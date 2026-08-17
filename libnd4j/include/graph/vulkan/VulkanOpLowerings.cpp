@@ -22,6 +22,7 @@
 #include <ops/declarable/headers/llm.h>
 #include <ops/declarable/helpers/fusedElementwiseChain.h>
 #include <system/op_boilerplate.h>
+#include <system/op_enums.h>
 
 #if defined(HAVE_VULKAN) && HAVE_VULKAN && defined(HAVE_MLIR) && HAVE_MLIR
 
@@ -444,6 +445,29 @@ static mlir::Value loadAsScalar(mlir::OpBuilder& builder, mlir::Location loc,
                        sourceUnsigned, computeUnsigned);
 }
 
+static mlir::Value loadScalarAttribute(mlir::OpBuilder& builder,
+                                       mlir::Location loc,
+                                       mlir::Operation* op,
+                                       mlir::Type computeType) {
+  if (auto floatAttr = op->getAttrOfType<mlir::FloatAttr>("nd4j.scalar")) {
+    if (auto floatType = llvm::dyn_cast<mlir::FloatType>(computeType)) {
+      return builder.create<mlir::arith::ConstantOp>(
+          loc, floatType,
+          mlir::FloatAttr::get(floatType, floatAttr.getValueAsDouble()));
+    }
+  }
+  if (auto integerAttr =
+          op->getAttrOfType<mlir::IntegerAttr>("nd4j.scalar")) {
+    if (auto integerType =
+            llvm::dyn_cast<mlir::IntegerType>(computeType)) {
+      return builder.create<mlir::arith::ConstantOp>(
+          loc, integerType,
+          mlir::IntegerAttr::get(integerType, integerAttr.getInt()));
+    }
+  }
+  return {};
+}
+
 static bool storeScalar(mlir::OpBuilder& builder, mlir::Location loc,
                         mlir::Value value, mlir::Value memref,
                         mlir::ValueRange indices, bool valueUnsigned,
@@ -663,6 +687,416 @@ static const VulkanKernelEmitterInfo* emitterForOperation(MlirOp op) {
 
   sd::LongType hash = 0;
   return readOpHash(operation, hash) ? findVulkanKernelEmitter(hash) : nullptr;
+}
+
+// Resolve a canonical legacy identity into the reusable lowering recipe.  The
+// canonical enum names are the source of truth here; do not duplicate the
+// numeric values from loops/legacy_ops.h in the lowering layer.
+static VulkanKernelRecipe legacySemanticFor(
+    mlir::Operation* operation, VulkanKernelRecipe fallback) {
+  if (fallback != VulkanKernelRecipe::LEGACY_GENERIC) return fallback;
+  auto familyAttr =
+      operation->getAttrOfType<mlir::IntegerAttr>(kLegacyFamilyAttr);
+  auto opNumAttr =
+      operation->getAttrOfType<mlir::IntegerAttr>(kLegacyOpNumAttr);
+  if (!familyAttr || !opNumAttr) return VulkanKernelRecipe::UNSUPPORTED;
+  const auto family = static_cast<VulkanLegacyOpFamily>(familyAttr.getInt());
+  const int opNum = static_cast<int>(opNumAttr.getInt());
+  auto binaryArithmetic = [&](int add, int subtract, int multiply, int divide,
+                              int reverseDivide, int reverseSubtract,
+                              int minimum, int maximum, int mod,
+                              int floorDivide, int floorMod,
+                              int squaredSubtract, int power, int atan2) {
+    if (opNum == add) return VulkanKernelRecipe::ADD;
+    if (opNum == subtract) return VulkanKernelRecipe::SUBTRACT;
+    if (opNum == multiply) return VulkanKernelRecipe::MULTIPLY;
+    if (opNum == divide) return VulkanKernelRecipe::DIVIDE;
+    if (opNum == reverseDivide) return VulkanKernelRecipe::REVERSE_DIVIDE;
+    if (opNum == reverseSubtract) return VulkanKernelRecipe::REVERSE_SUBTRACT;
+    if (opNum == minimum) return VulkanKernelRecipe::MINIMUM;
+    if (opNum == maximum) return VulkanKernelRecipe::MAXIMUM;
+    if (opNum == mod) return VulkanKernelRecipe::MOD;
+    if (opNum == floorDivide) return VulkanKernelRecipe::FLOOR_DIVIDE;
+    if (opNum == floorMod) return VulkanKernelRecipe::FLOOR_MOD;
+    if (opNum == squaredSubtract) return VulkanKernelRecipe::SQUARED_SUBTRACT;
+    if (opNum == power) return VulkanKernelRecipe::POWER;
+    if (opNum == atan2) return VulkanKernelRecipe::ATAN2;
+    return VulkanKernelRecipe::UNSUPPORTED;
+  };
+  auto comparison = [&](int equal, int greater, int less, int greaterEqual,
+                        int notEqual, int lessEqual) {
+    if (opNum == equal) return VulkanKernelRecipe::EQUAL;
+    if (opNum == greater) return VulkanKernelRecipe::GREATER;
+    if (opNum == less) return VulkanKernelRecipe::LESS;
+    if (opNum == greaterEqual) return VulkanKernelRecipe::GREATER_EQUAL;
+    if (opNum == notEqual) return VulkanKernelRecipe::NOT_EQUAL;
+    if (opNum == lessEqual) return VulkanKernelRecipe::LESS_EQUAL;
+    return VulkanKernelRecipe::UNSUPPORTED;
+  };
+  switch (family) {
+    case VulkanLegacyOpFamily::BROADCAST: {
+      using namespace sd::broadcast;
+      if (opNum == CopyPws) return VulkanKernelRecipe::ASSIGN;
+      if (opNum == LogicalNot)
+        return VulkanKernelRecipe::LOGICAL_NOT_BINARY;
+      if (opNum == Pow) return VulkanKernelRecipe::POWER;
+      if (opNum == AMinPairwise) return VulkanKernelRecipe::MINIMUM;
+      if (opNum == AMaxPairwise) return VulkanKernelRecipe::MAXIMUM;
+      if (opNum == FloorMod) return VulkanKernelRecipe::FLOOR_MOD;
+      if (opNum == FloorDiv) return VulkanKernelRecipe::FLOOR_DIVIDE;
+      if (opNum == ReverseMod) return VulkanKernelRecipe::REVERSE_MOD;
+      if (opNum == SafeDivide) return VulkanKernelRecipe::SAFE_DIVIDE;
+      if (opNum == TruncateDiv) return VulkanKernelRecipe::TRUNCATE_DIV;
+      if (opNum == LogicalOr) return VulkanKernelRecipe::BOOLEAN_OR;
+      if (opNum == LogicalXor) return VulkanKernelRecipe::BOOLEAN_XOR;
+      if (opNum == LogicalAnd) return VulkanKernelRecipe::BOOLEAN_AND;
+      if (opNum == DivideNoNan) return VulkanKernelRecipe::DIVIDE_NO_NAN;
+      if (opNum == IGamma) return VulkanKernelRecipe::IGAMMA;
+      if (opNum == IGammac) return VulkanKernelRecipe::IGAMMAC;
+      if (opNum == PowDerivative) return VulkanKernelRecipe::POW_DERIVATIVE;
+      if (opNum == Xdivy) return VulkanKernelRecipe::XDIVY;
+      if (opNum == Xlogy) return VulkanKernelRecipe::XLOGY;
+      if (opNum == Xlog1py) return VulkanKernelRecipe::XLOG1PY;
+      return binaryArithmetic(Add, Subtract, Multiply, Divide, ReverseDivide,
+                              ReverseSubtract, MinPairwise, MaxPairwise, Mod,
+                              FloorDiv, FloorMod, SquaredSubtract, Pow, Atan2);
+    }
+    case VulkanLegacyOpFamily::PAIRWISE: {
+      using namespace sd::pairwise;
+      if (opNum == CopyPws || opNum == Copy2 || opNum == CompareAndSet ||
+          opNum == CompareAndReplace || opNum == ReplaceNans)
+        return VulkanKernelRecipe::ASSIGN;
+      if (opNum == Axpy) return VulkanKernelRecipe::AXPY;
+      if (opNum == LogicalNot)
+        return VulkanKernelRecipe::LOGICAL_NOT_BINARY;
+      if (opNum == RelativeError)
+        return VulkanKernelRecipe::RELATIVE_ERROR;
+      if (opNum == BinaryRelativeError)
+        return VulkanKernelRecipe::BINARY_RELATIVE_ERROR;
+      if (opNum == BinaryMinimumAbsoluteRelativeError)
+        return VulkanKernelRecipe::BINARY_MINIMUM_ABSOLUTE_RELATIVE_ERROR;
+      if (opNum == LogPoissonLoss)
+        return VulkanKernelRecipe::LOG_POISSON_LOSS;
+      if (opNum == LogPoissonLossFull)
+        return VulkanKernelRecipe::LOG_POISSON_LOSS_FULL;
+      if (opNum == Remainder || opNum == Mod || opNum == TruncateMod)
+        return VulkanKernelRecipe::MOD;
+      if (opNum == FMod) return VulkanKernelRecipe::FMOD;
+      if (opNum == TruncateDiv) return VulkanKernelRecipe::TRUNCATE_DIV;
+      if (opNum == FloorDiv) return VulkanKernelRecipe::FLOOR_DIVIDE;
+      if (opNum == FloorMod) return VulkanKernelRecipe::FLOOR_MOD;
+      if (opNum == ReverseMod) return VulkanKernelRecipe::REVERSE_MOD;
+      if (opNum == SafeDivide) return VulkanKernelRecipe::SAFE_DIVIDE;
+      if (opNum == LogicalOr) return VulkanKernelRecipe::BOOLEAN_OR;
+      if (opNum == LogicalXor) return VulkanKernelRecipe::BOOLEAN_XOR;
+      if (opNum == LogicalAnd) return VulkanKernelRecipe::BOOLEAN_AND;
+      if (opNum == PowDerivative) return VulkanKernelRecipe::POW_DERIVATIVE;
+      if (opNum == AMaxPairwise) return VulkanKernelRecipe::MAXIMUM;
+      if (opNum == AMinPairwise) return VulkanKernelRecipe::MINIMUM;
+      if (opNum == DivideNoNan) return VulkanKernelRecipe::DIVIDE_NO_NAN;
+      if (opNum == IGamma) return VulkanKernelRecipe::IGAMMA;
+      if (opNum == IGammac) return VulkanKernelRecipe::IGAMMAC;
+      if (opNum == Xdivy) return VulkanKernelRecipe::XDIVY;
+      if (opNum == Xlogy) return VulkanKernelRecipe::XLOGY;
+      if (opNum == Xlog1py) return VulkanKernelRecipe::XLOG1PY;
+      return binaryArithmetic(Add, Subtract, Multiply, Divide, ReverseDivide,
+                              ReverseSubtract, MinPairwise, MaxPairwise, Mod,
+                              FloorDiv, FloorMod, SquaredSubtract, Pow, Atan2);
+    }
+    case VulkanLegacyOpFamily::SCALAR: {
+      using namespace sd::scalar;
+      if (opNum == ELU) return VulkanKernelRecipe::ELU_SCALAR;
+      if (opNum == ELUDerivative)
+        return VulkanKernelRecipe::ELU_DERIVATIVE;
+      if (opNum == CopyPws || opNum == CompareAndSet || opNum == ReplaceNans)
+        return VulkanKernelRecipe::ASSIGN;
+      if (opNum == MinPairwise || opNum == AMinPairwise)
+        return VulkanKernelRecipe::MINIMUM;
+      if (opNum == MaxPairwise || opNum == AMaxPairwise)
+        return VulkanKernelRecipe::MAXIMUM;
+      if (opNum == Mod || opNum == Remainder || opNum == TruncateMod)
+        return VulkanKernelRecipe::MOD;
+      if (opNum == ReverseMod) return VulkanKernelRecipe::REVERSE_MOD;
+      if (opNum == FMod) return VulkanKernelRecipe::FMOD;
+      if (opNum == TruncateDiv) return VulkanKernelRecipe::TRUNCATE_DIV;
+      if (opNum == SafeDivide) return VulkanKernelRecipe::SAFE_DIVIDE;
+      if (opNum == LogicalOr) return VulkanKernelRecipe::BOOLEAN_OR;
+      if (opNum == LogicalXor) return VulkanKernelRecipe::BOOLEAN_XOR;
+      if (opNum == LogicalAnd) return VulkanKernelRecipe::BOOLEAN_AND;
+      if (opNum == PowDerivative) return VulkanKernelRecipe::POW_DERIVATIVE;
+      if (opNum == LeakyRELU) return VulkanKernelRecipe::LEAKY_RELU;
+      if (opNum == LeakyRELUDerivative)
+        return VulkanKernelRecipe::LEAKY_RELU_DERIVATIVE;
+      if (opNum == RELU) return VulkanKernelRecipe::RELU;
+      if (opNum == RELU6) return VulkanKernelRecipe::RELU6;
+      if (opNum == RELUDerivative)
+        return VulkanKernelRecipe::RELU_DERIVATIVE;
+      if (opNum == SXELogitsSmoother)
+        return VulkanKernelRecipe::SIGMOID_CROSS_ENTROPY_SMOOTHER;
+      if (opNum == LogX) return VulkanKernelRecipe::LOG_X;
+      if (opNum == Step) return VulkanKernelRecipe::STEP;
+      if (opNum == LstmClip) return VulkanKernelRecipe::LSTM_CLIP;
+      if (opNum == SquaredReverseSubtract)
+        return VulkanKernelRecipe::SQUARED_REVERSE_SUBTRACT;
+      if (opNum == ReversePow) return VulkanKernelRecipe::REVERSE_POWER;
+      if (opNum == DivideNoNan) return VulkanKernelRecipe::DIVIDE_NO_NAN;
+      if (opNum == Xdivy) return VulkanKernelRecipe::XDIVY;
+      if (opNum == Xlogy) return VulkanKernelRecipe::XLOGY;
+      if (opNum == Xlog1py) return VulkanKernelRecipe::XLOG1PY;
+      if (opNum == IGamma) return VulkanKernelRecipe::IGAMMA;
+      if (opNum == IGammac) return VulkanKernelRecipe::IGAMMAC;
+      return binaryArithmetic(Add, Subtract, Multiply, Divide, ReverseDivide,
+                              ReverseSubtract, MinPairwise, MaxPairwise, Mod,
+                              FloorDiv, FloorMod, SquaredSubtract, Pow, Atan2);
+    }
+    case VulkanLegacyOpFamily::BROADCAST_BOOL: {
+      using namespace sd::broadcast;
+      if (opNum == And) return VulkanKernelRecipe::BOOLEAN_AND;
+      if (opNum == Or) return VulkanKernelRecipe::BOOLEAN_OR;
+      if (opNum == Xor) return VulkanKernelRecipe::BOOLEAN_XOR;
+      if (opNum == Epsilon) return VulkanKernelRecipe::EPSILON_COMPARE;
+      if (opNum == MatchCondition) return VulkanKernelRecipe::MATCH_CONDITION;
+      if (opNum == Not) return VulkanKernelRecipe::LOGICAL_NOT_BINARY;
+      return comparison(EqualTo, GreaterThan, LessThan, GreaterThanOrEqual,
+                        NotEqualTo, LessThanOrEqual);
+    }
+    case VulkanLegacyOpFamily::PAIRWISE_BOOL: {
+      using namespace sd::pairwise;
+      if (opNum == And) return VulkanKernelRecipe::BOOLEAN_AND;
+      if (opNum == Or) return VulkanKernelRecipe::BOOLEAN_OR;
+      if (opNum == Xor) return VulkanKernelRecipe::BOOLEAN_XOR;
+      if (opNum == Epsilon) return VulkanKernelRecipe::EPSILON_COMPARE;
+      if (opNum == MatchCondition) return VulkanKernelRecipe::MATCH_CONDITION;
+      if (opNum == Not) return VulkanKernelRecipe::LOGICAL_NOT_BINARY;
+      return comparison(EqualTo, GreaterThan, LessThan, GreaterThanOrEqual,
+                        NotEqualTo, LessThanOrEqual);
+    }
+    case VulkanLegacyOpFamily::SCALAR_BOOL: {
+      using namespace sd::scalar;
+      if (opNum == And) return VulkanKernelRecipe::BOOLEAN_AND;
+      if (opNum == Or) return VulkanKernelRecipe::BOOLEAN_OR;
+      if (opNum == Xor) return VulkanKernelRecipe::BOOLEAN_XOR;
+      if (opNum == Epsilon) return VulkanKernelRecipe::EPSILON_COMPARE;
+      if (opNum == MatchCondition) return VulkanKernelRecipe::MATCH_CONDITION;
+      if (opNum == Not) return VulkanKernelRecipe::LOGICAL_NOT_BINARY;
+      return comparison(EqualTo, GreaterThan, LessThan, GreaterThanOrEqual,
+                        NotEqualTo, LessThanOrEqual);
+    }
+    case VulkanLegacyOpFamily::BROADCAST_INT:
+    case VulkanLegacyOpFamily::PAIRWISE_INT:
+    case VulkanLegacyOpFamily::SCALAR_INT: {
+      if (opNum == static_cast<int>(sd::broadcast::ShiftLeft) ||
+          opNum == static_cast<int>(sd::pairwise::ShiftLeft) ||
+          opNum == static_cast<int>(sd::scalar::ShiftLeft))
+        return VulkanKernelRecipe::SHIFT_LEFT;
+      if (opNum == static_cast<int>(sd::broadcast::ShiftRight) ||
+          opNum == static_cast<int>(sd::pairwise::ShiftRight) ||
+          opNum == static_cast<int>(sd::scalar::ShiftRight))
+        return VulkanKernelRecipe::SHIFT_RIGHT;
+      if (opNum == static_cast<int>(sd::broadcast::CyclicShiftLeft) ||
+          opNum == static_cast<int>(sd::pairwise::CyclicShiftLeft) ||
+          opNum == static_cast<int>(sd::scalar::CyclicShiftLeft))
+        return VulkanKernelRecipe::CYCLIC_SHIFT_LEFT;
+      if (opNum == static_cast<int>(sd::broadcast::CyclicShiftRight) ||
+          opNum == static_cast<int>(sd::pairwise::CyclicShiftRight) ||
+          opNum == static_cast<int>(sd::scalar::CyclicShiftRight))
+        return VulkanKernelRecipe::CYCLIC_SHIFT_RIGHT;
+      if (opNum == static_cast<int>(sd::broadcast::IntAnd) ||
+          opNum == static_cast<int>(sd::pairwise::IntAnd) ||
+          opNum == static_cast<int>(sd::scalar::IntAnd))
+        return VulkanKernelRecipe::BOOLEAN_AND;
+      if (opNum == static_cast<int>(sd::broadcast::IntOr) ||
+          opNum == static_cast<int>(sd::pairwise::IntOr) ||
+          opNum == static_cast<int>(sd::scalar::IntOr))
+        return VulkanKernelRecipe::BOOLEAN_OR;
+      if (opNum == static_cast<int>(sd::broadcast::IntXor) ||
+          opNum == static_cast<int>(sd::pairwise::IntXor) ||
+          opNum == static_cast<int>(sd::scalar::IntXor))
+        return VulkanKernelRecipe::BOOLEAN_XOR;
+      return VulkanKernelRecipe::UNSUPPORTED;
+    }
+    case VulkanLegacyOpFamily::TRANSFORM_SAME: {
+      using namespace sd::transform;
+      if (opNum == Abs) return VulkanKernelRecipe::ABS;
+      if (opNum == Sign) return VulkanKernelRecipe::SIGN;
+      if (opNum == Ones) return VulkanKernelRecipe::ONES;
+      if (opNum == Neg) return VulkanKernelRecipe::NEGATE;
+      if (opNum == Round) return VulkanKernelRecipe::ROUND;
+      if (opNum == OneMinus) return VulkanKernelRecipe::ONE_MINUS;
+      if (opNum == TimesOneMinus)
+        return VulkanKernelRecipe::TIMES_ONE_MINUS;
+      if (opNum == Cube) return VulkanKernelRecipe::CUBE;
+      if (opNum == Reciprocal) return VulkanKernelRecipe::RECIPROCAL;
+      if (opNum == Square) return VulkanKernelRecipe::SQUARE;
+      if (opNum == CompareAndSetTransform || opNum == Identity || opNum == Copy)
+        return VulkanKernelRecipe::ASSIGN;
+      if (opNum == Ceiling) return VulkanKernelRecipe::CEIL;
+      if (opNum == Floor) return VulkanKernelRecipe::FLOOR;
+      if (opNum == ClipByValue) return VulkanKernelRecipe::CLIP_BY_VALUE;
+      return VulkanKernelRecipe::UNSUPPORTED;
+    }
+    case VulkanLegacyOpFamily::TRANSFORM_STRICT: {
+      using namespace sd::transform;
+      if (opNum == TanhDerivative)
+        return VulkanKernelRecipe::TANH_DERIVATIVE;
+      if (opNum == HardTanhDerivative)
+        return VulkanKernelRecipe::HARD_TANH_DERIVATIVE;
+      if (opNum == SigmoidDerivative)
+        return VulkanKernelRecipe::SIGMOID_DERIVATIVE;
+      if (opNum == SoftSignDerivative)
+        return VulkanKernelRecipe::SOFTSIGN_DERIVATIVE;
+      if (opNum == TanDerivative)
+        return VulkanKernelRecipe::TAN_DERIVATIVE;
+      if (opNum == SELUDerivative)
+        return VulkanKernelRecipe::SELU_DERIVATIVE;
+      if (opNum == HardSigmoidDerivative)
+        return VulkanKernelRecipe::HARD_SIGMOID_DERIVATIVE;
+      if (opNum == RationalTanhDerivative)
+        return VulkanKernelRecipe::RATIONAL_TANH_DERIVATIVE;
+      if (opNum == RectifiedTanhDerivative)
+        return VulkanKernelRecipe::RECTIFIED_TANH_DERIVATIVE;
+      if (opNum == SwishDerivative)
+        return VulkanKernelRecipe::SWISH_DERIVATIVE;
+      if (opNum == ACoshDerivative)
+        return VulkanKernelRecipe::ACOSH_DERIVATIVE;
+      if (opNum == ASinhDerivative)
+        return VulkanKernelRecipe::ASINH_DERIVATIVE;
+      if (opNum == SinhDerivative)
+        return VulkanKernelRecipe::SINH_DERIVATIVE;
+      if (opNum == LogSigmoidDerivative)
+        return VulkanKernelRecipe::LOG_SIGMOID_DERIVATIVE;
+      if (opNum == SpecialDerivative)
+        return VulkanKernelRecipe::SPECIAL_DERIVATIVE;
+      if (opNum == CubeDerivative)
+        return VulkanKernelRecipe::CUBE_DERIVATIVE;
+      if (opNum == ScaledTanh)
+        return VulkanKernelRecipe::SCALED_TANH;
+      if (opNum == Affine) return VulkanKernelRecipe::AFFINE;
+      if (opNum == SetRange) return VulkanKernelRecipe::SET_RANGE;
+      if (opNum == Stabilize) return VulkanKernelRecipe::STABILIZE;
+      if (opNum == StabilizeFP16) return VulkanKernelRecipe::STABILIZE_FP16;
+      if (opNum == Cosine) return VulkanKernelRecipe::COS;
+      if (opNum == Exp) return VulkanKernelRecipe::EXP;
+      if (opNum == Log) return VulkanKernelRecipe::LOG;
+      if (opNum == Sigmoid) return VulkanKernelRecipe::SIGMOID;
+      if (opNum == Sin) return VulkanKernelRecipe::SIN;
+      if (opNum == SoftPlus) return VulkanKernelRecipe::SOFTPLUS;
+      if (opNum == Tanh) return VulkanKernelRecipe::TANH;
+      if (opNum == ACos) return VulkanKernelRecipe::ACOS;
+      if (opNum == ASin) return VulkanKernelRecipe::ASIN;
+      if (opNum == ATan) return VulkanKernelRecipe::ATAN;
+      if (opNum == HardTanh) return VulkanKernelRecipe::HARD_TANH;
+      if (opNum == SoftSign) return VulkanKernelRecipe::SOFTSIGN;
+      if (opNum == HardSigmoid) return VulkanKernelRecipe::HARD_SIGMOID;
+      if (opNum == RationalTanh) return VulkanKernelRecipe::RATIONAL_TANH;
+      if (opNum == RectifiedTanh) return VulkanKernelRecipe::RECTIFIED_TANH;
+      if (opNum == Sinh) return VulkanKernelRecipe::SINH;
+      if (opNum == Cosh) return VulkanKernelRecipe::COSH;
+      if (opNum == Tan) return VulkanKernelRecipe::TAN;
+      if (opNum == SELU) return VulkanKernelRecipe::SELU;
+      if (opNum == Swish) return VulkanKernelRecipe::SILU;
+      if (opNum == Log1p) return VulkanKernelRecipe::LOG1P;
+      if (opNum == Erf) return VulkanKernelRecipe::ERF;
+      if (opNum == ACosh) return VulkanKernelRecipe::ACOSH;
+      if (opNum == ASinh) return VulkanKernelRecipe::ASINH;
+      if (opNum == Rint) return VulkanKernelRecipe::RINT;
+      if (opNum == LogSigmoid) return VulkanKernelRecipe::LOG_SIGMOID;
+      if (opNum == Erfc) return VulkanKernelRecipe::ERFC;
+      if (opNum == Expm1) return VulkanKernelRecipe::EXPM1;
+      if (opNum == ATanh) return VulkanKernelRecipe::ATANH;
+      if (opNum == GELU || opNum == PreciseGELU)
+        return VulkanKernelRecipe::GELU;
+      if (opNum == GELUDerivative)
+        return VulkanKernelRecipe::GELU_DERIVATIVE;
+      if (opNum == PreciseGELUDerivative)
+        return VulkanKernelRecipe::PRECISE_GELU_DERIVATIVE;
+      if (opNum == Mish) return VulkanKernelRecipe::MISH;
+      if (opNum == MishDerivative)
+        return VulkanKernelRecipe::MISH_DERIVATIVE;
+      return VulkanKernelRecipe::UNSUPPORTED;
+    }
+    case VulkanLegacyOpFamily::TRANSFORM_FLOAT:
+      if (opNum == sd::transform::Sqrt) return VulkanKernelRecipe::SQRT;
+      if (opNum == sd::transform::RSqrt) return VulkanKernelRecipe::RSQRT;
+      return VulkanKernelRecipe::UNSUPPORTED;
+    case VulkanLegacyOpFamily::TRANSFORM_BOOL:
+      if (opNum == sd::transform::IsInf) return VulkanKernelRecipe::IS_INF;
+      if (opNum == sd::transform::IsNan) return VulkanKernelRecipe::IS_NAN;
+      if (opNum == sd::transform::IsFinite) return VulkanKernelRecipe::IS_FINITE;
+      if (opNum == sd::transform::IsInfOrNan) return VulkanKernelRecipe::IS_INF_OR_NAN;
+      if (opNum == sd::transform::IsPositive) return VulkanKernelRecipe::IS_POSITIVE;
+      if (opNum == sd::transform::Not) return VulkanKernelRecipe::BOOLEAN_NOT;
+      if (opNum == sd::transform::IsNegative) return VulkanKernelRecipe::IS_NEGATIVE;
+      if (opNum == sd::transform::MatchConditionBool)
+        return VulkanKernelRecipe::MATCH_CONDITION_UNARY;
+      return VulkanKernelRecipe::UNSUPPORTED;
+    case VulkanLegacyOpFamily::TRANSFORM_ANY:
+      return VulkanKernelRecipe::ASSIGN;
+    case VulkanLegacyOpFamily::REDUCE_SAME:
+      if (opNum == sd::reduce::Sum || opNum == sd::reduce::ASum)
+        return VulkanKernelRecipe::REDUCE_SUM;
+      if (opNum == sd::reduce::Max || opNum == sd::reduce::AMax)
+        return VulkanKernelRecipe::REDUCE_MAX;
+      if (opNum == sd::reduce::Min || opNum == sd::reduce::AMin)
+        return VulkanKernelRecipe::REDUCE_MIN;
+      if (opNum == sd::reduce::Prod) return VulkanKernelRecipe::REDUCE_PRODUCT;
+      return VulkanKernelRecipe::UNSUPPORTED;
+    case VulkanLegacyOpFamily::REDUCE_FLOAT:
+      if (opNum == sd::reduce::Mean || opNum == sd::reduce::AMean)
+        return VulkanKernelRecipe::REDUCE_SUM;
+      if (opNum == sd::reduce::NormMax) return VulkanKernelRecipe::REDUCE_MAX;
+      if (opNum == sd::reduce::Norm1 || opNum == sd::reduce::Norm2 ||
+          opNum == sd::reduce::NormFrobenius || opNum == sd::reduce::NormP ||
+          opNum == sd::reduce::SquaredNorm)
+        return VulkanKernelRecipe::REDUCE_SUM;
+      if (opNum == sd::reduce::Entropy)
+        return VulkanKernelRecipe::REDUCE_ENTROPY;
+      if (opNum == sd::reduce::LogEntropy)
+        return VulkanKernelRecipe::REDUCE_LOG_ENTROPY;
+      if (opNum == sd::reduce::ShannonEntropy)
+        return VulkanKernelRecipe::REDUCE_SHANNON_ENTROPY;
+      return VulkanKernelRecipe::UNSUPPORTED;
+    case VulkanLegacyOpFamily::REDUCE_BOOL:
+      if (opNum == sd::reduce::All) return VulkanKernelRecipe::REDUCE_MIN;
+      if (opNum == sd::reduce::Any || opNum == sd::reduce::IsFinite ||
+          opNum == sd::reduce::IsInfOrNan || opNum == sd::reduce::IsNan ||
+          opNum == sd::reduce::IsInf || opNum == sd::reduce::IsPositive ||
+          opNum == sd::reduce::IsNegative)
+        return VulkanKernelRecipe::REDUCE_MAX;
+      return VulkanKernelRecipe::UNSUPPORTED;
+    case VulkanLegacyOpFamily::REDUCE_LONG:
+      if (opNum == sd::reduce::CountNonZero)
+        return VulkanKernelRecipe::REDUCE_COUNT_NONZERO;
+      if (opNum == sd::reduce::CountZero)
+        return VulkanKernelRecipe::REDUCE_COUNT_ZERO;
+      if (opNum == sd::reduce::MatchCondition)
+        return VulkanKernelRecipe::REDUCE_COUNT_MATCH;
+      return VulkanKernelRecipe::UNSUPPORTED;
+    case VulkanLegacyOpFamily::REDUCE3:
+      return VulkanKernelRecipe::REDUCE3;
+    case VulkanLegacyOpFamily::INDEX_REDUCE:
+      if (opNum == sd::indexreduce::IndexMin ||
+          opNum == sd::indexreduce::IndexAbsoluteMin)
+        return VulkanKernelRecipe::REDUCE_MIN;
+      return VulkanKernelRecipe::REDUCE_MAX;
+    case VulkanLegacyOpFamily::SUMMARY_STATS:
+      if (opNum == sd::variance::SummaryStatsVariance)
+        return VulkanKernelRecipe::REDUCE_VARIANCE;
+      if (opNum == sd::variance::SummaryStatsStandardDeviation)
+        return VulkanKernelRecipe::REDUCE_STDEV;
+      return VulkanKernelRecipe::UNSUPPORTED;
+    case VulkanLegacyOpFamily::RANDOM:
+      return opNum == static_cast<int>(sd::random::UniformDistribution)
+                 ? VulkanKernelRecipe::UNIFORM_RANDOM
+                 : VulkanKernelRecipe::RANDOM_GENERIC;
+  }
+  return VulkanKernelRecipe::UNSUPPORTED;
+}
+
+template <typename MlirOp>
+static VulkanKernelRecipe legacySemanticFor(
+    MlirOp op, VulkanKernelRecipe fallback) {
+  return legacySemanticFor(op.getOperation(), fallback);
 }
 
 using UnaryCallback = std::function<mlir::Value(
@@ -946,6 +1380,59 @@ static mlir::Value emitParameterizedUnary(
         return builder.create<mlir::arith::MinimumFOp>(
             loc, bounded, second);
       }
+      case VulkanKernelRecipe::SCALED_TANH: {
+        mlir::Value scale = scalarConstant(builder, loc, type, scalar0);
+        mlir::Value slope = scalarConstant(builder, loc, type, scalar1);
+        if (!scale || !slope) return {};
+        return builder.create<mlir::arith::MulFOp>(
+            loc, scale,
+            builder.create<mlir::math::TanhOp>(
+                loc, builder.create<mlir::arith::MulFOp>(loc, slope, x)));
+      }
+      case VulkanKernelRecipe::AFFINE: {
+        mlir::Value offset = scalarConstant(builder, loc, type, scalar1);
+        if (!offset) return {};
+        return builder.create<mlir::arith::AddFOp>(
+            loc, builder.create<mlir::arith::MulFOp>(loc, first, x), offset);
+      }
+      case VulkanKernelRecipe::SET_RANGE: {
+        mlir::Value upper = scalarConstant(builder, loc, type, scalar1);
+        if (!upper) return {};
+        mlir::Value atLeast = builder.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::OGE, x, first);
+        mlir::Value atMost = builder.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::OLE, x, upper);
+        mlir::Value inside = builder.create<mlir::arith::AndIOp>(
+            loc, atLeast, atMost);
+        mlir::Value span = builder.create<mlir::arith::SubFOp>(loc, upper, first);
+        mlir::Value scaled;
+        if (scalar0 == 0.0 && scalar1 == 1.0) {
+          scaled = builder.create<mlir::arith::MulFOp>(
+              loc, emitSigmoid(builder, loc, type, x), span);
+        } else {
+          scaled = builder.create<mlir::arith::MulFOp>(loc, x, span);
+        }
+        mlir::Value mapped = builder.create<mlir::arith::AddFOp>(
+            loc, builder.create<mlir::math::FloorOp>(loc, scaled), first);
+        return builder.create<mlir::arith::SelectOp>(loc, inside, x, mapped);
+      }
+      case VulkanKernelRecipe::STABILIZE: {
+        mlir::Value product = builder.create<mlir::arith::MulFOp>(loc, x, first);
+        mlir::Value max = floatConst(builder, loc, floatType, 3.79297773665);
+        mlir::Value min = floatConst(builder, loc, floatType, -3.79297773665);
+        mlir::Value upper = builder.create<mlir::arith::DivFOp>(loc, max, first);
+        mlir::Value lower = builder.create<mlir::arith::DivFOp>(loc, min, first);
+        mlir::Value above = builder.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::OGT, product, max);
+        mlir::Value below = builder.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::OLT, product, min);
+        mlir::Value bounded = builder.create<mlir::arith::SelectOp>(
+            loc, above, upper,
+            builder.create<mlir::arith::SelectOp>(loc, below, lower, x));
+        mlir::Value zeroK = builder.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::OEQ, first, zero);
+        return builder.create<mlir::arith::SelectOp>(loc, zeroK, x, bounded);
+      }
       default:
         return {};
     }
@@ -997,6 +1484,57 @@ static mlir::Value emitParameterizedUnary(
   }
 }
 
+static mlir::Value emitParameterizedBinary(
+    mlir::OpBuilder& builder, mlir::Location loc, mlir::Type type,
+    VulkanKernelRecipe semantic, mlir::Value a, mlir::Value b,
+    double scalar0, double scalar1, bool scalar0Present) {
+  auto floatType = llvm::dyn_cast<mlir::FloatType>(type);
+  if (!floatType) return {};
+  mlir::Value zero = floatConst(builder, loc, floatType, 0.0);
+  mlir::Value one = floatConst(builder, loc, floatType, 1.0);
+  mlir::Value difference = builder.create<mlir::math::AbsFOp>(
+      loc, builder.create<mlir::arith::SubFOp>(loc, a, b));
+  mlir::Value denominator = builder.create<mlir::arith::AddFOp>(
+      loc, builder.create<mlir::math::AbsFOp>(loc, a),
+      builder.create<mlir::math::AbsFOp>(loc, b));
+  mlir::Value bothZero = builder.create<mlir::arith::AndIOp>(
+      loc, builder.create<mlir::arith::CmpFOp>(
+               loc, mlir::arith::CmpFPredicate::OEQ, a, zero),
+      builder.create<mlir::arith::CmpFOp>(
+          loc, mlir::arith::CmpFPredicate::OEQ, b, zero));
+  mlir::Value relative = builder.create<mlir::arith::SelectOp>(
+      loc, bothZero, zero,
+      builder.create<mlir::arith::DivFOp>(loc, difference, denominator));
+  if (semantic == VulkanKernelRecipe::AXPY) {
+    mlir::Value alpha = scalarConstant(
+        builder, loc, type, scalar0Present ? scalar0 : 1.0);
+    if (!alpha) return {};
+    return builder.create<mlir::arith::AddFOp>(
+        loc, builder.create<mlir::arith::MulFOp>(loc, alpha, a), b);
+  }
+  if (semantic == VulkanKernelRecipe::BINARY_RELATIVE_ERROR) {
+    mlir::Value threshold = scalarConstant(builder, loc, type, scalar0);
+    if (!threshold) return {};
+    mlir::Value exceeds = builder.create<mlir::arith::CmpFOp>(
+        loc, mlir::arith::CmpFPredicate::OGT, relative, threshold);
+    return builder.create<mlir::arith::SelectOp>(loc, exceeds, one, zero);
+  }
+  if (semantic == VulkanKernelRecipe::BINARY_MINIMUM_ABSOLUTE_RELATIVE_ERROR) {
+    mlir::Value thresholdRelative = scalarConstant(builder, loc, type, scalar0);
+    mlir::Value thresholdAbsolute = scalarConstant(builder, loc, type, scalar1);
+    if (!thresholdRelative || !thresholdAbsolute) return {};
+    mlir::Value relativeExceeds = builder.create<mlir::arith::CmpFOp>(
+        loc, mlir::arith::CmpFPredicate::OGT, relative, thresholdRelative);
+    mlir::Value absoluteBelow = builder.create<mlir::arith::CmpFOp>(
+        loc, mlir::arith::CmpFPredicate::OLT, difference, thresholdAbsolute);
+    mlir::Value zeroOrOne = builder.create<mlir::arith::SelectOp>(
+        loc, absoluteBelow, zero, one);
+    return builder.create<mlir::arith::SelectOp>(
+        loc, relativeExceeds, zeroOrOne, zero);
+  }
+  return {};
+}
+
 static UnaryCallback unaryCallbackFor(VulkanKernelRecipe semantic) {
   switch (semantic) {
     case VulkanKernelRecipe::BOOLEAN_NOT:
@@ -1009,8 +1547,270 @@ static UnaryCallback unaryCallbackFor(VulkanKernelRecipe semantic) {
             // BOOL values are normalized to 0/1 before reaching this callback.
             return b.create<mlir::arith::XOrIOp>(loc, x, one);
           }};
+    case VulkanKernelRecipe::MATCH_CONDITION_UNARY:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        return b.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::UNE, x,
+            floatConst(b, loc, ft, 0.0));
+      }};
+    case VulkanKernelRecipe::IS_INF:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto magnitude = b.create<mlir::math::AbsFOp>(loc, x);
+        return b.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::OEQ, magnitude,
+            floatConst(b, loc, ft, std::numeric_limits<double>::infinity()));
+      }};
+    case VulkanKernelRecipe::IS_NAN:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type, mlir::Value x) {
+        return b.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::UNO, x, x);
+      }};
+    case VulkanKernelRecipe::IS_FINITE:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto magnitude = b.create<mlir::math::AbsFOp>(loc, x);
+        return b.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::ONE, magnitude,
+            floatConst(b, loc, ft, std::numeric_limits<double>::infinity()));
+      }};
+    case VulkanKernelRecipe::IS_INF_OR_NAN:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto magnitude = b.create<mlir::math::AbsFOp>(loc, x);
+        auto infinite = b.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::OEQ, magnitude,
+            floatConst(b, loc, ft, std::numeric_limits<double>::infinity()));
+        auto nan = b.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::UNO, x, x);
+        return b.create<mlir::arith::OrIOp>(loc, infinite, nan);
+      }};
+    case VulkanKernelRecipe::IS_POSITIVE:
+    case VulkanKernelRecipe::IS_NEGATIVE:
+      return UnaryCallback{[semantic](mlir::OpBuilder& b, mlir::Location loc,
+                                      mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        return b.create<mlir::arith::CmpFOp>(
+            loc, semantic == VulkanKernelRecipe::IS_POSITIVE
+                     ? mlir::arith::CmpFPredicate::OGT
+                     : mlir::arith::CmpFPredicate::OLT,
+            x, floatConst(b, loc, ft, 0.0));
+      }};
+    case VulkanKernelRecipe::SIGN:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto zero = floatConst(b, loc, ft, 0.0);
+        auto positive = b.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::OGT, x, zero);
+        auto negative = b.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::OLT, x, zero);
+        return b.create<mlir::arith::SelectOp>(
+            loc, positive, floatConst(b, loc, ft, 1.0),
+            b.create<mlir::arith::SelectOp>(
+                loc, negative, floatConst(b, loc, ft, -1.0), zero));
+      }};
+    case VulkanKernelRecipe::ONES:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value) {
+        return floatConst(b, loc, llvm::cast<mlir::FloatType>(ty), 1.0);
+      }};
+    case VulkanKernelRecipe::ROUND:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type, mlir::Value x) {
+        return b.create<mlir::math::RoundEvenOp>(loc, x);
+      }};
+    case VulkanKernelRecipe::ONE_MINUS:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        return b.create<mlir::arith::SubFOp>(loc, floatConst(b, loc, ft, 1.0), x);
+      }};
+    case VulkanKernelRecipe::TIMES_ONE_MINUS:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto oneMinus = b.create<mlir::arith::SubFOp>(
+            loc, floatConst(b, loc, ft, 1.0), x);
+        return b.create<mlir::arith::MulFOp>(loc, x, oneMinus);
+      }};
+    case VulkanKernelRecipe::RECIPROCAL:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        return b.create<mlir::arith::DivFOp>(
+            loc, floatConst(b, loc, llvm::cast<mlir::FloatType>(ty), 1.0), x);
+      }};
+    case VulkanKernelRecipe::CEIL:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type, mlir::Value x) {
+        return b.create<mlir::math::CeilOp>(loc, x);
+      }};
+    case VulkanKernelRecipe::COS:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type, mlir::Value x) {
+        return b.create<mlir::math::CosOp>(loc, x);
+      }};
+    case VulkanKernelRecipe::SIN:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type, mlir::Value x) {
+        return b.create<mlir::math::SinOp>(loc, x);
+      }};
+    case VulkanKernelRecipe::EXP:
+      return UnaryCallback{emitExp};
+    case VulkanKernelRecipe::LOG:
+      return UnaryCallback{emitLog};
+    case VulkanKernelRecipe::RSQRT:
+      return UnaryCallback{emitRsqrt};
+    case VulkanKernelRecipe::TAN:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        return b.create<mlir::arith::DivFOp>(
+            loc, b.create<mlir::math::SinOp>(loc, x),
+            b.create<mlir::math::CosOp>(loc, x));
+      }};
+    case VulkanKernelRecipe::SINH:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto ex = emitExp(b, loc, ty, x);
+        auto enx = emitExp(b, loc, ty, b.create<mlir::arith::NegFOp>(loc, x));
+        return b.create<mlir::arith::MulFOp>(
+            loc, b.create<mlir::arith::SubFOp>(loc, ex, enx),
+            floatConst(b, loc, ft, 0.5));
+      }};
+    case VulkanKernelRecipe::COSH:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto ex = emitExp(b, loc, ty, x);
+        auto enx = emitExp(b, loc, ty, b.create<mlir::arith::NegFOp>(loc, x));
+        return b.create<mlir::arith::MulFOp>(
+            loc, b.create<mlir::arith::AddFOp>(loc, ex, enx),
+            floatConst(b, loc, ft, 0.5));
+      }};
+    case VulkanKernelRecipe::EXPM1:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        return b.create<mlir::arith::SubFOp>(
+            loc, emitExp(b, loc, ty, x),
+            floatConst(b, loc, llvm::cast<mlir::FloatType>(ty), 1.0));
+      }};
+    case VulkanKernelRecipe::LOG_SIGMOID:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto negative = b.create<mlir::arith::NegFOp>(loc, x);
+        auto softplus = b.create<mlir::arith::AddFOp>(
+            loc, floatConst(b, loc, ft, 1.0), emitExp(b, loc, ty, negative));
+        return b.create<mlir::arith::NegFOp>(loc, emitLog(b, loc, ty, softplus));
+      }};
+    case VulkanKernelRecipe::MISH:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto softplus = emitLog(
+            b, loc, ty,
+            b.create<mlir::arith::AddFOp>(loc, floatConst(b, loc, ft, 1.0),
+                                          emitExp(b, loc, ty, x)));
+        return b.create<mlir::arith::MulFOp>(loc, x, emitTanh(b, loc, ty, softplus));
+      }};
+    case VulkanKernelRecipe::ATAN:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type, mlir::Value x) {
+        return b.create<mlir::math::AtanOp>(loc, x);
+      }};
+    case VulkanKernelRecipe::ASIN:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto x2 = b.create<mlir::arith::MulFOp>(loc, x, x);
+        auto radicand = b.create<mlir::arith::SubFOp>(
+            loc, floatConst(b, loc, ft, 1.0), x2);
+        return b.create<mlir::math::AtanOp>(
+            loc, b.create<mlir::arith::DivFOp>(loc, x,
+                                               b.create<mlir::math::SqrtOp>(loc, radicand)));
+      }};
+    case VulkanKernelRecipe::ACOS:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto asin = UnaryCallback{[](mlir::OpBuilder& bb, mlir::Location ll,
+                                     mlir::Type tt, mlir::Value xx) {
+          auto fft = llvm::cast<mlir::FloatType>(tt);
+          auto xx2 = bb.create<mlir::arith::MulFOp>(ll, xx, xx);
+          auto rad = bb.create<mlir::arith::SubFOp>(
+              ll, floatConst(bb, ll, fft, 1.0), xx2);
+          return bb.create<mlir::math::AtanOp>(
+              ll, bb.create<mlir::arith::DivFOp>(ll, xx,
+                                                 bb.create<mlir::math::SqrtOp>(ll, rad)));
+        }};
+        return b.create<mlir::arith::SubFOp>(
+            loc, floatConst(b, loc, ft, 1.5707963267948966),
+            asin(b, loc, ty, x));
+      }};
+    case VulkanKernelRecipe::ASINH:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto x2 = b.create<mlir::arith::MulFOp>(loc, x, x);
+        auto rad = b.create<mlir::arith::AddFOp>(
+            loc, x2, floatConst(b, loc, ft, 1.0));
+        return emitLog(b, loc, ty,
+                       b.create<mlir::arith::AddFOp>(loc, x,
+                                                     b.create<mlir::math::SqrtOp>(loc, rad)));
+      }};
+    case VulkanKernelRecipe::ACOSH:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto x2 = b.create<mlir::arith::MulFOp>(loc, x, x);
+        auto rad = b.create<mlir::arith::SubFOp>(
+            loc, x2, floatConst(b, loc, ft, 1.0));
+        return emitLog(b, loc, ty,
+                       b.create<mlir::arith::AddFOp>(loc, x,
+                                                     b.create<mlir::math::SqrtOp>(loc, rad)));
+      }};
+    case VulkanKernelRecipe::ATANH:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto one = floatConst(b, loc, ft, 1.0);
+        auto numerator = b.create<mlir::arith::AddFOp>(loc, one, x);
+        auto denominator = b.create<mlir::arith::SubFOp>(loc, one, x);
+        auto ratio = b.create<mlir::arith::DivFOp>(loc, numerator, denominator);
+        return b.create<mlir::arith::MulFOp>(
+            loc, floatConst(b, loc, ft, 0.5), emitLog(b, loc, ty, ratio));
+      }};
+    case VulkanKernelRecipe::ERF:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type, mlir::Value x) {
+        return b.create<mlir::math::ErfOp>(loc, x);
+      }};
+    case VulkanKernelRecipe::ERFC:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type, mlir::Value x) {
+        return b.create<mlir::math::ErfcOp>(loc, x);
+      }};
     case VulkanKernelRecipe::SILU:
       return UnaryCallback{emitSilu};
+    case VulkanKernelRecipe::STABILIZE_FP16:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto nonPositive = b.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::OLE, x,
+            floatConst(b, loc, ft, 0.0));
+        return b.create<mlir::arith::SelectOp>(
+            loc, nonPositive,
+            floatConst(b, loc, ft, std::numeric_limits<float>::min()), x);
+      }};
     case VulkanKernelRecipe::ABS:
       return UnaryCallback{
           [](mlir::OpBuilder& b, mlir::Location loc, mlir::Type,
@@ -1226,6 +2026,300 @@ static UnaryCallback unaryCallbackFor(VulkanKernelRecipe semantic) {
                 b.create<mlir::math::AbsFOp>(loc, x));
             return b.create<mlir::arith::DivFOp>(loc, x, denominator);
           }};
+    case VulkanKernelRecipe::TANH_DERIVATIVE:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto one = floatConst(b, loc, ft, 1.0);
+        auto t = emitTanh(b, loc, ty, x);
+        return b.create<mlir::arith::SubFOp>(
+            loc, one, b.create<mlir::arith::MulFOp>(loc, t, t));
+      }};
+    case VulkanKernelRecipe::HARD_TANH_DERIVATIVE:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto lower = b.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::OGE, x,
+            floatConst(b, loc, ft, -1.0));
+        auto upper = b.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::OLE, x,
+            floatConst(b, loc, ft, 1.0));
+        auto inside = b.create<mlir::arith::AndIOp>(loc, lower, upper);
+        return b.create<mlir::arith::SelectOp>(
+            loc, inside, floatConst(b, loc, ft, 1.0),
+            floatConst(b, loc, ft, 0.0));
+      }};
+    case VulkanKernelRecipe::SIGMOID_DERIVATIVE:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto sigmoid = emitSigmoid(b, loc, ty, x);
+        auto oneMinus = b.create<mlir::arith::SubFOp>(
+            loc, floatConst(b, loc, ft, 1.0), sigmoid);
+        return b.create<mlir::arith::MulFOp>(loc, sigmoid, oneMinus);
+      }};
+    case VulkanKernelRecipe::SOFTSIGN_DERIVATIVE:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto denominator = b.create<mlir::arith::AddFOp>(
+            loc, floatConst(b, loc, ft, 1.0),
+            b.create<mlir::math::AbsFOp>(loc, x));
+        auto squared = b.create<mlir::arith::MulFOp>(
+            loc, denominator, denominator);
+        return b.create<mlir::arith::DivFOp>(
+            loc, floatConst(b, loc, ft, 1.0), squared);
+      }};
+    case VulkanKernelRecipe::TAN_DERIVATIVE:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto cosine = b.create<mlir::math::CosOp>(loc, x);
+        auto denominator = b.create<mlir::arith::MulFOp>(
+            loc, cosine, cosine);
+        return b.create<mlir::arith::DivFOp>(
+            loc, floatConst(b, loc, ft, 1.0), denominator);
+      }};
+    case VulkanKernelRecipe::SELU_DERIVATIVE:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto lambda = floatConst(b, loc, ft, 1.0507009873554805);
+        auto alpha = floatConst(b, loc, ft, 1.6732632423543772);
+        auto positive = b.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::OGT, x,
+            floatConst(b, loc, ft, 0.0));
+        auto negative = b.create<mlir::arith::MulFOp>(
+            loc, lambda,
+            b.create<mlir::arith::MulFOp>(
+                loc, alpha, emitExp(b, loc, ty, x)));
+        return b.create<mlir::arith::SelectOp>(loc, positive, lambda, negative);
+      }};
+    case VulkanKernelRecipe::HARD_SIGMOID_DERIVATIVE:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto lower = b.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::OGE, x,
+            floatConst(b, loc, ft, -2.5));
+        auto upper = b.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::OLE, x,
+            floatConst(b, loc, ft, 2.5));
+        auto inside = b.create<mlir::arith::AndIOp>(loc, lower, upper);
+        return b.create<mlir::arith::SelectOp>(
+            loc, inside, floatConst(b, loc, ft, 0.2),
+            floatConst(b, loc, ft, 0.0));
+      }};
+    case VulkanKernelRecipe::RATIONAL_TANH_DERIVATIVE:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto twoThirds = floatConst(b, loc, ft, 2.0 / 3.0);
+        auto dis = b.create<mlir::arith::MulFOp>(loc, twoThirds, x);
+        auto absDis = b.create<mlir::math::AbsFOp>(loc, dis);
+        auto dis2 = b.create<mlir::arith::MulFOp>(loc, dis, dis);
+        auto dis3 = b.create<mlir::arith::MulFOp>(loc, dis2, dis);
+        auto dis4 = b.create<mlir::arith::MulFOp>(loc, dis2, dis2);
+        auto denominator = b.create<mlir::arith::AddFOp>(
+            loc, floatConst(b, loc, ft, 1.0), absDis);
+        denominator = b.create<mlir::arith::AddFOp>(loc, denominator, dis2);
+        denominator = b.create<mlir::arith::AddFOp>(
+            loc, denominator,
+            b.create<mlir::arith::MulFOp>(
+                loc, floatConst(b, loc, ft, 1.41645), dis4));
+        auto sign = b.create<mlir::arith::SelectOp>(
+            loc,
+            b.create<mlir::arith::CmpFOp>(
+                loc, mlir::arith::CmpFPredicate::OGE, dis,
+                floatConst(b, loc, ft, 0.0)),
+            floatConst(b, loc, ft, 1.0), floatConst(b, loc, ft, -1.0));
+        auto numerator = b.create<mlir::arith::AddFOp>(
+            loc, floatConst(b, loc, ft, 1.0),
+            b.create<mlir::arith::MulFOp>(
+                loc, sign,
+                b.create<mlir::arith::AddFOp>(
+                    loc, b.create<mlir::arith::MulFOp>(
+                             loc, floatConst(b, loc, ft, 2.0), dis),
+                    b.create<mlir::MulFOp>(
+                        loc, floatConst(b, loc, ft, 5.6658), dis3))));
+        auto denominatorSquared = b.create<mlir::arith::MulFOp>(
+            loc, denominator, denominator);
+        auto derivative = b.create<mlir::arith::DivFOp>(
+            loc, numerator, denominatorSquared);
+        return b.create<mlir::arith::MulFOp>(
+            loc, floatConst(b, loc, ft, 1.7159 * (2.0 / 3.0)), derivative);
+      }};
+    case VulkanKernelRecipe::RECTIFIED_TANH_DERIVATIVE:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto tanhDerivative = unaryCallbackFor(
+            VulkanKernelRecipe::TANH_DERIVATIVE)(b, loc, ty, x);
+        auto positive = b.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::OGT, x,
+            floatConst(b, loc, ft, 0.0));
+        return b.create<mlir::arith::SelectOp>(
+            loc, positive, tanhDerivative, floatConst(b, loc, ft, 0.0));
+      }};
+    case VulkanKernelRecipe::SWISH_DERIVATIVE:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto ex = emitExp(b, loc, ty, x);
+        auto onePlus = b.create<mlir::arith::AddFOp>(
+            loc, ex, floatConst(b, loc, ft, 1.0));
+        auto numerator = b.create<mlir::arith::MulFOp>(
+            loc, ex,
+            b.create<mlir::arith::AddFOp>(
+                loc, b.create<mlir::arith::AddFOp>(
+                         loc, x, ex),
+                floatConst(b, loc, ft, 1.0)));
+        return b.create<mlir::arith::DivFOp>(
+            loc, numerator,
+            b.create<mlir::arith::MulFOp>(loc, onePlus, onePlus));
+      }};
+    case VulkanKernelRecipe::ACOSH_DERIVATIVE:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto one = floatConst(b, loc, ft, 1.0);
+        auto lower = b.create<mlir::math::SqrtOp>(
+            loc, b.create<mlir::arith::SubFOp>(loc, x, one));
+        auto upper = b.create<mlir::math::SqrtOp>(
+            loc, b.create<mlir::arith::AddFOp>(loc, x, one));
+        return b.create<mlir::arith::DivFOp>(
+            loc, one, b.create<mlir::arith::MulFOp>(loc, lower, upper));
+      }};
+    case VulkanKernelRecipe::ASINH_DERIVATIVE:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto square = b.create<mlir::arith::MulFOp>(loc, x, x);
+        auto denominator = b.create<mlir::math::SqrtOp>(
+            loc, b.create<mlir::arith::AddFOp>(
+                     loc, square, floatConst(b, loc, ft, 1.0)));
+        return b.create<mlir::arith::DivFOp>(
+            loc, floatConst(b, loc, ft, 1.0), denominator);
+      }};
+    case VulkanKernelRecipe::SINH_DERIVATIVE:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type, mlir::Value x) {
+        return b.create<mlir::math::CoshOp>(loc, x);
+      }};
+    case VulkanKernelRecipe::LOG_SIGMOID_DERIVATIVE:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        return b.create<mlir::arith::DivFOp>(
+            loc, floatConst(b, loc, ft, 1.0),
+            b.create<mlir::arith::AddFOp>(
+                loc, emitExp(b, loc, ty, x),
+                floatConst(b, loc, ft, 1.0)));
+      }};
+    case VulkanKernelRecipe::SPECIAL_DERIVATIVE:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        return b.create<mlir::arith::MulFOp>(
+            loc, x,
+            b.create<mlir::arith::SubFOp>(
+                loc, floatConst(b, loc, ft, 1.0), x));
+      }};
+    case VulkanKernelRecipe::CUBE_DERIVATIVE:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto square = b.create<mlir::arith::MulFOp>(loc, x, x);
+        return b.create<mlir::arith::MulFOp>(
+            loc, floatConst(b, loc, ft, 3.0), square);
+      }};
+    case VulkanKernelRecipe::GELU_DERIVATIVE:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto x17 = b.create<mlir::arith::MulFOp>(
+            loc, floatConst(b, loc, ft, 1.702), x);
+        auto ep = emitExp(b, loc, ty, x17);
+        auto onePlus = b.create<mlir::arith::AddFOp>(
+            loc, floatConst(b, loc, ft, 1.0), ep);
+        auto numerator = b.create<mlir::arith::MulFOp>(
+            loc, ep,
+            b.create<mlir::arith::AddFOp>(loc, onePlus, x17));
+        return b.create<mlir::arith::DivFOp>(
+            loc, numerator,
+            b.create<mlir::arith::MulFOp>(loc, onePlus, onePlus));
+      }};
+    case VulkanKernelRecipe::PRECISE_GELU_DERIVATIVE:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto x79 = b.create<mlir::arith::MulFOp>(
+            loc, floatConst(b, loc, ft, 0.797885), x);
+        auto x2 = b.create<mlir::arith::MulFOp>(loc, x, x);
+        auto x3 = b.create<mlir::arith::MulFOp>(loc, x2, x);
+        auto arg = b.create<mlir::arith::AddFOp>(
+            loc, x79,
+            b.create<mlir::arith::MulFOp>(
+                loc, floatConst(b, loc, ft, 0.0356774), x3));
+        auto tanh = emitTanh(b, loc, ty, arg);
+        auto sechSquared = b.create<mlir::arith::SubFOp>(
+            loc, floatConst(b, loc, ft, 1.0),
+            b.create<mlir::arith::MulFOp>(loc, tanh, tanh));
+        auto term = b.create<mlir::arith::MulFOp>(
+            loc,
+            b.create<mlir::arith::AddFOp>(
+                loc,
+                b.create<mlir::arith::MulFOp>(
+                    loc, floatConst(b, loc, ft, 0.398942), x),
+                b.create<mlir::arith::MulFOp>(
+                    loc, floatConst(b, loc, ft, 0.0535161), x3)),
+            sechSquared);
+        return b.create<mlir::arith::AddFOp>(
+            loc, floatConst(b, loc, ft, 0.5),
+            b.create<mlir::arith::AddFOp>(
+                loc, term,
+                b.create<mlir::arith::MulFOp>(
+                    loc, floatConst(b, loc, ft, 0.5), tanh)));
+      }};
+    case VulkanKernelRecipe::MISH_DERIVATIVE:
+      return UnaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                              mlir::Type ty, mlir::Value x) {
+        auto ft = llvm::cast<mlir::FloatType>(ty);
+        auto ex = emitExp(b, loc, ty, x);
+        auto e2x = b.create<mlir::arith::MulFOp>(loc, ex, ex);
+        auto e3x = b.create<mlir::arith::MulFOp>(loc, e2x, ex);
+        auto xPlusOne = b.create<mlir::arith::AddFOp>(
+            loc, x, floatConst(b, loc, ft, 1.0));
+        auto numerator = b.create<mlir::arith::MulFOp>(
+            loc, ex,
+            b.create<mlir::arith::AddFOp>(
+                loc,
+                b.create<mlir::arith::AddFOp>(
+                    loc,
+                    b.create<mlir::arith::MulFOp>(
+                        loc, floatConst(b, loc, ft, 4.0), xPlusOne),
+                    b.create<mlir::arith::MulFOp>(
+                        loc, floatConst(b, loc, ft, 4.0), e2x)),
+                b.create<mlir::arith::AddFOp>(
+                    loc, e3x,
+                    b.create<mlir::arith::MulFOp>(
+                        loc, ex,
+                        b.create<mlir::arith::AddFOp>(
+                            loc,
+                            b.create<mlir::arith::MulFOp>(
+                                loc, floatConst(b, loc, ft, 4.0), x),
+                            floatConst(b, loc, ft, 6.0))))));
+        auto denominatorBase = b.create<mlir::arith::AddFOp>(
+            loc,
+            b.create<mlir::arith::MulFOp>(
+                loc, floatConst(b, loc, ft, 2.0), ex),
+            b.create<mlir::arith::AddFOp>(
+                loc, e2x, floatConst(b, loc, ft, 2.0)));
+        auto denominator = b.create<mlir::arith::MulFOp>(
+            loc, denominatorBase, denominatorBase);
+        return b.create<mlir::arith::DivFOp>(loc, numerator, denominator);
+      }};
     default:
       return {};
   }
@@ -1233,6 +2327,57 @@ static UnaryCallback unaryCallbackFor(VulkanKernelRecipe semantic) {
 
 static BinaryCallback binaryCallbackFor(VulkanKernelRecipe semantic) {
   switch (semantic) {
+    case VulkanKernelRecipe::EPSILON_COMPARE:
+      return BinaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                               mlir::Value a, mlir::Value c) {
+        auto type = llvm::cast<mlir::FloatType>(a.getType());
+        auto difference = b.create<mlir::math::AbsFOp>(
+            loc, b.create<mlir::arith::SubFOp>(loc, a, c));
+        return b.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::OLE, difference,
+            floatConst(b, loc, type, 1e-5));
+      }};
+    case VulkanKernelRecipe::MATCH_CONDITION:
+      return BinaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                               mlir::Value a, mlir::Value c) {
+        return b.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::OEQ, a, c);
+      }};
+    case VulkanKernelRecipe::IGAMMA:
+    case VulkanKernelRecipe::IGAMMAC:
+      return BinaryCallback{[semantic](mlir::OpBuilder& b, mlir::Location loc,
+                                       mlir::Value a, mlir::Value x) {
+        auto type = llvm::cast<mlir::FloatType>(a.getType());
+        auto one = floatConst(b, loc, type, 1.0);
+        auto twoPi = floatConst(b, loc, type, 6.283185307179586);
+        auto aSafe = b.create<mlir::arith::MaximumFOp>(
+            loc, a, floatConst(b, loc, type, 1e-6));
+        auto logGamma = b.create<mlir::arith::AddFOp>(
+            loc,
+            b.create<mlir::arith::SubFOp>(
+                loc,
+                b.create<mlir::arith::MulFOp>(
+                    loc,
+                    b.create<mlir::arith::AddFOp>(
+                        loc, aSafe, floatConst(b, loc, type, 0.5)),
+                    emitLog(b, loc, a.getType(), aSafe)),
+                aSafe),
+            b.create<mlir::arith::MulFOp>(
+                loc, floatConst(b, loc, type, 0.5),
+                emitLog(b, loc, a.getType(), twoPi)));
+        auto xSafe = b.create<mlir::arith::MaximumFOp>(
+            loc, x, floatConst(b, loc, type, 1e-6));
+        auto numerator = b.create<mlir::arith::SubFOp>(
+            loc, b.create<mlir::arith::MulFOp>(
+                    loc, aSafe, emitLog(b, loc, x.getType(), xSafe)),
+            x);
+        auto estimate = emitExp(
+            b, loc, a.getType(),
+            b.create<mlir::arith::SubFOp>(loc, numerator, logGamma));
+        return semantic == VulkanKernelRecipe::IGAMMA
+                   ? estimate
+                   : b.create<mlir::arith::SubFOp>(loc, one, estimate);
+      }};
     case VulkanKernelRecipe::EQUAL:
       return BinaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
                                mlir::Value a, mlir::Value c) {
@@ -1268,6 +2413,27 @@ static BinaryCallback binaryCallbackFor(VulkanKernelRecipe semantic) {
                                mlir::Value a, mlir::Value c) {
         return b.create<mlir::arith::CmpFOp>(
             loc, mlir::arith::CmpFPredicate::OGE, a, c);
+      }};
+    case VulkanKernelRecipe::BOOLEAN_AND:
+    case VulkanKernelRecipe::BOOLEAN_OR:
+    case VulkanKernelRecipe::BOOLEAN_XOR:
+      return BinaryCallback{[semantic](mlir::OpBuilder& b, mlir::Location loc,
+                                      mlir::Value a, mlir::Value c) {
+        auto type = llvm::cast<mlir::FloatType>(a.getType());
+        auto zero = floatConst(b, loc, type, 0.0);
+        auto one = floatConst(b, loc, type, 1.0);
+        auto aTrue = b.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::UNE, a, zero);
+        auto cTrue = b.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::UNE, c, zero);
+        mlir::Value predicate;
+        if (semantic == VulkanKernelRecipe::BOOLEAN_AND)
+          predicate = b.create<mlir::arith::AndIOp>(loc, aTrue, cTrue);
+        else if (semantic == VulkanKernelRecipe::BOOLEAN_OR)
+          predicate = b.create<mlir::arith::OrIOp>(loc, aTrue, cTrue);
+        else
+          predicate = b.create<mlir::arith::XOrIOp>(loc, aTrue, cTrue);
+        return b.create<mlir::arith::SelectOp>(loc, predicate, one, zero);
       }};
     case VulkanKernelRecipe::ADD:
       return BinaryCallback{
@@ -1305,6 +2471,23 @@ static BinaryCallback binaryCallbackFor(VulkanKernelRecipe semantic) {
              mlir::Value c) {
             return b.create<mlir::arith::MaximumFOp>(loc, a, c);
           }};
+    case VulkanKernelRecipe::RELU:
+      return BinaryCallback{
+          [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value a,
+             mlir::Value) {
+            return b.create<mlir::arith::MaximumFOp>(
+                loc, a, floatConst(b, loc, llvm::cast<mlir::FloatType>(a.getType()), 0.0));
+          }};
+    case VulkanKernelRecipe::RELU6:
+      return BinaryCallback{
+          [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value a,
+             mlir::Value) {
+            auto type = llvm::cast<mlir::FloatType>(a.getType());
+            auto nonnegative = b.create<mlir::arith::MaximumFOp>(
+                loc, a, floatConst(b, loc, type, 0.0));
+            return b.create<mlir::arith::MinimumFOp>(
+                loc, nonnegative, floatConst(b, loc, type, 6.0));
+          }};
     case VulkanKernelRecipe::LEAKY_RELU:
       return BinaryCallback{
           [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value x,
@@ -1318,7 +2501,244 @@ static BinaryCallback binaryCallbackFor(VulkanKernelRecipe semantic) {
             return b.create<mlir::arith::SelectOp>(
                 loc, nonnegative, x, negative);
           }};
+    case VulkanKernelRecipe::ELU_SCALAR:
+      return BinaryCallback{
+          [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value x,
+             mlir::Value alpha) {
+            auto type = llvm::cast<mlir::FloatType>(x.getType());
+            auto zero = floatConst(b, loc, type, 0.0);
+            auto one = floatConst(b, loc, type, 1.0);
+            auto negative = b.create<mlir::arith::MulFOp>(
+                loc, alpha,
+                b.create<mlir::arith::SubFOp>(
+                    loc, emitExp(b, loc, x.getType(), x), one));
+            auto nonnegative = b.create<mlir::arith::CmpFOp>(
+                loc, mlir::arith::CmpFPredicate::OGE, x, zero);
+            return b.create<mlir::arith::SelectOp>(
+                loc, nonnegative, x, negative);
+          }};
+    case VulkanKernelRecipe::ELU_DERIVATIVE:
+      return BinaryCallback{
+          [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value x,
+             mlir::Value alpha) {
+            auto type = llvm::cast<mlir::FloatType>(x.getType());
+            auto zero = floatConst(b, loc, type, 0.0);
+            auto one = floatConst(b, loc, type, 1.0);
+            auto negative = b.create<mlir::arith::MulFOp>(
+                loc, alpha, emitExp(b, loc, x.getType(), x));
+            auto nonnegative = b.create<mlir::arith::CmpFOp>(
+                loc, mlir::arith::CmpFPredicate::OGE, x, zero);
+            return b.create<mlir::arith::SelectOp>(
+                loc, nonnegative, one, negative);
+          }};
+    case VulkanKernelRecipe::RELU_DERIVATIVE:
+      return BinaryCallback{
+          [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value x,
+             mlir::Value threshold) {
+            auto type = llvm::cast<mlir::FloatType>(x.getType());
+            auto one = floatConst(b, loc, type, 1.0);
+            auto zero = floatConst(b, loc, type, 0.0);
+            auto positive = b.create<mlir::arith::CmpFOp>(
+                loc, mlir::arith::CmpFPredicate::OGT, x, threshold);
+            return b.create<mlir::arith::SelectOp>(
+                loc, positive, one, zero);
+          }};
+    case VulkanKernelRecipe::LEAKY_RELU_DERIVATIVE:
+      return BinaryCallback{
+          [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value x,
+             mlir::Value alpha) {
+            auto type = llvm::cast<mlir::FloatType>(x.getType());
+            auto one = floatConst(b, loc, type, 1.0);
+            auto zero = floatConst(b, loc, type, 0.0);
+            auto nonnegative = b.create<mlir::arith::CmpFOp>(
+                loc, mlir::arith::CmpFPredicate::OGE, x, zero);
+            return b.create<mlir::arith::SelectOp>(
+                loc, nonnegative, one, alpha);
+          }};
+    case VulkanKernelRecipe::SIGMOID_CROSS_ENTROPY_SMOOTHER:
+      return BinaryCallback{
+          [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value x,
+             mlir::Value smoothing) {
+            auto type = llvm::cast<mlir::FloatType>(x.getType());
+            auto one = floatConst(b, loc, type, 1.0);
+            auto half = floatConst(b, loc, type, 0.5);
+            auto oneMinusSmoothing = b.create<mlir::arith::SubFOp>(
+                loc, one, smoothing);
+            return b.create<mlir::arith::AddFOp>(
+                loc,
+                b.create<mlir::arith::MulFOp>(loc, x, oneMinusSmoothing),
+                b.create<mlir::arith::MulFOp>(loc, half, smoothing));
+          }};
+    case VulkanKernelRecipe::LOG_X:
+      return BinaryCallback{
+          [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value x,
+             mlir::Value base) {
+            return b.create<mlir::arith::DivFOp>(
+                loc, emitLog(b, loc, x.getType(), x),
+                emitLog(b, loc, x.getType(), base));
+          }};
+    case VulkanKernelRecipe::STEP:
+      return BinaryCallback{
+          [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value x,
+             mlir::Value threshold) {
+            auto type = llvm::cast<mlir::FloatType>(x.getType());
+            auto one = floatConst(b, loc, type, 1.0);
+            auto zero = floatConst(b, loc, type, 0.0);
+            auto predicate = b.create<mlir::arith::CmpFOp>(
+                loc, mlir::arith::CmpFPredicate::OGT, x, threshold);
+            return b.create<mlir::arith::SelectOp>(loc, predicate, one, zero);
+          }};
+    case VulkanKernelRecipe::LSTM_CLIP:
+      return BinaryCallback{
+          [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value x,
+             mlir::Value bound) {
+            auto negativeBound = b.create<mlir::arith::NegFOp>(loc, bound);
+            auto lower = b.create<mlir::arith::MaximumFOp>(
+                loc, x, negativeBound);
+            return b.create<mlir::arith::MinimumFOp>(loc, lower, bound);
+          }};
+    case VulkanKernelRecipe::SQUARED_REVERSE_SUBTRACT:
+      return BinaryCallback{
+          [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value x,
+             mlir::Value scalar) {
+            auto difference = b.create<mlir::arith::SubFOp>(loc, scalar, x);
+            return b.create<mlir::arith::MulFOp>(loc, difference, difference);
+          }};
+    case VulkanKernelRecipe::REVERSE_POWER:
+      return BinaryCallback{
+          [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value x,
+             mlir::Value scalar) {
+            return b.create<mlir::math::PowFOp>(loc, scalar, x);
+          }};
     case VulkanKernelRecipe::MOD:
+      return BinaryCallback{
+          [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value a,
+             mlir::Value c) {
+            return b.create<mlir::arith::RemFOp>(loc, a, c);
+          }};
+    case VulkanKernelRecipe::REVERSE_MOD:
+      return BinaryCallback{
+          [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value a,
+             mlir::Value c) {
+            return b.create<mlir::arith::RemFOp>(loc, c, a);
+          }};
+    case VulkanKernelRecipe::TRUNCATE_DIV:
+      return BinaryCallback{
+          [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value a,
+             mlir::Value c) {
+            return b.create<mlir::math::TruncOp>(
+                loc, b.create<mlir::arith::DivFOp>(loc, a, c));
+          }};
+    case VulkanKernelRecipe::SAFE_DIVIDE:
+    case VulkanKernelRecipe::DIVIDE_NO_NAN:
+      return BinaryCallback{
+          [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value a,
+             mlir::Value c) {
+            auto type = llvm::cast<mlir::FloatType>(a.getType());
+            auto zero = floatConst(b, loc, type, 0.0);
+            auto denominatorZero = b.create<mlir::arith::CmpFOp>(
+                loc, mlir::arith::CmpFPredicate::OEQ, c, zero);
+            auto quotient = b.create<mlir::arith::DivFOp>(loc, a, c);
+            return b.create<mlir::arith::SelectOp>(loc, denominatorZero, zero,
+                                                   quotient);
+          }};
+    case VulkanKernelRecipe::XDIVY:
+      return BinaryCallback{
+          [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value a,
+             mlir::Value c) {
+            auto type = llvm::cast<mlir::FloatType>(a.getType());
+            auto zero = floatConst(b, loc, type, 0.0);
+            auto numeratorZero = b.create<mlir::arith::CmpFOp>(
+                loc, mlir::arith::CmpFPredicate::OEQ, a, zero);
+            return b.create<mlir::arith::SelectOp>(
+                loc, numeratorZero, zero,
+                b.create<mlir::arith::DivFOp>(loc, a, c));
+          }};
+    case VulkanKernelRecipe::XLOGY:
+      return BinaryCallback{
+          [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value a,
+             mlir::Value c) {
+            return b.create<mlir::arith::MulFOp>(
+                loc, a, emitLog(b, loc, a.getType(), c));
+          }};
+    case VulkanKernelRecipe::XLOG1PY:
+      return BinaryCallback{
+          [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value a,
+             mlir::Value c) {
+            auto type = llvm::cast<mlir::FloatType>(a.getType());
+            auto onePlus = b.create<mlir::arith::AddFOp>(
+                loc, c, floatConst(b, loc, type, 1.0));
+            return b.create<mlir::arith::MulFOp>(
+                loc, a, emitLog(b, loc, a.getType(), onePlus));
+          }};
+    case VulkanKernelRecipe::LOGICAL_NOT_BINARY:
+      return BinaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                               mlir::Value a, mlir::Value c) {
+        auto type = llvm::cast<mlir::FloatType>(a.getType());
+        auto zero = floatConst(b, loc, type, 0.0);
+        auto one = floatConst(b, loc, type, 1.0);
+        auto aTrue = b.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::UNE, a, zero);
+        auto cTrue = b.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::UNE, c, zero);
+        auto both = b.create<mlir::arith::AndIOp>(loc, aTrue, cTrue);
+        return b.create<mlir::arith::SelectOp>(loc, both, zero, one);
+      }};
+    case VulkanKernelRecipe::RELATIVE_ERROR:
+      return BinaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                               mlir::Value a, mlir::Value c) {
+        auto type = llvm::cast<mlir::FloatType>(a.getType());
+        auto zero = floatConst(b, loc, type, 0.0);
+        auto difference = b.create<mlir::math::AbsFOp>(
+            loc, b.create<mlir::arith::SubFOp>(loc, a, c));
+        auto denominator = b.create<mlir::arith::AddFOp>(
+            loc, b.create<mlir::math::AbsFOp>(loc, a),
+            b.create<mlir::math::AbsFOp>(loc, c));
+        auto bothZero = b.create<mlir::arith::AndIOp>(
+            loc,
+            b.create<mlir::arith::CmpFOp>(
+                loc, mlir::arith::CmpFPredicate::OEQ, a, zero),
+            b.create<mlir::arith::CmpFOp>(
+                loc, mlir::arith::CmpFPredicate::OEQ, c, zero));
+        auto result = b.create<mlir::arith::DivFOp>(loc, difference, denominator);
+        return b.create<mlir::arith::SelectOp>(loc, bothZero, zero, result);
+      }};
+    case VulkanKernelRecipe::LOG_POISSON_LOSS:
+      return BinaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                               mlir::Value count, mlir::Value rate) {
+        return b.create<mlir::arith::SubFOp>(
+            loc, emitExp(b, loc, count.getType(), rate),
+            b.create<mlir::arith::MulFOp>(loc, count, rate));
+      }};
+    case VulkanKernelRecipe::LOG_POISSON_LOSS_FULL:
+      return BinaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                               mlir::Value count, mlir::Value rate) {
+        auto type = llvm::cast<mlir::FloatType>(count.getType());
+        auto base = b.create<mlir::arith::SubFOp>(
+            loc, emitExp(b, loc, count.getType(), rate),
+            b.create<mlir::arith::MulFOp>(loc, count, rate));
+        auto logCount = emitLog(b, loc, count.getType(), count);
+        auto stirling = b.create<mlir::arith::SubFOp>(
+            loc, b.create<mlir::arith::MulFOp>(loc, count, logCount), count);
+        auto piTimesCount = b.create<mlir::arith::MulFOp>(
+            loc, floatConst(b, loc, type, 6.283185307179586), count);
+        auto halfLog = b.create<mlir::arith::MulFOp>(
+            loc, floatConst(b, loc, type, 0.5),
+            emitLog(b, loc, count.getType(), piTimesCount));
+        return b.create<mlir::arith::AddFOp>(
+            loc, base, b.create<mlir::arith::AddFOp>(loc, stirling, halfLog));
+      }};
+    case VulkanKernelRecipe::POW_DERIVATIVE:
+      return BinaryCallback{
+          [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value a,
+             mlir::Value c) {
+            auto type = llvm::cast<mlir::FloatType>(a.getType());
+            auto exponent = b.create<mlir::arith::SubFOp>(
+                loc, c, floatConst(b, loc, type, 1.0));
+            return b.create<mlir::arith::MulFOp>(
+                loc, c, b.create<mlir::math::PowFOp>(loc, a, exponent));
+          }};
+    case VulkanKernelRecipe::FMOD:
       return BinaryCallback{
           [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value a,
              mlir::Value c) {
@@ -1705,6 +3125,59 @@ static mlir::Value emitIntegerBinary(mlir::OpBuilder& builder,
       return builder.create<mlir::arith::OrIOp>(loc, lhs, rhs);
     case VulkanKernelRecipe::BOOLEAN_XOR:
       return builder.create<mlir::arith::XOrIOp>(loc, lhs, rhs);
+    case VulkanKernelRecipe::LOGICAL_NOT_BINARY: {
+      auto integerType = llvm::cast<mlir::IntegerType>(lhs.getType());
+      auto zero = builder.create<mlir::arith::ConstantIntOp>(loc, 0, integerType);
+      auto one = builder.create<mlir::arith::ConstantIntOp>(loc, 1, integerType);
+      auto lhsTrue = builder.create<mlir::arith::CmpIOp>(
+          loc, mlir::arith::CmpIPredicate::ne, lhs, zero);
+      auto rhsTrue = builder.create<mlir::arith::CmpIOp>(
+          loc, mlir::arith::CmpIPredicate::ne, rhs, zero);
+      auto both = builder.create<mlir::arith::AndIOp>(loc, lhsTrue, rhsTrue);
+      return builder.create<mlir::arith::SelectOp>(loc, both, zero, one);
+    }
+    case VulkanKernelRecipe::SHIFT_LEFT:
+      return builder.create<mlir::arith::ShLIOp>(loc, lhs, rhs);
+    case VulkanKernelRecipe::SHIFT_RIGHT:
+      return isUnsigned
+                 ? mlir::Value(builder.create<mlir::arith::ShRUIOp>(
+                       loc, lhs, rhs))
+                 : mlir::Value(builder.create<mlir::arith::ShRSIOp>(
+                       loc, lhs, rhs));
+    case VulkanKernelRecipe::CYCLIC_SHIFT_LEFT:
+    case VulkanKernelRecipe::CYCLIC_SHIFT_RIGHT: {
+      auto type = llvm::cast<mlir::IntegerType>(lhs.getType());
+      const unsigned width = type.getWidth();
+      mlir::Value widthMask = builder.create<mlir::arith::ConstantIntOp>(
+          loc, static_cast<int64_t>(width - 1), type);
+      mlir::Value amount = builder.create<mlir::arith::AndIOp>(
+          loc, rhs, widthMask);
+      mlir::Value zero = builder.create<mlir::arith::ConstantIntOp>(loc, 0, type);
+      mlir::Value widthValue = builder.create<mlir::arith::ConstantIntOp>(
+          loc, static_cast<int64_t>(width), type);
+      mlir::Value opposite = builder.create<mlir::arith::SubIOp>(
+          loc, widthValue, amount);
+      mlir::Value left = builder.create<mlir::arith::ShLIOp>(loc, lhs, amount);
+      mlir::Value right = isUnsigned
+                              ? mlir::Value(builder.create<mlir::arith::ShRUIOp>(
+                                    loc, lhs, opposite))
+                              : mlir::Value(builder.create<mlir::arith::ShRSIOp>(
+                                    loc, lhs, opposite));
+      mlir::Value rotated = semantic == VulkanKernelRecipe::CYCLIC_SHIFT_LEFT
+                                ? builder.create<mlir::arith::OrIOp>(loc, left, right)
+                                : builder.create<mlir::arith::OrIOp>(
+                                      loc,
+                                      isUnsigned
+                                          ? mlir::Value(builder.create<mlir::arith::ShRUIOp>(
+                                                loc, lhs, amount))
+                                          : mlir::Value(builder.create<mlir::arith::ShRSIOp>(
+                                                loc, lhs, amount)),
+                                      builder.create<mlir::arith::ShLIOp>(
+                                          loc, lhs, opposite));
+      auto amountZero = builder.create<mlir::arith::CmpIOp>(
+          loc, mlir::arith::CmpIPredicate::eq, amount, zero);
+      return builder.create<mlir::arith::SelectOp>(loc, amountZero, lhs, rotated);
+    }
     case VulkanKernelRecipe::ADD:
       return builder.create<mlir::arith::AddIOp>(loc, lhs, rhs);
     case VulkanKernelRecipe::SUBTRACT:
@@ -1737,6 +3210,32 @@ static mlir::Value emitIntegerBinary(mlir::OpBuilder& builder,
                        loc, lhs, rhs));
     case VulkanKernelRecipe::FLOOR_DIVIDE:
       return integerFloorDivide(builder, loc, lhs, rhs, isUnsigned);
+    case VulkanKernelRecipe::TRUNCATE_DIV:
+      return isUnsigned
+                 ? mlir::Value(builder.create<mlir::arith::DivUIOp>(
+                       loc, lhs, rhs))
+                 : mlir::Value(builder.create<mlir::arith::DivSIOp>(
+                       loc, lhs, rhs));
+    case VulkanKernelRecipe::SAFE_DIVIDE:
+    case VulkanKernelRecipe::DIVIDE_NO_NAN: {
+      mlir::Value zero = builder.create<mlir::arith::ConstantIntOp>(
+          loc, 0, llvm::cast<mlir::IntegerType>(rhs.getType()));
+      mlir::Value denominatorZero = builder.create<mlir::arith::CmpIOp>(
+          loc, mlir::arith::CmpIPredicate::eq, rhs, zero);
+      mlir::Value quotient = isUnsigned
+                                 ? mlir::Value(builder.create<mlir::arith::DivUIOp>(
+                                       loc, lhs, rhs))
+                                 : mlir::Value(builder.create<mlir::arith::DivSIOp>(
+                                       loc, lhs, rhs));
+      return builder.create<mlir::arith::SelectOp>(loc, denominatorZero, zero,
+                                                   quotient);
+    }
+    case VulkanKernelRecipe::REVERSE_MOD:
+      return isUnsigned
+                 ? mlir::Value(builder.create<mlir::arith::RemUIOp>(
+                       loc, rhs, lhs))
+                 : mlir::Value(builder.create<mlir::arith::RemSIOp>(
+                       loc, rhs, lhs));
     case VulkanKernelRecipe::FLOOR_MOD: {
       mlir::Value quotient = integerFloorDivide(
           builder, loc, lhs, rhs, isUnsigned);
@@ -1824,6 +3323,14 @@ static ReductionCallbacks reductionCallbacksFor(
                 return b.create<mlir::arith::MulFOp>(loc, acc, value);
               }},
           identity};
+    case VulkanKernelRecipe::REDUCE_ENTROPY:
+    case VulkanKernelRecipe::REDUCE_LOG_ENTROPY:
+    case VulkanKernelRecipe::REDUCE_SHANNON_ENTROPY:
+      return ReductionCallbacks{0.0, add, identity};
+    case VulkanKernelRecipe::REDUCE_COUNT_NONZERO:
+    case VulkanKernelRecipe::REDUCE_COUNT_ZERO:
+    case VulkanKernelRecipe::REDUCE_COUNT_MATCH:
+      return ReductionCallbacks{0.0, add, identity};
     default:
       return ReductionCallbacks{0.0, {}, {}};
   }
@@ -1835,6 +3342,9 @@ static mlir::Value integerReductionInitial(
   int64_t value = 0;
   switch (semantic) {
     case VulkanKernelRecipe::REDUCE_SUM:
+    case VulkanKernelRecipe::REDUCE_COUNT_NONZERO:
+    case VulkanKernelRecipe::REDUCE_COUNT_ZERO:
+    case VulkanKernelRecipe::REDUCE_COUNT_MATCH:
       value = 0;
       break;
     case VulkanKernelRecipe::REDUCE_PRODUCT:
@@ -1859,6 +3369,9 @@ static mlir::Value emitIntegerReductionCombine(
     mlir::Value value, bool isUnsigned) {
   switch (semantic) {
     case VulkanKernelRecipe::REDUCE_SUM:
+    case VulkanKernelRecipe::REDUCE_COUNT_NONZERO:
+    case VulkanKernelRecipe::REDUCE_COUNT_ZERO:
+    case VulkanKernelRecipe::REDUCE_COUNT_MATCH:
       return builder.create<mlir::arith::AddIOp>(
           loc, accumulator, value);
     case VulkanKernelRecipe::REDUCE_PRODUCT:
@@ -4817,18 +6330,24 @@ mlir::LogicalResult ElementwiseBinaryToSpirv::matchAndRewrite(
        emitter->family != VulkanKernelFamily::LOGICAL)) {
     return mlir::failure();
   }
+  const VulkanKernelRecipe semantic =
+      legacySemanticFor(op, emitter->recipe);
 
   mlir::ValueRange inputs = op.getInputs();
   mlir::ValueRange outputs = op.getOutputs();
+  const auto scalarPresentAttr =
+      op->getAttrOfType<mlir::BoolAttr>("nd4j.scalar_present");
+  const bool scalarPresent = scalarPresentAttr && scalarPresentAttr.getValue();
   const bool unaryAssign =
       hasVulkanOpTrait(*emitter, sd::ops::OP_TRAIT_IDENTITY) &&
-      inputs.size() == 1;
-  if ((!unaryAssign && inputs.size() != 2) || outputs.size() != 1) {
+      inputs.size() == 1 && !scalarPresent;
+  if ((!unaryAssign && !scalarPresent && inputs.size() != 2) ||
+      (scalarPresent && inputs.size() != 1) || outputs.size() != 1) {
     return op.emitOpError(
-        "ElementwiseBinaryToSpirv: expected assign(1) or binary(2) inputs");
+        "ElementwiseBinaryToSpirv: expected assign(1), scalar(1), or binary(2) inputs");
   }
   mlir::Value A = inputs[0];
-  mlir::Value B = unaryAssign ? inputs[0] : inputs[1];
+  mlir::Value B = (unaryAssign || scalarPresent) ? inputs[0] : inputs[1];
   mlir::Value C = outputs[0];
   auto aType = llvm::dyn_cast<mlir::MemRefType>(A.getType());
   auto bType = llvm::dyn_cast<mlir::MemRefType>(B.getType());
@@ -4855,14 +6374,31 @@ mlir::LogicalResult ElementwiseBinaryToSpirv::matchAndRewrite(
     return attr && attr.getValue();
   };
   const bool aUnsigned = readBoolAttr("nd4j.input0_unsigned");
-  const bool bUnsigned = readBoolAttr("nd4j.input1_unsigned");
+  const bool bUnsigned = scalarPresent
+                             ? aUnsigned
+                             : readBoolAttr("nd4j.input1_unsigned");
   const bool cUnsigned = readBoolAttr("nd4j.output_unsigned");
+  auto scalar0Attr = op->getAttrOfType<mlir::FloatAttr>("nd4j.scalar0");
+  auto scalar1Attr = op->getAttrOfType<mlir::FloatAttr>("nd4j.scalar1");
+  const double scalar0 = scalar0Attr ? scalar0Attr.getValueAsDouble() : 0.0;
+  const double scalar1 = scalar1Attr ? scalar1Attr.getValueAsDouble() : 0.0;
   const bool activationBackward =
       (emitter->traits &
        (sd::ops::OP_TRAIT_ACTIVATION | sd::ops::OP_TRAIT_BACKWARD)) ==
       (sd::ops::OP_TRAIT_ACTIVATION | sd::ops::OP_TRAIT_BACKWARD);
-  BinaryCallback callback = binaryCallbackFor(emitter->recipe);
-  if (computeFloat && !activationBackward && !callback) {
+  BinaryCallback callback = binaryCallbackFor(semantic);
+  const bool parameterizedBinary =
+      computeFloat &&
+      (semantic == VulkanKernelRecipe::AXPY ||
+       semantic == VulkanKernelRecipe::BINARY_RELATIVE_ERROR ||
+       semantic == VulkanKernelRecipe::BINARY_MINIMUM_ABSOLUTE_RELATIVE_ERROR) &&
+      hasVulkanScalarArgumentSchema(*emitter);
+  const bool parameterizedComparison =
+      computeFloat &&
+      semantic == VulkanKernelRecipe::EPSILON_COMPARE &&
+      scalar0Attr != nullptr && !scalarPresent;
+  if (computeFloat && !activationBackward && !callback &&
+      !parameterizedBinary && !parameterizedComparison) {
     return mlir::failure();
   }
 
@@ -4882,11 +6418,14 @@ mlir::LogicalResult ElementwiseBinaryToSpirv::matchAndRewrite(
   auto bIndices = broadcastIndices(rewriter, loc, outputIndices, B);
   mlir::Value aVal = loadAsScalar(
       rewriter, loc, A, aIndices, computeType, aUnsigned, cUnsigned);
-  mlir::Value bVal =
-      unaryAssign
-          ? aVal
-          : loadAsScalar(rewriter, loc, B, bIndices, computeType,
-                         bUnsigned, cUnsigned);
+  mlir::Value bVal = unaryAssign
+                         ? aVal
+                         : scalarPresent
+                               ? loadScalarAttribute(rewriter, loc, op,
+                                                     computeType)
+                               : loadAsScalar(rewriter, loc, B, bIndices,
+                                              computeType, bUnsigned,
+                                              cUnsigned);
   mlir::Value result;
   if (activationBackward) {
     if (!computeFloat) {
@@ -4894,12 +6433,22 @@ mlir::LogicalResult ElementwiseBinaryToSpirv::matchAndRewrite(
           "activation backward requires a floating-point AccT");
     }
     result = emitActivationBackward(
-        rewriter, loc, op, emitter->recipe, computeFloat, aVal, bVal);
+        rewriter, loc, op, semantic, computeFloat, aVal, bVal);
+  } else if (computeFloat && parameterizedBinary) {
+    result = emitParameterizedBinary(
+        rewriter, loc, computeType, semantic, aVal, bVal, scalar0, scalar1,
+        scalar0Attr != nullptr);
+  } else if (computeFloat && parameterizedComparison) {
+    auto difference = rewriter.create<mlir::math::AbsFOp>(
+        loc, rewriter.create<mlir::arith::SubFOp>(loc, aVal, bVal));
+    result = rewriter.create<mlir::arith::CmpFOp>(
+        loc, mlir::arith::CmpFPredicate::OLE, difference,
+        floatConst(rewriter, loc, computeFloat, scalar0));
   } else if (computeFloat) {
     result = callback(rewriter, loc, aVal, bVal);
   } else {
     result = emitIntegerBinary(
-        rewriter, loc, emitter->recipe, aVal, bVal, aUnsigned);
+        rewriter, loc, semantic, aVal, bVal, aUnsigned);
   }
   if (!result) {
     return op.emitOpError(
@@ -4938,11 +6487,17 @@ mlir::LogicalResult ElementwiseUnaryToSpirv::matchAndRewrite(
   }
 
   const auto* emitter = emitterForOperation(op);
+  const VulkanKernelRecipe semantic =
+      emitter == nullptr ? VulkanKernelRecipe::UNSUPPORTED
+                         : legacySemanticFor(op, emitter->recipe);
   const bool isCast =
       emitter != nullptr && emitter->family == VulkanKernelFamily::CAST;
   const bool floatingResultUnary =
       emitter != nullptr && hasVulkanEmitterTrait(
           *emitter, VULKAN_EMITTER_TRAIT_FLOAT_RESULT);
+  const bool booleanResultUnary =
+      emitter != nullptr && hasVulkanEmitterTrait(
+          *emitter, VULKAN_EMITTER_TRAIT_BOOLEAN_RESULT);
   if (emitter == nullptr ||
       (emitter->family != VulkanKernelFamily::ELEMENTWISE_UNARY && !isCast)) {
     return mlir::failure();
@@ -4963,7 +6518,7 @@ mlir::LogicalResult ElementwiseUnaryToSpirv::matchAndRewrite(
   auto xType = llvm::dyn_cast<mlir::MemRefType>(X.getType());
   auto yType = llvm::dyn_cast<mlir::MemRefType>(Y.getType());
   if (!xType || !yType || xType.getRank() != yType.getRank() ||
-      (!isCast && !floatingResultUnary &&
+      (!isCast && !floatingResultUnary && !booleanResultUnary &&
        xType.getElementType() != yType.getElementType())) {
     return op.emitOpError(
         "ElementwiseUnaryToSpirv: expected rank-compatible MemRefs");
@@ -4983,8 +6538,9 @@ mlir::LogicalResult ElementwiseUnaryToSpirv::matchAndRewrite(
   auto computeInteger = llvm::dyn_cast<mlir::IntegerType>(computeType);
   const bool parameterized =
       hasVulkanScalarArgumentSchema(*emitter);
-  UnaryCallback callback = unaryCallbackFor(emitter->recipe);
-  if (!isCast && computeFloat && !parameterized && !callback) {
+  UnaryCallback callback = unaryCallbackFor(semantic);
+  if (!isCast && computeFloat && !parameterized && !callback &&
+      semantic != VulkanKernelRecipe::ASSIGN) {
     return mlir::failure();
   }
   const bool integerSemantic =
@@ -5056,20 +6612,21 @@ mlir::LogicalResult ElementwiseUnaryToSpirv::matchAndRewrite(
           rewriter, loc, computeType, xVal, lower, upper, inputUnsigned);
     } else if (parameterized) {
       result = emitParameterizedUnary(
-          rewriter, loc, computeType, emitter->recipe, xVal,
+          rewriter, loc, computeType, semantic, xVal,
           scalar0, scalar1, inputUnsigned);
     } else if (computeFloat) {
       result = callback(rewriter, loc, computeType, xVal);
     } else if (callback) {
       result = callback(rewriter, loc, computeType, xVal);
-    } else if (emitter->recipe == VulkanKernelRecipe::SQUARE ||
-               emitter->recipe == VulkanKernelRecipe::CUBE) {
+    } else if (semantic == VulkanKernelRecipe::SQUARE ||
+               semantic == VulkanKernelRecipe::CUBE) {
       result = rewriter.create<mlir::arith::MulIOp>(loc, xVal, xVal);
-      if (emitter->recipe == VulkanKernelRecipe::CUBE) {
+      if (semantic == VulkanKernelRecipe::CUBE) {
         result = rewriter.create<mlir::arith::MulIOp>(loc, result, xVal);
       }
     } else {
-      result = xVal;
+      return op.emitOpError(
+          "ElementwiseUnaryToSpirv: no Vulkan equation for legacy operation");
     }
     (void)storeScalar(rewriter, loc, result, Y, indices,
                       inputUnsigned, outputUnsigned);
@@ -6860,9 +8417,15 @@ mlir::LogicalResult DataMovementToSpirv::matchAndRewrite(
   if (constantFill) {
     const bool zeroInput = hasVulkanEmitterTrait(
         *emitter, VULKAN_EMITTER_TRAIT_ARGUMENT_GENERATED);
-    const size_t expectedFunctionInputs = hasRuntimeState ? 1 : (zeroInput ? 0 : 1);
+    const bool genericRandom =
+        hasRuntimeState &&
+        emitter->recipe == VulkanKernelRecipe::RANDOM_GENERIC;
+    const size_t expectedFunctionInputs =
+        hasRuntimeState
+            ? (genericRandom ? static_cast<size_t>(semanticInputCount + 1) : 1)
+            : (zeroInput ? 0 : 1);
     if (inputs.size() != expectedFunctionInputs ||
-        (hasRuntimeState && zeroInput)) {
+        (hasRuntimeState && zeroInput && !genericRandom)) {
       return op.emitOpError(
           "constant generation input count mismatch");
     }
@@ -6959,7 +8522,10 @@ mlir::LogicalResult DataMovementToSpirv::matchAndRewrite(
       return mlir::success();
     }
 
-    if (emitter->recipe == VulkanKernelRecipe::UNIFORM_RANDOM) {
+    if (emitter->recipe == VulkanKernelRecipe::UNIFORM_RANDOM ||
+        emitter->recipe == VulkanKernelRecipe::RANDOM_GENERIC) {
+      const bool genericRandom =
+          emitter->recipe == VulkanKernelRecipe::RANDOM_GENERIC;
       auto accumulatorAttr =
           op->getAttrOfType<mlir::TypeAttr>(kAccumulatorTypeAttr);
       auto accumulator =
@@ -6972,11 +8538,13 @@ mlir::LogicalResult DataMovementToSpirv::matchAndRewrite(
           op->getAttrOfType<mlir::FloatAttr>("nd4j.random_to");
       auto outputFloat =
           llvm::dyn_cast<mlir::FloatType>(outputType.getElementType());
-      if (!hasRuntimeState || inputs.size() != 1 || !accumulator ||
-          !fromAttr || !toAttr || !outputFloat ||
-          fromAttr.getType() != accumulator ||
-          toAttr.getType() != accumulator) {
-        return op.emitOpError("uniform random metadata contract mismatch");
+      if (!hasRuntimeState || inputs.empty() || !accumulator ||
+          !outputFloat ||
+          (!genericRandom &&
+           (!fromAttr || !toAttr ||
+            fromAttr.getType() != accumulator ||
+            toAttr.getType() != accumulator))) {
+        return op.emitOpError("random metadata contract mismatch");
       }
 
       auto [flat, outputIndices] = launchOutput();
@@ -7036,6 +8604,340 @@ mlir::LogicalResult DataMovementToSpirv::matchAndRewrite(
           scalarConstant(rewriter, loc, f32, 1.0));
       mlir::Value unitAccumulator =
           convertFloat(rewriter, loc, unit, accumulator);
+      if (genericRandom) {
+        auto randomArgument = [&](int ordinal, double fallback) {
+          auto attr = op->getAttrOfType<mlir::FloatAttr>(
+              "nd4j.random_arg" + std::to_string(ordinal));
+          return attr && attr.getType() == accumulator
+                     ? mlir::Value(rewriter.create<mlir::arith::ConstantOp>(
+                           loc, accumulator, attr))
+                     : floatConst(rewriter, loc, accumulator, fallback);
+        };
+        auto loadRandomInput = [&](int ordinal) {
+          if (inputs.size() <= static_cast<size_t>(ordinal + 1)) {
+            return unitAccumulator;
+          }
+          mlir::Value source = inputs[static_cast<size_t>(ordinal + 1)];
+          auto sourceType =
+              llvm::cast<mlir::MemRefType>(source.getType());
+          mlir::SmallVector<mlir::Value> sourceIndices;
+          bool sameShape = sourceType.getRank() == outputType.getRank();
+          for (int64_t d = 0; sameShape && d < outputType.getRank(); ++d) {
+            if (sourceType.isDynamicDim(d) || outputType.isDynamicDim(d)) {
+              continue;
+            }
+            sameShape = sourceType.getDimSize(d) == outputType.getDimSize(d);
+          }
+          if (sameShape) {
+            sourceIndices = logicalIndices(rewriter, loc, flat, source);
+          } else {
+            sourceIndices.assign(static_cast<size_t>(sourceType.getRank()),
+                                 idxConst(rewriter, loc, 0));
+          }
+          return loadAsAccumulator(rewriter, loc, source, sourceIndices,
+                                   accumulator);
+        };
+        auto normalValue = [&]() {
+          auto safeUnit = rewriter.create<mlir::arith::MaximumFOp>(
+              loc, unitAccumulator,
+              floatConst(rewriter, loc, accumulator, 1.0e-5));
+          auto radius = rewriter.create<mlir::math::SqrtOp>(
+              loc,
+              rewriter.create<mlir::arith::MulFOp>(
+                  loc, floatConst(rewriter, loc, accumulator, -2.0),
+                  emitLog(rewriter, loc, accumulator, safeUnit)));
+          auto angle = rewriter.create<mlir::arith::MulFOp>(
+              loc, floatConst(rewriter, loc, accumulator, 6.283185307179586),
+              unitAccumulator);
+          return rewriter.create<mlir::arith::MulFOp>(
+              loc, radius,
+              rewriter.create<mlir::math::CosOp>(loc, angle));
+        };
+        auto opNumberAttr = op->getAttrOfType<mlir::IntegerAttr>(
+            "nd4j.legacy_op_num");
+        const int opNumber =
+            opNumberAttr ? static_cast<int>(opNumberAttr.getInt()) : -1;
+        mlir::Value value = unitAccumulator;
+        switch (opNumber) {
+          case 1: {  // DropOut: retain with probability p.
+            auto inputValue = loadRandomInput(0);
+            auto probability = randomArgument(0, 1.0);
+            auto keep = rewriter.create<mlir::arith::CmpFOp>(
+                loc, mlir::arith::CmpFPredicate::OLT, unitAccumulator,
+                probability);
+            value = rewriter.create<mlir::arith::MulFOp>(
+                loc, inputValue,
+                rewriter.create<mlir::arith::SelectOp>(
+                    loc, keep, floatConst(rewriter, loc, accumulator, 1.0),
+                    floatConst(rewriter, loc, accumulator, 0.0)));
+            break;
+          }
+          case 2: {  // Inverted dropout.
+            auto inputValue = loadRandomInput(0);
+            auto probability = randomArgument(0, 1.0);
+            auto keep = rewriter.create<mlir::arith::CmpFOp>(
+                loc, mlir::arith::CmpFPredicate::OLT, unitAccumulator,
+                probability);
+            auto scale = rewriter.create<mlir::arith::DivFOp>(
+                loc, rewriter.create<mlir::arith::SelectOp>(
+                         loc, keep,
+                         floatConst(rewriter, loc, accumulator, 1.0),
+                         floatConst(rewriter, loc, accumulator, 0.0)),
+                rewriter.create<mlir::arith::MaximumFOp>(
+                    loc, probability,
+                    floatConst(rewriter, loc, accumulator, 1.0e-5)));
+            value = rewriter.create<mlir::arith::MulFOp>(loc, inputValue, scale);
+            break;
+          }
+          case 3: {  // Probabilistic merge of two input tensors.
+            auto first = loadRandomInput(0);
+            auto second = loadRandomInput(1);
+            auto chooseFirst = rewriter.create<mlir::arith::CmpFOp>(
+                loc, mlir::arith::CmpFPredicate::OLT, unitAccumulator,
+                randomArgument(0, 0.5));
+            value = rewriter.create<mlir::arith::SelectOp>(
+                loc, chooseFirst, first, second);
+            break;
+          }
+          case 4: {  // Linspace.
+            auto start = loadRandomInput(0);
+            auto finish = loadRandomInput(1);
+            auto count = loadRandomInput(2);
+            auto total = one;
+            for (int64_t d = 0; d < outputType.getRank(); ++d) {
+              total = rewriter.create<mlir::arith::MulIOp>(
+                  loc, total, rewriter.create<mlir::memref::DimOp>(
+                                  loc, output, d));
+            }
+            auto position = convertIndexToFloat(
+                rewriter, loc, flat, accumulator);
+            auto denominator = convertIndexToFloat(
+                rewriter, loc,
+                rewriter.create<mlir::arith::SubIOp>(
+                    loc, total, idxConst(rewriter, loc, 1)), accumulator);
+            auto fraction = rewriter.create<mlir::arith::SelectOp>(
+                loc,
+                rewriter.create<mlir::arith::CmpFOp>(
+                    loc, mlir::arith::CmpFPredicate::OEQ, count,
+                    floatConst(rewriter, loc, accumulator, 0.0)),
+                rewriter.create<mlir::arith::DivFOp>(
+                    loc, position,
+                    rewriter.create<mlir::arith::MaximumFOp>(
+                        loc, denominator,
+                        floatConst(rewriter, loc, accumulator, 1.0))),
+                count);
+            value = rewriter.create<mlir::arith::AddFOp>(
+                loc, start,
+                rewriter.create<mlir::arith::MulFOp>(
+                    loc, fraction,
+                    rewriter.create<mlir::arith::SubFOp>(loc, finish, start)));
+            break;
+          }
+          case 5: {  // Choice: categorical sample from source/probability vectors.
+            if (inputs.size() < 3) {
+              return op.emitOpError("choice requires source and probability inputs");
+            }
+            auto source = inputs[1];
+            auto probabilities = inputs[2];
+            auto sourceType = llvm::dyn_cast<mlir::MemRefType>(source.getType());
+            auto probabilityType =
+                llvm::dyn_cast<mlir::MemRefType>(probabilities.getType());
+            if (!sourceType || !probabilityType || sourceType.getRank() != 1 ||
+                probabilityType.getRank() != 1) {
+              return op.emitOpError("choice requires rank-1 source/probability inputs");
+            }
+            auto sourceLength = rewriter.create<mlir::memref::DimOp>(loc, source, 0);
+            auto probabilityLength =
+                rewriter.create<mlir::memref::DimOp>(loc, probabilities, 0);
+            auto sameLength = rewriter.create<mlir::arith::CmpIOp>(
+                loc, mlir::arith::CmpIPredicate::eq, sourceLength,
+                probabilityLength);
+            auto guarded = rewriter.create<mlir::scf::IfOp>(
+                loc, mlir::TypeRange{accumulator}, sameLength, true);
+            rewriter.setInsertionPointToStart(guarded.thenBlock());
+            auto zero = floatConst(rewriter, loc, accumulator, 0.0);
+            auto sourceZero = mlir::SmallVector<mlir::Value>{idxConst(rewriter, loc, 0)};
+            auto initialValue = loadAsAccumulator(
+                rewriter, loc, source, sourceZero, accumulator);
+            if (!initialValue) {
+              return op.emitOpError("choice source type cannot be converted");
+            }
+            auto found = rewriter.create<mlir::arith::ConstantOp>(
+                loc, rewriter.getI1Type(), rewriter.getBoolAttr(false));
+            auto loop = rewriter.create<mlir::scf::ForOp>(
+                loc, idxConst(rewriter, loc, 0), sourceLength,
+                idxConst(rewriter, loc, 1),
+                mlir::ValueRange{initialValue, zero, found},
+                [&](mlir::OpBuilder& nested, mlir::Location nestedLoc,
+                    mlir::Value item, mlir::ValueRange iterArgs) {
+                  auto itemIndices = mlir::SmallVector<mlir::Value>{item};
+                  auto probability = loadAsAccumulator(
+                      nested, nestedLoc, probabilities, itemIndices, accumulator);
+                  auto sourceValue = loadAsAccumulator(
+                      nested, nestedLoc, source, itemIndices, accumulator);
+                  auto cumulative = nested.create<mlir::arith::AddFOp>(
+                      nestedLoc, iterArgs[1], probability);
+                  auto below = nested.create<mlir::arith::CmpFOp>(
+                      nestedLoc, mlir::arith::CmpFPredicate::OLT,
+                      unitAccumulator, cumulative);
+                  auto notFound = nested.create<mlir::arith::XOrIOp>(
+                      nestedLoc, iterArgs[2],
+                      nested.create<mlir::arith::ConstantOp>(
+                          nestedLoc, nested.getI1Type(),
+                          nested.getBoolAttr(true)));
+                  auto take = nested.create<mlir::arith::AndIOp>(
+                      nestedLoc, below, notFound);
+                  auto selected = nested.create<mlir::arith::SelectOp>(
+                      nestedLoc, take, sourceValue, iterArgs[0]);
+                  auto selectedFound = nested.create<mlir::arith::OrIOp>(
+                      nestedLoc, iterArgs[2], take);
+                  nested.create<mlir::scf::YieldOp>(
+                      nestedLoc, mlir::ValueRange{selected, cumulative, selectedFound});
+                });
+            rewriter.setInsertionPointToEnd(guarded.thenBlock());
+            auto lastIndex = rewriter.create<mlir::arith::SubIOp>(
+                loc, sourceLength, idxConst(rewriter, loc, 1));
+            auto lastValue = loadAsAccumulator(
+                rewriter, loc, source,
+                mlir::SmallVector<mlir::Value>{lastIndex}, accumulator);
+            auto chosen = rewriter.create<mlir::SelectOp>(
+                loc, loop.getResult(2), loop.getResult(0), lastValue);
+            rewriter.create<mlir::scf::YieldOp>(loc, chosen);
+            rewriter.setInsertionPointToStart(guarded.elseBlock());
+            rewriter.create<mlir::scf::YieldOp>(loc, unitAccumulator);
+            rewriter.setInsertionPointAfter(guarded);
+            value = guarded.getResult(0);
+            break;
+          }
+          case 6: {  // Gaussian.
+            value = rewriter.create<mlir::arith::AddFOp>(
+                loc, randomArgument(0, 0.0),
+                rewriter.create<mlir::arith::MulFOp>(
+                    loc, randomArgument(1, 1.0), normalValue()));
+            break;
+          }
+          case 7: {  // Bernoulli.
+            auto probability = randomArgument(0, 0.5);
+            auto keep = rewriter.create<mlir::arith::CmpFOp>(
+                loc, mlir::arith::CmpFPredicate::OLT, unitAccumulator,
+                probability);
+            value = rewriter.create<mlir::arith::SelectOp>(
+                loc, keep, floatConst(rewriter, loc, accumulator, 1.0),
+                floatConst(rewriter, loc, accumulator, 0.0));
+            break;
+          }
+          case 8:
+          case 9: {  // Binomial and BinomialEx.
+            auto trials = randomArgument(0, 1.0);
+            auto probability = randomArgument(1, 0.5);
+            value = rewriter.create<mlir::math::FloorOp>(
+                loc, rewriter.create<mlir::arith::MulFOp>(
+                         loc, trials,
+                         rewriter.create<mlir::arith::AddFOp>(
+                             loc, probability,
+                             rewriter.create<mlir::arith::MulFOp>(
+                                 loc, unitAccumulator,
+                                 rewriter.create<mlir::arith::SubFOp>(
+                                     loc, floatConst(rewriter, loc, accumulator, 1.0),
+                                     probability))));
+            break;
+          }
+          case 10: {  // Log-normal.
+            value = emitExp(
+                rewriter, loc, accumulator,
+                rewriter.create<mlir::arith::AddFOp>(
+                    loc, randomArgument(0, 0.0),
+                    rewriter.create<mlir::arith::MulFOp>(
+                        loc, randomArgument(1, 1.0), normalValue())));
+            break;
+          }
+          case 11: {  // Truncated normal.
+            auto normal = normalValue();
+            value = rewriter.create<mlir::arith::AddFOp>(
+                loc, randomArgument(0, 0.0),
+                rewriter.create<mlir::arith::MulFOp>(
+                    loc, randomArgument(1, 1.0),
+                    rewriter.create<mlir::arith::MinimumFOp>(
+                        loc,
+                        rewriter.create<mlir::arith::MaximumFOp>(
+                            loc, normal,
+                            floatConst(rewriter, loc, accumulator, -2.0)),
+                        floatConst(rewriter, loc, accumulator, 2.0)));
+            break;
+          }
+          case 12: {  // Alpha dropout.
+            auto inputValue = loadRandomInput(0);
+            auto probability = randomArgument(0, 1.0);
+            auto keep = rewriter.create<mlir::arith::CmpFOp>(
+                loc, mlir::arith::CmpFPredicate::OLT, unitAccumulator,
+                probability);
+            auto retained = rewriter.create<mlir::arith::MulFOp>(
+                loc, randomArgument(1, 1.0), inputValue);
+            auto dropped = rewriter.create<mlir::arith::AddFOp>(
+                loc,
+                rewriter.create<mlir::arith::MulFOp>(
+                    loc, randomArgument(1, 1.0), randomArgument(3, 0.0)),
+                randomArgument(2, 0.0));
+            value = rewriter.create<mlir::arith::SelectOp>(
+                loc, keep, retained, dropped);
+            break;
+          }
+          case 13:
+          case 14: {  // Exponential and inverse exponential.
+            auto lambda = rewriter.create<mlir::arith::MaximumFOp>(
+                loc, randomArgument(0, 1.0),
+                floatConst(rewriter, loc, accumulator, 1.0e-5));
+            value = rewriter.create<mlir::arith::DivFOp>(
+                loc,
+                rewriter.create<mlir::arith::NegFOp>(
+                    loc, emitLog(rewriter, loc, accumulator,
+                                 rewriter.create<mlir::arith::SubFOp>(
+                                     loc, floatConst(rewriter, loc, accumulator, 1.0),
+                                     unitAccumulator))),
+                lambda);
+            break;
+          }
+          case 15: {  // Poisson approximation.
+            auto lambda = randomArgument(0, 1.0);
+            value = rewriter.create<mlir::math::FloorOp>(
+                loc, rewriter.create<mlir::arith::MaximumFOp>(
+                         loc, floatConst(rewriter, loc, accumulator, 0.0),
+                         rewriter.create<mlir::arith::AddFOp>(
+                             loc, lambda,
+                             rewriter.create<mlir::arith::MulFOp>(
+                                 loc, rewriter.create<mlir::math::SqrtOp>(
+                                          loc, lambda),
+                                 normalValue()))));
+            break;
+          }
+          case 16: {  // Gamma approximation.
+            auto shape = rewriter.create<mlir::arith::MaximumFOp>(
+                loc, randomArgument(0, 1.0),
+                floatConst(rewriter, loc, accumulator, 1.0e-5));
+            auto scale = randomArgument(1, 1.0);
+            value = emitExp(
+                rewriter, loc, accumulator,
+                rewriter.create<mlir::arith::AddFOp>(
+                    loc, rewriter.create<mlir::math::LogOp>(
+                             loc, rewriter.create<mlir::arith::MulFOp>(
+                                      loc, shape, scale)),
+                    rewriter.create<mlir::arith::MulFOp>(
+                        loc,
+                        rewriter.create<mlir::arith::DivFOp>(
+                            loc, normalValue(),
+                            rewriter.create<mlir::math::SqrtOp>(
+                                loc, shape)),
+                        floatConst(rewriter, loc, accumulator, 0.5))));
+            break;
+          }
+          default:
+            break;
+        }
+        storeFromAccumulator(rewriter, loc, value, output, outputIndices);
+        rewriter.create<mlir::gpu::TerminatorOp>(loc);
+        rewriter.eraseOp(op);
+        return mlir::success();
+      }
       mlir::Value from = rewriter.create<mlir::arith::ConstantOp>(
           loc, accumulator, fromAttr);
       mlir::Value to = rewriter.create<mlir::arith::ConstantOp>(
@@ -8236,8 +10138,9 @@ static mlir::LogicalResult emitReductionPattern(
       emitter->family != VulkanKernelFamily::REDUCTION) {
     return mlir::failure();
   }
+  const VulkanKernelRecipe semantic = legacySemanticFor(op, emitter->recipe);
   const ReductionCallbacks callbacks =
-      reductionCallbacksFor(emitter->recipe);
+      reductionCallbacksFor(semantic);
   if (!callbacks.combine || !callbacks.finalize) return mlir::failure();
   const double initConst = callbacks.initialValue;
   const BinaryCallback& combiner = callbacks.combine;
@@ -8379,9 +10282,13 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
       emitter->family != VulkanKernelFamily::REDUCTION) {
     return mlir::failure();
   }
+  const VulkanKernelRecipe semantic = legacySemanticFor(op, emitter->recipe);
+  const bool reduce3 = semantic == VulkanKernelRecipe::REDUCE3;
   const ReductionCallbacks reduction =
-      reductionCallbacksFor(emitter->recipe);
-  if (!reduction.combine || !reduction.finalize) return mlir::failure();
+      reductionCallbacksFor(semantic);
+  if (!reduce3 && (!reduction.combine || !reduction.finalize)) {
+    return mlir::failure();
+  }
   const bool indexReduction = hasVulkanEmitterTrait(
       *emitter, VULKAN_EMITTER_TRAIT_INDEX_RESULT);
   const bool floatingResultReduction = hasVulkanEmitterTrait(
@@ -8390,20 +10297,34 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
       *emitter, VULKAN_EMITTER_TRAIT_ABSOLUTE_INPUT);
   const bool squareInput = hasVulkanEmitterTrait(
       *emitter, VULKAN_EMITTER_TRAIT_SQUARE_INPUT);
+  const bool countReduction = hasVulkanEmitterTrait(
+      *emitter, VULKAN_EMITTER_TRAIT_COUNT_RESULT);
+  const bool booleanResultReduction = hasVulkanEmitterTrait(
+      *emitter, VULKAN_EMITTER_TRAIT_BOOLEAN_RESULT);
 
   // ── 3. Extract operands and the framework-selected AccT ───────────────────
   mlir::ValueRange inputs = op.getInputs();
   mlir::ValueRange outputs = op.getOutputs();
-  if (inputs.size() != 1 || outputs.size() != 1) {
+  if ((reduce3 ? inputs.size() != 2 : inputs.size() != 1) ||
+      outputs.size() != 1) {
     return op.emitOpError(
-        "ReduceNDToSpirv: expected exactly 1 input and 1 output");
+        "ReduceNDToSpirv: invalid input/output arity");
   }
   mlir::Value X = inputs.front();
+  mlir::Value X1 = reduce3 ? inputs[1] : mlir::Value{};
   mlir::Value Y = outputs.front();
   auto xType = llvm::dyn_cast<mlir::MemRefType>(X.getType());
+  auto x1Type = reduce3
+                    ? llvm::dyn_cast<mlir::MemRefType>(X1.getType())
+                    : mlir::MemRefType{};
   auto yType = llvm::dyn_cast<mlir::MemRefType>(Y.getType());
-  if (!xType || !yType) {
+  if (!xType || !yType || (reduce3 && !x1Type)) {
     return op.emitOpError("reduction ND: operands must be MemRefs");
+  }
+  if (reduce3 &&
+      (xType.getRank() != x1Type.getRank() ||
+       xType.getShape() != x1Type.getShape())) {
+    return op.emitOpError("reduce3 inputs must have identical shapes");
   }
 
   auto computeAttr = op->getAttrOfType<mlir::TypeAttr>(kAccumulatorTypeAttr);
@@ -8427,6 +10348,7 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
     return attr && attr.getValue();
   };
   const bool inputUnsigned = readBoolAttr("nd4j.input0_unsigned");
+  const bool input1Unsigned = readBoolAttr("nd4j.input1_unsigned");
   const bool outputUnsigned = readBoolAttr("nd4j.output_unsigned");
   const bool biasCorrected = readBoolAttr("nd4j.bias_corrected");
   // Signed absolute values are represented by their i32 magnitude bits.  In
@@ -8443,23 +10365,36 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
         (xStorage == computeFloat ||
          xStorage.getWidth() != computeFloat.getWidth());
     const bool compatibleIntegerInput =
-        floatingResultReduction && xInteger && xInteger.getWidth() == 32;
+        (reduce3 || floatingResultReduction || countReduction ||
+         booleanResultReduction) && xInteger &&
+        xInteger.getWidth() <= 64;
     const bool compatibleFloatOutput =
         yStorage && yStorage.getWidth() <= computeFloat.getWidth() &&
         (yStorage == computeFloat ||
          yStorage.getWidth() != computeFloat.getWidth());
     if ((!compatibleFloatInput && !compatibleIntegerInput) ||
-        (indexReduction
-             ? (!yInteger || yInteger.getWidth() != 32)
-             : !compatibleFloatOutput)) {
+        (countReduction
+             ? (!yInteger || yInteger.getWidth() != 64)
+             : (indexReduction
+                    ? (!yInteger || yInteger.getWidth() != 32)
+                    : (booleanResultReduction
+                           ? (!yInteger || yInteger.getWidth() != 8)
+                           : !compatibleFloatOutput)))) {
       return op.emitOpError(
           "reduction ND: storage types are incompatible with AccT");
     }
   } else {
     auto xStorage = llvm::dyn_cast<mlir::IntegerType>(xType.getElementType());
     auto yStorage = llvm::dyn_cast<mlir::IntegerType>(yType.getElementType());
-    if (!xStorage || !yStorage || xStorage.getWidth() != 32 ||
-        yStorage.getWidth() != 32) {
+    const bool inputStorageValid =
+        xStorage && (xStorage.getWidth() == 32 ||
+                     (booleanResultReduction && xStorage.getWidth() == 8));
+    const bool outputStorageValid =
+        yStorage && (countReduction ? yStorage.getWidth() == 64
+                                    : (booleanResultReduction
+                                           ? yStorage.getWidth() == 8
+                                           : yStorage.getWidth() == 32));
+    if (!inputStorageValid || !outputStorageValid) {
       return op.emitOpError(
           "reduction ND: integer storage must be i32");
     }
@@ -8568,7 +10503,7 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
       computeFloat
           ? floatConst(rewriter, loc, computeFloat, reduction.initialValue)
           : integerReductionInitial(
-                rewriter, loc, emitter->recipe, computeInteger,
+                rewriter, loc, semantic, computeInteger,
                 magnitudeComparison);
   if (!initConst) {
     return op.emitOpError("reduction ND: unsupported accumulator identity");
@@ -8586,6 +10521,52 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
   auto applyReductionInputTraits =
       [&](mlir::OpBuilder& builder, mlir::Location nestedLoc,
           mlir::Value element) -> mlir::Value {
+    if (countReduction) {
+      if (computeFloat) {
+        auto zero = floatConst(builder, nestedLoc, computeFloat, 0.0);
+        auto one = floatConst(builder, nestedLoc, computeFloat, 1.0);
+        mlir::Value target = zero;
+        if (semantic == VulkanKernelRecipe::REDUCE_COUNT_MATCH) {
+          if (auto targetAttr =
+                  op->getAttrOfType<mlir::FloatAttr>("nd4j.scalar0")) {
+            target = floatConst(builder, nestedLoc, computeFloat,
+                                targetAttr.getValueAsDouble());
+          }
+        }
+        auto predicate = semantic == VulkanKernelRecipe::REDUCE_COUNT_ZERO
+                             ? mlir::arith::CmpFPredicate::OEQ
+                             : mlir::arith::CmpFPredicate::ONE;
+        if (semantic == VulkanKernelRecipe::REDUCE_COUNT_MATCH) {
+          predicate = mlir::arith::CmpFPredicate::OEQ;
+        }
+        auto matches = builder.create<mlir::arith::CmpFOp>(
+            nestedLoc, predicate, element, target);
+        return builder.create<mlir::arith::SelectOp>(
+            nestedLoc, matches, one, zero);
+      }
+      auto zero = builder.create<mlir::arith::ConstantIntOp>(
+          nestedLoc, 0, computeInteger.getWidth());
+      auto one = builder.create<mlir::arith::ConstantIntOp>(
+          nestedLoc, 1, computeInteger.getWidth());
+      mlir::Value target = zero;
+      if (semantic == VulkanKernelRecipe::REDUCE_COUNT_MATCH) {
+        if (auto targetAttr =
+                op->getAttrOfType<mlir::IntegerAttr>("nd4j.scalar0")) {
+          target = builder.create<mlir::arith::ConstantIntOp>(
+              nestedLoc, targetAttr.getInt(), computeInteger.getWidth());
+        }
+      }
+      auto predicate = semantic == VulkanKernelRecipe::REDUCE_COUNT_ZERO
+                           ? mlir::arith::CmpIPredicate::eq
+                           : mlir::arith::CmpIPredicate::ne;
+      if (semantic == VulkanKernelRecipe::REDUCE_COUNT_MATCH) {
+        predicate = mlir::arith::CmpIPredicate::eq;
+      }
+      auto matches = builder.create<mlir::arith::CmpIOp>(
+          nestedLoc, predicate, element, target);
+      return builder.create<mlir::arith::SelectOp>(
+          nestedLoc, matches, one, zero);
+    }
     if (absoluteInput) {
       if (computeFloat) {
         element = builder.create<mlir::math::AbsFOp>(nestedLoc, element);
@@ -8609,6 +10590,24 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
       } else {
         element = builder.create<mlir::arith::MulIOp>(
             nestedLoc, element, element);
+      }
+    }
+    if (semantic == VulkanKernelRecipe::REDUCE_ENTROPY ||
+        semantic == VulkanKernelRecipe::REDUCE_LOG_ENTROPY ||
+        semantic == VulkanKernelRecipe::REDUCE_SHANNON_ENTROPY) {
+      if (computeFloat) {
+        auto safe = builder.create<mlir::arith::MaximumFOp>(
+            nestedLoc, element,
+            floatConst(builder, nestedLoc, computeFloat, 1e-30));
+        auto logarithm = emitLog(builder, nestedLoc, computeType, safe);
+        if (semantic == VulkanKernelRecipe::REDUCE_SHANNON_ENTROPY) {
+          logarithm = builder.create<mlir::arith::DivFOp>(
+              nestedLoc, logarithm,
+              floatConst(builder, nestedLoc, computeFloat,
+                         std::log(2.0)));
+        }
+        element = builder.create<mlir::arith::MulFOp>(
+            nestedLoc, element, logarithm);
       }
     }
     return element;
@@ -8651,6 +10650,184 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
         flatOutIdx, outputIndex);
     return {element, belongsToOutput};
   };
+
+  if (reduce3) {
+    if (!computeFloat) {
+      return op.emitOpError("reduce3 requires floating-point AccT");
+    }
+    auto pairForOutput =
+        [&](mlir::OpBuilder& builder, mlir::Location nestedLoc,
+            mlir::Value inputIndex)
+        -> std::pair<std::pair<mlir::Value, mlir::Value>, mlir::Value> {
+      llvm::SmallVector<mlir::Value> inIdx(rank);
+      mlir::Value remainder = inputIndex;
+      for (int64_t d = 0; d < rank; ++d) {
+        inIdx[d] = builder.create<mlir::arith::DivUIOp>(
+            nestedLoc, remainder, inStrides[d]);
+        remainder = builder.create<mlir::arith::RemUIOp>(
+            nestedLoc, remainder, inStrides[d]);
+      }
+      llvm::SmallVector<mlir::Value> outIdx;
+      for (int64_t d = 0; d < rank; ++d) {
+        if (reduced[static_cast<size_t>(d)] == 0) {
+          outIdx.push_back(inIdx[d]);
+        } else if (keepDims) {
+          outIdx.push_back(zeroIdx);
+        }
+      }
+      mlir::Value flatOutIdx = zeroIdx;
+      for (size_t od = 0; od < outStrides.size(); ++od) {
+        flatOutIdx = builder.create<mlir::arith::AddIOp>(
+            nestedLoc, flatOutIdx,
+            builder.create<mlir::arith::MulIOp>(
+                nestedLoc, outIdx[od], outStrides[od]));
+      }
+      auto indices = mlir::SmallVector<mlir::Value>(inIdx.begin(), inIdx.end());
+      mlir::Value first = loadAsScalar(
+          builder, nestedLoc, X, indices, computeType, inputUnsigned,
+          inputUnsigned);
+      mlir::Value second = loadAsScalar(
+          builder, nestedLoc, X1, indices, computeType, input1Unsigned,
+          input1Unsigned);
+      mlir::Value belongs = builder.create<mlir::arith::CmpIOp>(
+          nestedLoc, mlir::arith::CmpIPredicate::eq, flatOutIdx,
+          outputIndex);
+      return {{first, second}, belongs};
+    };
+    int reduce3OpNum = -1;
+    if (auto opNumAttr = op->getAttrOfType<mlir::IntegerAttr>(
+            kLegacyOpNumAttr)) {
+      reduce3OpNum = static_cast<int>(opNumAttr.getInt());
+    }
+    const bool cosine = reduce3OpNum == 2 || reduce3OpNum == 5;
+    const bool jaccard = reduce3OpNum == 6;
+    llvm::SmallVector<mlir::Value> reduce3Initial;
+    if (cosine) {
+      reduce3Initial = {floatConst(rewriter, loc, computeFloat, 0.0),
+                        floatConst(rewriter, loc, computeFloat, 0.0),
+                        floatConst(rewriter, loc, computeFloat, 0.0)};
+    } else if (jaccard) {
+      reduce3Initial = {floatConst(rewriter, loc, computeFloat, 0.0),
+                        floatConst(rewriter, loc, computeFloat, 0.0)};
+    } else {
+      reduce3Initial = {floatConst(
+          rewriter, loc, computeFloat,
+          reduce3OpNum == 4 ? 1.0 : 0.0)};
+    }
+    auto reduce3Loop = rewriter.create<mlir::scf::ForOp>(
+        loc, zeroIdx, totalN, oneIdx, mlir::ValueRange(reduce3Initial),
+        [&](mlir::OpBuilder& builder, mlir::Location nestedLoc,
+            mlir::Value inputIndex, mlir::ValueRange iterArgs) {
+          auto pair = pairForOutput(builder, nestedLoc, inputIndex);
+          mlir::Value a = pair.first.first;
+          mlir::Value b = pair.first.second;
+          mlir::Value belongs = pair.second;
+          llvm::SmallVector<mlir::Value> candidates;
+          if (reduce3OpNum == 0) {
+            candidates.push_back(builder.create<mlir::math::AbsFOp>(
+                nestedLoc, builder.create<mlir::arith::SubFOp>(
+                               nestedLoc, a, b)));
+          } else if (reduce3OpNum == 1) {
+            mlir::Value delta = builder.create<mlir::arith::SubFOp>(
+                nestedLoc, a, b);
+            candidates.push_back(builder.create<mlir::arith::MulFOp>(
+                nestedLoc, delta, delta));
+          } else if (reduce3OpNum == 2 || reduce3OpNum == 5) {
+            candidates.push_back(builder.create<mlir::arith::MulFOp>(
+                nestedLoc, a, b));
+            candidates.push_back(builder.create<mlir::arith::MulFOp>(
+                nestedLoc, a, a));
+            candidates.push_back(builder.create<mlir::arith::MulFOp>(
+                nestedLoc, b, b));
+          } else if (reduce3OpNum == 3) {
+            candidates.push_back(builder.create<mlir::arith::MulFOp>(
+                nestedLoc, a, b));
+          } else if (reduce3OpNum == 4) {
+            auto epsilonAttr = op->getAttrOfType<mlir::FloatAttr>(
+                "nd4j.scalar0");
+            const double epsilon =
+                epsilonAttr ? epsilonAttr.getValueAsDouble() : 1e-5;
+            mlir::Value delta = builder.create<mlir::math::AbsFOp>(
+                nestedLoc, builder.create<mlir::arith::SubFOp>(
+                               nestedLoc, a, b));
+            auto matches = builder.create<mlir::arith::CmpFOp>(
+                nestedLoc, mlir::arith::CmpFPredicate::OLE, delta,
+                floatConst(builder, nestedLoc, computeFloat, epsilon));
+            candidates.push_back(builder.create<mlir::arith::SelectOp>(
+                nestedLoc, matches,
+                floatConst(builder, nestedLoc, computeFloat, 1.0),
+                floatConst(builder, nestedLoc, computeFloat, 0.0)));
+          } else if (reduce3OpNum == 6) {
+            candidates.push_back(builder.create<mlir::arith::MinimumFOp>(
+                nestedLoc, a, b));
+            candidates.push_back(builder.create<mlir::arith::MaximumFOp>(
+                nestedLoc, a, b));
+          } else {
+            auto equal = builder.create<mlir::arith::CmpFOp>(
+                nestedLoc, mlir::arith::CmpFPredicate::OEQ, a, b);
+            candidates.push_back(builder.create<mlir::arith::SelectOp>(
+                nestedLoc, equal,
+                floatConst(builder, nestedLoc, computeFloat, 0.0),
+                floatConst(builder, nestedLoc, computeFloat, 1.0)));
+          }
+          llvm::SmallVector<mlir::Value> next;
+          for (size_t i = 0; i < candidates.size(); ++i) {
+            mlir::Value combined;
+            if (reduce3OpNum == 4) {
+              combined = builder.create<mlir::arith::MulFOp>(
+                  nestedLoc, iterArgs[i], candidates[i]);
+            } else {
+              combined = builder.create<mlir::arith::AddFOp>(
+                  nestedLoc, iterArgs[i], candidates[i]);
+            }
+            next.push_back(builder.create<mlir::arith::SelectOp>(
+                nestedLoc, belongs, combined, iterArgs[i]));
+          }
+          builder.create<mlir::scf::YieldOp>(nestedLoc, next);
+        });
+    mlir::Value result = reduce3Loop.getResult(0);
+    if (reduce3OpNum == 1) {
+      result = rewriter.create<mlir::math::SqrtOp>(loc, result);
+    } else if (cosine) {
+      mlir::Value denominator = rewriter.create<mlir::arith::MulFOp>(
+          loc, rewriter.create<mlir::math::SqrtOp>(
+                   loc, reduce3Loop.getResult(1)),
+          rewriter.create<mlir::math::SqrtOp>(
+                   loc, reduce3Loop.getResult(2)));
+      auto zero = floatConst(rewriter, loc, computeFloat, 0.0);
+      auto zeroDenominator = rewriter.create<mlir::arith::CmpFOp>(
+          loc, mlir::arith::CmpFPredicate::OEQ, denominator, zero);
+      auto similarity = rewriter.create<mlir::arith::SelectOp>(
+          loc, zeroDenominator, zero,
+          rewriter.create<mlir::arith::DivFOp>(
+              loc, reduce3Loop.getResult(0), denominator));
+      result = reduce3OpNum == 5
+                   ? rewriter.create<mlir::arith::SubFOp>(
+                         loc, floatConst(rewriter, loc, computeFloat, 1.0),
+                         similarity)
+                   : similarity;
+    } else if (jaccard) {
+      auto zero = floatConst(rewriter, loc, computeFloat, 0.0);
+      auto zeroUnion = rewriter.create<mlir::arith::CmpFOp>(
+          loc, mlir::arith::CmpFPredicate::OEQ, reduce3Loop.getResult(1),
+          zero);
+      result = rewriter.create<mlir::arith::SelectOp>(
+          loc, zeroUnion, zero,
+          rewriter.create<mlir::arith::SubFOp>(
+              loc, floatConst(rewriter, loc, computeFloat, 1.0),
+              rewriter.create<mlir::arith::DivFOp>(
+                  loc, reduce3Loop.getResult(0),
+                  reduce3Loop.getResult(1))));
+    }
+    auto outputIndices = logicalIndices(rewriter, loc, outputIndex, Y);
+    if (!storeScalar(rewriter, loc, result, Y, outputIndices, false,
+                     outputUnsigned)) {
+      return op.emitOpError("reduce3 result storage conversion failed");
+    }
+    rewriter.create<mlir::gpu::TerminatorOp>(loc);
+    rewriter.eraseOp(op);
+    return mlir::success();
+  }
 
   if (indexReduction) {
     // Index-result is an emitter trait layered on the shared max/min formula.
@@ -8705,7 +10882,7 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
           element =
               applyReductionInputTraits(builder, nestedLoc, element);
           const bool maximumFormula =
-              emitter->recipe == VulkanKernelRecipe::REDUCE_MAX;
+              semantic == VulkanKernelRecipe::REDUCE_MAX;
           mlir::Value better;
           if (computeFloat) {
             better = builder.create<mlir::arith::CmpFOp>(
@@ -8749,7 +10926,7 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
     return mlir::success();
   }
 
-  if (emitter->recipe == VulkanKernelRecipe::REDUCE_LOGSUMEXP) {
+  if (semantic == VulkanKernelRecipe::REDUCE_LOGSUMEXP) {
     if (!computeFloat) {
       return op.emitOpError("logsumexp requires floating-point AccT");
     }
@@ -8804,8 +10981,8 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
     return mlir::success();
   }
 
-  if (emitter->recipe == VulkanKernelRecipe::REDUCE_VARIANCE ||
-      emitter->recipe == VulkanKernelRecipe::REDUCE_STDEV) {
+  if (semantic == VulkanKernelRecipe::REDUCE_VARIANCE ||
+      semantic == VulkanKernelRecipe::REDUCE_STDEV) {
     if (!computeFloat) {
       return op.emitOpError("variance/stdev requires floating-point AccT");
     }
@@ -8860,7 +11037,7 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
         convertIndexToFloat(rewriter, loc, denominatorCount, computeFloat);
     mlir::Value result = rewriter.create<mlir::arith::DivFOp>(
         loc, welfordLoop.getResult(2), denominator);
-    if (emitter->recipe == VulkanKernelRecipe::REDUCE_STDEV) {
+    if (semantic == VulkanKernelRecipe::REDUCE_STDEV) {
       result = rewriter.create<mlir::math::SqrtOp>(loc, result);
     }
     auto outputIndices = logicalIndices(rewriter, loc, outputIndex, Y);
@@ -8911,7 +11088,7 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
             computeFloat
                 ? reduction.combine(ib, iloc, iterArgs[0], element)
                 : emitIntegerReductionCombine(
-                      ib, iloc, emitter->recipe, iterArgs[0], element,
+                      ib, iloc, semantic, iterArgs[0], element,
                       magnitudeComparison);
         mlir::Value belongsToOutput = ib.create<mlir::arith::CmpIOp>(
             iloc, mlir::arith::CmpIPredicate::eq, flatOutIdx, outputIndex);

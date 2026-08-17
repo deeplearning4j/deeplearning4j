@@ -71,6 +71,19 @@ enum class VulkanKernelRecipe : uint16_t {
   SQUARED_SUBTRACT,
   POWER,
   ATAN2,
+  REVERSE_MOD,
+  TRUNCATE_DIV,
+  SAFE_DIVIDE,
+  DIVIDE_NO_NAN,
+  XDIVY,
+  XLOGY,
+  XLOG1PY,
+  POW_DERIVATIVE,
+  FMOD,
+  SHIFT_LEFT,
+  SHIFT_RIGHT,
+  CYCLIC_SHIFT_LEFT,
+  CYCLIC_SHIFT_RIGHT,
   SWISH_MUL,
   ASSIGN,
   BIAS_ADD,
@@ -91,12 +104,53 @@ enum class VulkanKernelRecipe : uint16_t {
   RELU6,
   LEAKY_RELU,
   ELU,
+  ELU_SCALAR,
+  ELU_DERIVATIVE,
+  RELU_DERIVATIVE,
+  LEAKY_RELU_DERIVATIVE,
+  SIGMOID_CROSS_ENTROPY_SMOOTHER,
+  LOG_X,
+  STEP,
+  LSTM_CLIP,
+  SQUARED_REVERSE_SUBTRACT,
+  REVERSE_POWER,
+  LOGICAL_NOT_BINARY,
+  RELATIVE_ERROR,
+  BINARY_RELATIVE_ERROR,
+  BINARY_MINIMUM_ABSOLUTE_RELATIVE_ERROR,
+  AXPY,
+  LOG_POISSON_LOSS,
+  LOG_POISSON_LOSS_FULL,
   SELU,
   SOFTPLUS,
   SOFTSIGN,
   CUBE,
   RECTIFIED_TANH,
   RATIONAL_TANH,
+  TANH_DERIVATIVE,
+  HARD_TANH_DERIVATIVE,
+  SIGMOID_DERIVATIVE,
+  SOFTSIGN_DERIVATIVE,
+  TAN_DERIVATIVE,
+  SELU_DERIVATIVE,
+  HARD_SIGMOID_DERIVATIVE,
+  RATIONAL_TANH_DERIVATIVE,
+  RECTIFIED_TANH_DERIVATIVE,
+  SWISH_DERIVATIVE,
+  ACOSH_DERIVATIVE,
+  ASINH_DERIVATIVE,
+  SINH_DERIVATIVE,
+  LOG_SIGMOID_DERIVATIVE,
+  SPECIAL_DERIVATIVE,
+  CUBE_DERIVATIVE,
+  GELU_DERIVATIVE,
+  PRECISE_GELU_DERIVATIVE,
+  MISH_DERIVATIVE,
+  STABILIZE,
+  STABILIZE_FP16,
+  SCALED_TANH,
+  AFFINE,
+  SET_RANGE,
   FLOOR,
   LOG1P,
   RINT,
@@ -132,6 +186,43 @@ enum class VulkanKernelRecipe : uint16_t {
   BOOLEAN_OR,
   BOOLEAN_XOR,
   BOOLEAN_NOT,
+  EPSILON_COMPARE,
+  MATCH_CONDITION,
+  MATCH_CONDITION_UNARY,
+  IGAMMA,
+  IGAMMAC,
+  IS_INF,
+  IS_NAN,
+  IS_FINITE,
+  IS_INF_OR_NAN,
+  IS_POSITIVE,
+  IS_NEGATIVE,
+  SIGN,
+  ONES,
+  ROUND,
+  ONE_MINUS,
+  TIMES_ONE_MINUS,
+  RECIPROCAL,
+  CEIL,
+  COS,
+  SIN,
+  EXP,
+  LOG,
+  ACOS,
+  ASIN,
+  ATAN,
+  SINH,
+  COSH,
+  TAN,
+  ERF,
+  ERFC,
+  EXPM1,
+  ACOSH,
+  ASINH,
+  ATANH,
+  LOG_SIGMOID,
+  MISH,
+  RSQRT,
   SELECT,
   CAST,
 
@@ -179,6 +270,7 @@ enum class VulkanKernelRecipe : uint16_t {
   SIZE_AT,
   MIN_MAX_DATATYPE,
   UNIFORM_RANDOM,
+  RANDOM_GENERIC,
 
   REDUCE_SUM,
   REDUCE_LOGSUMEXP,
@@ -186,7 +278,22 @@ enum class VulkanKernelRecipe : uint16_t {
   REDUCE_STDEV,
   REDUCE_MAX,
   REDUCE_MIN,
-  REDUCE_PRODUCT
+  REDUCE_PRODUCT,
+  REDUCE_COUNT_NONZERO,
+  REDUCE_COUNT_ZERO,
+  REDUCE_COUNT_MATCH,
+  REDUCE_ENTROPY,
+  REDUCE_LOG_ENTROPY,
+  REDUCE_SHANNON_ENTROPY,
+  REDUCE3,
+
+  // Canonical legacy identity whose family/op-number selects the shared
+  // elementwise/reduction lowering at record time.
+  LEGACY_GENERIC,
+  // The canonical identity is registered, but no device equation has been
+  // supplied yet. Lowerers reject this value instead of silently materializing
+  // an identity or using a host implementation.
+  UNSUPPORTED
 };
 
 enum class VulkanKernelFamily : uint8_t {
@@ -234,6 +341,7 @@ enum class VulkanLoweringContract : uint8_t {
 enum class VulkanArgumentSchema : uint8_t {
   NONE,
   OPTIONAL_SCALAR,
+  OPTIONAL_SCALAR_PAIR,
   OPTIONAL_FINITE_SCALAR,
   REDUCTION_KEEPDIMS,
   STATISTICAL_REDUCTION,
@@ -334,6 +442,8 @@ enum VulkanKernelEmitterTraits : uint32_t {
   VULKAN_EMITTER_TRAIT_NONE = 0,
   VULKAN_EMITTER_TRAIT_FLOAT_RESULT = 1u << 2,
   VULKAN_EMITTER_TRAIT_INDEX_RESULT = 1u << 3,
+  // Unary legacy predicates write BOOL while computing in the input domain.
+  VULKAN_EMITTER_TRAIT_BOOLEAN_RESULT = 1u << 4,
   // Reduction axes are intrinsically the last dimension; an optional iArg is
   // keepDims rather than an axis list.
   VULKAN_EMITTER_TRAIT_IMPLICIT_LAST_AXIS = 1u << 7,
@@ -372,7 +482,10 @@ enum VulkanKernelEmitterTraits : uint32_t {
   // The emitted kernel consumes caller-owned RNG state through a replay-time
   // storage-buffer binding. State is refreshed before each submission and the
   // owning generator advances only after successful replay completion.
-  VULKAN_EMITTER_TRAIT_RANDOM_STATE = 1u << 23
+  VULKAN_EMITTER_TRAIT_RANDOM_STATE = 1u << 23,
+  // Count reductions accumulate in the backend integer domain but always
+  // materialize the NativeOpExecutioner INT64 result contract.
+  VULKAN_EMITTER_TRAIT_COUNT_RESULT = 1u << 24
 };
 
 /**
@@ -868,6 +981,7 @@ inline bool usesContractMovementSchedule(
 inline bool hasVulkanScalarArgumentSchema(
     const VulkanKernelEmitterInfo& emitter) {
   if (emitter.argumentSchema == VulkanArgumentSchema::OPTIONAL_SCALAR ||
+      emitter.argumentSchema == VulkanArgumentSchema::OPTIONAL_SCALAR_PAIR ||
       emitter.argumentSchema == VulkanArgumentSchema::OPTIONAL_FINITE_SCALAR) {
     return true;
   }

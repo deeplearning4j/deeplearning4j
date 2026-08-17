@@ -10,11 +10,22 @@
 #if defined(HAVE_VULKAN) && HAVE_VULKAN
 
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/LegacyBroadcastBoolOp.h>
+#include <ops/declarable/LegacyBroadcastOp.h>
+#include <ops/declarable/LegacyPairwiseTransformBoolOp.h>
+#include <ops/declarable/LegacyPairwiseTransformOp.h>
 #include <ops/declarable/LegacyRandomOp.h>
+#include <ops/declarable/LegacyReduce3Op.h>
+#include <ops/declarable/LegacyReduceBoolOp.h>
 #include <ops/declarable/LegacyReduceFloatOp.h>
+#include <ops/declarable/LegacyReduceLongOp.h>
 #include <ops/declarable/LegacyReduceSameOp.h>
+#include <ops/declarable/LegacyIndexReduceOp.h>
+#include <ops/declarable/LegacyScalarBoolOp.h>
 #include <ops/declarable/LegacyScalarOp.h>
+#include <ops/declarable/LegacyStatsOp.h>
 #include <ops/declarable/LegacyTransformAnyOp.h>
+#include <ops/declarable/LegacyTransformBoolOp.h>
 #include <ops/declarable/LegacyTransformFloatOp.h>
 #include <ops/declarable/LegacyTransformSameOp.h>
 #include <ops/declarable/LegacyTransformStrictOp.h>
@@ -223,6 +234,139 @@ void registerLegacyEmitter(
         "duplicate canonical typed identity in Vulkan emitter catalog");
   }
   catalog.entries.emplace_back(std::move(info));
+}
+
+template <typename LegacyOp>
+void registerLegacyEmitterIfMissing(
+    LegacyEmitterCatalogData& catalog, VulkanLegacyOpFamily family, int opNum,
+    uint32_t dtypeSupport, uint32_t layoutSupport,
+    uint32_t emitterTraits = VULKAN_EMITTER_TRAIT_NONE) {
+  if (catalog.indices.find(VulkanLegacyOpKey(family, opNum)) !=
+      catalog.indices.end()) {
+    return;
+  }
+  // The canonical reduction families all share the NativeOpExecutioner TAD
+  // ABI.  Preserve that ABI on generated descriptors so recordability does not
+  // depend on whether a specialized recipe happened to be registered above.
+  VulkanArgumentSchema argumentSchema = VulkanArgumentSchema::NONE;
+  uint32_t traits = emitterTraits;
+  switch (family) {
+    case VulkanLegacyOpFamily::BROADCAST_BOOL:
+    case VulkanLegacyOpFamily::PAIRWISE_BOOL:
+    case VulkanLegacyOpFamily::SCALAR_BOOL:
+      if (opNum == static_cast<int>(sd::broadcast::Epsilon) ||
+          opNum == static_cast<int>(sd::pairwise::Epsilon) ||
+          opNum == static_cast<int>(sd::scalar::Epsilon) ||
+          opNum == static_cast<int>(sd::broadcast::MatchCondition) ||
+          opNum == static_cast<int>(sd::pairwise::MatchCondition) ||
+          opNum == static_cast<int>(sd::scalar::MatchCondition)) {
+        argumentSchema = VulkanArgumentSchema::OPTIONAL_SCALAR_PAIR;
+      }
+      break;
+    case VulkanLegacyOpFamily::PAIRWISE: {
+      using namespace sd::pairwise;
+      if (opNum == static_cast<int>(Axpy) ||
+          opNum == static_cast<int>(BinaryRelativeError)) {
+        argumentSchema = VulkanArgumentSchema::OPTIONAL_SCALAR;
+      } else if (opNum == static_cast<int>(BinaryMinimumAbsoluteRelativeError)) {
+        argumentSchema = VulkanArgumentSchema::OPTIONAL_SCALAR_PAIR;
+      }
+      break;
+    }
+    case VulkanLegacyOpFamily::TRANSFORM_STRICT: {
+      using namespace sd::transform;
+      if (opNum == static_cast<int>(ScaledTanh) ||
+          opNum == static_cast<int>(Affine) ||
+          opNum == static_cast<int>(SetRange)) {
+        argumentSchema = VulkanArgumentSchema::OPTIONAL_SCALAR_PAIR;
+      } else if (opNum == static_cast<int>(Stabilize)) {
+        argumentSchema = VulkanArgumentSchema::OPTIONAL_SCALAR;
+      }
+      break;
+    }
+    case VulkanLegacyOpFamily::REDUCE_SAME: {
+      using namespace sd::reduce;
+      traits |= VULKAN_EMITTER_TRAIT_BOOLEAN_PARAMETERS |
+                VULKAN_EMITTER_TRAIT_TAD_REDUCTION_PERMUTATION;
+      if (opNum == static_cast<int>(ASum) ||
+          opNum == static_cast<int>(AMax) ||
+          opNum == static_cast<int>(AMin)) {
+        traits |= VULKAN_EMITTER_TRAIT_ABSOLUTE_INPUT;
+      }
+      argumentSchema = VulkanArgumentSchema::REDUCTION_KEEPDIMS;
+      break;
+    }
+    case VulkanLegacyOpFamily::REDUCE_FLOAT: {
+      using namespace sd::reduce;
+      traits |= VULKAN_EMITTER_TRAIT_BOOLEAN_PARAMETERS |
+                VULKAN_EMITTER_TRAIT_TAD_REDUCTION_PERMUTATION |
+                VULKAN_EMITTER_TRAIT_FLOAT_RESULT;
+      if (opNum == static_cast<int>(Mean) ||
+          opNum == static_cast<int>(AMean)) {
+        traits |= VULKAN_EMITTER_TRAIT_MEAN_FINALIZE;
+      } else if (opNum == static_cast<int>(Norm1) ||
+                 opNum == static_cast<int>(NormMax)) {
+        traits |= VULKAN_EMITTER_TRAIT_ABSOLUTE_INPUT;
+      } else if (opNum == static_cast<int>(Norm2) ||
+                 opNum == static_cast<int>(NormFrobenius)) {
+        traits |= VULKAN_EMITTER_TRAIT_SQUARE_INPUT |
+                  VULKAN_EMITTER_TRAIT_SQRT_FINALIZE;
+      } else if (opNum == static_cast<int>(SquaredNorm)) {
+        traits |= VULKAN_EMITTER_TRAIT_SQUARE_INPUT;
+      }
+      if (opNum == static_cast<int>(AMean)) {
+        traits |= VULKAN_EMITTER_TRAIT_ABSOLUTE_INPUT;
+      }
+      argumentSchema = VulkanArgumentSchema::REDUCTION_KEEPDIMS;
+      break;
+    }
+    case VulkanLegacyOpFamily::REDUCE_BOOL:
+      traits |= VULKAN_EMITTER_TRAIT_BOOLEAN_PARAMETERS |
+                VULKAN_EMITTER_TRAIT_TAD_REDUCTION_PERMUTATION |
+                VULKAN_EMITTER_TRAIT_BOOLEAN_RESULT;
+      argumentSchema = VulkanArgumentSchema::REDUCTION_KEEPDIMS;
+      break;
+    case VulkanLegacyOpFamily::REDUCE_LONG:
+      traits |= VULKAN_EMITTER_TRAIT_BOOLEAN_PARAMETERS |
+                VULKAN_EMITTER_TRAIT_TAD_REDUCTION_PERMUTATION |
+                VULKAN_EMITTER_TRAIT_COUNT_RESULT;
+      argumentSchema = VulkanArgumentSchema::REDUCTION_KEEPDIMS;
+      break;
+    case VulkanLegacyOpFamily::REDUCE3:
+      traits |= VULKAN_EMITTER_TRAIT_BOOLEAN_PARAMETERS |
+                VULKAN_EMITTER_TRAIT_TAD_REDUCTION_PERMUTATION;
+      argumentSchema = VulkanArgumentSchema::REDUCTION_KEEPDIMS;
+      break;
+    case VulkanLegacyOpFamily::INDEX_REDUCE:
+      traits |= VULKAN_EMITTER_TRAIT_BOOLEAN_PARAMETERS |
+                VULKAN_EMITTER_TRAIT_TAD_REDUCTION_PERMUTATION |
+                VULKAN_EMITTER_TRAIT_INDEX_RESULT;
+      argumentSchema = VulkanArgumentSchema::INDEX_REDUCTION;
+      break;
+    case VulkanLegacyOpFamily::SUMMARY_STATS:
+      traits |= VULKAN_EMITTER_TRAIT_BOOLEAN_PARAMETERS |
+                VULKAN_EMITTER_TRAIT_TAD_REDUCTION_PERMUTATION |
+                VULKAN_EMITTER_TRAIT_FLOAT_RESULT |
+                VULKAN_EMITTER_TRAIT_BIAS_CORRECTION_ARGUMENT;
+      argumentSchema = VulkanArgumentSchema::STATISTICAL_REDUCTION;
+      break;
+    case VulkanLegacyOpFamily::RANDOM:
+      // All random descriptors consume caller-owned state. Uniform distribution
+      // has a specialized equation; the generic recipe covers the remaining
+      // distributions through the same replay-safe state contract.
+      traits |= VULKAN_EMITTER_TRAIT_RANDOM_STATE;
+      break;
+    default:
+      break;
+  }
+  registerLegacyEmitter<LegacyOp>(
+      catalog, family, opNum,
+      family == VulkanLegacyOpFamily::RANDOM
+          ? VulkanKernelRecipe::RANDOM_GENERIC
+          : (family == VulkanLegacyOpFamily::REDUCE3
+                 ? VulkanKernelRecipe::REDUCE3
+                 : VulkanKernelRecipe::LEGACY_GENERIC),
+      dtypeSupport, layoutSupport, 0, -1, traits, argumentSchema);
 }
 
 const std::vector<VulkanKernelEmitterInfo>& buildCatalog() {
@@ -1463,6 +1607,143 @@ const LegacyEmitterCatalogData& buildLegacyCatalog() {
             VULKAN_ARGUMENT_VALUES_FINITE_TARGS |
                 VULKAN_ARGUMENT_VALUES_ORDERED_TARG_PAIR));
 
+    auto registerPairwiseArithmetic = [&](int opNum,
+                                          VulkanKernelRecipe recipe,
+                                          uint32_t dtypes) {
+      registerLegacyEmitter<sd::ops::LegacyPairwiseTransformOp>(
+          result, VulkanLegacyOpFamily::PAIRWISE, opNum, recipe, dtypes,
+          kGeneralLayout);
+    };
+    registerPairwiseArithmetic(static_cast<int>(sd::pairwise::Add),
+                               VulkanKernelRecipe::ADD, kNumeric32);
+    registerPairwiseArithmetic(static_cast<int>(sd::pairwise::Subtract),
+                               VulkanKernelRecipe::SUBTRACT, kNumeric32);
+    registerPairwiseArithmetic(static_cast<int>(sd::pairwise::Multiply),
+                               VulkanKernelRecipe::MULTIPLY, kNumeric32);
+    registerPairwiseArithmetic(static_cast<int>(sd::pairwise::Divide),
+                               VulkanKernelRecipe::DIVIDE, kNumeric32);
+    registerPairwiseArithmetic(static_cast<int>(sd::pairwise::ReverseDivide),
+                               VulkanKernelRecipe::REVERSE_DIVIDE, kNumeric32);
+    registerPairwiseArithmetic(static_cast<int>(sd::pairwise::ReverseSubtract),
+                               VulkanKernelRecipe::REVERSE_SUBTRACT, kNumeric32);
+    registerPairwiseArithmetic(static_cast<int>(sd::pairwise::MaxPairwise),
+                               VulkanKernelRecipe::MAXIMUM, kNumeric32);
+    registerPairwiseArithmetic(static_cast<int>(sd::pairwise::MinPairwise),
+                               VulkanKernelRecipe::MINIMUM, kNumeric32);
+    registerPairwiseArithmetic(static_cast<int>(sd::pairwise::Remainder),
+                               VulkanKernelRecipe::MOD, kNumeric32);
+    registerPairwiseArithmetic(static_cast<int>(sd::pairwise::FMod),
+                               VulkanKernelRecipe::MOD, kFloat);
+    registerPairwiseArithmetic(static_cast<int>(sd::pairwise::Atan2),
+                               VulkanKernelRecipe::ATAN2, kFloat);
+    registerPairwiseArithmetic(static_cast<int>(sd::pairwise::FloorDiv),
+                               VulkanKernelRecipe::FLOOR_DIVIDE, kNumeric32);
+    registerPairwiseArithmetic(static_cast<int>(sd::pairwise::FloorMod),
+                               VulkanKernelRecipe::FLOOR_MOD, kNumeric32);
+    registerPairwiseArithmetic(static_cast<int>(sd::pairwise::SquaredSubtract),
+                               VulkanKernelRecipe::SQUARED_SUBTRACT, kNumeric32);
+    registerPairwiseArithmetic(static_cast<int>(sd::pairwise::ReverseMod),
+                               VulkanKernelRecipe::MOD, kNumeric32);
+    registerPairwiseArithmetic(static_cast<int>(sd::pairwise::Mod),
+                               VulkanKernelRecipe::MOD, kNumeric32);
+    registerPairwiseArithmetic(static_cast<int>(sd::pairwise::DivideNoNan),
+                               VulkanKernelRecipe::DIVIDE, kNumeric32);
+
+    auto registerBroadcastArithmetic = [&](int opNum,
+                                           VulkanKernelRecipe recipe,
+                                           uint32_t dtypes) {
+      registerLegacyEmitter<sd::ops::LegacyBroadcastOp>(
+          result, VulkanLegacyOpFamily::BROADCAST, opNum, recipe, dtypes,
+          kGeneralLayout);
+    };
+    registerBroadcastArithmetic(static_cast<int>(sd::broadcast::Add),
+                                VulkanKernelRecipe::ADD, kNumeric32);
+    registerBroadcastArithmetic(static_cast<int>(sd::broadcast::Subtract),
+                                VulkanKernelRecipe::SUBTRACT, kNumeric32);
+    registerBroadcastArithmetic(static_cast<int>(sd::broadcast::Multiply),
+                                VulkanKernelRecipe::MULTIPLY, kNumeric32);
+    registerBroadcastArithmetic(static_cast<int>(sd::broadcast::Divide),
+                                VulkanKernelRecipe::DIVIDE, kNumeric32);
+    registerBroadcastArithmetic(static_cast<int>(sd::broadcast::ReverseDivide),
+                                VulkanKernelRecipe::REVERSE_DIVIDE, kNumeric32);
+    registerBroadcastArithmetic(static_cast<int>(sd::broadcast::ReverseSubtract),
+                                VulkanKernelRecipe::REVERSE_SUBTRACT, kNumeric32);
+    registerBroadcastArithmetic(static_cast<int>(sd::broadcast::Pow),
+                                VulkanKernelRecipe::POWER, kFloat);
+    registerBroadcastArithmetic(static_cast<int>(sd::broadcast::MinPairwise),
+                                VulkanKernelRecipe::MINIMUM, kNumeric32);
+    registerBroadcastArithmetic(static_cast<int>(sd::broadcast::MaxPairwise),
+                                VulkanKernelRecipe::MAXIMUM, kNumeric32);
+    registerBroadcastArithmetic(static_cast<int>(sd::broadcast::SquaredSubtract),
+                                VulkanKernelRecipe::SQUARED_SUBTRACT, kNumeric32);
+    registerBroadcastArithmetic(static_cast<int>(sd::broadcast::FloorMod),
+                                VulkanKernelRecipe::FLOOR_MOD, kNumeric32);
+    registerBroadcastArithmetic(static_cast<int>(sd::broadcast::FloorDiv),
+                                VulkanKernelRecipe::FLOOR_DIVIDE, kNumeric32);
+    registerBroadcastArithmetic(static_cast<int>(sd::broadcast::ReverseMod),
+                                VulkanKernelRecipe::MOD, kNumeric32);
+    registerBroadcastArithmetic(static_cast<int>(sd::broadcast::Mod),
+                                VulkanKernelRecipe::MOD, kNumeric32);
+    registerBroadcastArithmetic(static_cast<int>(sd::broadcast::Atan2),
+                                VulkanKernelRecipe::ATAN2, kFloat);
+
+    auto registerPairwiseComparison = [&](int opNum,
+                                          VulkanKernelRecipe recipe) {
+      registerLegacyEmitter<sd::ops::LegacyPairwiseTransformBoolOp>(
+          result, VulkanLegacyOpFamily::PAIRWISE_BOOL, opNum, recipe,
+          kNumeric32WithBool, kGeneralLayout);
+    };
+    registerPairwiseComparison(static_cast<int>(sd::pairwise::EqualTo),
+                               VulkanKernelRecipe::EQUAL);
+    registerPairwiseComparison(static_cast<int>(sd::pairwise::GreaterThan),
+                               VulkanKernelRecipe::GREATER);
+    registerPairwiseComparison(static_cast<int>(sd::pairwise::LessThan),
+                               VulkanKernelRecipe::LESS);
+    registerPairwiseComparison(static_cast<int>(sd::pairwise::GreaterThanOrEqual),
+                               VulkanKernelRecipe::GREATER_EQUAL);
+    registerPairwiseComparison(static_cast<int>(sd::pairwise::NotEqualTo),
+                               VulkanKernelRecipe::NOT_EQUAL);
+    registerPairwiseComparison(static_cast<int>(sd::pairwise::LessThanOrEqual),
+                               VulkanKernelRecipe::LESS_EQUAL);
+
+    auto registerBroadcastComparison = [&](int opNum,
+                                           VulkanKernelRecipe recipe) {
+      registerLegacyEmitter<sd::ops::LegacyBroadcastBoolOp>(
+          result, VulkanLegacyOpFamily::BROADCAST_BOOL, opNum, recipe,
+          kNumeric32WithBool, kGeneralLayout);
+    };
+    registerBroadcastComparison(static_cast<int>(sd::broadcast::EqualTo),
+                                VulkanKernelRecipe::EQUAL);
+    registerBroadcastComparison(static_cast<int>(sd::broadcast::GreaterThan),
+                                VulkanKernelRecipe::GREATER);
+    registerBroadcastComparison(static_cast<int>(sd::broadcast::LessThan),
+                                VulkanKernelRecipe::LESS);
+    registerBroadcastComparison(static_cast<int>(sd::broadcast::GreaterThanOrEqual),
+                                VulkanKernelRecipe::GREATER_EQUAL);
+    registerBroadcastComparison(static_cast<int>(sd::broadcast::NotEqualTo),
+                                VulkanKernelRecipe::NOT_EQUAL);
+    registerBroadcastComparison(static_cast<int>(sd::broadcast::LessThanOrEqual),
+                                VulkanKernelRecipe::LESS_EQUAL);
+
+    auto registerScalarComparison = [&](int opNum,
+                                        VulkanKernelRecipe recipe) {
+      registerLegacyEmitter<sd::ops::LegacyScalarBoolOp>(
+          result, VulkanLegacyOpFamily::SCALAR_BOOL, opNum, recipe, kNumeric32WithBool,
+          kGeneralLayout);
+    };
+    registerScalarComparison(static_cast<int>(sd::scalar::EqualTo),
+                             VulkanKernelRecipe::EQUAL);
+    registerScalarComparison(static_cast<int>(sd::scalar::GreaterThan),
+                             VulkanKernelRecipe::GREATER);
+    registerScalarComparison(static_cast<int>(sd::scalar::LessThan),
+                             VulkanKernelRecipe::LESS);
+    registerScalarComparison(static_cast<int>(sd::scalar::GreaterThanOrEqual),
+                             VulkanKernelRecipe::GREATER_EQUAL);
+    registerScalarComparison(static_cast<int>(sd::scalar::NotEqualTo),
+                             VulkanKernelRecipe::NOT_EQUAL);
+    registerScalarComparison(static_cast<int>(sd::scalar::LessThanOrEqual),
+                             VulkanKernelRecipe::LESS_EQUAL);
+
     registerLegacyEmitter<sd::ops::LegacyScalarOp>(
         result, VulkanLegacyOpFamily::SCALAR,
         static_cast<int>(sd::scalar::Add),
@@ -1479,6 +1760,70 @@ const LegacyEmitterCatalogData& buildLegacyCatalog() {
         result, VulkanLegacyOpFamily::SCALAR,
         static_cast<int>(sd::scalar::RELU),
         VulkanKernelRecipe::MAXIMUM, kFloat, kGeneralLayout);
+    registerLegacyEmitter<sd::ops::LegacyScalarOp>(
+        result, VulkanLegacyOpFamily::SCALAR,
+        static_cast<int>(sd::scalar::Subtract),
+        VulkanKernelRecipe::SUBTRACT, kNumeric32, kGeneralLayout);
+    registerLegacyEmitter<sd::ops::LegacyScalarOp>(
+        result, VulkanLegacyOpFamily::SCALAR,
+        static_cast<int>(sd::scalar::Divide),
+        VulkanKernelRecipe::DIVIDE, kNumeric32, kGeneralLayout);
+    registerLegacyEmitter<sd::ops::LegacyScalarOp>(
+        result, VulkanLegacyOpFamily::SCALAR,
+        static_cast<int>(sd::scalar::ReverseDivide),
+        VulkanKernelRecipe::REVERSE_DIVIDE, kNumeric32, kGeneralLayout);
+    registerLegacyEmitter<sd::ops::LegacyScalarOp>(
+        result, VulkanLegacyOpFamily::SCALAR,
+        static_cast<int>(sd::scalar::ReverseSubtract),
+        VulkanKernelRecipe::REVERSE_SUBTRACT, kNumeric32, kGeneralLayout);
+    registerLegacyEmitter<sd::ops::LegacyScalarOp>(
+        result, VulkanLegacyOpFamily::SCALAR,
+        static_cast<int>(sd::scalar::MaxPairwise),
+        VulkanKernelRecipe::MAXIMUM, kNumeric32, kGeneralLayout);
+    registerLegacyEmitter<sd::ops::LegacyScalarOp>(
+        result, VulkanLegacyOpFamily::SCALAR,
+        static_cast<int>(sd::scalar::MinPairwise),
+        VulkanKernelRecipe::MINIMUM, kNumeric32, kGeneralLayout);
+    registerLegacyEmitter<sd::ops::LegacyScalarOp>(
+        result, VulkanLegacyOpFamily::SCALAR,
+        static_cast<int>(sd::scalar::Mod),
+        VulkanKernelRecipe::MOD, kNumeric32, kGeneralLayout);
+    registerLegacyEmitter<sd::ops::LegacyScalarOp>(
+        result, VulkanLegacyOpFamily::SCALAR,
+        static_cast<int>(sd::scalar::ReverseMod),
+        VulkanKernelRecipe::MOD, kNumeric32, kGeneralLayout);
+    registerLegacyEmitter<sd::ops::LegacyScalarOp>(
+        result, VulkanLegacyOpFamily::SCALAR,
+        static_cast<int>(sd::scalar::Remainder),
+        VulkanKernelRecipe::MOD, kNumeric32, kGeneralLayout);
+    registerLegacyEmitter<sd::ops::LegacyScalarOp>(
+        result, VulkanLegacyOpFamily::SCALAR,
+        static_cast<int>(sd::scalar::FMod),
+        VulkanKernelRecipe::MOD, kFloat, kGeneralLayout);
+    registerLegacyEmitter<sd::ops::LegacyScalarOp>(
+        result, VulkanLegacyOpFamily::SCALAR,
+        static_cast<int>(sd::scalar::TruncateDiv),
+        VulkanKernelRecipe::DIVIDE, kNumeric32, kGeneralLayout);
+    registerLegacyEmitter<sd::ops::LegacyScalarOp>(
+        result, VulkanLegacyOpFamily::SCALAR,
+        static_cast<int>(sd::scalar::FloorDiv),
+        VulkanKernelRecipe::FLOOR_DIVIDE, kNumeric32, kGeneralLayout);
+    registerLegacyEmitter<sd::ops::LegacyScalarOp>(
+        result, VulkanLegacyOpFamily::SCALAR,
+        static_cast<int>(sd::scalar::FloorMod),
+        VulkanKernelRecipe::FLOOR_MOD, kNumeric32, kGeneralLayout);
+    registerLegacyEmitter<sd::ops::LegacyScalarOp>(
+        result, VulkanLegacyOpFamily::SCALAR,
+        static_cast<int>(sd::scalar::SquaredSubtract),
+        VulkanKernelRecipe::SQUARED_SUBTRACT, kNumeric32, kGeneralLayout);
+    registerLegacyEmitter<sd::ops::LegacyScalarOp>(
+        result, VulkanLegacyOpFamily::SCALAR,
+        static_cast<int>(sd::scalar::Atan2),
+        VulkanKernelRecipe::ATAN2, kFloat, kGeneralLayout);
+    registerLegacyEmitter<sd::ops::LegacyScalarOp>(
+        result, VulkanLegacyOpFamily::SCALAR,
+        static_cast<int>(sd::scalar::Pow),
+        VulkanKernelRecipe::POWER, kFloat, kGeneralLayout);
 
     constexpr uint32_t reductionParameters =
         VULKAN_EMITTER_TRAIT_BOOLEAN_PARAMETERS |
@@ -1532,6 +1877,105 @@ const LegacyEmitterCatalogData& buildLegacyCatalog() {
             VULKAN_EMITTER_TRAIT_SQRT_FINALIZE,
         VulkanArgumentSchema::REDUCTION_KEEPDIMS);
 
+    // Every canonical legacy identity gets a typed descriptor, even when no
+    // specialized recipe has been added yet.  The identity remains explicit in
+    // the catalog and the lowerer selects its semantics from the same family/op
+    // number, so unsupported operations fail at the device contract boundary
+    // instead of silently falling back to a host implementation.
+    for (const auto& entry : VulkanLegacyOpCatalog::entries()) {
+      switch (entry.family()) {
+        case VulkanLegacyOpFamily::BROADCAST:
+          registerLegacyEmitterIfMissing<sd::ops::LegacyBroadcastOp>(
+              result, entry.family(), entry.opNum(), kNumeric32, kGeneralLayout);
+          break;
+        case VulkanLegacyOpFamily::BROADCAST_BOOL:
+          registerLegacyEmitterIfMissing<sd::ops::LegacyBroadcastBoolOp>(
+              result, entry.family(), entry.opNum(), kNumeric32WithBool, kGeneralLayout);
+          break;
+        case VulkanLegacyOpFamily::BROADCAST_INT:
+          registerLegacyEmitterIfMissing<sd::ops::LegacyBroadcastOp>(
+              result, entry.family(), entry.opNum(), kNumeric32, kGeneralLayout);
+          break;
+        case VulkanLegacyOpFamily::PAIRWISE:
+          registerLegacyEmitterIfMissing<sd::ops::LegacyPairwiseTransformOp>(
+              result, entry.family(), entry.opNum(), kNumeric32, kGeneralLayout);
+          break;
+        case VulkanLegacyOpFamily::PAIRWISE_BOOL:
+          registerLegacyEmitterIfMissing<sd::ops::LegacyPairwiseTransformBoolOp>(
+              result, entry.family(), entry.opNum(), kNumeric32WithBool, kGeneralLayout);
+          break;
+        case VulkanLegacyOpFamily::PAIRWISE_INT:
+          registerLegacyEmitterIfMissing<sd::ops::LegacyPairwiseTransformOp>(
+              result, entry.family(), entry.opNum(), kNumeric32, kGeneralLayout);
+          break;
+        case VulkanLegacyOpFamily::SCALAR:
+          registerLegacyEmitterIfMissing<sd::ops::LegacyScalarOp>(
+              result, entry.family(), entry.opNum(), kNumeric32, kGeneralLayout);
+          break;
+        case VulkanLegacyOpFamily::SCALAR_BOOL:
+          registerLegacyEmitterIfMissing<sd::ops::LegacyScalarBoolOp>(
+              result, entry.family(), entry.opNum(), kNumeric32WithBool, kGeneralLayout);
+          break;
+        case VulkanLegacyOpFamily::SCALAR_INT:
+          registerLegacyEmitterIfMissing<sd::ops::LegacyScalarOp>(
+              result, entry.family(), entry.opNum(), kNumeric32, kGeneralLayout);
+          break;
+        case VulkanLegacyOpFamily::TRANSFORM_SAME:
+          registerLegacyEmitterIfMissing<sd::ops::LegacyTransformSameOp>(
+              result, entry.family(), entry.opNum(), kNumeric32, kGeneralLayout);
+          break;
+        case VulkanLegacyOpFamily::TRANSFORM_STRICT:
+          registerLegacyEmitterIfMissing<sd::ops::LegacyTransformStrictOp>(
+              result, entry.family(), entry.opNum(), kNumeric32, kGeneralLayout);
+          break;
+        case VulkanLegacyOpFamily::TRANSFORM_FLOAT:
+          registerLegacyEmitterIfMissing<sd::ops::LegacyTransformFloatOp>(
+              result, entry.family(), entry.opNum(), kFloat, kGeneralLayout);
+          break;
+        case VulkanLegacyOpFamily::TRANSFORM_BOOL:
+          registerLegacyEmitterIfMissing<sd::ops::LegacyTransformBoolOp>(
+              result, entry.family(), entry.opNum(), kNumeric32WithBool, kGeneralLayout,
+              VULKAN_EMITTER_TRAIT_BOOLEAN_RESULT);
+          break;
+        case VulkanLegacyOpFamily::TRANSFORM_ANY:
+          registerLegacyEmitterIfMissing<sd::ops::LegacyTransformAnyOp>(
+              result, entry.family(), entry.opNum(), kNumericWithIndex, kGeneralLayout);
+          break;
+        case VulkanLegacyOpFamily::REDUCE_SAME:
+          registerLegacyEmitterIfMissing<sd::ops::LegacyReduceSameOp>(
+              result, entry.family(), entry.opNum(), kNumeric32, kStridedLayout);
+          break;
+        case VulkanLegacyOpFamily::REDUCE_FLOAT:
+          registerLegacyEmitterIfMissing<sd::ops::LegacyReduceFloatOp>(
+              result, entry.family(), entry.opNum(), kFloat, kStridedLayout);
+          break;
+        case VulkanLegacyOpFamily::REDUCE_BOOL:
+          registerLegacyEmitterIfMissing<sd::ops::LegacyReduceBoolOp>(
+              result, entry.family(), entry.opNum(), kNumeric32WithBool, kStridedLayout);
+          break;
+        case VulkanLegacyOpFamily::REDUCE_LONG:
+          registerLegacyEmitterIfMissing<sd::ops::LegacyReduceLongOp>(
+              result, entry.family(), entry.opNum(), kNumeric32, kStridedLayout);
+          break;
+        case VulkanLegacyOpFamily::REDUCE3:
+          registerLegacyEmitterIfMissing<sd::ops::LegacyReduce3Op>(
+              result, entry.family(), entry.opNum(), kNumeric32, kStridedLayout);
+          break;
+        case VulkanLegacyOpFamily::INDEX_REDUCE:
+          registerLegacyEmitterIfMissing<sd::ops::LegacyIndexReduceOp>(
+              result, entry.family(), entry.opNum(), kNumeric32, kStridedLayout);
+          break;
+        case VulkanLegacyOpFamily::SUMMARY_STATS:
+          registerLegacyEmitterIfMissing<sd::ops::LegacyStatsOp>(
+              result, entry.family(), entry.opNum(), kFloat, kStridedLayout);
+          break;
+        case VulkanLegacyOpFamily::RANDOM:
+          registerLegacyEmitterIfMissing<sd::ops::LegacyRandomOp>(
+              result, entry.family(), entry.opNum(), kFloat, kStridedLayout);
+          break;
+      }
+    }
+
     return result;
   }();
   return catalog;
@@ -1575,7 +2019,8 @@ VulkanKernelFamily vulkanKernelFamily(
   if (hasAny(sd::ops::OP_TRAIT_REDUCTION)) {
     return VulkanKernelFamily::REDUCTION;
   }
-  if (hasAny(sd::ops::OP_TRAIT_CONSTANT_GENERATION)) {
+  if (hasAny(sd::ops::OP_TRAIT_CONSTANT_GENERATION) ||
+      (emitter.emitterTraits & VULKAN_EMITTER_TRAIT_RANDOM_STATE) != 0) {
     return VulkanKernelFamily::CONSTANT_GENERATION;
   }
   constexpr uint32_t kDataMovementTraits =

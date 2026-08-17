@@ -114,6 +114,15 @@ std::string mlirFloatLiteral(double value) {
   return literal.str();
 }
 
+std::string mlirScalarLiteral(double value, const std::string& type) {
+  if (!type.empty() && type.front() == 'f') {
+    return mlirFloatLiteral(value) + " : " + type;
+  }
+  std::ostringstream literal;
+  literal << static_cast<long long>(value) << " : " << type;
+  return literal.str();
+}
+
 struct DispatchGeometry {
   uint32_t x = 1;
   uint32_t y = 1;
@@ -741,6 +750,11 @@ static bool unaryArgumentsMatch(const VulkanKernelEmitterInfo& emitter,
       // descriptors declare one TArg while their implementation deliberately
       // supplies a semantic default when it is absent (for example relu).
       return numIn == 1 && slot.args.numTArgs <= 1;
+    case VulkanArgumentSchema::OPTIONAL_SCALAR_PAIR:
+      // Parameterized legacy equations may consume one or two scalar
+      // parameters. The descriptor remains valid when either parameter uses
+      // its native default, so the executable ABI is an optional pair.
+      return numIn == 1 && slot.args.numTArgs <= 2;
     case VulkanArgumentSchema::OPTIONAL_FINITE_SCALAR:
       return numIn == 1 && slot.args.numTArgs <= 1 &&
              (slot.args.numTArgs == 0 ||
@@ -754,6 +768,12 @@ static bool unaryProducesFloatingOutput(
     const VulkanKernelEmitterInfo& emitter) {
   return hasVulkanEmitterTrait(
       emitter, VULKAN_EMITTER_TRAIT_FLOAT_RESULT);
+}
+
+static bool unaryProducesBooleanOutput(
+    const VulkanKernelEmitterInfo& emitter) {
+  return hasVulkanEmitterTrait(
+      emitter, VULKAN_EMITTER_TRAIT_BOOLEAN_RESULT);
 }
 
 static bool isActivationBackward(
@@ -793,6 +813,8 @@ static bool reductionForSlot(const NativeSlot& slot, NDArray* input,
       emitter.argumentSchema == VulkanArgumentSchema::INDEX_REDUCTION;
   const bool acceptsBooleanParameters = hasVulkanEmitterTrait(
       emitter, VULKAN_EMITTER_TRAIT_BOOLEAN_PARAMETERS);
+  const bool countReduction = hasVulkanEmitterTrait(
+      emitter, VULKAN_EMITTER_TRAIT_COUNT_RESULT);
   if (rank < 1 || slot.args.numIArgs > rank ||
       slot.args.numSArgs != 0 ||
       !outputDataTypeArgumentsMatch(slot, outputs, numOut)) {
@@ -840,7 +862,8 @@ static bool reductionForSlot(const NativeSlot& slot, NDArray* input,
       }
       keepDims = slot.args.numBArgs == 1
                      ? slot.args.bArgs[0]
-                     : (slot.args.numTArgs == 1 && slot.args.tArgs[0] != 0.0);
+                     : (!countReduction && slot.args.numTArgs == 1 &&
+                        slot.args.tArgs[0] != 0.0);
       break;
     }
     default:
@@ -2301,7 +2324,41 @@ static bool opIsRecordableTyped(const NativeSlot& slot,
              (slot.args.numTArgs == 0 ||
               std::isfinite(slot.args.tArgs[0]));
     }
-    if (slot.args.numTArgs != 0) return false;
+    const auto legacyFamily =
+        vulkanLegacyFamilyFromTypeCode(slot.legacy.legacyOpType);
+    const bool scalarLegacy =
+        legacyFamily.has_value() &&
+        (*legacyFamily == VulkanLegacyOpFamily::SCALAR ||
+         *legacyFamily == VulkanLegacyOpFamily::SCALAR_BOOL) &&
+        numIn == 1;
+    const bool scalarBooleanComparison =
+        scalarLegacy && *legacyFamily == VulkanLegacyOpFamily::SCALAR_BOOL &&
+        emitter->recipe != VulkanKernelRecipe::UNSUPPORTED &&
+        (emitter->recipe == VulkanKernelRecipe::EPSILON_COMPARE ||
+         emitter->recipe == VulkanKernelRecipe::MATCH_CONDITION);
+    if ((!scalarLegacy && slot.args.numTArgs != 0) ||
+        (scalarLegacy &&
+         (!scalarBooleanComparison &&
+          (slot.args.numTArgs != 1 ||
+           !std::isfinite(slot.args.tArgs[0]))) ||
+         (scalarBooleanComparison &&
+          ((emitter->recipe == VulkanKernelRecipe::EPSILON_COMPARE &&
+            slot.args.numTArgs > 1) ||
+           (emitter->recipe == VulkanKernelRecipe::MATCH_CONDITION &&
+            slot.args.numTArgs > 3) ||
+           std::any_of(slot.args.tArgs,
+                       slot.args.tArgs + slot.args.numTArgs,
+                       [](double value) { return !std::isfinite(value); }))))) {
+      return false;
+    }
+    if (scalarLegacy) {
+      const bool scalarBoolean =
+          *legacyFamily == VulkanLegacyOpFamily::SCALAR_BOOL;
+      return DataTypeUtils::isR(inputs[0]->dataType()) &&
+             (scalarBoolean ? DataTypeUtils::isB(outputs[0]->dataType())
+                            : inputs[0]->dataType() == outputs[0]->dataType()) &&
+             inputs[0]->isSameShape(outputs[0]);
+    }
     if (hasVulkanOpTrait(*emitter, sd::ops::OP_TRAIT_IDENTITY) &&
         numIn == 1) {
       return inputs[0]->isSameShape(outputs[0]);
@@ -2348,6 +2405,10 @@ static bool opIsRecordableTyped(const NativeSlot& slot,
     if (unaryProducesFloatingOutput(*emitter)) {
       return inputs[0]->isSameShape(outputs[0]) &&
              DataTypeUtils::isR(outputs[0]->dataType());
+    }
+    if (unaryProducesBooleanOutput(*emitter)) {
+      return inputs[0]->isSameShape(outputs[0]) &&
+             outputs[0]->dataType() == DataType::BOOL;
     }
     return sameShapeAndType(inputs[0], outputs[0]);
   }
@@ -2504,12 +2565,24 @@ static bool opIsRecordableTyped(const NativeSlot& slot,
   // ── Replay-safe constant generation ─────────────────────────────────────
   if constexpr (Policy::constant) {
     const auto* emitter = emitterForSlot(slot);
+    const bool randomState =
+        emitter != nullptr &&
+        hasVulkanEmitterTrait(*emitter, VULKAN_EMITTER_TRAIT_RANDOM_STATE);
     if (emitter == nullptr ||
-        emitter->argumentContract.alternativeCount == 0 ||
-        !argumentContractMatchesSlot(
-            *emitter, slot, numIn, numOut, outputs) ||
-        !argumentContractValuesMatch(*emitter, slot)) {
+        (!randomState && emitter->argumentContract.alternativeCount == 0) ||
+        (!randomState &&
+         (!argumentContractMatchesSlot(
+              *emitter, slot, numIn, numOut, outputs) ||
+          !argumentContractValuesMatch(*emitter, slot)))) {
       return false;
+    }
+    if (randomState &&
+        (numOut != 1 || !DataTypeUtils::isR(outputs[0]->dataType()) ||
+         numIn > 8 || slot.args.numTArgs > 4)) {
+      return false;
+    }
+    for (int i = 0; randomState && i < slot.args.numTArgs; ++i) {
+      if (!std::isfinite(slot.args.tArgs[i])) return false;
     }
 
     if (emitter->recipe == VulkanKernelRecipe::MIN_MAX_DATATYPE) {
@@ -3242,21 +3315,53 @@ static bool opIsRecordableTyped(const NativeSlot& slot,
   }
 
   if constexpr (Policy::reduction) {
-    if (numIn != 1 || numOut != 1 || inputs[0]->rankOf() < 1) {
+    const auto* emitter = emitterForSlot(slot);
+    if (emitter == nullptr || numOut != 1 || inputs[0] == nullptr ||
+        inputs[0]->rankOf() < 1) {
       return false;
     }
-
-    const auto* emitter = emitterForSlot(slot);
-    if (emitter == nullptr) return false;
+    const bool reduce3 = emitter->recipe == VulkanKernelRecipe::REDUCE3;
+    if ((reduce3 ? numIn != 2 : numIn != 1) ||
+        (reduce3 && (inputs[1] == nullptr ||
+                     !inputs[0]->isSameShape(inputs[1])))) {
+      return false;
+    }
     const bool indexReduction = hasVulkanEmitterTrait(
         *emitter, VULKAN_EMITTER_TRAIT_INDEX_RESULT);
-    if (indexReduction) {
+    const bool countReduction = hasVulkanEmitterTrait(
+        *emitter, VULKAN_EMITTER_TRAIT_COUNT_RESULT);
+    if (reduce3) {
+      if (!DataTypeUtils::isR(inputs[0]->dataType()) ||
+          !DataTypeUtils::isR(inputs[1]->dataType()) ||
+          !DataTypeUtils::isR(outputs[0]->dataType()) ||
+          slot.args.numTArgs > 1 || slot.args.numBArgs > 1 ||
+          (slot.args.numTArgs == 1 &&
+           !std::isfinite(slot.args.tArgs[0]))) {
+        return false;
+      }
+    } else if (countReduction) {
+      if (outputs[0]->dataType() != DataType::INT64 ||
+          !DataTypeUtils::isR(inputs[0]->dataType()) ||
+          slot.args.numTArgs > 1 || slot.args.numBArgs > 1 ||
+          (slot.args.numTArgs == 1 &&
+           !std::isfinite(slot.args.tArgs[0]))) {
+        return false;
+      }
+    }
+    if (reduce3) {
+      // Reduce3 always materializes a floating result, including integer input.
+      if (!DataTypeUtils::isR(outputs[0]->dataType())) return false;
+    } else if (indexReduction) {
       const auto outputType = outputs[0]->dataType();
       if ((outputType != DataType::INT32 &&
            outputType != DataType::UINT32) ||
           slot.args.numDArgs != 1 || slot.args.dArgs[0] != outputType) {
         return false;
       }
+    } else if (countReduction) {
+      // Legacy reduce-long always materializes the NativeOpExecutioner INT64
+      // result, irrespective of the input storage type.
+      if (outputs[0]->dataType() != DataType::INT64) return false;
     } else if (reductionProducesFloatingOutput(*emitter)) {
       if (!DataTypeUtils::isR(outputs[0]->dataType())) return false;
     } else if (outputs[0]->dataType() != inputs[0]->dataType()) {
@@ -4848,6 +4953,61 @@ static std::string emitVulkanOp(const NativeSlot& slot,
   // ── elementwise binary ───────────────────────────────────────────────────
   if constexpr (Policy::binary) {
     const auto* emitter = emitterForSlot(slot);
+    const auto legacyFamily =
+        vulkanLegacyFamilyFromTypeCode(slot.legacy.legacyOpType);
+    const bool scalarLegacy =
+        legacyFamily.has_value() &&
+        (*legacyFamily == VulkanLegacyOpFamily::SCALAR ||
+         *legacyFamily == VulkanLegacyOpFamily::SCALAR_BOOL) &&
+        numIn == 1 && slot.args.numTArgs == 1;
+    if (scalarLegacy) {
+      std::string aTs, aAcc, cTs, cAcc;
+      bool aUnsigned = false;
+      bool cUnsigned = false;
+      if (!selectMlirScalarTypes(inputs[0]->dataType(), caps, aTs, aAcc,
+                                 aUnsigned) ||
+          !selectMlirScalarTypes(outputs[0]->dataType(), caps, cTs, cAcc,
+                                 cUnsigned)) {
+        return "";
+      }
+      if (*legacyFamily == VulkanLegacyOpFamily::SCALAR_BOOL) cAcc = aAcc;
+      const int rank = outputs[0]->rankOf();
+      std::ostringstream dimensions;
+      std::string iterTypes;
+      for (int d = 0; d < rank; ++d) {
+        if (d != 0) dimensions << ", ";
+        dimensions << "d" << d;
+        if (d != 0) iterTypes += ", ";
+        iterTypes += "\"parallel\"";
+      }
+      const std::string dims = dimensions.str();
+      const std::string identityMap =
+          "affine_map<(" + dims + ") -> (" + dims + ")>";
+      const std::string aType = mlirMemrefBody(inputs[0], aTs);
+      const std::string cType = mlirMemrefBody(outputs[0], cTs);
+      ss << "module {\n"
+         << "  func.func @main(%A: memref<" << aType << ">, %C: memref<"
+         << cType << ">) {\n"
+         << "    linalg.generic {" << emitterIdentityAttributes(slot)
+         << ", nd4j.accumulator_type = " << cAcc
+         << ", nd4j.binary = true, nd4j.scalar_present = true"
+         << ", nd4j.scalar = "
+         << mlirScalarLiteral(slot.args.tArgs[0], cAcc)
+         << ", nd4j.input0_unsigned = " << (aUnsigned ? "true" : "false")
+         << ", nd4j.output_unsigned = " << (cUnsigned ? "true" : "false")
+         << ",\n                    indexing_maps = [" << identityMap << ", "
+         << identityMap << "],\n                    iterator_types = [" << iterTypes
+         << "]}\n"
+         << "      ins(%A : memref<" << aType << ">)\n"
+         << "      outs(%C : memref<" << cType << ">) {\n"
+         << "      ^bb0(%av: " << aTs << ", %cv: " << cTs << "):\n"
+         << "        linalg.yield %cv : " << cTs << "\n"
+         << "    }\n"
+         << "    return\n"
+         << "  }\n"
+         << "}\n";
+      return ss.str();
+    }
     const bool unaryAssign =
         emitter != nullptr &&
         hasVulkanOpTrait(*emitter, sd::ops::OP_TRAIT_IDENTITY) &&
@@ -4927,6 +5087,28 @@ static std::string emitVulkanOp(const NativeSlot& slot,
     if (emitter != nullptr &&
         hasVulkanScalarArgumentSchema(*emitter)) {
       double parameter = 0.0;
+      double scalar0 = 0.0;
+      double scalar1 = 0.0;
+      const bool emitsScalarPair =
+          emitter->recipe == VulkanKernelRecipe::AXPY ||
+          emitter->recipe == VulkanKernelRecipe::BINARY_RELATIVE_ERROR ||
+          emitter->recipe ==
+              VulkanKernelRecipe::BINARY_MINIMUM_ABSOLUTE_RELATIVE_ERROR ||
+          emitter->recipe == VulkanKernelRecipe::EPSILON_COMPARE ||
+          emitter->recipe == VulkanKernelRecipe::MATCH_CONDITION;
+      if (emitter->recipe == VulkanKernelRecipe::AXPY ||
+          emitter->recipe == VulkanKernelRecipe::BINARY_RELATIVE_ERROR) {
+        scalar0 = slot.args.numTArgs == 1 ? slot.args.tArgs[0] : 0.0;
+      } else if (emitter->recipe ==
+                 VulkanKernelRecipe::BINARY_MINIMUM_ABSOLUTE_RELATIVE_ERROR) {
+        scalar0 = slot.args.numTArgs > 0 ? slot.args.tArgs[0] : 0.0;
+        scalar1 = slot.args.numTArgs > 1 ? slot.args.tArgs[1] : 0.0;
+      } else if (emitter->recipe == VulkanKernelRecipe::EPSILON_COMPARE) {
+        scalar0 = slot.args.numTArgs > 0 ? slot.args.tArgs[0] : 1e-5;
+      } else if (emitter->recipe == VulkanKernelRecipe::MATCH_CONDITION) {
+        scalar0 = slot.args.numTArgs > 0 ? slot.args.tArgs[0] : 0.0;
+        scalar1 = slot.args.numTArgs > 1 ? slot.args.tArgs[1] : 0.0;
+      }
       if (emitter->recipe == VulkanKernelRecipe::ELU_BP) {
         parameter = 1.0;
       } else if (emitter->recipe == VulkanKernelRecipe::LEAKY_RELU_BP) {
@@ -4941,9 +5123,15 @@ static std::string emitVulkanOp(const NativeSlot& slot,
       }
       semanticAttributes << std::scientific
                          << std::setprecision(
-                                std::numeric_limits<double>::max_digits10)
-                         << ", nd4j.parameter = " << parameter
-                         << " : " << cAcc;
+                                std::numeric_limits<double>::max_digits10);
+      if (emitsScalarPair) {
+        semanticAttributes << ", nd4j.scalar0 = " << scalar0
+                           << " : f64, nd4j.scalar1 = " << scalar1
+                           << " : f64";
+      } else {
+        semanticAttributes << ", nd4j.parameter = " << parameter
+                           << " : " << cAcc;
+      }
     }
 
     auto dimList = [&]() {
@@ -5118,6 +5306,15 @@ static std::string emitVulkanOp(const NativeSlot& slot,
       case VulkanKernelRecipe::CLIP_BY_VALUE:
         scalar0 = slot.args.tArgs[0];
         scalar1 = slot.args.tArgs[1];
+        break;
+      case VulkanKernelRecipe::SCALED_TANH:
+      case VulkanKernelRecipe::AFFINE:
+      case VulkanKernelRecipe::SET_RANGE:
+        scalar0 = slot.args.numTArgs > 0 ? slot.args.tArgs[0] : 0.0;
+        scalar1 = slot.args.numTArgs > 1 ? slot.args.tArgs[1] : 1.0;
+        break;
+      case VulkanKernelRecipe::STABILIZE:
+        scalar0 = slot.args.numTArgs > 0 ? slot.args.tArgs[0] : 1e-5;
         break;
       default:
         break;
@@ -5617,28 +5814,85 @@ static std::string emitVulkanOp(const NativeSlot& slot,
         "affine_map<(" + dims + ") -> (" + dims + ")>";
     if (hasVulkanEmitterTrait(
             *emitter, VULKAN_EMITTER_TRAIT_RANDOM_STATE)) {
-      if (numIn != 0 || slot.args.numTArgs != 2) return "";
+      const bool uniformRandom =
+          emitter->recipe == VulkanKernelRecipe::UNIFORM_RANDOM;
+      if ((uniformRandom && (numIn != 0 || slot.args.numTArgs != 2)) ||
+          (!uniformRandom && numIn > 8)) {
+        return "";
+      }
       const std::string stateMap =
           "affine_map<(" + dims + ") -> (0)>";
+      std::vector<std::string> inputTypes;
+      inputTypes.reserve(static_cast<size_t>(numIn));
+      for (int i = 0; i < numIn; ++i) {
+        std::string inputTs;
+        std::string inputAccTs;
+        bool inputUnsigned = false;
+        if (!selectMlirScalarTypes(inputs[i]->dataType(), caps, inputTs,
+                                   inputAccTs, inputUnsigned)) {
+          return "";
+        }
+        inputTypes.push_back(inputTs);
+      }
       std::ostringstream attributes;
       attributes << ", nd4j.accumulator_type = " << outputAccTs
-                 << ", nd4j.random_from = "
-                 << mlirFloatLiteral(slot.args.tArgs[0]) << " : " << outputAccTs
-                 << ", nd4j.random_to = "
-                 << mlirFloatLiteral(slot.args.tArgs[1]) << " : " << outputAccTs;
+                 << ", nd4j.legacy_op_num = " << slot.legacy.legacyOpNum
+                 << " : i64, nd4j.random_input_count = " << numIn << " : i64";
+      for (int i = 0; i < slot.args.numTArgs; ++i) {
+        attributes << ", nd4j.random_arg" << i << " = "
+                   << mlirFloatLiteral(slot.args.tArgs[i]) << " : "
+                   << outputAccTs;
+      }
+      if (uniformRandom) {
+        attributes << ", nd4j.random_from = "
+                   << mlirFloatLiteral(slot.args.tArgs[0]) << " : "
+                   << outputAccTs
+                   << ", nd4j.random_to = "
+                   << mlirFloatLiteral(slot.args.tArgs[1]) << " : "
+                   << outputAccTs;
+      }
       ss << "module {\n  func.func @main(%rng: memref<"
-         << kVulkanRandomStateWordCount << "xi32>, %out: memref<"
-         << mlirMemrefBody(outputs[0], outputTs) << ">) {\n"
+         << kVulkanRandomStateWordCount << "xi32>";
+      for (int i = 0; i < numIn; ++i) {
+        ss << ", %in" << i << ": memref<"
+           << mlirMemrefBody(inputs[i], inputTypes[static_cast<size_t>(i)])
+           << ">";
+      }
+      ss << ", %out: memref<" << mlirMemrefBody(outputs[0], outputTs)
+         << ">) {\n"
          << "    linalg.generic {" << emitterIdentityAttributes(slot)
          << attributes.str() << ",\n"
-         << "                    indexing_maps = [" << stateMap << ", "
-         << identity << "],\n                    iterator_types = ["
+         << "                    indexing_maps = [" << stateMap;
+      for (int i = 0; i < numIn; ++i) {
+        const bool identityInput =
+            inputs[i]->rankOf() == outputs[0]->rankOf() &&
+            inputs[i]->isSameShape(outputs[0]);
+        std::ostringstream inputMap;
+        inputMap << "affine_map<(" << dims << ") -> (";
+        for (int d = 0; d < inputs[i]->rankOf(); ++d) {
+          if (d != 0) inputMap << ", ";
+          inputMap << (identityInput ? "d" + std::to_string(d) : "0");
+        }
+        inputMap << ")>";
+        ss << ", " << inputMap.str();
+      }
+      ss << ", " << identity
+         << "],\n                    iterator_types = ["
          << iterators.str() << "]}\n"
          << "      ins(%rng : memref<" << kVulkanRandomStateWordCount
-         << "xi32>)\n"
-         << "      outs(%out : memref<"
+         << "xi32>)";
+      for (int i = 0; i < numIn; ++i) {
+        ss << ", %in" << i << " : memref<"
+           << mlirMemrefBody(inputs[i], inputTypes[static_cast<size_t>(i)])
+           << ">";
+      }
+      ss << "\n      outs(%out : memref<"
          << mlirMemrefBody(outputs[0], outputTs) << ">) {\n"
-         << "      ^bb0(%rngWord: i32, %ov: " << outputTs << "):\n"
+         << "      ^bb0(%rngWord: i32";
+      for (int i = 0; i < numIn; ++i) {
+        ss << ", %in" << i << ": " << inputTypes[static_cast<size_t>(i)];
+      }
+      ss << ", %ov: " << outputTs << "):\n"
          << "        linalg.yield %ov : " << outputTs
          << "\n    }\n    return\n  }\n}\n";
       return ss.str();
@@ -6918,6 +7172,135 @@ static std::string emitVulkanOp(const NativeSlot& slot,
     bool biasCorrected = false;
     const auto* emitter = emitterForSlot(slot);
     if (emitter == nullptr) return "";
+    const bool countReduction = hasVulkanEmitterTrait(
+        *emitter, VULKAN_EMITTER_TRAIT_COUNT_RESULT);
+    if (emitter->recipe == VulkanKernelRecipe::REDUCE3) {
+      if (numIn != 2 || inputs[1] == nullptr ||
+          !inputs[0]->isSameShape(inputs[1])) {
+        return "";
+      }
+      std::vector<int64_t> reduce3Axes;
+      bool reduce3KeepDims = false;
+      bool reduce3BiasCorrected = false;
+      if (!reductionForSlot(slot, inputs[0], *emitter, outputs, numOut,
+                            reduce3Axes, reduce3KeepDims,
+                            reduce3BiasCorrected)) {
+        return "";
+      }
+      std::string x0Ts;
+      std::string x0AccTs;
+      bool x0Unsigned = false;
+      std::string x1Ts;
+      std::string x1AccTs;
+      bool x1Unsigned = false;
+      std::string reduce3OutputTs;
+      std::string reduce3OutputAccTs;
+      bool reduce3OutputUnsigned = false;
+      if (!selectMlirScalarTypes(inputs[0]->dataType(), caps, x0Ts, x0AccTs,
+                                 x0Unsigned) ||
+          !selectMlirScalarTypes(inputs[1]->dataType(), caps, x1Ts, x1AccTs,
+                                 x1Unsigned) ||
+          !selectMlirScalarTypes(outputs[0]->dataType(), caps,
+                                 reduce3OutputTs, reduce3OutputAccTs,
+                                 reduce3OutputUnsigned)) {
+        return "";
+      }
+      std::string reduce3AccTs = accTs;
+      if (reduce3AccTs != "f64" && reduce3AccTs != "f32" &&
+          reduce3AccTs != "f16") {
+        reduce3AccTs = (x0AccTs == "f64" || x1AccTs == "f64" ||
+                        reduce3OutputAccTs == "f64")
+                           ? "f64"
+                           : "f32";
+      }
+      auto buildReduce3Shape = [&](NDArray* array,
+                                   const std::string& storageType) {
+        return mlirMemrefBody(array, storageType);
+      };
+      std::set<int64_t> reduce3Reduced(reduce3Axes.begin(),
+                                       reduce3Axes.end());
+      std::ostringstream reduce3Dims;
+      std::ostringstream reduce3Iterators;
+      for (int d = 0; d < rank; ++d) {
+        if (d != 0) {
+          reduce3Dims << ", ";
+          reduce3Iterators << ", ";
+        }
+        reduce3Dims << "d" << d;
+        reduce3Iterators << (reduce3Reduced.count(d)
+                                 ? "\"reduction\""
+                                 : "\"parallel\"");
+      }
+      const std::string reduce3DimList = reduce3Dims.str();
+      const std::string reduce3InputMap =
+          "affine_map<(" + reduce3DimList + ") -> (" + reduce3DimList + ")>";
+      std::ostringstream reduce3OutputMap;
+      reduce3OutputMap << "affine_map<(" << reduce3DimList << ") -> (";
+      bool reduce3First = true;
+      for (int d = 0; d < rank; ++d) {
+        if (reduce3Reduced.count(d) == 0 || reduce3KeepDims) {
+          if (!reduce3First) reduce3OutputMap << ", ";
+          reduce3OutputMap << (reduce3Reduced.count(d) == 0
+                                   ? "d" + std::to_string(d)
+                                   : "0");
+          reduce3First = false;
+        }
+      }
+      reduce3OutputMap << ")>";
+      std::ostringstream reduce3AxesText;
+      reduce3AxesText << "array<i64";
+      if (!reduce3Axes.empty()) reduce3AxesText << ": ";
+      for (size_t i = 0; i < reduce3Axes.size(); ++i) {
+        if (i != 0) reduce3AxesText << ", ";
+        reduce3AxesText << reduce3Axes[i];
+      }
+      reduce3AxesText << ">";
+      ss << "module {\n"
+         << "  func.func @main(%X0: memref<"
+         << buildReduce3Shape(inputs[0], x0Ts) << ">, %X1: memref<"
+         << buildReduce3Shape(inputs[1], x1Ts) << ">, %Y: memref<"
+         << buildReduce3Shape(outputs[0], reduce3OutputTs) << ">) {\n"
+         << "    linalg.generic {" << emitterIdentityAttributes(slot)
+         << ", nd4j.accumulator_type = " << reduce3AccTs << ",\n"
+         << "                    nd4j.nd_reduce = true,\n"
+         << "                    nd4j.reduce3 = true,\n"
+         << "                    nd4j.input0_unsigned = "
+         << (x0Unsigned ? "true" : "false") << ",\n"
+         << "                    nd4j.input1_unsigned = "
+         << (x1Unsigned ? "true" : "false") << ",\n"
+         << "                    nd4j.output_unsigned = "
+         << (reduce3OutputUnsigned ? "true" : "false") << ",\n"
+         << "                    nd4j.reduce_axes = " << reduce3AxesText.str()
+         << ",\n"
+         << "                    nd4j.keep_dims = "
+         << (reduce3KeepDims ? "true" : "false") << ",\n"
+         << "                    nd4j.bias_corrected = "
+         << (reduce3BiasCorrected ? "true" : "false") << ",\n"
+         << (slot.legacy.legacyOpNum == 4
+                 ? (std::string("                    nd4j.scalar0 = ") +
+                    std::to_string(slot.args.numTArgs > 0
+                                       ? slot.args.tArgs[0]
+                                       : 1e-5) +
+                    " : f64,\n")
+                 : std::string())
+         << "                    indexing_maps = [" << reduce3InputMap << ", "
+         << reduce3InputMap << ", " << reduce3OutputMap.str() << "],\n"
+         << "                    iterator_types = [" << reduce3Iterators.str()
+         << "]}\n"
+         << "      ins(%X0 : memref<" << buildReduce3Shape(inputs[0], x0Ts)
+         << ">, %X1 : memref<" << buildReduce3Shape(inputs[1], x1Ts)
+         << ">)\n"
+         << "      outs(%Y : memref<"
+         << buildReduce3Shape(outputs[0], reduce3OutputTs) << ">) {\n"
+         << "      ^bb0(%xv0: " << x0Ts << ", %xv1: " << x1Ts
+         << ", %yv: " << reduce3OutputTs << "):\n"
+         << "        linalg.yield %yv : " << reduce3OutputTs << "\n"
+         << "    }\n"
+         << "    return\n"
+         << "  }\n"
+         << "}\n";
+      return ss.str();
+    }
     if (hasVulkanEmitterTrait(*emitter, VULKAN_EMITTER_TRAIT_IMPLICIT_LAST_AXIS)) {
       axes.push_back(rank - 1);
       keepDims = slot.args.numIArgs == 0 || slot.args.iArgs[0] != 0;
@@ -6935,7 +7318,9 @@ static std::string emitVulkanOp(const NativeSlot& slot,
       return "";
     }
     std::string reductionAccTs = accTs;
-    if (reductionProducesFloatingOutput(*emitter)) {
+    if (countReduction) {
+      reductionAccTs = (accTs == "f64" || ts == "f64") ? "f64" : "f32";
+    } else if (reductionProducesFloatingOutput(*emitter)) {
       if (accTs == "f64" || outputAccTs == "f64") {
         reductionAccTs = "f64";
       } else if (accTs == "f32" || outputAccTs == "f32") {
@@ -6999,6 +7384,12 @@ static std::string emitVulkanOp(const NativeSlot& slot,
        << "                    nd4j.keep_dims = " << (keepDims ? "true" : "false") << ",\n"
        << "                    nd4j.bias_corrected = "
        << (biasCorrected ? "true" : "false") << ",\n"
+       << (countReduction &&
+                   slot.legacy.legacyOpNum == static_cast<int>(sd::reduce::MatchCondition)
+               ? (std::string("                    nd4j.scalar0 = ") +
+                  std::to_string(slot.args.numTArgs > 0 ? slot.args.tArgs[0] : 0.0) +
+                  " : f64,\n")
+               : std::string())
        << "                    indexing_maps = [" << inputMap << ", " << outputMap.str() << "],\n"
        << "                    iterator_types = [" << iterators.str() << "]}\n"
        << "      ins(%X : memref<" << buildShape(inputs[0], ts) << ">)\n"
