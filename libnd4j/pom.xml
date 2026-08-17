@@ -823,6 +823,37 @@
                      also materializing the full CUDA archive from assembly-cuda.xml. -->
                 <libnd4j.cuda.assembly.skip>true</libnd4j.cuda.assembly.skip>
             </properties>
+            <build>
+                <plugins>
+                    <!-- The native build leaves a large CMake tree beside the
+                         self-contained ZLUDA runtime package. Clean that tree before
+                         libnd4j's assembly execution creates a second copy of it;
+                         otherwise the Linux runner can run out of disk before the
+                         nd4j-zluda module reaches its existing cleanup. -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>cleanup-zluda-cmake-build-before-assembly</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target name="cleanup-zluda-cmake-build-before-assembly">
+                                        <delete includeEmptyDirs="true">
+                                            <fileset dir="${libnd4j.outputPath}"
+                                                     excludes="zluda-runtime-package/**,javacpp-build-toolchain.properties"/>
+                                        </delete>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
 
         <profile>
