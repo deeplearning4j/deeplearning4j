@@ -142,11 +142,9 @@ public class VulkanNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public void createBlas() {
-        // The BLAS façade is part of ND4J's public factory contract. Vulkan does
-        // not link a host BLAS library; VulkanBlasWrapper dispatches BLAS-level
-        // operations through the same device custom-op execution path used by
-        // Nd4j.matmul and graph execution.
-        blas = new VulkanBlasWrapper();
+        // The legacy factory contract requires a Blas metadata object. Actual
+        // level operations are dispatched through Vulkan custom-op emitters.
+        blas = new VulkanBlas();
     }
 
     @Override
