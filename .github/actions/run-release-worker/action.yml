@@ -62,30 +62,6 @@ runs:
       with:
         python-version: "3.10"
 
-    - name: Set up MSYS2
-      if: runner.os == 'Windows'
-      uses: msys2/setup-msys2@v2
-      with:
-        # Reuse the MSYS2 installation shipped on GitHub's Windows runners.
-        # A fresh release install plus update=true can block while generating
-        # the pacman keyring before the release worker ever starts.
-        release: false
-        update: false
-        msystem: MINGW64
-        path-type: minimal
-        install: >-
-          git tar pkg-config unzip p7zip zip autoconf autoconf-archive
-          automake bison diffstat diffutils flex m4 make patch texinfo
-          mingw-w64-x86_64-make mingw-w64-x86_64-cmake
-          mingw-w64-x86_64-nasm mingw-w64-x86_64-binutils
-          mingw-w64-x86_64-crt mingw-w64-x86_64-headers
-          mingw-w64-x86_64-libmangle mingw-w64-x86_64-libwinpthread
-          mingw-w64-x86_64-tools mingw-w64-x86_64-winpthreads
-          mingw-w64-x86_64-winstorecompat mingw-w64-x86_64-libtool
-          mingw-w64-x86_64-gcc mingw-w64-x86_64-gcc-fortran
-          mingw-w64-x86_64-ragel mingw-w64-x86_64-vulkan-headers
-          mingw-w64-x86_64-vulkan-loader
-
     - name: Bootstrap Unix worker
       if: runner.os != 'Windows'
       shell: bash
