@@ -74,8 +74,9 @@ runs:
         msystem: MINGW64
         path-type: minimal
         install: >-
-          base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive
-          automake patch mingw-w64-x86_64-make mingw-w64-x86_64-cmake
+          git tar pkg-config unzip p7zip zip autoconf autoconf-archive
+          automake bison diffstat diffutils flex m4 make patch texinfo
+          mingw-w64-x86_64-make mingw-w64-x86_64-cmake
           mingw-w64-x86_64-nasm mingw-w64-x86_64-binutils
           mingw-w64-x86_64-crt mingw-w64-x86_64-headers
           mingw-w64-x86_64-libmangle mingw-w64-x86_64-libwinpthread
