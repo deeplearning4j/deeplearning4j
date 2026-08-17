@@ -18,8 +18,8 @@ Every successful worker publishes its verified staged Maven coordinates to the C
 
 Add or change classifiers in the provider release plans first. Keep `release/github/workflow-matrix.json` limited to workflow-to-shard and shard-to-runtime mappings. `release/github/test_worker.py` rejects workflow rows that do not resolve to an explicit release-plan variant and checks the historically distinct Linux compile ISA classifiers.
 
-A normal dispatch always runs the complete canonical matrix for its selected workflow. Partial reruns must set `targetedRetry=1` and provide one or more exact `shard--variant` values in `classifiers`; filters are rejected otherwise. This keeps recovery of a failed classifier explicit without allowing an intended complete release run to silently omit base or another variant.
+A normal dispatch always runs the complete canonical matrix for its selected workflow. Partial reruns must set `targetedRetry=1` and provide one or more exact published classifier IDs in `classifiers`; filters are rejected otherwise. This keeps recovery of a failed classifier explicit without allowing an intended complete release run to silently omit base or another variant.
 
-ZLUDA is selected by its CUDA ABI variant in the internal matrix (for example, `linux-x86_64-zluda--cuda-12.9`). Published worker IDs and Maven classifiers are single-hyphen, ROCm-qualified names such as `linux-x86_64-cuda-12.9-zluda-rocm-7.2.4`; they never contain `--` or duplicate `zluda-zluda`. Older `--zluda` selectors remain accepted and normalize to the CUDA-versioned variant.
+ZLUDA is selected by its published CUDA/ROCm classifier, such as `linux-x86_64-cuda-12.9-zluda-rocm-7.2.4`. Published worker IDs and Maven classifiers use single hyphens and are the only supported classifier interface.
 
 These workflows run the shared worker locally on GitHub runners; they do not provision AWS, Azure, or GCP virtual machines.

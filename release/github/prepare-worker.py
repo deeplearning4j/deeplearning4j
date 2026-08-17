@@ -143,11 +143,10 @@ def public_artifact_id(
 ) -> str:
     """Return the public row ID for one planned shard/variant.
 
-    Selectors deliberately use ``--`` internally. Public IDs always use single
-    hyphens. ZLUDA rows additionally carry the complete ROCm-qualified native
-    classifier suffix so distinct ROCm runtimes cannot share a staging ID. The
-    ``-zluda`` shard marker is removed before appending that suffix to avoid
-    emitting ``zluda-zluda``.
+    Classifier IDs always use single hyphens. ZLUDA rows additionally carry
+    the complete ROCm-qualified native classifier suffix so distinct ROCm
+    runtimes cannot share a staging ID. The ``-zluda`` shard marker is removed
+    before appending that suffix to avoid emitting ``zluda-zluda``.
     """
     shard_id = str(shard_id).strip("-")
     variant_name = str(variant_name).strip("-")
@@ -201,18 +200,8 @@ def canonical_variant_name(shard: dict, variant_name: str) -> str:
 
 
 def canonical_selector(shards: dict[str, dict], selector: str) -> str:
-    """Normalize an internal selector or published artifact ID.
-
-    Workflow dispatches historically documented the public artifact IDs
-    (single-hyphen names), while the matrix resolver uses shard--variant
-    internally. Accept both forms so a copied published classifier can be
-    retried without requiring callers to reconstruct the internal selector.
-    """
+    """Return the canonical published classifier ID for an exact classifier."""
     selector = selector.strip()
-    shard_id, delimiter, variant_name = selector.partition("--")
-    if delimiter and shard_id in shards:
-        return f"{shard_id}--{canonical_variant_name(shards[shard_id], variant_name)}"
-
     matches: list[str] = []
     for candidate_shard_id, shard in shards.items():
         variants = shard.get("build", {}).get("variants", [])
@@ -220,13 +209,11 @@ def canonical_selector(shards: dict[str, dict], selector: str) -> str:
             candidate_variant_name = canonical_variant_name(
                 shard, str(variant["name"])
             )
-            if (
-                public_artifact_id(
-                    candidate_shard_id, candidate_variant_name, variant
-                )
-                == selector
-            ):
-                matches.append(f"{candidate_shard_id}--{candidate_variant_name}")
+            candidate_id = public_artifact_id(
+                candidate_shard_id, candidate_variant_name, variant
+            )
+            if candidate_id == selector:
+                matches.append(candidate_id)
 
     if len(matches) > 1:
         raise ValueError(
@@ -305,15 +292,18 @@ def workflow_rows(
             if shard_id not in shards:
                 continue
             variants = shards[shard_id]["build"].get("variants", [])
-            variant_names = [
-                canonical_variant_name(shards[shard_id], str(variant["name"]))
+            variant_by_name = {
+                canonical_variant_name(shards[shard_id], str(variant["name"])): variant
                 for variant in variants
-            ]
+            }
             selected_names = [
                 canonical_variant_name(shards[shard_id], str(name))
-                for name in (selection.get("variants") or variant_names)
+                for name in (selection.get("variants") or list(variant_by_name))
             ]
-            selectors.update(f"{shard_id}--{name}" for name in selected_names)
+            selectors.update(
+                public_artifact_id(shard_id, name, variant_by_name[name])
+                for name in selected_names
+            )
         return selectors
 
     if requested and not requested.issubset(available_selectors(workflow)):
@@ -347,9 +337,11 @@ def workflow_rows(
             if variant_name not in by_name:
                 raise ValueError(
                     f"workflow {workflow!r} references unknown variant "
-                    f"{shard_id}--{variant_name}"
+                    f"{shard_id}-{variant_name}"
                 )
-            available.add(f"{shard_id}--{variant_name}")
+            available.add(
+                public_artifact_id(shard_id, variant_name, by_name[variant_name])
+            )
         selections.append((shard_id, runtime, by_name, selected_names))
 
     unknown = sorted(requested - available)
@@ -360,27 +352,28 @@ def workflow_rows(
         )
 
     rows: list[dict] = []
-    public_ids: dict[str, str] = {}
+    public_ids: dict[str, tuple[str, str]] = {}
     for shard_id, runtime, by_name, selected_names in selections:
         if runtime.get("group") != group:
             continue
         for variant_name in selected_names:
-            selector = f"{shard_id}--{variant_name}"
-            if requested and selector not in requested:
-                continue
             variant = by_name[variant_name]
             artifact_id = public_artifact_id(shard_id, variant_name, variant)
+            if requested and artifact_id not in requested:
+                continue
             previous_selector = public_ids.get(artifact_id)
-            if previous_selector and previous_selector != selector:
+            identity = (shard_id, variant_name)
+            if previous_selector and previous_selector != identity:
+                previous_id = f"{previous_selector[0]}-{previous_selector[1]}"
                 raise ValueError(
                     "workflow matrix maps multiple selectors to public artifact ID "
-                    f"{artifact_id!r}: {previous_selector}, {selector}"
+                    f"{artifact_id!r}: {previous_id}, {shard_id}-{variant_name}"
                 )
-            public_ids[artifact_id] = selector
+            public_ids[artifact_id] = identity
             row = {
                 "name": artifact_id,
                 "artifactId": artifact_id,
-                "selector": selector,
+                "selector": artifact_id,
                 "shard": shard_id,
                 "variant": variant_name,
                 "runner": runner_override or str(runtime["runner"]),
@@ -487,7 +480,7 @@ def parse_args() -> argparse.Namespace:
     matrix_parser.add_argument(
         "--classifiers",
         default="",
-        help="Comma-separated exact shard--variant names to include",
+        help="Comma-separated published classifier IDs to include",
     )
     matrix_parser.add_argument(
         "--selection-mode",

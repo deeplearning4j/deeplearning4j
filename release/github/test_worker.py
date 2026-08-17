@@ -73,7 +73,11 @@ class WorkflowMatrixTests(unittest.TestCase):
     def test_every_plan_variant_is_reachable_from_a_canonical_workflow(self):
         plan_shards = prepare_worker.plan_shards(self.plan)
         expected = {
-            f'{shard_id}--{variant["name"]}'
+            prepare_worker.public_artifact_id(
+                shard_id,
+                prepare_worker.canonical_variant_name(shard, str(variant["name"])),
+                variant,
+            )
             for shard_id, shard in plan_shards.items()
             for variant in shard["build"].get("variants", [])
         }
@@ -119,9 +123,8 @@ class WorkflowMatrixTests(unittest.TestCase):
                 self.assertTrue(
                     row["dependencyCacheKey"].startswith(f'{row["shard"]}-'), workflow
                 )
-                self.assertEqual(
-                    f'{row["shard"]}--{row["variant"]}', row["selector"], workflow
-                )
+                self.assertEqual(row["artifactId"], row["selector"], workflow)
+                self.assertNotIn("--", row["selector"], workflow)
                 variants = {
                     variant["name"]
                     for variant in plan_shards[row["shard"]]["build"]["variants"]
@@ -204,7 +207,7 @@ class WorkflowMatrixTests(unittest.TestCase):
             self.matrix,
             "build-deploy-android-arm64.yml",
             "linux",
-            classifiers="android-arm64-vulkan--base",
+            classifiers="android-arm64-vulkan-base",
             selection_mode="targeted",
         )
         self.assertEqual(
@@ -212,7 +215,7 @@ class WorkflowMatrixTests(unittest.TestCase):
             [(row["shard"], row["variant"]) for row in rows],
         )
         self.assertEqual("android-arm64-vulkan-base", rows[0]["artifactId"])
-        self.assertEqual("android-arm64-vulkan--base", rows[0]["selector"])
+        self.assertEqual("android-arm64-vulkan-base", rows[0]["selector"])
 
     def test_targeted_classifier_auto_resolves_unique_canonical_workflow(self):
         rows = prepare_worker.workflow_rows(
@@ -220,7 +223,7 @@ class WorkflowMatrixTests(unittest.TestCase):
             self.matrix,
             "build-deploy-cross-platform.yml",
             "host",
-            classifiers="windows-x86_64-zluda--cuda-12.9",
+            classifiers="windows-x86_64-cuda-12.9-zluda-rocm-7.2.4",
             selection_mode="targeted",
         )
         self.assertEqual(
@@ -234,23 +237,9 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertNotIn("--", rows[0]["artifactId"])
         self.assertNotIn("zluda-zluda", rows[0]["artifactId"])
         self.assertIn("-rocm-7.2.4", rows[0]["artifactId"])
+        self.assertEqual(rows[0]["artifactId"], rows[0]["selector"])
 
-    def test_legacy_zluda_selector_maps_to_cuda_versioned_variant(self):
-        rows = prepare_worker.workflow_rows(
-            self.plan,
-            self.matrix,
-            "build-deploy-cross-platform.yml",
-            "host",
-            classifiers="windows-x86_64-zluda--zluda",
-            selection_mode="targeted",
-        )
-        self.assertEqual(
-            [("windows-x86_64-zluda", "cuda-12.9")],
-            [(row["shard"], row["variant"]) for row in rows],
-        )
-        self.assertEqual("windows-x86_64-zluda--cuda-12.9", rows[0]["selector"])
-
-    def test_public_classifier_id_resolves_to_internal_selector(self):
+    def test_public_classifier_id_resolves_to_public_selector(self):
         rows = prepare_worker.workflow_rows(
             self.plan,
             self.matrix,
@@ -263,7 +252,8 @@ class WorkflowMatrixTests(unittest.TestCase):
             [("windows-x86_64-cpu", "avx2")],
             [(row["shard"], row["variant"]) for row in rows],
         )
-        self.assertEqual("windows-x86_64-cpu--avx2", rows[0]["selector"])
+        self.assertEqual("windows-x86_64-cpu-avx2", rows[0]["selector"])
+        self.assertNotIn("--", rows[0]["selector"])
 
     def test_public_zluda_classifier_id_auto_resolves_canonical_workflow(self):
         rows = prepare_worker.workflow_rows(
@@ -290,7 +280,7 @@ class WorkflowMatrixTests(unittest.TestCase):
                 self.matrix,
                 "build-deploy-android-arm64.yml",
                 "linux",
-                classifiers="android-arm64-vulkan--missing",
+                classifiers="android-arm64-vulkan-missing",
                 selection_mode="targeted",
             )
 
@@ -301,7 +291,7 @@ class WorkflowMatrixTests(unittest.TestCase):
                 self.matrix,
                 "build-deploy-windows.yml",
                 "host",
-                classifiers="windows-x86_64-cpu--avx2",
+                classifiers="windows-x86_64-cpu-avx2",
             )
 
     def test_targeted_matrix_requires_explicit_classifiers(self):

@@ -24,7 +24,7 @@ on:
         required: false
         default: ""
       classifiers:
-        description: Published classifier IDs or shard--variant selectors; requires targetedRetry=1 and auto-resolves a unique canonical matrix.
+        description: Published classifier IDs; requires targetedRetry=1 and auto-resolves a unique canonical matrix.
         required: false
         default: ""
       targetedRetry:

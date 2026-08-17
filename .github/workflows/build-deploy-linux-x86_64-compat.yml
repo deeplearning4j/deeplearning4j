@@ -20,7 +20,7 @@ on:
         required: false
         default: ""
       classifiers:
-        description: Comma-separated published classifier IDs or shard--variant selectors; requires targetedRetry=1.
+        description: Comma-separated published classifier IDs; requires targetedRetry=1.
         required: false
         default: ""
       targetedRetry:
