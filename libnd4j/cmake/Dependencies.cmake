@@ -2225,9 +2225,16 @@ function(setup_triton)
     # separators on Windows.
     set(_TRITON_LLVM_BUILD_ENV)
     if(CMAKE_HOST_WIN32)
+        # The bootstrap resolves MinGW from the runner toolchain, but that
+        # directory is not guaranteed to survive into ExternalProject children.
+        # Derive it from the compiler CMake actually selected so llvm-tblgen
+        # and MLIR generators can load libstdc++/libgcc at runtime.
+        get_filename_component(_TRITON_MINGW_RUNTIME_DIR
+            "${CMAKE_CXX_COMPILER}" DIRECTORY)
         set(_TRITON_LLVM_BUILD_ENV
             --modify "PATH=path_list_prepend:${TRITON_LLVM_PREFIX}/build/bin"
-            --modify "PATH=path_list_prepend:${TRITON_LLVM_INSTALL_DIR}/bin")
+            --modify "PATH=path_list_prepend:${TRITON_LLVM_INSTALL_DIR}/bin"
+            --modify "PATH=path_list_prepend:${_TRITON_MINGW_RUNTIME_DIR}")
     endif()
     set(TRITON_LLVM_BUILD_COMMAND
             ${CMAKE_COMMAND}
