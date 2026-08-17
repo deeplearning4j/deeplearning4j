@@ -979,6 +979,8 @@ static Status reportReplayError(GraphSegment& seg, const char* step,
 static bool findUnsupportedTritonReplayGap(TritonGraphBackend* tritonBackend,
                                           const GraphSegment& seg,
                                           NativeSlot* slots,
+                                          NDArray** outputSlots,
+                                          int totalOutputSlots,
                                           int* firstGapSlot,
                                           int* lastCoveredSlot,
                                           int* gapSlotCount) {
@@ -987,7 +989,7 @@ static bool findUnsupportedTritonReplayGap(TritonGraphBackend* tritonBackend,
  if (gapSlotCount != nullptr) *gapSlotCount = 0;
  if (tritonBackend == nullptr) return false;
 
- auto gapSlots = tritonBackend->getGapSlots(seg, slots);
+ auto gapSlots = tritonBackend->getGapSlots(seg, slots, outputSlots, totalOutputSlots);
  if (gapSlotCount != nullptr) *gapSlotCount = static_cast<int>(gapSlots.size());
  if (gapSlots.empty()) return false;
 
@@ -1127,6 +1129,8 @@ static bool isGapRangeCaptureSafe(NativeSlot* slots, int startSlot, int endSlot,
 
 static ReplaySchedule buildCompositeReplaySchedule(const GraphSegment& seg,
                                                   NativeSlot* slots,
+                                                  NDArray** outputSlots,
+                                                  int totalOutputSlots,
                                                   TritonGraphBackend* tritonBackend) {
  ReplaySchedule schedule;
  auto gap_slots = tritonBackend->getGapSlots(seg, slots);
@@ -3356,7 +3360,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
 #if HAVE_TRITON
           auto* tritonBE = dynamic_cast<TritonGraphBackend*>(ctx.backend);
          if (tritonBE != nullptr) {
-           gapSlots = tritonBE->getGapSlots(seg, slots_);
+           gapSlots = tritonBE->getGapSlots(seg, slots_, outputSlots_, totalOutputSlots_);
          } else
 #endif
           {
@@ -3608,7 +3612,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
       // composite replay (with null handles) → cudaLaunchKernel SIGSEGV.
       if (ctx.tritonBackend != nullptr && seg.exec.compositeReplaySchedule.units.empty() &&
           !ctx.nativeOnlyGraphCapture) {
-        seg.exec.compositeReplaySchedule = buildCompositeReplaySchedule(seg, slots_, ctx.tritonBackend);
+        seg.exec.compositeReplaySchedule = buildCompositeReplaySchedule(seg, slots_, outputSlots_, totalOutputSlots_, ctx.tritonBackend);
         DSP_DIAG(SHAPE, "COMPOSITE_SCHEDULE_PREBUILT: seg[%d-%d] units=%d (before composite gate)",
                  seg.def.startSlot, seg.def.endSlot,
                  (int)seg.exec.compositeReplaySchedule.units.size());
@@ -5498,7 +5502,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
             // Build composite schedule now that Triton gap data is accurate.
 #if HAVE_TRITON
             if (seg.exec.compositeReplaySchedule.units.empty() && ctx.tritonBackend != nullptr) {
-              seg.exec.compositeReplaySchedule = buildCompositeReplaySchedule(seg, slots_, ctx.tritonBackend);
+              seg.exec.compositeReplaySchedule = buildCompositeReplaySchedule(seg, slots_, outputSlots_, totalOutputSlots_, ctx.tritonBackend);
               DSP_DIAG(SHAPE, "COMPOSITE_SCHEDULE_BUILT: seg[%d-%d] units=%d compiledBy=%s (capture path)",
                        seg.def.startSlot, seg.def.endSlot,
                        static_cast<int>(seg.exec.compositeReplaySchedule.units.size()),
@@ -5790,7 +5794,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
       if (ctx.tritonBackend != nullptr &&
           seg.exec.compiledByBackend == ctx.backendName &&
           seg.exec.compositeReplaySchedule.units.empty()) {
-        seg.exec.compositeReplaySchedule = buildCompositeReplaySchedule(seg, slots_, ctx.tritonBackend);
+        seg.exec.compositeReplaySchedule = buildCompositeReplaySchedule(seg, slots_, outputSlots_, totalOutputSlots_, ctx.tritonBackend);
         DSP_DIAG(SHAPE, "COMPOSITE_SCHEDULE_BUILT: seg[%d-%d] units=%d compiledBy=%s (direct path)",
                  seg.def.startSlot, seg.def.endSlot,
                  static_cast<int>(seg.exec.compositeReplaySchedule.units.size()),
@@ -6363,7 +6367,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   // direct paths in segDispatchCaptureOrDirect).  All-gap detection is handled
   // by platformShouldUseGraph() — the single eligibility gate.
   if (tritonBackend != nullptr) {
-   auto gapSlots = tritonBackend->getGapSlots(seg, slots_);
+   auto gapSlots = tritonBackend->getGapSlots(seg, slots_, outputSlots_, totalOutputSlots_);
    tritonGapSlotCount = static_cast<int>(gapSlots.size());
    int totalSegSlots = seg.def.endSlot - seg.def.startSlot + 1;
    allSlotsAreGaps = (tritonGapSlotCount == totalSegSlots);
