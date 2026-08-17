@@ -2302,8 +2302,18 @@ case "$OS" in
             # Another note on this particular gcc: ensure the path is setup in msys2 with /c/msys64/mingw64/bin
             # prefixed. If the one in USR is used, errors like error: 'RTLD_LAZY' was not declared in this scope
             # may show up
-            export CMAKE_COMMAND="cmake -G \"MSYS Makefiles\""
-            export MAKE_COMMAND="make -j${MAKEJ} -l${LOAD_LIMIT}"
+            # LLVM/MLIR builds launch many native TableGen generators.  MSYS Makefiles
+            # invokes those binaries through the MSYS shell and can return 127 when
+            # the MinGW runtime is outside the shell's loader view.  Prefer Ninja
+            # for the native build when the runner provides it; keep Makefiles as a
+            # portable fallback for older workers without Ninja.
+            if command -v ninja >/dev/null 2>&1; then
+                export CMAKE_COMMAND="cmake -G \"Ninja\""
+                export MAKE_COMMAND="ninja -j${MAKEJ}"
+            else
+                export CMAKE_COMMAND="cmake -G \"MSYS Makefiles\""
+                export MAKE_COMMAND="make -j${MAKEJ} -l${LOAD_LIMIT}"
+            fi
             export CC=gcc
             export CXX=g++
             PARALLEL="true"
