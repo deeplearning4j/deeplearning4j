@@ -161,7 +161,11 @@ def public_artifact_id(
         if "-zluda-rocm-" in candidate:
             classifier_suffix = candidate
 
-    if classifier_suffix:
+    if variant_name == "base":
+        # Base is the default platform classifier; it is represented by the
+        # shard ID itself and never receives a "-base" suffix.
+        value = shard_id
+    elif classifier_suffix:
         # Versioned ZLUDA shard IDs carry their ROCm version in the
         # shard key, while the variant suffix carries the complete published
         # classifier. Strip that shard marker before appending the suffix.

@@ -96,8 +96,14 @@ class WorkflowMatrixTests(unittest.TestCase):
             prepare_worker.public_artifact_id("linux-x86_64-compat", "compat"),
         )
         self.assertEqual(
-            "linux-x86_64-cpu-base",
+            "linux-x86_64-cpu",
             prepare_worker.public_artifact_id("linux-x86_64-cpu", "base"),
+        )
+        self.assertEqual(
+            "linux-x86_64-cuda-12-9",
+            prepare_worker.public_artifact_id(
+                "linux-x86_64-cuda-12-9", "base", {"classifierSuffix": "-cuda-12.9"}
+            ),
         )
         self.assertEqual(
             "linux-x86_64-cuda-12.9-zluda-rocm-6.2.4",
@@ -133,6 +139,8 @@ class WorkflowMatrixTests(unittest.TestCase):
                 )
                 self.assertEqual(row["artifactId"], row["selector"], workflow)
                 self.assertNotIn("--", row["selector"], workflow)
+                if row["variant"] == "base":
+                    self.assertEqual(row["shard"], row["artifactId"], workflow)
                 variants = {
                     variant["name"]
                     for variant in plan_shards[row["shard"]]["build"]["variants"]
@@ -215,15 +223,15 @@ class WorkflowMatrixTests(unittest.TestCase):
             self.matrix,
             "build-deploy-android-arm64.yml",
             "linux",
-            classifiers="android-arm64-vulkan-base",
+            classifiers="android-arm64-vulkan",
             selection_mode="targeted",
         )
         self.assertEqual(
             [("android-arm64-vulkan", "base")],
             [(row["shard"], row["variant"]) for row in rows],
         )
-        self.assertEqual("android-arm64-vulkan-base", rows[0]["artifactId"])
-        self.assertEqual("android-arm64-vulkan-base", rows[0]["selector"])
+        self.assertEqual("android-arm64-vulkan", rows[0]["artifactId"])
+        self.assertEqual("android-arm64-vulkan", rows[0]["selector"])
 
     def test_targeted_classifier_auto_resolves_unique_canonical_workflow(self):
         rows = prepare_worker.workflow_rows(
