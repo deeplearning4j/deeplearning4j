@@ -288,9 +288,50 @@ function(link_zluda_cuda_static_library main_target_name imported_target library
     unset(_zluda_cuda_static_library CACHE)
 endfunction()
 
+# Resolve and link a CUDA SDK shared runtime when a ZLUDA classifier cannot
+# safely embed the corresponding prebuilt archive. CUDA's NVRTC archive is
+# compiled with the small code model; embedding it in the all-ops ZLUDA DSO
+# places its read-only tables beyond the R_X86_64_PC32 range. The shared
+# implementation is ABI-identical and is staged into the classifier below.
+function(link_zluda_cuda_shared_library main_target_name imported_target library_name required)
+    if(TARGET ${imported_target})
+        target_link_libraries(${main_target_name} PUBLIC ${imported_target})
+        return()
+    endif()
+
+    unset(_zluda_cuda_shared_library CACHE)
+    find_library(_zluda_cuda_shared_library
+        NAMES ${library_name} lib${library_name}
+        HINTS
+            "${CUDAToolkit_LIBRARY_DIR}"
+            "${CUDAToolkit_LIBRARY_ROOT}"
+            "${CUDAToolkit_ROOT}"
+            "${CUDA_TOOLKIT_ROOT_DIR}"
+        PATH_SUFFIXES
+            lib64 lib
+            targets/x86_64-linux/lib
+            targets/aarch64-linux/lib
+        NO_DEFAULT_PATH)
+    if(NOT _zluda_cuda_shared_library)
+        find_library(_zluda_cuda_shared_library NAMES ${library_name} lib${library_name})
+    endif()
+
+    if(_zluda_cuda_shared_library)
+        message(STATUS
+            "Resolved ${imported_target} shared compatibility library: ${_zluda_cuda_shared_library}")
+        target_link_libraries(${main_target_name} PUBLIC
+            "${_zluda_cuda_shared_library}")
+    elseif(required)
+        message(FATAL_ERROR
+            "ZLUDA build requires ${imported_target} (${library_name}); install the CUDA runtime toolkit")
+    endif()
+    unset(_zluda_cuda_shared_library CACHE)
+endfunction()
+
 # Link CUDA implementation pieces that ZLUDA does not implement as CUDA ABI
-# replacements into the backend at build time. The resulting classifier must
-# not require these NVIDIA libraries dynamically on the consumer machine.
+# replacements into the backend at build time. Linux NVRTC is kept as an
+# explicitly packaged shared runtime because NVIDIA's prebuilt static compiler
+# archive cannot participate in a >2 GiB all-ops ELF link.
 function(configure_zluda_cuda_toolkit_linking main_target_name)
     if(NOT (SD_ZLUDA AND HAVE_ZLUDA))
         message(FATAL_ERROR
@@ -304,17 +345,22 @@ function(configure_zluda_cuda_toolkit_linking main_target_name)
     # ZLUDA does not implement the cuSolver ABI. Solver-backed operations are
     # compiled out for this target, so retaining NVIDIA's static cuSolver/LAPACK
     # archives would make the supposedly AMD-only classifier toolkit-dependent.
-    link_zluda_cuda_static_library(
-        ${main_target_name} CUDA::nvrtc_static nvrtc_static TRUE)
+    if(UNIX AND NOT APPLE)
+        link_zluda_cuda_shared_library(
+            ${main_target_name} CUDA::nvrtc nvrtc TRUE)
+    else()
+        link_zluda_cuda_static_library(
+            ${main_target_name} CUDA::nvrtc_static nvrtc_static TRUE)
 
-    # CUDA 12 splits these implementation archives from NVRTC. Older CMake
-    # versions/toolkit layouts may expose them transitively instead.
-    link_zluda_cuda_static_library(
-        ${main_target_name} CUDA::nvrtc_builtins_static nvrtc-builtins_static FALSE)
-    link_zluda_cuda_static_library(
-        ${main_target_name} CUDA::nvJitLink_static nvJitLink_static FALSE)
-    link_zluda_cuda_static_library(
-        ${main_target_name} CUDA::nvptxcompiler_static nvptxcompiler_static FALSE)
+        # CUDA 12 splits these implementation archives from NVRTC. Older CMake
+        # versions/toolkit layouts may expose them transitively instead.
+        link_zluda_cuda_static_library(
+            ${main_target_name} CUDA::nvrtc_builtins_static nvrtc-builtins_static FALSE)
+        link_zluda_cuda_static_library(
+            ${main_target_name} CUDA::nvJitLink_static nvJitLink_static FALSE)
+        link_zluda_cuda_static_library(
+            ${main_target_name} CUDA::nvptxcompiler_static nvptxcompiler_static FALSE)
+    endif()
 
     if(WIN32)
         # Official Windows ZLUDA distributions carry DLLs with the CUDA ABI
@@ -432,6 +478,20 @@ function(configure_cuda_linking main_target_name)
         endif()
         list(APPEND _cuda_shared_runtimes ${ZLUDA_RUNTIME_LIBRARIES})
         list(APPEND _cuda_shared_runtime_roots "${ZLUDA_RUNTIME_ROOT}")
+
+        # Linux ZLUDA links the CUDA NVRTC shared implementation to avoid the
+        # prebuilt static archive's small-model relocation overflow. Seed that
+        # exact target and its toolkit root so the runtime walker packages the
+        # complete CUDA compiler dependency closure.
+        if(UNIX AND NOT APPLE AND TARGET CUDA::nvrtc)
+            list(APPEND _cuda_shared_runtimes "$<TARGET_FILE:CUDA::nvrtc>")
+        endif()
+        foreach(_cuda_runtime_root IN ITEMS
+                "${CUDAToolkit_LIBRARY_DIR}" "${CUDAToolkit_LIBRARY_ROOT}")
+            if(IS_DIRECTORY "${_cuda_runtime_root}")
+                list(APPEND _cuda_shared_runtime_roots "${_cuda_runtime_root}")
+            endif()
+        endforeach()
 
         if(UNIX AND NOT APPLE)
             find_program(_cuda_patchelf_executable NAMES patchelf)

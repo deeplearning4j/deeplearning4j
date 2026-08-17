@@ -366,7 +366,7 @@ endfunction()
 function(_is_managed_gpu_runtime_name _out_var _runtime_name)
     string(TOLOWER "${_runtime_name}" _runtime_name_lower)
     if(_runtime_name_lower MATCHES
-            "^(lib)?(amd|hsa-runtime|hsakmt|miopen|roc|hip).*")
+            "^(lib)?(amd|hsa-runtime|hsakmt|miopen|roc|hip|cuda|nvcuda|cublas|cublaslt|cusparse|cufft|cudnn|nvrtc|nvjitlink|curand|nvptxcompiler).*")
         set(${_out_var} TRUE PARENT_SCOPE)
     else()
         set(${_out_var} FALSE PARENT_SCOPE)
@@ -696,10 +696,10 @@ if(_runtime_libraries)
     set(_runtime_libraries "${_runtime_ordered_libraries}")
 endif()
 
-# ZLUDA classifiers may use CUDA headers and static implementation archives at
-# build time, but the final backend must have no dynamic NVIDIA runtime
-# dependency. CUDA ABI names implemented by ZLUDA and AMD/ROCm names are allowed
-# only when their exact loader names are present in the packaged closure.
+# ZLUDA classifiers may use CUDA headers and implementation libraries at build
+# time. Every CUDA/ROCm runtime needed by the final backend must be explicitly
+# staged into the classifier closure; an AMD consumer must not need a host CUDA
+# or ROCm installation.
 if(DEFINED RUNTIME_POLICY AND RUNTIME_POLICY STREQUAL "zluda-amd")
     if(NOT DEFINED PRIMARY_RUNTIME OR PRIMARY_RUNTIME STREQUAL "" OR
        NOT EXISTS "${PRIMARY_RUNTIME}")
@@ -730,15 +730,9 @@ if(DEFINED RUNTIME_POLICY AND RUNTIME_POLICY STREQUAL "zluda-amd")
             # copy only for case-insensitive policy-family classification below.
             set(_primary_needed_compare "${_primary_needed_name}")
         endif()
-        if(_primary_needed_lower MATCHES
-                "^(lib)?(cudart|cusolver|nvrtc|nvjitlink|curand).*")
-            message(FATAL_ERROR
-                "ZLUDA backend retained forbidden dynamic NVIDIA dependency '${_primary_needed_name}'; link its build-time implementation statically")
-        endif()
-
         set(_packaged_gpu_runtime FALSE)
         if(_primary_needed_lower MATCHES
-                "^(lib)?(cuda|nvcuda|cublas|cublaslt|cusparse|cufft|cudnn|amd|hsa-runtime|hsakmt|miopen|roc|hip).*")
+                "^(lib)?(cuda|nvcuda|cublas|cublaslt|cusparse|cufft|cudnn|cudart|cusolver|nvrtc|nvjitlink|curand|nvptxcompiler|amd|hsa-runtime|hsakmt|miopen|roc|hip).*")
             set(_packaged_gpu_runtime TRUE)
         endif()
         if(_packaged_gpu_runtime)
