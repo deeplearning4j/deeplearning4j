@@ -44,7 +44,6 @@
         <libnd4j.outputPath>${libnd4jhome}/blasbuild/cpu</libnd4j.outputPath>
         <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/dsp/runtime/bindings/${javacpp.platform}${javacpp.platform.extension}</javacpp.build.output.path>
         <javacpp.platform.build>${javacpp.platform}</javacpp.platform.build>
-        <javacpp.compiler.options></javacpp.compiler.options>
         <sdx.native.library>nd4jcpu</sdx.native.library>
         <sdx.platform.links>nd4jcpu</sdx.platform.links>
         <sdx.android.variant>vulkan</sdx.android.variant>
@@ -128,9 +127,6 @@
                     <buildResources>
                         <buildResource>${libnd4j.outputPath}</buildResource>
                     </buildResources>
-                    <compilerOptions>
-                        <compilerOption>${javacpp.compiler.options}</compilerOption>
-                    </compilerOptions>
                 </configuration>
                 <executions>
                     <execution>
@@ -212,6 +208,19 @@
             <properties>
                 <javacpp.compiler.options>-Wl,--no-undefined</javacpp.compiler.options>
             </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <configuration>
+                            <compilerOptions>
+                                <compilerOption>${javacpp.compiler.options}</compilerOption>
+                            </compilerOptions>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
 
         <profile>
