@@ -1514,7 +1514,9 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
 
 // ─── Cache invalidation ────────────────────────────────────────────────────
 
-std::unordered_set<int> TritonGraphBackend::getGapSlots(const GraphSegment& seg, NativeSlot* slots) const {
+std::unordered_set<int> TritonGraphBackend::getGapSlots(
+    const GraphSegment& seg, NativeSlot* slots,
+    NDArray** outputSlots, int totalOutputSlots) const {
   std::unordered_set<int> gapSlots;
 
   int activeDevice = 0;
@@ -1548,47 +1550,85 @@ std::unordered_set<int> TritonGraphBackend::getGapSlots(const GraphSegment& seg,
     return gapSlots;
   }
 
-  // A Triton subkernel is compiled for the warmup-time tensor shapes. If it
-  // contains a dynamic-shape producer, or directly consumes a tensor whose shape
-  // changes at runtime, pointer-table refresh alone is insufficient: the static
-  // kernel extent remains stale. Keep the entire subkernel live as a composite
-  // gap. Demoting the whole subkernel is required because section kernels cannot
-  // be partially replayed.
+  // Triton compiles concrete tensor extents. Value-dependent producers must stay
+  // live so they can refresh their data and re-run shape inference every step. A
+  // compiled consumer, however, is safe when the producer's current output metadata
+  // exactly matches the metadata recorded on that kernel argument. This distinction
+  // is essential for fixed-capacity decode masks/KV tensors: their values change on
+  // every token, but their rank, extents, strides, and dtype do not.
+  //
+  // If a value-dependent producer later changes shape, executeSlot's frozen-shape
+  // contract fails before the consumer is launched. The comparison here additionally
+  // prevents admitting a consumer whose warmup tensor never matched its compiled
+  // extent. Unknown or incomplete metadata always stays live.
   std::unordered_set<int> dynamicShapeOutputSlots;
-  std::unordered_set<int> dynamicShapeHazardSlots;
   for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
     const auto& slot = slots[s];
-    bool consumesDynamicShape = false;
-    for (int i = 0; i < slot.wiring.numInputs; i++) {
-      const int srcIdx = slot.wiring.inputSourceIndices[i];
-      if (srcIdx >= 0 && dynamicShapeOutputSlots.count(srcIdx) != 0) {
-        consumesDynamicShape = true;
-        break;
-      }
-    }
-
-    const bool producesDynamicShape =
-        slot.flags.isDynamicShape ||
-        slot.flags.outputShapeDependsOnInputValues ||
-        slot.hasOpTrait(sd::ops::OP_TRAIT_DYNAMIC_OUTPUT_SIZE);
-    if (producesDynamicShape || consumesDynamicShape) {
-      dynamicShapeHazardSlots.insert(s);
-    }
-    if (producesDynamicShape) {
-      for (int o = 0; o < slot.wiring.numOutputs; o++) {
-        const int outputSlot = slot.wiring.outputSlotIndices[o];
-        if (outputSlot >= 0) dynamicShapeOutputSlots.insert(outputSlot);
-      }
+    if (!slot.hasValueDependentShape()) continue;
+    for (int o = 0; o < slot.wiring.numOutputs; o++) {
+      const int outputSlot = slot.wiring.outputSlotIndices[o];
+      if (outputSlot >= 0) dynamicShapeOutputSlots.insert(outputSlot);
     }
   }
+
+  auto compiledArgMatchesCurrent = [&](const TritonKernelArg& arg, int sourceSlot) {
+    if (outputSlots == nullptr || sourceSlot < 0 || sourceSlot >= totalOutputSlots ||
+        !arg.shapeKnown) {
+      return false;
+    }
+    NDArray* current = outputSlots[sourceSlot];
+    if (current == nullptr || !current->hasValidShapeInfo() ||
+        current->dataType() != arg.dtype ||
+        current->rankOf() != static_cast<int>(arg.shape.size())) {
+      return false;
+    }
+    for (int d = 0; d < current->rankOf(); d++) {
+      if (current->sizeAt(d) != arg.shape[static_cast<size_t>(d)]) return false;
+    }
+    if (current->rankOf() > 0) {
+      // Unknown layout is not an exact match. Cached shape extents alone do not
+      // distinguish contiguous tensors from live views with the same dimensions.
+      if (arg.strides.size() != arg.shape.size()) return false;
+      for (int d = 0; d < current->rankOf(); d++) {
+        if (current->strideAt(d) != arg.strides[static_cast<size_t>(d)]) return false;
+      }
+    }
+    return true;
+  };
 
   std::unordered_set<int> coveredSlots;
   for (const auto& sk : gapCompiledSeg->subKernels) {
     bool dynamicShapeHazard = false;
-    for (int s = sk.startSlot_; s <= sk.endSlot_; s++) {
-      if (dynamicShapeHazardSlots.count(s) != 0) {
+    int hazardSlot = -1;
+    int hazardSourceSlot = -1;
+    const char* hazardReason = nullptr;
+    for (int s = sk.startSlot_; s <= sk.endSlot_ && !dynamicShapeHazard; s++) {
+      const auto& slot = slots[s];
+      if (slot.hasValueDependentShape()) {
         dynamicShapeHazard = true;
+        hazardSlot = s;
+        hazardReason = "value-dependent producer is inside compiled subkernel";
         break;
+      }
+      for (int i = 0; i < slot.wiring.numInputs; i++) {
+        const int sourceSlot = slot.wiring.inputSourceIndices[i];
+        if (sourceSlot < 0 || dynamicShapeOutputSlots.count(sourceSlot) == 0) continue;
+
+        bool hasMatchingCompiledArg = false;
+        for (const auto& arg : sk.argSlotMapping) {
+          if (!arg.isOutput && arg.slotIndex == sourceSlot &&
+              compiledArgMatchesCurrent(arg, sourceSlot)) {
+            hasMatchingCompiledArg = true;
+            break;
+          }
+        }
+        if (!hasMatchingCompiledArg) {
+          dynamicShapeHazard = true;
+          hazardSlot = s;
+          hazardSourceSlot = sourceSlot;
+          hazardReason = "value-dependent input metadata differs from compiled argument";
+          break;
+        }
       }
     }
 
@@ -1598,9 +1638,9 @@ std::unordered_set<int> TritonGraphBackend::getGapSlots(const GraphSegment& seg,
       }
       DSP_DIAG_SEG(SHAPE, seg.def.startSlot,
           "DYNAMIC_SHAPE_SUBKERNEL_GAP: seg[%d-%d] subK[%d-%d] "
-          "contains a dynamic-shape producer/consumer; executing the whole "
-          "subkernel live",
-          seg.def.startSlot, seg.def.endSlot, sk.startSlot_, sk.endSlot_);
+          "hazardSlot=%d sourceSlot=%d reason='%s'; executing the whole subkernel live",
+          seg.def.startSlot, seg.def.endSlot, sk.startSlot_, sk.endSlot_,
+          hazardSlot, hazardSourceSlot, hazardReason != nullptr ? hazardReason : "unknown");
       continue;
     }
 
@@ -1617,7 +1657,7 @@ std::unordered_set<int> TritonGraphBackend::getGapSlots(const GraphSegment& seg,
 
   DSP_DIAG_SEG(EXECUTE, seg.def.startSlot, "NativeDSP: getGapSlots: seg[%d-%d] %d subKernels, %d covered, %d gap slots (of %d total)",
                seg.def.startSlot, seg.def.endSlot,
-               static_cast<int>(it->second.subKernels.size()),
+               static_cast<int>(gapCompiledSeg->subKernels.size()),
                static_cast<int>(coveredSlots.size()),
                static_cast<int>(gapSlots.size()),
                seg.def.endSlot - seg.def.startSlot + 1);

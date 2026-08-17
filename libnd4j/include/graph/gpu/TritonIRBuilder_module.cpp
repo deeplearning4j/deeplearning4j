@@ -901,6 +901,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           arg.outputIndex = 0;
           arg.isOutput = false;
           arg.dtype = externalInputs[extIdx]->dataType();
+          arg.shapeKnown = true;
           auto& arr = *externalInputs[extIdx];
           for (int d = 0; d < arr.rankOf(); d++) {
             arg.shape.push_back(arr.sizeAt(d));
@@ -940,6 +941,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           arg.outputIndex = 0;
           arg.isOutput = false;
           arg.dtype = dtype;
+          arg.shapeKnown = true;
           arg.shape = shape;
           // Extract actual strides from live NDArray for non-contiguous view detection
           if (hasLiveArr) {
@@ -1015,6 +1017,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
     arg.outputIndex = 0;
     arg.isOutput = false;
     arg.dtype = dtype;
+    arg.shapeKnown = true;
     arg.shape = shape;
     // Extract actual strides for frozen slot outputs (may be views)
     if (hasLiveArr) {
@@ -4846,6 +4849,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           arg.outputIndex = 0;
           arg.isOutput = false;
           arg.dtype = externalInputs[extIdx]->dataType();
+          arg.shapeKnown = true;
           auto& arr = *externalInputs[extIdx];
           for (int d = 0; d < arr.rankOf(); d++) {
             arg.shape.push_back(arr.sizeAt(d));
@@ -4864,6 +4868,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           arg.outputIndex = 0;
           arg.isOutput = false;
           arg.dtype = dtype;
+          arg.shapeKnown = true;
           arg.shape = shape;
           // Extract actual strides from live NDArray for non-contiguous view detection
           if (hasLiveArr) {
@@ -8773,6 +8778,7 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
           arg.outputIndex = 0;
           arg.isOutput = false;
           arg.dtype = externalInputs[extIdx]->dataType();
+          arg.shapeKnown = true;
           auto& arr = *externalInputs[extIdx];
           for (int d = 0; d < arr.rankOf(); d++) {
             arg.shape.push_back(arr.sizeAt(d));
@@ -8788,6 +8794,7 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
           arg.outputIndex = 0;
           arg.isOutput = false;
           arg.dtype = outputSlots[srcIdx]->dataType();
+          arg.shapeKnown = true;
           auto& arr = *outputSlots[srcIdx];
           for (int d = 0; d < arr.rankOf(); d++) {
             arg.shape.push_back(arr.sizeAt(d));
@@ -8813,6 +8820,7 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
             arg.outputIndex = 0;
             arg.isOutput = false;
             arg.dtype = dtype;
+            arg.shapeKnown = true;
             arg.shape = shape;
             if (srcIdx >= 0 && srcIdx < totalSlots) {
               // Build a minimal cachedShapeInfoMap for the helper

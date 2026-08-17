@@ -139,9 +139,12 @@ class TritonGraphBackend : public GraphBackend {
   void copyConsolidatedArgTableToDevice(GraphSegment& seg, void* stream);
 
   // Get the set of slot indices NOT covered by any sub-kernel (ordered native ranges).
+  // Value-dependent producers remain live. A compiled consumer may stay covered only
+  // when its current tensor metadata exactly matches the concrete compiled argument.
   // Used by batch-zero to only zero native-range outputs (Triton sub-kernel outputs are
   // NOT zeroed — they're fully written by the Triton kernel).
-  std::unordered_set<int> getGapSlots(const GraphSegment& seg, NativeSlot* slots) const;
+  std::unordered_set<int> getGapSlots(const GraphSegment& seg, NativeSlot* slots,
+                                      NDArray** outputSlots, int totalOutputSlots) const;
 
   // Counters for diagnostics and testing
   LongType getTotalKernelLaunches() const { return totalKernelLaunches_; }
