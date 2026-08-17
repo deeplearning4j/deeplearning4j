@@ -6614,6 +6614,11 @@ mlir::LogicalResult ElementwiseUnaryToSpirv::matchAndRewrite(
       result = emitParameterizedUnary(
           rewriter, loc, computeType, semantic, xVal,
           scalar0, scalar1, inputUnsigned);
+    } else if (semantic == VulkanKernelRecipe::ASSIGN) {
+      // Identity/copy legacy transforms share the unary lowering contract.  They
+      // deliberately have no callback: forwarding the loaded value is the device
+      // equation, and must happen before the callback branches below.
+      result = xVal;
     } else if (computeFloat) {
       result = callback(rewriter, loc, computeType, xVal);
     } else if (callback) {
