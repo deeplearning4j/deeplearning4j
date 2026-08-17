@@ -107,6 +107,11 @@ set_property(TARGET ${OBJECT_LIB_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_
 
 add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:${OBJECT_LIB_NAME}>)
 set_target_properties(${SD_LIBRARY_NAME} PROPERTIES OUTPUT_NAME ${SD_LIBRARY_NAME})
+if(WIN32)
+    # Windows SDX JavaCPP bindings link against the central CPU target. Keep
+    # the import library alongside the DLL for MSVC's linker.
+    set_target_properties(${SD_LIBRARY_NAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
 set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
 
 # --- RPATH Configuration for OpenMP runtime ---
