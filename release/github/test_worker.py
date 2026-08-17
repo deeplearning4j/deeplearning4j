@@ -96,8 +96,12 @@ class WorkflowMatrixTests(unittest.TestCase):
             prepare_worker.public_artifact_id("linux-x86_64-compat", "compat"),
         )
         self.assertEqual(
-            "linux-x86_64-cpu",
+            "linux-x86_64",
             prepare_worker.public_artifact_id("linux-x86_64-cpu", "base"),
+        )
+        self.assertEqual(
+            "linux-x86_64-avx2",
+            prepare_worker.public_artifact_id("linux-x86_64-cpu", "avx2"),
         )
         self.assertEqual(
             "linux-x86_64-cuda-12-9",
@@ -129,6 +133,7 @@ class WorkflowMatrixTests(unittest.TestCase):
                 self.assertNotIn("--", row["artifactId"], workflow)
                 self.assertNotIn("zluda-zluda", row["name"], workflow)
                 self.assertNotIn("zluda-zluda", row["artifactId"], workflow)
+                self.assertNotRegex(row["artifactId"], r"-cpu(?:-|$)", workflow)
                 if "-zluda" in row["shard"]:
                     self.assertRegex(
                         row["artifactId"], r"-rocm-[0-9]+\.[0-9]+\.[0-9]+$", workflow
@@ -140,7 +145,11 @@ class WorkflowMatrixTests(unittest.TestCase):
                 self.assertEqual(row["artifactId"], row["selector"], workflow)
                 self.assertNotIn("--", row["selector"], workflow)
                 if row["variant"] == "base":
-                    self.assertEqual(row["shard"], row["artifactId"], workflow)
+                    self.assertEqual(
+                        prepare_worker.public_artifact_id(row["shard"], "base"),
+                        row["artifactId"],
+                        workflow,
+                    )
                 variants = {
                     variant["name"]
                     for variant in plan_shards[row["shard"]]["build"]["variants"]
@@ -261,14 +270,14 @@ class WorkflowMatrixTests(unittest.TestCase):
             self.matrix,
             "build-deploy-windows.yml",
             "host",
-            classifiers="windows-x86_64-cpu-avx2",
+            classifiers="windows-x86_64-avx2",
             selection_mode="targeted",
         )
         self.assertEqual(
             [("windows-x86_64-cpu", "avx2")],
             [(row["shard"], row["variant"]) for row in rows],
         )
-        self.assertEqual("windows-x86_64-cpu-avx2", rows[0]["selector"])
+        self.assertEqual("windows-x86_64-avx2", rows[0]["selector"])
         self.assertNotIn("--", rows[0]["selector"])
 
     def test_public_zluda_classifier_id_auto_resolves_canonical_workflow(self):
@@ -307,7 +316,7 @@ class WorkflowMatrixTests(unittest.TestCase):
                 self.matrix,
                 "build-deploy-windows.yml",
                 "host",
-                classifiers="windows-x86_64-cpu-avx2",
+                classifiers="windows-x86_64-avx2",
             )
 
     def test_targeted_matrix_requires_explicit_classifiers(self):

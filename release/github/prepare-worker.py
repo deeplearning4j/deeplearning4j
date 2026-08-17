@@ -155,6 +155,11 @@ def public_artifact_id(
     if not shard_id or not variant_name:
         raise ValueError("release artifact ID cannot be empty")
 
+    # CPU is the default platform and is implicit in the historical public
+    # classifier IDs. Keep the explicit marker in the internal shard key, but
+    # never expose it in a published classifier.
+    public_shard_id = re.sub(r"-cpu$", "", shard_id)
+
     classifier_suffix = ""
     if variant:
         candidate = str(variant.get("classifierSuffix", "")).strip("-")
@@ -163,18 +168,22 @@ def public_artifact_id(
 
     if variant_name == "base":
         # Base is the default platform classifier; it is represented by the
-        # shard ID itself and never receives a "-base" suffix.
-        value = shard_id
+        # public shard ID itself and never receives a "-base" suffix.
+        value = public_shard_id
     elif classifier_suffix:
         # Versioned ZLUDA shard IDs carry their ROCm version in the
         # shard key, while the variant suffix carries the complete published
         # classifier. Strip that shard marker before appending the suffix.
-        base_shard = re.sub(r"-zluda(?:-rocm-[0-9]+(?:\.[0-9]+)*)?$", "", shard_id)
+        base_shard = re.sub(
+            r"-zluda(?:-rocm-[0-9]+(?:\.[0-9]+)*)?$", "", public_shard_id
+        )
         value = f"{base_shard}-{classifier_suffix}"
-    elif shard_id == variant_name or shard_id.endswith(f"-{variant_name}"):
-        value = shard_id
+    elif public_shard_id == variant_name or public_shard_id.endswith(
+        f"-{variant_name}"
+    ):
+        value = public_shard_id
     else:
-        value = f"{shard_id}-{variant_name}"
+        value = f"{public_shard_id}-{variant_name}"
 
     artifact_id = re.sub(r"-+", "-", value).strip("-")
     if not artifact_id:
@@ -241,7 +250,9 @@ def dependency_cache_key(shard_id: str, variant: dict) -> str:
             continue
         contract[key] = value
     if not contract:
-        return public_artifact_id(shard_id, "default")
+        # Dependency-cache keys are internal and retain the explicit shard ID
+        # so changing public classifier spelling does not invalidate caches.
+        return re.sub(r"-+", "-", f"{shard_id}-default").strip("-")
 
     labels: list[str] = []
     helper = str(contract.get("helper", "")).strip()
@@ -256,7 +267,9 @@ def dependency_cache_key(shard_id: str, variant: dict) -> str:
     digest = hashlib.sha256(
         json.dumps(contract, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()[:12]
-    return public_artifact_id(shard_id, "-".join(labels or ["custom"]) + f"-{digest}")
+    # Keep cache scopes tied to internal shard IDs, not public classifiers.
+    value = f"{shard_id}-{'-'.join(labels or ['custom'])}-{digest}"
+    return re.sub(r"-+", "-", value).strip("-")
 
 
 def workflow_rows(
