@@ -2226,6 +2226,10 @@ function(setup_triton)
     if(CMAKE_HOST_WIN32)
         set(_TRITON_LLVM_BUILD_ENV
             "PATH=${TRITON_LLVM_PREFIX}/build/bin;${TRITON_LLVM_INSTALL_DIR}/bin;$ENV{PATH}")
+        # Preserve the semicolon-separated Windows PATH as one command argument
+        # when the variable is expanded into the ExternalProject command list.
+        string(REPLACE ";" "\\;" _TRITON_LLVM_BUILD_ENV_ESCAPED
+            "${_TRITON_LLVM_BUILD_ENV}")
     endif()
     set(TRITON_LLVM_BUILD_COMMAND
             ${CMAKE_COMMAND}
@@ -2239,7 +2243,7 @@ function(setup_triton)
                 # toolchain path so MinGW generator executables resolve the exact
                 # runtime they were linked with (and do not silently exit before
                 # producing generated .inc files).
-                ${_TRITON_LLVM_BUILD_ENV}
+                ${_TRITON_LLVM_BUILD_ENV_ESCAPED}
                 # MLIRExecutionEngineShared is EXCLUDE_FROM_LIBMLIR, so include it
             # explicitly in the same build invocation. Keeping both goals in one
             # generator call avoids rebuilding the complete dependency graph.
