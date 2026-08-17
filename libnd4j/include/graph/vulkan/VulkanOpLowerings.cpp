@@ -1545,7 +1545,7 @@ static UnaryCallback unaryCallbackFor(VulkanKernelRecipe semantic) {
              mlir::Value x) {
             auto integerType = llvm::cast<mlir::IntegerType>(x.getType());
             mlir::Value one = b.create<mlir::arith::ConstantIntOp>(
-                loc, 1, integerType);
+                loc, 1, integerType.getWidth());
             // BOOL values are normalized to 0/1 before reaching this callback.
             return b.create<mlir::arith::XOrIOp>(loc, x, one);
           }};
@@ -3129,8 +3129,8 @@ static mlir::Value emitIntegerBinary(mlir::OpBuilder& builder,
       return builder.create<mlir::arith::XOrIOp>(loc, lhs, rhs);
     case VulkanKernelRecipe::LOGICAL_NOT_BINARY: {
       auto integerType = llvm::cast<mlir::IntegerType>(lhs.getType());
-      auto zero = builder.create<mlir::arith::ConstantIntOp>(loc, 0, integerType);
-      auto one = builder.create<mlir::arith::ConstantIntOp>(loc, 1, integerType);
+      auto zero = builder.create<mlir::arith::ConstantIntOp>(loc, 0, integerType.getWidth());
+      auto one = builder.create<mlir::arith::ConstantIntOp>(loc, 1, integerType.getWidth());
       auto lhsTrue = builder.create<mlir::arith::CmpIOp>(
           loc, mlir::arith::CmpIPredicate::ne, lhs, zero);
       auto rhsTrue = builder.create<mlir::arith::CmpIOp>(
@@ -3151,12 +3151,12 @@ static mlir::Value emitIntegerBinary(mlir::OpBuilder& builder,
       auto type = llvm::cast<mlir::IntegerType>(lhs.getType());
       const unsigned width = type.getWidth();
       mlir::Value widthMask = builder.create<mlir::arith::ConstantIntOp>(
-          loc, static_cast<int64_t>(width - 1), type);
+          loc, static_cast<int64_t>(width - 1), type.getWidth());
       mlir::Value amount = builder.create<mlir::arith::AndIOp>(
           loc, rhs, widthMask);
-      mlir::Value zero = builder.create<mlir::arith::ConstantIntOp>(loc, 0, type);
+      mlir::Value zero = builder.create<mlir::arith::ConstantIntOp>(loc, 0, type.getWidth());
       mlir::Value widthValue = builder.create<mlir::arith::ConstantIntOp>(
-          loc, static_cast<int64_t>(width), type);
+          loc, static_cast<int64_t>(width), type.getWidth());
       mlir::Value opposite = builder.create<mlir::arith::SubIOp>(
           loc, widthValue, amount);
       mlir::Value left = builder.create<mlir::arith::ShLIOp>(loc, lhs, amount);
@@ -3221,7 +3221,7 @@ static mlir::Value emitIntegerBinary(mlir::OpBuilder& builder,
     case VulkanKernelRecipe::SAFE_DIVIDE:
     case VulkanKernelRecipe::DIVIDE_NO_NAN: {
       mlir::Value zero = builder.create<mlir::arith::ConstantIntOp>(
-          loc, 0, llvm::cast<mlir::IntegerType>(rhs.getType()));
+          loc, 0, llvm::cast<mlir::IntegerType>(rhs.getType()).getWidth());
       mlir::Value denominatorZero = builder.create<mlir::arith::CmpIOp>(
           loc, mlir::arith::CmpIPredicate::eq, rhs, zero);
       mlir::Value quotient = isUnsigned
@@ -6294,7 +6294,7 @@ mlir::LogicalResult ElementwiseTernaryToSpirv::matchAndRewrite(
   mlir::Value conditionIsTrue = rewriter.create<mlir::arith::CmpIOp>(
       loc, mlir::arith::CmpIPredicate::ne, conditionValue,
       rewriter.create<mlir::arith::ConstantIntOp>(
-          loc, 0, rewriter.getI32Type()));
+          loc, 0, rewriter.getI32Type().getWidth()));
   mlir::Value trueScalar = loadAsScalar(
       rewriter, loc, trueValue, trueIndices, computeType,
       trueUnsigned, readBoolAttr("nd4j.input1_unsigned"));
