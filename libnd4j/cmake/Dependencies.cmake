@@ -1920,14 +1920,27 @@ function(setup_triton)
             # linking and runtime packaging must not depend on which setup path ran.
             if(NOT TARGET triton_llvm_shared)
                 add_library(triton_llvm_shared SHARED IMPORTED GLOBAL)
-                set_target_properties(triton_llvm_shared PROPERTIES
-                    IMPORTED_LOCATION "${_TRITON_LLVM_SHARED_LIBRARY}")
+                if(WIN32)
+                    set_target_properties(triton_llvm_shared PROPERTIES
+                        IMPORTED_LOCATION "${_TRITON_LLVM_SHARED_LIBRARY}"
+                        IMPORTED_IMPLIB "${TRITON_LLVM_INSTALL_DIR}/lib/libLLVM.dll.a")
+                else()
+                    set_target_properties(triton_llvm_shared PROPERTIES
+                        IMPORTED_LOCATION "${_TRITON_LLVM_SHARED_LIBRARY}")
+                endif()
             endif()
             if(NOT TARGET triton_mlir_shared)
                 add_library(triton_mlir_shared SHARED IMPORTED GLOBAL)
-                set_target_properties(triton_mlir_shared PROPERTIES
-                    IMPORTED_LOCATION "${_TRITON_MLIR_SHARED_LIBRARY}"
-                    INTERFACE_LINK_LIBRARIES triton_llvm_shared)
+                if(WIN32)
+                    set_target_properties(triton_mlir_shared PROPERTIES
+                        IMPORTED_LOCATION "${_TRITON_MLIR_SHARED_LIBRARY}"
+                        IMPORTED_IMPLIB "${TRITON_LLVM_INSTALL_DIR}/lib/libMLIR.dll.a"
+                        INTERFACE_LINK_LIBRARIES triton_llvm_shared)
+                else()
+                    set_target_properties(triton_mlir_shared PROPERTIES
+                        IMPORTED_LOCATION "${_TRITON_MLIR_SHARED_LIBRARY}"
+                        INTERFACE_LINK_LIBRARIES triton_llvm_shared)
+                endif()
             endif()
 
             target_link_libraries(triton_interface INTERFACE
@@ -2442,10 +2455,16 @@ function(setup_triton)
             # that hard format limit. Keep the shared ABI boundary, but hide
             # unannotated implementation symbols; LLVM_ABI/LLVM_EXPORT_TEMPLATE
             # annotations remain exported for MLIR and downstream consumers.
+            # MinGW cannot link LLVM tools against the monolithic DLL after
+            # the PE export table is bounded below 65,535 entries. Keep the shared
+            # producer for runtime packaging, but link LLVM/MLIR tools and the MLIR
+            # shared target against their component archives.
             list(APPEND TRITON_LLVM_CMAKE_ARGS
                 -DCMAKE_C_VISIBILITY_PRESET=hidden
                 -DCMAKE_CXX_VISIBILITY_PRESET=hidden
                 -DCMAKE_VISIBILITY_INLINES_HIDDEN=ON
+                -DLLVM_LINK_LLVM_DYLIB=OFF
+                -DMLIR_LINK_MLIR_DYLIB=OFF
             )
         endif()
 
@@ -2831,7 +2850,12 @@ function(setup_triton)
     # The pinned LLVM build produces the upstream monolithic LLVM and MLIR
     # shared libraries. For a fresh build their package exports do not exist at
     # configure time, so model the known build byproducts as imported targets.
-    if(APPLE)
+    if(WIN32)
+        set(_TRITON_LLVM_SHARED_LIBRARY "${TRITON_LLVM_INSTALL_DIR}/bin/libLLVM.dll")
+        set(_TRITON_MLIR_SHARED_LIBRARY "${TRITON_LLVM_INSTALL_DIR}/bin/libMLIR.dll")
+        set(_TRITON_LLVM_IMPORT_LIBRARY "${TRITON_LLVM_INSTALL_DIR}/lib/libLLVM.dll.a")
+        set(_TRITON_MLIR_IMPORT_LIBRARY "${TRITON_LLVM_INSTALL_DIR}/lib/libMLIR.dll.a")
+    elseif(APPLE)
         set(_TRITON_LLVM_SHARED_LIBRARY "${TRITON_LLVM_INSTALL_DIR}/lib/libLLVM.dylib")
         set(_TRITON_MLIR_SHARED_LIBRARY "${TRITON_LLVM_INSTALL_DIR}/lib/libMLIR.dylib")
     else()
@@ -2840,14 +2864,27 @@ function(setup_triton)
     endif()
 
     add_library(triton_llvm_shared SHARED IMPORTED GLOBAL)
-    set_target_properties(triton_llvm_shared PROPERTIES
-        IMPORTED_LOCATION "${_TRITON_LLVM_SHARED_LIBRARY}")
+    if(WIN32)
+        set_target_properties(triton_llvm_shared PROPERTIES
+            IMPORTED_LOCATION "${_TRITON_LLVM_SHARED_LIBRARY}"
+            IMPORTED_IMPLIB "${_TRITON_LLVM_IMPORT_LIBRARY}")
+    else()
+        set_target_properties(triton_llvm_shared PROPERTIES
+            IMPORTED_LOCATION "${_TRITON_LLVM_SHARED_LIBRARY}")
+    endif()
     add_dependencies(triton_llvm_shared triton_llvm_external)
 
     add_library(triton_mlir_shared SHARED IMPORTED GLOBAL)
-    set_target_properties(triton_mlir_shared PROPERTIES
-        IMPORTED_LOCATION "${_TRITON_MLIR_SHARED_LIBRARY}"
-        INTERFACE_LINK_LIBRARIES triton_llvm_shared)
+    if(WIN32)
+        set_target_properties(triton_mlir_shared PROPERTIES
+            IMPORTED_LOCATION "${_TRITON_MLIR_SHARED_LIBRARY}"
+            IMPORTED_IMPLIB "${_TRITON_MLIR_IMPORT_LIBRARY}"
+            INTERFACE_LINK_LIBRARIES triton_llvm_shared)
+    else()
+        set_target_properties(triton_mlir_shared PROPERTIES
+            IMPORTED_LOCATION "${_TRITON_MLIR_SHARED_LIBRARY}"
+            INTERFACE_LINK_LIBRARIES triton_llvm_shared)
+    endif()
     add_dependencies(triton_mlir_shared triton_llvm_external)
 
     target_link_libraries(triton_interface INTERFACE
