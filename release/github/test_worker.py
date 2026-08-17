@@ -99,6 +99,14 @@ class WorkflowMatrixTests(unittest.TestCase):
             "linux-x86_64-cpu-base",
             prepare_worker.public_artifact_id("linux-x86_64-cpu", "base"),
         )
+        self.assertEqual(
+            "linux-x86_64-cuda-12.9-zluda-rocm-6.2.4",
+            prepare_worker.public_artifact_id(
+                "linux-x86_64-zluda-rocm-6.2.4",
+                "cuda-12.9",
+                {"classifierSuffix": "-cuda-12.9-zluda-rocm-6.2.4"},
+            ),
+        )
 
     def test_every_matrix_row_is_an_explicit_plan_variant(self):
         plan_shards = prepare_worker.plan_shards(self.plan)

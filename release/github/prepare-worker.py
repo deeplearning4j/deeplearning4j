@@ -145,8 +145,10 @@ def public_artifact_id(
 
     Classifier IDs always use single hyphens. ZLUDA rows additionally carry
     the complete ROCm-qualified native classifier suffix so distinct ROCm
-    runtimes cannot share a staging ID. The ``-zluda`` shard marker is removed
-    before appending that suffix to avoid emitting ``zluda-zluda``.
+    runtimes cannot share a staging ID. The ``-zluda`` shard marker and any
+    ROCm version already present in the shard ID are removed before appending
+    that suffix. This keeps versioned shards from emitting the ROCm qualifier
+    twice.
     """
     shard_id = str(shard_id).strip("-")
     variant_name = str(variant_name).strip("-")
@@ -160,11 +162,10 @@ def public_artifact_id(
             classifier_suffix = candidate
 
     if classifier_suffix:
-        base_shard = (
-            shard_id[: -len("-zluda")]
-            if shard_id.endswith("-zluda")
-            else shard_id
-        )
+        # Versioned ZLUDA shard IDs carry their ROCm version in the
+        # shard key, while the variant suffix carries the complete published
+        # classifier. Strip that shard marker before appending the suffix.
+        base_shard = re.sub(r"-zluda(?:-rocm-[0-9]+(?:\.[0-9]+)*)?$", "", shard_id)
         value = f"{base_shard}-{classifier_suffix}"
     elif shard_id == variant_name or shard_id.endswith(f"-{variant_name}"):
         value = shard_id
