@@ -701,13 +701,141 @@ function(configure_windows_cuda_build)
     set_property(GLOBAL PROPERTY TARGET_MESSAGES ON)
 endfunction()
 
+# Resolve the PTX images used by ZLUDA without changing ordinary CUDA
+# architecture selection. ZLUDA translates virtual PTX at runtime; emitting
+# NVIDIA SASS or silently forcing an unrelated legacy target makes the runtime
+# choose an invalid payload on modern AMD GPUs.
+function(resolve_zluda_ptx_architectures COMPUTE_VALUE)
+    if(NOT SD_ZLUDA)
+        return()
+    endif()
+
+    set(_requested "${COMPUTE_VALUE}")
+    string(STRIP "${_requested}" _requested)
+    string(TOLOWER "${_requested}" _requested_lower)
+    set(_explicit TRUE)
+    if(_requested STREQUAL "" OR
+       _requested_lower STREQUAL "auto" OR
+       _requested_lower STREQUAL "all")
+        set(_explicit FALSE)
+    endif()
+
+    # An explicit user/build value is authoritative. Only the ZLUDA fallback
+    # is ROCm-aware; normal CUDA continues through the existing code below.
+    if(NOT _explicit)
+        set(_rocm_root "")
+        set(_rocm_major "")
+        set(_rocm_minor "")
+        set(_rocm_candidates
+            "${ROCM_PATH}"
+            "$ENV{ROCM_PATH}"
+            "$ENV{ROCM_HOME}"
+            "$ENV{HIP_PATH}"
+            "/opt/rocm")
+        foreach(_rocm_candidate IN LISTS _rocm_candidates)
+            if(NOT _rocm_candidate STREQUAL "" AND
+               EXISTS "${_rocm_candidate}/include/hip/hip_runtime.h")
+                get_filename_component(_rocm_root "${_rocm_candidate}" REALPATH)
+                break()
+            endif()
+        endforeach()
+
+        # Release workers normally use a versioned ROCm root (for example
+        # /opt/rocm-6.2.4). Also accept the canonical ROCm version header when
+        # /opt/rocm is an unversioned installation.
+        if(_rocm_root)
+            get_filename_component(_rocm_root_name "${_rocm_root}" NAME)
+            if(_rocm_root_name MATCHES "^rocm[-_]([0-9]+)[.]([0-9]+)")
+                set(_rocm_major "${CMAKE_MATCH_1}")
+                set(_rocm_minor "${CMAKE_MATCH_2}")
+            endif()
+
+            if(_rocm_major STREQUAL "")
+                foreach(_rocm_version_header IN ITEMS
+                        "${_rocm_root}/include/rocm-core/rocm_version.h"
+                        "${_rocm_root}/include/hip/hip_version.h")
+                    if(EXISTS "${_rocm_version_header}")
+                        file(STRINGS "${_rocm_version_header}" _rocm_version_lines
+                             REGEX "ROCM_VERSION_(MAJOR|MINOR)")
+                        foreach(_rocm_version_line IN LISTS _rocm_version_lines)
+                            if(_rocm_version_line MATCHES
+                               "ROCM_VERSION_MAJOR[ \\t]+([0-9]+)")
+                                set(_rocm_major "${CMAKE_MATCH_1}")
+                            elseif(_rocm_version_line MATCHES
+                                   "ROCM_VERSION_MINOR[ \\t]+([0-9]+)")
+                                set(_rocm_minor "${CMAKE_MATCH_1}")
+                            endif()
+                        endforeach()
+                    endif()
+                endforeach()
+            endif()
+        endif()
+
+        # ZLUDA v6 is built for ROCm 6/7. Keep ROCm 6 on the conservative
+        # Ampere-era PTX baseline, while ROCm 7 gets the project's CUDA 12.x
+        # pair. Unknown roots remain usable but are explicit in the configure
+        # output and use the conservative baseline.
+        if(_rocm_major STREQUAL "6")
+            set(_requested "8.6")
+        elseif(_rocm_major STREQUAL "7")
+            set(_requested "8.6 9.0")
+        else()
+            set(_requested "8.6")
+            if(_rocm_major STREQUAL "")
+                message(WARNING
+                    "ZLUDA ROCm version could not be detected; defaulting PTX target to compute_86")
+            else()
+                message(WARNING
+                    "ZLUDA ROCm ${_rocm_major}.${_rocm_minor} is outside the validated 6.x/7.x policy; "
+                    "defaulting PTX target to compute_86")
+            endif()
+        endif()
+        message(STATUS
+            "ZLUDA PTX defaults: ROCm=${_rocm_major}.${_rocm_minor}, targets='${_requested}'")
+    else()
+        message(STATUS "ZLUDA PTX targets requested by build: '${_requested}'")
+    endif()
+
+    # Normalize both comma- and whitespace-separated libnd4j.compute values.
+    string(REGEX REPLACE "[ \\t,]+" ";" _arch_list "${_requested}")
+    set(_arch_flags "")
+    set(_normalized_targets "")
+    foreach(_arch IN LISTS _arch_list)
+        string(STRIP "${_arch}" _arch)
+        if(_arch STREQUAL "")
+            continue()
+        endif()
+        string(REPLACE "." "" _arch_clean "${_arch}")
+        if(NOT _arch_clean MATCHES "^[0-9][0-9]$")
+            message(FATAL_ERROR
+                "Invalid ZLUDA PTX compute target '${_arch}'; use values such as 8.6 or 9.0")
+        endif()
+        list(APPEND _normalized_targets "${_arch_clean}")
+        list(APPEND _arch_flags
+            "-gencode arch=compute_${_arch_clean},code=compute_${_arch_clean}")
+    endforeach()
+
+    if(NOT _arch_flags)
+        message(FATAL_ERROR "ZLUDA requires at least one PTX compute target")
+    endif()
+
+    list(REMOVE_DUPLICATES _normalized_targets)
+    list(REMOVE_DUPLICATES _arch_flags)
+    string(REPLACE ";" " " _arch_flags_string "${_arch_flags}")
+    string(REPLACE ";" "," _normalized_targets_string "${_normalized_targets}")
+    set(CUDA_ARCH_FLAGS "${_arch_flags_string}" PARENT_SCOPE)
+    set(ZLUDA_PTX_TARGETS "${_normalized_targets_string}" PARENT_SCOPE)
+    set(CMAKE_CUDA_ARCHITECTURES "OFF" PARENT_SCOPE)
+    message(STATUS
+        "ZLUDA PTX flags: ${_arch_flags_string} (targets=${_normalized_targets_string})")
+endfunction()
+
 function(configure_cuda_architecture_flags COMPUTE)
-    # ZLUDA consumes PTX, not NVIDIA SASS. Keep one compute_50 virtual
-    # image for the widest PTX compatibility and suppress CMake's additional
-    # architecture emission with CMAKE_CUDA_ARCHITECTURES=OFF.
     if(SD_ZLUDA)
-        set(CUDA_ARCH_FLAGS "-gencode arch=compute_50,code=compute_50" PARENT_SCOPE)
-        set(CMAKE_CUDA_ARCHITECTURES "OFF" PARENT_SCOPE)
+        resolve_zluda_ptx_architectures("${COMPUTE}")
+        set(CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS}" PARENT_SCOPE)
+        set(CMAKE_CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}" PARENT_SCOPE)
+        set(ZLUDA_PTX_TARGETS "${ZLUDA_PTX_TARGETS}" PARENT_SCOPE)
         return()
     endif()
 
