@@ -2219,6 +2219,14 @@ function(setup_triton)
     set(_TRITON_LLVM_SHAPE_KEY_RAW
         "${TRITON_LLVM_COMMIT}-${TRITON_LLVM_TARGETS}-Release-${_TRITON_LLVM_RECIPE_REVISION}-${_TRITON_TARGET_CACHE_CONFIG}")
     string(REGEX REPLACE "[^A-Za-z0-9_.-]" "_" TRITON_LLVM_SHAPE_KEY "${_TRITON_LLVM_SHAPE_KEY_RAW}")
+    # Windows MinGW generator executables need both their in-tree DLLs and the
+    # compiler runtime on PATH. Keep this host-specific; semicolon-separated
+    # Windows PATH syntax must never leak into ELF builds.
+    set(_TRITON_LLVM_BUILD_ENV)
+    if(CMAKE_HOST_WIN32)
+        set(_TRITON_LLVM_BUILD_ENV
+            "PATH=${TRITON_LLVM_PREFIX}/build/bin;${TRITON_LLVM_INSTALL_DIR}/bin;$ENV{PATH}")
+    endif()
     set(TRITON_LLVM_BUILD_COMMAND
             ${CMAKE_COMMAND}
                 "-DBUILD_DIR=<BINARY_DIR>"
@@ -2226,6 +2234,12 @@ function(setup_triton)
             COMMAND ${CMAKE_COMMAND} -E env
                 "SD_SMART_CCACHE_SEGMENT=triton_llvm"
                 "SD_SMART_CCACHE_SHAPE_KEY=${TRITON_LLVM_SHAPE_KEY}"
+                # Native LLVM/MLIR generators are executed during this build. Keep
+                # the in-tree build/install DLL directories ahead of the inherited
+                # toolchain path so MinGW generator executables resolve the exact
+                # runtime they were linked with (and do not silently exit before
+                # producing generated .inc files).
+                ${_TRITON_LLVM_BUILD_ENV}
                 # MLIRExecutionEngineShared is EXCLUDE_FROM_LIBMLIR, so include it
             # explicitly in the same build invocation. Keeping both goals in one
             # generator call avoids rebuilding the complete dependency graph.
