@@ -75,8 +75,9 @@ set(TOKENIZERS_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/tokenizers-build")
 if(PLATFORM STREQUAL "windows")
     set(WRAPPER_LIB_NAME "tokenizers_wrapper")
     set(LIB_SUFFIX ".dll")
-    # MinGW uses .a for static libraries, MSVC uses .lib
-    if(MINGW)
+    # GNU-style Windows toolchains (MinGW or clang with GNU-like
+    # command-line semantics) consume Rust's .a archive. MSVC consumes .lib.
+    if(MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         set(STATIC_LIB_SUFFIX ".a")
     else()
         set(STATIC_LIB_SUFFIX ".lib")

@@ -247,6 +247,22 @@ CMAKE_ARGS=(
     "-DJAVACPP_PLATFORM=${JAVACPP_PLATFORM}"
 )
 
+# Pass the archive that Cargo actually produced. Windows workers may select
+# clang with GNU-like command-line semantics, while Cargo is intentionally
+# targeting x86_64-pc-windows-gnu; deriving the path avoids a .lib/.a mismatch.
+if [[ "${HOST_PLATFORM}" == "windows" ]]; then
+    TOKENIZERS_FFI_LIB_PATH=""
+    if [[ -f "${FFI_TARGET_DIR}/release/libtokenizers_ffi.a" ]]; then
+        TOKENIZERS_FFI_LIB_PATH="${FFI_TARGET_DIR}/release/libtokenizers_ffi.a"
+    elif [[ -f "${FFI_TARGET_DIR}/release/libtokenizers_ffi.lib" ]]; then
+        TOKENIZERS_FFI_LIB_PATH="${FFI_TARGET_DIR}/release/libtokenizers_ffi.lib"
+    else
+        echo "ERROR: Cargo did not produce a tokenizers FFI archive under ${FFI_TARGET_DIR}/release"
+        exit 1
+    fi
+    CMAKE_ARGS+=("-DTOKENIZERS_FFI_LIB=${TOKENIZERS_FFI_LIB_PATH}")
+fi
+
 # On Windows/MSYS2, force MinGW Makefiles generator (otherwise cmake picks Visual Studio)
 if [[ "${HOST_PLATFORM}" == "windows" ]]; then
     CMAKE_ARGS+=("-G" "MinGW Makefiles")
