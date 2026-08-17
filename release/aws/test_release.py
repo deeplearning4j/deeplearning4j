@@ -2724,14 +2724,27 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("-Dlibnd4j.platform=windows-x86_64", windows_vulkan)
         self.assertIn("-Dplatform.classifier=windows-x86_64", windows_vulkan)
         self.assertIn("-Dlibnd4j.classifier=windows-x86_64", windows_vulkan)
-        self.assertIn("-Dlibnd4j.triton=OFF", windows_vulkan)
-        self.assertIn("-Dlibnd4j.mlir=OFF", windows_vulkan)
-        self.assertNotIn("-Dlibnd4j.triton=ON", windows_vulkan)
-        self.assertNotIn("-Dlibnd4j.mlir=ON", windows_vulkan)
+        self.assertIn("-Dlibnd4j.triton=ON", windows_vulkan)
+        self.assertIn("-Dlibnd4j.mlir=ON", windows_vulkan)
+        self.assertNotIn("-Dlibnd4j.triton=OFF", windows_vulkan)
+        self.assertNotIn("-Dlibnd4j.mlir=OFF", windows_vulkan)
         self.assertEqual(
             ":nd4j-vulkan,:nd4j-vulkan-preset,:nd4j-vulkan-platform,:libnd4j",
             windows_vulkan[windows_vulkan.index("-pl") + 1],
         )
+
+        linux_vulkan = command(DL4J_FAMILY="vulkan")
+        self.assertIn("-Pvulkan", linux_vulkan)
+        self.assertIn("-Dlibnd4j.vulkan", linux_vulkan)
+        self.assertIn("-Dlibnd4j.triton=ON", linux_vulkan)
+        self.assertIn("-Dlibnd4j.mlir=ON", linux_vulkan)
+        self.assertIn("-Djavacpp.platform=linux-x86_64", linux_vulkan)
+        self.assertIn("-Dplatform.classifier=linux-x86_64", linux_vulkan)
+
+        linux_vulkan_mlir = command(DL4J_FAMILY="vulkan-mlir")
+        self.assertIn("-Dlibnd4j.triton=ON", linux_vulkan_mlir)
+        self.assertIn("-Dlibnd4j.mlir=ON", linux_vulkan_mlir)
+        self.assertIn("-Dplatform.classifier=linux-x86_64-compile", linux_vulkan_mlir)
 
         metal = command(DL4J_FAMILY="macos-arm64", DL4J_HELPER="mps")
         self.assertIn("-Pmetal", metal)

@@ -207,6 +207,14 @@ unset(_sd_helper_priority_description)
 set(MLIR_VERSION "18" CACHE STRING "MLIR/LLVM minimum version (18+)")
 option(MLIR_ENABLE_GPU "Enable MLIR GPU dialect and NVVM backend" OFF)
 option(MLIR_ENABLE_VULKAN "Enable the vendor-neutral MLIR Vulkan/SPIR-V backend" OFF)
+# Vulkan MLIR is a backend contract: whenever the Vulkan runtime requests the
+# MLIR helper, enable the SPIR-V dialect and validated MLIR::SPIRV target.
+# Keeping this derived from SD_VULKAN avoids platform-specific Maven/CMake
+# flags drifting apart between Linux and MinGW Windows builds.
+if(SD_VULKAN AND HELPERS_mlir)
+    set(MLIR_ENABLE_VULKAN ON CACHE BOOL
+        "Enable the vendor-neutral MLIR Vulkan/SPIR-V backend" FORCE)
+endif()
 option(MLIR_ENABLE_AARCH64 "Enable LLVM AArch64 backend for ARM cross-compilation" OFF)
 set(MLIR_AOT_TARGET "HOST" CACHE STRING "AOT compilation target (HOST, AARCH64_LINUX, AARCH64_ANDROID, X86_64_LINUX)")
 set_property(CACHE MLIR_AOT_TARGET PROPERTY STRINGS HOST AARCH64_LINUX AARCH64_ANDROID X86_64_LINUX)

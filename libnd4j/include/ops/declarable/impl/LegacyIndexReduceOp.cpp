@@ -31,11 +31,13 @@ namespace sd {
 namespace ops {
 SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 LegacyIndexReduceOp::LegacyIndexReduceOp() : LegacyOp(1) {
-  //
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyIndexReduceOp::LegacyIndexReduceOp(int opNum) : LegacyOp(1, opNum) {
-  //
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyOp *LegacyIndexReduceOp::clone() { return new LegacyIndexReduceOp(this->_opNum); }

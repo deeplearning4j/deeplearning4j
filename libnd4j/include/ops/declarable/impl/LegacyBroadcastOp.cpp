@@ -98,11 +98,13 @@ Status LegacyBroadcastOp::validateAndExecute(Context &block) {
 }
 
 LegacyBroadcastOp::LegacyBroadcastOp() : LegacyOp(2) {
-  //
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyBroadcastOp::LegacyBroadcastOp(int opNum) : LegacyOp(2, opNum) {
-  //
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyOp *LegacyBroadcastOp::clone() { return new LegacyBroadcastOp(this->_opNum); }

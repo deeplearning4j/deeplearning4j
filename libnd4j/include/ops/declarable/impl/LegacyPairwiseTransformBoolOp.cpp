@@ -27,11 +27,15 @@ namespace sd {
 namespace ops {
 SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 LegacyPairwiseTransformBoolOp::LegacyPairwiseTransformBoolOp() : LegacyOp(2) {
-  // just a no-op
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_COMPARISON |
+      OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyPairwiseTransformBoolOp::LegacyPairwiseTransformBoolOp(int opNum) : LegacyOp(2, opNum) {
-  // just a no-op
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_COMPARISON |
+      OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyOp *LegacyPairwiseTransformBoolOp::clone() { return new LegacyPairwiseTransformBoolOp(this->_opNum); }

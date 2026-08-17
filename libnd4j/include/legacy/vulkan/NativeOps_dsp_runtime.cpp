@@ -310,7 +310,15 @@ int dspIsExtInputDeviceAuthoritative(sd::Pointer planHandle, int extIdx) {
 }
 
 bool isTritonAvailable() {
-#if defined(HAVE_TRITON) && HAVE_TRITON && defined(HAVE_MLIR) && HAVE_MLIR
+  // The public API predates the Vulkan MLIR/SPIR-V compiler path and exposes
+  // it through the Triton availability probe. Vulkan does not build libtriton,
+  // but a compiler-enabled Vulkan runtime is available when MLIR/SPIR-V is
+  // compiled in and a Vulkan device can be initialized.
+#if defined(SD_VULKAN) && SD_VULKAN && defined(HAVE_MLIR) && HAVE_MLIR && \
+    defined(MLIR_ENABLE_VULKAN) && MLIR_ENABLE_VULKAN
+  auto& manager = VulkanDeviceManager::getInstance();
+  return manager.initialize() && manager.deviceCount() > 0;
+#elif defined(HAVE_TRITON) && HAVE_TRITON && defined(HAVE_MLIR) && HAVE_MLIR
   auto& manager = VulkanDeviceManager::getInstance();
   return manager.initialize() && manager.deviceCount() > 0;
 #else

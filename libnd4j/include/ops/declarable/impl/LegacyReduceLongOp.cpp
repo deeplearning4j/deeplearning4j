@@ -32,10 +32,13 @@ namespace sd {
 namespace ops {
 SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 LegacyReduceLongOp::LegacyReduceLongOp() : LegacyOp(1) {
-  //
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyReduceLongOp::LegacyReduceLongOp(int opNum) : LegacyOp(1, opNum) {
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyOp* LegacyReduceLongOp::clone() { return new LegacyReduceLongOp(this->_opNum); }

@@ -30,16 +30,23 @@ namespace sd {
 namespace ops {
 SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 LegacyScalarBoolOp::LegacyScalarBoolOp() : LegacyOp(1) {
-  // no-op
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_COMPARISON |
+      OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyScalarBoolOp::LegacyScalarBoolOp(int opNum) : LegacyOp(1, opNum) {
-  // no-op
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_COMPARISON |
+      OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyOp *LegacyScalarBoolOp::clone() { return new LegacyScalarBoolOp(this->_opNum, *this->_scalar); }
 
 LegacyScalarBoolOp::LegacyScalarBoolOp(int opNum, NDArray &scalar) : LegacyOp(1, opNum) {
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_COMPARISON |
+      OP_TRAIT_FULLY_WRITING);
   _scalar = scalar.dup(scalar.ordering(), false);
 }
 

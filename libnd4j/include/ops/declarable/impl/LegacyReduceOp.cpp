@@ -29,10 +29,13 @@
 namespace sd {
 namespace ops {
 LegacyReduceOp::LegacyReduceOp() : LegacyOp::LegacyOp(1) {
-  //
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyReduceOp::LegacyReduceOp(int opType) : LegacyOp::LegacyOp(1, opType) {
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyOp *LegacyReduceOp::clone() { return new LegacyReduceOp(this->_opNum); }

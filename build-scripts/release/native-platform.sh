@@ -154,7 +154,7 @@ case "${DL4J_FAMILY}" in
     modules=:nd4j-vulkan,:nd4j-vulkan-preset,:nd4j-vulkan-platform
     [ -n "${DL4J_LIBND4J_URL}" ] || modules+=,:libnd4j
     variant_cpu "${platform}"
-    command=(mvn ${split_flags[@]+"${split_flags[@]}"} ${repo[@]+"${repo[@]}"} --no-transfer-progress -Pvulkan -pl "${modules}" -Dlibnd4j.vulkan -Dlibnd4j.mlir=OFF -Dlibnd4j.triton=OFF "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false "-Djavacpp.platform=${platform}" -Djavacpp.platform.properties=windows-x86_64-mingw -Djavacpp.platform.compiler=g++ "-Dlibnd4j.platform=${platform}" "-Dplatform.classifier=${platform}" -Dlibnd4j.oom.killer=OFF ${also_make[@]+"${also_make[@]}"} --batch-mode "${VARIANT[@]}" "${DL4J_MAVEN_GOAL}" -DskipTests)
+    command=(mvn ${split_flags[@]+"${split_flags[@]}"} ${repo[@]+"${repo[@]}"} --no-transfer-progress -Pvulkan -pl "${modules}" -Dlibnd4j.vulkan -Dlibnd4j.mlir=ON -Dlibnd4j.triton=ON "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false "-Djavacpp.platform=${platform}" -Djavacpp.platform.properties=windows-x86_64-mingw -Djavacpp.platform.compiler=g++ "-Dlibnd4j.platform=${platform}" "-Dplatform.classifier=${platform}" -Dlibnd4j.oom.killer=OFF ${also_make[@]+"${also_make[@]}"} --batch-mode "${VARIANT[@]}" "${DL4J_MAVEN_GOAL}" -DskipTests)
     ;;
   vulkan|vulkan-mlir|hexagon|tpu)
     backend=${DL4J_FAMILY%%-*}; [ "${DL4J_FAMILY}" != vulkan-mlir ] || backend=vulkan
@@ -164,7 +164,7 @@ case "${DL4J_FAMILY}" in
     [ "${backend}" != vulkan ] || modules+=,:nd4j-vulkan-platform
     [ -n "${DL4J_LIBND4J_URL}" ] || modules+=,:libnd4j
     flags=("-Dlibnd4j.${backend}")
-    if [ "${DL4J_FAMILY}" = vulkan ] || [ "${DL4J_FAMILY}" = vulkan-mlir ]; then flags+=(-Dlibnd4j.triton=ON); fi
+    if [ "${DL4J_FAMILY}" = vulkan ] || [ "${DL4J_FAMILY}" = vulkan-mlir ]; then flags+=(-Dlibnd4j.triton=ON -Dlibnd4j.mlir=ON); fi
     [ "${DL4J_FAMILY}" != vulkan-mlir ] || flags+=(-Dlibnd4j.mlir=ON)
     command=(mvn ${split_flags[@]+"${split_flags[@]}"} ${repo[@]+"${repo[@]}"} --no-transfer-progress "-P${backend}" -pl "${modules}" "${flags[@]}" "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 "-Dplatform.classifier=${classifier}" ${also_make[@]+"${also_make[@]}"} --batch-mode "${DL4J_MAVEN_GOAL}" -DskipTests)
     ;;

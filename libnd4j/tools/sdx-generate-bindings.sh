@@ -249,8 +249,8 @@ case "${BACKEND}" in
       -DSD_CUDA=OFF
       -DSD_VULKAN=ON
       -DSD_TRITON=OFF
-      -DHELPERS_mlir=OFF
-      -DMLIR_ENABLE_VULKAN=OFF
+      -DHELPERS_mlir=ON
+      -DMLIR_ENABLE_VULKAN=ON
     )
     ;;
 esac

@@ -28,11 +28,13 @@ namespace sd {
 namespace ops {
 SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 LegacyTransformBoolOp::LegacyTransformBoolOp() : LegacyOp(1) {
-  // just a no-op
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyTransformBoolOp::LegacyTransformBoolOp(int opNum) : LegacyOp(1, opNum) {
-  // just a no-op
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyOp *LegacyTransformBoolOp::clone() { return new LegacyTransformBoolOp(this->_opNum); }

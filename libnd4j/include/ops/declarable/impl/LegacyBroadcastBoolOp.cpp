@@ -91,11 +91,15 @@ Status LegacyBroadcastBoolOp::validateAndExecute(Context &block) {
 }
 
 LegacyBroadcastBoolOp::LegacyBroadcastBoolOp() : LegacyOp(2) {
-  //
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_COMPARISON |
+      OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyBroadcastBoolOp::LegacyBroadcastBoolOp(int opNum) : LegacyOp(2, opNum) {
-  //
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_COMPARISON |
+      OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyOp *LegacyBroadcastBoolOp::clone() { return new LegacyBroadcastBoolOp(this->_opNum); }

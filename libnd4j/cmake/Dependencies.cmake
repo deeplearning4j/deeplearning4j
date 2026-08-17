@@ -1691,11 +1691,12 @@ function(setup_triton)
     endif()
 
     # The pinned LLVM sources currently require headers that are incompatible
-    # with MSVC's STL (constexpr string_view::substr in TypeName.h).
-    if(WIN32)
+    # with MSVC's STL (constexpr string_view::substr in TypeName.h). MinGW
+    # uses GCC/libstdc++ and is a supported Windows Vulkan toolchain.
+    if(WIN32 AND NOT MINGW)
         message(FATAL_ERROR
-            "The project-managed LLVM/MLIR stack is unsupported on Windows because "
-            "its LLVM headers are incompatible with MSVC.")
+            "The project-managed LLVM/MLIR stack is unsupported with MSVC because "
+            "its LLVM headers are incompatible with the MSVC STL.")
     endif()
     # Select the compiler package from the backend that consumes it. This is
     # deliberately not a GPU-vs-non-GPU shortcut: Vulkan consumes the same

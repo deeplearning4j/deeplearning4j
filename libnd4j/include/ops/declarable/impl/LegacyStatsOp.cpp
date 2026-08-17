@@ -89,11 +89,13 @@ Status LegacyStatsOp::validateAndExecute(Context &block) {
 }
 
 LegacyStatsOp::LegacyStatsOp() : LegacyOp(1) {
-  //
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyStatsOp::LegacyStatsOp(int opNum) : LegacyOp(1, opNum) {
-  //
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyOp *LegacyStatsOp::clone() { return new LegacyStatsOp(this->_opNum); }

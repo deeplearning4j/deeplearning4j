@@ -99,11 +99,13 @@ Status LegacyReduce3Op::validateAndExecute(Context &block) {
 
 
 LegacyReduce3Op::LegacyReduce3Op() : LegacyOp(2) {
-  //
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyReduce3Op::LegacyReduce3Op(int opNum) : LegacyOp(2, opNum) {
-  //
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyOp *LegacyReduce3Op::clone() { return new LegacyReduce3Op(this->_opNum); }

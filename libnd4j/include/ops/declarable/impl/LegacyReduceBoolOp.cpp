@@ -30,10 +30,13 @@ namespace sd {
 namespace ops {
 SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 LegacyReduceBoolOp::LegacyReduceBoolOp() : LegacyOp(1) {
-  //
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyReduceBoolOp::LegacyReduceBoolOp(int opNum) : LegacyOp(1, opNum) {
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyOp* LegacyReduceBoolOp::clone() { return new LegacyReduceBoolOp(this->_opNum); }

@@ -28,10 +28,14 @@ namespace ops {
 SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 LegacyPairwiseTransformOp::LegacyPairwiseTransformOp() : LegacyOp(2) {
   this->getOpDescriptor()->allowInplace(true);
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyPairwiseTransformOp::LegacyPairwiseTransformOp(int opNum) : LegacyOp(2, opNum) {
   this->getOpDescriptor()->allowInplace(true);
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyOp *LegacyPairwiseTransformOp::clone() { return new LegacyPairwiseTransformOp(this->_opNum); }
