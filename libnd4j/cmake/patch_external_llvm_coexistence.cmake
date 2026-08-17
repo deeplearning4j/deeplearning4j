@@ -182,6 +182,45 @@ ${_sd_android_shared_patch}
     endif()
 endif()
 
+# The project-managed runtime contract requires MLIRExecutionEngineShared on
+# Windows as well as ELF hosts. Upstream currently excludes that shared target
+# from WIN32/MINGW builds; the existing MinGW export and ArmSME patches make the
+# producer-side Windows build viable, so remove only that platform exclusion.
+if(_sd_external_project STREQUAL "LLVM")
+    set(_sd_mlir_execution_engine_file
+        "${SOURCE_DIR}/mlir/lib/ExecutionEngine/CMakeLists.txt")
+    if(EXISTS "${_sd_mlir_execution_engine_file}")
+        file(READ "${_sd_mlir_execution_engine_file}"
+            _sd_mlir_execution_engine_source)
+        set(_sd_mlir_execution_engine_marker
+            "# SD_WINDOWS_MLIR_EXECUTION_ENGINE_SHARED_V1")
+        string(FIND "${_sd_mlir_execution_engine_source}"
+            "${_sd_mlir_execution_engine_marker}"
+            _sd_mlir_execution_engine_marker_pos)
+        if(_sd_mlir_execution_engine_marker_pos EQUAL -1)
+            set(_sd_mlir_execution_engine_anchor
+                "if(LLVM_BUILD_LLVM_DYLIB AND NOT (WIN32 OR MINGW OR CYGWIN))")
+            set(_sd_mlir_execution_engine_patch [=[
+# SD_WINDOWS_MLIR_EXECUTION_ENGINE_SHARED_V1
+if(LLVM_BUILD_LLVM_DYLIB)
+]=])
+            string(REPLACE
+                "${_sd_mlir_execution_engine_anchor}"
+                "${_sd_mlir_execution_engine_patch}"
+                _sd_mlir_execution_engine_patched
+                "${_sd_mlir_execution_engine_source}")
+            if(_sd_mlir_execution_engine_patched STREQUAL
+               _sd_mlir_execution_engine_source)
+                message(FATAL_ERROR
+                    "patch_external_llvm_coexistence: failed to enable "
+                    "MLIRExecutionEngineShared on Windows")
+            endif()
+            file(WRITE "${_sd_mlir_execution_engine_file}"
+                "${_sd_mlir_execution_engine_patched}")
+        endif()
+    endif()
+endif()
+
 # Upstream MLIR deliberately resets this option from the native host
 # architecture, which disables the execution-engine shared runtime for an
 # Android cross build even when the external-project cache receives ON.
