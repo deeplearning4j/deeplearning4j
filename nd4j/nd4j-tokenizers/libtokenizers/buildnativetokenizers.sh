@@ -173,10 +173,18 @@ if [[ -d "${FFI_DIR}" ]]; then
     # Build the FFI crate. The Windows C++ wrapper uses MinGW, so Rust must
     # emit a GNU archive rather than the default MSVC tokenizers_ffi.lib.
     if [[ "${HOST_PLATFORM}" == "windows" ]]; then
-        CARGO_BUILD_TARGET="${CARGO_BUILD_TARGET:-${TARGET}}"
+        # The C++ wrapper is built with MinGW. Always select the GNU Rust
+        # toolchain and target explicitly: the shared Windows worker action also
+        # installs the host MSVC toolchain, and inheriting it makes Cargo invoke
+        # Git's /usr/bin/link.exe for an x86_64-pc-windows-msvc sysroot.
+        CARGO_BUILD_TARGET="${TARGET}"
+        RUST_TOOLCHAIN="stable-${TARGET}"
         if command_exists rustup; then
-            rustup target add "${CARGO_BUILD_TARGET}"
+            rustup toolchain install "${RUST_TOOLCHAIN}" --profile minimal
+            rustup target add "${CARGO_BUILD_TARGET}" --toolchain "${RUST_TOOLCHAIN}"
         fi
+        RUSTUP_TOOLCHAIN="${RUST_TOOLCHAIN}" \
+        CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER="${CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER:-gcc}" \
         CARGO_TARGET_DIR="${FFI_TARGET_DIR}" cargo build --release \
             --target "${CARGO_BUILD_TARGET}" --manifest-path="${FFI_DIR}/Cargo.toml"
     else

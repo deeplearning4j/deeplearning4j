@@ -845,7 +845,7 @@
                                     <target name="cleanup-zluda-cmake-build-before-assembly">
                                         <delete includeEmptyDirs="true">
                                             <fileset dir="${libnd4j.outputPath}"
-                                                     excludes="zluda-runtime-package/**,javacpp-build-toolchain.properties"/>
+                                                     excludes="zluda-runtime-package/**,shared-runtime-manifest.txt,javacpp-build-toolchain.properties"/>
                                         </delete>
                                     </target>
                                 </configuration>

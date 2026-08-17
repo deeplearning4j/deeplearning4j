@@ -99,6 +99,8 @@ runs:
 
     - name: Set up Rust
       uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: ${{ runner.os == 'Windows' && 'stable-x86_64-pc-windows-gnu' || 'stable' }}
 
     - name: Restore Maven dependency repository
       uses: actions/cache@v6
