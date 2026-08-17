@@ -485,7 +485,13 @@ enum VulkanKernelEmitterTraits : uint32_t {
   VULKAN_EMITTER_TRAIT_RANDOM_STATE = 1u << 23,
   // Count reductions accumulate in the backend integer domain but always
   // materialize the NativeOpExecutioner INT64 result contract.
-  VULKAN_EMITTER_TRAIT_COUNT_RESULT = 1u << 24
+  VULKAN_EMITTER_TRAIT_COUNT_RESULT = 1u << 24,
+  // Index reductions select the first matching element in logical traversal
+  // order, independent of its value.
+  VULKAN_EMITTER_TRAIT_INDEX_FIRST = 1u << 25,
+  // Index reductions select the last matching element in logical traversal
+  // order, independent of its value.
+  VULKAN_EMITTER_TRAIT_INDEX_LAST = 1u << 26
 };
 
 /**

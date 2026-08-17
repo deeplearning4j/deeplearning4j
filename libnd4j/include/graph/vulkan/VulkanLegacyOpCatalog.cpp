@@ -29,7 +29,7 @@ struct LegacyFamilyTypeCode {
   int typeCode;
 };
 
-constexpr std::array<LegacyFamilyTypeCode, 19> kLegacyFamilyTypeCodes{{
+constexpr std::array<LegacyFamilyTypeCode, 22> kLegacyFamilyTypeCodes{{
     {VulkanLegacyOpFamily::BROADCAST, LEGACY_BROADCAST},
     {VulkanLegacyOpFamily::BROADCAST_BOOL, LEGACY_BROADCAST_BOOL},
     {VulkanLegacyOpFamily::PAIRWISE, LEGACY_PAIRWISE_TRANSFORM},
@@ -41,6 +41,9 @@ constexpr std::array<LegacyFamilyTypeCode, 19> kLegacyFamilyTypeCodes{{
     {VulkanLegacyOpFamily::TRANSFORM_FLOAT, LEGACY_TRANSFORM_FLOAT},
     {VulkanLegacyOpFamily::TRANSFORM_BOOL, LEGACY_TRANSFORM_BOOL},
     {VulkanLegacyOpFamily::TRANSFORM_ANY, LEGACY_TRANSFORM_ANY},
+    {VulkanLegacyOpFamily::BROADCAST_INT, LEGACY_BROADCAST_INT},
+    {VulkanLegacyOpFamily::PAIRWISE_INT, LEGACY_PAIRWISE_INT},
+    {VulkanLegacyOpFamily::SCALAR_INT, LEGACY_SCALAR_INT},
     {VulkanLegacyOpFamily::REDUCE_SAME, LEGACY_REDUCE_SAME},
     {VulkanLegacyOpFamily::REDUCE_FLOAT, LEGACY_REDUCE_FLOAT},
     {VulkanLegacyOpFamily::REDUCE_BOOL, LEGACY_REDUCE_BOOL},

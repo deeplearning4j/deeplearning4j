@@ -60,6 +60,14 @@ enum LegacyOpTypeCode : int {
   LEGACY_RANDOM               = 17,
   LEGACY_PAIRWISE_BOOL        = 18,
   LEGACY_TRANSFORM_ANY        = 19,
+  // Private Vulkan eager-execution identities. The Java DSP wire protocol
+  // does not allocate separate integer family codes, but native Vulkan
+  // legacy entry points preserve these families explicitly. Negative values
+  // keep them outside the stable Java wire range while reusing NativeSlot's
+  // family lookup path.
+  LEGACY_BROADCAST_INT        = -1,
+  LEGACY_PAIRWISE_INT         = -2,
+  LEGACY_SCALAR_INT           = -3,
 };
 
 // True for legacy op types whose reduction/broadcast dimensions live in

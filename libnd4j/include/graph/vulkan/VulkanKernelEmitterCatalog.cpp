@@ -341,6 +341,15 @@ void registerLegacyEmitterIfMissing(
       traits |= VULKAN_EMITTER_TRAIT_BOOLEAN_PARAMETERS |
                 VULKAN_EMITTER_TRAIT_TAD_REDUCTION_PERMUTATION |
                 VULKAN_EMITTER_TRAIT_INDEX_RESULT;
+      if (opNum == static_cast<int>(sd::indexreduce::IndexAbsoluteMax) ||
+          opNum == static_cast<int>(sd::indexreduce::IndexAbsoluteMin)) {
+        traits |= VULKAN_EMITTER_TRAIT_ABSOLUTE_INPUT;
+      }
+      if (opNum == static_cast<int>(sd::indexreduce::FirstIndex)) {
+        traits |= VULKAN_EMITTER_TRAIT_INDEX_FIRST;
+      } else if (opNum == static_cast<int>(sd::indexreduce::LastIndex)) {
+        traits |= VULKAN_EMITTER_TRAIT_INDEX_LAST;
+      }
       argumentSchema = VulkanArgumentSchema::INDEX_REDUCTION;
       break;
     case VulkanLegacyOpFamily::SUMMARY_STATS:

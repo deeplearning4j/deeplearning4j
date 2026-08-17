@@ -10296,6 +10296,10 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
   }
   const bool indexReduction = hasVulkanEmitterTrait(
       *emitter, VULKAN_EMITTER_TRAIT_INDEX_RESULT);
+  const bool firstIndexReduction = hasVulkanEmitterTrait(
+      *emitter, VULKAN_EMITTER_TRAIT_INDEX_FIRST);
+  const bool lastIndexReduction = hasVulkanEmitterTrait(
+      *emitter, VULKAN_EMITTER_TRAIT_INDEX_LAST);
   const bool floatingResultReduction = hasVulkanEmitterTrait(
       *emitter, VULKAN_EMITTER_TRAIT_FLOAT_RESULT);
   const bool absoluteInput = hasVulkanEmitterTrait(
@@ -10835,12 +10839,14 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
   }
 
   if (indexReduction) {
-    // Index-result is an emitter trait layered on the shared max/min formula.
-    // Carry the winning value and reduced-coordinate index together; strict
-    // comparison preserves the first index on ties without atomics.
+    // Index-result is an emitter trait layered on the shared reduction schedule.
+    // Value extrema use strict comparison (first index on ties), while
+    // FirstIndex/LastIndex select traversal order without consulting values.
+    mlir::Value initialReducedIndex =
+        firstIndexReduction ? idxConst(rewriter, loc, -1) : zeroIdx;
     auto indexLoop = rewriter.create<mlir::scf::ForOp>(
         loc, zeroIdx, totalN, oneIdx,
-        mlir::ValueRange{initConst, zeroIdx},
+        mlir::ValueRange{initConst, initialReducedIndex},
         [&](mlir::OpBuilder& builder, mlir::Location nestedLoc,
             mlir::Value inputIndex, mlir::ValueRange iterArgs) {
           llvm::SmallVector<mlir::Value> inIdx(rank);
@@ -10886,10 +10892,18 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
               computeType, inputUnsigned, inputUnsigned);
           element =
               applyReductionInputTraits(builder, nestedLoc, element);
-          const bool maximumFormula =
-              semantic == VulkanKernelRecipe::REDUCE_MAX;
           mlir::Value better;
-          if (computeFloat) {
+          if (firstIndexReduction) {
+            mlir::Value notSelected = builder.create<mlir::arith::CmpIOp>(
+                nestedLoc, mlir::arith::CmpIPredicate::eq, iterArgs[1],
+                idxConst(builder, nestedLoc, -1));
+            better = notSelected;
+          } else if (lastIndexReduction) {
+            better = builder.create<mlir::arith::ConstantIntOp>(
+                nestedLoc, 1, 1);
+          } else if (computeFloat) {
+            const bool maximumFormula =
+                semantic == VulkanKernelRecipe::REDUCE_MAX;
             better = builder.create<mlir::arith::CmpFOp>(
                 nestedLoc,
                 maximumFormula ? mlir::arith::CmpFPredicate::OGT
@@ -10897,6 +10911,8 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
                 element, iterArgs[0]);
           } else {
             mlir::arith::CmpIPredicate predicate;
+            const bool maximumFormula =
+                semantic == VulkanKernelRecipe::REDUCE_MAX;
             if (maximumFormula) {
               predicate = magnitudeComparison
                               ? mlir::arith::CmpIPredicate::ugt
