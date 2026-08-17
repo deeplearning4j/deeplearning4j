@@ -1358,8 +1358,8 @@ class ReleaseValidationTest(unittest.TestCase):
     def test_rocm_hsakmt_sources_match_each_upstream_archive_layout(self):
         standalone = build_platform.ROCM_BUILD_SDKS["6.2.4"]
         self.assertEqual(
-            "https://github.com/ROCm/ROCT-Thunk-Interface/archive/refs/tags/"
-            "rocm-6.2.4.tar.gz",
+            "https://codeload.github.com/ROCm/ROCT-Thunk-Interface/tar.gz/"
+            "7f307277e71e695dae11e600182a3f5bb53b95b4",
             standalone["hsakmt_source_url"],
         )
         self.assertEqual("", standalone["hsakmt_source_subdirectory"])

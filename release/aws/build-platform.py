@@ -37,10 +37,13 @@ ROCM_BUILD_SDKS = {
         ),
         # ROCm 6.2 publishes the ROCt development package separately. Keep
         # it in the managed SDK so the version-matched HSA runtime closure
-        # includes libhsakmt.so.1 without relying on the host.
+        # includes libhsakmt.so.1 without relying on the host. Pin the
+        # immutable upstream commit instead of the tag archive endpoint: the
+        # latter intermittently returned 404 from GitHub Actions even though
+        # the tag exists.
         "hsakmt_source_url": (
-            "https://github.com/ROCm/ROCT-Thunk-Interface/archive/refs/tags/"
-            "rocm-6.2.4.tar.gz"
+            "https://codeload.github.com/ROCm/ROCT-Thunk-Interface/tar.gz/"
+            "7f307277e71e695dae11e600182a3f5bb53b95b4"
         ),
         # ROCm 6.2 still publishes ROCt/HSAKMT as a standalone repository.
         # Its archive root is the CMake source root and BUILD_SHARED_LIBS
