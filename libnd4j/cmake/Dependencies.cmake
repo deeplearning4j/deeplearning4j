@@ -3788,11 +3788,41 @@ function(setup_vulkan)
     else()
         # Windows (MSYS2/mingw: vulkan-loader provides libvulkan-1.dll.a) and
         # macOS (LunarG SDK or MoltenVK) still link the vendor-neutral loader.
-        find_library(VULKAN_LIBRARY
-            NAMES vulkan vulkan-1
-            HINTS
+        # MSYS2's shell does not always export MSYSTEM_PREFIX to Maven. Derive
+        # the prefix from the compiler CMake selected so the loader search stays
+        # toolchain-relative instead of depending on a fixed host path.
+        set(_vulkan_windows_library_paths "")
+        if(DEFINED ENV{VULKAN_SDK})
+            list(APPEND _vulkan_windows_library_paths
                 "$ENV{VULKAN_SDK}/lib"
-                "$ENV{MSYSTEM_PREFIX}/lib"
+                "$ENV{VULKAN_SDK}/Lib")
+        endif()
+        if(DEFINED ENV{MSYSTEM_PREFIX})
+            list(APPEND _vulkan_windows_library_paths "$ENV{MSYSTEM_PREFIX}/lib")
+        endif()
+        if(DEFINED ENV{MINGW_PREFIX})
+            list(APPEND _vulkan_windows_library_paths "$ENV{MINGW_PREFIX}/lib")
+        endif()
+        if(DEFINED ENV{MSYS2_PREFIX})
+            list(APPEND _vulkan_windows_library_paths "$ENV{MSYS2_PREFIX}/mingw64/lib")
+        endif()
+        set(_vulkan_compiler_path "")
+        if(CMAKE_C_COMPILER)
+            find_program(_vulkan_compiler_path NAMES "${CMAKE_C_COMPILER}")
+        endif()
+        if(NOT _vulkan_compiler_path AND CMAKE_CXX_COMPILER)
+            find_program(_vulkan_compiler_path NAMES "${CMAKE_CXX_COMPILER}")
+        endif()
+        if(_vulkan_compiler_path)
+            get_filename_component(_vulkan_compiler_bin "${_vulkan_compiler_path}" DIRECTORY)
+            get_filename_component(_vulkan_mingw_prefix "${_vulkan_compiler_bin}" DIRECTORY)
+            list(APPEND _vulkan_windows_library_paths "${_vulkan_mingw_prefix}/lib")
+        endif()
+        list(REMOVE_DUPLICATES _vulkan_windows_library_paths)
+        find_library(VULKAN_LIBRARY
+            NAMES vulkan vulkan-1 libvulkan-1
+            HINTS
+                ${_vulkan_windows_library_paths}
                 "/home/linuxbrew/.linuxbrew/lib"
                 "/usr/local/lib"
                 "/opt/homebrew/lib"
