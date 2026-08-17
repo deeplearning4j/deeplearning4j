@@ -1786,10 +1786,12 @@ function(setup_triton)
     # Keep cache identities aligned with the artifacts they describe. LLVM/MLIR,
     # the Triton compiler, native LLVM TableGen tools, and SLEEF generators have
     # different source/configuration closures and must not invalidate one another.
-    # The current LLVM and compiler values intentionally preserve the v12 cache
-    # identity; future changes must bump only the affected artifact contract.
-    set(_TRITON_LLVM_RECIPE_REVISION "managed-llvm-patches-v12")
-    set(_TRITON_COMPILER_RECIPE_REVISION "managed-llvm-patches-v12")
+    # The managed LLVM package now enables hidden visibility on MinGW so the
+    # monolithic DLL exports only its annotated ABI surface. Bump both package
+    # identities so dependency caches built with the pre-visibility contract are
+    # never reused by a build that needs the corrected Windows runtime.
+    set(_TRITON_LLVM_RECIPE_REVISION "managed-llvm-patches-v13")
+    set(_TRITON_COMPILER_RECIPE_REVISION "managed-llvm-patches-v13")
     set(_TRITON_LLVM_HOST_TOOLS_RECIPE_REVISION "managed-llvm-host-tools-v1")
     set(_TRITON_SLEEF_HOST_TOOLS_RECIPE_REVISION "managed-sleef-host-tools-v1")
     set(_TRITON_LLVM_INSTALL_MARKER
@@ -2432,6 +2434,18 @@ function(setup_triton)
                 -DLLVM_BUILD_SHARED_LIBS=OFF
                 "-DCMAKE_C_FLAGS=/utf-8 /D_SILENCE_NONFLOATING_COMPLEX_DEPRECATION_WARNING"
                 "-DCMAKE_CXX_FLAGS=/utf-8 /D_SILENCE_NONFLOATING_COMPLEX_DEPRECATION_WARNING"
+            )
+        elseif(MINGW)
+            # GNU ld cannot represent more than 65535 PE export ordinals. LLVM's
+            # upstream MinGW DSO path requests --export-all-symbols, so the
+            # default GCC visibility would make the monolithic libLLVM DLL exceed
+            # that hard format limit. Keep the shared ABI boundary, but hide
+            # unannotated implementation symbols; LLVM_ABI/LLVM_EXPORT_TEMPLATE
+            # annotations remain exported for MLIR and downstream consumers.
+            list(APPEND TRITON_LLVM_CMAKE_ARGS
+                -DCMAKE_C_VISIBILITY_PRESET=hidden
+                -DCMAKE_CXX_VISIBILITY_PRESET=hidden
+                -DCMAKE_VISIBILITY_INLINES_HIDDEN=ON
             )
         endif()
 
