@@ -2143,7 +2143,7 @@ static UnaryCallback unaryCallbackFor(VulkanKernelRecipe semantic) {
                 b.create<mlir::arith::AddFOp>(
                     loc, b.create<mlir::arith::MulFOp>(
                              loc, floatConst(b, loc, ft, 2.0), dis),
-                    b.create<mlir::MulFOp>(
+                    b.create<mlir::arith::MulFOp>(
                         loc, floatConst(b, loc, ft, 5.6658), dis3))));
         auto denominatorSquared = b.create<mlir::arith::MulFOp>(
             loc, denominator, denominator);
