@@ -491,7 +491,10 @@ enum VulkanKernelEmitterTraits : uint32_t {
   VULKAN_EMITTER_TRAIT_INDEX_FIRST = 1u << 25,
   // Index reductions select the last matching element in logical traversal
   // order, independent of its value.
-  VULKAN_EMITTER_TRAIT_INDEX_LAST = 1u << 26
+  VULKAN_EMITTER_TRAIT_INDEX_LAST = 1u << 26,
+  // Raise |x| to the caller-supplied p before a norm reduction and apply 1/p
+  // to the completed accumulator.
+  VULKAN_EMITTER_TRAIT_P_NORM = 1u << 27
 };
 
 /**

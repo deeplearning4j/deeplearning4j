@@ -10306,6 +10306,17 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
       *emitter, VULKAN_EMITTER_TRAIT_ABSOLUTE_INPUT);
   const bool squareInput = hasVulkanEmitterTrait(
       *emitter, VULKAN_EMITTER_TRAIT_SQUARE_INPUT);
+  const bool pNormReduction = hasVulkanEmitterTrait(
+      *emitter, VULKAN_EMITTER_TRAIT_P_NORM);
+  double pNorm = 0.0;
+  if (pNormReduction) {
+    auto pNormAttr = op->getAttrOfType<mlir::FloatAttr>("nd4j.p_norm");
+    if (!pNormAttr || !std::isfinite(pNormAttr.getValueAsDouble()) ||
+        pNormAttr.getValueAsDouble() <= 0.0) {
+      return op.emitOpError("p-norm requires a finite positive p");
+    }
+    pNorm = pNormAttr.getValueAsDouble();
+  }
   const bool countReduction = hasVulkanEmitterTrait(
       *emitter, VULKAN_EMITTER_TRAIT_COUNT_RESULT);
   const bool booleanResultReduction = hasVulkanEmitterTrait(
@@ -10347,7 +10358,7 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
   if (computeInteger &&
       (hasVulkanEmitterTrait(*emitter, VULKAN_EMITTER_TRAIT_MEAN_FINALIZE) ||
        hasVulkanEmitterTrait(*emitter, VULKAN_EMITTER_TRAIT_SQRT_FINALIZE) ||
-       floatingResultReduction)) {
+       pNormReduction || floatingResultReduction)) {
     return op.emitOpError(
         "reduction ND: floating finalizer requires floating-point AccT");
   }
@@ -10600,6 +10611,11 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
         element = builder.create<mlir::arith::MulIOp>(
             nestedLoc, element, element);
       }
+    }
+    if (pNormReduction) {
+      element = builder.create<mlir::math::PowFOp>(
+          nestedLoc, element,
+          floatConst(builder, nestedLoc, computeFloat, pNorm));
     }
     if (semantic == VulkanKernelRecipe::REDUCE_ENTROPY ||
         semantic == VulkanKernelRecipe::REDUCE_LOG_ENTROPY ||
@@ -11132,6 +11148,11 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
   if (hasVulkanEmitterTrait(
           *emitter, VULKAN_EMITTER_TRAIT_SQRT_FINALIZE)) {
     finalized = rewriter.create<mlir::math::SqrtOp>(loc, finalized);
+  }
+  if (pNormReduction) {
+    finalized = rewriter.create<mlir::math::PowFOp>(
+        loc, finalized,
+        floatConst(rewriter, loc, computeFloat, 1.0 / pNorm));
   }
   auto outputIndices = logicalIndices(rewriter, loc, outputIndex, Y);
   (void)storeScalar(rewriter, loc, finalized, Y, outputIndices,

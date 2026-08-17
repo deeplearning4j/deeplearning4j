@@ -815,6 +815,8 @@ static bool reductionForSlot(const NativeSlot& slot, NDArray* input,
       emitter, VULKAN_EMITTER_TRAIT_BOOLEAN_PARAMETERS);
   const bool countReduction = hasVulkanEmitterTrait(
       emitter, VULKAN_EMITTER_TRAIT_COUNT_RESULT);
+  const bool pNormReduction = hasVulkanEmitterTrait(
+      emitter, VULKAN_EMITTER_TRAIT_P_NORM);
   if (rank < 1 || slot.args.numIArgs > rank ||
       slot.args.numSArgs != 0 ||
       !outputDataTypeArgumentsMatch(slot, outputs, numOut)) {
@@ -860,10 +862,18 @@ static bool reductionForSlot(const NativeSlot& slot, NDArray* input,
           slot.args.numBArgs > maximumBooleanArguments) {
         return false;
       }
-      keepDims = slot.args.numBArgs == 1
-                     ? slot.args.bArgs[0]
-                     : (!countReduction && slot.args.numTArgs == 1 &&
-                        slot.args.tArgs[0] != 0.0);
+      if (pNormReduction) {
+        if (slot.args.numTArgs != 1 || !std::isfinite(slot.args.tArgs[0]) ||
+            slot.args.tArgs[0] <= 0.0) {
+          return false;
+        }
+        keepDims = slot.args.numBArgs == 1 && slot.args.bArgs[0];
+      } else {
+        keepDims = slot.args.numBArgs == 1
+                       ? slot.args.bArgs[0]
+                       : (!countReduction && slot.args.numTArgs == 1 &&
+                          slot.args.tArgs[0] != 0.0);
+      }
       break;
     }
     default:
@@ -3330,6 +3340,8 @@ static bool opIsRecordableTyped(const NativeSlot& slot,
         *emitter, VULKAN_EMITTER_TRAIT_INDEX_RESULT);
     const bool countReduction = hasVulkanEmitterTrait(
         *emitter, VULKAN_EMITTER_TRAIT_COUNT_RESULT);
+    const bool pNormReduction = hasVulkanEmitterTrait(
+        *emitter, VULKAN_EMITTER_TRAIT_P_NORM);
     if (reduce3) {
       if (!DataTypeUtils::isR(inputs[0]->dataType()) ||
           !DataTypeUtils::isR(inputs[1]->dataType()) ||
@@ -3345,6 +3357,13 @@ static bool opIsRecordableTyped(const NativeSlot& slot,
           slot.args.numTArgs > 1 || slot.args.numBArgs > 1 ||
           (slot.args.numTArgs == 1 &&
            !std::isfinite(slot.args.tArgs[0]))) {
+        return false;
+      }
+    } else if (pNormReduction) {
+      if (!DataTypeUtils::isR(inputs[0]->dataType()) ||
+          !DataTypeUtils::isR(outputs[0]->dataType()) ||
+          slot.args.numTArgs != 1 || slot.args.numBArgs > 1 ||
+          !std::isfinite(slot.args.tArgs[0]) || slot.args.tArgs[0] <= 0.0) {
         return false;
       }
     }
@@ -7174,6 +7193,8 @@ static std::string emitVulkanOp(const NativeSlot& slot,
     if (emitter == nullptr) return "";
     const bool countReduction = hasVulkanEmitterTrait(
         *emitter, VULKAN_EMITTER_TRAIT_COUNT_RESULT);
+    const bool pNormReduction = hasVulkanEmitterTrait(
+        *emitter, VULKAN_EMITTER_TRAIT_P_NORM);
     if (emitter->recipe == VulkanKernelRecipe::REDUCE3) {
       if (numIn != 2 || inputs[1] == nullptr ||
           !inputs[0]->isSameShape(inputs[1])) {
@@ -7384,6 +7405,10 @@ static std::string emitVulkanOp(const NativeSlot& slot,
        << "                    nd4j.keep_dims = " << (keepDims ? "true" : "false") << ",\n"
        << "                    nd4j.bias_corrected = "
        << (biasCorrected ? "true" : "false") << ",\n"
+       << (pNormReduction
+               ? (std::string("                    nd4j.p_norm = ") +
+                  std::to_string(slot.args.tArgs[0]) + " : f64,\n")
+               : std::string())
        << (countReduction &&
                    slot.legacy.legacyOpNum == static_cast<int>(sd::reduce::MatchCondition)
                ? (std::string("                    nd4j.scalar0 = ") +

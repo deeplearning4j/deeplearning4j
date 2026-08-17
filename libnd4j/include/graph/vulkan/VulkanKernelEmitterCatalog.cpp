@@ -1690,7 +1690,7 @@ const LegacyEmitterCatalogData& buildLegacyCatalog() {
     registerBroadcastArithmetic(static_cast<int>(sd::broadcast::FloorDiv),
                                 VulkanKernelRecipe::FLOOR_DIVIDE, kNumeric32);
     registerBroadcastArithmetic(static_cast<int>(sd::broadcast::ReverseMod),
-                                VulkanKernelRecipe::MOD, kNumeric32);
+                                VulkanKernelRecipe::REVERSE_MOD, kNumeric32);
     registerBroadcastArithmetic(static_cast<int>(sd::broadcast::Mod),
                                 VulkanKernelRecipe::MOD, kNumeric32);
     registerBroadcastArithmetic(static_cast<int>(sd::broadcast::Atan2),
@@ -1800,7 +1800,7 @@ const LegacyEmitterCatalogData& buildLegacyCatalog() {
     registerLegacyEmitter<sd::ops::LegacyScalarOp>(
         result, VulkanLegacyOpFamily::SCALAR,
         static_cast<int>(sd::scalar::ReverseMod),
-        VulkanKernelRecipe::MOD, kNumeric32, kGeneralLayout);
+        VulkanKernelRecipe::REVERSE_MOD, kNumeric32, kGeneralLayout);
     registerLegacyEmitter<sd::ops::LegacyScalarOp>(
         result, VulkanLegacyOpFamily::SCALAR,
         static_cast<int>(sd::scalar::Remainder),
@@ -1808,11 +1808,11 @@ const LegacyEmitterCatalogData& buildLegacyCatalog() {
     registerLegacyEmitter<sd::ops::LegacyScalarOp>(
         result, VulkanLegacyOpFamily::SCALAR,
         static_cast<int>(sd::scalar::FMod),
-        VulkanKernelRecipe::MOD, kFloat, kGeneralLayout);
+        VulkanKernelRecipe::FMOD, kFloat, kGeneralLayout);
     registerLegacyEmitter<sd::ops::LegacyScalarOp>(
         result, VulkanLegacyOpFamily::SCALAR,
         static_cast<int>(sd::scalar::TruncateDiv),
-        VulkanKernelRecipe::DIVIDE, kNumeric32, kGeneralLayout);
+        VulkanKernelRecipe::TRUNCATE_DIV, kNumeric32, kGeneralLayout);
     registerLegacyEmitter<sd::ops::LegacyScalarOp>(
         result, VulkanLegacyOpFamily::SCALAR,
         static_cast<int>(sd::scalar::FloorDiv),
@@ -1845,15 +1845,36 @@ const LegacyEmitterCatalogData& buildLegacyCatalog() {
         VulkanArgumentSchema::REDUCTION_KEEPDIMS);
     registerLegacyEmitter<sd::ops::LegacyReduceSameOp>(
         result, VulkanLegacyOpFamily::REDUCE_SAME,
+        static_cast<int>(sd::reduce::ASum),
+        VulkanKernelRecipe::REDUCE_SUM, kNumeric32, kStridedLayout,
+        1, -1,
+        reductionParameters | VULKAN_EMITTER_TRAIT_ABSOLUTE_INPUT,
+        VulkanArgumentSchema::REDUCTION_KEEPDIMS);
+    registerLegacyEmitter<sd::ops::LegacyReduceSameOp>(
+        result, VulkanLegacyOpFamily::REDUCE_SAME,
         static_cast<int>(sd::reduce::Max),
         VulkanKernelRecipe::REDUCE_MAX, kNumeric32, kStridedLayout,
         1, -1, reductionParameters,
         VulkanArgumentSchema::REDUCTION_KEEPDIMS);
     registerLegacyEmitter<sd::ops::LegacyReduceSameOp>(
         result, VulkanLegacyOpFamily::REDUCE_SAME,
+        static_cast<int>(sd::reduce::AMax),
+        VulkanKernelRecipe::REDUCE_MAX, kNumeric32, kStridedLayout,
+        1, -1,
+        reductionParameters | VULKAN_EMITTER_TRAIT_ABSOLUTE_INPUT,
+        VulkanArgumentSchema::REDUCTION_KEEPDIMS);
+    registerLegacyEmitter<sd::ops::LegacyReduceSameOp>(
+        result, VulkanLegacyOpFamily::REDUCE_SAME,
         static_cast<int>(sd::reduce::Min),
         VulkanKernelRecipe::REDUCE_MIN, kNumeric32, kStridedLayout,
         1, -1, reductionParameters,
+        VulkanArgumentSchema::REDUCTION_KEEPDIMS);
+    registerLegacyEmitter<sd::ops::LegacyReduceSameOp>(
+        result, VulkanLegacyOpFamily::REDUCE_SAME,
+        static_cast<int>(sd::reduce::AMin),
+        VulkanKernelRecipe::REDUCE_MIN, kNumeric32, kStridedLayout,
+        1, -1,
+        reductionParameters | VULKAN_EMITTER_TRAIT_ABSOLUTE_INPUT,
         VulkanArgumentSchema::REDUCTION_KEEPDIMS);
     registerLegacyEmitter<sd::ops::LegacyReduceSameOp>(
         result, VulkanLegacyOpFamily::REDUCE_SAME,
@@ -1867,6 +1888,15 @@ const LegacyEmitterCatalogData& buildLegacyCatalog() {
         VulkanKernelRecipe::REDUCE_SUM, kFloat, kStridedLayout,
         1, -1,
         reductionParameters | VULKAN_EMITTER_TRAIT_MEAN_FINALIZE,
+        VulkanArgumentSchema::REDUCTION_KEEPDIMS);
+    registerLegacyEmitter<sd::ops::LegacyReduceFloatOp>(
+        result, VulkanLegacyOpFamily::REDUCE_FLOAT,
+        static_cast<int>(sd::reduce::AMean),
+        VulkanKernelRecipe::REDUCE_SUM, kNumeric32, kStridedLayout,
+        1, -1,
+        reductionParameters | VULKAN_EMITTER_TRAIT_FLOAT_RESULT |
+            VULKAN_EMITTER_TRAIT_ABSOLUTE_INPUT |
+            VULKAN_EMITTER_TRAIT_MEAN_FINALIZE,
         VulkanArgumentSchema::REDUCTION_KEEPDIMS);
     registerLegacyEmitter<sd::ops::LegacyReduceFloatOp>(
         result, VulkanLegacyOpFamily::REDUCE_FLOAT,
@@ -1884,6 +1914,40 @@ const LegacyEmitterCatalogData& buildLegacyCatalog() {
         reductionParameters | VULKAN_EMITTER_TRAIT_FLOAT_RESULT |
             VULKAN_EMITTER_TRAIT_SQUARE_INPUT |
             VULKAN_EMITTER_TRAIT_SQRT_FINALIZE,
+        VulkanArgumentSchema::REDUCTION_KEEPDIMS);
+    registerLegacyEmitter<sd::ops::LegacyReduceFloatOp>(
+        result, VulkanLegacyOpFamily::REDUCE_FLOAT,
+        static_cast<int>(sd::reduce::NormMax),
+        VulkanKernelRecipe::REDUCE_MAX, kNumeric32, kStridedLayout,
+        1, -1,
+        reductionParameters | VULKAN_EMITTER_TRAIT_FLOAT_RESULT |
+            VULKAN_EMITTER_TRAIT_ABSOLUTE_INPUT,
+        VulkanArgumentSchema::REDUCTION_KEEPDIMS);
+    registerLegacyEmitter<sd::ops::LegacyReduceFloatOp>(
+        result, VulkanLegacyOpFamily::REDUCE_FLOAT,
+        static_cast<int>(sd::reduce::NormP),
+        VulkanKernelRecipe::REDUCE_SUM, kNumeric32, kStridedLayout,
+        1, -1,
+        reductionParameters | VULKAN_EMITTER_TRAIT_FLOAT_RESULT |
+            VULKAN_EMITTER_TRAIT_ABSOLUTE_INPUT |
+            VULKAN_EMITTER_TRAIT_P_NORM,
+        VulkanArgumentSchema::REDUCTION_KEEPDIMS);
+    registerLegacyEmitter<sd::ops::LegacyReduceFloatOp>(
+        result, VulkanLegacyOpFamily::REDUCE_FLOAT,
+        static_cast<int>(sd::reduce::NormFrobenius),
+        VulkanKernelRecipe::REDUCE_SUM, kNumeric32, kStridedLayout,
+        1, -1,
+        reductionParameters | VULKAN_EMITTER_TRAIT_FLOAT_RESULT |
+            VULKAN_EMITTER_TRAIT_SQUARE_INPUT |
+            VULKAN_EMITTER_TRAIT_SQRT_FINALIZE,
+        VulkanArgumentSchema::REDUCTION_KEEPDIMS);
+    registerLegacyEmitter<sd::ops::LegacyReduceFloatOp>(
+        result, VulkanLegacyOpFamily::REDUCE_FLOAT,
+        static_cast<int>(sd::reduce::SquaredNorm),
+        VulkanKernelRecipe::REDUCE_SUM, kNumeric32, kStridedLayout,
+        1, -1,
+        reductionParameters | VULKAN_EMITTER_TRAIT_FLOAT_RESULT |
+            VULKAN_EMITTER_TRAIT_SQUARE_INPUT,
         VulkanArgumentSchema::REDUCTION_KEEPDIMS);
 
     // Every canonical legacy identity gets a typed descriptor, even when no
