@@ -8846,7 +8846,7 @@ mlir::LogicalResult DataMovementToSpirv::matchAndRewrite(
                                  loc, unitAccumulator,
                                  rewriter.create<mlir::arith::SubFOp>(
                                      loc, floatConst(rewriter, loc, accumulator, 1.0),
-                                     probability))));
+                                     probability)))));
             break;
           }
           case 10: {  // Log-normal.
@@ -8869,7 +8869,7 @@ mlir::LogicalResult DataMovementToSpirv::matchAndRewrite(
                         rewriter.create<mlir::arith::MaximumFOp>(
                             loc, normal,
                             floatConst(rewriter, loc, accumulator, -2.0)),
-                        floatConst(rewriter, loc, accumulator, 2.0)));
+                        floatConst(rewriter, loc, accumulator, 2.0))));
             break;
           }
           case 12: {  // Alpha dropout.
@@ -10828,11 +10828,15 @@ mlir::LogicalResult ReduceNDToSpirv::matchAndRewrite(
           loc, zeroDenominator, zero,
           rewriter.create<mlir::arith::DivFOp>(
               loc, reduce3Loop.getResult(0), denominator));
-      result = reduce3OpNum == 5
-                   ? rewriter.create<mlir::arith::SubFOp>(
+      if (reduce3OpNum == 5) {
+        result = rewriter
+                     .create<mlir::arith::SubFOp>(
                          loc, floatConst(rewriter, loc, computeFloat, 1.0),
                          similarity)
-                   : similarity;
+                     .getResult();
+      } else {
+        result = similarity;
+      }
     } else if (jaccard) {
       auto zero = floatConst(rewriter, loc, computeFloat, 0.0);
       auto zeroUnion = rewriter.create<mlir::arith::CmpFOp>(
