@@ -2343,6 +2343,141 @@ mlir::LogicalResult StructuredComputeToSpirv::matchAndRewrite(
   };
 
   switch (emitter->recipe) {
+    case VulkanKernelRecipe::TRIANGULAR_SOLVE: {
+      if (inputs.size() != 2 || outputs.size() != 1) {
+        return op.emitOpError(
+            "triangular_solve requires matrix, rhs, and output operands");
+      }
+      auto matrixType = llvm::dyn_cast<mlir::MemRefType>(inputs[0].getType());
+      auto rhsType = llvm::dyn_cast<mlir::MemRefType>(inputs[1].getType());
+      auto outputType = llvm::dyn_cast<mlir::MemRefType>(outputs[0].getType());
+      if (!matrixType || !rhsType || !outputType ||
+          matrixType.getRank() < 2 || rhsType.getRank() < 2 ||
+          matrixType.getRank() != rhsType.getRank() ||
+          rhsType.getRank() != outputType.getRank()) {
+        return op.emitOpError(
+            "triangular_solve requires equally-ranked rank-2+ MemRefs");
+      }
+
+      const int64_t rank = rhsType.getRank();
+      const int64_t matrixRowDim = rank - 2;
+      mlir::Value rows = rewriter.create<mlir::memref::DimOp>(
+          loc, inputs[0], matrixRowDim);
+      mlir::Value columns = rewriter.create<mlir::memref::DimOp>(
+          loc, inputs[1], rank - 1);
+      mlir::Value batchCount = one;
+      for (int64_t d = 0; d < rank - 2; ++d) {
+        batchCount = rewriter.create<mlir::arith::MulIOp>(
+            loc, batchCount,
+            rewriter.create<mlir::memref::DimOp>(loc, inputs[1], d));
+      }
+      mlir::Value invocationCount = rewriter.create<mlir::arith::MulIOp>(
+          loc, batchCount, columns);
+      auto launch = createGpuLaunch(
+          rewriter, loc, invocationCount, one, one);
+      mlir::Value invocation = launch.getBlockIds().x;
+      rewriter.setInsertionPointToEnd(&launch.getBody().front());
+
+      mlir::Value rhsElementsPerBatch = rewriter.create<mlir::arith::MulIOp>(
+          loc, rows, columns);
+      mlir::Value batchIndex = rewriter.create<mlir::arith::DivUIOp>(
+          loc, invocation, columns);
+      mlir::Value column = rewriter.create<mlir::arith::RemUIOp>(
+          loc, invocation, columns);
+      mlir::Value rhsBase = rewriter.create<mlir::arith::MulIOp>(
+          loc, batchIndex, rhsElementsPerBatch);
+      mlir::Value matrixElementsPerBatch = rewriter.create<mlir::arith::MulIOp>(
+          loc, rows, rows);
+      mlir::Value matrixBase = rewriter.create<mlir::arith::MulIOp>(
+          loc, batchIndex, matrixElementsPerBatch);
+
+      auto operandIndices = [&](mlir::OpBuilder& builder,
+                                mlir::Location nestedLoc,
+                                mlir::Value memref, mlir::Value base,
+                                mlir::Value row, mlir::Value columnIndex) {
+        auto indices = logicalIndices(builder, nestedLoc, base, memref);
+        auto type = llvm::cast<mlir::MemRefType>(memref.getType());
+        indices[static_cast<size_t>(type.getRank() - 2)] = row;
+        indices[static_cast<size_t>(type.getRank() - 1)] = columnIndex;
+        return indices;
+      };
+
+      const auto lowerAttribute =
+          op->getAttrOfType<mlir::BoolAttr>("nd4j.triangular_lower");
+      const auto adjointAttribute =
+          op->getAttrOfType<mlir::BoolAttr>("nd4j.triangular_adjoint");
+      const bool lower = !lowerAttribute || lowerAttribute.getValue();
+      const bool adjoint = adjointAttribute && adjointAttribute.getValue();
+      const bool forward = adjoint ? !lower : lower;
+
+      emitReductionLoop(
+          rewriter, loc, zero, rows, one, zero,
+          [&](mlir::OpBuilder& builder, mlir::Location nestedLoc,
+              mlir::Value row, mlir::Value accumulator) -> mlir::Value {
+            mlir::Value actualRow = row;
+            if (!forward) {
+              actualRow = builder.create<mlir::arith::SubIOp>(
+                  nestedLoc, rows,
+                  builder.create<mlir::arith::AddIOp>(
+                      nestedLoc, row, one));
+            }
+            mlir::Value rhsOffset = builder.create<mlir::arith::AddIOp>(
+                nestedLoc, rhsBase,
+                builder.create<mlir::arith::AddIOp>(
+                    nestedLoc,
+                    builder.create<mlir::arith::MulIOp>(
+                        nestedLoc, actualRow, columns),
+                    column));
+            mlir::Value rhsValue = loadAsAccumulator(
+                builder, nestedLoc, inputs[1],
+                operandIndices(builder, nestedLoc, inputs[1], rhsOffset,
+                               actualRow, column),
+                accTy);
+            mlir::Value innerLower = forward
+                ? zero
+                : builder.create<mlir::arith::AddIOp>(
+                      nestedLoc, actualRow, one);
+            mlir::Value innerUpper = forward ? actualRow : rows;
+            auto inner = emitReductionLoop(
+                builder, nestedLoc, innerLower, innerUpper, one, rhsValue,
+                [&](mlir::OpBuilder& innerBuilder,
+                    mlir::Location innerLoc, mlir::Value k,
+                    mlir::Value value) -> mlir::Value {
+                  mlir::Value coefficient = loadAsAccumulator(
+                      innerBuilder, innerLoc, inputs[0],
+                      operandIndices(
+                          innerBuilder, innerLoc, inputs[0], matrixBase,
+                          adjoint ? k : actualRow,
+                          adjoint ? actualRow : k),
+                      accTy);
+                  mlir::Value solved = loadAsAccumulator(
+                      innerBuilder, innerLoc, outputs[0],
+                      operandIndices(
+                          innerBuilder, innerLoc, outputs[0], rhsBase,
+                          k, column),
+                      accTy);
+                  return innerBuilder.create<mlir::arith::SubFOp>(
+                      innerLoc, value,
+                      innerBuilder.create<mlir::arith::MulFOp>(
+                          innerLoc, coefficient, solved));
+                });
+            mlir::Value diagonal = loadAsAccumulator(
+                builder, nestedLoc, inputs[0],
+                operandIndices(builder, nestedLoc, inputs[0], matrixBase,
+                               actualRow, actualRow),
+                accTy);
+            mlir::Value result = builder.create<mlir::arith::DivFOp>(
+                nestedLoc, inner.getResult(0), diagonal);
+            storeFromAccumulator(
+                builder, nestedLoc, result, outputs[0],
+                operandIndices(builder, nestedLoc, outputs[0], rhsBase,
+                               actualRow, column));
+            return accumulator;
+          });
+      rewriter.create<mlir::gpu::TerminatorOp>(loc);
+      rewriter.eraseOp(op);
+      return mlir::success();
+    }
     case VulkanKernelRecipe::RMS_NORM_BP: {
       if (inputs.size() != 2 || outputs.size() != 1) {
         return op.emitOpError(

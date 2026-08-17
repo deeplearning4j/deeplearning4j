@@ -700,10 +700,6 @@ public final class VulkanExecutioner extends DefaultOpExecutioner {
                 affinityManager.setDeviceForCurrentThread(targetDevice);
             }
 
-            if ("triangular_solve".equals(op.opName())) {
-                return executeTriangularSolve(vulkanContext, op);
-            }
-
             long descriptorHash = op.opHash();
             getCustomOperations();
             CustomOpDescriptor descriptor = customOpsByHash.get(descriptorHash);
@@ -737,87 +733,6 @@ public final class VulkanExecutioner extends DefaultOpExecutioner {
                 affinityManager.setDeviceForCurrentThread(previousDevice);
             }
         }
-    }
-
-    private INDArray[] executeTriangularSolve(VulkanOpContext context, CustomOp op) {
-        prepareInputs(context);
-        prepareOutputs(context, false);
-        List<INDArray> inputs = context.getInputArrays();
-        List<INDArray> outputs = context.getOutputArrays();
-        if (inputs == null || inputs.size() < 2 || outputs == null || outputs.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "Vulkan triangular_solve requires matrix, rhs, and output arrays");
-        }
-        INDArray matrix = inputs.get(0);
-        INDArray rhs = inputs.get(1);
-        INDArray result = outputs.get(0);
-        long rhsRows = rhs.rank() == 1 ? rhs.length() : rhs.rows();
-        if (matrix.rank() != 2 || matrix.rows() != matrix.columns()
-                || rhs.rank() < 1 || rhsRows != matrix.rows()) {
-            throw new IllegalArgumentException(
-                    "Vulkan triangular_solve requires a square matrix and matching rhs");
-        }
-
-        boolean[] flags = op.bArgs();
-        boolean lower = flags == null || flags.length == 0 || flags[0];
-        boolean adjoint = flags != null && flags.length > 1 && flags[1];
-        boolean forward = adjoint ? !lower : lower;
-        result.assign(rhs);
-        int n = (int) matrix.rows();
-        int columns = rhs.rank() == 1 ? 1 : (int) rhs.columns();
-        for (int column = 0; column < columns; column++) {
-            if (forward) {
-                for (int row = 0; row < n; row++) {
-                    double value = rhs.rank() == 1
-                            ? result.getDouble(row) : result.getDouble(row, column);
-                    for (int previous = 0; previous < row; previous++) {
-                        double coefficient = adjoint
-                                ? matrix.getDouble(previous, row)
-                                : matrix.getDouble(row, previous);
-                        double solved = rhs.rank() == 1
-                                ? result.getDouble(previous) : result.getDouble(previous, column);
-                        value -= coefficient * solved;
-                    }
-                    double diagonal = matrix.getDouble(row, row);
-                    if (Math.abs(diagonal) <= 1.0e-12) {
-                        throw new IllegalArgumentException(
-                                "Vulkan triangular_solve encountered a singular diagonal");
-                    }
-                    value /= diagonal;
-                    if (rhs.rank() == 1) {
-                        result.putScalar(row, value);
-                    } else {
-                        result.putScalar(row, column, value);
-                    }
-                }
-            } else {
-                for (int row = n - 1; row >= 0; row--) {
-                    double value = rhs.rank() == 1
-                            ? result.getDouble(row) : result.getDouble(row, column);
-                    for (int next = row + 1; next < n; next++) {
-                        double coefficient = adjoint
-                                ? matrix.getDouble(next, row)
-                                : matrix.getDouble(row, next);
-                        double solved = rhs.rank() == 1
-                                ? result.getDouble(next) : result.getDouble(next, column);
-                        value -= coefficient * solved;
-                    }
-                    double diagonal = matrix.getDouble(row, row);
-                    if (Math.abs(diagonal) <= 1.0e-12) {
-                        throw new IllegalArgumentException(
-                                "Vulkan triangular_solve encountered a singular diagonal");
-                    }
-                    value /= diagonal;
-                    if (rhs.rank() == 1) {
-                        result.putScalar(row, value);
-                    } else {
-                        result.putScalar(row, column, value);
-                    }
-                }
-            }
-        }
-        markDeviceWritten(outputs);
-        return outputs.toArray(new INDArray[0]);
     }
 
     private VulkanOpContext requireVulkanContext(OpContext context) {

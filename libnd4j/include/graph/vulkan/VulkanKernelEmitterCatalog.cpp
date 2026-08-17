@@ -234,6 +234,15 @@ const std::vector<VulkanKernelEmitterInfo>& buildCatalog() {
         result, VulkanKernelRecipe::MATMUL,
         kFloat, kStridedLayout, 2, 3);
 #endif
+#if NOT_EXCLUDED(OP_triangular_solve)
+    registerEmitter<sd::ops::triangular_solve>(
+        result, VulkanKernelRecipe::TRIANGULAR_SOLVE,
+        kFloat, kStridedLayout, 2, -1,
+        VULKAN_EMITTER_TRAIT_BOOLEAN_PARAMETERS,
+        VulkanArgumentSchema::NONE,
+        VulkanLoweringContract::TRIANGULAR_SOLVE,
+        singleArguments(rangedArguments(2, 2, 1, 1, 0, 0, 0, 0, 0, 2)));
+#endif
 #if NOT_EXCLUDED(OP_batched_gemm)
     registerEmitter<sd::ops::batched_gemm>(
         result, VulkanKernelRecipe::MATMUL,
@@ -1551,6 +1560,9 @@ VulkanKernelFamily vulkanKernelFamily(
     const VulkanKernelEmitterInfo& emitter) {
   const uint32_t traits = emitter.traits;
   auto hasAny = [&](uint32_t mask) { return (traits & mask) != 0; };
+  if (emitter.loweringContract == VulkanLoweringContract::TRIANGULAR_SOLVE) {
+    return VulkanKernelFamily::TRIANGULAR_SOLVE;
+  }
   if (hasAny(sd::ops::OP_TRAIT_MATMUL)) {
     return VulkanKernelFamily::MATMUL;
   }

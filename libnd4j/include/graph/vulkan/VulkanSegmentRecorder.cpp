@@ -1663,6 +1663,28 @@ static bool opIsRecordableTyped(const NativeSlot& slot,
     }
 
     switch (emitter->recipe) {
+      case VulkanKernelRecipe::TRIANGULAR_SOLVE: {
+        if (numIn != 2 || numOut != 1 || inputs[0] == nullptr ||
+            inputs[1] == nullptr || outputs[0] == nullptr ||
+            inputs[0]->rankOf() < 2 ||
+            inputs[1]->rankOf() != inputs[0]->rankOf() ||
+            outputs[0]->rankOf() != inputs[1]->rankOf() ||
+            !DataTypeUtils::isR(inputs[0]->dataType()) ||
+            !DataTypeUtils::isR(inputs[1]->dataType()) ||
+            outputs[0]->dataType() != inputs[1]->dataType() ||
+            inputs[0]->sizeAt(inputs[0]->rankOf() - 1) !=
+                inputs[0]->sizeAt(inputs[0]->rankOf() - 2) ||
+            inputs[1]->sizeAt(inputs[1]->rankOf() - 2) !=
+                inputs[0]->sizeAt(inputs[0]->rankOf() - 2) ||
+            !inputs[1]->isSameShape(outputs[0])) {
+          return false;
+        }
+        const int rank = inputs[0]->rankOf();
+        for (int d = 0; d < rank - 2; ++d) {
+          if (inputs[0]->sizeAt(d) != inputs[1]->sizeAt(d)) return false;
+        }
+        return true;
+      }
       case VulkanKernelRecipe::WINDOW_PARTITION: {
         if (numIn != 1 || numOut != 1 || inputs[0]->rankOf() != 4 ||
             outputs[0]->rankOf() != 4 ||
@@ -3446,6 +3468,7 @@ static bool validateCatalogOp(const NativeSlot& slot,
     case VulkanLoweringContract::DEFAULT:
     case VulkanLoweringContract::LINEAR_COPY:
     case VulkanLoweringContract::INDEXED_TAD_MOVEMENT:
+    case VulkanLoweringContract::TRIANGULAR_SOLVE:
       break;
   }
 
@@ -3565,6 +3588,28 @@ static bool catalogDispatchGeometry(const NativeSlot& slot,
     destination = static_cast<uint32_t>(value);
     return true;
   };
+
+  if (emitter->family == VulkanKernelFamily::TRIANGULAR_SOLVE) {
+    if (inputs == nullptr || numIn != 2 || inputs[1] == nullptr ||
+        inputs[1]->rankOf() < 2) {
+      return false;
+    }
+    uint64_t batchCount = 1;
+    for (int d = 0; d < inputs[1]->rankOf() - 2; ++d) {
+      const sd::LongType dimension = inputs[1]->sizeAt(d);
+      if (dimension <= 0 ||
+          batchCount > kMaxDispatchCount / static_cast<uint64_t>(dimension)) {
+        return false;
+      }
+      batchCount *= static_cast<uint64_t>(dimension);
+    }
+    const sd::LongType columns = inputs[1]->sizeAt(inputs[1]->rankOf() - 1);
+    if (columns <= 0 ||
+        batchCount > kMaxDispatchCount / static_cast<uint64_t>(columns)) {
+      return false;
+    }
+    return checked(static_cast<sd::LongType>(batchCount) * columns, geometry.x);
+  }
 
   if (hasVulkanEmitterTrait(
           *emitter, VULKAN_EMITTER_TRAIT_DISPATCH_OUTER_ROWS)) {
@@ -6210,6 +6255,24 @@ static std::string emitVulkanOp(const NativeSlot& slot,
     std::vector<std::string> maps;
     std::vector<std::string> iterators;
     switch (emitter->recipe) {
+      case VulkanKernelRecipe::TRIANGULAR_SOLVE: {
+        const int rank = outputs[0]->rankOf();
+        if (rank < 2 || inputs[0]->rankOf() != rank ||
+            inputs[1]->rankOf() != rank) {
+          return "";
+        }
+        std::ostringstream dimensions;
+        for (int d = 0; d < rank; ++d) {
+          if (d != 0) dimensions << ", ";
+          dimensions << "d" << d;
+          iterators.push_back("\"parallel\"");
+        }
+        const std::string dims = dimensions.str();
+        const std::string identity =
+            "affine_map<(" + dims + ") -> (" + dims + ")>";
+        maps.assign(static_cast<size_t>(numIn + numOut), identity);
+        break;
+      }
       case VulkanKernelRecipe::WINDOW_PARTITION: {
         const sd::LongType window = slot.args.iArgs[0];
         const sd::LongType heightBlocks = inputs[0]->sizeAt(1) / window;
@@ -6680,6 +6743,12 @@ static std::string emitVulkanOp(const NativeSlot& slot,
       ss << ">, nd4j.epsilon = " << std::scientific
          << std::setprecision(std::numeric_limits<double>::max_digits10)
          << slot.args.tArgs[0] << " : " << accTs;
+    } else if (emitter->recipe == VulkanKernelRecipe::TRIANGULAR_SOLVE) {
+      const bool lower = slot.args.numBArgs == 0 || slot.args.bArgs[0];
+      const bool adjoint = slot.args.numBArgs > 1 && slot.args.bArgs[1];
+      ss << ", nd4j.triangular_solve = true"
+         << ", nd4j.triangular_lower = " << (lower ? "true" : "false")
+         << ", nd4j.triangular_adjoint = " << (adjoint ? "true" : "false");
     } else if (emitter->recipe ==
         VulkanKernelRecipe::VISION_EMBEDDING_MERGE) {
       const sd::LongType targetTokenId = slot.args.iArgs[0];

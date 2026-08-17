@@ -32,6 +32,7 @@ namespace graph {
  */
 enum class VulkanKernelRecipe : uint16_t {
   MATMUL,
+  TRIANGULAR_SOLVE,
   RMS_NORM,
   RMS_NORM_BP,
   FUSED_LAYER_NORM_BP,
@@ -191,6 +192,7 @@ enum class VulkanKernelRecipe : uint16_t {
 enum class VulkanKernelFamily : uint8_t {
   UNKNOWN,
   MATMUL,
+  TRIANGULAR_SOLVE,
   ATTENTION,
   ELEMENTWISE_BINARY,
   ELEMENTWISE_UNARY,
@@ -223,7 +225,9 @@ enum class VulkanLoweringContract : uint8_t {
   LINEAR_COPY,
   // Shared single-dispatch schedule for descriptor-driven indexed TAD movement.
   // The recipe selects gather versus disjoint-pair exchange semantics.
-  INDEXED_TAD_MOVEMENT
+  INDEXED_TAD_MOVEMENT,
+  // Forward/back substitution over a square matrix and one or more RHS columns.
+  TRIANGULAR_SOLVE
 };
 
 /** Frozen descriptor-argument encodings shared across emitter recipes. */
@@ -404,7 +408,7 @@ struct SD_LIB_EXPORT VulkanKernelEmitterInfo {
   sd::LongType descriptorHash;
   uint32_t traits;
   VulkanKernelRecipe recipe;
-  // Derived solely from traits by vulkanKernelFamily().
+  // Derived from descriptor traits and an explicit reusable lowering contract.
   VulkanKernelFamily family;
   VulkanLoweringContract loweringContract;
   VulkanArgumentSchema argumentSchema;
@@ -845,6 +849,7 @@ inline bool usesTrailingPayloadCopySchedule(
 inline bool usesStructuredComputeSchedule(
     const VulkanKernelEmitterInfo& emitter) {
   return emitter.loweringContract == VulkanLoweringContract::FUSED_LLM ||
+         emitter.loweringContract == VulkanLoweringContract::TRIANGULAR_SOLVE ||
          usesNormalizationGradientSchedule(emitter) ||
          usesBatchwiseNormalizationSchedule(emitter) ||
          usesBroadcastBinarySchedule(emitter) ||
