@@ -362,7 +362,7 @@
                                 <classPath>${project.basedir}/../nd4j-cuda-backend-common/target/classes</classPath>
                             </classPaths>
                             <includePaths>
-                                <includePath>${libnd4jhome}/blasbuild/cuda/include</includePath>
+                                <includePath>${libnd4j.outputPath}/include</includePath>
                                 <includePath>${libnd4jhome}/blasbuild/cuda/flatbuffers-src/include/</includePath>
                                 <includePath>${libnd4jhome}/blas</includePath>
                                 <includePath>${libnd4jhome}/include</includePath>
@@ -382,6 +382,7 @@
                             </linkPaths>
                             <compilerOptions>
                                 <compilerOption>-std=c++17</compilerOption>
+                                <compilerOption>-I${libnd4j.outputPath}/include</compilerOption>
                                 <compilerOption>-Wl,--no-undefined</compilerOption>
                                 <compilerOption>-L${libnd4jhome}/blasbuild/cuda</compilerOption>
                             </compilerOptions>
