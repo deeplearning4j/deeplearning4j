@@ -100,15 +100,17 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
     zEffective = z;
   }
 
-  // Apply transposes if needed
+  // Apply transposes if needed. transpose() already returns an owned
+  // NDArray view; wrapping that pointer in NDArray's pointer constructor
+  // allocates a new array without copying its elements.
   if (aTranspose) {
-    auto xTransposed = new NDArray(xEffective->transpose());
+    auto xTransposed = xEffective->transpose();
     if (deleteX) delete xEffective;
     xEffective = xTransposed;
     deleteX = true;
   }
   if (cTranspose) {
-    auto zTransposed = new NDArray(zEffective->transpose());
+    auto zTransposed = zEffective->transpose();
     if (deleteZ) delete zEffective;
     zEffective = zTransposed;
     deleteZ = true;
@@ -116,7 +118,7 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
 
   // Handle weight transpose
   if (bTranspose) {
-    wEffective = new NDArray(w->transpose());
+    wEffective = w->transpose();
     deleteW = true;
   } else {
     wEffective = w;

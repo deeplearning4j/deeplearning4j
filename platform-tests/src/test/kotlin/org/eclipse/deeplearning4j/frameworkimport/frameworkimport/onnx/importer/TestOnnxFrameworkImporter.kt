@@ -10,6 +10,7 @@ import org.nd4j.common.tests.tags.TagNames
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
+import org.nd4j.linalg.ops.transforms.Transforms
 import org.nd4j.onnxruntime.runner.OnnxRuntimeRunner
 import org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter
 import java.io.BufferedInputStream
@@ -115,7 +116,10 @@ class TestOnnxFrameworkImporter {
             val sameDiffOutput = imported.output(inputs, outputName)[outputName]!!
 
             assertArrayEquals(runnerOutput.shape(), sameDiffOutput.shape())
-            assertTrue(runnerOutput.equalsWithEps(sameDiffOutput, 0.0001))
+            assertTrue(
+                runnerOutput.equalsWithEps(sameDiffOutput, 0.0001),
+                "ONNX Runtime output=$runnerOutput; SameDiff output=$sameDiffOutput; maxAbsDiff=${Transforms.abs(runnerOutput.sub(sameDiffOutput)).maxNumber()}"
+            )
         }
     }
 

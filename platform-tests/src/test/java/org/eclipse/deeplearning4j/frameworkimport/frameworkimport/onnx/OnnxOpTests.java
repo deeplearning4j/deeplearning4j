@@ -966,6 +966,23 @@ public class OnnxOpTests {
                                 "transB", intAttr("transB", 0)),
                         opDir, 1e-4, 1e-6);
                 assertOpResult(result);
+
+                // ONNX Gemm commonly stores fully-connected weights as [out, in] and
+                // sets transB=1. Keep this path covered separately from the ordinary
+                // [in, out] case above; it exercises XwPlusB's transposed-weight path.
+                INDArray transposedB = Nd4j.rand(DataType.FLOAT, 4, 3);
+                OpTestResult transposedResult = executeOpTest(opType,
+                        List.of(
+                                InputSpec.graphInput("A", DataType.FLOAT, new long[]{2, 3}, a),
+                                InputSpec.graphInput("B", DataType.FLOAT, new long[]{4, 3}, transposedB),
+                                InputSpec.graphInput("C", DataType.FLOAT, new long[]{4}, c)),
+                        List.of(new OutputSpec("Y", DataType.FLOAT, new long[]{2, 4})),
+                        Map.of("alpha", floatAttr("alpha", 1.0f),
+                                "beta", floatAttr("beta", 1.0f),
+                                "transA", intAttr("transA", 0),
+                                "transB", intAttr("transB", 1)),
+                        opDir, 1e-4, 1e-6);
+                assertOpResult(transposedResult);
                 break;
             }
         }
