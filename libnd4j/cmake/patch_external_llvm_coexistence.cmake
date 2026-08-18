@@ -370,9 +370,9 @@ endif()
 
 # MinGW's LLVM shared-library recipe explicitly enables --export-all-symbols.
 # That archive-wide export can exceed PE/COFF's 65,535-export ordinal limit even
-# with hidden visibility. Build the DLL from its annotated ABI instead: remove
-# the upstream export-all flag and make LLVM's MinGW visibility annotations emit
-# __declspec(dllexport) while the producer is being compiled.
+# with hidden visibility. Build the DLL from LLVM's existing annotated ABI:
+# remove the upstream export-all flag while preserving MinGW's visibility
+# attributes (rewriting them to __declspec(dllimport) breaks static MLIR tools).
 if(_sd_external_project STREQUAL "LLVM")
     set(_sd_mingw_llvm_shlib_file
         "${SOURCE_DIR}/llvm/tools/llvm-shlib/CMakeLists.txt")
@@ -430,7 +430,7 @@ if(_sd_external_project STREQUAL "LLVM")
                     _sd_mingw_llvm_visibility_anchor_pos)
                 if(NOT _sd_mingw_llvm_visibility_anchor_pos EQUAL -1)
                     set(_sd_mingw_llvm_visibility_patch [=[
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(__MINGW32__)
   /* SD_MINGW_LLVM_DECLSPEC_EXPORTS_V1 */
 ]=])
                     string(REPLACE

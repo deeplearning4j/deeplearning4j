@@ -1786,15 +1786,15 @@ function(setup_triton)
     # Keep cache identities aligned with the artifacts they describe. LLVM/MLIR,
     # the Triton compiler, native LLVM TableGen tools, and SLEEF generators have
     # different source/configuration closures and must not invalidate one another.
-    # The v15 recipe removes MinGW's archive-wide LLVM export-all flag and
-    # exports only the annotated ABI, keeping the PE/COFF export table below
-    # the 65,535 ordinal limit. Keep the revision Windows/MinGW-only so
-    # unchanged Linux/Android packages remain cache-compatible.
+    # The v16 recipe removes MinGW's archive-wide LLVM export-all flag
+    # while preserving LLVM's native MinGW visibility attributes. Keep the
+    # revision Windows/MinGW-only so unchanged Linux/Android packages remain
+    # cache-compatible.
     set(_TRITON_LLVM_RECIPE_REVISION "managed-llvm-patches-v12")
     set(_TRITON_COMPILER_RECIPE_REVISION "managed-llvm-patches-v12")
     if(CMAKE_HOST_WIN32 OR MINGW)
-        set(_TRITON_LLVM_RECIPE_REVISION "managed-llvm-patches-v15")
-        set(_TRITON_COMPILER_RECIPE_REVISION "managed-llvm-patches-v15")
+        set(_TRITON_LLVM_RECIPE_REVISION "managed-llvm-patches-v16")
+        set(_TRITON_COMPILER_RECIPE_REVISION "managed-llvm-patches-v16")
     endif()
     set(_TRITON_LLVM_HOST_TOOLS_RECIPE_REVISION "managed-llvm-host-tools-v1")
     set(_TRITON_SLEEF_HOST_TOOLS_RECIPE_REVISION "managed-sleef-host-tools-v1")
@@ -2479,8 +2479,8 @@ function(setup_triton)
             # GNU ld cannot represent more than 65535 PE export ordinals. The
             # upstream MinGW DSO recipe adds --export-all-symbols to libLLVM,
             # which exceeds that limit once LLVM is linked from all component
-            # archives. The download-time patch removes that flag and enables
-            # MinGW-compatible __declspec exports for the annotated LLVM ABI.
+            # archives. The download-time patch removes that flag while retaining
+            # MinGW's native visibility attributes for the annotated LLVM ABI.
             # Keep hidden defaults so unannotated implementation symbols stay
             # private while MLIR consumers link against the supported ABI.
             list(APPEND TRITON_LLVM_CMAKE_ARGS
