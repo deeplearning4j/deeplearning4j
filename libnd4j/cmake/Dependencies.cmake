@@ -2489,8 +2489,11 @@ function(setup_triton)
                 -DCMAKE_VISIBILITY_INLINES_HIDDEN=ON
                 -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=OFF
                 -DLLVM_ENABLE_LLVM_EXPORT_ANNOTATIONS=ON
-                -DLLVM_LINK_LLVM_DYLIB=OFF
-                -DMLIR_LINK_MLIR_DYLIB=OFF
+                # MinGW now exports the annotated ABI from the monolithic DSOs.
+                # Link MLIR's execution engine against those DSOs instead of
+                # leaving its component-archive references unresolved.
+                -DLLVM_LINK_LLVM_DYLIB=ON
+                -DMLIR_LINK_MLIR_DYLIB=ON
             )
         endif()
 

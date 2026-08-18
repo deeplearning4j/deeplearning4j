@@ -18,9 +18,9 @@ if [ -n "${DL4J_MAVEN_REPOSITORY}" ]; then
 fi
 mingw=()
 if [ "${DL4J_OS}" = windows ]; then
-  # JavaCPP's profile selector is `platform.properties`; `platform.build` is
-  # a different property and silently leaves Windows builds on the MSVC profile.
-  mingw=(-Djavacpp.platform.properties=windows-x86_64-mingw -Djavacpp.platform.compiler=g++)
+  # The Maven JavaCPP configurations pass javacpp.platform.build to the plugin's
+  # properties selector. Keep platform.properties too for direct JavaCPP callers.
+  mingw=(-Djavacpp.platform.build=windows-x86_64-mingw -Djavacpp.platform.properties=windows-x86_64-mingw -Djavacpp.platform.compiler=g++)
 fi
 protoc_profile=()
 if [ "${DL4J_PLATFORM}" = linux-arm64 ] || [ "${DL4J_PLATFORM}" = macosx-arm64 ]; then
@@ -34,7 +34,7 @@ fi
 # belong exclusively to their explicit CUDA, Metal, TPU, Hexagon, Vulkan, and ZLUDA
 # matrix lanes; inferring them here would contaminate CPU builds.
 tokenizers=(mvn -pl :libtokenizers,:tokenizers-native-preset,:tokenizers-native --also-make "-Djavacpp.platform=${DL4J_PLATFORM}" ${mingw[@]+"${mingw[@]}"} ${repository[@]+"${repository[@]}"} -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false --no-transfer-progress --batch-mode "${DL4J_MAVEN_GOAL}" -DskipTests)
-java=(mvn -pl '!:blas-lapack-generator,!:libnd4j-gen,!:libnd4j,!:libtokenizers,!:tokenizers-native-preset,!:tokenizers-native,!:platform-tests' ${protoc_profile[@]+"${protoc_profile[@]}"} "${sdx_profile[@]}" ${repository[@]+"${repository[@]}"} -DskipTestResourceEnforcement=true "-Djavacpp.platform=${DL4J_PLATFORM}" -Dmaven.javadoc.failOnError=false -Dmaven.test.skip=true --no-transfer-progress --batch-mode "${DL4J_MAVEN_GOAL}")
+java=(mvn -pl '!:blas-lapack-generator,!:libnd4j-gen,!:libnd4j,!:libtokenizers,!:tokenizers-native-preset,!:tokenizers-native,!:platform-tests' ${protoc_profile[@]+"${protoc_profile[@]}"} "${sdx_profile[@]}" ${repository[@]+"${repository[@]}"} -DskipTestResourceEnforcement=true "-Djavacpp.platform=${DL4J_PLATFORM}" ${mingw[@]+"${mingw[@]}"} -Dmaven.javadoc.failOnError=false -Dmaven.test.skip=true --no-transfer-progress --batch-mode "${DL4J_MAVEN_GOAL}")
 
 print_command() {
   printf '%q ' "$@"

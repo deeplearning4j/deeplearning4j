@@ -2701,8 +2701,8 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertFalse(any("onednn-onednn" in argument for argument in windows_onednn))
 
         windows_cpu = command(DL4J_FAMILY="windows-cpu")
+        self.assertIn("-Djavacpp.platform.build=windows-x86_64-mingw", windows_cpu)
         self.assertIn("-Djavacpp.platform.properties=windows-x86_64-mingw", windows_cpu)
-        self.assertNotIn("-Djavacpp.platform.build=windows-x86_64-mingw", windows_cpu)
         self.assertIn("-Djavacpp.platform.compiler=g++", windows_cpu)
 
         windows_cudnn = command(
@@ -2722,6 +2722,7 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("-Pvulkan", windows_vulkan)
         self.assertIn("-Dlibnd4j.vulkan", windows_vulkan)
         self.assertIn("-Djavacpp.platform=windows-x86_64", windows_vulkan)
+        self.assertIn("-Djavacpp.platform.build=windows-x86_64-mingw", windows_vulkan)
         self.assertIn(
             "-Djavacpp.platform.properties=windows-x86_64-mingw", windows_vulkan
         )
@@ -3158,9 +3159,18 @@ option(MLIR_ENABLE_EXECUTION_ENGINE
             env=environment, check=True, capture_output=True, text=True,
         )
         command = shlex.split(result.stdout)
+        self.assertIn("-Djavacpp.platform.build=windows-x86_64-mingw", command)
         self.assertIn("-Djavacpp.platform.properties=windows-x86_64-mingw", command)
-        self.assertNotIn("-Djavacpp.platform.build=windows-x86_64-mingw", command)
         self.assertIn("-Djavacpp.platform.compiler=g++", command)
+
+        java_result = subprocess.run(
+            ["bash", str(root / "build-scripts/release/cross-platform.sh"), "--print-java"],
+            env=environment, check=True, capture_output=True, text=True,
+        )
+        java_command = shlex.split(java_result.stdout)
+        self.assertIn("-Djavacpp.platform.build=windows-x86_64-mingw", java_command)
+        self.assertIn("-Djavacpp.platform.properties=windows-x86_64-mingw", java_command)
+        self.assertIn("-Djavacpp.platform.compiler=g++", java_command)
 
     def test_linux_cross_platform_java_command_does_not_infer_accelerator_profiles(self):
         root = Path(__file__).parents[2]
