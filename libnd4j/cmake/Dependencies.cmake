@@ -1786,12 +1786,16 @@ function(setup_triton)
     # Keep cache identities aligned with the artifacts they describe. LLVM/MLIR,
     # the Triton compiler, native LLVM TableGen tools, and SLEEF generators have
     # different source/configuration closures and must not invalidate one another.
-    # The managed LLVM package now enables hidden visibility on MinGW so the
-    # monolithic DLL exports only its annotated ABI surface. Bump both package
-    # identities so dependency caches built with the pre-visibility contract are
-    # never reused by a build that needs the corrected Windows runtime.
-    set(_TRITON_LLVM_RECIPE_REVISION "managed-llvm-patches-v13")
-    set(_TRITON_COMPILER_RECIPE_REVISION "managed-llvm-patches-v13")
+    # The v14 recipe restores the MinGW LLVM exports required by
+    # MLIRExecutionEngineShared while retaining hidden visibility to stay below
+    # the PE/COFF export ordinal limit. Keep the revision Windows/MinGW-only so
+    # unchanged Linux/Android packages remain cache-compatible.
+    set(_TRITON_LLVM_RECIPE_REVISION "managed-llvm-patches-v12")
+    set(_TRITON_COMPILER_RECIPE_REVISION "managed-llvm-patches-v12")
+    if(CMAKE_HOST_WIN32 OR MINGW)
+        set(_TRITON_LLVM_RECIPE_REVISION "managed-llvm-patches-v14")
+        set(_TRITON_COMPILER_RECIPE_REVISION "managed-llvm-patches-v14")
+    endif()
     set(_TRITON_LLVM_HOST_TOOLS_RECIPE_REVISION "managed-llvm-host-tools-v1")
     set(_TRITON_SLEEF_HOST_TOOLS_RECIPE_REVISION "managed-sleef-host-tools-v1")
     set(_TRITON_LLVM_INSTALL_MARKER

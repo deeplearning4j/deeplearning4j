@@ -368,44 +368,10 @@ if(_sd_external_project STREQUAL "LLVM")
     endif()
 endif()
 
-# LLVM's MinGW shared-library recipe explicitly enables --export-all-symbols.
-# That defeats the hidden-visibility settings above and can exceed PE/COFF's
-# 65,535-export ordinal limit when LLVM is linked from its component archives.
-# Keep the target's intentional exports while preventing archive-wide auto-export.
-if(_sd_external_project STREQUAL "LLVM")
-    set(_sd_mingw_llvm_shlib_file
-        "${SOURCE_DIR}/llvm/tools/llvm-shlib/CMakeLists.txt")
-    if(EXISTS "${_sd_mingw_llvm_shlib_file}")
-        file(READ "${_sd_mingw_llvm_shlib_file}" _sd_mingw_llvm_shlib_source)
-        set(_sd_mingw_llvm_export_marker "# SD_MINGW_LLVM_EXPORT_LIMIT_V1")
-        string(FIND "${_sd_mingw_llvm_shlib_source}"
-            "${_sd_mingw_llvm_export_marker}" _sd_mingw_llvm_export_marker_pos)
-        if(_sd_mingw_llvm_export_marker_pos EQUAL -1)
-            set(_sd_mingw_llvm_export_flag
-                "target_link_options(LLVM PRIVATE LINKER:--export-all-symbols)")
-            string(FIND "${_sd_mingw_llvm_shlib_source}"
-                "${_sd_mingw_llvm_export_flag}" _sd_mingw_llvm_export_flag_pos)
-            if(NOT _sd_mingw_llvm_export_flag_pos EQUAL -1)
-                set(_sd_mingw_llvm_export_patch [=[
-# SD_MINGW_LLVM_EXPORT_LIMIT_V1
-  target_link_options(LLVM PRIVATE LINKER:--exclude-all-symbols)
-]=])
-                string(REPLACE
-                    "${_sd_mingw_llvm_export_flag}"
-                    "${_sd_mingw_llvm_export_patch}"
-                    _sd_mingw_llvm_shlib_patched
-                    "${_sd_mingw_llvm_shlib_source}")
-                if(_sd_mingw_llvm_shlib_patched STREQUAL _sd_mingw_llvm_shlib_source)
-                    message(FATAL_ERROR
-                        "patch_external_llvm_coexistence: failed to patch MinGW LLVM export limit in ${_sd_mingw_llvm_shlib_file}")
-                endif()
-                file(WRITE "${_sd_mingw_llvm_shlib_file}"
-                    "${_sd_mingw_llvm_shlib_patched}")
-            endif()
-        endif()
-    endif()
-endif()
-
+# Keep LLVM's upstream MinGW export-all behavior. The Windows build passes
+# hidden visibility defaults, so the explicit export-all option exports the
+# annotated LLVM ABI while retaining the symbols required by MLIR's execution
+# engine import library. Suppressing every export produces an unusable DLL.
 # The pinned MLIR SCF-to-SPIR-V conversion represents scf.for results with
 # Function-scope variables. Upstream initializes those variables only from
 # scf.yield in the loop body, so a zero-trip loop reads undefined data instead
