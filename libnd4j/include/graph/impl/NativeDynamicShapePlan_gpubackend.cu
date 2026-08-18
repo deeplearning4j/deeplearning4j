@@ -1133,7 +1133,7 @@ static ReplaySchedule buildCompositeReplaySchedule(const GraphSegment& seg,
                                                   int totalOutputSlots,
                                                   TritonGraphBackend* tritonBackend) {
  ReplaySchedule schedule;
- auto gap_slots = tritonBackend->getGapSlots(seg, slots);
+ auto gap_slots = tritonBackend->getGapSlots(seg, slots, outputSlots, totalOutputSlots);
 
  int totalSegSlots = seg.def.endSlot - seg.def.startSlot + 1;
  DSP_DIAG(SEGMENT,
