@@ -12,25 +12,51 @@ rustup default stable-x86_64-pc-windows-gnu
 if (-not (Get-Command cbindgen -ErrorAction SilentlyContinue)) {
   cargo install --locked cbindgen
 }
-$msysPath = 'C:\msys64\usr\bin'
-$mingwPath = 'C:\msys64\mingw64\bin'
 $gitBash = 'C:\Program Files\Git\bin\bash.exe'
 if (-not (Test-Path -LiteralPath $gitBash)) {
   throw "Git Bash was not installed at $gitBash"
 }
-# Hosted runners can expose a preinstalled MinGW toolchain at a different root
-# than the MSYS2 shell. Preserve the directory that actually supplied gcc so
-# native generators (llvm-tblgen, mlir-tblgen) can resolve their libstdc++/
-# libwinpthread runtime DLLs when MSYS Makefiles launches them.
+# The MSYS2 setup action installs the pinned MINGW64 toolchain before this
+# script runs. Prefer that root explicitly; falling back to PATH is allowed
+# for older callers, but never mix gcc and g++ from different installations.
+$preferredMingwPath = 'C:\msys64\mingw64\bin'
+$preferredGcc = Join-Path $preferredMingwPath 'gcc.exe'
 $gccCommand = Get-Command gcc.exe -ErrorAction SilentlyContinue
-$compilerMingwPath = if ($gccCommand) { Split-Path -Parent $gccCommand.Source } else { $mingwPath }
-Add-Content -Path $env:GITHUB_PATH -Value $msysPath
-Add-Content -Path $env:GITHUB_PATH -Value $mingwPath
-if ($compilerMingwPath -ne $mingwPath) {
-  Add-Content -Path $env:GITHUB_PATH -Value $compilerMingwPath
+$gccPath = if (Test-Path -LiteralPath $preferredGcc) {
+  $preferredGcc
+} elseif ($gccCommand) {
+  $gccCommand.Source
+} else {
+  $null
 }
+if ([string]::IsNullOrWhiteSpace($gccPath)) {
+  throw 'Pinned MSYS2 MinGW64 gcc.exe was not found; toolchain setup did not complete'
+}
+$mingwPath = Split-Path -Parent $gccPath
+$gxxPath = Join-Path $mingwPath 'g++.exe'
+if (-not (Test-Path -LiteralPath $gxxPath)) {
+  throw "MinGW g++.exe is missing beside gcc.exe at $mingwPath"
+}
+$mingwTarget = (& $gccPath -dumpmachine | Out-String).Trim()
+if ($mingwTarget -notmatch '^x86_64-w64-mingw32') {
+  throw "Expected an x86_64 MinGW compiler, got '$mingwTarget' from $gccPath"
+}
+$runtimeNames = @('libstdc++-6.dll', 'libgcc_s_seh-1.dll', 'libwinpthread-1.dll')
+$missingRuntime = @($runtimeNames | Where-Object { -not (Test-Path -LiteralPath (Join-Path $mingwPath $_)) })
+if ($missingRuntime.Count -gt 0) {
+  throw "MinGW runtime is incomplete under ${mingwPath}: $($missingRuntime -join ', ')"
+}
+$msysRoot = Split-Path -Parent (Split-Path -Parent $mingwPath)
+$msysPath = Join-Path $msysRoot 'usr\bin'
+if (Test-Path -LiteralPath $msysPath) {
+  Add-Content -Path $env:GITHUB_PATH -Value $msysPath
+}
+Add-Content -Path $env:GITHUB_PATH -Value $mingwPath
 Add-Content -Path $env:GITHUB_ENV -Value "DL4J_BASH_EXE=$gitBash"
-Write-Host "[dl4j-bootstrap] mingw-runtime=$compilerMingwPath"
+Add-Content -Path $env:GITHUB_ENV -Value "DL4J_MINGW_BIN=$mingwPath"
+Add-Content -Path $env:GITHUB_ENV -Value "DL4J_MINGW_GCC=$gccPath"
+Add-Content -Path $env:GITHUB_ENV -Value "DL4J_MINGW_GXX=$gxxPath"
+Write-Host "[dl4j-bootstrap] mingw-target=$mingwTarget gcc=$gccPath gxx=$gxxPath"
 
 # Use the exact upstream host compiler for schema generation. The MinGW-built
 # flatc from the same source tree has crashed while executing on hosted Windows

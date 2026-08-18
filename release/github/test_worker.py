@@ -612,8 +612,19 @@ class WorkflowMatrixTests(unittest.TestCase):
         builder = (
             ROOT / "nd4j/nd4j-tokenizers/libtokenizers/buildnativetokenizers.sh"
         ).read_text()
-        self.assertIn('CARGO_BUILD_TARGET="${CARGO_BUILD_TARGET:-${TARGET}}"', builder)
+        self.assertIn('CARGO_BUILD_TARGET="${TARGET}"', builder)
+        self.assertIn('RUST_TOOLCHAIN="stable-${TARGET}"', builder)
+        self.assertIn('DL4J_MINGW_BIN', builder)
+        self.assertIn('gcc -dumpmachine', builder)
         self.assertIn('--target "${CARGO_BUILD_TARGET}"', builder)
+
+    def test_windows_worker_pins_one_mingw_toolchain(self):
+        action = (ROOT / ".github/actions/run-release-worker/action.yml").read_text()
+        bootstrap = (ROOT / "release/github/bootstrap-worker.ps1").read_text()
+        self.assertIn("msys2/setup-msys2@v2", action)
+        self.assertIn("msystem: MINGW64", action)
+        self.assertIn("DL4J_MINGW_BIN", bootstrap)
+        self.assertIn("x86_64-w64-mingw32", bootstrap)
 
     def test_cuda_linking_includes_cublas_lt(self):
         configuration = (ROOT / "libnd4j/cmake/CudaConfiguration.cmake").read_text()

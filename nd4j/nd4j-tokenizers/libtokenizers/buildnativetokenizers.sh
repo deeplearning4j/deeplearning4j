@@ -267,22 +267,33 @@ fi
 if [[ "${HOST_PLATFORM}" == "windows" ]]; then
     CMAKE_ARGS+=("-G" "MinGW Makefiles")
 
+    # The worker bootstrap exports the exact Windows MinGW bin directory. Put
+    # that installation first in the Git-Bash PATH and never inherit CC/CXX
+    # from the MSVC environment materialized for the other Windows modules.
+    if [[ -n "${DL4J_MINGW_BIN:-}" ]] && command_exists cygpath; then
+        mingw_bin="$(cygpath -u "${DL4J_MINGW_BIN}")"
+        if [[ -d "${mingw_bin}" ]]; then
+            mingw_root="$(cd "${mingw_bin}/../.." && pwd)"
+            export PATH="${mingw_bin}:${mingw_root}/usr/bin:${PATH}"
+        fi
+    fi
+    if ! command_exists gcc || ! command_exists g++; then
+        echo "ERROR: pinned MSYS2 MinGW64 gcc/g++ are not available on PATH" >&2
+        exit 1
+    fi
+    mingw_target="$(gcc -dumpmachine 2>/dev/null || true)"
+    if [[ "${mingw_target}" != x86_64-w64-mingw32* ]]; then
+        echo "ERROR: expected x86_64-w64-mingw32 compiler, got '${mingw_target}'" >&2
+        exit 1
+    fi
+
     # The Rust FFI archive above is built for x86_64-pc-windows-gnu. Do not
     # let a runner-provided Visual Studio clang++ select the MSVC target: its
     # GNU frontend accepts the configure step but cannot consume that archive
-    # reliably. Allow an explicit TOKENIZERS_CC/TOKENIZERS_CXX override, while
-    # defaulting this wrapper to the installed MSYS2 MinGW compiler.
-    if [[ -n "${TOKENIZERS_CC:-}" || -n "${TOKENIZERS_CXX:-}" ]]; then
-        export CC="${TOKENIZERS_CC:-${CC:-gcc}}"
-        export CXX="${TOKENIZERS_CXX:-${CXX:-g++}}"
-    elif command_exists gcc && command_exists g++; then
-        # Keep the compiler as a PATH-resolved name. MSYS converts absolute
-        # /c/... paths in CMake cache arguments to C:/..., which may not be the
-        # actual Windows installation path on hosted runners.
-        export CC="gcc"
-        export CXX="g++"
-    fi
-    echo "Windows tokenizers compiler: CC=${CC:-<unset>}, CXX=${CXX:-<unset>}"
+    # reliably. Explicit overrides remain available for specialized callers.
+    export CC="${TOKENIZERS_CC:-gcc}"
+    export CXX="${TOKENIZERS_CXX:-g++}"
+    echo "Windows tokenizers compiler: CC=${CC}, CXX=${CXX}, target=${mingw_target}"
 fi
 
 # Explicitly pass compiler if set (critical for ABI compatibility)
