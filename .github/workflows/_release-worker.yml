@@ -198,6 +198,7 @@ jobs:
     if: ${{ always() && needs.matrix.result == 'success' && needs.matrix.outputs.linux != '[]' }}
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         include: ${{ fromJSON(needs.matrix.outputs.linux) }}
     name: publish / ${{ matrix.name }}
@@ -260,6 +261,7 @@ jobs:
     if: ${{ always() && needs.matrix.result == 'success' && needs.matrix.outputs.host != '[]' }}
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         include: ${{ fromJSON(needs.matrix.outputs.host) }}
     name: publish / ${{ matrix.name }}

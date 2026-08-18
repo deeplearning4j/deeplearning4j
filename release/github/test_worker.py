@@ -489,6 +489,7 @@ class WorkflowMatrixTests(unittest.TestCase):
         )
         self.assertIn("needs: [matrix, linux]", workflow)
         self.assertIn("needs: [matrix, host]", workflow)
+        self.assertEqual(2, workflow.count("max-parallel: 1"))
         self.assertIn("if: ${{ always() && needs.matrix.result == 'success'", workflow)
         self.assertNotIn("endsWith(steps.worker.outputs['release-version']", workflow)
         for caller in sorted((ROOT / ".github/workflows").glob("build-deploy-*")):
