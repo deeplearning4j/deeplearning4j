@@ -2700,6 +2700,11 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertNotIn("-Dlibnd4j.extension=onednn", windows_onednn)
         self.assertFalse(any("onednn-onednn" in argument for argument in windows_onednn))
 
+        windows_cpu = command(DL4J_FAMILY="windows-cpu")
+        self.assertIn("-Djavacpp.platform.properties=windows-x86_64-mingw", windows_cpu)
+        self.assertNotIn("-Djavacpp.platform.build=windows-x86_64-mingw", windows_cpu)
+        self.assertIn("-Djavacpp.platform.compiler=g++", windows_cpu)
+
         windows_cudnn = command(
             DL4J_FAMILY="windows-cuda",
             DL4J_CUDA_VERSION="12.9",

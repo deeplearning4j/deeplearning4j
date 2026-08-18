@@ -129,7 +129,7 @@ case "${DL4J_FAMILY}" in
     [ -n "${DL4J_LIBND4J_URL}" ] || modules+=,:libnd4j
     [ "$DL4J_NATIVE_ONLY" = 1 ] || append_sdx_modules
     variant_cpu windows-x86_64
-    command=(mvn ${split_flags[@]+"${split_flags[@]}"} ${repo[@]+"${repo[@]}"} -Dlibnd4j.generate.flatc=ON -Dlibnd4j.sdx.standalone=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Pcpu "${sdx_profile[@]}" "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Djavacpp.platform=windows-x86_64 -Djavacpp.platform.build=windows-x86_64-mingw -Djavacpp.platform.compiler=g++ -Dlibnd4j.platform=windows-x86_64 -DskipTests "${VARIANT[@]}" "${sdx_maven_flags[@]}" -pl "${modules}" ${also_make[@]+"${also_make[@]}"} "${DL4J_MAVEN_GOAL}")
+    command=(mvn ${split_flags[@]+"${split_flags[@]}"} ${repo[@]+"${repo[@]}"} -Dlibnd4j.generate.flatc=ON -Dlibnd4j.sdx.standalone=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Pcpu "${sdx_profile[@]}" "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Djavacpp.platform=windows-x86_64 -Djavacpp.platform.properties=windows-x86_64-mingw -Djavacpp.platform.compiler=g++ -Dlibnd4j.platform=windows-x86_64 -DskipTests "${VARIANT[@]}" "${sdx_maven_flags[@]}" -pl "${modules}" ${also_make[@]+"${also_make[@]}"} "${DL4J_MAVEN_GOAL}")
     ;;
   android-arm64-vulkan|android-x86_64-vulkan)
     case "${DL4J_FAMILY}" in
