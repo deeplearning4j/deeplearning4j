@@ -57,6 +57,10 @@ on:
 
 env:
   MAVEN_OPTS: -Xmx2g
+  # Keep the launch synchronous so a failing HIP dispatch is attributed to the
+  # CUDA call that submitted it. ZLUDA's trace shim writes PTX modules and
+  # compiler diagnostics below RUNNER_TEMP.
+  CUDA_LAUNCH_BLOCKING: '1'
 
 jobs:
   zluda-smoke:
@@ -157,6 +161,25 @@ jobs:
           echo "ZLUDA_PATH=$ZLUDA_PATH" >> "$GITHUB_ENV"
           echo "ZLUDA installed at $ZLUDA_PATH:"
           ls -la "$ZLUDA_PATH"
+
+      # ZLUDA's trace shim records every CUDA call plus the selected PTX module,
+      # translated ELF, and compiler diagnostics. Keep the normal ZLUDA driver as
+      # the target via ZLUDA_CUDA_LIB while placing the trace shim first on the
+      # loader path. This is enabled only for AMD, where the HIP launch crash is
+      # being investigated; Intel/Level Zero runs retain their normal loader.
+      - name: Enable ZLUDA trace diagnostics (AMD)
+        if: inputs.zludaTarget == 'AMD'
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/zluda-logs"
+          if [ ! -f "$ZLUDA_PATH/lib/libcuda.so" ] || [ ! -d "$ZLUDA_PATH/trace" ]; then
+            echo "::warning::ZLUDA trace shim or libcuda.so is unavailable under $ZLUDA_PATH; running without trace."
+            exit 0
+          fi
+          echo "ZLUDA_CUDA_LIB=$ZLUDA_PATH/lib/libcuda.so" >> "$GITHUB_ENV"
+          echo "ZLUDA_LOG_DIR=$RUNNER_TEMP/zluda-logs" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=$ZLUDA_PATH/trace:$ZLUDA_PATH:${LD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
+          echo "ZLUDA trace enabled; logs will be uploaded from $RUNNER_TEMP/zluda-logs"
 
       # Advisory: NVRTC stubs in ZLUDA distribution.
       # cuBLAS GEMM paths work without NVRTC, but Triton/NVRTC-compiled kernels
@@ -264,4 +287,6 @@ jobs:
             platform-tests/target/surefire-reports/
             platform-tests/zluda-smoke-tests.log
             zluda-build.log
+            ${{ runner.temp }}/zluda-logs/
+            '**/hs_err_pid*.log'
           retention-days: 14
