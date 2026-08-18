@@ -720,6 +720,18 @@ class WorkflowMatrixTests(unittest.TestCase):
             zluda_configuration,
         )
 
+    def test_zluda_release_plans_leave_ptx_architecture_to_cmake(self):
+        for provider in ("aws", "azure", "gcp"):
+            plan = prepare_worker.load_json(ROOT / f"release/{provider}/release-plan.json")
+            for shard in plan["shards"]:
+                build = shard["build"]
+                if build.get("zludaVersion"):
+                    self.assertNotIn(
+                        "-Dlibnd4j.compute=8.6 9.0",
+                        build.get("mavenArgs", []),
+                        f"{provider}:{shard['id']}",
+                    )
+
         cmake_source = (ROOT / "libnd4j/CMakeLists.txt").read_text()
         self.assertIn(
             'if(SD_ZLUDA)\n        set(_sd_cuda_msvc_runtime_flag "-MT")',

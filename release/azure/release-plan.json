@@ -1284,7 +1284,6 @@
           ":nd4j-presets-common"
         ],
         "mavenArgs": [
-          "-Dlibnd4j.compute=8.6 9.0",
           "-Dlibnd4j.zluda=AMD",
           "-Drocm.version=7.2.4"
         ],
@@ -1358,7 +1357,6 @@
           ":nd4j-presets-common"
         ],
         "mavenArgs": [
-          "-Dlibnd4j.compute=8.6 9.0",
           "-Dlibnd4j.zluda=AMD",
           "-Drocm.version=7.2.4",
           "-Dlibnd4j.oom.killer=OFF"
@@ -1399,7 +1397,7 @@
         "classifierArchiveContracts": {"nd4j-zluda-12.9": {"requiredEntries": ["org/nd4j/linalg/jcublas/bindings/{classifier}/libjnind4jcuda.so", "org/nd4j/linalg/jcublas/bindings/{classifier}/libnd4jcuda.so", "org/nd4j/linalg/jcublas/bindings/{classifier}/libcuda.so", "org/nd4j/linalg/jcublas/bindings/{classifier}/libamdhip64.so", "org/nd4j/linalg/jcublas/bindings/{classifier}/libhsa-runtime64.so.1", "org/nd4j/linalg/jcublas/bindings/{classifier}/libhsakmt.so.1", "org/nd4j/linalg/jcublas/bindings/{classifier}/shared-runtime-manifest.txt"], "runtimeManifest": "org/nd4j/linalg/jcublas/bindings/{classifier}/shared-runtime-manifest.txt", "requiredRuntimeAliases": {"libcuda.so": "libnvcuda.so", "libcuda.so.1": "libnvcuda.so"}}},
         "includeMetadata": true
       },
-      "build": {"backend": "cuda", "cudaVersion": "12.9", "zludaVersion": "v6", "rocmVersion": "6.2.4", "rocmBuildOnly": true, "rocmBuildComponents": ["hip", "rocblas", "hipblaslt", "rocsparse", "rocm-smi", "miopen"], "javacppPlatform": "linux-x86_64", "profiles": ["cuda", "sdx", "zluda", "zluda-platform"], "modules": [":nd4j-cuda-12.9-preset", ":nd4j-zluda-12.9", ":nd4j-zluda-12.9-platform", ":libnd4j", ":nd4j-cuda-backend-common", ":nd4j-presets-common"], "mavenArgs": ["-Dlibnd4j.compute=8.6 9.0", "-Dlibnd4j.zluda=AMD", "-Drocm.version=6.2.4"], "variants": [{"name": "cuda-12.9", "classifierSuffix": "-cuda-12.9-zluda-rocm-6.2.4", "platformExtension": "-zluda-rocm-6.2.4"}], "buildThreads": 48},
+      "build": {"backend": "cuda", "cudaVersion": "12.9", "zludaVersion": "v6", "rocmVersion": "6.2.4", "rocmBuildOnly": true, "rocmBuildComponents": ["hip", "rocblas", "hipblaslt", "rocsparse", "rocm-smi", "miopen"], "javacppPlatform": "linux-x86_64", "profiles": ["cuda", "sdx", "zluda", "zluda-platform"], "modules": [":nd4j-cuda-12.9-preset", ":nd4j-zluda-12.9", ":nd4j-zluda-12.9-platform", ":libnd4j", ":nd4j-cuda-backend-common", ":nd4j-presets-common"], "mavenArgs": ["-Dlibnd4j.zluda=AMD", "-Drocm.version=6.2.4"], "variants": [{"name": "cuda-12.9", "classifierSuffix": "-cuda-12.9-zluda-rocm-6.2.4", "platformExtension": "-zluda-rocm-6.2.4"}], "buildThreads": 48},
       "image": {"publisher": "Canonical", "offer": "0001-com-ubuntu-server-jammy", "sku": "22_04-lts-gen2", "version": "latest", "architecture": "x64"}
     },
     {
@@ -1418,7 +1416,7 @@
         "unclassifiedArtifactIds": ["nd4j-cuda-backend-common", "nd4j-cuda-12.9-preset", "nd4j-zluda-12.9", "nd4j-zluda-12.9-platform", "nd4j-presets-common"],
         "includeMetadata": true
       },
-      "build": {"backend": "cuda", "cudaVersion": "12.9", "zludaVersion": "v6", "rocmVersion": "6.2.4", "javacppPlatform": "windows-x86_64", "profiles": ["cuda", "sdx", "zluda", "zluda-platform"], "modules": [":nd4j-cuda-12.9-preset", ":nd4j-zluda-12.9", ":libnd4j", ":nd4j-cuda-backend-common", ":nd4j-zluda-12.9-platform", ":nd4j-presets-common"], "mavenArgs": ["-Dlibnd4j.compute=8.6 9.0", "-Dlibnd4j.zluda=AMD", "-Drocm.version=6.2.4", "-Dlibnd4j.oom.killer=OFF"], "variants": [{"name": "cuda-12.9", "classifierSuffix": "-cuda-12.9-zluda-rocm-6.2.4", "platformExtension": "-zluda-rocm-6.2.4"}], "buildThreads": 48},
+      "build": {"backend": "cuda", "cudaVersion": "12.9", "zludaVersion": "v6", "rocmVersion": "6.2.4", "javacppPlatform": "windows-x86_64", "profiles": ["cuda", "sdx", "zluda", "zluda-platform"], "modules": [":nd4j-cuda-12.9-preset", ":nd4j-zluda-12.9", ":libnd4j", ":nd4j-cuda-backend-common", ":nd4j-zluda-12.9-platform", ":nd4j-presets-common"], "mavenArgs": ["-Dlibnd4j.zluda=AMD", "-Drocm.version=6.2.4", "-Dlibnd4j.oom.killer=OFF"], "variants": [{"name": "cuda-12.9", "classifierSuffix": "-cuda-12.9-zluda-rocm-6.2.4", "platformExtension": "-zluda-rocm-6.2.4"}], "buildThreads": 48},
       "image": {"publisher": "MicrosoftWindowsServer", "offer": "WindowsServer", "sku": "2022-datacenter-azure-edition", "version": "latest", "architecture": "x64"}
     }
   ]
