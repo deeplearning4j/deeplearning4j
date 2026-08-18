@@ -35,9 +35,9 @@ on:
           - nd4j-cuda-12.6
 
       zludaVersion:
-        description: 'ZLUDA release tag to validate from vosen/ZLUDA (e.g. v6)'
+        description: 'ZLUDA release tag to validate from vosen/ZLUDA (v7-preview.8 or v6)'
         required: false
-        default: 'v6'
+        default: 'v7-preview.8'
 
 env:
   MAVEN_OPTS: -Xmx2g

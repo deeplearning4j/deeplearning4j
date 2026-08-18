@@ -6,8 +6,8 @@ name: ZLUDA Smoke Tests (AMD/Intel GPU)
 # self-hosted runner with labels e.g. [self-hosted, linux, amd-gpu].
 #
 # Scope: driver/runtime API, PTX JIT (NVRTC) and cuBLAS GEMM paths. cuDNN and CUDA
-# graph capture/replay are NOT supported by ZLUDA v6 — this is a correctness gate,
-# not a DSP/perf gate. See ADR 0087 and ADR 0102.
+# graph capture/replay are not part of this smoke gate; it covers CUDA ABI,
+# PTX JIT and cuBLAS execution. See ADR 0087 and ADR 0102.
 
 on:
   workflow_dispatch:
@@ -18,9 +18,9 @@ on:
         default: '["self-hosted","linux","amd-gpu"]'
 
       zludaVersion:
-        description: 'ZLUDA release tag to download from vosen/ZLUDA (e.g. v6), or "system" to use a preinstalled ZLUDA_PATH from the runner environment'
+        description: 'ZLUDA release tag to download from vosen/ZLUDA (v7-preview.8 or v6), or "system" to use a preinstalled ZLUDA_PATH from the runner environment'
         required: false
-        default: 'v6'
+        default: 'v7-preview.8'
 
       zludaTarget:
         description: 'GPU vendor target'
