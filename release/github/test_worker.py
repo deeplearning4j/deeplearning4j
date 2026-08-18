@@ -690,6 +690,23 @@ class WorkflowMatrixTests(unittest.TestCase):
             '"ZLUDA build requires ${imported_target} (${library_name}); install the complete CUDA build toolkit"',
             configuration,
         )
+        self.assertIn(
+            'ZLUDA supports compute_80, compute_86, and compute_89',
+            configuration,
+        )
+        self.assertNotIn('set(_requested "8.6 9.0")', configuration)
+
+        native_platform = (
+            ROOT / "build-scripts/release/native-platform.sh"
+        ).read_text()
+        zluda_block = native_platform.split("  zluda|windows-zluda)", 1)[1].split(
+            "    ;;", 1
+        )[0]
+        self.assertNotIn("-Dlibnd4j.compute=8.6 9.0", zluda_block)
+        self.assertIn(
+            "Let CMake resolve the ZLUDA virtual architecture",
+            zluda_block,
+        )
 
         zluda_configuration = (
             ROOT / "libnd4j/cmake/ZludaConfiguration.cmake"

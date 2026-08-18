@@ -831,14 +831,13 @@ function(resolve_zluda_ptx_architectures COMPUTE_VALUE)
             endif()
         endif()
 
-        # ZLUDA v6 is built for ROCm 6/7. Keep ROCm 6 on the conservative
-        # Ampere-era PTX baseline, while ROCm 7 gets the project's CUDA 12.x
-        # pair. Unknown roots remain usable but are explicit in the configure
-        # output and use the conservative baseline.
-        if(_rocm_major STREQUAL "6")
+        # ZLUDA's documented CUDA virtual-architecture contract is compute_80,
+        # compute_86, or compute_89. Keep both ROCm 6 and ROCm 7 on the
+        # conservative compute_86 baseline; newer virtual targets (notably
+        # compute_90) are not translated reliably by ZLUDA and must not leak
+        # into an automatic release build.
+        if(_rocm_major STREQUAL "6" OR _rocm_major STREQUAL "7")
             set(_requested "8.6")
-        elseif(_rocm_major STREQUAL "7")
-            set(_requested "8.6 9.0")
         else()
             set(_requested "8.6")
             if(_rocm_major STREQUAL "")
@@ -868,7 +867,18 @@ function(resolve_zluda_ptx_architectures COMPUTE_VALUE)
         string(REPLACE "." "" _arch_clean "${_arch}")
         if(NOT _arch_clean MATCHES "^[0-9][0-9]$")
             message(FATAL_ERROR
-                "Invalid ZLUDA PTX compute target '${_arch}'; use values such as 8.6 or 9.0")
+                "Invalid ZLUDA PTX compute target '${_arch}'; use values such as 8.0, 8.6, or 8.9")
+        endif()
+        set(_zluda_supported FALSE)
+        foreach(_supported_arch IN ITEMS 80 86 89)
+            if(_arch_clean STREQUAL "${_supported_arch}")
+                set(_zluda_supported TRUE)
+                break()
+            endif()
+        endforeach()
+        if(NOT _zluda_supported)
+            message(FATAL_ERROR
+                "Unsupported ZLUDA PTX compute target '${_arch}'; ZLUDA supports compute_80, compute_86, and compute_89")
         endif()
         list(APPEND _normalized_targets "${_arch_clean}")
         list(APPEND _arch_flags
