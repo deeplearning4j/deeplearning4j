@@ -151,7 +151,14 @@ target_include_directories(${WRAPPER_LIB_NAME} PRIVATE
 )
 
 # Compiler-specific options
-if(MSVC)
+# Clang can target the MSVC ABI without CMake setting MSVC=TRUE. Treat that
+# mode like MSVC as well: clang-cl/clang++ reject GCC's -fPIC option for the
+# x86_64-pc-windows-msvc target.
+set(TOKENIZERS_MSVC_ABI FALSE)
+if(MSVC OR (WIN32 AND CMAKE_CXX_COMPILER_TARGET MATCHES "windows-msvc"))
+    set(TOKENIZERS_MSVC_ABI TRUE)
+endif()
+if(TOKENIZERS_MSVC_ABI)
     target_compile_options(${WRAPPER_LIB_NAME} PRIVATE /W3 /EHsc)
     target_compile_definitions(${WRAPPER_LIB_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS)
 else()
