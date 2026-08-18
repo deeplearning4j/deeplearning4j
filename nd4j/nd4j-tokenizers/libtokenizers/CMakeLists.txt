@@ -153,9 +153,12 @@ target_include_directories(${WRAPPER_LIB_NAME} PRIVATE
 # Compiler-specific options
 # Clang can target the MSVC ABI without CMake setting MSVC=TRUE. Treat that
 # mode like MSVC as well: clang-cl/clang++ reject GCC's -fPIC option for the
-# x86_64-pc-windows-msvc target.
+# x86_64-pc-windows-msvc target. CMake may omit CMAKE_CXX_COMPILER_TARGET
+# for the host compiler, so the non-MinGW Clang case is covered explicitly.
 set(TOKENIZERS_MSVC_ABI FALSE)
-if(MSVC OR (WIN32 AND CMAKE_CXX_COMPILER_TARGET MATCHES "windows-msvc"))
+if(MSVC OR
+   (WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND
+    (CMAKE_CXX_COMPILER_TARGET MATCHES "windows-msvc" OR NOT MINGW)))
     set(TOKENIZERS_MSVC_ABI TRUE)
 endif()
 if(TOKENIZERS_MSVC_ABI)
