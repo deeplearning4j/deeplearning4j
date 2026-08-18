@@ -78,6 +78,10 @@ runs:
       uses: msys2/setup-msys2@v2
       with:
         msystem: MINGW64
+        # GitHub's Windows image already contains an initialized C:\\msys64.
+        # Avoid downloading a fresh base archive: its first-boot pacman key
+        # generation can hang before the worker ever starts.
+        release: false
         update: true
         install: >-
           base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive

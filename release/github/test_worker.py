@@ -623,6 +623,7 @@ class WorkflowMatrixTests(unittest.TestCase):
         bootstrap = (ROOT / "release/github/bootstrap-worker.ps1").read_text()
         self.assertIn("msys2/setup-msys2@v2", action)
         self.assertIn("msystem: MINGW64", action)
+        self.assertIn("release: false", action)
         self.assertIn("DL4J_MINGW_BIN", bootstrap)
         self.assertIn("x86_64-w64-mingw32", bootstrap)
 
