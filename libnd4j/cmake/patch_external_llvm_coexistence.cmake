@@ -368,10 +368,90 @@ if(_sd_external_project STREQUAL "LLVM")
     endif()
 endif()
 
-# Keep LLVM's upstream MinGW export-all behavior. The Windows build passes
-# hidden visibility defaults, so the explicit export-all option exports the
-# annotated LLVM ABI while retaining the symbols required by MLIR's execution
-# engine import library. Suppressing every export produces an unusable DLL.
+# MinGW's LLVM shared-library recipe explicitly enables --export-all-symbols.
+# That archive-wide export can exceed PE/COFF's 65,535-export ordinal limit even
+# with hidden visibility. Build the DLL from its annotated ABI instead: remove
+# the upstream export-all flag and make LLVM's MinGW visibility annotations emit
+# __declspec(dllexport) while the producer is being compiled.
+if(_sd_external_project STREQUAL "LLVM")
+    set(_sd_mingw_llvm_shlib_file
+        "${SOURCE_DIR}/llvm/tools/llvm-shlib/CMakeLists.txt")
+    if(EXISTS "${_sd_mingw_llvm_shlib_file}")
+        file(READ "${_sd_mingw_llvm_shlib_file}" _sd_mingw_llvm_shlib_source)
+        set(_sd_mingw_llvm_export_marker "# SD_MINGW_LLVM_EXPORT_LIMIT_V2")
+        string(FIND "${_sd_mingw_llvm_shlib_source}"
+            "${_sd_mingw_llvm_export_marker}"
+            _sd_mingw_llvm_export_marker_pos)
+        if(_sd_mingw_llvm_export_marker_pos EQUAL -1)
+            set(_sd_mingw_llvm_export_flag
+                "target_link_options(LLVM PRIVATE LINKER:--export-all-symbols)")
+            string(FIND "${_sd_mingw_llvm_shlib_source}"
+                "${_sd_mingw_llvm_export_flag}"
+                _sd_mingw_llvm_export_flag_pos)
+            if(NOT _sd_mingw_llvm_export_flag_pos EQUAL -1)
+                set(_sd_mingw_llvm_export_patch [=[
+# SD_MINGW_LLVM_EXPORT_LIMIT_V2
+  # LLVM_ABI/LLVM_C_ABI annotations are the MinGW export surface.
+]=])
+                string(REPLACE
+                    "${_sd_mingw_llvm_export_flag}"
+                    "${_sd_mingw_llvm_export_patch}"
+                    _sd_mingw_llvm_shlib_patched
+                    "${_sd_mingw_llvm_shlib_source}")
+                if(_sd_mingw_llvm_shlib_patched STREQUAL
+                   _sd_mingw_llvm_shlib_source)
+                    message(FATAL_ERROR
+                        "patch_external_llvm_coexistence: failed to remove MinGW "
+                        "LLVM export-all flag")
+                endif()
+                file(WRITE "${_sd_mingw_llvm_shlib_file}"
+                    "${_sd_mingw_llvm_shlib_patched}")
+            endif()
+        endif()
+    endif()
+
+    foreach(_sd_mingw_llvm_visibility_file IN ITEMS
+        "${SOURCE_DIR}/llvm/include/llvm/Support/Compiler.h"
+        "${SOURCE_DIR}/llvm/include/llvm-c/Visibility.h"
+        "${SOURCE_DIR}/llvm/include/llvm/Demangle/DemangleConfig.h")
+        if(EXISTS "${_sd_mingw_llvm_visibility_file}")
+            file(READ "${_sd_mingw_llvm_visibility_file}"
+                _sd_mingw_llvm_visibility_source)
+            set(_sd_mingw_llvm_visibility_marker
+                "/* SD_MINGW_LLVM_DECLSPEC_EXPORTS_V1 */")
+            string(FIND "${_sd_mingw_llvm_visibility_source}"
+                "${_sd_mingw_llvm_visibility_marker}"
+                _sd_mingw_llvm_visibility_marker_pos)
+            if(_sd_mingw_llvm_visibility_marker_pos EQUAL -1)
+                set(_sd_mingw_llvm_visibility_anchor
+                    "#if defined(_WIN32) && !defined(__MINGW32__)")
+                string(FIND "${_sd_mingw_llvm_visibility_source}"
+                    "${_sd_mingw_llvm_visibility_anchor}"
+                    _sd_mingw_llvm_visibility_anchor_pos)
+                if(NOT _sd_mingw_llvm_visibility_anchor_pos EQUAL -1)
+                    set(_sd_mingw_llvm_visibility_patch [=[
+#if defined(_WIN32)
+  /* SD_MINGW_LLVM_DECLSPEC_EXPORTS_V1 */
+]=])
+                    string(REPLACE
+                        "${_sd_mingw_llvm_visibility_anchor}"
+                        "${_sd_mingw_llvm_visibility_patch}"
+                        _sd_mingw_llvm_visibility_patched
+                        "${_sd_mingw_llvm_visibility_source}")
+                    if(_sd_mingw_llvm_visibility_patched STREQUAL
+                       _sd_mingw_llvm_visibility_source)
+                        message(FATAL_ERROR
+                            "patch_external_llvm_coexistence: failed to enable "
+                            "MinGW LLVM declspec exports in "
+                            "${_sd_mingw_llvm_visibility_file}")
+                    endif()
+                    file(WRITE "${_sd_mingw_llvm_visibility_file}"
+                        "${_sd_mingw_llvm_visibility_patched}")
+                endif()
+            endif()
+        endif()
+    endforeach()
+endif()
 # The pinned MLIR SCF-to-SPIR-V conversion represents scf.for results with
 # Function-scope variables. Upstream initializes those variables only from
 # scf.yield in the loop body, so a zero-trip loop reads undefined data instead
