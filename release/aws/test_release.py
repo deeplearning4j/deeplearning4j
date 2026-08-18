@@ -3146,6 +3146,22 @@ option(MLIR_ENABLE_EXECUTION_ENGINE
                     self.assertEqual(1, patched.count(marker))
                     self.assertGreater(patched.index(marker), patched.index(layout))
 
+    def test_windows_cross_platform_tokenizer_command_selects_mingw_properties(self):
+        root = Path(__file__).parents[2]
+        environment = {
+            "DL4J_PLATFORM": "windows-x86_64",
+            "DL4J_OS": "windows",
+            "PATH": "/usr/bin:/bin",
+        }
+        result = subprocess.run(
+            ["bash", str(root / "build-scripts/release/cross-platform.sh"), "--print-tokenizers"],
+            env=environment, check=True, capture_output=True, text=True,
+        )
+        command = shlex.split(result.stdout)
+        self.assertIn("-Djavacpp.platform.properties=windows-x86_64-mingw", command)
+        self.assertNotIn("-Djavacpp.platform.build=windows-x86_64-mingw", command)
+        self.assertIn("-Djavacpp.platform.compiler=g++", command)
+
     def test_linux_cross_platform_java_command_does_not_infer_accelerator_profiles(self):
         root = Path(__file__).parents[2]
         environment = {

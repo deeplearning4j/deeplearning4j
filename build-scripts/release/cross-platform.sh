@@ -18,7 +18,9 @@ if [ -n "${DL4J_MAVEN_REPOSITORY}" ]; then
 fi
 mingw=()
 if [ "${DL4J_OS}" = windows ]; then
-  mingw=(-Djavacpp.platform.build=windows-x86_64-mingw -Djavacpp.platform.compiler=g++)
+  # JavaCPP's profile selector is `platform.properties`; `platform.build` is
+  # a different property and silently leaves Windows builds on the MSVC profile.
+  mingw=(-Djavacpp.platform.properties=windows-x86_64-mingw -Djavacpp.platform.compiler=g++)
 fi
 protoc_profile=()
 if [ "${DL4J_PLATFORM}" = linux-arm64 ] || [ "${DL4J_PLATFORM}" = macosx-arm64 ]; then
