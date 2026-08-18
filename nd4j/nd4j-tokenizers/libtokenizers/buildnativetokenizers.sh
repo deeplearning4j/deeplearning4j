@@ -266,13 +266,27 @@ fi
 # On Windows/MSYS2, force MinGW Makefiles generator (otherwise cmake picks Visual Studio)
 if [[ "${HOST_PLATFORM}" == "windows" ]]; then
     CMAKE_ARGS+=("-G" "MinGW Makefiles")
+
+    # The Rust FFI archive above is built for x86_64-pc-windows-gnu. Do not
+    # let a runner-provided Visual Studio clang++ select the MSVC target: its
+    # GNU frontend accepts the configure step but cannot consume that archive
+    # reliably. Allow an explicit TOKENIZERS_CC/TOKENIZERS_CXX override, while
+    # defaulting this wrapper to the installed MSYS2 MinGW compiler.
+    if [[ -n "${TOKENIZERS_CC:-}" || -n "${TOKENIZERS_CXX:-}" ]]; then
+        export CC="${TOKENIZERS_CC:-${CC:-gcc}}"
+        export CXX="${TOKENIZERS_CXX:-${CXX:-g++}}"
+    elif command_exists gcc && command_exists g++; then
+        export CC="$(command -v gcc)"
+        export CXX="$(command -v g++)"
+    fi
+    echo "Windows tokenizers compiler: CC=${CC:-<unset>}, CXX=${CXX:-<unset>}"
 fi
 
 # Explicitly pass compiler if set (critical for ABI compatibility)
-if [[ -n "${CC}" ]]; then
+if [[ -n "${CC:-}" ]]; then
     CMAKE_ARGS+=("-DCMAKE_C_COMPILER=${CC}")
 fi
-if [[ -n "${CXX}" ]]; then
+if [[ -n "${CXX:-}" ]]; then
     CMAKE_ARGS+=("-DCMAKE_CXX_COMPILER=${CXX}")
 fi
 

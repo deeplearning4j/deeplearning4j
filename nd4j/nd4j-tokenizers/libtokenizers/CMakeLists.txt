@@ -151,26 +151,37 @@ target_include_directories(${WRAPPER_LIB_NAME} PRIVATE
 )
 
 # Compiler-specific options
-# Clang can target the MSVC ABI without CMake setting MSVC=TRUE. Treat that
-# mode like MSVC as well: clang-cl/clang++ reject GCC's -fPIC option for the
-# x86_64-pc-windows-msvc target. CMake may omit CMAKE_CXX_COMPILER_TARGET
-# for the host compiler, so the non-MinGW Clang case is covered explicitly.
+# Keep ABI detection separate from command-line frontend detection. Clang can
+# target the MSVC ABI while still using GNU-style command-line semantics (the
+# Visual Studio clang++ used by some MSYS workers does exactly that).
 set(TOKENIZERS_MSVC_ABI FALSE)
 if(MSVC OR
    (WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND
-    CMAKE_CXX_COMPILER_FRONTEND_VARIANT MATCHES "MSVC"))
+    (CMAKE_CXX_COMPILER_TARGET MATCHES "windows-msvc" OR
+     CMAKE_CXX_SIMULATE_ID MATCHES "MSVC")))
     set(TOKENIZERS_MSVC_ABI TRUE)
 endif()
-if(TOKENIZERS_MSVC_ABI)
+set(TOKENIZERS_MSVC_FRONTEND FALSE)
+if(MSVC OR CMAKE_CXX_COMPILER_FRONTEND_VARIANT MATCHES "MSVC")
+    set(TOKENIZERS_MSVC_FRONTEND TRUE)
+endif()
+if(TOKENIZERS_MSVC_FRONTEND)
     target_compile_options(${WRAPPER_LIB_NAME} PRIVATE /W3 /EHsc)
-    target_compile_definitions(${WRAPPER_LIB_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS)
 else()
-    target_compile_options(${WRAPPER_LIB_NAME} PRIVATE -Wall -Wextra -fPIC)
+    # -fPIC is an ELF option; PE/COFF Windows DLLs do not use it. In
+    # particular, Visual Studio clang++ rejects it even when using GNU flags.
+    target_compile_options(${WRAPPER_LIB_NAME} PRIVATE -Wall -Wextra)
+    if(NOT WIN32)
+        target_compile_options(${WRAPPER_LIB_NAME} PRIVATE -fPIC)
+    endif()
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         target_compile_options(${WRAPPER_LIB_NAME} PRIVATE -g -O0)
     else()
         target_compile_options(${WRAPPER_LIB_NAME} PRIVATE -O3 -DNDEBUG)
     endif()
+endif()
+if(TOKENIZERS_MSVC_ABI)
+    target_compile_definitions(${WRAPPER_LIB_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS)
 endif()
 
 # Link the Rust FFI library (built by buildnativetokenizers.sh)
