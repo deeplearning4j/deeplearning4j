@@ -276,8 +276,11 @@ if [[ "${HOST_PLATFORM}" == "windows" ]]; then
         export CC="${TOKENIZERS_CC:-${CC:-gcc}}"
         export CXX="${TOKENIZERS_CXX:-${CXX:-g++}}"
     elif command_exists gcc && command_exists g++; then
-        export CC="$(command -v gcc)"
-        export CXX="$(command -v g++)"
+        # Keep the compiler as a PATH-resolved name. MSYS converts absolute
+        # /c/... paths in CMake cache arguments to C:/..., which may not be the
+        # actual Windows installation path on hosted runners.
+        export CC="gcc"
+        export CXX="g++"
     fi
     echo "Windows tokenizers compiler: CC=${CC:-<unset>}, CXX=${CXX:-<unset>}"
 fi
