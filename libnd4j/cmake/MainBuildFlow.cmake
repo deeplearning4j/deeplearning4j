@@ -1511,6 +1511,12 @@ function(create_and_link_library)
         # are already set in PartialLinking.cmake. Skip these operations.
         if(NOT SD_PARTIAL_LINKED_TARGET)
             set_target_properties(${MAIN_LIB_NAME} PROPERTIES OUTPUT_NAME ${MAIN_LIB_NAME})
+            if(WIN32)
+                # The Windows SDX JavaCPP bindings link against the central
+                # CUDA/Vulkan/CPU target. Export its symbols so MSVC emits the
+                # import library beside the shared DLL.
+                set_target_properties(${MAIN_LIB_NAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+            endif()
 
             # Code model configuration is now centralized in CompilerFlags.cmake to avoid conflicts
             # (CMAKE_SHARED_LINKER_FLAGS is set there with -mcmodel=large for sanitizer builds)
