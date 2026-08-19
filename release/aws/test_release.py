@@ -1514,11 +1514,11 @@ class ReleaseValidationTest(unittest.TestCase):
             root / "libnd4j/include/legacy/impl/DspRuntimeC.cpp"
         ).read_text(encoding="utf-8")
 
-        for static_target in (
-            "CUDA::cudart_static",
-            "CUDA::nvrtc_static",
-        ):
-            self.assertIn(static_target, cuda_configuration)
+        self.assertIn("CUDA::cudart", cuda_configuration)
+        self.assertIn("CUDA::cudart_static", cuda_configuration)
+        self.assertIn("link_zluda_cuda_shared_library", cuda_configuration)
+        self.assertIn('target_link_options(${main_target_name} PRIVATE "LINKER:--no-as-needed")', cuda_configuration)
+        self.assertIn("CUDA::nvrtc_static", cuda_configuration)
         self.assertNotIn("CUDA::cusolver_static", cuda_configuration)
         self.assertNotIn("cusolver_lapack_static", cuda_configuration)
         self.assertIn('RUNTIME_POLICY=$<IF:$<BOOL:${SD_ZLUDA}>,zluda-amd,default>', cuda_configuration)

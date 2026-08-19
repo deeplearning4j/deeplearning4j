@@ -340,8 +340,25 @@ function(configure_zluda_cuda_toolkit_linking main_target_name)
 
     configure_zluda_linking(${main_target_name})
 
-    link_zluda_cuda_static_library(
-        ${main_target_name} CUDA::cudart_static cudart_static TRUE)
+    # Keep the classifier-owned shared CUDART in DT_NEEDED even when the
+    # backend's generated host stubs are resolved through indirect objects.
+    # Without this, GNU ld --as-needed can discard libcudart and the process
+    # falls back to a host CUDA runtime before ZLUDA sees the launch.
+    if(UNIX AND NOT APPLE)
+        target_link_options(${main_target_name} PRIVATE "LINKER:--no-as-needed")
+    endif()
+
+    # Linux must use one staged CUDA runtime instance so CUDA symbol
+    # registration and cudaLaunchKernel resolve through the same CUDART image
+    # that talks to ZLUDA. Windows keeps the static/hybrid layout supplied by
+    # the official ZLUDA package.
+    if(UNIX AND NOT APPLE)
+        link_zluda_cuda_shared_library(
+            ${main_target_name} CUDA::cudart cudart TRUE)
+    else()
+        link_zluda_cuda_static_library(
+            ${main_target_name} CUDA::cudart_static cudart_static TRUE)
+    endif()
     # ZLUDA does not implement the cuSolver ABI. Solver-backed operations are
     # compiled out for this target, so retaining NVIDIA's static cuSolver/LAPACK
     # archives would make the supposedly AMD-only classifier toolkit-dependent.
@@ -478,6 +495,13 @@ function(configure_cuda_linking main_target_name)
         endif()
         list(APPEND _cuda_shared_runtimes ${ZLUDA_RUNTIME_LIBRARIES})
         list(APPEND _cuda_shared_runtime_roots "${ZLUDA_RUNTIME_ROOT}")
+
+        # Linux ZLUDA uses shared CUDA runtime APIs so CUDA symbol
+        # registration and kernel launches share one classifier-owned CUDART
+        # instance. Stage it explicitly alongside the ZLUDA/ROCm closure.
+        if(UNIX AND NOT APPLE AND TARGET CUDA::cudart)
+            list(APPEND _cuda_shared_runtimes "$<TARGET_FILE:CUDA::cudart>")
+        endif()
 
         # Linux ZLUDA links the CUDA NVRTC shared implementation to avoid the
         # prebuilt static archive's small-model relocation overflow. Seed that
@@ -1116,7 +1140,11 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
     if(DEFINED CUDA_ARCH_FLAGS)
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} ${CUDA_ARCH_FLAGS}")
     endif()
-    if(SD_ZLUDA)
+    if(SD_ZLUDA AND UNIX AND NOT APPLE)
+        # Keep Linux CUDA runtime registration in one shared classifier-owned
+        # CUDART instance. Windows retains the official static/hybrid layout.
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -w --cudart=shared --expt-extended-lambda -Xfatbin -compress-all")
+    elseif(SD_ZLUDA)
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -w --cudart=static --expt-extended-lambda -Xfatbin -compress-all")
     else()
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -w --cudart=shared --expt-extended-lambda -Xfatbin -compress-all")
