@@ -881,6 +881,22 @@ def variant_artifact_classifier(build: dict, variant: dict) -> str:
     return f"{build['javacppPlatform']}{variant_platform_extension(variant)}"
 
 
+def sdx_variant_artifact_classifier(build: dict, variant: dict) -> str:
+    """Return the SDX classifier without colliding with another backend's JAR."""
+    classifier = variant_artifact_classifier(build, variant)
+    backend = build.get("backend")
+    if backend == "cpu" or build.get("zludaVersion"):
+        return classifier
+    if backend == "cuda" and build.get("cudaVersion"):
+        return (
+            f"{build['javacppPlatform']}-cuda-{build['cudaVersion']}"
+            f"{variant_platform_extension(variant)}"
+        )
+    if backend == "vulkan":
+        return f"{build['javacppPlatform']}-vulkan{variant_platform_extension(variant)}"
+    return classifier
+
+
 def has_base_platform_variant(build: dict) -> bool:
     """Return whether this selected slice owns the unextended platform output."""
     return any(
@@ -890,15 +906,49 @@ def has_base_platform_variant(build: dict) -> bool:
 
 
 def sdx_enabled_for_build(build: dict) -> bool:
-    """Return whether this matrix slice owns the opt-in desktop SDX component."""
+    """Return whether this desktop backend owns the opt-in SDX component."""
     return (
         "sdx" in build.get("profiles", [])
-        and build.get("backend") == "cpu"
+        and build.get("backend") in {"cpu", "cuda", "vulkan"}
         and build.get("javacppPlatform") in {
-            "linux-x86_64", "linux-arm64", "windows-x86_64", "macosx-arm64"
+            "linux-x86_64", "windows-x86_64", "macosx-arm64"
         }
-        and not build.get("zludaVersion")
     )
+
+
+def sdx_native_configuration(
+    source: Path, build: dict, variant: dict
+) -> tuple[str, str, Path]:
+    """Return the backend library, linker target, and central native output path."""
+    backend = build.get("backend")
+    if backend == "cuda":
+        return (
+            "nd4jcuda",
+            "nd4jcuda",
+            source / "libnd4j/blasbuild/cuda",
+        )
+    if backend == "vulkan":
+        return (
+            "nd4jvulkan",
+            "nd4jvulkan",
+            source
+            / "libnd4j/blasbuild/vulkan"
+            / variant_libnd4j_classifier(build, variant),
+        )
+    return (
+        "nd4jcpu",
+        "nd4jcpu",
+        source / "libnd4j/blasbuild/cpu",
+    )
+
+
+def variant_artifact_classifier_for(
+    build: dict, variant: dict, artifact_id: str
+) -> str:
+    """Use the SDX classifier only for SDX artifacts; backend JARs keep their contract."""
+    if artifact_id in SDX_ARTIFACT_IDS:
+        return sdx_variant_artifact_classifier(build, variant)
+    return variant_artifact_classifier(build, variant)
 
 
 def enable_sdx_release_component(build: dict, rules: dict) -> None:
@@ -1283,8 +1333,8 @@ def reset_variant_classifier_artifacts(
         return
     if not version:
         raise ValueError("classifier artifact validation requires a release version")
-    classifier = variant_artifact_classifier(build, variant)
     for artifact_id in required:
+        classifier = variant_artifact_classifier_for(build, variant, artifact_id)
         for path in exact_classifier_jar_candidates(
             repository, artifact_id, version, classifier
         ):
@@ -1304,9 +1354,9 @@ def attest_variant_classifier_artifacts(
         return
     if not version:
         raise ValueError("classifier artifact validation requires a release version")
-    classifier = variant_artifact_classifier(build, variant)
     found: dict[str, list[Path]] = {}
     for artifact_id in required:
+        classifier = variant_artifact_classifier_for(build, variant, artifact_id)
         found[artifact_id] = [
             path
             for path in exact_classifier_jar_candidates(
@@ -1316,11 +1366,16 @@ def attest_variant_classifier_artifacts(
         ]
     missing = [artifact_id for artifact_id, paths in found.items() if not paths]
     if missing:
+        missing_classifiers = ", ".join(
+            f"{artifact_id}={variant_artifact_classifier_for(build, variant, artifact_id)}"
+            for artifact_id in missing
+        )
         raise RuntimeError(
-            f"{phase} is missing exact {classifier} classifier JARs for "
-            f"variant {variant['name']}: {', '.join(missing)}"
+            f"{phase} is missing exact classifier JARs for variant "
+            f"{variant['name']}: {missing_classifiers}"
         )
     for artifact_id, paths_for_artifact in found.items():
+        classifier = variant_artifact_classifier_for(build, variant, artifact_id)
         for path in paths_for_artifact:
             attest_classifier_archive_contract(
                 path, rules, artifact_id, classifier, phase
@@ -1332,7 +1387,8 @@ def attest_variant_classifier_artifacts(
     )
     print(
         f"[dl4j-attestation] phase={phase} variant={variant['name']} "
-        f"classifier={classifier} artifacts={','.join(paths)}",
+        f"classifier={variant_artifact_classifier(build, variant)} "
+        f"artifacts={','.join(paths)}",
         flush=True,
     )
 
@@ -2230,6 +2286,11 @@ def package_sdk_jars(repository: Path, output: Path, build: dict, rules: dict) -
         variant_artifact_classifier(build, variant)
         for variant in build["variants"]
     }
+    if sdx_enabled_for_build(build):
+        classifiers.update(
+            sdx_variant_artifact_classifier(build, variant)
+            for variant in build["variants"]
+        )
     produced = 0
     for namespace in (Path("org/eclipse/deeplearning4j"), Path("org/nd4j")):
         root = repository / namespace
@@ -2508,6 +2569,9 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
         )
         variant_env = env.copy()
         family = shared_native_family(shard, variant)
+        sdx_library, sdx_links, sdx_output = sdx_native_configuration(
+            source, build, variant
+        )
         variant_env.update({
             "DL4J_FAMILY": family,
             "DL4J_HELPER": shared_variant_helper(variant),
@@ -2523,9 +2587,10 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
             "DL4J_ZLUDA_TARGET": zluda_target(build),
             "DL4J_LIBND4J_URL": prebuilt_libnd4j_url,
             "DL4J_BUILD_SDX": "1" if sdx_enabled_for_build(build) else "0",
-            "DL4J_SDX_NATIVE_LIBRARY": "nd4jcpu",
-            "DL4J_SDX_PLATFORM_LINKS": "nd4jcpu",
-            "DL4J_SDX_OUTPUT_PATH": str(source / "libnd4j/blasbuild/cpu"),
+            "DL4J_SDX_NATIVE_LIBRARY": sdx_library,
+            "DL4J_SDX_PLATFORM_LINKS": sdx_links,
+            "DL4J_SDX_OUTPUT_PATH": str(sdx_output),
+            "DL4J_SDX_CLASSIFIER": sdx_variant_artifact_classifier(build, variant),
         })
         if family == "vulkan-mlir" and variant.get("mlir"):
             # native-platform.sh uses platform.classifier for the JavaCPP
@@ -2619,9 +2684,19 @@ def main() -> None:
     env = os.environ.copy()
     env["MAVEN_OPTS"] = f"-Xmx{build.get('mavenHeapGiB', 16)}g -Dmaven.repo.local={args.repository}"
     env["DL4J_BUILD_SDX"] = "1" if sdx_enabled_for_build(build) else "0"
-    env["DL4J_SDX_NATIVE_LIBRARY"] = "nd4jcpu"
-    env["DL4J_SDX_PLATFORM_LINKS"] = "nd4jcpu"
-    env["DL4J_SDX_OUTPUT_PATH"] = str(args.source / "libnd4j/blasbuild/cpu")
+    sdx_backend = build.get("backend")
+    sdx_library = {
+        "cuda": "nd4jcuda",
+        "vulkan": "nd4jvulkan",
+    }.get(sdx_backend, "nd4jcpu")
+    sdx_output_dir = "vulkan" if sdx_backend == "vulkan" else (
+        "cuda" if sdx_backend == "cuda" else "cpu"
+    )
+    env["DL4J_SDX_NATIVE_LIBRARY"] = sdx_library
+    env["DL4J_SDX_PLATFORM_LINKS"] = sdx_library
+    env["DL4J_SDX_OUTPUT_PATH"] = str(
+        args.source / "libnd4j/blasbuild" / sdx_output_dir
+    )
     driver_started_at = int(time.time())
     driver_timer = time.monotonic()
     compiler_cache, sccache_started = configure_compiler_cache(

@@ -3025,6 +3025,40 @@ class ReleaseValidationTest(unittest.TestCase):
         non_sdx = dict(build, profiles=["cpu"])
         self.assertFalse(build_platform.sdx_enabled_for_build(non_sdx))
 
+    def test_sdx_gpu_backends_use_distinct_classifier_names(self):
+        cuda = {
+            "backend": "cuda",
+            "cudaVersion": "12.9",
+            "javacppPlatform": "linux-x86_64",
+            "profiles": ["cuda", "sdx"],
+        }
+        vulkan = {
+            "backend": "vulkan",
+            "javacppPlatform": "linux-x86_64",
+            "profiles": ["vulkan", "sdx"],
+        }
+        zluda = dict(
+            cuda,
+            zludaVersion="v6",
+            rocmVersion="6.2.4",
+        )
+        variant = {"name": "base", "platformExtension": ""}
+        self.assertTrue(build_platform.sdx_enabled_for_build(cuda))
+        self.assertTrue(build_platform.sdx_enabled_for_build(vulkan))
+        self.assertTrue(build_platform.sdx_enabled_for_build(zluda))
+        self.assertEqual(
+            "linux-x86_64-cuda-12.9",
+            build_platform.sdx_variant_artifact_classifier(cuda, variant),
+        )
+        self.assertEqual(
+            "linux-x86_64-vulkan",
+            build_platform.sdx_variant_artifact_classifier(vulkan, variant),
+        )
+        self.assertEqual(
+            "linux-x86_64",
+            build_platform.sdx_variant_artifact_classifier(zluda, variant),
+        )
+
     def test_native_sdx_command_contains_profile_and_modules(self):
         root = Path(__file__).parents[2]
         script = root / "build-scripts/release/native-platform.sh"
@@ -3041,6 +3075,28 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("-Psdx", command)
         for module in ("nd4j-sdx-model", "nd4j-sdx"):
             self.assertIn(module, command)
+
+    def test_native_sdx_gpu_command_contains_backend_configuration(self):
+        root = Path(__file__).parents[2]
+        script = root / "build-scripts/release/native-platform.sh"
+        env = os.environ.copy()
+        env.update({
+            "DL4J_FAMILY": "windows-vulkan",
+            "DL4J_BUILD_THREADS": "4",
+            "DL4J_BUILD_SDX": "1",
+            "DL4J_SDX_NATIVE_LIBRARY": "nd4jvulkan",
+            "DL4J_SDX_PLATFORM_LINKS": "nd4jvulkan",
+            "DL4J_SDX_OUTPUT_PATH": "/tmp/vulkan",
+            "DL4J_SDX_CLASSIFIER": "windows-x86_64-vulkan",
+            "DL4J_MAVEN_GOAL": "install",
+        })
+        command = subprocess.check_output(
+            [str(script), "--print"], cwd=root, env=env, text=True
+        )
+        self.assertIn("-Psdx", command)
+        self.assertIn("nd4j-sdx", command)
+        self.assertIn("-Dsdx.native.library=nd4jvulkan", command)
+        self.assertIn("-Dsdx.platform.classifier=windows-x86_64-vulkan", command)
 
     def test_sdx_gnu_linker_flag_is_not_active_on_macos(self):
         root = Path(__file__).parents[2]

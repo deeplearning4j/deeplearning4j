@@ -42,7 +42,8 @@
         <module.name>nd4j.sdx</module.name>
         <libnd4jhome>${project.basedir}/../../../../libnd4j</libnd4jhome>
         <libnd4j.outputPath>${libnd4jhome}/blasbuild/cpu</libnd4j.outputPath>
-        <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/dsp/runtime/bindings/${javacpp.platform}${javacpp.platform.extension}</javacpp.build.output.path>
+        <sdx.platform.classifier>${javacpp.platform}${javacpp.platform.extension}</sdx.platform.classifier>
+        <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/dsp/runtime/bindings/${sdx.platform.classifier}</javacpp.build.output.path>
         <javacpp.platform.build>${javacpp.platform}</javacpp.platform.build>
         <sdx.native.library>nd4jcpu</sdx.native.library>
         <sdx.platform.links>nd4jcpu</sdx.platform.links>
@@ -137,7 +138,7 @@
                         </goals>
                         <configuration>
                             <skip>${javacpp.parser.skip}</skip>
-                            <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
+                            <outputDirectory>${project.build.directory}/generated-sources/javacpp</outputDirectory>
                             <classOrPackageName>org.nd4j.dsp.runtime.presets.SdxRuntimePresets</classOrPackageName>
                         </configuration>
                     </execution>
@@ -153,7 +154,7 @@
                             <clean>true</clean>
                             <copyLibs>false</copyLibs>
                             <copyResources>false</copyResources>
-                            <configDirectory>${project.build.directory}/classes/META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</configDirectory>
+                            <configDirectory>${project.build.directory}/classes/META-INF/native-image/${sdx.platform.classifier}/</configDirectory>
                             <outputDirectory>${javacpp.build.output.path}</outputDirectory>
                         </configuration>
                     </execution>
@@ -177,17 +178,17 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>${javacpp.platform}${javacpp.platform.extension}</id>
+                        <id>${sdx.platform.classifier}</id>
                         <phase>package</phase>
                         <goals>
                             <goal>jar</goal>
                         </goals>
                         <configuration>
-                            <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
+                            <classifier>${sdx.platform.classifier}</classifier>
                             <skipIfEmpty>true</skipIfEmpty>
                             <includes>
-                                <include>org/nd4j/dsp/runtime/bindings/${javacpp.platform}${javacpp.platform.extension}/*</include>
-                                <include>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</include>
+                                <include>org/nd4j/dsp/runtime/bindings/${sdx.platform.classifier}/*</include>
+                                <include>META-INF/native-image/${sdx.platform.classifier}/</include>
                             </includes>
                         </configuration>
                     </execution>
@@ -236,6 +237,7 @@
                 <javacpp.platform.root>${android.ndk}</javacpp.platform.root>
                 <javacpp.platform.compiler>${android.ndk}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android${android.api}-clang++</javacpp.platform.compiler>
                 <javacpp.platform.sysroot>--sysroot=${android.ndk}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</javacpp.platform.sysroot>
+                <sdx.platform.classifier>${javacpp.platform}-${sdx.android.variant}</sdx.platform.classifier>
                 <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/dsp/runtime/bindings/${javacpp.platform}-${sdx.android.variant}</javacpp.build.output.path>
                 <sdx.native.library>nd4jvulkan</sdx.native.library>
                 <sdx.platform.links>${sdx.native.library}${path.separator}log${path.separator}c++_static${path.separator}c++abi${path.separator}dl${path.separator}m${path.separator}c</sdx.platform.links>
