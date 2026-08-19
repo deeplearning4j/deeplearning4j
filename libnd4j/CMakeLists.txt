@@ -586,11 +586,24 @@ if(WIN32 AND SD_CUDA)
                         set_target_properties(${target} PROPERTIES COMPILE_OPTIONS "${compile_options}")
                     endif()
                     set_property(TARGET ${target} PROPERTY CUDA_FLAGS "")
-                    set_target_properties(${target} PROPERTIES
-                            CUDA_RESOLVE_DEVICE_SYMBOLS ON
-                            CUDA_SEPARABLE_COMPILATION ON
-                            MSVC_RUNTIME_LIBRARY "${_sd_target_msvc_runtime}"
-                    )
+                    if(SD_ZLUDA)
+                        # ZLUDA consumes the per-translation-unit PTX at runtime.
+                        # Device linking is unnecessary and causes CMake/NVCC to
+                        # pull cudadevrt and cudart_static into the Windows link,
+                        # exceeding MSVC's 65,535-object library limit.
+                        set_target_properties(${target} PROPERTIES
+                                CUDA_RESOLVE_DEVICE_SYMBOLS OFF
+                                CUDA_SEPARABLE_COMPILATION OFF
+                                CUDA_RUNTIME_LIBRARY Shared
+                                MSVC_RUNTIME_LIBRARY "${_sd_target_msvc_runtime}"
+                        )
+                    else()
+                        set_target_properties(${target} PROPERTIES
+                                CUDA_RESOLVE_DEVICE_SYMBOLS ON
+                                CUDA_SEPARABLE_COMPILATION ON
+                                MSVC_RUNTIME_LIBRARY "${_sd_target_msvc_runtime}"
+                        )
+                    endif()
                 endif()
             endif()
         endforeach()

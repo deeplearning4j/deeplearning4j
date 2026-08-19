@@ -761,6 +761,18 @@ class WorkflowMatrixTests(unittest.TestCase):
             'MSVC_RUNTIME_LIBRARY "${_sd_target_msvc_runtime}"',
             cmake_source,
         )
+        self.assertIn(
+            'CUDA_RESOLVE_DEVICE_SYMBOLS OFF',
+            cmake_source,
+        )
+        self.assertIn(
+            'CUDA_SEPARABLE_COMPILATION OFF',
+            cmake_source,
+        )
+        self.assertIn(
+            'CUDA_RUNTIME_LIBRARY Shared',
+            cmake_source,
+        )
 
         cublas_helper = (
             ROOT / "libnd4j/include/helpers/cuda/cublasHelper.cu"
