@@ -675,20 +675,27 @@ class WorkflowMatrixTests(unittest.TestCase):
             api_pom,
         )
 
-    def test_zluda_links_only_required_cuda_static_archives(self):
+    def test_zluda_uses_shared_cuda_runtime_archives(self):
         configuration = (ROOT / "libnd4j/cmake/CudaConfiguration.cmake").read_text()
         self.assertIn(
-            "function(link_zluda_cuda_static_library main_target_name imported_target library_name required)",
+            "function(link_zluda_cuda_shared_library main_target_name imported_target library_name required)",
             configuration,
         )
+        self.assertNotIn("link_zluda_cuda_static_library", configuration)
+        self.assertNotIn("CUDA::cudart_static", configuration)
+        self.assertNotIn("CUDA::nvrtc_static", configuration)
         self.assertNotIn("CUDA::cusolver_static", configuration)
         self.assertNotIn("cusolver_lapack_static", configuration)
         self.assertIn(
-            "${main_target_name} CUDA::nvrtc_static nvrtc_static TRUE",
+            "${main_target_name} CUDA::cudart cudart TRUE",
             configuration,
         )
         self.assertIn(
-            '"ZLUDA build requires ${imported_target} (${library_name}); install the complete CUDA build toolkit"',
+            "${main_target_name} CUDA::nvrtc nvrtc TRUE",
+            configuration,
+        )
+        self.assertIn(
+            '"ZLUDA build requires ${imported_target} (${library_name}); install the CUDA runtime toolkit"',
             configuration,
         )
         self.assertIn(

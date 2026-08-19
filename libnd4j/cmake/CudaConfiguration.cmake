@@ -249,50 +249,9 @@ function(setup_modern_cudnn)
     message(STATUS "cuDNN: Not found (disable with -DHELPERS_cudnn=OFF)")
 endfunction()
 
-# Link a CUDA SDK archive while tolerating FindCUDAToolkit modules that predate
-# the corresponding imported target. CUDA 12 development images can contain the
-# archive even when the host CMake does not define (for example)
-# CUDA::nvrtc_static. Required archives still fail closed when genuinely absent.
-function(link_zluda_cuda_static_library main_target_name imported_target library_name required)
-    if(TARGET ${imported_target})
-        target_link_libraries(${main_target_name} PUBLIC ${imported_target})
-        return()
-    endif()
-
-    unset(_zluda_cuda_static_library CACHE)
-    find_library(_zluda_cuda_static_library
-        NAMES ${library_name}
-        HINTS
-            "${CUDAToolkit_LIBRARY_DIR}"
-            "${CUDAToolkit_LIBRARY_ROOT}"
-            "${CUDAToolkit_ROOT}"
-            "${CUDA_TOOLKIT_ROOT_DIR}"
-        PATH_SUFFIXES
-            lib64 lib
-            targets/x86_64-linux/lib
-            targets/aarch64-linux/lib
-        NO_DEFAULT_PATH)
-    if(NOT _zluda_cuda_static_library)
-        find_library(_zluda_cuda_static_library NAMES ${library_name})
-    endif()
-
-    if(_zluda_cuda_static_library)
-        message(STATUS
-            "Resolved ${imported_target} compatibility archive: ${_zluda_cuda_static_library}")
-        target_link_libraries(${main_target_name} PUBLIC
-            "${_zluda_cuda_static_library}")
-    elseif(required)
-        message(FATAL_ERROR
-            "ZLUDA build requires ${imported_target} (${library_name}); install the complete CUDA build toolkit")
-    endif()
-    unset(_zluda_cuda_static_library CACHE)
-endfunction()
-
-# Resolve and link a CUDA SDK shared runtime when a ZLUDA classifier cannot
-# safely embed the corresponding prebuilt archive. CUDA's NVRTC archive is
-# compiled with the small code model; embedding it in the all-ops ZLUDA DSO
-# places its read-only tables beyond the R_X86_64_PC32 range. The shared
-# implementation is ABI-identical and is staged into the classifier below.
+# Resolve and link a CUDA SDK shared runtime for a ZLUDA classifier. The
+# shared implementation keeps the large CUDA compiler/runtime implementation
+# out of the all-ops backend link and is staged into the classifier below.
 function(link_zluda_cuda_shared_library main_target_name imported_target library_name required)
     if(TARGET ${imported_target})
         target_link_libraries(${main_target_name} PUBLIC ${imported_target})
@@ -329,9 +288,9 @@ function(link_zluda_cuda_shared_library main_target_name imported_target library
 endfunction()
 
 # Link CUDA implementation pieces that ZLUDA does not implement as CUDA ABI
-# replacements into the backend at build time. Linux NVRTC is kept as an
-# explicitly packaged shared runtime because NVIDIA's prebuilt static compiler
-# archive cannot participate in a >2 GiB all-ops ELF link.
+# replacements into the backend at build time. Every platform uses shared CUDA
+# runtime/compiler libraries so the all-ops link never embeds NVIDIA's large
+# prebuilt static compiler archives (which exceed MSVC's 65,535-object limit).
 function(configure_zluda_cuda_toolkit_linking main_target_name)
     if(NOT (SD_ZLUDA AND HAVE_ZLUDA))
         message(FATAL_ERROR
@@ -340,44 +299,23 @@ function(configure_zluda_cuda_toolkit_linking main_target_name)
 
     configure_zluda_linking(${main_target_name})
 
-    # Keep the classifier-owned shared CUDART in DT_NEEDED even when the
-    # backend's generated host stubs are resolved through indirect objects.
-    # Without this, GNU ld --as-needed can discard libcudart and the process
-    # falls back to a host CUDA runtime before ZLUDA sees the launch.
+    # Keep the classifier-owned shared CUDART in the final target on every
+    # platform. On Linux this prevents --as-needed from selecting a host runtime;
+    # on Windows it avoids embedding the enormous cudart_static archive.
     if(UNIX AND NOT APPLE)
         target_link_options(${main_target_name} PRIVATE "LINKER:--no-as-needed")
     endif()
+    link_zluda_cuda_shared_library(
+        ${main_target_name} CUDA::cudart cudart TRUE)
 
-    # Linux must use one staged CUDA runtime instance so CUDA symbol
-    # registration and cudaLaunchKernel resolve through the same CUDART image
-    # that talks to ZLUDA. Windows keeps the static/hybrid layout supplied by
-    # the official ZLUDA package.
-    if(UNIX AND NOT APPLE)
-        link_zluda_cuda_shared_library(
-            ${main_target_name} CUDA::cudart cudart TRUE)
-    else()
-        link_zluda_cuda_static_library(
-            ${main_target_name} CUDA::cudart_static cudart_static TRUE)
-    endif()
     # ZLUDA does not implement the cuSolver ABI. Solver-backed operations are
     # compiled out for this target, so retaining NVIDIA's static cuSolver/LAPACK
     # archives would make the supposedly AMD-only classifier toolkit-dependent.
-    if(UNIX AND NOT APPLE)
-        link_zluda_cuda_shared_library(
-            ${main_target_name} CUDA::nvrtc nvrtc TRUE)
-    else()
-        link_zluda_cuda_static_library(
-            ${main_target_name} CUDA::nvrtc_static nvrtc_static TRUE)
-
-        # CUDA 12 splits these implementation archives from NVRTC. Older CMake
-        # versions/toolkit layouts may expose them transitively instead.
-        link_zluda_cuda_static_library(
-            ${main_target_name} CUDA::nvrtc_builtins_static nvrtc-builtins_static FALSE)
-        link_zluda_cuda_static_library(
-            ${main_target_name} CUDA::nvJitLink_static nvJitLink_static FALSE)
-        link_zluda_cuda_static_library(
-            ${main_target_name} CUDA::nvptxcompiler_static nvptxcompiler_static FALSE)
-    endif()
+    # NVRTC itself remains shared on every platform: its static compiler archive
+    # is the source of the Windows LNK1189 object-count failure and the Linux
+    # small-code-model relocation overflow.
+    link_zluda_cuda_shared_library(
+        ${main_target_name} CUDA::nvrtc nvrtc TRUE)
 
     if(WIN32)
         # Official Windows ZLUDA distributions carry DLLs with the CUDA ABI
@@ -496,18 +434,13 @@ function(configure_cuda_linking main_target_name)
         list(APPEND _cuda_shared_runtimes ${ZLUDA_RUNTIME_LIBRARIES})
         list(APPEND _cuda_shared_runtime_roots "${ZLUDA_RUNTIME_ROOT}")
 
-        # Linux ZLUDA uses shared CUDA runtime APIs so CUDA symbol
-        # registration and kernel launches share one classifier-owned CUDART
-        # instance. Stage it explicitly alongside the ZLUDA/ROCm closure.
-        if(UNIX AND NOT APPLE AND TARGET CUDA::cudart)
+        # Stage the same shared CUDA runtime/compiler images that are linked
+        # above. This is platform-independent: Windows needs the toolkit DLLs
+        # as much as Linux needs the corresponding shared objects.
+        if(TARGET CUDA::cudart)
             list(APPEND _cuda_shared_runtimes "$<TARGET_FILE:CUDA::cudart>")
         endif()
-
-        # Linux ZLUDA links the CUDA NVRTC shared implementation to avoid the
-        # prebuilt static archive's small-model relocation overflow. Seed that
-        # exact target and its toolkit root so the runtime walker packages the
-        # complete CUDA compiler dependency closure.
-        if(UNIX AND NOT APPLE AND TARGET CUDA::nvrtc)
+        if(TARGET CUDA::nvrtc)
             list(APPEND _cuda_shared_runtimes "$<TARGET_FILE:CUDA::nvrtc>")
         endif()
         foreach(_cuda_runtime_root IN ITEMS
@@ -1140,12 +1073,11 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
     if(DEFINED CUDA_ARCH_FLAGS)
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} ${CUDA_ARCH_FLAGS}")
     endif()
-    if(SD_ZLUDA AND UNIX AND NOT APPLE)
-        # Keep Linux CUDA runtime registration in one shared classifier-owned
-        # CUDART instance. Windows retains the official static/hybrid layout.
+    if(SD_ZLUDA)
+        # Keep CUDA runtime registration in one classifier-owned shared CUDART
+        # instance on every platform. Static CUDART is especially problematic on
+        # Windows because its archive can exceed MSVC's object-count limit.
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -w --cudart=shared --expt-extended-lambda -Xfatbin -compress-all")
-    elseif(SD_ZLUDA)
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -w --cudart=static --expt-extended-lambda -Xfatbin -compress-all")
     else()
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -w --cudart=shared --expt-extended-lambda -Xfatbin -compress-all")
     endif()

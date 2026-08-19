@@ -188,13 +188,13 @@ function(configure_sdx_triton_linking main_target_name)
                 "ZLUDA SDX target requires the platform runtime closure used by nd4jcuda")
         endif()
         list(APPEND _sdx_shared_runtimes ${ZLUDA_RUNTIME_LIBRARIES})
-        # Keep SDX on the same classifier-owned CUDART as nd4jcuda. The
-        # standalone target is loaded independently, so omitting this seed
-        # would let its CUDA registration path fall back to host CUDART.
-        if(UNIX AND NOT APPLE AND TARGET CUDA::cudart)
+        # Keep SDX on the same classifier-owned shared CUDA runtime/compiler
+        # images as nd4jcuda. The standalone target is loaded independently, so
+        # omitting these seeds would let it fall back to host toolkit libraries.
+        if(TARGET CUDA::cudart)
             list(APPEND _sdx_shared_runtimes "$<TARGET_FILE:CUDA::cudart>")
         endif()
-        if(UNIX AND NOT APPLE AND TARGET CUDA::nvrtc)
+        if(TARGET CUDA::nvrtc)
             list(APPEND _sdx_shared_runtimes "$<TARGET_FILE:CUDA::nvrtc>")
         endif()
         if(ROCM_HIP_RUNTIME_LIBRARY)
