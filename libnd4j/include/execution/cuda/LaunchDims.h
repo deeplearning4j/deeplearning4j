@@ -149,10 +149,11 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define BLOCK_SIZE_PRESCAN_ARRAY_RECURSIVE getEnvVariable("BLOCK_SIZE_PRESCAN_ARRAY_RECURSIVE", 256)
 #define SHARED_MEM_SIZE_PRESCAN_ARRAY_RECURSIVE getEnvVariable("SHARED_MEM_SIZE_PRESCAN_ARRAY_RECURSIVE", 256)
 
+// These kernels use fixed-size __shared__ variables only; no dynamic shared
+// allocation is declared, so the third launch dimension must remain zero.
 #define GRID_SIZE_SCALAR_SCAN getEnvVariable("GRID_SIZE_SCALAR_SCAN", 256)
 #define BLOCK_SIZE_SCALAR_SCAN getEnvVariable("BLOCK_SIZE_SCALAR_SCAN", 512)
-#define SHARED_MEM_SIZE_SCALAR_SCAN getEnvVariable("SHARED_MEM_SIZE_SCALAR_SCAN", 8192)
-
+#define SHARED_MEM_SIZE_SCALAR_SCAN getEnvVariable("SHARED_MEM_SIZE_SCALAR_SCAN", 0)
 
 #define GRID_SIZE_SCALAR_TAD getEnvVariable("GRID_SIZE_SCALAR_TAD", 256)
 #define BLOCK_SIZE_SCALAR_TAD getEnvVariable("BLOCK_SIZE_SCALAR_TAD", 256)
@@ -176,7 +177,7 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 
 #define GRID_SIZE_TRANSFORM_SCAN getEnvVariable("GRID_SIZE_TRANSFORM_SCAN", 256)
 #define BLOCK_SIZE_TRANSFORM_SCAN getEnvVariable("BLOCK_SIZE_TRANSFORM_SCAN", 256)
-#define SHARED_MEM_SIZE_TRANSFORM_SCAN getEnvVariable("SHARED_MEM_SIZE_TRANSFORM_SCAN", 1024)
+#define SHARED_MEM_SIZE_TRANSFORM_SCAN getEnvVariable("SHARED_MEM_SIZE_TRANSFORM_SCAN", 0)
 
 #define GRID_SIZE_SUMMARY_STATS getEnvVariable("GRID_SIZE_SUMMARY_STATS", 256)
 #define BLOCK_SIZE_SUMMARY_STATS getEnvVariable("BLOCK_SIZE_SUMMARY_STATS", SD_CUDA_BLOCK_SIZE)
