@@ -439,7 +439,7 @@ struct NativeSlot {
   // bit from this mask rather than a runtime override.
   //
   // Query methods below derive all classification decisions from this mask.
-  uint32_t opTraits_ = 0;
+  uint64_t opTraits_ = 0;
 
   // ── Top-level fields (not grouped) ────────────────────────────────
   int targetDeviceId = -1;             // -1 = auto
@@ -508,10 +508,10 @@ struct NativeSlot {
   // isIdentityOp, isViewCapableOp, isFullyWriting, needsZeroedOutput).
   // Each is a const inline bitcheck — zero overhead vs stored booleans.
 
-  bool hasOpTrait(uint32_t trait) const { return (opTraits_ & trait) != 0; }
-  void addOpTrait(uint32_t trait) { opTraits_ |= trait; }
-  void clearOpTrait(uint32_t trait) { opTraits_ &= ~trait; }
-  uint32_t opTraits() const { return opTraits_; }
+  bool hasOpTrait(uint64_t trait) const { return (opTraits_ & trait) != 0; }
+  void addOpTrait(uint64_t trait) { opTraits_ |= trait; }
+  void clearOpTrait(uint64_t trait) { opTraits_ &= ~trait; }
+  uint64_t opTraits() const { return opTraits_; }
 
   bool isDataDependent() const { return hasOpTrait(sd::ops::OP_TRAIT_DATA_DEPENDENT); }
   bool isIdentityOp()    const { return hasOpTrait(sd::ops::OP_TRAIT_IDENTITY); }
@@ -629,10 +629,11 @@ struct NativeSlot {
     // require host synchronization during execution to determine output tensor
     // dimensions. This invalidates CUDA graph capture streams (cudaStreamCaptureStatusInvalidated).
     // DATA_DEPENDENT alone is not sufficient: reshape, concat, and argmax can
-    // still execute as regular GPU kernels. Slice-family ops are different: their
-    // execution reads begin/size tensors on the host (asVectorT), so capturing
-    // them would either invalidate capture or bake stale control values.
-    if (hasDynamicOutputSize() || hasOpTrait(sd::ops::OP_TRAIT_SLICE)) return false;
+    // still execute as regular GPU kernels. Runtime-controlled slice-family ops
+    // read begin/size tensors on the host (asVectorT), so they must remain live;
+    // static argument slices have no host control read and are capture-safe.
+    if (hasDynamicOutputSize() ||
+        (hasOpTrait(sd::ops::OP_TRAIT_SLICE) && hasValueDependentShape())) return false;
     if (!mergeViews && (isViewCapableOp() || isIdentityOp() || frozenConstantSlot()))
       return false;
     return true;
@@ -2256,6 +2257,30 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   const PlanLifecycle& planLifecycle() const { return planLifecycle_; }
 
   /**
+   * Prepare the plan for a segment capture rebuild.
+   *
+   * Segment-level graph invalidation can happen while the plan is sealed in
+   * REPLAYING (for example, after a replay address drift).  The segment is
+   * reset to BUILDING:WARMUP by SegmentLifecycle, so leaving the plan sealed
+   * would make the next execute fail the replay invariant before dispatch.
+   * Keep this transition at the plan boundary so every invalidation path uses
+   * the same lifecycle and frozen-state cleanup.
+   */
+  void prepareForSegmentRebuild(const char* reason) {
+    if (planLifecycle_.isReplaying()) {
+      planLifecycle_.unseal();
+    } else if (planLifecycle_.isInFrozenOrReplayState()) {
+      planLifecycle_.recordPointersUnstable();
+    }
+    frozenSnapshot_.clear();
+    planLifecycle_.compilationDone = false;
+    DSP_DIAG(LIFECYCLE,
+             "PLAN_REBUILD_PREPARED: reason=%s phase=%s pointersStable=%d",
+             reason ? reason : "?", planLifecycle_.displayName(),
+             planLifecycle_.pointersStableCount);
+  }
+
+  /**
    * Unified lifecycle: maps to 3-state GraphNodePhase.
    * BUILDING = not yet in steady-state replay; SEALED = all segments replaying.
    */
@@ -2498,9 +2523,13 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     return db->isPrimaryActual() ? 0 : 1;  // device-authoritative = special is actual, primary is NOT
   }
 
-  /** Get this plan's backend-owned execution stream.
+  /** Get this plan's backend-owned execution stream storage.
    *  GPU plans own a stream so capture/replay is isolated from unrelated work
-   *  submitted through a process-wide default stream. */
+   *  submitted through a process-wide default stream.
+   *
+   *  CUDA ABI: this returns cudaStream_t* (pointer to handle), matching
+   *  executeDynamicShapePlan and dbAsyncCrossDeviceCopy. APIs that accept a
+   *  cudaStream_t handle value must dereference this boundary explicitly. */
   void* getExecutionStream() const {
 #ifdef SD_CUDA
     if (ownedStream_ != nullptr) {

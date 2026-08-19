@@ -62,6 +62,7 @@
 #include <graph/DspHashUtils.h>
 #include <graph/DspVerifyUtils.h>
 #include <graph/DspSegmentLifecycle.h>
+#include <graph/DspSegmentHelpers.h>
 #include <graph/cuda/CudaGraphReplayHandle.h>
 #include <graph/DspStreamGuard.h>
 #include <graph/gpu/DspCudaDispatch.h>
@@ -1750,14 +1751,42 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
     case SelectedBackend::DEVICE_REPLAY: {
       auto status = executeSegmentWithGraph(segment, externalInputs, numExternalInputs, stream);
       if (status != Status::OK) {
-        // Graph capture failed — mark permanently failed and throw.
-        // Do NOT fall back to slot-by-slot; fix the root cause.
-        SegmentLifecycle::markFailed(segment.exec, "cuda_graph_capture_failed", segment.def.startSlot, segment.def.endSlot);
+        // A genuine capture OOM is deferred by executeSegmentWithGraph.  Count
+        // this attempted execution so the next invocation reaches the scheduled
+        // retry interval, while preserving the graph-only execution contract.
+        if (segment.exec.segPhase.oomRetryPending) {
+          dspSegIncrementExecCount(segment, "cuda-graph-capture-oom-deferred");
+          DSP_DIAG(MEMORY,
+                   "CUDA graph capture OOM deferred for seg[%d-%d]; "
+                   "retry=%d/%d after exec=%d",
+                   segment.def.startSlot, segment.def.endSlot,
+                   segment.exec.captureOomRetries,
+                   GraphSegment::maxOomRetries(),
+                   segment.exec.captureRetryAfterExec);
+          return Status::OK;
+        }
+
+        // Non-OOM capture failures are terminal and must retain their original
+        // lifecycle/diagnostic classification. Do not fall back to slot-by-slot.
+        if (!segment.exec.segPhase.isFailed()) {
+          SegmentLifecycle::markFailed(segment.exec,
+                                       "cuda_graph_capture_failed",
+                                       segment.def.startSlot,
+                                       segment.def.endSlot);
+        }
         DSP_THROW_SEG(COMPILE, segment.def.startSlot,
                       "NativeDSP::execute: CUDA graph capture failed for seg[%d-%d] status=%d. "
-                      "Fix capture memory management — do NOT fall back to slot-by-slot.",
+                      "Fix the capture root cause — do NOT fall back to slot-by-slot.",
                       segment.def.startSlot, segment.def.endSlot, static_cast<int>(status));
       }
+
+      // executeSegmentWithGraph can also return OK while an OOM retry remains
+      // scheduled (the retry interval has not fired yet). Preserve that phase;
+      // the normal success path must not overwrite OOM_DEFERRED with COMPILED.
+      if (segment.exec.segPhase.oomRetryPending) {
+        return Status::OK;
+      }
+
       usedGraph = (segment.exec.replayHandle != nullptr && segment.exec.replayHandle->isReady() && !segment.exec.compilationFailed);
       if (usedGraph) {
         DSP_SET_SEG_PHASE(segment, ExecutionPhase::REPLAYING, "cuda_graph_replay_ready");

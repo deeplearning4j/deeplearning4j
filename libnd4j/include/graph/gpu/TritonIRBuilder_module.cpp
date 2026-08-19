@@ -4436,8 +4436,65 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
     auto ptrType = mlir::triton::PointerType::get(elemType, 1);
     auto ptrTensorType = mlir::RankedTensorType::get({blockSize}, ptrType);
 
+    // Output lanes are indexed in logical C-order, but a view output may have
+    // non-contiguous physical strides (for example permute [12,1,4]).  The
+    // logical offset remains the mask/bounds coordinate; only the pointer
+    // offset must be remapped to the output's physical layout.
+    mlir::Value storeOffsets = offsets;
+    if (arg.isNonContiguous() && arg.shapeKnown &&
+        arg.strides.size() == arg.shape.size() && !arg.shape.empty()) {
+      const int outRank = static_cast<int>(arg.shape.size());
+      std::vector<LongType> logicalStrides(outRank, 1);
+      for (int d = outRank - 2; d >= 0; d--) {
+        logicalStrides[d] = logicalStrides[d + 1] * arg.shape[d + 1];
+      }
+
+      mlir::Value physicalOffset =
+          splatConstantI32(builder, loc, i32TensorType, 0);
+      for (int d = 0; d < outRank; d++) {
+        if (arg.shape[d] <= 1 || arg.strides[d] == 0) continue;
+
+        // logicalCoord = (logicalOffset / logicalStride[d]) % shape[d]
+        mlir::Value logicalCoord = offsets;
+        if (logicalStrides[d] > 1) {
+          auto logicalStrideConst = splatConstantI32(
+              builder, loc, i32TensorType,
+              static_cast<int>(logicalStrides[d]));
+          logicalCoord = builder.create<mlir::arith::DivUIOp>(
+              loc, logicalCoord, logicalStrideConst);
+        }
+        if (arg.shape[d] > 1) {
+          auto dimConst = splatConstantI32(
+              builder, loc, i32TensorType,
+              static_cast<int>(arg.shape[d]));
+          logicalCoord = builder.create<mlir::arith::RemUIOp>(
+              loc, logicalCoord, dimConst);
+        }
+
+        // physicalOffset += logicalCoord * actualStride[d]
+        if (arg.strides[d] == 1) {
+          physicalOffset = builder.create<mlir::arith::AddIOp>(
+              loc, physicalOffset, logicalCoord);
+        } else {
+          auto physicalStrideConst = splatConstantI32(
+              builder, loc, i32TensorType,
+              static_cast<int>(arg.strides[d]));
+          auto contribution = builder.create<mlir::arith::MulIOp>(
+              loc, logicalCoord, physicalStrideConst);
+          physicalOffset = builder.create<mlir::arith::AddIOp>(
+              loc, physicalOffset, contribution);
+        }
+      }
+      storeOffsets = physicalOffset;
+      DSP_DIAG(COMPILE,
+               "TritonIRBuilder: output slot %d is NON-CONTIGUOUS; "
+               "using logical-to-physical stride mapping",
+               arg.slotIndex);
+    }
+
     auto splatPtr = builder.create<mlir::triton::SplatOp>(loc, ptrTensorType, funcArg);
-    auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc, ptrTensorType, splatPtr, offsets);
+    auto ptrs = builder.create<mlir::triton::AddPtrOp>(
+        loc, ptrTensorType, splatPtr, storeOffsets);
 
     // Cast SSA value to match output element type if needed
     mlir::Value storeVal = castTo(builder, loc, ssaIt->second, elemType);

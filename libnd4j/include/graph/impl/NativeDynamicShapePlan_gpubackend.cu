@@ -1039,8 +1039,9 @@ static bool isGapRangeCaptureSafe(NativeSlot* slots, int startSlot, int endSlot,
   //   - cuBLAS/external-workspace gaps are live by default; the opt-in capture
   //     path uses the explicit capture workspace and the same replay checks
   //   - Gather indices change per step but pointer args don't (data changes, not addresses)
-  //   - Slice-family ops are excluded by NativeSlot::isCapturable(): their
-  //     begin/size tensors are read on the host during execution and must stay live.
+  //   - Runtime-controlled slice-family ops are excluded by
+  //     NativeSlot::isCapturable(): their begin/size tensors are read on the host
+  //     during execution and must stay live; static argument slices are capture-safe.
   //   - Native attention is intentionally excluded below. If attention was not
   //     compiled as a Triton island, keep its helper live rather than capturing
   //     its multi-output/scratch/KV composition as generic gap glue.
@@ -1067,6 +1068,9 @@ static bool isGapRangeCaptureSafe(NativeSlot* slots, int startSlot, int endSlot,
     return false;
   }
 
+  int computeSlots = 0;
+  int externalWorkspaceSlots = 0;
+  int firstExternalWorkspaceSlot = -1;
   for (int s = startSlot; s <= endSlot; s++) {
     if (!slots[s].isCapturable(mergeViews)) {
       DSP_DIAG(SEGMENT,
@@ -1074,21 +1078,17 @@ static bool isGapRangeCaptureSafe(NativeSlot* slots, int startSlot, int endSlot,
                startSlot, endSlot, s, slots[s].ident.opName.c_str());
       return false;
     }
-    // Zero-compute ops (view/identity/frozen) are always safe — no GPU kernel nodes.
+    // Zero-compute view/identity/frozen slots are capture-safe. For a
+    // value-dependent view, the shape descriptor and ConstantShapeBuffer are
+    // sealed during warmup, while the segment create-value replay key detects
+    // any changed graph-baked control values before replay.
     if (slots[s].aliasesInput() || slots[s].frozenConstantSlot()) continue;
+    computeSlots++;
 
-    // Value-dependent constant-generation ops (range, create, lin_space) must
-    // remain live. Their output shape can stay fixed while their generated values
-    // change every decode step. Merging them into a captured gap bakes those
-    // control values into the CUDA graph, forcing a capture/invalidate cycle
-    // instead of allowing the composite schedule to refresh them before replay.
-    const bool valueDependentConstantGeneration =
-        slots[s].hasOpTrait(sd::ops::OP_TRAIT_CONSTANT_GENERATION) &&
-        slots[s].hasOpTrait(sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE);
-    if (valueDependentConstantGeneration) {
+    if (slots[s].hasDynamicOutputSize()) {
       DSP_DIAG(SEGMENT,
                "isGapRangeCaptureSafe [%d-%d] UNSAFE: slot=%d op='%s' has "
-               "CONSTANT_GENERATION+VALUE_DEPENDENT_SHAPE (effective=live_gap)",
+               "OP_TRAIT_DYNAMIC_OUTPUT_SIZE",
                startSlot, endSlot, s, slots[s].ident.opName.c_str());
       return false;
     }
@@ -1108,13 +1108,9 @@ static bool isGapRangeCaptureSafe(NativeSlot* slots, int startSlot, int endSlot,
                startSlot, endSlot, s, slots[s].ident.opName.c_str());
       return false;
     }
-    // Block ops with dynamic output sizes (Where, unique) — they allocate during execution,
-    // which poisons CUDA graph capture (cudaStreamCaptureStatusInvalidated).
-    if (slots[s].hasOpTrait(sd::ops::OP_TRAIT_DYNAMIC_OUTPUT_SIZE)) {
-      DSP_DIAG(SEGMENT,
-               "isGapRangeCaptureSafe [%d-%d] UNSAFE: slot=%d op='%s' has OP_TRAIT_DYNAMIC_OUTPUT_SIZE",
-               startSlot, endSlot, s, slots[s].ident.opName.c_str());
-      return false;
+    if (usesExternalWorkspace) {
+      externalWorkspaceSlots++;
+      if (firstExternalWorkspaceSlot < 0) firstExternalWorkspaceSlot = s;
     }
     // Block non-fully-writing ops (reduce, scatter) that need prezero.
     if (!slots[s].isFullyWriting()) {
@@ -1123,6 +1119,16 @@ static bool isGapRangeCaptureSafe(NativeSlot* slots, int startSlot, int endSlot,
                startSlot, endSlot, s, slots[s].ident.opName.c_str());
       return false;
     }
+  }
+  if (!blockExtWorkspace && externalWorkspaceSlots > 0 &&
+      (externalWorkspaceSlots > 1 || computeSlots > externalWorkspaceSlots)) {
+    DSP_DIAG(SEGMENT,
+             "isGapRangeCaptureSafe [%d-%d] UNSAFE: external-workspace gap is not isolated "
+             "(first slot=%d op='%s', extSlots=%d computeSlots=%d, effective=live_gap)",
+             startSlot, endSlot, firstExternalWorkspaceSlot,
+             firstExternalWorkspaceSlot >= 0 ? slots[firstExternalWorkspaceSlot].ident.opName.c_str() : "?",
+             externalWorkspaceSlots, computeSlots);
+    return false;
   }
   return true;
 }
@@ -1180,6 +1186,60 @@ static ReplaySchedule buildCompositeReplaySchedule(const GraphSegment& seg,
        schedule.units.emplace_back(REPLAY_UNIT_GAP, rangeStart, seg.def.endSlot, -1);
      }
    }
+ }
+
+ // A consecutive Triton gap is a scheduling boundary, not a capturability
+ // boundary. One live-only op (for example attention or an external-workspace
+ // matmul) must not force otherwise capture-safe glue before it to execute
+ // live as well. Refine mixed gaps into maximal ranges that preserve the
+ // existing isGapRangeCaptureSafe() policy exactly.
+ //
+ // This deliberately does not reclassify any slot: a range is emitted as
+ // capture-safe only when the same guard used by merged capture accepts the
+ // complete range. Unsafe slots remain ordinary REPLAY_UNIT_GAP units.
+ {
+   const bool mergeViews =
+       Environment::getInstance().triton().mergedCaptureThroughViews();
+   std::vector<ReplayScheduleUnit> refined;
+   refined.reserve(schedule.units.size());
+
+   for (const auto& unit : schedule.units) {
+     if (unit.kind != REPLAY_UNIT_GAP ||
+         isGapRangeCaptureSafe(slots, unit.startSlot, unit.endSlot, mergeViews)) {
+       refined.push_back(unit);
+       continue;
+     }
+
+     int runStart = unit.startSlot;
+     while (runStart <= unit.endSlot) {
+       const bool runCaptureSafe =
+           isGapRangeCaptureSafe(slots, runStart, runStart, mergeViews);
+       int runEnd = runStart;
+
+       while (runEnd < unit.endSlot) {
+         const int candidateEnd = runEnd + 1;
+         bool candidateMatches;
+         if (runCaptureSafe) {
+           candidateMatches =
+               isGapRangeCaptureSafe(slots, runStart, candidateEnd, mergeViews);
+         } else {
+           candidateMatches =
+               !isGapRangeCaptureSafe(slots, candidateEnd, candidateEnd, mergeViews);
+         }
+         if (!candidateMatches) break;
+         runEnd = candidateEnd;
+       }
+
+       DSP_DIAG_SEG(SEGMENT, runStart,
+                    "compositeReplaySchedule REFINED_GAP [%d-%d] from=[%d-%d] captureSafe=%d",
+                    runStart, runEnd, unit.startSlot, unit.endSlot,
+                    runCaptureSafe ? 1 : 0);
+       refined.emplace_back(REPLAY_UNIT_GAP, runStart, runEnd, -1);
+       runStart = runEnd + 1;
+     }
+   }
+
+   schedule.units = std::move(refined);
  }
 
  // ── Gap classification: mark capture-safe gaps ──────────────────────
@@ -1738,9 +1798,15 @@ Status NativeDynamicShapePlan::compositeReplay(
   long long tIslandLaunchUs = 0, tIslandDirtyUs = 0, tArgRefreshUs = 0;
   int nMergedLaunches = 0, nGapUnits = 0, nIslandLaunches = 0, nArgRefreshes = 0;
   int nExecSlots = 0, nTickSlots = 0, nBatchedGemmSlots = 0;
-  // Per-op-name EXECUTE slot counters for gap profiling (only first 250 decode steps)
+  long long tGapFastSlotUs = 0, tGapShapeAwareSlotUs = 0;
+  int nGapFastSlots = 0, nGapShapeAwareSlots = 0;
+  // Per-op-name EXECUTE slot counters for gap profiling. Include the first
+  // cached ultra-fast replay (executionCount == 5); execution 4 uses the cached
+  // action layout but still runs the full executor while pointer stability settles.
   std::unordered_map<std::string, int> execOpCounts;
-  bool collectExecOpNames = executionTimingEnabled_ && seg.exec.executionCount < 3;
+  std::unordered_map<std::string, int> shapeAwareExecOpCounts;
+  std::unordered_map<std::string, long long> execOpTimeUs;
+  bool collectExecOpNames = executionTimingEnabled_ && seg.exec.executionCount < 6;
 
   // ── N6: Hoist cuBLAS stream+workspace setup before gap loop ────────────────
   // All 60 bgemm groups use the same CUDA stream (cudaStr).  Per cuBLAS docs,
@@ -2062,23 +2128,29 @@ Status NativeDynamicShapePlan::compositeReplay(
                 }
               }
               // The ultra-fast path deliberately bypasses shape inference and output
-              // reconciliation. It is valid only for shape-stable slots. A cached
-              // value-dependent/dynamic gap (for example range(stepCount)) must run
-              // executeSlot every step and must report any replacement output buffer
-              // so downstream Triton arg tables are refreshed before replay.
+              // reconciliation. isDynamicShape propagates transitively to every
+              // downstream slot, so it cannot decide whether this slot's own output
+              // extent must be recomputed. Only concretely value-dependent output
+              // shapes need the full path; shape-stable descendants can use the
+              // frozen gap executor.
               auto& activeSlot = slots_[active.slotIdx];
               const bool needsShapeAwareGapExec =
-                  activeSlot.flags.isDynamicShape ||
-                  activeSlot.flags.outputShapeDependsOnInputValues;
+                  activeSlot.hasValueDependentShape();
               void* shapeAwareOutputBufsBefore[NativeDynamicShapePlan::MAX_OUTPUTS_PER_SLOT];
               if (needsShapeAwareGapExec) {
                 snapshotSlotOutputBuffers(activeSlot, outputSlots_, totalOutputSlots_,
                                           shapeAwareOutputBufsBefore,
                                           NativeDynamicShapePlan::MAX_OUTPUTS_PER_SLOT);
+                if (collectExecOpNames) {
+                  shapeAwareExecOpCounts[activeSlot.ident.opName]++;
+                }
               }
 
+              const bool useGapFastPath =
+                  executeCount_ >= 5 && skipPtrTracking && !needsShapeAwareGapExec;
+              auto tGapSlot0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
               Status slotStatus;
-              if (executeCount_ >= 5 && skipPtrTracking && !needsShapeAwareGapExec) {
+              if (useGapFastPath) {
                 slotStatus = executeSlotGapFast(active.slotIdx, effectiveExternals, numExt);
               } else {
                 if (needsShapeAwareGapExec && executeCount_ >= 5) {
@@ -2090,6 +2162,20 @@ Status NativeDynamicShapePlan::compositeReplay(
                       activeSlot.flags.outputShapeDependsOnInputValues ? 1 : 0);
                 }
                 slotStatus = executeSlot(active.slotIdx, effectiveExternals, numExt, stream);
+              }
+              if (executionTimingEnabled_) {
+                auto slotUs = std::chrono::duration_cast<std::chrono::microseconds>(
+                                  Clock::now() - tGapSlot0).count();
+                if (useGapFastPath) {
+                  tGapFastSlotUs += slotUs;
+                  nGapFastSlots++;
+                } else {
+                  tGapShapeAwareSlotUs += slotUs;
+                  nGapShapeAwareSlots++;
+                }
+                if (collectExecOpNames) {
+                  execOpTimeUs[activeSlot.ident.opName] += slotUs;
+                }
               }
               if (slotStatus != Status::OK) {
                 DSP_DIAG(EXECUTE, "COMPOSITE_REPLAY: gap slot %d FAILED status=%d",
@@ -2410,7 +2496,8 @@ Status NativeDynamicShapePlan::compositeReplay(
              "execCount=%d mergedGroups=%d islands=%d "
              "BREAKDOWN: mergedLaunch=%lldus(%d) mergedDirty=%lldus gapExec=%lldus(%d) "
              "islandLaunch=%lldus(%d) islandDirty=%lldus argRefresh=%lldus(%d) "
-             "GAP_SLOTS: exec=%d tick=%d bgemm=%d",
+             "GAP_SLOTS: exec=%d tick=%d bgemm=%d "
+             "GAP_EXEC_PATHS: fast=%lldus(%d) shapeAware=%lldus(%d)",
              totalUs, prezeroUs, unitsUs, seg.exec.executionCount,
              static_cast<int>(sched.mergedReplayHandles.size()),
              static_cast<int>(sched.compositeReplayHandles.size()),
@@ -2418,7 +2505,9 @@ Status NativeDynamicShapePlan::compositeReplay(
              tGapExecUs, nGapUnits,
              tIslandLaunchUs, nIslandLaunches, tIslandDirtyUs,
              tArgRefreshUs, nArgRefreshes,
-             nExecSlots, nTickSlots, nBatchedGemmSlots);
+             nExecSlots, nTickSlots, nBatchedGemmSlots,
+             tGapFastSlotUs, nGapFastSlots,
+             tGapShapeAwareSlotUs, nGapShapeAwareSlots);
     // Per-op-name breakdown of EXECUTE gap slots (first 3 steps only to avoid log spam)
     if (!execOpCounts.empty()) {
       std::string opBreakdown = "GAP_EXEC_OPS:";
@@ -2426,6 +2515,20 @@ Status NativeDynamicShapePlan::compositeReplay(
         opBreakdown += " " + kv.first + "=" + std::to_string(kv.second);
       }
       DSP_DIAG(TIMING, "%s", opBreakdown.c_str());
+    }
+    if (!shapeAwareExecOpCounts.empty()) {
+      std::string opBreakdown = "GAP_SHAPE_AWARE_OPS:";
+      for (auto& kv : shapeAwareExecOpCounts) {
+        opBreakdown += " " + kv.first + "=" + std::to_string(kv.second);
+      }
+      DSP_DIAG(TIMING, "%s", opBreakdown.c_str());
+    }
+    if (!execOpTimeUs.empty()) {
+      std::string opTiming = "GAP_EXEC_HOST_TIMING_US:";
+      for (auto& kv : execOpTimeUs) {
+        opTiming += " " + kv.first + "=" + std::to_string(kv.second);
+      }
+      DSP_DIAG(TIMING, "%s", opTiming.c_str());
     }
 
     // ── Per-unit performance ledger dump (Part II-G3) ────────────────────
@@ -4573,41 +4676,35 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
 
            size_t gpuFreeAtFail = 0, gpuTotalAtFail = 0;
            cudaMemGetInfo(&gpuFreeAtFail, &gpuTotalAtFail);
-           // Treat ALL capture failures as retryable for the first few attempts.
-           // Capture can fail for transient reasons in concurrent scenarios:
-           // - Cross-thread stream poisoning (error 906/901)
-           // - Memory pressure during capture
-           // - CUDA driver internal contention
-           // Only permanently fail after exhausting retries.
-           if (seg.exec.captureOomRetries < GraphSegment::maxOomRetries()) {
-             const int retryAfter = captureHeadroomLimited
-                 ? INT_MAX
-                 : seg.exec.executionCount + GraphSegment::retryInterval();
+           // Capacity deferral is the only path that may enter OOM_RETRY. A gap
+           // capture invalidation (for example, an allocation performed by a view
+           // wrapper constructor) is a deterministic capture-safety defect, not an
+           // OOM. Misclassifying every capture error as OOM hid the failing slot and
+           // silently ran the segment slot-by-slot with ample memory available.
+           if (captureHeadroomLimited &&
+               seg.exec.captureOomRetries < GraphSegment::maxOomRetries()) {
+             const int retryAfter = INT_MAX;
              SegmentLifecycle::markOomDeferred(seg.exec, retryAfter);
-             if (captureHeadroomLimited) {
-               DSP_DIAG_SEG(MEMORY, seg.def.startSlot,
-                            "COMPOSITE_CAPTURE DEFERRED FOR CAPACITY: gpuFree=%zuMB "
-                            "warmupPeak=%zuMB. Compiled backend retained; capture retry disabled.",
-                            gpuFreeAtFail / (1024*1024),
-                            seg.exec.peakWarmupAllocationBytes / (1024*1024));
-             } else {
-               DSP_DIAG_SEG(MEMORY, seg.def.startSlot,
-                            "COMPOSITE_CAPTURE FAILED — retry %d/%d, gpuFree=%zuMB. "
-                            "retryAfterExec=%d. Compiled backend retained.",
-                            seg.exec.captureOomRetries, GraphSegment::maxOomRetries(),
-                            gpuFreeAtFail / (1024*1024), retryAfter);
-             }
+             DSP_DIAG_SEG(MEMORY, seg.def.startSlot,
+                          "COMPOSITE_CAPTURE DEFERRED FOR CAPACITY: gpuFree=%zuMB "
+                          "warmupPeak=%zuMB. Compiled backend retained; capture retry disabled.",
+                          gpuFreeAtFail / (1024*1024),
+                          seg.exec.peakWarmupAllocationBytes / (1024*1024));
              // Prevent fallthrough to monolithic capture — the segment state
              // was already cleaned up by abortCapture. Monolithic would try to
              // capture again with a stale replayHandle and fail.
              didCompositeCapture = true;
-             // Don't throw — fall through to slot-by-slot execution for this step
            } else {
-             SegmentLifecycle::markFailed(seg.exec, "composite_capture_failed", seg.def.startSlot, seg.def.endSlot);
+             SegmentLifecycle::markFailed(
+                 seg.exec, "composite_capture_failed_non_oom",
+                 seg.def.startSlot, seg.def.endSlot);
              DSP_THROW_SEG(COMPILE, seg.def.startSlot,
-                           "COMPOSITE_CAPTURE_FAILED: seg[%d-%d] merged capture failed after %d retries. "
-                           "Fix the capture — do NOT reconfigure the segment.",
-                           seg.def.startSlot, seg.def.endSlot, seg.exec.captureOomRetries);
+                           "COMPOSITE_CAPTURE_FAILED: seg[%d-%d] merged capture failed "
+                           "with gpuFree=%zuMB and was not capacity-limited. Fix the "
+                           "capture-invalidating operation; this is not an OOM and will "
+                           "not fall back to slot-by-slot execution.",
+                           seg.def.startSlot, seg.def.endSlot,
+                           gpuFreeAtFail / (1024*1024));
            }
          }
          } // end else (compositeCaptureGuard.acquired())
@@ -4857,7 +4954,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
               viewPreExec++;
             } else {
               // Value-shape create op: CONSTANT_GENERATION + VALUE_DEPENDENT_SHAPE
-              const uint32_t slotTraits = slots_[s].opTraits();
+              const uint64_t slotTraits = slots_[s].opTraits();
               const bool isValueShapeCreate =
                   (slotTraits & sd::ops::OP_TRAIT_CONSTANT_GENERATION) != 0 &&
                   (slotTraits & sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE) != 0;
@@ -4957,7 +5054,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
               // allows correct per-step values and eliminates the
               // createValuesStable=false → invalidateForRebuild infinite cycle.
               {
-                const uint32_t slotTraits = slots_[s].opTraits();
+                const uint64_t slotTraits = slots_[s].opTraits();
                 if ((slotTraits & sd::ops::OP_TRAIT_CONSTANT_GENERATION) != 0 &&
                     (slotTraits & sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE) != 0) {
                   createOpSkipped++;

@@ -452,12 +452,12 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKey(
 // Returns 0 only if the segment has no create ops AND no variable external inputs.
 
 namespace {
-uint32_t resolveCreateValueKeyTraits(const NativeSlot& slot) {
+uint64_t resolveCreateValueKeyTraits(const NativeSlot& slot) {
   return slot.opTraits();
 }
 
 bool slotUsesValueTrackedConstantGeneration(const NativeSlot& slot) {
-  const uint32_t traits = resolveCreateValueKeyTraits(slot);
+  const uint64_t traits = resolveCreateValueKeyTraits(slot);
   return (traits & sd::ops::OP_TRAIT_CONSTANT_GENERATION) != 0 &&
          (traits & sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE) != 0;
 }
@@ -807,15 +807,20 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     platformCleanupSegmentForRebuild(seg);
   }
 
-  if (seg.exec.captureOomRetries > 0 && seg.exec.executionCount < seg.exec.captureRetryAfterExec) {
-    // HARD ERROR: OOM during capture is a bug — fix memory management.
-    // Silent fallback to slot-by-slot violates the execution mode contract.
-    DSP_THROW_SEG(MEMORY, seg.def.startSlot,
-                  "CUDA graph capture OOM for seg[%d-%d] (retry %d/%d, retryAfterExec=%d, "
-                  "currentExecCount=%d). Fix memory management — do NOT fall back to slot-by-slot.",
-                  seg.def.startSlot, seg.def.endSlot,
-                  seg.exec.captureOomRetries, GraphSegment::maxOomRetries(),
-                  seg.exec.captureRetryAfterExec, seg.exec.executionCount);
+  if (seg.exec.captureOomRetries > 0 &&
+      seg.exec.executionCount < seg.exec.captureRetryAfterExec) {
+    // Keep the segment deferred until its bounded retry interval. This is a
+    // successful no-op for the current execution: the previous warmup output
+    // remains published, and the next invocation retries capture. There is no
+    // slot-by-slot fallback and no permanent failure before retry exhaustion.
+    dspSegIncrementExecCount(seg, "cuda-graph-capture-oom-wait");
+    DSP_DIAG_SEG(MEMORY, segIdx,
+                 "CUDA graph capture OOM deferred for seg[%d-%d] "
+                 "(retry %d/%d, retryAfterExec=%d, currentExecCount=%d)",
+                 seg.def.startSlot, seg.def.endSlot,
+                 seg.exec.captureOomRetries, GraphSegment::maxOomRetries(),
+                 seg.exec.captureRetryAfterExec, seg.exec.executionCount);
+    return Status::OK;
   }
 
   // NOTE: The hasValueDependentShapeOps pre-capture warmup hack was REMOVED.
@@ -1053,6 +1058,29 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       execCtx->resetSyncPhase();
     }
     captureExternals = performPreReplaySync(externalArrays, numExt, stream, "cudagraph_capture");
+
+    // View wrappers must be rebuilt after staging has been established.  If a
+    // view aliases a placeholder, capturing the pre-staging wrapper bakes the
+    // caller-owned device address into downstream graph nodes.
+    int viewRefreshResult =
+        refreshStaleViewWrappersInSegment(seg, captureExternals, numExt);
+    if (viewRefreshResult < 0) {
+      DSP_DIAG_SEG(COMPILE, segIdx,
+                   "CUDA graph capture preparation failed while refreshing "
+                   "stale view wrappers for seg[%d-%d]",
+                   seg.def.startSlot, seg.def.endSlot);
+      platformCleanupSegmentForRebuild(seg);
+      SegmentLifecycle::markFailed(
+          seg.exec, "cuda_graph_capture_view_refresh_failed",
+          seg.def.startSlot, seg.def.endSlot);
+      return Status::KERNEL_FAILURE;
+    }
+    if (viewRefreshResult > 0) {
+      DSP_DIAG_SEG(MEMORY, segIdx,
+                   "CUDA graph capture refreshed %d staged view wrappers "
+                   "for seg[%d-%d]",
+                   viewRefreshResult, seg.def.startSlot, seg.def.endSlot);
+    }
   }
 
   DSP_DIAG_SEG(MEMORY, segIdx, "tl_captureWorkspace=%p size=%zu for capture",
@@ -1175,8 +1203,18 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                   seg.def.startSlot, seg.def.endSlot);
   }
 
+  enum class CaptureFailureKind {
+    NONE,
+    SLOT_EXECUTION,
+    CAPTURE_API,
+    OOM
+  };
+  auto isCaptureOom = [](cudaError_t err) {
+    return err == cudaErrorMemoryAllocation;
+  };
+
   bool captureOk = true;
-  bool captureOomFailure = false;
+  CaptureFailureKind captureFailure = CaptureFailureKind::NONE;
   int lastCaptureSlot = seg.def.startSlot;
   int frozenConstSkipped = 0;
   lastCaptureAudit_.clear();
@@ -1230,6 +1268,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                         stepIdx, slots_[stepIdx].ident.opName.c_str(),
                        static_cast<int>(capErr), static_cast<int>(capStatus));
           captureOk = false;
+          captureFailure = isCaptureOom(capErr)
+              ? CaptureFailureKind::OOM
+              : CaptureFailureKind::CAPTURE_API;
           break;
         }
       }
@@ -1238,9 +1279,16 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 
       auto status = executeSlot(stepIdx, captureExternals, numExt, stream);
       if (status != Status::OK) {
-        DSP_DIAG_SLOT(COMPILE, stepIdx, "op execution during capture failed at slot %d", stepIdx);
+        cudaError_t slotErr = cudaPeekAtLastError();
+        DSP_DIAG_SLOT(COMPILE, stepIdx,
+                      "op execution during capture failed at slot %d "
+                      "(status=%d cudaErr=%d)",
+                      stepIdx, static_cast<int>(status),
+                      static_cast<int>(slotErr));
         captureOk = false;
-        captureOomFailure = true;
+        captureFailure = isCaptureOom(slotErr)
+            ? CaptureFailureKind::OOM
+            : CaptureFailureKind::SLOT_EXECUTION;
         break;
       }
 
@@ -1253,6 +1301,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                         stepIdx, slots_[stepIdx].ident.opName.c_str(),
                        static_cast<int>(capErr), static_cast<int>(capStatus));
           captureOk = false;
+          captureFailure = isCaptureOom(capErr)
+              ? CaptureFailureKind::OOM
+              : CaptureFailureKind::CAPTURE_API;
           break;
         }
       }
@@ -1405,14 +1456,20 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 
     // Guard destructor will free captured host ptrs (commit() not called yet).
 
-    if (captureOomFailure && seg.exec.captureOomRetries < GraphSegment::maxOomRetries()) {
+    if (captureFailure == CaptureFailureKind::OOM &&
+        seg.exec.captureOomRetries < GraphSegment::maxOomRetries()) {
       dspSegScheduleOomRetry(seg);
-      DSP_DIAG_SEG(MEMORY, segIdx, "graph capture OOM for seg[%d-%d], retry %d/%d after exec %d",
+      DSP_DIAG_SEG(MEMORY, segIdx,
+                   "graph capture OOM for seg[%d-%d], retry %d/%d after exec %d",
                    seg.def.startSlot, seg.def.endSlot,
                    seg.exec.captureOomRetries, GraphSegment::maxOomRetries(),
                    seg.exec.captureRetryAfterExec);
     } else {
-      SegmentLifecycle::markFailed(seg.exec, "cuda_graph_capture_failed",
+      const char* failureReason =
+          captureFailure == CaptureFailureKind::OOM
+              ? "cuda_graph_capture_oom_exhausted"
+              : "cuda_graph_capture_failed";
+      SegmentLifecycle::markFailed(seg.exec, failureReason,
                                    seg.def.startSlot, seg.def.endSlot);
     }
 
@@ -1431,10 +1488,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     // Return KERNEL_FAILURE — the caller in _cuda.cu propagates this via
     // DSP_THROW_SEG so the error surfaces to the user. With memory-budget
     // segment splitting, this should not happen for well-sized segments.
-    DSP_DIAG_SEG(COMPILE, 0, "CUDA graph capture failed for seg[%d-%d] (oom=%s, retries=%d) "
+    DSP_DIAG_SEG(COMPILE, 0,
+                 "CUDA graph capture failed for seg[%d-%d] (failureKind=%d, retries=%d) "
                  "— returning KERNEL_FAILURE to caller",
                  seg.def.startSlot, seg.def.endSlot,
-                 captureOomFailure ? "true" : "false",
+                 static_cast<int>(captureFailure),
                  seg.exec.captureOomRetries);
     return Status::KERNEL_FAILURE;
   }
@@ -2218,7 +2276,7 @@ Status NativeDynamicShapePlan::replayMonolithicGraph(
     int liveCreateCount = 0;
     SyncOverride liveCreateSync(*this, "live_create_ops");
     for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
-      const uint32_t slotTraits = slots_[s].opTraits();
+      const uint64_t slotTraits = slots_[s].opTraits();
       if ((slotTraits & sd::ops::OP_TRAIT_CONSTANT_GENERATION) != 0 &&
           (slotTraits & sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE) != 0) {
         auto liveStatus = executeSlot(s, externalArrays, numExt, stream);

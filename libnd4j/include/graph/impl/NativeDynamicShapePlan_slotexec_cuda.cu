@@ -100,12 +100,11 @@ Status NativeDynamicShapePlan::platformExecuteSlot(const NativeSlot& slot,
     }
   }
 
-  // Slice-family ops materialize begin/size tensors on the host inside execute().
-  // Composite replay normally suppresses D2H synchronization, which leaves these
-  // controls at the previous plan invocation's host values. They are deliberately
-  // non-capturable (NativeSlot::isCapturable), so it is safe and required to lift
-  // replay suppression while this live slot consumes its bounded control tensors.
-  if (slot.hasOpTrait(sd::ops::OP_TRAIT_SLICE)) {
+  // Runtime-controlled slice-family ops materialize begin/size tensors on the
+  // host inside execute(). Composite replay normally suppresses D2H synchronization,
+  // which leaves these controls at the previous plan invocation's host values. Static
+  // argument slices do not perform that host read and remain eligible for capture.
+  if (slot.hasOpTrait(sd::ops::OP_TRAIT_SLICE) && slot.hasValueDependentShape()) {
     DspReplayGuard valueDependentHostReadGuard(false);
     return slot.ident.op->execute(&context);
   }
