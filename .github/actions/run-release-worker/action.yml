@@ -90,6 +90,7 @@ runs:
           mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool
           mingw-w64-x86_64-gcc mingw-w64-x86_64-gcc-fortran
           mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-ragel
+          mingw-w64-x86_64-vulkan-headers mingw-w64-x86_64-vulkan-loader
 
     - name: Bootstrap Windows worker
       if: runner.os == 'Windows'
