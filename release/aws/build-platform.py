@@ -964,6 +964,13 @@ def enable_sdx_release_component(build: dict, rules: dict) -> None:
     rules["unclassifiedArtifactIds"] = list(dict.fromkeys([
         *rules.get("unclassifiedArtifactIds", []), *SDX_UNCLASSIFIED_ARTIFACT_IDS
     ]))
+    sdx_classifier_tokens = [
+        sdx_variant_artifact_classifier(build, variant)
+        for variant in build.get("variants", [])
+    ]
+    rules["classifierTokens"] = list(dict.fromkeys([
+        *rules.get("classifierTokens", []), *sdx_classifier_tokens
+    ]))
 
 
 def required_classifier_artifact_ids(build: dict, rules: dict) -> tuple[str, ...]:

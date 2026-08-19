@@ -372,6 +372,26 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("mingw-w64-x86_64-vulkan-headers", action_source)
         self.assertIn("mingw-w64-x86_64-vulkan-loader", action_source)
 
+    def test_sdx_classifier_tokens_include_backend_specific_runtime_jars(self):
+        build = {
+            "backend": "vulkan",
+            "profiles": ["sdx"],
+            "javacppPlatform": "linux-x86_64",
+            "variants": [
+                {"name": "compile", "platformExtension": "-compile"}
+            ],
+        }
+        rules = {
+            "mode": "classifier",
+            "artifactIds": ["nd4j-vulkan"],
+            "classifierTokens": ["linux-x86_64-compile"],
+        }
+
+        build_platform.enable_sdx_release_component(build, rules)
+
+        self.assertIn("nd4j-sdx", rules["artifactIds"])
+        self.assertIn("linux-x86_64-vulkan-compile", rules["classifierTokens"])
+
     def test_smoke_overrides_instance_and_build_threads(self):
         shard = self.shard()
         shard["build"] = {"buildThreads": 48}
