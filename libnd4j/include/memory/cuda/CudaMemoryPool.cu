@@ -42,14 +42,13 @@ namespace memory {
 
 SD_INLINE cudaError_t streamOrderedMalloc(void** ptr, size_t size, cudaStream_t stream) {
 #if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
-  auto status = zluda_hip::mallocAsync(ptr, size, reinterpret_cast<void*>(stream));
-  switch (status) {
-    case zluda_hip::Status::SUCCESS: return cudaSuccess;
-    case zluda_hip::Status::OUT_OF_MEMORY: return cudaErrorMemoryAllocation;
-    case zluda_hip::Status::NOT_SUPPORTED: return cudaErrorNotSupported;
-    case zluda_hip::Status::INVALID_ARGUMENT: return cudaErrorInvalidValue;
-    default: return cudaErrorUnknown;
-  }
+  // Do not allocate through HIP behind ZLUDA's CUDA ABI. ZLUDA tracks pointers
+  // created by cuMemAlloc/cudaMalloc in its allocation map; HIP-native async
+  // pointers bypass that registration and crash when a later kernel launch
+  // resolves the pointer. The CUDA call is synchronous on this compatibility
+  // path, but preserves the pointer ownership contract for every ROCm version.
+  (void)stream;
+  return cudaMalloc(ptr, size);
 #else
   return cudaMallocAsync(ptr, size, stream);
 #endif
@@ -57,14 +56,10 @@ SD_INLINE cudaError_t streamOrderedMalloc(void** ptr, size_t size, cudaStream_t 
 
 SD_INLINE cudaError_t streamOrderedFree(void* ptr, cudaStream_t stream) {
 #if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
-  auto status = zluda_hip::freeAsync(ptr, reinterpret_cast<void*>(stream));
-  switch (status) {
-    case zluda_hip::Status::SUCCESS: return cudaSuccess;
-    case zluda_hip::Status::OUT_OF_MEMORY: return cudaErrorMemoryAllocation;
-    case zluda_hip::Status::NOT_SUPPORTED: return cudaErrorNotSupported;
-    case zluda_hip::Status::INVALID_ARGUMENT: return cudaErrorInvalidValue;
-    default: return cudaErrorUnknown;
-  }
+  // Match the ZLUDA allocation path above. cudaFree removes the allocation
+  // from ZLUDA's registry; hipFree/hipFreeAsync cannot do that.
+  (void)stream;
+  return cudaFree(ptr);
 #else
   return cudaFreeAsync(ptr, stream);
 #endif
@@ -630,13 +625,22 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
 
   // (allocStream resolved above, before the soft-limit block.)
 
-  // ZLUDA/ROCm must retain the stream-ordered contract. If the native HIP
-  // allocator is unavailable, fail explicitly instead of switching to a
-  // synchronous CUDA allocation or a different execution/placement mode.
+  // ZLUDA allocations use the CUDA ABI so every pointer is registered by
+  // ZLUDA before it reaches a kernel. If the optional HIP pool is unavailable,
+  // keep using registered synchronous CUDA allocations instead of changing
+  // execution or placement mode.
   if (!enabled_.load() || !supported_) {
 #if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
-    sd_printf("CudaMemoryPool::allocate: ROCm stream-ordered allocator is unavailable on device %d\n",
-              deviceId);
+    void* ptr = nullptr;
+    cudaError_t err = cudaMalloc(&ptr, size);
+    if (err == cudaSuccess && ptr != nullptr) {
+      registerDirectAllocation(ptr, size);
+      restoreDevice();
+      return ptr;
+    }
+    sd_printf("CudaMemoryPool::allocate: ZLUDA CUDA allocation failed on device %d size=%zu: %s\n",
+              deviceId, size, cudaGetErrorString(err));
+    cudaGetLastError();
     restoreDevice();
     return nullptr;
 #else
@@ -669,8 +673,18 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
   // Initialize pool for this device if needed.
   if (!poolInitialized_[deviceId] && !initializeForDevice(deviceId)) {
 #if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
-    sd_printf("CudaMemoryPool::allocate: failed to initialize ROCm memory pool for device %d: %s\n",
-              deviceId, zluda_hip::lastError());
+    // The HIP pool is an optimization, not a prerequisite for ZLUDA. Fall
+    // back to cudaMalloc so ZLUDA registers this pointer before launch.
+    void* ptr = nullptr;
+    cudaError_t err = cudaMalloc(&ptr, size);
+    if (err == cudaSuccess && ptr != nullptr) {
+      registerDirectAllocation(ptr, size);
+      restoreDevice();
+      return ptr;
+    }
+    sd_printf("CudaMemoryPool::allocate: failed to initialize optional ROCm pool and CUDA allocation failed on device %d: %s\n",
+              deviceId, cudaGetErrorString(err));
+    cudaGetLastError();
     restoreDevice();
     return nullptr;
 #else
@@ -771,7 +785,7 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
     // Never synchronize, spill, or switch execution mode on the ROCm/ZLUDA
     // path. DSP capture/replay requires the allocation to remain ordered on
     // this exact HIP stream.
-    sd_printf("CudaMemoryPool::allocate: hipMallocAsync failed on device %d size=%zu stream=%p: %s\n",
+    sd_printf("CudaMemoryPool::allocate: ZLUDA-compatible device allocation failed on device %d size=%zu stream=%p: %s\n",
               deviceId, size, reinterpret_cast<void*>(allocStream), streamOrderedErrorString(err));
     restoreDevice();
     return nullptr;
@@ -1804,9 +1818,9 @@ void CudaMemoryPool::trimPoolOnStream(int deviceId, cudaStream_t stream) {
   }
 
 #if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
-  // HIP's pool trim releases only currently unused pages and does not require
-  // synchronizing the DSP stream. Pending hipFreeAsync operations remain
-  // ordered on their streams and become reusable when those dependencies retire.
+  // Keep the ROCm pool maintenance path available for SDK diagnostics. ZLUDA
+  // device allocations themselves use the CUDA ABI above, so no HIP-native
+  // allocation is handed to a later kernel launch.
   size_t preUsed = 0, preReserved = 0;
   getStats(deviceId, preUsed, preReserved);
   zluda_hip::trimDefaultPool(deviceId, 0);
@@ -2021,8 +2035,9 @@ void* CudaMemoryPool::allocateDirect(size_t size, int deviceId) {
     cudaGetDevice(&deviceId);
   }
 
-  // ZLUDA uses the exact DSP/LaunchContext stream so hipMallocAsync is ordered
-  // with the consumer. NVIDIA keeps its dedicated non-capturing allocation stream.
+  // ZLUDA still observes the DSP/LaunchContext stream for capture checks.
+  // Its allocations use the synchronous CUDA ABI so ZLUDA can register pointers;
+  // NVIDIA keeps its dedicated non-capturing allocation stream.
 #if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
   cudaStream_t s = resolveNullStream(nullptr);
   if (s != nullptr) {

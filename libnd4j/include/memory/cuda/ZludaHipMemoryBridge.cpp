@@ -87,20 +87,6 @@ Status configureDefaultPool(int deviceId, std::uint64_t releaseThreshold) {
                        &releaseThreshold));
 }
 
-Status mallocAsync(void** ptr, std::size_t bytes, void* stream) {
-  if (ptr == nullptr || bytes == 0) return Status::INVALID_ARGUMENT;
-  *ptr = nullptr;
-  return hipStatus("hipMallocAsync",
-                   hipMallocAsync(ptr, bytes,
-                                  reinterpret_cast<hipStream_t>(stream)));
-}
-
-Status freeAsync(void* ptr, void* stream) {
-  if (ptr == nullptr) return Status::SUCCESS;
-  return hipStatus("hipFreeAsync",
-                   hipFreeAsync(ptr, reinterpret_cast<hipStream_t>(stream)));
-}
-
 Status getDefaultPoolStats(int deviceId, std::size_t* usedBytes,
                            std::size_t* reservedBytes) {
   if (usedBytes == nullptr || reservedBytes == nullptr) {

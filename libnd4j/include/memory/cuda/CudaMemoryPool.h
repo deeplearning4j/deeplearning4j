@@ -146,11 +146,10 @@ class SD_LIB_EXPORT CudaMemoryPool {
    * CUDA err700. This method gives such buffers a standalone lifetime.
    *
    * NVIDIA uses cudaMallocAsync on a dedicated non-capturing stream and materializes
-   * it outside capture. ZLUDA forwards the exact DSP/LaunchContext stream handle to
-   * hipMallocAsync and never synchronizes; a mid-capture request is rejected because
-   * constants must already come from the capture arena. Both paths produce pool-backed
-   * storage with no synchronous allocation fallback. The buffer is tracked so free()
-   * remains stream ordered and is released only by its owner.
+   * it outside capture. ZLUDA checks the exact DSP/LaunchContext stream but allocates
+   * through its CUDA ABI so every pointer is registered before launch; a mid-capture
+   * request is rejected because constants must already come from the capture arena.
+   * The buffer is tracked so free() is released only by its owner.
    *
    * @param size     bytes to allocate
    * @param deviceId device to allocate on
@@ -160,8 +159,8 @@ class SD_LIB_EXPORT CudaMemoryPool {
 
   // ── Capture-constant arena (state is private; see captureArenaBlocks_ in the private section) ──
   // Materialize the per-device capture-constant arena backing if not present. MUST be called
-  // PRE-capture (no capture yet active) — it cudaMallocAsync's the 64MB backing, illegal once the
-  // thread is capturing. Idempotent / no-op if already materialized or if a capture is active.
+  // PRE-capture (no capture yet active) — allocation is illegal once the thread is capturing.
+  // Idempotent / no-op if already materialized or if a capture is active.
   void ensureCaptureArena(int deviceId);
   // Bump-allocate `size` bytes of capture-safe persistent constant memory from the per-device
   // arena (ensures backing, then pointer-arithmetic bump). ZLUDA throws if the arena is

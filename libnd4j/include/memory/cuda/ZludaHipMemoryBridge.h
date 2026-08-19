@@ -32,8 +32,6 @@ const char* lastError();
 
 bool memoryPoolsSupported(int deviceId);
 Status configureDefaultPool(int deviceId, std::uint64_t releaseThreshold);
-Status mallocAsync(void** ptr, std::size_t bytes, void* stream);
-Status freeAsync(void* ptr, void* stream);
 Status getDefaultPoolStats(int deviceId, std::size_t* usedBytes,
                            std::size_t* reservedBytes);
 Status trimDefaultPool(int deviceId, std::size_t minBytesToHold);
