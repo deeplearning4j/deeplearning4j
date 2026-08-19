@@ -707,7 +707,7 @@ class WorkflowMatrixTests(unittest.TestCase):
             configuration,
         )
         self.assertIn(
-            'CUDA::cuda_driver nvcuda TRUE',
+            'CUDA::cuda_driver cuda TRUE',
             configuration,
         )
         self.assertIn(

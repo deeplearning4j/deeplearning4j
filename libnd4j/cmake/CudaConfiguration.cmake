@@ -348,7 +348,7 @@ function(configure_zluda_cuda_toolkit_linking main_target_name)
         link_zluda_cuda_shared_library(
             ${main_target_name} CUDA::cusparse cusparse TRUE)
         link_zluda_cuda_shared_library(
-            ${main_target_name} CUDA::cuda_driver nvcuda TRUE)
+            ${main_target_name} CUDA::cuda_driver cuda TRUE)
     endif()
 endfunction()
 
