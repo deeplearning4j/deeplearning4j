@@ -699,6 +699,26 @@ class WorkflowMatrixTests(unittest.TestCase):
             configuration,
         )
         self.assertIn(
+            'if(WIN32)\n        find_library(_zluda_cuda_shared_library',
+            configuration,
+        )
+        self.assertIn(
+            'PATH_SUFFIXES\n                lib/x64 lib64 lib',
+            configuration,
+        )
+        self.assertIn(
+            'CUDA::cuda_driver nvcuda TRUE',
+            configuration,
+        )
+        self.assertIn(
+            'CUDA_RESOLVE_DEVICE_SYMBOLS OFF',
+            (ROOT / "libnd4j/cmake/MainBuildFlow.cmake").read_text(),
+        )
+        self.assertIn(
+            'CUDA_RUNTIME_LIBRARY Shared',
+            (ROOT / "libnd4j/cmake/MainBuildFlow.cmake").read_text(),
+        )
+        self.assertIn(
             'ZLUDA supports compute_80, compute_86, and compute_89',
             configuration,
         )

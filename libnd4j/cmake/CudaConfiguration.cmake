@@ -253,26 +253,46 @@ endfunction()
 # shared implementation keeps the large CUDA compiler/runtime implementation
 # out of the all-ops backend link and is staged into the classifier below.
 function(link_zluda_cuda_shared_library main_target_name imported_target library_name required)
-    if(TARGET ${imported_target})
-        target_link_libraries(${main_target_name} PUBLIC ${imported_target})
-        return()
-    endif()
-
+    # Find the Windows SDK import library by its exact shared-library name.
+    # CMake's CUDA imported targets are normally shared, but their transitive
+    # interface can select static toolkit archives on some CUDA/CMake combinations.
+    # Linking the import file directly keeps the ZLUDA DLL boundary explicit and
+    # prevents MSVC from expanding a 65,535-object static archive.
     unset(_zluda_cuda_shared_library CACHE)
-    find_library(_zluda_cuda_shared_library
-        NAMES ${library_name} lib${library_name}
-        HINTS
-            "${CUDAToolkit_LIBRARY_DIR}"
-            "${CUDAToolkit_LIBRARY_ROOT}"
-            "${CUDAToolkit_ROOT}"
-            "${CUDA_TOOLKIT_ROOT_DIR}"
-        PATH_SUFFIXES
-            lib64 lib
-            targets/x86_64-linux/lib
-            targets/aarch64-linux/lib
-        NO_DEFAULT_PATH)
-    if(NOT _zluda_cuda_shared_library)
-        find_library(_zluda_cuda_shared_library NAMES ${library_name} lib${library_name})
+    if(WIN32)
+        find_library(_zluda_cuda_shared_library
+            NAMES ${library_name}
+            HINTS
+                "${CUDAToolkit_LIBRARY_DIR}"
+                "${CUDAToolkit_LIBRARY_ROOT}"
+                "${CUDAToolkit_ROOT}"
+                "${CUDA_TOOLKIT_ROOT_DIR}"
+            PATH_SUFFIXES
+                lib/x64 lib64 lib
+            NO_DEFAULT_PATH)
+        if(NOT _zluda_cuda_shared_library)
+            find_library(_zluda_cuda_shared_library NAMES ${library_name})
+        endif()
+    elseif(TARGET ${imported_target})
+        target_link_libraries(${main_target_name} PUBLIC ${imported_target})
+        unset(_zluda_cuda_shared_library CACHE)
+        return()
+    else()
+        find_library(_zluda_cuda_shared_library
+            NAMES ${library_name} lib${library_name}
+            HINTS
+                "${CUDAToolkit_LIBRARY_DIR}"
+                "${CUDAToolkit_LIBRARY_ROOT}"
+                "${CUDAToolkit_ROOT}"
+                "${CUDA_TOOLKIT_ROOT_DIR}"
+            PATH_SUFFIXES
+                lib64 lib
+                targets/x86_64-linux/lib
+                targets/aarch64-linux/lib
+            NO_DEFAULT_PATH)
+        if(NOT _zluda_cuda_shared_library)
+            find_library(_zluda_cuda_shared_library NAMES ${library_name} lib${library_name})
+        endif()
     endif()
 
     if(_zluda_cuda_shared_library)
@@ -319,16 +339,16 @@ function(configure_zluda_cuda_toolkit_linking main_target_name)
 
     if(WIN32)
         # Official Windows ZLUDA distributions carry DLLs with the CUDA ABI
-        # names. SDK import libraries are used only while linking this build.
-        foreach(_zluda_windows_import_target IN ITEMS
-                CUDA::cublas CUDA::cublasLt CUDA::cusparse CUDA::cuda_driver)
-            if(NOT TARGET ${_zluda_windows_import_target})
-                message(FATAL_ERROR
-                    "Windows ZLUDA build requires CUDA SDK import target ${_zluda_windows_import_target}")
-            endif()
-            target_link_libraries(${main_target_name} PUBLIC
-                ${_zluda_windows_import_target})
-        endforeach()
+        # names. Resolve the matching SDK import files directly so none of the
+        # imported targets can pull a static CUDA archive transitively.
+        link_zluda_cuda_shared_library(
+            ${main_target_name} CUDA::cublas cublas TRUE)
+        link_zluda_cuda_shared_library(
+            ${main_target_name} CUDA::cublasLt cublasLt TRUE)
+        link_zluda_cuda_shared_library(
+            ${main_target_name} CUDA::cusparse cusparse TRUE)
+        link_zluda_cuda_shared_library(
+            ${main_target_name} CUDA::cuda_driver nvcuda TRUE)
     endif()
 endfunction()
 

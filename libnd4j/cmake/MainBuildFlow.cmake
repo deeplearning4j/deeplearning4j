@@ -1134,6 +1134,17 @@ function(create_and_link_library)
 
     if(NOT TARGET ${OBJECT_LIB_NAME})
         add_library(${OBJECT_LIB_NAME} OBJECT ${ALL_SOURCES})
+        if(WIN32 AND SD_ZLUDA)
+            # Set these before any CUDA-generated build rule is emitted. The
+            # ZLUDA classifier executes per-translation-unit PTX and must not
+            # request a device-link step or a static CUDA device runtime.
+            set_target_properties(${OBJECT_LIB_NAME} PROPERTIES
+                CUDA_RESOLVE_DEVICE_SYMBOLS OFF
+                CUDA_SEPARABLE_COMPILATION OFF
+                CUDA_RUNTIME_LIBRARY Shared
+                MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
+            )
+        endif()
         add_dependencies(${OBJECT_LIB_NAME} flatbuffers_interface)
         target_link_libraries(${OBJECT_LIB_NAME} PUBLIC flatbuffers_interface)
 
@@ -1505,6 +1516,18 @@ function(create_and_link_library)
             sd_create_library_with_partial_linking(${MAIN_LIB_NAME} ${OBJECT_LIB_NAME})
         else()
             add_library(${MAIN_LIB_NAME} SHARED $<TARGET_OBJECTS:${OBJECT_LIB_NAME}>)
+        endif()
+
+        if(WIN32 AND SD_ZLUDA AND TARGET ${MAIN_LIB_NAME})
+            # Keep the final DLL on the shared CUDA runtime path as well. The
+            # target has no CUDA sources of its own, so set this explicitly rather
+            # than relying on CMake to infer it from the object library.
+            set_target_properties(${MAIN_LIB_NAME} PROPERTIES
+                CUDA_RESOLVE_DEVICE_SYMBOLS OFF
+                CUDA_SEPARABLE_COMPILATION OFF
+                CUDA_RUNTIME_LIBRARY Shared
+                MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
+            )
         endif()
 
         # For IMPORTED targets (created by partial linking), properties and includes
