@@ -1488,6 +1488,9 @@ class ReleaseValidationTest(unittest.TestCase):
         cuda_configuration = (
             root / "libnd4j/cmake/CudaConfiguration.cmake"
         ).read_text(encoding="utf-8")
+        sdx_cuda_configuration = (
+            root / "libnd4j/cmake/BuildSDX.cmake"
+        ).read_text(encoding="utf-8")
         runtime_staging = (
             root / "libnd4j/cmake/StageSharedRuntime.cmake"
         ).read_text(encoding="utf-8")
@@ -1519,6 +1522,8 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("link_zluda_cuda_shared_library", cuda_configuration)
         self.assertIn('target_link_options(${main_target_name} PRIVATE "LINKER:--no-as-needed")', cuda_configuration)
         self.assertIn("CUDA::nvrtc_static", cuda_configuration)
+        self.assertIn('TARGET CUDA::cudart', sdx_cuda_configuration)
+        self.assertIn('"$<TARGET_FILE:CUDA::cudart>"', sdx_cuda_configuration)
         self.assertNotIn("CUDA::cusolver_static", cuda_configuration)
         self.assertNotIn("cusolver_lapack_static", cuda_configuration)
         self.assertIn('RUNTIME_POLICY=$<IF:$<BOOL:${SD_ZLUDA}>,zluda-amd,default>', cuda_configuration)
