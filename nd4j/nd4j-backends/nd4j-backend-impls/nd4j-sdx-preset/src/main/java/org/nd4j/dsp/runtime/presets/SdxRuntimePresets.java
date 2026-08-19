@@ -39,9 +39,7 @@ import org.bytedeco.javacpp.tools.InfoMapper;
                         library = "jnisdx"
                 ),
                 @Platform(
-                        not = {"android", "ios"},
-                        link = "nd4jcpu",
-                        preload = "nd4jcpu"
+                        not = {"android", "ios"}
                 ),
                 @Platform(
                         value = "ios",
