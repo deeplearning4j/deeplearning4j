@@ -1003,6 +1003,72 @@ if(DEFINED PACKAGE_DIR AND NOT PACKAGE_DIR STREQUAL "")
                 "to '${_runtime_package_output}'")
         endif()
     endforeach()
+
+    # rocBLAS loads its Tensile dispatch data relative to a bundled
+    # rocblas/library directory. Shared-library dependency closure alone cannot
+    # discover these non-ELF resources, so copy the version-matched ROCm data
+    # tree into the classifier at the path expected by librocblas.so.
+    set(_rocblas_resource_dirs "")
+    foreach(_runtime_search_root IN LISTS _runtime_search_roots)
+        foreach(_rocblas_candidate
+                "${_runtime_search_root}/rocblas/library"
+                "${_runtime_search_root}/lib/rocblas/library"
+                "${_runtime_search_root}/lib64/rocblas/library"
+                "${_runtime_search_root}/lib/x86_64-linux-gnu/rocblas/library")
+            if(IS_DIRECTORY "${_rocblas_candidate}")
+                list(APPEND _rocblas_resource_dirs "${_rocblas_candidate}")
+            endif()
+        endforeach()
+    endforeach()
+    list(REMOVE_DUPLICATES _rocblas_resource_dirs)
+
+    set(_rocblas_runtime_present FALSE)
+    foreach(_staged_runtime_name IN LISTS _staged_runtime_names)
+        if(_staged_runtime_name MATCHES "^librocblas[.]so($|[.])")
+            set(_rocblas_runtime_present TRUE)
+            break()
+        endif()
+    endforeach()
+    set(_rocblas_tensile_found FALSE)
+    set(_rocblas_resource_count 0)
+    foreach(_rocblas_resource_dir IN LISTS _rocblas_resource_dirs)
+        file(GLOB_RECURSE _rocblas_resource_files LIST_DIRECTORIES FALSE
+            "${_rocblas_resource_dir}/*")
+        foreach(_rocblas_resource_file IN LISTS _rocblas_resource_files)
+            file(RELATIVE_PATH _rocblas_resource_relative
+                "${_rocblas_resource_dir}" "${_rocblas_resource_file}")
+            set(_rocblas_resource_output
+                "${_runtime_package_dir_absolute}/rocblas/library/${_rocblas_resource_relative}")
+            get_filename_component(_rocblas_resource_output_dir
+                "${_rocblas_resource_output}" DIRECTORY)
+            file(MAKE_DIRECTORY "${_rocblas_resource_output_dir}")
+            execute_process(
+                COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+                    "${_rocblas_resource_file}" "${_rocblas_resource_output}"
+                RESULT_VARIABLE _rocblas_resource_copy_result)
+            if(NOT _rocblas_resource_copy_result EQUAL 0 OR
+               NOT EXISTS "${_rocblas_resource_output}")
+                message(FATAL_ERROR
+                    "Failed to stage rocBLAS resource '${_rocblas_resource_file}'")
+            endif()
+            get_filename_component(_rocblas_resource_name
+                "${_rocblas_resource_file}" NAME)
+            if(_rocblas_resource_name STREQUAL "TensileLibrary.dat")
+                set(_rocblas_tensile_found TRUE)
+            endif()
+            math(EXPR _rocblas_resource_count "${_rocblas_resource_count} + 1")
+        endforeach()
+    endforeach()
+    if(_rocblas_runtime_present AND NOT _rocblas_tensile_found)
+        message(FATAL_ERROR
+            "librocblas.so is staged but its rocblas/library/TensileLibrary.dat "
+            "resource tree was not found in the declared ROCm runtime roots")
+    endif()
+    if(_rocblas_resource_count GREATER 0)
+        message(STATUS
+            "Staged rocBLAS dispatch resources: ${_rocblas_resource_count} files")
+    endif()
+
     execute_process(
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different
             "${_runtime_manifest_path}"

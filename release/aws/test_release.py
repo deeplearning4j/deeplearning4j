@@ -1531,6 +1531,8 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertNotIn("cusolver_lapack_static", cuda_configuration)
         self.assertIn('RUNTIME_POLICY=$<IF:$<BOOL:${SD_ZLUDA}>,zluda-amd,default>', cuda_configuration)
         self.assertIn("ZLUDA backend requires", runtime_staging)
+        self.assertIn("rocblas/library/TensileLibrary.dat", runtime_staging)
+        self.assertIn("Staged rocBLAS dispatch resources", runtime_staging)
         self.assertIn("ZLUDA_RUNTIME_LIBRARIES", cuda_configuration)
         self.assertIn("ROCM_HIP_RUNTIME_LIBRARY", cuda_configuration)
         self.assertIn("setup_zluda_download(ZLUDA_MANAGED_ROOT)", zluda_configuration)
