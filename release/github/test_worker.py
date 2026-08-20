@@ -762,6 +762,14 @@ class WorkflowMatrixTests(unittest.TestCase):
 
         cmake_source = (ROOT / "libnd4j/CMakeLists.txt").read_text()
         self.assertIn(
+            'if(WIN32 AND SD_CUDA)\n    # CMake defaults CUDA_RUNTIME_LIBRARY to Static',
+            cmake_source,
+        )
+        self.assertIn(
+            'set(CMAKE_CUDA_RUNTIME_LIBRARY Shared)',
+            cmake_source,
+        )
+        self.assertIn(
             'if(SD_ZLUDA)\n        set(_sd_cuda_msvc_runtime_flag "-MT")',
             cmake_source,
         )
@@ -791,6 +799,10 @@ class WorkflowMatrixTests(unittest.TestCase):
         )
         self.assertIn(
             'CUDA_RUNTIME_LIBRARY Shared',
+            cmake_source,
+        )
+        self.assertIn(
+            'CUDA_SEPARABLE_COMPILATION ON\n                                CUDA_RUNTIME_LIBRARY Shared',
             cmake_source,
         )
 

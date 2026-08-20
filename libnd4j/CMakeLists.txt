@@ -151,6 +151,16 @@ else()
     project(libnd4j LANGUAGES C CXX)
 endif()
 
+if(WIN32 AND SD_CUDA)
+    # CMake defaults CUDA_RUNTIME_LIBRARY to Static when the compiler does not
+    # advertise a preference. The Windows CUDA static runtime pulls cudart_static
+    # (and, for separable device linking, cudadevrt) into the final DLL and can
+    # exceed MSVC's 65,535-object library limit. All published Windows CUDA
+    # classifiers carry the matching CUDA DLLs, so use the shared runtime.
+    set(CMAKE_CUDA_RUNTIME_LIBRARY Shared)
+    message(STATUS "Windows CUDA: using the shared CUDA runtime")
+endif()
+
 # CMAKE_OTOOL is not initialized consistently by older CMake releases, but the
 # runtime staging contract needs the active Apple toolchain's binary inspector.
 # Resolve it once at configure time so every target stages dylibs identically.
@@ -601,6 +611,7 @@ if(WIN32 AND SD_CUDA)
                         set_target_properties(${target} PROPERTIES
                                 CUDA_RESOLVE_DEVICE_SYMBOLS ON
                                 CUDA_SEPARABLE_COMPILATION ON
+                                CUDA_RUNTIME_LIBRARY Shared
                                 MSVC_RUNTIME_LIBRARY "${_sd_target_msvc_runtime}"
                         )
                     endif()
