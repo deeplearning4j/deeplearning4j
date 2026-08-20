@@ -518,7 +518,7 @@ class ReleaseValidationTest(unittest.TestCase):
                 self.assertEqual("/tools/sccache", executable)
                 self.assertTrue(started)
                 self.assertEqual(f"disk,{backend}", environment["SCCACHE_MULTILEVEL_CHAIN"])
-                self.assertEqual("all", environment["SCCACHE_MULTILEVEL_WRITE_ERROR_POLICY"])
+                self.assertEqual("l0", environment["SCCACHE_MULTILEVEL_WRITE_ERROR_POLICY"])
                 self.assertEqual(str(source.resolve()), environment["SCCACHE_BASEDIRS"])
                 self.assertEqual("1", environment["SD_USE_SCCACHE"])
                 self.assertEqual("ON", environment["SD_REQUIRE_COMPILER_CACHE"])

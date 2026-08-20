@@ -773,7 +773,9 @@ def configure_compiler_cache(
             "SCCACHE_BASEDIRS": str(source.resolve()),
             "SCCACHE_ERROR_LOG": str(cache_dir / "sccache-error.log"),
             "SCCACHE_MULTILEVEL_CHAIN": f"disk,{backend}",
-            "SCCACHE_MULTILEVEL_WRITE_ERROR_POLICY": "all",
+            # A remote cache outage must not block compiler wrappers or make the
+            # hosted runner appear dead; the local cache remains authoritative.
+            "SCCACHE_MULTILEVEL_WRITE_ERROR_POLICY": "l0",
         })
         prefix = _required_cache_value(remote, "keyPrefix")
         if backend == "s3":
