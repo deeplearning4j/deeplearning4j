@@ -1538,8 +1538,40 @@ function(create_and_link_library)
                 # Public C/C++ APIs use SD_LIB_EXPORT/SDX_API explicitly. Do not
                 # synthesize an exports.def for every template-instantiated symbol:
                 # the generated export library exceeds MSVC's 65,535-member limit.
-                # Explicit exports still give SDX JavaCPP a usable import library.
                 set_target_properties(${MAIN_LIB_NAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS OFF)
+
+                # The monolithic target is also the SDX JavaCPP link target when
+                # standalone SDX is disabled. Generate a small import library for
+                # the explicit C ABI instead of relying on CMake's all-symbol
+                # export scan, which both overflows MSVC and can omit the import
+                # library when only object-library exports are present.
+                set(_sdx_windows_def
+                    "${CMAKE_CURRENT_BINARY_DIR}/${MAIN_LIB_NAME}_sdx_exports.def")
+                file(WRITE "${_sdx_windows_def}" "EXPORTS\n")
+                file(STRINGS
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/dsp/runtime/dsp_runtime_c.h"
+                    _sdx_windows_api_declarations
+                    REGEX "^[\\t ]*SDX_API[\\t ]+")
+                foreach(_sdx_windows_declaration IN LISTS
+                        _sdx_windows_api_declarations)
+                    string(REGEX MATCH
+                        "sdx[A-Za-z0-9_]+[\\t ]*\\("
+                        _sdx_windows_symbol_match
+                        "${_sdx_windows_declaration}")
+                    if(_sdx_windows_symbol_match)
+                        string(REGEX REPLACE
+                            ".*(sdx[A-Za-z0-9_]+)[\\t ]*\\(.*"
+                            "\\1"
+                            _sdx_windows_symbol
+                            "${_sdx_windows_declaration}")
+                        file(APPEND "${_sdx_windows_def}"
+                            "    ${_sdx_windows_symbol}\n")
+                    endif()
+                endforeach()
+                target_link_options(${MAIN_LIB_NAME} PRIVATE
+                    "/DEF:${_sdx_windows_def}")
+                set_property(TARGET ${MAIN_LIB_NAME} APPEND PROPERTY
+                    LINK_DEPENDS "${_sdx_windows_def}")
             endif()
 
             # Code model configuration is now centralized in CompilerFlags.cmake to avoid conflicts

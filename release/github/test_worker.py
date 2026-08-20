@@ -715,6 +715,9 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn('CUDA_RUNTIME_LIBRARY Shared', main_build_flow)
         self.assertIn('WINDOWS_EXPORT_ALL_SYMBOLS OFF', main_build_flow)
         self.assertNotIn('WINDOWS_EXPORT_ALL_SYMBOLS ON', main_build_flow)
+        self.assertIn('EXPORTS\\n', main_build_flow)
+        self.assertIn('dsp_runtime_c.h', main_build_flow)
+        self.assertIn('target_link_options(${MAIN_LIB_NAME} PRIVATE', main_build_flow)
         self.assertIn(
             'ZLUDA supports compute_80, compute_86, and compute_89',
             configuration,
