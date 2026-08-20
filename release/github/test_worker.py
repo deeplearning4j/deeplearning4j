@@ -710,14 +710,11 @@ class WorkflowMatrixTests(unittest.TestCase):
             'CUDA::cuda_driver cuda TRUE',
             configuration,
         )
-        self.assertIn(
-            'CUDA_RESOLVE_DEVICE_SYMBOLS OFF',
-            (ROOT / "libnd4j/cmake/MainBuildFlow.cmake").read_text(),
-        )
-        self.assertIn(
-            'CUDA_RUNTIME_LIBRARY Shared',
-            (ROOT / "libnd4j/cmake/MainBuildFlow.cmake").read_text(),
-        )
+        main_build_flow = (ROOT / "libnd4j/cmake/MainBuildFlow.cmake").read_text()
+        self.assertIn('CUDA_RESOLVE_DEVICE_SYMBOLS OFF', main_build_flow)
+        self.assertIn('CUDA_RUNTIME_LIBRARY Shared', main_build_flow)
+        self.assertIn('WINDOWS_EXPORT_ALL_SYMBOLS OFF', main_build_flow)
+        self.assertNotIn('WINDOWS_EXPORT_ALL_SYMBOLS ON', main_build_flow)
         self.assertIn(
             'ZLUDA supports compute_80, compute_86, and compute_89',
             configuration,

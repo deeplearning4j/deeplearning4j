@@ -1535,10 +1535,11 @@ function(create_and_link_library)
         if(NOT SD_PARTIAL_LINKED_TARGET)
             set_target_properties(${MAIN_LIB_NAME} PROPERTIES OUTPUT_NAME ${MAIN_LIB_NAME})
             if(WIN32)
-                # The Windows SDX JavaCPP bindings link against the central
-                # CUDA/Vulkan/CPU target. Export its symbols so MSVC emits the
-                # import library beside the shared DLL.
-                set_target_properties(${MAIN_LIB_NAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+                # Public C/C++ APIs use SD_LIB_EXPORT/SDX_API explicitly. Do not
+                # synthesize an exports.def for every template-instantiated symbol:
+                # the generated export library exceeds MSVC's 65,535-member limit.
+                # Explicit exports still give SDX JavaCPP a usable import library.
+                set_target_properties(${MAIN_LIB_NAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS OFF)
             endif()
 
             # Code model configuration is now centralized in CompilerFlags.cmake to avoid conflicts
