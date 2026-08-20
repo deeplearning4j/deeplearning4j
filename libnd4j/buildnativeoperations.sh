@@ -615,6 +615,7 @@ KERNEL_AUTOTUNING="${KERNEL_AUTOTUNING:-OFF}"
 KERNEL_CACHING="${KERNEL_CACHING:-ON}"
 HELPER_PRIORITY="${HELPER_PRIORITY:-}"
 ZLUDA="${ZLUDA:-OFF}"  # ZLUDA CUDA-compatibility shim (OFF by default)
+ZLUDA_VERSION="${ZLUDA_VERSION:-v7-preview.8}"  # Pinned ZLUDA runtime bundle
 CHECK_VECTORIZATION="${CHECK_VECTORIZATION:-OFF}"
 NAME="${NAME:-}"
 OP_OUTPUT_FILE="${OP_OUTPUT_FILE:-include/generated/include_ops.h}"
@@ -1810,6 +1811,19 @@ do
                     ;;
                 *)
                     print_colored "red" "Unsupported --zluda target '$ZLUDA' (expected OFF, ON, or AMD)"
+                    exit 2
+                    ;;
+            esac
+            shift # past argument
+            ;;
+        --zluda-version)
+            ZLUDA_VERSION="$value"
+            case "$ZLUDA_VERSION" in
+                v6|v7-preview.8)
+                    print_colored "green" "✓ ZLUDA runtime version selected: $ZLUDA_VERSION"
+                    ;;
+                *)
+                    print_colored "red" "Unsupported --zluda-version '$ZLUDA_VERSION' (expected v6 or v7-preview.8)"
                     exit 2
                     ;;
             esac
@@ -3123,7 +3137,7 @@ echo HELPERS_CMAKE       = "$HELPERS_CMAKE"
 # CMake owns the pinned ZLUDA dependency and emits the runtime manifest used by
 # the resulting classifier.
 if [ "$ZLUDA" == "ON" ] || [ "$ZLUDA" == "AMD" ]; then
-    ZLUDA_CMAKE="-DSD_ZLUDA=ON -DSD_ZLUDA_TARGET=AMD"
+    ZLUDA_CMAKE="-DSD_ZLUDA=ON -DSD_ZLUDA_TARGET=AMD -DSD_ZLUDA_VERSION=${ZLUDA_VERSION}"
     print_colored "green" "✓ ZLUDA cmake flag: $ZLUDA_CMAKE"
 fi
 # SD_MLX (macOS arm64 unified-APU MLX graph backend). Set by the Triton=ON
@@ -3135,6 +3149,7 @@ if [ "$SD_MLX" == "ON" ]; then
 fi
 echo MLX                = "$SD_MLX"
 echo ZLUDA              = "$ZLUDA"
+echo ZLUDA_VERSION      = "$ZLUDA_VERSION"
 echo DYNAMIC_KERNEL_SEL  = "$DYNAMIC_KERNEL_SELECTION"
 echo KERNEL_STRATEGY     = "$KERNEL_STRATEGY"
 echo KERNEL_AUTOTUNING   = "$KERNEL_AUTOTUNING"

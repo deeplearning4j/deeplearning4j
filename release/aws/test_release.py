@@ -1279,7 +1279,7 @@ class ReleaseValidationTest(unittest.TestCase):
                     platform = expectation["platform"]
                     self.assertEqual(platform, build["javacppPlatform"])
                     self.assertEqual("12.9", build["cudaVersion"])
-                    self.assertEqual("v6", build["zludaVersion"])
+                    self.assertEqual("v7-preview.8", build["zludaVersion"])
                     if expectation["os"] == "linux":
                         self.assertEqual("7.2.4", build["rocmVersion"])
                         self.assertIs(True, build["rocmBuildOnly"])
@@ -2857,6 +2857,7 @@ class ReleaseValidationTest(unittest.TestCase):
             DL4J_CLASSIFIER="linux-x86_64-cuda-12.9-zluda",
         )
         self.assertIn("-Dlibnd4j.zluda=AMD", zluda)
+        self.assertIn("-Dlibnd4j.zluda.version=v7-preview.8", zluda)
         self.assertFalse(any("zluda.root" in argument for argument in zluda))
         self.assertIn("-Dlibnd4j.classifier=linux-x86_64-cuda-12.9-zluda", zluda)
         self.assertIn("-Djavacpp.platform.extension=-zluda", zluda)
@@ -3000,6 +3001,7 @@ class ReleaseValidationTest(unittest.TestCase):
             )
         invocation = calls[0][1]
         self.assertEqual("-zluda-rocm-6.2.4", invocation["DL4J_PLATFORM_EXTENSION"])
+        self.assertEqual("v6", invocation["DL4J_ZLUDA_VERSION"])
         self.assertEqual(
             "linux-x86_64-cuda-12.9-zluda-rocm-6.2.4",
             invocation["DL4J_CLASSIFIER"],

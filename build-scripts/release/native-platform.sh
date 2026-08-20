@@ -11,6 +11,7 @@ set -Eeuo pipefail
 : "${DL4J_MAVEN_GOAL:=deploy}"
 : "${DL4J_MAVEN_REPOSITORY:=}"
 : "${DL4J_ROCM_VERSION:=}"
+: "${DL4J_ZLUDA_VERSION:=v7-preview.8}"
 : "${DL4J_LIBND4J_URL:=}"
 : "${DL4J_CMAKE_ARGS:=}"
 : "${DL4J_ANDROID_API:=24}"
@@ -199,7 +200,7 @@ case "${DL4J_FAMILY}" in
     # Let CMake resolve the ZLUDA virtual architecture from the selected ROCm
     # SDK. Passing a CUDA-only list here used to inject compute_90 into ROCm 7
     # builds, which is outside ZLUDA's supported virtual-architecture contract.
-    command=(mvn ${split_flags[@]+"${split_flags[@]}"} ${repo[@]+"${repo[@]}"} "${zluda_profiles[@]}" "${sdx_profile[@]}" -Dlibnd4j.generate.flatc=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda -Dlibnd4j.cpu.compile.skip=true "-Dlibnd4j.zluda=${DL4J_ZLUDA_TARGET}" "-Djavacpp.platform.extension=${DL4J_PLATFORM_EXTENSION}" "-Dlibnd4j.classifier=${DL4J_CLASSIFIER}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" "-Djavacpp.platform=${platform}" ${rocm_version[@]+"${rocm_version[@]}"} ${zluda_win[@]+"${zluda_win[@]}"} --batch-mode -DskipTests "${sdx_maven_flags[@]}" -pl "${zluda_modules}" ${also_make[@]+"${also_make[@]}"} "${DL4J_MAVEN_GOAL}")
+    command=(mvn ${split_flags[@]+"${split_flags[@]}"} ${repo[@]+"${repo[@]}"} "${zluda_profiles[@]}" "${sdx_profile[@]}" -Dlibnd4j.generate.flatc=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda -Dlibnd4j.cpu.compile.skip=true "-Dlibnd4j.zluda=${DL4J_ZLUDA_TARGET}" "-Dlibnd4j.zluda.version=${DL4J_ZLUDA_VERSION}" "-Djavacpp.platform.extension=${DL4J_PLATFORM_EXTENSION}" "-Dlibnd4j.classifier=${DL4J_CLASSIFIER}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" "-Djavacpp.platform=${platform}" ${rocm_version[@]+"${rocm_version[@]}"} ${zluda_win[@]+"${zluda_win[@]}"} --batch-mode -DskipTests "${sdx_maven_flags[@]}" -pl "${zluda_modules}" ${also_make[@]+"${also_make[@]}"} "${DL4J_MAVEN_GOAL}")
     ;;
   *) printf 'Unsupported DL4J_FAMILY=%s\n' "${DL4J_FAMILY}" >&2; exit 2;;
 esac

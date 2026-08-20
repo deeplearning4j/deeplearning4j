@@ -189,6 +189,7 @@
 
         <!-- ZLUDA Configuration: build-time CUDA ABI input, bundled AMD HIP/ROCm runtime -->
         <libnd4j.zluda>OFF</libnd4j.zluda>
+        <libnd4j.zluda.version>v7-preview.8</libnd4j.zluda.version>
         <!-- The CUDA profile normally attaches its own full archive. ZLUDA uses the
              classifier-aware primary assembly instead, so it suppresses that duplicate. -->
         <libnd4j.cuda.assembly.skip>false</libnd4j.cuda.assembly.skip>
@@ -715,6 +716,8 @@
                                         <argument>${libnd4j.dry.run}</argument>
                                         <argument>--zluda</argument>
                                         <argument>${libnd4j.zluda}</argument>
+                                        <argument>--zluda-version</argument>
+                                        <argument>${libnd4j.zluda.version}</argument>
                                         <argument>--mlir</argument>
                                         <argument>${libnd4j.mlir}</argument>
                                         <argument>--mlir-version</argument>
@@ -966,6 +969,8 @@
                                         <argument>${libnd4j.dry.run}</argument>
                                         <argument>--zluda</argument>
                                         <argument>${libnd4j.zluda}</argument>
+                                        <argument>--zluda-version</argument>
+                                        <argument>${libnd4j.zluda.version}</argument>
                                         <argument>--mlir</argument>
                                         <argument>${libnd4j.mlir}</argument>
                                         <argument>--mlir-version</argument>
@@ -1137,6 +1142,8 @@
                                         <argument>${libnd4j.dry.run}</argument>
                                         <argument>--zluda</argument>
                                         <argument>${libnd4j.zluda}</argument>
+                                        <argument>--zluda-version</argument>
+                                        <argument>${libnd4j.zluda.version}</argument>
                                         <argument>--mlir</argument>
                                         <argument>${libnd4j.mlir}</argument>
                                         <argument>--mlir-version</argument>
@@ -1420,6 +1427,8 @@
                                         <argument>${libnd4j.dry.run}</argument>
                                         <argument>--zluda</argument>
                                         <argument>${libnd4j.zluda}</argument>
+                                        <argument>--zluda-version</argument>
+                                        <argument>${libnd4j.zluda.version}</argument>
                                         <argument>--mlir</argument>
                                         <argument>${libnd4j.mlir}</argument>
                                         <argument>--mlir-version</argument>
