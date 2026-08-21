@@ -1571,8 +1571,9 @@ function(create_and_link_library)
                             "    ${_sdx_windows_symbol}\n")
                     endif()
                 endforeach()
-                target_link_options(${MAIN_LIB_NAME} PRIVATE
-                    "/DEF:${_sdx_windows_def}")
+                # CMake recognizes a .def target source and wires it into the
+                # MSVC DLL link/import-library generation directly.
+                target_sources(${MAIN_LIB_NAME} PRIVATE "${_sdx_windows_def}")
                 set_property(TARGET ${MAIN_LIB_NAME} APPEND PROPERTY
                     LINK_DEPENDS "${_sdx_windows_def}")
             endif()
