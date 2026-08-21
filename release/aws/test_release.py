@@ -2398,7 +2398,8 @@ class ReleaseValidationTest(unittest.TestCase):
             (
                 "rocm-hip-runtime-dev", "hsa-rocr-dev",
                 "libnuma-dev", "libdrm-dev",
-                "rocblas", "rocblas-dev", "hipblaslt-dev", "rocsparse-dev",
+                "rocblas", "rocblas-dev", "python3-yaml", "python3-msgpack",
+                "python3-joblib", "hipblaslt-dev", "rocsparse-dev",
                 "rocm-smi-lib", "miopen-hip-dev",
             ),
             spec["packages"],
@@ -2483,6 +2484,7 @@ class ReleaseValidationTest(unittest.TestCase):
                 side_effect=[RuntimeError("missing"), None]) as attest, patch.object(
                 build_platform, "download_with_retry") as download, patch.object(
                 build_platform, "build_rocm_hsakmt", return_value=Path("/opt/rocm-7.2.4/lib/libhsakmt.so.1")) as hsakmt, patch.object(
+                build_platform, "build_rocm_tensile_data", return_value=Path("/opt/rocm-7.2.4/lib/rocblas/library/TensileLibrary.dat")) as tensile, patch.object(
                 build_platform, "run") as run_command, patch.object(
                 build_platform.platform, "system", return_value="Linux"), patch.object(
                 build_platform.platform, "machine", return_value="x86_64"), patch.object(
@@ -2515,6 +2517,7 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("rocblas-dev", flattened)
         self.assertTrue(any(token == "rocblas" for command in commands for token in command))
         hsakmt.assert_called_once()
+        tensile.assert_called_once()
         self.assertIn("hipblaslt-dev", flattened)
         self.assertIn("rocsparse-dev", flattened)
         self.assertIn("rocm-smi-lib", flattened)

@@ -35,6 +35,16 @@ ROCM_BUILD_SDKS = {
             "https://repo.radeon.com/amdgpu-install/6.2.4/ubuntu/jammy/"
             "amdgpu-install_6.2.60204-1_all.deb"
         ),
+        "rocblas_source_url": (
+            "https://codeload.github.com/ROCm/rocBLAS/tar.gz/refs/tags/rocm-6.2.4"
+        ),
+        "tensile_source_url": (
+            "https://codeload.github.com/ROCm/Tensile/tar.gz/refs/tags/rocm-6.2.4"
+        ),
+        "tensile_architectures": "gfx1103",
+        # The ROCm binary packages omit Tensile data; these are the generator's
+        # pinned Python dependencies, not runtime GPU dependencies.
+        "tensile_packages": ("python3-yaml", "python3-msgpack", "python3-joblib"),
         # ROCm 6.2 publishes the ROCt development package separately. Keep
         # it in the managed SDK so the version-matched HSA runtime closure
         # includes libhsakmt.so.1 without relying on the host. Pin the
@@ -61,8 +71,11 @@ ROCM_BUILD_SDKS = {
                 "libdrm-dev",
             ),
             # rocblas-dev supplies headers/symlinks; rocblas supplies the
-            # runtime Tensile dispatch data under lib/rocblas.
-            "rocblas": ("rocblas", "rocblas-dev"),
+            # runtime library. Tensile data is generated when the packages omit it.
+            "rocblas": (
+                "rocblas", "rocblas-dev", "python3-yaml", "python3-msgpack",
+                "python3-joblib",
+            ),
             "hipblaslt": ("hipblaslt-dev",),
             "rocsparse": ("rocsparse-dev",),
             "rocm-smi": ("rocm-smi-lib",),
@@ -75,6 +88,14 @@ ROCM_BUILD_SDKS = {
             "https://repo.radeon.com/amdgpu-install/7.2.4/ubuntu/jammy/"
             "amdgpu-install_7.2.4.70204-1_all.deb"
         ),
+        "rocblas_source_url": (
+            "https://codeload.github.com/ROCm/rocBLAS/tar.gz/refs/tags/rocm-7.2.4"
+        ),
+        "tensile_source_url": (
+            "https://codeload.github.com/ROCm/Tensile/tar.gz/refs/tags/rocm-7.2.4"
+        ),
+        "tensile_architectures": "gfx1103",
+        "tensile_packages": ("python3-yaml", "python3-msgpack", "python3-joblib"),
         # ROCm 7.2 folded ROCt into the hsa-rocr development package and no
         # longer publishes a standalone hsakmt-roct-dev package.  Keep the
         # matching ROCm source revision here so the managed SDK still contains
@@ -98,8 +119,11 @@ ROCM_BUILD_SDKS = {
                 "libdrm-dev",
             ),
             # rocblas-dev supplies headers/symlinks; rocblas supplies the
-            # runtime Tensile dispatch data under lib/rocblas.
-            "rocblas": ("rocblas", "rocblas-dev"),
+            # runtime library. Tensile data is generated when the packages omit it.
+            "rocblas": (
+                "rocblas", "rocblas-dev", "python3-yaml", "python3-msgpack",
+                "python3-joblib",
+            ),
             "hipblaslt": ("hipblaslt-dev",),
             "rocsparse": ("rocsparse-dev",),
             "rocm-smi": ("rocm-smi-lib",),
@@ -1772,6 +1796,10 @@ def rocm_build_spec(build: dict) -> dict | None:
         "packages": packages,
         "installer_name": sdk["installer_name"],
         "installer_url": sdk["installer_url"],
+        "rocblas_source_url": sdk["rocblas_source_url"],
+        "tensile_source_url": sdk["tensile_source_url"],
+        "tensile_architectures": sdk["tensile_architectures"],
+        "tensile_packages": sdk["tensile_packages"],
         "hsakmt_source_url": sdk["hsakmt_source_url"],
         "hsakmt_source_subdirectory": sdk["hsakmt_source_subdirectory"],
         "hsakmt_cmake_subdirectory": sdk["hsakmt_cmake_subdirectory"],
@@ -1921,6 +1949,148 @@ def attest_rocm_build_toolchain(
             flush=True,
         )
     return attested
+
+
+def rocm_tensile_data_file(root: Path) -> Path | None:
+    """Locate a generated rocBLAS Tensile master file below a ROCm prefix."""
+    if not root.is_dir():
+        return None
+    candidates = sorted(
+        path for path in root.rglob("TensileLibrary.dat") if path.is_file()
+    )
+    return candidates[0] if candidates else None
+
+
+def extract_rocm_source_archive(archive_path: Path, destination: Path) -> None:
+    """Safely extract a pinned ROCm source archive."""
+    destination.mkdir(parents=True, exist_ok=True)
+    with tarfile.open(archive_path, "r:gz") as archive:
+        root = destination.resolve()
+        for member in archive.getmembers():
+            member_path = Path(member.name)
+            if member_path.is_absolute() or ".." in member_path.parts:
+                raise RuntimeError(
+                    f"unsafe ROCm source archive member: {member.name!r}"
+                )
+            member_destination = (destination / member.name).resolve()
+            if member_destination != root and root not in member_destination.parents:
+                raise RuntimeError(
+                    f"unsafe ROCm source archive member: {member.name!r}"
+                )
+            if member.issym() or member.islnk():
+                link_target = posixpath.normpath(
+                    posixpath.join(posixpath.dirname(member.name), member.linkname)
+                )
+                if link_target == ".." or link_target.startswith("../"):
+                    raise RuntimeError(
+                        f"unsafe ROCm source archive link: {member.name!r} -> "
+                        f"{member.linkname!r}"
+                    )
+        archive.extractall(destination)
+
+
+def build_rocm_tensile_data(
+    build: dict,
+    spec: dict,
+    rocm_root: Path,
+    env: dict[str, str],
+    temporary_directory: Path,
+) -> Path:
+    """Generate the missing rocBLAS Tensile data for the target AMD ISA."""
+    existing = rocm_tensile_data_file(rocm_root)
+    if existing is not None:
+        return existing
+    if platform.system().lower() != "linux" or platform.machine().lower() not in {
+        "amd64", "x86_64"
+    }:
+        raise RuntimeError("Tensile data generation requires a Linux x86_64 builder")
+
+    rocblas_archive = temporary_directory / "rocblas-source.tar.gz"
+    tensile_archive = temporary_directory / "tensile-source.tar.gz"
+    download_with_retry(
+        str(spec["rocblas_source_url"]), rocblas_archive,
+        f"ROCm {spec['version']} rocBLAS source",
+    )
+    download_with_retry(
+        str(spec["tensile_source_url"]), tensile_archive,
+        f"ROCm {spec['version']} Tensile source",
+    )
+    rocblas_source = temporary_directory / "rocblas-source"
+    tensile_source = temporary_directory / "tensile-source"
+    extract_rocm_source_archive(rocblas_archive, rocblas_source)
+    extract_rocm_source_archive(tensile_archive, tensile_source)
+
+    logic_candidates = sorted(
+        path for path in rocblas_source.rglob("Logic")
+        if path.is_dir() and path.parent.name == "Tensile"
+        and path.parent.parent.name == "blas3"
+    )
+    tool_candidates = sorted(
+        path for path in tensile_source.rglob("TensileCreateLibrary")
+        if path.is_file() and path.parent.name == "bin"
+    )
+    if len(logic_candidates) != 1 or len(tool_candidates) != 1:
+        raise RuntimeError(
+            "ROCm source archives must contain exactly one rocBLAS Tensile Logic "
+            f"directory and generator; found {len(logic_candidates)} and "
+            f"{len(tool_candidates)}"
+        )
+
+    generator_environment = env.copy()
+    generator_environment["ROCM_PATH"] = str(rocm_root)
+    generator_environment["ROCM_HOME"] = str(rocm_root)
+    generator_environment["HIP_PATH"] = str(rocm_root)
+    _prepend_environment_path(generator_environment, "PATH", str(rocm_root / "bin"))
+    _prepend_environment_path(
+        generator_environment, "LD_LIBRARY_PATH", str(rocm_root / "lib")
+    )
+    output = temporary_directory / "tensile-output"
+    threads = str(max(1, int(build.get("buildThreads") or 4)))
+    run(
+        [
+            sys.executable,
+            str(tool_candidates[0]),
+            f"--architecture={spec['tensile_architectures']}",
+            "--no-enumerate",
+            f"--jobs={threads}",
+            "--cxx-compiler=hipcc",
+            "--library-format=msgpack",
+            str(logic_candidates[0]),
+            str(output),
+            "HIP",
+        ],
+        temporary_directory,
+        generator_environment,
+    )
+
+    generated = sorted(
+        path for path in output.rglob("TensileLibrary.dat") if path.is_file()
+    )
+    if len(generated) != 1:
+        raise RuntimeError(
+            "TensileCreateLibrary did not produce exactly one TensileLibrary.dat; "
+            f"found {len(generated)}"
+        )
+    generated_root = generated[0].parent
+    destination = rocm_root / "lib" / "rocblas" / "library"
+    destination.mkdir(parents=True, exist_ok=True)
+    for source_path in generated_root.rglob("*"):
+        if not source_path.is_file():
+            continue
+        target_path = destination / source_path.relative_to(generated_root)
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source_path, target_path)
+    installed = destination / "TensileLibrary.dat"
+    if not installed.is_file():
+        raise RuntimeError(
+            f"Tensile data generation completed without {installed}"
+        )
+    print(
+        f"[dl4j-rocm] generated Tensile data for "
+        f"{spec['tensile_architectures']}: {installed}",
+        flush=True,
+    )
+    return installed
 
 
 def rocm_hsakmt_source_candidates(extracted: Path, spec: dict) -> list[Path]:
@@ -2152,6 +2322,9 @@ def prepare_rocm_build_toolchain(
             ],
             "installerUrl": spec["installer_url"],
             "hsakmtSourceUrl": spec["hsakmt_source_url"],
+            "rocblasSourceUrl": spec["rocblas_source_url"],
+            "tensileSourceUrl": spec["tensile_source_url"],
+            "tensileArchitectures": spec["tensile_architectures"],
             "hsakmtSourceSubdirectory": spec["hsakmt_source_subdirectory"],
             "hsakmtCmakeSubdirectory": spec["hsakmt_cmake_subdirectory"],
             "hsakmtRewriteStaticTarget": spec["hsakmt_rewrite_static_target"],
@@ -2162,6 +2335,8 @@ def prepare_rocm_build_toolchain(
     cache_seed_required = False
     try:
         attest_rocm_build_toolchain(build, env, root=rocm_root, emit=False)
+        if rocm_tensile_data_file(rocm_root) is None:
+            raise RuntimeError("rocBLAS Tensile data is missing")
     except RuntimeError:
         rocm_ready = restore_toolchain_dependency(
             config,
@@ -2176,6 +2351,8 @@ def prepare_rocm_build_toolchain(
                 attest_rocm_build_toolchain(
                     build, env, root=rocm_root, emit=False
                 )
+                if rocm_tensile_data_file(rocm_root) is None:
+                    raise RuntimeError("rocBLAS Tensile data is missing")
             except RuntimeError:
                 # Older cache entries may predate the managed ROCt closure.
                 # Treat them as a seed candidate and repair them in place.
@@ -2227,6 +2404,12 @@ def prepare_rocm_build_toolchain(
                 rocm_root,
                 install_env,
                 Path(temporary_directory),
+            )
+
+    if rocm_tensile_data_file(rocm_root) is None:
+        with tempfile.TemporaryDirectory(prefix="dl4j-tensile-") as temporary_directory:
+            build_rocm_tensile_data(
+                build, spec, rocm_root, env, Path(temporary_directory)
             )
 
     attest_rocm_build_toolchain(build, env, root=rocm_root)
