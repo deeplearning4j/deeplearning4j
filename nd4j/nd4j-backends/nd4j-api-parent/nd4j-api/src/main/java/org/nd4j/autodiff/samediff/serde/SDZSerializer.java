@@ -87,6 +87,59 @@ public class SDZSerializer {
     private static double maxCompressionRatio = getConfiguredMaxRatio();
     private static int maxZipEntries = getConfiguredMaxEntries();
 
+    /*
+     * Model loading temporarily suppresses DSP compilation and CUDA graph capture because loading
+     * constants is the peak-memory phase. SDZ models may be loaded concurrently, so this global
+     * execution state must be managed as one shared scope. Independent snapshot/restore pairs race:
+     * a loader entering after the first observes DSP=false and can restore that stale value last.
+     */
+    private static final Object MODEL_LOAD_EXECUTION_LOCK = new Object();
+    private static int activeModelLoadExecutionScopes;
+    private static boolean dspEnabledBeforeModelLoads;
+    private static String cudaGraphsBeforeModelLoads;
+
+    static ModelLoadExecutionScope suppressDspDuringModelLoad() {
+        synchronized (MODEL_LOAD_EXECUTION_LOCK) {
+            if (activeModelLoadExecutionScopes == 0) {
+                dspEnabledBeforeModelLoads = InferenceSession.isDynamicShapePlanEnabled();
+                cudaGraphsBeforeModelLoads =
+                        System.getProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED);
+                InferenceSession.setDynamicShapePlanEnabled(false);
+                System.setProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, "false");
+            }
+            activeModelLoadExecutionScopes++;
+        }
+        return new ModelLoadExecutionScope();
+    }
+
+    static final class ModelLoadExecutionScope implements AutoCloseable {
+        private boolean closed;
+
+        @Override
+        public void close() {
+            synchronized (MODEL_LOAD_EXECUTION_LOCK) {
+                if (closed) {
+                    return;
+                }
+                closed = true;
+                activeModelLoadExecutionScopes--;
+                if (activeModelLoadExecutionScopes != 0) {
+                    return;
+                }
+
+                InferenceSession.setDynamicShapePlanEnabled(dspEnabledBeforeModelLoads);
+                if (cudaGraphsBeforeModelLoads != null) {
+                    System.setProperty(
+                            ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED,
+                            cudaGraphsBeforeModelLoads);
+                } else {
+                    System.clearProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED);
+                }
+                cudaGraphsBeforeModelLoads = null;
+            }
+        }
+    }
+
     private static long getConfiguredMaxSize() {
         String prop = System.getProperty(ND4JSystemProperties.SDZ_MAX_ZIP_SIZE);
         if (prop != null) {
@@ -430,12 +483,9 @@ public class SDZSerializer {
             throw new IOException("File is not a valid ZIP archive: " + modelZipFile.getAbsolutePath());
         }
 
-        // Disable DSP and CUDA graphs during model loading. Loading model constants to GPU
-        // is peak memory usage — DSP compilation and CUDA graph capture add memory that causes OOM.
-        boolean dspWasEnabled = InferenceSession.isDynamicShapePlanEnabled();
-        String prevCudaGraphs = System.getProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED);
-        InferenceSession.setDynamicShapePlanEnabled(false);
-        System.setProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, "false");
+        // Loading constants is peak memory usage. Share one reference-counted suppression
+        // scope across parallel SDZ loads so an overlapping loader cannot restore stale state.
+        ModelLoadExecutionScope executionScope = suppressDspDuringModelLoad();
 
         long loadStart = System.currentTimeMillis();
         SameDiff loadedSameDiff;
@@ -500,13 +550,7 @@ public class SDZSerializer {
                     log.warn("Failed to delete temporary load directory: {}", tempDir, e);
                 }
             }
-            // Restore DSP and CUDA graph settings
-            InferenceSession.setDynamicShapePlanEnabled(dspWasEnabled);
-            if (prevCudaGraphs != null) {
-                System.setProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, prevCudaGraphs);
-            } else {
-                System.clearProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED);
-            }
+            executionScope.close();
         }
 
         if (loadedSameDiff == null) {
@@ -544,12 +588,9 @@ public class SDZSerializer {
             throw new IOException("File is not a valid ZIP archive: " + modelZipFile.getAbsolutePath());
         }
 
-        // Disable DSP and CUDA graphs during model loading. Loading model constants to GPU
-        // is peak memory usage — DSP compilation and CUDA graph capture add memory that causes OOM.
-        boolean dspWasEnabled = InferenceSession.isDynamicShapePlanEnabled();
-        String prevCudaGraphs = System.getProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED);
-        InferenceSession.setDynamicShapePlanEnabled(false);
-        System.setProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, "false");
+        // Loading constants is peak memory usage. Share one reference-counted suppression
+        // scope across parallel SDZ loads so an overlapping loader cannot restore stale state.
+        ModelLoadExecutionScope executionScope = suppressDspDuringModelLoad();
 
         log.info("Loading model with intelligent context: target={}, totalSize={}",
                 context.getTargetDevice().getDeviceId(),
@@ -613,13 +654,7 @@ public class SDZSerializer {
                     log.warn("Failed to delete temporary load directory: {}", tempDir, e);
                 }
             }
-            // Restore DSP and CUDA graph settings
-            InferenceSession.setDynamicShapePlanEnabled(dspWasEnabled);
-            if (prevCudaGraphs != null) {
-                System.setProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, prevCudaGraphs);
-            } else {
-                System.clearProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED);
-            }
+            executionScope.close();
         }
 
         if (loadedSameDiff == null) {

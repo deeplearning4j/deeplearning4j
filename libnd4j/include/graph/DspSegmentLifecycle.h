@@ -375,6 +375,7 @@ static inline void markFunctionalCaptureFailure(GraphSegmentExec& exec,
   exec.replayHandle.reset();
   exec.segPhase.reset();  // PRIMARY: back to BUILDING:WARMUP
   exec.outcome = SegmentExecOutcome::PENDING;
+  exec.clearShapeChangeWarmupCaptureReady("functional_capture_failure");
   exec.markArgsStale();
   exec.lifecycleState = SLS::NEEDS_WARMUP;  // Legacy sync
 }
@@ -394,6 +395,14 @@ static inline void invalidateSegmentCaptures(NativeDynamicShapePlan* plan, Graph
            exec.segPhase.displayName(), reason);
   exec.handleTracker.record(ReplayHandleEvent::Kind::INVALIDATE, exec.executionCount,
                             0, 0, reason);
+  // A segment can be invalidated from the sealed REPLAYING plan while a
+  // replay dispatch is still unwinding.  Move the plan to its rebuilding
+  // state before resetting the segment, otherwise the next execute sees
+  // REPLAYING + WARMUP and trips the phase invariant.
+  // Capture-only invalidation is resolved inside the affected segment's
+  // dispatch. Preserve the already-completed plan-wide compile phase so later
+  // segments in this same invocation remain legal to dispatch.
+  plan->prepareForSegmentRebuild(reason, false);
   plan->cleanupSegmentForRebuild(seg, reason);
   plan->clearNativeRangeSegmentsForSlotRange(seg.def.startSlot, seg.def.endSlot);
 
@@ -447,6 +456,10 @@ static inline void invalidateForRebuild(NativeDynamicShapePlan* plan, GraphSegme
            exec.segPhase.displayName(), reason);
   exec.handleTracker.record(ReplayHandleEvent::Kind::INVALIDATE, exec.executionCount,
                             0, 0, reason);
+  // Keep the plan lifecycle synchronized with the segment reset.  In
+  // REPLAYING, invalidateForRebuild must first unseal the plan so the next
+  // execute can enter the normal warmup/recapture boundary.
+  plan->prepareForSegmentRebuild(reason, true);
   plan->cleanupSegmentForRebuild(seg, reason);
   // Clear any nativeRangeSegments_ entries within this segment's slot range.
   // These hold FunctionalReplayHandle captures that reference the OLD slot array

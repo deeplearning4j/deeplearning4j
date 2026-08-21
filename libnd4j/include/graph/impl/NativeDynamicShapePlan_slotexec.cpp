@@ -837,6 +837,74 @@ enum ViewCreateResult {
 };
 
 /**
+ * Return true when an installed view already has exactly the wrapper metadata
+ * tryCreateViewForSlot() would produce.  This check must run before constructing
+ * a replacement wrapper: resolving a shape-info device constant in the NDArray
+ * constructor is illegal while a CUDA stream is being captured.
+ *
+ * DataBuffer object identity alone is too strict. Multiple DataBuffer wrappers
+ * may legitimately refer to the same primary/special allocation, so compare the
+ * backing allocations as well as offset, dtype, shape, and strides.
+ */
+static bool isExactExistingViewForSlot(
+    const NativeSlot& slot,
+    NDArray* input0,
+    const LongType* outShapeInfo,
+    NDArray** allInputs,
+    int numInputs,
+    NDArray* existing,
+    LongType* outAbsoluteOffset) {
+  if (outAbsoluteOffset != nullptr) *outAbsoluteOffset = 0;
+  if (input0 == nullptr || existing == nullptr || outShapeInfo == nullptr ||
+      input0->dataBuffer() == nullptr || !input0->dataBuffer()->isValid() ||
+      !existing->hasValidShapeInfo() || existing->dataBuffer() == nullptr ||
+      !existing->dataBuffer()->isValid()) {
+    return false;
+  }
+  if (input0->ordering() != 'c' ||
+      !shape::strideDescendingCAscendingF(const_cast<LongType*>(input0->shapeInfo()))) {
+    return false;
+  }
+
+  LongType relativeOffset = 0;
+  const bool isSlice = slot.ident.op && slot.ident.op->getOpDescriptor() &&
+      slot.ident.op->getOpDescriptor()->hasAnyTrait(sd::ops::OP_TRAIT_SLICE);
+  if (isSlice) {
+    relativeOffset = computeStridedSliceViewOffset(slot, input0, allInputs, numInputs);
+    if (relativeOffset < 0) return false;
+  }
+  const LongType absoluteOffset = input0->offset() + relativeOffset;
+  if (outAbsoluteOffset != nullptr) *outAbsoluteOffset = absoluteOffset;
+
+  const LongType outLen = shape::length(outShapeInfo);
+  const LongType inLen = input0->lengthOf();
+  const LongType sourceBufferElems = input0->dataBuffer()->getNumElements();
+  const bool elementCountCompatible =
+      isSlice ? (outLen > 0 && outLen <= inLen) : (outLen > 0 && outLen == inLen);
+  const bool fitsBackingBuffer =
+      absoluteOffset >= 0 && absoluteOffset <= sourceBufferElems &&
+      outLen <= (sourceBufferElems - absoluteOffset);
+  if (!elementCountCompatible || !fitsBackingBuffer) return false;
+
+  auto* existingBuffer = existing->dataBuffer();
+  auto* inputBuffer = input0->dataBuffer();
+  const bool sameDataBuffer = existingBuffer == inputBuffer;
+  const bool sameSpecialAllocation =
+      existingBuffer->special() != nullptr &&
+      existingBuffer->special() == inputBuffer->special();
+  const bool samePrimaryAllocation =
+      existingBuffer->primary() != nullptr &&
+      existingBuffer->primary() == inputBuffer->primary();
+  const bool sameBackingStorage =
+      sameDataBuffer || sameSpecialAllocation || samePrimaryAllocation;
+
+  return sameBackingStorage && existing->offset() == absoluteOffset &&
+      existing->dataType() == input0->dataType() &&
+      shape::shapeEquals(existing->shapeInfo(), outShapeInfo) &&
+      shape::strideEquals(existing->shapeInfo(), outShapeInfo);
+}
+
+/**
  * Try to create a zero-copy view for a view-capable op (reshape, expand_dims,
  * squeeze, strided_slice, permute).
  *
@@ -2293,8 +2361,15 @@ Status NativeDynamicShapePlan::executeSlot(
           slot.shapeCache.cachedOutputShapes[0] = ffCachedShape;
         }
 
-        NDArray* ffNewView = nullptr;
         LongType ffViewOffset = 0;
+        if (isExactExistingViewForSlot(
+                slot, input0, ffCachedShape, ffViewInputs.data(), slot.wiring.numInputs,
+                currentOut, &ffViewOffset)) {
+          backfillCachedOutputShapes(slot, outputSlots_, totalOutputSlots_);
+          return Status::OK;
+        }
+
+        NDArray* ffNewView = nullptr;
         ViewCreateResult ffVcr = tryCreateViewForSlot(
             stepIdx, slot, input0, ffCachedShape,
             ffViewInputs.data(), slot.wiring.numInputs,
@@ -3086,12 +3161,14 @@ Status NativeDynamicShapePlan::executeSlot(
               }
             }
 
-            if (executeCount_ <= 1 || hasDynamicUpstream) {
+            if (executeCount_ <= 1 || hasDynamicUpstream || inShapeChangeWarmup_) {
               // Warmup (execCount 0 = prefill, 1 = first decode) or dynamic
               // upstream: shape drift expected. Reassign.
               DSP_DIAG_SLOT(SHAPE, lastSlotIdx,
-                  "fused-chain-reassign: slot %d shape changed (execCount=%d dynamicUpstream=%d) — replacing",
-                  lastSlotIdx, executeCount_, hasDynamicUpstream ? 1 : 0);
+                  "fused-chain-reassign: slot %d shape changed "
+                  "(execCount=%d dynamicUpstream=%d shapeChangeWarmup=%d) — replacing",
+                  lastSlotIdx, executeCount_, hasDynamicUpstream ? 1 : 0,
+                  inShapeChangeWarmup_ ? 1 : 0);
               // Must use discardCachedSlotArray to erase from planOwnedArrays_
               // before deleting — raw delete leaves a ghost pointer that causes
               // heap corruption when malloc reuses the freed chunk.
@@ -3109,8 +3186,11 @@ Status NativeDynamicShapePlan::executeSlot(
               lastSlot.shapeCache.cachedOutputShapes.clear();
               // Only mark as permanently dynamic if genuinely dynamic upstream.
               if (hasDynamicUpstream) {
-                lastSlot.flags.isDynamicShape = true;
-                slot.flags.isDynamicShape = true;
+                const bool tailPromoted = lastSlot.markDynamicShape();
+                const bool headPromoted = slot.markDynamicShape();
+                if (tailPromoted || headPromoted) {
+                  refreshDynamicSegmentBoundaryAnalysis();
+                }
               }
             } else {
               DSP_THROW(SHAPE,
@@ -3269,11 +3349,18 @@ Status NativeDynamicShapePlan::executeSlot(
   }
 
   // ── Fast path: frozen context ────────────────────────────────────────────
-  // Dynamic-shape slots always bypass this path: their output shape changes each
-  // step, so the frozen context's cached shapes/buffers are stale. They must
-  // fall through to the normal execution path below.
-  if (!frozenSlotBySlot && slot.frozenContextReady() && !slot.flags.isDynamicShape
-      && syncOverrideDepth_ <= 0) {
+  // Dynamic-shape slots normally bypass this path because their cached
+  // shapes/buffers may be stale. During CUDA capture, however, a slot that was
+  // actually sealed as a view producer must reuse the exact wrapper from
+  // warmup. A merely view-capable op may have materialized an owned output
+  // instead (for example, reshape_no_copy after a non-contiguous permute); that
+  // case must execute normally so its copy kernel is recorded into the graph.
+  const bool captureExactViewEligible =
+      tl_graphExecutionActive && slot.isViewCapableOp() &&
+      slot.slotPhase.isViewProducer;
+  if (!frozenSlotBySlot && slot.frozenContextReady() &&
+      (!slot.flags.isDynamicShape || captureExactViewEligible) &&
+      (syncOverrideDepth_ <= 0 || captureExactViewEligible)) {
 
     // ── View-capable fast path (reshape/expand_dims/squeeze/strided_slice) ──
     if (slot.isViewCapableOp() && slot.wiring.numInputs >= 1 && slot.wiring.numOutputs >= 1) {
@@ -3325,6 +3412,29 @@ Status NativeDynamicShapePlan::executeSlot(
             ArrayOptions::setDataType(correctedShapeBuffer, input0->dataType());
             frozenOutShape = correctedShapeBuffer;
           }
+          // Reuse an already-correct frozen view before constructing a duplicate wrapper.
+          NDArray* currentOut = outputSlots_[si];
+          LongType expectedAbsoluteOffset = 0;
+          if (isExactExistingViewForSlot(
+                  slot, input0, frozenOutShape, ssInputs.data(), slot.wiring.numInputs,
+                  currentOut, &expectedAbsoluteOffset)) {
+            if (tl_graphExecutionActive) {
+              DSP_DIAG_SLOT(EXECUTE, stepIdx,
+                  "CAPTURE_EXACT_FROZEN_VIEW_REUSE: slot=%d op=%s offset=%lld",
+                  stepIdx, slot.ident.opName.c_str(),
+                  static_cast<long long>(expectedAbsoluteOffset));
+            }
+            backfillCachedOutputShapes(slot, outputSlots_, totalOutputSlots_);
+            return Status::OK;
+          }
+          if (tl_graphExecutionActive) {
+            DSP_DIAG_SLOT(EXECUTE, stepIdx,
+                "CAPTURE_FROZEN_VIEW_MISMATCH: slot=%d op=%s — refusing capture-time "
+                "shape resolution or wrapper construction",
+                stepIdx, slot.ident.opName.c_str());
+            return Status::KERNEL_FAILURE;
+          }
+
           ViewCreateResult vcr = tryCreateViewForSlot(
               stepIdx, slot, input0, frozenOutShape,
               ssInputs.data(), slot.wiring.numInputs,
@@ -3353,7 +3463,6 @@ Status NativeDynamicShapePlan::executeSlot(
             break;  // → normalExecution
           } else if (vcr == VIEW_CREATED) {
             // Check if existing view already matches — skip re-creation
-            NDArray* currentOut = outputSlots_[si];
             if (currentOut != nullptr &&
                 currentOut->hasValidShapeInfo() &&
                 newView != nullptr &&
@@ -4118,8 +4227,12 @@ Status NativeDynamicShapePlan::executeSlot(
   // synchronize the producer stream once at that precise graph-to-host boundary.
   // External host-authoritative controls and graph-capture execution do not need
   // (and during capture must not perform) this synchronization.
-  if (slot.flags.outputShapeDependsOnInputValues &&
-      !dspStreamIsCapturing(dspGetExecutionStream())) {
+  const bool valueShapeCaptureActive =
+      tl_graphExecutionActive || tl_compositeCaptureStream != nullptr ||
+      dspStreamIsCapturing(dspGetGraphCaptureStream()) ||
+      dspStreamIsCapturing(dspGetGapStream()) ||
+      dspStreamIsCapturing(dspGetExecutionStream());
+  if (slot.flags.outputShapeDependsOnInputValues && !valueShapeCaptureActive) {
     bool hasPendingInternalControl = false;
     for (int i = 0; i < slot.wiring.numInputs; i++) {
       if (slot.wiring.inputSourceIndices[i] < 0 ||
@@ -4207,6 +4320,17 @@ Status NativeDynamicShapePlan::executeSlot(
     }
   }
 
+  // Runtime-sized outputs (for example one-input Where/NonZero) must run
+  // shape inference on every invocation. Their controlling tensor can be much
+  // larger than the bounded control arrays included in computeShapeKey(), so a
+  // key match does not prove that the cached output extent is still valid.
+  if (cacheHit && slot.hasDynamicOutputSize()) {
+    DSP_DIAG_SLOT(SHAPE, stepIdx,
+        "DYNAMIC_OUTPUT_SHAPE_REFRESH: slot=%d op=%s executeCount=%d",
+        stepIdx, slot.ident.opName.c_str(), executeCount_);
+    cacheHit = false;
+  }
+
   std::vector<const LongType*> outputShapes;
   if (cacheHit) {
     outputShapes = slot.shapeCache.cachedOutputShapes;
@@ -4232,6 +4356,52 @@ Status NativeDynamicShapePlan::executeSlot(
       outputShapes.clear();
     }
   }
+
+  // Composite replay must re-check value-dependent control tensors on every
+  // invocation, but an exact shape-key hit proves that the current control
+  // values describe the already-validated output shapes. In steady state, avoid
+  // rerunning the full allocation/lifecycle tail after that proof. Validate all
+  // installed output wrappers (and view aliasing) before entering the lean GAP
+  // executor; any mismatch stays on the full path below.
+  if (cacheHit && slot.hasValueDependentShape() && executeCount_ >= 5 &&
+      dspGetReplayActive() && contextPool_[stepIdx] != nullptr &&
+      static_cast<int>(contextPool_[stepIdx]->fastpath_in().size()) >=
+          slot.wiring.numInputs) {
+    bool stableOutputWrappers =
+        static_cast<int>(outputShapes.size()) >= slot.wiring.numOutputs;
+    for (int i = 0; stableOutputWrappers && i < slot.wiring.numOutputs; i++) {
+      const int outSi = slot.wiring.outputSlotIndices[i];
+      stableOutputWrappers =
+          outSi >= 0 && outSi < totalOutputSlots_ &&
+          outputWrapperMatchesExpectedShape(outputSlots_[outSi], outputShapes[i]);
+    }
+
+    if (stableOutputWrappers && slot.isViewCapableOp()) {
+      const int inputSrc = slot.wiring.numInputs > 0
+                               ? slot.wiring.inputSourceIndices[0]
+                               : totalOutputSlots_;
+      NDArray* input0 = resolveInputSourceArray(
+          inputSrc, outputSlots_, totalOutputSlots_, externalArrays, numExt);
+      const int outSi = slot.wiring.numOutputs > 0
+                            ? slot.wiring.outputSlotIndices[0]
+                            : -1;
+      NDArray* output0 =
+          outSi >= 0 && outSi < totalOutputSlots_ ? outputSlots_[outSi] : nullptr;
+      stableOutputWrappers =
+          input0 != nullptr && output0 != nullptr &&
+          input0->dataBuffer() != nullptr &&
+          output0->dataBuffer() == input0->dataBuffer();
+    }
+
+    if (stableOutputWrappers) {
+      DSP_DIAG_SLOT(SHAPE, stepIdx,
+          "VALUE_SHAPE_CACHE_FAST: slot=%d op=%s key=0x%llx executeCount=%d",
+          stepIdx, slot.ident.opName.c_str(),
+          static_cast<unsigned long long>(shapeKey), executeCount_);
+      return executeSlotGapFast(stepIdx, externalArrays, numExt);
+    }
+  }
+
   if (!cacheHit) {
     // A value-dependent op may reveal its recurring output-shape behavior only
     // on the first SHAPES_FROZEN execution (the first value change after the
@@ -4959,17 +5129,58 @@ Status NativeDynamicShapePlan::executeSlot(
             (void*)(__slotArr != nullptr && __slotArr->dataBuffer() != nullptr ? __slotArr->dataBuffer()->special() : nullptr),
             (input0 == __slotArr) ? 1 : 0, (long long)input0->lengthOf());
       }
+      int slotIdx = slot.wiring.outputSlotIndices[0];
       NDArray* view = nullptr;
       LongType viewOffset = 0;
-      ViewCreateResult vcr = tryCreateViewForSlot(
-          stepIdx, slot, input0, outputShapes[0],
-          inputs.data(), slot.wiring.numInputs,
-          &view, &viewOffset);
+      NDArray* installedView =
+          slotIdx >= 0 && slotIdx < totalOutputSlots_ ? outputSlots_[slotIdx] : nullptr;
+      const LongType* exactViewShape = outputShapes[0];
+      if (tl_graphExecutionActive && slot.shapeCacheValid() &&
+          !slot.shapeCache.cachedOutputShapes.empty() &&
+          slot.shapeCache.cachedOutputShapes[0] != nullptr) {
+        // Capture must consume the shape sealed during warmup. Re-evaluating a
+        // value-dependent reshape target while capture is active can observe a
+        // device-only update through stale host shape data.
+        exactViewShape = slot.shapeCache.cachedOutputShapes[0];
+      }
+
+      ViewCreateResult vcr;
+      if (isExactExistingViewForSlot(
+              slot, input0, exactViewShape, inputs.data(), slot.wiring.numInputs,
+              installedView, &viewOffset)) {
+        view = installedView;
+        vcr = VIEW_CREATED;
+        DSP_DIAG_SLOT(EXECUTE, stepIdx,
+            "EXACT_VIEW_REUSE: slot=%d op=%s capture=%d offset=%lld",
+            stepIdx, slot.ident.opName.c_str(), tl_graphExecutionActive ? 1 : 0,
+            static_cast<long long>(viewOffset));
+      } else if (tl_graphExecutionActive && slot.slotPhase.isViewProducer) {
+        // A sealed view producer must reuse the exact wrapper established during
+        // warmup. Re-running shape resolution or constructing a
+        // ConstantShapeBuffer here can invalidate CUDA capture.
+        DSP_DIAG_SLOT(EXECUTE, stepIdx,
+            "CAPTURE_VIEW_REUSE_REQUIRED: slot=%d op=%s installed=%p input=%p",
+            stepIdx, slot.ident.opName.c_str(), (void*)installedView, (void*)input0);
+        return Status::KERNEL_FAILURE;
+      } else if (tl_graphExecutionActive) {
+        // Some view-capable ops legitimately materialize an owned output. A
+        // reshape after a non-contiguous permute is one example. Warmup already
+        // classified this slot as owned, so skip view construction during
+        // capture and let the normal cached-output path record the copy kernel.
+        vcr = VIEW_STRIDED_SLICE_FAIL;
+        DSP_DIAG_SLOT(EXECUTE, stepIdx,
+            "CAPTURE_OWNED_VIEW_CAPABLE_EXEC: slot=%d op=%s installed=%p input=%p",
+            stepIdx, slot.ident.opName.c_str(), (void*)installedView, (void*)input0);
+      } else {
+        vcr = tryCreateViewForSlot(
+            stepIdx, slot, input0, outputShapes[0],
+            inputs.data(), slot.wiring.numInputs,
+            &view, &viewOffset);
+      }
 
       if (vcr == VIEW_STRIDED_SLICE_FAIL) {
         // Non-unit strides or newAxisMask — can't create contiguous view, fall through to allocate
       } else if (vcr == VIEW_CREATED) {
-        int slotIdx = slot.wiring.outputSlotIndices[0];
         outputs[0] = view;
         if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
           // DIAGNOSTIC: trace view-op-install buffer stability for lifecycle debugging
@@ -5334,7 +5545,7 @@ Status NativeDynamicShapePlan::executeSlot(
         bool hasDynamicUpstream = hasTransitiveDynamicUpstream(
             slots_, numSlots_, stepIdx);
 
-        if (executeCount_ <= 1 || hasDynamicUpstream) {
+        if (executeCount_ <= 1 || hasDynamicUpstream || inShapeChangeWarmup_) {
           // During warmup (execCount 0 = prefill, 1 = first decode) OR for
           // dynamic-shape slots: shape drift is expected. The prefill→decode
           // transition changes external placeholder shapes (seq_len=N → 1),
@@ -5342,8 +5553,10 @@ Status NativeDynamicShapePlan::executeSlot(
           // during this window without marking slots dynamic (they stabilize
           // after the first decode step).
           DSP_DIAG_SLOT(SHAPE, slotIdx,
-              "step3-shape-reassign: slot %d (%s) shape changed (execCount=%d dynamicUpstream=%d) — replacing cached array",
-              slotIdx, slot.ident.opName.c_str(), executeCount_, hasDynamicUpstream ? 1 : 0);
+              "step3-shape-reassign: slot %d (%s) shape changed "
+              "(execCount=%d dynamicUpstream=%d shapeChangeWarmup=%d) — replacing cached array",
+              slotIdx, slot.ident.opName.c_str(), executeCount_,
+              hasDynamicUpstream ? 1 : 0, inShapeChangeWarmup_ ? 1 : 0);
           // Use discardCachedSlotArray instead of raw delete — raw delete
           // leaves a ghost pointer in planOwnedArrays_ which causes
           // "corrupted double-linked list" when malloc reuses the freed
@@ -5357,8 +5570,8 @@ Status NativeDynamicShapePlan::executeSlot(
           // Only mark as permanently dynamic if there's a genuinely dynamic
           // upstream (value-dependent ops like range/fill). Shape changes from
           // the prefill→decode transition are one-time events, not recurring.
-          if (hasDynamicUpstream && !slot.flags.isDynamicShape) {
-            slot.flags.isDynamicShape = true;
+          if (hasDynamicUpstream && slot.markDynamicShape()) {
+            refreshDynamicSegmentBoundaryAnalysis();
             DSP_DIAG_SLOT(SHAPE, slotIdx,
                 "DYNAMIC_SHAPE_CLASSIFIED: slot %d (%s) became dynamic after "
                 "observed output-shape drift (execCount=%d)",
@@ -5758,6 +5971,29 @@ Status NativeDynamicShapePlan::executeSlot(
 
   try {
     status = platformExecuteSlot(slot, ctx);
+    // Debug+verbose is the explicit DSP fault-localization mode. Device
+    // work can be issued on either the plan stream or the LaunchContext stream;
+    // checking only one allows an asynchronous fault to surface during teardown.
+    // Synchronize both after every non-captured warmup slot and name the source.
+    if (sd::env_isDebugAndVerbose()) {
+      void* debugExecutionStream = dspGetExecutionStream();
+      void* debugDefaultStream = dspGetLcDefaultStream();
+      auto debugSync = [&](void* stream, const char* source) {
+        if (stream == nullptr || dspStreamIsCapturing(stream)) return;
+        if (!dspSynchronizeStream(stream)) {
+          char msg[512];
+          snprintf(msg, sizeof(msg),
+                   "DSP_DEBUG_SLOT_SYNC_FAILED: slot=%d op=%s execCount=%d "
+                   "source=%s stream=%p",
+                   stepIdx, slot.ident.opName.c_str(), executeCount_, source, stream);
+          THROW_EXCEPTION(msg);
+        }
+      };
+      debugSync(debugExecutionStream, "plan");
+      if (debugDefaultStream != debugExecutionStream) {
+        debugSync(debugDefaultStream, "launch_context");
+      }
+    }
   } catch (const std::exception& e) {
     // Reshape failures and other exceptions land here — log with DSP_DIAG
     std::string inputShapes, outputShapesStr, iArgsStr;
@@ -6156,8 +6392,15 @@ Status NativeDynamicShapePlan::executeSlotGapFast(
     }
   }
 
-  // Execute the op directly.
+  // Steady-state GAP slots have already completed warmup and are outside the
+  // value-dependent shape path. Skip repeated platform-helper discovery here:
+  // CUDA matmul still dispatches through MmulHelper/cuBLAS, while the remaining
+  // GAP ops execute their CUSTOM_OP_IMPL directly. Preserve the Context's prior
+  // setting so this shortcut cannot leak into later full-path executions.
+  const bool helpersWereAllowed = ctx.helpersAllowed();
+  ctx.allowHelpers(false);
   Status result = platformExecuteSlot(slot, ctx);
+  ctx.allowHelpers(helpersWereAllowed);
 
   if (DSP_DIAG_ENABLED(EXECUTE) && result != Status::OK) {
     DSP_DIAG_SLOT(EXECUTE, slotIdx,

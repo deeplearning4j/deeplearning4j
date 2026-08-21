@@ -791,7 +791,7 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     // individual gap actions require full shape-aware execution.
     if (slot.hasDynamicOutputSize()) {
       slot.flags.outputShapeDependsOnInputValues = true;
-      slot.flags.isDynamicShape = true;
+      slot.markDynamicShape();
     }
   }
 

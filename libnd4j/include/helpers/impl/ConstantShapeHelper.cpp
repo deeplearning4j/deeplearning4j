@@ -166,13 +166,24 @@ ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(LongType* shapeInfo
    THROW_EXCEPTION(errorMessage.c_str());
  }
 
- // Verify ranks match
+ // Verify the cached entry matches the complete requested descriptor. Shape and
+ // stride equality alone is insufficient because EMPTY, VIEW, dtype, EWS, and order
+ // live outside those fields and alter execution semantics.
  if (returnedRank != inputRank) {
    std::string errorMessage = "bufferForShapeInfo: RANK MISMATCH! Input rank: ";
    errorMessage += std::to_string(inputRank);
    errorMessage += ", returned rank: ";
    errorMessage += std::to_string(returnedRank);
    errorMessage += ". This indicates cache corruption or hash collision.";
+   THROW_EXCEPTION(errorMessage.c_str());
+ }
+ const int shapeInfoLen = shape::shapeInfoLength(static_cast<int>(inputRank));
+ if (std::memcmp(returnedShapeInfo, shapeInfo, shapeInfoLen * sizeof(LongType)) != 0) {
+   std::string errorMessage = "bufferForShapeInfo: FULL DESCRIPTOR MISMATCH! requested extras=";
+   errorMessage += std::to_string(shape::extra(shapeInfo));
+   errorMessage += ", returned extras=";
+   errorMessage += std::to_string(shape::extra(returnedShapeInfo));
+   errorMessage += ". This indicates a shape-cache collision or corrupt entry.";
    THROW_EXCEPTION(errorMessage.c_str());
  }
 

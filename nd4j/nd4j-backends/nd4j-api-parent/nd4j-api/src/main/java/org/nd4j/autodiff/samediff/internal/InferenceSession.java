@@ -543,6 +543,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             if (execProtected != null) {
                 snapshot.putAll(execProtected);
             }
+            // A frozen executor may own multiple pinned shape plans at once (for example VLM
+            // prefill and decode). The inactive plan's inputs are not present in this call's
+            // placeholder map, but its captured native pointers remain live until the executor
+            // releases that plan pin.
+            exec.collectRetainedExternalInputBuffers(snapshot);
         }
         return snapshot;
     }
@@ -936,8 +941,14 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     // starts, the plan re-resolves/re-mints views over the new casts, so the
                     // previous copies are safe to free here.
                     if (pendingCastPlaceholderCloses != null && !pendingCastPlaceholderCloses.isEmpty()) {
+                        DynamicShapePlanExecutor retainedExecutor = dynamicShapePlanExecutorTl.get();
                         for (INDArray prevCast : pendingCastPlaceholderCloses) {
                             if (prevCast != null && !prevCast.wasClosed()) {
+                                DataBuffer buffer = prevCast.data();
+                                // A frozen plan may still own this exact cast placeholder across a
+                                // prefill/decode shape switch. Plan-retained identity is authoritative.
+                                if ((retainedExecutor != null
+                                        && retainedExecutor.isRetainedExternalInput(prevCast))) continue;
                                 try { prevCast.close(); } catch (Exception ignored) { }
                             }
                         }
@@ -2046,7 +2057,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             int forceClosedCount = 0;
             long forceClosedBytes = 0;
             Set<INDArray> seen = Collections.newSetFromMap(new IdentityHashMap<>());
-            IdentityHashMap<DataBuffer, Boolean> protectedBuffers = new IdentityHashMap<>();
+            // Start with session-wide owners, including inputs retained by every pinned DSP
+            // shape plan. Building protection only from this call's placeholders closes the
+            // inactive decode plan's buffers while a VLM prefill plan is active.
+            IdentityHashMap<DataBuffer, Boolean> protectedBuffers = snapshotProtectedBuffersForCleanup();
 
             // Collect protected DataBuffers (constants, variables, placeholders)
             for (String name : preserveNames) {
@@ -3716,6 +3730,58 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
                     boolean isOutput = i < outputNames.size() && allRequired.contains(outputNames.get(i));
                     outputArrays[i] = mmgr.allocate(isOutput, dt, actualShape, requiresZeroed);
+                }
+
+                if (Nd4j.getEnvironment().isDebugAndVerbose()) {
+                    boolean descriptorEmpty = Shape.isEmpty(shapeInfo);
+                    INDArray allocated = outputArrays[i];
+                    if (allocated == null || allocated.isEmpty() != descriptorEmpty) {
+                        throw new ND4JIllegalStateException(
+                                "Output allocation does not match calculated descriptor for op '" +
+                                        customOp.opName() + "' output " + i +
+                                        ": descriptor=" + Arrays.toString(shapeInfo) +
+                                        ", allocated=" + (allocated == null ? "null" :
+                                        Arrays.toString(allocated.shapeInfoJava())));
+                    }
+                    long[] allocatedJavaShapeInfo = allocated.shapeInfoJava();
+                    DataBuffer allocatedNativeShapeBuffer = allocated.shapeInfoDataBuffer();
+                    long[] allocatedNativeShapeInfo = allocatedNativeShapeBuffer == null
+                            ? null : allocatedNativeShapeBuffer.asLong();
+                    if (!Arrays.equals(allocatedJavaShapeInfo, allocatedNativeShapeInfo)) {
+                        throw new ND4JIllegalStateException(
+                                "Output allocation has divergent Java/native shape descriptors for op '" +
+                                        customOp.opName() + "' output " + i +
+                                        ": requested=" + Arrays.toString(shapeInfo) +
+                                        ", java=" + Arrays.toString(allocatedJavaShapeInfo) +
+                                        ", native=" + Arrays.toString(allocatedNativeShapeInfo));
+                    }
+                    if (!descriptorEmpty && (allocated.data() == null
+                            || allocated.data().length() < Shape.length(shapeInfo))) {
+                        throw new ND4JIllegalStateException(
+                                "Non-empty output allocation has no usable backing buffer for op '" +
+                                        customOp.opName() + "' output " + i +
+                                        ": descriptor=" + Arrays.toString(shapeInfo) +
+                                        ", bufferLength=" + (allocated.data() == null ? -1 :
+                                        allocated.data().length()));
+                    }
+                    if (!descriptorEmpty) {
+                        OpaqueDataBuffer opaque = allocated.data().opaqueBuffer();
+                        boolean opaqueMissing = opaque == null || opaque.isNull();
+                        Pointer primary = opaqueMissing ? null : Nd4j.getNativeOps().dbPrimaryBuffer(opaque);
+                        Pointer special = opaqueMissing ? null : Nd4j.getNativeOps().dbSpecialBuffer(opaque);
+                        boolean primaryMissing = primary == null || primary.isNull();
+                        boolean specialMissing = special == null || special.isNull();
+                        if (opaqueMissing || (primaryMissing && specialMissing)) {
+                            throw new ND4JIllegalStateException(
+                                    "Non-empty output allocation has no native storage for op '" +
+                                            customOp.opName() + "' output " + i +
+                                            ": descriptor=" + Arrays.toString(shapeInfo) +
+                                            ", arrayId=" + allocated.getId() +
+                                            ", opaqueAddress=" + (opaqueMissing ? 0 : opaque.address()) +
+                                            ", primaryMissing=" + primaryMissing +
+                                            ", specialMissing=" + specialMissing);
+                        }
+                    }
                 }
             }
 
@@ -6066,27 +6132,35 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     }
 
     /**
-     * Compute a hash key for output shape caching based on op name, input array shapes,
-     * and all op arguments (iArgs, tArgs, dArgs, bArgs, sArgs) since they all affect output shapes.
+     * Compute a hash key for output shape caching based on the complete input shape
+     * descriptors and all op arguments (iArgs, tArgs, dArgs, bArgs, sArgs).
+     *
+     * Dimensions and dtype alone are not sufficient: EMPTY, VIEW, copy-offset,
+     * strides, EWS, and order can all change shape-function results or whether an
+     * output must be materialized. In particular, empty and non-empty arrays may
+     * intentionally have identical dimensions.
      */
     private long computeShapeKey(String opName, OpContext opContext) {
         long hash = opName.hashCode() * 0x9E3779B97F4A7C15L;
         List<INDArray> inputs = opContext.getInputArrays();
+        hash ^= inputs.size();
+        hash *= 0x517CC1B727220A95L;
         for (int i = 0; i < inputs.size(); i++) {
             INDArray in = inputs.get(i);
+            hash ^= i;
+            hash *= 0x9E3779B97F4A7C15L;
             if (in != null) {
-                long[] s = in.shape();
-                for (long dim : s) {
-                    hash ^= dim;
+                long[] shapeInfo = in.shapeInfoJava();
+                for (long descriptorValue : shapeInfo) {
+                    hash ^= descriptorValue;
                     hash *= 0x517CC1B727220A95L;
                 }
-                hash ^= in.dataType().ordinal();
-                hash *= 0x9E3779B97F4A7C15L;
-                // For INT/LONG inputs, include actual values in key.
+                // For INT/LONG/BOOL inputs, include actual values in key.
                 // These carry shape/axis/permutation parameters whose VALUES
                 // determine output shape (e.g. permute order, reshape target, gather axis).
                 // Data is already synced to host by the caller.
-                if ((in.dataType() == DataType.INT || in.dataType() == DataType.LONG)
+                if ((in.dataType() == DataType.INT || in.dataType() == DataType.LONG
+                        || in.dataType() == DataType.BOOL)
                         && in.length() > 0 && in.length() <= 32
                         && in.data() != null && !in.data().wasClosed()) {
                     for (long j = 0; j < in.length(); j++) {
@@ -6094,6 +6168,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         hash *= 0x517CC1B727220A95L;
                     }
                 }
+            } else {
+                hash ^= 0xD1B54A32D192ED03L;
+                hash *= 0x517CC1B727220A95L;
             }
         }
         // Include iArgs in key (e.g. conv2d kernel sizes, strides, padding)

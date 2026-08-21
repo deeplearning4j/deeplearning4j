@@ -32,7 +32,7 @@ namespace graph {
 bool IslandCapturePolicy::isExcluded(const NativeSlot* slots, int i,
                                      const IslandCaptureProfile& profile) {
   const NativeSlot& slot = slots[i];
-  const uint32_t traits = slot.opTraits_;
+  const uint64_t traits = slot.opTraits_;
 
   // ── Attention ─────────────────────────────────────────────────────────────
   if (profile.excludeAttention &&

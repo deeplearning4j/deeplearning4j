@@ -14,8 +14,10 @@ import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.indexaccum.FirstIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.api.ops.impl.shape.Concat;
 import org.nd4j.linalg.api.ops.impl.shape.Create;
 import org.nd4j.linalg.api.ops.impl.shape.CreateView;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Abs;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.Exp;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.Sqrt;
@@ -282,6 +284,51 @@ public class TestShapeCacheValidation extends BaseOpValidation {
 
         assertNotSame(shapes1, shapes2,
                 "concat: different axis must invalidate cache");
+    }
+
+    @Test
+    public void testConcatMixedEmptyInputProducesNonEmptyShape() {
+        INDArray emptyKv = Nd4j.emptyWithShape(new long[]{1, 3, 0, 64}, DataType.FLOAT);
+        INDArray currentKv = Nd4j.ones(DataType.FLOAT, 1, 3, 82, 64);
+        Concat concatOp = new Concat(2, emptyKv, currentKv);
+
+        OpContext oc = Nd4j.getExecutioner().buildContext();
+        oc.setInputArray(0, emptyKv);
+        oc.setInputArray(1, currentKv);
+        oc.setIArguments(2L);
+
+        List<DataBuffer> shapes = concatOp.calculateOutputShape(oc);
+        long[] shapeInfo = shapes.get(0).asLong();
+        assertFalse(Shape.isEmpty(shapeInfo),
+                "concat(empty KV cache, current KV) must produce a materialized output");
+        assertArrayEquals(new long[]{1, 3, 82, 64}, Shape.shape(shapeInfo));
+    }
+
+    @Test
+    public void testDynamicShapeCacheDistinguishesEmptyDescriptor() {
+        long[] inputShape = {1, 3, 82, 64};
+        INDArray emptyA = Nd4j.emptyWithShape(inputShape, DataType.FLOAT);
+        INDArray emptyB = Nd4j.emptyWithShape(inputShape, DataType.FLOAT);
+        INDArray fullA = Nd4j.ones(DataType.FLOAT, inputShape);
+        INDArray fullB = Nd4j.ones(DataType.FLOAT, inputShape);
+        Concat concatOp = new Concat(2, emptyA, emptyB);
+
+        OpContext emptyContext = Nd4j.getExecutioner().buildContext();
+        emptyContext.setInputArray(0, emptyA);
+        emptyContext.setInputArray(1, emptyB);
+        emptyContext.setIArguments(2L);
+        List<DataBuffer> emptyShapes = concatOp.calculateOutputShape(emptyContext);
+        assertTrue(Shape.isEmpty(emptyShapes.get(0).asLong()));
+
+        OpContext fullContext = Nd4j.getExecutioner().buildContext();
+        fullContext.setInputArray(0, fullA);
+        fullContext.setInputArray(1, fullB);
+        fullContext.setIArguments(2L);
+        List<DataBuffer> fullShapes = concatOp.calculateOutputShape(fullContext);
+        assertNotSame(emptyShapes, fullShapes,
+                "EMPTY descriptor state must invalidate the DynamicCustomOp shape cache");
+        assertFalse(Shape.isEmpty(fullShapes.get(0).asLong()));
+        assertArrayEquals(new long[]{1, 3, 164, 64}, Shape.shape(fullShapes.get(0).asLong()));
     }
 
     @Test

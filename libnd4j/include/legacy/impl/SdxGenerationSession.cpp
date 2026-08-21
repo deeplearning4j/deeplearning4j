@@ -561,42 +561,29 @@ bool validateRecurrentArray(
 std::unique_ptr<NDArray> createRecurrentArray(
     const TextGenerationRecurrentState& state) {
   std::vector<LongType> shape(state.shape.begin(), state.shape.end());
-  auto result = createArray(shape, state.dataType);
-  assignScalar(result.get(), 0.0);
-  return result;
+  // createArray() returns a host-owned, zero-initialized buffer. Do not route
+  // initialization through assign(), which can make an accelerator/device
+  // buffer authoritative and leave the host pointer unavailable to the SDX
+  // tensor-view ABI.
+  return createArray(shape, state.dataType);
 }
 
-bool copyRecurrentArray(
+bool copyRecurrentArrayInto(
     NDArray* source,
+    NDArray* destination,
     const TextGenerationRecurrentState& state,
-    std::unique_ptr<NDArray>* out,
     std::string* error) {
-  if (!validateRecurrentArray(source, state, error)) return false;
-
-  // Recurrent outputs are borrowed from the prefill plan and may have just
-  // returned from an accelerator segment. The decode context consumes public
-  // inputs through the host-only sdx_tensor_view_t ABI, so this context
-  // boundary must produce an independently owned, host-materialized buffer.
-  // Generic NDArray::assign can preserve device-authoritative state for a
-  // borrowed output and leave buffer() null in CPU accelerator builds.
-  source->syncToHost();
-  void* sourceBuffer = source->buffer();
-  if (source->lengthOf() > 0 && sourceBuffer == nullptr) {
-    if (error != nullptr) {
-      *error = "prefill recurrent state has no host buffer: " + state.output;
-    }
+  if (!validateRecurrentArray(source, state, error) ||
+      !validateRecurrentArray(destination, state, error)) {
     return false;
   }
 
-  auto destination = createRecurrentArray(state);
-  void* destinationBuffer = destination->buffer();
-  if (destination->lengthOf() > 0 && destinationBuffer == nullptr) {
-    if (error != nullptr) {
-      *error = "decode recurrent state allocation has no host buffer: " +
-               state.input;
-    }
-    return false;
-  }
+  // Recurrent outputs can be returned by an accelerator segment with the
+  // device copy authoritative. Materialize both sides at this context
+  // boundary, then copy bytes explicitly so the next host-only tensor view
+  // never observes a borrowed or null pointer.
+  source->forceSyncToHost();
+  destination->forceSyncToHost();
 
   const size_t elementSize =
       sd::DataTypeUtils::sizeOfElement(state.dataType);
@@ -609,9 +596,54 @@ bool copyRecurrentArray(
     return false;
   }
   const size_t bytes = static_cast<size_t>(elements) * elementSize;
+
+  auto* sourceData = source->dataBuffer();
+  auto* destinationData = destination->dataBuffer();
+  if (bytes > 0 && (sourceData == nullptr || destinationData == nullptr)) {
+    if (error != nullptr) {
+      *error = "recurrent state has no DataBuffer: " + state.output;
+    }
+    return false;
+  }
+  if (bytes > 0 && destination->buffer() == nullptr) {
+    // Plan-owned recurrent inputs may be metadata-only placeholders. They
+    // still need a real host allocation before being exposed to SDX.
+    destinationData->allocatePrimary();
+  }
+
+  void* sourceBuffer = source->buffer();
+  void* destinationBuffer = destination->buffer();
+  if (bytes > 0 && (sourceBuffer == nullptr || destinationBuffer == nullptr)) {
+    if (error != nullptr) {
+      *error = "recurrent state has no host buffer: " + state.output;
+    }
+    return false;
+  }
+  if (bytes > 0 &&
+      (sourceData->getLenInBytes() < bytes ||
+       destinationData->getLenInBytes() < bytes)) {
+    if (error != nullptr) {
+      *error = "recurrent state DataBuffer is smaller than its shape: " +
+               state.output;
+    }
+    return false;
+  }
+
   if (bytes > 0) {
     std::memcpy(destinationBuffer, sourceBuffer, bytes);
     destination->tickWriteHost();
+  }
+  return true;
+}
+
+bool copyRecurrentArray(
+    NDArray* source,
+    const TextGenerationRecurrentState& state,
+    std::unique_ptr<NDArray>* out,
+    std::string* error) {
+  auto destination = createRecurrentArray(state);
+  if (!copyRecurrentArrayInto(source, destination.get(), state, error)) {
+    return false;
   }
 
   *out = std::move(destination);
@@ -1410,11 +1442,9 @@ sdx_status_t warmDecode(
     NDArray* destination =
         sd::dsp::runtime::detail::contextPlanInputArray(
             session->decodeContext, inputIndex);
-    if (!validateRecurrentArray(source, state, &error) ||
-        !validateRecurrentArray(destination, state, &error)) {
+    if (!copyRecurrentArrayInto(source, destination, state, &error)) {
       return fail(session, SDX_STATUS_EXECUTION_FAILED, error);
     }
-    destination->assign(source);
   }
   const auto freezeStart = Clock::now();
   DSP_DIAG(TIMING, "SDX_PHASE_BEGIN phase=decode_freeze_shapes");

@@ -52,6 +52,8 @@ if(SD_SMART_CCACHE AND CMAKE_CXX_COMPILER_LAUNCHER)
                  "run_id=${_SD_CCACHE_TRACE_RUN_ID}\n"
                  "binary_dir=${CMAKE_BINARY_DIR}\n"
                  "ccache=${CCACHE_PATH}\n"
+                 "ccache_base_dir=${CMAKE_BINARY_DIR}\n"
+                 "ccache_hash_dir=false\n"
                  "cmake_version=${CMAKE_VERSION}\n"
                  "generator=${CMAKE_GENERATOR}\n"
                  "build_type=${CMAKE_BUILD_TYPE}\n"
@@ -101,6 +103,14 @@ IS_MSYS=0
 case \"\$(uname -o 2>/dev/null)\" in
     Msys|Cygwin|MS/Windows) IS_MSYS=1 ;;
 esac
+
+# Normalize content-addressed CMake build roots so unchanged compilation units
+# reuse the same ccache entries across immutable build generations. Source paths
+# outside BUILD_DIR remain absolute and stable; generated paths become relative
+# to the current binary directory. file_macro sloppiness makes ignoring the
+# absolute working directory safe for this wrapper's supported builds.
+export CCACHE_BASEDIR=\"\$BUILD_DIR\"
+export CCACHE_NOHASHDIR=1
 
 # Set sloppiness for all files to ensure cacheability
 export CCACHE_SLOPPINESS=\"file_macro,include_file_ctime,include_file_mtime,pch_defines,time_macros,file_stat_matches,clang_index_store,locale,random_seed\"

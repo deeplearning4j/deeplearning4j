@@ -269,15 +269,42 @@ public class MultiPartModelLoader {
     }
 
     private static ModelConfig loadConfig(File modelDir) {
+        ModelConfig config = null;
         File configFile = new File(modelDir, "config.json");
         if (configFile.exists()) {
             try {
-                return ModelConfig.fromFile(configFile);
+                config = ModelConfig.fromFile(configFile);
             } catch (Exception e) {
                 log.warn("Failed to load config.json: {}", e.getMessage());
             }
         }
-        return null;
+
+        // Hugging Face generation_config.json is authoritative for generation protocol
+        // tokens. SmolDocling, for example, uses <end_of_utterance> rather than the
+        // tokenizer's shared EOS/PAD token. Ignoring this file makes generation run to
+        // maxNewTokens and can leave structured page output incomplete.
+        File generationConfigFile = new File(modelDir, "generation_config.json");
+        if (generationConfigFile.exists()) {
+            try {
+                ModelConfig generationConfig = ModelConfig.fromFile(generationConfigFile);
+                if (config == null) {
+                    config = generationConfig;
+                } else {
+                    if (generationConfig.getBosTokenId() != null) {
+                        config.setBosTokenId(generationConfig.getBosTokenId());
+                    }
+                    if (generationConfig.getEosTokenId() != null) {
+                        config.setEosTokenId(generationConfig.getEosTokenId());
+                    }
+                    if (generationConfig.getPadTokenId() != null) {
+                        config.setPadTokenId(generationConfig.getPadTokenId());
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Failed to load generation_config.json: {}", e.getMessage());
+            }
+        }
+        return config;
     }
 
     private static Tokenizer loadTokenizer(File modelDir) {

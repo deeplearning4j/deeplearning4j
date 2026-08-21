@@ -121,7 +121,33 @@ public class ImageTiler {
      * @return SplitImageResult containing the frames and metadata
      */
     public static SplitImageResult splitImageForVLM(BufferedImage image, int maxSize, int maxTiles) {
-        image = resizeForVisionEncoder(image, maxSize);
+        return splitImageForVLM(image, maxSize, maxTiles, true);
+    }
+
+    /**
+     * Split an image without resizing the source to a tile-aligned canvas first.
+     *
+     * <p>This is intended for OCR crops whose pixel scale must be preserved. Each tile and the
+     * global frame are still resized-to-fit and padded to {@code maxSize}, but their
+     * {@link ContentRegion} values retain the true unpadded bounds so pixel-attention masks do
+     * not treat white padding as document content.</p>
+     *
+     * @param image The input image
+     * @param maxSize The model frame size
+     * @param maxTiles Maximum number of content tiles (-1 for no limit)
+     * @return SplitImageResult containing scale-preserving frames and content metadata
+     */
+    public static SplitImageResult splitImageForVLMPreservingScale(BufferedImage image,
+                                                                    int maxSize,
+                                                                    int maxTiles) {
+        return splitImageForVLM(image, maxSize, maxTiles, false);
+    }
+
+    private static SplitImageResult splitImageForVLM(BufferedImage image, int maxSize,
+                                                       int maxTiles, boolean alignSourceToTileGrid) {
+        if (alignSourceToTileGrid) {
+            image = resizeForVisionEncoder(image, maxSize);
+        }
         int width = image.getWidth();
         int height = image.getHeight();
         log.info("Splitting image {}x{} into {}x{} tiles (maxTiles={})", width, height, maxSize, maxSize,

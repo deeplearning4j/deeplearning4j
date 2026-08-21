@@ -82,6 +82,11 @@ public final class SameDiffMemoryUtils {
             return 0;
         }
 
+        // Model execution is asynchronous on accelerator backends. Never release weights
+        // while queued kernels may still reference them; doing so poisons the CUDA stream
+        // and causes the next unrelated operation to report error 700.
+        Nd4j.getExecutioner().commit();
+
         List<INDArray> arrays = new ArrayList<>();
 
         // Free constant arrays

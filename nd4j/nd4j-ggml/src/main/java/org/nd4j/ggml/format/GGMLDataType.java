@@ -54,7 +54,7 @@ public enum GGMLDataType {
     GGML_TYPE_IQ2_XS(17, null, 2.3125/8, 256, true),
     GGML_TYPE_IQ3_XXS(18, null, 3.0625/8, 256, true),
     GGML_TYPE_IQ1_S(19, null, 1.5625/8, 256, true),
-    GGML_TYPE_IQ4_NL(20, null, 4.5/8, 256, true),
+    GGML_TYPE_IQ4_NL(20, null, 4.5/8, 32, true),
     GGML_TYPE_IQ3_S(21, null, 3.4375/8, 256, true),
     GGML_TYPE_IQ2_S(22, null, 2.5/8, 256, true),
     GGML_TYPE_IQ4_XS(23, null, 4.25/8, 256, true),

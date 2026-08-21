@@ -127,6 +127,31 @@ public class MultiGpuMigrationTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("Test: Cast stays on the current non-default GPU")
+    void testCastStaysOnCurrentNonDefaultGpu(Nd4jBackend backend) {
+        assumeTrue(isCudaBackend(), "Test requires CUDA backend");
+        assumeTrue(getNumDevices() >= 2, "Test requires at least 2 CUDA devices");
+
+        DeviceMemoryManager.getInstance().switchDevice(
+                1, "MultiGpuMigrationTest", "cast-current-device");
+        try {
+            INDArray source = Nd4j.createFromArray(1.0f, 2.0f, 3.0f, 4.0f);
+            INDArray cast = source.castTo(DataType.HALF);
+            Nd4j.getExecutioner().commit();
+
+            assertEquals(1, Nd4j.getAffinityManager().getDeviceForArray(source));
+            assertEquals(1, Nd4j.getAffinityManager().getDeviceForArray(cast),
+                    "A same-device cast must not be rerouted to the default GPU");
+            assertArrayEquals(new float[]{1.0f, 2.0f, 3.0f, 4.0f},
+                    cast.data().asFloat(), 1e-3f);
+        } finally {
+            DeviceMemoryManager.getInstance().switchDevice(
+                    0, "MultiGpuMigrationTest", "restore-after-cast");
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test: MatMul on same device")
     void testSameDeviceMatMul(Nd4jBackend backend) {
         assumeTrue(isCudaBackend(), "Test requires CUDA backend");

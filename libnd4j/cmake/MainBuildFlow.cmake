@@ -1535,9 +1535,10 @@ function(create_and_link_library)
         if(NOT SD_PARTIAL_LINKED_TARGET)
             set_target_properties(${MAIN_LIB_NAME} PROPERTIES OUTPUT_NAME ${MAIN_LIB_NAME})
             if(WIN32)
-                # Public C/C++ APIs use SD_LIB_EXPORT/SDX_API explicitly. Do not
-                # synthesize an exports.def for every template-instantiated symbol:
-                # the generated export library exceeds MSVC's 65,535-member limit.
+                if(MSVC)
+                    # Public C/C++ APIs use SD_LIB_EXPORT/SDX_API explicitly. Do not
+                    # synthesize an exports.def for every template-instantiated symbol:
+                    # the generated export library exceeds MSVC's 65,535-member limit.
                 set_target_properties(${MAIN_LIB_NAME} PROPERTIES
                     WINDOWS_EXPORT_ALL_SYMBOLS OFF
                     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
@@ -1571,11 +1572,18 @@ function(create_and_link_library)
                             "    ${_sdx_windows_symbol}\n")
                     endif()
                 endforeach()
-                # CMake recognizes a .def target source and wires it into the
-                # MSVC DLL link/import-library generation directly.
-                target_sources(${MAIN_LIB_NAME} PRIVATE "${_sdx_windows_def}")
+                # Explicitly pass the definition file. CMake's source-file
+                # inference is not honored by the Ninja/MSVC linker path.
+                target_link_options(${MAIN_LIB_NAME} PRIVATE
+                    "/DEF:${_sdx_windows_def}")
                 set_property(TARGET ${MAIN_LIB_NAME} APPEND PROPERTY
                     LINK_DEPENDS "${_sdx_windows_def}")
+                else()
+                    # MinGW understands CMake's export-all path but not the
+                    # MSVC /DEF linker option used above.
+                    set_target_properties(${MAIN_LIB_NAME} PROPERTIES
+                        WINDOWS_EXPORT_ALL_SYMBOLS ON)
+                endif()
             endif()
 
             # Code model configuration is now centralized in CompilerFlags.cmake to avoid conflicts

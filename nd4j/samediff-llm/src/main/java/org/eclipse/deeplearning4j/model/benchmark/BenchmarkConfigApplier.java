@@ -199,7 +199,13 @@ public class BenchmarkConfigApplier {
         env.setDspFreezeMergeSegments(config.isDspFreezeMergeSegments());
         env.setDspFreezeRecompile(config.isDspFreezeRecompile());
 
-        // DSP execution timing: enables per-step timing instrumentation in native code
+        // DSP execution timing must survive the no-executor apply(config) path used by
+        // BenchmarkRunner. GenerationPipeline reads this per-config bridge after the
+        // decode plan exists. Do not reuse VLM_BENCHMARK_OP_TIMING here: that property
+        // is an independent user-requested native op profile and must not be clobbered
+        // when a benchmark config has dspExecutionTiming=false.
+        System.setProperty(ND4JSystemProperties.VLM_BENCHMARK_DSP_EXECUTION_TIMING,
+                Boolean.toString(config.isDspExecutionTiming()));
         if (config.isDspExecutionTiming() && executor != null) {
             executor.setExecutionTimingEnabled(true);
         }
@@ -222,8 +228,14 @@ public class BenchmarkConfigApplier {
                 || System.getenv("ND4J_DSP_DIAGNOSTICS") != null
                 || System.getProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_LEVEL) != null
                 || System.getenv("ND4J_DSP_DIAGNOSTICS_LEVEL") != null;
-        if (!userConfiguredDiagnostics
-                && (config.isTritonGraphCapture() || config.getExecutionMode() == GraphExecutionMode.CUDA_GRAPHS)) {
+        if (userConfiguredDiagnostics) {
+            // Benchmark configurations are applied before the plan executes, so this is
+            // the reliable point to bridge forked JVM properties into native diagnostics.
+            // Relying on a later incidental DspDiagnostics call leaves requested categories
+            // silently disabled when the benchmark itself does not touch the Java facade.
+            DspDiagnostics.initialize();
+        } else if (config.isTritonGraphCapture()
+                || config.getExecutionMode() == GraphExecutionMode.CUDA_GRAPHS) {
             DspDiagnostics.enableCategories(
                     DspDiagnostics.COMPILE | DspDiagnostics.FALLBACK |
                     DspDiagnostics.BACKEND);

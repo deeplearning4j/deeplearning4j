@@ -2,15 +2,22 @@ package org.eclipse.deeplearning4j.frameworkimport.frameworkimport.onnx;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
+import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.common.util.ArrayUtil;
 
 import java.util.Arrays;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -298,5 +305,127 @@ public class MhaKvConcatRegressionTest {
 
         // The decode output shape should be [1, 1, 576]
         assertArrayEquals(new long[]{batch, 1, qHidden}, referenceOutput.shape());
+    }
+
+    /**
+     * Regression for the imported SmolDocling prefill path at the SameDiff execution layer.
+     * The eager concat regression is insufficient: imported decoder graphs execute
+     * concat(empty past KV, non-contiguous current KV), then consume both the data and
+     * a shape_of/gather/concat reconstruction of that output.
+     */
+    @Test
+    @DisplayName("Shape mutation recomputes empty state from the new shape")
+    public void testShapeMutationClearsEmptyState() {
+        INDArray array = Nd4j.createUninitialized(DataType.FLOAT, 1, 3, 82, 64);
+        try {
+            BaseNDArray base = (BaseNDArray) array;
+            long[] emptyShape = {1, 3, 0, 64};
+            base.setShapeAndStride(ArrayUtil.toInts(emptyShape),
+                    ArrayUtil.toInts(Nd4j.getStrides(emptyShape, 'c')));
+            assertTrue(array.isEmpty(), "A zero dimension must set ARRAY_EMPTY");
+
+            long[] populatedShape = {1, 3, 82, 64};
+            base.setShapeAndStride(ArrayUtil.toInts(populatedShape),
+                    ArrayUtil.toInts(Nd4j.getStrides(populatedShape, 'c')));
+            assertFalse(array.isEmpty(),
+                    "Changing an empty cached array to a populated shape must clear ARRAY_EMPTY");
+            assertArrayEquals(populatedShape, array.shape());
+            assertNotNull(array.data(), "The reused capacity buffer must remain allocated");
+        } finally {
+            array.close();
+        }
+    }
+
+    @Test
+    @DisplayName("Array cache rejects a live handle whose native storage was freed")
+    public void testArrayCacheRejectsStorageLessNativeBuffer() {
+        boolean cacheWasEnabled = ArrayCacheMemoryMgr.isCacheEnabled();
+        double growthFactor = ArrayCacheMemoryMgr.getGrowthFactor().get();
+        ArrayCacheMemoryMgr.clearCacheState();
+        ArrayCacheMemoryMgr.setEnableCache(true);
+        ArrayCacheMemoryMgr.setGrowthFactor(1.0);
+
+        ArrayCacheMemoryMgr memoryMgr = new ArrayCacheMemoryMgr();
+        INDArray cached = null;
+        INDArray replacement = null;
+        try {
+            long[] shape = {1, 3, 82, 64};
+            cached = memoryMgr.allocate(false, DataType.FLOAT, shape);
+            assertFalse(cached.isEmpty());
+            assertNotNull(cached.data());
+
+            memoryMgr.release(cached);
+            var opaque = cached.data().opaqueBuffer();
+            Nd4j.getNativeOps().dbFreeBuffersOnly(opaque);
+
+            var primary = Nd4j.getNativeOps().dbPrimaryBuffer(opaque);
+            var special = Nd4j.getNativeOps().dbSpecialBuffer(opaque);
+            assertTrue((primary == null || primary.isNull()) && (special == null || special.isNull()),
+                    "The regression requires a live OpaqueDataBuffer handle with freed native storage");
+
+            replacement = memoryMgr.allocate(false, DataType.FLOAT, shape);
+            assertNotSame(cached, replacement,
+                    "A cache entry with no host or device storage must not be reissued");
+            assertFalse(replacement.isEmpty());
+            assertEquals(ArrayUtil.prodLong(shape), replacement.data().length());
+            var replacementOpaque = replacement.data().opaqueBuffer();
+            var replacementPrimary = Nd4j.getNativeOps().dbPrimaryBuffer(replacementOpaque);
+            var replacementSpecial = Nd4j.getNativeOps().dbSpecialBuffer(replacementOpaque);
+            assertFalse((replacementPrimary == null || replacementPrimary.isNull())
+                            && (replacementSpecial == null || replacementSpecial.isNull()),
+                    "The replacement must have real host or device storage");
+        } finally {
+            if (replacement != null && !replacement.wasClosed()) {
+                replacement.close();
+            }
+            if (cached != null && !cached.wasClosed()) {
+                cached.close();
+            }
+            memoryMgr.close();
+            ArrayCacheMemoryMgr.clearCacheState();
+            ArrayCacheMemoryMgr.setGrowthFactor(growthFactor);
+            ArrayCacheMemoryMgr.setEnableCache(cacheWasEnabled);
+        }
+    }
+
+    @Test
+    @DisplayName("SameDiff prefill preserves empty-past KV concat data and shape chain")
+    public void testSameDiffEmptyPastKvConcatAndShapeChain() {
+        SameDiff sd = SameDiff.create();
+        try {
+            SDVariable past = sd.placeHolder("past", DataType.FLOAT, 1, 3, -1, 64);
+            SDVariable current = sd.placeHolder("current", DataType.FLOAT, 1, 3, -1, 64);
+            SDVariable present = sd.concat("present", 2, past, current);
+
+            SDVariable presentShape = sd.shape("present_shape", present);
+            SDVariable d0 = sd.gather("d0", presentShape, sd.constant("i0", Nd4j.scalar(0L)), 0);
+            SDVariable d1 = sd.gather("d1", presentShape, sd.constant("i1", Nd4j.scalar(1L)), 0);
+            SDVariable d2 = sd.gather("d2", presentShape, sd.constant("i2", Nd4j.scalar(2L)), 0);
+            SDVariable d3 = sd.gather("d3", presentShape, sd.constant("i3", Nd4j.scalar(3L)), 0);
+            SDVariable reconstructedShape = sd.concat("reconstructed_shape", 0, d0, d1, d2, d3);
+            sd.reshape("reshaped_present", present, reconstructedShape);
+            sd.setOutputs("present", "present_shape", "reconstructed_shape", "reshaped_present");
+            sd.setGraphExecutionMode(GraphExecutionMode.SLOT_BY_SLOT);
+
+            Nd4j.getRandom().setSeed(12345);
+            INDArray currentParent = Nd4j.rand(DataType.FLOAT, 1, 1142, 3, 64);
+            INDArray currentView = currentParent.permute(0, 2, 1, 3);
+            INDArray expected = currentView.dup('c');
+            INDArray emptyPast = Nd4j.create(DataType.FLOAT, 1, 3, 0, 64);
+
+            Map<String, INDArray> output = sd.output(
+                    Map.of("past", emptyPast, "current", currentView),
+                    "present", "present_shape", "reconstructed_shape", "reshaped_present");
+
+            assertEquals(expected, output.get("present"),
+                    "SameDiff concat(empty past, current KV) must preserve current KV values");
+            assertArrayEquals(new long[]{1, 3, 1142, 64}, output.get("present").shape());
+            assertArrayEquals(new long[]{1, 3, 1142, 64}, output.get("present_shape").toLongVector());
+            assertArrayEquals(new long[]{1, 3, 1142, 64}, output.get("reconstructed_shape").toLongVector());
+            assertEquals(expected, output.get("reshaped_present"),
+                    "shape_of/gather/concat/reshape must preserve the prefill KV tensor");
+        } finally {
+            sd.close();
+        }
     }
 }

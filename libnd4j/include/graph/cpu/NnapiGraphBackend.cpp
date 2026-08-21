@@ -24,13 +24,17 @@
 #include <helpers/logger.h>
 #include <helpers/shape.h>
 #include <system/Environment.h>
+#include <types/float16.h>
 
 #include <android/NeuralNetworks.h>
 #include <sys/system_properties.h>
 
 #include <algorithm>
+#include <array>
 #include <cctype>
+#include <cstdint>
 #include <cstring>
+#include <limits>
 #include <mutex>
 
 namespace sd {
@@ -62,6 +66,78 @@ static bool isDenseCOrder(NDArray* arr) {
 // 32 keeps individual vendor compilations small enough for the Tensor G3 deadline
 // while still allowing useful arithmetic islands to remain on the accelerator.
 static constexpr int kMaxNnapiSegmentOps = 32;
+static constexpr size_t kNnapiOutputGuardBytes = 256;
+static constexpr uint8_t kNnapiOutputGuardValue = 0xa5;
+static constexpr size_t kNnapiCacheTokenBytes = 32;
+
+struct EmbeddingLookupContract {
+  bool valid = false;
+  bool flattenLookups = false;
+  LongType lookupCount = 0;
+  std::vector<LongType> flattenedOutputDimensions;
+};
+
+static EmbeddingLookupContract getEmbeddingLookupContract(
+    NDArray* values, NDArray* lookups, NDArray* output, int axis) {
+  EmbeddingLookupContract contract;
+  if (values == nullptr || lookups == nullptr || output == nullptr || axis != 0 ||
+      values->rankOf() < 2 || lookups->rankOf() < 1 ||
+      (lookups->dataType() != DataType::INT32 &&
+       lookups->dataType() != DataType::INT64) ||
+      output->dataType() != values->dataType() ||
+      output->rankOf() != lookups->rankOf() + values->rankOf() - 1) {
+    return contract;
+  }
+
+  for (int dimension = 0; dimension < lookups->rankOf(); ++dimension) {
+    if (output->sizeAt(dimension) != lookups->sizeAt(dimension)) {
+      return contract;
+    }
+  }
+  for (int dimension = 1; dimension < values->rankOf(); ++dimension) {
+    const int outputDimension = lookups->rankOf() + dimension - 1;
+    if (output->sizeAt(outputDimension) != values->sizeAt(dimension)) {
+      return contract;
+    }
+  }
+
+  const LongType lookupCount = lookups->lengthOf();
+  if (lookupCount <= 0 ||
+      static_cast<unsigned long long>(lookupCount) >
+          static_cast<unsigned long long>(std::numeric_limits<int32_t>::max())) {
+    return contract;
+  }
+
+  contract.valid = true;
+  contract.flattenLookups = lookups->rankOf() != 1;
+  contract.lookupCount = lookupCount;
+  contract.flattenedOutputDimensions.push_back(lookupCount);
+  for (int dimension = 1; dimension < values->rankOf(); ++dimension) {
+    contract.flattenedOutputDimensions.push_back(values->sizeAt(dimension));
+  }
+  return contract;
+}
+
+static std::array<uint8_t, kNnapiCacheTokenBytes> makeNnapiCacheToken(
+    const std::string& modelKey, int startSlot, int endSlot, LongType shapeKey) {
+  const std::string material = modelKey + ":" + std::to_string(startSlot) + ":" +
+                               std::to_string(endSlot) + ":" +
+                               std::to_string(static_cast<long long>(shapeKey));
+  std::array<uint8_t, kNnapiCacheTokenBytes> token{};
+  for (size_t lane = 0; lane < 4; ++lane) {
+    uint64_t hash = 1469598103934665603ULL ^
+                    (0x9e3779b97f4a7c15ULL * static_cast<uint64_t>(lane + 1));
+    for (unsigned char value : material) {
+      hash ^= static_cast<uint64_t>(value);
+      hash *= 1099511628211ULL;
+    }
+    for (size_t byte = 0; byte < sizeof(hash); ++byte) {
+      token[lane * sizeof(hash) + byte] =
+          static_cast<uint8_t>((hash >> (byte * 8)) & 0xffU);
+    }
+  }
+  return token;
+}
 
 #if defined(SD_NNAPI_ACCELERATOR_ONLY)
 #define SD_NNAPI_STRINGIFY_INNER(value) #value
@@ -82,8 +158,10 @@ int32_t NnapiGraphBackend::toNnapiOperandType(DataType dt) {
     case DataType::HALF:    return ANEURALNETWORKS_TENSOR_FLOAT16;
     case DataType::INT32:   return ANEURALNETWORKS_TENSOR_INT32;
     case DataType::BOOL:    return ANEURALNETWORKS_TENSOR_BOOL8;
-    case DataType::INT8:    return ANEURALNETWORKS_TENSOR_QUANT8_ASYMM_SIGNED;
-    case DataType::UINT8:   return ANEURALNETWORKS_TENSOR_QUANT8_ASYMM;
+    // INT8/UINT8 are deliberately not mapped. This backend has no quantization
+    // parameter plumbing (scale/zero-point), and declaring QUANT8 operands with
+    // scale = 0 would be an invalid model. Unsupported non-floating types are
+    // rejected during model construction instead of silently reinterpreted.
     default:                return -1;
   }
 }
@@ -341,8 +419,8 @@ bool NnapiGraphBackend::validateSlotContract(const NativeSlot& slot, int nnapiOp
   if (nnapiOp == ANEURALNETWORKS_SOFTMAX) {
     if (!exactInputs(1) || !oneOutput()) return false;
     if (args.numIArgs != 0 || args.numBArgs != 0 || args.numDArgs != 0 ||
-        args.numSArgs != 0 || args.numTArgs > 1)
-      return fail("softmax lowering accepts only an optional beta scalar");
+        args.numSArgs != 0 || args.numTArgs != 0)
+      return fail("softmax lowering accepts only default-axis softmax without parameters");
     return true;
   }
 
@@ -611,7 +689,15 @@ bool NnapiGraphBackend::canResolveSlot(const GraphBackendRequest& request,
 bool NnapiGraphBackend::canResolveSegment(const GraphBackendRequest& request,
                                           NativeSlot* slots, int start,
                                           int end) {
-  if (start == end && request.executionMode == GraphExecutionMode::GEM_NNAPI) {
+  // ARM hybrid is still a compiler-required accelerator contract. Capability
+  // partitioning may legitimately isolate a supported operation into a
+  // one-slot segment (for example, at a boundary between NNAPI-supported and
+  // MLIR/ACL-supported operations). NNAPI can lower that operation directly;
+  // requiring a fused pair here leaves the segment unresolved before lowering
+  // and makes the compiler-required seal fail even though the slot is valid.
+  if (start == end &&
+      (request.executionMode == GraphExecutionMode::GEM_NNAPI ||
+       request.executionMode == GraphExecutionMode::GEM_ARM_HYBRID)) {
     return isSlotResolvable(slots, start);
   }
   return canFuseSegment(slots, start, end);
@@ -628,17 +714,34 @@ bool NnapiGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
     return false;
   }
 
+  bool hasGather = false;
   for (int i = start; i <= end; i++) {
     if (!isSlotResolvable(slots, i)) return false;
+    hasGather |= toLower(slots[i].ident.opName) == "gather";
+  }
+
+  // A gather has value-dependent indexing and is only verified here as a
+  // standalone NNAPI operation. Do not advertise a fused range containing it:
+  // the vendor compiler may reject the otherwise syntactically valid graph
+  // (for example, the [gather,multiply] range seen on Tensor G3). Range-level
+  // admission must describe a concrete lowering contract, not just a list of
+  // individually supported op codes.
+  if (hasGather) {
+    DSP_DIAG(BACKEND,
+             "NNAPI admission rejected seg[%d-%d]: gather is a standalone "
+             "compiler segment boundary",
+             start, end);
+    return false;
   }
   return true;
 }
 
 // ─── Operand helpers ────────────────────────────────────────────────────────
 
-uint32_t NnapiGraphBackend::addOperand(ANeuralNetworksModel* model, NDArray* arr,
-                                        uint32_t& nextOperand,
-                                        std::vector<std::unique_ptr<NDArray>>& contiguousCopies) {
+bool NnapiGraphBackend::addOperand(ANeuralNetworksModel* model, NDArray* arr,
+                                    uint32_t& nextOperand,
+                                    std::vector<std::unique_ptr<NDArray>>& contiguousCopies,
+                                    uint32_t* outIdx) {
   uint32_t idx = nextOperand++;
 
   // NNAPI requires contiguous memory. If the array is a view or has
@@ -653,8 +756,19 @@ uint32_t NnapiGraphBackend::addOperand(ANeuralNetworksModel* model, NDArray* arr
   auto dt = contiguous->dataType();
   int32_t nnapiType = toNnapiOperandType(dt);
   if (nnapiType < 0) {
-    // Type not directly supported by NNAPI — cast to FLOAT32.
-    // This is a real conversion, not a silent reinterpret.
+    if (!DataTypeUtils::isR(dt)) {
+      // INT64 and other non-floating types have no NNAPI representation. A
+      // silent conversion to FLOAT32 would change integer semantics (exact
+      // only below 2^24) — reject the operand so the whole segment falls
+      // back instead.
+      DSP_DIAG(COMPILE,
+               "NnapiGraphBackend: unsupported non-floating operand type %d "
+               "cannot be represented in NNAPI",
+               static_cast<int>(dt));
+      return false;
+    }
+    // Unsupported floating type (e.g. BFLOAT16) — cast to FLOAT32.
+    // This is a real value conversion, not a silent reinterpret.
     auto cast = std::make_unique<NDArray>(contiguous->cast(DataType::FLOAT32));
     contiguous = cast.get();
     contiguousCopies.push_back(std::move(cast));
@@ -682,8 +796,13 @@ uint32_t NnapiGraphBackend::addOperand(ANeuralNetworksModel* model, NDArray* arr
   operandType.scale = 0.0f;
   operandType.zeroPoint = 0;
 
-  ANeuralNetworksModel_addOperand(model, &operandType);
-  return idx;
+  const int result = ANeuralNetworksModel_addOperand(model, &operandType);
+  if (result != ANEURALNETWORKS_NO_ERROR) {
+    DSP_DIAG(COMPILE, "NnapiGraphBackend: addOperand failed: %d", result);
+    return false;
+  }
+  *outIdx = idx;
+  return true;
 }
 
 uint32_t NnapiGraphBackend::addScalarOperand(ANeuralNetworksModel* model,
@@ -801,6 +920,7 @@ uint32_t NnapiGraphBackend::addShapeOperand(ANeuralNetworksModel* model, NDArray
 bool NnapiGraphBackend::addImplicitParams(ANeuralNetworksModel* model, NativeSlot& slot,
                                            int nnapiOp, std::vector<uint32_t>& inputOperands,
                                            uint32_t& nextOperand,
+                                           NDArray** externalInputs, int numExternalInputs,
                                            NDArray** outputSlots, int totalOutputSlots,
                                            std::vector<std::vector<int32_t>>& vectorStorage) {
   // ── Binary arithmetic: ADD, SUB, MUL, DIV need fused activation code ──
@@ -810,11 +930,41 @@ bool NnapiGraphBackend::addImplicitParams(ANeuralNetworksModel* model, NativeSlo
     return true;
   }
 
-  // ── Softmax: needs beta (float scalar, default 1.0) ──
+  // ── Softmax: beta must match the input tensor type — FLOAT16 for FLOAT16
+  // inputs, FLOAT32 otherwise. The admission contract rejects softmax slots
+  // carrying any tArgs (nd4j softmax has no beta parameter), so beta is
+  // always the neutral 1.0. ──
   if (nnapiOp == ANEURALNETWORKS_SOFTMAX) {
-    float beta = 1.0f;
-    if (slot.args.numTArgs > 0 && slot.args.tArgs) beta = static_cast<float>(slot.args.tArgs[0]);
-    inputOperands.push_back(addFloatOperand(model, beta, nextOperand));
+    NDArray* softmaxInput = nullptr;
+    if (slot.wiring.numInputs > 0 && slot.wiring.inputSourceIndices != nullptr) {
+      const int srcIdx = slot.wiring.inputSourceIndices[0];
+      if (srcIdx < 0) {
+        const int extIdx = -(srcIdx + 1);
+        if (extIdx < numExternalInputs && externalInputs != nullptr) {
+          softmaxInput = externalInputs[extIdx];
+        }
+      } else if (srcIdx < totalOutputSlots && outputSlots != nullptr) {
+        softmaxInput = outputSlots[srcIdx];
+      }
+    }
+    if (softmaxInput != nullptr && softmaxInput->dataType() == DataType::HALF) {
+      // NNAPI requires the beta scalar to be FLOAT16 when the input is
+      // FLOAT16. A FLOAT32 beta on a FLOAT16 input is a model-contract
+      // violation that vendors may reject or misinterpret.
+      const uint32_t betaIdx = nextOperand++;
+      ANeuralNetworksOperandType type;
+      type.type = ANEURALNETWORKS_FLOAT16;
+      type.dimensionCount = 0;
+      type.dimensions = nullptr;
+      type.scale = 0.0f;
+      type.zeroPoint = 0;
+      ANeuralNetworksModel_addOperand(model, &type);
+      const float16 beta16(1.0f);
+      ANeuralNetworksModel_setOperandValue(model, betaIdx, &beta16, sizeof(beta16));
+      inputOperands.push_back(betaIdx);
+    } else {
+      inputOperands.push_back(addFloatOperand(model, 1.0f, nextOperand));
+    }
     return true;
   }
 
@@ -953,11 +1103,17 @@ bool NnapiGraphBackend::addImplicitParams(ANeuralNetworksModel* model, NativeSlo
     return true;
   }
 
-  // ── GATHER: needs axis scalar ──
+  // ── GATHER: NNAPI order is [input, axis, indices]. SameDiff
+  // exposes its data inputs as [input, indices], so the scalar axis must be
+  // inserted between them rather than appended after the indices tensor.
   if (nnapiOp == ANEURALNETWORKS_GATHER) {
+    if (inputOperands.size() != 2) return false;
     int axis = 0;
     if (slot.args.numIArgs > 0 && slot.args.iArgs) axis = static_cast<int>(slot.args.iArgs[0]);
+    const uint32_t indicesOperand = inputOperands[1];
+    inputOperands.resize(1);
     inputOperands.push_back(addScalarOperand(model, axis, nextOperand));
+    inputOperands.push_back(indicesOperand);
     return true;
   }
 
@@ -1005,10 +1161,16 @@ bool NnapiGraphBackend::addImplicitParams(ANeuralNetworksModel* model, NativeSlo
       ANeuralNetworksModel_addOperand(model, &type);
       inputOperands.push_back(aidx);
     }
-    // keepDims: bArgs[0] if present, default false
+    // keep_dims: NNAPI MEAN requires an INT32 scalar, while REDUCE_* require
+    // a BOOL scalar. Emitting BOOL for MEAN violates the model contract and
+    // leaves acceptance up to driver leniency.
     bool keepDims = false;
     if (slot.args.numBArgs > 0 && slot.args.bArgs) keepDims = slot.args.bArgs[0];
-    inputOperands.push_back(addScalarOperand(model, keepDims ? 1 : 0, nextOperand));
+    if (nnapiOp == ANEURALNETWORKS_MEAN) {
+      inputOperands.push_back(addScalarOperand(model, keepDims ? 1 : 0, nextOperand));
+    } else {
+      inputOperands.push_back(addBoolOperand(model, keepDims, nextOperand));
+    }
     return true;
   }
 
@@ -1236,8 +1398,10 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
                                     NDArray** outputSlots, int totalOutputSlots,
                                     int totalSlots,
                                     const int* requestedOutputSlotIndices,
-                                    int numRequestedOutputs) {
+                                    int numRequestedOutputs,
+                                    std::vector<int>& operationSourceSlots) {
   uint32_t nextOperand = 0;
+  operationSourceSlots.clear();
 
   // Persistent storage for vector operand data (must outlive ANeuralNetworksModel_finish)
   std::vector<std::vector<int32_t>> vectorStorage;
@@ -1261,6 +1425,79 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
       slots, startSlot, endSlot, totalSlots,
       requestedOutputSlotIndices, numRequestedOutputs);
 
+  // Resolve a wiring source index to its NDArray (external input or output
+  // slot). Shared by operand construction and shape-contract validation.
+  auto resolveSourceArray = [&](int srcIdx) -> NDArray* {
+    if (srcIdx < 0) {
+      int extIdx = -(srcIdx + 1);
+      if (extIdx < numExternalInputs && externalInputs) return externalInputs[extIdx];
+      return nullptr;
+    }
+    if (srcIdx < totalOutputSlots && outputSlots) return outputSlots[srcIdx];
+    return nullptr;
+  };
+
+  auto bindingDataType = [&](DataType sourceType) -> DataType {
+    if (isNnapiSupportedType(sourceType)) return sourceType;
+    return DataTypeUtils::isR(sourceType) ? DataType::FLOAT32 : DataType::UNKNOWN;
+  };
+
+  auto addOperandDescriptor = [&](DataType dataType,
+                                  const std::vector<LongType>& dimensions,
+                                  uint32_t* outIdx) -> bool {
+    const int32_t nnapiType = toNnapiOperandType(dataType);
+    if (nnapiType < 0 || dimensions.empty() || outIdx == nullptr) return false;
+    std::vector<uint32_t> nnapiDimensions(dimensions.size());
+    for (size_t dimension = 0; dimension < dimensions.size(); ++dimension) {
+      const LongType value = dimensions[dimension];
+      if (value <= 0 ||
+          static_cast<unsigned long long>(value) >
+              static_cast<unsigned long long>(std::numeric_limits<uint32_t>::max())) {
+        return false;
+      }
+      nnapiDimensions[dimension] = static_cast<uint32_t>(value);
+    }
+    ANeuralNetworksOperandType operandType;
+    operandType.type = nnapiType;
+    operandType.dimensionCount = static_cast<uint32_t>(nnapiDimensions.size());
+    operandType.dimensions = nnapiDimensions.data();
+    operandType.scale = 0.0f;
+    operandType.zeroPoint = 0;
+    const uint32_t operand = nextOperand++;
+    const int result = ANeuralNetworksModel_addOperand(model, &operandType);
+    if (result != ANEURALNETWORKS_NO_ERROR) return false;
+    *outIdx = operand;
+    return true;
+  };
+
+  std::unordered_map<int, EmbeddingLookupContract> embeddingContracts;
+  std::unordered_set<int> embeddingLookupSources;
+  for (int slotIndex = startSlot; slotIndex <= endSlot; ++slotIndex) {
+    if (getNnapiOpCode(slots[slotIndex].ident.opName) !=
+            ANEURALNETWORKS_GATHER ||
+        slots[slotIndex].wiring.numInputs != 2 ||
+        slots[slotIndex].wiring.numOutputs != 1) {
+      continue;
+    }
+    const int axis =
+        slots[slotIndex].args.numIArgs > 0 && slots[slotIndex].args.iArgs != nullptr
+            ? static_cast<int>(slots[slotIndex].args.iArgs[0])
+            : 0;
+    NDArray* values = resolveSourceArray(
+        slots[slotIndex].wiring.inputSourceIndices[0]);
+    NDArray* lookups = resolveSourceArray(
+        slots[slotIndex].wiring.inputSourceIndices[1]);
+    NDArray* output = resolveSourceArray(
+        slots[slotIndex].wiring.outputSlotIndices[0]);
+    const auto contract =
+        getEmbeddingLookupContract(values, lookups, output, axis);
+    if (contract.valid) {
+      embeddingContracts.emplace(slotIndex, contract);
+      embeddingLookupSources.insert(
+          slots[slotIndex].wiring.inputSourceIndices[1]);
+    }
+  }
+
   // Phase 1: Add input operands (external inputs + pre-segment intermediates)
   for (int i = startSlot; i <= endSlot; i++) {
     for (int inp = 0; inp < slots[i].wiring.numInputs; inp++) {
@@ -1271,29 +1508,34 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
       bool isPreSegment = (!isExternal && !segmentOutputs.count(srcIdx));
 
       if (isExternal || isPreSegment) {
-        NDArray* arr = nullptr;
-        if (isExternal) {
-          int extIdx = -(srcIdx + 1);
-          if (extIdx < numExternalInputs && externalInputs) arr = externalInputs[extIdx];
-        } else {
-          if (srcIdx < totalOutputSlots && outputSlots) arr = outputSlots[srcIdx];
-        }
+        NDArray* arr = resolveSourceArray(srcIdx);
         if (!arr) {
           DSP_DIAG(COMPILE, "NnapiGraphBackend: null input array for source %d at slot %d", srcIdx, i);
           return false;
         }
 
-        uint32_t opIdx = addOperand(model, arr, nextOperand, contiguousCopies);
-        sourceToOperand[srcIdx] = opIdx;
+        const bool embeddingLookupInput = embeddingLookupSources.count(srcIdx) != 0;
+        const DataType compiledDataType =
+            embeddingLookupInput ? DataType::INT32 : bindingDataType(arr->dataType());
+        uint32_t opIdx = 0;
         std::vector<LongType> dimensions(static_cast<size_t>(arr->rankOf()));
         for (int dimension = 0; dimension < arr->rankOf(); dimension++) {
           dimensions[static_cast<size_t>(dimension)] = arr->sizeAt(dimension);
         }
-        DataType bindingDataType = isNnapiSupportedType(arr->dataType())
-                                       ? arr->dataType()
-                                       : DataType::FLOAT32;
+        const bool operandAdded = embeddingLookupInput
+                                      ? addOperandDescriptor(compiledDataType, dimensions, &opIdx)
+                                      : addOperand(model, arr, nextOperand,
+                                                   contiguousCopies, &opIdx);
+        if (!operandAdded) {
+          DSP_DIAG(COMPILE,
+                   "NnapiGraphBackend: unsupported input operand type for "
+                   "source %d at slot %d",
+                   srcIdx, i);
+          return false;
+        }
+        sourceToOperand[srcIdx] = opIdx;
         compiled.inputMappings.push_back(
-            {srcIdx, opIdx, false, arr->dataType(), bindingDataType,
+            {srcIdx, opIdx, false, arr->dataType(), compiledDataType,
              std::move(dimensions)});
       }
     }
@@ -1329,8 +1571,142 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
       inputOperands.push_back(it->second);
     }
 
+    // Tensor G3 does not compile the general NNAPI GATHER operation. Qwen's
+    // axis-0 embedding gather is equivalent to EMBEDDING_LOOKUP, but SDX supplies
+    // batched INT64 token ids ([1, sequence]) while NNAPI requires one-dimensional
+    // INT32 lookups. The verified contract below binds the ids as INT32 and, for
+    // batched ids, emits reshape -> embedding lookup -> reshape.
+    int operationOp = nnapiOp;
+    const auto embeddingContractIt = embeddingContracts.find(i);
+    const bool embeddingLookup = embeddingContractIt != embeddingContracts.end();
+    bool batchedEmbeddingLookup = false;
+    NDArray* gatherValues = nullptr;
+    NDArray* gatherIndices = nullptr;
+    NDArray* gatherOutput = nullptr;
+    if (embeddingLookup) {
+      gatherValues = resolveSourceArray(slots[i].wiring.inputSourceIndices[0]);
+      gatherIndices = resolveSourceArray(slots[i].wiring.inputSourceIndices[1]);
+      gatherOutput = resolveSourceArray(slots[i].wiring.outputSlotIndices[0]);
+      operationOp = ANEURALNETWORKS_EMBEDDING_LOOKUP;
+      std::swap(inputOperands[0], inputOperands[1]);
+      const auto& contract = embeddingContractIt->second;
+      batchedEmbeddingLookup = contract.flattenLookups;
+      if (batchedEmbeddingLookup) {
+        const LongType flattenedLookupShape[1] = {contract.lookupCount};
+        const uint32_t shapeOperand = addIntVectorOperand(
+            model, flattenedLookupShape, 1, nextOperand, vectorStorage);
+        uint32_t flattenedLookupOperand = 0;
+        if (!addOperandDescriptor(DataType::INT32, {contract.lookupCount},
+                                  &flattenedLookupOperand)) {
+          DSP_DIAG(COMPILE,
+                   "NnapiGraphBackend: failed to declare flattened embedding "
+                   "lookups at slot %d",
+                   i);
+          return false;
+        }
+        const uint32_t reshapeInputs[2] = {inputOperands[0], shapeOperand};
+        const uint32_t reshapeOutputs[1] = {flattenedLookupOperand};
+        const int reshapeResult = ANeuralNetworksModel_addOperation(
+            model, ANEURALNETWORKS_RESHAPE, 2, reshapeInputs, 1,
+            reshapeOutputs);
+        if (reshapeResult != ANEURALNETWORKS_NO_ERROR) {
+          DSP_DIAG(COMPILE,
+                   "NnapiGraphBackend: failed to flatten embedding lookups at "
+                   "slot %d: %d",
+                   i, reshapeResult);
+          return false;
+        }
+        operationSourceSlots.push_back(i);
+        inputOperands[0] = flattenedLookupOperand;
+      }
+      DSP_DIAG(COMPILE,
+               "NNAPI_GATHER_LOWERING slot=%d axis=0 values_rank=%d "
+               "lookups_rank=%d lookups=%lld binding=INT32 flatten=%d "
+               "lowered=EMBEDDING_LOOKUP",
+               i, gatherValues->rankOf(), gatherIndices->rankOf(),
+               static_cast<long long>(contract.lookupCount),
+               batchedEmbeddingLookup ? 1 : 0);
+    }
+
+    // NNAPI FULLY_CONNECTED computes input @ weights^T with weights of shape
+    // [num_units, input_size]. nd4j xw_plus_b computes x @ w + b with w of
+    // shape [input, output]. Feeding w directly would silently compute the
+    // transposed product, so insert an NNAPI TRANSPOSE on the weight operand
+    // and hand the fully-connected op w^T instead.
+    if (nnapiOp == ANEURALNETWORKS_FULLY_CONNECTED) {
+      if (inputOperands.size() != 3) {
+        DSP_DIAG(COMPILE,
+                 "NnapiGraphBackend: fully-connected lowering requires 3 data inputs at slot %d",
+                 i);
+        return false;
+      }
+      NDArray* fcInput = resolveSourceArray(slots[i].wiring.inputSourceIndices[0]);
+      NDArray* fcWeight = resolveSourceArray(slots[i].wiring.inputSourceIndices[1]);
+      NDArray* fcBias = resolveSourceArray(slots[i].wiring.inputSourceIndices[2]);
+      if (fcInput == nullptr || fcWeight == nullptr || fcBias == nullptr) {
+        DSP_DIAG(COMPILE, "NnapiGraphBackend: null fully-connected input at slot %d", i);
+        return false;
+      }
+      // NNAPI requires input rank >= 2, 2-D weights, and a 1-D bias. Anything
+      // else must fall back rather than reach vendor compilation with
+      // ambiguous shapes.
+      if (fcInput->rankOf() < 2 || fcWeight->rankOf() != 2 ||
+          fcBias->rankOf() != 1) {
+        DSP_DIAG(COMPILE,
+                 "NnapiGraphBackend: fully-connected shape contract violated "
+                 "at slot %d (input rank %d, weight rank %d, bias rank %d)",
+                 i, fcInput->rankOf(), fcWeight->rankOf(), fcBias->rankOf());
+        return false;
+      }
+
+      const uint32_t weightOperand = inputOperands[1];
+      // The weight operand was declared by addOperand, which promotes
+      // unsupported floating types to FLOAT32.
+      int32_t weightType = toNnapiOperandType(fcWeight->dataType());
+      if (weightType < 0) weightType = ANEURALNETWORKS_TENSOR_FLOAT32;
+
+      const uint32_t transposedOperand = nextOperand++;
+      ANeuralNetworksOperandType transposedType;
+      transposedType.type = weightType;
+      transposedType.dimensionCount = 2;
+      const uint32_t swappedDims[2] = {
+          static_cast<uint32_t>(fcWeight->sizeAt(1)),
+          static_cast<uint32_t>(fcWeight->sizeAt(0))};
+      transposedType.dimensions = swappedDims;
+      transposedType.scale = 0.0f;
+      transposedType.zeroPoint = 0;
+      const int transposedResult =
+          ANeuralNetworksModel_addOperand(model, &transposedType);
+      if (transposedResult != ANEURALNETWORKS_NO_ERROR) {
+        DSP_DIAG(COMPILE,
+                 "NnapiGraphBackend: failed to add transposed weight operand "
+                 "at slot %d: %d",
+                 i, transposedResult);
+        return false;
+      }
+
+      static const LongType fcPerm[2] = {1, 0};
+      const uint32_t permOperand =
+          addIntVectorOperand(model, fcPerm, 2, nextOperand, vectorStorage);
+      const uint32_t transposeInputs[2] = {weightOperand, permOperand};
+      const uint32_t transposeOutputs[1] = {transposedOperand};
+      const int transposeResult = ANeuralNetworksModel_addOperation(
+          model, ANEURALNETWORKS_TRANSPOSE, 2, transposeInputs, 1,
+          transposeOutputs);
+      if (transposeResult != ANEURALNETWORKS_NO_ERROR) {
+        DSP_DIAG(COMPILE,
+                 "NnapiGraphBackend: failed to add weight transpose for "
+                 "fully-connected op at slot %d: %d",
+                 i, transposeResult);
+        return false;
+      }
+      operationSourceSlots.push_back(i);
+      inputOperands[1] = transposedOperand;
+    }
+
     // Add implicit parameters (padding, stride, axis, activation codes, etc.)
-    if (!addImplicitParams(model, slots[i], nnapiOp, inputOperands, nextOperand,
+    if (!addImplicitParams(model, slots[i], operationOp, inputOperands, nextOperand,
+                           externalInputs, numExternalInputs,
                            outputSlots, totalOutputSlots, vectorStorage)) {
       DSP_DIAG(COMPILE, "NnapiGraphBackend: failed to add implicit params for '%s' at slot %d",
                 slots[i].ident.opName.c_str(), i);
@@ -1351,7 +1727,14 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
         return false;
       }
 
-      uint32_t opIdx = addOperand(model, arr, nextOperand, contiguousCopies);
+      uint32_t opIdx = 0;
+      if (!addOperand(model, arr, nextOperand, contiguousCopies, &opIdx)) {
+        DSP_DIAG(COMPILE,
+                 "NnapiGraphBackend: unsupported output operand type at slot "
+                 "%d output %d",
+                 i, o);
+        return false;
+      }
       sourceToOperand[outIdx] = opIdx;
       outputOperands.push_back(opIdx);
 
@@ -1360,25 +1743,68 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
         for (int dimension = 0; dimension < arr->rankOf(); dimension++) {
           dimensions[static_cast<size_t>(dimension)] = arr->sizeAt(dimension);
         }
-        DataType bindingDataType = isNnapiSupportedType(arr->dataType())
-                                       ? arr->dataType()
-                                       : DataType::FLOAT32;
+        DataType outputBindingDataType = bindingDataType(arr->dataType());
         compiled.outputMappings.push_back(
-            {outIdx, opIdx, true, arr->dataType(), bindingDataType,
+            {outIdx, opIdx, true, arr->dataType(), outputBindingDataType,
              std::move(dimensions)});
       }
     }
 
-    // Add the operation
-    int result = ANeuralNetworksModel_addOperation(
-        model, nnapiOp,
-        static_cast<uint32_t>(inputOperands.size()), inputOperands.data(),
-        static_cast<uint32_t>(outputOperands.size()), outputOperands.data());
+    if (batchedEmbeddingLookup) {
+      const auto& contract = embeddingContractIt->second;
+      const DataType intermediateDataType = bindingDataType(gatherOutput->dataType());
+      uint32_t flattenedOutputOperand = 0;
+      if (intermediateDataType == DataType::UNKNOWN ||
+          !addOperandDescriptor(intermediateDataType,
+                                contract.flattenedOutputDimensions,
+                                &flattenedOutputOperand)) {
+        DSP_DIAG(COMPILE,
+                 "NnapiGraphBackend: failed to declare flattened embedding "
+                 "output at slot %d",
+                 i);
+        return false;
+      }
+      const uint32_t embeddingOutputs[1] = {flattenedOutputOperand};
+      int result = ANeuralNetworksModel_addOperation(
+          model, operationOp, static_cast<uint32_t>(inputOperands.size()),
+          inputOperands.data(), 1, embeddingOutputs);
+      if (result != ANEURALNETWORKS_NO_ERROR) {
+        DSP_DIAG(COMPILE,
+                 "NnapiGraphBackend: failed to add flattened embedding lookup "
+                 "at slot %d: %d",
+                 i, result);
+        return false;
+      }
+      operationSourceSlots.push_back(i);
 
-    if (result != ANEURALNETWORKS_NO_ERROR) {
-      DSP_DIAG(COMPILE, "NnapiGraphBackend: failed to add op '%s' (NNAPI code %d) at slot %d, error=%d",
-                slots[i].ident.opName.c_str(), nnapiOp, i, result);
-      return false;
+      const uint32_t outputShapeOperand =
+          addShapeOperand(model, gatherOutput, nextOperand, vectorStorage);
+      const uint32_t restoreInputs[2] = {flattenedOutputOperand,
+                                         outputShapeOperand};
+      const uint32_t restoreOutputs[1] = {outputOperands[0]};
+      result = ANeuralNetworksModel_addOperation(
+          model, ANEURALNETWORKS_RESHAPE, 2, restoreInputs, 1,
+          restoreOutputs);
+      if (result != ANEURALNETWORKS_NO_ERROR) {
+        DSP_DIAG(COMPILE,
+                 "NnapiGraphBackend: failed to restore batched embedding "
+                 "shape at slot %d: %d",
+                 i, result);
+        return false;
+      }
+      operationSourceSlots.push_back(i);
+    } else {
+      const int result = ANeuralNetworksModel_addOperation(
+          model, operationOp,
+          static_cast<uint32_t>(inputOperands.size()), inputOperands.data(),
+          static_cast<uint32_t>(outputOperands.size()), outputOperands.data());
+
+      if (result != ANEURALNETWORKS_NO_ERROR) {
+        DSP_DIAG(COMPILE, "NnapiGraphBackend: failed to add op '%s' (NNAPI code %d) at slot %d, error=%d",
+                  slots[i].ident.opName.c_str(), nnapiOp, i, result);
+        return false;
+      }
+      operationSourceSlots.push_back(i);
     }
   }
 
@@ -1409,13 +1835,11 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
     return false;
   }
 
-  // Allow NNAPI to use FP16 computation when beneficial (API 28+)
-#if defined(__ANDROID_API__) && __ANDROID_API__ >= 28
-  if (apiLevel_ >= 28) {
-    ANeuralNetworksModel_relaxComputationFloat32toFloat16(model, true);
-  }
-#endif
-
+  // Do not relax FLOAT32 operands to FLOAT16. BF16 source tensors are
+  // converted to FLOAT32 at NNAPI boundaries, and transformer reductions and
+  // normalization require the declared FLOAT32 range and precision. Relaxing
+  // the complete model here changes logits while still reporting a successful
+  // accelerator execution.
   result = ANeuralNetworksModel_finish(model);
   if (result != ANEURALNETWORKS_NO_ERROR) {
     DSP_DIAG(COMPILE, "NnapiGraphBackend: model finish failed: %d", result);
@@ -1434,6 +1858,31 @@ bool NnapiGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                                         int totalSlots,
                                         int* requestedOutputSlotIndices,
                                         int numRequestedOutputs) {
+  return compileSegmentImpl(nullptr, seg, slots, externalInputs, numExternalInputs,
+                            outputSlots, totalOutputSlots, shapeKey, totalSlots,
+                            requestedOutputSlotIndices, numRequestedOutputs);
+}
+
+bool NnapiGraphBackend::compileSegment(const GraphBackendRequest& request,
+                                        GraphSegment& seg, NativeSlot* slots,
+                                        NDArray** externalInputs, int numExternalInputs,
+                                        NDArray** outputSlots, int totalOutputSlots,
+                                        LongType shapeKey, int totalSlots,
+                                        int* requestedOutputSlotIndices,
+                                        int numRequestedOutputs) {
+  return compileSegmentImpl(&request, seg, slots, externalInputs, numExternalInputs,
+                            outputSlots, totalOutputSlots, shapeKey, totalSlots,
+                            requestedOutputSlotIndices, numRequestedOutputs);
+}
+
+bool NnapiGraphBackend::compileSegmentImpl(const GraphBackendRequest* request,
+                                            GraphSegment& seg, NativeSlot* slots,
+                                            NDArray** externalInputs, int numExternalInputs,
+                                            NDArray** outputSlots, int totalOutputSlots,
+                                            LongType shapeKey,
+                                            int totalSlots,
+                                            int* requestedOutputSlotIndices,
+                                            int numRequestedOutputs) {
   int startSlot = seg.def.startSlot;
   int endSlot = seg.def.endSlot;
   DSP_DIAG(COMPILE, "NNAPI_PHASE compile_admission_begin seg[%d-%d] ops=%d shapeKey=%lld",
@@ -1478,10 +1927,12 @@ bool NnapiGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
   // Build the model graph
   DSP_DIAG(COMPILE, "NNAPI_PHASE model_build_begin seg[%d-%d]", startSlot, endSlot);
+  std::vector<int> operationSourceSlots;
   if (!buildModel(model, *compiled, slots, startSlot, endSlot,
                   externalInputs, numExternalInputs,
                   outputSlots, totalOutputSlots, totalSlots,
-                  requestedOutputSlotIndices, numRequestedOutputs)) {
+                  requestedOutputSlotIndices, numRequestedOutputs,
+                  operationSourceSlots)) {
     ANeuralNetworksModel_free(model);
     return false;
   }
@@ -1508,11 +1959,18 @@ bool NnapiGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   }
 
   const ANeuralNetworksDevice* devices[] = {requiredDevice_};
-  const int operationCount = endSlot - startSlot + 1;
-  std::unique_ptr<bool[]> supportedOperations(new bool[operationCount]());
+  const int operationCount = static_cast<int>(operationSourceSlots.size());
+  if (operationCount <= 0) {
+    DSP_DIAG(COMPILE,
+             "NNAPI_DEVICE_CLASSIFICATION_FAILED seg[%d-%d] reason=no_emitted_operations",
+             startSlot, endSlot);
+    return false;
+  }
+  bool* supportedOperations = new bool[static_cast<size_t>(operationCount)]();
   result = ANeuralNetworksModel_getSupportedOperationsForDevices(
-      model, devices, 1, supportedOperations.get());
+      model, devices, 1, supportedOperations);
   if (result != ANEURALNETWORKS_NO_ERROR) {
+    delete[] supportedOperations;
     DSP_DIAG(COMPILE,
              "NNAPI_DEVICE_CLASSIFICATION_FAILED seg[%d-%d] device=%s status=%d",
              startSlot, endSlot, selectedDeviceName_.c_str(), result);
@@ -1525,7 +1983,7 @@ bool NnapiGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
       ++supportedCount;
       continue;
     }
-    const int slotIndex = startSlot + operationIndex;
+    const int slotIndex = operationSourceSlots[static_cast<size_t>(operationIndex)];
     DSP_DIAG(COMPILE,
              "NNAPI_DEVICE_UNSUPPORTED_OPERATION device=%s slot=%d op=%s",
              selectedDeviceName_.c_str(), slotIndex,
@@ -1535,6 +1993,7 @@ bool NnapiGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
            "NNAPI_DEVICE_CLASSIFICATION device=%s seg[%d-%d] supported=%d total=%d",
            selectedDeviceName_.c_str(), startSlot, endSlot,
            supportedCount, operationCount);
+  delete[] supportedOperations;
   if (supportedCount != operationCount) {
     return false;
   }
@@ -1559,6 +2018,32 @@ bool NnapiGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   compiled->compilation = compilation;
 
   ANeuralNetworksCompilation_setPreference(compilation, preference_);
+
+#if defined(__ANDROID_API__) && __ANDROID_API__ >= 29
+  if (request != nullptr &&
+      !request->deviceCompilationCacheDirectory.empty() &&
+      !request->deviceCompilationCacheModelKey.empty()) {
+    const auto cacheToken = makeNnapiCacheToken(
+        request->deviceCompilationCacheModelKey, startSlot, endSlot, shapeKey);
+    const int cacheStatus = ANeuralNetworksCompilation_setCaching(
+        compilation, request->deviceCompilationCacheDirectory.c_str(),
+        cacheToken.data());
+    if (cacheStatus == ANEURALNETWORKS_NO_ERROR) {
+      DSP_DIAG(COMPILE,
+               "NNAPI_DEVICE_CACHE_CONFIGURED device=%s seg[%d-%d] directory=%s",
+               selectedDeviceName_.empty() ? "nnapi-default" : selectedDeviceName_.c_str(),
+               startSlot, endSlot,
+               request->deviceCompilationCacheDirectory.c_str());
+    } else {
+      // Driver caching is an optimization. A vendor or filesystem rejection must
+      // not make an otherwise valid accelerator compilation unusable.
+      DSP_DIAG(COMPILE,
+               "NNAPI_DEVICE_CACHE_REJECTED device=%s seg[%d-%d] status=%d",
+               selectedDeviceName_.empty() ? "nnapi-default" : selectedDeviceName_.c_str(),
+               startSlot, endSlot, cacheStatus);
+    }
+  }
+#endif
 
   DSP_DIAG(COMPILE, "NNAPI_PHASE compilation_finish_begin seg[%d-%d]", startSlot, endSlot);
   result = ANeuralNetworksCompilation_finish(compilation);
@@ -1664,8 +2149,42 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     return Status::KERNEL_FAILURE;
   }
 
+#if defined(__ANDROID_API__) && __ANDROID_API__ >= 31
+  // Feature level 5 lets the compilation describe the alignment and trailing
+  // padding its selected driver expects. Opt in before binding any operands so
+  // output lengths may include that padding. Tensor accelerators can otherwise
+  // access a full transfer unit past the raw tensor payload.
+  const bool usePreferredBufferLayout = apiLevel_ >= 31;
+  if (usePreferredBufferLayout) {
+    result = ANeuralNetworksExecution_enableInputAndOutputPadding(execution, true);
+    if (result != ANEURALNETWORKS_NO_ERROR) {
+      DSP_DIAG(EXECUTE,
+               "NnapiGraphBackend: failed to enable NNAPI operand padding: %d",
+               result);
+      ANeuralNetworksExecution_free(execution);
+      return Status::KERNEL_FAILURE;
+    }
+  }
+#else
+  const bool usePreferredBufferLayout = false;
+#endif
+
   // Temporary contiguous copies for non-contiguous input arrays
   std::vector<std::unique_ptr<NDArray>> contiguousInputCopies;
+
+  // Padded input staging buffers (API 31+). With input/output padding enabled
+  // the driver may access input buffers in padded chunks; bind aligned,
+  // padded staging instead of exact-size buffers so the driver never reads
+  // past the logical tensor payload. Entries must outlive the execution.
+  struct StagedInputBuffer {
+    std::vector<uint8_t> storage;
+    size_t dataOffset = 0;
+    size_t boundBytes = 0;
+
+    uint8_t* data() { return storage.data() + dataOffset; }
+  };
+  std::vector<StagedInputBuffer> stagedInputs;
+  stagedInputs.reserve(compiled->inputMappings.size());
 
   // Set inputs — map source indices to actual NDArray buffers
   for (uint32_t idx = 0; idx < compiled->inputMappings.size(); idx++) {
@@ -1682,6 +2201,16 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
 
     if (!arr) {
       DSP_DIAG(EXECUTE, "NnapiGraphBackend: null input array for source %d", mapping.sourceIndex);
+      ANeuralNetworksExecution_free(execution);
+      return Status::KERNEL_FAILURE;
+    }
+    DataBuffer* inputDataBuffer = arr->dataBuffer();
+    if (inputDataBuffer == nullptr || !inputDataBuffer->isValid()) {
+      DSP_DIAG(EXECUTE,
+               "NNAPI_INPUT_TARGET_INVALID seg[%d-%d] input=%u source_slot=%d "
+               "arr=%p db=%p",
+               startSlot, endSlot, idx, mapping.sourceIndex, (void*)arr,
+               (void*)inputDataBuffer);
       ANeuralNetworksExecution_free(execution);
       return Status::KERNEL_FAILURE;
     }
@@ -1711,6 +2240,24 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       contiguousInputCopies.push_back(std::move(copy));
     }
 
+    if (mapping.sourceDataType == DataType::INT64 &&
+        mapping.bindingDataType == DataType::INT32) {
+      const LongType* values = contiguous->bufferAsT<LongType>();
+      for (LongType element = 0; element < contiguous->lengthOf(); ++element) {
+        if (values[element] < std::numeric_limits<int32_t>::min() ||
+            values[element] > std::numeric_limits<int32_t>::max()) {
+          DSP_DIAG(EXECUTE,
+                   "NNAPI_GATHER_INDEX_RANGE seg[%d-%d] input=%u "
+                   "source_slot=%d element=%lld value=%lld",
+                   startSlot, endSlot, idx, mapping.sourceIndex,
+                   static_cast<long long>(element),
+                   static_cast<long long>(values[element]));
+          ANeuralNetworksExecution_free(execution);
+          return Status::KERNEL_FAILURE;
+        }
+      }
+    }
+
     // Bind the representation that addOperand() compiled into the model.
     if (contiguous->dataType() != mapping.bindingDataType) {
       auto cast = std::make_unique<NDArray>(contiguous->cast(mapping.bindingDataType));
@@ -1733,6 +2280,60 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     void* buffer = contiguous->buffer();
     size_t bufferSize = contiguous->lengthOf() * contiguous->sizeOfT();
 
+#if defined(__ANDROID_API__) && __ANDROID_API__ >= 31
+    if (usePreferredBufferLayout) {
+      uint32_t preferredAlignment = 1;
+      uint32_t preferredPadding = 1;
+      int layoutStatus =
+          ANeuralNetworksCompilation_getPreferredMemoryAlignmentForInput(
+              compiled->compilation, idx, &preferredAlignment);
+      if (layoutStatus == ANEURALNETWORKS_NO_ERROR) {
+        layoutStatus =
+            ANeuralNetworksCompilation_getPreferredMemoryPaddingForInput(
+                compiled->compilation, idx, &preferredPadding);
+      }
+      if (layoutStatus == ANEURALNETWORKS_NO_ERROR &&
+          preferredAlignment != 0 &&
+          (preferredAlignment & (preferredAlignment - 1)) == 0 &&
+          preferredPadding != 0 &&
+          (preferredPadding & (preferredPadding - 1)) == 0 &&
+          (preferredAlignment > 1 || preferredPadding > 1)) {
+        const size_t paddingMask = static_cast<size_t>(preferredPadding - 1);
+        const size_t alignmentSlack = static_cast<size_t>(preferredAlignment - 1);
+        if (bufferSize >
+            std::numeric_limits<size_t>::max() - paddingMask - alignmentSlack) {
+          ANeuralNetworksExecution_free(execution);
+          return Status::KERNEL_FAILURE;
+        }
+        const size_t boundBytes = (bufferSize + paddingMask) & ~paddingMask;
+
+        stagedInputs.emplace_back();
+        auto& staging = stagedInputs.back();
+        staging.storage.assign(alignmentSlack + boundBytes,
+                               static_cast<uint8_t>(0));
+        const uintptr_t storageAddress =
+            reinterpret_cast<uintptr_t>(staging.storage.data());
+        const uintptr_t alignedDataAddress =
+            (storageAddress + alignmentSlack) &
+            ~static_cast<uintptr_t>(alignmentSlack);
+        staging.dataOffset =
+            static_cast<size_t>(alignedDataAddress - storageAddress);
+        staging.boundBytes = boundBytes;
+        std::memcpy(staging.data(), contiguous->buffer(), bufferSize);
+        std::fill(staging.data() + bufferSize,
+                  staging.data() + boundBytes, static_cast<uint8_t>(0));
+
+        DSP_DIAG(EXECUTE,
+                 "NNAPI_INPUT_STAGING seg[%d-%d] input=%u source_slot=%d "
+                 "raw_bytes=%zu bound_bytes=%zu alignment=%u padding=%u",
+                 startSlot, endSlot, idx, mapping.sourceIndex, bufferSize,
+                 boundBytes, preferredAlignment, preferredPadding);
+        buffer = staging.data();
+        bufferSize = boundBytes;
+      }
+    }
+#endif
+
     result = ANeuralNetworksExecution_setInput(
         execution, idx, nullptr, buffer, bufferSize);
     if (result != ANEURALNETWORKS_NO_ERROR) {
@@ -1742,16 +2343,21 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     }
   }
 
-  // Bind every output to an independent host-owned buffer described by the
-  // compiled operand contract. NNAPI must never write directly into mutable
-  // DynamicShapePlan arrays: those arrays may be views, aliases, or have been
-  // replaced since compilation. Unsupported source types (notably BFLOAT16)
-  // use the FLOAT32 representation selected by addOperand(). The staging arrays
-  // remain alive until ANeuralNetworksEvent_wait() completes.
-  std::vector<NDArray*> boundOutputs;
-  boundOutputs.reserve(compiled->outputMappings.size());
-  std::vector<std::unique_ptr<NDArray>> stagedOutputCopies;
-  stagedOutputCopies.reserve(compiled->outputMappings.size());
+  // Bind every output to host-owned storage using the alignment and trailing
+  // padding requested by the selected compilation. Keep guards outside the
+  // driver-visible region and construct NDArray metadata only after execution.
+  struct StagedOutputBuffer {
+    std::vector<uint8_t> storage;
+    size_t dataOffset = 0;
+    size_t rawBytes = 0;
+    size_t boundBytes = 0;
+    uint32_t alignment = 1;
+    uint32_t padding = 1;
+
+    uint8_t* data() { return storage.data() + dataOffset; }
+  };
+  std::vector<StagedOutputBuffer> stagedOutputs;
+  stagedOutputs.reserve(compiled->outputMappings.size());
 
   for (uint32_t idx = 0; idx < compiled->outputMappings.size(); idx++) {
     auto& mapping = compiled->outputMappings[idx];
@@ -1763,6 +2369,16 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
 
     if (!arr) {
       DSP_DIAG(EXECUTE, "NnapiGraphBackend: null output array for source %d", mapping.sourceIndex);
+      ANeuralNetworksExecution_free(execution);
+      return Status::KERNEL_FAILURE;
+    }
+    DataBuffer* outputDataBuffer = arr->dataBuffer();
+    if (outputDataBuffer == nullptr || !outputDataBuffer->isValid()) {
+      DSP_DIAG(EXECUTE,
+               "NNAPI_OUTPUT_TARGET_INVALID seg[%d-%d] output=%u source_slot=%d "
+               "stage=before_bind arr=%p db=%p",
+               startSlot, endSlot, idx, mapping.sourceIndex, (void*)arr,
+               (void*)outputDataBuffer);
       ANeuralNetworksExecution_free(execution);
       return Status::KERNEL_FAILURE;
     }
@@ -1781,34 +2397,92 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       return Status::KERNEL_FAILURE;
     }
 
-    std::vector<LongType> stagingShape = mapping.dimensions;
-    auto staging = std::make_unique<NDArray>(
-        'c', stagingShape, mapping.bindingDataType, arr->getContext());
-    NDArray* boundOutput = staging.get();
-    boundOutputs.push_back(boundOutput);
-    stagedOutputCopies.push_back(std::move(staging));
+    uint32_t preferredAlignment = 1;
+    uint32_t preferredPadding = 1;
+#if defined(__ANDROID_API__) && __ANDROID_API__ >= 31
+    if (usePreferredBufferLayout) {
+      result = ANeuralNetworksCompilation_getPreferredMemoryAlignmentForOutput(
+          compiled->compilation, idx, &preferredAlignment);
+      if (result == ANEURALNETWORKS_NO_ERROR) {
+        result = ANeuralNetworksCompilation_getPreferredMemoryPaddingForOutput(
+            compiled->compilation, idx, &preferredPadding);
+      }
+      if (result != ANEURALNETWORKS_NO_ERROR || preferredAlignment == 0 ||
+          (preferredAlignment & (preferredAlignment - 1)) != 0 ||
+          preferredPadding == 0 ||
+          (preferredPadding & (preferredPadding - 1)) != 0) {
+        DSP_DIAG(EXECUTE,
+                 "NnapiGraphBackend: invalid preferred output layout for "
+                 "output %u: status=%d alignment=%u padding=%u",
+                 idx, result, preferredAlignment, preferredPadding);
+        ANeuralNetworksExecution_free(execution);
+        return Status::KERNEL_FAILURE;
+      }
+    }
+#endif
 
-    void* buffer = boundOutput->buffer();
-    size_t bufferSize = boundOutput->lengthOf() * boundOutput->sizeOfT();
-    if (bufferSize > 0 && !buffer) {
+    const LongType outputLength = arr->lengthOf();
+    const size_t elementSize = DataTypeUtils::sizeOf(mapping.bindingDataType);
+    const size_t maxBufferBytes = std::numeric_limits<size_t>::max();
+    if (outputLength < 0 || elementSize == 0 ||
+        static_cast<unsigned long long>(outputLength) >
+            static_cast<unsigned long long>(maxBufferBytes / elementSize)) {
       DSP_DIAG(EXECUTE,
-               "NnapiGraphBackend: staging buffer is null for output %u "
-               "source slot %d bytes=%zu",
-               idx, mapping.sourceIndex, bufferSize);
+               "NnapiGraphBackend: invalid staging capacity for output %u "
+               "source slot %d length=%lld element_bytes=%zu",
+               idx, mapping.sourceIndex, static_cast<long long>(outputLength),
+               elementSize);
       ANeuralNetworksExecution_free(execution);
       return Status::KERNEL_FAILURE;
     }
+
+    const size_t rawBytes = static_cast<size_t>(outputLength) * elementSize;
+    const size_t paddingMask = static_cast<size_t>(preferredPadding - 1);
+    const size_t alignmentSlack = static_cast<size_t>(preferredAlignment - 1);
+    if (rawBytes > maxBufferBytes - paddingMask) {
+      ANeuralNetworksExecution_free(execution);
+      return Status::KERNEL_FAILURE;
+    }
+    const size_t boundBytes = (rawBytes + paddingMask) & ~paddingMask;
+    const size_t guardBytes = 2 * kNnapiOutputGuardBytes;
+    if (alignmentSlack > maxBufferBytes - guardBytes ||
+        boundBytes > maxBufferBytes - guardBytes - alignmentSlack) {
+      ANeuralNetworksExecution_free(execution);
+      return Status::KERNEL_FAILURE;
+    }
+
+    stagedOutputs.emplace_back();
+    auto& staging = stagedOutputs.back();
+    staging.storage.assign(guardBytes + alignmentSlack + boundBytes,
+                           kNnapiOutputGuardValue);
+    const uintptr_t storageAddress =
+        reinterpret_cast<uintptr_t>(staging.storage.data());
+    const uintptr_t minimumDataAddress =
+        storageAddress + kNnapiOutputGuardBytes;
+    const uintptr_t alignedDataAddress =
+        (minimumDataAddress + alignmentSlack) & ~static_cast<uintptr_t>(alignmentSlack);
+    staging.dataOffset = static_cast<size_t>(alignedDataAddress - storageAddress);
+    staging.rawBytes = rawBytes;
+    staging.boundBytes = boundBytes;
+    staging.alignment = preferredAlignment;
+    staging.padding = preferredPadding;
+    std::fill(staging.data(), staging.data() + boundBytes,
+              static_cast<uint8_t>(0));
+
+    void* buffer = staging.data();
     DSP_DIAG(
         EXECUTE,
         "NNAPI_OUTPUT_STAGING seg[%d-%d] output=%u source_slot=%d "
-        "source_dtype=%d binding_dtype=%d storage_bytes=%zu bound_bytes=%zu",
+        "source_dtype=%d binding_dtype=%d storage_bytes=%zu raw_bytes=%zu "
+        "bound_bytes=%zu alignment=%u padding=%u",
         startSlot, endSlot, idx, mapping.sourceIndex,
         static_cast<int>(mapping.sourceDataType),
         static_cast<int>(mapping.bindingDataType),
-        arr->lengthOf() * arr->sizeOfT(), bufferSize);
+        arr->lengthOf() * arr->sizeOfT(), rawBytes, boundBytes,
+        preferredAlignment, preferredPadding);
 
     result = ANeuralNetworksExecution_setOutput(
-        execution, idx, nullptr, buffer, bufferSize);
+        execution, idx, nullptr, buffer, boundBytes);
     if (result != ANEURALNETWORKS_NO_ERROR) {
       DSP_DIAG(EXECUTE, "NnapiGraphBackend: setOutput failed for idx %d: %d", idx, result);
       ANeuralNetworksExecution_free(execution);
@@ -1853,13 +2527,52 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     }
 
     NDArray* arr = outputSlots[mapping.sourceIndex];
-    NDArray* boundOutput = boundOutputs[idx];
-    if (!arr || !boundOutput) {
+    if (!arr) {
       continue;
     }
+    DataBuffer* outputDataBuffer = arr->dataBuffer();
+    if (outputDataBuffer == nullptr || !outputDataBuffer->isValid()) {
+      DSP_DIAG(EXECUTE,
+               "NNAPI_OUTPUT_TARGET_INVALID seg[%d-%d] output=%u source_slot=%d "
+               "stage=before_copyback arr=%p db=%p",
+               startSlot, endSlot, idx, mapping.sourceIndex, (void*)arr,
+               (void*)outputDataBuffer);
+      return Status::KERNEL_FAILURE;
+    }
 
-    boundOutput->tickWriteHost();
-    arr->assign(boundOutput);
+    auto& staging = stagedOutputs[idx];
+    const bool prefixGuardIntact = std::all_of(
+        staging.storage.begin(), staging.storage.begin() + staging.dataOffset,
+        [](uint8_t value) { return value == kNnapiOutputGuardValue; });
+    const bool suffixGuardIntact = std::all_of(
+        staging.storage.begin() + staging.dataOffset + staging.boundBytes,
+        staging.storage.end(),
+        [](uint8_t value) { return value == kNnapiOutputGuardValue; });
+    if (!prefixGuardIntact || !suffixGuardIntact) {
+      DSP_DIAG(EXECUTE,
+               "NNAPI_OUTPUT_GUARD_CORRUPTION seg[%d-%d] output=%u "
+               "source_slot=%d raw_bytes=%zu bound_bytes=%zu alignment=%u "
+               "padding=%u prefix_intact=%d suffix_intact=%d",
+               startSlot, endSlot, idx, mapping.sourceIndex,
+               staging.rawBytes, staging.boundBytes, staging.alignment,
+               staging.padding, prefixGuardIntact ? 1 : 0,
+               suffixGuardIntact ? 1 : 0);
+      return Status::KERNEL_FAILURE;
+    }
+
+    std::vector<LongType> stagingShape = mapping.dimensions;
+    NDArray boundOutput(staging.data(), 'c', stagingShape,
+                        mapping.bindingDataType, arr->getContext(), false);
+    boundOutput.tickWriteHost();
+    arr->assign(&boundOutput);
+    if (!outputDataBuffer->isValid()) {
+      DSP_DIAG(EXECUTE,
+               "NNAPI_OUTPUT_TARGET_INVALID seg[%d-%d] output=%u source_slot=%d "
+               "stage=after_copyback arr=%p db=%p",
+               startSlot, endSlot, idx, mapping.sourceIndex, (void*)arr,
+               (void*)outputDataBuffer);
+      return Status::KERNEL_FAILURE;
+    }
     DSP_DIAG(EXECUTE,
              "NNAPI_OUTPUT_COPYBACK seg[%d-%d] output=%u source_slot=%d "
              "source_dtype=%d binding_dtype=%d",

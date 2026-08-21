@@ -88,11 +88,13 @@ public class DynamicShapePlanCompiler {
     // publishes these traits from its own DECLARE_TYPES/addTraits registration;
     // Java queries the resolved descriptor through JNI so both compilers use the
     // same semantic metadata.
+    private static final int OP_TRAIT_TERNARY_ELEMENTWISE    = 1 << 2;
     private static final int OP_TRAIT_REDUCTION              = 1 << 3;
     private static final int OP_TRAIT_VIEW_PRODUCING         = 1 << 7;
     private static final int OP_TRAIT_VALUE_DEPENDENT_SHAPE  = 1 << 8;
     private static final int OP_TRAIT_DATA_DEPENDENT         = 1 << 9;
     private static final int OP_TRAIT_CONCAT                 = 1 << 20;
+    private static final int OP_TRAIT_DYNAMIC_OUTPUT_SIZE    = 1 << 31;
 
     // Cache: op-name → immutable descriptor trait bitmask. Memoise per name to
     // avoid JNI round-trips during plan compilation.
@@ -787,6 +789,12 @@ public class DynamicShapePlanCompiler {
             // argument-driven versus tensor-driven forms for this invocation.
             // Operation names remain diagnostics-only.
             int opTraits = opTraitsOf(opName);
+            boolean fixedExtentTernaryInvocation =
+                    (opTraits & OP_TRAIT_TERNARY_ELEMENTWISE) != 0
+                            && numInputs == 3;
+            boolean dynamicOutputSize =
+                    (opTraits & OP_TRAIT_DYNAMIC_OUTPUT_SIZE) != 0
+                            && !fixedExtentTernaryInvocation;
             boolean shapeDependsOnValues = opTraits != 0
                     ? (opTraits & OP_TRAIT_VALUE_DEPENDENT_SHAPE) != 0
                     : hasIntLongInputs;
@@ -819,6 +827,9 @@ public class DynamicShapePlanCompiler {
                         || tensorControlledView
                         || tensorControlledReduction;
             }
+            // A runtime-sized result necessarily requires fresh shape inference,
+            // even when the descriptor's narrower VALUE_DEPENDENT_SHAPE bit is absent.
+            shapeDependsOnValues |= dynamicOutputSize;
 
             DifferentialFunction slotOp = op;
 

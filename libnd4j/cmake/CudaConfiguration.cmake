@@ -259,9 +259,17 @@ function(link_zluda_cuda_shared_library main_target_name imported_target library
     # Linking the import file directly keeps the ZLUDA DLL boundary explicit and
     # prevents MSVC from expanding a 65,535-object static archive.
     unset(_zluda_cuda_shared_library CACHE)
+    # FindCUDAToolkit names the Windows driver import target
+    # CUDA::cuda_driver and searches both cuda_driver and cuda. Keep the
+    # direct-link path aligned with that lookup because the physical import
+    # filename differs across CUDA toolkit revisions.
+    set(_zluda_cuda_library_names ${library_name})
+    if(WIN32 AND imported_target STREQUAL "CUDA::cuda_driver")
+        set(_zluda_cuda_library_names cuda_driver cuda)
+    endif()
     if(WIN32)
         find_library(_zluda_cuda_shared_library
-            NAMES ${library_name}
+            NAMES ${_zluda_cuda_library_names}
             HINTS
                 "${CUDAToolkit_LIBRARY_DIR}"
                 "${CUDAToolkit_LIBRARY_ROOT}"
@@ -271,7 +279,7 @@ function(link_zluda_cuda_shared_library main_target_name imported_target library
                 lib/x64 lib64 lib
             NO_DEFAULT_PATH)
         if(NOT _zluda_cuda_shared_library)
-            find_library(_zluda_cuda_shared_library NAMES ${library_name})
+            find_library(_zluda_cuda_shared_library NAMES ${_zluda_cuda_library_names})
         endif()
     elseif(TARGET ${imported_target})
         target_link_libraries(${main_target_name} PUBLIC ${imported_target})

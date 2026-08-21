@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,7 +38,8 @@ public final class HuggingFaceGgmlResolver {
             "(?i)(IQ[1-4](?:_[A-Z0-9]+)+|Q[2-8](?:_[A-Z0-9]+)*|BF16|FP16|F16|INT8)");
     private static final List<String> TOKENIZER_ASSET_NAMES = List.of(
             "tokenizer.json", "tokenizer_config.json", "special_tokens_map.json",
-            "generation_config.json", "config.json", "chat_template.jinja");
+            "added_tokens.json", "chat_template.jinja", "generation_config.json",
+            "config.json", "text-generation.json");
     private static final int MAX_REPOSITORY_FILES = 100_000;
 
     private HuggingFaceGgmlResolver() {
@@ -125,6 +127,68 @@ public final class HuggingFaceGgmlResolver {
         }
     }
 
+    /**
+     * One immutable Hugging Face repository snapshot that may contribute canonical text assets.
+     * Snapshots are ordered from the selected weight repository toward explicitly declared
+     * upstream repositories. The first snapshot containing an asset owns that asset.
+     */
+    public static final class RepositorySnapshot {
+        private final String repository;
+        private final String resolvedRevision;
+        private final List<RepositoryFile> files;
+
+        public RepositorySnapshot(
+                String repository, String resolvedRevision, List<RepositoryFile> files) {
+            this.repository = requireRepositoryId(repository);
+            if (resolvedRevision == null
+                    || !IMMUTABLE_REVISION.matcher(resolvedRevision.trim()).matches()) {
+                throw new IllegalArgumentException(
+                        "Hugging Face asset repository API did not return an immutable commit SHA");
+            }
+            if (files == null) {
+                throw new IllegalArgumentException(
+                        "Hugging Face asset repository API response omitted repository files");
+            }
+            if (files.size() > MAX_REPOSITORY_FILES) {
+                throw new IllegalArgumentException(
+                        "Hugging Face asset repository file list is unreasonably large");
+            }
+            this.resolvedRevision = resolvedRevision.trim().toLowerCase(Locale.ROOT);
+            this.files = List.copyOf(files);
+        }
+
+        public String getRepository() {
+            return repository;
+        }
+
+        public String getResolvedRevision() {
+            return resolvedRevision;
+        }
+
+        public List<RepositoryFile> getFiles() {
+            return files;
+        }
+    }
+
+    /** Immutable repository provenance for one or more resolved canonical assets. */
+    public static final class AssetSource {
+        private final String repository;
+        private final String resolvedRevision;
+
+        private AssetSource(String repository, String resolvedRevision) {
+            this.repository = repository;
+            this.resolvedRevision = resolvedRevision;
+        }
+
+        public String getRepository() {
+            return repository;
+        }
+
+        public String getResolvedRevision() {
+            return resolvedRevision;
+        }
+    }
+
     public static final class Candidate {
         private final String path;
         private final long size;
@@ -184,7 +248,10 @@ public final class HuggingFaceGgmlResolver {
             return sha256;
         }
 
-        /** Model-specific tokenizer/config files resolved from the same immutable commit. */
+        /**
+         * Model-specific tokenizer/config files resolved from one immutable configuration commit.
+         * That commit may belong to the weight repository or to its explicitly declared base model.
+         */
         public List<TokenizerAsset> getTokenizerAssets() {
             return tokenizerAssets;
         }
@@ -196,14 +263,24 @@ public final class HuggingFaceGgmlResolver {
         private final long size;
         private final String sha256;
         private final URI downloadUri;
+        private final String sourceRepository;
+        private final String sourceRevision;
 
         private TokenizerAsset(
-                String name, String path, long size, String sha256, URI downloadUri) {
+                String name,
+                String path,
+                long size,
+                String sha256,
+                URI downloadUri,
+                String sourceRepository,
+                String sourceRevision) {
             this.name = name;
             this.path = path;
             this.size = size;
             this.sha256 = sha256;
             this.downloadUri = downloadUri;
+            this.sourceRepository = sourceRepository;
+            this.sourceRevision = sourceRevision;
         }
 
         public String getName() {
@@ -225,16 +302,30 @@ public final class HuggingFaceGgmlResolver {
         public URI getDownloadUri() {
             return downloadUri;
         }
+
+        public String getSourceRepository() {
+            return sourceRepository;
+        }
+
+        public String getSourceRevision() {
+            return sourceRevision;
+        }
     }
 
     public static final class Discovery {
         private final Reference reference;
         private final String resolvedRevision;
+        private final List<AssetSource> assetSources;
         private final List<Candidate> candidates;
 
-        private Discovery(Reference reference, String resolvedRevision, List<Candidate> candidates) {
+        private Discovery(
+                Reference reference,
+                String resolvedRevision,
+                List<AssetSource> assetSources,
+                List<Candidate> candidates) {
             this.reference = reference;
             this.resolvedRevision = resolvedRevision;
+            this.assetSources = List.copyOf(assetSources);
             this.candidates = List.copyOf(candidates);
         }
 
@@ -244,6 +335,30 @@ public final class HuggingFaceGgmlResolver {
 
         public String getResolvedRevision() {
             return resolvedRevision;
+        }
+
+        /** Every immutable repository that actually contributed a selected canonical asset. */
+        public List<AssetSource> getAssetSources() {
+            return assetSources;
+        }
+
+        /**
+         * Compatibility accessor for callers that predate per-asset provenance. New callers must
+         * use {@link #getAssetSources()} or the source fields on each {@link TokenizerAsset}.
+         */
+        @Deprecated
+        public String getConfigurationRepository() {
+            return assetSources.isEmpty()
+                    ? reference.getRepository()
+                    : assetSources.get(0).getRepository();
+        }
+
+        /** Compatibility accessor; see {@link #getConfigurationRepository()}. */
+        @Deprecated
+        public String getResolvedConfigurationRevision() {
+            return assetSources.isEmpty()
+                    ? resolvedRevision
+                    : assetSources.get(0).getResolvedRevision();
         }
 
         public List<Candidate> getCandidates() {
@@ -371,7 +486,11 @@ public final class HuggingFaceGgmlResolver {
                 -1L,
                 null,
                 List.of());
-        return new Discovery(reference, reference.getRequestedRevision(), List.of(candidate));
+        return new Discovery(
+                reference,
+                reference.getRequestedRevision(),
+                List.of(),
+                List.of(candidate));
     }
 
     /**
@@ -383,9 +502,48 @@ public final class HuggingFaceGgmlResolver {
             String resolvedRevision,
             List<RepositoryFile> repositoryFiles) {
         requireReference(reference);
-        if (reference.isExactModel()) {
-            return exact(reference);
-        }
+        return resolve(
+                reference,
+                resolvedRevision,
+                repositoryFiles,
+                List.of(new RepositorySnapshot(
+                        reference.getRepository(), resolvedRevision, repositoryFiles)));
+    }
+
+    /**
+     * Resolve weight candidates and attach one separately pinned asset repository to all of them.
+     * Retained for source compatibility; per-asset upstream resolution should use the snapshot-list
+     * overload so every selected asset retains its actual repository and revision.
+     */
+    public static Discovery resolve(
+            Reference reference,
+            String resolvedRevision,
+            List<RepositoryFile> repositoryFiles,
+            String configurationRepository,
+            String resolvedConfigurationRevision,
+            List<RepositoryFile> configurationFiles) {
+        return resolve(
+                reference,
+                resolvedRevision,
+                repositoryFiles,
+                List.of(new RepositorySnapshot(
+                        configurationRepository,
+                        resolvedConfigurationRevision,
+                        configurationFiles)));
+    }
+
+    /**
+     * Resolve weight candidates plus an ordered chain of immutable repositories that may each
+     * contribute canonical tokenizer, template, generation, or model configuration assets.
+     * Repositories must be supplied from nearest to farthest upstream; the resolver never guesses
+     * repository names and never synthesizes a missing asset.
+     */
+    public static Discovery resolve(
+            Reference reference,
+            String resolvedRevision,
+            List<RepositoryFile> repositoryFiles,
+            List<RepositorySnapshot> assetRepositories) {
+        requireReference(reference);
         if (resolvedRevision == null || !IMMUTABLE_REVISION.matcher(resolvedRevision.trim()).matches()) {
             throw new IllegalArgumentException(
                     "Hugging Face API did not return an immutable commit SHA");
@@ -395,6 +553,9 @@ public final class HuggingFaceGgmlResolver {
         }
         if (repositoryFiles.size() > MAX_REPOSITORY_FILES) {
             throw new IllegalArgumentException("Hugging Face repository file list is unreasonably large");
+        }
+        if (assetRepositories == null) {
+            throw new IllegalArgumentException("Hugging Face asset repository chain is required");
         }
 
         String revision = resolvedRevision.trim().toLowerCase(Locale.ROOT);
@@ -410,9 +571,56 @@ public final class HuggingFaceGgmlResolver {
                         "Hugging Face API returned a duplicate repository path: " + file.getPath());
             }
         }
+        List<Map<String, RepositoryFile>> assetFilesByRepository = new ArrayList<>();
+        Map<String, RepositorySnapshot> snapshotsByRepository = new LinkedHashMap<>();
+        for (RepositorySnapshot snapshot : assetRepositories) {
+            if (snapshot == null) {
+                continue;
+            }
+            RepositorySnapshot previous = snapshotsByRepository.putIfAbsent(
+                    snapshot.getRepository(), snapshot);
+            if (previous != null) {
+                throw new IllegalArgumentException(
+                        "Hugging Face asset repository chain contains a duplicate repository: "
+                                + snapshot.getRepository());
+            }
+            Map<String, RepositoryFile> byPath = new LinkedHashMap<>();
+            for (RepositoryFile file : snapshot.getFiles()) {
+                if (file == null) {
+                    continue;
+                }
+                RepositoryFile duplicate = byPath.putIfAbsent(file.getPath(), file);
+                if (duplicate != null) {
+                    throw new IllegalArgumentException(
+                            "Hugging Face asset repository " + snapshot.getRepository()
+                                    + " returned a duplicate path: " + file.getPath());
+                }
+            }
+            assetFilesByRepository.add(byPath);
+        }
+        List<RepositorySnapshot> snapshots = new ArrayList<>(snapshotsByRepository.values());
+        List<TokenizerAsset> repositoryTokenizerAssets = tokenizerAssets(
+                snapshots, assetFilesByRepository);
+        Map<String, AssetSource> selectedSourcesByKey = new LinkedHashMap<>();
+        for (TokenizerAsset asset : repositoryTokenizerAssets) {
+            String key = asset.getSourceRepository() + "@" + asset.getSourceRevision();
+            selectedSourcesByKey.putIfAbsent(
+                    key, new AssetSource(asset.getSourceRepository(), asset.getSourceRevision()));
+        }
+        List<AssetSource> selectedSources = new ArrayList<>();
+        for (RepositorySnapshot snapshot : snapshots) {
+            AssetSource source = selectedSourcesByKey.get(
+                    snapshot.getRepository() + "@" + snapshot.getResolvedRevision());
+            if (source != null) {
+                selectedSources.add(source);
+            }
+        }
         Map<String, Candidate> byPath = new LinkedHashMap<>();
         boolean splitGgufFound = false;
         for (RepositoryFile file : repositoryByPath.values()) {
+            if (reference.isExactModel() && !file.getPath().equals(reference.getRequestedPath())) {
+                continue;
+            }
             if (!withinScope(file.getPath(), scope) || !isGgufOrGgml(file.getPath())) {
                 continue;
             }
@@ -424,8 +632,7 @@ public final class HuggingFaceGgmlResolver {
                     file.getPath(),
                     candidate(
                             reference.getRepository(), revision, file.getPath(), file.getSize(),
-                            file.getSha256(), tokenizerAssets(
-                                    reference.getRepository(), revision, file.getPath(), repositoryByPath)));
+                            file.getSha256(), repositoryTokenizerAssets));
             if (previous != null) {
                 throw new IllegalArgumentException("Duplicate model candidate: " + file.getPath());
             }
@@ -440,7 +647,11 @@ public final class HuggingFaceGgmlResolver {
                     "Hugging Face repository contains no GGUF/GGML files"
                             + (scope == null ? "" : " under " + scope));
         }
-        return new Discovery(reference, revision, candidates);
+        return new Discovery(
+                reference,
+                revision,
+                selectedSources,
+                candidates);
     }
 
     public static String requireRepositoryId(String repository) {
@@ -477,29 +688,50 @@ public final class HuggingFaceGgmlResolver {
     }
 
     private static List<TokenizerAsset> tokenizerAssets(
-            String repository,
-            String revision,
-            String modelPath,
-            Map<String, RepositoryFile> repositoryByPath) {
-        int separator = modelPath.lastIndexOf('/');
-        String directory = separator < 0 ? null : modelPath.substring(0, separator);
+            List<RepositorySnapshot> repositories,
+            List<Map<String, RepositoryFile>> repositoryFiles) {
         List<TokenizerAsset> assets = new ArrayList<>();
         for (String name : TOKENIZER_ASSET_NAMES) {
-            String localPath = directory == null ? name : directory + "/" + name;
-            RepositoryFile file = repositoryByPath.get(localPath);
-            if (file == null && directory != null) {
-                file = repositoryByPath.get(name);
-            }
-            if (file != null) {
+            for (int index = 0; index < repositories.size(); index++) {
+                RepositoryFile file = findUniqueRepositoryAsset(repositoryFiles.get(index), name);
+                if (file == null) {
+                    continue;
+                }
+                RepositorySnapshot repository = repositories.get(index);
                 assets.add(new TokenizerAsset(
                         name,
                         file.getPath(),
                         file.getSize(),
                         file.getSha256(),
-                        downloadUri(repository, revision, file.getPath())));
+                        downloadUri(
+                                repository.getRepository(),
+                                repository.getResolvedRevision(),
+                                file.getPath()),
+                        repository.getRepository(),
+                        repository.getResolvedRevision()));
+                break;
             }
         }
-        return assets;
+        return List.copyOf(assets);
+    }
+
+    private static RepositoryFile findUniqueRepositoryAsset(
+            Map<String, RepositoryFile> repositoryByPath,
+            String assetName) {
+        RepositoryFile repositoryRoot = repositoryByPath.get(assetName);
+        if (repositoryRoot != null) {
+            return repositoryRoot;
+        }
+        List<RepositoryFile> matches = repositoryByPath.values().stream()
+                .filter(file -> file.getPath().endsWith("/" + assetName))
+                .sorted(Comparator.comparing(RepositoryFile::getPath))
+                .collect(Collectors.toList());
+        if (matches.size() > 1) {
+            throw new IllegalArgumentException(
+                    "Hugging Face repository contains ambiguous " + assetName + " files: "
+                            + matches.stream().map(RepositoryFile::getPath).collect(Collectors.toList()));
+        }
+        return matches.isEmpty() ? null : matches.get(0);
     }
 
     private static String canonicalSha256(String sha256) {

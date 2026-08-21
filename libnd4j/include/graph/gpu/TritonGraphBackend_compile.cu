@@ -316,7 +316,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     return nullptr;
   };
 
-  auto resolveSlotTraits = [](const NativeSlot& slot) -> uint32_t {
+  auto resolveSlotTraits = [](const NativeSlot& slot) -> uint64_t {
     return dsp::resolveSlotTraits(slot);
   };
 
@@ -374,7 +374,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   };
 
   auto slotLooksLikeShapeControl = [&](const NativeSlot& slot) -> bool {
-    uint32_t traits = resolveSlotTraits(slot);
+    uint64_t traits = resolveSlotTraits(slot);
     // SHAPE_ONLY and VIEW_PRODUCING are always host-only / shape-control.
     if ((traits & (sd::ops::OP_TRAIT_SHAPE_ONLY_OUTPUT |
                    sd::ops::OP_TRAIT_VIEW_PRODUCING)) != 0) {

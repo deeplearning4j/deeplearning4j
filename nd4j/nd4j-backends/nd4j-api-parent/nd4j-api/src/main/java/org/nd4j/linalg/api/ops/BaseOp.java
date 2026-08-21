@@ -101,9 +101,9 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     }
 
     /**
-     * Compute a compact signature from input array shapes in an OpContext.
-     * Uses a hash of (numInputs, rank, dimensions, dtype) for each input.
-     * Zero-allocation: just arithmetic on primitives.
+     * Compute a compact signature from complete input shape descriptors.
+     * Dimensions and dtype alone are insufficient because EMPTY, VIEW,
+     * copy-offset, strides, EWS, and order can change output shape semantics.
      */
     static long computeInputShapeSignature(OpContext oc) {
         long h = 17;
@@ -111,13 +111,13 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         h = h * 31 + n;
         for (int i = 0; i < n; i++) {
             INDArray arr = oc.getInputArray(i);
+            h = h * 31 + i;
             if (arr != null) {
-                long[] shape = arr.shape();
-                h = h * 31 + shape.length;
-                for (long dim : shape) {
-                    h = h * 31 + dim;
+                long[] shapeInfo = arr.shapeInfoJava();
+                h = h * 31 + shapeInfo.length;
+                for (long descriptorValue : shapeInfo) {
+                    h = h * 31 + descriptorValue;
                 }
-                h = h * 31 + arr.dataType().ordinal();
             } else {
                 h = h * 31 - 1;
             }

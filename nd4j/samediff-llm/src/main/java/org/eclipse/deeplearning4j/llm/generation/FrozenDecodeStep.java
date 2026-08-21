@@ -293,8 +293,15 @@ public class FrozenDecodeStep implements AutoCloseable {
         boolean skipFreeze = "true".equalsIgnoreCase(System.getProperty(ND4JSystemProperties.DSP_NO_FREEZE));
         if (dspExec != null && !skipFreeze) {
             dspExec.setShapesFrozen(true);
-            dspExec.setTraceEnabled(true);
-            dspExec.setExecutionTimingEnabled(true);
+            boolean dspDiagnosticsEnabled =
+                    Boolean.parseBoolean(System.getProperty(
+                            ND4JSystemProperties.DSP_EXECUTION_TIMING, "false"))
+                    || Boolean.parseBoolean(System.getProperty(
+                            ND4JSystemProperties.VLM_BENCHMARK_DSP_EXECUTION_TIMING, "false"))
+                    || Boolean.parseBoolean(System.getProperty(
+                            ND4JSystemProperties.VLM_BENCHMARK_OP_TIMING, "false"));
+            dspExec.setExecutionTimingEnabled(dspDiagnosticsEnabled);
+            dspExec.setTraceEnabled(System.getProperty(ND4JSystemProperties.DSP_TRACE) != null);
             log.info("  Shapes frozen for merged decode step (seqLen={})", seqLen);
         }
 

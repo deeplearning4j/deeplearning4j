@@ -5077,6 +5077,11 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         long threadId = Thread.currentThread().getId();
         InferenceSession session = sessions.remove(threadId);
         if (session != null) {
+            // DSP execution may finish asynchronously on its dedicated stream and publish
+            // completion to the default stream through an event. Drain that dependency
+            // before releaseGpuIntermediates() frees plan-owned buffers; otherwise kernels
+            // still in flight can dereference recycled allocations and poison the CUDA stream.
+            Nd4j.getExecutioner().commit();
             int closedCount = destroySession(session);
             log.info("SameDiff: Reset session for thread {} - closed {} unique data buffers, workspace memory released",
                     threadId, closedCount);

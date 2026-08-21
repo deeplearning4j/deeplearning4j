@@ -4,24 +4,25 @@
  ******************************************************************************/
 package org.eclipse.deeplearning4j.sdx.aot;
 
-import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate;
-import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.dsp.model.SdxTargetProfile;
 import org.nd4j.dsp.runtime.SdxRuntime;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.shade.jackson.databind.JsonNode;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
-import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -31,14 +32,77 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Unit tests for SdxLlmCore tokenizer utilities.
  *
- * These tests exercise the GGUF-embedded tokenizer JSON builder (R8-2 fix)
- * without requiring a native image or a real GGUF file on disk — they operate
- * purely in Java using the shaded Jackson API that sdx-aot already depends on.
+ * These tests verify that tokenizer resolution requires the canonical Hugging Face
+ * tokenizer assets; generation must never synthesize a tokenizer from GGUF metadata.
  */
+@ResourceLock(Resources.SYSTEM_PROPERTIES)
 class SdxLlmCoreTokenizerTest {
 
     @TempDir
     Path temporaryDirectory;
+
+    private String originalDiagnostics;
+    private String originalDiagnosticsLevel;
+    private String originalNativeDump;
+
+    @BeforeEach
+    void captureDiagnosticProperties() {
+        originalDiagnostics = System.getProperty(ND4JSystemProperties.DSP_DIAGNOSTICS);
+        originalDiagnosticsLevel = System.getProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_LEVEL);
+        originalNativeDump = System.getProperty(ND4JSystemProperties.DSP_NATIVE_DUMP_OUTPUTS);
+    }
+
+    @AfterEach
+    void restoreDiagnosticProperties() {
+        restoreProperty(ND4JSystemProperties.DSP_DIAGNOSTICS, originalDiagnostics);
+        restoreProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_LEVEL, originalDiagnosticsLevel);
+        restoreProperty(ND4JSystemProperties.DSP_NATIVE_DUMP_OUTPUTS, originalNativeDump);
+    }
+
+    @Test
+    void opSanityDiagnosticModeEnablesComparableNativeValueRecords() {
+        JsonNode options = new ObjectMapper().createObjectNode()
+                .put("diagnosticMode", "op_sanity");
+
+        assertEquals("op_sanity", SdxGgufModelPreparer.configureDiagnostics(options));
+        assertEquals("VERIFY", System.getProperty(ND4JSystemProperties.DSP_DIAGNOSTICS));
+        assertEquals("full", System.getProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_LEVEL));
+        assertEquals("true", System.getProperty(ND4JSystemProperties.DSP_NATIVE_DUMP_OUTPUTS));
+    }
+
+    @Test
+    void standardDiagnosticModeClearsPriorImporterDiagnostics() {
+        System.setProperty(ND4JSystemProperties.DSP_DIAGNOSTICS, "ALL");
+        System.setProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_LEVEL, "full");
+        System.setProperty(ND4JSystemProperties.DSP_NATIVE_DUMP_OUTPUTS, "true");
+
+        assertEquals(
+                "standard",
+                SdxGgufModelPreparer.configureDiagnostics(new ObjectMapper().createObjectNode()));
+        assertNull(System.getProperty(ND4JSystemProperties.DSP_DIAGNOSTICS));
+        assertNull(System.getProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_LEVEL));
+        assertNull(System.getProperty(ND4JSystemProperties.DSP_NATIVE_DUMP_OUTPUTS));
+    }
+
+    @Test
+    void unknownDiagnosticModeDoesNotMutateImporterDiagnostics() {
+        System.setProperty(ND4JSystemProperties.DSP_DIAGNOSTICS, "VERIFY");
+        System.setProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_LEVEL, "detailed");
+        System.setProperty(ND4JSystemProperties.DSP_NATIVE_DUMP_OUTPUTS, "false");
+        JsonNode options = new ObjectMapper().createObjectNode()
+                .put("diagnosticMode", "unknown");
+
+        assertThrows(IllegalArgumentException.class,
+                () -> SdxGgufModelPreparer.configureDiagnostics(options));
+        assertEquals("VERIFY", System.getProperty(ND4JSystemProperties.DSP_DIAGNOSTICS));
+        assertEquals("detailed", System.getProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_LEVEL));
+        assertEquals("false", System.getProperty(ND4JSystemProperties.DSP_NATIVE_DUMP_OUTPUTS));
+    }
+
+    private static void restoreProperty(String name, String value) {
+        if (value == null) System.clearProperty(name);
+        else System.setProperty(name, value);
+    }
 
     @Test
     void rawSourceIdentityAcceptsArbitraryContainerExtensions() throws Exception {
@@ -50,6 +114,38 @@ class SdxLlmCoreTokenizerTest {
 
         assertEquals(5L, identity.bytes());
         assertEquals(64, identity.sha256().length());
+    }
+
+    @Test
+    void tokenizerCacheIdentityTracksExactHuggingFaceAssetBytes() throws Exception {
+        Path tokenizer = temporaryDirectory.resolve("tokenizer.json");
+        Path tokenizerConfig = temporaryDirectory.resolve("tokenizer_config.json");
+        Path generationConfig = temporaryDirectory.resolve("generation_config.json");
+        Files.writeString(tokenizer, "{\"decoder\":{\"type\":\"ByteLevel\"}}",
+                StandardCharsets.UTF_8);
+        Files.writeString(tokenizerConfig, "{\"chat_template\":\"{{ messages }}\"}",
+                StandardCharsets.UTF_8);
+        Files.writeString(generationConfig, "{\"eos_token_id\":1}",
+                StandardCharsets.UTF_8);
+
+        String original = SdxGgufModelPreparer.tokenizerAssetIdentity(
+                tokenizer, tokenizerConfig, generationConfig);
+        String repeated = SdxGgufModelPreparer.tokenizerAssetIdentity(
+                tokenizer, tokenizerConfig, generationConfig);
+        Files.writeString(tokenizer, "{\"decoder\":null}", StandardCharsets.UTF_8);
+        String changedTokenizer = SdxGgufModelPreparer.tokenizerAssetIdentity(
+                tokenizer, tokenizerConfig, generationConfig);
+        Files.writeString(tokenizerConfig, "{\"chat_template\":\"changed\"}",
+                StandardCharsets.UTF_8);
+        String changedConfig = SdxGgufModelPreparer.tokenizerAssetIdentity(
+                tokenizer, tokenizerConfig, generationConfig);
+
+        assertEquals(original, repeated);
+        assertEquals(64, original.length());
+        assertNotEquals(original, changedTokenizer);
+        assertNotEquals(changedTokenizer, changedConfig);
+        assertNotEquals(changedConfig, SdxGgufModelPreparer.tokenizerAssetIdentity(
+                tokenizer, tokenizerConfig, null));
     }
 
     @Test
@@ -92,199 +188,14 @@ class SdxLlmCoreTokenizerTest {
     }
 
     @Test
-    void buildBpeTokenizerJson_wellFormed() throws Exception {
-        // Minimal GPT-2 BPE vocabulary: letters a-z + space + BOS/EOS
-        List<String> tokens = new ArrayList<>();
-        tokens.add("<|endoftext|>"); // id=0 (BOS/EOS for GPT-2)
-        for (char c = 'a'; c <= 'z'; c++) tokens.add(String.valueOf(c));
-        tokens.add("Ġ"); // space prefix (byte-level BPE convention)
+    void rejectsMissingCanonicalTokenizerInsteadOfSynthesizingFromGguf() throws Exception {
+        Path model = temporaryDirectory.resolve("model.gguf");
+        Files.write(model, new byte[] {'G', 'G', 'U', 'F'});
 
-        List<String> merges = List.of("a b", "b c", "c d");
-
-        String json = SdxLlmCore.buildBpeTokenizerJson(tokens, merges, 0, 0, "gpt2");
-        assertNotNull(json);
-        assertFalse(json.isBlank());
-
-        // Must parse as valid JSON
-        ObjectMapper m = new ObjectMapper();
-        JsonNode root = m.readTree(json);
-        assertEquals("1.0", root.path("version").asText());
-
-        JsonNode model = root.path("model");
-        assertEquals("BPE", model.path("type").asText());
-
-        // Vocab must contain all tokens
-        JsonNode vocab = model.path("vocab");
-        assertTrue(vocab.has("<|endoftext|>"), "Expected BOS token in vocab");
-        assertEquals(0, vocab.get("<|endoftext|>").asInt());
-        assertEquals(1, vocab.get("a").asInt());
-
-        // Merges
-        JsonNode mergesNode = model.path("merges");
-        assertTrue(mergesNode.isArray());
-        assertEquals(3, mergesNode.size());
-        assertEquals("a b", mergesNode.get(0).asText());
-
-        // added_tokens: BOS == EOS (same id 0), so only one added_token entry expected
-        JsonNode addedTokens = root.path("added_tokens");
-        assertTrue(addedTokens.isArray());
-        assertEquals(1, addedTokens.size());
-        assertEquals(0, addedTokens.get(0).path("id").asInt());
-        assertTrue(addedTokens.get(0).path("special").asBoolean());
-    }
-
-    @Test
-    void buildBpeTokenizerJson_separateBosEos() throws Exception {
-        List<String> tokens = new ArrayList<>();
-        tokens.add("<|im_start|>"); // id=0  BOS
-        tokens.add("<|im_end|>");   // id=1  EOS
-        for (char c = 'a'; c <= 'z'; c++) tokens.add(String.valueOf(c));
-
-        String json = SdxLlmCore.buildBpeTokenizerJson(tokens, List.of(), 0, 1, "qwen2");
-        JsonNode root = new ObjectMapper().readTree(json);
-
-        JsonNode addedTokens = root.path("added_tokens");
-        assertEquals(2, addedTokens.size(), "Separate BOS and EOS should both appear");
-        assertEquals(0, addedTokens.get(0).path("id").asInt());
-        assertEquals(1, addedTokens.get(1).path("id").asInt());
-    }
-
-    @Test
-    void buildBpeTokenizerJson_emptyMerges() throws Exception {
-        List<String> tokens = List.of("a", "b", "c");
-        // SentencePiece-based tokenizers may have no merges
-        String json = SdxLlmCore.buildBpeTokenizerJson(tokens, List.of(), -1, -1, "llama");
-        JsonNode root = new ObjectMapper().readTree(json);
-        JsonNode mergesNode = root.path("model").path("merges");
-        assertTrue(mergesNode.isArray());
-        assertEquals(0, mergesNode.size());
-
-        // Out-of-range BOS/EOS (-1) → added_tokens array must be empty (no AIOOBE)
-        assertEquals(0, root.path("added_tokens").size());
-    }
-
-    @Test
-    void buildBpeTokenizerJson_nullabilityGuards() throws Exception {
-        List<String> tokens = List.of("a", "b");
-        // Null merges list should not throw
-        String json = SdxLlmCore.buildBpeTokenizerJson(tokens, null, 0, 1, "gpt2");
-        JsonNode root = new ObjectMapper().readTree(json);
-        JsonNode mergesNode = root.path("model").path("merges");
-        assertTrue(mergesNode.isArray());
-        assertEquals(0, mergesNode.size(), "null merges should produce empty merges array");
-    }
-
-    // -----------------------------------------------------------------------
-    // R8 item 4: token_type array — CONTROL tokens must appear in added_tokens
-    // -----------------------------------------------------------------------
-
-    /**
-     * Synthetic Qwen2.5-style vocabulary: 4 NORMAL tokens + 3 CONTROL tokens.
-     * With tokenTypes provided, all non-NORMAL (type != 1) tokens must land in
-     * added_tokens with special=true, deduplicated against BOS/EOS.
-     */
-    @Test
-    void buildBpeTokenizerJson_controlTokensPromotedToAddedTokens() throws Exception {
-        // Indices: 0=<|endoftext|> NORMAL, 1=hello NORMAL, 2=world NORMAL,
-        //          3=<|im_start|> CONTROL(3), 4=<|im_end|> CONTROL(3), 5=<|tool_call|> CONTROL(3)
-        List<String> tokens = new ArrayList<>();
-        tokens.add("<|endoftext|>");  // 0 NORMAL (BOS)
-        tokens.add("hello");          // 1 NORMAL
-        tokens.add("world");          // 2 NORMAL
-        tokens.add("<|im_start|>");   // 3 CONTROL
-        tokens.add("<|im_end|>");     // 4 CONTROL (EOS)
-        tokens.add("<|tool_call|>");  // 5 CONTROL
-
-        // GGUF token_type: 1=NORMAL, 3=CONTROL
-        int[] tokenTypes = {1, 1, 1, 3, 3, 3};
-
-        String json = SdxLlmCore.buildBpeTokenizerJson(tokens, List.of(), 0, 4, "qwen2", tokenTypes);
-        JsonNode root = new ObjectMapper().readTree(json);
-        JsonNode addedTokens = root.path("added_tokens");
-        assertTrue(addedTokens.isArray());
-
-        // Collect all added token ids
-        Set<Integer> addedIds = new HashSet<>();
-        for (JsonNode t : addedTokens) {
-            assertTrue(t.path("special").asBoolean(), "All added tokens must have special=true");
-            addedIds.add(t.path("id").asInt());
-        }
-
-        // BOS(0) + EOS(4) + <|im_start|>(3) + <|tool_call|>(5) — NORMAL tokens (1,2) excluded
-        assertTrue(addedIds.contains(0), "BOS id=0 must be present");
-        assertTrue(addedIds.contains(3), "<|im_start|> id=3 must be present (CONTROL type)");
-        assertTrue(addedIds.contains(4), "<|im_end|>/EOS id=4 must be present");
-        assertTrue(addedIds.contains(5), "<|tool_call|> id=5 must be present (CONTROL type)");
-        assertFalse(addedIds.contains(1), "NORMAL token id=1 must NOT be in added_tokens");
-        assertFalse(addedIds.contains(2), "NORMAL token id=2 must NOT be in added_tokens");
-        assertEquals(4, addedIds.size(), "Exactly 4 special tokens (BOS/EOS + 2 extra CONTROL)");
-    }
-
-    /**
-     * Null tokenTypes: behaviour must be identical to the legacy 5-arg overload
-     * (only BOS and EOS in added_tokens).
-     */
-    @Test
-    void buildBpeTokenizerJson_nullTokenTypesBackwardCompat() throws Exception {
-        List<String> tokens = new ArrayList<>();
-        tokens.add("<|bos|>"); // 0 BOS
-        tokens.add("<|eos|>"); // 1 EOS
-        tokens.add("hello");   // 2 NORMAL
-
-        // Null tokenTypes → same as old 5-arg path
-        String json6 = SdxLlmCore.buildBpeTokenizerJson(tokens, List.of(), 0, 1, "gpt2", null);
-        String json5 = SdxLlmCore.buildBpeTokenizerJson(tokens, List.of(), 0, 1, "gpt2");
-        assertEquals(json5, json6, "null tokenTypes should produce identical output to 5-arg overload");
-
-        JsonNode root = new ObjectMapper().readTree(json6);
-        assertEquals(2, root.path("added_tokens").size(), "Only BOS+EOS when tokenTypes=null");
-    }
-
-    /**
-     * R8 item 4 integration — real GGUF file, embedded tokenizer path.
-     * Asserts that <|im_start|> and <|im_end|> each encode to EXACTLY ONE token id
-     * (151644 and 151645 respectively) via the embedded (no-sidecar) path.
-     *
-     * Skipped automatically when the model is not present (CI without model cache).
-     */
-    @Test
-    void embeddedTokenizer_qwen25_chatmlMarkersAreSingleIds() throws Exception {
-        // Check both 0.5b q4 and fp16; use whichever is present.
-        String[] candidates = {
-            System.getProperty("user.home") + "/.kompile/models/chat/qwen2.5-0.5b-instruct-q4_k_m.gguf",
-            System.getProperty("user.home") + "/.kompile/models/chat/qwen2.5-0.5b-instruct-fp16.gguf",
-            System.getProperty("user.home") + "/.kompile/models/chat/qwen2.5-1.5b-instruct-fp16.gguf",
-        };
-        String modelPath = null;
-        for (String c : candidates) {
-            if (new File(c).exists()) { modelPath = c; break; }
-        }
-        Assumptions.assumeTrue(modelPath != null,
-                "No Qwen2.5 GGUF found under ~/.kompile/models/chat/ — skipping live tokenizer test");
-
-        // resolveTokenizer with no sidecar → must use the GGUF-embedded path.
-        // Temporarily rename any sidecar to ensure embedded path is exercised.
-        File sidecar = new File(new File(modelPath).getParentFile(), "tokenizer.json");
-        Assumptions.assumeFalse(sidecar.exists(),
-                "Sidecar tokenizer.json present — embedded path not tested; remove it to run this test");
-
-        Tokenizer tok = SdxLlmCore.resolveTokenizer(modelPath, null);
-        assertNotNull(tok, "Tokenizer must load from embedded GGUF metadata");
-
-        // <|im_start|> must be a single token with id 151644
-        int[] imStartIds = tok.encode("<|im_start|>", false).getIds();
-        assertEquals(1, imStartIds.length,
-                "<|im_start|> must tokenize to exactly 1 id (was " + imStartIds.length
-                + " — ChatML delimiters are split, R8 item 4 NOT fixed)");
-        assertEquals(151644, imStartIds[0],
-                "<|im_start|> must have id=151644");
-
-        // <|im_end|> must be a single token with id 151645
-        int[] imEndIds = tok.encode("<|im_end|>", false).getIds();
-        assertEquals(1, imEndIds.length,
-                "<|im_end|> must tokenize to exactly 1 id (was " + imEndIds.length + ")");
-        assertEquals(151645, imEndIds[0],
-                "<|im_end|> must have id=151645");
+        IOException failure = assertThrows(IOException.class,
+                () -> SdxLlmCore.resolveTokenizer(model.toString(), null));
+        assertTrue(failure.getMessage().contains("Canonical Hugging Face tokenizer.json"));
+        assertTrue(failure.getMessage().contains("reconstruction is disabled"));
     }
 
     @Test
@@ -330,7 +241,7 @@ class SdxLlmCoreTokenizerTest {
         assertTrue(exports.contains("sdxLlmRenderChatPrompt"));
         assertTrue(exports.contains("sdxLlmParseChatResult"));
         assertEquals("sdx-prepared-text-model-v5", SdxGgufModelPreparer.PREPARED_SCHEMA);
-        assertEquals("ggml-runtime-packed-gdn-v3", SdxGgufModelPreparer.GRAPH_IMPORT_ABI);
+        assertEquals("ggml-runtime-packed-gdn-v6", SdxGgufModelPreparer.GRAPH_IMPORT_ABI);
     }
 
     @Test
@@ -372,6 +283,7 @@ class SdxLlmCoreTokenizerTest {
                 "Verified source SHA-256 did not match the GGUF bytes",
                 failure.getMessage());
     }
+
 
     @Test
     void embeddedNativeImageFreezesProcessOwnedSymbolResolutionAtBuildTime() throws Exception {

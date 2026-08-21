@@ -235,11 +235,19 @@ OpaqueConstantShapeBuffer shapeBufferEx(int rank, sd::LongType *shape, sd::LongT
                                         sd::LongType ews, sd::LongType extras) {
 #ifdef __cpp_exceptions
     auto desc = sd::ShapeBuilders::createShapeInfo(dtype, order,rank, shape, strides,nullptr, extras);
+    // The strided ShapeBuilders overload deliberately defaults EWS to -1. This bridge
+    // receives the authoritative EWS from Java, so preserve it before interning the
+    // descriptor; otherwise distinct descriptors alias in the constant-shape cache.
+    desc[shape::shapeInfoLength(rank) - 2] = ews;
     auto buffer = sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
     delete[] desc;
     return buffer;
 #else
     auto desc = sd::ShapeBuilders::createShapeInfo(dtype, order,rank, shape, strides,nullptr, extras);
+    // The strided ShapeBuilders overload deliberately defaults EWS to -1. This bridge
+    // receives the authoritative EWS from Java, so preserve it before interning the
+    // descriptor; otherwise distinct descriptors alias in the constant-shape cache.
+    desc[shape::shapeInfoLength(rank) - 2] = ews;
     auto buffer = sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
     delete[] desc;
     return buffer;

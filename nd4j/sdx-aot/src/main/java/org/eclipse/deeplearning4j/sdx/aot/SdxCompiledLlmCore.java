@@ -7,7 +7,6 @@ package org.eclipse.deeplearning4j.sdx.aot;
 import org.eclipse.deeplearning4j.llm.generation.ChatGenerationResult;
 import org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate;
 import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
-import org.eclipse.deeplearning4j.tokenizers.NativeTokenizer;
 import org.nd4j.dsp.model.SdxTargetProfile;
 import org.nd4j.dsp.runtime.SdxRuntime;
 import org.nd4j.dsp.runtime.SdxTextSession;
@@ -16,7 +15,6 @@ import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -33,24 +31,20 @@ final class SdxCompiledLlmCore implements SdxLlmModel {
     private final SdxRuntime runtime;
     private final SdxRuntime.SdxModel model;
     private final SdxTextSession session;
-    private final NativeTokenizer tokenizer;
-    private final HuggingFaceTokenizer protocolTokenizer;
-    private final String tokenizerConfigJson;
+    private final HuggingFaceTokenizer tokenizer;
     private final SdxTargetProfile target;
     private final int defaultMaxNewTokens;
     private volatile SdxTextSession.GenerationReport lastReport;
+    private volatile long[] lastPromptTokenIds = new long[0];
+    private volatile long[] lastGeneratedTokenIds = new long[0];
 
     private SdxCompiledLlmCore(SdxRuntime runtime, SdxRuntime.SdxModel model,
-                               SdxTextSession session, NativeTokenizer tokenizer,
-                               HuggingFaceTokenizer protocolTokenizer,
-                               String tokenizerConfigJson, SdxTargetProfile target,
-                               int defaultMaxNewTokens) {
+                               SdxTextSession session, HuggingFaceTokenizer tokenizer,
+                               SdxTargetProfile target, int defaultMaxNewTokens) {
         this.runtime = runtime;
         this.model = model;
         this.session = session;
         this.tokenizer = tokenizer;
-        this.protocolTokenizer = protocolTokenizer;
-        this.tokenizerConfigJson = tokenizerConfigJson;
         this.target = target;
         this.defaultMaxNewTokens = defaultMaxNewTokens;
     }
@@ -63,8 +57,7 @@ final class SdxCompiledLlmCore implements SdxLlmModel {
         SdxRuntime runtime = null;
         SdxRuntime.SdxModel model = null;
         SdxTextSession session = null;
-        NativeTokenizer tokenizer = null;
-        HuggingFaceTokenizer protocolTokenizer = null;
+        HuggingFaceTokenizer tokenizer = null;
         try {
             runtime = SdxRuntime.create();
             SdxRuntime.ModelOptions modelOptions = runtimeOptions(target);
@@ -86,16 +79,13 @@ final class SdxCompiledLlmCore implements SdxLlmModel {
             if (!Files.isRegularFile(tokenizerConfig)) {
                 throw new IOException("tokenizer_config.json is required beside " + tokenizerFile);
             }
-            String tokenizerConfigJson = Files.readString(tokenizerConfig, StandardCharsets.UTF_8);
-            tokenizer = NativeTokenizer.fromFile(tokenizerFile.toString());
-            protocolTokenizer = HuggingFaceTokenizer.fromFile(tokenizerFile.toFile());
+            tokenizer = HuggingFaceTokenizer.fromFile(tokenizerFile.toFile());
             session = model.createTextSession();
             int defaultMaxNewTokens = positive(options.path("maxNewTokens").asInt(128), "maxNewTokens");
             return new SdxCompiledLlmCore(runtime, model, session, tokenizer,
-                    protocolTokenizer, tokenizerConfigJson, target, defaultMaxNewTokens);
+                    target, defaultMaxNewTokens);
         } catch (Throwable failure) {
             closeQuietly(session);
-            closeQuietly(protocolTokenizer);
             closeQuietly(tokenizer);
             closeQuietly(model);
             closeQuietly(runtime);
@@ -121,9 +111,12 @@ final class SdxCompiledLlmCore implements SdxLlmModel {
                 options.path("sampling"));
         long[] promptIds = tokenizer.encodeLong(prompt, false);
         if (promptIds.length == 0) throw new IllegalArgumentException("prompt encoded to zero tokens");
+        lastPromptTokenIds = promptIds.clone();
+        lastGeneratedTokenIds = new long[0];
 
         session.reset();
-        NativeTokenizer.DecodeStream decoder = onChunk == null ? null : tokenizer.newDecodeStream(true);
+        HuggingFaceTokenizer.DecodeStream decoder =
+                onChunk == null ? null : tokenizer.newDecodeStream(true);
         try {
             SdxTextSession.GenerationResult result = session.generate(promptIds, generation, tokenId -> {
                 if (decoder == null) return;
@@ -131,6 +124,7 @@ final class SdxCompiledLlmCore implements SdxLlmModel {
                 if (!chunk.isEmpty()) onChunk.accept(chunk);
             }, shouldCancel);
             lastReport = result.report();
+            lastGeneratedTokenIds = result.tokenIds().clone();
             return tokenizer.decode(result.tokenIds(), true);
         } catch (RuntimeException failure) {
             throw new IOException("Compiled SDX generation failed: " + failure.getMessage(), failure);
@@ -149,13 +143,13 @@ final class SdxCompiledLlmCore implements SdxLlmModel {
     @Override
     public String parseChatResult(String requestJson, String rawText) throws IOException {
         ChatTemplate.Request request = SdxLlmCore.parseChatRequest(requestJson);
-        String templateSource = protocolTokenizer.getChatTemplate();
+        String templateSource = tokenizer.getChatTemplate();
         ChatGenerationResult result;
         if (templateSource == null || templateSource.isBlank()) {
             result = new ChatGenerationResult(rawText, request.getTools(), request.getToolCallFormat());
         } else {
             ChatTemplate template = new ChatTemplate(templateSource,
-                    protocolTokenizer.getBosToken(), protocolTokenizer.getEosToken());
+                    tokenizer.getBosToken(), tokenizer.getEosToken());
             result = new ChatGenerationResult(rawText, template.parseAssistantOutput(rawText),
                     request.getTools(), request.getToolCallFormat(), request.getToolChoice());
         }
@@ -183,12 +177,12 @@ final class SdxCompiledLlmCore implements SdxLlmModel {
             throw new IllegalArgumentException("messages_json must contain a non-empty messages array");
         }
         context.put("add_generation_prompt", addGenerationPrompt);
-        return tokenizer.applyChatTemplateContext(tokenizerConfigJson, context.toString());
+        return tokenizer.applyChatTemplateContext(context.toString());
     }
 
     @Override
     public int[] tokenize(String text, boolean addSpecialTokens) {
-        return tokenizer.encode(text, addSpecialTokens);
+        return tokenizer.encode(text, addSpecialTokens).getIds();
     }
 
     @Override
@@ -224,6 +218,8 @@ final class SdxCompiledLlmCore implements SdxLlmModel {
         result.put("appliedGpuTarget", report.appliedGpuTarget());
         result.put("planPhase", report.planPhase());
         result.put("executionCount", report.executionCount());
+        for (long tokenId : lastPromptTokenIds) result.withArray("promptTokenIds").add(tokenId);
+        for (long tokenId : lastGeneratedTokenIds) result.withArray("generatedTokenIds").add(tokenId);
         return result.toString();
     }
 
@@ -233,10 +229,10 @@ final class SdxCompiledLlmCore implements SdxLlmModel {
         result.put("executionMode", "compiled-sdx");
         result.put("targetProfile", target.id());
         result.put("runtimeAbiVersion", runtime.abiVersion());
-        result.put("vocabSize", protocolTokenizer.getVocabSize());
-        result.put("bosTokenId", protocolTokenizer.getBosTokenId());
-        result.put("eosTokenId", protocolTokenizer.getEosTokenId());
-        result.put("hasChatTemplate", protocolTokenizer.getChatTemplate() != null);
+        result.put("vocabSize", tokenizer.getVocabSize());
+        result.put("bosTokenId", tokenizer.getBosTokenId());
+        result.put("eosTokenId", tokenizer.getEosTokenId());
+        result.put("hasChatTemplate", tokenizer.getChatTemplate() != null);
         return result.toString();
     }
 
@@ -244,7 +240,6 @@ final class SdxCompiledLlmCore implements SdxLlmModel {
     public synchronized void close() {
         RuntimeException failure = null;
         failure = close(failure, session);
-        failure = close(failure, protocolTokenizer);
         failure = close(failure, tokenizer);
         failure = close(failure, model);
         failure = close(failure, runtime);

@@ -177,9 +177,44 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
             }
             fastpath_out.put(idx, array);
             singleOutputArrayRefs.put(idx, array);
+            boolean validateDescriptor = Nd4j.getEnvironment().isDebugAndVerbose();
+            long[] expectedShapeInfo = validateDescriptor ? array.shapeInfoJava().clone() : null;
+            if (validateDescriptor) {
+                long[] bufferShapeInfo = array.shapeInfoDataBuffer().asLong();
+                if (!Arrays.equals(expectedShapeInfo, bufferShapeInfo)) {
+                    throw new IllegalStateException("CUDA output shape descriptor differs between Java and its data buffer: java="
+                            + Arrays.toString(expectedShapeInfo) + ", buffer=" + Arrays.toString(bufferShapeInfo));
+                }
+                OpaqueDataBuffer shapeOpaque = array.shapeInfoDataBuffer().opaqueBuffer();
+                Pointer opaquePrimaryPointer = nativeOps.dbPrimaryBuffer(shapeOpaque);
+                LongPointer opaquePrimaryLongs = new LongPointer(opaquePrimaryPointer);
+                opaquePrimaryLongs.capacity(expectedShapeInfo.length);
+                long[] opaquePrimaryShapeInfo = new long[expectedShapeInfo.length];
+                opaquePrimaryLongs.get(opaquePrimaryShapeInfo);
+                if (!Arrays.equals(expectedShapeInfo, opaquePrimaryShapeInfo)) {
+                    throw new IllegalStateException("CUDA output shape descriptor differs from OpaqueDataBuffer primary: expected="
+                            + Arrays.toString(expectedShapeInfo) + ", opaquePrimary=" + Arrays.toString(opaquePrimaryShapeInfo));
+                }
+            }
             OpaqueNDArray opaqueArray = OpaqueNDArray.fromINDArray(array);
+            if (validateDescriptor) {
+                long[] opaqueShapeInfo = opaqueArray.shapeInfo();
+                if (!Arrays.equals(expectedShapeInfo, opaqueShapeInfo)) {
+                    throw new IllegalStateException("CUDA output shape descriptor changed while creating OpaqueNDArray: expected="
+                            + Arrays.toString(expectedShapeInfo) + ", opaque=" + Arrays.toString(opaqueShapeInfo));
+                }
+            }
             outputOpaqueArrayRefs.put(idx, opaqueArray);
             nativeOps.setGraphContextOutputArray(context, idx, opaqueArray);
+            if (validateDescriptor) {
+                OpaqueNDArray registeredArray = nativeOps.getOutputArrayNative(context, idx);
+                registeredArray.attachOwner(opaqueArray.backendOwner());
+                long[] registeredShapeInfo = registeredArray.shapeInfo();
+                if (!Arrays.equals(expectedShapeInfo, registeredShapeInfo)) {
+                    throw new IllegalStateException("CUDA output shape descriptor changed while registering graph context output: expected="
+                            + Arrays.toString(expectedShapeInfo) + ", registered=" + Arrays.toString(registeredShapeInfo));
+                }
+            }
             idx++;
         }
     }
@@ -310,9 +345,44 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
     public void setOutputArray(int index, @NonNull INDArray array) {
         // Store strong reference to INDArray to prevent GC while this OpContext is alive
         singleOutputArrayRefs.put(index, array);
+        boolean validateDescriptor = Nd4j.getEnvironment().isDebugAndVerbose();
+        long[] expectedShapeInfo = validateDescriptor ? array.shapeInfoJava().clone() : null;
+        if (validateDescriptor) {
+            long[] bufferShapeInfo = array.shapeInfoDataBuffer().asLong();
+            if (!Arrays.equals(expectedShapeInfo, bufferShapeInfo)) {
+                throw new IllegalStateException("CUDA output shape descriptor differs between Java and its data buffer: java="
+                        + Arrays.toString(expectedShapeInfo) + ", buffer=" + Arrays.toString(bufferShapeInfo));
+            }
+            OpaqueDataBuffer shapeOpaque = array.shapeInfoDataBuffer().opaqueBuffer();
+            Pointer opaquePrimaryPointer = nativeOps.dbPrimaryBuffer(shapeOpaque);
+            LongPointer opaquePrimaryLongs = new LongPointer(opaquePrimaryPointer);
+            opaquePrimaryLongs.capacity(expectedShapeInfo.length);
+            long[] opaquePrimaryShapeInfo = new long[expectedShapeInfo.length];
+            opaquePrimaryLongs.get(opaquePrimaryShapeInfo);
+            if (!Arrays.equals(expectedShapeInfo, opaquePrimaryShapeInfo)) {
+                throw new IllegalStateException("CUDA output shape descriptor differs from OpaqueDataBuffer primary: expected="
+                        + Arrays.toString(expectedShapeInfo) + ", opaquePrimary=" + Arrays.toString(opaquePrimaryShapeInfo));
+            }
+        }
         OpaqueNDArray opaqueArray = OpaqueNDArray.fromINDArray(array);
+        if (validateDescriptor) {
+            long[] opaqueShapeInfo = opaqueArray.shapeInfo();
+            if (!Arrays.equals(expectedShapeInfo, opaqueShapeInfo)) {
+                throw new IllegalStateException("CUDA output shape descriptor changed while creating OpaqueNDArray: expected="
+                        + Arrays.toString(expectedShapeInfo) + ", opaque=" + Arrays.toString(opaqueShapeInfo));
+            }
+        }
         outputOpaqueArrayRefs.put(index, opaqueArray);
         nativeOps.setGraphContextOutputArray(context, index, opaqueArray);
+        if (validateDescriptor) {
+            OpaqueNDArray registeredArray = nativeOps.getOutputArrayNative(context, index);
+            registeredArray.attachOwner(opaqueArray.backendOwner());
+            long[] registeredShapeInfo = registeredArray.shapeInfo();
+            if (!Arrays.equals(expectedShapeInfo, registeredShapeInfo)) {
+                throw new IllegalStateException("CUDA output shape descriptor changed while registering graph context output: expected="
+                        + Arrays.toString(expectedShapeInfo) + ", registered=" + Arrays.toString(registeredShapeInfo));
+            }
+        }
         super.setOutputArray(index, array);
     }
 

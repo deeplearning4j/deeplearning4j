@@ -194,6 +194,26 @@ void classifyAndUpdateOwnership(
     NDArray** outputSlots, int totalOutputSlots,
     SlotBufferInfo* ownershipArray);
 
+/**
+ * Find whether a retiring NDArray wrapper is still represented in the live
+ * slot table, either by exact wrapper identity or by another wrapper sharing
+ * the same DataBuffer.  The shared-buffer case must keep an owning wrapper
+ * alive until all views have left the table.
+ */
+bool findLiveSlotAlias(
+    NDArray* retiringArray,
+    NDArray** outputSlots, int totalOutputSlots,
+    int* exactReferenceSlot, int* sharedBufferSlot);
+
+/**
+ * Decide whether a deferred wrapper must survive this drain. Exact live
+ * wrappers are always retained. A distinct live wrapper sharing the same
+ * DataBuffer only requires retention when the retiring wrapper actually owns
+ * that DataBuffer and would close it in its destructor.
+ */
+bool shouldRetainDeferredSlotArray(
+    NDArray* retiringArray, bool exactWrapperLive, bool sharedBufferLive);
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Phase-Aware Lifecycle Validation
 // ═══════════════════════════════════════════════════════════════════════════════

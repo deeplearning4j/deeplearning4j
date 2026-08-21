@@ -41,7 +41,9 @@ ROCM_BUILD_SDKS = {
         "tensile_source_url": (
             "https://codeload.github.com/ROCm/Tensile/tar.gz/refs/tags/rocm-6.2.4"
         ),
-        "tensile_architectures": "gfx1103",
+        # gfx1100 is supported by both pinned ROCm releases. gfx1103 was
+        # introduced after ROCm 6.2 and makes the older generator fail closed.
+        "tensile_architectures": "gfx1100",
         # The ROCm binary packages omit Tensile data; these are the generator's
         # pinned Python dependencies, not runtime GPU dependencies.
         "tensile_packages": ("python3-yaml", "python3-msgpack", "python3-joblib"),
@@ -94,7 +96,7 @@ ROCM_BUILD_SDKS = {
         "tensile_source_url": (
             "https://codeload.github.com/ROCm/Tensile/tar.gz/refs/tags/rocm-7.2.4"
         ),
-        "tensile_architectures": "gfx1103",
+        "tensile_architectures": "gfx1100",
         "tensile_packages": ("python3-yaml", "python3-msgpack", "python3-joblib"),
         # ROCm 7.2 folded ROCt into the hsa-rocr development package and no
         # longer publishes a standalone hsakmt-roct-dev package.  Keep the
@@ -2036,6 +2038,14 @@ def build_rocm_tensile_data(
             f"{len(tool_candidates)}"
         )
 
+    # ROCm 7.2 ships asm_lite/hip fallback tables whose legacy gfx000/hip
+    # metadata is rejected by the matching Tensile parser. They are not part
+    # of the architecture-specific dispatch table generated for ZLUDA.
+    filtered_logic = temporary_directory / "tensile-logic"
+    shutil.copytree(
+        logic_candidates[0], filtered_logic,
+        ignore=shutil.ignore_patterns("asm_lite"),
+    )
     generator_environment = env.copy()
     generator_environment["ROCM_PATH"] = str(rocm_root)
     generator_environment["ROCM_HOME"] = str(rocm_root)
@@ -2060,7 +2070,7 @@ def build_rocm_tensile_data(
             f"--jobs={threads}",
             "--cxx-compiler=hipcc",
             "--library-format=msgpack",
-            str(logic_candidates[0]),
+            str(filtered_logic),
             str(output),
             "HIP",
         ],
@@ -2326,6 +2336,9 @@ def prepare_rocm_build_toolchain(
                 "libhsakmt.so.1",
             ],
             "installerUrl": spec["installer_url"],
+            "rocblasSourceUrl": spec["rocblas_source_url"],
+            "tensileSourceUrl": spec["tensile_source_url"],
+            "tensileArchitectures": spec["tensile_architectures"],
             "hsakmtSourceUrl": spec["hsakmt_source_url"],
             "rocblasSourceUrl": spec["rocblas_source_url"],
             "tensileSourceUrl": spec["tensile_source_url"],

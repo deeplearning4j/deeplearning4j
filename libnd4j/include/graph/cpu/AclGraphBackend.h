@@ -35,6 +35,7 @@
 #include <mutex>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace sd {
@@ -43,14 +44,13 @@ namespace graph {
 /**
  * ARM Compute Library backend for the native plan executor.
  *
- * Uses ACL's NEFunctions for individual ops and composes them into
- * fused execution groups where possible. For supported patterns
- * (MatMul+Bias+Activation, Conv+BN+ReLU), uses ACL's built-in fusion.
+ * Uses ACL's NEFunctions for individual ops and composes completely covered
+ * operation ranges into one segment-owned execution group.
  *
  * Follows the existing armcompute platform helper patterns:
  * - Tensor info from NDArray shape/dtype
  * - import_memory() for zero-copy when possible
- * - Cached configured functions keyed by shape
+ * - Segment-owned configured functions keyed by shape
  */
 class AclGraphBackend : public GraphBackend {
  public:
@@ -61,6 +61,10 @@ class AclGraphBackend : public GraphBackend {
   bool isAvailable() const override;
   bool isResolvable(const GraphBackendRequest& request) const override;
   int resolutionPriority(const GraphBackendRequest& request) const override;
+  bool canResolveSlot(const GraphBackendRequest& request,
+                      NativeSlot* slots, int slotIndex) override;
+  bool canResolveSegment(const GraphBackendRequest& request,
+                         NativeSlot* slots, int start, int end) override;
   bool canFuseSegment(NativeSlot* slots, int start, int end) override;
 
   bool compileSegment(GraphSegment& seg, NativeSlot* slots,
@@ -92,10 +96,17 @@ class AclGraphBackend : public GraphBackend {
   // Helper to detect activation type from op name
   static arm_compute::ActivationLayerInfo::ActivationFunction mapActivation(const std::string& opName);
 
+  // Metadata-only admission for operations implemented by buildFunctions().
+  // Runtime tensor descriptors are validated again before ACL configuration.
+  static bool isSupportedSlotContract(const NativeSlot& slot);
+
   // A compiled ACL function group: a sequence of ACL NEFunctions + their tensors
   struct AclFunctionGroup {
-    LongType shapeKey;
-    bool valid;
+    LongType shapeKey = 0;
+    int startSlot = -1;
+    int endSlot = -1;
+    bool valid = false;
+    std::mutex executionMtx;
 
     struct FunctionEntry {
       std::unique_ptr<arm_compute::IFunction> function;
@@ -108,28 +119,34 @@ class AclGraphBackend : public GraphBackend {
     // slotIdx -> index into the tensors vector
     std::unordered_map<int, std::shared_ptr<arm_compute::Tensor>> slotToTensor;
     std::unordered_map<int, std::shared_ptr<arm_compute::Tensor>> extToTensor;
+    std::unordered_set<int> producedSlots;
 
     // Per-slot compilation audit: tracks which ops were compiled vs skipped
     std::vector<CompilationAuditEntry> compilationAudit;
 
-    AclFunctionGroup() : shapeKey(0), valid(false) {}
+    void invalidate() {
+      std::lock_guard<std::mutex> lock(executionMtx);
+      valid = false;
+      functions.clear();
+      slotToTensor.clear();
+      extToTensor.clear();
+      producedSlots.clear();
+    }
   };
 
-  // Segment cache (SegmentCacheKey/Hash from GraphBackendCommon.h)
-  std::unordered_map<SegmentCacheKey, AclFunctionGroup, SegmentCacheHash> cache_;
-  std::mutex cacheMtx_;
+  // Plans own compiled groups. The singleton retains weak references only for
+  // explicit global invalidation, avoiding mutable cross-plan tensor sharing.
+  std::vector<std::weak_ptr<AclFunctionGroup>> compiledArtifacts_;
+  mutable std::mutex cacheMtx_;
 
   // Most recent compilation audit (updated by compileSegment)
   std::vector<CompilationAuditEntry> lastCompilationAudit_;
 
   // Build ACL functions for a segment
-  AclFunctionGroup buildFunctions(NativeSlot* slots, int startSlot, int endSlot,
-                                  NDArray** externalInputs, int numExternalInputs,
-                                  NDArray** outputSlots, int totalOutputSlots);
-
-  // Detect fusible patterns:
-  // Returns true if slots[idx] and slots[idx+1] can be fused (e.g., add+relu)
-  bool canFuseActivation(NativeSlot* slots, int idx, int endSlot);
+  std::shared_ptr<AclFunctionGroup> buildFunctions(
+      NativeSlot* slots, int startSlot, int endSlot,
+      NDArray** externalInputs, int numExternalInputs,
+      NDArray** outputSlots, int totalOutputSlots);
 };
 
 }  // namespace graph

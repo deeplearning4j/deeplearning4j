@@ -120,9 +120,11 @@ void concat(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray
     return;
   }
 
-  // Also check if output buffer is null (defensive check)
+  // A non-empty output without storage is a lifecycle error, not an empty concat.
+  // Returning success here leaves the output unwritten and poisons downstream CUDA
+  // work, which then fails far away from the owning operation with error 700.
   if (output.getDataBuffer() == nullptr) {
-    return;
+    THROW_EXCEPTION("helpers::concat: non-empty output has no DataBuffer");
   }
 
   NDArray::prepareSpecialUse({&output}, inArrs);

@@ -23,7 +23,9 @@ package org.eclipse.deeplearning4j.nd4j.linalg.framework.device;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
 import org.junit.jupiter.api.*;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.execution.DspReplayTransferAnalytics;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -355,6 +357,9 @@ public class VlmPageReuseMemoryLeakTest {
         long totalBytesGrowthUnfixed = totalBytesPerPage.get(numPages - 1) - totalBytesBaseline;
         int totalDeferred = deferredPerPageList.get(numPages - 1);
         long liveGrowthUnfixed = Nd4j.framework.lifecycle().liveCount() - liveBaseline;
+        long retainedDeferredBytes = ArrayCacheMemoryMgr.getDeferredCloseBuffers().keySet().stream()
+                .mapToLong(buffer -> buffer.length() * buffer.dataType().width())
+                .sum();
 
         log.info("LEAK 3 — UNFIXED (deferred buffers accumulate):");
         for (int p = 0; p < numPages; p++) {
@@ -369,12 +374,14 @@ public class VlmPageReuseMemoryLeakTest {
         log.info("  Expected leak: {} KB ({} buffers × {} KB each)",
                 expectedTotalLeak / 1024, numPages * deferredPerPage, expectedBytesPerBuffer / 1024);
 
-        // Deferred should accumulate
+        // Deferred buffers and their native byte footprint should accumulate. Pointer.physicalBytes()
+        // is only diagnostic here: a warmed native allocator may satisfy these buffers from its pool
+        // without increasing process-reserved bytes.
         assertEquals(numPages * deferredPerPage, totalDeferred);
-
-        // physicalBytes should grow (native allocations held by deferred set)
-        assertTrue(physGrowthUnfixed > 0,
-                "Pointer.physicalBytes should grow from deferred buffers: +" + physGrowthUnfixed);
+        assertEquals(expectedTotalLeak, retainedDeferredBytes,
+                "Deferred buffers should retain the expected native byte footprint");
+        assertTrue(liveGrowthUnfixed >= numPages * deferredPerPage,
+                "Deferred buffers should remain live until the page-boundary drain");
 
         // --- FIXED: drain deferred at each page boundary ---
         ArrayCacheMemoryMgr.clearCacheState();
@@ -422,6 +429,8 @@ public class VlmPageReuseMemoryLeakTest {
 
         assertEquals(numPages * deferredPerPage, totalFreedBuffers,
                 "All deferred buffers should be freed");
+        assertEquals(expectedTotalLeak, totalFreedBytes,
+                "The page-boundary drains should reclaim the full deferred byte footprint");
 
         log.info("IMPACT: Fix reclaims ~{} KB of native memory per page ({} buffers × {} KB)",
                 deferredPerPage * expectedBytesPerBuffer / 1024,
@@ -766,5 +775,151 @@ public class VlmPageReuseMemoryLeakTest {
                 (physAfter - physBefore) / 1024,
                 (totalBytesAfter - totalBytesBefore) / 1024,
                 liveAfter - liveBefore);
+    }
+
+    // =========================================================================
+    // Test 7: A component reset must not sweep another executor's retained inputs
+    // =========================================================================
+
+    @Test
+    @Order(7)
+    @DisplayName("Multi-model reset preserves frozen decoder inputs until the shared cache sweep")
+    void testComponentResetDefersSharedCacheCleanup() {
+        DynamicShapePlanExecutor disposableExecutor =
+                new DynamicShapePlanExecutor(SameDiff.create(), new ArrayCacheMemoryMgr());
+        INDArray retainedDecoderMask = Nd4j.zeros(DataType.LONG, 1, 2305);
+        INDArray disposableIntermediate = Nd4j.zeros(DataType.FLOAT, 8, 8);
+        DataBuffer retainedBuffer = retainedDecoderMask.data();
+        DataBuffer disposableBuffer = disposableIntermediate.data();
+
+        try {
+            // Reproduce the page-boundary state: both buffers were released by session memory
+            // managers, but the frozen decoder still strongly owns its external input array.
+            ArrayCacheMemoryMgr.getDeferredCloseBuffers().put(retainedBuffer, Boolean.TRUE);
+            ArrayCacheMemoryMgr.getDeferredCloseBuffers().put(disposableBuffer, Boolean.TRUE);
+
+            // Resetting the vision/embed component must not sweep the thread-wide cache. The VLM
+            // page owner will do that once all disposable executors have been reset.
+            disposableExecutor.resetForNextPage(false);
+            assertFalse(retainedBuffer.wasClosed(),
+                    "A component reset must not close another executor's frozen external input");
+            assertFalse(disposableBuffer.wasClosed(),
+                    "Shared cleanup must remain deferred until the multi-model page boundary");
+
+            IdentityHashMap<DataBuffer, Boolean> survivingBuffers = new IdentityHashMap<>();
+            survivingBuffers.put(retainedBuffer, Boolean.TRUE);
+            long[] cleanup = ArrayCacheMemoryMgr.closeDeferredBuffers(survivingBuffers);
+            ArrayCacheMemoryMgr.clearCacheState();
+            ArrayCacheMemoryMgr.setEnableCache(false);
+
+            assertEquals(1, cleanup[0], "Only the unprotected component buffer should be reclaimed");
+            assertTrue(disposableBuffer.wasClosed(),
+                    "The page-level sweep must reclaim buffers from reset executors");
+            assertFalse(retainedBuffer.wasClosed(),
+                    "The page-level sweep must preserve the frozen decoder input");
+
+            // This is the exact operation and shape from the multi-page OCR failure.
+            assertDoesNotThrow(() -> retainedDecoderMask.assign(0));
+            assertEquals(0L, retainedDecoderMask.sumNumber().longValue());
+        } finally {
+            disposableExecutor.close();
+            if (!retainedDecoderMask.wasClosed()) {
+                retainedDecoderMask.close();
+            }
+            if (!disposableIntermediate.wasClosed()) {
+                disposableIntermediate.close();
+            }
+        }
+    }
+
+    // =========================================================================
+    // Test 8: Frozen-plan reuse must reject arrays whose DataBuffer was closed
+    // =========================================================================
+
+    @Test
+    @Order(8)
+    @DisplayName("Frozen decoder reuse rejects a closed retained attention mask")
+    void testClosedFrozenExternalInputIsNotReusable() {
+        INDArray retainedDecoderMask = Nd4j.zeros(DataType.LONG, 1, 2305);
+        DataBuffer retainedBuffer = retainedDecoderMask.data();
+
+        try {
+            INDArray[] frozenInputs = new INDArray[]{retainedDecoderMask};
+            assertTrue(DynamicShapePlanExecutor.areExternalInputsReusable(frozenInputs),
+                    "A live frozen attention mask should be reusable");
+
+            // Reproduce the exact stale-owner state from the dogfood runtime: the executor still
+            // holds the INDArray object, but cleanup has already closed its DataBuffer.
+            retainedBuffer.close();
+
+            assertFalse(DynamicShapePlanExecutor.areExternalInputsReusable(frozenInputs),
+                    "Frozen-plan reuse must fail closed before assign(0) touches a dead DataBuffer");
+            assertFalse(DynamicShapePlanExecutor.areExternalInputsReusable(
+                            new INDArray[]{retainedDecoderMask, null}),
+                    "A partially populated snapshot cannot preserve pointer stability");
+        } finally {
+            if (!retainedDecoderMask.wasClosed() && retainedDecoderMask.data() != null
+                    && !retainedDecoderMask.data().wasClosed()) {
+                retainedDecoderMask.close();
+            }
+        }
+    }
+
+    // =========================================================================
+    // Test 9: Inactive frozen plans retain their inputs across active-plan cleanup
+    // =========================================================================
+
+    @Test
+    @Order(9)
+    @DisplayName("Prefill cleanup preserves the inactive decode plan attention mask")
+    void testInactivePinnedPlanInputsAreProtectedDuringCacheCleanup() throws Exception {
+        ArrayCacheMemoryMgr memoryManager = new ArrayCacheMemoryMgr();
+        DynamicShapePlanExecutor executor =
+                new DynamicShapePlanExecutor(SameDiff.create(), memoryManager);
+        INDArray retainedDecoderMask = Nd4j.zeros(DataType.LONG, 1, 2305);
+        INDArray activePrefillInput = Nd4j.zeros(DataType.FLOAT, 1, 1536, 4);
+        INDArray disposablePrefillIntermediate = Nd4j.zeros(DataType.FLOAT, 8, 8);
+        DataBuffer retainedBuffer = retainedDecoderMask.data();
+        DataBuffer disposableBuffer = disposablePrefillIntermediate.data();
+
+        try {
+            // Model the decoder's frozen A/B plan switch without requiring a native backend:
+            // handle 0xdec owns the decode mask and handle 0xpre owns the active prefill input.
+            java.lang.reflect.Method retainForPlan = DynamicShapePlanExecutor.class
+                    .getDeclaredMethod("retainExternalInputsForPlan", long.class, INDArray[].class);
+            retainForPlan.setAccessible(true);
+            retainForPlan.invoke(executor, 0xdecL, (Object) new INDArray[]{retainedDecoderMask});
+            retainForPlan.invoke(executor, 0xfeeL, (Object) new INDArray[]{activePrefillInput});
+
+            assertTrue(executor.isRetainedExternalInput(retainedDecoderMask),
+                    "Pending cast cleanup must recognize the inactive decode-plan input by identity");
+            assertTrue(executor.isRetainedExternalInput(activePrefillInput),
+                    "The active prefill-plan input must also remain retained");
+            assertFalse(executor.isRetainedExternalInput(disposablePrefillIntermediate),
+                    "Unowned intermediates must remain eligible for cleanup");
+
+            ArrayCacheMemoryMgr.setEnableCache(true);
+            memoryManager.release(retainedDecoderMask);
+            memoryManager.release(disposablePrefillIntermediate);
+
+            IdentityHashMap<DataBuffer, Boolean> protectedBuffers = new IdentityHashMap<>();
+            executor.collectRetainedExternalInputBuffers(protectedBuffers);
+            memoryManager.close(protectedBuffers);
+
+            assertTrue(protectedBuffers.containsKey(retainedBuffer),
+                    "Inactive decode-plan inputs must be part of the session cleanup protection set");
+            assertFalse(retainedBuffer.wasClosed(),
+                    "Active prefill cleanup must not close the inactive decode attention mask");
+            assertTrue(disposableBuffer.wasClosed(),
+                    "Unowned prefill intermediates should still be reclaimed");
+
+            // Exact operation and shape from the post-rebuild dogfood failure.
+            assertDoesNotThrow(() -> retainedDecoderMask.assign(0));
+        } finally {
+            executor.close();
+            if (!retainedDecoderMask.wasClosed()) retainedDecoderMask.close();
+            if (!activePrefillInput.wasClosed()) activePrefillInput.close();
+            if (!disposablePrefillIntermediate.wasClosed()) disposablePrefillIntermediate.close();
+        }
     }
 }

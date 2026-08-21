@@ -512,17 +512,26 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                 // a "dataBuffer is null" crash in native dbSetDeviceId/dbClose calls.
                 DataBuffer arrBuf = arr.data();
                 boolean nativePointerInvalid = false;
+                boolean nativeStorageMissing = false;
                 if (arrBuf != null && !arrBuf.wasClosed()) {
                     try {
                         var opaque = arrBuf.opaqueBuffer();
                         nativePointerInvalid = (opaque == null || opaque.isNull());
+                        if (!nativePointerInvalid && arrBuf.length() > 0) {
+                            Pointer primary = Nd4j.getNativeOps().dbPrimaryBuffer(opaque);
+                            Pointer special = Nd4j.getNativeOps().dbSpecialBuffer(opaque);
+                            boolean primaryMissing = primary == null || primary.isNull();
+                            boolean specialMissing = special == null || special.isNull();
+                            nativeStorageMissing = primaryMissing && specialMissing;
+                        }
                     } catch (IllegalStateException e) {
                         // opaqueBuffer() throws if released - treat as invalid
                         nativePointerInvalid = true;
                     }
                 }
                 if (!arr.closeable() || arr.wasClosed() || arr.isView()
-                        || arrBuf == null || arrBuf.wasClosed() || nativePointerInvalid) {
+                        || arrBuf == null || arrBuf.wasClosed() || nativePointerInvalid
+                        || nativeStorageMissing) {
                     lru.remove(arr.getId());
                     long skippedBytes = arrBuf != null && !arrBuf.wasClosed() ? dataType.width() * arrBuf.length() : 0;
                     currentCacheSize.addAndGet(-skippedBytes);
@@ -547,38 +556,20 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                 lru.remove(arr.getId());
 
                 boolean isExactSize = (arr.data().length() == requiredElements);
-                boolean isExactShape = isExactSize && Arrays.equals(arr.shape(), shape);
 
-                // Always reset strides to contiguous layout. Cached arrays may have
-                // broadcast strides (e.g. [1,1] for shape [1,1024]) from prior assign(scalar)
-                // operations. These non-contiguous strides cause buffer overruns in downstream
-                // ops like scatter_nd_update that iterate using physical strides.
+                // Always rebuild the canonical descriptor, even when shape and strides already
+                // match. A cached array may carry transient flags from its previous logical use
+                // (most importantly ARRAY_EMPTY after an empty KV-cache view). Reusing only its
+                // dimensions would preserve those flags and turn a non-empty allocation into an
+                // unallocated output. setShapeAndStride derives emptiness from the requested shape.
                 long[] newStrides = Nd4j.getStrides(shape, arr.ordering());
-                if (!isExactShape) {
-                    int[] intShape = ArrayUtil.toInts(shape);
-                    int[] intStrides = ArrayUtil.toInts(newStrides);
-                    ((BaseNDArray) arr).setShapeAndStride(intShape, intStrides);
-                    if (isExactSize) {
-                        counters[0]++;
-                    } else {
-                        counters[1]++;
-                    }
-                } else {
-                    // Even for exact shape match, verify strides are contiguous
-                    long[] currentStrides = arr.stride();
-                    boolean stridesMatch = true;
-                    for (int s = 0; s < currentStrides.length; s++) {
-                        if (currentStrides[s] != newStrides[s]) {
-                            stridesMatch = false;
-                            break;
-                        }
-                    }
-                    if (!stridesMatch) {
-                        int[] intShape = ArrayUtil.toInts(shape);
-                        int[] intStrides = ArrayUtil.toInts(newStrides);
-                        ((BaseNDArray) arr).setShapeAndStride(intShape, intStrides);
-                    }
+                int[] intShape = ArrayUtil.toInts(shape);
+                int[] intStrides = ArrayUtil.toInts(newStrides);
+                ((BaseNDArray) arr).setShapeAndStride(intShape, intStrides);
+                if (isExactSize) {
                     counters[0]++;
+                } else {
+                    counters[1]++;
                 }
 
                 ((BaseNDArray) arr).assignNewId();

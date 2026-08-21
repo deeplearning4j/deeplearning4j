@@ -305,7 +305,8 @@ Status NativeDynamicShapePlan::segDispatchWarmup(
 // ═══════════════════════════════════════════════════════════════════════════
 Status NativeDynamicShapePlan::segDispatchCompile(
     GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream,
-    LongType& segShapeKey) {
+    LongType& segShapeKey, bool& invocationSatisfiedByWarmup) {
+  invocationSatisfiedByWarmup = false;
   const GraphBackendRequest request = makeGraphBackendRequest();
   const auto& resolvedCandidates = getGraphBackendCandidates();
   GraphBackend* backend = seg.resolvedGraphBackend;
@@ -316,6 +317,7 @@ Status NativeDynamicShapePlan::segDispatchCompile(
     return Status::KERNEL_FAILURE;
   }
   const char* backendName = backend->name();
+  bool shapeChangeWarmupCompleted = false;
 
   auto collectInputSignatures = [&]() {
     std::vector<std::string> signatures;
@@ -387,8 +389,13 @@ Status NativeDynamicShapePlan::segDispatchCompile(
     needsCompile = true;
   }
 
-  // Phase guard: compilation must not happen during REPLAYING
-  if (needsCompile && planLifecycle_.isReplaying()) {
+  const bool isRecompileDueToShapeChange =
+      seg.def.shapeKeyState.hasDrifted();
+
+  // A compiled artifact may not be replaced during REPLAYING unless a freshly
+  // computed boundary key proves that the current artifact is invalid. That
+  // transition uses the normal segment invalidation lifecycle below.
+  if (needsCompile && planLifecycle_.isReplaying() && !isRecompileDueToShapeChange) {
     DSP_DIAG(COMPILE,
              "ERROR: compilation triggered during REPLAYING phase for seg[%d-%d] "
              "(executionCount=%d, shapeKey compiled=%lld current=%lld, phase=%s). "
@@ -405,7 +412,6 @@ Status NativeDynamicShapePlan::segDispatchCompile(
   }
 
   if (needsCompile) {
-    bool isRecompileDueToShapeChange = (seg.exec.executionCount > 1) && seg.def.shapeKeyState.hasDrifted();
     if (isRecompileDueToShapeChange) {
       if (DSP_DIAG_ENABLED(LIFECYCLE)) {
         const auto currentSignatures = collectInputSignatures();
@@ -441,8 +447,10 @@ Status NativeDynamicShapePlan::segDispatchCompile(
       DSP_SEG_EVENT(seg, RECOMPILE_TRIGGERED,
                     "shape change detected. Running slot-by-slot warmup to "
                     "refresh outputSlots_ before recompilation.");
-      // Invalidate cached graph
-      SegmentLifecycle::invalidateForRebuild(this, seg, "shape_change");
+      // Invalidate only this segment. Resetting the plan-wide execute counter
+      // would destructively re-warm unrelated captured segments.
+      SegmentLifecycle::invalidateSegmentCaptures(this, seg, "shape_change");
+      platformResetGapCaches();
       platformResetBatchD2D();
       Status warmupStatus;
       {
@@ -455,10 +463,11 @@ Status NativeDynamicShapePlan::segDispatchCompile(
         return warmupStatus;
       }
       // Transition NEEDS_WARMUP -> NEEDS_COMPILE after successful warmup.
-      // invalidateForRebuild set state to NEEDS_WARMUP; the slot-by-slot
+      // invalidateSegmentCaptures set state to NEEDS_WARMUP; the slot-by-slot
       // execution above completed the warmup, so advance the state machine
       // before calling markCompiled (which asserts NEEDS_COMPILE).
       SegmentLifecycle::markWarmupDone(seg.exec);
+      shapeChangeWarmupCompleted = true;
       segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
       DSP_DIAG(COMPILE, "segDispatchCompile: shape-change warmup OK for seg[%d-%d], "
                         "recomputed shapeKey=%lld", seg.def.startSlot, seg.def.endSlot, segShapeKey);
@@ -527,31 +536,6 @@ Status NativeDynamicShapePlan::segDispatchCompile(
                           static_cast<uint8_t>(SegmentLifecycleState::CAPTURE_PENDING),
                           static_cast<uint32_t>(executeCount_));
     }
-    // Guard: only transition lifecycle if the segment is in the expected
-    // NEEDS_COMPILE state. Plan cache can return a plan whose segment was
-    // previously captured+sealed; re-compiling (e.g. after plan-swap refreeze)
-    // must not fire a lifecycle transition on an already-sealed segment.
-    if (seg.exec.segPhase.needsCompile()) {
-      SegmentLifecycle::markCompiled(seg.exec, backendName, segShapeKey);
-    } else if (seg.exec.segPhase.isSealed()) {
-      // Already sealed from a prior run on this plan — skip lifecycle transition
-      // but still update shape key state so the Triton cache lookup matches.
-      DSP_DIAG(COMPILE, "segDispatchCompile: seg[%d-%d] already SEALED — "
-               "skipping markCompiled lifecycle transition (plan cache re-hit)",
-               seg.def.startSlot, seg.def.endSlot);
-    }
-    // Store the compiled shape key so the Triton cache lookup key matches.
-    // This MUST only happen when compilation actually occurred — the caller
-    // previously did this unconditionally, which overwrote compiledShapeKey
-    // on non-compilation execs with a new shape key (e.g. KV cache grew),
-    // causing KERNEL_FAILURE on the Triton cache lookup.
-    seg.def.shapeKeyState.markCompiled(segShapeKey);
-    if (DSP_DIAG_ENABLED(LIFECYCLE)) {
-      seg.def.shapeKeyState.compiledInputSignatures = collectInputSignatures();
-    } else {
-      seg.def.shapeKeyState.compiledInputSignatures.clear();
-    }
-    DSP_SEG_EVENT(seg, SHAPE_KEY_STORED, "compilation complete");
   }
 
   // Validate compilation coverage on every compilation (not just the first).
@@ -606,6 +590,34 @@ Status NativeDynamicShapePlan::segDispatchCompile(
       DSP_DIAG(COMPILE, "%s: segment [%d-%d] mixed compile OK (compiled=%d nativeHandled=%d). "
                         "Native-handled ops will execute via slot-by-slot within the segment.",
                backendName, seg.def.startSlot, seg.def.endSlot, compiledCount, nativeHandledCount);
+    }
+  }
+
+  // Publish lifecycle and cache identity only after lowering coverage has been
+  // validated. A rejected partial compile must never become replay-visible.
+  if (needsCompile) {
+    if (seg.exec.segPhase.needsCompile()) {
+      SegmentLifecycle::markCompiled(seg.exec, backendName, segShapeKey);
+    } else if (!seg.exec.segPhase.isSealed()) {
+      DSP_THROW_SEG(COMPILE, seg.def.startSlot,
+                    "segDispatchCompile: successful compile for seg[%d-%d] ended in invalid phase %s",
+                    seg.def.startSlot, seg.def.endSlot,
+                    seg.exec.segPhase.displayName());
+    }
+    seg.def.shapeKeyState.markCompiled(segShapeKey);
+    if (DSP_DIAG_ENABLED(LIFECYCLE)) {
+      seg.def.shapeKeyState.compiledInputSignatures = collectInputSignatures();
+    } else {
+      seg.def.shapeKeyState.compiledInputSignatures.clear();
+    }
+    DSP_SEG_EVENT(seg, SHAPE_KEY_STORED, "validated compilation complete");
+    if (shapeChangeWarmupCompleted) {
+      // The bounded functional warmup produced this invocation's outputs.
+      // Publish capture readiness only after the replacement artifact and its
+      // coverage audit are valid. Capture/direct execution must wait until the
+      // next call or stateful/in-place operations would execute twice.
+      seg.exec.markShapeChangeWarmupCaptureReady();
+      invocationSatisfiedByWarmup = true;
     }
   }
 

@@ -206,6 +206,40 @@ void classifyAndUpdateOwnership(
   }
 }
 
+bool findLiveSlotAlias(
+    NDArray* retiringArray,
+    NDArray** outputSlots, int totalOutputSlots,
+    int* exactReferenceSlot, int* sharedBufferSlot) {
+  if (exactReferenceSlot != nullptr) *exactReferenceSlot = -1;
+  if (sharedBufferSlot != nullptr) *sharedBufferSlot = -1;
+  if (retiringArray == nullptr || outputSlots == nullptr || totalOutputSlots <= 0) {
+    return false;
+  }
+
+  DataBuffer* retiringBuffer = retiringArray->dataBuffer();
+  for (int i = 0; i < totalOutputSlots; i++) {
+    NDArray* live = outputSlots[i];
+    if (live == nullptr) continue;
+    if (live == retiringArray) {
+      if (exactReferenceSlot != nullptr) *exactReferenceSlot = i;
+      return true;
+    }
+    if (retiringBuffer != nullptr && live->dataBuffer() == retiringBuffer) {
+      if (sharedBufferSlot != nullptr) *sharedBufferSlot = i;
+      return true;
+    }
+  }
+  return false;
+}
+
+bool shouldRetainDeferredSlotArray(
+    NDArray* retiringArray, bool exactWrapperLive, bool sharedBufferLive) {
+  if (retiringArray == nullptr) return false;
+  if (exactWrapperLive) return true;
+  return sharedBufferLive && retiringArray->ownsDataBuffer() &&
+         !retiringArray->isView();
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // BufferPointerSnapshot
 // ═══════════════════════════════════════════════════════════════════════════════

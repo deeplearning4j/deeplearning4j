@@ -725,8 +725,16 @@ public class StaticKvCacheDecodeLoop {
                         // CRITICAL: Freeze shapes IMMEDIATELY after recompile.
                         if (dspExec != null && !skipFreeze) {
                             dspExec.setShapesFrozen(true);
-                            dspExec.setTraceEnabled(true);
-                            dspExec.setExecutionTimingEnabled(true);
+                            boolean dspDiagnosticsEnabled =
+                                    Boolean.parseBoolean(System.getProperty(
+                                            ND4JSystemProperties.DSP_EXECUTION_TIMING, "false"))
+                                    || Boolean.parseBoolean(System.getProperty(
+                                            ND4JSystemProperties.VLM_BENCHMARK_DSP_EXECUTION_TIMING, "false"))
+                                    || Boolean.parseBoolean(System.getProperty(
+                                            ND4JSystemProperties.VLM_BENCHMARK_OP_TIMING, "false"));
+                            dspExec.setExecutionTimingEnabled(dspDiagnosticsEnabled);
+                            dspExec.setTraceEnabled(
+                                    System.getProperty(ND4JSystemProperties.DSP_TRACE) != null);
                             decoderDspExec = dspExec;
                             log.info("  [Perf] Shapes frozen AFTER recompile (stable Triton cache keys)");
                             logDecodePhase("SHAPES_FROZEN", step,

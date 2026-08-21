@@ -710,15 +710,26 @@ class WorkflowMatrixTests(unittest.TestCase):
             'CUDA::cuda_driver cuda TRUE',
             configuration,
         )
-        main_build_flow = (ROOT / "libnd4j/cmake/MainBuildFlow.cmake").read_text()
+        self.assertIn(
+            'set(_zluda_cuda_library_names cuda_driver cuda)',
+            configuration,
+        )
+        main_build_flow = (
+            ROOT / "libnd4j/cmake/MainBuildFlow.cmake"
+        ).read_text()
         self.assertIn('CUDA_RESOLVE_DEVICE_SYMBOLS OFF', main_build_flow)
         self.assertIn('CUDA_RUNTIME_LIBRARY Shared', main_build_flow)
         self.assertIn('WINDOWS_EXPORT_ALL_SYMBOLS OFF', main_build_flow)
-        self.assertNotIn('WINDOWS_EXPORT_ALL_SYMBOLS ON', main_build_flow)
         self.assertIn('EXPORTS\\n', main_build_flow)
         self.assertIn('dsp_runtime_c.h', main_build_flow)
-        self.assertIn('target_sources(${MAIN_LIB_NAME} PRIVATE', main_build_flow)
-        self.assertIn('ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"', main_build_flow)
+        self.assertIn(
+            'ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"',
+            main_build_flow,
+        )
+        self.assertIn(
+            'target_link_options(${MAIN_LIB_NAME} PRIVATE\n                    "/DEF:${_sdx_windows_def}")',
+            main_build_flow,
+        )
         self.assertIn(
             'ZLUDA supports compute_80, compute_86, and compute_89',
             configuration,

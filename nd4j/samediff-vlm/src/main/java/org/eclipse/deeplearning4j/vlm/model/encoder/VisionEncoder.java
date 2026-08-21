@@ -23,6 +23,7 @@ package org.eclipse.deeplearning4j.vlm.model.encoder;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.deeplearning4j.llm.generation.SameDiffMemoryUtils;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImageTiler;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VLMImagePreprocessor;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -103,49 +104,66 @@ public class VisionEncoder implements AutoCloseable {
         String[] outputNames = model.outputs().toArray(new String[0]);
 
         List<INDArray> frameEmbeddings = new ArrayList<>();
-        List<INDArray> frameInputs = new ArrayList<>();
         boolean frameLoopSucceeded = false;
         try {
             for (int frameIdx = 0; frameIdx < numFrames; frameIdx++) {
-                INDArray frameSlice = tiledImage.get(
-                        NDArrayIndex.point(0), NDArrayIndex.point(frameIdx),
-                        NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
-                // SmolDocling's vision encoder expects rank-4 NCHW input per frame.
-                // Passing rank-5 [1, 1, C, H, W] breaks ONNX zero-copy reshape constants.
-                INDArray singleFrame = frameSlice.reshape(1, 3, targetSize, targetSize).dup();
-                frameInputs.add(singleFrame);
+                List<INDArray> frameInputs = new ArrayList<>();
+                Map<String, INDArray> outputs = null;
+                try {
+                    INDArray frameSlice = tiledImage.get(
+                            NDArrayIndex.point(0), NDArrayIndex.point(frameIdx),
+                            NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+                    // SmolDocling's vision encoder expects rank-4 NCHW input per frame.
+                    // Passing rank-5 [1, 1, C, H, W] breaks ONNX zero-copy reshape constants.
+                    INDArray singleFrame = frameSlice.reshape(1, 3, targetSize, targetSize).dup();
+                    frameInputs.add(singleFrame);
 
-                Map<String, INDArray> inputMap = new HashMap<>();
-                for (String inputName : inputNames) {
-                    if (inputName.equals("pixel_values")) {
-                        inputMap.put(inputName, singleFrame);
-                    } else if (inputName.equals("pixel_attention_mask")) {
-                        ImageTiler.ContentRegion region = splitResult.contentRegions.get(frameIdx);
-                        INDArray attentionMask = ImageTiler.createPixelAttentionMask(region.width, region.height, targetSize);
-                        inputMap.put(inputName, attentionMask);
-                        frameInputs.add(attentionMask);
+                    Map<String, INDArray> inputMap = new HashMap<>();
+                    for (String inputName : inputNames) {
+                        if (inputName.equals("pixel_values")) {
+                            inputMap.put(inputName, singleFrame);
+                        } else if (inputName.equals("pixel_attention_mask")) {
+                            ImageTiler.ContentRegion region = splitResult.contentRegions.get(frameIdx);
+                            INDArray attentionMask = ImageTiler.createPixelAttentionMask(
+                                    region.width, region.height, targetSize);
+                            inputMap.put(inputName, attentionMask);
+                            frameInputs.add(attentionMask);
+                        }
+                    }
+
+                    outputs = model.output(inputMap, outputNames);
+                    VisionEncoderUtils.VisionOutput selected = VisionEncoderUtils.selectVisionOutput(outputs);
+                    if (selected == null || selected.tensor == null) {
+                        throw new IllegalStateException(
+                                "Vision encoder produced no usable output for frame " + frameIdx);
+                    }
+
+                    INDArray out = selected.tensor.dup();
+                    // SameDiff and dup() may enqueue CUDA work asynchronously. The copied
+                    // frame embedding must be complete before output/session buffers are released.
+                    Nd4j.getExecutioner().commit();
+                    frameEmbeddings.add(out);
+                } finally {
+                    if (outputs != null) {
+                        for (INDArray output : outputs.values()) {
+                            SameDiffMemoryUtils.safeClose(output);
+                        }
+                    }
+                    // directExecHelper marks placeholders non-closeable/constant. Clear the
+                    // per-call references before closing this frame, but retain the SameDiff
+                    // session so the DSP plan can freeze, capture, and replay across frames.
+                    model.clearPlaceholders(false);
+                    model.clearOpInputs();
+                    for (INDArray frameInput : frameInputs) {
+                        SameDiffMemoryUtils.safeClose(frameInput);
                     }
                 }
-
-                Map<String, INDArray> outputs = model.output(inputMap, outputNames);
-
-                VisionEncoderUtils.VisionOutput selected = VisionEncoderUtils.selectVisionOutput(outputs);
-                if (selected == null || selected.tensor == null) {
-                    throw new IllegalStateException("Vision encoder produced no usable output for frame " + frameIdx);
-                }
-
-                INDArray out = selected.tensor.dup();
-                frameEmbeddings.add(out);
-
             }
             frameLoopSucceeded = true;
         } finally {
-            for (INDArray frameInput : frameInputs) {
-                if (frameInput != null && frameInput.closeable() && !frameInput.wasClosed()) frameInput.close();
-            }
             if (!frameLoopSucceeded) {
-                for (INDArray fe : frameEmbeddings) {
-                    if (fe != null && fe.closeable() && !fe.wasClosed()) fe.close();
+                for (INDArray frameEmbedding : frameEmbeddings) {
+                    SameDiffMemoryUtils.safeClose(frameEmbedding);
                 }
             }
         }
@@ -157,10 +175,11 @@ public class VisionEncoder implements AutoCloseable {
         } else {
             embeddings = Nd4j.concat(1, frameEmbeddings.toArray(new INDArray[0])).dup();
         }
+        Nd4j.getExecutioner().commit();
 
-        // Clean up individual frame embeddings
-        for (INDArray fe : frameEmbeddings) {
-            if (fe != null && fe.closeable() && !fe.wasClosed()) fe.close();
+        // Clean up individual frame embeddings only after the final copy/concat completes.
+        for (INDArray frameEmbedding : frameEmbeddings) {
+            SameDiffMemoryUtils.safeClose(frameEmbedding);
         }
 
         long encodingTimeMs = System.currentTimeMillis() - startMs;

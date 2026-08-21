@@ -84,11 +84,9 @@ void NativeDynamicShapePlan::setCublasWorkspaceForCapture(void* stream) {
   // into the graph on the correct stream.
   cublasSetStream_v2(*handlePtr, resolvedStream);
 
-  // CUDA graph capture bakes cuBLAS GEMM algorithm choices into the graph. Honor
-  // the execution-mode contract here: AUTO/TRITON/CUDA_GRAPHS require the same
-  // deterministic cuBLAS policy during warmup, capture, and live replay. Captured
-  // external-workspace gaps otherwise use tensor-core/default math while live gaps
-  // use PEDANTIC, which is enough to change VLM decode tokens.
+  // CUDA graph capture bakes cuBLAS GEMM algorithm choices into the graph.
+  // Honor the execution-mode determinism contract during both warmup and capture
+  // so captured and live paths cannot diverge numerically.
   const bool deterministic = ModeContract::forMode(graphExecutionMode_).requiresDeterministicCublas;
   cublasSetMathMode(*handlePtr, deterministic ? CUBLAS_PEDANTIC_MATH : CUBLAS_DEFAULT_MATH);
   tl_cublasLtDisabled = true;

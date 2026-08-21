@@ -11,10 +11,15 @@
 package org.nd4j.dsp.runtime;
 
 import org.eclipse.deeplearning4j.llm.generation.SdxTextGenerationConfig;
+import org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate;
+import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.serde.SDZSerializer;
 import org.nd4j.ggml.GGMLModelImport;
+import org.nd4j.ggml.convert.ConversionOptions;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -24,6 +29,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -42,11 +48,21 @@ class Qwen35DesktopExecutionGateTest {
 
     private static final String MODEL_PROPERTY = "sdx.qwen.gguf";
     private static final String BUNDLE_PROPERTY = "sdx.qwen.bundle";
-    private static final String PROMPT_PROPERTY = "sdx.qwen.promptTokenIds";
+    private static final String TOKENIZER_PROPERTY = "sdx.qwen.tokenizer";
 
     @Test
     void exactQwenBundleGeneratesPrefillAndWarmDecodeTokensWithoutFallback()
             throws Exception {
+        if (Boolean.getBoolean("nd4j.dsp.native.dumpOutputs")) {
+            String nativeDumpEnvironment = System.getenv("ND4J_DSP_NATIVE_DUMP_OUTPUTS");
+            assertTrue("1".equals(nativeDumpEnvironment)
+                            || Boolean.parseBoolean(nativeDumpEnvironment),
+                    "The native op-sanity system property must reach the native runtime environment");
+            // Load the selected ND4J backend before the backend-neutral SDX JNI
+            // transport. With pathsFirst this makes incremental native tests use
+            // the freshly rebuilt library rather than a same-version JavaCPP cache.
+            Nd4j.getEnvironment();
+        }
         String ggufValue = System.getProperty(MODEL_PROPERTY);
         Path gguf = ggufValue == null || ggufValue.trim().isEmpty()
                 ? null
@@ -58,6 +74,16 @@ class Qwen35DesktopExecutionGateTest {
         Path model = bundle.resolve("model.sdz");
         Path generationConfig = bundle.resolve("text-generation.json");
         Path manifest = bundle.resolve("manifest.json");
+        Path tokenizerPath = Paths.get(System.getProperty(
+                TOKENIZER_PROPERTY,
+                Paths.get(System.getProperty("user.home"), ".cache", "dl4j-llm-models",
+                        "Qwen3.5-0.8B-serving", "tokenizer.json").toString()))
+                .toAbsolutePath().normalize();
+        Path tokenizerConfig = tokenizerPath.resolveSibling("tokenizer_config.json");
+        assertTrue(Files.isRegularFile(tokenizerPath),
+                "Canonical Hugging Face tokenizer does not exist: " + tokenizerPath);
+        assertTrue(Files.isRegularFile(tokenizerConfig),
+                "Canonical Hugging Face tokenizer_config.json does not exist: " + tokenizerConfig);
 
         boolean rebuild = Boolean.getBoolean("sdx.qwen.rebuildBundle")
                 || !Files.isRegularFile(model)
@@ -69,32 +95,54 @@ class Qwen35DesktopExecutionGateTest {
                             + " when the canonical desktop-gate bundle must be built");
             assertTrue(Files.isRegularFile(gguf), "GGUF does not exist: " + gguf);
             exportCanonicalBundle(gguf, bundle, model, generationConfig, manifest);
+            if (Boolean.getBoolean("sdx.qwen.exportOnly")) {
+                System.out.printf("SDX_DESKTOP_EXPORT_ONLY bundle=%s model_bytes=%d%n",
+                        bundle, Files.size(model));
+                return;
+            }
         }
 
         String modelSource = gguf != null
                 ? gguf.getFileName().toString()
                 : bundle.getFileName().toString() + "/model.sdz";
-        long[] promptTokenIds = promptTokenIds();
         try (SdxRuntime runtime = SdxRuntime.create();
              SdxRuntime.SdxModel loaded = runtime.loadModel(
-                     bundle.toString(), SdxRuntime.ModelOptions.desktopOpenVino());
-             SdxTextSession session = loaded.createTextSession()) {
+                     bundle.toString(), desktopStrictCpuOptions());
+             SdxTextSession session = loaded.createTextSession();
+             HuggingFaceTokenizer tokenizer =
+                     HuggingFaceTokenizer.fromFile(tokenizerPath.toFile())) {
+            String prompt = tokenizer.applyChatTemplate(
+                    Arrays.asList(
+                            ChatTemplate.Message.system(
+                                    "You are a graph assistant. Use the available graph tools when the answer "
+                                            + "depends on people, organizations, entities, or relationships in the graph. "
+                                            + "Inspect relevant entities before drawing conclusions, do not invent missing "
+                                            + "facts, and give a concise answer grounded in the returned graph data."),
+                            ChatTemplate.Message.user("Hello")),
+                    true);
+            long[] promptTokenIds = tokenizer.encodeLong(prompt, false);
             SdxTextSession.GenerationResult result = session.generate(
                     promptTokenIds,
-                    new SdxTextSession.GenerationOptions(2)
-                            .minNewTokens(2)
+                    new SdxTextSession.GenerationOptions(16)
+                            .minNewTokens(1)
                             .temperature(0.0)
                             .topK(0)
                             .topP(1.0),
                     null,
                     null);
             SdxTextSession.GenerationReport report = result.report();
+            String decoded = tokenizer.decode(result.tokenIds(), true);
+            StringBuilder streamed = new StringBuilder();
+            try (HuggingFaceTokenizer.DecodeStream decoder =
+                         tokenizer.newDecodeStream(true)) {
+                for (long tokenId : result.tokenIds()) streamed.append(decoder.step(tokenId));
+            }
 
             System.out.printf(
                     "SDX_DESKTOP_GATE model=%s model_bytes=%d prompt_tokens=%d "
                             + "generated_tokens=%d backend_report=%s requested_backend=%d "
                             + "applied_backend=%d backend_status=%d used_fallback=%d "
-                            + "plan_phase=%d execution_count=%d token_ids=%s%n",
+                            + "plan_phase=%d execution_count=%d token_ids=%s decoded=%s%n",
                     modelSource,
                     Files.size(model),
                     promptTokenIds.length,
@@ -106,20 +154,40 @@ class Qwen35DesktopExecutionGateTest {
                     report.usedFallback(),
                     report.planPhase(),
                     report.executionCount(),
-                    Arrays.toString(result.tokenIds()));
+                    Arrays.toString(result.tokenIds()),
+                    decoded.replace("\n", "\\n"));
 
-            assertEquals(2, result.tokenCount(),
-                    "The desktop gate must cross prefill into the first decode warmup step");
+            assertTrue(result.tokenCount() > 0 && result.tokenCount() <= 16,
+                    "The desktop gate must generate at least one bounded decode token");
+            assertArrayEquals(
+                    new long[] {9419, 0, 2500, 628, 353, 7543, 488, 440, 678, 3134, 3242, 30, 248046},
+                    result.tokenIds(),
+                    "The exact app prompt must retain the known-good Qwen logits and greedy token sequence");
+            assertEquals("Hello! How can I assist you with your query today?", decoded,
+                    "The desktop acceptance gate must reject semantically invalid but decodable tokens");
+            assertFalse(decoded.isBlank(), "The exact Qwen tokenizer must decode generated text");
+            assertEquals(decoded, streamed.toString(),
+                    "Streaming and final JavaCPP BytePointer decode must agree byte-for-byte");
+            assertFalse(decoded.contains("Ġ") || decoded.contains("Ċ")
+                            || decoded.contains("Ã©") || decoded.contains("å»"),
+                    "Raw ByteLevel vocabulary symbols escaped the Hugging Face decoder: " + decoded);
             assertTrue(report.backendReportAvailable(),
                     "A requested route is not execution proof; the native report is required");
-            assertEquals(SdxRuntime.SDX_BACKEND_OPENVINO, report.requestedBackend());
-            assertEquals(SdxRuntime.SDX_BACKEND_OPENVINO, report.appliedBackend());
+            assertEquals(SdxRuntime.SDX_BACKEND_SLOT_BY_SLOT, report.requestedBackend());
+            assertEquals(SdxRuntime.SDX_BACKEND_SLOT_BY_SLOT, report.appliedBackend());
             assertEquals(SdxRuntime.SDX_STATUS_OK, report.backendStatusCode());
             assertEquals(0, report.usedFallback(),
                     "Slot-by-slot/host fallback is forbidden by this gate");
             assertTrue(report.executionCount() >= 1,
                     "The applied-backend report must come from an executed context");
         }
+    }
+
+    private static SdxRuntime.ModelOptions desktopStrictCpuOptions() {
+        return new SdxRuntime.ModelOptions()
+                .backend(SdxRuntime.SDX_BACKEND_SLOT_BY_SLOT)
+                .strictBackend(true)
+                .allowRuntimeJit(true);
     }
 
     private static void exportCanonicalBundle(
@@ -129,7 +197,19 @@ class Qwen35DesktopExecutionGateTest {
             Path generationConfig,
             Path manifest) throws Exception {
         Files.createDirectories(bundle);
-        SameDiff graph = GGMLModelImport.importModel(gguf.toFile());
+        SameDiff graph = Boolean.getBoolean("sdx.qwen.mobileProfile")
+                ? GGMLModelImport.importModel(gguf.toFile(), ConversionOptions.builder()
+                        .quantizationMode(ConversionOptions.QuantizationMode.DEQUANTIZE_TO_FLOAT16)
+                        .targetDataType(DataType.FLOAT16)
+                        .embeddingDataType(DataType.HALF)
+                        .lastPositionLogitsOnly(true)
+                        .forTraining(false)
+                        .preserveTokenizerInfo(true)
+                        .kvQuantFormat(0)
+                        .tensorBatchSize(10)
+                        .useMemoryMapping(true)
+                        .build())
+                : GGMLModelImport.importModel(gguf.toFile());
         assertTrue(graph.hasVariable("model.embed_tokens.weight"),
                 "GGUF import omitted model.embed_tokens.weight");
         assertTrue(graph.getVariable("model.embed_tokens.weight").getArr() != null,
@@ -192,17 +272,4 @@ class Qwen35DesktopExecutionGateTest {
         Files.write(manifest, manifestJson.getBytes(StandardCharsets.UTF_8));
     }
 
-    private static long[] promptTokenIds() {
-        String configured = System.getProperty(PROMPT_PROPERTY, "40,374,264,1273,13");
-        String[] values = configured.split(",");
-        long[] result = new long[values.length];
-        for (int i = 0; i < values.length; i++) {
-            result[i] = Long.parseLong(values[i].trim());
-            if (result[i] < 0) {
-                throw new IllegalArgumentException(
-                        PROMPT_PROPERTY + " contains a negative token ID");
-            }
-        }
-        return result;
-    }
 }

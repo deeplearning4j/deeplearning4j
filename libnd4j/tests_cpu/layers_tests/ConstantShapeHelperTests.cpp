@@ -119,6 +119,18 @@ TEST_F(ConstantShapeHelperTests, stress_test_1) {
   sd_printf("Total time (us) %lld\n", outerTime);
 }
 
+TEST_F(ConstantShapeHelperTests, cache_distinguishes_element_wise_stride) {
+  LongType nonElementwise[] = {4, 2, 2, 2, 2, 8, 4, 2, 1, 8192, -1, 99};
+  LongType elementwise[] = {4, 2, 2, 2, 2, 8, 4, 2, 1, 8192, 1, 99};
+
+  auto nonElementwiseBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(nonElementwise);
+  auto elementwiseBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(elementwise);
+
+  ASSERT_NE(nonElementwiseBuffer->primary(), elementwiseBuffer->primary());
+  ASSERT_EQ(-1, shape::elementWiseStride(nonElementwiseBuffer->primary()));
+  ASSERT_EQ(1, shape::elementWiseStride(elementwiseBuffer->primary()));
+}
+
 TEST_F(ConstantShapeHelperTests, basic_test_3) {
   auto array = NDArrayFactory::create_<float>('c', {128});
 

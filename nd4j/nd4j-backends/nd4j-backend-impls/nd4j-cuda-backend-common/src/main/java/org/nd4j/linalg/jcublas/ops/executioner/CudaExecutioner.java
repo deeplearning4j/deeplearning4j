@@ -377,16 +377,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         // device priorities, and fallback routing centrally.
         long workspaceBytes = MIN_FREE_MEMORY_FOR_TARGET;
 
-        DeviceDescriptor preferredDesc = null;
-        if (preferredDevice >= 0) {
-            String prefId = String.valueOf(preferredDevice);
-            for (DeviceDescriptor d : mgr.getRegisteredDevices()) {
-                if (prefId.equals(d.getDeviceId())) {
-                    preferredDesc = d;
-                    break;
-                }
-            }
-        }
+        DeviceDescriptor preferredDesc = preferredDevice >= 0
+                ? mgr.getRegisteredDevice(preferredDevice)
+                : null;
 
         DeviceDescriptor selected;
         if (preferredDesc != null) {
@@ -394,14 +387,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         } else {
             selected = mgr.selectDeviceForAllocation(workspaceBytes);
         }
-        if (selected != null) {
-            try {
-                return Integer.parseInt(selected.getDeviceId());
-            } catch (NumberFormatException e) {
-                return 0;
-            }
-        }
-        return 0;
+        return selected != null ? selected.getDeviceIndex() : 0;
     }
 
     /** Get the number of CUDA devices (cached after first query). */
@@ -496,7 +482,15 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         if (outputDeviceId >= 0 && outputDeviceId != targetDeviceId) {
                             // For outputs, create a fresh buffer on the target device (no data to copy).
                             // The old output buffer belongs to the caller — do NOT close it here.
+                            long[] expectedDescriptor = output.shapeInfoJava().clone();
                             INDArray migrated = Nd4j.createUninitialized(output.dataType(), output.shape(), output.ordering());
+                            long[] migratedDescriptor = migrated.shapeInfoJava();
+                            if (!Arrays.equals(expectedDescriptor, migratedDescriptor)) {
+                                throw new ND4JIllegalStateException("CUDA output migration changed its shape descriptor: sourceDevice="
+                                        + outputDeviceId + ", targetDevice=" + targetDeviceId
+                                        + ", expected=" + Arrays.toString(expectedDescriptor)
+                                        + ", migrated=" + Arrays.toString(migratedDescriptor));
+                            }
                             oc.setOutputArray(i, migrated);
                         }
                     }
@@ -2512,6 +2506,25 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             }
 
 
+
+            if (Nd4j.getEnvironment().isDebugAndVerbose()) {
+                for (int outputIndex = 0; outputIndex < context.getOutputArrays().size(); outputIndex++) {
+                    INDArray javaOutput = context.getOutputArray(outputIndex);
+                    if (javaOutput == null) {
+                        continue;
+                    }
+                    long[] expectedDescriptor = javaOutput.shapeInfoJava();
+                    OpaqueNDArray nativeOutput = Nd4j.getNativeOps().getOutputArrayNative(
+                            (OpaqueContext) context.contextPointer(), outputIndex);
+                    nativeOutput.attachOwner(javaOutput.shapeInfoDataBuffer().opaqueBuffer().backendOwner());
+                    long[] nativeDescriptor = nativeOutput.shapeInfo();
+                    if (!Arrays.equals(expectedDescriptor, nativeDescriptor)) {
+                        throw new ND4JIllegalStateException("CUDA graph context output descriptor diverged before native execution: index="
+                                + outputIndex + ", java=" + Arrays.toString(expectedDescriptor)
+                                + ", native=" + Arrays.toString(nativeDescriptor));
+                    }
+                }
+            }
 
             val status = Nd4j.getNativeOps().execCustomOp2(null, op.opHash(), context.contextPointer());
             if (Nd4j.getNativeOps().lastErrorCode() != 0)

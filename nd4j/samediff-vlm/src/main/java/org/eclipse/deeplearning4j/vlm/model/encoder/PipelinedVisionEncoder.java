@@ -24,8 +24,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImageTiler;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VLMImagePreprocessor;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.samediff.internal.InferenceSession;
-import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -62,7 +60,6 @@ public class PipelinedVisionEncoder {
     private final VisionEncoderIOConfig ioConfig;
     private final int visionChunkSize;
     private final ExecutorService preprocessPool;
-    private boolean firstFrameEncoded = false;
 
     /**
      * Create a pipelined vision encoder.
@@ -212,21 +209,7 @@ public class PipelinedVisionEncoder {
         // Process frames one at a time through the vision encoder. ONNX vision
         // encoder models (SigLIP etc.) only support batch_size=1 — internal reshape
         // and attention ops break with batch_size>1 (CUDA error 700).
-        //
-        // DSP/CUDA graph disable strategy: only the FIRST frame needs DSP disabled.
-        // DSP compilation + CUDA graph capture on frame 0 temporarily doubles intermediate
-        // memory, causing OOM when all 3 models are loaded. After frame 0, the plan is
-        // compiled and cached arrays are reused — no new allocations, so DSP is safe.
-        boolean dspWasEnabled = false;
-        String prevCudaGraphs = null;
         for (int f = 0; f < page.numFrames; f++) {
-            if (!firstFrameEncoded) {
-                dspWasEnabled = InferenceSession.isDynamicShapePlanEnabled();
-                prevCudaGraphs = System.getProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED);
-                InferenceSession.setDynamicShapePlanEnabled(false);
-                System.setProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, "false");
-                log.info("  Frame 0: DSP and CUDA graphs disabled for first vision encoder execution");
-            }
             // Pre-flight memory check: trim pools and verify sufficient memory BEFORE
             // starting a frame that takes ~30s. Without this, OOM occurs at the end of
             // a frame after wasting the entire encode time.
@@ -303,26 +286,13 @@ public class PipelinedVisionEncoder {
                 }
             }
             // directExecHelper poisons placeholders via setCloseable(false) → setConstant(true).
-            // Must undo before close, otherwise close() is a no-op → leaked to GC → SIGABRT.
+            // Undo that protection and clear per-call references before close, but retain the
+            // SameDiff session so one DSP plan is reused across same-shaped frames.
             pixelValues.setCloseable(true);
             mask.setCloseable(true);
             visionEncoder.clearPlaceholders(false);
             visionEncoder.clearOpInputs();
-            visionEncoder.resetSession();
             Nd4j.getExecutioner().commit();
-
-            // Re-enable DSP after first frame — plan is now compiled, cached arrays allocated.
-            // Subsequent frames reuse the plan with no new allocations, so DSP is safe and fast.
-            if (!firstFrameEncoded) {
-                firstFrameEncoded = true;
-                InferenceSession.setDynamicShapePlanEnabled(dspWasEnabled);
-                if (prevCudaGraphs != null) {
-                    System.setProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, prevCudaGraphs);
-                } else {
-                    System.clearProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED);
-                }
-                log.info("  Frame 0 done: DSP and CUDA graphs re-enabled for remaining frames");
-            }
         }
 
         return embeddings;

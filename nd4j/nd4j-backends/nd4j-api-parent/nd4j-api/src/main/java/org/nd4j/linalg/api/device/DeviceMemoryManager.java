@@ -732,54 +732,62 @@ public class DeviceMemoryManager {
      * @return the eligible GPU device index with the most free memory, or 0 if the query fails
      */
     public int selectBestGpu(java.util.Collection<Integer> candidateDevices) {
+        return selectBestGpu(candidateDevices, 0, false);
+    }
+
+    /**
+     * Select the pool-aware GPU with enough available memory for a complete planned allocation.
+     * Unlike per-buffer failover, this is an admission decision: it returns
+     * {@link #NO_DEVICE_AVAILABLE} rather than committing a model to an undersized GPU.
+     */
+    public int selectBestGpuForAllocation(
+            long requiredBytes, java.util.Collection<Integer> candidateDevices) {
+        if (requiredBytes < 0) {
+            throw new IllegalArgumentException("requiredBytes must not be negative");
+        }
+        return selectBestGpu(candidateDevices, requiredBytes, true);
+    }
+
+    private int selectBestGpu(
+            java.util.Collection<Integer> candidateDevices,
+            long requiredBytes,
+            boolean requireCapacity) {
         try {
             var nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
             int numDevices = nativeOps.getAvailableDevices();
-            if (numDevices <= 1) {
-                return 0;
-            }
             boolean restrict = candidateDevices != null && !candidateDevices.isEmpty();
 
-            // Pick the GPU with the most AVAILABLE memory (pool-aware), skipping any device not in
-            // the candidate set (e.g. one banned because its context creation failed with error 2).
-            // cudaMemGetInfo reports free memory MINUS pool reserved, but cudaMallocAsync can reuse
-            // reserved pool memory. Without pool-aware accounting, devices that previously ran a
-            // large graph (e.g., vision encoder) appear nearly full even though their pool has GB of
-            // reusable memory. available = cudaFree + max(0, poolReserved - poolUsed)
             long bestAvailable = -1;
             int bestDevice = -1;
             for (int i = 0; i < numDevices; i++) {
-                if (restrict && !candidateDevices.contains(i)) continue; // skip banned / non-candidate
-                long cudaFree = nativeOps.getDeviceFreeMemory(i);
-                long poolReusable = 0;
-                try {
-                    org.bytedeco.javacpp.LongPointer usedPtr = new org.bytedeco.javacpp.LongPointer(1);
-                    org.bytedeco.javacpp.LongPointer reservedPtr = new org.bytedeco.javacpp.LongPointer(1);
-                    nativeOps.getMemoryPoolStats(i, usedPtr, reservedPtr);
-                    long poolUsed = usedPtr.get();
-                    long poolReserved = reservedPtr.get();
-                    poolReusable = Math.max(0, poolReserved - poolUsed);
-                } catch (Exception ignored) {}
-                long available = cudaFree + poolReusable;
-                if (available > bestAvailable) {
+                if (restrict && !candidateDevices.contains(i)) continue;
+                long available = getPoolAwareFreeMemory(i);
+                if ((!requireCapacity || available >= requiredBytes) && available > bestAvailable) {
                     bestAvailable = available;
                     bestDevice = i;
                 }
             }
 
             if (bestDevice < 0) {
-                // Every candidate was filtered out (all banned, or empty intersection with physical
-                // devices). Fall back to unconstrained selection rather than crash.
+                if (requireCapacity) {
+                    log.warn("No eligible GPU has {} MB pool-aware memory available among candidates {}",
+                            requiredBytes / (1024 * 1024), candidateDevices);
+                    return NO_DEVICE_AVAILABLE;
+                }
                 log.warn("selectBestGpu: no eligible device among candidates {}, defaulting to device 0",
                         candidateDevices);
                 return 0;
             }
 
-            log.debug("selectBestGpu: device [{}] selected with {} MB available (pool-aware) out of {} devices{}",
-                    bestDevice, bestAvailable / (1024 * 1024), numDevices,
-                    restrict ? " (restricted to " + candidateDevices + ")" : "");
+            log.debug("selectBestGpu: device [{}] selected with {} MB available (required={} MB) out of {} devices{}",
+                    bestDevice, bestAvailable / (1024 * 1024), requiredBytes / (1024 * 1024),
+                    numDevices, restrict ? " (restricted to " + candidateDevices + ")" : "");
             return bestDevice;
         } catch (Exception e) {
+            if (requireCapacity) {
+                log.warn("Failed to query GPU capacity for {} bytes: {}", requiredBytes, e.getMessage());
+                return NO_DEVICE_AVAILABLE;
+            }
             log.warn("Failed to query GPU free memory, defaulting to device 0: {}", e.getMessage());
             return 0;
         }
@@ -798,24 +806,40 @@ public class DeviceMemoryManager {
      * @return pool-aware free bytes on that GPU
      */
     public long getPoolAwareFreeMemory(int deviceIndex) {
+        long available;
+        long poolUsed = 0;
         if (memorySimulationEnabled && simulatedFreeMemory.containsKey(deviceIndex)) {
-            return getEffectiveFreeMemory(deviceIndex, 0);
-        }
-        try {
-            var nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-            long cudaFree = nativeOps.getDeviceFreeMemory(deviceIndex);
-            long poolReusable = 0;
+            available = getEffectiveFreeMemory(deviceIndex, 0);
+        } else {
             try {
-                org.bytedeco.javacpp.LongPointer usedPtr = new org.bytedeco.javacpp.LongPointer(1);
-                org.bytedeco.javacpp.LongPointer reservedPtr = new org.bytedeco.javacpp.LongPointer(1);
-                nativeOps.getMemoryPoolStats(deviceIndex, usedPtr, reservedPtr);
-                poolReusable = Math.max(0, reservedPtr.get() - usedPtr.get());
-            } catch (Exception ignored) {}
-            return cudaFree + poolReusable;
-        } catch (Exception e) {
-            log.debug("getPoolAwareFreeMemory({}) failed: {}", deviceIndex, e.getMessage());
-            return Long.MAX_VALUE;
+                var nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                long cudaFree = nativeOps.getDeviceFreeMemory(deviceIndex);
+                long poolReusable = 0;
+                try {
+                    org.bytedeco.javacpp.LongPointer usedPtr = new org.bytedeco.javacpp.LongPointer(1);
+                    org.bytedeco.javacpp.LongPointer reservedPtr = new org.bytedeco.javacpp.LongPointer(1);
+                    nativeOps.getMemoryPoolStats(deviceIndex, usedPtr, reservedPtr);
+                    poolUsed = Math.max(0, usedPtr.get());
+                    poolReusable = Math.max(0, reservedPtr.get() - poolUsed);
+                } catch (Exception ignored) {}
+                available = cudaFree + poolReusable;
+            } catch (Exception e) {
+                log.debug("getPoolAwareFreeMemory({}) failed: {}", deviceIndex, e.getMessage());
+                return Long.MAX_VALUE;
+            }
         }
+
+        DeviceDescriptor device = getRegisteredDevice(deviceIndex);
+        if (device != null) {
+            long cap = getMemoryCap(device);
+            if (cap > 0) {
+                long tracked = allocatedMemory.getOrDefault(
+                        device.getDeviceId(), new AtomicLong(0)).get();
+                long capRemaining = Math.max(0, cap - Math.max(poolUsed, tracked));
+                available = Math.min(available, capRemaining);
+            }
+        }
+        return available;
     }
 
     /**

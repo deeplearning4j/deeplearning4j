@@ -94,7 +94,7 @@ public static class TokenizerResult extends Pointer {
     }
 
     public native @Cast("TokenizerError") int error_code(); public native TokenizerResult error_code(int setter);
-    public native @Cast("char*") String error_message(); public native TokenizerResult error_message(String setter);
+    public native @Cast("char*") BytePointer error_message(); public native TokenizerResult error_message(BytePointer setter);
 }
 
 // =============================================================================
@@ -106,16 +106,16 @@ public static class TokenizerResult extends Pointer {
  * @param model_path Path to the tokenizer configuration file
  * @return Pointer to tokenizer instance, or NULL on failure
  */
-public native @Name("create_tokenizer_from_file") OpaqueTokenizer createTokenizerFromFile(@Cast("char*") String model_path);
 public native @Name("create_tokenizer_from_file") OpaqueTokenizer createTokenizerFromFile(@Cast("char*") BytePointer model_path);
+public native @Name("create_tokenizer_from_file") OpaqueTokenizer createTokenizerFromFile(@Cast("char*") String model_path);
 
 /**
  * \brief Create a tokenizer from JSON string
  * @param json_config JSON configuration string
  * @return Pointer to tokenizer instance, or NULL on failure
  */
-public native @Name("create_tokenizer_from_json") OpaqueTokenizer createTokenizerFromJson(@Cast("char*") String json_config);
 public native @Name("create_tokenizer_from_json") OpaqueTokenizer createTokenizerFromJson(@Cast("char*") BytePointer json_config);
+public native @Name("create_tokenizer_from_json") OpaqueTokenizer createTokenizerFromJson(@Cast("char*") String json_config);
 
 /**
  * \brief Free a tokenizer instance
@@ -144,12 +144,12 @@ public native @Cast("size_t") @Name("get_vocab_size") long getVocabSize(OpaqueTo
  * @param token_id Receives the token ID when found
  * @return true when the token exists, false when it does not or input is invalid
  */
-public native @Cast("bool") @Name("get_token_id") boolean getTokenId(OpaqueTokenizer tokenizer, @Cast("char*") String token, @Cast("uint32_t*") IntPointer token_id);
-public native @Cast("bool") @Name("get_token_id") boolean getTokenId(OpaqueTokenizer tokenizer, @Cast("char*") BytePointer token, @Cast("uint32_t*") IntBuffer token_id);
-public native @Cast("bool") @Name("get_token_id") boolean getTokenId(OpaqueTokenizer tokenizer, @Cast("char*") String token, @Cast("uint32_t*") int[] token_id);
 public native @Cast("bool") @Name("get_token_id") boolean getTokenId(OpaqueTokenizer tokenizer, @Cast("char*") BytePointer token, @Cast("uint32_t*") IntPointer token_id);
 public native @Cast("bool") @Name("get_token_id") boolean getTokenId(OpaqueTokenizer tokenizer, @Cast("char*") String token, @Cast("uint32_t*") IntBuffer token_id);
 public native @Cast("bool") @Name("get_token_id") boolean getTokenId(OpaqueTokenizer tokenizer, @Cast("char*") BytePointer token, @Cast("uint32_t*") int[] token_id);
+public native @Cast("bool") @Name("get_token_id") boolean getTokenId(OpaqueTokenizer tokenizer, @Cast("char*") String token, @Cast("uint32_t*") IntPointer token_id);
+public native @Cast("bool") @Name("get_token_id") boolean getTokenId(OpaqueTokenizer tokenizer, @Cast("char*") BytePointer token, @Cast("uint32_t*") IntBuffer token_id);
+public native @Cast("bool") @Name("get_token_id") boolean getTokenId(OpaqueTokenizer tokenizer, @Cast("char*") String token, @Cast("uint32_t*") int[] token_id);
 
 /**
  * \brief Render a Hugging Face tokenizer_config.json chat template
@@ -159,13 +159,13 @@ public native @Cast("bool") @Name("get_token_id") boolean getTokenId(OpaqueToken
  * @param add_generation_prompt Whether to append the assistant prompt
  * @return Rendered prompt, or NULL on failure (must be freed with free_string)
  */
-public native @Name("apply_chat_template") @Cast("char*") String applyChatTemplate(@Cast("char*") String messages_json,
-                          @Cast("char*") String tokenizer_config_json,
-                          @Cast("char*") String current_date,
-                          @Cast("bool") boolean add_generation_prompt);
 public native @Name("apply_chat_template") @Cast("char*") BytePointer applyChatTemplate(@Cast("char*") BytePointer messages_json,
                           @Cast("char*") BytePointer tokenizer_config_json,
                           @Cast("char*") BytePointer current_date,
+                          @Cast("bool") boolean add_generation_prompt);
+public native @Name("apply_chat_template") @Cast("char*") String applyChatTemplate(@Cast("char*") String messages_json,
+                          @Cast("char*") String tokenizer_config_json,
+                          @Cast("char*") String current_date,
                           @Cast("bool") boolean add_generation_prompt);
 
 /**
@@ -176,12 +176,12 @@ public native @Name("apply_chat_template") @Cast("char*") BytePointer applyChatT
  * @param current_date Current date exposed as date_string when not overridden
  * @return Rendered prompt, or NULL on failure (must be freed with free_string)
  */
-public native @Name("apply_chat_template_context") @Cast("char*") String applyChatTemplateContext(@Cast("char*") String context_json,
-                                  @Cast("char*") String tokenizer_config_json,
-                                  @Cast("char*") String current_date);
 public native @Name("apply_chat_template_context") @Cast("char*") BytePointer applyChatTemplateContext(@Cast("char*") BytePointer context_json,
                                   @Cast("char*") BytePointer tokenizer_config_json,
                                   @Cast("char*") BytePointer current_date);
+public native @Name("apply_chat_template_context") @Cast("char*") String applyChatTemplateContext(@Cast("char*") String context_json,
+                                  @Cast("char*") String tokenizer_config_json,
+                                  @Cast("char*") String current_date);
 
 // =============================================================================
 // Encoding Functions
@@ -194,8 +194,8 @@ public native @Name("apply_chat_template_context") @Cast("char*") BytePointer ap
  * @param add_special_tokens Whether to add special tokens
  * @return Encoding result, or NULL on failure
  */
-public native @Name("encode_text") OpaqueEncoding encodeText(OpaqueTokenizer tokenizer, @Cast("char*") String text, @Cast("bool") boolean add_special_tokens);
 public native @Name("encode_text") OpaqueEncoding encodeText(OpaqueTokenizer tokenizer, @Cast("char*") BytePointer text, @Cast("bool") boolean add_special_tokens);
+public native @Name("encode_text") OpaqueEncoding encodeText(OpaqueTokenizer tokenizer, @Cast("char*") String text, @Cast("bool") boolean add_special_tokens);
 
 /**
  * \brief Encode multiple texts in batch
@@ -268,9 +268,9 @@ public native @Cast("size_t") @Name("encoding_get_offsets") long encodingGetOffs
  * @param skip_special_tokens Whether to skip special tokens
  * @return Decoded text string, or NULL on failure (must be freed with free_string)
  */
-public native @Name("decode_ids") @Cast("char*") String decodeIds(OpaqueTokenizer tokenizer, @Cast("const uint32_t*") IntPointer ids, @Cast("size_t") long num_ids, @Cast("bool") boolean skip_special_tokens);
-public native @Name("decode_ids") @Cast("char*") BytePointer decodeIds(OpaqueTokenizer tokenizer, @Cast("const uint32_t*") IntBuffer ids, @Cast("size_t") long num_ids, @Cast("bool") boolean skip_special_tokens);
-public native @Name("decode_ids") @Cast("char*") String decodeIds(OpaqueTokenizer tokenizer, @Cast("const uint32_t*") int[] ids, @Cast("size_t") long num_ids, @Cast("bool") boolean skip_special_tokens);
+public native @Name("decode_ids") @Cast("char*") BytePointer decodeIds(OpaqueTokenizer tokenizer, @Cast("const uint32_t*") IntPointer ids, @Cast("size_t") long num_ids, @Cast("bool") boolean skip_special_tokens);
+public native @Name("decode_ids") @Cast("char*") String decodeIds(OpaqueTokenizer tokenizer, @Cast("const uint32_t*") IntBuffer ids, @Cast("size_t") long num_ids, @Cast("bool") boolean skip_special_tokens);
+public native @Name("decode_ids") @Cast("char*") BytePointer decodeIds(OpaqueTokenizer tokenizer, @Cast("const uint32_t*") int[] ids, @Cast("size_t") long num_ids, @Cast("bool") boolean skip_special_tokens);
 
 /**
  * \brief Create a stateful decoder using the tokenizer's native DecodeStream
@@ -291,7 +291,7 @@ public native @Name("create_decode_stream") OpaqueDecodeStream createDecodeStrea
  * failure. An empty string means that more tokens are required before text can
  * be emitted.
  */
-public native @Name("decode_stream_step") @Cast("char*") String decodeStreamStep(OpaqueDecodeStream stream, @Cast("uint32_t") int token_id);
+public native @Name("decode_stream_step") @Cast("char*") BytePointer decodeStreamStep(OpaqueDecodeStream stream, @Cast("uint32_t") int token_id);
 
 /**
  * \brief Free a stateful decoder
@@ -302,8 +302,8 @@ public native @Name("free_decode_stream") void freeDecodeStream(OpaqueDecodeStre
  * \brief Free a string returned by decode operations
  * @param str String to free
  */
-public native @Name("free_string") void freeString(@Cast("char*") String str);
 public native @Name("free_string") void freeString(@Cast("char*") BytePointer str);
+public native @Name("free_string") void freeString(@Cast("char*") String str);
 
 // =============================================================================
 // Model Manager Functions
@@ -326,8 +326,8 @@ public native @Name("free_model_manager") void freeModelManager(OpaqueModelManag
  * @param model_path Path to model file
  * @return true if valid, false otherwise
  */
-public native @Cast("bool") @Name("is_valid_model_file") boolean isValidModelFile(@Cast("char*") String model_path);
 public native @Cast("bool") @Name("is_valid_model_file") boolean isValidModelFile(@Cast("char*") BytePointer model_path);
+public native @Cast("bool") @Name("is_valid_model_file") boolean isValidModelFile(@Cast("char*") String model_path);
 
 /**
  * \brief Get list of available embedded models
@@ -362,13 +362,13 @@ public native @Name("clear_last_error") void clearLastError();
  * \brief Get version information
  * @return Version string (do not free)
  */
-public native @Name("get_tokenizer_version") @Cast("char*") String getTokenizerVersion();
+public native @Name("get_tokenizer_version") @Cast("char*") BytePointer getTokenizerVersion();
 
 /**
  * \brief Get build information
  * @return Build info string (do not free)
  */
-public native @Name("get_build_info") @Cast("char*") String getBuildInfo();
+public native @Name("get_build_info") @Cast("char*") BytePointer getBuildInfo();
 
 // #ifdef __cplusplus
 // #endif

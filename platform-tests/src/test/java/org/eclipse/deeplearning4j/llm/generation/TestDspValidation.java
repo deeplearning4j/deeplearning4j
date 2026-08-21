@@ -204,7 +204,10 @@ public class TestDspValidation {
             INDArray frameSlice = imageInput.get(
                     NDArrayIndex.point(0), NDArrayIndex.point(frameIdx),
                     NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
-            INDArray singleFrame = frameSlice.reshape(1, 1, 3, targetSize, targetSize).dup();
+            // SmolDocling's vision encoder contract is rank-4 NCHW per frame.
+            // A rank-5 [1, 1, C, H, W] test-only input changes ONNX reshape
+            // semantics and can enqueue an invalid asynchronous CUDA access.
+            INDArray singleFrame = frameSlice.reshape(1, 3, targetSize, targetSize).dup();
 
             Map<String, INDArray> visionInputMap = new HashMap<>();
             for (String inputName : visionInputNames) {
@@ -220,6 +223,9 @@ public class TestDspValidation {
             Map<String, INDArray> visionOutputs = visionEncoder.output(visionInputMap, visionOutputNames);
             VisionEncoderUtils.VisionOutput selected = VisionEncoderUtils.selectVisionOutput(visionOutputs);
             frameEmbeddings.add(selected.tensor.dup());
+            // The duplicate is submitted asynchronously. Match VisionEncoder's
+            // production lifetime boundary before closing the source outputs.
+            Nd4j.getExecutioner().commit();
             for (var entry : visionOutputs.entrySet()) {
                 INDArray arr = entry.getValue();
                 if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();

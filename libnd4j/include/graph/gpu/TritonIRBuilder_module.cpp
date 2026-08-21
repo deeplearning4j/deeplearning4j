@@ -1413,13 +1413,31 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
     slotToArgIdx[result.args[a].slotIndex] = a;
   }
 
-  // 2b: Load inputs — tt.load for each external input arg
-  // For segments with normalization ops, skip preloading external inputs.
-  // Normalization handlers will load them directly with actual tensor shapes
-  // (preloading flattens to blockSize which breaks reduction semantics).
-  bool skipExternalPreload = hasNormalization;
-  DSP_DIAG(COMPILE, "TritonIRBuilder::buildModule: skipExternalPreload=%d hasNormalization=%d inputArgs.size=%d",
-            skipExternalPreload ? 1 : 0, hasNormalization ? 1 : 0, (int)inputArgs.size());
+  // 2b: Load inputs — tt.load for each external input arg.
+  // Normalization handlers load their operands directly with row-aware tensor shapes;
+  // preloading those operands here would flatten them to blockSize and break reduction
+  // semantics.  Do not, however, skip every input merely because the segment contains
+  // a normalization op: fused norm -> add chains also have bias inputs consumed by the
+  // downstream elementwise op.  Those inputs must be preloaded into SSA.  Skip only
+  // sources whose consumers in this segment are exclusively normalization ops.
+  std::unordered_map<int, bool> inputHasNonNormalizationConsumer;
+  if (hasNormalization) {
+    for (int si = startSlot; si <= endSlot; si++) {
+      bool isNormalization = getOpCategory(slots[si].ident.opName) == TritonOpCategory::NORMALIZATION;
+      for (int inp = 0; inp < slots[si].wiring.numInputs; inp++) {
+        int src = slots[si].wiring.inputSourceIndices[inp];
+        auto inserted = inputHasNonNormalizationConsumer.emplace(src, !isNormalization);
+        if (!inserted.second && !isNormalization) inserted.first->second = true;
+      }
+    }
+  }
+  auto isNormalizationOnlyInput = [&](int src) {
+    auto it = inputHasNonNormalizationConsumer.find(src);
+    return hasNormalization && it != inputHasNonNormalizationConsumer.end() && !it->second;
+  };
+  DSP_DIAG(COMPILE,
+            "TritonIRBuilder::buildModule: hasNormalization=%d normalizationTrackedInputs=%d inputArgs.size=%d",
+            hasNormalization ? 1 : 0, (int)inputHasNonNormalizationConsumer.size(), (int)inputArgs.size());
   
   // Compute max output element count and reference shape for broadcasting detection
   LongType maxOutputElements = 0;
@@ -1433,8 +1451,9 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
     }
   }
   // Fallback: if output shapes are unavailable (empty), use max input element count/shape
-  if (maxOutputElements <= 1 && !skipExternalPreload) {
+  if (maxOutputElements <= 1) {
     for (auto& iarg : inputArgs) {
+      if (isNormalizationOnlyInput(iarg.slotIndex)) continue;
       LongType iElems = 1;
       for (auto d : iarg.shape) iElems *= d;
       if (iElems > maxOutputElements) {
@@ -1446,10 +1465,10 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   for (int a = 0; a < static_cast<int>(inputArgs.size()); a++) {
     auto& arg = inputArgs[a];
     
-    // Skip preloading for ALL inputs in normalization segments
-    // (normalization handlers will load them directly with proper masking)
-    if (skipExternalPreload) {
-      DSP_DIAG(COMPILE, "TritonIRBuilder::buildModule: SKIPPING preload for normalization input arg %d slotIndex=%d",
+    // Normalization-only inputs are loaded by the normalization handler with
+    // row-aware shapes. Inputs also consumed by another op must enter SSA here.
+    if (isNormalizationOnlyInput(arg.slotIndex)) {
+      DSP_DIAG(COMPILE, "TritonIRBuilder::buildModule: SKIPPING normalization-only preload for input arg %d slotIndex=%d",
                 a, arg.slotIndex);
       continue;
     }

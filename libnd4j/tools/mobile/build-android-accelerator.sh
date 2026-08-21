@@ -241,11 +241,11 @@ done < <(find "$OUTPUT_ROOT" -mindepth 1 -maxdepth 1 -name 'quarantined-maven-ta
 
 MAVEN_SHA256="$(sha256sum "$MVN_REAL" | cut -d ' ' -f 1)"
 MAVEN_VERSION_SHA256="$(
-    { env JAVA_HOME="$JAVA_HOME_REAL" PATH="$JAVA_HOME_REAL/bin:$PATH" "$MVN_REAL" --version; } 2>&1 |
+    { env -u JAVA_TOOL_OPTIONS JAVA_HOME="$JAVA_HOME_REAL" PATH="$JAVA_HOME_REAL/bin:$PATH" "$MVN_REAL" --version; } 2>&1 |
         sha256sum | cut -d ' ' -f 1
 )"
 JAVA_VERSION_SHA256="$(
-    { "$JAVA_HOME_REAL/bin/java" -version; } 2>&1 | sha256sum | cut -d ' ' -f 1
+    { env -u JAVA_TOOL_OPTIONS "$JAVA_HOME_REAL/bin/java" -version; } 2>&1 | sha256sum | cut -d ' ' -f 1
 )"
 for command_name in cmake cargo rustup unzip zip sha256sum realpath mktemp git stat sort find grep; do
     if ! command -v "$command_name" >/dev/null 2>&1; then
@@ -337,32 +337,22 @@ record_fresh_maven_build() {
 archive_member_sha256() {
     local archive="$1"
     local member="$2"
-    if ! unzip -Z1 "$archive" | grep -Fxq "$member"; then
+    # Do not use grep -q here. With pipefail, an early grep exit can send
+    # SIGPIPE to unzip and make an existing early archive entry look missing.
+    if ! unzip -Z1 "$archive" | grep -Fx "$member" >/dev/null; then
         echo "Required archive member is missing from $archive: $member" >&2
         return 1
     fi
     unzip -p "$archive" "$member" | sha256sum | cut -d ' ' -f 1
 }
 
-source_manifest_sha256() {
+source_tree_manifest_sha256() {
     local relative file mode digest
-    local -a roots=(
-        libnd4j
-        nd4j/sdx-aot
-        nd4j/nd4j-tokenizers
-        nd4j/nd4j-backends/nd4j-api-parent/nd4j-api
-        nd4j/nd4j-backends/nd4j-backend-impls/nd4j-cpu-backend-common
-        nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx
-        nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-model
-        nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-preset
-    )
+    local -a roots=("$@")
     local -a excludes=(
         ':(top,exclude)libnd4j/cmake/tests/**'
     )
     {
-        # CMake contract tests are not inputs to the Android provider build. Keep
-        # unrelated test edits out of the production receipt while retaining every
-        # native, Java, profile, and build-script input used by this build.
         git -C "$REPO_ROOT" ls-files -z --cached --others --exclude-standard -- "${roots[@]}" "${excludes[@]}" |
             LC_ALL=C sort -z |
             while IFS= read -r -d '' relative; do
@@ -373,6 +363,28 @@ source_manifest_sha256() {
                 printf '%s\0%s\0%s\0' "$relative" "$mode" "$digest"
             done
     } | sha256sum | cut -d ' ' -f 1
+}
+
+native_source_manifest_sha256() {
+    # The provider DSO is compiled exclusively from libnd4j. Java, tokenizer,
+    # and application changes must invalidate the full AAR, never the native
+    # producer or its compiler cache.
+    source_tree_manifest_sha256 libnd4j
+}
+
+source_manifest_sha256() {
+    # CMake contract tests are not inputs to the Android provider build. Keep
+    # unrelated test edits out of the production receipt while retaining every
+    # native, Java, profile, and build-script input used by the full AAR.
+    source_tree_manifest_sha256 \
+        libnd4j \
+        nd4j/sdx-aot \
+        nd4j/nd4j-tokenizers \
+        nd4j/nd4j-backends/nd4j-api-parent/nd4j-api \
+        nd4j/nd4j-backends/nd4j-backend-impls/nd4j-cpu-backend-common \
+        nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx \
+        nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-model \
+        nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-preset
 }
 
 declare -A RECEIPT_VALUES=()
@@ -396,7 +408,7 @@ load_strict_receipt() {
             return 1
         }
         case "$key" in
-            format|stage|variant|artifact|sha256|inputs_sha256|source_manifest_sha256|profile_sha256|build_script_sha256|ndk_revision_sha256|android_api|android_abi|chip|helpers|required_accelerator_device|provider_member|provider_sha256|arm_compute_member|arm_compute_sha256|native_artifact|native_sha256|native_receipt_sha256|full_source_artifact|full_source_sha256|classes_sha256|jni_bridge_member|jni_bridge_sha256) ;;
+            format|stage|variant|artifact|sha256|inputs_sha256|source_manifest_sha256|native_source_manifest_sha256|profile_sha256|build_script_sha256|ndk_revision_sha256|android_api|android_abi|chip|helpers|required_accelerator_device|provider_member|provider_sha256|arm_compute_member|arm_compute_sha256|native_artifact|native_sha256|native_receipt_sha256|full_source_artifact|full_source_sha256|classes_sha256|jni_bridge_member|jni_bridge_sha256) ;;
             *)
                 echo "Unknown build receipt field in $receipt: $key" >&2
                 return 1
@@ -481,6 +493,7 @@ NDK_REVISION_FILE="$ANDROID_NDK_ARG/source.properties"
 }
 NDK_REVISION_SHA256="$(sha256_file "$NDK_REVISION_FILE")"
 SOURCE_MANIFEST_SHA256="$(source_manifest_sha256)"
+NATIVE_SOURCE_MANIFEST_SHA256="$(native_source_manifest_sha256)"
 MAVEN_TARGET_QUARANTINE="$(mktemp -d "$OUTPUT_ROOT/quarantined-maven-targets.XXXXXX")"
 FRESH_JAVA_BUILDS_TMP="$(mktemp "$DIST_DIR/fresh-java-builds.tmp.XXXXXX")"
 cleanup_accelerator_temporary_state() {
@@ -507,7 +520,7 @@ if [[ "$SDX_VARIANT" == "tensor-g3" ]]; then
 fi
 NATIVE_INPUTS_SHA256="$(
     printf '%s\n' \
-        "source_manifest_sha256=$SOURCE_MANIFEST_SHA256" \
+        "native_source_manifest_sha256=$NATIVE_SOURCE_MANIFEST_SHA256" \
         "profile_sha256=$PROFILE_SHA256" \
         "build_script_sha256=$BUILD_SCRIPT_SHA256" \
         "ndk_revision_sha256=$NDK_REVISION_SHA256" \
@@ -519,33 +532,6 @@ NATIVE_INPUTS_SHA256="$(
         "required_accelerator_device=$REQUIRED_ACCELERATOR_DEVICE" |
         sha256sum | cut -d ' ' -f 1
 )"
-
-if [[ "$SKIP_TOKENIZERS" != "1" ]]; then
-    "$TOKENIZER_BUILD" \
-        --platform android-arm64 \
-        --android-ndk "$ANDROID_NDK_ARG" \
-        --android-api "$SDX_ANDROID_API" \
-        --jobs "$JOBS" \
-        "${TOKENIZER_OFFLINE[@]}"
-
-    # Maven's clean phase is deliberately forbidden in this pipeline. Move each
-    # old target aside, then build into a newly-created target so removed classes
-    # cannot survive while interrupted output remains recoverable.
-    prepare_fresh_maven_target "tokenizers-native-preset" "$TOKENIZER_PRESET_MODULE"
-    "$MVN_REAL" "${MAVEN_OFFLINE[@]}" \
-        -f "$TOKENIZER_PRESET_MODULE/pom.xml" \
-        -DskipTests install
-    record_fresh_maven_build "tokenizers-native-preset" "$TOKENIZER_PRESET_MODULE"
-
-    prepare_fresh_maven_target "tokenizers-native" "$TOKENIZER_MODULE"
-    "$MVN_REAL" "${MAVEN_OFFLINE[@]}" \
-        -f "$TOKENIZER_MODULE/pom.xml" \
-        -Pandroid-arm64 install \
-        -DskipTests \
-        -Dandroid.ndk="$ANDROID_NDK_ARG" \
-        -Dandroid.api="$SDX_ANDROID_API"
-    record_fresh_maven_build "tokenizers-native" "$TOKENIZER_MODULE"
-fi
 
 NATIVE_AAR="$NATIVE_BUILD_DIR/sdx-runtime-sdk/dist/sdx-runtime-android-arm64-$SDX_VARIANT.aar"
 NATIVE_RECEIPT="$NATIVE_AAR.build-receipt"
@@ -609,13 +595,13 @@ fi
 if [[ "$SKIP_NATIVE" != "1" ]]; then
     NATIVE_RECEIPT_TMP="$(mktemp "$NATIVE_RECEIPT.tmp.XXXXXX")"
     {
-        printf 'format=2\n'
+        printf 'format=3\n'
         printf 'stage=native\n'
         printf 'variant=%s\n' "$SDX_VARIANT"
         printf 'artifact=%s\n' "$NATIVE_AAR_REAL"
         printf 'sha256=%s\n' "$NATIVE_AAR_SHA256"
         printf 'inputs_sha256=%s\n' "$NATIVE_INPUTS_SHA256"
-        printf 'source_manifest_sha256=%s\n' "$SOURCE_MANIFEST_SHA256"
+        printf 'native_source_manifest_sha256=%s\n' "$NATIVE_SOURCE_MANIFEST_SHA256"
         printf 'profile_sha256=%s\n' "$PROFILE_SHA256"
         printf 'build_script_sha256=%s\n' "$BUILD_SCRIPT_SHA256"
         printf 'ndk_revision_sha256=%s\n' "$NDK_REVISION_SHA256"
@@ -639,13 +625,13 @@ else
     fi
     load_strict_receipt "$NATIVE_RECEIPT"
     require_receipt_fields "$NATIVE_RECEIPT" \
-        format stage variant artifact sha256 inputs_sha256 source_manifest_sha256 \
+        format stage variant artifact sha256 inputs_sha256 native_source_manifest_sha256 \
         profile_sha256 build_script_sha256 ndk_revision_sha256 android_api android_abi \
         chip helpers required_accelerator_device provider_member provider_sha256 \
         arm_compute_member arm_compute_sha256
     RECEIPT_NATIVE_INPUTS_SHA256="$(
         printf '%s\n' \
-            "source_manifest_sha256=${RECEIPT_VALUES[source_manifest_sha256]}" \
+            "native_source_manifest_sha256=${RECEIPT_VALUES[native_source_manifest_sha256]}" \
             "profile_sha256=${RECEIPT_VALUES[profile_sha256]}" \
             "build_script_sha256=${RECEIPT_VALUES[build_script_sha256]}" \
             "ndk_revision_sha256=${RECEIPT_VALUES[ndk_revision_sha256]}" \
@@ -657,7 +643,7 @@ else
             "required_accelerator_device=${RECEIPT_VALUES[required_accelerator_device]}" |
             sha256sum | cut -d ' ' -f 1
     )"
-    if [[ "${RECEIPT_VALUES[format]}" != "2" ||
+    if [[ "${RECEIPT_VALUES[format]}" != "3" ||
           "${RECEIPT_VALUES[stage]}" != "native" ||
           "${RECEIPT_VALUES[variant]}" != "$SDX_VARIANT" ||
           "${RECEIPT_VALUES[artifact]}" != "$NATIVE_AAR_REAL" ||
@@ -680,7 +666,7 @@ else
     fi
     if [[ "$REUSE_RECEIPTED_NATIVE" != "1" &&
           ( "${RECEIPT_VALUES[inputs_sha256]}" != "$NATIVE_INPUTS_SHA256" ||
-            "${RECEIPT_VALUES[source_manifest_sha256]}" != "$SOURCE_MANIFEST_SHA256" ||
+            "${RECEIPT_VALUES[native_source_manifest_sha256]}" != "$NATIVE_SOURCE_MANIFEST_SHA256" ||
             "${RECEIPT_VALUES[build_script_sha256]}" != "$BUILD_SCRIPT_SHA256" ) ]]; then
         echo "Native build receipt does not match the current source closure: $NATIVE_RECEIPT" >&2
         echo "Use --reuse-receipted-native only when intentionally layering current Java artifacts over this immutable native producer." >&2
@@ -691,6 +677,33 @@ else
     else
         echo "Verified native build receipt: $NATIVE_RECEIPT"
     fi
+fi
+
+if [[ "$SKIP_TOKENIZERS" != "1" ]]; then
+    "$TOKENIZER_BUILD" \
+        --platform android-arm64 \
+        --android-ndk "$ANDROID_NDK_ARG" \
+        --android-api "$SDX_ANDROID_API" \
+        --jobs "$JOBS" \
+        "${TOKENIZER_OFFLINE[@]}"
+
+    # Maven's clean phase is deliberately forbidden in this pipeline. Move each
+    # old target aside, then build into a newly-created target so removed classes
+    # cannot survive while interrupted output remains recoverable.
+    prepare_fresh_maven_target "tokenizers-native-preset" "$TOKENIZER_PRESET_MODULE"
+    "$MVN_REAL" "${MAVEN_OFFLINE[@]}" \
+        -f "$TOKENIZER_PRESET_MODULE/pom.xml" \
+        -DskipTests install
+    record_fresh_maven_build "tokenizers-native-preset" "$TOKENIZER_PRESET_MODULE"
+
+    prepare_fresh_maven_target "tokenizers-native" "$TOKENIZER_MODULE"
+    "$MVN_REAL" "${MAVEN_OFFLINE[@]}" \
+        -f "$TOKENIZER_MODULE/pom.xml" \
+        -Pandroid-arm64 install \
+        -DskipTests \
+        -Dandroid.ndk="$ANDROID_NDK_ARG" \
+        -Dandroid.api="$SDX_ANDROID_API"
+    record_fresh_maven_build "tokenizers-native" "$TOKENIZER_MODULE"
 fi
 
 if [[ "$SKIP_JAVA" != "1" ]]; then

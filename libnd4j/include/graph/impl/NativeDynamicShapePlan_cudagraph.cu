@@ -572,17 +572,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   }
 
   // ── Segment shape key: detect whether recompilation/recapture is needed ──
-  // Frozen + cached key: reuse (shapes can't change). Otherwise: compute once and cache.
-  // computeSegmentShapeKey is expensive (per-element D2H sync) so only call when needed.
-  LongType segShapeKey;
-  if (!planLifecycle_.isSlotBySlot() && seg.exec.cachedShapeKey != 0) {
-    segShapeKey = seg.exec.cachedShapeKey;
-  } else {
-    segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
-    if (!planLifecycle_.isSlotBySlot()) {
-      seg.exec.cachedShapeKey = segShapeKey;
-    }
-  }
+  // computeSegmentShapeKey owns the frozen-cache policy. Dynamic cross-segment
+  // boundaries bypass that cache and hash their current concrete dimensions.
+  const LongType segShapeKey =
+      computeSegmentShapeKey(seg, externalArrays, numExt);
 
   {
     bool hasGraph = (seg.exec.replayHandle != nullptr);
@@ -708,9 +701,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 
   if (seg.exec.executionCount < CAPTURE_MIN_WARMUPS || (shapeChanged && !seg.exec.compilationFailed)) {
     if (shapeChanged && seg.exec.replayHandle) {
-      platformCleanupSegmentForRebuild(seg);
+      SegmentLifecycle::invalidateSegmentCaptures(this, seg, "cuda_graph_shape_change");
+      platformResetGapCaches();
+      platformResetBatchD2D();
     }
-    seg.exec.cachedShapeKey = segShapeKey;
     std::unique_ptr<ShapeChangeWarmupGuard> warmupGuard;
     if (shapeChanged) {
       warmupGuard.reset(new ShapeChangeWarmupGuard(*this, seg.def.startSlot, seg.def.endSlot));
@@ -741,6 +735,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     }
     auto warmupResult = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
     if (warmupResult == Status::OK) {
+      // This key represents a successfully materialized warmup shape. It cannot
+      // become replay-visible until capture installs a ready replay handle.
+      seg.exec.cachedShapeKey = segShapeKey;
       dspSegIncrementExecCount(seg, "cuda-graph-warmup");
 
       // Staging buffer sync during warmup: handled by performPreReplaySync

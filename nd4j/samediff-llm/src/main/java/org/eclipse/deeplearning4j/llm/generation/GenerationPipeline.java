@@ -2196,7 +2196,9 @@ public class GenerationPipeline implements AutoCloseable {
                 executor.setShapesFrozen(true);
                 log.info("[Perf] GGUF shapes frozen after warmup decode (planPhase={} pointersStable={})",
                         executor.getPlanPhase(), executor.arePointersStable());
-                if ("true".equalsIgnoreCase(System.getProperty(ND4JSystemProperties.VLM_BENCHMARK_OP_TIMING, "false"))) {
+                if ("true".equalsIgnoreCase(System.getProperty(ND4JSystemProperties.VLM_BENCHMARK_OP_TIMING, "false"))
+                        || "true".equalsIgnoreCase(System.getProperty(
+                                ND4JSystemProperties.VLM_BENCHMARK_DSP_EXECUTION_TIMING, "false"))) {
                     executor.setExecutionTimingEnabled(true);
                     log.info("[Perf] GGUF decoder execution timing enabled");
                 }
@@ -5989,20 +5991,28 @@ public class GenerationPipeline implements AutoCloseable {
             if (existingSession != null) {
                 DynamicShapePlanExecutor existingExecutor = existingSession.getDynamicShapePlanExecutor();
                 if (existingExecutor != null && existingExecutor.isShapesFrozen()) {
-                    log.info("[Lifecycle] Reusing frozen DSP plan for native generation (fixedBuffers=true, maxPrefill={})", maxPrefill);
-                    // Keep both the plan and its node-output buffers alive. The captured graph tracks
-                    // these external-input addresses, so overwrite the retained arrays in place below.
-                    // clearNodeOutputsOnly() must not be used here: despite its name it closes the
-                    // session DynamicShapePlan and forces a new native borrower on the next dispatch.
+                    // Keep both the plan and its node-output buffers alive only when every retained
+                    // external input is still usable. A strong INDArray reference can outlive its
+                    // DataBuffer after a cross-model cache sweep or failed request cleanup.
                     frozenExtInputSnapshot = existingExecutor.getExternalInputsSnapshot();
                     DynamicShapePlan frozenPlan = existingExecutor.getCurrentPlan();
                     frozenExtInputKeys = frozenPlan != null ? frozenPlan.getExternalInputKeys() : null;
-                    reusingFrozenPlan = frozenExtInputSnapshot != null && frozenExtInputSnapshot.length > 0
+                    reusingFrozenPlan = DynamicShapePlanExecutor.areExternalInputsReusable(frozenExtInputSnapshot)
                             && frozenExtInputKeys != null
                             && frozenExtInputKeys.length == frozenExtInputSnapshot.length;
                     if (reusingFrozenPlan) {
-                        log.info("[Lifecycle] Captured {} ext input arrays for pointer-stable reuse",
-                                frozenExtInputSnapshot.length);
+                        log.info("[Lifecycle] Reusing frozen DSP plan with {} live ext input arrays " +
+                                        "(fixedBuffers=true, maxPrefill={})",
+                                frozenExtInputSnapshot.length, maxPrefill);
+                    } else {
+                        // A frozen graph captures these addresses, so substituting fresh arrays into
+                        // selected slots is unsafe. Invalidate the whole borrower and let the normal
+                        // first-call path allocate inputs and compile a coherent replacement plan.
+                        log.warn("[Lifecycle] Frozen DSP plan has missing, mismatched, or closed ext " +
+                                "inputs; invalidating it before native generation");
+                        existingExecutor.resetForNextPage(false);
+                        frozenExtInputSnapshot = null;
+                        frozenExtInputKeys = null;
                     }
                 }
             }
@@ -6108,12 +6118,14 @@ public class GenerationPipeline implements AutoCloseable {
             );
         }
 
-        long maxKvLen =
-                prefillSeqLen + maxNewTokens;
+        long requestedMaxKvLen = prefillSeqLen + maxNewTokens;
+        // A fixed-buffer plan owns one capacity envelope. Reusing it with a smaller
+        // per-call maxNewTokens must not shrink KV or mask shapes; only the active
+        // decode length changes. Otherwise the frozen graph replays against arrays
+        // compiled for a different maxKvLen and silently diverges on later requests.
+        long maxKvLen = fixedBuffers && kvCap > 0 ? kvCap : requestedMaxKvLen;
 
-        // Cap to configured KV cache length to keep buffer shapes stable across
-        // calls with different maxNewTokens — avoids plan recompilation.
-        if (kvCap > 0 && maxKvLen > kvCap) {
+        if (kvCap > 0 && requestedMaxKvLen > kvCap) {
             maxNewTokens = kvCap - prefillSeqLen;
             maxKvLen = kvCap;
         }
@@ -6404,6 +6416,7 @@ public class GenerationPipeline implements AutoCloseable {
 
             // Position IDs: [1, 1] INT64 — first decode position is after real tokens
             decodePosIds = Nd4j.createFromArray(new long[]{actualPrefillLen}).reshape(1, 1);
+
         }
 
         // ── attn_mask_reformat override ──────────────────────────────────────
@@ -6555,7 +6568,9 @@ public class GenerationPipeline implements AutoCloseable {
             executor.setShapesFrozen(true);
             log.info("[Perf] Shapes frozen after warmup decode (planPhase={} pointersStable={})",
                     executor.getPlanPhase(), executor.arePointersStable());
-            if ("true".equalsIgnoreCase(System.getProperty(ND4JSystemProperties.VLM_BENCHMARK_OP_TIMING, "false"))) {
+            if ("true".equalsIgnoreCase(System.getProperty(ND4JSystemProperties.VLM_BENCHMARK_OP_TIMING, "false"))
+                    || "true".equalsIgnoreCase(System.getProperty(
+                            ND4JSystemProperties.VLM_BENCHMARK_DSP_EXECUTION_TIMING, "false"))) {
                 executor.setExecutionTimingEnabled(true);
                 log.info("[Perf] Decoder execution timing enabled");
             }
@@ -6884,11 +6899,11 @@ public class GenerationPipeline implements AutoCloseable {
                 decodeSteps, decodeLoopMs, String.format("%.1f", tokPerSec),
                 String.format("%.1f", lateSteadyTokPerSec));
 
-        // Cleanup — fixed-buffer decode inputs belong to the frozen executor plan.
-        // Closing them would destroy device memory tracked by the native plan and
-        // break pointer-stable replay on the next page.
-        currentInputIds.close();
+        // Cleanup — fixed-buffer prefill/decode inputs belong to the frozen executor plan.
+        // Closing any of them destroys device memory tracked by the native plan and
+        // drops the live plan before callers can validate or reuse it on the next page.
         if (!fixedBuffers) {
+            currentInputIds.close();
             decodeEmbeddings.close();
             decodeInputIds.close();
             decodeCausalMask.close();

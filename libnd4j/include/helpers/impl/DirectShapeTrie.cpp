@@ -105,9 +105,12 @@ size_t DirectShapeTrie::computeHash(const LongType* shapeInfo) const {
     hash = hash * 19 + static_cast<size_t>(strides[i]) * (11 + i);
   }
 
-  // Add data type and order with higher weights
+  // Add data type, order, and EWS with higher weights. EWS is part of the
+  // full shape descriptor: identical dimensions/strides with EWS=-1 versus 1
+  // must not share a cached ConstantShapeBuffer.
   hash = hash * 23 + static_cast<size_t>(ArrayOptions::dataType(shapeInfo)) * 29;
   hash = hash * 37 + static_cast<size_t>(shape::order(shapeInfo)) * 41;
+  hash = hash * 41 + static_cast<size_t>(shape::elementWiseStride(shapeInfo)) * 43;
 
   // Add total element count
   hash = hash * 43 + shape::length(shapeInfo);
@@ -134,9 +137,10 @@ int DirectShapeTrie::calculateShapeSignature(const LongType* shapeInfo) const {
     signature = signature * 13 + static_cast<int>(shapeValues[i]) * (7 + i);
   }
 
-  // Incorporate data type and order
+  // Incorporate data type, order, and EWS
   signature = signature * 7 + static_cast<int>(ArrayOptions::dataType(shapeInfo)) * 11;
   signature = signature * 17 + static_cast<int>(shape::order(shapeInfo)) * 19;
+  signature = signature * 19 + static_cast<int>(shape::elementWiseStride(shapeInfo)) * 23;
 
   // Include element count
   signature = signature * 23 + static_cast<int>(shape::length(shapeInfo) % 10000);
@@ -293,14 +297,22 @@ ConstantShapeBuffer* DirectShapeTrie::search(const LongType* shapeInfo, size_t s
   }
 
   // Check extras (EMPTY flag, VIEW flag, etc.) — without this, shapes differing
-  // only in extras (e.g., empty vs non-empty rank-0 scalars) collide in the trie
+  // only in extras (e.g., empty vs non-empty rank-0 scalars) collide in the trie.
   LongType extras = shape::extra(shapeInfo);
   current = findChild(current, extras, 4 + 2 * rank, false, shapeSignature);
   if (!current) {
     return nullptr;
   }
 
-  return current ? current->buffer() : nullptr;
+  // EWS is also semantic descriptor state. It may differ even when dimensions
+  // and explicit strides match (for example -1 for a non-elementwise layout).
+  LongType ews = shape::elementWiseStride(shapeInfo);
+  current = findChild(current, ews, 5 + 2 * rank, false, shapeSignature);
+  if (!current) {
+    return nullptr;
+  }
+
+  return current->buffer();
 }
 
 
@@ -365,23 +377,25 @@ ConstantShapeBuffer* DirectShapeTrie::getOrCreate(const LongType* shapeInfo) {
     SHARED_LOCK_TYPE<MUTEX_TYPE> readLock(*(*_mutexes)[stripeIdx]);
     ConstantShapeBuffer* existing = search(shapeInfo, stripeIdx);
     if (existing != nullptr) {
-      if (shapeInfoEqual(existing->primary(), shapeInfo)) {
-        existing->addRef();  // Increment refcount before returning cached buffer
-        return existing;
+      if (!shapeInfoEqual(existing->primary(), shapeInfo)) {
+        THROW_EXCEPTION("DirectShapeTrie: read lookup returned a shape buffer whose full descriptor does not match the key");
       }
+      existing->addRef();  // Increment refcount before returning cached buffer
+      return existing;
     }
   }
 
-  // If not found or not matching, grab exclusive lock and try again
+  // If not found, grab exclusive lock and try again
   EXCLUSIVE_LOCK_TYPE<MUTEX_TYPE> writeLock(*(*_mutexes)[stripeIdx]);
 
   // Check again under the write lock
   ConstantShapeBuffer* existing = search(shapeInfo, stripeIdx);
   if (existing != nullptr) {
-    if (shapeInfoEqual(existing->primary(), shapeInfo)) {
-      existing->addRef();  // Increment refcount before returning cached buffer
-      return existing;
+    if (!shapeInfoEqual(existing->primary(), shapeInfo)) {
+      THROW_EXCEPTION("DirectShapeTrie: write lookup returned a shape buffer whose full descriptor does not match the key");
     }
+    existing->addRef();  // Increment refcount before returning cached buffer
+    return existing;
   }
 
   if (_roots == nullptr) {
@@ -452,9 +466,16 @@ ConstantShapeBuffer* DirectShapeTrie::getOrCreate(const LongType* shapeInfo) {
   }
 
   // Insert extras (EMPTY flag, VIEW flag, etc.) — without this, shapes differing
-  // only in extras (e.g., empty vs non-empty rank-0 scalars) collide in the trie
+  // only in extras (e.g., empty vs non-empty rank-0 scalars) collide in the trie.
   LongType extras = shape::extra(shapeInfo);
   safeNodePtr = current->findOrCreateChild(extras, 4 + 2 * rank, false, shapeSignature);
+  if (safeNodePtr == nullptr) {
+    return createFallbackBuffer(shapeInfo, rank);
+  }
+  current = safeNodePtr;
+
+  LongType ews = shape::elementWiseStride(shapeInfo);
+  safeNodePtr = current->findOrCreateChild(ews, 5 + 2 * rank, false, shapeSignature);
   if (safeNodePtr == nullptr) {
     return createFallbackBuffer(shapeInfo, rank);
   }
@@ -592,11 +613,19 @@ ConstantShapeBuffer* DirectShapeTrie::insert(const LongType* shapeInfo, size_t s
   }
 
   // Insert extras (EMPTY flag, VIEW flag, etc.) — without this, shapes differing
-  // only in extras (e.g., empty vs non-empty rank-0 scalars) collide in the trie
+  // only in extras (e.g., empty vs non-empty rank-0 scalars) collide in the trie.
   LongType extras = shape::extra(shapeInfo);
   current = current->findOrCreateChild(extras, 4 + 2 * rank, false, shapeSignature);
   if (!current) {
     std::string msg = "Failed to create extras node";
+    THROW_EXCEPTION(msg.c_str());
+    return nullptr;
+  }
+
+  LongType ews = shape::elementWiseStride(shapeInfo);
+  current = current->findOrCreateChild(ews, 5 + 2 * rank, false, shapeSignature);
+  if (!current) {
+    std::string msg = "Failed to create EWS node";
     THROW_EXCEPTION(msg.c_str());
     return nullptr;
   }

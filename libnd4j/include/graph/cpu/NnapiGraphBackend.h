@@ -91,6 +91,14 @@ class NnapiGraphBackend : public GraphBackend {
                       int* requestedOutputSlotIndices = nullptr,
                       int numRequestedOutputs = 0) override;
 
+  bool compileSegment(const GraphBackendRequest& request,
+                      GraphSegment& seg, NativeSlot* slots,
+                      NDArray** externalInputs, int numExternalInputs,
+                      NDArray** outputSlots, int totalOutputSlots,
+                      LongType shapeKey, int totalSlots,
+                      int* requestedOutputSlotIndices,
+                      int numRequestedOutputs) override;
+
   Status executeSegment(GraphSegment& seg, NativeSlot* slots,
                         NDArray** externalInputs, int numExternalInputs,
                         NDArray** outputSlots, int totalOutputSlots,
@@ -106,6 +114,14 @@ class NnapiGraphBackend : public GraphBackend {
   void setPreference(int preference) { preference_ = preference; }
 
  private:
+  bool compileSegmentImpl(const GraphBackendRequest* request,
+                          GraphSegment& seg, NativeSlot* slots,
+                          NDArray** externalInputs, int numExternalInputs,
+                          NDArray** outputSlots, int totalOutputSlots,
+                          LongType shapeKey, int totalSlots,
+                          int* requestedOutputSlotIndices,
+                          int numRequestedOutputs);
+
   bool nnapiAvailable_ = false;
   int apiLevel_ = 0;
   int preference_ = ANEURALNETWORKS_PREFER_SUSTAINED_SPEED;
@@ -231,13 +247,18 @@ class NnapiGraphBackend : public GraphBackend {
                   NDArray** outputSlots, int totalOutputSlots,
                   int totalSlots,
                   const int* requestedOutputSlotIndices,
-                  int numRequestedOutputs);
+                  int numRequestedOutputs,
+                  std::vector<int>& operationSourceSlots);
 
-  // Add an NDArray as an NNAPI operand and return its operand index.
-  // If the array is non-contiguous, it will be dup()'d to a contiguous copy.
-  // The contiguous copy is stored in contiguousCopies for lifetime management.
-  uint32_t addOperand(ANeuralNetworksModel* model, NDArray* arr, uint32_t& nextOperand,
-                      std::vector<std::unique_ptr<NDArray>>& contiguousCopies);
+  // Add an NDArray as an NNAPI operand, returning its operand index in
+  // *outIdx. If the array is non-contiguous, it will be dup()'d to a
+  // contiguous copy stored in contiguousCopies for lifetime management.
+  // Unsupported floating types (e.g. BFLOAT16) are promoted to FLOAT32.
+  // Unsupported non-floating types (e.g. INT64) fail the model build so the
+  // segment falls back instead of computing on silently converted values.
+  bool addOperand(ANeuralNetworksModel* model, NDArray* arr, uint32_t& nextOperand,
+                  std::vector<std::unique_ptr<NDArray>>& contiguousCopies,
+                  uint32_t* outIdx);
 
   // Add a scalar constant operand (for fused activation codes, axis, etc.)
   uint32_t addScalarOperand(ANeuralNetworksModel* model, int32_t value, uint32_t& nextOperand);
@@ -257,6 +278,7 @@ class NnapiGraphBackend : public GraphBackend {
   // Returns false if the op requires params we can't provide.
   bool addImplicitParams(ANeuralNetworksModel* model, NativeSlot& slot, int nnapiOp,
                          std::vector<uint32_t>& inputOperands, uint32_t& nextOperand,
+                         NDArray** externalInputs, int numExternalInputs,
                          NDArray** outputSlots, int totalOutputSlots,
                          std::vector<std::vector<int32_t>>& vectorStorage);
 };

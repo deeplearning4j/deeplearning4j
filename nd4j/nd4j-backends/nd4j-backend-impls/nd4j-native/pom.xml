@@ -203,7 +203,7 @@
                         <configuration>
                             <target>
                                 <!-- Copy any additional .so files from libnd4j build dir (e.g., libomp.so) -->
-                                <copy todir="${javacpp.build.output.path}" failonerror="false" verbose="true">
+                                <copy todir="${javacpp.build.output.path}" failonerror="false" verbose="true" overwrite="true">
                                     <fileset dir="${libnd4j.outputPath}">
                                         <include name="*.so"/>
                                         <include name="*.so.*"/>

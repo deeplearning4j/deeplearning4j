@@ -267,6 +267,40 @@ Java_ai_kompile_chat_local_android_model_SdxAndroidLlmNative_nativeRenderChatPro
 }
 
 extern "C" JNIEXPORT jint JNICALL
+Java_ai_kompile_chat_local_android_model_SdxAndroidLlmNative_nativeTokenCount(
+        JNIEnv* env, jclass, jlong runtime, jlong model, jbyteArray text,
+        jint add_special_tokens, jintArray out_count) {
+    if (out_count == nullptr || env->GetArrayLength(out_count) < 1) {
+        if (!env->ExceptionCheck()) {
+            throw_exception(env, "java/lang/IllegalArgumentException",
+                            "SDX token count output array must contain one element");
+        }
+        return SDX_LLM_STATUS_INVALID_ARGUMENT;
+    }
+    const jint zero = 0;
+    env->SetIntArrayRegion(out_count, 0, 1, &zero);
+    Utf8Bytes text_value(env, text);
+    if (!text_value.valid()) {
+        return SDX_LLM_STATUS_INVALID_ARGUMENT;
+    }
+
+    auto* runtime_value = from_handle<sdx_llm_runtime_t>(runtime);
+    int32_t* ids = nullptr;
+    int32_t count = 0;
+    const sdx_llm_status_t status = sdxLlmTokenize(
+            runtime_value, from_handle<sdx_llm_model_t>(model), text_value.get(),
+            static_cast<int32_t>(add_special_tokens), &ids, &count);
+    if (ids != nullptr) {
+        sdxLlmFree(runtime_value, ids);
+    }
+    if (status == SDX_LLM_STATUS_OK && !env->ExceptionCheck()) {
+        const jint result = static_cast<jint>(count);
+        env->SetIntArrayRegion(out_count, 0, 1, &result);
+    }
+    return status;
+}
+
+extern "C" JNIEXPORT jint JNICALL
 Java_ai_kompile_chat_local_android_model_SdxAndroidLlmNative_nativeParseChatResult(
         JNIEnv* env, jclass, jlong runtime, jlong model, jbyteArray request_json,
         jbyteArray raw_text, jlongArray out_json) {

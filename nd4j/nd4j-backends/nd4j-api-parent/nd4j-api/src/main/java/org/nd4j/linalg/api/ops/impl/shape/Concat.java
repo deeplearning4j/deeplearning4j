@@ -217,9 +217,12 @@ public class Concat extends DynamicCustomOp {
             return null; // Invalid axis - fall back to C++
         }
 
-        // Sum up the concat dimension across all inputs
+        // Sum up the concat dimension across all inputs. A mixture of empty
+        // and non-empty inputs produces a non-empty output; only an all-empty
+        // input set carries EMPTY forward (independently of dimensional zeros).
         long concatDimSize = firstShape[axis];
         int numInputs = oc.numInputArguments();
+        boolean allInputsEmpty = first.isEmpty();
 
         for (int i = 1; i < numInputs; i++) {
             INDArray input = oc.getInputArray(i);
@@ -231,6 +234,7 @@ public class Concat extends DynamicCustomOp {
                 return null; // Rank mismatch - fall back to C++
             }
             concatDimSize += inputShape[axis];
+            allInputsEmpty &= input.isEmpty();
         }
 
         // Build output shape
@@ -239,7 +243,7 @@ public class Concat extends DynamicCustomOp {
 
         DataType dtype = first.dataType();
         long[] strides = Nd4j.getStrides(outputShape, 'c');
-        boolean isEmpty = false;
+        boolean isEmpty = allInputsEmpty;
         for (long dim : outputShape) {
             if (dim == 0) { isEmpty = true; break; }
         }

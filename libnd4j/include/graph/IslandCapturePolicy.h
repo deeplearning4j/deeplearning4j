@@ -31,7 +31,7 @@
 #include <vector>
 
 // Forward declaration — avoid pulling in the full NativeDynamicShapePlan.h.
-// IslandCapturePolicy only needs opTraits_ (uint32_t) and ident.opName (string).
+// IslandCapturePolicy only needs opTraits_ (uint64_t) and ident.opName (string).
 namespace sd {
 namespace graph {
 struct NativeSlot;

@@ -32,9 +32,10 @@ import java.nio.ByteOrder;
  * linear scale+offset. Each 4-bit index maps to a specific float value.
  *
  * Block layout (QK4_NL = 32):
- *   ggml_half d        — 2 bytes, super-block scale
+ *   ggml_half d        — 2 bytes, block scale
  *   uint8_t qs[16]     — 16 bytes, packed 4-bit indices (2 per byte)
- * Total: 18 bytes per block of 32 elements.
+ * Total: 18 bytes per block of 32 elements.  The low nibbles encode the
+ * first 16 values and the high nibbles encode the second 16 values.
  */
 public class IQ4_NLDequantizer implements Dequantizer {
 
@@ -73,18 +74,22 @@ public class IQ4_NLDequantizer implements Dequantizer {
         ByteBuffer buffer = ByteBuffer.wrap(quantizedData).order(ByteOrder.LITTLE_ENDIAN);
 
         int numBlocks = (totalElements + QK4_NL - 1) / QK4_NL;
-        int outputIdx = 0;
 
         for (int block = 0; block < numBlocks && buffer.remaining() >= BYTES_PER_BLOCK; block++) {
             float d = fp16ToFloat(buffer.getShort());
             byte[] qs = new byte[16];
             buffer.get(qs);
 
-            for (int j = 0; j < 16 && outputIdx < totalElements; j++) {
+            // GGML stores each block's low nibbles in values [0, 15] and
+            // high nibbles in values [16, 31]; they are not interleaved.
+            int blockOutput = block * QK4_NL;
+            for (int j = 0; j < 16; j++) {
                 int lo = qs[j] & 0x0F;
                 int hi = (qs[j] >> 4) & 0x0F;
-                if (outputIdx < totalElements) result[outputIdx++] = d * KVALUES_IQ4NL[lo];
-                if (outputIdx < totalElements) result[outputIdx++] = d * KVALUES_IQ4NL[hi];
+                int lowIndex = blockOutput + j;
+                int highIndex = blockOutput + j + 16;
+                if (lowIndex < totalElements) result[lowIndex] = d * KVALUES_IQ4NL[lo];
+                if (highIndex < totalElements) result[highIndex] = d * KVALUES_IQ4NL[hi];
             }
         }
 

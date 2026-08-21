@@ -330,10 +330,13 @@ int executeDynamicShapePlan(
       // platformBeginExecution may create and switch to a plan-owned stream after
       // Java has already resolved that pointer. Sync the actual plan execution
       // stream after execute(), falling back to the caller stream only if needed.
+      // Both getExecutionStream() and the legacy JNI cudaStream argument
+      // use the established cudaStream_t* ABI. Dereference exactly once here
+      // because cudaStreamSynchronize accepts the cudaStream_t handle value.
       void* planStream = plan->getExecutionStream();
-      void* syncStreamPtr = (planStream != nullptr) ? planStream : cudaStream;
-      cudaStream_t dspStream = (syncStreamPtr != nullptr)
-          ? *static_cast<cudaStream_t*>(syncStreamPtr)
+      void* syncStreamStorage = planStream != nullptr ? planStream : cudaStream;
+      cudaStream_t dspStream = syncStreamStorage != nullptr
+          ? *static_cast<cudaStream_t*>(syncStreamStorage)
           : *sd::LaunchContext::defaultContext()->getCudaStream();
       cudaError_t syncErr = cudaStreamSynchronize(dspStream);
       if (syncErr != cudaSuccess) {

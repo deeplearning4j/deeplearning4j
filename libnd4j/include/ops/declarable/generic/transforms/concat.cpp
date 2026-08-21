@@ -256,6 +256,11 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
   // ******** end of input validation ******** //
 
   auto output = OUTPUT_VARIABLE(0);
+  if (output->isEmpty()) {
+    std::string errorMessage = "CONCAT op: output must be non-empty when at least one input is non-empty; actual=";
+    errorMessage += ShapeUtils::shapeInfoAsString(output->shapeInfo());
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
 
   helpers::concat(block.launchContext(), nonEmptyArrs, *output, axis);
 

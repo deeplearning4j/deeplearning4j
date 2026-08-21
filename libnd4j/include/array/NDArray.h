@@ -515,6 +515,13 @@ class SD_LIB_EXPORT NDArray {
 #ifndef __JAVACPP_HACK__
   SD_INLINE DataBuffer * getDataBuffer();
   SD_INLINE DataBuffer *  dataBuffer();
+
+  /**
+   * Returns whether this wrapper owns its DataBuffer object. Deleting an
+   * owning, non-view wrapper closes the DataBuffer; borrowed/view wrappers
+   * can be destroyed without invalidating other aliases.
+   */
+  SD_INLINE bool ownsDataBuffer() const { return _ownsBuffer; }
 #endif
 
   /**

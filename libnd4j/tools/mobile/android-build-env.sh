@@ -75,7 +75,8 @@ sdx_android_java_major_matches() {
     local major="$2"
     local version
     [[ -x "$candidate/bin/java" && -x "$candidate/bin/javac" ]] || return 1
-    version="$("$candidate/bin/java" -version 2>&1 | sed -n '1p')"
+    # JAVA_TOOL_OPTIONS may print a banner before the version line; select the actual version record.
+    version="$("$candidate/bin/java" -version 2>&1 | sed -n '/ version "/p' | sed -n '1p')"
     [[ "$version" == *"\"$major."* ]]
 }
 

@@ -2158,6 +2158,17 @@ public class ND4JSystemProperties {
     public static final String VLM_BENCHMARK_OP_TIMING = "vlm.benchmark.opTiming";
 
     /**
+     * Applicability: GenerationPipeline (VLM benchmarking)<br>
+     * Description: Per-benchmark-config bridge that enables DSP execution timing after
+     * the decode plan has been created. Kept separate from {@link #VLM_BENCHMARK_OP_TIMING}
+     * so applying a config cannot overwrite a user-requested native op profile.
+     * <p>
+     * Default: false
+     */
+    public static final String VLM_BENCHMARK_DSP_EXECUTION_TIMING =
+            "vlm.benchmark.dspExecutionTiming";
+
+    /**
      * Applicability: StaticKvCacheDecodeLoop (VLM benchmarking)<br>
      * Description: When set to "true", enables per-phase logging during the decode loop
      * (e.g., prefill vs. decode phase timings).

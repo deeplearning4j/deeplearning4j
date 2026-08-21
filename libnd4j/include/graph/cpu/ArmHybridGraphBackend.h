@@ -60,6 +60,8 @@ class ArmHybridGraphBackend : public GraphBackend {
   bool isResolvable(const GraphBackendRequest& request) const override;
   int resolutionPriority(const GraphBackendRequest& request) const override;
   bool canFuseSegment(NativeSlot* slots, int start, int end) override;
+  bool canResolveSegment(const GraphBackendRequest& request,
+                         NativeSlot* slots, int start, int end) override;
 
   bool compileSegment(GraphSegment& seg, NativeSlot* slots,
                       NDArray** externalInputs, int numExternalInputs,

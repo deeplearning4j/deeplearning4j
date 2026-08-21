@@ -60,6 +60,14 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
                                                 NDArray** slotArrayCache) {
   int numBufferArgs = static_cast<int>(compiled.argSlotMapping.size());
   void* actualStream = (stream != nullptr) ? *static_cast<void**>(stream) : nullptr;
+  auto failKernel = [&](const std::string& reason) {
+    std::string message = "Triton kernel [" + std::to_string(compiled.startSlot_) + "-" +
+                          std::to_string(compiled.endSlot_) + "]: " + reason;
+    auto* errorRef = LaunchContext::defaultContext()->errorReference();
+    errorRef->setErrorCode(static_cast<int>(Status::KERNEL_FAILURE));
+    errorRef->setErrorMessage(message);
+    return Status::KERNEL_FAILURE;
+  };
 
   // ── ModuleResidencyCache reload + LRU touch ──
   // If the kernel module was evicted by a prior over-budget sweep, reload it
@@ -85,7 +93,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
       DSP_DIAG(EXECUTE, "TritonGraphBackend::executeSingleKernel: cannot reload evicted kernel "
                 "[%d-%d] hash=%s while stream is capturing",
                 compiled.startSlot_, compiled.endSlot_, compiled.diskCacheHash.c_str());
-      return Status::KERNEL_FAILURE;
+      return failKernel("module was evicted before capture");
     }
     Status reloadStatus = reloadModuleIfEvicted(&compiled);
     if (reloadStatus != Status::OK) {
@@ -116,7 +124,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
   if (devErr != cudaSuccess) {
     DSP_DIAG(EXECUTE, "TritonGraphBackend::executeSingleKernel: cudaGetDevice failed: %s",
               cudaGetErrorString(devErr));
-    return Status::KERNEL_FAILURE;
+    return failKernel("cudaGetDevice failed");
   }
 
   bool streamIsCapturing = false;
@@ -141,7 +149,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
       DSP_DIAG(MEMORY, "TritonGraphBackend::executeSingleKernel: cannot pre-allocate slot %d — no shape info "
                 "(sub-segment [%d-%d])",
                 argMapping.slotIndex, compiled.startSlot_, compiled.endSlot_);
-      return Status::KERNEL_FAILURE;
+      return failKernel("output shape is unavailable");
     }
     std::vector<LongType> shapeVec(argMapping.shape.begin(), argMapping.shape.end());
     auto* newArr = new NDArray('c', shapeVec, argMapping.dtype, LaunchContext::defaultContext());
@@ -240,7 +248,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
       DSP_DIAG(EXECUTE, "TritonGraphBackend::executeSingleKernel: null array for arg slot %d "
                 "(sub-segment [%d-%d])",
                 argMapping.slotIndex, compiled.startSlot_, compiled.endSlot_);
-      return Status::KERNEL_FAILURE;
+      return failKernel("argument array is null");
     }
     // Validate DataBuffer before accessing specialBuffer() — Java close() may have
     // deleted the NDArray or its DataBuffer, leaving outputSlots_ with a dangling pointer.
@@ -268,30 +276,33 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
           }
         }
       }
-      return Status::KERNEL_FAILURE;
+      return failKernel("argument DataBuffer is invalid");
     }
     void* sbuf = arr->specialBuffer();
     if (!sbuf) {
-      // Zero-length arrays (e.g., unused optional attention mask inputs) have no
-      // device buffer. Provide a dummy pointer so the arg table has a valid address.
-      // The kernel won't actually read/write this slot since the element count is 0.
-      if (arr->lengthOf() == 0) {
+      // Empty arrays (e.g., unused optional attention mask inputs) legitimately have
+      // no device buffer. ND4J's empty scalar descriptor reports rank=0/length=1, so
+      // length alone is not an emptiness test. Match the DataBuffer validation above:
+      // any isEmpty() array receives the preallocated dummy pointer. The attention
+      // emitter ignores these optional arguments; the pointer only satisfies the
+      // kernel ABI and must be stable across CUDA graph capture/replay.
+      if (arr->isEmpty() || arr->lengthOf() == 0) {
         sbuf = getDummyDevicePtrForDevice(currentDevice, streamIsCapturing);
         if (!sbuf) {
-          DSP_DIAG(MEMORY, "TritonGraphBackend::executeSingleKernel: null specialBuffer for zero-length arg slot %d "
+          DSP_DIAG(MEMORY, "TritonGraphBackend::executeSingleKernel: null specialBuffer for empty arg slot %d "
                     "(sub-segment [%d-%d], dtype=%d, device=%d, capturing=%d) and dummy pointer unavailable",
                     argMapping.slotIndex, compiled.startSlot_, compiled.endSlot_,
                     static_cast<int>(arr->dataType())
                     , currentDevice, streamIsCapturing ? 1 : 0
                     );
-          return Status::KERNEL_FAILURE;
+          return failKernel("empty argument dummy pointer is unavailable");
         }
       } else {
         DSP_DIAG(EXECUTE, "TritonGraphBackend::executeSingleKernel: null specialBuffer for arg slot %d "
                   "(sub-segment [%d-%d], length=%lld, dtype=%d)",
                   argMapping.slotIndex, compiled.startSlot_, compiled.endSlot_,
                   (long long)arr->lengthOf(), static_cast<int>(arr->dataType()));
-        return Status::KERNEL_FAILURE;
+        return failKernel("argument special buffer is null");
       }
     }
     bufferPtrs.push_back(sbuf);
@@ -658,7 +669,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
                   deviceChanged ? 1 : 0, compiled.cachedArgTableDevice,
                   compiled.cachedArgTableBytes, tableBytes,
                   compiled.cachedArgTableDeviceId, currentDevice);
-        return Status::KERNEL_FAILURE;
+        return failKernel("indirect argument table was not preallocated before capture");
       }
       if (compiled.cachedArgTableDevice != nullptr) {
         recordModuleFree(compiled.cachedArgTableDeviceId >= 0 ? compiled.cachedArgTableDeviceId : currentDevice,
@@ -667,7 +678,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
         if (freeErr != cudaSuccess) {
           DSP_DIAG(MEMORY, "TritonGraphBackend: failed to free stale arg table for [%d-%d]: %s",
                     compiled.startSlot_, compiled.endSlot_, cudaGetErrorString(freeErr));
-          return Status::KERNEL_FAILURE;
+          return failKernel("stale indirect argument table could not be freed");
         }
         compiled.cachedArgTableDevice = nullptr;
         compiled.cachedArgTableBytes = 0;
@@ -677,7 +688,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
       if (allocErr != cudaSuccess) {
         DSP_DIAG(MEMORY, "TritonGraphBackend: failed to allocate arg table (%d bytes): %s",
                   (int)tableBytes, cudaGetErrorString(allocErr));
-        return Status::KERNEL_FAILURE;
+        return failKernel("indirect argument table allocation failed");
       }
       compiled.cachedArgTableBytes = tableBytes;
       compiled.cachedArgTableDeviceId = currentDevice;
@@ -705,7 +716,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
       if (compiled.cachedArgTableHostPinned == nullptr) {
         DSP_DIAG(MEMORY, "TritonGraphBackend: failed to allocate pinned arg table host (%d bytes) via pool",
                   (int)tableBytes);
-        return Status::KERNEL_FAILURE;
+        return failKernel("pinned argument table allocation failed");
       }
       compiled.cachedArgTableHostPinnedBytes = tableBytes;
     }
@@ -727,7 +738,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
                   "(tableBytes=%d, cachedDeviceId=%d, currentDevice=%d)",
                   compiled.startSlot_, compiled.endSlot_,
                   (int)tableBytes, compiled.cachedArgTableDeviceId, currentDevice);
-        return Status::KERNEL_FAILURE;
+        return failKernel("indirect argument table device pointer is null");
       }
 
       // Check pointer alignment (CUDA requires at least 4-byte alignment for memcpy)
@@ -737,7 +748,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
                   argTableDevice, compiled.startSlot_, compiled.endSlot_,
                   reinterpret_cast<uintptr_t>(argTableDevice) % 256,
                   compiled.cachedArgTableDeviceId);
-        return Status::KERNEL_FAILURE;
+        return failKernel("indirect argument table device pointer is misaligned");
       }
 
       // Copy host → device (async on the execution stream)
@@ -782,7 +793,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
                   argTableDevice, argTableHostPinned,
                   compiled.cachedArgTableDeviceId, currentDevice, (void*)cudaExecStream);
         cudaGetLastError();  // Clear the error so subsequent operations aren't poisoned
-        return Status::KERNEL_FAILURE;
+        return failKernel("indirect argument table H2D copy failed");
       }
     }
     // When argTablePreCopied=true, the consolidated copy in executeSegment already
@@ -808,7 +819,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
       if (streamIsCapturing) {
         DSP_DIAG(EXECUTE, "TritonGraphBackend::executeSingleKernel: cooperative sync counter device mismatch during capture [%d-%d]",
                   compiled.startSlot_, compiled.endSlot_);
-        return Status::KERNEL_FAILURE;
+        return failKernel("cooperative sync counter device changed during capture");
       }
       recordModuleFree(compiled.cachedSyncCounterDeviceId >= 0 ? compiled.cachedSyncCounterDeviceId : currentDevice,
                        sizeof(int));
@@ -816,7 +827,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
       if (freeErr != cudaSuccess) {
         DSP_DIAG(MEMORY, "TritonGraphBackend: failed to free stale cooperative sync counter for [%d-%d]: %s",
                   compiled.startSlot_, compiled.endSlot_, cudaGetErrorString(freeErr));
-        return Status::KERNEL_FAILURE;
+        return failKernel("stale cooperative sync counter could not be freed");
       }
       compiled.cachedSyncCounterDevice = nullptr;
       compiled.cachedSyncCounterDeviceId = -1;
@@ -825,13 +836,13 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
       if (streamIsCapturing) {
         DSP_DIAG(EXECUTE, "TritonGraphBackend::executeSingleKernel: cooperative sync counter was not pre-allocated for captured launch [%d-%d]",
                   compiled.startSlot_, compiled.endSlot_);
-        return Status::KERNEL_FAILURE;
+        return failKernel("cooperative sync counter was not preallocated before capture");
       }
       auto allocErr = allocateDeviceBufferAsync(&compiled.cachedSyncCounterDevice, sizeof(int), cudaExecStream);
       if (allocErr != cudaSuccess) {
         DSP_DIAG(MEMORY, "TritonGraphBackend: failed to allocate cooperative sync counter: %s",
                   cudaGetErrorString(allocErr));
-        return Status::KERNEL_FAILURE;
+        return failKernel("cooperative sync counter allocation failed");
       }
       compiled.cachedSyncCounterDeviceId = currentDevice;
       recordModuleAlloc(currentDevice, sizeof(int));
@@ -843,7 +854,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
     if (memsetErr != cudaSuccess) {
       DSP_DIAG(EXECUTE, "TritonGraphBackend: failed to initialize cooperative sync counter: %s",
                 cudaGetErrorString(memsetErr));
-      return Status::KERNEL_FAILURE;
+      return failKernel("cooperative sync counter initialization failed");
     }
     // Cooperative sectioned kernels expect sync counter arg after n_elements.
     kernelArgs.push_back(&syncCounterDevice);
@@ -882,7 +893,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
                   compiled.startSlot_, compiled.endSlot_,
                   deviceChanged ? 1 : 0, compiled.cachedGlobalScratchDevice,
                   compiled.cachedGlobalScratchBytes, totalScratchBytes);
-        return Status::KERNEL_FAILURE;
+        return failKernel("global scratch was not preallocated before capture");
       }
       if (compiled.cachedGlobalScratchDevice != nullptr) {
         recordModuleFree(compiled.cachedGlobalScratchDeviceId >= 0 ? compiled.cachedGlobalScratchDeviceId : currentDevice,
@@ -898,7 +909,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
         DSP_DIAG(MEMORY, "TritonGraphBackend: failed to allocate global scratch (%zu bytes) for [%d-%d]: %s",
                   totalScratchBytes, compiled.startSlot_, compiled.endSlot_,
                   cudaGetErrorString(allocErr));
-        return Status::KERNEL_FAILURE;
+        return failKernel("global scratch allocation failed");
       }
       compiled.cachedGlobalScratchBytes = totalScratchBytes;
       compiled.cachedGlobalScratchDeviceId = currentDevice;
@@ -920,7 +931,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
       DSP_DIAG(COMPILE, "TritonGraphBackend::executeSingleKernel: shared memory re-configuration failed "
                 "for [%d-%d] (requested=%u bytes, device=%d)",
                 compiled.startSlot_, compiled.endSlot_, compiled.sharedMemBytes, currentDevice);
-      return Status::KERNEL_FAILURE;
+      return failKernel("shared-memory configuration failed");
     }
   }
 
@@ -988,7 +999,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
     for (auto& ao : aliasedOutputs) {
       freeDeviceBufferAsync(ao.tempPtr, cudaExecStream);
     }
-    return Status::KERNEL_FAILURE;
+    return failKernel("kernel launch failed");
   }
 
   DSP_DIAG(EXECUTE, "LAUNCH OK: [%d-%d] kernel launched successfully, marking actuality",

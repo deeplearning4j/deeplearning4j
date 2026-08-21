@@ -64,43 +64,71 @@ public class Q3_KDequantizer implements Dequantizer {
         int outputIdx = 0;
 
         for (int block = 0; block < numBlocks && buffer.remaining() >= BYTES_PER_BLOCK; block++) {
-            // Read high bits (32 bytes)
+            // Q3_K stores 32 high-bit bytes, 64 low-bit bytes, twelve packed
+            // scale bytes, and one FP16 super-block scale.  The twelve scale
+            // bytes encode sixteen signed (0..63, then -32) sub-block scales.
             byte[] hmask = new byte[32];
             buffer.get(hmask);
-
-            // Read low 2 bits (64 bytes for 256 elements)
             byte[] qs = new byte[64];
             buffer.get(qs);
+            byte[] packedScales = new byte[12];
+            buffer.get(packedScales);
 
-            // Read scales (12 bytes)
-            byte[] scales = new byte[12];
-            buffer.get(scales);
-
-            // Read d
             short dRaw = buffer.getShort();
             float d = fp16ToFloat(dRaw);
 
-            // Dequantize (simplified)
-            for (int i = 0; i < 256 && outputIdx < totalElements; i++) {
-                int qsIdx = i / 4;
-                int qsShift = (i % 4) * 2;
-                int lowBits = (qs[qsIdx] >> qsShift) & 0x03;
+            // This is the same unpacking used by ggml's dequantize_row_q3_K:
+            // the low four bits of the first two words and the high two bits
+            // packed in the third word form sixteen scale bytes.
+            int aux0 = littleEndianInt(packedScales, 0);
+            int aux1 = littleEndianInt(packedScales, 4);
+            int aux2 = littleEndianInt(packedScales, 8);
+            int tmp = aux2;
+            int decoded0 = (aux0 & 0x0F0F0F0F) | (((tmp)       & 0x03030303) << 4);
+            int decoded1 = (aux1 & 0x0F0F0F0F) | (((tmp >>> 2) & 0x03030303) << 4);
+            int decoded2 = ((aux0 >>> 4) & 0x0F0F0F0F) | (((tmp >>> 4) & 0x03030303) << 4);
+            int decoded3 = ((aux1 >>> 4) & 0x0F0F0F0F) | (((tmp >>> 6) & 0x03030303) << 4);
+            int[] scales = {decoded0, decoded1, decoded2, decoded3};
 
-                int hmaskIdx = i / 8;
-                int hmaskShift = i % 8;
-                int highBit = (hmask[hmaskIdx] >> hmaskShift) & 0x01;
+            int scaleIndex = 0;
+            int qOffset = 0;
+            int highMask = 1;
+            for (int half = 0; half < 2 && outputIdx < totalElements; half++) {
+                int shift = 0;
+                for (int group = 0; group < 4 && outputIdx < totalElements; group++) {
+                    float scale = d * (scaleByte(scales, scaleIndex++) - 32);
+                    for (int lane = 0; lane < 16 && outputIdx < totalElements; lane++) {
+                        int lowBits = (qs[qOffset + lane] >>> shift) & 0x03;
+                        int highBit = (hmask[lane] & highMask) != 0 ? 0 : 4;
+                        result[outputIdx++] = scale * (lowBits - highBit);
+                    }
 
-                int val = lowBits | (highBit << 2);
-                val -= 4; // Signed offset
+                    scale = d * (scaleByte(scales, scaleIndex++) - 32);
+                    for (int lane = 0; lane < 16 && outputIdx < totalElements; lane++) {
+                        int lowBits = (qs[qOffset + 16 + lane] >>> shift) & 0x03;
+                        int highBit = (hmask[16 + lane] & highMask) != 0 ? 0 : 4;
+                        result[outputIdx++] = scale * (lowBits - highBit);
+                    }
 
-                int scaleIdx = i / 16;
-                float scale = d * ((scales[scaleIdx] & 0x3F) - 32);
-
-                result[outputIdx++] = val * scale;
+                    shift += 2;
+                    highMask <<= 1;
+                }
+                qOffset += 32;
             }
         }
 
         return result;
+    }
+
+    private static int littleEndianInt(byte[] bytes, int offset) {
+        return (bytes[offset] & 0xFF)
+                | ((bytes[offset + 1] & 0xFF) << 8)
+                | ((bytes[offset + 2] & 0xFF) << 16)
+                | ((bytes[offset + 3] & 0xFF) << 24);
+    }
+
+    private static int scaleByte(int[] packedScales, int index) {
+        return (packedScales[index >>> 2] >>> ((index & 3) * 8)) & 0xFF;
     }
 
     @Override

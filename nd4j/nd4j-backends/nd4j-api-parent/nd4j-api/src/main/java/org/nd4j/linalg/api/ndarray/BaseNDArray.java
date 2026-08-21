@@ -1436,8 +1436,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public void setShapeAndStride(int[] shape, int[] stride) {
-        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(ArrayUtil.toLongArray(shape),ArrayUtil.toLongArray( stride), Shape.elementWiseStride(shape, stride, ordering() == 'f'), ordering(), this.dataType(), isEmpty());
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride),  0, ordering(), this.dataType(), isEmpty()));
+        long[] newShape = ArrayUtil.toLongArray(shape);
+        long[] newStride = ArrayUtil.toLongArray(stride);
+        boolean empty = newShape.length > 0 && ArrayUtil.prodLong(newShape) == 0;
+        long ews = Shape.elementWiseStride(newShape, newStride, ordering() == 'f');
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(
+                newShape, newStride, ews, ordering(), dataType(), empty));
     }
 
     @Override

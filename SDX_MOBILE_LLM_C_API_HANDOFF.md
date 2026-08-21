@@ -348,75 +348,23 @@ Found while running qwen2.5-0.5b-instruct GGUFs through the built `sdx_llm` imag
    ```
    The cosine-similarity divergence between formats is gone.
 
-   *Embedded tokenizer special tokens: FIXED (R8 item 4, 2026-07-12).* `q4_k_m`
-   works sidecar-free. `SdxLlmCore.buildBpeTokenizerJson` now reads
-   `tokenizer.ggml.token_type` and adds every non-NORMAL token (type != 1 in GGUF)
-   to `added_tokens` with `"special":true`. All 22 Qwen2.5 special tokens
-   (IDs 151643–151664) correctly promoted; `<|im_start|>` and `<|im_end|>` each
-   tokenize to exactly 1 id. JVM tests: 7/7 green (SdxLlmCoreTokenizerTest).
-   Native rebuild in progress; `libsdx_llm.so` refresh pending build completion.
+   **Tokenizer source policy (current): canonical Hugging Face assets only.** The GGUF
+   metadata is model/runtime metadata, not a tokenizer source. The importer now requires
+   `tokenizer.json`, `tokenizer_config.json`, and `config.json` from the same
+   immutable Hugging Face revision as the selected GGUF. The Rust-backed
+   `HuggingFaceTokenizer` is loaded directly from those files and must round-trip
+   the smoke input `Hello` before graph compilation begins.
 
-2. **Tokenizer not read from GGUF metadata** — **FIXED 2026-07-12 (kompile):**
-   `SdxLlmCore.resolveTokenizer` now has a 3-path fallback:
-   1. explicit `tokenizerPath` arg, 2. sidecar `tokenizer.json` next to model,
-   3. **GGUF-embedded tokenizer**: reads `tokenizer.ggml.tokens` (vocab array),
-   `tokenizer.ggml.merges` (BPE merges), BOS/EOS IDs from `GGMLMetadata`, and
-   constructs a HuggingFace `tokenizer.json` in memory via `buildBpeTokenizerJson`,
-   then calls `HuggingFaceTokenizer.fromJson()`.
-   `nd4j/sdx-aot/src/test/…/SdxLlmCoreTokenizerTest.java` covers 4 cases
-   (GPT-2 BPE, separate BOS/EOS, empty merges, null merges) — all green.
-   **Verification (RE-PROOF 3, 2026-07-12, cpu linux-x86_64):**
-   ```
-   # qwen2.5-1.5b-instruct-fp16.gguf — NO sidecar tokenizer.json present
-   [PROOF3] Model loaded in 15.4s vocabSize=151936
-   # vocabSize=151936, bosTokenId=128245, eosTokenId=151645 — read from GGUF metadata
-   # Generation works: 2.89 tok/s (simple prompt, 23 tokens)
-   # Output: "I 'm Ġsorry , Ġbut ĠI 'm Ġnot Ġable Ġto Ġassist..." (BPE byte markers, coherent)
-   ```
-   Note: Qwen2.5 uses a custom BPE variant with byte-level markers (Ġ prefix = space).
-   The chat template (`hasChatTemplate=false` from sdxLlmInfoJson) is not yet
-   applied by the tokenizer binding — chat prompts should use `<|im_start|>` tags
-   directly (as in `SdxSubprocessChatModel`). Tool-call JSON emission at 1.5B
-   is functional but reliability depends on prompt discipline (see item 3).
-3. Field evidence for R2: a 0.5B model cannot reliably emit tool-call JSON with
-   prompt-only discipline — constrained decoding (R2) is what makes small-model
-   tool use viable; until it lands, catalog guidance should steer tool-use
-   scenarios to 1.5B+.
-4. **GGUF-embedded tokenizer missing special tokens** — **FIXED 2026-07-12 (kompile):**
+   There is deliberately no GGUF-embedded tokenizer reconstruction, byte-level decoder,
+   generated tokenizer JSON, or fallback path. If any canonical asset is missing, import
+   fails with an actionable error and the model is not activated. This keeps model
+   vocabulary, special tokens, chat template, and decoding behavior identical to the
+   Hugging Face repository that produced the model.
 
-   **Root cause:** `SdxLlmCore.buildBpeTokenizerJson` emitted only BOS/EOS in
-   `added_tokens`. Qwen2.5 has 22 special tokens (IDs 151643–151664) with
-   `tokenizer.ggml.token_type != 1` (NORMAL=1 in GGUF). Without them the HuggingFace
-   Rust tokenizer split `<|im_start|>` as `[27,91,318,4906,91,29]` (6 chars) instead
-   of `[151644]` (1 token), producing garbled pipe-character output in no-sidecar mode.
-
-   **Fix applied (`nd4j/sdx-aot/src/main/java/…/SdxLlmCore.java`):**
-   - `tryLoadEmbeddedGgufTokenizer`: reads `raw.get("tokenizer.ggml.token_type")`
-     (int[] from `GGUFReader`; defensive boxed-List path also handled), passes it as
-     `tokenTypes` to the new 6-arg `buildBpeTokenizerJson` overload.
-   - `buildBpeTokenizerJson(tokens, merges, bosId, eosId, model, tokenTypes)`: sweeps
-     all token indices; for each where `tokenTypes[i] != 1`, adds an `added_tokens`
-     entry with `"special":true`, deduplicated against BOS/EOS already added. The
-     original 5-arg signature is a backward-compat wrapper that passes `null`.
-   - `makeAddedToken(ObjectMapper, id, content)`: extracted helper to avoid duplication.
-
-   **Test additions (`SdxLlmCoreTokenizerTest.java`, total 7/7 green):**
-   - `buildBpeTokenizerJson_controlTokensPromotedToAddedTokens`: synthetic 6-token vocab
-     with 3 CONTROL tokens (type=3); asserts CONTROL ids in `added_tokens`, NORMAL ids
-     excluded, `special=true` on all.
-   - `buildBpeTokenizerJson_nullTokenTypesBackwardCompat`: null tokenTypes produces
-     identical JSON to the 5-arg overload.
-   - `embeddedTokenizer_qwen25_chatmlMarkersAreSingleIds`: live GGUF test (skips if no
-     model present, skips if sidecar present); asserts `<|im_start|>` → [151644] (1 id)
-     and `<|im_end|>` → [151645] (1 id) via embedded path. Ran and passed 2026-07-12.
-
-   **Verification (2026-07-12, JVM, cpu linux-x86_64):**
-   ```
-   Tests run: 7, Failures: 0, Errors: 0, Skipped: 0  (SdxLlmCoreTokenizerTest)
-   <|im_start|>  → [151644]  (1 token, correct)
-   <|im_end|>    → [151645]  (1 token, correct)
-   ```
-   Native rebuild (libsdx_llm.so) in progress. Spin results pending rebuild completion.
+   The Android acquisition layer resolves even exact blob/resolve URLs through the
+   Hugging Face model API so it can pin the model and canonical tokenizer assets to the
+   same commit. Cached assets are identity-prefixed by the model path and verified before
+   reuse.
 
 ## Acceptance criteria
 

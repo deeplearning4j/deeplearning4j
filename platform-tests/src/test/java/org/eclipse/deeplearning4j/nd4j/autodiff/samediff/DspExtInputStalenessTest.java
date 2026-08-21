@@ -286,6 +286,37 @@ public class DspExtInputStalenessTest {
         log.info("[UNMARKED_PH] mode={} all 10 steps unique — auto-detection works", mode);
     }
 
+    @ParameterizedTest(name = "booleanMaskAndFloatPixelsRefresh mode={0}")
+    @EnumSource(value = GraphExecutionMode.class, names = {"CUDA_GRAPHS", "TRITON", "AUTO"})
+    @DisplayName("BOOL mask and FLOAT pixels both refresh across frozen replay")
+    void testBooleanMaskAndFloatPixelsRefresh(GraphExecutionMode mode) {
+        sd = SameDiff.create();
+        SDVariable pixels = sd.placeHolder("pixel_values", DataType.FLOAT, 1, 16);
+        SDVariable mask = sd.placeHolder("pixel_attention_mask", DataType.BOOL, 1, 16);
+        pixels.add("out", mask.castTo(DataType.FLOAT));
+        configureMode(sd, mode);
+
+        for (int step = 0; step < 20; step++) {
+            float pixelValue = step + 1.0f;
+            int enabledPixels = (step * 5) % 17;
+            INDArray pixelArray = Nd4j.valueArrayOf(new long[]{1, 16}, pixelValue);
+            INDArray maskArray = Nd4j.zeros(DataType.BOOL, 1, 16);
+            for (int i = 0; i < enabledPixels; i++) {
+                maskArray.putScalar(0, i, 1);
+            }
+
+            Map<String, INDArray> placeholders = new LinkedHashMap<>();
+            placeholders.put("pixel_values", pixelArray);
+            placeholders.put("pixel_attention_mask", maskArray);
+            INDArray output = sd.output(placeholders, "out").get("out");
+
+            double expected = 16.0 * pixelValue + enabledPixels;
+            assertEquals(expected, output.sumNumber().doubleValue(), 1e-4,
+                    mode + " step " + step + " used stale FLOAT pixels or BOOL mask");
+        }
+        log.info("[BOOL_MASK_REFRESH] mode={} PASS — all 20 pixel/mask pairs refreshed", mode);
+    }
+
     @ParameterizedTest(name = "constantNeverStaged mode={0}")
     @EnumSource(value = GraphExecutionMode.class, names = {"CUDA_GRAPHS", "TRITON", "AUTO"})
     @DisplayName("True CONSTANT ext input never gets staging")

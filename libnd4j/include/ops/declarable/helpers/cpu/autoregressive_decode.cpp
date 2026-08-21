@@ -31,6 +31,8 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cstring>
+#include <limits>
 #include <unordered_map>
 #include <vector>
 
@@ -153,6 +155,51 @@ static void argmaxCpu(const void* vLogits, void* vOutput, LongType vocabSize) {
         }
     }
     output[0] = maxIdx;
+}
+
+// Recurrent state is fed back through host-owned external inputs. NDArray::assign
+// is not sufficient here: on accelerator plans it may retain device-authoritative
+// storage and leave the host pointer null on the next tensor-view submission.
+static bool copyRecurrentFeedback(NDArray* source, NDArray* destination) {
+    if (source == nullptr || destination == nullptr ||
+        source->lengthOf() != destination->lengthOf() ||
+        source->dataType() != destination->dataType()) {
+        return false;
+    }
+
+    source->forceSyncToHost();
+    destination->forceSyncToHost();
+    const size_t elementSize = DataTypeUtils::sizeOfElement(source->dataType());
+    const LongType length = source->lengthOf();
+    if (length < 0 || (elementSize != 0 &&
+                       static_cast<uint64_t>(length) >
+                           std::numeric_limits<size_t>::max() / elementSize)) {
+        return false;
+    }
+    const size_t bytes = static_cast<size_t>(length) * elementSize;
+    auto* sourceData = source->dataBuffer();
+    auto* destinationData = destination->dataBuffer();
+    if (bytes > 0 && (sourceData == nullptr || destinationData == nullptr)) {
+        return false;
+    }
+    if (bytes > 0 && destination->buffer() == nullptr) {
+        destinationData->allocatePrimary();
+    }
+    void* sourceBuffer = source->buffer();
+    void* destinationBuffer = destination->buffer();
+    if (bytes > 0 && (sourceBuffer == nullptr || destinationBuffer == nullptr)) {
+        return false;
+    }
+    if (bytes > 0 &&
+        (sourceData->getLenInBytes() < bytes ||
+         destinationData->getLenInBytes() < bytes)) {
+        return false;
+    }
+    if (bytes > 0) {
+        std::memcpy(destinationBuffer, sourceBuffer, bytes);
+        destination->tickWriteHost();
+    }
+    return true;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -959,54 +1006,35 @@ void autoregressiveDecode(
         // This is critical for hybrid architectures (e.g. Qwen with GDN layers).
         // Without this, GDN layers see frozen state from warmup and degenerate.
         //
-        // Safety: validate element count, dtype, and DataBuffer byte capacity before
-        // each assign() to prevent buffer overruns when plan output shape diverges
-        // from the external input shape.
-        if (config->numGdnStatePairs > 0 && config->gdnStateExtIndices != nullptr
-            && config->gdnStateOutputIndices != nullptr) {
+        // State mappings are strict. A missing or incompatible recurrent pair is
+        // a graph/runtime error; silently skipping it changes model semantics.
+        if (config->numGdnStatePairs > 0) {
+            REQUIRE_TRUE(config->gdnStateExtIndices != nullptr &&
+                         config->gdnStateOutputIndices != nullptr, 0,
+                         "autoregressive_decode: GDN state mappings are missing for %d pairs at step %d",
+                         config->numGdnStatePairs, step);
             for (int s = 0; s < config->numGdnStatePairs; s++) {
                 int outIdx = config->gdnStateOutputIndices[s];
                 int extIdx = config->gdnStateExtIndices[s];
-                if (outIdx >= 0 && outIdx < numPlanOutputs && planOutputs[outIdx] != nullptr
-                    && extIdx >= 0 && extIdx < numExtInputs && extInputs[extIdx] != nullptr) {
-                    NDArray* src = planOutputs[outIdx];
-                    NDArray* dst = extInputs[extIdx];
-                    // Validate element count
-                    if (src->lengthOf() != dst->lengthOf()) {
-                        DSP_DIAG(FALLBACK,
-                            "autoregressive_decode: GDN state feedback SKIPPED at step %d pair %d: "
-                            "plan output[%d] length=%lld != extInput[%d] length=%lld — shape mismatch",
-                            step, s, outIdx, (long long)src->lengthOf(),
-                            extIdx, (long long)dst->lengthOf());
-                        continue;
-                    }
-                    // Validate dtype
-                    if (src->dataType() != dst->dataType()) {
-                        DSP_DIAG(FALLBACK,
-                            "autoregressive_decode: GDN state feedback SKIPPED at step %d pair %d: "
-                            "plan output[%d] dtype=%d != extInput[%d] dtype=%d — type mismatch",
-                            step, s, outIdx, (int)src->dataType(),
-                            extIdx, (int)dst->dataType());
-                        continue;
-                    }
-                    // Validate DataBuffer byte capacity (guards against overrun)
-                    auto* srcDb = src->dataBuffer();
-                    auto* dstDb = dst->dataBuffer();
-                    if (srcDb != nullptr && dstDb != nullptr &&
-                        srcDb->getLenInBytes() > dstDb->getLenInBytes()) {
-                        DSP_DIAG(FALLBACK,
-                            "autoregressive_decode: GDN state feedback SKIPPED at step %d pair %d: "
-                            "plan output[%d] byte size=%zu exceeds extInput[%d] DataBuffer capacity=%zu — overrun prevented",
-                            step, s, outIdx, srcDb->getLenInBytes(),
-                            extIdx, dstDb->getLenInBytes());
-                        continue;
-                    }
-                    dst->assign(src);
-                }
+                REQUIRE_TRUE(outIdx >= 0 && outIdx < numPlanOutputs &&
+                             extIdx >= 0 && extIdx < numExtInputs,
+                             0, "autoregressive_decode: invalid GDN state mapping at step %d pair %d",
+                             step, s);
+                NDArray* src = planOutputs[outIdx];
+                NDArray* dst = extInputs[extIdx];
+                REQUIRE_TRUE(src != nullptr && dst != nullptr, 0,
+                             "autoregressive_decode: null GDN state mapping at step %d pair %d",
+                             step, s);
+                REQUIRE_TRUE(copyRecurrentFeedback(src, dst), 0,
+                             "autoregressive_decode: GDN state feedback copy failed at step %d pair %d",
+                             step, s);
             }
         }
-        if (config->numConvStatePairs > 0 && config->convStateExtIndices != nullptr
-            && config->convStateOutputIndices != nullptr) {
+        if (config->numConvStatePairs > 0) {
+            REQUIRE_TRUE(config->convStateExtIndices != nullptr &&
+                         config->convStateOutputIndices != nullptr, 0,
+                         "autoregressive_decode: conv state mappings are missing for %d pairs at step %d",
+                         config->numConvStatePairs, step);
             for (int s = 0; s < config->numConvStatePairs; s++) {
                 int outIdx = config->convStateOutputIndices[s];
                 int extIdx = config->convStateExtIndices[s];
@@ -1023,42 +1051,18 @@ void autoregressiveDecode(
                         valid ? extInputs[extIdx]->e<float>(1) : -999.0f,
                         valid ? extInputs[extIdx]->e<float>(2) : -999.0f);
                 }
-                if (outIdx >= 0 && outIdx < numPlanOutputs && planOutputs[outIdx] != nullptr
-                    && extIdx >= 0 && extIdx < numExtInputs && extInputs[extIdx] != nullptr) {
-                    NDArray* src = planOutputs[outIdx];
-                    NDArray* dst = extInputs[extIdx];
-                    // Validate element count
-                    if (src->lengthOf() != dst->lengthOf()) {
-                        DSP_DIAG(FALLBACK,
-                            "autoregressive_decode: conv state feedback SKIPPED at step %d pair %d: "
-                            "plan output[%d] length=%lld != extInput[%d] length=%lld — shape mismatch",
-                            step, s, outIdx, (long long)src->lengthOf(),
-                            extIdx, (long long)dst->lengthOf());
-                        continue;
-                    }
-                    // Validate dtype
-                    if (src->dataType() != dst->dataType()) {
-                        DSP_DIAG(FALLBACK,
-                            "autoregressive_decode: conv state feedback SKIPPED at step %d pair %d: "
-                            "plan output[%d] dtype=%d != extInput[%d] dtype=%d — type mismatch",
-                            step, s, outIdx, (int)src->dataType(),
-                            extIdx, (int)dst->dataType());
-                        continue;
-                    }
-                    // Validate DataBuffer byte capacity (guards against overrun)
-                    auto* srcDb = src->dataBuffer();
-                    auto* dstDb = dst->dataBuffer();
-                    if (srcDb != nullptr && dstDb != nullptr &&
-                        srcDb->getLenInBytes() > dstDb->getLenInBytes()) {
-                        DSP_DIAG(FALLBACK,
-                            "autoregressive_decode: conv state feedback SKIPPED at step %d pair %d: "
-                            "plan output[%d] byte size=%zu exceeds extInput[%d] DataBuffer capacity=%zu — overrun prevented",
-                            step, s, outIdx, srcDb->getLenInBytes(),
-                            extIdx, dstDb->getLenInBytes());
-                        continue;
-                    }
-                    dst->assign(src);
-                }
+                REQUIRE_TRUE(outIdx >= 0 && outIdx < numPlanOutputs &&
+                             extIdx >= 0 && extIdx < numExtInputs,
+                             0, "autoregressive_decode: invalid conv state mapping at step %d pair %d",
+                             step, s);
+                NDArray* src = planOutputs[outIdx];
+                NDArray* dst = extInputs[extIdx];
+                REQUIRE_TRUE(src != nullptr && dst != nullptr, 0,
+                             "autoregressive_decode: null conv state mapping at step %d pair %d",
+                             step, s);
+                REQUIRE_TRUE(copyRecurrentFeedback(src, dst), 0,
+                             "autoregressive_decode: conv state feedback copy failed at step %d pair %d",
+                             step, s);
             }
         }
 

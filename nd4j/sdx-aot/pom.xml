@@ -140,7 +140,7 @@
             <version>1.2.13</version>
             <scope>compile</scope>
         </dependency>
-        <!-- JUnit 5 for the buildBpeTokenizerJson unit tests (no native image needed).
+        <!-- JUnit 5 for canonical Hugging Face tokenizer validation tests.
              Pinned to 5.10.2 to match surefire 3.3.0's requirement (parent's 5.8.0-M1
              predates the getAncestors() API surefire 3.x uses).
              junit-platform-engine is overridden to 1.10.2 to win over the 1.8.0-M1

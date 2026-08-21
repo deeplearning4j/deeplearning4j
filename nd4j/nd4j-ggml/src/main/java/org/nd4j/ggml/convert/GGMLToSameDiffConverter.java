@@ -204,9 +204,11 @@ public class GGMLToSameDiffConverter {
     }
 
     /**
-     * Estimate the model size from tensor information for pre-allocation.
+     * Estimate the destination-array size produced by this converter's current policy.
+     * Compressed GGUF storage bytes are not a valid device-admission estimate when tensors are
+     * dequantized to FLOAT/HALF/BFLOAT16 during import.
      */
-    private ModelSizeInfo estimateModelSize(File ggmlFile) {
+    public ModelSizeInfo estimateModelSize(File ggmlFile) {
         try {
             GGMLFormat format = GGMLFormatDetector.detect(ggmlFile);
             GGMLMetadata metadata;
@@ -221,25 +223,41 @@ public class GGMLToSameDiffConverter {
                 }
             }
 
-            // Build manifest from tensor info
+            List<GGMLTensorInfo> tensorInfos = metadata.getTensors();
+            boolean compactTokenEmbedding = shouldUseCompactTokenEmbedding(tensorInfos);
             Map<String, Pair<Long, Long>> manifest = new LinkedHashMap<>();
             long offset = 0;
-            for (GGMLTensorInfo info : metadata.getTensors()) {
-                long tensorBytes = (long) (info.getNumElements() * info.getDataType().getBytesPerElement());
+            for (GGMLTensorInfo info : tensorInfos) {
+                long tensorBytes = estimateDestinationBytes(info, compactTokenEmbedding);
                 manifest.put(info.getName(), Pair.of(offset, tensorBytes));
-                offset += tensorBytes;
+                offset = Math.addExact(offset, tensorBytes);
             }
 
             return ModelSizeInfo.fromManifest(manifest);
         } catch (Exception e) {
-            log.warn("Failed to estimate model size, using file size as fallback: {}", e.getMessage());
-            return ModelSizeInfo.builder()
-                    .totalBytes(ggmlFile.length())
-                    .arrayCount(0)
-                    .largestArrayBytes(0)
-                    .arraySizes(new LinkedHashMap<>())
-                    .build();
+            throw new IllegalStateException(
+                    "Failed to estimate destination model size for " + ggmlFile, e);
         }
+    }
+
+    long estimateDestinationBytes(GGMLTensorInfo info, boolean compactTokenEmbedding) {
+        if (info.getDataType().isQuantized()) {
+            if (options.getQuantizationMode() == ConversionOptions.QuantizationMode.PRESERVE_QUANTIZATION
+                    || shouldUseRuntimeQuantizedMatmul(info)) {
+                return info.getDataSize();
+            }
+            return Math.multiplyExact(info.getNumElements(),
+                    (long) getTargetDataType(info, compactTokenEmbedding).width());
+        }
+
+        DataType sourceType = info.getDataType().getNd4jType();
+        if (sourceType == null) {
+            throw new IllegalStateException("No ND4J type mapping for: " + info.getDataType());
+        }
+        DataType targetType = getTargetDataType(info, compactTokenEmbedding);
+        DataType materializedType = sourceType.isFPType() && targetType != null
+                ? targetType : sourceType;
+        return Math.multiplyExact(info.getNumElements(), (long) materializedType.width());
     }
 
     /**
@@ -583,27 +601,16 @@ public class GGMLToSameDiffConverter {
      */
     private INDArray convertTensorDataDirect(ByteBuffer directData, GGMLTensorInfo info,
                                              DataType targetType) {
-        long[] shape = reverseShape(info.getShape());
-        GGMLDataType dataType = info.getDataType();
-        DataType nd4jType = dataType.getNd4jType();
-        if (nd4jType == null) {
-            throw new IllegalStateException("No ND4J type mapping for: " + dataType);
-        }
-
-        long numElements = 1;
-        for (long dim : shape) numElements *= dim;
-        if (numElements < 1) numElements = 1;
-
-        // directData is already a direct ByteBuffer in little-endian order.
-        // Create ND4J DataBuffer directly from it — no heap copy needed.
-        DataBuffer buf = Nd4j.createBuffer(directData, nd4jType, numElements);
-        INDArray array = Nd4j.create(buf, shape, Nd4j.getStrides(shape, 'c'), 0, 'c');
-
-        // Ensure host has correct data for later transfers
-        Nd4j.getAffinityManager().ensureLocation(array,
-                AffinityManager.Location.HOST);
-
-        return castFloatingTarget(array, nd4jType, targetType);
+        // The direct-buffer DataBuffer constructor is not a complete host-authoritative
+        // materialization path on every backend. In particular, it can leave the source
+        // bytes unregistered before the first device transfer, producing all-zero or
+        // non-finite weights. Copy the bounded tensor bytes and use the same canonical
+        // type-specific materializer as the regular reader path.
+        ByteBuffer readable = directData.duplicate().order(ByteOrder.LITTLE_ENDIAN);
+        byte[] data = new byte[readable.remaining()];
+        readable.get(data);
+        return handleNonQuantizedTensor(data, info.getDataType(),
+                reverseShape(info.getShape()), targetType);
     }
 
     private INDArray handleNonQuantizedTensor(byte[] data, GGMLDataType dataType, long[] shape,
@@ -636,21 +643,29 @@ public class GGMLToSameDiffConverter {
                 return castFloatingTarget(Nd4j.create(floatData, shape, 'c'), nd4jType, targetType);
             }
             case HALF: {
-                // F16: raw bytes are IEEE 754 half-precision bit patterns.
-                // Use direct buffer approach with explicit host sync for CUDA compatibility.
-                ByteBuffer directBuffer = ByteBuffer.allocateDirect(data.length).order(ByteOrder.LITTLE_ENDIAN);
-                directBuffer.put(data);
-                directBuffer.rewind();
-                DataBuffer buf = Nd4j.createBuffer(directBuffer, DataType.HALF, numElements);
-                // Construct with the exact GGUF shape so rank-0 scalars, rank-1 vectors, and N-D
-                // tensors all produce consistent shape info. The previous "create(buf) + conditional
-                // reshape" pattern left rank-0 tensors as malformed 1D [1] arrays that later paths
-                // (e.g. SameDiffSerializer.saveAutoShard → dup) mistakenly flagged as empty.
-                INDArray array = Nd4j.create(buf, shape, Nd4j.getStrides(shape, 'c'), 0, 'c');
-                // Force device→host sync so host has correct data for later host→device transfers
-                Nd4j.getAffinityManager().ensureLocation(array,
-                        AffinityManager.Location.HOST);
-                return castFloatingTarget(array, nd4jType, targetType);
+                // F16 stores IEEE-754 binary16 bit patterns. Decode to float on the host,
+                // then cast through ND4J's normal authoritative host-array path.
+                short[] raw = new short[Math.toIntExact(numElements)];
+                bb.asShortBuffer().get(raw);
+                float[] floatData = new float[raw.length];
+                for (int i = 0; i < raw.length; i++) {
+                    floatData[i] = halfToFloat(raw[i]);
+                }
+                return castFloatingTarget(Nd4j.create(floatData, shape, 'c'),
+                        DataType.FLOAT, targetType);
+            }
+            case BFLOAT16: {
+                // BF16 is the high 16 bits of an IEEE-754 float. Materialize through FLOAT
+                // so the bytes are copied and marked host-authoritative before any backend
+                // transfer; casting the resulting array preserves the model's BF16 dtype.
+                short[] raw = new short[Math.toIntExact(numElements)];
+                bb.asShortBuffer().get(raw);
+                float[] floatData = new float[raw.length];
+                for (int i = 0; i < raw.length; i++) {
+                    floatData[i] = Float.intBitsToFloat((raw[i] & 0xffff) << 16);
+                }
+                return castFloatingTarget(Nd4j.create(floatData, shape, 'c'),
+                        DataType.FLOAT, targetType);
             }
             case DOUBLE: {
                 double[] doubleData = new double[Math.toIntExact(numElements)];
@@ -668,6 +683,31 @@ public class GGMLToSameDiffConverter {
                 return Nd4j.create(rawDataBuffer, shape, Nd4j.getStrides(shape, 'c'), 0, 'c');
             }
         }
+    }
+
+    private static float halfToFloat(short bits) {
+        int value = bits & 0xffff;
+        int sign = (value >>> 15) & 1;
+        int exponent = (value >>> 10) & 0x1f;
+        int fraction = value & 0x3ff;
+        int signBits = sign << 31;
+
+        if (exponent == 0) {
+            if (fraction == 0) {
+                return Float.intBitsToFloat(signBits);
+            }
+            while ((fraction & 0x400) == 0) {
+                fraction <<= 1;
+                exponent--;
+            }
+            exponent++;
+            fraction &= 0x3ff;
+        } else if (exponent == 0x1f) {
+            return Float.intBitsToFloat(signBits | 0x7f800000 | (fraction << 13));
+        }
+
+        int floatExponent = exponent + (127 - 15);
+        return Float.intBitsToFloat(signBits | (floatExponent << 23) | (fraction << 13));
     }
 
     private static INDArray castFloatingTarget(INDArray array, DataType sourceType, DataType targetType) {

@@ -680,6 +680,39 @@ static inline const char* statusName_gpu(Status status) {
   return dsp::dspStatusName(status);
 }
 
+// Capture validity is a correctness check, not a logging feature. The historical
+// DSP_CAPTURE_PROBE macro skips cudaStreamGetCaptureInfo_v2 entirely when GRAPH_REPLAY
+// diagnostics are disabled, which makes capture failure attribution depend on logging
+// configuration. Probe unconditionally during the one-time capture path; only event
+// emission remains diagnostic-gated.
+static bool probeCaptureStatusAlways(cudaStream_t stream, int slot, const char* tag,
+                                     const char* op, std::string* failureDetail = nullptr) {
+  if (!tl_graphExecutionActive) return false;
+  cudaStreamCaptureStatus captureStatus = cudaStreamCaptureStatusNone;
+  cudaError_t captureError = cudaStreamGetCaptureInfo_v2(
+      stream, &captureStatus, nullptr, nullptr, nullptr, nullptr);
+  if (captureError == cudaSuccess && captureStatus != cudaStreamCaptureStatusInvalidated) {
+    return false;
+  }
+
+  const char* safeTag = tag != nullptr ? tag : "?";
+  const char* safeOp = op != nullptr ? op : "?";
+  if (failureDetail != nullptr && failureDetail->empty()) {
+    *failureDetail = "capture invalidated at " + std::string(safeTag) +
+                     " slot=" + std::to_string(slot) + " op=" + safeOp +
+                     " captureError=" + std::to_string(static_cast<int>(captureError)) +
+                     " captureStatus=" + std::to_string(static_cast<int>(captureStatus));
+  }
+  if (DSP_DIAG_ENABLED(GRAPH_REPLAY)) {
+    DSP_DIAG_SLOT(GRAPH_REPLAY, slot,
+                  "CAPTURE_INVALIDATED: slot=%d tag=%s op=%s capErr=%d capStat=%d",
+                  slot, safeTag, safeOp, static_cast<int>(captureError),
+                  static_cast<int>(captureStatus));
+  }
+  if (captureError != cudaSuccess) cudaGetLastError();
+  return true;
+}
+
 // Helper: extract specialBuffer() device addresses from NDArray** into void** for
 // address snapshot diagnostics. Thread-local to avoid repeated allocation.
 static void extractDeviceAddrs(NDArray** arrays, int count, std::vector<void*>& out) {
@@ -2047,6 +2080,7 @@ Status NativeDynamicShapePlan::compositeReplay(
       if (gapLtEnabled) {
         tl_cublasLtDisabled = false;
       }
+      const bool viewFastpathDisabled = dsp_disable_view_fastpath();
 
       // ── Active gap slot cache: skip 97% of slot iterations in steady state ──
       // On the first frozen+steady pass, classify every slot and cache only those
@@ -2058,6 +2092,80 @@ Status NativeDynamicShapePlan::compositeReplay(
           static_cast<uint32_t>(unit.endSlot);
       bool useCachedActiveSlots = activeGapSlotsCachedSet_.count(gapCacheKey)
                                   && !planLifecycle_.isSlotBySlot() && executeCount_ >= 3;
+
+      // VIEW_TICK is valid only while the exact view publication established
+      // when the cache was built is still present and aliases its current
+      // source. refreshStaleViewWrappersInSegment() can demote a view producer
+      // and clear its output when a value-dependent parent changes extent. A
+      // cached VIEW_TICK must not silently survive that transition: it would
+      // skip the producer and expose a null/stale input to the next gap slot.
+      // Reclassify the whole interval so ordering, batched groups, and pointer
+      // tracking are rebuilt together rather than repairing one cached entry.
+      if (useCachedActiveSlots) {
+        const auto cachedIt = cachedActiveGapSlotsMap_.find(gapCacheKey);
+        bool cachedViewActionsValid = cachedIt != cachedActiveGapSlotsMap_.end();
+        if (cachedViewActionsValid) {
+          for (const auto& active : cachedIt->second) {
+            if (active.action != ActiveSlotAction::VIEW_TICK) continue;
+            const int slotIdx = active.slotIdx;
+            if (viewFastpathDisabled || slotIdx < 0 || slotIdx >= numSlots_) {
+              cachedViewActionsValid = false;
+              break;
+            }
+            const auto& viewSlot = slots_[slotIdx];
+            if (viewSlot.flags.isDynamicShape || viewSlot.wiring.numInputs < 1 ||
+                viewSlot.wiring.numOutputs < 1) {
+              cachedViewActionsValid = false;
+              break;
+            }
+            const int outSi = viewSlot.wiring.outputSlotIndices[0];
+            const int inSrc = viewSlot.wiring.inputSourceIndices[0];
+            NDArray* currentOut = outSi >= 0 && outSi < totalOutputSlots_
+                                      ? outputSlots_[outSi]
+                                      : nullptr;
+            NDArray* input0 = nullptr;
+            if (inSrc >= 0 && inSrc < totalOutputSlots_) {
+              input0 = outputSlots_[inSrc];
+            } else if (inSrc < 0) {
+              const int extIdx = -(inSrc + 1);
+              if (extIdx >= 0 && extIdx < numExt) input0 = effectiveExternals[extIdx];
+            }
+            DataBuffer* currentOutBuffer = currentOut != nullptr
+                                               ? currentOut->dataBuffer()
+                                               : nullptr;
+            DataBuffer* inputBuffer = input0 != nullptr ? input0->dataBuffer() : nullptr;
+            if (currentOut == nullptr || input0 == nullptr ||
+                !currentOut->hasValidShapeInfo() || !input0->hasValidShapeInfo() ||
+                currentOutBuffer == nullptr || inputBuffer == nullptr ||
+                !currentOutBuffer->isValid() || !inputBuffer->isValid() ||
+                currentOutBuffer != inputBuffer) {
+              cachedViewActionsValid = false;
+              break;
+            }
+            if (!viewSlot.shapeCacheValid() ||
+                viewSlot.shapeCache.cachedOutputShapes.empty() ||
+                viewSlot.shapeCache.cachedOutputShapes[0] == nullptr) {
+              cachedViewActionsValid = false;
+              break;
+            }
+            const LongType* expectedShape = viewSlot.shapeCache.cachedOutputShapes[0];
+            if (currentOut->dataType() != ArrayOptions::dataType(expectedShape) ||
+                !shape::shapeEquals(currentOut->shapeInfo(), expectedShape) ||
+                !shape::strideEquals(currentOut->shapeInfo(), expectedShape)) {
+              cachedViewActionsValid = false;
+              break;
+            }
+          }
+        }
+        if (!cachedViewActionsValid) {
+          DSP_DIAG(EXECUTE,
+                   "GAP_VIEW_CACHE_INVALIDATE: gap[%d-%d] cached view publication changed — reclassifying",
+                   unit.startSlot, unit.endSlot);
+          activeGapSlotsCachedSet_.erase(gapCacheKey);
+          cachedActiveGapSlotsMap_.erase(gapCacheKey);
+          useCachedActiveSlots = false;
+        }
+      }
 
       if (useCachedActiveSlots) {
         // ── FAST PATH: iterate only over pre-classified active slots ──
@@ -2099,9 +2207,10 @@ Status NativeDynamicShapePlan::compositeReplay(
               // On cache build (executeCount_==2), reshape_no_copy may not yet share
               // dataBuffer with input, so it gets classified as EXECUTE. Once the view
               // is established in later steps, demote to VIEW_TICK to skip full op dispatch.
-              if (executeCount_ >= 4 && skipPtrTracking) {
+              if (!viewFastpathDisabled && executeCount_ >= 4 && skipPtrTracking) {
                 auto& slot = slots_[active.slotIdx];
-                if (slot.isViewCapableOp() && slot.wiring.numInputs >= 1 && slot.wiring.numOutputs >= 1) {
+                if (!slot.flags.isDynamicShape && slot.isViewCapableOp() &&
+                    slot.wiring.numInputs >= 1 && slot.wiring.numOutputs >= 1) {
                   int outSi = slot.wiring.outputSlotIndices[0];
                   if (outSi >= 0 && outSi < totalOutputSlots_) {
                     NDArray* currentOut = outputSlots_[outSi];
@@ -2269,9 +2378,10 @@ Status NativeDynamicShapePlan::compositeReplay(
         }
 
         // ── View-op fast path ──
-        if (!dsp_disable_view_fastpath() &&
+        if (!viewFastpathDisabled &&
             s < totalOutputSlots_ &&
             slots_[s].isViewCapableOp() &&
+            !slots_[s].flags.isDynamicShape &&
             slots_[s].slotPhase.isSealed() &&
             slots_[s].wiring.numInputs >= 1 &&
             slots_[s].wiring.numOutputs >= 1) {
@@ -3215,8 +3325,10 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
   // This is the actual capture point - the diagnostic above just logs the decision.
   bool hasReplayHandleNow = (seg.exec.replayHandle != nullptr);
   bool replayHandleNullNow = (seg.exec.replayHandle == nullptr);
-  bool execCountInWindowNow = (seg.exec.executionCount >= ctx.captureMinExec);
-  bool captureWindowSatisfiedNow = execCountInWindowNow || ctx.requiresOrderedGapCapture;
+  bool execCountInWindowNow =
+      seg.exec.captureWarmupWindowSatisfied(ctx.captureMinExec);
+  bool captureWindowSatisfiedNow =
+      execCountInWindowNow || ctx.requiresOrderedGapCapture;
   // compilationFailed prevents re-capture of permanently failed segments
   // (distinct from platformShouldUseGraph which gates graph USAGE).
   // Capture is legal only after the segment completed warmup and compilation.
@@ -3971,6 +4083,10 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
 
          bool allIslandsOk = true;
          bool captureHeadroomLimited = false;
+         std::string compositeCaptureFailureDetail;
+         auto setCompositeCaptureFailureDetail = [&](const std::string& detail) {
+           if (compositeCaptureFailureDetail.empty()) compositeCaptureFailureDetail = detail;
+         };
          int deviceId = 0;
          cudaGetDevice(&deviceId);
 
@@ -4081,24 +4197,32 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                    // bakes in stable plan-owned device addresses, not Java-side pointers
                    // that may be reallocated between steps.
                    {
-                     bool _preInvalid = false;
-                     DSP_CAPTURE_PROBE(ctx.cudaStr, s, "BEFORE_GAP_SLOT",
-                                       slots_[s].ident.opName.c_str(), _preInvalid);
-                     if (_preInvalid) { gapOk = false; break; }
+                     if (probeCaptureStatusAlways(ctx.cudaStr, s, "BEFORE_GAP_SLOT",
+                                                  slots_[s].ident.opName.c_str(),
+                                                  &compositeCaptureFailureDetail)) {
+                       gapOk = false;
+                       break;
+                     }
                    }
                    size_t auditNodesBefore = (mergedNativeHandle != nullptr)
                        ? mergedNativeHandle->getNumNodesDuringCapture(ctx.cudaStr) : 0;
                    auto gapStatus = executeSlot(s, effectiveExternalsForCapture, numExt, stream);
                    {
-                     bool _postInvalid = false;
-                     DSP_CAPTURE_PROBE(ctx.cudaStr, s, "AFTER_GAP_SLOT",
-                                       slots_[s].ident.opName.c_str(), _postInvalid);
-                     if (_postInvalid) { gapOk = false; break; }
+                     if (probeCaptureStatusAlways(ctx.cudaStr, s, "AFTER_GAP_SLOT",
+                                                  slots_[s].ident.opName.c_str(),
+                                                  &compositeCaptureFailureDetail)) {
+                       gapOk = false;
+                       break;
+                     }
                    }
                   if (gapStatus != Status::OK) {
                     DSP_DIAG(EXECUTE, "MERGED_CAPTURE: gap slot %d FAILED status=%d",
                              s, static_cast<int>(gapStatus));
                     gapOk = false;
+                    setCompositeCaptureFailureDetail(
+                        "captured gap slot=" + std::to_string(s) + " op=" +
+                        slots_[s].ident.opName + " returned status=" +
+                        std::to_string(static_cast<int>(gapStatus)));
                     break;
                   }
                   // Per-slot capture audit (task #53): a "capture-safe" gap slot can
@@ -4112,6 +4236,9 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                 }
 
                 if (!gapOk) {
+                  setCompositeCaptureFailureDetail(
+                      "capture-safe gap range [" + std::to_string(unit.startSlot) + "-" +
+                      std::to_string(unit.endSlot) + "] invalidated capture");
                   DSP_DIAG(COMPILE, "COMPOSITE_CAPTURE_FAIL: gap [%d-%d] invalidated capture (gapOk=false)",
                            unit.startSlot, unit.endSlot);
                   // Gap op invalidated capture — likely a pool allocation
@@ -4184,10 +4311,19 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                          nodeCount, seg.exec.peakWarmupAllocationBytes,
                          &captureHeadroomLimited, ctx.cudaStr)) {
                    allIslandsOk = false;
+                   setCompositeCaptureFailureDetail(
+                       "merged group=" + std::to_string(mergedGroupId) + " [" +
+                       std::to_string(mergedStartSlot) + "-" + std::to_string(mergedEndSlot) +
+                       "] failed graph instantiation after gap finalize");
                  }
                } else {
                  DSP_DIAG(EXECUTE, "MERGED_CAPTURE: group=%d endCapture failed or 0 nodes", mergedGroupId);
                  allIslandsOk = false;
+                 setCompositeCaptureFailureDetail(
+                     "merged group=" + std::to_string(mergedGroupId) + " [" +
+                     std::to_string(mergedStartSlot) + "-" + std::to_string(mergedEndSlot) +
+                     "] gap finalize endCapture=" + std::to_string(endOk ? 1 : 0) +
+                     " nodes=" + std::to_string(nodeCount));
                }
                releaseMergedHandle("gap_finalize");
 
@@ -4207,6 +4343,10 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                    DSP_DIAG(EXECUTE, "COMPOSITE_CAPTURE: gap slot %d FAILED status=%d",
                             s, static_cast<int>(gapStatus));
                    allIslandsOk = false;
+                   setCompositeCaptureFailureDetail(
+                       "native gap slot=" + std::to_string(s) + " op=" +
+                       slots_[s].ident.opName + " returned status=" +
+                       std::to_string(static_cast<int>(gapStatus)));
                    break;
                  }
                }
@@ -4237,6 +4377,8 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                if (!newHandle) {
                  DSP_DIAG(EXECUTE, "MERGED_CAPTURE: GraphReplayFactory::create failed for island %d", islandIdx);
                  allIslandsOk = false;
+                 setCompositeCaptureFailureDetail(
+                     "GraphReplayFactory::create failed for island=" + std::to_string(islandIdx));
                  break;
                }
                newHandle->useExternalWorkspace(sharedCaptureWorkspace_, sharedCaptureWorkspaceBytes_);
@@ -4277,6 +4419,8 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                  DSP_DIAG(EXECUTE, "MERGED_CAPTURE: island %d beginCapture FAILED", islandIdx);
                  releaseMergedHandle("begin_fail");
                  allIslandsOk = false;
+                 setCompositeCaptureFailureDetail(
+                     "beginCapture failed for island=" + std::to_string(islandIdx));
                  break;
                }
                  nodesAtCaptureStart = 0;
@@ -4335,10 +4479,11 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                   totalOutputSlots_, stream);
 
                {
-                 bool _islandInvalid = false;
-                 DSP_CAPTURE_PROBE(ctx.cudaStr, unit.startSlot, "AFTER_TRITON_ISLAND",
-                                   "triton_island", _islandInvalid);
-                 if (_islandInvalid) captureStatus = Status::KERNEL_FAILURE;
+                 if (probeCaptureStatusAlways(ctx.cudaStr, unit.startSlot,
+                                              "AFTER_TRITON_ISLAND", "triton_island",
+                                              &compositeCaptureFailureDetail)) {
+                   captureStatus = Status::KERNEL_FAILURE;
+                 }
                }
 
                // ── Incremental node tracking: island ────────────────────────────
@@ -4400,6 +4545,15 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                  mergedNativeHandle->endCapture(ctx.cudaStr);
                }
                allIslandsOk = false;
+               const char* backendError =
+                   LaunchContext::defaultContext()->errorReference()->errorMessage();
+               setCompositeCaptureFailureDetail(
+                   "island=" + std::to_string(islandIdx) + " group=" +
+                   std::to_string(mergedGroupId) + " [" + std::to_string(mergedStartSlot) +
+                   "-" + std::to_string(mergedEndSlot) + "] status=" +
+                   std::to_string(static_cast<int>(captureStatus)) + " backend=" +
+                   ((backendError != nullptr && backendError[0] != '\0')
+                        ? backendError : "unspecified"));
                releaseMergedHandle("island_fail");
                break;
              }
@@ -4418,11 +4572,20 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                  DSP_DIAG(COMPILE, "COMPOSITE_CAPTURE_FAIL: instantiateAndStore FAILED group=%d [%d-%d] nodes=%zu",
                           mergedGroupId, mergedStartSlot, mergedEndSlot, nodeCount);
                  allIslandsOk = false;
+                 setCompositeCaptureFailureDetail(
+                     "merged group=" + std::to_string(mergedGroupId) + " [" +
+                     std::to_string(mergedStartSlot) + "-" + std::to_string(mergedEndSlot) +
+                     "] failed graph instantiation after island finalize");
                }
              } else {
                DSP_DIAG(COMPILE, "COMPOSITE_CAPTURE_FAIL: endCapture=%d nodeCount=%zu group=%d [%d-%d]",
                         endOk ? 1 : 0, nodeCount, mergedGroupId, mergedStartSlot, mergedEndSlot);
                allIslandsOk = false;
+               setCompositeCaptureFailureDetail(
+                   "merged group=" + std::to_string(mergedGroupId) + " [" +
+                   std::to_string(mergedStartSlot) + "-" + std::to_string(mergedEndSlot) +
+                   "] island finalize endCapture=" + std::to_string(endOk ? 1 : 0) +
+                   " nodes=" + std::to_string(nodeCount));
              }
 
              exitMergedCaptureTls("post_validate");
@@ -4453,9 +4616,18 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                      nodeCount, seg.exec.peakWarmupAllocationBytes,
                      &captureHeadroomLimited, ctx.cudaStr)) {
                allIslandsOk = false;
+               setCompositeCaptureFailureDetail(
+                   "tail merged group=" + std::to_string(mergedGroupId) + " [" +
+                   std::to_string(mergedStartSlot) + "-" + std::to_string(mergedEndSlot) +
+                   "] failed graph instantiation");
              }
            } else {
              allIslandsOk = false;
+             setCompositeCaptureFailureDetail(
+                 "tail merged group=" + std::to_string(mergedGroupId) + " [" +
+                 std::to_string(mergedStartSlot) + "-" + std::to_string(mergedEndSlot) +
+                 "] endCapture=" + std::to_string(endOk ? 1 : 0) +
+                 " nodes=" + std::to_string(nodeCount));
            }
            releaseMergedHandle("tail_finalize");
          }
@@ -4485,7 +4657,6 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
            status = Status::OK;
            usedTritonGraphCapture = true;
            didCompositeCapture = true;
-           seg.exec.cachedShapeKey = ctx.segShapeKey;
            snapshotExternalAddrs(seg, externalArrays, numExt);
            seg.exec.replayUnitCount = static_cast<int>(sched.units.size());
             // Guard: only seal a segment that actually reached BUILDING:CAPTURING.
@@ -4521,6 +4692,9 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
               DSP_DIAG(EXECUTE, "COMPOSITE_CAPTURE_SEAL_GUARD: seg[%d-%d] in %s (not CAPTURING) "
                        "— skip seal, re-capture next exec",
                        seg.def.startSlot, seg.def.endSlot, seg.exec.segPhase.displayName());
+            }
+            if (seg.exec.segPhase.isSealed()) {
+              seg.exec.cachedShapeKey = ctx.segShapeKey;
             }
             // Force arg-table refresh on the very first post-capture replay.
             // markCaptured() does NOT call markArgsCurrent(), so capturedArgGeneration
@@ -4700,11 +4874,13 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                  seg.def.startSlot, seg.def.endSlot);
              DSP_THROW_SEG(COMPILE, seg.def.startSlot,
                            "COMPOSITE_CAPTURE_FAILED: seg[%d-%d] merged capture failed "
-                           "with gpuFree=%zuMB and was not capacity-limited. Fix the "
+                           "with gpuFree=%zuMB and was not capacity-limited. detail=%s. Fix the "
                            "capture-invalidating operation; this is not an OOM and will "
                            "not fall back to slot-by-slot execution.",
                            seg.def.startSlot, seg.def.endSlot,
-                           gpuFreeAtFail / (1024*1024));
+                           gpuFreeAtFail / (1024*1024),
+                           compositeCaptureFailureDetail.empty()
+                               ? "unspecified" : compositeCaptureFailureDetail.c_str());
            }
          }
          } // end else (compositeCaptureGuard.acquired())
@@ -5075,10 +5251,8 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
               handle->recordSlotAudit(s, slots_[s].ident.opName,
                                       auditNodesBefore, ctx.cudaStr);
               {
-                bool _slotInvalid = false;
-                DSP_CAPTURE_PROBE(ctx.cudaStr, s, "AFTER_NATIVE_SLOT",
-                                  slots_[s].ident.opName.c_str(), _slotInvalid);
-                if (_slotInvalid) {
+                if (probeCaptureStatusAlways(ctx.cudaStr, s, "AFTER_NATIVE_SLOT",
+                                             slots_[s].ident.opName.c_str())) {
                   captureStatus = Status::KERNEL_FAILURE;
                   break;
                 }
@@ -5426,7 +5600,6 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
             }
           }
           // replayHandle already set (created before capture began)
-          seg.exec.cachedShapeKey = ctx.segShapeKey;
           snapshotExternalAddrs(seg, externalArrays, numExt);
           // Guard: only seal a segment that actually reached BUILDING:CAPTURING.
           //   - needsCapture() (CAPTURING): a real capture completed → markCaptured → SEALED.
@@ -5456,6 +5629,9 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
             DSP_DIAG(EXECUTE, "MONOLITHIC_CAPTURE_SEAL_GUARD: seg[%d-%d] in %s (not CAPTURING) "
                      "— skip seal, re-capture next exec",
                      seg.def.startSlot, seg.def.endSlot, seg.exec.segPhase.displayName());
+          }
+          if (seg.exec.segPhase.isSealed()) {
+            seg.exec.cachedShapeKey = ctx.segShapeKey;
           }
           // Force arg-table refresh on the first post-capture replay.
           // Same rationale as the composite-capture path above: markCaptured() does
@@ -5876,6 +6052,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
              seg.exec.compilationFailed ? 1 : 0, usedTritonGraphCapture ? 1 : 0);
 
     if (status == Status::OK) {
+      seg.exec.cachedShapeKey = ctx.segShapeKey;
       seg.exec.executionCount++;
       totalGraphReplays_++;
       if (seg.exec.compiledByBackend.empty()) {
@@ -6076,16 +6253,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   // createValueKey/address stability checks handle value-dependent inputs separately.
   // ── Shape key: detect if segment needs recompilation ──
   // Frozen + cached key: reuse. Otherwise: compute once and cache.
-  const bool hasInternalValueShapeInputs = dsp::segmentHasInternalValueShapeInputs(seg, slots_);
-  LongType segShapeKey;
-  if (!planLifecycle_.isSlotBySlot() && seg.exec.cachedShapeKey != 0) {
-    segShapeKey = seg.exec.cachedShapeKey;
-  } else {
-    segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
-    if (!planLifecycle_.isSlotBySlot()) {
-      seg.exec.cachedShapeKey = segShapeKey;
-    }
-  }
+  const bool hasInternalValueShapeInputs =
+      dsp::segmentHasInternalValueShapeInputs(seg, slots_);
+  const bool hasDynamicBoundaryInputs = seg.def.hasDynamicBoundaryInputs;
+  LongType segShapeKey =
+      computeSegmentShapeKey(seg, externalArrays, numExt);
 
   // Diagnostic: scan all outputSlots_ entries for freed DataBuffers.
   // During warmup, this runs unconditionally (handles invalidation + rebuild).
@@ -6355,12 +6527,22 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
                              static_cast<uint32_t>(executeCount_),
                              static_cast<uint64_t>(segShapeKey));
     }
-    auto compileStatus = segDispatchCompile(seg, externalArrays, numExt, stream, segShapeKey);
+    bool invocationSatisfiedByWarmup = false;
+    auto compileStatus = segDispatchCompile(
+        seg, externalArrays, numExt, stream, segShapeKey,
+        invocationSatisfiedByWarmup);
     if (compileStatus != Status::OK) {
       DSP_TRACE_ERROR(trace_, static_cast<int8_t>(segIdx), seg.def.startSlot,
                       static_cast<uint32_t>(executeCount_),
                       static_cast<uint64_t>(compileStatus));
       return compileStatus;
+    }
+    if (invocationSatisfiedByWarmup) {
+      DSP_DIAG(EXECUTE,
+               "SHAPE_CHANGE_WARMUP_OUTPUT_COMMITTED: seg[%d-%d] key=%lld — capture deferred to next invocation",
+               seg.def.startSlot, seg.def.endSlot,
+               static_cast<long long>(segShapeKey));
+      return Status::OK;
     }
     backend = seg.resolvedGraphBackend;
     if (backend == nullptr) {
@@ -6434,7 +6616,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   bool replayHandleNull = (seg.exec.replayHandle == nullptr);
   bool hasComposite = hasCompositeHandles(seg);  // true only for composite-captured segments
   bool notCaptureFailed = !seg.exec.compilationFailed;
-  bool execCountInWindow = (seg.exec.executionCount >= captureMinExec);
+  bool execCountInWindow =
+      seg.exec.captureWarmupWindowSatisfied(captureMinExec);
   bool hasCudaStream = (cudaStr != nullptr);
   bool requiresOrderedGapCapture = false;
 
@@ -6444,9 +6627,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
            planLifecycle_.isShapesFrozen() ? 1 : 0,
            Environment::getInstance().tritonSkipKernels() ? 1 : 0,
            allowTritonCudaGraphReplay ? 1 : 0);
-  DSP_DIAG(EXECUTE, "  seg.exec.executionCount=%d, captureMinExec=%d, window=[%d,inf), inWindow=%d",
-           seg.exec.executionCount, captureMinExec, captureMinExec,
-           execCountInWindow ? 1 : 0);
+  DSP_DIAG(EXECUTE, "  seg.exec.executionCount=%d, shapeChangeCaptureCredit=%d, captureMinExec=%d, window=[%d,inf), inWindow=%d",
+           seg.exec.executionCount,
+           seg.exec.hasShapeChangeWarmupCaptureCredit() ? 1 : 0,
+           captureMinExec, captureMinExec, execCountInWindow ? 1 : 0);
   // hasReplayHandle=1 + hasComposite=1 means composite-captured (sentinel + island handles).
   // hasReplayHandle=1 + hasComposite=0 means monolithic-captured (full graph in replayHandle).
   // hasReplayHandle=0 means no capture yet.
@@ -6605,11 +6789,13 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     const bool shapeKeyStable = (seg.exec.cachedShapeKey == 0) || (seg.exec.cachedShapeKey == segShapeKey);
     seg.exec.replayStability.record(extAddrsStable,
                                     createValuesStable || seg.exec.createOpsExcludedFromGraph,
-                                    shapeKeyStable, hasInternalValueShapeInputs, tritonGapSlotCount);
+                                    shapeKeyStable,
+                                    hasInternalValueShapeInputs || hasDynamicBoundaryInputs,
+                                    tritonGapSlotCount);
     // Only value-shape segments can go stale on value/addr churn; sync the generation
     // counter to the verdict (recover when stable, invalidate when not). Not gated on the
     // prior state — that one-way latch was a prior bug that made recovery unreachable.
-    if (hasInternalValueShapeInputs) {
+    if (hasInternalValueShapeInputs || hasDynamicBoundaryInputs) {
       const bool wasStable = !seg.exec.needsArgRefresh();
       const bool nowStable = seg.exec.replayStability.isStable();
       if (wasStable && !nowStable)      seg.exec.bumpArgGeneration();

@@ -22,7 +22,7 @@ Common options:
   quick-build default      KOMPILE_NATIVE_QUICK_BUILD=1 (0 selects production)
   --keep-work              Preserve a failed AOT generation
   --fresh-classes-only     Compile/audit AOT cache inputs, then stop
-  --print-config           Print the resolved configuration and exit
+  --print-config           Print and persist the resolved configuration, then exit
   generation retention     $SDX_ANDROID_GENERATION_RETENTION (default: 2)
   -h, --help               Show this help
 
@@ -118,7 +118,8 @@ java_home_matches_major() {
   local major="$2"
   local version
   [[ -x "$candidate/bin/java" ]] || return 1
-  version="$("$candidate/bin/java" -version 2>&1 | sed -n '1p')"
+  # JAVA_TOOL_OPTIONS may print a banner before the version line; select the actual version record.
+  version="$("$candidate/bin/java" -version 2>&1 | sed -n '/ version "/p' | sed -n '1p')"
   [[ "$version" == *"\"$major."* ]]
 }
 
@@ -274,7 +275,15 @@ if [[ "$MODE" != aot ]]; then
 fi
 
 KOMPILE_GRAPH_ROOT="${SDX_KOMPILE_GRAPH_ROOT:-$DL4J_ROOT/../kompile/kompile-app/kompile-data/kompile-graphs/kompile-graph-reasoning-local}"
-SUPPORT_DEFAULT="$KOMPILE_GRAPH_ROOT/target/android-ndk-aot/clibraries/bionic"
+# The graph AOT producer stages its Android support closure in the shared
+# pipeline work root before the SDX AOT SDK is assembled. Prefer that stable
+# cache location, while retaining the graph module target as the canonical
+# published-artifact location for standalone builds.
+SUPPORT_CANDIDATES=(
+  "$BUILD_ROOT/graph-aot-work/clibraries/bionic"
+  "$BUILD_ROOT/graph-aot-reactor-work/clibraries/bionic"
+  "$KOMPILE_GRAPH_ROOT/target/android-ndk-aot/clibraries/bionic"
+)
 M2_REPOSITORY="${M2_REPOSITORY:-${HOME:-}/.m2/repository}"
 
 GRAALVM_HOME_RESOLVED=""
@@ -286,8 +295,8 @@ if [[ "$MODE" != cpu ]]; then
   GRAALVM_HOME_RESOLVED="$(resolve_java_home "GraalVM" 21 "$GRAALVM_OVERRIDE" "${GRAAL_CANDIDATES[@]}")"
   OBJECT_BUILDER="$(resolve_executable "Android Native Image object builder" "$OBJECT_BUILDER_OVERRIDE"     "$KOMPILE_GRAPH_ROOT/build-android-ndk.sh")"
   JAVACPP_JAR="$(resolve_regular_file "JavaCPP builder jar" "$JAVACPP_JAR_OVERRIDE"     "$M2_REPOSITORY/org/bytedeco/javacpp/1.5.13/javacpp-1.5.13.jar")"
-  JDK_SUPPORT_DIR="$(resolve_directory "Android JDK support closure" "$JDK_SUPPORT_OVERRIDE" "$SUPPORT_DEFAULT")"
-  SVM_SUPPORT_DIR="$(resolve_directory "Android SVM support closure" "$SVM_SUPPORT_OVERRIDE" "$SUPPORT_DEFAULT")"
+  JDK_SUPPORT_DIR="$(resolve_directory "Android JDK support closure" "$JDK_SUPPORT_OVERRIDE" "${SUPPORT_CANDIDATES[@]}")"
+  SVM_SUPPORT_DIR="$(resolve_directory "Android SVM support closure" "$SVM_SUPPORT_OVERRIDE" "${SUPPORT_CANDIDATES[@]}")"
 fi
 
 CPU_LINK="$BUILD_ROOT/cpu-sdk/current"
@@ -318,6 +327,26 @@ if [[ "$MODE" != cpu ]]; then
   printf '  base SDK:       %s\n' "$BASE_SDK"
   printf '  AOT SDK:        %s\n' "$AOT_LINK"
 fi
+
+mkdir -p -- "$BUILD_ROOT"
+RESOLVED_CONFIG="$BUILD_ROOT/resolved-build-config.properties"
+RESOLVED_CONFIG_TEMP="$(mktemp "$BUILD_ROOT/.resolved-build-config.XXXXXX")"
+{
+  printf '%s\n' \
+    'format=1' \
+    "mode=$MODE" \
+    "android_ndk=$ANDROID_NDK" \
+    "managed_java_home=$JAVA17_HOME" \
+    "maven=$MAVEN" \
+    "jobs=$JOBS" \
+    "kompile_graph_root=$KOMPILE_GRAPH_ROOT" \
+    "graalvm_home=$GRAALVM_HOME_RESOLVED" \
+    "jdk_support_dir=$JDK_SUPPORT_DIR" \
+    "svm_support_dir=$SVM_SUPPORT_DIR"
+} > "$RESOLVED_CONFIG_TEMP"
+chmod 0644 "$RESOLVED_CONFIG_TEMP"
+mv -f -- "$RESOLVED_CONFIG_TEMP" "$RESOLVED_CONFIG"
+printf '  resolved config: %s\n' "$RESOLVED_CONFIG"
 [[ "$PRINT_CONFIG" == 0 ]] || exit 0
 
 case "${SDX_ANDROID_PIPELINE_LOCK_HELD:-0}" in

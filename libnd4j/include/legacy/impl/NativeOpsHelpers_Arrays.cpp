@@ -218,9 +218,21 @@ OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer *shapeInfo,
     THROW_EXCEPTION("createOpaqueNDArray: Shape info was not empty but buffer was null!");
   }
 
+  // The OpaqueDataBuffer wrapper can outlive its underlying DataBuffer after an
+  // incorrect close/reuse sequence. Treating the wrapper itself as sufficient
+  // creates a non-empty NDArray with a null _buffer and lets the owning op report
+  // success without writing anything. Reject that invalid state at the JNI boundary.
+  auto* nativeDataBuffer = buffer != nullptr ? buffer->getDataBuffer() : nullptr;
+  if (!effectivelyEmpty && nativeDataBuffer == nullptr) {
+    std::string errorMessage = "createOpaqueNDArray: non-empty shape has an OpaqueDataBuffer with no underlying DataBuffer";
+    errorMessage += " (opaque=" + std::to_string(reinterpret_cast<uintptr_t>(buffer));
+    errorMessage += ", shapeLength=" + std::to_string(shape::length(shapeInfoCast)) + ")";
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
   // Validate buffer integrity before using (debug only — canary scan is O(8K))
-  if(buffer != nullptr && buffer->getDataBuffer() != nullptr && sd::Environment::getInstance().isDebug()) {
-    buffer->getDataBuffer()->validateIntegrity();
+  if(nativeDataBuffer != nullptr && sd::Environment::getInstance().isDebug()) {
+    nativeDataBuffer->validateIntegrity();
   }
 
   // For javaStyleEmpty arrays (rank-0, null buffer, Nd4j.empty(DataType) singleton pattern):
@@ -245,7 +257,7 @@ OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer *shapeInfo,
   }
 
   sd::NDArray* ret = new sd::NDArray(
-    buffer != nullptr ? buffer->getDataBuffer() : nullptr,
+    nativeDataBuffer,
     const_cast<sd::LongType*>(shapeInfoPtr),
     sd::LaunchContext::defaultContext(),
     offset
@@ -258,6 +270,19 @@ OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer *shapeInfo,
   // setSpecialBuffer() calls deleteSpecial() first.
 
   if (ret != nullptr) {
+    auto* returnedShapeInfo = ret->shapeInfo();
+    if (returnedShapeInfo == nullptr ||
+        std::memcmp(returnedShapeInfo, shapeInfoPtr, shapeInfoLen * sizeof(sd::LongType)) != 0) {
+      std::string errorMessage = "createOpaqueNDArray: native NDArray descriptor differs from the Java-provided descriptor";
+      errorMessage += " (requestedExtras=" + std::to_string(shape::extra(shapeInfoPtr));
+      errorMessage += ", returnedExtras=" + std::to_string(returnedShapeInfo == nullptr ? -1 : shape::extra(returnedShapeInfo));
+      errorMessage += ", requestedEws=" + std::to_string(shape::elementWiseStride(shapeInfoPtr));
+      errorMessage += ", returnedEws=" + std::to_string(returnedShapeInfo == nullptr ? -1 : shape::elementWiseStride(returnedShapeInfo));
+      errorMessage += ")";
+      delete ret;
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+
     sd::ConstantShapeBuffer* shapeBuffer = ret->shapeInfoConstBuffer();
 
     if (shapeBuffer == nullptr) {

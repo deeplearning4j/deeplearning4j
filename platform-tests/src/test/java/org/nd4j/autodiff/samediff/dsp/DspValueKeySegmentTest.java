@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.execution.DspHandle;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -170,58 +171,101 @@ public class DspValueKeySegmentTest {
     }
 
     /**
-     * Test 3: Graph invalidation on value-key mismatch.
-     *
-     * Verifies that when a segment's value-key changes (position_id increments),
-     * the segment properly invalidates and re-captures WITHOUT crashing.
-     * This tests the graph invalidation path directly.
+     * Test 3: A genuinely value-dependent output extent must be recomputed on every
+     * frozen replay. The previous version of this test declared range inputs but
+     * never connected a range op to the graph, so it could not cover this contract.
      */
     @Test
-    @DisplayName("segment invalidation on value-key change must not crash")
-    public void testSegmentInvalidationOnValueKeyChange() {
+    @DisplayName("range recomputes its output extent on every frozen replay")
+    public void testValueDependentRangeRecomputesOutputExtent() {
         SameDiff sd = SameDiff.create();
         sd.setDspAutoCompileEnabled(true);
         sd.setDspNativeAutoCompileEnabled(true);
 
-        // Simulate a mini transformer layer that uses position_id for RoPE-like computation
-        SDVariable input = sd.placeHolder("input", DataType.FLOAT, 1, 4, 16);  // [batch, heads, dim]
-        SDVariable positionId = sd.placeHolder("position_id", DataType.INT64, 1);
-
-        // range(0, position_id, 1) — produces different-length output each step
-        // In decode, position_id is constant (1 element), so range always produces same shape
-        // but different VALUES
+        SDVariable limit = sd.placeHolder("limit", DataType.INT64);
         SDVariable start = sd.constant(Nd4j.scalar(DataType.INT64, 0));
         SDVariable step = sd.constant(Nd4j.scalar(DataType.INT64, 1));
+        sd.range("range_output", start, limit, step, DataType.INT64);
 
-        // Use position_id in computation — value changes each decode step
-        SDVariable posFloat = positionId.castTo(DataType.FLOAT);
-        SDVariable posScaled = sd.math.mul(posFloat, sd.constant(Nd4j.scalar(0.01f)));
+        int[] limits = {1, 5, 2, 8, 3, 6};
+        for (int execution = 0; execution < limits.length; execution++) {
+            int currentLimit = limits[execution];
+            INDArray result = sd.outputSingle(
+                    Map.of("limit", Nd4j.scalar(DataType.INT64, currentLimit)),
+                    "range_output");
 
-        // Matmul-like computation that follows the position-dependent value
-        SDVariable shifted = sd.math.add("output", input, posScaled);
-
-        INDArray inputArr = Nd4j.randn(DataType.FLOAT, 1, 4, 16);
-
-        // Run 20 steps with incrementing position_id
-        // This forces repeated value-key changes → graph invalidation on each step
-        for (int i = 0; i < 20; i++) {
-            INDArray posArr = Nd4j.scalar(DataType.INT64, i + 1);
-
-            Map<String, INDArray> out = sd.output(
-                    Map.of("input", inputArr, "position_id", posArr),
-                    "output");
-
-            INDArray result = out.get("output");
-            assertNotNull(result, "Step " + i + ": output is null");
-            assertArrayEquals(new long[]{1, 4, 16}, result.shape(),
-                    "Step " + i + ": wrong shape after invalidation");
-
-            // Verify: output = input + (position_id * 0.01)
-            float expectedOffset = (i + 1) * 0.01f;
-            float inputVal = inputArr.getFloat(0, 0, 0);
-            assertEquals(inputVal + expectedOffset, result.getFloat(0), 1e-4f,
-                    "Step " + i + ": incorrect value after graph invalidation/re-capture");
+            assertEquals(currentLimit, result.length(),
+                    "Execution " + execution + ": stale range output extent");
+            for (int value = 0; value < currentLimit; value++) {
+                assertEquals(value, result.getLong(value),
+                        "Execution " + execution + ": wrong range value at " + value);
+            }
         }
+
+        DspHandle handle = sd.dsp();
+        int rangeSlot = findSlot(handle, "range");
+        assertTrue((handle.slotFlags(rangeSlot) & (1 << 2)) != 0,
+                "range must retain the resolved SHAPE_DEPENDS_ON_VALUES flag");
+        sd.close();
+    }
+
+    /**
+     * A multi-arity descriptor must be resolved per invocation. Ternary where is
+     * fixed-extent elementwise selection, while one-input where emits a runtime-sized
+     * coordinate list. Both forms share the same descriptor and op name.
+     */
+    @Test
+    @DisplayName("where arity resolves fixed versus runtime-sized output semantics")
+    public void testWhereArityResolvesDynamicOutputSemantics() {
+        SameDiff selectSd = SameDiff.create();
+        selectSd.setDspAutoCompileEnabled(true);
+        selectSd.setDspNativeAutoCompileEnabled(true);
+        SDVariable selectCondition = selectSd.placeHolder("condition", DataType.BOOL, 4);
+        SDVariable x = selectSd.placeHolder("x", DataType.FLOAT, 4);
+        SDVariable y = selectSd.placeHolder("y", DataType.FLOAT, 4);
+        selectSd.where("selected", x, y, selectCondition);
+
+        INDArray selected = selectSd.outputSingle(
+                Map.of(
+                        "condition", Nd4j.createFromArray(true, false, true, false),
+                        "x", Nd4j.createFromArray(1.0f, 2.0f, 3.0f, 4.0f),
+                        "y", Nd4j.createFromArray(10.0f, 20.0f, 30.0f, 40.0f)),
+                "selected");
+        assertEquals(Nd4j.createFromArray(1.0f, 20.0f, 3.0f, 40.0f), selected);
+
+        DspHandle selectHandle = selectSd.dsp();
+        int selectSlot = findSlot(selectHandle, "where");
+        assertEquals(0, selectHandle.slotFlags(selectSlot) & (1 << 2),
+                "ternary where must not be classified as value-dependent shape");
+        selectSd.close();
+
+        SameDiff coordinatesSd = SameDiff.create();
+        coordinatesSd.setDspAutoCompileEnabled(true);
+        coordinatesSd.setDspNativeAutoCompileEnabled(true);
+        SDVariable coordinateCondition =
+                coordinatesSd.placeHolder("condition", DataType.BOOL, 4);
+        coordinatesSd.where("coordinates", coordinateCondition);
+
+        boolean[][] conditions = {
+                {true, false, true, false},
+                {false, true, false, false},
+                {true, true, true, true}
+        };
+        int[] expectedLengths = {2, 1, 4};
+        for (int execution = 0; execution < conditions.length; execution++) {
+            boolean[] condition = conditions[execution];
+            INDArray coordinates = coordinatesSd.outputSingle(
+                    Map.of("condition", Nd4j.create(condition, new long[]{4}, DataType.BOOL)),
+                    "coordinates");
+            assertEquals(expectedLengths[execution], coordinates.length(),
+                    "Execution " + execution + ": stale one-input where extent");
+        }
+
+        DspHandle coordinatesHandle = coordinatesSd.dsp();
+        int coordinatesSlot = findSlot(coordinatesHandle, "where");
+        assertTrue((coordinatesHandle.slotFlags(coordinatesSlot) & (1 << 2)) != 0,
+                "one-input where must be classified as value-dependent shape");
+        coordinatesSd.close();
     }
 
     /**
@@ -352,5 +396,15 @@ public class DspValueKeySegmentTest {
             assertEquals(expected, result,
                     "Execution " + execution + ": slice begin control selected the wrong token");
         }
+    }
+
+    private static int findSlot(DspHandle handle, String opName) {
+        for (int slot = 0; slot < handle.totalSlots(); slot++) {
+            if (opName.equalsIgnoreCase(handle.slotOpName(slot))) {
+                return slot;
+            }
+        }
+        fail("No DSP slot found for op " + opName);
+        return -1;
     }
 }

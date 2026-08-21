@@ -396,6 +396,31 @@ public class DspNativeOnlyCaptureTest {
         assertEquals(2, planPhase, "Should reach REPLAYING phase");
     }
 
+    @Test
+    @Order(5)
+    void test5b_NormalizationBiasChainCompilesWithTriton() {
+        int embedDim = 128;
+        SameDiff g = buildPureTritonGraph(embedDim);
+        sd = g;
+        Map<String, INDArray> ph = Map.of("input", Nd4j.randn(DataType.FLOAT, 1, embedDim));
+
+        configureMode(g, GraphExecutionMode.SLOT_BY_SLOT);
+        INDArray expected = g.output(ph, "out").get("out").dup();
+
+        configureMode(g, GraphExecutionMode.TRITON);
+        INDArray actual = null;
+        for (int i = 0; i < 25; i++) {
+            actual = g.output(ph, "out").get("out");
+        }
+
+        assertNotNull(actual);
+        assertTrue(DspPlanAssertions.getTotalGraphReplays(g) > 0,
+                "Explicit Triton must replay the normalization -> external bias add chain");
+        double maxDiff = Transforms.abs(expected.sub(actual)).maxNumber().doubleValue();
+        assertTrue(maxDiff < 1e-4,
+                "Triton normalization -> bias add mismatch: maxDiff=" + maxDiff);
+    }
+
     // ═══════════════════════════════════════════════════════════════════════════
     // TEST 6: Pure gap graph — all matmul, native-only capture
     //

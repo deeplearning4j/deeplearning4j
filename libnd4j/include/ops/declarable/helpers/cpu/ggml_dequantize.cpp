@@ -342,64 +342,46 @@ static void dequantize_q3_K(const uint8_t* data, float* output, LongType numElem
         float d = fp16ToFloat(dRaw);
         LongType outBase = b * QK_K;
 
-        // Unpack 12 bytes of scales into 16 values
-        int scales[16];
-        int a;
-        for (int i = 0; i < 8; i++) {
-            a = scaleBytes[i];
-            scales[i] = (a & 0xF) - 8;
-            scales[i + 8] = (a >> 4) - 8;
-        }
+        // Q3_K stores eight 4-bit low scale nibbles and sixteen 2-bit high
+        // scale bits in the final four bytes. Reconstruct the canonical
+        // signed 6-bit scales before decoding the four 2-bit planes.
+        constexpr uint32_t kmask1 = 0x03030303;
+        constexpr uint32_t kmask2 = 0x0f0f0f0f;
+        uint32_t aux[4];
+        const int8_t* scales = reinterpret_cast<const int8_t*>(aux);
+        memcpy(aux, scaleBytes, 12);
+        uint32_t tmp = aux[2];
+        aux[2] = ((aux[0] >> 4) & kmask2) | (((tmp >> 4) & kmask1) << 4);
+        aux[3] = ((aux[1] >> 4) & kmask2) | (((tmp >> 6) & kmask1) << 4);
+        aux[0] = (aux[0] & kmask2) | (((tmp >> 0) & kmask1) << 4);
+        aux[1] = (aux[1] & kmask2) | (((tmp >> 2) & kmask1) << 4);
 
-        // Rearrange: ggml's Q3_K scale order needs the 4 high bits from last 4 bytes
-        // Actually the simple unpack above matches ggml for QK_K=256 path
-        // The ggml reference dequantize_row_q3_K has a specific unpack pattern
-        // Using the simpler interpretation for now, matching dequantize_row_q3_K
         uint8_t m = 1;
         int is = 0;
-        int qIdx = 0;
         int localOff = 0;
+        const uint8_t* q = qs;
+        const uint8_t* hm = hmask;
+        for (int n = 0; n < QK_K; n += 128) {
+            int shift = 0;
+            for (int j = 0; j < 4; ++j) {
+                float dl = d * (scales[is++] - 32);
+                for (int l = 0; l < 16; ++l) {
+                    int value = static_cast<int>((q[l] >> shift) & 3) - ((hm[l] & m) ? 0 : 4);
+                    LongType idx = outBase + localOff++;
+                    if (idx < numElements) output[idx] = dl * value;
+                }
 
-        for (int i = 0; i < QK_K; i += 128) {
-            for (int l = 0; l < 32; l++) {
-                int sIdx = is + l / 16;
-                float dl = d * scales[sIdx];
-                int q = qs[qIdx + l] & 3;
-                int h = (hmask[l] & m) ? 0 : 4;
-                LongType idx = outBase + localOff++;
-                if (idx < numElements) output[idx] = dl * (q - h);
+                dl = d * (scales[is++] - 32);
+                for (int l = 0; l < 16; ++l) {
+                    int value = static_cast<int>((q[l + 16] >> shift) & 3) - ((hm[l + 16] & m) ? 0 : 4);
+                    LongType idx = outBase + localOff++;
+                    if (idx < numElements) output[idx] = dl * value;
+                }
+
+                shift += 2;
+                m <<= 1;
             }
-            is += 2;
-            for (int l = 0; l < 32; l++) {
-                int sIdx = is + l / 16;
-                float dl = d * scales[sIdx];
-                int q = (qs[qIdx + l] >> 2) & 3;
-                int h = (hmask[l] & (m << 1)) ? 0 : 4;
-                LongType idx = outBase + localOff++;
-                if (idx < numElements) output[idx] = dl * (q - h);
-            }
-            is += 2;
-            m <<= 2;
-            for (int l = 0; l < 32; l++) {
-                int sIdx = is + l / 16;
-                float dl = d * scales[sIdx];
-                int q = (qs[qIdx + l] >> 4) & 3;
-                int h = (hmask[l] & m) ? 0 : 4;
-                LongType idx = outBase + localOff++;
-                if (idx < numElements) output[idx] = dl * (q - h);
-            }
-            is += 2;
-            for (int l = 0; l < 32; l++) {
-                int sIdx = is + l / 16;
-                float dl = d * scales[sIdx];
-                int q = (qs[qIdx + l] >> 6) & 3;
-                int h = (hmask[l] & (m << 1)) ? 0 : 4;
-                LongType idx = outBase + localOff++;
-                if (idx < numElements) output[idx] = dl * (q - h);
-            }
-            is += 2;
-            m <<= 2;
-            qIdx += 32;
+            q += 32;
         }
     }
 }
@@ -602,9 +584,11 @@ static void dequantize_iq4_nl(const uint8_t* data, float* output, LongType numEl
         const uint8_t* qs = block + 2;
         LongType outBase = b * QK4_NL;
 
+        // GGML stores low nibbles in values [0, 15] and high nibbles in
+        // values [16, 31] for each IQ4_NL block; they are not interleaved.
         for (int j = 0; j < QK4_NL / 2; j++) {
-            LongType idx0 = outBase + j * 2;
-            LongType idx1 = outBase + j * 2 + 1;
+            LongType idx0 = outBase + j;
+            LongType idx1 = outBase + j + QK4_NL / 2;
             int lo = qs[j] & 0x0F;
             int hi = (qs[j] >> 4) & 0x0F;
             if (idx0 < numElements) output[idx0] = d * kvalues_iq4nl[lo];

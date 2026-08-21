@@ -354,17 +354,25 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
     attnBias = attnBiasCastOwner.get();
   }
 
-  // Output in BSHD format [batch, seqQ, numHeads, headDim]
-  // Always use workspace path and explicit copy-back.
-  // The "zero-copy reshape" path (output->reshape('c', outShape4d, false)) was
-  // incorrect: when the DSP-allocated output buffer has non-contiguous strides,
-  // reshape() detects this and falls back to allocating a NEW buffer (copyToNewBuff=true).
-  // FlashAttention then writes into that temporary copy, not the real output buffer,
-  // leaving the actual output all-zeros. Use workspace+assign unconditionally to
-  // guarantee correctness regardless of buffer layout.
+  // Output in BSHD format [batch, seqQ, numHeads, headDim].
+  //
+  // reshape() may return either a zero-copy view or an allocated copy when the
+  // DSP output has a non-contiguous layout. Write directly only when the
+  // reshaped array demonstrably shares the output DataBuffer. Otherwise retain
+  // the workspace + explicit copy-back path so non-contiguous outputs remain
+  // correct. This removes one full output copy per layer on the common
+  // contiguous decode path without weakening the allocator/layout contract.
   std::vector<LongType> outShape4d = {batch, seqQ, numHeads, headDim};
+  std::unique_ptr<NDArray> outputView4d(output->reshape('c', outShape4d, false));
+  const bool directOutput =
+      outputView4d != nullptr && outputView4d->dataBuffer() != nullptr &&
+      outputView4d->dataBuffer() == output->dataBuffer();
+
   auto workspace = AttentionWorkspace::getInstance();
-  NDArray* attnOut4d = workspace->getBuffer("mha_attnOut4d", outShape4d, query->dataType(), block.launchContext());
+  NDArray* attnOut4d = directOutput
+      ? outputView4d.get()
+      : workspace->getBuffer("mha_attnOut4d", outShape4d, query->dataType(),
+                             block.launchContext());
   attnOut4d->nullify();
 
   // Call FlashAttentionHelper::forward with 4D tensors (BSHD format)
@@ -372,12 +380,10 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
                                 nullptr, nullptr, nullptr,
                                 block.launchContext(), attnBias);
 
-  // Copy workspace result to the op output buffer
-  {
+  if (!directOutput) {
     std::vector<LongType> outShape3d = {batch, seqQ, hidden};
-    NDArray* attnOutFinal = attnOut4d->reshape('c', outShape3d, false);
-    output->assign(attnOutFinal);
-    delete attnOutFinal;
+    std::unique_ptr<NDArray> attnOutFinal(attnOut4d->reshape('c', outShape3d, false));
+    output->assign(attnOutFinal.get());
   }
   
   // Output present key/value if requested (in BHSD format for ONNX compatibility)

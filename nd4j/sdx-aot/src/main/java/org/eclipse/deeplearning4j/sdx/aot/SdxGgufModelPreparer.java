@@ -5,6 +5,7 @@
 package org.eclipse.deeplearning4j.sdx.aot;
 
 import org.eclipse.deeplearning4j.llm.generation.SdxTextGenerationConfig;
+import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.serde.SDZSerializer;
 import org.nd4j.common.config.ND4JSystemProperties;
@@ -49,7 +50,10 @@ import java.util.Map;
  */
 final class SdxGgufModelPreparer {
     static final String PREPARED_SCHEMA = "sdx-prepared-text-model-v5";
-    static final String GRAPH_IMPORT_ABI = "ggml-runtime-packed-gdn-v3";
+    // Bump this whenever GGUF tensor materialization or graph-import semantics change.
+    // The profile digest is part of the prepared-cache path, so old canonical SDZ files
+    // cannot silently survive an importer fix and produce stale logits.
+    static final String GRAPH_IMPORT_ABI = "ggml-runtime-packed-gdn-v6";
     static final String RESOLVED_SCHEMA = "sdx-resolved-text-model-v1";
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -71,9 +75,13 @@ final class SdxGgufModelPreparer {
         String diagnosticMode = configureDiagnostics(options);
         RawSourceIdentity sourceIdentity = RawSourceIdentity.identify(source);
         verifyAttestation(sourceIdentity, options);
+        TokenizerAssetSources tokenizerSources = resolveTokenizerAssetSources(source, tokenizerPath);
+        String tokenizerAssetIdentity = tokenizerAssetIdentity(
+                tokenizerSources.tokenizer, tokenizerSources.tokenizerConfig,
+                tokenizerSources.generationConfig);
 
         Path preparedRoot = cache.root().resolve("prepared").resolve(sourceIdentity.sha256())
-                .resolve(profile.sha256());
+                .resolve(profile.sha256()).resolve(tokenizerAssetIdentity);
         Path canonicalPointer = preparedRoot.resolve("canonical.path");
         Path optimizedSource = profile.existingOptimizedSource(source, preparedRoot);
         Path canonical = readCanonicalPointer(cache, canonicalPointer);
@@ -82,8 +90,10 @@ final class SdxGgufModelPreparer {
         if (canonical != null) {
             try {
                 SdxCompiledModel cached = cache.resolve(canonical, target);
-                if (isNativeTextGenerationContract(
-                        cached.requireTextModelAssets().textGenerationConfig())) {
+                SdxTextModelAssets cachedAssets = cached.requireTextModelAssets();
+                if (cachedTextAssetsMatch(cachedAssets, tokenizerSources)
+                        && isNativeTextGenerationContract(cachedAssets.textGenerationConfig())) {
+                    validateCanonicalTokenizer(cachedAssets.tokenizer().getParent());
                     int cachedContextLength = contextLength(source);
                     requireUnchangedRawSource(source, sourceIdentity);
                     return preparedJson(sourceIdentity, canonicalIdentity, canonical, cached, true,
@@ -97,7 +107,7 @@ final class SdxGgufModelPreparer {
         Files.createDirectories(preparedRoot);
         optimizedSource = profile.materializeOptimizedSource(source, preparedRoot, temporaryRoot);
         TokenizerAssets tokenizerAssets = materializeTokenizerAssets(
-                source, tokenizerPath, preparedRoot.resolve("text-assets"));
+                source, tokenizerSources, preparedRoot.resolve("text-assets"));
         boolean publishCanonicalPointer = false;
         if (canonical == null) {
             Path generated = Files.createTempFile(temporaryRoot, "gguf-import-", ".sdz");
@@ -261,20 +271,31 @@ final class SdxGgufModelPreparer {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private static TokenizerAssets materializeTokenizerAssets(
-            Path source, String explicitTokenizerPath, Path destination) throws IOException {
-        Files.createDirectories(destination);
-        GGMLMetadata metadata = inspect(source);
+    private static TokenizerAssetSources resolveTokenizerAssetSources(
+            Path source, String explicitTokenizerPath) throws IOException {
         Path tokenizerSource = null;
         Path configSource = null;
         Path generationSource = null;
         if (explicitTokenizerPath != null && !explicitTokenizerPath.isBlank()) {
             Path explicit = Path.of(explicitTokenizerPath).toAbsolutePath().normalize();
-            tokenizerSource = Files.isDirectory(explicit) ? explicit.resolve("tokenizer.json") : explicit;
-            Path parent = Files.isDirectory(explicit) ? explicit : explicit.getParent();
-            configSource = parent.resolve("tokenizer_config.json");
-            generationSource = firstRegular(parent.resolve("generation_config.json"),
+            boolean directory = Files.isDirectory(explicit);
+            tokenizerSource = directory ? explicit.resolve("tokenizer.json") : explicit;
+            Path parent = directory ? explicit : explicit.getParent();
+            String tokenizerFileName = tokenizerSource.getFileName().toString();
+            String sidecarPrefix = tokenizerFileName.endsWith(".tokenizer.json")
+                    ? tokenizerFileName.substring(
+                            0, tokenizerFileName.length() - ".tokenizer.json".length())
+                    : "";
+            configSource = firstRegular(
+                    sidecarPrefix.isEmpty() ? null
+                            : parent.resolve(sidecarPrefix + ".tokenizer_config.json"),
+                    parent.resolve("tokenizer_config.json"));
+            generationSource = firstRegular(
+                    sidecarPrefix.isEmpty() ? null
+                            : parent.resolve(sidecarPrefix + ".generation_config.json"),
+                    sidecarPrefix.isEmpty() ? null
+                            : parent.resolve(sidecarPrefix + ".text_generation_config.json"),
+                    parent.resolve("generation_config.json"),
                     parent.resolve("text_generation_config.json"));
         } else {
             Path parent = source.toAbsolutePath().getParent();
@@ -284,55 +305,91 @@ final class SdxGgufModelPreparer {
                     parent.resolve("text_generation_config.json"));
         }
 
+        if (!Files.isRegularFile(tokenizerSource)) {
+            throw new IOException("Canonical Hugging Face tokenizer.json is required beside " + source
+                    + "; GGUF metadata tokenizer reconstruction is disabled.");
+        }
+        if (!Files.isRegularFile(configSource)) {
+            throw new IOException("Canonical Hugging Face tokenizer_config.json is required beside "
+                    + tokenizerSource);
+        }
+        return new TokenizerAssetSources(
+                tokenizerSource.toAbsolutePath().normalize(),
+                configSource.toAbsolutePath().normalize(),
+                generationSource == null ? null : generationSource.toAbsolutePath().normalize());
+    }
+
+    private static TokenizerAssets materializeTokenizerAssets(
+            Path source, TokenizerAssetSources sources, Path destination) throws IOException {
+        Files.createDirectories(destination);
+        GGMLMetadata metadata = inspect(source);
         Path tokenizer = destination.resolve("tokenizer.json");
         Path tokenizerConfig = destination.resolve("tokenizer_config.json");
         Path textGeneration = destination.resolve("text_generation.json");
         int contextLength = contextLength(metadata);
 
-        if (Files.isRegularFile(tokenizerSource)) {
-            Files.copy(tokenizerSource, tokenizer, StandardCopyOption.REPLACE_EXISTING);
-            if (!Files.isRegularFile(configSource)) {
-                throw new IOException("tokenizer_config.json is required beside " + tokenizerSource);
-            }
-            Files.copy(configSource, tokenizerConfig, StandardCopyOption.REPLACE_EXISTING);
-        } else {
-            Map<String, Object> raw = metadata.getRawMetadata();
-            Object tokensValue = raw.get("tokenizer.ggml.tokens");
-            if (!(tokensValue instanceof List) || ((List<?>) tokensValue).isEmpty()) {
-                throw new IOException("GGUF does not contain tokenizer.ggml.tokens: " + source);
-            }
-            List<String> tokens = (List<String>) tokensValue;
-            Object mergesValue = raw.get("tokenizer.ggml.merges");
-            List<String> merges = mergesValue instanceof List
-                    ? (List<String>) mergesValue : new ArrayList<>();
-            GGMLMetadata.TokenizerInfo info = metadata.getTokenizerInfo();
-            int bosId = info == null ? 1 : info.getBosTokenId();
-            int eosId = info == null ? 2 : info.getEosTokenId();
-            String model = info == null || info.getModel() == null ? "gpt2" : info.getModel();
-            int[] tokenTypes = tokenTypes(raw.get("tokenizer.ggml.token_type"));
-            Files.writeString(tokenizer,
-                    SdxLlmCore.buildBpeTokenizerJson(tokens, merges, bosId, eosId, model, tokenTypes),
-                    StandardCharsets.UTF_8);
-            String config = SdxLlmCore.embeddedTokenizerConfigJson(raw, tokens, bosId, eosId);
-            if (config == null || config.isBlank()) {
-                throw new IOException("GGUF does not contain tokenizer.chat_template: " + source);
-            }
-            Files.writeString(tokenizerConfig, config, StandardCharsets.UTF_8);
-        }
+        Files.copy(sources.tokenizer, tokenizer, StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(sources.tokenizerConfig, tokenizerConfig, StandardCopyOption.REPLACE_EXISTING);
+        validateCanonicalTokenizer(destination);
 
         SdxTextGenerationConfig.Options generationOptions = generationOptions(
-                tokenizerConfig, generationSource, metadata, contextLength);
+                tokenizerConfig, sources.generationConfig, metadata, contextLength);
         return new TokenizerAssets(tokenizer, tokenizerConfig, textGeneration,
                 contextLength, generationOptions);
     }
 
-    private static int[] tokenTypes(Object value) {
-        if (value instanceof int[]) return (int[]) value;
-        if (!(value instanceof List)) return null;
-        List<?> values = (List<?>) value;
-        int[] result = new int[values.size()];
-        for (int i = 0; i < result.length; i++) result[i] = ((Number) values.get(i)).intValue();
-        return result;
+    /**
+     * Content-address the exact Hugging Face text assets admitted to the immutable cache.
+     * File names and paths are deliberately excluded: only bytes and their semantic roles matter.
+     */
+    static String tokenizerAssetIdentity(
+            Path tokenizer, Path tokenizerConfig, Path generationConfig) throws IOException {
+        RawSourceIdentity tokenizerIdentity = RawSourceIdentity.identify(tokenizer);
+        RawSourceIdentity configIdentity = RawSourceIdentity.identify(tokenizerConfig);
+        String generationIdentity = "absent";
+        if (generationConfig != null) {
+            RawSourceIdentity identity = RawSourceIdentity.identify(generationConfig);
+            generationIdentity = identity.sha256() + ":" + identity.bytes();
+        }
+        return sha256("tokenizer=" + tokenizerIdentity.sha256() + ":" + tokenizerIdentity.bytes()
+                + "\ntokenizer_config=" + configIdentity.sha256() + ":" + configIdentity.bytes()
+                + "\ngeneration_config=" + generationIdentity);
+    }
+
+    private static boolean cachedTextAssetsMatch(
+            SdxTextModelAssets cached, TokenizerAssetSources sources) throws IOException {
+        return sameFileContent(cached.tokenizer(), sources.tokenizer)
+                && sameFileContent(cached.tokenizerConfig(), sources.tokenizerConfig);
+    }
+
+    private static boolean sameFileContent(Path first, Path second) throws IOException {
+        RawSourceIdentity firstIdentity = RawSourceIdentity.identify(first);
+        RawSourceIdentity secondIdentity = RawSourceIdentity.identify(second);
+        return firstIdentity.bytes() == secondIdentity.bytes()
+                && firstIdentity.sha256().equals(secondIdentity.sha256());
+    }
+
+    /**
+     * Prove that the canonical Hugging Face tokenizer is usable before any graph compilation
+     * or accelerator work starts. This deliberately exercises the same Rust-backed tokenizer
+     * used for chat generation; no GGUF metadata or alternate decoder is involved.
+     */
+    static void validateCanonicalTokenizer(Path directory) throws IOException {
+        final String probe = "Hello é 日本語";
+        try (HuggingFaceTokenizer tokenizer = HuggingFaceTokenizer.fromDirectory(directory.toFile())) {
+            int[] ids = tokenizer.encode(probe, false).getIds();
+            if (ids == null || ids.length == 0) {
+                throw new IOException("Canonical Hugging Face tokenizer produced no IDs for UTF-8 probe");
+            }
+            String decoded = tokenizer.decode(ids, true);
+            if (!probe.equals(decoded)) {
+                throw new IOException("Canonical Hugging Face tokenizer failed UTF-8/ByteLevel round-trip: "
+                        + String.valueOf(decoded));
+            }
+        } catch (RuntimeException failure) {
+            throw new IOException("Canonical Hugging Face tokenizer failed UTF-8/ByteLevel validation",
+                    failure);
+        }
     }
 
     private static int contextLength(Path source) throws IOException {
@@ -585,9 +642,26 @@ final class SdxGgufModelPreparer {
         return value;
     }
 
-    private static String configureDiagnostics(JsonNode options) {
+    static String configureDiagnostics(JsonNode options) {
         String mode = options.path("diagnosticMode").asText("standard").trim()
                 .toLowerCase(Locale.ROOT);
+        // Validate before mutating process-wide state. Android also applies the matching
+        // ND4J_DSP_* environment variables before creating the Graal/native runtime; these
+        // properties mirror that authoritative mode for Java importer/SameDiff diagnostics.
+        switch (mode) {
+            case "standard":
+            case "verbose":
+            case "op_sanity":
+            case "dsp":
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown diagnosticMode: " + mode);
+        }
+
+        // Apply each request as a complete mode instead of allowing stale process properties.
+        System.clearProperty(ND4JSystemProperties.DSP_DIAGNOSTICS);
+        System.clearProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_LEVEL);
+        System.clearProperty(ND4JSystemProperties.DSP_NATIVE_DUMP_OUTPUTS);
         switch (mode) {
             case "standard":
                 return mode;
@@ -596,12 +670,17 @@ final class SdxGgufModelPreparer {
                         "COMPILE,EXECUTE,TIMING,MEMORY");
                 System.setProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_LEVEL, "detailed");
                 return mode;
+            case "op_sanity":
+                System.setProperty(ND4JSystemProperties.DSP_DIAGNOSTICS, "VERIFY");
+                System.setProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_LEVEL, "full");
+                System.setProperty(ND4JSystemProperties.DSP_NATIVE_DUMP_OUTPUTS, "true");
+                return mode;
             case "dsp":
                 System.setProperty(ND4JSystemProperties.DSP_DIAGNOSTICS, "ALL");
                 System.setProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_LEVEL, "full");
                 return mode;
             default:
-                throw new IllegalArgumentException("Unknown diagnosticMode: " + mode);
+                throw new IllegalStateException("Validated diagnostic mode was not applied: " + mode);
         }
     }
 
@@ -619,9 +698,11 @@ final class SdxGgufModelPreparer {
         return result.toString();
     }
 
-    private static Path firstRegular(Path first, Path second) {
-        if (Files.isRegularFile(first)) return first;
-        return Files.isRegularFile(second) ? second : null;
+    private static Path firstRegular(Path... candidates) {
+        for (Path candidate : candidates) {
+            if (candidate != null && Files.isRegularFile(candidate)) return candidate;
+        }
+        return null;
     }
 
     private static Path requireRegularFile(String value, String label) throws IOException {
@@ -838,6 +919,19 @@ final class SdxGgufModelPreparer {
 
         String sha256() {
             return sha256;
+        }
+    }
+
+    private static final class TokenizerAssetSources {
+        private final Path tokenizer;
+        private final Path tokenizerConfig;
+        private final Path generationConfig;
+
+        private TokenizerAssetSources(
+                Path tokenizer, Path tokenizerConfig, Path generationConfig) {
+            this.tokenizer = tokenizer;
+            this.tokenizerConfig = tokenizerConfig;
+            this.generationConfig = generationConfig;
         }
     }
 

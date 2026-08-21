@@ -161,7 +161,7 @@ SD_INLINE bool isOutputAliasedWithInput(
 // and the slot's cached flags. Centralizes the manual bit-setting pattern
 // that was duplicated in TritonGraphBackend_compile.cu.
 
-SD_INLINE uint32_t resolveSlotTraits(const NativeSlot& slot) {
+SD_INLINE uint64_t resolveSlotTraits(const NativeSlot& slot) {
   return slot.opTraits();
 }
 
@@ -206,7 +206,7 @@ SD_INLINE bool segmentHasInternalValueShapeInputs(const GraphSegment& seg, const
   if (slots == nullptr) return false;
 
   for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
-    const uint32_t traits = resolveSlotTraits(slots[s]);
+    const uint64_t traits = resolveSlotTraits(slots[s]);
     if ((traits & sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE) == 0) continue;
 
     for (int i = 0; i < slots[s].wiring.numInputs; i++) {
@@ -218,6 +218,41 @@ SD_INLINE bool segmentHasInternalValueShapeInputs(const GraphSegment& seg, const
     }
   }
 
+  return false;
+}
+
+// Check whether a segment consumes an output produced outside its own range
+// whose extent may change at runtime. This is distinct from an internal
+// value-dependent control: the boundary tensor's current shape must participate
+// in the segment cache key before any compiled artifact can be replayed.
+SD_INLINE bool segmentHasDynamicCrossSegmentInput(
+    const GraphSegment& seg, const NativeSlot* slots, int numSlots) {
+  if (slots == nullptr || numSlots <= 0) return false;
+
+  std::unordered_set<int> internalOutputs;
+  for (int step = seg.def.startSlot; step <= seg.def.endSlot && step < numSlots; step++) {
+    for (int output = 0; output < slots[step].wiring.numOutputs; output++) {
+      internalOutputs.insert(slots[step].wiring.outputSlotIndices[output]);
+    }
+  }
+
+  for (int step = seg.def.startSlot; step <= seg.def.endSlot && step < numSlots; step++) {
+    for (int input = 0; input < slots[step].wiring.numInputs; input++) {
+      const int sourceSlot = slots[step].wiring.inputSourceIndices[input];
+      if (sourceSlot < 0 || internalOutputs.count(sourceSlot) != 0) continue;
+
+      const int producerStep = findProducingStepForOutputSlot(slots, numSlots, sourceSlot);
+      if (producerStep < 0 || producerStep >= numSlots ||
+          (producerStep >= seg.def.startSlot && producerStep <= seg.def.endSlot)) {
+        continue;
+      }
+      const auto& producer = slots[producerStep];
+      if (producer.flags.isDynamicShape || producer.hasDynamicOutputSize() ||
+          producer.flags.outputShapeDependsOnInputValues) {
+        return true;
+      }
+    }
+  }
   return false;
 }
 

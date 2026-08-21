@@ -22,9 +22,7 @@ package org.eclipse.deeplearning4j.vlm.model.loading;
 
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.serde.SDZSerializer;
-import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter;
 
 import org.nd4j.linalg.api.device.DeviceMemoryManager;
@@ -235,15 +233,6 @@ public class OnnxModelCache {
             return new SameDiff[]{importWithCache(onnxFilePaths[0])};
         }
 
-        // Disable DSP and CUDA graphs during model loading. Loading multiple models
-        // simultaneously is peak GPU memory usage — DSP compilation and CUDA graph
-        // capture allocate additional cached arrays and graph copies that push past OOM.
-        boolean dspWasEnabled = InferenceSession.isDynamicShapePlanEnabled();
-        String prevCudaGraphs = System.getProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED);
-        InferenceSession.setDynamicShapePlanEnabled(false);
-        System.setProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, "false");
-        log.info("DSP and CUDA graphs disabled during model loading");
-
         // Find the primary GPU (most total memory) for model loading.
         int primaryDevice = selectPrimaryDevice();
 
@@ -274,8 +263,7 @@ public class OnnxModelCache {
 
         long start = System.currentTimeMillis();
 
-        try {
-            SameDiff[] results;
+        SameDiff[] results;
             if (allCached) {
                 // All models have SDZ caches — safe to load in parallel (I/O-bound, no CUDA contention)
                 log.info("Loading {} cached models in parallel (device {})...",
@@ -291,21 +279,10 @@ public class OnnxModelCache {
                 }
             }
 
-            long elapsed = System.currentTimeMillis() - start;
-            log.info("All {} models loaded in {}ms (device {})",
-                    onnxFilePaths.length, elapsed, primaryDevice);
-            return results;
-        } finally {
-            // Restore DSP and CUDA graph settings
-            InferenceSession.setDynamicShapePlanEnabled(dspWasEnabled);
-            if (prevCudaGraphs != null) {
-                System.setProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, prevCudaGraphs);
-            } else {
-                System.clearProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED);
-            }
-            log.info("DSP and CUDA graphs restored after model loading (dsp={}, cudaGraphs={})",
-                    dspWasEnabled, prevCudaGraphs != null ? prevCudaGraphs : "default");
-        }
+        long elapsed = System.currentTimeMillis() - start;
+        log.info("All {} models loaded in {}ms (device {})",
+                onnxFilePaths.length, elapsed, primaryDevice);
+        return results;
     }
 
     /**

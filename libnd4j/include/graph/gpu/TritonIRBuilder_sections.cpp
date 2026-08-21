@@ -105,23 +105,23 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
     return resolved;
   };
 
-  auto resolveSlotTraits = [](const NativeSlot& slot) -> uint32_t {
-    const auto* descriptor =
-        slot.ident.op != nullptr ? slot.ident.op->getOpDescriptor() : nullptr;
-    const uint32_t traits = descriptor != nullptr ? descriptor->getTraits() : 0;
-    DSP_DIAG(COMPILE, "resolveSlotTraits: op='%s' descriptor traits=0x%x",
-             slot.ident.opName.c_str(), traits);
+  auto resolveSlotTraits = [](const NativeSlot& slot) -> uint64_t {
+    const uint64_t traits = slot.opTraits();
+    DSP_DIAG(COMPILE, "resolveSlotTraits: op='%s' descriptor traits=0x%llx",
+             slot.ident.opName.c_str(),
+             static_cast<unsigned long long>(traits));
     return traits;
   };
 
-  auto slotHasTrait = [&](const NativeSlot& slot, uint32_t traits) -> bool {
+  auto slotHasTrait = [&](const NativeSlot& slot, uint64_t traits) -> bool {
     return (resolveSlotTraits(slot) & traits) != 0;
   };
 
   auto dataMovementSectionType = [&](const NativeSlot& slot) -> KernelSectionType {
-    uint32_t resolvedTraits = resolveSlotTraits(slot);
-    DSP_DIAG(COMPILE, "dataMovementSectionType: op='%s' traits=0x%x GATHER=0x%x STACK=0x%x hasGather=%d hasStack=%d",
-             slot.ident.opName.c_str(), resolvedTraits,
+    uint64_t resolvedTraits = resolveSlotTraits(slot);
+    DSP_DIAG(COMPILE, "dataMovementSectionType: op='%s' traits=0x%llx GATHER=0x%x STACK=0x%x hasGather=%d hasStack=%d",
+             slot.ident.opName.c_str(),
+             static_cast<unsigned long long>(resolvedTraits),
              sd::ops::OP_TRAIT_GATHER, sd::ops::OP_TRAIT_STACK,
              (resolvedTraits & sd::ops::OP_TRAIT_GATHER) ? 1 : 0,
              (resolvedTraits & sd::ops::OP_TRAIT_STACK) ? 1 : 0);
@@ -512,6 +512,18 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
     if (isIdentityShape) {
       sectionType = KernelSectionType::ELEMENTWISE;
       isShapeOp = false;
+    }
+
+    // A value-dependent producer must execute live so it can refresh both data and
+    // shape metadata on every invocation. Isolate only that producer as a native
+    // ordered section. Consumers start a fresh section and may remain compiled when
+    // getGapSlots verifies that their recorded argument metadata exactly matches the
+    // producer's current output. This preserves the dynamic-shape safety boundary
+    // without de-optimizing the producer's entire fused neighborhood.
+    if (slots[i].hasValueDependentShape()) {
+      sectionType = KernelSectionType::SHAPE_MANIPULATION;
+      isShapeOp = true;
+      isIdentityShape = false;
     }
 
     bool startNewSection = false;

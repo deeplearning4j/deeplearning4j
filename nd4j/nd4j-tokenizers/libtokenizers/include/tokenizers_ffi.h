@@ -10,6 +10,10 @@
 
 /**
  * Opaque stateful decoder handle exported through the C ABI.
+ *
+ * Keep every piece of incremental decode state owned by the handle. This
+ * avoids manufacturing a `'static` reference into the retained tokenizer and
+ * makes ordinary Rust drop order sufficient for cleanup.
  */
 typedef struct DecodeStreamHandle DecodeStreamHandle;
 

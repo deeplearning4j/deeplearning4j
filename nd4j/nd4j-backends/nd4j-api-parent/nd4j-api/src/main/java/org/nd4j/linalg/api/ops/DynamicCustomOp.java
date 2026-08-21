@@ -40,8 +40,6 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
-import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.guava.collect.Lists;
@@ -1028,69 +1026,6 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                 ret = Nd4j.getExecutioner().calculateOutputShape(this, oc);
         }
 
-        // Propagate EMPTY bit: ensure output shapes carry the EMPTY flag when inputs are empty.
-        // Some C++ shape functions (e.g., cast) don't propagate the EMPTY bit from input to output.
-        // For binary ops (exactly 2 inputs): if ANY input is empty, output is empty (TF broadcast semantics:
-        //   op(empty, non-empty) → empty, e.g. maximum(empty_scalar, scalar) → empty).
-        // For multi-input ops (concat, stack, etc.): only force empty when ALL inputs are empty, because
-        //   concat([empty, non-empty]) produces non-empty output.
-        if (ret != null && !ret.isEmpty()) {
-            boolean shouldForceEmpty = false;
-            boolean anyRank0Empty = false;
-            List<INDArray> inputArraysForEmpty = (oc != null) ? oc.getInputArrays() : inputArguments;
-            if (inputArraysForEmpty != null && !inputArraysForEmpty.isEmpty()) {
-                boolean anyEmpty = false;
-                boolean allInputsEmpty = true;
-                for (INDArray in : inputArraysForEmpty) {
-                    if (in != null && in.isEmpty()) {
-                        anyEmpty = true;
-                        if (in.rank() == 0) {
-                            anyRank0Empty = true;
-                        }
-                    } else {
-                        allInputsEmpty = false;
-                    }
-                }
-                // Binary ops: any empty input → empty output (broadcast semantics)
-                // Multi-input ops: only if all empty
-                if (inputArraysForEmpty.size() == 2) {
-                    shouldForceEmpty = anyEmpty;
-                } else {
-                    shouldForceEmpty = allInputsEmpty && anyEmpty;
-                }
-            }
-            if (shouldForceEmpty) {
-                List<DataBuffer> fixed = new ArrayList<>(ret.size());
-                boolean changed = false;
-                for (DataBuffer shapeBuffer : ret) {
-                    long[] shapeInfo = shapeBuffer.asLong();
-                    if (!Shape.isEmpty(shapeInfo)) {
-                        if (anyRank0Empty) {
-                            // When any empty input is rank-0, produce rank-0 empty output.
-                            // This matches TF semantics: broadcastOp(rank0_empty, non_empty) → rank0_empty.
-                            DataType dtype = Shape.dataType(shapeInfo);
-                            // Build a rank-0 empty shape info with the EMPTY bit set
-                            DataBuffer rank0Buf = Shape.createShapeInformation(
-                                    new long[0], new long[0], 1, 'c', dtype, true);
-                            fixed.add(rank0Buf);
-                        } else {
-                            // Create a corrected copy with the EMPTY bit set, preserving shape
-                            long[] corrected = Arrays.copyOf(shapeInfo, shapeInfo.length);
-                            int optionsIdx = Shape.shapeInfoLength(corrected) - 3;
-                            corrected[optionsIdx] |= ArrayOptionsHelper.ATYPE_EMPTY_BIT;
-                            fixed.add(Nd4j.getDataBufferFactory().createLong(corrected));
-                        }
-                        changed = true;
-                    } else {
-                        fixed.add(shapeBuffer);
-                    }
-                }
-                if (changed) {
-                    ret = fixed;
-                }
-            }
-        }
-
         // Cache result with rich signature
         if (oc != null && ret != null && !ret.isEmpty()) {
             outputShapes = ret;
@@ -1156,6 +1091,13 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         h = h * 31 + dArgs.size();
         for (DataType dArg : dArgs) {
             h = h * 31 + dArg.ordinal();
+        }
+
+        // sArgs - string arguments can select shape/layout modes.
+        List<String> sArgs = oc.getSArguments();
+        h = h * 31 + sArgs.size();
+        for (String sArg : sArgs) {
+            h = h * 31 + (sArg == null ? 0 : sArg.hashCode());
         }
 
         // For ops where input values determine output shape, hash the actual values.

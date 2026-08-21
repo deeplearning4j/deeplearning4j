@@ -2291,6 +2291,12 @@ sdx_status_t runOwnedArrays(
       view.rank = static_cast<int32_t>(array->rankOf());
       view.dtype = static_cast<int32_t>(array->dataType());
       view.bytes = static_cast<size_t>(length) * elementSize;
+      if (view.bytes > 0 && view.data == nullptr) {
+        setContextError(
+            context, "runOwnedArrays input has no host buffer at index " +
+                         std::to_string(i));
+        return SDX_STATUS_INVALID_ARGUMENT;
+      }
       view.device_type = static_cast<int32_t>(SDX_DEVICE_HOST);
       view.device_id = -1;
     } catch (const std::exception& e) {

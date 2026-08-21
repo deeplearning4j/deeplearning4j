@@ -372,7 +372,9 @@ struct SlotFlags {
    *   - Slot's output DataBuffer is NOT frozen (addFrozenRef skipped in phaseWarmup).
    *   - Slot always runs via the normal (non-frozen) execution path every step.
    *
-   * This flag is set once during warmup and never cleared (immutable after freeze).
+   * This flag is monotonic: normally classified during warmup, but a view may
+   * be promoted later when replay first observes that its internal producer has
+   * a dynamic extent. It is never cleared.
    */
   bool isDynamicShape = false;
 };
@@ -550,6 +552,19 @@ struct NativeSlot {
   bool hasValueDependentShape() const {
     return flags.outputShapeDependsOnInputValues ||
            hasOpTrait(sd::ops::OP_TRAIT_DYNAMIC_OUTPUT_SIZE);
+  }
+
+  /**
+   * Monotonically promote this slot to dynamic-shape execution.
+   *
+   * All classification paths use this transition instead of mutating
+   * SlotFlags directly. Returning true only on the first promotion lets callers
+   * attach one-time diagnostics or invalidation without duplicating state checks.
+   */
+  bool markDynamicShape() {
+    if (flags.isDynamicShape) return false;
+    flags.isDynamicShape = true;
+    return true;
   }
 
   // ── In-place fusion state management ────────────────────────────────
@@ -758,6 +773,10 @@ struct GraphSegmentDef {
   // false routes the segment to the explicit plan-level execution path.
   bool isCapturable = false;
   bool hasValueDepOps = false;         // True if any slot has outputShapeDependsOnInputValues
+  // True when a cross-segment input is produced by a slot whose output extent
+  // may change at runtime. Such segments must validate their boundary shape key
+  // before replay even when the plan's placeholder shapes are frozen.
+  bool hasDynamicBoundaryInputs = false;
   /// Structured shape key lifecycle. All shape key reads/writes go through this.
   ShapeKeyState shapeKeyState;
 
@@ -982,6 +1001,41 @@ struct GraphSegmentExec {
 
   int executionCount = 0;
 
+  // A successful shape-drift rebuild performs one bounded functional warmup
+  // and then compiles the replacement artifact without executing it again in
+  // the same logical invocation. That validated transition contributes one
+  // capture-readiness observation on the next call. Keep the credit explicit
+  // so configured capture windows above the default are still honored.
+ private:
+  bool shapeChangeWarmupCaptureCredit_ = false;
+
+ public:
+  void markShapeChangeWarmupCaptureReady() {
+    shapeChangeWarmupCaptureCredit_ = true;
+    DSP_DIAG(LIFECYCLE,
+             "SHAPE_CHANGE_CAPTURE_CREDIT: granted phase=%s exec=%d",
+             displayPhaseName(), executionCount);
+  }
+
+  bool captureWarmupWindowSatisfied(int requiredExecutions) const {
+    const int effectiveExecutions =
+        executionCount + (shapeChangeWarmupCaptureCredit_ ? 1 : 0);
+    return effectiveExecutions >= requiredExecutions;
+  }
+
+  bool hasShapeChangeWarmupCaptureCredit() const {
+    return shapeChangeWarmupCaptureCredit_;
+  }
+
+  void clearShapeChangeWarmupCaptureReady(const char* reason) {
+    if (shapeChangeWarmupCaptureCredit_) {
+      DSP_DIAG(LIFECYCLE,
+               "SHAPE_CHANGE_CAPTURE_CREDIT: cleared reason=%s phase=%s exec=%d",
+               reason ? reason : "?", displayPhaseName(), executionCount);
+    }
+    shapeChangeWarmupCaptureCredit_ = false;
+  }
+
   // ══════════════════════════════════════════════════════════════════════════
   // OUTCOME: Why this segment executes the way it does
   // ══════════════════════════════════════════════════════════════════════════
@@ -1103,7 +1157,9 @@ struct GraphSegmentExec {
     capturedInputAddrKey = 0;
     capturedCreateValueKey = 0;
     capturedSlotAddrHash = 0;
-    DSP_DIAG(LIFECYCLE, "RESET_CAPTURE_KEYS: cleared shape/inputAddr/createValue/slotAddr phase=%s exec=%d",
+    clearShapeChangeWarmupCaptureReady("reset_capture_keys");
+    DSP_DIAG(LIFECYCLE,
+             "RESET_CAPTURE_KEYS: cleared shape/inputAddr/createValue/slotAddr/shapeWarmupCredit phase=%s exec=%d",
              displayPhaseName(), executionCount);
   }
 
@@ -2257,27 +2313,33 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   const PlanLifecycle& planLifecycle() const { return planLifecycle_; }
 
   /**
-   * Prepare the plan for a segment capture rebuild.
+   * Prepare the plan for a segment-local rebuild.
    *
    * Segment-level graph invalidation can happen while the plan is sealed in
-   * REPLAYING (for example, after a replay address drift).  The segment is
+   * REPLAYING (for example, after a replay address drift). The segment is
    * reset to BUILDING:WARMUP by SegmentLifecycle, so leaving the plan sealed
    * would make the next execute fail the replay invariant before dispatch.
-   * Keep this transition at the plan boundary so every invalidation path uses
-   * the same lifecycle and frozen-state cleanup.
+   * Capture-only invalidation preserves the completed plan compilation phase;
+   * full artifact invalidation clears it. Keep both transitions at this plan
+   * boundary so callers cannot mutate the compilation seal independently.
    */
-  void prepareForSegmentRebuild(const char* reason) {
+  void prepareForSegmentRebuild(const char* reason,
+                                bool invalidatePlanCompilation) {
     if (planLifecycle_.isReplaying()) {
       planLifecycle_.unseal();
     } else if (planLifecycle_.isInFrozenOrReplayState()) {
       planLifecycle_.recordPointersUnstable();
     }
     frozenSnapshot_.clear();
-    planLifecycle_.compilationDone = false;
+    if (invalidatePlanCompilation) {
+      planLifecycle_.compilationDone = false;
+    }
     DSP_DIAG(LIFECYCLE,
-             "PLAN_REBUILD_PREPARED: reason=%s phase=%s pointersStable=%d",
+             "PLAN_REBUILD_PREPARED: reason=%s phase=%s pointersStable=%d invalidateCompilation=%d compilationDone=%d",
              reason ? reason : "?", planLifecycle_.displayName(),
-             planLifecycle_.pointersStableCount);
+             planLifecycle_.pointersStableCount,
+             invalidatePlanCompilation ? 1 : 0,
+             planLifecycle_.compilationDone ? 1 : 0);
   }
 
   /**
@@ -2941,6 +3003,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 
   // Graph segments for CUDA Graphs
   std::vector<GraphSegment> segments_;
+  bool hasDynamicSegmentBoundaries_ = false;
 
   // Persistent native-range segments for OneDNN/OpenVINO NativeSlotExecutor callbacks.
   // Keyed by (startSlot << 32 | endSlot). Enables CPU_FROZEN_REPLAY for native range
@@ -3238,6 +3301,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Internal methods
   // flushPendingClose REMOVED: arrays persist, view wrappers deleted inline
   void buildSegments();
+  void refreshDynamicSegmentBoundaryAnalysis();
   void resegmentForFreeze();
   SelectedBackend resolveBackendForSegment(bool isBackendEligible);
 
@@ -3577,7 +3641,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // recomputes the key after a mini-warmup and writes the new value back
   // so the caller's shapeKeyState.markCompiled() uses the correct key.
   Status segDispatchCompile(GraphSegment& seg, NDArray** externalArrays,
-                            int numExt, void* stream, LongType& segShapeKey);
+                            int numExt, void* stream, LongType& segShapeKey,
+                            bool& invocationSatisfiedByWarmup);
 
 #ifdef SD_CUDA
   // segDispatchReplay — attempts composite replay for a segment that has

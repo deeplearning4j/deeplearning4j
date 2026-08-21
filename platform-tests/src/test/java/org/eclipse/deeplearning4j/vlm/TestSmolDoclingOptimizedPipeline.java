@@ -41,7 +41,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.diagnostics.DspDiagnostics;
 import org.nd4j.autodiff.samediff.execution.DspDebugger;
+import org.nd4j.autodiff.samediff.execution.DspHandle;
 import org.nd4j.autodiff.samediff.execution.DspPlanAssertions;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.execution.PlanPhase;
@@ -116,8 +118,11 @@ public class TestSmolDoclingOptimizedPipeline {
     private static final String COMPILE_ALL_TYPES_WITH_NORM_AND_MATMUL =
             COMPILE_ALL_TYPES_WITH_NORM + ",MATMUL";
 
+    // The source page renders the heading's decorative drop-cap "M" as a
+    // separate visual object. Validate the page-specific prose rather than
+    // requiring the OCR model to merge that glyph into the following word.
     private static final String[] SMOLDOC_IDEAL_EXPECTED_SUBSTRINGS = {
-            "ythic heroes",
+            "heroes are set apart from their contemporaries",
             "mythic characters",
             "mythic paths"
     };
@@ -138,6 +143,7 @@ public class TestSmolDoclingOptimizedPipeline {
                 .cublasTf32(true).tritonTf32(true)
                 .dspBatchedGemm(true)
                 .dspFreezeMergeSegments(true)
+                .dspExecutionTiming(Boolean.getBoolean("vlm.test.dspExecutionTiming"))
                 .maxTokens(250)
                 .minDiversityPct(0)
                 .expectedSubstrings(SMOLDOC_IDEAL_EXPECTED_SUBSTRINGS);
@@ -326,6 +332,21 @@ public class TestSmolDoclingOptimizedPipeline {
     @DisplayName("Optimized SmolDocling: Configuration matrix sweep")
     public void testOptimizedDoclingPipeline() throws Exception {
         Nd4j.getEnvironment().setTritonBuildThreads(4);
+        boolean captureExternalWorkspaceGaps = Boolean.getBoolean("vlm.test.dspCaptureExternalWorkspaceGaps");
+        if (captureExternalWorkspaceGaps) {
+            try {
+                Class<?> cudaEnvironment = Class.forName("org.nd4j.linalg.jcublas.bindings.Nd4jCuda$Environment");
+                Object environment = cudaEnvironment.getMethod("getInstance").invoke(null);
+                Object dsp = cudaEnvironment.getMethod("dsp").invoke(environment);
+                dsp.getClass().getMethod("setGapCaptureBlockExternalWorkspace", boolean.class)
+                        .invoke(dsp, false);
+                log.info("Enabled isolated external-workspace gap capture for this CUDA benchmark process");
+            } catch (ClassNotFoundException e) {
+                log.info("Ignoring CUDA external-workspace gap capture option on a non-CUDA backend");
+            } catch (ReflectiveOperationException e) {
+                throw new IllegalStateException("Failed to configure CUDA external-workspace gap capture", e);
+            }
+        }
 
         // ── Phase 1: Download models ──
         long phaseNs = phaseStart("DOWNLOAD_MODELS", benchmarkInputSummary());
@@ -455,6 +476,13 @@ public class TestSmolDoclingOptimizedPipeline {
 
             assertFalse(visionEmbeddings.wasClosed(), "Vision embeddings closed");
             assertTrue(visionEmbeddings.rank() == 3, "Vision embeddings should be rank 3, got " + visionEmbeddings.rank());
+            if (isDspAssertEnabled()) {
+                DspPlanAssertions.assertPhaseReached(visionEncoderSd, PlanPhase.SHAPES_FROZEN,
+                        "vision encoder benchmark");
+                DspPlanAssertions.assertNoSegmentFailures(visionEncoderSd, "vision encoder benchmark");
+                DspPlanAssertions.assertNoCaptureFailures(visionEncoderSd, "vision encoder benchmark");
+                DspPlanAssertions.assertNoFallbacks(visionEncoderSd, "vision encoder benchmark");
+            }
             log.info("Vision encoder done [{}ms]: shape={}", visionMs, Arrays.toString(visionEmbeddings.shape()));
 
             imageInput.close();
@@ -563,8 +591,10 @@ public class TestSmolDoclingOptimizedPipeline {
             log.info("Override maxTokens={} for all {} configs", mt, configs.size());
         }
 
-        // Use pipeline.getDecoder() — GraphOptimizer may have replaced the original decoder
-        List<SameDiff> models = List.of(pipeline.getDecoder(), embedTokensSd);
+        // GraphOptimizer may replace the imported decoder while constructing the pipeline.
+        // Every benchmark operation and assertion must target the decoder that generation actually uses.
+        final SameDiff pipelineDecoder = pipeline.getDecoder();
+        List<SameDiff> models = List.of(pipelineDecoder, embedTokensSd);
 
         // Capture for lambdas
         final INDArray finalInputsEmbeds = inputsEmbeds;
@@ -577,11 +607,11 @@ public class TestSmolDoclingOptimizedPipeline {
             long compPhaseNs = phaseStart("CONFIG_COMPILE", configSummary);
             try {
                 BenchmarkConfigApplier.compileModels(
-                        decoder, "decoder", embedTokensSd, "embed_tokens", config);
-                logDspState("POST_COMPILE " + config.getName(), decoder);
+                        pipelineDecoder, "decoder", embedTokensSd, "embed_tokens", config);
+                logDspState("POST_COMPILE " + config.getName(), pipelineDecoder);
                 phaseSuccess("CONFIG_COMPILE", compPhaseNs, configSummary);
             } catch (Throwable t) {
-                logDspState("COMPILE_FAILURE " + config.getName(), decoder);
+                logDspState("COMPILE_FAILURE " + config.getName(), pipelineDecoder);
                 throw phaseFailure("CONFIG_COMPILE", configSummary, t);
             }
         };
@@ -596,22 +626,28 @@ public class TestSmolDoclingOptimizedPipeline {
                             + summarizeTensor("inputsEmbeds", finalInputsEmbeds));
 
             try {
-                logDspState("PRE_DECODE " + config.getName(), decoder);
+                logDspState("PRE_DECODE " + config.getName(), pipelineDecoder);
                 GenerationResult result = finalPipeline.generate(finalInputsEmbeds.dup(), finalPromptTokenIds, config.getMaxTokens());
                 maybeCompareAgainstOldDecoder(
                         config,
-                        decoder,
+                        pipelineDecoder,
                         embedTokensSd,
                         tokenizer,
                         hiddenSize,
                         finalInputsEmbeds,
                         finalPromptTokenIds,
                         result);
-                logDspState("POST_DECODE " + config.getName(), decoder);
+                logDspState("POST_DECODE " + config.getName(), pipelineDecoder);
+                dumpActiveDspReport(config.getName());
                 phaseSuccess("CONFIG_DECODE", decPhaseNs, summarizeResult(result));
                 return result;
             } catch (Throwable t) {
-                logDspState("DECODE_FAILURE " + config.getName(), decoder);
+                logDspState("DECODE_FAILURE " + config.getName(), pipelineDecoder);
+                try {
+                    dumpActiveDspReport(config.getName());
+                } catch (Throwable diagnosticsFailure) {
+                    t.addSuppressed(diagnosticsFailure);
+                }
                 throw phaseFailure("CONFIG_DECODE", configSummary, t);
             }
         };
@@ -627,10 +663,11 @@ public class TestSmolDoclingOptimizedPipeline {
                 }
                 // DSP structural assertions (enabled via --dsp-assert / -Dvlm.benchmark.dspAssert=true)
                 if (isDspAssertEnabled() && config.getExecutionMode() != GraphExecutionMode.SLOT_BY_SLOT) {
-                    DspPlanAssertions.assertPhaseReached(decoder, PlanPhase.SHAPES_FROZEN,
+                    DspPlanAssertions.assertPhaseReached(pipelineDecoder, PlanPhase.SHAPES_FROZEN,
                             config.getName() + " benchmark");
-                    DspPlanAssertions.assertNoSegmentFailures(decoder, config.getName() + " benchmark");
-                    DspPlanAssertions.assertNoFallbacks(decoder, config.getName() + " benchmark");
+                    DspPlanAssertions.assertNoSegmentFailures(pipelineDecoder, config.getName() + " benchmark");
+                    DspPlanAssertions.assertNoCaptureFailures(pipelineDecoder, config.getName() + " benchmark");
+                    DspPlanAssertions.assertNoFallbacks(pipelineDecoder, config.getName() + " benchmark");
                     log.info("[DSP_ASSERT] {} — all structural assertions passed", config.getName());
                 }
                 phaseSuccess("FINAL_VALIDATE", valPhaseNs, config.getName());
@@ -653,6 +690,26 @@ public class TestSmolDoclingOptimizedPipeline {
                 downloadMs, importMs, visionMs, embedMs));
         log.info("{}", pipelineInfo);
         BenchmarkRunner.printReport(results);
+    }
+
+    private static void dumpActiveDspReport(String configName) {
+        String configuredPath = System.getProperty("vlm.diag.dspReportFile");
+        if (configuredPath == null || configuredPath.isBlank()) {
+            return;
+        }
+
+        String safeConfigName = configName.replaceAll("[^A-Za-z0-9._-]", "_");
+        Path reportPath = Paths.get(configuredPath.replace("{config}", safeConfigName));
+        try {
+            Path parent = reportPath.toAbsolutePath().getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
+            Files.writeString(reportPath, DspDiagnostics.getJsonReport());
+            log.info("[DSP_DIAG] Wrote active decoder report to {}", reportPath);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to write active DSP diagnostics to " + reportPath, e);
+        }
     }
 
     private void maybeCompareAgainstOldDecoder(BenchmarkConfig config,
@@ -1177,9 +1234,18 @@ public class TestSmolDoclingOptimizedPipeline {
     private void logDspState(String phase, SameDiff model) {
         if (!isDspStateLoggingEnabled() || model == null) return;
         try {
-            DspDebugger debugger = DspDebugger.attach(model);
+            DspHandle handle = model.dsp();
+            DspHandle.StepSnapshot snapshot = handle.captureStepSnapshot();
+            DspDebugger debugger = handle.debugger();
             DspDebugger.PlanReport planReport = debugger.analyzePlan();
             DspDebugger.GraphReplayReport replayReport = debugger.analyzeGraphReplay();
+
+            log.info("[DSP] {} snapshot={} replayedSegments={} slotBySlotSegments={} lastExec={{warmup={}, captured={}, replayed={}, slotBySlot={}, failed={}, total={}, syncLevel={}, streamSyncs={}}}",
+                    phase, snapshot, snapshot.replayedSegments(), snapshot.slotBySlotSegments(),
+                    handle.lastExecSegmentsWarmup(), handle.lastExecSegmentsCaptured(),
+                    handle.lastExecSegmentsReplayed(), handle.lastExecSegmentsSlotBySlot(),
+                    handle.lastExecSegmentsFailed(), handle.lastExecSegmentsTotal(),
+                    handle.lastExecSyncLevel(), handle.lastExecStreamSyncCount());
 
             if (planReport.errorMessage != null || replayReport.errorMessage != null) {
                 log.info("[DSP] {} plan={} replay={}", phase, planReport.errorMessage, replayReport.errorMessage);

@@ -1951,15 +1951,9 @@ bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
 
   cudaStream_t intendedStream = stream != nullptr ? *stream : nullptr;
   cudaStream_t handleStream = intendedStream;
-  if (cublasGetStream(*handle, &handleStream) != CUBLAS_STATUS_SUCCESS) {
-    handleStream = intendedStream;
-  }
   cublasMath_t handleMathMode = CUBLAS_DEFAULT_MATH;
   cublasPointerMode_t handlePointerMode = CUBLAS_POINTER_MODE_HOST;
   cublasAtomicsMode_t handleAtomicsMode = CUBLAS_ATOMICS_NOT_ALLOWED;
-  cublasGetMathMode(*handle, &handleMathMode);
-  cublasGetPointerMode(*handle, &handlePointerMode);
-  cublasGetAtomicsMode(*handle, &handleAtomicsMode);
   cublasStatus_t status;
   const cublasOperation_t opB = transB ? CUBLAS_OP_T : CUBLAS_OP_N;
   const cublasOperation_t opA = transA ? CUBLAS_OP_T : CUBLAS_OP_N;
@@ -1971,7 +1965,17 @@ bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
   // each requested row-major transpose into the corresponding cuBLAS op.
 
   int activeMmulFpOrdinal = -1;
-  if (!tl_graphExecutionActive) {
+  // The handle-state reads below are diagnostic probes, not execution
+  // requirements. Keep them completely off the production path: live DSP gaps
+  // execute 90 matmuls per SmolDocling token, so querying four cuBLAS handle
+  // properties for every GEMM materially reduces steady-state throughput.
+  if (!tl_graphExecutionActive && DSP_DIAG_ENABLED(MEMORY)) {
+    if (cublasGetStream(*handle, &handleStream) != CUBLAS_STATUS_SUCCESS) {
+      handleStream = intendedStream;
+    }
+    cublasGetMathMode(*handle, &handleMathMode);
+    cublasGetPointerMode(*handle, &handlePointerMode);
+    cublasGetAtomicsMode(*handle, &handleAtomicsMode);
     activeMmulFpOrdinal = graph::recordActiveMmulFingerprintTriplet(
         A->specialBuffer(), static_cast<size_t>(A->lengthOf()) * A->sizeOfT(),
         B->specialBuffer(), static_cast<size_t>(B->lengthOf()) * B->sizeOfT(),

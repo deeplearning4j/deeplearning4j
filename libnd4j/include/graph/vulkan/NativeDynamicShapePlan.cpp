@@ -130,7 +130,8 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     NDArray** requestedOutputs, int numRequestedOutputs, void* stream) {
   const auto& contract = ModeContract::forMode(graphExecutionMode_);
   if (contract.isSlotBySlot || !contract.allowsFrozenFastPath ||
-      !planLifecycle_.isInFrozenOrReplayState() || !allSegmentsReplayReady()) {
+      !planLifecycle_.isInFrozenOrReplayState() || !allSegmentsReplayReady() ||
+      hasDynamicSegmentBoundaries_) {
     return Status::MAYBE;
   }
 
@@ -764,6 +765,17 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
     }
   }
 
+  const LongType segmentShapeKey =
+      computeSegmentShapeKey(segment, externalInputs, numExternalInputs);
+  segment.def.shapeKeyState.recordComputed(segmentShapeKey);
+  if (segment.exec.replayHandle != nullptr &&
+      segment.exec.cachedShapeKey != segmentShapeKey) {
+    SegmentLifecycle::invalidateSegmentCaptures(
+        this, segment, "vulkan_boundary_shape_change");
+    platformResetGapCaches();
+    platformResetBatchD2D();
+  }
+
   if (segment.exec.replayHandle) {
     auto* handle =
         dynamic_cast<VulkanReplayHandle*>(segment.exec.replayHandle.get());
@@ -793,10 +805,6 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
     return segDispatchWarmup(segment, externalInputs, numExternalInputs,
                              executionStream);
   }
-
-  const LongType segmentShapeKey =
-      computeSegmentShapeKey(segment, externalInputs, numExternalInputs);
-  segment.def.shapeKeyState.recordComputed(segmentShapeKey);
 
   for (int slotIndex = segment.def.startSlot;
        slotIndex <= segment.def.endSlot; ++slotIndex) {
@@ -856,9 +864,6 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
     SegmentLifecycle::markCompiled(segment.exec, "vulkan-native",
                                    segmentShapeKey);
     segment.def.shapeKeyState.markCompiled(segmentShapeKey);
-    if (!planLifecycle_.isSlotBySlot()) {
-      segment.exec.cachedShapeKey = segmentShapeKey;
-    }
   }
   if (!segment.exec.segPhase.needsCapture()) {
     return fail("vulkan_invalid_capture_phase");
@@ -886,6 +891,7 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
           }));
   SegmentLifecycle::markCaptured(segment.exec, inputAddressKey, 0,
                                  slotAddressHash, "vulkan-native");
+  segment.exec.cachedShapeKey = segmentShapeKey;
   segment.exec.lastReplayExecCount = executeCount_;
   totalGraphReplays_++;
   dspSegIncrementExecCount(segment,

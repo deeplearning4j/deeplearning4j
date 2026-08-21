@@ -30,6 +30,7 @@
 #include <graph/DspVerifyUtils.h>
 #include <graph/DspPhaseUtils.h>
 #include <graph/DspHashUtils.h>
+#include <graph/DspAnalysisUtils.h>
 #include <graph/PlanExecutionContext.h>
 #include <graph/DspThreadState.h>
 #include <graph/DspSegmentLifecycle.h>
@@ -42,6 +43,11 @@
 #include <system/Environment.h>
 
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <cstring>
+#include <limits>
+#include <type_traits>
 #include <unordered_set>
 
 // GraphSegment static methods (moved from header to avoid Environment.h in NativeDynamicShapePlan.h)
@@ -106,9 +112,312 @@ static void scanAllSlotsForCorruption(
 }
 
 namespace {
+static constexpr LongType kOpSanityMaxScannedValues = 4096;
+
 // Status enum string helper — delegates to shared dsp::dspStatusName in DspPhaseUtils.h.
 const char* statusName_seg(Status status) {
   return dsp::dspStatusName(status);
+}
+
+struct OpSanitySummary {
+  uint64_t valueHash = 0xcbf29ce484222325ULL;
+  LongType scannedCount = 0;
+  LongType finiteCount = 0;
+  LongType nanCount = 0;
+  LongType infCount = 0;
+  double minimum = std::numeric_limits<double>::infinity();
+  double maximum = -std::numeric_limits<double>::infinity();
+  double sum = 0.0;
+  double sumCompensation = 0.0;
+  double l1 = 0.0;
+  double l1Compensation = 0.0;
+  double samples[4] = {};
+  int sampleCount = 0;
+};
+
+static void addCompensated(double value, double* sum, double* compensation) {
+  const double adjusted = value - *compensation;
+  const double next = *sum + adjusted;
+  *compensation = (next - *sum) - adjusted;
+  *sum = next;
+}
+
+template <typename T>
+static void hashSanityValue(T value, double numeric, OpSanitySummary* summary) {
+  if constexpr (std::is_same<T, bool>::value) {
+    summary->valueHash ^= static_cast<uint8_t>(value ? 1 : 0);
+    summary->valueHash *= 0x100000001b3ULL;
+  } else if constexpr (std::is_integral<T>::value) {
+    using UnsignedT = typename std::make_unsigned<T>::type;
+    const UnsignedT bits = static_cast<UnsignedT>(value);
+    for (size_t shift = 0; shift < sizeof(UnsignedT) * 8; shift += 8) {
+      summary->valueHash ^= static_cast<uint8_t>((bits >> shift) & static_cast<UnsignedT>(0xffU));
+      summary->valueHash *= 0x100000001b3ULL;
+    }
+  } else {
+    uint64_t canonicalBits = 0;
+    std::memcpy(&canonicalBits, &numeric, sizeof(canonicalBits));
+    for (int shift = 0; shift < 64; shift += 8) {
+      summary->valueHash ^= static_cast<uint8_t>((canonicalBits >> shift) & 0xffU);
+      summary->valueHash *= 0x100000001b3ULL;
+    }
+  }
+}
+
+static std::string formatSanitySamples(const double* values, int count) {
+  std::string result = "[";
+  for (int index = 0; index < count; ++index) {
+    if (index > 0) result += ",";
+    char value[32];
+    snprintf(value, sizeof(value), "%.9g", values[index]);
+    result += value;
+  }
+  result += "]";
+  return result;
+}
+
+template <typename T>
+void summarizeLogicalArray(NDArray* array, OpSanitySummary* summary) {
+  if (array == nullptr || summary == nullptr || array->lengthOf() <= 0) return;
+  const bool denseC = array->ordering() == 'c' &&
+      shape::strideDescendingCAscendingF(array->shapeInfo());
+  const T* buffer = reinterpret_cast<const T*>(array->buffer());
+  const LongType length = array->lengthOf();
+  const LongType scanCount = std::min(length, kOpSanityMaxScannedValues);
+  summary->scannedCount = scanCount;
+  LongType sampleOrdinals[4] = {};
+  int samplePositionCount = 0;
+  const LongType candidates[4] = {
+      0, scanCount / 3, scanCount - 1 - scanCount / 3, scanCount - 1};
+  for (int candidate = 0; candidate < 4; ++candidate) {
+    if (candidate == 0 || candidates[candidate] != sampleOrdinals[samplePositionCount - 1]) {
+      sampleOrdinals[samplePositionCount++] = candidates[candidate];
+    }
+  }
+  const int rank = array->rankOf();
+  const LongType scanSpan = scanCount - 1;
+  const LongType logicalSpan = length - 1;
+
+  for (LongType scanOrdinal = 0; scanOrdinal < scanCount; ++scanOrdinal) {
+    LongType logicalIndex = scanOrdinal;
+    if (scanCount < length && scanSpan > 0) {
+      // Evenly cover the complete logical array without multiplying two large
+      // dimensions. The remainder term is bounded by the 4096-value scan cap.
+      logicalIndex = (logicalSpan / scanSpan) * scanOrdinal +
+          ((logicalSpan % scanSpan) * scanOrdinal) / scanSpan;
+    }
+    LongType offset = logicalIndex;
+    if (!denseC) {
+      LongType remaining = logicalIndex;
+      offset = 0;
+      for (int axis = rank - 1; axis >= 0; --axis) {
+        const LongType dimension = array->sizeAt(axis);
+        const LongType coordinate = dimension > 0 ? remaining % dimension : 0;
+        remaining = dimension > 0 ? remaining / dimension : 0;
+        offset += coordinate * array->strideAt(axis);
+      }
+    }
+    const T value = buffer[offset];
+    const double numeric = static_cast<double>(value);
+    hashSanityValue(value, numeric, summary);
+
+    if (std::isnan(numeric)) {
+      summary->nanCount++;
+    } else if (std::isinf(numeric)) {
+      summary->infCount++;
+    } else {
+      summary->finiteCount++;
+      summary->minimum = std::min(summary->minimum, numeric);
+      summary->maximum = std::max(summary->maximum, numeric);
+      addCompensated(numeric, &summary->sum, &summary->sumCompensation);
+      addCompensated(std::abs(numeric), &summary->l1, &summary->l1Compensation);
+    }
+    for (int sample = 0; sample < samplePositionCount; ++sample) {
+      if (scanOrdinal == sampleOrdinals[sample]) {
+        summary->samples[sample] = numeric;
+        summary->sampleCount = std::max(summary->sampleCount, sample + 1);
+      }
+    }
+  }
+}
+
+static bool summarizeByDataType(NDArray* output, OpSanitySummary* summary) {
+  switch (output->dataType()) {
+    case DataType::BOOL: summarizeLogicalArray<bool>(output, summary); return true;
+    case DataType::INT8: summarizeLogicalArray<SignedChar>(output, summary); return true;
+    case DataType::INT16: summarizeLogicalArray<Int16Type>(output, summary); return true;
+    case DataType::INT32: summarizeLogicalArray<Int32Type>(output, summary); return true;
+    case DataType::INT64: summarizeLogicalArray<LongType>(output, summary); return true;
+    case DataType::UINT8: summarizeLogicalArray<UnsignedChar>(output, summary); return true;
+    case DataType::UINT16: summarizeLogicalArray<UInt16Type>(output, summary); return true;
+    case DataType::UINT32: summarizeLogicalArray<UInt32Type>(output, summary); return true;
+    case DataType::UINT64: summarizeLogicalArray<UInt64Type>(output, summary); return true;
+    case DataType::QINT8: summarizeLogicalArray<SignedChar>(output, summary); return true;
+    case DataType::QINT16: summarizeLogicalArray<Int16Type>(output, summary); return true;
+    case DataType::HALF: summarizeLogicalArray<float16>(output, summary); return true;
+    case DataType::BFLOAT16: summarizeLogicalArray<bfloat16>(output, summary); return true;
+    case DataType::FLOAT32: summarizeLogicalArray<float>(output, summary); return true;
+    case DataType::DOUBLE: summarizeLogicalArray<double>(output, summary); return true;
+    case DataType::FLOAT8: summarizeLogicalArray<float8>(output, summary); return true;
+    case DataType::FLOAT8_E5M2: summarizeLogicalArray<float8_e5m2>(output, summary); return true;
+    default: return false;
+  }
+}
+
+static bool opSanityEnabled(int execCount) {
+  auto& diagnostics = DspDiagnostics::getInstance();
+  return Environment::getInstance().dsp().diagnosticsNativeDump() &&
+      diagnostics.isEnabled(DSP_DIAG_VERIFY) &&
+      diagnostics.withinExecLimit(execCount);
+}
+
+static void recordOpSanity(const char* backend, int segmentId, int stepIdx,
+                           int outputOrdinal, int outputSlot, const char* opName,
+                           NDArray* output, int execCount, bool captureActive) {
+  if (!opSanityEnabled(execCount)) return;
+  auto& diagnostics = DspDiagnostics::getInstance();
+  if (output == nullptr) {
+    diagnostics.recordEvent(
+        DSP_DIAG_VERIFY, stepIdx, segmentId, -1, opName, 0,
+        "OP_SANITY backend=%s exec=%d output=%d slot=%d state=null",
+        backend, execCount, outputOrdinal, outputSlot);
+    return;
+  }
+  bool metadataOnly = captureActive;
+#if defined(SD_CUDA) || defined(SD_VULKAN) || defined(SD_HIP)
+  // Device-backed diagnostics stay asynchronous. CPU and Android host backends
+  // provide the comparable value records used by this mode.
+  metadataOnly = true;
+#endif
+  if (metadataOnly) {
+    diagnostics.recordEvent(
+        DSP_DIAG_VERIFY, stepIdx, segmentId, -1, opName, 0,
+        "OP_SANITY backend=%s exec=%d output=%d slot=%d state=capture-skip "
+        "dtype=%s shape=%s len=%lld",
+        backend, execCount, outputOrdinal, outputSlot,
+        DataTypeUtils::asString(output->dataType()).c_str(),
+        dspShapeStr(output).c_str(), static_cast<long long>(output->lengthOf()));
+    return;
+  }
+
+  if (output->lengthOf() > 0 &&
+      (output->dataBuffer() == nullptr || output->buffer() == nullptr)) {
+    diagnostics.recordEvent(
+        DSP_DIAG_VERIFY, stepIdx, segmentId, -1, opName, 0,
+        "OP_SANITY backend=%s exec=%d output=%d slot=%d state=invalid-buffer "
+        "dtype=%s shape=%s len=%lld",
+        backend, execCount, outputOrdinal, outputSlot,
+        DataTypeUtils::asString(output->dataType()).c_str(),
+        dspShapeStr(output).c_str(), static_cast<long long>(output->lengthOf()));
+    return;
+  }
+
+  output->forceSyncToHost();
+  OpSanitySummary summary;
+  if (!summarizeByDataType(output, &summary)) {
+    diagnostics.recordEvent(
+        DSP_DIAG_VERIFY, stepIdx, segmentId, -1, opName, 0,
+        "OP_SANITY backend=%s exec=%d output=%d slot=%d state=unsupported-dtype "
+        "dtype=%s shape=%s len=%lld",
+        backend, execCount, outputOrdinal, outputSlot,
+        DataTypeUtils::asString(output->dataType()).c_str(),
+        dspShapeStr(output).c_str(), static_cast<long long>(output->lengthOf()));
+    return;
+  }
+  const double mean = summary.finiteCount > 0
+      ? summary.sum / static_cast<double>(summary.finiteCount)
+      : std::numeric_limits<double>::quiet_NaN();
+  const bool completeScan = summary.scannedCount == output->lengthOf();
+  const std::string samples = formatSanitySamples(summary.samples, summary.sampleCount);
+  diagnostics.recordEvent(
+      DSP_DIAG_VERIFY, stepIdx, segmentId, -1, opName, 0,
+      "OP_SANITY backend=%s exec=%d output=%d slot=%d dtype=%s shape=%s "
+      "len=%lld scanned=%lld coverage=%s hash=0x%016llx "
+      "finite=%lld nan=%lld inf=%lld "
+      "min=%.9g max=%.9g mean=%.9g l1=%.9g samples=%s",
+      backend, execCount, outputOrdinal, outputSlot,
+      DataTypeUtils::asString(output->dataType()).c_str(),
+      dspShapeStr(output).c_str(), static_cast<long long>(output->lengthOf()),
+      static_cast<long long>(summary.scannedCount),
+      completeScan ? "full" : "sampled",
+      static_cast<unsigned long long>(summary.valueHash),
+      static_cast<long long>(summary.finiteCount),
+      static_cast<long long>(summary.nanCount),
+      static_cast<long long>(summary.infCount),
+      summary.minimum, summary.maximum, mean, summary.l1, samples.c_str());
+}
+
+static void recordSlotOpSanity(
+    const char* backend, int segmentId, int stepIdx,
+    const NativeSlot* slots, NDArray** outputSlots,
+    int totalOutputSlots, int execCount, bool captureActive,
+    bool outputsDead = false) {
+  const auto& slot = slots[stepIdx];
+  for (int output = 0; output < slot.wiring.numOutputs; ++output) {
+    const int outputSlot = slot.wiring.outputSlotIndices[output];
+    if (outputsDead) {
+      if (opSanityEnabled(execCount)) {
+        DspDiagnostics::getInstance().recordEvent(
+            DSP_DIAG_VERIFY, stepIdx, segmentId, -1,
+            slot.ident.opName.c_str(), 0,
+            "OP_SANITY backend=%s exec=%d output=%d slot=%d state=dead",
+            backend, execCount, output, outputSlot);
+      }
+      continue;
+    }
+    NDArray* value = outputSlot >= 0 && outputSlot < totalOutputSlots
+        ? outputSlots[outputSlot]
+        : nullptr;
+    recordOpSanity(
+        backend, segmentId, stepIdx, output, outputSlot,
+        slot.ident.opName.c_str(), value, execCount, captureActive);
+  }
+}
+
+static bool outputLeavesSegment(const NativeSlot* slots, int numSlots,
+                                int segmentEnd, int outputSlot,
+                                const int* requestedOutputs,
+                                int numRequestedOutputs) {
+  for (int requested = 0; requested < numRequestedOutputs; ++requested) {
+    if (requestedOutputs != nullptr && requestedOutputs[requested] == outputSlot) return true;
+  }
+  for (int consumer = segmentEnd + 1; consumer < numSlots; ++consumer) {
+    const auto& slot = slots[consumer];
+    for (int input = 0; input < slot.wiring.numInputs; ++input) {
+      if (slot.wiring.inputSourceIndices[input] == outputSlot) return true;
+    }
+  }
+  return false;
+}
+
+static void recordSegmentBoundaryOpSanity(
+    const char* backend, const GraphSegment& segment,
+    const NativeSlot* slots, int numSlots,
+    NDArray** outputSlots, int totalOutputSlots,
+    const int* requestedOutputs, int numRequestedOutputs,
+    int execCount) {
+  if (!opSanityEnabled(execCount)) return;
+  std::unordered_set<int> recordedOutputs;
+  for (int step = segment.def.startSlot; step <= segment.def.endSlot; ++step) {
+    const auto& slot = slots[step];
+    for (int output = 0; output < slot.wiring.numOutputs; ++output) {
+      const int outputSlot = slot.wiring.outputSlotIndices[output];
+      const bool terminalOutput = step == segment.def.endSlot;
+      if (!terminalOutput && !outputLeavesSegment(
+              slots, numSlots, segment.def.endSlot, outputSlot,
+              requestedOutputs, numRequestedOutputs)) {
+        continue;
+      }
+      if (outputSlot < 0 || outputSlot >= totalOutputSlots ||
+          !recordedOutputs.insert(outputSlot).second) {
+        continue;
+      }
+      recordOpSanity(
+          backend, segment.def.startSlot, step, output, outputSlot,
+          slot.ident.opName.c_str(), outputSlots[outputSlot], execCount,
+          dspGetGraphCaptureStream() != nullptr);
+    }
+  }
 }
 
 static void appendSlotInputExceptionContext(std::string& msg,
@@ -190,7 +499,8 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
   // ── Frozen fast path: reuse cached key if shapes can't change ──
   // This is the AUTHORITATIVE cache check — applies to ALL callers
   // (phaseCompile, executeSegmentWithGpuGraph, executeSegmentWithSpecificBackend, etc.)
-  if (!planLifecycle_.isSlotBySlot() && seg.exec.cachedShapeKey != 0) {
+  if (!planLifecycle_.isSlotBySlot() && seg.exec.cachedShapeKey != 0 &&
+      !seg.def.hasDynamicBoundaryInputs) {
     return seg.exec.cachedShapeKey;
   }
 
@@ -222,7 +532,8 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
   // When enabled, collect cross-segment inputs, feed them to the shape
   // profiler, and (after warmup) use range-based hashing that ignores
   // dynamic dimensions.
-  if (seg.exec.symbolicShapeEnabled && seg.exec.symbolicRangeData != nullptr) {
+  if (!seg.def.hasDynamicBoundaryInputs &&
+      seg.exec.symbolicShapeEnabled && seg.exec.symbolicRangeData != nullptr) {
     auto* profile = static_cast<SegmentShapeProfile*>(seg.exec.symbolicRangeData);
 
     // Collect cross-segment input arrays (same logic as standard path below)
@@ -590,19 +901,15 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
   // Setting it before compile would cause the cascade to skip compilation for the
   // next backend when the first backend fails (the key would be non-zero but no
   // compiled segment exists in the next backend's cache).
-  LongType segShapeKey;
-  bool needsCompile;
-  if (!planLifecycle_.isSlotBySlot() && seg.exec.cachedShapeKey != 0) {
-    segShapeKey = seg.exec.cachedShapeKey;
-    needsCompile = false;
-  } else {
-    segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
-    seg.def.shapeKeyState.recordComputed(segShapeKey);
-    needsCompile = (seg.exec.executionCount == 1) || seg.def.shapeKeyState.hasDrifted();
-  }
+  LongType segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
+  seg.def.shapeKeyState.recordComputed(segShapeKey);
+  bool needsCompile = seg.exec.segPhase.needsCompile() ||
+                      seg.def.shapeKeyState.hasDrifted();
+  const bool isRecompileDueToShapeChange =
+      seg.def.shapeKeyState.hasDrifted();
 
   // ── Phase guard: compilation must not happen during REPLAYING ────────────
-  if (needsCompile && planLifecycle_.isReplaying()) {
+  if (needsCompile && planLifecycle_.isReplaying() && !isRecompileDueToShapeChange) {
     DSP_DIAG(COMPILE,
              "ERROR: CPU backend compilation triggered during REPLAYING phase for seg[%d-%d] "
              "(executionCount=%d, planPhase=%s). Demoting plan phase.",
@@ -613,6 +920,22 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
                  "for seg[%d-%d].", seg.def.startSlot, seg.def.endSlot);
     demotePlanPhase(PlanPhase::SHAPES_FROZEN,
                     "CPU compilation triggered during REPLAYING phase");
+  }
+
+  if (isRecompileDueToShapeChange) {
+    DSP_SEG_EVENT(seg, RECOMPILE_TRIGGERED,
+                  "dynamic boundary shape changed; refreshing segment before backend compile");
+    SegmentLifecycle::invalidateSegmentCaptures(this, seg, "cpu_shape_change");
+    platformResetGapCaches();
+    platformResetBatchD2D();
+    ShapeChangeWarmupGuard warmupGuard(*this, seg.def.startSlot, seg.def.endSlot);
+    Status warmupStatus = executeSegmentSlotBySlot(
+        seg, externalArrays, numExt, stream);
+    if (warmupStatus != Status::OK) return warmupStatus;
+    SegmentLifecycle::markWarmupDone(seg.exec);
+    segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
+    seg.def.shapeKeyState.recordComputed(segShapeKey);
+    needsCompile = true;
   }
 
   if (needsCompile) {
@@ -648,7 +971,7 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
     lastCompilationAudit_ = lowering.attempts.back().audit;
   }
 
-  if (needsCompile && seg.exec.executionCount == 1) {
+  if (needsCompile) {
     auto audit = backend->getLastCompilationAudit();
     lastCompilationAudit_ = audit;
     bool allCovered = true;
@@ -839,6 +1162,9 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
                  backendName, seg.exec.executionCount, segErr);
       }
     }
+    recordSegmentBoundaryOpSanity(
+        backendName, seg, slots_, numSlots_, outputSlots_, totalOutputSlots_,
+        requestedOutputSlotIndices_, numRequestedOutputs_, executeCount_);
   }
 
   return status;
@@ -1064,8 +1390,10 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
       int numExternalArrays;
       void* streamPointer;
       void* streamValue;
+      bool captureActive;
     } invocation{
-        this, &seg, externalArrays, numExt, stream, segmentStream};
+        this, &seg, externalArrays, numExt, stream, segmentStream,
+        streamIsCapturing};
 
     FunctionalReplayExecutionContext replayContext;
     replayContext.userData = &invocation;
@@ -1086,10 +1414,19 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
       }
 
       switch (command.type) {
-        case FunctionalReplayCommandType::EXECUTE_SLOT:
-          return plan->executeSlot(
+        case FunctionalReplayCommandType::EXECUTE_SLOT: {
+          Status status = plan->executeSlot(
               command.slotIndex, call->externalArrays,
               call->numExternalArrays, call->streamPointer);
+          if (status == Status::OK) {
+            recordSlotOpSanity(
+                "FUNCTIONAL_REPLAY", call->segment->def.startSlot,
+                command.slotIndex, plan->slots_, plan->outputSlots_,
+                plan->totalOutputSlots_, plan->executeCount_,
+                call->captureActive);
+          }
+          return status;
+        }
 
         case FunctionalReplayCommandType::FORWARD_IDENTITY: {
           if (!replaySlot.isIdentityOp() ||
@@ -1128,6 +1465,11 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
                 input, "functional-replay-identity");
           }
           replaySlot.bumpGeneration();
+          recordSlotOpSanity(
+              "FUNCTIONAL_REPLAY", call->segment->def.startSlot,
+              command.slotIndex, plan->slots_, plan->outputSlots_,
+              plan->totalOutputSlots_, plan->executeCount_,
+              call->captureActive);
           return Status::OK;
         }
 
@@ -1144,9 +1486,19 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
               plan->slotToBatchedGemmGroup_[command.slotIndex] != groupIndex) {
             return Status::BAD_GRAPH;
           }
-          return plan->executeBatchedGemmGroup(
+          Status status = plan->executeBatchedGemmGroup(
               groupIndex, call->externalArrays,
               call->numExternalArrays, call->streamValue);
+          if (status == Status::OK) {
+            for (int groupSlot : group.slotIndices) {
+              recordSlotOpSanity(
+                  "FUNCTIONAL_REPLAY_BATCH", call->segment->def.startSlot,
+                  groupSlot, plan->slots_, plan->outputSlots_,
+                  plan->totalOutputSlots_, plan->executeCount_,
+                  call->captureActive);
+            }
+          }
+          return status;
         }
       }
       return Status::BAD_GRAPH;
@@ -1199,6 +1551,10 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
                         "slot %d (%s) DEAD: propagated from dead input (cf=%d)",
                         stepIdx, slot.ident.opName.c_str(), (int)slot.cf.controlFlowType);
           markOutputsDead(slot, slotIsDead_, slotIsDeadSize_);
+          recordSlotOpSanity(
+              "SLOT_BY_SLOT_CF_DEAD", seg.def.startSlot, stepIdx,
+              slots_, outputSlots_, totalOutputSlots_, executeCount_,
+              streamIsCapturing, true);
           stepIdx++;
           continue;
         }
@@ -1300,6 +1656,11 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
 
       // Release schedule removed: arrays persist (one array per slot, never nullified)
 
+      recordSlotOpSanity(
+          "SLOT_BY_SLOT_CF", seg.def.startSlot, stepIdx,
+          slots_, outputSlots_, totalOutputSlots_, executeCount_,
+          streamIsCapturing);
+
       stepIdx++;
       continue;
     }
@@ -1308,6 +1669,10 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
     if (hasControlFlow_ && slotIsDead_ != nullptr) {
       if (anyInputDead(slot, slotIsDead_, slotIsDeadSize_)) {
         markOutputsDead(slot, slotIsDead_, slotIsDeadSize_);
+        recordSlotOpSanity(
+            "SLOT_BY_SLOT_DEAD", seg.def.startSlot, stepIdx,
+            slots_, outputSlots_, totalOutputSlots_, executeCount_,
+            streamIsCapturing, true);
         stepIdx++;
         continue;
       }
@@ -1343,6 +1708,12 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
               return Status::BAD_GRAPH;
             }
 #endif
+            for (int groupSlot : bgGroup.slotIndices) {
+              recordSlotOpSanity(
+                  "SLOT_BY_SLOT_BATCH", seg.def.startSlot, groupSlot,
+                  slots_, outputSlots_, totalOutputSlots_, executeCount_,
+                  streamIsCapturing);
+            }
             // Release schedule removed: arrays persist (one array per slot)
             stepIdx++;
             continue;
@@ -1377,6 +1748,10 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
           }
         }
         if (allPopulated) {
+          recordSlotOpSanity(
+              "SLOT_BY_SLOT_FROZEN", seg.def.startSlot, stepIdx,
+              slots_, outputSlots_, totalOutputSlots_, executeCount_,
+              streamIsCapturing);
           stepIdx++;
           continue;
         }
@@ -1384,6 +1759,10 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
 
       // Fused chain tail: head already executed the entire chain
       if (slot.fusedChain.isFusedChainTail) {
+        recordSlotOpSanity(
+            "SLOT_BY_SLOT_FUSED_TAIL", seg.def.startSlot, stepIdx,
+            slots_, outputSlots_, totalOutputSlots_, executeCount_,
+            streamIsCapturing);
         stepIdx++;
         continue;
       }
@@ -1416,6 +1795,10 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
             return Status::BAD_GRAPH;
           }
 #endif
+          recordSlotOpSanity(
+              "SLOT_BY_SLOT_IDENTITY", seg.def.startSlot, stepIdx,
+              slots_, outputSlots_, totalOutputSlots_, executeCount_,
+              streamIsCapturing);
           stepIdx++;
           continue;
         }
@@ -1509,6 +1892,13 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
                  "execution: %s",
                  badOutputs, stepIdx, doneSlot.ident.opName.c_str(), postSlotErr);
       }
+    }
+
+    if (status == Status::OK && opSanityEnabled(executeCount_)) {
+      recordSlotOpSanity(
+          "SLOT_BY_SLOT", seg.def.startSlot, stepIdx,
+          slots_, outputSlots_, totalOutputSlots_, executeCount_,
+          streamIsCapturing);
     }
 
     // ── Diagnostic: per-slot CUDA error check on warmup execution ──────────
@@ -2664,7 +3054,10 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
   // immutable functional program for static capturable segments. Later passes
   // replay that program. Data-dependent/control-flow segments remain explicit
   // diagnostic slot-by-slot emulation and never report a replay launch.
-  if (execCount == 0 && seg.exec.segPhase.needsWarmup()) {
+  const bool ownsFunctionalReplayLifecycle =
+      seg.def.selectedBackend == SelectedBackend::EMULATED_REPLAY;
+  if (ownsFunctionalReplayLifecycle && execCount == 0 &&
+      seg.exec.segPhase.needsWarmup()) {
     DSP_DIAG(EMULATED_REPLAY,
              "  LIFECYCLE: seg[%d-%d] BUILDING:WARMUP -> BUILDING:CAPTURING "
              "(warmup done, execCount=%d)",
@@ -2672,7 +3065,8 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
     SegmentLifecycle::skipToCapturing(
         seg.exec, "emulated_replay",
         seg.def.startSlot, seg.def.endSlot);
-  } else if (execCount >= 1 && seg.exec.segPhase.needsCapture()) {
+  } else if (ownsFunctionalReplayLifecycle && execCount >= 1 &&
+             seg.exec.segPhase.needsCapture()) {
     if (functionalRecordable) {
       if (!functionalProgramReady) {
         DSP_DIAG(EMULATED_REPLAY,

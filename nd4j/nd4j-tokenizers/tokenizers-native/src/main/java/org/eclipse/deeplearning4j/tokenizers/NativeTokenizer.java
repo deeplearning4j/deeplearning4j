@@ -14,15 +14,14 @@ package org.eclipse.deeplearning4j.tokenizers;
 
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.IntPointer;
+import org.bytedeco.javacpp.PointerPointer;
 import org.eclipse.deeplearning4j.tokenizers.bindings.TokenizersNative;
 import org.eclipse.deeplearning4j.tokenizers.bindings.TokenizersNative.OpaqueDecodeStream;
 import org.eclipse.deeplearning4j.tokenizers.bindings.TokenizersNative.OpaqueEncoding;
 import org.eclipse.deeplearning4j.tokenizers.bindings.TokenizersNative.OpaqueTokenizer;
 import org.eclipse.deeplearning4j.tokenizers.bindings.TokenizersNative.TokenizerResult;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.IntBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -59,8 +58,10 @@ public final class NativeTokenizer implements AutoCloseable {
             throw new IllegalArgumentException("tokenizerPath must not be empty");
         }
         TokenizersNative api = new TokenizersNative();
-        return own(api, api.createTokenizerFromFile(tokenizerPath),
-                "load tokenizer from " + tokenizerPath);
+        try (BytePointer nativePath = new BytePointer(tokenizerPath, StandardCharsets.UTF_8)) {
+            return own(api, api.createTokenizerFromFile(nativePath),
+                    "load tokenizer from " + tokenizerPath);
+        }
     }
 
     /**
@@ -72,8 +73,10 @@ public final class NativeTokenizer implements AutoCloseable {
             throw new IllegalArgumentException("tokenizerJson must not be empty");
         }
         TokenizersNative api = new TokenizersNative();
-        return own(api, api.createTokenizerFromJson(tokenizerJson),
-                "load tokenizer JSON");
+        try (BytePointer nativeJson = new BytePointer(tokenizerJson, StandardCharsets.UTF_8)) {
+            return own(api, api.createTokenizerFromJson(nativeJson),
+                    "load tokenizer JSON");
+        }
     }
 
     private static NativeTokenizer own(TokenizersNative api,
@@ -95,8 +98,66 @@ public final class NativeTokenizer implements AutoCloseable {
     public synchronized int[] encode(String text, boolean addSpecialTokens) {
         Objects.requireNonNull(text, "text");
         OpaqueTokenizer tokenizer = requireOpen();
+        try (BytePointer nativeText = new BytePointer(text, StandardCharsets.UTF_8)) {
+            return encodeNative(api, tokenizer, nativeText, addSpecialTokens);
+        }
+    }
+
+    /**
+     * Encodes text and returns both token IDs and the exact vocabulary pieces
+     * reported by Hugging Face tokenizers. This is the detailed form used by
+     * the public {@code HuggingFaceTokenizer} facade.
+     */
+    public synchronized EncodedText encodeWithTokens(String text,
+                                                     boolean addSpecialTokens) {
+        Objects.requireNonNull(text, "text");
+        OpaqueTokenizer tokenizer = requireOpen();
+        OpaqueEncoding encoding;
+        try (BytePointer nativeText = new BytePointer(text, StandardCharsets.UTF_8)) {
+            encoding = api.encodeText(tokenizer, nativeText, addSpecialTokens);
+        }
+        if (isNull(encoding)) {
+            throw failure(api, "encode text");
+        }
+
+        try {
+            long length = api.encodingGetLength(encoding);
+            if (length < 0 || length > Integer.MAX_VALUE) {
+                throw new IllegalStateException(
+                        "Tokenizer returned an invalid token count: " + length);
+            }
+            int tokenCount = (int) length;
+            int[] ids = new int[tokenCount];
+            String[] tokens = new String[tokenCount];
+            if (tokenCount == 0) {
+                return new EncodedText(ids, tokens);
+            }
+
+            IntPointer nativeIds = api.encodingGetIds(encoding);
+            if (isNull(nativeIds)) {
+                throw failure(api, "read encoded token IDs");
+            }
+            nativeIds.position(0).get(ids);
+
+            PointerPointer nativeTokens = api.encodingGetTokens(encoding);
+            if (isNull(nativeTokens)) {
+                throw failure(api, "read encoded token strings");
+            }
+            for (int i = 0; i < tokenCount; i++) {
+                tokens[i] = nativeTokens.getString(i, StandardCharsets.UTF_8);
+            }
+            return new EncodedText(ids, tokens);
+        } finally {
+            api.freeEncoding(encoding);
+        }
+    }
+
+    private static int[] encodeNative(TokenizersNative api,
+                                      OpaqueTokenizer tokenizer,
+                                      BytePointer nativeText,
+                                      boolean addSpecialTokens) {
         OpaqueEncoding encoding =
-                api.encodeText(tokenizer, text, addSpecialTokens);
+                api.encodeText(tokenizer, nativeText, addSpecialTokens);
         if (isNull(encoding)) {
             throw failure(api, "encode text");
         }
@@ -214,9 +275,9 @@ public final class NativeTokenizer implements AutoCloseable {
         String messagesJson = messagesJson(messages);
         String currentDate = LocalDate.now(ZoneOffset.UTC)
                 .format(CHAT_DATE_FORMAT);
-        try (BytePointer nativeMessages = new BytePointer(messagesJson);
-             BytePointer nativeConfig = new BytePointer(tokenizerConfigJson);
-             BytePointer nativeDate = new BytePointer(currentDate)) {
+        try (BytePointer nativeMessages = new BytePointer(messagesJson, StandardCharsets.UTF_8);
+             BytePointer nativeConfig = new BytePointer(tokenizerConfigJson, StandardCharsets.UTF_8);
+             BytePointer nativeDate = new BytePointer(currentDate, StandardCharsets.UTF_8)) {
             BytePointer rendered = api.applyChatTemplate(
                     nativeMessages,
                     nativeConfig,
@@ -226,7 +287,7 @@ public final class NativeTokenizer implements AutoCloseable {
                 throw failure(api, "render tokenizer chat template");
             }
             try {
-                return rendered.getString();
+                return rendered.getString(StandardCharsets.UTF_8);
             } finally {
                 api.freeString(rendered);
             }
@@ -250,9 +311,9 @@ public final class NativeTokenizer implements AutoCloseable {
 
         String currentDate = LocalDate.now(ZoneOffset.UTC)
                 .format(CHAT_DATE_FORMAT);
-        try (BytePointer nativeContext = new BytePointer(contextJson);
-             BytePointer nativeConfig = new BytePointer(tokenizerConfigJson);
-             BytePointer nativeDate = new BytePointer(currentDate)) {
+        try (BytePointer nativeContext = new BytePointer(contextJson, StandardCharsets.UTF_8);
+             BytePointer nativeConfig = new BytePointer(tokenizerConfigJson, StandardCharsets.UTF_8);
+             BytePointer nativeDate = new BytePointer(currentDate, StandardCharsets.UTF_8)) {
             BytePointer rendered = api.applyChatTemplateContext(
                     nativeContext,
                     nativeConfig,
@@ -261,7 +322,7 @@ public final class NativeTokenizer implements AutoCloseable {
                 throw failure(api, "render tokenizer chat template context");
             }
             try {
-                return rendered.getString();
+                return rendered.getString(StandardCharsets.UTF_8);
             } finally {
                 api.freeString(rendered);
             }
@@ -279,22 +340,17 @@ public final class NativeTokenizer implements AutoCloseable {
             return "";
         }
 
-        IntBuffer nativeIds = ByteBuffer
-                .allocateDirect(Math.multiplyExact(tokenIds.length, Integer.BYTES))
-                .order(ByteOrder.nativeOrder())
-                .asIntBuffer();
-        nativeIds.put(tokenIds);
-        nativeIds.flip();
-
-        BytePointer decoded = api.decodeIds(
-                tokenizer, nativeIds, tokenIds.length, skipSpecialTokens);
-        if (isNull(decoded)) {
-            throw failure(api, "decode token IDs");
-        }
-        try {
-            return decoded.getString();
-        } finally {
-            api.freeString(decoded);
+        try (IntPointer nativeIds = new IntPointer(tokenIds)) {
+            BytePointer decoded = api.decodeIds(
+                    tokenizer, nativeIds, tokenIds.length, skipSpecialTokens);
+            if (isNull(decoded)) {
+                throw failure(api, "decode token IDs");
+            }
+            try {
+                return decoded.getString(StandardCharsets.UTF_8);
+            } finally {
+                api.freeString(decoded);
+            }
         }
     }
 
@@ -360,11 +416,11 @@ public final class NativeTokenizer implements AutoCloseable {
             if (isNull(handle)) {
                 throw new IllegalStateException("Decode stream is closed");
             }
-            String chunk = api.decodeStreamStep(handle, (int) tokenId);
-            if (chunk == null) {
+            BytePointer chunk = api.decodeStreamStep(handle, (int) tokenId);
+            if (isNull(chunk)) {
                 throw failure(api, "decode stream token");
             }
-            return chunk;
+            return chunk.getString(StandardCharsets.UTF_8);
         }
 
         @Override
@@ -373,6 +429,27 @@ public final class NativeTokenizer implements AutoCloseable {
                 api.freeDecodeStream(handle);
                 handle = null;
             }
+        }
+    }
+
+    /**
+     * Java-owned detailed encoding returned by the native Hugging Face library.
+     */
+    public static final class EncodedText {
+        private final int[] ids;
+        private final String[] tokens;
+
+        private EncodedText(int[] ids, String[] tokens) {
+            this.ids = ids;
+            this.tokens = tokens;
+        }
+
+        public int[] ids() {
+            return ids;
+        }
+
+        public String[] tokens() {
+            return tokens;
         }
     }
 
@@ -431,8 +508,11 @@ public final class NativeTokenizer implements AutoCloseable {
      */
     public synchronized int tokenToId(String token) {
         Objects.requireNonNull(token, "token");
-        int[] tokenId = new int[1];
-        return api.getTokenId(requireOpen(), token, tokenId) ? tokenId[0] : -1;
+        try (BytePointer nativeToken = new BytePointer(token, StandardCharsets.UTF_8);
+             IntPointer tokenId = new IntPointer(1)) {
+            return api.getTokenId(requireOpen(), nativeToken, tokenId)
+                    ? tokenId.get(0) : -1;
+        }
     }
 
     /**
@@ -442,12 +522,22 @@ public final class NativeTokenizer implements AutoCloseable {
         return !isNull(handle) && api.tokenizerIsValid(handle);
     }
 
+    public static String nativeVersion() {
+        BytePointer version = new TokenizersNative().getTokenizerVersion();
+        return isNull(version) ? "" : version.getString(StandardCharsets.UTF_8);
+    }
+
+    public static String nativeBuildInfo() {
+        BytePointer buildInfo = new TokenizersNative().getBuildInfo();
+        return isNull(buildInfo) ? "" : buildInfo.getString(StandardCharsets.UTF_8);
+    }
+
     public String version() {
-        return api.getTokenizerVersion();
+        return nativeVersion();
     }
 
     public String buildInfo() {
-        return api.getBuildInfo();
+        return nativeBuildInfo();
     }
 
     /**
@@ -540,7 +630,10 @@ public final class NativeTokenizer implements AutoCloseable {
             return new IllegalStateException(operation + " failed");
         }
         try {
-            String message = result.error_message();
+            BytePointer nativeMessage = result.error_message();
+            String message = isNull(nativeMessage)
+                    ? null
+                    : nativeMessage.getString(StandardCharsets.UTF_8);
             String suffix = message == null || message.isEmpty()
                     ? ""
                     : ": " + message;

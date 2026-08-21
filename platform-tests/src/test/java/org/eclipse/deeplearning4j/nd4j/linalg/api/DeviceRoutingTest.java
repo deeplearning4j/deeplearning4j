@@ -37,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -355,6 +356,57 @@ public class DeviceRoutingTest {
             DeviceDescriptor target = memoryManager.selectFailoverDevice(100L * 1024 * 1024, 0);
             assertNull(target,
                 "When nothing can fit, failover returns null so the caller surfaces a real OOM");
+        } finally {
+            memoryManager.clearAllMemorySimulation();
+        }
+    }
+
+    @Test
+    @DisplayName("Model admission should choose a GPU that can satisfy the complete peak")
+    void testPeakAwareGpuAdmissionChoosesDeviceWithCapacity() {
+        memoryManager.setSimulatedFreeMemory(0, 24L * 1024 * 1024 * 1024);
+        memoryManager.setSimulatedFreeMemory(1, 8L * 1024 * 1024 * 1024);
+        memoryManager.setMemorySimulationEnabled(true);
+        try {
+            int selected = memoryManager.selectBestGpuForAllocation(
+                    15L * 1024 * 1024 * 1024, List.of(0, 1));
+            assertEquals(0, selected,
+                    "Admission must reject the smaller GPU even when it is otherwise eligible");
+        } finally {
+            memoryManager.clearAllMemorySimulation();
+        }
+    }
+
+    @Test
+    @DisplayName("Model admission should reject when no GPU can satisfy the complete peak")
+    void testPeakAwareGpuAdmissionRejectsUndersizedDevices() {
+        memoryManager.setSimulatedFreeMemory(0, 10L * 1024 * 1024 * 1024);
+        memoryManager.setSimulatedFreeMemory(1, 8L * 1024 * 1024 * 1024);
+        memoryManager.setMemorySimulationEnabled(true);
+        try {
+            int selected = memoryManager.selectBestGpuForAllocation(
+                    15L * 1024 * 1024 * 1024, List.of(0, 1));
+            assertEquals(DeviceMemoryManager.NO_DEVICE_AVAILABLE, selected);
+        } finally {
+            memoryManager.clearAllMemorySimulation();
+        }
+    }
+
+    @Test
+    @DisplayName("Pool-aware admission should honor the configured device memory cap")
+    void testPeakAwareGpuAdmissionHonorsDeviceCap() {
+        DeviceDescriptor cuda0 = DeviceDescriptor.cuda(0);
+        DeviceDescriptor cuda1 = DeviceDescriptor.cuda(1);
+        memoryManager.setMemoryCap(cuda0, 20L * 1024 * 1024 * 1024);
+        memoryManager.setMemoryCap(cuda1, 7L * 1024 * 1024 * 1024);
+        memoryManager.setSimulatedFreeMemory(0, 20L * 1024 * 1024 * 1024);
+        memoryManager.setSimulatedFreeMemory(1, 8L * 1024 * 1024 * 1024);
+        memoryManager.setMemorySimulationEnabled(true);
+        try {
+            int selected = memoryManager.selectBestGpuForAllocation(
+                    15L * 1024 * 1024 * 1024, List.of(0, 1));
+            assertEquals(0, selected,
+                    "Physical free memory above a device cap must not make that GPU eligible");
         } finally {
             memoryManager.clearAllMemorySimulation();
         }

@@ -30,6 +30,7 @@ import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.node.ObjectNode;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
 
@@ -89,13 +90,11 @@ public class HuggingFaceTokenizer implements Tokenizer {
         String nativeVersion = "not available";
         String loadError = null;
         try {
-            Class.forName("org.eclipse.deeplearning4j.tokenizers.bindings.TokenizersNative");
-            nativeAvailable = true;
+            // Load through the one JavaCPP facade used by every runtime.
+            // This keeps UTF-8 BytePointer overload selection compile-time checked.
             nativeVersion = getNativeVersionInternal();
+            nativeAvailable = true;
             log.info("Tokenizers native library loaded, version: {}", nativeVersion);
-        } catch (ClassNotFoundException e) {
-            loadError = "Native tokenizers library not found. Add nd4j-tokenizers dependency with platform classifier.";
-            log.error(loadError);
         } catch (NoClassDefFoundError e) {
             loadError = "Native tokenizers library class definition error: " + e.getMessage();
             log.error(loadError, e);
@@ -109,19 +108,23 @@ public class HuggingFaceTokenizer implements Tokenizer {
         NATIVE_LOAD_ERROR = loadError;
     }
 
-    // Delegate to native implementation
-    private final NativeTokenizerImpl impl;
+    // The single model-owned JavaCPP facade used by desktop and mobile.
+    private final NativeTokenizer impl;
     @Getter private TokenizerConfig config;
     private final String tokenizerConfigJson;
     private final Map<String, Integer> addedTokenIdsByContent;
     private final Map<Integer, String> addedTokensById;
     private final Set<Integer> addedSpecialTokenIds;
+    private int padTokenId = -1;
+    private int bosTokenId = -1;
+    private int eosTokenId = -1;
+    private int unkTokenId = -1;
     private volatile boolean closed = false;
 
     /**
      * Private constructor - use factory methods.
      */
-    private HuggingFaceTokenizer(NativeTokenizerImpl impl, TokenizerConfig config,
+    private HuggingFaceTokenizer(NativeTokenizer impl, TokenizerConfig config,
                                  String tokenizerConfigJson, String tokenizerJson) {
         this.impl = impl;
         this.config = config;
@@ -131,7 +134,7 @@ public class HuggingFaceTokenizer implements Tokenizer {
         this.addedTokenIdsByContent.forEach((content, id) -> byId.put(id, content));
         this.addedTokensById = Collections.unmodifiableMap(byId);
         this.addedSpecialTokenIds = parseSpecialTokenIds(tokenizerJson);
-        this.impl.initializeSpecialTokens(config);
+        initializeSpecialTokens(config);
     }
 
     /**
@@ -166,11 +169,7 @@ public class HuggingFaceTokenizer implements Tokenizer {
     }
 
     private static String getNativeVersionInternal() {
-        try {
-            return NativeTokenizerImpl.getVersion();
-        } catch (Exception e) {
-            return "unknown";
-        }
+        return NativeTokenizer.nativeVersion();
     }
 
     /**
@@ -222,7 +221,7 @@ public class HuggingFaceTokenizer implements Tokenizer {
         } catch (Exception e) {
             throw new TokenizerException("Could not load tokenizer.json: " + e.getMessage(), e);
         }
-        NativeTokenizerImpl impl = NativeTokenizerImpl.fromFile(file.getAbsolutePath());
+        NativeTokenizer impl = NativeTokenizer.fromFile(file.getAbsolutePath());
         log.debug("Created native tokenizer from: {}", file.getAbsolutePath());
 
         return new HuggingFaceTokenizer(impl, config, tokenizerConfigJson, tokenizerJson);
@@ -321,16 +320,17 @@ public class HuggingFaceTokenizer implements Tokenizer {
     public static HuggingFaceTokenizer fromJson(String json) {
         requireNative();
 
-        NativeTokenizerImpl impl = NativeTokenizerImpl.fromJson(json);
+        NativeTokenizer impl = NativeTokenizer.fromJson(json);
         log.debug("Created native tokenizer from JSON");
 
         return new HuggingFaceTokenizer(impl, null, null, json);
     }
 
     /**
-     * Create a tokenizer from tokenizer.json plus its complete model-owned
-     * tokenizer_config.json. This is used by importers that reconstruct tokenizer
-     * assets from a container such as GGUF.
+     * Create a tokenizer from the canonical Hugging Face tokenizer.json and its
+     * complete model-owned tokenizer_config.json. Callers that need chat behavior
+     * must supply both files from the same model revision; this overload does not
+     * synthesize tokenizer metadata.
      */
     public static HuggingFaceTokenizer fromJson(String tokenizerJson,
                                                 String tokenizerConfigJson) {
@@ -343,7 +343,7 @@ public class HuggingFaceTokenizer implements Tokenizer {
                 throw new TokenizerException("Invalid tokenizer_config.json: " + e.getMessage(), e);
             }
         }
-        NativeTokenizerImpl impl = NativeTokenizerImpl.fromJson(tokenizerJson);
+        NativeTokenizer impl = NativeTokenizer.fromJson(tokenizerJson);
         log.debug("Created native tokenizer from JSON with model chat configuration");
         return new HuggingFaceTokenizer(impl, config, tokenizerConfigJson, tokenizerJson);
     }
@@ -391,14 +391,15 @@ public class HuggingFaceTokenizer implements Tokenizer {
         String baseUrl = "https://huggingface.co/" + repositoryId + "/resolve/main/";
         try {
             ModelDownloader.download(baseUrl + "tokenizer.json", "tokenizer.json", repositoryCache);
-            try {
-                ModelDownloader.download(baseUrl + "tokenizer_config.json", "tokenizer_config.json", repositoryCache);
-            } catch (java.io.IOException e) {
-                log.warn("No tokenizer_config.json available for {}: {}", repositoryId, e.getMessage());
-            }
+            // Hugging Face's tokenizer_config.json is part of the tokenizer contract for
+            // chat models. Do not silently continue without it: the permissive path can
+            // instantiate a tokenizer that encodes bytes but cannot honor the model's
+            // special-token/chat-template configuration.
+            ModelDownloader.download(baseUrl + "tokenizer_config.json", "tokenizer_config.json", repositoryCache);
             return fromDirectory(repositoryCache);
         } catch (java.io.IOException e) {
-            throw new TokenizerException("Failed to download tokenizer from " + repositoryId, e);
+            throw new TokenizerException("Failed to download the complete Hugging Face tokenizer from "
+                    + repositoryId + " (tokenizer.json and tokenizer_config.json are required)", e);
         }
     }
 
@@ -411,7 +412,23 @@ public class HuggingFaceTokenizer implements Tokenizer {
     @Override
     public Encoding encode(String text, boolean addSpecialTokens) {
         checkNotClosed();
-        return impl.encode(text, addSpecialTokens);
+        NativeTokenizer.EncodedText encoded = impl.encodeWithTokens(text, addSpecialTokens);
+        int[] attentionMask = new int[encoded.ids().length];
+        Arrays.fill(attentionMask, 1);
+        return Encoding.builder()
+                .ids(encoded.ids())
+                .tokens(encoded.tokens())
+                .attentionMask(attentionMask)
+                .build();
+    }
+
+    /**
+     * Encodes directly to the unsigned int64 token representation consumed by
+     * SDX, through the same model-owned tokenizer used by desktop callers.
+     */
+    public long[] encodeLong(String text, boolean addSpecialTokens) {
+        checkNotClosed();
+        return impl.encodeLong(text, addSpecialTokens);
     }
 
     @Override
@@ -419,7 +436,7 @@ public class HuggingFaceTokenizer implements Tokenizer {
         checkNotClosed();
         List<Encoding> results = new ArrayList<>(texts.size());
         for (String text : texts) {
-            results.add(impl.encode(text, addSpecialTokens));
+            results.add(encode(text, addSpecialTokens));
         }
         return results;
     }
@@ -428,6 +445,18 @@ public class HuggingFaceTokenizer implements Tokenizer {
     public String decode(int[] ids, boolean skipSpecialTokens) {
         checkNotClosed();
         return impl.decode(ids, skipSpecialTokens);
+    }
+
+    /** Decode SDX int64 token IDs through this same tokenizer handle. */
+    public String decode(long[] ids, boolean skipSpecialTokens) {
+        checkNotClosed();
+        return impl.decode(ids, skipSpecialTokens);
+    }
+
+    /** Creates a stateful decoder owned by this tokenizer implementation. */
+    public DecodeStream newDecodeStream(boolean skipSpecialTokens) {
+        checkNotClosed();
+        return new DecodeStream(impl.newDecodeStream(skipSpecialTokens));
     }
 
     @Override
@@ -443,7 +472,11 @@ public class HuggingFaceTokenizer implements Tokenizer {
     @Override
     public int getVocabSize() {
         checkNotClosed();
-        return impl.getVocabSize();
+        long size = impl.vocabSize();
+        if (size < 0 || size > Integer.MAX_VALUE) {
+            throw new TokenizerException("Native tokenizer returned an invalid vocabulary size: " + size);
+        }
+        return (int) size;
     }
 
     @Override
@@ -453,7 +486,8 @@ public class HuggingFaceTokenizer implements Tokenizer {
         if (addedId != null) {
             return addedId;
         }
-        return impl.getTokenId(token);
+        int nativeId = impl.tokenToId(token);
+        return nativeId < 0 ? null : nativeId;
     }
 
     @Override
@@ -463,19 +497,18 @@ public class HuggingFaceTokenizer implements Tokenizer {
         if (addedToken != null) {
             return addedToken;
         }
-        return impl.getToken(id);
+        throw new UnsupportedOperationException(
+                "The generated tokenizer binding does not expose id-to-token lookup");
     }
 
     @Override
     public Map<String, Integer> getVocab() {
         checkNotClosed();
-        Map<String, Integer> nativeVocab = impl.getVocab();
-        if (nativeVocab == null || nativeVocab.isEmpty()) {
-            return addedTokenIdsByContent;
+        if (addedTokenIdsByContent.isEmpty()) {
+            throw new UnsupportedOperationException(
+                    "The generated tokenizer binding does not expose vocabulary enumeration");
         }
-        Map<String, Integer> merged = new LinkedHashMap<>(nativeVocab);
-        merged.putAll(addedTokenIdsByContent);
-        return Collections.unmodifiableMap(merged);
+        return addedTokenIdsByContent;
     }
 
     @Override
@@ -485,22 +518,22 @@ public class HuggingFaceTokenizer implements Tokenizer {
 
     @Override
     public int getPadTokenId() {
-        return impl.getPadTokenId();
+        return padTokenId;
     }
 
     @Override
     public int getBosTokenId() {
-        return impl.getBosTokenId();
+        return bosTokenId;
     }
 
     @Override
     public int getEosTokenId() {
-        return impl.getEosTokenId();
+        return eosTokenId;
     }
 
     @Override
     public int getUnkTokenId() {
-        return impl.getUnkTokenId();
+        return unkTokenId;
     }
 
     @Override
@@ -550,7 +583,7 @@ public class HuggingFaceTokenizer implements Tokenizer {
             throw new IllegalStateException(
                     "Tokenizer import does not provide tokenizer_config.json with a chat_template");
         }
-        return NativeTokenizer.renderChatTemplateContext(
+        return impl.applyChatTemplateContext(
                 renderConfig, ChatTemplate.requestContextJson(request));
     }
 
@@ -580,7 +613,7 @@ public class HuggingFaceTokenizer implements Tokenizer {
             throw new IllegalStateException(
                     "Tokenizer import does not provide tokenizer_config.json with a chat_template");
         }
-        return NativeTokenizer.renderChatTemplateContext(tokenizerConfigJson, contextJson);
+        return impl.applyChatTemplateContext(tokenizerConfigJson, contextJson);
     }
 
     @Override
@@ -593,6 +626,42 @@ public class HuggingFaceTokenizer implements Tokenizer {
     public String getEosToken() {
         String token = config != null ? config.getEosToken() : null;
         return token != null ? token : Tokenizer.super.getEosToken();
+    }
+
+    private void initializeSpecialTokens(TokenizerConfig tokenizerConfig) {
+        if (tokenizerConfig == null) {
+            return;
+        }
+        bosTokenId = resolveSpecialToken(tokenizerConfig.getBosToken());
+        eosTokenId = resolveSpecialToken(tokenizerConfig.getEosToken());
+        padTokenId = resolveSpecialToken(tokenizerConfig.getPadToken());
+        unkTokenId = resolveSpecialToken(tokenizerConfig.getUnkToken());
+    }
+
+    private int resolveSpecialToken(String token) {
+        if (token == null || token.isEmpty()) {
+            return -1;
+        }
+        Integer tokenId = getTokenId(token);
+        return tokenId == null ? -1 : tokenId;
+    }
+
+    /** Public streaming decoder that retains the same native tokenizer state. */
+    public static final class DecodeStream implements AutoCloseable {
+        private final NativeTokenizer.DecodeStream delegate;
+
+        private DecodeStream(NativeTokenizer.DecodeStream delegate) {
+            this.delegate = delegate;
+        }
+
+        public String step(long tokenId) {
+            return delegate.step(tokenId);
+        }
+
+        @Override
+        public void close() {
+            delegate.close();
+        }
     }
 
     @Override
@@ -609,296 +678,4 @@ public class HuggingFaceTokenizer implements Tokenizer {
         }
     }
 
-    // ========================================================================
-    // Native implementation using Rust JNI bindings (HuggingFace tokenizers v0.21)
-    // Uses direct JavaCPP calls - same pattern as kompile for reliability
-    // ========================================================================
-
-    private static class NativeTokenizerImpl {
-        // Use direct imports via reflection to avoid compile-time dependency
-        // but call methods directly once loaded (no reflection on each call)
-        private static volatile boolean initialized = false;
-
-        private final Object nativeLib;  // TokenizersNative instance
-        private final Object nativeTokenizer;  // OpaqueTokenizer instance
-
-        // Method handles for direct calls (cached on init)
-        private static java.lang.reflect.Method encodeTextMethod;
-        private static java.lang.reflect.Method encodingGetLengthMethod;
-        private static java.lang.reflect.Method encodingGetIdsMethod;
-        private static java.lang.reflect.Method encodingGetTokensMethod;
-        private static java.lang.reflect.Method freeEncodingMethod;
-        private static java.lang.reflect.Method decodeIdsMethod;
-        private static java.lang.reflect.Method getVocabSizeMethod;
-        private static java.lang.reflect.Method tokenizerIsValidMethod;
-        private static java.lang.reflect.Method freeTokenizerMethod;
-        private static java.lang.reflect.Method getVersionMethod;
-        private static java.lang.reflect.Method createFromFileMethod;
-        private static java.lang.reflect.Method createFromJsonMethod;
-        private static Class<?> opaqueTokenizerClass;
-        private static Class<?> opaqueEncodingClass;
-
-        private @Getter int padTokenId = -1;
-        private @Getter int bosTokenId = -1;
-        private @Getter int eosTokenId = -1;
-        private @Getter int unkTokenId = -1;
-
-        private static synchronized void initializeMethodHandles() throws Exception {
-            if (initialized) return;
-
-            Class<?> nativeClass = Class.forName("org.eclipse.deeplearning4j.tokenizers.bindings.TokenizersNative");
-            opaqueTokenizerClass = Class.forName("org.eclipse.deeplearning4j.tokenizers.bindings.TokenizersNative$OpaqueTokenizer");
-            opaqueEncodingClass = Class.forName("org.eclipse.deeplearning4j.tokenizers.bindings.TokenizersNative$OpaqueEncoding");
-            Class<?> intPointerClass = Class.forName("org.bytedeco.javacpp.IntPointer");
-
-            // Cache all method handles
-            createFromFileMethod = nativeClass.getMethod("createTokenizerFromFile", String.class);
-            createFromJsonMethod = nativeClass.getMethod("createTokenizerFromJson", String.class);
-            encodeTextMethod = nativeClass.getMethod("encodeText", opaqueTokenizerClass, String.class, boolean.class);
-            encodingGetLengthMethod = nativeClass.getMethod("encodingGetLength", opaqueEncodingClass);
-            encodingGetIdsMethod = nativeClass.getMethod("encodingGetIds", opaqueEncodingClass);
-            encodingGetTokensMethod = nativeClass.getMethod("encodingGetTokens", opaqueEncodingClass);
-            freeEncodingMethod = nativeClass.getMethod("freeEncoding", opaqueEncodingClass);
-            decodeIdsMethod = nativeClass.getMethod("decodeIds", opaqueTokenizerClass, int[].class, long.class, boolean.class);
-            getVocabSizeMethod = nativeClass.getMethod("getVocabSize", opaqueTokenizerClass);
-            tokenizerIsValidMethod = nativeClass.getMethod("tokenizerIsValid", opaqueTokenizerClass);
-            freeTokenizerMethod = nativeClass.getMethod("freeTokenizer", opaqueTokenizerClass);
-            getVersionMethod = nativeClass.getMethod("getTokenizerVersion");
-
-            initialized = true;
-        }
-
-        private NativeTokenizerImpl(Object nativeLib, Object nativeTokenizer) {
-            this.nativeLib = nativeLib;
-            this.nativeTokenizer = nativeTokenizer;
-        }
-
-        static NativeTokenizerImpl fromFile(String path) {
-            try {
-                initializeMethodHandles();
-
-                // Create new TokenizersNative instance (like kompile does)
-                Class<?> nativeClass = Class.forName("org.eclipse.deeplearning4j.tokenizers.bindings.TokenizersNative");
-                Object nativeLib = nativeClass.getDeclaredConstructor().newInstance();
-
-                // Call createTokenizerFromFile with String directly (not BytePointer)
-                Object handle = createFromFileMethod.invoke(nativeLib, path);
-
-                if (handle == null) {
-                    throw new TokenizerException("Failed to create native tokenizer from file: " + path);
-                }
-
-                // Check if handle is null pointer
-                java.lang.reflect.Method isNullMethod = handle.getClass().getMethod("isNull");
-                if ((Boolean) isNullMethod.invoke(handle)) {
-                    throw new TokenizerException("Failed to create native tokenizer from file (null handle): " + path);
-                }
-
-                return new NativeTokenizerImpl(nativeLib, handle);
-            } catch (TokenizerException e) {
-                throw e;
-            } catch (Exception e) {
-                throw new TokenizerException("Failed to create native tokenizer: " + e.getMessage(), e);
-            }
-        }
-
-        static NativeTokenizerImpl fromJson(String json) {
-            try {
-                initializeMethodHandles();
-
-                // Create new TokenizersNative instance (like kompile does)
-                Class<?> nativeClass = Class.forName("org.eclipse.deeplearning4j.tokenizers.bindings.TokenizersNative");
-                Object nativeLib = nativeClass.getDeclaredConstructor().newInstance();
-
-                // Call createTokenizerFromJson with String directly
-                Object handle = createFromJsonMethod.invoke(nativeLib, json);
-
-                if (handle == null) {
-                    throw new TokenizerException("Failed to create native tokenizer from JSON");
-                }
-
-                // Check if handle is null pointer
-                java.lang.reflect.Method isNullMethod = handle.getClass().getMethod("isNull");
-                if ((Boolean) isNullMethod.invoke(handle)) {
-                    throw new TokenizerException("Failed to create native tokenizer from JSON (null handle)");
-                }
-
-                return new NativeTokenizerImpl(nativeLib, handle);
-            } catch (TokenizerException e) {
-                throw e;
-            } catch (Exception e) {
-                throw new TokenizerException("Failed to create native tokenizer: " + e.getMessage(), e);
-            }
-        }
-
-        static String getVersion() {
-            try {
-                initializeMethodHandles();
-                Class<?> nativeClass = Class.forName("org.eclipse.deeplearning4j.tokenizers.bindings.TokenizersNative");
-                Object nativeLib = nativeClass.getDeclaredConstructor().newInstance();
-                Object result = getVersionMethod.invoke(nativeLib);
-                if (result != null) {
-                    return result.toString();
-                }
-            } catch (Exception e) {
-                // Ignore
-            }
-            return "unknown";
-        }
-
-        private void initializeSpecialTokens(TokenizerConfig config) {
-            if (config == null) return;
-            bosTokenId = resolveSpecialToken(config.getBosToken());
-            eosTokenId = resolveSpecialToken(config.getEosToken());
-            padTokenId = resolveSpecialToken(config.getPadToken());
-            unkTokenId = resolveSpecialToken(config.getUnkToken());
-        }
-
-        private int resolveSpecialToken(String tokenStr) {
-            if (tokenStr == null || tokenStr.isEmpty()) return -1;
-            try {
-                Encoding enc = encode(tokenStr, false);
-                int[] ids = enc.getIds();
-                if (ids != null && ids.length == 1) {
-                    return ids[0];
-                }
-            } catch (Exception e) {
-                log.debug("Configured special token is not resolvable: {}", tokenStr);
-            }
-            return -1;
-        }
-
-        public Encoding encode(String text, boolean addSpecialTokens) {
-            try {
-                // Call encodeText directly with String (not BytePointer)
-                Object encoding = encodeTextMethod.invoke(nativeLib, nativeTokenizer, text, addSpecialTokens);
-
-                if (encoding == null) {
-                    throw new TokenizerException("Failed to encode text");
-                }
-
-                // Check if encoding is null pointer
-                java.lang.reflect.Method isNullMethod = encoding.getClass().getMethod("isNull");
-                if ((Boolean) isNullMethod.invoke(encoding)) {
-                    throw new TokenizerException("Failed to encode text (null encoding)");
-                }
-
-                try {
-                    // Get length
-                    long length = (Long) encodingGetLengthMethod.invoke(nativeLib, encoding);
-
-                    // Get IDs via IntPointer
-                    Object idsPtr = encodingGetIdsMethod.invoke(nativeLib, encoding);
-                    int[] ids = new int[(int) length];
-                    if (idsPtr != null && length > 0) {
-                        java.lang.reflect.Method getMethod = idsPtr.getClass().getMethod("get", int[].class);
-                        getMethod.invoke(idsPtr, ids);
-                    }
-
-                    // Token STRINGS via encoding_get_tokens (const char**). Previously
-                    // this array was left as nulls even though the native binding
-                    // exposes the strings — Encoding.getTokens() returned [null, ...].
-                    // Token strings are informational; never fail an encode over them.
-                    String[] tokens = new String[(int) length];
-                    try {
-                        Object tokensPtr = encodingGetTokensMethod.invoke(nativeLib, encoding);
-                        if (tokensPtr != null && length > 0) {
-                            java.lang.reflect.Method isNullPtr = tokensPtr.getClass().getMethod("isNull");
-                            if (!(Boolean) isNullPtr.invoke(tokensPtr)) {
-                                java.lang.reflect.Method getStringMethod =
-                                        tokensPtr.getClass().getMethod("getString", long.class);
-                                for (int i = 0; i < (int) length; i++) {
-                                    tokens[i] = (String) getStringMethod.invoke(tokensPtr, (long) i);
-                                }
-                            }
-                        }
-                    } catch (Exception tokensError) {
-                        log.debug("encoding_get_tokens unavailable, token strings left null: {}",
-                                tokensError.getMessage());
-                    }
-
-                    // Attention mask - default to all 1s
-                    int[] attentionMask = new int[(int) length];
-                    Arrays.fill(attentionMask, 1);
-
-                    return Encoding.builder()
-                            .ids(ids)
-                            .tokens(tokens)
-                            .attentionMask(attentionMask)
-                            .build();
-                } finally {
-                    // Free encoding - this is the only free we need to do
-                    freeEncodingMethod.invoke(nativeLib, encoding);
-                }
-            } catch (TokenizerException e) {
-                throw e;
-            } catch (Exception e) {
-                throw new TokenizerException("Failed to encode: " + e.getMessage(), e);
-            }
-        }
-
-        public String decode(int[] ids, boolean skipSpecialTokens) {
-            try {
-                // Call decodeIds with int[] directly (like kompile does)
-                // No need to create IntPointer - JavaCPP handles it
-                Object result = decodeIdsMethod.invoke(nativeLib, nativeTokenizer, ids, (long) ids.length, skipSpecialTokens);
-
-                if (result != null) {
-                    return result.toString();
-                }
-                return "";
-            } catch (Exception e) {
-                throw new TokenizerException("Failed to decode: " + e.getMessage(), e);
-            }
-        }
-
-        public int getVocabSize() {
-            try {
-                return ((Number) getVocabSizeMethod.invoke(nativeLib, nativeTokenizer)).intValue();
-            } catch (Exception e) {
-                return 0;
-            }
-        }
-
-        public Integer getTokenId(String token) {
-            // Resolve via encoding: if the token encodes to exactly one ID, return it
-            try {
-                Encoding enc = encode(token, false);
-                int[] ids = enc.getIds();
-                if (ids != null && ids.length == 1) {
-                    return ids[0];
-                }
-            } catch (Exception e) {
-                // Token not found
-            }
-            return null;
-        }
-
-        public String getToken(int id) {
-            // Not in current native bindings
-            return null;
-        }
-
-        public Map<String, Integer> getVocab() {
-            return Collections.emptyMap();
-        }
-
-        public boolean isValid() {
-            try {
-                return (Boolean) tokenizerIsValidMethod.invoke(nativeLib, nativeTokenizer);
-            } catch (Exception e) {
-                return false;
-            }
-        }
-
-        public void close() {
-            if (nativeTokenizer != null) {
-                try {
-                    freeTokenizerMethod.invoke(nativeLib, nativeTokenizer);
-                } catch (Exception e) {
-                    // Ignore
-                }
-            }
-        }
-    }
 }

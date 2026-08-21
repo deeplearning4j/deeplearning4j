@@ -103,6 +103,33 @@ public class SameDiffOutputTest extends BaseNd4jTestWithBackends {
                 0.0001),"output != input + 2");
     }
 
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void outputShapeCacheDistinguishesEmptyDescriptor(Nd4jBackend backend) {
+        SameDiff sd = SameDiff.create();
+        long[] inputShape = {1, 3, 82, 64};
+
+        SDVariable emptyA = sd.placeHolder("emptyA", DataType.FLOAT, inputShape);
+        SDVariable emptyB = sd.placeHolder("emptyB", DataType.FLOAT, inputShape);
+        SDVariable fullA = sd.placeHolder("fullA", DataType.FLOAT, inputShape);
+        SDVariable fullB = sd.placeHolder("fullB", DataType.FLOAT, inputShape);
+
+        SDVariable emptyConcat = sd.concat("emptyConcat", 0, emptyA, emptyB);
+        SDVariable fullConcat = sd.concat("fullConcat", 0, fullA, fullB);
+        fullConcat.addControlDependency(emptyConcat);
+
+        Map<String, INDArray> inputs = new LinkedHashMap<>();
+        inputs.put("emptyA", Nd4j.emptyWithShape(inputShape, DataType.FLOAT));
+        inputs.put("emptyB", Nd4j.emptyWithShape(inputShape, DataType.FLOAT));
+        inputs.put("fullA", Nd4j.ones(DataType.FLOAT, inputShape));
+        inputs.put("fullB", Nd4j.ones(DataType.FLOAT, inputShape));
+
+        INDArray output = sd.output(inputs, fullConcat.name()).get(fullConcat.name());
+        assertTrue(!output.isEmpty(), "Non-empty concat reused a cached empty output descriptor");
+        assertEquals(2, output.size(0));
+        assertEquals(1.0, output.meanNumber().doubleValue(), 0.0);
+    }
+
     @Override
     public char ordering() {
         return 'c';

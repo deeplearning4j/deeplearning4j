@@ -124,8 +124,8 @@ public class TokenizersPresets implements InfoMapper, BuildEnabled {
                 .put(new Info("TokenizerResult").pointerTypes("TokenizerResult"))
 
                 // String handling
-                .put(new Info("char").valueTypes("byte").pointerTypes("@Cast(\"char*\") String",
-                        "@Cast(\"char*\") BytePointer"))
+                .put(new Info("char").valueTypes("byte").pointerTypes("@Cast(\"char*\") BytePointer",
+                        "@Cast(\"char*\") String"))
 
                 // Basic type mappings
                 .put(new Info("bool").cast().valueTypes("boolean").pointerTypes("BooleanPointer", "boolean[]"))

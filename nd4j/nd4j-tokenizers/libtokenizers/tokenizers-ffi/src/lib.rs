@@ -22,8 +22,7 @@
 //! This crate provides C-compatible functions that wrap the tokenizers library,
 //! allowing it to be called from C/C++/Java via JNI.
 
-use std::ffi::{c_void, CStr, CString};
-use std::mem::ManuallyDrop;
+use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 use std::ptr;
 use std::slice;
@@ -32,20 +31,8 @@ use std::sync::{Arc, Mutex};
 
 use minijinja::{Environment, Error as MiniJinjaError, ErrorKind};
 use serde_json::{Map as JsonMap, Value as JsonValue};
-use tokenizers::tokenizer::{
-    DecodeStream, DecoderWrapper, ModelWrapper, NormalizerWrapper, PostProcessorWrapper,
-    PreTokenizerWrapper,
-};
+use tokenizers::tokenizer::step_decode_stream;
 use tokenizers::Tokenizer;
-
-type TokenizerDecodeStream = DecodeStream<
-    'static,
-    ModelWrapper,
-    NormalizerWrapper,
-    PreTokenizerWrapper,
-    PostProcessorWrapper,
-    DecoderWrapper,
->;
 
 /// Thread-local error storage
 thread_local! {
@@ -222,41 +209,17 @@ pub struct TokenizerHandle {
     tokenizer: Arc<Tokenizer>,
 }
 
-/// Stateful decoder backed by Hugging Face tokenizers' DecodeStream.
-///
-/// The stream contains a reference into the Arc allocation retained in
-/// `_tokenizer`. The Arc keeps that allocation stable and alive until after
-/// the stream is dropped, including when the originating TokenizerHandle has
-/// already been freed.
-struct DecodeStreamInner {
-    stream: ManuallyDrop<TokenizerDecodeStream>,
-    _tokenizer: Arc<Tokenizer>,
-}
-
-impl Drop for DecodeStreamInner {
-    fn drop(&mut self) {
-        // Drop the borrowing stream before releasing the Arc that owns the
-        // tokenizer it references.
-        unsafe {
-            ManuallyDrop::drop(&mut self.stream);
-        }
-    }
-}
-
 /// Opaque stateful decoder handle exported through the C ABI.
+///
+/// Keep every piece of incremental decode state owned by the handle. This
+/// avoids manufacturing a `'static` reference into the retained tokenizer and
+/// makes ordinary Rust drop order sufficient for cleanup.
 pub struct DecodeStreamHandle {
-    inner: *mut c_void,
-}
-
-impl Drop for DecodeStreamHandle {
-    fn drop(&mut self) {
-        if !self.inner.is_null() {
-            unsafe {
-                drop(Box::from_raw(self.inner as *mut DecodeStreamInner));
-            }
-            self.inner = ptr::null_mut();
-        }
-    }
+    tokenizer: Arc<Tokenizer>,
+    skip_special_tokens: bool,
+    ids: Vec<u32>,
+    prefix: String,
+    prefix_index: usize,
 }
 
 /// Opaque encoding handle
@@ -634,16 +597,12 @@ pub extern "C" fn ffi_tokenizer_decode_stream_create(
         return ptr::null_mut();
     }
 
-    let tokenizer = unsafe { Arc::clone(&(*handle).tokenizer) };
-    let tokenizer_ref: &'static Tokenizer = unsafe { &*Arc::as_ptr(&tokenizer) };
-    let stream: TokenizerDecodeStream = tokenizer_ref.decode_stream(skip_special_tokens);
-
-    let inner = Box::new(DecodeStreamInner {
-        stream: ManuallyDrop::new(stream),
-        _tokenizer: tokenizer,
-    });
     Box::into_raw(Box::new(DecodeStreamHandle {
-        inner: Box::into_raw(inner) as *mut c_void,
+        tokenizer: unsafe { Arc::clone(&(*handle).tokenizer) },
+        skip_special_tokens,
+        ids: Vec::new(),
+        prefix: String::new(),
+        prefix_index: 0,
     }))
 }
 
@@ -664,13 +623,21 @@ pub extern "C" fn ffi_tokenizer_decode_stream_step(
         return ptr::null_mut();
     }
 
-    let stream_handle = unsafe { &mut *handle };
-    if stream_handle.inner.is_null() {
-        set_error("Decode stream state is null".to_string());
-        return ptr::null_mut();
-    }
-    let stream = unsafe { &mut *(stream_handle.inner as *mut DecodeStreamInner) };
-    match stream.stream.step(token_id) {
+    let DecodeStreamHandle {
+        tokenizer,
+        skip_special_tokens,
+        ids,
+        prefix,
+        prefix_index,
+    } = unsafe { &mut *handle };
+    match step_decode_stream(
+        tokenizer.as_ref(),
+        token_id,
+        *skip_special_tokens,
+        ids,
+        prefix,
+        prefix_index,
+    ) {
         Ok(chunk) => {
             let chunk = chunk.unwrap_or_default();
             match CString::new(chunk) {
@@ -754,7 +721,75 @@ pub extern "C" fn ffi_tokenizer_get_version() -> *const c_char {
 
 #[cfg(test)]
 mod tests {
-    use super::{render_chat_template, render_chat_template_context};
+    use super::{
+        ffi_tokenizer_decode_stream_create, ffi_tokenizer_decode_stream_free,
+        ffi_tokenizer_decode_stream_step, ffi_tokenizer_free, ffi_tokenizer_free_string,
+        render_chat_template, render_chat_template_context, TokenizerHandle,
+    };
+    use std::ffi::CStr;
+    use std::str::FromStr;
+    use std::sync::Arc;
+    use tokenizers::models::wordpiece::WordPiece;
+    use tokenizers::Tokenizer;
+
+    fn word_level_tokenizer_handle() -> *mut TokenizerHandle {
+        let vocab = [
+            ("hello".to_string(), 0),
+            ("world".to_string(), 1),
+            ("[UNK]".to_string(), 2),
+        ];
+        let model = WordPiece::builder()
+            .vocab(vocab)
+            .unk_token("[UNK]".to_string())
+            .build()
+            .unwrap();
+        Box::into_raw(Box::new(TokenizerHandle {
+            tokenizer: Arc::new(Tokenizer::new(model)),
+        }))
+    }
+
+    #[test]
+    fn decode_stream_owns_tokenizer_and_drops_after_steps() {
+        for _ in 0..128 {
+            let tokenizer = word_level_tokenizer_handle();
+            let stream = ffi_tokenizer_decode_stream_create(tokenizer, false);
+            assert!(!stream.is_null());
+
+            // The stream's Arc must keep the tokenizer alive after the public
+            // tokenizer handle has been released.
+            ffi_tokenizer_free(tokenizer);
+
+            for token_id in [0, 1, 0, 1] {
+                let chunk = ffi_tokenizer_decode_stream_step(stream, token_id);
+                assert!(!chunk.is_null());
+                assert!(unsafe { CStr::from_ptr(chunk) }.to_str().is_ok());
+                ffi_tokenizer_free_string(chunk);
+            }
+
+            ffi_tokenizer_decode_stream_free(stream);
+        }
+    }
+
+    #[test]
+    fn decodes_qwen_byte_level_tokens_to_unicode() {
+        // This is the relevant shape of Qwen3.5's tokenizer.json: BPE pieces
+        // use GPT-2 byte-level spellings (for example Ġ = leading space and
+        // Ã© = the UTF-8 bytes for é), and the decoder must reverse that map.
+        let json = r#"{
+            "version":"1.0",
+            "truncation":null,
+            "padding":null,
+            "added_tokens":[],
+            "normalizer":{"type":"NFC"},
+            "pre_tokenizer":{"type":"ByteLevel","add_prefix_space":false,"trim_offsets":false,"use_regex":false},
+            "post_processor":{"type":"ByteLevel","add_prefix_space":false,"trim_offsets":false,"use_regex":false},
+            "decoder":{"type":"ByteLevel","add_prefix_space":false,"trim_offsets":false,"use_regex":false},
+            "model":{"type":"BPE","dropout":null,"unk_token":null,"continuing_subword_prefix":"","end_of_word_suffix":"","fuse_unk":false,"byte_fallback":false,"vocab":{"ĠHello":0,"Ã©":1},"merges":[]}
+        }"#;
+        let tokenizer = Tokenizer::from_str(json).expect("Qwen ByteLevel tokenizer must load");
+        let decoded = tokenizer.decode(&[0, 1], true).expect("Qwen ByteLevel decode");
+        assert_eq!(decoded, " Helloé");
+    }
 
     #[test]
     fn renders_qwen_chatml_with_generation_prompt() {

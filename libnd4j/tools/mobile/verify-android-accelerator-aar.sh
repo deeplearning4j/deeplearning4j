@@ -152,6 +152,27 @@ if ! grep -Fq "$JNI_CACHE_DIRECTORY_SETTER" <<<"$JNI_SDX_SYMBOLS"; then
     exit 1
 fi
 
+# Cross-compilation must preserve the same official Hugging Face tokenizer ABI
+# exercised on the host. Verify the Rust C surface used by JavaCPP before the AAR
+# can be admitted; this rejects stale Android classifiers that happen to contain
+# the Java facade but not its encode/decode/streaming implementation.
+TOKENIZER_FFI_SYMBOLS="$("$READELF" --dyn-syms --wide "$NATIVE_DIR/libtokenizers_ffi.so")"
+for symbol in \
+    ffi_tokenizer_from_file \
+    ffi_tokenizer_apply_chat_template_context \
+    ffi_tokenizer_encode \
+    ffi_encoding_get_ids \
+    ffi_tokenizer_decode \
+    ffi_tokenizer_decode_stream_create \
+    ffi_tokenizer_decode_stream_step \
+    ffi_tokenizer_decode_stream_free \
+    ffi_tokenizer_free_string; do
+    if ! grep -Eq "[[:space:]]$symbol(@[^[:space:]]*)?$" <<<"$TOKENIZER_FFI_SYMBOLS"; then
+        echo "Android tokenizer classifier is missing the production Hugging Face ABI symbol: $symbol" >&2
+        exit 1
+    fi
+done
+
 python3 - "$BINDING_JSON" "$PROVIDER_JSON" "$VARIANT" "$NATIVE_LIBRARY" "$ACCELERATOR" \
            "$GPU_TARGET" "$DEVICE_READY" "$ADAPTER_NAME" <<'PY'
 import json
@@ -268,6 +289,7 @@ for class_name in \
     'org/nd4j/dsp/runtime/presets/SdxRuntimePresets.class' \
     'org/eclipse/deeplearning4j/tokenizers/NativeTokenizer.class' \
     'org/eclipse/deeplearning4j/tokenizers/NativeTokenizer$ChatMessage.class' \
+    'org/eclipse/deeplearning4j/tokenizers/NativeTokenizer$DecodeStream.class' \
     'org/eclipse/deeplearning4j/tokenizers/presets/TokenizersPresets.class'; do
     if ! grep -Fxq "$class_name" <<<"$CLASS_ENTRIES"; then
         echo "Required Java API class missing: $class_name" >&2

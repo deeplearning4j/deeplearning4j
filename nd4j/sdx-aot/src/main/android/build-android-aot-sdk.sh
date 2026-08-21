@@ -186,6 +186,9 @@ DL4J_AOT_SOURCE_ROOTS=(
   nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native-preset
   nd4j/nd4j-backends/nd4j-backend-impls/nd4j-cpu-backend-common
   nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native
+  nd4j/nd4j-tokenizers/tokenizers-native-preset
+  nd4j/nd4j-tokenizers/tokenizers-native
+  nd4j/samediff-llm
   nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx
   nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-model
   nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-preset
@@ -510,10 +513,10 @@ LINKER_SCRIPT="$MODULE_DIR/src/main/linker/sdx_exports.lds"
 BUILD_SCRIPT_SHA256="$(sha256_file "${BASH_SOURCE[0]}")"
 NATIVE_IMAGE_CACHE_HELPER_SHA256="$(sha256_file "$NATIVE_IMAGE_CACHE_HELPER")"
 MAVEN_SHA256="$(sha256_file "$MAVEN")"
-MAVEN_VERSION="$({ env JAVA_HOME="$JAVA_HOME_ARG" PATH="$JAVA_HOME_ARG/bin:$PATH" "$MAVEN" --version; } 2>&1)"
-MAVEN_VERSION_SHA256="$(printf '%s' "$MAVEN_VERSION" | sha256sum | cut -d ' ' -f 1)"
-JAVA_VERSION="$({ "$JAVA_HOME_ARG/bin/java" -version; } 2>&1)"
-JAVA_VERSION_SHA256="$(printf '%s' "$JAVA_VERSION" | sha256sum | cut -d ' ' -f 1)"
+MAVEN_VERSION="$({ env -u JAVA_TOOL_OPTIONS JAVA_HOME="$JAVA_HOME_ARG" PATH="$JAVA_HOME_ARG/bin:$PATH" "$MAVEN" --version; } 2>&1)"
+MAVEN_VERSION_SHA256="$(printf '%s\n' "$MAVEN_VERSION" | sha256sum | cut -d ' ' -f 1)"
+JAVA_VERSION="$({ env -u JAVA_TOOL_OPTIONS "$JAVA_HOME_ARG/bin/java" -version; } 2>&1)"
+JAVA_VERSION_SHA256="$(printf '%s\n' "$JAVA_VERSION" | sha256sum | cut -d ' ' -f 1)"
 LINKER_SCRIPT_SHA256="$(sha256_file "$LINKER_SCRIPT")"
 JAVACPP_JAR_SHA256="$(sha256_file "$JAVACPP_JAR")"
 NDK_REVISION_SHA256="$(sha256_file "$ANDROID_NDK/source.properties")"
@@ -535,7 +538,7 @@ validate_published_generation() {
   complete="$generation/.complete.cmake"
   [[ -s "$receipt" && -s "$native_bytes" && -s "$complete" ]] || return 1
   for expected in \
-    "format=7" \
+    "format=8" \
     "stage=android-aot-sdk" \
     "native_image_build_mode=$NATIVE_IMAGE_BUILD_MODE" \
     "native_image_optimization=$NATIVE_IMAGE_OPTIMIZATION" \
@@ -590,6 +593,9 @@ declare -A MODULE_ROOTS=(
   [nd4j-native-preset]="nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native-preset"
   [nd4j-cpu-backend-common]="nd4j/nd4j-backends/nd4j-backend-impls/nd4j-cpu-backend-common"
   [nd4j-native]="nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native"
+  [tokenizers-native-preset]="nd4j/nd4j-tokenizers/tokenizers-native-preset"
+  [tokenizers-native]="nd4j/nd4j-tokenizers/tokenizers-native"
+  [samediff-llm]="nd4j/samediff-llm"
   [nd4j-sdx-preset]="nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-preset"
   [nd4j-sdx-model]="nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-model"
   [nd4j-sdx]="nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx"
@@ -602,6 +608,9 @@ declare -A MODULE_CLASS_DIRS=(
   [nd4j-native-preset]="$NATIVE_RUNTIME_CLASSES"
   [nd4j-cpu-backend-common]="$NATIVE_RUNTIME_CLASSES"
   [nd4j-native]="$NATIVE_RUNTIME_CLASSES"
+  [tokenizers-native-preset]="$FRESH_CLASSES_ROOT/tokenizers-native-preset"
+  [tokenizers-native]="$FRESH_CLASSES_ROOT/tokenizers-native"
+  [samediff-llm]="$FRESH_CLASSES_ROOT/samediff-llm"
   [nd4j-sdx-preset]="$FRESH_CLASSES_ROOT/nd4j-sdx-preset"
   [nd4j-sdx-model]="$FRESH_CLASSES_ROOT/nd4j-sdx-model"
   [nd4j-sdx]="$FRESH_CLASSES_ROOT/nd4j-sdx"
@@ -614,6 +623,9 @@ declare -A MODULE_PROBE_CLASSES=(
   [nd4j-native-preset]="org/nd4j/presets/cpu/Nd4jCpuHelper.class"
   [nd4j-cpu-backend-common]="org/nd4j/linalg/cpu/nativecpu/CpuNDArrayFactory.class"
   [nd4j-native]="org/nd4j/linalg/cpu/nativecpu/CpuBackend.class"
+  [tokenizers-native-preset]="org/eclipse/deeplearning4j/tokenizers/presets/TokenizersPresets.class"
+  [tokenizers-native]="org/eclipse/deeplearning4j/tokenizers/NativeTokenizer.class"
+  [samediff-llm]="org/eclipse/deeplearning4j/llm/tokenizer/HuggingFaceTokenizer.class"
   [nd4j-sdx-preset]="org/nd4j/dsp/runtime/presets/SdxRuntimePresets.class"
   [nd4j-sdx-model]="org/nd4j/dsp/model/SdxLlmNative.class"
   [nd4j-sdx]="org/nd4j/dsp/runtime/SdxRuntime.class"
@@ -626,6 +638,9 @@ FRESH_COMPILE_ORDER=(
   nd4j-native-preset
   nd4j-cpu-backend-common
   nd4j-native
+  tokenizers-native-preset
+  tokenizers-native
+  samediff-llm
   nd4j-sdx-preset
   nd4j-sdx-model
   nd4j-sdx
@@ -644,7 +659,7 @@ MAVEN_DEPENDENCY_ARGUMENTS_SHA256="$(
   printf '%s\n' \
     "profile=cpu-managed" \
     "reactor_modules=nd4j-api,nd4j-native-api,nd4j-presets-common,nd4j-native-preset,nd4j-cpu-backend-common,nd4j-native" \
-    "target_modules=nd4j-sdx-preset,nd4j-sdx-model,nd4j-sdx,sdx-aot" \
+    "target_modules=tokenizers-native-preset,tokenizers-native,samediff-llm,nd4j-sdx-preset,nd4j-sdx-model,nd4j-sdx,sdx-aot" \
     "dependency_scope=runtime" \
     "compiler_goal=compiler:compile" \
     "${maven_compile_flags[@]}" |
@@ -669,7 +684,7 @@ for module_id in nd4j-api nd4j-native-api nd4j-presets-common nd4j-native-preset
     fail "fresh Maven reactor compilation omitted ${MODULE_PROBE_CLASSES[$module_id]} for $module_id"
 done
 
-for module_id in nd4j-sdx-preset nd4j-sdx-model nd4j-sdx sdx-aot; do
+for module_id in tokenizers-native-preset tokenizers-native samediff-llm nd4j-sdx-preset nd4j-sdx-model nd4j-sdx sdx-aot; do
   module_root="$DL4J_ROOT/${MODULE_ROOTS[$module_id]}"
   module_classes="${MODULE_CLASS_DIRS[$module_id]}"
   mkdir -p "$module_classes"
@@ -679,6 +694,21 @@ for module_id in nd4j-sdx-preset nd4j-sdx-model nd4j-sdx sdx-aot; do
   [[ -s "$module_classes/${MODULE_PROBE_CLASSES[$module_id]}" ]] ||
     fail "fresh Maven compilation omitted ${MODULE_PROBE_CLASSES[$module_id]} for $module_id"
 done
+
+# The Android image must use the exact same official Hugging Face facade and
+# JavaCPP tokenizer implementation as the desktop execution gate. These constant-
+# pool checks are a build-time linkage assertion; they do not introduce reflection
+# or an alternate tokenizer implementation into the runtime.
+AOT_COMPILED_CORE="${MODULE_CLASS_DIRS[sdx-aot]}/org/eclipse/deeplearning4j/sdx/aot/SdxCompiledLlmCore.class"
+HUGGING_FACE_TOKENIZER_CLASS="${MODULE_CLASS_DIRS[samediff-llm]}/org/eclipse/deeplearning4j/llm/tokenizer/HuggingFaceTokenizer.class"
+NATIVE_TOKENIZER_CLASS="${MODULE_CLASS_DIRS[tokenizers-native]}/org/eclipse/deeplearning4j/tokenizers/NativeTokenizer.class"
+[[ -s "$AOT_COMPILED_CORE" && -s "$HUGGING_FACE_TOKENIZER_CLASS" && -s "$NATIVE_TOKENIZER_CLASS" ]] ||
+  fail "fresh Android compilation omitted the canonical tokenizer execution path"
+grep -aFq 'org/eclipse/deeplearning4j/llm/tokenizer/HuggingFaceTokenizer' "$AOT_COMPILED_CORE" ||
+  fail "SdxCompiledLlmCore is not linked directly to HuggingFaceTokenizer"
+grep -aFq 'org/eclipse/deeplearning4j/tokenizers/NativeTokenizer' "$HUGGING_FACE_TOKENIZER_CLASS" ||
+  fail "HuggingFaceTokenizer is not linked directly to the JavaCPP NativeTokenizer"
+
 # compiler:compile intentionally avoids each module's target directory, so it
 # does not execute process-resources. Merge the resources from every freshly
 # compiled module into the same class directory that Native Image receives.
@@ -725,11 +755,14 @@ CLASSES_DIR="${MODULE_CLASS_DIRS[sdx-aot]}"
 MODEL_CLASSES_DIR="${MODULE_CLASS_DIRS[nd4j-sdx-model]}"
 declare -A CURRENT_CLASSPATH_DIRS=(
   [nd4j-native-runtime]="$NATIVE_RUNTIME_CLASSES"
+  [tokenizers-native-preset]="$FRESH_CLASSES_ROOT/tokenizers-native-preset"
+  [tokenizers-native]="$FRESH_CLASSES_ROOT/tokenizers-native"
+  [samediff-llm]="$FRESH_CLASSES_ROOT/samediff-llm"
   [nd4j-sdx]="$FRESH_CLASSES_ROOT/nd4j-sdx"
   [nd4j-sdx-model]="$FRESH_CLASSES_ROOT/nd4j-sdx-model"
   [nd4j-sdx-preset]="$FRESH_CLASSES_ROOT/nd4j-sdx-preset"
 )
-CURRENT_CLASSPATH_IDS=(nd4j-native-runtime nd4j-sdx nd4j-sdx-model nd4j-sdx-preset)
+CURRENT_CLASSPATH_IDS=(nd4j-native-runtime tokenizers-native-preset tokenizers-native samediff-llm nd4j-sdx nd4j-sdx-model nd4j-sdx-preset)
 OVERRIDDEN_CLASSPATH_ARTIFACT_IDS=(
   nd4j-api
   nd4j-native-api
@@ -737,6 +770,9 @@ OVERRIDDEN_CLASSPATH_ARTIFACT_IDS=(
   nd4j-native-preset
   nd4j-cpu-backend-common
   nd4j-native
+  tokenizers-native-preset
+  tokenizers-native
+  samediff-llm
   nd4j-sdx
   nd4j-sdx-model
   nd4j-sdx-preset
@@ -1192,8 +1228,10 @@ for symbol in JNI_OnLoad JNI_OnUnload JNI_OnLoad_jnijavacpp JNI_OnUnload_jnijava
 done
 LIBJNISDX_DYNAMIC_SYMBOLS="$BUILD_ROOT/libjnisdx_llm.dynamic-symbols"
 "$LLVM_NM" -D --defined-only "$JNI_DIR/libjnisdx_llm.so" >"$LIBJNISDX_DYNAMIC_SYMBOLS"
-grep -q 'Java_ai_kompile_chat_local_android_model_SdxAndroidLlmNative_nativeParseChatResult' "$LIBJNISDX_DYNAMIC_SYMBOLS" ||
-  fail "fresh libjnisdx_llm.so omitted the direct parse-chat JNI binding"
+for binding in nativeParseChatResult nativeTokenCount; do
+  grep -q "Java_ai_kompile_chat_local_android_model_SdxAndroidLlmNative_${binding}" "$LIBJNISDX_DYNAMIC_SYMBOLS" ||
+    fail "fresh libjnisdx_llm.so omitted required direct JNI binding: ${binding}"
+done
 if "$LLVM_READELF" -d "$JNI_DIR/libjnisdx_llm.so" | grep -q 'Shared library: \[libjnijavacpp[.]so\]'; then
   fail "ART-facing libjnisdx_llm.so must not depend on JavaCPP's process-global JNI cache"
 fi
@@ -1251,10 +1289,10 @@ done <"$NATIVE_MANIFEST" >"$CLOSURE"
 BUILD_SCRIPT_SHA256="$(sha256_file "${BASH_SOURCE[0]}")"
 NATIVE_IMAGE_CACHE_HELPER_SHA256="$(sha256_file "$NATIVE_IMAGE_CACHE_HELPER")"
 MAVEN_SHA256="$(sha256_file "$MAVEN")"
-MAVEN_VERSION="$({ env JAVA_HOME="$JAVA_HOME_ARG" PATH="$JAVA_HOME_ARG/bin:$PATH" "$MAVEN" --version; } 2>&1)"
-MAVEN_VERSION_SHA256="$(printf '%s' "$MAVEN_VERSION" | sha256sum | cut -d ' ' -f 1)"
-JAVA_VERSION="$({ "$JAVA_HOME_ARG/bin/java" -version; } 2>&1)"
-JAVA_VERSION_SHA256="$(printf '%s' "$JAVA_VERSION" | sha256sum | cut -d ' ' -f 1)"
+MAVEN_VERSION="$({ env -u JAVA_TOOL_OPTIONS JAVA_HOME="$JAVA_HOME_ARG" PATH="$JAVA_HOME_ARG/bin:$PATH" "$MAVEN" --version; } 2>&1)"
+MAVEN_VERSION_SHA256="$(printf '%s\n' "$MAVEN_VERSION" | sha256sum | cut -d ' ' -f 1)"
+JAVA_VERSION="$({ env -u JAVA_TOOL_OPTIONS "$JAVA_HOME_ARG/bin/java" -version; } 2>&1)"
+JAVA_VERSION_SHA256="$(printf '%s\n' "$JAVA_VERSION" | sha256sum | cut -d ' ' -f 1)"
 BASE_SDK_NATIVE_SHA256="$(sha256_file "$BASE_NATIVE_BYTES")"
 LINKER_SCRIPT_SHA256="$(sha256_file "$LINKER_SCRIPT")"
 JAVACPP_JAR_SHA256="$(sha256_file "$JAVACPP_JAR")"

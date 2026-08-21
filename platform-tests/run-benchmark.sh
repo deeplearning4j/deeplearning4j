@@ -651,7 +651,11 @@ fi
 # GraphSegmentExec transitions (markArgsStale/resetCaptureKeys/resetForWarmup/
 # slotAddrDrifted) during decode without corrupting what's being measured.
 if $DIAG_DETAILED; then
-    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.diagnostics=EXECUTE,LIFECYCLE,MEMORY"
+    # Preserve categories requested by --diag-replay/--diag-stream/--diag-device/
+    # --diag-shape. The previous assignment replaced them, which silently disabled
+    # the per-slot CUDA capture probes needed to identify an invalidating op.
+    DIAG_CATS="${DIAG_CATS:+$DIAG_CATS,}EXECUTE,LIFECYCLE,MEMORY,COMPILE,BACKEND"
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.diagnostics=$DIAG_CATS"
     EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.diagnostics.level=detailed"
     if [ -z "$DIAG_JSON" ]; then
         DIAG_JSON="$SCRIPT_DIR/dsp-ring-detailed.json"
@@ -659,6 +663,10 @@ if $DIAG_DETAILED; then
 fi
 if [ -n "$DIAG_JSON" ]; then
     EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.diagnostics.file=$DIAG_JSON"
+    # Native diagnostics flush when a plan is destroyed. A VLM has multiple live
+    # plans, so also snapshot the active decoder ring immediately after decode.
+    DIAG_ACTIVE_JSON="${DIAG_JSON%.json}-active-{config}.json"
+    EXTRA_ARGS="$EXTRA_ARGS -Dvlm.diag.dspReportFile=$DIAG_ACTIVE_JSON"
 fi
 
 # Pipeline introspection flags (DspHandle StepSnapshot, D2D, capture audit)
@@ -848,11 +856,12 @@ CRASH_FLAG=""
 if $JVM_CRASHED; then CRASH_FLAG="CRASHED"; fi
 
 if [ -n "$REPORT" ]; then
-    python3 - "$REPORT" "$MAX_TOKENS" "$CRASH_FLAG" <<'PYEOF'
+    python3 - "$REPORT" "$MAX_TOKENS" "$CRASH_FLAG" "$BUILD_RESULT" <<'PYEOF'
 import sys, re, xml.etree.ElementTree as ET
 
 report_path = sys.argv[1]
 max_tokens = int(sys.argv[2])
+build_result = int(sys.argv[4])
 
 # Get lines from either plain text or XML
 if report_path.endswith('.xml'):
@@ -1125,6 +1134,8 @@ expected_min_tokens = max(1, max_tokens // 5)  # at least 20% of requested
 
 if jvm_crashed:
     print(f"  CORRECTNESS: CRASH — JVM killed (only {token_count_actual} tokens generated)")
+elif build_result != 0:
+    print(f"  CORRECTNESS: FAIL — benchmark/JUnit failed (exit code {build_result})")
 elif token_count_actual == 0 and not generated_text_block:
     if full_text_block and has_mythic_content:
         print("  CORRECTNESS: PASS (FULL_TEXT mythic content confirmed)")

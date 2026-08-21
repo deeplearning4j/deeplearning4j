@@ -250,6 +250,9 @@ struct PlanExecutionContext {
    */
   int graphExecutionMode = 0;  // GraphExecutionMode value
 
+  /** Whether the selected mode's compiled backend is ready for replay. */
+  bool compilationDone = false;
+
   // ══════════════════════════════════════════════════════════════════════
   // Sync tracking
   //
@@ -577,7 +580,7 @@ struct PlanExecutionContext {
       bool shapesFrozen, int executeCount, int gemMode,
       bool bypassCompiledExecution, bool allowPlatformGraphReplay,
       bool verifyCompiledExecution, bool hasVariableList,
-      bool execTimingEnabled,
+      bool execTimingEnabled, bool compilationComplete,
       bool anySegmentInWarmup) {
 
     // Snapshot execution identity
@@ -609,6 +612,7 @@ struct PlanExecutionContext {
         bypassCompiledExecution && !modeContract.isSlotBySlot;
     graphExecutionMode = forcedSlotBySlot
         ? static_cast<int>(GraphExecutionMode::GEM_SLOT_BY_SLOT) : gemMode;
+    compilationDone = compilationComplete;
 
     // Graph capture/replay gate. ModeContract.isSlotBySlot is the PERMANENT mode guard:
     // GEM_SLOT_BY_SLOT never captures regardless of phase (mirrors the gpubackend gate —
@@ -642,8 +646,11 @@ struct PlanExecutionContext {
     // to build shape caches and let AUTO_SEAL trigger. Without this gate, CUDA_GRAPHS
     // and TRITON modes enter phaseReplay on their first execution (shapesFrozen=false)
     // and hit platformShouldUseGraph() returning false → silent slot-by-slot fallback.
+    const ModeContract resolvedModeContract =
+        ModeContract::forMode(graphExecutionMode);
     isReplay = shapesFrozen && !isFirstFrozenWarmup &&
-        !ModeContract::forMode(graphExecutionMode).isSlotBySlot;
+        !resolvedModeContract.isSlotBySlot &&
+        (!resolvedModeContract.requiresCompilation || compilationDone);
   }
 
   /**

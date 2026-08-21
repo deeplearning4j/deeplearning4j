@@ -311,6 +311,12 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
   if (!planLifecycle_.isInFrozenOrReplayState() || !allSegmentsReplayReady()) {
     return Status::MAYBE;
   }
+  // A dynamic cross-segment boundary must be produced first and then hashed by
+  // ordered segment dispatch. Whole-plan replay cannot validate that dependency
+  // and would launch a graph compiled for a prior boundary extent.
+  if (hasDynamicSegmentBoundaries_) {
+    return Status::MAYBE;
+  }
   // After markVariable(), invalidateSegmentCaptures resets segment executionCount
   // to 0 and clears replay handles. However, the plan-level planLifecycle_.isShapesFrozen() stays
   // true and executeCount_ is NOT reset. If allSegmentsReplayReady() still returns

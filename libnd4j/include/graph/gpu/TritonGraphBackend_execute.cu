@@ -278,6 +278,14 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                                           NDArray** outputSlots, int totalOutputSlots,
                                           void* stream) {
   void* actualStream = (stream != nullptr) ? *static_cast<void**>(stream) : nullptr;
+  auto failSegment = [&](const std::string& reason) {
+    std::string message = "Triton segment [" + std::to_string(seg.def.startSlot) + "-" +
+                          std::to_string(seg.def.endSlot) + "]: " + reason;
+    auto* errorRef = LaunchContext::defaultContext()->errorReference();
+    errorRef->setErrorCode(static_cast<int>(Status::KERNEL_FAILURE));
+    errorRef->setErrorMessage(message);
+    return Status::KERNEL_FAILURE;
+  };
   int execDevice = -1;
   int targetDevice = -1;
   if (seg.def.startSlot >= 0) {
@@ -290,7 +298,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     DSP_DIAG(BACKEND, "TritonGraphBackend::executeSegment: cudaGetDevice failed for segment [%d-%d]: %s",
               seg.def.startSlot, seg.def.endSlot, cudaGetErrorString(execDeviceErr));
     cudaGetLastError();
-    return Status::KERNEL_FAILURE;
+    return failSegment("cudaGetDevice failed");
   }
   if (actualStream != nullptr) {
     cudaStreamCaptureStatus captureStatus = cudaStreamCaptureStatusNone;
@@ -344,7 +352,8 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                    entry.first.deviceId, entry.first.compileAll ? 1 : 0, entry.first.excludeOpsHash);
         }
       }
-      return Status::KERNEL_FAILURE;
+      return failSegment(cachedDeviceId != -999 ? "compiled kernel is on another device"
+                                                : "compiled kernel cache entry is missing");
     }
 	    compiledSeg = &it->second;
 	  }
@@ -357,7 +366,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       DSP_DIAG(EXECUTE, "TritonGraphBackend::executeSegment: pre-allocation event wait failed for [%d-%d]: %s",
                 seg.def.startSlot, seg.def.endSlot, cudaGetErrorString(waitErr));
       cudaGetLastError();
-      return Status::KERNEL_FAILURE;
+      return failSegment("pre-allocation event wait failed");
     }
   } else if (compiledSeg->preallocReadyEvent != nullptr) {
     DSP_DIAG(EXECUTE, "TritonGraphBackend::executeSegment: pre-allocation event already ordered before capture for [%d-%d]",
@@ -630,7 +639,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       if (!orderedRangeExecutor_) {
         DSP_DIAG(FALLBACK, "TritonGraphBackend::executeSegment: missing ordered range executor for gap [%d-%d]",
                   nextSlotToRun, subKernel.startSlot_ - 1);
-        return Status::KERNEL_FAILURE;
+        return failSegment("ordered range executor is missing before sub-kernel");
       }
       auto gapStatus = orderedRangeExecutor_(nextSlotToRun, subKernel.startSlot_ - 1);
       if (gapStatus != Status::OK) {
@@ -1000,6 +1009,10 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         DSP_DIAG(EXECUTE, "TritonGraphBackend::executeSegment: sub-kernel %d/%d [%d-%d] FAILED status=%d",
                   i + 1, (int)compiledSeg->subKernels.size(),
                   subKernel.startSlot_, subKernel.endSlot_, static_cast<int>(status));
+        const char* kernelDetail = LaunchContext::defaultContext()->errorReference()->errorMessage();
+        if (kernelDetail == nullptr || kernelDetail[0] == '\0') {
+          failSegment("sub-kernel returned status=" + std::to_string(static_cast<int>(status)));
+        }
         for (auto& kv : savedOutputs) delete kv.second;
         return status;
       }
@@ -1300,7 +1313,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         DSP_DIAG(EXECUTE, "TritonGraphBackend::executeSegment: CUDA launch error after sub-kernel [%d-%d]: %s",
                   subKernel.startSlot_, subKernel.endSlot_, cudaGetErrorString(launchErr));
         cudaGetLastError();
-        return Status::KERNEL_FAILURE;
+        return failSegment("CUDA launch error after sub-kernel");
       }
     }
 
@@ -1371,7 +1384,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     if (!orderedRangeExecutor_) {
       DSP_DIAG(FALLBACK, "TritonGraphBackend::executeSegment: missing ordered range executor for trailing gap [%d-%d]",
                 nextSlotToRun, seg.def.endSlot);
-      return Status::KERNEL_FAILURE;
+      return failSegment("ordered range executor is missing after sub-kernels");
     }
     auto gapStatus = orderedRangeExecutor_(nextSlotToRun, seg.def.endSlot);
     if (gapStatus != Status::OK) {
@@ -1488,7 +1501,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       DSP_DIAG(EXECUTE, "TritonGraphBackend::executeSegment: CUDA launch error for [%d-%d]: %s",
                 seg.def.startSlot, seg.def.endSlot, cudaGetErrorString(launchErr));
       cudaGetLastError();
-      return Status::KERNEL_FAILURE;
+      return failSegment("CUDA launch error after segment");
     }
   }
 

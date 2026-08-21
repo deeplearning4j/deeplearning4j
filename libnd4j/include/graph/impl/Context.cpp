@@ -761,6 +761,16 @@ void Context::setOutputArray(int index, NDArray *array, bool removable) {
   LaunchContext* contextBefore = _context;
 
   _fastpath_out[index] = array;
+  if (_fastpath_out[index] != array) {
+    THROW_EXCEPTION("Context::setOutputArray: stored output pointer differs from the supplied NDArray");
+  }
+  if (sd::env_isDebugAndVerbose()) {
+    auto* outputShapeInfo = array->shapeInfo();
+    sd_debug("Context::setOutputArray index=%i array=%p empty=%d extras=%lld ews=%lld length=%lld\n", index,
+             array, static_cast<int>(array->isEmpty()), static_cast<long long>(shape::extra(outputShapeInfo)),
+             static_cast<long long>(shape::elementWiseStride(outputShapeInfo)),
+             static_cast<long long>(array->lengthOf()));
+  }
 
   if (removable) _handles.emplace_back(array);
 

@@ -29,7 +29,6 @@ import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.ggml.GGMLModelImport;
-import org.nd4j.ggml.format.GGMLMetadata;
 import org.nd4j.shade.jackson.databind.JsonNode;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.node.ArrayNode;
@@ -38,11 +37,9 @@ import org.nd4j.shade.jackson.databind.node.ObjectNode;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * JVM-independent engine behind the SDX AOT exports: one place that loads a model
@@ -130,23 +127,17 @@ public final class SdxLlmCore implements SdxLlmModel {
     }
 
     /**
-     * Resolve a tokenizer: explicit file/directory first, then sidecar {@code tokenizer.json}
-     * next to the model, then GGUF-embedded tokenizer data (R1 / R8-2: no sidecar required
-     * when the GGUF carries {@code tokenizer.ggml.*} arrays).
+     * Resolve the canonical Hugging Face tokenizer. GGUF metadata is never used to
+     * synthesize tokenizer assets: tokenization must come from the model repository's
+     * tokenizer.json so its normalizer, pre-tokenizer, decoder, and added tokens stay
+     * consistent with the published model configuration.
      *
-     * <p>GGUF-embedded path: reads {@code tokenizer.ggml.model} (BPE type), {@code .tokens}
-     * (vocab array), {@code .merges} (merge rules), and BOS/EOS IDs from the GGUF metadata via
-     * {@link GGMLModelImport#inspectModel}, then constructs a HuggingFace tokenizer.json in
-     * memory and calls {@link HuggingFaceTokenizer#fromJson}. Qwen2/GPT-2 BPE GGUFs work with
-     * this path.</p>
-     *
-     * @param modelPath     path to the model file (checked for .gguf/.ggml extension)
-     * @param tokenizerPath optional explicit tokenizer path; {@code null} triggers auto-resolve
+     * @param modelPath     path to the model file
+     * @param tokenizerPath optional explicit tokenizer file or directory
      * @return a ready {@link Tokenizer}
-     * @throws IOException if no tokenizer source is found or construction fails
+     * @throws IOException if no canonical tokenizer source is found or construction fails
      */
     public static Tokenizer resolveTokenizer(String modelPath, String tokenizerPath) throws IOException {
-        // 1) Explicit tokenizer path: file or directory.
         if (tokenizerPath != null && !tokenizerPath.isEmpty()) {
             File f = new File(tokenizerPath);
             if (!f.exists()) {
@@ -155,243 +146,16 @@ public final class SdxLlmCore implements SdxLlmModel {
             return f.isDirectory() ? HuggingFaceTokenizer.fromDirectory(f) : HuggingFaceTokenizer.fromFile(f);
         }
 
-        // 2) Sidecar tokenizer.json in the model's parent directory.
         File parent = new File(modelPath).getAbsoluteFile().getParentFile();
         File tokenizerJson = new File(parent, "tokenizer.json");
-        if (tokenizerJson.exists()) {
-            log.debug("sdx-llm: loading sidecar tokenizer from {}", tokenizerJson);
+        if (tokenizerJson.isFile()) {
+            log.debug("sdx-llm: loading canonical Hugging Face tokenizer from {}", tokenizerJson);
             return HuggingFaceTokenizer.fromDirectory(parent);
         }
 
-        // 3) GGUF-embedded tokenizer: read tokenizer.ggml.* metadata and build on the fly.
-        String name = new File(modelPath).getName().toLowerCase(Locale.ROOT);
-        if (name.endsWith(".gguf") || name.endsWith(".ggml")) {
-            Tokenizer embedded = tryLoadEmbeddedGgufTokenizer(modelPath);
-            if (embedded != null) {
-                return embedded;
-            }
-        }
-
-        throw new IOException("No tokenizer found for " + modelPath
-                + " — pass --tokenizer <path> or place tokenizer.json next to the model."
-                + " (GGUF-embedded path tried but tokenizer.ggml.tokens was missing or empty.)");
-    }
-
-    /**
-     * Attempt to build a {@link HuggingFaceTokenizer} directly from the GGUF metadata arrays.
-     * Returns {@code null} (with a warning) when the required keys are absent.
-     */
-    @SuppressWarnings("unchecked")
-    private static Tokenizer tryLoadEmbeddedGgufTokenizer(String modelPath) throws IOException {
-        GGMLMetadata meta;
-        try {
-            meta = GGMLModelImport.inspectModel(new File(modelPath));
-        } catch (Exception e) {
-            log.warn("sdx-llm: GGUF inspect failed for tokenizer probe ({}): {}", modelPath, e.getMessage());
-            return null;
-        }
-
-        Map<String, Object> raw = meta.getRawMetadata();
-        if (raw == null || raw.isEmpty()) {
-            log.warn("sdx-llm: GGUF metadata empty for {}", modelPath);
-            return null;
-        }
-
-        Object tokensObj = raw.get("tokenizer.ggml.tokens");
-        if (!(tokensObj instanceof List) || ((List<?>) tokensObj).isEmpty()) {
-            log.warn("sdx-llm: GGUF has no tokenizer.ggml.tokens in {}" +
-                    " — found keys: {}", modelPath, raw.keySet());
-            return null;
-        }
-        List<String> tokens = (List<String>) tokensObj;
-
-        // Merges are required for BPE (gpt2 / qwen2 model type); SentencePiece (llama) does not use them.
-        Object mergesObj = raw.get("tokenizer.ggml.merges");
-        List<String> merges = (mergesObj instanceof List) ? (List<String>) mergesObj : new ArrayList<>();
-
-        // BOS/EOS/UNK from metadata or TokenizerInfo fallback.
-        GGMLMetadata.TokenizerInfo ti = meta.getTokenizerInfo();
-        int bosId = (ti != null) ? ti.getBosTokenId() : 1;
-        int eosId = (ti != null) ? ti.getEosTokenId() : 2;
-        String tokenizerModel = (ti != null && ti.getModel() != null) ? ti.getModel() : "gpt2";
-
-        // R8 item 4 fix: read token_type array so CONTROL/USER_DEFINED tokens get added as special.
-        // GGUFReader stores INT32 arrays as int[] primitives.
-        Object tokenTypeObj = raw.get("tokenizer.ggml.token_type");
-        int[] tokenTypes = null;
-        if (tokenTypeObj instanceof int[]) {
-            tokenTypes = (int[]) tokenTypeObj;
-        } else if (tokenTypeObj instanceof List) {
-            // Defensive: handle boxed List<Integer> if a future reader change boxes the array.
-            List<?> list = (List<?>) tokenTypeObj;
-            tokenTypes = new int[list.size()];
-            for (int i = 0; i < list.size(); i++) {
-                tokenTypes[i] = ((Number) list.get(i)).intValue();
-            }
-        }
-
-        int controlCount = 0;
-        if (tokenTypes != null) {
-            for (int t : tokenTypes) {
-                if (t != 1) controlCount++; // 1 = NORMAL in GGUF token_type
-            }
-        }
-        log.info("sdx-llm: building embedded tokenizer from GGUF ({} vocab={} merges={} model={} bos={} eos={} specialTokens={})",
-                modelPath, tokens.size(), merges.size(), tokenizerModel, bosId, eosId, controlCount);
-
-        String json = buildBpeTokenizerJson(tokens, merges, bosId, eosId, tokenizerModel, tokenTypes);
-        String tokenizerConfigJson = embeddedTokenizerConfigJson(raw, tokens, bosId, eosId);
-        try {
-            return HuggingFaceTokenizer.fromJson(json, tokenizerConfigJson);
-        } catch (Exception e) {
-            throw new IOException("GGUF-embedded tokenizer construction failed for " + modelPath
-                    + " — vocab=" + tokens.size() + " merges=" + merges.size(), e);
-        }
-    }
-
-    static String embeddedTokenizerConfigJson(Map<String, Object> metadata,
-                                                      List<String> tokens,
-                                                      int bosId, int eosId) {
-        Object template = metadata.get("tokenizer.chat_template");
-        if (!(template instanceof String) || ((String) template).isBlank()) {
-            return null;
-        }
-        ObjectNode config = MAPPER.createObjectNode();
-        config.put("chat_template", (String) template);
-        if (bosId >= 0 && bosId < tokens.size()) config.put("bos_token", tokens.get(bosId));
-        if (eosId >= 0 && eosId < tokens.size()) config.put("eos_token", tokens.get(eosId));
-        Object addBos = metadata.get("tokenizer.ggml.add_bos_token");
-        Object addEos = metadata.get("tokenizer.ggml.add_eos_token");
-        if (addBos instanceof Boolean) config.put("add_bos_token", (Boolean) addBos);
-        if (addEos instanceof Boolean) config.put("add_eos_token", (Boolean) addEos);
-        return config.toString();
-    }
-
-    /**
-     * Backward-compatible overload: no token_type array (e.g. older GGUF files or tests).
-     * Delegates to the full 6-arg form with {@code tokenTypes = null}.
-     *
-     * <p>The Rust HF tokenizers library (used by {@link HuggingFaceTokenizer#fromJson}) accepts
-     * the standard tokenizer.json schema with a {@code "model"} section. For BPE models the
-     * required structure is:
-     * <pre>
-     * {
-     *   "version": "1.0",
-     *   "model": {
-     *     "type": "BPE",
-     *     "vocab": { "<token>": id, ... },
-     *     "merges": [ "a b", ... ],
-     *     "byte_fallback": false,
-     *     "fuse_unk": false
-     *   },
-     *   "added_tokens": [],
-     *   "normalizer": null,
-     *   "pre_tokenizer": null,
-     *   "post_processor": null,
-     *   "decoder": null
-     * }
-     * </pre>
-     * GGUF {@code tokenizer.ggml.tokens} is a flat array indexed by token ID. The GGUF
-     * {@code tokenizer.ggml.merges} array contains merge rules as "a b" strings.</p>
-     */
-    static String buildBpeTokenizerJson(List<String> tokens, List<String> merges,
-                                        int bosId, int eosId, String ggmlModel) throws IOException {
-        return buildBpeTokenizerJson(tokens, merges, bosId, eosId, ggmlModel, null);
-    }
-
-    /**
-     * Build a minimal HuggingFace tokenizer.json from GGUF {@code tokenizer.ggml.*} arrays,
-     * including all special (non-NORMAL) tokens in {@code added_tokens}.
-     *
-     * <p><b>R8 item 4 fix:</b> GGUF stores a parallel {@code tokenizer.ggml.token_type} int
-     * array where {@code 1 = NORMAL} (regular BPE pieces) and any other value (
-     * {@code 2 = UNKNOWN}, {@code 3 = CONTROL}, {@code 4 = USER_DEFINED}, {@code 5 = UNUSED},
-     * {@code 6 = BYTE}) marks tokens that must appear in {@code added_tokens} with
-     * {@code "special": true} so the Rust HF tokenizer treats them as atomic units rather
-     * than splitting them character-by-character. Without this, {@code <|im_start|>} (type=3,
-     * id=151644 in Qwen2.5) tokenizes as 6 characters instead of one token, producing garbled
-     * output in sidecar-free (embedded tokenizer) mode.</p>
-     *
-     * @param tokenTypes parallel int array from {@code tokenizer.ggml.token_type}; may be
-     *                   {@code null} (treated as all-NORMAL).
-     */
-    static String buildBpeTokenizerJson(List<String> tokens, List<String> merges,
-                                        int bosId, int eosId, String ggmlModel,
-                                        int[] tokenTypes) throws IOException {
-        ObjectMapper m = new ObjectMapper();
-        ObjectNode root = m.createObjectNode();
-        root.put("version", "1.0");
-
-        // vocab map: token → id
-        ObjectNode vocab = m.createObjectNode();
-        for (int i = 0; i < tokens.size(); i++) {
-            vocab.put(tokens.get(i), i);
-        }
-
-        ObjectNode model = m.createObjectNode();
-        // "gpt2" and "qwen2" in GGUF both map to BPE in the HF tokenizers schema.
-        model.put("type", "BPE");
-        model.set("vocab", vocab);
-
-        ArrayNode mergesArr = m.createArrayNode();
-        if (merges != null) {
-            for (String merge : merges) {
-                mergesArr.add(merge);
-            }
-        }
-        model.set("merges", mergesArr);
-        model.put("byte_fallback", false);
-        model.put("fuse_unk", false);
-        root.set("model", model);
-
-        // added_tokens: BOS + EOS always; then every token whose type != 1 (NORMAL).
-        // GGUF token_type values: 1=NORMAL, 2=UNKNOWN, 3=CONTROL, 4=USER_DEFINED,
-        // 5=UNUSED, 6=BYTE. All non-NORMAL tokens must be in added_tokens so the Rust
-        // HF tokenizer treats them as atomic. This fixes ChatML delimiters like
-        // <|im_start|> (id=151644, type=3) being split character-by-character.
-        ArrayNode addedTokens = m.createArrayNode();
-        Set<Integer> alreadyAdded = new HashSet<>();
-
-        if (bosId >= 0 && bosId < tokens.size()) {
-            addedTokens.add(makeAddedToken(m, bosId, tokens.get(bosId)));
-            alreadyAdded.add(bosId);
-        }
-        if (eosId >= 0 && eosId < tokens.size() && eosId != bosId) {
-            addedTokens.add(makeAddedToken(m, eosId, tokens.get(eosId)));
-            alreadyAdded.add(eosId);
-        }
-
-        // Sweep all tokens: add any with non-NORMAL type that aren't already added.
-        if (tokenTypes != null) {
-            int limit = Math.min(tokenTypes.length, tokens.size());
-            for (int i = 0; i < limit; i++) {
-                if (tokenTypes[i] != 1 && !alreadyAdded.contains(i)) {
-                    addedTokens.add(makeAddedToken(m, i, tokens.get(i)));
-                    alreadyAdded.add(i);
-                }
-            }
-        }
-        root.set("added_tokens", addedTokens);
-
-        root.putNull("normalizer");
-        root.putNull("pre_tokenizer");
-        root.putNull("post_processor");
-        root.putNull("decoder");
-
-        return m.writeValueAsString(root);
-    }
-
-    /** Build a single added_tokens entry with standard fields. */
-    private static ObjectNode makeAddedToken(ObjectMapper m, int id, String content) {
-        ObjectNode node = m.createObjectNode();
-        node.put("id", id);
-        node.put("content", content);
-        node.put("single_word", false);
-        node.put("lstrip", false);
-        node.put("rstrip", false);
-        node.put("normalized", false);
-        node.put("special", true);
-        return node;
+        throw new IOException("Canonical Hugging Face tokenizer.json is required for " + modelPath
+                + ". Provide tokenizerPath or place the repository tokenizer.json beside the model; "
+                + "GGUF metadata tokenizer reconstruction is disabled.");
     }
 
     /**
@@ -567,6 +331,7 @@ public final class SdxLlmCore implements SdxLlmModel {
             JsonNode args = function.has("arguments")
                     ? function.get("arguments") : function.get("args");
             Map<String, Object> arguments;
+
             if (args == null || args.isNull()) {
                 arguments = Map.of();
             } else if (args.isTextual()) {

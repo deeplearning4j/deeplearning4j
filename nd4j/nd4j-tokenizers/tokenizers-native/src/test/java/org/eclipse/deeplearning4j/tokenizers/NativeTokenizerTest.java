@@ -41,6 +41,26 @@ public class NativeTokenizerTest {
                     + "}"
                     + "}";
 
+    private static final String BYTE_LEVEL_TOKENIZER_JSON =
+            "{"
+                    + "\"version\":\"1.0\","
+                    + "\"truncation\":null,"
+                    + "\"padding\":null,"
+                    + "\"added_tokens\":[],"
+                    + "\"normalizer\":null,"
+                    + "\"pre_tokenizer\":{\"type\":\"ByteLevel\","
+                    + "\"add_prefix_space\":false,\"trim_offsets\":false,\"use_regex\":false},"
+                    + "\"post_processor\":null,"
+                    + "\"decoder\":{\"type\":\"ByteLevel\","
+                    + "\"add_prefix_space\":false,\"trim_offsets\":false,\"use_regex\":false},"
+                    + "\"model\":{"
+                    + "\"type\":\"BPE\","
+                    + "\"dropout\":null,\"unk_token\":null,\"continuing_subword_prefix\":null,"
+                    + "\"end_of_word_suffix\":null,\"fuse_unk\":false,"
+                    + "\"vocab\":{\"ĠHello\":0,\"Ã©\":1},\"merges\":[]"
+                    + "}"
+                    + "}";
+
     @Test
     public void encodesDecodesAndOwnsNativeResources() {
         NativeTokenizer tokenizer = NativeTokenizer.fromJson(TOKENIZER_JSON);
@@ -51,6 +71,10 @@ public class NativeTokenizerTest {
         assertEquals(-1, tokenizer.tokenToId("missing"));
         assertArrayEquals(new int[] {1, 2},
                 tokenizer.encode("hello world", false));
+        NativeTokenizer.EncodedText detailed =
+                tokenizer.encodeWithTokens("hello world", false);
+        assertArrayEquals(new int[] {1, 2}, detailed.ids());
+        assertArrayEquals(new String[] {"hello", "world"}, detailed.tokens());
         assertArrayEquals(new long[] {1L, 2L},
                 tokenizer.encodeLong("hello world", false));
         assertEquals("hello world",
@@ -94,6 +118,17 @@ public class NativeTokenizerTest {
     }
 
     @Test
+    public void decodesByteLevelTokensToUnicodeThroughNativeFfi() {
+        try (NativeTokenizer tokenizer = NativeTokenizer.fromJson(BYTE_LEVEL_TOKENIZER_JSON)) {
+            assertEquals(" Helloé",
+                    tokenizer.decode(new int[] {0, 1}, true));
+            NativeTokenizer.DecodeStream stream = tokenizer.newDecodeStream(true);
+            assertEquals(" Helloé", stream.step(0L) + stream.step(1L));
+            stream.close();
+        }
+    }
+
+    @Test
     public void rejectsInvalidTokenizerJsonWithNativeError() {
         IllegalStateException error = assertThrows(
                 IllegalStateException.class,
@@ -114,10 +149,10 @@ public class NativeTokenizerTest {
                     config,
                     List.of(
                             NativeTokenizer.ChatMessage.system("Be concise."),
-                            NativeTokenizer.ChatMessage.user("quoted \"value\"")),
+                            NativeTokenizer.ChatMessage.user("quoted \"value\" — café 日本語")),
                     true);
             assertEquals(
-                    "<s>system:Be concise.\nuser:quoted \"value\"\nassistant:",
+                    "<s>system:Be concise.\nuser:quoted \"value\" — café 日本語\nassistant:",
                     rendered);
         }
     }
@@ -132,14 +167,14 @@ public class NativeTokenizerTest {
                 + "{% if add_generation_prompt %}assistant:{% endif %}\""
                 + "}";
         String androidContext = "{"
-                + "\"messages\":[{\"role\":\"user\",\"content\":\"Reply with OK.\"}],"
+                + "\"messages\":[{\"role\":\"user\",\"content\":\"Reply café 日本語.\"}],"
                 + "\"tools\":[],"
                 + "\"tool_choice\":\"none\","
                 + "\"add_generation_prompt\":true"
                 + "}";
 
         assertEquals(
-                "<s>user:Reply with OK.\ntools=0;choice=none;assistant:",
+                "<s>user:Reply café 日本語.\ntools=0;choice=none;assistant:",
                 NativeTokenizer.renderChatTemplateContext(config, androidContext));
     }
 

@@ -234,11 +234,26 @@ public class DynamicShapePlanExecutor implements Closeable {
     private int cachedJitModeInt = -1;       // -1 = leave default
     private boolean cachedExecTiming;
     private boolean cachedTraceEnabled;
+    /** Explicit runtime diagnostic overrides survive native plan compilation, reset,
+     *  and shape-keyed handle swaps. null means use the JVM property default. */
+    private Boolean executionTimingOverride;
+    private Boolean traceEnabledOverride;
     private int cachedEffectiveGraphModeCode = -1;   // -1 = leave default
     private final Set<Long> configuredHandleAddresses = new HashSet<>();
 
     /** Cache pins owned by this executor, including both sides of a frozen prefill/decode switch. */
     private final Map<Long, Pointer> pinnedPlanHandles = new HashMap<>();
+
+    /**
+     * Java external-input owners retained by each pinned native plan handle.
+     *
+     * <p>A frozen executor can alternate between shape-keyed native plans (for example VLM
+     * prefill and decode). The active execution replaces {@link #externalInputs}, but the
+     * inactive pinned plan still owns its previously-bound input buffers through captured native
+     * pointers. Keep one Java snapshot per pinned handle so per-execution cache cleanup cannot
+     * close an inactive plan's buffers before that handle is unpinned.</p>
+     */
+    private final Map<Long, INDArray[]> retainedExternalInputsByPlanHandle = new HashMap<>();
 
     /**
      * External inputs that are mutable at runtime even though their SameDiff
@@ -954,6 +969,99 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     /**
+     * Return whether an external-input snapshot is safe for pointer-stable frozen-plan reuse.
+     *
+     * <p>A strong Java reference is not a liveness guarantee: cleanup may close the array's
+     * {@link DataBuffer} while the executor still retains the {@link INDArray}. Reusing such a
+     * snapshot would fail on the first in-place update and leave the poisoned frozen plan cached
+     * across subsequent requests.</p>
+     *
+     * @param candidates external inputs captured by a frozen plan
+     * @return true only when the snapshot is non-empty and every array and DataBuffer is open
+     */
+    public static boolean areExternalInputsReusable(INDArray[] candidates) {
+        if (candidates == null || candidates.length == 0) return false;
+        for (INDArray candidate : candidates) {
+            try {
+                if (candidate == null || candidate.wasClosed()) return false;
+                DataBuffer buffer = candidate.data();
+                if (buffer == null || buffer.wasClosed()) return false;
+            } catch (RuntimeException e) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Retain the Java external-input owners for one pinned native plan handle.
+     * The array container is copied because the frozen fast path reuses a mutable working array
+     * while alternating between shape-keyed plans.
+     */
+    private void retainExternalInputsForPlan(long planHandleAddress, INDArray[] inputs) {
+        if (planHandleAddress == 0 || inputs == null) return;
+
+        INDArray[] retained = retainedExternalInputsByPlanHandle.get(planHandleAddress);
+        if (retained == null || retained.length != inputs.length) {
+            retainedExternalInputsByPlanHandle.put(
+                    planHandleAddress, Arrays.copyOf(inputs, inputs.length));
+            return;
+        }
+
+        for (int i = 0; i < inputs.length; i++) {
+            retained[i] = inputs[i];
+        }
+    }
+
+    /**
+     * Add every live external-input buffer owned by this executor's pinned native plans to a
+     * cleanup protection set.
+     *
+     * <p>Per-execution SameDiff cleanup is thread-local but an executor may have multiple pinned
+     * shape plans. Protecting only the active call's placeholders can close inputs retained by an
+     * inactive plan (for example the VLM decode attention mask while page prefill runs).</p>
+     */
+    public void collectRetainedExternalInputBuffers(
+            IdentityHashMap<DataBuffer, Boolean> protectedBuffers) {
+        if (protectedBuffers == null) return;
+
+        for (INDArray[] inputs : retainedExternalInputsByPlanHandle.values()) {
+            collectLiveInputBuffers(inputs, protectedBuffers);
+        }
+        // Include the current inputs before the first native handle snapshot is published.
+        collectLiveInputBuffers(externalInputs, protectedBuffers);
+    }
+
+    /** Whether the exact INDArray is retained by any currently pinned native plan. */
+    public boolean isRetainedExternalInput(INDArray candidate) {
+        if (candidate == null) return false;
+        for (INDArray[] inputs : retainedExternalInputsByPlanHandle.values()) {
+            if (inputs == null) continue;
+            for (INDArray input : inputs) {
+                if (input == candidate) return true;
+            }
+        }
+        if (externalInputs != null) {
+            for (INDArray input : externalInputs) {
+                if (input == candidate) return true;
+            }
+        }
+        return false;
+    }
+
+    private static void collectLiveInputBuffers(
+            INDArray[] inputs, IdentityHashMap<DataBuffer, Boolean> protectedBuffers) {
+        if (inputs == null) return;
+        for (INDArray input : inputs) {
+            if (!isArrayLive(input)) continue;
+            DataBuffer buffer = input.data();
+            if (buffer != null) {
+                protectedBuffers.put(buffer, Boolean.TRUE);
+            }
+        }
+    }
+
+    /**
      * Override a specific external input slot with a new array.
      * Used by DspHandle to inject buffers directly into the plan's ext input array.
      * Package-private — only accessible from the execution package.
@@ -967,6 +1075,9 @@ public class DynamicShapePlanExecutor implements Closeable {
                     " len=" + (externalInputs == null ? 0 : externalInputs.length));
         }
         externalInputs[extIdx] = arr;
+        if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
+            retainExternalInputsForPlan(nativePlanHandle.address(), externalInputs);
+        }
     }
 
     /**
@@ -1108,6 +1219,22 @@ public class DynamicShapePlanExecutor implements Closeable {
      * a fresh entry is the only correct reset path.
      */
     public void resetForNextPage() {
+        resetForNextPage(true);
+    }
+
+    /**
+     * Reset executor state for next-page reuse, optionally deferring cleanup of the shared
+     * thread-local {@link ArrayCacheMemoryMgr} state.
+     *
+     * <p>The array cache is shared by every SameDiff executor on the current thread. A component
+     * in a multi-model pipeline must therefore pass {@code false}, reset all disposable executors,
+     * and let the pipeline owner perform one cache sweep with every surviving model buffer
+     * protected. Sweeping here with only this executor's protections can close another executor's
+     * retained external inputs.</p>
+     *
+     * @param clearSharedArrayCache whether this reset owns the complete thread-local cache boundary
+     */
+    public void resetForNextPage(boolean clearSharedArrayCache) {
         log.info("DSP resetForNextPage: releasing GPU intermediates and destroying native plan handle");
         cachedInputArrays = null;
         cachedInputOpaques = null;
@@ -1131,6 +1258,10 @@ public class DynamicShapePlanExecutor implements Closeable {
         // for whatever shape the next page uses. Plan phases are linear and immutable, so we
         // cannot reuse a frozen plan for a different shape.
         freeNativePlanHandle("PAGE_RESET");
+        // The destroyed plan no longer owns external inputs. Drop these references before a
+        // pipeline-level cache sweep so buffers from the reset executor are reclaimable, while
+        // preserved executors can still publish their live inputs as protected.
+        externalInputs = null;
         // Decrement global frozen-executor count before resetting Java frozen state.
         // releaseGpuIntermediates() above destroyed the CUDA graphs; the baked TAD pointers
         // from the old plan no longer exist. It is safe to allow clearTADCache again.
@@ -1146,18 +1277,19 @@ public class DynamicShapePlanExecutor implements Closeable {
         executionCount = 0;
         lastDispatchedShapeHash = 0;
 
-        // Drain ArrayCacheMemoryMgr state: deferred close buffers accumulate across pages
-        // because nothing drains them between page boundaries. The cache itself holds arrays
-        // that will never be reused (different shapes per page). Disable the cache flag so
-        // the next executeDynamicShapePlanBased() starts from a clean state.
-        // IMPORTANT: Pass model constant/variable buffers as protected so that force-closing
-        // "constant-poisoned" intermediates doesn't destroy buffers the native DSP plan still
-        // references. Without this, 60+ model constants get closed → stale buffer scan fails
-        // → CUDA graph replay can't proceed → 13x slowdown.
-        IdentityHashMap<DataBuffer, Boolean> protectedModelBuffers = collectProtectedModelBuffers();
-        ArrayCacheMemoryMgr.closeDeferredBuffers(protectedModelBuffers);
-        ArrayCacheMemoryMgr.clearCacheState();
-        ArrayCacheMemoryMgr.setEnableCache(false);
+        if (clearSharedArrayCache) {
+            // Drain ArrayCacheMemoryMgr state only when this reset owns the entire thread-local
+            // cache boundary. Multi-model pipelines defer this sweep until every disposable
+            // executor is reset, then protect the external inputs of executors that survive.
+            // IMPORTANT: Pass model constant/variable buffers as protected so that force-closing
+            // "constant-poisoned" intermediates doesn't destroy buffers the native DSP plan still
+            // references. Without this, 60+ model constants get closed → stale buffer scan fails
+            // → CUDA graph replay can't proceed → 13x slowdown.
+            IdentityHashMap<DataBuffer, Boolean> protectedModelBuffers = collectProtectedModelBuffers();
+            ArrayCacheMemoryMgr.closeDeferredBuffers(protectedModelBuffers);
+            ArrayCacheMemoryMgr.clearCacheState();
+            ArrayCacheMemoryMgr.setEnableCache(false);
+        }
         if (currentPlan != null) {
             currentPlan.clearAllShapeCaches();
         }
@@ -1250,6 +1382,8 @@ public class DynamicShapePlanExecutor implements Closeable {
      * Enable/disable execution timing breakdown logging on the native plan.
      */
     public void setExecutionTimingEnabled(boolean enabled) {
+        executionTimingOverride = enabled;
+        cachedExecTiming = enabled;
         if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
             NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
             nativeOps.setPlanExecutionTimingEnabled(nativePlanHandle, enabled);
@@ -1260,6 +1394,8 @@ public class DynamicShapePlanExecutor implements Closeable {
      * Enable/disable trace logging for DSP execution decisions.
      */
     public void setTraceEnabled(boolean enabled) {
+        traceEnabledOverride = enabled;
+        cachedTraceEnabled = enabled;
         if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
             NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
             nativeOps.setPlanTraceEnabled(nativePlanHandle, enabled);
@@ -1482,9 +1618,13 @@ public class DynamicShapePlanExecutor implements Closeable {
                 cachedJitModeInt = 0;  // GRAPH_ONLY fallback
             }
 
-            cachedExecTiming = "true".equalsIgnoreCase(
-                    System.getProperty(ND4JSystemProperties.DSP_EXECUTION_TIMING, "false"));
-            cachedTraceEnabled = System.getProperty(ND4JSystemProperties.DSP_TRACE) != null;
+            cachedExecTiming = executionTimingOverride != null
+                    ? executionTimingOverride
+                    : "true".equalsIgnoreCase(
+                            System.getProperty(ND4JSystemProperties.DSP_EXECUTION_TIMING, "false"));
+            cachedTraceEnabled = traceEnabledOverride != null
+                    ? traceEnabledOverride
+                    : System.getProperty(ND4JSystemProperties.DSP_TRACE) != null;
 
             nativePlanSource = plan;
             nativeExecutorFailed = false;
@@ -1956,20 +2096,16 @@ public class DynamicShapePlanExecutor implements Closeable {
             }
         }
 
-        if (cachedExecTiming) {
-            try {
-                nativeOps.setPlanExecutionTimingEnabled(handle, true);
-            } catch (UnsupportedOperationException e) {
-                // Backend doesn't support timing
-            }
+        try {
+            nativeOps.setPlanExecutionTimingEnabled(handle, cachedExecTiming);
+        } catch (UnsupportedOperationException e) {
+            // Backend doesn't support timing
         }
 
-        if (cachedTraceEnabled) {
-            try {
-                nativeOps.setPlanTraceEnabled(handle, true);
-            } catch (UnsupportedOperationException e) {
-                // Backend doesn't support trace
-            }
+        try {
+            nativeOps.setPlanTraceEnabled(handle, cachedTraceEnabled);
+        } catch (UnsupportedOperationException e) {
+            // Backend doesn't support trace
         }
 
         // NOTE: graphExecutionMode is part of the cache key — each mode gets its
@@ -2986,6 +3122,9 @@ public class DynamicShapePlanExecutor implements Closeable {
         // Publish the resolved external input array so snapshots and lifecycle
         // checks see the same buffers that will be bound into the native context.
         this.externalInputs = extInputs;
+        if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
+            retainExternalInputsForPlan(nativePlanHandle.address(), extInputs);
+        }
 
         // Debug metadata only; value reductions would force host reads on CUDA.
         if (Nd4j.getEnvironment().isDebug() && extInputs.length > 1331 && extInputs[1331] != null) {
@@ -4452,6 +4591,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             log.debug("    freeNativePlanHandle: cache cleanup failed (non-fatal): {}", e.getMessage());
         }
         pinnedPlanHandles.clear();
+        retainedExternalInputsByPlanHandle.clear();
         nativePlanHandle = null;
         nativePlanSource = null;
         configuredGraphExecutionMode = GraphExecutionMode.AUTO;

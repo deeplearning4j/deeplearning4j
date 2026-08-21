@@ -22,10 +22,10 @@ The active CPU/AOT symlink targets and one rollback generation are preserved by
 default. Every content-addressed stage referenced by a retained generation is
 also preserved, plus one unreferenced fallback stage by default. Superseded
 immutable publications, orphan managed/object stages beyond that bound, and
-explicitly named disposable state from interrupted builds are removed. Stable
-native CMake worktrees, shared checksum-verified native caches, accelerator
-native worktrees/dist artifacts, ccache, and final APK candidates are outside
-this script's deletion scope.
+explicitly named disposable state from interrupted builds are removed. The stable
+native CMake workspace, shared checksum-verified native caches, accelerator
+native build/dist artifacts, ccache, and final APK candidates are outside this
+script's deletion scope.
 USAGE
 }
 

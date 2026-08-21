@@ -3,6 +3,7 @@ package org.nd4j.dsp.model;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -119,24 +120,149 @@ class HuggingFaceGgmlResolverTest {
                 "https://huggingface.co/owner/model/resolve/" + SHA
                         + "/tokenizer.json?download=true",
                 tokenizer.getDownloadUri().toASCIIString());
-        assertEquals("config.json", selected.getTokenizerAssets().get(2).getName());
-        assertEquals("chat_template.jinja", selected.getTokenizerAssets().get(3).getName());
+        assertEquals("chat_template.jinja", selected.getTokenizerAssets().get(2).getName());
+        assertEquals("config.json", selected.getTokenizerAssets().get(3).getName());
     }
 
     @Test
-    void modelDirectoryTokenizerAssetsTakePrecedenceOverRepositoryRoot() {
-        HuggingFaceGgmlResolver.Candidate selected = HuggingFaceGgmlResolver.resolve(
+    void candidateUsesSeparatelyPinnedBaseModelConfigurationWithoutMovingWeights() {
+        String configurationSha = "dddddddddddddddddddddddddddddddddddddddd";
+        HuggingFaceGgmlResolver.Discovery discovery = HuggingFaceGgmlResolver.resolve(
+                HuggingFaceGgmlResolver.parse("unsloth/Qwen3.5-0.8B-GGUF"),
+                SHA,
+                List.of(new HuggingFaceGgmlResolver.RepositoryFile(
+                        "Qwen3.5-0.8B-Q4_K_M.gguf", 1234, CONTENT_SHA256)),
+                "Qwen/Qwen3.5-0.8B",
+                configurationSha,
+                List.of(
+                        new HuggingFaceGgmlResolver.RepositoryFile("tokenizer.json", 50),
+                        new HuggingFaceGgmlResolver.RepositoryFile("tokenizer_config.json", 60),
+                        new HuggingFaceGgmlResolver.RepositoryFile("config.json", 40),
+                        new HuggingFaceGgmlResolver.RepositoryFile("chat_template.jinja", 30)));
+
+        HuggingFaceGgmlResolver.Candidate selected =
+                discovery.selectedCandidate().orElseThrow();
+        assertEquals("unsloth/Qwen3.5-0.8B-GGUF", discovery.getReference().getRepository());
+        assertEquals(SHA, discovery.getResolvedRevision());
+        assertEquals(1, discovery.getAssetSources().size());
+        assertEquals("Qwen/Qwen3.5-0.8B", discovery.getAssetSources().get(0).getRepository());
+        assertEquals(configurationSha, discovery.getAssetSources().get(0).getResolvedRevision());
+        assertEquals(
+                "https://huggingface.co/unsloth/Qwen3.5-0.8B-GGUF/resolve/" + SHA
+                        + "/Qwen3.5-0.8B-Q4_K_M.gguf?download=true",
+                selected.getDownloadUri().toASCIIString());
+        assertEquals(
+                "https://huggingface.co/Qwen/Qwen3.5-0.8B/resolve/" + configurationSha
+                        + "/tokenizer.json?download=true",
+                selected.getTokenizerAssets().get(0).getDownloadUri().toASCIIString());
+        assertEquals(
+                "Qwen/Qwen3.5-0.8B",
+                selected.getTokenizerAssets().get(0).getSourceRepository());
+        assertEquals(
+                configurationSha,
+                selected.getTokenizerAssets().get(0).getSourceRevision());
+    }
+
+    @Test
+    void resolvesEachCanonicalAssetFromItsNearestPinnedUpstreamRepository() {
+        String configurationSha = "dddddddddddddddddddddddddddddddddddddddd";
+        String tokenizerSha = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+        HuggingFaceGgmlResolver.Discovery discovery = HuggingFaceGgmlResolver.resolve(
+                HuggingFaceGgmlResolver.parse("vendor/chat-GGUF"),
+                SHA,
+                List.of(new HuggingFaceGgmlResolver.RepositoryFile("chat-Q4.gguf", 1234)),
+                List.of(
+                        new HuggingFaceGgmlResolver.RepositorySnapshot(
+                                "vendor/chat-GGUF",
+                                SHA,
+                                List.of(
+                                        new HuggingFaceGgmlResolver.RepositoryFile(
+                                                "chat-Q4.gguf", 1234),
+                                        new HuggingFaceGgmlResolver.RepositoryFile(
+                                                "generation_config.json", 12))),
+                        new HuggingFaceGgmlResolver.RepositorySnapshot(
+                                "vendor/chat-config",
+                                configurationSha,
+                                List.of(
+                                        new HuggingFaceGgmlResolver.RepositoryFile("config.json", 42),
+                                        new HuggingFaceGgmlResolver.RepositoryFile(
+                                                "chat_template.jinja", 20))),
+                        new HuggingFaceGgmlResolver.RepositorySnapshot(
+                                "vendor/chat-tokenizer",
+                                tokenizerSha,
+                                List.of(
+                                        new HuggingFaceGgmlResolver.RepositoryFile(
+                                                "tokenizer.json", 100),
+                                        new HuggingFaceGgmlResolver.RepositoryFile(
+                                                "tokenizer_config.json", 30),
+                                        new HuggingFaceGgmlResolver.RepositoryFile(
+                                                "added_tokens.json", 10)))));
+
+        HuggingFaceGgmlResolver.Candidate candidate =
+                discovery.selectedCandidate().orElseThrow();
+        assertEquals(
+                List.of("vendor/chat-GGUF", "vendor/chat-config", "vendor/chat-tokenizer"),
+                discovery.getAssetSources().stream()
+                        .map(HuggingFaceGgmlResolver.AssetSource::getRepository)
+                        .collect(Collectors.toList()));
+        HuggingFaceGgmlResolver.TokenizerAsset tokenizer = candidate.getTokenizerAssets().stream()
+                .filter(asset -> "tokenizer.json".equals(asset.getName()))
+                .findFirst().orElseThrow();
+        HuggingFaceGgmlResolver.TokenizerAsset config = candidate.getTokenizerAssets().stream()
+                .filter(asset -> "config.json".equals(asset.getName()))
+                .findFirst().orElseThrow();
+        HuggingFaceGgmlResolver.TokenizerAsset generation = candidate.getTokenizerAssets().stream()
+                .filter(asset -> "generation_config.json".equals(asset.getName()))
+                .findFirst().orElseThrow();
+        assertEquals("vendor/chat-tokenizer", tokenizer.getSourceRepository());
+        assertEquals(tokenizerSha, tokenizer.getSourceRevision());
+        assertEquals("vendor/chat-config", config.getSourceRepository());
+        assertEquals(configurationSha, config.getSourceRevision());
+        assertEquals("vendor/chat-GGUF", generation.getSourceRepository());
+        assertEquals(SHA, generation.getSourceRevision());
+    }
+
+    @Test
+    void repositoryRootConfigurationIsSharedAcrossEveryModelCandidate() {
+        HuggingFaceGgmlResolver.Discovery discovery = HuggingFaceGgmlResolver.resolve(
                 HuggingFaceGgmlResolver.parse("owner/model"),
                 SHA,
                 List.of(
-                        new HuggingFaceGgmlResolver.RepositoryFile("mobile/model.gguf", 1234),
+                        new HuggingFaceGgmlResolver.RepositoryFile("mobile/model-Q4.gguf", 1234),
+                        new HuggingFaceGgmlResolver.RepositoryFile("desktop/model-Q8.gguf", 2234),
                         new HuggingFaceGgmlResolver.RepositoryFile("tokenizer.json", 10),
+                        new HuggingFaceGgmlResolver.RepositoryFile("tokenizer_config.json", 30),
+                        new HuggingFaceGgmlResolver.RepositoryFile("config.json", 40),
                         new HuggingFaceGgmlResolver.RepositoryFile("mobile/tokenizer.json", 20),
-                        new HuggingFaceGgmlResolver.RepositoryFile("mobile/tokenizer_config.json", 30)))
-                .selectedCandidate().orElseThrow();
+                        new HuggingFaceGgmlResolver.RepositoryFile("added_tokens.json", 15),
+                        new HuggingFaceGgmlResolver.RepositoryFile("text-generation.json", 25)));
 
-        assertEquals("mobile/tokenizer.json", selected.getTokenizerAssets().get(0).getPath());
-        assertEquals("mobile/tokenizer_config.json", selected.getTokenizerAssets().get(1).getPath());
+        assertEquals(2, discovery.getCandidates().size());
+        List<String> expectedPaths = List.of(
+                "tokenizer.json", "tokenizer_config.json", "added_tokens.json",
+                "config.json", "text-generation.json");
+        for (HuggingFaceGgmlResolver.Candidate candidate : discovery.getCandidates()) {
+            assertEquals(expectedPaths, candidate.getTokenizerAssets().stream()
+                    .map(HuggingFaceGgmlResolver.TokenizerAsset::getPath)
+                    .collect(Collectors.toList()));
+        }
+    }
+
+    @Test
+    void ambiguousNestedConfigurationFailsInsteadOfChoosingAFlavorDirectory() {
+        IllegalArgumentException failure = assertThrows(
+                IllegalArgumentException.class,
+                () -> HuggingFaceGgmlResolver.resolve(
+                        HuggingFaceGgmlResolver.parse("owner/model"),
+                        SHA,
+                        List.of(
+                                new HuggingFaceGgmlResolver.RepositoryFile("mobile/model.gguf", 1234),
+                                new HuggingFaceGgmlResolver.RepositoryFile("mobile/tokenizer.json", 20),
+                                new HuggingFaceGgmlResolver.RepositoryFile("desktop/tokenizer.json", 21))));
+
+        assertTrue(failure.getMessage().contains("ambiguous tokenizer.json"));
+        assertTrue(failure.getMessage().contains("desktop/tokenizer.json"));
+        assertTrue(failure.getMessage().contains("mobile/tokenizer.json"));
     }
 
     @Test

@@ -85,6 +85,22 @@ bool ArmHybridGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end
   return true;
 }
 
+bool ArmHybridGraphBackend::canResolveSegment(const GraphBackendRequest& request,
+                                              NativeSlot* slots, int start, int end) {
+  // In ARM hybrid mode, capability partitioning may isolate one MLIR-mappable
+  // operation when the NNAPI device rejects that operation at model
+  // classification/compilation time. Treat that operation as a real ARM
+  // compiler candidate so the ordered backend cascade can lower it directly;
+  // otherwise the segment remains unresolved even though the ARM compiler can
+  // represent the operation.
+  if (request.executionMode == GraphExecutionMode::GEM_ARM_HYBRID &&
+      start == end && slots != nullptr && start >= 0 &&
+      CpuIRBuilder::isMlirMappable(slots[start].ident.opName)) {
+    return true;
+  }
+  return canFuseSegment(slots, start, end);
+}
+
 sd::mlir_runtime::MLIRCompileOptions ArmHybridGraphBackend::getArmCompileOptions() const {
   auto opts = sd::mlir_runtime::MLIREngine::getArmAndroidDefaults();
   // Override AOT mode — for JIT execution we don't want AOT

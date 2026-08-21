@@ -569,6 +569,23 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
           }
           int shapeEquals = shape::equalsSoft(out, arrayShapeInfo);
           int arrayEmpty = array->isEmpty();
+          int expectedEmpty = shape::isEmptyConst(out);
+          if (sd::env_isDebugAndVerbose()) {
+            sd_debug("OP PREPARE OUTPUTS: op=%s index=%zu array=%p expectedEmpty=%d actualEmpty=%d expectedExtras=%lld actualExtras=%lld expectedEws=%lld actualEws=%lld\n",
+                     getOpName()->c_str(), idx, array, expectedEmpty, arrayEmpty,
+                     static_cast<long long>(shape::extra(out)), static_cast<long long>(shape::extra(arrayShapeInfo)),
+                     static_cast<long long>(shape::elementWiseStride(out)),
+                     static_cast<long long>(shape::elementWiseStride(arrayShapeInfo)));
+          }
+          if (expectedEmpty != arrayEmpty) {
+            auto expectedShapeInfo = ShapeUtils::shapeInfoAsString(out);
+            auto actualShapeInfo = ShapeUtils::shapeInfoAsString(arrayShapeInfo);
+            delete outSha;
+            std::string errorMessage = "OP PREPARE OUTPUTS: preallocated fast-path output empty status differs from calculated output for op ";
+            errorMessage += *getOpName();
+            errorMessage += "; expected=" + expectedShapeInfo + "; actual=" + actualShapeInfo;
+            THROW_EXCEPTION(errorMessage.c_str());
+          }
           // checking out shape equality
           if (!shapeEquals) {
             auto eShape = ShapeUtils::shapeAsString(out);
@@ -1035,15 +1052,19 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
   // correctly by calculateOutputShape; the output array is already allocated as empty.
   // Executing the kernel would crash on NULL DataBuffer dereference.
   if (this->emptyHandling() == samediff::EmptyHandling::EMPTY_SKIP) {
-    bool hasEmptyInput = false;
+    int firstEmptyInput = -1;
     for (int i = 0; i < block->width(); i++) {
       auto input = block->array(i);
       if (input != nullptr && input->isEmpty()) {
-        hasEmptyInput = true;
+        firstEmptyInput = i;
         break;
       }
     }
-    if (hasEmptyInput) {
+    if (firstEmptyInput >= 0) {
+      if (sd::env_isDebugAndVerbose()) {
+        sd_debug("node_%i (%s): EMPTY_SKIP short-circuit on empty input %i\n", block->nodeId(), _safeOpName,
+                 firstEmptyInput);
+      }
       return sd::Status::OK;
     }
   }

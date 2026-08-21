@@ -100,6 +100,9 @@ NATIVE_SOURCE_ROOTS=(
   pom.xml
   build-scripts/release/native-platform.sh
   libnd4j
+  # The CPU/NNAPI build excludes Vulkan sources, while CMake regenerates this catalog
+  # in-place during configuration. It is build output, not an input to this producer.
+  ':(exclude)libnd4j/include/graph/vulkan/VulkanKernelEmitterCatalog.cpp'
 )
 MANAGED_SOURCE_ROOTS=(
   pom.xml
@@ -197,9 +200,30 @@ cleanup_paths() {
 }
 trap cleanup_paths EXIT
 
+write_source_manifest_text() {
+  local output="${1:?output path is required}"
+  shift
+  local relative mode digest
+  : >"$output"
+  while IFS= read -r -d '' relative &&
+    IFS= read -r -d '' mode &&
+    IFS= read -r -d '' digest; do
+    printf '%s\t%s\t%s\n' "$relative" "$mode" "$digest" >>"$output"
+  done < <(sdx_git_source_manifest "$@")
+}
+
 SOURCE_MANIFEST_SHA256="$(sdx_git_source_manifest_sha256 "$DL4J_ROOT" "${RUNTIME_SOURCE_ROOTS[@]}")"
+SOURCE_MANIFEST_BEFORE="$(mktemp "$WORK_DIR/runtime-source-manifest.before.XXXXXXXX")"
+CLEANUP_PATHS+=("$SOURCE_MANIFEST_BEFORE")
+write_source_manifest_text "$SOURCE_MANIFEST_BEFORE" "$DL4J_ROOT" "${RUNTIME_SOURCE_ROOTS[@]}"
 NATIVE_SOURCE_MANIFEST_SHA256="$(sdx_git_source_manifest_sha256 "$DL4J_ROOT" "${NATIVE_SOURCE_ROOTS[@]}")"
+NATIVE_SOURCE_MANIFEST_BEFORE="$(mktemp "$WORK_DIR/native-source-manifest.before.XXXXXXXX")"
+CLEANUP_PATHS+=("$NATIVE_SOURCE_MANIFEST_BEFORE")
+write_source_manifest_text "$NATIVE_SOURCE_MANIFEST_BEFORE" "$DL4J_ROOT" "${NATIVE_SOURCE_ROOTS[@]}"
 MANAGED_SOURCE_MANIFEST_SHA256="$(sdx_git_source_manifest_sha256 "$DL4J_ROOT" "${MANAGED_SOURCE_ROOTS[@]}")"
+MANAGED_SOURCE_MANIFEST_BEFORE="$(mktemp "$WORK_DIR/managed-source-manifest.before.XXXXXXXX")"
+CLEANUP_PATHS+=("$MANAGED_SOURCE_MANIFEST_BEFORE")
+write_source_manifest_text "$MANAGED_SOURCE_MANIFEST_BEFORE" "$DL4J_ROOT" "${MANAGED_SOURCE_ROOTS[@]}"
 NDK_SOURCE_PROPERTIES_SHA256="$(sha256_file "$ANDROID_NDK/source.properties")"
 JAVA_RELEASE_SHA256="$(sha256_file "$JAVA_HOME_ARG/release")"
 MAVEN_ID_SHA256="$({ sha256_file "$MAVEN"; env JAVA_HOME="$JAVA_HOME_ARG" "$MAVEN" --version; } |
@@ -281,52 +305,19 @@ NATIVE_STAGE_KEY="$({
     'sdx_standalone=on'
 } | sha256sum | cut -d ' ' -f 1)"
 
-# The stage key identifies immutable output bytes. It must not also name the mutable
-# CMake worktree: changing that path discards Make/Ninja dependency state and poisons
-# path-sensitive ccache keys. Keep one physical worktree for each toolchain/configuration
-# and update its content receipt after a successful incremental compile.
-NATIVE_WORKTREE_COMPAT_KEY="$({
-  printf '%s\n' \
-    'format=android-cpu-native-worktree-v1' \
-    "ndk=$NDK_SOURCE_PROPERTIES_SHA256" \
-    "android_api=$ANDROID_API" \
-    'android_abi=arm64-v8a' \
-    'blas=openblas' \
-    'triton=on' \
-    'sdx_standalone=on'
-} | sha256sum | cut -d ' ' -f 1)"
-NATIVE_WORKTREE_STATE_DIR="$NATIVE_BUILDS_DIR/.worktrees/$NATIVE_WORKTREE_COMPAT_KEY"
-NATIVE_WORKTREE_POINTER="$NATIVE_WORKTREE_STATE_DIR/active-root"
-LEGACY_NATIVE_OUTPUT_ROOT="$NATIVE_BUILDS_DIR/$NATIVE_STAGE_KEY"
-mkdir -p "$NATIVE_WORKTREE_STATE_DIR"
-exec {NATIVE_WORKTREE_LOCK_FD}>"$NATIVE_WORKTREE_STATE_DIR/build.lock"
-flock "$NATIVE_WORKTREE_LOCK_FD"
-
-if [[ -e "$NATIVE_WORKTREE_POINTER" ]]; then
-  [[ -f "$NATIVE_WORKTREE_POINTER" && ! -L "$NATIVE_WORKTREE_POINTER" ]] ||
-    fail "unsafe native worktree pointer: $NATIVE_WORKTREE_POINTER"
-  IFS= read -r NATIVE_OUTPUT_ROOT <"$NATIVE_WORKTREE_POINTER"
-  [[ -n "$NATIVE_OUTPUT_ROOT" ]] || fail "native worktree pointer is empty"
-elif [[ -e "$LEGACY_NATIVE_OUTPUT_ROOT" ]]; then
-  NATIVE_OUTPUT_ROOT="$(realpath -e -- "$LEGACY_NATIVE_OUTPUT_ROOT")"
-  printf 'Adopting existing native CMake worktree: %s\n' "$NATIVE_OUTPUT_ROOT"
-else
-  NATIVE_OUTPUT_ROOT="$NATIVE_WORKTREE_STATE_DIR/root"
-fi
-
+# Native compilation always uses one directly addressed workspace. Immutable
+# publication stages remain content-addressed, but CMake dependency state is not
+# wrapped in pointers, compatibility hashes, or generation directories.
+NATIVE_OUTPUT_ROOT="$NATIVE_BUILDS_DIR/current"
 NATIVE_OUTPUT_ROOT="$(realpath -m -- "$NATIVE_OUTPUT_ROOT")"
-case "$NATIVE_OUTPUT_ROOT/" in
-  "$NATIVE_BUILDS_DIR"/*/) ;;
-  *) fail "native worktree escapes the managed build root: $NATIVE_OUTPUT_ROOT" ;;
-esac
+[[ "$NATIVE_OUTPUT_ROOT" == "$(realpath -m -- "$NATIVE_BUILDS_DIR/current")" ]] ||
+  fail "native workspace did not resolve to the canonical current directory"
 [[ ! -e "$NATIVE_OUTPUT_ROOT" || ( -d "$NATIVE_OUTPUT_ROOT" && ! -L "$NATIVE_OUTPUT_ROOT" ) ]] ||
-  fail "unsafe native worktree root: $NATIVE_OUTPUT_ROOT"
+  fail "unsafe native workspace root: $NATIVE_OUTPUT_ROOT"
 mkdir -p "$NATIVE_OUTPUT_ROOT"
 NATIVE_OUTPUT_ROOT="$(realpath -e -- "$NATIVE_OUTPUT_ROOT")"
-native_pointer_tmp="$NATIVE_WORKTREE_POINTER.tmp.$$"
-CLEANUP_PATHS+=("$native_pointer_tmp")
-printf '%s\n' "$NATIVE_OUTPUT_ROOT" >"$native_pointer_tmp"
-mv -f -- "$native_pointer_tmp" "$NATIVE_WORKTREE_POINTER"
+exec {NATIVE_BUILD_LOCK_FD}>"$NATIVE_BUILDS_DIR/build.lock"
+flock "$NATIVE_BUILD_LOCK_FD"
 
 NATIVE_BUILD_DIR="$NATIVE_OUTPUT_ROOT/android-arm64-api${ANDROID_API}-cpu"
 NATIVE_CPU_BACKEND="$NATIVE_BUILD_DIR/libnd4jcpu.so"
@@ -336,11 +327,8 @@ NATIVE_NM="$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-nm"
 
 validate_native_stage() {
   [[ -s "$NATIVE_BUILD_DIR/CMakeCache.txt" && -s "$NATIVE_CPU_BACKEND" ]] || return 1
-  if receipt_has "$NATIVE_STAGE_RECEIPT" "format=2"; then
-    receipt_has "$NATIVE_STAGE_RECEIPT" "worktree_compatibility_key=$NATIVE_WORKTREE_COMPAT_KEY" || return 1
-  else
-    receipt_has "$NATIVE_STAGE_RECEIPT" "format=1" || return 1
-  fi
+  receipt_has "$NATIVE_STAGE_RECEIPT" "format=3" || return 1
+  receipt_has "$NATIVE_STAGE_RECEIPT" "native_workspace=stable-current-v1" || return 1
   receipt_has "$NATIVE_STAGE_RECEIPT" "stage=android-cpu-native" || return 1
   receipt_has "$NATIVE_STAGE_RECEIPT" "stage_key=$NATIVE_STAGE_KEY" || return 1
   receipt_has "$NATIVE_STAGE_RECEIPT" "source_manifest_sha256=$NATIVE_SOURCE_MANIFEST_SHA256" || return 1
@@ -355,9 +343,9 @@ if validate_native_stage; then
 else
   if [[ "$SKIP_NATIVE_BUILD" == 0 ]]; then
     if [[ -s "$NATIVE_BUILD_DIR/CMakeCache.txt" ]]; then
-      printf 'Incrementally updating native CMake worktree: %s\n' "$NATIVE_OUTPUT_ROOT"
+      printf 'Incrementally updating stable native CMake workspace: %s\n' "$NATIVE_OUTPUT_ROOT"
     else
-      printf 'Initializing native CMake worktree: %s\n' "$NATIVE_OUTPUT_ROOT"
+      printf 'Initializing stable native CMake workspace: %s\n' "$NATIVE_OUTPUT_ROOT"
     fi
     run_native_platform_stage compile -Dlibnd4j.triton=ON
   else
@@ -368,15 +356,22 @@ else
   "$NATIVE_NM" -D --defined-only "$NATIVE_CPU_BACKEND" |
     grep -E "[[:space:]]$PROCESS_BLAS_SYMBOLS_ABI$" >/dev/null ||
     fail "native CPU build lacks process BLAS symbol-resolution ABI"
-  [[ "$(sdx_git_source_manifest_sha256 "$DL4J_ROOT" "${NATIVE_SOURCE_ROOTS[@]}")" == "$NATIVE_SOURCE_MANIFEST_SHA256" ]] ||
+  current_native_source_manifest_sha256="$(sdx_git_source_manifest_sha256 "$DL4J_ROOT" "${NATIVE_SOURCE_ROOTS[@]}")"
+  if [[ "$current_native_source_manifest_sha256" != "$NATIVE_SOURCE_MANIFEST_SHA256" ]]; then
+    native_source_manifest_after="$(mktemp "$WORK_DIR/native-source-manifest.after.XXXXXXXX")"
+    CLEANUP_PATHS+=("$native_source_manifest_after")
+    write_source_manifest_text "$native_source_manifest_after" "$DL4J_ROOT" "${NATIVE_SOURCE_ROOTS[@]}"
+    printf 'Native source manifest changed during compilation:\n' >&2
+    diff -u "$NATIVE_SOURCE_MANIFEST_BEFORE" "$native_source_manifest_after" >&2 || true
     fail "native sources changed during the Android CPU compile stage"
+  fi
   native_receipt_tmp="$NATIVE_STAGE_RECEIPT.tmp.$$"
   cat >"$native_receipt_tmp" <<RECEIPT
-format=2
+format=3
 stage=android-cpu-native
 stage_key=$NATIVE_STAGE_KEY
 source_manifest_sha256=$NATIVE_SOURCE_MANIFEST_SHA256
-worktree_compatibility_key=$NATIVE_WORKTREE_COMPAT_KEY
+native_workspace=stable-current-v1
 android_api=$ANDROID_API
 android_abi=arm64-v8a
 android_ndk_source_properties_sha256=$NDK_SOURCE_PROPERTIES_SHA256
@@ -510,8 +505,15 @@ else
     >"$managed_tmp/native-library-bytes.txt"
   validate_native_payload_manifest "$managed_tmp/native-libraries" "$managed_tmp/native-library-bytes.txt" ||
     fail "could not validate immutable managed native payload"
-  [[ "$(sdx_git_source_manifest_sha256 "$DL4J_ROOT" "${MANAGED_SOURCE_ROOTS[@]}")" == "$MANAGED_SOURCE_MANIFEST_SHA256" ]] ||
+  current_managed_source_manifest_sha256="$(sdx_git_source_manifest_sha256 "$DL4J_ROOT" "${MANAGED_SOURCE_ROOTS[@]}")"
+  if [[ "$current_managed_source_manifest_sha256" != "$MANAGED_SOURCE_MANIFEST_SHA256" ]]; then
+    managed_source_manifest_after="$(mktemp "$WORK_DIR/managed-source-manifest.after.XXXXXXXX")"
+    CLEANUP_PATHS+=("$managed_source_manifest_after")
+    write_source_manifest_text "$managed_source_manifest_after" "$DL4J_ROOT" "${MANAGED_SOURCE_ROOTS[@]}"
+    printf "Managed source manifest changed during the Android CPU runtime stage:\\n" >&2
+    diff -u "$MANAGED_SOURCE_MANIFEST_BEFORE" "$managed_source_manifest_after" >&2 || true
     fail "managed sources changed during the Android CPU runtime stage"
+  fi
   cat >"$managed_tmp/managed-stage.receipt" <<RECEIPT
 format=2
 stage=android-cpu-managed-runtime
@@ -630,8 +632,15 @@ while IFS= read -r library_name; do
   printf '%s %s\n' "$(sha256_file "$JNI_DIR/$library_name")" "$library_name"
 done <"$NATIVE_MANIFEST" >"$NATIVE_BYTES"
 
-[[ "$(sdx_git_source_manifest_sha256 "$DL4J_ROOT" "${RUNTIME_SOURCE_ROOTS[@]}")" == "$SOURCE_MANIFEST_SHA256" ]] ||
+current_source_manifest_sha256="$(sdx_git_source_manifest_sha256 "$DL4J_ROOT" "${RUNTIME_SOURCE_ROOTS[@]}")"
+if [[ "$current_source_manifest_sha256" != "$SOURCE_MANIFEST_SHA256" ]]; then
+  source_manifest_after="$(mktemp "$WORK_DIR/runtime-source-manifest.after.XXXXXXXX")"
+  CLEANUP_PATHS+=("$source_manifest_after")
+  write_source_manifest_text "$source_manifest_after" "$DL4J_ROOT" "${RUNTIME_SOURCE_ROOTS[@]}"
+  printf 'Runtime source manifest changed during the importer build:\n' >&2
+  diff -u "$SOURCE_MANIFEST_BEFORE" "$source_manifest_after" >&2 || true
   fail "runtime sources changed during the Android CPU importer build"
+fi
 INPUTS_SHA256="$({
   printf '%s\n' "$PRODUCER_SHA256"
   sha256_file "$CLASSPATH_BYTES"

@@ -91,6 +91,55 @@ class DequantizerTest {
     }
 
     @Test
+    @DisplayName("Test Q3_K dequantization unpacks all sixteen packed scales")
+    void testQ3_KDequantizeFullBlock() {
+        Dequantizer dequantizer = DequantizerFactory.getDequantizer(GGMLDataType.GGML_TYPE_Q3_K);
+        assertNotNull(dequantizer);
+
+        // One Q3_K block: hmask[32] + qs[64] + packed scales[12] + d[2].
+        // Zero q/hmask/scales with d=1.0 should decode every element to
+        // (-32) * (0 - 4) = 128. The final four scale groups exercise the
+        // packed scale bytes that previously accessed scales[12].
+        byte[] quantizedData = new byte[110];
+        quantizedData[108] = 0x00;
+        quantizedData[109] = 0x3C;
+
+        float[] result = dequantizer.dequantize(quantizedData, 256);
+
+        assertEquals(256, result.length);
+        for (float value : result) {
+            assertEquals(128.0f, value, 0.0f);
+        }
+    }
+
+    @Test
+    @DisplayName("Test IQ4_NL dequantization preserves GGML nibble order")
+    void testIQ4_NLDequantizeNibbleOrder() {
+        Dequantizer dequantizer = DequantizerFactory.getDequantizer(GGMLDataType.GGML_TYPE_IQ4_NL);
+        assertNotNull(dequantizer);
+        assertEquals(32, dequantizer.getBlockSize());
+        assertEquals(18, dequantizer.getBytesPerBlock());
+
+        // One IQ4_NL block: d=1.0 and qs[j]=(15-j)<<4 | j.
+        // GGML places all low nibbles in the first 16 outputs and all high
+        // nibbles in the second 16 outputs.
+        byte[] quantizedData = new byte[18];
+        quantizedData[0] = 0x00;
+        quantizedData[1] = 0x3C;
+        for (int j = 0; j < 16; j++) {
+            quantizedData[2 + j] = (byte) ((15 - j) << 4 | j);
+        }
+
+        float[] result = dequantizer.dequantize(quantizedData, 32);
+        int[] codebook = {-127, -104, -83, -65, -49, -35, -22, -10,
+                1, 13, 25, 38, 53, 69, 89, 113};
+        for (int j = 0; j < 16; j++) {
+            assertEquals(codebook[j], result[j], 0.0f);
+            assertEquals(codebook[15 - j], result[j + 16], 0.0f);
+        }
+    }
+
+    @Test
     @DisplayName("Test Q4_0 dequantization produces correct length")
     void testQ4_0DequantizeLength() {
         Dequantizer dequantizer = DequantizerFactory.getDequantizer(GGMLDataType.GGML_TYPE_Q4_0);

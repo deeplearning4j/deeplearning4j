@@ -616,6 +616,12 @@
         </dependency>
         <dependency>
             <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-sdx</artifactId>
+            <version>${dl4j.version}</version>
+            <classifier>${javacpp.platform}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-sdx-litertlm</artifactId>
             <version>${dl4j.version}</version>
         </dependency>
@@ -1889,6 +1895,8 @@
                         <ND4J_DSP_DIAGNOSTICS>${nd4j.dsp.diagnostics}</ND4J_DSP_DIAGNOSTICS>
                         <ND4J_DSP_DIAGNOSTICS_LEVEL>${nd4j.dsp.diagnostics.level}</ND4J_DSP_DIAGNOSTICS_LEVEL>
                         <ND4J_DSP_DIAGNOSTICS_FILE>${nd4j.dsp.diagnostics.file}</ND4J_DSP_DIAGNOSTICS_FILE>
+                        <ND4J_DSP_NATIVE_DUMP_OUTPUTS>${nd4j.dsp.native.dumpOutputs}</ND4J_DSP_NATIVE_DUMP_OUTPUTS>
+                        <ND4J_DSP_DIAG_EXEC_LIMIT>${nd4j.dsp.diagExecLimit}</ND4J_DSP_DIAG_EXEC_LIMIT>
                         <ONEDNN_VERBOSE>${onednn.verbose}</ONEDNN_VERBOSE>
                         <DNNL_VERBOSE>${onednn.verbose}</DNNL_VERBOSE>
                         <BUF_FP_RING>${buf.fp.ring}</BUF_FP_RING>
@@ -1948,6 +1956,8 @@
                         <org.nd4j.libnd4j.test.filter>${libnd4j.test.filter}</org.nd4j.libnd4j.test.filter>
                         <org.nd4j.libnd4j.test.timeout>${libnd4j.test.timeout}</org.nd4j.libnd4j.test.timeout>
                         <org.nd4j.libnd4j.autobuild>${libnd4j.autobuild}</org.nd4j.libnd4j.autobuild>
+                        <!-- Supported JavaCPP native-library sideload for incremental native tests. -->
+                        <org.bytedeco.javacpp.pathsFirst>${org.bytedeco.javacpp.pathsFirst}</org.bytedeco.javacpp.pathsFirst>
                         <!-- VLM test configuration -->
                         <vlm.test.pdf.path>${vlm.test.pdf.path}</vlm.test.pdf.path>
                         <vlm.test.pdf.page>${vlm.test.pdf.page}</vlm.test.pdf.page>
@@ -1956,13 +1966,24 @@
                         <vlm.test.pdf.dpi>${vlm.test.pdf.dpi}</vlm.test.pdf.dpi>
                         <vlm.test.maxTiles>${vlm.test.maxTiles}</vlm.test.maxTiles>
                         <vlm.test.maxTokens>${vlm.test.maxTokens}</vlm.test.maxTokens>
+                        <vlm.test.dspExecutionTiming>${vlm.test.dspExecutionTiming}</vlm.test.dspExecutionTiming>
                         <vlm.test.configs>${vlm.test.configs}</vlm.test.configs>
+                        <!-- Decode op timing diagnostics used by the benchmark script. -->
+                        <vlm.benchmark.opTiming>${vlm.benchmark.opTiming}</vlm.benchmark.opTiming>
+                        <vlm.benchmark.opTimingDetailed>${vlm.benchmark.opTimingDetailed}</vlm.benchmark.opTimingDetailed>
+                        <vlm.benchmark.opTimingTopN>${vlm.benchmark.opTimingTopN}</vlm.benchmark.opTimingTopN>
+                        <vlm.benchmark.opTimingCsvDir>${vlm.benchmark.opTimingCsvDir}</vlm.benchmark.opTimingCsvDir>
+                        <vlm.benchmark.opTimingBreakdownOps>${vlm.benchmark.opTimingBreakdownOps}</vlm.benchmark.opTimingBreakdownOps>
+                        <vlm.benchmark.opTimingHistogramOps>${vlm.benchmark.opTimingHistogramOps}</vlm.benchmark.opTimingHistogramOps>
                         <!-- VLM optimizer and cache configuration -->
                         <vlm.model.cache.disable>${vlm.model.cache.disable}</vlm.model.cache.disable>
                         <nd4j.optimizer.enabled>${nd4j.optimizer.enabled}</nd4j.optimizer.enabled>
                         <nd4j.optimizer.fp16>${nd4j.optimizer.fp16}</nd4j.optimizer.fp16>
                         <nd4j.optimizer.skip>${nd4j.optimizer.skip}</nd4j.optimizer.skip>
                         <!-- DSP debug properties -->
+                        <nd4j.dsp.diagnostics>${nd4j.dsp.diagnostics}</nd4j.dsp.diagnostics>
+                        <nd4j.dsp.diagnostics.level>${nd4j.dsp.diagnostics.level}</nd4j.dsp.diagnostics.level>
+                        <nd4j.dsp.diagnostics.file>${nd4j.dsp.diagnostics.file}</nd4j.dsp.diagnostics.file>
                         <nd4j.dsp.native.dumpOutputs>${nd4j.dsp.native.dumpOutputs}</nd4j.dsp.native.dumpOutputs>
                         <nd4j.dsp.java.dumpOutputs>${nd4j.dsp.java.dumpOutputs}</nd4j.dsp.java.dumpOutputs>
                         <!-- DSP shape-only dry-run mode: skips op kernel execution, measures dispatch overhead -->
@@ -1993,7 +2014,7 @@
                     </classpathDependencyExcludes>
                     <useManifestOnlyJar>false</useManifestOnlyJar>
                     <shutdown>kill</shutdown>
-                    <argLine>-Dorg.bytedeco.javacpp.logger.debug=false   ${jdk9.exports}  -Dorg.nd4j.arraynogc=${test.nogc}  -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.maxphysicalbytes} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
+                    <argLine>-Dorg.bytedeco.javacpp.logger.debug=false   ${jdk9.exports}  -Djava.library.path=${java.library.path} -Dorg.nd4j.arraynogc=${test.nogc}  -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.maxphysicalbytes} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
                     <forkedProcessTimeoutInSeconds>3600</forkedProcessTimeoutInSeconds>
                     <forkCount>${surefire.forks}</forkCount>
                     <threadCount>${surefire.threads}</threadCount>

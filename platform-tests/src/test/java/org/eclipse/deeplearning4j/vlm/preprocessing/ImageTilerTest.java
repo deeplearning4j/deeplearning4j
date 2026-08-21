@@ -125,6 +125,44 @@ public class ImageTilerTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testScalePreservingSmallCropRetainsContentBounds(Nd4jBackend backend) {
+        BufferedImage crop = new BufferedImage(310, 73, BufferedImage.TYPE_INT_RGB);
+        ImageTiler.SplitImageResult result =
+                ImageTiler.splitImageForVLMPreservingScale(crop, 512, -1);
+
+        assertEquals(1, result.getTotalFrames());
+        assertEquals(0, result.numRows);
+        assertEquals(0, result.numCols);
+        assertEquals(512, result.frames.get(0).getWidth());
+        assertEquals(512, result.frames.get(0).getHeight());
+        assertEquals(310, result.contentRegions.get(0).width);
+        assertEquals(73, result.contentRegions.get(0).height);
+
+        INDArray mask = ImageTiler.createPixelAttentionMask(
+                result.contentRegions.get(0).width, result.contentRegions.get(0).height, 512);
+        assertEquals(310L * 73L, mask.castTo(DataType.INT32).sumNumber().longValue());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testScalePreservingWideCropTilesOriginalGeometry(Nd4jBackend backend) {
+        BufferedImage crop = new BufferedImage(1224, 370, BufferedImage.TYPE_INT_RGB);
+        ImageTiler.SplitImageResult result =
+                ImageTiler.splitImageForVLMPreservingScale(crop, 512, -1);
+
+        assertEquals(1, result.numRows);
+        assertEquals(3, result.numCols);
+        assertEquals(4, result.getTotalFrames());
+        for (int i = 0; i < 3; i++) {
+            assertEquals(408, result.contentRegions.get(i).width);
+            assertEquals(370, result.contentRegions.get(i).height);
+        }
+        assertEquals(512, result.contentRegions.get(3).width);
+        assertEquals(155, result.contentRegions.get(3).height);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testResizeLongestEdge(Nd4jBackend backend) {
         BufferedImage image = new BufferedImage(800, 400, BufferedImage.TYPE_INT_RGB);
         BufferedImage resized = ImageTiler.resizeLongestEdge(image, 200);
