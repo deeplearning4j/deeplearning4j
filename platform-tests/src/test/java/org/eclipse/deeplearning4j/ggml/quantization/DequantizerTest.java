@@ -26,6 +26,8 @@ import org.nd4j.ggml.format.GGMLDataType;
 import org.nd4j.ggml.quantization.Dequantizer;
 import org.nd4j.ggml.quantization.DequantizerFactory;
 import org.nd4j.ggml.quantization.QuantizationInfo;
+import org.nd4j.ggml.quantization.Quantizer;
+import org.nd4j.ggml.quantization.QuantizerFactory;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -88,6 +90,33 @@ class DequantizerTest {
         Dequantizer dequantizer = DequantizerFactory.getDequantizer(GGMLDataType.GGML_TYPE_Q4_K);
         assertNotNull(dequantizer);
         assertEquals(256, dequantizer.getBlockSize());
+    }
+
+    @Test
+    @DisplayName("Test Q4_K scale packing keeps min high bits out of later scales")
+    void testQ4_KScalePackingDoesNotMixMinAndScaleBits() {
+        float[] values = new float[256];
+        for (int i = 0; i < 32; i++) {
+            values[i] = -10.0f + i / 31.0f;
+            values[32 + i] = 15.0f * i / 31.0f;
+            values[128 + i] = 1.5f * i / 31.0f;
+        }
+
+        Quantizer quantizer = QuantizerFactory.getQuantizer(GGMLDataType.GGML_TYPE_Q4_K);
+        Dequantizer dequantizer = DequantizerFactory.getDequantizer(GGMLDataType.GGML_TYPE_Q4_K);
+        byte[] encoded = quantizer.quantize(values);
+
+        // Q4_K bytes 4..15 are the packed scales. Byte 4 holds L[0] in its
+        // low six bits and only the high two bits of L[4] in bits 6..7. L[4]
+        // is deliberately below 16 here, while M[0] is 63. Mixing M[0]'s high
+        // bits into this byte was the model-wide BF16 -> Q4_K corruption.
+        assertEquals(0, encoded[4] & 0xC0);
+
+        float[] decoded = dequantizer.dequantize(encoded, values.length);
+        for (int i = 128; i < 160; i++) {
+            assertEquals(values[i], decoded[i], 0.15f,
+                    "Q4_K sub-block 4 scale was corrupted at element " + i);
+        }
     }
 
     @Test

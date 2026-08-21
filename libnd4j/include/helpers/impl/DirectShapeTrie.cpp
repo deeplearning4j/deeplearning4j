@@ -84,71 +84,33 @@ void ShapeTrieNode::collectStoreStackTrace() {
 #endif
 
 size_t DirectShapeTrie::computeHash(const LongType* shapeInfo) const {
-  size_t hash = 17; // Prime number starting point
-  const int rank = shape::rank(shapeInfo);
-
-  int deviceId = AffinityManager::currentDeviceId();
-  hash = hash * 53 + static_cast<size_t>(deviceId) * 59;
-
-  // Add rank first with high weight
-  hash = hash * 31 + rank * 19;
-
-  // Add shape elements to hash with position-dependent multipliers
-  const LongType* shape = shape::shapeOf(shapeInfo);
-  for (int i = 0; i < rank; i++) {
-    hash = hash * 13 + static_cast<size_t>(shape[i]) * (7 + i);
+  size_t hash = 17;
+  hash = hash * 53 + static_cast<size_t>(AffinityManager::currentDeviceId()) * 59;
+  const int descriptorLength =
+      static_cast<int>(shape::shapeInfoLength(shape::rank(shapeInfo)));
+  hash = hash * 31 + static_cast<size_t>(descriptorLength);
+  // Hash every stored descriptor word. Rank-0 descriptors retain scalar
+  // shape/stride storage and a raw order word even though their logical shape
+  // has no dimensions. Logical accessors omit those words and therefore cannot
+  // provide a collision-free cache identity.
+  for (int i = 0; i < descriptorLength; ++i) {
+    hash = hash * 131 + static_cast<size_t>(shapeInfo[i]);
   }
-
-  // Add stride elements to hash with position-dependent multipliers
-  const LongType* strides = shape::stride(shapeInfo);
-  for (int i = 0; i < rank; i++) {
-    hash = hash * 19 + static_cast<size_t>(strides[i]) * (11 + i);
-  }
-
-  // Add data type, order, and EWS with higher weights. EWS is part of the
-  // full shape descriptor: identical dimensions/strides with EWS=-1 versus 1
-  // must not share a cached ConstantShapeBuffer.
-  hash = hash * 23 + static_cast<size_t>(ArrayOptions::dataType(shapeInfo)) * 29;
-  hash = hash * 37 + static_cast<size_t>(shape::order(shapeInfo)) * 41;
-  hash = hash * 41 + static_cast<size_t>(shape::elementWiseStride(shapeInfo)) * 43;
-
-  // Add total element count
-  hash = hash * 43 + shape::length(shapeInfo);
-
-  // **NEW: Add property flags to distinguish views from non-views**
-  hash = hash * 47 + static_cast<size_t>(shapeInfo[ArrayOptions::extraIndex(shapeInfo)]);
-
   return hash;
 }
 
 int DirectShapeTrie::calculateShapeSignature(const LongType* shapeInfo) const {
-  int signature = 17;
-  const int rank = shape::rank(shapeInfo);
-
-  int deviceId = AffinityManager::currentDeviceId();
-  signature = signature * 37 + deviceId * 41;
-
-  // Incorporate rank with weight
-  signature = signature * 31 + rank * 13;
-
-  // Incorporate shape dimensions with position weights
-  const LongType* shapeValues = shape::shapeOf(shapeInfo);
-  for (int i = 0; i < rank; i++) {
-    signature = signature * 13 + static_cast<int>(shapeValues[i]) * (7 + i);
+  uint32_t signature = 2166136261u;
+  signature = (signature ^ static_cast<uint32_t>(AffinityManager::currentDeviceId())) * 16777619u;
+  const int descriptorLength =
+      static_cast<int>(shape::shapeInfoLength(shape::rank(shapeInfo)));
+  for (int i = 0; i < descriptorLength; ++i) {
+    const uint64_t word = static_cast<uint64_t>(shapeInfo[i]);
+    signature = (signature ^ static_cast<uint32_t>(word)) * 16777619u;
+    signature = (signature ^ static_cast<uint32_t>(word >> 32)) * 16777619u;
   }
-
-  // Incorporate data type, order, and EWS
-  signature = signature * 7 + static_cast<int>(ArrayOptions::dataType(shapeInfo)) * 11;
-  signature = signature * 17 + static_cast<int>(shape::order(shapeInfo)) * 19;
-  signature = signature * 19 + static_cast<int>(shape::elementWiseStride(shapeInfo)) * 23;
-
-  // Include element count
-  signature = signature * 23 + static_cast<int>(shape::length(shapeInfo) % 10000);
-
-  // **NEW: Include property flags**
-  signature = signature * 29 + static_cast<int>(shapeInfo[ArrayOptions::extraIndex(shapeInfo)] % 10000);
-
-  return signature;
+  // Zero is the findChild wildcard, so reserve it rather than weakening lookup.
+  return static_cast<int>(signature == 0 ? 1u : signature);
 }
 
 size_t DirectShapeTrie::getStripeIndex(const LongType* shapeInfo) const {
@@ -251,65 +213,18 @@ ConstantShapeBuffer* DirectShapeTrie::search(const LongType* shapeInfo, size_t s
     return nullptr;
   }
 
-  const int rank = shape::rank(shapeInfo);
   const int shapeSignature = calculateShapeSignature(shapeInfo);
 
-  int deviceId = AffinityManager::currentDeviceId();
-  current = findChild(current, deviceId, 0, true, shapeSignature);
+  current = findChild(current, AffinityManager::currentDeviceId(), 0, false,
+                      shapeSignature);
   if (!current) {
     return nullptr;  // Not found for this device
   }
-
-  // Check rank (now at level 1)
-  current = findChild(current, rank, 1, true, shapeSignature);
-  if (!current) {
-    return nullptr;  // Not found, but this is expected behavior
-  }
-
-  // Check datatype (now at level 2)
-  current = findChild(current, ArrayOptions::dataType(shapeInfo), 2, true, shapeSignature);
-  if (!current) {
-    return nullptr;  // Not found, but this is expected behavior
-  }
-
-  // Check order (now at level 3)
-  current = findChild(current, shape::order(shapeInfo), 3, true, shapeSignature);
-  if (!current) {
-    return nullptr;  // Not found, but this is expected behavior
-  }
-
-  // Check shape values (now starting at level 4)
-  const LongType* shapeValues = shape::shapeOf(shapeInfo);
-  for (int i = 0; i < rank; i++) {
-    current = findChild(current, shapeValues[i], 4 + i, true, shapeSignature);
-    if (!current) {
-      return nullptr;  // Not found, but this is expected behavior
-    }
-  }
-
-  // Check stride values
-  const LongType* strides = shape::stride(shapeInfo);
-  for (int i = 0; i < rank; i++) {
-    current = findChild(current, strides[i], 4 + rank + i, false, shapeSignature);
-    if (!current) {
-      return nullptr;  // Not found, but this is expected behavior
-    }
-  }
-
-  // Check extras (EMPTY flag, VIEW flag, etc.) — without this, shapes differing
-  // only in extras (e.g., empty vs non-empty rank-0 scalars) collide in the trie.
-  LongType extras = shape::extra(shapeInfo);
-  current = findChild(current, extras, 4 + 2 * rank, false, shapeSignature);
-  if (!current) {
-    return nullptr;
-  }
-
-  // EWS is also semantic descriptor state. It may differ even when dimensions
-  // and explicit strides match (for example -1 for a non-elementwise layout).
-  LongType ews = shape::elementWiseStride(shapeInfo);
-  current = findChild(current, ews, 5 + 2 * rank, false, shapeSignature);
-  if (!current) {
-    return nullptr;
+  const int descriptorLength =
+      static_cast<int>(shape::shapeInfoLength(shape::rank(shapeInfo)));
+  for (int i = 0; i < descriptorLength; ++i) {
+    current = findChild(current, shapeInfo[i], 1 + i, false, shapeSignature);
+    if (!current) return nullptr;
   }
 
   return current->buffer();
@@ -417,69 +332,20 @@ ConstantShapeBuffer* DirectShapeTrie::getOrCreate(const LongType* shapeInfo) {
   // Safe pointer to track the current node through the insertion process
   ShapeTrieNode* safeNodePtr = nullptr;
 
-  int deviceId = AffinityManager::currentDeviceId();
-  safeNodePtr = current->findOrCreateChild(deviceId, 0, true, shapeSignature);
+  safeNodePtr = current->findOrCreateChild(
+      AffinityManager::currentDeviceId(), 0, false, shapeSignature);
   if (safeNodePtr == nullptr) {
     return createFallbackBuffer(shapeInfo, rank);
   }
   current = safeNodePtr;
-
-  // Insert rank with signature (now at level 1)
-  safeNodePtr = current->findOrCreateChild(rank, 1, true, shapeSignature);
-  if (safeNodePtr == nullptr) {
-    return createFallbackBuffer(shapeInfo, rank);
-  }
-  current = safeNodePtr;
-
-  // Insert datatype with signature (now at level 2)
-  safeNodePtr = current->findOrCreateChild(ArrayOptions::dataType(shapeInfo), 2, true, shapeSignature);
-  if (safeNodePtr == nullptr) {
-    return createFallbackBuffer(shapeInfo, rank);
-  }
-  current = safeNodePtr;
-
-  // Insert order with signature (now at level 3)
-  safeNodePtr = current->findOrCreateChild(shape::order(shapeInfo), 3, true, shapeSignature);
-  if (safeNodePtr == nullptr) {
-    return createFallbackBuffer(shapeInfo, rank);
-  }
-  current = safeNodePtr;
-
-  // Insert shape values with signature (now starting at level 4)
-  const LongType* shapeValues = shape::shapeOf(shapeInfo);
-  for (int i = 0; i < rank; i++) {
-    safeNodePtr = current->findOrCreateChild(shapeValues[i], 4 + i, true, shapeSignature);
-    if (safeNodePtr == nullptr) {
-      return createFallbackBuffer(shapeInfo, rank);
-    }
+  const int descriptorLength =
+      static_cast<int>(shape::shapeInfoLength(rank));
+  for (int i = 0; i < descriptorLength; ++i) {
+    safeNodePtr = current->findOrCreateChild(
+        shapeInfo[i], 1 + i, false, shapeSignature);
+    if (safeNodePtr == nullptr) return createFallbackBuffer(shapeInfo, rank);
     current = safeNodePtr;
   }
-
-  // Insert stride values with signature
-  const LongType* strides = shape::stride(shapeInfo);
-  for (int i = 0; i < rank; i++) {
-    safeNodePtr = current->findOrCreateChild(strides[i], 4 + rank + i, false, shapeSignature);
-    if (safeNodePtr == nullptr) {
-      return createFallbackBuffer(shapeInfo, rank);
-    }
-    current = safeNodePtr;
-  }
-
-  // Insert extras (EMPTY flag, VIEW flag, etc.) — without this, shapes differing
-  // only in extras (e.g., empty vs non-empty rank-0 scalars) collide in the trie.
-  LongType extras = shape::extra(shapeInfo);
-  safeNodePtr = current->findOrCreateChild(extras, 4 + 2 * rank, false, shapeSignature);
-  if (safeNodePtr == nullptr) {
-    return createFallbackBuffer(shapeInfo, rank);
-  }
-  current = safeNodePtr;
-
-  LongType ews = shape::elementWiseStride(shapeInfo);
-  safeNodePtr = current->findOrCreateChild(ews, 5 + 2 * rank, false, shapeSignature);
-  if (safeNodePtr == nullptr) {
-    return createFallbackBuffer(shapeInfo, rank);
-  }
-  current = safeNodePtr;
 
   // Check if another thread has already created the buffer
   if (ConstantShapeBuffer* nodeBuffer = current->buffer()) {
@@ -558,76 +424,24 @@ ConstantShapeBuffer* DirectShapeTrie::insert(const LongType* shapeInfo, size_t s
   const int rank = shape::rank(shapeInfo);
   const int shapeSignature = calculateShapeSignature(shapeInfo);
 
-  int deviceId = AffinityManager::currentDeviceId();
-  current = current->findOrCreateChild(deviceId, 0, true, shapeSignature);
+  current = current->findOrCreateChild(
+      AffinityManager::currentDeviceId(), 0, false, shapeSignature);
   if (!current) {
     std::string msg = "Failed to create device node";
     THROW_EXCEPTION(msg.c_str());
     return nullptr;
   }
-
-  // Insert rank (now at level 1)
-  current = current->findOrCreateChild(rank, 1, true, shapeSignature);
-  if (!current) {
-    std::string msg = "Failed to create rank node";
-    THROW_EXCEPTION(msg.c_str());
-    return nullptr;
-  }
-
-  // Insert datatype (now at level 2)
-  current = current->findOrCreateChild(ArrayOptions::dataType(shapeInfo), 2, true, shapeSignature);
-  if (!current) {
-    std::string msg = "Failed to create datatype node";
-    THROW_EXCEPTION(msg.c_str());
-    return nullptr;
-  }
-
-  // Insert order (now at level 3)
-  current = current->findOrCreateChild(shape::order(shapeInfo), 3, true, shapeSignature);
-  if (!current) {
-    std::string msg = "Failed to create order node";
-    THROW_EXCEPTION(msg.c_str());
-    return nullptr;
-  }
-
-  // Insert shape values (now starting at level 4)
-  const LongType* shape = shape::shapeOf(shapeInfo);
-  for (int i = 0; i < rank; i++) {
-    current = current->findOrCreateChild(shape[i], 4 + i, true, shapeSignature);
+  const int descriptorLength =
+      static_cast<int>(shape::shapeInfoLength(rank));
+  for (int i = 0; i < descriptorLength; ++i) {
+    current = current->findOrCreateChild(
+        shapeInfo[i], 1 + i, false, shapeSignature);
     if (!current) {
-      std::string msg = "Failed to create shape value node at index " + std::to_string(i);
+      std::string msg = "Failed to create descriptor node at index " +
+                        std::to_string(i);
       THROW_EXCEPTION(msg.c_str());
       return nullptr;
     }
-  }
-
-  // Insert stride values
-  const LongType* strides = shape::stride(shapeInfo);
-  for (int i = 0; i < rank; i++) {
-    current = current->findOrCreateChild(strides[i], 4 + rank + i, false, shapeSignature);
-    if (!current) {
-      std::string msg = "Failed to create stride value node at index " + std::to_string(i);
-      THROW_EXCEPTION(msg.c_str());
-      return nullptr;
-    }
-  }
-
-  // Insert extras (EMPTY flag, VIEW flag, etc.) — without this, shapes differing
-  // only in extras (e.g., empty vs non-empty rank-0 scalars) collide in the trie.
-  LongType extras = shape::extra(shapeInfo);
-  current = current->findOrCreateChild(extras, 4 + 2 * rank, false, shapeSignature);
-  if (!current) {
-    std::string msg = "Failed to create extras node";
-    THROW_EXCEPTION(msg.c_str());
-    return nullptr;
-  }
-
-  LongType ews = shape::elementWiseStride(shapeInfo);
-  current = current->findOrCreateChild(ews, 5 + 2 * rank, false, shapeSignature);
-  if (!current) {
-    std::string msg = "Failed to create EWS node";
-    THROW_EXCEPTION(msg.c_str());
-    return nullptr;
   }
 
   if (!current->buffer()) {

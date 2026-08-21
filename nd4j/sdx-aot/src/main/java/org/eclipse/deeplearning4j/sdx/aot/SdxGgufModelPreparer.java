@@ -53,7 +53,7 @@ final class SdxGgufModelPreparer {
     // Bump this whenever GGUF tensor materialization or graph-import semantics change.
     // The profile digest is part of the prepared-cache path, so old canonical SDZ files
     // cannot silently survive an importer fix and produce stale logits.
-    static final String GRAPH_IMPORT_ABI = "ggml-runtime-packed-gdn-v6";
+    static final String GRAPH_IMPORT_ABI = "ggml-runtime-packed-gdn-v7";
     static final String RESOLVED_SCHEMA = "sdx-resolved-text-model-v1";
 
     private static final ObjectMapper MAPPER = new ObjectMapper();

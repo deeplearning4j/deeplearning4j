@@ -1,0 +1,69 @@
+{
+  "backend" : "project-local",
+  "distributed" : false,
+  "executedAt" : "2026-08-21T00:06:36.909780842Z",
+  "projectRoot" : "/home/agibsonccc/Documents/GitHub/deeplearning4j",
+  "knowledgeBase" : "ocr-dense-page8-capture-diag",
+  "request" : {
+    "name" : "smoldocling-page8-region-capture-diagnostic",
+    "documents" : [ {
+      "path" : "/home/agibsonccc/Documents/GitHub/kompile/kompile-vlm-demo/sample-pdfs/sample.pdf",
+      "pipelineId" : "vlm-page8-capture-diag",
+      "loaderName" : "pdf",
+      "chunkerName" : "sentence"
+    } ],
+    "knowledgeBase" : {
+      "name" : "ocr-dense-page8-capture-diag"
+    },
+    "pipelines" : [ {
+      "pipelineId" : "vlm-page8-capture-diag",
+      "pipelineType" : "VLM",
+      "registeredPipelineId" : "vlm-document",
+      "loaderName" : "pdf",
+      "chunkerName" : "sentence",
+      "modelId" : "smoldocling-256m",
+      "modelBindings" : {
+        "default" : "smoldocling-256m"
+      },
+      "options" : {
+        "outputFormat" : "MARKDOWN",
+        "maxPages" : 1,
+        "pageRange" : "8",
+        "maxNewTokens" : 64,
+        "pdfRenderDpi" : 144,
+        "pageBatchSize" : 1,
+        "temperature" : 0.0,
+        "doSample" : false,
+        "timeoutMinutes" : 30
+      }
+    } ],
+    "pipelineRegistry" : {
+      "models" : [ {
+        "id" : "smoldocling-256m",
+        "modelId" : "smoldocling-256m",
+        "role" : "default",
+        "localPath" : "/home/agibsonccc/Documents/GitHub/kompile/data/models/vlm-pipelines/smoldocling-256m",
+        "format" : "samediff",
+        "type" : "vlm_pipeline",
+        "autoBootstrap" : false
+      } ]
+    },
+    "defaultPipelineId" : "vlm-page8-capture-diag",
+    "steps" : [ "LOADING", "MARKDOWN_EXTRACTION", "CHUNKING" ],
+    "strictSteps" : true,
+    "deriveOntology" : false,
+    "runtimeConfig" : {
+      "runReasoningLearning" : false
+    },
+    "modelRuntime" : {
+      "autoBootstrap" : false,
+      "localPath" : "/home/agibsonccc/Documents/GitHub/kompile/data/models/vlm-pipelines/smoldocling-256m",
+      "type" : "vlm_pipeline",
+      "timeoutMinutes" : 30,
+      "environment" : {
+        "ND4J_DSP_DIAGNOSTICS" : "ALL",
+        "ND4J_DSP_DIAGNOSTICS_LEVEL" : "full"
+      }
+    }
+  }
+}

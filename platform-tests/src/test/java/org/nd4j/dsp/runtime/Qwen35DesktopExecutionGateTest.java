@@ -16,8 +16,10 @@ import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.serde.SDZSerializer;
+import org.nd4j.ggml.GGMLModelExport;
 import org.nd4j.ggml.GGMLModelImport;
 import org.nd4j.ggml.convert.ConversionOptions;
+import org.nd4j.ggml.export.ExportOptions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -28,6 +30,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -49,6 +52,14 @@ class Qwen35DesktopExecutionGateTest {
     private static final String MODEL_PROPERTY = "sdx.qwen.gguf";
     private static final String BUNDLE_PROPERTY = "sdx.qwen.bundle";
     private static final String TOKENIZER_PROPERTY = "sdx.qwen.tokenizer";
+    private static final String REBUILD_BUNDLE_PROPERTY = "sdx.qwen.rebuildBundle";
+    private static final String ANDROID_SMOKE_PROMPT_PROPERTY = "sdx.qwen.androidSmokePrompt";
+    private static final String ANDROID_Q4_PROFILE_PROPERTY = "sdx.qwen.androidQ4Profile";
+    private static final String ANDROID_SMOKE_PROMPT = "Reply with the single word: ready";
+    private static final long[] ANDROID_SMOKE_PROMPT_IDS = {
+            248045, 846, 198, 20206, 440, 279, 3074, 3299, 25, 5354,
+            248046, 198, 248045, 74455, 198, 248068, 271, 248069, 271
+    };
 
     @Test
     void exactQwenBundleGeneratesPrefillAndWarmDecodeTokensWithoutFallback()
@@ -68,8 +79,11 @@ class Qwen35DesktopExecutionGateTest {
                 ? null
                 : Paths.get(ggufValue).toAbsolutePath().normalize();
 
-        Path bundle = Paths.get(System.getProperty(
-                BUNDLE_PROPERTY, "target/sdx-desktop-gate/qwen35-0.8b"))
+        boolean androidQ4Profile = Boolean.getBoolean(ANDROID_Q4_PROFILE_PROPERTY);
+        String defaultBundle = androidQ4Profile
+                ? "target/sdx-desktop-gate/qwen35-0.8b-android-q4"
+                : "target/sdx-desktop-gate/qwen35-0.8b";
+        Path bundle = Paths.get(System.getProperty(BUNDLE_PROPERTY, defaultBundle))
                 .toAbsolutePath().normalize();
         Path model = bundle.resolve("model.sdz");
         Path generationConfig = bundle.resolve("text-generation.json");
@@ -85,7 +99,7 @@ class Qwen35DesktopExecutionGateTest {
         assertTrue(Files.isRegularFile(tokenizerConfig),
                 "Canonical Hugging Face tokenizer_config.json does not exist: " + tokenizerConfig);
 
-        boolean rebuild = Boolean.getBoolean("sdx.qwen.rebuildBundle")
+        boolean rebuild = Boolean.getBoolean(REBUILD_BUNDLE_PROPERTY)
                 || !Files.isRegularFile(model)
                 || !Files.isRegularFile(generationConfig)
                 || !Files.isRegularFile(manifest);
@@ -94,7 +108,8 @@ class Qwen35DesktopExecutionGateTest {
                     "Set -D" + MODEL_PROPERTY
                             + " when the canonical desktop-gate bundle must be built");
             assertTrue(Files.isRegularFile(gguf), "GGUF does not exist: " + gguf);
-            exportCanonicalBundle(gguf, bundle, model, generationConfig, manifest);
+            exportCanonicalBundle(
+                    gguf, bundle, model, generationConfig, manifest, androidQ4Profile, rebuild);
             if (Boolean.getBoolean("sdx.qwen.exportOnly")) {
                 System.out.printf("SDX_DESKTOP_EXPORT_ONLY bundle=%s model_bytes=%d%n",
                         bundle, Files.size(model));
@@ -111,15 +126,17 @@ class Qwen35DesktopExecutionGateTest {
              SdxTextSession session = loaded.createTextSession();
              HuggingFaceTokenizer tokenizer =
                      HuggingFaceTokenizer.fromFile(tokenizerPath.toFile())) {
-            String prompt = tokenizer.applyChatTemplate(
-                    Arrays.asList(
+            boolean androidSmokePrompt = Boolean.getBoolean(ANDROID_SMOKE_PROMPT_PROPERTY);
+            List<ChatTemplate.Message> messages = androidSmokePrompt
+                    ? Collections.singletonList(ChatTemplate.Message.user(ANDROID_SMOKE_PROMPT))
+                    : Arrays.asList(
                             ChatTemplate.Message.system(
                                     "You are a graph assistant. Use the available graph tools when the answer "
                                             + "depends on people, organizations, entities, or relationships in the graph. "
                                             + "Inspect relevant entities before drawing conclusions, do not invent missing "
                                             + "facts, and give a concise answer grounded in the returned graph data."),
-                            ChatTemplate.Message.user("Hello")),
-                    true);
+                            ChatTemplate.Message.user("Hello"));
+            String prompt = tokenizer.applyChatTemplate(messages, true);
             long[] promptTokenIds = tokenizer.encodeLong(prompt, false);
             SdxTextSession.GenerationResult result = session.generate(
                     promptTokenIds,
@@ -159,12 +176,21 @@ class Qwen35DesktopExecutionGateTest {
 
             assertTrue(result.tokenCount() > 0 && result.tokenCount() <= 16,
                     "The desktop gate must generate at least one bounded decode token");
-            assertArrayEquals(
-                    new long[] {9419, 0, 2500, 628, 353, 7543, 488, 440, 678, 3134, 3242, 30, 248046},
-                    result.tokenIds(),
-                    "The exact app prompt must retain the known-good Qwen logits and greedy token sequence");
-            assertEquals("Hello! How can I assist you with your query today?", decoded,
-                    "The desktop acceptance gate must reject semantically invalid but decodable tokens");
+            if (androidSmokePrompt) {
+                assertArrayEquals(ANDROID_SMOKE_PROMPT_IDS, promptTokenIds,
+                        "The desktop gate must render the exact Android smoke-test prompt tokens");
+                assertArrayEquals(new long[] {2232, 248046}, result.tokenIds(),
+                        "The Android smoke prompt must retain the known-good greedy token sequence");
+                assertEquals("ready", decoded,
+                        "The Android smoke prompt must retain its exact coherent desktop result");
+            } else {
+                assertArrayEquals(
+                        new long[] {9419, 0, 2500, 628, 353, 7543, 488, 440, 678, 3134, 3242, 30, 248046},
+                        result.tokenIds(),
+                        "The graph-assistant prompt must retain the known-good Qwen logits and greedy token sequence");
+                assertEquals("Hello! How can I assist you with your query today?", decoded,
+                        "The desktop acceptance gate must reject semantically invalid but decodable tokens");
+            }
             assertFalse(decoded.isBlank(), "The exact Qwen tokenizer must decode generated text");
             assertEquals(decoded, streamed.toString(),
                     "Streaming and final JavaCPP BytePointer decode must agree byte-for-byte");
@@ -195,21 +221,44 @@ class Qwen35DesktopExecutionGateTest {
             Path bundle,
             Path model,
             Path generationConfig,
-            Path manifest) throws Exception {
+            Path manifest,
+            boolean androidQ4Profile,
+            boolean rebuild) throws Exception {
         Files.createDirectories(bundle);
-        SameDiff graph = Boolean.getBoolean("sdx.qwen.mobileProfile")
-                ? GGMLModelImport.importModel(gguf.toFile(), ConversionOptions.builder()
-                        .quantizationMode(ConversionOptions.QuantizationMode.DEQUANTIZE_TO_FLOAT16)
-                        .targetDataType(DataType.FLOAT16)
-                        .embeddingDataType(DataType.HALF)
-                        .lastPositionLogitsOnly(true)
-                        .forTraining(false)
-                        .preserveTokenizerInfo(true)
-                        .kvQuantFormat(0)
-                        .tensorBatchSize(10)
-                        .useMemoryMapping(true)
-                        .build())
-                : GGMLModelImport.importModel(gguf.toFile());
+        SameDiff graph;
+        if (androidQ4Profile) {
+            Path optimizedQ4 = bundle.resolve("optimized-q4_k.gguf");
+            if (rebuild) Files.deleteIfExists(optimizedQ4);
+            if (!Files.isRegularFile(optimizedQ4)) {
+                GGMLModelExport.requantize(
+                        gguf.toFile(), optimizedQ4.toFile(), ExportOptions.QuantizationType.Q4_K);
+            }
+            graph = GGMLModelImport.importModel(optimizedQ4.toFile(), ConversionOptions.builder()
+                    .quantizationMode(ConversionOptions.QuantizationMode.RUNTIME_QUANTIZED_MATMUL)
+                    .targetDataType(DataType.FLOAT)
+                    .embeddingDataType(DataType.HALF)
+                    .lastPositionLogitsOnly(true)
+                    .forTraining(false)
+                    .preserveTokenizerInfo(true)
+                    .kvQuantFormat(1)
+                    .tensorBatchSize(4)
+                    .useMemoryMapping(true)
+                    .build());
+        } else if (Boolean.getBoolean("sdx.qwen.mobileProfile")) {
+            graph = GGMLModelImport.importModel(gguf.toFile(), ConversionOptions.builder()
+                    .quantizationMode(ConversionOptions.QuantizationMode.DEQUANTIZE_TO_FLOAT16)
+                    .targetDataType(DataType.FLOAT16)
+                    .embeddingDataType(DataType.HALF)
+                    .lastPositionLogitsOnly(true)
+                    .forTraining(false)
+                    .preserveTokenizerInfo(true)
+                    .kvQuantFormat(0)
+                    .tensorBatchSize(10)
+                    .useMemoryMapping(true)
+                    .build());
+        } else {
+            graph = GGMLModelImport.importModel(gguf.toFile());
+        }
         assertTrue(graph.hasVariable("model.embed_tokens.weight"),
                 "GGUF import omitted model.embed_tokens.weight");
         assertTrue(graph.getVariable("model.embed_tokens.weight").getArr() != null,

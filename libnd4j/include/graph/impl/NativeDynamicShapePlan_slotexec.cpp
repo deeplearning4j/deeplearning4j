@@ -4220,11 +4220,14 @@ Status NativeDynamicShapePlan::executeSlot(
     }
   }
 
-  // A value-dependent shape op can follow a captured segment whose integral
-  // control output was produced asynchronously on the plan-owned stream. The
-  // subsequent host D2H in computeShapeKey must not race that producer. Actuality
-  // counters tell us whether a plan-internal control has a newer device value;
-  // synchronize the producer stream once at that precise graph-to-host boundary.
+  // A value-dependent shape op can follow a captured segment whose control
+  // output was produced asynchronously on the plan-owned stream. The subsequent
+  // host D2H in computeShapeKey/calculateOutputShape must not race that producer.
+  // Small structural controls use actuality counters to avoid unnecessary waits.
+  // Runtime-sized outputs (Where/NonZero/Unique/NMS-class operations) inspect a
+  // potentially large input tensor to determine their extent, so they require
+  // producer ordering regardless of the bounded-control cutoff or current
+  // actuality counters.
   // External host-authoritative controls and graph-capture execution do not need
   // (and during capture must not perform) this synchronization.
   const bool valueShapeCaptureActive =
@@ -4233,15 +4236,18 @@ Status NativeDynamicShapePlan::executeSlot(
       dspStreamIsCapturing(dspGetGapStream()) ||
       dspStreamIsCapturing(dspGetExecutionStream());
   if (slot.flags.outputShapeDependsOnInputValues && !valueShapeCaptureActive) {
+    const bool scansRuntimeTensorValues = slot.hasDynamicOutputSize();
     bool hasPendingInternalControl = false;
     for (int i = 0; i < slot.wiring.numInputs; i++) {
       if (slot.wiring.inputSourceIndices[i] < 0 ||
-          !isSmallIntegralControlArray(shapeValueInputs[i])) {
+          (!scansRuntimeTensorValues &&
+           !isSmallIntegralControlArray(shapeValueInputs[i]))) {
         continue;
       }
       auto* controlBuffer = shapeValueInputs[i]->dataBuffer();
       if (controlBuffer != nullptr && !controlBuffer->isClosed() &&
-          controlBuffer->isSpecialActual() && !controlBuffer->isPrimaryActual()) {
+          (scansRuntimeTensorValues ||
+           (controlBuffer->isSpecialActual() && !controlBuffer->isPrimaryActual()))) {
         hasPendingInternalControl = true;
         break;
       }

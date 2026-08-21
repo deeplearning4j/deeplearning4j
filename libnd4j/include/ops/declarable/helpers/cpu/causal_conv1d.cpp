@@ -20,6 +20,8 @@
 #include <math/templatemath.h>
 #include <ops/declarable/helpers/causal_conv1d.h>
 
+#include <cmath>
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -87,14 +89,24 @@ static void causalConv1d_(LaunchContext* context, NDArray* x, NDArray* weight, N
                     } else {
                         x_val = 0.0f;
                     }
-                    sum += static_cast<float>(wBuf[d * wChanStride + (K - 1 - kk) * wDimStride]) * x_val;
+                    const float weightValue =
+                        static_cast<float>(wBuf[d * wChanStride + (K - 1 - kk) * wDimStride]);
+                    // Encode the accumulation operation explicitly. Plain a*b+c is
+                    // contracted/vectorized differently by x86 and ARM compilers,
+                    // and the resulting ULP drift is amplified by gated_delta_rule.
+                    sum = std::fma(weightValue, x_val, sum);
                 }
 
                 if (bBuf != nullptr) sum += static_cast<float>(bBuf[d]);
 
-                // SiLU activation: x * sigmoid(x) — computed in float to avoid exp overflow
+                // Evaluate exp in double and round once to float. Host expf comes
+                // from different libc implementations on glibc/x86 and Bionic/ARM.
+                // Preserve sd_exp's clamp while avoiding an architecture-specific
+                // float transcendental before the recurrent GDN path.
                 if (activation == 1) {
-                    float sig = 1.0f / (1.0f + sd::math::sd_exp<float, float>(-sum));
+                    const double exponent = std::max(-88.0, std::min(88.0, -static_cast<double>(sum)));
+                    const float expValue = static_cast<float>(std::exp(exponent));
+                    const float sig = 1.0f / (1.0f + expValue);
                     sum = sum * sig;
                 }
 

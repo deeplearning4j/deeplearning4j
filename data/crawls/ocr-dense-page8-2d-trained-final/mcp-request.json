@@ -1,0 +1,65 @@
+{
+  "backend" : "project-local",
+  "distributed" : false,
+  "executedAt" : "2026-08-21T02:41:13.458920382Z",
+  "projectRoot" : "/home/agibsonccc/Documents/GitHub/deeplearning4j",
+  "knowledgeBase" : "ocr-dense-page8-2d-trained-final",
+  "request" : {
+    "name" : "smoldocling-page8-2d-trained-final",
+    "documents" : [ {
+      "path" : "/home/agibsonccc/Documents/GitHub/kompile/kompile-vlm-demo/sample-pdfs/sample.pdf",
+      "pipelineId" : "vlm-page8-2d-trained-final",
+      "loaderName" : "pdf",
+      "chunkerName" : "sentence"
+    } ],
+    "knowledgeBase" : {
+      "name" : "ocr-dense-page8-2d-trained-final"
+    },
+    "pipelines" : [ {
+      "pipelineId" : "vlm-page8-2d-trained-final",
+      "pipelineType" : "VLM",
+      "registeredPipelineId" : "vlm-document",
+      "loaderName" : "pdf",
+      "chunkerName" : "sentence",
+      "modelId" : "smoldocling-256m",
+      "modelBindings" : {
+        "default" : "smoldocling-256m"
+      },
+      "options" : {
+        "outputFormat" : "MARKDOWN",
+        "maxPages" : 1,
+        "pageRange" : "8",
+        "maxNewTokens" : 4096,
+        "pdfRenderDpi" : 144,
+        "pageBatchSize" : 1,
+        "temperature" : 0.0,
+        "doSample" : false,
+        "timeoutMinutes" : 30
+      }
+    } ],
+    "pipelineRegistry" : {
+      "models" : [ {
+        "id" : "smoldocling-256m",
+        "modelId" : "smoldocling-256m",
+        "role" : "default",
+        "localPath" : "/home/agibsonccc/Documents/GitHub/kompile/data/models/vlm-pipelines/smoldocling-256m",
+        "format" : "samediff",
+        "type" : "vlm_pipeline",
+        "autoBootstrap" : false
+      } ]
+    },
+    "defaultPipelineId" : "vlm-page8-2d-trained-final",
+    "steps" : [ "LOADING", "MARKDOWN_EXTRACTION", "CHUNKING" ],
+    "strictSteps" : true,
+    "deriveOntology" : false,
+    "runtimeConfig" : {
+      "runReasoningLearning" : false
+    },
+    "modelRuntime" : {
+      "autoBootstrap" : false,
+      "localPath" : "/home/agibsonccc/Documents/GitHub/kompile/data/models/vlm-pipelines/smoldocling-256m",
+      "type" : "vlm_pipeline",
+      "timeoutMinutes" : 30
+    }
+  }
+}

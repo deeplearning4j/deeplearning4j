@@ -375,7 +375,7 @@ static inline void markFunctionalCaptureFailure(GraphSegmentExec& exec,
   exec.replayHandle.reset();
   exec.segPhase.reset();  // PRIMARY: back to BUILDING:WARMUP
   exec.outcome = SegmentExecOutcome::PENDING;
-  exec.clearShapeChangeWarmupCaptureReady("functional_capture_failure");
+  exec.clearBoundedRebuildWarmupCaptureReady("functional_capture_failure");
   exec.markArgsStale();
   exec.lifecycleState = SLS::NEEDS_WARMUP;  // Legacy sync
 }

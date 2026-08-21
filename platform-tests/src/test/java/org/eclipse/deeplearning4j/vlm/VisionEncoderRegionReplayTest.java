@@ -70,6 +70,7 @@ public class VisionEncoderRegionReplayTest {
 
             INDArray initial = encodeRegion(visionEncoder, preprocessor, target, "initial");
             INDArray fresh = encodeRegion(visionEncoder, preprocessor, target, "repeat");
+            dumpFingerprintsIfRequested(visionEncoder);
 
             // Separate the reference and production-order scenarios without clearing mid-scenario.
             visionEncoder.resetSession();
@@ -159,5 +160,19 @@ public class VisionEncoderRegionReplayTest {
         } finally {
             SameDiffMemoryUtils.safeClose(difference);
         }
+    }
+
+    private void dumpFingerprintsIfRequested(SameDiff visionEncoder) {
+        if (!Boolean.getBoolean("vlm.test.dumpFingerprints")) {
+            return;
+        }
+        org.bytedeco.javacpp.Pointer planHandle = visionEncoder.dsp().getNativePlanHandle();
+        if (planHandle == null) {
+            log.info("Vision fingerprint ring unavailable: no native plan handle");
+            return;
+        }
+        Nd4j.getNativeOps().drainPlanFingerprintRing(planHandle);
+        log.info("Vision fingerprint ring: {}",
+                Nd4j.getNativeOps().getPlanFingerprintJson(planHandle));
     }
 }

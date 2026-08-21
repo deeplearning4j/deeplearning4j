@@ -1001,39 +1001,39 @@ struct GraphSegmentExec {
 
   int executionCount = 0;
 
-  // A successful shape-drift rebuild performs one bounded functional warmup
+  // A successful segment-local rebuild performs one bounded functional warmup
   // and then compiles the replacement artifact without executing it again in
   // the same logical invocation. That validated transition contributes one
   // capture-readiness observation on the next call. Keep the credit explicit
   // so configured capture windows above the default are still honored.
  private:
-  bool shapeChangeWarmupCaptureCredit_ = false;
+  bool rebuildWarmupCaptureCredit_ = false;
 
  public:
-  void markShapeChangeWarmupCaptureReady() {
-    shapeChangeWarmupCaptureCredit_ = true;
+  void markBoundedRebuildWarmupCaptureReady() {
+    rebuildWarmupCaptureCredit_ = true;
     DSP_DIAG(LIFECYCLE,
-             "SHAPE_CHANGE_CAPTURE_CREDIT: granted phase=%s exec=%d",
+             "REBUILD_WARMUP_CAPTURE_CREDIT: granted phase=%s exec=%d",
              displayPhaseName(), executionCount);
   }
 
   bool captureWarmupWindowSatisfied(int requiredExecutions) const {
     const int effectiveExecutions =
-        executionCount + (shapeChangeWarmupCaptureCredit_ ? 1 : 0);
+        executionCount + (rebuildWarmupCaptureCredit_ ? 1 : 0);
     return effectiveExecutions >= requiredExecutions;
   }
 
-  bool hasShapeChangeWarmupCaptureCredit() const {
-    return shapeChangeWarmupCaptureCredit_;
+  bool hasBoundedRebuildWarmupCaptureCredit() const {
+    return rebuildWarmupCaptureCredit_;
   }
 
-  void clearShapeChangeWarmupCaptureReady(const char* reason) {
-    if (shapeChangeWarmupCaptureCredit_) {
+  void clearBoundedRebuildWarmupCaptureReady(const char* reason) {
+    if (rebuildWarmupCaptureCredit_) {
       DSP_DIAG(LIFECYCLE,
-               "SHAPE_CHANGE_CAPTURE_CREDIT: cleared reason=%s phase=%s exec=%d",
+               "REBUILD_WARMUP_CAPTURE_CREDIT: cleared reason=%s phase=%s exec=%d",
                reason ? reason : "?", displayPhaseName(), executionCount);
     }
-    shapeChangeWarmupCaptureCredit_ = false;
+    rebuildWarmupCaptureCredit_ = false;
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -1157,9 +1157,9 @@ struct GraphSegmentExec {
     capturedInputAddrKey = 0;
     capturedCreateValueKey = 0;
     capturedSlotAddrHash = 0;
-    clearShapeChangeWarmupCaptureReady("reset_capture_keys");
+    clearBoundedRebuildWarmupCaptureReady("reset_capture_keys");
     DSP_DIAG(LIFECYCLE,
-             "RESET_CAPTURE_KEYS: cleared shape/inputAddr/createValue/slotAddr/shapeWarmupCredit phase=%s exec=%d",
+             "RESET_CAPTURE_KEYS: cleared shape/inputAddr/createValue/slotAddr/rebuildWarmupCredit phase=%s exec=%d",
              displayPhaseName(), executionCount);
   }
 
@@ -3636,6 +3636,13 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Called from executeSegmentWithGpuGraph based on lifecycleState.
   Status segDispatchWarmup(GraphSegment& seg, NDArray** externalArrays,
                            int numExt, void* stream);
+  // Run one transactional functional pass after segment-local replay identity
+  // drift (shape boundary, baked create value, or equivalent). The helper owns
+  // invalidation, coherency, shape replacement authorization, lifecycle
+  // advancement, and capture-readiness credit.
+  Status runBoundedSegmentRebuildWarmup(
+      GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream,
+      const char* reason);
   // segDispatchCompile — handles one compile cycle for a segment.
   // segShapeKey is passed by reference: the shape-change recompile path
   // recomputes the key after a mini-warmup and writes the new value back

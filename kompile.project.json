@@ -1,0 +1,51 @@
+{
+  "schemaVersion" : 1,
+  "projectId" : "3be0ad7c-d930-4fb1-a24c-c91225e8f9f5",
+  "name" : "deeplearning4j",
+  "description" : null,
+  "lifecycle" : "ACTIVE",
+  "tags" : [ "auto-detected", "code", "directory-project", "local-stdio" ],
+  "repository" : {
+    "backend" : "LOCAL",
+    "remoteUrl" : null,
+    "branch" : "main",
+    "autoCommit" : true,
+    "remoteSyncEnabled" : true,
+    "gitXetEnabled" : false,
+    "metadata" : { }
+  },
+  "modules" : [ ],
+  "components" : [ ],
+  "codingProjects" : [ {
+    "id" : "deeplearning4j",
+    "codeProjectId" : "deeplearning4j",
+    "name" : "Java project (deeplearning4j)",
+    "rootPath" : "/home/agibsonccc/Documents/GitHub/deeplearning4j",
+    "contextPath" : "data/code-projects/deeplearning4j",
+    "agentsMdPath" : "data/code-projects/deeplearning4j/AGENTS.md",
+    "chatsPath" : "data/code-projects/deeplearning4j/chats",
+    "metadataPath" : "data/code-projects/deeplearning4j/metadata",
+    "indexPath" : "data/code-projects/deeplearning4j/indexes",
+    "description" : null,
+    "includePatterns" : null,
+    "excludePatterns" : null,
+    "autoIndex" : true,
+    "factSheetId" : null,
+    "lifecycle" : "ACTIVE",
+    "tags" : [ "code", "java", "auto-detected", "directory-project" ],
+    "metadata" : {
+      "detection.language" : "Java",
+      "detection.buildFile" : "pom.xml"
+    },
+    "createdAt" : "2026-08-21T20:06:29.082576947Z",
+    "updatedAt" : "2026-08-21T20:06:29.083235286Z"
+  } ],
+  "models" : [ ],
+  "pipelines" : [ ],
+  "scripts" : [ ],
+  "crawlProfiles" : [ ],
+  "workflows" : [ ],
+  "metadata" : { },
+  "createdAt" : "2026-08-21T20:06:29.083137933Z",
+  "updatedAt" : "2026-08-21T20:06:29.083884278Z"
+}

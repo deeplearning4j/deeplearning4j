@@ -1,0 +1,16 @@
+{
+  "id" : "deeplearning4j",
+  "codeProjectId" : "deeplearning4j",
+  "name" : "Java project (deeplearning4j)",
+  "rootPath" : "/home/agibsonccc/Documents/GitHub/deeplearning4j",
+  "contextPath" : "data/code-projects/deeplearning4j",
+  "agentsMdPath" : "data/code-projects/deeplearning4j/AGENTS.md",
+  "chatsPath" : "data/code-projects/deeplearning4j/chats",
+  "metadataPath" : "data/code-projects/deeplearning4j/metadata",
+  "indexPath" : "data/code-projects/deeplearning4j/indexes",
+  "includePatterns" : [ ],
+  "excludePatterns" : [ ],
+  "autoIndex" : true,
+  "tags" : [ "code", "java", "auto-detected", "directory-project" ],
+  "updatedAt" : "2026-08-21T20:06:29.083235286Z"
+}

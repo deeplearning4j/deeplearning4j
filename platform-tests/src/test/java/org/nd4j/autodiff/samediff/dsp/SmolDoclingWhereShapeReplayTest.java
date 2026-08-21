@@ -24,10 +24,12 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * Throwaway isolation test for the SmolDocling vision-mask failure reported as
+ * Isolation test for the SmolDocling vision-mask failure reported as
  * {@code [992,1,2] -> [1024,2]} inside a one-input {@code Where} DSP slot.
+ * The predicate is deliberately produced by a capturable plan-internal op;
+ * a direct placeholder-to-Where graph cannot exercise producer-stream ordering.
  */
-class SmolDoclingWhereShapeThrowawayTest {
+class SmolDoclingWhereShapeReplayTest {
 
     @Test
     void oneInputWhereRefreshesShapeThroughCoordinateReshape() {
@@ -36,10 +38,14 @@ class SmolDoclingWhereShapeThrowawayTest {
             sd.setDspNativeAutoCompileEnabled(true);
 
             SDVariable patchMask = sd.placeHolder("pixel_attention_mask", DataType.BOOL, 32, 32);
-            SDVariable coordinates = sd.where("Where_1", patchMask);
+            SDVariable zeros = sd.zerosLike("mask_zeros", patchMask);
+            SDVariable livePredicate = patchMask.neq("mask_not_zero", zeros);
+            SDVariable coordinates = sd.where("Where_1", livePredicate);
             sd.reshape("coordinates_with_group_axis", coordinates, -1, 1, 2);
 
-            int[] validPatchCounts = {1024, 992, 1024, 992};
+            // Four stable observations allow the producer segment to reach replay,
+            // then exercise the production cardinality round-trip on one plan.
+            int[] validPatchCounts = {1024, 1024, 1024, 1024, 992, 1024, 1024};
             for (int execution = 0; execution < validPatchCounts.length; execution++) {
                 int validPatchCount = validPatchCounts[execution];
                 INDArray mask = Nd4j.ones(DataType.BOOL, 32, 32);
@@ -55,6 +61,15 @@ class SmolDoclingWhereShapeThrowawayTest {
                         "Execution " + execution + " reused a stale Where extent");
                 assertEquals((long) validPatchCount * 2, output.length(),
                         "Execution " + execution + " allocated the wrong coordinate buffer length");
+                assertEquals(0, output.getLong(0, 0, 0),
+                        "Execution " + execution + " corrupted the first coordinate row");
+                assertEquals(0, output.getLong(0, 0, 1),
+                        "Execution " + execution + " corrupted the first coordinate column");
+                assertEquals(validPatchCount == 1024 ? 31 : 30,
+                        output.getLong(validPatchCount - 1, 0, 0),
+                        "Execution " + execution + " read a stale predicate row");
+                assertEquals(31, output.getLong(validPatchCount - 1, 0, 1),
+                        "Execution " + execution + " read a stale predicate column");
 
                 output.close();
                 mask.close();

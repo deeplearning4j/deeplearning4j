@@ -1,0 +1,13 @@
+{
+  "codeProjectId" : "deeplearning4j",
+  "sourceRoot" : "/home/agibsonccc/Documents/GitHub/deeplearning4j",
+  "actualIndexer" : "LocalCodeIndexer",
+  "actualIndexPath" : "/home/agibsonccc/.kompile/code-index/deeplearning4j",
+  "includePatterns" : [ ],
+  "requestedExcludePatterns" : [ ],
+  "defaultExcludePatterns" : [ ".git", ".svn", ".hg", ".kompile", ".claude", ".codex", ".gemini", ".opencode", ".cursor", ".idea", ".vscode", ".settings", ".gradle", "target", "build", "dist", "out", "node_modules", "__pycache__", ".tox", ".mypy_cache", ".pytest_cache", ".angular", ".next", ".nuxt", "coverage", ".cache", "bin", "obj" ],
+  "effectiveExcludePatterns" : [ ".git", ".svn", ".hg", ".kompile", ".claude", ".codex", ".gemini", ".opencode", ".cursor", ".idea", ".vscode", ".settings", ".gradle", "target", "build", "dist", "out", "node_modules", "__pycache__", ".tox", ".mypy_cache", ".pytest_cache", ".angular", ".next", ".nuxt", "coverage", ".cache", "bin", "obj" ],
+  "indexPath" : "data/code-projects/deeplearning4j/indexes",
+  "latestIndexPath" : "data/code-projects/deeplearning4j/indexes/latest",
+  "autoIndex" : true
+}

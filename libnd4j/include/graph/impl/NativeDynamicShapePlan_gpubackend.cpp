@@ -300,6 +300,40 @@ Status NativeDynamicShapePlan::segDispatchWarmup(
   return warmupStatus;
 }
 
+Status NativeDynamicShapePlan::runBoundedSegmentRebuildWarmup(
+    GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream,
+    const char* reason) {
+  SegmentLifecycle::invalidateSegmentCaptures(this, seg, reason);
+  platformResetGapCaches();
+  platformResetBatchD2D();
+
+  Status warmupStatus;
+  {
+    // The plan-level execute count remains in frozen steady state during a
+    // segment-local rebuild, so needsSync() would otherwise skip the
+    // prepareSpecialUse/registerSpecialUse bracket. Force coherency only for
+    // this bounded pass, and allow legitimate output shape replacement.
+    SyncOverride warmupSyncGuard(*this, reason);
+    ShapeChangeWarmupGuard warmupGuard(*this, seg.def.startSlot, seg.def.endSlot);
+    warmupStatus = executeSegmentSlotBySlot(
+        seg, externalArrays, numExt, stream);
+  }
+  if (warmupStatus != Status::OK) {
+    DSP_DIAG(COMPILE,
+             "bounded rebuild warmup FAILED for seg[%d-%d] reason=%s status=%d",
+             seg.def.startSlot, seg.def.endSlot, reason ? reason : "?",
+             static_cast<int>(warmupStatus));
+    return warmupStatus;
+  }
+
+  SegmentLifecycle::markWarmupDone(seg.exec);
+  seg.exec.markBoundedRebuildWarmupCaptureReady();
+  DSP_DIAG(COMPILE,
+           "bounded rebuild warmup OK for seg[%d-%d] reason=%s",
+           seg.def.startSlot, seg.def.endSlot, reason ? reason : "?");
+  return Status::OK;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // segDispatchCompile — NEEDS_COMPILE state handler
 // ═══════════════════════════════════════════════════════════════════════════
@@ -447,26 +481,13 @@ Status NativeDynamicShapePlan::segDispatchCompile(
       DSP_SEG_EVENT(seg, RECOMPILE_TRIGGERED,
                     "shape change detected. Running slot-by-slot warmup to "
                     "refresh outputSlots_ before recompilation.");
-      // Invalidate only this segment. Resetting the plan-wide execute counter
+      // Rebuild only this segment. Resetting the plan-wide execute counter
       // would destructively re-warm unrelated captured segments.
-      SegmentLifecycle::invalidateSegmentCaptures(this, seg, "shape_change");
-      platformResetGapCaches();
-      platformResetBatchD2D();
-      Status warmupStatus;
-      {
-        ShapeChangeWarmupGuard warmupGuard(*this, seg.def.startSlot, seg.def.endSlot);
-        warmupStatus = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
-      }
+      Status warmupStatus = runBoundedSegmentRebuildWarmup(
+          seg, externalArrays, numExt, stream, "shape_change");
       if (warmupStatus != Status::OK) {
-        DSP_DIAG(COMPILE, "segDispatchCompile: shape-change warmup FAILED for seg[%d-%d] status=%d",
-                 seg.def.startSlot, seg.def.endSlot, static_cast<int>(warmupStatus));
         return warmupStatus;
       }
-      // Transition NEEDS_WARMUP -> NEEDS_COMPILE after successful warmup.
-      // invalidateSegmentCaptures set state to NEEDS_WARMUP; the slot-by-slot
-      // execution above completed the warmup, so advance the state machine
-      // before calling markCompiled (which asserts NEEDS_COMPILE).
-      SegmentLifecycle::markWarmupDone(seg.exec);
       shapeChangeWarmupCompleted = true;
       segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
       DSP_DIAG(COMPILE, "segDispatchCompile: shape-change warmup OK for seg[%d-%d], "
@@ -616,7 +637,6 @@ Status NativeDynamicShapePlan::segDispatchCompile(
       // Publish capture readiness only after the replacement artifact and its
       // coverage audit are valid. Capture/direct execution must wait until the
       // next call or stateful/in-place operations would execute twice.
-      seg.exec.markShapeChangeWarmupCaptureReady();
       invocationSatisfiedByWarmup = true;
     }
   }

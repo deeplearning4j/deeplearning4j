@@ -4146,8 +4146,9 @@ Status NativeDynamicShapePlan::executeSteadyState(
       for (int i = 0; i < numRequestedOutputs; i++) {
         int slotIdx = requestedOutputSlotIndices_[i];
         if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
+          NDArray* mappedOutput = outputSlots_[slotIdx];
           requestedOutputs[i] =
-              platformGetOutputForDevice0(outputSlots_[slotIdx], slotIdx, i);
+              platformGetOutputForDevice0(mappedOutput, slotIdx, i);
         } else {
           requestedOutputs[i] = nullptr;
         }
@@ -5392,12 +5393,32 @@ void NativeDynamicShapePlan::phaseCompile(NDArray** externalInputs, int numExter
     bool firstUnresolved = true;
     const GraphBackendRequest unresolvedRequest = makeGraphBackendRequest();
     const auto& unresolvedCandidates = getGraphBackendCandidates();
-    for (const auto& seg : segments_) {
+    for (auto& seg : segments_) {
       if (seg.def.selectedBackend != SelectedBackend::GRAPH_BACKEND ||
           !seg.def.isCapturable || seg.def.allFrozenConstants) {
         continue;
       }
       if (seg.resolvedGraphBackend == nullptr) {
+        const auto admitted = GraphBackendResolver::resolveSegment(
+            unresolvedRequest, unresolvedCandidates, slots_, seg.def.startSlot,
+            seg.def.endSlot, seg.resolvedGraphBackend);
+
+        // Compiler backends deliberately admit only the ranges they can lower.
+        // On a platform with an integrated recorder, a range rejected by every
+        // compiler is not a lowering failure: it is a DEVICE_REPLAY range. Make
+        // that decision before sealing so replay never discovers it mid-loop.
+        // If a backend admitted the range but failed to lower it, retain the
+        // fail-closed contract below — that is a genuine compiler defect.
+        if (admitted.empty() && modeContract.usesGraphCapture) {
+          DSP_DIAG(COMPILE,
+                   "phaseCompile: seg[%d-%d] admitted by no compiler; "
+                   "publishing DEVICE_REPLAY before compilation seal",
+                   seg.def.startSlot, seg.def.endSlot);
+          seg.def.selectedBackend = SelectedBackend::DEVICE_REPLAY;
+          seg.setResolvedGraphBackend(nullptr, unresolvedRequest);
+          continue;
+        }
+
         unresolvedSegments++;
         DSP_DIAG(COMPILE,
                  "phaseCompile: unresolved compiler segment [%d-%d] "
@@ -5422,9 +5443,6 @@ void NativeDynamicShapePlan::phaseCompile(NDArray** externalInputs, int numExter
           if (slot != seg.def.startSlot) unresolvedDetail << ",";
           unresolvedDetail << slots_[slot].ident.opName;
         }
-        const auto admitted = GraphBackendResolver::resolveSegment(
-            unresolvedRequest, unresolvedCandidates, slots_, seg.def.startSlot,
-            seg.def.endSlot, seg.resolvedGraphBackend);
         unresolvedDetail << " admitted=";
         if (admitted.empty()) {
           unresolvedDetail << "none";

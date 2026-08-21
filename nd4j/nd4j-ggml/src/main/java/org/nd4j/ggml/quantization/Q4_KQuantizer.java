@@ -122,10 +122,10 @@ public class Q4_KQuantizer implements Quantizer {
 
             // Step 4: pack L[] and M[] into 12 bytes using ggml's get_scale_min_k4 packing.
             // The packing layout is (from ggml-common.h make_qkx2_quants / set_scale_min_k4):
-            //   bytes[0..3]:  L[0]..L[3] in bits 0..5, upper 2 bits of M[0]..M[3] in bits 6..7
-            //   bytes[4..7]:  M[0]..M[3] in bits 0..5  (lower 6 bits; upper 2 stored in bytes[0..3])
-            //   bytes[8..11]: bottom nibble = lower 4 bits of L[4..7] or M[4..7],
-            //                 top nibble    = upper 2 bits packed
+            //   bytes[0..3]:  L[0]..L[3] in bits 0..5, upper 2 bits of L[4]..L[7] in bits 6..7
+            //   bytes[4..7]:  M[0]..M[3] in bits 0..5, upper 2 bits of M[4]..M[7] in bits 6..7
+            //   bytes[8..11]: low nibble = lower 4 bits of L[4..7],
+            //                 high nibble = lower 4 bits of M[4..7]
             // This is the exact inverse of get_scale_min_k4 used in Q4_KDequantizer.
             //
             // get_scale_min_k4(j, q):
@@ -134,9 +134,10 @@ public class Q4_KQuantizer implements Quantizer {
             //           m  = (q[j+4] >> 4)   | ((q[j]   >> 6) << 4)
             //
             // Reverse-engineering the packing for L and M:
-            // For j < 4:
-            //   q[j]   = L[j] | ((M[j] & 0x30) << 2)  — lower 6 bits of L[j] + upper 2 bits of M[j] in bits 6-7
-            //   q[j+4] = M[j] & 0x3F                   — lower 6 bits of M[j]
+            // For j < 4, initialize only the low six bits. The high bits are
+            // supplied by L[j+4] and M[j+4], respectively:
+            //   q[j]   = L[j] & 0x3F
+            //   q[j+4] = M[j] & 0x3F
             // For j in [4..7]:
             //   scale sc[j] = (q[j+4] & 0xF) | ((q[j-4] >> 6) << 4)
             //   min   m[j]  = (q[j+4] >> 4)  | ((q[j]   >> 6) << 4)
@@ -145,11 +146,11 @@ public class Q4_KQuantizer implements Quantizer {
             //   => q[j]   bits 6-7 = (M[j] >> 4) & 3  -- these are the 2 high bits of the min
             byte[] scaleBytes = new byte[12];
 
-            // Fill bytes[0..3] and bytes[4..7] for j in [0..3]
+            // Fill bytes[0..3] and bytes[4..7] for j in [0..3]. The high bits
+            // stay clear here: bytes[0..3] receive the high bits of L[4..7]
+            // below, while bytes[4..7] receive the high bits of M[4..7].
             for (int j = 0; j < 4; j++) {
-                // lower 6 bits of L[j]; upper 2 bits of M[j] go into bits 6-7
-                scaleBytes[j]     = (byte) ((L[j] & 0x3F) | ((M[j] & 0x30) << 2));
-                // lower 6 bits of M[j]
+                scaleBytes[j]     = (byte) (L[j] & 0x3F);
                 scaleBytes[j + 4] = (byte) (M[j] & 0x3F);
             }
             // Fill bytes[8..11] for j in [4..7], and update high bits in bytes[j-4] and bytes[j]

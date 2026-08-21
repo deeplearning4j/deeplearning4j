@@ -6627,9 +6627,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
            planLifecycle_.isShapesFrozen() ? 1 : 0,
            Environment::getInstance().tritonSkipKernels() ? 1 : 0,
            allowTritonCudaGraphReplay ? 1 : 0);
-  DSP_DIAG(EXECUTE, "  seg.exec.executionCount=%d, shapeChangeCaptureCredit=%d, captureMinExec=%d, window=[%d,inf), inWindow=%d",
+  DSP_DIAG(EXECUTE, "  seg.exec.executionCount=%d, rebuildWarmupCaptureCredit=%d, captureMinExec=%d, window=[%d,inf), inWindow=%d",
            seg.exec.executionCount,
-           seg.exec.hasShapeChangeWarmupCaptureCredit() ? 1 : 0,
+           seg.exec.hasBoundedRebuildWarmupCaptureCredit() ? 1 : 0,
            captureMinExec, captureMinExec, execCountInWindow ? 1 : 0);
   // hasReplayHandle=1 + hasComposite=1 means composite-captured (sentinel + island handles).
   // hasReplayHandle=1 + hasComposite=0 means monolithic-captured (full graph in replayHandle).
@@ -6813,14 +6813,34 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   // Those ops execute live before each cudaGraphLaunch (see replayMonolithicGraph),
   // so their input values changing per decode step is handled naturally — no need
   // to invalidate and re-capture the entire graph.
+  auto rebuildForCreateValueDrift = [&](const char* reason) -> Status {
+    const LongType capturedCreateValueKeyBefore =
+        seg.exec.capturedCreateValueKey;
+    Status rebuildStatus = runBoundedSegmentRebuildWarmup(
+        seg, externalArrays, numExt, stream, reason);
+    markReplayInvariantInvalidatedForDispatch(
+        seg, reason, extAddrsStable, hasReplayHandle, replayHandleNull,
+        hasComposite);
+    if (rebuildStatus != Status::OK) return rebuildStatus;
+
+    LongType rebuiltShapeKey = computeSegmentShapeKey(
+        seg, externalArrays, numExt);
+    char compileReason[160];
+    std::snprintf(compileReason, sizeof(compileReason),
+                  "%s (createValueKey %lld->%lld)", reason ? reason : "?",
+                  static_cast<long long>(capturedCreateValueKeyBefore),
+                  static_cast<long long>(createValueKey));
+    recordMidExecutionCompile(seg.def.startSlot, seg.def.endSlot, compileReason);
+    bool compileWarmupSatisfied = false;
+    return segDispatchCompile(seg, externalArrays, numExt, stream,
+                              rebuiltShapeKey, compileWarmupSatisfied);
+  };
+
   if (!createValuesStable && seg.exec.replayHandle && !hasComposite &&
       !seg.exec.createOpsExcludedFromGraph) {
     DSP_DIAG(EXECUTE, "CREATE_VALUE_KEY mismatch: captured=%lld current=%lld → invalidating MONOLITHIC graph seg[%d-%d]",
              (long long)seg.exec.capturedCreateValueKey, (long long)createValueKey, seg.def.startSlot, seg.def.endSlot);
-    SegmentLifecycle::invalidateForRebuild(this, seg, "create_value_key_mismatch");
-    markReplayInvariantInvalidatedForDispatch(
-        seg, "create_value_key_mismatch",
-        extAddrsStable, hasReplayHandle, replayHandleNull, hasComposite);
+    return rebuildForCreateValueDrift("create_value_key_mismatch");
   } else if (!createValuesStable && !hasComposite && seg.exec.createOpsExcludedFromGraph) {
     DSP_DIAG(EXECUTE, "CREATE_VALUE_KEY mismatch: captured=%lld current=%lld — MONOLITHIC seg[%d-%d] "
              "skipping invalidation (create ops excluded from graph, execute live at replay)",
@@ -6831,10 +6851,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
              "COMPOSITE graph seg[%d-%d] (captured create value changed)",
              (long long)seg.exec.capturedCreateValueKey, (long long)createValueKey,
              seg.def.startSlot, seg.def.endSlot);
-    SegmentLifecycle::invalidateForRebuild(this, seg, "composite_create_value_key_mismatch");
-    markReplayInvariantInvalidatedForDispatch(
-        seg, "composite_create_value_key_mismatch",
-        extAddrsStable, hasReplayHandle, replayHandleNull, hasComposite);
+    return rebuildForCreateValueDrift(
+        "composite_create_value_key_mismatch");
   }
 
   // Triton graph replay conditions:
