@@ -1020,6 +1020,21 @@ if(DEFINED PACKAGE_DIR AND NOT PACKAGE_DIR STREQUAL "")
             endif()
         endforeach()
     endforeach()
+
+    # ROCm package revisions differ on whether the install step preserves the
+    # intermediate `library` directory. Locate the sentinel recursively so both
+    # lib/rocblas/TensileLibrary.dat and lib/rocblas/library/TensileLibrary.dat
+    # layouts are accepted while the classifier path remains canonical.
+    foreach(_runtime_search_root IN LISTS _runtime_search_roots)
+        file(GLOB_RECURSE _rocblas_tensile_candidates LIST_DIRECTORIES FALSE
+            "${_runtime_search_root}/TensileLibrary.dat"
+            "${_runtime_search_root}/*/TensileLibrary.dat")
+        foreach(_rocblas_tensile_candidate IN LISTS _rocblas_tensile_candidates)
+            get_filename_component(_rocblas_tensile_dir
+                "${_rocblas_tensile_candidate}" DIRECTORY)
+            list(APPEND _rocblas_resource_dirs "${_rocblas_tensile_dir}")
+        endforeach()
+    endforeach()
     list(REMOVE_DUPLICATES _rocblas_resource_dirs)
 
     set(_rocblas_runtime_present FALSE)
