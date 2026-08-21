@@ -1746,6 +1746,7 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn('env["DL4J_ZLUDA_REQUIRE_ROCM"] = "1"', driver)
         self.assertIn('env["DL4J_ZLUDA_REQUIRE_MIOPEN"] = "1"', driver)
         self.assertIn("hardwareProbe=skipped", driver)
+        self.assertIn('generator_python = (', driver)
         self.assertNotIn("amdgpu-dkms", driver)
         self.assertNotIn("rocminfo", driver)
 

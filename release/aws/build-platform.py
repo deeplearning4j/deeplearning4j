@@ -2046,9 +2046,14 @@ def build_rocm_tensile_data(
     )
     output = temporary_directory / "tensile-output"
     threads = str(max(1, int(build.get("buildThreads") or 4)))
+    generator_python = (
+        "/usr/bin/python3"
+        if Path("/usr/bin/python3").is_file()
+        else sys.executable
+    )
     run(
         [
-            sys.executable,
+            generator_python,
             str(tool_candidates[0]),
             f"--architecture={spec['tensile_architectures']}",
             "--no-enumerate",
