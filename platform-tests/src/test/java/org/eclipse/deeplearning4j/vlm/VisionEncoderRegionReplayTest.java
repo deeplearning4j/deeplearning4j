@@ -68,33 +68,37 @@ public class VisionEncoderRegionReplayTest {
             BufferedImage parent = page.getSubimage(0, 0, 522, 1584);
             BufferedImage target = page.getSubimage(0, 0, 280, 1584);
 
-            INDArray fresh = null;
-            for (int i = 0; i < 2; i++) {
-                SameDiffMemoryUtils.safeClose(fresh);
-                fresh = encodeRegion(visionEncoder, preprocessor, target);
-            }
+            INDArray initial = encodeRegion(visionEncoder, preprocessor, target, "initial");
+            INDArray fresh = encodeRegion(visionEncoder, preprocessor, target, "repeat");
 
             // Separate the reference and production-order scenarios without clearing mid-scenario.
             visionEncoder.resetSession();
             visionEncoder.clearDynamicShapePlanCache();
 
-            SameDiffMemoryUtils.safeClose(encodeRegion(visionEncoder, preprocessor, parent));
-            INDArray replayed = encodeRegion(visionEncoder, preprocessor, target);
+            SameDiffMemoryUtils.safeClose(encodeRegion(visionEncoder, preprocessor, parent, "parent"));
+            INDArray replayed = encodeRegion(visionEncoder, preprocessor, target, "after-parent");
             visionEncoder.resetSession();
             visionEncoder.clearDynamicShapePlanCache();
-            INDArray recomputed = encodeRegion(visionEncoder, preprocessor, target);
+            INDArray recomputed = encodeRegion(visionEncoder, preprocessor, target, "post-reset");
             try {
+                double repeatDifference = maxAbsDifference(initial, fresh);
                 double replayDifference = maxAbsDifference(fresh, replayed);
                 double recomputedDifference = maxAbsDifference(fresh, recomputed);
-                log.info("Vision lifecycle comparison: freshSum={}, replayedSum={}, recomputedSum={}, "
-                                + "replayDifference={}, recomputedDifference={}",
-                        fresh.sumNumber(), replayed.sumNumber(), recomputed.sumNumber(),
-                        replayDifference, recomputedDifference);
+                double initialRecomputedDifference = maxAbsDifference(initial, recomputed);
+                log.info("Vision lifecycle comparison: initialSum={}, freshSum={}, replayedSum={}, "
+                                + "recomputedSum={}, repeatDifference={}, replayDifference={}, "
+                                + "recomputedDifference={}, initialRecomputedDifference={}",
+                        initial.sumNumber(), fresh.sumNumber(), replayed.sumNumber(),
+                        recomputed.sumNumber(), repeatDifference, replayDifference,
+                        recomputedDifference, initialRecomputedDifference);
+                assertEquals(0.0, repeatDifference, 1e-3,
+                        "Repeated target execution changed while the DSP plan remained active");
                 assertEquals(0.0, recomputedDifference, 1e-3,
                         "Target remained corrupted after rebuilding only the DSP plan; model state was mutated");
                 assertEquals(0.0, replayDifference, 1e-3,
                         "Vision output changed after replaying preceding OCR regions");
             } finally {
+                SameDiffMemoryUtils.safeClose(initial);
                 SameDiffMemoryUtils.safeClose(fresh);
                 SameDiffMemoryUtils.safeClose(replayed);
                 SameDiffMemoryUtils.safeClose(recomputed);
@@ -107,7 +111,8 @@ public class VisionEncoderRegionReplayTest {
 
     private INDArray encodeRegion(SameDiff visionEncoder,
                                   VLMImagePreprocessor preprocessor,
-                                  BufferedImage region) {
+                                  BufferedImage region,
+                                  String label) {
         ImageTiler.SplitImageResult split =
                 ImageTiler.splitImageForVLMPreservingScale(region, TARGET_SIZE, -1);
         String outputName = visionEncoder.outputs().get(0);
@@ -124,7 +129,12 @@ public class VisionEncoderRegionReplayTest {
             placeholders.put("pixel_values", pixels);
             placeholders.put("pixel_attention_mask", mask);
             try {
-                encodedFrames.add(visionEncoder.output(placeholders, outputName).get(outputName).dup());
+                INDArray encodedFrame = visionEncoder.output(placeholders, outputName)
+                        .get(outputName).dup();
+                encodedFrames.add(encodedFrame);
+                log.info("Vision frame output: label={}, frame={}/{}, content={}x{}, shape={}, sum={}",
+                        label, i + 1, split.frames.size(), content.width, content.height,
+                        encodedFrame.shape(), encodedFrame.sumNumber());
             } finally {
                 SameDiffMemoryUtils.safeClose(pixels);
                 SameDiffMemoryUtils.safeClose(mask);
