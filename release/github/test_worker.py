@@ -727,7 +727,7 @@ class WorkflowMatrixTests(unittest.TestCase):
             main_build_flow,
         )
         self.assertIn(
-            'target_link_options(${MAIN_LIB_NAME} PRIVATE\n                    "/DEF:${_sdx_windows_def}")',
+            'LINK_FLAGS "/DEF:${_sdx_windows_def}"',
             main_build_flow,
         )
         self.assertIn(

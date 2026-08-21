@@ -1572,10 +1572,11 @@ function(create_and_link_library)
                             "    ${_sdx_windows_symbol}\n")
                     endif()
                 endforeach()
-                # Explicitly pass the definition file. CMake's source-file
-                # inference is not honored by the Ninja/MSVC linker path.
-                target_link_options(${MAIN_LIB_NAME} PRIVATE
-                    "/DEF:${_sdx_windows_def}")
+                # Use the legacy MSVC target property as well as the dependency
+                # edge: CMake/Ninja has dropped target_link_options(/DEF:...) on
+                # this CUDA shared-library link path in hosted Windows builds.
+                set_target_properties(${MAIN_LIB_NAME} PROPERTIES
+                    LINK_FLAGS "/DEF:${_sdx_windows_def}")
                 set_property(TARGET ${MAIN_LIB_NAME} APPEND PROPERTY
                     LINK_DEPENDS "${_sdx_windows_def}")
                 else()
