@@ -791,6 +791,7 @@ if(EXISTS "${_runtime_manifest_path}")
 endif()
 
 set(_staged_runtime_names "")
+set(_staged_resource_names "")
 set(_staged_package_names "")
 set(_staged_runtime_alias_names "")
 set(_staged_runtime_alias_targets "")
@@ -927,31 +928,6 @@ if(DEFINED RUNTIME_POLICY AND RUNTIME_POLICY STREQUAL "zluda-amd" AND
     endforeach()
 endif()
 
-# Preserve the dependency-first order produced above. Sorting here would make
-# manifest preload order alphabetical and reintroduce consumer-before-dependency
-# failures on ROCm/ZLUDA.
-list(LENGTH _staged_runtime_names _runtime_count)
-set(_runtime_manifest
-    "# nd4j-shared-runtime-manifest-v1\n# runtime-count=${_runtime_count}\n")
-if(DEFINED PACKAGE_DIR AND NOT PACKAGE_DIR STREQUAL "")
-    # These entries are extraction metadata, not preload entries. JavaCPP must
-    # materialize each compatibility name beside its canonical target without
-    # calling System.load() on the alias and creating a second runtime identity.
-    list(SORT _staged_runtime_alias_mappings)
-    list(LENGTH _staged_runtime_alias_mappings _runtime_alias_count)
-    string(APPEND _runtime_manifest
-        "# runtime-alias-count=${_runtime_alias_count}\n")
-    foreach(_runtime_alias_mapping IN LISTS _staged_runtime_alias_mappings)
-        string(APPEND _runtime_manifest
-            "# runtime-alias=${_runtime_alias_mapping}\n")
-    endforeach()
-endif()
-if(_staged_runtime_names)
-    string(REPLACE ";" "\n" _runtime_entries "${_staged_runtime_names}")
-    string(APPEND _runtime_manifest "${_runtime_entries}\n")
-endif()
-file(WRITE "${_runtime_manifest_path}" "${_runtime_manifest}")
-
 # A binding module must not rediscover native dependencies or copy broad build
 # directory globs.  When PACKAGE_DIR is supplied, materialize the exact package
 # payload selected above: the linked backend, every canonical manifest-owned
@@ -1071,9 +1047,12 @@ if(DEFINED PACKAGE_DIR AND NOT PACKAGE_DIR STREQUAL "")
             if(_rocblas_resource_name STREQUAL "TensileLibrary.dat")
                 set(_rocblas_tensile_found TRUE)
             endif()
+            list(APPEND _staged_resource_names
+                "rocblas/library/${_rocblas_resource_relative}")
             math(EXPR _rocblas_resource_count "${_rocblas_resource_count} + 1")
         endforeach()
     endforeach()
+    list(REMOVE_DUPLICATES _staged_resource_names)
     if(_rocblas_runtime_present AND NOT _rocblas_tensile_found)
         message(FATAL_ERROR
             "librocblas.so is staged but its rocblas/library/TensileLibrary.dat "
@@ -1084,6 +1063,42 @@ if(DEFINED PACKAGE_DIR AND NOT PACKAGE_DIR STREQUAL "")
             "Staged rocBLAS dispatch resources: ${_rocblas_resource_count} files")
     endif()
 
+    list(LENGTH _runtime_package_sources _runtime_package_file_count)
+    message(STATUS
+        "Materialized classifier runtime package at "
+        "${_runtime_package_dir_absolute} (${_runtime_package_file_count} libraries)")
+endif()
+
+# Preserve the dependency-first order produced above. Resource entries are
+# extraction metadata, not preload entries; SharedCompilerRuntime materializes
+# them beside the classifier libraries before rocBLAS is loaded.
+list(LENGTH _staged_runtime_names _runtime_count)
+set(_runtime_manifest
+    "# nd4j-shared-runtime-manifest-v1\n# runtime-count=${_runtime_count}\n")
+if(DEFINED PACKAGE_DIR AND NOT PACKAGE_DIR STREQUAL "")
+    list(SORT _staged_runtime_alias_mappings)
+    list(LENGTH _staged_runtime_alias_mappings _runtime_alias_count)
+    string(APPEND _runtime_manifest
+        "# runtime-alias-count=${_runtime_alias_count}\n")
+    foreach(_runtime_alias_mapping IN LISTS _staged_runtime_alias_mappings)
+        string(APPEND _runtime_manifest
+            "# runtime-alias=${_runtime_alias_mapping}\n")
+    endforeach()
+endif()
+list(REMOVE_DUPLICATES _staged_resource_names)
+list(SORT _staged_resource_names)
+list(LENGTH _staged_resource_names _resource_count)
+string(APPEND _runtime_manifest "# resource-count=${_resource_count}\n")
+foreach(_staged_resource_name IN LISTS _staged_resource_names)
+    string(APPEND _runtime_manifest
+        "# resource=${_staged_resource_name}\n")
+endforeach()
+if(_staged_runtime_names)
+    string(REPLACE ";" "\n" _runtime_entries "${_staged_runtime_names}")
+    string(APPEND _runtime_manifest "${_runtime_entries}\n")
+endif()
+file(WRITE "${_runtime_manifest_path}" "${_runtime_manifest}")
+if(DEFINED PACKAGE_DIR AND NOT PACKAGE_DIR STREQUAL "")
     execute_process(
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different
             "${_runtime_manifest_path}"
@@ -1094,10 +1109,6 @@ if(DEFINED PACKAGE_DIR AND NOT PACKAGE_DIR STREQUAL "")
         message(FATAL_ERROR
             "Failed to copy the classifier shared-runtime manifest")
     endif()
-    list(LENGTH _runtime_package_sources _runtime_package_file_count)
-    message(STATUS
-        "Materialized classifier runtime package at "
-        "${_runtime_package_dir_absolute} (${_runtime_package_file_count} libraries)")
 endif()
 
 # Build-only metadata: JavaCPP consumes this from platform.linkpath to compile its

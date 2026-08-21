@@ -50,6 +50,8 @@ public final class SharedCompilerRuntime {
     private static final String RUNTIME_ALIAS_COUNT_PREFIX =
             "# runtime-alias-count=";
     private static final String RUNTIME_ALIAS_PREFIX = "# runtime-alias=";
+    private static final String RESOURCE_COUNT_PREFIX = "# resource-count=";
+    private static final String RESOURCE_PREFIX = "# resource=";
     private static final String RUNTIME_ALIAS_SEPARATOR = "->";
     private static final String BUILD_TOOLCHAIN_NAME =
             "javacpp-build-toolchain.properties";
@@ -208,6 +210,22 @@ public final class SharedCompilerRuntime {
                                 + alias.getKey() + "' in " + runtimeDirectory, e);
             }
         }
+        for (String resourceName : manifest.resourceNames) {
+            Path resource = runtimeDirectory.resolve(resourceName).normalize();
+            if (!resource.startsWith(runtimeDirectory)
+                    || !Files.isRegularFile(resource)) {
+                throw new IllegalStateException(
+                        "External compiler runtime manifest " + manifestPath
+                                + " declares missing resource " + resourceName);
+            }
+            try {
+                Loader.cacheResource(resource.toUri().toURL());
+            } catch (IOException e) {
+                throw new IllegalStateException(
+                        "Cannot extract external runtime resource " + resourceName
+                                + " from " + manifestPath, e);
+            }
+        }
         return manifest;
     }
 
@@ -356,6 +374,8 @@ public final class SharedCompilerRuntime {
                 }
                 materializeRuntimeAliases(
                         classLoader, runtimeResourceRoot, manifest, resource);
+                materializeRuntimeResources(
+                        classLoader, runtimeResourceRoot, manifest, resource);
                 return manifest;
             } catch (IOException e) {
                 throw new IllegalStateException(
@@ -378,9 +398,11 @@ public final class SharedCompilerRuntime {
             BufferedReader reader, String source) throws IOException {
         Set<String> runtimeNames = new LinkedHashSet<>();
         Map<String, String> runtimeAliases = new LinkedHashMap<>();
+        Set<String> resourceNames = new LinkedHashSet<>();
         boolean formatSeen = false;
         Integer declaredCount = null;
         Integer declaredAliasCount = null;
+        Integer declaredResourceCount = null;
         String line;
         while ((line = reader.readLine()) != null) {
             String runtimeName = line.trim();
@@ -441,6 +463,38 @@ public final class SharedCompilerRuntime {
                 }
                 continue;
             }
+            if (runtimeName.startsWith(RESOURCE_COUNT_PREFIX)) {
+                if (declaredResourceCount != null) {
+                    throw new IllegalStateException(
+                            "Duplicate resource count in compiler runtime manifest "
+                                    + source);
+                }
+                String count = runtimeName.substring(RESOURCE_COUNT_PREFIX.length());
+                try {
+                    declaredResourceCount = Integer.valueOf(count);
+                } catch (NumberFormatException e) {
+                    throw new IllegalStateException(
+                            "Invalid resource count '" + count
+                                    + "' in compiler runtime manifest " + source,
+                            e);
+                }
+                if (declaredResourceCount < 0) {
+                    throw new IllegalStateException(
+                            "Negative resource count in compiler runtime manifest "
+                                    + source);
+                }
+                continue;
+            }
+            if (runtimeName.startsWith(RESOURCE_PREFIX)) {
+                String resourceName = runtimeName.substring(RESOURCE_PREFIX.length());
+                validateResourceName(resourceName, source);
+                if (!resourceNames.add(resourceName)) {
+                    throw new IllegalStateException(
+                            "Duplicate resource '" + resourceName
+                                    + "' in compiler runtime manifest " + source);
+                }
+                continue;
+            }
             if (runtimeName.startsWith(RUNTIME_ALIAS_PREFIX)) {
                 String mapping = runtimeName.substring(RUNTIME_ALIAS_PREFIX.length());
                 int separator = mapping.indexOf(RUNTIME_ALIAS_SEPARATOR);
@@ -493,7 +547,19 @@ public final class SharedCompilerRuntime {
                             + declaredAliasCount + " runtime aliases but contains "
                             + runtimeAliases.size());
         }
-        for (Map.Entry<String, String> alias : runtimeAliases.entrySet()) {
+        if (!resourceNames.isEmpty() && declaredResourceCount == null) {
+            throw new IllegalStateException(
+                    "Compiler runtime manifest " + source
+                            + " declares resources without a resource count");
+        }
+        if (declaredResourceCount != null
+                && declaredResourceCount != resourceNames.size()) {
+            throw new IllegalStateException(
+                    "Compiler runtime manifest " + source + " declares "
+                            + declaredResourceCount + " resources but contains "
+                            + resourceNames.size());
+        }
+        for (Map.Entry<String, String> alias : runtimeAliases.entrySet()){
             if (runtimeNames.contains(alias.getKey())) {
                 throw new IllegalStateException(
                         "Compiler runtime manifest " + source
@@ -508,7 +574,21 @@ public final class SharedCompilerRuntime {
                                 + alias.getValue() + "'");
             }
         }
-        return new RuntimeManifest(runtimeNames, runtimeAliases);
+        return new RuntimeManifest(runtimeNames, runtimeAliases, resourceNames);
+    }
+
+    private static void validateResourceName(String resourceName, String source) {
+        if (resourceName.isEmpty()
+                || resourceName.startsWith("/")
+                || resourceName.startsWith("\\")
+                || resourceName.contains("\\")
+                || resourceName.contains("../")
+                || resourceName.equals("..")
+                || !resourceName.startsWith("rocblas/library/")) {
+            throw new IllegalStateException(
+                    "Invalid runtime resource path '" + resourceName
+                            + "' in compiler runtime manifest " + source);
+        }
     }
 
     private static void validateRuntimeName(String runtimeName, String source) {
@@ -516,6 +596,27 @@ public final class SharedCompilerRuntime {
             throw new IllegalStateException(
                     "Invalid shared-library loader name '" + runtimeName
                             + "' in compiler runtime manifest " + source);
+        }
+    }
+
+    private static synchronized void materializeRuntimeResources(
+            ClassLoader classLoader,
+            String runtimeResourceRoot,
+            RuntimeManifest manifest,
+            String source) throws IOException {
+        for (String resourceName : manifest.resourceNames) {
+            URL resource = classLoader.getResource(runtimeResourceRoot + resourceName);
+            if (resource == null) {
+                throw new IllegalStateException(
+                        "Classifier resource '" + resourceName
+                                + "' declared by " + source + " is missing");
+            }
+            File cached = Loader.cacheResource(resource);
+            if (cached == null || !cached.isFile()) {
+                throw new IllegalStateException(
+                        "Cannot extract classifier resource '" + resourceName
+                                + "' declared by " + source);
+            }
         }
     }
 
@@ -605,12 +706,15 @@ public final class SharedCompilerRuntime {
     private static final class RuntimeManifest {
         private final Set<String> runtimeNames;
         private final Map<String, String> runtimeAliases;
+        private final Set<String> resourceNames;
 
         private RuntimeManifest(
                 Set<String> runtimeNames,
-                Map<String, String> runtimeAliases) {
+                Map<String, String> runtimeAliases,
+                Set<String> resourceNames) {
             this.runtimeNames = runtimeNames;
             this.runtimeAliases = runtimeAliases;
+            this.resourceNames = resourceNames;
         }
     }
 

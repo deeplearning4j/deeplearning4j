@@ -57,6 +57,8 @@ class SharedCompilerRuntimeJarTest {
                             "# nd4j-shared-runtime-manifest-v1",
                             "# runtime-count=1",
                             "# runtime-alias-count=2",
+                            "# resource-count=1",
+                            "# resource=rocblas/library/TensileLibrary.dat",
                             "# runtime-alias=libcuda.so->libnvcuda.so",
                             "# runtime-alias=libcuda.so.1->libnvcuda.so",
                             "libnvcuda.so",
@@ -64,6 +66,8 @@ class SharedCompilerRuntimeJarTest {
             addEntry(output, classifierRoot + "libnvcuda.so", "canonical-runtime");
             addEntry(output, classifierRoot + "libcuda.so", "packaged-alias");
             addEntry(output, classifierRoot + "libcuda.so.1", "packaged-alias");
+            addEntry(output, classifierRoot
+                    + "rocblas/library/TensileLibrary.dat", "tensile-data");
         }
 
         String cacheProperty = "org.bytedeco.javacpp.cachedir";
@@ -93,6 +97,11 @@ class SharedCompilerRuntimeJarTest {
                     canonicalPath.resolveSibling("libcuda.so"), canonicalPath));
             assertTrue(Files.isSameFile(
                     canonicalPath.resolveSibling("libcuda.so.1"), canonicalPath));
+            URL tensileResource = resourceLoader.getResource(
+                    classifierRoot + "rocblas/library/TensileLibrary.dat");
+            assertTrue(tensileResource != null);
+            File cachedTensile = Loader.cacheResource(tensileResource);
+            assertTrue(cachedTensile != null && cachedTensile.isFile());
         } finally {
             if (previousCache == null) {
                 System.clearProperty(cacheProperty);
