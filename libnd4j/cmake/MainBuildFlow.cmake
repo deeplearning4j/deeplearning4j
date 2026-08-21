@@ -1538,7 +1538,10 @@ function(create_and_link_library)
                 # Public C/C++ APIs use SD_LIB_EXPORT/SDX_API explicitly. Do not
                 # synthesize an exports.def for every template-instantiated symbol:
                 # the generated export library exceeds MSVC's 65,535-member limit.
-                set_target_properties(${MAIN_LIB_NAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS OFF)
+                set_target_properties(${MAIN_LIB_NAME} PROPERTIES
+                    WINDOWS_EXPORT_ALL_SYMBOLS OFF
+                    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+                    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 
                 # The monolithic target is also the SDX JavaCPP link target when
                 # standalone SDX is disabled. Generate a small import library for
