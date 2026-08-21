@@ -1738,7 +1738,7 @@ class ReleaseValidationTest(unittest.TestCase):
             build["rocmBuildComponents"],
         )
         for package in (
-            "lld", "patchelf", "rocm-hip-runtime-dev", "rocblas-dev",
+            "lld", "patchelf", "rocm-hip-runtime-dev", "rocblas", "rocblas-dev",
             "hipblaslt-dev", "rocsparse-dev", "rocm-smi-lib", "miopen-hip-dev",
         ):
             self.assertIn(package, driver)
@@ -2398,7 +2398,7 @@ class ReleaseValidationTest(unittest.TestCase):
             (
                 "rocm-hip-runtime-dev", "hsa-rocr-dev",
                 "libnuma-dev", "libdrm-dev",
-                "rocblas-dev", "hipblaslt-dev", "rocsparse-dev",
+                "rocblas", "rocblas-dev", "hipblaslt-dev", "rocsparse-dev",
                 "rocm-smi-lib", "miopen-hip-dev",
             ),
             spec["packages"],
@@ -2511,7 +2511,9 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("libnuma-dev", flattened)
         self.assertIn("libdrm-dev", flattened)
         self.assertNotIn("hsakmt-roct-dev", flattened)
+        self.assertIn("rocblas", flattened)
         self.assertIn("rocblas-dev", flattened)
+        self.assertTrue(any(token == "rocblas" for command in commands for token in command))
         hsakmt.assert_called_once()
         self.assertIn("hipblaslt-dev", flattened)
         self.assertIn("rocsparse-dev", flattened)

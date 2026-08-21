@@ -60,7 +60,9 @@ ROCM_BUILD_SDKS = {
                 "libnuma-dev",
                 "libdrm-dev",
             ),
-            "rocblas": ("rocblas-dev",),
+            # rocblas-dev supplies headers/symlinks; rocblas supplies the
+            # runtime Tensile dispatch data under lib/rocblas.
+            "rocblas": ("rocblas", "rocblas-dev"),
             "hipblaslt": ("hipblaslt-dev",),
             "rocsparse": ("rocsparse-dev",),
             "rocm-smi": ("rocm-smi-lib",),
@@ -95,7 +97,9 @@ ROCM_BUILD_SDKS = {
                 "libnuma-dev",
                 "libdrm-dev",
             ),
-            "rocblas": ("rocblas-dev",),
+            # rocblas-dev supplies headers/symlinks; rocblas supplies the
+            # runtime Tensile dispatch data under lib/rocblas.
+            "rocblas": ("rocblas", "rocblas-dev"),
             "hipblaslt": ("hipblaslt-dev",),
             "rocsparse": ("rocsparse-dev",),
             "rocm-smi": ("rocm-smi-lib",),
