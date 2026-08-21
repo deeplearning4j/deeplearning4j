@@ -44,6 +44,7 @@ ROCM_BUILD_SDKS = {
         # gfx1100 is supported by both pinned ROCm releases. gfx1103 was
         # introduced after ROCm 6.2 and makes the older generator fail closed.
         "tensile_architectures": "gfx1100",
+        "tensile_code_object_version": "V4",
         # The ROCm binary packages omit Tensile data; these are the generator's
         # pinned Python dependencies, not runtime GPU dependencies.
         "tensile_packages": ("python3-yaml", "python3-msgpack", "python3-joblib"),
@@ -97,6 +98,7 @@ ROCM_BUILD_SDKS = {
             "https://codeload.github.com/ROCm/Tensile/tar.gz/refs/tags/rocm-7.2.4"
         ),
         "tensile_architectures": "gfx1100",
+        "tensile_code_object_version": "V4",
         "tensile_packages": ("python3-yaml", "python3-msgpack", "python3-joblib"),
         # ROCm 7.2 folded ROCt into the hsa-rocr development package and no
         # longer publishes a standalone hsakmt-roct-dev package.  Keep the
@@ -1801,6 +1803,7 @@ def rocm_build_spec(build: dict) -> dict | None:
         "rocblas_source_url": sdk["rocblas_source_url"],
         "tensile_source_url": sdk["tensile_source_url"],
         "tensile_architectures": sdk["tensile_architectures"],
+        "tensile_code_object_version": sdk["tensile_code_object_version"],
         "tensile_packages": sdk["tensile_packages"],
         "hsakmt_source_url": sdk["hsakmt_source_url"],
         "hsakmt_source_subdirectory": sdk["hsakmt_source_subdirectory"],
@@ -2044,7 +2047,7 @@ def build_rocm_tensile_data(
     filtered_logic = temporary_directory / "tensile-logic"
     shutil.copytree(
         logic_candidates[0], filtered_logic,
-        ignore=shutil.ignore_patterns("asm_lite"),
+        ignore=shutil.ignore_patterns("asm_lite", "asm_miopen"),
     )
     generator_environment = env.copy()
     generator_environment["ROCM_PATH"] = str(rocm_root)
@@ -2066,6 +2069,7 @@ def build_rocm_tensile_data(
             generator_python,
             str(tool_candidates[0]),
             f"--architecture={spec['tensile_architectures']}",
+            f"--code-object-version={spec['tensile_code_object_version']}",
             "--no-enumerate",
             f"--jobs={threads}",
             "--cxx-compiler=hipcc",
@@ -2339,10 +2343,8 @@ def prepare_rocm_build_toolchain(
             "rocblasSourceUrl": spec["rocblas_source_url"],
             "tensileSourceUrl": spec["tensile_source_url"],
             "tensileArchitectures": spec["tensile_architectures"],
+            "tensileCodeObjectVersion": spec["tensile_code_object_version"],
             "hsakmtSourceUrl": spec["hsakmt_source_url"],
-            "rocblasSourceUrl": spec["rocblas_source_url"],
-            "tensileSourceUrl": spec["tensile_source_url"],
-            "tensileArchitectures": spec["tensile_architectures"],
             "hsakmtSourceSubdirectory": spec["hsakmt_source_subdirectory"],
             "hsakmtCmakeSubdirectory": spec["hsakmt_cmake_subdirectory"],
             "hsakmtRewriteStaticTarget": spec["hsakmt_rewrite_static_target"],

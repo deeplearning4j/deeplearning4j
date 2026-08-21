@@ -2407,12 +2407,14 @@ class ReleaseValidationTest(unittest.TestCase):
             spec["packages"],
         )
         self.assertEqual("gfx1100", spec["tensile_architectures"])
+        self.assertEqual("V4", spec["tensile_code_object_version"])
         self.assertEqual(
             ("python3-yaml", "python3-msgpack", "python3-joblib"),
             spec["tensile_packages"],
         )
         six_spec = build_platform.rocm_build_spec({**build, "rocmVersion": "6.2.4"})
         self.assertEqual("gfx1100", six_spec["tensile_architectures"])
+        self.assertEqual("V4", six_spec["tensile_code_object_version"])
         self.assertIn("hsakmt-roct-dev", six_spec["packages"])
         self.assertTrue(six_spec["hsakmt_disable_static_drm_target"])
         self.assertFalse(spec["hsakmt_disable_static_drm_target"])
