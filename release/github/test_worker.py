@@ -731,6 +731,14 @@ class WorkflowMatrixTests(unittest.TestCase):
             main_build_flow,
         )
         self.assertIn(
+            'COMMAND "${CMAKE_LINKER}"\n                        "/LIB"',
+            main_build_flow,
+        )
+        self.assertIn(
+            '"/OUT:${CMAKE_CURRENT_BINARY_DIR}/${MAIN_LIB_NAME}.lib"',
+            main_build_flow,
+        )
+        self.assertIn(
             'ZLUDA supports compute_80, compute_86, and compute_89',
             configuration,
         )

@@ -1579,6 +1579,18 @@ function(create_and_link_library)
                     LINK_FLAGS "/DEF:${_sdx_windows_def}")
                 set_property(TARGET ${MAIN_LIB_NAME} APPEND PROPERTY
                     LINK_DEPENDS "${_sdx_windows_def}")
+                # Do not rely on CMake propagating /DEF through the CUDA/Ninja
+                # shared-library link rule. Generate the import library directly
+                # after the DLL exists at the path consumed by JavaCPP.
+                add_custom_command(TARGET ${MAIN_LIB_NAME} POST_BUILD
+                    COMMAND "${CMAKE_LINKER}"
+                        "/LIB"
+                        "/DEF:${_sdx_windows_def}"
+                        "/MACHINE:X64"
+                        "/OUT:${CMAKE_CURRENT_BINARY_DIR}/${MAIN_LIB_NAME}.lib"
+                    DEPENDS "${_sdx_windows_def}"
+                    COMMENT "Generating ${MAIN_LIB_NAME}.lib for JavaCPP"
+                    VERBATIM)
                 else()
                     # MinGW understands CMake's export-all path but not the
                     # MSVC /DEF linker option used above.
