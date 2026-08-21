@@ -17,6 +17,8 @@ import org.junit.jupiter.api.Test;
 import org.nd4j.presets.SharedCompilerRuntime;
 
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -38,6 +40,23 @@ class Nd4jCudaZludaClassifierTest {
                 .collect(Collectors.toList());
         assertTrue(extensions.contains("-zluda-rocm-7.2.4"));
         assertTrue(extensions.contains("-zluda-rocm-6.2.4"));
+
+        List<String> resources = Arrays.stream(preset.value())
+                .flatMap(platform -> Arrays.stream(platform.resource()))
+                .collect(Collectors.toList());
+        assertTrue(resources.contains("rocblas/library"),
+                "ZLUDA JavaCPP properties must extract rocBLAS resources");
+
+        Path pomPath = Path.of("pom.xml");
+        String pom = Files.readString(pomPath);
+        if (!pom.contains("${javacpp.platform}${javacpp.platform.extension}/**</exclude>")) {
+            pomPath = Path.of("nd4j/nd4j-backends/nd4j-backend-impls/nd4j-zluda/pom.xml");
+            pom = Files.readString(pomPath);
+        }
+        assertTrue(pom.contains("${javacpp.platform}${javacpp.platform.extension}/**</exclude>"),
+                "Unclassified JAR must exclude the complete classifier tree");
+        assertTrue(pom.contains("${javacpp.platform}${javacpp.platform.extension}/**</include>"),
+                "Classifier JAR must include nested ROCm resources");
 
         ClassProperties properties = new ClassProperties();
         properties.addAll("platform.extension", extensions);

@@ -129,7 +129,7 @@
                         </manifestEntries>
                     </archive>
                     <excludes>
-                        <exclude>org/nd4j/linalg/jcublas/bindings/${javacpp.platform}${javacpp.platform.extension}/*</exclude>
+                        <exclude>org/nd4j/linalg/jcublas/bindings/${javacpp.platform}${javacpp.platform.extension}/**</exclude>
                         <exclude>lib/**</exclude>
                         <exclude>*.dll</exclude>
                         <exclude>*.dylib</exclude>
@@ -300,7 +300,7 @@
                                          replace, not inherit, those exclusions. -->
                                     <excludes combine.self="override"/>
                                     <includes>
-                                        <include>org/nd4j/linalg/jcublas/bindings/${javacpp.platform}${javacpp.platform.extension}/*</include>
+                                        <include>org/nd4j/linalg/jcublas/bindings/${javacpp.platform}${javacpp.platform.extension}/**</include>
                                         <include>lib/**</include>
                                         <include>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</include>
                                     </includes>

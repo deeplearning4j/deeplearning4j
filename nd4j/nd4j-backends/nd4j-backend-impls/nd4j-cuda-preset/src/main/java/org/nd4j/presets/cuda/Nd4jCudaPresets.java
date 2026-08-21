@@ -149,7 +149,10 @@ import org.nd4j.presets.SharedCompilerRuntime;
                 @Platform(value = "linux-ppc64", preloadpath = {"/usr/powerpc64-linux-gnu/lib/", "/usr/powerpc64le-linux-gnu/lib/", "/usr/lib/powerpc64-linux-gnu/", "/usr/lib/powerpc64le-linux-gnu/"}),
                 @Platform(value = "windows", preload = {"libwinpthread-1", "libgcc_s_seh-1", "libgomp-1", "libstdc++-6", "libnd4jcpu"}),
                 @Platform(extension = {"-cudnn", "-", "-compile", "-zluda",
-                        "-zluda-rocm-7.2.4", "-zluda-rocm-6.2.4"})})
+                        "-zluda-rocm-7.2.4", "-zluda-rocm-6.2.4"}),
+                @Platform(value = "linux",
+                        extension = {"-zluda-rocm-7.2.4", "-zluda-rocm-6.2.4"},
+                        resource = {"rocblas/library"})})
 public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
     private static final String JAVACPP_PHASE_PROPERTY =
             "platform.nd4j.javacpp.phase";
