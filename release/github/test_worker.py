@@ -738,10 +738,14 @@ class WorkflowMatrixTests(unittest.TestCase):
             main_build_flow,
         )
         self.assertIn(
+            "Preserve the complete import library emitted by the DLL linker",
+            main_build_flow,
+        )
+        self.assertNotIn(
             'COMMAND "${CMAKE_LINKER}"\n                        "/LIB"',
             main_build_flow,
         )
-        self.assertIn(
+        self.assertNotIn(
             '"/OUT:${CMAKE_CURRENT_BINARY_DIR}/${MAIN_LIB_NAME}.lib"',
             main_build_flow,
         )

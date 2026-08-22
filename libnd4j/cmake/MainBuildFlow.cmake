@@ -1539,58 +1539,49 @@ function(create_and_link_library)
                     # Public C/C++ APIs use SD_LIB_EXPORT/SDX_API explicitly. Do not
                     # synthesize an exports.def for every template-instantiated symbol:
                     # the generated export library exceeds MSVC's 65,535-member limit.
-                set_target_properties(${MAIN_LIB_NAME} PROPERTIES
-                    WINDOWS_EXPORT_ALL_SYMBOLS OFF
-                    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-                    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+                    set_target_properties(${MAIN_LIB_NAME} PROPERTIES
+                        WINDOWS_EXPORT_ALL_SYMBOLS OFF
+                        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+                        ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 
-                # The monolithic target is also the SDX JavaCPP link target when
-                # standalone SDX is disabled. Generate a small import library for
-                # the explicit C ABI instead of relying on CMake's all-symbol
-                # export scan, which both overflows MSVC and can omit the import
-                # library when only object-library exports are present.
-                set(_sdx_windows_def
-                    "${CMAKE_CURRENT_BINARY_DIR}/${MAIN_LIB_NAME}_sdx_exports.def")
-                file(WRITE "${_sdx_windows_def}" "EXPORTS\n")
-                file(STRINGS
-                    "${CMAKE_CURRENT_SOURCE_DIR}/include/dsp/runtime/dsp_runtime_c.h"
-                    _sdx_windows_api_declarations
-                    REGEX "^[\\t ]*SDX_API[\\t ]+")
-                foreach(_sdx_windows_declaration IN LISTS
-                        _sdx_windows_api_declarations)
-                    string(REGEX MATCH
-                        "sdx[A-Za-z0-9_]+[\\t ]*\\("
-                        _sdx_windows_symbol_match
-                        "${_sdx_windows_declaration}")
-                    if(_sdx_windows_symbol_match)
-                        string(REGEX REPLACE
-                            ".*(sdx[A-Za-z0-9_]+)[\\t ]*\\(.*"
-                            "\\1"
-                            _sdx_windows_symbol
+                    # The monolithic target is also the SDX and NativeOps JavaCPP
+                    # link target. Feed the explicit SDX C ABI to the DLL linker so
+                    # it always emits an import library; SD_LIB_EXPORT directives
+                    # from the object files add the complete NativeOps ABI without
+                    # CMake's oversized all-symbol template export scan.
+                    set(_sdx_windows_def
+                        "${CMAKE_CURRENT_BINARY_DIR}/${MAIN_LIB_NAME}_sdx_exports.def")
+                    file(WRITE "${_sdx_windows_def}" "EXPORTS\n")
+                    file(STRINGS
+                        "${CMAKE_CURRENT_SOURCE_DIR}/include/dsp/runtime/dsp_runtime_c.h"
+                        _sdx_windows_api_declarations
+                        REGEX "^[\\t ]*SDX_API[\\t ]+")
+                    foreach(_sdx_windows_declaration IN LISTS
+                            _sdx_windows_api_declarations)
+                        string(REGEX MATCH
+                            "sdx[A-Za-z0-9_]+[\\t ]*\\("
+                            _sdx_windows_symbol_match
                             "${_sdx_windows_declaration}")
-                        file(APPEND "${_sdx_windows_def}"
-                            "    ${_sdx_windows_symbol}\n")
-                    endif()
-                endforeach()
-                # Use the legacy MSVC target property as well as the dependency
-                # edge: CMake/Ninja has dropped target_link_options(/DEF:...) on
-                # this CUDA shared-library link path in hosted Windows builds.
-                set_target_properties(${MAIN_LIB_NAME} PROPERTIES
-                    LINK_FLAGS "/DEF:${_sdx_windows_def}")
-                set_property(TARGET ${MAIN_LIB_NAME} APPEND PROPERTY
-                    LINK_DEPENDS "${_sdx_windows_def}")
-                # Do not rely on CMake propagating /DEF through the CUDA/Ninja
-                # shared-library link rule. Generate the import library directly
-                # after the DLL exists at the path consumed by JavaCPP.
-                add_custom_command(TARGET ${MAIN_LIB_NAME} POST_BUILD
-                    COMMAND "${CMAKE_LINKER}"
-                        "/LIB"
-                        "/DEF:${_sdx_windows_def}"
-                        "/MACHINE:X64"
-                        "/OUT:${CMAKE_CURRENT_BINARY_DIR}/${MAIN_LIB_NAME}.lib"
-                    DEPENDS "${_sdx_windows_def}"
-                    COMMENT "Generating ${MAIN_LIB_NAME}.lib for JavaCPP"
-                    VERBATIM)
+                        if(_sdx_windows_symbol_match)
+                            string(REGEX REPLACE
+                                ".*(sdx[A-Za-z0-9_]+)[\\t ]*\\(.*"
+                                "\\1"
+                                _sdx_windows_symbol
+                                "${_sdx_windows_declaration}")
+                            file(APPEND "${_sdx_windows_def}"
+                                "    ${_sdx_windows_symbol}\n")
+                        endif()
+                    endforeach()
+                    # Use the legacy MSVC target property as well as the dependency
+                    # edge: CMake/Ninja has dropped target_link_options(/DEF:...) on
+                    # this CUDA shared-library link path in hosted Windows builds.
+                    set_target_properties(${MAIN_LIB_NAME} PROPERTIES
+                        LINK_FLAGS "/DEF:${_sdx_windows_def}")
+                    set_property(TARGET ${MAIN_LIB_NAME} APPEND PROPERTY
+                        LINK_DEPENDS "${_sdx_windows_def}")
+                    # Preserve the complete import library emitted by the DLL linker.
+                    # Re-running lib.exe with the SDX-only definition would overwrite
+                    # the SD_LIB_EXPORT NativeOps entries required by jnind4jcuda.
                 else()
                     # MinGW understands CMake's export-all path but not the
                     # MSVC /DEF linker option used above.
