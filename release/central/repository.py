@@ -157,7 +157,22 @@ def restore_embedded_component_poms(root: Path) -> list[Path]:
     return restored
 
 
-def merge(inputs: list[Path], output: Path, manifest_path: Path, release_version: str, commit: str) -> dict:
+def is_unclassified_coordinate(path: Path) -> bool:
+    """Return whether a repository file is the main artifact without a classifier."""
+    version = path.parent.name
+    artifact_id = path.parent.parent.name
+    return path.name == f"{artifact_id}-{version}{path.suffix}"
+
+
+def merge(
+    inputs: list[Path],
+    output: Path,
+    manifest_path: Path,
+    release_version: str,
+    commit: str,
+    *,
+    allow_unclassified_duplicates: bool = False,
+) -> dict:
     output.mkdir(parents=True, exist_ok=True)
     ownership: dict[str, list[str]] = {}
     with tempfile.TemporaryDirectory(prefix="dl4j-central-merge-") as temporary:
@@ -181,7 +196,13 @@ def merge(inputs: list[Path], output: Path, manifest_path: Path, release_version
                 ownership.setdefault(key, []).append(source_label)
                 if destination.exists():
                     if digest(destination) != digest(path):
-                        raise ValueError(f"conflicting duplicate Maven path {key} from {source}")
+                        if not (
+                            allow_unclassified_duplicates
+                            and is_unclassified_coordinate(relative)
+                        ):
+                            raise ValueError(
+                                f"conflicting duplicate Maven path {key} from {source}"
+                            )
                     continue
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(path, destination)
@@ -682,6 +703,11 @@ def parse_args() -> argparse.Namespace:
     merge_cmd.add_argument("--manifest", type=Path, required=True)
     merge_cmd.add_argument("--release-version", required=True)
     merge_cmd.add_argument("--commit", required=True)
+    merge_cmd.add_argument(
+        "--allow-unclassified-duplicates",
+        action="store_true",
+        help="Prefer the first independently-built copy of duplicate main artifacts",
+    )
     materialize_cmd = sub.add_parser("materialize-test-repository")
     materialize_cmd.add_argument("--input", type=Path, action="append", required=True)
     materialize_cmd.add_argument("--output", type=Path, required=True)
@@ -718,7 +744,14 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     if args.command == "merge":
-        merge(args.input, args.output, args.manifest, args.release_version, args.commit)
+        merge(
+            args.input,
+            args.output,
+            args.manifest,
+            args.release_version,
+            args.commit,
+            allow_unclassified_duplicates=args.allow_unclassified_duplicates,
+        )
     elif args.command == "materialize-test-repository":
         materialize_test_repository(args.input, args.output, args.manifest, args.release_version, args.commit)
     elif args.command == "verify-release-assets":

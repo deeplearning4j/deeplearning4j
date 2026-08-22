@@ -402,6 +402,7 @@ class MavenExecutableTests(unittest.TestCase):
                 b"rocm6"
             )
             second_dir = second / relative
+            Path(str(second_dir / base_name) + ".jar").write_bytes(b"base-rocm7")
             Path(
                 str(second_dir / base_name)
                 + "-linux-x86_64-zluda-rocm-7.2.4.jar"
@@ -410,7 +411,12 @@ class MavenExecutableTests(unittest.TestCase):
             merged = root / "merged"
             manifest = root / "merged-manifest.json"
             repository.merge(
-                [first, second], merged, manifest, version, "deadbeef"
+                [first, second],
+                merged,
+                manifest,
+                version,
+                "deadbeef",
+                allow_unclassified_duplicates=True,
             )
             repository.verify(merged, manifest, version, "deadbeef")
 
