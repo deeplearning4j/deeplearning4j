@@ -411,6 +411,37 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertEqual(9, len(linux["build"]["variants"]))
         self.assertNotIn("--base", linux["id"])
 
+    def test_cpu_platform_lanes_publish_base_jars_without_rebuilding_java(self):
+        plan = release.load_plan(Path(__file__).with_name("release-plan.json"))
+        required = {
+            "nd4j-native", "nd4j-native-preset", "libtokenizers",
+            "tokenizers-native-preset", "tokenizers-native",
+        }
+        for shard_id in (
+            "linux-x86_64-cpu", "linux-arm64-cpu",
+            "windows-x86_64-cpu", "macos-14-arm64-cpu",
+        ):
+            shard = next(item for item in plan["shards"] if item["id"] == shard_id)
+            self.assertFalse(shard["build"]["buildCrossPlatformJava"], shard_id)
+            self.assertEqual(
+                required,
+                set(shard["artifactRules"]["unclassifiedArtifactIds"]),
+                shard_id,
+            )
+
+    def test_cross_platform_artifact_only_build_skips_java_reactor(self):
+        build = {
+            "javacppPlatform": "linux-x86_64",
+            "buildCrossPlatformJava": False,
+        }
+        commands = []
+        with patch.object(
+            build_platform, "run", side_effect=lambda command, *_args: commands.append(command)
+        ):
+            build_platform.build_cross_platform(Path("/source"), build, Path("/m2"), {})
+        self.assertEqual(1, len(commands))
+        self.assertIn("--run-tokenizers", commands[0])
+
     def test_windows_shards_omit_unsupported_managed_llvm_variants(self):
         plan = release.load_plan(Path(__file__).with_name("release-plan.json"))
         windows = [item for item in plan["shards"] if item["os"] == "windows"]

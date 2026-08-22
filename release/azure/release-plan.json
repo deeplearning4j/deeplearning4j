@@ -90,12 +90,20 @@
         "classifierTokens": [
           "linux-x86_64"
         ],
+        "unclassifiedArtifactIds": [
+          "nd4j-native",
+          "nd4j-native-preset",
+          "libtokenizers",
+          "tokenizers-native-preset",
+          "tokenizers-native"
+        ],
         "includeMetadata": true
       },
       "build": {
         "backend": "cpu",
         "javacppPlatform": "linux-x86_64",
         "buildCrossPlatform": true,
+        "buildCrossPlatformJava": false,
         "profiles": [
           "cpu",
           "sdx"
@@ -190,12 +198,21 @@
         ],
         "classifierTokens": [
           "linux-arm64"
-        ]
+        ],
+        "unclassifiedArtifactIds": [
+          "nd4j-native",
+          "nd4j-native-preset",
+          "libtokenizers",
+          "tokenizers-native-preset",
+          "tokenizers-native"
+        ],
+        "includeMetadata": true
       },
       "build": {
         "backend": "cpu",
         "javacppPlatform": "linux-arm64",
         "buildCrossPlatform": true,
+        "buildCrossPlatformJava": false,
         "profiles": [
           "cpu",
           "sdx",
@@ -415,11 +432,19 @@
         "classifierTokens": [
           "windows-x86_64"
         ],
+        "unclassifiedArtifactIds": [
+          "nd4j-native",
+          "nd4j-native-preset",
+          "libtokenizers",
+          "tokenizers-native-preset",
+          "tokenizers-native"
+        ],
         "includeMetadata": true
       },
       "build": {
         "backend": "cpu",
         "buildCrossPlatform": true,
+        "buildCrossPlatformJava": false,
         "javacppPlatform": "windows-x86_64",
         "profiles": [
           "cpu",

@@ -1447,7 +1447,14 @@ def build_cross_platform(source: Path, build: dict, repository: Path, env: dict[
     })
     script = source / "build-scripts/release/cross-platform.sh"
     run(bash_command([str(script), "--run-tokenizers"], cross_env), source, cross_env)
-    run(bash_command([str(script), "--run-java"], cross_env), source, cross_env)
+    if build.get("buildCrossPlatformJava", True):
+        run(bash_command([str(script), "--run-java"], cross_env), source, cross_env)
+    else:
+        print(
+            f"[dl4j-phase] platform={platform} phase=cross-platform-java "
+            "status=skipped reason=platform-artifacts-only",
+            flush=True,
+        )
 
 
 def prepare_openblas(
@@ -2873,9 +2880,6 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
         write_build_result(progress_output, completed_variants)
         if compiler_cache:
             run([compiler_cache, "--show-stats"], source, env)
-    attest_unclassified_artifacts(
-        repository, build, rules, release_version, "local-repository"
-    )
     if build.get("buildCrossPlatform") and has_base_platform_variant(build):
         print(f"[dl4j-phase] shard={shard_id} phase=cross-platform", flush=True)
         build_cross_platform(source, build, repository, env)
@@ -2885,6 +2889,11 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
             "reason=no-base-platform-variant",
             flush=True,
         )
+    # Cross-platform tokenizers contribute both base and classified JARs. Verify
+    # unclassified publication only after that phase has installed its outputs.
+    attest_unclassified_artifacts(
+        repository, build, rules, release_version, "local-repository"
+    )
 
 
 def main() -> None:
