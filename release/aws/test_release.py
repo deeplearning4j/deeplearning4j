@@ -432,6 +432,7 @@ class ReleaseValidationTest(unittest.TestCase):
     def test_cross_platform_artifact_only_build_skips_java_reactor(self):
         build = {
             "javacppPlatform": "linux-x86_64",
+            "buildCrossPlatform": True,
             "buildCrossPlatformJava": False,
         }
         commands = []
@@ -441,6 +442,17 @@ class ReleaseValidationTest(unittest.TestCase):
             build_platform.build_cross_platform(Path("/source"), build, Path("/m2"), {})
         self.assertEqual(1, len(commands))
         self.assertIn("--run-tokenizers", commands[0])
+        self.assertEqual(
+            build_platform.TOKENIZER_ARTIFACT_IDS,
+            build_platform.required_unclassified_artifact_ids(
+                build,
+                {
+                    "mode": "classifier",
+                    "artifactIds": list(build_platform.TOKENIZER_ARTIFACT_IDS),
+                    "unclassifiedArtifactIds": list(build_platform.TOKENIZER_ARTIFACT_IDS),
+                },
+            ),
+        )
 
     def test_windows_shards_omit_unsupported_managed_llvm_variants(self):
         plan = release.load_plan(Path(__file__).with_name("release-plan.json"))

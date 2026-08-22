@@ -148,6 +148,9 @@ SDX_MODULES = (
 )
 SDX_ARTIFACT_IDS = tuple(module.removeprefix(":") for module in SDX_MODULES)
 SDX_UNCLASSIFIED_ARTIFACT_IDS = SDX_ARTIFACT_IDS
+TOKENIZER_ARTIFACT_IDS = (
+    "libtokenizers", "tokenizers-native-preset", "tokenizers-native",
+)
 SCCACHE_ASSETS = {
     ("linux", "x86_64"): (
         "x86_64-unknown-linux-musl",
@@ -1085,6 +1088,8 @@ def required_unclassified_artifact_ids(build: dict, rules: dict) -> tuple[str, .
     modules = {
         str(module).removeprefix(":") for module in build.get("modules", [])
     }
+    if build.get("buildCrossPlatform"):
+        modules.update(TOKENIZER_ARTIFACT_IDS)
     missing_modules = [artifact_id for artifact_id in required if artifact_id not in modules]
     if missing_modules:
         raise ValueError(
