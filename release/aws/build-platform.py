@@ -2125,37 +2125,43 @@ def backport_rocm_6_gfx1103_logic(
 def backport_rocm_6_gfx1103_rocblas_runtime(logic_directory: Path) -> None:
     """Apply Fedora's gfx1103 rocBLAS host-runtime changes to pinned 6.2 source."""
     source_root = logic_directory.parents[4]
-    replacements = {
+    insertions = {
         source_root / "library/src/include/handle.hpp": (
-            "    gfx1102 = 1102,\n    gfx1151 = 1151",
-            "    gfx1102 = 1102,\n    gfx1103 = 1103,\n    gfx1151 = 1151",
+            "gfx1151 = 1151",
+            ("gfx1103 = 1103,",),
         ),
         source_root / "library/src/handle.cpp": (
-            "    else if(deviceString.find(\"gfx1151\") != std::string::npos)\n"
-            "    {\n        return Processor::gfx1151;\n    }",
-            "    else if(deviceString.find(\"gfx1103\") != std::string::npos)\n"
-            "    {\n        return Processor::gfx1103;\n    }\n"
-            "    else if(deviceString.find(\"gfx1151\") != std::string::npos)\n"
-            "    {\n        return Processor::gfx1151;\n    }",
+            "else if(deviceString.find(\"gfx1151\") != std::string::npos)",
+            (
+                "else if(deviceString.find(\"gfx1103\") != std::string::npos)",
+                "{",
+                "    return Processor::gfx1103;",
+                "}",
+            ),
         ),
         source_root / "library/src/tensile_host.cpp": (
-            "    else if(deviceString.find(\"gfx1102\") != std::string::npos)\n"
-            "    {\n        return Tensile::LazyLoadingInit::gfx1102;\n    }\n"
-            "    return Tensile::LazyLoadingInit::None;",
-            "    else if(deviceString.find(\"gfx1102\") != std::string::npos)\n"
-            "    {\n        return Tensile::LazyLoadingInit::gfx1102;\n    }\n"
-            "    else if(deviceString.find(\"gfx1103\") != std::string::npos)\n"
-            "    {\n        return Tensile::LazyLoadingInit::gfx1103;\n    }\n"
-            "    return Tensile::LazyLoadingInit::None;",
+            "return Tensile::LazyLoadingInit::None;",
+            (
+                "else if(deviceString.find(\"gfx1103\") != std::string::npos)",
+                "{",
+                "    return Tensile::LazyLoadingInit::gfx1103;",
+                "}",
+            ),
         ),
     }
-    for path, (old, new) in replacements.items():
-        text = path.read_text(encoding="utf-8")
-        if text.count(old) != 1:
+    for path, (marker, inserted_lines) in insertions.items():
+        source_lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+        matches = [index for index, line in enumerate(source_lines) if line.strip() == marker]
+        if len(matches) != 1:
             raise RuntimeError(
                 f"pinned rocBLAS 6.2 source no longer matches the gfx1103 runtime contract: {path}"
             )
-        path.write_text(text.replace(old, new), encoding="utf-8")
+        index = matches[0]
+        indentation_width = len(source_lines[index]) - len(source_lines[index].lstrip())
+        indentation = source_lines[index][:indentation_width]
+        insertion = [f"{indentation}{line}\n" for line in inserted_lines]
+        source_lines[index:index] = insertion
+        path.write_text("".join(source_lines), encoding="utf-8")
 
 
 def backport_rocm_6_gfx1103_tensile_runtime(

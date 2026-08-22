@@ -2671,9 +2671,9 @@ class ReleaseValidationTest(unittest.TestCase):
             )
             tensile_host = source / "library/src/tensile_host.cpp"
             tensile_host.write_text(
-                "    else if(deviceString.find(\"gfx1102\") != std::string::npos)\n"
-                "    {\n        return Tensile::LazyLoadingInit::gfx1102;\n    }\n"
-                "    return Tensile::LazyLoadingInit::None;\n",
+                "        else if(deviceString.find(\"gfx1102\") != std::string::npos)\n"
+                "        {\n            return Tensile::LazyLoadingInit::gfx1102;\n        }\n"
+                "        return Tensile::LazyLoadingInit::None;\n",
                 encoding="utf-8",
             )
 
@@ -2681,6 +2681,10 @@ class ReleaseValidationTest(unittest.TestCase):
 
             for path in (handle_header, handle, tensile_host):
                 self.assertIn("gfx1103", path.read_text(encoding="utf-8"))
+            self.assertIn(
+                "        else if(deviceString.find(\"gfx1103\")",
+                tensile_host.read_text(encoding="utf-8"),
+            )
 
     def test_rocm_sdk_provisioning_installs_no_kernel_driver(self):
         build = {
