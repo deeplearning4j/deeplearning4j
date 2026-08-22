@@ -20,6 +20,7 @@
 #define LIBND4J_KERNELSPEC_KERNELSPEC_H
 
 #include <graph/kernelspec/KernelExpr.h>
+#include <system/common.h>
 
 #include <cstdint>
 #include <functional>
@@ -32,8 +33,9 @@
 // VulkanKernelEmitterCatalog, the Java trait mirror) plus the op's math as a
 // KernelExpr body or reduction triple.
 //
-// NOT wired: no emitter or table consults this registry yet. The registry is
-// the future single source those tables are generated from / checked against.
+// Runtime wiring begins with the StableHLO/PJRT target: it resolves specs by
+// canonical descriptor hash and interprets KernelExpr directly. Other emitters
+// can migrate incrementally without changing the authored equations.
 
 namespace sd {
 namespace kernelspec {
@@ -89,8 +91,9 @@ struct ReductionTripleSpec {
 struct KernelSpec {
   std::string name;
   std::vector<std::string> aliases;  // e.g. the CamelCase table variants
+  LongType descriptorHash = 0;       // resolved from the canonical registered op
   KernelCategory category = KernelCategory::UNARY_ELEMENTWISE;
-  uint32_t traits = 0;  // OP_TRAIT_* bitmask; constants live in ops/declarable/OpDescriptor.h
+  uint64_t traits = 0;  // expected OP_TRAIT_* subset; op-local descriptor is authoritative
   uint32_t dtypes = KDT_F32;
   int numInputs = 1;
   std::vector<ScalarParamSpec> scalars;
@@ -116,6 +119,8 @@ class KernelSpecRegistry {
 
   // Lookup by primary name or alias; nullptr when absent.
   const KernelSpec* find(const std::string& nameOrAlias) const;
+  // Canonical lookup used by runtime emitters. Names are diagnostic/authoring only.
+  const KernelSpec* find(LongType descriptorHash) const;
 
   std::vector<const KernelSpec*> all() const;
   size_t size() const;
@@ -146,7 +151,7 @@ class KernelSpecBuilder {
 
   KernelSpecBuilder& alias(std::string a);
   KernelSpecBuilder& category(KernelCategory c);
-  KernelSpecBuilder& traits(uint32_t traitMask);
+  KernelSpecBuilder& traits(uint64_t traitMask);
   KernelSpecBuilder& dtypes(uint32_t dtypeMask);
   KernelSpecBuilder& inputs(int n);
   KernelSpecBuilder& scalar(std::string name, int tArgIndex, double defaultValue);
@@ -168,5 +173,9 @@ class KernelSpecBuilder {
 
 }  // namespace kernelspec
 }  // namespace sd
+
+// Registers the production expression specs. Explicit, idempotent, and called
+// by emitter backends after the normal op registry has initialized.
+namespace sd { namespace kernelspec { void registerBuiltinKernelSpecs(); } }
 
 #endif  // LIBND4J_KERNELSPEC_KERNELSPEC_H

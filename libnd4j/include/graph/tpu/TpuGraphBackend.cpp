@@ -19,56 +19,75 @@
 #ifdef SD_TPU
 
 #include <graph/tpu/TpuGraphBackend.h>
-#include <graph/tpu/HloIRBuilder.h>
-#include <graph/tpu/PjrtClientManager.h>
-#include <graph/tpu/TpuReplayHandle.h>
-#include <graph/NativeDynamicShapePlan.h>
-#include <graph/DspDiagnostics.h>
 
-#include <cstring>
-#include <memory>
+#include <graph/DspDiagnostics.h>
+#include <graph/NativeDynamicShapePlan.h>
+#include <graph/tpu/PjrtClientManager.h>
+#include <graph/tpu/StableHloGraphLowering.h>
+#include <graph/tpu/TpuReplayHandle.h>
+
 #include <mutex>
+#include <string>
+#include <vector>
 
 namespace sd {
 namespace graph {
+namespace {
 
-// ── Singleton ───────────────────────────────────────────────────────────────
-
-TpuGraphBackend::TpuGraphBackend() {
-  DSP_DIAG(BACKEND, "TpuGraphBackend: instance created");
+NDArray* resolveBoundaryArray(int sourceIndex,
+                              NDArray** externalInputs, int numExternalInputs,
+                              NDArray** outputSlots, int totalOutputSlots) {
+  if (sourceIndex < 0) {
+    const int externalIndex = -(sourceIndex + 1);
+    return externalInputs != nullptr && externalIndex >= 0 &&
+                   externalIndex < numExternalInputs
+               ? externalInputs[externalIndex]
+               : nullptr;
+  }
+  return outputSlots != nullptr && sourceIndex < totalOutputSlots
+             ? outputSlots[sourceIndex]
+             : nullptr;
 }
+
+int resolveSegmentDevice(NativeSlot* slots, int start, int end,
+                         int defaultDevice) {
+  int selected = -1;
+  for (int i = start; i <= end; ++i) {
+    const int requested = slots[i].targetDeviceId;
+    if (requested < 0) continue;
+    if (selected >= 0 && selected != requested) return -2;
+    selected = requested;
+  }
+  return selected < 0 ? defaultDevice : selected;
+}
+
+}  // namespace
+
+TpuGraphBackend::TpuGraphBackend() = default;
 
 TpuGraphBackend& TpuGraphBackend::getInstance() {
   static TpuGraphBackend* instance = nullptr;
-  static std::once_flag initFlag;
-  std::call_once(initFlag, []() {
-    instance = new TpuGraphBackend();
-  });
+  static std::once_flag once;
+  std::call_once(once, []() { instance = new TpuGraphBackend(); });
   return *instance;
 }
 
-// ── Availability ────────────────────────────────────────────────────────────
-
 bool TpuGraphBackend::isAvailable() const {
-  auto& mgr = PjrtClientManager::getInstance();
-  if (!mgr.isAvailable()) {
-    DSP_DIAG(BACKEND, "TpuGraphBackend::isAvailable: PJRT client not available");
+  auto& manager = PjrtClientManager::getInstance();
+  if (!manager.isAvailable()) {
+    DSP_DIAG(BACKEND, "TpuGraphBackend: PJRT unavailable: %s",
+             manager.getLastError().c_str());
     return false;
   }
-
-  int deviceCount = mgr.getDeviceCount();
-  if (deviceCount <= 0) {
-    DSP_DIAG(BACKEND, "TpuGraphBackend::isAvailable: no TPU devices found");
+  if (!manager.isTpuPlatform()) {
+    DSP_DIAG(BACKEND, "TpuGraphBackend: rejecting non-TPU PJRT platform '%s'",
+             manager.getPlatformName().c_str());
     return false;
   }
-
-  DSP_DIAG(BACKEND, "TpuGraphBackend::isAvailable: %d TPU device(s) available",
-           deviceCount);
-  return true;
+  return manager.getDeviceCount() > 0;
 }
 
-bool TpuGraphBackend::isResolvable(
-    const GraphBackendRequest& request) const {
+bool TpuGraphBackend::isResolvable(const GraphBackendRequest& request) const {
   return request.executionMode == GraphExecutionMode::GEM_TPU ||
          request.executionMode == GraphExecutionMode::GEM_AUTO;
 }
@@ -78,218 +97,185 @@ int TpuGraphBackend::resolutionPriority(
   return request.executionMode == GraphExecutionMode::GEM_TPU ? 1000 : 400;
 }
 
-// ── Segment Fusion Check ────────────────────────────────────────────────────
+GraphBackendPlanningPolicy TpuGraphBackend::planningPolicy(
+    const GraphBackendRequest& request) const {
+  auto policy = GraphBackend::planningPolicy(request);
+  policy.requiresShapePrePass = true;
+  policy.requiresSuccessfulShapePrePass = true;
+  policy.precompileBeforeFirstExecution = true;
+  policy.allowsShapeOnlyWarmup = true;
+  policy.requiresCapabilityPartitioning = true;
+  policy.requiresCompleteLowering =
+      request.executionMode == GraphExecutionMode::GEM_TPU;
+  return policy;
+}
+
+bool TpuGraphBackend::canResolveSlot(const GraphBackendRequest& request,
+                                     NativeSlot* slots, int slotIndex) {
+  (void)request;
+  return slots != nullptr && slotIndex >= 0 &&
+         StableHloGraphLowering::canLowerSlot(slots[slotIndex]);
+}
 
 bool TpuGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
-  if (slots == nullptr || start >= end) return false;
-
-  for (int i = start; i < end; ++i) {
-    const char* opName = slots[i].ident.opName.c_str();
-    if (!HloIRBuilder::isHloMappable(opName)) {
-      DSP_DIAG(SEGMENT, "TpuGraphBackend::canFuseSegment: slot %d op '%s' "
-               "not HLO-mappable", i, opName);
-      return false;
-    }
+  if (slots == nullptr || start < 0 || end < start) return false;
+  for (int i = start; i <= end; ++i) {
+    if (!StableHloGraphLowering::canLowerSlot(slots[i])) return false;
   }
-
-  DSP_DIAG(SEGMENT, "TpuGraphBackend::canFuseSegment: range [%d, %d) "
-           "all %d ops are HLO-mappable", start, end, end - start);
   return true;
 }
 
-// ── Segment Compilation ─────────────────────────────────────────────────────
-
-bool TpuGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
-                                      NDArray** externalInputs,
-                                      int numExternalInputs,
-                                      NDArray** outputSlots,
-                                      int totalOutputSlots,
-                                      LongType shapeKey,
-                                      int totalSlots,
-                                      int* requestedOutputSlotIndices,
-                                      int numRequestedOutputs) {
-  std::lock_guard<std::mutex> lock(mutex_);
-
-  // Clear previous audit
+void TpuGraphBackend::auditRange(NativeSlot* slots, int start, int end,
+                                 bool compiled, const std::string& reason) {
   lastAudit_.clear();
-
-  int start = seg.def.startSlot;
-  int end = seg.def.endSlot;
-
-  DSP_DIAG(COMPILE, "TpuGraphBackend::compileSegment: compiling segment "
-           "[%d, %d), shapeKey=0x%llx",
-           start, end, static_cast<unsigned long long>(shapeKey));
-
-  // Build HLO module text from slot sequence
-  std::string hloText = HloIRBuilder::buildModule(
-      slots, start, end, externalInputs, numExternalInputs);
-
-  if (hloText.empty()) {
-    DSP_DIAG(COMPILE, "TpuGraphBackend::compileSegment: HLO generation failed "
-             "for segment [%d, %d)", start, end);
-
-    // Record audit entries for all slots as uncompiled
-    for (int i = start; i < end; ++i) {
-      CompilationAuditEntry entry;
-      entry.slotIndex = i;
-      entry.opName = slots[i].ident.opName;
-      entry.wasCompiled = false;
-      entry.reason = "HLO module generation failed";
-      lastAudit_.push_back(entry);
-    }
-    return false;
-  }
-
-  // Create or reuse TpuReplayHandle for this segment
-  if (!seg.exec.replayHandle || std::string(seg.exec.replayHandle->backendName()) != "TPU (PJRT)") {
-    seg.exec.replayHandle = std::make_unique<TpuReplayHandle>(0);
-  }
-
-  auto* tpuHandle = static_cast<TpuReplayHandle*>(seg.exec.replayHandle.get());
-
-  // Set the HLO module on the replay handle
-  tpuHandle->setHloModule(hloText);
-
-  // Run through the capture lifecycle (state transitions for TPU)
-  if (!tpuHandle->beginCapture(nullptr)) {
-    DSP_DIAG(COMPILE, "TpuGraphBackend::compileSegment: beginCapture failed");
-    return false;
-  }
-
-  if (!tpuHandle->endCapture(nullptr)) {
-    DSP_DIAG(COMPILE, "TpuGraphBackend::compileSegment: endCapture failed");
-    return false;
-  }
-
-  // Finalize: compile HLO -> XLA executable
-  if (!tpuHandle->finalize()) {
-    DSP_DIAG(COMPILE, "TpuGraphBackend::compileSegment: finalize (HLO "
-             "compilation) failed");
-
-    for (int i = start; i < end; ++i) {
-      CompilationAuditEntry entry;
-      entry.slotIndex = i;
-      entry.opName = slots[i].ident.opName;
-      entry.wasCompiled = false;
-      entry.reason = "XLA compilation via PJRT failed";
-      lastAudit_.push_back(entry);
-    }
-    return false;
-  }
-
-  // Update segment metadata
-  seg.exec.cachedShapeKey = shapeKey;
-
-  // Record successful audit entries
-  for (int i = start; i < end; ++i) {
+  if (slots == nullptr || end < start) return;
+  lastAudit_.reserve(static_cast<size_t>(end - start + 1));
+  for (int i = start; i <= end; ++i) {
     CompilationAuditEntry entry;
     entry.slotIndex = i;
     entry.opName = slots[i].ident.opName;
-    entry.wasCompiled = true;
+    entry.wasCompiled = compiled;
+    entry.reason = reason;
     lastAudit_.push_back(entry);
   }
+}
 
-  DSP_DIAG(COMPILE, "TpuGraphBackend::compileSegment: segment [%d, %d) "
-           "compiled successfully (%zu bytes HLO)", start, end, hloText.size());
+bool TpuGraphBackend::compileSegment(
+    GraphSegment& seg, NativeSlot* slots,
+    NDArray** externalInputs, int numExternalInputs,
+    NDArray** outputSlots, int totalOutputSlots,
+    LongType shapeKey, int totalSlots,
+    int* requestedOutputSlotIndices, int numRequestedOutputs) {
+  return compileInternal(true, seg, slots, externalInputs, numExternalInputs,
+                         outputSlots, totalOutputSlots, shapeKey, totalSlots,
+                         requestedOutputSlotIndices, numRequestedOutputs);
+}
+
+bool TpuGraphBackend::compileSegment(
+    const GraphBackendRequest& request, GraphSegment& seg, NativeSlot* slots,
+    NDArray** externalInputs, int numExternalInputs,
+    NDArray** outputSlots, int totalOutputSlots,
+    LongType shapeKey, int totalSlots,
+    int* requestedOutputSlotIndices, int numRequestedOutputs) {
+  return compileInternal(request.runtimeCompilationAllowed, seg, slots,
+                         externalInputs, numExternalInputs, outputSlots,
+                         totalOutputSlots, shapeKey, totalSlots,
+                         requestedOutputSlotIndices, numRequestedOutputs);
+}
+
+bool TpuGraphBackend::compileInternal(
+    bool runtimeCompilationAllowed, GraphSegment& seg, NativeSlot* slots,
+    NDArray** externalInputs, int numExternalInputs,
+    NDArray** outputSlots, int totalOutputSlots,
+    LongType shapeKey, int totalSlots,
+    int* requestedOutputSlotIndices, int numRequestedOutputs) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  const int start = seg.def.startSlot;
+  const int end = seg.def.endSlot;
+
+  if (!runtimeCompilationAllowed) {
+    auditRange(slots, start, end, false,
+               "runtime compilation disabled and no TPU AOT artifact was supplied");
+    return false;
+  }
+  if (!isAvailable() || !canFuseSegment(slots, start, end)) {
+    auditRange(slots, start, end, false,
+               "TPU unavailable or segment is not completely lowerable");
+    return false;
+  }
+
+  auto& manager = PjrtClientManager::getInstance();
+  const int deviceId = resolveSegmentDevice(
+      slots, start, end, manager.getCurrentDevice());
+  if (deviceId == -2 || deviceId < 0 || deviceId >= manager.getDeviceCount()) {
+    auditRange(slots, start, end, false,
+               "segment requests conflicting or unavailable TPU devices");
+    return false;
+  }
+
+  StableHloLoweringResult program = StableHloGraphLowering::lower(
+      slots, start, end, externalInputs, numExternalInputs,
+      outputSlots, totalOutputSlots, totalSlots,
+      requestedOutputSlotIndices, numRequestedOutputs);
+  if (!program.success) {
+    auditRange(slots, start, end, false, program.error);
+    return false;
+  }
+
+  // A shape-keyed plan owns this handle. Replacing it atomically avoids stale
+  // READY-state reuse when shape drift recompiles the same segment.
+  seg.exec.replayHandle.reset(new TpuReplayHandle(deviceId));
+  auto* handle = static_cast<TpuReplayHandle*>(seg.exec.replayHandle.get());
+  handle->setProgram(program.program, program.format,
+                     program.boundary.inputSourceIndices,
+                     program.boundary.outputSlotIndices,
+                     end - start + 1);
+  if (!handle->beginCapture(nullptr) || !handle->endCapture(nullptr) ||
+      !handle->finalize()) {
+    auditRange(slots, start, end, false,
+               "PJRT StableHLO compilation failed: " + manager.getLastError());
+    seg.exec.replayHandle.reset();
+    return false;
+  }
+
+  seg.exec.cachedShapeKey = shapeKey;
+  auditRange(slots, start, end, true, "");
+  DSP_DIAG(COMPILE,
+           "TpuGraphBackend: compiled inclusive segment [%d,%d] device=%d "
+           "shapeKey=0x%llx inputs=%d outputs=%d",
+           start, end, deviceId, static_cast<unsigned long long>(shapeKey),
+           static_cast<int>(program.boundary.inputSourceIndices.size()),
+           static_cast<int>(program.boundary.outputSlotIndices.size()));
   return true;
 }
 
-// ── Segment Execution ───────────────────────────────────────────────────────
-
-Status TpuGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
-                                        NDArray** externalInputs,
-                                        int numExternalInputs,
-                                        NDArray** outputSlots,
-                                        int totalOutputSlots,
-                                        void* stream) {
-  if (!seg.exec.replayHandle || !seg.exec.replayHandle->isReady()) {
-    DSP_DIAG(EXECUTE, "TpuGraphBackend::executeSegment: segment [%d, %d) "
-             "not compiled/ready", seg.def.startSlot, seg.def.endSlot);
+Status TpuGraphBackend::executeSegment(
+    GraphSegment& seg, NativeSlot* slots,
+    NDArray** externalInputs, int numExternalInputs,
+    NDArray** outputSlots, int totalOutputSlots,
+    void* stream) {
+  (void)slots;
+  if (!seg.exec.replayHandle || !seg.exec.replayHandle->isReady() ||
+      std::string(seg.exec.replayHandle->backendName()) != "TPU (PJRT)") {
     return Status::KERNEL_FAILURE;
   }
+  auto* handle = static_cast<TpuReplayHandle*>(seg.exec.replayHandle.get());
 
-  auto* tpuHandle = static_cast<TpuReplayHandle*>(seg.exec.replayHandle.get());
+  std::vector<NDArray*> inputs;
+  inputs.reserve(handle->inputSourceIndices().size());
+  for (int source : handle->inputSourceIndices()) {
+    NDArray* array = resolveBoundaryArray(source, externalInputs,
+                                          numExternalInputs, outputSlots,
+                                          totalOutputSlots);
+    if (array == nullptr) return Status::KERNEL_FAILURE;
+    inputs.push_back(array);
+  }
 
-  int start = seg.def.startSlot;
-  int end = seg.def.endSlot;
-
-  DSP_DIAG(EXECUTE, "TpuGraphBackend::executeSegment: executing segment "
-           "[%d, %d), replay #%d", start, end, tpuHandle->getReplayCount() + 1);
-
-  // Collect input PJRT buffer pointers from external inputs and prior slot outputs
-  // For now, we would need to create PJRT buffers from NDArray device pointers.
-  // This requires the full PJRT buffer creation path to be implemented.
-
-  // Collect input arrays for this segment
-  std::vector<void*> inputBuffers;
-  for (int i = start; i < end; ++i) {
-    for (int j = 0; j < slots[i].wiring.numInputs; ++j) {
-      int srcIdx = slots[i].wiring.inputSourceIndices[j];
-      if (srcIdx < 0) {
-        // External input
-        int extIdx = -(srcIdx + 1);
-        if (extIdx >= 0 && extIdx < numExternalInputs &&
-            externalInputs[extIdx] != nullptr) {
-          // In a full implementation, we would create or look up the
-          // PJRT buffer for this NDArray's device data.
-          inputBuffers.push_back(externalInputs[extIdx]->specialBuffer());
-        }
-      } else if (srcIdx >= 0 && srcIdx < totalOutputSlots) {
-        // Prior slot output
-        if (outputSlots[srcIdx] != nullptr) {
-          inputBuffers.push_back(outputSlots[srcIdx]->specialBuffer());
-        }
-      }
+  std::vector<NDArray*> outputs;
+  outputs.reserve(handle->outputSlotIndices().size());
+  for (int outputIndex : handle->outputSlotIndices()) {
+    if (outputIndex < 0 || outputIndex >= totalOutputSlots ||
+        outputSlots == nullptr || outputSlots[outputIndex] == nullptr) {
+      return Status::KERNEL_FAILURE;
     }
+    outputs.push_back(outputSlots[outputIndex]);
   }
 
-  // Collect output buffer pointers
-  std::vector<void*> outputBufferPtrs;
-  for (int i = start; i < end; ++i) {
-    for (int k = 0; k < slots[i].wiring.numOutputs; ++k) {
-      int outIdx = slots[i].wiring.outputSlotIndices[k];
-      if (outIdx >= 0 && outIdx < totalOutputSlots &&
-          outputSlots[outIdx] != nullptr) {
-        outputBufferPtrs.push_back(outputSlots[outIdx]->specialBuffer());
-      }
-    }
-  }
-
-  // Bind buffers and replay
-  tpuHandle->bindBuffers(
-      inputBuffers.empty() ? nullptr : inputBuffers.data(),
-      static_cast<int>(inputBuffers.size()),
-      outputBufferPtrs.empty() ? nullptr : outputBufferPtrs.data(),
-      static_cast<int>(outputBufferPtrs.size()));
-
-  if (!tpuHandle->replay(stream)) {
-    DSP_DIAG(EXECUTE, "TpuGraphBackend::executeSegment: replay failed for "
-             "segment [%d, %d)", start, end);
-    return Status::KERNEL_FAILURE;
-  }
-
-  DSP_DIAG(EXECUTE, "TpuGraphBackend::executeSegment: segment [%d, %d) "
-           "executed successfully", start, end);
-  return Status::OK;
+  handle->bindArrays(inputs.empty() ? nullptr : inputs.data(),
+                     static_cast<int>(inputs.size()),
+                     outputs.empty() ? nullptr : outputs.data(),
+                     static_cast<int>(outputs.size()));
+  return handle->replay(stream) ? Status::OK : Status::KERNEL_FAILURE;
 }
-
-// ── Cache Invalidation ──────────────────────────────────────────────────────
 
 void TpuGraphBackend::invalidateCache() {
   std::lock_guard<std::mutex> lock(mutex_);
-
-  DSP_DIAG(COMPILE, "TpuGraphBackend::invalidateCache: clearing compilation "
-           "caches");
-
-  // Individual segment replay handles own their compiled executables.
-  // This method is called when global state changes require re-compilation.
-  // Segments will re-compile on next compileSegment() call.
+  PjrtClientManager::getInstance().invalidateCompilationCache();
   lastAudit_.clear();
 }
 
-// ── Compilation Audit ───────────────────────────────────────────────────────
-
-std::vector<CompilationAuditEntry> TpuGraphBackend::getLastCompilationAudit() const {
+std::vector<CompilationAuditEntry>
+TpuGraphBackend::getLastCompilationAudit() const {
   std::lock_guard<std::mutex> lock(mutex_);
   return lastAudit_;
 }

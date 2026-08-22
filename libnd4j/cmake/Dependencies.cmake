@@ -348,10 +348,11 @@ function(setup_blas)
     if(SD_CUDA)
         return()
     endif()
-    if(SD_VULKAN OR SD_HEXAGON OR SD_TPU OR SD_GOOGLE_TENSOR_TPU)
-        # Primary accelerator builds are device-only. Host BLAS would create a
-        # second execution path, enlarge mobile packages, and make unsupported
-        # device segments look successful through CPU fallback. Force the cache
+    if(SD_VULKAN OR SD_HEXAGON OR SD_GOOGLE_TENSOR_TPU)
+        # Device-only mobile accelerator builds do not expose the host-native
+        # ND4J control plane. Cloud TPU/PJRT intentionally does: eager ND4J ops
+        # and shape preparation use the mature host backend while forced TPU DSP
+        # segments remain fail-closed through TpuGraphBackend policy. Force the cache
         # clean as well so a reused build directory cannot retain an ambient
         # OpenBLAS configuration.
         set(BLAS FALSE CACHE BOOL

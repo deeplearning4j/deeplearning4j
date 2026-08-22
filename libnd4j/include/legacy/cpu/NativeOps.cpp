@@ -49,6 +49,9 @@
 #include <math/templatemath.h>
 #include <ops/declarable/helpers/transforms.h>
 #include <graph/NativeDynamicShapePlan.h>
+#ifdef SD_TPU
+#include <graph/tpu/PjrtClientManager.h>
+#endif
 #include <memory/MemoryCounter.h>
 #include <memory/MultiBackendWorkspace.h>
 #include <stdio.h>
@@ -247,7 +250,11 @@ bool isBlasVersionMatches(int major, int minor, int build) { return true; }
  * This is dummy method for JNI compatibility
  * Since we'll use this from java, jni compiler would like to have method no matter what.
  */
-void initializeDevicesAndFunctions() {}
+void initializeDevicesAndFunctions() {
+#ifdef SD_TPU
+  sd::graph::PjrtClientManager::getInstance().initialize();
+#endif
+}
 
 /**
  * Initialize the shape cache early to prevent race conditions during static initialization.
@@ -474,17 +481,48 @@ int getDeviceId(void* deviceId) { return 0; }
 
 int registerEvent(sd::Pointer event, sd::Pointer stream) { return 0L; }
 
-int setDevice(int deviceId) { return 0L; }
+int setDevice(int deviceId) {
+#ifdef SD_TPU
+  auto& manager = sd::graph::PjrtClientManager::getInstance();
+  return manager.setCurrentDevice(deviceId) ? 0 : -1;
+#else
+  (void)deviceId;
+  return 0L;
+#endif
+}
 
 void setAvailableDevices(int *devices, int size) {
   // no-op for CPU backend
 }
 
-sd::LongType getDeviceFreeMemory(int deviceId) { return 0L; }
+sd::LongType getDeviceFreeMemory(int deviceId) {
+#ifdef SD_TPU
+  auto& manager = sd::graph::PjrtClientManager::getInstance();
+  return manager.isTpuPlatform() ? manager.getDeviceFreeMemory(deviceId) : 0L;
+#else
+  (void)deviceId;
+  return 0L;
+#endif
+}
 
-sd::LongType getDeviceFreeMemoryDefault() { return 0L; }
+sd::LongType getDeviceFreeMemoryDefault() {
+#ifdef SD_TPU
+  return getDeviceFreeMemory(
+      sd::graph::PjrtClientManager::getInstance().getCurrentDevice());
+#else
+  return 0L;
+#endif
+}
 
-sd::LongType getDeviceTotalMemory(int deviceId) { return 0L; }
+sd::LongType getDeviceTotalMemory(int deviceId) {
+#ifdef SD_TPU
+  auto& manager = sd::graph::PjrtClientManager::getInstance();
+  return manager.isTpuPlatform() ? manager.getDeviceTotalMemory(deviceId) : 0L;
+#else
+  (void)deviceId;
+  return 0L;
+#endif
+}
 
 int memcpySync(sd::Pointer dst, sd::Pointer src, sd::LongType size, int flags, sd::Pointer reserved) { return 0L; }
 
@@ -500,7 +538,14 @@ int streamSynchronize(sd::Pointer stream) { return 0L; }
 
 int eventSynchronize(sd::Pointer event) { return 0L; }
 
-int getAvailableDevices() { return 0L; }
+int getAvailableDevices() {
+#ifdef SD_TPU
+  auto& manager = sd::graph::PjrtClientManager::getInstance();
+  return manager.isTpuPlatform() ? manager.getDeviceCount() : 0;
+#else
+  return 0;
+#endif
+}
 
 bool isPeerAccessSupported(int srcDevice, int dstDevice) { return false; }
 
@@ -821,7 +866,13 @@ void setOmpMinThreads(int threads) {
   sd::Environment::getInstance().setMaxThreads(threads);
 }
 
-int getDevice() { return 0; }
+int getDevice() {
+#ifdef SD_TPU
+  return sd::graph::PjrtClientManager::getInstance().getCurrentDevice();
+#else
+  return 0;
+#endif
+}
 
 
 
@@ -829,6 +880,17 @@ char *name;
 bool nameSet = false;
 
 const char *getDeviceName(int deviceId) {
+#ifdef SD_TPU
+  static thread_local std::string tpuDeviceName;
+  auto& manager = sd::graph::PjrtClientManager::getInstance();
+  if (!manager.isTpuPlatform() || deviceId < 0 ||
+      deviceId >= manager.getDeviceCount()) {
+    tpuDeviceName = "TPU unavailable";
+  } else {
+    tpuDeviceName = manager.getDeviceName(deviceId);
+  }
+  return tpuDeviceName.c_str();
+#else
   #ifdef __cpp_exceptions
   try {
     if (!nameSet) {
@@ -873,6 +935,7 @@ const char *getDeviceName(int deviceId) {
   #endif
 
   return name;
+#endif
 }
 
 

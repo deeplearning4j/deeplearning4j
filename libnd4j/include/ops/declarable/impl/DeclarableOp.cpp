@@ -36,6 +36,9 @@
 #if defined(SD_VULKAN) && defined(HAVE_VULKAN) && HAVE_VULKAN
 #include <graph/vulkan/VulkanEagerExecutor.h>
 #endif
+#ifdef SD_TPU
+#include <graph/tpu/TpuEagerExecutor.h>
+#endif
 
 #if defined(SD_GCC_FUNCTRACE)
 #include <ops/declarable/OpExecutionLogger.h>
@@ -1110,6 +1113,10 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
       // A Vulkan artifact owns descriptor execution, never the source-authored
       // CPU/CUDA validateAndExecute body.
       status = graph::VulkanEagerExecutor::execute(this->getOpHash(), *block);
+#elif defined(SD_TPU)
+      // TPU eager execution uses the same trait/KernelSpec/StableHLO/PJRT lane
+      // as DSP. Unsupported descriptors fail instead of invoking CPU numerics.
+      status = graph::TpuEagerExecutor::execute(this->getOpHash(), *block);
 #else
       status = this->validateAndExecute(*block);
 #endif
@@ -1188,6 +1195,8 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
     graph::OpPhaseTimer nativeExecTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::NATIVE_EXEC);
 #if defined(SD_VULKAN) && defined(HAVE_VULKAN) && HAVE_VULKAN
     status = graph::VulkanEagerExecutor::execute(this->getOpHash(), *block);
+#elif defined(SD_TPU)
+    status = graph::TpuEagerExecutor::execute(this->getOpHash(), *block);
 #else
     status = this->validateAndExecute(*block);
 #endif

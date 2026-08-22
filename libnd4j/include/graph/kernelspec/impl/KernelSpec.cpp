@@ -17,6 +17,7 @@
  ******************************************************************************/
 
 #include <graph/kernelspec/KernelSpec.h>
+#include <ops/declarable/OpRegistrator.h>
 
 #include <map>
 #include <mutex>
@@ -104,6 +105,7 @@ struct KernelSpecRegistry::Impl {
   mutable std::mutex mutex;
   std::map<std::string, KernelSpec> specs;          // primary name -> spec
   std::map<std::string, std::string> aliasToName;   // alias -> primary name
+  std::map<LongType, std::string> hashToName;       // canonical descriptor hash -> primary name
 };
 
 KernelSpecRegistry& KernelSpecRegistry::getInstance() {
@@ -117,15 +119,32 @@ KernelSpecRegistry::Impl& KernelSpecRegistry::impl() const {
 }
 
 bool KernelSpecRegistry::add(const KernelSpec& spec, std::string* error) {
-  auto err = spec.validate();
+  KernelSpec resolved = spec;
+  auto* op = sd::ops::OpRegistrator::getInstance().getOperation(spec.name.c_str());
+  if (op == nullptr || op->getOpDescriptor() == nullptr) {
+    if (error) *error = spec.name + ": no canonical registered operation";
+    return false;
+  }
+  auto* descriptor = op->getOpDescriptor();
+  resolved.descriptorHash = descriptor->getHash();
+  const uint64_t descriptorTraits = descriptor->getTraits64();
+  if ((descriptorTraits & resolved.traits) != resolved.traits) {
+    if (error) *error = spec.name + ": KernelSpec traits are not an op-local descriptor subset";
+    return false;
+  }
+  auto err = resolved.validate();
   if (!err.empty()) {
     if (error) *error = err;
     return false;
   }
   auto& state = impl();
   std::lock_guard<std::mutex> lock(state.mutex);
-  if (state.specs.count(spec.name) || state.aliasToName.count(spec.name)) {
+  if (state.specs.count(resolved.name) || state.aliasToName.count(resolved.name)) {
     if (error) *error = spec.name + ": name already registered";
+    return false;
+  }
+  if (state.hashToName.count(resolved.descriptorHash)) {
+    if (error) *error = resolved.name + ": descriptor hash already registered";
     return false;
   }
   for (const auto& a : spec.aliases) {
@@ -134,8 +153,9 @@ bool KernelSpecRegistry::add(const KernelSpec& spec, std::string* error) {
       return false;
     }
   }
-  for (const auto& a : spec.aliases) state.aliasToName[a] = spec.name;
-  state.specs[spec.name] = spec;
+  for (const auto& a : resolved.aliases) state.aliasToName[a] = resolved.name;
+  state.hashToName[resolved.descriptorHash] = resolved.name;
+  state.specs[resolved.name] = resolved;
   return true;
 }
 
@@ -150,6 +170,15 @@ const KernelSpec* KernelSpecRegistry::find(const std::string& nameOrAlias) const
     if (primary != state.specs.end()) return &primary->second;
   }
   return nullptr;
+}
+
+const KernelSpec* KernelSpecRegistry::find(LongType descriptorHash) const {
+  auto& state = impl();
+  std::lock_guard<std::mutex> lock(state.mutex);
+  auto hash = state.hashToName.find(descriptorHash);
+  if (hash == state.hashToName.end()) return nullptr;
+  auto spec = state.specs.find(hash->second);
+  return spec == state.specs.end() ? nullptr : &spec->second;
 }
 
 std::vector<const KernelSpec*> KernelSpecRegistry::all() const {
@@ -200,7 +229,7 @@ KernelSpecBuilder& KernelSpecBuilder::category(KernelCategory c) {
   return *this;
 }
 
-KernelSpecBuilder& KernelSpecBuilder::traits(uint32_t traitMask) {
+KernelSpecBuilder& KernelSpecBuilder::traits(uint64_t traitMask) {
   spec_.traits = traitMask;
   return *this;
 }

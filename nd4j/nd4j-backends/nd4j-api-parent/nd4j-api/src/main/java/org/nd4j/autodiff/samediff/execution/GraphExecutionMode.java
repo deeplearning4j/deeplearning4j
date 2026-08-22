@@ -132,10 +132,10 @@ public enum GraphExecutionMode {
     METAL(12),
 
     /**
-     * TPU XLA compilation caching via PJRT. Compiles fusible segments to HLO
-     * (High-Level Operations) modules, caches compiled executables via
-     * PJRT_Client_Compile, and re-executes cached binaries on subsequent calls.
-     * Google Cloud TPU v4/v5 only.
+     * TPU StableHLO compilation and replay via PJRT. Compiles completely
+     * lowerable, shape-keyed segments as MLIR StableHLO with deterministic
+     * boundary bindings and re-executes the loaded PJRT executable. Unsupported
+     * forms fail closed in forced TPU mode. Google Cloud TPU v4/v5 only.
      */
     TPU(13),
 

@@ -455,7 +455,6 @@ elseif(SD_TPU)
     set(DEFAULT_ENGINE "samediff::ENGINE_TPU")
     add_compile_definitions(DEFAULT_ENGINE=samediff::ENGINE_TPU)
     add_compile_definitions(SD_TPU=1)
-    add_compile_definitions(HAVE_PJRT=1)
 elseif(SD_HEXAGON)
     set(DEFAULT_ENGINE "samediff::ENGINE_CPU")
     add_compile_definitions(DEFAULT_ENGINE=samediff::ENGINE_CPU)
@@ -546,6 +545,14 @@ message(STATUS "==============================")
 # Include JNI configuration BEFORE MainBuildFlow so JVM_LIBRARY is available for linking
 include(cmake/JNIConfiguration.cmake)
 
+# TPU source collection and generated packaging inspect HAVE_PJRT. Resolve the
+# vendored ABI header before MainBuildFlow instead of mutating availability after
+# targets and package metadata have already been created.
+if(SD_TPU)
+    include(cmake/TpuConfiguration.cmake)
+    setup_pjrt_paths()
+endif()
+
 include(cmake/MainBuildFlow.cmake)
 
 if(SD_CUDA)
@@ -555,7 +562,6 @@ if(SD_CUDA)
     include(cmake/CudaCleanup.cmake)
     cuda_create_cleanup_target()
 elseif(SD_TPU)
-    include(cmake/TpuConfiguration.cmake)
     include(cmake/BuildTPU.cmake)
     setup_tpu_build()
 elseif(SD_HEXAGON)

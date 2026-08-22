@@ -23,6 +23,8 @@
 
 #ifdef SD_TPU
 
+#include <array/NDArray.h>
+
 #include <cstddef>
 #include <cstdint>
 #include <mutex>
@@ -33,149 +35,100 @@ namespace sd {
 namespace graph {
 
 /**
- * Singleton managing PJRT_Api* function table and PJRT_Client lifecycle.
+ * Process-wide owner of the runtime-loaded PJRT plugin and client.
  *
- * Loads libtpu.so at runtime via dlopen, resolves the GetPjrtApi() symbol,
- * and provides a thread-safe interface for TPU device enumeration, buffer
- * management, and HLO compilation.
- *
- * All PJRT types are opaque void* since we dlopen at runtime and do not
- * link against any PJRT headers. The actual PJRT_Api struct is cast to
- * void* and function pointers are resolved from the symbol table.
+ * The PJRT C API header defines the ABI, but the plugin remains a runtime
+ * dependency: libnd4jtpu never links libtpu (or another PJRT plugin). All
+ * public handles are opaque so PJRT types do not leak through the graph API.
  */
 class SD_LIB_EXPORT PjrtClientManager {
  public:
   /**
-   * Get the singleton instance. Thread-safe lazy initialization.
+   * Process-lifetime singleton. Native plan shutdown deliberately leaves
+   * backend runtimes alive until process exit, matching the plan-cache shutdown
+   * contract and avoiding static-destruction order races with replay handles.
    */
   static PjrtClientManager& getInstance();
 
-  /**
-   * Check if the PJRT library was loaded and client is available.
-   * @return true if libtpu.so was loaded and a PJRT client was created
-   */
+  /** Initialize the selected plugin and client. Safe to call repeatedly. */
+  bool initialize();
+
+  /** True when a client with at least one addressable device is ready. */
   bool isAvailable() const;
 
-  // ── Device enumeration ────────────────────────────────────────────────
+  /** True only when the loaded PJRT client reports a TPU platform. */
+  bool isTpuPlatform() const;
 
-  /**
-   * Get the number of TPU devices visible to this client.
-   * @return device count, or 0 if client is not initialized
-   */
+  std::string getPlatformName() const;
   int getDeviceCount() const;
-
-  /**
-   * Get opaque device handles for all visible TPU devices.
-   * Each entry is a PJRT_Device* cast to void*.
-   * @return vector of opaque device pointers
-   */
   std::vector<void*> getDevices() const;
+  std::string getDeviceName(int deviceIdx) const;
+  LongType getDeviceTotalMemory(int deviceIdx) const;
+  LongType getDeviceFreeMemory(int deviceIdx) const;
+  bool setCurrentDevice(int deviceIdx);
+  int getCurrentDevice() const;
 
-  // ── Buffer management ─────────────────────────────────────────────────
+  /** Upload an NDArray value to one addressable PJRT device. */
+  void* createBuffer(NDArray* array, int deviceIdx = 0);
 
-  /**
-   * Create a device buffer from host data.
-   *
-   * @param hostData   Pointer to host memory
-   * @param sizeBytes  Size of the data in bytes
-   * @param deviceIdx  Target device index
-   * @return Opaque PJRT_Buffer* handle, or nullptr on failure
-   */
-  void* createBuffer(const void* hostData, size_t sizeBytes, int deviceIdx = 0);
-
-  /**
-   * Destroy a previously created device buffer.
-   *
-   * @param buffer  Opaque PJRT_Buffer* handle from createBuffer()
-   */
+  /** Destroy a PJRT_Buffer returned by createBuffer() or execute(). */
   void destroyBuffer(void* buffer);
 
-  /**
-   * Copy buffer contents back to host memory.
-   *
-   * @param buffer     Opaque PJRT_Buffer* handle
-   * @param hostDst    Destination host memory (must be pre-allocated)
-   * @param sizeBytes  Number of bytes to copy
-   * @return true if the transfer completed successfully
-   */
-  bool bufferToHost(void* buffer, void* hostDst, size_t sizeBytes);
+  /** Copy one PJRT output buffer into a dense C-order NDArray. */
+  bool bufferToArray(void* buffer, NDArray* destination);
 
-  // ── Compilation ───────────────────────────────────────────────────────
+  /** Compile an MLIR/StableHLO program for the selected device. */
+  void* compile(const void* programBytes, size_t programSize,
+                const char* programFormat = "mlir", int deviceIdx = 0);
 
   /**
-   * Compile an HLO module into an executable.
-   *
-   * @param hloBytes  Serialized HLO module (text or protobuf)
-   * @param hloSize   Size of the HLO data in bytes
-   * @return Opaque PJRT_LoadedExecutable* handle, or nullptr on failure
-   */
-  void* compile(const void* hloBytes, size_t hloSize);
-
-  /**
-   * Execute a compiled executable with input buffers.
-   *
-   * @param executable    Opaque PJRT_LoadedExecutable* from compile()
-   * @param inputBuffers  Array of opaque PJRT_Buffer* input handles
-   * @param numInputs     Number of input buffers
-   * @param outputBuffers Output: array of opaque PJRT_Buffer* result handles
-   * @param numOutputs    Output: number of result buffers
-   * @return true if execution completed successfully
+   * Execute a loaded executable on one addressable device. Returned output
+   * buffers are owned by the caller and must be destroyed with destroyBuffer().
    */
   bool execute(void* executable, void** inputBuffers, int numInputs,
-               void** outputBuffers, int* numOutputs);
+               int deviceIdx, std::vector<void*>& outputBuffers);
 
-  /**
-   * Destroy a compiled executable.
-   *
-   * @param executable  Opaque PJRT_LoadedExecutable* from compile()
-   */
+  /** Release a loaded executable. */
   void destroyExecutable(void* executable);
 
-  // ── Diagnostics ───────────────────────────────────────────────────────
+  /** Monotonically invalidate backend compilation state. */
+  void invalidateCompilationCache();
+  uint64_t compilationGeneration() const;
 
-  /**
-   * Get the last error message from PJRT operations.
-   */
-  const std::string& getLastError() const { return lastError_; }
+  /** Thread-safe error snapshot. */
+  std::string getLastError() const;
 
  private:
   PjrtClientManager();
   ~PjrtClientManager();
 
-  // Non-copyable
   PjrtClientManager(const PjrtClientManager&) = delete;
   PjrtClientManager& operator=(const PjrtClientManager&) = delete;
 
-  /**
-   * Load libtpu.so and resolve GetPjrtApi symbol.
-   * @return true if library was loaded successfully
-   */
+  static PjrtClientManager* instance_;
+  static std::once_flag instanceOnce_;
+  static thread_local int currentDevice_;
+
   bool loadLibrary();
-
-  /**
-   * Initialize the PJRT client from the loaded API.
-   * @return true if client was created successfully
-   */
   bool initClient();
+  void shutdownUnlocked();
+  bool consumeError(void* error, const char* operation);
+  bool awaitAndDestroyEvent(void* event, const char* operation);
+  void setLastError(const std::string& message);
+  bool validDeviceIndex(int deviceIdx) const;
 
-  // Library handle from dlopen
   void* libHandle_ = nullptr;
-
-  // PJRT_Api* function table (opaque — resolved at runtime)
   void* pjrtApi_ = nullptr;
-
-  // PJRT_Client* (opaque)
   void* client_ = nullptr;
-
-  // Cached device list
   std::vector<void*> devices_;
+  std::vector<std::string> deviceNames_;
+  std::string platformName_;
 
-  // Thread safety for lazy init
-  mutable std::mutex mutex_;
+  mutable std::mutex initMutex_;
+  mutable std::mutex errorMutex_;
+  mutable std::mutex executionMutex_;
   bool initialized_ = false;
-  bool initFailed_ = false;
-
-  // Last error message
+  uint64_t compilationGeneration_ = 1;
   std::string lastError_;
 };
 

@@ -19,284 +19,207 @@
 #ifdef SD_TPU
 
 #include <graph/tpu/TpuReplayHandle.h>
-#include <graph/tpu/PjrtClientManager.h>
-#include <graph/DspDiagnostics.h>
 
-#include <cstring>
-#include <functional>
+#include <graph/DspDiagnostics.h>
+#include <graph/tpu/PjrtClientManager.h>
+
+#include <cstdlib>
+#include <vector>
 
 namespace sd {
 namespace graph {
 
-// ── Constructor / Destructor ────────────────────────────────────────────────
-
-TpuReplayHandle::TpuReplayHandle(int deviceId)
-    : state_(ReplayState::EMPTY),
-      deviceId_(deviceId) {
-}
+TpuReplayHandle::TpuReplayHandle(int deviceId) : deviceId_(deviceId) {}
 
 TpuReplayHandle::~TpuReplayHandle() {
+  clearBindings();
+  cleanupExecutable();
+  releaseWorkspace();
   freeHostPointers();
-  cleanup();
 }
 
-// ── Capture Lifecycle ───────────────────────────────────────────────────────
-
 bool TpuReplayHandle::beginCapture(void* stream) {
+  (void)stream;
   if (state_ != ReplayState::EMPTY && state_ != ReplayState::ERRORED) {
-    DSP_DIAG(EXECUTE, "TpuReplayHandle::beginCapture: invalid state %d",
+    DSP_DIAG(EXECUTE, "TpuReplayHandle::beginCapture invalid state=%d",
              static_cast<int>(state_));
     return false;
   }
-
-  // For TPU, capture is a logical phase only — XLA does not use stream capture.
-  // We transition state to allow HLO module collection.
+  if (program_.empty()) {
+    state_ = ReplayState::ERRORED;
+    DSP_DIAG(COMPILE, "TpuReplayHandle::beginCapture has no PJRT program");
+    return false;
+  }
   state_ = ReplayState::CAPTURING;
-
-  DSP_DIAG(EXECUTE, "TpuReplayHandle::beginCapture: entered capture phase "
-           "on device %d", deviceId_);
   return true;
 }
 
 bool TpuReplayHandle::endCapture(void* stream) {
-  if (state_ != ReplayState::CAPTURING) {
-    DSP_DIAG(EXECUTE, "TpuReplayHandle::endCapture: not capturing (state %d)",
-             static_cast<int>(state_));
-    return false;
-  }
-
+  (void)stream;
+  if (state_ != ReplayState::CAPTURING) return false;
   state_ = ReplayState::CAPTURED;
-
-  DSP_DIAG(EXECUTE, "TpuReplayHandle::endCapture: capture phase complete, "
-           "HLO module size=%zu bytes", hloModuleText_.size());
   return true;
 }
 
 bool TpuReplayHandle::finalize() {
-  if (state_ == ReplayState::READY) return true;  // Already finalized
-
-  if (state_ != ReplayState::CAPTURED) {
-    DSP_DIAG(EXECUTE, "TpuReplayHandle::finalize: not captured (state %d)",
-             static_cast<int>(state_));
-    return false;
-  }
-
-  if (hloModuleText_.empty()) {
-    DSP_DIAG(EXECUTE, "TpuReplayHandle::finalize: no HLO module set");
+  if (state_ != ReplayState::CAPTURED || program_.empty()) {
     state_ = ReplayState::ERRORED;
     return false;
   }
 
-  // Hash the HLO module and check the compilation cache
-  uint64_t hloHash = hashHloModule();
-
-  auto cacheIt = compilationCache_.find(hloHash);
-  if (cacheIt != compilationCache_.end()) {
-    // Cache hit — reuse previously compiled executable
-    compiledExecutable_ = cacheIt->second;
-    DSP_DIAG(COMPILE, "TpuReplayHandle::finalize: compilation cache hit "
-             "for hash 0x%016llx", static_cast<unsigned long long>(hloHash));
-  } else {
-    // Cache miss — compile via PjrtClientManager
-    DSP_DIAG(COMPILE, "TpuReplayHandle::finalize: compilation cache miss "
-             "for hash 0x%016llx, compiling %zu bytes HLO",
-             static_cast<unsigned long long>(hloHash), hloModuleText_.size());
-
-    auto& mgr = PjrtClientManager::getInstance();
-    compiledExecutable_ = mgr.compile(hloModuleText_.data(),
-                                       hloModuleText_.size());
-
-    if (compiledExecutable_ == nullptr) {
-      DSP_DIAG(COMPILE, "TpuReplayHandle::finalize: compilation failed: %s",
-               mgr.getLastError().c_str());
-      state_ = ReplayState::ERRORED;
-      return false;
-    }
-
-    // Store in cache for future reuse
-    compilationCache_[hloHash] = compiledExecutable_;
-    DSP_DIAG(COMPILE, "TpuReplayHandle::finalize: compiled and cached "
-             "executable %p", compiledExecutable_);
+  cleanupExecutable();
+  auto& manager = PjrtClientManager::getInstance();
+  compiledExecutable_ = manager.compile(program_.data(), program_.size(),
+                                        programFormat_.c_str(), deviceId_);
+  if (compiledExecutable_ == nullptr) {
+    state_ = ReplayState::ERRORED;
+    DSP_DIAG(COMPILE, "TpuReplayHandle::finalize failed: %s",
+             manager.getLastError().c_str());
+    return false;
   }
-
   state_ = ReplayState::READY;
-
-  DSP_DIAG(EXECUTE, "TpuReplayHandle::finalize: ready for replay "
-           "(cache size=%d)", static_cast<int>(compilationCache_.size()));
   return true;
 }
 
 bool TpuReplayHandle::replay(void* stream) {
-  if (state_ != ReplayState::READY) {
-    DSP_DIAG(EXECUTE, "TpuReplayHandle::replay: not ready (state %d)",
-             static_cast<int>(state_));
+  (void)stream;
+  if (state_ != ReplayState::READY || compiledExecutable_ == nullptr) return false;
+  if (boundInputArrays_.size() != inputSourceIndices_.size() ||
+      boundOutputArrays_.size() != outputSlotIndices_.size()) {
+    DSP_DIAG(EXECUTE,
+             "TpuReplayHandle::replay binding mismatch inputs=%d/%d outputs=%d/%d",
+             static_cast<int>(boundInputArrays_.size()),
+             static_cast<int>(inputSourceIndices_.size()),
+             static_cast<int>(boundOutputArrays_.size()),
+             static_cast<int>(outputSlotIndices_.size()));
     return false;
   }
 
-  if (compiledExecutable_ == nullptr) {
-    DSP_DIAG(EXECUTE, "TpuReplayHandle::replay: no compiled executable");
-    state_ = ReplayState::ERRORED;
-    return false;
+  auto& manager = PjrtClientManager::getInstance();
+  std::vector<void*> inputBuffers;
+  std::vector<void*> outputBuffers;
+  inputBuffers.reserve(boundInputArrays_.size());
+  bool success = true;
+  for (auto* input : boundInputArrays_) {
+    void* buffer = manager.createBuffer(input, deviceId_);
+    if (buffer == nullptr) {
+      success = false;
+      break;
+    }
+    inputBuffers.push_back(buffer);
   }
 
-  if (boundInputBuffers_.empty()) {
-    DSP_DIAG(EXECUTE, "TpuReplayHandle::replay: no input buffers bound");
-    return false;
+  if (success) {
+    success = manager.execute(
+        compiledExecutable_, inputBuffers.empty() ? nullptr : inputBuffers.data(),
+        static_cast<int>(inputBuffers.size()), deviceId_, outputBuffers);
+  }
+  if (success && outputBuffers.size() != boundOutputArrays_.size()) {
+    DSP_DIAG(EXECUTE,
+             "TpuReplayHandle::replay output count mismatch runtime=%d expected=%d",
+             static_cast<int>(outputBuffers.size()),
+             static_cast<int>(boundOutputArrays_.size()));
+    success = false;
+  }
+  if (success) {
+    for (size_t i = 0; i < outputBuffers.size(); ++i) {
+      if (!manager.bufferToArray(outputBuffers[i], boundOutputArrays_[i])) {
+        success = false;
+        break;
+      }
+    }
   }
 
-  // Execute the compiled module via PjrtClientManager
-  auto& mgr = PjrtClientManager::getInstance();
-
-  void** outputPtrs = boundOutputBuffers_.empty() ? nullptr : boundOutputBuffers_.data();
-  int numOutputs = static_cast<int>(boundOutputBuffers_.size());
-
-  bool success = mgr.execute(
-      compiledExecutable_,
-      boundInputBuffers_.data(),
-      static_cast<int>(boundInputBuffers_.size()),
-      outputPtrs,
-      &numOutputs);
+  for (auto* output : outputBuffers) manager.destroyBuffer(output);
+  for (auto* input : inputBuffers) manager.destroyBuffer(input);
 
   if (!success) {
-    DSP_DIAG(EXECUTE, "TpuReplayHandle::replay: execution failed: %s",
-             mgr.getLastError().c_str());
+    DSP_DIAG(EXECUTE, "TpuReplayHandle::replay failed: %s",
+             manager.getLastError().c_str());
     return false;
   }
-
-  replayCount_++;
-
-  DSP_DIAG(EXECUTE, "TpuReplayHandle::replay: execution %d complete "
-           "(%d inputs, %d outputs)",
-           replayCount_,
-           static_cast<int>(boundInputBuffers_.size()),
-           numOutputs);
+  ++replayCount_;
   return true;
 }
 
-// ── State & Statistics ──────────────────────────────────────────────────────
-
-ReplayState TpuReplayHandle::getState() const {
-  return state_;
-}
+ReplayState TpuReplayHandle::getState() const { return state_; }
 
 ReplayStatistics TpuReplayHandle::getStatistics() const {
-  ReplayStatistics stats;
-  stats.numOperations = 0;  // Not tracked at this level for TPU
-  stats.numMemoryOps = 0;
-  stats.estimatedMemory = captureWorkspaceBytes_;
-  stats.captureTimeMs = 0.0;
-  stats.lastReplayTimeMs = 0.0;
-  stats.replayCount = replayCount_;
-  return stats;
+  ReplayStatistics statistics;
+  statistics.numOperations = numOperations_;
+  statistics.numMemoryOps = static_cast<int>(inputSourceIndices_.size() +
+                                              outputSlotIndices_.size());
+  statistics.estimatedMemory = captureWorkspaceBytes_;
+  statistics.captureTimeMs = 0.0;
+  statistics.lastReplayTimeMs = 0.0;
+  statistics.replayCount = replayCount_;
+  return statistics;
 }
 
-// ── Workspace Management ────────────────────────────────────────────────────
-
 bool TpuReplayHandle::allocateWorkspace(size_t bytes, int deviceId,
-                                         void* registryPtr, int segIdx) {
-  if (captureWorkspacePtr_ != nullptr) return true;  // Already allocated
-
-  // TPU workspace allocation goes through PjrtClientManager
-  auto& mgr = PjrtClientManager::getInstance();
-  if (!mgr.isAvailable()) {
-    DSP_DIAG(MEMORY, "TpuReplayHandle: PJRT not available for workspace alloc");
-    return false;
-  }
-
-  // Allocate a zero-filled host buffer as workspace staging
-  // (PJRT manages device memory internally)
-  void* ptr = calloc(1, bytes);
-  if (ptr == nullptr) {
-    DSP_DIAG(MEMORY, "TpuReplayHandle: host workspace alloc failed for %zu bytes",
-             bytes);
-    return false;
-  }
-
-  captureWorkspacePtr_ = ptr;
+                                        void* registryPtr, int segIdx) {
+  (void)deviceId;
+  (void)registryPtr;
+  (void)segIdx;
+  if (captureWorkspacePtr_ != nullptr || bytes == 0) return true;
+  void* allocation = std::calloc(1, bytes);
+  if (allocation == nullptr) return false;
+  captureWorkspacePtr_ = allocation;
   captureWorkspaceBytes_ = bytes;
-
-  DSP_DIAG(MEMORY, "TpuReplayHandle: allocated %zuMB workspace on device %d",
-           bytes / (1024 * 1024), deviceId);
+  workspaceIsExternal_ = false;
   return true;
 }
 
 void TpuReplayHandle::releaseWorkspace(void* registryPtr, int segIdx) {
+  (void)registryPtr;
+  (void)segIdx;
   if (captureWorkspacePtr_ == nullptr) return;
-
-  free(captureWorkspacePtr_);
+  if (!workspaceIsExternal_) std::free(captureWorkspacePtr_);
   captureWorkspacePtr_ = nullptr;
   captureWorkspaceBytes_ = 0;
-
-  DSP_DIAG(MEMORY, "TpuReplayHandle: released workspace");
+  workspaceIsExternal_ = false;
 }
 
 void TpuReplayHandle::freeHostPointers() {
-  for (auto* ptr : capturedHostPtrs_) {
-    if (ptr != nullptr) {
-      free(ptr);
-    }
-  }
-  capturedHostPtrs_.clear();
+  GraphReplayHandle::freeHostPointers();
 }
 
-// ── HLO Module Binding ─────────────────────────────────────────────────────
-
-void TpuReplayHandle::setHloModule(const std::string& hloText) {
-  hloModuleText_ = hloText;
-  DSP_DIAG(COMPILE, "TpuReplayHandle::setHloModule: %zu bytes HLO text",
-           hloText.size());
-}
-
-void TpuReplayHandle::setHloModule(const void* hloBytes, size_t hloSize) {
-  if (hloBytes != nullptr && hloSize > 0) {
-    hloModuleText_.assign(static_cast<const char*>(hloBytes), hloSize);
-  } else {
-    hloModuleText_.clear();
-  }
-  DSP_DIAG(COMPILE, "TpuReplayHandle::setHloModule: %zu bytes HLO data",
-           hloSize);
-}
-
-void TpuReplayHandle::bindBuffers(void** inputBuffers, int numInputs,
-                                   void** outputBuffers, int numOutputs) {
-  boundInputBuffers_.clear();
-  boundOutputBuffers_.clear();
-
-  if (inputBuffers != nullptr && numInputs > 0) {
-    boundInputBuffers_.assign(inputBuffers, inputBuffers + numInputs);
-  }
-  if (outputBuffers != nullptr && numOutputs > 0) {
-    boundOutputBuffers_.assign(outputBuffers, outputBuffers + numOutputs);
-  }
-
-  DSP_DIAG(EXECUTE, "TpuReplayHandle::bindBuffers: %d inputs, %d outputs",
-           numInputs, numOutputs);
-}
-
-// ── Internal Helpers ────────────────────────────────────────────────────────
-
-uint64_t TpuReplayHandle::hashHloModule() const {
-  // Use std::hash<std::string> for a fast, non-cryptographic hash.
-  // Sufficient for compilation cache keying.
-  return std::hash<std::string>{}(hloModuleText_);
-}
-
-void TpuReplayHandle::cleanup() {
-  // Destroy all cached compiled executables
-  auto& mgr = PjrtClientManager::getInstance();
-  for (auto& pair : compilationCache_) {
-    if (pair.second != nullptr) {
-      mgr.destroyExecutable(pair.second);
-    }
-  }
-  compilationCache_.clear();
-
-  compiledExecutable_ = nullptr;
-  boundInputBuffers_.clear();
-  boundOutputBuffers_.clear();
-
+void TpuReplayHandle::setProgram(
+    const std::string& program, const std::string& format,
+    const std::vector<int>& inputSourceIndices,
+    const std::vector<int>& outputSlotIndices,
+    int numOperations) {
+  cleanupExecutable();
+  clearBindings();
+  program_ = program;
+  programFormat_ = format;
+  inputSourceIndices_ = inputSourceIndices;
+  outputSlotIndices_ = outputSlotIndices;
+  numOperations_ = numOperations;
   state_ = ReplayState::EMPTY;
-  replayCount_ = 0;
+}
+
+void TpuReplayHandle::bindArrays(NDArray** inputArrays, int numInputs,
+                                 NDArray** outputArrays, int numOutputs) {
+  clearBindings();
+  if (inputArrays != nullptr && numInputs > 0) {
+    boundInputArrays_.assign(inputArrays, inputArrays + numInputs);
+  }
+  if (outputArrays != nullptr && numOutputs > 0) {
+    boundOutputArrays_.assign(outputArrays, outputArrays + numOutputs);
+  }
+}
+
+void TpuReplayHandle::cleanupExecutable() {
+  if (compiledExecutable_ != nullptr) {
+    PjrtClientManager::getInstance().destroyExecutable(compiledExecutable_);
+    compiledExecutable_ = nullptr;
+  }
+}
+
+void TpuReplayHandle::clearBindings() {
+  boundInputArrays_.clear();
+  boundOutputArrays_.clear();
 }
 
 }  // namespace graph

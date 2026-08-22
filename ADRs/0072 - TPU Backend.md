@@ -47,26 +47,22 @@ We implement a TPU backend for ND4J using the PJRT API, following the establishe
 │                                                                     │
 │  ┌──────────────────────────────────────────────────────────────┐  │
 │  │ TpuEnvironment                                                │  │
-│  │  - TPU version detection (v4, v5e, v5p)                       │  │
-│  │  - HBM capacity reporting                                     │  │
-│  │  - bfloat16 preference                                        │  │
-│  │  - Multi-chip topology                                        │  │
+│  │  - Delegates the complete Environment contract to native C++  │  │
+│  │  - Device count/name/memory comes from the PJRT client         │  │
 │  └──────────────────────────────────────────────────────────────┘  │
 │                                                                     │
 │  ┌──────────────────────────────────────────────────────────────┐  │
 │  │ TpuExecutioner                                                │  │
-│  │  extends DefaultOpExecutioner                                 │  │
+│  │  extends NativeOpExecutioner                                  │  │
 │  │                                                               │  │
-│  │  Op → HLO compilation → PJRT execution                       │  │
-│  │  Compiled executable caching                                  │  │
-│  │  Shape calculation on CPU (host)                              │  │
+│  │  Custom eager ops + DSP share trait/KernelSpec lowering        │  │
+│  │  KernelExpr → StableHLO → PJRT replay                         │  │
 │  └──────────────────────────────────────────────────────────────┘  │
 │                                                                     │
 │  ┌──────────────────────────────────────────────────────────────┐  │
-│  │ JTpuNDArray / JTpuNDArrayFactory                              │  │
-│  │  - Device array management (toDevice/toHost)                  │  │
-│  │  - HBM buffer allocation via PJRT                             │  │
-│  │  - Lazy host↔device transfer                                 │  │
+│  │ Host-native NDArray / CpuNDArrayFactory                        │  │
+│  │  - One Java buffer/deallocation/serialization contract         │  │
+│  │  - PJRT buffers are transient native replay resources          │  │
 │  └──────────────────────────────────────────────────────────────┘  │
 └──────────────────────────────┬─────────────────────────────────────┘
                                │
@@ -99,17 +95,16 @@ nd4j/nd4j-backends/nd4j-backend-impls/
 ├── nd4j-tpu/
 │   └── src/main/java/org/nd4j/linalg/jtpu/
 │       ├── JTpuBackend.java          # Backend discovery via SPI
-│       ├── TpuEnvironment.java       # TPU device info and config
-│       ├── JTpuNDArray.java          # TPU-specific array impl
-│       ├── JTpuNDArrayFactory.java   # Array creation on TPU
+│       ├── TpuEnvironment.java       # Native Environment facade
+│       ├── TpuStatisticsProvider.java
 │       └── ops/
-│           ├── TpuExecutioner.java   # Op execution via PJRT
-│           └── TpuOpContext.java     # Op context for TPU
+│           ├── TpuExecutioner.java   # Host-native + DSP TPU identity
+│           └── TpuOpContext.java     # Shared opaque native context
 │
 ├── nd4j-tpu-preset/
 │   └── src/main/java/org/nd4j/
-│       ├── Nd4jTpuPresets.java       # JavaCPP PJRT bindings
-│       └── Nd4jTpuHelper.java        # Utility methods
+│       ├── Nd4jTpuPresets.java       # JavaCPP NativeOps binding
+│       └── Nd4jTpuHelper.java        # NativeOps base class
 ```
 
 ### Backend Discovery
@@ -120,7 +115,7 @@ nd4j/nd4j-backends/nd4j-backend-impls/
 public class JTpuBackend extends Nd4jBackend {
     @Override
     public int getPriority() {
-        return BACKEND_PRIORITY_GPU + 10; // Higher than CPU, lower than CUDA
+        return midpoint(BACKEND_PRIORITY_CPU, BACKEND_PRIORITY_GPU);
     }
 
     @Override
@@ -142,108 +137,101 @@ Priority is set higher than CPU (0) but lower than native CUDA (100), ensuring T
 
 ### PJRT Execution Model
 
-Operations are compiled to HLO (High-Level Operations) and executed through PJRT:
+SameDiff DSP segments are lowered to StableHLO MLIR and executed through PJRT:
 
 ```java
-public class TpuExecutioner extends DefaultOpExecutioner {
-    // Compilation cache: opSignature → compiled executable
-    private Map<String, PjrtLoadedExecutable> compiledCache = new HashMap<>();
-
-    @Override
-    public void exec(CustomOp op, OpContext context) {
-        String signature = computeOpSignature(op, context);
-        PjrtLoadedExecutable executable = compiledCache.computeIfAbsent(
-            signature, k -> compileToHlo(op, context));
-        executable.execute(context.getInputArrays(), context.getOutputArrays());
-    }
+public class TpuExecutioner extends NativeOpExecutioner {
+    // Canonical CustomOps enter the same native StableHLO/PJRT lowerer as DSP.
+    // Legacy numbered ops fail until given canonical KernelSpecs.
 }
 ```
 
-**Compilation Caching**: HLO compilation is expensive (100ms-10s depending on graph complexity). Compiled executables are cached by op signature (op name + input shapes + dtypes), so repeated executions with the same shapes reuse the compiled code.
+**Compilation Caching**: StableHLO compilation is expensive (100ms-10s
+depending on graph complexity). The DSP plan cache is keyed by graph boundary
+shapes and each TPU replay handle owns the loaded executable for that shape.
+Shape drift replaces the handle rather than mutating a READY executable.
 
 **Shape Calculation**: Shape inference runs on the host CPU, not on TPU. This avoids device round-trips for shape computation and reuses existing C++ shape functions.
 
 ### TPU Environment
 
-`TpuEnvironment` provides TPU-specific device information:
+`TpuEnvironment` delegates the complete public Environment contract to the
+generated native `sd::Environment` binding. Java-only tracking flags remain in
+the facade, while device identity and memory telemetry come from NativeOps/PJRT:
 
 ```java
-public class TpuEnvironment implements Environment {
-    public String getTpuVersion()     // "v4", "v5e", "v5p"
-    public int getTpuCoreCount()      // Cores per chip (typically 8)
-    public long getHbmCapacity()      // HBM bytes per chip
-    public boolean preferBfloat16()   // Always true for TPUs
-}
+Environment env = TpuEnvironment.getInstance();
+int devices = Nd4j.getNativeOps().getAvailableDevices();
+long hbm = Nd4j.getNativeOps().getDeviceTotalMemory(deviceId);
 ```
 
-HBM capacity varies by generation:
-- TPU v4: 32GB per chip
-- TPU v5e: 16GB per chip (cost-optimized)
-- TPU v5p: 96GB per chip (performance-optimized)
+No capacity or core count is guessed from environment-variable TPU version
+strings; the active PJRT client is the device authority.
 
 ### Native Binding Strategy
 
-JavaCPP presets (`Nd4jTpuPresets`) map the PJRT C API to Java:
+JavaCPP presets (`Nd4jTpuPresets`) expose the same backend-neutral `NativeOps`
+ABI used by the native and CUDA backends:
 
 ```java
-@Properties(target = "jnind4jtpu", link = "nd4jtpu")
+@Properties(target = "org.nd4j.linalg.jtpu.bindings.Nd4jTpu",
+            link = "nd4jtpu")
 public class Nd4jTpuPresets implements InfoMapper {
-    // Maps PJRT C API functions to Java via JavaCPP
-    // Targets: linux-x86_64, linux-arm64
+    // Maps NativeOps/NativeOpsDsp. Raw PJRT objects remain native-owned.
 }
 ```
 
-The binding uses the PJRT C API (not the C++ API) for maximum ABI stability. PJRT plugins (`libtpu.so`) are loaded at runtime via `PJRT_LoadedClientCreate`.
+`PjrtClientManager` uses the typed PJRT C API for ABI stability, but resolves
+`GetPjrtApi` from the selected plugin at runtime. `libnd4jtpu` never links or
+preloads `libtpu.so`; the manager validates the API version, initializes the
+plugin, creates the client, verifies that the platform is TPU, and enumerates
+addressable devices.
 
 ### Data Transfer Model
 
-Arrays are lazily transferred between host and TPU:
+Java NDArrays remain host-native and continue to use the mature ND4J buffer,
+workspace, serialization, and deallocation contracts; this does not authorize
+host numerical fallback. A compiled DSP or eager descriptor
+segment records deterministic boundary input/output indices. At replay time,
+`TpuReplayHandle` creates typed `PJRT_Buffer` inputs (dtype, dimensions and byte
+strides), executes the loaded StableHLO program, waits for completion, copies
+the exact boundary outputs into dense C-order NDArrays, and destroys all
+transient events and buffers. Raw PJRT handles never cross the JNI boundary.
 
-```java
-public class JTpuNDArray extends BaseNDArray {
-    private boolean deviceDirty = false;
-    private boolean hostDirty = false;
-
-    public void toDevice() {
-        if (hostDirty) {
-            pjrtClient.transferToDevice(hostBuffer, tpuBuffer);
-            hostDirty = false;
-        }
-    }
-
-    public void toHost() {
-        if (deviceDirty) {
-            pjrtClient.transferToHost(tpuBuffer, hostBuffer);
-            deviceDirty = false;
-        }
-    }
-}
-```
-
-Operations mark arrays as device-dirty after execution. Host reads trigger a device→host transfer only when needed. This minimizes PCIe/network bandwidth usage for pure-device computation chains.
+Persistent device-resident boundary buffers may be added later behind the same
+native replay-handle ownership contract; they must be keyed by ND4J buffer
+generation and device identity rather than represented by a second Java array
+class.
 
 ## Implementation Status
 
 The implementation includes both Java backend infrastructure and C++ graph replay architecture:
 
 **Implemented**:
-- Backend discovery and priority (JTpuBackend)
-- Environment configuration (TpuEnvironment)
-- Executioner framework with compilation caching and CPU fallback (TpuExecutioner)
-- NDArray and NDArrayFactory stubs (JTpuNDArray, JTpuNDArrayFactory)
-- Maven module structure with JavaCPP preset scaffold
-- C++ graph replay: TpuReplayHandle (XLA compilation caching via PJRT)
-- C++ graph backend: TpuGraphBackend (segment fusion, HLO compilation, execution)
-- C++ HLO IR builder: HloIRBuilder (NativeSlot → HLO opcode mapping)
-- C++ PJRT client manager: PjrtClientManager (dlopen libtpu.so, device enumeration)
+- Runtime backend discovery backed by the generated `Nd4jTpu implements NativeOps`
+- Native Environment facade and host-native NDArray/factory/workspace control plane
+- Maven JavaCPP generation, JNI/native classifier packaging, SPI and JPMS registration
+- Typed PJRT lifecycle: API negotiation, plugin/client/device ownership, events,
+  buffers, compilation, execution, output download, diagnostics and teardown
+- Strict TPU platform identity (CPU/ROCm/CUDA PJRT plugins cannot select JTpuBackend)
+- C++ graph replay: one owned loaded executable per shape-keyed DSP segment
+- C++ graph backend: inclusive range admission, deterministic boundary binding,
+  device selection, complete-lowering audit and fail-closed forced TPU mode
+- Op-local 64-bit `NativeSlot` traits as family/safety authority
+- Canonical descriptor-hash resolution into shared `KernelSpec`/`KernelExpr`
+- StableHLO target sink for shared expression semantics, broadcasting, rank-2
+  matmul, reshape, multiple segment results, and eager CustomOps
 - GraphExecutionMode.TPU (native code 13) enum integration
 - GraphReplayFactory dispatch for SD_TPU builds
-- CMake build system (BuildTPU.cmake, TpuConfiguration.cmake)
+- Runtime-only PJRT CMake configuration with one runtime; the duplicate per-op
+  PJRT implementation and backend-local HLO op whitelist were removed
 
 **Pending**:
-- JavaCPP PJRT native bindings generation
-- End-to-end testing on TPU hardware
-- Multi-chip execution (data/model parallelism)
+- Broader shared KernelSpec and exact structural recipe coverage
+- Legacy numbered eager op migration to canonical KernelSpecs (currently fails,
+  never falls back to CPU numerics)
+- Multi-chip/SPMD compile options and execution (current execution targets one
+  addressable device per segment)
 - Performance benchmarking vs CPU baseline
 
 ## Consequences
@@ -254,7 +242,9 @@ The implementation includes both Java backend infrastructure and C++ graph repla
 
 **Pod Scaling**: PJRT supports multi-chip TPU pods, enabling model parallelism across hundreds of chips for large language models.
 
-**Native bfloat16**: TPUs achieve peak throughput with bfloat16, and the environment defaults to this precision. No manual dtype management needed.
+**Native bfloat16**: TPUs execute bfloat16 natively. FLOAT remains the public
+default so loading this backend does not silently change application numerics;
+models can request or optimize weights to bfloat16 explicitly.
 
 **Standard Backend Pattern**: Follows the established Nd4jBackend/Environment/Executioner pattern, ensuring full API compatibility with existing ND4J code.
 
@@ -270,7 +260,9 @@ The implementation includes both Java backend infrastructure and C++ graph repla
 
 **Limited Hardware Availability**: TPU access requires Google Cloud account setup, quotas, and potentially waitlists for newer generations.
 
-**Incomplete Implementation**: The current skeleton requires significant engineering to reach production readiness, particularly the native binding generation and multi-chip support.
+**Conservative Lowering**: Forced TPU execution rejects unsupported operation
+forms instead of silently running them on the host. This makes missing coverage
+visible but requires expanding the StableHLO catalog for larger models.
 
 ## References
 

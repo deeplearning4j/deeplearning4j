@@ -2757,7 +2757,10 @@ configure_primary_backend() {
             BLAS_ARG="$disabled_backends -DSD_CUDA=ON -DBLAS=TRUE"
             ;;
         tpu)
-            BLAS_ARG="$disabled_backends -DSD_TPU=ON -DBLAS=FALSE"
+            # Cloud TPU uses host-native NDArrays and eager/shape execution as
+            # its Java control plane; forced GEM_TPU segments still fail closed
+            # in TpuGraphBackend when StableHLO lowering is unavailable.
+            BLAS_ARG="$disabled_backends -DSD_TPU=ON -DBLAS=TRUE"
             ;;
         nnapi)
             # Tensor G3 uses the CPU-family graph library as the canonical

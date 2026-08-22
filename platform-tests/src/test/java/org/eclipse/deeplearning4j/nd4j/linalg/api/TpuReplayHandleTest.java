@@ -11,43 +11,42 @@
 
 package org.eclipse.deeplearning4j.nd4j.linalg.api;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
+import org.nd4j.common.tests.tags.TagNames;
+import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.nativeblas.NativeOps;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Unit tests for TPU replay handle lifecycle.
- * Tests that verify PJRT compilation caching behavior require TPU hardware
- * and are gated by the sd.backend=tpu system property.
- *
- * The non-hardware tests verify Java-side enum values and configuration
- * that must be correct for the C++ TpuReplayHandle to function.
- */
+/** Java contracts required by the native TPU replay lifecycle. */
+@Tag(TagNames.TPU)
 public class TpuReplayHandleTest {
 
     @Test
-    public void testTpuGraphExecutionModeValue() {
-        // TpuReplayHandle is created when GEM_TPU (13) is requested
-        assertEquals(13, GraphExecutionMode.TPU.getNativeCode(),
-                "TPU mode native code must be 13 to match C++ GEM_TPU");
+    public void testTpuModeRoundTrip() {
+        assertEquals(13, GraphExecutionMode.TPU.getNativeCode());
+        assertEquals(GraphExecutionMode.TPU, GraphExecutionMode.fromNativeCode(13));
     }
 
     @Test
-    public void testTpuModeFromNativeCode() {
-        GraphExecutionMode mode = GraphExecutionMode.fromNativeCode(13);
-        assertEquals(GraphExecutionMode.TPU, mode,
-                "Native code 13 should resolve to TPU mode");
+    public void testTpuExecutionerUsesNativeControlPlane() throws Exception {
+        Class<?> executioner = Class.forName("org.nd4j.linalg.jtpu.ops.TpuExecutioner");
+        Class<?> context = Class.forName("org.nd4j.linalg.jtpu.ops.TpuOpContext");
+        Class<?> binding = Class.forName("org.nd4j.linalg.jtpu.bindings.Nd4jTpu");
+
+        assertTrue(hasSuperclass(executioner,
+                "org.nd4j.linalg.cpu.nativecpu.ops.NativeOpExecutioner"));
+        assertTrue(OpContext.class.isAssignableFrom(context));
+        assertTrue(NativeOps.class.isAssignableFrom(binding));
     }
 
-    @Test
-    @EnabledIfSystemProperty(named = "sd.backend", matches = "tpu")
-    public void testTpuReplayHandleCreation() {
-        // This test verifies that GraphReplayFactory creates a TpuReplayHandle
-        // when SD_TPU is defined. Requires TPU backend to be active.
-        // The C++ side creates the handle; Java side verifies through
-        // DynamicShapePlanExecutor behavior.
-        assertNotNull(GraphExecutionMode.TPU);
+    private static boolean hasSuperclass(Class<?> type, String expectedName) {
+        for (Class<?> current = type; current != null; current = current.getSuperclass()) {
+            if (expectedName.equals(current.getName())) return true;
+        }
+        return false;
     }
 }

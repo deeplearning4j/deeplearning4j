@@ -26,100 +26,71 @@
 #include <graph/GraphBackend.h>
 
 #include <mutex>
-#include <string>
 #include <vector>
 
 namespace sd {
 namespace graph {
 
-// Forward declarations — avoid circular include with NativeDynamicShapePlan.h
 struct NativeSlot;
 struct GraphSegment;
 
-/**
- * TPU HLO graph backend for NativeDynamicShapePlan.
- *
- * Implements the GraphBackend interface for TPU hardware via PJRT:
- *   1. canFuseSegment(): checks all ops in range are HLO-representable
- *   2. compileSegment(): builds HLO via HloIRBuilder -> compiles via PjrtClientManager
- *   3. executeSegment(): binds input PJRT buffers -> executes -> copies outputs
- *
- * Singleton pattern, consistent with other graph backends.
- */
+/** Strict StableHLO/PJRT compiler and executor for TPU graph segments. */
 class SD_LIB_EXPORT TpuGraphBackend : public GraphBackend {
  public:
-  /**
-   * Get the singleton instance.
-   */
   static TpuGraphBackend& getInstance();
 
-  // ── GraphBackend interface ────────────────────────────────────────────
-
-  /**
-   * Check if TPU backend is available at runtime.
-   * Returns true if PjrtClientManager can create a client and devices exist.
-   */
   bool isAvailable() const override;
   bool isResolvable(const GraphBackendRequest& request) const override;
   int resolutionPriority(const GraphBackendRequest& request) const override;
+  GraphBackendPlanningPolicy planningPolicy(
+      const GraphBackendRequest& request) const override;
 
-  /**
-   * Check if all ops in the slot range [start, end) can be fused into HLO.
-   * Uses HloIRBuilder's whitelist to verify each op is mappable.
-   */
+  bool canResolveSlot(const GraphBackendRequest& request,
+                      NativeSlot* slots, int slotIndex) override;
   bool canFuseSegment(NativeSlot* slots, int start, int end) override;
 
-  /**
-   * Compile a segment into an HLO module and XLA executable.
-   * 1. Build HLO text via HloIRBuilder
-   * 2. Compile via PjrtClientManager
-   * 3. Store compiled handle in segment's replayHandle (TpuReplayHandle)
-   */
   bool compileSegment(GraphSegment& seg, NativeSlot* slots,
                       NDArray** externalInputs, int numExternalInputs,
                       NDArray** outputSlots, int totalOutputSlots,
-                      LongType shapeKey,
-                      int totalSlots = 0,
+                      LongType shapeKey, int totalSlots = 0,
                       int* requestedOutputSlotIndices = nullptr,
                       int numRequestedOutputs = 0) override;
 
-  /**
-   * Execute a previously compiled segment.
-   * Binds input PJRT buffers from externalInputs and outputSlots,
-   * executes the compiled module, and copies output buffers back.
-   */
+  bool compileSegment(const GraphBackendRequest& request,
+                      GraphSegment& seg, NativeSlot* slots,
+                      NDArray** externalInputs, int numExternalInputs,
+                      NDArray** outputSlots, int totalOutputSlots,
+                      LongType shapeKey, int totalSlots,
+                      int* requestedOutputSlotIndices,
+                      int numRequestedOutputs) override;
+
   Status executeSegment(GraphSegment& seg, NativeSlot* slots,
                         NDArray** externalInputs, int numExternalInputs,
                         NDArray** outputSlots, int totalOutputSlots,
                         void* stream) override;
 
-  /**
-   * Invalidate all cached compiled graphs.
-   */
   void invalidateCache() override;
-
-  /**
-   * Get the backend name for diagnostics.
-   */
-  const char* name() const override { return "TPU HLO"; }
-
-  /**
-   * Get the compilation audit for the most recent compileSegment() call.
-   */
+  const char* name() const override { return "TPU StableHLO"; }
   std::vector<CompilationAuditEntry> getLastCompilationAudit() const override;
 
  private:
   TpuGraphBackend();
   ~TpuGraphBackend() override = default;
 
-  // Non-copyable
   TpuGraphBackend(const TpuGraphBackend&) = delete;
   TpuGraphBackend& operator=(const TpuGraphBackend&) = delete;
 
-  // Compilation audit trail for the last compileSegment() call
-  std::vector<CompilationAuditEntry> lastAudit_;
+  bool compileInternal(bool runtimeCompilationAllowed,
+                       GraphSegment& seg, NativeSlot* slots,
+                       NDArray** externalInputs, int numExternalInputs,
+                       NDArray** outputSlots, int totalOutputSlots,
+                       LongType shapeKey, int totalSlots,
+                       int* requestedOutputSlotIndices,
+                       int numRequestedOutputs);
+  void auditRange(NativeSlot* slots, int start, int end, bool compiled,
+                  const std::string& reason);
 
-  // Thread safety for singleton access and audit
+  std::vector<CompilationAuditEntry> lastAudit_;
   mutable std::mutex mutex_;
 };
 

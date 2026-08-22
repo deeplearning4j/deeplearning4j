@@ -1351,18 +1351,13 @@
             </activation>
             <properties>
                 <sd.test.backend>tpu</sd.test.backend>
+                <backend.artifactId>nd4j-tpu</backend.artifactId>
+                <platform.classifier>${javacpp.platform}${javacpp.platform.extension}</platform.classifier>
                 <pjrt.path>${env.PJRT_PATH}</pjrt.path>
                 <tpu.library.path>${env.TPU_LIBRARY_PATH}</tpu.library.path>
                 <!-- Override to broaden what runs under the TPU environment, e.g. -Dtpu.test.groups=smoke -->
                 <tpu.test.groups>tpu</tpu.test.groups>
             </properties>
-            <dependencies>
-                <dependency>
-                    <groupId>org.eclipse.deeplearning4j</groupId>
-                    <artifactId>nd4j-tpu</artifactId>
-                    <version>${dl4j.version}</version>
-                </dependency>
-            </dependencies>
             <build>
                 <plugins>
                     <plugin>
@@ -1375,6 +1370,7 @@
                                 <tpu.library.path>${tpu.library.path}</tpu.library.path>
                             </systemPropertyVariables>
                             <environmentVariables>
+                                <PJRT_PLUGIN_LIBRARY_PATH>${pjrt.path}</PJRT_PLUGIN_LIBRARY_PATH>
                                 <PJRT_PATH>${pjrt.path}</PJRT_PATH>
                                 <TPU_LIBRARY_PATH>${tpu.library.path}</TPU_LIBRARY_PATH>
                             </environmentVariables>

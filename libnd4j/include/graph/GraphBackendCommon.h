@@ -127,6 +127,55 @@ inline std::unordered_set<int> computeExternallyVisibleOutputSlots(
   return externallyVisible;
 }
 
+/** Ordered functional tensor boundary used by SSA compiler backends. */
+struct FunctionalGraphBoundary {
+  std::vector<int> inputSourceIndices;
+  std::vector<int> outputSlotIndices;
+};
+
+/**
+ * Compute deterministic first-use inputs and producer-order visible outputs.
+ * Internal values stay backend-local SSA values rather than becoming mutable
+ * buffer arguments.
+ */
+inline FunctionalGraphBoundary computeFunctionalGraphBoundary(
+    NativeSlot* slots, int startSlot, int endSlot, int totalSlots,
+    const int* requestedOutputSlotIndices = nullptr,
+    int numRequestedOutputs = 0) {
+  FunctionalGraphBoundary result;
+  if (slots == nullptr || startSlot < 0 || endSlot < startSlot) return result;
+  if (totalSlots <= endSlot) totalSlots = endSlot + 1;
+
+  std::unordered_set<int> produced;
+  std::unordered_set<int> seenInputs;
+  for (int slot = startSlot; slot <= endSlot; ++slot) {
+    for (int input = 0; input < slots[slot].wiring.numInputs; ++input) {
+      const int source = slots[slot].wiring.inputSourceIndices[input];
+      if ((source < 0 || produced.count(source) == 0) &&
+          seenInputs.insert(source).second) {
+        result.inputSourceIndices.push_back(source);
+      }
+    }
+    for (int output = 0; output < slots[slot].wiring.numOutputs; ++output) {
+      produced.insert(slots[slot].wiring.outputSlotIndices[output]);
+    }
+  }
+
+  const auto visible = computeExternallyVisibleOutputSlots(
+      slots, startSlot, endSlot, totalSlots, requestedOutputSlotIndices,
+      numRequestedOutputs);
+  std::unordered_set<int> seenOutputs;
+  for (int slot = startSlot; slot <= endSlot; ++slot) {
+    for (int output = 0; output < slots[slot].wiring.numOutputs; ++output) {
+      const int source = slots[slot].wiring.outputSlotIndices[output];
+      if (visible.count(source) != 0 && seenOutputs.insert(source).second) {
+        result.outputSlotIndices.push_back(source);
+      }
+    }
+  }
+  return result;
+}
+
 // ─── 3-phase argument reconstruction ─────────────────────────────────────────
 //
 // All MLIR-based backends build kernel arguments in the same order:

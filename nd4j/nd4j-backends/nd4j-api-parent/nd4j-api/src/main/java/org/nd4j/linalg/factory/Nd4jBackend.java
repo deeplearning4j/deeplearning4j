@@ -76,7 +76,7 @@ public abstract class Nd4jBackend {
         BACKEND_PRIORITY_CPU = initializePriority(
                 ND4JSystemProperties.BACKEND_PRIORITY_CPU,
                 ND4JEnvironmentVars.BACKEND_PRIORITY_CPU,
-                "CPU"
+                "CPU", 0
         );
     }
 
@@ -85,15 +85,16 @@ public abstract class Nd4jBackend {
         BACKEND_PRIORITY_GPU = initializePriority(
                 ND4JSystemProperties.BACKEND_PRIORITY_GPU,
                 ND4JEnvironmentVars.BACKEND_PRIORITY_GPU,
-                "GPU"
+                "GPU", 100
         );
     }
 
     /**
      * Safely initialize priority values with proper error handling
      */
-    private static int initializePriority(String systemProperty, String envVar, String type) {
-        int priority = 0;
+    private static int initializePriority(String systemProperty, String envVar,
+                                          String type, int defaultPriority) {
+        int priority = defaultPriority;
 
         try {
             String value = System.getProperty(systemProperty);
@@ -106,11 +107,13 @@ public abstract class Nd4jBackend {
                 }
             }
         } catch (NumberFormatException e) {
-            log.warn("Invalid {} backend priority value, using default 0", type, e);
-            priority = 0;
+            log.warn("Invalid {} backend priority value, using default {}",
+                    type, defaultPriority, e);
+            priority = defaultPriority;
         } catch (SecurityException e) {
-            log.warn("Security exception accessing {} backend priority, using default 0", type, e);
-            priority = 0;
+            log.warn("Security exception accessing {} backend priority, using default {}",
+                    type, defaultPriority, e);
+            priority = defaultPriority;
         }
 
         return priority;
