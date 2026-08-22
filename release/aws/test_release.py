@@ -3152,6 +3152,26 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("-Dsdx.native.library=nd4jvulkan", command)
         self.assertIn("-Dsdx.platform.classifier=windows-x86_64-vulkan", command)
 
+        windows_cuda_env = os.environ.copy()
+        windows_cuda_env.update({
+            "DL4J_FAMILY": "windows-cuda",
+            "DL4J_CUDA_VERSION": "12.9",
+            "DL4J_BUILD_THREADS": "4",
+            "DL4J_BUILD_SDX": "1",
+            "DL4J_SDX_NATIVE_LIBRARY": "nd4jcuda",
+            "DL4J_SDX_PLATFORM_LINKS": "nd4jcuda",
+            "DL4J_SDX_OUTPUT_PATH": "D:/build/libnd4j/blasbuild/cuda",
+            "DL4J_SDX_CLASSIFIER": "windows-x86_64-cuda-12.9",
+            "DL4J_MAVEN_GOAL": "install",
+        })
+        windows_cuda_command = subprocess.check_output(
+            [str(script), "--print"], cwd=root, env=windows_cuda_env, text=True
+        )
+        self.assertIn(
+            "-Dsdx.platform.links=D:/build/libnd4j/blasbuild/cuda/nd4jcuda",
+            windows_cuda_command,
+        )
+
     def test_sdx_gnu_linker_flag_is_not_active_on_macos(self):
         root = Path(__file__).parents[2]
         namespace = {"m": "http://maven.apache.org/POM/4.0.0"}

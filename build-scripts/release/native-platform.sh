@@ -59,6 +59,14 @@ if [ "$DL4J_BUILD_SDX" = 1 ]; then
     "-Dlibnd4j.outputPath=${DL4J_SDX_OUTPUT_PATH}"
     "-Dsdx.platform.classifier=${DL4J_SDX_CLASSIFIER}"
   )
+  if [ "$DL4J_FAMILY" = windows-cuda ]; then
+    # MSVC's import library is generated beside nd4jcuda.dll. Pass its absolute
+    # stem so JavaCPP emits the exact file path instead of relying on a later
+    # /LIBPATH lookup, which can fail under the Git Bash/MSVC boundary.
+    sdx_maven_flags+=(
+      "-Dsdx.platform.links=${DL4J_SDX_OUTPUT_PATH}/nd4jcuda"
+    )
+  fi
 fi
 append_sdx_modules() {
   [ "$DL4J_BUILD_SDX" != 1 ] || modules+=,:nd4j-sdx-preset,:nd4j-sdx-model,:nd4j-sdx,:nd4j-sdx-litertlm
