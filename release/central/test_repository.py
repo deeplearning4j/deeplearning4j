@@ -378,6 +378,65 @@ class MavenExecutableTests(unittest.TestCase):
             )
             run.assert_called_once_with(command, check=True)
 
+    def test_merged_shards_deploy_all_classifiers_for_one_gav(self):
+        version = "1.0.0-SNAPSHOT"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            first = root / "worker-linux-rocm-6"
+            second = root / "worker-linux-rocm-7"
+            relative = Path(
+                "org/eclipse/deeplearning4j/nd4j-zluda-12.9"
+            ) / version
+            for source in (first, second):
+                version_dir = source / relative
+                version_dir.mkdir(parents=True)
+                base = version_dir / f"nd4j-zluda-12.9-{version}"
+                Path(str(base) + ".pom").write_text(
+                    "<project><modelVersion>4.0.0</modelVersion></project>\n",
+                    encoding="utf-8",
+                )
+            base_dir = first / relative
+            base_name = "nd4j-zluda-12.9-" + version
+            Path(str(base_dir / base_name) + ".jar").write_bytes(b"base")
+            Path(str(base_dir / base_name) + "-linux-x86_64-zluda-rocm-6.2.4.jar").write_bytes(
+                b"rocm6"
+            )
+            second_dir = second / relative
+            Path(
+                str(second_dir / base_name)
+                + "-linux-x86_64-zluda-rocm-7.2.4.jar"
+            ).write_bytes(b"rocm7")
+
+            merged = root / "merged"
+            manifest = root / "merged-manifest.json"
+            repository.merge(
+                [first, second], merged, manifest, version, "deadbeef"
+            )
+            repository.verify(merged, manifest, version, "deadbeef")
+
+            with (
+                mock.patch.object(
+                    repository,
+                    "resolve_maven_command",
+                    return_value=["mvn"],
+                ),
+                mock.patch.object(repository.subprocess, "run") as run,
+            ):
+                repository.deploy_snapshot(
+                    merged,
+                    version,
+                    "central-portal-snapshots",
+                    "https://example.invalid/snapshots/",
+                )
+
+            run.assert_called_once()
+            command = run.call_args.args[0]
+            self.assertIn(
+                "-Dclassifiers=linux-x86_64-zluda-rocm-6.2.4,"
+                "linux-x86_64-zluda-rocm-7.2.4",
+                command,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

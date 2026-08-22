@@ -36,7 +36,7 @@ class WorkflowMatrixTests(unittest.TestCase):
             1, workflow.count("ref: ${{ steps.source.outputs.result }}")
         )
         self.assertEqual(
-            4, workflow.count("ref: ${{ needs.matrix.outputs.source }}")
+            3, workflow.count("ref: ${{ needs.matrix.outputs.source }}")
         )
         self.assertNotIn("ref: ${{ inputs.sourceRef }}", workflow)
 
@@ -476,20 +476,21 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn('subparsers.add_parser("release-version")', preparer)
         self.assertIn("CENTRAL_SONATYPE_TOKEN_USERNAME:\n        required: true", workflow)
         self.assertIn("CENTRAL_SONATYPE_TOKEN_PASSWORD:\n        required: true", workflow)
-        self.assertEqual(2, workflow.count("name: Download staged worker result"))
-        self.assertEqual(2, workflow.count("name: Publish staged Maven snapshot"))
-        self.assertEqual(2, workflow.count("repository.py deploy-snapshot"))
-        self.assertEqual(2, workflow.count("server-id: central-portal-snapshots"))
-        self.assertEqual(2, workflow.count('if [ ! -f "${artifact_root}/worker-success" ]'))
+        self.assertEqual(1, workflow.count("name: Download staged worker results"))
+        self.assertEqual(1, workflow.count("name: Publish merged staged Maven snapshot"))
+        self.assertEqual(1, workflow.count("repository.py merge"))
+        self.assertEqual(1, workflow.count("repository.py deploy-snapshot"))
+        self.assertEqual(1, workflow.count("server-id: central-portal-snapshots"))
+        self.assertEqual(1, workflow.count('name worker-config.json -printf'))
         self.assertEqual(
-            2,
+            1,
             workflow.count(
                 "--url https://central.sonatype.com/repository/maven-snapshots/"
             ),
         )
-        self.assertIn("needs: [matrix, linux]", workflow)
-        self.assertIn("needs: [matrix, host]", workflow)
-        self.assertEqual(2, workflow.count("max-parallel: 1"))
+        self.assertIn("needs: [matrix, linux, host]", workflow)
+        self.assertNotIn("max-parallel: 1", workflow)
+        self.assertIn("merge-multiple: false", workflow)
         self.assertIn("if: ${{ always() && needs.matrix.result == 'success'", workflow)
         self.assertNotIn("endsWith(steps.worker.outputs['release-version']", workflow)
         for caller in sorted((ROOT / ".github/workflows").glob("build-deploy-*")):
@@ -510,10 +511,12 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("uploadStep?.conclusion !== 'success'", workflow)
         self.assertIn("actions/download-artifact@v8", workflow)
         self.assertIn("run-id: ${{ inputs.sourceRunId }}", workflow)
-        self.assertIn("max-parallel: 1", workflow)
-        self.assertIn('if [ ! -f "${artifact_root}/worker-config.json" ]', workflow)
-        self.assertNotIn('if [ ! -f "${artifact_root}/worker-success" ]', workflow)
+        self.assertIn("merge-multiple: false", workflow)
+        self.assertIn("name worker-config.json -printf", workflow)
+        self.assertIn('if [ ! -f "${worker_root}/worker-success" ]', workflow)
+        self.assertIn("repository.py merge", workflow)
         self.assertIn("repository.py deploy-snapshot", workflow)
+        self.assertEqual(1, workflow.count("repository.py deploy-snapshot"))
         self.assertNotIn("run-release-worker", workflow)
 
         caller = (
