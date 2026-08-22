@@ -19,6 +19,7 @@ set -Eeuo pipefail
 : "${DL4J_MAVEN_ALSO_MAKE:=1}"
 : "${DL4J_BUILD_SDX:=0}"
 : "${DL4J_SDX_CLASSIFIER:=${DL4J_CLASSIFIER}}"
+: "${DL4J_PROTOC_COMMAND:=}"
 case "$DL4J_NATIVE_ONLY" in
   0|1) ;;
   *) printf 'DL4J_NATIVE_ONLY must be 0 or 1: %s\n' "$DL4J_NATIVE_ONLY" >&2; exit 2 ;;
@@ -45,6 +46,18 @@ esac
 
 split_flags=()
 [ -z "${DL4J_MVN_FLAGS}" ] || read -r -a split_flags <<<"${DL4J_MVN_FLAGS}"
+protoc_command=${DL4J_PROTOC_COMMAND}
+if [ -z "${protoc_command}" ]; then
+  for candidate in /opt/protoc-21.7/bin/protoc /usr/local/bin/protoc; do
+    if [ -x "${candidate}" ]; then
+      protoc_command=${candidate}
+      break
+    fi
+  done
+fi
+if [ -n "${protoc_command}" ]; then
+  split_flags+=("-DprotocCommand=${protoc_command}" "-DprotocExecutable=${protoc_command}")
+fi
 repo=()
 [ -z "${DL4J_MAVEN_REPOSITORY}" ] || repo=("-Dmaven.repo.local=${DL4J_MAVEN_REPOSITORY}")
 also_make=()
@@ -176,6 +189,7 @@ case "${DL4J_FAMILY}" in
     classifier=linux-x86_64
     [ "${DL4J_FAMILY}" != vulkan-mlir ] || classifier=linux-x86_64-compile
     modules=":nd4j-${backend},:nd4j-${backend}-preset"
+    [ "${backend}" != tpu ] || modules+=,:nd4j-cpu-backend-common
     [ "${backend}" != vulkan ] || modules+=,:nd4j-vulkan-platform
     [ -n "${DL4J_LIBND4J_URL}" ] || modules+=,:libnd4j
     [ "${backend}" != vulkan ] || append_sdx_modules

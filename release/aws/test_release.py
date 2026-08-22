@@ -1628,6 +1628,28 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertNotIn('_putenv_s("ZLUDA_TARGET"', dsp_runtime)
 
         namespace = {"m": "http://maven.apache.org/POM/4.0.0"}
+        libnd4j_pom = ET.parse(root / "libnd4j/pom.xml").getroot()
+        libnd4j_zluda_profile = next(
+            item
+            for item in libnd4j_pom.findall("m:profiles/m:profile", namespace)
+            if item.findtext("m:id", namespaces=namespace) == "zluda"
+        )
+        early_cleanup = libnd4j_zluda_profile.find(
+            ".//m:execution[m:id='cleanup-zluda-cmake-build-before-assembly']",
+            namespace,
+        )
+        self.assertIsNotNone(early_cleanup)
+        early_cleanup_fileset = early_cleanup.find(".//m:fileset", namespace)
+        self.assertIsNotNone(early_cleanup_fileset)
+        early_excludes = early_cleanup_fileset.attrib.get("excludes", "")
+        for required_native_link_input in (
+            "libnd4jcuda.so",
+            "nd4jcuda.dll",
+            "nd4jcuda.lib",
+            "nd4jcuda.exp",
+        ):
+            self.assertIn(required_native_link_input, early_excludes)
+
         zluda_pom = ET.parse(
             root
             / "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-zluda/pom.xml"
@@ -2928,7 +2950,16 @@ class ReleaseValidationTest(unittest.TestCase):
             cpu_preset,
         )
 
-        for family in ("tpu", "hexagon", "vulkan"):
+        tpu = command(
+            DL4J_FAMILY="tpu",
+            DL4J_PROTOC_COMMAND="/opt/protoc-21.7/bin/protoc",
+        )
+        self.assertIn("-Ptpu", tpu)
+        self.assertIn(":nd4j-cpu-backend-common", tpu[tpu.index("-pl") + 1])
+        self.assertIn("-DprotocCommand=/opt/protoc-21.7/bin/protoc", tpu)
+        self.assertIn("-DprotocExecutable=/opt/protoc-21.7/bin/protoc", tpu)
+
+        for family in ("hexagon", "vulkan"):
             accelerator = command(DL4J_FAMILY=family)
             self.assertIn(f"-P{family}", accelerator)
 

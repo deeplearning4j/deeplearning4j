@@ -851,7 +851,7 @@
                                                  nd4j-zluda's downstream JavaCPP JNI compile has consumed them.
                                                  That module performs the final cleanup after process-classes. -->
                                             <fileset dir="${libnd4j.outputPath}"
-                                                     excludes="zluda-runtime-package/**,include/**,libnd4jcuda.so,shared-runtime-manifest.txt,javacpp-build-toolchain.properties"/>
+                                                     excludes="zluda-runtime-package/**,include/**,libnd4jcuda.so,nd4jcuda.dll,nd4jcuda.lib,nd4jcuda.exp,shared-runtime-manifest.txt,javacpp-build-toolchain.properties"/>
                                         </delete>
                                     </target>
                                 </configuration>

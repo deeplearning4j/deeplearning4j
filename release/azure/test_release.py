@@ -515,14 +515,22 @@ class ReleasePlanTests(unittest.TestCase):
             "function(configure_cuda_architecture_flags COMPUTE)", 1
         )[1].split("endfunction()", 1)[0]
         self.assertIn(
-            'set(CUDA_ARCH_FLAGS "-gencode arch=compute_50,code=compute_50" '
-            "PARENT_SCOPE)",
+            'resolve_zluda_ptx_architectures("${COMPUTE}")',
             architecture_function,
+        )
+        zluda_resolver = cuda_configuration.split(
+            "function(resolve_zluda_ptx_architectures COMPUTE_VALUE)", 1
+        )[1].split("endfunction()", 1)[0]
+        self.assertIn('set(_requested "8.6")', zluda_resolver)
+        self.assertIn(
+            '"-gencode arch=compute_${_arch_clean},code=compute_${_arch_clean}"',
+            zluda_resolver,
         )
         self.assertIn(
             'set(CMAKE_CUDA_ARCHITECTURES "OFF" PARENT_SCOPE)',
-            architecture_function,
+            zluda_resolver,
         )
+        self.assertNotIn("compute_50", zluda_resolver)
         self.assertNotIn("-arch=sm_50", cuda_configuration)
 
 
