@@ -285,6 +285,38 @@ public class TestGdnChunkedPrefill {
         assertEquals(0.0, stRelErr,  1e-4, "T=64 chunked state must match sequential: relErr=" + stRelErr);
     }
 
+    @Test
+    public void testDoubleT64ChunkedSharedMemoryContract() {
+        int B = 1, T = 64, H = 1, Dk = 128, Dv = 128;
+        Nd4j.getRandom().setSeed(8877L);
+
+        INDArray q = Nd4j.randn(DataType.DOUBLE, B, T, H, Dk).muli(0.02);
+        INDArray k = Nd4j.randn(DataType.DOUBLE, B, T, H, Dk).muli(0.02);
+        INDArray v = Nd4j.randn(DataType.DOUBLE, B, T, H, Dv).muli(0.05);
+        INDArray beta = Nd4j.rand(DataType.DOUBLE, B, T, H).subi(0.5);
+        INDArray gate = Nd4j.randn(DataType.DOUBLE, B, T, H).muli(0.3).subi(0.5);
+
+        INDArray[] full = Nd4j.exec(new GatedDeltaRule(q, k, v, beta, gate));
+        INDArray[] first = Nd4j.exec(new GatedDeltaRule(
+                q.get(org.nd4j.linalg.indexing.NDArrayIndex.all(), org.nd4j.linalg.indexing.NDArrayIndex.interval(0, 32), org.nd4j.linalg.indexing.NDArrayIndex.all(), org.nd4j.linalg.indexing.NDArrayIndex.all()).dup(),
+                k.get(org.nd4j.linalg.indexing.NDArrayIndex.all(), org.nd4j.linalg.indexing.NDArrayIndex.interval(0, 32), org.nd4j.linalg.indexing.NDArrayIndex.all(), org.nd4j.linalg.indexing.NDArrayIndex.all()).dup(),
+                v.get(org.nd4j.linalg.indexing.NDArrayIndex.all(), org.nd4j.linalg.indexing.NDArrayIndex.interval(0, 32), org.nd4j.linalg.indexing.NDArrayIndex.all(), org.nd4j.linalg.indexing.NDArrayIndex.all()).dup(),
+                beta.get(org.nd4j.linalg.indexing.NDArrayIndex.all(), org.nd4j.linalg.indexing.NDArrayIndex.interval(0, 32), org.nd4j.linalg.indexing.NDArrayIndex.all()).dup(),
+                gate.get(org.nd4j.linalg.indexing.NDArrayIndex.all(), org.nd4j.linalg.indexing.NDArrayIndex.interval(0, 32), org.nd4j.linalg.indexing.NDArrayIndex.all()).dup()));
+        INDArray[] second = Nd4j.exec(new GatedDeltaRule(
+                q.get(org.nd4j.linalg.indexing.NDArrayIndex.all(), org.nd4j.linalg.indexing.NDArrayIndex.interval(32, 64), org.nd4j.linalg.indexing.NDArrayIndex.all(), org.nd4j.linalg.indexing.NDArrayIndex.all()).dup(),
+                k.get(org.nd4j.linalg.indexing.NDArrayIndex.all(), org.nd4j.linalg.indexing.NDArrayIndex.interval(32, 64), org.nd4j.linalg.indexing.NDArrayIndex.all(), org.nd4j.linalg.indexing.NDArrayIndex.all()).dup(),
+                v.get(org.nd4j.linalg.indexing.NDArrayIndex.all(), org.nd4j.linalg.indexing.NDArrayIndex.interval(32, 64), org.nd4j.linalg.indexing.NDArrayIndex.all(), org.nd4j.linalg.indexing.NDArrayIndex.all()).dup(),
+                beta.get(org.nd4j.linalg.indexing.NDArrayIndex.all(), org.nd4j.linalg.indexing.NDArrayIndex.interval(32, 64), org.nd4j.linalg.indexing.NDArrayIndex.all()).dup(),
+                gate.get(org.nd4j.linalg.indexing.NDArrayIndex.all(), org.nd4j.linalg.indexing.NDArrayIndex.interval(32, 64), org.nd4j.linalg.indexing.NDArrayIndex.all()).dup(), first[1]));
+
+        INDArray sequentialOutput = Nd4j.concat(1, first[0], second[0]);
+        assertEquals(0.0, relErr(full[0], sequentialOutput), 1e-10,
+                "DOUBLE chunked output must match the sequential reference");
+        assertEquals(0.0, relErr(full[1], second[1]), 1e-10,
+                "DOUBLE chunked state must match the sequential reference");
+    }
+
     /**
      * Tests with nonzero initial state for T >= 64 (chunked path exercises the
      * state-to-U0 subtraction in kernel B).

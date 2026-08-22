@@ -12,6 +12,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention;
+import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.common.util.ArrayUtil;
@@ -426,6 +427,123 @@ public class MhaKvConcatRegressionTest {
                     "shape_of/gather/concat/reshape must preserve the prefill KV tensor");
         } finally {
             sd.close();
+        }
+    }
+
+    @Test
+    @DisplayName("Triton prefill concat filters empty past KV across replay")
+    public void testTritonEmptyPastKvConcatRepeated() {
+        Environment environment = Nd4j.getEnvironment();
+        boolean compileAllBefore = environment.tritonCompileAll();
+        String includeTypesBefore = environment.tritonIncludeTypes();
+        INDArray currentParent = null;
+        INDArray emptyPast = null;
+        INDArray expected = null;
+        try {
+            environment.setTritonCompileAll(true);
+            environment.setTritonIncludeTypes("CONCAT");
+
+            try (SameDiff sd = SameDiff.create()) {
+                SDVariable past = sd.placeHolder("past", DataType.HALF, 1, 3, 0, 64);
+                SDVariable current = sd.placeHolder("current", DataType.HALF, 1, 512, 3, 64);
+                SDVariable currentView = current.permute(0, 2, 1, 3);
+                sd.updateVariableNameAndReference(currentView, "current_view");
+                sd.concat("present", 2, past, currentView);
+                sd.setGraphExecutionMode(GraphExecutionMode.TRITON);
+
+                Nd4j.getRandom().setSeed(12345L);
+                currentParent = Nd4j.rand(DataType.HALF, 1, 512, 3, 64);
+                emptyPast = Nd4j.create(DataType.HALF, 1, 3, 0, 64);
+                expected = currentParent.permute(0, 2, 1, 3).dup('c');
+                Map<String, INDArray> inputs = Map.of(
+                        "past", emptyPast,
+                        "current", currentParent);
+
+                for (int execution = 0; execution < 6; execution++) {
+                    INDArray actual = sd.output(inputs, "present").get("present");
+                    assertArrayEquals(new long[]{1, 3, 512, 64}, actual.shape(),
+                            "Execution " + execution + ": wrong prefill concat shape");
+                    assertEquals(expected, actual,
+                            "Execution " + execution
+                                    + ": Triton concat(empty past, current KV) changed values");
+                }
+            }
+        } finally {
+            environment.setTritonCompileAll(compileAllBefore);
+            environment.setTritonIncludeTypes(includeTypesBefore);
+            if (expected != null && !expected.wasClosed()) expected.close();
+            if (emptyPast != null && !emptyPast.wasClosed()) emptyPast.close();
+            if (currentParent != null && !currentParent.wasClosed()) currentParent.close();
+        }
+    }
+
+    @Test
+    @DisplayName("Triton ONNX GQA honors the causal-mask argument")
+    public void testTritonOnnxGqaCausalParity() {
+        final int batch = 1;
+        final int seq = 32;
+        final int qHeads = 9;
+        final int kvHeads = 3;
+        final int headDim = 64;
+        final int qHidden = qHeads * headDim;
+        final int kvHidden = kvHeads * headDim;
+
+        Environment environment = Nd4j.getEnvironment();
+        boolean compileAllBefore = environment.tritonCompileAll();
+        String includeTypesBefore = environment.tritonIncludeTypes();
+        Nd4j.getRandom().setSeed(19070L);
+        try (INDArray query = Nd4j.randn(DataType.HALF, batch, seq, qHidden);
+             INDArray key = Nd4j.randn(DataType.HALF, batch, seq, kvHidden);
+             INDArray value = Nd4j.randn(DataType.HALF, batch, seq, kvHidden);
+             INDArray bias = Nd4j.zeros(DataType.FLOAT, batch, qHeads, seq, seq)) {
+            environment.setTritonCompileAll(true);
+            environment.setTritonIncludeTypes("ATTENTION");
+
+            INDArray nativeOutput = executeCausalGqa(
+                    GraphExecutionMode.SLOT_BY_SLOT, query, key, value, bias,
+                    qHeads, qHidden, kvHidden);
+            INDArray tritonOutput = executeCausalGqa(
+                    GraphExecutionMode.TRITON, query, key, value, bias,
+                    qHeads, qHidden, kvHidden);
+            try {
+                INDArray difference = nativeOutput.sub(tritonOutput);
+                try {
+                    double maxAbsDifference = Nd4j.math().abs(difference).maxNumber().doubleValue();
+                    assertTrue(maxAbsDifference < 2e-2,
+                            "Triton causal ONNX GQA diverged from native execution: maxAbsDifference="
+                                    + maxAbsDifference);
+                } finally {
+                    difference.close();
+                }
+            } finally {
+                nativeOutput.close();
+                tritonOutput.close();
+            }
+        } finally {
+            environment.setTritonCompileAll(compileAllBefore);
+            environment.setTritonIncludeTypes(includeTypesBefore);
+        }
+    }
+
+    private INDArray executeCausalGqa(GraphExecutionMode mode,
+                                      INDArray query, INDArray key, INDArray value, INDArray bias,
+                                      int qHeads, int qHidden, int kvHidden) {
+        try (SameDiff sd = SameDiff.create()) {
+            SDVariable queryVar = sd.placeHolder("query", query.dataType(), query.shape());
+            SDVariable keyVar = sd.placeHolder("key", key.dataType(), key.shape());
+            SDVariable valueVar = sd.placeHolder("value", value.dataType(), value.shape());
+            SDVariable biasVar = sd.placeHolder("bias", bias.dataType(), bias.shape());
+            OnnxMultiHeadAttention attention = new OnnxMultiHeadAttention(
+                    sd, queryVar, keyVar, valueVar, biasVar, null, null,
+                    qHeads, 0.125, true);
+            SDVariable output = attention.outputVariables()[0];
+            sd.setGraphExecutionMode(mode);
+            INDArray actual = sd.output(
+                    Map.of("query", query, "key", key, "value", value, "bias", bias),
+                    output.name()).get(output.name());
+            assertArrayEquals(new long[]{query.size(0), query.size(1), qHidden}, actual.shape());
+            assertEquals(kvHidden, key.size(2));
+            return actual.dup();
         }
     }
 }

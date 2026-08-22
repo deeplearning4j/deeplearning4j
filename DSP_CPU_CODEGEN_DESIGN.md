@@ -273,7 +273,8 @@ workload: BGE embedding [32×512] at 68-82s/pass before the threading fixes.
 
 **Graph-backend-slot alternatives (peers of oneDNN/OpenVINO, coarser granularity):**
 - **XLA:CPU via PJRT** — cheapest meaningful experiment in this whole space:
-  `graph/tpu/PjrtClientManager` + `HloIRBuilder` already exist in-tree; the same
+  `graph/tpu/PjrtClientManager` + the shared KernelSpec/KernelExpr StableHLO
+  target already exist in-tree; the same
   PJRT client API loads the CPU plugin. Recommended as a P5 side experiment/data
   point, not the primary (whole-segment granularity, no per-section auction).
 - **Apache TVM (Relax/MetaSchedule)** — alive; autotuning philosophy matches WS-G,

@@ -45,6 +45,29 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.*;
  */
 public class TestGatedDeltaRule {
 
+    private static float reproducibleExp(float value) {
+        float clamped = Math.max(-88.0f, Math.min(88.0f, value));
+        float scaled = clamped * (float) 1.442695040888963407359924681001892137;
+        float bias = scaled >= 0.0f ? 0.5f : -0.5f;
+        int exponent = (int) (scaled + bias);
+        float reduced = clamped - exponent * (float) 0.693147180559945309417232121458176568;
+
+        float term = 1.0f;
+        float sum = 1.0f;
+        for (int order = 1; order <= 18; ++order) {
+            term = (term * reduced) / order;
+            sum = sum + term;
+        }
+
+        float scale = 1.0f;
+        float scaleStep = exponent >= 0 ? 2.0f : 0.5f;
+        int scaleCount = Math.abs(exponent);
+        for (int index = 0; index < scaleCount; ++index) {
+            scale = scale * scaleStep;
+        }
+        return sum * scale;
+    }
+
     @Test
     public void testBasicShapesNoState() {
         int B = 2, L = 4, H = 3, Dk = 8, Dv = 8;
@@ -274,17 +297,85 @@ public class TestGatedDeltaRule {
     }
 
     @Test
-    public void testDoubleType() {
-        int B = 1, L = 2, H = 1, Dk = 4, Dv = 4;
-        INDArray q = Nd4j.randn(DataType.DOUBLE, B, L, H, Dk).muli(0.1);
-        INDArray k = Nd4j.randn(DataType.DOUBLE, B, L, H, Dk).muli(0.1);
-        INDArray v = Nd4j.randn(DataType.DOUBLE, B, L, H, Dv).muli(0.1);
-        INDArray beta = Nd4j.rand(DataType.DOUBLE, B, L, H);
-        INDArray gate = Nd4j.randn(DataType.DOUBLE, B, L, H).muli(0.5);
+    public void testFloatReductionUsesFixedPairwiseTree() {
+        int B = 1, L = 1, H = 1, Dk = 4, Dv = 1;
+        INDArray q = Nd4j.createFromArray(new float[]{
+                1.0e20f, 1.0f, -1.0e20f, 3.0f
+        }).reshape(B, L, H, Dk);
+        INDArray k = Nd4j.ones(DataType.FLOAT, B, L, H, Dk);
+        INDArray v = Nd4j.ones(DataType.FLOAT, B, L, H, Dv);
+        INDArray beta = Nd4j.ones(DataType.FLOAT, B, L, H);
+        INDArray gate = Nd4j.zeros(DataType.FLOAT, B, L, H);
 
         INDArray[] result = Nd4j.exec(new GatedDeltaRule(q, k, v, beta, gate));
+
+        // Fixed pairwise tree: (1e20 + 1) + (-1e20 + 3) = 0.
+        // A scalar left fold produces 3, so this raw-bit assertion locks the tree.
+        assertEquals(
+                Float.floatToRawIntBits(0.0f),
+                Float.floatToRawIntBits(result[0].getFloat(0, 0, 0, 0))
+        );
+    }
+
+    @Test
+    public void testFloatGateDecayUsesReproducibleExp() {
+        int B = 1, L = 2, H = 1, Dk = 1, Dv = 1;
+        INDArray q = Nd4j.ones(DataType.FLOAT, B, L, H, Dk);
+        INDArray k = Nd4j.ones(DataType.FLOAT, B, L, H, Dk);
+        INDArray v = Nd4j.createFromArray(new float[]{1.0f, 0.0f}).reshape(B, L, H, Dv);
+        INDArray beta = Nd4j.createFromArray(new float[]{1.0f, 0.0f}).reshape(B, L, H);
+        INDArray gate = Nd4j.createFromArray(new float[]{0.0f, -0.7f}).reshape(B, L, H);
+
+        INDArray[] result = Nd4j.exec(new GatedDeltaRule(q, k, v, beta, gate));
+        int expectedBits = Float.floatToRawIntBits(reproducibleExp(-0.7f));
+
+        assertEquals(expectedBits,
+                Float.floatToRawIntBits(result[0].getFloat(0, 1, 0, 0)));
+        assertEquals(expectedBits,
+                Float.floatToRawIntBits(result[1].getFloat(0, 0, 0, 0)));
+    }
+
+    @Test
+    public void testDoubleTypePreservesDoubleAggregation() {
+        int B = 1, L = 1, H = 1, Dk = 2, Dv = 1;
+        double q0 = 1.0000000001;
+        double q1 = -0.9999999998;
+        double k0 = 0.7500000003;
+        double k1 = -0.2500000002;
+        double v0 = 0.3333333337;
+        double beta0 = 0.9000000004;
+
+        INDArray q = Nd4j.createFromArray(new double[]{q0, q1}).reshape(B, L, H, Dk);
+        INDArray k = Nd4j.createFromArray(new double[]{k0, k1}).reshape(B, L, H, Dk);
+        INDArray v = Nd4j.createFromArray(new double[]{v0}).reshape(B, L, H, Dv);
+        INDArray beta = Nd4j.createFromArray(new double[]{beta0}).reshape(B, L, H);
+        INDArray gate = Nd4j.zeros(DataType.DOUBLE, B, L, H);
+
+        INDArray[] result = Nd4j.exec(new GatedDeltaRule(q, k, v, beta, gate));
+
+        double betaDelta = beta0 * v0;
+        double expectedState0 = betaDelta * k0;
+        double expectedState1 = betaDelta * k1;
+        double expectedOutput = expectedState0 * q0 + expectedState1 * q1;
+
         assertEquals(DataType.DOUBLE, result[0].dataType());
-        assertFalse(result[0].isNaN().any());
+        assertEquals(DataType.DOUBLE, result[1].dataType());
+        assertEquals(expectedState0, result[1].getDouble(0, 0, 0, 0), 1e-14);
+        assertEquals(expectedState1, result[1].getDouble(0, 0, 1, 0), 1e-14);
+        assertEquals(expectedOutput, result[0].getDouble(0, 0, 0, 0), 1e-14);
+    }
+
+    @Test
+    public void testMixedFloatingStorageTypesAreRejected() {
+        INDArray q = Nd4j.ones(DataType.FLOAT, 1, 1, 1, 2);
+        INDArray k = Nd4j.ones(DataType.DOUBLE, 1, 1, 1, 2);
+        INDArray v = Nd4j.ones(DataType.FLOAT, 1, 1, 1, 2);
+        INDArray beta = Nd4j.ones(DataType.FLOAT, 1, 1, 1);
+        INDArray gate = Nd4j.zeros(DataType.FLOAT, 1, 1, 1);
+
+        assertThrows(Exception.class,
+                () -> Nd4j.exec(new GatedDeltaRule(q, k, v, beta, gate)),
+                "GDR must reject mixed storage instead of reinterpreting buffers through Q's dtype");
     }
 
     /**

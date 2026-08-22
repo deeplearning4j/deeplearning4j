@@ -352,6 +352,18 @@ public final class SdxRuntime implements AutoCloseable {
         return SdxNative.sdxGetRuntimeAbiVersion();
     }
 
+    /** Clear diagnostics in the backend library selected by this SDX transport. */
+    public void clearDiagnostics() {
+        ensureOpen();
+        SdxNative.sdxClearDiagnostics();
+    }
+
+    /** Persist diagnostics from the backend library selected by this SDX transport. */
+    public void flushDiagnostics() {
+        ensureOpen();
+        SdxNative.sdxFlushDiagnostics();
+    }
+
     public synchronized SdxModel loadModel(String bundlePath, ModelOptions options) {
         ensureOpen();
         Objects.requireNonNull(bundlePath, "bundlePath");

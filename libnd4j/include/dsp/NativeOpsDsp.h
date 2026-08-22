@@ -1062,6 +1062,9 @@ SD_LIB_EXPORT const char* dspDiagGetPlanReport();
  */
 SD_LIB_EXPORT const char* dspDiagGetJsonReport();
 
+/** Persist the current diagnostic ring to the configured native JSON path. */
+SD_LIB_EXPORT void dspDiagFlushJson();
+
 /**
  * Clear all diagnostic state (ring buffer, stats, snapshots).
  */

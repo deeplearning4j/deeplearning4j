@@ -181,6 +181,7 @@ class SD_LIB_EXPORT DspDiagnostics {
   // ── Misc ──
   void clear();
   void applyDspConfig();
+  uint64_t epoch() const { return epoch_.load(std::memory_order_relaxed); }
 
   // ── Slot buffer diagnostics ──
   // Dumps first N float values from a device buffer via D2H copy.
@@ -319,6 +320,7 @@ class SD_LIB_EXPORT DspDiagnostics {
   // Ring buffer
   DspDiagEvent events_[DSP_DIAG_RING_SIZE];
   std::atomic<int64_t>  writePos_;
+  std::atomic<uint64_t> epoch_{1};
   mutable std::mutex    eventMutex_;
 
   // Per-category stats

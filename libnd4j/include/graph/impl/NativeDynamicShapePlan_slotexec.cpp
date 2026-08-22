@@ -128,6 +128,40 @@ struct SlotSyncGuard {
   }
 };
 
+// A cached native plan can reinstall outputSlots_ wrappers that differ from the
+// arrays retained by a previously frozen Context. Every direct slot-execution
+// path must write through the currently installed wrapper; otherwise downstream
+// slots and requested-output materialization read a buffer this execution never
+// updated. This is the task-#54 invariant originally enforced by the ordinary
+// frozen-context path and shared here with the steady-state gap fast path.
+static void reconcileContextOutputsWithInstalledSlots(
+    const NativeSlot& slot, Context& ctx, NDArray** outputSlots,
+    int totalOutputSlots, int stepIdx, const char* path) {
+  auto& contextOutputs = ctx.fastpath_out();
+  for (int outputIdx = 0;
+       outputIdx < slot.wiring.numOutputs &&
+       outputIdx < static_cast<int>(contextOutputs.size());
+       outputIdx++) {
+    const int slotIdx = slot.wiring.outputSlotIndices[outputIdx];
+    if (slotIdx < 0 || slotIdx >= totalOutputSlots) continue;
+
+    NDArray* installed = outputSlots[slotIdx];
+    NDArray* retained = contextOutputs[outputIdx];
+    if (installed == nullptr || retained == nullptr) continue;
+    if (installed->dataBuffer() == retained->dataBuffer()) continue;
+
+    DSP_DIAG(FALLBACK,
+             "CTX_OUTPUT_REBIND: path=%s slot=%d op=%s outIdx=%d "
+             "retainedDb=%p installedDb=%p — rebinding direct execution to "
+             "the currently installed slot wrapper",
+             path != nullptr ? path : "unknown", stepIdx,
+             slot.ident.opName.c_str(), outputIdx,
+             static_cast<void*>(retained->dataBuffer()),
+             static_cast<void*>(installed->dataBuffer()));
+    ctx.setOutputArray(outputIdx, installed);
+  }
+}
+
 // Verify helpers now in DspVerifyUtils.h (dspLogSlotOutput, dspDumpSlotValues, etc.)
 
 /**
@@ -3650,34 +3684,8 @@ Status NativeDynamicShapePlan::executeSlot(
       }
     }
 
-    // ── Slot-identity reconciliation (task #54) ─────────────────────────────
-    // A plan checked out from the native cache can carry outputSlots_ wrappers
-    // (re-installed by the step-3 cached-reuse path) that differ from this
-    // frozen context's output arrays (bound at freeze time). The kernel then
-    // writes the ctx array while readback materializes from the wrapper's
-    // stale device pointer — the host reads content this exec never wrote
-    // (bit-identical, batch-only wrong outputs; the two buffers only diverge
-    // after a cross-test plan reuse). Rebind the ctx output to the CURRENT
-    // wrapper so kernel-write and readback share one identity.
-    {
-      auto& fpOutRebind = ctx.fastpath_out();
-      for (int oi = 0; oi < slot.wiring.numOutputs && oi < (int)fpOutRebind.size(); oi++) {
-        int osi = slot.wiring.outputSlotIndices[oi];
-        if (osi < 0 || osi >= totalOutputSlots_) continue;
-        NDArray* wrapper = outputSlots_[osi];
-        NDArray* ctxArr = fpOutRebind[oi];
-        if (wrapper == nullptr || ctxArr == nullptr) continue;
-        if (wrapper->dataBuffer() != ctxArr->dataBuffer()) {
-          DSP_DIAG(FALLBACK,
-                   "FROZEN_CTX_OUTPUT_REBIND: slot=%d op=%s outIdx=%d ctxDb=%p wrapperDb=%p "
-                   "— frozen ctx output diverged from installed slot wrapper (cached-plan "
-                   "reuse); rebinding ctx to the wrapper so write and readback share one buffer",
-                   stepIdx, slot.ident.opName.c_str(), oi,
-                   (void*)ctxArr->dataBuffer(), (void*)wrapper->dataBuffer());
-          ctx.setOutputArray(oi, wrapper);
-        }
-      }
-    }
+    reconcileContextOutputsWithInstalledSlots(
+        slot, ctx, outputSlots_, totalOutputSlots_, stepIdx, "frozen-context");
 
     // Ensure CUDA host↔device coherency before op execution.
     // The standard path gets this via NativeOps entry points (prepareSpecialUse/registerSpecialUse).
@@ -6358,6 +6366,11 @@ Status NativeDynamicShapePlan::executeSlotGapFast(
       fpIn[i] = outputSlots_[srcIdx];
     }
   }
+
+  // The gap fast path was added after the task-#54 cached-plan output-identity
+  // repair. It must preserve the same invariant before calling the op directly.
+  reconcileContextOutputsWithInstalledSlots(
+      slot, ctx, outputSlots_, totalOutputSlots_, slotIdx, "gap-fast");
 
   // Shape override already set from prior frozen-context path (executeCount_ >= 3).
   // Prezero: handled by batch prezero pass in compositeReplay before gap loop.

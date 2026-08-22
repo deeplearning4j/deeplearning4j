@@ -18,9 +18,8 @@
 
 #include <execution/Threads.h>
 #include <math/templatemath.h>
+#include <ops/op_types.h>
 #include <ops/declarable/helpers/causal_conv1d.h>
-
-#include <cmath>
 
 namespace sd {
 namespace ops {
@@ -30,6 +29,9 @@ template <typename X, typename W, typename S>
 static void causalConv1d_(LaunchContext* context, NDArray* x, NDArray* weight, NDArray* bias,
                            NDArray* stateIn, NDArray* actualLen, NDArray* output, NDArray* stateOut,
                            int activation, int wFormat) {
+    using PromotedT = typename sd::math::promote_type3<X, W, S>::type;
+    using AccT = typename simdOps::AggregateType<PromotedT>::type;
+
     const auto B = x->sizeAt(0);
     const auto L = x->sizeAt(1);
     const auto D = x->sizeAt(2);
@@ -76,38 +78,37 @@ static void causalConv1d_(LaunchContext* context, NDArray* x, NDArray* weight, N
             // where srcT = t - kk, so kk=0 is current timestep. Map to weight index
             // K-1-kk so weight[K-1] hits current input.
             for (LongType t = 0; t < L; ++t) {
-                // Accumulate convolution in float to avoid FP16 product overflow
-                float sum = 0.0f;
+                AccT sum = static_cast<AccT>(0);
                 for (LongType kk = 0; kk < K; ++kk) {
                     LongType srcT = t - kk;
-                    float x_val;
+                    AccT xVal;
                     if (srcT >= 0) {
-                        x_val = static_cast<float>(xBuf[b * xS0 + srcT * xS1 + d * xS2]);
+                        xVal = static_cast<AccT>(xBuf[b * xS0 + srcT * xS1 + d * xS2]);
                     } else if (sInBuf != nullptr) {
                         LongType stateIdx = (K - 1) + srcT;
-                        x_val = (stateIdx >= 0) ? static_cast<float>(sInBuf[b * siS0 + d * siS1 + stateIdx * siS2]) : 0.0f;
+                        xVal = stateIdx >= 0
+                            ? static_cast<AccT>(sInBuf[b * siS0 + d * siS1 + stateIdx * siS2])
+                            : static_cast<AccT>(0);
                     } else {
-                        x_val = 0.0f;
+                        xVal = static_cast<AccT>(0);
                     }
-                    const float weightValue =
-                        static_cast<float>(wBuf[d * wChanStride + (K - 1 - kk) * wDimStride]);
-                    // Encode the accumulation operation explicitly. Plain a*b+c is
-                    // contracted/vectorized differently by x86 and ARM compilers,
-                    // and the resulting ULP drift is amplified by gated_delta_rule.
-                    sum = std::fma(weightValue, x_val, sum);
+                    const AccT weightValue = static_cast<AccT>(
+                        wBuf[d * wChanStride + (K - 1 - kk) * wDimStride]);
+                    sum = sd::math::sd_add<AccT, AccT, AccT>(
+                        sum, sd::math::sd_multiply<AccT, AccT, AccT>(weightValue, xVal));
                 }
 
-                if (bBuf != nullptr) sum += static_cast<float>(bBuf[d]);
+                if (bBuf != nullptr) {
+                    sum = sd::math::sd_add<AccT, AccT, AccT>(
+                        sum, static_cast<AccT>(bBuf[d]));
+                }
 
-                // Evaluate exp in double and round once to float. Host expf comes
-                // from different libc implementations on glibc/x86 and Bionic/ARM.
-                // Preserve sd_exp's clamp while avoiding an architecture-specific
-                // float transcendental before the recurrent GDN path.
                 if (activation == 1) {
-                    const double exponent = std::max(-88.0, std::min(88.0, -static_cast<double>(sum)));
-                    const float expValue = static_cast<float>(std::exp(exponent));
-                    const float sig = 1.0f / (1.0f + expValue);
-                    sum = sum * sig;
+                    const AccT one = static_cast<AccT>(1);
+                    const AccT sigmoid = sd::math::sd_divide<AccT, AccT, AccT>(
+                        one, sd::math::sd_add<AccT, AccT, AccT>(
+                            one, sd::math::sd_exp<AccT, AccT>(-sum)));
+                    sum = sd::math::sd_multiply<AccT, AccT, AccT>(sum, sigmoid);
                 }
 
                 outBuf[b * oS0 + t * oS1 + d * oS2] = static_cast<X>(sum);

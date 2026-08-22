@@ -20,6 +20,7 @@
 #include <helpers/DebugHelper.h>
 #include <array/NDArray.h>
 #include <math/templatemath.h>
+#include <ops/op_types.h>
 #include <types/float16.h>
 #include <ops/declarable/helpers/causal_conv1d.h>
 #include <ops/declarable/helpers/cuda/device_primitives.cuh>
@@ -27,12 +28,6 @@
 namespace sd {
 namespace ops {
 namespace helpers {
-
-// Accumulator type: double when T=double for precision, float otherwise.
-template <typename T>
-struct AccType { using type = float; };
-template <>
-struct AccType<double> { using type = double; };
 
 // One thread per (batch, time, channel) element. Activations/state/output use X;
 // weights may use a lower-precision storage type W.
@@ -50,7 +45,8 @@ SD_KERNEL void causalConv1dKernel(
     const LongType oS0, const LongType oS1, const LongType oS2,
     const LongType siS0, const LongType siS1, const LongType siS2) {
 
-    using AccT = typename AccType<X>::type;
+    using PromotedT = typename sd::math::promote_type3<X, W, S>::type;
+    using AccT = typename simdOps::AggregateType<PromotedT>::type;
 
     const LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
     const LongType total = B * L * D;
@@ -76,15 +72,22 @@ SD_KERNEL void causalConv1dKernel(
         } else {
             x_val = static_cast<AccT>(0);
         }
-        sum += static_cast<AccT>(weight[d * wChanStride + (K - 1 - kk) * wDimStride]) * x_val;
+        const AccT weightValue = static_cast<AccT>(
+            weight[d * wChanStride + (K - 1 - kk) * wDimStride]);
+        sum = sd::math::sd_add<AccT, AccT, AccT>(
+            sum, sd::math::sd_multiply<AccT, AccT, AccT>(weightValue, x_val));
     }
 
-    if (bias != nullptr) sum += static_cast<AccT>(bias[d]);
+    if (bias != nullptr) {
+        sum = sd::math::sd_add<AccT, AccT, AccT>(sum, static_cast<AccT>(bias[d]));
+    }
 
-    // SiLU activation
     if (activation == 1) {
-        AccT sig = static_cast<AccT>(1) / (static_cast<AccT>(1) + sd::math::sd_exp<AccT, AccT>(-sum));
-        sum = sum * sig;
+        const AccT one = static_cast<AccT>(1);
+        const AccT sigmoid = sd::math::sd_divide<AccT, AccT, AccT>(
+            one, sd::math::sd_add<AccT, AccT, AccT>(
+                one, sd::math::sd_exp<AccT, AccT>(-sum)));
+        sum = sd::math::sd_multiply<AccT, AccT, AccT>(sum, sigmoid);
     }
 
     out[b * oS0 + t * oS1 + d * oS2] = static_cast<X>(sum);

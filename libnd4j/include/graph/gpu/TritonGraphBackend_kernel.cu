@@ -763,26 +763,34 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
       // Without this, compiled-kernel teardown pool-frees the block under the
       // live graph and the next cudaGraphLaunch dies host-side (pointer-matched
       // on DspBufferAliasAccuracyTest sharedBufferViewFanout/AUTO).
-      if (memcpyErr == cudaSuccess && !compiled.cachedArgTableCaptureOwned) {
+      if (memcpyErr == cudaSuccess) {
         cudaStream_t execStreamCopy = cudaExecStream;
         if (DebugHelper::streamIsCapturing(&execStreamCopy)) {
-          tl_capturedHostPtrs.push_back(compiled.cachedArgTableHostPinned);
-          sd::memory::CudaMemoryPool::getInstance().relinquishPinnedHost(
-              compiled.cachedArgTableHostPinned);
-          compiled.cachedArgTableCaptureOwned = true;
-          DSP_DIAG(EXECUTE, "TritonGraphBackend: arg table pinned %p baked into capture "
-                   "for [%d-%d] — ownership -> captured graph",
-                   compiled.cachedArgTableHostPinned, compiled.startSlot_, compiled.endSlot_);
-        }
-        // The kernel node about to be captured references compiled.gpuModule —
-        // same ownership contract: the replay handle unloads it at death.
-        if (!compiled.moduleCaptureOwned && compiled.gpuModule != nullptr) {
-          sd::graph::modreg::retainForHandle(compiled.gpuModule);
-          tl_capturedModules.push_back(compiled.gpuModule);
-          compiled.moduleCaptureOwned = true;
-          DSP_DIAG(EXECUTE, "TritonGraphBackend: module %p baked into capture for [%d-%d] "
-                   "— ownership -> captured graph",
-                   compiled.gpuModule, compiled.startSlot_, compiled.endSlot_);
+          if (!compiled.cachedArgTableCaptureOwned) {
+            // Non-consolidated tables are independently pool-tracked bases.
+            // Consolidated tables are transferred once by executeSegment and
+            // mark every interior view capture-owned before reaching here.
+            auto& memPool = sd::memory::CudaMemoryPool::getInstance();
+            if (!memPool.relinquishPinnedHost(compiled.cachedArgTableHostPinned)) {
+              return failKernel("argument table ownership transfer failed");
+            }
+            tl_capturedHostPtrs.push_back(compiled.cachedArgTableHostPinned);
+            compiled.cachedArgTableCaptureOwned = true;
+            DSP_DIAG(EXECUTE, "TritonGraphBackend: arg table pinned %p baked into capture "
+                     "for [%d-%d] — ownership -> captured graph",
+                     compiled.cachedArgTableHostPinned, compiled.startSlot_, compiled.endSlot_);
+          }
+          // Module lifetime is independent from arg-table ownership. A
+          // consolidated table marks its interior views capture-owned before
+          // this call, but the captured kernel node still needs its module.
+          if (!compiled.moduleCaptureOwned && compiled.gpuModule != nullptr) {
+            sd::graph::modreg::retainForHandle(compiled.gpuModule);
+            tl_capturedModules.push_back(compiled.gpuModule);
+            compiled.moduleCaptureOwned = true;
+            DSP_DIAG(EXECUTE, "TritonGraphBackend: module %p baked into capture for [%d-%d] "
+                     "— ownership -> captured graph",
+                     compiled.gpuModule, compiled.startSlot_, compiled.endSlot_);
+          }
         }
       }
       if (memcpyErr != cudaSuccess) {
@@ -1076,6 +1084,9 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
       // fall back to a loose match ignoring the dtype hash before concluding "no sub-kernels".
       compiledSeg = findCompiledSegmentAnyDtype(key);
       if (compiledSeg == nullptr) {
+        compiledSeg = findCompiledSegmentForLiveSegment(key);
+      }
+      if (compiledSeg == nullptr) {
         DSP_DIAG(EXECUTE, "TritonGraphBackend::refreshArgTablesForReplay: no compiled segment for [%d-%d] "
                   "(shapeKey=%lld, device=%d) → marking args current (no arg tables to refresh)",
                   seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey, currentDevice);
@@ -1271,6 +1282,9 @@ void TritonGraphBackend::copyConsolidatedArgTableToDevice(GraphSegment& seg, voi
       // Recovered hash may be stale/0 — a silent skip here leaves the device arg table stale.
       // Fall back to a loose match ignoring the dtype hash before concluding nothing to copy.
       compiledSeg = findCompiledSegmentAnyDtype(key);
+      if (compiledSeg == nullptr) {
+        compiledSeg = findCompiledSegmentForLiveSegment(key);
+      }
       if (compiledSeg == nullptr) {
         // No compiled segment - nothing to copy
         return;

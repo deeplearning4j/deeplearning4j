@@ -25,6 +25,7 @@
 #include <cuda_runtime.h>
 #include <cuda.h>
 #include <graph/gpu/CapturedModuleRegistry.h>
+#include <execution/LaunchContext.h>
 
 namespace sd {
 namespace graph {
@@ -91,9 +92,13 @@ bool CudaGraphReplayHandle::replay(void* stream) {
   if (!handle_) {
     DSP_DIAG_DEV(FALLBACK, deviceId_,
                  "CudaGraphReplayHandle::replay: handle_ is NULL device=%d", deviceId_);
+    auto* errorRef = LaunchContext::defaultContext()->errorReference();
+    errorRef->setErrorCode(static_cast<int>(Status::KERNEL_FAILURE));
+    errorRef->setErrorMessage("CUDA graph replay handle is null");
     return false;
   }
   cudaStream_t cudaStr = (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
+  cudaError_t fastLaunchError = cudaSuccess;
 
   // Fast path: call cudaGraphLaunch directly, bypassing launchAsync overhead
   // (mutex, cudaGetDevice, chrono timestamps, cudaGetLastError, state transitions,
@@ -111,6 +116,7 @@ bool CudaGraphReplayHandle::replay(void* stream) {
                  handle_->getNumNodes(), (int)handle_->getState());
     cudaError_t err = cudaGraphLaunch(exec, cudaStr);
     if (err == cudaSuccess) { replayCount_++; return true; }
+    fastLaunchError = err;
     // Launch failed — fall through to full launchAsync for detailed diagnostics
     DSP_DIAG_DEV(FALLBACK, deviceId_,
                  "CudaGraphReplayHandle::replay cudaGraphLaunch FAILED err=%d (%s) exec=%p stream=%p",
@@ -130,6 +136,17 @@ bool CudaGraphReplayHandle::replay(void* stream) {
     DSP_DIAG_DEV(FALLBACK, deviceId_,
                  "CudaGraphReplayHandle::replay launchAsync FAILED device=%d state=%d",
                  deviceId_, (int)handle_->getState());
+    char detail[512];
+    std::snprintf(detail, sizeof(detail),
+                  "CUDA graph replay failed on device %d: fastLaunchError=%d (%s), "
+                  "graphExec=%p, stream=%p, state=%d",
+                  deviceId_, static_cast<int>(fastLaunchError),
+                  fastLaunchError == cudaSuccess ? "not attempted" : cudaGetErrorString(fastLaunchError),
+                  static_cast<void*>(exec), static_cast<void*>(cudaStr),
+                  static_cast<int>(handle_->getState()));
+    auto* errorRef = LaunchContext::defaultContext()->errorReference();
+    errorRef->setErrorCode(static_cast<int>(Status::KERNEL_FAILURE));
+    errorRef->setErrorMessage(detail);
   }
   return ok;
 }

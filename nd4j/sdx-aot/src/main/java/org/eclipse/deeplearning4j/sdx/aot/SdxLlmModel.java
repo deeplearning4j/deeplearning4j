@@ -38,6 +38,12 @@ interface SdxLlmModel extends AutoCloseable {
 
     String infoJson();
 
+    /** Start a fresh diagnostic epoch in the backend that owns this model. */
+    void clearDiagnostics();
+
+    /** Persist the live diagnostic ring from the backend that owns this model. */
+    void flushDiagnostics();
+
     @Override
     void close();
 }

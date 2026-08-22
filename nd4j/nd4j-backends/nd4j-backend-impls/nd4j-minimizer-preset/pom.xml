@@ -53,6 +53,11 @@
             <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-native-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-native-preset</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
     <build>

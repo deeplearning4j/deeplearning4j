@@ -581,7 +581,7 @@ struct PlanExecutionContext {
       bool bypassCompiledExecution, bool allowPlatformGraphReplay,
       bool verifyCompiledExecution, bool hasVariableList,
       bool execTimingEnabled, bool compilationComplete,
-      bool anySegmentInWarmup) {
+      bool anySegmentInWarmup, int diagnosticExecuteCount) {
 
     // Snapshot execution identity
     execCount = executeCount;
@@ -634,7 +634,7 @@ struct PlanExecutionContext {
     // Diagnostic gates — check if any diagnostic category is active
     diagAnyEnabled = DspDiagnostics::getInstance().isEnabled(0xFFFFFFFF);
     diagVerifyEnabled = DSP_DIAG_ENABLED(VERIFY) &&
-        DspDiagnostics::getInstance().withinExecLimit(executeCount);
+        DspDiagnostics::getInstance().withinExecLimit(diagnosticExecuteCount);
 
     // Timing
     timingEnabled = execTimingEnabled;

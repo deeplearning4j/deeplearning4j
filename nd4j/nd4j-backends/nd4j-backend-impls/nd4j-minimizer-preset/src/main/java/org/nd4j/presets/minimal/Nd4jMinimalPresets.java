@@ -23,6 +23,7 @@ package org.nd4j.presets.minimal;
 import org.bytedeco.javacpp.annotation.Platform;
 import org.bytedeco.javacpp.annotation.Properties;
 import org.bytedeco.javacpp.tools.*;
+import org.nd4j.presets.cpu.Nd4jCpuPresets;
 import org.nd4j.presets.OpExclusionUtils;
 
 /**
@@ -36,9 +37,17 @@ import org.nd4j.presets.OpExclusionUtils;
                 //going to be the source of ops, see also:
                 //https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/blas/CMakeLists.txt#L76
                 //https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/buildnativeoperations.sh#L517
+                "array/DataType.h",
+                "system/config/CoreConfig.h",
+                "system/config/CudaDeviceConfig.h",
+                "system/config/TritonConfig.h",
+                "system/config/DspConfig.h",
+                "system/config/LifecycleConfig.h",
+                "system/config/MemoryConfig.h",
+                "system/config/PrintConfig.h",
+                "system/Environment.h",
                 "generated/include_ops.h",
                 "memory/MemoryType.h",
-                "array/DataType.h",
                 "array/DataBuffer.h",
                 "array/PointerDeallocator.h",
                 "array/PointerWrapper.h",
@@ -51,7 +60,6 @@ import org.nd4j.presets.OpExclusionUtils;
                 "execution/Engine.h",
                 "execution/ExecutionMode.h",
                 "system/CudaLimitType.h",
-                "system/Environment.h",
                 "types/utf8string.h",
                 "legacy/NativeOps.h",
                 "dsp/NativeOpsDsp.h",
@@ -79,13 +87,13 @@ import org.nd4j.presets.OpExclusionUtils;
                 "graph/profiling/NodeProfile.h",
                 "graph/Context.h",
                 "graph/ContextPrototype.h",
-                "helpers/shape.h",
                 "helpers/OpArgsHolder.h",
                 "array/ShapeList.h",
                 "system/type_boilerplate.h",
                 "system/op_boilerplate.h",
                 "ops/InputType.h",
                 "ops/declarable/OpDescriptor.h",
+                "helpers/HelperVersionRegistry.h",
                 "ops/declarable/PlatformHelper.h",
                 "ops/declarable/BroadcastableOp.h",
                 "ops/declarable/BroadcastableBoolOp.h",
@@ -158,7 +166,7 @@ import org.nd4j.presets.OpExclusionUtils;
                 @Platform(value = "windows", preload = {"libwinpthread-1", "libgcc_s_seh-1", "libgomp-1", "libstdc++-6", "libnd4jcpu"}),
                 @Platform(extension = {"-onednn", "-onednn-avx512","-onednn-avx2", "-vednn", "-vednn-avx512", "-vednn-avx2", "-","-avx2","-avx512", "-compat"}, resource={"libnd4jcpu_device.vso"})
         })
-public class Nd4jMinimalPresets implements InfoMapper, BuildEnabled {
+public class Nd4jMinimalPresets extends Nd4jCpuPresets implements InfoMapper, BuildEnabled {
 
     private Logger logger;
     private java.util.Properties properties;
@@ -166,6 +174,7 @@ public class Nd4jMinimalPresets implements InfoMapper, BuildEnabled {
 
     @Override
     public void init(Logger logger, java.util.Properties properties, String encoding) {
+        super.init(logger, properties, encoding);
         this.logger = logger;
         this.properties = properties;
         this.encoding = encoding;
@@ -173,6 +182,7 @@ public class Nd4jMinimalPresets implements InfoMapper, BuildEnabled {
 
     @Override
     public void map(InfoMap infoMap) {
+        super.map(infoMap);
         OpExclusionUtils.processOps(logger, properties, infoMap);
     }
 

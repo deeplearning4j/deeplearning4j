@@ -2517,6 +2517,7 @@ Status NativeDynamicShapePlan::execute(
   }
 
   // ── PlanExecutionContext: consolidates all per-execute() state ─────────
+  const int diagnosticExecCount = diagnosticExecuteCount();
   // Created by platformBeginExecution (CUDA: stream guard + cross-stream sync,
   // CPU: minimal struct). Destroyed by platformEndExecution at end of execute().
   // Cast from void* to typed pointer — header keeps void* to avoid rebuild cascade.
@@ -2599,7 +2600,7 @@ Status NativeDynamicShapePlan::execute(
       !externalInputIsVariable_.empty(),
       executionTimingEnabled_,
       planLifecycle_.compilationDone,
-      anySegmentNeedsWarmup());
+      anySegmentNeedsWarmup(), diagnosticExecCount);
   execCtx->segmentsTotal = static_cast<int>(segments_.size());
   execCtx->recordFlow(PlanExecutionContext::FlowEventType::EXECUTE_ENTRY,
                        executeCount_, frozenOrReplay ? 1 : 0);
@@ -2753,7 +2754,7 @@ Status NativeDynamicShapePlan::execute(
         !externalInputIsVariable_.empty(),
         executionTimingEnabled_,
         planLifecycle_.compilationDone,
-        anySegmentNeedsWarmup());
+        anySegmentNeedsWarmup(), diagnosticExecCount);
     execCtx->recordFlow(PlanExecutionContext::FlowEventType::DERIVED_STATE_REFRESH,
                          executeCount_, invalidatedSegments);
 
@@ -3249,7 +3250,7 @@ Status NativeDynamicShapePlan::execute(
         backendExecutionPolicy.verifyCompiledExecution,
         !externalInputIsVariable_.empty(),
         executionTimingEnabled_, planLifecycle_.compilationDone,
-        anySegmentNeedsWarmup());
+        anySegmentNeedsWarmup(), diagnosticExecCount);
     DSP_DIAG(COMPILE,
              "BACKEND_PRECOMPILE_FASTPATH: complete segments=%d executeCount=%d",
              static_cast<int>(segments_.size()), executeCount_);
@@ -3785,7 +3786,7 @@ Status NativeDynamicShapePlan::execute(
         !externalInputIsVariable_.empty(),
         executionTimingEnabled_,
         planLifecycle_.compilationDone,
-        anySegmentNeedsWarmup());
+        anySegmentNeedsWarmup(), diagnosticExecCount);
     execCtx->recordFlow(PlanExecutionContext::FlowEventType::DERIVED_STATE_REFRESH,
                          executeCount_, planLifecycle_.isShapesFrozen() ? 1 : 0);
   }
@@ -3965,8 +3966,11 @@ Status NativeDynamicShapePlan::executeSteadyState(
   processPendingExternalViewReacquire(externalInputs, numExternalInputs);
 
   // Precondition check: fall back to full execute() if not in steady state
+  const bool opSanityActive =
+      Environment::getInstance().dsp().diagnosticsNativeDump() &&
+      DspDiagnostics::getInstance().isEnabled(DSP_DIAG_VERIFY);
   if (!planLifecycle_.isReplaying() || executeCount_ < 4 ||
-      backendExecutionPolicy.verifyCompiledExecution) {
+      backendExecutionPolicy.verifyCompiledExecution || opSanityActive) {
     DSP_DIAG(EXECUTE, "[DSP_GATE] FALLBACK execute() — shapesFrozen=%d executeCount=%d planPhase=%s verifyCompiled=%d",
              (int)planLifecycle_.isShapesFrozen(), (int)executeCount_, planLifecycle_.displayName(),
              (int)backendExecutionPolicy.verifyCompiledExecution);

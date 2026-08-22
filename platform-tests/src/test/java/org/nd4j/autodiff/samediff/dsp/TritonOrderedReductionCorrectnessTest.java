@@ -19,6 +19,7 @@
  */
 package org.nd4j.autodiff.samediff.dsp;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -38,6 +39,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -185,6 +187,48 @@ public class TritonOrderedReductionCorrectnessTest {
                                 + expected + " actual=" + actualF);
             }
         } finally {
+            Nd4j.getEnvironment().setTritonCompileAll(prevCompileAll);
+            Nd4j.getEnvironment().setTritonIncludeTypes(prevIncludeTypes);
+        }
+    }
+
+    /**
+     * SmolDocling patch-mask regression: the imported graph reduces both 16-wide
+     * patch dimensions of an INT64 tensor. Treating only iArgs[0] as the axis
+     * silently sums 16 values instead of 16*16 and corrupts the downstream
+     * greater/not-equals/Where coordinate count.
+     */
+    @Test
+    public void testMultiAxisInt64SumMatchesNative() {
+        assumeTrue(isTritonAvailable(), "Triton unavailable on this build");
+
+        final boolean prevCompileAll = Nd4j.getEnvironment().tritonCompileAll();
+        final String prevIncludeTypes = Nd4j.getEnvironment().tritonIncludeTypes();
+        SameDiff sd = SameDiff.create();
+        INDArray input = Nd4j.ones(DataType.INT64, 1, 32, 32, 16, 16);
+        try {
+            Nd4j.getEnvironment().setTritonCompileAll(true);
+            Nd4j.getEnvironment().setTritonIncludeTypes("REDUCTION");
+
+            SDVariable ph = sd.placeHolder("in", DataType.INT64, 1, 32, 32, 16, 16);
+            SDVariable out = ph.sum("out", false, -1, -2);
+            sd.setOutputs(out.name());
+            sd.setGraphExecutionMode(GraphExecutionMode.TRITON);
+
+            INDArray actual = null;
+            Map<String, INDArray> placeholders = Collections.singletonMap("in", input);
+            for (int i = 0; i < WARMUP_EXECUTIONS; i++) {
+                actual = sd.output(placeholders, out.name()).get(out.name());
+            }
+
+            assertArrayEquals(new long[]{1, 32, 32}, actual.shape());
+            long[] values = actual.toLongVector();
+            for (int i = 0; i < values.length; i++) {
+                assertEquals(256L, values[i], "multi-axis sum diverged at output " + i);
+            }
+        } finally {
+            input.close();
+            sd.close();
             Nd4j.getEnvironment().setTritonCompileAll(prevCompileAll);
             Nd4j.getEnvironment().setTritonIncludeTypes(prevIncludeTypes);
         }

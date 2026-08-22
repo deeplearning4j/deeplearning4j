@@ -245,6 +245,21 @@ class SdxLlmCoreTokenizerTest {
     }
 
     @Test
+    void modelUnloadPurgesDspCacheAfterPipelineStateAndBeforeDecoderClose() throws IOException {
+        String source = Files.readString(Path.of(
+                "src/main/java/org/eclipse/deeplearning4j/sdx/aot/SdxLlmCore.java"));
+        int closeMethod = source.indexOf("public void close() {");
+        int pipelineClose = source.indexOf("pipeline.close();", closeMethod);
+        int cacheClear = source.indexOf("decoder.clearDynamicShapePlanCache();", closeMethod);
+        int decoderClose = source.indexOf("decoder.close();", closeMethod);
+
+        assertTrue(closeMethod >= 0);
+        assertTrue(pipelineClose > closeMethod);
+        assertTrue(cacheClear > pipelineClose);
+        assertTrue(decoderClose > cacheClear);
+    }
+
+    @Test
     void runtimeQuantizedProfilesKeepPackedActivationsAndKvStateFloat32() {
         for (String mode : List.of(
                 "RUNTIME_QUANTIZED_MATMUL",

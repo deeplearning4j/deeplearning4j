@@ -650,6 +650,7 @@ void DspDiagnostics::flushJsonReport() const {
 
 void DspDiagnostics::clear() {
   std::lock_guard<std::mutex> lock(eventMutex_);
+  epoch_.fetch_add(1, std::memory_order_relaxed);
   writePos_.store(0, std::memory_order_relaxed);
   for (int i = 0; i < DSP_DIAG_NUM_CATEGORIES; i++) {
     categoryStats_[i] = DspDiagCategoryStats();

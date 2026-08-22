@@ -2738,6 +2738,9 @@ public interface NativeOps {
       throw new UnsupportedOperationException("DSP diagnostic reports are not implemented by " + getClass().getName());
   }
 
+  /** Persist the current diagnostic ring to its configured JSON path. */
+  void dspDiagFlushJson();
+
   /**
    * Clear all diagnostic events and stats.
    */

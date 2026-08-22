@@ -330,12 +330,12 @@ and prefer a scheduled warm job + `restore-only` PR reads if PR triggers are eve
     -pl libnd4j,:nd4j-tpu-preset,:nd4j-tpu install -DskipTests 2>&1 | tee tpu-build.log
   ```
 
-  Produces `libnd4j/blasbuild/tpu/libnd4jtpu.so` (~192MB, exports the `HloIRBuilder`/
-  `TpuGraphBackend`/`PjrtClientManager` layer) + installs both TPU jars. The `-Ptpu` profile in
+  Produces `libnd4j/blasbuild/tpu/libnd4jtpu.so` (trait-driven shared
+  `KernelSpec`/`KernelExpr` → StableHLO → `TpuGraphBackend`/`PjrtClientManager`)
+  and installs both TPU jars. The `-Ptpu` profile in
   `libnd4j/pom.xml` sets `libnd4j.chip=tpu` → `javacpp-cppbuild-compile-tpu` → `-DSD_TPU=true`.
-  C++ bit-rot fixed across all `graph/tpu/*` + `platform/pjrt/*` files (API drift: DataType enum
-  names, `reduceAlongDimension` target-overloads, non-const-ref shape constructors, banned
-  `make_unique` into raw pointers, `PjrtClient.get()` accessor, stray/duplicate deletes).
+  The obsolete second runtime under `platform/pjrt/*` was removed; eager CustomOps
+  and DSP now use the same canonical descriptor/trait/StableHLO/PJRT lane.
   Also: `build-deploy-linux-tpu.yml` (mirrors build-deploy-linux-x86_64 with sccache) and the
   python-free `run-tpu-smoke-tests.yml` (curl+jq wheel extraction).
 

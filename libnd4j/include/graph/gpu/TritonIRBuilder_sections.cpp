@@ -295,6 +295,7 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
   // the 1D grid kernel to work correctly. When element count changes,
   // we must start a new section.
   LongType currentSectionElements = getOutputElements(startSlot);
+  std::unordered_set<int> currentSectionOutputSlots;
 
   // Track whether the current section contains a shape manipulation op
   // (permute, transpose, reshape, squeeze, expand_dims).  When true,
@@ -615,15 +616,26 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
         if (opElements > 0 && currentSectionElements > 0 && opElements != currentSectionElements) {
           // Element count changed — check if broadcast-compatible.
           // The 1D kernel uses a single n_elements (the larger of the two).
-          // Broadcast-compatible cases:
-          //   1. Scalar (1 element) is always broadcast-compatible
+          // Divisibility alone is insufficient: adjacent independent branches
+          // can have divisible extents but do not form a broadcast chain. The
+          // new op must consume an output already produced by this section.
+          bool consumesCurrentSectionOutput = false;
+          for (int input = 0; input < slots[i].wiring.numInputs; input++) {
+            if (currentSectionOutputSlots.count(slots[i].wiring.inputSourceIndices[input]) > 0) {
+              consumesCurrentSectionOutput = true;
+              break;
+            }
+          }
+          // Connected broadcast-compatible cases:
+          //   1. Scalar (1 element) can broadcast into its consuming chain
           //   2. One count evenly divides the other (e.g., [N] op on [B,N] data
           //      where output is [B,N]) — the larger count is used for the grid
           //      and the smaller operand is broadcast via modular indexing.
           bool broadcastCompatible = false;
-          if (opElements == 1 || currentSectionElements == 1) {
+          if (consumesCurrentSectionOutput &&
+              (opElements == 1 || currentSectionElements == 1)) {
             broadcastCompatible = true;
-          } else {
+          } else if (consumesCurrentSectionOutput) {
             // Check if one divides the other (broadcast along batch dimensions)
             LongType larger = std::max(opElements, currentSectionElements);
             LongType smaller = std::min(opElements, currentSectionElements);
@@ -677,6 +689,7 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
       currentSection.type = sectionType;
       // Reset element count for the new section
       currentSectionElements = getOutputElements(i);
+      currentSectionOutputSlots.clear();
       // Reset shape op tracking for the new section
       currentSectionHasShapeOp = isShapeOp;
     }
@@ -689,6 +702,10 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
 
     currentSection.endSlot = i;
     currentSection.numOps++;
+    for (int output = 0; output < slots[i].wiring.numOutputs; output++) {
+      int outputSlot = slots[i].wiring.outputSlotIndices[output];
+      if (outputSlot >= 0) currentSectionOutputSlots.insert(outputSlot);
+    }
 
     // Update section element count — use the largest non-scalar output
     // to handle cases where the first op in a section is a scalar
@@ -786,6 +803,12 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
     // Extract attention dimensions
     if (sectionType == KernelSectionType::FUSED_ATTENTION) {
       currentSection.type = KernelSectionType::FUSED_ATTENTION;
+      std::string attentionOpLower = slots[i].ident.opName;
+      std::transform(attentionOpLower.begin(), attentionOpLower.end(), attentionOpLower.begin(), ::tolower);
+      currentSection.attnIsCausal =
+          attentionOpLower.find("onnx_multi_head_attention") != std::string::npos
+          && slots[i].args.numIArgs > 1 && slots[i].args.iArgs
+          && slots[i].args.iArgs[1] != 0;
       if (slots[i].wiring.numInputs >= 1) {
         NDArray* qArr = resolveArray(slots[i].wiring.inputSourceIndices[0]);
         if (qArr && qArr->rankOf() >= 3) {
@@ -1482,10 +1505,32 @@ void TritonIRBuilder::emitConcatSection(mlir::OpBuilder& builder, mlir::Location
                                          const std::vector<mlir::Value>& inputPtrs,
                                          mlir::Value outputPtr, int axis,
                                          const std::vector<std::vector<LongType>>& inputShapes,
+                                         const std::vector<std::vector<LongType>>& inputStrides,
                                          int nElements) {
   DSP_DIAG(JIT, "emitConcatSection: axis=%d nElements=%d numInputs=%d blockSize=%d",
            axis, nElements, (int)inputPtrs.size(), blockSize);
   if (inputPtrs.empty() || inputShapes.empty()) return;
+
+  // Match the declarable concat contract: empty inputs do not participate in
+  // either the output extent or the copy. In particular, decoder prefill uses
+  // concat(emptyPastKv, currentKv). Emitting a masked load for the empty operand
+  // keeps a semantically absent dummy pointer in the compiled kernel argument
+  // table and can expose stale/different dummy storage on later executions.
+  // Native concat filters these arrays before dispatch, so filter them here too.
+  std::vector<size_t> nonEmptyInputs;
+  const size_t pairedInputs = std::min(inputPtrs.size(), inputShapes.size());
+  nonEmptyInputs.reserve(pairedInputs);
+  for (size_t inp = 0; inp < pairedInputs; inp++) {
+    bool empty = false;
+    for (LongType dimension : inputShapes[inp]) {
+      if (dimension == 0) {
+        empty = true;
+        break;
+      }
+    }
+    if (!empty) nonEmptyInputs.push_back(inp);
+  }
+  if (nonEmptyInputs.empty()) return;
 
   auto i32Type = builder.getI32Type();
   auto i32TensorType = mlir::RankedTensorType::get({blockSize}, i32Type);
@@ -1507,16 +1552,19 @@ void TritonIRBuilder::emitConcatSection(mlir::OpBuilder& builder, mlir::Location
       loc, mlir::arith::CmpIPredicate::slt, offsets, splatN);
 
   // Compute output shape from input shapes
-  int ndim = static_cast<int>(inputShapes[0].size());
+  int ndim = static_cast<int>(inputShapes[nonEmptyInputs[0]].size());
   // Normalize axis to positive
   int normAxis = (axis < 0) ? (ndim + axis) : axis;
   if (normAxis < 0 || normAxis >= ndim) normAxis = 0;  // fallback
 
   // Compute output shape
   std::vector<int> outShape(ndim);
-  for (int d = 0; d < ndim; d++) outShape[d] = static_cast<int>(inputShapes[0][d]);
-  for (size_t inp = 1; inp < inputShapes.size(); inp++) {
-    outShape[normAxis] += static_cast<int>(inputShapes[inp][normAxis]);
+  for (int d = 0; d < ndim; d++) {
+    outShape[d] = static_cast<int>(inputShapes[nonEmptyInputs[0]][d]);
+  }
+  for (size_t active = 1; active < nonEmptyInputs.size(); active++) {
+    outShape[normAxis] +=
+        static_cast<int>(inputShapes[nonEmptyInputs[active]][normAxis]);
   }
 
   // Compute output strides (C-order: stride[d] = product(outShape[d+1..ndim-1]))
@@ -1551,14 +1599,24 @@ void TritonIRBuilder::emitConcatSection(mlir::OpBuilder& builder, mlir::Location
   mlir::Value result = splatConstantF32(builder, loc, elemTensorType, 0.0f);
 
   int cumAxisOffset = 0;
-  for (size_t inp = 0; inp < inputPtrs.size(); inp++) {
-    if (inp >= inputShapes.size()) break;
+  for (size_t active = 0; active < nonEmptyInputs.size(); active++) {
+    const size_t inp = nonEmptyInputs[active];
     const auto& inShape = inputShapes[inp];
     int inAxisSize = static_cast<int>(inShape[normAxis]);
 
-    // Compute input strides (C-order)
+    // Use the concrete NDArray strides whenever available. Concat commonly
+    // consumes permute/transpose views (for example [B,S,H,D] -> [B,H,S,D]
+    // current KV); treating those buffers as contiguous reads the wrong heads.
     std::vector<int> inStrides(ndim, 1);
-    for (int d = ndim - 2; d >= 0; d--) inStrides[d] = inStrides[d + 1] * static_cast<int>(inShape[d + 1]);
+    if (inp < inputStrides.size() && inputStrides[inp].size() == inShape.size()) {
+      for (int d = 0; d < ndim; d++) {
+        inStrides[d] = static_cast<int>(inputStrides[inp][d]);
+      }
+    } else {
+      for (int d = ndim - 2; d >= 0; d--) {
+        inStrides[d] = inStrides[d + 1] * static_cast<int>(inShape[d + 1]);
+      }
+    }
 
     // Determine if this element belongs to input[inp]:
     // cumAxisOffset <= coord[normAxis] < cumAxisOffset + inAxisSize
@@ -2349,6 +2407,7 @@ void TritonIRBuilder::emitAttentionSection(mlir::OpBuilder& builder, mlir::Locat
                             section.headDim, section.attentionScale,
                             blockM, blockN,
                             section.attnQIsBSHD, section.attnKIsBSHD,
+                            section.attnIsCausal,
                             mlir::Value(), std::vector<LongType>(),
                             mlir::Value(), mlir::Value(), 0, 0);
 }

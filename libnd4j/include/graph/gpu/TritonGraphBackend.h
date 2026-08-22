@@ -502,6 +502,34 @@ class TritonGraphBackend : public GraphBackend {
         static_cast<const TritonGraphBackend*>(this)->findCompiledSegmentAnyDtype(partial));
   }
 
+  // Resolve a previously compiled artifact by the immutable identity of its
+  // owning live-plan segment. Process-global Triton tuning flags are mutable:
+  // a decoder pipeline may apply a benchmark profile while an already-captured
+  // vision plan remains live. Replay must keep using the artifact compiled for
+  // that segment rather than reconstructing its key from the new global flags.
+  // A second match is a lifecycle error, so ambiguity fails closed.
+  const CompiledSegment* findCompiledSegmentForLiveSegment(
+      const SegmentCacheKey& partial) const {
+    const CompiledSegment* found = nullptr;
+    for (const auto& entry : cache_) {
+      const SegmentCacheKey& key = entry.first;
+      if (key.startSlot == partial.startSlot && key.endSlot == partial.endSlot &&
+          key.shapeKey == partial.shapeKey && key.deviceId == partial.deviceId &&
+          key.segmentInstance == partial.segmentInstance) {
+        if (found != nullptr) return nullptr;
+        found = &entry.second;
+      }
+    }
+    return found;
+  }
+
+  CompiledSegment* findCompiledSegmentForLiveSegment(
+      const SegmentCacheKey& partial) {
+    return const_cast<CompiledSegment*>(
+        static_cast<const TritonGraphBackend*>(this)
+            ->findCompiledSegmentForLiveSegment(partial));
+  }
+
  public:
   // Per-device GPU memory consumed by compiled Triton modules (arg tables, scratch, modules)
   static constexpr int kMaxTritonDevices = 16;

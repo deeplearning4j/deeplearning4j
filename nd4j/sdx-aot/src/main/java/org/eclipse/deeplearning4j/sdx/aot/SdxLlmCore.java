@@ -28,6 +28,7 @@ import org.eclipse.deeplearning4j.llm.tokenizer.Encoding;
 import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.diagnostics.DspDiagnostics;
 import org.nd4j.ggml.GGMLModelImport;
 import org.nd4j.shade.jackson.databind.JsonNode;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
@@ -475,11 +476,37 @@ public final class SdxLlmCore implements SdxLlmModel {
     }
 
     @Override
+    public void clearDiagnostics() {
+        DspDiagnostics.clear();
+    }
+
+    @Override
+    public void flushDiagnostics() {
+        DspDiagnostics.flushJsonReport();
+    }
+
+    @Override
     public void close() {
+        RuntimeException failure = null;
         try {
             pipeline.close();
-        } catch (Exception e) {
-            log.warn("Error closing generation pipeline", e);
+        } catch (RuntimeException e) {
+            failure = e;
         }
+        try {
+            // The pipeline receives a preloaded decoder and therefore does not own its
+            // SameDiff cache. Model unload is the safe boundary for explicitly purging it.
+            decoder.clearDynamicShapePlanCache();
+        } catch (RuntimeException e) {
+            if (failure == null) failure = e;
+            else failure.addSuppressed(e);
+        }
+        try {
+            decoder.close();
+        } catch (RuntimeException e) {
+            if (failure == null) failure = e;
+            else failure.addSuppressed(e);
+        }
+        if (failure != null) throw failure;
     }
 }

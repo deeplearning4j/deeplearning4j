@@ -243,6 +243,15 @@ SDX_API int sdxGetRuntimeAbiVersion(void);
 SDX_API sdx_status_t sdxCreateRuntime(const sdx_runtime_options_t* options, sdx_runtime_t** out_runtime);
 SDX_API void sdxDestroyRuntime(sdx_runtime_t* runtime);
 
+/**
+ * Clear and persist diagnostics owned by the selected SDX backend library.
+ * These functions intentionally live on the backend-neutral SDX transport:
+ * an Android accelerator process may also contain an embedded CPU backend,
+ * but only the selected provider owns the active compiled plan and its ring.
+ */
+SDX_API void sdxClearDiagnostics(void);
+SDX_API void sdxFlushDiagnostics(void);
+
 SDX_API sdx_status_t sdxLoadBundle(
     sdx_runtime_t* runtime,
     const char* bundle_path,

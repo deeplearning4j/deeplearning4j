@@ -183,6 +183,13 @@ class Qwen35DesktopExecutionGateTest {
                         "The Android smoke prompt must retain the known-good greedy token sequence");
                 assertEquals("ready", decoded,
                         "The Android smoke prompt must retain its exact coherent desktop result");
+            } else if (androidQ4Profile) {
+                assertArrayEquals(
+                        new long[] {9419, 0, 2500, 628, 353, 7543, 488, 440, 678, 4618, 3134, 30, 248046},
+                        result.tokenIds(),
+                        "The Android Q4 profile must retain its known-good greedy token sequence");
+                assertEquals("Hello! How can I assist you with your graph query?", decoded,
+                        "The Android Q4 profile must retain its coherent desktop result");
             } else {
                 assertArrayEquals(
                         new long[] {9419, 0, 2500, 628, 353, 7543, 488, 440, 678, 3134, 3242, 30, 248046},

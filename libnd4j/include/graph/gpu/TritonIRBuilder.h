@@ -370,6 +370,7 @@ class TritonIRBuilder {
                                         int headDim, float scale,
                                         int blockM, int blockN,
                                         bool qIsBSHD, bool kIsBSHD,
+                                        bool isCausal,
                                         mlir::Value biasPtr,
                                         const std::vector<LongType>& biasShape,
                                         mlir::Value curKPtr,
@@ -457,6 +458,7 @@ class TritonIRBuilder {
                                 const std::vector<mlir::Value>& inputPtrs,
                                 mlir::Value outputPtr, int axis,
                                 const std::vector<std::vector<LongType>>& inputShapes,
+                                const std::vector<std::vector<LongType>>& inputStrides,
                                 int nElements);
 
   // Slice: result = load(input + start + offsets * stride)

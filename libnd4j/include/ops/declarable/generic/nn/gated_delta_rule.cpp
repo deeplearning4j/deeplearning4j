@@ -61,6 +61,12 @@ CUSTOM_OP_IMPL(gated_delta_rule, 5, 2, false, 0, 0) {
     }
     REQUIRE_TRUE(actualLen == nullptr || actualLen->dataType() == DataType::INT64, 0,
                  "gated_delta_rule: actualLen input must be INT64 scalar");
+    const auto dataType = Q->dataType();
+    REQUIRE_TRUE(K->dataType() == dataType && V->dataType() == dataType &&
+                     beta->dataType() == dataType && gate->dataType() == dataType,
+                 0, "gated_delta_rule: Q, K, V, beta, and gate must have the same floating dtype");
+    REQUIRE_TRUE(stateIn == nullptr || stateIn->dataType() == dataType, 0,
+                 "gated_delta_rule: stateIn dtype must match Q dtype");
 
     helpers::gatedDeltaRule(block.launchContext(), Q, K, V, beta, gate, stateIn, actualLen,
                             output, stateOut);
@@ -69,7 +75,11 @@ CUSTOM_OP_IMPL(gated_delta_rule, 5, 2, false, 0, 0) {
 }
 
 DECLARE_TYPES(gated_delta_rule) {
-    getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_ACTIVATION);
+    // CUDA execution allocates per-invocation recurrent/chunk scratch buffers.
+    // Keep this op live between captured Triton islands so graph replay never
+    // retains pointers to scratch storage returned to the memory pool.
+    getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING |
+                                 OP_TRAIT_ACTIVATION | OP_TRAIT_EXTERNAL_WORKSPACE);
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})
         ->setAllowedOutputTypes({ALL_FLOATS});

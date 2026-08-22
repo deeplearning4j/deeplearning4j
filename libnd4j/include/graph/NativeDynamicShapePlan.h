@@ -1928,6 +1928,23 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   /** Current plan execution count. */
   int getExecuteCount() const { return executeCount_; }
 
+  /**
+   * Execution count relative to the current diagnostic epoch. A diagnostics
+   * clear starts a new bounded capture without mutating this plan's lifecycle.
+   */
+  int diagnosticExecuteCount() {
+    auto& diagnostics = DspDiagnostics::getInstance();
+    const uint64_t currentEpoch = diagnostics.epoch();
+    if (diagnosticEpoch_ != currentEpoch ||
+        executeCount_ < diagnosticEpochBaseExecuteCount_) {
+      diagnosticEpoch_ = currentEpoch;
+      diagnosticEpochBaseExecuteCount_ = executeCount_;
+      diagnostics.beginPlanExecution(
+          numSlots_, static_cast<int>(segments_.size()));
+    }
+    return executeCount_ - diagnosticEpochBaseExecuteCount_;
+  }
+
   /** Number of cached variable ext input indices (fast-path list). */
   int getNumCachedVariableExtIndices() const {
     return static_cast<int>(cachedVariableExtIndices_.size());
@@ -3090,6 +3107,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   bool inShapeChangeWarmup_ = false;  // True during segDispatchCompile's shape-change warmup pass.
                                        // Allows slot shape reassignment in step3_allocateOutputs.
   int executeCount_;  // Total plan execution count (monotonically increasing)
+  uint64_t diagnosticEpoch_ = 0;
+  int diagnosticEpochBaseExecuteCount_ = 0;
   // Set when weight DataBuffer rebinds are detected (a NEW Java executor
   // borrowed this cached plan): the next external-input H2D prepare must be
   // BROAD (all inputs, not the variable-filter subset) even though

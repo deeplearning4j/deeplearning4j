@@ -40,6 +40,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <mutex>
 #include <sstream>
 #include <unordered_map>
@@ -274,6 +275,105 @@ static OrderedReductionSpec classifyOrderedReduction(const SlotT& slot) {
       spec.biasCorrected = slot.args.tArgs[1] != 0.0;
   }
   return spec;
+}
+
+struct OrderedReductionLayout {
+  std::vector<int> reductionAxes;
+  std::vector<int> nonReductionAxes;
+  std::vector<int> inputStrides;
+  std::vector<int> outputShape;
+  std::vector<int> outputStrides;
+  std::vector<int> reductionShape;
+  std::vector<int> reductionStrides;
+  int reductionSize = 0;
+  int outputLength = 0;
+  bool valid = false;
+
+  int reductionOffset(int k) const {
+    int offset = 0;
+    for (size_t i = 0; i < reductionAxes.size(); i++) {
+      const int coord = (k / reductionStrides[i]) % reductionShape[i];
+      offset += coord * inputStrides[reductionAxes[i]];
+    }
+    return offset;
+  }
+};
+
+template <typename SlotT>
+static OrderedReductionLayout buildOrderedReductionLayout(
+    const std::vector<LongType>& inputShape, const SlotT& slot) {
+  OrderedReductionLayout layout;
+  const int rank = static_cast<int>(inputShape.size());
+  if (rank <= 0) return layout;
+
+  for (LongType dim : inputShape) {
+    if (dim <= 0 || dim > std::numeric_limits<int>::max()) return layout;
+  }
+
+  std::vector<bool> reduced(rank, false);
+  if (slot.args.numIArgs > 0 && slot.args.iArgs != nullptr) {
+    for (int i = 0; i < slot.args.numIArgs; i++) {
+      int axis = static_cast<int>(slot.args.iArgs[i]);
+      if (axis < 0) axis += rank;
+      if (axis < 0 || axis >= rank) return layout;
+      reduced[axis] = true;
+    }
+  } else {
+    // Empty dimensions mean a full reduction in ND4J reduction ops.
+    std::fill(reduced.begin(), reduced.end(), true);
+  }
+
+  layout.inputStrides.assign(rank, 1);
+  LongType inputStride = 1;
+  for (int d = rank - 1; d >= 0; d--) {
+    if (inputStride > std::numeric_limits<int>::max()) {
+      return OrderedReductionLayout{};
+    }
+    layout.inputStrides[d] = static_cast<int>(inputStride);
+    inputStride *= inputShape[d];
+  }
+
+  for (int d = 0; d < rank; d++) {
+    if (reduced[d]) {
+      layout.reductionAxes.push_back(d);
+      layout.reductionShape.push_back(static_cast<int>(inputShape[d]));
+    } else {
+      layout.nonReductionAxes.push_back(d);
+      layout.outputShape.push_back(static_cast<int>(inputShape[d]));
+    }
+  }
+  if (layout.reductionAxes.empty()) return OrderedReductionLayout{};
+  if (layout.outputShape.empty()) layout.outputShape.push_back(1);
+
+  layout.outputStrides.assign(layout.outputShape.size(), 1);
+  LongType outputStride = 1;
+  for (int d = static_cast<int>(layout.outputShape.size()) - 1; d >= 0; d--) {
+    if (outputStride > std::numeric_limits<int>::max()) {
+      return OrderedReductionLayout{};
+    }
+    layout.outputStrides[d] = static_cast<int>(outputStride);
+    outputStride *= layout.outputShape[d];
+  }
+  layout.reductionStrides.assign(layout.reductionShape.size(), 1);
+  LongType reductionStride = 1;
+  for (int d = static_cast<int>(layout.reductionShape.size()) - 1; d >= 0; d--) {
+    if (reductionStride > std::numeric_limits<int>::max()) {
+      return OrderedReductionLayout{};
+    }
+    layout.reductionStrides[d] = static_cast<int>(reductionStride);
+    reductionStride *= layout.reductionShape[d];
+  }
+
+  const LongType outputLength = outputStride;
+  const LongType reductionSize = reductionStride;
+  if (outputLength <= 0 || outputLength > std::numeric_limits<int>::max() ||
+      reductionSize <= 0 || reductionSize > std::numeric_limits<int>::max()) {
+    return OrderedReductionLayout{};
+  }
+  layout.outputLength = static_cast<int>(outputLength);
+  layout.reductionSize = static_cast<int>(reductionSize);
+  layout.valid = true;
+  return layout;
 }
 
 // Value+index companion to emitNativeOrderedReduction for argmax/argmin.
@@ -1066,7 +1166,6 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   {
     std::unordered_set<int> seenOutputSlots;
     int skippedInternal = 0;
-    int skippedAliased = 0;
     for (int i = startSlot; i <= endSlot; i++) {
       for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
         int outIdx = slots[i].wiring.outputSlotIndices[o];
@@ -1083,12 +1182,14 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           continue;  // Purely internal — SSA forwarded
         }
 
-        // Skip outputs whose GPU buffer aliases an input buffer.
+        // Keep externally-visible outputs even when their buffer aliases an input.
+        // In-place fusion is restricted to single-consumer elementwise chains, so
+        // same-index load/store is valid. Dropping this argument removes both the
+        // external store and the output extent used to derive n_elements, causing
+        // broadcast kernels to replay only the smaller input extent.
         if (dsp::isOutputAliasedWithInput(outIdx, outputSlots, totalOutputSlots, inputBufferAddrs)) {
-          skippedAliased++;
-          DSP_DIAG(COMPILE, "TritonIRBuilder: skipping aliased output slot %d in segment [%d-%d]",
+          DSP_DIAG(COMPILE, "TritonIRBuilder: retaining aliased external output slot %d in segment [%d-%d]",
                    outIdx, startSlot, endSlot);
-          continue;
         }
 
         TritonKernelArg arg;
@@ -1143,10 +1244,9 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         outputArgs.push_back(arg);
       }
     }
-    if (skippedInternal > 0 || skippedAliased > 0) {
-      DSP_DIAG(FUSION, "TritonIRBuilder::buildModule: eliminated %d internal + %d aliased outputs, "
-                "keeping %d external",
-                skippedInternal, skippedAliased, (int)outputArgs.size());
+    if (skippedInternal > 0) {
+      DSP_DIAG(FUSION, "TritonIRBuilder::buildModule: eliminated %d internal outputs, keeping %d external",
+                skippedInternal, (int)outputArgs.size());
     }
   }
 
@@ -1484,8 +1584,26 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
     LongType inputElements = 1;
     for (auto d : arg.shape) inputElements *= d;
 
-    mlir::Value loadOffsets = offsets;
+    mlir::Value logicalLoadOffsets = offsets;
     mlir::Value loadMask = mask;
+    if (normMultiRow && normLogicalRowLen > 0) {
+      // Generic epilogue operands (for example the bias following RMSNorm)
+      // live in the same packed logical row space as normalization outputs.
+      // The kernel block is padded to a power of two, so pid*blockSize would
+      // rotate a [logicalRowLen] broadcast vector on every row.
+      auto rowLen = builder.create<mlir::arith::ConstantIntOp>(
+          loc, normLogicalRowLen, 32);
+      auto rowBase = builder.create<mlir::arith::MulIOp>(loc, pid, rowLen);
+      auto rowBaseSplat = builder.create<mlir::triton::SplatOp>(
+          loc, i32TensorType, rowBase);
+      logicalLoadOffsets = builder.create<mlir::arith::AddIOp>(
+          loc, rowBaseSplat, range);
+      auto rowLenSplat = builder.create<mlir::triton::SplatOp>(
+          loc, i32TensorType, rowLen);
+      loadMask = builder.create<mlir::arith::CmpIOp>(
+          loc, mlir::arith::CmpIPredicate::slt, range, rowLenSplat);
+    }
+    mlir::Value loadOffsets = logicalLoadOffsets;
     // Non-contiguous view detection: if this input has non-C-contiguous strides
     // (e.g., from a permute view), we MUST use stride-based decomposition even
     // when no broadcasting is needed. The flat offset path assumes C-contiguous.
@@ -1572,7 +1690,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           if (inStrides[d] == 0) continue;  // broadcast dim, skip
 
           // dimIdx = (offsets / outStride[d]) % outDim[d]
-          mlir::Value dimIdx = offsets;
+          mlir::Value dimIdx = logicalLoadOffsets;
           if (outStrides[d] > 1) {
             auto strideConst = splatConstantI32(builder, loc, i32TensorType,
                                                  static_cast<int>(outStrides[d]));
@@ -1600,7 +1718,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
             loc, static_cast<int>(inputElements), 32);
         auto splatInputSize = builder.create<mlir::triton::SplatOp>(
             loc, i32TensorType, inputSizeConst);
-        loadOffsets = builder.create<mlir::arith::RemUIOp>(loc, offsets, splatInputSize);
+        loadOffsets = builder.create<mlir::arith::RemUIOp>(
+            loc, logicalLoadOffsets, splatInputSize);
       }
     }
 
@@ -2091,8 +2210,6 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         continue;
       }
       int inputSrc = slot.wiring.inputSourceIndices[0];
-      // Get reduction axis from iArgs
-      int reductionAxis = (slot.args.numIArgs > 0 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[0]) : -1;
 
       // Resolve input shape
       auto inputShape = resolveShapeLocal(inputSrc);
@@ -2101,30 +2218,21 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         DSP_DIAG_SLOT(SHAPE, si, "TritonIRBuilder: reduction op '%s' has no input shape info", slot.ident.opName.c_str());
         continue;
       }
-      // Handle negative axis
-      if (reductionAxis < 0) reductionAxis += inputRank;
-      if (reductionAxis < 0 || reductionAxis >= inputRank) reductionAxis = inputRank - 1;
-
-      int reductionSize = static_cast<int>(inputShape[reductionAxis]);
-
-      // Compute input strides (row-major)
-      std::vector<int> inStrides(inputRank, 1);
-      for (int d = inputRank - 2; d >= 0; d--)
-        inStrides[d] = inStrides[d + 1] * static_cast<int>(inputShape[d + 1]);
-
-      // Compute output shape (input shape with reduction axis removed)
-      std::vector<int> outShape;
-      for (int d = 0; d < inputRank; d++)
-        if (d != reductionAxis) outShape.push_back(static_cast<int>(inputShape[d]));
-      int outRank = static_cast<int>(outShape.size());
-      if (outRank == 0) { outShape.push_back(1); outRank = 1; } // scalar output
-
-      // Compute output strides (row-major)
-      std::vector<int> outStrides(outRank, 1);
-      for (int d = outRank - 2; d >= 0; d--)
-        outStrides[d] = outStrides[d + 1] * outShape[d + 1];
-      int nOutputElements = 1;
-      for (auto d : outShape) nOutputElements *= static_cast<int>(d);
+      const OrderedReductionLayout reductionLayout =
+          buildOrderedReductionLayout(inputShape, slot);
+      if (!reductionLayout.valid) {
+        DSP_DIAG_SLOT(FALLBACK, si,
+                      "TritonIRBuilder: reduction op '%s' at slot %d has invalid axes/shape",
+                      slot.ident.opName.c_str(), si);
+        result.valid = false;
+        return result;
+      }
+      const int reductionSize = reductionLayout.reductionSize;
+      const int nOutputElements = reductionLayout.outputLength;
+      DSP_DIAG_SLOT(COMPILE, si,
+                    "TritonIRBuilder: reduction slot %d uses %d axes, reductionSize=%d, outputLength=%d",
+                    si, static_cast<int>(reductionLayout.reductionAxes.size()),
+                    reductionSize, nOutputElements);
 
       // Find the input arg for this input source.
       // If the input is an internal intermediate with a forced output buffer
@@ -2200,8 +2308,9 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       auto ptrTensorType = mlir::RankedTensorType::get({blockSize}, ptrType);
 
       // Segmented reduction: for each output offset i (from the block's offsets vector),
-      // accumulate: acc = identity_val; for k=0..reductionSize-1: acc = combine(acc, input[inputOffset(i, k)])
-      // Where inputOffset(i, k) unravels i to output ND coords, inserts k at reductionAxis, ravels to flat.
+      // accumulate: acc = identity_val; for k=0..reductionSize-1:
+      // acc = combine(acc, input[inputOffset(i, k)]). inputOffset unravels
+      // compact output coordinates and every normalized reduction axis.
 
       // Classify the reduction algorithm. Unsupported kinds must not fall
       // through to a plain sum — invalidate the module for native fallback.
@@ -2217,40 +2326,47 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
 
       auto splatPtr =
           builder.create<mlir::triton::SplatOp>(loc, ptrTensorType, inputPtrArg);
+      auto reductionOutputLength = builder.create<mlir::arith::ConstantIntOp>(
+          loc, nOutputElements, 32);
+      auto reductionOutputLengthSplat = builder.create<mlir::triton::SplatOp>(
+          loc, i32TensorType, reductionOutputLength);
+      auto reductionOutputMask = builder.create<mlir::arith::CmpIOp>(
+          loc, mlir::arith::CmpIPredicate::slt, offsets,
+          reductionOutputLengthSplat);
       auto loadValueAtK = [&](int k) -> mlir::Value {
-        // Compute input flat offset for each output position with reduction index k.
+        // Compute the input flat offset for each compact output position and
+        // flattened coordinate across every reduced axis.
         mlir::Value inputOffset =
             splatConstantI32(builder, loc, i32TensorType, 0);
         mlir::Value rem = offsets;
-        int inputDimIdx = 0;
-        for (int d = 0; d < inputRank; d++) {
-          if (d == reductionAxis) {
-            auto contrib = splatConstantI32(
-                builder, loc, i32TensorType, k * inStrides[d]);
-            inputOffset =
-                builder.create<mlir::arith::AddIOp>(loc, inputOffset, contrib);
-          } else {
-            auto oStrideConst = splatConstantI32(
-                builder, loc, i32TensorType, outStrides[inputDimIdx]);
-            auto coord =
-                builder.create<mlir::arith::DivSIOp>(loc, rem, oStrideConst);
-            if (inputDimIdx < outRank - 1)
-              rem = builder.create<mlir::arith::RemSIOp>(
-                  loc, rem, oStrideConst);
-            auto inStrideConst = splatConstantI32(
-                builder, loc, i32TensorType, inStrides[d]);
-            auto contrib = builder.create<mlir::arith::MulIOp>(
-                loc, coord, inStrideConst);
-            inputOffset =
-                builder.create<mlir::arith::AddIOp>(loc, inputOffset, contrib);
-            inputDimIdx++;
+        for (size_t outDim = 0;
+             outDim < reductionLayout.nonReductionAxes.size(); outDim++) {
+          const int inputDim = reductionLayout.nonReductionAxes[outDim];
+          auto outStride = splatConstantI32(
+              builder, loc, i32TensorType,
+              reductionLayout.outputStrides[outDim]);
+          auto coord = builder.create<mlir::arith::DivSIOp>(
+              loc, rem, outStride);
+          if (outDim + 1 < reductionLayout.nonReductionAxes.size()) {
+            rem = builder.create<mlir::arith::RemSIOp>(loc, rem, outStride);
           }
+          auto inputStride = splatConstantI32(
+              builder, loc, i32TensorType,
+              reductionLayout.inputStrides[inputDim]);
+          auto contribution = builder.create<mlir::arith::MulIOp>(
+              loc, coord, inputStride);
+          inputOffset = builder.create<mlir::arith::AddIOp>(
+              loc, inputOffset, contribution);
         }
+        inputOffset = builder.create<mlir::arith::AddIOp>(
+            loc, inputOffset,
+            splatConstantI32(builder, loc, i32TensorType,
+                             reductionLayout.reductionOffset(k)));
 
         auto ptrs = builder.create<mlir::triton::AddPtrOp>(
             loc, ptrTensorType, splatPtr, inputOffset);
         auto loaded = builder.create<mlir::triton::LoadOp>(
-            loc, ptrs.getResult(), mask.getResult(), mlir::Value(),
+            loc, ptrs.getResult(), reductionOutputMask.getResult(), mlir::Value(),
             mlir::triton::CacheModifier::NONE,
             mlir::triton::EvictionPolicy::NORMAL, false);
         return castTo(builder, loc, loaded, f32Type);
@@ -2288,41 +2404,6 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         }
       }
       if (hasDownstreamConsumer && nInputElements > nOutputElements && nOutputElements > 0) {
-        // Build mapping: for each position in [0, blockSize), compute the output index
-        // that should be broadcast to that position.
-        // outIdx[i] = (i / (product of dims after reductionAxis in input)) % nOutputElements
-        // For axis=last: outIdx = i / reductionSize
-        // For axis=first: outIdx = i % (product of remaining dims)
-        // General: unravel i with input strides, skip reduction axis, ravel with output strides
-        mlir::Value broadcastIdx = splatConstantI32(builder, loc, i32TensorType, 0);
-        mlir::Value rem2 = offsets;
-        int oDimIdx = 0;
-        for (int d = 0; d < inputRank; d++) {
-          auto iStrConst = splatConstantI32(builder, loc, i32TensorType, inStrides[d]);
-          auto coord2 = builder.create<mlir::arith::DivSIOp>(loc, rem2, iStrConst);
-          if (d < inputRank - 1)
-            rem2 = builder.create<mlir::arith::RemSIOp>(loc, rem2, iStrConst);
-          if (d != reductionAxis) {
-            auto oStrConst = splatConstantI32(builder, loc, i32TensorType, outStrides[oDimIdx]);
-            auto contrib2 = builder.create<mlir::arith::MulIOp>(loc, coord2, oStrConst);
-            broadcastIdx = builder.create<mlir::arith::AddIOp>(loc, broadcastIdx, contrib2);
-            oDimIdx++;
-          }
-        }
-        // Now gather from the reduction result using broadcastIdx
-        // opResult[broadcastIdx[i]] → broadcast value
-        // Since opResult is stored at output positions 0..nOut-1, we need to
-        // store the reduction result to a buffer, then reload with broadcast indices.
-        // But we don't have a buffer. Instead, recompute: the reduction already produced
-        // correct values at positions 0..nOut-1 in the tensor. We need to shuffle them.
-        // Alternative: re-emit the accumulation with input-sized offsets.
-        // Simplest approach: the result at position outIdx should be at position broadcastIdx.
-        // We can use the broadcastIdx to re-index: for each thread, re-accumulate from scratch.
-        // But that's wasteful. Better: store result to output buffer, then reload with broadcast.
-        // Actually, since we're in SSA-land, the cleanest approach is to just redo the
-        // reduction indexed by input offsets: for input position i, the reduced value
-        // is sum(input[outIdx * reductionSize + k]) for the right k range.
-
         // Re-compute with input-indexed offsets using the same native tree.
         auto nInputConst =
             builder.create<mlir::arith::ConstantIntOp>(loc, nInputElements, 32);
@@ -2336,27 +2417,25 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         auto loadBroadcastValueAtK = [&](int k) -> mlir::Value {
           mlir::Value inputOff =
               splatConstantI32(builder, loc, i32TensorType, 0);
-          mlir::Value rem3 = offsets;
-          for (int d = 0; d < inputRank; d++) {
-            if (d == reductionAxis) {
-              auto contrib3 = splatConstantI32(
-                  builder, loc, i32TensorType, k * inStrides[d]);
-              inputOff =
-                  builder.create<mlir::arith::AddIOp>(loc, inputOff, contrib3);
-            } else {
-              auto iStrConst3 = splatConstantI32(
-                  builder, loc, i32TensorType, inStrides[d]);
-              auto coord3 = builder.create<mlir::arith::DivSIOp>(
-                  loc, rem3, iStrConst3);
-              if (d < inputRank - 1)
-                rem3 = builder.create<mlir::arith::RemSIOp>(
-                    loc, rem3, iStrConst3);
-              auto contrib3 = builder.create<mlir::arith::MulIOp>(
-                  loc, coord3, iStrConst3);
-              inputOff =
-                  builder.create<mlir::arith::AddIOp>(loc, inputOff, contrib3);
-            }
+          for (int inputDim : reductionLayout.nonReductionAxes) {
+            auto inputStride = splatConstantI32(
+                builder, loc, i32TensorType,
+                reductionLayout.inputStrides[inputDim]);
+            mlir::Value coord = builder.create<mlir::arith::DivSIOp>(
+                loc, offsets, inputStride);
+            auto dimSize = splatConstantI32(
+                builder, loc, i32TensorType,
+                static_cast<int>(inputShape[inputDim]));
+            coord = builder.create<mlir::arith::RemSIOp>(loc, coord, dimSize);
+            auto contribution = builder.create<mlir::arith::MulIOp>(
+                loc, coord, inputStride);
+            inputOff = builder.create<mlir::arith::AddIOp>(
+                loc, inputOff, contribution);
           }
+          inputOff = builder.create<mlir::arith::AddIOp>(
+              loc, inputOff,
+              splatConstantI32(builder, loc, i32TensorType,
+                               reductionLayout.reductionOffset(k)));
           auto ptrs2 = builder.create<mlir::triton::AddPtrOp>(
               loc, ptrTensorType, splatPtr2, inputOff);
           auto loaded2 = builder.create<mlir::triton::LoadOp>(
@@ -3180,6 +3259,9 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         std::string opLowerKV = slot.ident.opName;
         std::transform(opLowerKV.begin(), opLowerKV.end(), opLowerKV.begin(), ::tolower);
         bool isDpaV2 = (opLowerKV.find("dot_product_attention") != std::string::npos);
+        bool isOnnxMha = (opLowerKV.find("onnx_multi_head_attention") != std::string::npos);
+        bool useCausalMask = isOnnxMha && slot.args.numIArgs > 1 && slot.args.iArgs
+            && slot.args.iArgs[1] != 0;
 
         int kSrc = isDpaV2 ? slot.wiring.inputSourceIndices[2] : slot.wiring.inputSourceIndices[1];
         int vSrc = isDpaV2 ? slot.wiring.inputSourceIndices[1] : slot.wiring.inputSourceIndices[2];
@@ -3552,6 +3634,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           emitFusedAttentionKernel(builder, loc, qPtr, kPtr, vPtr, outPtr,
                                    batchSize, numQHeads, numKvHeads, seqQ, seqK, headDim,
                                    scale, blockM, blockN, qIsBSHD, kIsBSHD,
+                                   useCausalMask,
                                    biasPtr, biasShape,
                                    curKPtr, curVPtr, pastSeqLen, seqKVCur);
 
@@ -4025,6 +4108,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
 
         std::vector<mlir::Value> inPtrs;
         std::vector<std::vector<LongType>> inShapes;
+        std::vector<std::vector<LongType>> inStrides;
         bool allValid = outPtr && outArr;
 
         for (int inp = 0; inp < slot.wiring.numInputs && allValid; inp++) {
@@ -4034,8 +4118,13 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           if (ptr && arr) {
             inPtrs.push_back(ptr);
             std::vector<LongType> shape;
-            for (int d = 0; d < arr->rankOf(); d++) shape.push_back(arr->sizeAt(d));
+            std::vector<LongType> strides;
+            for (int d = 0; d < arr->rankOf(); d++) {
+              shape.push_back(arr->sizeAt(d));
+              strides.push_back(arr->strideAt(d));
+            }
             inShapes.push_back(shape);
+            inStrides.push_back(strides);
           } else {
             allValid = false;
           }
@@ -4046,7 +4135,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           int axis = (slot.args.numIArgs > 0 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[0]) : 0;
 
           emitConcatSection(builder, loc, pid, blockSize,
-                            inPtrs, outPtr, axis, inShapes, nElements);
+                            inPtrs, outPtr, axis, inShapes, inStrides, nElements);
 
           auto loaded = loadBackFromBuffer(outSlot, outArr->dataType());
           if (loaded) {
@@ -4215,6 +4304,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
 
         std::vector<mlir::Value> inPtrs;
         std::vector<std::vector<LongType>> inShapes;
+        std::vector<std::vector<LongType>> inStrides;
         bool allValid = outPtr && outArr;
 
         for (int inp = 0; inp < slot.wiring.numInputs && allValid; inp++) {
@@ -4224,8 +4314,13 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           if (ptr && arr) {
             inPtrs.push_back(ptr);
             std::vector<LongType> shape;
-            for (int d = 0; d < arr->rankOf(); d++) shape.push_back(arr->sizeAt(d));
+            std::vector<LongType> strides;
+            for (int d = 0; d < arr->rankOf(); d++) {
+              shape.push_back(arr->sizeAt(d));
+              strides.push_back(arr->strideAt(d));
+            }
             inShapes.push_back(shape);
+            inStrides.push_back(strides);
           } else {
             allValid = false;
           }
@@ -4238,8 +4333,11 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           for (auto& shape : inShapes) {
             shape.insert(shape.begin() + axis, 1);
           }
+          for (auto& strides : inStrides) {
+            strides.insert(strides.begin() + axis, 0);
+          }
           emitConcatSection(builder, loc, pid, blockSize,
-                            inPtrs, outPtr, axis, inShapes, nElements);
+                            inPtrs, outPtr, axis, inShapes, inStrides, nElements);
 
           auto loaded = loadBackFromBuffer(outSlot, outArr->dataType());
           if (loaded) {
@@ -4455,11 +4553,41 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
     auto ptrType = mlir::triton::PointerType::get(elemType, 1);
     auto ptrTensorType = mlir::RankedTensorType::get({blockSize}, ptrType);
 
+    LongType outElements = arg.elementCount();
+    mlir::Value logicalStoreOffsets = offsets;
+    mlir::Value storeMask = mask;
+    const bool normRowPackedOutput =
+        normMultiRow && normLogicalRowLen > 0 && normNumRows > 1 &&
+        outElements == normLogicalRowLen * normNumRows;
+    if (normRowPackedOutput) {
+      // Normalization uses one padded block per logical row. Downstream fused
+      // epilogues retain that padded tensor width in SSA, but their global
+      // outputs are packed at logicalRowLen, not blockSize. Using the generic
+      // pid*blockSize offsets leaves a padding hole after every row and writes
+      // later rows out of place.
+      auto rowLen = builder.create<mlir::arith::ConstantIntOp>(
+          loc, normLogicalRowLen, 32);
+      auto rowBase = builder.create<mlir::arith::MulIOp>(loc, pid, rowLen);
+      auto rowBaseSplat = builder.create<mlir::triton::SplatOp>(
+          loc, i32TensorType, rowBase);
+      logicalStoreOffsets = builder.create<mlir::arith::AddIOp>(
+          loc, rowBaseSplat, range);
+      auto rowLenSplat = builder.create<mlir::triton::SplatOp>(
+          loc, i32TensorType, rowLen);
+      storeMask = builder.create<mlir::arith::CmpIOp>(
+          loc, mlir::arith::CmpIPredicate::slt, range, rowLenSplat);
+      DSP_DIAG(COMPILE,
+               "TritonIRBuilder: output slot %d is a multi-row normalization "
+               "epilogue; using packed row offsets (rows=%lld logicalRowLen=%lld blockSize=%d)",
+               arg.slotIndex, static_cast<long long>(normNumRows),
+               static_cast<long long>(normLogicalRowLen), blockSize);
+    }
+
     // Output lanes are indexed in logical C-order, but a view output may have
     // non-contiguous physical strides (for example permute [12,1,4]).  The
     // logical offset remains the mask/bounds coordinate; only the pointer
     // offset must be remapped to the output's physical layout.
-    mlir::Value storeOffsets = offsets;
+    mlir::Value storeOffsets = logicalStoreOffsets;
     if (arg.isNonContiguous() && arg.shapeKnown &&
         arg.strides.size() == arg.shape.size() && !arg.shape.empty()) {
       const int outRank = static_cast<int>(arg.shape.size());
@@ -4474,7 +4602,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         if (arg.shape[d] <= 1 || arg.strides[d] == 0) continue;
 
         // logicalCoord = (logicalOffset / logicalStride[d]) % shape[d]
-        mlir::Value logicalCoord = offsets;
+        mlir::Value logicalCoord = logicalStoreOffsets;
         if (logicalStrides[d] > 1) {
           auto logicalStrideConst = splatConstantI32(
               builder, loc, i32TensorType,
@@ -4521,9 +4649,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
     // Per-output mask: use the output's actual element count to prevent buffer overflow.
     // Rank-0 scalars have an empty dimension vector but a known element count of one;
     // do not confuse them with unresolved shapes and fall back to the global mask.
-    mlir::Value storeMask = mask;  // Default: global mask (offsets < n_elements)
-    LongType outElements = arg.elementCount();
-    if (outElements > 0 && outElements < static_cast<LongType>(maxOutputElements)) {
+    if (!normRowPackedOutput && outElements > 0 &&
+        outElements < static_cast<LongType>(maxOutputElements)) {
       // This output is smaller than the largest — use a tighter mask
       auto outN = builder.create<mlir::arith::ConstantIntOp>(
           loc, static_cast<int>(std::min(outElements, static_cast<LongType>(2147483647))), 32);
@@ -4716,6 +4843,33 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
       std::vector<LongType> s(rank);
       for (int d = 0; d < rank; d++) s[d] = shape::shapeOf(cit->second)[d];
       return s;
+    }
+    return {};
+  };
+
+  auto resolveStrides = [&](int srcIdx) -> std::vector<LongType> {
+    if (srcIdx < 0) {
+      int extIdx = -(srcIdx + 1);
+      if (extIdx < numExternalInputs && externalInputs && externalInputs[extIdx]) {
+        auto& arr = *externalInputs[extIdx];
+        std::vector<LongType> strides(arr.rankOf());
+        for (int d = 0; d < arr.rankOf(); d++) strides[d] = arr.strideAt(d);
+        return strides;
+      }
+      return {};
+    }
+    if (srcIdx < totalOutputSlots && outputSlots && outputSlots[srcIdx]) {
+      auto& arr = *outputSlots[srcIdx];
+      std::vector<LongType> strides(arr.rankOf());
+      for (int d = 0; d < arr.rankOf(); d++) strides[d] = arr.strideAt(d);
+      return strides;
+    }
+    auto cit = cachedShapeInfoMap.find(srcIdx);
+    if (cit != cachedShapeInfoMap.end() && cit->second) {
+      LongType rank = shape::rank(cit->second);
+      std::vector<LongType> strides(rank);
+      for (int d = 0; d < rank; d++) strides[d] = shape::stride(cit->second)[d];
+      return strides;
     }
     return {};
   };
@@ -5019,7 +5173,6 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   std::vector<TritonKernelArg> outputArgs;
   {
     std::unordered_set<int> seenOutputSlots;
-    int skippedAliased = 0;
     for (int i = startSlot; i <= endSlot; i++) {
       for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
         int outIdx = slots[i].wiring.outputSlotIndices[o];
@@ -5028,12 +5181,11 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
         seenOutputSlots.insert(outIdx);
         if (!externalOutputs.count(outIdx)) continue;
 
-        // Skip outputs whose GPU buffer aliases an input buffer
+        // Preserve the external store and output extent for in-place elementwise
+        // outputs. The argument may carry the same device pointer as an input.
         if (dsp::isOutputAliasedWithInput(outIdx, outputSlots, totalOutputSlots, inputBufferAddrsSectioned)) {
-          skippedAliased++;
-          DSP_DIAG(COMPILE, "TritonIRBuilder::buildSectionedModule: skipping aliased output slot %d "
-                   "in segment [%d-%d]", outIdx, startSlot, endSlot);
-          continue;
+          DSP_DIAG(COMPILE, "TritonIRBuilder::buildSectionedModule: retaining aliased external output slot %d "
+                    "in segment [%d-%d]", outIdx, startSlot, endSlot);
         }
 
         TritonKernelArg arg;
@@ -5079,10 +5231,6 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
         }
         outputArgs.push_back(arg);
       }
-    }
-    if (skippedAliased > 0) {
-      DSP_DIAG(FUSION, "TritonIRBuilder::buildSectionedModule: eliminated %d aliased outputs, "
-                "keeping %d external", skippedAliased, (int)outputArgs.size());
     }
   }
 
@@ -5775,14 +5923,20 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               mlir::Value loadOffsets = offsets;
               mlir::Value effectiveMask = mask.getResult();
               mlir::Value otherValue = mlir::Value();
-              if (inputElements > 0 && inputElements < secMaxOutputElements) {
+              // Sectioned kernels use the same logical C-order lane space as
+              // ordinary Triton kernels. A view input must therefore remap each
+              // logical lane through its actual strides even when its element
+              // count and shape match the section output exactly.
+              bool inputIsNonContiguous = argDesc.isNonContiguous();
+              if ((inputElements > 0 && inputElements < secMaxOutputElements) ||
+                  (inputIsNonContiguous && !secMaxOutputShape.empty())) {
                 // Check if N-D broadcast indexing is needed.
                 // N-D broadcast is required when input and output shapes differ in
                 // non-trailing dimensions (e.g., [1,1142,1,1] → [1,1142,9,64]).
                 // Flat modular indexing (offset % inputElements) only works for
                 // scalar broadcasting or last-dimension-only broadcasting.
                 const auto& inShapeRaw = argDesc.shape;
-                bool needsNdBroadcast = false;
+                bool needsNdBroadcast = inputIsNonContiguous;
                 // Partial-sequence: a dim is >1 in input but < the corresponding output dim
                 // (e.g. [1,1139,576] feeding [1,1142,576]).  These are NOT broadcast dims
                 // (inShape[d] != 1) so the N-D guard misses them; the flat modulo wraps
@@ -5793,9 +5947,12 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                   int outRank = static_cast<int>(secMaxOutputShape.size());
                   int inRank = static_cast<int>(inShapeRaw.size());
                   std::vector<LongType> inShape(outRank, 1);
-                  int padDims = outRank - inRank;
-                  for (int d = 0; d < inRank; d++)
-                    inShape[padDims + d] = inShapeRaw[d];
+                  for (int d = 0; d < outRank; d++) {
+                    int srcDim = d + (inRank - outRank);
+                    if (srcDim >= 0 && srcDim < inRank) {
+                      inShape[d] = inShapeRaw[srcDim];
+                    }
+                  }
 
                   // N-D broadcast needed if any dimension is 1 in input but >1 in output
                   for (int d = 0; d < outRank; d++) {
@@ -5826,10 +5983,24 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                     for (int d = rank - 2; d >= 0; d--)
                       outStrides[d] = outStrides[d + 1] * static_cast<int>(secMaxOutputShape[d + 1]);
 
-                    // Compute input strides (row-major), using padded input shape
+                    // Compute input strides. Prefer the actual NDArray strides
+                    // so permute/slice views retain their physical layout;
+                    // synthesize C strides only when runtime metadata is absent.
                     std::vector<int> inStrides(rank, 1);
-                    for (int d = rank - 2; d >= 0; d--)
-                      inStrides[d] = inStrides[d + 1] * static_cast<int>(inShape[d + 1]);
+                    bool hasActualStrides =
+                        argDesc.strides.size() == inShapeRaw.size();
+                    for (int d = 0; d < rank; d++) {
+                      int srcDim = d + (inRank - outRank);
+                      if (inShape[d] <= 1) {
+                        inStrides[d] = 0;
+                      } else if (hasActualStrides && srcDim >= 0 && srcDim < inRank) {
+                        inStrides[d] = static_cast<int>(argDesc.strides[srcDim]);
+                      } else {
+                        LongType stride = 1;
+                        for (int dd = d + 1; dd < rank; dd++) stride *= inShape[dd];
+                        inStrides[d] = static_cast<int>(stride);
+                      }
+                    }
 
                     // Unravel output flat offset, mod each coord by inputShape[d], ravel to input offset
                     mlir::Value srcOffset = splatConstantI32(builder, loc, i32TensorType, 0);
@@ -5847,6 +6018,12 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                       srcOffset = builder.create<mlir::arith::AddIOp>(loc, srcOffset, contrib);
                     }
                     loadOffsets = srcOffset;
+                    if (inputIsNonContiguous) {
+                      DSP_DIAG(COMPILE,
+                               "TritonIRBuilder::buildSectionedModule: input slot %d "
+                               "is NON-CONTIGUOUS; using logical-to-physical stride mapping",
+                               srcIdx);
+                    }
                   }
                 }
 
@@ -6047,9 +6224,6 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             if (slot.wiring.numInputs < 1) continue;
             int inputSrc = slot.wiring.inputSourceIndices[0];
 
-            // Get reduction axis from iArgs
-            int reductionAxis = (slot.args.numIArgs > 0 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[0]) : -1;
-
             // Resolve original input shape (multi-dimensional)
             auto inputShape = resolveShape(inputSrc);
             int inputRank = static_cast<int>(inputShape.size());
@@ -6058,32 +6232,23 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                         slot.ident.opName.c_str(), si);
               continue;
             }
-
-            // Handle negative axis
-            if (reductionAxis < 0) reductionAxis += inputRank;
-            if (reductionAxis < 0 || reductionAxis >= inputRank) reductionAxis = inputRank - 1;
-
-            int reductionSize = static_cast<int>(inputShape[reductionAxis]);
-
-            // Compute input strides (row-major)
-            std::vector<int> inStrides(inputRank, 1);
-            for (int d = inputRank - 2; d >= 0; d--)
-              inStrides[d] = inStrides[d + 1] * static_cast<int>(inputShape[d + 1]);
-
-            // Compute output shape (input shape with reduction axis removed)
-            std::vector<int> redOutShape;
-            for (int d = 0; d < inputRank; d++)
-              if (d != reductionAxis) redOutShape.push_back(static_cast<int>(inputShape[d]));
-            int outRank = static_cast<int>(redOutShape.size());
-            if (outRank == 0) { redOutShape.push_back(1); outRank = 1; }
-
-            // Compute output strides (row-major)
-            std::vector<int> redOutStrides(outRank, 1);
-            for (int d = outRank - 2; d >= 0; d--)
-              redOutStrides[d] = redOutStrides[d + 1] * redOutShape[d + 1];
-            int nOutputElements = 1;
-            for (auto d : redOutShape)
-              nOutputElements *= static_cast<int>(d);
+            const OrderedReductionLayout reductionLayout =
+                buildOrderedReductionLayout(inputShape, slot);
+            if (!reductionLayout.valid) {
+              DSP_DIAG_SLOT(FALLBACK, si,
+                            "TritonIRBuilder::buildSectionedModule: reduction op '%s' "
+                            "at slot %d has invalid axes/shape",
+                            slot.ident.opName.c_str(), si);
+              result.valid = false;
+              return result;
+            }
+            const int reductionSize = reductionLayout.reductionSize;
+            const int nOutputElements = reductionLayout.outputLength;
+            DSP_DIAG_SLOT(COMPILE, si,
+                          "TritonIRBuilder::buildSectionedModule: reduction slot %d uses %d axes, "
+                          "reductionSize=%d, outputLength=%d",
+                          si, static_cast<int>(reductionLayout.reductionAxes.size()),
+                          reductionSize, nOutputElements);
 
             // Find input buffer arg
             auto inputArgIt = slotToArgIdx.find(inputSrc);
@@ -6138,41 +6303,48 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
 
             auto splatPtr = builder.create<mlir::triton::SplatOp>(
                 loc, ptrTensorType, inputPtrArg);
+            auto reductionOutputLength = builder.create<mlir::arith::ConstantIntOp>(
+                loc, nOutputElements, 32);
+            auto reductionOutputLengthSplat = builder.create<mlir::triton::SplatOp>(
+                loc, i32TensorType, reductionOutputLength);
+            auto reductionOutputMask = builder.create<mlir::arith::CmpIOp>(
+                loc, mlir::arith::CmpIPredicate::slt, offsets,
+                reductionOutputLengthSplat);
             auto loadValueAtK = [&](int k) -> mlir::Value {
-              // Compute input flat offset: unravel output coordinates, insert k
-              // at the reduction axis, then ravel using the original strides.
+              // Compute the input flat offset from compact output coordinates
+              // plus the flattened coordinate over all reduced axes.
               mlir::Value inputOffset =
                   splatConstantI32(builder, loc, i32TensorType, 0);
               mlir::Value rem = offsets;
-              int oDimIdx = 0;
-              for (int d = 0; d < inputRank; d++) {
-                if (d == reductionAxis) {
-                  auto contrib = splatConstantI32(
-                      builder, loc, i32TensorType, k * inStrides[d]);
-                  inputOffset = builder.create<mlir::arith::AddIOp>(
-                      loc, inputOffset, contrib);
-                } else {
-                  auto oStrideConst = splatConstantI32(
-                      builder, loc, i32TensorType, redOutStrides[oDimIdx]);
-                  auto coord = builder.create<mlir::arith::DivSIOp>(
-                      loc, rem, oStrideConst);
-                  if (oDimIdx < outRank - 1)
-                    rem = builder.create<mlir::arith::RemSIOp>(
-                        loc, rem, oStrideConst);
-                  auto inStrideConst = splatConstantI32(
-                      builder, loc, i32TensorType, inStrides[d]);
-                  auto contrib = builder.create<mlir::arith::MulIOp>(
-                      loc, coord, inStrideConst);
-                  inputOffset = builder.create<mlir::arith::AddIOp>(
-                      loc, inputOffset, contrib);
-                  oDimIdx++;
+              for (size_t outDim = 0;
+                   outDim < reductionLayout.nonReductionAxes.size(); outDim++) {
+                const int inputDim = reductionLayout.nonReductionAxes[outDim];
+                auto outStride = splatConstantI32(
+                    builder, loc, i32TensorType,
+                    reductionLayout.outputStrides[outDim]);
+                auto coord = builder.create<mlir::arith::DivSIOp>(
+                    loc, rem, outStride);
+                if (outDim + 1 < reductionLayout.nonReductionAxes.size()) {
+                  rem = builder.create<mlir::arith::RemSIOp>(
+                      loc, rem, outStride);
                 }
+                auto inputStride = splatConstantI32(
+                    builder, loc, i32TensorType,
+                    reductionLayout.inputStrides[inputDim]);
+                auto contribution = builder.create<mlir::arith::MulIOp>(
+                    loc, coord, inputStride);
+                inputOffset = builder.create<mlir::arith::AddIOp>(
+                    loc, inputOffset, contribution);
               }
+              inputOffset = builder.create<mlir::arith::AddIOp>(
+                  loc, inputOffset,
+                  splatConstantI32(builder, loc, i32TensorType,
+                                   reductionLayout.reductionOffset(k)));
 
               auto ptrs = builder.create<mlir::triton::AddPtrOp>(
                   loc, ptrTensorType, splatPtr, inputOffset);
               auto loaded = builder.create<mlir::triton::LoadOp>(
-                  loc, ptrs.getResult(), mask.getResult(), mlir::Value(),
+                  loc, ptrs.getResult(), reductionOutputMask.getResult(), mlir::Value(),
                   mlir::triton::CacheModifier::NONE,
                   mlir::triton::EvictionPolicy::NORMAL, false);
               return castTo(builder, loc, loaded, f32Type);
@@ -6937,7 +7109,53 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             auto elemType = ptrType.getPointeeType();
             auto ptrTensorType = mlir::RankedTensorType::get({blockSize}, ptrType);
             auto splatPtr = builder.create<mlir::triton::SplatOp>(loc, ptrTensorType, funcArg);
-            auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc, ptrTensorType, splatPtr, offsets);
+            auto& outArgDesc = result.args[argIt->second];
+            mlir::Value storeOffsets = offsets;
+            if (outArgDesc.isNonContiguous() && outArgDesc.shapeKnown &&
+                outArgDesc.strides.size() == outArgDesc.shape.size() &&
+                !outArgDesc.shape.empty()) {
+              int rank = static_cast<int>(outArgDesc.shape.size());
+              std::vector<LongType> logicalStrides(rank, 1);
+              for (int d = rank - 2; d >= 0; d--) {
+                logicalStrides[d] = logicalStrides[d + 1] * outArgDesc.shape[d + 1];
+              }
+              mlir::Value physicalOffset =
+                  splatConstantI32(builder, loc, i32TensorType, 0);
+              for (int d = 0; d < rank; d++) {
+                if (outArgDesc.shape[d] <= 1 || outArgDesc.strides[d] == 0) continue;
+                mlir::Value coord = offsets;
+                if (logicalStrides[d] > 1) {
+                  auto logicalStride = splatConstantI32(
+                      builder, loc, i32TensorType,
+                      static_cast<int>(logicalStrides[d]));
+                  coord = builder.create<mlir::arith::DivUIOp>(
+                      loc, coord, logicalStride);
+                }
+                auto dim = splatConstantI32(
+                    builder, loc, i32TensorType,
+                    static_cast<int>(outArgDesc.shape[d]));
+                coord = builder.create<mlir::arith::RemUIOp>(loc, coord, dim);
+                if (outArgDesc.strides[d] == 1) {
+                  physicalOffset = builder.create<mlir::arith::AddIOp>(
+                      loc, physicalOffset, coord);
+                } else {
+                  auto physicalStride = splatConstantI32(
+                      builder, loc, i32TensorType,
+                      static_cast<int>(outArgDesc.strides[d]));
+                  auto contribution = builder.create<mlir::arith::MulIOp>(
+                      loc, coord, physicalStride);
+                  physicalOffset = builder.create<mlir::arith::AddIOp>(
+                      loc, physicalOffset, contribution);
+                }
+              }
+              storeOffsets = physicalOffset;
+              DSP_DIAG(COMPILE,
+                       "TritonIRBuilder::buildSectionedModule: output slot %d "
+                       "is NON-CONTIGUOUS; using logical-to-physical stride mapping",
+                       outIdx);
+            }
+            auto ptrs = builder.create<mlir::triton::AddPtrOp>(
+                loc, ptrTensorType, splatPtr, storeOffsets);
             mlir::Value storeVal = castTo(builder, loc, ssaIt->second, elemType);
             mlir::Value outMask = mask;
             auto outShape = resolveShape(outIdx);
@@ -7437,6 +7655,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           std::string opLowerSec = slot.ident.opName;
           std::transform(opLowerSec.begin(), opLowerSec.end(), opLowerSec.begin(), ::tolower);
           bool isDpaV2Sec = (opLowerSec.find("dot_product_attention") != std::string::npos);
+          bool isOnnxMhaSec = (opLowerSec.find("onnx_multi_head_attention") != std::string::npos);
+          bool useCausalMaskSec = isOnnxMhaSec && slot.args.numIArgs > 1 && slot.args.iArgs
+              && slot.args.iArgs[1] != 0;
 
           // 3D Q: compound attention (onnx_multi_head_attention) — handled via dual-buffer kernel
           auto qShapeSec = resolveShape(qSrc);
@@ -7956,6 +8177,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             emitFusedAttentionKernel(builder, loc, qPtr, kPtr, vPtr, outPtr,
                                      batchSize, numQHeads, numKvHeads, seqQ, seqK, headDim,
                                      scale, blockM, blockN, isBSHD, kIsBSHD,
+                                     useCausalMaskSec,
                                      attnBiasPtr, attnBiasShape,
                                      curKPtr, curVPtr, pastSeqLen, seqKVCur);
             // output[0] = attention result (loaded from output buffer)
@@ -8076,6 +8298,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           auto outShape = resolveShape(outSlot);
           std::vector<mlir::Value> inPtrs;
           std::vector<std::vector<LongType>> inShapes;
+          std::vector<std::vector<LongType>> inStrides;
           bool allValid = outPtr && !outShape.empty();
           for (int inp = 0; inp < slot.wiring.numInputs && allValid; inp++) {
             int src = slot.wiring.inputSourceIndices[inp];
@@ -8084,12 +8307,14 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             if (ptr && !shape.empty()) {
               inPtrs.push_back(ptr);
               inShapes.push_back(shape);
+              inStrides.push_back(resolveStrides(src));
             } else allValid = false;
           }
           if (allValid && !inPtrs.empty()) {
             int nElements = static_cast<int>(shapeLength(outShape));
             int axis = (slot.args.numIArgs > 0 && slot.args.iArgs) ? static_cast<int>(slot.args.iArgs[0]) : 0;
-            emitConcatSection(builder, loc, pid, blockSize, inPtrs, outPtr, axis, inShapes, nElements);
+            emitConcatSection(builder, loc, pid, blockSize, inPtrs, outPtr, axis,
+                              inShapes, inStrides, nElements);
             auto loaded = loadBlock(outSlot, resolveDtype(outSlot));
             if (loaded) for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;
           }
@@ -8429,6 +8654,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           auto outShape = resolveShape(outSlot);
           std::vector<mlir::Value> inPtrs;
           std::vector<std::vector<LongType>> inShapes;
+          std::vector<std::vector<LongType>> inStrides;
           bool allValid = outPtr && !outShape.empty();
           for (int inp = 0; inp < slot.wiring.numInputs && allValid; inp++) {
             int src = slot.wiring.inputSourceIndices[inp];
@@ -8437,6 +8663,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             if (ptr && !shape.empty()) {
               inPtrs.push_back(ptr);
               inShapes.push_back(shape);
+              inStrides.push_back(resolveStrides(src));
             } else allValid = false;
           }
           if (allValid && !inPtrs.empty()) {
@@ -8446,7 +8673,11 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             for (auto& shape : inShapes) {
               shape.insert(shape.begin() + axis, 1);
             }
-            emitConcatSection(builder, loc, pid, blockSize, inPtrs, outPtr, axis, inShapes, nElements);
+            for (auto& strides : inStrides) {
+              strides.insert(strides.begin() + axis, 0);
+            }
+            emitConcatSection(builder, loc, pid, blockSize, inPtrs, outPtr, axis,
+                              inShapes, inStrides, nElements);
             auto loaded = loadBlock(outSlot, resolveDtype(outSlot));
             if (loaded) for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = loaded;
           }

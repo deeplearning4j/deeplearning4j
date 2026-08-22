@@ -1305,13 +1305,14 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
                                                 int headDim, float scale,
                                                 int blockM, int blockN,
                                                 bool qIsBSHD, bool kIsBSHD,
+                                                bool isCausal,
                                                 mlir::Value biasPtr,
                                                 const std::vector<LongType>& biasShape,
                                                 mlir::Value curKPtr, mlir::Value curVPtr,
                                                 int pastSeq, int seqKVCur) {
   DSP_DIAG(JIT, "emitFusedAttentionKernel: batch=%d qHeads=%d kvHeads=%d seqQ=%d seqK=%d headDim=%d "
-           "block=(%d,%d) dualBuffer=%d", batchSize, numQHeads, numKvHeads, seqQ, seqK, headDim,
-           blockM, blockN, curKPtr ? 1 : 0);
+           "block=(%d,%d) dualBuffer=%d causal=%d", batchSize, numQHeads, numKvHeads, seqQ, seqK, headDim,
+           blockM, blockN, curKPtr ? 1 : 0, isCausal ? 1 : 0);
   // Dual-buffer mode: when curKPtr is valid, K/V are split across two buffers:
   //   kPtr  = past_key  [B,H,pastSeq,D]   BHSD (positions [0, pastSeq))
   //   curKPtr = current_key [B,seqKVCur,H*D] BSHD (positions [pastSeq, seqK))
@@ -1784,7 +1785,23 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
   auto kMask1DExp = builder.create<mlir::triton::ExpandDimsOp>(loc, kMask1D, 0);  // [1, BN]
   auto i1BmBnType = mlir::RankedTensorType::get({blockM, blockN}, i1Type);
   auto kMaskBmBn = builder.create<mlir::triton::BroadcastOp>(loc, i1BmBnType, kMask1DExp);
-  auto qkMasked = builder.create<mlir::arith::SelectOp>(loc, kMaskBmBn, qk, negInfSplat);
+  mlir::Value attentionMaskBmBn = kMaskBmBn;
+  if (isCausal) {
+    // Align query positions to the end of the key sequence. For self-attention
+    // seqQ == seqK, this is k <= q. For cached decode seqK > seqQ, query row 0
+    // represents absolute position seqK-seqQ.
+    auto qCausalExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, qIndices, 1);
+    auto qCausalBroadcast = builder.create<mlir::triton::BroadcastOp>(loc, i32BmBnType, qCausalExpanded);
+    auto kCausalExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, kIndices, 0);
+    auto kCausalBroadcast = builder.create<mlir::triton::BroadcastOp>(loc, i32BmBnType, kCausalExpanded);
+    auto causalOffset = builder.create<mlir::arith::ConstantIntOp>(loc, std::max(0, seqK - seqQ), 32);
+    auto causalOffsetSplat = builder.create<mlir::triton::SplatOp>(loc, i32BmBnType, causalOffset);
+    auto absoluteQuery = builder.create<mlir::arith::AddIOp>(loc, qCausalBroadcast, causalOffsetSplat);
+    auto causalMask = builder.create<mlir::arith::CmpIOp>(
+        loc, mlir::arith::CmpIPredicate::sle, kCausalBroadcast, absoluteQuery);
+    attentionMaskBmBn = builder.create<mlir::arith::AndIOp>(loc, kMaskBmBn, causalMask);
+  }
+  auto qkMasked = builder.create<mlir::arith::SelectOp>(loc, attentionMaskBmBn, qk, negInfSplat);
 
   // Apply attention bias/mask if provided
   // Bias shape: [B, H, seqQ, seqK] (rank 4 per-head) or [B, seqQ, seqK] (rank 3)
@@ -1855,9 +1872,9 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
     auto biasSplat = builder.create<mlir::triton::SplatOp>(loc, biasPtrTensorType, biasPtr);
     auto biasPtrs = builder.create<mlir::triton::AddPtrOp>(loc, biasPtrTensorType, biasSplat, biasFinalOffsets);
 
-    // Bias mask: same as kMaskBmBn (valid Q and K positions)
+    // Bias mask: same valid key/causal positions used by the attention scores.
     auto biasLoadedRaw = builder.create<mlir::triton::LoadOp>(loc,
-        biasPtrs, kMaskBmBn, mlir::Value(),
+        biasPtrs, attentionMaskBmBn, mlir::Value(),
         mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
     auto biasLoaded = castTo(builder, loc, biasLoadedRaw, f32Type);
 

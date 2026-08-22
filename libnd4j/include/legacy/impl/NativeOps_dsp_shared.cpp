@@ -63,6 +63,10 @@ void setDspNativeError(int code, const std::string& message) {
 
 }  // namespace
 
+void dspDiagFlushJson() {
+  sd::graph::DspDiagnostics::getInstance().flushJsonReport();
+}
+
 
 int isPlanCompilationSealed(sd::Pointer planHandle) {
   if (planHandle == nullptr) return -1;

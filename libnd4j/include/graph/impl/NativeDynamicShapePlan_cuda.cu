@@ -1743,15 +1743,29 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
       // slot-by-slot — a fallback masks the real capture failure (and silently drops to
       // ~8 tok/s). Mark permanently failed and throw so the root cause is fixed (capture
       // must actually engage), exactly like the CUDA_GRAPHS path below.
+      const char* backendError =
+          LaunchContext::defaultContext()->errorReference()->errorMessage();
+      std::string backendErrorDetail;
+      if (backendError != nullptr && backendError[0] != '\0') {
+        backendErrorDetail = backendError;
+      } else {
+        backendErrorDetail =
+            "backend returned no detail (phase=" + std::string(segment.exec.segPhase.displayName()) +
+            ", outcome=" + segmentExecOutcomeName(segment.exec.outcome) +
+            ", executionCount=" + std::to_string(segment.exec.executionCount) +
+            ", replayHandle=" + std::to_string(segment.exec.replayHandle != nullptr ? 1 : 0) +
+            ", compositeHandles=" + std::to_string(hasCompositeHandles(segment) ? 1 : 0) +
+            ", compilationFailed=" + std::to_string(segment.exec.compilationFailed ? 1 : 0) + ")";
+      }
       SegmentLifecycle::markFailed(segment.exec, "gpu_backend_exec_failed", segment.def.startSlot, segment.def.endSlot);
       DSP_THROW_SEG(COMPILE, segment.def.startSlot,
                     "NativeDSP::execute: exec%d seg[%d-%d] graphBackend=%s FAILED status=%d. "
-                    "Graph backend compilation/capture failed — fix the root cause.",
+                    "detail=%s. Graph backend compilation/capture failed — fix the root cause.",
                     executeCount_, segment.def.startSlot, segment.def.endSlot,
                     segment.resolvedGraphBackend != nullptr
                         ? segment.resolvedGraphBackend->name()
                         : "<unresolved>",
-                    static_cast<int>(status));
+                    static_cast<int>(status), backendErrorDetail.c_str());
     }
 
     case SelectedBackend::DEVICE_REPLAY: {

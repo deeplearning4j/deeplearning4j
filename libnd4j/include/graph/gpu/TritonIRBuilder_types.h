@@ -85,6 +85,7 @@ struct KernelSection {
   float attentionScale;
   bool attnQIsBSHD = false;
   bool attnKIsBSHD = false;
+  bool attnIsCausal = false;
 
   int gatherAxis;
   int concatAxis;

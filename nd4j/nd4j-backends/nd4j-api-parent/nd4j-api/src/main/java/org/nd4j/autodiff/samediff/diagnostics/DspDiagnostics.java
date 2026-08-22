@@ -97,6 +97,7 @@ public class DspDiagnostics {
 
     private static volatile boolean initialized = false;
     private static int cachedMask = NONE;
+    private static volatile String configuredJsonPath;
 
     private DspDiagnostics() {}
 
@@ -141,7 +142,7 @@ public class DspDiagnostics {
             String file = System.getProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_FILE);
             if (file == null) file = System.getenv("ND4J_DSP_DIAGNOSTICS_FILE");
             if (file != null && !file.isEmpty()) {
-                nativeOps.dspDiagSetJsonPath(file);
+                setJsonPath(file);
             }
 
             // Also apply legacy flag mapping (done in C++ constructor too, but
@@ -238,11 +239,11 @@ public class DspDiagnostics {
     public static synchronized void setCategories(int mask) {
         Nd4j.getNativeOps().dspDiagSetCategories(mask);
         cachedMask = mask;
-        // If diagnostics are being fully disabled, reset the initialization guard so
-        // the env-var-configured mask is re-applied on the next isEnabled() call.
-        if (mask == NONE) {
-            initialized = false;
-        }
+        // NONE requests a one-time environment reload on the next isEnabled() call.
+        // Conversely, a subsequent explicit non-NONE mask is authoritative and must
+        // cancel that pending reload; otherwise initialize() can overwrite the mask
+        // and JSON path that the caller just configured programmatically.
+        initialized = mask != NONE;
     }
 
     /**
@@ -281,6 +282,21 @@ public class DspDiagnostics {
      */
     public static String getJsonReport() {
         return Nd4j.getNativeOps().dspDiagGetJsonReport();
+    }
+
+    public static void setJsonPath(String path) {
+        String effective = path == null ? "" : path;
+        Nd4j.getNativeOps().dspDiagSetJsonPath(effective);
+        configuredJsonPath = effective;
+    }
+
+    public static String getJsonPath() {
+        return configuredJsonPath;
+    }
+
+    /** Persist the current native ring without requiring plan destruction. */
+    public static void flushJsonReport() {
+        Nd4j.getNativeOps().dspDiagFlushJson();
     }
 
     /**

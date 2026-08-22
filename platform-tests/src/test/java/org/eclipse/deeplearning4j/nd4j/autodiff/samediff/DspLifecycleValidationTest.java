@@ -54,6 +54,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -1425,6 +1427,30 @@ public class DspLifecycleValidationTest {
             DspDiagnostics.setLevel(DspDiagnostics.LEVEL_SUMMARY);
             DspDiagnostics.clear();
             dmm.clearStubTopology();
+        }
+    }
+
+    @Test
+    @DisplayName("DSP diagnostics flush persists the live ring without plan destruction")
+    public void testDiagnosticsFlushPersistsLiveRing() throws Exception {
+        Path report = Files.createTempFile("dsp-live-ring", ".json");
+        String previousPath = DspDiagnostics.getJsonPath();
+        try {
+            // Exercise the real class-to-class transition: cleanup disables diagnostics,
+            // then a caller installs an explicit path and category before recording.
+            DspDiagnostics.setCategories(DspDiagnostics.NONE);
+            DspDiagnostics.setJsonPath(report.toString());
+            DspDiagnostics.setCategories(DspDiagnostics.VERIFY);
+            DspDiagnostics.clear();
+            DspDiagnostics.record(DspDiagnostics.VERIFY, "CHAT_FLUSH_MARKER");
+
+            DspDiagnostics.flushJsonReport();
+
+            String json = Files.readString(report);
+            assertTrue(json.contains("CHAT_FLUSH_MARKER"));
+        } finally {
+            DspDiagnostics.setJsonPath(previousPath);
+            Files.deleteIfExists(report);
         }
     }
 

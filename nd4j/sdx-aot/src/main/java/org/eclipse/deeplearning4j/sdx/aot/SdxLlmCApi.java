@@ -173,17 +173,22 @@ public final class SdxLlmCApi {
 
     @CEntryPoint(name = "sdxLlmUnloadModel")
     public static int sdxLlmUnloadModel(IsolateThread runtime, ObjectHandle model) {
+        boolean destroyHandle = false;
         try {
             SdxLlmModel core = resolve(model);
             if (core == null) {
                 return INVALID_ARGUMENT;
             }
+            destroyHandle = true;
             core.close();
-            ObjectHandles.getGlobal().destroy(model);
             return OK;
         } catch (Throwable t) {
             lastError = describe(t);
             return EXECUTION_FAILED;
+        } finally {
+            if (destroyHandle) {
+                ObjectHandles.getGlobal().destroy(model);
+            }
         }
     }
 
@@ -197,18 +202,22 @@ public final class SdxLlmCApi {
     @CEntryPoint(name = "sdxLlmGenerate")
     public static int sdxLlmGenerate(IsolateThread runtime, ObjectHandle model, CCharPointer prompt,
                                      CCharPointer optionsJson, CCharPointerPointer outText) {
+        SdxLlmModel core = null;
         try {
-            SdxLlmModel core = resolve(model);
+            core = resolve(model);
             String promptText = toJavaString(prompt);
             if (core == null || promptText == null || outText.isNull()) {
                 lastError = "model, prompt and out_text must not be null";
                 return INVALID_ARGUMENT;
             }
+            core.clearDiagnostics();
             outText.write(toCString(core.generateText(promptText, toJavaString(optionsJson))));
             return OK;
         } catch (Throwable t) {
             lastError = describe(t);
             return EXECUTION_FAILED;
+        } finally {
+            if (core != null) core.flushDiagnostics();
         }
     }
 
@@ -230,13 +239,15 @@ public final class SdxLlmCApi {
                                               ChunkCallback onChunk,
                                               CancelCallback shouldCancel,
                                               CCharPointerPointer outText) {
+        SdxLlmModel core = null;
         try {
-            SdxLlmModel core = resolve(model);
+            core = resolve(model);
             String promptText = toJavaString(prompt);
             if (core == null || promptText == null || outText.isNull()) {
                 lastError = "model, prompt and out_text must not be null";
                 return INVALID_ARGUMENT;
             }
+            core.clearDiagnostics();
             Consumer<String> consumer = onChunk.isNull()
                     ? null : new NativeChunkConsumer(onChunk.rawValue());
             BooleanSupplier cancel = shouldCancel.isNull()
@@ -247,6 +258,8 @@ public final class SdxLlmCApi {
         } catch (Throwable t) {
             lastError = describe(t);
             return EXECUTION_FAILED;
+        } finally {
+            if (core != null) core.flushDiagnostics();
         }
     }
 

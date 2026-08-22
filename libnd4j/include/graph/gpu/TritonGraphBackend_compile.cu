@@ -608,6 +608,61 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     return shouldBeStandalone(cfg, sectionFusionEnabled, section);
   };
 
+  auto sectionRangeMaxElements = [&](int startSection, int endSection) -> LongType {
+    LongType maxElements = 0;
+    for (int sectionIndex = startSection; sectionIndex <= endSection; sectionIndex++) {
+      const auto& section = sections[sectionIndex];
+      for (int slotIndex = section.startSlot; slotIndex <= section.endSlot; slotIndex++) {
+        for (int output = 0; output < slots[slotIndex].wiring.numOutputs; output++) {
+          int outputSlot = slots[slotIndex].wiring.outputSlotIndices[output];
+          maxElements = std::max(maxElements, shapeLength(resolveShape(outputSlot)));
+        }
+      }
+    }
+    return maxElements;
+  };
+
+  auto sectionConsumesRangeOutput = [&](int startSection, int endSection,
+                                         int consumerSection) -> bool {
+    std::unordered_set<int> producedOutputs;
+    for (int sectionIndex = startSection; sectionIndex <= endSection; sectionIndex++) {
+      const auto& section = sections[sectionIndex];
+      for (int slotIndex = section.startSlot; slotIndex <= section.endSlot; slotIndex++) {
+        for (int output = 0; output < slots[slotIndex].wiring.numOutputs; output++) {
+          int outputSlot = slots[slotIndex].wiring.outputSlotIndices[output];
+          if (outputSlot >= 0) producedOutputs.insert(outputSlot);
+        }
+      }
+    }
+
+    const auto& consumer = sections[consumerSection];
+    for (int slotIndex = consumer.startSlot; slotIndex <= consumer.endSlot; slotIndex++) {
+      for (int input = 0; input < slots[slotIndex].wiring.numInputs; input++) {
+        if (producedOutputs.count(slots[slotIndex].wiring.inputSourceIndices[input]) > 0) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  auto isElementwiseDomainSection = [](KernelSectionType type) -> bool {
+    return type == KernelSectionType::ELEMENTWISE ||
+           type == KernelSectionType::IDENTITY;
+  };
+
+  auto elementDomainsCanShareRange = [&](int startSection, int endSection,
+                                          int nextSection) -> bool {
+    if (!isElementwiseDomainSection(sections[endSection].type) ||
+        !isElementwiseDomainSection(sections[nextSection].type)) {
+      return true;
+    }
+    LongType currentElements = sectionRangeMaxElements(startSection, endSection);
+    LongType nextElements = sectionRangeMaxElements(nextSection, nextSection);
+    return currentElements <= 0 || nextElements <= 0 || currentElements == nextElements ||
+           sectionConsumesRangeOutput(startSection, endSection, nextSection);
+  };
+
   // Determine which sections are compiled as Triton kernels vs native ordered ranges.
   // Default mode: only ELEMENTWISE/IDENTITY compiled, everything else uses cuBLAS/native.
   // When tritonCompileAll=true: compile ALL section types EXCEPT those containing
@@ -821,6 +876,16 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     while (runEnd + 1 < static_cast<int>(sections.size()) &&
            !isStandaloneSection(sections[runEnd + 1]) &&
            !isNativeOrderedSection(sections[runEnd + 1])) {
+      if (!elementDomainsCanShareRange(runStart, runEnd, runEnd + 1)) {
+        DSP_DIAG(FUSION,
+                 "TritonGraphBackend: section %d [%d-%d] NOT merged into range [%d-%d] "
+                 "(independent element domains: current=%lld next=%lld)",
+                 runEnd + 1, sections[runEnd + 1].startSlot, sections[runEnd + 1].endSlot,
+                 sections[runStart].startSlot, sections[runEnd].endSlot,
+                 static_cast<long long>(sectionRangeMaxElements(runStart, runEnd)),
+                 static_cast<long long>(sectionRangeMaxElements(runEnd + 1, runEnd + 1)));
+        break;
+      }
       if (fusionScoringEnabled) {
         float score = scoreSectionFusionRange(sections, runStart, runEnd, runEnd + 1,
                                              slots, seg.def.startSlot, seg.def.endSlot,

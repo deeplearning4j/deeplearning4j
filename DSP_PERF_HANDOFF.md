@@ -705,8 +705,9 @@ Three slots, not one:
   linalg/StableHLO so it pairs with the CpuIRBuilder emitter, not the Triton-dialect
   one; heavier, graph-backend-shaped integration.
 - Graph-backend slot (peer of oneDNN/OpenVINO in getCpuGraphBackendChain): XLA:CPU
-  via PJRT — CHEAPEST EXPERIMENT: graph/tpu/PjrtClientManager + HloIRBuilder already
-  exist in-tree for TPU; the same PJRT client API loads the CPU plugin. Also: Apache
+  via PJRT — CHEAPEST EXPERIMENT: graph/tpu/PjrtClientManager plus the shared
+  KernelSpec/KernelExpr StableHLO target already exist in-tree for TPU; the same
+  PJRT client API loads the CPU plugin. Also: Apache
   TVM (Relax/MetaSchedule — autotuning philosophy matches WS-G, but Python-centric
   tuning). ONNX Runtime: circular for this repo, skip.
 - Microkernel slot (no codegen — G4 auction hand-kernel candidates; directly hits

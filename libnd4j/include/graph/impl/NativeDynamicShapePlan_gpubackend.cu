@@ -680,6 +680,18 @@ static inline const char* statusName_gpu(Status status) {
   return dsp::dspStatusName(status);
 }
 
+static Status setGpuBackendFailureDetail(GraphSegment& seg, const std::string& detail) {
+  auto* errorRef = LaunchContext::defaultContext()->errorReference();
+  const char* existing = errorRef->errorMessage();
+  if (existing == nullptr || existing[0] == '\0') {
+    std::string message = "GPU graph segment [" + std::to_string(seg.def.startSlot) + "-" +
+                          std::to_string(seg.def.endSlot) + "]: " + detail;
+    errorRef->setErrorMessage(message);
+  }
+  errorRef->setErrorCode(static_cast<int>(Status::KERNEL_FAILURE));
+  return Status::KERNEL_FAILURE;
+}
+
 // Capture validity is a correctness check, not a logging feature. The historical
 // DSP_CAPTURE_PROBE macro skips cudaStreamGetCaptureInfo_v2 entirely when GRAPH_REPLAY
 // diagnostics are disabled, which makes capture failure attribution depend on logging
@@ -977,6 +989,9 @@ static Status reportCaptureError(NativeDynamicShapePlan* plan, GraphSegment& seg
       seg.exec.executionCount, seg.def.endSlot - seg.def.startSlot + 1,
       seg.exec.compiledByBackend.c_str());
   DSP_DIAG(EXECUTE, "%s", captureMsg);
+  auto* errorRef = LaunchContext::defaultContext()->errorReference();
+  errorRef->setErrorCode(static_cast<int>(Status::KERNEL_FAILURE));
+  errorRef->setErrorMessage(captureMsg);
   // Capture errors are recoverable — reset segment for retry via lifecycle.
   // The CUDA context is NOT poisoned after endCapture + cudaGetLastError
   // clears the sticky error.
@@ -1946,7 +1961,8 @@ Status NativeDynamicShapePlan::compositeReplay(
       }
       if (!launchOk) {
         DSP_DIAG(EXECUTE, "MERGED_REPLAY: group %d launch FAILED", mgId);
-        return Status::KERNEL_FAILURE;
+        return setGpuBackendFailureDetail(
+            seg, "merged replay group " + std::to_string(mgId) + " launch failed");
       }
 
       // ── Post-merged-replay island output diagnostic ──────────────────────
@@ -2551,7 +2567,8 @@ Status NativeDynamicShapePlan::compositeReplay(
       }
       if (!launchOk) {
         DSP_DIAG(EXECUTE, "COMPOSITE_REPLAY: island %d launch FAILED", idx);
-        return Status::KERNEL_FAILURE;
+        return setGpuBackendFailureDetail(
+            seg, "composite replay island " + std::to_string(idx) + " launch failed");
       }
 
       // Mark island output slots as dirty + tick actuality in one pass.
@@ -3950,7 +3967,10 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
             SegmentLifecycle::markFailed(
                 seg.exec, "capture_defer_warmup_sync_failed",
                 seg.def.startSlot, seg.def.endSlot);
-            return Status::KERNEL_FAILURE;
+            return setGpuBackendFailureDetail(
+                seg, "deferred capture warmup synchronization failed with CUDA error " +
+                         std::to_string(static_cast<int>(warmupSyncErr)) + " (" +
+                         cudaGetErrorString(warmupSyncErr) + ")");
           }
 
           if (willUseCompositeCapture) {
@@ -5534,7 +5554,10 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                             seg.def.startSlot, seg.def.endSlot, deviceId,
                             seg.exec.captureOomRetries, GraphSegment::maxOomRetries(),
                             seg.exec.captureRetryAfterExec);
-              return Status::KERNEL_FAILURE;
+              return setGpuBackendFailureDetail(
+                  seg, "graph instantiation OOM deferred for retry " +
+                           std::to_string(seg.exec.captureOomRetries) + "/" +
+                           std::to_string(GraphSegment::maxOomRetries()));
             }
           }
 
@@ -6001,6 +6024,10 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
           if (slotStatus != Status::OK) {
             DSP_DIAG(EXECUTE, "NATIVE_DIRECT_EXEC: slot %d (%s) FAILED status=%d",
                      s, slots_[s].ident.opName.c_str(), static_cast<int>(slotStatus));
+            setGpuBackendFailureDetail(
+                seg, "native direct slot " + std::to_string(s) + " (" +
+                         slots_[s].ident.opName + ") failed with status " +
+                         std::to_string(static_cast<int>(slotStatus)));
             status = slotStatus;
             break;
           }
@@ -6090,6 +6117,11 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
     }
 #endif
 
+    if (status != Status::OK) {
+      setGpuBackendFailureDetail(
+          seg, "capture/direct dispatch returned status " +
+                   std::to_string(static_cast<int>(status)));
+    }
     return status;
 
   }  // end if (!usedTritonGraphCapture)
@@ -6203,7 +6235,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   if (backend == nullptr) {
     DSP_DIAG(BACKEND, "executeSegmentWithGpuGraph: no GPU backend selected for seg[%d-%d]",
              seg.def.startSlot, seg.def.endSlot);
-    return Status::KERNEL_FAILURE;
+    return setGpuBackendFailureDetail(seg, "no GPU backend was selected");
   }
   const char* backendName = backend->name();
 #if HAVE_TRITON
@@ -6216,7 +6248,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   if (seg.exec.segPhase.isFailed()) {
     DSP_DIAG(FALLBACK, "EXEC_SEG_FAILED_GATE: seg[%d-%d] phase=%s — returning KERNEL_FAILURE",
               seg.def.startSlot, seg.def.endSlot, seg.exec.segPhase.displayName());
-    return Status::KERNEL_FAILURE;
+    return setGpuBackendFailureDetail(
+        seg, "segment entered dispatch in failed phase " +
+                 std::string(seg.exec.segPhase.displayName()));
   }
 
   const GraphBackendRequest backendRequest = makeGraphBackendRequest();
@@ -6227,7 +6261,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     DSP_DIAG(BACKEND,
              "executeSegmentWithGpuGraph: no resolver candidate admits seg[%d-%d]",
              seg.def.startSlot, seg.def.endSlot);
-    return Status::KERNEL_FAILURE;
+    return setGpuBackendFailureDetail(seg, "no graph backend candidate admitted the segment");
   }
 
   // First execution: run slot-by-slot warmup BEFORE compilation.
@@ -6535,6 +6569,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       DSP_TRACE_ERROR(trace_, static_cast<int8_t>(segIdx), seg.def.startSlot,
                       static_cast<uint32_t>(executeCount_),
                       static_cast<uint64_t>(compileStatus));
+      setGpuBackendFailureDetail(
+          seg, "compile dispatch returned status " +
+                   std::to_string(static_cast<int>(compileStatus)));
       return compileStatus;
     }
     if (invocationSatisfiedByWarmup) {
@@ -6546,7 +6583,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     }
     backend = seg.resolvedGraphBackend;
     if (backend == nullptr) {
-      return Status::KERNEL_FAILURE;
+      return setGpuBackendFailureDetail(seg, "compiled segment lost its resolved backend");
     }
     backendName = backend->name();
 #if HAVE_TRITON

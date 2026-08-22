@@ -237,6 +237,16 @@ final class SdxCompiledLlmCore implements SdxLlmModel {
     }
 
     @Override
+    public void clearDiagnostics() {
+        runtime.clearDiagnostics();
+    }
+
+    @Override
+    public void flushDiagnostics() {
+        runtime.flushDiagnostics();
+    }
+
+    @Override
     public synchronized void close() {
         RuntimeException failure = null;
         failure = close(failure, session);

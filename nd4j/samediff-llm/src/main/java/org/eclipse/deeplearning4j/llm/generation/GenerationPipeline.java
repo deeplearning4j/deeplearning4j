@@ -75,6 +75,7 @@ import java.util.Collections;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -285,6 +286,14 @@ public class GenerationPipeline implements AutoCloseable {
      * Thread-confined to the pipeline's decode thread.
      */
     private InGraphKvState cachedFixedBufferState;
+
+    /**
+     * Stable-address prefill inputs for the pre-built-embeddings entry point used by VLMs.
+     * The frozen prefill plan captures these addresses just like the token-only path captures
+     * {@link InGraphKvState#prefillInputMap}; subsequent pages overwrite their contents in place.
+     * Thread-confined to the pipeline's decode thread and released in {@link #close()}.
+     */
+    private Map<String, INDArray> cachedEmbeddingPrefillInputMap;
 
     /**
      * Cross-request KV prefix block pool. Non-null when
@@ -6083,7 +6092,7 @@ public class GenerationPipeline implements AutoCloseable {
                 // Slice embeddings to last maxPrefill tokens
                 effectiveEmbeddings = prefillEmbeddings.get(NDArrayIndex.all(),
                         NDArrayIndex.interval(actualPrefillLen - maxPrefill, actualPrefillLen),
-                        NDArrayIndex.all());
+                        NDArrayIndex.all()).dup();
                 actualPrefillLen = maxPrefill;
             } else if (actualPrefillLen < maxPrefill) {
                 // Right-pad tokens and embeddings
@@ -6099,7 +6108,9 @@ public class GenerationPipeline implements AutoCloseable {
                 log.info("[Native] Padded prompt from {} to {} tokens", actualPrefillLen, maxPrefill);
             } else {
                 effectiveTokenIds = promptTokenIds;
-                effectiveEmbeddings = prefillEmbeddings;
+                // The fixed prefill plan retains this array across calls. Always own a
+                // distinct contiguous buffer rather than retaining caller storage.
+                effectiveEmbeddings = prefillEmbeddings.dup();
             }
         } else {
             prefillSeqLen = actualPrefillLen;
@@ -6149,7 +6160,7 @@ public class GenerationPipeline implements AutoCloseable {
         INDArray encoderOutputs = options != null ? options.getEncoderOutputs() : null;
         INDArray encoderAttentionMask = options != null ? options.getEncoderAttentionMask() : null;
 
-        Map<String, INDArray> prefillInputMap = DecoderInputBuilder.buildDecoderInputMap(
+        Map<String, INDArray> freshPrefillInputMap = DecoderInputBuilder.buildDecoderInputMap(
                 ioConfig, decoderInputNames, decoder,
                 effectiveEmbeddings, currentInputIds,
                 0, prefillSeqLen,
@@ -6158,6 +6169,76 @@ public class GenerationPipeline implements AutoCloseable {
                 reusableInputs, dspActive,
                 encoderOutputs, encoderAttentionMask,
                 actualPrefillLen);
+
+        Map<String, INDArray> prefillInputMap = freshPrefillInputMap;
+        if (fixedBuffers) {
+            if (cachedEmbeddingPrefillInputMap == null) {
+                // Retain the first call's map so the frozen prefill plan always sees the
+                // same addresses. Encoder-decoder options remain caller-owned, so retain
+                // owned copies for those entries before the first execution.
+                cachedEmbeddingPrefillInputMap = new LinkedHashMap<>(freshPrefillInputMap);
+                for (Map.Entry<String, INDArray> entry : cachedEmbeddingPrefillInputMap.entrySet()) {
+                    INDArray value = entry.getValue();
+                    if (value != null && (value == encoderOutputs || value == encoderAttentionMask)) {
+                        entry.setValue(value.dup());
+                    }
+                }
+                prefillInputMap = cachedEmbeddingPrefillInputMap;
+                log.info("[Lifecycle] Retained {} stable prefill inputs for embedding generation",
+                        prefillInputMap.size());
+            } else {
+                if (!cachedEmbeddingPrefillInputMap.keySet().equals(freshPrefillInputMap.keySet())) {
+                    throw new IllegalStateException("Fixed embedding prefill input set changed while the "
+                            + "DSP plan was frozen: retained=" + cachedEmbeddingPrefillInputMap.keySet()
+                            + ", current=" + freshPrefillInputMap.keySet());
+                }
+                for (Map.Entry<String, INDArray> entry : freshPrefillInputMap.entrySet()) {
+                    String name = entry.getKey();
+                    INDArray fresh = entry.getValue();
+                    INDArray retained = cachedEmbeddingPrefillInputMap.get(name);
+                    if (fresh == null || retained == null) {
+                        if (fresh != retained) {
+                            throw new IllegalStateException("Fixed embedding prefill input '" + name
+                                    + "' changed nullability while the DSP plan was frozen");
+                        }
+                        continue;
+                    }
+                    if (retained.wasClosed()) {
+                        throw new IllegalStateException("Retained embedding prefill input '" + name
+                                + "' was closed while the DSP plan was frozen");
+                    }
+                    if (retained.dataType() != fresh.dataType()
+                            || !Arrays.equals(retained.shape(), fresh.shape())) {
+                        throw new IllegalStateException("Fixed embedding prefill input '" + name
+                                + "' changed dtype/shape while the DSP plan was frozen: retained="
+                                + retained.dataType() + Arrays.toString(retained.shape()) + ", current="
+                                + fresh.dataType() + Arrays.toString(fresh.shape()));
+                    }
+                    if (!fresh.isEmpty()) {
+                        retained.assign(fresh);
+                    }
+                }
+                // assign() is asynchronous on CUDA. Complete every copy before releasing
+                // the fresh donors, then make the retained buffers device-visible before replay.
+                Nd4j.getExecutioner().commit();
+                for (INDArray retained : cachedEmbeddingPrefillInputMap.values()) {
+                    if (retained != null && !retained.wasClosed() && !retained.isEmpty()) {
+                        retained.syncToDevice();
+                    }
+                }
+                Set<INDArray> released = Collections.newSetFromMap(new IdentityHashMap<>());
+                for (INDArray fresh : freshPrefillInputMap.values()) {
+                    if (fresh == null || fresh == encoderOutputs || fresh == encoderAttentionMask
+                            || !released.add(fresh) || fresh.wasClosed()) {
+                        continue;
+                    }
+                    fresh.close();
+                }
+                prefillInputMap = cachedEmbeddingPrefillInputMap;
+                log.info("[Lifecycle] Refilled {} stable prefill inputs for embedding generation",
+                        prefillInputMap.size());
+            }
+        }
 
         Map<String, INDArray> prefillOutputs = decoder.output(
                 prefillInputMap, allOutputNames.toArray(new String[0]));
@@ -7160,6 +7241,19 @@ public class GenerationPipeline implements AutoCloseable {
                 cachedOneShot.close();
             } catch (Exception e) {
                 log.warn("Error closing cached fixed-buffer state: {}", e.getMessage());
+            }
+        }
+        Map<String, INDArray> cachedEmbeddingPrefill = cachedEmbeddingPrefillInputMap;
+        cachedEmbeddingPrefillInputMap = null;
+        if (cachedEmbeddingPrefill != null) {
+            Set<INDArray> closed = Collections.newSetFromMap(new IdentityHashMap<>());
+            for (INDArray input : cachedEmbeddingPrefill.values()) {
+                if (input == null || !closed.add(input) || input.wasClosed()) continue;
+                try {
+                    input.close();
+                } catch (Exception e) {
+                    log.warn("Error closing cached embedding prefill input: {}", e.getMessage());
+                }
             }
         }
         // ADR 0107 V2: restore the KV placeholders' original dtype/shape (mutated to INT8

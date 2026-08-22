@@ -27,6 +27,7 @@ import org.nd4j.common.io.Resource;
 import org.nd4j.linalg.cpu.nativecpu.CpuEnvironment;
 import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.factory.Environment;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.nativeblas.NativeOpsHolder;
 

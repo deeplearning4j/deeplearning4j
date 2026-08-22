@@ -325,6 +325,17 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     std::lock_guard<std::mutex> lock(cacheMtx_);
     auto it = cache_.find(key);
     if (it == cache_.end()) {
+      compiledSeg = findCompiledSegmentForLiveSegment(key);
+      if (compiledSeg != nullptr) {
+        DSP_DIAG(EXECUTE,
+                 "TritonGraphBackend::executeSegment: recovered live segment [%d-%d] "
+                 "after process-global Triton config changed",
+                 seg.def.startSlot, seg.def.endSlot);
+      }
+    } else {
+      compiledSeg = &it->second;
+    }
+    if (compiledSeg == nullptr) {
       int cachedDeviceId = -999;
       for (const auto& entry : cache_) {
         if (entry.first.startSlot == seg.def.startSlot &&
@@ -355,8 +366,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       return failSegment(cachedDeviceId != -999 ? "compiled kernel is on another device"
                                                 : "compiled kernel cache entry is missing");
     }
-	    compiledSeg = &it->second;
-	  }
+  }
 
 #ifdef SD_CUDA
   if (compiledSeg->preallocReadyEvent != nullptr && !streamCaptureActive) {
@@ -577,7 +587,35 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                      seg.def.startSlot, seg.def.endSlot);
       }
     } else {
-      // During capture: per-kernel H2D via executeSingleKernel (argTablePreCopied=false)
+      // During capture, executeSingleKernel records one H2D node per captured
+      // sub-kernel so each island uploads only its own current rows.  Those
+      // rows are interior offsets into this ONE pinned allocation, however;
+      // only the allocation base may be handed to the replay handle.  Trying
+      // to relinquish/free each interior pointer corrupts the mailbox lifetime.
+      if (!compiledSeg->consolidatedArgTableCaptureOwned) {
+        auto& memPool = sd::memory::CudaMemoryPool::getInstance();
+        if (!memPool.relinquishPinnedHost(compiledSeg->consolidatedArgTableHostPinned)) {
+          DSP_DIAG(EXECUTE,
+                   "TritonGraphBackend: consolidated arg table base %p was not a tracked "
+                   "pinned allocation during capture for seg[%d-%d]",
+                   compiledSeg->consolidatedArgTableHostPinned,
+                   seg.def.startSlot, seg.def.endSlot);
+          return failSegment("consolidated argument table ownership transfer failed");
+        }
+        tl_capturedHostPtrs.push_back(compiledSeg->consolidatedArgTableHostPinned);
+        compiledSeg->consolidatedArgTableCaptureOwned = true;
+        for (auto& subKernel : compiledSeg->subKernels) {
+          if (subKernel.useIndirectArgs) {
+            subKernel.cachedArgTableCaptureOwned = true;
+          }
+        }
+        DSP_DIAG_SEG(EXECUTE, seg.def.startSlot,
+                     "TritonGraphBackend: consolidated arg table base %p baked into "
+                     "capture for seg[%d-%d] — ownership -> captured graph",
+                     compiledSeg->consolidatedArgTableHostPinned,
+                     seg.def.startSlot, seg.def.endSlot);
+      }
+      // Per-kernel H2D via executeSingleKernel (argTablePreCopied=false).
       DSP_DIAG_SEG(EXECUTE, seg.def.startSlot,
                    "TritonGraphBackend: SKIP consolidated H2D during capture — per-kernel H2D will be used");
     }
@@ -1557,6 +1595,9 @@ std::unordered_set<int> TritonGraphBackend::getGapSlots(
     gapCompiledSeg = findCompiledSegmentAnyDtype(key);
   }
   if (gapCompiledSeg == nullptr) {
+    gapCompiledSeg = findCompiledSegmentForLiveSegment(key);
+  }
+  if (gapCompiledSeg == nullptr) {
     for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
       gapSlots.insert(s);
     }
@@ -1829,6 +1870,9 @@ bool TritonGraphBackend::rollbackCaptureOwnershipForSegments(
               : 0;
           compiledSegment.subKernels[ki].cachedArgTableHostPinned =
               static_cast<char*>(replacement) + offset;
+          if (compiledSegment.subKernels[ki].useIndirectArgs) {
+            compiledSegment.subKernels[ki].cachedArgTableCaptureOwned = false;
+          }
         }
         restoredHostTables++;
       } else {

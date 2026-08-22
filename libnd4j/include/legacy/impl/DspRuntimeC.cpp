@@ -1054,6 +1054,14 @@ SDX_API void sdxDestroyRuntime(sdx_runtime_t* runtime) {
   delete runtime;
 }
 
+SDX_API void sdxClearDiagnostics(void) {
+  sd::graph::DspDiagnostics::getInstance().clear();
+}
+
+SDX_API void sdxFlushDiagnostics(void) {
+  sd::graph::DspDiagnostics::getInstance().flushJsonReport();
+}
+
 SDX_API sdx_status_t sdxLoadBundle(
     sdx_runtime_t* runtime,
     const char* bundle_path,

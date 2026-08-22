@@ -138,7 +138,7 @@
                         </goals>
                         <configuration>
                             <skip>${javacpp.parser.skip}</skip>
-                            <outputDirectory>${project.build.directory}/generated-sources/javacpp</outputDirectory>
+                            <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
                             <classOrPackageName>org.nd4j.dsp.runtime.presets.SdxRuntimePresets</classOrPackageName>
                         </configuration>
                     </execution>

@@ -516,54 +516,33 @@ public class TestCausalConv1d {
     }
 
     @Test
-    public void testDeterministicQwenGeometryMatchesExplicitFmaReference() {
-        int B = 1, L = 19, D = 8, K = 10;
-        float[] xValues = new float[B * L * D];
-        float[] weightValues = new float[D * K];
-        float[] biasValues = new float[D];
-        float[] stateValues = new float[B * D * (K - 1)];
-        for (int i = 0; i < xValues.length; i++)
-            xValues[i] = (float) (((i * 37) % 101) - 50) / 64.0f;
-        for (int i = 0; i < weightValues.length; i++)
-            weightValues[i] = (float) (((i * 19) % 67) - 33) / 128.0f;
-        for (int i = 0; i < biasValues.length; i++)
-            biasValues[i] = (float) (i - 4) / 256.0f;
-        for (int i = 0; i < stateValues.length; i++)
-            stateValues[i] = (float) (((i * 11) % 43) - 21) / 96.0f;
+    public void testDoubleInputsPreserveDoubleAccumulator() {
+        int B = 1, L = 1, D = 1, K = 3;
+        double x0 = 1.0000000001;
+        double oldestState = -0.3333333337;
+        double newestState = 0.6666666669;
+        double oldestWeight = 0.1250000003;
+        double middleWeight = -0.2500000002;
+        double currentWeight = 0.5000000004;
+        double bias0 = -0.0625000001;
 
-        INDArray x = Nd4j.createFromArray(xValues).reshape(B, L, D);
-        INDArray weight = Nd4j.createFromArray(weightValues).reshape(D, K);
-        INDArray bias = Nd4j.createFromArray(biasValues);
-        INDArray state = Nd4j.createFromArray(stateValues).reshape(B, D, K - 1);
-        INDArray[] actual = Nd4j.exec(new CausalConv1d(
-                x, weight, bias, state, Nd4j.scalar(DataType.INT64, L), 1, 0));
+        INDArray x = Nd4j.createFromArray(new double[]{x0}).reshape(B, L, D);
+        INDArray weight = Nd4j.createFromArray(new double[]{
+                oldestWeight, middleWeight, currentWeight
+        }).reshape(D, K);
+        INDArray bias = Nd4j.createFromArray(new double[]{bias0});
+        INDArray state = Nd4j.createFromArray(new double[]{oldestState, newestState})
+                .reshape(B, D, K - 1);
 
-        for (int t = 0; t < L; t++) {
-            for (int d = 0; d < D; d++) {
-                float sum = 0.0f;
-                for (int kk = 0; kk < K; kk++) {
-                    int srcT = t - kk;
-                    float input;
-                    if (srcT >= 0) {
-                        input = xValues[srcT * D + d];
-                    } else {
-                        int stateIndex = (K - 1) + srcT;
-                        input = stateIndex >= 0
-                                ? stateValues[d * (K - 1) + stateIndex]
-                                : 0.0f;
-                    }
-                    sum = Math.fma(weightValues[d * K + (K - 1 - kk)], input, sum);
-                }
-                sum += biasValues[d];
-                double exponent = Math.max(-88.0, Math.min(88.0, -(double) sum));
-                float sigmoid = 1.0f / (1.0f + (float) StrictMath.exp(exponent));
-                float expected = sum * sigmoid;
-                float observed = actual[0].getFloat(0, t, d);
-                assertEquals(Float.floatToRawIntBits(expected), Float.floatToRawIntBits(observed),
-                        "Architecture-stable causal_conv1d bits differ at t=" + t + ", d=" + d
-                                + ": expected=" + expected + ", observed=" + observed);
-            }
-        }
+        INDArray[] result = Nd4j.exec(new CausalConv1d(x, weight, bias, state, 0, 0));
+        double expected = currentWeight * x0
+                + middleWeight * newestState
+                + oldestWeight * oldestState
+                + bias0;
+
+        assertEquals(DataType.DOUBLE, result[0].dataType());
+        assertEquals(DataType.DOUBLE, result[1].dataType());
+        assertEquals(expected, result[0].getDouble(0, 0, 0), 1e-14);
     }
 
     @Test

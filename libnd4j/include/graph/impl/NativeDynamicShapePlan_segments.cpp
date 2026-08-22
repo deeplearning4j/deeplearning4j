@@ -112,7 +112,10 @@ static void scanAllSlotsForCorruption(
 }
 
 namespace {
-static constexpr LongType kOpSanityMaxScannedValues = 4096;
+// OP_SANITY is a parity diagnostic, not a finiteness sampler. Fully hash typical
+// activation/state tensors while retaining a cap for multi-hundred-megabyte
+// parameter tables such as the tied embedding/output projection.
+static constexpr LongType kOpSanityMaxScannedValues = 524288;
 
 // Status enum string helper — delegates to shared dsp::dspStatusName in DspPhaseUtils.h.
 const char* statusName_seg(Status status) {
@@ -202,7 +205,7 @@ void summarizeLogicalArray(NDArray* array, OpSanitySummary* summary) {
     LongType logicalIndex = scanOrdinal;
     if (scanCount < length && scanSpan > 0) {
       // Evenly cover the complete logical array without multiplying two large
-      // dimensions. The remainder term is bounded by the 4096-value scan cap.
+      // dimensions. The remainder term is bounded by the configured scan cap.
       logicalIndex = (logicalSpan / scanSpan) * scanOrdinal +
           ((logicalSpan % scanSpan) * scanOrdinal) / scanSpan;
     }
@@ -1164,7 +1167,7 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
     }
     recordSegmentBoundaryOpSanity(
         backendName, seg, slots_, numSlots_, outputSlots_, totalOutputSlots_,
-        requestedOutputSlotIndices_, numRequestedOutputs_, executeCount_);
+        requestedOutputSlotIndices_, numRequestedOutputs_, diagnosticExecuteCount());
   }
 
   return status;
@@ -1422,7 +1425,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
             recordSlotOpSanity(
                 "FUNCTIONAL_REPLAY", call->segment->def.startSlot,
                 command.slotIndex, plan->slots_, plan->outputSlots_,
-                plan->totalOutputSlots_, plan->executeCount_,
+                plan->totalOutputSlots_, plan->diagnosticExecuteCount(),
                 call->captureActive);
           }
           return status;
@@ -1468,7 +1471,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
           recordSlotOpSanity(
               "FUNCTIONAL_REPLAY", call->segment->def.startSlot,
               command.slotIndex, plan->slots_, plan->outputSlots_,
-              plan->totalOutputSlots_, plan->executeCount_,
+              plan->totalOutputSlots_, plan->diagnosticExecuteCount(),
               call->captureActive);
           return Status::OK;
         }
@@ -1494,7 +1497,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
               recordSlotOpSanity(
                   "FUNCTIONAL_REPLAY_BATCH", call->segment->def.startSlot,
                   groupSlot, plan->slots_, plan->outputSlots_,
-                  plan->totalOutputSlots_, plan->executeCount_,
+                  plan->totalOutputSlots_, plan->diagnosticExecuteCount(),
                   call->captureActive);
             }
           }
@@ -1553,7 +1556,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
           markOutputsDead(slot, slotIsDead_, slotIsDeadSize_);
           recordSlotOpSanity(
               "SLOT_BY_SLOT_CF_DEAD", seg.def.startSlot, stepIdx,
-              slots_, outputSlots_, totalOutputSlots_, executeCount_,
+              slots_, outputSlots_, totalOutputSlots_, diagnosticExecuteCount(),
               streamIsCapturing, true);
           stepIdx++;
           continue;
@@ -1658,7 +1661,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
 
       recordSlotOpSanity(
           "SLOT_BY_SLOT_CF", seg.def.startSlot, stepIdx,
-          slots_, outputSlots_, totalOutputSlots_, executeCount_,
+          slots_, outputSlots_, totalOutputSlots_, diagnosticExecuteCount(),
           streamIsCapturing);
 
       stepIdx++;
@@ -1671,7 +1674,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
         markOutputsDead(slot, slotIsDead_, slotIsDeadSize_);
         recordSlotOpSanity(
             "SLOT_BY_SLOT_DEAD", seg.def.startSlot, stepIdx,
-            slots_, outputSlots_, totalOutputSlots_, executeCount_,
+            slots_, outputSlots_, totalOutputSlots_, diagnosticExecuteCount(),
             streamIsCapturing, true);
         stepIdx++;
         continue;
@@ -1711,7 +1714,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
             for (int groupSlot : bgGroup.slotIndices) {
               recordSlotOpSanity(
                   "SLOT_BY_SLOT_BATCH", seg.def.startSlot, groupSlot,
-                  slots_, outputSlots_, totalOutputSlots_, executeCount_,
+                  slots_, outputSlots_, totalOutputSlots_, diagnosticExecuteCount(),
                   streamIsCapturing);
             }
             // Release schedule removed: arrays persist (one array per slot)
@@ -1750,7 +1753,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
         if (allPopulated) {
           recordSlotOpSanity(
               "SLOT_BY_SLOT_FROZEN", seg.def.startSlot, stepIdx,
-              slots_, outputSlots_, totalOutputSlots_, executeCount_,
+              slots_, outputSlots_, totalOutputSlots_, diagnosticExecuteCount(),
               streamIsCapturing);
           stepIdx++;
           continue;
@@ -1761,7 +1764,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
       if (slot.fusedChain.isFusedChainTail) {
         recordSlotOpSanity(
             "SLOT_BY_SLOT_FUSED_TAIL", seg.def.startSlot, stepIdx,
-            slots_, outputSlots_, totalOutputSlots_, executeCount_,
+            slots_, outputSlots_, totalOutputSlots_, diagnosticExecuteCount(),
             streamIsCapturing);
         stepIdx++;
         continue;
@@ -1797,7 +1800,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
 #endif
           recordSlotOpSanity(
               "SLOT_BY_SLOT_IDENTITY", seg.def.startSlot, stepIdx,
-              slots_, outputSlots_, totalOutputSlots_, executeCount_,
+              slots_, outputSlots_, totalOutputSlots_, diagnosticExecuteCount(),
               streamIsCapturing);
           stepIdx++;
           continue;
@@ -1894,10 +1897,10 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
       }
     }
 
-    if (status == Status::OK && opSanityEnabled(executeCount_)) {
+    if (status == Status::OK && opSanityEnabled(diagnosticExecuteCount())) {
       recordSlotOpSanity(
           "SLOT_BY_SLOT", seg.def.startSlot, stepIdx,
-          slots_, outputSlots_, totalOutputSlots_, executeCount_,
+          slots_, outputSlots_, totalOutputSlots_, diagnosticExecuteCount(),
           streamIsCapturing);
     }
 

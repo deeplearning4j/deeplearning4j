@@ -413,6 +413,76 @@ public class DspMultiPlanShapeSwitchTest {
         }
     }
 
+    /**
+     * Covers the production fixed-buffer reuse boundary that the three-page test above misses:
+     * both shape plans retain the same external array addresses while Java overwrites their
+     * contents in place, and the fourth visit is the first one eligible for executeSteadyState().
+     */
+    @Test
+    @DisplayName("Stable-address multi-plan reuse remains correct after steady-state promotion")
+    void testStableAddressMultiPlanSteadyStatePromotion() {
+        int dim = 64;
+        int prefillSeq = 8;
+        int cycles = 6;
+
+        SameDiff sd = buildDynamicSeqGraph(dim);
+        INDArray prefillInput = Nd4j.zeros(DataType.FLOAT, 1, prefillSeq, dim);
+        INDArray decodeInput = Nd4j.zeros(DataType.FLOAT, 1, 1, dim);
+        Map<String, INDArray> prefillInputs = new LinkedHashMap<>();
+        Map<String, INDArray> decodeInputs = new LinkedHashMap<>();
+        prefillInputs.put("x", prefillInput);
+        decodeInputs.put("x", decodeInput);
+
+        INDArray[] expectedPrefill = new INDArray[cycles];
+        INDArray[] expectedDecode = new INDArray[cycles];
+        try {
+            for (int cycle = 0; cycle < cycles; cycle++) {
+                prefillInput.assign(cycle + 1.0);
+                decodeInput.assign(100.0 + cycle);
+                expectedPrefill[cycle] = runEager(sd, prefillInputs, "y").get("y").dup();
+                expectedDecode[cycle] = runEager(sd, decodeInputs, "y").get("y").dup();
+            }
+
+            configureDsp(sd);
+            for (int cycle = 0; cycle < cycles; cycle++) {
+                prefillInput.assign(cycle + 1.0);
+                decodeInput.assign(100.0 + cycle);
+
+                Map<String, INDArray> prefillResult = sd.output(prefillInputs, "y");
+                Map<String, INDArray> expectedPrefillMap = new LinkedHashMap<>();
+                expectedPrefillMap.put("y", expectedPrefill[cycle]);
+                assertOutputsMatch("StableAddress-Cycle" + cycle + "-Prefill",
+                        expectedPrefillMap, prefillResult);
+
+                Map<String, INDArray> decodeResult = null;
+                for (int step = 0; step < 4; step++) {
+                    decodeResult = sd.output(decodeInputs, "y");
+                }
+                Map<String, INDArray> expectedDecodeMap = new LinkedHashMap<>();
+                expectedDecodeMap.put("y", expectedDecode[cycle]);
+                assertOutputsMatch("StableAddress-Cycle" + cycle + "-Decode",
+                        expectedDecodeMap, decodeResult);
+
+                if (cycle == 0) {
+                    DynamicShapePlanExecutor executor =
+                            sd.getOrCreateSession().getDynamicShapePlanExecutor();
+                    assertNotNull(executor, "DSP executor should exist before fixed-buffer freeze");
+                    executor.setShapesFrozen(true);
+                }
+            }
+        } finally {
+            for (INDArray expected : expectedPrefill) {
+                if (expected != null && !expected.wasClosed()) expected.close();
+            }
+            for (INDArray expected : expectedDecode) {
+                if (expected != null && !expected.wasClosed()) expected.close();
+            }
+            if (!prefillInput.wasClosed()) prefillInput.close();
+            if (!decodeInput.wasClosed()) decodeInput.close();
+            sd.close();
+        }
+    }
+
     // ═════════════════════════════════════════════════════════════════════════
     // TEST 4: clearNodeOutputsOnly + shape switch (fixedBuffers path)
     // ═════════════════════════════════════════════════════════════════════════
