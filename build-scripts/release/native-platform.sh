@@ -59,7 +59,8 @@ if [ "$DL4J_BUILD_SDX" = 1 ]; then
     "-Dlibnd4j.outputPath=${DL4J_SDX_OUTPUT_PATH}"
     "-Dsdx.platform.classifier=${DL4J_SDX_CLASSIFIER}"
   )
-  if [ "$DL4J_FAMILY" = windows-cuda ]; then
+  if [ "$DL4J_FAMILY" = windows-cuda ] ||
+     [ "$DL4J_FAMILY" = windows-zluda ]; then
     # MSVC's import library is generated beside nd4jcuda.dll. Pass its absolute
     # stem so JavaCPP emits the exact file path instead of relying on a later
     # /LIBPATH lookup, which can fail under the Git Bash/MSVC boundary.

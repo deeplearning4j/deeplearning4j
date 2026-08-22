@@ -3172,6 +3172,21 @@ class ReleaseValidationTest(unittest.TestCase):
             windows_cuda_command,
         )
 
+        windows_zluda_env = windows_cuda_env.copy()
+        windows_zluda_env["DL4J_FAMILY"] = "windows-zluda"
+        windows_zluda_env["DL4J_CUDA_VERSION"] = "12.9"
+        windows_zluda_env["DL4J_PLATFORM_EXTENSION"] = "-zluda-rocm-7.2.4"
+        windows_zluda_env["DL4J_CLASSIFIER"] = (
+            "windows-x86_64-cuda-12.9-zluda-rocm-7.2.4"
+        )
+        windows_zluda_command = subprocess.check_output(
+            [str(script), "--print"], cwd=root, env=windows_zluda_env, text=True
+        )
+        self.assertIn(
+            "-Dsdx.platform.links=D:/build/libnd4j/blasbuild/cuda/nd4jcuda",
+            windows_zluda_command,
+        )
+
     def test_sdx_gnu_linker_flag_is_not_active_on_macos(self):
         root = Path(__file__).parents[2]
         namespace = {"m": "http://maven.apache.org/POM/4.0.0"}
