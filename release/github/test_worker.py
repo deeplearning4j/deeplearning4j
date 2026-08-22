@@ -426,6 +426,9 @@ class WorkflowMatrixTests(unittest.TestCase):
         )
         self.assertIn('--repository "${work_root}/m2"', action)
         self.assertNotIn('--repository "${artifact_root}/m2"', action)
+        self.assertIn("source-commit:", action)
+        self.assertIn('--commit "${INPUT_SOURCE_COMMIT}"', action)
+        self.assertIn("source-commit: ${{ needs.matrix.outputs.source }}", workflow)
         self.assertEqual(2, workflow.count("compression-level: 0"))
         self.assertIn(
             '<target if="dl4j.prune.native.intermediates">', vulkan_pom
@@ -481,7 +484,7 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertEqual(1, workflow.count("repository.py merge"))
         self.assertEqual(1, workflow.count("repository.py deploy-snapshot"))
         self.assertEqual(1, workflow.count("server-id: central-portal-snapshots"))
-        self.assertEqual(1, workflow.count('name worker-config.json -printf'))
+        self.assertEqual(1, workflow.count('-name worker-config.json'))
         self.assertEqual(
             1,
             workflow.count(
@@ -512,8 +515,9 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("actions/download-artifact@v8", workflow)
         self.assertIn("run-id: ${{ inputs.sourceRunId }}", workflow)
         self.assertIn("merge-multiple: false", workflow)
-        self.assertIn("name worker-config.json -printf", workflow)
         self.assertIn('if [ ! -f "${worker_root}/worker-success" ]', workflow)
+        self.assertIn("sourceSha: sourceJob.head_sha", workflow)
+        self.assertIn("VERIFIED_ARTIFACTS: ${{ needs.matrix.outputs.artifacts }}", workflow)
         self.assertIn("repository.py merge", workflow)
         self.assertIn("repository.py deploy-snapshot", workflow)
         self.assertEqual(1, workflow.count("repository.py deploy-snapshot"))

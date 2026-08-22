@@ -132,6 +132,7 @@ jobs:
         with:
           shard: ${{ matrix.shard }}
           variant: ${{ matrix.variant }}
+          source-commit: ${{ needs.matrix.outputs.source }}
           build-threads: ${{ inputs.buildThreads }}
           maven-flags: ${{ inputs.mvnFlags }}
           libnd4j-url: ${{ inputs.libnd4jUrl }}
@@ -176,6 +177,7 @@ jobs:
         with:
           shard: ${{ matrix.shard }}
           variant: ${{ matrix.variant }}
+          source-commit: ${{ needs.matrix.outputs.source }}
           build-threads: ${{ inputs.buildThreads }}
           maven-flags: ${{ inputs.mvnFlags }}
           libnd4j-url: ${{ inputs.libnd4jUrl }}
@@ -215,12 +217,14 @@ jobs:
       - name: Inspect staged worker results
         id: staged
         shell: bash
+        env:
+          EXPECTED_SOURCE_COMMIT: ${{ needs.matrix.outputs.source }}
         run: |
           set -Eeuo pipefail
           artifact_root="${GITHUB_WORKSPACE}/.release-worker-publish"
           mapfile -t worker_roots < <(
-            find "${artifact_root}" -mindepth 2 -maxdepth 2 -type f \
-              -name worker-config.json -printf '%h\n' | sort
+            find "${artifact_root}" -type f -name worker-config.json \
+              -printf '%h\n' | sort
           )
           if [ "${#worker_roots[@]}" -eq 0 ]; then
             printf 'No staged worker configurations were downloaded.\n' >&2
@@ -238,6 +242,20 @@ jobs:
             fi
             current_version=$(python3 release/github/prepare-worker.py release-version \
               --config "${worker_root}/worker-config.json")
+            current_commit=$(python3 -c \
+              'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["commit"])' \
+              "${worker_root}/worker-config.json")
+            if [ "${current_commit}" != "${EXPECTED_SOURCE_COMMIT}" ]; then
+              printf 'Worker source commit mismatch: expected %s, got %s (%s)\n' \
+                "${EXPECTED_SOURCE_COMMIT}" "${current_commit}" "${worker_root}" >&2
+              exit 1
+            fi
+            python3 -c \
+              'import re,sys; raise SystemExit(0 if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*-SNAPSHOT", sys.argv[1]) else 1)' \
+              "${current_version}" || {
+                printf 'Invalid Maven snapshot version: %s\n' "${current_version}" >&2
+                exit 1
+              }
             if [ -z "${release_version}" ]; then
               release_version="${current_version}"
             elif [ "${release_version}" != "${current_version}" ]; then
@@ -267,8 +285,14 @@ jobs:
         env:
           CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
           CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+          RELEASE_VERSION: ${{ steps.staged.outputs.release-version }}
+          SOURCE_COMMIT: ${{ needs.matrix.outputs.source }}
         run: |
           set -Eeuo pipefail
+          if ! [[ "${SOURCE_COMMIT}" =~ ^[0-9a-f]{40}$ ]]; then
+            printf 'Invalid source commit: %s\n' "${SOURCE_COMMIT}" >&2
+            exit 1
+          fi
           artifact_root="${GITHUB_WORKSPACE}/.release-worker-publish"
           merged_repository="${GITHUB_WORKSPACE}/.release-worker-merged/maven-repository"
           merged_manifest="${GITHUB_WORKSPACE}/.release-worker-merged/repository-manifest.json"
@@ -277,14 +301,13 @@ jobs:
           merge_command=(python3 release/central/repository.py merge
             --output "${merged_repository}"
             --manifest "${merged_manifest}"
-            --release-version "${{ steps.staged.outputs.release-version }}"
-            --commit "${{ needs.matrix.outputs.source }}")
+            --release-version "${RELEASE_VERSION}"
+            --commit "${SOURCE_COMMIT}")
           repository_count=0
           while IFS= read -r repository; do
             merge_command+=(--input "${repository}")
             repository_count=$((repository_count + 1))
-          done < <(find "${artifact_root}" -mindepth 2 -maxdepth 2 -type d \
-            -name maven-repository | sort)
+          done < <(find "${artifact_root}" -type d -name maven-repository | sort)
           if [ "${repository_count}" -eq 0 ]; then
             printf 'No staged Maven repositories were found.\n' >&2
             exit 1
@@ -293,11 +316,11 @@ jobs:
           python3 release/central/repository.py verify \
             --repository "${merged_repository}" \
             --manifest "${merged_manifest}" \
-            --release-version "${{ steps.staged.outputs.release-version }}" \
-            --commit "${{ needs.matrix.outputs.source }}"
+            --release-version "${RELEASE_VERSION}" \
+            --commit "${SOURCE_COMMIT}"
           python3 release/central/repository.py deploy-snapshot \
             --repository "${merged_repository}" \
-            --release-version "${{ steps.staged.outputs.release-version }}" \
+            --release-version "${RELEASE_VERSION}" \
             --repository-id central-portal-snapshots \
             --url https://central.sonatype.com/repository/maven-snapshots/ \
             --maven-executable mvn

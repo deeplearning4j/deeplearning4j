@@ -173,11 +173,12 @@ def merge(inputs: list[Path], output: Path, manifest_path: Path, release_version
             candidates = list(repository_files(root))
             if not candidates:
                 raise ValueError(f"Maven shard has no DL4J repository files: {source}")
+            source_label = source.name if source.is_file() else source.parent.name
             for path in candidates:
                 relative = path.relative_to(root)
                 destination = output / relative
                 key = relative.as_posix()
-                ownership.setdefault(key, []).append(source.name)
+                ownership.setdefault(key, []).append(source_label)
                 if destination.exists():
                     if digest(destination) != digest(path):
                         raise ValueError(f"conflicting duplicate Maven path {key} from {source}")
@@ -256,7 +257,7 @@ def verify(repository: Path, manifest_path: Path | None, version: str | None, co
             continue
         if path.name == "maven-metadata.xml":
             continue
-        if version and version not in path.parts:
+        if version and (path.parent.name != version or version not in path.parts):
             raise ValueError(f"unexpected version path in repository: {path.relative_to(repository)}")
         version_dirs.setdefault(path.parent, []).append(path)
     if not version_dirs:

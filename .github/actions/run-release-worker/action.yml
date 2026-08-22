@@ -8,6 +8,9 @@ inputs:
   variant:
     required: true
     description: Canonical release-plan variant name.
+  source-commit:
+    required: true
+    description: Resolved source commit used for the worker checkout.
   build-threads:
     required: false
     default: ""
@@ -156,6 +159,7 @@ runs:
       env:
         INPUT_SHARD: ${{ inputs.shard }}
         INPUT_VARIANT: ${{ inputs.variant }}
+        INPUT_SOURCE_COMMIT: ${{ inputs.source-commit }}
         INPUT_BUILD_THREADS: ${{ inputs.build-threads }}
         INPUT_MAVEN_FLAGS: ${{ inputs.maven-flags }}
         INPUT_LIBND4J_URL: ${{ inputs.libnd4j-url }}
@@ -182,7 +186,7 @@ runs:
           --maven-flags "${INPUT_MAVEN_FLAGS}"
           --libnd4j-url "${INPUT_LIBND4J_URL}"
           --run-id "github-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          --commit "${GITHUB_SHA}"
+          --commit "${INPUT_SOURCE_COMMIT}"
         )
         [ "${INPUT_BUILD_AOT}" != 1 ] || args+=(--build-aot)
         [ "${INPUT_AOT_ALL_SPINS}" != 1 ] || args+=(--aot-all-spins)

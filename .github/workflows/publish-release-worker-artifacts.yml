@@ -101,7 +101,11 @@ jobs:
                 );
                 continue;
               }
-              rows.push({ name: artifact.name, sourceJobId: String(sourceJob.id) });
+              rows.push({
+                name: artifact.name,
+                sourceJobId: String(sourceJob.id),
+                sourceSha: sourceJob.head_sha,
+              });
             }
             if (rows.length === 0) {
               core.setFailed(
@@ -132,26 +136,40 @@ jobs:
       - name: Inspect staged worker artifact
         id: staged
         shell: bash
+        env:
+          VERIFIED_ARTIFACTS: ${{ needs.matrix.outputs.artifacts }}
         run: |
           set -Eeuo pipefail
           artifact_root="${GITHUB_WORKSPACE}/.release-worker-recovery"
-          mapfile -t worker_roots < <(
-            find "${artifact_root}" -mindepth 2 -maxdepth 2 -type f \
-              -name worker-config.json -printf '%h\n' | sort
+          mapfile -t verified_artifacts < <(
+            python3 -c 'import json,sys; print("\n".join(item["name"] for item in json.loads(sys.argv[1])))' \
+              "${VERIFIED_ARTIFACTS}"
           )
-          if [ "${#worker_roots[@]}" -eq 0 ]; then
-            printf 'No verified staged worker configurations were downloaded.\n' >&2
+          if [ "${#verified_artifacts[@]}" -eq 0 ]; then
+            printf 'No verified staged worker artifacts were resolved.\n' >&2
             exit 1
           fi
           release_version=""
           source_commit=""
-          for worker_root in "${worker_roots[@]}"; do
+          worker_roots=()
+          for artifact_name in "${verified_artifacts[@]}"; do
+            worker_root="${artifact_root}/${artifact_name}"
+            if [ ! -f "${worker_root}/worker-config.json" ] &&
+               [ "${#verified_artifacts[@]}" -eq 1 ] &&
+               [ -f "${artifact_root}/worker-config.json" ]; then
+              worker_root="${artifact_root}"
+            fi
+            worker_roots+=("${worker_root}")
+            expected_commit=$(python3 -c \
+              'import json,sys; print(next(item["sourceSha"] for item in json.loads(sys.argv[1]) if item["name"] == sys.argv[2]))' \
+              "${VERIFIED_ARTIFACTS}" "${artifact_name}")
             if [ ! -f "${worker_root}/worker-success" ]; then
-              printf 'Worker did not complete successfully: %s\n' "${worker_root}" >&2
+              printf 'Verified worker artifact is incomplete: %s\n' "${artifact_name}" >&2
               exit 1
             fi
             if [ ! -d "${worker_root}/maven-repository" ]; then
-              printf 'Worker is missing its Maven repository: %s\n' "${worker_root}" >&2
+              printf 'Verified worker artifact is missing its Maven repository: %s\n' \
+                "${artifact_name}" >&2
               exit 1
             fi
             current_version=$(python3 release/github/prepare-worker.py release-version \
@@ -159,6 +177,11 @@ jobs:
             current_commit=$(python3 -c \
               'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["commit"])' \
               "${worker_root}/worker-config.json")
+            if [ "${current_commit}" != "${expected_commit}" ]; then
+              printf 'Worker source commit mismatch for %s: expected %s, got %s\n' \
+                "${artifact_name}" "${expected_commit}" "${current_commit}" >&2
+              exit 1
+            fi
             if [ -z "${release_version}" ]; then
               release_version="${current_version}"
               source_commit="${current_commit}"
@@ -172,6 +195,10 @@ jobs:
               exit 1
             fi
           done
+          if ! [[ "${source_commit}" =~ ^[0-9a-f]{40}$ ]]; then
+            printf 'Invalid staged source commit: %s\n' "${source_commit}" >&2
+            exit 1
+          fi
           if [[ "${release_version}" != *-SNAPSHOT ]]; then
             printf 'publish=false\n' >>"${GITHUB_OUTPUT}"
             printf 'Skipping recovery publication because version %s is not a snapshot.\n' \
@@ -196,8 +223,14 @@ jobs:
         env:
           CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
           CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+          RELEASE_VERSION: ${{ steps.staged.outputs.release-version }}
+          SOURCE_COMMIT: ${{ steps.staged.outputs.source-commit }}
         run: |
           set -Eeuo pipefail
+          if ! [[ "${SOURCE_COMMIT}" =~ ^[0-9a-f]{40}$ ]]; then
+            printf 'Invalid source commit: %s\n' "${SOURCE_COMMIT}" >&2
+            exit 1
+          fi
           artifact_root="${GITHUB_WORKSPACE}/.release-worker-recovery"
           merged_repository="${GITHUB_WORKSPACE}/.release-worker-recovery-merged/maven-repository"
           merged_manifest="${GITHUB_WORKSPACE}/.release-worker-recovery-merged/repository-manifest.json"
@@ -206,13 +239,13 @@ jobs:
           merge_command=(python3 release/central/repository.py merge
             --output "${merged_repository}"
             --manifest "${merged_manifest}"
-            --release-version "${{ steps.staged.outputs.release-version }}"
-            --commit "${{ steps.staged.outputs.source-commit }}")
+            --release-version "${RELEASE_VERSION}"
+            --commit "${SOURCE_COMMIT}")
           repository_count=0
           while IFS= read -r repository; do
             merge_command+=(--input "${repository}")
             repository_count=$((repository_count + 1))
-          done < <(find "${artifact_root}" -mindepth 2 -maxdepth 2 -type d \
+          done < <(find "${artifact_root}" -type d \
             -name maven-repository | sort)
           if [ "${repository_count}" -eq 0 ]; then
             printf 'No staged Maven repositories were found.\n' >&2
@@ -222,11 +255,11 @@ jobs:
           python3 release/central/repository.py verify \
             --repository "${merged_repository}" \
             --manifest "${merged_manifest}" \
-            --release-version "${{ steps.staged.outputs.release-version }}" \
-            --commit "${{ steps.staged.outputs.source-commit }}"
+            --release-version "${RELEASE_VERSION}" \
+            --commit "${SOURCE_COMMIT}"
           python3 release/central/repository.py deploy-snapshot \
             --repository "${merged_repository}" \
-            --release-version "${{ steps.staged.outputs.release-version }}" \
+            --release-version "${RELEASE_VERSION}" \
             --repository-id central-portal-snapshots \
             --url https://central.sonatype.com/repository/maven-snapshots/ \
             --maven-executable mvn
