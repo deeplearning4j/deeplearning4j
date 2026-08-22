@@ -41,10 +41,22 @@ ROCM_BUILD_SDKS = {
         "tensile_source_url": (
             "https://codeload.github.com/ROCm/Tensile/tar.gz/refs/tags/rocm-6.2.4"
         ),
-        # gfx1100 is supported by both pinned ROCm releases. gfx1103 was
-        # introduced after ROCm 6.2 and makes the older generator fail closed.
-        "tensile_architectures": "gfx1100",
+        # ROCm 6.2 predates upstream gfx1103 support. Backport Fedora's tested
+        # Radeon 780M/Phoenix logic while retaining the version-matched ROCm
+        # compiler and runtime.
+        "tensile_architectures": "gfx1103",
         "tensile_code_object_version": "V4",
+        "tensile_gfx1103_backport": True,
+        "tensile_gfx1103_patch_url": (
+            "https://src.fedoraproject.org/rpms/python-tensile/raw/"
+            "6f308b0956b7736ae874b07f8ebc9f404fa2fae5/f/"
+            "0001-enable-gfx1103-for-Tensile.patch"
+        ),
+        "rocblas_gfx1103_logic_patch_url": (
+            "https://src.fedoraproject.org/rpms/rocblas/raw/"
+            "74df24057a4579f507a50431aaa96ae7484d1567/f/"
+            "0001-add-gfx1103-support-for-rocBLAS.patch"
+        ),
         # The ROCm binary packages omit Tensile data; these are the generator's
         # pinned Python dependencies, not runtime GPU dependencies.
         "tensile_packages": ("python3-yaml", "python3-msgpack", "python3-joblib"),
@@ -77,7 +89,7 @@ ROCM_BUILD_SDKS = {
             # runtime library. Tensile data is generated when the packages omit it.
             "rocblas": (
                 "rocblas", "rocblas-dev", "python3-yaml", "python3-msgpack",
-                "python3-joblib",
+                "python3-joblib", "libmsgpack-dev", "cmake", "ninja-build",
             ),
             "hipblaslt": ("hipblaslt-dev",),
             "rocsparse": ("rocsparse-dev",),
@@ -97,8 +109,11 @@ ROCM_BUILD_SDKS = {
         "tensile_source_url": (
             "https://codeload.github.com/ROCm/Tensile/tar.gz/refs/tags/rocm-7.2.4"
         ),
-        "tensile_architectures": "gfx1100",
+        "tensile_architectures": "gfx1103",
         "tensile_code_object_version": "V4",
+        "tensile_gfx1103_backport": False,
+        "tensile_gfx1103_patch_url": None,
+        "rocblas_gfx1103_logic_patch_url": None,
         "tensile_packages": ("python3-yaml", "python3-msgpack", "python3-joblib"),
         # ROCm 7.2 folded ROCt into the hsa-rocr development package and no
         # longer publishes a standalone hsakmt-roct-dev package.  Keep the
@@ -1817,6 +1832,9 @@ def rocm_build_spec(build: dict) -> dict | None:
         "tensile_architectures": sdk["tensile_architectures"],
         "tensile_code_object_version": sdk["tensile_code_object_version"],
         "tensile_packages": sdk["tensile_packages"],
+        "tensile_gfx1103_backport": sdk["tensile_gfx1103_backport"],
+        "tensile_gfx1103_patch_url": sdk["tensile_gfx1103_patch_url"],
+        "rocblas_gfx1103_logic_patch_url": sdk["rocblas_gfx1103_logic_patch_url"],
         "hsakmt_source_url": sdk["hsakmt_source_url"],
         "hsakmt_source_subdirectory": sdk["hsakmt_source_subdirectory"],
         "hsakmt_cmake_subdirectory": sdk["hsakmt_cmake_subdirectory"],
@@ -1968,14 +1986,24 @@ def attest_rocm_build_toolchain(
     return attested
 
 
-def rocm_tensile_data_file(root: Path) -> Path | None:
-    """Locate a generated rocBLAS Tensile master file below a ROCm prefix."""
+def rocm_tensile_data_file(root: Path, required_architecture: str) -> Path | None:
+    """Locate a Tensile master file backed by the required ISA code objects."""
     if not root.is_dir():
         return None
     candidates = sorted(
         path for path in root.rglob("TensileLibrary.dat") if path.is_file()
     )
-    return candidates[0] if candidates else None
+    if not candidates:
+        return None
+    valid = [
+        candidate
+        for candidate in candidates
+        if any(
+            path.is_file() and path.stat().st_size > 0
+            for path in candidate.parent.rglob(f"*{required_architecture}*.co")
+        )
+    ]
+    return valid[0] if len(valid) == 1 else None
 
 
 def extract_rocm_source_archive(archive_path: Path, destination: Path) -> None:
@@ -2006,6 +2034,265 @@ def extract_rocm_source_archive(archive_path: Path, destination: Path) -> None:
         archive.extractall(destination)
 
 
+def backport_rocm_6_gfx1103_generator(tensile_source: Path) -> None:
+    """Backport Fedora's gfx1103 generator registration to pinned Tensile 6.2."""
+    common_candidates = sorted(tensile_source.rglob("Tensile/Common.py"))
+    caps_candidates = sorted(tensile_source.rglob("Tensile/AsmCaps.py"))
+    if len(common_candidates) != 1 or len(caps_candidates) != 1:
+        raise RuntimeError(
+            "ROCm 6.2 Tensile source must contain exactly one Common.py and "
+            f"AsmCaps.py; found {len(common_candidates)} and {len(caps_candidates)}"
+        )
+
+    common_path = common_candidates[0]
+    common_text = common_path.read_text(encoding="utf-8")
+    replacements = (
+        (
+            "                                    (11,0,0), (11,0,1), (11,0,2),\n"
+            "                                    (11,5,1)]",
+            "                                    (11,0,0), (11,0,1), (11,0,2), (11,0,3),\n"
+            "                                    (11,5,1)]",
+        ),
+        (
+            "  'gfx1100':'navi31', 'gfx1101':'navi32', 'gfx1102':'navi33',\n"
+            "  'gfx1151':'gfx1151'",
+            "  'gfx1100':'navi31', 'gfx1101':'navi32', 'gfx1102':'navi33', "
+            "'gfx1103':'phoenix',\n  'gfx1151':'gfx1151'",
+        ),
+    )
+    for old, new in replacements:
+        if common_text.count(old) != 1:
+            raise RuntimeError(
+                "pinned Tensile 6.2 source no longer matches the gfx1103 "
+                "generator backport contract"
+            )
+        common_text = common_text.replace(old, new)
+    common_path.write_text(common_text, encoding="utf-8")
+
+    caps_path = caps_candidates[0]
+    caps_text = caps_path.read_text(encoding="utf-8")
+    if "(11, 0, 3)" in caps_text:
+        raise RuntimeError("pinned Tensile 6.2 unexpectedly already declares gfx1103")
+    caps_path.write_text(
+        caps_text.rstrip()
+        + "\n\n# Fedora gfx1103 backport: Phoenix has the gfx1102 assembler capabilities.\n"
+        + "CACHED_ASM_CAPS[(11, 0, 3)] = dict(CACHED_ASM_CAPS[(11, 0, 2)])\n",
+        encoding="utf-8",
+    )
+
+
+def backport_rocm_6_gfx1103_logic(
+    spec: dict,
+    logic_directory: Path,
+    env: dict[str, str],
+    temporary_directory: Path,
+) -> None:
+    """Install Fedora's tuned Phoenix rocBLAS logic into pinned rocBLAS 6.2."""
+    patch_url = spec.get("rocblas_gfx1103_logic_patch_url")
+    if not patch_url:
+        raise RuntimeError("ROCm 6.2 gfx1103 generation requires a pinned logic patch")
+    source_root = logic_directory.parents[4]
+    if not (source_root / "CMakeLists.txt").is_file():
+        raise RuntimeError(f"could not identify the rocBLAS source root for {logic_directory}")
+    patch_path = temporary_directory / "rocblas-gfx1103-logic.patch"
+    download_with_retry(
+        str(patch_url), patch_path, "ROCm 6.2 gfx1103 rocBLAS logic patch"
+    )
+    includes = ["--include=library/src/blas3/Tensile/Logic/asm_full/phoenix/*"]
+    run(
+        ["git", "apply", "--check", *includes, str(patch_path)],
+        source_root,
+        env,
+    )
+    run(
+        ["git", "apply", *includes, str(patch_path)],
+        source_root,
+        env,
+    )
+    phoenix = logic_directory / "asm_full" / "phoenix"
+    logic_files = sorted(phoenix.glob("phoenix_*.yaml"))
+    if len(logic_files) != 36:
+        raise RuntimeError(
+            "ROCm 6.2 gfx1103 backport must produce all 36 Phoenix logic files; "
+            f"found {len(logic_files)}"
+        )
+    print(
+        f"[dl4j-rocm] installed {len(logic_files)} pinned Phoenix logic files",
+        flush=True,
+    )
+
+
+def backport_rocm_6_gfx1103_rocblas_runtime(logic_directory: Path) -> None:
+    """Apply Fedora's gfx1103 rocBLAS host-runtime changes to pinned 6.2 source."""
+    source_root = logic_directory.parents[4]
+    replacements = {
+        source_root / "library/src/include/handle.hpp": (
+            "    gfx1102 = 1102,\n    gfx1151 = 1151",
+            "    gfx1102 = 1102,\n    gfx1103 = 1103,\n    gfx1151 = 1151",
+        ),
+        source_root / "library/src/handle.cpp": (
+            "    else if(deviceString.find(\"gfx1151\") != std::string::npos)\n"
+            "    {\n        return Processor::gfx1151;\n    }",
+            "    else if(deviceString.find(\"gfx1103\") != std::string::npos)\n"
+            "    {\n        return Processor::gfx1103;\n    }\n"
+            "    else if(deviceString.find(\"gfx1151\") != std::string::npos)\n"
+            "    {\n        return Processor::gfx1151;\n    }",
+        ),
+        source_root / "library/src/tensile_host.cpp": (
+            "    else if(deviceString.find(\"gfx1102\") != std::string::npos)\n"
+            "    {\n        return Tensile::LazyLoadingInit::gfx1102;\n    }\n"
+            "    return Tensile::LazyLoadingInit::None;",
+            "    else if(deviceString.find(\"gfx1102\") != std::string::npos)\n"
+            "    {\n        return Tensile::LazyLoadingInit::gfx1102;\n    }\n"
+            "    else if(deviceString.find(\"gfx1103\") != std::string::npos)\n"
+            "    {\n        return Tensile::LazyLoadingInit::gfx1103;\n    }\n"
+            "    return Tensile::LazyLoadingInit::None;",
+        ),
+    }
+    for path, (old, new) in replacements.items():
+        text = path.read_text(encoding="utf-8")
+        if text.count(old) != 1:
+            raise RuntimeError(
+                f"pinned rocBLAS 6.2 source no longer matches the gfx1103 runtime contract: {path}"
+            )
+        path.write_text(text.replace(old, new), encoding="utf-8")
+
+
+def backport_rocm_6_gfx1103_tensile_runtime(
+    spec: dict,
+    tensile_source: Path,
+    env: dict[str, str],
+    temporary_directory: Path,
+) -> None:
+    """Install Fedora's complete gfx1103 Tensile host-runtime registration."""
+    patch_url = spec.get("tensile_gfx1103_patch_url")
+    if not patch_url:
+        raise RuntimeError("ROCm 6.2 gfx1103 requires a pinned Tensile runtime patch")
+    config_candidates = sorted(
+        tensile_source.rglob("Tensile/cmake/TensileConfig.cmake")
+    )
+    if len(config_candidates) != 1:
+        raise RuntimeError(
+            "ROCm 6.2 Tensile source must contain exactly one TensileConfig.cmake; "
+            f"found {len(config_candidates)}"
+        )
+    source_root = config_candidates[0].parents[2]
+    patch_path = temporary_directory / "tensile-gfx1103-runtime.patch"
+    download_with_retry(
+        str(patch_url), patch_path, "ROCm 6.2 gfx1103 Tensile runtime patch"
+    )
+    includes = [
+        "--include=Tensile/Source/CMakeLists.txt",
+        "--include=Tensile/Source/lib/include/Tensile/AMDGPU.hpp",
+        "--include=Tensile/Source/lib/include/Tensile/PlaceholderLibrary.hpp",
+        "--include=Tensile/Source/lib/include/Tensile/Serialization/Predicates.hpp",
+        "--include=Tensile/Source/lib/source/ocl/OclUtils.cpp",
+    ]
+    run(
+        ["git", "apply", "--check", *includes, str(patch_path)],
+        source_root,
+        env,
+    )
+    run(["git", "apply", *includes, str(patch_path)], source_root, env)
+    runtime_files = tuple(source_root / include.removeprefix("--include=") for include in includes)
+    if any("gfx1103" not in path.read_text(encoding="utf-8") for path in runtime_files):
+        raise RuntimeError("ROCm 6.2 gfx1103 Tensile runtime backport is incomplete")
+
+
+def rebuild_rocm_6_gfx1103_rocblas(
+    build: dict,
+    spec: dict,
+    rocm_root: Path,
+    rocblas_logic: Path,
+    tensile_source: Path,
+    env: dict[str, str],
+    temporary_directory: Path,
+) -> Path:
+    """Rebuild rocBLAS 6.2 so its host runtime and kernels both target gfx1103."""
+    source_root = rocblas_logic.parents[4]
+    config_candidates = sorted(
+        tensile_source.rglob("Tensile/cmake/TensileConfig.cmake")
+    )
+    if len(config_candidates) != 1:
+        raise RuntimeError(
+            "ROCm 6.2 Tensile source must expose exactly one CMake package"
+        )
+    tensile_config = config_candidates[0]
+    tensile_root = tensile_config.parents[1]
+    runtime_before = _first_existing_file(rocm_root, (
+        "lib/librocblas.so", "lib64/librocblas.so",
+        "lib/x86_64-linux-gnu/librocblas.so",
+    ))
+    if runtime_before is None:
+        raise RuntimeError("ROCm 6.2 SDK is missing the stock librocblas.so")
+    digest_before = hashlib.sha256(runtime_before.read_bytes()).hexdigest()
+
+    cmake_build = temporary_directory / "rocblas-gfx1103-build"
+    threads = str(max(1, int(build.get("buildThreads") or 4)))
+    cmake_environment = env.copy()
+    cmake_environment["ROCM_PATH"] = str(rocm_root)
+    cmake_environment["ROCM_HOME"] = str(rocm_root)
+    cmake_environment["HIP_PATH"] = str(rocm_root)
+    _prepend_environment_path(cmake_environment, "PATH", str(rocm_root / "bin"))
+    _prepend_environment_path(
+        cmake_environment, "LD_LIBRARY_PATH", str(rocm_root / "lib")
+    )
+    run(
+        [
+            "cmake", "-G", "Ninja", "-S", str(source_root), "-B", str(cmake_build),
+            "-DCMAKE_BUILD_TYPE=Release",
+            f"-DCMAKE_CXX_COMPILER={rocm_root / 'bin/hipcc'}",
+            f"-DCMAKE_INSTALL_PREFIX={rocm_root}",
+            "-DCMAKE_INSTALL_LIBDIR=lib",
+            f"-DROCM_PATH={rocm_root}",
+            f"-DROCM_PLATFORM_VERSION={spec['version']}",
+            "-DBUILD_SHARED_LIBS=ON",
+            "-DBUILD_WITH_TENSILE=ON",
+            "-DBUILD_WITH_PIP=OFF",
+            "-DBUILD_FILE_REORG_BACKWARD_COMPATIBILITY=OFF",
+            "-DBUILD_CLIENTS_SAMPLES=OFF",
+            "-DBUILD_CLIENTS_TESTS=OFF",
+            "-DBUILD_CLIENTS_BENCHMARKS=OFF",
+            "-DBUILD_FORTRAN_CLIENTS=OFF",
+            f"-DAMDGPU_TARGETS={spec['tensile_architectures']}",
+            "-DTensile_LOGIC=asm_full",
+            f"-DTensile_CODE_OBJECT_VERSION={spec['tensile_code_object_version']}",
+            "-DTensile_LIBRARY_FORMAT=msgpack",
+            "-DTensile_SEPARATE_ARCHITECTURES=OFF",
+            "-DTensile_LAZY_LIBRARY_LOADING=OFF",
+            f"-DTensile_CPU_THREADS={threads}",
+            f"-DTensile_ROOT={tensile_root}",
+            f"-DTensile_DIR={tensile_config.parent}",
+        ],
+        source_root,
+        cmake_environment,
+    )
+    run(
+        ["cmake", "--build", str(cmake_build), "--target", "rocblas", "--parallel", threads],
+        source_root,
+        cmake_environment,
+    )
+    run(["cmake", "--install", str(cmake_build)], source_root, cmake_environment)
+
+    runtime_after = _first_existing_file(rocm_root, (
+        "lib/librocblas.so", "lib64/librocblas.so",
+        "lib/x86_64-linux-gnu/librocblas.so",
+    ))
+    installed = rocm_tensile_data_file(
+        rocm_root, str(spec["tensile_architectures"])
+    )
+    if runtime_after is None or installed is None:
+        raise RuntimeError("ROCm 6.2 gfx1103 rocBLAS rebuild produced an incomplete SDK")
+    digest_after = hashlib.sha256(runtime_after.read_bytes()).hexdigest()
+    if digest_after == digest_before:
+        raise RuntimeError("ROCm 6.2 gfx1103 rebuild did not replace librocblas.so")
+    print(
+        f"[dl4j-rocm] rebuilt gfx1103 rocBLAS runtime={runtime_after} master={installed}",
+        flush=True,
+    )
+    return installed
+
+
 def build_rocm_tensile_data(
     build: dict,
     spec: dict,
@@ -2014,7 +2301,8 @@ def build_rocm_tensile_data(
     temporary_directory: Path,
 ) -> Path:
     """Generate the missing rocBLAS Tensile data for the target AMD ISA."""
-    existing = rocm_tensile_data_file(rocm_root)
+    architecture = str(spec["tensile_architectures"])
+    existing = rocm_tensile_data_file(rocm_root, architecture)
     if existing is not None:
         return existing
     if platform.system().lower() != "linux" or platform.machine().lower() not in {
@@ -2053,6 +2341,25 @@ def build_rocm_tensile_data(
             f"{len(tool_candidates)}"
         )
 
+    if spec.get("tensile_gfx1103_backport"):
+        backport_rocm_6_gfx1103_generator(tensile_source)
+        backport_rocm_6_gfx1103_logic(
+            spec, logic_candidates[0], env, temporary_directory
+        )
+        backport_rocm_6_gfx1103_rocblas_runtime(logic_candidates[0])
+        backport_rocm_6_gfx1103_tensile_runtime(
+            spec, tensile_source, env, temporary_directory
+        )
+        return rebuild_rocm_6_gfx1103_rocblas(
+            build,
+            spec,
+            rocm_root,
+            logic_candidates[0],
+            tensile_source,
+            env,
+            temporary_directory,
+        )
+
     # ROCm 7.2 ships asm_lite/hip fallback tables whose legacy gfx000/hip
     # metadata is rejected by the matching Tensile parser. They are not part
     # of the architecture-specific dispatch table generated for ZLUDA.
@@ -2080,7 +2387,7 @@ def build_rocm_tensile_data(
         [
             generator_python,
             str(tool_candidates[0]),
-            f"--architecture={spec['tensile_architectures']}",
+            f"--architecture={architecture}",
             f"--code-object-version={spec['tensile_code_object_version']}",
             "--no-enumerate",
             f"--jobs={threads}",
@@ -2103,6 +2410,11 @@ def build_rocm_tensile_data(
             f"found {len(generated)}"
         )
     generated_root = generated[0].parent
+    generated_code_objects = sorted(generated_root.rglob(f"*{architecture}*.co"))
+    if not generated_code_objects:
+        raise RuntimeError(
+            f"TensileCreateLibrary produced no {architecture} code objects"
+        )
     destination = rocm_root / "lib" / "rocblas" / "library"
     destination.mkdir(parents=True, exist_ok=True)
     for source_path in generated_root.rglob("*"):
@@ -2111,14 +2423,14 @@ def build_rocm_tensile_data(
         target_path = destination / source_path.relative_to(generated_root)
         target_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source_path, target_path)
-    installed = destination / "TensileLibrary.dat"
-    if not installed.is_file():
+    installed = rocm_tensile_data_file(rocm_root, architecture)
+    if installed is None:
         raise RuntimeError(
-            f"Tensile data generation completed without {installed}"
+            f"Tensile data generation completed without an attested {architecture} payload"
         )
     print(
         f"[dl4j-rocm] generated Tensile data for "
-        f"{spec['tensile_architectures']}: {installed}",
+        f"{architecture}: master={installed} codeObjects={len(generated_code_objects)}",
         flush=True,
     )
     return installed
@@ -2356,6 +2668,9 @@ def prepare_rocm_build_toolchain(
             "tensileSourceUrl": spec["tensile_source_url"],
             "tensileArchitectures": spec["tensile_architectures"],
             "tensileCodeObjectVersion": spec["tensile_code_object_version"],
+            "tensileGfx1103Backport": spec["tensile_gfx1103_backport"],
+            "tensileGfx1103PatchUrl": spec["tensile_gfx1103_patch_url"],
+            "rocblasGfx1103LogicPatchUrl": spec["rocblas_gfx1103_logic_patch_url"],
             "hsakmtSourceUrl": spec["hsakmt_source_url"],
             "hsakmtSourceSubdirectory": spec["hsakmt_source_subdirectory"],
             "hsakmtCmakeSubdirectory": spec["hsakmt_cmake_subdirectory"],
@@ -2367,7 +2682,7 @@ def prepare_rocm_build_toolchain(
     cache_seed_required = False
     try:
         attest_rocm_build_toolchain(build, env, root=rocm_root, emit=False)
-        if rocm_tensile_data_file(rocm_root) is None:
+        if rocm_tensile_data_file(rocm_root, spec["tensile_architectures"]) is None:
             raise RuntimeError("rocBLAS Tensile data is missing")
     except RuntimeError:
         rocm_ready = restore_toolchain_dependency(
@@ -2383,7 +2698,9 @@ def prepare_rocm_build_toolchain(
                 attest_rocm_build_toolchain(
                     build, env, root=rocm_root, emit=False
                 )
-                if rocm_tensile_data_file(rocm_root) is None:
+                if rocm_tensile_data_file(
+                    rocm_root, spec["tensile_architectures"]
+                ) is None:
                     raise RuntimeError("rocBLAS Tensile data is missing")
             except RuntimeError:
                 # Older cache entries may predate the managed ROCt closure.
@@ -2438,7 +2755,7 @@ def prepare_rocm_build_toolchain(
                 Path(temporary_directory),
             )
 
-    if rocm_tensile_data_file(rocm_root) is None:
+    if rocm_tensile_data_file(rocm_root, spec["tensile_architectures"]) is None:
         with tempfile.TemporaryDirectory(prefix="dl4j-tensile-") as temporary_directory:
             build_rocm_tensile_data(
                 build, spec, rocm_root, env, Path(temporary_directory)

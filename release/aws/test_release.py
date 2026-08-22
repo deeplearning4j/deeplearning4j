@@ -2500,16 +2500,30 @@ class ReleaseValidationTest(unittest.TestCase):
             ),
             spec["packages"],
         )
-        self.assertEqual("gfx1100", spec["tensile_architectures"])
+        self.assertEqual("gfx1103", spec["tensile_architectures"])
         self.assertEqual("V4", spec["tensile_code_object_version"])
+        self.assertFalse(spec["tensile_gfx1103_backport"])
+        self.assertIsNone(spec["tensile_gfx1103_patch_url"])
+        self.assertIsNone(spec["rocblas_gfx1103_logic_patch_url"])
         self.assertEqual(
             ("python3-yaml", "python3-msgpack", "python3-joblib"),
             spec["tensile_packages"],
         )
         six_spec = build_platform.rocm_build_spec({**build, "rocmVersion": "6.2.4"})
-        self.assertEqual("gfx1100", six_spec["tensile_architectures"])
+        self.assertEqual("gfx1103", six_spec["tensile_architectures"])
         self.assertEqual("V4", six_spec["tensile_code_object_version"])
+        self.assertTrue(six_spec["tensile_gfx1103_backport"])
+        self.assertIn(
+            "6f308b0956b7736ae874b07f8ebc9f404fa2fae5",
+            six_spec["tensile_gfx1103_patch_url"],
+        )
+        self.assertIn(
+            "74df24057a4579f507a50431aaa96ae7484d1567",
+            six_spec["rocblas_gfx1103_logic_patch_url"],
+        )
         self.assertIn("hsakmt-roct-dev", six_spec["packages"])
+        self.assertIn("libmsgpack-dev", six_spec["packages"])
+        self.assertIn("ninja-build", six_spec["packages"])
         self.assertTrue(six_spec["hsakmt_disable_static_drm_target"])
         self.assertFalse(spec["hsakmt_disable_static_drm_target"])
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -2572,6 +2586,101 @@ class ReleaseValidationTest(unittest.TestCase):
             )
         with self.assertRaisesRegex(ValueError, "rocmBuildOnly=true"):
             build_platform.rocm_build_spec(dict(build, rocmBuildOnly=False))
+
+    def test_rocm_tensile_payload_requires_target_code_objects(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            library = root / "lib/rocblas/library"
+            library.mkdir(parents=True)
+            master = library / "TensileLibrary.dat"
+            master.write_text("dispatch", encoding="utf-8")
+
+            self.assertIsNone(build_platform.rocm_tensile_data_file(root, "gfx1103"))
+            (library / "TensileLibrary_gfx1100.co").write_text(
+                "wrong architecture", encoding="utf-8"
+            )
+            self.assertIsNone(build_platform.rocm_tensile_data_file(root, "gfx1103"))
+            (library / "TensileLibrary_gfx1103.co").write_text(
+                "phoenix", encoding="utf-8"
+            )
+            self.assertEqual(
+                master, build_platform.rocm_tensile_data_file(root, "gfx1103")
+            )
+            second = root / "other/rocblas/library"
+            second.mkdir(parents=True)
+            (second / "TensileLibrary.dat").write_text("stale", encoding="utf-8")
+            (second / "TensileLibrary_gfx1103.co").write_text(
+                "ambiguous", encoding="utf-8"
+            )
+            self.assertIsNone(build_platform.rocm_tensile_data_file(root, "gfx1103"))
+
+    def test_rocm_6_gfx1103_generator_backport_is_fail_closed(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            tensile = root / "Tensile"
+            tensile.mkdir()
+            common = tensile / "Common.py"
+            common.write_text(
+                "globalParameters['SupportedISA'] = [\n"
+                "                                    (11,0,0), (11,0,1), (11,0,2),\n"
+                "                                    (11,5,1)]\n"
+                "architectureMap = {\n"
+                "  'gfx1100':'navi31', 'gfx1101':'navi32', 'gfx1102':'navi33',\n"
+                "  'gfx1151':'gfx1151'\n}\n",
+                encoding="utf-8",
+            )
+            caps = tensile / "AsmCaps.py"
+            caps.write_text(
+                "CACHED_ASM_CAPS = {(11, 0, 2): {'SupportedISA': True}}\n",
+                encoding="utf-8",
+            )
+
+            build_platform.backport_rocm_6_gfx1103_generator(root)
+
+            self.assertIn("(11,0,3)", common.read_text(encoding="utf-8"))
+            self.assertIn("'gfx1103':'phoenix'", common.read_text(encoding="utf-8"))
+            self.assertIn(
+                "CACHED_ASM_CAPS[(11, 0, 3)]",
+                caps.read_text(encoding="utf-8"),
+            )
+            namespace = {}
+            exec(caps.read_text(encoding="utf-8"), namespace)
+            self.assertEqual(
+                namespace["CACHED_ASM_CAPS"][(11, 0, 2)],
+                namespace["CACHED_ASM_CAPS"][(11, 0, 3)],
+            )
+            with self.assertRaisesRegex(RuntimeError, "no longer matches"):
+                build_platform.backport_rocm_6_gfx1103_generator(root)
+
+    def test_rocm_6_gfx1103_rocblas_runtime_backport_is_complete(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            source = Path(temporary_directory) / "rocblas"
+            logic = source / "library/src/blas3/Tensile/Logic"
+            include = source / "library/src/include"
+            logic.mkdir(parents=True)
+            include.mkdir(parents=True)
+            handle_header = include / "handle.hpp"
+            handle_header.write_text(
+                "    gfx1102 = 1102,\n    gfx1151 = 1151\n", encoding="utf-8"
+            )
+            handle = source / "library/src/handle.cpp"
+            handle.write_text(
+                "    else if(deviceString.find(\"gfx1151\") != std::string::npos)\n"
+                "    {\n        return Processor::gfx1151;\n    }\n",
+                encoding="utf-8",
+            )
+            tensile_host = source / "library/src/tensile_host.cpp"
+            tensile_host.write_text(
+                "    else if(deviceString.find(\"gfx1102\") != std::string::npos)\n"
+                "    {\n        return Tensile::LazyLoadingInit::gfx1102;\n    }\n"
+                "    return Tensile::LazyLoadingInit::None;\n",
+                encoding="utf-8",
+            )
+
+            build_platform.backport_rocm_6_gfx1103_rocblas_runtime(logic)
+
+            for path in (handle_header, handle, tensile_host):
+                self.assertIn("gfx1103", path.read_text(encoding="utf-8"))
 
     def test_rocm_sdk_provisioning_installs_no_kernel_driver(self):
         build = {
