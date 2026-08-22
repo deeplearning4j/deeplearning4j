@@ -28,7 +28,6 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -637,13 +636,6 @@ public final class SharedCompilerRuntime {
                             "Classifier resource '" + resourceName
                                     + "' declared by " + source + " is missing");
                 }
-                File cached = Loader.cacheResource(resource);
-                if (cached == null || !cached.isFile()) {
-                    throw new IllegalStateException(
-                            "Cannot extract classifier resource '" + resourceName
-                                    + "' declared by " + source);
-                }
-
                 Path destination = cacheDirectory.resolve(resourceName)
                         .toAbsolutePath().normalize();
                 if (!destination.startsWith(cacheDirectory)) {
@@ -651,15 +643,18 @@ public final class SharedCompilerRuntime {
                             "Classifier resource escapes JavaCPP cache directory: "
                                     + resourceName);
                 }
-                Path cachedPath = cached.toPath().toAbsolutePath().normalize();
-                if (destination.equals(cachedPath)) {
-                    continue;
-                }
                 Files.createDirectories(destination.getParent());
-                if (!Files.isRegularFile(destination)
-                        || Files.size(destination) != Files.size(cachedPath)) {
-                    Files.copy(cachedPath, destination,
-                            StandardCopyOption.REPLACE_EXISTING);
+                if (!Files.isRegularFile(destination)) {
+                    File extracted = Loader.extractResource(
+                            resource, destination.toFile(), null, null);
+                    if (extracted == null
+                            || !destination.equals(extracted.toPath()
+                            .toAbsolutePath().normalize())) {
+                        throw new IllegalStateException(
+                                "Cannot extract classifier resource '" + resourceName
+                                        + "' to its runtime-relative path declared by "
+                                        + source);
+                    }
                 }
                 if (!Files.isRegularFile(destination)) {
                     throw new IllegalStateException(
