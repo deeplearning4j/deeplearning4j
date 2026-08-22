@@ -150,8 +150,8 @@
     {
       "id": "linux-x86_64-tpu", "sourceWorkflow": "build-deploy-linux-tpu.yml",
       "os": "linux", "architecture": "x86_64", "imageProject": "ubuntu-os-cloud", "imageFamily": "ubuntu-2204-lts", "machineClass": "x86", "worker": "worker.sh", "workloads": ["maven"],
-      "artifactRules": {"mode": "classifier", "artifactIds": ["nd4j-tpu", "nd4j-tpu-preset"], "classifierTokens": ["linux-x86_64"], "unclassifiedArtifactIds": ["nd4j-tpu", "nd4j-tpu-preset"], "includeMetadata": true},
-      "build": {"backend": "tpu", "javacppPlatform": "linux-x86_64", "profiles": ["tpu", "sdx"], "modules": [":nd4j-tpu", ":nd4j-tpu-preset", ":libnd4j"], "mavenArgs": ["-Dlibnd4j.tpu", "-Dplatform.classifier=linux-x86_64"], "variants": [{"name": "base", "suffix": ""}], "buildThreads": 48}
+      "artifactRules": {"mode": "classifier", "artifactIds": ["nd4j-tpu", "nd4j-tpu-preset", "nd4j-cpu-backend-common"], "classifierTokens": ["linux-x86_64"], "unclassifiedArtifactIds": ["nd4j-tpu", "nd4j-tpu-preset", "nd4j-cpu-backend-common"], "includeMetadata": true},
+      "build": {"backend": "tpu", "javacppPlatform": "linux-x86_64", "profiles": ["tpu", "sdx"], "modules": [":nd4j-tpu", ":nd4j-tpu-preset", ":libnd4j", ":nd4j-cpu-backend-common"], "mavenArgs": ["-Dlibnd4j.tpu", "-Dplatform.classifier=linux-x86_64"], "variants": [{"name": "base", "suffix": ""}], "buildThreads": 48}
     },
     {
       "id": "linux-x86_64-zluda", "sourceWorkflow": "build-deploy-linux-zluda.yml",

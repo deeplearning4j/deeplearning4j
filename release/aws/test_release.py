@@ -372,6 +372,31 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("mingw-w64-x86_64-vulkan-headers", action_source)
         self.assertIn("mingw-w64-x86_64-vulkan-loader", action_source)
 
+    def test_tpu_release_includes_cpu_backend_dependency(self):
+        root = Path(__file__).parents[2]
+        for provider in ("aws", "azure", "gcp"):
+            plan = json.loads(
+                (root / f"release/{provider}/release-plan.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            shard = next(
+                item for item in plan["shards"] if item["id"] == "linux-x86_64-tpu"
+            )
+            self.assertIn(
+                ":nd4j-cpu-backend-common", shard["build"]["modules"], provider
+            )
+            self.assertIn(
+                "nd4j-cpu-backend-common",
+                shard["artifactRules"]["artifactIds"],
+                provider,
+            )
+            self.assertIn(
+                "nd4j-cpu-backend-common",
+                shard["artifactRules"]["unclassifiedArtifactIds"],
+                provider,
+            )
+
     def test_sdx_classifier_tokens_include_backend_specific_runtime_jars(self):
         build = {
             "backend": "vulkan",
