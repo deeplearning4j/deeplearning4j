@@ -2235,10 +2235,19 @@ def rebuild_rocm_6_gfx1103_rocblas(
 
     cmake_build = temporary_directory / "rocblas-gfx1103-build"
     threads = str(max(1, int(build.get("buildThreads") or 4)))
+    generator_python = (
+        "/usr/bin/python3" if Path("/usr/bin/python3").is_file() else sys.executable
+    )
     cmake_environment = env.copy()
     cmake_environment["ROCM_PATH"] = str(rocm_root)
     cmake_environment["ROCM_HOME"] = str(rocm_root)
     cmake_environment["HIP_PATH"] = str(rocm_root)
+    # Tensile's Linux CMake integration executes its script directly through
+    # `env python3`. Keep that shebang and CMake's `python` variable on the same
+    # interpreter where the pinned apt generator dependencies were installed.
+    _prepend_environment_path(
+        cmake_environment, "PATH", str(Path(generator_python).parent)
+    )
     _prepend_environment_path(cmake_environment, "PATH", str(rocm_root / "bin"))
     _prepend_environment_path(
         cmake_environment, "LD_LIBRARY_PATH", str(rocm_root / "lib")
@@ -2248,6 +2257,7 @@ def rebuild_rocm_6_gfx1103_rocblas(
             "cmake", "-G", "Ninja", "-S", str(source_root), "-B", str(cmake_build),
             "-DCMAKE_BUILD_TYPE=Release",
             f"-DCMAKE_CXX_COMPILER={rocm_root / 'bin/hipcc'}",
+            f"-Dpython={generator_python}",
             f"-DCMAKE_INSTALL_PREFIX={rocm_root}",
             "-DCMAKE_INSTALL_LIBDIR=lib",
             f"-DROCM_PATH={rocm_root}",

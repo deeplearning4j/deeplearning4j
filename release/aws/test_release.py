@@ -2686,6 +2686,57 @@ class ReleaseValidationTest(unittest.TestCase):
                 tensile_host.read_text(encoding="utf-8"),
             )
 
+    def test_rocm_6_rebuild_pins_tensile_to_system_python(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            source = root / "rocblas"
+            logic = source / "library/src/blas3/Tensile/Logic"
+            logic.mkdir(parents=True)
+            tensile_source = root / "tensile-source"
+            tensile_config = tensile_source / "Tensile/cmake/TensileConfig.cmake"
+            tensile_config.parent.mkdir(parents=True)
+            tensile_config.write_text("config", encoding="utf-8")
+            rocm_root = root / "rocm"
+            runtime = rocm_root / "lib/librocblas.so"
+            runtime.parent.mkdir(parents=True)
+            runtime.write_bytes(b"stock-runtime")
+            calls = []
+
+            def fake_run(command, cwd, environment):
+                calls.append((command, cwd, environment.copy()))
+                if command[:2] == ["cmake", "--install"]:
+                    runtime.write_bytes(b"gfx1103-runtime")
+                    library = rocm_root / "lib/rocblas/library"
+                    library.mkdir(parents=True)
+                    (library / "TensileLibrary.dat").write_bytes(b"dispatch")
+                    (library / "TensileLibrary_gfx1103.co").write_bytes(b"code-object")
+
+            with patch.object(build_platform, "run", side_effect=fake_run), patch.object(
+                build_platform.Path, "is_file", return_value=True
+            ):
+                installed = build_platform.rebuild_rocm_6_gfx1103_rocblas(
+                    {"buildThreads": 4},
+                    {
+                        "version": "6.2.4",
+                        "tensile_architectures": "gfx1103",
+                        "tensile_code_object_version": "V4",
+                    },
+                    rocm_root,
+                    logic,
+                    tensile_source,
+                    {"PATH": "/actions/python:/usr/bin"},
+                    root / "work",
+                )
+
+            self.assertEqual(
+                rocm_root / "lib/rocblas/library/TensileLibrary.dat", installed
+            )
+            configure, _, configure_environment = calls[0]
+            self.assertIn("-Dpython=/usr/bin/python3", configure)
+            path_entries = configure_environment["PATH"].split(os.pathsep)
+            self.assertEqual(str(rocm_root / "bin"), path_entries[0])
+            self.assertEqual("/usr/bin", path_entries[1])
+
     def test_rocm_sdk_provisioning_installs_no_kernel_driver(self):
         build = {
             "zludaVersion": "v6",
