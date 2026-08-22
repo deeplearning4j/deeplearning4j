@@ -1133,7 +1133,11 @@ class ReleaseValidationTest(unittest.TestCase):
         expected_profiles = {
             "cuda": {"nd4j-cuda-backend-common", "nd4j-cuda", "nd4j-cuda-preset", "nd4j-cuda-platform"},
             "metal": {"nd4j-metal", "nd4j-metal-preset"},
-            "tpu": {"nd4j-tpu", "nd4j-tpu-preset"},
+            "tpu": {
+                "nd4j-tpu",
+                "nd4j-tpu-preset",
+                "nd4j-cpu-backend-common",
+            },
             "hexagon": {"nd4j-hexagon", "nd4j-hexagon-preset"},
             "vulkan": {"nd4j-vulkan", "nd4j-vulkan-preset", "nd4j-vulkan-platform"},
             "zluda": {"nd4j-cuda-backend-common", "nd4j-zluda"},

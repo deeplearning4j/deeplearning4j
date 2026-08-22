@@ -241,6 +241,7 @@
             <modules>
                 <module>nd4j-tpu</module>
                 <module>nd4j-tpu-preset</module>
+                <module>nd4j-cpu-backend-common</module>
             </modules>
 
         </profile>
