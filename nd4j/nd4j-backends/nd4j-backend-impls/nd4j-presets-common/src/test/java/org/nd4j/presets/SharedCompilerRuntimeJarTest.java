@@ -97,6 +97,10 @@ class SharedCompilerRuntimeJarTest {
                     canonicalPath.resolveSibling("libcuda.so"), canonicalPath));
             assertTrue(Files.isSameFile(
                     canonicalPath.resolveSibling("libcuda.so.1"), canonicalPath));
+            Path materializedTensile = canonicalPath.getParent().resolve(
+                    "rocblas/library/TensileLibrary.dat");
+            assertTrue(Files.isRegularFile(materializedTensile));
+            assertEquals("tensile-data", Files.readString(materializedTensile));
             URL tensileResource = resourceLoader.getResource(
                     classifierRoot + "rocblas/library/TensileLibrary.dat");
             assertTrue(tensileResource != null);

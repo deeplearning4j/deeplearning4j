@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -604,18 +605,67 @@ public final class SharedCompilerRuntime {
             String runtimeResourceRoot,
             RuntimeManifest manifest,
             String source) throws IOException {
-        for (String resourceName : manifest.resourceNames) {
-            URL resource = classLoader.getResource(runtimeResourceRoot + resourceName);
-            if (resource == null) {
-                throw new IllegalStateException(
-                        "Classifier resource '" + resourceName
-                                + "' declared by " + source + " is missing");
-            }
-            File cached = Loader.cacheResource(resource);
-            if (cached == null || !cached.isFile()) {
-                throw new IllegalStateException(
-                        "Cannot extract classifier resource '" + resourceName
-                                + "' declared by " + source);
+        if (manifest.resourceNames.isEmpty()) {
+            return;
+        }
+        if (manifest.runtimeNames.isEmpty()) {
+            throw new IllegalStateException(
+                    "Compiler runtime manifest " + source
+                            + " declares resources without a runtime directory");
+        }
+
+        String anchorName = manifest.runtimeNames.iterator().next();
+        URL anchorResource = classLoader.getResource(runtimeResourceRoot + anchorName);
+        File cachedAnchor = anchorResource == null
+                ? null : Loader.cacheResource(anchorResource);
+        if (cachedAnchor == null || !cachedAnchor.isFile()) {
+            throw new IllegalStateException(
+                    "Cannot extract runtime anchor '" + anchorName
+                            + "' declared by " + source);
+        }
+        Path cacheDirectory = cachedAnchor.toPath().toAbsolutePath()
+                .normalize().getParent();
+        Path lockPath = cacheDirectory.resolve(".nd4j-shared-runtime-resources.lock");
+        try (FileChannel channel = FileChannel.open(
+                lockPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+             FileLock ignored = channel.lock()) {
+            for (String resourceName : manifest.resourceNames) {
+                URL resource = classLoader.getResource(
+                        runtimeResourceRoot + resourceName);
+                if (resource == null) {
+                    throw new IllegalStateException(
+                            "Classifier resource '" + resourceName
+                                    + "' declared by " + source + " is missing");
+                }
+                File cached = Loader.cacheResource(resource);
+                if (cached == null || !cached.isFile()) {
+                    throw new IllegalStateException(
+                            "Cannot extract classifier resource '" + resourceName
+                                    + "' declared by " + source);
+                }
+
+                Path destination = cacheDirectory.resolve(resourceName)
+                        .toAbsolutePath().normalize();
+                if (!destination.startsWith(cacheDirectory)) {
+                    throw new IllegalStateException(
+                            "Classifier resource escapes JavaCPP cache directory: "
+                                    + resourceName);
+                }
+                Path cachedPath = cached.toPath().toAbsolutePath().normalize();
+                if (destination.equals(cachedPath)) {
+                    continue;
+                }
+                Files.createDirectories(destination.getParent());
+                if (!Files.isRegularFile(destination)
+                        || Files.size(destination) != Files.size(cachedPath)) {
+                    Files.copy(cachedPath, destination,
+                            StandardCopyOption.REPLACE_EXISTING);
+                }
+                if (!Files.isRegularFile(destination)) {
+                    throw new IllegalStateException(
+                            "Cannot materialize classifier resource '" + resourceName
+                                    + "' beside runtimes declared by " + source);
+                }
             }
         }
     }
