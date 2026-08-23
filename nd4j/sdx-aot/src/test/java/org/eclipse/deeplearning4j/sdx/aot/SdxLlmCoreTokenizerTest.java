@@ -71,13 +71,13 @@ class SdxLlmCoreTokenizerTest {
     }
 
     @Test
-    void standardDiagnosticModeClearsPriorImporterDiagnostics() {
+    void offDiagnosticModeIsDefaultAndClearsPriorImporterDiagnostics() {
         System.setProperty(ND4JSystemProperties.DSP_DIAGNOSTICS, "ALL");
         System.setProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_LEVEL, "full");
         System.setProperty(ND4JSystemProperties.DSP_NATIVE_DUMP_OUTPUTS, "true");
 
         assertEquals(
-                "standard",
+                "off",
                 SdxGgufModelPreparer.configureDiagnostics(new ObjectMapper().createObjectNode()));
         assertNull(System.getProperty(ND4JSystemProperties.DSP_DIAGNOSTICS));
         assertNull(System.getProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_LEVEL));

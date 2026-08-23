@@ -643,12 +643,13 @@ final class SdxGgufModelPreparer {
     }
 
     static String configureDiagnostics(JsonNode options) {
-        String mode = options.path("diagnosticMode").asText("standard").trim()
+        String mode = options.path("diagnosticMode").asText("off").trim()
                 .toLowerCase(Locale.ROOT);
         // Validate before mutating process-wide state. Android also applies the matching
         // ND4J_DSP_* environment variables before creating the Graal/native runtime; these
         // properties mirror that authoritative mode for Java importer/SameDiff diagnostics.
         switch (mode) {
+            case "off":
             case "standard":
             case "verbose":
             case "op_sanity":
@@ -663,6 +664,7 @@ final class SdxGgufModelPreparer {
         System.clearProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_LEVEL);
         System.clearProperty(ND4JSystemProperties.DSP_NATIVE_DUMP_OUTPUTS);
         switch (mode) {
+            case "off":
             case "standard":
                 return mode;
             case "verbose":
