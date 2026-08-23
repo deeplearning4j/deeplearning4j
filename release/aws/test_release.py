@@ -396,6 +396,9 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("-DLLVM_ENABLE_ZSTD=OFF", dependencies)
         self.assertIn("-DLLVM_ENABLE_ZLIB=OFF", dependencies)
         self.assertIn("managed-llvm-mingw-vulkan-static-v1", dependencies)
+        self.assertIn('"${CMAKE_BINARY_DIR}/tllvm_mwv_${_TRITON_LLVM_SHORT_ID}"', dependencies)
+        self.assertIn('"${CMAKE_BINARY_DIR}/tllvm_mwv_install"', dependencies)
+        self.assertNotIn("triton_llvm_mingw_vulkan_static_install", dependencies)
         self.assertIn("--target ${_TRITON_LLVM_BUILD_TARGETS}", dependencies)
         self.assertNotIn("--target all MLIRExecutionEngineShared", dependencies)
 

@@ -1813,7 +1813,7 @@ function(setup_triton)
         set(TRITON_LLVM_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_llvm_install")
     elseif(_TRITON_MINGW_VULKAN_STATIC)
         set(TRITON_LLVM_INSTALL_DIR
-            "${CMAKE_BINARY_DIR}/triton_llvm_mingw_vulkan_static_install")
+            "${CMAKE_BINARY_DIR}/tllvm_mwv_install")
     else()
         set(TRITON_LLVM_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_llvm_install")
     endif()
@@ -2178,8 +2178,21 @@ function(setup_triton)
         # without consuming Triton emitter code.
         set(TRITON_LLVM_COMMIT "f6ded0be897e2878612dd903f7e8bb85448269e5")
         set(TRITON_LLVM_URL_HASH "SHA256=f63c624aa63eda73508b9df2be2a6945ea4fddbee58615fbe1cd747b6884dd5e")
-        set(TRITON_LLVM_PREFIX
-            "${CMAKE_BINARY_DIR}/triton_llvm_${_TRITON_LLVM_RECIPE_REVISION}")
+        if(_TRITON_MINGW_VULKAN_STATIC)
+            # MinGW binutils still enforce legacy path limits even when Windows
+            # long-path support is enabled. Keep the descriptive recipe in the
+            # cache key/marker, but use a compact hashed ExternalProject root so
+            # deeply nested MLIR object files remain below CMAKE_OBJECT_PATH_MAX.
+            string(SHA256 _TRITON_LLVM_SHORT_ID
+                "${_TRITON_LLVM_RECIPE_REVISION};${TRITON_LLVM_COMMIT}")
+            string(SUBSTRING "${_TRITON_LLVM_SHORT_ID}" 0 8
+                _TRITON_LLVM_SHORT_ID)
+            set(TRITON_LLVM_PREFIX
+                "${CMAKE_BINARY_DIR}/tllvm_mwv_${_TRITON_LLVM_SHORT_ID}")
+        else()
+            set(TRITON_LLVM_PREFIX
+                "${CMAKE_BINARY_DIR}/triton_llvm_${_TRITON_LLVM_RECIPE_REVISION}")
+        endif()
         set(_TRITON_LLVM_PATCH_SCF_TO_SPIRV_ZERO_TRIP ON)
     endif()
 
