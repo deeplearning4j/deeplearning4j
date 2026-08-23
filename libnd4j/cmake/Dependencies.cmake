@@ -1736,6 +1736,28 @@ function(setup_triton)
     endif()
     set(SD_TRITON_CONSUMER_KIND "${_TRITON_CONSUMER_KIND}" CACHE INTERNAL
         "Compiler package consumer selected by setup_triton" FORCE)
+    # Upstream deliberately does not support its monolithic LLVM/MLIR DLL graph
+    # on MinGW. Vulkan needs only the MLIR-to-SPIR-V component graph, so embed
+    # those upstream static targets in nd4jvulkan instead of forcing unsupported
+    # shared targets (especially MLIRExecutionEngineShared) into existence.
+    set(_TRITON_MINGW_VULKAN_STATIC OFF)
+    if(MINGW AND _TRITON_CONSUMER_KIND STREQUAL "VULKAN_SPIRV")
+        set(_TRITON_MINGW_VULKAN_STATIC ON)
+    endif()
+    set(SD_TRITON_MANAGED_LLVM_STATIC "${_TRITON_MINGW_VULKAN_STATIC}"
+        CACHE INTERNAL "Managed LLVM/MLIR uses the static MinGW Vulkan graph" FORCE)
+    set(_TRITON_VULKAN_STATIC_MLIR_TARGETS
+        MLIRParser
+        MLIRTransforms
+        MLIRLinalgDialect
+        MLIRGPUTransforms
+        MLIRGPUToSPIRV
+        MLIRMathToSPIRV
+        MLIRSPIRVTransforms
+        MLIRSPIRVSerialization)
+    set(SD_TRITON_VULKAN_STATIC_MLIR_TARGETS
+        "${_TRITON_VULKAN_STATIC_MLIR_TARGETS}" CACHE INTERNAL
+        "Static MLIR component graph required by MinGW Vulkan" FORCE)
     set(HAVE_TRITON_CPU OFF CACHE BOOL "Triton CPU backend" FORCE)
     set(HAVE_TRITON_CPU OFF PARENT_SCOPE)
 
@@ -1789,6 +1811,9 @@ function(setup_triton)
     elseif(_TRITON_CONSUMER_KIND STREQUAL "GPU_EMITTER")
         set(TRITON_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_install")
         set(TRITON_LLVM_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_llvm_install")
+    elseif(_TRITON_MINGW_VULKAN_STATIC)
+        set(TRITON_LLVM_INSTALL_DIR
+            "${CMAKE_BINARY_DIR}/triton_llvm_mingw_vulkan_static_install")
     else()
         set(TRITON_LLVM_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_llvm_install")
     endif()
@@ -1804,7 +1829,10 @@ function(setup_triton)
     # cache-compatible.
     set(_TRITON_LLVM_RECIPE_REVISION "managed-llvm-patches-v12")
     set(_TRITON_COMPILER_RECIPE_REVISION "managed-llvm-patches-v12")
-    if(CMAKE_HOST_WIN32 OR MINGW)
+    if(_TRITON_MINGW_VULKAN_STATIC)
+        set(_TRITON_LLVM_RECIPE_REVISION "managed-llvm-mingw-vulkan-static-v1")
+        set(_TRITON_COMPILER_RECIPE_REVISION "managed-llvm-mingw-vulkan-static-v1")
+    elseif(CMAKE_HOST_WIN32 OR MINGW)
         set(_TRITON_LLVM_RECIPE_REVISION "managed-llvm-patches-v16")
         set(_TRITON_COMPILER_RECIPE_REVISION "managed-llvm-patches-v16")
     endif()
@@ -1833,8 +1861,32 @@ function(setup_triton)
         "${_TRITON_LLVM_DSO_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}MLIR${CMAKE_SHARED_LIBRARY_SUFFIX}")
     set(_TRITON_MLIR_EXECUTION_ENGINE_SHARED_LIBRARY
         "${_TRITON_LLVM_DSO_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}MLIRExecutionEngineShared${CMAKE_SHARED_LIBRARY_SUFFIX}")
+    set(_TRITON_LLVM_STATIC_REQUIRED_FILES
+        "${TRITON_LLVM_INSTALL_DIR}/lib/libMLIRParser.a"
+        "${TRITON_LLVM_INSTALL_DIR}/lib/libMLIRTransforms.a"
+        "${TRITON_LLVM_INSTALL_DIR}/lib/libMLIRLinalgDialect.a"
+        "${TRITON_LLVM_INSTALL_DIR}/lib/libMLIRGPUTransforms.a"
+        "${TRITON_LLVM_INSTALL_DIR}/lib/libMLIRGPUToSPIRV.a"
+        "${TRITON_LLVM_INSTALL_DIR}/lib/libMLIRMathToSPIRV.a"
+        "${TRITON_LLVM_INSTALL_DIR}/lib/libMLIRSPIRVTransforms.a"
+        "${TRITON_LLVM_INSTALL_DIR}/lib/libMLIRSPIRVSerialization.a"
+        "${TRITON_LLVM_INSTALL_DIR}/lib/libLLVMSupport.a")
+    set(_TRITON_LLVM_STATIC_FILES_COMPLETE TRUE)
+    foreach(_triton_static_file IN LISTS _TRITON_LLVM_STATIC_REQUIRED_FILES)
+        if(NOT EXISTS "${_triton_static_file}")
+            set(_TRITON_LLVM_STATIC_FILES_COMPLETE FALSE)
+        endif()
+    endforeach()
     set(_TRITON_LLVM_INSTALL_COMPLETE FALSE)
-    if(EXISTS "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/llvm/LLVMConfig.cmake" AND
+    if(_TRITON_MINGW_VULKAN_STATIC AND
+       EXISTS "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/llvm/LLVMConfig.cmake" AND
+       EXISTS "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir/MLIRConfig.cmake" AND
+       _TRITON_LLVM_STATIC_FILES_COMPLETE AND
+       (EXISTS "${_TRITON_LLVM_INSTALL_MARKER}" OR
+        NOT _managed_llvm_root_from_config STREQUAL ""))
+        set(_TRITON_LLVM_INSTALL_COMPLETE TRUE)
+    elseif(NOT _TRITON_MINGW_VULKAN_STATIC AND
+       EXISTS "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/llvm/LLVMConfig.cmake" AND
        EXISTS "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir/MLIRConfig.cmake" AND
        EXISTS "${_TRITON_LLVM_SHARED_LIBRARY}" AND
        EXISTS "${_TRITON_MLIR_SHARED_LIBRARY}" AND
@@ -1894,74 +1946,79 @@ function(setup_triton)
                     target_link_libraries(triton_interface INTERFACE "${TRITON_INSTALL_DIR}/lib/libtriton.a")
                 endif()
             endif()
-            # Consume the monolithic shared libraries exported by the pinned
-            # LLVM/MLIR install. This preserves LLVM/MLIR's DSO boundaries and lets
-            # independent LLVM/MLIR versions coexist in the same process.
             set(LLVM_DIR "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/llvm" CACHE PATH
                 "Project-managed target LLVM package" FORCE)
             set(MLIR_DIR "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir" CACHE PATH
                 "Project-managed target MLIR package" FORCE)
-            set(LLVM_LINK_LLVM_DYLIB ON)
-            set(MLIR_LINK_MLIR_DYLIB ON)
-            find_package(LLVM CONFIG REQUIRED PATHS "${LLVM_DIR}" NO_DEFAULT_PATH)
-            find_package(MLIR CONFIG REQUIRED PATHS "${MLIR_DIR}" NO_DEFAULT_PATH)
-
-            foreach(_triton_shared_target MLIR LLVM)
-                if(NOT TARGET ${_triton_shared_target})
-                    message(FATAL_ERROR
-                        "Triton LLVM install at ${TRITON_LLVM_INSTALL_DIR} does not export "
-                        "the required shared target '${_triton_shared_target}'. Remove that "
-                        "install and reconfigure so it is rebuilt with LLVM_BUILD_LLVM_DYLIB, "
-                        "LLVM_LINK_LLVM_DYLIB, MLIR_BUILD_MLIR_DYLIB, and "
-                        "MLIR_LINK_MLIR_DYLIB enabled.")
-                endif()
-                get_target_property(_triton_shared_type ${_triton_shared_target} TYPE)
-                get_target_property(_triton_shared_location ${_triton_shared_target} IMPORTED_LOCATION_RELEASE)
-                if(NOT _triton_shared_location)
-                    get_target_property(_triton_shared_location ${_triton_shared_target} IMPORTED_LOCATION)
-                endif()
-                if(NOT _triton_shared_type STREQUAL "SHARED_LIBRARY" OR
-                   NOT _triton_shared_location OR
-                   NOT EXISTS "${_triton_shared_location}")
-                    message(FATAL_ERROR
-                        "Triton requires an installed shared ${_triton_shared_target} target; "
-                        "got type='${_triton_shared_type}', location='${_triton_shared_location}'.")
-                endif()
+            if(_TRITON_MINGW_VULKAN_STATIC)
+                set(LLVM_LINK_LLVM_DYLIB OFF)
+                set(MLIR_LINK_MLIR_DYLIB OFF)
+                find_package(LLVM CONFIG REQUIRED PATHS "${LLVM_DIR}" NO_DEFAULT_PATH)
+                find_package(MLIR CONFIG REQUIRED PATHS "${MLIR_DIR}" NO_DEFAULT_PATH)
+                foreach(_triton_static_target IN LISTS _TRITON_VULKAN_STATIC_MLIR_TARGETS)
+                    if(NOT TARGET ${_triton_static_target})
+                        message(FATAL_ERROR
+                            "Static MinGW Vulkan package does not export '${_triton_static_target}'")
+                    endif()
+                endforeach()
+                target_link_libraries(triton_interface INTERFACE
+                    ${_TRITON_VULKAN_STATIC_MLIR_TARGETS})
                 message(STATUS
-                    "Triton shared ${_triton_shared_target}: ${_triton_shared_location}")
-            endforeach()
-
-            # Normalize package-exported MLIR/LLVM targets to the same project-owned
-            # imported target names used by the fresh/cache-restored path. Downstream
-            # linking and runtime packaging must not depend on which setup path ran.
-            if(NOT TARGET triton_llvm_shared)
-                add_library(triton_llvm_shared SHARED IMPORTED GLOBAL)
-                if(WIN32)
-                    set_target_properties(triton_llvm_shared PROPERTIES
-                        IMPORTED_LOCATION "${_TRITON_LLVM_SHARED_LIBRARY}"
-                        IMPORTED_IMPLIB "${TRITON_LLVM_INSTALL_DIR}/lib/libLLVM.dll.a")
-                else()
-                    set_target_properties(triton_llvm_shared PROPERTIES
-                        IMPORTED_LOCATION "${_TRITON_LLVM_SHARED_LIBRARY}")
+                    "Triton interface: upstream static MLIR-to-SPIR-V graph (reused MinGW Vulkan install)")
+            else()
+                # Consume the monolithic shared libraries exported by the pinned
+                # LLVM/MLIR install. This preserves LLVM/MLIR's DSO boundaries and
+                # lets independent LLVM/MLIR versions coexist in the same process.
+                set(LLVM_LINK_LLVM_DYLIB ON)
+                set(MLIR_LINK_MLIR_DYLIB ON)
+                find_package(LLVM CONFIG REQUIRED PATHS "${LLVM_DIR}" NO_DEFAULT_PATH)
+                find_package(MLIR CONFIG REQUIRED PATHS "${MLIR_DIR}" NO_DEFAULT_PATH)
+                foreach(_triton_shared_target MLIR LLVM)
+                    if(NOT TARGET ${_triton_shared_target})
+                        message(FATAL_ERROR
+                            "Triton LLVM install at ${TRITON_LLVM_INSTALL_DIR} does not export "
+                            "the required shared target '${_triton_shared_target}'.")
+                    endif()
+                    get_target_property(_triton_shared_type ${_triton_shared_target} TYPE)
+                    get_target_property(_triton_shared_location ${_triton_shared_target} IMPORTED_LOCATION_RELEASE)
+                    if(NOT _triton_shared_location)
+                        get_target_property(_triton_shared_location ${_triton_shared_target} IMPORTED_LOCATION)
+                    endif()
+                    if(NOT _triton_shared_type STREQUAL "SHARED_LIBRARY" OR
+                       NOT _triton_shared_location OR
+                       NOT EXISTS "${_triton_shared_location}")
+                        message(FATAL_ERROR
+                            "Triton requires an installed shared ${_triton_shared_target} target; "
+                            "got type='${_triton_shared_type}', location='${_triton_shared_location}'.")
+                    endif()
+                endforeach()
+                if(NOT TARGET triton_llvm_shared)
+                    add_library(triton_llvm_shared SHARED IMPORTED GLOBAL)
+                    if(WIN32)
+                        set_target_properties(triton_llvm_shared PROPERTIES
+                            IMPORTED_LOCATION "${_TRITON_LLVM_SHARED_LIBRARY}"
+                            IMPORTED_IMPLIB "${TRITON_LLVM_INSTALL_DIR}/lib/libLLVM.dll.a")
+                    else()
+                        set_target_properties(triton_llvm_shared PROPERTIES
+                            IMPORTED_LOCATION "${_TRITON_LLVM_SHARED_LIBRARY}")
+                    endif()
                 endif()
-            endif()
-            if(NOT TARGET triton_mlir_shared)
-                add_library(triton_mlir_shared SHARED IMPORTED GLOBAL)
-                if(WIN32)
-                    set_target_properties(triton_mlir_shared PROPERTIES
-                        IMPORTED_LOCATION "${_TRITON_MLIR_SHARED_LIBRARY}"
-                        IMPORTED_IMPLIB "${TRITON_LLVM_INSTALL_DIR}/lib/libMLIR.dll.a"
-                        INTERFACE_LINK_LIBRARIES triton_llvm_shared)
-                else()
-                    set_target_properties(triton_mlir_shared PROPERTIES
-                        IMPORTED_LOCATION "${_TRITON_MLIR_SHARED_LIBRARY}"
-                        INTERFACE_LINK_LIBRARIES triton_llvm_shared)
+                if(NOT TARGET triton_mlir_shared)
+                    add_library(triton_mlir_shared SHARED IMPORTED GLOBAL)
+                    if(WIN32)
+                        set_target_properties(triton_mlir_shared PROPERTIES
+                            IMPORTED_LOCATION "${_TRITON_MLIR_SHARED_LIBRARY}"
+                            IMPORTED_IMPLIB "${TRITON_LLVM_INSTALL_DIR}/lib/libMLIR.dll.a"
+                            INTERFACE_LINK_LIBRARIES triton_llvm_shared)
+                    else()
+                        set_target_properties(triton_mlir_shared PROPERTIES
+                            IMPORTED_LOCATION "${_TRITON_MLIR_SHARED_LIBRARY}"
+                            INTERFACE_LINK_LIBRARIES triton_llvm_shared)
+                    endif()
                 endif()
+                target_link_libraries(triton_interface INTERFACE
+                    triton_mlir_shared triton_llvm_shared)
             endif()
-
-            target_link_libraries(triton_interface INTERFACE
-                triton_mlir_shared
-                triton_llvm_shared)
             if(NOT WIN32)
                 target_link_libraries(triton_interface INTERFACE -lz -lm)
                 if(NOT APPLE AND NOT ANDROID)
@@ -1979,9 +2036,11 @@ function(setup_triton)
                     target_link_libraries(triton_interface INTERFACE -lnvrtc -lcuda)
                 endif()
             endif()
-            message(STATUS
-                "Triton interface: shared MLIR ${MLIR_PACKAGE_VERSION}, LLVM ${LLVM_PACKAGE_VERSION} "
-                "(reused install)")
+            if(NOT _TRITON_MINGW_VULKAN_STATIC)
+                message(STATUS
+                    "Triton interface: shared MLIR ${MLIR_PACKAGE_VERSION}, LLVM ${LLVM_PACKAGE_VERSION} "
+                    "(reused install)")
+            endif()
         endif()
         set(TRITON triton_interface PARENT_SCOPE)
         return()
@@ -2177,13 +2236,31 @@ function(setup_triton)
     if(SD_DEP_CACHE)
         # Check Triton LLVM cache
         string(SUBSTRING "${TRITON_LLVM_COMMIT}" 0 8 TRITON_LLVM_COMMIT_SHORT)
+        set(_TRITON_LLVM_LINKAGE_CACHE "shared")
+        if(_TRITON_MINGW_VULKAN_STATIC)
+            set(_TRITON_LLVM_LINKAGE_CACHE "mingw-vulkan-static")
+        endif()
         sd_dep_cache_key("triton_llvm" "${TRITON_LLVM_COMMIT_SHORT}"
-            "TARGETS=${TRITON_LLVM_TARGETS};llvm_mlir_dylib=1;recipe=${_TRITON_LLVM_RECIPE_REVISION};${_TRITON_TARGET_CACHE_CONFIG}"
+            "TARGETS=${TRITON_LLVM_TARGETS};linkage=${_TRITON_LLVM_LINKAGE_CACHE};recipe=${_TRITON_LLVM_RECIPE_REVISION};${_TRITON_TARGET_CACHE_CONFIG}"
             _tllvm_cache_key)
         sd_dep_cache_check("triton_llvm" "${_tllvm_cache_key}" _tllvm_hit _tllvm_cache_path)
         if(_tllvm_hit AND NOT _TRITON_LLVM_INSTALL_COMPLETE)
             sd_dep_cache_restore("triton_llvm" "${_tllvm_cache_path}" "${TRITON_LLVM_INSTALL_DIR}")
-            if(EXISTS "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/llvm/LLVMConfig.cmake" AND
+            set(_TRITON_LLVM_STATIC_FILES_COMPLETE TRUE)
+            foreach(_triton_static_file IN LISTS _TRITON_LLVM_STATIC_REQUIRED_FILES)
+                if(NOT EXISTS "${_triton_static_file}")
+                    set(_TRITON_LLVM_STATIC_FILES_COMPLETE FALSE)
+                endif()
+            endforeach()
+            if(_TRITON_MINGW_VULKAN_STATIC AND
+               EXISTS "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/llvm/LLVMConfig.cmake" AND
+               EXISTS "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir/MLIRConfig.cmake" AND
+               _TRITON_LLVM_STATIC_FILES_COMPLETE AND
+               (EXISTS "${_TRITON_LLVM_INSTALL_MARKER}" OR
+                NOT _managed_llvm_root_from_config STREQUAL ""))
+                set(_TRITON_LLVM_INSTALL_COMPLETE TRUE)
+            elseif(NOT _TRITON_MINGW_VULKAN_STATIC AND
+               EXISTS "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/llvm/LLVMConfig.cmake" AND
                EXISTS "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir/MLIRConfig.cmake" AND
                EXISTS "${_TRITON_LLVM_SHARED_LIBRARY}" AND
                EXISTS "${_TRITON_MLIR_SHARED_LIBRARY}" AND
@@ -2252,6 +2329,10 @@ function(setup_triton)
             --modify "PATH=path_list_prepend:${TRITON_LLVM_INSTALL_DIR}/bin"
             --modify "PATH=path_list_prepend:${_TRITON_MINGW_RUNTIME_DIR}")
     endif()
+    set(_TRITON_LLVM_BUILD_TARGETS all)
+    if(NOT _TRITON_MINGW_VULKAN_STATIC)
+        list(APPEND _TRITON_LLVM_BUILD_TARGETS MLIRExecutionEngineShared)
+    endif()
     set(TRITON_LLVM_BUILD_COMMAND
             ${CMAKE_COMMAND}
                 "-DBUILD_DIR=<BINARY_DIR>"
@@ -2265,11 +2346,8 @@ function(setup_triton)
                 # runtime they were linked with (and do not silently exit before
                 # producing generated .inc files).
                 ${_TRITON_LLVM_BUILD_ENV}
-                # MLIRExecutionEngineShared is EXCLUDE_FROM_LIBMLIR, so include it
-            # explicitly in the same build invocation. Keeping both goals in one
-            # generator call avoids rebuilding the complete dependency graph.
             ${CMAKE_COMMAND} --build <BINARY_DIR> --config Release
-                --target all MLIRExecutionEngineShared --parallel ${DEP_PARALLEL_JOBS}
+                --target ${_TRITON_LLVM_BUILD_TARGETS} --parallel ${DEP_PARALLEL_JOBS}
     )
     message(STATUS "   Triton LLVM smart ccache segment=triton_llvm shape=${TRITON_LLVM_SHAPE_KEY}")
 
@@ -2481,8 +2559,20 @@ function(setup_triton)
                 -DMLIR_TABLEGEN=${_TRITON_LLVM_NATIVE_TOOL_DIR}/mlir-tblgen${_TRITON_HOST_EXE_SUFFIX})
         endif()
 
+        if(_TRITON_MINGW_VULKAN_STATIC)
+            list(APPEND TRITON_LLVM_CMAKE_ARGS
+                -DLLVM_BUILD_LLVM_DYLIB=OFF
+                -DLLVM_LINK_LLVM_DYLIB=OFF
+                -DMLIR_LINK_MLIR_DYLIB=OFF
+                -DMLIR_ENABLE_EXECUTION_ENGINE=OFF
+                -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=OFF
+                -DLLVM_ENABLE_ZLIB=OFF
+                -DLLVM_ENABLE_ZSTD=OFF
+                -DLLVM_ENABLE_LIBXML2=OFF
+                -DLLVM_ENABLE_CURL=OFF
+                -DLLVM_ENABLE_TERMINFO=OFF)
         # MSVC-specific flags for LLVM build
-        if(MSVC)
+        elseif(MSVC)
             list(APPEND TRITON_LLVM_CMAKE_ARGS
                 -DLLVM_BUILD_SHARED_LIBS=OFF
                 "-DCMAKE_C_FLAGS=/utf-8 /D_SILENCE_NONFLOATING_COMPLEX_DEPRECATION_WARNING"
@@ -2529,6 +2619,20 @@ function(setup_triton)
             list(APPEND TRITON_LLVM_CMAKE_ARGS "-DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${SD_PLAIN_CCACHE_PATH}")
         endif()
 
+        set(_TRITON_LLVM_BUILD_BYPRODUCTS
+            "${_TRITON_LLVM_INSTALL_MARKER}"
+            "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir/MLIRConfig.cmake"
+            "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/llvm/LLVMConfig.cmake")
+        if(_TRITON_MINGW_VULKAN_STATIC)
+            list(APPEND _TRITON_LLVM_BUILD_BYPRODUCTS
+                ${_TRITON_LLVM_STATIC_REQUIRED_FILES})
+        else()
+            list(APPEND _TRITON_LLVM_BUILD_BYPRODUCTS
+                "${_TRITON_MLIR_EXECUTION_ENGINE_SHARED_LIBRARY}"
+                "${_TRITON_MLIR_SHARED_LIBRARY}"
+                "${_TRITON_LLVM_SHARED_LIBRARY}")
+        endif()
+
         ExternalProject_Add(triton_llvm_external
                 PREFIX            "${TRITON_LLVM_PREFIX}"
                 URL               "${TRITON_LLVM_URL}"
@@ -2539,6 +2643,7 @@ function(setup_triton)
                     -DSOURCE_DIR=<SOURCE_DIR>
                     -DSD_EXTERNAL_PROJECT=LLVM
                     -DSD_LLVM_PATCH_SCF_TO_SPIRV_ZERO_TRIP=${_TRITON_LLVM_PATCH_SCF_TO_SPIRV_ZERO_TRIP}
+                    -DSD_LLVM_MINGW_STATIC_VULKAN=${_TRITON_MINGW_VULKAN_STATIC}
                     -P "${CMAKE_SOURCE_DIR}/cmake/patch_external_llvm_coexistence.cmake"
                 SOURCE_SUBDIR     llvm
                 BINARY_DIR        "${TRITON_LLVM_PREFIX}/build"
@@ -2550,13 +2655,7 @@ function(setup_triton)
                 # GNU Make's dependency scanner from a nested ExternalProject recipe.
                 INSTALL_COMMAND   ${CMAKE_COMMAND} --install <BINARY_DIR> --config Release
                     COMMAND ${CMAKE_COMMAND} -E touch "${_TRITON_LLVM_INSTALL_MARKER}"
-                BUILD_BYPRODUCTS
-                    "${_TRITON_LLVM_INSTALL_MARKER}"
-                    "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir/MLIRConfig.cmake"
-                    "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/llvm/LLVMConfig.cmake"
-                    "${_TRITON_MLIR_EXECUTION_ENGINE_SHARED_LIBRARY}"
-                    "${_TRITON_MLIR_SHARED_LIBRARY}"
-                    "${_TRITON_LLVM_SHARED_LIBRARY}"
+                BUILD_BYPRODUCTS ${_TRITON_LLVM_BUILD_BYPRODUCTS}
                 TIMEOUT           7200
                 LOG_DOWNLOAD      OFF
                 LOG_CONFIGURE     OFF
@@ -2892,10 +2991,15 @@ function(setup_triton)
         endif()
     endif()
 
+    if(_TRITON_MINGW_VULKAN_STATIC)
+        target_link_libraries(triton_interface INTERFACE
+            ${_TRITON_VULKAN_STATIC_MLIR_TARGETS})
+        message(STATUS
+            "Triton interface: upstream static MLIR-to-SPIR-V graph (fresh MinGW Vulkan build)")
     # The pinned LLVM build produces the upstream monolithic LLVM and MLIR
     # shared libraries. For a fresh build their package exports do not exist at
     # configure time, so model the known build byproducts as imported targets.
-    if(WIN32)
+    elseif(WIN32)
         set(_TRITON_LLVM_SHARED_LIBRARY "${TRITON_LLVM_INSTALL_DIR}/bin/libLLVM.dll")
         set(_TRITON_MLIR_SHARED_LIBRARY "${TRITON_LLVM_INSTALL_DIR}/bin/libMLIR.dll")
         set(_TRITON_LLVM_IMPORT_LIBRARY "${TRITON_LLVM_INSTALL_DIR}/lib/libLLVM.dll.a")
@@ -2908,6 +3012,7 @@ function(setup_triton)
         set(_TRITON_MLIR_SHARED_LIBRARY "${TRITON_LLVM_INSTALL_DIR}/lib/libMLIR.so")
     endif()
 
+    if(NOT _TRITON_MINGW_VULKAN_STATIC)
     add_library(triton_llvm_shared SHARED IMPORTED GLOBAL)
     if(WIN32)
         set_target_properties(triton_llvm_shared PROPERTIES
@@ -2948,6 +3053,7 @@ function(setup_triton)
     message(STATUS
         "Triton interface: shared MLIR=${_TRITON_MLIR_SHARED_LIBRARY}, "
         "LLVM=${_TRITON_LLVM_SHARED_LIBRARY} (fresh build)")
+    endif()
 
     # NVRTC and the CUDA driver belong only to the CUDA emitter consumer.
     if(SD_CUDA)

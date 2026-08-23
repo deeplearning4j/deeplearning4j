@@ -23,12 +23,19 @@ if(NOT DEFINED MLIR_VERSION)
     set(MLIR_VERSION "18")
 endif()
 
-# Consume LLVM/MLIR through their upstream monolithic shared-library targets.
-# When setup_triton publishes a managed package root it is the sole valid
-# compiler-runtime package. Ambient LLVM_DIR, CMAKE_PREFIX_PATH, package-manager,
-# and system packages must not change either headers or linked DSOs.
-set(LLVM_LINK_LLVM_DYLIB ON)
-set(MLIR_LINK_MLIR_DYLIB ON)
+# MinGW cannot consume upstream's monolithic LLVM/MLIR DLL graph. The Vulkan
+# consumer embeds the exported static MLIR-to-SPIR-V component graph instead;
+# all other consumers retain the versioned shared-library boundary.
+set(_sd_mingw_vulkan_static OFF)
+if(MINGW AND SD_TRITON_CONSUMER_KIND STREQUAL "VULKAN_SPIRV" AND
+   SD_TRITON_MANAGED_LLVM_STATIC)
+    set(_sd_mingw_vulkan_static ON)
+    set(LLVM_LINK_LLVM_DYLIB OFF)
+    set(MLIR_LINK_MLIR_DYLIB OFF)
+else()
+    set(LLVM_LINK_LLVM_DYLIB ON)
+    set(MLIR_LINK_MLIR_DYLIB ON)
+endif()
 
 # setup_triton publishes the exact patched, revision-marked shared LLVM/MLIR
 # package selected for its explicit compiler consumer. FindMLIR consumes that
@@ -59,12 +66,27 @@ else()
     set(_sd_managed_llvm_dso_dir "${_sd_managed_llvm_root}/lib")
 endif()
 
-foreach(_sd_managed_llvm_file IN ITEMS
-        "${_sd_managed_llvm_root}/lib/cmake/llvm/LLVMConfig.cmake"
-        "${_sd_managed_llvm_root}/lib/cmake/mlir/MLIRConfig.cmake"
+set(_sd_managed_llvm_required_files
+    "${_sd_managed_llvm_root}/lib/cmake/llvm/LLVMConfig.cmake"
+    "${_sd_managed_llvm_root}/lib/cmake/mlir/MLIRConfig.cmake")
+if(_sd_mingw_vulkan_static)
+    list(APPEND _sd_managed_llvm_required_files
+        "${_sd_managed_llvm_root}/lib/libMLIRParser.a"
+        "${_sd_managed_llvm_root}/lib/libMLIRTransforms.a"
+        "${_sd_managed_llvm_root}/lib/libMLIRLinalgDialect.a"
+        "${_sd_managed_llvm_root}/lib/libMLIRGPUTransforms.a"
+        "${_sd_managed_llvm_root}/lib/libMLIRGPUToSPIRV.a"
+        "${_sd_managed_llvm_root}/lib/libMLIRMathToSPIRV.a"
+        "${_sd_managed_llvm_root}/lib/libMLIRSPIRVTransforms.a"
+        "${_sd_managed_llvm_root}/lib/libMLIRSPIRVSerialization.a"
+        "${_sd_managed_llvm_root}/lib/libLLVMSupport.a")
+else()
+    list(APPEND _sd_managed_llvm_required_files
         "${_sd_managed_llvm_dso_dir}/${CMAKE_SHARED_LIBRARY_PREFIX}LLVM${CMAKE_SHARED_LIBRARY_SUFFIX}"
         "${_sd_managed_llvm_dso_dir}/${CMAKE_SHARED_LIBRARY_PREFIX}MLIR${CMAKE_SHARED_LIBRARY_SUFFIX}"
         "${_sd_managed_llvm_dso_dir}/${CMAKE_SHARED_LIBRARY_PREFIX}MLIRExecutionEngineShared${CMAKE_SHARED_LIBRARY_SUFFIX}")
+endif()
+foreach(_sd_managed_llvm_file IN LISTS _sd_managed_llvm_required_files)
     if(NOT EXISTS "${_sd_managed_llvm_file}")
         message(FATAL_ERROR
             "The project-managed LLVM/MLIR package is incomplete: "
@@ -163,9 +185,42 @@ function(_sd_require_shared_imported_target target_name out_location)
     set(${out_location} "${_shared_location}" PARENT_SCOPE)
 endfunction()
 
-_sd_require_shared_imported_target(MLIR MLIR_SHARED_LIBRARY)
-_sd_require_shared_imported_target(MLIRExecutionEngineShared MLIR_EXECUTION_ENGINE_SHARED_LIBRARY)
-_sd_require_shared_imported_target(LLVM LLVM_SHARED_LIBRARY)
+if(_sd_mingw_vulkan_static)
+    set(_sd_vulkan_static_mlir_targets
+        ${SD_TRITON_VULKAN_STATIC_MLIR_TARGETS})
+    if(NOT _sd_vulkan_static_mlir_targets)
+        message(FATAL_ERROR
+            "Static MinGW Vulkan package has no declared MLIR-to-SPIR-V component graph")
+    endif()
+    foreach(_sd_static_mlir_target IN LISTS _sd_vulkan_static_mlir_targets)
+        if(NOT TARGET ${_sd_static_mlir_target})
+            message(FATAL_ERROR
+                "Static MinGW Vulkan package does not export '${_sd_static_mlir_target}'")
+        endif()
+        get_target_property(_sd_static_mlir_type
+            ${_sd_static_mlir_target} TYPE)
+        get_target_property(_sd_static_mlir_location
+            ${_sd_static_mlir_target} IMPORTED_LOCATION_RELEASE)
+        if(NOT _sd_static_mlir_location)
+            get_target_property(_sd_static_mlir_location
+                ${_sd_static_mlir_target} IMPORTED_LOCATION)
+        endif()
+        if(NOT _sd_static_mlir_type STREQUAL "STATIC_LIBRARY" OR
+           NOT _sd_static_mlir_location OR
+           NOT EXISTS "${_sd_static_mlir_location}")
+            message(FATAL_ERROR
+                "Static MinGW Vulkan target '${_sd_static_mlir_target}' has "
+                "type='${_sd_static_mlir_type}', location='${_sd_static_mlir_location}'")
+        endif()
+    endforeach()
+    set(MLIR_SHARED_LIBRARY "")
+    set(MLIR_EXECUTION_ENGINE_SHARED_LIBRARY "")
+    set(LLVM_SHARED_LIBRARY "")
+else()
+    _sd_require_shared_imported_target(MLIR MLIR_SHARED_LIBRARY)
+    _sd_require_shared_imported_target(MLIRExecutionEngineShared MLIR_EXECUTION_ENGINE_SHARED_LIBRARY)
+    _sd_require_shared_imported_target(LLVM LLVM_SHARED_LIBRARY)
+endif()
 
 if(_sd_managed_llvm_root)
     get_filename_component(_sd_managed_llvm_root_real
@@ -363,6 +418,10 @@ list(REMOVE_DUPLICATES _sd_mlir_capability_definitions)
 
 if(NOT TARGET MLIR::MLIR)
     add_library(MLIR::MLIR INTERFACE IMPORTED)
+    set(_sd_mlir_link_libraries "MLIR;MLIRExecutionEngineShared;LLVM")
+    if(_sd_mingw_vulkan_static)
+        set(_sd_mlir_link_libraries "${_sd_vulkan_static_mlir_targets}")
+    endif()
     set_target_properties(MLIR::MLIR PROPERTIES
         # The explicitly selected package must win over ambient SDK include roots.
         # Imported targets default to SYSTEM includes, which can otherwise put a
@@ -370,9 +429,13 @@ if(NOT TARGET MLIR::MLIR)
         IMPORTED_NO_SYSTEM TRUE
         INTERFACE_INCLUDE_DIRECTORIES "${MLIR_INCLUDE_DIRS}"
         INTERFACE_COMPILE_DEFINITIONS "${_sd_mlir_capability_definitions}"
-        INTERFACE_LINK_LIBRARIES "MLIR;MLIRExecutionEngineShared;LLVM")
+        INTERFACE_LINK_LIBRARIES "${_sd_mlir_link_libraries}")
 endif()
-set(MLIR_LIBRARIES MLIR MLIRExecutionEngineShared LLVM)
+if(_sd_mingw_vulkan_static)
+    set(MLIR_LIBRARIES ${_sd_vulkan_static_mlir_targets})
+else()
+    set(MLIR_LIBRARIES MLIR MLIRExecutionEngineShared LLVM)
+endif()
 
 if(MLIR_ENABLE_GPU AND NOT TARGET MLIR::GPU)
     add_library(MLIR::GPU INTERFACE IMPORTED)

@@ -95,12 +95,12 @@ function(setup_vulkan_build)
         ${CMAKE_DL_LIBS}
     )
 
-    # The backend classifier carries the project-managed compiler runtimes
-    # explicitly selected by this native target configuration. Loader-relative
-    # lookup keeps independent versioned LLVM/MLIR installations coexistent.
+    # Shared compiler packages are staged beside the backend. MinGW Vulkan uses
+    # the upstream static MLIR-to-SPIR-V graph, so it has no compiler DLLs to
+    # stage and no runtime dependency on MLIRExecutionEngineShared.
     set(_vulkan_shared_runtimes "")
 
-    if(HAVE_MLIR)
+    if(HAVE_MLIR AND NOT SD_TRITON_MANAGED_LLVM_STATIC)
         foreach(_mlir_runtime_target IN ITEMS MLIR MLIRExecutionEngineShared LLVM)
             if(NOT TARGET ${_mlir_runtime_target})
                 message(FATAL_ERROR
@@ -111,7 +111,7 @@ function(setup_vulkan_build)
         endforeach()
     endif()
 
-    if(HAVE_TRITON)
+    if(HAVE_TRITON AND NOT SD_TRITON_MANAGED_LLVM_STATIC)
         foreach(_triton_runtime_target IN ITEMS triton_mlir_shared triton_llvm_shared)
             if(NOT TARGET ${_triton_runtime_target})
                 message(FATAL_ERROR

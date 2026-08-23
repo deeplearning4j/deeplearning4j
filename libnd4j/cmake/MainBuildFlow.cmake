@@ -789,9 +789,8 @@ function(configure_vulkan_linking main_target_name)
             "${VULKAN_INCLUDE_DIR}")
     endif()
 
-    # Vulkan and CUDA consume the same project-selected shared MLIR/LLVM
-    # package. MLIR::SPIRV extends MLIR::MLIR; it does not statically isolate
-    # another LLVM or hide symbols from sibling native backends.
+    # Vulkan consumes the validated MLIR::SPIRV target. On MinGW that target is
+    # the upstream static component graph; supported hosts retain shared DSOs.
     if(HAVE_MLIR AND DEFINED MLIR)
         if(TARGET ${_vulkan_object_target})
             target_include_directories(${_vulkan_object_target} BEFORE PRIVATE
@@ -801,17 +800,18 @@ function(configure_vulkan_linking main_target_name)
         endif()
         target_link_libraries(${main_target_name} PUBLIC ${MLIR})
         target_compile_definitions(${main_target_name} PUBLIC HAVE_MLIR=1)
-        message(STATUS "🔗 Vulkan: linking the selected shared MLIR/LLVM package")
+        message(STATUS "🔗 Vulkan: linking the selected MLIR-to-SPIR-V package")
     endif()
 
-    # Vulkan consumes the project-managed shared LLVM/MLIR interface for
-    # MLIR-to-SPIR-V lowering independently of the optional Triton DSP compiler.
-    if(HAVE_MANAGED_LLVM_MLIR AND DEFINED TRITON)
+    # The dependency producer must finish before any Vulkan source includes its
+    # generated MLIR headers. Linkage itself is owned only by MLIR::SPIRV above;
+    # linking triton_interface here duplicated the same package graph.
+    if(HAVE_MANAGED_LLVM_MLIR AND TARGET triton_external)
         if(TARGET ${_vulkan_object_target})
-            target_link_libraries(${_vulkan_object_target} PUBLIC ${TRITON})
+            add_dependencies(${_vulkan_object_target} triton_external)
         endif()
-        target_link_libraries(${main_target_name} PUBLIC ${TRITON})
-        message(STATUS "🔗 Vulkan: linking managed LLVM/MLIR infrastructure")
+        add_dependencies(${main_target_name} triton_external)
+        message(STATUS "🔒 Vulkan: waiting for managed LLVM/MLIR infrastructure")
     endif()
 
     # Common host coordination code uses OpenMP, but no CPU BLAS or CPU graph
@@ -1582,6 +1582,11 @@ function(create_and_link_library)
                     # Preserve the complete import library emitted by the DLL linker.
                     # Re-running lib.exe with the SDX-only definition would overwrite
                     # the SD_LIB_EXPORT NativeOps entries required by jnind4jcuda.
+                elseif(SD_VULKAN)
+                    # MinGW Vulkan embeds static LLVM/MLIR internals. Export only
+                    # the explicit SD_LIB_EXPORT API to avoid PE's ordinal limit.
+                    set_target_properties(${MAIN_LIB_NAME} PROPERTIES
+                        WINDOWS_EXPORT_ALL_SYMBOLS OFF)
                 else()
                     # MinGW understands CMake's export-all path but not the
                     # MSVC /DEF linker option used above.

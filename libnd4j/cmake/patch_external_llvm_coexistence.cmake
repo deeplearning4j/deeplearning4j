@@ -182,11 +182,11 @@ ${_sd_android_shared_patch}
     endif()
 endif()
 
-# The project-managed runtime contract requires MLIRExecutionEngineShared on
-# Windows as well as ELF hosts. Upstream currently excludes that shared target
-# from WIN32/MINGW builds; the existing MinGW export and ArmSME patches make the
-# producer-side Windows build viable, so remove only that platform exclusion.
-if(_sd_external_project STREQUAL "LLVM")
+# Preserve upstream's Windows exclusion for MLIRExecutionEngineShared. MinGW
+# Vulkan uses the supported static MLIR-to-SPIR-V component graph and does not
+# consume the execution engine at all.
+if(_sd_external_project STREQUAL "LLVM" AND
+   NOT SD_LLVM_MINGW_STATIC_VULKAN)
     set(_sd_mlir_execution_engine_file
         "${SOURCE_DIR}/mlir/lib/ExecutionEngine/CMakeLists.txt")
     if(EXISTS "${_sd_mlir_execution_engine_file}")
@@ -213,7 +213,7 @@ if(LLVM_BUILD_LLVM_DYLIB)
                _sd_mlir_execution_engine_source)
                 message(FATAL_ERROR
                     "patch_external_llvm_coexistence: failed to enable "
-                    "MLIRExecutionEngineShared on Windows")
+                    "MLIRExecutionEngineShared for a supported shared consumer")
             endif()
             file(WRITE "${_sd_mlir_execution_engine_file}"
                 "${_sd_mlir_execution_engine_patched}")
@@ -272,6 +272,15 @@ if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "Android")
   set(MLIR_ENABLE_EXECUTION_ENGINE 1 CACHE BOOL "Enable MLIR execution engine" FORCE)
 endif()
 ]=])
+            if(SD_LLVM_MINGW_STATIC_VULKAN)
+                string(APPEND _sd_android_mlir_engine_patch [=[
+# SD_MINGW_VULKAN_STATIC_NO_EXECUTION_ENGINE_V1
+# Vulkan performs parser/pass/SPIR-V serialization only. Upstream derives this
+# option from LLVM_NATIVE_ARCH after reading the cache, so force it off here.
+set(MLIR_ENABLE_EXECUTION_ENGINE 0)
+set(MLIR_ENABLE_EXECUTION_ENGINE 0 CACHE BOOL "Enable MLIR execution engine" FORCE)
+]=])
+            endif()
             string(REPLACE
                 "${_sd_mlir_options_anchor}"
                 "${_sd_mlir_options_anchor}
@@ -333,7 +342,8 @@ endif()
 # but the shared MLIR execution-engine build still compiles this source on
 # Windows.  Normalize the producer-side export annotation without changing
 # native ELF or MSVC behavior.
-if(_sd_external_project STREQUAL "LLVM")
+if(_sd_external_project STREQUAL "LLVM" AND
+   NOT SD_LLVM_MINGW_STATIC_VULKAN)
     set(_sd_arm_sme_stubs_file
         "${SOURCE_DIR}/mlir/lib/ExecutionEngine/ArmSMEStubs.cpp")
     if(EXISTS "${_sd_arm_sme_stubs_file}")
@@ -373,7 +383,8 @@ endif()
 # with hidden visibility. Build the DLL from LLVM's existing annotated ABI:
 # remove the upstream export-all flag while preserving MinGW's visibility
 # attributes (rewriting them to __declspec(dllimport) breaks static MLIR tools).
-if(_sd_external_project STREQUAL "LLVM")
+if(_sd_external_project STREQUAL "LLVM" AND
+   NOT SD_LLVM_MINGW_STATIC_VULKAN)
     set(_sd_mingw_llvm_shlib_file
         "${SOURCE_DIR}/llvm/tools/llvm-shlib/CMakeLists.txt")
     if(EXISTS "${_sd_mingw_llvm_shlib_file}")

@@ -372,6 +372,55 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("mingw-w64-x86_64-vulkan-headers", action_source)
         self.assertIn("mingw-w64-x86_64-vulkan-loader", action_source)
 
+    def test_windows_vulkan_uses_static_mlir_spirv_graph(self):
+        root = Path(__file__).parents[2]
+        dependencies = (root / "libnd4j/cmake/Dependencies.cmake").read_text(
+            encoding="utf-8"
+        )
+        find_mlir = (root / "libnd4j/cmake/FindMLIR.cmake").read_text(
+            encoding="utf-8"
+        )
+        build_vulkan = (root / "libnd4j/cmake/BuildVulkan.cmake").read_text(
+            encoding="utf-8"
+        )
+        main_flow = (root / "libnd4j/cmake/MainBuildFlow.cmake").read_text(
+            encoding="utf-8"
+        )
+        llvm_patch = (
+            root / "libnd4j/cmake/patch_external_llvm_coexistence.cmake"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("_TRITON_MINGW_VULKAN_STATIC", dependencies)
+        self.assertIn('set(_TRITON_LLVM_LINKAGE_CACHE "mingw-vulkan-static")', dependencies)
+        self.assertIn("-DMLIR_ENABLE_EXECUTION_ENGINE=OFF", dependencies)
+        self.assertIn("-DLLVM_ENABLE_ZSTD=OFF", dependencies)
+        self.assertIn("-DLLVM_ENABLE_ZLIB=OFF", dependencies)
+        self.assertIn("managed-llvm-mingw-vulkan-static-v1", dependencies)
+        self.assertIn("--target ${_TRITON_LLVM_BUILD_TARGETS}", dependencies)
+        self.assertNotIn("--target all MLIRExecutionEngineShared", dependencies)
+
+        for target in (
+            "MLIRParser",
+            "MLIRTransforms",
+            "MLIRLinalgDialect",
+            "MLIRGPUTransforms",
+            "MLIRGPUToSPIRV",
+            "MLIRMathToSPIRV",
+            "MLIRSPIRVTransforms",
+            "MLIRSPIRVSerialization",
+        ):
+            self.assertIn(target, dependencies)
+            self.assertIn(target, find_mlir)
+
+        self.assertIn("SD_TRITON_MANAGED_LLVM_STATIC", find_mlir)
+        self.assertIn('STATIC_LIBRARY', find_mlir)
+        self.assertIn("SD_TRITON_MANAGED_LLVM_STATIC", build_vulkan)
+        self.assertIn("WINDOWS_EXPORT_ALL_SYMBOLS OFF", main_flow)
+        self.assertIn("add_dependencies(${main_target_name} triton_external)", main_flow)
+        self.assertIn("SD_WINDOWS_MLIR_EXECUTION_ENGINE_SHARED_V1", llvm_patch)
+        self.assertIn("SD_MINGW_VULKAN_STATIC_NO_EXECUTION_ENGINE_V1", llvm_patch)
+        self.assertIn("NOT SD_LLVM_MINGW_STATIC_VULKAN", llvm_patch)
+
     def test_tpu_release_includes_cpu_backend_dependency(self):
         root = Path(__file__).parents[2]
         for provider in ("aws", "azure", "gcp"):
@@ -3559,6 +3608,66 @@ option(MLIR_ENABLE_EXECUTION_ENGINE
                     marker = "# SD_ANDROID_MLIR_EXECUTION_ENGINE_V2"
                     self.assertEqual(1, patched.count(marker))
                     self.assertGreater(patched.index(marker), patched.index(layout))
+
+    def test_external_llvm_patch_preserves_mingw_vulkan_static_engine_exclusion(self):
+        root = Path(__file__).parents[2]
+        patch_script = root / "libnd4j/cmake/patch_external_llvm_coexistence.cmake"
+        upstream_guard = "if(LLVM_BUILD_LLVM_DYLIB AND NOT (WIN32 OR MINGW OR CYGWIN))"
+
+        def run_fixture(static_vulkan):
+            temp = tempfile.TemporaryDirectory()
+            source_dir = Path(temp.name)
+            handle_options = source_dir / "llvm/cmake/modules/HandleLLVMOptions.cmake"
+            handle_options.parent.mkdir(parents=True)
+            handle_options.write_text("include(LLVMProcessSources)\n", encoding="utf-8")
+            llvm_cmake = source_dir / "llvm/CMakeLists.txt"
+            llvm_cmake.write_text(
+                'cmake_dependent_option(LLVM_BUILD_LLVM_DYLIB "Build libllvm dynamic library" '
+                '${LLVM_BUILD_LLVM_DYLIB_default}\n                       "CAN_BUILD_LLVM_DYLIB" OFF)\n',
+                encoding="utf-8",
+            )
+            mlir_cmake = source_dir / "mlir/CMakeLists.txt"
+            mlir_cmake.parent.mkdir(parents=True)
+            mlir_cmake.write_text(
+                "if(${LLVM_NATIVE_ARCH} IN_LIST LLVM_TARGETS_TO_BUILD)\n"
+                "  set(MLIR_ENABLE_EXECUTION_ENGINE 1)\nelse()\n"
+                "  set(MLIR_ENABLE_EXECUTION_ENGINE 0)\nendif()\n",
+                encoding="utf-8",
+            )
+            engine = source_dir / "mlir/lib/ExecutionEngine/CMakeLists.txt"
+            engine.parent.mkdir(parents=True)
+            engine.write_text(upstream_guard + "\nendif()\n", encoding="utf-8")
+            subprocess.run(
+                [
+                    "cmake",
+                    f"-DSOURCE_DIR={source_dir}",
+                    "-DSD_EXTERNAL_PROJECT=LLVM",
+                    f"-DSD_LLVM_MINGW_STATIC_VULKAN={'ON' if static_vulkan else 'OFF'}",
+                    "-P",
+                    str(patch_script),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            return (
+                temp,
+                engine.read_text(encoding="utf-8"),
+                mlir_cmake.read_text(encoding="utf-8"),
+            )
+
+        static_temp, static_engine, static_mlir = run_fixture(True)
+        shared_temp, shared_engine, shared_mlir = run_fixture(False)
+        try:
+            self.assertIn(upstream_guard, static_engine)
+            self.assertNotIn("SD_WINDOWS_MLIR_EXECUTION_ENGINE_SHARED_V1", static_engine)
+            self.assertIn("SD_MINGW_VULKAN_STATIC_NO_EXECUTION_ENGINE_V1", static_mlir)
+            self.assertNotIn(upstream_guard, shared_engine)
+            self.assertIn("SD_WINDOWS_MLIR_EXECUTION_ENGINE_SHARED_V1", shared_engine)
+            self.assertNotIn("SD_MINGW_VULKAN_STATIC_NO_EXECUTION_ENGINE_V1", shared_mlir)
+        finally:
+            static_temp.cleanup()
+            shared_temp.cleanup()
 
     def test_windows_cross_platform_tokenizer_command_selects_mingw_properties(self):
         root = Path(__file__).parents[2]
