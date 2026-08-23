@@ -5325,19 +5325,52 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
           outputSlots_, totalOutputSlots_, slotOwnership_);
     }
 
-    std::unordered_set<int> requestedOutputSet;
+    // Coloring's ownership scan observes the wrappers published by this warmup.
+    // A view-capable op can legitimately publish a dedicated array during the
+    // functional warmup, then republish a zero-copy view once frozen execution
+    // selects its metadata-only path. Protect potential aliases structurally so
+    // coloring cannot reuse either side before that identity transition settles.
+    // This supplements (rather than replaces) the actual DataBuffer/ref-count
+    // checks in DspBufferColorMap and preserves its invariant that views and view
+    // parents are never colored.
+    std::unordered_set<int> coloringProtectedSlots;
     if (requestedOutputSlotIndices_ != nullptr) {
       for (int i = 0; i < numRequestedOutputs_; i++) {
         const int slotIdx = requestedOutputSlotIndices_[i];
         if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
-          requestedOutputSet.insert(slotIdx);
+          coloringProtectedSlots.insert(slotIdx);
         }
       }
     }
+    const size_t requestedProtectedCount = coloringProtectedSlots.size();
+    for (int stepIdx = 0; stepIdx < numSlots_; stepIdx++) {
+      const NativeSlot& slot = slots_[stepIdx];
+      if (!slot.aliasesInput() && !slot.isInPlaceFused()) continue;
+
+      // View/identity ops alias their data input (input 0). In-place fusion
+      // records the exact reused input, which may differ for binary chains.
+      const int sourceSlot = slot.isInPlaceFused()
+          ? slot.inPlaceSourceSlot()
+          : (slot.wiring.numInputs > 0 ? slot.wiring.inputSourceIndices[0] : -1);
+      if (sourceSlot >= 0 && sourceSlot < totalOutputSlots_) {
+        coloringProtectedSlots.insert(sourceSlot);
+      }
+      for (int output = 0; output < slot.wiring.numOutputs; output++) {
+        const int outputSlot = slot.wiring.outputSlotIndices[output];
+        if (outputSlot >= 0 && outputSlot < totalOutputSlots_) {
+          coloringProtectedSlots.insert(outputSlot);
+        }
+      }
+    }
+    DSP_DIAG(MEMORY,
+             "phaseWarmup: coloring protected slots requested=%zu structuralAliases=%zu total=%zu",
+             requestedProtectedCount,
+             coloringProtectedSlots.size() - requestedProtectedCount,
+             coloringProtectedSlots.size());
 
     try {
       colorMap_.compute(*slotLiveness_, outputSlots_, totalOutputSlots_,
-                        slotOwnership_, planOwnedArrays_, requestedOutputSet);
+                        slotOwnership_, planOwnedArrays_, coloringProtectedSlots);
       if (colorMap_.numColoredSlots() > 0) {
         DSP_DIAG(MEMORY, "phaseWarmup: buffer coloring computed: %d slots -> %d colors, "
                  "estimated saving %zuMB",
