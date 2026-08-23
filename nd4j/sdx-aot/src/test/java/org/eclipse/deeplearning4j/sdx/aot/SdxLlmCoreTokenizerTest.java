@@ -85,6 +85,18 @@ class SdxLlmCoreTokenizerTest {
     }
 
     @Test
+    void backendAuditModeCapturesPlacementAndReplayWithoutValueDumps() {
+        JsonNode options = new ObjectMapper().createObjectNode()
+                .put("diagnosticMode", "backend_audit");
+
+        assertEquals("backend_audit", SdxGgufModelPreparer.configureDiagnostics(options));
+        assertEquals("BACKEND,COMPILE,EXECUTE,SEGMENT,EMULATED_REPLAY,GRAPH_REPLAY",
+                System.getProperty(ND4JSystemProperties.DSP_DIAGNOSTICS));
+        assertEquals("detailed", System.getProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_LEVEL));
+        assertNull(System.getProperty(ND4JSystemProperties.DSP_NATIVE_DUMP_OUTPUTS));
+    }
+
+    @Test
     void unknownDiagnosticModeDoesNotMutateImporterDiagnostics() {
         System.setProperty(ND4JSystemProperties.DSP_DIAGNOSTICS, "VERIFY");
         System.setProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_LEVEL, "detailed");

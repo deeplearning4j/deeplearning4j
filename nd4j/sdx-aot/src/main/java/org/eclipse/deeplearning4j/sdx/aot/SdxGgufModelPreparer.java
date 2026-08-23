@@ -651,6 +651,7 @@ final class SdxGgufModelPreparer {
         switch (mode) {
             case "off":
             case "standard":
+            case "backend_audit":
             case "verbose":
             case "op_sanity":
             case "dsp":
@@ -666,6 +667,11 @@ final class SdxGgufModelPreparer {
         switch (mode) {
             case "off":
             case "standard":
+                return mode;
+            case "backend_audit":
+                System.setProperty(ND4JSystemProperties.DSP_DIAGNOSTICS,
+                        "BACKEND,COMPILE,EXECUTE,SEGMENT,EMULATED_REPLAY,GRAPH_REPLAY");
+                System.setProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_LEVEL, "detailed");
                 return mode;
             case "verbose":
                 System.setProperty(ND4JSystemProperties.DSP_DIAGNOSTICS,
