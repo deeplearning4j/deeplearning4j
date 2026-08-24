@@ -37,6 +37,10 @@ import org.eclipse.deeplearning4j.vlm.preprocessing.ImagePromptBuilder;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImageTiler;
 import org.eclipse.deeplearning4j.vlm.model.patching.SameDiffGraphPatch;
 import org.eclipse.deeplearning4j.vlm.model.encoder.VisionEncoderIOConfig;
+import org.eclipse.deeplearning4j.vlm.output.protocol.VlmOutputProtocolRegistry;
+import org.eclipse.deeplearning4j.vlm.output.protocol.VlmProtocolOutput;
+import org.eclipse.deeplearning4j.vlm.output.protocol.VlmProtocolPlan;
+import org.eclipse.deeplearning4j.vlm.output.protocol.VlmProtocolRequest;
 import org.eclipse.deeplearning4j.vlm.model.encoder.VisionEncoderUtils;
 import org.eclipse.deeplearning4j.vlm.model.encoder.EmbeddingMerger;
 import org.eclipse.deeplearning4j.vlm.model.loading.MultiPartModelLoader;
@@ -119,6 +123,7 @@ public class VisionLanguageModel implements AutoCloseable {
     private final Tokenizer tokenizer;
     private final VLMImagePreprocessor imagePreprocessor;
     private final ModelConfig config;
+    private final VlmOutputProtocolRegistry outputProtocols;
 
     // Device-aware fields for multi-chip support
     @Setter
@@ -147,6 +152,10 @@ public class VisionLanguageModel implements AutoCloseable {
      * so the frozen DSP plan is reused across pages without recompilation.
      */
     private GenerationPipeline cachedPipeline;
+    private int cachedPromptTokenCount;
+    /** Physical padded prefill capacity captured by {@link #cachedPipeline}; zero in dynamic mode. */
+    private int cachedMaxPrefillLength;
+    private String cachedProtocolKey;
 
     /** Cached decoder I/O configuration — discovered once, reused across pages. */
     private ModelIOConfig cachedDecoderIOConfig;
@@ -167,6 +176,7 @@ public class VisionLanguageModel implements AutoCloseable {
             Tokenizer tokenizer,
             VLMImagePreprocessor imagePreprocessor,
             ModelConfig config,
+            VlmOutputProtocolRegistry outputProtocols,
             DeviceDescriptor targetDevice,
             MultiBackendWorkspace workspace,
             VisionEncoderIOConfig visionEncoderIOConfig,
@@ -179,6 +189,7 @@ public class VisionLanguageModel implements AutoCloseable {
         this.tokenizer = tokenizer;
         this.imagePreprocessor = imagePreprocessor;
         this.config = config;
+        this.outputProtocols = outputProtocols != null ? outputProtocols : VlmOutputProtocolRegistry.fallback();
         this.targetDevice = targetDevice;
         this.workspace = workspace;
         this.kvCacheStrategy = kvCacheStrategy != null ? kvCacheStrategy : KvCacheStrategy.STATIC;
@@ -369,12 +380,12 @@ public class VisionLanguageModel implements AutoCloseable {
         long elapsed = System.currentTimeMillis() - start;
         log.info("VLM loaded from ONNX in {}ms (with caching)", elapsed);
 
-        VisionLanguageModelBuilder builder = VisionLanguageModel.builder()
-                .visionEncoder(visionEncoder)
-                .decoder(decoder)
-                .embedTokens(embedTokens)
-                .tokenizer(tokenizer)
-                .imagePreprocessor(null);
+        VisionLanguageModelBuilder builder = applyOnnxPackageMetadata(
+                VisionLanguageModel.builder()
+                        .visionEncoder(visionEncoder)
+                        .decoder(decoder)
+                        .embedTokens(embedTokens)
+                        .tokenizer(tokenizer), tokenizerFile);
         if (ioConfig != null) {
             builder.visionEncoderIOConfig(ioConfig);
         }
@@ -434,16 +445,28 @@ public class VisionLanguageModel implements AutoCloseable {
         long elapsed = System.currentTimeMillis() - start;
         log.info("VLM loaded from ONNX with patches in {}ms", elapsed);
 
-        VisionLanguageModelBuilder builder = VisionLanguageModel.builder()
-                .visionEncoder(visionEncoder)
-                .decoder(decoder)
-                .embedTokens(embedTokens)
-                .tokenizer(tokenizer)
-                .imagePreprocessor(null);
+        VisionLanguageModelBuilder builder = applyOnnxPackageMetadata(
+                VisionLanguageModel.builder()
+                        .visionEncoder(visionEncoder)
+                        .decoder(decoder)
+                        .embedTokens(embedTokens)
+                        .tokenizer(tokenizer), tokenizerFile);
         if (ioConfig != null) {
             builder.visionEncoderIOConfig(ioConfig);
         }
         return builder.build();
+    }
+
+    private static VisionLanguageModelBuilder applyOnnxPackageMetadata(
+            VisionLanguageModelBuilder builder, File tokenizerFile) throws IOException {
+        File modelDirectory = tokenizerFile == null ? null : tokenizerFile.getAbsoluteFile().getParentFile();
+        if (modelDirectory == null) return builder.outputProtocols(VlmOutputProtocolRegistry.fallback());
+        builder.config(MultiPartModelLoader.loadConfig(modelDirectory));
+        builder.outputProtocols(VlmOutputProtocolRegistry.load(modelDirectory));
+        if (new File(modelDirectory, "preprocessor_config.json").isFile()) {
+            builder.imagePreprocessor(VLMImagePreprocessor.fromModelDirectory(modelDirectory));
+        }
+        return builder;
     }
 
     private static void applyPatches(SameDiff model, List<SameDiffGraphPatch> patches, String label) {
@@ -585,7 +608,7 @@ public class VisionLanguageModel implements AutoCloseable {
      * @return the generated text
      */
     public String generate(INDArray image, String prompt) {
-        return generate(image, prompt, 512, 1.0, true);
+        return generate(image, prompt, 0, 1.0, true);
     }
 
     /**
@@ -611,7 +634,7 @@ public class VisionLanguageModel implements AutoCloseable {
      * @return the generation result with metrics
      */
     public GenerationResult generateWithMetrics(INDArray image, String prompt) {
-        return generateWithMetrics(image, prompt, 512, 1.0, true);
+        return generateWithMetrics(image, prompt, 0, 1.0, true);
     }
 
     /**
@@ -626,22 +649,56 @@ public class VisionLanguageModel implements AutoCloseable {
      */
     public GenerationResult generateWithMetrics(INDArray image, String prompt, int maxNewTokens,
                                                 double temperature, boolean doSample) {
+        return generateWithMetrics(image,
+                VlmProtocolRequest.builder().promptOverride(prompt).build(),
+                maxNewTokens, temperature, doSample);
+    }
+
+    /** Direct-image generation through a package/request-selected output protocol. */
+    public GenerationResult generateWithMetrics(INDArray image, VlmProtocolRequest protocolRequest,
+                                                int maxNewTokens, double temperature, boolean doSample) {
+        SamplingConfig samplingConfig = SamplingConfig.builder()
+                .maxNewTokens(maxNewTokens)
+                .temperature(temperature)
+                .doSample(doSample)
+                .build();
+        return generateWithMetrics(image, protocolRequest, samplingConfig);
+    }
+
+    /** Direct-image generation with the complete sampling policy preserved. */
+    public GenerationResult generateWithMetrics(INDArray image, VlmProtocolRequest protocolRequest,
+                                                SamplingConfig samplingConfig) {
         checkNotClosed();
+        SamplingConfig requestedSampling = samplingConfig != null
+                ? samplingConfig : SamplingConfig.greedy();
 
-        // Encode image
-        INDArray imageEmbeddings = encodeImage(image);
+        VlmProtocolPlan protocolPlan = outputProtocols.prepare(protocolRequest, tokenizer, config);
 
-        // Encode prompt
-        Encoding promptEncoding = tokenizer.encode(prompt, true);
-        int[] promptIds = promptEncoding.getIds();
-        INDArray textEmbeddings = embedText(promptIds);
+        INDArray imageEmbeddings = null;
+        INDArray textEmbeddings = null;
+        INDArray combinedEmbeddings = null;
+        try {
+            imageEmbeddings = encodeImage(image);
+            Encoding promptEncoding = protocolPlan.isApplyChatTemplate()
+                    ? tokenizer.encodePrompt(protocolPlan.getPrompt())
+                    : tokenizer.encode(protocolPlan.getPrompt(), false);
+            int[] textPromptIds = promptEncoding.getIds();
+            textEmbeddings = embedText(textPromptIds);
+            combinedEmbeddings = combineEmbeddings(imageEmbeddings, textEmbeddings);
 
-        // Combine embeddings (image before text for most VLMs)
-        INDArray combinedEmbeddings = combineEmbeddings(imageEmbeddings, textEmbeddings);
-
-        // Use GenerationPipeline for decode
-        return decodeWithStaticLoop(combinedEmbeddings, promptIds, maxNewTokens,
-                temperature, doSample);
+            int imageTokenId = ImagePromptBuilder.resolveImageTokenId(tokenizer);
+            int imageTokenCount = (int) imageEmbeddings.size(1);
+            int[] combinedPromptIds = combinedPromptIds(
+                    imageTokenCount, imageTokenId, textPromptIds);
+            int effectiveMaxTokens = resolveGenerationBudget(
+                    combinedPromptIds.length, requestedSampling.getMaxNewTokens());
+            return decodeWithStaticLoop(combinedEmbeddings, combinedPromptIds,
+                    requestedSampling.toBuilder().maxNewTokens(effectiveMaxTokens).build(), protocolPlan);
+        } finally {
+            SameDiffMemoryUtils.safeClose(combinedEmbeddings);
+            SameDiffMemoryUtils.safeClose(textEmbeddings);
+            SameDiffMemoryUtils.safeClose(imageEmbeddings);
+        }
     }
 
     /**
@@ -1316,16 +1373,40 @@ public class VisionLanguageModel implements AutoCloseable {
                                                  boolean doSample,
                                                  double temperature,
                                                  int targetSize) {
-        checkNotClosed();
-        if (pageSplitResults == null || pageSplitResults.isEmpty()) {
-            return new GenerationResult[0];
-        }
+        return generatePagesTiled(pageSplitResults,
+                VlmProtocolRequest.builder().promptOverride(userPrompt).build(),
+                maxNewTokens, doSample, temperature, targetSize);
+    }
 
+    /** Generate tiled pages through a package/request-selected output protocol. */
+    public GenerationResult[] generatePagesTiled(List<ImageTiler.SplitImageResult> pageSplitResults,
+                                                 VlmProtocolRequest protocolRequest,
+                                                 int maxNewTokens,
+                                                 boolean doSample,
+                                                 double temperature,
+                                                 int targetSize) {
         SamplingConfig samplingConfig = SamplingConfig.builder()
                 .maxNewTokens(maxNewTokens)
                 .doSample(doSample)
                 .temperature(temperature)
                 .build();
+        return generatePagesTiled(pageSplitResults, protocolRequest, samplingConfig, targetSize);
+    }
+
+    /** Generate tiled pages while preserving the complete caller sampling policy. */
+    public GenerationResult[] generatePagesTiled(List<ImageTiler.SplitImageResult> pageSplitResults,
+                                                 VlmProtocolRequest protocolRequest,
+                                                 SamplingConfig samplingConfig,
+                                                 int targetSize) {
+        checkNotClosed();
+        if (pageSplitResults == null || pageSplitResults.isEmpty()) {
+            return new GenerationResult[0];
+        }
+
+        VlmProtocolPlan protocolPlan = outputProtocols.prepare(protocolRequest, tokenizer, config);
+
+        SamplingConfig requestedSampling = samplingConfig != null
+                ? samplingConfig : SamplingConfig.greedy();
 
         GenerationResult[] results = new GenerationResult[pageSplitResults.size()];
         for (int i = 0; i < pageSplitResults.size(); i++) {
@@ -1358,8 +1439,8 @@ public class VisionLanguageModel implements AutoCloseable {
                 int imageSeqLenPerFrame = (int) (visionEmbeddings.size(1) / Math.max(totalFrames, 1));
                 results[i] = generateFromEmbeddings(
                         visionEmbeddings,
-                        userPrompt,
-                        samplingConfig,
+                        protocolPlan,
+                        requestedSampling,
                         splitResult.numRows,
                         splitResult.numCols,
                         imageSeqLenPerFrame);
@@ -1460,10 +1541,22 @@ public class VisionLanguageModel implements AutoCloseable {
             SamplingConfig config,
             int imageRows, int imageCols,
             int imageSeqLenPerFrame) {
+        VlmProtocolPlan plan = outputProtocols.prepare(
+                VlmProtocolRequest.builder().promptOverride(userPrompt).build(), tokenizer, this.config);
+        return generateFromEmbeddings(visionEmbeddings, plan, config,
+                imageRows, imageCols, imageSeqLenPerFrame);
+    }
+
+    /** Protocol-aware embedding generation used by document/OCR pipelines. */
+    public GenerationResult generateFromEmbeddings(
+            INDArray visionEmbeddings,
+            VlmProtocolPlan protocolPlan,
+            SamplingConfig config,
+            int imageRows, int imageCols,
+            int imageSeqLenPerFrame) {
         checkNotClosed();
 
-        long startNanos = System.nanoTime();
-        int maxTokens = config.getMaxNewTokens();
+        int requestedMaxTokens = config.getMaxNewTokens();
         double temperature = config.getTemperature();
         boolean doSample = config.isDoSample();
 
@@ -1478,8 +1571,10 @@ public class VisionLanguageModel implements AutoCloseable {
         // Apply chat template if available — wraps image + text in model-specific format
         // (e.g., Idefics3: <|im_start|>User:<image tokens>prompt<end_of_utterance>\nAssistant:)
         String fullPrompt;
+        String userPrompt = protocolPlan.getPrompt();
         String chatTemplateText = tokenizer.getChatTemplate();
-        if (chatTemplateText != null && !chatTemplateText.isEmpty()) {
+        if (protocolPlan.isApplyChatTemplate()
+                && chatTemplateText != null && !chatTemplateText.isEmpty()) {
             List<ChatTemplate.ContentPart> parts = new ArrayList<>();
             parts.add(ChatTemplate.ContentPart.image(imagePrompt));
             parts.add(ChatTemplate.ContentPart.text(userPrompt));
@@ -1499,6 +1594,7 @@ public class VisionLanguageModel implements AutoCloseable {
         int[] promptTokenIds = encoding.getIds();
         int imageTokenId = ImagePromptBuilder.resolveImageTokenId(tokenizer);
         int promptTokenCount = promptTokenIds.length;
+        int maxTokens = resolveGenerationBudget(promptTokenCount, requestedMaxTokens);
 
         log.info("generateFromEmbeddings: prompt has {} tokens, {} image tokens expected, vision shape={}",
                 promptTokenCount, totalImageTokens,
@@ -1514,7 +1610,8 @@ public class VisionLanguageModel implements AutoCloseable {
 
         // Run decode loop using the merged embeddings directly
         try {
-            return decodeWithStaticLoop(inputsEmbeds, promptTokenIds, maxTokens, temperature, doSample);
+            return decodeWithStaticLoop(inputsEmbeds, promptTokenIds,
+                    config.toBuilder().maxNewTokens(maxTokens).build(), protocolPlan);
         } finally {
             // inputsEmbeds is not closed by the decode loop (it treats it as externally owned).
             // We must close it here to prevent ~5 MB GPU memory leak per page.
@@ -1871,17 +1968,15 @@ public class VisionLanguageModel implements AutoCloseable {
         //   - KV:      [batch, heads, maxKvLen, dim] (static buffers)
         //
         // These shapes are identical across pages, so the frozen plan (including
-        // captured CUDA graphs) is valid for replay. The generateNative() method's
-        // fixedBuffers path (lines 1572-1582) handles this correctly:
-        //   1. clearNodeOutputsOnly() removes stale intermediate outputs
-        //   2. Prefill creates fresh KV buffers with the same shapes
-        //   3. Ext input mechanism updates device pointers before replay
+        // captured CUDA graphs) is valid for replay. The fixedBuffers path retains
+        // pointer-stable prefill/decode/KV arrays and refills their contents in place
+        // before replay; it must not clear the session or replace captured addresses.
         //
         // The previous full-reset approach destroyed the decoder plan between pages,
         // causing ~5s recompilation overhead per page and CUDA graph capture conflicts
         // that leaked ~3GB/page. The stale-KV-pointer crash that motivated the full
-        // reset only occurs WITHOUT fixedBuffers — with fixedBuffers, KV buffers are
-        // created fresh each call and the ext input update path is safe.
+        // reset only occurs WITHOUT fixedBuffers — with fixedBuffers, retained KV and
+        // decode arrays are refilled in place and the external-input identity stays stable.
         boolean memoryPressureHigh = isGpuMemoryPressureHigh();
         if (cachedPipeline != null && !memoryPressureHigh) {
             log.info("Decoder DSP plan preserved for replay (fixedBuffers mode active)");
@@ -1920,13 +2015,93 @@ public class VisionLanguageModel implements AutoCloseable {
     private void resetCachedDecoderPipelineForMemoryPressure() {
         if (cachedPipeline != null) {
             cachedPipeline.close();
+            if (cachedPipeline.hasRetainedEmbeddingInputs()) {
+                throw new IllegalStateException("Decoder borrower retirement failed; cached generation "
+                        + "pipeline retained for a safe teardown retry");
+            }
             cachedPipeline = null;
             cachedDecoderIOConfig = null;
         }
+        cachedPromptTokenCount = 0;
+        cachedMaxPrefillLength = 0;
+        cachedProtocolKey = null;
         if (decoder != null) {
             decoder.resetSession();
             decoder.clearDynamicShapePlanCache();
         }
+    }
+
+    /**
+     * End one logical adaptive generation batch while keeping model weights loaded.
+     * Region replay is preserved within the batch; at its boundary every shape-keyed
+     * vision/embed/decoder session and plan is retired so region shapes cannot leak into
+     * the next full page.
+     */
+    public void releaseCachedGenerationPipeline() {
+        log.info("Releasing cached generation pipeline at explicit batch boundary");
+        resetCachedDecoderPipelineForMemoryPressure();
+        retireModelSession("visionEncoder", visionEncoder);
+        retireModelSession("embedTokens", embedTokens);
+        // The sessions above have deliberately been retired. Protect model-owned weights only;
+        // asking them for a DSP executor here would recreate empty sessions immediately after
+        // retirement and leave another lifecycle object behind.
+        IdentityHashMap<DataBuffer, Boolean> protectedBuffers = collectAllModelWeightBuffers();
+        ArrayCacheMemoryMgr.closeDeferredBuffers(protectedBuffers);
+        ArrayCacheMemoryMgr.clearCacheState();
+        ArrayCacheMemoryMgr.setEnableCache(false);
+        SameDiffMemoryUtils.trimAllDevicePools();
+        logGpuMemoryStatus("after explicit generation batch release");
+    }
+
+    /**
+     * Complete an adaptive page while preserving all fixed-shape replay plans.
+     *
+     * <p>Vision tiles are normalized to the model input shape before inference, and the
+     * generation pipeline pads decoder inputs to its fixed envelope. Destroying the vision/embed
+     * sessions after a crop therefore does not release a unique crop plan; it discards the warmed
+     * plan needed by the next page and can spend minutes rebuilding it under memory pressure.
+     * Emergency reclamation remains in {@link #reclaimAdaptiveInputPlansIfNeeded()} and runs only
+     * when the configured GPU pressure threshold is actually exceeded.</p>
+     */
+    public void retireAdaptiveInputPlansPreservingDecoder() {
+        resetSessionsForDecode();
+        if (lastDecoderResetWasFull) {
+            log.info("Adaptive page complete; preserved vision/embed replay and released decoder state under pressure");
+        } else {
+            log.info("Adaptive page complete; preserved warmed vision, embed, and padded decoder plans");
+        }
+        logGpuMemoryStatus(lastDecoderResetWasFull
+                ? "after adaptive page cleanup (decoder pressure release)"
+                : "after adaptive page cleanup (all replay plans preserved)");
+    }
+
+    /**
+     * Reclaim accumulated crop-shape plans before the next adaptive sibling can OOM.
+     * The decoder uses one fixed padded shape and remains protected/replayable.
+     *
+     * @return true when vision/embed plans were retired
+     */
+    public boolean reclaimAdaptiveInputPlansIfNeeded() {
+        if (!isGpuMemoryPressureHigh()) return false;
+        log.warn("Adaptive crop memory pressure is high; retiring superseded vision/embed plans "
+                + "before the next crop while preserving the padded decoder plan");
+        IdentityHashMap<DataBuffer, Boolean> protectedBuffers = collectAllModelWeightBuffers();
+        collectDspExtInputBuffers(decoder, protectedBuffers);
+        retireModelSession("visionEncoder", visionEncoder);
+        retireModelSession("embedTokens", embedTokens);
+        ArrayCacheMemoryMgr.closeDeferredBuffers(protectedBuffers);
+        ArrayCacheMemoryMgr.clearCacheState();
+        ArrayCacheMemoryMgr.setEnableCache(false);
+        SameDiffMemoryUtils.trimAllDevicePools();
+        logGpuMemoryStatus("after adaptive crop-plan reclamation");
+        return true;
+    }
+
+    private void retireModelSession(String label, SameDiff model) {
+        if (model == null) return;
+        model.resetSession();
+        model.clearDynamicShapePlanCache();
+        log.info("Retired {} session and shape-keyed DSP plan cache at adaptive batch boundary", label);
     }
 
     /**
@@ -2030,10 +2205,7 @@ public class VisionLanguageModel implements AutoCloseable {
      * which would leave the native DSP plan with stale pointers and break CUDA graph replay.
      */
     private IdentityHashMap<DataBuffer, Boolean> collectAllModelProtectedBuffers() {
-        IdentityHashMap<DataBuffer, Boolean> protectedBuffers = new IdentityHashMap<>();
-        collectModelBuffers(decoder, protectedBuffers);
-        collectModelBuffers(visionEncoder, protectedBuffers);
-        collectModelBuffers(embedTokens, protectedBuffers);
+        IdentityHashMap<DataBuffer, Boolean> protectedBuffers = collectAllModelWeightBuffers();
         // Protect ext input arrays from frozen DSP plans.
         // These arrays (inputIds, posIds, causalMask, attentionMask, embeddings, etc.)
         // are tracked by the native plan for pointer stability. If trimAllDevicePools()
@@ -2042,6 +2214,14 @@ public class VisionLanguageModel implements AutoCloseable {
         collectDspExtInputBuffers(decoder, protectedBuffers);
         collectDspExtInputBuffers(visionEncoder, protectedBuffers);
         collectDspExtInputBuffers(embedTokens, protectedBuffers);
+        return protectedBuffers;
+    }
+
+    private IdentityHashMap<DataBuffer, Boolean> collectAllModelWeightBuffers() {
+        IdentityHashMap<DataBuffer, Boolean> protectedBuffers = new IdentityHashMap<>();
+        collectModelBuffers(decoder, protectedBuffers);
+        collectModelBuffers(visionEncoder, protectedBuffers);
+        collectModelBuffers(embedTokens, protectedBuffers);
         return protectedBuffers;
     }
 
@@ -2086,25 +2266,69 @@ public class VisionLanguageModel implements AutoCloseable {
      */
     private GenerationResult decodeWithStaticLoop(INDArray combinedEmbeddings, int[] promptIds,
                                                    int maxNewTokens, double temperature, boolean doSample) {
+        VlmProtocolPlan defaultPlan = outputProtocols.prepare(
+                VlmProtocolRequest.raw(""), tokenizer, config);
+        return decodeWithStaticLoop(combinedEmbeddings, promptIds, maxNewTokens,
+                temperature, doSample, defaultPlan);
+    }
+
+    private GenerationResult decodeWithStaticLoop(INDArray combinedEmbeddings, int[] promptIds,
+                                                   int maxNewTokens, double temperature, boolean doSample,
+                                                   VlmProtocolPlan protocolPlan) {
         SamplingConfig samplingCfg = doSample
                 ? SamplingConfig.builder()
-                        .temperature(temperature).topP(0.95).doSample(true).build()
-                : SamplingConfig.greedy();
-        Integer modelEosTokenId = config != null ? config.getEosTokenIdSingle() : null;
-        if (modelEosTokenId != null) {
+                        .maxNewTokens(maxNewTokens).temperature(temperature)
+                        .topP(0.95).doSample(true).build()
+                : SamplingConfig.greedy().toBuilder().maxNewTokens(maxNewTokens).build();
+        return decodeWithStaticLoop(combinedEmbeddings, promptIds, samplingCfg, protocolPlan);
+    }
+
+    private GenerationResult decodeWithStaticLoop(INDArray combinedEmbeddings, int[] promptIds,
+                                                   SamplingConfig requestedSampling,
+                                                   VlmProtocolPlan protocolPlan) {
+        SamplingConfig samplingCfg = requestedSampling != null
+                ? requestedSampling : SamplingConfig.greedy();
+        int maxNewTokens = samplingCfg.getMaxNewTokens();
+        java.util.List<Integer> modelEosTokenIds = modelEosTokenIds();
+        Integer modelEosTokenId = modelEosTokenIds.isEmpty() ? null : modelEosTokenIds.get(0);
+        if ((protocolPlan == null || protocolPlan.isInheritModelEos()) && modelEosTokenId != null) {
             samplingCfg = samplingCfg.toBuilder().eosTokenId(modelEosTokenId).build();
         }
-        Integer docTagsStopTokenId = tokenizer.getTokenId("</doctag>");
-        java.util.Set<Integer> structuredStopTokenIds = docTagsStopTokenId == null
-                ? java.util.Collections.emptySet()
-                : java.util.Collections.singleton(docTagsStopTokenId);
+        // Secondary model EOS values remain alternate scalar terminators. Task/output protocol
+        // stops are independent ordered sequences resolved from package metadata below.
+        java.util.Set<Integer> additionalModelStopTokenIds = protocolPlan != null
+                && !protocolPlan.isInheritModelEos() ? java.util.Collections.emptySet()
+                : modelEosTokenIds.size() <= 1 ? java.util.Collections.emptySet()
+                : new java.util.LinkedHashSet<>(modelEosTokenIds.subList(1, modelEosTokenIds.size()));
+        String protocolKey = protocolPlan == null ? "fallback" : protocolPlan.cacheKey();
 
         try {
+            boolean promptIncompatible = cachedMaxPrefillLength > 0
+                    ? promptIds.length > cachedMaxPrefillLength
+                    : cachedPromptTokenCount > 0 && promptIds.length != cachedPromptTokenCount;
+            boolean protocolIncompatible = !java.util.Objects.equals(protocolKey, cachedProtocolKey);
+            if (cachedPipeline != null && (promptIncompatible || protocolIncompatible)) {
+                log.info("Rebuilding cached generation pipeline for capacity/protocol change "
+                                + "prompt {} -> {} (padded capacity={}), protocol {} -> {}",
+                        cachedPromptTokenCount, promptIds.length, cachedMaxPrefillLength,
+                        cachedProtocolKey, protocolKey);
+                GenerationPipeline incompatiblePipeline = cachedPipeline;
+                incompatiblePipeline.close();
+                if (incompatiblePipeline.hasRetainedEmbeddingInputs()) {
+                    throw new IllegalStateException("Decoder borrower retirement failed while rebuilding the "
+                            + "cached generation pipeline; retaining it for a safe teardown retry");
+                }
+                cachedPipeline = null;
+                cachedDecoderIOConfig = null;
+                cachedPromptTokenCount = 0;
+                cachedMaxPrefillLength = 0;
+                cachedProtocolKey = null;
+            }
             if (cachedPipeline == null) {
                 cachedDecoderIOConfig = ModelIOConfig.discover(decoder);
                 boolean dynamicBenchmarkBuffers = Boolean.getBoolean("vlm.benchmark.dynamicBuffers");
                 int maxPrefill = dynamicBenchmarkBuffers ? 0 : computeMaxPrefillLength(promptIds.length, maxNewTokens);
-                int effectiveMaxKvCacheLength = dynamicBenchmarkBuffers ? 0 : (this.maxKvLen > 0 ? this.maxKvLen : 0);
+                int effectiveMaxKvCacheLength = dynamicBenchmarkBuffers ? 0 : resolveContextWindow();
                 log.info("Creating cached GenerationPipeline (mode={}, maxPrefillLength={}, promptLen={}, maxNewTokens={}, maxKvCacheLength={})",
                         dynamicBenchmarkBuffers ? "dynamic-benchmark" : "fixedBuffers",
                         maxPrefill, promptIds.length, maxNewTokens, effectiveMaxKvCacheLength);
@@ -2115,53 +2339,131 @@ public class VisionLanguageModel implements AutoCloseable {
                         .tokenizer(tokenizer)
                         .ioConfig(cachedDecoderIOConfig)
                         .samplingConfig(samplingCfg)
-                        .additionalStopTokenIds(structuredStopTokenIds)
+                        .additionalStopTokenIds(additionalModelStopTokenIds)
+                        .additionalStopTokenSequences(protocolPlan == null
+                                ? java.util.Collections.emptyList()
+                                : protocolPlan.tokenSequences())
+                        .inheritModelStopTokenIds(protocolPlan == null || protocolPlan.isInheritModelEos())
+                        .inheritDefaultEos(protocolPlan == null || protocolPlan.isInheritModelEos())
+                        .inheritChatTemplateStopTokenIds(protocolPlan == null
+                                || protocolPlan.isInheritChatTemplateStops())
                         .maxNewTokens(maxNewTokens)
                         .maxKvCacheLength(effectiveMaxKvCacheLength)
                         .hiddenSize(config != null && config.getHiddenSize() != null ? config.getHiddenSize() : 0)
+                        // MultiPartModelLoader/SameDiffOptimizationCache already loaded the
+                        // optimized decoder artifact. Re-optimizing here creates an owned graph
+                        // copy (including every model weight) each time pressure rebuilds the
+                        // generation borrower, defeating cleanup and exhausting GPU memory.
+                        .graphOptimizerEnabled(false)
                         .benchmarkConfig(benchmarkConfig);
                 if (!dynamicBenchmarkBuffers) {
                     pipelineConfigBuilder.maxPrefillLength(maxPrefill);
                 }
 
                 cachedPipeline = GenerationPipeline.create(pipelineConfigBuilder.build());
+                cachedPromptTokenCount = promptIds.length;
+                cachedMaxPrefillLength = maxPrefill;
+                cachedProtocolKey = protocolKey;
             } else {
-                log.info("Reusing cached GenerationPipeline (decoder plan preserved)");
+                log.info("Reusing cached GenerationPipeline (promptLen={}, padded capacity={}, decoder plan preserved)",
+                        promptIds.length, cachedMaxPrefillLength);
+                cachedPromptTokenCount = promptIds.length;
             }
 
+            // Sampling is pure logits post-processing and does not alter frozen plan shapes.
+            // Refresh it on every call so adaptive repetition penalties and filters are not
+            // silently replaced by the first full-page request's policy.
+            cachedPipeline.setSamplingConfig(samplingCfg);
             return cachedPipeline.generate(combinedEmbeddings, promptIds, maxNewTokens);
         } catch (IOException e) {
             throw new RuntimeException("Failed to create generation pipeline", e);
         }
     }
 
+    /** Resolve one request against the package-declared protocol registry. */
+    public VlmProtocolPlan prepareOutputProtocol(VlmProtocolRequest request) {
+        return outputProtocols.prepare(request, tokenizer, config);
+    }
+
+    /** Parse/render one generation with the same selected protocol used for prompting. */
+    public VlmProtocolOutput processOutputProtocol(VlmProtocolRequest request, GenerationResult result) {
+        VlmProtocolPlan plan = outputProtocols.prepare(request, tokenizer, config);
+        return outputProtocols.process(request, plan, result, tokenizer);
+    }
+
+    public GenerationResult mergeOutputProtocolRegions(VlmProtocolRequest request,
+                                                       java.util.List<GenerationResult> regions) {
+        VlmProtocolPlan plan = outputProtocols.prepare(request, tokenizer, config);
+        return outputProtocols.mergeRegions(request, plan, regions, tokenizer);
+    }
+
+    public String getDefaultOutputProtocolId() {
+        return outputProtocols.defaultProtocolId();
+    }
+
+    /** Resolve an EOS-oriented generation budget from the actual prompt and model context. */
+    int resolveGenerationBudget(int promptTokenCount, int requestedMaxTokens) {
+        int contextWindow = resolveContextWindow();
+        if (contextWindow <= 0) {
+            return requestedMaxTokens > 0 ? requestedMaxTokens : 512;
+        }
+        int available = contextWindow - promptTokenCount;
+        if (available <= 0) {
+            throw new IllegalStateException("Prompt length " + promptTokenCount
+                    + " exhausts the model context window " + contextWindow);
+        }
+        return requestedMaxTokens > 0 ? Math.min(requestedMaxTokens, available) : available;
+    }
+
+    private int resolveContextWindow() {
+        int contextWindow = config != null && config.getMaxPositionEmbeddings() != null
+                ? config.getMaxPositionEmbeddings() : 0;
+        if (maxKvLen > 0) {
+            contextWindow = contextWindow > 0 ? Math.min(contextWindow, maxKvLen) : maxKvLen;
+        }
+        return contextWindow;
+    }
+
+    java.util.List<Integer> modelEosTokenIds() {
+        return config == null ? java.util.Collections.emptyList() : config.getEosTokenIds();
+    }
+
+    static int[] combinedPromptIds(int imageTokenCount, int imageTokenId, int[] textPromptIds) {
+        if (imageTokenCount < 0) throw new IllegalArgumentException("imageTokenCount must be >= 0");
+        int[] textIds = textPromptIds == null ? new int[0] : textPromptIds;
+        int[] combined = new int[imageTokenCount + textIds.length];
+        java.util.Arrays.fill(combined, 0, imageTokenCount, imageTokenId);
+        System.arraycopy(textIds, 0, combined, imageTokenCount, textIds.length);
+        return combined;
+    }
+
     /**
      * Compute the fixed prefill length for stable DSP plan shapes across pages.
      *
-     * <p>When {@code maxKvLen} is configured, it is used as the total sequence budget
-     * and {@code maxPrefillLength = maxKvLen - maxNewTokens}. Otherwise, the current
-     * prompt length is rounded up to the next 256-token boundary with 20% headroom
-     * to accommodate minor prompt length variations between pages.</p>
+     * <p>The physical prefill buffer is rounded to the next 256-token boundary with 20%
+     * headroom and capped by the model context. Padding is only a replay shape: semantic
+     * generation capacity remains based on the real prompt length.</p>
      *
      * @param currentPromptLen the prompt token count from the first page
      * @param maxNewTokens maximum tokens to generate per page
      * @return the fixed prefill length for all subsequent pages
      */
     private int computeMaxPrefillLength(int currentPromptLen, int maxNewTokens) {
-        // Add 20% headroom and round up to 256-token boundary to absorb
-        // prompt length variation across pages (tile count differences).
-        // maxKvLen caps the total sequence budget when configured.
-        int prefill = (int) (currentPromptLen * 1.2);
+        int contextWindow = resolveContextWindow();
+        if (contextWindow > 0 && currentPromptLen > contextWindow) {
+            throw new IllegalStateException("Prompt length " + currentPromptLen
+                    + " exceeds fixed KV/context capacity " + contextWindow);
+        }
+
+        // Select a capacity, not the first request's exact length. The logical prompt length
+        // still drives cache_position and maxNewTokens, so this padding never consumes context.
+        int prefill = (int) Math.ceil(currentPromptLen * 1.2);
         prefill = Math.max(prefill, 512);
         prefill = ((prefill + 255) / 256) * 256;
-        if (this.maxKvLen > 0) {
-            // Never discard prompt/image tokens to satisfy an oversized generation request.
-            // GenerationPipeline caps maxNewTokens to the capacity left after prefill; if the
-            // prompt itself fills maxKvLen, its existing no-room validation reports that error.
-            int cap = this.maxKvLen - 1;
-            prefill = Math.min(prefill, cap);
-            prefill = Math.max(prefill, currentPromptLen);
+        if (contextWindow > 0) {
+            prefill = Math.min(prefill, contextWindow);
         }
+        prefill = Math.max(prefill, currentPromptLen);
         log.info("maxPrefillLength computed: {} (promptLen={}, maxNewTokens={}, maxKvLen={})",
                 prefill, currentPromptLen, maxNewTokens, this.maxKvLen);
         return prefill;
@@ -2554,6 +2856,7 @@ public class VisionLanguageModel implements AutoCloseable {
                 .tokenizer(loaded.getTokenizer())
                 .imagePreprocessor(VLMImagePreprocessor.forDevice(loaded.getImagePreprocessor().getConfig(), device))
                 .config(loaded.getConfig())
+                .outputProtocols(loaded.getOutputProtocols())
                 .targetDevice(device)
                 .build();
     }
@@ -2570,6 +2873,9 @@ public class VisionLanguageModel implements AutoCloseable {
                 }
                 cachedPipeline = null;
                 cachedDecoderIOConfig = null;
+                cachedPromptTokenCount = 0;
+                cachedMaxPrefillLength = 0;
+                cachedProtocolKey = null;
             }
             closeModel("decoder", decoder);
             closeModel("embedTokens", embedTokens);

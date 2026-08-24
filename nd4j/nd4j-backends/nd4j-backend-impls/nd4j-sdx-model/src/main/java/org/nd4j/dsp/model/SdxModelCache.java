@@ -15,6 +15,7 @@ import java.io.InputStreamReader;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.LinkOption;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -67,6 +68,7 @@ public final class SdxModelCache {
     private static final int MAX_MANIFEST_BYTES = 1024 * 1024;
     private static final int MAX_CACHE_FILES = 100_000;
     private static final long ZIP_TIME = 315532800000L;
+    private static final Object INVENTORY_PROCESS_LOCK = new Object();
     private static final Pattern SHA256 = Pattern.compile("^[0-9a-f]{64}$");
     private static final Pattern SAFE_KEY = Pattern.compile("^[A-Za-z0-9_.-]+$");
     private static final Base64.Encoder PATH_ENCODER =
@@ -94,6 +96,65 @@ public final class SdxModelCache {
 
     public Path root() {
         return root;
+    }
+
+    /**
+     * Inspect every complete source/target reference without re-hashing large model payloads.
+     * Full checksums are enforced by {@link #resolveVerified(Path, SdxTargetProfile)} before use.
+     */
+    public SdxModelCacheInventory inventory() throws IOException {
+        return inventory(null);
+    }
+
+    /** Return a metadata-only inventory restricted to one target, or all targets when null. */
+    public SdxModelCacheInventory inventory(SdxTargetProfile targetFilter) throws IOException {
+        return withInventoryLock(() -> inventoryUnlocked(targetFilter));
+    }
+
+    private SdxModelCacheInventory inventoryUnlocked(SdxTargetProfile targetFilter)
+            throws IOException {
+        long totalPhysicalBytes = treePhysicalBytes(root);
+        Path indexRoot = root.resolve("index");
+        if (!Files.isDirectory(indexRoot, LinkOption.NOFOLLOW_LINKS)) {
+            return new SdxModelCacheInventory(
+                    Collections.emptyList(), totalPhysicalBytes, 0L, 0L, 0);
+        }
+
+        List<Path> references;
+        try (Stream<Path> stream = Files.walk(indexRoot, 2)) {
+            references = stream
+                    .filter(path -> path.getFileName().toString().endsWith(".ref"))
+                    .sorted()
+                    .collect(java.util.stream.Collectors.toList());
+        }
+
+        List<SdxCachedModel> entries = new ArrayList<>();
+        Map<Path, Long> sourceBytes = new HashMap<>();
+        Map<Path, Long> objectBytes = new HashMap<>();
+        int invalidReferences = 0;
+        for (Path reference : references) {
+            try {
+                SdxCachedModel entry = inspectInventoryReference(indexRoot, reference, targetFilter);
+                if (entry == null) {
+                    continue;
+                }
+                entries.add(entry);
+                sourceBytes.put(entry.sourceModel(), entry.sourcePhysicalBytes());
+                objectBytes.put(entry.cacheEntry(), entry.objectPhysicalBytes());
+            } catch (IOException | RuntimeException invalid) {
+                invalidReferences++;
+            }
+        }
+        entries.sort(Comparator
+                .comparingLong(SdxCachedModel::lastModifiedMillis)
+                .reversed()
+                .thenComparing(SdxCachedModel::compileKey));
+        return new SdxModelCacheInventory(
+                entries,
+                totalPhysicalBytes,
+                sumBytes(sourceBytes.values()),
+                sumBytes(objectBytes.values()),
+                invalidReferences);
     }
 
     public SdxSourceIdentity identify(Path sourceModel) throws IOException {
@@ -154,18 +215,30 @@ public final class SdxModelCache {
      * No runtime/JIT compilation is attempted here.
      */
     public SdxCompiledModel resolve(Path sourceModel, SdxTargetProfile target) throws IOException {
+        return resolve(sourceModel, target, false);
+    }
+
+    /** Resolve and hash every declared target payload before returning it for execution. */
+    public SdxCompiledModel resolveVerified(Path sourceModel, SdxTargetProfile target)
+            throws IOException {
+        return resolve(sourceModel, target, true);
+    }
+
+    private SdxCompiledModel resolve(
+            Path sourceModel, SdxTargetProfile target, boolean forceHashes) throws IOException {
         Objects.requireNonNull(target, "target");
         Path source = requireSource(sourceModel);
         SdxSourceIdentity identity = identify(source);
         ensureSourceCached(source, identity);
 
-        Optional<SdxCompiledModel> installed = resolveReference(source, identity, target);
+        Optional<SdxCompiledModel> installed = resolveReference(
+                source, identity, target, forceHashes);
         if (installed.isPresent()) {
             return installed.get();
         }
 
         if (tryInstallEmbedded(source, identity, target)) {
-            installed = resolveReference(source, identity, target);
+            installed = resolveReference(source, identity, target, forceHashes);
             if (installed.isPresent()) {
                 return installed.get();
             }
@@ -427,16 +500,25 @@ public final class SdxModelCache {
     private Optional<SdxCompiledModel> resolveReference(
             Path source,
             SdxSourceIdentity identity,
-            SdxTargetProfile target) throws IOException {
+            SdxTargetProfile target,
+            boolean forceHashes) throws IOException {
         Path reference = referencePath(identity, target);
         if (!Files.isRegularFile(reference)) {
             return Optional.empty();
         }
-        String compileKey = Files.readString(reference, StandardCharsets.US_ASCII).trim();
+        String compileKey = readBoundedAscii(reference, 256).trim();
         if (!SHA256.matcher(compileKey).matches()) {
             return Optional.empty();
         }
-        return resolveByCompileKey(source, identity, target, compileKey);
+        if (!forceHashes) {
+            return resolveByCompileKey(source, identity, target, compileKey);
+        }
+        Path object = objectDirectory(compileKey);
+        if (!Files.isDirectory(object, LinkOption.NOFOLLOW_LINKS)) {
+            return Optional.empty();
+        }
+        return Optional.of(validateObject(
+                source, identity, target, compileKey, object, true));
     }
 
     private boolean tryInstallEmbedded(
@@ -535,7 +617,8 @@ public final class SdxModelCache {
                 && Files.isRegularFile(marker)
                 && manifestSha.equals(Files.readString(marker, StandardCharsets.US_ASCII).trim());
 
-        for (FileRecord file : fileRecords(manifest)) {
+        List<FileRecord> records = fileRecords(manifest);
+        for (FileRecord file : records) {
             Path path = resolveContained(object, file.path);
             if (!Files.isRegularFile(path) || Files.size(path) != file.bytes) {
                 throw new IOException("SDX cache file is missing or changed: " + file.path);
@@ -580,6 +663,198 @@ public final class SdxModelCache {
                 required(manifest, "compileKey"),
                 compilerId,
                 compilerVersion);
+    }
+
+    private SdxCachedModel inspectInventoryReference(
+            Path indexRoot,
+            Path reference,
+            SdxTargetProfile targetFilter) throws IOException {
+        if (Files.isSymbolicLink(reference)
+                || !Files.isRegularFile(reference, LinkOption.NOFOLLOW_LINKS)) {
+            throw new IOException("SDX cache reference is not a regular file: " + reference);
+        }
+        Path relative = indexRoot.relativize(reference);
+        if (relative.getNameCount() != 2) {
+            throw new IOException("SDX cache reference has an invalid layout: " + relative);
+        }
+        String sourceSha = relative.getName(0).toString();
+        requireSha256(sourceSha, "sourceSha256");
+        String referenceName = relative.getName(1).toString();
+        String targetId = referenceName.substring(0, referenceName.length() - ".ref".length());
+        SdxTargetProfile target = SdxTargetProfile.fromId(targetId);
+        if (targetFilter != null && target != targetFilter) {
+            return null;
+        }
+
+        String compileKey = readBoundedAscii(reference, 256).trim();
+        requireSha256(compileKey, "compileKey");
+        Path object = objectDirectory(compileKey);
+        if (Files.isSymbolicLink(object)
+                || !Files.isDirectory(object, LinkOption.NOFOLLOW_LINKS)) {
+            throw new IOException("SDX cache object is missing: " + object);
+        }
+        Path manifestPath = object.resolve(MANIFEST_FILE);
+        Map<String, String> manifest = readCanonicalMap(manifestPath);
+        if (!CACHE_ABI.equals(required(manifest, "cacheAbi"))
+                || !compileKey.equals(required(manifest, "compileKey"))
+                || !sourceSha.equals(required(manifest, "sourceSha256"))
+                || !target.id().equals(required(manifest, "target"))
+                || !target.runtimeKind().name().equals(required(manifest, "runtimeKind"))) {
+            throw new IOException("SDX cache reference and object manifest disagree");
+        }
+
+        String sourceFileName = required(manifest, "sourceFileName");
+        if (!("model.sdz".equals(sourceFileName) || "model.sdnb".equals(sourceFileName))) {
+            throw new IOException("SDX cache source format is invalid: " + sourceFileName);
+        }
+        long sourceLogicalBytes = parseLong(manifest, "sourceLogicalBytes");
+        if (sourceLogicalBytes <= 0L) {
+            throw new IOException("SDX cache source logical size is invalid");
+        }
+        Path source = root.resolve("sources").resolve(sourceSha).resolve(sourceFileName).normalize();
+        requireContainedRootPath(source, "cached source");
+        if (Files.isSymbolicLink(source)
+                || !Files.isRegularFile(source, LinkOption.NOFOLLOW_LINKS)) {
+            throw new IOException("Canonical SDX source is missing from cache: " + source);
+        }
+
+        String manifestSha = SdxSourceIdentity.sha256(manifestPath);
+        Path marker = object.resolve(VALIDATED_FILE);
+        if (Files.isSymbolicLink(marker)
+                || !Files.isRegularFile(marker, LinkOption.NOFOLLOW_LINKS)
+                || !manifestSha.equals(readBoundedAscii(marker, 256).trim())) {
+            throw new IOException("SDX cache object has no current validation marker");
+        }
+        List<FileRecord> records = fileRecords(manifest);
+        for (FileRecord file : records) {
+            Path path = resolveContained(object, file.path);
+            if (Files.isSymbolicLink(path)
+                    || !Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)
+                    || Files.size(path) != file.bytes) {
+                throw new IOException("SDX cache file is missing or changed: " + file.path);
+            }
+        }
+
+        Path runtimePath = resolveContained(
+                object, decodePath(required(manifest, "runtimePath64")));
+        if (Files.isSymbolicLink(runtimePath)
+                || !Files.exists(runtimePath, LinkOption.NOFOLLOW_LINKS)) {
+            throw new IOException("SDX runtime path is missing from cache");
+        }
+        long sourcePhysicalBytes = Files.size(source);
+        if (sourcePhysicalBytes <= 0L) {
+            throw new IOException("Canonical SDX source is empty: " + source);
+        }
+        long payloadBytes = 0L;
+        try {
+            for (FileRecord file : records) {
+                payloadBytes = Math.addExact(payloadBytes, file.bytes);
+            }
+            payloadBytes = Math.addExact(payloadBytes, Files.size(manifestPath));
+            payloadBytes = Math.addExact(payloadBytes, Files.size(marker));
+        } catch (ArithmeticException overflow) {
+            throw new IOException("SDX cache object size overflow", overflow);
+        }
+        long objectPhysicalBytes = payloadBytes;
+        long lastModifiedMillis = Math.max(
+                Files.getLastModifiedTime(source, LinkOption.NOFOLLOW_LINKS).toMillis(),
+                Files.getLastModifiedTime(manifestPath, LinkOption.NOFOLLOW_LINKS).toMillis());
+        return new SdxCachedModel(
+                source,
+                object,
+                runtimePath,
+                sourceSha,
+                sourceLogicalBytes,
+                sourcePhysicalBytes,
+                sourceFileName,
+                target,
+                compileKey,
+                decodeText(required(manifest, "compilerId64")),
+                decodeText(required(manifest, "compilerVersion64")),
+                objectPhysicalBytes,
+                lastModifiedMillis);
+    }
+
+    private void requireContainedRootPath(Path path, String description) throws IOException {
+        Path normalizedRoot = root.toAbsolutePath().normalize();
+        Path normalized = path.toAbsolutePath().normalize();
+        if (!normalized.startsWith(normalizedRoot)) {
+            throw new IOException("SDX " + description + " escaped the cache root: " + normalized);
+        }
+    }
+
+    private static long treePhysicalBytes(Path directory) throws IOException {
+        if (!Files.exists(directory, LinkOption.NOFOLLOW_LINKS)) {
+            return 0L;
+        }
+        if (Files.isSymbolicLink(directory)) {
+            throw new IOException("SDX cache storage contains a symlink: " + directory);
+        }
+        long total = 0L;
+        try (Stream<Path> stream = Files.walk(directory)) {
+            java.util.Iterator<Path> paths = stream.iterator();
+            while (paths.hasNext()) {
+                Path path = paths.next();
+                if (Files.isSymbolicLink(path)) {
+                    throw new IOException("SDX cache storage contains a symlink: " + path);
+                }
+                if (Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)) {
+                    try {
+                        total = Math.addExact(total, Files.size(path));
+                    } catch (ArithmeticException overflow) {
+                        throw new IOException("SDX cache storage size overflow", overflow);
+                    }
+                }
+            }
+        }
+        return total;
+    }
+
+    private <T> T withInventoryLock(IoSupplier<T> action) throws IOException {
+        synchronized (INVENTORY_PROCESS_LOCK) {
+            Path lockDirectory = root.resolve("locks");
+            Files.createDirectories(lockDirectory);
+            Path lockPath = lockDirectory.resolve("inventory.lock");
+            try (FileChannel channel = FileChannel.open(
+                         lockPath,
+                         StandardOpenOption.CREATE,
+                         StandardOpenOption.WRITE);
+                 FileLock ignored = channel.lock()) {
+                try {
+                    return action.get();
+                } catch (IOException failure) {
+                    throw failure;
+                } catch (RuntimeException failure) {
+                    throw failure;
+                } catch (Exception failure) {
+                    throw new IOException("SDX cache inventory operation failed", failure);
+                }
+            }
+        }
+    }
+
+    private static String readBoundedAscii(Path path, int maxBytes) throws IOException {
+        if (Files.isSymbolicLink(path)
+                || !Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)) {
+            throw new IOException("SDX cache metadata is not a regular file: " + path);
+        }
+        long bytes = Files.size(path);
+        if (bytes <= 0L || bytes > maxBytes) {
+            throw new IOException("SDX cache metadata has an invalid size: " + path);
+        }
+        return Files.readString(path, StandardCharsets.US_ASCII);
+    }
+
+    private static long sumBytes(Collection<Long> values) throws IOException {
+        long total = 0L;
+        for (Long value : values) {
+            try {
+                total = Math.addExact(total, value);
+            } catch (ArithmeticException overflow) {
+                throw new IOException("SDX cache inventory size overflow", overflow);
+            }
+        }
+        return total;
     }
 
     private void validateManifestIdentity(
@@ -666,11 +941,14 @@ public final class SdxModelCache {
             SdxSourceIdentity identity,
             SdxTargetProfile target,
             String compileKey) throws IOException {
-        Path reference = referencePath(identity, target);
-        Files.createDirectories(reference.getParent());
-        writeAtomically(
-                reference,
-                (compileKey + "\n").getBytes(StandardCharsets.US_ASCII));
+        withInventoryLock(() -> {
+            Path reference = referencePath(identity, target);
+            Files.createDirectories(reference.getParent());
+            writeAtomically(
+                    reference,
+                    (compileKey + "\n").getBytes(StandardCharsets.US_ASCII));
+            return null;
+        });
     }
 
     private Path referencePath(SdxSourceIdentity identity, SdxTargetProfile target) {

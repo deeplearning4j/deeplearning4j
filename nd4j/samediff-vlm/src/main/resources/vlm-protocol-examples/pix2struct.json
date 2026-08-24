@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1, "defaultProtocol": "screenshot-html",
+  "protocols": {"screenshot-html": {
+    "provider": "builtin.markup", "defaultTask": "html",
+    "tasks": {"html": {"prompt": "", "framing": "RAW"}, "vqa": {"prompt": "Answer the question shown with the image.", "framing": "RAW"}},
+    "termination": {"inheritModelEos": true, "inheritChatTemplateStops": false, "sequences": []},
+    "completion": {"mode": "HTML", "required": false}, "output": {"nativeFormat": "SIMPLIFIED_HTML"}
+  }}
+}

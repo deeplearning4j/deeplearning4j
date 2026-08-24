@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "defaultProtocol": "document",
+  "protocols": {
+    "document": {
+      "provider": "builtin.doctags",
+      "defaultTask": "ocr",
+      "tasks": {"ocr": {"aliases": ["document", "full_page"], "prompt": "Convert this page to docling.", "framing": "CHAT_TEMPLATE"}},
+      "termination": {"inheritModelEos": true, "inheritChatTemplateStops": false, "sequences": []},
+      "completion": {"mode": "DOCTAGS", "required": true, "rootElement": "doctag"},
+      "output": {"nativeFormat": "DOCTAGS", "renderers": {"RAW": "RAW", "PLAIN_TEXT": "PLAIN_TEXT", "MARKDOWN": "MARKDOWN", "HTML": "HTML"}}
+    }
+  }
+}

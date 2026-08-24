@@ -24,11 +24,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.config.ModelConfig;
+import org.eclipse.deeplearning4j.llm.config.TokenizerConfig;
 import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VLMImagePreprocessor;
 import org.eclipse.deeplearning4j.vlm.model.VisionLanguageModel;
 import org.eclipse.deeplearning4j.vlm.model.encoder.VisionEncoderIOConfig;
+import org.eclipse.deeplearning4j.vlm.output.protocol.VlmOutputProtocolRegistry;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.serde.SDZSerializer;
 
@@ -97,6 +99,8 @@ public class MultiPartModelLoader {
         if (!modelDir.exists() || !modelDir.isDirectory()) {
             throw new IOException("Model directory does not exist: " + modelDir.getAbsolutePath());
         }
+        // Validate lightweight protocol metadata before acquiring any model/tokenizer resources.
+        VlmOutputProtocolRegistry outputProtocols = VlmOutputProtocolRegistry.load(modelDir);
 
         // Resolve which SDZ files exist (fast filesystem check, no I/O)
         File visionEncoderFile = findSdzFile(modelDir, VISION_ENCODER_NAMES);
@@ -155,6 +159,7 @@ public class MultiPartModelLoader {
                 .tokenizer(tokenizer)
                 .imagePreprocessor(preprocessor)
                 .config(config)
+                .outputProtocols(outputProtocols)
                 .metadata(metadata)
                 .build();
     }
@@ -268,7 +273,7 @@ public class MultiPartModelLoader {
         return null;
     }
 
-    private static ModelConfig loadConfig(File modelDir) {
+    public static ModelConfig loadConfig(File modelDir) {
         ModelConfig config = null;
         File configFile = new File(modelDir, "config.json");
         if (configFile.exists()) {
@@ -304,6 +309,26 @@ public class MultiPartModelLoader {
                 log.warn("Failed to load generation_config.json: {}", e.getMessage());
             }
         }
+        File tokenizerConfigFile = new File(modelDir, "tokenizer_config.json");
+        if (tokenizerConfigFile.exists()) {
+            try {
+                TokenizerConfig tokenizerConfig = TokenizerConfig.fromFile(tokenizerConfigFile);
+                Number declaredLength = tokenizerConfig.getModelMaxLength();
+                long modelMaxLength = declaredLength == null ? 0L : declaredLength.longValue();
+                // Hugging Face sometimes uses enormous sentinel values for an unknown limit.
+                if (modelMaxLength > 0L && modelMaxLength <= Integer.MAX_VALUE) {
+                    if (config == null) config = new ModelConfig();
+                    if (config.getMaxPositionEmbeddings() == null
+                            || config.getMaxPositionEmbeddings() <= 0) {
+                        config.setMaxPositionEmbeddings((int) modelMaxLength);
+                        log.info("Using tokenizer model_max_length={} as the model context window",
+                                modelMaxLength);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Failed to load tokenizer context metadata: {}", e.getMessage());
+            }
+        }
         return config;
     }
 
@@ -335,6 +360,7 @@ public class MultiPartModelLoader {
         private final Tokenizer tokenizer;
         private final VLMImagePreprocessor imagePreprocessor;
         private final ModelConfig config;
+        private final VlmOutputProtocolRegistry outputProtocols;
         private final Map<String, Object> metadata;
 
         /**
@@ -359,7 +385,8 @@ public class MultiPartModelLoader {
                     .decoder(decoder)
                     .tokenizer(tokenizer)
                     .imagePreprocessor(imagePreprocessor)
-                    .config(config);
+                    .config(config)
+                    .outputProtocols(outputProtocols);
             if (ioConfig != null) {
                 builder.visionEncoderIOConfig(ioConfig);
             }

@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1, "defaultProtocol": "mmd",
+  "protocols": {"mmd": {
+    "provider": "builtin.markup", "defaultTask": "document",
+    "tasks": {"document": {"prompt": "", "framing": "RAW"}},
+    "termination": {"inheritModelEos": true, "inheritChatTemplateStops": false, "sequences": []},
+    "completion": {"mode": "MARKUP", "required": true}, "output": {"nativeFormat": "MARKDOWN_LATEX"}
+  }}
+}

@@ -106,6 +106,17 @@ public class SamplingConfig {
     private double repetitionPenalty = 1.0;
 
     /**
+     * Explicit native periodic-tail guard. Zero disables native repetition termination and
+     * preserves ordinary generate() semantics. When enabled, periods 1..this value are tested.
+     */
+    @Builder.Default
+    private int nativeRepetitionLoopMaxPeriod = 0;
+
+    /** Consecutive repeats required by the opt-in native periodic-tail guard. */
+    @Builder.Default
+    private int nativeRepetitionLoopMaxRepeats = 0;
+
+    /**
      * Frequency penalty subtracts {@code count(token) * frequencyPenalty} from seen-token logits.
      * Default: 0.0 (disabled)
      */
@@ -506,6 +517,17 @@ public class SamplingConfig {
             throw new IllegalArgumentException("topP must be in [0, 1]; got: " + topP);
         if (minP < 0.0 || minP > 1.0)
             throw new IllegalArgumentException("minP must be in [0, 1]; got: " + minP);
+        if (nativeRepetitionLoopMaxPeriod < 0 || nativeRepetitionLoopMaxPeriod > 1024)
+            throw new IllegalArgumentException("nativeRepetitionLoopMaxPeriod must be in [0, 1024]; got: "
+                    + nativeRepetitionLoopMaxPeriod);
+        if (nativeRepetitionLoopMaxRepeats < 0 || nativeRepetitionLoopMaxRepeats > 1024)
+            throw new IllegalArgumentException("nativeRepetitionLoopMaxRepeats must be in [0, 1024]; got: "
+                    + nativeRepetitionLoopMaxRepeats);
+        if ((nativeRepetitionLoopMaxPeriod == 0) != (nativeRepetitionLoopMaxRepeats == 0))
+            throw new IllegalArgumentException("native repetition termination requires both maxPeriod and maxRepeats");
+        if (nativeRepetitionLoopMaxRepeats > 0 && nativeRepetitionLoopMaxRepeats < 2)
+            throw new IllegalArgumentException("nativeRepetitionLoopMaxRepeats must be >= 2 when enabled; got: "
+                    + nativeRepetitionLoopMaxRepeats);
         if (maxOutputBlockTokens < 0)
             throw new IllegalArgumentException(
                     "maxOutputBlockTokens must be >= 0; got: " + maxOutputBlockTokens);

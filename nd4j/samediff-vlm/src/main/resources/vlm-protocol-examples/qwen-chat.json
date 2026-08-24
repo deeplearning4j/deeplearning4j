@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "defaultProtocol": "chat-text",
+  "protocols": {
+    "chat-text": {
+      "provider": "builtin.plain", "defaultTask": "ocr",
+      "tasks": {"ocr": {"prompt": "Extract all text from this document.", "framing": "CHAT_TEMPLATE"}},
+      "termination": {"inheritModelEos": true, "inheritChatTemplateStops": true, "sequences": [{"id": "assistant-turn-end", "kind": "END_OF_TURN", "text": "<|im_end|>", "retention": "DROP_MATCH"}]},
+      "completion": {"mode": "NON_EMPTY", "required": true},
+      "output": {"nativeFormat": "PLAIN_TEXT"}
+    },
+    "chat-json": {
+      "provider": "builtin.json", "defaultTask": "document_json",
+      "tasks": {"document_json": {"prompt": "Extract this document as valid JSON.", "framing": "CHAT_TEMPLATE"}},
+      "termination": {"inheritModelEos": true, "inheritChatTemplateStops": true, "sequences": [{"id": "assistant-turn-end", "kind": "END_OF_TURN", "text": "<|im_end|>", "retention": "DROP_MATCH"}]},
+      "completion": {"mode": "JSON", "required": true},
+      "output": {"nativeFormat": "JSON"}
+    }
+  }
+}

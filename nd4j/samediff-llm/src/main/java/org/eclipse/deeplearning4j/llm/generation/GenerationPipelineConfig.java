@@ -30,6 +30,7 @@ import org.eclipse.deeplearning4j.llm.generation.speculative.Speculator;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.eclipse.deeplearning4j.model.benchmark.BenchmarkConfig;
 
+import java.util.List;
 import java.util.Set;
 
 
@@ -178,6 +179,27 @@ public class GenerationPipelineConfig {
 
     /** Additional stop token IDs beyond EOS. */
     private final Set<Integer> additionalStopTokenIds;
+
+    /** Additional ordered token sequences. Unlike scalar stops these match only as full suffixes. */
+    private final List<int[]> additionalStopTokenSequences;
+
+    public List<int[]> getAdditionalStopTokenSequences() {
+        if (additionalStopTokenSequences == null) return java.util.Collections.emptyList();
+        List<int[]> copy = new java.util.ArrayList<>(additionalStopTokenSequences.size());
+        for (int[] sequence : additionalStopTokenSequences) {
+            if (sequence != null) copy.add(sequence.clone());
+        }
+        return java.util.Collections.unmodifiableList(copy);
+    }
+
+    /** Whether imported model stop IDs participate in this request. */
+    @Builder.Default private final boolean inheritModelStopTokenIds = true;
+
+    /** Whether imported/tokenizer EOS participates when sampling does not explicitly override it. */
+    @Builder.Default private final boolean inheritDefaultEos = true;
+
+    /** Whether atomic assistant-turn stops inferred from the chat template participate. */
+    @Builder.Default private final boolean inheritChatTemplateStopTokenIds = true;
 
     /** Name of the embedding model input (auto-discovered if null). */
     private final String embedInputName;

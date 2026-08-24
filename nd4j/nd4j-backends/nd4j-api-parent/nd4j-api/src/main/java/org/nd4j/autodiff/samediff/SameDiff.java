@@ -1797,6 +1797,69 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
 
 
     /**
+     * Atomically replace every data input for an existing function while keeping the forward and reverse
+     * graph metadata consistent. Repeated inputs are preserved in the function input list, while each
+     * variable records the function consumer only once.
+     *
+     * <p>This is the graph-rewrite counterpart to {@link #replaceArgFor(int, SDVariable, DifferentialFunction)}.
+     * Callers that need to change an op's arity must use this method instead of mutating
+     * {@link SameDiffOp#getInputsToOp()} directly.</p>
+     *
+     * @param function existing function whose complete input list will be replaced
+     * @param newArgs new ordered input variables
+     */
+    public void replaceArgsFor(@NonNull DifferentialFunction function, @NonNull SDVariable... newArgs) {
+        String opName = function.getOwnName();
+        Preconditions.checkState(opName != null, "Cannot replace inputs for an unnamed function");
+
+        SameDiffOp op = ops.get(opName);
+        Preconditions.checkState(op != null && op.getOp() == function,
+                "Function %s is not registered in this SameDiff instance", opName);
+
+        List<String> newNames = new ArrayList<>(newArgs.length);
+        for (int i = 0; i < newArgs.length; i++) {
+            SDVariable variable = newArgs[i];
+            Preconditions.checkNotNull(variable, "Found null replacement input at index %s for function %s", i, opName);
+            Variable metadata = variables.get(variable.name());
+            Preconditions.checkState(metadata != null && metadata.getVariable() == variable,
+                    "Replacement input %s at index %s does not belong to this SameDiff instance",
+                    variable.name(), i);
+            newNames.add(variable.name());
+        }
+
+        List<String> oldNames = op.getInputsToOp() == null
+                ? Collections.emptyList() : new ArrayList<>(op.getInputsToOp());
+        Set<String> retainedNames = new HashSet<>(newNames);
+
+        // Commit only after the complete replacement has been validated.
+        op.setInputsToOp(newNames);
+
+        for (String oldName : new HashSet<>(oldNames)) {
+            if (retainedNames.contains(oldName)) {
+                continue;
+            }
+            Variable metadata = variables.get(oldName);
+            if (metadata != null && metadata.getInputsForOp() != null) {
+                metadata.getInputsForOp().remove(opName);
+            }
+        }
+
+        for (String newName : retainedNames) {
+            Variable metadata = variables.get(newName);
+            List<String> consumers = metadata.getInputsForOp();
+            if (consumers == null) {
+                consumers = new ArrayList<>();
+                metadata.setInputsForOp(consumers);
+            }
+            if (!consumers.contains(opName)) {
+                consumers.add(opName);
+            }
+        }
+        invalidateAllPlanCaches();
+    }
+
+
+    /**
      * Replaces the argument at i with newArg for function
      * Does not use (or remove) ArgumentInterceptor stuff
      */

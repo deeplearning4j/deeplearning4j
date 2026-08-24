@@ -12,6 +12,7 @@
 package org.eclipse.deeplearning4j.vlm.model.loading;
 
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.deeplearning4j.vlm.model.patching.SmolDoclingExternalKvToInPlacePatch;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
 import org.nd4j.autodiff.samediff.serde.SDZSerializer;
@@ -62,6 +63,10 @@ public class SameDiffOptimizationCache {
      */
     private static final String META_KEY_FINGERPRINT = "optimizerFingerprint";
 
+    /** Java graph-rewrite schema. Bump whenever a pre-optimization canonicalization changes. */
+    private static final String GRAPH_REWRITE_SCHEMA =
+            SmolDoclingExternalKvToInPlacePatch.SCHEMA_VERSION;
+
     /**
      * Per-JVM cached optimizer fingerprint.  Computed once from buildInfo() on first
      * access.  Using the same native fingerprint as DspPlanDiskCache keeps the two
@@ -83,14 +88,20 @@ public class SameDiffOptimizationCache {
                         org.nd4j.linalg.factory.Nd4j.getBackend();
                         String info = NativeOpsHolder.getInstance()
                                 .getDeviceNativeOps().buildInfo();
-                        OPTIMIZER_FINGERPRINT = fingerprintForBuildInfo(info);
+                        OPTIMIZER_FINGERPRINT = fingerprintForBuildInfo(
+                                info + "\ngraphRewriteSchema=" + GRAPH_REWRITE_SCHEMA
+                                        + "\nsmoldoclingInPlaceKvEnabled="
+                                        + isSmolDoclingInPlaceKvEnabled());
                     } catch (Throwable e) {
                         // Throwable, not Exception: NativeOpsHolder init failures surface
                         // as ExceptionInInitializerError, which must also degrade to the
                         // "unavailable" fingerprint instead of killing the import.
                         log.warn("SameDiffOptimizationCache: could not read native buildInfo(), " +
                                 "optimizer cache fingerprint unavailable: {}", e.getMessage());
-                        OPTIMIZER_FINGERPRINT = fingerprintForBuildInfo("unavailable");
+                        OPTIMIZER_FINGERPRINT = fingerprintForBuildInfo(
+                                "unavailable\ngraphRewriteSchema=" + GRAPH_REWRITE_SCHEMA
+                                        + "\nsmoldoclingInPlaceKvEnabled="
+                                        + isSmolDoclingInPlaceKvEnabled());
                     }
                 }
             }
@@ -108,6 +119,12 @@ public class SameDiffOptimizationCache {
             // SHA-256 is required by the JDK; this is only a last-resort fallback.
             return "raw-hash:" + Integer.toUnsignedString(normalized.hashCode());
         }
+    }
+
+    private static boolean isSmolDoclingInPlaceKvEnabled() {
+        String configured = System.getProperty(
+                SmolDoclingExternalKvToInPlacePatch.ENABLED_PROPERTY);
+        return configured == null || !"false".equalsIgnoreCase(configured.trim());
     }
 
     /**
@@ -336,6 +353,7 @@ public class SameDiffOptimizationCache {
      */
     public static SameDiff optimizeWithCache(SameDiff sd, File sourceFile, boolean cacheDisabled,
                                              Map<String, String> extraMetadata) {
+        SmolDoclingExternalKvToInPlacePatch.applyIfEnabled(sd);
         if (!isOptimizerEnabled()) {
             return sd;
         }

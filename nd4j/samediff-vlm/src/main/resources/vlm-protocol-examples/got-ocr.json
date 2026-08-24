@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1, "defaultProtocol": "formatted-ocr",
+  "protocols": {"formatted-ocr": {
+    "provider": "builtin.markup", "defaultTask": "format",
+    "tasks": {"format": {"prompt": "OCR with format:", "framing": "CHAT_TEMPLATE"}, "plain": {"prompt": "OCR:", "framing": "CHAT_TEMPLATE"}},
+    "termination": {"inheritModelEos": true, "inheritChatTemplateStops": false, "sequences": [{"id": "assistant-turn-end", "kind": "END_OF_TURN", "text": "<|im_end|>", "retention": "DROP_MATCH"}]},
+    "completion": {"mode": "MARKUP", "required": true}, "output": {"nativeFormat": "MARKDOWN"}
+  }}
+}

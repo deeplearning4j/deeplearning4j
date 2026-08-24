@@ -35,7 +35,7 @@ import java.util.List;
  * Adam Gibson
  */
 @Data
-@Builder
+@Builder(toBuilder = true)
 public class GenerationResult {
 
     /**
@@ -203,10 +203,10 @@ public class GenerationResult {
 
         /**
          * Generation was stopped early because the model entered a degenerate repetition loop
-         * (a "thinking trap") with no natural EOS. Only produced by
-         * {@link GenerationPipeline.GenerationSession#continueToCompletion(int)} when its
-         * repetition guard trips — never by the numerically-pure {@code generate}/{@code continueGeneration}
-         * primitives. See {@code RepetitionGuard}.
+         * (a "thinking trap") with no natural EOS. Produced either by the explicit opt-in native
+         * periodic-tail policy in {@code SamplingConfig}, or by
+         * {@link GenerationPipeline.GenerationSession#continueToCompletion(int)} when its Java
+         * repetition guard trips. Ordinary generation remains unchanged when the native policy is disabled.
          */
         REPETITION
     }

@@ -23,14 +23,18 @@ package org.eclipse.deeplearning4j.llm.generation;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.AutoregressiveDecode;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -107,6 +111,37 @@ public class TestAutoregressiveDecodeIArgs {
     }
 
     @Test
+    @DisplayName("AutoregressiveDecode appends a versioned multi-token stop trailer")
+    public void testMultiTokenStopTrailer() {
+        AutoregressiveDecode op = newOp(-1, Set.of(777));
+        long[] legacy = op.iArgs().clone();
+
+        op.withStopSequences(List.of(new int[]{10, 11}, new int[]{20, 21, 22}),
+                new int[]{90, 91, 92});
+        long[] packed = op.iArgs();
+
+        long[] expectedPrefix = legacy.clone();
+        expectedPrefix[4] |= 512L;
+        assertArrayEquals(expectedPrefix, java.util.Arrays.copyOf(packed, legacy.length),
+                "only the optional-mask trailer bit may change in the legacy prefix");
+        assertTrue((packed[4] & 512L) != 0L, "optional mask must advertise the trailer");
+        assertArrayEquals(new long[]{-1398034256L, 1L, 1L, 2L, 2L, 10L, 11L,
+                        3L, 20L, 21L, 22L, 2L, 91L, 92L, 15L},
+                java.util.Arrays.copyOfRange(packed, legacy.length, packed.length));
+    }
+
+    @Test
+    @DisplayName("AutoregressiveDecode validates stop history before mutating iArgs")
+    public void testInvalidStopHistoryLeavesIArgsUnchanged() {
+        AutoregressiveDecode op = newOp(-1, Set.of(777));
+        long[] before = op.iArgs().clone();
+
+        assertThrows(IllegalArgumentException.class, () ->
+                op.withStopSequences(List.of(new int[]{10, 11}), new int[]{4, -1}));
+        assertArrayEquals(before, op.iArgs());
+    }
+
+    @Test
     @DisplayName("AutoregressiveDecode exposes scalar token-sampling policy defaults")
     public void testScalarTokenSamplingPolicyDefaults() {
         AutoregressiveDecode op = newOp(-1, Set.of());
@@ -161,6 +196,7 @@ public class TestAutoregressiveDecodeIArgs {
         AutoregressiveDecode op = newOp(-1, Set.of());
 
         double[] tArgs = op.tArgs();
+        assertEquals(24, tArgs.length, "disabled native repetition policy must not change the legacy tArgs ABI");
         // tArgs[21] = typicalP (1.0 = off)
         // tArgs[22] = xtcProbability (0.0 = off)
         // tArgs[23] = xtcThreshold (0.1 default)
@@ -224,5 +260,49 @@ public class TestAutoregressiveDecodeIArgs {
         assertEquals(0.75, op.getTypicalP(), 1e-9, "configureFromArguments must restore typicalP");
         assertEquals(0.4,  op.getXtcProbability(), 1e-9, "configureFromArguments must restore xtcProbability");
         assertEquals(0.12, op.getXtcThreshold(), 1e-9, "configureFromArguments must restore xtcThreshold");
+    }
+
+    @Test
+    @DisplayName("AutoregressiveDecode appends explicit native repetition policy at tArgs[43..44]")
+    public void testNativeRepetitionPolicyPackingAndHistory() {
+        AutoregressiveDecode op = newOp(-1, Set.of());
+        op.withNativeRepetitionLoopTermination(6, 4);
+
+        assertEquals(45, op.tArgs().length);
+        assertEquals(-1.0, op.tArgs()[26], 1e-9,
+                "padding to the additive extension must preserve disabled actual-sequence index");
+        assertEquals(6.0, op.tArgs()[43], 1e-9);
+        assertEquals(4.0, op.tArgs()[44], 1e-9);
+        op.withSamplingPolicy(0.0, 0.0, 0.0, 0, 0, 0L);
+        assertEquals(6.0, op.tArgs()[43], 1e-9,
+                "policy rebuild must preserve additive repetition metadata");
+        assertEquals(4.0, op.tArgs()[44], 1e-9);
+
+        int[] history = new int[30];
+        for (int i = 0; i < history.length; i++) history[i] = i;
+        op.withStopSequences(List.of(), history);
+        long[] packed = op.iArgs();
+        assertTrue((packed[4] & 512L) != 0L);
+        // A 6*4 detector needs at most 23 preceding tokens across continuation boundaries.
+        assertEquals(23L, packed[packed.length - 25]);
+
+        op.configureFromArguments();
+        assertEquals(6, op.getNativeRepetitionLoopMaxPeriod());
+        assertEquals(4, op.getNativeRepetitionLoopMaxRepeats());
+    }
+
+    @Test
+    public void testNativeRepetitionPolicyRejectsPartialEnablement() {
+        AutoregressiveDecode op = newOp(-1, Set.of());
+        assertThrows(IllegalArgumentException.class,
+                () -> op.withNativeRepetitionLoopTermination(6, 0));
+    }
+
+    @Test
+    public void testNativeFinishReasonPreservesTimingOutputShape() {
+        AutoregressiveDecode op = newOp(-1, Set.of());
+        List<DataBuffer> shapes = Nd4j.getExecutioner().calculateOutputShape(op);
+        assertEquals(3, shapes.size());
+        assertArrayEquals(new long[]{10}, Shape.shape(shapes.get(2).asLong()));
     }
 }

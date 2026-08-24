@@ -228,9 +228,13 @@ public final class SameDiffMemoryUtils {
     public static void trimAllDevicePools() {
         try {
             var nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            // Java-owned arrays close via stream-ordered frees after decoder.resetSession().
+            // Complete those frees first, then use the established full-pool trim from
+            // SameDiff.resetSession(); stream-local trim can run before these frees land.
+            Nd4j.getExecutioner().commit();
             int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
             for (int d = 0; d < numDevices; d++) {
-                nativeOps.trimMemoryPoolOnStream(d, null);
+                nativeOps.trimMemoryPool(d);
             }
         } catch (Exception e) {
             log.debug("Failed to trim memory pools: {}", e.getMessage());

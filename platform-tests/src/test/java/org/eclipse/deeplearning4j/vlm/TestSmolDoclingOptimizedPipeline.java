@@ -129,6 +129,8 @@ public class TestSmolDoclingOptimizedPipeline {
 
     private static final String DEFAULT_LLM_TRITON_INCLUDE_TYPES =
             "CONST_GEN,GATHER,GATHER_ND,CONCAT,SPLIT,SPLIT_V,STACK,STRIDED_SLICE,NORMALIZATION,ATTENTION,REDUCTION";
+    private static final int PRODUCTION_MAX_PREFILL = 3072;
+    private static final int PRODUCTION_MAX_KV = 4608;
 
     private static BenchmarkConfig smolDoclingIdealConfig() {
         return BenchmarkConfig.create("SMOLDOC_IDEAL")
@@ -509,6 +511,9 @@ public class TestSmolDoclingOptimizedPipeline {
                             .tokenizer(tokenizer)
                             .samplingConfig(SamplingConfig.greedy())
                             .maxNewTokens(256)
+                            .maxPrefillLength(PRODUCTION_MAX_PREFILL)
+                            .maxKvCacheLength(PRODUCTION_MAX_KV)
+                            .benchmarkConfig(BenchmarkConfig.optimal())
                             .build());
 
             long embedStart = System.currentTimeMillis();
@@ -627,6 +632,40 @@ public class TestSmolDoclingOptimizedPipeline {
 
             try {
                 logDspState("PRE_DECODE " + config.getName(), pipelineDecoder);
+                if ("OPTIMAL".equals(config.getName()) || "SMOLDOC_IDEAL".equals(config.getName())) {
+                    int shortBudget = Math.min(8, config.getMaxTokens());
+                    GenerationResult shortResult = finalPipeline.generate(
+                            finalInputsEmbeds.dup(), finalPromptTokenIds, shortBudget);
+                    Object retainedPlan = currentDecoderPlan(pipelineDecoder);
+                    long retainedHandle = currentDecoderPlanHandle(pipelineDecoder);
+                    int replayCountBeforeLongRun = decoderReplayCount(pipelineDecoder);
+                    assertNotNull(retainedPlan, config.getName() + ": short production-envelope run compiled no plan");
+                    assertTrue(retainedHandle != 0L, config.getName() + ": short run has no native plan handle");
+                    assertFixedKvEnvelope(pipelineDecoder, PRODUCTION_MAX_KV);
+
+                    GenerationResult result = finalPipeline.generate(
+                            finalInputsEmbeds.dup(), finalPromptTokenIds, config.getMaxTokens());
+                    assertSame(retainedPlan, currentDecoderPlan(pipelineDecoder),
+                            config.getName() + ": active token budget replaced the fixed production plan");
+                    assertEquals(retainedHandle, currentDecoderPlanHandle(pipelineDecoder),
+                            config.getName() + ": native plan handle changed across active token budgets");
+                    int prefixLength = Math.min(shortResult.getTokenIds().length, result.getTokenIds().length);
+                    assertTrue(result.getTokenIds().length >= shortResult.getTokenIds().length,
+                            config.getName() + ": active-budget run terminated before the short-run prefix");
+                    assertArrayEquals(Arrays.copyOf(shortResult.getTokenIds(), prefixLength),
+                            Arrays.copyOf(result.getTokenIds(), prefixLength),
+                            config.getName() + ": fixed-envelope replay changed the deterministic token prefix");
+                    assertDecoderReplayed(pipelineDecoder, config.getName(), replayCountBeforeLongRun);
+                    log.info("[PRODUCTION_EQUIVALENCE] {} retained one {}-token KV plan across budgets {} -> {}",
+                            config.getName(), PRODUCTION_MAX_KV, shortBudget, config.getMaxTokens());
+                    maybeCompareAgainstOldDecoder(
+                            config, pipelineDecoder, embedTokensSd, tokenizer, hiddenSize,
+                            finalInputsEmbeds, finalPromptTokenIds, result);
+                    logDspState("POST_DECODE " + config.getName(), pipelineDecoder);
+                    dumpActiveDspReport(config.getName());
+                    phaseSuccess("CONFIG_DECODE", decPhaseNs, summarizeResult(result));
+                    return result;
+                }
                 GenerationResult result = finalPipeline.generate(finalInputsEmbeds.dup(), finalPromptTokenIds, config.getMaxTokens());
                 maybeCompareAgainstOldDecoder(
                         config,
@@ -710,6 +749,57 @@ public class TestSmolDoclingOptimizedPipeline {
         } catch (IOException e) {
             throw new IllegalStateException("Failed to write active DSP diagnostics to " + reportPath, e);
         }
+    }
+
+    private static Object currentDecoderPlan(SameDiff model) {
+        var session = model.getOrCreateSession();
+        if (session == null || session.getDynamicShapePlanExecutor() == null) return null;
+        return session.getDynamicShapePlanExecutor().getCurrentPlan();
+    }
+
+    private static long currentDecoderPlanHandle(SameDiff model) {
+        var session = model.getOrCreateSession();
+        if (session == null || session.getDynamicShapePlanExecutor() == null
+                || session.getDynamicShapePlanExecutor().getNativePlanHandle() == null) return 0L;
+        return session.getDynamicShapePlanExecutor().getNativePlanHandle().address();
+    }
+
+    private static int decoderReplayCount(SameDiff model) {
+        DspDebugger.GraphReplayReport report = DspDebugger.attach(model).analyzeGraphReplay();
+        return report.errorMessage == null
+                ? report.segments.stream().mapToInt(segment -> segment.replayCount).sum() : 0;
+    }
+
+    private static void assertDecoderReplayed(SameDiff model, String label, int priorReplayCount) {
+        DspDebugger.GraphReplayReport report = DspDebugger.attach(model).analyzeGraphReplay();
+        assertNull(report.errorMessage, label + ": replay report failed: " + report.errorMessage);
+        assertEquals(PlanPhase.REPLAYING, report.planPhase, label + ": decoder never reached replay");
+        assertTrue(report.isFullyReplaying(), label + ": decoder has a non-replaying segment");
+        assertEquals(1, report.numSegments,
+                label + ": optimal CUDA decoder replay was fragmented into extra launches");
+        int replayCount = report.segments.stream().mapToInt(segment -> segment.replayCount).sum();
+        assertTrue(replayCount > priorReplayCount,
+                label + ": active-budget invocation added no decoder replays");
+    }
+
+    private static void assertFixedKvEnvelope(SameDiff model, long expectedCapacity) {
+        var session = model.getOrCreateSession();
+        assertNotNull(session, "Decoder session is missing");
+        var executor = session.getDynamicShapePlanExecutor();
+        assertNotNull(executor, "Decoder DSP executor is missing");
+        var plan = executor.getCurrentPlan();
+        assertNotNull(plan, "Decoder DSP plan is missing");
+        String[] keys = plan.getExternalInputKeys();
+        INDArray[] arrays = executor.getExternalInputsSnapshot();
+        int kvInputs = 0;
+        for (int i = 0; i < keys.length; i++) {
+            if (!keys[i].startsWith("past_key_values.")) continue;
+            kvInputs++;
+            assertNotNull(arrays[i], keys[i]);
+            assertEquals(expectedCapacity, arrays[i].size(2),
+                    keys[i] + " did not keep the production KV envelope");
+        }
+        assertEquals(60, kvInputs, "Expected 30 key/value cache pairs in the decoder plan");
     }
 
     private void maybeCompareAgainstOldDecoder(BenchmarkConfig config,
@@ -841,6 +931,9 @@ public class TestSmolDoclingOptimizedPipeline {
                         .tokenizer(tokenizer)
                         .samplingConfig(SamplingConfig.greedy())
                         .maxNewTokens(maxTokens)
+                        .maxPrefillLength(PRODUCTION_MAX_PREFILL)
+                        .maxKvCacheLength(PRODUCTION_MAX_KV)
+                        .benchmarkConfig(BenchmarkConfig.optimal())
                         .build());
 
         int imageTokenId = ImagePromptBuilder.resolveImageTokenId(tokenizer);

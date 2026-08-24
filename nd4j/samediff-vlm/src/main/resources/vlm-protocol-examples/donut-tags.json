@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1, "defaultProtocol": "donut-document",
+  "protocols": {"donut-document": {
+    "provider": "builtin.tagged", "defaultTask": "document",
+    "tasks": {"document": {"prompt": "<s_cord-v2>", "framing": "RAW"}, "docvqa": {"prompt": "<s_docvqa>", "framing": "RAW"}},
+    "termination": {"inheritModelEos": true, "inheritChatTemplateStops": false, "sequences": []},
+    "completion": {"mode": "BALANCED_TAGS", "required": true}, "output": {"nativeFormat": "DONUT_TAGS"}
+  }}
+}

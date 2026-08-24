@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1, "defaultProtocol": "florence",
+  "protocols": {"florence": {
+    "provider": "builtin.tagged", "defaultTask": "ocr",
+    "tasks": {"ocr": {"prompt": "What is the text in the image?", "framing": "RAW"}, "ocr_with_region": {"prompt": "What is the text in the image, with regions?", "framing": "RAW"}, "od": {"prompt": "Locate the objects with category name in the image.", "framing": "RAW"}},
+    "termination": {"inheritModelEos": true, "inheritChatTemplateStops": false, "sequences": []},
+    "completion": {"mode": "TASK_TAGS", "required": false}, "output": {"nativeFormat": "FLORENCE2_TAGS"}
+  }}
+}

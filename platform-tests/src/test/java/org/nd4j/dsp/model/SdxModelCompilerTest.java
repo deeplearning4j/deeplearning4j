@@ -44,6 +44,71 @@ class SdxModelCompilerTest {
     }
 
     @Test
+    void inventoriesExistingCompiledModelsAndPhysicalStorageWithoutRecompiling() throws Exception {
+        Path source = createSourceSdz(temporary.resolve("inventory-source.sdz"));
+        SdxModelCache cache = new SdxModelCache(temporary.resolve("inventory-cache"));
+        AtomicInteger compiles = new AtomicInteger();
+        SdxCompiledModel compiled = new SdxModelCompiler(cache).compile(
+                source,
+                SdxTargetProfile.ANDROID_ARM64_GOOGLE_TENSOR_G5,
+                fakeCompiler("inventory-compiler", "1", compiles));
+
+        SdxModelCacheInventory inventory = cache.inventory(
+                SdxTargetProfile.ANDROID_ARM64_GOOGLE_TENSOR_G5);
+
+        assertEquals(1, compiles.get());
+        assertEquals(1, inventory.entries().size());
+        SdxCachedModel entry = inventory.entries().get(0);
+        assertEquals(compiled.compileKey(), entry.compileKey());
+        assertEquals(compiled.sourceIdentity().sha256(), entry.sourceSha256());
+        assertEquals(compiled.sourceIdentity().logicalBytes(), entry.sourceLogicalBytes());
+        assertEquals(compiled.target(), entry.target());
+        assertEquals(compiled.compilerId(), entry.compilerId());
+        assertEquals(compiled.compilerVersion(), entry.compilerVersion());
+        assertEquals(compiled.runtimeModelPath(), entry.runtimeModelPath());
+        assertTrue(Files.isRegularFile(entry.sourceModel()));
+        assertTrue(entry.sourcePhysicalBytes() > 0L);
+        assertTrue(entry.objectPhysicalBytes() > 0L);
+        assertTrue(inventory.totalPhysicalBytes() >= entry.referencedPhysicalBytes());
+        assertEquals(entry.sourcePhysicalBytes(), inventory.referencedSourceBytes());
+        assertEquals(entry.objectPhysicalBytes(), inventory.referencedObjectBytes());
+        assertEquals(0, inventory.invalidReferenceCount());
+
+        assertTrue(cache.inventory(SdxTargetProfile.ANDROID_ARM64_VULKAN)
+                .entries().isEmpty());
+        assertEquals(1, compiles.get(), "inventory must never invoke a target compiler");
+
+        byte[] runtimeBytes = Files.readAllBytes(compiled.runtimeModelPath());
+        runtimeBytes[0] ^= 0x01;
+        Files.write(compiled.runtimeModelPath(), runtimeBytes);
+        assertEquals(1, cache.inventory(
+                SdxTargetProfile.ANDROID_ARM64_GOOGLE_TENSOR_G5).entries().size(),
+                "metadata inventory intentionally avoids hashing large payloads");
+        IOException corruption = assertThrows(
+                IOException.class,
+                () -> cache.resolveVerified(
+                        source, SdxTargetProfile.ANDROID_ARM64_GOOGLE_TENSOR_G5));
+        assertTrue(corruption.getMessage().contains("checksum mismatch"));
+    }
+
+    @Test
+    void inventoryBoundsMalformedReferenceMetadata() throws Exception {
+        SdxModelCache cache = new SdxModelCache(temporary.resolve("malformed-inventory"));
+        Path reference = cache.root().resolve("index")
+                .resolve("a".repeat(64))
+                .resolve(SdxTargetProfile.ANDROID_ARM64_NNAPI_ACCELERATOR.id() + ".ref");
+        Files.createDirectories(reference.getParent());
+        Files.write(reference, new byte[4_096]);
+
+        SdxModelCacheInventory inventory = cache.inventory(
+                SdxTargetProfile.ANDROID_ARM64_NNAPI_ACCELERATOR);
+
+        assertTrue(inventory.entries().isEmpty());
+        assertEquals(1, inventory.invalidReferenceCount());
+        assertTrue(inventory.totalPhysicalBytes() >= 4_096L);
+    }
+
+    @Test
     void compilesOnceAndResolvesEmbeddedTargetsFromOneSdz() throws Exception {
         Path source = createSourceSdz(temporary.resolve("source.sdz"));
         Path tokenizer = Files.writeString(

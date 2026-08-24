@@ -31,6 +31,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.internal.Variable;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 
 import java.util.ArrayList;
@@ -271,6 +272,48 @@ public class ModelIOConfig {
         // In-graph KV cache: has KV cache inputs but no present outputs
         KVCacheNames outputKv = findKVCacheOutputNames(decoder);
         return outputKv.keyNames.isEmpty();
+    }
+
+    /**
+     * Check for the ONNX MHA fixed-cache contract: canonical past-key/value inputs, no present
+     * outputs, and every MHA receives the shared cache-position control as its seventh input.
+     * This is distinct from the GGUF in-graph contract because ONNX MHA caches are contiguous
+     * BHSD buffers rather than the BSHD/k_rope prefill layout used by GGUF decoders.
+     */
+    public static boolean isOnnxMhaInPlaceKvCache(SameDiff decoder) {
+        KVCacheNames inputKv = findKVCacheInputNames(decoder);
+        SDVariable cachePosition = decoder.getVariable("cache_position");
+        KVCacheNames outputKv = findKVCacheOutputNames(decoder);
+        if (inputKv == null || inputKv.keyNames.isEmpty()
+                || inputKv.keyNames.size() != inputKv.valueNames.size()
+                || cachePosition == null
+                || cachePosition.getVariableType() != VariableType.PLACEHOLDER
+                || cachePosition.dataType() != DataType.INT64
+                || cachePosition.getShape() == null || cachePosition.getShape().length != 1
+                || cachePosition.getShape()[0] != 1
+                || !outputKv.keyNames.isEmpty() || !outputKv.valueNames.isEmpty()) {
+            return false;
+        }
+        int mhaCount = 0;
+        Set<String> mappedKeys = new HashSet<>();
+        Set<String> mappedValues = new HashSet<>();
+        for (SameDiffOp op : decoder.getOps().values()) {
+            if (op.getOp() == null || !"onnx_multi_head_attention".equals(op.getOp().opName())) {
+                continue;
+            }
+            mhaCount++;
+            List<String> inputs = op.getInputsToOp();
+            if (inputs == null || inputs.size() != 7 || !"cache_position".equals(inputs.get(6))
+                    || !inputKv.keyNames.contains(inputs.get(4))
+                    || !inputKv.valueNames.contains(inputs.get(5))
+                    || !mappedKeys.add(inputs.get(4))
+                    || !mappedValues.add(inputs.get(5))) {
+                return false;
+            }
+        }
+        return mhaCount > 0 && mhaCount == inputKv.keyNames.size()
+                && mappedKeys.size() == inputKv.keyNames.size()
+                && mappedValues.size() == inputKv.valueNames.size();
     }
 
     /**

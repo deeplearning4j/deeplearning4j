@@ -54,7 +54,7 @@ import java.util.Set;
  * Outputs:
  *   0: generatedTokenIds [maxNewTokens] INT64
  *   1: tokenCount [1] INT64
- *   2: timingInfo [10] FLOAT (timing metrics plus speculative proposed/accepted/step counts)
+ *   2: timingInfo [10] FLOAT (timing/speculative metrics; negative [6] means repetition finish)
  *
  * iArgs layout (when plan config is present):
  *   0: maxNewTokens
@@ -106,9 +106,15 @@ import java.util.Set;
  *   24: speculativeK (0 = off; ADR 0106 Phase 2 n-gram speculation)
  *   25: speculatorType (0=none, 1=NGRAM; ADR 0106 Phase 2)
  *   26: actualSequenceLengthExtIdx (-1 when the target graph has no recurrent-length control)
+ *   27..42: optional MTP metadata
+ *   43: nativeRepetitionLoopMaxPeriod (0 = disabled)
+ *   44: nativeRepetitionLoopMaxRepeats (0 = disabled)
  */
 @NoArgsConstructor
 public class AutoregressiveDecode extends DynamicCustomOp {
+    private static final long STOP_SEQUENCE_TRAILER_MAGIC = -1398034256L;
+    private static final long STOP_SEQUENCE_TRAILER_VERSION = 1L;
+    private static final long STOP_SEQUENCE_MASK = 512L;
 
     public static final int DECODE_STRATEGY_AUTO = 0;
     public static final int DECODE_STRATEGY_GREEDY = 1;
@@ -119,6 +125,8 @@ public class AutoregressiveDecode extends DynamicCustomOp {
     public static final int SPECULATOR_TYPE_NONE = 0;
     public static final int SPECULATOR_TYPE_NGRAM = 1;
     public static final int SPECULATOR_TYPE_MTP = 2;
+    public static final int NATIVE_FINISH_NONE = 0;
+    public static final int NATIVE_FINISH_REPETITION = 1;
 
     @Getter private int maxNewTokens;
     @Getter private int eosTokenId;
@@ -129,6 +137,8 @@ public class AutoregressiveDecode extends DynamicCustomOp {
     @Getter private int topK;
     @Getter private double repetitionPenalty;
     @Getter private int optionalInputMask;
+    private boolean hasPlanLayout;
+    private boolean stopSequencesConfigured;
     @Getter private int decodeStrategy = DECODE_STRATEGY_AUTO;
     @Getter private int batchMax = 1;
     @Getter private int windowMax = 1;
@@ -153,6 +163,8 @@ public class AutoregressiveDecode extends DynamicCustomOp {
     @Getter private int speculativeK = 0;     // 0=off; >0 enables n-gram speculation
     @Getter private int speculatorType = 0;   // 0=none, 1=NGRAM
     @Getter private int actualSequenceLengthExtIdx = -1;
+    @Getter private int nativeRepetitionLoopMaxPeriod = 0;
+    @Getter private int nativeRepetitionLoopMaxRepeats = 0;
 
     private static int resolveScalarDecodeStrategy(double temperature, int topK, double topP) {
         return (temperature <= 0.0 || (topK <= 1 && topP <= 0.0))
@@ -253,6 +265,22 @@ public class AutoregressiveDecode extends DynamicCustomOp {
                 typicalP,
                 xtcProbability,
                 xtcThreshold);
+        appendNativeRepetitionArgumentsIfEnabled();
+    }
+
+    private void appendNativeRepetitionArgumentsIfEnabled() {
+        if (nativeRepetitionLoopMaxPeriod <= 0 || nativeRepetitionLoopMaxRepeats <= 0) {
+            if (tArguments.size() > 43) tArguments.set(43, 0.0);
+            if (tArguments.size() > 44) tArguments.set(44, 0.0);
+            return;
+        }
+        while (tArguments.size() < 43) {
+            tArguments.add(tArguments.size() == 26 ? -1.0 : 0.0);
+        }
+        if (tArguments.size() == 43) tArguments.add((double) nativeRepetitionLoopMaxPeriod);
+        else tArguments.set(43, (double) nativeRepetitionLoopMaxPeriod);
+        if (tArguments.size() == 44) tArguments.add((double) nativeRepetitionLoopMaxRepeats);
+        else tArguments.set(44, (double) nativeRepetitionLoopMaxRepeats);
     }
 
     /**
@@ -353,6 +381,7 @@ public class AutoregressiveDecode extends DynamicCustomOp {
             optionalMask |= 16;
         }
         // Plan ext inputs read from the persistent OpaqueContext in C++.
+        this.hasPlanLayout = true;
         this.optionalInputMask = optionalMask;
 
         addInputArgument(inputList.toArray(new INDArray[0]));
@@ -443,6 +472,71 @@ public class AutoregressiveDecode extends DynamicCustomOp {
     }
 
     /**
+     * Append versioned multi-token stop sequences without changing the legacy scalar-stop layout.
+     * Existing callers that do not use this method produce byte-for-byte identical iArgs.
+     */
+    public AutoregressiveDecode withStopSequences(List<int[]> stopSequences) {
+        return withStopSequences(stopSequences, new int[0]);
+    }
+
+    /** Append stop sequences plus the preceding generated suffix for cross-call matching. */
+    public AutoregressiveDecode withStopSequences(List<int[]> stopSequences, int[] precedingTokens) {
+        boolean hasSequences = stopSequences != null && !stopSequences.isEmpty();
+        boolean hasRepetitionHistory = nativeRepetitionLoopMaxPeriod > 0
+                && nativeRepetitionLoopMaxRepeats > 0
+                && precedingTokens != null && precedingTokens.length > 0;
+        if (!hasSequences && !hasRepetitionHistory) return this;
+        if (stopSequencesConfigured) {
+            throw new IllegalStateException("Stop sequences were already configured for this op");
+        }
+        if (iArguments.size() <= 4) {
+            throw new IllegalStateException("autoregressive_decode iArgs are not initialized");
+        }
+        List<int[]> valid = new ArrayList<>();
+        for (int[] sequence : hasSequences ? stopSequences : java.util.Collections.<int[]>emptyList()) {
+            if (sequence == null || sequence.length == 0) {
+                throw new IllegalArgumentException("Stop sequences must contain at least one token");
+            }
+            int[] copy = sequence.clone();
+            for (int token : copy) {
+                if (token < 0) throw new IllegalArgumentException("Stop token IDs must be non-negative");
+            }
+            valid.add(copy);
+        }
+        int maxSequenceLength = valid.stream().mapToInt(sequence -> sequence.length).max().orElse(1);
+        int repetitionHistoryLength = nativeRepetitionLoopMaxPeriod > 0
+                ? nativeRepetitionLoopMaxPeriod * nativeRepetitionLoopMaxRepeats - 1 : 0;
+        int[] history = precedingTokens == null ? new int[0] : precedingTokens;
+        int historyLength = Math.min(history.length,
+                Math.max(Math.max(0, maxSequenceLength - 1), repetitionHistoryLength));
+        for (int i = history.length - historyLength; i < history.length; i++) {
+            if (history[i] < 0) {
+                throw new IllegalArgumentException("Stop history token IDs must be non-negative");
+            }
+        }
+        long mask = iArguments.get(4) | STOP_SEQUENCE_MASK;
+        iArguments.set(4, mask);
+        this.optionalInputMask = (int) mask;
+        int trailerStart = iArguments.size();
+        iArguments.add(STOP_SEQUENCE_TRAILER_MAGIC);
+        iArguments.add(STOP_SEQUENCE_TRAILER_VERSION);
+        iArguments.add(hasPlanLayout ? 1L : 0L);
+        iArguments.add((long) valid.size());
+        for (int[] sequence : valid) {
+            iArguments.add((long) sequence.length);
+            for (int token : sequence) iArguments.add((long) token);
+        }
+        iArguments.add((long) historyLength);
+        for (int i = history.length - historyLength; i < history.length; i++) {
+            iArguments.add((long) history[i]);
+        }
+        // Final length word makes the trailer deterministically addressable from the end.
+        iArguments.add((long) (iArguments.size() - trailerStart + 1));
+        stopSequencesConfigured = true;
+        return this;
+    }
+
+    /**
      * Constructor for in-graph KV cache mode (GGUF pattern).
      *
      * <p>The attention op writes K/V in-place at cachePosition. No present outputs,
@@ -517,6 +611,7 @@ public class AutoregressiveDecode extends DynamicCustomOp {
         if (hasRecurrentState) {
             optionalMask |= 32;
         }
+        this.hasPlanLayout = true;
         this.optionalInputMask = optionalMask;
 
         addInputArgument(inputList.toArray(new INDArray[0]));
@@ -806,6 +901,24 @@ public class AutoregressiveDecode extends DynamicCustomOp {
     }
 
     /**
+     * Enable explicit native periodic-tail termination. Disabled by default, so callers that
+     * do not opt in retain byte-for-byte ordinary generation behavior.
+     */
+    public AutoregressiveDecode withNativeRepetitionLoopTermination(int maxPeriod, int maxRepeats) {
+        if (maxPeriod < 0 || maxPeriod > 1024 || maxRepeats < 0 || maxRepeats > 1024) {
+            throw new IllegalArgumentException("Native repetition limits must be in [0, 1024]");
+        }
+        if ((maxPeriod == 0) != (maxRepeats == 0) || (maxRepeats > 0 && maxRepeats < 2)) {
+            throw new IllegalArgumentException(
+                    "Native repetition termination requires maxPeriod >= 1 and maxRepeats >= 2, or 0/0");
+        }
+        this.nativeRepetitionLoopMaxPeriod = maxPeriod;
+        this.nativeRepetitionLoopMaxRepeats = maxRepeats;
+        appendNativeRepetitionArgumentsIfEnabled();
+        return this;
+    }
+
+    /**
      * Attach the isolated Qwen3.5 MTP predictor plan to this target decode invocation.
      *
      * <p>The seven arrays are appended after the target KV (and optional quantised-scale)
@@ -934,6 +1047,8 @@ public class AutoregressiveDecode extends DynamicCustomOp {
         if (tArguments.size() > 24) this.speculativeK = tArguments.get(24).intValue();
         if (tArguments.size() > 25) this.speculatorType = tArguments.get(25).intValue();
         if (tArguments.size() > 26) this.actualSequenceLengthExtIdx = tArguments.get(26).intValue();
+        if (tArguments.size() > 43) this.nativeRepetitionLoopMaxPeriod = tArguments.get(43).intValue();
+        if (tArguments.size() > 44) this.nativeRepetitionLoopMaxRepeats = tArguments.get(44).intValue();
     }
 
     @Override
