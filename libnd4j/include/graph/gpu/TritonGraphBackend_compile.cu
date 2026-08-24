@@ -158,6 +158,16 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   size_t cacheDtypeHash = computeSegInternalDtypeHash(slots, seg.def.startSlot, seg.def.endSlot,
                                                        externalInputs, numExternalInputs,
                                                        outputSlots, totalOutputSlots);
+  // Seven-input ONNX MHA carries cache_position and mutates the past-KV inputs.
+  // Distinguish this native-gap contract from older cached segments that compiled
+  // the same shapes as pure attention and silently dropped the side effect.
+  for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
+    if (slots[s].wiring.numInputs > 6
+        && slots[s].ident.opName.find("onnx_multi_head_attention") != std::string::npos) {
+      cacheDtypeHash ^= static_cast<size_t>(0x4f4e4e584b565031ULL);
+      break;
+    }
+  }
   SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, shapeKey, compileDevice,
                       cacheCompileAll, cacheExcludeHash, cacheIncludeHash,
                       cacheGraphCapture, &seg};

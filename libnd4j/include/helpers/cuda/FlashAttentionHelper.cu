@@ -48,6 +48,9 @@ namespace sd {
 // RTX 4090: 128 SMs, 100KB shared memory per SM, 1 TB/s memory bandwidth
 constexpr int TILE_SIZE_Q = 64;   // Query tile size (increased from 32)
 constexpr int TILE_SIZE_KV = 64;  // Key/Value tile size (increased from 32)
+// Scalar GQA decode uses a 256-thread block. Match one KV score to each thread so the
+// block is fully occupied and the online-softmax loop needs 4x fewer barriers.
+constexpr int GQA_DECODE_TILE_SIZE_KV = 256;
 constexpr int WARP_SIZE = 32;
 constexpr int DEFAULT_BLOCK_SIZE = 512;  // Increased from 256 for better occupancy
 
@@ -1231,11 +1234,11 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
  const LongType kvHead = qHead / headsPerKvHead;
  if (kvHead >= numKvHeads) return;
 
- // Shared memory layout: scores tile [TILE_SIZE_KV] + output accumulator [headDim]
+ // Shared memory layout: scores tile + output accumulator [headDim]
  // in accumulator precision.
  extern __shared__ char sharedMem[];
  AccT* sharedScores = reinterpret_cast<AccT*>(sharedMem);
- AccT* sharedOutput = sharedScores + TILE_SIZE_KV;
+ AccT* sharedOutput = sharedScores + GQA_DECODE_TILE_SIZE_KV;
 
  // Q pointer: query[batchIdx, queryIdx, qHead, :] — stride-based indexing
  const T* Q = query + batchIdx * qStride0 + queryIdx * qStride1 + qHead * qStride2;
@@ -1291,9 +1294,10 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
 
  if (headDim <= 0 || seqKV <= 0) return;
 
- // Tile over KV positions — same structure as fusedAttention3DKernel
- for (LongType kvStart = 0; kvStart < seqKV; kvStart += TILE_SIZE_KV) {
-   const LongType kvEnd = min(kvStart + TILE_SIZE_KV, seqKV);
+ // Tile only over the device-resident logical prefix. The cache tensor remains max-sized
+ // (and therefore capture-stable), while cache_position controls the actual work per replay.
+ for (LongType kvStart = 0; kvStart < maxKV; kvStart += GQA_DECODE_TILE_SIZE_KV) {
+   const LongType kvEnd = min(kvStart + GQA_DECODE_TILE_SIZE_KV, maxKV);
    const int tileSize = static_cast<int>(kvEnd - kvStart);
    if (tileSize <= 0) continue;
 
@@ -1478,7 +1482,7 @@ static void fusedGQADecodeLauncher(
  using AccT = typename FlashAccType<T>::type;
  size_t smem = sharedMem > 0
      ? static_cast<size_t>(sharedMem)
-     : static_cast<size_t>(TILE_SIZE_KV + headDim) * sizeof(AccT);
+     : static_cast<size_t>(GQA_DECODE_TILE_SIZE_KV + headDim) * sizeof(AccT);
 
  fusedGQADecodeKernel<T><<<grid, block, smem, *stream>>>(
      query, key, value,

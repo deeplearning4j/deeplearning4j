@@ -753,8 +753,9 @@ void NativeDynamicShapePlan::pinSegmentGraphBakedSlots(GraphSegment& seg, NDArra
     // OWNED graph-baked intermediate (pinOwnedOutputs) is plan-owned (externalOwned=false).
     if (out->isView() || pinOwnedOutputs) pinOne(out, ps, /*externalOwned=*/out->isView());
   }
-  // (2) SOURCE_VARIABLE input buffers (trainable weights). The graph bakes their RAW device
-  // address (vs staged addresses for SOURCE_EXTERNAL placeholders). A weight is reached through
+  // (2) SOURCE_VARIABLE input buffers (trainable weights) and device-managed external state.
+  // The graph bakes their RAW device address (vs staged addresses for ordinary placeholders).
+  // A weight/state buffer is reached through
   // inputSourceIndices that may be a prior-slot ref (>=0) OR the external encoding -(extIdx+1)
   // (<0) — the SAME resolution the slot executor uses (resolveInputSourceArray). The old code
   // only handled >=0 and indexed outputSlots_, silently dropping EVERY external-encoded weight;
@@ -763,10 +764,15 @@ void NativeDynamicShapePlan::pinSegmentGraphBakedSlots(GraphSegment& seg, NDArra
     const SlotWiring& w = slots_[s].wiring;
     if (w.inputSourceTypes == nullptr || w.inputSourceIndices == nullptr) continue;
     for (int i = 0; i < w.numInputs; i++) {
-      if (w.inputSourceTypes[i] != SOURCE_VARIABLE) continue;     // only weights (raw-baked); skip externals/prior-slots
+      const int sourceIndex = w.inputSourceIndices[i];
       NDArray* srcArr = dsp::resolveInputSourceArray(
-          w.inputSourceIndices[i], outputSlots_, totalOutputSlots_, externalArrays, safeNumExt);
-      pinOne(srcArr, w.inputSourceIndices[i], /*externalOwned=*/true);  // weight — defer free to teardown
+          sourceIndex, outputSlots_, totalOutputSlots_, externalArrays, safeNumExt);
+      int extIdx = sourceIndex < 0 ? -(sourceIndex + 1) : -1;
+      const bool rawBakedWeight = w.inputSourceTypes[i] == SOURCE_VARIABLE;
+      const bool rawBakedState = extIdx >= 0 && extIdx < safeNumExt &&
+          isDeviceManagedExternalInput(extIdx, srcArr);
+      if (!rawBakedWeight && !rawBakedState) continue;
+      pinOne(srcArr, sourceIndex, /*externalOwned=*/true);
     }
   }
 }
@@ -2172,6 +2178,10 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
   plan->externalInputIsPlaceholder_.resize(plan->numExternalInputs_, false);
   for (int s = 0; s < plan->numSlots_; s++) {
     auto& slot = plan->slots_[s];
+    const bool inPlaceOnnxMha =
+        slot.ident.op != nullptr && slot.ident.op->getOpName() != nullptr
+            && *slot.ident.op->getOpName() == "onnx_multi_head_attention"
+            && slot.wiring.numInputs >= 7;
     for (int i = 0; i < slot.wiring.numInputs; i++) {
       int srcIdx = slot.wiring.inputSourceIndices[i];
       if (srcIdx < 0) {
@@ -2180,6 +2190,13 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
           if (slot.wiring.inputSourceTypes[i] == SOURCE_PLACEHOLDER) {
             plan->externalInputIsVariable_[extIdx] = true;
             plan->externalInputIsPlaceholder_[extIdx] = true;
+          }
+          // Seven-input ONNX MHA owns in-place KV writes. Keep past K/V on
+          // their canonical external device buffers from the first prefill;
+          // ordinary placeholder staging is input-only and would hide writes.
+          if (inPlaceOnnxMha && (i == 4 || i == 5)) {
+            plan->externalInputIsVariable_[extIdx] = true;
+            plan->externalInputIsPlaceholder_[extIdx] = false;
           }
           // NOTE: SOURCE_VARIABLE inputs (trainable weights) are NOT marked
           // variable here. During inference, weights are constants — they never
@@ -7456,6 +7473,15 @@ void NativeDynamicShapePlan::registerDeviceManagedExternalInput(NDArray* input) 
 }
 
 bool NativeDynamicShapePlan::isDeviceManagedExternalInput(NDArray* input) const {
+  return isDeviceManagedExternalInput(-1, input);
+}
+
+bool NativeDynamicShapePlan::isDeviceManagedExternalInput(int extIdx, NDArray* input) const {
+  if (extIdx >= 0 && extIdx < static_cast<int>(externalInputIsVariable_.size()) &&
+      extIdx < static_cast<int>(externalInputIsPlaceholder_.size()) &&
+      externalInputIsVariable_[extIdx] && !externalInputIsPlaceholder_[extIdx]) {
+    return true;
+  }
   if (input == nullptr || input->isEmpty() || input->dataBuffer() == nullptr) return false;
   void* devAddr = input->specialBuffer();
   if (devAddr == nullptr) return false;
@@ -7467,6 +7493,18 @@ bool NativeDynamicShapePlan::isDeviceManagedExternalInput(NDArray* input) const 
       if (entry.staticBuf != nullptr && entry.staticBuf->specialBuffer() == devAddr) {
         return true;
       }
+    }
+  }
+  return false;
+}
+
+bool NativeDynamicShapePlan::hasDeviceManagedExternalInputs(
+    NDArray** externalInputs, int numExternalInputs) const {
+  if (externalInputs == nullptr) return false;
+  for (int extIdx : cachedVariableExtIndices_) {
+    if (extIdx >= 0 && extIdx < numExternalInputs &&
+        isDeviceManagedExternalInput(extIdx, externalInputs[extIdx])) {
+      return true;
     }
   }
   return false;

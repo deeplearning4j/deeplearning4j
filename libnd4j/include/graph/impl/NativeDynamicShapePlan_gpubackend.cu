@@ -1581,7 +1581,8 @@ Status NativeDynamicShapePlan::compositeReplay(
   if (!seg.exec.needsArgRefresh() && seg.exec.capturedInputAddrKey != 0) {
     // Skip the O(N) hash when addresses have been stable for multiple consecutive steps.
     // Periodic recheck (every kAddrRecheckInterval steps) catches pathological cases.
-    bool skipAddrCheck = (seg.exec.addrKeyStableCount >= kAddrStableSkipThreshold) &&
+    bool skipAddrCheck = !hasDeviceManagedExternalInputs(effectiveExternals, numExt) &&
+                         (seg.exec.addrKeyStableCount >= kAddrStableSkipThreshold) &&
                          ((seg.exec.executionCount % kAddrRecheckInterval) != 0);
     if (skipAddrCheck) {
       seg.exec.addrKeyStableCount++;
@@ -6770,7 +6771,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   LongType createValueKey;
   bool canSkipReplayInvariantRecompute =
       !seg.exec.needsArgRefresh() && allowTritonCudaGraphReplay &&
-      !hasInternalValueShapeInputs;
+      !hasInternalValueShapeInputs &&
+      !hasDeviceManagedExternalInputs(externalArrays, numExt);
   if (canSkipReplayInvariantRecompute) {
     // Fast path: arg table is stable, all addresses are known-good
     DSP_DIAG_SEG(EXECUTE, seg.def.startSlot,

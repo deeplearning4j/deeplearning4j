@@ -1167,7 +1167,7 @@ DECLARE_CUSTOM_OP(kl_divergence_per_layer, 2, 1, false, 1, 0);
  * Output:
  *   0: generatedTokenIds [maxNewTokens] INT64 — produced token sequence
  *   1: tokenCount [1] INT64 scalar — actual number of tokens generated
- *   2: timingInfo [10] FLOAT — timing metrics plus speculative proposed/accepted/step counts
+ *   2: timingInfo [10] FLOAT — timing/speculative metrics; negative index 6 means repetition finish
  */
 #if NOT_EXCLUDED(OP_autoregressive_decode)
 DECLARE_CUSTOM_OP(autoregressive_decode, 3, 3, false, 3, 5);

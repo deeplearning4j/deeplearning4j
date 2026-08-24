@@ -232,6 +232,10 @@ static void kvInPlaceWrite_(NDArray* pastKv, NDArray* newKv,
 
 void kvInPlaceWrite(NDArray* pastKv, NDArray* newKv,
                      const void* cachePosPtr, LaunchContext* context) {
+    LongType cachePos = *reinterpret_cast<const LongType*>(cachePosPtr);
+    if (cachePos < 0 || cachePos + newKv->sizeAt(1) > pastKv->sizeAt(2)) {
+        THROW_EXCEPTION("kvInPlaceWrite: cache_position is outside the fixed KV capacity");
+    }
     // Auto-cast newKv to match cache dtype (e.g. FLOAT→HALF after FusedRoPE promotion).
     // Cache dtype is authoritative — it's the persistent storage format.
     NDArray* castBuf = nullptr;

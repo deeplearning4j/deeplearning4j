@@ -155,6 +155,8 @@ public class VisionLanguageModel implements AutoCloseable {
     private int cachedPromptTokenCount;
     /** Physical padded prefill capacity captured by {@link #cachedPipeline}; zero in dynamic mode. */
     private int cachedMaxPrefillLength;
+    /** Physical KV capacity captured by {@link #cachedPipeline}; zero in dynamic mode. */
+    private int cachedMaxKvCacheLength;
     private String cachedProtocolKey;
 
     /** Cached decoder I/O configuration — discovered once, reused across pages. */
@@ -1983,7 +1985,7 @@ public class VisionLanguageModel implements AutoCloseable {
             lastDecoderResetWasFull = false;
         } else {
             if (memoryPressureHigh) {
-                log.warn("GPU memory pressure exceeded the preservation threshold; releasing the cached decoder pipeline");
+                log.warn("GPU memory pressure exceeded the preservation threshold; releasing bounded decoder state while preserving vision/embed replay");
                 resetCachedDecoderPipelineForMemoryPressure();
             } else {
                 log.info("No cached generation pipeline; resetting the decoder DSP plan");
@@ -2024,6 +2026,7 @@ public class VisionLanguageModel implements AutoCloseable {
         }
         cachedPromptTokenCount = 0;
         cachedMaxPrefillLength = 0;
+        cachedMaxKvCacheLength = 0;
         cachedProtocolKey = null;
         if (decoder != null) {
             decoder.resetSession();
@@ -2066,7 +2069,7 @@ public class VisionLanguageModel implements AutoCloseable {
     public void retireAdaptiveInputPlansPreservingDecoder() {
         resetSessionsForDecode();
         if (lastDecoderResetWasFull) {
-            log.info("Adaptive page complete; preserved vision/embed replay and released decoder state under pressure");
+            log.info("Adaptive page complete; preserved vision/embed replay and released bounded decoder state under pressure");
         } else {
             log.info("Adaptive page complete; preserved warmed vision, embed, and padded decoder plans");
         }
@@ -2303,11 +2306,21 @@ public class VisionLanguageModel implements AutoCloseable {
         String protocolKey = protocolPlan == null ? "fallback" : protocolPlan.cacheKey();
 
         try {
+            boolean dynamicBenchmarkBuffers = Boolean.getBoolean("vlm.benchmark.dynamicBuffers");
+            int requestedMaxPrefill = dynamicBenchmarkBuffers ? 0
+                    : computeMaxPrefillLength(promptIds.length, maxNewTokens);
+            int modelContextWindow = dynamicBenchmarkBuffers ? 0 : resolveContextWindow();
+            int requestedKvCapacity = dynamicBenchmarkBuffers ? 0
+                    : Math.min(modelContextWindow,
+                            ((requestedMaxPrefill + maxNewTokens + 255) / 256) * 256);
             boolean promptIncompatible = cachedMaxPrefillLength > 0
                     ? promptIds.length > cachedMaxPrefillLength
                     : cachedPromptTokenCount > 0 && promptIds.length != cachedPromptTokenCount;
+            boolean kvCapacityIncompatible = cachedMaxKvCacheLength > 0
+                    && requestedKvCapacity > cachedMaxKvCacheLength;
             boolean protocolIncompatible = !java.util.Objects.equals(protocolKey, cachedProtocolKey);
-            if (cachedPipeline != null && (promptIncompatible || protocolIncompatible)) {
+            if (cachedPipeline != null
+                    && (promptIncompatible || kvCapacityIncompatible || protocolIncompatible)) {
                 log.info("Rebuilding cached generation pipeline for capacity/protocol change "
                                 + "prompt {} -> {} (padded capacity={}), protocol {} -> {}",
                         cachedPromptTokenCount, promptIds.length, cachedMaxPrefillLength,
@@ -2322,13 +2335,13 @@ public class VisionLanguageModel implements AutoCloseable {
                 cachedDecoderIOConfig = null;
                 cachedPromptTokenCount = 0;
                 cachedMaxPrefillLength = 0;
+                cachedMaxKvCacheLength = 0;
                 cachedProtocolKey = null;
             }
             if (cachedPipeline == null) {
                 cachedDecoderIOConfig = ModelIOConfig.discover(decoder);
-                boolean dynamicBenchmarkBuffers = Boolean.getBoolean("vlm.benchmark.dynamicBuffers");
-                int maxPrefill = dynamicBenchmarkBuffers ? 0 : computeMaxPrefillLength(promptIds.length, maxNewTokens);
-                int effectiveMaxKvCacheLength = dynamicBenchmarkBuffers ? 0 : resolveContextWindow();
+                int maxPrefill = requestedMaxPrefill;
+                int effectiveMaxKvCacheLength = requestedKvCapacity;
                 log.info("Creating cached GenerationPipeline (mode={}, maxPrefillLength={}, promptLen={}, maxNewTokens={}, maxKvCacheLength={})",
                         dynamicBenchmarkBuffers ? "dynamic-benchmark" : "fixedBuffers",
                         maxPrefill, promptIds.length, maxNewTokens, effectiveMaxKvCacheLength);
@@ -2363,6 +2376,7 @@ public class VisionLanguageModel implements AutoCloseable {
                 cachedPipeline = GenerationPipeline.create(pipelineConfigBuilder.build());
                 cachedPromptTokenCount = promptIds.length;
                 cachedMaxPrefillLength = maxPrefill;
+                cachedMaxKvCacheLength = effectiveMaxKvCacheLength;
                 cachedProtocolKey = protocolKey;
             } else {
                 log.info("Reusing cached GenerationPipeline (promptLen={}, padded capacity={}, decoder plan preserved)",
@@ -2875,6 +2889,7 @@ public class VisionLanguageModel implements AutoCloseable {
                 cachedDecoderIOConfig = null;
                 cachedPromptTokenCount = 0;
                 cachedMaxPrefillLength = 0;
+                cachedMaxKvCacheLength = 0;
                 cachedProtocolKey = null;
             }
             closeModel("decoder", decoder);

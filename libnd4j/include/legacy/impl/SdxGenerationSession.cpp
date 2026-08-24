@@ -1617,6 +1617,8 @@ sdx_status_t runNativeDecode(
 
   const auto start = Clock::now();
   const int32_t before = *count;
+  const std::vector<std::vector<int>> stopTokenSequences;
+  const std::vector<int> stopTokenHistory;
   DSP_DIAG(
       TIMING,
       "SDX_PHASE_BEGIN phase=native_decode steps=%d cache_position=%d cache_capacity=%d",
@@ -1640,6 +1642,8 @@ sdx_status_t runNativeDecode(
         steps,
         session->cachePosition,
         session->metadata.eosIds,
+        stopTokenSequences,
+        stopTokenHistory,
         policy.temperature,
         policy.topK,
         policy.topP,

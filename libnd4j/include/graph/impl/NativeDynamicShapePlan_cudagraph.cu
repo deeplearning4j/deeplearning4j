@@ -418,7 +418,7 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKey(
         // addresses must participate in the replay key and trigger recapture if a
         // cached plan is handed different buffers.
         if (externalInputIsVariable_[extIdx]) {
-          if (isDeviceManagedExternalInput(extArr)) {
+          if (isDeviceManagedExternalInput(extIdx, extArr)) {
             mix(reinterpret_cast<LongType>(extArr->specialBuffer()));
           }
           continue;
@@ -2431,8 +2431,8 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
     effectiveExternals_ = new NDArray*[numExt]();
   }
 
-  auto isPlanManagedDeviceBuffer = [&](NDArray* ext) -> bool {
-    return isDeviceManagedExternalInput(ext);
+  auto isPlanManagedDeviceBuffer = [&](int extIdx, NDArray* ext) -> bool {
+    return isDeviceManagedExternalInput(extIdx, ext);
   };
 
   // Host-side shape/control ops execute between captured device segments during
@@ -2488,7 +2488,7 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
         break;
       }
       if (activeStagingBuffers_[i] == nullptr &&
-          !isPlanManagedDeviceBuffer(externalArrays[i])) {
+          !isPlanManagedDeviceBuffer(i, externalArrays[i])) {
         allStagingAllocated = false;
         break;
       }
@@ -2516,7 +2516,7 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
         continue;
       }
 
-      if (isPlanManagedDeviceBuffer(ext)) {
+      if (isPlanManagedDeviceBuffer(i, ext)) {
         skippedManaged++;
         effectiveExternals_[i] = externalArrays[i];
         DSP_DIAG(MEMORY,
@@ -2723,25 +2723,26 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
       continue;
     }
 
+    // Every variable external participates in the fast-path index, including
+    // device-managed inputs that bypass staging. The replay validator scans this
+    // cache to decide whether raw graph-baked addresses require checking on every
+    // launch; omitting managed K/V here silently restores the 64-step check.
+    if (std::find(cachedVariableExtIndices_.begin(), cachedVariableExtIndices_.end(), i)
+        == cachedVariableExtIndices_.end()) {
+      cachedVariableExtIndices_.push_back(i);
+    }
+
     // Skip staging for device-managed buffers. KV caches and recurrent decode
     // state are written by GPU kernels during execution; their device buffers
     // are the source of truth, and D2D-copying them into staging would capture
     // stale pre-update data.
-    if (isPlanManagedDeviceBuffer(ext)) {
+    if (isPlanManagedDeviceBuffer(i, ext)) {
       DSP_DIAG(MEMORY,
                "STAGING_D2D_SLOW[%d]: SKIPPED — plan-managed device buffer "
                "(devAddr=%p), passing through directly",
                i, ext->specialBuffer());
       effectiveExternals_[i] = externalArrays[i];
       continue;
-    }
-
-    // Record this as a variable index for the fast path on subsequent calls.
-    // A newly activated secondary device enters this slow path too, so do not
-    // append duplicates to the plan-wide index cache.
-    if (std::find(cachedVariableExtIndices_.begin(), cachedVariableExtIndices_.end(), i)
-        == cachedVariableExtIndices_.end()) {
-      cachedVariableExtIndices_.push_back(i);
     }
 
     NDArray* staging = activeStagingBuffers_[i];

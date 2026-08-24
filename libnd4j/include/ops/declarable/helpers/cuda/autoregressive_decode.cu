@@ -508,12 +508,20 @@ void autoregressiveDecode(
     int maxNewTokens,
     int prefillSeqLen,
     const std::vector<int>& stopTokenIds,
+    const std::vector<std::vector<int>>& stopTokenSequences,
+    const std::vector<int>& stopTokenHistory,
     double temperature,
     int topK,
     double topP,
     double repPenalty,
     LaunchContext* context,
     AutoregressiveDecodeConfig* config) {
+    StopSequenceMatcher stopMatcher(stopTokenIds, stopTokenSequences);
+    bool historyMatchedStop = stopMatcher.prime(stopTokenHistory);
+    RepetitionLoopMatcher repetitionMatcher(
+        config != nullptr ? config->nativeRepetitionLoopMaxPeriod : 0,
+        config != nullptr ? config->nativeRepetitionLoopMaxRepeats : 0);
+    bool historyMatchedRepetition = repetitionMatcher.prime(stopTokenHistory);
 
     auto stream = context->getCudaStream();
 
@@ -523,6 +531,7 @@ void autoregressiveDecode(
     generatedTokenIds->assign(zero);
     tokenCount->assign(zero);
     timingInfo->assign(zeroF);
+    if (config != nullptr) config->nativeFinishReason = 0;
 
     // Validate that we have a plan to execute — hard error, not silent return.
     REQUIRE_TRUE(config != nullptr && config->planHandle != nullptr, 0,
@@ -530,6 +539,13 @@ void autoregressiveDecode(
                  "The Java side MUST pass a compiled NativeDynamicShapePlan via config->planHandle. "
                  "config=%p planHandle=%p",
                  config, config ? config->planHandle : nullptr);
+
+    if (historyMatchedStop && stopTerminationAllowed(config, 0)) return;
+    if (historyMatchedRepetition) {
+        config->nativeFinishReason = 1;
+        if (timingInfo->lengthOf() > 6) timingInfo->p(6, -1.0f);
+        return;
+    }
 
     auto plan = config->planHandle;
 
@@ -2198,9 +2214,8 @@ void autoregressiveDecode(
                 if (config->tokenCallback != nullptr) {
                     config->tokenCallback(tok, config->callbackUserData);
                 }
-                for (int s : stopTokenIds) {
-                    if (tok == static_cast<LongType>(s)) { shouldStop = true; break; }
-                }
+                bool matchedStop = stopMatcher.accept(tok);
+                shouldStop = matchedStop && stopTerminationAllowed(config, tokensGenerated);
                 if (shouldStop) break;
             }
             NDArray::registerSpecialUse({generatedTokenIds}, {specArgmaxDevice});
@@ -2655,13 +2670,9 @@ void autoregressiveDecode(
         }
 
         // ── Check stop condition ──
-        bool shouldStop = false;
-        for (int s : stopTokenIds) {
-            if (nextTokenId == static_cast<LongType>(s)) {
-                shouldStop = true;
-                break;
-            }
-        }
+        bool matchedStop = stopMatcher.accept(nextTokenId);
+        bool shouldStop = matchedStop && stopTerminationAllowed(config, tokensGenerated);
+        bool matchedRepetition = repetitionMatcher.accept(nextTokenId);
 
         auto tStopCheck = std::chrono::high_resolution_clock::now();
 
@@ -2672,6 +2683,10 @@ void autoregressiveDecode(
         stepTimesMs.push_back(stepMs);
 
         if (shouldStop) break;
+        if (matchedRepetition) {
+            config->nativeFinishReason = 1;
+            break;
+        }
 
         // ── Step 6: Embedding lookup for next token ──
         // Only perform embedding lookup if we have an embeddings ext input to update.
@@ -2793,7 +2808,6 @@ void autoregressiveDecode(
     timingInfo->p(7, static_cast<float>(totalSpeculativeProposed));
     timingInfo->p(8, static_cast<float>(totalSpeculativeAccepted));
     timingInfo->p(9, static_cast<float>(speculativeStepCount));
-
     if (!stepTimesMs.empty()) {
         double avgMs = totalMs / stepTimesMs.size();
         double tokPerSec = stepTimesMs.size() > 0 ? (stepTimesMs.size() * 1000.0 / totalMs) : 0.0;
@@ -2829,6 +2843,9 @@ void autoregressiveDecode(
             timingInfo->p(5, static_cast<float>(tokPerSec));
             timingInfo->p(6, static_cast<float>(avgMs));
         }
+    }
+    if (config->nativeFinishReason == 1 && timingInfo->lengthOf() > 6) {
+        timingInfo->p(6, -1.0f);
     }
 
     // ── Cleanup internal allocations ──

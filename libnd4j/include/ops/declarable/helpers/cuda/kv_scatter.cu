@@ -344,6 +344,7 @@ SD_KERNEL void kvInPlaceWriteKernel(const X* __restrict__ newKv,
     bsh /= numKvHeads;
     LongType s = bsh % seqKV;
     LongType b = bsh / seqKV;
+    if (cachePos < 0 || cachePos + s >= pastMaxSeqLen) return;
 
     // newKv is BSHD: offset = b * seqKV * numKvHeads * headDim + s * numKvHeads * headDim + h * headDim
     LongType srcOffset = b * seqKV * numKvHeads * headDim

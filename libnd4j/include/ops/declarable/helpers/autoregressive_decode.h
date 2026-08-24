@@ -25,6 +25,8 @@
 #include <array/NDArray.h>
 #include <ops/declarable/helpers/token_sample.h>
 
+#include <algorithm>
+#include <cstddef>
 #include <vector>
 
 namespace sd {
@@ -196,6 +198,11 @@ struct AutoregressiveDecodeConfig {
     // parsed and validated by tokenSamplePolicy so they cannot silently run as greedy.
     TokenSampleConfig sampleConfig;
 
+    // Explicit opt-in periodic-tail termination. Disabled when either value is zero.
+    int nativeRepetitionLoopMaxPeriod = 0;
+    int nativeRepetitionLoopMaxRepeats = 0;
+    int nativeFinishReason = 0;  // 0=none, 1=repetition
+
     // Portable streaming/cancellation hooks used by SDX generation sessions.
     // tokenCallback is notification-only. cancelCallback is polled between
     // complete decode steps so a cancelled session retains coherent KV state.
@@ -203,6 +210,92 @@ struct AutoregressiveDecodeConfig {
     AutoregressiveCancelCallback cancelCallback = nullptr;
     void* callbackUserData = nullptr;
 };
+
+/** Host-side rolling suffix matcher shared by CPU and CUDA decode controllers. */
+class StopSequenceMatcher {
+ public:
+  StopSequenceMatcher(const std::vector<int>& scalarStops,
+                      const std::vector<std::vector<int>>& sequences) {
+    for (int stop : scalarStops) _sequences.push_back({stop});
+    for (const auto& sequence : sequences) {
+      if (!sequence.empty()) _sequences.push_back(sequence);
+    }
+    for (const auto& sequence : _sequences) {
+      _maxLength = std::max(_maxLength, sequence.size());
+    }
+  }
+
+  bool accept(LongType token) {
+    if (_maxLength == 0) return false;
+    _suffix.push_back(static_cast<int>(token));
+    if (_suffix.size() > _maxLength) _suffix.erase(_suffix.begin());
+    for (const auto& sequence : _sequences) {
+      if (sequence.size() > _suffix.size()) continue;
+      auto start = _suffix.end() - static_cast<std::ptrdiff_t>(sequence.size());
+      if (std::equal(sequence.begin(), sequence.end(), start)) return true;
+    }
+    return false;
+  }
+
+  bool prime(const std::vector<int>& history) {
+    bool matched = false;
+    for (int token : history) matched = accept(token);
+    return matched;
+  }
+
+ private:
+  std::vector<std::vector<int>> _sequences;
+  std::vector<int> _suffix;
+  size_t _maxLength = 0;
+};
+
+/** Opt-in host-side periodic-tail matcher; bounded and shared by CPU/CUDA controllers. */
+class RepetitionLoopMatcher {
+ public:
+  RepetitionLoopMatcher(int maxPeriod, int maxRepeats)
+      : _maxPeriod(std::max(0, maxPeriod)), _maxRepeats(std::max(0, maxRepeats)) {
+    _maxLength = static_cast<size_t>(_maxPeriod) * static_cast<size_t>(_maxRepeats);
+  }
+
+  bool accept(LongType token) {
+    if (_maxPeriod <= 0 || _maxRepeats < 2) return false;
+    _suffix.push_back(static_cast<int>(token));
+    if (_suffix.size() > _maxLength) _suffix.erase(_suffix.begin());
+    for (int period = 1; period <= _maxPeriod; period++) {
+      size_t required = static_cast<size_t>(period) * static_cast<size_t>(_maxRepeats);
+      if (required > _suffix.size()) continue;
+      size_t start = _suffix.size() - required;
+      bool repeated = true;
+      for (size_t i = start + static_cast<size_t>(period); i < _suffix.size(); i++) {
+        if (_suffix[i] != _suffix[start + ((i - start) % static_cast<size_t>(period))]) {
+          repeated = false;
+          break;
+        }
+      }
+      if (repeated) return true;
+    }
+    return false;
+  }
+
+  bool prime(const std::vector<int>& history) {
+    bool repeated = false;
+    for (int token : history) repeated = accept(token);
+    return repeated;
+  }
+
+ private:
+  int _maxPeriod = 0;
+  int _maxRepeats = 0;
+  size_t _maxLength = 0;
+  std::vector<int> _suffix;
+};
+
+inline bool stopTerminationAllowed(const AutoregressiveDecodeConfig* config,
+                                   int generatedTokenCount) {
+  if (config == nullptr || config->sampleConfig.minNewTokens <= 0) return true;
+  return config->sampleConfig.generatedTokenOffset + generatedTokenCount
+      >= config->sampleConfig.minNewTokens;
+}
 
 /**
  * Autoregressive decode loop (CPU and CUDA — platform selected at link time).
@@ -223,10 +316,12 @@ SD_LIB_HIDDEN void autoregressiveDecode(
     int numKvPairs,
     NDArray* generatedTokenIds,    // [maxNewTokens] INT64 output
     NDArray* tokenCount,           // [1] INT64 output
-    NDArray* timingInfo,           // [10] FLOAT output
+    NDArray* timingInfo,           // [10] FLOAT output; negative [6]=repetition finish
     int maxNewTokens,
     int prefillSeqLen,
     const std::vector<int>& stopTokenIds,
+    const std::vector<std::vector<int>>& stopTokenSequences,
+    const std::vector<int>& stopTokenHistory,
     double temperature,
     int topK,
     double topP,

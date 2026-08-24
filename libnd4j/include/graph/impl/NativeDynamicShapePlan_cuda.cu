@@ -3283,7 +3283,13 @@ SelectedBackend NativeDynamicShapePlan::platformResolvePortableReplayBackend() c
 }
 
 bool NativeDynamicShapePlan::platformShouldBreakSegmentAtTraitBoundary(int currIdx, int prevIdx) const {
-  return false;  // No trait-based segmentation on GPU
+  (void)currIdx;
+  (void)prevIdx;
+  // CUDA graph capture records native gap kernels together with the surrounding
+  // compiled islands. In-place ONNX MHA now binds its canonical KV buffers as
+  // device-managed externals, so its writes remain visible without fragmenting
+  // the decoder into one replay launch per layer.
+  return false;
 }
 
 size_t NativeDynamicShapePlan::platformEstimateCaptureBudget() const {

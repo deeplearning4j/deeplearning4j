@@ -82,10 +82,11 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   if (attnBias != nullptr && (attnBias->isEmpty() || attnBias->rankOf() == 0 || attnBias->lengthOf() <= 1)) attnBias = nullptr;
   if (pastKey != nullptr && (pastKey->isEmpty() || pastKey->rankOf() == 0 || pastKey->lengthOf() <= 1)) pastKey = nullptr;
   if (pastValue != nullptr && (pastValue->isEmpty() || pastValue->rankOf() == 0 || pastValue->lengthOf() <= 1)) pastValue = nullptr;
-  // cache_position must be a non-empty scalar or 1-element tensor with an allocated buffer.
-  // A placeholder that was never fed has no buffer — using it would dereference null/garbage.
-  if (cachePosInput != nullptr && (cachePosInput->isEmpty() || cachePosInput->lengthOf() <= 0
-      || cachePosInput->buffer() == nullptr || cachePosInput->specialBuffer() == nullptr))
+  // cache_position is a capture-stable INT64 scalar. Use the selected backend pointer:
+  // host builds legitimately have no specialBuffer(), while CUDA uses the device pointer.
+  if (cachePosInput != nullptr && (cachePosInput->isEmpty() || cachePosInput->lengthOf() != 1
+      || cachePosInput->dataType() != DataType::INT64
+      || sd::graph::dspBufferConst(cachePosInput) == nullptr))
     cachePosInput = nullptr;
   bool useInPlaceKv = (cachePosInput != nullptr && pastKey != nullptr && pastValue != nullptr);
   
@@ -198,6 +199,13 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   bool pastAlreadyConcat = (pastKey != nullptr && pastKvHeadCount != numKvHeads);
 
   if (useInPlaceKv) {
+    REQUIRE_TRUE(pastKey->rankOf() == 4 && pastValue->rankOf() == 4, 0,
+                 "onnx_multi_head_attention: in-place KV caches must be rank-4 BHSD");
+    REQUIRE_TRUE(pastKey->sizeAt(0) == batch && pastValue->sizeAt(0) == batch
+                     && pastKey->sizeAt(1) == numKvHeads && pastValue->sizeAt(1) == numKvHeads
+                     && pastKey->sizeAt(3) == headDim && pastValue->sizeAt(3) == headDim
+                     && pastKey->sizeAt(2) == pastValue->sizeAt(2), 0,
+                 "onnx_multi_head_attention: in-place KV cache shape does not match current K/V");
     // In-place KV write mode: write new K/V token(s) at cache_position directly
     // into the persistent pastKey/pastValue buffers. This eliminates the bulk
     // past→present copy (4 assign kernels per layer, 120 kernels/step for 30 layers).
@@ -342,10 +350,18 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   // Setup FlashAttentionHelper config
   FlashAttentionHelper::Config config;
   config.scale = static_cast<float>(scale);
-  config.isCausal = useCausalMask;
+  // In-place cache mode has a device-resident logical sequence length. Keep the physical
+  // cache shape fixed for capture/replay, but make the fused attention kernel stop at
+  // cache_position + currentSeq instead of scanning the entire padded envelope.
+  config.isCausal = useCausalMask || useInPlaceKv;
   config.dropout = 0.0f;
   config.numHeads = numHeads;
   config.numKvHeads = numKvHeads;
+  if (useInPlaceKv) {
+    config.currentKeyWindow = kReshaped;
+    config.currentValueWindow = vReshaped;
+    config.currentKvPosition = sd::graph::dspBufferConst(cachePosInput);
+  }
   
   // Cast attention bias to query dtype if needed
   std::unique_ptr<NDArray> attnBiasCastOwner;
@@ -373,7 +389,6 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
       ? outputView4d.get()
       : workspace->getBuffer("mha_attnOut4d", outShape4d, query->dataType(),
                              block.launchContext());
-  attnOut4d->nullify();
 
   // Call FlashAttentionHelper::forward with 4D tensors (BSHD format)
   FlashAttentionHelper::forward(qReshaped, kFinal, vFinal, attnOut4d, config,
@@ -430,7 +445,7 @@ DECLARE_TYPES(onnx_multi_head_attention) {
       ->setAllowedInputTypes(3, {ALL_FLOATS, ALL_INTS, BOOL})  // attn_bias (optional)
       ->setAllowedInputTypes(4, {ALL_FLOATS})   // past_key (optional)
       ->setAllowedInputTypes(5, {ALL_FLOATS})   // past_value (optional)
-      ->setAllowedInputTypes(6, {ALL_INTS})     // cache_position (optional, INT64 scalar)
+      ->setAllowedInputTypes(6, {DataType::INT64})  // cache_position (optional scalar)
       ->setAllowedOutputTypes({ALL_FLOATS})
       ;
 }

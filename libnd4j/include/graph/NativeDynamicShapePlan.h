@@ -2295,6 +2295,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    */
   void registerDeviceManagedExternalInput(NDArray* input);
   bool isDeviceManagedExternalInput(NDArray* input) const;
+  bool isDeviceManagedExternalInput(int extIdx, NDArray* input) const;
+  bool hasDeviceManagedExternalInputs(NDArray** externalInputs, int numExternalInputs) const;
 
   /**
    * Enable/disable shape-only dry-run mode.

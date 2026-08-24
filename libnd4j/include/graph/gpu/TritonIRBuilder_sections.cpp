@@ -281,11 +281,19 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
   currentSection.endSlot = startSlot;
   currentSection.numOps = 0;
 
+  auto isPlanOwnedOnnxMha = [](const NativeSlot& slot) {
+    return slot.wiring.numInputs > 6
+        && slot.ident.opName.find("onnx_multi_head_attention") != std::string::npos;
+  };
+
   auto firstCat = getOpCategory(slots[startSlot].ident.opName);
   // Reclassify TERNARY ops with < 3 inputs (e.g., 1-input Where = coordinate
   // extraction, not element-wise select).  These are data-dependent and cannot
   // be compiled by Triton — they must stay in native ordered execution.
   if (firstCat == TritonOpCategory::TERNARY && slots[startSlot].wiring.numInputs < 3) {
+    firstCat = TritonOpCategory::UNSUPPORTED;
+  }
+  if (isPlanOwnedOnnxMha(slots[startSlot])) {
     firstCat = TritonOpCategory::UNSUPPORTED;
   }
   currentSection.type = categoryToSectionType(firstCat, slots[startSlot]);
@@ -499,6 +507,9 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
     auto cat = getOpCategory(slots[i].ident.opName);
     // Reclassify TERNARY ops with < 3 inputs as non-compilable
     if (cat == TritonOpCategory::TERNARY && slots[i].wiring.numInputs < 3) {
+      cat = TritonOpCategory::UNSUPPORTED;
+    }
+    if (isPlanOwnedOnnxMha(slots[i])) {
       cat = TritonOpCategory::UNSUPPORTED;
     }
     auto sectionType = categoryToSectionType(cat, slots[i]);

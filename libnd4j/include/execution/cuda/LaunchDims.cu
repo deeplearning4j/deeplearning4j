@@ -1286,24 +1286,28 @@ dim3 getFusedGQADecodeDims(int numQHeads, int batch, int seqKV, int headDim, int
   // The stride-aware kernel uses 25+ LongType parameters (50+ registers just for strides),
   // plus local variables for tiling/reduction. At 1024 threads the per-SM register file
   // overflows (cudaErrorLaunchOutOfResources). 256 threads is sufficient: the kernel tiles
-  // over KV positions with TILE_SIZE_KV=64, so each thread handles 1 score and headDim/256
-  // output dimensions per tile — good occupancy without register pressure.
+  // over 256 KV positions, so each thread handles one score and headDim/256
+  // output dimensions per tile — full score-stage occupancy without register pressure.
   int threadsPerBlock = 256;
   if (headDim > 128) threadsPerBlock = 256;  // Keep at 256 even for large headDim
   if (seqKV < 64 && headDim < 128) threadsPerBlock = 128;
 
-  // Shared memory: scores tile (TILE_SIZE=64 elements) + output accumulator (headDim elements)
+  // Shared memory: scores tile (256 elements) + output accumulator (headDim elements)
   // in accumulator precision. Double stays double; other floating types use float.
-  int tileSizeKV = 64;
+  int tileSizeKV = 256;
   int accSize = dtypeSize == static_cast<int>(sizeof(double))
       ? static_cast<int>(sizeof(double))
       : static_cast<int>(sizeof(float));
   int sharedMem = (tileSizeKV + headDim) * accSize;
 
-  // Allow env variable overrides
-  threadsPerBlock = getEnvVariable("BLOCK_SIZE_FUSED_GQA_DECODE", threadsPerBlock);
-  blocksPerGrid = getEnvVariable("GRID_SIZE_FUSED_GQA_DECODE", blocksPerGrid);
-  sharedMem = getEnvVariable("SHARED_MEM_SIZE_FUSED_GQA_DECODE", sharedMem);
+  // Allow safe tuning overrides. The kernel's warp reductions require a warp multiple and
+  // its launch bound caps blocks at 512 threads. Shared memory may grow, never below the
+  // score/output layout required by the compiled kernel.
+  int requestedThreads = getEnvVariable("BLOCK_SIZE_FUSED_GQA_DECODE", threadsPerBlock);
+  requestedThreads = std::max(32, std::min(512, requestedThreads));
+  threadsPerBlock = (requestedThreads / 32) * 32;
+  int requestedShared = getEnvVariable("SHARED_MEM_SIZE_FUSED_GQA_DECODE", sharedMem);
+  sharedMem = std::max(sharedMem, requestedShared);
 
   return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 }

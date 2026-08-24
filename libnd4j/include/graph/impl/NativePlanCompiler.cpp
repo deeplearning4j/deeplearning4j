@@ -927,6 +927,10 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
   plan->externalInputIsPlaceholder_.resize(plan->numExternalInputs_, false);
   for (int s = 0; s < numSteps; s++) {
     auto& slot = plan->slots_[s];
+    const bool inPlaceOnnxMha =
+        slot.ident.op != nullptr && slot.ident.op->getOpName() != nullptr
+            && *slot.ident.op->getOpName() == "onnx_multi_head_attention"
+            && slot.wiring.numInputs >= 7;
     for (int i = 0; i < slot.wiring.numInputs; i++) {
       int srcIdx = slot.wiring.inputSourceIndices[i];
       if (srcIdx < 0) {
@@ -935,6 +939,15 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
           if (slot.wiring.inputSourceTypes[i] == SOURCE_PLACEHOLDER) {
             plan->externalInputIsVariable_[extIdx] = true;
             plan->externalInputIsPlaceholder_[extIdx] = true;
+          }
+          // Seven-input ONNX MHA writes past_key/past_value in-place when
+          // cache_position is present. Those canonical external buffers are
+          // both inputs and persistent state: staging them would strand the
+          // captured write in a plan-owned copy and the next decode would read
+          // stale KV. Classify them before the first prefill execution.
+          if (inPlaceOnnxMha && (i == 4 || i == 5)) {
+            plan->externalInputIsVariable_[extIdx] = true;
+            plan->externalInputIsPlaceholder_[extIdx] = false;
           }
           // NOTE: SOURCE_VARIABLE inputs (trainable weights) are NOT marked
           // variable here. During inference (generation), weights are constants —

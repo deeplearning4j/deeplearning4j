@@ -26,6 +26,8 @@
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/Context.h>
 
+#include <limits>
+
 namespace sd {
 namespace ops {
 
@@ -44,7 +46,7 @@ namespace ops {
  * Outputs:
  *   0: generatedTokenIds [maxNewTokens] INT64
  *   1: tokenCount [1] INT64
- *   2: timingInfo [10] FLOAT32
+ *   2: timingInfo [10] FLOAT32 (negative [6] means explicit repetition finish)
  *
  * iArgs:
  *   0: maxNewTokens
@@ -233,6 +235,25 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
   if (block.getTArguments()->size() > 26) {
     actualSequenceLengthExtIdx_arg = static_cast<int>(T_ARG(26));
   }
+  int nativeRepetitionLoopMaxPeriod = 0;
+  int nativeRepetitionLoopMaxRepeats = 0;
+  if (block.getTArguments()->size() > 43) {
+    nativeRepetitionLoopMaxPeriod = static_cast<int>(T_ARG(43));
+  }
+  if (block.getTArguments()->size() > 44) {
+    nativeRepetitionLoopMaxRepeats = static_cast<int>(T_ARG(44));
+  }
+  REQUIRE_TRUE(nativeRepetitionLoopMaxPeriod >= 0 && nativeRepetitionLoopMaxPeriod <= 1024, 0,
+               "autoregressive_decode: native repetition max period must be in [0,1024], got %d",
+               nativeRepetitionLoopMaxPeriod);
+  REQUIRE_TRUE(nativeRepetitionLoopMaxRepeats >= 0 && nativeRepetitionLoopMaxRepeats <= 1024, 0,
+               "autoregressive_decode: native repetition max repeats must be in [0,1024], got %d",
+               nativeRepetitionLoopMaxRepeats);
+  REQUIRE_TRUE((nativeRepetitionLoopMaxPeriod == 0) == (nativeRepetitionLoopMaxRepeats == 0)
+                   && (nativeRepetitionLoopMaxRepeats == 0 || nativeRepetitionLoopMaxRepeats >= 2),
+               0, "autoregressive_decode: native repetition termination requires 0/0 or period>=1,repeats>=2");
+  REQUIRE_TRUE(!(nativeRepetitionLoopMaxPeriod > 0 && speculativeK_arg > 0), 0,
+               "autoregressive_decode: native repetition termination is not supported with speculative decode");
 
   // Validate inputs
   REQUIRE_TRUE(prefillEmbeddings->rankOf() == 3, 0,
@@ -288,6 +309,8 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
   decodeConfig.speculativeK = speculativeK_arg;
   decodeConfig.speculatorType = speculatorType_arg;
   decodeConfig.actualSequenceLengthExtIdx = actualSequenceLengthExtIdx_arg;
+  decodeConfig.nativeRepetitionLoopMaxPeriod = nativeRepetitionLoopMaxPeriod;
+  decodeConfig.nativeRepetitionLoopMaxRepeats = nativeRepetitionLoopMaxRepeats;
 
   if (hasMtpPlan) {
     REQUIRE_TRUE(speculatorType_arg == 2, 0,
@@ -371,7 +394,22 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
   }
 
   int iArgCount = block.getIArguments()->size();
-  bool hasPlanConfig = (iArgCount > 8);  // need at least plan + context pointers
+  bool hasStopSequenceTrailer = (optionalMask & 512) != 0;
+  int declaredTrailerStart = -1;
+  if (hasStopSequenceTrailer) {
+    REQUIRE_TRUE(iArgCount > 5, 0, "autoregressive_decode: missing stop trailer length");
+    LongType trailerLengthArg = INT_ARG(iArgCount - 1);
+    REQUIRE_TRUE(trailerLengthArg >= 6 && trailerLengthArg <= iArgCount - 5, 0,
+                 "autoregressive_decode: invalid stop trailer length %lld",
+                 static_cast<long long>(trailerLengthArg));
+    declaredTrailerStart = iArgCount - static_cast<int>(trailerLengthArg);
+    REQUIRE_TRUE(INT_ARG(declaredTrailerStart) == -1398034256LL, 0,
+                 "autoregressive_decode: stop trailer magic mismatch");
+  }
+  bool hasPlanConfig = hasStopSequenceTrailer
+      ? (declaredTrailerStart >= 0 && declaredTrailerStart + 3 < iArgCount
+          && INT_ARG(declaredTrailerStart + 2) != 0)
+      : (iArgCount > 8);
 
   std::vector<int> kvInputExtIndicesVec;
   std::vector<int> kvOutputIndicesVec;
@@ -554,8 +592,67 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
     decodeConfig.planOutputs = nullptr;
   }
 
-  // Collect additional stop token IDs (after the plan config block)
-  for (int i = stopTokenStartIdx; i < iArgCount; i++) {
+  std::vector<std::vector<int>> stopTokenSequences;
+  std::vector<int> stopTokenHistory;
+  int scalarStopEnd = iArgCount;
+  if (hasStopSequenceTrailer) {
+    constexpr LongType kStopMagic = -1398034256LL;
+    int trailerStart = declaredTrailerStart;
+    REQUIRE_TRUE(trailerStart >= 0 && trailerStart + 3 < iArgCount, 0,
+                 "autoregressive_decode: malformed stop-sequence trailer");
+    scalarStopEnd = trailerStart;
+    REQUIRE_TRUE(INT_ARG(trailerStart + 1) == 1, 0,
+                 "autoregressive_decode: unsupported stop-sequence trailer version %lld",
+                 static_cast<long long>(INT_ARG(trailerStart + 1)));
+    LongType planLayoutFlag = INT_ARG(trailerStart + 2);
+    REQUIRE_TRUE(planLayoutFlag == 0 || planLayoutFlag == 1, 0,
+                 "autoregressive_decode: invalid stop-sequence plan-layout flag");
+    LongType countArg = INT_ARG(trailerStart + 3);
+    REQUIRE_TRUE(countArg >= 0 && countArg <= std::numeric_limits<int>::max(), 0,
+                 "autoregressive_decode: invalid stop sequence count");
+    int count = static_cast<int>(countArg);
+    int cursor = trailerStart + 4;
+    for (int sequenceIndex = 0; sequenceIndex < count; sequenceIndex++) {
+      REQUIRE_TRUE(cursor < iArgCount, 0,
+                   "autoregressive_decode: truncated stop sequence length");
+      LongType lengthArg = INT_ARG(cursor++);
+      REQUIRE_TRUE(lengthArg > 0 && lengthArg <= std::numeric_limits<int>::max(), 0,
+                   "autoregressive_decode: invalid stop sequence length");
+      int length = static_cast<int>(lengthArg);
+      REQUIRE_TRUE(cursor <= iArgCount - 1 && length <= (iArgCount - 1) - cursor, 0,
+                   "autoregressive_decode: truncated stop sequence");
+      std::vector<int> sequence;
+      sequence.reserve(length);
+      for (int j = 0; j < length; j++) {
+        LongType token = INT_ARG(cursor++);
+        REQUIRE_TRUE(token >= 0 && token <= std::numeric_limits<int>::max(), 0,
+                     "autoregressive_decode: invalid stop sequence token %lld",
+                     static_cast<long long>(token));
+        sequence.push_back(static_cast<int>(token));
+      }
+      stopTokenSequences.push_back(std::move(sequence));
+    }
+    REQUIRE_TRUE(cursor < iArgCount, 0,
+                 "autoregressive_decode: missing stop-sequence history length");
+    LongType historyLengthArg = INT_ARG(cursor++);
+    REQUIRE_TRUE(historyLengthArg >= 0 && historyLengthArg <= std::numeric_limits<int>::max(), 0,
+                 "autoregressive_decode: invalid stop-sequence history length");
+    int historyLength = static_cast<int>(historyLengthArg);
+    REQUIRE_TRUE(cursor <= iArgCount - 1 && historyLength == (iArgCount - 1) - cursor, 0,
+                 "autoregressive_decode: truncated or trailing stop history");
+    for (int i = 0; i < historyLength; i++) {
+      LongType token = INT_ARG(cursor++);
+      REQUIRE_TRUE(token >= 0 && token <= std::numeric_limits<int>::max(), 0,
+                   "autoregressive_decode: invalid stop history token %lld",
+                   static_cast<long long>(token));
+      stopTokenHistory.push_back(static_cast<int>(token));
+    }
+    cursor++;  // consume the validated final trailer-length word
+    REQUIRE_TRUE(cursor == iArgCount, 0, "autoregressive_decode: malformed stop trailer");
+  }
+
+  // Collect legacy additional scalar stop token IDs before the optional trailer.
+  for (int i = stopTokenStartIdx; i < scalarStopEnd; i++) {
     stopTokenIds.push_back(INT_ARG(i));
   }
 
@@ -565,7 +662,7 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
       prefillEmbeddings, embeddingTable, inputIds, attentionMask, positionIds,
       staticKvBuffers.empty() ? nullptr : staticKvBuffers.data(), numKvPairs,
       generatedTokenIds, tokenCount, timingInfo,
-      maxNewTokens, prefillSeqLen, stopTokenIds,
+      maxNewTokens, prefillSeqLen, stopTokenIds, stopTokenSequences, stopTokenHistory,
       temperature, topK, topP, repPenalty,
       block.launchContext(), configPtr);
 
@@ -596,6 +693,7 @@ DECLARE_SHAPE_FN(autoregressive_decode) {
   // Output 2: timingInfo [10] FLOAT32
   // [0]=totalMs [1]=avgDecodeMs [2]=tokPerSec [3]=p50Ms [4]=p99Ms
   // [5]=lateSteadyTokPerSec (steps 60+) [6]=lateSteadyAvgMs
+  // [6]=lateSteadyAvgMs, or -1 when explicit native repetition termination fired
   // [7]=speculativeProposed [8]=speculativeAccepted [9]=speculativeSteps
   auto timingShape = ConstantShapeHelper::getInstance().vectorShapeInfo(10, FLOAT32);
 

@@ -365,4 +365,54 @@ public class TestMhaMultiStepKvStability {
 
         assertFalse(result[0].isNaN().any());
     }
+
+    @Test
+    public void testInPlaceGqaUsesLogicalCachePrefix() {
+        int batch = 1;
+        int qHeads = 9;
+        int kvHeads = 3;
+        int headDim = 64;
+        int qHidden = qHeads * headDim;
+        int kvHidden = kvHeads * headDim;
+        int maxKvLen = 64;
+        int cachePosition = 11;
+
+        INDArray query = Nd4j.randn(DataType.FLOAT, batch, 1, qHidden).muli(0.1);
+        INDArray currentKey = Nd4j.randn(DataType.FLOAT, batch, 1, kvHidden).muli(0.1);
+        INDArray currentValue = Nd4j.randn(DataType.FLOAT, batch, 1, kvHidden).muli(0.1);
+        INDArray fullKey = Nd4j.zeros(DataType.FLOAT, batch, kvHeads, maxKvLen, headDim);
+        INDArray fullValue = Nd4j.zeros(DataType.FLOAT, batch, kvHeads, maxKvLen, headDim);
+        fullKey.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                NDArrayIndex.interval(0, cachePosition), NDArrayIndex.all())
+                .assign(Nd4j.randn(DataType.FLOAT, batch, kvHeads, cachePosition, headDim).muli(0.1));
+        fullValue.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                NDArrayIndex.interval(0, cachePosition), NDArrayIndex.all())
+                .assign(Nd4j.randn(DataType.FLOAT, batch, kvHeads, cachePosition, headDim).muli(0.1));
+
+        INDArray pastKey = fullKey.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                NDArrayIndex.interval(0, cachePosition), NDArrayIndex.all()).dup();
+        INDArray pastValue = fullValue.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                NDArrayIndex.interval(0, cachePosition), NDArrayIndex.all()).dup();
+        INDArray reference = Nd4j.exec(new OnnxMultiHeadAttention(
+                query, currentKey, currentValue, null, pastKey, pastValue,
+                qHeads, 0.0, false))[0].dup();
+
+        INDArray bias = Nd4j.valueArrayOf(new long[]{batch, 1, 1, maxKvLen}, -65504.0f);
+        bias.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(),
+                NDArrayIndex.interval(0, cachePosition + 1)).assign(0.0f);
+        INDArray position = Nd4j.scalar(DataType.INT64, cachePosition);
+        INDArray actual = Nd4j.exec(new OnnxMultiHeadAttention(
+                query, currentKey, currentValue, bias, fullKey, fullValue, position,
+                qHeads, 0.0, false))[0];
+
+        assertEquals(0.0, reference.sub(actual).amaxNumber().doubleValue(), 1e-4,
+                "Padded in-place GQA must match attention over the active prefix");
+        INDArray writtenKey = fullKey.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                NDArrayIndex.point(cachePosition), NDArrayIndex.all());
+        INDArray expectedKey = currentKey.reshape(batch, 1, kvHeads, headDim)
+                .permute(0, 2, 1, 3)
+                .get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(0), NDArrayIndex.all());
+        assertEquals(0.0, writtenKey.sub(expectedKey).amaxNumber().doubleValue(), 1e-6,
+                "Current key must be written at cache_position");
+    }
 }

@@ -3356,6 +3356,19 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         bool useDualBuffer = (qIs3D && hasPastKv);
         int pastSeqLen = 0, seqKVCur = 0;
 
+        // Canonicalized ONNX MHA with cache_position mutates the live BHSD cache and
+        // uses that device scalar as the logical prefix length. The current Triton
+        // dual-buffer emitter models neither the write-back nor the dynamic boundary;
+        // compiling it would replay cacheless/full-capacity attention. Keep this slot
+        // native (and capture it as a gap) until that contract has an explicit lowering.
+        if (slot.wiring.numInputs > 6
+            && slot.ident.opName.find("onnx_multi_head_attention") != std::string::npos) {
+          DSP_DIAG(JIT, "ATTN slot=%d: seven-input ONNX MHA has plan-owned KV side effects; "
+                    "deferring to capture-safe C++ native", si);
+          result.valid = false;
+          return result;
+        }
+
         // GGUF in-graph KV-cache contract (dot_product_attention_v2 with a LIVE
         // keyCache at input[5], cache_position at input[7], additive bias at
         // input[8]): the op writes current K/V into the cache in-op and attends
@@ -7859,6 +7872,14 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           // Determine if we need dual-buffer mode (3D Q with past_key)
           bool useDualBuffer = (qShape.size() == 3 && hasPastKv);
           int pastSeqLen = 0, seqKVCur = 0;
+
+          if (slot.wiring.numInputs > 6
+              && slot.ident.opName.find("onnx_multi_head_attention") != std::string::npos) {
+            DSP_DIAG(COMPILE, "ATTN slot=%d (sectioned): seven-input ONNX MHA requires "
+                      "native side-effect/dynamic-prefix execution", si);
+            result.valid = false;
+            return result;
+          }
 
           // GGUF in-graph KV-cache contract with rank-4 Q: not expressible by the
           // fused emission (see the JIT-path gate above for the full rationale) —
