@@ -365,7 +365,7 @@ SD_LIB_EXPORT const char* getPlanExternalInputName(sd::Pointer planHandle, int i
  * clamping/resolution — mirror of setPlanGraphExecutionMode).
  *
  * @param planHandle  Handle from compileDynamicShapePlan()
- * @return GraphExecutionMode as int (GEM_AUTO=0 .. GEM_PORTABLE_REPLAY=19), -1 if invalid
+ * @return GraphExecutionMode as int (GEM_AUTO=0 .. GEM_ONEDNN=20), -1 if invalid
  */
 SD_LIB_EXPORT int getPlanGraphExecutionMode(sd::Pointer planHandle);
 
@@ -472,7 +472,7 @@ SD_LIB_EXPORT void setPlanRuntimeArtifactDirectory(sd::Pointer planHandle,
  * @param mode  0=AUTO, 1=SLOT_BY_SLOT, 2=CUDA_GRAPHS, 3=NVRTC_JIT, 4=PTX_JIT, 5=TRITON,
  *              6=MLX, 7=ARM_HYBRID, 8=NNAPI, 9=HIP_GRAPHS, 10=LEVEL_ZERO, 11=VULKAN,
  *              12=METAL, 13=TPU, 14=HEXAGON, 15=OPENVINO, 16=TVM (deprecated),
- *              17=EMULATED_REPLAY, 18=SHAPE_INFERENCE_ONLY, 19=PORTABLE_REPLAY
+ *              17=EMULATED_REPLAY, 18=SHAPE_INFERENCE_ONLY, 19=PORTABLE_REPLAY, 20=ONEDNN
  */
 SD_LIB_EXPORT void setPlanGraphExecutionMode(sd::Pointer planHandle, int mode);
 

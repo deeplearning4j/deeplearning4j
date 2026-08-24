@@ -1194,6 +1194,7 @@ SDX_API sdx_status_t sdxLoadBundle(
   const bool requireFileBacked =
       strictBackend ||
       backend == static_cast<int>(SDX_BACKEND_NNAPI) ||
+      backend == static_cast<int>(SDX_BACKEND_ARM_HYBRID) ||
       backend == static_cast<int>(SDX_BACKEND_HEXAGON) ||
       backend == static_cast<int>(SDX_BACKEND_VULKAN);
   sd::Pointer modelHandle =

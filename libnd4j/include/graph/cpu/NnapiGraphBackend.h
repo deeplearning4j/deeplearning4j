@@ -159,6 +159,35 @@ class NnapiGraphBackend : public GraphBackend {
 
   // Compiled NNAPI model for a segment
   struct CompiledModel {
+    static constexpr int kQ4KLoweringAbiVersion = 1;
+
+    enum class BoundaryTransform : uint8_t {
+      NONE = 0,
+      INT64_TO_INT32 = 1,
+      QUANTIZE_ASYMM_SIGNED = 2,
+      DEQUANTIZE_ASYMM_SIGNED = 3,
+    };
+
+    struct QuantizedQ4KConstant {
+      int slotIndex = -1;
+      int sourceIndex = 0;
+      LongType outputChannels = 0;
+      LongType inputChannels = 0;
+      float activationScale = 0.0f;
+      float outputScale = 0.0f;
+      std::vector<int8_t> filter;
+      std::vector<float> perChannelScales;
+      std::vector<int32_t> zeroBias;
+      std::string packedWeightDigest;
+      std::string loweringDigest;
+
+      size_t ownedBytes() const {
+        return filter.size() * sizeof(int8_t) +
+               perChannelScales.size() * sizeof(float) +
+               zeroBias.size() * sizeof(int32_t);
+      }
+    };
+
     ANeuralNetworksModel* model = nullptr;
     ANeuralNetworksCompilation* compilation = nullptr;
     int startSlot = -1;
@@ -175,14 +204,26 @@ class NnapiGraphBackend : public GraphBackend {
       DataType sourceDataType;
       DataType bindingDataType;
       std::vector<LongType> dimensions;
+      BoundaryTransform boundaryTransform = BoundaryTransform::NONE;
+      float quantizationScale = 0.0f;
+      int32_t quantizationZeroPoint = 0;
     };
     std::vector<OperandMapping> inputMappings;
     std::vector<OperandMapping> outputMappings;
 
+    // Backend-owned lowering state. NNAPI retains pointers for constants larger
+    // than its immediate-copy threshold, so these buffers must outlive both the
+    // model and every execution created from its compilation.
+    std::vector<QuantizedQ4KConstant> q4kConstants;
+    std::string sourceWeightIdentity;
+    std::string loweringCacheIdentity;
+
     // Compilation audit
     std::vector<CompilationAuditEntry> compilationAudit;
+    std::mutex executionMutex;
 
     void invalidate() {
+      std::lock_guard<std::mutex> lock(executionMutex);
       if (compilation) {
         ANeuralNetworksCompilation_free(compilation);
         compilation = nullptr;
@@ -200,37 +241,8 @@ class NnapiGraphBackend : public GraphBackend {
     CompiledModel() = default;
     CompiledModel(const CompiledModel&) = delete;
     CompiledModel& operator=(const CompiledModel&) = delete;
-    CompiledModel(CompiledModel&& o) noexcept
-        : model(o.model), compilation(o.compilation),
-          startSlot(o.startSlot), endSlot(o.endSlot),
-          shapeKey(o.shapeKey), valid(o.valid),
-          inputMappings(std::move(o.inputMappings)),
-          outputMappings(std::move(o.outputMappings)),
-          compilationAudit(std::move(o.compilationAudit)) {
-      o.model = nullptr;
-      o.compilation = nullptr;
-      o.startSlot = -1;
-      o.endSlot = -1;
-      o.valid = false;
-    }
-    CompiledModel& operator=(CompiledModel&& o) noexcept {
-      if (this != &o) {
-        invalidate();
-        model = o.model;
-        compilation = o.compilation;
-        startSlot = o.startSlot;
-        endSlot = o.endSlot;
-        shapeKey = o.shapeKey;
-        valid = o.valid;
-        inputMappings = std::move(o.inputMappings);
-        outputMappings = std::move(o.outputMappings);
-        compilationAudit = std::move(o.compilationAudit);
-        o.model = nullptr;
-        o.compilation = nullptr;
-        o.valid = false;
-      }
-      return *this;
-    }
+    CompiledModel(CompiledModel&&) = delete;
+    CompiledModel& operator=(CompiledModel&&) = delete;
   };
 
   // Non-owning registry used only by invalidateCache(). The plan's GraphSegment

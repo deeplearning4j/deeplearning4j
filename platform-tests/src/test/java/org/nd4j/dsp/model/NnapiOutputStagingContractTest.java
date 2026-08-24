@@ -13,6 +13,91 @@ import org.junit.jupiter.api.Test;
 class NnapiOutputStagingContractTest {
 
     @Test
+    void tensorG3AcceleratorContractReachesCppAndArtifactVerification()
+            throws Exception {
+        Path root = Path.of("").toAbsolutePath().normalize().resolve("..").normalize();
+        Path options = root.resolve("libnd4j/cmake/Options.cmake");
+        Path aarVerifier = root.resolve("libnd4j/tools/mobile/verify-android-accelerator-aar.sh");
+
+        assertTrue(Files.isRegularFile(options), "CMake options source was not found");
+        assertTrue(Files.isRegularFile(aarVerifier), "Android AAR verifier was not found");
+
+        String cmake = Files.readString(options);
+        String aar = Files.readString(aarVerifier);
+        assertTrue(cmake.contains("add_definitions(-DSD_NNAPI_ACCELERATOR_ONLY=1)")
+                        && cmake.contains("-DSD_NNAPI_REQUIRED_DEVICE_NAME=${SD_NNAPI_REQUIRED_DEVICE_NAME}")
+                        && cmake.contains("SD_NNAPI_ACCELERATOR_ONLY requires SD_NNAPI_REQUIRED_DEVICE_NAME")
+                        && cmake.contains("SD_NNAPI_ACCELERATOR_ONLY requires Android API 29+"),
+                "Tensor G3 deployment settings must be C++ compile definitions, not metadata only");
+        for (String symbol : new String[]{
+                "ANeuralNetworks_getDeviceCount",
+                "ANeuralNetworks_getDevice",
+                "ANeuralNetworksDevice_getName",
+                "ANeuralNetworksDevice_getType",
+                "ANeuralNetworksDevice_getFeatureLevel",
+                "ANeuralNetworksModel_getSupportedOperationsForDevices",
+                "ANeuralNetworksCompilation_createForDevices"}) {
+            assertTrue(aar.contains(symbol),
+                    "The AAR verifier must require pinned-device symbol " + symbol);
+        }
+        assertTrue(aar.contains("forbidden generic NNAPI compilation")
+                        && aar.contains("google-edgetpu"),
+                "Tensor G3 artifacts must reject generic NNAPI and retain the required device fingerprint");
+    }
+
+    @Test
+    void directGraphBackendCompilationIsDistinctFromReplayHandles()
+            throws Exception {
+        Path root = Path.of("").toAbsolutePath().normalize().resolve("..").normalize();
+        String lifecycle = Files.readString(
+                root.resolve("libnd4j/include/graph/DspSegmentLifecycle.h"));
+        String plan = Files.readString(
+                root.resolve("libnd4j/include/graph/impl/NativeDynamicShapePlan.cpp"));
+        String segments = Files.readString(
+                root.resolve("libnd4j/include/graph/impl/NativeDynamicShapePlan_segments.cpp"));
+        String cpu = Files.readString(
+                root.resolve("libnd4j/include/graph/cpu/NativeDynamicShapePlan_cuda_stubs.cpp"));
+
+        assertTrue(lifecycle.contains("markDirectGraphBackendCompiled")
+                        && lifecycle.contains("SEALED:DIRECT_COMPILED")
+                        && lifecycle.contains("exec.outcome = SegmentExecOutcome::DIRECT_COMPILED"),
+                "Direct compiled artifacts need an explicit validated lifecycle transition");
+        assertTrue(cpu.contains("GraphBackendArtifactKind::DIRECT_COMPILED")
+                        && cpu.contains("SegmentLifecycle::markDirectGraphBackendCompiled")
+                        && cpu.contains("executeSegmentWithSpecificBackend("),
+                "CPU precompile and frozen replay must publish and execute direct backend artifacts");
+        int eagerPrecompile = cpu.indexOf(
+                "void NativeDynamicShapePlan::platformPrecompileSegments(");
+        int eagerFallbackPolicy = cpu.indexOf(
+                "ModeContract::forMode(graphExecutionMode_).allowsFallback", eagerPrecompile);
+        int eagerFallbackBackend = cpu.indexOf(
+                "seg.def.selectedBackend = SelectedBackend::EMULATED_REPLAY", eagerFallbackPolicy);
+        int eagerFallbackHandoff = cpu.indexOf(
+                "SegmentLifecycle::prepareFunctionalReplayHandoff(", eagerFallbackBackend);
+        assertTrue(eagerPrecompile >= 0
+                        && eagerFallbackPolicy > eagerPrecompile
+                        && eagerFallbackBackend > eagerFallbackPolicy
+                        && eagerFallbackHandoff > eagerFallbackBackend,
+                "Eager ARM-hybrid precompile must hand rejected NNAPI/ACL ranges to explicit replay before sealing");
+        assertTrue(segments.contains("seg.setResolvedGraphBackend(backend, request);")
+                        && segments.contains("SegmentLifecycle::markDirectGraphBackendCompiled")
+                        && segments.contains("backendIdentityChanged")
+                        && segments.contains("seg.resolvedGraphBackend != backend"),
+                "Lazy and same-shape recovery must recompile before publishing direct execution");
+        assertTrue(plan.contains("allFrozenDispatchUnitsReady")
+                        && plan.contains("SegmentExecOutcome::DIRECT_COMPILED")
+                        && plan.contains("segmentHasReadyDirectArtifact"),
+                "Direct readiness must be validated separately from graph replay handles");
+        assertTrue(plan.contains(
+                        "return seg.def.isCapturable && !seg.def.allFrozenConstants &&"),
+                "All-frozen constant segments have no runtime work and must not block plan replay promotion");
+        assertTrue(Files.readString(
+                        root.resolve("libnd4j/include/graph/NativeDynamicShapePlan.h"))
+                        .contains("def.shapeKeyState.reset();"),
+                "Destroying backend ownership must also invalidate its compilation key");
+    }
+
+    @Test
     void everyOutputUsesTheCompiledDescriptorAndOwnedStorageUntilNnapiCompletes()
             throws Exception {
         Path backend = Path.of("")
@@ -386,14 +471,21 @@ class NnapiOutputStagingContractTest {
                 .toAbsolutePath()
                 .normalize()
                 .resolve("pom.xml");
+        Path nnapiBackend = segmentExecutor
+                .getParent()
+                .resolve("../cpu/NnapiGraphBackend.cpp")
+                .normalize();
         assertTrue(Files.isRegularFile(segmentExecutor),
                 "DSP segment executor source was not found at " + segmentExecutor);
         assertTrue(Files.isRegularFile(platformPom),
                 "platform-tests pom was not found at " + platformPom);
+        assertTrue(Files.isRegularFile(nnapiBackend),
+                "NNAPI backend source was not found at " + nnapiBackend);
 
         String source = Files.readString(segmentExecutor);
         String pom = Files.readString(platformPom);
-        int scanCap = source.indexOf("kOpSanityMaxScannedValues = 4096");
+        String nnapiSource = Files.readString(nnapiBackend);
+        int scanCap = source.indexOf("kOpSanityMaxScannedValues =");
         int helper = source.indexOf("struct OpSanitySummary", scanCap);
         int hash = source.indexOf("summary->valueHash *= 0x100000001b3ULL;", helper);
         int logicalLayout = source.indexOf(
@@ -424,6 +516,8 @@ class NnapiOutputStagingContractTest {
                 "Each record must include a value hash plus NaN/Inf/finite statistics");
         assertTrue(source.indexOf("scanned=%lld coverage=%s", event) >= event,
                 "Large output records must disclose bounded sampling coverage");
+        assertTrue(source.indexOf("arr=%p db=%p primary=%p special=%p offset=%lld", event) >= event,
+                "Operation sanity records must expose wrapper and storage identities for alias diagnosis");
         assertTrue(source.indexOf("std::is_integral<T>::value", helper) < finiteChecks,
                 "Integer hashes must preserve exact typed bits instead of rounding through double");
         assertTrue(invalidBuffer > finiteChecks && deadState > invalidBuffer,
@@ -442,6 +536,11 @@ class NnapiOutputStagingContractTest {
                         && pom.contains("<ND4J_DSP_DIAG_EXEC_LIMIT>"
                         + "${nd4j.dsp.diagExecLimit}</ND4J_DSP_DIAG_EXEC_LIMIT>"),
                 "Surefire must pass the opt-in trigger and execution bound into its forked JVM");
+        assertTrue(nnapiSource.contains("diagDetailLimit()")
+                        && nnapiSource.contains("emittedAliasCount < aliasDetailLimit")
+                        && nnapiSource.contains("NNAPI_OUTPUT_TARGET_ALIAS_SUMMARY")
+                        && nnapiSource.contains("aliases_omitted=%d"),
+                "NNAPI identity tracing must bound alias detail and summarize omitted entries");
     }
 
     @Test

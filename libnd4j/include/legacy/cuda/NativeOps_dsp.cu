@@ -1197,29 +1197,14 @@ const char* getPlanSegmentCompilationAudit(sd::Pointer planHandle, int segIdx) {
 void invalidatePlanSegmentCache(sd::Pointer planHandle, int segIdx) {
   if (planHandle == nullptr) return;
   auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
-  auto& segs = plan->getSegmentsMutable();
-  if (segIdx < 0 || segIdx >= static_cast<int>(segs.size())) return;
-  auto& seg = segs[segIdx];
-  seg.exec.replayHandle.reset();
-  SegmentLifecycle::resetForCacheInvalidation(seg.exec);
-  seg.exec.cachedShapeKey = 0;
-  seg.exec.executionCount = 0;
-  seg.exec.compiledByBackend.clear();
+  plan->invalidateSegmentCache(segIdx, "jni_segment_cache_invalidation");
 }
 
 void invalidatePlanBackendCaches(sd::Pointer planHandle, const char* backendName) {
   if (planHandle == nullptr) return;
   auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
   std::string name = backendName ? backendName : "";
-  for (auto& seg : plan->getSegmentsMutable()) {
-    if (seg.exec.compiledByBackend == name || name.empty()) {
-      seg.exec.replayHandle.reset();
-      SegmentLifecycle::resetForCacheInvalidation(seg.exec);
-      seg.exec.cachedShapeKey = 0;
-      seg.exec.executionCount = 0;
-      seg.exec.compiledByBackend.clear();
-    }
-  }
+  plan->invalidateBackendCaches(name, "jni_backend_cache_invalidation");
 }
 
 const char* getPlanBackendCacheStats(sd::Pointer planHandle) {

@@ -918,36 +918,23 @@ const char* getPlanSegmentCompiledBackend(sd::Pointer planHandle, int segIdx) {
 
 const char* getPlanSegmentCompilationAudit(sd::Pointer planHandle, int segIdx) {
   static thread_local std::string result;
-  result = "{}";
+  if (planHandle == nullptr) { result = "{}"; return result.c_str(); }
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  result = plan->getSegmentCompilationAudit(segIdx);
   return result.c_str();
 }
 
 void invalidatePlanSegmentCache(sd::Pointer planHandle, int segIdx) {
   if (planHandle == nullptr) return;
   auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
-  auto& segs = plan->getSegmentsMutable();
-  if (segIdx < 0 || segIdx >= static_cast<int>(segs.size())) return;
-  auto& seg = segs[segIdx];
-  seg.exec.replayHandle.reset();
-  SegmentLifecycle::resetForCacheInvalidation(seg.exec);
-  seg.exec.cachedShapeKey = 0;
-  seg.exec.executionCount = 0;
-  seg.exec.compiledByBackend.clear();
+  plan->invalidateSegmentCache(segIdx, "jni_segment_cache_invalidation");
 }
 
 void invalidatePlanBackendCaches(sd::Pointer planHandle, const char* backendName) {
   if (planHandle == nullptr) return;
   auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
   std::string name = backendName ? backendName : "";
-  for (auto& seg : plan->getSegmentsMutable()) {
-    if (seg.exec.compiledByBackend == name || name.empty()) {
-      seg.exec.replayHandle.reset();
-      SegmentLifecycle::resetForCacheInvalidation(seg.exec);
-      seg.exec.cachedShapeKey = 0;
-      seg.exec.executionCount = 0;
-      seg.exec.compiledByBackend.clear();
-    }
-  }
+  plan->invalidateBackendCaches(name, "jni_backend_cache_invalidation");
 }
 
 const char* getPlanBackendCacheStats(sd::Pointer planHandle) {
@@ -975,7 +962,15 @@ void setPlanSegmentBackendOverride(sd::Pointer planHandle, int segIdx, const cha
 }
 
 void setPlanBackendPriority(sd::Pointer planHandle, const char* priorityList) {
-  // CPU backend has only one backend, priority doesn't apply
+  if (planHandle == nullptr || priorityList == nullptr) return;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  std::vector<std::string> priority;
+  std::stringstream input(priorityList);
+  std::string backend;
+  while (std::getline(input, backend, ',')) {
+    if (!backend.empty()) priority.push_back(backend);
+  }
+  plan->setBackendPriority(priority);
 }
 
 // ─── CUDA Graph Visualization stubs (CPU backend) ─────────────────────────────
@@ -1060,13 +1055,11 @@ int ncclGroupEnd() {
     return -1;
 }
 
-// Triton availability — check compile-time flag
+// The CPU build may contain Triton compiler tooling because SD_TRITON also
+// enables the OpenVINO dependency umbrella.  Availability is an executable
+// backend contract, not a binary-presence probe: CPU has no CUDA launch target.
 bool isTritonAvailable() {
-#if HAVE_TRITON
-  return true;
-#else
   return false;
-#endif
 }
 sd::LongType getTritonKernelLaunchCount() { return 0; }
 sd::LongType getTritonCacheHitCount() { return 0; }

@@ -154,7 +154,19 @@ struct ModeContract {
         return c;
 
       case 6:  // GEM_MLX
+        c.requiresCompilation = true;
+        c.needsJitBackend = true;
+        c.allowsFrozenFastPath = true;
+        return c;
+
       case 7:  // GEM_ARM_HYBRID
+        c.requiresCompilation = true;
+        c.needsJitBackend = true;
+        c.allowsFrozenFastPath = true;
+        c.allowsFallback = true;
+        c.allowsPhaseStall = true;
+        return c;
+
       case 8:  // GEM_NNAPI
       case 13: // GEM_TPU
       case 14: // GEM_HEXAGON
@@ -182,6 +194,13 @@ struct ModeContract {
         c.forcesSyncOnFrozen = true;
         c.allowsFallback = true;
         c.allowsPhaseStall = true;
+        return c;
+
+      case 20: // GEM_ONEDNN
+        c.requiresCompilation = true;
+        c.needsJitBackend = true;
+        c.allowsFrozenFastPath = true;
+        c.requiresSuccessfulShapePrePass = true;
         return c;
 
       case 18: // GEM_SHAPE_INFERENCE_ONLY
@@ -233,6 +252,7 @@ struct ModeContract {
       case 17: return "EMULATED_REPLAY";
       case 18: return "SHAPE_INFERENCE_ONLY";
       case 19: return "PORTABLE_REPLAY";
+      case 20: return "ONEDNN";
       default: return "UNKNOWN";
     }
   }

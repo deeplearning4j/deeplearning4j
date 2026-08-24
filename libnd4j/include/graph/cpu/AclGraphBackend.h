@@ -61,6 +61,12 @@ class AclGraphBackend : public GraphBackend {
   bool isAvailable() const override;
   bool isResolvable(const GraphBackendRequest& request) const override;
   int resolutionPriority(const GraphBackendRequest& request) const override;
+  GraphBackendPlanningPolicy planningPolicy(
+      const GraphBackendRequest& request) const override {
+    auto policy = GraphBackend::planningPolicy(request);
+    policy.artifactKind = GraphBackendArtifactKind::DIRECT_COMPILED;
+    return policy;
+  }
   bool canResolveSlot(const GraphBackendRequest& request,
                       NativeSlot* slots, int slotIndex) override;
   bool canResolveSegment(const GraphBackendRequest& request,

@@ -39,6 +39,41 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class TestCausalConv1d {
 
+    private static float deterministicFastExp(float value) {
+        if (Float.isNaN(value)) {
+            return value;
+        }
+        float clamped = Math.max(-88.0f, Math.min(88.0f, value));
+        float scaled = clamped * 1.4426950408889634f;
+        int exponent = (int) (scaled + (scaled >= 0.0f ? 0.5f : -0.5f));
+        float reduced = clamped - exponent * 0.6931471805599453f;
+
+        float polynomial = 2.7557319223985893e-6f;
+        polynomial = 2.48015873015873e-5f + reduced * polynomial;
+        polynomial = 1.984126984126984e-4f + reduced * polynomial;
+        polynomial = 1.388888888888889e-3f + reduced * polynomial;
+        polynomial = 8.333333333333333e-3f + reduced * polynomial;
+        polynomial = 4.1666666666666664e-2f + reduced * polynomial;
+        polynomial = 1.6666666666666666e-1f + reduced * polynomial;
+        polynomial = 0.5f + reduced * polynomial;
+        polynomial = 1.0f + reduced * polynomial;
+        polynomial = 1.0f + reduced * polynomial;
+
+        final float scale;
+        if (exponent >= -126) {
+            scale = Float.intBitsToFloat((exponent + 127) << 23);
+        } else if (exponent >= -149) {
+            scale = Float.intBitsToFloat(1 << (exponent + 149));
+        } else {
+            scale = 0.0f;
+        }
+        return polynomial * scale;
+    }
+
+    private static float deterministicSilu(float value) {
+        return value * (1.0f / (1.0f + deterministicFastExp(-value)));
+    }
+
     /**
      * Test cross-correlation correctness with wFormat=0 [D, K].
      *
@@ -179,6 +214,35 @@ public class TestCausalConv1d {
 
         assertEquals(expected0, resultsSilu[0].getFloat(0, 0, 0), 1e-4f, "SiLU for positive value");
         assertEquals(expected1, resultsSilu[0].getFloat(0, 0, 1), 1e-4f, "SiLU for negative value");
+    }
+
+    @Test
+    public void testFloatAccumulationDoesNotContractMultiplyAdd() {
+        float nextAfterOne = Float.intBitsToFloat(Float.floatToRawIntBits(1.0f) + 1);
+        float roundedProduct = nextAfterOne * nextAfterOne;
+        INDArray x = Nd4j.createFromArray(new float[]{nextAfterOne, 1.0f}).reshape(1, 2, 1);
+        INDArray weight = Nd4j.createFromArray(new float[]{nextAfterOne, -roundedProduct}).reshape(1, 2);
+
+        INDArray output = Nd4j.exec(new CausalConv1d(x, weight, null, null, 0, 0))[0];
+        assertEquals(Float.floatToRawIntBits(0.0f),
+                Float.floatToRawIntBits(output.getFloat(0, 1, 0)),
+                "causal accumulation must round multiply before add instead of contracting to FMA");
+    }
+
+    @Test
+    public void testDeterministicSiluRawBits() {
+        float[] inputValues = new float[]{-10.0f, -4.0f, -1.0f, -0.0f, 0.0f, 1.0f, 4.0f, 10.0f};
+        INDArray x = Nd4j.createFromArray(inputValues).reshape(1, 1, inputValues.length);
+        INDArray weight = Nd4j.ones(DataType.FLOAT, inputValues.length, 1);
+
+        INDArray preactivation = Nd4j.exec(new CausalConv1d(x, weight, null, null, 0, 0))[0];
+        INDArray output = Nd4j.exec(new CausalConv1d(x, weight, null, null, 1, 0))[0];
+        for (int index = 0; index < inputValues.length; ++index) {
+            float expected = deterministicSilu(preactivation.getFloat(0, 0, index));
+            float actual = output.getFloat(0, 0, index);
+            assertEquals(Float.floatToRawIntBits(expected), Float.floatToRawIntBits(actual),
+                    "deterministic SiLU raw bits differ at index " + index);
+        }
     }
 
     /**

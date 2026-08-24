@@ -19,6 +19,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -69,6 +70,11 @@ public class NativeTokenizerTest {
         assertEquals(0, tokenizer.tokenToId("[UNK]"));
         assertEquals(1, tokenizer.tokenToId("hello"));
         assertEquals(-1, tokenizer.tokenToId("missing"));
+        assertEquals("[UNK]", tokenizer.idToToken(0));
+        assertEquals("hello", tokenizer.idToToken(1));
+        assertEquals("world", tokenizer.idToToken(2));
+        assertNull(tokenizer.idToToken(-1));
+        assertNull(tokenizer.idToToken(99));
         assertArrayEquals(new int[] {1, 2},
                 tokenizer.encode("hello world", false));
         NativeTokenizer.EncodedText detailed =
@@ -120,6 +126,8 @@ public class NativeTokenizerTest {
     @Test
     public void decodesByteLevelTokensToUnicodeThroughNativeFfi() {
         try (NativeTokenizer tokenizer = NativeTokenizer.fromJson(BYTE_LEVEL_TOKENIZER_JSON)) {
+            assertEquals("ĠHello", tokenizer.idToToken(0));
+            assertEquals("Ã©", tokenizer.idToToken(1));
             assertEquals(" Helloé",
                     tokenizer.decode(new int[] {0, 1}, true));
             NativeTokenizer.DecodeStream stream = tokenizer.newDecodeStream(true);

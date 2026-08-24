@@ -54,8 +54,12 @@ CUSTOM_OP_IMPL(gated_delta_rule, 5, 2, false, 0, 0) {
     for (int i = 5; i < block.width(); ++i) {
         auto input = INPUT_VARIABLE(i);
         if (input->rankOf() == 0) {
+            REQUIRE_TRUE(actualLen == nullptr, 0,
+                         "gated_delta_rule: multiple scalar actualLen inputs are not allowed");
             actualLen = input;
         } else {
+            REQUIRE_TRUE(stateIn == nullptr, 0,
+                         "gated_delta_rule: multiple recurrent state inputs are not allowed");
             stateIn = input;
         }
     }
@@ -67,6 +71,13 @@ CUSTOM_OP_IMPL(gated_delta_rule, 5, 2, false, 0, 0) {
                  0, "gated_delta_rule: Q, K, V, beta, and gate must have the same floating dtype");
     REQUIRE_TRUE(stateIn == nullptr || stateIn->dataType() == dataType, 0,
                  "gated_delta_rule: stateIn dtype must match Q dtype");
+    REQUIRE_TRUE(stateIn == nullptr ||
+                     (stateIn->rankOf() == 4 &&
+                      stateIn->sizeAt(0) == Q->sizeAt(0) &&
+                      stateIn->sizeAt(1) == Q->sizeAt(2) &&
+                      stateIn->sizeAt(2) == Q->sizeAt(3) &&
+                      stateIn->sizeAt(3) == V->sizeAt(3)), 0,
+                 "gated_delta_rule: stateIn must have shape [B,H,D_k,D_v]");
 
     helpers::gatedDeltaRule(block.launchContext(), Q, K, V, beta, gate, stateIn, actualLen,
                             output, stateOut);
@@ -78,8 +89,7 @@ DECLARE_TYPES(gated_delta_rule) {
     // CUDA execution allocates per-invocation recurrent/chunk scratch buffers.
     // Keep this op live between captured Triton islands so graph replay never
     // retains pointers to scratch storage returned to the memory pool.
-    getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING |
-                                 OP_TRAIT_ACTIVATION | OP_TRAIT_EXTERNAL_WORKSPACE);
+    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING | OP_TRAIT_EXTERNAL_WORKSPACE);
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})
         ->setAllowedOutputTypes({ALL_FLOATS});

@@ -147,8 +147,10 @@ public class DspBufferAliasAccuracyTest {
         modes.add(GraphExecutionMode.AUTO);
         modes.add(GraphExecutionMode.SLOT_BY_SLOT);
         modes.add(GraphExecutionMode.CUDA_GRAPHS);
-        modes.add(GraphExecutionMode.NVRTC_JIT);
-        modes.add(GraphExecutionMode.PTX_JIT);
+        if (Nd4j.backends().isCudaAvailable()) {
+            modes.add(GraphExecutionMode.NVRTC_JIT);
+            modes.add(GraphExecutionMode.PTX_JIT);
+        }
         modes.add(GraphExecutionMode.TRITON);
         modes.add(GraphExecutionMode.EMULATED_REPLAY);
         return modes;

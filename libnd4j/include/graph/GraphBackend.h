@@ -78,6 +78,13 @@ struct GraphBackendRequest {
  * NativeDynamicShapePlan applies the same mechanics regardless of which backend
  * supplied the policy.
  */
+enum class GraphBackendArtifactKind : uint8_t {
+  UNSPECIFIED = 0,
+  DIRECT_COMPILED = 1,
+  BACKEND_REPLAY_HANDLE = 2,
+  PLATFORM_REPLAY_REQUIRED = 3,
+};
+
 struct GraphBackendPlanningPolicy {
   bool requiresShapePrePass = false;
   bool requiresSuccessfulShapePrePass = false;
@@ -95,6 +102,13 @@ struct GraphBackendPlanningPolicy {
   // plan may enter replay steady state. This is a backend property, not a CPU/GPU
   // distinction; direct graph runtimes leave it false.
   bool requiresPlatformReplayHandle = false;
+  GraphBackendArtifactKind artifactKind =
+      GraphBackendArtifactKind::UNSPECIFIED;
+  // True when successful backend execution leaves every framework output slot
+  // in the lowered range materialized and valid. Backends that intentionally
+  // keep island-internal values private validate only their published boundary
+  // tensors and set this false.
+  bool materializesAllFrameworkSlots = true;
   // Split matrix-multiply/attention ranges from neighboring elementwise ranges.
   // The backend requests the topology; the plan owns the generic split mechanics.
   bool separateMatrixMultiplySegments = false;
@@ -276,6 +290,10 @@ class SD_LIB_EXPORT GraphBackend {
    * @param outputSlots The plan's output slot array (written by execution)
    * @param totalOutputSlots Total number of output slots
    * @param stream Backend-specific execution stream (nullptr for CPU)
+   *
+   * Status contract: BAD_GRAPH is reserved for rejection before any backend
+   * work starts. Once execution begins, failures must use another status so the
+   * resolver cannot retry a different backend after partial execution.
    */
   virtual Status executeSegment(GraphSegment& seg, NativeSlot* slots,
                                 NDArray** externalInputs, int numExternalInputs,

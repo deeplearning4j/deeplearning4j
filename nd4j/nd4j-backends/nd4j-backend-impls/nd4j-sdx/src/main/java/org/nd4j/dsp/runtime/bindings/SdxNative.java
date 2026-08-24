@@ -450,6 +450,15 @@ public static native @Cast("sdx_status_t") int sdxCreateRuntime(@Const sdx_runti
 public static native @Cast("sdx_status_t") int sdxCreateRuntime(@Const sdx_runtime_options_t options, @ByPtrPtr sdx_runtime_t out_runtime);
 public static native void sdxDestroyRuntime(sdx_runtime_t runtime);
 
+/**
+ * Clear and persist diagnostics owned by the selected SDX backend library.
+ * These functions intentionally live on the backend-neutral SDX transport:
+ * an Android accelerator process may also contain an embedded CPU backend,
+ * but only the selected provider owns the active compiled plan and its ring.
+ */
+public static native void sdxClearDiagnostics();
+public static native void sdxFlushDiagnostics();
+
 public static native @Cast("sdx_status_t") int sdxLoadBundle(
     sdx_runtime_t runtime,
     @Cast("const char*") BytePointer bundle_path,

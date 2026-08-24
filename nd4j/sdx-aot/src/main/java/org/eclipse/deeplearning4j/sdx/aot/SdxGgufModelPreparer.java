@@ -157,7 +157,7 @@ final class SdxGgufModelPreparer {
         SdxTargetProfile target = SdxTargetProfile.fromId(requireText(targetProfile, "target profile"));
         SdxModelCache cache = new SdxModelCache(Path.of(requireText(cacheDirectory, "cache directory")));
         configureTemporaryDirectory(cache);
-        SdxCompiledModel compiled = cache.resolve(source, target);
+        SdxCompiledModel compiled = cache.resolveVerified(source, target);
         SdxTextModelAssets assets = compiled.requireTextModelAssets();
         ObjectNode result = MAPPER.createObjectNode();
         result.put("schema", RESOLVED_SCHEMA);

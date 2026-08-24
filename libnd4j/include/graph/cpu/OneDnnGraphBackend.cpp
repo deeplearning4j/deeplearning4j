@@ -21,16 +21,13 @@
 #if HAVE_ONEDNN
 
 #include <graph/cpu/OneDnnGraphBackend.h>
+#include <graph/cpu/OneDnnGraphEmitterCatalog.h>
 #include <graph/DspDiagnostics.h>
-#include <helpers/shape.h>
-#include <ops/declarable/OpDescriptor.h>
-#include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/platform/mkldnn/OnednnVersionProvider.h>
 #include <system/Environment.h>
 
 #include <algorithm>
 #include <climits>
-#include <cstdlib>
 #include <mutex>
 #include <thread>
 
@@ -110,142 +107,13 @@ bool OneDnnGraphBackend::isAvailable() const {
 bool OneDnnGraphBackend::isResolvable(
     const GraphBackendRequest& request) const {
   return request.executionMode == GraphExecutionMode::GEM_AUTO ||
-         request.executionMode == GraphExecutionMode::GEM_PORTABLE_REPLAY;
+         request.executionMode == GraphExecutionMode::GEM_PORTABLE_REPLAY ||
+         request.executionMode == GraphExecutionMode::GEM_ONEDNN;
 }
 
 int OneDnnGraphBackend::resolutionPriority(
     const GraphBackendRequest& request) const {
-  (void)request;
-  return 500;
-}
-
-// ─── Op kind mapping ────────────────────────────────────────────────────────
-//
-// STRICT mapping: only ops that oneDNN Graph API can genuinely compile and
-// execute are included here. oneDNN's partitioner rejects ops it can't optimize
-// individually or fuse, so mapping an op that oneDNN can't handle wastes
-// compilation time and forces the entire segment to fall back.
-//
-// Excluded categories:
-//   - Shape-only ops (reshape, permute, identity, squeeze, expand_dims):
-//     oneDNN rejects these individually. They're zero-compute memory reorders
-//     that are better handled natively.
-//   - Scalar ops (add_scalar, mul_scalar, neg): Need synthetic scalar tensors
-//     that our graph builder doesn't create. Better handled natively.
-//   - Custom/composite ops (gated_delta_rule, fused_rope, causal_conv):
-//     Not in oneDNN's vocabulary regardless of trait classification.
-//   - Ops requiring special tensor layouts (concat with dynamic axis):
-//     Can cause partition rejection.
-
-dg::op::kind OneDnnGraphBackend::mapOpKind(const std::string& opName) {
-  // ── Compute-heavy anchor ops (individually supported by oneDNN) ──────────
-  if (opName == "matmul" || opName == "MatMul" || opName == "mmul") return dg::op::kind::MatMul;
-  if (opName == "batch_matmul" || opName == "BatchMatMul") return dg::op::kind::MatMul;
-  // Convolution: requires strides, pads_begin, pads_end, dilations attributes
-  // that need complex arg-to-attribute mapping. Route to native execution.
-  // if (opName == "conv2d" || opName == "Conv2D") return dg::op::kind::Convolution;
-
-  // ── Normalization (individually supported) ───────────────────────────────
-  if (opName == "softmax" || opName == "Softmax") return dg::op::kind::SoftMax;
-  if (opName == "log_softmax" || opName == "LogSoftmax") return dg::op::kind::LogSoftmax;
-  if (opName == "layer_norm" || opName == "LayerNorm") return dg::op::kind::LayerNorm;
-  if (opName == "batchnorm" || opName == "BatchNorm") return dg::op::kind::BatchNormInference;
-  if (opName == "group_norm" || opName == "GroupNorm") return dg::op::kind::GroupNorm;
-
-  // ── Reduction (individually supported) ───────────────────────────────────
-  if (opName == "reduce_sum" || opName == "ReduceSum") return dg::op::kind::ReduceSum;
-  if (opName == "reduce_mean" || opName == "ReduceMean") return dg::op::kind::ReduceMean;
-  if (opName == "reduce_min" || opName == "ReduceMin") return dg::op::kind::ReduceMin;
-  if (opName == "reduce_max" || opName == "ReduceMax") return dg::op::kind::ReduceMax;
-  if (opName == "reduce_prod" || opName == "ReduceProd") return dg::op::kind::ReduceProd;
-
-  // ── Element-wise binary (fusible as post-ops into matmul/conv) ──────────
-  if (opName == "add" || opName == "Add") return dg::op::kind::Add;
-  if (opName == "subtract" || opName == "Sub") return dg::op::kind::Subtract;
-  if (opName == "multiply" || opName == "Mul") return dg::op::kind::Multiply;
-  if (opName == "divide" || opName == "Div" || opName == "RealDiv") return dg::op::kind::Divide;
-  if (opName == "minimum" || opName == "Min") return dg::op::kind::Minimum;
-  if (opName == "maximum" || opName == "Max") return dg::op::kind::Maximum;
-
-  // ── Element-wise unary / activations (fusible as post-ops) ──────────────
-  if (opName == "relu" || opName == "Relu") return dg::op::kind::ReLU;
-  if (opName == "sigmoid" || opName == "Sigmoid") return dg::op::kind::Sigmoid;
-  if (opName == "tanh" || opName == "Tanh") return dg::op::kind::Tanh;
-  if (opName == "gelu" || opName == "Gelu") return dg::op::kind::GELU;
-  if (opName == "elu" || opName == "Elu") return dg::op::kind::Elu;
-  if (opName == "exp" || opName == "Exp") return dg::op::kind::Exp;
-  if (opName == "log" || opName == "Log") return dg::op::kind::Log;
-  if (opName == "abs" || opName == "Abs") return dg::op::kind::Abs;
-  if (opName == "sqrt" || opName == "Sqrt") return dg::op::kind::Sqrt;
-  if (opName == "square" || opName == "Square") return dg::op::kind::Square;
-  if (opName == "pow" || opName == "Pow") return dg::op::kind::Pow;
-  if (opName == "clamp" || opName == "ClipByValue" || opName == "clip_by_value") return dg::op::kind::Clamp;
-  if (opName == "hardswish" || opName == "HardSwish") return dg::op::kind::HardSwish;
-  if (opName == "hardsigmoid" || opName == "HardSigmoid") return dg::op::kind::HardSigmoid;
-  if (opName == "mish" || opName == "Mish") return dg::op::kind::Mish;
-  if (opName == "round" || opName == "Round") return dg::op::kind::Round;
-  if (opName == "reciprocal" || opName == "Reciprocal") return dg::op::kind::Reciprocal;
-  if (opName == "softplus" || opName == "SoftPlus" || opName == "Softplus") return dg::op::kind::SoftPlus;
-  if (opName == "prelu" || opName == "PReLU" || opName == "Prelu") return dg::op::kind::PReLU;
-  if (opName == "lrelu" || opName == "leakyrelu" || opName == "LeakyReLU" || opName == "LeakyRelu") return dg::op::kind::LeakyReLU;
-
-  // ── Pooling ──────────────────────────────────────────────────────────────
-  // AvgPool/MaxPool: require strides, pads_begin, pads_end, kernel attributes
-  // that need complex arg-to-attribute mapping. Route to native execution.
-  // if (opName == "avgpool2d" || opName == "avgpool" || opName == "AvgPool") return dg::op::kind::AvgPool;
-  // if (opName == "maxpool2d" || opName == "maxpool" || opName == "MaxPool") return dg::op::kind::MaxPool;
-
-  // ── Type casting ─────────────────────────────────────────────────────────
-  if (opName == "cast" || opName == "Cast") return dg::op::kind::TypeCast;
-
-  // ── Conditional selection ────────────────────────────────────────────────
-  if (opName == "where" || opName == "Where" || opName == "select" || opName == "Select" || opName == "where_np") return dg::op::kind::Select;
-
-  // ── Comparison (only GreaterEqual available in this oneDNN version) ──────
-  if (opName == "greater_equal" || opName == "GreaterEqual") return dg::op::kind::GreaterEqual;
-
-  // ── Bias addition (fusible into matmul/conv) ────────────────────────────
-  if (opName == "biasadd" || opName == "BiasAdd" || opName == "bias_add") return dg::op::kind::BiasAdd;
-
-  // ── Squared difference ──────────────────────────────────────────────────
-  if (opName == "squared_difference" || opName == "SquaredDifference" || opName == "squareddifference") return dg::op::kind::SquaredDifference;
-
-  // ── Interpolation / resize ──────────────────────────────────────────────
-  // Interpolate: requires 'mode' string attribute that needs complex mapping.
-  // if (opName == "interpolate" || opName == "Interpolate" || opName == "resize" || opName == "Resize") return dg::op::kind::Interpolate;
-
-  // Not mappable — will be executed natively.
-  // Do NOT use trait-based fallback: traits classify op CATEGORY (e.g. MATMUL trait
-  // on gated_delta_rule) but oneDNN requires exact op implementations, not categories.
-  return dg::op::kind::LastSymbol;
-}
-
-// ─── Trait-based op kind fallback (diagnostic only) ────────────────────────
-//
-// NOT used for compilation — only for reporting what CATEGORY an unknown op
-// belongs to. Triton can use this because it generates custom kernels; oneDNN
-// uses pre-built kernels and can only execute ops it specifically knows about.
-
-dg::op::kind OneDnnGraphBackend::mapOpKindFromTraits(const std::string& opName) {
-  // Diagnostic-only: returns what oneDNN kind we WOULD map to based on traits.
-  // Caller must not use this for actual compilation decisions.
-  using sd::ops::OpTraits;
-
-  auto* op = sd::ops::OpRegistrator::getInstance().getOperation(opName.c_str());
-  if (op == nullptr) return dg::op::kind::LastSymbol;
-  auto* desc = op->getOpDescriptor();
-  if (desc == nullptr) return dg::op::kind::LastSymbol;
-  uint32_t traits = desc->getTraits();
-  if (traits == 0) return dg::op::kind::LastSymbol;
-
-  if (traits & OpTraits::OP_TRAIT_MATMUL)              return dg::op::kind::MatMul;
-  if (traits & OpTraits::OP_TRAIT_NORMALIZATION)        return dg::op::kind::LayerNorm;
-  if (traits & OpTraits::OP_TRAIT_ACTIVATION)           return dg::op::kind::ReLU;
-  if (traits & OpTraits::OP_TRAIT_IDENTITY)            return dg::op::kind::StaticReshape;
-  if (traits & OpTraits::OP_TRAIT_CAST)                return dg::op::kind::TypeCast;
-  if (traits & OpTraits::OP_TRAIT_REDUCTION)           return dg::op::kind::ReduceSum;
-
-  return dg::op::kind::LastSymbol;
+  return request.executionMode == GraphExecutionMode::GEM_ONEDNN ? 1000 : 500;
 }
 
 // ─── Data type mapping ──────────────────────────────────────────────────────
@@ -267,30 +135,10 @@ dg::logical_tensor::data_type OneDnnGraphBackend::mapDataType(DataType dt) {
 
 // ─── Segment fusibility check ───────────────────────────────────────────────
 
-// Anchor ops: compute-intensive ops where oneDNN provides real optimization.
-// A segment is only worth compiling if it contains at least one anchor.
-// Elementwise ops alone are NOT anchors — they're only useful as post-ops
-// fused INTO an anchor (e.g., matmul + relu).
-static bool isAnchorOp(dg::op::kind kind) {
-  switch (kind) {
-    case dg::op::kind::MatMul:
-    case dg::op::kind::Convolution:
-    case dg::op::kind::SoftMax:
-    case dg::op::kind::LogSoftmax:
-    case dg::op::kind::LayerNorm:
-    case dg::op::kind::BatchNormInference:
-    case dg::op::kind::GroupNorm:
-    case dg::op::kind::AvgPool:
-    case dg::op::kind::MaxPool:
-    case dg::op::kind::ReduceSum:
-    case dg::op::kind::ReduceMean:
-    case dg::op::kind::ReduceMin:
-    case dg::op::kind::ReduceMax:
-    case dg::op::kind::ReduceProd:
-      return true;
-    default:
-      return false;
-  }
+bool OneDnnGraphBackend::canResolveSlot(const GraphBackendRequest& request,
+                                        NativeSlot* slots, int slotIndex) {
+  return slots != nullptr && slotIndex >= 0 && isResolvable(request) &&
+         isAvailable() && findOneDnnGraphEmitter(slots[slotIndex]) != nullptr;
 }
 
 bool OneDnnGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
@@ -302,25 +150,13 @@ bool OneDnnGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
   int mappableOps = 0;
   int anchorOps = 0;
   int totalOps = end - start + 1;
-  bool hasCast = false;
 
   for (int i = start; i <= end; i++) {
-    const auto& opName = slots[i].ident.opName;
-    auto kind = mapOpKind(opName);
-    if (kind != dg::op::kind::LastSymbol) {
+    const auto* emitter = findOneDnnGraphEmitter(slots[i]);
+    if (emitter != nullptr) {
       mappableOps++;
-      if (isAnchorOp(kind)) anchorOps++;
+      if (emitter->anchor) anchorOps++;
     }
-    // OneDNN Graph's add_op fails on TypeCast ops — skip segments containing
-    // cast to avoid wasted compile attempts that always cascade to OpenVINO.
-    if (kind == dg::op::kind::TypeCast) hasCast = true;
-  }
-
-  if (hasCast) {
-    DSP_DIAG(SEGMENT, "OneDnnGraphBackend::canFuseSegment [%d-%d]: contains cast ops "
-             "— skipping (oneDNN add_op fails on TypeCast)",
-             start, end);
-    return false;
   }
 
   // Require at least one anchor op. A segment of pure elementwise ops
@@ -388,87 +224,79 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
     return nullptr;
   };
 
-  // Helper: check if a slot is fully mappable to oneDNN.
-  // An op is mappable only if:
-  //   (1) its name maps to an oneDNN kind
-  //   (2) all its input/output arrays have data types supported by oneDNN Graph API
-  //   (3) for multi-input ops, all inputs have the SAME data type (oneDNN binary
-  //       ops reject mixed types like f32+f16; the partitioner marks such ops as
-  //       unsupported, which blocks fusion of the entire connected sub-graph)
-  auto isSlotMappable = [&](int s) -> bool {
-    if (mapOpKind(slots[s].ident.opName) == dg::op::kind::LastSymbol) return false;
-
-    // Pow semantic check: oneDNN Pow takes 1 input + scalar beta attribute.
-    // nd4j pow takes 2 tensor inputs (base, exponent). Only mappable if the
-    // exponent (input[1]) is a scalar constant whose value we can extract.
-    auto kind = mapOpKind(slots[s].ident.opName);
-    if (kind == dg::op::kind::Pow && slots[s].wiring.numInputs >= 2) {
-      NDArray* expArr = resolveWiringArray(slots[s].wiring.inputSourceIndices[1]);
-      if (expArr == nullptr || !expArr->isScalar()) {
-        DSP_DIAG(COMPILE, "OneDnnGraphBackend: slot %d op '%s' has non-scalar exponent — "
-                 "routing to native (oneDNN Pow requires scalar beta attribute)",
-                 s, slots[s].ident.opName.c_str());
-        return false;
-      }
-    }
-
-    // Collect input data types, checking for unsupported types
-    dg::logical_tensor::data_type firstInputDtype = dg::logical_tensor::data_type::undef;
-    for (int i = 0; i < slots[s].wiring.numInputs; i++) {
-      NDArray* arr = resolveWiringArray(slots[s].wiring.inputSourceIndices[i]);
-      if (arr == nullptr) continue;
-      auto dt = mapDataType(arr->dataType());
-      if (dt == dg::logical_tensor::data_type::undef) {
-        DSP_DIAG(COMPILE, "OneDnnGraphBackend: slot %d op '%s' input %d has unsupported dtype %d",
-                 s, slots[s].ident.opName.c_str(), i, static_cast<int>(arr->dataType()));
-        return false;
-      }
-      if (firstInputDtype == dg::logical_tensor::data_type::undef) {
-        firstInputDtype = dt;
-      } else if (dt != firstInputDtype && slots[s].wiring.numInputs > 1) {
-        // Mixed input types: oneDNN binary ops require matching types.
-        // Route to native execution instead of building a graph that will
-        // produce unsupported partitions and block fusion.
-        DSP_DIAG(COMPILE, "OneDnnGraphBackend: slot %d op '%s' has mixed input types "
-                 "(input 0 dtype=%d, input %d dtype=%d) — routing to native",
-                 s, slots[s].ident.opName.c_str(),
-                 static_cast<int>(firstInputDtype), i, static_cast<int>(dt));
-        return false;
-      }
-    }
-
-    // Check output data types
-    for (int i = 0; i < slots[s].wiring.numOutputs; i++) {
-      int outIdx = slots[s].wiring.outputSlotIndices[i];
-      if (outIdx >= 0 && outIdx < totalOutputSlots) {
-        if (outputSlots[outIdx] == nullptr) {
-          // Output array is null (e.g. in-place-fused VIEW_OF_SLOT at compile time).
-          // For cast ops this is fatal: buildGraph() would create a logical_tensor
-          // with unknown shape and oneDNN's add_op() would throw.  Route to native.
-          if (kind == dg::op::kind::TypeCast) {
-            DSP_DIAG(COMPILE, "OneDnnGraphBackend: slot %d op '%s' output %d is nullptr "
-                     "— routing cast to native (cannot build logical_tensor without shape)",
-                     s, slots[s].ident.opName.c_str(), i);
-            return false;
-          }
-          continue;
-        }
-        if (mapDataType(outputSlots[outIdx]->dataType()) == dg::logical_tensor::data_type::undef) {
-          DSP_DIAG(COMPILE, "OneDnnGraphBackend: slot %d op '%s' output %d has unsupported dtype %d",
-                   s, slots[s].ident.opName.c_str(), i, static_cast<int>(outputSlots[outIdx]->dataType()));
-          return false;
-        }
-      }
-    }
-    return true;
-  };
-
-  // Determine if this is a pure or mixed segment
+  // Resolve and validate every slot through the emitter that owns its complete
+  // oneDNN contract. Names are diagnostic only; descriptor identity selects the
+  // lowering and the lowering decides exact dtype/layout/argument support.
   int totalOps = endSlot - startSlot + 1;
+  std::vector<bool> slotMappable(static_cast<size_t>(totalOps), false);
   int mappableOps = 0;
   for (int s = startSlot; s <= endSlot; s++) {
-    if (isSlotMappable(s)) mappableOps++;
+    const auto* emitter = findOneDnnGraphEmitter(slots[s]);
+    if (emitter == nullptr) continue;
+    std::vector<NDArray*> inputs;
+    std::vector<NDArray*> outputs;
+    for (int input = 0; input < slots[s].wiring.numInputs; ++input) {
+      inputs.push_back(resolveWiringArray(slots[s].wiring.inputSourceIndices[input]));
+    }
+    for (int output = 0; output < slots[s].wiring.numOutputs; ++output) {
+      const int outputSlot = slots[s].wiring.outputSlotIndices[output];
+      outputs.push_back(outputSlot >= 0 && outputSlot < totalOutputSlots
+                            ? outputSlots[outputSlot]
+                            : nullptr);
+    }
+    OneDnnLoweredOp validationOp(0, emitter->kind, slots[s].ident.opName);
+    std::string rejectionReason;
+    if (!emitter->lower({slots[s], inputs, outputs}, validationOp,
+                        rejectionReason)) {
+      DSP_DIAG(COMPILE,
+               "OneDnnGraphBackend: slot %d op '%s' rejected by emitter: %s",
+               s, slots[s].ident.opName.c_str(), rejectionReason.c_str());
+      continue;
+    }
+    slotMappable[static_cast<size_t>(s - startSlot)] = true;
+    ++mappableOps;
   }
+  // Framework elementwise fusion is an execution unit, not independent slot
+  // metadata.  A native tail intentionally skips because its head executes the
+  // complete chain.  Splitting a chain between oneDNN and a native range would
+  // therefore leave the tail output at its warmup value.  Keep every chain
+  // atomic: lower all of its slots, or route its complete interval through the
+  // ordered native executor.
+  for (int s = startSlot; s <= endSlot; ++s) {
+    const FusedChain& chain = slots[s].fusedChain;
+    if (!chain.isFusedChainHead || chain.fusedChainLength < 2) continue;
+
+    bool completeAndMappable = true;
+    for (int chainIndex = 0; chainIndex < chain.fusedChainLength; ++chainIndex) {
+      const int chainSlot = chain.fusedChainSlots[chainIndex];
+      if (chainSlot < startSlot || chainSlot > endSlot) {
+        DSP_DIAG(COMPILE,
+                 "OneDnnGraphBackend: fused chain head=%d crosses segment "
+                 "[%d-%d] at slot=%d; rejecting partial-chain lowering",
+                 s, startSlot, endSlot, chainSlot);
+        return result;
+      }
+      if (!slotMappable[static_cast<size_t>(chainSlot - startSlot)]) {
+        completeAndMappable = false;
+        break;
+      }
+    }
+    if (completeAndMappable) continue;
+
+    DSP_DIAG(COMPILE,
+             "OneDnnGraphBackend: fused chain head=%d length=%d is not fully "
+             "lowerable; assigning the complete chain to native execution",
+             s, chain.fusedChainLength);
+    for (int chainIndex = 0; chainIndex < chain.fusedChainLength; ++chainIndex) {
+      const int chainSlot = chain.fusedChainSlots[chainIndex];
+      if (chainSlot >= startSlot && chainSlot <= endSlot) {
+        slotMappable[static_cast<size_t>(chainSlot - startSlot)] = false;
+      }
+    }
+  }
+
+  mappableOps = static_cast<int>(std::count(
+      slotMappable.begin(), slotMappable.end(), true));
   result.isMixedSegment = (mappableOps != totalOps);
 
   DSP_DIAG(COMPILE, "OneDnnGraphBackend::buildGraph [%d-%d]: totalOps=%d mappable=%d mixed=%s",
@@ -485,9 +313,10 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
   {
     int cur = startSlot;
     while (cur <= endSlot) {
-      bool curMappable = isSlotMappable(cur);
+      bool curMappable = slotMappable[static_cast<size_t>(cur - startSlot)];
       int runEnd = cur;
-      while (runEnd + 1 <= endSlot && isSlotMappable(runEnd + 1) == curMappable) {
+      while (runEnd + 1 <= endSlot &&
+             slotMappable[static_cast<size_t>(runEnd + 1 - startSlot)] == curMappable) {
         runEnd++;
       }
       subRanges.push_back({cur, runEnd, !curMappable});
@@ -540,20 +369,26 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
       std::unordered_map<int, size_t> extToTensorId;
       std::unordered_map<size_t, dg::logical_tensor> logicalTensors;
 
-      // Helper: create a logical tensor with the right layout.
-      // - rank >= 2: layout_type::strided (gives oneDNN freedom to optimize)
-      // - rank == 1: explicit strides {1} (oneDNN crashes on 1D + layout_type::strided)
-      // - rank == 0: layout_type::strided (scalars work fine)
-      // Actual strides are provided only at execution time (via dg::tensor constructor).
-      // This matches the working pattern in sdpa.cpp.
+      // Compile against the exact framework strides. The emitter has already
+      // rejected unsupported views, so runtime binding must match this contract.
       auto makeLT = [](size_t id, dg::logical_tensor::data_type dtype,
-                       const std::vector<int64_t>& shape) -> dg::logical_tensor {
-        if (shape.size() == 1) {
-          // oneDNN Graph API bug: 1D tensors with layout_type::strided throw
-          // "could not create logical_tensor with property". Use explicit strides.
-          return dg::logical_tensor(id, dtype, shape, std::vector<int64_t>{1});
+                       NDArray* array) -> dg::logical_tensor {
+        if (array == nullptr || dtype == dg::logical_tensor::data_type::undef) {
+          THROW_EXCEPTION("OneDnnGraphBackend: missing exact tensor descriptor");
         }
-        return dg::logical_tensor(id, dtype, shape, dg::logical_tensor::layout_type::strided);
+        const int rank = array->rankOf();
+        if (rank == 0) {
+          return dg::logical_tensor(
+              id, dtype, std::vector<int64_t>{},
+              dg::logical_tensor::layout_type::strided);
+        }
+        std::vector<int64_t> dimensions(rank);
+        std::vector<int64_t> strides(rank);
+        for (int dimension = 0; dimension < rank; ++dimension) {
+          dimensions[dimension] = array->sizeAt(dimension);
+          strides[dimension] = array->strideAt(dimension);
+        }
+        return dg::logical_tensor(id, dtype, dimensions, strides);
       };
 
       auto getExternalInputTensor = [&](int extIdx) -> dg::logical_tensor {
@@ -565,11 +400,7 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
 
         size_t id = tensorId++;
         auto dtype = mapDataType(arr->dataType());
-        if (dtype == dg::logical_tensor::data_type::undef) dtype = dg::logical_tensor::data_type::f32;
-        int rank = arr->rankOf();
-        std::vector<int64_t> shape(rank);
-        for (int d = 0; d < rank; d++) { shape[d] = arr->sizeAt(d); }
-        auto lt = makeLT(id, dtype, shape);
+        auto lt = makeLT(id, dtype, arr);
         logicalTensors.emplace(id, lt);
         extToTensorId[extIdx] = id;
         result.tensorIdToSlotMap[id] = -(extIdx + 1);
@@ -581,17 +412,8 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
         if (it != slotToTensorId.end()) return logicalTensors.at(it->second);
 
         size_t id = tensorId++;
-        auto dtype = mapDataType(arr != nullptr ? arr->dataType() : DataType::FLOAT32);
-        if (dtype == dg::logical_tensor::data_type::undef) dtype = dg::logical_tensor::data_type::f32;
-        dg::logical_tensor lt;
-        if (arr != nullptr) {
-          int rank = arr->rankOf();
-          std::vector<int64_t> shape(rank);
-          for (int d = 0; d < rank; d++) { shape[d] = arr->sizeAt(d); }
-          lt = makeLT(id, dtype, shape);
-        } else {
-          lt = dg::logical_tensor(id, dtype, dg::logical_tensor::layout_type::strided);
-        }
+        auto dtype = mapDataType(arr != nullptr ? arr->dataType() : DataType::INHERIT);
+        dg::logical_tensor lt = makeLT(id, dtype, arr);
         logicalTensors.emplace(id, lt);
         slotToTensorId[slotIdx] = id;
         result.tensorIdToSlotMap[id] = slotIdx;
@@ -605,96 +427,41 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
 
       for (int s = sr.first; s <= sr.last; s++) {
         NativeSlot& slot = slots[s];
-        auto kind = mapOpKind(slot.ident.opName);
-        // All slots in this sub-range are mappable — kind != LastSymbol guaranteed
-
+        const auto* emitter = findOneDnnGraphEmitter(slot);
+        if (emitter == nullptr) return result;
         size_t opId = tensorId++;
         opIdToSlot[opId] = s;
-        dg::op dgOp(opId, kind, slot.ident.opName);
-
-        // Set op-specific attributes (same as before)
-        if (kind == dg::op::kind::MatMul) {
-          bool transposeA = (slot.args.numIArgs > 0 && slot.args.iArgs[0] != 0);
-          bool transposeB = (slot.args.numIArgs > 1 && slot.args.iArgs[1] != 0);
-          dgOp.set_attr<bool>(dg::op::attr::transpose_a, transposeA);
-          dgOp.set_attr<bool>(dg::op::attr::transpose_b, transposeB);
-        } else if (kind == dg::op::kind::SoftMax || kind == dg::op::kind::LogSoftmax) {
-          int64_t axis = -1;
-          if (slot.args.numIArgs > 0) axis = static_cast<int64_t>(slot.args.iArgs[0]);
-          dgOp.set_attr<int64_t>(dg::op::attr::axis, axis);
-        } else if (kind == dg::op::kind::Concat) {
-          int64_t axis = 0;
-          if (slot.args.numIArgs > 0) axis = static_cast<int64_t>(slot.args.iArgs[0]);
-          dgOp.set_attr<int64_t>(dg::op::attr::axis, axis);
-        } else if (kind == dg::op::kind::Elu) {
-          float alpha = 1.0f;
-          if (slot.args.numTArgs > 0) alpha = static_cast<float>(slot.args.tArgs[0]);
-          dgOp.set_attr<float>(dg::op::attr::alpha, alpha);
-        } else if (kind == dg::op::kind::Clamp) {
-          float minVal = -std::numeric_limits<float>::infinity();
-          float maxVal = std::numeric_limits<float>::infinity();
-          if (slot.args.numTArgs > 0) minVal = static_cast<float>(slot.args.tArgs[0]);
-          if (slot.args.numTArgs > 1) maxVal = static_cast<float>(slot.args.tArgs[1]);
-          dgOp.set_attr<float>(dg::op::attr::min, minVal);
-          dgOp.set_attr<float>(dg::op::attr::max, maxVal);
-        } else if (kind == dg::op::kind::Pow) {
-          // oneDNN Pow: x^beta (single input, scalar beta attribute).
-          // nd4j pow has 2 tensor inputs — isSlotMappable verified input[1] is scalar.
-          // Extract its value as the beta attribute.
-          NDArray* expArr = resolveWiringArray(slot.wiring.inputSourceIndices[1]);
-          float beta = expArr->e<float>(0);
-          dgOp.set_attr<float>(dg::op::attr::beta, beta);
-        } else if (kind == dg::op::kind::LeakyReLU) {
-          float alpha = 0.01f;
-          if (slot.args.numTArgs > 0) alpha = static_cast<float>(slot.args.tArgs[0]);
-          dgOp.set_attr<float>(dg::op::attr::alpha, alpha);
-        } else if (kind == dg::op::kind::HardSigmoid) {
-          float alpha = 1.0f / 6.0f;
-          float beta = 0.5f;
-          if (slot.args.numTArgs > 0) alpha = static_cast<float>(slot.args.tArgs[0]);
-          if (slot.args.numTArgs > 1) beta = static_cast<float>(slot.args.tArgs[1]);
-          dgOp.set_attr<float>(dg::op::attr::alpha, alpha);
-          dgOp.set_attr<float>(dg::op::attr::beta, beta);
-        } else if (kind == dg::op::kind::BatchNormInference) {
-          float epsilon = 1e-5f;
-          if (slot.args.numTArgs > 0) epsilon = static_cast<float>(slot.args.tArgs[0]);
-          dgOp.set_attr<float>(dg::op::attr::epsilon, epsilon);
-        } else if (kind == dg::op::kind::GroupNorm) {
-          int64_t groups = 1;
-          if (slot.args.numIArgs > 0) groups = static_cast<int64_t>(slot.args.iArgs[0]);
-          dgOp.set_attr<int64_t>(dg::op::attr::groups, groups);
-          float epsilon = 1e-5f;
-          if (slot.args.numTArgs > 0) epsilon = static_cast<float>(slot.args.tArgs[0]);
-          dgOp.set_attr<float>(dg::op::attr::epsilon, epsilon);
-        } else if (kind == dg::op::kind::LayerNorm) {
-          float epsilon = 1e-5f;
-          if (slot.args.numTArgs > 0) epsilon = static_cast<float>(slot.args.tArgs[0]);
-          dgOp.set_attr<float>(dg::op::attr::epsilon, epsilon);
-          dgOp.set_attr<bool>(dg::op::attr::keep_stats, false);
-        } else if (kind == dg::op::kind::ReduceSum || kind == dg::op::kind::ReduceMean ||
-                   kind == dg::op::kind::ReduceMin || kind == dg::op::kind::ReduceMax ||
-                   kind == dg::op::kind::ReduceProd) {
-          if (slot.args.numIArgs > 0) {
-            std::vector<int64_t> axes(slot.args.numIArgs);
-            for (int i = 0; i < slot.args.numIArgs; i++) {
-              axes[i] = static_cast<int64_t>(slot.args.iArgs[i]);
-            }
-            dgOp.set_attr<std::vector<int64_t>>(dg::op::attr::axes, axes);
-          }
-          dgOp.set_attr<bool>(dg::op::attr::keep_dims, false);
-          if (slot.args.numBArgs > 0 && slot.args.bArgs[0]) {
-            dgOp.set_attr<bool>(dg::op::attr::keep_dims, true);
-          }
+        std::vector<NDArray*> frameworkInputs;
+        std::vector<NDArray*> frameworkOutputs;
+        for (int input = 0; input < slot.wiring.numInputs; ++input) {
+          frameworkInputs.push_back(
+              resolveWiringArray(slot.wiring.inputSourceIndices[input]));
+        }
+        for (int output = 0; output < slot.wiring.numOutputs; ++output) {
+          const int outputSlot = slot.wiring.outputSlotIndices[output];
+          frameworkOutputs.push_back(
+              outputSlot >= 0 && outputSlot < totalOutputSlots
+                  ? outputSlots[outputSlot]
+                  : nullptr);
+        }
+        OneDnnLoweredOp lowered(opId, emitter->kind, slot.ident.opName);
+        std::string rejectionReason;
+        if (!emitter->lower({slot, frameworkInputs, frameworkOutputs}, lowered,
+                            rejectionReason)) {
+          DSP_DIAG(COMPILE,
+                   "OneDnnGraphBackend: emitter changed admission for slot %d "
+                   "op '%s': %s",
+                   s, slot.ident.opName.c_str(), rejectionReason.c_str());
+          return result;
         }
 
-        // Wire inputs
+        // Wire inputs in the exact order declared by the emitter.
         std::vector<dg::logical_tensor> inputTensors;
-        for (int i = 0; i < slot.wiring.numInputs; i++) {
-          // Pow: skip second input — exponent is set as beta attribute, not a tensor input.
-          // oneDNN Pow expects exactly 1 input (the base).
-          if (kind == dg::op::kind::Pow && i == 1) continue;
-
-          int srcIdx = slot.wiring.inputSourceIndices[i];
+        for (int frameworkInput : lowered.frameworkInputOrder) {
+          if (frameworkInput < 0 || frameworkInput >= slot.wiring.numInputs) {
+            return result;
+          }
+          int srcIdx = slot.wiring.inputSourceIndices[frameworkInput];
           if (srcIdx >= 0) {
             NDArray* arr = (srcIdx < totalOutputSlots) ? outputSlots[srcIdx] : nullptr;
             inputTensors.push_back(getSlotOutputTensor(srcIdx, arr));
@@ -705,7 +472,7 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
             }
           }
         }
-        dgOp.add_inputs(inputTensors);
+        lowered.operation.add_inputs(inputTensors);
 
         // Wire outputs
         std::vector<dg::logical_tensor> outputTensors;
@@ -715,7 +482,7 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
                              ? outputSlots[outSlotIdx] : nullptr;
           outputTensors.push_back(getSlotOutputTensor(outSlotIdx, arr));
         }
-        dgOp.add_outputs(outputTensors);
+        lowered.operation.add_outputs(outputTensors);
 
         // Dump detailed logical tensor info for debugging partition support
         for (size_t ti = 0; ti < inputTensors.size(); ti++) {
@@ -747,12 +514,12 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
                    static_cast<int>(dims.size()), shapeStr.c_str());
         }
         DSP_DIAG(COMPILE, "  slot %d op '%s' kind=%d numInputs=%d numOutputs=%d opId=%zu",
-                 s, slot.ident.opName.c_str(), static_cast<int>(kind),
+                 s, slot.ident.opName.c_str(), static_cast<int>(emitter->kind),
                  static_cast<int>(inputTensors.size()), static_cast<int>(outputTensors.size()),
                  opId);
 
         try {
-          g.add_op(dgOp);
+          g.add_op(lowered.operation);
           opsAdded++;
         } catch (const std::exception& e) {
           DSP_DIAG(COMPILE, "OneDNN Graph: add_op failed for slot %d op '%s': %s",
@@ -779,110 +546,10 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
         continue;
       }
 
-      // ── Clone diagnostic: if first partition unsupported, reproduce from scratch ─
-      // Build a completely independent graph with the same ops to determine
-      // whether the issue is in our construction or the oneDNN library state.
-      if (!partitions.empty() && !partitions[0].is_supported()) {
-        // -fno-threadsafe-statics: use std::call_once for thread-safe initialization.
-        static std::once_flag cloneDiagFlag;
-        std::call_once(cloneDiagFlag, [&]() {
-          try {
-            // Rebuild same graph from scratch using local IDs
-            dg::graph cloneG(dnnl::engine::kind::cpu);
-            size_t cloneId = 80000;
-            std::unordered_map<size_t, dg::logical_tensor> cloneLTs;
-            std::unordered_map<size_t, size_t> origToClone;  // orig tensor ID -> clone ID
-
-            for (int s2 = sr.first; s2 <= sr.last; s2++) {
-              NativeSlot& slot2 = slots[s2];
-              auto kind2 = mapOpKind(slot2.ident.opName);
-              if (kind2 == dg::op::kind::LastSymbol) continue;
-              size_t cloneOpId = cloneId++;
-              dg::op cloneOp(cloneOpId, kind2, "clone_" + slot2.ident.opName);
-              if (kind2 == dg::op::kind::MatMul) {
-                cloneOp.set_attr<bool>(dg::op::attr::transpose_a, false);
-                cloneOp.set_attr<bool>(dg::op::attr::transpose_b, false);
-              }
-              // Clone inputs
-              std::vector<dg::logical_tensor> cloneInputs;
-              for (int ci = 0; ci < slot2.wiring.numInputs; ci++) {
-                int srcIdx = slot2.wiring.inputSourceIndices[ci];
-                NDArray* arr = resolveWiringArray(srcIdx);
-                if (!arr) continue;
-                // Check if we already created a clone LT for this source
-                size_t origId = 0;
-                auto sit = slotToTensorId.find(srcIdx);
-                if (sit != slotToTensorId.end()) origId = sit->second;
-                else {
-                  auto eit = extToTensorId.find(-(srcIdx + 1));
-                  if (eit != extToTensorId.end()) origId = eit->second;
-                  else origId = srcIdx + 50000;
-                }
-                if (origToClone.find(origId) == origToClone.end()) {
-                  size_t cid = cloneId++;
-                  origToClone[origId] = cid;
-                  int rank = arr->rankOf();
-                  std::vector<int64_t> sh(rank);
-                  for (int d = 0; d < rank; d++) sh[d] = arr->sizeAt(d);
-                  auto dt = mapDataType(arr->dataType());
-                  if (dt == dg::logical_tensor::data_type::undef) dt = dg::logical_tensor::data_type::f32;
-                  cloneLTs[cid] = makeLT(cid, dt, sh);
-                }
-                cloneInputs.push_back(cloneLTs[origToClone[origId]]);
-              }
-              cloneOp.add_inputs(cloneInputs);
-              // Clone outputs
-              std::vector<dg::logical_tensor> cloneOutputs;
-              for (int co = 0; co < slot2.wiring.numOutputs; co++) {
-                int outIdx = slot2.wiring.outputSlotIndices[co];
-                NDArray* outArr = (outIdx >= 0 && outIdx < totalOutputSlots) ? outputSlots[outIdx] : nullptr;
-                size_t origOutId = 0;
-                auto osit = slotToTensorId.find(outIdx);
-                if (osit != slotToTensorId.end()) origOutId = osit->second;
-                else origOutId = outIdx + 60000;
-                if (origToClone.find(origOutId) == origToClone.end()) {
-                  size_t cid = cloneId++;
-                  origToClone[origOutId] = cid;
-                  if (outArr) {
-                    int rank = outArr->rankOf();
-                    std::vector<int64_t> sh(rank);
-                    for (int d = 0; d < rank; d++) sh[d] = outArr->sizeAt(d);
-                    auto dt = mapDataType(outArr->dataType());
-                    if (dt == dg::logical_tensor::data_type::undef) dt = dg::logical_tensor::data_type::f32;
-                    cloneLTs[cid] = makeLT(cid, dt, sh);
-                  } else {
-                    cloneLTs[cid] = dg::logical_tensor(cid, dg::logical_tensor::data_type::f32,
-                                                        dg::logical_tensor::layout_type::strided);
-                  }
-                }
-                cloneOutputs.push_back(cloneLTs[origToClone[origOutId]]);
-              }
-              cloneOp.add_outputs(cloneOutputs);
-              cloneG.add_op(cloneOp);
-            }
-            cloneG.finalize();
-            auto cloneParts = cloneG.get_partitions();
-            DSP_DIAG(COMPILE, "OneDNN CLONE-DIAGNOSTIC: island [%d-%d] clone has %d partitions",
-                     sr.first, sr.last, static_cast<int>(cloneParts.size()));
-            for (size_t cp = 0; cp < cloneParts.size(); cp++) {
-              DSP_DIAG(COMPILE, "  clone partition[%d] supported=%d numOps=%d",
-                       static_cast<int>(cp), cloneParts[cp].is_supported() ? 1 : 0,
-                       static_cast<int>(cloneParts[cp].get_ops_num()));
-            }
-          } catch (const std::exception& e) {
-            DSP_DIAG(COMPILE, "OneDNN CLONE-DIAGNOSTIC: EXCEPTION: %s", e.what());
-          }
-        });
-      }
-
-      // ── Process partitions: compile supported, convert unsupported to native ─
-      // oneDNN's partitioner may split our island into some supported fused
-      // partitions and some unsupported ones. Instead of failing the entire
-      // island on any unsupported partition, we convert those ops to native
-      // ranges and interleave with the compiled partitions.
-      //
-      // To maintain correct execution order, we sort all partition entries
-      // (both supported and unsupported) by their minimum slot index.
+      // Every catalog-admitted operation must be accepted by oneDNN. An
+      // unsupported partition means the catalog claim is wrong for this concrete
+      // contract, so fail lowering before execution begins and let the resolver
+      // choose the next backend. Never introduce an unplanned runtime fallback.
 
       struct PartitionSlotInfo {
         int minSlot, maxSlot;
@@ -893,7 +560,7 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
       };
       std::vector<PartitionSlotInfo> partInfos;
 
-      int supportedCount = 0, unsupportedCount = 0;
+      int supportedCount = 0;
       for (size_t partIdx = 0; partIdx < partitions.size(); partIdx++) {
         auto& partition = partitions[partIdx];
         PartitionSlotInfo info;
@@ -917,12 +584,18 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
                  opIds.empty() ? "" : std::to_string(opIds[0]).c_str(),
                  info.minSlot, info.maxSlot);
         if (info.minSlot == INT_MAX) {
-          DSP_DIAG(COMPILE, "  partition[%d] SKIPPED: no slot mapping for any opId", static_cast<int>(partIdx));
-          continue;  // No slot mapping found
+          DSP_DIAG(COMPILE, "  partition[%d] rejected: no slot mapping for any opId", static_cast<int>(partIdx));
+          return result;
         }
 
-        if (info.supported) {
-          supportedCount++;
+        if (!info.supported) {
+          DSP_DIAG(COMPILE,
+                   "OneDnnGraphBackend: catalog-admitted island [%d-%d] produced "
+                   "unsupported partition [%d-%d]",
+                   sr.first, sr.last, info.minSlot, info.maxSlot);
+          return result;
+        }
+        supportedCount++;
           auto inPorts = partition.get_input_ports();
           auto outPorts = partition.get_output_ports();
           for (auto& lt : inPorts) {
@@ -946,14 +619,8 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
           } catch (const std::exception& e) {
             DSP_DIAG(COMPILE, "OneDnnGraphBackend: island [%d-%d] partition [%d-%d] compile failed: %s",
                      sr.first, sr.last, info.minSlot, info.maxSlot, e.what());
-            // Treat compile failure as unsupported — convert to native range
-            info.supported = false;
-            supportedCount--;
-            unsupportedCount++;
+            return result;
           }
-        } else {
-          unsupportedCount++;
-        }
 
         partInfos.push_back(std::move(info));
       }
@@ -964,37 +631,17 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
                   return a.minSlot < b.minSlot;
                 });
 
-      // Build interleaved execution schedule:
-      // - Supported partitions → OneDNN execution
-      // - Unsupported partitions → native slot ranges
-      // - Merge adjacent unsupported ranges for efficiency
+      // Build the oneDNN portion of the interleaved schedule. Native ranges in
+      // this schedule came only from slots absent from the exact emitter catalog.
       for (auto& info : partInfos) {
         if (info.supported && info.partitionIdx >= 0) {
           result.executionSchedule.push_back({false, info.partitionIdx});
         } else {
-          // Convert to native range
-          int nativeIdx = static_cast<int>(result.nativeRanges.size());
-          result.nativeRanges.push_back({info.minSlot, info.maxSlot});
-          result.executionSchedule.push_back({true, nativeIdx});
-          result.isMixedSegment = true;  // Island became mixed after partition rejection
-
-          // Update audit: these ops are now natively handled
-          for (auto& audit : result.compilationAudit) {
-            if (audit.slotIndex >= info.minSlot && audit.slotIndex <= info.maxSlot) {
-              audit.wasCompiled = false;
-              audit.isNativeHandled = true;
-              audit.reason = "oneDNN partition unsupported — executed natively";
-            }
-          }
-          DSP_DIAG(COMPILE, "OneDnnGraphBackend: island [%d-%d] unsupported partition [%d-%d] "
-                   "converted to native range",
-                   sr.first, sr.last, info.minSlot, info.maxSlot);
+          return result;
         }
       }
-      DSP_DIAG(COMPILE, "OneDnnGraphBackend: island [%d-%d] compiled %d/%d partitions "
-               "(%d converted to native)",
-               sr.first, sr.last, supportedCount, supportedCount + unsupportedCount,
-               unsupportedCount);
+      DSP_DIAG(COMPILE, "OneDnnGraphBackend: island [%d-%d] compiled %d partitions",
+               sr.first, sr.last, supportedCount);
 
     } catch (const std::exception& e) {
       DSP_DIAG(COMPILE, "OneDnnGraphBackend: island [%d-%d] build failed: %s",
@@ -1026,6 +673,30 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
 // ─── Compile segment ────────────────────────────────────────────────────────
 
 bool OneDnnGraphBackend::compileSegment(
+    const GraphBackendRequest& request, GraphSegment& seg, NativeSlot* slots,
+    NDArray** externalInputs, int numExternalInputs,
+    NDArray** outputSlots, int totalOutputSlots, LongType shapeKey,
+    int totalSlots, int* requestedOutputSlotIndices,
+    int numRequestedOutputs) {
+  if (!compileSegment(seg, slots, externalInputs, numExternalInputs,
+                      outputSlots, totalOutputSlots, shapeKey, totalSlots,
+                      requestedOutputSlotIndices, numRequestedOutputs)) {
+    return false;
+  }
+  if (request.executionMode != GraphExecutionMode::GEM_ONEDNN) return true;
+  auto compiled = std::static_pointer_cast<CompiledSegment>(
+      seg.compiledGraphBackendArtifact);
+  std::lock_guard<std::mutex> executionLock(*compiled->executionMtx);
+  if (compiled->nativeRanges.empty()) return true;
+  DSP_DIAG(COMPILE,
+           "OneDnnGraphBackend: strict mode rejected seg[%d-%d]: %d native ranges",
+           seg.def.startSlot, seg.def.endSlot,
+           static_cast<int>(compiled->nativeRanges.size()));
+  seg.clearCompiledGraphBackendArtifact();
+  return false;
+}
+
+bool OneDnnGraphBackend::compileSegment(
     GraphSegment& seg, NativeSlot* slots,
     NDArray** externalInputs, int numExternalInputs,
     NDArray** outputSlots, int totalOutputSlots,
@@ -1034,49 +705,56 @@ bool OneDnnGraphBackend::compileSegment(
     int* requestedOutputSlotIndices,
     int numRequestedOutputs) {
 
-  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, shapeKey};
-
-  std::lock_guard<std::mutex> lock(cacheMtx_);
-
-  // Negative cache check: skip known-bad segment+shape combinations
-  // (mirrors Triton's failedCache_ pattern to avoid re-compiling failures)
-  if (failedCache_.count(key) > 0) {
-    DSP_DIAG(COMPILE, "OneDnnGraphBackend::compileSegment [%d-%d]: NEGATIVE cache HIT "
-             "(shapeKey=0x%llx) — skipping known-bad compilation",
-             seg.def.startSlot, seg.def.endSlot, (long long)shapeKey);
-    return false;
-  }
-
-  auto it = cache_.find(key);
-  if (it != cache_.end() && it->second.valid) {
-    DSP_DIAG(JIT, "OneDnnGraphBackend::compileSegment [%d-%d]: cache HIT (shapeKey=0x%llx)",
-             seg.def.startSlot, seg.def.endSlot, (long long)shapeKey);
-    return true;  // Already compiled for this shape
+  if (seg.compiledGraphBackendArtifactOwner == this &&
+      seg.compiledGraphBackendArtifactShapeKey == shapeKey &&
+      seg.compiledGraphBackendArtifact) {
+    auto existing = std::static_pointer_cast<CompiledSegment>(
+        seg.compiledGraphBackendArtifact);
+    std::lock_guard<std::mutex> registryLock(cacheMtx_);
+    std::lock_guard<std::mutex> executionLock(*existing->executionMtx);
+    if (existing->valid) {
+      lastCompilationAudit_ = existing->compilationAudit;
+      DSP_DIAG(JIT,
+               "OneDnnGraphBackend::compileSegment [%d-%d]: segment artifact HIT "
+               "(shapeKey=0x%llx)",
+               seg.def.startSlot, seg.def.endSlot, (long long)shapeKey);
+      return true;
+    }
   }
 
   DSP_DIAG(COMPILE, "OneDnnGraphBackend::compileSegment [%d-%d]: cache MISS, building graph (shapeKey=0x%llx)",
            seg.def.startSlot, seg.def.endSlot, (long long)shapeKey);
 
-  auto compiled = buildGraph(slots, seg.def.startSlot, seg.def.endSlot,
-                             externalInputs, numExternalInputs,
-                             outputSlots, totalOutputSlots);
-  compiled.shapeKey = shapeKey;
+  auto compiled = std::make_shared<CompiledSegment>(
+      buildGraph(slots, seg.def.startSlot, seg.def.endSlot,
+                 externalInputs, numExternalInputs,
+                 outputSlots, totalOutputSlots));
+  compiled->shapeKey = shapeKey;
 
-  // Store compilation audit for validation
-  lastCompilationAudit_ = compiled.compilationAudit;
+  {
+    std::lock_guard<std::mutex> registryLock(cacheMtx_);
+    lastCompilationAudit_ = compiled->compilationAudit;
+  }
 
-  if (compiled.valid) {
+  if (compiled->valid) {
     DSP_DIAG(COMPILE, "OneDnnGraphBackend::compileSegment [%d-%d]: SUCCESS partitions=%d",
-             seg.def.startSlot, seg.def.endSlot, (int)compiled.partitions.size());
-    // Clear negative cache entry if a previous shape failed but this one succeeds
-    failedCache_.erase(key);
-    cache_[key] = std::move(compiled);
+             seg.def.startSlot, seg.def.endSlot, (int)compiled->partitions.size());
+    {
+      std::lock_guard<std::mutex> registryLock(cacheMtx_);
+      compiledArtifacts_.erase(
+          std::remove_if(compiledArtifacts_.begin(), compiledArtifacts_.end(),
+                         [](const std::weak_ptr<CompiledSegment>& artifact) {
+                           return artifact.expired();
+                         }),
+          compiledArtifacts_.end());
+      compiledArtifacts_.push_back(compiled);
+    }
+    seg.compilationAudit = compiled->compilationAudit;
+    seg.setCompiledGraphBackendArtifact(this, shapeKey, compiled);
     return true;
   }
 
-  // Insert into negative cache so we don't re-attempt this segment+shape
-  failedCache_.insert(key);
-  DSP_DIAG(COMPILE, "OneDnnGraphBackend::compileSegment [%d-%d]: FAILED (added to negative cache)",
+  DSP_DIAG(COMPILE, "OneDnnGraphBackend::compileSegment [%d-%d]: FAILED",
            seg.def.startSlot, seg.def.endSlot);
   return false;
 }
@@ -1084,6 +762,7 @@ bool OneDnnGraphBackend::compileSegment(
 // ─── Compilation audit ──────────────────────────────────────────────────────
 
 std::vector<CompilationAuditEntry> OneDnnGraphBackend::getLastCompilationAudit() const {
+  std::lock_guard<std::mutex> lock(cacheMtx_);
   return lastCompilationAudit_;
 }
 
@@ -1095,18 +774,26 @@ Status OneDnnGraphBackend::executeSegment(
     NDArray** outputSlots, int totalOutputSlots,
     void* stream) {
 
-  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey};
-
-  CompiledSegment* compiled = nullptr;
-  {
-    std::lock_guard<std::mutex> lock(cacheMtx_);
-    auto it = cache_.find(key);
-    if (it == cache_.end() || !it->second.valid) {
-      DSP_DIAG(EXECUTE, "OneDnnGraphBackend::executeSegment [%d-%d]: no compiled segment found",
-               seg.def.startSlot, seg.def.endSlot);
-      return Status::KERNEL_FAILURE;
-    }
-    compiled = &it->second;
+  if (seg.compiledGraphBackendArtifactOwner != this ||
+      !seg.compiledGraphBackendArtifact) {
+    DSP_DIAG(EXECUTE,
+             "OneDnnGraphBackend::executeSegment [%d-%d]: no owned artifact",
+             seg.def.startSlot, seg.def.endSlot);
+    return Status::KERNEL_FAILURE;
+  }
+  auto compiledHandle = std::static_pointer_cast<CompiledSegment>(
+      seg.compiledGraphBackendArtifact);
+  std::lock_guard<std::mutex> executionLock(*compiledHandle->executionMtx);
+  CompiledSegment* compiled = compiledHandle.get();
+  if (!compiled->valid || compiled->shapeKey != seg.def.shapeKeyState.compiledShapeKey ||
+      seg.compiledGraphBackendArtifactShapeKey != compiled->shapeKey) {
+    DSP_DIAG(EXECUTE,
+             "OneDnnGraphBackend::executeSegment [%d-%d]: stale artifact "
+             "artifactKey=0x%llx compiledKey=0x%llx",
+             seg.def.startSlot, seg.def.endSlot,
+             (long long)compiled->shapeKey,
+             (long long)seg.def.shapeKeyState.compiledShapeKey);
+    return Status::KERNEL_FAILURE;
   }
 
   auto& strm = getThreadStream();
@@ -1120,6 +807,75 @@ Status OneDnnGraphBackend::executeSegment(
     return (slotIdx < totalOutputSlots) ? outputSlots[slotIdx] : nullptr;
   };
 
+  auto matchesCompiledDescriptor = [&](NDArray* array,
+                                       const dg::logical_tensor& tensor) {
+    if (array == nullptr || mapDataType(array->dataType()) != tensor.get_data_type()) {
+      return false;
+    }
+    const auto dimensions = tensor.get_dims();
+    if (dimensions.size() != static_cast<size_t>(array->rankOf())) return false;
+    const auto strides = tensor.get_strides();
+    if (!strides.empty() && strides.size() != dimensions.size()) return false;
+    for (int dimension = 0; dimension < array->rankOf(); ++dimension) {
+      if (dimensions[static_cast<size_t>(dimension)] != array->sizeAt(dimension)) {
+        return false;
+      }
+      if (!strides.empty() &&
+          strides[static_cast<size_t>(dimension)] != array->strideAt(dimension)) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // Validate every oneDNN boundary before the schedule starts. Returning
+  // BAD_GRAPH here is a pre-execution lowering miss, so the resolver may choose
+  // another backend without risking partial execution.
+  for (auto& part : compiled->partitions) {
+    if (part.cachedInputTensors.empty()) {
+      part.cachedInputTensors.resize(part.inputTensorIds.size());
+      for (size_t index = 0; index < part.inputTensorIds.size(); ++index) {
+        const size_t tensorId = part.inputTensorIds[index];
+        if (compiled->tensorIdToSlotMap.find(tensorId) ==
+            compiled->tensorIdToSlotMap.end()) {
+          return Status::BAD_GRAPH;
+        }
+        part.cachedInputTensors[index].lt =
+            part.compiledPartition.query_logical_tensor(tensorId);
+      }
+    }
+    if (part.cachedOutputTensors.empty()) {
+      part.cachedOutputTensors.resize(part.outputTensorIds.size());
+      for (size_t index = 0; index < part.outputTensorIds.size(); ++index) {
+        const size_t tensorId = part.outputTensorIds[index];
+        if (compiled->tensorIdToSlotMap.find(tensorId) ==
+            compiled->tensorIdToSlotMap.end()) {
+          return Status::BAD_GRAPH;
+        }
+        part.cachedOutputTensors[index].lt =
+            part.compiledPartition.query_logical_tensor(tensorId);
+      }
+    }
+    for (size_t index = 0; index < part.inputTensorIds.size(); ++index) {
+      const auto mapping =
+          compiled->tensorIdToSlotMap.find(part.inputTensorIds[index]);
+      if (mapping == compiled->tensorIdToSlotMap.end() ||
+          !matchesCompiledDescriptor(resolveArray(mapping->second),
+                                     part.cachedInputTensors[index].lt)) {
+        return Status::BAD_GRAPH;
+      }
+    }
+    for (size_t index = 0; index < part.outputTensorIds.size(); ++index) {
+      const auto mapping =
+          compiled->tensorIdToSlotMap.find(part.outputTensorIds[index]);
+      if (mapping == compiled->tensorIdToSlotMap.end() ||
+          !matchesCompiledDescriptor(resolveArray(mapping->second),
+                                     part.cachedOutputTensors[index].lt)) {
+        return Status::BAD_GRAPH;
+      }
+    }
+  }
+
   if (!compiled->isMixedSegment) {
     // ── Pure-OneDNN path: execute all partitions in order ────────────────
     DSP_DIAG(EXECUTE, "OneDnnGraphBackend::executeSegment [%d-%d]: pure-OneDNN, %d partitions",
@@ -1130,30 +886,24 @@ Status OneDnnGraphBackend::executeSegment(
         part.cachedInputTensors.resize(part.inputTensorIds.size());
         for (size_t i = 0; i < part.inputTensorIds.size(); i++) {
           size_t tid = part.inputTensorIds[i];
-          auto slotIt = compiled->tensorIdToSlotMap.find(tid);
-          if (slotIt == compiled->tensorIdToSlotMap.end()) return Status::KERNEL_FAILURE;
-          NDArray* arr = resolveArray(slotIt->second);
-          if (!arr) return Status::KERNEL_FAILURE;
-          int rank = arr->rankOf();
-          std::vector<int64_t> shape(rank), strides(rank);
-          for (int d = 0; d < rank; d++) { shape[d] = arr->sizeAt(d); strides[d] = arr->strideAt(d); }
-          part.cachedInputTensors[i].lt = dg::logical_tensor(tid, mapDataType(arr->dataType()), shape, strides);
-          part.cachedInputTensors[i].lastBuffer = arr->buffer();
+          if (compiled->tensorIdToSlotMap.find(tid) ==
+              compiled->tensorIdToSlotMap.end()) {
+            return Status::KERNEL_FAILURE;
+          }
+          part.cachedInputTensors[i].lt =
+              part.compiledPartition.query_logical_tensor(tid);
         }
       }
       if (part.cachedOutputTensors.empty()) {
         part.cachedOutputTensors.resize(part.outputTensorIds.size());
         for (size_t i = 0; i < part.outputTensorIds.size(); i++) {
           size_t tid = part.outputTensorIds[i];
-          auto slotIt = compiled->tensorIdToSlotMap.find(tid);
-          if (slotIt == compiled->tensorIdToSlotMap.end()) return Status::KERNEL_FAILURE;
-          NDArray* arr = resolveArray(slotIt->second);
-          if (!arr) return Status::KERNEL_FAILURE;
-          int rank = arr->rankOf();
-          std::vector<int64_t> shape(rank), strides(rank);
-          for (int d = 0; d < rank; d++) { shape[d] = arr->sizeAt(d); strides[d] = arr->strideAt(d); }
-          part.cachedOutputTensors[i].lt = dg::logical_tensor(tid, mapDataType(arr->dataType()), shape, strides);
-          part.cachedOutputTensors[i].lastBuffer = arr->buffer();
+          if (compiled->tensorIdToSlotMap.find(tid) ==
+              compiled->tensorIdToSlotMap.end()) {
+            return Status::KERNEL_FAILURE;
+          }
+          part.cachedOutputTensors[i].lt =
+              part.compiledPartition.query_logical_tensor(tid);
         }
       }
 
@@ -1162,7 +912,9 @@ Status OneDnnGraphBackend::executeSegment(
       for (size_t i = 0; i < part.inputTensorIds.size(); i++) {
         auto slotIt = compiled->tensorIdToSlotMap.find(part.inputTensorIds[i]);
         NDArray* arr = resolveArray(slotIt->second);
-        if (!arr) return Status::KERNEL_FAILURE;
+        if (!matchesCompiledDescriptor(arr, part.cachedInputTensors[i].lt)) {
+          return Status::KERNEL_FAILURE;
+        }
         inputTensors.emplace_back(part.cachedInputTensors[i].lt, engine_, arr->buffer());
       }
 
@@ -1171,7 +923,9 @@ Status OneDnnGraphBackend::executeSegment(
       for (size_t i = 0; i < part.outputTensorIds.size(); i++) {
         auto slotIt = compiled->tensorIdToSlotMap.find(part.outputTensorIds[i]);
         NDArray* arr = resolveArray(slotIt->second);
-        if (!arr) return Status::KERNEL_FAILURE;
+        if (!matchesCompiledDescriptor(arr, part.cachedOutputTensors[i].lt)) {
+          return Status::KERNEL_FAILURE;
+        }
         outputTensors.emplace_back(part.cachedOutputTensors[i].lt, engine_, arr->buffer());
       }
 
@@ -1224,30 +978,24 @@ Status OneDnnGraphBackend::executeSegment(
         part.cachedInputTensors.resize(part.inputTensorIds.size());
         for (size_t i = 0; i < part.inputTensorIds.size(); i++) {
           size_t tid = part.inputTensorIds[i];
-          auto slotIt = compiled->tensorIdToSlotMap.find(tid);
-          if (slotIt == compiled->tensorIdToSlotMap.end()) return Status::KERNEL_FAILURE;
-          NDArray* arr = resolveArray(slotIt->second);
-          if (!arr) return Status::KERNEL_FAILURE;
-          int rank = arr->rankOf();
-          std::vector<int64_t> shape(rank), strides(rank);
-          for (int d = 0; d < rank; d++) { shape[d] = arr->sizeAt(d); strides[d] = arr->strideAt(d); }
-          part.cachedInputTensors[i].lt = dg::logical_tensor(tid, mapDataType(arr->dataType()), shape, strides);
-          part.cachedInputTensors[i].lastBuffer = arr->buffer();
+          if (compiled->tensorIdToSlotMap.find(tid) ==
+              compiled->tensorIdToSlotMap.end()) {
+            return Status::KERNEL_FAILURE;
+          }
+          part.cachedInputTensors[i].lt =
+              part.compiledPartition.query_logical_tensor(tid);
         }
       }
       if (part.cachedOutputTensors.empty()) {
         part.cachedOutputTensors.resize(part.outputTensorIds.size());
         for (size_t i = 0; i < part.outputTensorIds.size(); i++) {
           size_t tid = part.outputTensorIds[i];
-          auto slotIt = compiled->tensorIdToSlotMap.find(tid);
-          if (slotIt == compiled->tensorIdToSlotMap.end()) return Status::KERNEL_FAILURE;
-          NDArray* arr = resolveArray(slotIt->second);
-          if (!arr) return Status::KERNEL_FAILURE;
-          int rank = arr->rankOf();
-          std::vector<int64_t> shape(rank), strides(rank);
-          for (int d = 0; d < rank; d++) { shape[d] = arr->sizeAt(d); strides[d] = arr->strideAt(d); }
-          part.cachedOutputTensors[i].lt = dg::logical_tensor(tid, mapDataType(arr->dataType()), shape, strides);
-          part.cachedOutputTensors[i].lastBuffer = arr->buffer();
+          if (compiled->tensorIdToSlotMap.find(tid) ==
+              compiled->tensorIdToSlotMap.end()) {
+            return Status::KERNEL_FAILURE;
+          }
+          part.cachedOutputTensors[i].lt =
+              part.compiledPartition.query_logical_tensor(tid);
         }
       }
 
@@ -1256,7 +1004,9 @@ Status OneDnnGraphBackend::executeSegment(
       for (size_t i = 0; i < part.inputTensorIds.size(); i++) {
         auto slotIt = compiled->tensorIdToSlotMap.find(part.inputTensorIds[i]);
         NDArray* arr = resolveArray(slotIt->second);
-        if (!arr) return Status::KERNEL_FAILURE;
+        if (!matchesCompiledDescriptor(arr, part.cachedInputTensors[i].lt)) {
+          return Status::KERNEL_FAILURE;
+        }
         inputTensors.emplace_back(part.cachedInputTensors[i].lt, engine_, arr->buffer());
       }
 
@@ -1265,7 +1015,9 @@ Status OneDnnGraphBackend::executeSegment(
       for (size_t i = 0; i < part.outputTensorIds.size(); i++) {
         auto slotIt = compiled->tensorIdToSlotMap.find(part.outputTensorIds[i]);
         NDArray* arr = resolveArray(slotIt->second);
-        if (!arr) return Status::KERNEL_FAILURE;
+        if (!matchesCompiledDescriptor(arr, part.cachedOutputTensors[i].lt)) {
+          return Status::KERNEL_FAILURE;
+        }
         outputTensors.emplace_back(part.cachedOutputTensors[i].lt, engine_, arr->buffer());
       }
 
@@ -1288,8 +1040,10 @@ Status OneDnnGraphBackend::executeSegment(
 
 void OneDnnGraphBackend::invalidateCache() {
   std::lock_guard<std::mutex> lock(cacheMtx_);
-  cache_.clear();
-  failedCache_.clear();
+  for (auto& weakArtifact : compiledArtifacts_) {
+    if (auto artifact = weakArtifact.lock()) artifact->invalidate();
+  }
+  compiledArtifacts_.clear();
 }
 
 }  // namespace graph

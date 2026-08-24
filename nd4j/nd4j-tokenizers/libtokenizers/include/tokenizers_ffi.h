@@ -65,6 +65,14 @@ bool ffi_tokenizer_token_to_id(const struct TokenizerHandle *handle,
                                uint32_t *token_id);
 
 /**
+ * Resolve a token ID to its exact vocabulary piece without applying the decoder.
+ * The returned UTF-8 string is owned by the caller and must be released with
+ * ffi_tokenizer_free_string. A null return with no recorded error means that the
+ * ID is not present in either the added vocabulary or the model vocabulary.
+ */
+char *ffi_tokenizer_id_to_token(const struct TokenizerHandle *handle, uint32_t token_id);
+
+/**
  * Render a Hugging Face tokenizer_config.json chat_template with MiniJinja.
  *
  * The returned UTF-8 string is owned by the caller and must be released with

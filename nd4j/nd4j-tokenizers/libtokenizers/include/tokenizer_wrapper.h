@@ -105,6 +105,14 @@ public:
      * @return true when the exact token exists in the tokenizer vocabulary
      */
     bool token_to_id(const std::string& token, uint32_t& token_id) const;
+
+    /**
+     * @brief Resolve a token ID to its exact vocabulary piece without decoding it
+     * @param token_id Token ID to resolve
+     * @param token Receives the vocabulary piece when found
+     * @return true when the ID exists in the tokenizer vocabulary
+     */
+    bool id_to_token(uint32_t token_id, std::string& token) const;
     
     /**
      * @brief Check if the tokenizer is valid and ready to use

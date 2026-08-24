@@ -70,6 +70,24 @@ class SdxRuntimeJavaCppTest {
     }
 
     @Test
+    void mobileLoaderReleasesPartialOwnershipAndRequiresMappedArmHybridWeights()
+            throws Exception {
+        Path legacy = Path.of("../libnd4j/include/legacy/impl");
+        String loader = Files.readString(legacy.resolve("NativeOps_dsp_shared.cpp"));
+        String runtime = Files.readString(legacy.resolve("DspRuntimeC.cpp"));
+
+        int allocation = loader.indexOf("handle = new LoadedModelHandle()");
+        int catchBlock = loader.indexOf("catch (const std::exception& e)", allocation);
+        int catchDelete = loader.indexOf("delete handle;", catchBlock);
+        assertTrue(allocation >= 0);
+        assertTrue(catchBlock > allocation);
+        assertTrue(catchDelete > catchBlock,
+                "A failed mapped-model load must release its partial owner");
+        assertTrue(runtime.contains(
+                "backend == static_cast<int>(SDX_BACKEND_ARM_HYBRID)"));
+    }
+
+    @Test
     void everyNativeOpsBindingExposesDiagnosticFlush() throws Exception {
         Path backends = Path.of("../nd4j/nd4j-backends/nd4j-backend-impls");
         String[] bindings = {

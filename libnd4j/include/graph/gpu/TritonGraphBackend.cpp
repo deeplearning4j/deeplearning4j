@@ -130,6 +130,7 @@ GraphBackendPlanningPolicy TritonGraphBackend::planningPolicy(
     const GraphBackendRequest& request) const {
   auto policy = GraphBackend::planningPolicy(request);
   policy.requiresPlatformReplayHandle = true;
+  policy.artifactKind = GraphBackendArtifactKind::PLATFORM_REPLAY_REQUIRED;
   policy.separateMatrixMultiplySegments =
       Environment::getInstance().dspMatmulSegmentation();
   return policy;

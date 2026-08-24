@@ -100,6 +100,7 @@ int TpuGraphBackend::resolutionPriority(
 GraphBackendPlanningPolicy TpuGraphBackend::planningPolicy(
     const GraphBackendRequest& request) const {
   auto policy = GraphBackend::planningPolicy(request);
+  policy.artifactKind = GraphBackendArtifactKind::BACKEND_REPLAY_HANDLE;
   policy.requiresShapePrePass = true;
   policy.requiresSuccessfulShapePrePass = true;
   policy.precompileBeforeFirstExecution = true;

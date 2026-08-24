@@ -516,6 +516,27 @@ public final class NativeTokenizer implements AutoCloseable {
     }
 
     /**
+     * Resolves a token ID to the exact vocabulary piece reported by Hugging Face
+     * tokenizers, without applying the decoder.
+     *
+     * @return the vocabulary piece, or {@code null} when the ID is absent
+     */
+    public synchronized String idToToken(int tokenId) {
+        if (tokenId < 0) {
+            return null;
+        }
+        BytePointer nativeToken = api.getToken(requireOpen(), tokenId);
+        if (isNull(nativeToken)) {
+            return null;
+        }
+        try {
+            return nativeToken.getString(StandardCharsets.UTF_8);
+        } finally {
+            api.freeString(nativeToken);
+        }
+    }
+
+    /**
      * Returns whether this wrapper still owns a valid native tokenizer.
      */
     public synchronized boolean isValid() {

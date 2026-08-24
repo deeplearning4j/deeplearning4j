@@ -46,6 +46,9 @@ class QwenTokenizerGoldenTest {
             assertArrayEquals(new String[] {"Hello", "ĠÃ©", "Ġ", "æĹ¥æľ¬èªŀ"}, encoding.getTokens());
             assertEquals(encoding.getIds().length, encoding.getTokens().length);
             assertFalse(Arrays.stream(encoding.getTokens()).anyMatch(token -> token == null || token.indexOf('�') >= 0));
+            for (int i = 0; i < encoding.getIds().length; i++) {
+                assertEquals(encoding.getTokens()[i], tokenizer.getToken(encoding.getIds()[i]));
+            }
 
             String decoded = tokenizer.decode(encoding.getIds(), false);
             assertEquals(input, decoded);

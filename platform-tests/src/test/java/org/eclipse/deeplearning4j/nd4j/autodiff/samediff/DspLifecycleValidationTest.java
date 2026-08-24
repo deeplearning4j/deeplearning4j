@@ -217,8 +217,10 @@ public class DspLifecycleValidationTest {
         out.add(modeConfig("AUTO", GraphExecutionMode.AUTO));
         out.add(modeConfig("SLOT_BY_SLOT", GraphExecutionMode.SLOT_BY_SLOT));
         out.add(modeConfig("CUDA_GRAPHS", GraphExecutionMode.CUDA_GRAPHS));
-        out.add(modeConfig("NVRTC_JIT", GraphExecutionMode.NVRTC_JIT));
-        out.add(modeConfig("PTX_JIT", GraphExecutionMode.PTX_JIT));
+        if (Nd4j.backends().isCudaAvailable()) {
+            out.add(modeConfig("NVRTC_JIT", GraphExecutionMode.NVRTC_JIT));
+            out.add(modeConfig("PTX_JIT", GraphExecutionMode.PTX_JIT));
+        }
         if (tritonAvailable) {
             out.add(modeConfig("TRITON", GraphExecutionMode.TRITON));
         } else {
@@ -234,8 +236,8 @@ public class DspLifecycleValidationTest {
      */
     static Stream<BenchmarkConfig> tritonKnobBisectionConfigs() {
         if (!isTritonAvailable()) {
-            log.info("tritonKnobBisectionConfigs: empty stream — Triton unavailable");
-            return Stream.empty();
+            log.info("tritonKnobBisectionConfigs: one sentinel invocation will be skipped — Triton unavailable");
+            return Stream.of(BenchmarkConfig.create("triton_unavailable"));
         }
         String includeTypes = "CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION";
         List<BenchmarkConfig> out = new ArrayList<>();

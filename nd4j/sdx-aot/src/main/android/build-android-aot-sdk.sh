@@ -35,9 +35,9 @@ Optional:
   -h, --help                 Show this help
 
 Native Image cache environment:
-  KOMPILE_NATIVE_CACHE=0                 Disable local and shared object reuse
-  KOMPILE_NATIVE_FORCE_REBUILD=1         Rebuild despite a valid cache hit
-  KOMPILE_NATIVE_CACHE_DIR=/cache/root   Override ~/.cache/kompile/native-images
+  SDX_NATIVE_CACHE=0                     Disable local and shared object reuse
+  SDX_NATIVE_FORCE_REBUILD=1             Rebuild despite a valid cache hit
+  SDX_NATIVE_CACHE_DIR=/cache/root       Override ~/.cache/sdx/native-images
 USAGE
 }
 
@@ -538,7 +538,7 @@ validate_published_generation() {
   complete="$generation/.complete.cmake"
   [[ -s "$receipt" && -s "$native_bytes" && -s "$complete" ]] || return 1
   for expected in \
-    "format=8" \
+    "format=9" \
     "stage=android-aot-sdk" \
     "native_image_build_mode=$NATIVE_IMAGE_BUILD_MODE" \
     "native_image_optimization=$NATIVE_IMAGE_OPTIMIZATION" \
@@ -1077,7 +1077,7 @@ stage_native_image_object() {
 }
 
 OBJECT_REUSED=0
-if [[ "$KOMPILE_NATIVE_CACHE" == 1 && "$KOMPILE_NATIVE_FORCE_REBUILD" != 1 ]]; then
+if [[ "$SDX_NATIVE_CACHE" == 1 && "$SDX_NATIVE_FORCE_REBUILD" != 1 ]]; then
   if validate_native_image_object_stage "$OBJECT_STAGE_DIR"; then
     stage_native_image_object "$OBJECT_STAGE_DIR"
     printf 'CACHE HIT: reusing validated local Native Image object stage: %s\n' "$OBJECT_STAGE_INPUTS_SHA256"
@@ -1108,9 +1108,9 @@ if [[ "$KOMPILE_NATIVE_CACHE" == 1 && "$KOMPILE_NATIVE_FORCE_REBUILD" != 1 ]]; t
 fi
 
 if [[ "$OBJECT_REUSED" == 0 ]]; then
-  if [[ "$KOMPILE_NATIVE_CACHE" == 0 ]]; then
+  if [[ "$SDX_NATIVE_CACHE" == 0 ]]; then
     printf 'Native Image object cache disabled; rebuilding %s.\n' "$OBJECT_STAGE_INPUTS_SHA256"
-  elif [[ "$KOMPILE_NATIVE_FORCE_REBUILD" == 1 ]]; then
+  elif [[ "$SDX_NATIVE_FORCE_REBUILD" == 1 ]]; then
     printf 'Native Image object cache bypassed by force rebuild: %s\n' "$OBJECT_STAGE_INPUTS_SHA256"
   else
     printf 'CACHE MISS: Native Image object %s\n' "$OBJECT_STAGE_INPUTS_SHA256"
@@ -1135,7 +1135,7 @@ if [[ "$OBJECT_REUSED" == 0 ]]; then
     fail "Native Image relocatable object was not produced as an Android AArch64 object"
   OBJECT_SHA256="$(sha256_file "$OBJECT")"
 
-  if [[ "$KOMPILE_NATIVE_CACHE" == 1 ]]; then
+  if [[ "$SDX_NATIVE_CACHE" == 1 ]]; then
     OBJECT_STAGE_TMP="$(mktemp -d "$OBJECT_STAGES_DIR/.native-image-object.XXXXXXXX")"
     cp --reflink=auto -- "$OBJECT" "$OBJECT_STAGE_TMP/libsdx_llm.o"
     [[ "$(stat -c '%d:%i' "$OBJECT")" != "$(stat -c '%d:%i' "$OBJECT_STAGE_TMP/libsdx_llm.o")" ]] ||
@@ -1172,7 +1172,7 @@ validate_native_image_object "$OBJECT" "$OBJECT_ELF_HEADER" ||
   fail "staged Native Image object is not Android AArch64"
 [[ "$(sha256_file "$OBJECT")" == "$OBJECT_SHA256" ]] ||
   fail "Native Image object changed after stage validation"
-if [[ "$KOMPILE_NATIVE_CACHE" == 1 ]]; then
+if [[ "$SDX_NATIVE_CACHE" == 1 ]]; then
   sdx_native_cache_publish \
     "$OBJECT_CACHE_TARGET" "$OBJECT_STAGE_INPUTS_SHA256" "$OBJECT_CACHE_ARTIFACT" "$OBJECT" ||
     printf 'WARNING: could not publish shared Native Image object cache entry %s\n' \
@@ -1200,48 +1200,34 @@ for symbol in sdxLlmAbiVersion sdxLlmPrepareGguf sdxLlmResolveModelBundle sdxLlm
     fail "fresh libsdx_llm.so omitted required versioned export: ${symbol}@@SDX_LLM_1"
 done
 
-# The embedded image still needs JavaCPP's core JNI library for ND4J. The Android
-# host transport must not use the generated SdxLlmNative wrapper: ART and the
-# embedded Graal VM are separate JVMs, while generated JavaCPP code caches one
-# process-global set of jclass/jfieldID/jmethodID values.
-DIRECT_JNI_BRIDGE="$SCRIPT_DIR/sdx_llm_android_jni.cpp"
+# The embedded image still needs JavaCPP's core JNI library for ND4J. Consumer
+# transports are deliberately excluded from this SDK: Android applications own
+# their JNI bridge to the stable sdx_llm_c.h ABI.
 JAVACPP_LIFECYCLE_BRIDGE="$SCRIPT_DIR/javacpp_jni_lifecycle.cpp"
-[[ -s "$DIRECT_JNI_BRIDGE" ]] || fail "direct Android SDX JNI bridge is missing"
 [[ -s "$JAVACPP_LIFECYCLE_BRIDGE" ]] || fail "JavaCPP JNI lifecycle bridge is missing"
 "$GRAALVM_HOME/bin/java" -cp "$JAVACPP_JAR" org.bytedeco.javacpp.tools.Builder   -classpath "$MODEL_CLASSES_DIR" -d "$BRIDGE_DIR" -o jnisdx_llm -nocompile   org.nd4j.dsp.model.SdxLlmNative
 [[ -s "$BRIDGE_DIR/jnijavacpp.cpp" ]] ||
   fail "JavaCPP did not generate the embedded-runtime core JNI source"
-cp "$DIRECT_JNI_BRIDGE" "$BRIDGE_DIR/jnisdx_llm.cpp"
 
 COMMON_BRIDGE_FLAGS=(
-  -shared -fPIC -O2 -std=c++17 -DANDROID -D__ANDROID_API__="$ANDROID_API"
+  -shared -fPIC -O2 -std=c++17 -DANDROID
   -Wl,--no-undefined -Wl,--build-id=sha1
   -Wl,-z,relro,-z,now -Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384
 )
 "$CLANGXX" "${COMMON_BRIDGE_FLAGS[@]}"   -Wl,-soname,libjnijavacpp.so   "$BRIDGE_DIR/jnijavacpp.cpp" "$JAVACPP_LIFECYCLE_BRIDGE" -o "$JNI_DIR/libjnijavacpp.so"   -llog -ldl -lm
-"$CLANGXX" "${COMMON_BRIDGE_FLAGS[@]}"   -Wl,-soname,libjnisdx_llm.so   -I"$MODULE_DIR/include" "$BRIDGE_DIR/jnisdx_llm.cpp"   "$JNI_DIR/libsdx_llm.so"   -o "$JNI_DIR/libjnisdx_llm.so" -llog -ldl -lm
 LIBJNIJAVACPP_DYNAMIC_SYMBOLS="$BUILD_ROOT/libjnijavacpp.dynamic-symbols"
 "$LLVM_NM" -D --defined-only "$JNI_DIR/libjnijavacpp.so" >"$LIBJNIJAVACPP_DYNAMIC_SYMBOLS"
 for symbol in JNI_OnLoad JNI_OnUnload JNI_OnLoad_jnijavacpp JNI_OnUnload_jnijavacpp; do
   grep -q "[[:space:]]${symbol}$" "$LIBJNIJAVACPP_DYNAMIC_SYMBOLS" ||
     fail "fresh libjnijavacpp.so omitted required lifecycle symbol: $symbol"
 done
-LIBJNISDX_DYNAMIC_SYMBOLS="$BUILD_ROOT/libjnisdx_llm.dynamic-symbols"
-"$LLVM_NM" -D --defined-only "$JNI_DIR/libjnisdx_llm.so" >"$LIBJNISDX_DYNAMIC_SYMBOLS"
-for binding in nativeParseChatResult nativeTokenCount; do
-  grep -q "Java_ai_kompile_chat_local_android_model_SdxAndroidLlmNative_${binding}" "$LIBJNISDX_DYNAMIC_SYMBOLS" ||
-    fail "fresh libjnisdx_llm.so omitted required direct JNI binding: ${binding}"
-done
-if "$LLVM_READELF" -d "$JNI_DIR/libjnisdx_llm.so" | grep -q 'Shared library: \[libjnijavacpp[.]so\]'; then
-  fail "ART-facing libjnisdx_llm.so must not depend on JavaCPP's process-global JNI cache"
-fi
 
 BASE_NATIVE_BYTES="$METADATA_DIR/base-sdk-native-bytes.txt"
 while IFS= read -r library_name; do
   [[ "$library_name" =~ ^lib[A-Za-z0-9._+-]+[.]so$ ]] ||
     fail "unsafe base SDK native member: $library_name"
   case "$library_name" in
-    libsdx_llm.so|libjnisdx_llm.so|libjnijavacpp.so|libc++_shared.so) continue ;;
+    libsdx_llm.so|libjnijavacpp.so|libc++_shared.so) continue ;;
   esac
   source_library="$BASE_SDK/jni/arm64-v8a/$library_name"
   [[ -f "$source_library" && ! -L "$source_library" && -s "$source_library" ]] ||
@@ -1265,7 +1251,6 @@ cp "$MODULE_DIR/include/sdx_llm_c.h" "$INCLUDE_DIR/sdx_llm_c.h"
 cp "$JDK_SUPPORT_RECEIPT" "$METADATA_DIR/jdk-support-receipt"
 cp "$BRIDGE_DIR/jnijavacpp.cpp" "$METADATA_DIR/jnijavacpp.cpp"
 cp "$JAVACPP_LIFECYCLE_BRIDGE" "$METADATA_DIR/javacpp_jni_lifecycle.cpp"
-cp "$BRIDGE_DIR/jnisdx_llm.cpp" "$METADATA_DIR/jnisdx_llm.cpp"
 
 NATIVE_MANIFEST="$METADATA_DIR/cmake-owned-native-libraries.txt"
 find "$JNI_DIR" -maxdepth 1 -type f -name '*.so' -printf '%f\n' | LC_ALL=C sort -u >"$NATIVE_MANIFEST"
@@ -1299,11 +1284,9 @@ JAVACPP_JAR_SHA256="$(sha256_file "$JAVACPP_JAR")"
 NDK_REVISION_SHA256="$(sha256_file "$ANDROID_NDK/source.properties")"
 GRAALVM_VERSION_SHA256="$(printf '%s' "$NATIVE_IMAGE_VERSION" | sha256sum | cut -d ' ' -f 1)"
 LIBSDX_SHA256="$(sha256_file "$JNI_DIR/libsdx_llm.so")"
-LIBJNISDX_SHA256="$(sha256_file "$JNI_DIR/libjnisdx_llm.so")"
 LIBJNIJAVACPP_SHA256="$(sha256_file "$JNI_DIR/libjnijavacpp.so")"
 JNIJAVACPP_SOURCE_SHA256="$(sha256_file "$METADATA_DIR/jnijavacpp.cpp")"
 JAVACPP_LIFECYCLE_SOURCE_SHA256="$(sha256_file "$METADATA_DIR/javacpp_jni_lifecycle.cpp")"
-JNISDX_SOURCE_SHA256="$(sha256_file "$METADATA_DIR/jnisdx_llm.cpp")"
 NATIVE_MANIFEST_SHA256="$(sha256_file "$NATIVE_MANIFEST")"
 
 [[ "$(sdx_git_source_manifest_sha256 "$DL4J_ROOT" "${DL4J_AOT_SOURCE_ROOTS[@]}")" == "$SOURCE_MANIFEST_SHA256" ]] ||
@@ -1366,11 +1349,9 @@ INPUTS_SHA256="$(
     "ndk_revision_sha256=$NDK_REVISION_SHA256" \
     "graalvm_version_sha256=$GRAALVM_VERSION_SHA256" \
     "libsdx_sha256=$LIBSDX_SHA256" \
-    "libjnisdx_sha256=$LIBJNISDX_SHA256" \
     "libjnijavacpp_sha256=$LIBJNIJAVACPP_SHA256" \
     "jnijavacpp_source_sha256=$JNIJAVACPP_SOURCE_SHA256" \
     "javacpp_lifecycle_source_sha256=$JAVACPP_LIFECYCLE_SOURCE_SHA256" \
-    "jnisdx_source_sha256=$JNISDX_SOURCE_SHA256" \
     "native_manifest_sha256=$NATIVE_MANIFEST_SHA256" \
     "sdk_native_bytes_sha256=$SDK_NATIVE_BYTES_SHA256" |
     sha256sum | cut -d ' ' -f 1
@@ -1378,7 +1359,7 @@ INPUTS_SHA256="$(
 
 RECEIPT="$METADATA_DIR/build-receipt"
 cat >"$RECEIPT" <<RECEIPT
-format=8
+format=9
 stage=android-aot-sdk
 inputs_sha256=$INPUTS_SHA256
 native_image_build_mode=$NATIVE_IMAGE_BUILD_MODE
@@ -1408,10 +1389,8 @@ process_blas_symbols_capability=$PROCESS_BLAS_SYMBOLS_ABI
 build_script=$SCRIPT_DIR/build-android-aot-sdk.sh
 build_script_sha256=$BUILD_SCRIPT_SHA256
 native_image_cache_helper_sha256=$NATIVE_IMAGE_CACHE_HELPER_SHA256
-object_builder=$OBJECT_BUILDER
 object_builder_sha256=$OBJECT_BUILDER_SHA256
 jdk_support_receipt_sha256=$JDK_SUPPORT_RECEIPT_SHA256
-svm_support=$REUSE_SVM_LIBS_SOURCE
 libjvm_sha256=$LIBJVM_SHA256
 liblibchelper_sha256=$LIBLIBCHELPER_SHA256
 maven=$MAVEN
@@ -1427,11 +1406,9 @@ graalvm_version_sha256=$GRAALVM_VERSION_SHA256
 android_api=$ANDROID_API
 android_abi=arm64-v8a
 libsdx_sha256=$LIBSDX_SHA256
-libjnisdx_sha256=$LIBJNISDX_SHA256
 libjnijavacpp_sha256=$LIBJNIJAVACPP_SHA256
 jnijavacpp_source_sha256=$JNIJAVACPP_SOURCE_SHA256
 javacpp_lifecycle_source_sha256=$JAVACPP_LIFECYCLE_SOURCE_SHA256
-jnisdx_source_sha256=$JNISDX_SOURCE_SHA256
 native_manifest_sha256=$NATIVE_MANIFEST_SHA256
 sdk_native_bytes_sha256=$SDK_NATIVE_BYTES_SHA256
 native_library_count=$NATIVE_COUNT
@@ -1486,7 +1463,6 @@ done <"$NATIVE_MANIFEST"
     metadata/native-dependency-closure.txt \
     metadata/jnijavacpp.cpp \
     metadata/javacpp_jni_lifecycle.cpp \
-    metadata/jnisdx_llm.cpp \
     "${archive_native_members[@]}"
 )
 ARCHIVE_SHA256="$(sha256_file "$ARCHIVE")"

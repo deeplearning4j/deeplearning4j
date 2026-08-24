@@ -61,11 +61,9 @@ public class TritonCacheManager {
     /**
      * Check if Triton is active: available AND has compiled or cached kernels in this session.
      *
-     * <p>A backend may report {@link #isTritonAvailable()} = {@code true} (the Triton binary is
-     * present) while having no active GPU context or no compiled kernels yet. This happens on
-     * the CPU backend, which detects the Triton binary but cannot compile or launch GPU kernels.
-     * Calling {@link #exportCache(Path)} in that state would return error code -1 from the
-     * native layer, triggering a spurious {@link IllegalStateException}.</p>
+     * <p>An executable GPU backend may be available before the current session has compiled or
+     * loaded any kernels. CPU builds return unavailable even when their build contains Triton
+     * tooling for the OpenVINO dependency umbrella.</p>
      *
      * <p>This method additionally checks whether any Triton kernels have been compiled or served
      * from cache in the current JVM session. Use it before {@link #exportCache(Path)} when you
@@ -90,9 +88,8 @@ public class TritonCacheManager {
     /**
      * Export the current Triton kernel cache to a shareable bundle file.
      *
-     * <p>Returns {@code 0} (with a warning log) when Triton is available but no kernels have
-     * been compiled or served from cache in this session (e.g. the CPU backend has the Triton
-     * binary present but no GPU context). Use {@link #isTritonActive()} to distinguish
+     * <p>Returns {@code 0} (with a warning log) when no executable Triton session has
+     * compiled or loaded kernels. Use {@link #isTritonActive()} to distinguish
      * "empty session" from an actual export error when a GPU backend is active.</p>
      *
      * @param outputPath path to write the .tkcache bundle
@@ -104,8 +101,8 @@ public class TritonCacheManager {
         int result = ops.exportTritonCacheBundle(outputPath.toAbsolutePath().toString());
         if (result < 0) {
             if (!isTritonActive()) {
-                log.warn("TritonCacheManager.exportCache: Triton binary is present but no GPU context "
-                        + "or compiled kernels exist in this session — returning 0 (nothing to export). "
+                log.warn("TritonCacheManager.exportCache: no executable Triton session or compiled "
+                        + "kernels exist — returning 0 (nothing to export). "
                         + "Use isTritonActive() before calling exportCache() to avoid this warning.");
                 return 0;
             }
@@ -161,15 +158,12 @@ public class TritonCacheManager {
     }
 
     /**
-     * Check if Triton support is compiled into this backend.
+     * Check whether this backend can execute Triton kernels.
      *
-     * <p><b>Important:</b> returning {@code true} means the Triton binary is present, but does
-     * <em>not</em> mean a GPU context exists or that any kernels have been compiled. On the CPU
-     * backend this can return {@code true} while kernel compilation and cache export are not
-     * possible. Use {@link #isTritonActive()} when you need to confirm that Triton has actually
-     * been used in this session.</p>
+     * <p>Returning {@code true} requires an executable backend target. It does not imply that
+     * the current session has compiled a kernel; use {@link #isTritonActive()} for that.</p>
      *
-     * @return {@code true} if Triton backend support is compiled and the binary is present
+     * @return {@code true} if the active backend can compile and launch Triton kernels
      */
     public static boolean isTritonAvailable() {
         return Nd4j.getNativeOps().isTritonAvailable();

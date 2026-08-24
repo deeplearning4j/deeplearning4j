@@ -274,6 +274,7 @@ enum class SegmentExecOutcome : uint8_t {
   NOT_FUSIBLE      = 3,  // Backend cannot fuse ops — permanent slot-by-slot (expected)
   COMPILE_FAILED   = 4,  // Compilation failed — permanent slot-by-slot (error)
   OOM_DEFERRED     = 5,  // OOM during capture — deferred retry scheduled
+  DIRECT_COMPILED  = 6,  // Valid backend-owned compilation — direct steady-state dispatch
 };
 
 inline const char* segmentExecOutcomeName(SegmentExecOutcome o) {
@@ -284,6 +285,7 @@ inline const char* segmentExecOutcomeName(SegmentExecOutcome o) {
     case SegmentExecOutcome::NOT_FUSIBLE:     return "NOT_FUSIBLE";
     case SegmentExecOutcome::COMPILE_FAILED:  return "COMPILE_FAILED";
     case SegmentExecOutcome::OOM_DEFERRED:    return "OOM_DEFERRED";
+    case SegmentExecOutcome::DIRECT_COMPILED: return "DIRECT_COMPILED";
     default:                                  return "UNKNOWN";
   }
 }

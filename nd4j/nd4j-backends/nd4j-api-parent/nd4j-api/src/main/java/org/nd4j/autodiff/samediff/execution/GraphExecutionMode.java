@@ -217,7 +217,14 @@ public enum GraphExecutionMode {
      * replay handle alone is not enough: the capability matrix also requires a
      * plan recorder before selecting hardware replay.</p>
      */
-    PORTABLE_REPLAY(19);
+    PORTABLE_REPLAY(19),
+
+    /**
+     * Strict oneDNN Graph mode. Only descriptor-catalogued operations whose
+     * concrete dtype, layout, and argument contracts are exact are lowered.
+     * Unsupported ranges fail closed rather than switching execution backends.
+     */
+    ONEDNN(20);
 
     private final int nativeCode;
 

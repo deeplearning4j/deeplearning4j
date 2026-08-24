@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.execution.DspHandle;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.common.config.ND4JSystemProperties;
@@ -186,6 +187,119 @@ public class DspOpenVinoAccuracyTest {
         Map<String, INDArray> expected = runEager(sd, inputs, "y");
         Map<String, INDArray> actual = runDsp(sd, inputs, "y");
         assertOutputsMatch("testMatmulChain", expected, actual);
+
+        DspHandle handle = sd.dsp();
+        assertTrue(handle.numSegments() > 0, "OpenVINO test produced no DSP segments");
+        assertTrue(handle.segmentCompiledBackend(0).contains("OpenVINO"),
+                "AUTO x86 priority did not select OpenVINO: "
+                        + handle.segmentCompiledBackend(0));
+    }
+
+    @Test
+    @DisplayName("OpenVINO topology cache distinguishes equal-shape dataflow")
+    void testTopologyCacheIncludesNormalizedWiring() {
+        SameDiff first = SameDiff.create();
+        SameDiff second = SameDiff.create();
+        try {
+            SDVariable firstInput = first.placeHolder("x", DataType.FLOAT, 1, 1, 16);
+            SDVariable firstW1 = first.var("w1", Nd4j.randn(DataType.FLOAT, 16, 16));
+            SDVariable firstW2 = first.var("w2", Nd4j.randn(DataType.FLOAT, 16, 8));
+            SDVariable firstFlat = first.reshape("xflat", firstInput, 1, 16);
+            SDVariable firstMm = first.mmul("mm1", firstFlat, firstW1);
+            SDVariable firstResidual = firstFlat.add("residual", firstMm);
+            first.mmul("out", firstResidual, firstW2);
+            first.setOutputs("out");
+
+            SDVariable secondInput = second.placeHolder("x", DataType.FLOAT, 1, 1, 16);
+            SDVariable secondW1 = second.var("w1", Nd4j.randn(DataType.FLOAT, 16, 16));
+            SDVariable secondW2 = second.var("w2", Nd4j.randn(DataType.FLOAT, 16, 8));
+            SDVariable secondFlat = second.reshape("xflat", secondInput, 1, 16);
+            SDVariable secondMm = second.mmul("mm1", secondFlat, secondW1);
+            // Same op sequence and tensor shapes as the first graph, but a
+            // different producer edge into add. The old cache key collided.
+            SDVariable secondResidual = secondMm.add("residual", secondMm);
+            second.mmul("out", secondResidual, secondW2);
+            second.setOutputs("out");
+
+            Map<String, INDArray> firstInputs = new LinkedHashMap<>();
+            firstInputs.put("x", Nd4j.randn(DataType.FLOAT, 1, 1, 16));
+            runDsp(first, firstInputs, "out");
+
+            Map<String, INDArray> secondInputs = new LinkedHashMap<>();
+            secondInputs.put("x", Nd4j.randn(DataType.FLOAT, 1, 1, 16));
+            Map<String, INDArray> expected = runEager(second, secondInputs, "out");
+            Map<String, INDArray> actual = runDsp(second, secondInputs, "out");
+            assertOutputsMatch("testTopologyCacheIncludesNormalizedWiring", expected, actual);
+            assertTrue(second.dsp().segmentCompiledBackend(0).contains("OpenVINO"));
+        } finally {
+            second.close();
+            first.close();
+        }
+    }
+
+    @Test
+    @DisplayName("OpenVINO layout drift re-resolves before execution")
+    void testSameShapeLayoutDriftFallsThroughBeforeExecution() {
+        SameDiff sd = SameDiff.create();
+        try {
+            INDArray weights = Nd4j.randn(DataType.FLOAT, 4, 3);
+            SDVariable input = sd.placeHolder("input", DataType.FLOAT, 2, 4);
+            SDVariable weight = sd.var("weight", weights.dup());
+            sd.mmul("out", input, weight);
+            sd.setOutputs("out");
+            sd.setGraphExecutionMode(GraphExecutionMode.AUTO);
+
+            INDArray cInput = Nd4j.create(DataType.FLOAT, new long[]{2, 4}, 'c').assign(0.5);
+            Map<String, INDArray> cValues = Map.of("input", cInput);
+            for (int execution = 0; execution < 7; ++execution) {
+                sd.output(cValues, "out");
+            }
+            assertTrue(sd.dsp().segmentCompiledBackend(0).contains("OpenVINO"));
+
+            INDArray fInput = Nd4j.create(DataType.FLOAT, new long[]{2, 4}, 'f').assign(1.25);
+            INDArray expected = fInput.mmul(weights);
+            INDArray actual = sd.output(Map.of("input", fInput), "out").get("out");
+            assertTrue(expected.equalsWithEps(actual, 1e-5),
+                    "same-shape F-order rebind used a stale dense OpenVINO artifact");
+            assertTrue(sd.dsp().segmentCompiledBackend(0).contains("OneDNN"),
+                    "non-dense input was not transferred to the exact-stride OneDNN tier: "
+                            + sd.dsp().segmentCompiledBackend(0));
+        } finally {
+            sd.close();
+        }
+    }
+
+    @Test
+    @DisplayName("OpenVINO refreshes mutable FP16 promotion at a stable address")
+    void testMutableFp16InputIsPromotedEveryExecution() {
+        SameDiff sd = SameDiff.create();
+        try {
+            INDArray weights = Nd4j.ones(DataType.HALF, 4, 3);
+            SDVariable input = sd.placeHolder("input", DataType.HALF, 2, 4);
+            sd.mmul("out", input, sd.var("weight", weights));
+            sd.setOutputs("out");
+            sd.setGraphExecutionMode(GraphExecutionMode.AUTO);
+
+            INDArray stableInput = Nd4j.create(DataType.HALF, new long[]{2, 4}, 'c');
+            double previousSum = Double.NaN;
+            for (int execution = 1; execution <= 8; ++execution) {
+                stableInput.assign(execution * 0.25);
+                INDArray actual = sd.output(Map.of("input", stableInput), "out").get("out");
+                double expectedSum = 2.0 * 3.0 * 4.0 * execution * 0.25;
+                double actualSum = actual.sumNumber().doubleValue();
+                assertTrue(Math.abs(expectedSum - actualSum) < 0.1,
+                        "mutable FP16 promotion was stale at execution " + execution
+                                + ": expected sum=" + expectedSum + " actual=" + actualSum);
+                if (!Double.isNaN(previousSum)) {
+                    assertTrue(Math.abs(actualSum - previousSum) > 0.1,
+                            "mutable FP16 output did not change at execution " + execution);
+                }
+                previousSum = actualSum;
+            }
+            assertTrue(sd.dsp().segmentCompiledBackend(0).contains("OpenVINO"));
+        } finally {
+            sd.close();
+        }
     }
 
     // ── Test 2: RMSNorm ─────────────────────────────────────────────────────

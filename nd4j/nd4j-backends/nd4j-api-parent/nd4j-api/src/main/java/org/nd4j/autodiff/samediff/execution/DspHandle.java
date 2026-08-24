@@ -778,6 +778,12 @@ public final class DspHandle {
         return nativeOps().getPlanTotalGraphReplays(requireHandle());
     }
 
+    /** Applied native graph execution mode. */
+    public GraphExecutionMode graphExecutionMode() {
+        return GraphExecutionMode.fromNativeCode(
+                nativeOps().getPlanGraphExecutionMode(requireHandle()));
+    }
+
     /** Number of segments with captured CUDA graphs. */
     public int numCapturedGraphSegments() {
         return nativeOps().getPlanNumCapturedGraphSegments(requireHandle());
@@ -839,6 +845,17 @@ public final class DspHandle {
     /** Per-segment compilation audit as JSON. */
     public String segmentCompilationAudit(int segIdx) {
         return nativeOps().getPlanSegmentCompilationAudit(requireHandle(), segIdx);
+    }
+
+    /** Invalidate one segment's backend/replay artifact and force clean rebuilding. */
+    public void invalidateSegmentCache(int segIdx) {
+        nativeOps().invalidatePlanSegmentCache(requireHandle(), segIdx);
+    }
+
+    /** Invalidate all artifacts owned by one backend name (empty means all). */
+    public void invalidateBackendCaches(String backendName) {
+        nativeOps().invalidatePlanBackendCaches(
+                requireHandle(), backendName == null ? "" : backendName);
     }
 
     /** Aggregated backend cache stats as JSON. */

@@ -497,8 +497,7 @@ public class HuggingFaceTokenizer implements Tokenizer {
         if (addedToken != null) {
             return addedToken;
         }
-        throw new UnsupportedOperationException(
-                "The generated tokenizer binding does not expose id-to-token lookup");
+        return impl.idToToken(id);
     }
 
     @Override

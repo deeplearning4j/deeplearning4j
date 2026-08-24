@@ -111,7 +111,8 @@ enum class GraphExecutionMode : int {
   GEM_TVM = 16,         // Deprecated: TVM removed, use triton-cpu instead
   GEM_EMULATED_REPLAY = 17,  // Emulated graph replay: slot-by-slot with replay lifecycle diagnostics
   GEM_SHAPE_INFERENCE_ONLY = 18, // Shape inference only: calculates output shapes without executing ops
-  GEM_PORTABLE_REPLAY = 19       // Best executable replay recorder; never selects Triton/NVRTC/PTX
+  GEM_PORTABLE_REPLAY = 19,      // Best executable replay recorder; never selects Triton/NVRTC/PTX
+  GEM_ONEDNN = 20                // Force exact oneDNN Graph lowering; unsupported ranges fail closed
 };
 
 /**
@@ -772,6 +773,11 @@ struct GraphSegmentDef {
   // compile-only modes it means eligible for backend admission. In both cases
   // false routes the segment to the explicit plan-level execution path.
   bool isCapturable = false;
+  // Independent of graph-backend admission. True when this range can be
+  // recorded as an immutable FunctionalReplay program; false ranges still use
+  // the explicit plan-level lane but execute live (for control flow or dynamic
+  // output extents).
+  bool isFunctionalReplayEligible = false;
   bool hasValueDepOps = false;         // True if any slot has outputShapeDependsOnInputValues
   // True when a cross-segment input is produced by a slot whose output extent
   // may change at runtime. Such segments must validate their boundary shape key
@@ -1459,6 +1465,7 @@ struct GraphSegment {
   GraphBackend* compiledGraphBackendArtifactOwner = nullptr;
   LongType compiledGraphBackendArtifactShapeKey = 0;
   std::shared_ptr<void> compiledGraphBackendArtifact;
+  std::vector<CompilationAuditEntry> compilationAudit;
 
   // Pointer to NativeDynamicShapePlan slot array cache — allows GPU backends
   // to update the slot cache when pre-allocating output arrays.
@@ -1487,6 +1494,7 @@ struct GraphSegment {
     compiledGraphBackendArtifact.reset();
     compiledGraphBackendArtifactOwner = nullptr;
     compiledGraphBackendArtifactShapeKey = 0;
+    compilationAudit.clear();
   }
 
   // Reset backend identity, policy, and its plan-owned compilation together.
@@ -1494,6 +1502,10 @@ struct GraphSegment {
     clearCompiledGraphBackendArtifact();
     resolvedGraphBackend = nullptr;
     resolvedGraphBackendPolicy = GraphBackendPlanningPolicy{};
+    // A compile key without its owning backend/artifact is not reusable. Keeping
+    // it would let same-shape invalidation skip lowering and execute a missing
+    // artifact on the next dispatch.
+    def.shapeKeyState.reset();
   }
 
   // Unified lifecycle accessor — delegates to exec.graphNodePhase().
@@ -2098,6 +2110,12 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * Use for session reset or model reload without full plan rebuild.
    */
   void resetSegmentExecutionState();
+
+  // Public cache invalidation entry points. These own the legal plan unseal and
+  // segment rebuild transition; external callers must never mutate segments.
+  bool invalidateSegmentCache(int segmentIndex, const char* reason);
+  int invalidateBackendCaches(const std::string& backendName,
+                              const char* reason);
 
   /**
    * Get raw slot array for inspection (read-only).
@@ -3479,7 +3497,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   GraphBackendPlanningPolicy getResolvedGraphBackendPlanningPolicy();
   GraphBackendExecutionPolicy getResolvedGraphBackendExecutionPolicy();
   Status executeSegmentWithSpecificBackend(GraphSegment& seg, GraphBackend* backend,
-                                           NDArray** externalArrays, int numExt, void* stream);
+                                           NDArray** externalArrays, int numExt, void* stream,
+                                           bool* executionStarted = nullptr);
 
   // ── Emulated graph replay (NativeDynamicShapePlan_segments.cpp) ──
   Status executeSegmentEmulatedReplay(GraphSegment& seg, NDArray** externalArrays,
@@ -3524,14 +3543,20 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Used by platformBeginExecution, platformEndExecution, and populateDerivedState.
   bool anySegmentNeedsWarmup() const;
 
-  // Returns true when ALL segments have a replay handle ready (monolithic or
-  // composite). Callers use this to decide whether platformTryFrozenFastPath
+  // Returns true when ALL replay-eligible segments have a ready replay artifact:
+  // a monolithic/composite platform handle or a sealed direct graph-backend
+  // compilation. Callers use this to decide whether platformTryFrozenFastPath
   // can be invoked. When false, the caller must use phaseReplay instead.
   bool allSegmentsReplayReady() const;
 
-  // Replays all segments via their captured graph handles. Returns OK on
-  // success, KERNEL_FAILURE on replay error. Precondition: allSegmentsReplayReady()
-  // must be true — calling without replay handles is a hard error.
+  // CPU/mobile steady-state readiness. Unlike allSegmentsReplayReady(), this
+  // accepts exact segment-owned DIRECT_COMPILED artifacts while preserving the
+  // stricter replay-handle contract used by CUDA/Vulkan paths.
+  bool allFrozenDispatchUnitsReady() const;
+
+  // Replays all segments via platform handles or sealed direct graph-backend
+  // artifacts. Returns OK on success, KERNEL_FAILURE on replay error.
+  // Precondition: allSegmentsReplayReady() must be true.
   Status platformTryFrozenFastPath(NDArray** externalInputs, int numExternalInputs,
                                     NDArray** requestedOutputs, int numRequestedOutputs, void* stream);
   void platformPreExecuteSetup(NDArray** externalInputs, int numExternalInputs, void* stream);

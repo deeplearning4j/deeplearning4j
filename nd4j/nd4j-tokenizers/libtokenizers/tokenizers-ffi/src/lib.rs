@@ -360,6 +360,34 @@ pub extern "C" fn ffi_tokenizer_token_to_id(
     }
 }
 
+/// Resolve a token ID to its exact vocabulary piece without applying the decoder.
+/// The returned UTF-8 string is owned by the caller and must be released with
+/// ffi_tokenizer_free_string. A null return with no recorded error means that the
+/// ID is not present in either the added vocabulary or the model vocabulary.
+#[no_mangle]
+pub extern "C" fn ffi_tokenizer_id_to_token(
+    handle: *const TokenizerHandle,
+    token_id: u32,
+) -> *mut c_char {
+    clear_error();
+    if handle.is_null() {
+        set_error("Tokenizer handle is null".to_string());
+        return ptr::null_mut();
+    }
+
+    let tokenizer = unsafe { &(*handle).tokenizer };
+    match tokenizer.id_to_token(token_id) {
+        Some(token) => match CString::new(token) {
+            Ok(token) => token.into_raw(),
+            Err(error) => {
+                set_error(format!("Token contains an embedded NUL byte: {}", error));
+                ptr::null_mut()
+            }
+        },
+        None => ptr::null_mut(),
+    }
+}
+
 /// Render a Hugging Face tokenizer_config.json chat_template with MiniJinja.
 ///
 /// The returned UTF-8 string is owned by the caller and must be released with
@@ -724,7 +752,8 @@ mod tests {
     use super::{
         ffi_tokenizer_decode_stream_create, ffi_tokenizer_decode_stream_free,
         ffi_tokenizer_decode_stream_step, ffi_tokenizer_free, ffi_tokenizer_free_string,
-        render_chat_template, render_chat_template_context, TokenizerHandle,
+        ffi_tokenizer_id_to_token, render_chat_template, render_chat_template_context,
+        TokenizerHandle,
     };
     use std::ffi::CStr;
     use std::str::FromStr;
@@ -746,6 +775,18 @@ mod tests {
         Box::into_raw(Box::new(TokenizerHandle {
             tokenizer: Arc::new(Tokenizer::new(model)),
         }))
+    }
+
+    #[test]
+    fn resolves_exact_vocabulary_piece_by_id() {
+        let tokenizer = word_level_tokenizer_handle();
+        let token = ffi_tokenizer_id_to_token(tokenizer, 1);
+        assert!(!token.is_null());
+        assert_eq!(unsafe { CStr::from_ptr(token) }.to_str().unwrap(), "world");
+        ffi_tokenizer_free_string(token);
+
+        assert!(ffi_tokenizer_id_to_token(tokenizer, 99).is_null());
+        ffi_tokenizer_free(tokenizer);
     }
 
     #[test]

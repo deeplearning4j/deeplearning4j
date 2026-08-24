@@ -59,6 +59,18 @@ class OneDnnGraphBackend : public GraphBackend {
   bool isAvailable() const override;
   bool isResolvable(const GraphBackendRequest& request) const override;
   int resolutionPriority(const GraphBackendRequest& request) const override;
+  GraphBackendPlanningPolicy planningPolicy(
+      const GraphBackendRequest& request) const override {
+    auto policy = GraphBackend::planningPolicy(request);
+    policy.artifactKind = GraphBackendArtifactKind::DIRECT_COMPILED;
+    policy.requiresSuccessfulShapePrePass =
+        request.executionMode == GraphExecutionMode::GEM_ONEDNN;
+    policy.requiresCompleteLowering =
+        request.executionMode == GraphExecutionMode::GEM_ONEDNN;
+    return policy;
+  }
+  bool canResolveSlot(const GraphBackendRequest& request,
+                      NativeSlot* slots, int slotIndex) override;
   bool canFuseSegment(NativeSlot* slots, int start, int end) override;
 
   // Type for a callback that executes a native slot range [startSlot, endSlot].
@@ -78,6 +90,14 @@ class OneDnnGraphBackend : public GraphBackend {
                       int* requestedOutputSlotIndices = nullptr,
                       int numRequestedOutputs = 0) override;
 
+  bool compileSegment(const GraphBackendRequest& request,
+                      GraphSegment& seg, NativeSlot* slots,
+                      NDArray** externalInputs, int numExternalInputs,
+                      NDArray** outputSlots, int totalOutputSlots,
+                      LongType shapeKey, int totalSlots,
+                      int* requestedOutputSlotIndices,
+                      int numRequestedOutputs) override;
+
   Status executeSegment(GraphSegment& seg, NativeSlot* slots,
                         NDArray** externalInputs, int numExternalInputs,
                         NDArray** outputSlots, int totalOutputSlots,
@@ -95,10 +115,6 @@ class OneDnnGraphBackend : public GraphBackend {
   // Thread-local stream for reduced allocation overhead
   dnnl::stream& getThreadStream();
 
-  // Map libnd4j op name to oneDNN graph op kind.
-  // Returns dg::op::kind::LastSymbol if unmapped.
-  static dg::op::kind mapOpKind(const std::string& opName);
-
   // Map NDArray DataType to oneDNN graph logical tensor data type.
   static dg::logical_tensor::data_type mapDataType(DataType dt);
 
@@ -107,6 +123,7 @@ class OneDnnGraphBackend : public GraphBackend {
     LongType shapeKey;
     bool valid;
     bool isMixedSegment = false;  // true if segment has both OneDNN and native ops
+    std::shared_ptr<std::mutex> executionMtx = std::make_shared<std::mutex>();
 
     // One compiled partition per oneDNN partition (usually 1 for a fusible segment)
     struct PartitionEntry {
@@ -114,12 +131,10 @@ class OneDnnGraphBackend : public GraphBackend {
       std::vector<size_t> inputTensorIds;   // Logical tensor IDs for inputs
       std::vector<size_t> outputTensorIds;  // Logical tensor IDs for outputs
 
-      // Cached tensor wrappers — avoids recreating logical_tensor + tensor every execution.
-      // On stable shapes, only buffer pointers change; we rebuild tensors only if
-      // buffer address differs from lastBufferPtrs[i].
+      // Compiled logical tensor descriptors queried from oneDNN. Runtime tensor
+      // wrappers bind the current framework buffers to these immutable contracts.
       struct CachedTensor {
         dg::logical_tensor lt;
-        void* lastBuffer = nullptr;
       };
       std::vector<CachedTensor> cachedInputTensors;
       std::vector<CachedTensor> cachedOutputTensors;
@@ -156,15 +171,22 @@ class OneDnnGraphBackend : public GraphBackend {
     std::vector<CompilationAuditEntry> compilationAudit;
 
     CompiledSegment() : shapeKey(0), valid(false), isMixedSegment(false) {}
+
+    void invalidate() {
+      std::lock_guard<std::mutex> lock(*executionMtx);
+      valid = false;
+      partitions.clear();
+      executionSchedule.clear();
+      nativeRanges.clear();
+      tensorIdToSlotMap.clear();
+    }
   };
 
-  // Per-segment cache (SegmentCacheKey/Hash from GraphBackendCommon.h)
-  std::unordered_map<SegmentCacheKey, CompiledSegment, SegmentCacheHash> cache_;
-  std::mutex cacheMtx_;
-
-  // Negative cache: segment+shape combinations that failed compilation.
-  // Avoids re-attempting known-bad compilations (mirrors Triton's failedCache_).
-  std::unordered_set<SegmentCacheKey, SegmentCacheHash> failedCache_;
+  // Plans own mutable compiled schedules. The singleton keeps weak references
+  // only for explicit global invalidation; slot range and shape are not model
+  // identities and must never be a process-wide cache key.
+  std::vector<std::weak_ptr<CompiledSegment>> compiledArtifacts_;
+  mutable std::mutex cacheMtx_;
 
   // Most recent compilation audit (updated by compileSegment)
   std::vector<CompilationAuditEntry> lastCompilationAudit_;
@@ -176,11 +198,7 @@ class OneDnnGraphBackend : public GraphBackend {
   // Minimum fraction of ops that must be OneDNN-mappable to accept a mixed segment.
   static constexpr float MIN_ONEDNN_COVERAGE = 0.3f;
   // Minimum absolute count of OneDNN-mappable ops required.
-  static constexpr int MIN_MAPPABLE_OPS = 2;
-
-  // Trait-based fallback: check OpDescriptor traits for mappability when mapOpKind returns LastSymbol.
-  // Maps OpTraits flags to dg::op::kind. Returns LastSymbol if no mapping exists.
-  static dg::op::kind mapOpKindFromTraits(const std::string& opName);
+  static constexpr int MIN_MAPPABLE_OPS = 1;
 
   // Build a dg::graph from a segment of slots (pure-OneDNN or mixed).
   // For mixed segments, unmappable ops are tracked as NativeRanges in the result.

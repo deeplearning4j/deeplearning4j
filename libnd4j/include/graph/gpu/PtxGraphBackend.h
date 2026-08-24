@@ -58,6 +58,7 @@ class PtxGraphBackend : public GraphBackend {
       const GraphBackendRequest& request) const override {
     auto policy = GraphBackend::planningPolicy(request);
     policy.requiresPlatformReplayHandle = true;
+    policy.artifactKind = GraphBackendArtifactKind::PLATFORM_REPLAY_REQUIRED;
     return policy;
   }
   bool canFuseSegment(NativeSlot* slots, int start, int end) override;

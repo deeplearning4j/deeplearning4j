@@ -21,6 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.autodiff.samediff;
 
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -52,6 +53,8 @@ public class DspAliasCrashReproTest {
      */
     @Test
     public void reproModeSequence() {
+        Assumptions.assumeTrue(Nd4j.backends().isCudaAvailable(),
+                "CUDA-only cudaGraphLaunch accumulation reproducer");
         GraphExecutionMode[] order = {
                 GraphExecutionMode.AUTO, GraphExecutionMode.SLOT_BY_SLOT,
                 GraphExecutionMode.CUDA_GRAPHS, GraphExecutionMode.NVRTC_JIT,
@@ -70,6 +73,8 @@ public class DspAliasCrashReproTest {
 
     @Test
     public void reproVaryingInput() {
+        Assumptions.assumeTrue(Nd4j.backends().isCudaAvailable(),
+                "CUDA-only cudaGraphLaunch varying-input reproducer");
         GraphExecutionMode mode = GraphExecutionMode.valueOf(
                 System.getProperty("repro.mode", "NVRTC_JIT"));
         log.info("REPRO mode={}", mode);

@@ -1948,11 +1948,14 @@ public interface NativeOps {
    *             5=TRITON, 6=MLX, 7=ARM_HYBRID, 8=NNAPI, 9=HIP_GRAPHS,
    *             10=LEVEL_ZERO, 11=VULKAN, 12=METAL, 13=TPU, 14=HEXAGON,
    *             15=OPENVINO, 16=TVM (deprecated), 17=EMULATED_REPLAY,
-   *             18=SHAPE_INFERENCE_ONLY, 19=PORTABLE_REPLAY
+   *             18=SHAPE_INFERENCE_ONLY, 19=PORTABLE_REPLAY, 20=ONEDNN
    */
   default void setPlanGraphExecutionMode(Pointer planHandle, int mode) {
       // No-op on backends that don't support graph execution mode
   }
+
+  /** Applied graph execution mode, or -1 when unavailable. */
+  default int getPlanGraphExecutionMode(Pointer planHandle) { return -1; }
 
   /**
    * Set maximum sizes for specific output slots (KV cache pre-allocation).

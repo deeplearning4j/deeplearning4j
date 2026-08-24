@@ -24,6 +24,7 @@
 #include <types/float16.h>
 #include <ops/declarable/helpers/causal_conv1d.h>
 #include <ops/declarable/helpers/cuda/device_primitives.cuh>
+#include <ops/declarable/helpers/reproducible_math.h>
 
 namespace sd {
 namespace ops {
@@ -74,20 +75,20 @@ SD_KERNEL void causalConv1dKernel(
         }
         const AccT weightValue = static_cast<AccT>(
             weight[d * wChanStride + (K - 1 - kk) * wDimStride]);
-        sum = sd::math::sd_add<AccT, AccT, AccT>(
-            sum, sd::math::sd_multiply<AccT, AccT, AccT>(weightValue, x_val));
+        const AccT product = reproducible::multiply<AccT>(weightValue, x_val);
+        sum = reproducible::add<AccT>(sum, product);
     }
 
     if (bias != nullptr) {
-        sum = sd::math::sd_add<AccT, AccT, AccT>(sum, static_cast<AccT>(bias[d]));
+        sum = reproducible::add<AccT>(sum, static_cast<AccT>(bias[d]));
     }
 
     if (activation == 1) {
         const AccT one = static_cast<AccT>(1);
-        const AccT sigmoid = sd::math::sd_divide<AccT, AccT, AccT>(
-            one, sd::math::sd_add<AccT, AccT, AccT>(
-                one, sd::math::sd_exp<AccT, AccT>(-sum)));
-        sum = sd::math::sd_multiply<AccT, AccT, AccT>(sum, sigmoid);
+        const AccT sigmoid = reproducible::divide<AccT>(
+            one, reproducible::add<AccT>(
+                one, reproducible::fastExp<AccT>(-sum)));
+        sum = reproducible::multiply<AccT>(sum, sigmoid);
     }
 
     out[b * oS0 + t * oS1 + d * oS2] = static_cast<X>(sum);

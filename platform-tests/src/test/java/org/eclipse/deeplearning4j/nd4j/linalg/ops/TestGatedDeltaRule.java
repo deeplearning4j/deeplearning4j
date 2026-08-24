@@ -46,26 +46,35 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 public class TestGatedDeltaRule {
 
     private static float reproducibleExp(float value) {
+        if (Float.isNaN(value)) {
+            return value;
+        }
         float clamped = Math.max(-88.0f, Math.min(88.0f, value));
         float scaled = clamped * (float) 1.442695040888963407359924681001892137;
         float bias = scaled >= 0.0f ? 0.5f : -0.5f;
         int exponent = (int) (scaled + bias);
         float reduced = clamped - exponent * (float) 0.693147180559945309417232121458176568;
 
-        float term = 1.0f;
-        float sum = 1.0f;
-        for (int order = 1; order <= 18; ++order) {
-            term = (term * reduced) / order;
-            sum = sum + term;
-        }
+        float polynomial = 2.7557319223985893e-6f;
+        polynomial = 2.48015873015873e-5f + reduced * polynomial;
+        polynomial = 1.984126984126984e-4f + reduced * polynomial;
+        polynomial = 1.388888888888889e-3f + reduced * polynomial;
+        polynomial = 8.333333333333333e-3f + reduced * polynomial;
+        polynomial = 4.1666666666666664e-2f + reduced * polynomial;
+        polynomial = 1.6666666666666666e-1f + reduced * polynomial;
+        polynomial = 0.5f + reduced * polynomial;
+        polynomial = 1.0f + reduced * polynomial;
+        polynomial = 1.0f + reduced * polynomial;
 
-        float scale = 1.0f;
-        float scaleStep = exponent >= 0 ? 2.0f : 0.5f;
-        int scaleCount = Math.abs(exponent);
-        for (int index = 0; index < scaleCount; ++index) {
-            scale = scale * scaleStep;
+        final float scale;
+        if (exponent >= -126) {
+            scale = Float.intBitsToFloat((exponent + 127) << 23);
+        } else if (exponent >= -149) {
+            scale = Float.intBitsToFloat(1 << (exponent + 149));
+        } else {
+            scale = 0.0f;
         }
-        return sum * scale;
+        return polynomial * scale;
     }
 
     @Test
@@ -376,6 +385,21 @@ public class TestGatedDeltaRule {
         assertThrows(Exception.class,
                 () -> Nd4j.exec(new GatedDeltaRule(q, k, v, beta, gate)),
                 "GDR must reject mixed storage instead of reinterpreting buffers through Q's dtype");
+    }
+
+    @Test
+    public void testMismatchedRecurrentStateShapeIsRejected() {
+        int B = 1, L = 1, H = 2, Dk = 4, Dv = 6;
+        INDArray q = Nd4j.ones(DataType.FLOAT, B, L, H, Dk);
+        INDArray k = Nd4j.ones(DataType.FLOAT, B, L, H, Dk);
+        INDArray v = Nd4j.ones(DataType.FLOAT, B, L, H, Dv);
+        INDArray beta = Nd4j.ones(DataType.FLOAT, B, L, H);
+        INDArray gate = Nd4j.zeros(DataType.FLOAT, B, L, H);
+        INDArray wrongState = Nd4j.zeros(DataType.FLOAT, B, H, Dk, Dv - 1);
+
+        assertThrows(Exception.class,
+                () -> Nd4j.exec(new GatedDeltaRule(q, k, v, beta, gate, wrongState)),
+                "GDR must reject a recurrent buffer with a mismatched logical layout");
     }
 
     /**

@@ -20,6 +20,7 @@
 #include <math/templatemath.h>
 #include <ops/op_types.h>
 #include <ops/declarable/helpers/causal_conv1d.h>
+#include <ops/declarable/helpers/reproducible_math.h>
 
 namespace sd {
 namespace ops {
@@ -94,21 +95,20 @@ static void causalConv1d_(LaunchContext* context, NDArray* x, NDArray* weight, N
                     }
                     const AccT weightValue = static_cast<AccT>(
                         wBuf[d * wChanStride + (K - 1 - kk) * wDimStride]);
-                    sum = sd::math::sd_add<AccT, AccT, AccT>(
-                        sum, sd::math::sd_multiply<AccT, AccT, AccT>(weightValue, xVal));
+                    const AccT product = reproducible::multiply<AccT>(weightValue, xVal);
+                    sum = reproducible::add<AccT>(sum, product);
                 }
 
                 if (bBuf != nullptr) {
-                    sum = sd::math::sd_add<AccT, AccT, AccT>(
-                        sum, static_cast<AccT>(bBuf[d]));
+                    sum = reproducible::add<AccT>(sum, static_cast<AccT>(bBuf[d]));
                 }
 
                 if (activation == 1) {
                     const AccT one = static_cast<AccT>(1);
-                    const AccT sigmoid = sd::math::sd_divide<AccT, AccT, AccT>(
-                        one, sd::math::sd_add<AccT, AccT, AccT>(
-                            one, sd::math::sd_exp<AccT, AccT>(-sum)));
-                    sum = sd::math::sd_multiply<AccT, AccT, AccT>(sum, sigmoid);
+                    const AccT sigmoid = reproducible::divide<AccT>(
+                        one, reproducible::add<AccT>(
+                            one, reproducible::fastExp<AccT>(-sum)));
+                    sum = reproducible::multiply<AccT>(sum, sigmoid);
                 }
 
                 outBuf[b * oS0 + t * oS1 + d * oS2] = static_cast<X>(sum);

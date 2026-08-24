@@ -101,6 +101,47 @@ elseif(NOT SD_CUDA)
     add_definitions(-DSD_BACKEND_TYPE_CPU=1)
 endif()
 
+# NNAPI accelerator-only is an executable source contract, not packaging
+# metadata. Keep the exact required device in the translation units that own
+# discovery, capability classification, compilation, and execution. Without
+# these definitions NnapiGraphBackend silently compiles its generic
+# ANeuralNetworksCompilation_create() branch even when the AAR receipt claims a
+# pinned accelerator.
+option(SD_NNAPI_ACCELERATOR_ONLY
+       "Require compilation on one explicitly selected NNAPI accelerator" OFF)
+set(SD_NNAPI_REQUIRED_DEVICE_NAME "" CACHE STRING
+    "Exact NNAPI accelerator device required by accelerator-only builds")
+if(SD_NNAPI_ACCELERATOR_ONLY)
+    if(NOT ANDROID AND NOT SD_ANDROID_BUILD AND
+       NOT CMAKE_SYSTEM_NAME STREQUAL "Android")
+        message(FATAL_ERROR
+            "SD_NNAPI_ACCELERATOR_ONLY requires an Android target")
+    endif()
+    if(SD_NNAPI_REQUIRED_DEVICE_NAME STREQUAL "")
+        message(FATAL_ERROR
+            "SD_NNAPI_ACCELERATOR_ONLY requires SD_NNAPI_REQUIRED_DEVICE_NAME")
+    endif()
+    if(DEFINED ANDROID_PLATFORM)
+        string(REGEX REPLACE "^android-" "" _sd_nnapi_target_api "${ANDROID_PLATFORM}")
+    elseif(DEFINED CMAKE_ANDROID_API)
+        set(_sd_nnapi_target_api "${CMAKE_ANDROID_API}")
+    elseif(DEFINED ANDROID_NATIVE_API_LEVEL)
+        set(_sd_nnapi_target_api "${ANDROID_NATIVE_API_LEVEL}")
+    else()
+        set(_sd_nnapi_target_api "${CMAKE_SYSTEM_VERSION}")
+    endif()
+    if(NOT _sd_nnapi_target_api MATCHES "^[0-9]+$" OR
+       _sd_nnapi_target_api LESS 29)
+        message(FATAL_ERROR
+            "SD_NNAPI_ACCELERATOR_ONLY requires Android API 29+ for device enumeration and createForDevices (target=${_sd_nnapi_target_api})")
+    endif()
+    add_definitions(-DSD_NNAPI_ACCELERATOR_ONLY=1)
+    add_definitions(
+        -DSD_NNAPI_REQUIRED_DEVICE_NAME=${SD_NNAPI_REQUIRED_DEVICE_NAME})
+    message(STATUS
+        "NNAPI accelerator-only source contract: ${SD_NNAPI_REQUIRED_DEVICE_NAME}")
+endif()
+
 # --- ZLUDA Transpiler Options ---
 # The published ZLUDA backend translates the CUDA ABI to AMD HIP/ROCm.
 option(SD_ZLUDA "Enable the AMD ZLUDA CUDA-compatibility backend" OFF)

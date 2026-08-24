@@ -964,6 +964,8 @@ public class DspLifecycleExhaustiveTest {
     @EnumSource(value = GraphExecutionMode.class, names = {"CUDA_GRAPHS", "TRITON", "AUTO"})
     @DisplayName("After markVariable + re-warmup, effective address must be staging address")
     void testEffectiveAddrMatchesStaging(GraphExecutionMode mode) {
+        Assumptions.assumeTrue(Nd4j.backends().isCudaAvailable(),
+                "CUDA staging-address contract");
         sd = buildSimpleGraph(8, 4);
         configureMode(sd, mode);
 
@@ -1177,6 +1179,8 @@ public class DspLifecycleExhaustiveTest {
     @Test
     @DisplayName("Re-capture after markVariable bakes staging addresses into CUDA graph")
     void testReCaptureUsesStaging() {
+        Assumptions.assumeTrue(Nd4j.backends().isCudaAvailable(),
+                "CUDA re-capture staging contract");
         sd = buildSimpleGraph(8, 4);
         configureMode(sd, GraphExecutionMode.CUDA_GRAPHS);
 
@@ -1652,6 +1656,8 @@ public class DspLifecycleExhaustiveTest {
     @Test
     @DisplayName("After markVariable + replay, variable is in cached indices")
     void testVariableIndexCaching() {
+        Assumptions.assumeTrue(Nd4j.backends().isCudaAvailable(),
+                "CUDA captured-variable index contract");
         sd = buildSimpleGraph(8, 4);
         configureMode(sd, GraphExecutionMode.CUDA_GRAPHS);
 
@@ -1841,6 +1847,8 @@ public class DspLifecycleExhaustiveTest {
     @Test
     @DisplayName("Isolation: staging buffer exists after mark + replay")
     void testIsolationStagingBufferExists() {
+        Assumptions.assumeTrue(Nd4j.backends().isCudaAvailable(),
+                "CUDA staging-buffer contract");
         sd = buildSimpleGraph(8, 4);
         configureMode(sd, GraphExecutionMode.CUDA_GRAPHS);
 

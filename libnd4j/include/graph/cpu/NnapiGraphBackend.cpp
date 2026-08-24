@@ -23,6 +23,7 @@
 #include <graph/gpu/OpCategoryTable.h>
 #include <helpers/logger.h>
 #include <helpers/shape.h>
+#include <ops/declarable/helpers/ggml_qmatmul.h>
 #include <system/Environment.h>
 #include <types/float16.h>
 
@@ -32,10 +33,13 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <iomanip>
 #include <limits>
 #include <mutex>
+#include <sstream>
 
 namespace sd {
 namespace graph {
@@ -69,6 +73,457 @@ static constexpr int kMaxNnapiSegmentOps = 32;
 static constexpr size_t kNnapiOutputGuardBytes = 256;
 static constexpr uint8_t kNnapiOutputGuardValue = 0xa5;
 static constexpr size_t kNnapiCacheTokenBytes = 32;
+static_assert(kNnapiCacheTokenBytes == ANEURALNETWORKS_BYTE_SIZE_OF_CACHE_TOKEN,
+              "NNAPI cache token ABI changed");
+
+// Tensor G3 calibration profile used by backend-owned Q4_K lowering. These
+// fixed values come from the production min/max calibration contract and are
+// part of the lowering/cache identity. Runtime-derived scales are deliberately
+// prohibited because NNAPI quantization metadata is fixed at model compilation.
+static constexpr float kTensorG3Q4ActivationScale = 0.03125f;
+static constexpr float kTensorG3Q4OutputScale = 0.0625f;
+static constexpr const char* kTensorG3Q4LoweringAbi = "nnapi-q4k-conv-v1";
+
+struct StableDigest256 {
+  std::array<uint64_t, 4> lanes = {
+      1469598103934665603ULL,
+      1469598103934665603ULL ^ 0x9e3779b97f4a7c15ULL,
+      1469598103934665603ULL ^ 0xc2b2ae3d27d4eb4fULL,
+      1469598103934665603ULL ^ 0x165667b19e3779f9ULL};
+
+  void mix(const void* data, size_t bytes) {
+    const auto* values = static_cast<const uint8_t*>(data);
+    for (size_t index = 0; index < bytes; ++index) {
+      for (size_t lane = 0; lane < lanes.size(); ++lane) {
+        lanes[lane] ^= static_cast<uint64_t>(values[index]) +
+                       static_cast<uint64_t>(lane * 0x31U);
+        lanes[lane] *= 1099511628211ULL + static_cast<uint64_t>(lane * 2U);
+      }
+    }
+  }
+
+  template <typename T>
+  void mixValue(const T& value) {
+    mix(&value, sizeof(value));
+  }
+
+  void mixString(const std::string& value) {
+    mix(value.data(), value.size());
+    const uint8_t terminator = 0xff;
+    mix(&terminator, 1);
+  }
+
+  std::array<uint8_t, kNnapiCacheTokenBytes> bytes() const {
+    std::array<uint8_t, kNnapiCacheTokenBytes> result{};
+    for (size_t lane = 0; lane < lanes.size(); ++lane) {
+      for (size_t byte = 0; byte < sizeof(uint64_t); ++byte) {
+        result[lane * sizeof(uint64_t) + byte] =
+            static_cast<uint8_t>((lanes[lane] >> (byte * 8)) & 0xffU);
+      }
+    }
+    return result;
+  }
+
+  std::string hex() const {
+    const auto digestBytes = bytes();
+    std::ostringstream output;
+    output << std::hex << std::setfill('0');
+    for (uint8_t value : digestBytes) {
+      output << std::setw(2) << static_cast<unsigned int>(value);
+    }
+    return output.str();
+  }
+};
+
+static void mixNnapiCacheToken(
+    std::array<uint8_t, kNnapiCacheTokenBytes>& token,
+    const std::string& loweringIdentity) {
+  StableDigest256 digest;
+  digest.mix(token.data(), token.size());
+  digest.mixString(loweringIdentity);
+  token = digest.bytes();
+}
+
+static bool isQ4KQMatMul(const NativeSlot& slot) {
+  return toLower(slot.ident.opName) == "ggml_qmatmul" &&
+         slot.args.numIArgs == 4 && slot.args.iArgs != nullptr &&
+         slot.args.iArgs[0] == 8;
+}
+
+static NDArray* resolveNnapiSourceArray(
+    int sourceIndex, NDArray** externalInputs, int numExternalInputs,
+    NDArray** outputSlots, int totalOutputSlots) {
+  if (sourceIndex < 0) {
+    const int externalIndex = -(sourceIndex + 1);
+    return externalIndex >= 0 && externalIndex < numExternalInputs &&
+                   externalInputs != nullptr
+               ? externalInputs[externalIndex]
+               : nullptr;
+  }
+  return sourceIndex < totalOutputSlots && outputSlots != nullptr
+             ? outputSlots[sourceIndex]
+             : nullptr;
+}
+
+static float q4KFp16ToFloat(uint16_t value) {
+  const uint32_t sign = (value >> 15) & 1U;
+  uint32_t exponent = (value >> 10) & 0x1fU;
+  uint32_t mantissa = value & 0x3ffU;
+  if (exponent == 0) {
+    if (mantissa == 0) {
+      const uint32_t result = sign << 31;
+      float converted;
+      std::memcpy(&converted, &result, sizeof(converted));
+      return converted;
+    }
+    int adjustedExponent = -14;
+    while ((mantissa & 0x400U) == 0) {
+      mantissa <<= 1;
+      --adjustedExponent;
+    }
+    mantissa &= 0x3ffU;
+    const uint32_t result = (sign << 31) |
+                            (static_cast<uint32_t>(adjustedExponent + 127) << 23) |
+                            (mantissa << 13);
+    float converted;
+    std::memcpy(&converted, &result, sizeof(converted));
+    return converted;
+  }
+  if (exponent == 31) {
+    const uint32_t result = (sign << 31) | 0x7f800000U | (mantissa << 13);
+    float converted;
+    std::memcpy(&converted, &result, sizeof(converted));
+    return converted;
+  }
+  const uint32_t result = (sign << 31) | ((exponent + 112U) << 23) |
+                          (mantissa << 13);
+  float converted;
+  std::memcpy(&converted, &result, sizeof(converted));
+  return converted;
+}
+
+static void getQ4KScaleAndMin(int index, const uint8_t* values,
+                             int& scale, int& minimum) {
+  if (index < 4) {
+    scale = values[index] & 63;
+    minimum = values[index + 4] & 63;
+  } else {
+    scale = (values[index + 4] & 0x0f) |
+            (((values[index - 4] >> 6) & 3) << 4);
+    minimum = ((values[index + 4] >> 4) & 0x0f) |
+              (((values[index] >> 6) & 3) << 4);
+  }
+}
+
+static bool decodeQ4KBlock(const uint8_t* block, float* output) {
+  uint16_t scaleBits = 0;
+  uint16_t minimumBits = 0;
+  std::memcpy(&scaleBits, block, sizeof(scaleBits));
+  std::memcpy(&minimumBits, block + sizeof(scaleBits), sizeof(minimumBits));
+  const float scaleBase = q4KFp16ToFloat(scaleBits);
+  const float minimumBase = q4KFp16ToFloat(minimumBits);
+  if (!std::isfinite(scaleBase) || !std::isfinite(minimumBase)) return false;
+
+  const uint8_t* scales = block + 4;
+  const uint8_t* quants = block + 16;
+  int scaleIndex = 0;
+  for (int elementBase = 0; elementBase < 256;
+       elementBase += 64, scaleIndex += 2) {
+    int firstScale = 0;
+    int firstMinimum = 0;
+    int secondScale = 0;
+    int secondMinimum = 0;
+    getQ4KScaleAndMin(scaleIndex, scales, firstScale, firstMinimum);
+    getQ4KScaleAndMin(scaleIndex + 1, scales, secondScale, secondMinimum);
+    const float firstMultiplier = scaleBase * firstScale;
+    const float firstOffset = minimumBase * firstMinimum;
+    const float secondMultiplier = scaleBase * secondScale;
+    const float secondOffset = minimumBase * secondMinimum;
+    const int quantOffset = elementBase / 2;
+    for (int element = 0; element < 32; ++element) {
+      output[elementBase + element] =
+          firstMultiplier * (quants[quantOffset + element] & 0x0f) -
+          firstOffset;
+      output[elementBase + element + 32] =
+          secondMultiplier * ((quants[quantOffset + element] >> 4) & 0x0f) -
+          secondOffset;
+    }
+  }
+  return true;
+}
+
+struct Q4KLoweringContract {
+  int slotIndex = -1;
+  int activationSourceIndex = 0;
+  int packedWeightSourceIndex = 0;
+  int outputSlotIndex = -1;
+  LongType outputChannels = 0;
+  LongType inputChannels = 0;
+  DataType outputDataType = DataType::UNKNOWN;
+  NDArray* activations = nullptr;
+  NDArray* packedWeights = nullptr;
+  NDArray* output = nullptr;
+  std::vector<LongType> nnapiInputDimensions;
+  std::vector<LongType> nnapiOutputDimensions;
+  std::string packedWeightDigest;
+};
+
+struct ConvertedQ4KWeights {
+  std::vector<int8_t> filter;
+  std::vector<float> perChannelScales;
+  std::vector<int32_t> zeroBias;
+  std::string loweringDigest;
+};
+
+static bool resolveQ4KLoweringContract(
+    NativeSlot& slot, int slotIndex, NDArray** externalInputs,
+    int numExternalInputs, NDArray** outputSlots, int totalOutputSlots,
+    Q4KLoweringContract& contract, std::string& reason) {
+  if (!isQ4KQMatMul(slot)) {
+    reason = "slot is not a Q4_K ggml_qmatmul";
+    return false;
+  }
+  if (slot.wiring.numInputs != 2 || slot.wiring.numOutputs != 1 ||
+      slot.wiring.inputSourceIndices == nullptr ||
+      slot.wiring.outputSlotIndices == nullptr ||
+      slot.wiring.inputSourceTypes == nullptr) {
+    reason = "Q4_K lowering requires two inputs, one output, and source metadata";
+    return false;
+  }
+  if (slot.args.numTArgs != 0 || slot.args.numBArgs != 0 ||
+      slot.args.numDArgs != 0 || slot.args.numSArgs != 0) {
+    reason = "Q4_K lowering accepts only its four integer arguments";
+    return false;
+  }
+
+  const LongType outputChannels = slot.args.iArgs[1];
+  const LongType inputChannels = slot.args.iArgs[2];
+  const int outputTypeArgument = static_cast<int>(slot.args.iArgs[3]);
+  if (outputChannels <= 0 || inputChannels <= 0 || inputChannels % 256 != 0 ||
+      (outputTypeArgument != 0 && outputTypeArgument != 1)) {
+    reason = "invalid Q4_K N, K, or output dtype argument";
+    return false;
+  }
+  constexpr LongType kMaxSafeInt32Accumulation =
+      static_cast<LongType>(std::numeric_limits<int32_t>::max()) / (127 * 127);
+  if (inputChannels > kMaxSafeInt32Accumulation) {
+    reason = "Q4_K inner dimension can overflow signed INT32 accumulation";
+    return false;
+  }
+  if (static_cast<unsigned long long>(outputChannels) >
+          static_cast<unsigned long long>(std::numeric_limits<uint32_t>::max()) ||
+      static_cast<unsigned long long>(inputChannels) >
+          static_cast<unsigned long long>(std::numeric_limits<uint32_t>::max())) {
+    reason = "Q4_K dimensions exceed NNAPI uint32 dimensions";
+    return false;
+  }
+
+  const int activationSource = slot.wiring.inputSourceIndices[0];
+  const int packedWeightSource = slot.wiring.inputSourceIndices[1];
+  const int8_t packedWeightSourceType = slot.wiring.inputSourceTypes[1];
+  if (packedWeightSource >= 0 ||
+      (packedWeightSourceType != SOURCE_CONSTANT &&
+       packedWeightSourceType != SOURCE_VARIABLE)) {
+    reason = "Q4_K packed weights must be an inference-static external source";
+    return false;
+  }
+
+  NDArray* activations = resolveNnapiSourceArray(
+      activationSource, externalInputs, numExternalInputs, outputSlots,
+      totalOutputSlots);
+  NDArray* packedWeights = resolveNnapiSourceArray(
+      packedWeightSource, externalInputs, numExternalInputs, outputSlots,
+      totalOutputSlots);
+  const int outputSlotIndex = slot.wiring.outputSlotIndices[0];
+  NDArray* output = resolveNnapiSourceArray(
+      outputSlotIndex, externalInputs, numExternalInputs, outputSlots,
+      totalOutputSlots);
+  if (activations == nullptr || packedWeights == nullptr || output == nullptr) {
+    reason = "Q4_K lowering encountered an unresolved activation, weight, or output";
+    return false;
+  }
+  if ((activations->dataType() != DataType::FLOAT32 &&
+       activations->dataType() != DataType::HALF) ||
+      (activations->rankOf() != 2 && activations->rankOf() != 3) ||
+      activations->sizeAt(activations->rankOf() - 1) != inputChannels) {
+    reason = "Q4_K activation dtype/rank/inner dimension is unsupported";
+    return false;
+  }
+  if (packedWeights->dataType() != DataType::INT8 ||
+      packedWeights->rankOf() != 1) {
+    reason = "Q4_K packed weight must be a rank-1 INT8 byte tensor";
+    return false;
+  }
+  const DataType expectedOutputType =
+      outputTypeArgument == 1 ? DataType::HALF : DataType::FLOAT32;
+  if (output->dataType() != expectedOutputType ||
+      output->rankOf() != activations->rankOf()) {
+    reason = "Q4_K output dtype/rank does not match its declared contract";
+    return false;
+  }
+  for (int dimension = 0; dimension < activations->rankOf() - 1; ++dimension) {
+    if (output->sizeAt(dimension) != activations->sizeAt(dimension)) {
+      reason = "Q4_K output leading dimensions do not match activations";
+      return false;
+    }
+  }
+  if (output->sizeAt(output->rankOf() - 1) != outputChannels) {
+    reason = "Q4_K output channel dimension does not match N";
+    return false;
+  }
+
+  const LongType blocksPerRow = inputChannels / 256;
+  if (blocksPerRow > std::numeric_limits<LongType>::max() /
+                         sd::ops::helpers::GGML_QMM_BLOCK_Q4_K ||
+      outputChannels > std::numeric_limits<LongType>::max() /
+                           (blocksPerRow *
+                            sd::ops::helpers::GGML_QMM_BLOCK_Q4_K)) {
+    reason = "Q4_K packed byte count overflows LongType";
+    return false;
+  }
+  const LongType expectedBytes =
+      outputChannels * blocksPerRow *
+      sd::ops::helpers::GGML_QMM_BLOCK_Q4_K;
+  if (packedWeights->lengthOf() != expectedBytes) {
+    reason = "Q4_K packed byte count does not match N and K";
+    return false;
+  }
+  if (outputChannels > std::numeric_limits<LongType>::max() / inputChannels) {
+    reason = "Q4_K converted filter size overflows LongType";
+    return false;
+  }
+  const LongType convertedElements = outputChannels * inputChannels;
+  if (static_cast<unsigned long long>(convertedElements) >
+      static_cast<unsigned long long>(std::numeric_limits<size_t>::max())) {
+    reason = "Q4_K converted filter exceeds addressable storage";
+    return false;
+  }
+
+  packedWeights->syncToHost();
+  std::unique_ptr<NDArray> packedCopy;
+  NDArray* packedDense = packedWeights;
+  if (!isDenseCOrder(packedWeights)) {
+    packedCopy = std::make_unique<NDArray>(packedWeights->dup('c'));
+    packedDense = packedCopy.get();
+  }
+  StableDigest256 packedDigest;
+  packedDigest.mixString(kTensorG3Q4LoweringAbi);
+  packedDigest.mixValue(outputChannels);
+  packedDigest.mixValue(inputChannels);
+  packedDigest.mixValue(kTensorG3Q4ActivationScale);
+  packedDigest.mixValue(kTensorG3Q4OutputScale);
+  packedDigest.mix(packedDense->buffer(), static_cast<size_t>(expectedBytes));
+
+  contract.slotIndex = slotIndex;
+  contract.activationSourceIndex = activationSource;
+  contract.packedWeightSourceIndex = packedWeightSource;
+  contract.outputSlotIndex = outputSlotIndex;
+  contract.outputChannels = outputChannels;
+  contract.inputChannels = inputChannels;
+  contract.outputDataType = expectedOutputType;
+  contract.activations = activations;
+  contract.packedWeights = packedWeights;
+  contract.output = output;
+  contract.packedWeightDigest = packedDigest.hex();
+  if (activations->rankOf() == 2) {
+    contract.nnapiInputDimensions =
+        {1, activations->sizeAt(0), 1, inputChannels};
+    contract.nnapiOutputDimensions =
+        {1, activations->sizeAt(0), 1, outputChannels};
+  } else {
+    contract.nnapiInputDimensions =
+        {activations->sizeAt(0), activations->sizeAt(1), 1, inputChannels};
+    contract.nnapiOutputDimensions =
+        {activations->sizeAt(0), activations->sizeAt(1), 1, outputChannels};
+  }
+  return true;
+}
+
+static bool convertQ4KWeights(const Q4KLoweringContract& contract,
+                              ConvertedQ4KWeights& converted,
+                              std::string& reason) {
+  contract.packedWeights->syncToHost();
+  std::unique_ptr<NDArray> packedCopy;
+  NDArray* packedDense = contract.packedWeights;
+  if (!isDenseCOrder(contract.packedWeights)) {
+    packedCopy = std::make_unique<NDArray>(contract.packedWeights->dup('c'));
+    packedDense = packedCopy.get();
+  }
+  const auto* packedBytes =
+      reinterpret_cast<const uint8_t*>(packedDense->buffer());
+  const LongType blocksPerRow = contract.inputChannels / 256;
+  const LongType convertedElements =
+      contract.outputChannels * contract.inputChannels;
+  converted.filter.resize(static_cast<size_t>(convertedElements));
+  converted.perChannelScales.resize(
+      static_cast<size_t>(contract.outputChannels));
+  converted.zeroBias.assign(static_cast<size_t>(contract.outputChannels), 0);
+
+  float blockValues[256];
+  for (LongType channel = 0; channel < contract.outputChannels; ++channel) {
+    const uint8_t* row =
+        packedBytes + static_cast<size_t>(channel * blocksPerRow) *
+                          sd::ops::helpers::GGML_QMM_BLOCK_Q4_K;
+    float maximumAbsoluteValue = 0.0f;
+    for (LongType blockIndex = 0; blockIndex < blocksPerRow; ++blockIndex) {
+      if (!decodeQ4KBlock(
+              row + static_cast<size_t>(blockIndex) *
+                        sd::ops::helpers::GGML_QMM_BLOCK_Q4_K,
+              blockValues)) {
+        reason = "Q4_K block contains a non-finite scale";
+        return false;
+      }
+      for (float value : blockValues) {
+        if (!std::isfinite(value)) {
+          reason = "Q4_K block dequantizes to a non-finite value";
+          return false;
+        }
+        maximumAbsoluteValue = std::max(maximumAbsoluteValue, std::abs(value));
+      }
+    }
+    const float channelScale = maximumAbsoluteValue > 0.0f
+                                   ? maximumAbsoluteValue / 127.0f
+                                   : 1.0f;
+    if (!std::isfinite(channelScale) || channelScale <= 0.0f) {
+      reason = "Q4_K channel produced an invalid symmetric scale";
+      return false;
+    }
+    converted.perChannelScales[static_cast<size_t>(channel)] = channelScale;
+
+    int8_t* quantizedRow = converted.filter.data() +
+                           static_cast<size_t>(channel * contract.inputChannels);
+    for (LongType blockIndex = 0; blockIndex < blocksPerRow; ++blockIndex) {
+      if (!decodeQ4KBlock(
+              row + static_cast<size_t>(blockIndex) *
+                        sd::ops::helpers::GGML_QMM_BLOCK_Q4_K,
+              blockValues)) {
+        reason = "Q4_K block changed while lowering";
+        return false;
+      }
+      const LongType elementBase = blockIndex * 256;
+      for (int element = 0; element < 256; ++element) {
+        const long quantized = std::lround(blockValues[element] / channelScale);
+        quantizedRow[elementBase + element] = static_cast<int8_t>(
+            std::max(-127L, std::min(127L, quantized)));
+      }
+    }
+  }
+
+  StableDigest256 loweringDigest;
+  loweringDigest.mixString(kTensorG3Q4LoweringAbi);
+  loweringDigest.mixString(contract.packedWeightDigest);
+  loweringDigest.mixValue(contract.outputChannels);
+  loweringDigest.mixValue(contract.inputChannels);
+  loweringDigest.mixValue(kTensorG3Q4ActivationScale);
+  loweringDigest.mixValue(kTensorG3Q4OutputScale);
+  loweringDigest.mix(converted.filter.data(), converted.filter.size());
+  loweringDigest.mix(converted.perChannelScales.data(),
+                     converted.perChannelScales.size() * sizeof(float));
+  loweringDigest.mix(converted.zeroBias.data(),
+                     converted.zeroBias.size() * sizeof(int32_t));
+  converted.loweringDigest = loweringDigest.hex();
+  return true;
+}
 
 struct EmbeddingLookupContract {
   bool valid = false;
@@ -197,6 +652,10 @@ int NnapiGraphBackend::getNnapiOpCode(const std::string& opName) {
                              return ANEURALNETWORKS_LOCAL_RESPONSE_NORMALIZATION;
 
   // Convolution
+  // Q4_K ggml_qmatmul is lowered by this backend to a quantized 1x1
+  // convolution. Packed GGML bytes never enter the generic operand path.
+  if (name == "ggml_qmatmul")
+                             return ANEURALNETWORKS_CONV_2D;
   if (name == "conv2d")      return ANEURALNETWORKS_CONV_2D;
   if (name == "depthwise_conv2d" || name == "sconv2d")
                              return ANEURALNETWORKS_DEPTHWISE_CONV_2D;
@@ -317,7 +776,7 @@ int NnapiGraphBackend::getMinApiLevel(const std::string& opName) {
   std::string name = toLower(opName);
 
   // NNAPI 1.3 (API 30)
-  if (name == "matmul" || name == "mmul") return 30;
+  if (name == "matmul" || name == "mmul" || name == "ggml_qmatmul") return 30;
 
   // NNAPI 1.2 (API 29)
   static const std::unordered_set<std::string> api29Ops = {
@@ -390,6 +849,26 @@ bool NnapiGraphBackend::validateSlotContract(const NativeSlot& slot, int nnapiOp
   auto exactInputs = [&](int count) {
     return wiring.numInputs == count || fail("unexpected data-input count");
   };
+
+  if (toLower(slot.ident.opName) == "ggml_qmatmul") {
+    if (!exactInputs(2) || !oneOutput()) return false;
+    if (args.numIArgs != 4 || args.numTArgs != 0 || args.numBArgs != 0 ||
+        args.numDArgs != 0 || args.numSArgs != 0) {
+      return fail("Q4_K ggml_qmatmul requires exactly four integer arguments");
+    }
+    if (args.iArgs[0] != 8 || args.iArgs[1] <= 0 || args.iArgs[2] <= 0 ||
+        args.iArgs[2] % 256 != 0 ||
+        (args.iArgs[3] != 0 && args.iArgs[3] != 1)) {
+      return fail("only a valid Q4_K ggml_qmatmul contract is lowerable");
+    }
+    if (wiring.inputSourceTypes == nullptr ||
+        wiring.inputSourceIndices[1] >= 0 ||
+        (wiring.inputSourceTypes[1] != SOURCE_CONSTANT &&
+         wiring.inputSourceTypes[1] != SOURCE_VARIABLE)) {
+      return fail("Q4_K lowering requires inference-static external packed weights");
+    }
+    return true;
+  }
 
   const bool binary =
       nnapiOp == ANEURALNETWORKS_ADD || nnapiOp == ANEURALNETWORKS_SUB ||
@@ -544,7 +1023,7 @@ bool NnapiGraphBackend::resolveRequiredAcceleratorDevice() {
   }
 
   for (uint32_t deviceIndex = 0; deviceIndex < deviceCount; ++deviceIndex) {
-    const ANeuralNetworksDevice* device = nullptr;
+    ANeuralNetworksDevice* device = nullptr;
     if (ANeuralNetworks_getDevice(deviceIndex, &device) != ANEURALNETWORKS_NO_ERROR ||
         device == nullptr) {
       continue;
@@ -649,6 +1128,7 @@ int NnapiGraphBackend::resolutionPriority(
 GraphBackendPlanningPolicy NnapiGraphBackend::planningPolicy(
     const GraphBackendRequest& request) const {
   GraphBackendPlanningPolicy policy;
+  policy.artifactKind = GraphBackendArtifactKind::DIRECT_COMPILED;
   policy.requiresShapePrePass = true;
   policy.requiresSuccessfulShapePrePass = true;
   policy.precompileBeforeFirstExecution = true;
@@ -657,6 +1137,7 @@ GraphBackendPlanningPolicy NnapiGraphBackend::planningPolicy(
   policy.requiresCompleteLowering =
       request.executionMode == GraphExecutionMode::GEM_NNAPI;
   policy.preferredMaxSegmentOps = kMaxNnapiSegmentOps;
+  policy.separateMatrixMultiplySegments = true;
   return policy;
 }
 
@@ -689,15 +1170,11 @@ bool NnapiGraphBackend::canResolveSlot(const GraphBackendRequest& request,
 bool NnapiGraphBackend::canResolveSegment(const GraphBackendRequest& request,
                                           NativeSlot* slots, int start,
                                           int end) {
-  // ARM hybrid is still a compiler-required accelerator contract. Capability
-  // partitioning may legitimately isolate a supported operation into a
-  // one-slot segment (for example, at a boundary between NNAPI-supported and
-  // MLIR/ACL-supported operations). NNAPI can lower that operation directly;
-  // requiring a fused pair here leaves the segment unresolved before lowering
-  // and makes the compiler-required seal fail even though the slot is valid.
-  if (start == end &&
-      (request.executionMode == GraphExecutionMode::GEM_NNAPI ||
-       request.executionMode == GraphExecutionMode::GEM_ARM_HYBRID)) {
+  (void)request;
+  // Capability partitioning may legitimately isolate a supported operation
+  // into a one-slot segment. NNAPI can lower that operation directly; requiring
+  // a fused pair leaves a valid Q4_K or boundary op unresolved before lowering.
+  if (start == end) {
     return isSlotResolvable(slots, start);
   }
   return canFuseSegment(slots, start, end);
@@ -717,6 +1194,13 @@ bool NnapiGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
   bool hasGather = false;
   for (int i = start; i <= end; i++) {
     if (!isSlotResolvable(slots, i)) return false;
+    if (isQ4KQMatMul(slots[i])) {
+      DSP_DIAG(BACKEND,
+               "NNAPI admission rejected seg[%d-%d]: Q4_K lowering is a "
+               "standalone quantized compilation unit",
+               start, end);
+      return false;
+    }
     hasGather |= toLower(slots[i].ident.opName) == "gather";
   }
 
@@ -1411,6 +1895,90 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
   // Track which source indices map to which NNAPI operands
   std::unordered_map<int, uint32_t> sourceToOperand;
 
+  // Q4_K lowering is deliberately standalone in v1. This keeps quantized
+  // boundaries explicit and prevents a neighboring float op from accidentally
+  // consuming an INT8-only internal value.
+  std::unordered_map<int, Q4KLoweringContract> q4KContracts;
+  std::unordered_map<int, size_t> q4KArtifactIndices;
+  compiled.q4kConstants.reserve(static_cast<size_t>(endSlot - startSlot + 1));
+  for (int slotIndex = startSlot; slotIndex <= endSlot; ++slotIndex) {
+    if (!isQ4KQMatMul(slots[slotIndex])) continue;
+    if (startSlot != endSlot) {
+      DSP_DIAG(FALLBACK,
+               "NNAPI_Q4K_LOWERING_REJECTED slot=%d seg[%d-%d] "
+               "reason=non_standalone_segment",
+               slotIndex, startSlot, endSlot);
+      return false;
+    }
+#if defined(SD_NNAPI_ACCELERATOR_ONLY)
+    if (selectedDeviceFeatureLevel_ < ANEURALNETWORKS_FEATURE_LEVEL_4) {
+      DSP_DIAG(FALLBACK,
+               "NNAPI_Q4K_LOWERING_REJECTED slot=%d device=%s "
+               "feature_level=%lld required=%d",
+               slotIndex, selectedDeviceName_.c_str(),
+               static_cast<long long>(selectedDeviceFeatureLevel_),
+               ANEURALNETWORKS_FEATURE_LEVEL_4);
+      return false;
+    }
+#endif
+
+    Q4KLoweringContract contract;
+    std::string reason;
+    if (!resolveQ4KLoweringContract(
+            slots[slotIndex], slotIndex, externalInputs, numExternalInputs,
+            outputSlots, totalOutputSlots, contract, reason)) {
+      DSP_DIAG(FALLBACK,
+               "NNAPI_Q4K_LOWERING_REJECTED slot=%d reason=%s",
+               slotIndex, reason.c_str());
+      return false;
+    }
+    ConvertedQ4KWeights converted;
+    if (!convertQ4KWeights(contract, converted, reason)) {
+      DSP_DIAG(FALLBACK,
+               "NNAPI_Q4K_LOWERING_REJECTED slot=%d reason=%s",
+               slotIndex, reason.c_str());
+      return false;
+    }
+
+    CompiledModel::QuantizedQ4KConstant artifact;
+    artifact.slotIndex = slotIndex;
+    artifact.sourceIndex = contract.packedWeightSourceIndex;
+    artifact.outputChannels = contract.outputChannels;
+    artifact.inputChannels = contract.inputChannels;
+    artifact.activationScale = kTensorG3Q4ActivationScale;
+    artifact.outputScale = kTensorG3Q4OutputScale;
+    artifact.filter = std::move(converted.filter);
+    artifact.perChannelScales = std::move(converted.perChannelScales);
+    artifact.zeroBias = std::move(converted.zeroBias);
+    artifact.packedWeightDigest = contract.packedWeightDigest;
+    artifact.loweringDigest = converted.loweringDigest;
+    const size_t artifactIndex = compiled.q4kConstants.size();
+    compiled.q4kConstants.push_back(std::move(artifact));
+    q4KArtifactIndices.emplace(slotIndex, artifactIndex);
+    q4KContracts.emplace(slotIndex, std::move(contract));
+
+    const auto& stored = compiled.q4kConstants.back();
+    compiled.sourceWeightIdentity = stored.packedWeightDigest;
+    StableDigest256 cacheIdentity;
+    cacheIdentity.mixString(kTensorG3Q4LoweringAbi);
+    cacheIdentity.mixString(stored.loweringDigest);
+    cacheIdentity.mixString(selectedDeviceName_);
+    cacheIdentity.mixString(selectedDeviceVersion_);
+    cacheIdentity.mixValue(selectedDeviceFeatureLevel_);
+    compiled.loweringCacheIdentity = cacheIdentity.hex();
+    DSP_DIAG(
+        COMPILE,
+        "NNAPI_Q4K_LOWERING_COMMITTED slot=%d source=%d N=%lld K=%lld "
+        "activation_scale=%.8g output_scale=%.8g filter_bytes=%zu "
+        "channels=%zu packed_digest=%s lowering_digest=%s cache_identity=%s",
+        slotIndex, stored.sourceIndex,
+        static_cast<long long>(stored.outputChannels),
+        static_cast<long long>(stored.inputChannels), stored.activationScale,
+        stored.outputScale, stored.filter.size(), stored.perChannelScales.size(),
+        stored.packedWeightDigest.c_str(), stored.loweringDigest.c_str(),
+        compiled.loweringCacheIdentity.c_str());
+  }
+
   // Identify all outputs produced within this segment
   std::unordered_set<int> segmentOutputs;
   for (int i = startSlot; i <= endSlot; i++) {
@@ -1442,11 +2010,14 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
     return DataTypeUtils::isR(sourceType) ? DataType::FLOAT32 : DataType::UNKNOWN;
   };
 
-  auto addOperandDescriptor = [&](DataType dataType,
-                                  const std::vector<LongType>& dimensions,
-                                  uint32_t* outIdx) -> bool {
-    const int32_t nnapiType = toNnapiOperandType(dataType);
-    if (nnapiType < 0 || dimensions.empty() || outIdx == nullptr) return false;
+  auto addRawOperandDescriptor = [&](int32_t nnapiType,
+                                     const std::vector<LongType>& dimensions,
+                                     float scale, int32_t zeroPoint,
+                                     uint32_t* outIdx) -> bool {
+    if (nnapiType < 0 || dimensions.empty() || outIdx == nullptr ||
+        !std::isfinite(scale) || scale < 0.0f) {
+      return false;
+    }
     std::vector<uint32_t> nnapiDimensions(dimensions.size());
     for (size_t dimension = 0; dimension < dimensions.size(); ++dimension) {
       const LongType value = dimensions[dimension];
@@ -1461,13 +2032,20 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
     operandType.type = nnapiType;
     operandType.dimensionCount = static_cast<uint32_t>(nnapiDimensions.size());
     operandType.dimensions = nnapiDimensions.data();
-    operandType.scale = 0.0f;
-    operandType.zeroPoint = 0;
+    operandType.scale = scale;
+    operandType.zeroPoint = zeroPoint;
     const uint32_t operand = nextOperand++;
     const int result = ANeuralNetworksModel_addOperand(model, &operandType);
     if (result != ANEURALNETWORKS_NO_ERROR) return false;
     *outIdx = operand;
     return true;
+  };
+
+  auto addOperandDescriptor = [&](DataType dataType,
+                                  const std::vector<LongType>& dimensions,
+                                  uint32_t* outIdx) -> bool {
+    return addRawOperandDescriptor(toNnapiOperandType(dataType), dimensions,
+                                   0.0f, 0, outIdx);
   };
 
   std::unordered_map<int, EmbeddingLookupContract> embeddingContracts;
@@ -1504,6 +2082,48 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
       int srcIdx = slots[i].wiring.inputSourceIndices[inp];
       if (sourceToOperand.count(srcIdx)) continue;
 
+      const auto q4KContractIt = q4KContracts.find(i);
+      if (q4KContractIt != q4KContracts.end()) {
+        const auto& contract = q4KContractIt->second;
+        if (srcIdx == contract.packedWeightSourceIndex) {
+          // The packed Q4_K source is converted into a backend-owned NNAPI
+          // constant and is intentionally absent from model input mappings.
+          continue;
+        }
+        if (srcIdx != contract.activationSourceIndex) {
+          DSP_DIAG(COMPILE,
+                   "NNAPI_Q4K_LOWERING_REJECTED slot=%d source=%d "
+                   "reason=unexpected_input_source",
+                   i, srcIdx);
+          return false;
+        }
+        uint32_t operand = 0;
+        if (!addRawOperandDescriptor(
+                ANEURALNETWORKS_TENSOR_QUANT8_ASYMM_SIGNED,
+                contract.nnapiInputDimensions,
+                kTensorG3Q4ActivationScale, 0, &operand)) {
+          DSP_DIAG(COMPILE,
+                   "NNAPI_Q4K_LOWERING_REJECTED slot=%d "
+                   "reason=input_operand_declaration",
+                   i);
+          return false;
+        }
+        std::vector<LongType> frameworkDimensions(
+            static_cast<size_t>(contract.activations->rankOf()));
+        for (int dimension = 0; dimension < contract.activations->rankOf();
+             ++dimension) {
+          frameworkDimensions[static_cast<size_t>(dimension)] =
+              contract.activations->sizeAt(dimension);
+        }
+        sourceToOperand[srcIdx] = operand;
+        compiled.inputMappings.push_back(
+            {srcIdx, operand, false, contract.activations->dataType(),
+             DataType::INT8, std::move(frameworkDimensions),
+             CompiledModel::BoundaryTransform::QUANTIZE_ASYMM_SIGNED,
+             kTensorG3Q4ActivationScale, 0});
+        continue;
+      }
+
       bool isExternal = (srcIdx < 0);
       bool isPreSegment = (!isExternal && !segmentOutputs.count(srcIdx));
 
@@ -1536,7 +2156,12 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
         sourceToOperand[srcIdx] = opIdx;
         compiled.inputMappings.push_back(
             {srcIdx, opIdx, false, arr->dataType(), compiledDataType,
-             std::move(dimensions)});
+             std::move(dimensions),
+             arr->dataType() == DataType::INT64 &&
+                     compiledDataType == DataType::INT32
+                 ? CompiledModel::BoundaryTransform::INT64_TO_INT32
+                 : CompiledModel::BoundaryTransform::NONE,
+             0.0f, 0});
       }
     }
   }
@@ -1556,6 +2181,160 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
                "NnapiGraphBackend: refusing unverified contract for '%s' at slot %d: %s",
                slots[i].ident.opName.c_str(), i, contractReason.c_str());
       return false;
+    }
+
+    const auto q4KContractIt = q4KContracts.find(i);
+    if (q4KContractIt != q4KContracts.end()) {
+      const auto artifactIndexIt = q4KArtifactIndices.find(i);
+      if (artifactIndexIt == q4KArtifactIndices.end() ||
+          artifactIndexIt->second >= compiled.q4kConstants.size()) {
+        DSP_DIAG(COMPILE,
+                 "NNAPI_Q4K_LOWERING_REJECTED slot=%d "
+                 "reason=missing_artifact_state",
+                 i);
+        return false;
+      }
+      const auto& contract = q4KContractIt->second;
+      auto& artifact = compiled.q4kConstants[artifactIndexIt->second];
+      const auto activationOperandIt =
+          sourceToOperand.find(contract.activationSourceIndex);
+      if (activationOperandIt == sourceToOperand.end()) {
+        DSP_DIAG(COMPILE,
+                 "NNAPI_Q4K_LOWERING_REJECTED slot=%d "
+                 "reason=missing_activation_operand",
+                 i);
+        return false;
+      }
+
+      uint32_t filterOperand = 0;
+      const std::vector<LongType> filterDimensions = {
+          contract.outputChannels, 1, 1, contract.inputChannels};
+      if (!addRawOperandDescriptor(
+              ANEURALNETWORKS_TENSOR_QUANT8_SYMM_PER_CHANNEL,
+              filterDimensions, 0.0f, 0, &filterOperand)) {
+        DSP_DIAG(COMPILE,
+                 "NNAPI_Q4K_LOWERING_REJECTED slot=%d "
+                 "reason=filter_operand_declaration",
+                 i);
+        return false;
+      }
+      ANeuralNetworksSymmPerChannelQuantParams channelParameters;
+      channelParameters.channelDim = 0;
+      channelParameters.scaleCount = static_cast<uint32_t>(
+          artifact.perChannelScales.size());
+      channelParameters.scales = artifact.perChannelScales.data();
+      int result = ANeuralNetworksModel_setOperandSymmPerChannelQuantParams(
+          model, filterOperand, &channelParameters);
+      if (result != ANEURALNETWORKS_NO_ERROR) {
+        DSP_DIAG(COMPILE,
+                 "NNAPI_Q4K_LOWERING_REJECTED slot=%d "
+                 "reason=filter_per_channel_params status=%d",
+                 i, result);
+        return false;
+      }
+      result = ANeuralNetworksModel_setOperandValue(
+          model, filterOperand, artifact.filter.data(),
+          artifact.filter.size() * sizeof(int8_t));
+      if (result != ANEURALNETWORKS_NO_ERROR) {
+        DSP_DIAG(COMPILE,
+                 "NNAPI_Q4K_LOWERING_REJECTED slot=%d "
+                 "reason=filter_constant status=%d",
+                 i, result);
+        return false;
+      }
+
+      uint32_t biasOperand = 0;
+      const std::vector<LongType> biasDimensions = {contract.outputChannels};
+      if (!addRawOperandDescriptor(ANEURALNETWORKS_TENSOR_INT32,
+                                   biasDimensions, 0.0f, 0, &biasOperand)) {
+        DSP_DIAG(COMPILE,
+                 "NNAPI_Q4K_LOWERING_REJECTED slot=%d "
+                 "reason=bias_operand_declaration",
+                 i);
+        return false;
+      }
+      result = ANeuralNetworksModel_setOperandValue(
+          model, biasOperand, artifact.zeroBias.data(),
+          artifact.zeroBias.size() * sizeof(int32_t));
+      if (result != ANEURALNETWORKS_NO_ERROR) {
+        DSP_DIAG(COMPILE,
+                 "NNAPI_Q4K_LOWERING_REJECTED slot=%d "
+                 "reason=bias_constant status=%d",
+                 i, result);
+        return false;
+      }
+
+      uint32_t outputOperand = 0;
+      if (!addRawOperandDescriptor(
+              ANEURALNETWORKS_TENSOR_QUANT8_ASYMM_SIGNED,
+              contract.nnapiOutputDimensions, kTensorG3Q4OutputScale, 0,
+              &outputOperand)) {
+        DSP_DIAG(COMPILE,
+                 "NNAPI_Q4K_LOWERING_REJECTED slot=%d "
+                 "reason=output_operand_declaration",
+                 i);
+        return false;
+      }
+      sourceToOperand[contract.outputSlotIndex] = outputOperand;
+      if (externalOutputSet.count(contract.outputSlotIndex) == 0) {
+        DSP_DIAG(COMPILE,
+                 "NNAPI_Q4K_LOWERING_REJECTED slot=%d output=%d "
+                 "reason=standalone_output_not_visible",
+                 i, contract.outputSlotIndex);
+        return false;
+      }
+      std::vector<LongType> frameworkOutputDimensions(
+          static_cast<size_t>(contract.output->rankOf()));
+      for (int dimension = 0; dimension < contract.output->rankOf(); ++dimension) {
+        frameworkOutputDimensions[static_cast<size_t>(dimension)] =
+            contract.output->sizeAt(dimension);
+      }
+      compiled.outputMappings.push_back(
+          {contract.outputSlotIndex, outputOperand, true,
+           contract.outputDataType, DataType::INT8,
+           std::move(frameworkOutputDimensions),
+           CompiledModel::BoundaryTransform::DEQUANTIZE_ASYMM_SIGNED,
+           kTensorG3Q4OutputScale, 0});
+
+      std::vector<uint32_t> convolutionInputs = {
+          activationOperandIt->second, filterOperand, biasOperand};
+      convolutionInputs.push_back(addScalarOperand(model, 0, nextOperand));
+      convolutionInputs.push_back(addScalarOperand(model, 0, nextOperand));
+      convolutionInputs.push_back(addScalarOperand(model, 0, nextOperand));
+      convolutionInputs.push_back(addScalarOperand(model, 0, nextOperand));
+      convolutionInputs.push_back(addScalarOperand(model, 1, nextOperand));
+      convolutionInputs.push_back(addScalarOperand(model, 1, nextOperand));
+      convolutionInputs.push_back(addScalarOperand(
+          model, ANEURALNETWORKS_FUSED_NONE, nextOperand));
+      result = ANeuralNetworksModel_addOperation(
+          model, ANEURALNETWORKS_CONV_2D,
+          static_cast<uint32_t>(convolutionInputs.size()),
+          convolutionInputs.data(), 1, &outputOperand);
+      if (result != ANEURALNETWORKS_NO_ERROR) {
+        DSP_DIAG(COMPILE,
+                 "NNAPI_Q4K_LOWERING_REJECTED slot=%d "
+                 "reason=conv2d_operation status=%d",
+                 i, result);
+        return false;
+      }
+      operationSourceSlots.push_back(i);
+      DSP_DIAG(
+          COMPILE,
+          "NNAPI_Q4K_EMITTED slot=%d op=CONV_2D emitted_ops=1 "
+          "input_shape=[%lld,%lld,%lld,%lld] filter_shape=[%lld,1,1,%lld] "
+          "output_shape=[%lld,%lld,%lld,%lld] shape_adaptation=metadata_only",
+          i,
+          static_cast<long long>(contract.nnapiInputDimensions[0]),
+          static_cast<long long>(contract.nnapiInputDimensions[1]),
+          static_cast<long long>(contract.nnapiInputDimensions[2]),
+          static_cast<long long>(contract.nnapiInputDimensions[3]),
+          static_cast<long long>(contract.outputChannels),
+          static_cast<long long>(contract.inputChannels),
+          static_cast<long long>(contract.nnapiOutputDimensions[0]),
+          static_cast<long long>(contract.nnapiOutputDimensions[1]),
+          static_cast<long long>(contract.nnapiOutputDimensions[2]),
+          static_cast<long long>(contract.nnapiOutputDimensions[3]));
+      continue;
     }
 
     // Collect input operand indices for this op
@@ -1896,6 +2675,31 @@ bool NnapiGraphBackend::compileSegmentImpl(const GraphBackendRequest* request,
     return false;
   }
 
+  bool hasQ4KLowering = false;
+  std::string currentSourceWeightIdentity;
+  for (int slotIndex = startSlot; slotIndex <= endSlot; ++slotIndex) {
+    if (!isQ4KQMatMul(slots[slotIndex])) continue;
+    if (segmentOps != 1) {
+      DSP_DIAG(COMPILE,
+               "NNAPI_Q4K_LOWERING_REJECTED slot=%d seg[%d-%d] "
+               "reason=non_standalone_compile",
+               slotIndex, startSlot, endSlot);
+      return false;
+    }
+    Q4KLoweringContract contract;
+    std::string reason;
+    if (!resolveQ4KLoweringContract(
+            slots[slotIndex], slotIndex, externalInputs, numExternalInputs,
+            outputSlots, totalOutputSlots, contract, reason)) {
+      DSP_DIAG(COMPILE,
+               "NNAPI_Q4K_LOWERING_REJECTED slot=%d reason=%s",
+               slotIndex, reason.c_str());
+      return false;
+    }
+    hasQ4KLowering = true;
+    currentSourceWeightIdentity = contract.packedWeightDigest;
+  }
+
   // Reuse is deliberately scoped to this exact GraphSegment. Slot ranges and
   // shape keys are not model identities and must never cross-hit another plan.
   if (seg.compiledGraphBackendArtifactOwner == this &&
@@ -1904,10 +2708,30 @@ bool NnapiGraphBackend::compileSegmentImpl(const GraphBackendRequest* request,
     auto existing = std::static_pointer_cast<CompiledModel>(
         seg.compiledGraphBackendArtifact);
     if (existing->valid && existing->startSlot == startSlot &&
-        existing->endSlot == endSlot) {
+        existing->endSlot == endSlot &&
+        (!hasQ4KLowering ||
+         existing->sourceWeightIdentity == currentSourceWeightIdentity)) {
       lastCompilationAudit_ = existing->compilationAudit;
-      DSP_DIAG(COMPILE, "NNAPI_PHASE compile_segment_hit seg[%d-%d]", startSlot, endSlot);
+      DSP_DIAG(COMPILE,
+               "NNAPI_PHASE compile_segment_hit seg[%d-%d] cache_identity=%s "
+               "source_weight_identity=%s",
+               startSlot, endSlot,
+               existing->loweringCacheIdentity.empty()
+                   ? "direct"
+                   : existing->loweringCacheIdentity.c_str(),
+               existing->sourceWeightIdentity.empty()
+                   ? "runtime-input"
+                   : existing->sourceWeightIdentity.c_str());
       return true;
+    }
+    if (hasQ4KLowering) {
+      DSP_DIAG(COMPILE,
+               "NNAPI_Q4K_ARTIFACT_CACHE_MISS seg[%d-%d] previous=%s current=%s",
+               startSlot, endSlot,
+               existing->sourceWeightIdentity.empty()
+                   ? "none"
+                   : existing->sourceWeightIdentity.c_str(),
+               currentSourceWeightIdentity.c_str());
     }
   }
 
@@ -2025,9 +2849,22 @@ bool NnapiGraphBackend::compileSegmentImpl(const GraphBackendRequest* request,
       !request->deviceCompilationCacheModelKey.empty()) {
     const auto cacheToken = makeNnapiCacheToken(
         request->deviceCompilationCacheModelKey, startSlot, endSlot, shapeKey);
+    auto loweringAwareCacheToken = cacheToken;
+    if (!compiled->loweringCacheIdentity.empty()) {
+      mixNnapiCacheToken(loweringAwareCacheToken,
+                         compiled->loweringCacheIdentity);
+      DSP_DIAG(COMPILE,
+               "NNAPI_DEVICE_CACHE_IDENTITY device=%s seg[%d-%d] abi=%s "
+               "identity=%s source_weight=%s",
+               selectedDeviceName_.empty() ? "nnapi-default"
+                                           : selectedDeviceName_.c_str(),
+               startSlot, endSlot, kTensorG3Q4LoweringAbi,
+               compiled->loweringCacheIdentity.c_str(),
+               compiled->sourceWeightIdentity.c_str());
+    }
     const int cacheStatus = ANeuralNetworksCompilation_setCaching(
         compilation, request->deviceCompilationCacheDirectory.c_str(),
-        cacheToken.data());
+        loweringAwareCacheToken.data());
     if (cacheStatus == ANEURALNETWORKS_NO_ERROR) {
       DSP_DIAG(COMPILE,
                "NNAPI_DEVICE_CACHE_CONFIGURED device=%s seg[%d-%d] directory=%s",
@@ -2100,6 +2937,7 @@ bool NnapiGraphBackend::compileSegmentImpl(const GraphBackendRequest* request,
         compiledArtifacts_.end());
     compiledArtifacts_.push_back(compiled);
   }
+  seg.compilationAudit = compiled->compilationAudit;
   seg.setCompiledGraphBackendArtifact(this, shapeKey, compiled);
 
   return true;
@@ -2120,6 +2958,7 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   auto compiledHandle = std::static_pointer_cast<CompiledModel>(
       seg.compiledGraphBackendArtifact);
   CompiledModel* compiled = compiledHandle.get();
+  std::lock_guard<std::mutex> artifactExecutionLock(compiled->executionMutex);
   if (!compiled->valid || !compiled->compilation ||
       compiled->startSlot != startSlot || compiled->endSlot != endSlot ||
       compiled->shapeKey != seg.def.shapeKeyState.compiledShapeKey) {
@@ -2139,6 +2978,53 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       }
     }
     return true;
+  };
+
+  auto recordOutputTargetIdentity = [&](const char* stage, uint32_t outputIndex,
+                                        int sourceSlot, NDArray* array) {
+    if (!DSP_DIAG_ENABLED(VERIFY)) return;
+    DataBuffer* dataBuffer = array != nullptr ? array->dataBuffer() : nullptr;
+    const bool valid = dataBuffer != nullptr && dataBuffer->isValid();
+    DSP_DIAG(
+        VERIFY,
+        "NNAPI_OUTPUT_TARGET_IDENTITY stage=%s seg[%d-%d] output=%u "
+        "source_slot=%d arr=%p db=%p primary=%p special=%p offset=%lld len=%lld",
+        stage, startSlot, endSlot, outputIndex, sourceSlot, (void*)array,
+        (void*)dataBuffer, valid ? dataBuffer->primary() : nullptr,
+        valid ? dataBuffer->special() : nullptr,
+        array != nullptr ? static_cast<long long>(array->offset()) : -1LL,
+        array != nullptr ? static_cast<long long>(array->lengthOf()) : -1LL);
+    if (!valid || outputSlots == nullptr) return;
+    const int aliasDetailLimit =
+        std::max(0, DspDiagnostics::getInstance().diagDetailLimit());
+    int aliasCount = 0;
+    int emittedAliasCount = 0;
+    for (int aliasSlot = 0; aliasSlot < totalOutputSlots; ++aliasSlot) {
+      if (aliasSlot == sourceSlot || outputSlots[aliasSlot] == nullptr) continue;
+      if (outputSlots[aliasSlot]->dataBuffer() == dataBuffer) {
+        ++aliasCount;
+        if (emittedAliasCount < aliasDetailLimit) {
+          DSP_DIAG(
+              VERIFY,
+              "NNAPI_OUTPUT_TARGET_ALIAS stage=%s seg[%d-%d] output=%u "
+              "source_slot=%d alias_slot=%d target_arr=%p alias_arr=%p db=%p "
+              "target_offset=%lld alias_offset=%lld",
+              stage, startSlot, endSlot, outputIndex, sourceSlot, aliasSlot,
+              (void*)array, (void*)outputSlots[aliasSlot], (void*)dataBuffer,
+              static_cast<long long>(array->offset()),
+              static_cast<long long>(outputSlots[aliasSlot]->offset()));
+          ++emittedAliasCount;
+        }
+      }
+    }
+    if (aliasCount > emittedAliasCount) {
+      DSP_DIAG(
+          VERIFY,
+          "NNAPI_OUTPUT_TARGET_ALIAS_SUMMARY stage=%s seg[%d-%d] output=%u "
+          "source_slot=%d db=%p aliases_total=%d aliases_emitted=%d aliases_omitted=%d",
+          stage, startSlot, endSlot, outputIndex, sourceSlot, (void*)dataBuffer,
+          aliasCount, emittedAliasCount, aliasCount - emittedAliasCount);
+    }
   };
 
   // Create execution
@@ -2171,6 +3057,8 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
 
   // Temporary contiguous copies for non-contiguous input arrays
   std::vector<std::unique_ptr<NDArray>> contiguousInputCopies;
+  std::vector<std::vector<int8_t>> quantizedInputCopies;
+  quantizedInputCopies.reserve(compiled->inputMappings.size());
 
   // Padded input staging buffers (API 31+). With input/output padding enabled
   // the driver may access input buffers in padded chunks; bind aligned,
@@ -2240,45 +3128,114 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       contiguousInputCopies.push_back(std::move(copy));
     }
 
-    if (mapping.sourceDataType == DataType::INT64 &&
-        mapping.bindingDataType == DataType::INT32) {
-      const LongType* values = contiguous->bufferAsT<LongType>();
+    void* buffer = nullptr;
+    size_t bufferSize = 0;
+    if (mapping.boundaryTransform ==
+        CompiledModel::BoundaryTransform::QUANTIZE_ASYMM_SIGNED) {
+      if (!std::isfinite(mapping.quantizationScale) ||
+          mapping.quantizationScale <= 0.0f ||
+          (mapping.sourceDataType != DataType::FLOAT32 &&
+           mapping.sourceDataType != DataType::HALF)) {
+        DSP_DIAG(EXECUTE,
+                 "NNAPI_Q4K_INPUT_QUANTIZATION_FAILED seg[%d-%d] input=%u "
+                 "source_slot=%d dtype=%d scale=%.8g",
+                 startSlot, endSlot, idx, mapping.sourceIndex,
+                 static_cast<int>(mapping.sourceDataType),
+                 mapping.quantizationScale);
+        ANeuralNetworksExecution_free(execution);
+        return Status::KERNEL_FAILURE;
+      }
+      quantizedInputCopies.emplace_back(
+          static_cast<size_t>(contiguous->lengthOf()));
+      auto& quantized = quantizedInputCopies.back();
+      LongType saturatedLow = 0;
+      LongType saturatedHigh = 0;
+      const float* floatValues =
+          mapping.sourceDataType == DataType::FLOAT32
+              ? contiguous->bufferAsT<float>()
+              : nullptr;
+      const float16* halfValues =
+          mapping.sourceDataType == DataType::HALF
+              ? contiguous->bufferAsT<float16>()
+              : nullptr;
       for (LongType element = 0; element < contiguous->lengthOf(); ++element) {
-        if (values[element] < std::numeric_limits<int32_t>::min() ||
-            values[element] > std::numeric_limits<int32_t>::max()) {
+        const float value = floatValues != nullptr
+                                ? floatValues[element]
+                                : static_cast<float>(halfValues[element]);
+        if (!std::isfinite(value)) {
           DSP_DIAG(EXECUTE,
-                   "NNAPI_GATHER_INDEX_RANGE seg[%d-%d] input=%u "
-                   "source_slot=%d element=%lld value=%lld",
+                   "NNAPI_Q4K_INPUT_QUANTIZATION_FAILED seg[%d-%d] input=%u "
+                   "source_slot=%d element=%lld reason=non_finite",
                    startSlot, endSlot, idx, mapping.sourceIndex,
-                   static_cast<long long>(element),
-                   static_cast<long long>(values[element]));
+                   static_cast<long long>(element));
           ANeuralNetworksExecution_free(execution);
           return Status::KERNEL_FAILURE;
         }
+        long quantizedValue = std::lround(
+            value / mapping.quantizationScale) +
+            mapping.quantizationZeroPoint;
+        if (quantizedValue < -128L) {
+          quantizedValue = -128L;
+          ++saturatedLow;
+        } else if (quantizedValue > 127L) {
+          quantizedValue = 127L;
+          ++saturatedHigh;
+        }
+        quantized[static_cast<size_t>(element)] =
+            static_cast<int8_t>(quantizedValue);
       }
-    }
-
-    // Bind the representation that addOperand() compiled into the model.
-    if (contiguous->dataType() != mapping.bindingDataType) {
-      auto cast = std::make_unique<NDArray>(contiguous->cast(mapping.bindingDataType));
-      contiguous = cast.get();
-      contiguousInputCopies.push_back(std::move(cast));
-    }
-    if (!matchesCompiledDescriptor(contiguous, mapping.bindingDataType,
-                                   mapping.dimensions)) {
+      buffer = quantized.data();
+      bufferSize = quantized.size() * sizeof(int8_t);
       DSP_DIAG(EXECUTE,
-               "NNAPI_OPERAND_DESCRIPTOR_MISMATCH kind=bound_input "
-               "seg[%d-%d] input=%u source_slot=%d expected_dtype=%d "
-               "actual_dtype=%d",
+               "NNAPI_Q4K_INPUT_QUANTIZED seg[%d-%d] input=%u "
+               "source_slot=%d elements=%lld scale=%.8g zero_point=%d "
+               "saturated_low=%lld saturated_high=%lld",
                startSlot, endSlot, idx, mapping.sourceIndex,
-               static_cast<int>(mapping.bindingDataType),
-               static_cast<int>(contiguous->dataType()));
-      ANeuralNetworksExecution_free(execution);
-      return Status::KERNEL_FAILURE;
-    }
+               static_cast<long long>(contiguous->lengthOf()),
+               mapping.quantizationScale, mapping.quantizationZeroPoint,
+               static_cast<long long>(saturatedLow),
+               static_cast<long long>(saturatedHigh));
+    } else {
+      if (mapping.sourceDataType == DataType::INT64 &&
+          mapping.bindingDataType == DataType::INT32) {
+        const LongType* values = contiguous->bufferAsT<LongType>();
+        for (LongType element = 0; element < contiguous->lengthOf(); ++element) {
+          if (values[element] < std::numeric_limits<int32_t>::min() ||
+              values[element] > std::numeric_limits<int32_t>::max()) {
+            DSP_DIAG(EXECUTE,
+                     "NNAPI_GATHER_INDEX_RANGE seg[%d-%d] input=%u "
+                     "source_slot=%d element=%lld value=%lld",
+                     startSlot, endSlot, idx, mapping.sourceIndex,
+                     static_cast<long long>(element),
+                     static_cast<long long>(values[element]));
+            ANeuralNetworksExecution_free(execution);
+            return Status::KERNEL_FAILURE;
+          }
+        }
+      }
 
-    void* buffer = contiguous->buffer();
-    size_t bufferSize = contiguous->lengthOf() * contiguous->sizeOfT();
+      // Bind the representation that addOperand() compiled into the model.
+      if (contiguous->dataType() != mapping.bindingDataType) {
+        auto cast =
+            std::make_unique<NDArray>(contiguous->cast(mapping.bindingDataType));
+        contiguous = cast.get();
+        contiguousInputCopies.push_back(std::move(cast));
+      }
+      if (!matchesCompiledDescriptor(contiguous, mapping.bindingDataType,
+                                     mapping.dimensions)) {
+        DSP_DIAG(EXECUTE,
+                 "NNAPI_OPERAND_DESCRIPTOR_MISMATCH kind=bound_input "
+                 "seg[%d-%d] input=%u source_slot=%d expected_dtype=%d "
+                 "actual_dtype=%d",
+                 startSlot, endSlot, idx, mapping.sourceIndex,
+                 static_cast<int>(mapping.bindingDataType),
+                 static_cast<int>(contiguous->dataType()));
+        ANeuralNetworksExecution_free(execution);
+        return Status::KERNEL_FAILURE;
+      }
+      buffer = contiguous->buffer();
+      bufferSize = contiguous->lengthOf() * contiguous->sizeOfT();
+    }
 
 #if defined(__ANDROID_API__) && __ANDROID_API__ >= 31
     if (usePreferredBufferLayout) {
@@ -2382,6 +3339,7 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       ANeuralNetworksExecution_free(execution);
       return Status::KERNEL_FAILURE;
     }
+    recordOutputTargetIdentity("before_bind", idx, mapping.sourceIndex, arr);
     if (!matchesCompiledDescriptor(arr, mapping.sourceDataType,
                                    mapping.dimensions)) {
       DSP_DIAG(
@@ -2539,6 +3497,7 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                (void*)outputDataBuffer);
       return Status::KERNEL_FAILURE;
     }
+    recordOutputTargetIdentity("before_copyback", idx, mapping.sourceIndex, arr);
 
     auto& staging = stagedOutputs[idx];
     const bool prefixGuardIntact = std::all_of(
@@ -2561,10 +3520,52 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     }
 
     std::vector<LongType> stagingShape = mapping.dimensions;
-    NDArray boundOutput(staging.data(), 'c', stagingShape,
-                        mapping.bindingDataType, arr->getContext(), false);
-    boundOutput.tickWriteHost();
-    arr->assign(&boundOutput);
+    if (mapping.boundaryTransform ==
+        CompiledModel::BoundaryTransform::DEQUANTIZE_ASYMM_SIGNED) {
+      if (mapping.bindingDataType != DataType::INT8 ||
+          !std::isfinite(mapping.quantizationScale) ||
+          mapping.quantizationScale <= 0.0f) {
+        DSP_DIAG(EXECUTE,
+                 "NNAPI_Q4K_OUTPUT_DEQUANTIZATION_FAILED seg[%d-%d] output=%u "
+                 "source_slot=%d binding_dtype=%d scale=%.8g",
+                 startSlot, endSlot, idx, mapping.sourceIndex,
+                 static_cast<int>(mapping.bindingDataType),
+                 mapping.quantizationScale);
+        return Status::KERNEL_FAILURE;
+      }
+      std::vector<float> dequantizedValues(
+          static_cast<size_t>(arr->lengthOf()));
+      const auto* quantizedValues =
+          reinterpret_cast<const int8_t*>(staging.data());
+      float minimumValue = std::numeric_limits<float>::infinity();
+      float maximumValue = -std::numeric_limits<float>::infinity();
+      for (LongType element = 0; element < arr->lengthOf(); ++element) {
+        const float value =
+            (static_cast<int32_t>(quantizedValues[element]) -
+             mapping.quantizationZeroPoint) *
+            mapping.quantizationScale;
+        dequantizedValues[static_cast<size_t>(element)] = value;
+        minimumValue = std::min(minimumValue, value);
+        maximumValue = std::max(maximumValue, value);
+      }
+      NDArray dequantizedOutput(dequantizedValues.data(), 'c', stagingShape,
+                                DataType::FLOAT32, arr->getContext(), false);
+      dequantizedOutput.tickWriteHost();
+      arr->assign(&dequantizedOutput);
+      DSP_DIAG(EXECUTE,
+               "NNAPI_Q4K_OUTPUT_DEQUANTIZED seg[%d-%d] output=%u "
+               "source_slot=%d elements=%lld scale=%.8g zero_point=%d "
+               "min=%.8g max=%.8g",
+               startSlot, endSlot, idx, mapping.sourceIndex,
+               static_cast<long long>(arr->lengthOf()),
+               mapping.quantizationScale, mapping.quantizationZeroPoint,
+               minimumValue, maximumValue);
+    } else {
+      NDArray boundOutput(staging.data(), 'c', stagingShape,
+                          mapping.bindingDataType, arr->getContext(), false);
+      boundOutput.tickWriteHost();
+      arr->assign(&boundOutput);
+    }
     if (!outputDataBuffer->isValid()) {
       DSP_DIAG(EXECUTE,
                "NNAPI_OUTPUT_TARGET_INVALID seg[%d-%d] output=%u source_slot=%d "
@@ -2573,6 +3574,7 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                (void*)outputDataBuffer);
       return Status::KERNEL_FAILURE;
     }
+    recordOutputTargetIdentity("after_copyback", idx, mapping.sourceIndex, arr);
     DSP_DIAG(EXECUTE,
              "NNAPI_OUTPUT_COPYBACK seg[%d-%d] output=%u source_slot=%d "
              "source_dtype=%d binding_dtype=%d",

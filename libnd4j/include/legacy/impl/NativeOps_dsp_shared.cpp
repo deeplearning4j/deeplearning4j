@@ -92,6 +92,7 @@ sd::Pointer loadModelFromFile(const char* filePath) {
 
 sd::Pointer loadModelFromFileWithOptions(const char* filePath,
                                          bool requireFileBacked) {
+  LoadedModelHandle* handle = nullptr;
   try {
     if (filePath == nullptr) {
       DSP_DIAG(COMPILE, "loadModelFromFile: null file path");
@@ -99,7 +100,7 @@ sd::Pointer loadModelFromFileWithOptions(const char* filePath,
       return nullptr;
     }
 
-    auto* handle = new LoadedModelHandle();
+    handle = new LoadedModelHandle();
     std::string path(filePath);
     std::string pathLower = path;
     std::transform(pathLower.begin(), pathLower.end(), pathLower.begin(),
@@ -165,6 +166,7 @@ sd::Pointer loadModelFromFileWithOptions(const char* filePath,
   } catch (const std::exception& e) {
     DSP_DIAG(COMPILE, "loadModelFromFile: exception: %s", e.what());
     setDspNativeError(3, e.what());
+    delete handle;
     return nullptr;
   }
 }
@@ -219,7 +221,7 @@ sd::Pointer compileModelPlanWithRuntimeOptions(
 
     auto mode = static_cast<sd::graph::GraphExecutionMode>(graphExecutionMode);
     if (mode < sd::graph::GraphExecutionMode::GEM_AUTO ||
-        mode > sd::graph::GraphExecutionMode::GEM_PORTABLE_REPLAY) {
+        mode > sd::graph::GraphExecutionMode::GEM_ONEDNN) {
       mode = sd::graph::GraphExecutionMode::GEM_AUTO;
     }
 
@@ -269,7 +271,7 @@ void setPlanGraphExecutionMode(sd::Pointer planHandle, int mode) {
   const auto requested = static_cast<sd::graph::GraphExecutionMode>(mode);
   auto applied = requested;
   if (applied < sd::graph::GraphExecutionMode::GEM_AUTO ||
-      applied > sd::graph::GraphExecutionMode::GEM_PORTABLE_REPLAY) {
+      applied > sd::graph::GraphExecutionMode::GEM_ONEDNN) {
     applied = sd::graph::GraphExecutionMode::GEM_AUTO;
   }
 

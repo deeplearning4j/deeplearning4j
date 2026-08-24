@@ -251,7 +251,7 @@
                             <goal>build</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${project.build.directory}/generated-sources/javacpp</outputDirectory>
+                            <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
                             <classOrPackageName>org.eclipse.deeplearning4j.tokenizers.presets.TokenizersPresets</classOrPackageName>
                         </configuration>
                     </execution>

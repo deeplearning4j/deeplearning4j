@@ -681,6 +681,7 @@ bool AclGraphBackend::compileSegment(
                        }),
         compiledArtifacts_.end());
     compiledArtifacts_.push_back(compiled);
+    seg.compilationAudit = compiled->compilationAudit;
     seg.setCompiledGraphBackendArtifact(this, shapeKey, compiled);
     return true;
   }

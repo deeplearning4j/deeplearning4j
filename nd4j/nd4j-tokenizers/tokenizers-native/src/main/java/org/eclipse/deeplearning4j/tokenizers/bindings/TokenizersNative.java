@@ -152,6 +152,15 @@ public native @Cast("bool") @Name("get_token_id") boolean getTokenId(OpaqueToken
 public native @Cast("bool") @Name("get_token_id") boolean getTokenId(OpaqueTokenizer tokenizer, @Cast("char*") String token, @Cast("uint32_t*") int[] token_id);
 
 /**
+ * \brief Resolve a token ID to its exact vocabulary piece without decoding it
+ * @param tokenizer Tokenizer instance
+ * @param token_id Token ID to resolve
+ * @return Newly allocated UTF-8 token string, or NULL when the ID is absent
+ *         (must be freed with free_string)
+ */
+public native @Name("get_token") @Cast("char*") BytePointer getToken(OpaqueTokenizer tokenizer, @Cast("uint32_t") int token_id);
+
+/**
  * \brief Render a Hugging Face tokenizer_config.json chat template
  * @param messages_json JSON array of role/content message objects
  * @param tokenizer_config_json Full normalized tokenizer_config.json

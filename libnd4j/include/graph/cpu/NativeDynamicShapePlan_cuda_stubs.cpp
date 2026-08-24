@@ -80,9 +80,10 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
   if (executeCount_ < 2) {
     return Status::MAYBE;
   }
-  // The frozen fast path requires shapes to be frozen and all segments to have
-  // ready replay handles. Without this, early executions with no handles fail.
-  if (!planLifecycle_.isInFrozenOrReplayState() || !allSegmentsReplayReady()) {
+  // CPU/mobile steady state accepts direct compiled artifacts and real replay
+  // handles, but never terminal or implicit slot-by-slot segments.
+  if (!planLifecycle_.isInFrozenOrReplayState() ||
+      !allFrozenDispatchUnitsReady()) {
     return Status::MAYBE;
   }
   if (hasDynamicSegmentBoundaries_) {
@@ -101,28 +102,6 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
   // frozen fast path silently bypass the recorder.
   // Graph backends fuse multiple ops into optimized subgraphs, dramatically
   // reducing per-op dispatch overhead (1761 individual calls → ~dozens of fused calls).
-  auto executePortableFunctionalFallback =
-      [&](GraphSegment& seg, const char* reason) -> Status {
-    const ModeContract modeContract = ModeContract::forMode(graphExecutionMode_);
-    if (!modeContract.allowsFallback) {
-      DSP_DIAG(BACKEND,
-               "CPU_FROZEN: graph backend failed seg[%d-%d] reason=%s; "
-               "mode=%d forbids execution fallback",
-               seg.def.startSlot, seg.def.endSlot, reason,
-               static_cast<int>(graphExecutionMode_));
-      return Status::KERNEL_FAILURE;
-    }
-    seg.def.selectedBackend = SelectedBackend::EMULATED_REPLAY;
-    SegmentLifecycle::invalidateSegmentCaptures(this, seg, reason);
-    // invalidateSegmentCaptures clears capture/compiler state, while these two
-    // terminal hints describe the rejected CPU backend rather than the new
-    // functional recorder and must not leak across the backend transition.
-    seg.exec.noFusibleOps = false;
-    seg.exec.captureProducedNoKernels = false;
-    return executeSegmentEmulatedReplay(
-        seg, externalInputs, numExternalInputs, stream);
-  };
-
   for (auto& seg : segments_) {
     // All-frozen-constant segments: outputs already populated from warmup.
     if (seg.def.allFrozenConstants) {
@@ -138,34 +117,29 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       // which installs the NativeSlotExecutor for native-deferred ops (rope, attention).
       // Calling backend->executeSegment() directly would skip NativeSlotExecutor setup
       // and cause native-deferred ops to fail with KERNEL_FAILURE.
+      bool executionStarted = false;
       status = executeSegmentWithSpecificBackend(
-          seg, seg.resolvedGraphBackend, externalInputs, numExternalInputs, stream);
+          seg, seg.resolvedGraphBackend, externalInputs, numExternalInputs,
+          stream, &executionStarted);
+      if (status == Status::BAD_GRAPH && !executionStarted) {
+        DSP_DIAG(EXECUTE,
+                 "CPU_FROZEN: backend rejected seg[%d-%d] before execution; "
+                 "returning MAYBE for ordered backend re-resolution",
+                 seg.def.startSlot, seg.def.endSlot);
+        return Status::MAYBE;
+      }
       if (status != Status::OK) {
         DSP_DIAG(EXECUTE,
-                 "CPU_FROZEN: resolved graph backend failed seg[%d-%d], requesting contract-defined fallback",
+                 "CPU_FROZEN: resolved graph backend failed seg[%d-%d]; "
+                 "post-start failover is forbidden",
                  seg.def.startSlot, seg.def.endSlot);
-        status = executePortableFunctionalFallback(
-            seg, "frozen_graph_backend_failed");
+        return status;
       }
-    } else if (seg.def.selectedBackend == SelectedBackend::GRAPH_BACKEND &&
-               !seg.exec.compilationFailed && !seg.exec.noFusibleOps) {
-      // Lazy compile path: backend not yet resolved. Call the full cascade
-      // (warmup → compile → execute) which populates resolvedGraphBackend.
-      // This happens when platformPrecompileSegments skips segments with
-      // executionCount==0 after freeze resets them.
-      status = executeSegmentWithGraphBackend(seg, externalInputs, numExternalInputs, stream);
-      if (status != Status::OK) {
-        DSP_DIAG(EXECUTE,
-                 "CPU_FROZEN: graph backend cascade rejected seg[%d-%d], requesting contract-defined fallback",
-                 seg.def.startSlot, seg.def.endSlot);
-        status = executePortableFunctionalFallback(
-            seg, "frozen_graph_backend_cascade_failed");
-      }
-    } else if (seg.def.selectedBackend == SelectedBackend::GRAPH_BACKEND) {
-      status = executePortableFunctionalFallback(
-          seg, "frozen_graph_backend_terminal");
     } else {
-      status = executeSegmentSlotBySlot(seg, externalInputs, numExternalInputs, stream);
+      DSP_DIAG(EXECUTE,
+               "CPU_FROZEN: seg[%d-%d] has no explicit steady-state artifact",
+               seg.def.startSlot, seg.def.endSlot);
+      return Status::KERNEL_FAILURE;
     }
     if (status != Status::OK) {
       return status;
@@ -221,7 +195,9 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
     return;
   }
 
-  int compiled = 0, skipped = 0, failed = 0;
+  int compiled = 0, skipped = 0, replayFallback = 0, failed = 0;
+  const bool allowsReplayFallback =
+      ModeContract::forMode(graphExecutionMode_).allowsFallback;
   for (auto& seg : segments_) {
     // CPU precompilation is only valid for segments explicitly resolved to
     // GRAPH_BACKEND.
@@ -258,10 +234,42 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
       seg.setResolvedGraphBackend(lowering.backend, request);
       seg.exec.cachedShapeKey = segShapeKey;
       seg.def.shapeKeyState.markCompiled(segShapeKey);
+      if (seg.resolvedGraphBackendPolicy.artifactKind ==
+              GraphBackendArtifactKind::DIRECT_COMPILED &&
+          seg.compiledGraphBackendArtifactOwner == lowering.backend &&
+          seg.compiledGraphBackendArtifactShapeKey == segShapeKey &&
+          seg.compiledGraphBackendArtifact && !seg.exec.segPhase.isSealed()) {
+        SegmentLifecycle::markDirectGraphBackendCompiled(
+            seg.exec, lowering.backend->name(), segShapeKey,
+            seg.def.startSlot, seg.def.endSlot);
+      } else if (seg.resolvedGraphBackendPolicy.artifactKind ==
+                     GraphBackendArtifactKind::BACKEND_REPLAY_HANDLE &&
+                 seg.exec.replayHandle && seg.exec.replayHandle->isReady() &&
+                 !seg.exec.segPhase.isSealed()) {
+        SegmentLifecycle::markBackendReplayHandleSealed(
+            seg.exec, lowering.backend->name(), segShapeKey,
+            seg.def.startSlot, seg.def.endSlot);
+      }
       compiled++;
       DSP_DIAG(COMPILE,
                "platformPrecompileSegments: seg[%d-%d] compiled by %s",
                seg.def.startSlot, seg.def.endSlot, lowering.backend->name());
+    } else if (allowsReplayFallback) {
+      // Keep eager precompile behavior identical to the runtime backend cascade.
+      // ARM hybrid is an ordered NNAPI -> ACL -> explicit-replay policy: a
+      // concrete device capability rejection (for example, EdgeTPU rejecting an
+      // otherwise valid NNAPI model) is not a compiler defect and must transfer
+      // ownership to the functional recorder before the compilation seal. Strict
+      // compiler modes leave allowsFallback=false and continue to fail closed.
+      seg.resetGraphBackend();
+      seg.def.selectedBackend = SelectedBackend::EMULATED_REPLAY;
+      SegmentLifecycle::prepareFunctionalReplayHandoff(
+          seg.exec, seg.def.startSlot, seg.def.endSlot);
+      replayFallback++;
+      DSP_DIAG(COMPILE,
+               "platformPrecompileSegments: seg[%d-%d] no backend lowered; "
+               "ownership -> explicit replay before compilation seal",
+               seg.def.startSlot, seg.def.endSlot);
     } else {
       failed++;
       DSP_DIAG(COMPILE,
@@ -270,8 +278,10 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
     }
   }
 
-  DSP_DIAG(COMPILE, "platformPrecompileSegments: compiled=%d skipped=%d failed=%d total=%d",
-           compiled, skipped, failed, (int)segments_.size());
+  DSP_DIAG(COMPILE,
+           "platformPrecompileSegments: compiled=%d skipped=%d explicitReplay=%d "
+           "failed=%d total=%d",
+           compiled, skipped, replayFallback, failed, (int)segments_.size());
 }
 
 // ── Segment device binding: thread-local device bracketing ──────────────────
@@ -331,27 +341,6 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
     void* stream, bool& usedGraph) {
   usedGraph = false;
 
-  auto executePortableFunctionalFallback =
-      [&](const char* reason) -> Status {
-    const ModeContract modeContract = ModeContract::forMode(graphExecutionMode_);
-    if (!modeContract.allowsFallback) {
-      DSP_DIAG(BACKEND,
-               "NativeDSP::execute: graph backend failed seg[%d-%d] reason=%s; "
-               "mode=%d forbids execution fallback",
-               segment.def.startSlot, segment.def.endSlot, reason,
-               static_cast<int>(graphExecutionMode_));
-      return Status::KERNEL_FAILURE;
-    }
-    segment.def.selectedBackend = SelectedBackend::EMULATED_REPLAY;
-    SegmentLifecycle::invalidateSegmentCaptures(this, segment, reason);
-    segment.exec.noFusibleOps = false;
-    segment.exec.captureProducedNoKernels = false;
-    Status fallbackStatus = executeSegmentEmulatedReplay(
-        segment, externalInputs, numExternalInputs, stream);
-    usedGraph = (fallbackStatus == Status::OK);
-    return fallbackStatus;
-  };
-
   DSP_DIAG(EXECUTE, "NativeDSP::execute: seg[%d-%d] selectedBackend=%d isCapturable=%d executionCount=%d",
            segment.def.startSlot, segment.def.endSlot,
            static_cast<int>(segment.def.selectedBackend), static_cast<int>(segment.def.isCapturable),
@@ -373,13 +362,12 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
           return Status::OK;
         }
         DSP_DIAG(BACKEND,
-                 "NativeDSP::execute: GRAPH_BACKEND cascade rejected seg[%d-%d], requesting contract-defined fallback",
+                 "NativeDSP::execute: GRAPH_BACKEND failed seg[%d-%d]; "
+                 "post-start failover is forbidden",
                  segment.def.startSlot, segment.def.endSlot);
-        return executePortableFunctionalFallback(
-            "graph_backend_cascade_failed");
+        return st;
       }
-      return executePortableFunctionalFallback(
-          "graph_backend_terminal");
+      return Status::KERNEL_FAILURE;
     }
 
     case SelectedBackend::EMULATED_REPLAY:

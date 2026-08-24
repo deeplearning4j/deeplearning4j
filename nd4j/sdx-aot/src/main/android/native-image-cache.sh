@@ -9,17 +9,17 @@
 SDX_NATIVE_CACHE_SCHEMA=sdx-native-artifact-cache-v1
 
 sdx_native_cache_configure() {
-  KOMPILE_NATIVE_CACHE="${KOMPILE_NATIVE_CACHE:-1}"
-  KOMPILE_NATIVE_FORCE_REBUILD="${KOMPILE_NATIVE_FORCE_REBUILD:-0}"
-  KOMPILE_NATIVE_CACHE_DIR="${KOMPILE_NATIVE_CACHE_DIR:-${XDG_CACHE_HOME:-${HOME:?HOME is required}/.cache}/kompile/native-images}"
+  SDX_NATIVE_CACHE="${SDX_NATIVE_CACHE:-1}"
+  SDX_NATIVE_FORCE_REBUILD="${SDX_NATIVE_FORCE_REBUILD:-0}"
+  SDX_NATIVE_CACHE_DIR="${SDX_NATIVE_CACHE_DIR:-${XDG_CACHE_HOME:-${HOME:?HOME is required}/.cache}/sdx/native-images}"
 
-  case "$KOMPILE_NATIVE_CACHE" in
+  case "$SDX_NATIVE_CACHE" in
     0|1) ;;
-    *) printf 'KOMPILE_NATIVE_CACHE must be 0 or 1 (got %s)\n' "$KOMPILE_NATIVE_CACHE" >&2; return 1 ;;
+    *) printf 'SDX_NATIVE_CACHE must be 0 or 1 (got %s)\n' "$SDX_NATIVE_CACHE" >&2; return 1 ;;
   esac
-  case "$KOMPILE_NATIVE_FORCE_REBUILD" in
+  case "$SDX_NATIVE_FORCE_REBUILD" in
     0|1) ;;
-    *) printf 'KOMPILE_NATIVE_FORCE_REBUILD must be 0 or 1 (got %s)\n' "$KOMPILE_NATIVE_FORCE_REBUILD" >&2; return 1 ;;
+    *) printf 'SDX_NATIVE_FORCE_REBUILD must be 0 or 1 (got %s)\n' "$SDX_NATIVE_FORCE_REBUILD" >&2; return 1 ;;
   esac
 }
 
@@ -43,7 +43,7 @@ sdx_native_cache_artifact_path() {
     printf 'Unsafe native cache artifact name: %s\n' "$artifact_name" >&2
     return 1
   }
-  printf '%s/%s/%s/%s' "$KOMPILE_NATIVE_CACHE_DIR" "$target" "$fingerprint" "$artifact_name"
+  printf '%s/%s/%s/%s' "$SDX_NATIVE_CACHE_DIR" "$target" "$fingerprint" "$artifact_name"
 }
 
 sdx_native_cache_validate_artifact() {
@@ -77,7 +77,7 @@ sdx_native_cache_restore() {
   local target_path="${4:?target path is required}"
   local target_sidecar="$target_path.native-cache"
   local cached_artifact temporary_artifact checksum sidecar_fingerprint sidecar_checksum
-  [[ "$KOMPILE_NATIVE_CACHE" == 1 && "$KOMPILE_NATIVE_FORCE_REBUILD" != 1 ]] || return 1
+  [[ "$SDX_NATIVE_CACHE" == 1 && "$SDX_NATIVE_FORCE_REBUILD" != 1 ]] || return 1
 
   # The normal target is the cheapest cache tier. Accept it only when both
   # sidecar fields match this invocation and the current bytes verify.
@@ -119,7 +119,7 @@ sdx_native_cache_publish() {
   local artifact_name="${3:?cache artifact name is required}"
   local source_path="${4:?source path is required}"
   local cached_artifact cache_dir checksum cached_checksum temporary_artifact temporary_checksum
-  [[ "$KOMPILE_NATIVE_CACHE" == 1 ]] || return 0
+  [[ "$SDX_NATIVE_CACHE" == 1 ]] || return 0
   [[ -f "$source_path" && ! -L "$source_path" && -s "$source_path" ]] || return 1
 
   cached_artifact="$(sdx_native_cache_artifact_path "$target" "$fingerprint" "$artifact_name")" || return 1

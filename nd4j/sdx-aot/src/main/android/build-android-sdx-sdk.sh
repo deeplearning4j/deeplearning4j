@@ -7,8 +7,9 @@ usage() {
 Usage: build-android-sdx-sdk.sh [all|cpu|aot] [options]
 
 The default mode is "all". Local tools are discovered from standard environment
-variables, the Android SDK, SDKMAN, Maven local storage, PATH, and the sibling
-kompile checkout used by the Android Native Image toolchain.
+variables, the Android SDK, SDKMAN, Maven local storage, and PATH. AOT mode also
+requires an explicit generic Android Native Image object builder and verified
+JDK/SVM support closure; SDX never discovers an application or graph project.
 
 Common options:
   --android-api N          Android API (default: 28)
@@ -19,7 +20,7 @@ Common options:
   --online                 Permit dependency resolution
   --dev                    Native Image -Ob quick build (default)
   --production             Optimized Native Image production build
-  quick-build default      KOMPILE_NATIVE_QUICK_BUILD=1 (0 selects production)
+  quick-build default      SDX_NATIVE_QUICK_BUILD=1 (0 selects production)
   --keep-work              Preserve a failed AOT generation
   --fresh-classes-only     Compile/audit AOT cache inputs, then stop
   --print-config           Print and persist the resolved configuration, then exit
@@ -32,18 +33,18 @@ Discovery overrides:
   --maven FILE             or SDX_MAVEN / MAVEN_HOME
   --ccache FILE            or SDX_CCACHE
   --graalvm-home DIR       or SDX_GRAALVM_HOME / GRAALVM_HOME
-  --object-builder FILE    or SDX_OBJECT_BUILDER
-  sibling support root     SDX_KOMPILE_GRAPH_ROOT
+  --object-builder FILE    or SDX_OBJECT_BUILDER (required for AOT)
   --javacpp-jar FILE       or SDX_JAVACPP_JAR
   --reuse-jdk-libs DIR     or SDX_JDK_SUPPORT_DIR
   --reuse-svm-libs DIR     or SDX_SVM_SUPPORT_DIR
   --base-sdk DIR           or SDX_CPU_BASE_SDK
 
 Examples:
-  build-android-sdx-sdk.sh
   build-android-sdx-sdk.sh cpu
-  build-android-sdx-sdk.sh aot
-  build-android-sdx-sdk.sh aot --production
+  build-android-sdx-sdk.sh aot --object-builder /path/to/generic-builder \
+    --reuse-jdk-libs /path/to/bionic-support --reuse-svm-libs /path/to/bionic-support
+  build-android-sdx-sdk.sh all --production --object-builder /path/to/generic-builder \
+    --reuse-jdk-libs /path/to/bionic-support --reuse-svm-libs /path/to/bionic-support
 USAGE
 }
 
@@ -176,10 +177,10 @@ OFFLINE=1
 KEEP_WORK=0
 FRESH_CLASSES_ONLY=0
 PRINT_CONFIG=0
-case "${KOMPILE_NATIVE_QUICK_BUILD:-1}" in
+case "${SDX_NATIVE_QUICK_BUILD:-1}" in
   1|true|TRUE|yes|YES|on|ON) DEFAULT_AOT_BUILD_MODE=dev ;;
   0|false|FALSE|no|NO|off|OFF) DEFAULT_AOT_BUILD_MODE=production ;;
-  *) fail "KOMPILE_NATIVE_QUICK_BUILD must be 0/1 or a boolean value" ;;
+  *) fail "SDX_NATIVE_QUICK_BUILD must be 0/1 or a boolean value" ;;
 esac
 AOT_BUILD_MODE="${SDX_ANDROID_AOT_BUILD_MODE:-$DEFAULT_AOT_BUILD_MODE}"
 
@@ -274,15 +275,10 @@ if [[ "$MODE" != aot ]]; then
   CCACHE="$(resolve_executable "ccache" "$CCACHE_OVERRIDE"     "$(command -v ccache 2>/dev/null || true)"     "${CONDA_PREFIX:-}/bin/ccache"     "${HOME:-}/miniconda3/bin/ccache")"
 fi
 
-KOMPILE_GRAPH_ROOT="${SDX_KOMPILE_GRAPH_ROOT:-$DL4J_ROOT/../kompile/kompile-app/kompile-data/kompile-graphs/kompile-graph-reasoning-local}"
-# The graph AOT producer stages its Android support closure in the shared
-# pipeline work root before the SDX AOT SDK is assembled. Prefer that stable
-# cache location, while retaining the graph module target as the canonical
-# published-artifact location for standalone builds.
+# Support archives are generic Native Image toolchain inputs. Callers may stage
+# them under this SDX-owned location or provide explicit verified directories.
 SUPPORT_CANDIDATES=(
-  "$BUILD_ROOT/graph-aot-work/clibraries/bionic"
-  "$BUILD_ROOT/graph-aot-reactor-work/clibraries/bionic"
-  "$KOMPILE_GRAPH_ROOT/target/android-ndk-aot/clibraries/bionic"
+  "$BUILD_ROOT/native-image-support/bionic"
 )
 M2_REPOSITORY="${M2_REPOSITORY:-${HOME:-}/.m2/repository}"
 
@@ -293,10 +289,17 @@ JDK_SUPPORT_DIR=""
 SVM_SUPPORT_DIR=""
 if [[ "$MODE" != cpu ]]; then
   GRAALVM_HOME_RESOLVED="$(resolve_java_home "GraalVM" 21 "$GRAALVM_OVERRIDE" "${GRAAL_CANDIDATES[@]}")"
-  OBJECT_BUILDER="$(resolve_executable "Android Native Image object builder" "$OBJECT_BUILDER_OVERRIDE"     "$KOMPILE_GRAPH_ROOT/build-android-ndk.sh")"
+  OBJECT_BUILDER="$(resolve_executable "Android Native Image object builder" "$OBJECT_BUILDER_OVERRIDE")"
   JAVACPP_JAR="$(resolve_regular_file "JavaCPP builder jar" "$JAVACPP_JAR_OVERRIDE"     "$M2_REPOSITORY/org/bytedeco/javacpp/1.5.13/javacpp-1.5.13.jar")"
-  JDK_SUPPORT_DIR="$(resolve_directory "Android JDK support closure" "$JDK_SUPPORT_OVERRIDE" "${SUPPORT_CANDIDATES[@]}")"
-  SVM_SUPPORT_DIR="$(resolve_directory "Android SVM support closure" "$SVM_SUPPORT_OVERRIDE" "${SUPPORT_CANDIDATES[@]}")"
+  if [[ "$PRINT_CONFIG" == 1 && -z "$JDK_SUPPORT_OVERRIDE" && -z "$SVM_SUPPORT_OVERRIDE" ]]; then
+    # Consumer orchestrators may use --print-config to resolve the NDK/GraalVM
+    # toolchain before producing the generic support closure they will pass back.
+    JDK_SUPPORT_DIR=""
+    SVM_SUPPORT_DIR=""
+  else
+    JDK_SUPPORT_DIR="$(resolve_directory "Android JDK support closure" "$JDK_SUPPORT_OVERRIDE" "${SUPPORT_CANDIDATES[@]}")"
+    SVM_SUPPORT_DIR="$(resolve_directory "Android SVM support closure" "$SVM_SUPPORT_OVERRIDE" "${SUPPORT_CANDIDATES[@]}")"
+  fi
 fi
 
 CPU_LINK="$BUILD_ROOT/cpu-sdk/current"
@@ -339,7 +342,7 @@ RESOLVED_CONFIG_TEMP="$(mktemp "$BUILD_ROOT/.resolved-build-config.XXXXXX")"
     "managed_java_home=$JAVA17_HOME" \
     "maven=$MAVEN" \
     "jobs=$JOBS" \
-    "kompile_graph_root=$KOMPILE_GRAPH_ROOT" \
+    "object_builder=$OBJECT_BUILDER" \
     "graalvm_home=$GRAALVM_HOME_RESOLVED" \
     "jdk_support_dir=$JDK_SUPPORT_DIR" \
     "svm_support_dir=$SVM_SUPPORT_DIR"

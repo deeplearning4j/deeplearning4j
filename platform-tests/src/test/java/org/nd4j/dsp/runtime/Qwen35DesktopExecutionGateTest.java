@@ -15,26 +15,34 @@ import org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate;
 import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.serde.SDZSerializer;
 import org.nd4j.ggml.GGMLModelExport;
 import org.nd4j.ggml.GGMLModelImport;
 import org.nd4j.ggml.convert.ConversionOptions;
 import org.nd4j.ggml.export.ExportOptions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -59,6 +67,15 @@ class Qwen35DesktopExecutionGateTest {
     private static final long[] ANDROID_SMOKE_PROMPT_IDS = {
             248045, 846, 198, 20206, 440, 279, 3074, 3299, 25, 5354,
             248046, 198, 248045, 74455, 198, 248068, 271, 248069, 271
+    };
+    private static final long[] GRAPH_ASSISTANT_PROMPT_IDS = {
+            248045, 8678, 198, 2523, 513, 264, 4618, 17313, 13, 5272, 279, 2420,
+            4618, 7141, 948, 279, 4087, 13402, 383, 1208, 11, 10781, 11, 14318,
+            11, 466, 11532, 303, 279, 4618, 13, 9437, 955, 9468, 14318, 1518,
+            12945, 29256, 11, 635, 524, 16525, 7167, 12688, 11, 321, 2873, 264,
+            61446, 4087, 42873, 303, 279, 5743, 4618, 795, 13, 248046, 198,
+            248045, 846, 198, 9419, 248046, 198, 248045, 74455, 198, 248068, 271,
+            248069, 271
     };
 
     @Test
@@ -214,6 +231,142 @@ class Qwen35DesktopExecutionGateTest {
             assertTrue(report.executionCount() >= 1,
                     "The applied-backend report must come from an executed context");
         }
+    }
+
+    @Test
+    void firstQwenGdrActualLengthSelectsTheSequentialContract() throws Exception {
+        Path bundle = Paths.get(System.getProperty(
+                BUNDLE_PROPERTY,
+                "target/sdx-desktop-gate/qwen35-0.8b-android-q4-fixed"))
+                .toAbsolutePath().normalize();
+        assertTrue(Files.isRegularFile(bundle.resolve("model.sdz")),
+                "Corrected Android Q4 bundle is required: " + bundle);
+
+        String[] intermediateNames;
+        try (SameDiff graph = SDZSerializer.load(bundle.resolve("model.sdz").toFile(), false)) {
+            SameDiffOp firstGdr = graph.getOps().values().stream()
+                    .filter(candidate -> candidate.getOp() != null &&
+                            "gated_delta_rule".equals(candidate.getOp().opName()) &&
+                            candidate.getOutputsOfOp().contains("gdn_state_out_0"))
+                    .findFirst().orElse(null);
+            assertNotNull(firstGdr, "Serialized graph must contain the first GDR op");
+            assertEquals(7, firstGdr.getInputsToOp().size(),
+                    "First GDR must retain Q/K/V/beta/gate/state/actualLen inputs");
+            intermediateNames = firstGdr.getInputsToOp().subList(0, 5).toArray(new String[0]);
+            System.out.println("QWEN_GDR_INPUT_NAMES " + Arrays.toString(intermediateNames));
+        }
+        try (SdxRuntime runtime = SdxRuntime.create();
+             SdxRuntime.SdxModel loaded = runtime.loadModel(
+                     bundle.toString(), desktopStrictCpuOptions());
+             SdxRuntime.SdxContext context = loaded.createInferenceContext(intermediateNames)) {
+            Map<String, INDArray> ownedInputs = new HashMap<>();
+            ownedInputs.put("input_ids", Nd4j.createFromArray(GRAPH_ASSISTANT_PROMPT_IDS)
+                    .reshape(1, GRAPH_ASSISTANT_PROMPT_IDS.length));
+            ownedInputs.put("actual_sequence_length",
+                    Nd4j.scalar(DataType.INT64, GRAPH_ASSISTANT_PROMPT_IDS.length));
+            ownedInputs.put("position_offset", Nd4j.scalar(DataType.INT64, 0));
+            ownedInputs.put("cache_position", Nd4j.scalar(DataType.INT64, 0));
+            ownedInputs.put("past_conv_state.0", Nd4j.zeros(DataType.FLOAT, 1, 6144, 3));
+            ownedInputs.put("past_gdn_state.0", Nd4j.zeros(DataType.FLOAT, 1, 16, 128, 128));
+
+            Object[] inputs = new Object[context.numInputs()];
+            for (int index = 0; index < inputs.length; index++) {
+                String name = context.inputName(index);
+                INDArray array = ownedInputs.get(name);
+                assertTrue(array != null, "Unexpected first-GDR context input: " + name);
+                inputs[index] = array;
+            }
+
+            INDArray q = Nd4j.create(DataType.FLOAT, 1, 72, 16, 128);
+            INDArray k = Nd4j.create(DataType.FLOAT, 1, 72, 16, 128);
+            INDArray v = Nd4j.create(DataType.FLOAT, 1, 72, 16, 128);
+            INDArray beta = Nd4j.create(DataType.FLOAT, 1, 72, 16);
+            INDArray gate = Nd4j.create(DataType.FLOAT, 1, 72, 16);
+            context.runNd4j(inputs, new Object[]{q, k, v, beta, gate});
+
+            String vectorExport = System.getProperty("sdx.qwen.gdrVectorExport");
+            if (vectorExport != null && !vectorExport.isBlank()) {
+                int dKey = (int) q.size(3);
+                int dValue = (int) v.size(3);
+                ByteBuffer vector = ByteBuffer
+                        .allocate((dKey * 2 + dValue + 2) * Float.BYTES)
+                        .order(ByteOrder.LITTLE_ENDIAN);
+                for (int d = 0; d < dKey; d++) vector.putFloat(q.getFloat(0, 0, 0, d));
+                for (int d = 0; d < dKey; d++) vector.putFloat(k.getFloat(0, 0, 0, d));
+                for (int d = 0; d < dValue; d++) vector.putFloat(v.getFloat(0, 0, 0, d));
+                vector.putFloat(beta.getFloat(0, 0, 0));
+                vector.putFloat(gate.getFloat(0, 0, 0));
+                Files.write(Paths.get(vectorExport), vector.array());
+                System.out.println("QWEN_GDR_VECTOR_EXPORT " + vectorExport);
+            }
+
+            INDArray zeroState = ownedInputs.get("past_gdn_state.0");
+            INDArray actualLength = ownedInputs.get("actual_sequence_length");
+            INDArray[] sequential = Nd4j.exec(new GatedDeltaRule(
+                    q, k, v, beta, gate, zeroState, actualLength));
+            INDArray oneLength = Nd4j.scalar(DataType.INT64, 1L);
+            INDArray[] oneToken = Nd4j.exec(new GatedDeltaRule(
+                    q, k, v, beta, gate, zeroState, oneLength));
+            INDArray[] chunked = Nd4j.exec(new GatedDeltaRule(
+                    q, k, v, beta, gate, zeroState));
+
+            long sequentialOutputHash = opSanityHash(sequential[0]);
+            long sequentialStateHash = opSanityHash(sequential[1]);
+            long chunkedOutputHash = opSanityHash(chunked[0]);
+            long chunkedStateHash = opSanityHash(chunked[1]);
+            System.out.printf(
+                    "QWEN_GDR_PATH sequential_out=0x%016x sequential_state=0x%016x " +
+                            "one_token_out=0x%016x one_token_state=0x%016x " +
+                            "chunked_out=0x%016x chunked_state=0x%016x%n",
+                    sequentialOutputHash, sequentialStateHash,
+                    opSanityHash(oneToken[0]), opSanityHash(oneToken[1]),
+                    chunkedOutputHash, chunkedStateHash);
+            System.out.printf(
+                    "QWEN_GDR_ONE_TOKEN output_first=%.9g output_min=%.9g output_max=%.9g " +
+                            "state_first=%.9g state_min=%.9g state_max=%.9g%n",
+                    oneToken[0].getDouble(0),
+                    oneToken[0].minNumber().doubleValue(), oneToken[0].maxNumber().doubleValue(),
+                    oneToken[1].getDouble(0),
+                    oneToken[1].minNumber().doubleValue(), oneToken[1].maxNumber().doubleValue());
+            System.out.printf(
+                    "QWEN_GDR_SEQUENTIAL output_first=%.9g state_first=%.9g " +
+                            "state_min=%.9g state_max=%.9g%n",
+                    sequential[0].getDouble(0), sequential[1].getDouble(0),
+                    sequential[1].minNumber().doubleValue(), sequential[1].maxNumber().doubleValue());
+            System.out.printf(
+                    "QWEN_GDR_CHUNKED output_first=%.9g output_min=%.9g output_max=%.9g " +
+                            "state_first=%.9g state_min=%.9g state_max=%.9g%n",
+                    chunked[0].getDouble(0),
+                    chunked[0].minNumber().doubleValue(), chunked[0].maxNumber().doubleValue(),
+                    chunked[1].getDouble(0),
+                    chunked[1].minNumber().doubleValue(), chunked[1].maxNumber().doubleValue());
+
+            assertEquals(0x2114163817fe43eaL, sequentialOutputHash,
+                    "actualLen=72 must retain the known-good sequential output");
+            assertEquals(0x9fbf870820c29e4eL, sequentialStateHash,
+                    "actualLen=72 must retain the known-good sequential state");
+
+            for (INDArray array : ownedInputs.values()) {
+                if (!array.wasClosed()) array.close();
+            }
+            for (INDArray array : new INDArray[]{q, k, v, beta, gate, oneLength,
+                    sequential[0], sequential[1], oneToken[0], oneToken[1],
+                    chunked[0], chunked[1]}) {
+                if (!array.wasClosed()) array.close();
+            }
+        }
+    }
+
+    private static long opSanityHash(INDArray array) {
+        long hash = 0xcbf29ce484222325L;
+        for (long index = 0; index < array.length(); index++) {
+            long bits = Double.doubleToRawLongBits(array.getDouble(index));
+            for (int shift = 0; shift < Long.SIZE; shift += Byte.SIZE) {
+                hash ^= (bits >>> shift) & 0xffL;
+                hash *= 0x100000001b3L;
+            }
+        }
+        return hash;
     }
 
     private static SdxRuntime.ModelOptions desktopStrictCpuOptions() {

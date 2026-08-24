@@ -127,6 +127,33 @@ bool get_token_id(OpaqueTokenizer* tokenizer, const char* token, uint32_t* token
     }
 }
 
+char* get_token(OpaqueTokenizer* tokenizer, uint32_t token_id) {
+    if (!tokenizer) {
+        set_error(TOKENIZER_ERROR_INVALID_INPUT, "Tokenizer cannot be null");
+        return nullptr;
+    }
+
+    try {
+        clear_error();
+        auto* wrapper = reinterpret_cast<tokenizers::TokenizerWrapper*>(tokenizer);
+        std::string token;
+        if (!wrapper->id_to_token(token_id, token)) {
+            return nullptr;
+        }
+        auto* copy = new (std::nothrow) char[token.size() + 1];
+        if (!copy) {
+            set_error(TOKENIZER_ERROR_MEMORY_ALLOCATION,
+                      "Failed to allocate token string");
+            return nullptr;
+        }
+        std::memcpy(copy, token.c_str(), token.size() + 1);
+        return copy;
+    } catch (const std::exception& e) {
+        set_error(TOKENIZER_ERROR_UNKNOWN, e.what());
+        return nullptr;
+    }
+}
+
 char* apply_chat_template(const char* messages_json,
                           const char* tokenizer_config_json,
                           const char* current_date,

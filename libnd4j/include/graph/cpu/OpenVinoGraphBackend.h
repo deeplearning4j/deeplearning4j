@@ -31,7 +31,6 @@
 #include <openvino/op/ops.hpp>
 
 #include <functional>
-#include <list>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -65,6 +64,13 @@ class OpenVinoGraphBackend : public GraphBackend {
   bool isAvailable() const override;
   bool isResolvable(const GraphBackendRequest& request) const override;
   int resolutionPriority(const GraphBackendRequest& request) const override;
+  GraphBackendPlanningPolicy planningPolicy(
+      const GraphBackendRequest& request) const override {
+    auto policy = GraphBackend::planningPolicy(request);
+    policy.artifactKind = GraphBackendArtifactKind::DIRECT_COMPILED;
+    policy.materializesAllFrameworkSlots = false;
+    return policy;
+  }
   bool canFuseSegment(NativeSlot* slots, int start, int end) override;
 
   bool compileSegment(GraphSegment& seg, NativeSlot* slots,
@@ -106,6 +112,7 @@ class OpenVinoGraphBackend : public GraphBackend {
     std::shared_ptr<ov::CompiledModel> compiled;
     std::shared_ptr<ov::InferRequest> request;
     std::vector<int> inputSlotMap;   // OV input index -> source slot/ext index
+    std::vector<bool> inputIsImmutable;  // true only for SOURCE_CONSTANT externals
     std::vector<int> outputSlotMap;  // OV output index -> outputSlot index
 
     // Cached promoted tensors for ISA-promotion path (f16 NDArray → f32 OV tensor).
@@ -138,6 +145,7 @@ class OpenVinoGraphBackend : public GraphBackend {
   struct CompiledSegment {
     LongType shapeKey;
     bool valid;
+    std::shared_ptr<std::mutex> executionMtx = std::make_shared<std::mutex>();
 
     // OV islands (compiled subgraphs between native ops)
     std::vector<OvIsland> ovIslands;
@@ -150,38 +158,35 @@ class OpenVinoGraphBackend : public GraphBackend {
     std::vector<CompilationAuditEntry> compilationAudit;
 
     CompiledSegment() : shapeKey(0), valid(false) {}
+
+    void invalidate() {
+      std::lock_guard<std::mutex> lock(*executionMtx);
+      valid = false;
+      ovIslands.clear();
+      nativeRanges.clear();
+      executionSchedule.clear();
+    }
   };
 
-  // Per-segment cache with optional LRU eviction.
-  // 0 = unlimited (no eviction). Memory is bounded by the topology model cache
-  // (modelCache_) which shares CompiledModels across segments with identical op
-  // structure (e.g., transformer layers). Each segment entry only holds a
-  // lightweight InferRequest (~KB). Previously 32, which caused KERNEL_FAILURE
-  // when frozen plans executed evicted segments (e.g. 772 evictions on
-  // 1913-slot Qwen model).
-  static constexpr int kMaxCacheEntries = 0;
-
-  // LRU list: front = MRU, back = LRU
-  using CacheEntry = std::pair<SegmentCacheKey, CompiledSegment>;
-  using CacheLruList = std::list<CacheEntry>;
-  CacheLruList cacheLru_;
-  std::unordered_map<SegmentCacheKey, CacheLruList::iterator, SegmentCacheHash> cache_;
-  std::mutex cacheMtx_;
-
-  // Evict oldest cache entries until under the cap. Must hold cacheMtx_.
-  void evictCacheIfOverLimitLocked();
+  // Plans own mutable infer requests and mappings. The singleton retains weak
+  // references only for explicit invalidation; immutable CompiledModels may
+  // still be shared through modelCache_.
+  std::vector<std::weak_ptr<CompiledSegment>> compiledArtifacts_;
+  mutable std::mutex cacheMtx_;
 
   // Topology-based compiled model cache.
-  // Segments from different transformer layers with the same op sequence and shapes
-  // share one CompiledModel.  Each segment gets its own InferRequest (cheap, ~KB).
-  // Key: topology hash (op names + input shapes + output shapes), Value: compiled model.
+  // Segments share a CompiledModel only when their canonical descriptors,
+  // normalized wiring, exact tensor layouts, arguments, and visible outputs
+  // match. Each segment gets its own InferRequest (cheap, ~KB).
   std::unordered_map<uint64_t, std::shared_ptr<ov::CompiledModel>> modelCache_;
   std::mutex modelCacheMtx_;
 
-  // Compute topology hash for an island (op names + parameter shapes, slot-index-agnostic)
+  // Compute an exact, slot-index-agnostic topology hash for an island.
   uint64_t computeIslandTopologyHash(NativeSlot* slots, int startSlot, int endSlot,
                                      NDArray** externalInputs, int numExternalInputs,
-                                     NDArray** outputSlots, int totalOutputSlots);
+                                     NDArray** outputSlots, int totalOutputSlots,
+                                     const std::vector<int>& inputSourceMap,
+                                     const std::vector<int>& outputSourceMap);
 
   // Most recent compilation audit
   std::vector<CompilationAuditEntry> lastCompilationAudit_;

@@ -293,13 +293,19 @@ static void recordOpSanity(const char* backend, int segmentId, int stepIdx,
   metadataOnly = true;
 #endif
   if (metadataOnly) {
+    DataBuffer* dataBuffer = output->dataBuffer();
+    const bool dataBufferValid = dataBuffer != nullptr && dataBuffer->isValid();
     diagnostics.recordEvent(
         DSP_DIAG_VERIFY, stepIdx, segmentId, -1, opName, 0,
         "OP_SANITY backend=%s exec=%d output=%d slot=%d state=capture-skip "
-        "dtype=%s shape=%s len=%lld",
+        "dtype=%s shape=%s len=%lld arr=%p db=%p primary=%p special=%p offset=%lld",
         backend, execCount, outputOrdinal, outputSlot,
         DataTypeUtils::asString(output->dataType()).c_str(),
-        dspShapeStr(output).c_str(), static_cast<long long>(output->lengthOf()));
+        dspShapeStr(output).c_str(), static_cast<long long>(output->lengthOf()),
+        (void*)output, (void*)dataBuffer,
+        dataBufferValid ? dataBuffer->primary() : nullptr,
+        dataBufferValid ? dataBuffer->special() : nullptr,
+        static_cast<long long>(output->offset()));
     return;
   }
 
@@ -332,12 +338,15 @@ static void recordOpSanity(const char* backend, int segmentId, int stepIdx,
       : std::numeric_limits<double>::quiet_NaN();
   const bool completeScan = summary.scannedCount == output->lengthOf();
   const std::string samples = formatSanitySamples(summary.samples, summary.sampleCount);
+  DataBuffer* dataBuffer = output->dataBuffer();
+  const bool dataBufferValid = dataBuffer != nullptr && dataBuffer->isValid();
   diagnostics.recordEvent(
       DSP_DIAG_VERIFY, stepIdx, segmentId, -1, opName, 0,
       "OP_SANITY backend=%s exec=%d output=%d slot=%d dtype=%s shape=%s "
       "len=%lld scanned=%lld coverage=%s hash=0x%016llx "
       "finite=%lld nan=%lld inf=%lld "
-      "min=%.9g max=%.9g mean=%.9g l1=%.9g samples=%s",
+      "min=%.9g max=%.9g mean=%.9g l1=%.9g samples=%s "
+      "arr=%p db=%p primary=%p special=%p offset=%lld",
       backend, execCount, outputOrdinal, outputSlot,
       DataTypeUtils::asString(output->dataType()).c_str(),
       dspShapeStr(output).c_str(), static_cast<long long>(output->lengthOf()),
@@ -347,7 +356,11 @@ static void recordOpSanity(const char* backend, int segmentId, int stepIdx,
       static_cast<long long>(summary.finiteCount),
       static_cast<long long>(summary.nanCount),
       static_cast<long long>(summary.infCount),
-      summary.minimum, summary.maximum, mean, summary.l1, samples.c_str());
+      summary.minimum, summary.maximum, mean, summary.l1, samples.c_str(),
+      (void*)output, (void*)dataBuffer,
+      dataBufferValid ? dataBuffer->primary() : nullptr,
+      dataBufferValid ? dataBuffer->special() : nullptr,
+      static_cast<long long>(output->offset()));
 }
 
 static void recordSlotOpSanity(
@@ -374,6 +387,117 @@ static void recordSlotOpSanity(
     recordOpSanity(
         backend, segmentId, stepIdx, output, outputSlot,
         slot.ident.opName.c_str(), value, execCount, captureActive);
+  }
+}
+
+static void recordGdrInputSanity(
+    const char* backend, int segmentId, int stepIdx,
+    const NativeSlot* slots, NDArray** outputSlots, int totalOutputSlots,
+    NDArray** externalArrays, int numExternalArrays,
+    const std::vector<std::string>& externalInputNames,
+    int execCount, bool captureActive) {
+  if (!opSanityEnabled(execCount) || captureActive || slots == nullptr ||
+      slots[stepIdx].ident.opName != "gated_delta_rule") {
+    return;
+  }
+
+  const auto& slot = slots[stepIdx];
+  auto& diagnostics = DspDiagnostics::getInstance();
+  for (int input = 0; input < slot.wiring.numInputs; ++input) {
+    const int sourceIndex = slot.wiring.inputSourceIndices[input];
+    NDArray* value = nullptr;
+    std::string source;
+    if (sourceIndex >= 0) {
+      source = "slot:" + std::to_string(sourceIndex);
+      if (outputSlots != nullptr && sourceIndex < totalOutputSlots) {
+        value = outputSlots[sourceIndex];
+      }
+    } else {
+      const int externalIndex = -(sourceIndex + 1);
+      source = "ext:" + std::to_string(externalIndex);
+      if (externalIndex >= 0 &&
+          externalIndex < static_cast<int>(externalInputNames.size())) {
+        source += ":" + externalInputNames[externalIndex];
+      }
+      if (externalArrays != nullptr && externalIndex >= 0 &&
+          externalIndex < numExternalArrays) {
+        value = externalArrays[externalIndex];
+      }
+    }
+
+    if (value == nullptr) {
+      diagnostics.recordEvent(
+          DSP_DIAG_VERIFY, stepIdx, segmentId, -1, slot.ident.opName.c_str(), 0,
+          "GDR_INPUT_SANITY backend=%s exec=%d input=%d source=%s state=null",
+          backend, execCount, input, source.c_str());
+      continue;
+    }
+
+#if defined(SD_CUDA) || defined(SD_VULKAN) || defined(SD_HIP)
+    diagnostics.recordEvent(
+        DSP_DIAG_VERIFY, stepIdx, segmentId, -1, slot.ident.opName.c_str(), 0,
+        "GDR_INPUT_SANITY backend=%s exec=%d input=%d source=%s "
+        "state=device-metadata dtype=%s shape=%s offset=%lld len=%lld",
+        backend, execCount, input, source.c_str(),
+        DataTypeUtils::asString(value->dataType()).c_str(),
+        dspShapeStr(value).c_str(), static_cast<long long>(value->offset()),
+        static_cast<long long>(value->lengthOf()));
+    continue;
+#endif
+
+    if (value->lengthOf() > 0 &&
+        (value->dataBuffer() == nullptr || value->buffer() == nullptr)) {
+      diagnostics.recordEvent(
+          DSP_DIAG_VERIFY, stepIdx, segmentId, -1, slot.ident.opName.c_str(), 0,
+          "GDR_INPUT_SANITY backend=%s exec=%d input=%d source=%s "
+          "state=invalid-buffer dtype=%s shape=%s len=%lld",
+          backend, execCount, input, source.c_str(),
+          DataTypeUtils::asString(value->dataType()).c_str(),
+          dspShapeStr(value).c_str(), static_cast<long long>(value->lengthOf()));
+      continue;
+    }
+
+    value->forceSyncToHost();
+    OpSanitySummary summary;
+    if (!summarizeByDataType(value, &summary)) {
+      diagnostics.recordEvent(
+          DSP_DIAG_VERIFY, stepIdx, segmentId, -1, slot.ident.opName.c_str(), 0,
+          "GDR_INPUT_SANITY backend=%s exec=%d input=%d source=%s "
+          "state=unsupported-dtype dtype=%s shape=%s",
+          backend, execCount, input, source.c_str(),
+          DataTypeUtils::asString(value->dataType()).c_str(),
+          dspShapeStr(value).c_str());
+      continue;
+    }
+
+    std::string strides = "[";
+    for (int axis = 0; axis < value->rankOf(); ++axis) {
+      if (axis > 0) strides += ",";
+      strides += std::to_string(value->strideAt(axis));
+    }
+    strides += "]";
+    const double mean = summary.finiteCount > 0
+        ? summary.sum / static_cast<double>(summary.finiteCount)
+        : std::numeric_limits<double>::quiet_NaN();
+    const std::string samples = formatSanitySamples(summary.samples, summary.sampleCount);
+    DataBuffer* dataBuffer = value->dataBuffer();
+    const bool dataBufferValid = dataBuffer != nullptr && dataBuffer->isValid();
+    diagnostics.recordEvent(
+        DSP_DIAG_VERIFY, stepIdx, segmentId, -1, slot.ident.opName.c_str(), 0,
+        "GDR_INPUT_SANITY backend=%s exec=%d input=%d source=%s dtype=%s "
+        "shape=%s strides=%s offset=%lld len=%lld hash=0x%016llx "
+        "min=%.9g max=%.9g mean=%.9g l1=%.9g samples=%s "
+        "arr=%p db=%p primary=%p special=%p",
+        backend, execCount, input, source.c_str(),
+        DataTypeUtils::asString(value->dataType()).c_str(),
+        dspShapeStr(value).c_str(), strides.c_str(),
+        static_cast<long long>(value->offset()),
+        static_cast<long long>(value->lengthOf()),
+        static_cast<unsigned long long>(summary.valueHash),
+        summary.minimum, summary.maximum, mean, summary.l1, samples.c_str(),
+        (void*)value, (void*)dataBuffer,
+        dataBufferValid ? dataBuffer->primary() : nullptr,
+        dataBufferValid ? dataBuffer->special() : nullptr);
   }
 }
 
@@ -502,8 +626,12 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
   // ── Frozen fast path: reuse cached key if shapes can't change ──
   // This is the AUTHORITATIVE cache check — applies to ALL callers
   // (phaseCompile, executeSegmentWithGpuGraph, executeSegmentWithSpecificBackend, etc.)
+  const bool directBackendNeedsLiveLayoutKey =
+      seg.resolvedGraphBackendPolicy.artifactKind ==
+          GraphBackendArtifactKind::DIRECT_COMPILED;
   if (!planLifecycle_.isSlotBySlot() && seg.exec.cachedShapeKey != 0 &&
-      !seg.def.hasDynamicBoundaryInputs) {
+      !seg.def.hasDynamicBoundaryInputs &&
+      !directBackendNeedsLiveLayoutKey) {
     return seg.exec.cachedShapeKey;
   }
 
@@ -602,16 +730,46 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
       };
       for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
         NativeSlot& slot = slots_[s];
-        if (!slot.ident.opName.empty()) {
-          for (const char* p = slot.ident.opName.c_str(); *p != '\0'; p++) {
-            mixRange(static_cast<LongType>(*p));
-          }
-        }
+        mixRange(slot.ident.opHash);
         mixRange(static_cast<LongType>(slot.args.numIArgs));
         for (int a = 0; a < slot.args.numIArgs; a++) {
           mixRange(static_cast<LongType>(slot.args.iArgs[a]));
         }
         mixRange(static_cast<LongType>(slot.args.numTArgs));
+        for (int a = 0; a < slot.args.numTArgs; ++a) {
+          LongType bits = 0;
+          static_assert(sizeof(bits) == sizeof(double),
+                        "LongType must preserve a double argument bit pattern");
+          std::memcpy(&bits, &slot.args.tArgs[a], sizeof(bits));
+          mixRange(bits);
+        }
+        mixRange(static_cast<LongType>(slot.args.numBArgs));
+        for (int a = 0; a < slot.args.numBArgs; ++a) {
+          mixRange(slot.args.bArgs[a] ? 1 : 0);
+        }
+        mixRange(static_cast<LongType>(slot.args.numDArgs));
+        for (int a = 0; a < slot.args.numDArgs; ++a) {
+          mixRange(static_cast<LongType>(slot.args.dArgs[a]));
+        }
+        mixRange(static_cast<LongType>(slot.args.numSArgs));
+        for (int a = 0; a < slot.args.numSArgs; ++a) {
+          for (char character : slot.args.sArgs[a]) {
+            mixRange(static_cast<unsigned char>(character));
+          }
+          mixRange(0xFF);
+        }
+      }
+      for (NDArray* input : crossInputs) {
+        if (input == nullptr) continue;
+        mixRange(static_cast<LongType>(input->dataType()));
+        mixRange(static_cast<LongType>(input->rankOf()));
+        mixRange(static_cast<LongType>(input->ordering()));
+        for (int dimension = 0; dimension < input->rankOf(); ++dimension) {
+          // A stride on a singleton dimension is not observable: that index is
+          // always zero. Normalize it so canonical placeholder staging does not
+          // invalidate a kernel compiled from an equivalent caller layout.
+          mixRange(input->sizeAt(dimension) <= 1 ? 0 : input->strideAt(dimension));
+        }
       }
       mixRequestedOutputSet(rangeKeyU64);
 
@@ -632,7 +790,7 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
     dsp::fnv1aMixValue(key, static_cast<uint64_t>(val));
   };
 
-  // Hash array shape signature: rank + dims + length + dtype.
+  // Hash the exact array layout contract used by compiled backends.
   auto mixArraySignature = [&](NDArray* arr) {
     if (arr == nullptr) return;
 
@@ -641,9 +799,13 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
     mix(rank);
     for (int d = 0; d < rank; d++) {
       mix(si[d + 1]);
+      // Singleton-dimension strides are semantically irrelevant and can be
+      // canonicalized by staging without changing the tensor layout.
+      mix(si[d + 1] <= 1 ? 0 : arr->strideAt(d));
     }
     mix(static_cast<LongType>(arr->lengthOf()));
     mix(static_cast<LongType>(arr->dataType()));
+    mix(static_cast<LongType>(arr->ordering()));
   };
 
   mix(seg.def.startSlot);
@@ -654,11 +816,7 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
   // in singleton backend caches (e.g. OpenVINO, OneDNN Graph)
   for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
     NativeSlot& slot = slots_[s];
-    if (!slot.ident.opName.empty()) {
-      for (const char* p = slot.ident.opName.c_str(); *p != '\0'; p++) {
-        mix(static_cast<LongType>(*p));
-      }
-    }
+    mix(slot.ident.opHash);
     mix(static_cast<LongType>(slot.wiring.numInputs));
     mix(static_cast<LongType>(slot.wiring.numOutputs));
     mix(static_cast<LongType>(slot.args.numIArgs));
@@ -666,8 +824,29 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
     for (int a = 0; a < slot.args.numIArgs; a++) {
       mix(static_cast<LongType>(slot.args.iArgs[a]));
     }
-    // Mix tArg count (float args like epsilon, scale)
     mix(static_cast<LongType>(slot.args.numTArgs));
+    for (int a = 0; a < slot.args.numTArgs; ++a) {
+      LongType bits = 0;
+      static_assert(sizeof(bits) == sizeof(double),
+                    "LongType must preserve a double argument bit pattern");
+      std::memcpy(&bits, &slot.args.tArgs[a], sizeof(bits));
+      mix(bits);
+    }
+    mix(static_cast<LongType>(slot.args.numBArgs));
+    for (int a = 0; a < slot.args.numBArgs; ++a) {
+      mix(slot.args.bArgs[a] ? 1 : 0);
+    }
+    mix(static_cast<LongType>(slot.args.numDArgs));
+    for (int a = 0; a < slot.args.numDArgs; ++a) {
+      mix(static_cast<LongType>(slot.args.dArgs[a]));
+    }
+    mix(static_cast<LongType>(slot.args.numSArgs));
+    for (int a = 0; a < slot.args.numSArgs; ++a) {
+      for (char character : slot.args.sArgs[a]) {
+        mix(static_cast<unsigned char>(character));
+      }
+      mix(0xFF);
+    }
   }
 
   std::unordered_set<int> segOutputSlots;
@@ -726,7 +905,7 @@ const std::vector<GraphBackend*>& NativeDynamicShapePlan::getGraphBackendCandida
   graphBackendCandidatesBuilt_ = true;
 
   std::vector<GraphBackend*> catalog;
-#if !defined(SD_VULKAN)
+#if !defined(SD_VULKAN) && !defined(SD_CUDA) && !defined(SD_HIP)
 #if HAVE_MLX
   catalog.push_back(&MlxGraphBackend::getInstance());
 #endif
@@ -743,10 +922,22 @@ const std::vector<GraphBackend*>& NativeDynamicShapePlan::getGraphBackendCandida
   catalog.push_back(&NnapiGraphBackend::getInstance());
 #endif
 #if HAVE_MLIR
+  // MLIR CPU backends are not an implicit third compiler tier. Production
+  // x86 and ARM chains end in explicit functional replay after their two
+  // target backends. Keep MLIR available only through an explicit priority
+  // request until it has a dedicated execution mode.
+  const auto explicitlyRequests = [this](const char* backendName) {
+    return std::find(backendPriority_.begin(), backendPriority_.end(),
+                     backendName) != backendPriority_.end();
+  };
 #if defined(__ANDROID__) || (defined(__linux__) && defined(__aarch64__))
-  catalog.push_back(&ArmHybridGraphBackend::getInstance());
+  if (explicitlyRequests("ARM MLIR CPU")) {
+    catalog.push_back(&ArmHybridGraphBackend::getInstance());
+  }
 #endif
-  catalog.push_back(&MlirCpuGraphBackend::getInstance());
+  if (explicitlyRequests("MLIR CPU JIT")) {
+    catalog.push_back(&MlirCpuGraphBackend::getInstance());
+  }
 #endif
 #endif
   catalog.push_back(dspGetTritonBackend());
@@ -764,6 +955,24 @@ const std::vector<GraphBackend*>& NativeDynamicShapePlan::getGraphBackendCandida
 
   const GraphBackendRequest request = makeGraphBackendRequest();
   graphBackendCandidates_ = GraphBackendResolver::resolve(request, catalog);
+
+  // Apply the plan-local priority override after capability/mode resolution.
+  // Backends named in the override come first in the requested order; all
+  // remaining candidates retain the resolver's stable priority order.
+  if (!backendPriority_.empty() && graphBackendCandidates_.size() > 1) {
+    auto overrideRank = [this](const GraphBackend* backend) {
+      const auto found = std::find(
+          backendPriority_.begin(), backendPriority_.end(), backend->name());
+      return found == backendPriority_.end()
+                 ? backendPriority_.size()
+                 : static_cast<size_t>(found - backendPriority_.begin());
+    };
+    std::stable_sort(
+        graphBackendCandidates_.begin(), graphBackendCandidates_.end(),
+        [&overrideRank](const GraphBackend* left, const GraphBackend* right) {
+          return overrideRank(left) < overrideRank(right);
+        });
+  }
 
   DSP_DIAG(BACKEND,
            "graph backend resolver: mode=%d catalog=%d candidates=%d",
@@ -840,6 +1049,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraphBackend(
   }
 
   // Warmup must happen before any backend tries to compile (needs output shapes)
+  bool warmedUpThisCall = false;
   if (seg.exec.executionCount == 0) {
     auto warmupStatus = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
     DSP_DIAG(EXECUTE, "executeSegmentWithGraphBackend: warmup %s for seg[%d-%d], executionCount→%d",
@@ -848,6 +1058,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGraphBackend(
     if (warmupStatus != Status::OK) {
       return warmupStatus;
     }
+    if (seg.exec.segPhase.needsWarmup()) {
+      SegmentLifecycle::markWarmupDone(seg.exec);
+    }
+    warmedUpThisCall = true;
   }
 
   // Try each admitted backend in shared resolver order.
@@ -856,8 +1070,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGraphBackend(
     const char* backendName = backend->name();
 
     // Attempt lower + validate + execute with this backend.
+    bool executionStarted = false;
     auto status = executeSegmentWithSpecificBackend(
-        seg, backend, externalArrays, numExt, stream);
+        seg, backend, externalArrays, numExt, stream, &executionStarted);
     if (status == Status::OK) {
       // Cache backend identity and its exact lifecycle policy atomically.
       seg.setResolvedGraphBackend(backend, request);
@@ -869,17 +1084,42 @@ Status NativeDynamicShapePlan::executeSegmentWithGraphBackend(
       return Status::OK;
     }
 
+    if (executionStarted || status != Status::BAD_GRAPH) {
+      DSP_DIAG(BACKEND,
+               "cascade: backend=%s execution failed for seg[%d-%d] "
+               "(status=%d); post-start failover is forbidden",
+               backendName, seg.def.startSlot, seg.def.endSlot,
+               static_cast<int>(status));
+      return status;
+    }
+
     DSP_DIAG(BACKEND,
-             "cascade: backend=%s failed for seg[%d-%d] (status=%d), "
+             "cascade: backend=%s rejected lowering for seg[%d-%d], "
              "trying next admitted backend",
              backendName, seg.def.startSlot, seg.def.endSlot,
              static_cast<int>(status));
+    seg.resetGraphBackend();
     // compilationFailed is managed by lifecycle — no raw reset needed here.
     // The markFailed() call below handles the terminal case; individual backend
     // failures don't set compilationFailed since the cascade continues.
   }
 
-  // At least one candidate accepted the segment but every lowering failed.
+  // At least one candidate admitted the metadata but every concrete lowering
+  // rejected its dtype/layout/argument contract. AUTO/ARM hybrid own an explicit
+  // third tier, selected here before any backend execution starts.
+  if (ModeContract::forMode(graphExecutionMode_).allowsFallback) {
+    seg.resetGraphBackend();
+    seg.def.selectedBackend = SelectedBackend::EMULATED_REPLAY;
+    SegmentLifecycle::prepareFunctionalReplayHandoff(
+        seg.exec, seg.def.startSlot, seg.def.endSlot);
+    DSP_DIAG(BACKEND,
+             "cascade: concrete lowering rejected seg[%d-%d]; ownership -> explicit replay",
+             seg.def.startSlot, seg.def.endSlot);
+    if (warmedUpThisCall) return Status::OK;
+    return executeSegmentEmulatedReplay(
+        seg, externalArrays, numExt, stream);
+  }
+
   SegmentLifecycle::markFailed(seg.exec, "cascade_all_backends_failed",
                                seg.def.startSlot, seg.def.endSlot);
   DSP_DIAG(COMPILE,
@@ -892,8 +1132,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGraphBackend(
 // ─── Execute segment with a specific backend (shared logic) ─────────────────
 
 Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
-    GraphSegment& seg, GraphBackend* backend, NDArray** externalArrays, int numExt, void* stream) {
+    GraphSegment& seg, GraphBackend* backend, NDArray** externalArrays, int numExt,
+    void* stream, bool* executionStarted) {
   DSP_REQUIRE_PLAN_PHASE_AT_LEAST(PlanPhase::SLOT_BY_SLOT, "executeSegmentWithSpecificBackend");
+  if (executionStarted != nullptr) *executionStarted = false;
 
   const char* backendName = backend->name();
   const GraphBackendRequest request = makeGraphBackendRequest();
@@ -906,8 +1148,10 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
   // compiled segment exists in the next backend's cache).
   LongType segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
   seg.def.shapeKeyState.recordComputed(segShapeKey);
+  const bool backendIdentityChanged = seg.resolvedGraphBackend != backend;
   bool needsCompile = seg.exec.segPhase.needsCompile() ||
-                      seg.def.shapeKeyState.hasDrifted();
+                      seg.def.shapeKeyState.hasDrifted() ||
+                      backendIdentityChanged;
   const bool isRecompileDueToShapeChange =
       seg.def.shapeKeyState.hasDrifted();
 
@@ -945,7 +1189,8 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
     DSP_DIAG_SEG(COMPILE, seg.def.startSlot,
                  "seg[%d-%d] needs compile: %s (execCount=%d shapeKey=%lld->%lld backend=%s)",
                  seg.def.startSlot, seg.def.endSlot,
-                 seg.exec.executionCount == 1 ? "first-compile" : "shape-key-changed",
+                 backendIdentityChanged ? "backend-identity-missing-or-changed" :
+                 (seg.exec.executionCount == 1 ? "first-compile" : "shape-key-changed"),
                  seg.exec.executionCount,
                  static_cast<long long>(seg.def.shapeKeyState.compiledShapeKey),
                  static_cast<long long>(segShapeKey),
@@ -966,20 +1211,41 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
           "executeSegmentWithSpecificBackend: backend=%s lowering failed "
           "for seg[%d-%d]",
           backendName, seg.def.startSlot, seg.def.endSlot);
-      return Status::KERNEL_FAILURE;
+      return Status::BAD_GRAPH;
     }
     backend = lowering.backend;
     backendName = backend->name();
     seg.setResolvedGraphBackend(backend, request);
-    lastCompilationAudit_ = lowering.attempts.back().audit;
+    seg.compilationAudit = lowering.attempts.back().audit;
+    lastCompilationAudit_ = seg.compilationAudit;
   }
 
   if (needsCompile) {
-    auto audit = backend->getLastCompilationAudit();
+    const auto& audit = seg.compilationAudit;
     lastCompilationAudit_ = audit;
-    bool allCovered = true;
+    const int expectedAuditEntries = seg.def.endSlot - seg.def.startSlot + 1;
+    bool allCovered = static_cast<int>(audit.size()) == expectedAuditEntries;
     int compiledCount = 0, nativeHandledCount = 0, uncoveredCount = 0;
+    std::vector<bool> auditedSlots(static_cast<size_t>(expectedAuditEntries), false);
     for (const auto& entry : audit) {
+      if (entry.slotIndex < seg.def.startSlot || entry.slotIndex > seg.def.endSlot) {
+        allCovered = false;
+        uncoveredCount++;
+        DSP_DIAG(COMPILE,
+                 "%s VALIDATION: audit entry references out-of-range slot %d for seg[%d-%d]",
+                 backendName, entry.slotIndex, seg.def.startSlot, seg.def.endSlot);
+        continue;
+      }
+      const size_t auditIndex =
+          static_cast<size_t>(entry.slotIndex - seg.def.startSlot);
+      if (auditedSlots[auditIndex]) {
+        allCovered = false;
+        uncoveredCount++;
+        DSP_DIAG(COMPILE, "%s VALIDATION: duplicate audit entry for slot %d",
+                 backendName, entry.slotIndex);
+        continue;
+      }
+      auditedSlots[auditIndex] = true;
       if (entry.wasCompiled) {
         compiledCount++;
       } else if (entry.isNativeHandled) {
@@ -993,6 +1259,14 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
         uncoveredCount++;
         DSP_DIAG(COMPILE, "%s VALIDATION: slot %d (%s) was NOT compiled: %s",
                   backendName, entry.slotIndex, entry.opName.c_str(), entry.reason.c_str());
+      }
+    }
+    for (int offset = 0; offset < expectedAuditEntries; ++offset) {
+      if (!auditedSlots[static_cast<size_t>(offset)]) {
+        allCovered = false;
+        uncoveredCount++;
+        DSP_DIAG(COMPILE, "%s VALIDATION: missing audit entry for slot %d",
+                 backendName, seg.def.startSlot + offset);
       }
     }
     if (!allCovered) {
@@ -1020,6 +1294,17 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
   if (needsCompile) {
     seg.def.shapeKeyState.markCompiled(segShapeKey);
   }
+  if (seg.resolvedGraphBackendPolicy.artifactKind ==
+          GraphBackendArtifactKind::DIRECT_COMPILED &&
+      (seg.compiledGraphBackendArtifactOwner != backend ||
+       seg.compiledGraphBackendArtifactShapeKey != segShapeKey ||
+       !seg.compiledGraphBackendArtifact)) {
+    DSP_DIAG(COMPILE,
+             "executeSegmentWithSpecificBackend: backend=%s accepted seg[%d-%d] "
+             "without publishing its segment-owned direct artifact",
+             backendName, seg.def.startSlot, seg.def.endSlot);
+    return Status::BAD_GRAPH;
+  }
   // tl_graphExecutionActive must NOT be set here — it is a CUDA-graph-capture
   // guard that suppresses frees and skips syncs. This function drives non-capture
   // paths (CPU backends, Triton warmup). Capture manages the flag internally.
@@ -1042,6 +1327,7 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
         if (!slots_[s].isCapturable()) capturable = false;
       }
       nativeSeg.def.isCapturable = capturable;
+      nativeSeg.def.isFunctionalReplayEligible = capturable && !hasControlFlow_;
       nativeSeg.exec.executionCount = 1;
     }
 
@@ -1125,9 +1411,16 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
   backend->setNativeSlotExecutor(nativeSlotCallback);
 #endif
 
+  if (executionStarted != nullptr) *executionStarted = false;
   auto status = backend->executeSegment(
       request, seg, slots_, externalArrays, numExt, outputSlots_,
       totalOutputSlots_, stream);
+  // GraphBackend contract: BAD_GRAPH is a pre-execution rejection. Any status
+  // after work starts must be reported as a non-BAD_GRAPH failure so the
+  // resolver never retries after partial execution.
+  if (executionStarted != nullptr) {
+    *executionStarted = status != Status::BAD_GRAPH;
+  }
 
 #if !defined(SD_VULKAN)
   backend->clearNativeSlotExecutor();
@@ -1141,16 +1434,40 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
             static_cast<int>(status), statusName_seg(status));
 
   if (status == Status::OK) {
+    // Publish backend identity on every successful path, including a sticky
+    // backend selected by the outer cascade. A direct graph backend's compiled
+    // artifact is its steady-state executable; it reaches SEALED without being
+    // mislabeled as, or wrapped in, a platform replay handle.
+    seg.setResolvedGraphBackend(backend, request);
+    if (seg.resolvedGraphBackendPolicy.artifactKind ==
+            GraphBackendArtifactKind::DIRECT_COMPILED &&
+        seg.compiledGraphBackendArtifactOwner == backend &&
+        seg.compiledGraphBackendArtifactShapeKey == segShapeKey &&
+        seg.compiledGraphBackendArtifact && !seg.exec.segPhase.isSealed()) {
+      SegmentLifecycle::markDirectGraphBackendCompiled(
+          seg.exec, backendName, segShapeKey,
+          seg.def.startSlot, seg.def.endSlot);
+    } else if (seg.resolvedGraphBackendPolicy.artifactKind ==
+                   GraphBackendArtifactKind::BACKEND_REPLAY_HANDLE &&
+               seg.exec.replayHandle && seg.exec.replayHandle->isReady() &&
+               !seg.exec.segPhase.isSealed()) {
+      SegmentLifecycle::markBackendReplayHandleSealed(
+          seg.exec, backendName, segShapeKey,
+          seg.def.startSlot, seg.def.endSlot);
+    }
     // Cache the shape key only after successful compile+execute so the cascade
     // doesn't skip compilation for the next backend when the current one fails.
     if (!planLifecycle_.isSlotBySlot()) {
       seg.exec.cachedShapeKey = segShapeKey;
     }
     seg.exec.executionCount++;
-    totalGraphReplays_++;
+    if (seg.exec.outcome == SegmentExecOutcome::GRAPH_REPLAY) {
+      totalGraphReplays_++;
+    }
 
     // ── Segment boundary validation (warmup only, backend path) ──────────
-    if (executeCount_ < 4) {
+    if (executeCount_ < 4 &&
+        seg.resolvedGraphBackendPolicy.materializesAllFrameworkSlots) {
       char segErr[512] = {};
       int segInvalid = validateSlotRange(
           seg.def.startSlot, seg.def.endSlot,
@@ -1164,6 +1481,11 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
                  segInvalid, seg.def.startSlot, seg.def.endSlot,
                  backendName, seg.exec.executionCount, segErr);
       }
+    } else if (executeCount_ < 4) {
+      DSP_DIAG(VERIFY,
+               "SEGMENT_BOUNDARY_VALIDATION: backend=%s seg[%d-%d] owns "
+               "validation of materialized boundary tensors",
+               backendName, seg.def.startSlot, seg.def.endSlot);
     }
     recordSegmentBoundaryOpSanity(
         backendName, seg, slots_, numSlots_, outputSlots_, totalOutputSlots_,
@@ -1812,6 +2134,10 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
     Status status;
     bool retriedAfterTrim = false;
     bool shouldRetry = false;
+    recordGdrInputSanity(
+        "SLOT_BY_SLOT", seg.def.startSlot, stepIdx,
+        slots_, outputSlots_, totalOutputSlots_, externalArrays, numExt,
+        externalInputNames_, diagnosticExecuteCount(), streamIsCapturing);
     do {
       shouldRetry = false;
       try {
@@ -2819,7 +3145,7 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
   int functionalReplayCountBefore = 0;
   int functionalReplayDelta = 0;
   std::vector<FunctionalReplayPointerBinding> functionalPointerSnapshot;
-  functionalRecordable = seg.def.isCapturable && !hasControlFlow_;
+  functionalRecordable = seg.def.isFunctionalReplayEligible && !hasControlFlow_;
   auto* functionalHandle =
       dynamic_cast<FunctionalReplayHandle*>(seg.exec.replayHandle.get());
 

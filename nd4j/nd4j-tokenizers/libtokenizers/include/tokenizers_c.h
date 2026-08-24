@@ -97,6 +97,15 @@ size_t get_vocab_size(OpaqueTokenizer* tokenizer);
 bool get_token_id(OpaqueTokenizer* tokenizer, const char* token, uint32_t* token_id);
 
 /**
+ * @brief Resolve a token ID to its exact vocabulary piece without decoding it
+ * @param tokenizer Tokenizer instance
+ * @param token_id Token ID to resolve
+ * @return Newly allocated UTF-8 token string, or NULL when the ID is absent
+ *         (must be freed with free_string)
+ */
+char* get_token(OpaqueTokenizer* tokenizer, uint32_t token_id);
+
+/**
  * @brief Render a Hugging Face tokenizer_config.json chat template
  * @param messages_json JSON array of role/content message objects
  * @param tokenizer_config_json Full normalized tokenizer_config.json

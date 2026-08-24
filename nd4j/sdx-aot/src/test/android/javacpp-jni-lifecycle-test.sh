@@ -31,7 +31,11 @@ grep -Fq '"$BRIDGE_DIR/jnijavacpp.cpp" "$JAVACPP_LIFECYCLE_BRIDGE"' "$BUILD_SCRI
   fail "standalone JavaCPP library is not linked with the lifecycle bridge"
 grep -Fq 'for symbol in JNI_OnLoad JNI_OnUnload JNI_OnLoad_jnijavacpp JNI_OnUnload_jnijavacpp' "$BUILD_SCRIPT" ||
   fail "Android build does not verify the complete JavaCPP lifecycle export contract"
-grep -Fq 'ART-facing libjnisdx_llm.so must not depend on JavaCPP' "$BUILD_SCRIPT" ||
-  fail "direct ART bridge isolation invariant was removed"
+if grep -Eq 'ai[_./]kompile|libjnisdx_llm|sdx_llm_android_jni' "$BUILD_SCRIPT" "$ANDROID_MAIN_DIR"/*.cpp; then
+  fail "SDX producer contains a consumer-owned Kompile JNI bridge"
+fi
+if grep -Rq 'KOMPILE_NATIVE_' "$ANDROID_MAIN_DIR"; then
+  fail "SDX producer still exposes Kompile-owned cache configuration"
+fi
 
-printf 'PASS: standalone JavaCPP bridge owns a complete, verified JNI lifecycle\n'
+printf 'PASS: standalone JavaCPP lifecycle is verified and consumer JNI stays outside SDX\n'

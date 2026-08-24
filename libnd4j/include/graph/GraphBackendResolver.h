@@ -147,12 +147,15 @@ class GraphBackendResolver {
         resolveSegment(request, candidates, slots, start, end, preferred);
     result.attempts.reserve(admitted.size());
     for (GraphBackend* backend : admitted) {
+      segment.compilationAudit.clear();
       const bool succeeded = backend->compileSegment(
           request, segment, slots, externalInputs, numExternalInputs,
           outputSlots, totalOutputSlots, shapeKey, totalSlots,
           requestedOutputSlotIndices, numRequestedOutputs);
-      result.attempts.push_back(
-          LoweringAttempt{backend, succeeded, backend->getLastCompilationAudit()});
+      const auto audit = !segment.compilationAudit.empty()
+                             ? segment.compilationAudit
+                             : backend->getLastCompilationAudit();
+      result.attempts.push_back(LoweringAttempt{backend, succeeded, audit});
       if (succeeded) {
         result.backend = backend;
         break;

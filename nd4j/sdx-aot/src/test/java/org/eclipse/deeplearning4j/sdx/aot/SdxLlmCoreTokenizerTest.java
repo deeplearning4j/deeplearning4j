@@ -217,18 +217,18 @@ class SdxLlmCoreTokenizerTest {
                 + "{\"role\":\"user\",\"content\":\"Find Alice\"},"
                 + "{\"role\":\"assistant\",\"content\":\"raw\",\"tool_calls\":[{"
                 + "\"id\":\"c1\",\"type\":\"function\",\"function\":{"
-                + "\"name\":\"graph_search\",\"arguments\":{\"query\":\"Alice\"}}}]},"
+                + "\"name\":\"lookup_record\",\"arguments\":{\"query\":\"Alice\"}}}]},"
                 + "{\"role\":\"tool\",\"content\":\"{}\","
-                + "\"tool_call_id\":\"c1\",\"name\":\"graph_search\"}],"
-                + "\"tools\":[{\"name\":\"graph_search\",\"description\":\"Search\","
+                + "\"tool_call_id\":\"c1\",\"name\":\"lookup_record\"}],"
+                + "\"tools\":[{\"name\":\"lookup_record\",\"description\":\"Search\","
                 + "\"parameters\":{\"type\":\"object\"}}],"
                 + "\"tool_choice\":\"required\"}";
 
         ChatTemplate.Request request = SdxLlmCore.parseChatRequest(requestJson);
 
         assertEquals(ChatTemplate.ToolChoice.REQUIRED, request.getToolChoice());
-        assertEquals("graph_search", request.getTools().get(0).getName());
-        assertEquals("graph_search",
+        assertEquals("lookup_record", request.getTools().get(0).getName());
+        assertEquals("lookup_record",
                 request.getMessages().get(1).getToolCalls().get(0).getName());
         assertEquals("c1", request.getMessages().get(2).getToolCallId());
         assertEquals("tool", request.getMessages().get(2).getRole());

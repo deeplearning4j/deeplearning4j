@@ -147,6 +147,74 @@ static inline void markCompiled(GraphSegmentExec& exec, const char* backendName,
   exec.lifecycleState = SLS::CAPTURE_PENDING;  // Legacy sync
 }
 
+// Publish a backend-owned compiled artifact for direct steady-state dispatch.
+// This is not graph capture or functional replay: the backend binds current
+// arrays and invokes its cached compilation on each execution.
+static inline void markDirectGraphBackendCompiled(
+    GraphSegmentExec& exec, const char* backendName, LongType shapeKey,
+    int startSlot = -1, int endSlot = -1) {
+  if (exec.segPhase.needsWarmup()) markWarmupDone(exec);
+  SLS_ASSERT_FROM(exec, SLS::NEEDS_COMPILE,
+                  "markDirectGraphBackendCompiled");
+  DSP_DIAG(EXECUTE,
+           "LIFECYCLE: %s -> SEALED:DIRECT_COMPILED "
+           "seg[%d-%d] backend=%s shapeKey=%lld execCount=%d",
+           exec.segPhase.displayName(), startSlot, endSlot, backendName,
+           (long long)shapeKey, exec.executionCount);
+  exec.segPhase.sealNonCapture();
+  exec.outcome = SegmentExecOutcome::DIRECT_COMPILED;
+  exec.terminalReason = nullptr;
+  exec.compiledByBackend = backendName;
+  exec.cachedShapeKey = shapeKey;
+  exec.lifecycleState = SLS::REPLAYING;
+}
+
+// Transfer an already-warmed segment from a rejected compiler cascade to the
+// explicit functional recorder. Preserve executionCount (the warmup output is
+// valid) but restore the segment phase expected by executeSegmentEmulatedReplay,
+// which will advance directly to functional capture on the next dispatch.
+static inline void prepareFunctionalReplayHandoff(
+    GraphSegmentExec& exec, int startSlot = -1, int endSlot = -1) {
+  DSP_DIAG(EXECUTE,
+           "LIFECYCLE: %s -> BUILDING:WARMUP (functional replay handoff) "
+           "seg[%d-%d] execCount=%d",
+           exec.segPhase.displayName(), startSlot, endSlot,
+           exec.executionCount);
+  exec.segPhase.reset();
+  exec.outcome = SegmentExecOutcome::PENDING;
+  exec.terminalReason = nullptr;
+  exec.compilationFailed = false;
+  exec.noFusibleOps = false;
+  exec.captureProducedNoKernels = false;
+  exec.compiledByBackend.clear();
+  exec.lifecycleState = SLS::NEEDS_WARMUP;
+  exec.markArgsStale();
+}
+
+// Publish a replay handle compiled and finalized by the backend itself (for
+// example PJRT/TPU). No platform capture wrapper is involved, but GRAPH_REPLAY
+// is accurate because the segment owns a ready executable replay handle.
+static inline void markBackendReplayHandleSealed(
+    GraphSegmentExec& exec, const char* backendName, LongType shapeKey,
+    int startSlot = -1, int endSlot = -1) {
+  if (exec.segPhase.needsWarmup()) markWarmupDone(exec);
+  SLS_ASSERT_FROM(exec, SLS::NEEDS_COMPILE,
+                  "markBackendReplayHandleSealed");
+  DSP_DIAG(EXECUTE,
+           "LIFECYCLE: %s -> SEALED:BACKEND_REPLAY_HANDLE "
+           "seg[%d-%d] backend=%s shapeKey=%lld execCount=%d",
+           exec.segPhase.displayName(), startSlot, endSlot, backendName,
+           (long long)shapeKey, exec.executionCount);
+  exec.segPhase.sealNonCapture();
+  exec.outcome = SegmentExecOutcome::GRAPH_REPLAY;
+  exec.terminalReason = nullptr;
+  exec.compiledByBackend = backendName;
+  exec.cachedShapeKey = shapeKey;
+  exec.lifecycleState = SLS::REPLAYING;
+  exec.handleTracker.record(ReplayHandleEvent::Kind::INSTANTIATE,
+                            exec.executionCount, 0, 0, backendName);
+}
+
 // BUILDING:CAPTURING -> SEALED (capture complete — steady-state replay)
 // gapsCaptured: true when native-only capture included gap ops (cuBLAS etc.)
 // in the monolithic graph. The frozen fast path checks hasGapsInGraph() to

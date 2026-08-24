@@ -156,6 +156,7 @@ public class NonContigViewLayerNormTest {
                 .addInputs(permuted, gain, bias)
                 .addOutputs(outPermuted)
                 .addIntegerArguments(2)
+                .addBooleanArguments(false)  // NHWC: gain/bias follow the last dimension
                 .build();
         Nd4j.getExecutioner().exec(opP);
 
@@ -164,6 +165,7 @@ public class NonContigViewLayerNormTest {
                 .addInputs(contiguous, gain, bias)
                 .addOutputs(outContiguous)
                 .addIntegerArguments(2)
+                .addBooleanArguments(false)  // same NHWC contract as the permuted view
                 .build();
         Nd4j.getExecutioner().exec(opC);
 

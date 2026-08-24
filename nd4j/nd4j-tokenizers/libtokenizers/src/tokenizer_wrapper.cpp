@@ -108,6 +108,19 @@ public:
         }
         return ffi_tokenizer_token_to_id(handle, token.c_str(), &token_id);
     }
+
+    bool id_to_token(uint32_t token_id, std::string& token) const {
+        if (!valid || !handle) {
+            return false;
+        }
+        std::unique_ptr<char, decltype(&ffi_tokenizer_free_string)> native_token(
+                ffi_tokenizer_id_to_token(handle, token_id), &ffi_tokenizer_free_string);
+        if (!native_token) {
+            return false;
+        }
+        token.assign(native_token.get());
+        return true;
+    }
 };
 
 // TokenizerWrapper implementation
@@ -171,6 +184,10 @@ size_t TokenizerWrapper::get_vocab_size() const {
 
 bool TokenizerWrapper::token_to_id(const std::string& token, uint32_t& token_id) const {
     return pImpl && pImpl->token_to_id(token, token_id);
+}
+
+bool TokenizerWrapper::id_to_token(uint32_t token_id, std::string& token) const {
+    return pImpl && pImpl->id_to_token(token_id, token);
 }
 
 bool TokenizerWrapper::is_valid() const {

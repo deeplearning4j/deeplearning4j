@@ -352,6 +352,30 @@ elif [[ "$ACCELERATOR" == "NNAPI_ACCELERATOR_ONLY" ]]; then
         echo "Tensor G3 runtime is not linked to the packaged ARM Compute backend" >&2
         exit 1
     fi
+    if [[ "$VARIANT" == "tensor-g3" ]]; then
+        for symbol in \
+            ANeuralNetworks_getDeviceCount \
+            ANeuralNetworks_getDevice \
+            ANeuralNetworksDevice_getName \
+            ANeuralNetworksDevice_getType \
+            ANeuralNetworksDevice_getFeatureLevel \
+            ANeuralNetworksModel_getSupportedOperationsForDevices \
+            ANeuralNetworksCompilation_createForDevices; do
+            if ! grep -Eq "[[:space:]]${symbol}(@[^[:space:]]*)?$" <<<"$DYNAMIC_SYMBOLS"; then
+                echo "Tensor G3 runtime is missing pinned-device NNAPI symbol: $symbol" >&2
+                exit 1
+            fi
+        done
+        if grep -Eq '[[:space:]]ANeuralNetworksCompilation_create(@[^[:space:]]*)?$' \
+            <<<"$DYNAMIC_SYMBOLS"; then
+            echo "Tensor G3 runtime contains forbidden generic NNAPI compilation" >&2
+            exit 1
+        fi
+        if ! grep -aFq 'google-edgetpu' "$MAIN_LIBRARY"; then
+            echo "Tensor G3 runtime is missing the required google-edgetpu fingerprint" >&2
+            exit 1
+        fi
+    fi
 fi
 
 is_android_system_library() {

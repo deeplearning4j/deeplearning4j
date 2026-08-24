@@ -419,7 +419,12 @@ std::string normalizeOpName(const std::string& opName) {
 }
 
 bool segmentBlocksPlanPhase(const GraphSegment& seg) {
-  return seg.def.isCapturable && !seg.exec.compilationFailed;
+  // An all-frozen-constant segment has no runtime work: dispatch skips it and
+  // its warmup output is already final. Requiring an emulated replay handle or
+  // refreshed argument table for that segment can hold the whole plan in
+  // SHAPES_FROZEN forever even while every executable segment is sealed.
+  return seg.def.isCapturable && !seg.def.allFrozenConstants &&
+         !seg.exec.compilationFailed;
 }
 
 // Check if a segment has at least one ready composite replay handle.
@@ -477,6 +482,16 @@ bool NativeDynamicShapePlan::allSegmentsReplayReady() const {
       segIdx++;
       continue;
     }
+    // Functional replay needs the current plan invocation and must execute via
+    // replayWithContext(). It is ready for ordered segment dispatch, but it is
+    // never a monolithic/composite platform replay handle.
+    if (seg.def.selectedBackend == SelectedBackend::EMULATED_REPLAY) {
+      DSP_DIAG(GRAPH_REPLAY,
+               "allSegmentsReplayReady: seg[%d-%d] idx=%d NOT PLATFORM READY "
+               "(functional replay requires invocation context)",
+               seg.def.startSlot, seg.def.endSlot, segIdx);
+      return false;
+    }
     // This is a capturable segment — it must have a ready replay handle
     // Monolithic replay handle
     if (seg.exec.replayHandle != nullptr && seg.exec.replayHandle->isReady()) {
@@ -509,6 +524,44 @@ bool NativeDynamicShapePlan::allSegmentsReplayReady() const {
   return hasReplayableSegment;
 }
 
+bool NativeDynamicShapePlan::allFrozenDispatchUnitsReady() const {
+  bool hasReadyUnit = false;
+  for (const auto& seg : segments_) {
+    if (seg.def.allFrozenConstants) continue;
+
+    if (seg.exec.outcome == SegmentExecOutcome::DIRECT_COMPILED) {
+      const bool directReady =
+          seg.def.selectedBackend == SelectedBackend::GRAPH_BACKEND &&
+          seg.resolvedGraphBackend != nullptr &&
+          seg.resolvedGraphBackendPolicy.artifactKind ==
+              GraphBackendArtifactKind::DIRECT_COMPILED &&
+          seg.compiledGraphBackendArtifactOwner == seg.resolvedGraphBackend &&
+          seg.compiledGraphBackendArtifact &&
+          seg.compiledGraphBackendArtifactShapeKey ==
+              seg.def.shapeKeyState.compiledShapeKey &&
+          seg.exec.segPhase.isSealed();
+      if (!directReady) return false;
+      hasReadyUnit = true;
+      continue;
+    }
+
+    if (seg.exec.outcome == SegmentExecOutcome::GRAPH_REPLAY) {
+      const bool replayReady =
+          (seg.exec.replayHandle && seg.exec.replayHandle->isReady()) ||
+          segmentHasReadyCompositeHandles(seg);
+      if (!seg.exec.segPhase.isSealed() || !replayReady) return false;
+      hasReadyUnit = true;
+      continue;
+    }
+
+    // Frozen fast dispatch must never silently become slot-by-slot execution.
+    // Unsupported ranges must be assigned an explicit FunctionalReplay artifact
+    // before the plan enters steady state.
+    return false;
+  }
+  return hasReadyUnit;
+}
+
 namespace {
 
 bool segmentIsCompiledSteadyState(const GraphSegment& seg, int minExecutionCountExclusive) {
@@ -534,6 +587,18 @@ int findProducerStepInSegment(const GraphSegment& seg, NativeSlot* slots, int ou
 
 bool segmentHasInternalValueShapeInputs(const GraphSegment& seg, NativeSlot* slots) {
   return dsp::segmentHasInternalValueShapeInputs(seg, slots);
+}
+
+bool segmentHasReadyDirectArtifact(const GraphSegment& seg) {
+  return seg.exec.outcome == SegmentExecOutcome::DIRECT_COMPILED &&
+         seg.exec.segPhase.isSealed() &&
+         seg.resolvedGraphBackend != nullptr &&
+         seg.resolvedGraphBackendPolicy.artifactKind ==
+             GraphBackendArtifactKind::DIRECT_COMPILED &&
+         seg.compiledGraphBackendArtifactOwner == seg.resolvedGraphBackend &&
+         seg.compiledGraphBackendArtifact &&
+         seg.compiledGraphBackendArtifactShapeKey ==
+             seg.def.shapeKeyState.compiledShapeKey;
 }
 
 bool isSmallIntegralControlArray(NDArray* arr) {
@@ -564,17 +629,19 @@ bool segmentHasStablePointersForPlanPhase(const GraphSegment& seg, NativeSlot* s
         stable = !seg.exec.needsArgRefresh();  why = "emulated";
         break;
       case SelectedBackend::GRAPH_BACKEND: {
-        const bool requiresReplay =
-            seg.resolvedGraphBackendPolicy.requiresPlatformReplayHandle;
         const bool argStable =
             !segmentHasInternalValueShapeInputs(seg, slots) || !seg.exec.needsArgRefresh();
         const bool hasReadyReplay =
             (seg.exec.replayHandle && seg.exec.replayHandle->isReady()) ||
             segmentHasReadyCompositeHandles(seg);
-        if (!requiresReplay) {
-          stable = seg.exec.segPhase.isSealed() ||
-                   segmentIsCompiledSteadyState(seg, 1);
+        if (seg.resolvedGraphBackendPolicy.artifactKind ==
+            GraphBackendArtifactKind::DIRECT_COMPILED) {
+          stable = segmentHasReadyDirectArtifact(seg);
           why = "direct_graph_backend";
+        } else if (seg.resolvedGraphBackendPolicy.artifactKind ==
+                   GraphBackendArtifactKind::UNSPECIFIED) {
+          stable = segmentIsCompiledSteadyState(seg, 1) && argStable;
+          why = "legacy_backend_managed";
         } else if (seg.exec.segPhase.isSealed()) {
           stable = hasReadyReplay && argStable;
           why = "backend_replay_sealed";
@@ -634,12 +701,17 @@ bool segmentIsFullyReplayingForPlanPhase(const GraphSegment& seg) {
         replaying = sealed;  why = "emulated_sealed";
         break;
       case SelectedBackend::GRAPH_BACKEND:
-        if (seg.resolvedGraphBackendPolicy.requiresPlatformReplayHandle) {
+        if (seg.resolvedGraphBackendPolicy.artifactKind ==
+            GraphBackendArtifactKind::DIRECT_COMPILED) {
+          replaying = segmentHasReadyDirectArtifact(seg);
+          why = "direct_graph_backend";
+        } else if (seg.resolvedGraphBackendPolicy.artifactKind ==
+                   GraphBackendArtifactKind::UNSPECIFIED) {
+          replaying = segmentIsCompiledSteadyState(seg, 2);
+          why = "legacy_backend_managed";
+        } else {
           replaying = sealed && graphReady;
           why = "backend_replay_ready";
-        } else {
-          replaying = sealed || segmentIsCompiledSteadyState(seg, 2);
-          why = "direct_graph_backend";
         }
         break;
       case SelectedBackend::DEVICE_REPLAY:
@@ -4307,7 +4379,17 @@ std::string NativeDynamicShapePlan::getSegmentCompilationAudit(int segIdx) const
      << ",\"capturable\":" << (seg.def.isCapturable ? "true" : "false")
      << ",\"compilationFailed\":" << (seg.exec.compilationFailed ? "true" : "false")
      << ",\"executionCount\":" << seg.exec.executionCount
-     << "}";
+     << ",\"operations\":[";
+  for (size_t auditIndex = 0; auditIndex < seg.compilationAudit.size(); ++auditIndex) {
+    const auto& entry = seg.compilationAudit[auditIndex];
+    if (auditIndex > 0) ss << ",";
+    ss << "{\"slotIndex\":" << entry.slotIndex
+       << ",\"opName\":\"" << entry.opName << "\""
+       << ",\"wasCompiled\":" << (entry.wasCompiled ? "true" : "false")
+       << ",\"isNativeHandled\":" << (entry.isNativeHandled ? "true" : "false")
+       << ",\"reason\":\"" << entry.reason << "\"}";
+  }
+  ss << "]}";
   return ss.str();
 }
 
@@ -4607,8 +4689,9 @@ void NativeDynamicShapePlan::advancePlanPhase() {
       }
     }
     if (hasReplayEligibleSegment && allReplaying && !planLifecycle_.isReplaying()) {
-      // Count segments with GRAPH_REPLAY outcome — if zero, the plan will run
-      // slot-by-slot forever and must NOT be marked REPLAYING.
+      // Count explicit steady-state artifacts. PlanPhase::REPLAYING is the
+      // ABI-compatible name for optimized steady state; SegmentExecOutcome
+      // distinguishes direct compilation from actual replay.
       //
       // EMULATED_REPLAY segments (CPU without graph backends) are sealed with
       // ZERO_KERNEL_SBS outcome by markEmulatedSealed() — they re-execute ops
@@ -4619,18 +4702,21 @@ void NativeDynamicShapePlan::advancePlanPhase() {
       // per step.  Count them as replay-capable so the plan can advance to
       // REPLAYING (SEALED) and assertFrozenExecCountAtLeast / assertPointersStable
       // work correctly on CPU.
-      int graphReplaySegCount = 0;
+      int steadyStateSegCount = 0;
       for (auto& s : segments_) {
         if (s.exec.outcome == SegmentExecOutcome::GRAPH_REPLAY) {
-          graphReplaySegCount++;
+          steadyStateSegCount++;
+        } else if (s.exec.outcome == SegmentExecOutcome::DIRECT_COMPILED &&
+                   segmentHasReadyDirectArtifact(s)) {
+          steadyStateSegCount++;
         } else if (s.def.selectedBackend == SelectedBackend::EMULATED_REPLAY &&
                    s.exec.segPhase.isSealed()) {
           // Sealed EMULATED_REPLAY = CPU replay steady state: counts as replay.
-          graphReplaySegCount++;
+          steadyStateSegCount++;
         }
       }
       const char* oldPhase = planLifecycle_.displayName();
-      if (graphReplaySegCount == 0) {
+      if (steadyStateSegCount == 0) {
         // All eligible segments reached steady state but none has a real CUDA graph
         // (genuinely graphless: terminal / 0-kernel). This can no longer fire
         // mid-capture: segmentIsFullyReplayingForPlanPhase only reports a segment
@@ -4681,7 +4767,7 @@ void NativeDynamicShapePlan::advancePlanPhase() {
                    totalIslandHandles, totalMergedGroups,
                    totalGraphReplays_, planLifecycle_.postFreezeExecCount);
         }
-      }  // end else (graphReplaySegCount > 0)
+      }  // end else (steadyStateSegCount > 0)
     }
   }
 }
@@ -6305,7 +6391,7 @@ Status NativeDynamicShapePlan::dispatchSegment(
   // ── VALIDATION: detect invalid state combinations ──────────────────────
   // These throw hard errors — invalid states are bugs, not edge cases.
 
-  // V1: SEALED + GRAPH_REPLAY but no replay handle = broken lifecycle
+  // V1: SEALED + GRAPH_REPLAY but no replay handle = broken lifecycle.
   if (seg.exec.outcome == SegmentExecOutcome::GRAPH_REPLAY &&
       seg.exec.segPhase.isSealed() &&
       !seg.exec.replayHandle &&
@@ -6313,7 +6399,7 @@ Status NativeDynamicShapePlan::dispatchSegment(
     DSP_THROW_SEG(EXECUTE, seg.def.startSlot,
                   "DISPATCH VALIDATION: seg[%d-%d] outcome=GRAPH_REPLAY and phase=SEALED "
                   "but no replay handle (monolithic or composite). Broken lifecycle — "
-                  "markCaptured was called but handle was destroyed without invalidation.",
+                  "replay ownership was lost without invalidation.",
                   seg.def.startSlot, seg.def.endSlot);
   }
 
@@ -6744,6 +6830,31 @@ void NativeDynamicShapePlan::resetSegmentExecutionState() {
   DSP_THROW(FALLBACK,
            "[PHASE_VIOLATION] resetSegmentExecutionState called — "
            "phase demotion is prohibited. Destroy the plan and recreate.");
+}
+
+bool NativeDynamicShapePlan::invalidateSegmentCache(int segmentIndex,
+                                                    const char* reason) {
+  if (segmentIndex < 0 || segmentIndex >= static_cast<int>(segments_.size())) {
+    return false;
+  }
+  SegmentLifecycle::invalidateSegmentCaptures(
+      this, segments_[static_cast<size_t>(segmentIndex)], reason);
+  segments_[static_cast<size_t>(segmentIndex)].exec.executionCount = 0;
+  return true;
+}
+
+int NativeDynamicShapePlan::invalidateBackendCaches(
+    const std::string& backendName, const char* reason) {
+  int invalidated = 0;
+  for (auto& segment : segments_) {
+    if (!backendName.empty() && segment.exec.compiledByBackend != backendName) {
+      continue;
+    }
+    SegmentLifecycle::invalidateSegmentCaptures(this, segment, reason);
+    segment.exec.executionCount = 0;
+    ++invalidated;
+  }
+  return invalidated;
 }
 
 // ─── Passivation ────────────────────────────────────────────────────────────
@@ -8029,7 +8140,36 @@ void NativeDynamicShapePlan::buildSegments() {
   // Propagate outputSlots_, resolve backend, and detect value-dep ops for all segments.
   for (auto& seg : segments_) {
     seg.slotArrayCache = outputSlots_;
-    seg.def.selectedBackend = resolveBackendForSegment(seg.def.isCapturable);
+    seg.def.isFunctionalReplayEligible = !hasControlFlow_;
+    for (int slotIndex = seg.def.startSlot;
+         slotIndex <= seg.def.endSlot && seg.def.isFunctionalReplayEligible;
+         ++slotIndex) {
+      seg.def.isFunctionalReplayEligible = slots_[slotIndex].isCapturable();
+    }
+    const bool graphBackendAdmitted =
+        seg.def.isCapturable &&
+        !GraphBackendResolver::resolveSegment(
+             segmentBackendRequest, segmentBackendCandidates, slots_,
+             seg.def.startSlot, seg.def.endSlot).empty();
+    const bool compilerPlacement =
+        modeContract.requiresCompilation || modeContract.needsJitBackend;
+    if (!compilerPlacement) {
+      // Recorder-only modes (CUDA_GRAPHS, Vulkan, etc.) do not require a
+      // GraphBackend candidate; platformResolveBackend owns their placement.
+      seg.def.selectedBackend =
+          resolveBackendForSegment(seg.def.isCapturable);
+    } else if (!graphBackendAdmitted && modeContract.allowsFallback) {
+      // Placement is decided before execution: graph candidates have already
+      // rejected this range, so its third-tier owner is explicit replay/live
+      // plan execution. No backend execution failure is involved.
+      seg.def.selectedBackend = SelectedBackend::EMULATED_REPLAY;
+    } else if (!graphBackendAdmitted && modeContract.requiresCompilation) {
+      // Preserve strict mode semantics: dispatch reaches the graph lane and
+      // reports the missing required lowering instead of silently selecting SBS.
+      seg.def.selectedBackend = SelectedBackend::GRAPH_BACKEND;
+    } else {
+      seg.def.selectedBackend = resolveBackendForSegment(graphBackendAdmitted);
+    }
     // Scan slots for value-dependent ops — these require shape key recomputation
     // even when shapes are frozen, because input VALUES (not just shapes) affect output shape.
     seg.def.hasValueDepOps = false;
@@ -8101,9 +8241,20 @@ void NativeDynamicShapePlan::buildSegments() {
           !capabilityPartitioning ||
           resolveSlotCandidates(prev.def.endSlot) ==
               resolveSlotCandidates(seg.def.startSlot);
+      // Candidate-set equality is necessary but not sufficient: a backend can
+      // admit each slot independently while explicitly rejecting their combined
+      // range (for example, a quantized matrix island with fixed boundaries).
+      // The profitability pass must never undo that backend-owned range contract.
+      const bool backendMergeRangeAdmitted =
+          !capabilityPartitioning || !prev.def.isCapturable ||
+          !seg.def.isCapturable ||
+          !GraphBackendResolver::resolveSegment(
+               segmentBackendRequest, segmentBackendCandidates, slots_,
+               prev.def.startSlot, seg.def.endSlot).empty();
 
       if (isSmallTransparent && !merged.empty() &&
-          backendMergeWithinBound && backendMergeWithinCapability) {
+          backendMergeWithinBound && backendMergeWithinCapability &&
+          backendMergeRangeAdmitted) {
         // Absorb into preceding segment
         DSP_DIAG(FUSION,
                  "segmentMerge VERDICT=merged segA=[%d-%d] segB=[%d-%d] size=%d reason=small-transparent",
@@ -8121,6 +8272,8 @@ void NativeDynamicShapePlan::buildSegments() {
              !backendMergeWithinBound) ? "backend-size-bound" :
             (isSmallTransparent && capabilityPartitioning &&
              !backendMergeWithinCapability) ? "backend-capability-boundary" :
+            (isSmallTransparent && capabilityPartitioning &&
+             !backendMergeRangeAdmitted) ? "backend-range-rejected" :
             (sz < MIN_PROFITABLE_SIZE && !seg.def.isCapturable) ? "non-capturable" :
             (sz >= MIN_PROFITABLE_SIZE) ? "above-min-profitable-size" :
             "materializing-op";
