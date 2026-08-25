@@ -27,6 +27,7 @@
 
 #include <android/NeuralNetworks.h>
 
+#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -159,8 +160,6 @@ class NnapiGraphBackend : public GraphBackend {
 
   // Compiled NNAPI model for a segment
   struct CompiledModel {
-    static constexpr int kQ4KLoweringAbiVersion = 1;
-
     enum class BoundaryTransform : uint8_t {
       NONE = 0,
       INT64_TO_INT32 = 1,
@@ -216,6 +215,7 @@ class NnapiGraphBackend : public GraphBackend {
     // model and every execution created from its compilation.
     std::vector<QuantizedQ4KConstant> q4kConstants;
     std::string sourceWeightIdentity;
+    std::string sourceLoweringIdentity;
     std::string loweringCacheIdentity;
 
     // Compilation audit
@@ -237,7 +237,7 @@ class NnapiGraphBackend : public GraphBackend {
 
     ~CompiledModel() { invalidate(); }
 
-    // Non-copyable, moveable
+    // Address-stable: NNAPI can retain pointers into this artifact's constants.
     CompiledModel() = default;
     CompiledModel(const CompiledModel&) = delete;
     CompiledModel& operator=(const CompiledModel&) = delete;
@@ -250,6 +250,7 @@ class NnapiGraphBackend : public GraphBackend {
   // model/compilation instead of retaining it in this process-wide singleton.
   std::vector<std::weak_ptr<CompiledModel>> compiledArtifacts_;
   std::mutex cacheMtx_;
+  uint64_t cacheGeneration_ = 0;
   std::vector<CompilationAuditEntry> lastCompilationAudit_;
 
   // Build the NNAPI model for a segment — adds operands and operations

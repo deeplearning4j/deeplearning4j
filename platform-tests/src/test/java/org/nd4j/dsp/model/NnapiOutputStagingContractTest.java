@@ -13,6 +13,76 @@ import org.junit.jupiter.api.Test;
 class NnapiOutputStagingContractTest {
 
     @Test
+    void q4KMatmulLoweringIsBackendOwnedQuantizedAndCacheSeparated()
+            throws Exception {
+        Path root = Path.of("").toAbsolutePath().normalize().resolve("..").normalize();
+        Path backend = root.resolve("libnd4j/include/graph/cpu/NnapiGraphBackend.cpp");
+        Path header = backend.resolveSibling("NnapiGraphBackend.h");
+        Path plan = root.resolve("libnd4j/include/graph/impl/NativeDynamicShapePlan.cpp");
+        assertTrue(Files.isRegularFile(backend), "NNAPI backend source was not found");
+        assertTrue(Files.isRegularFile(header), "NNAPI backend header was not found");
+        assertTrue(Files.isRegularFile(plan), "DSP execution-plan source was not found");
+
+        String source = Files.readString(backend);
+        String artifact = Files.readString(header);
+        String executionPlan = Files.readString(plan);
+
+        assertTrue(source.contains("name == \"ggml_qmatmul\"")
+                        && source.contains("args.iArgs[0] != 8")
+                        && source.contains("Q4_K packed weights must be an inference-static external source")
+                        && source.contains("non_standalone_compile"),
+                "Only standalone immutable Q4_K ggml_qmatmul contracts may enter NNAPI lowering");
+        assertTrue(source.contains("decodeQ4KBlock(")
+                        && source.contains("symmetricInt8ScaleFromAbsMax(")
+                        && source.contains("quantizeSymmetricInt8("),
+                "Q4_K weights must be stream-decoded and symmetrically quantized per output channel");
+        assertTrue(source.contains("ANEURALNETWORKS_TENSOR_QUANT8_ASYMM_SIGNED")
+                        && source.contains("ANEURALNETWORKS_TENSOR_QUANT8_SYMM_PER_CHANNEL")
+                        && source.contains("ANeuralNetworksModel_setOperandSymmPerChannelQuantParams(")
+                        && source.contains("NNAPI_Q4K_EMITTED slot=%d op=CONV_2D emitted_ops=1")
+                        && source.contains("shape_adaptation=metadata_only"),
+                "The EdgeTPU artifact must be one signed-INT8 per-channel 1x1 convolution");
+        assertTrue(artifact.contains("std::vector<int8_t> filter;")
+                        && artifact.contains("std::vector<float> perChannelScales;")
+                        && artifact.contains("std::vector<int32_t> zeroBias;")
+                        && artifact.contains("std::vector<QuantizedQ4KConstant> q4kConstants;")
+                        && artifact.contains("std::mutex executionMutex;"),
+                "Converted constants and execution ownership must remain in the segment artifact");
+        assertTrue(source.contains("derivePlanSymmetricInt8Scale(")
+                        && source.contains("reduceNumber(reduce::AMax)")
+                        && source.contains("policy.precompileBeforeFirstExecution = false")
+                        && source.contains("policy.allowsShapeOnlyWarmup = false")
+                        && source.contains("QUANTIZE_ASYMM_SIGNED")
+                        && source.contains("DEQUANTIZE_ASYMM_SIGNED")
+                        && source.contains("quantizeSymmetricInt8(")
+                        && source.contains("std::memcpy(staging.data(), buffer, bufferSize)")
+                        && source.contains("NNAPI_Q4K_INPUT_QUANTIZED")
+                        && source.contains("NNAPI_Q4K_OUTPUT_DEQUANTIZED")
+                        && source.contains("NNAPI_Q4K_PLAN_RANGE_REJECTED")
+                        && source.contains("return Status::BAD_GRAPH;"),
+                "DSP must value-warm the plan, derive per-slot ranges, and use the shared quantizer for NNAPI boundaries");
+        assertTrue(!source.contains("kTensorG3Q4ActivationScale")
+                        && !source.contains("kTensorG3Q4OutputScale")
+                        && !source.contains("0.03125f")
+                        && !source.contains("0.0625f"),
+                "NNAPI lowering must never embed model-independent activation/output scales");
+        assertTrue(source.contains("contract.packedWeightSnapshot.resize(")
+                        && source.contains("contract.packedWeightSnapshot.data()")
+                        && source.contains("#if !defined(__ANDROID_API__) || __ANDROID_API__ < 29"),
+                "Weight digest/conversion must share one snapshot and API-28 admission must fail early");
+        assertTrue(source.contains("mixNnapiCacheToken(loweringAwareCacheToken,")
+                        && source.contains("compiled->loweringCacheIdentity")
+                        && source.contains("existing->sourceWeightIdentity == currentSourceWeightIdentity")
+                        && source.contains("existing->sourceLoweringIdentity ==")
+                        && source.contains("NNAPI_DEVICE_CACHE_IDENTITY")
+                        && source.contains("cacheGeneration_ != cacheGenerationAtStart"),
+                "Artifact and driver-cache reuse must distinguish weights and lowering ABI");
+        assertTrue(executionPlan.contains("backendMergeRangeAdmitted")
+                        && executionPlan.contains("backend-range-rejected"),
+                "The execution plan must not merge across a backend-rejected quantized boundary");
+    }
+
+    @Test
     void tensorG3AcceleratorContractReachesCppAndArtifactVerification()
             throws Exception {
         Path root = Path.of("").toAbsolutePath().normalize().resolve("..").normalize();
@@ -43,6 +113,32 @@ class NnapiOutputStagingContractTest {
         assertTrue(aar.contains("forbidden generic NNAPI compilation")
                         && aar.contains("google-edgetpu"),
                 "Tensor G3 artifacts must reject generic NNAPI and retain the required device fingerprint");
+    }
+
+    @Test
+    void androidCpuImporterExcludesUnusedCompilerRuntime() throws Exception {
+        Path root = Path.of("").toAbsolutePath().normalize().resolve("..").normalize();
+        Path producer = root.resolve(
+                "nd4j/sdx-aot/src/main/android/build-android-cpu-importer-sdk.sh");
+        assertTrue(Files.isRegularFile(producer),
+                "Android CPU importer producer was not found");
+
+        String source = Files.readString(producer);
+        assertTrue(source.contains("run_native_platform_stage compile -Dlibnd4j.triton=OFF")
+                        && source.contains("-Dlibnd4j.triton=OFF \\")
+                        && source.contains("'triton=off'")
+                        && source.contains("triton_cpu_included=false"),
+                "The conversion-only CPU importer must not compile or advertise Triton");
+        assertTrue(source.contains("libsdx_cpu.so|libLLVM.so|libMLIR.so")
+                        && source.contains(
+                                "CPU importer closure contains unused compiler runtime")
+                        && source.contains(
+                                "CPU importer deployment contains unused compiler runtime")
+                        && source.contains("compiler_runtime_included=false"),
+                "The CPU importer must reject LLVM/MLIR compiler payloads before APK packaging");
+        assertTrue(!source.contains("run_native_platform_stage compile -Dlibnd4j.triton=ON")
+                        && !source.contains("Triton CPU and its LLVM/MLIR runtime closure remain"),
+                "The importer producer must not retain the obsolete compiler-enabled contract");
     }
 
     @Test

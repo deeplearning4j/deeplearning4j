@@ -20,11 +20,33 @@
 #define LIBND4J_PER_TOKEN_QUANT_H
 
 #include <array/NDArray.h>
+#include <math/templatemath.h>
 #include <system/common.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
+
+// Canonical symmetric INT8 quantization policy shared by eager quantizers and
+// compiled backends. The range is a storage-format property, never a
+// model/calibration parameter.
+static constexpr float SYMMETRIC_INT8_QUANT_MAX = 127.0f;
+
+static SD_HOST_DEVICE SD_INLINE float symmetricInt8ScaleFromAbsMax(
+    float absoluteMaximum) {
+  return absoluteMaximum > 0.0f
+             ? absoluteMaximum / SYMMETRIC_INT8_QUANT_MAX
+             : 1.0f;
+}
+
+static SD_HOST_DEVICE SD_INLINE int8_t quantizeSymmetricInt8(
+    float value, float scale) {
+  float scaled = value / scale;
+  scaled = sd::math::sd_max<float>(
+      -SYMMETRIC_INT8_QUANT_MAX,
+      sd::math::sd_min<float>(SYMMETRIC_INT8_QUANT_MAX, scaled));
+  return static_cast<int8_t>(sd::math::sd_round<float, int>(scaled));
+}
 
 /**
  * Per-token FP8 quantization for activations.

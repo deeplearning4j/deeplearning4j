@@ -29,7 +29,6 @@ namespace ops {
 namespace helpers {
 
 static constexpr float FP8_E4M3_MAX = 448.0f;
-static constexpr float INT8_MAX_VAL = 127.0f;
 
 //////////////////////////////////////////////////////////////////////////////
 // Per-token FP8 quantization (CPU)
@@ -69,7 +68,7 @@ static void perTokenQuantFp8Cpu_(NDArray* input, NDArray* quantized, NDArray* sc
                 float val = static_cast<float>(xRow[i]) * invScale;
                 val = sd::math::sd_max<float>(-FP8_E4M3_MAX, sd::math::sd_min<float>(FP8_E4M3_MAX, val));
                 // Map to int8 range: val / FP8_MAX * 127
-                float mapped = val * (INT8_MAX_VAL / FP8_E4M3_MAX);
+                float mapped = val * (SYMMETRIC_INT8_QUANT_MAX / FP8_E4M3_MAX);
                 qRow[i] = static_cast<int8_t>(sd::math::sd_round<float, int>(mapped));
             }
         }
@@ -98,7 +97,8 @@ static void perTokenDequantFp8Cpu_(NDArray* quantized, NDArray* scales, NDArray*
 
             for (LongType i = 0; i < hiddenDim; ++i) {
                 // Reverse the mapping: int8 -> FP8 range -> original
-                float fp8Val = static_cast<float>(qRow[i]) * (FP8_E4M3_MAX / INT8_MAX_VAL);
+                float fp8Val = static_cast<float>(qRow[i]) *
+                               (FP8_E4M3_MAX / SYMMETRIC_INT8_QUANT_MAX);
                 zRow[i] = static_cast<T>(fp8Val * scale);
             }
         }
@@ -121,7 +121,7 @@ static void perTokenGroupQuantCpu_(NDArray* input, NDArray* quantized, NDArray* 
     int8_t* q = reinterpret_cast<int8_t*>(quantized->buffer());
     float* s = reinterpret_cast<float*>(scales->buffer());
 
-    const float maxRange = useFp8 ? FP8_E4M3_MAX : INT8_MAX_VAL;
+    const float maxRange = useFp8 ? FP8_E4M3_MAX : SYMMETRIC_INT8_QUANT_MAX;
 
     auto func = PRAGMA_THREADS_FOR {
         for (auto row = start; row < stop; ++row) {
@@ -140,17 +140,26 @@ static void perTokenGroupQuantCpu_(NDArray* input, NDArray* quantized, NDArray* 
                     if (absVal > absMax) absMax = absVal;
                 }
 
-                float scale = absMax / maxRange;
-                if (scale == 0.0f) scale = 1.0f;
+                float scale = useFp8
+                                  ? (absMax > 0.0f ? absMax / maxRange : 1.0f)
+                                  : symmetricInt8ScaleFromAbsMax(absMax);
                 sRow[g] = scale;
 
                 float invScale = 1.0f / scale;
 
                 // Quantize group
                 for (LongType i = gStart; i < gEnd; ++i) {
-                    float val = static_cast<float>(xRow[i]) * invScale;
-                    val = sd::math::sd_max<float>(-INT8_MAX_VAL, sd::math::sd_min<float>(INT8_MAX_VAL, val));
-                    qRow[i] = static_cast<int8_t>(sd::math::sd_round<float, int>(val));
+                    if (useFp8) {
+                        float val = static_cast<float>(xRow[i]) * invScale;
+                        val = sd::math::sd_max<float>(
+                            -SYMMETRIC_INT8_QUANT_MAX,
+                            sd::math::sd_min<float>(SYMMETRIC_INT8_QUANT_MAX, val));
+                        qRow[i] = static_cast<int8_t>(
+                            sd::math::sd_round<float, int>(val));
+                    } else {
+                        qRow[i] = quantizeSymmetricInt8(
+                            static_cast<float>(xRow[i]), scale);
+                    }
                 }
             }
         }

@@ -199,16 +199,24 @@ SD_KERNEL void perTokenGroupQuantKernel(
             groupMax = fmaxf(groupMax, val);
         }
 
-        float groupScale = groupMax / quantMax;
-        if (groupScale == 0.0f) groupScale = 1.0f;
+        const bool symmetricInt8 =
+            quantMax == SYMMETRIC_INT8_QUANT_MAX;
+        float groupScale = symmetricInt8
+                               ? symmetricInt8ScaleFromAbsMax(groupMax)
+                               : (groupMax > 0.0f ? groupMax / quantMax : 1.0f);
         tokenScales[g] = groupScale;
         float invScale = 1.0f / groupScale;
 
         // Quantize group
         for (LongType i = gStart; i < gEnd; i++) {
-            float val = static_cast<float>(tokenInput[i]) * invScale;
-            val = fmaxf(-quantMax, fminf(quantMax, rintf(val)));
-            tokenOut[i] = static_cast<int8_t>(val);
+            if (symmetricInt8) {
+                tokenOut[i] = quantizeSymmetricInt8(
+                    static_cast<float>(tokenInput[i]), groupScale);
+            } else {
+                float val = static_cast<float>(tokenInput[i]) * invScale;
+                val = fmaxf(-quantMax, fminf(quantMax, rintf(val)));
+                tokenOut[i] = static_cast<int8_t>(val);
+            }
         }
     }
 }
@@ -346,7 +354,7 @@ void perTokenGroupQuant(LaunchContext* context,
     int threads = min(numGroups, 256);
     if (threads < PTQ_WARP_SIZE) threads = PTQ_WARP_SIZE;
 
-    float quantMax = useFp8 ? FP8_E4M3_MAX : 127.0f;
+    float quantMax = useFp8 ? FP8_E4M3_MAX : SYMMETRIC_INT8_QUANT_MAX;
 
     if (dtype == DataType::FLOAT32) {
         perTokenGroupQuantKernel<float><<<numTokens, threads, 0, *stream>>>(

@@ -26,9 +26,10 @@ SDK stages. Only the first invalid stage is rebuilt. Native compilation is separ
 from Maven packaging so a managed or publication failure never recreates libnd4j's
 large native archive. Deployment copies have only their debug sections removed before
 they are audited and published as an immutable SDK.
-Triton CPU and its LLVM/MLIR runtime closure remain enabled and packaged. The separate
-standalone libsdx_cpu.so is not part of the JavaCPP importer runtime. Accelerator
-provider libraries are forbidden.
+This SDK imports GGUF/GGML into canonical SDZ; it does not execute compiled CPU plans.
+Triton and its LLVM/MLIR compiler closure are therefore disabled and forbidden from the
+published importer. The separate standalone libsdx_cpu.so is not part of the JavaCPP
+importer runtime. Accelerator provider libraries are forbidden.
 USAGE
 }
 
@@ -295,13 +296,13 @@ run_native_platform_stage() {
 
 NATIVE_STAGE_KEY="$({
   printf '%s\n' \
-    'format=android-cpu-native-stage-v1' \
+    'format=android-cpu-native-stage-v2' \
     "source=$NATIVE_SOURCE_MANIFEST_SHA256" \
     "ndk=$NDK_SOURCE_PROPERTIES_SHA256" \
     "android_api=$ANDROID_API" \
     'android_abi=arm64-v8a' \
     'blas=openblas' \
-    'triton=on' \
+    'triton=off' \
     'sdx_standalone=on'
 } | sha256sum | cut -d ' ' -f 1)"
 
@@ -347,7 +348,7 @@ else
     else
       printf 'Initializing stable native CMake workspace: %s\n' "$NATIVE_OUTPUT_ROOT"
     fi
-    run_native_platform_stage compile -Dlibnd4j.triton=ON
+    run_native_platform_stage compile -Dlibnd4j.triton=OFF
   else
     printf 'Expert override: validating existing native output without compiling it.\n'
   fi
@@ -392,7 +393,7 @@ MANAGED_STAGE_KEY="$({
     "maven=$MAVEN_ID_SHA256" \
     'javacpp_platform=android-arm64' \
     'libnd4j_archive=skipped' \
-    'payload=immutable-native-closure-v1'
+    'payload=immutable-importer-closure-v2-no-compiler'
 } | sha256sum | cut -d ' ' -f 1)"
 MANAGED_STAGE_DIR="$MANAGED_STAGES_DIR/$MANAGED_STAGE_KEY"
 MANAGED_STAGE_RECEIPT="$MANAGED_STAGE_DIR/managed-stage.receipt"
@@ -423,7 +424,7 @@ else
     # The native compile is already receipted. This install packages that exact output
     # without running CMake or generating libnd4j's multi-gigabyte assembly archive.
     run_native_platform_stage install \
-      -Dlibnd4j.triton=ON \
+      -Dlibnd4j.triton=OFF \
       -Dlibnd4j.native.compile.skip=true \
       -Dassembly.skipAssembly=true
   else
@@ -457,7 +458,9 @@ else
       # The standalone C runtime is published directly from the receipted native
       # stage. It is intentionally absent from the JavaCPP importer closure, so
       # do not inflate its multi-gigabyte ZIP64 member just to delete it below.
-      [[ "$(basename -- "$member")" != libsdx_cpu.so ]] || continue
+      case "$(basename -- "$member")" in
+        libsdx_cpu.so|libLLVM.so|libMLIR.so) continue ;;
+      esac
       extract_android_native_member "$archive" "$member" "$managed_tmp/native-libraries" "$managed_tmp"
     done <"$members"
     rm -f -- "$members"
@@ -495,6 +498,10 @@ else
   for provider_library in libnd4jnnapi.so libnd4jvulkan.so liblitert-lm.so; do
     [[ ! -e "$managed_tmp/native-libraries/$provider_library" ]] ||
       fail "CPU importer closure contains accelerator provider $provider_library"
+  done
+  for compiler_library in libLLVM.so libMLIR.so; do
+    [[ ! -e "$managed_tmp/native-libraries/$compiler_library" ]] ||
+      fail "CPU importer closure contains unused compiler runtime $compiler_library"
   done
   : >"$managed_tmp/native-library-bytes.txt"
   while IFS= read -r library_name; do
@@ -581,6 +588,10 @@ done
 for provider_library in libnd4jnnapi.so libnd4jvulkan.so liblitert-lm.so; do
   [[ ! -e "$JNI_DIR/$provider_library" ]] ||
     fail "CPU importer closure contains accelerator provider $provider_library"
+done
+for compiler_library in libLLVM.so libMLIR.so; do
+  [[ ! -e "$JNI_DIR/$compiler_library" ]] ||
+    fail "CPU importer deployment contains unused compiler runtime $compiler_library"
 done
 
 is_android_system_library() {
@@ -670,6 +681,8 @@ android_abi=arm64-v8a
 process_blas_symbols_abi=1
 process_blas_symbols_capability=$PROCESS_BLAS_SYMBOLS_ABI
 native_packaging=strip-debug
+triton_cpu_included=false
+compiler_runtime_included=false
 standalone_sdx_cpu_included=false
 android_ndk_source_properties_sha256=$NDK_SOURCE_PROPERTIES_SHA256
 classpath_bytes_sha256=$(sha256_file "$CLASSPATH_BYTES")
