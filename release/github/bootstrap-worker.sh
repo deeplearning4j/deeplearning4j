@@ -54,9 +54,29 @@ ensure_modern_maven() {
   if [ ! -x "${target}/bin/mvn" ]; then
     work=$(mktemp -d)
     trap 'rm -rf "${work}"' RETURN
-    curl --fail --location --retry 5 \
-      "https://archive.apache.org/dist/maven/maven-3/${maven_version}/binaries/apache-maven-${maven_version}-bin.tar.gz" \
-      -o "${work}/maven.tar.gz"
+    maven_archive="apache-maven-${maven_version}-bin.tar.gz"
+    maven_sha512=a555254d6b53d267965a3404ecb14e53c3827c09c3b94b5678835887ab404556bfaf78dcfe03ba76fa2508649dca8531c74bca4d5846513522404d48e8c4ac8b
+    maven_downloaded=0
+    for maven_url in \
+      "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/${maven_version}/${maven_archive}" \
+      "https://dlcdn.apache.org/maven/maven-3/${maven_version}/binaries/${maven_archive}" \
+      "https://archive.apache.org/dist/maven/maven-3/${maven_version}/binaries/${maven_archive}"; do
+      if curl --fail --location --retry 5 --retry-all-errors \
+          --connect-timeout 20 --max-time 300 \
+          "${maven_url}" -o "${work}/maven.tar.gz"; then
+        maven_downloaded=1
+        break
+      fi
+    done
+    [ "${maven_downloaded}" -eq 1 ] || {
+      printf 'Failed to download Maven %s from all configured mirrors\n' "${maven_version}" >&2
+      return 1
+    }
+    if command -v sha512sum >/dev/null 2>&1; then
+      printf '%s  %s\n' "${maven_sha512}" "${work}/maven.tar.gz" | sha512sum --check --status
+    else
+      printf '%s  %s\n' "${maven_sha512}" "${work}/maven.tar.gz" | shasum -a 512 --check --status
+    fi
     as_root tar -xzf "${work}/maven.tar.gz" -C "${toolchain_root}"
     trap - RETURN
     rm -rf "${work}"

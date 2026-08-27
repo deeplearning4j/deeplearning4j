@@ -44,6 +44,17 @@
 namespace sd {
 namespace cuda {
 
+static cudaError_t getGraphEdgesCompat(cudaGraph_t graph, cudaGraphNode_t* from,
+                                       cudaGraphNode_t* to, size_t* numEdges) {
+#if defined(CUDART_VERSION) && CUDART_VERSION >= 13000
+    // CUDA 13 added edge metadata before numEdges. This caller only needs the
+    // dependency endpoints, so request no metadata and preserve the old contract.
+    return cudaGraphGetEdges(graph, from, to, nullptr, numEdges);
+#else
+    return cudaGraphGetEdges(graph, from, to, numEdges);
+#endif
+}
+
 // ============================================================================
 // CudaGraphHandle Implementation
 // ============================================================================
@@ -490,7 +501,7 @@ size_t CudaGraphHandle::getNumEdges() const {
     if (_graph == nullptr) return 0;
 
     size_t numEdges;
-    cudaError_t err = cudaGraphGetEdges(_graph, nullptr, nullptr, &numEdges);
+    cudaError_t err = getGraphEdgesCompat(_graph, nullptr, nullptr, &numEdges);
 
     if (err != cudaSuccess) return 0;
     return numEdges;
@@ -870,10 +881,10 @@ std::string CudaGraphHandle::getChromeTraceJson() const {
 
     // Get dependency edges for flow events
     size_t numEdges = 0;
-    cudaGraphGetEdges(_graph, nullptr, nullptr, &numEdges);
+    getGraphEdgesCompat(_graph, nullptr, nullptr, &numEdges);
     std::vector<cudaGraphNode_t> fromNodes(numEdges), toNodes(numEdges);
     if (numEdges > 0) {
-        cudaGraphGetEdges(_graph, fromNodes.data(), toNodes.data(), &numEdges);
+        getGraphEdgesCompat(_graph, fromNodes.data(), toNodes.data(), &numEdges);
     }
 
     // Build node index map for flow events

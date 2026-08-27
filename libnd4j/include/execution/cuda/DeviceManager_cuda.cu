@@ -67,7 +67,12 @@ void DeviceManager::discoverCudaDevices() {
         gpuInfo.computeCapabilityMajor = props.major;
         gpuInfo.computeCapabilityMinor = props.minor;
         gpuInfo.numSMs = props.multiProcessorCount;
-        gpuInfo.clockSpeedGHz = props.clockRate / 1e6f;
+        // CUDA 13 removed clockRate from cudaDeviceProp. The device attribute
+        // remains the runtime's cross-version source for the peak kHz value.
+        int clockRateKHz = 0;
+        cudaError_t clockErr = cudaDeviceGetAttribute(&clockRateKHz, cudaDevAttrClockRate, i);
+        gpuInfo.clockSpeedGHz = clockErr == cudaSuccess ? clockRateKHz / 1e6f : 0.0f;
+        if (clockErr != cudaSuccess) cudaGetLastError();
 
         // Check unified memory support (Pascal and later)
         gpuInfo.supportsUnifiedMemory = (props.major >= 6);
