@@ -766,6 +766,12 @@ class ReleaseValidationTest(unittest.TestCase):
             self.assertEqual("false", environment["DL4J_SCCACHE_SNAPSHOT_RESTORED"])
             self.assertEqual("true", environment["DL4J_SCCACHE_SNAPSHOT_SEEDING"])
             self.assertEqual("disk,azure", environment["SCCACHE_MULTILEVEL_CHAIN"])
+            bounded_launcher = Path(environment["DL4J_COMPILER_CACHE"])
+            self.assertEqual("sccache", bounded_launcher.name)
+            self.assertEqual(cache_dir / "bounded-launcher", bounded_launcher.parent)
+            launcher_source = bounded_launcher.read_text()
+            self.assertIn("timeout --signal=TERM --kill-after=30s 300s", launcher_source)
+            self.assertIn("/tools/sccache", launcher_source)
 
             cache_file = cache_dir / "object"
             cache_file.write_bytes(b"cached-object")

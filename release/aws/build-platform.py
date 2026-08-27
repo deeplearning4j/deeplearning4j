@@ -9,6 +9,7 @@ import json
 import os
 import platform
 import posixpath
+import shlex
 import shutil
 import subprocess
 import sys
@@ -680,6 +681,20 @@ def _activate_sccache(env: dict[str, str], compiler_cache: str) -> None:
     _configure_compiler_launchers(env, compiler_cache)
 
 
+def _bounded_sccache_seed_launcher(cache_dir: Path, compiler_cache: str) -> str:
+    """Bound one live remote seed lookup so the L0 snapshot can be published."""
+    launcher = cache_dir / "bounded-launcher" / "sccache"
+    launcher.parent.mkdir(parents=True, exist_ok=True)
+    launcher.write_text(
+        "#!/usr/bin/env bash\n"
+        "exec timeout --signal=TERM --kill-after=30s 300s "
+        f"{shlex.quote(compiler_cache)} \"$@\"\n",
+        encoding="utf-8",
+    )
+    launcher.chmod(0o755)
+    return str(launcher)
+
+
 def compiler_cache_snapshot_identity(config: dict) -> str | None:
     remote = config.get("compilerCache")
     if not isinstance(remote, dict):
@@ -876,6 +891,13 @@ def configure_compiler_cache(
             f"keyPrefix={prefix}", flush=True,
         )
         _activate_sccache(env, compiler_cache)
+        if snapshot_enabled and not snapshot_restored:
+            bounded_launcher = _bounded_sccache_seed_launcher(cache_dir, compiler_cache)
+            _configure_compiler_launchers(env, bounded_launcher)
+            print(
+                f"[dl4j-cache] seed launcher timeoutSeconds=300 path={bounded_launcher}",
+                flush=True,
+            )
         run([compiler_cache, "--start-server"], source, env)
         return compiler_cache, True
 
@@ -3426,15 +3448,26 @@ def main() -> None:
         build_completed = True
     finally:
         try:
-            if sccache_started and compiler_cache:
-                print("+", subprocess.list2cmdline([compiler_cache, "--stop-server"]), flush=True)
-                stopped = subprocess.run(
-                    [compiler_cache, "--stop-server"], cwd=args.source, env=env, check=False,
-                )
-                if build_completed and stopped.returncode != 0:
-                    raise RuntimeError(
-                        f"sccache server shutdown failed with exit code {stopped.returncode}"
+            try:
+                if sccache_started and compiler_cache:
+                    print("+", subprocess.list2cmdline([compiler_cache, "--stop-server"]), flush=True)
+                    stopped = subprocess.run(
+                        [compiler_cache, "--stop-server"], cwd=args.source, env=env, check=False,
+                        timeout=30,
                     )
+                    if build_completed and stopped.returncode != 0:
+                        raise RuntimeError(
+                            f"sccache server shutdown failed with exit code {stopped.returncode}"
+                        )
+            except subprocess.TimeoutExpired:
+                print(
+                    "[dl4j-cache] sccache shutdown timed out; terminating the wedged daemon",
+                    flush=True,
+                )
+                subprocess.run(["pkill", "-TERM", "-x", "sccache"], check=False)
+                time.sleep(1)
+                subprocess.run(["pkill", "-KILL", "-x", "sccache"], check=False)
+
             if compiler_cache_snapshot_metrics(env)["enabled"]:
                 try:
                     benchmark["compilerCacheSnapshot"] = publish_compiler_cache_snapshot(
