@@ -41,6 +41,28 @@
 #if defined(SD_CUDA) && defined(CUDART_VERSION) && CUDART_VERSION >= 13000
 #define cudaStreamGetCaptureInfo_v2(STREAM, STATUS, ID, GRAPH, DEPENDENCIES, NUM_DEPENDENCIES) \
   cudaStreamGetCaptureInfo((STREAM), (STATUS), (ID), (GRAPH), (DEPENDENCIES), nullptr, (NUM_DEPENDENCIES))
+
+static inline cudaMemLocation sdCudaMemLocationForDevice(int device) {
+  cudaMemLocation location{};
+  location.type = device == cudaCpuDeviceId ? cudaMemLocationTypeHost : cudaMemLocationTypeDevice;
+  location.id = device == cudaCpuDeviceId ? 0 : device;
+  return location;
+}
+
+static inline cudaError_t sdCudaMemAdviseCompat(const void* ptr, size_t count,
+                                                cudaMemoryAdvise advice, int device) {
+  return cudaMemAdvise(ptr, count, advice, sdCudaMemLocationForDevice(device));
+}
+
+static inline cudaError_t sdCudaMemPrefetchAsyncCompat(const void* ptr, size_t count,
+                                                       int device, cudaStream_t stream) {
+  return cudaMemPrefetchAsync(ptr, count, sdCudaMemLocationForDevice(device), 0, stream);
+}
+
+#define cudaMemAdvise(PTR, COUNT, ADVICE, DEVICE) \
+  sdCudaMemAdviseCompat((PTR), (COUNT), (ADVICE), (DEVICE))
+#define cudaMemPrefetchAsync(PTR, COUNT, DEVICE, STREAM) \
+  sdCudaMemPrefetchAsyncCompat((PTR), (COUNT), (DEVICE), (STREAM))
 #endif
 
 namespace sd {
