@@ -183,6 +183,24 @@ ensure_cuda_sbsa_cross() {
   printf 'CUDA_SBSA_TARGET_ROOT=%s\n' "${sbsa_root}" >>"${GITHUB_ENV}"
   printf 'LIBRARY_PATH=%s:%s\n' "${sbsa_root}/lib" "${LIBRARY_PATH:-}" >>"${GITHUB_ENV}"
   printf 'CUDNN_ROOT=%s\n' "${sbsa_root}" >>"${GITHUB_ENV}"
+
+  target_jdk="${toolchain_root}/temurin-11-aarch64"
+  if [ ! -f "${target_jdk}/include/jni.h" ] || [ ! -f "${target_jdk}/lib/server/libjvm.so" ]; then
+    jdk_archive=OpenJDK11U-jdk_aarch64_linux_hotspot_11.0.32.1_1.tar.gz
+    jdk_sha256=f27033e6f7523c1b0b2565a78e9c0e0abe5596a854ce00ca04ec1b06ece7a935
+    work=$(mktemp -d)
+    trap 'rm -rf "${work}"' RETURN
+    curl --fail --location --retry 5 --retry-all-errors \
+      --connect-timeout 20 --max-time 300 \
+      "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.32.1%2B1/${jdk_archive}" \
+      -o "${work}/${jdk_archive}"
+    printf '%s  %s\n' "${jdk_sha256}" "${work}/${jdk_archive}" | sha256sum --check --status
+    as_root mkdir -p "${target_jdk}"
+    as_root tar -xzf "${work}/${jdk_archive}" -C "${target_jdk}" --strip-components=1
+    trap - RETURN
+    rm -rf "${work}"
+  fi
+  printf 'JAVA_AARCH64_HOME=%s\n' "${target_jdk}" >>"${GITHUB_ENV}"
 }
 
 case "$(uname -s)" in

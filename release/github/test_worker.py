@@ -606,6 +606,8 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("cuda-cross-sbsa-13-1", bootstrap)
         self.assertIn("cudnn9-cross-sbsa=9.19.1-1", bootstrap)
         self.assertIn("gcc-aarch64-linux-gnu", bootstrap)
+        self.assertIn("OpenJDK11U-jdk_aarch64_linux_hotspot_11.0.32.1_1.tar.gz", bootstrap)
+        self.assertIn("JAVA_AARCH64_HOME", bootstrap)
 
     def test_android_worker_accepts_sccache_as_the_required_compiler_cache(self):
         builder = (ROOT / "libnd4j/buildnativeoperations.sh").read_text()

@@ -3026,10 +3026,12 @@ def cuda_sbsa_cross_enabled(build: dict) -> bool:
 
 def cuda_sbsa_cross_cmake_args(source: Path, env: dict[str, str]) -> str:
     target_root = Path(env.get("CUDA_SBSA_TARGET_ROOT", "/usr/local/cuda/targets/sbsa-linux"))
+    target_jdk = Path(env.get("JAVA_AARCH64_HOME", "/opt/temurin-11-aarch64"))
     openblas_root = Path(env["OPENBLAS_PATH"])
     return " ".join([
         f"-DCMAKE_TOOLCHAIN_FILE={source / 'libnd4j/cmake/linux-arm64-cuda-cross.cmake'}",
         f"-DCUDAToolkit_TARGET_DIR={target_root}",
+        f"-DJAVA_HOME_PATH={target_jdk}",
         f"-DBLAS_LIBRARIES={openblas_root / 'lib/libopenblas.so'}",
         f"-DLAPACK_LIBRARIES={openblas_root / 'lib/libopenblas.so'}",
     ])

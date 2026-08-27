@@ -29,6 +29,7 @@ find_path(JNI_INCLUDE_DIR
         "${JAVA_HOME_PATH}/include"
         "${JAVA_HOME_PATH}/Headers"
     NO_DEFAULT_PATH
+    NO_CMAKE_FIND_ROOT_PATH
 )
 
 if(APPLE)
@@ -36,18 +37,21 @@ if(APPLE)
         NAMES jni_md.h
         PATHS "${JAVA_HOME_PATH}/include/darwin" "${JAVA_HOME_PATH}/Headers"
         NO_DEFAULT_PATH
+        NO_CMAKE_FIND_ROOT_PATH
     )
 elseif(UNIX)
     find_path(JNI_INCLUDE_DIR_PLATFORM
         NAMES jni_md.h
         PATHS "${JAVA_HOME_PATH}/include/linux" "${JAVA_HOME_PATH}/include/freebsd"
         NO_DEFAULT_PATH
+        NO_CMAKE_FIND_ROOT_PATH
     )
 elseif(WIN32)
     find_path(JNI_INCLUDE_DIR_PLATFORM
         NAMES jni_md.h
         PATHS "${JAVA_HOME_PATH}/include/win32"
         NO_DEFAULT_PATH
+        NO_CMAKE_FIND_ROOT_PATH
     )
 endif()
 
@@ -63,6 +67,7 @@ find_library(JVM_LIBRARY
         "${JAVA_HOME_PATH}/jre/lib/i386/server"
         "${JAVA_HOME_PATH}/bin/server"
     NO_DEFAULT_PATH
+    NO_CMAKE_FIND_ROOT_PATH
 )
 
 if(NOT JNI_INCLUDE_DIR OR NOT JNI_INCLUDE_DIR_PLATFORM)
