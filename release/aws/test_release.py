@@ -3050,7 +3050,7 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertEqual("arm64", shard["architecture"])
         self.assertEqual("linux-arm64", build["javacppPlatform"])
         self.assertEqual("13.1", build["cudaVersion"])
-        self.assertEqual("9.0 12.1", build_platform.cuda_compute_targets(build))
+        self.assertEqual("12.1", build_platform.cuda_compute_targets(build))
         self.assertEqual(4, build["buildThreads"])
         self.assertEqual(1, build["cudaThreads"])
         self.assertEqual(1, build["cudaSplitCompile"])
@@ -3122,14 +3122,14 @@ class ReleaseValidationTest(unittest.TestCase):
             DL4J_FAMILY="linux-cuda",
             DL4J_PLATFORM="linux-arm64",
             DL4J_CUDA_VERSION="13.1",
-            DL4J_COMPUTE="9.0 12.1",
+            DL4J_COMPUTE="12.1",
             DL4J_CUDA_THREADS="1",
             DL4J_CUDA_SPLIT_COMPILE="1",
             DL4J_HELPER="compile",
         )
         self.assertIn("-Djavacpp.platform=linux-arm64", dgx_spark)
         self.assertIn("-Djavacpp.platform.compiler=g++", dgx_spark)
-        self.assertIn("-Dlibnd4j.compute=9.0 12.1", dgx_spark)
+        self.assertIn("-Dlibnd4j.compute=12.1", dgx_spark)
         self.assertIn("-Dlibnd4j.cuda.threads=1", dgx_spark)
         self.assertIn("-Dlibnd4j.cuda.splitcompile=1", dgx_spark)
         self.assertIn("-Posx-aarch64-protoc", dgx_spark)

@@ -237,7 +237,7 @@ class WorkflowMatrixTests(unittest.TestCase):
         shard = prepare_worker.plan_shards(self.plan)["linux-arm64-cuda-13-1"]
         self.assertEqual("arm64", shard["architecture"])
         self.assertEqual("linux-arm64", shard["build"]["javacppPlatform"])
-        self.assertEqual(["-Dlibnd4j.compute=9.0 12.1"], shard["build"]["mavenArgs"])
+        self.assertEqual(["-Dlibnd4j.compute=12.1"], shard["build"]["mavenArgs"])
         self.assertEqual(4, shard["build"]["buildThreads"])
         self.assertEqual(1, shard["build"]["cudaThreads"])
         self.assertEqual(1, shard["build"]["cudaSplitCompile"])

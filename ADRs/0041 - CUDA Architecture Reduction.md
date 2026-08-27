@@ -22,7 +22,7 @@ Our analysis of actual GPU usage patterns reveals that the majority of our users
 
 We will reduce the generic x86_64 CUDA classifier targets to focus on modern GPUs, specifically compute capabilities 8.6 and 9.0. This means dropping support for all architectures older than Ampere.
 
-Architecture-specific classifiers may use a narrower target set appropriate to that host family. The Linux ARM64 CUDA 13.1 classifier targets Grace Hopper compute capability 9.0 and NVIDIA DGX Spark compute capability 12.1 (`sm_121`). Keeping it separate avoids multiplying every CUDA artifact by ARM-specific images while still producing a native AArch64 runtime for both major Grace platforms.
+Architecture-specific classifiers may use a narrower target set appropriate to a coupled host/GPU platform. The Linux ARM64 CUDA 13.1 classifier targets NVIDIA DGX Spark compute capability 12.1 (`sm_121`). Keeping it separate avoids multiplying every CUDA artifact by DGX-specific images while still producing a native AArch64 runtime for the requested platform.
 
 The technical implementation is straightforward - we'll modify our CMake configuration from:
 ```cmake
@@ -37,7 +37,7 @@ To:
 This change will support:
 - Compute capability 8.6: RTX 3050-3090, RTX A2000-A6000, A40, A100
 - Compute capability 9.0: RTX 4060-4090, L4, L40, H100
-- Compute capabilities 9.0 and 12.1: Grace Hopper and DGX Spark GB10, through the dedicated Linux ARM64 CUDA 13.1 classifier
+- Compute capability 12.1: DGX Spark GB10, through the dedicated Linux ARM64 CUDA 13.1 classifier
 
 We will no longer support:
 - Maxwell (5.0-5.2): GTX 900 series
