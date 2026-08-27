@@ -3164,6 +3164,8 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
             "DL4J_MAVEN_REPOSITORY": str(repository),
             "DL4J_CUDA_VERSION": str(build.get("cudaVersion", "")),
             "DL4J_COMPUTE": cuda_compute_targets(build),
+            "DL4J_CUDA_THREADS": str(build.get("cudaThreads", "")),
+            "DL4J_CUDA_SPLIT_COMPILE": str(build.get("cudaSplitCompile", "")),
             "DL4J_ROCM_VERSION": str(build.get("rocmVersion", "")),
             "DL4J_ZLUDA_VERSION": str(build.get("zludaVersion", "")),
             "DL4J_ZLUDA_TARGET": zluda_target(build),

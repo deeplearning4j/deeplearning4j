@@ -3051,6 +3051,9 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertEqual("linux-arm64", build["javacppPlatform"])
         self.assertEqual("13.1", build["cudaVersion"])
         self.assertEqual("9.0 12.1", build_platform.cuda_compute_targets(build))
+        self.assertEqual(4, build["buildThreads"])
+        self.assertEqual(1, build["cudaThreads"])
+        self.assertEqual(1, build["cudaSplitCompile"])
         self.assertEqual(
             "nvidia/cuda:13.1.2-cudnn-devel-ubuntu24.04",
             shard["containerImage"],
@@ -3120,11 +3123,15 @@ class ReleaseValidationTest(unittest.TestCase):
             DL4J_PLATFORM="linux-arm64",
             DL4J_CUDA_VERSION="13.1",
             DL4J_COMPUTE="9.0 12.1",
+            DL4J_CUDA_THREADS="1",
+            DL4J_CUDA_SPLIT_COMPILE="1",
             DL4J_HELPER="compile",
         )
         self.assertIn("-Djavacpp.platform=linux-arm64", dgx_spark)
         self.assertIn("-Djavacpp.platform.compiler=g++", dgx_spark)
         self.assertIn("-Dlibnd4j.compute=9.0 12.1", dgx_spark)
+        self.assertIn("-Dlibnd4j.cuda.threads=1", dgx_spark)
+        self.assertIn("-Dlibnd4j.cuda.splitcompile=1", dgx_spark)
         self.assertIn("-Posx-aarch64-protoc", dgx_spark)
         self.assertIn(
             "-Dlibnd4j.classifier=linux-arm64-cuda-13.1-compile",
@@ -3425,6 +3432,7 @@ class ReleaseValidationTest(unittest.TestCase):
             "id": "linux-x86_64-cuda-12-9", "os": "linux", "workloads": ["maven"],
             "build": {"backend": "cuda", "cudaVersion": "12.9", "javacppPlatform": "linux-x86_64",
                       "mavenArgs": ["-Dlibnd4j.compute=8.6 9.0"],
+                      "cudaThreads": 3, "cudaSplitCompile": 2,
                       "modules": [], "variants": [{"name": "compile", "triton": True}]},
         }
         calls = []
@@ -3435,6 +3443,8 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertEqual("12.9", calls[0][1]["DL4J_CUDA_VERSION"])
         self.assertEqual("linux-x86_64", calls[0][1]["DL4J_PLATFORM"])
         self.assertEqual("8.6 9.0", calls[0][1]["DL4J_COMPUTE"])
+        self.assertEqual("3", calls[0][1]["DL4J_CUDA_THREADS"])
+        self.assertEqual("2", calls[0][1]["DL4J_CUDA_SPLIT_COMPILE"])
 
     def test_aws_cross_platform_invokes_the_shared_workflow_script(self):
         calls = []

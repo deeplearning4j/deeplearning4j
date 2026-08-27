@@ -238,6 +238,9 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertEqual("arm64", shard["architecture"])
         self.assertEqual("linux-arm64", shard["build"]["javacppPlatform"])
         self.assertEqual(["-Dlibnd4j.compute=9.0 12.1"], shard["build"]["mavenArgs"])
+        self.assertEqual(4, shard["build"]["buildThreads"])
+        self.assertEqual(1, shard["build"]["cudaThreads"])
+        self.assertEqual(1, shard["build"]["cudaSplitCompile"])
         self.assertNotIn(
             "nd4j-cuda-13.1-platform", shard["artifactRules"]["artifactIds"]
         )
