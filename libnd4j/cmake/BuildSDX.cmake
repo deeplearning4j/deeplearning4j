@@ -418,6 +418,7 @@ function(configure_sdx_cuda_linking main_target_name)
     if(OpenMP_CXX_FOUND)
         target_link_libraries(${main_target_name} PUBLIC OpenMP::OpenMP_CXX)
     endif()
+    link_cuda_cross_openmp_runtime(${main_target_name})
 
     # zlib (objects already compiled with HAVE_ZLIB from main build)
     find_package(ZLIB QUIET)

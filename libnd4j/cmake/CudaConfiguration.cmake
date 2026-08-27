@@ -4,6 +4,28 @@
 ################################################################################
 
 # CUDA toolkit detection with proper include path setup
+function(link_cuda_cross_openmp_runtime target_name)
+    if(NOT CMAKE_CROSSCOMPILING OR NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        return()
+    endif()
+
+    execute_process(
+        COMMAND "${CMAKE_CXX_COMPILER}" -print-file-name=libgomp.so
+        RESULT_VARIABLE _cross_gomp_result
+        OUTPUT_VARIABLE _cross_gomp_library
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if(NOT _cross_gomp_result EQUAL 0 OR
+       NOT IS_ABSOLUTE "${_cross_gomp_library}" OR
+       NOT EXISTS "${_cross_gomp_library}")
+        message(FATAL_ERROR
+            "GNU CUDA cross-build requires the target libgomp runtime; "
+            "${CMAKE_CXX_COMPILER} returned '${_cross_gomp_library}'")
+    endif()
+    target_link_libraries(${target_name} PUBLIC "${_cross_gomp_library}")
+    message(STATUS "🔗 Cross OpenMP runtime: ${target_name} -> ${_cross_gomp_library}")
+endfunction()
+
+
 function(setup_cuda_toolkit_paths)
     find_package(CUDAToolkit REQUIRED)
 
@@ -623,6 +645,7 @@ function(configure_cuda_linking main_target_name)
     else()
         target_link_libraries(${main_target_name} PUBLIC "-fopenmp")
     endif()
+    link_cuda_cross_openmp_runtime(${main_target_name})
 
     # SDZ SameDiff archives are ZIP/DEFLATE by default, so link zlib when available.
     find_package(ZLIB QUIET)

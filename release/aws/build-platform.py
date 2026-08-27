@@ -3032,8 +3032,8 @@ def cuda_sbsa_cross_cmake_args(source: Path, env: dict[str, str]) -> str:
         f"-DCMAKE_TOOLCHAIN_FILE={source / 'libnd4j/cmake/linux-arm64-cuda-cross.cmake'}",
         f"-DCUDAToolkit_TARGET_DIR={target_root}",
         f"-DJAVA_HOME_PATH={target_jdk}",
-        f"-DBLAS_LIBRARIES={openblas_root / 'lib/libopenblas.so'}",
-        f"-DLAPACK_LIBRARIES={openblas_root / 'lib/libopenblas.so'}",
+        f"-DBLAS_LIBRARIES={openblas_root / 'libopenblas.so'}",
+        f"-DLAPACK_LIBRARIES={openblas_root / 'libopenblas.so'}",
     ])
 
 

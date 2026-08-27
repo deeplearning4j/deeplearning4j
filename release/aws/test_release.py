@@ -3059,6 +3059,22 @@ class ReleaseValidationTest(unittest.TestCase):
             "nvidia/cuda:13.1.2-cudnn-devel-ubuntu24.04",
             shard["containerImage"],
         )
+        sbsa_args = build_platform.cuda_sbsa_cross_cmake_args(
+            root,
+            {
+                "CUDA_SBSA_TARGET_ROOT": "/usr/local/cuda/targets/sbsa-linux",
+                "JAVA_AARCH64_HOME": "/opt/temurin-11-aarch64",
+                "OPENBLAS_PATH": "/tmp/openblas/linux-arm64",
+            },
+        )
+        self.assertIn("-DJAVA_HOME_PATH=/opt/temurin-11-aarch64", sbsa_args)
+        self.assertIn("-DBLAS_LIBRARIES=/tmp/openblas/linux-arm64/libopenblas.so", sbsa_args)
+        self.assertNotIn("linux-arm64/lib/libopenblas.so", sbsa_args)
+
+        cuda_linking = (root / "libnd4j/cmake/CudaConfiguration.cmake").read_text()
+        sdx_linking = (root / "libnd4j/cmake/BuildSDX.cmake").read_text()
+        self.assertIn("link_cuda_cross_openmp_runtime(${main_target_name})", cuda_linking)
+        self.assertIn("link_cuda_cross_openmp_runtime(${main_target_name})", sdx_linking)
 
         self.assertNotIn("nd4j-cuda-13.1-platform", shard["artifactRules"]["artifactIds"])
         self.assertNotIn(":nd4j-cuda-13.1-platform", build["modules"])
