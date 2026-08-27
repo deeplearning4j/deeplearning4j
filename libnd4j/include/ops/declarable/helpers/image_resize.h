@@ -411,7 +411,7 @@ struct WeightsAndIndices {
 
   int _advance;  // advance value.
   // see: https://stackoverflow.com/questions/41552966/getting-new-delete-type-mismatch-from-asan
-  virtual ~WeightsAndIndices() = default;
+  SD_HOST_DEVICE ~WeightsAndIndices() = default;
 };
 
 SD_INLINE SD_HOST_DEVICE LongType bound(LongType val, LongType limit) {
