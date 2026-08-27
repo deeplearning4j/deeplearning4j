@@ -29,3 +29,39 @@
              .layer(HttpClientLayer::new(set_user_agent()))
              .layer(LoggingLayer::default())
              .finish();
+
+--- a/src/cache/azure.rs
++++ b/src/cache/azure.rs
+@@ -13,8 +13,9 @@
+ // limitations under the License.
+
+ use opendal::Operator;
+
+-use opendal::layers::{HttpClientLayer, LoggingLayer};
++use opendal::layers::{HttpClientLayer, LoggingLayer, RetryLayer, TimeoutLayer};
+ use opendal::services::Azblob;
++use std::time::Duration;
+
+ use crate::errors::*;
+@@ -29,6 +30,21 @@
+             .root(key_prefix);
+
+         let op = Operator::new(builder)?
++            // Azure reads must never hold every compiler client indefinitely.
++            // TimeoutLayer is intentionally inside RetryLayer: each attempt gets
++            // its own deadline, then the cache miss/error falls back to compile.
++            .layer(
++                TimeoutLayer::new()
++                    .with_timeout(Duration::from_secs(30))
++                    .with_io_timeout(Duration::from_secs(30)),
++            )
++            .layer(
++                RetryLayer::new()
++                    .with_max_times(3)
++                    .with_min_delay(Duration::from_millis(500))
++                    .with_max_delay(Duration::from_secs(5))
++                    .with_jitter(),
++            )
+             .layer(HttpClientLayer::new(set_user_agent()))
+             .layer(LoggingLayer::default())
+             .finish();

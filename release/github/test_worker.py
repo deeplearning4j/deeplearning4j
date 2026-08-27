@@ -626,6 +626,11 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("DL4J_FLATC_EXECUTABLE", dependencies)
 
     def test_sccache_actions_support_github_and_azure_backends(self):
+        retry_patch = (ROOT / ".github/patches/sccache-retry.patch").read_text()
+        self.assertIn("--- a/src/cache/azure.rs", retry_patch)
+        self.assertIn("TimeoutLayer::new()", retry_patch)
+        self.assertIn("with_io_timeout(Duration::from_secs(30))", retry_patch)
+        self.assertIn("RetryLayer::new()", retry_patch)
         for operating_system in ("linux", "windows", "macos"):
             action = (
                 ROOT / f".github/actions/setup-sccache-{operating_system}/action.yml"
