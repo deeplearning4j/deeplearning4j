@@ -139,7 +139,11 @@ struct KeysCubicKernelFunc
 
   T _coef = KEYS_CUBIC_COEF;
   // see: https://stackoverflow.com/questions/41552966/getting-new-delete-type-mismatch-from-asan
-  virtual ~KeysCubicKernelFunc() = default;
+#if defined(__CUDACC__)
+  SD_HOST_DEVICE ~KeysCubicKernelFunc() = default;
+#else
+  ~KeysCubicKernelFunc() override = default;
+#endif
 };
 
 struct LanczosKernelFunc
@@ -362,7 +366,7 @@ struct LegacyScaler {
   }
 
   // see: https://stackoverflow.com/questions/41552966/getting-new-delete-type-mismatch-from-asan
-  virtual ~LegacyScaler() = default;
+  SD_HOST_DEVICE ~LegacyScaler() = default;
 };
 
 // Half pixel scaler scales assuming that the pixel centers are at 0.5, i.e. the
@@ -376,7 +380,7 @@ struct HalfPixelScaler {
   }
 
   // see: https://stackoverflow.com/questions/41552966/getting-new-delete-type-mismatch-from-asan
-  virtual ~HalfPixelScaler() = default;
+  SD_HOST_DEVICE ~HalfPixelScaler() = default;
 };
 
 // Half pixel scaler scales assuming that the pixel centers are at 0.5, i.e. the
@@ -390,7 +394,7 @@ struct HalfPixelScalerNN {
   }
 
   // see: https://stackoverflow.com/questions/41552966/getting-new-delete-type-mismatch-from-asan
-  virtual ~HalfPixelScalerNN() = default;
+  SD_HOST_DEVICE ~HalfPixelScalerNN() = default;
 };
 
 constexpr LongType kTableSize = (1 << 10);
