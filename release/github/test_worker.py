@@ -229,7 +229,7 @@ class WorkflowMatrixTests(unittest.TestCase):
             ],
             [row["artifactId"] for row in rows],
         )
-        self.assertEqual({"ubuntu-22.04-arm"}, {row["runner"] for row in rows})
+        self.assertEqual({"ubuntu-22.04"}, {row["runner"] for row in rows})
         self.assertEqual(
             {"nvidia/cuda:13.1.2-cudnn-devel-ubuntu24.04"},
             {row["container"] for row in rows},
@@ -237,6 +237,7 @@ class WorkflowMatrixTests(unittest.TestCase):
         shard = prepare_worker.plan_shards(self.plan)["linux-arm64-cuda-13-1"]
         self.assertEqual("arm64", shard["architecture"])
         self.assertEqual("linux-arm64", shard["build"]["javacppPlatform"])
+        self.assertIs(True, shard["build"]["crossCompileSbsa"])
         self.assertEqual(["-Dlibnd4j.compute=12.1"], shard["build"]["mavenArgs"])
         self.assertEqual(4, shard["build"]["buildThreads"])
         self.assertEqual(1, shard["build"]["cudaThreads"])
@@ -597,6 +598,14 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("maven_version=3.9.9", bootstrap)
         self.assertIn('"${target}/bin/mvn" --version', bootstrap)
         self.assertIn('"${target}/bin" >>"${GITHUB_PATH}"', bootstrap)
+
+    def test_linux_arm64_cuda_bootstrap_installs_pinned_sbsa_cross_toolchain(self):
+        action = (ROOT / ".github/actions/run-release-worker/action.yml").read_text()
+        bootstrap = (ROOT / "release/github/bootstrap-worker.sh").read_text()
+        self.assertIn('"${{ inputs.variant }}"', action)
+        self.assertIn("cuda-cross-sbsa-13-1", bootstrap)
+        self.assertIn("cudnn9-cross-sbsa=9.19.1-1", bootstrap)
+        self.assertIn("gcc-aarch64-linux-gnu", bootstrap)
 
     def test_android_worker_accepts_sccache_as_the_required_compiler_cache(self):
         builder = (ROOT / "libnd4j/buildnativeoperations.sh").read_text()

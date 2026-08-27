@@ -3,6 +3,7 @@ set -Eeuo pipefail
 
 shard=${1:?shard is required}
 ndk_version=${2:-}
+variant=${3:-}
 toolchain_root=${DL4J_TOOLCHAIN_ROOT:-/opt}
 
 as_root() {
@@ -147,6 +148,43 @@ ensure_android_ndk() {
   printf 'ANDROID_NDK_HOME=%s\n' "${target}" >>"${GITHUB_ENV}"
 }
 
+ensure_cuda_sbsa_cross() {
+  [ "${shard}" = linux-arm64-cuda-13-1 ] || return 0
+  case "$(uname -m)" in
+    x86_64|amd64) ;;
+    *) return 0 ;;
+  esac
+
+  as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+
+  work=$(mktemp -d)
+  trap 'rm -rf "${work}"' RETURN
+  curl --fail --location --retry 5 --retry-all-errors \
+    --connect-timeout 20 --max-time 300 \
+    https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/cross-linux-sbsa/cuda-keyring_1.1-1_all.deb \
+    -o "${work}/cuda-keyring.deb"
+  as_root dpkg -i "${work}/cuda-keyring.deb"
+  as_root env DEBIAN_FRONTEND=noninteractive apt-get update
+  as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    cuda-cross-sbsa-13-1
+  if [ "${variant}" = cudnn ]; then
+    as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      cudnn9-cross-sbsa=9.19.1-1 libcudnn9-cross-sbsa-cuda-13=9.19.1.2-1
+  fi
+  trap - RETURN
+  rm -rf "${work}"
+
+  sbsa_root=/usr/local/cuda/targets/sbsa-linux
+  [ -d "${sbsa_root}/include" ] && [ -d "${sbsa_root}/lib" ] || {
+    printf 'CUDA 13.1 SBSA cross target is incomplete: %s\n' "${sbsa_root}" >&2
+    return 1
+  }
+  printf 'CUDA_SBSA_TARGET_ROOT=%s\n' "${sbsa_root}" >>"${GITHUB_ENV}"
+  printf 'LIBRARY_PATH=%s:%s\n' "${sbsa_root}/lib" "${LIBRARY_PATH:-}" >>"${GITHUB_ENV}"
+  printf 'CUDNN_ROOT=%s\n' "${sbsa_root}" >>"${GITHUB_ENV}"
+}
+
 case "$(uname -s)" in
   Linux)
     install_linux_packages
@@ -154,6 +192,7 @@ case "$(uname -s)" in
     ensure_protobuf
     ensure_protoc_21
     ensure_android_ndk
+    ensure_cuda_sbsa_cross
     printf '%s\n' "${toolchain_root}/protobuf/bin" "${toolchain_root}/protoc-21.7/bin" >>"${GITHUB_PATH}"
     ;;
   Darwin)

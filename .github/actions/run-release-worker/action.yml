@@ -74,7 +74,7 @@ runs:
           android-arm64|android-arm64-vulkan) ndk=r27d ;;
           android-x86_64) ndk=r26d ;;
         esac
-        bash release/github/bootstrap-worker.sh "${{ inputs.shard }}" "$ndk"
+        bash release/github/bootstrap-worker.sh "${{ inputs.shard }}" "$ndk" "${{ inputs.variant }}"
 
     - name: Install pinned MSYS2 MinGW64 toolchain
       if: runner.os == 'Windows'

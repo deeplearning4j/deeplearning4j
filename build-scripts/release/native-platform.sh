@@ -7,6 +7,7 @@ set -Eeuo pipefail
 : "${DL4J_COMPUTE:=}"
 : "${DL4J_CUDA_THREADS:=}"
 : "${DL4J_CUDA_SPLIT_COMPILE:=}"
+: "${DL4J_CUDA_CROSS_SBSA:=0}"
 : "${DL4J_HELPER:=}"
 : "${DL4J_EXTENSION:=}"
 : "${DL4J_PLATFORM_EXTENSION:=}"
@@ -140,7 +141,11 @@ case "${DL4J_FAMILY}" in
         linux-x86_64) ;;
         linux-arm64)
           cuda_profiles+=(-Posx-aarch64-protoc)
-          cuda_host=(-Djavacpp.platform.compiler=g++)
+          if [ "${DL4J_CUDA_CROSS_SBSA}" = 1 ]; then
+            cuda_host=(-Djavacpp.platform.compiler=/usr/bin/aarch64-linux-gnu-g++)
+          else
+            cuda_host=(-Djavacpp.platform.compiler=g++)
+          fi
           ;;
         *) printf 'Unsupported Linux CUDA platform: %s\n' "${platform}" >&2; exit 2 ;;
       esac

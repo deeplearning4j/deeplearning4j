@@ -3018,6 +3018,23 @@ def android_cmake_args(source: Path, build: dict, variant: dict, env: dict[str, 
     ])
 
 
+def cuda_sbsa_cross_enabled(build: dict) -> bool:
+    """Return whether this x86 worker must produce an NVIDIA SBSA artifact."""
+    machine = platform.machine().lower()
+    return bool(build.get("crossCompileSbsa")) and machine in {"x86_64", "amd64"}
+
+
+def cuda_sbsa_cross_cmake_args(source: Path, env: dict[str, str]) -> str:
+    target_root = Path(env.get("CUDA_SBSA_TARGET_ROOT", "/usr/local/cuda/targets/sbsa-linux"))
+    openblas_root = Path(env["OPENBLAS_PATH"])
+    return " ".join([
+        f"-DCMAKE_TOOLCHAIN_FILE={source / 'libnd4j/cmake/linux-arm64-cuda-cross.cmake'}",
+        f"-DCUDAToolkit_TARGET_DIR={target_root}",
+        f"-DBLAS_LIBRARIES={openblas_root / 'lib/libopenblas.so'}",
+        f"-DLAPACK_LIBRARIES={openblas_root / 'lib/libopenblas.so'}",
+    ])
+
+
 def shared_variant_helper(variant: dict) -> str:
     """Translate a release-plan variant to the workflow matrix helper verbatim."""
     name = variant.get("name", "")
@@ -3193,6 +3210,13 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
         if build["javacppPlatform"].startswith("android-"):
             variant_env["DL4J_ANDROID_API"] = str(android_api_level(variant))
             variant_env["DL4J_CMAKE_ARGS"] = android_cmake_args(source, build, variant, variant_env)
+        if cuda_sbsa_cross_enabled(build):
+            variant_env["DL4J_CUDA_CROSS_SBSA"] = "1"
+            existing_cmake_args = variant_env.get("CMAKE_ARGUMENTS", "").strip()
+            variant_env["CMAKE_ARGUMENTS"] = " ".join(filter(None, (
+                existing_cmake_args,
+                cuda_sbsa_cross_cmake_args(source, variant_env),
+            )))
         script_name = "linux-x86_64.sh" if family == "linux-x86_64" else "native-platform.sh"
         if family == "linux-x86_64":
             variant_env["DL4J_MATRIX_MVN_EXT"] = variant_env.pop("DL4J_MVN_FLAGS")
