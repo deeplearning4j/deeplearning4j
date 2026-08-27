@@ -768,7 +768,9 @@ def publish_compiler_cache_snapshot(config: dict, env: dict[str, str]) -> dict:
     metrics = compiler_cache_snapshot_metrics(env)
     if not metrics["enabled"]:
         return metrics
-    if metrics["restoreStatus"] == "hit":
+    remote = config.get("compilerCache") or {}
+    snapshot = remote.get("localSnapshot") or {}
+    if metrics["restoreStatus"] == "hit" and not snapshot.get("refresh"):
         metrics["publishStatus"] = "not-required"
         return metrics
     cache_dir = Path(env["DL4J_SCCACHE_SNAPSHOT_DIR"])
@@ -816,13 +818,20 @@ def configure_compiler_cache(
         restore_compiler_cache_snapshot(config, env, cache_dir)
         cache_dir.mkdir(parents=True, exist_ok=True)
         compiler_cache = ensure_cached_sccache(cache_dir, config, env)
+        snapshot_enabled = bool(env.get("DL4J_SCCACHE_SNAPSHOT_IDENTITY"))
+        snapshot_restored = env.get("DL4J_SCCACHE_SNAPSHOT_RESTORED") == "true"
+        use_live_remote = not snapshot_enabled or not snapshot_restored
+        if snapshot_enabled and not snapshot_restored:
+            env["DL4J_SCCACHE_SNAPSHOT_SEEDING"] = "true"
         env.update({
             "SCCACHE_DIR": str(cache_dir),
             "SCCACHE_CACHE_SIZE": "100G",
             "SCCACHE_IDLE_TIMEOUT": "0",
             "SCCACHE_BASEDIRS": str(source.resolve()),
             "SCCACHE_ERROR_LOG": str(cache_dir / "sccache-error.log"),
-            "SCCACHE_MULTILEVEL_CHAIN": f"disk,{backend}",
+            "SCCACHE_MULTILEVEL_CHAIN": (
+                f"disk,{backend}" if use_live_remote else "disk"
+            ),
             # A remote cache outage must not block compiler wrappers or make the
             # hosted runner appear dead; the local cache remains authoritative.
             "SCCACHE_MULTILEVEL_WRITE_ERROR_POLICY": "l0",
@@ -862,7 +871,9 @@ def configure_compiler_cache(
                 "SCCACHE_AZURE_KEY_PREFIX": prefix,
             })
         print(
-            f"[dl4j-cache] backend={backend} mode=disk+remote keyPrefix={prefix}", flush=True,
+            f"[dl4j-cache] backend={backend} "
+            f"mode={'disk+remote-seed' if use_live_remote else 'snapshot+disk'} "
+            f"keyPrefix={prefix}", flush=True,
         )
         _activate_sccache(env, compiler_cache)
         run([compiler_cache, "--start-server"], source, env)
@@ -3177,7 +3188,10 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
             "DL4J_EXTENSION": variant.get("extension", ""),
             "DL4J_PLATFORM_EXTENSION": variant_platform_extension(variant),
             "DL4J_CLASSIFIER": variant_libnd4j_classifier(build, variant),
-            "DL4J_BUILD_THREADS": str(build.get("buildThreads", 16)),
+            "DL4J_BUILD_THREADS": (
+                "1" if env.get("DL4J_SCCACHE_SNAPSHOT_SEEDING") == "true"
+                else str(build.get("buildThreads", 16))
+            ),
             "DL4J_MVN_FLAGS": str(build.get("workflowMvnFlags", "")),
             "DL4J_MAVEN_GOAL": "install",
             "DL4J_MAVEN_REPOSITORY": str(repository),
@@ -3421,10 +3435,19 @@ def main() -> None:
                     raise RuntimeError(
                         f"sccache server shutdown failed with exit code {stopped.returncode}"
                     )
-            if build_completed:
-                benchmark["compilerCacheSnapshot"] = publish_compiler_cache_snapshot(
-                    config, env
-                )
+            if compiler_cache_snapshot_metrics(env)["enabled"]:
+                try:
+                    benchmark["compilerCacheSnapshot"] = publish_compiler_cache_snapshot(
+                        config, env
+                    )
+                except Exception as cache_error:
+                    if build_completed:
+                        raise
+                    print(
+                        f"[dl4j-cache-prefetch] snapshot publish after failed build "
+                        f"also failed: {cache_error}",
+                        flush=True,
+                    )
         finally:
             benchmark.update({
                 "status": "complete" if build_completed else "failed",

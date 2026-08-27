@@ -428,6 +428,9 @@ def worker_config(args: argparse.Namespace) -> dict:
     if args.shard not in shards:
         raise ValueError(f"unknown shard {args.shard!r}")
     shard = copy.deepcopy(shards[args.shard])
+    shard["contractDigest"] = hashlib.sha256(
+        json.dumps(shard, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
     variants = shard["build"].get("variants", [])
     variant_name = canonical_variant_name(shard, args.variant)
     selected = [variant for variant in variants if variant["name"] == variant_name]
@@ -482,6 +485,12 @@ def worker_config(args: argparse.Namespace) -> dict:
                 "keyPrefix": "deeplearning4j/releases/toolchain-cache/v1",
             },
         }
+        if shard["build"].get("crossCompileSbsa"):
+            config["compilerCache"]["localSnapshot"] = {
+                "schemaVersion": 1,
+                "name": "sccache-l0",
+                "refresh": True,
+            }
     return config
 
 

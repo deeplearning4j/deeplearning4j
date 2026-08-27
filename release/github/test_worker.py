@@ -1024,6 +1024,7 @@ class WorkerConfigTests(unittest.TestCase):
             config["compilerCache"]["connectionStringEnv"],
         )
         self.assertNotIn("connectionString", config["compilerCache"])
+        self.assertRegex(config["shard"]["contractDigest"], r"^[0-9a-f]{64}$")
         dependency_cache = config["dependencyCache"]
         self.assertEqual(
             "https://dl4jrel26302370c1eeb25.blob.core.windows.net/releases",
@@ -1036,6 +1037,21 @@ class WorkerConfigTests(unittest.TestCase):
                 for target in dependency_cache["targets"]
             },
         )
+
+    def test_dgx_cross_config_uses_refreshable_local_compiler_snapshot(self):
+        config = prepare_worker.worker_config(
+            self.args(
+                shard="linux-arm64-cuda-13-1",
+                variant="base",
+                build_threads="",
+                maven_flags="",
+            )
+        )
+        self.assertEqual(
+            {"schemaVersion": 1, "name": "sccache-l0", "refresh": True},
+            config["compilerCache"]["localSnapshot"],
+        )
+        self.assertRegex(config["shard"]["contractDigest"], r"^[0-9a-f]{64}$")
 
     def test_legacy_direct_zluda_variant_is_normalized(self):
         config = prepare_worker.worker_config(
