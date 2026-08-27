@@ -34,6 +34,15 @@
 #include <unordered_map>
 #include <vector>
 
+// CUDA 13 folded the graph-edge output from cudaStreamGetCaptureInfo_v3 into
+// the unversioned API and removed cudaStreamGetCaptureInfo_v2. libnd4j's
+// capture queries use the v2 contract (no edge metadata), so preserve that
+// exact contract on CUDA 13 by supplying a null edge-data output.
+#if defined(SD_CUDA) && defined(CUDART_VERSION) && CUDART_VERSION >= 13000
+#define cudaStreamGetCaptureInfo_v2(STREAM, STATUS, ID, GRAPH, DEPENDENCIES, NUM_DEPENDENCIES) \
+  cudaStreamGetCaptureInfo((STREAM), (STATUS), (ID), (GRAPH), (DEPENDENCIES), nullptr, (NUM_DEPENDENCIES))
+#endif
+
 namespace sd {
 namespace graph {
 
