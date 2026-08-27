@@ -631,6 +631,9 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("TimeoutLayer::new()", retry_patch)
         self.assertIn("with_io_timeout(Duration::from_secs(30))", retry_patch)
         self.assertIn("RetryLayer::new()", retry_patch)
+        self.assertIn("--- a/src/cache/http_client.rs", retry_patch)
+        self.assertIn("connect_timeout(Duration::from_secs(10))", retry_patch)
+        self.assertIn("timeout(Duration::from_secs(30))", retry_patch)
         for operating_system in ("linux", "windows", "macos"):
             action = (
                 ROOT / f".github/actions/setup-sccache-{operating_system}/action.yml"

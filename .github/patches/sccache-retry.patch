@@ -30,6 +30,26 @@
              .layer(LoggingLayer::default())
              .finish();
 
+--- a/src/cache/http_client.rs
++++ b/src/cache/http_client.rs
+@@ -1,9 +1,15 @@
+ use opendal::raw::HttpClient;
+ use reqwest::ClientBuilder;
++use std::time::Duration;
+
+ /// Set the user agent (helps with monitoring on the server side)
+ pub fn set_user_agent() -> HttpClient {
+     let user_agent = format!("{}/{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+-    let client = ClientBuilder::new().user_agent(user_agent).build().unwrap();
++    let client = ClientBuilder::new()
++        .user_agent(user_agent)
++        .connect_timeout(Duration::from_secs(10))
++        .timeout(Duration::from_secs(30))
++        .build()
++        .unwrap();
+     HttpClient::with(client)
+ }
+
 --- a/src/cache/azure.rs
 +++ b/src/cache/azure.rs
 @@ -13,8 +13,9 @@
