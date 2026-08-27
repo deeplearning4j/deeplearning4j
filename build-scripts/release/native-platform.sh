@@ -3,6 +3,8 @@ set -Eeuo pipefail
 
 : "${DL4J_FAMILY:?DL4J_FAMILY is required}"
 : "${DL4J_BUILD_THREADS:?DL4J_BUILD_THREADS is required}"
+: "${DL4J_PLATFORM:=}"
+: "${DL4J_COMPUTE:=}"
 : "${DL4J_HELPER:=}"
 : "${DL4J_EXTENSION:=}"
 : "${DL4J_PLATFORM_EXTENSION:=}"
@@ -128,8 +130,26 @@ case "${DL4J_FAMILY}" in
     ;;
   linux-cuda|windows-cuda)
     : "${DL4J_CUDA_VERSION:?DL4J_CUDA_VERSION is required}"
-    platform=linux-x86_64
-    [ "${DL4J_FAMILY}" = linux-cuda ] || platform=windows-x86_64
+    cuda_profiles=(-Pcuda)
+    cuda_host=()
+    if [ "${DL4J_FAMILY}" = linux-cuda ]; then
+      platform=${DL4J_PLATFORM:-linux-x86_64}
+      case "${platform}" in
+        linux-x86_64) ;;
+        linux-arm64)
+          cuda_profiles+=(-Posx-aarch64-protoc)
+          cuda_host=(-Djavacpp.platform.compiler=g++)
+          ;;
+        *) printf 'Unsupported Linux CUDA platform: %s\n' "${platform}" >&2; exit 2 ;;
+      esac
+    else
+      platform=windows-x86_64
+      if [ -n "${DL4J_PLATFORM}" ] && [ "${DL4J_PLATFORM}" != "${platform}" ]; then
+        printf 'Windows CUDA requires DL4J_PLATFORM=windows-x86_64, got %s\n' "${DL4J_PLATFORM}" >&2
+        exit 2
+      fi
+    fi
+    compute=${DL4J_COMPUTE:-8.6 9.0}
     modules=":nd4j-cuda-${DL4J_CUDA_VERSION},:nd4j-cuda-${DL4J_CUDA_VERSION}-preset"
     [ -n "${DL4J_LIBND4J_URL}" ] || modules+=,:libnd4j
     append_sdx_modules
@@ -148,7 +168,7 @@ case "${DL4J_FAMILY}" in
       variant=("-Dlibnd4j.classifier=${platform}-cuda-${DL4J_CUDA_VERSION}")
     fi
     win=(); [ "${DL4J_FAMILY}" = linux-cuda ] || win=(-Dlibnd4j.platform=windows-x86_64 -Dlibnd4j.oom.killer=OFF)
-    command=(mvn ${split_flags[@]+"${split_flags[@]}"} ${repo[@]+"${repo[@]}"} -Pcuda "${sdx_profile[@]}" -Dlibnd4j.generate.flatc=ON -Dlibnd4j.sdx.standalone=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda -Pcuda '-Dlibnd4j.compute=8.6 9.0' -Dlibnd4j.cpu.compile.skip=true "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 "-Djavacpp.platform=${platform}" ${win[@]+"${win[@]}"} -DskipTests "${variant[@]}" "${sdx_maven_flags[@]}" -pl "${modules}" ${also_make[@]+"${also_make[@]}"} "${DL4J_MAVEN_GOAL}")
+    command=(mvn ${split_flags[@]+"${split_flags[@]}"} ${repo[@]+"${repo[@]}"} "${cuda_profiles[@]}" "${sdx_profile[@]}" -Dlibnd4j.generate.flatc=ON -Dlibnd4j.sdx.standalone=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda "-Dlibnd4j.compute=${compute}" -Dlibnd4j.cpu.compile.skip=true "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 "-Djavacpp.platform=${platform}" "${cuda_host[@]}" ${win[@]+"${win[@]}"} -DskipTests "${variant[@]}" "${sdx_maven_flags[@]}" -pl "${modules}" ${also_make[@]+"${also_make[@]}"} "${DL4J_MAVEN_GOAL}")
     ;;
   windows-cpu)
     modules=:nd4j-native-preset,:nd4j-native

@@ -928,6 +928,24 @@ def variant_flags(build: dict, variant: dict) -> list[str]:
     return flags
 
 
+def cuda_compute_targets(build: dict) -> str:
+    """Return the one explicit native CUDA architecture contract for a shard."""
+    if build.get("backend") != "cuda" or build.get("zludaVersion"):
+        return ""
+    prefix = "-Dlibnd4j.compute="
+    values = [
+        str(argument)[len(prefix):].strip()
+        for argument in build.get("mavenArgs", [])
+        if str(argument).startswith(prefix)
+    ]
+    if len(values) != 1 or not values[0]:
+        raise ValueError(
+            "CUDA release shards require exactly one non-empty "
+            "-Dlibnd4j.compute architecture contract"
+        )
+    return values[0]
+
+
 def variant_artifact_classifier(build: dict, variant: dict) -> str:
     """Return the attached JavaCPP JAR classifier for a release variant."""
     return f"{build['javacppPlatform']}{variant_platform_extension(variant)}"
@@ -3135,6 +3153,7 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
         )
         variant_env.update({
             "DL4J_FAMILY": family,
+            "DL4J_PLATFORM": str(build.get("javacppPlatform", "")),
             "DL4J_HELPER": shared_variant_helper(variant),
             "DL4J_EXTENSION": variant.get("extension", ""),
             "DL4J_PLATFORM_EXTENSION": variant_platform_extension(variant),
@@ -3144,6 +3163,7 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
             "DL4J_MAVEN_GOAL": "install",
             "DL4J_MAVEN_REPOSITORY": str(repository),
             "DL4J_CUDA_VERSION": str(build.get("cudaVersion", "")),
+            "DL4J_COMPUTE": cuda_compute_targets(build),
             "DL4J_ROCM_VERSION": str(build.get("rocmVersion", "")),
             "DL4J_ZLUDA_VERSION": str(build.get("zludaVersion", "")),
             "DL4J_ZLUDA_TARGET": zluda_target(build),

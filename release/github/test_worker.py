@@ -213,6 +213,35 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("-windows-native-compile-", windows_scopes["compile"])
         self.assertNotEqual(windows_scopes["base"], windows_scopes["compile"])
 
+    def test_linux_arm64_cuda_13_1_is_a_native_dgx_spark_matrix(self):
+        rows = prepare_worker.workflow_rows(
+            self.plan,
+            self.matrix,
+            "build-deploy-linux-arm64-cuda-13.1.yml",
+            "linux",
+        )
+        self.assertEqual(["base", "cudnn", "compile"], [row["variant"] for row in rows])
+        self.assertEqual(
+            [
+                "linux-arm64-cuda-13-1",
+                "linux-arm64-cuda-13-1-cudnn",
+                "linux-arm64-cuda-13-1-compile",
+            ],
+            [row["artifactId"] for row in rows],
+        )
+        self.assertEqual({"ubuntu-22.04-arm"}, {row["runner"] for row in rows})
+        self.assertEqual(
+            {"nvidia/cuda:13.1.2-cudnn-devel-ubuntu24.04"},
+            {row["container"] for row in rows},
+        )
+        shard = prepare_worker.plan_shards(self.plan)["linux-arm64-cuda-13-1"]
+        self.assertEqual("arm64", shard["architecture"])
+        self.assertEqual("linux-arm64", shard["build"]["javacppPlatform"])
+        self.assertEqual(["-Dlibnd4j.compute=9.0 12.1"], shard["build"]["mavenArgs"])
+        self.assertNotIn(
+            "nd4j-cuda-13.1-platform", shard["artifactRules"]["artifactIds"]
+        )
+
     def test_android_arm64_workflow_includes_cpu_and_vulkan_shards(self):
         rows = prepare_worker.workflow_rows(
             self.plan, self.matrix, "build-deploy-android-arm64.yml", "linux"

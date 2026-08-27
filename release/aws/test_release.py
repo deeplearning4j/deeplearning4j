@@ -3040,6 +3040,66 @@ class ReleaseValidationTest(unittest.TestCase):
             self.assertGreaterEqual(compile_guard, 0)
             self.assertGreater(source.index("#endif", call), call)
 
+    def test_dgx_spark_cuda_classifier_contract_is_wired_end_to_end(self):
+        root = Path(__file__).parents[2]
+        plan = json.loads((root / "release/aws/release-plan.json").read_text(encoding="utf-8"))
+        shard = next(
+            item for item in plan["shards"] if item["id"] == "linux-arm64-cuda-13-1"
+        )
+        build = shard["build"]
+        self.assertEqual("arm64", shard["architecture"])
+        self.assertEqual("linux-arm64", build["javacppPlatform"])
+        self.assertEqual("13.1", build["cudaVersion"])
+        self.assertEqual("9.0 12.1", build_platform.cuda_compute_targets(build))
+        self.assertEqual(
+            "nvidia/cuda:13.1.2-cudnn-devel-ubuntu24.04",
+            shard["containerImage"],
+        )
+
+        self.assertNotIn("nd4j-cuda-13.1-platform", shard["artifactRules"]["artifactIds"])
+        self.assertNotIn(":nd4j-cuda-13.1-platform", build["modules"])
+
+        with tempfile.TemporaryDirectory() as temp:
+            contract = Path(temp) / "cuda-architecture-contract.cmake"
+            contract.write_text(
+                "cmake_minimum_required(VERSION 3.18)\n"
+                "set(SD_CUDA ON)\n"
+                "set(SD_ZLUDA OFF)\n"
+                "set(SD_GCC_FUNCTRACE OFF)\n"
+                f'include("{root / "libnd4j/cmake/CudaConfiguration.cmake"}")\n'
+                'set(COMPUTE "9.0 12.1")\n'
+                "setup_cuda_architectures_early()\n"
+                'if(NOT CUDA_ARCHITECTURES STREQUAL "90;121")\n'
+                '  message(FATAL_ERROR "architecture mismatch: ${CUDA_ARCHITECTURES}")\n'
+                "endif()\n"
+                'configure_cuda_architecture_flags("9.0 12.1")\n'
+                'if(NOT CUDA_ARCH_FLAGS MATCHES "compute_90,code=sm_90" OR\n'
+                '   NOT CUDA_ARCH_FLAGS MATCHES "compute_121,code=sm_121")\n'
+                '  message(FATAL_ERROR "flag mismatch: ${CUDA_ARCH_FLAGS}")\n'
+                "endif()\n",
+                encoding="utf-8",
+            )
+            valid = subprocess.run(
+                ["cmake", "-P", str(contract)], capture_output=True, text=True
+            )
+            self.assertEqual(0, valid.returncode, valid.stdout + valid.stderr)
+
+            invalid = Path(temp) / "cuda-architecture-invalid.cmake"
+            invalid.write_text(
+                "cmake_minimum_required(VERSION 3.18)\n"
+                "set(SD_CUDA ON)\n"
+                "set(SD_ZLUDA OFF)\n"
+                "set(SD_GCC_FUNCTRACE OFF)\n"
+                f'include("{root / "libnd4j/cmake/CudaConfiguration.cmake"}")\n'
+                'configure_cuda_architecture_flags("12..1")\n',
+                encoding="utf-8",
+            )
+            rejected = subprocess.run(
+                ["cmake", "-P", str(invalid)], capture_output=True, text=True
+            )
+            self.assertNotEqual(0, rejected.returncode)
+            self.assertIn("Invalid CUDA compute target '12..1'", rejected.stderr)
+
     def test_shared_native_script_emits_specialized_classifiers(self):
         root = Path(__file__).parents[2]
         script = root / "build-scripts/release/native-platform.sh"
@@ -3054,6 +3114,22 @@ class ReleaseValidationTest(unittest.TestCase):
         cuda = command(DL4J_FAMILY="linux-cuda", DL4J_CUDA_VERSION="12.9", DL4J_HELPER="compile")
         self.assertIn("-Dlibnd4j.classifier=linux-x86_64-cuda-12.9-compile", cuda)
         self.assertIn("-Djavacpp.platform.extension=-compile", cuda)
+
+        dgx_spark = command(
+            DL4J_FAMILY="linux-cuda",
+            DL4J_PLATFORM="linux-arm64",
+            DL4J_CUDA_VERSION="13.1",
+            DL4J_COMPUTE="9.0 12.1",
+            DL4J_HELPER="compile",
+        )
+        self.assertIn("-Djavacpp.platform=linux-arm64", dgx_spark)
+        self.assertIn("-Djavacpp.platform.compiler=g++", dgx_spark)
+        self.assertIn("-Dlibnd4j.compute=9.0 12.1", dgx_spark)
+        self.assertIn("-Posx-aarch64-protoc", dgx_spark)
+        self.assertIn(
+            "-Dlibnd4j.classifier=linux-arm64-cuda-13.1-compile",
+            dgx_spark,
+        )
 
         windows_onednn = command(DL4J_FAMILY="windows-cpu", DL4J_HELPER="onednn")
         self.assertIn("-Dlibnd4j.helper=onednn", windows_onednn)
@@ -3348,6 +3424,7 @@ class ReleaseValidationTest(unittest.TestCase):
         shard = {
             "id": "linux-x86_64-cuda-12-9", "os": "linux", "workloads": ["maven"],
             "build": {"backend": "cuda", "cudaVersion": "12.9", "javacppPlatform": "linux-x86_64",
+                      "mavenArgs": ["-Dlibnd4j.compute=8.6 9.0"],
                       "modules": [], "variants": [{"name": "compile", "triton": True}]},
         }
         calls = []
@@ -3356,6 +3433,8 @@ class ReleaseValidationTest(unittest.TestCase):
             build_platform.build_native_platform(Path("/source"), shard, Path("/m2"), {}, None)
         self.assertEqual("compile", calls[0][1]["DL4J_HELPER"])
         self.assertEqual("12.9", calls[0][1]["DL4J_CUDA_VERSION"])
+        self.assertEqual("linux-x86_64", calls[0][1]["DL4J_PLATFORM"])
+        self.assertEqual("8.6 9.0", calls[0][1]["DL4J_COMPUTE"])
 
     def test_aws_cross_platform_invokes_the_shared_workflow_script(self):
         calls = []
