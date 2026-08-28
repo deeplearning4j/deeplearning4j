@@ -1562,6 +1562,16 @@ def build_cross_platform(source: Path, build: dict, repository: Path, env: dict[
         )
 
 
+def select_openblas_shared_library(root: Path) -> Path:
+    candidates = sorted(
+        (path for path in root.rglob("libopenblas.so*") if path.is_file()),
+        key=lambda path: (path.name != "libopenblas.so", len(path.name), path.as_posix()),
+    )
+    if not candidates:
+        raise RuntimeError(f"OpenBLAS classifier has no libopenblas.so shared library under {root}")
+    return candidates[0].resolve()
+
+
 def prepare_openblas(
     source: Path,
     build: dict,
@@ -1602,6 +1612,10 @@ def prepare_openblas(
     if not headers:
         raise RuntimeError(f"OpenBLAS archive has no include/cblas.h: {archive}")
     env["OPENBLAS_PATH"] = str(headers[0].parent.parent)
+    env["OPENBLAS_LIBRARY"] = str(
+        select_openblas_shared_library(Path(env["OPENBLAS_PATH"]))
+    )
+    print(f"[dl4j-openblas] library={env['OPENBLAS_LIBRARY']}", flush=True)
     if not restored:
         publish_toolchain_dependency(
             config or {},
@@ -3075,13 +3089,16 @@ def android_cmake_args(source: Path, build: dict, variant: dict, env: dict[str, 
     arm64 = build["javacppPlatform"] == "android-arm64"
     abi, toolchain = ("arm64-v8a", "android-arm64.cmake") if arm64 else ("x86_64", "android-x86_64.cmake")
     api = android_api_level(variant)
+    openblas_library = Path(
+        env.get("OPENBLAS_LIBRARY", str(Path(env["OPENBLAS_PATH"]) / "libopenblas.so"))
+    )
     return " ".join([
         f"-DCMAKE_TOOLCHAIN_FILE={source / 'libnd4j/cmake' / toolchain}", "-G Ninja",
         "-DSD_ANDROID_BUILD=true", "-DSD_BUILD_WITH_JAVA=OFF",
         f"-DANDROID_ABI={abi}", f"-DANDROID_PLATFORM=android-{api}",
         f"-DANDROID_NDK={env['ANDROID_NDK']}", "-DCMAKE_BUILD_TYPE=Release", "-DCMAKE_MAKE_PROGRAM=/usr/bin/ninja",
-        f"-DBLAS_LIBRARIES={Path(env['OPENBLAS_PATH']) / 'libopenblas.so'}",
-        f"-DLAPACK_LIBRARIES={Path(env['OPENBLAS_PATH']) / 'libopenblas.so'}",
+        f"-DBLAS_LIBRARIES={openblas_library}",
+        f"-DLAPACK_LIBRARIES={openblas_library}",
     ])
 
 
@@ -3094,13 +3111,13 @@ def cuda_sbsa_cross_enabled(build: dict) -> bool:
 def cuda_sbsa_cross_cmake_args(source: Path, env: dict[str, str]) -> str:
     target_root = Path(env.get("CUDA_SBSA_TARGET_ROOT", "/usr/local/cuda/targets/sbsa-linux"))
     target_jdk = Path(env.get("JAVA_AARCH64_HOME", "/opt/temurin-11-aarch64"))
-    openblas_root = Path(env["OPENBLAS_PATH"])
+    openblas_library = Path(env["OPENBLAS_LIBRARY"])
     return " ".join([
         f"-DCMAKE_TOOLCHAIN_FILE={source / 'libnd4j/cmake/linux-arm64-cuda-cross.cmake'}",
         f"-DCUDAToolkit_TARGET_DIR={target_root}",
         f"-DJAVA_HOME_PATH={target_jdk}",
-        f"-DBLAS_LIBRARIES={openblas_root / 'libopenblas.so'}",
-        f"-DLAPACK_LIBRARIES={openblas_root / 'libopenblas.so'}",
+        f"-DBLAS_LIBRARIES={openblas_library}",
+        f"-DLAPACK_LIBRARIES={openblas_library}",
     ])
 
 

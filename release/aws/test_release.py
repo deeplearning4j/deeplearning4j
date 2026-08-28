@@ -3131,11 +3131,21 @@ class ReleaseValidationTest(unittest.TestCase):
                 "CUDA_SBSA_TARGET_ROOT": "/usr/local/cuda/targets/sbsa-linux",
                 "JAVA_AARCH64_HOME": "/opt/temurin-11-aarch64",
                 "OPENBLAS_PATH": "/tmp/openblas/linux-arm64",
+                "OPENBLAS_LIBRARY": "/tmp/openblas/linux-arm64/libopenblas.so.0",
             },
         )
         self.assertIn("-DJAVA_HOME_PATH=/opt/temurin-11-aarch64", sbsa_args)
-        self.assertIn("-DBLAS_LIBRARIES=/tmp/openblas/linux-arm64/libopenblas.so", sbsa_args)
+        self.assertIn("-DBLAS_LIBRARIES=/tmp/openblas/linux-arm64/libopenblas.so.0", sbsa_args)
         self.assertNotIn("linux-arm64/lib/libopenblas.so", sbsa_args)
+
+        with tempfile.TemporaryDirectory() as temp:
+            openblas_root = Path(temp)
+            versioned = openblas_root / "libopenblas.so.0"
+            versioned.write_bytes(b"openblas")
+            self.assertEqual(
+                versioned.resolve(),
+                build_platform.select_openblas_shared_library(openblas_root),
+            )
 
         cuda_linking = (root / "libnd4j/cmake/CudaConfiguration.cmake").read_text()
         sdx_linking = (root / "libnd4j/cmake/BuildSDX.cmake").read_text()
