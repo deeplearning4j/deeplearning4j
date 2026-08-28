@@ -2907,6 +2907,11 @@ function(setup_triton)
         set(_TRITON_PATCH_ARGS
             -DSOURCE_DIR=${TRITON_SOURCE_DIR}
         )
+        if(CMAKE_CROSSCOMPILING)
+            list(APPEND _TRITON_PATCH_ARGS
+                -DLLVM_HOST_TABLEGEN=${_TRITON_LLVM_NATIVE_TOOL_DIR}/llvm-tblgen${_TRITON_HOST_EXE_SUFFIX}
+                -DMLIR_HOST_TABLEGEN=${_TRITON_LLVM_NATIVE_TOOL_DIR}/mlir-tblgen${_TRITON_HOST_EXE_SUFFIX})
+        endif()
         if(NOT "amd" IN_LIST TRITON_CODEGEN_BACKENDS)
             list(APPEND _TRITON_PATCH_ARGS -DREMOVE_AMD=ON)
         endif()

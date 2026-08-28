@@ -40,6 +40,39 @@ macro(patch_file_remove_lines FILE_PATH PATTERN)
     endif()
 endmacro()
 
+# Cross builds link against target LLVM/MLIR packages, but every TableGen
+# executable runs on the build host. MLIRConfig points MLIR_TABLEGEN_EXE back
+# at the target install unless we override it after package discovery.
+if(LLVM_HOST_TABLEGEN OR MLIR_HOST_TABLEGEN)
+    if(NOT EXISTS "${LLVM_HOST_TABLEGEN}" OR NOT EXISTS "${MLIR_HOST_TABLEGEN}")
+        message(FATAL_ERROR
+            "Cross-building Triton requires executable LLVM/MLIR host tablegen tools: "
+            "llvm='${LLVM_HOST_TABLEGEN}' mlir='${MLIR_HOST_TABLEGEN}'")
+    endif()
+    set(_TRITON_ROOT_CMAKE "${SOURCE_DIR}/CMakeLists.txt")
+    file(READ "${_TRITON_ROOT_CMAKE}" _triton_root_content)
+    string(FIND "${_triton_root_content}"
+        "PATCHED_BY_LIBND4J_GPU_HOST_TABLEGEN" _host_tablegen_marker)
+    if(_host_tablegen_marker EQUAL -1)
+        set(_mlir_find_anchor "find_package(MLIR REQUIRED CONFIG PATHS \${MLIR_DIR})")
+        set(_mlir_find_replacement
+            "${_mlir_find_anchor}\n"
+            "# PATCHED_BY_LIBND4J_GPU_HOST_TABLEGEN: generators are build-host tools.\n"
+            "set(LLVM_TABLEGEN_EXE \"${LLVM_HOST_TABLEGEN}\" CACHE FILEPATH \"Host llvm-tblgen\" FORCE)\n"
+            "set(MLIR_TABLEGEN_EXE \"${MLIR_HOST_TABLEGEN}\" CACHE FILEPATH \"Host mlir-tblgen\" FORCE)")
+        string(FIND "${_triton_root_content}" "${_mlir_find_anchor}" _mlir_find_pos)
+        if(_mlir_find_pos EQUAL -1)
+            message(FATAL_ERROR
+                "patch_triton: could not find MLIR package anchor for host TableGen override")
+        endif()
+        string(REPLACE "${_mlir_find_anchor}" "${_mlir_find_replacement}"
+            _triton_root_content "${_triton_root_content}")
+        file(WRITE "${_TRITON_ROOT_CMAKE}" "${_triton_root_content}")
+        message(STATUS
+            "Patched ${_TRITON_ROOT_CMAKE}: host LLVM/MLIR TableGen executables")
+    endif()
+endif()
+
 # === Part 1: AMD dialect removal (when REMOVE_AMD is set) ===
 if(REMOVE_AMD)
     set(_REG_H "${SOURCE_DIR}/bin/RegisterTritonDialects.h")

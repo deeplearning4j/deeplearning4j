@@ -3753,6 +3753,20 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("SD_ANDROID_MLIR_EXECUTION_ENGINE_V2", llvm_patch)
         self.assertIn("unsupported MLIR execution-engine option layout", llvm_patch)
 
+    def test_triton_gpu_cross_patch_binds_host_tablegen_after_target_mlir_discovery(self):
+        root = Path(__file__).parents[2]
+        patch_script = (root / "libnd4j/cmake/patch_triton.cmake").read_text(
+            encoding="utf-8"
+        )
+        dependencies = (root / "libnd4j/cmake/Dependencies.cmake").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("PATCHED_BY_LIBND4J_GPU_HOST_TABLEGEN", patch_script)
+        self.assertIn('set(LLVM_TABLEGEN_EXE \\"${LLVM_HOST_TABLEGEN}\\"', patch_script)
+        self.assertIn('set(MLIR_TABLEGEN_EXE \\"${MLIR_HOST_TABLEGEN}\\"', patch_script)
+        self.assertIn("-DLLVM_HOST_TABLEGEN=${_TRITON_LLVM_NATIVE_TOOL_DIR}", dependencies)
+        self.assertIn("-DMLIR_HOST_TABLEGEN=${_TRITON_LLVM_NATIVE_TOOL_DIR}", dependencies)
+
     def test_external_llvm_patch_forces_android_execution_engine_after_arch_check(self):
         root = Path(__file__).parents[2]
         patch_script = root / "libnd4j/cmake/patch_external_llvm_coexistence.cmake"
