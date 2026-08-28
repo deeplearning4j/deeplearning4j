@@ -978,6 +978,7 @@ class WorkflowMatrixTests(unittest.TestCase):
         setup = (ROOT / "libnd4j/cmake/Setup.cmake").read_text()
         compiler_flags = (ROOT / "libnd4j/cmake/CompilerFlags.cmake").read_text()
         cuda_config = (ROOT / "libnd4j/cmake/CudaConfiguration.cmake").read_text()
+        smart_ccache = (ROOT / "libnd4j/cmake/SmartCcache.cmake").read_text()
         build_script = (ROOT / "libnd4j/buildnativeoperations.sh").read_text()
         nvcc_filter = (ROOT / "libnd4j/cmake/nvcc_filter.py").read_text()
 
@@ -990,6 +991,8 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn('if verbose_enabled():', nvcc_filter)
         self.assertNotIn('_log_count', nvcc_filter)
         self.assertIn('=== NVCC FAILED', nvcc_filter)
+        self.assertIn('-print-prog-name=ld', smart_ccache)
+        self.assertIn('compiler_linker', smart_ccache)
 
 
 class WorkerConfigTests(unittest.TestCase):
