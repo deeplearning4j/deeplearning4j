@@ -488,7 +488,7 @@ def worker_config(args: argparse.Namespace) -> dict:
         if shard["build"].get("crossCompileSbsa"):
             config["compilerCache"]["localSnapshot"] = {
                 "schemaVersion": 1,
-                "name": "sccache-l0",
+                "name": "ccache-l0",
                 "refresh": True,
             }
     return config

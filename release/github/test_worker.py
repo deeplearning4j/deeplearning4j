@@ -625,12 +625,8 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("ONEDNN_CMAKE_ARGS -DANDROID_ABI=", dependencies)
         self.assertIn("ONEDNN_CMAKE_ARGS -DANDROID_PLATFORM=", dependencies)
         self.assertIn("DL4J_FLATC_EXECUTABLE", dependencies)
-        self.assertEqual(
-            4,
-            libnd4j_pom.count(
-                "<CMAKE_ARGUMENTS>${libnd4j.cmake}</CMAKE_ARGUMENTS>"
-            ),
-        )
+        self.assertEqual(4, libnd4j_pom.count("<argument>--cmake-arguments</argument>"))
+        self.assertEqual(4, libnd4j_pom.count("<argument>${libnd4j.cmake}</argument>"))
 
     def test_sccache_actions_support_github_and_azure_backends(self):
         retry_patch = (ROOT / ".github/patches/sccache-retry.patch").read_text()
@@ -1055,7 +1051,7 @@ class WorkerConfigTests(unittest.TestCase):
             )
         )
         self.assertEqual(
-            {"schemaVersion": 1, "name": "sccache-l0", "refresh": True},
+            {"schemaVersion": 1, "name": "ccache-l0", "refresh": True},
             config["compilerCache"]["localSnapshot"],
         )
         self.assertRegex(config["shard"]["contractDigest"], r"^[0-9a-f]{64}$")

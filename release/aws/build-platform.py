@@ -695,7 +695,7 @@ def _bounded_sccache_seed_launcher(cache_dir: Path, compiler_cache: str) -> str:
     return str(launcher)
 
 
-def compiler_cache_snapshot_identity(config: dict) -> str | None:
+def compiler_cache_snapshot_name(config: dict) -> str | None:
     remote = config.get("compilerCache")
     if not isinstance(remote, dict):
         return None
@@ -704,8 +704,19 @@ def compiler_cache_snapshot_identity(config: dict) -> str | None:
         return None
     if snapshot.get("schemaVersion") != 1:
         raise ValueError("compilerCache.localSnapshot.schemaVersion must be 1")
-    if snapshot.get("name") != "sccache-l0":
-        raise ValueError("compilerCache.localSnapshot.name must be 'sccache-l0'")
+    name = snapshot.get("name")
+    if name not in {"sccache-l0", "ccache-l0"}:
+        raise ValueError(
+            "compilerCache.localSnapshot.name must be 'sccache-l0' or 'ccache-l0'"
+        )
+    return name
+
+
+def compiler_cache_snapshot_identity(config: dict) -> str | None:
+    name = compiler_cache_snapshot_name(config)
+    if name is None:
+        return None
+    remote = config["compilerCache"]
     shard = config.get("shard")
     if not isinstance(shard, dict):
         raise ValueError("compilerCache.localSnapshot requires a shard contract")
@@ -717,10 +728,11 @@ def compiler_cache_snapshot_identity(config: dict) -> str | None:
         )
     operating_system, architecture = host_platform()
     return toolchain_cache_identity(
-        "sccache-l0",
+        name,
         {
             "snapshotSchemaVersion": 1,
-            "sccacheVersion": SCCACHE_VERSION,
+            "cacheImplementation": name,
+            "cacheVersion": SCCACHE_VERSION if name == "sccache-l0" else "system",
             "platform": operating_system,
             "architecture": architecture,
             "backend": _required_cache_value(remote, "backend"),
@@ -738,10 +750,11 @@ def restore_compiler_cache_snapshot(
     if identity is None or toolchain_cache_transport(config, env) is None:
         return
     started = time.monotonic()
+    snapshot_name = compiler_cache_snapshot_name(config)
     restored = restore_toolchain_dependency(
         config,
         env,
-        name="sccache-l0",
+        name=snapshot_name,
         identity=identity,
         destination=cache_dir,
     )
@@ -753,7 +766,7 @@ def restore_compiler_cache_snapshot(
         "DL4J_SCCACHE_SNAPSHOT_RESTORE_SECONDS": str(duration),
     })
     print(
-        f"[dl4j-cache-prefetch] name=sccache-l0 identity={identity} "
+        f"[dl4j-cache-prefetch] name={snapshot_name} identity={identity} "
         f"status={'hit' if restored else 'miss'} durationSeconds={duration}",
         flush=True,
     )
@@ -789,12 +802,13 @@ def publish_compiler_cache_snapshot(config: dict, env: dict[str, str]) -> dict:
         metrics["publishStatus"] = "not-required"
         return metrics
     cache_dir = Path(env["DL4J_SCCACHE_SNAPSHOT_DIR"])
+    snapshot_name = compiler_cache_snapshot_name(config)
     expanded_bytes = directory_size_bytes(cache_dir)
     started = time.monotonic()
     publish_toolchain_dependency(
         config,
         env,
-        name="sccache-l0",
+        name=snapshot_name,
         identity=metrics["identity"],
         source=cache_dir,
     )
@@ -805,7 +819,7 @@ def publish_compiler_cache_snapshot(config: dict, env: dict[str, str]) -> dict:
         "expandedBytes": expanded_bytes,
     })
     print(
-        f"[dl4j-cache-prefetch] name=sccache-l0 identity={metrics['identity']} "
+        f"[dl4j-cache-prefetch] name={snapshot_name} identity={metrics['identity']} "
         f"status=published expandedBytes={expanded_bytes} durationSeconds={duration}",
         flush=True,
     )
@@ -832,6 +846,26 @@ def configure_compiler_cache(
             raise ValueError("DL4J_SCCACHE_DIR must be an absolute path")
         restore_compiler_cache_snapshot(config, env, cache_dir)
         cache_dir.mkdir(parents=True, exist_ok=True)
+        snapshot_name = compiler_cache_snapshot_name(config)
+        if snapshot_name == "ccache-l0":
+            compiler_cache = shutil.which("ccache")
+            if not compiler_cache:
+                raise RuntimeError("ccache-l0 snapshot mode requires ccache on PATH")
+            env.pop("SD_USE_SCCACHE", None)
+            _configure_compiler_launchers(env, compiler_cache)
+            env.update({
+                "CCACHE_DIR": str(cache_dir),
+                "CCACHE_BASEDIR": str(source.resolve()),
+                "CCACHE_NOHASHDIR": "true",
+                "CCACHE_MAXSIZE": "100G",
+            })
+            print(
+                f"[dl4j-cache] backend={backend} mode=snapshot+ccache "
+                f"restoreStatus={env.get('DL4J_SCCACHE_SNAPSHOT_RESTORED', 'false')}",
+                flush=True,
+            )
+            run([compiler_cache, "--zero-stats"], source, env)
+            return compiler_cache, False
         compiler_cache = ensure_cached_sccache(cache_dir, config, env)
         snapshot_enabled = bool(env.get("DL4J_SCCACHE_SNAPSHOT_IDENTITY"))
         snapshot_restored = env.get("DL4J_SCCACHE_SNAPSHOT_RESTORED") == "true"

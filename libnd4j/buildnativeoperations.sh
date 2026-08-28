@@ -1419,6 +1419,10 @@ do
             CMAKE_ARGUMENTS="$CMAKE_ARGUMENTS -DGENERATE_FLATC=ON"
             shift # past argument
             ;;
+        --cmake-arguments)
+            CMAKE_ARGUMENTS="$CMAKE_ARGUMENTS $value"
+            shift # past argument
+            ;;
         -ptxas|--ptxas-info)
             PTXAS_INFO="$value"
             shift # past argument

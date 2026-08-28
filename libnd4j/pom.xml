@@ -622,11 +622,12 @@
                                     <skip>${libnd4j.cuda.compile.skip}</skip>
                                     <environmentVariables>
                                         <BUILD_WITH_JAVA>${libnd4j.build.with.java}</BUILD_WITH_JAVA>
-                                        <CMAKE_ARGUMENTS>${libnd4j.cmake}</CMAKE_ARGUMENTS>
                                     </environmentVariables>
                                     <buildCommand>
                                         <program>${libnd4j.buildprogram}</program>
                                         <argument>buildnativeoperations.sh</argument>
+                                        <argument>--cmake-arguments</argument>
+                                        <argument>${libnd4j.cmake}</argument>
                                         <argument>--output-path</argument>
                                         <argument>${libnd4j.outputPath}</argument>
                                         <argument>--build-type</argument>
@@ -898,11 +899,12 @@
                                     <skip>${libnd4j.tpu.compile.skip}</skip>
                                     <environmentVariables>
                                         <BUILD_WITH_JAVA>${libnd4j.build.with.java}</BUILD_WITH_JAVA>
-                                        <CMAKE_ARGUMENTS>${libnd4j.cmake}</CMAKE_ARGUMENTS>
                                     </environmentVariables>
                                     <buildCommand>
                                         <program>${libnd4j.buildprogram}</program>
                                         <argument>buildnativeoperations.sh</argument>
+                                        <argument>--cmake-arguments</argument>
+                                        <argument>${libnd4j.cmake}</argument>
                                         <argument>--output-path</argument>
                                         <argument>${libnd4j.outputPath}</argument>
                                         <argument>--build-type</argument>
@@ -1074,11 +1076,12 @@
                                     <skip>${libnd4j.hexagon.compile.skip}</skip>
                                     <environmentVariables>
                                         <BUILD_WITH_JAVA>${libnd4j.build.with.java}</BUILD_WITH_JAVA>
-                                        <CMAKE_ARGUMENTS>${libnd4j.cmake}</CMAKE_ARGUMENTS>
                                     </environmentVariables>
                                     <buildCommand>
                                         <program>${libnd4j.buildprogram}</program>
                                         <argument>buildnativeoperations.sh</argument>
+                                        <argument>--cmake-arguments</argument>
+                                        <argument>${libnd4j.cmake}</argument>
                                         <argument>--output-path</argument>
                                         <argument>${libnd4j.outputPath}</argument>
                                         <argument>--build-type</argument>
@@ -1336,11 +1339,12 @@
                                     <skip>${libnd4j.native.compile.skip}</skip>
                                     <environmentVariables>
                                         <BUILD_WITH_JAVA>${libnd4j.build.with.java}</BUILD_WITH_JAVA>
-                                        <CMAKE_ARGUMENTS>${libnd4j.cmake}</CMAKE_ARGUMENTS>
                                     </environmentVariables>
                                     <buildCommand>
                                         <program>${libnd4j.buildprogram}</program>
                                         <argument>buildnativeoperations.sh</argument>
+                                        <argument>--cmake-arguments</argument>
+                                        <argument>${libnd4j.cmake}</argument>
                                         <argument>--output-path</argument>
                                         <argument>${libnd4j.outputPath}</argument>
                                         <argument>--build-type</argument>
