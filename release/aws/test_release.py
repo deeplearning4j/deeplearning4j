@@ -3192,10 +3192,15 @@ class ReleaseValidationTest(unittest.TestCase):
             DL4J_CUDA_THREADS="1",
             DL4J_CUDA_SPLIT_COMPILE="1",
             DL4J_CUDA_CROSS_SBSA="1",
+            DL4J_CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=/tmp/linux-arm64-cuda-cross.cmake",
             DL4J_HELPER="compile",
         )
         self.assertIn("-Djavacpp.platform=linux-arm64", dgx_spark)
         self.assertIn("-Djavacpp.platform.compiler=/usr/bin/aarch64-linux-gnu-g++", dgx_spark)
+        self.assertIn(
+            "-Dlibnd4j.cmake=-DCMAKE_TOOLCHAIN_FILE=/tmp/linux-arm64-cuda-cross.cmake",
+            dgx_spark,
+        )
         self.assertIn("-Dlibnd4j.compute=12.1", dgx_spark)
         self.assertIn("-Dlibnd4j.cuda.threads=1", dgx_spark)
         self.assertIn("-Dlibnd4j.cuda.splitcompile=1", dgx_spark)

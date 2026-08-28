@@ -142,9 +142,9 @@ case "${DL4J_FAMILY}" in
         linux-arm64)
           cuda_profiles+=(-Posx-aarch64-protoc)
           if [ "${DL4J_CUDA_CROSS_SBSA}" = 1 ]; then
-            cuda_host=(-Djavacpp.platform.compiler=/usr/bin/aarch64-linux-gnu-g++)
+            cuda_host=(-Djavacpp.platform.compiler=/usr/bin/aarch64-linux-gnu-g++ "-Dlibnd4j.cmake=${DL4J_CMAKE_ARGS}")
           else
-            cuda_host=(-Djavacpp.platform.compiler=g++)
+            cuda_host=(-Djavacpp.platform.compiler=g++ "-Dlibnd4j.cmake=${DL4J_CMAKE_ARGS}")
           fi
           ;;
         *) printf 'Unsupported Linux CUDA platform: %s\n' "${platform}" >&2; exit 2 ;;

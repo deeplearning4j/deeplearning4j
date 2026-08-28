@@ -161,6 +161,7 @@
         <libnd4j.instantiation.report>OFF</libnd4j.instantiation.report>
         <libnd4j.instantiation.verbose>OFF</libnd4j.instantiation.verbose>
         <libnd4j.analyze.templates>OFF</libnd4j.analyze.templates>
+        <libnd4j.cmake></libnd4j.cmake>
         <libnd4j.cmake.only>OFF</libnd4j.cmake.only>
         <libnd4j.compiler></libnd4j.compiler>
         <libnd4j.link.only>OFF</libnd4j.link.only>
@@ -621,6 +622,7 @@
                                     <skip>${libnd4j.cuda.compile.skip}</skip>
                                     <environmentVariables>
                                         <BUILD_WITH_JAVA>${libnd4j.build.with.java}</BUILD_WITH_JAVA>
+                                        <CMAKE_ARGUMENTS>${libnd4j.cmake}</CMAKE_ARGUMENTS>
                                     </environmentVariables>
                                     <buildCommand>
                                         <program>${libnd4j.buildprogram}</program>
@@ -896,6 +898,7 @@
                                     <skip>${libnd4j.tpu.compile.skip}</skip>
                                     <environmentVariables>
                                         <BUILD_WITH_JAVA>${libnd4j.build.with.java}</BUILD_WITH_JAVA>
+                                        <CMAKE_ARGUMENTS>${libnd4j.cmake}</CMAKE_ARGUMENTS>
                                     </environmentVariables>
                                     <buildCommand>
                                         <program>${libnd4j.buildprogram}</program>
@@ -1071,6 +1074,7 @@
                                     <skip>${libnd4j.hexagon.compile.skip}</skip>
                                     <environmentVariables>
                                         <BUILD_WITH_JAVA>${libnd4j.build.with.java}</BUILD_WITH_JAVA>
+                                        <CMAKE_ARGUMENTS>${libnd4j.cmake}</CMAKE_ARGUMENTS>
                                     </environmentVariables>
                                     <buildCommand>
                                         <program>${libnd4j.buildprogram}</program>
@@ -1332,6 +1336,7 @@
                                     <skip>${libnd4j.native.compile.skip}</skip>
                                     <environmentVariables>
                                         <BUILD_WITH_JAVA>${libnd4j.build.with.java}</BUILD_WITH_JAVA>
+                                        <CMAKE_ARGUMENTS>${libnd4j.cmake}</CMAKE_ARGUMENTS>
                                     </environmentVariables>
                                     <buildCommand>
                                         <program>${libnd4j.buildprogram}</program>

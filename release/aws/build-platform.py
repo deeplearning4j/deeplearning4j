@@ -3250,8 +3250,8 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
             variant_env["DL4J_CMAKE_ARGS"] = android_cmake_args(source, build, variant, variant_env)
         if cuda_sbsa_cross_enabled(build):
             variant_env["DL4J_CUDA_CROSS_SBSA"] = "1"
-            existing_cmake_args = variant_env.get("CMAKE_ARGUMENTS", "").strip()
-            variant_env["CMAKE_ARGUMENTS"] = " ".join(filter(None, (
+            existing_cmake_args = variant_env.get("DL4J_CMAKE_ARGS", "").strip()
+            variant_env["DL4J_CMAKE_ARGS"] = " ".join(filter(None, (
                 existing_cmake_args,
                 cuda_sbsa_cross_cmake_args(source, variant_env),
             )))

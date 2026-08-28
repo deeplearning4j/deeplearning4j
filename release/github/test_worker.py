@@ -621,9 +621,16 @@ class WorkflowMatrixTests(unittest.TestCase):
 
     def test_external_dependencies_receive_complete_android_and_host_tool_contracts(self):
         dependencies = (ROOT / "libnd4j/cmake/Dependencies.cmake").read_text()
+        libnd4j_pom = (ROOT / "libnd4j/pom.xml").read_text()
         self.assertIn("ONEDNN_CMAKE_ARGS -DANDROID_ABI=", dependencies)
         self.assertIn("ONEDNN_CMAKE_ARGS -DANDROID_PLATFORM=", dependencies)
         self.assertIn("DL4J_FLATC_EXECUTABLE", dependencies)
+        self.assertEqual(
+            4,
+            libnd4j_pom.count(
+                "<CMAKE_ARGUMENTS>${libnd4j.cmake}</CMAKE_ARGUMENTS>"
+            ),
+        )
 
     def test_sccache_actions_support_github_and_azure_backends(self):
         retry_patch = (ROOT / ".github/patches/sccache-retry.patch").read_text()
