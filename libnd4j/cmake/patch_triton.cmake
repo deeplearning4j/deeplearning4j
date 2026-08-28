@@ -55,7 +55,7 @@ if(LLVM_HOST_TABLEGEN OR MLIR_HOST_TABLEGEN)
         "PATCHED_BY_LIBND4J_GPU_HOST_TABLEGEN" _host_tablegen_marker)
     if(_host_tablegen_marker EQUAL -1)
         set(_mlir_find_anchor "find_package(MLIR REQUIRED CONFIG PATHS \${MLIR_DIR})")
-        set(_mlir_find_replacement
+        string(CONCAT _mlir_find_replacement
             "${_mlir_find_anchor}\n"
             "# PATCHED_BY_LIBND4J_GPU_HOST_TABLEGEN: generators are build-host tools.\n"
             "set(LLVM_TABLEGEN_EXE \"${LLVM_HOST_TABLEGEN}\" CACHE FILEPATH \"Host llvm-tblgen\" FORCE)\n"

@@ -3762,6 +3762,7 @@ class ReleaseValidationTest(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn("PATCHED_BY_LIBND4J_GPU_HOST_TABLEGEN", patch_script)
+        self.assertIn("string(CONCAT _mlir_find_replacement", patch_script)
         self.assertIn('set(LLVM_TABLEGEN_EXE \\"${LLVM_HOST_TABLEGEN}\\"', patch_script)
         self.assertIn('set(MLIR_TABLEGEN_EXE \\"${MLIR_HOST_TABLEGEN}\\"', patch_script)
         self.assertIn("-DLLVM_HOST_TABLEGEN=${_TRITON_LLVM_NATIVE_TOOL_DIR}", dependencies)
