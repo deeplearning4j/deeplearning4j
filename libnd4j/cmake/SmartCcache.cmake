@@ -292,12 +292,26 @@ object_file_is_valid() {
             local validator=\"\"
             if [[ -n \"\$compiler\" ]]; then
                 compiler_dir=\"\$(dirname \"\$compiler\")\"
+                # Cross compilers share /usr/bin with host linkers. Ask the
+                # compiler for its target linker before considering directory
+                # or PATH fallbacks, otherwise valid AArch64/other cross objects
+                # are falsely rejected by the host ELF linker.
+                local compiler_linker=\"\"
+                compiler_linker=\"\$(\"\$compiler\" -print-prog-name=ld 2>/dev/null)\"
+                if [[ -n \"\$compiler_linker\" && \"\$compiler_linker\" != \"ld\" ]]; then
+                    if [[ \"\$compiler_linker\" != /* ]]; then
+                        compiler_linker=\"\$(command -v \"\$compiler_linker\" 2>/dev/null)\"
+                    fi
+                    if [[ -x \"\$compiler_linker\" ]]; then
+                        validator=\"\$compiler_linker\"
+                    fi
+                fi
             fi
-            if [[ -x \"\$compiler_dir/ld.lld\" ]]; then
+            if [[ -z \"\$validator\" && -x \"\$compiler_dir/ld.lld\" ]]; then
                 validator=\"\$compiler_dir/ld.lld\"
-            elif [[ -x \"\$compiler_dir/ld\" ]]; then
+            elif [[ -z \"\$validator\" && -x \"\$compiler_dir/ld\" ]]; then
                 validator=\"\$compiler_dir/ld\"
-            elif command -v ld.lld >/dev/null 2>&1; then
+            elif [[ -z \"\$validator\" ]] && command -v ld.lld >/dev/null 2>&1; then
                 validator=\"\$(command -v ld.lld)\"
             fi
             if [[ -n \"\$validator\" ]]; then
