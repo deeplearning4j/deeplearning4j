@@ -3149,6 +3149,7 @@ class ReleaseValidationTest(unittest.TestCase):
 
         cuda_linking = (root / "libnd4j/cmake/CudaConfiguration.cmake").read_text()
         sdx_linking = (root / "libnd4j/cmake/BuildSDX.cmake").read_text()
+        self.assertIn("CUDA::toolkit CUDA::cudart", sdx_linking)
         self.assertIn("link_cuda_cross_openmp_runtime(${main_target_name})", cuda_linking)
         self.assertIn("link_cuda_cross_openmp_runtime(${main_target_name})", sdx_linking)
 

@@ -366,7 +366,7 @@ function(configure_sdx_cuda_linking main_target_name)
             target_link_options(${main_target_name} PRIVATE "LINKER:--no-as-needed")
         endif()
         target_link_libraries(${main_target_name} PUBLIC
-                CUDA::cudart CUDA::cublas CUDA::cublasLt CUDA::cusolver CUDA::cusparse)
+                CUDA::toolkit CUDA::cudart CUDA::cublas CUDA::cublasLt CUDA::cusolver CUDA::cusparse)
         if(TARGET CUDA::nvrtc)
             target_link_libraries(${main_target_name} PUBLIC CUDA::nvrtc)
         endif()
