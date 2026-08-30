@@ -1612,7 +1612,7 @@ class ReleaseValidationTest(unittest.TestCase):
                     ".kpack/blas_lib_gfx1103.kpack",
                     required_entries,
                 )
-                self.assertIn(
+                self.assertNotIn(
                     "org/nd4j/linalg/jcublas/bindings/{classifier}/"
                     ".kpack/sparse_lib_gfx1103.kpack",
                     required_entries,
@@ -2873,7 +2873,7 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertFalse(spec["hsakmt_required"])
         self.assertTrue(spec["comgr_required"])
         self.assertFalse(spec["miopen_acceleration"])
-        self.assertEqual(("blas", "sparse"), spec["kernel_pack_groups"])
+        self.assertEqual(("blas",), spec["kernel_pack_groups"])
         self.assertTrue(spec["package_inventory_required"])
         self.assertEqual(
             "D0F004A0025A1145C7807FCD0701EAC4D5E02107",
@@ -2884,7 +2884,6 @@ class ReleaseValidationTest(unittest.TestCase):
             root = Path(temporary_directory)
             comgr_runtime = root / "lib/libamd_comgr.so"
             blas_pack = root / ".kpack/blas_lib_gfx1103.kpack"
-            sparse_pack = root / ".kpack/sparse_lib_gfx1103.kpack"
             required_files = (
                 root / ".info/version",
                 root / "include/hip/hip_runtime.h",
@@ -2901,7 +2900,6 @@ class ReleaseValidationTest(unittest.TestCase):
                 root / "include/amd_comgr/amd_comgr.h",
                 comgr_runtime,
                 blas_pack,
-                sparse_pack,
             )
             for path in required_files:
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -2932,24 +2930,25 @@ class ReleaseValidationTest(unittest.TestCase):
             self.assertEqual("1", environment["DL4J_ZLUDA_REQUIRE_COMGR"])
             self.assertEqual("0", environment["DL4J_ZLUDA_REQUIRE_HSAKMT"])
             self.assertEqual("0", environment["DL4J_ZLUDA_MIOPEN_ACCELERATION"])
+            self.assertEqual("blas", environment["DL4J_ROCM_KERNEL_PACK_GROUPS"])
             packs = build_platform.attest_rocm_optimized_payload(build, root)
-            self.assertEqual({"blas", "sparse"}, set(packs))
+            self.assertEqual({"blas"}, set(packs))
 
-            sparse_pack.unlink()
+            blas_pack.unlink()
             with self.assertRaisesRegex(RuntimeError, "kernel packs"):
                 build_platform.attest_rocm_optimized_payload(build, root)
-            nested = root / ".kpack/nested/sparse_lib_gfx1103.kpack"
+            nested = root / ".kpack/nested/blas_lib_gfx1103.kpack"
             nested.parent.mkdir(parents=True)
             nested.write_text("nested", encoding="utf-8")
             with self.assertRaisesRegex(RuntimeError, "kernel packs"):
                 build_platform.attest_rocm_optimized_payload(build, root)
             nested.unlink()
-            renamed = root / ".kpack/sparse_renamed_gfx1103.kpack"
+            renamed = root / ".kpack/blas_renamed_gfx1103.kpack"
             renamed.write_text("renamed", encoding="utf-8")
             with self.assertRaisesRegex(RuntimeError, "kernel packs"):
                 build_platform.attest_rocm_optimized_payload(build, root)
             renamed.unlink()
-            sparse_pack.write_text("sdk", encoding="utf-8")
+            blas_pack.write_text("sdk", encoding="utf-8")
             comgr_runtime.unlink()
             with self.assertRaisesRegex(RuntimeError, "COMGR runtime"):
                 build_platform.attest_rocm_build_toolchain(

@@ -174,7 +174,9 @@ ROCM_BUILD_SDKS = {
         "package_inventory_required": True,
         # The architecture-specific development meta-package pulls the HIP,
         # HSA/COMGR, rocBLAS, hipBLASLt, rocSPARSE, compiler, headers and the
-        # gfx1103 .kpack payload as one version-coherent dependency graph.
+        # gfx1103 BLAS .kpack payload as one version-coherent dependency graph.
+        # AMD's signed sparse package is a metapackage over sparse-host and this
+        # BLAS package; it does not publish a separate sparse .kpack.
         # AMD does not publish a gfx1103 DNN device package in 10.0.0, so only
         # the MIOpen host ABI is bundled; do not advertise MIOpen acceleration.
         "component_packages": {
@@ -187,7 +189,7 @@ ROCM_BUILD_SDKS = {
         },
         "tensile_architectures": "gfx1103",
         "tensile_required": False,
-        "kernel_pack_groups": ("blas", "sparse"),
+        "kernel_pack_groups": ("blas",),
         "hsakmt_bootstrap": False,
         # TheRock builds libhsakmt sources into ROCR but publishes only the
         # consolidated libhsa-runtime64 DSO in the Core SDK runtime package.
@@ -2254,6 +2256,9 @@ def attest_rocm_build_toolchain(
     env["DL4J_ROCM_RESOURCE_FORMAT"] = (
         "tensile" if spec["tensile_required"] else "kpack"
     )
+    env["DL4J_ROCM_KERNEL_PACK_GROUPS"] = ",".join(
+        spec["kernel_pack_groups"]
+    )
     env["DL4J_ZLUDA_MIOPEN_ACCELERATION"] = (
         "1" if spec["miopen_acceleration"] else "0"
     )
@@ -2339,7 +2344,7 @@ def rocm_kernel_pack_files(
 
 
 def attest_rocm_optimized_payload(build: dict, root: Path) -> dict[str, Path]:
-    """Fail closed on the version-specific rocBLAS/sparse device payload."""
+    """Fail closed on the version-specific optimized device payload."""
     spec = rocm_build_spec(build)
     if spec is None:
         return {}

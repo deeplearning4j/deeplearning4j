@@ -611,7 +611,8 @@ function(configure_cuda_linking main_target_name)
         "-DRUNTIME_LIBRARIES_PIPE=${_cuda_shared_runtimes_pipe}"
         "-DRUNTIME_SEARCH_ROOTS_PIPE=${_cuda_shared_runtime_roots_pipe}"
         "-DROCM_RUNTIME_ARCH=$ENV{DL4J_ROCM_ARCH}"
-        "-DROCM_RESOURCE_FORMAT=$ENV{DL4J_ROCM_RESOURCE_FORMAT}")
+        "-DROCM_RESOURCE_FORMAT=$ENV{DL4J_ROCM_RESOURCE_FORMAT}"
+        "-DROCM_KERNEL_PACK_GROUPS_CSV=$ENV{DL4J_ROCM_KERNEL_PACK_GROUPS}")
     if(WIN32)
         # A pipe-delimited value is safe as a CMake argument on POSIX, but it is
         # a cmd.exe metacharacter. Passing the resolved generator-expression

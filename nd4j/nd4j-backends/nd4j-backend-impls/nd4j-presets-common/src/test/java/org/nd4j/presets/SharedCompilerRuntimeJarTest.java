@@ -57,10 +57,9 @@ class SharedCompilerRuntimeJarTest {
                             "# nd4j-shared-runtime-manifest-v1",
                             "# runtime-count=1",
                             "# runtime-alias-count=2",
-                            "# resource-count=3",
+                            "# resource-count=2",
                             "# resource=rocblas/library/TensileLibrary.dat",
                             "# resource=.kpack/blas_lib_gfx1103.kpack",
-                            "# resource=.kpack/sparse_lib_gfx1103.kpack",
                             "# runtime-alias=libcuda.so->libnvcuda.so",
                             "# runtime-alias=libcuda.so.1->libnvcuda.so",
                             "libnvcuda.so",
@@ -72,8 +71,6 @@ class SharedCompilerRuntimeJarTest {
                     + "rocblas/library/TensileLibrary.dat", "tensile-data");
             addEntry(output, classifierRoot
                     + ".kpack/blas_lib_gfx1103.kpack", "blas-kpack");
-            addEntry(output, classifierRoot
-                    + ".kpack/sparse_lib_gfx1103.kpack", "sparse-kpack");
         }
 
         String cacheProperty = "org.bytedeco.javacpp.cachedir";
@@ -116,10 +113,6 @@ class SharedCompilerRuntimeJarTest {
                     "blas-kpack",
                     Files.readString(canonicalPath.getParent().resolve(
                             ".kpack/blas_lib_gfx1103.kpack")));
-            assertEquals(
-                    "sparse-kpack",
-                    Files.readString(canonicalPath.getParent().resolve(
-                            ".kpack/sparse_lib_gfx1103.kpack")));
         } finally {
             if (previousCache == null) {
                 System.clearProperty(cacheProperty);

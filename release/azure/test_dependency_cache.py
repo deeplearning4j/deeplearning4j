@@ -87,10 +87,16 @@ class DependencyCacheIntegrationContractTests(unittest.TestCase):
         self.assertIn('name="rocm-sdk"', driver)
         self.assertIn("restore_toolchain_dependency(", driver)
         self.assertIn("publish_toolchain_dependency(", driver)
-        self.assertIn('"destination": "/opt/rocm"', driver)
+        self.assertIn(
+            'rocm_root = Path(env.get("ROCM_PATH", spec["install_root"]))',
+            driver,
+        )
+        self.assertIn("destination=rocm_root", driver)
+        self.assertIn("source=rocm_root.resolve()", driver)
         self.assertIn('name="sccache"', driver)
         self.assertIn("ensure_cached_sccache(cache_dir, config, env)", driver)
-        self.assertIn('name="sccache-l0"', driver)
+        self.assertIn('name not in {"sccache-l0", "ccache-l0"}', driver)
+        self.assertIn("name=snapshot_name", driver)
         self.assertIn("restore_compiler_cache_snapshot(config, env, cache_dir)", driver)
         self.assertIn("publish_compiler_cache_snapshot(", driver)
         self.assertIn('name="openblas"', driver)

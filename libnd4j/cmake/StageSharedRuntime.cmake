@@ -1015,15 +1015,30 @@ if(DEFINED PACKAGE_DIR AND NOT PACKAGE_DIR STREQUAL "")
 
     # TheRock-based ROCm Core SDKs replace the legacy Tensile directory with
     # architecture-specific kernel packs. Preserve the SDK-relative .kpack
-    # layout in the classifier and copy only the optimized libraries used by
-    # this ZLUDA runtime closure. The declared resource format comes from the
-    # release SDK attestation; never infer a fallback from partial contents.
+    # layout in the classifier and copy exactly the groups attested by the
+    # release SDK contract. The declared resource format and group list come
+    # from release attestation; never infer a fallback from partial contents.
     set(_rocm_kpack_dirs "")
+    set(_rocm_kpack_groups "")
     if(DEFINED ROCM_RESOURCE_FORMAT AND ROCM_RESOURCE_FORMAT STREQUAL "kpack")
         if(NOT DEFINED ROCM_RUNTIME_ARCH OR ROCM_RUNTIME_ARCH STREQUAL "")
             message(FATAL_ERROR
                 "ROCm kpack runtime staging requires an attested ROCM_RUNTIME_ARCH")
         endif()
+        if(NOT DEFINED ROCM_KERNEL_PACK_GROUPS_CSV OR
+           ROCM_KERNEL_PACK_GROUPS_CSV STREQUAL "")
+            message(FATAL_ERROR
+                "ROCm kpack runtime staging requires attested kernel-pack groups")
+        endif()
+        string(REPLACE "," ";" _rocm_kpack_groups
+            "${ROCM_KERNEL_PACK_GROUPS_CSV}")
+        list(REMOVE_DUPLICATES _rocm_kpack_groups)
+        foreach(_rocm_kpack_group IN LISTS _rocm_kpack_groups)
+            if(NOT _rocm_kpack_group MATCHES "^[A-Za-z0-9_-]+$")
+                message(FATAL_ERROR
+                    "Invalid ROCm kernel-pack group '${_rocm_kpack_group}'")
+            endif()
+        endforeach()
         foreach(_runtime_search_root IN LISTS _runtime_search_roots)
             if(IS_DIRECTORY "${_runtime_search_root}/.kpack")
                 list(APPEND _rocm_kpack_dirs "${_runtime_search_root}/.kpack")
@@ -1080,7 +1095,7 @@ if(DEFINED PACKAGE_DIR AND NOT PACKAGE_DIR STREQUAL "")
     set(_rocm_kpack_resource_count 0)
     if(_rocm_kpack_dirs)
         list(GET _rocm_kpack_dirs 0 _rocm_kpack_dir)
-        foreach(_rocm_kpack_group IN ITEMS blas sparse)
+        foreach(_rocm_kpack_group IN LISTS _rocm_kpack_groups)
             set(_rocm_kpack_name
                 "${_rocm_kpack_group}_lib_${ROCM_RUNTIME_ARCH}.kpack")
             set(_rocm_kpack_file
