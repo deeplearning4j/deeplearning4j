@@ -1833,35 +1833,12 @@ class ReleaseValidationTest(unittest.TestCase):
             root
             / "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-zluda/pom.xml"
         ).getroot()
-        self.assertEqual(
-            "true",
-            zluda_pom.findtext(
-                "m:properties/m:zluda.hsakmt.required", namespaces=namespace
-            ),
-        )
-        consolidated_rocr_profile = next(
-            item
-            for item in zluda_pom.findall("m:profiles/m:profile", namespace)
-            if item.findtext("m:id", namespaces=namespace)
-            == "zluda-consolidated-rocr-runtime"
-        )
-        self.assertEqual(
-            "env.DL4J_ZLUDA_REQUIRE_HSAKMT",
-            consolidated_rocr_profile.findtext(
-                "m:activation/m:property/m:name", namespaces=namespace
-            ),
-        )
-        self.assertEqual(
-            "0",
-            consolidated_rocr_profile.findtext(
-                "m:activation/m:property/m:value", namespaces=namespace
-            ),
-        )
-        self.assertEqual(
-            "false",
-            consolidated_rocr_profile.findtext(
-                "m:properties/m:zluda.hsakmt.required", namespaces=namespace
-            ),
+        self.assertNotIn(
+            "zluda-consolidated-rocr-runtime",
+            {
+                item.findtext("m:id", namespaces=namespace)
+                for item in zluda_pom.findall("m:profiles/m:profile", namespace)
+            },
         )
         runtime_dependencies = {
             item.findtext("m:artifactId", namespaces=namespace)
@@ -1878,17 +1855,43 @@ class ReleaseValidationTest(unittest.TestCase):
             ".//m:execution[m:id='verify-zluda-cmake-runtime-package']", namespace
         )
         self.assertIsNotNone(runtime_verifier)
+        verifier_target = runtime_verifier.find(
+            "m:configuration/m:target", namespace
+        )
+        self.assertIsNotNone(verifier_target)
+        self.assertTrue(
+            any(
+                item.attrib.get("environment") == "env"
+                for item in verifier_target.findall("m:property", namespace)
+            )
+        )
         hsakmt_failure = next(
             failure
             for failure in runtime_verifier.findall(".//m:fail", namespace)
             if "ROCt thunk" in failure.attrib.get("message", "")
         )
-        self.assertTrue(
-            any(
-                condition.attrib.get("arg1") == "${zluda.hsakmt.required}"
-                and condition.attrib.get("arg2") == "true"
-                for condition in hsakmt_failure.findall(".//m:equals", namespace)
-            )
+        hsakmt_failure_condition = hsakmt_failure.find(
+            "m:condition/m:and", namespace
+        )
+        self.assertIsNotNone(hsakmt_failure_condition)
+        self.assertIsNotNone(
+            hsakmt_failure_condition.find("m:not/m:os[@family='windows']", namespace)
+        )
+        consolidated_rocr_exemption = hsakmt_failure_condition.find(
+            "m:not/m:and", namespace
+        )
+        self.assertIsNotNone(consolidated_rocr_exemption)
+        self.assertEqual(
+            {
+                ("${env.DL4J_ZLUDA_REQUIRE_HSAKMT}", "0"),
+                ("${rocm.version}", "10.0.0"),
+            },
+            {
+                (condition.attrib.get("arg1"), condition.attrib.get("arg2"))
+                for condition in consolidated_rocr_exemption.findall(
+                    "m:equals", namespace
+                )
+            },
         )
         profile_artifacts = {
             item.findtext("m:artifactId", namespaces=namespace)

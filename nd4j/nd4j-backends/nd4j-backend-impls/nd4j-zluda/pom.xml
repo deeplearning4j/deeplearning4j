@@ -55,10 +55,6 @@
         <zluda.accelerator.runtime.library>libamdhip64.so</zluda.accelerator.runtime.library>
         <zluda.hsa.runtime.library>libhsa-runtime64.so.1</zluda.hsa.runtime.library>
         <zluda.hsakmt.runtime.library>libhsakmt.so.1</zluda.hsakmt.runtime.library>
-        <!-- Legacy ROCm SDKs publish ROCt/HSAKMT as a separate runtime DSO.
-             Keep that closure fail-closed unless the release toolchain attests a
-             consolidated ROCR runtime such as ROCm Core SDK 10. -->
-        <zluda.hsakmt.required>true</zluda.hsakmt.required>
         <zluda.jni.library>libjnind4jcuda.so</zluda.jni.library>
         <module.name>nd4j.zluda</module.name>
     </properties>
@@ -146,22 +142,6 @@
     </build>
 
     <profiles>
-        <!-- ROCm Core SDK 10 consolidates ROCt into libhsa-runtime64 and exports
-             this attested flag from the release provisioner. Ordinary and
-             legacy ROCm builds retain the fail-closed HSAKMT requirement. -->
-        <profile>
-            <id>zluda-consolidated-rocr-runtime</id>
-            <activation>
-                <property>
-                    <name>env.DL4J_ZLUDA_REQUIRE_HSAKMT</name>
-                    <value>0</value>
-                </property>
-            </activation>
-            <properties>
-                <zluda.hsakmt.required>false</zluda.hsakmt.required>
-            </properties>
-        </profile>
-
         <!-- Build and attach the ZLUDA JNI/native payload directly.  libnd4j's
              CMake build owns the pinned ZLUDA and AMD runtime closure; this
              module owns the resulting platform classifier. -->
@@ -218,6 +198,9 @@
                                 </goals>
                                 <configuration>
                                     <target name="verify-zluda-cmake-runtime-package">
+                                        <!-- Import the same attested environment contract consumed
+                                             by CMake. No Maven profile can disable this verifier. -->
+                                        <property environment="env"/>
                                         <fail message="CMake ZLUDA runtime package is missing ${zluda.native.library}">
                                             <condition><not><available file="${zluda.runtime.package}/${zluda.native.library}"/></not></condition>
                                         </fail>
@@ -239,7 +222,15 @@
                                             <condition>
                                                 <and>
                                                     <not><os family="windows"/></not>
-                                                    <equals arg1="${zluda.hsakmt.required}" arg2="true" casesensitive="false"/>
+                                                    <!-- Only the exact ROCm 10 attestation may omit
+                                                         the DSO; unset, legacy, and invalid values
+                                                         all retain the fail-closed requirement. -->
+                                                    <not>
+                                                        <and>
+                                                            <equals arg1="${env.DL4J_ZLUDA_REQUIRE_HSAKMT}" arg2="0" trim="true"/>
+                                                            <equals arg1="${rocm.version}" arg2="10.0.0" trim="true"/>
+                                                        </and>
+                                                    </not>
                                                     <not><available file="${zluda.runtime.package}/${zluda.hsakmt.runtime.library}"/></not>
                                                 </and>
                                             </condition>
