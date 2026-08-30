@@ -106,6 +106,16 @@ function(setup_modern_cudnn)
         return()
     endif()
 
+    if(SD_ZLUDA AND
+       DEFINED ENV{DL4J_ZLUDA_MIOPEN_ACCELERATION} AND
+       "$ENV{DL4J_ZLUDA_MIOPEN_ACCELERATION}" MATCHES "^(0|[Oo][Ff][Ff]|[Ff][Aa][Ll][Ss][Ee])$")
+        set(HAVE_CUDNN FALSE PARENT_SCOPE)
+        set(CUDNN_FOUND FALSE PARENT_SCOPE)
+        message(STATUS
+            "ZLUDA cuDNN/MIOpen execution is unavailable for this ROCm target; retaining runtime ABI closure only")
+        return()
+    endif()
+
     find_package(CUDAToolkit REQUIRED)
 
     # Search paths for cuDNN
@@ -534,6 +544,9 @@ function(configure_cuda_linking main_target_name)
                 "${ROCM_HIP_RUNTIME_LIBRARY}"
                 "${ROCM_HSA_RUNTIME_LIBRARY}"
                 "${ROCM_HSAKMT_RUNTIME_LIBRARY}")
+            if(ROCM_COMGR_LIBRARY)
+                list(APPEND _cuda_shared_runtimes "${ROCM_COMGR_LIBRARY}")
+            endif()
             if(HAVE_MIOPEN)
                 if(NOT MIOPEN_LIBRARY OR NOT EXISTS "${MIOPEN_LIBRARY}")
                     message(FATAL_ERROR
@@ -592,7 +605,9 @@ function(configure_cuda_linking main_target_name)
         _cuda_shared_runtime_roots_pipe)
     set(_cuda_runtime_stage_args
         "-DRUNTIME_LIBRARIES_PIPE=${_cuda_shared_runtimes_pipe}"
-        "-DRUNTIME_SEARCH_ROOTS_PIPE=${_cuda_shared_runtime_roots_pipe}")
+        "-DRUNTIME_SEARCH_ROOTS_PIPE=${_cuda_shared_runtime_roots_pipe}"
+        "-DROCM_RUNTIME_ARCH=$ENV{DL4J_ROCM_ARCH}"
+        "-DROCM_RESOURCE_FORMAT=$ENV{DL4J_ROCM_RESOURCE_FORMAT}")
     if(WIN32)
         # A pipe-delimited value is safe as a CMake argument on POSIX, but it is
         # a cmd.exe metacharacter. Passing the resolved generator-expression

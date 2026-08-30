@@ -29,6 +29,7 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.StandardCopyOption;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -75,6 +76,18 @@ public final class SharedCompilerRuntime {
             ClassProperties properties,
             Class<?> presetClass,
             String resourceRoot) {
+        return configure(properties, presetClass, resourceRoot, null);
+    }
+
+    /**
+     * Adds the exact CMake-selected compiler runtimes using one already-resolved
+     * bundled classifier extension when JavaCPP has no explicit extension.
+     */
+    public static int configure(
+            ClassProperties properties,
+            Class<?> presetClass,
+            String resourceRoot,
+            String effectiveBundledExtension) {
         String platform = properties.getProperty("platform");
         if (platform == null || platform.isEmpty()) {
             throw new IllegalStateException(
@@ -97,6 +110,18 @@ public final class SharedCompilerRuntime {
             } else {
                 String configuredExtension =
                         configuredProperties.getProperty("platform.extension");
+                if ((configuredExtension == null || configuredExtension.isEmpty())
+                        && effectiveBundledExtension != null
+                        && !effectiveBundledExtension.isEmpty()) {
+                    if (!properties.get("platform.extension")
+                            .contains(effectiveBundledExtension)) {
+                        throw new IllegalStateException(
+                                "Resolved compiler runtime extension '"
+                                        + effectiveBundledExtension
+                                        + "' is not declared by the preset");
+                    }
+                    configuredExtension = effectiveBundledExtension;
+                }
                 manifest = readBundledManifest(
                         presetClass,
                         resourceRoot,
@@ -584,7 +609,8 @@ public final class SharedCompilerRuntime {
                 || resourceName.contains("\\")
                 || resourceName.contains("../")
                 || resourceName.equals("..")
-                || !resourceName.startsWith("rocblas/library/")) {
+                || !(resourceName.startsWith("rocblas/library/")
+                || resourceName.startsWith(".kpack/"))) {
             throw new IllegalStateException(
                     "Invalid runtime resource path '" + resourceName
                             + "' in compiler runtime manifest " + source);
@@ -644,17 +670,18 @@ public final class SharedCompilerRuntime {
                                     + resourceName);
                 }
                 Files.createDirectories(destination.getParent());
-                if (!Files.isRegularFile(destination)) {
-                    File extracted = Loader.extractResource(
-                            resource, destination.toFile(), null, null);
-                    if (extracted == null
-                            || !destination.equals(extracted.toPath()
-                            .toAbsolutePath().normalize())) {
-                        throw new IllegalStateException(
-                                "Cannot extract classifier resource '" + resourceName
-                                        + "' to its runtime-relative path declared by "
-                                        + source);
-                    }
+                File refreshed = Loader.cacheResource(resource);
+                if (refreshed == null || !refreshed.isFile()) {
+                    throw new IllegalStateException(
+                            "Cannot refresh classifier resource '" + resourceName
+                                    + "' declared by " + source);
+                }
+                Path refreshedPath = refreshed.toPath().toAbsolutePath().normalize();
+                if (!destination.equals(refreshedPath)) {
+                    Files.copy(
+                            refreshedPath,
+                            destination,
+                            StandardCopyOption.REPLACE_EXISTING);
                 }
                 if (!Files.isRegularFile(destination)) {
                     throw new IllegalStateException(

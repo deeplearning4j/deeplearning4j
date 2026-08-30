@@ -3,4 +3,7 @@
 # runtime-alias-count=2
 # runtime-alias=libcuda.so->libnvcuda.so
 # runtime-alias=libcuda.so.1->libnvcuda.so
+# resource-count=2
+# resource=.kpack/blas_lib_gfx1103.kpack
+# resource=.kpack/sparse_lib_gfx1103.kpack
 libnvcuda.so

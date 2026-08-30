@@ -152,10 +152,12 @@ import org.nd4j.presets.SharedCompilerRuntime;
                 @Platform(value = "linux-ppc64", preloadpath = {"/usr/powerpc64-linux-gnu/lib/", "/usr/powerpc64le-linux-gnu/lib/", "/usr/lib/powerpc64-linux-gnu/", "/usr/lib/powerpc64le-linux-gnu/"}),
                 @Platform(value = "windows", preload = {"libwinpthread-1", "libgcc_s_seh-1", "libgomp-1", "libstdc++-6", "libnd4jcpu"}),
                 @Platform(extension = {"-cudnn", "-", "-compile", "-zluda",
-                        "-zluda-rocm-7.2.4", "-zluda-rocm-6.2.4"}),
+                        "-zluda-rocm-7.2.4", "-zluda-rocm-6.2.4",
+                        "-zluda-rocm-10.0.0"}),
                 @Platform(value = "linux",
-                        extension = {"-zluda-rocm-7.2.4", "-zluda-rocm-6.2.4"},
-                        resource = {"rocblas/library"})})
+                        extension = {"-zluda-rocm-7.2.4", "-zluda-rocm-6.2.4",
+                                "-zluda-rocm-10.0.0"},
+                        resource = {"rocblas/library", ".kpack"})})
 public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
     private static final String JAVACPP_PHASE_PROPERTY =
             "platform.nd4j.javacpp.phase";
@@ -163,6 +165,7 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
     private static final String CUDA_BINDINGS_RESOURCE_ROOT =
             "org/nd4j/linalg/jcublas/bindings/";
     private static final String ZLUDA_EXTENSION = "-zluda";
+    private static final String DEFAULT_ZLUDA_EXTENSION = "-zluda-rocm-7.2.4";
 
     private Logger logger;
     private java.util.Properties properties;
@@ -195,22 +198,28 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
         if (javacppPhase == null) {
             javacppPhase = properties.getProperty(JAVACPP_PHASE_PROPERTY);
         }
+        String extension = null;
+        if (Loader.isLoadLibraries()) {
+            extension = Loader.loadProperties().getProperty("platform.extension");
+            if (extension == null || extension.isEmpty()) {
+                extension = resolveBundledZludaExtension(
+                        properties, platform, Nd4jCudaPresets.class.getClassLoader());
+                if (extension != null && !extension.isEmpty()) {
+                    properties.setProperty("platform.extension", extension);
+                }
+            }
+        }
         if (!JAVACPP_PARSE_PHASE.equals(javacppPhase)) {
             SharedCompilerRuntime.configure(
                     properties,
                     Nd4jCudaPresets.class,
-                    CUDA_BINDINGS_RESOURCE_ROOT);
+                    CUDA_BINDINGS_RESOURCE_ROOT,
+                    extension);
         }
 
         // Only apply the CUDA toolkit preloads at load time.
         if (!Loader.isLoadLibraries()) {
             return;
-        }
-
-        String extension = Loader.loadProperties().getProperty("platform.extension");
-        if (extension == null || extension.isEmpty()) {
-            extension = resolveBundledZludaExtension(
-                    properties, platform, Nd4jCudaPresets.class.getClassLoader());
         }
         if (isZludaExtension(extension)) {
             String classifierResource = "/" + CUDA_BINDINGS_RESOURCE_ROOT
@@ -272,6 +281,14 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
             return null;
         }
         List<String> extensions = properties.get("platform.extension");
+        if (extensions.contains(DEFAULT_ZLUDA_EXTENSION)) {
+            String defaultManifest = CUDA_BINDINGS_RESOURCE_ROOT
+                    + platform + DEFAULT_ZLUDA_EXTENSION + "/"
+                    + SharedCompilerRuntime.MANIFEST_NAME;
+            if (resourceLoader.getResource(defaultManifest) != null) {
+                return DEFAULT_ZLUDA_EXTENSION;
+            }
+        }
         for (int i = extensions.size() - 1; i >= 0; i--) {
             String extension = extensions.get(i);
             if (!isZludaExtension(extension)) {

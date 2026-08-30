@@ -40,19 +40,21 @@ class Nd4jCudaZludaClassifierTest {
                 .collect(Collectors.toList());
         assertTrue(extensions.contains("-zluda-rocm-7.2.4"));
         assertTrue(extensions.contains("-zluda-rocm-6.2.4"));
+        assertTrue(extensions.contains("-zluda-rocm-10.0.0"));
 
         List<String> resources = Arrays.stream(preset.value())
                 .flatMap(platform -> Arrays.stream(platform.resource()))
                 .collect(Collectors.toList());
         assertTrue(resources.contains("rocblas/library"),
-                "ZLUDA JavaCPP properties must extract rocBLAS resources");
+                "ZLUDA JavaCPP properties must extract legacy rocBLAS resources");
+        assertTrue(resources.contains(".kpack"),
+                "ZLUDA JavaCPP properties must extract ROCm Core SDK kernel packs");
 
-        Path pomPath = Path.of("pom.xml");
+        Path testClasses = Path.of(
+                Nd4jCudaZludaClassifierTest.class.getProtectionDomain()
+                        .getCodeSource().getLocation().toURI());
+        Path pomPath = testClasses.resolve("../../pom.xml").normalize();
         String pom = Files.readString(pomPath);
-        if (!pom.contains("${javacpp.platform}${javacpp.platform.extension}/**</exclude>")) {
-            pomPath = Path.of("nd4j/nd4j-backends/nd4j-backend-impls/nd4j-zluda/pom.xml");
-            pom = Files.readString(pomPath);
-        }
         assertTrue(pom.contains("${javacpp.platform}${javacpp.platform.extension}/**</exclude>"),
                 "Unclassified JAR must exclude the complete classifier tree");
         assertTrue(pom.contains("${javacpp.platform}${javacpp.platform.extension}/**</include>"),
@@ -66,18 +68,34 @@ class Nd4jCudaZludaClassifierTest {
         String selectedManifest = "org/nd4j/linalg/jcublas/bindings/"
                 + platform + selectedExtension + "/"
                 + SharedCompilerRuntime.MANIFEST_NAME;
+        String rocm10Extension = "-zluda-rocm-10.0.0";
+        String rocm10Manifest = "org/nd4j/linalg/jcublas/bindings/"
+                + platform + rocm10Extension + "/"
+                + SharedCompilerRuntime.MANIFEST_NAME;
         URL manifestUrl = new URL("file:/fixture/" + SharedCompilerRuntime.MANIFEST_NAME);
         ClassLoader resourceLoader = new ClassLoader(null) {
             @Override
             public URL getResource(String name) {
-                return selectedManifest.equals(name) ? manifestUrl : null;
+                return selectedManifest.equals(name) || rocm10Manifest.equals(name)
+                        ? manifestUrl : null;
             }
         };
 
         assertEquals(
                 selectedExtension,
                 Nd4jCudaPresets.resolveBundledZludaExtension(
-                        properties, platform, resourceLoader));
+                        properties, platform, resourceLoader),
+                "The 7.2.4 default must win when multiple classifiers are visible");
+        ClassLoader rocm10OnlyLoader = new ClassLoader(null) {
+            @Override
+            public URL getResource(String name) {
+                return rocm10Manifest.equals(name) ? manifestUrl : null;
+            }
+        };
+        assertEquals(
+                rocm10Extension,
+                Nd4jCudaPresets.resolveBundledZludaExtension(
+                        properties, platform, rocm10OnlyLoader));
         assertTrue(Nd4jCudaPresets.isZludaExtension(selectedExtension));
         assertTrue(Nd4jCudaPresets.isZludaExtension("-zluda"));
     }

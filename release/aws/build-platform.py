@@ -29,6 +29,12 @@ SCCACHE_RELEASE_BASE = (
 ZLUDA_TARGET = "AMD"
 ZLUDA_LINUX_LINKER_PACKAGE = "lld"
 ZLUDA_LINUX_RPATH_EDITOR_PACKAGE = "patchelf"
+ROCM_LEGACY_BUILD_COMPONENTS = (
+    "hip", "rocblas", "hipblaslt", "rocsparse", "rocm-smi", "miopen",
+)
+ROCM_CORE_10_BUILD_COMPONENTS = (
+    "hip", "rocblas", "hipblaslt", "rocsparse", "amdsmi", "miopen-host",
+)
 ROCM_BUILD_SDKS = {
     "6.2.4": {
         "installer_name": "amdgpu-install_6.2.60204-1_all.deb",
@@ -150,10 +156,53 @@ ROCM_BUILD_SDKS = {
             "miopen": ("miopen-hip-dev",),
         },
     },
+    "10.0.0": {
+        # ROCm Core SDK 10 is a TheRock distribution. It is published through
+        # AMD's signed repository under a versioned, side-by-side prefix rather
+        # than through the legacy amdgpu-install repository bootstrap.
+        "components": ROCM_CORE_10_BUILD_COMPONENTS,
+        "provisioner": "signed-core-repository",
+        "install_root": "/opt/rocm/core-10.0",
+        "repository_key_url": "https://stable.repo.amd.com/rocm/gpg/packages.gpg",
+        "repository_key_fingerprint": "D0F004A0025A1145C7807FCD0701EAC4D5E02107",
+        "repository_url": (
+            "https://stable.repo.amd.com/rocm/core/packages/ubuntu2204/"
+        ),
+        "repository_suite": "stable",
+        "repository_component": "main",
+        "package_version": "10.0.0-4",
+        "package_inventory_required": True,
+        # The architecture-specific development meta-package pulls the HIP,
+        # HSA/COMGR, rocBLAS, hipBLASLt, rocSPARSE, compiler, headers and the
+        # gfx1103 .kpack payload as one version-coherent dependency graph.
+        # AMD does not publish a gfx1103 DNN device package in 10.0.0, so only
+        # the MIOpen host ABI is bundled; do not advertise MIOpen acceleration.
+        "component_packages": {
+            "hip": ("amdrocm-core-dev10.0-gfx1103=10.0.0-4",),
+            "rocblas": (),
+            "hipblaslt": (),
+            "rocsparse": (),
+            "amdsmi": (),
+            "miopen-host": ("amdrocm-dnn-host10.0=10.0.0-4",),
+        },
+        "tensile_architectures": "gfx1103",
+        "tensile_required": False,
+        "kernel_pack_groups": ("blas", "sparse"),
+        "hsakmt_bootstrap": False,
+        "comgr_required": True,
+        "monitoring_component": "amdsmi",
+        "monitoring_name": "AMD SMI",
+        "monitoring_library_candidates": (
+            "lib/libamd_smi.so",
+            "lib64/libamd_smi.so",
+            "lib/x86_64-linux-gnu/libamd_smi.so",
+        ),
+        "miopen_component": "miopen-host",
+        "miopen_acceleration": False,
+    },
 }
-ROCM_BUILD_COMPONENTS = (
-    "hip", "rocblas", "hipblaslt", "rocsparse", "rocm-smi", "miopen",
-)
+# Compatibility alias retained for callers describing the two legacy SDKs.
+ROCM_BUILD_COMPONENTS = ROCM_LEGACY_BUILD_COMPONENTS
 DOWNLOAD_RETRIES = 4
 TRANSIENT_HTTP_STATUSES = {408, 429, 500, 502, 503, 504}
 SDX_MODULES = (
@@ -1283,6 +1332,12 @@ def attest_classifier_archive_contract(
             manifest_lines = [
                 line.strip() for line in manifest_text.splitlines() if line.strip()
             ]
+            manifest_format = "# nd4j-shared-runtime-manifest-v1"
+            if manifest_lines.count(manifest_format) != 1:
+                raise RuntimeError(
+                    f"{phase} classifier archive {path.name} has an invalid "
+                    f"runtime manifest format marker in {manifest_entry}"
+                )
             runtime_names = [
                 line for line in manifest_lines if not line.startswith("#")
             ]
@@ -1291,10 +1346,26 @@ def attest_classifier_archive_contract(
                     f"{phase} classifier archive {path.name} has an empty "
                     f"runtime closure manifest {manifest_entry}"
                 )
+            runtime_count = None
             alias_count = None
+            resource_count = None
             runtime_aliases = {}
+            resource_names = []
             for line in manifest_lines:
-                if line.startswith("# runtime-alias-count="):
+                if line.startswith("# runtime-count="):
+                    if runtime_count is not None:
+                        raise RuntimeError(
+                            f"{phase} classifier archive {path.name} has duplicate "
+                            "runtime counts"
+                        )
+                    try:
+                        runtime_count = int(line.partition("=")[2])
+                    except ValueError as exc:
+                        raise RuntimeError(
+                            f"{phase} classifier archive {path.name} has an invalid "
+                            f"runtime count: {line}"
+                        ) from exc
+                elif line.startswith("# runtime-alias-count="):
                     if alias_count is not None:
                         raise RuntimeError(
                             f"{phase} classifier archive {path.name} has duplicate "
@@ -1323,10 +1394,41 @@ def attest_classifier_archive_contract(
                             f"runtime alias declarations for {alias}"
                         )
                     runtime_aliases[alias] = target
+                elif line.startswith("# resource-count="):
+                    if resource_count is not None:
+                        raise RuntimeError(
+                            f"{phase} classifier archive {path.name} has duplicate "
+                            "resource counts"
+                        )
+                    try:
+                        resource_count = int(line.partition("=")[2])
+                    except ValueError as exc:
+                        raise RuntimeError(
+                            f"{phase} classifier archive {path.name} has an invalid "
+                            f"resource count: {line}"
+                        ) from exc
+                elif line.startswith("# resource="):
+                    resource_name = line.partition("=")[2].strip()
+                    if not resource_name or resource_name in resource_names:
+                        raise RuntimeError(
+                            f"{phase} classifier archive {path.name} has an invalid "
+                            f"runtime resource declaration: {line}"
+                        )
+                    resource_names.append(resource_name)
+            if runtime_count is None or runtime_count != len(runtime_names):
+                raise RuntimeError(
+                    f"{phase} classifier archive {path.name} declares "
+                    f"{runtime_count!r} runtimes but lists {len(runtime_names)}"
+                )
             if alias_count is not None and alias_count != len(runtime_aliases):
                 raise RuntimeError(
                     f"{phase} classifier archive {path.name} declares "
                     f"{alias_count} runtime aliases but lists {len(runtime_aliases)}"
+                )
+            if resource_count is None or resource_count != len(resource_names):
+                raise RuntimeError(
+                    f"{phase} classifier archive {path.name} declares "
+                    f"{resource_count!r} resources but lists {len(resource_names)}"
                 )
             missing_required_aliases = [
                 f"{alias}->{target}"
@@ -1377,6 +1479,33 @@ def attest_classifier_archive_contract(
                     f"{phase} classifier archive {path.name} is missing "
                     "manifest-owned runtimes: " + ", ".join(missing_runtime)
                 )
+            unsafe_resources = [
+                name for name in resource_names
+                if (
+                    name.startswith(("/", "\\"))
+                    or "\\" in name
+                    or "../" in name
+                    or name == ".."
+                    or not name.startswith(("rocblas/library/", ".kpack/"))
+                )
+            ]
+            if unsafe_resources:
+                raise RuntimeError(
+                    f"{phase} classifier archive {path.name} has unsafe runtime "
+                    "resources: " + ", ".join(unsafe_resources)
+                )
+            resource_entries = [
+                manifest_sibling(name) for name in resource_names
+            ]
+            missing_resources = [
+                entry for entry in resource_entries
+                if entry not in entries or entries[entry].file_size == 0
+            ]
+            if missing_resources:
+                raise RuntimeError(
+                    f"{phase} classifier archive {path.name} is missing "
+                    "manifest-owned resources: " + ", ".join(missing_resources)
+                )
             alias_entries = {
                 manifest_sibling(alias): manifest_sibling(target)
                 for alias, target in runtime_aliases.items()
@@ -1414,7 +1543,8 @@ def attest_classifier_archive_contract(
         f"[dl4j-attestation] phase={phase} classifier={classifier} "
         f"artifact={artifact_id} archive-entries={len(entries)} "
         f"runtime-closure={len(runtime_names)} "
-        f"runtime-aliases={len(runtime_aliases)}",
+        f"runtime-aliases={len(runtime_aliases)} "
+        f"runtime-resources={len(resource_names)}",
         flush=True,
     )
 
@@ -1906,39 +2036,66 @@ def rocm_build_spec(build: dict) -> dict | None:
         raise ValueError(
             f"Linux ZLUDA releases require a supported rocmVersion; got {version!r}"
         )
+    sdk = ROCM_BUILD_SDKS[version]
     if build.get("rocmBuildOnly") is not True:
         raise ValueError("Linux ZLUDA releases must declare rocmBuildOnly=true")
     components = tuple(build.get("rocmBuildComponents", ()))
-    if components != ROCM_BUILD_COMPONENTS:
+    required_components = tuple(sdk.get("components", ROCM_LEGACY_BUILD_COMPONENTS))
+    if components != required_components:
         raise ValueError(
-            "Linux ZLUDA releases require the exact ROCm build components "
-            f"{list(ROCM_BUILD_COMPONENTS)!r}; got {list(components)!r}"
+            f"Linux ZLUDA releases for ROCm {version} require the exact ROCm "
+            f"build components {list(required_components)!r}; "
+            f"got {list(components)!r}"
         )
-    sdk = ROCM_BUILD_SDKS[version]
-    packages = tuple(
+    packages = tuple(dict.fromkeys(
         package
         for component in components
         for package in sdk["component_packages"][component]
-    )
+    ))
     return {
         "version": version,
         "components": components,
         "packages": packages,
-        "installer_name": sdk["installer_name"],
-        "installer_url": sdk["installer_url"],
-        "rocblas_source_url": sdk["rocblas_source_url"],
-        "tensile_source_url": sdk["tensile_source_url"],
+        "provisioner": sdk.get("provisioner", "legacy-installer"),
+        "install_root": sdk.get("install_root", f"/opt/rocm-{version}"),
+        "installer_name": sdk.get("installer_name"),
+        "installer_url": sdk.get("installer_url"),
+        "repository_key_url": sdk.get("repository_key_url"),
+        "repository_key_fingerprint": sdk.get("repository_key_fingerprint"),
+        "repository_url": sdk.get("repository_url"),
+        "repository_suite": sdk.get("repository_suite"),
+        "repository_component": sdk.get("repository_component"),
+        "package_version": sdk.get("package_version"),
+        "package_inventory_required": sdk.get("package_inventory_required", False),
+        "rocblas_source_url": sdk.get("rocblas_source_url"),
+        "tensile_source_url": sdk.get("tensile_source_url"),
         "tensile_architectures": sdk["tensile_architectures"],
-        "tensile_code_object_version": sdk["tensile_code_object_version"],
-        "tensile_packages": sdk["tensile_packages"],
-        "tensile_gfx1103_backport": sdk["tensile_gfx1103_backport"],
-        "tensile_gfx1103_patch_url": sdk["tensile_gfx1103_patch_url"],
-        "rocblas_gfx1103_logic_patch_url": sdk["rocblas_gfx1103_logic_patch_url"],
-        "hsakmt_source_url": sdk["hsakmt_source_url"],
-        "hsakmt_source_subdirectory": sdk["hsakmt_source_subdirectory"],
-        "hsakmt_cmake_subdirectory": sdk["hsakmt_cmake_subdirectory"],
-        "hsakmt_rewrite_static_target": sdk["hsakmt_rewrite_static_target"],
+        "tensile_required": sdk.get("tensile_required", True),
+        "kernel_pack_groups": tuple(sdk.get("kernel_pack_groups", ())),
+        "tensile_code_object_version": sdk.get("tensile_code_object_version"),
+        "tensile_packages": tuple(sdk.get("tensile_packages", ())),
+        "tensile_gfx1103_backport": sdk.get("tensile_gfx1103_backport", False),
+        "tensile_gfx1103_patch_url": sdk.get("tensile_gfx1103_patch_url"),
+        "rocblas_gfx1103_logic_patch_url": sdk.get("rocblas_gfx1103_logic_patch_url"),
+        "hsakmt_bootstrap": sdk.get("hsakmt_bootstrap", True),
+        "hsakmt_source_url": sdk.get("hsakmt_source_url"),
+        "hsakmt_source_subdirectory": sdk.get("hsakmt_source_subdirectory", ""),
+        "hsakmt_cmake_subdirectory": sdk.get("hsakmt_cmake_subdirectory", ""),
+        "hsakmt_rewrite_static_target": sdk.get("hsakmt_rewrite_static_target", False),
         "hsakmt_disable_static_drm_target": sdk.get("hsakmt_disable_static_drm_target", False),
+        "comgr_required": sdk.get("comgr_required", False),
+        "monitoring_component": sdk.get("monitoring_component", "rocm-smi"),
+        "monitoring_name": sdk.get("monitoring_name", "ROCm SMI"),
+        "monitoring_library_candidates": tuple(sdk.get(
+            "monitoring_library_candidates",
+            (
+                "lib/librocm_smi64.so",
+                "lib64/librocm_smi64.so",
+                "lib/x86_64-linux-gnu/librocm_smi64.so",
+            ),
+        )),
+        "miopen_component": sdk.get("miopen_component", "miopen"),
+        "miopen_acceleration": sdk.get("miopen_acceleration", True),
     }
 
 
@@ -2000,10 +2157,14 @@ def attest_rocm_build_toolchain(
         "lib64/librocsparse.so",
         "lib/x86_64-linux-gnu/librocsparse.so",
     ))
-    rocm_smi_runtime = _first_existing_file(rocm_root, (
-        "lib/librocm_smi64.so",
-        "lib64/librocm_smi64.so",
-        "lib/x86_64-linux-gnu/librocm_smi64.so",
+    monitoring_runtime = _first_existing_file(
+        rocm_root, spec["monitoring_library_candidates"]
+    )
+    comgr_header = rocm_root / "include/amd_comgr/amd_comgr.h"
+    comgr_runtime = _first_existing_file(rocm_root, (
+        "lib/libamd_comgr.so",
+        "lib64/libamd_comgr.so",
+        "lib/x86_64-linux-gnu/libamd_comgr.so",
     ))
     failures = []
     installed_version = (
@@ -2015,6 +2176,27 @@ def attest_rocm_build_toolchain(
             f"{version_file} does not attest ROCm {spec['version']} "
             f"(found {installed_version or 'missing'})"
         )
+    package_inventory = rocm_root / ".info/dl4j-package-contract.json"
+    if spec["package_inventory_required"]:
+        expected_packages = {
+            package.split("=", 1)[0]: package.split("=", 1)[1]
+            for package in spec["packages"]
+        }
+        try:
+            inventory = json.loads(package_inventory.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            inventory = None
+        expected_inventory = {
+            "schemaVersion": 1,
+            "rocmVersion": spec["version"],
+            "repositoryKeyFingerprint": spec["repository_key_fingerprint"],
+            "packages": expected_packages,
+        }
+        if inventory != expected_inventory:
+            failures.append(
+                f"{package_inventory} does not attest the exact signed ROCm "
+                f"package contract {expected_inventory!r}"
+            )
     for description, path in (
             ("HIP header", hip_header),
             ("HIP compiler driver", hipcc)):
@@ -2033,15 +2215,26 @@ def attest_rocm_build_toolchain(
             failures.append(f"rocBLAS runtime library is missing below {rocm_root}")
     for component, description, runtime in (
             ("hipblaslt", "hipBLASLt", hipblaslt_runtime),
-            ("rocsparse", "rocSPARSE", rocsparse_runtime),
-            ("rocm-smi", "ROCm SMI", rocm_smi_runtime)):
+            ("rocsparse", "rocSPARSE", rocsparse_runtime)):
         if component in spec["components"] and runtime is None:
             failures.append(f"{description} runtime library is missing below {rocm_root}")
-    if "miopen" in spec["components"]:
+    if (
+        spec["monitoring_component"] in spec["components"]
+        and monitoring_runtime is None
+    ):
+        failures.append(
+            f"{spec['monitoring_name']} runtime library is missing below {rocm_root}"
+        )
+    if spec["miopen_component"] in spec["components"]:
         if not miopen_header.is_file():
             failures.append(f"MIOpen header is missing at {miopen_header}")
         if miopen_runtime is None:
             failures.append(f"MIOpen runtime library is missing below {rocm_root}")
+    if spec["comgr_required"]:
+        if not comgr_header.is_file():
+            failures.append(f"COMGR header is missing at {comgr_header}")
+        if comgr_runtime is None:
+            failures.append(f"COMGR runtime library is missing below {rocm_root}")
     if failures:
         raise RuntimeError("ROCm build-toolchain attestation failed: " + "; ".join(failures))
 
@@ -2050,11 +2243,21 @@ def attest_rocm_build_toolchain(
     env["HIP_PATH"] = str(rocm_root)
     env["DL4J_ZLUDA_REQUIRE_ROCM"] = "1"
     env["DL4J_ZLUDA_REQUIRE_MIOPEN"] = "1"
+    env["DL4J_ROCM_ARCH"] = spec["tensile_architectures"]
+    env["DL4J_ROCM_RESOURCE_FORMAT"] = (
+        "tensile" if spec["tensile_required"] else "kpack"
+    )
+    env["DL4J_ZLUDA_MIOPEN_ACCELERATION"] = (
+        "1" if spec["miopen_acceleration"] else "0"
+    )
+    if spec["comgr_required"]:
+        env["DL4J_ZLUDA_REQUIRE_COMGR"] = "1"
     _prepend_environment_path(env, "PATH", str(rocm_root / "bin"))
     _prepend_environment_path(env, "LD_LIBRARY_PATH", str(hip_runtime.parent))
     _prepend_environment_path(env, "CPLUS_INCLUDE_PATH", str(rocm_root / "include"))
     attested = {
         "version": version_file,
+        "packageInventory": package_inventory,
         "hipHeader": hip_header,
         "hipcc": hipcc,
         "hipRuntime": hip_runtime,
@@ -2064,7 +2267,10 @@ def attest_rocm_build_toolchain(
         "rocblasRuntime": rocblas_runtime,
         "hipblasltRuntime": hipblaslt_runtime,
         "rocsparseRuntime": rocsparse_runtime,
-        "rocmSmiRuntime": rocm_smi_runtime,
+        "monitoringRuntime": monitoring_runtime,
+        "rocmSmiRuntime": monitoring_runtime,
+        "comgrHeader": comgr_header,
+        "comgrRuntime": comgr_runtime,
         "miopenHeader": miopen_header,
         "miopenRuntime": miopen_runtime,
     }
@@ -2077,8 +2283,11 @@ def attest_rocm_build_toolchain(
             f"hsaRuntime={hsa_runtime} hsakmtRuntime={hsakmt_runtime} "
             f"rocblasHeader={rocblas_header} rocblasRuntime={rocblas_runtime} "
             f"hipblasltRuntime={hipblaslt_runtime} "
-            f"rocsparseRuntime={rocsparse_runtime} rocmSmiRuntime={rocm_smi_runtime} "
+            f"rocsparseRuntime={rocsparse_runtime} "
+            f"monitoring={spec['monitoring_name']} monitoringRuntime={monitoring_runtime} "
+            f"comgrHeader={comgr_header} comgrRuntime={comgr_runtime} "
             f"miopenHeader={miopen_header} miopenRuntime={miopen_runtime} "
+            f"miopenAcceleration={str(spec['miopen_acceleration']).lower()} "
             "hardwareProbe=skipped",
             flush=True,
         )
@@ -2103,6 +2312,44 @@ def rocm_tensile_data_file(root: Path, required_architecture: str) -> Path | Non
         )
     ]
     return valid[0] if len(valid) == 1 else None
+
+
+def rocm_kernel_pack_files(
+    root: Path, required_architecture: str, required_groups: tuple[str, ...]
+) -> dict[str, Path]:
+    """Locate one non-empty TheRock kernel pack for each required library group."""
+    kpack_root = root / ".kpack"
+    if not kpack_root.is_dir():
+        return {}
+    found: dict[str, Path] = {}
+    for group in required_groups:
+        candidate = kpack_root / f"{group}_lib_{required_architecture}.kpack"
+        if not candidate.is_file() or candidate.stat().st_size <= 0:
+            return {}
+        found[group] = candidate
+    return found
+
+
+def attest_rocm_optimized_payload(build: dict, root: Path) -> dict[str, Path]:
+    """Fail closed on the version-specific rocBLAS/sparse device payload."""
+    spec = rocm_build_spec(build)
+    if spec is None:
+        return {}
+    if spec["tensile_required"]:
+        tensile = rocm_tensile_data_file(root, spec["tensile_architectures"])
+        if tensile is None:
+            raise RuntimeError("rocBLAS Tensile data is missing")
+        return {"tensile": tensile}
+    packs = rocm_kernel_pack_files(
+        root, spec["tensile_architectures"], spec["kernel_pack_groups"]
+    )
+    if set(packs) != set(spec["kernel_pack_groups"]):
+        raise RuntimeError(
+            "ROCm Core SDK kernel packs are missing for "
+            f"{spec['tensile_architectures']}: "
+            f"required={','.join(spec['kernel_pack_groups'])}"
+        )
+    return packs
 
 
 def extract_rocm_source_archive(archive_path: Path, destination: Path) -> None:
@@ -2747,6 +2994,143 @@ def build_rocm_hsakmt(
     return installed
 
 
+def configure_rocm_core_repository(
+    spec: dict, env: dict[str, str], temporary_directory: Path
+) -> None:
+    """Configure AMD's signed ROCm Core SDK apt repository."""
+    required = (
+        "repository_key_url",
+        "repository_url",
+        "repository_suite",
+        "repository_component",
+        "repository_key_fingerprint",
+    )
+    missing = [name for name in required if not spec.get(name)]
+    if missing:
+        raise RuntimeError(
+            "ROCm Core SDK repository contract is incomplete: "
+            + ", ".join(missing)
+        )
+    key_download = temporary_directory / "amdrocm-packages.gpg"
+    download_with_retry(
+        str(spec["repository_key_url"]),
+        key_download,
+        f"ROCm {spec['version']} repository signing key",
+    )
+    verify_openpgp_key_fingerprint(
+        key_download, str(spec["repository_key_fingerprint"]), env
+    )
+    keyring = Path("/etc/apt/keyrings/amdrocm.gpg")
+    keyring.parent.mkdir(parents=True, exist_ok=True)
+    run(
+        [
+            "gpg", "--batch", "--yes", "--dearmor",
+            "--output", str(keyring), str(key_download),
+        ],
+        Path("/"),
+        env,
+    )
+    sources = Path("/etc/apt/sources.list.d/amdrocm-stable.sources")
+    sources.write_text(
+        "X-Repo-Id: amdrocm-stable\n"
+        "Types: deb\n"
+        f"URIs: {spec['repository_url']}\n"
+        f"Suites: {spec['repository_suite']}\n"
+        f"Components: {spec['repository_component']}\n"
+        "Architectures: amd64\n"
+        f"Signed-By: {keyring}\n"
+        "Enabled: yes\n",
+        encoding="utf-8",
+    )
+
+
+def verify_openpgp_key_fingerprint(
+    key_path: Path, expected_fingerprint: str, env: dict[str, str]
+) -> None:
+    """Fail closed unless the downloaded repository key has the pinned identity."""
+    inspected = subprocess.run(
+        ["gpg", "--batch", "--with-colons", "--show-keys", str(key_path)],
+        cwd=Path("/"),
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if inspected.returncode != 0:
+        raise RuntimeError(
+            "Could not inspect ROCm repository signing key: "
+            + inspected.stderr.strip()
+        )
+    primary_key_count = 0
+    primary_fingerprints = []
+    awaiting_primary_fingerprint = False
+    for line in inspected.stdout.splitlines():
+        fields = line.split(":")
+        record_type = fields[0] if fields else ""
+        if record_type == "pub":
+            primary_key_count += 1
+            awaiting_primary_fingerprint = True
+        elif record_type == "sub":
+            awaiting_primary_fingerprint = False
+        elif (
+            record_type == "fpr"
+            and awaiting_primary_fingerprint
+            and len(fields) > 9
+        ):
+            primary_fingerprints.append(fields[9].upper())
+            awaiting_primary_fingerprint = False
+    expected = expected_fingerprint.upper()
+    if primary_key_count != 1 or primary_fingerprints != [expected]:
+        raise RuntimeError(
+            "ROCm repository signing key fingerprint mismatch: "
+            f"expected exactly one primary key {expected}, found "
+            f"primaryKeys={primary_key_count}, "
+            f"fingerprints={primary_fingerprints or 'none'}"
+        )
+
+
+def record_rocm_package_inventory(
+    spec: dict, rocm_root: Path, env: dict[str, str]
+) -> Path:
+    """Persist exact signed package revisions so restored SDK caches remain auditable."""
+    installed_packages: dict[str, str] = {}
+    for package_contract in spec["packages"]:
+        if "=" not in package_contract:
+            raise RuntimeError(
+                "ROCm package inventory requires exact name=version contracts; "
+                f"got {package_contract!r}"
+            )
+        package_name, expected_version = package_contract.split("=", 1)
+        query = subprocess.run(
+            ["dpkg-query", "-W", "-f=${Version}", package_name],
+            cwd=Path("/"),
+            env=env,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        installed_version = query.stdout.strip()
+        if query.returncode != 0 or installed_version != expected_version:
+            raise RuntimeError(
+                f"ROCm package {package_name} must be {expected_version}; "
+                f"found {installed_version or 'missing'}"
+            )
+        installed_packages[package_name] = installed_version
+    inventory = {
+        "schemaVersion": 1,
+        "rocmVersion": spec["version"],
+        "repositoryKeyFingerprint": spec["repository_key_fingerprint"],
+        "packages": installed_packages,
+    }
+    inventory_path = rocm_root / ".info/dl4j-package-contract.json"
+    inventory_path.parent.mkdir(parents=True, exist_ok=True)
+    inventory_path.write_text(
+        json.dumps(inventory, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return inventory_path
+
+
 def prepare_rocm_build_toolchain(
     build: dict, env: dict[str, str], config: dict | None = None
 ) -> None:
@@ -2760,10 +3144,9 @@ def prepare_rocm_build_toolchain(
     os_release = Path("/etc/os-release")
     if os_release.is_file():
         os_contract = os_release.read_text(encoding="utf-8")
-    # ROCM_PATH is the explicit version selector. When it is not supplied,
-    # use the versioned prefix created by the ROCm repository installer rather
-    # than assuming that the installer also creates an /opt/rocm symlink.
-    rocm_root = Path(env.get("ROCM_PATH", f"/opt/rocm-{spec['version']}"))
+    # ROCM_PATH is the explicit version selector. Legacy and Core SDK package
+    # streams intentionally use different side-by-side prefixes.
+    rocm_root = Path(env.get("ROCM_PATH", spec["install_root"]))
     cache_identity = toolchain_cache_identity(
         "rocm-sdk",
         {
@@ -2778,10 +3161,20 @@ def prepare_rocm_build_toolchain(
                 "libhsa-runtime64.so.1",
                 "libhsakmt.so.1",
             ],
+            "provisioner": spec["provisioner"],
             "installerUrl": spec["installer_url"],
+            "repositoryKeyUrl": spec["repository_key_url"],
+            "repositoryKeyFingerprint": spec["repository_key_fingerprint"],
+            "repositoryUrl": spec["repository_url"],
+            "repositorySuite": spec["repository_suite"],
+            "repositoryComponent": spec["repository_component"],
+            "packageVersion": spec["package_version"],
+            "packageInventoryRequired": spec["package_inventory_required"],
             "rocblasSourceUrl": spec["rocblas_source_url"],
             "tensileSourceUrl": spec["tensile_source_url"],
             "tensileArchitectures": spec["tensile_architectures"],
+            "tensileRequired": spec["tensile_required"],
+            "kernelPackGroups": list(spec["kernel_pack_groups"]),
             "tensileCodeObjectVersion": spec["tensile_code_object_version"],
             "tensileGfx1103Backport": spec["tensile_gfx1103_backport"],
             "tensileGfx1103PatchUrl": spec["tensile_gfx1103_patch_url"],
@@ -2797,8 +3190,7 @@ def prepare_rocm_build_toolchain(
     cache_seed_required = False
     try:
         attest_rocm_build_toolchain(build, env, root=rocm_root, emit=False)
-        if rocm_tensile_data_file(rocm_root, spec["tensile_architectures"]) is None:
-            raise RuntimeError("rocBLAS Tensile data is missing")
+        attest_rocm_optimized_payload(build, rocm_root)
     except RuntimeError:
         rocm_ready = restore_toolchain_dependency(
             config,
@@ -2813,10 +3205,7 @@ def prepare_rocm_build_toolchain(
                 attest_rocm_build_toolchain(
                     build, env, root=rocm_root, emit=False
                 )
-                if rocm_tensile_data_file(
-                    rocm_root, spec["tensile_architectures"]
-                ) is None:
-                    raise RuntimeError("rocBLAS Tensile data is missing")
+                attest_rocm_optimized_payload(build, rocm_root)
             except RuntimeError:
                 # Older cache entries may predate the managed ROCt closure.
                 # Treat them as a seed candidate and repair them in place.
@@ -2839,18 +3228,31 @@ def prepare_rocm_build_toolchain(
         install_env = env.copy()
         install_env["DEBIAN_FRONTEND"] = "noninteractive"
         with tempfile.TemporaryDirectory(prefix="dl4j-rocm-sdk-") as temporary_directory:
-            installer = Path(temporary_directory) / str(spec["installer_name"])
-            if not rocm_ready:
-                download_with_retry(
-                    str(spec["installer_url"]),
-                    installer,
-                    f"ROCm {spec['version']} Ubuntu Jammy repository installer",
-                )
             run(["apt-get", "update"], Path("/"), install_env)
             if not rocm_ready:
-                run([
-                    "apt-get", "install", "-y", "--no-install-recommends", str(installer),
-                ], Path("/"), install_env)
+                if spec["provisioner"] == "signed-core-repository":
+                    run([
+                        "apt-get", "install", "-y", "--no-install-recommends",
+                        "ca-certificates", "gpg",
+                    ], Path("/"), install_env)
+                    configure_rocm_core_repository(
+                        spec, install_env, Path(temporary_directory)
+                    )
+                elif spec["provisioner"] == "legacy-installer":
+                    installer = Path(temporary_directory) / str(spec["installer_name"])
+                    download_with_retry(
+                        str(spec["installer_url"]),
+                        installer,
+                        f"ROCm {spec['version']} Ubuntu Jammy repository installer",
+                    )
+                    run([
+                        "apt-get", "install", "-y", "--no-install-recommends",
+                        str(installer),
+                    ], Path("/"), install_env)
+                else:
+                    raise RuntimeError(
+                        f"Unsupported ROCm provisioner: {spec['provisioner']}"
+                    )
                 run(["apt-get", "update"], Path("/"), install_env)
 
             packages = list(spec["packages"]) if not rocm_ready else []
@@ -2862,21 +3264,35 @@ def prepare_rocm_build_toolchain(
                 run([
                     "apt-get", "install", "-y", "--no-install-recommends", *packages,
                 ], Path("/"), install_env)
-            build_rocm_hsakmt(
-                build,
-                spec,
-                rocm_root,
-                install_env,
-                Path(temporary_directory),
-            )
+            if not rocm_ready and spec["package_inventory_required"]:
+                record_rocm_package_inventory(spec, rocm_root, install_env)
+            if spec["hsakmt_bootstrap"]:
+                build_rocm_hsakmt(
+                    build,
+                    spec,
+                    rocm_root,
+                    install_env,
+                    Path(temporary_directory),
+                )
 
-    if rocm_tensile_data_file(rocm_root, spec["tensile_architectures"]) is None:
+    if (
+        spec["tensile_required"]
+        and rocm_tensile_data_file(
+            rocm_root, spec["tensile_architectures"]
+        ) is None
+    ):
         with tempfile.TemporaryDirectory(prefix="dl4j-tensile-") as temporary_directory:
             build_rocm_tensile_data(
                 build, spec, rocm_root, env, Path(temporary_directory)
             )
 
     attest_rocm_build_toolchain(build, env, root=rocm_root)
+    optimized_payload = attest_rocm_optimized_payload(build, rocm_root)
+    print(
+        "[dl4j-attestation] rocmOptimizedPayload="
+        + ",".join(f"{name}:{path}" for name, path in optimized_payload.items()),
+        flush=True,
+    )
     if cache_seed_required:
         publish_toolchain_dependency(
             config,

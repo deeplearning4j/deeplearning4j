@@ -9,6 +9,7 @@
     "build-deploy-linux-arm64.yml",
     "build-deploy-linux-cuda-12.6.yml",
     "build-deploy-linux-cuda-12.9.yml",
+    "build-deploy-linux-arm64-cuda-13.1.yml",
     "build-deploy-windows.yml",
     "build-deploy-windows-cuda-12.6.yml",
     "build-deploy-windows-cuda-12.9.yml",
@@ -407,6 +408,25 @@
         "version": "latest",
         "architecture": "x64"
       }
+    },
+    {
+      "id": "linux-arm64-cuda-13-1",
+      "lane": "linux-arm64-jammy",
+      "os": "linux",
+      "architecture": "arm64",
+      "machineClass": "arm",
+      "worker": "worker.sh",
+      "containerImage": "nvidia/cuda:13.1.2-cudnn-devel-ubuntu24.04",
+      "workloads": ["maven", "sdk"],
+      "artifactRules": {
+        "mode": "classifier",
+        "artifactIds": ["nd4j-cuda-13.1", "nd4j-cuda-13.1-preset", "nd4j-cuda-backend-common"],
+        "classifierTokens": ["linux-arm64"],
+        "unclassifiedArtifactIds": ["nd4j-cuda-13.1", "nd4j-cuda-13.1-preset", "nd4j-cuda-backend-common"],
+        "includeMetadata": true
+      },
+      "build": {"backend": "cuda", "cudaVersion": "13.1", "javacppPlatform": "linux-arm64", "crossCompileSbsa": true, "profiles": ["cuda", "osx-aarch64-protoc"], "modules": [":nd4j-cuda-13.1", ":nd4j-cuda-13.1-preset", ":libnd4j", ":nd4j-cuda-backend-common"], "mavenArgs": ["-Dlibnd4j.compute=12.1"], "cudaThreads": 1, "cudaSplitCompile": 1, "variants": [{"name": "base", "classifierSuffix": "-cuda-13.1", "platformExtension": ""}, {"name": "cudnn", "helper": "cudnn", "classifierSuffix": "-cuda-13.1-cudnn", "platformExtension": "-cudnn"}, {"name": "compile", "classifierSuffix": "-cuda-13.1-compile", "platformExtension": "-compile", "triton": true}], "buildThreads": 4},
+      "image": {"publisher": "Canonical", "offer": "0001-com-ubuntu-server-jammy", "sku": "22_04-lts-arm64", "version": "latest", "architecture": "Arm64"}
     },
     {
       "id": "windows-x86_64-cpu",
@@ -1446,6 +1466,28 @@
       },
       "build": {"backend": "cuda", "cudaVersion": "12.9", "zludaVersion": "v7-preview.8", "rocmVersion": "6.2.4", "javacppPlatform": "windows-x86_64", "profiles": ["cuda", "sdx", "zluda", "zluda-platform"], "modules": [":nd4j-cuda-12.9-preset", ":nd4j-zluda-12.9", ":libnd4j", ":nd4j-cuda-backend-common", ":nd4j-zluda-12.9-platform", ":nd4j-presets-common"], "mavenArgs": ["-Dlibnd4j.zluda=AMD", "-Drocm.version=6.2.4", "-Dlibnd4j.oom.killer=OFF"], "variants": [{"name": "cuda-12.9", "classifierSuffix": "-cuda-12.9-zluda-rocm-6.2.4", "platformExtension": "-zluda-rocm-6.2.4"}], "buildThreads": 48},
       "image": {"publisher": "MicrosoftWindowsServer", "offer": "WindowsServer", "sku": "2022-datacenter-azure-edition", "version": "latest", "architecture": "x64"}
+    },
+    {
+      "id": "linux-x86_64-zluda-rocm-10.0.0",
+      "lane": "linux-x86-64-jammy",
+      "sourceWorkflow": "build-deploy-linux-zluda.yml",
+      "os": "linux",
+      "architecture": "x86_64",
+      "machineClass": "x86",
+      "worker": "worker.sh",
+      "containerImage": "nvidia/cuda:12.9.1-devel-ubuntu22.04",
+      "workloads": ["maven"],
+      "artifactRules": {
+        "mode": "classifier",
+        "classifierPrimaryArtifact": "nd4j-zluda-12.9",
+        "artifactIds": ["nd4j-cuda-12.9-preset", "nd4j-zluda-12.9", "nd4j-zluda-12.9-platform", "nd4j-cuda-backend-common", "nd4j-presets-common"],
+        "classifierTokens": ["linux-x86_64-zluda-rocm-10.0.0"],
+        "unclassifiedArtifactIds": ["nd4j-cuda-backend-common", "nd4j-cuda-12.9-preset", "nd4j-zluda-12.9", "nd4j-zluda-12.9-platform", "nd4j-presets-common"],
+        "classifierArchiveContracts": {"nd4j-zluda-12.9": {"requiredEntries": ["org/nd4j/linalg/jcublas/bindings/{classifier}/libjnind4jcuda.so", "org/nd4j/linalg/jcublas/bindings/{classifier}/libnd4jcuda.so", "org/nd4j/linalg/jcublas/bindings/{classifier}/libcuda.so", "org/nd4j/linalg/jcublas/bindings/{classifier}/libamdhip64.so", "org/nd4j/linalg/jcublas/bindings/{classifier}/libhsa-runtime64.so.1", "org/nd4j/linalg/jcublas/bindings/{classifier}/libhsakmt.so.1", "org/nd4j/linalg/jcublas/bindings/{classifier}/.kpack/blas_lib_gfx1103.kpack", "org/nd4j/linalg/jcublas/bindings/{classifier}/.kpack/sparse_lib_gfx1103.kpack", "org/nd4j/linalg/jcublas/bindings/{classifier}/shared-runtime-manifest.txt"], "runtimeManifest": "org/nd4j/linalg/jcublas/bindings/{classifier}/shared-runtime-manifest.txt", "requiredRuntimeAliases": {"libcuda.so": "libnvcuda.so", "libcuda.so.1": "libnvcuda.so"}}},
+        "includeMetadata": true
+      },
+      "build": {"backend": "cuda", "cudaVersion": "12.9", "zludaVersion": "v7-preview.8", "rocmVersion": "10.0.0", "rocmBuildOnly": true, "rocmBuildComponents": ["hip", "rocblas", "hipblaslt", "rocsparse", "amdsmi", "miopen-host"], "javacppPlatform": "linux-x86_64", "profiles": ["cuda", "sdx", "zluda", "zluda-platform"], "modules": [":nd4j-cuda-12.9-preset", ":nd4j-zluda-12.9", ":nd4j-zluda-12.9-platform", ":libnd4j", ":nd4j-cuda-backend-common", ":nd4j-presets-common"], "mavenArgs": ["-Dlibnd4j.zluda=AMD", "-Drocm.version=10.0.0"], "variants": [{"name": "cuda-12.9", "classifierSuffix": "-cuda-12.9-zluda-rocm-10.0.0", "platformExtension": "-zluda-rocm-10.0.0"}], "buildThreads": 48},
+      "image": {"publisher": "Canonical", "offer": "0001-com-ubuntu-server-jammy", "sku": "22_04-lts-gen2", "version": "latest", "architecture": "x64"}
     }
   ]
 }

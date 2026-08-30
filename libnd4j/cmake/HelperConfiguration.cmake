@@ -508,7 +508,8 @@ function(sd_initialize_helpers)
     if(HELPERS_miopen)
         if(HELPER_MIOPEN_COMPATIBLE)
             setup_miopen_download()
-            if(HAVE_MIOPEN)
+            if(HAVE_MIOPEN AND
+               (NOT SD_ZLUDA OR ZLUDA_MIOPEN_HELPERS_ENABLED))
                 list(APPEND enabled_helpers "miopen")
                 sd_register_helper("miopen")
             endif()
@@ -684,8 +685,11 @@ function(sd_print_helper_summary)
 
     # MIOpen
     if(HELPERS_miopen)
-        if(HAVE_MIOPEN)
+        if(HAVE_MIOPEN AND
+           (NOT SD_ZLUDA OR ZLUDA_MIOPEN_HELPERS_ENABLED))
             message(STATUS "║ MIOpen            │    YES    │    YES    │ Active              ║")
+        elseif(HAVE_MIOPEN AND SD_ZLUDA)
+            message(STATUS "║ MIOpen            │    YES    │    NO     │ Runtime ABI only    ║")
         else()
             message(STATUS "║ MIOpen            │    YES    │    NO     │ Not Found           ║")
         endif()
@@ -779,7 +783,7 @@ function(sd_collect_helper_sources out_source_list)
     endif()
 
     # MIOpen sources
-    if(HAVE_MIOPEN)
+    if(HAVE_MIOPEN AND (NOT SD_ZLUDA OR ZLUDA_MIOPEN_HELPERS_ENABLED))
         file(GLOB_RECURSE MIOPEN_SOURCES
             ${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/platform/miopen/*.cpp
         )

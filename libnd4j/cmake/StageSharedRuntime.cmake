@@ -1013,6 +1013,30 @@ if(DEFINED PACKAGE_DIR AND NOT PACKAGE_DIR STREQUAL "")
     endforeach()
     list(REMOVE_DUPLICATES _rocblas_resource_dirs)
 
+    # TheRock-based ROCm Core SDKs replace the legacy Tensile directory with
+    # architecture-specific kernel packs. Preserve the SDK-relative .kpack
+    # layout in the classifier and copy only the optimized libraries used by
+    # this ZLUDA runtime closure. The declared resource format comes from the
+    # release SDK attestation; never infer a fallback from partial contents.
+    set(_rocm_kpack_dirs "")
+    if(DEFINED ROCM_RESOURCE_FORMAT AND ROCM_RESOURCE_FORMAT STREQUAL "kpack")
+        if(NOT DEFINED ROCM_RUNTIME_ARCH OR ROCM_RUNTIME_ARCH STREQUAL "")
+            message(FATAL_ERROR
+                "ROCm kpack runtime staging requires an attested ROCM_RUNTIME_ARCH")
+        endif()
+        foreach(_runtime_search_root IN LISTS _runtime_search_roots)
+            if(IS_DIRECTORY "${_runtime_search_root}/.kpack")
+                list(APPEND _rocm_kpack_dirs "${_runtime_search_root}/.kpack")
+            endif()
+        endforeach()
+        list(REMOVE_DUPLICATES _rocm_kpack_dirs)
+        list(LENGTH _rocm_kpack_dirs _rocm_kpack_dir_count)
+        if(NOT _rocm_kpack_dir_count EQUAL 1)
+            message(FATAL_ERROR
+                "ROCm ${ROCM_RUNTIME_ARCH} requires exactly one canonical .kpack root; found ${_rocm_kpack_dir_count}")
+        endif()
+    endif()
+
     set(_rocblas_runtime_present FALSE)
     foreach(_staged_runtime_name IN LISTS _staged_runtime_names)
         if(_staged_runtime_name MATCHES "^librocblas[.]so($|[.])")
@@ -1052,8 +1076,49 @@ if(DEFINED PACKAGE_DIR AND NOT PACKAGE_DIR STREQUAL "")
             math(EXPR _rocblas_resource_count "${_rocblas_resource_count} + 1")
         endforeach()
     endforeach()
+
+    set(_rocm_kpack_resource_count 0)
+    if(_rocm_kpack_dirs)
+        list(GET _rocm_kpack_dirs 0 _rocm_kpack_dir)
+        foreach(_rocm_kpack_group IN ITEMS blas sparse)
+            set(_rocm_kpack_name
+                "${_rocm_kpack_group}_lib_${ROCM_RUNTIME_ARCH}.kpack")
+            set(_rocm_kpack_file
+                "${_rocm_kpack_dir}/${_rocm_kpack_name}")
+            if(NOT EXISTS "${_rocm_kpack_file}" OR
+               IS_DIRECTORY "${_rocm_kpack_file}")
+                message(FATAL_ERROR
+                    "ROCm ${ROCM_RUNTIME_ARCH} canonical ${_rocm_kpack_group} kernel pack is missing: ${_rocm_kpack_file}")
+            endif()
+            file(SIZE "${_rocm_kpack_file}" _rocm_kpack_size)
+            if(_rocm_kpack_size EQUAL 0)
+                message(FATAL_ERROR
+                    "ROCm kernel pack is empty: ${_rocm_kpack_file}")
+            endif()
+            set(_rocm_kpack_output
+                "${_runtime_package_dir_absolute}/.kpack/${_rocm_kpack_name}")
+            get_filename_component(_rocm_kpack_output_dir
+                "${_rocm_kpack_output}" DIRECTORY)
+            file(MAKE_DIRECTORY "${_rocm_kpack_output_dir}")
+            execute_process(
+                COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+                    "${_rocm_kpack_file}" "${_rocm_kpack_output}"
+                RESULT_VARIABLE _rocm_kpack_copy_result)
+            if(NOT _rocm_kpack_copy_result EQUAL 0 OR
+               NOT EXISTS "${_rocm_kpack_output}")
+                message(FATAL_ERROR
+                    "Failed to stage ROCm kernel pack '${_rocm_kpack_file}'")
+            endif()
+            list(APPEND _staged_resource_names
+                ".kpack/${_rocm_kpack_name}")
+            math(EXPR _rocm_kpack_resource_count
+                "${_rocm_kpack_resource_count} + 1")
+        endforeach()
+    endif()
     list(REMOVE_DUPLICATES _staged_resource_names)
-    if(_rocblas_runtime_present AND NOT _rocblas_tensile_found)
+    if(NOT (DEFINED ROCM_RESOURCE_FORMAT AND
+            ROCM_RESOURCE_FORMAT STREQUAL "kpack") AND
+       _rocblas_runtime_present AND NOT _rocblas_tensile_found)
         message(FATAL_ERROR
             "librocblas.so is staged but its rocblas/library/TensileLibrary.dat "
             "resource tree was not found in the declared ROCm runtime roots")
@@ -1061,6 +1126,10 @@ if(DEFINED PACKAGE_DIR AND NOT PACKAGE_DIR STREQUAL "")
     if(_rocblas_resource_count GREATER 0)
         message(STATUS
             "Staged rocBLAS dispatch resources: ${_rocblas_resource_count} files")
+    endif()
+    if(_rocm_kpack_resource_count GREATER 0)
+        message(STATUS
+            "Staged ROCm ${ROCM_RUNTIME_ARCH} kernel packs: ${_rocm_kpack_resource_count} files")
     endif()
 
     list(LENGTH _runtime_package_sources _runtime_package_file_count)

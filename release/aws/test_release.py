@@ -1565,6 +1565,59 @@ class ReleaseValidationTest(unittest.TestCase):
                         self.assertNotIn("rocmBuildOnly", build)
                         self.assertNotIn("rocmBuildComponents", build)
 
+    def test_rocm_10_zluda_linux_shard_is_published_for_every_cloud(self):
+        root = Path(__file__).parents[2]
+        shard_id = "linux-x86_64-zluda-rocm-10.0.0"
+        for provider in ("aws", "gcp", "azure"):
+            plan = json.loads(
+                (root / f"release/{provider}/release-plan.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            by_id = {shard["id"]: shard for shard in plan["shards"]}
+            with self.subTest(provider=provider):
+                self.assertIn(shard_id, by_id)
+                self.assertNotIn("windows-x86_64-zluda-rocm-10.0.0", by_id)
+                shard = by_id[shard_id]
+                build = shard["build"]
+                self.assertEqual("linux", shard["os"])
+                self.assertEqual("linux-x86_64", build["javacppPlatform"])
+                self.assertEqual("10.0.0", build["rocmVersion"])
+                self.assertTrue(build["rocmBuildOnly"])
+                self.assertEqual(
+                    [
+                        "hip", "rocblas", "hipblaslt", "rocsparse",
+                        "amdsmi", "miopen-host",
+                    ],
+                    build["rocmBuildComponents"],
+                )
+                self.assertEqual(
+                    ["linux-x86_64-zluda-rocm-10.0.0"],
+                    shard["artifactRules"]["classifierTokens"],
+                )
+                self.assertEqual(
+                    "-cuda-12.9-zluda-rocm-10.0.0",
+                    build["variants"][0]["classifierSuffix"],
+                )
+                self.assertEqual(
+                    "-zluda-rocm-10.0.0",
+                    build["variants"][0]["platformExtension"],
+                )
+                self.assertIn("-Drocm.version=10.0.0", build["mavenArgs"])
+                required_entries = shard["artifactRules"][
+                    "classifierArchiveContracts"
+                ]["nd4j-zluda-12.9"]["requiredEntries"]
+                self.assertIn(
+                    "org/nd4j/linalg/jcublas/bindings/{classifier}/"
+                    ".kpack/blas_lib_gfx1103.kpack",
+                    required_entries,
+                )
+                self.assertIn(
+                    "org/nd4j/linalg/jcublas/bindings/{classifier}/"
+                    ".kpack/sparse_lib_gfx1103.kpack",
+                    required_entries,
+                )
+
     def test_rocm_hsakmt_sources_match_each_upstream_archive_layout(self):
         standalone = build_platform.ROCM_BUILD_SDKS["6.2.4"]
         self.assertEqual(
@@ -1843,6 +1896,12 @@ class ReleaseValidationTest(unittest.TestCase):
         configuration = (
             root / "libnd4j/cmake/ZludaConfiguration.cmake"
         ).read_text(encoding="utf-8")
+        cuda_configuration = (
+            root / "libnd4j/cmake/CudaConfiguration.cmake"
+        ).read_text(encoding="utf-8")
+        main_build_flow = (
+            root / "libnd4j/cmake/MainBuildFlow.cmake"
+        ).read_text(encoding="utf-8")
         replay_factory = (
             root / "libnd4j/include/graph/impl/GraphReplayFactory.cpp"
         ).read_text(encoding="utf-8")
@@ -1882,8 +1941,14 @@ class ReleaseValidationTest(unittest.TestCase):
             "ROCM_HIP_RUNTIME_LIBRARY",
             "DL4J_ZLUDA_REQUIRE_ROCM",
             "DL4J_ZLUDA_REQUIRE_MIOPEN",
+            "DL4J_ZLUDA_REQUIRE_COMGR",
+            "ZLUDA_MIOPEN_HELPERS_ENABLED",
+            "ROCM_COMGR_LIBRARY",
             "target_link_libraries(${target_name} PRIVATE ${MIOPEN_LIBRARY})",
             "target_link_libraries(${target_name} PRIVATE ${ROCM_HIP_RUNTIME_LIBRARY})",
+            "target_link_libraries(${target_name} PRIVATE ${ROCM_COMGR_LIBRARY})",
+            "unset(ROCM_PATH CACHE)",
+            "unset(${_rocm_cached_lookup} CACHE)",
         ):
             self.assertIn(token, configuration)
         for leaked_sdk_setting in (
@@ -1901,6 +1966,16 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn(
             'set(_ZLUDA_MIOPEN_BRIDGE_SOURCE', configuration
         )
+        self.assertIn('set(_ZLUDA_TRITON_TARGET_SOURCE', configuration)
+        self.assertIn('"${ROCM_COMGR_INCLUDE_DIR}"', configuration)
+        self.assertIn(
+            "DL4J_ZLUDA_MIOPEN_ACCELERATION", cuda_configuration
+        )
+        self.assertIn(
+            "ZLUDA cuDNN/MIOpen execution is unavailable",
+            cuda_configuration,
+        )
+        self.assertIn("ZLUDA_MIOPEN_HELPERS_ENABLED", main_build_flow)
         self.assertIn(
             'INCLUDE_DIRECTORIES "${_ZLUDA_MIOPEN_INCLUDE_DIRS}"', configuration
         )
@@ -2496,6 +2571,7 @@ class ReleaseValidationTest(unittest.TestCase):
                 "# nd4j-shared-runtime-manifest-v1\n"
                 "# runtime-count=2\n"
                 "# runtime-alias-count=2\n"
+                "# resource-count=0\n"
                 "# runtime-alias=libcuda.so->libnvcuda.so\n"
                 "# runtime-alias=libcuda.so.1->libnvcuda.so\n"
                 "libamdhip64.so\nlibnvcuda.so\n"
@@ -2541,6 +2617,36 @@ class ReleaseValidationTest(unittest.TestCase):
                 )
             self.assertIn("runtime-closure=2", output.getvalue())
             self.assertIn("runtime-aliases=2", output.getvalue())
+
+            resource_manifest = manifest.replace(
+                "# resource-count=0\n",
+                "# resource-count=1\n"
+                "# resource=rocblas/library/TensileLibrary.dat\n",
+            )
+            with zipfile.ZipFile(zluda_path, "w") as archive:
+                for name, value in (
+                    (f"{native_root}/libjnind4jcuda.so", b"jni"),
+                    (f"{native_root}/libnd4jcuda.so", b"backend"),
+                    (f"{native_root}/libamdhip64.so", b"hip"),
+                    (f"{native_root}/libnvcuda.so", b"zluda"),
+                    (f"{native_root}/libcuda.so", b"zluda"),
+                    (f"{native_root}/libcuda.so.1", b"zluda"),
+                    (f"{native_root}/shared-runtime-manifest.txt",
+                     resource_manifest.encode("utf-8")),
+                ):
+                    archive.writestr(name, value)
+            with self.assertRaisesRegex(RuntimeError, "manifest-owned resources"):
+                build_platform.attest_variant_classifier_artifacts(
+                    repository, build, rules, variant, version, "test-repository"
+                )
+            with zipfile.ZipFile(zluda_path, "a") as archive:
+                archive.writestr(
+                    f"{native_root}/rocblas/library/TensileLibrary.dat",
+                    b"dispatch",
+                )
+            build_platform.attest_variant_classifier_artifacts(
+                repository, build, rules, variant, version, "test-repository"
+            )
 
     def test_cpu_cuda_classifier_contract_rejects_incomplete_plan(self):
         build = {
@@ -2732,6 +2838,183 @@ class ReleaseValidationTest(unittest.TestCase):
             )
             self.assertIsNone(build_platform.rocm_tensile_data_file(root, "gfx1103"))
 
+    def test_rocm_10_core_sdk_contract_and_kernel_packs_are_fail_closed(self):
+        build = {
+            "zludaVersion": "v7-preview.8",
+            "javacppPlatform": "linux-x86_64",
+            "rocmVersion": "10.0.0",
+            "rocmBuildOnly": True,
+            "rocmBuildComponents": [
+                "hip", "rocblas", "hipblaslt", "rocsparse",
+                "amdsmi", "miopen-host",
+            ],
+        }
+        spec = build_platform.rocm_build_spec(build)
+        self.assertEqual("signed-core-repository", spec["provisioner"])
+        self.assertEqual("/opt/rocm/core-10.0", spec["install_root"])
+        self.assertEqual(
+            (
+                "amdrocm-core-dev10.0-gfx1103=10.0.0-4",
+                "amdrocm-dnn-host10.0=10.0.0-4",
+            ),
+            spec["packages"],
+        )
+        self.assertFalse(spec["tensile_required"])
+        self.assertFalse(spec["hsakmt_bootstrap"])
+        self.assertTrue(spec["comgr_required"])
+        self.assertFalse(spec["miopen_acceleration"])
+        self.assertEqual(("blas", "sparse"), spec["kernel_pack_groups"])
+        self.assertTrue(spec["package_inventory_required"])
+        self.assertEqual(
+            "D0F004A0025A1145C7807FCD0701EAC4D5E02107",
+            spec["repository_key_fingerprint"],
+        )
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            required_files = (
+                root / ".info/version",
+                root / "include/hip/hip_runtime.h",
+                root / "bin/hipcc",
+                root / "lib/libamdhip64.so",
+                root / "lib/libhsa-runtime64.so.1",
+                root / "lib/libhsakmt.so.1",
+                root / "include/rocblas/rocblas.h",
+                root / "lib/librocblas.so",
+                root / "lib/libhipblaslt.so",
+                root / "lib/librocsparse.so",
+                root / "lib/libamd_smi.so",
+                root / "include/miopen/miopen.h",
+                root / "lib/libMIOpen.so",
+                root / "include/amd_comgr/amd_comgr.h",
+                root / "lib/libamd_comgr.so",
+                root / ".kpack/blas_lib_gfx1103.kpack",
+                root / ".kpack/sparse_lib_gfx1103.kpack",
+            )
+            for path in required_files:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(
+                    "10.0.0-4" if path == required_files[0] else "sdk",
+                    encoding="utf-8",
+                )
+            inventory_path = root / ".info/dl4j-package-contract.json"
+            inventory_path.write_text(
+                json.dumps({
+                    "schemaVersion": 1,
+                    "rocmVersion": "10.0.0",
+                    "repositoryKeyFingerprint": spec["repository_key_fingerprint"],
+                    "packages": {
+                        "amdrocm-core-dev10.0-gfx1103": "10.0.0-4",
+                        "amdrocm-dnn-host10.0": "10.0.0-4",
+                    },
+                }),
+                encoding="utf-8",
+            )
+
+            environment = {"PATH": "/usr/bin"}
+            attested = build_platform.attest_rocm_build_toolchain(
+                build, environment, root=root, emit=False
+            )
+            self.assertEqual(required_files[14], attested["comgrRuntime"])
+            self.assertEqual("1", environment["DL4J_ZLUDA_REQUIRE_COMGR"])
+            self.assertEqual("0", environment["DL4J_ZLUDA_MIOPEN_ACCELERATION"])
+            packs = build_platform.attest_rocm_optimized_payload(build, root)
+            self.assertEqual({"blas", "sparse"}, set(packs))
+
+            required_files[16].unlink()
+            with self.assertRaisesRegex(RuntimeError, "kernel packs"):
+                build_platform.attest_rocm_optimized_payload(build, root)
+            nested = root / ".kpack/nested/sparse_lib_gfx1103.kpack"
+            nested.parent.mkdir(parents=True)
+            nested.write_text("nested", encoding="utf-8")
+            with self.assertRaisesRegex(RuntimeError, "kernel packs"):
+                build_platform.attest_rocm_optimized_payload(build, root)
+            nested.unlink()
+            renamed = root / ".kpack/sparse_renamed_gfx1103.kpack"
+            renamed.write_text("renamed", encoding="utf-8")
+            with self.assertRaisesRegex(RuntimeError, "kernel packs"):
+                build_platform.attest_rocm_optimized_payload(build, root)
+            renamed.unlink()
+            required_files[16].write_text("sdk", encoding="utf-8")
+            required_files[14].unlink()
+            with self.assertRaisesRegex(RuntimeError, "COMGR runtime"):
+                build_platform.attest_rocm_build_toolchain(
+                    build, environment, root=root, emit=False
+                )
+            required_files[14].write_text("sdk", encoding="utf-8")
+            inventory_path.write_text("{}", encoding="utf-8")
+            with self.assertRaisesRegex(RuntimeError, "exact signed ROCm package"):
+                build_platform.attest_rocm_build_toolchain(
+                    build, environment, root=root, emit=False
+                )
+
+    def test_rocm_repository_key_and_package_inventory_are_exact(self):
+        fingerprint = "D0F004A0025A1145C7807FCD0701EAC4D5E02107"
+        key_listing = (
+            "pub:-:4096:1:0701EAC4D5E02107:0:0:::::::\n"
+            f"fpr:::::::::{fingerprint}:\n"
+            "sub:-:4096:1:FA296B056C5BB456:0:0:::::::\n"
+            "fpr:::::::::C367239A86C9B62AF49C921EFA296B056C5BB456:\n"
+        )
+        completed = subprocess.CompletedProcess(
+            args=["gpg"], returncode=0, stdout=key_listing, stderr=""
+        )
+        with patch.object(build_platform.subprocess, "run", return_value=completed):
+            build_platform.verify_openpgp_key_fingerprint(
+                Path("/tmp/packages.gpg"), fingerprint, {"PATH": "/usr/bin"}
+            )
+            with self.assertRaisesRegex(RuntimeError, "fingerprint mismatch"):
+                build_platform.verify_openpgp_key_fingerprint(
+                    Path("/tmp/packages.gpg"), "0" * 40, {"PATH": "/usr/bin"}
+                )
+        multi_primary_listing = key_listing + (
+            "pub:-:4096:1:1111111111111111:0:0:::::::\n"
+            "fpr:::::::::1111111111111111111111111111111111111111:\n"
+        )
+        multiple = subprocess.CompletedProcess(
+            args=["gpg"], returncode=0,
+            stdout=multi_primary_listing, stderr=""
+        )
+        with patch.object(build_platform.subprocess, "run", return_value=multiple):
+            with self.assertRaisesRegex(RuntimeError, "exactly one primary key"):
+                build_platform.verify_openpgp_key_fingerprint(
+                    Path("/tmp/packages.gpg"), fingerprint, {"PATH": "/usr/bin"}
+                )
+
+        spec = build_platform.rocm_build_spec({
+            "zludaVersion": "v7-preview.8",
+            "javacppPlatform": "linux-x86_64",
+            "rocmVersion": "10.0.0",
+            "rocmBuildOnly": True,
+            "rocmBuildComponents": [
+                "hip", "rocblas", "hipblaslt", "rocsparse",
+                "amdsmi", "miopen-host",
+            ],
+        })
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            versions = iter(("10.0.0-4", "10.0.0-4"))
+
+            def query_package(*args, **kwargs):
+                return subprocess.CompletedProcess(
+                    args=args[0], returncode=0, stdout=next(versions), stderr=""
+                )
+
+            with patch.object(
+                build_platform.subprocess, "run", side_effect=query_package
+            ):
+                inventory = build_platform.record_rocm_package_inventory(
+                    spec, root, {"PATH": "/usr/bin"}
+                )
+            recorded = json.loads(inventory.read_text(encoding="utf-8"))
+            self.assertEqual(
+                {
+                    "amdrocm-core-dev10.0-gfx1103": "10.0.0-4",
+                    "amdrocm-dnn-host10.0": "10.0.0-4",
+                },
+                recorded["packages"],
+            )
+
     def test_rocm_6_gfx1103_generator_backport_is_fail_closed(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
@@ -2871,6 +3154,7 @@ class ReleaseValidationTest(unittest.TestCase):
                 build_platform, "download_with_retry") as download, patch.object(
                 build_platform, "build_rocm_hsakmt", return_value=Path("/opt/rocm-7.2.4/lib/libhsakmt.so.1")) as hsakmt, patch.object(
                 build_platform, "build_rocm_tensile_data", return_value=Path("/opt/rocm-7.2.4/lib/rocblas/library/TensileLibrary.dat")) as tensile, patch.object(
+                build_platform, "attest_rocm_optimized_payload", return_value={"tensile": Path("/opt/rocm-7.2.4/lib/rocblas/library/TensileLibrary.dat")}) as optimized_payload, patch.object(
                 build_platform, "run") as run_command, patch.object(
                 build_platform.platform, "system", return_value="Linux"), patch.object(
                 build_platform.platform, "machine", return_value="x86_64"), patch.object(
@@ -2904,6 +3188,7 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertTrue(any(token == "rocblas" for command in commands for token in command))
         hsakmt.assert_called_once()
         tensile.assert_called_once()
+        optimized_payload.assert_called_once()
         self.assertIn("hipblaslt-dev", flattened)
         self.assertIn("rocsparse-dev", flattened)
         self.assertIn("rocm-smi-lib", flattened)
@@ -3431,6 +3716,20 @@ class ReleaseValidationTest(unittest.TestCase):
                     self.assertIn(f"-Dlibnd4j.classifier={classifier}", versioned)
                     self.assertIn(f"-Drocm.version={rocm_version}", versioned)
                     self.assertNotIn("-Djavacpp.platform.extension=-zluda", versioned)
+
+        rocm_version = "10.0.0"
+        extension = f"-zluda-rocm-{rocm_version}"
+        classifier = f"linux-x86_64-cuda-12.9-zluda-rocm-{rocm_version}"
+        versioned = command(
+            DL4J_FAMILY="zluda",
+            DL4J_CUDA_VERSION="12.9",
+            DL4J_PLATFORM_EXTENSION=extension,
+            DL4J_CLASSIFIER=classifier,
+            DL4J_ROCM_VERSION=rocm_version,
+        )
+        self.assertIn(f"-Djavacpp.platform.extension={extension}", versioned)
+        self.assertIn(f"-Dlibnd4j.classifier={classifier}", versioned)
+        self.assertIn(f"-Drocm.version={rocm_version}", versioned)
 
     def test_vulkan_native_family_tracks_worker_os(self):
         build = {

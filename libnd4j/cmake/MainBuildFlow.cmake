@@ -399,7 +399,8 @@ function(collect_all_sources out_source_list)
         endif()
 
         # ZLUDA MIOpen support for AMD GPUs (cuDNN alternative)
-        if(HAVE_ZLUDA AND ZLUDA_TARGET_BACKEND STREQUAL "AMD" AND HAVE_MIOPEN)
+        if(HAVE_ZLUDA AND ZLUDA_TARGET_BACKEND STREQUAL "AMD" AND
+           ZLUDA_MIOPEN_HELPERS_ENABLED)
             file(GLOB_RECURSE CUSTOMOPS_MIOPEN_SOURCES ./include/ops/declarable/platform/miopen/*.cpp)
             list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_MIOPEN_SOURCES})
             message(STATUS "✅ Added MIOpen platform sources for ZLUDA AMD")

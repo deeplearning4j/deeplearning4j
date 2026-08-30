@@ -258,7 +258,9 @@ function(setup_zluda)
     setup_zluda_amd()
     foreach(_zluda_amd_variable
             ROCM_PATH ROCM_INCLUDE_DIR ROCM_LIB_DIR ROCM_HIP_RUNTIME_LIBRARY
-            ROCM_HSA_RUNTIME_LIBRARY ROCM_HSAKMT_RUNTIME_LIBRARY HAVE_MIOPEN MIOPEN_LIBRARY MIOPEN_INCLUDE_DIR)
+            ROCM_HSA_RUNTIME_LIBRARY ROCM_HSAKMT_RUNTIME_LIBRARY HAVE_MIOPEN
+            ZLUDA_MIOPEN_HELPERS_ENABLED MIOPEN_LIBRARY MIOPEN_INCLUDE_DIR
+            ROCM_COMGR_LIBRARY ROCM_COMGR_INCLUDE_DIR)
         set(${_zluda_amd_variable} "${${_zluda_amd_variable}}" PARENT_SCOPE)
     endforeach()
 
@@ -283,6 +285,7 @@ function(setup_zluda_amd)
     # CMake treats any defined value other than *-NOTFOUND as resolved and
     # skips the filesystem search entirely.
     set(HAVE_MIOPEN FALSE)
+    set(ZLUDA_MIOPEN_HELPERS_ENABLED FALSE)
 
     # Find ROCm installation
     # ROCM_PATH is the sole version selector. Keep the unversioned /opt/rocm
@@ -292,14 +295,21 @@ function(setup_zluda_amd)
         $ENV{ROCM_PATH}
         $ENV{ROCM_HOME}
         $ENV{HIP_PATH}
+        ${ROCM_PATH}
         /opt/rocm
     )
 
-    find_path(ROCM_PATH
-        NAMES include/hip/hip_runtime.h
-        HINTS ${ROCM_SEARCH_PATHS}
-        NO_DEFAULT_PATH
-    )
+    set(_zluda_selected_rocm_path "")
+    foreach(_rocm_candidate IN LISTS ROCM_SEARCH_PATHS)
+        if(NOT "${_rocm_candidate}" STREQUAL "" AND
+           EXISTS "${_rocm_candidate}/include/hip/hip_runtime.h")
+            get_filename_component(_zluda_selected_rocm_path
+                "${_rocm_candidate}" REALPATH)
+            break()
+        endif()
+    endforeach()
+    unset(ROCM_PATH CACHE)
+    set(ROCM_PATH "${_zluda_selected_rocm_path}")
 
     if(ROCM_PATH)
         message(STATUS "Found ROCm: ${ROCM_PATH}")
@@ -307,6 +317,13 @@ function(setup_zluda_amd)
         set(ROCM_LIB_DIR "${ROCM_PATH}/lib")
 
         if(NOT WIN32)
+            foreach(_rocm_cached_lookup IN ITEMS
+                    ROCM_HIP_RUNTIME_LIBRARY ROCM_HSA_RUNTIME_LIBRARY
+                    ROCM_HSAKMT_RUNTIME_LIBRARY ROCM_COMGR_LIBRARY
+                    ROCM_COMGR_INCLUDE_DIR)
+                unset(${_rocm_cached_lookup} CACHE)
+                unset(${_rocm_cached_lookup})
+            endforeach()
             find_library(ROCM_HIP_RUNTIME_LIBRARY
                 NAMES amdhip64
                 HINTS ${ROCM_PATH}
@@ -325,6 +342,33 @@ function(setup_zluda_amd)
                 PATH_SUFFIXES lib lib64 lib/x86_64-linux-gnu
                 NO_DEFAULT_PATH
             )
+            find_library(ROCM_COMGR_LIBRARY
+                NAMES amd_comgr
+                HINTS ${ROCM_PATH}
+                PATH_SUFFIXES lib lib64 lib/x86_64-linux-gnu
+                NO_DEFAULT_PATH
+            )
+            find_path(ROCM_COMGR_INCLUDE_DIR
+                NAMES amd_comgr/amd_comgr.h
+                HINTS ${ROCM_PATH}
+                PATH_SUFFIXES include
+                NO_DEFAULT_PATH
+            )
+
+            # Triton AMD lowering bypasses ZLUDA and includes HIP/COMGR directly.
+            # Keep those declarations source-scoped so the remaining CUDA
+            # translation units never see conflicting HIP vector/runtime types.
+            set(_ZLUDA_TRITON_TARGET_SOURCE
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/graph/gpu/TritonTargetDispatch.cpp")
+            if(ROCM_HIP_RUNTIME_LIBRARY)
+                set_property(SOURCE "${_ZLUDA_TRITON_TARGET_SOURCE}" APPEND
+                    PROPERTY COMPILE_DEFINITIONS "__HIP_PLATFORM_AMD__=1")
+                set_property(SOURCE "${_ZLUDA_TRITON_TARGET_SOURCE}" APPEND
+                    PROPERTY INCLUDE_DIRECTORIES
+                        "${ROCM_INCLUDE_DIR}" "${ROCM_COMGR_INCLUDE_DIR}")
+                set_source_files_properties("${_ZLUDA_TRITON_TARGET_SOURCE}" PROPERTIES
+                    SKIP_UNITY_BUILD_INCLUSION ON)
+            endif()
 
             # HIP, HSA, and ROCt are one versioned ROCm user-space contract. Resolve
             # all three below the selected SDK so a classifier cannot combine
@@ -332,7 +376,7 @@ function(setup_zluda_amd)
             get_filename_component(_rocm_path_real "${ROCM_PATH}" REALPATH)
             foreach(_rocm_runtime_variable IN ITEMS
                     ROCM_HIP_RUNTIME_LIBRARY ROCM_HSA_RUNTIME_LIBRARY
-                    ROCM_HSAKMT_RUNTIME_LIBRARY)
+                    ROCM_HSAKMT_RUNTIME_LIBRARY ROCM_COMGR_LIBRARY)
                 if(${_rocm_runtime_variable})
                     get_filename_component(_rocm_runtime_real
                         "${${_rocm_runtime_variable}}" REALPATH)
@@ -353,6 +397,23 @@ function(setup_zluda_amd)
 
         # Set up MIOpen for DNN operations (cuDNN replacement)
         setup_miopen()
+        set(ZLUDA_MIOPEN_HELPERS_ENABLED ${HAVE_MIOPEN})
+        if(DEFINED ENV{DL4J_ZLUDA_MIOPEN_ACCELERATION} AND
+           NOT "$ENV{DL4J_ZLUDA_MIOPEN_ACCELERATION}" STREQUAL "")
+            string(TOLOWER "$ENV{DL4J_ZLUDA_MIOPEN_ACCELERATION}"
+                _zluda_miopen_acceleration)
+            if(_zluda_miopen_acceleration MATCHES "^(0|off|false)$")
+                set(ZLUDA_MIOPEN_HELPERS_ENABLED FALSE)
+                message(STATUS
+                    "MIOpen runtime ABI is present; libnd4j MIOpen helpers are disabled for this ROCm target")
+            elseif(NOT _zluda_miopen_acceleration MATCHES "^(1|on|true)$")
+                message(FATAL_ERROR
+                    "DL4J_ZLUDA_MIOPEN_ACCELERATION must be 0/1, OFF/ON, or FALSE/TRUE")
+            endif()
+        endif()
+        if(ZLUDA_MIOPEN_HELPERS_ENABLED)
+            add_compile_definitions(HAVE_MIOPEN=1)
+        endif()
 
         # Only SDK-neutral bridge implementations see AMD HIP/MIOpen. All
         # other ZLUDA sources remain CUDA-only, so CUDA and AMD HIP declarations
@@ -367,7 +428,7 @@ function(setup_zluda_amd)
             add_compile_definitions(HAVE_ZLUDA_HIP_MEMORY_BRIDGE=1)
         endif()
 
-        if(HAVE_MIOPEN)
+        if(ZLUDA_MIOPEN_HELPERS_ENABLED)
             set(_ZLUDA_MIOPEN_BRIDGE_SOURCE
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/platform/miopen/miopenBridge.cpp")
             set(_ZLUDA_MIOPEN_INCLUDE_DIRS "${ROCM_INCLUDE_DIR}" "${MIOPEN_INCLUDE_DIR}")
@@ -395,10 +456,19 @@ function(setup_zluda_amd)
             message(FATAL_ERROR
                 "Build-only ZLUDA contract requires MIOpen headers and library below ${ROCM_PATH}")
         endif()
+        if(DEFINED ENV{DL4J_ZLUDA_REQUIRE_COMGR}
+                AND NOT "$ENV{DL4J_ZLUDA_REQUIRE_COMGR}" STREQUAL ""
+                AND NOT "$ENV{DL4J_ZLUDA_REQUIRE_COMGR}" STREQUAL "0"
+                AND (NOT ROCM_COMGR_LIBRARY OR NOT ROCM_COMGR_INCLUDE_DIR))
+            message(FATAL_ERROR
+                "Build-only ZLUDA contract requires AMD COMGR headers and library below ${ROCM_PATH}")
+        endif()
 
         foreach(_zluda_amd_variable
                 ROCM_PATH ROCM_INCLUDE_DIR ROCM_LIB_DIR ROCM_HIP_RUNTIME_LIBRARY
-                ROCM_HSA_RUNTIME_LIBRARY ROCM_HSAKMT_RUNTIME_LIBRARY HAVE_MIOPEN MIOPEN_LIBRARY MIOPEN_INCLUDE_DIR)
+                ROCM_HSA_RUNTIME_LIBRARY ROCM_HSAKMT_RUNTIME_LIBRARY HAVE_MIOPEN
+                ZLUDA_MIOPEN_HELPERS_ENABLED MIOPEN_LIBRARY MIOPEN_INCLUDE_DIR
+                ROCM_COMGR_LIBRARY ROCM_COMGR_INCLUDE_DIR)
             set(${_zluda_amd_variable} "${${_zluda_amd_variable}}" PARENT_SCOPE)
         endforeach()
     else()
@@ -425,6 +495,10 @@ function(setup_miopen)
         return()
     endif()
 
+    unset(MIOPEN_LIBRARY CACHE)
+    unset(MIOPEN_LIBRARY)
+    unset(MIOPEN_INCLUDE_DIR CACHE)
+    unset(MIOPEN_INCLUDE_DIR)
     find_library(MIOPEN_LIBRARY
         NAMES MIOpen miopen
         HINTS ${ROCM_PATH}
@@ -447,8 +521,6 @@ function(setup_miopen)
         set(HAVE_MIOPEN TRUE PARENT_SCOPE)
         set(MIOPEN_LIBRARY "${MIOPEN_LIBRARY}" PARENT_SCOPE)
         set(MIOPEN_INCLUDE_DIR "${MIOPEN_INCLUDE_DIR}" PARENT_SCOPE)
-        add_compile_definitions(HAVE_MIOPEN=1)
-
         # Get MIOpen version
         if(EXISTS "${MIOPEN_INCLUDE_DIR}/miopen/version.h")
             file(READ "${MIOPEN_INCLUDE_DIR}/miopen/version.h" MIOPEN_VERSION_CONTENT)
@@ -551,7 +623,11 @@ function(configure_zluda_linking target_name)
         target_link_libraries(${target_name} PRIVATE ${ROCM_HIP_RUNTIME_LIBRARY})
         message(STATUS "   Linked isolated AMD HIP runtime: ${ROCM_HIP_RUNTIME_LIBRARY}")
     endif()
-    if(HAVE_MIOPEN)
+    if(ROCM_COMGR_LIBRARY)
+        target_link_libraries(${target_name} PRIVATE ${ROCM_COMGR_LIBRARY})
+        message(STATUS "   Linked AMD COMGR runtime: ${ROCM_COMGR_LIBRARY}")
+    endif()
+    if(ZLUDA_MIOPEN_HELPERS_ENABLED)
         target_link_libraries(${target_name} PRIVATE ${MIOPEN_LIBRARY})
         message(STATUS "   Linked isolated MIOpen runtime: ${MIOPEN_LIBRARY}")
     endif()

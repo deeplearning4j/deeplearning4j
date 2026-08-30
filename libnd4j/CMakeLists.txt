@@ -669,6 +669,14 @@ if(SD_BUILD_TESTS)
             "-DTEST_PATCHELF=${SD_TEST_PATCHELF_EXECUTABLE}"
             -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/tests/SharedRuntimeAliasContractTest.cmake")
     add_test(
+        NAME rocm_kpack_runtime_contract
+        COMMAND ${CMAKE_COMMAND}
+            "-DLIBND4J_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}"
+            "-DTEST_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}"
+            "-DTEST_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
+            "-DTEST_READELF=${CMAKE_READELF}"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/tests/RocmKpackRuntimeContractTest.cmake")
+    add_test(
         NAME cublas_lazy_solver_contract
         COMMAND ${CMAKE_COMMAND}
             "-DLIBND4J_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}"

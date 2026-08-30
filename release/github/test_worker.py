@@ -117,6 +117,14 @@ class WorkflowMatrixTests(unittest.TestCase):
                 {"classifierSuffix": "-cuda-12.9-zluda-rocm-6.2.4"},
             ),
         )
+        self.assertEqual(
+            "linux-x86_64-cuda-12.9-zluda-rocm-10.0.0",
+            prepare_worker.public_artifact_id(
+                "linux-x86_64-zluda-rocm-10.0.0",
+                "cuda-12.9",
+                {"classifierSuffix": "-cuda-12.9-zluda-rocm-10.0.0"},
+            ),
+        )
 
     def test_every_matrix_row_is_an_explicit_plan_variant(self):
         plan_shards = prepare_worker.plan_shards(self.plan)
@@ -328,6 +336,24 @@ class WorkflowMatrixTests(unittest.TestCase):
         )
         self.assertEqual(
             "windows-x86_64-cuda-12.9-zluda-rocm-7.2.4",
+            rows[0]["artifactId"],
+        )
+
+    def test_rocm_10_classifier_auto_resolves_linux_zluda_workflow(self):
+        rows = prepare_worker.workflow_rows(
+            self.plan,
+            self.matrix,
+            "build-deploy-cross-platform.yml",
+            "linux",
+            classifiers="linux-x86_64-cuda-12.9-zluda-rocm-10.0.0",
+            selection_mode="targeted",
+        )
+        self.assertEqual(
+            [("linux-x86_64-zluda-rocm-10.0.0", "cuda-12.9")],
+            [(row["shard"], row["variant"]) for row in rows],
+        )
+        self.assertEqual(
+            "linux-x86_64-cuda-12.9-zluda-rocm-10.0.0",
             rows[0]["artifactId"],
         )
 

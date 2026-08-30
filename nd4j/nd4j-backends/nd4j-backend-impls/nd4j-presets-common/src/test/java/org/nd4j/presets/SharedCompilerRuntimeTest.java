@@ -146,6 +146,13 @@ class SharedCompilerRuntimeTest {
         Files.write(
                 cudaSonameAlias,
                 "stale-independent-runtime".getBytes(StandardCharsets.UTF_8));
+        Path staleBlasPack = canonicalPath.resolveSibling(
+                ".kpack/blas_lib_gfx1103.kpack");
+        Path staleSparsePack = canonicalPath.resolveSibling(
+                ".kpack/sparse_lib_gfx1103.kpack");
+        Files.createDirectories(staleBlasPack.getParent());
+        Files.writeString(staleBlasPack, "stale-blas", StandardCharsets.UTF_8);
+        Files.writeString(staleSparsePack, "stale-sparse", StandardCharsets.UTF_8);
 
         ClassProperties properties = new ClassProperties(loaderProperties);
         int added = SharedCompilerRuntime.configure(
@@ -154,6 +161,14 @@ class SharedCompilerRuntimeTest {
         assertEquals(1, added);
         assertTrue(Files.isSameFile(cudaAlias, canonicalPath));
         assertTrue(Files.isSameFile(cudaSonameAlias, canonicalPath));
+        assertEquals(
+                "gfx1103 optimized BLAS kernels",
+                Files.readString(canonicalPath.resolveSibling(
+                        ".kpack/blas_lib_gfx1103.kpack"), StandardCharsets.UTF_8));
+        assertEquals(
+                "gfx1103 optimized sparse kernels",
+                Files.readString(canonicalPath.resolveSibling(
+                        ".kpack/sparse_lib_gfx1103.kpack"), StandardCharsets.UTF_8));
 
         List<String> preloads = properties.get("platform.preload");
         assertEquals(1, preloads.stream()
