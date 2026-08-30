@@ -31,6 +31,16 @@ runs:
         fi
         echo "hash=$HASH" >> "$GITHUB_OUTPUT"
 
+    - name: Resolve Linux runtime ABI
+      id: runtime-abi
+      shell: bash
+      run: |
+        set -euo pipefail
+        GLIBC_VERSION=$(getconf GNU_LIBC_VERSION)
+        ABI_KEY=$(printf '%s' "$GLIBC_VERSION" | tr -c 'A-Za-z0-9._-' '-')
+        echo "glibc=$GLIBC_VERSION"
+        echo "key=$ABI_KEY" >> "$GITHUB_OUTPUT"
+
     # ---------------------------------------------------------------
     # 2. Check GHA cache for a previously-built patched binary.
     #    Key includes platform, arch, sccache version, and patch hash.
@@ -40,7 +50,7 @@ runs:
       uses: actions/cache@v6
       with:
         path: /tmp/sccache-patched-bin
-        key: sccache-patched-v0.17.0-gha-azure-linux-${{ runner.arch }}-${{ steps.patch-hash.outputs.hash }}
+        key: sccache-patched-v0.17.0-gha-azure-linux-${{ runner.arch }}-${{ steps.runtime-abi.outputs.key }}-${{ steps.patch-hash.outputs.hash }}
 
     # ---------------------------------------------------------------
     # 3. On cache miss: clone sccache source, apply RetryLayer patch,
@@ -107,11 +117,16 @@ runs:
           fi
         }
 
-        if [ -f "/tmp/sccache-patched-bin/sccache" ]; then
-          install_sccache /tmp/sccache-patched-bin/sccache
+        PATCHED_SCCACHE=/tmp/sccache-patched-bin/sccache
+        if [ -f "$PATCHED_SCCACHE" ] &&
+           "$PATCHED_SCCACHE" --version >/dev/null 2>&1; then
+          install_sccache "$PATCHED_SCCACHE"
           echo "Installed patched sccache (with RetryLayer):"
           sccache --version
         else
+          if [ -f "$PATCHED_SCCACHE" ]; then
+            echo "Cached patched sccache is incompatible with the current Linux ABI; using the pinned musl fallback."
+          fi
           # Fallback to upstream unpatched release
           echo "Patched build not available — falling back to upstream sccache ${SCCACHE_VERSION}."
           ARCH=$(uname -m)

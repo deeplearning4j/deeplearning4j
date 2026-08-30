@@ -669,6 +669,15 @@ class WorkflowMatrixTests(unittest.TestCase):
             ).read_text()
             self.assertIn("--features gha,azure --no-default-features", action)
             self.assertIn("gha-azure", action)
+        linux_action = (
+            ROOT / ".github/actions/setup-sccache-linux/action.yml"
+        ).read_text()
+        self.assertIn("getconf GNU_LIBC_VERSION", linux_action)
+        self.assertIn("steps.runtime-abi.outputs.key", linux_action)
+        self.assertIn(
+            '"$PATCHED_SCCACHE" --version >/dev/null 2>&1', linux_action
+        )
+        self.assertIn("pinned musl fallback", linux_action)
 
     def test_unix_protoc_bootstrap_places_member_selector_before_destination(self):
         bootstrap = (ROOT / "release/github/bootstrap-worker.sh").read_text()

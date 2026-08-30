@@ -20,6 +20,25 @@ function(zluda_find_first_existing output_var)
     set(${output_var} "${_zluda_match}" PARENT_SCOPE)
 endfunction()
 
+# Resolve a runtime DSO by its exact packaged filename. CMake's find_library()
+# may return a static archive when a development package has no shared object;
+# static archives are link inputs, not loadable classifier runtimes.
+function(resolve_zluda_rocm_shared_runtime rocm_root output_runtime)
+    unset(_zluda_rocm_shared_runtime CACHE)
+    unset(_zluda_rocm_shared_runtime)
+    find_file(_zluda_rocm_shared_runtime
+        NAMES ${ARGN}
+        HINTS "${rocm_root}"
+        PATH_SUFFIXES lib lib64 lib/x86_64-linux-gnu
+        NO_DEFAULT_PATH)
+    if(_zluda_rocm_shared_runtime)
+        set(${output_runtime} "${_zluda_rocm_shared_runtime}" PARENT_SCOPE)
+    else()
+        set(${output_runtime} "" PARENT_SCOPE)
+    endif()
+    unset(_zluda_rocm_shared_runtime CACHE)
+endfunction()
+
 # Resolve the runtime independently from the link input. Official Windows
 # packages contain nvcuda.dll but no import library: Windows builds link the
 # CUDA SDK's ABI-compatible nvcuda.lib and ZLUDA replaces it at runtime through
@@ -349,12 +368,9 @@ function(setup_zluda_amd)
                 PATH_SUFFIXES lib lib64 lib/x86_64-linux-gnu
                 NO_DEFAULT_PATH
             )
-            find_library(ROCM_HSAKMT_RUNTIME_LIBRARY
-                NAMES hsakmt libhsakmt.so.1
-                HINTS ${ROCM_PATH}
-                PATH_SUFFIXES lib lib64 lib/x86_64-linux-gnu
-                NO_DEFAULT_PATH
-            )
+            resolve_zluda_rocm_shared_runtime(
+                "${ROCM_PATH}" ROCM_HSAKMT_RUNTIME_LIBRARY
+                libhsakmt.so.1 libhsakmt.so)
             find_library(ROCM_COMGR_LIBRARY
                 NAMES amd_comgr
                 HINTS ${ROCM_PATH}

@@ -40,6 +40,28 @@ if(_windows_sdx_hsakmt_sdk_contract EQUAL -1)
         "Windows ZLUDA SDX must not require the Linux libhsakmt packaging contract")
 endif()
 
+# ROCm Core SDK 10 contains a build-time libhsakmt.a but consolidates the
+# runtime into ROCR. Static archives must never enter the classifier runtime
+# list, while legacy ROCm releases with a real HSAKMT DSO remain supported.
+set(_rocm_fixture "${CMAKE_CURRENT_BINARY_DIR}/zluda-rocm-runtime-contract")
+file(REMOVE_RECURSE "${_rocm_fixture}")
+file(MAKE_DIRECTORY "${_rocm_fixture}/lib")
+file(WRITE "${_rocm_fixture}/lib/libhsakmt.a" "static archive")
+resolve_zluda_rocm_shared_runtime(
+    "${_rocm_fixture}" _static_only_hsakmt libhsakmt.so.1 libhsakmt.so)
+if(_static_only_hsakmt)
+    message(FATAL_ERROR
+        "Static HSAKMT archive was accepted as a classifier runtime: ${_static_only_hsakmt}")
+endif()
+file(WRITE "${_rocm_fixture}/lib/libhsakmt.so.1" "shared runtime")
+resolve_zluda_rocm_shared_runtime(
+    "${_rocm_fixture}" _shared_hsakmt libhsakmt.so.1 libhsakmt.so)
+if(NOT _shared_hsakmt STREQUAL "${_rocm_fixture}/lib/libhsakmt.so.1")
+    message(FATAL_ERROR
+        "Shared HSAKMT runtime was not resolved: '${_shared_hsakmt}'")
+endif()
+file(REMOVE_RECURSE "${_rocm_fixture}")
+
 set(_fixture "${CMAKE_CURRENT_BINARY_DIR}/zluda-windows-runtime-contract")
 file(REMOVE_RECURSE "${_fixture}")
 file(MAKE_DIRECTORY "${_fixture}/bin" "${_fixture}/lib")
