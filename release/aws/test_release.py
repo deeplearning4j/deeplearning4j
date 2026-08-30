@@ -1833,6 +1833,36 @@ class ReleaseValidationTest(unittest.TestCase):
             root
             / "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-zluda/pom.xml"
         ).getroot()
+        self.assertEqual(
+            "true",
+            zluda_pom.findtext(
+                "m:properties/m:zluda.hsakmt.required", namespaces=namespace
+            ),
+        )
+        consolidated_rocr_profile = next(
+            item
+            for item in zluda_pom.findall("m:profiles/m:profile", namespace)
+            if item.findtext("m:id", namespaces=namespace)
+            == "zluda-consolidated-rocr-runtime"
+        )
+        self.assertEqual(
+            "env.DL4J_ZLUDA_REQUIRE_HSAKMT",
+            consolidated_rocr_profile.findtext(
+                "m:activation/m:property/m:name", namespaces=namespace
+            ),
+        )
+        self.assertEqual(
+            "0",
+            consolidated_rocr_profile.findtext(
+                "m:activation/m:property/m:value", namespaces=namespace
+            ),
+        )
+        self.assertEqual(
+            "false",
+            consolidated_rocr_profile.findtext(
+                "m:properties/m:zluda.hsakmt.required", namespaces=namespace
+            ),
+        )
         runtime_dependencies = {
             item.findtext("m:artifactId", namespaces=namespace)
             for item in zluda_pom.findall("m:dependencies/m:dependency", namespace)
@@ -1843,6 +1873,22 @@ class ReleaseValidationTest(unittest.TestCase):
             item
             for item in zluda_pom.findall("m:profiles/m:profile", namespace)
             if item.findtext("m:id", namespaces=namespace) == "zluda-native"
+        )
+        runtime_verifier = profile.find(
+            ".//m:execution[m:id='verify-zluda-cmake-runtime-package']", namespace
+        )
+        self.assertIsNotNone(runtime_verifier)
+        hsakmt_failure = next(
+            failure
+            for failure in runtime_verifier.findall(".//m:fail", namespace)
+            if "ROCt thunk" in failure.attrib.get("message", "")
+        )
+        self.assertTrue(
+            any(
+                condition.attrib.get("arg1") == "${zluda.hsakmt.required}"
+                and condition.attrib.get("arg2") == "true"
+                for condition in hsakmt_failure.findall(".//m:equals", namespace)
+            )
         )
         profile_artifacts = {
             item.findtext("m:artifactId", namespaces=namespace)
