@@ -260,7 +260,8 @@ function(setup_zluda)
             ROCM_PATH ROCM_INCLUDE_DIR ROCM_LIB_DIR ROCM_HIP_RUNTIME_LIBRARY
             ROCM_HSA_RUNTIME_LIBRARY ROCM_HSAKMT_RUNTIME_LIBRARY HAVE_MIOPEN
             ZLUDA_MIOPEN_HELPERS_ENABLED MIOPEN_LIBRARY MIOPEN_INCLUDE_DIR
-            ROCM_COMGR_LIBRARY ROCM_COMGR_INCLUDE_DIR)
+            ROCM_COMGR_LIBRARY ROCM_COMGR_INCLUDE_DIR
+            ZLUDA_HSAKMT_REQUIRED)
         set(${_zluda_amd_variable} "${${_zluda_amd_variable}}" PARENT_SCOPE)
     endforeach()
 
@@ -286,6 +287,18 @@ function(setup_zluda_amd)
     # skips the filesystem search entirely.
     set(HAVE_MIOPEN FALSE)
     set(ZLUDA_MIOPEN_HELPERS_ENABLED FALSE)
+    set(ZLUDA_HSAKMT_REQUIRED TRUE)
+    if(DEFINED ENV{DL4J_ZLUDA_REQUIRE_HSAKMT} AND
+       NOT "$ENV{DL4J_ZLUDA_REQUIRE_HSAKMT}" STREQUAL "")
+        string(TOLOWER "$ENV{DL4J_ZLUDA_REQUIRE_HSAKMT}"
+            _zluda_hsakmt_required)
+        if(_zluda_hsakmt_required MATCHES "^(0|off|false)$")
+            set(ZLUDA_HSAKMT_REQUIRED FALSE)
+        elseif(NOT _zluda_hsakmt_required MATCHES "^(1|on|true)$")
+            message(FATAL_ERROR
+                "DL4J_ZLUDA_REQUIRE_HSAKMT must be 0/1, OFF/ON, or FALSE/TRUE")
+        endif()
+    endif()
 
     # Find ROCm installation
     # ROCM_PATH is the sole version selector. Keep the unversioned /opt/rocm
@@ -444,10 +457,17 @@ function(setup_zluda_amd)
                 AND NOT "$ENV{DL4J_ZLUDA_REQUIRE_ROCM}" STREQUAL "0"
                 AND NOT WIN32 AND
                 (NOT ROCM_HIP_RUNTIME_LIBRARY OR
-                 NOT ROCM_HSA_RUNTIME_LIBRARY OR
-                 NOT ROCM_HSAKMT_RUNTIME_LIBRARY))
+                 NOT ROCM_HSA_RUNTIME_LIBRARY))
             message(FATAL_ERROR
-                "Build-only ZLUDA contract requires version-matched libamdhip64, libhsa-runtime64, and libhsakmt below ${ROCM_PATH}")
+                "Build-only ZLUDA contract requires version-matched libamdhip64 and libhsa-runtime64 below ${ROCM_PATH}")
+        endif()
+        if(ZLUDA_HSAKMT_REQUIRED AND NOT WIN32 AND
+           NOT ROCM_HSAKMT_RUNTIME_LIBRARY)
+            message(FATAL_ERROR
+                "This ROCm release requires version-matched libhsakmt below ${ROCM_PATH}")
+        elseif(NOT ZLUDA_HSAKMT_REQUIRED AND NOT ROCM_HSAKMT_RUNTIME_LIBRARY)
+            message(STATUS
+                "ROCm Core SDK uses the consolidated ROCR runtime without a separate libhsakmt DSO")
         endif()
         if(DEFINED ENV{DL4J_ZLUDA_REQUIRE_MIOPEN}
                 AND NOT "$ENV{DL4J_ZLUDA_REQUIRE_MIOPEN}" STREQUAL ""
@@ -468,7 +488,8 @@ function(setup_zluda_amd)
                 ROCM_PATH ROCM_INCLUDE_DIR ROCM_LIB_DIR ROCM_HIP_RUNTIME_LIBRARY
                 ROCM_HSA_RUNTIME_LIBRARY ROCM_HSAKMT_RUNTIME_LIBRARY HAVE_MIOPEN
                 ZLUDA_MIOPEN_HELPERS_ENABLED MIOPEN_LIBRARY MIOPEN_INCLUDE_DIR
-                ROCM_COMGR_LIBRARY ROCM_COMGR_INCLUDE_DIR)
+                ROCM_COMGR_LIBRARY ROCM_COMGR_INCLUDE_DIR
+                ZLUDA_HSAKMT_REQUIRED)
             set(${_zluda_amd_variable} "${${_zluda_amd_variable}}" PARENT_SCOPE)
         endforeach()
     else()

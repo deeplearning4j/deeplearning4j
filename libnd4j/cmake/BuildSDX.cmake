@@ -183,7 +183,8 @@ function(configure_sdx_triton_linking main_target_name)
         if(NOT ZLUDA_RUNTIME_LIBRARIES OR
            (NOT WIN32 AND NOT ROCM_HIP_RUNTIME_LIBRARY) OR
            (NOT WIN32 AND NOT ROCM_HSA_RUNTIME_LIBRARY) OR
-           (NOT WIN32 AND NOT ROCM_HSAKMT_RUNTIME_LIBRARY))
+           (NOT WIN32 AND ZLUDA_HSAKMT_REQUIRED AND
+            NOT ROCM_HSAKMT_RUNTIME_LIBRARY))
             message(FATAL_ERROR
                 "ZLUDA SDX target requires the platform runtime closure used by nd4jcuda")
         endif()

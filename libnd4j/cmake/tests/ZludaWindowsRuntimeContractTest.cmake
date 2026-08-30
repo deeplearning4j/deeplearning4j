@@ -33,7 +33,7 @@ if(_windows_sdx_hsa_sdk_contract EQUAL -1)
         "Windows ZLUDA SDX must not require the Linux libhsa-runtime64 packaging contract")
 endif()
 string(FIND "${_sdx_configuration}"
-    "(NOT WIN32 AND NOT ROCM_HSAKMT_RUNTIME_LIBRARY)"
+    "(NOT WIN32 AND ZLUDA_HSAKMT_REQUIRED AND"
     _windows_sdx_hsakmt_sdk_contract)
 if(_windows_sdx_hsakmt_sdk_contract EQUAL -1)
     message(FATAL_ERROR

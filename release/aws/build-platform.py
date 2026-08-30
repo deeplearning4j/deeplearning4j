@@ -189,6 +189,9 @@ ROCM_BUILD_SDKS = {
         "tensile_required": False,
         "kernel_pack_groups": ("blas", "sparse"),
         "hsakmt_bootstrap": False,
+        # TheRock builds libhsakmt sources into ROCR but publishes only the
+        # consolidated libhsa-runtime64 DSO in the Core SDK runtime package.
+        "hsakmt_required": False,
         "comgr_required": True,
         "monitoring_component": "amdsmi",
         "monitoring_name": "AMD SMI",
@@ -2078,6 +2081,7 @@ def rocm_build_spec(build: dict) -> dict | None:
         "tensile_gfx1103_patch_url": sdk.get("tensile_gfx1103_patch_url"),
         "rocblas_gfx1103_logic_patch_url": sdk.get("rocblas_gfx1103_logic_patch_url"),
         "hsakmt_bootstrap": sdk.get("hsakmt_bootstrap", True),
+        "hsakmt_required": sdk.get("hsakmt_required", True),
         "hsakmt_source_url": sdk.get("hsakmt_source_url"),
         "hsakmt_source_subdirectory": sdk.get("hsakmt_source_subdirectory", ""),
         "hsakmt_cmake_subdirectory": sdk.get("hsakmt_cmake_subdirectory", ""),
@@ -2206,7 +2210,7 @@ def attest_rocm_build_toolchain(
         failures.append(f"HIP runtime library is missing below {rocm_root}")
     if hsa_runtime is None:
         failures.append(f"HSA runtime library is missing below {rocm_root}")
-    if hsakmt_runtime is None:
+    if spec["hsakmt_required"] and hsakmt_runtime is None:
         failures.append(f"HSAKMT runtime library is missing below {rocm_root}")
     if "rocblas" in spec["components"]:
         if not rocblas_header.is_file():
@@ -2242,6 +2246,9 @@ def attest_rocm_build_toolchain(
     env["ROCM_HOME"] = str(rocm_root)
     env["HIP_PATH"] = str(rocm_root)
     env["DL4J_ZLUDA_REQUIRE_ROCM"] = "1"
+    env["DL4J_ZLUDA_REQUIRE_HSAKMT"] = (
+        "1" if spec["hsakmt_required"] else "0"
+    )
     env["DL4J_ZLUDA_REQUIRE_MIOPEN"] = "1"
     env["DL4J_ROCM_ARCH"] = spec["tensile_architectures"]
     env["DL4J_ROCM_RESOURCE_FORMAT"] = (
@@ -2281,6 +2288,7 @@ def attest_rocm_build_toolchain(
             f"components={','.join(spec['components'])} root={rocm_root} "
             f"hipHeader={hip_header} hipRuntime={hip_runtime} "
             f"hsaRuntime={hsa_runtime} hsakmtRuntime={hsakmt_runtime} "
+            f"hsakmtRequired={str(spec['hsakmt_required']).lower()} "
             f"rocblasHeader={rocblas_header} rocblasRuntime={rocblas_runtime} "
             f"hipblasltRuntime={hipblaslt_runtime} "
             f"rocsparseRuntime={rocsparse_runtime} "
@@ -3147,6 +3155,9 @@ def prepare_rocm_build_toolchain(
     # ROCM_PATH is the explicit version selector. Legacy and Core SDK package
     # streams intentionally use different side-by-side prefixes.
     rocm_root = Path(env.get("ROCM_PATH", spec["install_root"]))
+    runtime_closure = ["libamdhip64.so", "libhsa-runtime64.so.1"]
+    if spec["hsakmt_required"]:
+        runtime_closure.append("libhsakmt.so.1")
     cache_identity = toolchain_cache_identity(
         "rocm-sdk",
         {
@@ -3156,11 +3167,8 @@ def prepare_rocm_build_toolchain(
             "version": spec["version"],
             "components": list(spec["components"]),
             "packages": list(spec["packages"]),
-            "runtimeClosure": [
-                "libamdhip64.so",
-                "libhsa-runtime64.so.1",
-                "libhsakmt.so.1",
-            ],
+            "runtimeClosure": runtime_closure,
+            "hsakmtRequired": spec["hsakmt_required"],
             "provisioner": spec["provisioner"],
             "installerUrl": spec["installer_url"],
             "repositoryKeyUrl": spec["repository_key_url"],

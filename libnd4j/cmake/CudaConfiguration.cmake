@@ -535,15 +535,19 @@ function(configure_cuda_linking main_target_name)
                 message(FATAL_ERROR
                     "AMD ZLUDA classifier requires the matching libhsa-runtime64 from the selected ROCm SDK")
             endif()
-            if(NOT ROCM_HSAKMT_RUNTIME_LIBRARY OR
-               NOT EXISTS "${ROCM_HSAKMT_RUNTIME_LIBRARY}")
+            if(ZLUDA_HSAKMT_REQUIRED AND
+               (NOT ROCM_HSAKMT_RUNTIME_LIBRARY OR
+                NOT EXISTS "${ROCM_HSAKMT_RUNTIME_LIBRARY}"))
                 message(FATAL_ERROR
                     "AMD ZLUDA classifier requires the matching libhsakmt from the selected ROCm SDK")
             endif()
             list(APPEND _cuda_shared_runtimes
                 "${ROCM_HIP_RUNTIME_LIBRARY}"
-                "${ROCM_HSA_RUNTIME_LIBRARY}"
-                "${ROCM_HSAKMT_RUNTIME_LIBRARY}")
+                "${ROCM_HSA_RUNTIME_LIBRARY}")
+            if(ROCM_HSAKMT_RUNTIME_LIBRARY)
+                list(APPEND _cuda_shared_runtimes
+                    "${ROCM_HSAKMT_RUNTIME_LIBRARY}")
+            endif()
             if(ROCM_COMGR_LIBRARY)
                 list(APPEND _cuda_shared_runtimes "${ROCM_COMGR_LIBRARY}")
             endif()

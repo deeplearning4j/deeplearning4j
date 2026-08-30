@@ -1617,6 +1617,10 @@ class ReleaseValidationTest(unittest.TestCase):
                     ".kpack/sparse_lib_gfx1103.kpack",
                     required_entries,
                 )
+                self.assertNotIn(
+                    "org/nd4j/linalg/jcublas/bindings/{classifier}/libhsakmt.so.1",
+                    required_entries,
+                )
 
     def test_rocm_hsakmt_sources_match_each_upstream_archive_layout(self):
         standalone = build_platform.ROCM_BUILD_SDKS["6.2.4"]
@@ -1940,9 +1944,11 @@ class ReleaseValidationTest(unittest.TestCase):
         for token in (
             "ROCM_HIP_RUNTIME_LIBRARY",
             "DL4J_ZLUDA_REQUIRE_ROCM",
+            "DL4J_ZLUDA_REQUIRE_HSAKMT",
             "DL4J_ZLUDA_REQUIRE_MIOPEN",
             "DL4J_ZLUDA_REQUIRE_COMGR",
             "ZLUDA_MIOPEN_HELPERS_ENABLED",
+            "ZLUDA_HSAKMT_REQUIRED",
             "ROCM_COMGR_LIBRARY",
             "target_link_libraries(${target_name} PRIVATE ${MIOPEN_LIBRARY})",
             "target_link_libraries(${target_name} PRIVATE ${ROCM_HIP_RUNTIME_LIBRARY})",
@@ -2725,6 +2731,7 @@ class ReleaseValidationTest(unittest.TestCase):
             spec["packages"],
         )
         self.assertEqual("gfx1103", spec["tensile_architectures"])
+        self.assertTrue(spec["hsakmt_required"])
         self.assertEqual("V4", spec["tensile_code_object_version"])
         self.assertFalse(spec["tensile_gfx1103_backport"])
         self.assertIsNone(spec["tensile_gfx1103_patch_url"])
@@ -2734,6 +2741,7 @@ class ReleaseValidationTest(unittest.TestCase):
             spec["tensile_packages"],
         )
         six_spec = build_platform.rocm_build_spec({**build, "rocmVersion": "6.2.4"})
+        self.assertTrue(six_spec["hsakmt_required"])
         self.assertEqual("gfx1103", six_spec["tensile_architectures"])
         self.assertEqual("V4", six_spec["tensile_code_object_version"])
         self.assertTrue(six_spec["tensile_gfx1103_backport"])
@@ -2784,6 +2792,7 @@ class ReleaseValidationTest(unittest.TestCase):
             self.assertEqual(files[12], attested["hsakmtRuntime"])
             self.assertEqual(str(root), environment["ROCM_PATH"])
             self.assertEqual("1", environment["DL4J_ZLUDA_REQUIRE_ROCM"])
+            self.assertEqual("1", environment["DL4J_ZLUDA_REQUIRE_HSAKMT"])
             self.assertEqual("1", environment["DL4J_ZLUDA_REQUIRE_MIOPEN"])
             self.assertIn("hardwareProbe=skipped", output.getvalue())
             files[11].unlink()
@@ -2861,6 +2870,7 @@ class ReleaseValidationTest(unittest.TestCase):
         )
         self.assertFalse(spec["tensile_required"])
         self.assertFalse(spec["hsakmt_bootstrap"])
+        self.assertFalse(spec["hsakmt_required"])
         self.assertTrue(spec["comgr_required"])
         self.assertFalse(spec["miopen_acceleration"])
         self.assertEqual(("blas", "sparse"), spec["kernel_pack_groups"])
@@ -2872,13 +2882,15 @@ class ReleaseValidationTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
+            comgr_runtime = root / "lib/libamd_comgr.so"
+            blas_pack = root / ".kpack/blas_lib_gfx1103.kpack"
+            sparse_pack = root / ".kpack/sparse_lib_gfx1103.kpack"
             required_files = (
                 root / ".info/version",
                 root / "include/hip/hip_runtime.h",
                 root / "bin/hipcc",
                 root / "lib/libamdhip64.so",
                 root / "lib/libhsa-runtime64.so.1",
-                root / "lib/libhsakmt.so.1",
                 root / "include/rocblas/rocblas.h",
                 root / "lib/librocblas.so",
                 root / "lib/libhipblaslt.so",
@@ -2887,9 +2899,9 @@ class ReleaseValidationTest(unittest.TestCase):
                 root / "include/miopen/miopen.h",
                 root / "lib/libMIOpen.so",
                 root / "include/amd_comgr/amd_comgr.h",
-                root / "lib/libamd_comgr.so",
-                root / ".kpack/blas_lib_gfx1103.kpack",
-                root / ".kpack/sparse_lib_gfx1103.kpack",
+                comgr_runtime,
+                blas_pack,
+                sparse_pack,
             )
             for path in required_files:
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -2915,13 +2927,15 @@ class ReleaseValidationTest(unittest.TestCase):
             attested = build_platform.attest_rocm_build_toolchain(
                 build, environment, root=root, emit=False
             )
-            self.assertEqual(required_files[14], attested["comgrRuntime"])
+            self.assertIsNone(attested["hsakmtRuntime"])
+            self.assertEqual(comgr_runtime, attested["comgrRuntime"])
             self.assertEqual("1", environment["DL4J_ZLUDA_REQUIRE_COMGR"])
+            self.assertEqual("0", environment["DL4J_ZLUDA_REQUIRE_HSAKMT"])
             self.assertEqual("0", environment["DL4J_ZLUDA_MIOPEN_ACCELERATION"])
             packs = build_platform.attest_rocm_optimized_payload(build, root)
             self.assertEqual({"blas", "sparse"}, set(packs))
 
-            required_files[16].unlink()
+            sparse_pack.unlink()
             with self.assertRaisesRegex(RuntimeError, "kernel packs"):
                 build_platform.attest_rocm_optimized_payload(build, root)
             nested = root / ".kpack/nested/sparse_lib_gfx1103.kpack"
@@ -2935,13 +2949,13 @@ class ReleaseValidationTest(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "kernel packs"):
                 build_platform.attest_rocm_optimized_payload(build, root)
             renamed.unlink()
-            required_files[16].write_text("sdk", encoding="utf-8")
-            required_files[14].unlink()
+            sparse_pack.write_text("sdk", encoding="utf-8")
+            comgr_runtime.unlink()
             with self.assertRaisesRegex(RuntimeError, "COMGR runtime"):
                 build_platform.attest_rocm_build_toolchain(
                     build, environment, root=root, emit=False
                 )
-            required_files[14].write_text("sdk", encoding="utf-8")
+            comgr_runtime.write_text("sdk", encoding="utf-8")
             inventory_path.write_text("{}", encoding="utf-8")
             with self.assertRaisesRegex(RuntimeError, "exact signed ROCm package"):
                 build_platform.attest_rocm_build_toolchain(
