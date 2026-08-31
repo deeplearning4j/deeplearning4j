@@ -625,6 +625,16 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn('"${target}/bin/mvn" --version', bootstrap)
         self.assertIn('"${target}/bin" >>"${GITHUB_PATH}"', bootstrap)
 
+    def test_unix_rustup_bootstrap_retries_transient_tls_failures(self):
+        bootstrap = (ROOT / "release/github/bootstrap-worker.sh").read_text()
+        self.assertIn("ensure_rust_toolchain()", bootstrap)
+        self.assertIn("--retry 5 --retry-all-errors", bootstrap)
+        self.assertIn(
+            'https://sh.rustup.rs -o "${work}/rustup-init.sh"', bootstrap
+        )
+        self.assertIn('sh "${work}/rustup-init.sh" -y', bootstrap)
+        self.assertNotIn("https://sh.rustup.rs | sh", bootstrap)
+
     def test_linux_arm64_cuda_bootstrap_installs_pinned_sbsa_cross_toolchain(self):
         action = (ROOT / ".github/actions/run-release-worker/action.yml").read_text()
         bootstrap = (ROOT / "release/github/bootstrap-worker.sh").read_text()

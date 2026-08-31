@@ -148,6 +148,21 @@ ensure_android_ndk() {
   printf 'ANDROID_NDK_HOME=%s\n' "${target}" >>"${GITHUB_ENV}"
 }
 
+ensure_rust_toolchain() {
+  command -v cargo >/dev/null 2>&1 && return 0
+
+  work=$(mktemp -d)
+  trap 'rm -rf "${work}"' RETURN
+  curl --proto '=https' --tlsv1.2 --fail --silent --show-error --location \
+    --retry 5 --retry-all-errors --connect-timeout 20 --max-time 300 \
+    https://sh.rustup.rs -o "${work}/rustup-init.sh"
+  sh "${work}/rustup-init.sh" -y --default-toolchain stable
+  export PATH="${HOME}/.cargo/bin:${PATH}"
+  printf '%s\n' "${HOME}/.cargo/bin" >>"${GITHUB_PATH}"
+  trap - RETURN
+  rm -rf "${work}"
+}
+
 ensure_cuda_sbsa_cross() {
   [ "${shard}" = linux-arm64-cuda-13-1 ] || return 0
   case "$(uname -m)" in
@@ -224,12 +239,7 @@ case "$(uname -s)" in
     ;;
 esac
 
-if ! command -v cargo >/dev/null 2>&1; then
-  curl --proto '=https' --tlsv1.2 --fail --silent --show-error \
-    https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
-  export PATH="${HOME}/.cargo/bin:${PATH}"
-  printf '%s\n' "${HOME}/.cargo/bin" >>"${GITHUB_PATH}"
-fi
+ensure_rust_toolchain
 if ! command -v cbindgen >/dev/null 2>&1; then
   cargo install --locked cbindgen
 fi
