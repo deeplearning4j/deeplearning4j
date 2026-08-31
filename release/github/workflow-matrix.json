@@ -23,7 +23,8 @@
     "windows-x86_64-zluda": {"group": "host", "runner": "windows-2022"},
     "linux-x86_64-zluda-rocm-6.2.4": {"group": "linux", "runner": "ubuntu-22.04", "container": "nvidia/cuda:12.9.1-devel-ubuntu22.04"},
     "windows-x86_64-zluda-rocm-6.2.4": {"group": "host", "runner": "windows-2022"},
-    "linux-x86_64-zluda-rocm-10.0.0": {"group": "linux", "runner": "ubuntu-22.04", "container": "nvidia/cuda:12.9.1-devel-ubuntu22.04"}
+    "linux-x86_64-zluda-rocm-10.0.0": {"group": "linux", "runner": "ubuntu-22.04", "container": "nvidia/cuda:12.9.1-devel-ubuntu22.04"},
+    "windows-x86_64-zluda-rocm-10.0.0": {"group": "host", "runner": "windows-2022"}
   },
   "workflows": {
     "build-deploy-cross-platform.yml": [
@@ -59,7 +60,8 @@
       {"shard": "windows-x86_64-zluda"},
       {"shard": "linux-x86_64-zluda-rocm-6.2.4"},
       {"shard": "windows-x86_64-zluda-rocm-6.2.4"},
-      {"shard": "linux-x86_64-zluda-rocm-10.0.0"}
+      {"shard": "linux-x86_64-zluda-rocm-10.0.0"},
+      {"shard": "windows-x86_64-zluda-rocm-10.0.0"}
     ]
   }
 }

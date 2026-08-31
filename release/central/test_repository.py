@@ -385,10 +385,11 @@ class MavenExecutableTests(unittest.TestCase):
             first = root / "worker-linux-rocm-6"
             second = root / "worker-linux-rocm-7"
             third = root / "worker-linux-rocm-10"
+            fourth = root / "worker-windows-rocm-10"
             relative = Path(
                 "org/eclipse/deeplearning4j/nd4j-zluda-12.9"
             ) / version
-            for source in (first, second, third):
+            for source in (first, second, third, fourth):
                 version_dir = source / relative
                 version_dir.mkdir(parents=True)
                 base = version_dir / f"nd4j-zluda-12.9-{version}"
@@ -414,11 +415,19 @@ class MavenExecutableTests(unittest.TestCase):
                 str(third_dir / base_name)
                 + "-linux-x86_64-zluda-rocm-10.0.0.jar"
             ).write_bytes(b"rocm10")
+            fourth_dir = fourth / relative
+            Path(str(fourth_dir / base_name) + ".jar").write_bytes(
+                b"base-windows-rocm10"
+            )
+            Path(
+                str(fourth_dir / base_name)
+                + "-windows-x86_64-zluda-rocm-10.0.0.jar"
+            ).write_bytes(b"windows-rocm10")
 
             merged = root / "merged"
             manifest = root / "merged-manifest.json"
             repository.merge(
-                [first, second, third],
+                [first, second, third, fourth],
                 merged,
                 manifest,
                 version,
@@ -447,7 +456,8 @@ class MavenExecutableTests(unittest.TestCase):
             self.assertIn(
                 "-Dclassifiers=linux-x86_64-zluda-rocm-10.0.0,"
                 "linux-x86_64-zluda-rocm-6.2.4,"
-                "linux-x86_64-zluda-rocm-7.2.4",
+                "linux-x86_64-zluda-rocm-7.2.4,"
+                "windows-x86_64-zluda-rocm-10.0.0",
                 command,
             )
 

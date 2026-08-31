@@ -349,6 +349,23 @@ source /opt/intel/oneapi/setvars.sh
 java -jar myapp.jar
 ```
 
+### Version-qualified Windows classifiers
+
+The Windows ROCm 10 ZLUDA classifier is qualified by the AMD runtime
+compatibility line it targets even though the Linux ROCm SDK is not embedded
+on Windows. The Windows build consumes the checksum-pinned ZLUDA release asset
+and must attest the complete application-local DLL closure (`nvcuda.dll`,
+`nvcudart_hybrid64.dll`, `zluda_redirect.dll`, the generated ND4J/JNI DLLs,
+`shared-runtime-manifest.txt`, and every additional runtime named by that
+manifest) before publication. Linux-only ROCm package, HSAKMT, and kernel-pack
+contracts must not be applied to this Windows classifier.
+
+ROCm 10 therefore has distinct release contracts: Linux embeds and attests the
+signed Core SDK/kpack closure, while Windows embeds and attests the pinned
+ZLUDA Windows DLL bundle under the `windows-x86_64-zluda-rocm-10.0.0`
+classifier. Both use the same CUDA ABI build version and record ROCm 10.0.0 in
+the classifier metadata.
+
 ## Consequences
 
 ### Benefits

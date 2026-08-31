@@ -630,7 +630,7 @@ class ReleaseValidationTest(unittest.TestCase):
                 source.mkdir()
                 environment = {"PATH": "/existing/bin"}
                 with patch.object(
-                    build_platform, "ensure_sccache", return_value="/tools/sccache"
+                    build_platform, "ensure_cached_sccache", return_value="/tools/sccache"
                 ), patch.object(build_platform, "run") as execute:
                     executable, started = build_platform.configure_compiler_cache(
                         {"compilerCache": remote}, source, environment
@@ -1565,9 +1565,12 @@ class ReleaseValidationTest(unittest.TestCase):
                         self.assertNotIn("rocmBuildOnly", build)
                         self.assertNotIn("rocmBuildComponents", build)
 
-    def test_rocm_10_zluda_linux_shard_is_published_for_every_cloud(self):
+    def test_rocm_10_zluda_shards_are_published_for_every_cloud(self):
         root = Path(__file__).parents[2]
-        shard_id = "linux-x86_64-zluda-rocm-10.0.0"
+        expected = {
+            "linux-x86_64-zluda-rocm-10.0.0": ("linux", "linux-x86_64"),
+            "windows-x86_64-zluda-rocm-10.0.0": ("windows", "windows-x86_64"),
+        }
         for provider in ("aws", "gcp", "azure"):
             plan = json.loads(
                 (root / f"release/{provider}/release-plan.json").read_text(
@@ -1575,52 +1578,103 @@ class ReleaseValidationTest(unittest.TestCase):
                 )
             )
             by_id = {shard["id"]: shard for shard in plan["shards"]}
-            with self.subTest(provider=provider):
-                self.assertIn(shard_id, by_id)
-                self.assertNotIn("windows-x86_64-zluda-rocm-10.0.0", by_id)
-                shard = by_id[shard_id]
-                build = shard["build"]
-                self.assertEqual("linux", shard["os"])
-                self.assertEqual("linux-x86_64", build["javacppPlatform"])
-                self.assertEqual("10.0.0", build["rocmVersion"])
-                self.assertTrue(build["rocmBuildOnly"])
-                self.assertEqual(
-                    [
-                        "hip", "rocblas", "hipblaslt", "rocsparse",
-                        "amdsmi", "miopen-host",
-                    ],
-                    build["rocmBuildComponents"],
-                )
-                self.assertEqual(
-                    ["linux-x86_64-zluda-rocm-10.0.0"],
-                    shard["artifactRules"]["classifierTokens"],
-                )
-                self.assertEqual(
-                    "-cuda-12.9-zluda-rocm-10.0.0",
-                    build["variants"][0]["classifierSuffix"],
-                )
-                self.assertEqual(
-                    "-zluda-rocm-10.0.0",
-                    build["variants"][0]["platformExtension"],
-                )
-                self.assertIn("-Drocm.version=10.0.0", build["mavenArgs"])
-                required_entries = shard["artifactRules"][
-                    "classifierArchiveContracts"
-                ]["nd4j-zluda-12.9"]["requiredEntries"]
-                self.assertIn(
-                    "org/nd4j/linalg/jcublas/bindings/{classifier}/"
-                    ".kpack/blas_lib_gfx1103.kpack",
-                    required_entries,
-                )
-                self.assertNotIn(
-                    "org/nd4j/linalg/jcublas/bindings/{classifier}/"
-                    ".kpack/sparse_lib_gfx1103.kpack",
-                    required_entries,
-                )
-                self.assertNotIn(
-                    "org/nd4j/linalg/jcublas/bindings/{classifier}/libhsakmt.so.1",
-                    required_entries,
-                )
+            for shard_id, (os_name, platform_name) in expected.items():
+                with self.subTest(provider=provider, shard=shard_id):
+                    shard = by_id[shard_id]
+                    build = shard["build"]
+                    rules = shard["artifactRules"]
+                    self.assertEqual(os_name, shard["os"])
+                    self.assertEqual(platform_name, build["javacppPlatform"])
+                    self.assertEqual("10.0.0", build["rocmVersion"])
+                    self.assertEqual("v7-preview.8", build["zludaVersion"])
+                    self.assertEqual(
+                        [f"{platform_name}-zluda-rocm-10.0.0"],
+                        rules["classifierTokens"],
+                    )
+                    self.assertEqual(
+                        "-cuda-12.9-zluda-rocm-10.0.0",
+                        build["variants"][0]["classifierSuffix"],
+                    )
+                    self.assertEqual(
+                        "-zluda-rocm-10.0.0",
+                        build["variants"][0]["platformExtension"],
+                    )
+                    self.assertIn("-Drocm.version=10.0.0", build["mavenArgs"])
+                    required_entries = rules["classifierArchiveContracts"][
+                        "nd4j-zluda-12.9"
+                    ]["requiredEntries"]
+                    if os_name == "linux":
+                        self.assertTrue(build["rocmBuildOnly"])
+                        self.assertEqual(
+                            [
+                                "hip", "rocblas", "hipblaslt", "rocsparse",
+                                "amdsmi", "miopen-host",
+                            ],
+                            build["rocmBuildComponents"],
+                        )
+                        self.assertIn(
+                            "org/nd4j/linalg/jcublas/bindings/{classifier}/"
+                            ".kpack/blas_lib_gfx1103.kpack",
+                            required_entries,
+                        )
+                        self.assertNotIn(
+                            "org/nd4j/linalg/jcublas/bindings/{classifier}/"
+                            ".kpack/sparse_lib_gfx1103.kpack",
+                            required_entries,
+                        )
+                        self.assertNotIn(
+                            "org/nd4j/linalg/jcublas/bindings/{classifier}/libhsakmt.so.1",
+                            required_entries,
+                        )
+                    else:
+                        self.assertEqual("worker.ps1", shard["worker"])
+                        self.assertNotIn("rocmBuildOnly", build)
+                        self.assertNotIn("rocmBuildComponents", build)
+                        native_root = (
+                            "org/nd4j/linalg/jcublas/bindings/{classifier}"
+                        )
+                        expected_windows_entries = {
+                            f"{native_root}/jnind4jcuda.dll",
+                            f"{native_root}/nd4jcuda.dll",
+                            f"{native_root}/nvcuda.dll",
+                            f"{native_root}/nvcudart_hybrid64.dll",
+                            f"{native_root}/zluda_redirect.dll",
+                            f"{native_root}/shared-runtime-manifest.txt",
+                        }
+                        self.assertEqual(
+                            expected_windows_entries,
+                            set(required_entries),
+                        )
+                        self.assertEqual(
+                            f"{native_root}/shared-runtime-manifest.txt",
+                            rules["classifierArchiveContracts"][
+                                "nd4j-zluda-12.9"
+                            ]["runtimeManifest"],
+                        )
+                        self.assertFalse(
+                            any(entry.endswith((".so", ".so.1", ".kpack"))
+                                for entry in required_entries)
+                        )
+
+        matrix = json.loads(
+            (root / "release/github/workflow-matrix.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(
+            {"group": "host", "runner": "windows-2022"},
+            matrix["shards"]["windows-x86_64-zluda-rocm-10.0.0"],
+        )
+        self.assertIn(
+            {"shard": "windows-x86_64-zluda-rocm-10.0.0"},
+            matrix["workflows"]["build-deploy-linux-zluda.yml"],
+        )
+        dependencies = (root / "libnd4j/cmake/Dependencies.cmake").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("zluda-windows-6e7abfd.zip", dependencies)
+        self.assertIn(
+            "7138c9e33cc49b2a3c6f111c9cae5d90410fc01f127121be91b734aa9029a2f3",
+            dependencies,
+        )
 
     def test_rocm_hsakmt_sources_match_each_upstream_archive_layout(self):
         standalone = build_platform.ROCM_BUILD_SDKS["6.2.4"]
@@ -2703,6 +2757,76 @@ class ReleaseValidationTest(unittest.TestCase):
                 repository, build, rules, variant, version, "test-repository"
             )
 
+    def test_windows_rocm_10_archive_attests_manifest_owned_dlls(self):
+        root = Path(__file__).parents[2]
+        plan = json.loads(
+            (root / "release/aws/release-plan.json").read_text(encoding="utf-8")
+        )
+        shard = next(
+            item for item in plan["shards"]
+            if item["id"] == "windows-x86_64-zluda-rocm-10.0.0"
+        )
+        build = shard["build"]
+        rules = shard["artifactRules"]
+        variant = build["variants"][0]
+        classifier = build_platform.variant_artifact_classifier(build, variant)
+        artifact_id = "nd4j-zluda-12.9"
+        version = "1.0.0-SNAPSHOT"
+        native_root = f"org/nd4j/linalg/jcublas/bindings/{classifier}"
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            repository = Path(temporary_directory)
+
+            def artifact_path(current_artifact_id):
+                path = (
+                    repository / "org/eclipse/deeplearning4j"
+                    / current_artifact_id / version
+                    / f"{current_artifact_id}-{version}-{classifier}.jar"
+                )
+                path.parent.mkdir(parents=True, exist_ok=True)
+                return path
+
+            build_platform.enable_sdx_release_component(build, rules)
+            for current_artifact_id in build_platform.required_classifier_artifact_ids(
+                    build, rules):
+                if current_artifact_id != artifact_id:
+                    artifact_path(current_artifact_id).write_bytes(b"fixture")
+            zluda_path = artifact_path(artifact_id)
+            manifest = (
+                "# nd4j-shared-runtime-manifest-v1\n"
+                "# runtime-count=4\n"
+                "# runtime-alias-count=0\n"
+                "# resource-count=0\n"
+                "nvcuda.dll\n"
+                "nvcudart_hybrid64.dll\n"
+                "zluda_redirect.dll\n"
+                "zluda_optional.dll\n"
+            )
+            with zipfile.ZipFile(zluda_path, "w") as archive:
+                for name, value in (
+                    (f"{native_root}/jnind4jcuda.dll", b"jni"),
+                    (f"{native_root}/nd4jcuda.dll", b"backend"),
+                    (f"{native_root}/nvcuda.dll", b"zluda"),
+                    (f"{native_root}/nvcudart_hybrid64.dll", b"runtime"),
+                    (f"{native_root}/zluda_redirect.dll", b"redirect"),
+                    (f"{native_root}/shared-runtime-manifest.txt",
+                     manifest.encode("utf-8")),
+                ):
+                    archive.writestr(name, value)
+            with self.assertRaisesRegex(RuntimeError, "manifest-owned runtimes"):
+                build_platform.attest_variant_classifier_artifacts(
+                    repository, build, rules, variant, version, "test-repository"
+                )
+
+            with zipfile.ZipFile(zluda_path, "a") as archive:
+                archive.writestr(f"{native_root}/zluda_optional.dll", b"optional")
+            output = StringIO()
+            with redirect_stdout(output):
+                build_platform.attest_variant_classifier_artifacts(
+                    repository, build, rules, variant, version, "test-repository"
+                )
+            self.assertIn("runtime-closure=4", output.getvalue())
+
     def test_cpu_cuda_classifier_contract_rejects_incomplete_plan(self):
         build = {
             "backend": "cuda",
@@ -3778,7 +3902,7 @@ class ReleaseValidationTest(unittest.TestCase):
             windows_zluda[windows_zluda.index("-pl") + 1],
         )
 
-        for rocm_version in ("7.2.4", "6.2.4"):
+        for rocm_version in ("10.0.0", "7.2.4", "6.2.4"):
             extension = f"-zluda-rocm-{rocm_version}"
             for family, platform_name in (
                 ("zluda", "linux-x86_64"),
@@ -3801,20 +3925,6 @@ class ReleaseValidationTest(unittest.TestCase):
                     self.assertIn(f"-Dlibnd4j.classifier={classifier}", versioned)
                     self.assertIn(f"-Drocm.version={rocm_version}", versioned)
                     self.assertNotIn("-Djavacpp.platform.extension=-zluda", versioned)
-
-        rocm_version = "10.0.0"
-        extension = f"-zluda-rocm-{rocm_version}"
-        classifier = f"linux-x86_64-cuda-12.9-zluda-rocm-{rocm_version}"
-        versioned = command(
-            DL4J_FAMILY="zluda",
-            DL4J_CUDA_VERSION="12.9",
-            DL4J_PLATFORM_EXTENSION=extension,
-            DL4J_CLASSIFIER=classifier,
-            DL4J_ROCM_VERSION=rocm_version,
-        )
-        self.assertIn(f"-Djavacpp.platform.extension={extension}", versioned)
-        self.assertIn(f"-Dlibnd4j.classifier={classifier}", versioned)
-        self.assertIn(f"-Drocm.version={rocm_version}", versioned)
 
     def test_vulkan_native_family_tracks_worker_os(self):
         build = {
