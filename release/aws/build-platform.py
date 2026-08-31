@@ -1697,13 +1697,25 @@ def build_cross_platform(source: Path, build: dict, repository: Path, env: dict[
         )
 
 
-def select_openblas_shared_library(root: Path) -> Path:
+def select_openblas_shared_library(root: Path, classifier: str) -> Path:
+    if classifier.startswith("windows-"):
+        pattern, preferred = "libopenblas.dll", "libopenblas.dll"
+    elif classifier.startswith("macosx-"):
+        pattern, preferred = "libopenblas*.dylib", "libopenblas.dylib"
+    elif classifier.startswith(("linux-", "android-")):
+        pattern, preferred = "libopenblas.so*", "libopenblas.so"
+    else:
+        raise ValueError(
+            f"unsupported OpenBLAS classifier shared-library contract: {classifier}"
+        )
     candidates = sorted(
-        (path for path in root.rglob("libopenblas.so*") if path.is_file()),
-        key=lambda path: (path.name != "libopenblas.so", len(path.name), path.as_posix()),
+        (path for path in root.rglob(pattern) if path.is_file()),
+        key=lambda path: (path.name != preferred, len(path.name), path.as_posix()),
     )
     if not candidates:
-        raise RuntimeError(f"OpenBLAS classifier has no libopenblas.so shared library under {root}")
+        raise RuntimeError(
+            f"OpenBLAS classifier {classifier} has no {pattern} shared library under {root}"
+        )
     return candidates[0].resolve()
 
 
@@ -1748,7 +1760,7 @@ def prepare_openblas(
         raise RuntimeError(f"OpenBLAS archive has no include/cblas.h: {archive}")
     env["OPENBLAS_PATH"] = str(headers[0].parent.parent)
     env["OPENBLAS_LIBRARY"] = str(
-        select_openblas_shared_library(Path(env["OPENBLAS_PATH"]))
+        select_openblas_shared_library(Path(env["OPENBLAS_PATH"]), classifier)
     )
     print(f"[dl4j-openblas] library={env['OPENBLAS_LIBRARY']}", flush=True)
     if not restored:

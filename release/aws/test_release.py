@@ -3487,12 +3487,35 @@ class ReleaseValidationTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temp:
             openblas_root = Path(temp)
-            versioned = openblas_root / "libopenblas.so.0"
-            versioned.write_bytes(b"openblas")
-            self.assertEqual(
-                versioned.resolve(),
-                build_platform.select_openblas_shared_library(openblas_root),
+            contracts = (
+                ("linux-x86_64", "libopenblas.so.0"),
+                ("android-arm64", "libopenblas.so"),
+                ("windows-x86_64", "libopenblas.dll"),
+                ("macosx-arm64", "libopenblas.0.dylib"),
             )
+            for classifier, library_name in contracts:
+                with self.subTest(classifier=classifier):
+                    classifier_root = openblas_root / classifier
+                    classifier_root.mkdir()
+                    library = classifier_root / library_name
+                    library.write_bytes(b"openblas")
+                    self.assertEqual(
+                        library.resolve(),
+                        build_platform.select_openblas_shared_library(
+                            classifier_root, classifier
+                        ),
+                    )
+            static_only = openblas_root / "windows-static-only"
+            static_only.mkdir()
+            (static_only / "openblas.lib").write_bytes(b"static import library")
+            with self.assertRaisesRegex(RuntimeError, "libopenblas.dll"):
+                build_platform.select_openblas_shared_library(
+                    static_only, "windows-x86_64"
+                )
+            with self.assertRaisesRegex(ValueError, "unsupported OpenBLAS classifier"):
+                build_platform.select_openblas_shared_library(
+                    openblas_root, "unsupported-x86_64"
+                )
 
         cuda_linking = (root / "libnd4j/cmake/CudaConfiguration.cmake").read_text()
         sdx_linking = (root / "libnd4j/cmake/BuildSDX.cmake").read_text()
