@@ -2616,6 +2616,13 @@ function(setup_triton)
                 -DLLVM_NATIVE_TOOL_DIR=${_TRITON_LLVM_NATIVE_TOOL_DIR}
                 -DLLVM_TABLEGEN=${_TRITON_LLVM_NATIVE_TOOL_DIR}/llvm-tblgen${_TRITON_HOST_EXE_SUFFIX}
                 -DMLIR_TABLEGEN=${_TRITON_LLVM_NATIVE_TOOL_DIR}/mlir-tblgen${_TRITON_HOST_EXE_SUFFIX})
+            # Android bionic has no libpthread/librt; LLVM's pthreads probe
+            # then falls back to "-lpthreads", which fails the tblgen link
+            # ("unable to find library -lpthreads"). Threads are not required
+            # for the cross codegen path, so disable them for the target LLVM.
+            if(ANDROID)
+                list(APPEND TRITON_LLVM_CMAKE_ARGS -DLLVM_ENABLE_THREADS=OFF)
+            endif()
         endif()
 
         if(_TRITON_MINGW_VULKAN_STATIC)
