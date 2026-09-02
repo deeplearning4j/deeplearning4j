@@ -2620,7 +2620,9 @@ function(setup_triton)
             # then falls back to "-lpthreads", which fails the tblgen link
             # ("unable to find library -lpthreads"). Threads are not required
             # for the cross codegen path, so disable them for the target LLVM.
-            if(ANDROID)
+            # Note: the triton subproject receives the toolchain via forwarded
+            # CMAKE_SYSTEM_NAME, so ANDROID itself may be undefined here.
+            if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "Android")
                 list(APPEND TRITON_LLVM_CMAKE_ARGS -DLLVM_ENABLE_THREADS=OFF)
             endif()
         endif()
