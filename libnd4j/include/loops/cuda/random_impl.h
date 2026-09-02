@@ -233,10 +233,9 @@ static SD_INLINE SD_DEVICE void randomSingleGeneric(sd::Pointer state, void* z, 
 
 template <typename T, typename OpClass>
 static SD_INLINE SD_DEVICE void randomDoubleGeneric(sd::Pointer state, void const* x, sd::LongType const* xShapeBuffer,
-                                                   void const* y, sd::LongType const* yShapeBuffer, void* z,
-                                                   sd::LongType const* zShapeBuffer, void* extraArguments) {
- functions::random::RandomFunction<T>::template execTransformCuda<OpClass>(state, x, xShapeBuffer, y, yShapeBuffer, z,
-                                                                           zShapeBuffer, extraArguments);
+                                                   void* z, sd::LongType const* zShapeBuffer, void* extraArguments) {
+ functions::random::RandomFunction<T>::template execTransformCuda<OpClass>(state, x, xShapeBuffer, z, zShapeBuffer,
+                                                                           extraArguments);
 }
 
 template <typename T, typename OpClass>
