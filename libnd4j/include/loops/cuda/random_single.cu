@@ -96,7 +96,7 @@ SD_HOST void RandomFunction<double>::executeCudaSingle(dim3& launchDims, cudaStr
 
 // Explicit instantiation of the class template for the common type matrix;
 // the member definitions live in random_impl.h.
-BUILD_SINGLE_TEMPLATE( template class RandomFunction, , SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE( class RandomFunction, , SD_COMMON_TYPES);
 
 }  // namespace random
 }  // namespace functions
