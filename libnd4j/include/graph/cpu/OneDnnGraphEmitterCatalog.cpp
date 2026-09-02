@@ -22,7 +22,9 @@ namespace sd {
 namespace graph {
 namespace {
 
-bool isSupportedStridedLayout(const NDArray* array) {
+bool isSupportedStridedLayout(NDArray* array) {
+  // isEmpty/rankOf/sizeAt/strideAt are non-const on NDArray (shapeInfo()
+  // refreshes cached pointers), so callers keep non-const NDArray views.
   if (array == nullptr || array->isEmpty()) return false;
   std::vector<std::pair<LongType, LongType>> dimensions;
   dimensions.reserve(static_cast<size_t>(array->rankOf()));
@@ -52,15 +54,14 @@ bool hasOnlyStructuralArguments(const NativeSlot& slot) {
          slot.args.numSArgs == 0;
 }
 
-bool sameShape(const NDArray* left, const NDArray* right) {
-  return left != nullptr && right != nullptr &&
-         const_cast<NDArray*>(left)->isSameShape(const_cast<NDArray*>(right));
+bool sameShape(NDArray* left, NDArray* right) {
+  return left != nullptr && right != nullptr && left->isSameShape(right);
 }
 
 bool validateF32Dense(const std::vector<NDArray*>& arrays,
                       std::string& rejectionReason) {
   for (size_t index = 0; index < arrays.size(); ++index) {
-    const NDArray* array = arrays[index];
+    NDArray* array = arrays[index];
     if (array == nullptr) {
       rejectionReason = "required array " + std::to_string(index) + " is null";
       return false;
@@ -178,8 +179,8 @@ bool lowerBiasAdd(const OneDnnLoweringContext& context,
     if (rejectionReason.empty()) rejectionReason = "biasadd argument or tensor contract mismatch";
     return false;
   }
-  const NDArray* input = context.inputs[0];
-  const NDArray* bias = context.inputs[1];
+  NDArray* input = context.inputs[0];
+  NDArray* bias = context.inputs[1];
   const bool nchw = context.slot.args.numBArgs == 1 && context.slot.args.bArgs[0];
   const int channelDimension = nchw ? 1 : input->rankOf() - 1;
   if (input->rankOf() < 2 || bias->rankOf() != 1 ||
@@ -202,10 +203,10 @@ bool lowerSelect(const OneDnnLoweringContext& context,
     rejectionReason = "select requires three inputs, one output, and no arguments";
     return false;
   }
-  const NDArray* condition = context.inputs[0];
-  const NDArray* left = context.inputs[1];
-  const NDArray* right = context.inputs[2];
-  const NDArray* output = context.outputs[0];
+  NDArray* condition = context.inputs[0];
+  NDArray* left = context.inputs[1];
+  NDArray* right = context.inputs[2];
+  NDArray* output = context.outputs[0];
   if (condition == nullptr || condition->dataType() != DataType::BOOL ||
       !isSupportedStridedLayout(condition) ||
       !validateF32Dense({context.inputs[1], context.inputs[2],
