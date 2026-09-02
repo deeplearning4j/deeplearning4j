@@ -3649,6 +3649,15 @@ else
     run_cmake_configure_logged "OFF"
 fi
 
+# The build tool must match the generator CMake actually used. Android and
+# managed-native paths pass "-G Ninja" through CMAKE_ARGUMENTS, so a Linux
+# build configured with the Ninja generator would otherwise be driven by a
+# bare `make` that finds no Makefile ("No targets specified" failure).
+if [ -f "build.ninja" ] && command -v ninja >/dev/null 2>&1; then
+    export MAKE_COMMAND="ninja -j${MAKEJ}"
+    print_colored "blue" "🔧 Build tool: ninja (generator requested Ninja)"
+fi
+
 validate_compiler_cache_contract
 
 if [[ "$EXTRACT_INSTANTIATIONS" == "ON" ]]; then
