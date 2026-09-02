@@ -146,6 +146,15 @@
       (13, ExponentialDistribution), (14, ExponentialDistributionInv), (15, PoissonDistribution),                    \
       (16, GammaDistribution)
 
+#define RANDOM_OPS_PART1                                                                                             \
+  (0, UniformDistribution), (1, DropOut), (2, DropOutInverted), (3, ProbablisticMerge), (4, Linspace), (5, Choice),   \
+      (6, GaussianDistribution), (7, BernoulliDistribution), (8, BinomialDistribution)
+
+#define RANDOM_OPS_PART2                                                                                             \
+  (9, BinomialDistributionEx), (10, LogNormalDistribution), (11, TruncatedNormalDistribution), (12, AlphaDropOut),   \
+      (13, ExponentialDistribution), (14, ExponentialDistributionInv), (15, PoissonDistribution),                    \
+      (16, GammaDistribution)
+
 #define PAIRWISE_INT_OPS \
   (0, ShiftLeft), (1, ShiftRight), (2, CyclicShiftLeft), (3, CyclicShiftRight), (4, IntAnd), (5, IntOr), (6, IntXor)
 
