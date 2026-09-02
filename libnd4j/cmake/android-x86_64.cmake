@@ -35,4 +35,7 @@ else()
 endif (WIN32)
 
 
-add_definitions(-D__ANDROID_API__=$ENV{ANDROID_VERSION} -DANDROID -fPIC -ffunction-sections -funwind-tables -fstack-protector-strong -target x86_64-none-linux-android)
+# __ANDROID_API__ comes from the -target triple's built-in __ANDROID_MIN_SDK_VERSION__
+# (NDK r26+); a command-line redefinition trips -Werror -Wmacro-redefined in
+# third-party builds such as Triton.
+add_definitions(-DANDROID -fPIC -ffunction-sections -funwind-tables -fstack-protector-strong -target x86_64-none-linux-android)

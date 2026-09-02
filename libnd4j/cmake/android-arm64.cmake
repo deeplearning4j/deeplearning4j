@@ -138,8 +138,11 @@ if(EXISTS "${NDK_TOOLCHAIN_LIB_PATH}")
    set(CMAKE_LIBRARY_PATH "${CMAKE_LIBRARY_PATH}:${NDK_TOOLCHAIN_LIB_PATH}")
 endif()
 
-# Set Android-specific preprocessor definitions
-add_definitions(-DANDROID -D__ANDROID__ -D__ANDROID_API__=${ANDROID_NATIVE_API_LEVEL})
+# Set Android-specific preprocessor definitions. NDK r26+ clang derives
+# __ANDROID_API__ from the --target triple (built-in __ANDROID_MIN_SDK_VERSION__);
+# redefining it on the command line trips -Werror -Wmacro-redefined in
+# third-party builds such as Triton, so only the non-builtin macros stay here.
+add_definitions(-DANDROID -D__ANDROID__)
 
 # Optimization flags for ARM64
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -DNDEBUG")
