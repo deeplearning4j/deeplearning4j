@@ -28,6 +28,32 @@
 namespace functions {
 namespace random {
 
+// here we generate kernels for target operations
+DISPATCH_KERNEL_SIMPLE(randomTriple_, randomTripleGeneric, float,
+                      INPUT(sd::Pointer state, void const* x, sd::LongType const* xShapeBuffer, void const* y,
+                            sd::LongType const* yShapeBuffer, void* z, sd::LongType const* zShapeBuffer,
+                            void* extraArguments),
+                      PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments),
+                      OPS_A(RANDOM_OPS))
+DISPATCH_KERNEL_SIMPLE(randomTriple_, randomTripleGeneric, double,
+                      INPUT(sd::Pointer state, void const* x, sd::LongType const* xShapeBuffer, void const* y,
+                            sd::LongType const* yShapeBuffer, void* z, sd::LongType const* zShapeBuffer,
+                            void* extraArguments),
+                      PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments),
+                      OPS_A(RANDOM_OPS))
+DISPATCH_KERNEL_SIMPLE(randomTriple_, randomTripleGeneric, float16,
+                      INPUT(sd::Pointer state, void const* x, sd::LongType const* xShapeBuffer, void const* y,
+                            sd::LongType const* yShapeBuffer, void* z, sd::LongType const* zShapeBuffer,
+                            void* extraArguments),
+                      PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments),
+                      OPS_A(RANDOM_OPS))
+DISPATCH_KERNEL_SIMPLE(randomTriple_, randomTripleGeneric, bfloat16,
+                      INPUT(sd::Pointer state, void const* x, sd::LongType const* xShapeBuffer, void const* y,
+                            sd::LongType const* yShapeBuffer, void* z, sd::LongType const* zShapeBuffer,
+                            void* extraArguments),
+                      PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments),
+                      OPS_A(RANDOM_OPS))
+
 template <>
 SD_HOST void RandomFunction<float>::executeCudaTriple(dim3& launchDims, cudaStream_t* stream, int opNum,
                                                      sd::Pointer stateHost, void const* vx,

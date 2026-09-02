@@ -28,6 +28,24 @@
 namespace functions {
 namespace random {
 
+// here we generate kernels for target operations
+DISPATCH_KERNEL_SIMPLE(randomDouble_, randomDoubleGeneric, float,
+                      INPUT(sd::Pointer state, void const* x, sd::LongType const* xShapeBuffer, void* z,
+                            sd::LongType const* zShapeBuffer, void* extraArguments),
+                      PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+DISPATCH_KERNEL_SIMPLE(randomDouble_, randomDoubleGeneric, double,
+                      INPUT(sd::Pointer state, void const* x, sd::LongType const* xShapeBuffer, void* z,
+                            sd::LongType const* zShapeBuffer, void* extraArguments),
+                      PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+DISPATCH_KERNEL_SIMPLE(randomDouble_, randomDoubleGeneric, float16,
+                      INPUT(sd::Pointer state, void const* x, sd::LongType const* xShapeBuffer, void* z,
+                            sd::LongType const* zShapeBuffer, void* extraArguments),
+                      PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+DISPATCH_KERNEL_SIMPLE(randomDouble_, randomDoubleGeneric, bfloat16,
+                      INPUT(sd::Pointer state, void const* x, sd::LongType const* xShapeBuffer, void* z,
+                            sd::LongType const* zShapeBuffer, void* extraArguments),
+                      PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+
 template <>
 SD_HOST void RandomFunction<float>::executeCudaDouble(dim3& launchDims, cudaStream_t* stream, int opNum,
                                                      sd::Pointer stateHost, void const* vx,
