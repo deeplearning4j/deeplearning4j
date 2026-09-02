@@ -207,9 +207,9 @@
                 </os>
             </activation>
             <properties>
-                <!-- jnijavacpp.cpp uses dlopen/dlsym/dlclose; with
-                     -Wl,--no-undefined the shared object must link libdl
-                     explicitly (older glibc keeps them in libdl). -->
+                <!-- jnijavacpp.cpp uses dlopen/dlsym/dlclose; with the
+                     no-undefined linker flag the shared object must link
+                     libdl explicitly (older glibc keeps them in libdl). -->
                 <javacpp.compiler.options>-Wl,--no-undefined -ldl</javacpp.compiler.options>
             </properties>
             <build>
