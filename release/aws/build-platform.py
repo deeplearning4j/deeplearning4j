@@ -1577,6 +1577,29 @@ def attest_unclassified_artifacts(
     required = required_unclassified_artifact_ids(build, rules)
     if not required:
         return
+    # Tokenizers unclassified JARs are installed by the cross-platform
+    # tokenizers stage, which only the base-platform-variant slice of a shard
+    # executes (build_native_platform skips it for every other variant). A
+    # non-base slice cannot have produced them, so scope the tokenizer
+    # requirement to the slice that owns the unextended platform classifier.
+    tokenizer_required = [
+        artifact_id
+        for artifact_id in required
+        if artifact_id in TOKENIZER_ARTIFACT_IDS
+    ]
+    if tokenizer_required and not has_base_platform_variant(build):
+        required = tuple(
+            artifact_id
+            for artifact_id in required
+            if artifact_id not in TOKENIZER_ARTIFACT_IDS
+        )
+        print(
+            f"[dl4j-attestation] phase={phase} skipping tokenizers unclassified "
+            "attestation: this slice does not own the base platform variant",
+            flush=True,
+        )
+    if not required:
+        return
     if not version:
         raise ValueError("unclassified artifact validation requires a release version")
     found = {
