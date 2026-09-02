@@ -628,7 +628,11 @@ class WorkflowMatrixTests(unittest.TestCase):
     def test_unix_rustup_bootstrap_retries_transient_tls_failures(self):
         bootstrap = (ROOT / "release/github/bootstrap-worker.sh").read_text()
         self.assertIn("ensure_rust_toolchain()", bootstrap)
-        self.assertIn("--retry 5 --retry-all-errors", bootstrap)
+        # --retry-all-errors is probed at runtime: curl <7.71 (almalinux:8)
+        # rejects the flag, so the bootstrap keeps an empty retry array there.
+        self.assertIn('CURL_RETRY_ALL=(--retry-all-errors)', bootstrap)
+        self.assertIn('CURL_RETRY_ALL=()', bootstrap)
+        self.assertIn('--retry 5 "${CURL_RETRY_ALL[@]}"', bootstrap)
         self.assertIn(
             'https://sh.rustup.rs -o "${work}/rustup-init.sh"', bootstrap
         )
@@ -650,6 +654,9 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("ccache|ccache.exe)", builder)
         self.assertIn("sccache|sccache.exe)", builder)
         self.assertIn("-DSCCACHE_PROGRAM:FILEPATH=$DL4J_COMPILER_CACHE", builder)
+        cmake = (ROOT / "libnd4j/CMakeLists.txt").read_text()
+        self.assertIn("unset(SCCACHE_PROGRAM CACHE)", cmake)
+        self.assertIn('set(SD_USE_SCCACHE_VAL "$ENV{SD_USE_SCCACHE}")', cmake)
         self.assertNotIn(
             "Android smart-cache contract requires ccache",
             builder,

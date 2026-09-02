@@ -49,6 +49,15 @@ install_macos_packages() {
   printf '%s\n' "$(brew --prefix)/opt/gnu-sed/libexec/gnubin" >>"${GITHUB_PATH}"
 }
 
+# curl gained --retry-all-errors in 7.71; containers such as almalinux:8 ship
+# curl 7.61 and reject the option outright, so probe for support once and reuse
+# the result for every download in this script.
+if curl --retry-all-errors --help >/dev/null 2>&1; then
+  CURL_RETRY_ALL=(--retry-all-errors)
+else
+  CURL_RETRY_ALL=()
+fi
+
 ensure_modern_maven() {
   maven_version=3.9.9
   target="${toolchain_root}/apache-maven-${maven_version}"
@@ -62,7 +71,7 @@ ensure_modern_maven() {
       "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/${maven_version}/${maven_archive}" \
       "https://dlcdn.apache.org/maven/maven-3/${maven_version}/binaries/${maven_archive}" \
       "https://archive.apache.org/dist/maven/maven-3/${maven_version}/binaries/${maven_archive}"; do
-      if curl --fail --location --retry 5 --retry-all-errors \
+      if curl --fail --location --retry 5 "${CURL_RETRY_ALL[@]}" \
           --connect-timeout 20 --max-time 300 \
           "${maven_url}" -o "${work}/maven.tar.gz"; then
         maven_downloaded=1
@@ -154,7 +163,7 @@ ensure_rust_toolchain() {
   work=$(mktemp -d)
   trap 'rm -rf "${work}"' RETURN
   curl --proto '=https' --tlsv1.2 --fail --silent --show-error --location \
-    --retry 5 --retry-all-errors --connect-timeout 20 --max-time 300 \
+    --retry 5 "${CURL_RETRY_ALL[@]}" --connect-timeout 20 --max-time 300 \
     https://sh.rustup.rs -o "${work}/rustup-init.sh"
   sh "${work}/rustup-init.sh" -y --default-toolchain stable
   export PATH="${HOME}/.cargo/bin:${PATH}"
@@ -175,7 +184,7 @@ ensure_cuda_sbsa_cross() {
 
   work=$(mktemp -d)
   trap 'rm -rf "${work}"' RETURN
-  curl --fail --location --retry 5 --retry-all-errors \
+  curl --fail --location --retry 5 "${CURL_RETRY_ALL[@]}" \
     --connect-timeout 20 --max-time 300 \
     https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/cross-linux-sbsa/cuda-keyring_1.1-1_all.deb \
     -o "${work}/cuda-keyring.deb"
@@ -205,7 +214,7 @@ ensure_cuda_sbsa_cross() {
     jdk_sha256=f27033e6f7523c1b0b2565a78e9c0e0abe5596a854ce00ca04ec1b06ece7a935
     work=$(mktemp -d)
     trap 'rm -rf "${work}"' RETURN
-    curl --fail --location --retry 5 --retry-all-errors \
+    curl --fail --location --retry 5 "${CURL_RETRY_ALL[@]}" \
       --connect-timeout 20 --max-time 300 \
       "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.32.1%2B1/${jdk_archive}" \
       -o "${work}/${jdk_archive}"
