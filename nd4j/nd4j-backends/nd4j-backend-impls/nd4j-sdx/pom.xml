@@ -210,7 +210,7 @@
                 <!-- jnijavacpp.cpp uses dlopen/dlsym/dlclose; with the
                      no-undefined linker flag the shared object must link
                      libdl explicitly (older glibc keeps them in libdl). -->
-                <javacpp.compiler.options>-Wl,--no-undefined -ldl</javacpp.compiler.options>
+                <javacpp.compiler.options>-Wl,--no-undefined</javacpp.compiler.options>
             </properties>
             <build>
                 <plugins>
@@ -220,6 +220,7 @@
                         <configuration>
                             <compilerOptions>
                                 <compilerOption>${javacpp.compiler.options}</compilerOption>
+                                <compilerOption>-ldl</compilerOption>
                             </compilerOptions>
                         </configuration>
                     </plugin>
