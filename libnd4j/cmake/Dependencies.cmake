@@ -2028,12 +2028,58 @@ function(setup_triton)
                 else()
                     target_link_libraries(triton_interface INTERFACE -ldl)
                 endif()
+                # Cross builds (AArch64 SBSA) have no target zlib installed on
+                # the host; NVIDIA ships libz.so / libz.so.1 with the CUDA
+                # target libraries, so add that directory to the search path.
+                if(CMAKE_CROSSCOMPILING
+                   AND CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64"
+                   AND NOT CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
+                    set(_SD_TRITON_CROSS_ZLIB_DIR "")
+                    if(DEFINED ENV{CUDA_SBSA_TARGET_ROOT}
+                       AND EXISTS "$ENV{CUDA_SBSA_TARGET_ROOT}/lib/libz.so")
+                        set(_SD_TRITON_CROSS_ZLIB_DIR "$ENV{CUDA_SBSA_TARGET_ROOT}/lib")
+                    elseif(EXISTS "/usr/local/cuda/targets/sbsa-linux/lib/libz.so")
+                        set(_SD_TRITON_CROSS_ZLIB_DIR "/usr/local/cuda/targets/sbsa-linux/lib")
+                    endif()
+                    if(_SD_TRITON_CROSS_ZLIB_DIR)
+                        target_link_options(triton_interface INTERFACE
+                            "LINKER:-L${_SD_TRITON_CROSS_ZLIB_DIR}")
+                    endif()
+                endif()
             endif()
             if(SD_CUDA)
                 if(WIN32)
                     target_link_libraries(triton_interface INTERFACE nvrtc.lib cuda.lib)
                 else()
-                    target_link_libraries(triton_interface INTERFACE -lnvrtc -lcuda)
+                    # See the fresh-build branch below: bare -l flags break
+                    # cross (SBSA) links that lack a default CUDA lib path.
+                    set(_SD_TRITON_CUDA_LIBS "")
+                    if(TARGET CUDA::nvrtc)
+                        list(APPEND _SD_TRITON_CUDA_LIBS CUDA::nvrtc)
+                    endif()
+                    if(TARGET CUDA::cuda_driver)
+                        list(APPEND _SD_TRITON_CUDA_LIBS CUDA::cuda_driver)
+                    endif()
+                    if(_SD_TRITON_CUDA_LIBS)
+                        target_link_libraries(triton_interface INTERFACE ${_SD_TRITON_CUDA_LIBS})
+                    else()
+                        set(_SD_TRITON_CUDA_LIBDIR "")
+                        if(CUDAToolkit_LIBRARY_DIR AND EXISTS "${CUDAToolkit_LIBRARY_DIR}")
+                            set(_SD_TRITON_CUDA_LIBDIR "${CUDAToolkit_LIBRARY_DIR}")
+                        elseif(DEFINED ENV{CUDA_SBSA_TARGET_ROOT}
+                               AND EXISTS "$ENV{CUDA_SBSA_TARGET_ROOT}/lib")
+                            set(_SD_TRITON_CUDA_LIBDIR "$ENV{CUDA_SBSA_TARGET_ROOT}/lib")
+                        elseif(EXISTS "/usr/local/cuda/targets/sbsa-linux/lib"
+                               AND CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
+                            set(_SD_TRITON_CUDA_LIBDIR "/usr/local/cuda/targets/sbsa-linux/lib")
+                        endif()
+                        if(_SD_TRITON_CUDA_LIBDIR)
+                            target_link_libraries(triton_interface INTERFACE
+                                "-L${_SD_TRITON_CUDA_LIBDIR}" -lnvrtc -lcuda)
+                        else()
+                            target_link_libraries(triton_interface INTERFACE -lnvrtc -lcuda)
+                        endif()
+                    endif()
                 endif()
             endif()
             if(NOT _TRITON_MINGW_VULKAN_STATIC)
@@ -3067,6 +3113,24 @@ function(setup_triton)
         else()
             target_link_libraries(triton_interface INTERFACE -ldl)
         endif()
+        # Cross builds (AArch64 SBSA) have no target zlib installed on the
+        # host; NVIDIA ships libz.so / libz.so.1 with the CUDA target
+        # libraries, so add that directory to the search path.
+        if(CMAKE_CROSSCOMPILING
+           AND CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64"
+           AND NOT CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
+            set(_SD_TRITON_CROSS_ZLIB_DIR "")
+            if(DEFINED ENV{CUDA_SBSA_TARGET_ROOT}
+               AND EXISTS "$ENV{CUDA_SBSA_TARGET_ROOT}/lib/libz.so")
+                set(_SD_TRITON_CROSS_ZLIB_DIR "$ENV{CUDA_SBSA_TARGET_ROOT}/lib")
+            elseif(EXISTS "/usr/local/cuda/targets/sbsa-linux/lib/libz.so")
+                set(_SD_TRITON_CROSS_ZLIB_DIR "/usr/local/cuda/targets/sbsa-linux/lib")
+            endif()
+            if(_SD_TRITON_CROSS_ZLIB_DIR)
+                target_link_options(triton_interface INTERFACE
+                    "LINKER:-L${_SD_TRITON_CROSS_ZLIB_DIR}")
+            endif()
+        endif()
     endif()
     message(STATUS
         "Triton interface: shared MLIR=${_TRITON_MLIR_SHARED_LIBRARY}, "
@@ -3078,7 +3142,39 @@ function(setup_triton)
         if(WIN32)
             target_link_libraries(triton_interface INTERFACE nvrtc.lib cuda.lib)
         else()
-            target_link_libraries(triton_interface INTERFACE -lnvrtc -lcuda)
+            # Bare -l flags only resolve when the linker already searches the
+            # CUDA library directory. Cross builds (AArch64 SBSA) have no
+            # default search path for the target libraries, so the bare form
+            # fails with "cannot find -lnvrtc/-lcuda". Prefer the resolved
+            # imported targets and, when they are unavailable, pass an
+            # explicit -L for the toolkit library directory that hosts them.
+            set(_SD_TRITON_CUDA_LIBS "")
+            if(TARGET CUDA::nvrtc)
+                list(APPEND _SD_TRITON_CUDA_LIBS CUDA::nvrtc)
+            endif()
+            if(TARGET CUDA::cuda_driver)
+                list(APPEND _SD_TRITON_CUDA_LIBS CUDA::cuda_driver)
+            endif()
+            if(_SD_TRITON_CUDA_LIBS)
+                target_link_libraries(triton_interface INTERFACE ${_SD_TRITON_CUDA_LIBS})
+            else()
+                set(_SD_TRITON_CUDA_LIBDIR "")
+                if(CUDAToolkit_LIBRARY_DIR AND EXISTS "${CUDAToolkit_LIBRARY_DIR}")
+                    set(_SD_TRITON_CUDA_LIBDIR "${CUDAToolkit_LIBRARY_DIR}")
+                elseif(DEFINED ENV{CUDA_SBSA_TARGET_ROOT}
+                       AND EXISTS "$ENV{CUDA_SBSA_TARGET_ROOT}/lib")
+                    set(_SD_TRITON_CUDA_LIBDIR "$ENV{CUDA_SBSA_TARGET_ROOT}/lib")
+                elseif(EXISTS "/usr/local/cuda/targets/sbsa-linux/lib"
+                       AND CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
+                    set(_SD_TRITON_CUDA_LIBDIR "/usr/local/cuda/targets/sbsa-linux/lib")
+                endif()
+                if(_SD_TRITON_CUDA_LIBDIR)
+                    target_link_libraries(triton_interface INTERFACE
+                        "-L${_SD_TRITON_CUDA_LIBDIR}" -lnvrtc -lcuda)
+                else()
+                    target_link_libraries(triton_interface INTERFACE -lnvrtc -lcuda)
+                endif()
+            endif()
         endif()
     endif()
 

@@ -2558,6 +2558,46 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
                     break()
                 endif()
             endforeach()
+            # NDK r26+/r27 ships libc++_shared.so in the ABI root
+            # (<sysroot>/usr/lib/<abi>/libc++_shared.so) while the implicit
+            # link directories only expose the API-specific subdirectory
+            # (<sysroot>/usr/lib/<abi>/<api>/). Probe the known sysroot
+            # locations explicitly before failing.
+            if(NOT IS_ABSOLUTE "${_sdx_cxx_shared_library}" OR
+               NOT EXISTS "${_sdx_cxx_shared_library}")
+                set(_sdx_android_sysroot "")
+                set(_sdx_android_abi "")
+                if(DEFINED CMAKE_SYSROOT AND EXISTS "${CMAKE_SYSROOT}")
+                    set(_sdx_android_sysroot "${CMAKE_SYSROOT}")
+                elseif(DEFINED CMAKE_ANDROID_NDK AND EXISTS "${CMAKE_ANDROID_NDK}")
+                    if(EXISTS "${CMAKE_ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot")
+                        set(_sdx_android_sysroot
+                            "${CMAKE_ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot")
+                    elseif(EXISTS "${CMAKE_ANDROID_NDK}/sysroot")
+                        set(_sdx_android_sysroot "${CMAKE_ANDROID_NDK}/sysroot")
+                    endif()
+                endif()
+                if(DEFINED CMAKE_ANDROID_ARCH_ABI AND NOT "${CMAKE_ANDROID_ARCH_ABI}" STREQUAL "")
+                    set(_sdx_android_abi "${CMAKE_ANDROID_ARCH_ABI}")
+                endif()
+                # Map the DSLK/NDK ABI name to the sysroot library triple.
+                if("${_sdx_android_abi}" STREQUAL "arm64-v8a")
+                    set(_sdx_android_abi "aarch64-linux-android")
+                elseif("${_sdx_android_abi}" STREQUAL "x86_64")
+                    set(_sdx_android_abi "x86_64-linux-android")
+                elseif("${_sdx_android_abi}" STREQUAL "armeabi-v7a")
+                    set(_sdx_android_abi "arm-linux-androideabi")
+                elseif("${_sdx_android_abi}" STREQUAL "x86")
+                    set(_sdx_android_abi "i686-linux-android")
+                endif()
+                if(_sdx_android_sysroot AND _sdx_android_abi)
+                    if(EXISTS
+                       "${_sdx_android_sysroot}/usr/lib/${_sdx_android_abi}/libc++_shared.so")
+                        set(_sdx_cxx_shared_library
+                            "${_sdx_android_sysroot}/usr/lib/${_sdx_android_abi}/libc++_shared.so")
+                    endif()
+                endif()
+            endif()
             if(NOT IS_ABSOLUTE "${_sdx_cxx_shared_library}" OR
                NOT EXISTS "${_sdx_cxx_shared_library}")
                 message(FATAL_ERROR
