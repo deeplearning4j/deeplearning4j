@@ -337,12 +337,6 @@ function(collect_all_sources out_source_list)
         split_heavy_op(LOOPS_SOURCES_CUDA bitonicSortStep.cu   loops/cuda/specials/bitonicSortStep.cu    12)
         split_heavy_op(LOOPS_SOURCES_CUDA bitonicArbitraryStep.cu loops/cuda/specials/bitonicArbitraryStep.cu 12)
         split_heavy_op(LOOPS_SOURCES_CUDA oesTad.cu            loops/cuda/specials/oesTad.cu             12)
-        # random.cu crashes nvcc (cicc segfault, CUDA 12.6 Linux) and Windows
-        # ptxas (access violation for compute_90) when the whole 3-family x
-        # 17-op RANDOM_OPS matrix is expanded in one TU. Use the SD_FLOAT_TYPES
-        # subset (4 types) — SD_SPLIT_TYPE_LIST indexes into the same list the
-        # guard's COUNT_NARG check validates against.
-        split_heavy_op(LOOPS_SOURCES_CUDA random.cu            loops/cuda/random.cu                      3)
         # NOTE: where.cu intentionally NOT split — its object weight is the shared
         # device-kernel impl (compiled into every TU), not the type instantiations
         # (a split TU is ~7 MB = the monolith), so splitting multiplies work for no
