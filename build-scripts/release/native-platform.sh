@@ -231,7 +231,9 @@ case "${DL4J_FAMILY}" in
     command=(mvn ${split_flags[@]+"${split_flags[@]}"} ${repo[@]+"${repo[@]}"} --no-transfer-progress "-P${backend}" "${sdx_profile[@]}" -pl "${modules}" "${flags[@]}" "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 "-Dplatform.classifier=${classifier}" ${also_make[@]+"${also_make[@]}"} --batch-mode "${sdx_maven_flags[@]}" "${DL4J_MAVEN_GOAL}" -DskipTests)
     ;;
   compat)
-    command=(mvn -pl :nd4j-native-preset,:libnd4j,:nd4j-native ${split_flags[@]+"${split_flags[@]}"} ${repo[@]+"${repo[@]}"} -Pcpu "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Pcpu ${also_make[@]+"${also_make[@]}"} --batch-mode -DskipTests -Dlibnd4j.extension=compat -Djavacpp.platform.extension=-compat -Dlibnd4j.classifier=linux-x86_64-compat "${DL4J_MAVEN_GOAL}")
+    compat_modules=:nd4j-native-preset,:libnd4j,:nd4j-native
+    [ "$DL4J_BUILD_SDX" != 1 ] || compat_modules+=",:nd4j-sdx-preset,:nd4j-sdx-model,:nd4j-sdx,:nd4j-sdx-litertlm"
+    command=(mvn -pl "${compat_modules}" ${split_flags[@]+"${split_flags[@]}"} ${repo[@]+"${repo[@]}"} -Pcpu "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Pcpu ${sdx_profile[@]+"${sdx_profile[@]}"} ${also_make[@]+"${also_make[@]}"} --batch-mode -DskipTests -Dlibnd4j.extension=compat -Djavacpp.platform.extension=-compat -Dlibnd4j.classifier=linux-x86_64-compat ${sdx_maven_flags[@]+"${sdx_maven_flags[@]}"} "${DL4J_MAVEN_GOAL}")
     ;;
   zluda|windows-zluda)
     : "${DL4J_CUDA_VERSION:?DL4J_CUDA_VERSION is required}"
