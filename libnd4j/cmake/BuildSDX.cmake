@@ -262,6 +262,14 @@ function(configure_sdx_cpu_linking main_target_name)
     target_link_libraries(${main_target_name} PUBLIC
             ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} flatbuffers_interface ${CMAKE_DL_LIBS})
 
+    # Android NDK: the standalone library carries the same OpenMP object code
+    # as the main CPU target, and the NDK toolchain does not propagate the
+    # OpenMP link flags through OpenMP::OpenMP_CXX. Add -fopenmp
+    # -static-openmp so __kmpc_* symbols resolve from the NDK's static libomp.
+    if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "Android")
+        target_link_libraries(${main_target_name} PUBLIC "-fopenmp" "-static-openmp")
+    endif()
+
     # The standalone SDX library contains the same Apple MPS implementation
     # objects as the normal CPU target and therefore needs the same frameworks.
     if(HAVE_MPS)
