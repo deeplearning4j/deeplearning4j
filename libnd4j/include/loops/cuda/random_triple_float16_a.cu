@@ -1,0 +1,52 @@
+/*
+ * ******************************************************************************
+ *
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership. Unless required by applicable
+ *  law or agreed to in writing, software distributed under the License is
+ *  distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied. See the License for the specific
+ *  language governing permissions and limitations under the License.
+ *
+ *  SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+//  @author raver119@gmail.com
+//
+// Per-type, per-op-half random kernels. CUDA 12.6/12.9 nvcc segfaults
+// (cicc) and Windows ptxas access-violates when every random op for a
+// family is expanded in one translation unit, so each (family, dtype,
+// op-half) pair gets its own small TU.
+//
+#include <loops/cuda/random_impl.h>
+
+namespace functions {
+namespace random {
+#define RANDOM_OPS_HALF (0, UniformDistribution), (1, DropOut), (2, DropOutInverted), (3, ProbablisticMerge), (4, Linspace), (5, Choice), (6, GaussianDistribution), (7, BernoulliDistribution), (8, BinomialDistribution)
+
+DISPATCH_KERNEL_SIMPLE(randomTriple_, randomTripleGeneric, float16,
+                      INPUT(sd::Pointer state, void const* x, sd::LongType const* xShapeBuffer, void const* y, sd::LongType const* yShapeBuffer, void* z, sd::LongType const* zShapeBuffer, void* extraArguments),
+                      PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS_HALF))
+
+template <>
+SD_HOST void RandomFunction<float16>::executeCudaTriple(dim3& launchDims, cudaStream_t* stream, int opNum,
+                                                      sd::Pointer stateHost, void const* vx, sd::LongType const* xShapeBuffer, void const* vy, sd::LongType const* yShapeBuffer, void* vz, sd::LongType const* zShapeBuffer, void* vextraArguments) {
+ auto x = reinterpret_cast<float16 const*>(vx);
+ auto y = reinterpret_cast<float16 const*>(vy);
+ auto z = reinterpret_cast<float16*>(vz);
+ auto extraArguments = reinterpret_cast<float16*>(vextraArguments);
+
+ // this macro builds bunch of IF/ELSE selectors for kernel launch
+ DISPATCH_SIMPLE(randomTriple, float16, PARAMS(stateHost, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS_HALF))
+
+ sd::DebugHelper::checkErrorCode(stream, "RandomFunction executeCudaSingle(...) failed");
+}
+
+}  // namespace random
+}  // namespace functions
