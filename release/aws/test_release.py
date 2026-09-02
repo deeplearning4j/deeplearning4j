@@ -2496,6 +2496,100 @@ class ReleaseValidationTest(unittest.TestCase):
                     rules,
                 )
 
+    def test_tokenizers_unclassified_attestation_requires_base_platform_slice(self):
+        """Non-base platform slices skip the cross-platform tokenizers stage,
+        so the tokenizer unclassified requirement must not fail them."""
+        version = "1.0.0"
+        rules = {
+            "mode": "classifier",
+            "artifactIds": [
+                "nd4j-native",
+                "nd4j-native-preset",
+                "libtokenizers",
+                "tokenizers-native-preset",
+                "tokenizers-native",
+            ],
+            "unclassifiedArtifactIds": [
+                "nd4j-native",
+                "nd4j-native-preset",
+                "libtokenizers",
+                "tokenizers-native-preset",
+                "tokenizers-native",
+            ],
+        }
+        non_base_build = {
+            "backend": "cpu",
+            "javacppPlatform": "linux-arm64",
+            "buildCrossPlatform": True,
+            "modules": [
+                ":nd4j-native",
+                ":nd4j-native-preset",
+                ":libnd4j",
+                ":libtokenizers",
+                ":tokenizers-native-preset",
+                ":tokenizers-native",
+            ],
+            "variants": [
+                {"name": "onednn", "helper": "onednn", "suffix": "-onednn"},
+            ],
+        }
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            repository = Path(temporary_directory)
+            # The native install provides the unclassified platform JARs on
+            # every slice; only the tokenizer JARs are base-slice-exclusive.
+            for artifact_id in ("nd4j-native", "nd4j-native-preset"):
+                jar = (
+                    repository
+                    / "org/eclipse/deeplearning4j"
+                    / artifact_id
+                    / version
+                    / f"{artifact_id}-{version}.jar"
+                )
+                jar.parent.mkdir(parents=True)
+                jar.write_bytes(b"jar")
+            # The non-base slice owns no unclassified platform artifacts and
+            # skips the tokenizers stage, so the attestation must pass empty.
+            output = StringIO()
+            with redirect_stdout(output):
+                build_platform.attest_unclassified_artifacts(
+                    repository,
+                    non_base_build,
+                    rules,
+                    version,
+                    "local-repository",
+                )
+            self.assertIn("tokenizers unclassified", output.getvalue())
+
+        base_build = {
+            "backend": "cpu",
+            "javacppPlatform": "linux-arm64",
+            "buildCrossPlatform": True,
+            "modules": [
+                ":nd4j-native",
+                ":nd4j-native-preset",
+                ":libnd4j",
+                ":libtokenizers",
+                ":tokenizers-native-preset",
+                ":tokenizers-native",
+            ],
+            "variants": [
+                {"name": "base", "suffix": ""},
+                {"name": "onednn", "helper": "onednn", "suffix": "-onednn"},
+            ],
+        }
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            repository = Path(temporary_directory)
+            # The base slice owns the tokenizers output, so a missing JAR
+            # must still fail the attestation there.
+            with self.assertRaisesRegex(RuntimeError, "libtokenizers"):
+                build_platform.attest_unclassified_artifacts(
+                    repository,
+                    base_build,
+                    rules,
+                    version,
+                    "local-repository",
+                )
+
     def test_cpu_cuda_classifier_artifact_attestation_is_exact_and_complete(self):
         cases = (
             (
