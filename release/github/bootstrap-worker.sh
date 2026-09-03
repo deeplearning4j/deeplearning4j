@@ -190,6 +190,16 @@ ensure_cuda_sbsa_cross() {
     -o "${work}/cuda-keyring.deb"
   as_root dpkg -i "${work}/cuda-keyring.deb"
   as_root env DEBIAN_FRONTEND=noninteractive apt-get update
+  # Triton/LLVM objects reference zlib symbols; the amd64-only zlib1g-dev
+  # installed for the host toolchain does not satisfy the aarch64 cross
+  # linker. Add the arm64 architecture via the Ubuntu ports archive and
+  # install the target zlib development files.
+  as_root dpkg --add-architecture arm64
+  as_root env DEBIAN_FRONTEND=noninteractive apt-get update
+  as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    zlib1g-dev:arm64 || {
+      printf 'zlib1g-dev:arm64 unavailable; continuing without target zlib\n' >&2
+    }
   as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     cuda-cross-sbsa-13-1
   if [ "${variant}" = cudnn ]; then
