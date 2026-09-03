@@ -913,7 +913,7 @@
       },
       "build": {
         "backend": "cpu",
-        "ndkVersion": "r26d",
+        "ndkVersion": "r27d",
         "javacppPlatform": "android-x86_64",
         "profiles": [
           "cpu",
