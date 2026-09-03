@@ -16,15 +16,16 @@
 * SPDX-License-Identifier: Apache-2.0
 ******************************************************************************/
 
-//
-//  @author raver119@gmail.com
-//
+
+#ifndef PROJECT_RANDOM_IMPL_GEN_H
+#define PROJECT_RANDOM_IMPL_GEN_H
+
 #include <helpers/DebugHelper.h>
-#include <loops/cuda/random_kernel_declarations.h>
 #include <loops/random.h>
 #include <ops/specials_cuda.h>
 #include <system/common.h>
 #include <system/op_boilerplate.h>
+#include <types/types.h>
 
 
 using namespace randomOps;
@@ -49,62 +50,6 @@ static SD_INLINE SD_DEVICE void randomTripleGeneric(sd::Pointer state, void cons
  functions::random::RandomFunction<T>::template execTransformCuda<OpClass>(state, x, xShapeBuffer, y, yShapeBuffer, z,
                                                                            zShapeBuffer, extraArguments);
 }
-
-// here we generate kernels for target operations
-DISPATCH_KERNEL_SIMPLE(randomSingle_, randomSingleGeneric, float,
-                      INPUT(sd::Pointer state, void* z, sd::LongType const* zShapeBuffer, void* extraArguments),
-                      PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
-DISPATCH_KERNEL_SIMPLE(randomSingle_, randomSingleGeneric, double,
-                      INPUT(sd::Pointer state, void* z, sd::LongType const* zShapeBuffer, void* extraArguments),
-                      PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
-DISPATCH_KERNEL_SIMPLE(randomSingle_, randomSingleGeneric, float16,
-                      INPUT(sd::Pointer state, void* z, sd::LongType const* zShapeBuffer, void* extraArguments),
-                      PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
-DISPATCH_KERNEL_SIMPLE(randomSingle_, randomSingleGeneric, bfloat16,
-                      INPUT(sd::Pointer state, void* z, sd::LongType const* zShapeBuffer, void* extraArguments),
-                      PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
-
-DISPATCH_KERNEL_SIMPLE(randomDouble_, randomDoubleGeneric, float,
-                      INPUT(sd::Pointer state, void const* x, sd::LongType const* xShapeBuffer, void* z,
-                            sd::LongType const* zShapeBuffer, void* extraArguments),
-                      PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
-DISPATCH_KERNEL_SIMPLE(randomDouble_, randomDoubleGeneric, double,
-                      INPUT(sd::Pointer state, void const* x, sd::LongType const* xShapeBuffer, void* z,
-                            sd::LongType const* zShapeBuffer, void* extraArguments),
-                      PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
-DISPATCH_KERNEL_SIMPLE(randomDouble_, randomDoubleGeneric, float16,
-                      INPUT(sd::Pointer state, void const* x, sd::LongType const* xShapeBuffer, void* z,
-                            sd::LongType const* zShapeBuffer, void* extraArguments),
-                      PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
-DISPATCH_KERNEL_SIMPLE(randomDouble_, randomDoubleGeneric, bfloat16,
-                      INPUT(sd::Pointer state, void const* x, sd::LongType const* xShapeBuffer, void* z,
-                            sd::LongType const* zShapeBuffer, void* extraArguments),
-                      PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
-
-DISPATCH_KERNEL_SIMPLE(randomTriple_, randomTripleGeneric, float,
-                      INPUT(sd::Pointer state, void const* x, sd::LongType const* xShapeBuffer, void const* y,
-                            sd::LongType const* yShapeBuffer, void* z, sd::LongType const* zShapeBuffer,
-                            void* extraArguments),
-                      PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments),
-                      OPS_A(RANDOM_OPS))
-DISPATCH_KERNEL_SIMPLE(randomTriple_, randomTripleGeneric, double,
-                      INPUT(sd::Pointer state, void const* x, sd::LongType const* xShapeBuffer, void const* y,
-                            sd::LongType const* yShapeBuffer, void* z, sd::LongType const* zShapeBuffer,
-                            void* extraArguments),
-                      PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments),
-                      OPS_A(RANDOM_OPS))
-DISPATCH_KERNEL_SIMPLE(randomTriple_, randomTripleGeneric, float16,
-                      INPUT(sd::Pointer state, void const* x, sd::LongType const* xShapeBuffer, void const* y,
-                            sd::LongType const* yShapeBuffer, void* z, sd::LongType const* zShapeBuffer,
-                            void* extraArguments),
-                      PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments),
-                      OPS_A(RANDOM_OPS))
-DISPATCH_KERNEL_SIMPLE(randomTriple_, randomTripleGeneric, bfloat16,
-                      INPUT(sd::Pointer state, void const* x, sd::LongType const* xShapeBuffer, void const* y,
-                            sd::LongType const* yShapeBuffer, void* z, sd::LongType const* zShapeBuffer,
-                            void* extraArguments),
-                      PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments),
-                      OPS_A(RANDOM_OPS))
 
 
 namespace functions {
@@ -297,3 +242,5 @@ void SD_DEVICE RandomFunction<T>::execTransformCuda(sd::Pointer state, void* vz,
 
 }  // namespace random
 }  // namespace functions
+
+#endif  // PROJECT_RANDOM_IMPL_GEN_H
