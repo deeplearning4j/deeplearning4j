@@ -2610,21 +2610,27 @@ function(setup_triton)
                 -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                 -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
         )
-        if(CMAKE_CROSSCOMPILING)
+        # The host tblgen must be used whenever native tools are available,
+        # independent of how the parent scope detected cross compilation —
+        # some lanes (e.g. android vulkan) apply the cross toolchain deeper
+        # in the build so CMAKE_CROSSCOMPILING is false at this point even
+        # though the compilers target a foreign triple.
+        list(APPEND TRITON_LLVM_CMAKE_ARGS
+            ${_TRITON_TARGET_CMAKE_ARGS})
+        if(EXISTS "${_TRITON_LLVM_NATIVE_TOOL_DIR}/llvm-tblgen${_TRITON_HOST_EXE_SUFFIX}")
             list(APPEND TRITON_LLVM_CMAKE_ARGS
-                ${_TRITON_TARGET_CMAKE_ARGS}
                 -DLLVM_NATIVE_TOOL_DIR=${_TRITON_LLVM_NATIVE_TOOL_DIR}
                 -DLLVM_TABLEGEN=${_TRITON_LLVM_NATIVE_TOOL_DIR}/llvm-tblgen${_TRITON_HOST_EXE_SUFFIX}
                 -DMLIR_TABLEGEN=${_TRITON_LLVM_NATIVE_TOOL_DIR}/mlir-tblgen${_TRITON_HOST_EXE_SUFFIX})
-            # Android bionic has no libpthread/librt; LLVM's pthreads probe
-            # then falls back to "-lpthreads", which fails the tblgen link
-            # ("unable to find library -lpthreads"). Threads are not required
-            # for the cross codegen path, so disable them for the target LLVM.
-            # Note: the triton subproject receives the toolchain via forwarded
-            # CMAKE_SYSTEM_NAME, so ANDROID itself may be undefined here.
-            if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "Android")
-                list(APPEND TRITON_LLVM_CMAKE_ARGS -DLLVM_ENABLE_THREADS=OFF)
-            endif()
+        endif()
+        # Android bionic has no libpthread/librt; LLVM's pthreads probe then
+        # falls back to "-lpthreads", which fails the tblgen link ("unable to
+        # find library -lpthreads"). Threads are not required for the cross
+        # codegen path, so disable them whenever the target is Android.
+        # Note: the triton subproject receives the toolchain via forwarded
+        # CMAKE_SYSTEM_NAME, so ANDROID itself may be undefined here.
+        if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "Android")
+            list(APPEND TRITON_LLVM_CMAKE_ARGS -DLLVM_ENABLE_THREADS=OFF)
         endif()
 
         if(_TRITON_MINGW_VULKAN_STATIC)
