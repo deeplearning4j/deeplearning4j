@@ -468,12 +468,12 @@ SD_HOST_DEVICE SD_INLINE Z sd_atanh(T val);
 // fp32 computation used by the half-precision overloads below: the series
 // convergence threshold is 1.0e-12, which underflows to zero in half types.
 static SD_HOST_DEVICE SD_INLINE float sd_igamma_f32(float a, float x) {
-  float aim = p_powf(x, a) / (expf(x) * lgammaf(a));
+  float aim = p_pow<float>(x, a) / (expf(x) * lgammaf(a));
   float sum = 0.f;
   float denom = 1.f;
   for (int i = 0; 1.f / denom > 1.0e-12f; i++) {
     denom *= a + i;
-    sum += p_powf(x, (float)i) / denom;
+    sum += p_pow<float>(x, (float)i) / denom;
   }
   return aim * sum;
 }
