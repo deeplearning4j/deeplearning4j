@@ -336,6 +336,12 @@ function(collect_all_sources out_source_list)
         split_heavy_op(LOOPS_SOURCES_CUDA reduce_same.cu       loops/cuda/reduce/reduce_same.cu          12)
         split_heavy_op(LOOPS_SOURCES_CUDA bitonicSortStep.cu   loops/cuda/specials/bitonicSortStep.cu    12)
         split_heavy_op(LOOPS_SOURCES_CUDA bitonicArbitraryStep.cu loops/cuda/specials/bitonicArbitraryStep.cu 12)
+        # random_kernels_double_float16.cu deterministically segfaults cicc
+        # (CUDA 12.6 and 12.9, reproducible across lanes) while all sibling
+        # random TUs compile; compile just that TU at -O0 to avoid the
+        # compiler's optimized codegen path that crashes.
+        set_source_files_properties(loops/cuda/random_kernels_double_float16.cu
+            PROPERTIES COMPILE_FLAGS "-O0")
         split_heavy_op(LOOPS_SOURCES_CUDA oesTad.cu            loops/cuda/specials/oesTad.cu             12)
         # NOTE: where.cu intentionally NOT split — its object weight is the shared
         # device-kernel impl (compiled into every TU), not the type instantiations
