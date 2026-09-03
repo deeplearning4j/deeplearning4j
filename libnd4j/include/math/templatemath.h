@@ -938,6 +938,41 @@ SD_HOST_DEVICE SD_INLINE Z sd_igamma(X a, Y x) {
   return result;
 }
 
+#ifdef HAS_FLOAT16
+// float16 cannot represent the 1.0e-12 convergence threshold (underflows to
+// zero, making the series loop non-terminating at half precision) and cicc
+// crashes while expanding the unbounded loop for half. Compute in fp32 and
+// truncate to half — matching the precision of the surrounding fp16 math.
+template <>
+SD_HOST_DEVICE SD_INLINE float16 sd_igamma<float16, float16, float16>(float16 a, float16 x) {
+  float result = sd_igamma<float, float, float>(static_cast<float>(a), static_cast<float>(x));
+  return static_cast<float16>(result);
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE float16 sd_igammac<float16, float16, float16>(float16 a, float16 x) {
+  float result = sd_igammac<float, float, float>(static_cast<float>(a), static_cast<float>(x));
+  return static_cast<float16>(result);
+}
+#endif // HAS_FLOAT16
+
+#ifdef HAS_BFLOAT16
+// Same rationale as the float16 specializations above: the half-precision
+// convergence threshold underflows, so the regularized incomplete gamma is
+// computed in fp32 for bfloat16.
+template <>
+SD_HOST_DEVICE SD_INLINE bfloat16 sd_igamma<bfloat16, bfloat16, bfloat16>(bfloat16 a, bfloat16 x) {
+  float result = sd_igamma<float, float, float>(static_cast<float>(a), static_cast<float>(x));
+  return static_cast<bfloat16>(result);
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE bfloat16 sd_igammac<bfloat16, bfloat16, bfloat16>(bfloat16 a, bfloat16 x) {
+  float result = sd_igammac<float, float, float>(static_cast<float>(a), static_cast<float>(x));
+  return static_cast<bfloat16>(result);
+}
+#endif // HAS_BFLOAT16
+
 template <typename X, typename Y, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_igammac(X a, Y x) {
   Z result = Z(1.) - sd_igamma<X, Y, Z>(a, x);
