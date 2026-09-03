@@ -3540,11 +3540,17 @@ def shared_native_family(shard: dict, variant: dict) -> str:
     }[build["javacppPlatform"]]
 
 
-def android_api_level(variant: dict) -> int:
+def android_api_level(variant: dict, build: dict | None = None) -> int:
     configured = variant.get("androidApi")
     if configured is not None:
         return int(configured)
-    return 27 if "nnapi" in variant.get("name", "") else 21
+    if "nnapi" in variant.get("name", ""):
+        return 27
+    # x86_64 bionic does not export the stderr/stdout data symbols until
+    # API 23, which the triton CPU runtime requires.
+    if build is not None and build.get("javacppPlatform") == "android-x86_64":
+        return 23
+    return 21
 
 
 def android_cmake_args(source: Path, build: dict, variant: dict, env: dict[str, str]) -> str:
