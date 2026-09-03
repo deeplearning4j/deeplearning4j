@@ -345,7 +345,6 @@ function(collect_all_sources out_source_list)
         # nvcc's optimized codegen path and -O0 output is functionally
         # identical for these launch-only kernels.
         set_source_files_properties(
-            loops/cuda/random_kernels_double_float16.cu
             loops/cuda/random_kernels_double_bfloat16.cu
             loops/cuda/random_kernels_single_float16.cu
             loops/cuda/random_kernels_single_bfloat16.cu
