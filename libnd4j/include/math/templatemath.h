@@ -959,12 +959,12 @@ SD_HOST_DEVICE SD_INLINE Z sd_igamma(X a, Y x) {
 // accepts them; a non-template exact match also beats the primary template
 // during overload resolution.
 SD_HOST_DEVICE SD_INLINE float16 sd_igamma(float16 a, float16 x) {
-  float result = sd_igamma<float, float, float>(static_cast<float>(a), static_cast<float>(x));
+  float result = sd_igamma(static_cast<float>(a), static_cast<float>(x));
   return static_cast<float16>(result);
 }
 
 SD_HOST_DEVICE SD_INLINE float16 sd_igammac(float16 a, float16 x) {
-  float result = sd_igammac<float, float, float>(static_cast<float>(a), static_cast<float>(x));
+  float result = sd_igammac(static_cast<float>(a), static_cast<float>(x));
   return static_cast<float16>(result);
 }
 #endif // HAS_FLOAT16
@@ -974,12 +974,12 @@ SD_HOST_DEVICE SD_INLINE float16 sd_igammac(float16 a, float16 x) {
 // convergence threshold underflows, so the regularized incomplete gamma is
 // computed in fp32 for bfloat16.
 SD_HOST_DEVICE SD_INLINE bfloat16 sd_igamma(bfloat16 a, bfloat16 x) {
-  float result = sd_igamma<float, float, float>(static_cast<float>(a), static_cast<float>(x));
+  float result = sd_igamma(static_cast<float>(a), static_cast<float>(x));
   return static_cast<bfloat16>(result);
 }
 
 SD_HOST_DEVICE SD_INLINE bfloat16 sd_igammac(bfloat16 a, bfloat16 x) {
-  float result = sd_igammac<float, float, float>(static_cast<float>(a), static_cast<float>(x));
+  float result = sd_igammac(static_cast<float>(a), static_cast<float>(x));
   return static_cast<bfloat16>(result);
 }
 #endif // HAS_BFLOAT16
