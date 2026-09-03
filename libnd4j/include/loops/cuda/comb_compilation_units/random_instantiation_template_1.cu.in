@@ -49,7 +49,7 @@
         sd::LongType const* xShapeBuffer, \
         void* vz, \
         sd::LongType const* zShapeBuffer, \
-        void* vextraParams_unused);
+        void* vextraArguments);
 
 #define LIST_CALLBACK_RANDOM_TRIPLE(OUTER_ELEMENT, INNER_ELEMENT, THIRD, FUNC_NAME, ARGS) \
     template void functions::random::RandomFunction<INNER_ELEMENT>::executeCudaTriple( \
