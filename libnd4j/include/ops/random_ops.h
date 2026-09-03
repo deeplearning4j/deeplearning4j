@@ -167,6 +167,39 @@ class PoissonDistribution {
   }
 };
 
+// float16 specializations: cicc (CUDA 12.6/12.9) segfaults while expanding
+// the half-precision igammac/igamma series. Compute in fp32 and truncate.
+template <>
+class PoissonDistribution<float16> {
+ public:
+  no_exec_special no_exec_special_cuda
+
+      method_XY
+
+      static SD_INLINE SD_HOST_DEVICE float16
+      op(sd::LongType idx, sd::LongType length, sd::graph::RandomGenerator *helper, float16 *extraParams) {
+    float lambda = static_cast<float>(extraParams[0]);
+    float x = helper->template relativeT<float>(idx, -sd::DataTypeUtils::max<float>() / 10,
+                                                sd::DataTypeUtils::max<float>() / 10);
+    return x <= 0.f ? float16(0.f)
+                    : static_cast<float16>(
+                          sd::math::sd_igammac<float, float, float>(sd::math::sd_floor<float>(x), lambda));
+  }
+
+  static SD_INLINE SD_HOST_DEVICE float16 op(float16 valueX, sd::LongType idx, sd::LongType length,
+                                             sd::graph::RandomGenerator *helper, float16 *extraParams) {
+    float lambda = static_cast<float>(extraParams[0]);
+    float vx = static_cast<float>(valueX);
+    return vx <= 0.f
+               ? float16(0.f)
+               : static_cast<float16>(
+                     sd::math::sd_igammac<float, float, float>(sd::math::sd_floor<float>(vx), lambda));
+  }
+};
+
+
+
+
 template <typename T>
 class GammaDistribution {
  public:
@@ -189,6 +222,38 @@ class GammaDistribution {
     return valueX <= (T)0.f ? (T)0.f : sd::math::sd_igamma<T, T, T>(alpha, beta * valueX);
   }
 };
+
+template <>
+class GammaDistribution<float16> {
+ public:
+  no_exec_special no_exec_special_cuda
+
+      method_XY
+
+      static SD_INLINE SD_HOST_DEVICE float16
+      op(sd::LongType idx, sd::LongType length, sd::graph::RandomGenerator *helper, float16 *extraParams) {
+    float alpha = static_cast<float>(extraParams[0]);
+    float beta = static_cast<float>(extraParams[1]);
+    float x = helper->template relativeT<float>(
+        idx, -sd::DataTypeUtils::max<float>() / 10, sd::DataTypeUtils::max<float>() / 10);
+    return x <= 0.f ? float16(0.f)
+                    : static_cast<float16>(
+                          sd::math::sd_igamma<float, float, float>(alpha, x * beta));
+  }
+
+  static SD_INLINE SD_HOST_DEVICE float16 op(float16 valueX, sd::LongType idx, sd::LongType length,
+                                             sd::graph::RandomGenerator *helper, float16 *extraParams) {
+    float alpha = static_cast<float>(extraParams[0]);
+    float beta = static_cast<float>(extraParams[1]);
+    float vx = static_cast<float>(valueX);
+    return vx <= 0.f
+               ? float16(0.f)
+               : static_cast<float16>(sd::math::sd_igamma<float, float, float>(alpha, beta * vx));
+  }
+};
+
+
+
 
 /**
  * Basic DropOut/DropConnect Op
