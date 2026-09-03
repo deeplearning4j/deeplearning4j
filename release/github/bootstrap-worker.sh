@@ -195,6 +195,22 @@ ensure_cuda_sbsa_cross() {
   # linker. Add the arm64 architecture via the Ubuntu ports archive and
   # install the target zlib development files.
   as_root dpkg --add-architecture arm64
+  # arm64 packages live on the Ubuntu ports archive, not archive.ubuntu.com;
+  # the default amd64 sources list 404s for arm64 indices. Give the arm64
+  # architecture its own restricted sources list so apt-get update succeeds.
+  printf '%s\n' \
+    'deb [arch=arm64] http://ports.ubuntu.com/ noble main restricted universe multiverse' \
+    'deb [arch=arm64] http://ports.ubuntu.com/ noble-updates main restricted universe multiverse' \
+    'deb [arch=arm64] http://ports.ubuntu.com/ noble-security main restricted universe multiverse' \
+    | as_root tee /etc/apt/sources.list.d/arm64.list > /dev/null
+  # Restrict the existing amd64 sources to amd64 so they are not re-fetched
+  # for arm64. Ubuntu 24.04 uses the deb822 ubuntu.sources format; older
+  # images use the one-line sources.list.
+  if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
+    as_root sed -i 's/^Types: deb$/Types: deb\nArchitectures: amd64/' \
+      /etc/apt/sources.list.d/ubuntu.sources
+  fi
+  as_root sed -i 's/^deb /deb [arch=amd64,i386] /' /etc/apt/sources.list 2>/dev/null || true
   as_root env DEBIAN_FRONTEND=noninteractive apt-get update
   as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     zlib1g-dev:arm64 || {
