@@ -925,7 +925,7 @@
           ":libnd4j"
         ],
         "mavenArgs": [
-          "-Dlibnd4j.android.api=21"
+          "-Dlibnd4j.android.api=2321"
         ],
         "variants": [
           {

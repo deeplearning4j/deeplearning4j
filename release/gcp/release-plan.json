@@ -128,7 +128,7 @@
       "id": "android-x86_64",
       "os": "linux", "architecture": "x86_64", "imageProject": "ubuntu-os-cloud", "imageFamily": "ubuntu-2404-lts-amd64", "machineClass": "x86", "worker": "worker.sh", "workloads": ["maven", "sdk"],
       "artifactRules": {"mode": "classifier", "artifactIds": ["nd4j-native", "nd4j-native-preset"], "classifierTokens": ["android-x86_64"], "includeMetadata": true},
-      "build": {"backend": "cpu", "ndkVersion": "r27d", "javacppPlatform": "android-x86_64", "profiles": ["cpu", "sdx"], "modules": [":nd4j-native", ":nd4j-native-preset", ":libnd4j"], "mavenArgs": ["-Dlibnd4j.android.api=21"], "variants": [{"name": "base", "suffix": ""}, {"name": "onednn", "helper": "onednn", "suffix": "-onednn"}, {"name": "compile", "suffix": "-compile", "mlir": true}], "buildThreads": 24}
+      "build": {"backend": "cpu", "ndkVersion": "r27d", "javacppPlatform": "android-x86_64", "profiles": ["cpu", "sdx"], "modules": [":nd4j-native", ":nd4j-native-preset", ":libnd4j"], "mavenArgs": ["-Dlibnd4j.android.api=2321"], "variants": [{"name": "base", "suffix": ""}, {"name": "onednn", "helper": "onednn", "suffix": "-onednn"}, {"name": "compile", "suffix": "-compile", "mlir": true}], "buildThreads": 24}
     },
     {
       "id": "linux-x86_64-compat", "sourceWorkflow": "build-deploy-linux-x86_64-compat.yml",
