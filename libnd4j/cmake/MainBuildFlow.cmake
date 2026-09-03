@@ -336,11 +336,21 @@ function(collect_all_sources out_source_list)
         split_heavy_op(LOOPS_SOURCES_CUDA reduce_same.cu       loops/cuda/reduce/reduce_same.cu          12)
         split_heavy_op(LOOPS_SOURCES_CUDA bitonicSortStep.cu   loops/cuda/specials/bitonicSortStep.cu    12)
         split_heavy_op(LOOPS_SOURCES_CUDA bitonicArbitraryStep.cu loops/cuda/specials/bitonicArbitraryStep.cu 12)
-        # random_kernels_double_float16.cu deterministically segfaults cicc
-        # (CUDA 12.6 and 12.9, reproducible across lanes) while all sibling
-        # random TUs compile; compile just that TU at -O0 to avoid the
-        # compiler's optimized codegen path that crashes.
-        set_source_files_properties(loops/cuda/random_kernels_double_float16.cu
+        # random_kernels_{double,float16-family} TUs deterministically crash
+        # nvcc: cicc segfaults on random_kernels_double_float16.cu (CUDA
+        # 12.6/12.9 Linux) and Windows cudafe1/ptxas access-violates on the
+        # double-family float16/bfloat16 TUs (and Linux 12.6 on
+        # double_float16) — always in the half-precision double-family
+        # expansion at compute_90. Compile those TUs at -O0: the crash is in
+        # nvcc's optimized codegen path and -O0 output is functionally
+        # identical for these launch-only kernels.
+        set_source_files_properties(
+            loops/cuda/random_kernels_double_float16.cu
+            loops/cuda/random_kernels_double_bfloat16.cu
+            loops/cuda/random_kernels_single_float16.cu
+            loops/cuda/random_kernels_single_bfloat16.cu
+            loops/cuda/random_kernels_triple_float16.cu
+            loops/cuda/random_kernels_triple_bfloat16.cu
             PROPERTIES COMPILE_FLAGS "-O0")
         split_heavy_op(LOOPS_SOURCES_CUDA oesTad.cu            loops/cuda/specials/oesTad.cu             12)
         # NOTE: where.cu intentionally NOT split — its object weight is the shared
