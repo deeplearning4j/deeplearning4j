@@ -465,6 +465,19 @@ SD_HOST_DEVICE SD_INLINE Z sd_atanh(T val);
 // CONDITIONAL SPECIALIZATIONS BASED ON HAS_* MACROS
 // ============================================================================
 
+// fp32 computation used by the half-precision overloads below: the series
+// convergence threshold is 1.0e-12, which underflows to zero in half types.
+static SD_HOST_DEVICE SD_INLINE float sd_igamma_f32(float a, float x) {
+  float aim = p_powf(x, a) / (expf(x) * lgammaf(a));
+  float sum = 0.f;
+  float denom = 1.f;
+  for (int i = 0; 1.f / denom > 1.0e-12f; i++) {
+    denom *= a + i;
+    sum += p_powf(x, (float)i) / denom;
+  }
+  return aim * sum;
+}
+
 #ifdef HAS_FLOAT16
 template <>
 SD_HOST_DEVICE SD_INLINE float16 sd_abs<float16, float16>(float16 value) {
@@ -959,12 +972,12 @@ SD_HOST_DEVICE SD_INLINE Z sd_igamma(X a, Y x) {
 // accepts them; a non-template exact match also beats the primary template
 // during overload resolution.
 SD_HOST_DEVICE SD_INLINE float16 sd_igamma(float16 a, float16 x) {
-  float result = sd_igamma<float, float, float>(static_cast<float>(a), static_cast<float>(x));
+  float result = sd_igamma_f32(static_cast<float>(a), static_cast<float>(x));
   return static_cast<float16>(result);
 }
 
 SD_HOST_DEVICE SD_INLINE float16 sd_igammac(float16 a, float16 x) {
-  float result = sd_igammac<float, float, float>(static_cast<float>(a), static_cast<float>(x));
+  float result = 1.f - sd_igamma_f32(static_cast<float>(a), static_cast<float>(x));
   return static_cast<float16>(result);
 }
 #endif // HAS_FLOAT16
@@ -974,12 +987,12 @@ SD_HOST_DEVICE SD_INLINE float16 sd_igammac(float16 a, float16 x) {
 // convergence threshold underflows, so the regularized incomplete gamma is
 // computed in fp32 for bfloat16.
 SD_HOST_DEVICE SD_INLINE bfloat16 sd_igamma(bfloat16 a, bfloat16 x) {
-  float result = sd_igamma<float, float, float>(static_cast<float>(a), static_cast<float>(x));
+  float result = sd_igamma_f32(static_cast<float>(a), static_cast<float>(x));
   return static_cast<bfloat16>(result);
 }
 
 SD_HOST_DEVICE SD_INLINE bfloat16 sd_igammac(bfloat16 a, bfloat16 x) {
-  float result = sd_igammac<float, float, float>(static_cast<float>(a), static_cast<float>(x));
+  float result = 1.f - sd_igamma_f32(static_cast<float>(a), static_cast<float>(x));
   return static_cast<bfloat16>(result);
 }
 #endif // HAS_BFLOAT16
