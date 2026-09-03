@@ -2617,7 +2617,13 @@ function(setup_triton)
         # though the compilers target a foreign triple.
         list(APPEND TRITON_LLVM_CMAKE_ARGS
             ${_TRITON_TARGET_CMAKE_ARGS})
-        if(EXISTS "${_TRITON_LLVM_NATIVE_TOOL_DIR}/llvm-tblgen${_TRITON_HOST_EXE_SUFFIX}")
+        # The host tblgen must be used whenever the managed host-tools recipe
+        # is part of this lane, independent of configure-time file existence —
+        # add_dependencies(triton_llvm_external triton_llvm_host_tools_external)
+        # guarantees the tools are installed before the target LLVM builds, but
+        # the files do not exist yet when THIS cmake configure runs.
+        # Gate on the tool dir variable being set instead of file existence.
+        if(_TRITON_LLVM_NATIVE_TOOL_DIR)
             list(APPEND TRITON_LLVM_CMAKE_ARGS
                 -DLLVM_NATIVE_TOOL_DIR=${_TRITON_LLVM_NATIVE_TOOL_DIR}
                 -DLLVM_TABLEGEN=${_TRITON_LLVM_NATIVE_TOOL_DIR}/llvm-tblgen${_TRITON_HOST_EXE_SUFFIX}
