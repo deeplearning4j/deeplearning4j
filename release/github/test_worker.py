@@ -40,16 +40,22 @@ class WorkflowMatrixTests(unittest.TestCase):
         )
         self.assertNotIn("ref: ${{ inputs.sourceRef }}", workflow)
 
-    def test_every_dispatch_caller_requires_explicit_targeted_retry_mode(self):
-        for workflow_name in self.matrix["workflows"]:
-            workflow = (ROOT / ".github/workflows" / workflow_name).read_text()
-            self.assertIn("      classifiers:\n", workflow, workflow_name)
-            self.assertIn("      targetedRetry:\n", workflow, workflow_name)
-            self.assertIn(
-                "      targetedRetry: ${{ inputs.targetedRetry }}",
-                workflow,
-                workflow_name,
-            )
+    def test_single_dispatcher_supports_every_logical_release_matrix(self):
+        callers = sorted((ROOT / ".github/workflows").glob("build-deploy-*"))
+        self.assertEqual(
+            [ROOT / ".github/workflows/build-deploy-cross-platform.yml"], callers
+        )
+        workflow = callers[0].read_text()
+        self.assertIn("      workflow:\n", workflow)
+        self.assertIn("      classifiers:\n", workflow)
+        self.assertIn("      targetedRetry:\n", workflow)
+        self.assertIn("      workflow: ${{ inputs.workflow }}", workflow)
+        self.assertIn("      targetedRetry: ${{ inputs.targetedRetry }}", workflow)
+
+        # The remaining names are logical matrix IDs, not physical workflow
+        # files. The registered cross-platform dispatcher passes any of them
+        # to prepare-worker.py through the reusable release worker.
+        self.assertGreater(len(self.matrix["workflows"]), 1)
 
         reusable = (ROOT / ".github/workflows/_release-worker.yml").read_text()
         self.assertIn("          TARGETED_RETRY: ${{ inputs.targetedRetry }}", reusable)
@@ -555,10 +561,10 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("merge-multiple: false", workflow)
         self.assertIn("if: ${{ always() && needs.matrix.result == 'success'", workflow)
         self.assertNotIn("endsWith(steps.worker.outputs['release-version']", workflow)
-        for caller in sorted((ROOT / ".github/workflows").glob("build-deploy-*")):
-            contents = caller.read_text()
-            if "uses: ./.github/workflows/_release-worker.yml" in contents:
-                self.assertIn("secrets: inherit", contents, caller.name)
+        caller = ROOT / ".github/workflows/build-deploy-cross-platform.yml"
+        contents = caller.read_text()
+        self.assertIn("uses: ./.github/workflows/_release-worker.yml", contents)
+        self.assertIn("secrets: inherit", contents)
 
     def test_staged_worker_artifacts_can_be_republished_without_rebuilding(self):
         workflow = (

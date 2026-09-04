@@ -1229,19 +1229,19 @@ class ReleaseValidationTest(unittest.TestCase):
             for invocation in invocations
         ))
 
-    def test_every_covered_workflow_uses_a_shared_release_executor(self):
+    def test_single_github_dispatcher_uses_the_shared_release_executor(self):
         repository_root = Path(__file__).resolve().parents[2]
         plan = json.loads((Path(__file__).with_name("release-plan.json")).read_text(encoding="utf-8"))
         shared = ".github/workflows/_release-worker.yml"
-        missing = []
-        for relative_path in plan["coveredWorkflows"]:
-            workflow_path = Path(relative_path)
-            if workflow_path.parent == Path("."):
-                workflow_path = Path(".github/workflows") / workflow_path
-            workflow = (repository_root / workflow_path).read_text(encoding="utf-8")
-            if shared not in workflow:
-                missing.append(relative_path)
-        self.assertEqual([], missing)
+        dispatcher_path = repository_root / ".github/workflows/build-deploy-cross-platform.yml"
+        dispatcher = dispatcher_path.read_text(encoding="utf-8")
+        self.assertIn(shared, dispatcher)
+        self.assertIn("workflow: ${{ inputs.workflow }}", dispatcher)
+        self.assertGreater(len(plan["coveredWorkflows"]), 1)
+        self.assertEqual(
+            [dispatcher_path],
+            sorted((repository_root / ".github/workflows").glob("build-deploy-*")),
+        )
 
     def test_every_accelerator_backend_is_profile_gated_like_cuda(self):
         repository_root = Path(__file__).resolve().parents[2]
@@ -4543,13 +4543,12 @@ option(MLIR_ENABLE_EXECUTION_ENGINE
 
     def test_github_and_clouds_reference_the_same_release_worker(self):
         root = Path(__file__).parents[2]
-        linux_workflow = (root / ".github/workflows/build-deploy-linux-x86_64.yml").read_text(encoding="utf-8")
         cross_workflow = (root / ".github/workflows/build-deploy-cross-platform.yml").read_text(encoding="utf-8")
         reusable = (root / ".github/workflows/_release-worker.yml").read_text(encoding="utf-8")
         action = (root / ".github/actions/run-release-worker/action.yml").read_text(encoding="utf-8")
         driver = (root / "release/aws/build-platform.py").read_text(encoding="utf-8")
-        self.assertIn(".github/workflows/_release-worker.yml", linux_workflow)
         self.assertIn(".github/workflows/_release-worker.yml", cross_workflow)
+        self.assertIn("workflow: ${{ inputs.workflow }}", cross_workflow)
         self.assertIn("release/github/prepare-worker.py matrix", reusable)
         self.assertIn("release/aws/build-platform.py", action)
         self.assertIn('script_name = "linux-x86_64.sh"', driver)
