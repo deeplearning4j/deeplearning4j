@@ -255,6 +255,8 @@ public static class sdx_generation_session_options_t extends Pointer {
     }
 
   public native @Cast("uint32_t") int struct_size(); public native sdx_generation_session_options_t struct_size(int setter);
+  /** One physical plan/buffer capacity. Zero uses limits.maxPrefillLength. */
+  public native @Cast("int32_t") int fixed_context_capacity(); public native sdx_generation_session_options_t fixed_context_capacity(int setter);
 }
 
 /**
@@ -451,11 +453,33 @@ public static native @Cast("sdx_status_t") int sdxCreateRuntime(@Const sdx_runti
 public static native void sdxDestroyRuntime(sdx_runtime_t runtime);
 
 /**
- * Clear and persist diagnostics owned by the selected SDX backend library.
- * These functions intentionally live on the backend-neutral SDX transport:
- * an Android accelerator process may also contain an embedded CPU backend,
- * but only the selected provider owns the active compiled plan and its ring.
+ * Configure, record, clear, and persist diagnostics owned by the selected SDX
+ * backend library. These functions intentionally live on the backend-neutral
+ * SDX transport: an Android accelerator process may also contain an embedded
+ * CPU backend, but only the selected provider owns the active compiled plan
+ * and its diagnostic ring.
+ *
+ * category_mask/category use the DspDiagCategory bit assignments and level is
+ * 0=summary, 1=detailed, or 2=full. An empty json_path disables file output.
  */
+public static native @Cast("sdx_status_t") int sdxConfigureDiagnostics(
+    sdx_runtime_t runtime,
+    @Cast("uint32_t") int category_mask,
+    @Cast("int32_t") int level,
+    @Cast("const char*") BytePointer json_path);
+public static native @Cast("sdx_status_t") int sdxConfigureDiagnostics(
+    sdx_runtime_t runtime,
+    @Cast("uint32_t") int category_mask,
+    @Cast("int32_t") int level,
+    String json_path);
+public static native @Cast("sdx_status_t") int sdxRecordDiagnosticEvent(
+    sdx_runtime_t runtime,
+    @Cast("uint32_t") int category,
+    @Cast("const char*") BytePointer message);
+public static native @Cast("sdx_status_t") int sdxRecordDiagnosticEvent(
+    sdx_runtime_t runtime,
+    @Cast("uint32_t") int category,
+    String message);
 public static native void sdxClearDiagnostics();
 public static native void sdxFlushDiagnostics();
 
@@ -500,11 +524,14 @@ public static native @Cast("sdx_status_t") int sdxCreateGenerationSession(
     sdx_model_t model,
     @Const sdx_generation_session_options_t options,
     @ByPtrPtr sdx_generation_session_t out_session);
+/** Effective fixed physical capacity after model-envelope clamping. */
+public static native @Cast("int32_t") int sdxGetGenerationContextCapacity(
+    @Const sdx_generation_session_t session);
 public static native void sdxDestroyGenerationSession(sdx_generation_session_t session);
 
 /**
- * Clear prompt/KV/decode state while retaining parsed metadata and the model.
- * Contexts are rebuilt lazily on the next generation call.
+ * Clear logical prompt/KV/recurrent state while retaining the session's sole
+ * precompiled context, fixed buffers, and plan.
  */
 public static native @Cast("sdx_status_t") int sdxResetGenerationSession(
     sdx_generation_session_t session);
@@ -517,8 +544,8 @@ public static native @Cast("sdx_status_t") int sdxResetGenerationSession(
 public static native void sdxCancelGeneration(sdx_generation_session_t session);
 
 /**
- * Reset the session, prefill prompt_token_ids, warm/freeze the fixed decode
- * plan, and generate up to options.max_new_tokens. Tokens are returned in
+ * Reset logical state, ingest a rolling prompt window through the precompiled
+ * fixed plan, and generate to EOS/cancellation/context capacity. Tokens are returned in
  * out_token_ids and optionally streamed through callbacks on the calling
  * thread. out_capacity must be at least max_new_tokens when out_token_ids is
  * non-NULL; out_count is always required.

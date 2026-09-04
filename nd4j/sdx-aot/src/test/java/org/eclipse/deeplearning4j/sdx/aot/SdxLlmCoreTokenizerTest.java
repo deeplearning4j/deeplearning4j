@@ -20,9 +20,11 @@ import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -184,6 +186,8 @@ class SdxLlmCoreTokenizerTest {
                         + "\"logits\":\"logits\","
                         + "\"kvKeyInputs\":[\"past_key_values.0.key\"],"
                         + "\"kvValueInputs\":[\"past_key_values.0.value\"],"
+                        + "\"kvKeyShapes\":[[1,-1,2,4]],"
+                        + "\"kvValueShapes\":[[1,-1,2,4]],"
                         + "\"prefillKeyOutputs\":[\"k_rope_0\"],"
                         + "\"prefillValueOutputs\":[\"v_heads_0\"],"
                         + "\"recurrentStates\":[{\"input\":\"state.0\","
@@ -242,8 +246,8 @@ class SdxLlmCoreTokenizerTest {
 
     @Test
     void abiV2ExportsCanonicalPreparationCompiledLoadAndStreaming() {
-        Set<String> exports = java.util.Arrays.stream(SdxLlmCApi.class.getDeclaredMethods())
-                .map(java.lang.reflect.Method::getName)
+        Set<String> exports = Arrays.stream(SdxLlmCApi.class.getDeclaredMethods())
+                .map(Method::getName)
                 .collect(Collectors.toSet());
         assertEquals(2, SdxLlmCApi.ABI_VERSION);
         assertTrue(exports.contains("sdxLlmPrepareGguf"));
@@ -252,8 +256,9 @@ class SdxLlmCoreTokenizerTest {
         assertTrue(exports.contains("sdxLlmGenerateStreaming"));
         assertTrue(exports.contains("sdxLlmRenderChatPrompt"));
         assertTrue(exports.contains("sdxLlmParseChatResult"));
-        assertEquals("sdx-prepared-text-model-v5", SdxGgufModelPreparer.PREPARED_SCHEMA);
-        assertEquals("ggml-runtime-packed-gdn-v7", SdxGgufModelPreparer.GRAPH_IMPORT_ABI);
+        assertEquals("sdx-prepared-text-model-v6", SdxGgufModelPreparer.PREPARED_SCHEMA);
+        assertEquals("ggml-fixed-plan-rolling-context-q4-linears-v9",
+                SdxGgufModelPreparer.GRAPH_IMPORT_ABI);
     }
 
     @Test

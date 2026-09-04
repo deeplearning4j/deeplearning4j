@@ -44,6 +44,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <string>
 #include <ops/declarable/OpRegistrator.h>
 
 #if HAVE_ONEDNN
@@ -55,6 +56,19 @@
 
 namespace sd {
 namespace graph {
+
+namespace {
+
+Status cpuPlanFailure(const std::string& detail) {
+  const std::string message =
+      detail + " [DSP status=KERNEL_FAILURE (50)]";
+  auto* errorReference = LaunchContext::defaultContext()->errorReference();
+  errorReference->setErrorCode(static_cast<int>(Status::KERNEL_FAILURE));
+  errorReference->setErrorMessage(message);
+  return Status::KERNEL_FAILURE;
+}
+
+}  // namespace
 
 using SegmentLifecycleState = GraphSegmentExec::SegmentLifecycleState;
 
@@ -117,11 +131,11 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       // which installs the NativeSlotExecutor for native-deferred ops (rope, attention).
       // Calling backend->executeSegment() directly would skip NativeSlotExecutor setup
       // and cause native-deferred ops to fail with KERNEL_FAILURE.
-      bool executionStarted = false;
-      status = executeSegmentWithSpecificBackend(
+      DspExecutionResult backendResult = executeSegmentWithSpecificBackend(
           seg, seg.resolvedGraphBackend, externalInputs, numExternalInputs,
-          stream, &executionStarted);
-      if (status == Status::BAD_GRAPH && !executionStarted) {
+          stream);
+      status = backendResult.status;
+      if (backendResult.preExecutionRejection()) {
         DSP_DIAG(EXECUTE,
                  "CPU_FROZEN: backend rejected seg[%d-%d] before execution; "
                  "returning MAYBE for ordered backend re-resolution",
@@ -139,7 +153,10 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       DSP_DIAG(EXECUTE,
                "CPU_FROZEN: seg[%d-%d] has no explicit steady-state artifact",
                seg.def.startSlot, seg.def.endSlot);
-      return Status::KERNEL_FAILURE;
+      return cpuPlanFailure(
+          "CPU frozen DSP path found no explicit compiled/replay artifact for "
+          "segment [" + std::to_string(seg.def.startSlot) + "-" +
+          std::to_string(seg.def.endSlot) + "]");
     }
     if (status != Status::OK) {
       return status;
@@ -192,6 +209,38 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
   const GraphBackendRequest request = makeGraphBackendRequest();
   if (chain.empty()) {
     DSP_DIAG(COMPILE, "platformPrecompileSegments: no graph backends resolved, skipping");
+    return;
+  }
+
+  const auto planningPolicy =
+      GraphBackendResolver::aggregatePlanningPolicy(request, chain);
+  if (planningPolicy.requiresPrecommitFunctionalWarmup) {
+    // Calibration backends cannot all be compiled from one earlier functional
+    // snapshot: compiled upstream quantization changes the values observed by
+    // downstream boundaries. Dispatch one complete frozen pass in graph order.
+    // Each graph segment compiles immediately before its first device execution,
+    // while explicit-replay/native ranges materialize the intervening values.
+    // phaseCompile applies the atomic plan seal only after this pass succeeds.
+    DSP_DIAG(COMPILE,
+             "PROGRESSIVE_CALIBRATION_PASS_BEGIN segments=%d",
+             static_cast<int>(segments_.size()));
+    int dispatched = 0;
+    for (auto& seg : segments_) {
+      bool usedGraph = false;
+      const Status status = dispatchSegment(
+          seg, externalInputs, numExternalInputs, nullptr, usedGraph);
+      if (status != Status::OK) {
+        DSP_THROW(
+            COMPILE,
+            "PROGRESSIVE_CALIBRATION_PASS_FAILED seg[%d-%d] status=%s (%d)",
+            seg.def.startSlot, seg.def.endSlot, dsp::dspStatusName(status),
+            static_cast<int>(status));
+      }
+      ++dispatched;
+    }
+    DSP_DIAG(COMPILE,
+             "PROGRESSIVE_CALIBRATION_PASS_DONE dispatched=%d",
+             dispatched);
     return;
   }
 
@@ -254,6 +303,17 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
       DSP_DIAG(COMPILE,
                "platformPrecompileSegments: seg[%d-%d] compiled by %s",
                seg.def.startSlot, seg.def.endSlot, lowering.backend->name());
+    } else if (lowering.prerequisiteBlocked()) {
+      failed++;
+      const std::string message =
+          std::string("graph backend compilation prerequisite missing for ") +
+          lowering.prerequisiteBlockedBackend->name() + " seg[" +
+          std::to_string(seg.def.startSlot) + "-" +
+          std::to_string(seg.def.endSlot) + "]: " +
+          lowering.prerequisiteFailureReason;
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(
+          message.c_str());
+      DSP_THROW(COMPILE, "%s", message.c_str());
     } else if (allowsReplayFallback) {
       // Keep eager precompile behavior identical to the runtime backend cascade.
       // ARM hybrid is an ordered NNAPI -> ACL -> explicit-replay policy: a
@@ -314,10 +374,10 @@ NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int /
 // On CPU there are no CUDA streams, no cross-stream ordering, no D2D staging.
 // Return externalArrays unchanged.
 
-NDArray** NativeDynamicShapePlan::performPreReplaySync(
+DspStagingSyncResult NativeDynamicShapePlan::performPreReplaySync(
     NDArray** externalArrays, int numExt, void* stream, const char* diagTag) {
   (void)numExt; (void)stream; (void)diagTag;
-  return externalArrays;
+  return {externalArrays, DspStagingSyncStatus::NOT_REQUIRED, 0, false};
 }
 
 void NativeDynamicShapePlan::verifyStagingNotStale(
@@ -356,8 +416,9 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
       // This is the ONLY correct way to dispatch GRAPH_BACKEND — never bypass it
       // with direct resolvedGraphBackend calls (the backend may not be compiled yet).
       if (!segment.exec.compilationFailed && !segment.exec.noFusibleOps) {
-        Status st = executeSegmentWithGraphBackend(segment, externalInputs, numExternalInputs, stream);
-        if (st == Status::OK) {
+        DspExecutionResult result = executeSegmentWithGraphBackend(
+            segment, externalInputs, numExternalInputs, stream);
+        if (result.ok()) {
           usedGraph = (segment.resolvedGraphBackend != nullptr);
           return Status::OK;
         }
@@ -365,9 +426,16 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
                  "NativeDSP::execute: GRAPH_BACKEND failed seg[%d-%d]; "
                  "post-start failover is forbidden",
                  segment.def.startSlot, segment.def.endSlot);
-        return st;
+        return result.status;
       }
-      return Status::KERNEL_FAILURE;
+      return cpuPlanFailure(
+          "CPU graph backend dispatch rejected segment [" +
+          std::to_string(segment.def.startSlot) + "-" +
+          std::to_string(segment.def.endSlot) + "]: compilationFailed=" +
+          std::to_string(segment.exec.compilationFailed ? 1 : 0) +
+          ", noFusibleOps=" +
+          std::to_string(segment.exec.noFusibleOps ? 1 : 0) +
+          ", phase=" + segment.exec.displayPhaseName());
     }
 
     case SelectedBackend::EMULATED_REPLAY:
@@ -587,7 +655,12 @@ SelectedBackend NativeDynamicShapePlan::platformResolveBackend(
 }
 
 SelectedBackend NativeDynamicShapePlan::platformResolvePortableReplayBackend() const {
-  return platformResolveBackend(false);
+  // PORTABLE_REPLAY is the backend-neutral recorder contract. CPU has no
+  // platform graph handle, so selecting a compiler candidate here would make
+  // the result depend on optional OneDNN/OpenVINO availability and can leave
+  // an unfused range with no executable owner. Use the functional recorder
+  // deterministically; compiler-backed modes resolve their own candidates.
+  return SelectedBackend::EMULATED_REPLAY;
 }
 
 size_t NativeDynamicShapePlan::platformEstimateCaptureBudget() const {
@@ -606,10 +679,12 @@ bool NativeDynamicShapePlan::platformShouldBreakSegmentAtTraitBoundary(int /*cur
 }
 
 void NativeDynamicShapePlan::platformReleaseSegmentGpuResources() {
-  // CPU path: reset segment execution state (no CUDA graphs or GPU resources)
+  // CPU/Android direct graph artifacts are plan-owned resources too. Releasing
+  // a session or passivating a cached plan must drop NNAPI/ACL/oneDNN/OpenVINO
+  // compilations and their constants before the plan is returned to the cache.
   for (auto& seg : segments_) {
     seg.exec.reset();
-    seg.def.shapeKeyState.reset();
+    seg.resetGraphBackend();
   }
 }
 
@@ -636,7 +711,7 @@ void NativeDynamicShapePlan::platformPrezeroSegmentOutputs(const GraphSegment& s
     for (int o = 0; o < slot.wiring.numOutputs; o++) {
       int outIdx = slot.wiring.outputSlotIndices[o];
       if (outIdx < 0 || outIdx >= totalOutputSlots_) continue;
-      if (slots_[outIdx].slotPhase.isViewProducer) continue;
+      if (slot.slotPhase.isViewProducer) continue;
       NDArray* arr = outputSlots_[outIdx];
       if (arr == nullptr) continue;
       if (arr->isView()) continue;

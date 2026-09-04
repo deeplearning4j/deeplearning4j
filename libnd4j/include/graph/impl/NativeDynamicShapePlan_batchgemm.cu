@@ -32,6 +32,7 @@
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/DspDiagnostics.h>
 #include <graph/OpDetection.h>
+#include <execution/LaunchContext.h>
 #include <helpers/DebugHelper.h>
 #include <helpers/shape.h>
 #include <array/ArrayOptions.h>
@@ -42,6 +43,7 @@
 
 #include <algorithm>
 #include <queue>
+#include <string>
 #include <unordered_set>
 
 // N6: When true, compositeReplay has already called cublasSetStream_v2 +
@@ -67,6 +69,31 @@ SD_KERNEL void batchedGemmCastFloat2Half(const float* __restrict__ src,
 }
 
 namespace {
+
+const char* cublasStatusName(cublasStatus_t status) {
+  switch (status) {
+    case CUBLAS_STATUS_SUCCESS: return "CUBLAS_STATUS_SUCCESS";
+    case CUBLAS_STATUS_NOT_INITIALIZED: return "CUBLAS_STATUS_NOT_INITIALIZED";
+    case CUBLAS_STATUS_ALLOC_FAILED: return "CUBLAS_STATUS_ALLOC_FAILED";
+    case CUBLAS_STATUS_INVALID_VALUE: return "CUBLAS_STATUS_INVALID_VALUE";
+    case CUBLAS_STATUS_ARCH_MISMATCH: return "CUBLAS_STATUS_ARCH_MISMATCH";
+    case CUBLAS_STATUS_MAPPING_ERROR: return "CUBLAS_STATUS_MAPPING_ERROR";
+    case CUBLAS_STATUS_EXECUTION_FAILED: return "CUBLAS_STATUS_EXECUTION_FAILED";
+    case CUBLAS_STATUS_INTERNAL_ERROR: return "CUBLAS_STATUS_INTERNAL_ERROR";
+    case CUBLAS_STATUS_NOT_SUPPORTED: return "CUBLAS_STATUS_NOT_SUPPORTED";
+    case CUBLAS_STATUS_LICENSE_ERROR: return "CUBLAS_STATUS_LICENSE_ERROR";
+    default: return "CUBLAS_STATUS_UNKNOWN";
+  }
+}
+
+Status batchedGemmFailure(const std::string& detail) {
+  const std::string message =
+      detail + " [DSP status=KERNEL_FAILURE (50)]";
+  auto* errorReference = LaunchContext::defaultContext()->errorReference();
+  errorReference->setErrorCode(static_cast<int>(Status::KERNEL_FAILURE));
+  errorReference->setErrorMessage(message);
+  return Status::KERNEL_FAILURE;
+}
 
 struct BatchedMatmulSig {
   int M, N, K, transA, transB;
@@ -903,12 +930,20 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
         if (fallbackScratch == nullptr) {
           DSP_DIAG(EXECUTE, "batched GEMM group %d: fallback cast scratch alloc failed (%zu bytes)",
                    groupIdx, totalCastBytes);
-          return Status::KERNEL_FAILURE;
+          return batchedGemmFailure(
+              "batched GEMM group " + std::to_string(groupIdx) +
+              " could not allocate fallback cast scratch: bytes=" +
+              std::to_string(totalCastBytes) + ", device=" +
+              std::to_string(fbDeviceId));
         }
         fallbackPtrs = reinterpret_cast<void**>(fbPool.allocate(ptrArrayBytes, fbDeviceId, stream));
         if (fallbackPtrs == nullptr) {
           fbPool.free(fallbackScratch, fbDeviceId, stream);
-          return Status::KERNEL_FAILURE;
+          return batchedGemmFailure(
+              "batched GEMM group " + std::to_string(groupIdx) +
+              " could not allocate fallback pointer table: bytes=" +
+              std::to_string(ptrArrayBytes) + ", device=" +
+              std::to_string(fbDeviceId));
         }
       }
 
@@ -963,15 +998,24 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
   }
 
   if (status != CUBLAS_STATUS_SUCCESS) {
-    DSP_DIAG(EXECUTE, "batched GEMM group %d: cublasGemmBatched FAILED cublas_status=%d "
+    DSP_DIAG(EXECUTE, "batched GEMM group %d: cublasGemmBatched FAILED cublas_status=%s (%d) "
               "aType=%d bType=%d cType=%d M=%d N=%d K=%d batch=%d mixedType=%d "
               "transA=%d transB=%d lda=%d ldb=%d ldc=%d",
-              groupIdx, (int)status,
+              groupIdx, cublasStatusName(status), static_cast<int>(status),
               (int)group.aType, (int)group.bType, (int)group.cType,
               group.M, group.N, group.K, batchCount,
               (int)(group.aType != group.bType),
               (int)group.transA, (int)group.transB, lda, ldb, ldc);
-    return Status::KERNEL_FAILURE;
+    return batchedGemmFailure(
+        "cublasGemmBatchedEx failed for group " + std::to_string(groupIdx) +
+        ": " + cublasStatusName(status) + " (" +
+        std::to_string(static_cast<int>(status)) + "), M=" +
+        std::to_string(group.M) + ", N=" + std::to_string(group.N) +
+        ", K=" + std::to_string(group.K) + ", batch=" +
+        std::to_string(batchCount) + ", aType=" +
+        std::to_string(static_cast<int>(group.aType)) + ", bType=" +
+        std::to_string(static_cast<int>(group.bType)) + ", cType=" +
+        std::to_string(static_cast<int>(group.cType)));
   }
 
   // 5. Mark outputs as device-authoritative. Pointer-stable executions skipped

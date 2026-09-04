@@ -21,6 +21,7 @@
 package org.nd4j.linalg.api.memory.deallocation;
 
 import lombok.extern.slf4j.Slf4j;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.device.DeviceDescriptor;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.api.memory.Deallocator;
@@ -35,12 +36,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * ensuring reliable cleanup of native DataBuffer memory.
  *
  * <p>IMPORTANT: This class implements Deallocatable but NOT Deallocator.
- * The deallocator() method returns a separate BufferDeallocator instance.
- * This separation is critical: DeallocatableReference (PhantomReference) stores
- * the Deallocator returned by deallocator(). If deallocator() returned 'this',
- * the DeallocatableReference would hold a strong reference to the referent,
- * preventing the PhantomReference from ever being enqueued, which means the
- * GC-based cleanup path would never fire.</p>
+ * The deallocator() method returns a separate BufferDeallocator instance whose
+ * native cleanup facade is detached from the public OpaqueDataBuffer and from
+ * this phantom referent. DeallocatableReference strongly retains that cleanup
+ * action, so any path back to either public object would prevent collection.</p>
  *
  * @author Adam Gibson
  * @see DeallocatorService
@@ -134,10 +133,22 @@ public class OpaqueDataBufferDeallocator implements Deallocatable {
         innerDeallocator.markDeallocated();
     }
 
+    /** Raw-address facade with no Java reference back to the registered public buffer. */
+    private static final class DetachedCleanupBuffer extends OpaqueDataBuffer {
+        private DetachedCleanupBuffer(OpaqueDataBuffer source, NativeBufferOwner owner,
+                                      DeviceDescriptor allocationDevice) {
+            super((Pointer) null);
+            this.address = source.address();
+            this.position = source.position();
+            this.limit = source.limit();
+            this.capacity = source.capacity();
+            attachOwner(owner, allocationDevice);
+        }
+    }
+
     /**
-     * The actual Deallocator implementation. This is a SEPARATE object from the
-     * Deallocatable (OpaqueDataBufferDeallocator) to avoid the strong reference cycle
-     * that would prevent PhantomReference enqueuing.
+     * Cleanup action retained by DeallocatableReference. It owns only a detached
+     * native-pointer facade and therefore has no path back to the phantom referent.
      */
     @Slf4j
     static class BufferDeallocator implements Deallocator {
@@ -146,16 +157,18 @@ public class OpaqueDataBufferDeallocator implements Deallocatable {
         private final long allocationBytes;
         private final NativeBufferOwner owner;
         private final DeviceDescriptor allocationDevice;
+        private final DeallocatorService service;
         private final AtomicBoolean deallocated = new AtomicBoolean(false);
         private volatile boolean constant = false;
 
         BufferDeallocator(OpaqueDataBuffer buffer, long uniqueId, long allocationBytes,
                           NativeBufferOwner owner, DeviceDescriptor allocationDevice) {
-            this.buffer = buffer;
+            this.buffer = new DetachedCleanupBuffer(buffer, owner, allocationDevice);
             this.uniqueId = uniqueId;
             this.allocationBytes = allocationBytes;
             this.owner = owner;
             this.allocationDevice = allocationDevice;
+            this.service = owner.deallocatorService();
         }
 
         @Override
@@ -175,8 +188,7 @@ public class OpaqueDataBufferDeallocator implements Deallocatable {
                 } catch (Throwable t) {
                     // Ignore - JVM is shutting down, OS will reclaim all memory.
                 } finally {
-                    buffer = null;
-                    deallocated.set(true);
+                    markDeallocated();
                 }
                 return;
             }
@@ -236,8 +248,7 @@ public class OpaqueDataBufferDeallocator implements Deallocatable {
                 } catch (Exception e) {
                     log.error("Error deallocating OpaqueDataBuffer with uniqueId: " + uniqueId, e);
                 } finally {
-                    buffer = null;
-                    deallocated.set(true);
+                    markDeallocated();
                 }
             }
         }
@@ -266,8 +277,12 @@ public class OpaqueDataBufferDeallocator implements Deallocatable {
 
         void markDeallocated() {
             synchronized (this) {
+                if (this.buffer != null) {
+                    this.buffer.setNull();
+                }
                 this.buffer = null;
                 this.deallocated.set(true);
+                service.getReferenceMap().remove(uniqueId);
             }
         }
     }

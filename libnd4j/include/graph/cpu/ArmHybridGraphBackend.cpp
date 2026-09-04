@@ -220,6 +220,13 @@ Status ArmHybridGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slot
                                               void* stream) {
   int startSlot = seg.def.startSlot;
   int endSlot = seg.def.endSlot;
+  auto fail = [&](const std::string& reason) {
+    const std::string message =
+        reason + " [ARM hybrid segment " + std::to_string(startSlot) + "-" +
+        std::to_string(endSlot) + ", status=KERNEL_FAILURE (50)]";
+    safeSetErrorContext(static_cast<int>(Status::KERNEL_FAILURE), message.c_str());
+    return Status::KERNEL_FAILURE;
+  };
   SegmentCacheKey key{startSlot, endSlot, seg.def.shapeKeyState.compiledShapeKey};
 
   // Look up cached kernel
@@ -230,14 +237,14 @@ Status ArmHybridGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slot
     if (it == cache_.end() || !it->second.valid) {
       DSP_DIAG(EXECUTE, "ArmHybridGraphBackend::executeSegment [%d-%d]: no compiled kernel found",
                startSlot, endSlot);
-      return Status::KERNEL_FAILURE;
+      return fail("compiled ARM CPU kernel is absent from the segment cache");
     }
     compiled = &it->second;
   }
 
   if (!compiled->kernel || !compiled->kernel->isValid()) {
     DSP_DIAG(EXECUTE, "ArmHybridGraphBackend::executeSegment [%d-%d]: kernel invalid", startSlot, endSlot);
-    return Status::KERNEL_FAILURE;
+    return fail("compiled ARM CPU kernel handle is null or invalid");
   }
 
   DSP_DIAG(EXECUTE, "ArmHybridGraphBackend::executeSegment [%d-%d]: executing ARM CPU kernel with %d args",
@@ -260,7 +267,8 @@ Status ArmHybridGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slot
     if (!arr) {
       DSP_DIAG(EXECUTE, "ArmHybridGraphBackend: null array for arg sourceIndex=%d in segment [%d-%d]",
                 mapping.sourceIndex, startSlot, endSlot);
-      return Status::KERNEL_FAILURE;
+      return fail("kernel argument resolved to a null array: sourceIndex=" +
+                  std::to_string(mapping.sourceIndex));
     }
 
     if (mapping.isOutput) {
@@ -275,7 +283,7 @@ Status ArmHybridGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slot
   if (!ok) {
     DSP_DIAG(EXECUTE, "ArmHybridGraphBackend: ARM CPU execution failed for segment [%d-%d]",
               startSlot, endSlot);
-    return Status::KERNEL_FAILURE;
+    return fail("compiled ARM CPU kernel execution returned false");
   }
 
   return Status::OK;

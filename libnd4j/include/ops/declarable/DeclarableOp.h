@@ -61,9 +61,16 @@ SD_LIB_EXPORT ErrorResult conditionHelper(const char* file, int line, int condit
 template <typename T>
 sd::Status resultHelper(T status, const char* func, const char* file, int line) {
   if (status != sd::Status::OK) {
-    //  TODO: fill out error codes here
-    fprintf(stderr, "Validation error at %s:%d code=%d(%s) \"%s\" \n", file, line, static_cast<unsigned int>(status),
-            "", func);
+    const auto typedStatus = static_cast<sd::Status>(status);
+    char message[512];
+    snprintf(message, sizeof(message),
+             "Validation call \"%s\" returned %s (%d) [at %s:%d]",
+             func, sd::statusName(typedStatus),
+             static_cast<int>(typedStatus), file, line);
+#ifndef __JAVACPP_HACK__
+    safeSetErrorContext(static_cast<int>(typedStatus), message);
+#endif
+    fprintf(stderr, "%s\n", message);
 
     return sd::Status::BAD_INPUT;
   }

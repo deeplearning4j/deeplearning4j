@@ -94,6 +94,44 @@ Write-Host "[dl4j-bootstrap] flatc=$flatcVersion path=$flatcPath"
   if (-not $vsInstall) {
     throw 'Visual Studio 2022 C++ Build Tools installation was not found'
   }
+  $vcVarsVersion = $null
+  if ($Shard -match 'cuda-12-6') {
+    # CUDA 12.6 supports Visual Studio 2022 only with the MSVC 193x
+    # compiler family. Current hosted runners default to a newer 194x
+    # compiler, so install and select the last supported toolset explicitly.
+    $cuda126ToolsetVersion = '14.38'
+    $cuda126ToolsetComponent = 'Microsoft.VisualStudio.Component.VC.14.38.17.8.x86.x64'
+    $toolsetRoot = Join-Path $vsInstall 'VC\Tools\MSVC'
+    $cuda126Toolset = Get-ChildItem -LiteralPath $toolsetRoot -Directory -ErrorAction SilentlyContinue |
+      Where-Object { $_.Name -like "$cuda126ToolsetVersion.*" } |
+      Sort-Object Name -Descending |
+      Select-Object -First 1
+    if ($null -eq $cuda126Toolset) {
+      $vsSetup = Join-Path $vsWhereRoot 'Microsoft Visual Studio\Installer\setup.exe'
+      if (-not (Test-Path -LiteralPath $vsSetup)) {
+        throw "Visual Studio installer was not found at $vsSetup"
+      }
+      $setupArguments = @(
+        'modify', '--installPath', "`"$vsInstall`"",
+        '--channelId', 'VisualStudio.17.Release',
+        '--productId', 'Microsoft.VisualStudio.Product.Enterprise',
+        '--add', $cuda126ToolsetComponent,
+        '--quiet', '--norestart'
+      )
+      $setup = Start-Process -FilePath $vsSetup -ArgumentList $setupArguments -Wait -PassThru
+      if ($setup.ExitCode -notin @(0, 3010)) {
+        throw "Installing $cuda126ToolsetComponent failed with exit code $($setup.ExitCode)"
+      }
+      $cuda126Toolset = Get-ChildItem -LiteralPath $toolsetRoot -Directory -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -like "$cuda126ToolsetVersion.*" } |
+        Sort-Object Name -Descending |
+        Select-Object -First 1
+    }
+    if ($null -eq $cuda126Toolset) {
+      throw "CUDA 12.6 requires MSVC 193x, but toolset $cuda126ToolsetVersion was not installed"
+    }
+    $vcVarsVersion = $cuda126ToolsetVersion
+  }
   $vcVars = Join-Path $vsInstall 'VC\Auxiliary\Build\vcvars64.bat'
   if (-not (Test-Path -LiteralPath $vcVars)) {
     throw "Visual Studio x64 environment script was not found at $vcVars"
@@ -102,7 +140,11 @@ Write-Host "[dl4j-bootstrap] flatc=$flatcVersion path=$flatcPath"
   foreach ($pathEntry in ($env:PATH -split ';')) {
     if ($pathEntry) { [void]$originalPathSet.Add($pathEntry) }
   }
-  $environmentLines = & $env:ComSpec /d /s /c "`"$vcVars`" >nul && set"
+  $vcVarsCommand = "`"$vcVars`""
+  if ($vcVarsVersion) {
+    $vcVarsCommand += " -vcvars_ver=$vcVarsVersion"
+  }
+  $environmentLines = & $env:ComSpec /d /s /c "$vcVarsCommand >nul && set"
   if ($LASTEXITCODE -ne 0) {
     throw "Visual Studio x64 environment initialization failed with exit code $LASTEXITCODE"
   }
@@ -113,6 +155,9 @@ Write-Host "[dl4j-bootstrap] flatc=$flatcVersion path=$flatcPath"
   }
   if (-not (Get-Command cl.exe -ErrorAction SilentlyContinue)) {
     throw 'Visual Studio environment did not expose cl.exe on PATH'
+  }
+  if ($vcVarsVersion -and $env:VCToolsVersion -notlike "$vcVarsVersion.*") {
+    throw "Requested MSVC $vcVarsVersion for CUDA 12.6, but vcvars selected $($env:VCToolsVersion)"
   }
 
   $vsEnvironmentNames = @(
@@ -182,9 +227,6 @@ if ($Shard -match 'cuda-12-([69])' -or $Shard -match 'zluda') {
   Add-Content -Path $env:GITHUB_ENV -Value "CUDA_PATH=$cudaPath"
   Add-Content -Path $env:GITHUB_ENV -Value "CUDNN_ROOT_DIR=$cudaPath"
   Add-Content -Path $env:GITHUB_PATH -Value (Join-Path $cudaPath 'bin')
-  Add-Content -Path $env:GITHUB_ENV -Value 'CUDAFLAGS=--allow-unsupported-compiler'
-  Add-Content -Path $env:GITHUB_ENV -Value 'NVCC_APPEND_FLAGS=--allow-unsupported-compiler'
-  Add-Content -Path $env:GITHUB_ENV -Value 'CMAKE_CUDA_FLAGS=--allow-unsupported-compiler'
 }
 
 Write-Host "[dl4j-bootstrap] shard=$Shard status=complete"

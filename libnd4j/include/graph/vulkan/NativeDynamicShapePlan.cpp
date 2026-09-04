@@ -11,6 +11,7 @@
 #if defined(SD_VULKAN) && defined(HAVE_VULKAN) && HAVE_VULKAN
 
 #include <execution/vulkan/VulkanExecutionStream.h>
+#include <execution/LaunchContext.h>
 #include <graph/DspHashUtils.h>
 #include <graph/DspPhaseUtils.h>
 #include <graph/DspSegmentHelpers.h>
@@ -33,6 +34,7 @@
 #include <algorithm>
 #include <cstring>
 #include <limits>
+#include <new>
 #include <set>
 #include <stdexcept>
 #include <unordered_set>
@@ -42,6 +44,18 @@ namespace sd {
 namespace graph {
 
 namespace {
+
+Status vulkanPlanFailure(const std::string& detail) {
+  auto* errorReference = LaunchContext::defaultContext()->errorReference();
+  const char* existing = errorReference->errorMessage();
+  const std::string message =
+      existing != nullptr && existing[0] != '\0'
+          ? std::string(existing) + " [" + detail + "]"
+          : detail;
+  errorReference->setErrorCode(static_cast<int>(Status::KERNEL_FAILURE));
+  errorReference->setErrorMessage(message);
+  return Status::KERNEL_FAILURE;
+}
 
 struct ExecutionBinding {
   PlanExecutionContext* context = nullptr;
@@ -143,11 +157,14 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       execCtx != nullptr) {
     execCtx->execTarget = ExecTarget::GRAPH_REPLAY;
   }
-  externalInputs = performPreReplaySync(
+  DspStagingSyncResult syncResult = performPreReplaySync(
       externalInputs, numExternalInputs, stream, "vulkan_frozen_fast_path");
-  if (externalInputs == nullptr && numExternalInputs > 0) {
-    return Status::KERNEL_FAILURE;
+  if (!syncResult.ok() || syncResult.effectiveExternals == nullptr) {
+    return vulkanPlanFailure(
+        "Vulkan frozen fast-path input staging failed: syncStatus=" +
+        std::to_string(static_cast<int>(syncResult.status)));
   }
+  externalInputs = syncResult.effectiveExternals;
 
   // CUDA refreshes zero-copy view wrappers again in the frozen fast path,
   // because requested-output materialization replaces the slot wrapper after
@@ -167,12 +184,23 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       SegmentLifecycle::markFailed(segment.exec,
                                    "vulkan_frozen_non_vulkan_segment",
                                    segment.def.startSlot, segment.def.endSlot);
-      return Status::KERNEL_FAILURE;
+      return vulkanPlanFailure(
+          "Vulkan frozen fast path encountered non-Vulkan segment " +
+          std::to_string(segment.def.startSlot) + "-" +
+          std::to_string(segment.def.endSlot) + ", backend=" +
+          std::to_string(static_cast<int>(segment.def.selectedBackend)));
     }
     bool usedGraph = false;
     const Status status = platformExecuteSegmentWithBackends(
         segment, externalInputs, numExternalInputs, stream, usedGraph);
-    if (status != Status::OK || !usedGraph) return Status::KERNEL_FAILURE;
+    if (status != Status::OK || !usedGraph) {
+      return vulkanPlanFailure(
+          "Vulkan frozen segment " + std::to_string(segment.def.startSlot) +
+          "-" + std::to_string(segment.def.endSlot) + " returned " +
+          sd::statusName(status) + " (" +
+          std::to_string(static_cast<int>(status)) +
+          "), usedGraph=" + std::to_string(usedGraph ? 1 : 0));
+    }
   }
 
   // Match CUDA's requested-output boundary contract. A replayed view still
@@ -551,19 +579,27 @@ NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(
   return migrated;
 }
 
-NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
+DspStagingSyncResult NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
     NDArray** externalArrays, int numExt, void* stream) {
   if (externalArrays == nullptr || numExt <= 0 ||
       externalInputIsVariable_.empty()) {
-    return externalArrays;
+    return {externalArrays, DspStagingSyncStatus::NOT_REQUIRED, 0, false};
   }
 
+  auto fail = [&](DspStagingSyncStatus status) -> DspStagingSyncResult {
+    stagingMaintainedThisExec_ = false;
+    return {nullptr, status, 0, false};
+  };
   auto* executionStream = resolveExecutionStream(stream);
-  if (executionStream == nullptr) return nullptr;
+  if (executionStream == nullptr) return fail(DspStagingSyncStatus::SYNCHRONIZATION_FAILED);
 
   if (placeholderStagingBuffers_ == nullptr) {
-    placeholderStagingBuffers_ = new NDArray*[numExt]();
-    effectiveExternals_ = new NDArray*[numExt]();
+    try {
+      placeholderStagingBuffers_ = new NDArray*[numExt]();
+      effectiveExternals_ = new NDArray*[numExt]();
+    } catch (const std::bad_alloc&) {
+      return fail(DspStagingSyncStatus::ALLOCATION_FAILED);
+    }
   }
   std::memcpy(effectiveExternals_, externalArrays,
               sizeof(NDArray*) * static_cast<size_t>(numExt));
@@ -593,13 +629,17 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
 
     NDArray*& staging = placeholderStagingBuffers_[index];
     if (staging == nullptr) {
-      staging = new NDArray(source->ordering(), *source->getShapeAsVector(),
-                            source->dataType(), LaunchContext::defaultContext());
+      try {
+        staging = new NDArray(source->ordering(), *source->getShapeAsVector(),
+                              source->dataType(), LaunchContext::defaultContext());
+      } catch (const std::bad_alloc&) {
+        return fail(DspStagingSyncStatus::ALLOCATION_FAILED);
+      }
       staging->dataBuffer()->syncToSpecial(false);
     }
     if (staging->lengthOf() != source->lengthOf() ||
         staging->dataType() != source->dataType()) {
-      return nullptr;
+      return fail(DspStagingSyncStatus::ALLOCATION_FAILED);
     }
 
     const bool directWrite =
@@ -613,7 +653,7 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
       if (bytes > 0 &&
           !executionStream->enqueueCopy(staging->specialBuffer(),
                                         source->specialBuffer(), bytes, 3)) {
-        return nullptr;
+        return fail(DspStagingSyncStatus::TRANSFER_FAILED);
       }
     }
     staging->dataBuffer()->writeSpecial();
@@ -621,16 +661,20 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
   }
 
   stagingMaintainedThisExec_ = true;
-  return effectiveExternals_;
+  return {effectiveExternals_, DspStagingSyncStatus::SUCCESS, 0, true};
 }
 
-NDArray** NativeDynamicShapePlan::performPreReplaySync(
+DspStagingSyncResult NativeDynamicShapePlan::performPreReplaySync(
     NDArray** externalArrays, int numExt, void* stream, const char* diagTag) {
-  if (numExt <= 0) return externalArrays;
-  if (externalArrays == nullptr) return nullptr;
+  if (numExt <= 0) return {externalArrays, DspStagingSyncStatus::NOT_REQUIRED, 0, false};
+  if (externalArrays == nullptr) {
+    return {nullptr, DspStagingSyncStatus::SYNCHRONIZATION_FAILED, 0, false};
+  }
 
   auto* executionStream = resolveExecutionStream(stream);
-  if (executionStream == nullptr) return nullptr;
+  if (executionStream == nullptr) {
+    return {nullptr, DspStagingSyncStatus::SYNCHRONIZATION_FAILED, 0, false};
+  }
   VulkanExecutionStreamGuard guard(executionStream);
 
   std::vector<NDArray*> reads;
@@ -646,15 +690,16 @@ NDArray** NativeDynamicShapePlan::performPreReplaySync(
     NDArray::registerSpecialUse({}, reads);
   }
 
-  NDArray** effective =
+  DspStagingSyncResult stagingResult =
       ensureAndSyncStagingBuffers(externalArrays, numExt, executionStream);
-  if (effective == nullptr) {
+  if (!stagingResult.ok() || stagingResult.effectiveExternals == nullptr) {
     DSP_DIAG(EXECUTE, "%s: Vulkan pre-replay staging failed", diagTag);
-    return nullptr;
+    return stagingResult;
   }
+  NDArray** effective = stagingResult.effectiveExternals;
   verifyStagingNotStale(externalArrays, effective, numExt, executionStream,
                         diagTag);
-  return effective;
+  return stagingResult;
 }
 
 void NativeDynamicShapePlan::verifyStagingNotStale(
@@ -693,7 +738,11 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
   auto fail = [&](const char* reason) {
     SegmentLifecycle::markFailed(segment.exec, reason, segment.def.startSlot,
                                  segment.def.endSlot);
-    return Status::KERNEL_FAILURE;
+    return vulkanPlanFailure(
+        std::string("Vulkan segment ") +
+        std::to_string(segment.def.startSlot) + "-" +
+        std::to_string(segment.def.endSlot) + " failed at " + reason +
+        " [phase=" + segment.exec.displayPhaseName() + "]");
   };
 
   if (segment.def.selectedBackend != SelectedBackend::VULKAN_REPLAY) {
@@ -882,9 +931,9 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
   const LongType inputAddressKey = computeSegmentInputAddrKeyPortable(
       segment, externalInputs, numExternalInputs);
   const LongType slotAddressHash = static_cast<LongType>(
-      dsp::computeSlotAddrHash(
-          outputSlots_, segment.def.startSlot, segment.def.endSlot,
-          totalOutputSlots_, [](NDArray* array) -> void* {
+      dsp::computeSegmentSlotAddrHash(
+          slots_, numSlots_, outputSlots_, segment.def.startSlot,
+          segment.def.endSlot, totalOutputSlots_, [](NDArray* array) -> void* {
             return array != nullptr && array->dataBuffer() != nullptr
                        ? array->dataBuffer()->special()
                        : nullptr;
@@ -911,7 +960,10 @@ Status NativeDynamicShapePlan::postGraphReplayFixup(
   auto* handle =
       dynamic_cast<VulkanReplayHandle*>(segment.exec.replayHandle.get());
   if (handle == nullptr || handle->getRecorder() == nullptr) {
-    return Status::KERNEL_FAILURE;
+    return vulkanPlanFailure(
+        "Vulkan replay fixup has no replay handle or segment recorder for segment " +
+        std::to_string(segment.def.startSlot) + "-" +
+        std::to_string(segment.def.endSlot));
   }
   handle->getRecorder()->markReplayOutputs();
   return Status::OK;
@@ -1123,7 +1175,8 @@ void NativeDynamicShapePlan::prepareBatchedGemmDevice(void* /*stream*/) {}
 Status NativeDynamicShapePlan::executeBatchedGemmGroup(
     int /*groupIdx*/, NDArray** /*externalArrays*/, int /*numExt*/,
     void* /*stream*/) {
-  return Status::KERNEL_FAILURE;
+  return vulkanPlanFailure(
+      "Vulkan DSP does not implement the CUDA batched-GEMM execution path");
 }
 
 void NativeDynamicShapePlan::freeBatchedGemmResources() {}

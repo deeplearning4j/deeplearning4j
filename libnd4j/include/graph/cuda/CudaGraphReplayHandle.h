@@ -68,6 +68,13 @@ class SD_LIB_EXPORT CudaGraphReplayHandle : public GraphReplayHandle {
   void releaseWorkspace(void* registryPtr = nullptr, int segIdx = 0) override;
   void freeHostPointers() override;
 
+  /**
+   * Destroy cudaGraphExec_t/cudaGraph_t while retaining the captured resources.
+   * Collection owners use this as a first pass before releasing resources that
+   * may be shared across multiple merged graph handles.
+   */
+  void destroyGraphBeforeCapturedResources();
+
   // ── CUDA-specific access ──────────────────────────────────────────────
 
   /**

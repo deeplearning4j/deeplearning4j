@@ -43,6 +43,16 @@ public interface Listener {
     ListenerVariables requiredVariables(SameDiff sd);
 
     /**
+     * Whether DSP execution must materialize every intermediate op output for
+     * listener parity. Existing listeners retain the historical {@code true}
+     * behavior. Scalar/statistical listeners may return {@code false} and use
+     * {@link #requiredVariables(SameDiff)} to bound retained outputs.
+     */
+    default boolean requiresAllActivations() {
+        return true;
+    }
+
+    /**
      * Returns whether this listener is active during the given operation. If this returns false for the given operation,
      * those listener methods will not be called.
      */

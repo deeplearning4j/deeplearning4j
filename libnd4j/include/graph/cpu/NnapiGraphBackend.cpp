@@ -20,7 +20,9 @@
 
 #include <graph/cpu/NnapiGraphBackend.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/ReplayCacheManager.h>
 #include <graph/gpu/OpCategoryTable.h>
+#include <execution/LaunchContext.h>
 #include <helpers/logger.h>
 #include <helpers/shape.h>
 #include <ops/declarable/helpers/ggml_qmatmul.h>
@@ -33,12 +35,17 @@
 
 #include <algorithm>
 #include <array>
+#include <cerrno>
 #include <cctype>
+#include <cstdlib>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <ctime>
+#include <functional>
 #include <iomanip>
 #include <limits>
+#include <map>
 #include <mutex>
 #include <sstream>
 
@@ -58,6 +65,48 @@ static std::string toLower(const std::string& s) {
   std::transform(r.begin(), r.end(), r.begin(),
                  [](unsigned char c) { return std::tolower(c); });
   return r;
+}
+
+static const char* nnapiStatusName(int status) {
+  switch (status) {
+    case 0: return "ANEURALNETWORKS_NO_ERROR";
+    case 1: return "ANEURALNETWORKS_OUT_OF_MEMORY";
+    case 2: return "ANEURALNETWORKS_INCOMPLETE";
+    case 3: return "ANEURALNETWORKS_UNEXPECTED_NULL";
+    case 4: return "ANEURALNETWORKS_BAD_DATA";
+    case 5: return "ANEURALNETWORKS_OP_FAILED";
+    case 6: return "ANEURALNETWORKS_BAD_STATE";
+    case 7: return "ANEURALNETWORKS_UNMAPPABLE";
+    case 8: return "ANEURALNETWORKS_OUTPUT_INSUFFICIENT_SIZE";
+    case 9: return "ANEURALNETWORKS_UNAVAILABLE_DEVICE";
+    case 10: return "ANEURALNETWORKS_MISSED_DEADLINE_TRANSIENT";
+    case 11: return "ANEURALNETWORKS_MISSED_DEADLINE_PERSISTENT";
+    case 12: return "ANEURALNETWORKS_RESOURCE_EXHAUSTED_TRANSIENT";
+    case 13: return "ANEURALNETWORKS_RESOURCE_EXHAUSTED_PERSISTENT";
+    case 14: return "ANEURALNETWORKS_DEAD_OBJECT";
+    default: return "ANEURALNETWORKS_UNKNOWN_STATUS";
+  }
+}
+
+static Status nnapiFailure(int startSlot, int endSlot, const char* device,
+                           const std::string& detail) {
+  const std::string message =
+      detail + " [NNAPI device=" + (device != nullptr ? device : "nnapi-default") +
+      ", seg=" + std::to_string(startSlot) + "-" +
+      std::to_string(endSlot) + ", DSP status=KERNEL_FAILURE (50)]";
+  auto* errorReference = LaunchContext::defaultContext()->errorReference();
+  errorReference->setErrorCode(static_cast<int>(Status::KERNEL_FAILURE));
+  errorReference->setErrorMessage(message);
+  DSP_DIAG(EXECUTE, "%s", message.c_str());
+  return Status::KERNEL_FAILURE;
+}
+
+static Status nnapiApiFailure(int startSlot, int endSlot, const char* device,
+                              const char* api, int status) {
+  return nnapiFailure(
+      startSlot, endSlot, device,
+      std::string(api) + " returned " + nnapiStatusName(status) + " (" +
+          std::to_string(status) + ")");
 }
 
 static bool isDenseCOrder(NDArray* arr) {
@@ -93,6 +142,61 @@ static bool derivePlanSymmetricInt8Scale(NDArray* array,
   return true;
 }
 
+// A single value warmup must not make a direct EdgeTPU artifact depend on the
+// exact last bit of that sample's extrema. Fixed-generation plans execute the
+// same immutable artifact across many tokens, and transformer residuals can
+// legitimately move a little beyond the first observed range. Expand external
+// quantized boundaries by 100%, then round to a power-of-two bucket. Production
+// Qwen traces show token-to-token extrema up to roughly 2x the BOS-only warmup
+// range. The guard absorbs that recurrent drift, while bucketing keeps the artifact/cache
+// identity stable for equivalent warmups. Values outside the bucket still fail
+// closed in executeSegmentImpl rather than being silently clipped.
+static constexpr double kCompiledBoundaryCalibrationHeadroom = 2.0;
+// Q4 output publication cannot inspect the pre-quantized accelerator result.
+// Keep the positive INT8 endpoint outside the admitted calibration interval so
+// code 127 remains an unambiguous device-side overflow sentinel. Code 126 is
+// the largest representation of a value still inside the frozen envelope.
+static constexpr float kCompiledQ4OutputInteriorQuantMax = 126.0f;
+
+static bool deriveGuardedCalibrationBucket(
+    float observedAbsoluteMaximum, float observedScale,
+    float& admittedAbsoluteMaximum, float& scale, std::string& reason,
+    double headroom = kCompiledBoundaryCalibrationHeadroom) {
+  if (!std::isfinite(observedAbsoluteMaximum) ||
+      observedAbsoluteMaximum <= 0.0f) {
+    // The shared symmetric quantizer intentionally uses scale=1 for an all-zero
+    // tensor. That is appropriate for eager quantization, but it is not a valid
+    // predictor for a long-lived compiled boundary: admitting +/-127 from a
+    // zero-only sample would silently quantize later small values to zero.
+    reason = "signed pointwise calibration requires a positive observed range";
+    return false;
+  }
+
+  const double guarded = std::max(
+      static_cast<double>(observedAbsoluteMaximum) * headroom,
+      static_cast<double>(observedScale) *
+          sd::ops::helpers::SYMMETRIC_INT8_QUANT_MAX);
+  int exponent = 0;
+  const double fraction = std::frexp(guarded, &exponent);
+  const double bucket = fraction == 0.5
+                            ? std::ldexp(1.0, exponent - 1)
+                            : std::ldexp(1.0, exponent);
+  if (!std::isfinite(bucket) || bucket <= 0.0 ||
+      bucket > static_cast<double>(std::numeric_limits<float>::max())) {
+    reason = "signed pointwise calibration bucket is invalid";
+    return false;
+  }
+
+  admittedAbsoluteMaximum = static_cast<float>(bucket);
+  scale = sd::ops::helpers::symmetricInt8ScaleFromAbsMax(
+      admittedAbsoluteMaximum);
+  if (!std::isfinite(scale) || scale <= 0.0f) {
+    reason = "signed pointwise calibration bucket produced an invalid scale";
+    return false;
+  }
+  return true;
+}
+
 // NNAPI vendor compilation is synchronous on Android. Keep admission bounded
 // so a large transformer graph cannot monopolize the runtime until the IPC
 // watchdog kills the worker. Larger graphs must be split or explicitly replayed.
@@ -105,7 +209,13 @@ static constexpr size_t kNnapiCacheTokenBytes = 32;
 static_assert(kNnapiCacheTokenBytes == ANEURALNETWORKS_BYTE_SIZE_OF_CACHE_TOKEN,
               "NNAPI cache token ABI changed");
 static constexpr const char* kTensorG3Q4LoweringAbi =
-    "nnapi-q4k-conv-v2-plan-calibrated";
+    "nnapi-q4k-conv-v14-finalized-per-op-calibration";
+static constexpr const char* kTensorG3Q4CalibrationMetadataAbi =
+    "sdx.nnapi.q4.calibration.v1";
+static constexpr const char* kTensorG3SignedPointwiseLoweringAbi =
+    "nnapi-edgetpu-signed-pointwise-v7-dynamic-boundary-safe";
+static constexpr const char* kDirectNnapiLoweringAbi =
+    "nnapi-direct-v1";
 
 struct StableDigest256 {
   std::array<uint64_t, 4> lanes = {
@@ -167,10 +277,117 @@ static void mixNnapiCacheToken(
   token = digest.bytes();
 }
 
+static std::string nnapiCacheTokenHex(
+    const std::array<uint8_t, kNnapiCacheTokenBytes>& token) {
+  std::ostringstream output;
+  output << std::hex << std::setfill('0');
+  for (uint8_t value : token) {
+    output << std::setw(2) << static_cast<unsigned int>(value);
+  }
+  return output.str();
+}
+
+static LongType compactNnapiCacheKey(const std::string& artifactIdentity) {
+  uint64_t hash = 1469598103934665603ULL;
+  for (unsigned char value : artifactIdentity) {
+    hash ^= static_cast<uint64_t>(value);
+    hash *= 1099511628211ULL;
+  }
+  if (hash == 0) hash = 1;
+  return static_cast<LongType>(hash);
+}
+
+static std::string makeRequestedOutputIdentity(
+    const int* requestedOutputSlotIndices, int numRequestedOutputs) {
+  std::vector<int> outputs;
+  if (requestedOutputSlotIndices != nullptr && numRequestedOutputs > 0) {
+    outputs.assign(requestedOutputSlotIndices,
+                   requestedOutputSlotIndices + numRequestedOutputs);
+    std::sort(outputs.begin(), outputs.end());
+    outputs.erase(std::unique(outputs.begin(), outputs.end()), outputs.end());
+  }
+  StableDigest256 digest;
+  digest.mixString("nnapi-requested-outputs-v1");
+  const int outputCount = static_cast<int>(outputs.size());
+  digest.mixValue(outputCount);
+  for (int output : outputs) digest.mixValue(output);
+  return digest.hex();
+}
+
 static bool isQ4KQMatMul(const NativeSlot& slot) {
   return toLower(slot.ident.opName) == "ggml_qmatmul" &&
          slot.args.numIArgs == 4 && slot.args.iArgs != nullptr &&
          slot.args.iArgs[0] == 8;
+}
+
+struct FinalizedQ4KCalibration {
+  int sampleCount = 0;
+  std::string datasetSha256;
+  float activationScale = 0.0f;
+  float outputScale = 0.0f;
+};
+
+static bool isLowercaseSha256(const std::string& value) {
+  if (value.size() != 64) return false;
+  for (char c : value) {
+    if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))) return false;
+  }
+  return true;
+}
+
+static bool parsePositiveFloat(const std::string& value, float& result) {
+  errno = 0;
+  char* end = nullptr;
+  result = std::strtof(value.c_str(), &end);
+  return errno == 0 && end != value.c_str() && end != nullptr && *end == '\0' &&
+         std::isfinite(result) && result > 0.0f;
+}
+
+static bool parseFinalizedQ4KCalibration(
+    const NativeSlot& slot, FinalizedQ4KCalibration& calibration,
+    std::string& reason) {
+  if (slot.args.numSArgs != 5 || slot.args.sArgs == nullptr) {
+    reason = "Q4_K requires five finalized calibration string arguments";
+    return false;
+  }
+  if (slot.args.sArgs[0] != kTensorG3Q4CalibrationMetadataAbi) {
+    reason = "Q4_K calibration metadata ABI is missing or unsupported";
+    return false;
+  }
+  errno = 0;
+  char* sampleEnd = nullptr;
+  const long samples = std::strtol(
+      slot.args.sArgs[1].c_str(), &sampleEnd, 10);
+  if (errno != 0 || sampleEnd == slot.args.sArgs[1].c_str() ||
+      sampleEnd == nullptr || *sampleEnd != '\0' || samples < 32 ||
+      samples > std::numeric_limits<int>::max()) {
+    reason = "Q4_K calibration sample count must be an integer of at least 32";
+    return false;
+  }
+  if (!isLowercaseSha256(slot.args.sArgs[2])) {
+    reason = "Q4_K calibration dataset digest must be lowercase SHA-256";
+    return false;
+  }
+  float activationScale = 0.0f;
+  float outputScale = 0.0f;
+  if (!parsePositiveFloat(slot.args.sArgs[3], activationScale) ||
+      !parsePositiveFloat(slot.args.sArgs[4], outputScale)) {
+    reason = "Q4_K finalized activation/output scales must be finite and positive";
+    return false;
+  }
+  const float activationEnvelope =
+      activationScale * sd::ops::helpers::SYMMETRIC_INT8_QUANT_MAX;
+  const float outputEnvelope = outputScale * kCompiledQ4OutputInteriorQuantMax;
+  if (!std::isfinite(activationEnvelope) || activationEnvelope <= 0.0f ||
+      !std::isfinite(outputEnvelope) || outputEnvelope <= 0.0f) {
+    reason = "Q4_K finalized calibration scales overflow their INT8 envelopes";
+    return false;
+  }
+  calibration.sampleCount = static_cast<int>(samples);
+  calibration.datasetSha256 = slot.args.sArgs[2];
+  calibration.activationScale = activationScale;
+  calibration.outputScale = outputScale;
+  return true;
 }
 
 static NDArray* resolveNnapiSourceArray(
@@ -186,6 +403,375 @@ static NDArray* resolveNnapiSourceArray(
   return sourceIndex < totalOutputSlots && outputSlots != nullptr
              ? outputSlots[sourceIndex]
              : nullptr;
+}
+
+static bool isSignedPointwiseOpName(const std::string& opName) {
+  const std::string name = toLower(opName);
+  return name == "add" || name == "multiply" || name == "mul" ||
+         name == "sigmoid" || name == "logistic";
+}
+
+static bool isEdgeTpuSignedPointwiseSlot(const NativeSlot& slot) {
+  if (!isSignedPointwiseOpName(slot.ident.opName)) return false;
+  const std::string name = toLower(slot.ident.opName);
+  const bool multiply = name == "multiply" || name == "mul";
+  // Squaring feeds RMS/L2 normalization reductions. Quantizing those tiny
+  // squared values to INT8 destroys the norm and amplifies the following
+  // divide by orders of magnitude, so normalization squares remain on the
+  // floating ARM path.
+  if (multiply && slot.wiring.numInputs == 2 &&
+      slot.wiring.inputSourceIndices != nullptr &&
+      slot.wiring.inputSourceIndices[0] == slot.wiring.inputSourceIndices[1]) {
+    return false;
+  }
+  return true;
+}
+
+static bool isSignedPointwiseSegment(NativeSlot* slots, int startSlot,
+                                     int endSlot) {
+  if (slots == nullptr || startSlot < 0 || endSlot < startSlot) return false;
+  for (int slotIndex = startSlot; slotIndex <= endSlot; ++slotIndex) {
+    if (!isEdgeTpuSignedPointwiseSlot(slots[slotIndex])) return false;
+  }
+  return true;
+}
+
+static int findProducerSlot(NativeSlot* slots, int endExclusive,
+                            int sourceIndex) {
+  if (slots == nullptr || sourceIndex < 0) return -1;
+  for (int slotIndex = endExclusive - 1; slotIndex >= 0; --slotIndex) {
+    const auto& wiring = slots[slotIndex].wiring;
+    if (wiring.outputSlotIndices == nullptr) continue;
+    for (int outputIndex = 0; outputIndex < wiring.numOutputs; ++outputIndex) {
+      if (wiring.outputSlotIndices[outputIndex] == sourceIndex) return slotIndex;
+    }
+  }
+  return -1;
+}
+
+static bool isRmsNormalizationOutputSource(NativeSlot* slots,
+                                           int endExclusive,
+                                           int sourceIndex) {
+  const int divideSlot = findProducerSlot(slots, endExclusive, sourceIndex);
+  if (divideSlot < 0 || toLower(slots[divideSlot].ident.opName) != "divide" ||
+      slots[divideSlot].wiring.numInputs != 2 ||
+      slots[divideSlot].wiring.inputSourceIndices == nullptr) {
+    return false;
+  }
+  const int numeratorSource =
+      slots[divideSlot].wiring.inputSourceIndices[0];
+  const int sqrtSlot = findProducerSlot(
+      slots, divideSlot, slots[divideSlot].wiring.inputSourceIndices[1]);
+  if (sqrtSlot < 0 || toLower(slots[sqrtSlot].ident.opName) != "sqrt" ||
+      slots[sqrtSlot].wiring.numInputs != 1 ||
+      slots[sqrtSlot].wiring.inputSourceIndices == nullptr) {
+    return false;
+  }
+  const int epsilonSlot = findProducerSlot(
+      slots, sqrtSlot, slots[sqrtSlot].wiring.inputSourceIndices[0]);
+  const std::string epsilonOp =
+      epsilonSlot >= 0 ? toLower(slots[epsilonSlot].ident.opName) : "";
+  if (epsilonSlot < 0 ||
+      (epsilonOp != "add_scalar" && epsilonOp != "add") ||
+      slots[epsilonSlot].wiring.numInputs < 1 ||
+      slots[epsilonSlot].wiring.inputSourceIndices == nullptr) {
+    return false;
+  }
+  const int meanSlot = findProducerSlot(
+      slots, epsilonSlot, slots[epsilonSlot].wiring.inputSourceIndices[0]);
+  const std::string meanOp =
+      meanSlot >= 0 ? toLower(slots[meanSlot].ident.opName) : "";
+  if (meanSlot < 0 ||
+      (meanOp != "reduce_mean" && meanOp != "reduce_mean_bp") ||
+      slots[meanSlot].wiring.numInputs < 1 ||
+      slots[meanSlot].wiring.inputSourceIndices == nullptr) {
+    return false;
+  }
+  const int squareSlot = findProducerSlot(
+      slots, meanSlot, slots[meanSlot].wiring.inputSourceIndices[0]);
+  if (squareSlot < 0 ||
+      toLower(slots[squareSlot].ident.opName) != "multiply" ||
+      slots[squareSlot].wiring.numInputs != 2 ||
+      slots[squareSlot].wiring.inputSourceIndices == nullptr) {
+    return false;
+  }
+  const int firstSquareSource =
+      slots[squareSlot].wiring.inputSourceIndices[0];
+  return firstSquareSource == slots[squareSlot].wiring.inputSourceIndices[1] &&
+         firstSquareSource == numeratorSource;
+}
+
+static bool collectPointwiseDimensions(
+    NDArray* array, std::vector<LongType>& frameworkDimensions,
+    std::vector<LongType>& nnapiDimensions, std::string& reason) {
+  if (array == nullptr || array->isEmpty() ||
+      (array->dataType() != DataType::FLOAT32 &&
+       array->dataType() != DataType::HALF)) {
+    reason = "signed pointwise tensors must be non-empty FLOAT32 or HALF arrays";
+    return false;
+  }
+  const int rank = array->rankOf();
+  if (rank < 0 || rank > 4) {
+    reason = "signed pointwise tensor rank must be between zero and four";
+    return false;
+  }
+  frameworkDimensions.resize(static_cast<size_t>(rank));
+  nnapiDimensions.resize(static_cast<size_t>(rank == 0 ? 1 : rank));
+  if (rank == 0) {
+    nnapiDimensions[0] = 1;
+    return true;
+  }
+  for (int dimension = 0; dimension < rank; ++dimension) {
+    const LongType value = array->sizeAt(dimension);
+    if (value <= 0 ||
+        static_cast<unsigned long long>(value) >
+            static_cast<unsigned long long>(
+                std::numeric_limits<uint32_t>::max())) {
+      reason = "signed pointwise tensor dimensions must fit positive uint32 values";
+      return false;
+    }
+    frameworkDimensions[static_cast<size_t>(dimension)] = value;
+    nnapiDimensions[static_cast<size_t>(dimension)] = value;
+  }
+  return true;
+}
+
+static bool broadcastPointwiseDimensions(
+    const std::vector<LongType>& left, const std::vector<LongType>& right,
+    std::vector<LongType>& output) {
+  const size_t outputRank = std::max(left.size(), right.size());
+  if (outputRank > 4) return false;
+  output.assign(outputRank, 1);
+  for (size_t offset = 0; offset < outputRank; ++offset) {
+    const LongType leftValue =
+        offset < left.size() ? left[left.size() - 1 - offset] : 1;
+    const LongType rightValue =
+        offset < right.size() ? right[right.size() - 1 - offset] : 1;
+    if (leftValue != rightValue && leftValue != 1 && rightValue != 1) {
+      return false;
+    }
+    output[outputRank - 1 - offset] = std::max(leftValue, rightValue);
+  }
+  return true;
+}
+
+struct SignedPointwiseOperandContract {
+  int sourceIndex = 0;
+  DataType sourceDataType = DataType::UNKNOWN;
+  NDArray* array = nullptr;
+  std::vector<LongType> frameworkDimensions;
+  std::vector<LongType> nnapiDimensions;
+  float observedAbsoluteMaximum = 0.0f;
+  float admittedAbsoluteMaximum = 0.0f;
+  float scale = 0.0f;
+  int32_t zeroPoint = 0;
+};
+
+struct SignedPointwiseLoweringContract {
+  std::map<int, SignedPointwiseOperandContract> operands;
+  std::string loweringIdentity;
+};
+
+using PublishedBoundaryLookup = std::function<bool(
+    int, NDArray*, float&, float&, int32_t&)>;
+
+static bool resolveSignedPointwiseLoweringContract(
+    NativeSlot* slots, int startSlot, int endSlot, NDArray** externalInputs,
+    int numExternalInputs, NDArray** outputSlots, int totalOutputSlots,
+    const PublishedBoundaryLookup& publishedBoundaryLookup,
+    SignedPointwiseLoweringContract& contract, std::string& reason) {
+  if (!isSignedPointwiseSegment(slots, startSlot, endSlot)) {
+    reason = "segment is not a pure ADD/MUL/LOGISTIC signed pointwise range";
+    return false;
+  }
+
+  auto ensureSource = [&](int sourceIndex)
+      -> SignedPointwiseOperandContract* {
+    auto existing = contract.operands.find(sourceIndex);
+    if (existing != contract.operands.end()) return &existing->second;
+    NDArray* array = resolveNnapiSourceArray(
+        sourceIndex, externalInputs, numExternalInputs, outputSlots,
+        totalOutputSlots);
+    SignedPointwiseOperandContract operand;
+    operand.sourceIndex = sourceIndex;
+    operand.array = array;
+    operand.sourceDataType =
+        array != nullptr ? array->dataType() : DataType::UNKNOWN;
+    if (!collectPointwiseDimensions(array, operand.frameworkDimensions,
+                                    operand.nnapiDimensions, reason)) {
+      return nullptr;
+    }
+    const bool inheritedBoundary = publishedBoundaryLookup &&
+        publishedBoundaryLookup(
+            sourceIndex, array, operand.admittedAbsoluteMaximum,
+            operand.scale, operand.zeroPoint);
+    if (!inheritedBoundary) {
+      if (sourceIndex >= 0) {
+        const int producerSlot =
+            findProducerSlot(slots, startSlot, sourceIndex);
+        if (producerSlot >= 0 &&
+            toLower(slots[producerSlot].ident.opName) == "ggml_qmatmul") {
+          reason =
+              "signed pointwise internal qmatmul input requires an "
+              "inherited compiled boundary";
+          return nullptr;
+        }
+        if (isRmsNormalizationOutputSource(slots, startSlot, sourceIndex)) {
+          reason =
+              "signed pointwise RMS-normalization input requires "
+              "precision-preserving replay";
+          return nullptr;
+        }
+        if (producerSlot < 0 || !slots[producerSlot].frozenConstantSlot()) {
+          reason =
+              "signed pointwise dynamic internal input requires an inherited "
+              "compiled boundary or precision-preserving replay";
+          return nullptr;
+        }
+      }
+      float observedScale = 0.0f;
+      if (!derivePlanSymmetricInt8Scale(
+              array, operand.observedAbsoluteMaximum, observedScale, reason)) {
+        return nullptr;
+      }
+      if (!deriveGuardedCalibrationBucket(
+              operand.observedAbsoluteMaximum, observedScale,
+              operand.admittedAbsoluteMaximum, operand.scale, reason)) {
+        return nullptr;
+      }
+    } else {
+      operand.observedAbsoluteMaximum = operand.admittedAbsoluteMaximum;
+      DSP_DIAG(
+          COMPILE,
+          "NNAPI_INHERITED_BOUNDARY source_slot=%d admitted_absmax=%.8g "
+          "scale=%.8g zero_point=%d",
+          sourceIndex, operand.admittedAbsoluteMaximum, operand.scale,
+          operand.zeroPoint);
+    }
+    auto inserted = contract.operands.emplace(sourceIndex, std::move(operand));
+    return &inserted.first->second;
+  };
+
+  for (int slotIndex = startSlot; slotIndex <= endSlot; ++slotIndex) {
+    NativeSlot& slot = slots[slotIndex];
+    const std::string opName = toLower(slot.ident.opName);
+    const bool logistic = opName == "sigmoid" || opName == "logistic";
+    const int expectedInputs = logistic ? 1 : 2;
+    if (slot.wiring.numInputs != expectedInputs ||
+        slot.wiring.numOutputs != 1 ||
+        slot.wiring.inputSourceIndices == nullptr ||
+        slot.wiring.outputSlotIndices == nullptr ||
+        slot.args.numIArgs != 0 || slot.args.numTArgs != 0 ||
+        slot.args.numBArgs != 0 || slot.args.numDArgs != 0 ||
+        slot.args.numSArgs != 0) {
+      reason = "signed pointwise slot has unsupported wiring or arguments";
+      return false;
+    }
+
+    SignedPointwiseOperandContract* first =
+        ensureSource(slot.wiring.inputSourceIndices[0]);
+    if (first == nullptr) return false;
+    SignedPointwiseOperandContract* second = nullptr;
+    if (!logistic) {
+      second = ensureSource(slot.wiring.inputSourceIndices[1]);
+      if (second == nullptr) return false;
+    }
+
+    const int outputSource = slot.wiring.outputSlotIndices[0];
+    NDArray* outputArray = resolveNnapiSourceArray(
+        outputSource, externalInputs, numExternalInputs, outputSlots,
+        totalOutputSlots);
+    SignedPointwiseOperandContract output;
+    output.sourceIndex = outputSource;
+    output.array = outputArray;
+    output.sourceDataType =
+        outputArray != nullptr ? outputArray->dataType() : DataType::UNKNOWN;
+    if (!collectPointwiseDimensions(outputArray, output.frameworkDimensions,
+                                    output.nnapiDimensions, reason)) {
+      return false;
+    }
+    if (logistic) {
+      if (first->frameworkDimensions != output.frameworkDimensions ||
+          outputArray == nullptr) {
+        reason = "LOGISTIC output shape is invalid";
+        return false;
+      }
+      output.admittedAbsoluteMaximum = 1.0f;
+      output.observedAbsoluteMaximum = output.admittedAbsoluteMaximum;
+      output.scale = 1.0f / 256.0f;
+      output.zeroPoint = -128;
+    } else {
+      std::vector<LongType> broadcastDimensions;
+      if (!broadcastPointwiseDimensions(first->frameworkDimensions,
+                                        second->frameworkDimensions,
+                                        broadcastDimensions) ||
+          broadcastDimensions != output.frameworkDimensions) {
+        reason = "ADD/MUL output shape does not match NNAPI broadcasting";
+        return false;
+      }
+      const double admitted = opName == "add"
+                                  ? static_cast<double>(
+                                        first->admittedAbsoluteMaximum) +
+                                        static_cast<double>(
+                                            second->admittedAbsoluteMaximum)
+                                  : static_cast<double>(
+                                        first->admittedAbsoluteMaximum) *
+                                        static_cast<double>(
+                                            second->admittedAbsoluteMaximum);
+      if (!std::isfinite(admitted) || admitted < 0.0 ||
+          admitted > std::numeric_limits<float>::max()) {
+        reason = "ADD/MUL propagated calibration range is invalid";
+        return false;
+      }
+      output.admittedAbsoluteMaximum = static_cast<float>(admitted);
+      output.observedAbsoluteMaximum = output.admittedAbsoluteMaximum;
+      output.scale = sd::ops::helpers::symmetricInt8ScaleFromAbsMax(
+          output.admittedAbsoluteMaximum);
+      if (opName == "multiply" || opName == "mul") {
+        const float inputScaleProduct = first->scale * second->scale;
+        if (!std::isfinite(inputScaleProduct) || inputScaleProduct <= 0.0f) {
+          reason = "MUL input scale product is invalid";
+          return false;
+        }
+        if (!(output.scale > inputScaleProduct)) {
+          output.scale = std::nextafter(
+              inputScaleProduct, std::numeric_limits<float>::infinity());
+        }
+      }
+      if (!std::isfinite(output.scale) || output.scale <= 0.0f) {
+        reason = "ADD/MUL output scale is invalid";
+        return false;
+      }
+      output.zeroPoint = 0;
+    }
+    contract.operands[outputSource] = std::move(output);
+  }
+
+  StableDigest256 digest;
+  digest.mixString(kTensorG3SignedPointwiseLoweringAbi);
+  digest.mixValue(startSlot);
+  digest.mixValue(endSlot);
+  for (int slotIndex = startSlot; slotIndex <= endSlot; ++slotIndex) {
+    digest.mixString(toLower(slots[slotIndex].ident.opName));
+    for (int inputIndex = 0;
+         inputIndex < slots[slotIndex].wiring.numInputs; ++inputIndex) {
+      digest.mixValue(slots[slotIndex].wiring.inputSourceIndices[inputIndex]);
+    }
+    digest.mixValue(slots[slotIndex].wiring.outputSlotIndices[0]);
+  }
+  for (const auto& entry : contract.operands) {
+    const auto& operand = entry.second;
+    digest.mixValue(operand.sourceIndex);
+    digest.mixValue(operand.sourceDataType);
+    for (LongType dimension : operand.frameworkDimensions) {
+      digest.mixValue(dimension);
+    }
+    digest.mixValue(operand.admittedAbsoluteMaximum);
+    digest.mixValue(operand.scale);
+    digest.mixValue(operand.zeroPoint);
+  }
+  contract.loweringIdentity = digest.hex();
+  return true;
 }
 
 static float q4KFp16ToFloat(uint16_t value) {
@@ -300,6 +886,7 @@ struct Q4KLoweringContract {
 struct ConvertedQ4KWeights {
   std::vector<int8_t> filter;
   std::vector<float> perChannelScales;
+  std::vector<float> perChannelBiasScales;
   std::vector<int32_t> zeroBias;
   std::string loweringDigest;
 };
@@ -307,6 +894,7 @@ struct ConvertedQ4KWeights {
 static bool resolveQ4KLoweringContract(
     NativeSlot& slot, int slotIndex, NDArray** externalInputs,
     int numExternalInputs, NDArray** outputSlots, int totalOutputSlots,
+    const PublishedBoundaryLookup& publishedBoundaryLookup,
     Q4KLoweringContract& contract, std::string& reason) {
   if (!isQ4KQMatMul(slot)) {
     reason = "slot is not a Q4_K ggml_qmatmul";
@@ -320,8 +908,12 @@ static bool resolveQ4KLoweringContract(
     return false;
   }
   if (slot.args.numTArgs != 0 || slot.args.numBArgs != 0 ||
-      slot.args.numDArgs != 0 || slot.args.numSArgs != 0) {
-    reason = "Q4_K lowering accepts only its four integer arguments";
+      slot.args.numDArgs != 0) {
+    reason = "Q4_K lowering accepts integer arguments and finalized calibration metadata only";
+    return false;
+  }
+  FinalizedQ4KCalibration finalizedCalibration;
+  if (!parseFinalizedQ4KCalibration(slot, finalizedCalibration, reason)) {
     return false;
   }
 
@@ -350,10 +942,8 @@ static bool resolveQ4KLoweringContract(
   const int activationSource = slot.wiring.inputSourceIndices[0];
   const int packedWeightSource = slot.wiring.inputSourceIndices[1];
   const int8_t packedWeightSourceType = slot.wiring.inputSourceTypes[1];
-  if (packedWeightSource >= 0 ||
-      (packedWeightSourceType != SOURCE_CONSTANT &&
-       packedWeightSourceType != SOURCE_VARIABLE)) {
-    reason = "Q4_K packed weights must be an inference-static external source";
+  if (packedWeightSource >= 0 || packedWeightSourceType != SOURCE_CONSTANT) {
+    reason = "Q4_K packed weights must be an immutable external constant";
     return false;
   }
 
@@ -400,18 +990,27 @@ static bool resolveQ4KLoweringContract(
     reason = "Q4_K output channel dimension does not match N";
     return false;
   }
-  if (!derivePlanSymmetricInt8Scale(
-          activations, contract.activationAbsoluteMaximum,
-          contract.activationScale, reason)) {
-    reason = "Q4_K activation " + reason;
+  (void)publishedBoundaryLookup;
+  contract.activationScale = finalizedCalibration.activationScale;
+  contract.outputScale = finalizedCalibration.outputScale;
+  contract.activationAbsoluteMaximum =
+      contract.activationScale * sd::ops::helpers::SYMMETRIC_INT8_QUANT_MAX;
+  contract.outputAbsoluteMaximum =
+      contract.outputScale * kCompiledQ4OutputInteriorQuantMax;
+  if (!std::isfinite(contract.activationAbsoluteMaximum) ||
+      contract.activationAbsoluteMaximum <= 0.0f ||
+      !std::isfinite(contract.outputAbsoluteMaximum) ||
+      contract.outputAbsoluteMaximum <= 0.0f) {
+    reason = "Q4_K finalized calibration envelope is invalid";
     return false;
   }
-  if (!derivePlanSymmetricInt8Scale(
-          output, contract.outputAbsoluteMaximum, contract.outputScale,
-          reason)) {
-    reason = "Q4_K output " + reason;
-    return false;
-  }
+  DSP_DIAG(
+      COMPILE,
+      "NNAPI_FINALIZED_Q4K_CALIBRATION slot=%d samples=%d dataset=%s "
+      "activation_scale=%.8g output_scale=%.8g",
+      slotIndex, finalizedCalibration.sampleCount,
+      finalizedCalibration.datasetSha256.c_str(), contract.activationScale,
+      contract.outputScale);
 
   const LongType blocksPerRow = inputChannels / 256;
   if (blocksPerRow > std::numeric_limits<LongType>::max() /
@@ -441,11 +1040,11 @@ static bool resolveQ4KLoweringContract(
   }
 
   packedWeights->syncToHost();
-  std::unique_ptr<NDArray> packedCopy;
+  NDArray* packedCopy = nullptr;
   NDArray* packedDense = packedWeights;
   if (!isDenseCOrder(packedWeights)) {
-    packedCopy = std::make_unique<NDArray>(packedWeights->dup('c'));
-    packedDense = packedCopy.get();
+    packedCopy = new NDArray(packedWeights->dup('c'));
+    packedDense = packedCopy;
   }
   StableDigest256 packedDigest;
   packedDigest.mixString(kTensorG3Q4LoweringAbi);
@@ -454,6 +1053,7 @@ static bool resolveQ4KLoweringContract(
   contract.packedWeightSnapshot.resize(static_cast<size_t>(expectedBytes));
   std::memcpy(contract.packedWeightSnapshot.data(), packedDense->buffer(),
               contract.packedWeightSnapshot.size());
+  delete packedCopy;
   packedDigest.mix(contract.packedWeightSnapshot.data(),
                    contract.packedWeightSnapshot.size());
   contract.packedWeightDigest = packedDigest.hex();
@@ -464,6 +1064,8 @@ static bool resolveQ4KLoweringContract(
   sourceLoweringDigest.mixValue(contract.outputScale);
   sourceLoweringDigest.mixValue(contract.activationAbsoluteMaximum);
   sourceLoweringDigest.mixValue(contract.outputAbsoluteMaximum);
+  sourceLoweringDigest.mixValue(finalizedCalibration.sampleCount);
+  sourceLoweringDigest.mixString(finalizedCalibration.datasetSha256);
   contract.sourceLoweringIdentity = sourceLoweringDigest.hex();
 
   contract.slotIndex = slotIndex;
@@ -504,6 +1106,8 @@ static bool convertQ4KWeights(const Q4KLoweringContract& contract,
   converted.filter.resize(static_cast<size_t>(convertedElements));
   converted.perChannelScales.resize(
       static_cast<size_t>(contract.outputChannels));
+  converted.perChannelBiasScales.resize(
+      static_cast<size_t>(contract.outputChannels));
   converted.zeroBias.assign(static_cast<size_t>(contract.outputChannels), 0);
 
   float blockValues[256];
@@ -536,6 +1140,12 @@ static bool convertQ4KWeights(const Q4KLoweringContract& contract,
       return false;
     }
     converted.perChannelScales[static_cast<size_t>(channel)] = channelScale;
+    const float biasScale = contract.activationScale * channelScale;
+    if (!std::isfinite(biasScale) || biasScale <= 0.0f) {
+      reason = "Q4_K per-channel bias scale is invalid";
+      return false;
+    }
+    converted.perChannelBiasScales[static_cast<size_t>(channel)] = biasScale;
 
     int8_t* quantizedRow = converted.filter.data() +
                            static_cast<size_t>(channel * contract.inputChannels);
@@ -566,6 +1176,8 @@ static bool convertQ4KWeights(const Q4KLoweringContract& contract,
   loweringDigest.mix(converted.filter.data(), converted.filter.size());
   loweringDigest.mix(converted.perChannelScales.data(),
                      converted.perChannelScales.size() * sizeof(float));
+  loweringDigest.mix(converted.perChannelBiasScales.data(),
+                     converted.perChannelBiasScales.size() * sizeof(float));
   loweringDigest.mix(converted.zeroBias.data(),
                      converted.zeroBias.size() * sizeof(int32_t));
   converted.loweringDigest = loweringDigest.hex();
@@ -900,8 +1512,8 @@ bool NnapiGraphBackend::validateSlotContract(const NativeSlot& slot, int nnapiOp
   if (toLower(slot.ident.opName) == "ggml_qmatmul") {
     if (!exactInputs(2) || !oneOutput()) return false;
     if (args.numIArgs != 4 || args.numTArgs != 0 || args.numBArgs != 0 ||
-        args.numDArgs != 0 || args.numSArgs != 0) {
-      return fail("Q4_K ggml_qmatmul requires exactly four integer arguments");
+        args.numDArgs != 0) {
+      return fail("Q4_K ggml_qmatmul requires four integer arguments and finalized calibration metadata");
     }
     if (args.iArgs[0] != 8 || args.iArgs[1] <= 0 || args.iArgs[2] <= 0 ||
         args.iArgs[2] % 256 != 0 ||
@@ -910,9 +1522,8 @@ bool NnapiGraphBackend::validateSlotContract(const NativeSlot& slot, int nnapiOp
     }
     if (wiring.inputSourceTypes == nullptr ||
         wiring.inputSourceIndices[1] >= 0 ||
-        (wiring.inputSourceTypes[1] != SOURCE_CONSTANT &&
-         wiring.inputSourceTypes[1] != SOURCE_VARIABLE)) {
-      return fail("Q4_K lowering requires inference-static external packed weights");
+        wiring.inputSourceTypes[1] != SOURCE_CONSTANT) {
+      return fail("Q4_K lowering requires immutable external packed weights");
     }
     return true;
   }
@@ -1064,8 +1675,8 @@ bool NnapiGraphBackend::resolveRequiredAcceleratorDevice() {
   int result = ANeuralNetworks_getDeviceCount(&deviceCount);
   if (result != ANEURALNETWORKS_NO_ERROR) {
     DSP_DIAG(BACKEND,
-             "NNAPI_DEVICE_SELECTION_FAILED required=%s getDeviceCount=%d",
-             requiredDeviceName_.c_str(), result);
+             "NNAPI_DEVICE_SELECTION_FAILED required=%s getDeviceCount=%s (%d)",
+             requiredDeviceName_.c_str(), nnapiStatusName(result), result);
     return false;
   }
 
@@ -1095,12 +1706,13 @@ bool NnapiGraphBackend::resolveRequiredAcceleratorDevice() {
              deviceVersion != nullptr ? deviceVersion : "unknown",
              static_cast<long long>(featureLevel));
 
-    if (toLower(deviceName) != toLower(requiredDeviceName_) ||
+    if (std::string(deviceName) != requiredDeviceName_ ||
         deviceType != ANEURALNETWORKS_DEVICE_ACCELERATOR) {
       continue;
     }
 
     requiredDevice_ = device;
+    selectedDeviceIndex_ = static_cast<int>(deviceIndex);
     selectedDeviceName_ = deviceName;
     selectedDeviceVersion_ = deviceVersion != nullptr ? deviceVersion : "unknown";
     selectedDeviceType_ = deviceType;
@@ -1119,6 +1731,7 @@ bool NnapiGraphBackend::resolveRequiredAcceleratorDevice() {
   return false;
 #else
   requiredDeviceName_.clear();
+  selectedDeviceIndex_ = -1;
   return true;
 #endif
 }
@@ -1151,6 +1764,42 @@ NnapiGraphBackend& NnapiGraphBackend::getInstance() {
   return *instance;
 }
 
+bool NnapiGraphBackend::findPublishedBoundaryCalibration(
+    int sourceIndex, NDArray* sourceArray,
+    float& admittedAbsoluteMaximum, float& scale,
+    int32_t& zeroPoint) {
+  if (sourceIndex < 0 || sourceArray == nullptr ||
+      sourceArray->dataBuffer() == nullptr) {
+    return false;
+  }
+  DataBuffer* const sourceBuffer = sourceArray->dataBuffer();
+  std::lock_guard<std::mutex> cacheLock(cacheMtx_);
+  for (auto artifactIt = compiledArtifacts_.rbegin();
+       artifactIt != compiledArtifacts_.rend(); ++artifactIt) {
+    auto artifact = artifactIt->lock();
+    if (!artifact) continue;
+    std::lock_guard<std::mutex> artifactLock(artifact->executionMutex);
+    if (!artifact->valid) continue;
+    for (const auto& mapping : artifact->outputMappings) {
+      if (mapping.sourceIndex != sourceIndex ||
+          mapping.sourceBufferIdentity != sourceBuffer ||
+          mapping.boundaryTransform !=
+              CompiledModel::BoundaryTransform::DEQUANTIZE_ASYMM_SIGNED ||
+          !std::isfinite(mapping.calibrationAbsoluteMaximum) ||
+          mapping.calibrationAbsoluteMaximum <= 0.0f ||
+          !std::isfinite(mapping.quantizationScale) ||
+          mapping.quantizationScale <= 0.0f) {
+        continue;
+      }
+      admittedAbsoluteMaximum = mapping.calibrationAbsoluteMaximum;
+      scale = mapping.quantizationScale;
+      zeroPoint = mapping.quantizationZeroPoint;
+      return true;
+    }
+  }
+  return false;
+}
+
 bool NnapiGraphBackend::isAvailable() const {
   return nnapiAvailable_;
 }
@@ -1176,13 +1825,16 @@ GraphBackendPlanningPolicy NnapiGraphBackend::planningPolicy(
     const GraphBackendRequest& request) const {
   GraphBackendPlanningPolicy policy;
   policy.artifactKind = GraphBackendArtifactKind::DIRECT_COMPILED;
+  policy.materializesAllFrameworkSlots = false;
   policy.requiresShapePrePass = true;
   policy.requiresSuccessfulShapePrePass = true;
-  // Q4_K NNAPI operands require fixed scales. DSP's first functional warmup
-  // supplies the concrete source-op activation/output ranges; compilation then
-  // freezes those per-slot scales into the cached backend artifact.
-  policy.precompileBeforeFirstExecution = false;
-  policy.allowsShapeOnlyWarmup = false;
+  // Q4_K scales are immutable per-op deployment metadata. Shape inference is
+  // sufficient preparation; the first value-producing execution must use the
+  // finalized device artifact rather than becoming a calibration sample.
+  policy.precompileBeforeFirstExecution = true;
+  policy.allowsShapeOnlyWarmup = true;
+  policy.deferCompilationUntilPlanFreeze = false;
+  policy.requiresPrecommitFunctionalWarmup = false;
   policy.requiresCapabilityPartitioning = true;
   policy.requiresCompleteLowering =
       request.executionMode == GraphExecutionMode::GEM_NNAPI;
@@ -1191,11 +1843,48 @@ GraphBackendPlanningPolicy NnapiGraphBackend::planningPolicy(
   return policy;
 }
 
+GraphBackendCompilationReadiness NnapiGraphBackend::compilationReadiness(
+    const GraphBackendRequest& request, NativeSlot* slots, int start,
+    int end) const {
+  (void)request;
+  if (slots == nullptr || start < 0 || end < start) {
+    return GraphBackendCompilationReadiness::blocked(
+        "invalid slot range for NNAPI compilation readiness");
+  }
+  for (int slotIndex = start; slotIndex <= end; ++slotIndex) {
+    if (!isQ4KQMatMul(slots[slotIndex])) continue;
+    FinalizedQ4KCalibration calibration;
+    std::string reason;
+    if (!parseFinalizedQ4KCalibration(
+            slots[slotIndex], calibration, reason)) {
+      return GraphBackendCompilationReadiness::blocked(
+          "slot " + std::to_string(slotIndex) + " (ggml_qmatmul): " + reason);
+    }
+  }
+  return {};
+}
+
 // ─── Segment analysis ───────────────────────────────────────────────────────
 
 bool NnapiGraphBackend::isSlotResolvable(NativeSlot* slots,
                                          int slotIndex) const {
   if (slots == nullptr || slotIndex < 0) return false;
+#if defined(SD_NNAPI_ACCELERATOR_ONLY)
+  const bool exactEdgeTpu = selectedDeviceName_ == requiredDeviceName_ &&
+                            selectedDeviceType_ ==
+                                ANEURALNETWORKS_DEVICE_ACCELERATOR;
+  if (exactEdgeTpu && !isQ4KQMatMul(slots[slotIndex]) &&
+      !isEdgeTpuSignedPointwiseSlot(slots[slotIndex])) {
+    return false;
+  }
+  if (exactEdgeTpu &&
+      (isQ4KQMatMul(slots[slotIndex]) ||
+       isEdgeTpuSignedPointwiseSlot(slots[slotIndex])) &&
+      (apiLevel_ < 30 ||
+       selectedDeviceFeatureLevel_ < ANEURALNETWORKS_FEATURE_LEVEL_4)) {
+    return false;
+  }
+#endif
 #if !defined(__ANDROID_API__) || __ANDROID_API__ < 29
   if (isQ4KQMatMul(slots[slotIndex])) {
     DSP_DIAG(BACKEND,
@@ -1340,7 +2029,8 @@ bool NnapiGraphBackend::addOperand(ANeuralNetworksModel* model, NDArray* arr,
 
   const int result = ANeuralNetworksModel_addOperand(model, &operandType);
   if (result != ANEURALNETWORKS_NO_ERROR) {
-    DSP_DIAG(COMPILE, "NnapiGraphBackend: addOperand failed: %d", result);
+    DSP_DIAG(COMPILE, "NnapiGraphBackend: addOperand failed: %s (%d)",
+             nnapiStatusName(result), result);
     return false;
   }
   *outIdx = idx;
@@ -1953,9 +2643,15 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
   // Track which source indices map to which NNAPI operands
   std::unordered_map<int, uint32_t> sourceToOperand;
 
-  // Q4_K lowering is deliberately standalone in v1. This keeps quantized
+  // Q4_K lowering is deliberately standalone. This keeps quantized
   // boundaries explicit and prevents a neighboring float op from accidentally
   // consuming an INT8-only internal value.
+  const PublishedBoundaryLookup publishedBoundaryLookup =
+      [this](int sourceIndex, NDArray* sourceArray, float& admittedMaximum,
+             float& scale, int32_t& zeroPoint) {
+        return findPublishedBoundaryCalibration(
+            sourceIndex, sourceArray, admittedMaximum, scale, zeroPoint);
+      };
   std::unordered_map<int, Q4KLoweringContract> q4KContracts;
   std::unordered_map<int, size_t> q4KArtifactIndices;
   compiled.q4kConstants.reserve(static_cast<size_t>(endSlot - startSlot + 1));
@@ -1984,7 +2680,8 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
     std::string reason;
     if (!resolveQ4KLoweringContract(
             slots[slotIndex], slotIndex, externalInputs, numExternalInputs,
-            outputSlots, totalOutputSlots, contract, reason)) {
+            outputSlots, totalOutputSlots, publishedBoundaryLookup, contract,
+            reason)) {
       DSP_DIAG(FALLBACK,
                "NNAPI_Q4K_LOWERING_REJECTED slot=%d reason=%s",
                slotIndex, reason.c_str());
@@ -2007,6 +2704,8 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
     artifact.outputScale = contract.outputScale;
     artifact.filter = std::move(converted.filter);
     artifact.perChannelScales = std::move(converted.perChannelScales);
+    artifact.perChannelBiasScales =
+        std::move(converted.perChannelBiasScales);
     artifact.zeroBias = std::move(converted.zeroBias);
     artifact.packedWeightDigest = contract.packedWeightDigest;
     artifact.loweringDigest = converted.loweringDigest;
@@ -2026,6 +2725,7 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
     cacheIdentity.mixString(selectedDeviceVersion_);
     cacheIdentity.mixValue(selectedDeviceFeatureLevel_);
     compiled.loweringCacheIdentity = cacheIdentity.hex();
+    compiled.backendCacheAbi = kTensorG3Q4LoweringAbi;
     DSP_DIAG(
         COMPILE,
         "NNAPI_Q4K_LOWERING_COMMITTED slot=%d source=%d N=%lld K=%lld "
@@ -2041,6 +2741,46 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
         stored.perChannelScales.size(),
         stored.packedWeightDigest.c_str(), stored.loweringDigest.c_str(),
         compiled.loweringCacheIdentity.c_str());
+  }
+
+  SignedPointwiseLoweringContract signedPointwiseContract;
+  const bool exactEdgeTpu = selectedDeviceName_ == requiredDeviceName_ &&
+                            selectedDeviceType_ ==
+                                ANEURALNETWORKS_DEVICE_ACCELERATOR;
+  const bool signedPointwise =
+      exactEdgeTpu && selectedDeviceFeatureLevel_ >=
+                          ANEURALNETWORKS_FEATURE_LEVEL_4 &&
+      isSignedPointwiseSegment(slots, startSlot, endSlot);
+  if (signedPointwise) {
+    std::string reason;
+    if (!resolveSignedPointwiseLoweringContract(
+            slots, startSlot, endSlot, externalInputs, numExternalInputs,
+            outputSlots, totalOutputSlots, publishedBoundaryLookup,
+            signedPointwiseContract, reason)) {
+      DSP_DIAG(FALLBACK,
+               "NNAPI_SIGNED_POINTWISE_LOWERING_REJECTED seg[%d-%d] reason=%s",
+               startSlot, endSlot, reason.c_str());
+      return false;
+    }
+    compiled.sourceLoweringIdentity =
+        signedPointwiseContract.loweringIdentity;
+    StableDigest256 cacheIdentity;
+    cacheIdentity.mixString(kTensorG3SignedPointwiseLoweringAbi);
+    cacheIdentity.mixString(compiled.sourceLoweringIdentity);
+    cacheIdentity.mixString(selectedDeviceName_);
+    cacheIdentity.mixString(selectedDeviceVersion_);
+    cacheIdentity.mixValue(selectedDeviceFeatureLevel_);
+    compiled.loweringCacheIdentity = cacheIdentity.hex();
+    compiled.backendCacheAbi = kTensorG3SignedPointwiseLoweringAbi;
+    DSP_DIAG(COMPILE,
+             "NNAPI_SIGNED_POINTWISE_LOWERING_COMMITTED seg[%d-%d] "
+             "operands=%zu identity=%s cache_identity=%s",
+             startSlot, endSlot, signedPointwiseContract.operands.size(),
+             compiled.sourceLoweringIdentity.c_str(),
+             compiled.loweringCacheIdentity.c_str());
+  }
+  if (compiled.backendCacheAbi.empty()) {
+    compiled.backendCacheAbi = kDirectNnapiLoweringAbi;
   }
 
   // Identify all outputs produced within this segment
@@ -2184,7 +2924,44 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
             {srcIdx, operand, false, contract.activations->dataType(),
              DataType::INT8, std::move(frameworkDimensions),
              CompiledModel::BoundaryTransform::QUANTIZE_ASYMM_SIGNED,
-             contract.activationScale, 0});
+             contract.activationScale, 0,
+             contract.activationAbsoluteMaximum});
+        continue;
+      }
+
+      if (signedPointwise) {
+        const bool isExternal = srcIdx < 0;
+        const bool isPreSegment =
+            !isExternal && !segmentOutputs.count(srcIdx);
+        if (!isExternal && !isPreSegment) continue;
+        const auto contractIt =
+            signedPointwiseContract.operands.find(srcIdx);
+        if (contractIt == signedPointwiseContract.operands.end()) {
+          DSP_DIAG(COMPILE,
+                   "NNAPI_SIGNED_POINTWISE_LOWERING_REJECTED seg[%d-%d] "
+                   "source=%d reason=missing_input_contract",
+                   startSlot, endSlot, srcIdx);
+          return false;
+        }
+        const auto& operandContract = contractIt->second;
+        uint32_t operand = 0;
+        if (!addRawOperandDescriptor(
+                ANEURALNETWORKS_TENSOR_QUANT8_ASYMM_SIGNED,
+                operandContract.nnapiDimensions, operandContract.scale,
+                operandContract.zeroPoint, &operand)) {
+          DSP_DIAG(COMPILE,
+                   "NNAPI_SIGNED_POINTWISE_LOWERING_REJECTED seg[%d-%d] "
+                   "source=%d reason=input_operand_declaration",
+                   startSlot, endSlot, srcIdx);
+          return false;
+        }
+        sourceToOperand[srcIdx] = operand;
+        compiled.inputMappings.push_back(
+            {srcIdx, operand, false, operandContract.sourceDataType,
+             DataType::INT8, operandContract.frameworkDimensions,
+             CompiledModel::BoundaryTransform::QUANTIZE_ASYMM_SIGNED,
+             operandContract.scale, operandContract.zeroPoint,
+             operandContract.admittedAbsoluteMaximum});
         continue;
       }
 
@@ -2294,8 +3071,8 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
       if (result != ANEURALNETWORKS_NO_ERROR) {
         DSP_DIAG(COMPILE,
                  "NNAPI_Q4K_LOWERING_REJECTED slot=%d "
-                 "reason=filter_per_channel_params status=%d",
-                 i, result);
+                 "reason=filter_per_channel_params status=%s (%d)",
+                 i, nnapiStatusName(result), result);
         return false;
       }
 #else
@@ -2310,8 +3087,8 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
       if (result != ANEURALNETWORKS_NO_ERROR) {
         DSP_DIAG(COMPILE,
                  "NNAPI_Q4K_LOWERING_REJECTED slot=%d "
-                 "reason=filter_constant status=%d",
-                 i, result);
+                 "reason=filter_constant status=%s (%d)",
+                 i, nnapiStatusName(result), result);
         return false;
       }
 
@@ -2325,14 +3102,18 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
                  i);
         return false;
       }
+      // NNAPI CONV_2D with a per-channel filter requires a TENSOR_INT32 bias
+      // descriptor with scale 0.0. Its effective channel scales are implicitly
+      // activationScale * filterScale[channel]; the per-channel setter is valid
+      // only for TENSOR_QUANT8_SYMM_PER_CHANNEL and must not be applied here.
       result = ANeuralNetworksModel_setOperandValue(
           model, biasOperand, artifact.zeroBias.data(),
           artifact.zeroBias.size() * sizeof(int32_t));
       if (result != ANEURALNETWORKS_NO_ERROR) {
         DSP_DIAG(COMPILE,
                  "NNAPI_Q4K_LOWERING_REJECTED slot=%d "
-                 "reason=bias_constant status=%d",
-                 i, result);
+                 "reason=bias_constant status=%s (%d)",
+                 i, nnapiStatusName(result), result);
         return false;
       }
 
@@ -2366,7 +3147,8 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
            contract.outputDataType, DataType::INT8,
            std::move(frameworkOutputDimensions),
            CompiledModel::BoundaryTransform::DEQUANTIZE_ASYMM_SIGNED,
-           contract.outputScale, 0});
+           contract.outputScale, 0, contract.outputAbsoluteMaximum,
+           contract.output->dataBuffer()});
 
       std::vector<uint32_t> convolutionInputs = {
           activationOperandIt->second, filterOperand, biasOperand};
@@ -2385,8 +3167,8 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
       if (result != ANEURALNETWORKS_NO_ERROR) {
         DSP_DIAG(COMPILE,
                  "NNAPI_Q4K_LOWERING_REJECTED slot=%d "
-                 "reason=conv2d_operation status=%d",
-                 i, result);
+                 "reason=conv2d_operation status=%s (%d)",
+                 i, nnapiStatusName(result), result);
         return false;
       }
       operationSourceSlots.push_back(i);
@@ -2463,8 +3245,8 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
         if (reshapeResult != ANEURALNETWORKS_NO_ERROR) {
           DSP_DIAG(COMPILE,
                    "NnapiGraphBackend: failed to flatten embedding lookups at "
-                   "slot %d: %d",
-                   i, reshapeResult);
+                   "slot %d: %s (%d)",
+                   i, nnapiStatusName(reshapeResult), reshapeResult);
           return false;
         }
         operationSourceSlots.push_back(i);
@@ -2531,8 +3313,8 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
       if (transposedResult != ANEURALNETWORKS_NO_ERROR) {
         DSP_DIAG(COMPILE,
                  "NnapiGraphBackend: failed to add transposed weight operand "
-                 "at slot %d: %d",
-                 i, transposedResult);
+                 "at slot %d: %s (%d)",
+                 i, nnapiStatusName(transposedResult), transposedResult);
         return false;
       }
 
@@ -2547,8 +3329,8 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
       if (transposeResult != ANEURALNETWORKS_NO_ERROR) {
         DSP_DIAG(COMPILE,
                  "NnapiGraphBackend: failed to add weight transpose for "
-                 "fully-connected op at slot %d: %d",
-                 i, transposeResult);
+                 "fully-connected op at slot %d: %s (%d)",
+                 i, nnapiStatusName(transposeResult), transposeResult);
         return false;
       }
       operationSourceSlots.push_back(i);
@@ -2579,13 +3361,29 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
       }
 
       uint32_t opIdx = 0;
-      if (!addOperand(model, arr, nextOperand, contiguousCopies, &opIdx)) {
-        DSP_DIAG(COMPILE,
-                 "NnapiGraphBackend: unsupported output operand type at slot "
-                 "%d output %d",
-                 i, o);
-        return false;
-      }
+      if (signedPointwise) {
+        const auto contractIt =
+            signedPointwiseContract.operands.find(outIdx);
+        if (contractIt == signedPointwiseContract.operands.end() ||
+            !addRawOperandDescriptor(
+                ANEURALNETWORKS_TENSOR_QUANT8_ASYMM_SIGNED,
+                contractIt->second.nnapiDimensions,
+                contractIt->second.scale, contractIt->second.zeroPoint,
+                &opIdx)) {
+          DSP_DIAG(COMPILE,
+                   "NNAPI_SIGNED_POINTWISE_LOWERING_REJECTED seg[%d-%d] "
+                   "slot=%d output=%d reason=output_operand_declaration",
+                   startSlot, endSlot, i, o);
+          return false;
+        }
+      } else if (!addOperand(model, arr, nextOperand, contiguousCopies,
+                             &opIdx)) {
+          DSP_DIAG(COMPILE,
+                   "NnapiGraphBackend: unsupported output operand type at slot "
+                   "%d output %d",
+                   i, o);
+          return false;
+        }
       sourceToOperand[outIdx] = opIdx;
       outputOperands.push_back(opIdx);
 
@@ -2594,10 +3392,21 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
         for (int dimension = 0; dimension < arr->rankOf(); dimension++) {
           dimensions[static_cast<size_t>(dimension)] = arr->sizeAt(dimension);
         }
-        DataType outputBindingDataType = bindingDataType(arr->dataType());
-        compiled.outputMappings.push_back(
-            {outIdx, opIdx, true, arr->dataType(), outputBindingDataType,
-             std::move(dimensions)});
+        if (signedPointwise) {
+          const auto& operandContract =
+              signedPointwiseContract.operands.at(outIdx);
+          compiled.outputMappings.push_back(
+              {outIdx, opIdx, true, arr->dataType(), DataType::INT8,
+               std::move(dimensions),
+               CompiledModel::BoundaryTransform::DEQUANTIZE_ASYMM_SIGNED,
+               operandContract.scale, operandContract.zeroPoint,
+               operandContract.admittedAbsoluteMaximum, arr->dataBuffer()});
+        } else {
+          DataType outputBindingDataType = bindingDataType(arr->dataType());
+          compiled.outputMappings.push_back(
+              {outIdx, opIdx, true, arr->dataType(), outputBindingDataType,
+               std::move(dimensions)});
+        }
       }
     }
 
@@ -2622,8 +3431,8 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
       if (result != ANEURALNETWORKS_NO_ERROR) {
         DSP_DIAG(COMPILE,
                  "NnapiGraphBackend: failed to add flattened embedding lookup "
-                 "at slot %d: %d",
-                 i, result);
+                 "at slot %d: %s (%d)",
+                 i, nnapiStatusName(result), result);
         return false;
       }
       operationSourceSlots.push_back(i);
@@ -2639,8 +3448,8 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
       if (result != ANEURALNETWORKS_NO_ERROR) {
         DSP_DIAG(COMPILE,
                  "NnapiGraphBackend: failed to restore batched embedding "
-                 "shape at slot %d: %d",
-                 i, result);
+                 "shape at slot %d: %s (%d)",
+                 i, nnapiStatusName(result), result);
         return false;
       }
       operationSourceSlots.push_back(i);
@@ -2651,8 +3460,11 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
           static_cast<uint32_t>(outputOperands.size()), outputOperands.data());
 
       if (result != ANEURALNETWORKS_NO_ERROR) {
-        DSP_DIAG(COMPILE, "NnapiGraphBackend: failed to add op '%s' (NNAPI code %d) at slot %d, error=%d",
-                  slots[i].ident.opName.c_str(), nnapiOp, i, result);
+        DSP_DIAG(COMPILE,
+                 "NnapiGraphBackend: failed to add op '%s' (NNAPI op code %d) "
+                 "at slot %d: %s (%d)",
+                 slots[i].ident.opName.c_str(), nnapiOp, i,
+                 nnapiStatusName(result), result);
         return false;
       }
       operationSourceSlots.push_back(i);
@@ -2676,13 +3488,51 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
     return false;
   }
 
+  StableDigest256 modelIoDigest;
+  modelIoDigest.mixString("nnapi-model-io-v1");
+  modelIoDigest.mixString(compiled.backendCacheAbi);
+  modelIoDigest.mixString(compiled.requestedOutputIdentity);
+  auto mixMapping = [&](const CompiledModel::OperandMapping& mapping) {
+    modelIoDigest.mixValue(mapping.sourceIndex);
+    modelIoDigest.mixValue(mapping.operand);
+    modelIoDigest.mixValue(mapping.isOutput);
+    modelIoDigest.mixValue(mapping.sourceDataType);
+    modelIoDigest.mixValue(mapping.bindingDataType);
+    const int dimensionCount = static_cast<int>(mapping.dimensions.size());
+    modelIoDigest.mixValue(dimensionCount);
+    for (LongType dimension : mapping.dimensions) {
+      modelIoDigest.mixValue(dimension);
+    }
+    modelIoDigest.mixValue(mapping.boundaryTransform);
+    modelIoDigest.mixValue(mapping.quantizationScale);
+    modelIoDigest.mixValue(mapping.quantizationZeroPoint);
+    modelIoDigest.mixValue(mapping.calibrationAbsoluteMaximum);
+  };
+  for (const auto& mapping : compiled.inputMappings) mixMapping(mapping);
+  for (const auto& mapping : compiled.outputMappings) mixMapping(mapping);
+  compiled.modelIoIdentity = modelIoDigest.hex();
+  StableDigest256 completeArtifactDigest;
+  completeArtifactDigest.mixString(compiled.backendCacheAbi);
+  completeArtifactDigest.mixString(compiled.loweringCacheIdentity);
+  completeArtifactDigest.mixString(compiled.modelIoIdentity);
+  compiled.loweringCacheIdentity = completeArtifactDigest.hex();
+  DSP_DIAG(COMPILE,
+           "NNAPI_MODEL_IO_IDENTITY seg[%d-%d] requested=%s model_io=%s "
+           "artifact=%s inputs=%zu outputs=%zu",
+           startSlot, endSlot, compiled.requestedOutputIdentity.c_str(),
+           compiled.modelIoIdentity.c_str(),
+           compiled.loweringCacheIdentity.c_str(),
+           compiled.inputMappings.size(), compiled.outputMappings.size());
+
   int result = ANeuralNetworksModel_identifyInputsAndOutputs(
       model,
       static_cast<uint32_t>(modelInputs.size()), modelInputs.data(),
       static_cast<uint32_t>(modelOutputs.size()), modelOutputs.data());
 
   if (result != ANEURALNETWORKS_NO_ERROR) {
-    DSP_DIAG(COMPILE, "NnapiGraphBackend: identifyInputsAndOutputs failed: %d", result);
+    DSP_DIAG(COMPILE,
+             "NnapiGraphBackend: identifyInputsAndOutputs failed: %s (%d)",
+             nnapiStatusName(result), result);
     return false;
   }
 
@@ -2693,7 +3543,8 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
   // accelerator execution.
   result = ANeuralNetworksModel_finish(model);
   if (result != ANEURALNETWORKS_NO_ERROR) {
-    DSP_DIAG(COMPILE, "NnapiGraphBackend: model finish failed: %d", result);
+    DSP_DIAG(COMPILE, "NnapiGraphBackend: model finish failed: %s (%d)",
+             nnapiStatusName(result), result);
     return false;
   }
 
@@ -2746,6 +3597,9 @@ bool NnapiGraphBackend::compileSegmentImpl(const GraphBackendRequest* request,
              startSlot, endSlot, segmentOps, kMaxNnapiSegmentOps);
     return false;
   }
+  const std::string currentRequestedOutputIdentity =
+      makeRequestedOutputIdentity(requestedOutputSlotIndices,
+                                  numRequestedOutputs);
   uint64_t cacheGenerationAtStart = 0;
   {
     std::lock_guard<std::mutex> lock(cacheMtx_);
@@ -2753,8 +3607,15 @@ bool NnapiGraphBackend::compileSegmentImpl(const GraphBackendRequest* request,
   }
 
   bool hasQ4KLowering = false;
+  bool hasSignedPointwiseLowering = false;
   std::string currentSourceWeightIdentity;
   std::string currentSourceLoweringIdentity;
+  const PublishedBoundaryLookup publishedBoundaryLookup =
+      [this](int sourceIndex, NDArray* sourceArray, float& admittedMaximum,
+             float& scale, int32_t& zeroPoint) {
+        return findPublishedBoundaryCalibration(
+            sourceIndex, sourceArray, admittedMaximum, scale, zeroPoint);
+      };
   for (int slotIndex = startSlot; slotIndex <= endSlot; ++slotIndex) {
     if (!isQ4KQMatMul(slots[slotIndex])) continue;
     if (segmentOps != 1) {
@@ -2768,7 +3629,8 @@ bool NnapiGraphBackend::compileSegmentImpl(const GraphBackendRequest* request,
     std::string reason;
     if (!resolveQ4KLoweringContract(
             slots[slotIndex], slotIndex, externalInputs, numExternalInputs,
-            outputSlots, totalOutputSlots, contract, reason)) {
+            outputSlots, totalOutputSlots, publishedBoundaryLookup, contract,
+            reason)) {
       DSP_DIAG(COMPILE,
                "NNAPI_Q4K_LOWERING_REJECTED slot=%d reason=%s",
                slotIndex, reason.c_str());
@@ -2778,6 +3640,26 @@ bool NnapiGraphBackend::compileSegmentImpl(const GraphBackendRequest* request,
     currentSourceWeightIdentity = contract.packedWeightDigest;
     currentSourceLoweringIdentity = contract.sourceLoweringIdentity;
   }
+  if (selectedDeviceName_ == requiredDeviceName_ &&
+      selectedDeviceType_ == ANEURALNETWORKS_DEVICE_ACCELERATOR &&
+      selectedDeviceFeatureLevel_ >= ANEURALNETWORKS_FEATURE_LEVEL_4 &&
+      isSignedPointwiseSegment(slots, startSlot, endSlot)) {
+    SignedPointwiseLoweringContract contract;
+    std::string reason;
+    if (!resolveSignedPointwiseLoweringContract(
+            slots, startSlot, endSlot, externalInputs, numExternalInputs,
+            outputSlots, totalOutputSlots, publishedBoundaryLookup, contract,
+            reason)) {
+      DSP_DIAG(COMPILE,
+               "NNAPI_SIGNED_POINTWISE_LOWERING_REJECTED seg[%d-%d] reason=%s",
+               startSlot, endSlot, reason.c_str());
+      return false;
+    }
+    hasSignedPointwiseLowering = true;
+    currentSourceLoweringIdentity = contract.loweringIdentity;
+  }
+  const bool hasCalibratedLowering =
+      hasQ4KLowering || hasSignedPointwiseLowering;
 
   // Reuse is deliberately scoped to this exact GraphSegment. Slot ranges and
   // shape keys are not model identities and must never cross-hit another plan.
@@ -2790,10 +3672,12 @@ bool NnapiGraphBackend::compileSegmentImpl(const GraphBackendRequest* request,
         existing->executionMutex);
     if (existing->valid && existing->startSlot == startSlot &&
         existing->endSlot == endSlot &&
-        (!hasQ4KLowering ||
-         (existing->sourceWeightIdentity == currentSourceWeightIdentity &&
-          existing->sourceLoweringIdentity ==
-              currentSourceLoweringIdentity))) {
+        existing->requestedOutputIdentity ==
+            currentRequestedOutputIdentity &&
+        (!hasCalibratedLowering ||
+         (existing->sourceLoweringIdentity == currentSourceLoweringIdentity &&
+          (!hasQ4KLowering ||
+           existing->sourceWeightIdentity == currentSourceWeightIdentity)))) {
       lastCompilationAudit_ = existing->compilationAudit;
       DSP_DIAG(COMPILE,
                "NNAPI_PHASE compile_segment_hit seg[%d-%d] cache_identity=%s "
@@ -2810,9 +3694,9 @@ bool NnapiGraphBackend::compileSegmentImpl(const GraphBackendRequest* request,
                    : existing->sourceLoweringIdentity.c_str());
       return true;
     }
-    if (hasQ4KLowering) {
+    if (hasCalibratedLowering) {
       DSP_DIAG(COMPILE,
-               "NNAPI_Q4K_ARTIFACT_CACHE_MISS seg[%d-%d] "
+               "NNAPI_CALIBRATED_ARTIFACT_CACHE_MISS seg[%d-%d] "
                "previous_weight=%s current_weight=%s "
                "previous_lowering=%s current_lowering=%s",
                startSlot, endSlot,
@@ -2832,7 +3716,8 @@ bool NnapiGraphBackend::compileSegmentImpl(const GraphBackendRequest* request,
   ANeuralNetworksModel* model = nullptr;
   int result = ANeuralNetworksModel_create(&model);
   if (result != ANEURALNETWORKS_NO_ERROR || !model) {
-    DSP_DIAG(COMPILE, "NnapiGraphBackend: failed to create model: %d", result);
+    DSP_DIAG(COMPILE, "NnapiGraphBackend: failed to create model: %s (%d)",
+             nnapiStatusName(result), result);
     return false;
   }
 
@@ -2840,6 +3725,7 @@ bool NnapiGraphBackend::compileSegmentImpl(const GraphBackendRequest* request,
   compiled->startSlot = startSlot;
   compiled->endSlot = endSlot;
   compiled->shapeKey = shapeKey;
+  compiled->requestedOutputIdentity = currentRequestedOutputIdentity;
 
   // Build the model graph
   DSP_DIAG(COMPILE, "NNAPI_PHASE model_build_begin seg[%d-%d]", startSlot, endSlot);
@@ -2888,8 +3774,9 @@ bool NnapiGraphBackend::compileSegmentImpl(const GraphBackendRequest* request,
   if (result != ANEURALNETWORKS_NO_ERROR) {
     delete[] supportedOperations;
     DSP_DIAG(COMPILE,
-             "NNAPI_DEVICE_CLASSIFICATION_FAILED seg[%d-%d] device=%s status=%d",
-             startSlot, endSlot, selectedDeviceName_.c_str(), result);
+             "NNAPI_DEVICE_CLASSIFICATION_FAILED seg[%d-%d] device=%s status=%s (%d)",
+             startSlot, endSlot, selectedDeviceName_.c_str(),
+             nnapiStatusName(result), result);
     return false;
   }
 
@@ -2926,14 +3813,19 @@ bool NnapiGraphBackend::compileSegmentImpl(const GraphBackendRequest* request,
 #endif
   if (result != ANEURALNETWORKS_NO_ERROR || !compilation) {
     DSP_DIAG(COMPILE,
-             "NnapiGraphBackend: failed to create compilation for device '%s': %d",
+             "NnapiGraphBackend: failed to create compilation for device '%s': %s (%d)",
              selectedDeviceName_.empty() ? "nnapi-default" : selectedDeviceName_.c_str(),
-             result);
+             nnapiStatusName(result), result);
     return false;
   }
   compiled->compilation = compilation;
 
   ANeuralNetworksCompilation_setPreference(compilation, preference_);
+
+  ReplayCacheEntry persistentCacheEntry;
+  ReplayCacheDeviceKey persistentCacheDevice;
+  bool persistentCacheConfigured = false;
+  bool persistentCacheCandidate = false;
 
 #if defined(__ANDROID_API__) && __ANDROID_API__ >= 29
   if (request != nullptr &&
@@ -2950,26 +3842,78 @@ bool NnapiGraphBackend::compileSegmentImpl(const GraphBackendRequest* request,
                "identity=%s source_weight=%s",
                selectedDeviceName_.empty() ? "nnapi-default"
                                            : selectedDeviceName_.c_str(),
-               startSlot, endSlot, kTensorG3Q4LoweringAbi,
+               startSlot, endSlot, compiled->backendCacheAbi.c_str(),
                compiled->loweringCacheIdentity.c_str(),
                compiled->sourceWeightIdentity.c_str());
     }
-    const int cacheStatus = ANeuralNetworksCompilation_setCaching(
-        compilation, request->deviceCompilationCacheDirectory.c_str(),
-        loweringAwareCacheToken.data());
-    if (cacheStatus == ANEURALNETWORKS_NO_ERROR) {
+    StableDigest256 deviceIdentity;
+    deviceIdentity.mixString(selectedDeviceName_.empty() ? "nnapi-default"
+                                                          : selectedDeviceName_);
+    deviceIdentity.mixString(selectedDeviceVersion_.empty() ? "unknown"
+                                                             : selectedDeviceVersion_);
+    deviceIdentity.mixValue(selectedDeviceType_);
+    deviceIdentity.mixValue(selectedDeviceFeatureLevel_);
+    deviceIdentity.mixValue(apiLevel_);
+    deviceIdentity.mixString(compiled->backendCacheAbi);
+    const std::string deviceFingerprint = deviceIdentity.hex();
+    persistentCacheDevice = ReplayCacheDeviceKey(
+        modelparallel::DeviceType::ACCELERATOR,
+        selectedDeviceIndex_ >= 0 ? selectedDeviceIndex_ : 0,
+        deviceFingerprint);
+    auto& replayCache = ReplayCacheManager::getInstance();
+    const bool cacheRootAccepted = replayCache.configureCacheRoot(
+        request->deviceCompilationCacheDirectory);
+    const std::string driverCacheDirectory = cacheRootAccepted
+        ? replayCache.getOrCreateBackendCacheDir(persistentCacheDevice,
+                                                 "nnapi-driver")
+        : "";
+    const std::string artifactIdentity =
+        nnapiCacheTokenHex(loweringAwareCacheToken);
+    persistentCacheCandidate = replayCache.findEntry(
+        persistentCacheDevice, artifactIdentity, nullptr);
+    DSP_DIAG(COMPILE,
+             "NNAPI_DSP_CACHE_CANDIDATE device=%s seg[%d-%d] metadata=%s identity=%s",
+             selectedDeviceName_.empty() ? "nnapi-default" : selectedDeviceName_.c_str(),
+             startSlot, endSlot, persistentCacheCandidate ? "hit" : "miss",
+             artifactIdentity.c_str());
+    if (driverCacheDirectory.empty()) {
       DSP_DIAG(COMPILE,
-               "NNAPI_DEVICE_CACHE_CONFIGURED device=%s seg[%d-%d] directory=%s",
+               "NNAPI_DEVICE_CACHE_REJECTED device=%s seg[%d-%d] reason=dsp_cache_directory",
                selectedDeviceName_.empty() ? "nnapi-default" : selectedDeviceName_.c_str(),
-               startSlot, endSlot,
-               request->deviceCompilationCacheDirectory.c_str());
+               startSlot, endSlot);
     } else {
-      // Driver caching is an optimization. A vendor or filesystem rejection must
-      // not make an otherwise valid accelerator compilation unusable.
-      DSP_DIAG(COMPILE,
-               "NNAPI_DEVICE_CACHE_REJECTED device=%s seg[%d-%d] status=%d",
-               selectedDeviceName_.empty() ? "nnapi-default" : selectedDeviceName_.c_str(),
-               startSlot, endSlot, cacheStatus);
+      const int cacheStatus = ANeuralNetworksCompilation_setCaching(
+          compilation, driverCacheDirectory.c_str(),
+          loweringAwareCacheToken.data());
+      if (cacheStatus == ANEURALNETWORKS_NO_ERROR) {
+        persistentCacheConfigured = true;
+        persistentCacheEntry.schemaVersion = 1;
+        persistentCacheEntry.cacheKey = compactNnapiCacheKey(artifactIdentity);
+        persistentCacheEntry.artifactIdentity = artifactIdentity;
+        persistentCacheEntry.modelKey = request->deviceCompilationCacheModelKey;
+        persistentCacheEntry.startSlot = startSlot;
+        persistentCacheEntry.endSlot = endSlot;
+        persistentCacheEntry.shapeKey = shapeKey;
+        persistentCacheEntry.backendName = name();
+        persistentCacheEntry.backendCacheAbi = compiled->backendCacheAbi;
+        persistentCacheEntry.deviceFingerprint = deviceFingerprint;
+        persistentCacheEntry.workspaceHint = 0;
+        persistentCacheEntry.numCaptureBuffers = 0;
+        persistentCacheEntry.timestamp = static_cast<int64_t>(std::time(nullptr));
+        persistentCacheEntry.deviceCachingConfigured = true;
+        DSP_DIAG(COMPILE,
+                 "NNAPI_DEVICE_CACHE_CONFIGURED device=%s seg[%d-%d] directory=%s",
+                 selectedDeviceName_.empty() ? "nnapi-default" : selectedDeviceName_.c_str(),
+                 startSlot, endSlot,
+                 driverCacheDirectory.c_str());
+      } else {
+        // Driver caching is an optimization. A vendor or filesystem rejection must
+        // not make an otherwise valid accelerator compilation unusable.
+        DSP_DIAG(COMPILE,
+                 "NNAPI_DEVICE_CACHE_REJECTED device=%s seg[%d-%d] status=%s (%d)",
+                 selectedDeviceName_.empty() ? "nnapi-default" : selectedDeviceName_.c_str(),
+                 startSlot, endSlot, nnapiStatusName(cacheStatus), cacheStatus);
+      }
     }
   }
 #endif
@@ -2977,7 +3921,9 @@ bool NnapiGraphBackend::compileSegmentImpl(const GraphBackendRequest* request,
   DSP_DIAG(COMPILE, "NNAPI_PHASE compilation_finish_begin seg[%d-%d]", startSlot, endSlot);
   result = ANeuralNetworksCompilation_finish(compilation);
   if (result != ANEURALNETWORKS_NO_ERROR) {
-    DSP_DIAG(COMPILE, "NnapiGraphBackend: compilation finish failed: %d", result);
+    DSP_DIAG(COMPILE,
+             "NnapiGraphBackend: compilation finish failed: %s (%d)",
+             nnapiStatusName(result), result);
     return false;
   }
 
@@ -2989,13 +3935,17 @@ bool NnapiGraphBackend::compileSegmentImpl(const GraphBackendRequest* request,
            startSlot, endSlot);
   DSP_DIAG(COMPILE, "NNAPI_PHASE compilation_finish_done seg[%d-%d]", startSlot, endSlot);
 
-  // Build compilation audit
+  // Build compilation audit from the actual emitted operation-to-slot map.
+  // Reaching this point means every emitted operation was classified against
+  // the pinned device and the complete model compiled successfully.
+  const std::unordered_set<int> compiledSourceSlots(
+      operationSourceSlots.begin(), operationSourceSlots.end());
   for (int i = startSlot; i <= endSlot; i++) {
     CompilationAuditEntry entry;
     entry.slotIndex = i;
     entry.opName = slots[i].ident.opName;
     int minApi = getMinApiLevel(slots[i].ident.opName);
-    entry.wasCompiled = (getNnapiOpCode(slots[i].ident.opName) >= 0 && apiLevel_ >= minApi);
+    entry.wasCompiled = compiledSourceSlots.count(i) != 0;
     if (!entry.wasCompiled) {
       if (apiLevel_ < minApi) {
         entry.reason = "requires API " + std::to_string(minApi) + " (device is " +
@@ -3005,6 +3955,18 @@ bool NnapiGraphBackend::compileSegmentImpl(const GraphBackendRequest* request,
       }
     }
     compiled->compilationAudit.push_back(entry);
+  }
+  const bool completeAudit = std::all_of(
+      compiled->compilationAudit.begin(), compiled->compilationAudit.end(),
+      [](const CompilationAuditEntry& entry) { return entry.wasCompiled; });
+  if (!completeAudit) {
+    DSP_DIAG(COMPILE,
+             "NNAPI_COMPILATION_AUDIT_REJECTED device=%s seg[%d-%d] "
+             "reason=uncovered_source_slot",
+             selectedDeviceName_.empty() ? "nnapi-default"
+                                         : selectedDeviceName_.c_str(),
+             startSlot, endSlot);
+    return false;
   }
 
   DSP_DIAG(COMPILE, "NnapiGraphBackend: compiled segment [%d-%d] with %d inputs, %d outputs (%d ops) on API %d",
@@ -3035,10 +3997,21 @@ bool NnapiGraphBackend::compileSegmentImpl(const GraphBackendRequest* request,
             }),
         compiledArtifacts_.end());
     compiledArtifacts_.push_back(compiled);
+    lastCompilationAudit_ = compiled->compilationAudit;
+    seg.compilationAudit = compiled->compilationAudit;
+    seg.setCompiledGraphBackendArtifact(
+        this, shapeKey, compiled, compiled->ownedBytes());
   }
-  lastCompilationAudit_ = compiled->compilationAudit;
-  seg.compilationAudit = compiled->compilationAudit;
-  seg.setCompiledGraphBackendArtifact(this, shapeKey, compiled);
+
+  if (persistentCacheConfigured) {
+    const bool metadataSaved = ReplayCacheManager::getInstance().saveEntry(
+        persistentCacheDevice, persistentCacheEntry);
+    DSP_DIAG(COMPILE,
+             "NNAPI_DSP_CACHE_METADATA device=%s seg[%d-%d] candidate=%s saved=%d",
+             selectedDeviceName_.empty() ? "nnapi-default" : selectedDeviceName_.c_str(),
+             startSlot, endSlot, persistentCacheCandidate ? "hit" : "miss",
+             metadataSaved ? 1 : 0);
+  }
 
   return true;
 }
@@ -3051,9 +4024,13 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                                           void* stream) {
   int startSlot = seg.def.startSlot;
   int endSlot = seg.def.endSlot;
+  const char* executionDevice =
+      selectedDeviceName_.empty() ? "nnapi-default" : selectedDeviceName_.c_str();
   if (seg.compiledGraphBackendArtifactOwner != this ||
       !seg.compiledGraphBackendArtifact) {
-    return Status::KERNEL_FAILURE;
+    return nnapiFailure(
+        startSlot, endSlot, executionDevice,
+        "NNAPI execution has no segment-owned compiled artifact or the artifact belongs to another backend");
   }
   auto compiledHandle = std::static_pointer_cast<CompiledModel>(
       seg.compiledGraphBackendArtifact);
@@ -3062,7 +4039,15 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   if (!compiled->valid || !compiled->compilation ||
       compiled->startSlot != startSlot || compiled->endSlot != endSlot ||
       compiled->shapeKey != seg.def.shapeKeyState.compiledShapeKey) {
-    return Status::KERNEL_FAILURE;
+    return nnapiFailure(
+        startSlot, endSlot, executionDevice,
+        "NNAPI compiled artifact validation failed: valid=" +
+            std::to_string(compiled->valid ? 1 : 0) + ", compilation=" +
+            std::to_string(compiled->compilation != nullptr ? 1 : 0) +
+            ", artifactSlots=" + std::to_string(compiled->startSlot) + "-" +
+            std::to_string(compiled->endSlot) + ", artifactShapeKey=" +
+            std::to_string(compiled->shapeKey) + ", planShapeKey=" +
+            std::to_string(seg.def.shapeKeyState.compiledShapeKey));
   }
 
   auto matchesCompiledDescriptor = [](NDArray* array, DataType expectedDataType,
@@ -3131,8 +4116,16 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   ANeuralNetworksExecution* execution = nullptr;
   int result = ANeuralNetworksExecution_create(compiled->compilation, &execution);
   if (result != ANEURALNETWORKS_NO_ERROR || !execution) {
-    DSP_DIAG(EXECUTE, "NnapiGraphBackend: failed to create execution: %d", result);
-    return Status::KERNEL_FAILURE;
+    DSP_DIAG(EXECUTE,
+             "NnapiGraphBackend: failed to create execution: %s (%d)",
+             nnapiStatusName(result), result);
+    if (result != ANEURALNETWORKS_NO_ERROR) {
+      return nnapiApiFailure(startSlot, endSlot, executionDevice,
+                             "ANeuralNetworksExecution_create", result);
+    }
+    return nnapiFailure(
+        startSlot, endSlot, executionDevice,
+        "ANeuralNetworksExecution_create returned ANEURALNETWORKS_NO_ERROR (0) but produced a null execution");
   }
 
 #if defined(__ANDROID_API__) && __ANDROID_API__ >= 31
@@ -3145,10 +4138,12 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     result = ANeuralNetworksExecution_enableInputAndOutputPadding(execution, true);
     if (result != ANEURALNETWORKS_NO_ERROR) {
       DSP_DIAG(EXECUTE,
-               "NnapiGraphBackend: failed to enable NNAPI operand padding: %d",
-               result);
+               "NnapiGraphBackend: failed to enable NNAPI operand padding: %s (%d)",
+               nnapiStatusName(result), result);
       ANeuralNetworksExecution_free(execution);
-      return Status::KERNEL_FAILURE;
+      return nnapiApiFailure(
+          startSlot, endSlot, executionDevice,
+          "ANeuralNetworksExecution_enableInputAndOutputPadding", result);
     }
   }
 #else
@@ -3190,7 +4185,11 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     if (!arr) {
       DSP_DIAG(EXECUTE, "NnapiGraphBackend: null input array for source %d", mapping.sourceIndex);
       ANeuralNetworksExecution_free(execution);
-      return Status::KERNEL_FAILURE;
+      return nnapiFailure(
+          startSlot, endSlot, executionDevice,
+          "NNAPI input binding resolved a null array: input=" +
+              std::to_string(idx) + ", sourceSlot=" +
+              std::to_string(mapping.sourceIndex));
     }
     DataBuffer* inputDataBuffer = arr->dataBuffer();
     if (inputDataBuffer == nullptr || !inputDataBuffer->isValid()) {
@@ -3200,7 +4199,11 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                startSlot, endSlot, idx, mapping.sourceIndex, (void*)arr,
                (void*)inputDataBuffer);
       ANeuralNetworksExecution_free(execution);
-      return Status::KERNEL_FAILURE;
+      return nnapiFailure(
+          startSlot, endSlot, executionDevice,
+          "NNAPI input target has no valid DataBuffer: input=" +
+              std::to_string(idx) + ", sourceSlot=" +
+              std::to_string(mapping.sourceIndex));
     }
 
     if (!matchesCompiledDescriptor(arr, mapping.sourceDataType,
@@ -3215,7 +4218,15 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
           static_cast<int>(arr->dataType()), mapping.dimensions.size(),
           arr->rankOf());
       ANeuralNetworksExecution_free(execution);
-      return Status::KERNEL_FAILURE;
+      return nnapiFailure(
+          startSlot, endSlot, executionDevice,
+          "NNAPI input descriptor differs from the compiled operand: input=" +
+              std::to_string(idx) + ", sourceSlot=" +
+              std::to_string(mapping.sourceIndex) + ", expectedDtype=" +
+              std::to_string(static_cast<int>(mapping.sourceDataType)) +
+              ", actualDtype=" + std::to_string(static_cast<int>(arr->dataType())) +
+              ", expectedRank=" + std::to_string(mapping.dimensions.size()) +
+              ", actualRank=" + std::to_string(arr->rankOf()));
     }
 
     // Ensure data is on host and contiguous
@@ -3232,24 +4243,48 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     size_t bufferSize = 0;
     if (mapping.boundaryTransform ==
         CompiledModel::BoundaryTransform::QUANTIZE_ASYMM_SIGNED) {
+      const bool signedPointwise =
+          compiled->backendCacheAbi == kTensorG3SignedPointwiseLoweringAbi;
       if (!std::isfinite(mapping.quantizationScale) ||
           mapping.quantizationScale <= 0.0f ||
+          (!signedPointwise && mapping.quantizationZeroPoint != 0) ||
           (mapping.sourceDataType != DataType::FLOAT32 &&
            mapping.sourceDataType != DataType::HALF)) {
-        DSP_DIAG(EXECUTE,
-                 "NNAPI_Q4K_INPUT_QUANTIZATION_FAILED seg[%d-%d] input=%u "
-                 "source_slot=%d dtype=%d scale=%.8g",
-                 startSlot, endSlot, idx, mapping.sourceIndex,
-                 static_cast<int>(mapping.sourceDataType),
-                 mapping.quantizationScale);
+        if (signedPointwise) {
+          DSP_DIAG(EXECUTE,
+                   "NNAPI_SIGNED_POINTWISE_INPUT_QUANTIZATION_FAILED "
+                   "seg[%d-%d] input=%u source_slot=%d dtype=%d scale=%.8g",
+                   startSlot, endSlot, idx, mapping.sourceIndex,
+                   static_cast<int>(mapping.sourceDataType),
+                   mapping.quantizationScale);
+        } else {
+          DSP_DIAG(EXECUTE,
+                   "NNAPI_Q4K_INPUT_QUANTIZATION_FAILED seg[%d-%d] input=%u "
+                   "source_slot=%d dtype=%d scale=%.8g",
+                   startSlot, endSlot, idx, mapping.sourceIndex,
+                   static_cast<int>(mapping.sourceDataType),
+                   mapping.quantizationScale);
+        }
         ANeuralNetworksExecution_free(execution);
-        return Status::KERNEL_FAILURE;
+        return nnapiFailure(
+            startSlot, endSlot, executionDevice,
+            std::string(signedPointwise
+                            ? "NNAPI signed-pointwise input quantization metadata is invalid"
+                            : "NNAPI Q4K input quantization metadata is invalid") +
+                ": input=" + std::to_string(idx) + ", sourceSlot=" +
+                std::to_string(mapping.sourceIndex) + ", dtype=" +
+                std::to_string(static_cast<int>(mapping.sourceDataType)) +
+                ", scale=" + std::to_string(mapping.quantizationScale) +
+                ", zeroPoint=" + std::to_string(mapping.quantizationZeroPoint));
       }
       quantizedInputCopies.emplace_back(
           static_cast<size_t>(contiguous->lengthOf()));
       auto& quantized = quantizedInputCopies.back();
       LongType saturatedLow = 0;
       LongType saturatedHigh = 0;
+      float observedMinimum = std::numeric_limits<float>::infinity();
+      float observedMaximum = -std::numeric_limits<float>::infinity();
+      float observedAbsoluteMaximum = 0.0f;
       const float* floatValues =
           mapping.sourceDataType == DataType::FLOAT32
               ? contiguous->bufferAsT<float>()
@@ -3258,54 +4293,145 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
           mapping.sourceDataType == DataType::HALF
               ? contiguous->bufferAsT<float16>()
               : nullptr;
+      const bool affineSigned = mapping.quantizationZeroPoint != 0;
+      const float admittedAbsoluteMaximum =
+          mapping.calibrationAbsoluteMaximum >= 0.0f
+              ? std::nextafter(mapping.calibrationAbsoluteMaximum,
+                               std::numeric_limits<float>::infinity())
+              : mapping.quantizationScale *
+                    sd::ops::helpers::SYMMETRIC_INT8_QUANT_MAX;
+      const float admittedMinimum = affineSigned
+          ? (static_cast<int32_t>(std::numeric_limits<int8_t>::min()) -
+             mapping.quantizationZeroPoint) * mapping.quantizationScale
+          : -admittedAbsoluteMaximum;
+      const float admittedMaximum = affineSigned
+          ? (static_cast<int32_t>(std::numeric_limits<int8_t>::max()) -
+             mapping.quantizationZeroPoint) * mapping.quantizationScale
+          : admittedAbsoluteMaximum;
       for (LongType element = 0; element < contiguous->lengthOf(); ++element) {
         const float value = floatValues != nullptr
                                 ? floatValues[element]
                                 : static_cast<float>(halfValues[element]);
         if (!std::isfinite(value)) {
-          DSP_DIAG(EXECUTE,
-                   "NNAPI_Q4K_INPUT_QUANTIZATION_FAILED seg[%d-%d] input=%u "
-                   "source_slot=%d element=%lld reason=non_finite",
-                   startSlot, endSlot, idx, mapping.sourceIndex,
-                   static_cast<long long>(element));
+          if (signedPointwise) {
+            DSP_DIAG(EXECUTE,
+                     "NNAPI_SIGNED_POINTWISE_INPUT_QUANTIZATION_FAILED "
+                     "seg[%d-%d] input=%u source_slot=%d element=%lld "
+                     "reason=non_finite",
+                     startSlot, endSlot, idx, mapping.sourceIndex,
+                     static_cast<long long>(element));
+          } else {
+            DSP_DIAG(EXECUTE,
+                     "NNAPI_Q4K_INPUT_QUANTIZATION_FAILED seg[%d-%d] input=%u "
+                     "source_slot=%d element=%lld reason=non_finite",
+                     startSlot, endSlot, idx, mapping.sourceIndex,
+                     static_cast<long long>(element));
+          }
           ANeuralNetworksExecution_free(execution);
-          return Status::KERNEL_FAILURE;
+          return nnapiFailure(
+              startSlot, endSlot, executionDevice,
+              std::string(signedPointwise
+                              ? "NNAPI signed-pointwise input contains a non-finite value"
+                              : "NNAPI Q4K input contains a non-finite value") +
+                  ": input=" + std::to_string(idx) + ", sourceSlot=" +
+                  std::to_string(mapping.sourceIndex) + ", element=" +
+                  std::to_string(element));
         }
-        const float scaledValue = value / mapping.quantizationScale;
-        if (scaledValue < -sd::ops::helpers::SYMMETRIC_INT8_QUANT_MAX) {
+        observedMinimum = std::min(observedMinimum, value);
+        observedMaximum = std::max(observedMaximum, value);
+        observedAbsoluteMaximum =
+            std::max(observedAbsoluteMaximum, std::abs(value));
+        if (value < std::nextafter(
+                        admittedMinimum,
+                        -std::numeric_limits<float>::infinity())) {
           ++saturatedLow;
-        } else if (scaledValue >
-                   sd::ops::helpers::SYMMETRIC_INT8_QUANT_MAX) {
+        } else if (value > std::nextafter(
+                               admittedMaximum,
+                               std::numeric_limits<float>::infinity())) {
           ++saturatedHigh;
         }
-        quantized[static_cast<size_t>(element)] =
-            sd::ops::helpers::quantizeSymmetricInt8(
-                value, mapping.quantizationScale);
+        if (affineSigned) {
+          const float shifted =
+              std::round(value / mapping.quantizationScale) +
+              static_cast<float>(mapping.quantizationZeroPoint);
+          const float clamped = std::max(
+              static_cast<float>(std::numeric_limits<int8_t>::min()),
+              std::min(
+                  static_cast<float>(std::numeric_limits<int8_t>::max()),
+                  shifted));
+          quantized[static_cast<size_t>(element)] =
+              static_cast<int8_t>(clamped);
+        } else {
+          quantized[static_cast<size_t>(element)] =
+              sd::ops::helpers::quantizeSymmetricInt8(
+                  value, mapping.quantizationScale);
+        }
       }
       if (saturatedLow != 0 || saturatedHigh != 0) {
-        DSP_DIAG(
-            FALLBACK,
-            "NNAPI_Q4K_PLAN_RANGE_REJECTED seg[%d-%d] input=%u "
-            "source_slot=%d scale=%.8g saturated_low=%lld "
-            "saturated_high=%lld reason=outside_plan_calibration",
-            startSlot, endSlot, idx, mapping.sourceIndex,
-            mapping.quantizationScale,
-            static_cast<long long>(saturatedLow),
-            static_cast<long long>(saturatedHigh));
+        if (signedPointwise) {
+          DSP_DIAG(
+              FALLBACK,
+              "NNAPI_SIGNED_POINTWISE_PLAN_RANGE_REJECTED seg[%d-%d] input=%u "
+              "source_slot=%d admitted_absmax=%.8g scale=%.8g "
+              "observed_min=%.8g observed_max=%.8g observed_absmax=%.8g "
+              "saturated_low=%lld saturated_high=%lld "
+              "reason=outside_plan_calibration",
+              startSlot, endSlot, idx, mapping.sourceIndex,
+              mapping.calibrationAbsoluteMaximum, mapping.quantizationScale,
+              observedMinimum, observedMaximum, observedAbsoluteMaximum,
+              static_cast<long long>(saturatedLow),
+              static_cast<long long>(saturatedHigh));
+        } else {
+          DSP_DIAG(
+              FALLBACK,
+              "NNAPI_Q4K_PLAN_RANGE_REJECTED seg[%d-%d] input=%u "
+              "source_slot=%d admitted_absmax=%.8g scale=%.8g "
+              "observed_min=%.8g observed_max=%.8g observed_absmax=%.8g "
+              "saturated_low=%lld saturated_high=%lld "
+              "reason=outside_plan_calibration",
+              startSlot, endSlot, idx, mapping.sourceIndex,
+              mapping.calibrationAbsoluteMaximum, mapping.quantizationScale,
+              observedMinimum, observedMaximum, observedAbsoluteMaximum,
+              static_cast<long long>(saturatedLow),
+              static_cast<long long>(saturatedHigh));
+        }
         ANeuralNetworksExecution_free(execution);
-        return Status::BAD_GRAPH;
+        return nnapiFailure(
+            startSlot, endSlot, executionDevice,
+            std::string(signedPointwise
+                            ? "NNAPI signed-pointwise input exceeded the compiled calibration range"
+                            : "NNAPI Q4K input exceeded the compiled calibration range") +
+                ": input=" + std::to_string(idx) + ", sourceSlot=" +
+                std::to_string(mapping.sourceIndex) + ", observedMin=" +
+                std::to_string(observedMinimum) + ", observedMax=" +
+                std::to_string(observedMaximum) + ", admittedMin=" +
+                std::to_string(admittedMinimum) + ", admittedMax=" +
+                std::to_string(admittedMaximum) + ", saturatedLow=" +
+                std::to_string(saturatedLow) + ", saturatedHigh=" +
+                std::to_string(saturatedHigh));
       }
       buffer = quantized.data();
       bufferSize = quantized.size() * sizeof(int8_t);
-      DSP_DIAG(EXECUTE,
-               "NNAPI_Q4K_INPUT_QUANTIZED seg[%d-%d] input=%u "
-               "source_slot=%d elements=%lld scale=%.8g zero_point=%d "
-               "saturated_low=%lld saturated_high=%lld",
-               startSlot, endSlot, idx, mapping.sourceIndex,
-               static_cast<long long>(contiguous->lengthOf()),
-               mapping.quantizationScale, mapping.quantizationZeroPoint,
-               static_cast<long long>(saturatedLow),
-               static_cast<long long>(saturatedHigh));
+      if (signedPointwise) {
+        DSP_DIAG(EXECUTE,
+                 "NNAPI_SIGNED_POINTWISE_INPUT_QUANTIZED seg[%d-%d] input=%u "
+                 "source_slot=%d elements=%lld admitted_absmax=%.8g "
+                 "scale=%.8g zero_point=%d",
+                 startSlot, endSlot, idx, mapping.sourceIndex,
+                 static_cast<long long>(contiguous->lengthOf()),
+                 mapping.calibrationAbsoluteMaximum,
+                 mapping.quantizationScale, mapping.quantizationZeroPoint);
+      } else {
+        DSP_DIAG(EXECUTE,
+                 "NNAPI_Q4K_INPUT_QUANTIZED seg[%d-%d] input=%u "
+                 "source_slot=%d elements=%lld scale=%.8g zero_point=%d "
+                 "saturated_low=%lld saturated_high=%lld",
+                 startSlot, endSlot, idx, mapping.sourceIndex,
+                 static_cast<long long>(contiguous->lengthOf()),
+                 mapping.quantizationScale, mapping.quantizationZeroPoint,
+                 static_cast<long long>(saturatedLow),
+                 static_cast<long long>(saturatedHigh));
+      }
     } else {
       if (mapping.sourceDataType == DataType::INT64 &&
           mapping.bindingDataType == DataType::INT32) {
@@ -3320,7 +4446,13 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                      static_cast<long long>(element),
                      static_cast<long long>(values[element]));
             ANeuralNetworksExecution_free(execution);
-            return Status::KERNEL_FAILURE;
+            return nnapiFailure(
+                startSlot, endSlot, executionDevice,
+                "NNAPI gather index cannot be represented as INT32: input=" +
+                    std::to_string(idx) + ", sourceSlot=" +
+                    std::to_string(mapping.sourceIndex) + ", element=" +
+                    std::to_string(element) + ", value=" +
+                    std::to_string(values[element]));
           }
         }
       }
@@ -3342,7 +4474,14 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                  static_cast<int>(mapping.bindingDataType),
                  static_cast<int>(contiguous->dataType()));
         ANeuralNetworksExecution_free(execution);
-        return Status::KERNEL_FAILURE;
+        return nnapiFailure(
+            startSlot, endSlot, executionDevice,
+            "NNAPI cast input still differs from the compiled operand: input=" +
+                std::to_string(idx) + ", sourceSlot=" +
+                std::to_string(mapping.sourceIndex) + ", expectedDtype=" +
+                std::to_string(static_cast<int>(mapping.bindingDataType)) +
+                ", actualDtype=" +
+                std::to_string(static_cast<int>(contiguous->dataType())));
       }
       buffer = contiguous->buffer();
       bufferSize = contiguous->lengthOf() * contiguous->sizeOfT();
@@ -3371,7 +4510,13 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         if (bufferSize >
             std::numeric_limits<size_t>::max() - paddingMask - alignmentSlack) {
           ANeuralNetworksExecution_free(execution);
-          return Status::KERNEL_FAILURE;
+          return nnapiFailure(
+              startSlot, endSlot, executionDevice,
+              "NNAPI input staging size overflow: input=" +
+                  std::to_string(idx) + ", rawBytes=" +
+                  std::to_string(bufferSize) + ", alignment=" +
+                  std::to_string(preferredAlignment) + ", padding=" +
+                  std::to_string(preferredPadding));
         }
         const size_t boundBytes = (bufferSize + paddingMask) & ~paddingMask;
 
@@ -3405,9 +4550,12 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     result = ANeuralNetworksExecution_setInput(
         execution, idx, nullptr, buffer, bufferSize);
     if (result != ANEURALNETWORKS_NO_ERROR) {
-      DSP_DIAG(EXECUTE, "NnapiGraphBackend: setInput failed for idx %d: %d", idx, result);
+      DSP_DIAG(EXECUTE,
+               "NnapiGraphBackend: setInput failed for idx %d: %s (%d)",
+               idx, nnapiStatusName(result), result);
       ANeuralNetworksExecution_free(execution);
-      return Status::KERNEL_FAILURE;
+      return nnapiApiFailure(startSlot, endSlot, executionDevice,
+                             "ANeuralNetworksExecution_setInput", result);
     }
   }
 
@@ -3438,7 +4586,11 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     if (!arr) {
       DSP_DIAG(EXECUTE, "NnapiGraphBackend: null output array for source %d", mapping.sourceIndex);
       ANeuralNetworksExecution_free(execution);
-      return Status::KERNEL_FAILURE;
+      return nnapiFailure(
+          startSlot, endSlot, executionDevice,
+          "NNAPI output binding resolved a null array: output=" +
+              std::to_string(idx) + ", sourceSlot=" +
+              std::to_string(mapping.sourceIndex));
     }
     DataBuffer* outputDataBuffer = arr->dataBuffer();
     if (outputDataBuffer == nullptr || !outputDataBuffer->isValid()) {
@@ -3448,7 +4600,11 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                startSlot, endSlot, idx, mapping.sourceIndex, (void*)arr,
                (void*)outputDataBuffer);
       ANeuralNetworksExecution_free(execution);
-      return Status::KERNEL_FAILURE;
+      return nnapiFailure(
+          startSlot, endSlot, executionDevice,
+          "NNAPI output target has no valid DataBuffer before binding: output=" +
+              std::to_string(idx) + ", sourceSlot=" +
+              std::to_string(mapping.sourceIndex));
     }
     recordOutputTargetIdentity("before_bind", idx, mapping.sourceIndex, arr);
     if (!matchesCompiledDescriptor(arr, mapping.sourceDataType,
@@ -3463,7 +4619,15 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
           static_cast<int>(arr->dataType()), mapping.dimensions.size(),
           arr->rankOf());
       ANeuralNetworksExecution_free(execution);
-      return Status::KERNEL_FAILURE;
+      return nnapiFailure(
+          startSlot, endSlot, executionDevice,
+          "NNAPI output descriptor differs from the compiled operand: output=" +
+              std::to_string(idx) + ", sourceSlot=" +
+              std::to_string(mapping.sourceIndex) + ", expectedDtype=" +
+              std::to_string(static_cast<int>(mapping.sourceDataType)) +
+              ", actualDtype=" + std::to_string(static_cast<int>(arr->dataType())) +
+              ", expectedRank=" + std::to_string(mapping.dimensions.size()) +
+              ", actualRank=" + std::to_string(arr->rankOf()));
     }
 
     uint32_t preferredAlignment = 1;
@@ -3482,10 +4646,17 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
           (preferredPadding & (preferredPadding - 1)) != 0) {
         DSP_DIAG(EXECUTE,
                  "NnapiGraphBackend: invalid preferred output layout for "
-                 "output %u: status=%d alignment=%u padding=%u",
-                 idx, result, preferredAlignment, preferredPadding);
+                 "output %u: status=%s (%d) alignment=%u padding=%u",
+                 idx, nnapiStatusName(result), result,
+                 preferredAlignment, preferredPadding);
         ANeuralNetworksExecution_free(execution);
-        return Status::KERNEL_FAILURE;
+        return nnapiFailure(
+            startSlot, endSlot, executionDevice,
+            "NNAPI preferred output layout is invalid: output=" +
+                std::to_string(idx) + ", apiStatus=" +
+                nnapiStatusName(result) + " (" + std::to_string(result) +
+                "), alignment=" + std::to_string(preferredAlignment) +
+                ", padding=" + std::to_string(preferredPadding));
       }
     }
 #endif
@@ -3502,7 +4673,13 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                idx, mapping.sourceIndex, static_cast<long long>(outputLength),
                elementSize);
       ANeuralNetworksExecution_free(execution);
-      return Status::KERNEL_FAILURE;
+      return nnapiFailure(
+          startSlot, endSlot, executionDevice,
+          "NNAPI output staging capacity is invalid: output=" +
+              std::to_string(idx) + ", sourceSlot=" +
+              std::to_string(mapping.sourceIndex) + ", length=" +
+              std::to_string(outputLength) + ", elementBytes=" +
+              std::to_string(elementSize));
     }
 
     const size_t rawBytes = static_cast<size_t>(outputLength) * elementSize;
@@ -3510,14 +4687,25 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     const size_t alignmentSlack = static_cast<size_t>(preferredAlignment - 1);
     if (rawBytes > maxBufferBytes - paddingMask) {
       ANeuralNetworksExecution_free(execution);
-      return Status::KERNEL_FAILURE;
+      return nnapiFailure(
+          startSlot, endSlot, executionDevice,
+          "NNAPI output padded-size overflow: output=" +
+              std::to_string(idx) + ", rawBytes=" +
+              std::to_string(rawBytes) + ", padding=" +
+              std::to_string(preferredPadding));
     }
     const size_t boundBytes = (rawBytes + paddingMask) & ~paddingMask;
     const size_t guardBytes = 2 * kNnapiOutputGuardBytes;
     if (alignmentSlack > maxBufferBytes - guardBytes ||
         boundBytes > maxBufferBytes - guardBytes - alignmentSlack) {
       ANeuralNetworksExecution_free(execution);
-      return Status::KERNEL_FAILURE;
+      return nnapiFailure(
+          startSlot, endSlot, executionDevice,
+          "NNAPI output guarded staging-size overflow: output=" +
+              std::to_string(idx) + ", boundBytes=" +
+              std::to_string(boundBytes) + ", alignment=" +
+              std::to_string(preferredAlignment) + ", guardBytes=" +
+              std::to_string(guardBytes));
     }
 
     stagedOutputs.emplace_back();
@@ -3553,9 +4741,12 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     result = ANeuralNetworksExecution_setOutput(
         execution, idx, nullptr, buffer, boundBytes);
     if (result != ANEURALNETWORKS_NO_ERROR) {
-      DSP_DIAG(EXECUTE, "NnapiGraphBackend: setOutput failed for idx %d: %d", idx, result);
+      DSP_DIAG(EXECUTE,
+               "NnapiGraphBackend: setOutput failed for idx %d: %s (%d)",
+               idx, nnapiStatusName(result), result);
       ANeuralNetworksExecution_free(execution);
-      return Status::KERNEL_FAILURE;
+      return nnapiApiFailure(startSlot, endSlot, executionDevice,
+                             "ANeuralNetworksExecution_setOutput", result);
     }
   }
 
@@ -3569,22 +4760,27 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   ANeuralNetworksEvent* event = nullptr;
   result = ANeuralNetworksExecution_startCompute(execution, &event);
   if (result != ANEURALNETWORKS_NO_ERROR) {
-    DSP_DIAG(EXECUTE, "NnapiGraphBackend: startCompute failed: %d", result);
+    DSP_DIAG(EXECUTE, "NnapiGraphBackend: startCompute failed: %s (%d)",
+             nnapiStatusName(result), result);
     ANeuralNetworksExecution_free(execution);
-    return Status::KERNEL_FAILURE;
+    return nnapiApiFailure(startSlot, endSlot, executionDevice,
+                           "ANeuralNetworksExecution_startCompute", result);
   }
 
   DSP_DIAG(EXECUTE, "NNAPI_PHASE event_wait_begin seg[%d-%d]", startSlot, endSlot);
   result = ANeuralNetworksEvent_wait(event);
-  DSP_DIAG(EXECUTE, "NNAPI_PHASE event_wait_done seg[%d-%d] status=%d",
-            startSlot, endSlot, result);
+  DSP_DIAG(EXECUTE,
+           "NNAPI_PHASE event_wait_done seg[%d-%d] status=%s (%d)",
+           startSlot, endSlot, nnapiStatusName(result), result);
   ANeuralNetworksEvent_free(event);
   ANeuralNetworksExecution_free(execution);
 
   if (result != ANEURALNETWORKS_NO_ERROR) {
-    DSP_DIAG(EXECUTE, "NnapiGraphBackend: execution failed for segment [%d-%d]: %d",
-              startSlot, endSlot, result);
-    return Status::KERNEL_FAILURE;
+    DSP_DIAG(EXECUTE,
+             "NnapiGraphBackend: execution failed for segment [%d-%d]: %s (%d)",
+             startSlot, endSlot, nnapiStatusName(result), result);
+    return nnapiApiFailure(startSlot, endSlot, executionDevice,
+                           "ANeuralNetworksEvent_wait", result);
   }
 
   // Publish accelerator outputs only after the event completed. Staging data
@@ -3606,7 +4802,11 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                "stage=before_copyback arr=%p db=%p",
                startSlot, endSlot, idx, mapping.sourceIndex, (void*)arr,
                (void*)outputDataBuffer);
-      return Status::KERNEL_FAILURE;
+      return nnapiFailure(
+          startSlot, endSlot, executionDevice,
+          "NNAPI output target became invalid before copyback: output=" +
+              std::to_string(idx) + ", sourceSlot=" +
+              std::to_string(mapping.sourceIndex));
     }
     recordOutputTargetIdentity("before_copyback", idx, mapping.sourceIndex, arr);
 
@@ -3627,22 +4827,53 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                staging.rawBytes, staging.boundBytes, staging.alignment,
                staging.padding, prefixGuardIntact ? 1 : 0,
                suffixGuardIntact ? 1 : 0);
-      return Status::KERNEL_FAILURE;
+      return nnapiFailure(
+          startSlot, endSlot, executionDevice,
+          "NNAPI driver wrote outside the bound output buffer: output=" +
+              std::to_string(idx) + ", sourceSlot=" +
+              std::to_string(mapping.sourceIndex) + ", rawBytes=" +
+              std::to_string(staging.rawBytes) + ", boundBytes=" +
+              std::to_string(staging.boundBytes) + ", prefixGuardIntact=" +
+              std::to_string(prefixGuardIntact ? 1 : 0) +
+              ", suffixGuardIntact=" +
+              std::to_string(suffixGuardIntact ? 1 : 0));
     }
 
     std::vector<LongType> stagingShape = mapping.dimensions;
     if (mapping.boundaryTransform ==
         CompiledModel::BoundaryTransform::DEQUANTIZE_ASYMM_SIGNED) {
+      const bool signedPointwise =
+          compiled->backendCacheAbi == kTensorG3SignedPointwiseLoweringAbi;
+      const bool q4KBoundary =
+          compiled->backendCacheAbi == kTensorG3Q4LoweringAbi;
       if (mapping.bindingDataType != DataType::INT8 ||
           !std::isfinite(mapping.quantizationScale) ||
           mapping.quantizationScale <= 0.0f) {
-        DSP_DIAG(EXECUTE,
-                 "NNAPI_Q4K_OUTPUT_DEQUANTIZATION_FAILED seg[%d-%d] output=%u "
-                 "source_slot=%d binding_dtype=%d scale=%.8g",
-                 startSlot, endSlot, idx, mapping.sourceIndex,
-                 static_cast<int>(mapping.bindingDataType),
-                 mapping.quantizationScale);
-        return Status::KERNEL_FAILURE;
+        if (signedPointwise) {
+          DSP_DIAG(EXECUTE,
+                   "NNAPI_SIGNED_POINTWISE_OUTPUT_DEQUANTIZATION_FAILED "
+                   "seg[%d-%d] output=%u source_slot=%d binding_dtype=%d "
+                   "scale=%.8g",
+                   startSlot, endSlot, idx, mapping.sourceIndex,
+                   static_cast<int>(mapping.bindingDataType),
+                   mapping.quantizationScale);
+        } else {
+          DSP_DIAG(EXECUTE,
+                   "NNAPI_Q4K_OUTPUT_DEQUANTIZATION_FAILED seg[%d-%d] output=%u "
+                   "source_slot=%d binding_dtype=%d scale=%.8g",
+                   startSlot, endSlot, idx, mapping.sourceIndex,
+                   static_cast<int>(mapping.bindingDataType),
+                   mapping.quantizationScale);
+        }
+        return nnapiFailure(
+            startSlot, endSlot, executionDevice,
+            std::string(signedPointwise
+                            ? "NNAPI signed-pointwise output dequantization metadata is invalid"
+                            : "NNAPI Q4K output dequantization metadata is invalid") +
+                ": output=" + std::to_string(idx) + ", sourceSlot=" +
+                std::to_string(mapping.sourceIndex) + ", bindingDtype=" +
+                std::to_string(static_cast<int>(mapping.bindingDataType)) +
+                ", scale=" + std::to_string(mapping.quantizationScale));
       }
       std::vector<float> dequantizedValues(
           static_cast<size_t>(arr->lengthOf()));
@@ -3650,7 +4881,14 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
           reinterpret_cast<const int8_t*>(staging.data());
       float minimumValue = std::numeric_limits<float>::infinity();
       float maximumValue = -std::numeric_limits<float>::infinity();
+      LongType endpointLow = 0;
+      LongType endpointHigh = 0;
       for (LongType element = 0; element < arr->lengthOf(); ++element) {
+        if (quantizedValues[element] < -126) {
+          ++endpointLow;
+        } else if (quantizedValues[element] > 126) {
+          ++endpointHigh;
+        }
         const float value =
             (static_cast<int32_t>(quantizedValues[element]) -
              mapping.quantizationZeroPoint) *
@@ -3659,18 +4897,49 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         minimumValue = std::min(minimumValue, value);
         maximumValue = std::max(maximumValue, value);
       }
+      if (q4KBoundary && (endpointLow != 0 || endpointHigh != 0)) {
+        DSP_DIAG(
+            FALLBACK,
+            "NNAPI_Q4K_OUTPUT_RANGE_REJECTED seg[%d-%d] output=%u "
+            "source_slot=%d admitted_absmax=%.8g scale=%.8g "
+            "endpoint_low=%lld endpoint_high=%lld "
+            "reason=quantized_endpoint_saturation",
+            startSlot, endSlot, idx, mapping.sourceIndex,
+            mapping.calibrationAbsoluteMaximum, mapping.quantizationScale,
+            static_cast<long long>(endpointLow),
+            static_cast<long long>(endpointHigh));
+        return nnapiFailure(
+            startSlot, endSlot, executionDevice,
+            "NNAPI Q4K output reached reserved saturation endpoints: output=" +
+                std::to_string(idx) + ", sourceSlot=" +
+                std::to_string(mapping.sourceIndex) + ", endpointLow=" +
+                std::to_string(endpointLow) + ", endpointHigh=" +
+                std::to_string(endpointHigh) + ", scale=" +
+                std::to_string(mapping.quantizationScale));
+      }
       NDArray dequantizedOutput(dequantizedValues.data(), 'c', stagingShape,
                                 DataType::FLOAT32, arr->getContext(), false);
       dequantizedOutput.tickWriteHost();
       arr->assign(&dequantizedOutput);
-      DSP_DIAG(EXECUTE,
-               "NNAPI_Q4K_OUTPUT_DEQUANTIZED seg[%d-%d] output=%u "
-               "source_slot=%d elements=%lld scale=%.8g zero_point=%d "
-               "min=%.8g max=%.8g",
-               startSlot, endSlot, idx, mapping.sourceIndex,
-               static_cast<long long>(arr->lengthOf()),
-               mapping.quantizationScale, mapping.quantizationZeroPoint,
-               minimumValue, maximumValue);
+      if (signedPointwise) {
+        DSP_DIAG(EXECUTE,
+                 "NNAPI_SIGNED_POINTWISE_OUTPUT_DEQUANTIZED seg[%d-%d] "
+                 "output=%u source_slot=%d elements=%lld scale=%.8g "
+                 "zero_point=%d min=%.8g max=%.8g",
+                 startSlot, endSlot, idx, mapping.sourceIndex,
+                 static_cast<long long>(arr->lengthOf()),
+                 mapping.quantizationScale, mapping.quantizationZeroPoint,
+                 minimumValue, maximumValue);
+      } else {
+        DSP_DIAG(EXECUTE,
+                 "NNAPI_Q4K_OUTPUT_DEQUANTIZED seg[%d-%d] output=%u "
+                 "source_slot=%d elements=%lld scale=%.8g zero_point=%d "
+                 "min=%.8g max=%.8g",
+                 startSlot, endSlot, idx, mapping.sourceIndex,
+                 static_cast<long long>(arr->lengthOf()),
+                 mapping.quantizationScale, mapping.quantizationZeroPoint,
+                 minimumValue, maximumValue);
+      }
     } else {
       NDArray boundOutput(staging.data(), 'c', stagingShape,
                           mapping.bindingDataType, arr->getContext(), false);
@@ -3683,7 +4952,11 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                "stage=after_copyback arr=%p db=%p",
                startSlot, endSlot, idx, mapping.sourceIndex, (void*)arr,
                (void*)outputDataBuffer);
-      return Status::KERNEL_FAILURE;
+      return nnapiFailure(
+          startSlot, endSlot, executionDevice,
+          "NNAPI output target became invalid after copyback: output=" +
+              std::to_string(idx) + ", sourceSlot=" +
+              std::to_string(mapping.sourceIndex));
     }
     recordOutputTargetIdentity("after_copyback", idx, mapping.sourceIndex, arr);
     DSP_DIAG(EXECUTE,
@@ -3696,9 +4969,9 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   }
 
   DSP_DIAG(EXECUTE,
-           "NNAPI_DEVICE_EXECUTE_DONE device=%s seg[%d-%d] status=0",
+           "NNAPI_DEVICE_EXECUTE_DONE device=%s seg[%d-%d] status=%s (0)",
            selectedDeviceName_.empty() ? "nnapi-default" : selectedDeviceName_.c_str(),
-           startSlot, endSlot);
+           startSlot, endSlot, nnapiStatusName(ANEURALNETWORKS_NO_ERROR));
   DSP_DIAG(EXECUTE, "NNAPI_PHASE execute_done seg[%d-%d]", startSlot, endSlot);
   return Status::OK;
 }

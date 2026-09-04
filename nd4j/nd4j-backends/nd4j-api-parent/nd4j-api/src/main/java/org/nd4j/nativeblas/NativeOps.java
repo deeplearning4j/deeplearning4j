@@ -2140,6 +2140,12 @@ public interface NativeOps {
   default int getPlanPhase(Pointer planHandle) { return -1; }
 
   /**
+   * Get one immutable point-in-time snapshot of the native plan lifecycle.
+   * Returns a compact key/value payload consumed by DspLifecycleSnapshot.
+   */
+  default String getPlanLifecycleSnapshot(Pointer planHandle) { return "valid=false"; }
+
+  /**
    * Get the replay schedule signature hash for a segment.
    * Returns the FNV-1a hash encoding of the ordered replay unit list.
    * Zero if the segment has no replay.

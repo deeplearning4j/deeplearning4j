@@ -1699,39 +1699,18 @@ function(create_direct_instantiation_file template_file combinations output_dir 
     get_filename_component(template_name ${template_file} NAME_WE)
     file(READ "${template_file}" template_content)
 
-    # MEMORY OPTIMIZATION: Check if template has @OP_GROUP@ placeholder
-    # If yes, generate 3 versions (one per op group) to reduce per-file memory usage
+    # A direct-instantiation function has one externally visible definition per
+    # type tuple. Splitting its dispatcher by operation group would emit several
+    # different definitions of that same symbol, violating the one-definition
+    # rule. Keep operation sharding behind uniquely named implementation entry
+    # points; direct-instantiation templates must always own the full dispatcher.
     string(FIND "${template_content}" "@OP_GROUP@" has_op_group)
     if(NOT has_op_group EQUAL -1)
-        message(STATUS "🔧 Op group template detected: ${template_name} - generating 3 op group versions")
-        set(local_generated_sources ${${generated_sources_var}})
-
-        foreach(op_group 1 2 3)
-            # Create a modified template content with the op group set
-            string(REPLACE "@OP_GROUP@" "${op_group}" group_template_content "${template_content}")
-
-            # Write temporary template file for this op group
-            set(temp_template_file "${output_dir}/${template_name}_opgroup${op_group}.cu.in.tmp")
-            file(WRITE "${temp_template_file}" "${group_template_content}")
-
-            # Recursively call to process this op group version
-            # Use a different name to avoid conflicts
-            create_direct_instantiation_file_impl(
-                "${temp_template_file}"
-                "${combinations}"
-                "${output_dir}"
-                local_generated_sources
-                "${template_name}_g${op_group}")
-
-            # Clean up temp file
-            file(REMOVE "${temp_template_file}")
-        endforeach()
-
-        set(${generated_sources_var} ${local_generated_sources} PARENT_SCOPE)
-        return()
+        message(FATAL_ERROR
+            "Direct-instantiation template ${template_name} contains @OP_GROUP@; "
+            "operation-group fanout would define the same symbol more than once")
     endif()
 
-    # No @OP_GROUP@ - proceed normally
     create_direct_instantiation_file_impl("${template_file}" "${combinations}" "${output_dir}" ${generated_sources_var} "${template_name}")
     set(${generated_sources_var} ${${generated_sources_var}} PARENT_SCOPE)
 endfunction()
@@ -1749,6 +1728,16 @@ function(create_direct_instantiation_file_impl template_file combinations output
         set(file_extension "cu")
     else()
         set(file_extension "cpp")
+    endif()
+
+    # CUDA 12.6's front end and ptxas crash on the oversized pairwise shards
+    # produced on low-core runners. Each pairwise specialization contains the
+    # complete legacy op dispatcher, so isolate one dtype per translation unit.
+    # Other templates retain the normal adaptive chunk size, and CPU generation
+    # is deliberately unaffected despite sharing the same template stem.
+    set(direct_chunk_size "${MULTI_PASS_CHUNK_SIZE}")
+    if(IS_CUDA_FILE AND template_name STREQUAL "pairwise_instantiation_template_3")
+        set(direct_chunk_size 1)
     endif()
     
     # Build file header
@@ -1862,7 +1851,7 @@ function(create_direct_instantiation_file_impl template_file combinations output
         math(EXPR total_instantiations "${total_instantiations} + ${templates_added}")
 
         # Write chunk if limit reached (now counting actual template instantiations)
-        if(instantiation_count GREATER_EQUAL ${MULTI_PASS_CHUNK_SIZE})
+        if(instantiation_count GREATER_EQUAL ${direct_chunk_size})
             set(chunk_file "${output_dir}/${template_name}_direct_${chunk_index}.${file_extension}")
             write_file_if_changed("${chunk_file}" "${chunk_content}")
             list(APPEND local_generated_sources "${chunk_file}")
@@ -2562,14 +2551,24 @@ endfunction()
 function(process_cuda_comb_templates output_dir generated_sources_var)
     message(STATUS "🔧 Processing CUDA combination templates...")
 
-    # Find all CUDA combination templates
-    file(GLOB_RECURSE CUDA_COMB_TEMPLATES
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cuda/comb_compilation_units/*.cu.in")
-
-    if(NOT CUDA_COMB_TEMPLATES)
-        message(STATUS "⚠️  No CUDA combination templates found")
-        return()
-    endif()
+    # Every externally visible instantiation must have exactly one source owner.
+    # Keep this list explicit so a newly added convenience template cannot be
+    # silently discovered and emit duplicate definitions.
+    set(cuda_comb_template_dir
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cuda/comb_compilation_units")
+    set(CUDA_COMB_TEMPLATES
+        "${cuda_comb_template_dir}/broadcast_instantiation_template_3.cu.in"
+        "${cuda_comb_template_dir}/indexreduce_instantiation_template_2.cu.in"
+        "${cuda_comb_template_dir}/pairwise_instantiation_template_3.cu.in"
+        "${cuda_comb_template_dir}/reduce3_instantiation_template_2.cu.in"
+        "${cuda_comb_template_dir}/reduce_float_instantiation_template_2.cu.in"
+        "${cuda_comb_template_dir}/scalar_instantiation_template_3.cu.in")
+    foreach(cuda_comb_template IN LISTS CUDA_COMB_TEMPLATES)
+        if(NOT EXISTS "${cuda_comb_template}")
+            message(FATAL_ERROR
+                "Canonical CUDA instantiation template is missing: ${cuda_comb_template}")
+        endif()
+    endforeach()
 
     if(NOT DEFINED UNIFIED_COMBINATIONS_2 OR NOT DEFINED UNIFIED_COMBINATIONS_3)
         message(FATAL_ERROR "❌ CUDA processing requires selective rendering combinations!")
@@ -2637,13 +2636,9 @@ function(process_cuda_comb_templates output_dir generated_sources_var)
         elseif(template_name MATCHES ".*_template_2\$")
             set(combinations_to_use ${COMBINATIONS_2})
             message(STATUS "🔄 Processing 2-type CUDA template: ${template_name}")
-        elseif(template_name MATCHES "^(broadcast|pairwise|scalar)_(instantiation_template_3|exec_.*)\$")
+        elseif(template_name MATCHES "^(broadcast|pairwise|scalar)_instantiation_template_3\$")
             # OPTIMIZATION: These templates use BUILD_SINGLE_SELECTOR_THRICE which only dispatches (T, T, T)
             # Cross-type combinations are NEVER used at runtime, so only generate same-type
-            # Templates matched:
-            # - broadcast_instantiation_template_3, broadcast_exec_broadcast_with_dimension, broadcast_exec_inverse_broadcast
-            # - pairwise_instantiation_template_3, pairwise_exec_cuda_shaped
-            # - scalar_instantiation_template_3, scalar_exec_cuda_along_dimension, scalar_exec_cuda_shaped
             set(combinations_to_use ${COMBINATIONS_3_SAME})
             list(LENGTH COMBINATIONS_3_SAME same_count)
             message(STATUS "🔄 Processing 3-type SAME-TYPE CUDA template: ${template_name} (${same_count} combinations instead of ${combo_3_count})")
@@ -2886,6 +2881,28 @@ function(setup_template_processing)
         set(cached_sources "")
         set(CUSTOMOPS_GENERIC_SOURCES "" CACHE INTERNAL
             "Template-generated source files" FORCE)
+    endif()
+
+    # Older CUDA manifests may still point at operation-group or convenience
+    # sources that emitted duplicate explicit definitions. Invalidate the source
+    # list only; generated files and compiler-cache entries remain intact and the
+    # normal configure pass reconstructs the canonical manifest.
+    if(SD_CUDA AND cached_sources)
+        set(has_legacy_cuda_instantiations FALSE)
+        foreach(cached_source IN LISTS cached_sources)
+            if(cached_source MATCHES "_g[123]_direct_" OR
+               cached_source MATCHES "(pairwise_exec_cuda_shaped|scalar_exec_cuda_shaped|scalar_exec_cuda_along_dimension|broadcast_exec_broadcast_with_dimension|broadcast_exec_inverse_broadcast)")
+                set(has_legacy_cuda_instantiations TRUE)
+                break()
+            endif()
+        endforeach()
+        if(has_legacy_cuda_instantiations)
+            message(STATUS
+                "🔄 Invalidating legacy duplicate CUDA instantiation source manifest")
+            set(cached_sources "")
+            set(CUSTOMOPS_GENERIC_SOURCES "" CACHE INTERNAL
+                "Template-generated source files" FORCE)
+        endif()
     endif()
 
     if(SD_VULKAN)

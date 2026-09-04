@@ -233,6 +233,35 @@ enum class Status : int {
   EQ_FALSE = 101,
   MAYBE = 200
 };
+
+SD_INLINE const char* statusName(Status status) {
+  switch (status) {
+    case Status::OK: return "OK";
+    case Status::BAD_INPUT: return "BAD_INPUT";
+    case Status::BAD_SHAPE: return "BAD_SHAPE";
+    case Status::BAD_RANK: return "BAD_RANK";
+    case Status::BAD_PARAMS: return "BAD_PARAMS";
+    case Status::BAD_OUTPUT: return "BAD_OUTPUT";
+    case Status::BAD_RNG: return "BAD_RNG";
+    case Status::BAD_EPSILON: return "BAD_EPSILON";
+    case Status::BAD_GRADIENTS: return "BAD_GRADIENTS";
+    case Status::BAD_BIAS: return "BAD_BIAS";
+    case Status::VALIDATION: return "VALIDATION";
+    case Status::BAD_GRAPH: return "BAD_GRAPH";
+    case Status::BAD_LENGTH: return "BAD_LENGTH";
+    case Status::BAD_DIMENSIONS: return "BAD_DIMENSIONS";
+    case Status::BAD_ORDER: return "BAD_ORDER";
+    case Status::BAD_ARGUMENTS: return "BAD_ARGUMENTS";
+    case Status::DOUBLE_WRITE: return "DOUBLE_WRITE";
+    case Status::DOUBLE_READ: return "DOUBLE_READ";
+    case Status::KERNEL_FAILURE: return "KERNEL_FAILURE";
+    case Status::EQ_TRUE: return "EQ_TRUE";
+    case Status::EQ_FALSE: return "EQ_FALSE";
+    case Status::MAYBE: return "MAYBE";
+    default: return "UNKNOWN_STATUS";
+  }
+}
+
 struct ErrorResult {
   sd::Status status;
   std::string message;

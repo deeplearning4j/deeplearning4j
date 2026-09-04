@@ -40,17 +40,17 @@ import java.util.zip.ZipOutputStream;
 /**
  * In-process Tensor G3 compiler for calibrated NNAPI weight-INT8 matrix multiplies.
  *
- * <p>The compiler loads the canonical SameDiff graph, rewrites every supported
- * constant-weight {@code matmul}/{@code mmul} to the explicit five-input
- * {@code quantized_matmul}, stores its sole INT8 weight in NNAPI-native
- * {@code [N,K]} layout, removes source weights that became unreachable, and
- * writes a derived SDZ. Non-model entries are copied byte-for-byte from the
- * source archive so tokenizer, model configuration, chat template, and
- * generation assets remain bundled.</p>
+ * <p>The compiler loads the canonical SameDiff graph, rewrites supported dense
+ * constant-weight {@code matmul}/{@code mmul} nodes to the explicit five-input
+ * {@code quantized_matmul}, and annotates packed two-input Q4_K
+ * {@code ggml_qmatmul} nodes with source-bound per-operation calibration.
+ * Packed Q4 weights and the reference CPU/CUDA op ABI remain unchanged. The
+ * derived SDZ preserves every non-model entry byte-for-byte so tokenizer, model
+ * configuration, chat template, and generation assets remain bundled.</p>
  */
 public final class SdxTensorG3NnapiCompiler implements SdxModelCompiler.TargetCompiler {
     public static final String COMPILER_ID = "sdx-tensor-g3-nnapi";
-    public static final String COMPILER_VERSION = "4";
+    public static final String COMPILER_VERSION = "6";
     public static final String TARGET_SOC = "Tensor_G3";
 
     private static final String TENSOR_G3 = TARGET_SOC;
@@ -79,7 +79,8 @@ public final class SdxTensorG3NnapiCompiler implements SdxModelCompiler.TargetCo
         SdxQuantizationContract contract =
                 SdxQuantizationContract.load(requireQuantization(options));
         contract.validateForCompilation(sourceIdentity, target, options.targetSoc());
-        return "graphRewrite=quantized_matmul-5-native-nk;sdzStorage=stored-native-memory;quantization="
+        return "graphRewrite=quantized_matmul-5-native-nk+ggml-q4-calibration-sargs-v2-mixed;"
+                + "sdzStorage=stored-native-memory;quantization="
                 + contract.summaryJson();
     }
 
@@ -103,10 +104,10 @@ public final class SdxTensorG3NnapiCompiler implements SdxModelCompiler.TargetCo
                 throw new IOException("Unable to load canonical SameDiff SDZ " + source, failure);
             }
             try (SameDiff closeable = graph) {
-                int rewrites = rewriteEligibleMatmuls(closeable, contract);
-                if (rewrites == 0) {
+                int prepared = prepareEligibleMatmuls(closeable, contract);
+                if (prepared == 0) {
                     throw new IOException(
-                            "Tensor G3 NNAPI compilation found no eligible constant-weight matmul/mmul nodes");
+                            "Tensor G3 NNAPI compilation found no eligible operations covered by its quantization contract");
                 }
                 SDZSerializer.save(closeable, generated.toFile(), false, null);
             }
@@ -129,19 +130,29 @@ public final class SdxTensorG3NnapiCompiler implements SdxModelCompiler.TargetCo
         }
     }
 
-    private static int rewriteEligibleMatmuls(
+    private static int prepareEligibleMatmuls(
             SameDiff graph, SdxQuantizationContract contract) throws IOException {
-        List<SameDiffOp> candidates = new ArrayList<>();
+        List<SameDiffOp> denseCandidates = new ArrayList<>();
+        List<SameDiffOp> q4Candidates = new ArrayList<>();
         for (SameDiffOp op : new ArrayList<>(graph.getOps().values())) {
             String opName = op.getOp().opName().toLowerCase(Locale.ROOT);
             if ("matmul".equals(opName) || "mmul".equals(opName)) {
-                candidates.add(op);
+                denseCandidates.add(op);
+            } else if ("ggml_qmatmul".equals(opName) && isQ4K(op)) {
+                q4Candidates.add(op);
             }
         }
+        if (contract.isTensorG3Q4PerOperator()) {
+            return annotateQ4Matmuls(graph, q4Candidates, contract);
+        }
+        if (!q4Candidates.isEmpty()) {
+            throw new IOException(
+                    "Tensor G3 Q4_K operations require a source-bound per-op calibration contract");
+        }
 
-        int rewritten = 0;
+        int prepared = 0;
         Set<String> rewrittenWeightVariables = new HashSet<>();
-        for (SameDiffOp candidate : candidates) {
+        for (SameDiffOp candidate : denseCandidates) {
             List<String> inputs = candidate.getInputsToOp();
             if (inputs == null || inputs.size() != 2) {
                 throw unsupported(candidate, "requires exactly two inputs");
@@ -212,10 +223,74 @@ public final class SdxTensorG3NnapiCompiler implements SdxModelCompiler.TargetCo
             };
             graph.addArgsFor(replacementInputs, replacement);
             rewrittenWeightVariables.add(weightVariable.name());
-            rewritten++;
+            prepared++;
         }
         pruneUnreferencedRewrittenWeights(graph, rewrittenWeightVariables);
-        return rewritten;
+        return prepared;
+    }
+
+    private static boolean isQ4K(SameDiffOp candidate) throws IOException {
+        if (!(candidate.getOp() instanceof DynamicCustomOp)) {
+            throw unsupported(candidate, "does not expose custom-op arguments");
+        }
+        long[] integerArgs = ((DynamicCustomOp) candidate.getOp()).iArgs();
+        if (integerArgs == null || integerArgs.length == 0) {
+            throw unsupported(candidate, "has no quantization type argument");
+        }
+        return integerArgs[0] == 8L;
+    }
+
+    private static int annotateQ4Matmuls(
+            SameDiff graph,
+            List<SameDiffOp> q4Candidates,
+            SdxQuantizationContract contract) throws IOException {
+        Set<String> annotatedQ4Ops = new HashSet<>();
+        for (SameDiffOp candidate : q4Candidates) {
+            SdxQuantizationContract.OperatorCalibration calibration =
+                    contract.operatorCalibration(candidate.getName());
+            if (calibration == null) {
+                throw unsupported(candidate,
+                        "has no source-bound per-op calibration metadata");
+            }
+            List<String> inputs = candidate.getInputsToOp();
+            if (inputs == null || inputs.size() != 2) {
+                throw unsupported(candidate, "requires exactly two Q4 inputs");
+            }
+            SDVariable packedWeight = graph.getVariable(inputs.get(1));
+            if (packedWeight == null
+                    || (packedWeight.getVariableType() != VariableType.CONSTANT
+                    && packedWeight.getVariableType() != VariableType.VARIABLE)
+                    || packedWeight.getArr() == null
+                    || packedWeight.getArr().dataType() != DataType.INT8
+                    || packedWeight.getArr().rank() != 1) {
+                throw unsupported(candidate,
+                        "requires materialized inference-static rank-1 INT8 packed weights");
+            }
+            DynamicCustomOp q4 = (DynamicCustomOp) candidate.getOp();
+            long[] integerArgs = q4.iArgs();
+            if (integerArgs == null || integerArgs.length != 4
+                    || integerArgs[1] <= 0L
+                    || integerArgs[2] <= 0L || integerArgs[2] % 256L != 0L
+                    || (integerArgs[3] != 0L && integerArgs[3] != 1L)) {
+                throw unsupported(candidate, "is not a valid Q4_K contract");
+            }
+            String[] existing = q4.sArgs();
+            if (existing != null && existing.length != 0) {
+                throw unsupported(candidate,
+                        "already contains conflicting string metadata");
+            }
+            q4.addSArgument(calibration.nnapiQ4SArguments(
+                    contract.calibrationSampleCount(),
+                    contract.calibrationDatasetSha256()));
+            annotatedQ4Ops.add(candidate.getName());
+        }
+        for (String calibratedOp : contract.operatorCalibrations().keySet()) {
+            if (!annotatedQ4Ops.contains(calibratedOp)) {
+                throw new IOException("Tensor G3 NNAPI calibration references stale or "
+                        + "non-Q4 op " + calibratedOp);
+            }
+        }
+        return annotatedQ4Ops.size();
     }
 
     private static INDArray quantizeSignedSymmetricNativeNByK(INDArray weights, float scale)

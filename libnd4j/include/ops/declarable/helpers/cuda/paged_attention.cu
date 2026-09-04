@@ -23,6 +23,7 @@
 
 #include <ops/declarable/helpers/paged_attention.h>
 #include <helpers/PointersManager.h>
+#include <helpers/DebugHelper.h>
 #include <execution/cuda/LaunchDims.h>
 #include <array/NDArrayFactory.h>
 
@@ -76,7 +77,9 @@ static SD_KERNEL __launch_bounds__(256, 2) void pagedAttentionDecodeKernel(
     // Load query vector into shared memory
     extern __shared__ char smem[];
     T* qVec = reinterpret_cast<T*>(smem);                        // [headDim]
-    float* scores = reinterpret_cast<float*>(qVec + headDim);     // [ctxLen] (upper bound)
+    // scores region starts at the first 4-byte-aligned byte after qVec —
+    // must match the host-side smemBytes computation in pagedAttentionForward.
+    float* scores = reinterpret_cast<float*>(smem + ((headDim * sizeof(T) + 3) & ~3));
 
     // Cooperatively load query: query[batchIdx, 0, headIdx, :]
     int qOffset = ((batchIdx * 1 * numHeads) + headIdx) * headDim;
@@ -244,7 +247,12 @@ void pagedAttentionForward(
     int maxCtxLen = maxBlocksPerSeq * blockSize;
 
     // Shared memory: qVec[headDim] + scores[maxCtxLen]
-    int smemBytes = headDim * sizeof(float) + maxCtxLen * sizeof(float);
+    // scores are always float (softmax computed in fp32); qVec uses T's size.
+    // Alignment: qVec is T-typed, scores follow it — pad so the float* region
+    // starts at a 4-byte boundary for all T sizes.
+    int qVecBytes = headDim * static_cast<int>(query->sizeOfT());
+    int qVecPadded = (qVecBytes + 3) & ~3;
+    int smemBytes = qVecPadded + maxCtxLen * static_cast<int>(sizeof(float));
     // Cap at device limit, fall back to smaller ctxLen if needed
     if (smemBytes > 48 * 1024) {
         // Limit to 48KB shared memory; reduce maxCtxLen if needed
@@ -275,6 +283,11 @@ void pagedAttentionForward(
             reinterpret_cast<const int*>(contextLens->specialBuffer()),
             reinterpret_cast<half*>(output->specialBuffer()),
             numHeads, numKvHeads, headDim, blockSize, maxBlocksPerSeq, scale);
+    } else {
+        // No dispatch = no output write = a silently wrong result. Fail loudly.
+        // The op's DECLARE_TYPES restricts inputs to FLOAT32/HALF; reaching this
+        // line means the descriptor contract was violated.
+        THROW_EXCEPTION("pagedAttentionForward: unsupported data type (need FLOAT32 or HALF)");
     }
 
     pm.synchronize();
@@ -323,6 +336,10 @@ void pagedKvCacheAppend(
             reinterpret_cast<const int*>(pageTables->specialBuffer()),
             reinterpret_cast<const int*>(contextLens->specialBuffer()),
             numKvHeads, headDim, blockSize, maxBlocksPerSeq, newLen, batch);
+    } else {
+        // No dispatch = the pools are never written = silent corruption on later
+        // reads of the appended positions. Fail loudly instead.
+        THROW_EXCEPTION("pagedKvCacheAppend: unsupported data type (need FLOAT32 or HALF)");
     }
 
     pm.synchronize();

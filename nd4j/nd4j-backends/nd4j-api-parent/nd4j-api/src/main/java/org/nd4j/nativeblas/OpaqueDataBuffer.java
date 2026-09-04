@@ -940,13 +940,9 @@ public class OpaqueDataBuffer extends Pointer {
         }
 
         // Use tryMarkForDeallocation() directly to coordinate with any GC-based deallocator.
-        // This is the atomic flag that prevents double-free. We call dbClose directly here
-        // instead of delegating to OpaqueDataBufferDeallocator.deallocate() because:
-        // 1. The deallocator may have been marked "deallocated" without actually calling dbClose
-        //    (e.g. if buffer.isNull() was true at the time)
-        // 2. The DeallocatorService PhantomReference path has a strong reference cycle
-        //    (OpaqueDataBufferDeallocator implements both Deallocatable and Deallocator with
-        //    deallocator() returning this), so GC-based cleanup never fires
+        // This is the atomic flag that prevents double-free. Explicit close uses this public
+        // facade while the PhantomReference cleanup action uses a detached raw-address facade;
+        // both ultimately meet the native InteropDataBuffer tryClose guard.
         if (!this.isNull() && tryMarkForDeallocation()) {
             try {
                 printAllocationTraceIfNeeded();

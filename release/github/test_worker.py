@@ -529,7 +529,7 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("toolchainCache", preparer)
         self.assertIn("deeplearning4j/releases/toolchain-cache/v1", preparer)
 
-    def test_shared_worker_publishes_prebuilt_snapshots_with_existing_central_credentials(self):
+    def test_shared_worker_selects_snapshot_or_manual_release_publication(self):
         action = (ROOT / ".github/actions/run-release-worker/action.yml").read_text()
         workflow = (ROOT / ".github/workflows/_release-worker.yml").read_text()
         preparer = (ROOT / "release/github/prepare-worker.py").read_text()
@@ -542,12 +542,20 @@ class WorkflowMatrixTests(unittest.TestCase):
         )
         self.assertIn("worker-success", action)
         self.assertIn('subparsers.add_parser("release-version")', preparer)
+        self.assertIn("release-version:\n    required: true", action)
+        self.assertIn("snapshot-version:\n    required: true", action)
+        self.assertIn('--release-version "${INPUT_RELEASE_VERSION}"', action)
+        self.assertIn('--snapshot-version "${INPUT_SNAPSHOT_VERSION}"', action)
         self.assertIn("CENTRAL_SONATYPE_TOKEN_USERNAME:\n        required: true", workflow)
         self.assertIn("CENTRAL_SONATYPE_TOKEN_PASSWORD:\n        required: true", workflow)
+        self.assertIn("Validate publication configuration", workflow)
+        self.assertIn("deployToReleaseStaging must be 0 or 1", workflow)
         self.assertEqual(1, workflow.count("name: Download staged worker results"))
         self.assertEqual(1, workflow.count("name: Publish merged staged Maven snapshot"))
         self.assertEqual(1, workflow.count("repository.py merge"))
         self.assertEqual(1, workflow.count("repository.py deploy-snapshot"))
+        self.assertEqual(1, workflow.count("repository.py sign-bundle"))
+        self.assertEqual(1, workflow.count("repository.py upload"))
         self.assertEqual(1, workflow.count("server-id: central-portal-snapshots"))
         self.assertEqual(1, workflow.count('-name worker-config.json'))
         self.assertEqual(
@@ -561,10 +569,17 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("merge-multiple: false", workflow)
         self.assertIn("if: ${{ always() && needs.matrix.result == 'success'", workflow)
         self.assertNotIn("endsWith(steps.worker.outputs['release-version']", workflow)
+        self.assertNotIn("--automatic", workflow)
         caller = ROOT / ".github/workflows/build-deploy-cross-platform.yml"
         contents = caller.read_text()
         self.assertIn("uses: ./.github/workflows/_release-worker.yml", contents)
         self.assertIn("secrets: inherit", contents)
+        for forwarded in (
+            "releaseVersion", "snapshotVersion", "deployToReleaseStaging", "dryRun"
+        ):
+            self.assertIn(
+                f"      {forwarded}: ${{{{ inputs.{forwarded} }}}}", contents
+            )
 
     def test_staged_worker_artifacts_can_be_republished_without_rebuilding(self):
         workflow = (
@@ -586,6 +601,10 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("repository.py merge", workflow)
         self.assertIn("repository.py deploy-snapshot", workflow)
         self.assertEqual(1, workflow.count("repository.py deploy-snapshot"))
+        self.assertEqual(1, workflow.count("repository.py sign-bundle"))
+        self.assertEqual(1, workflow.count("repository.py upload"))
+        self.assertIn("Release recovery requires a non-SNAPSHOT artifact version", workflow)
+        self.assertNotIn("Skipping recovery publication because version", workflow)
         self.assertNotIn("run-release-worker", workflow)
 
         caller = (
@@ -599,6 +618,11 @@ class WorkflowMatrixTests(unittest.TestCase):
             "uses: ./.github/workflows/publish-release-worker-artifacts.yml",
             caller,
         )
+        self.assertIn(
+            "      deployToReleaseStaging: ${{ inputs.deployToReleaseStaging }}",
+            caller,
+        )
+        self.assertIn("      dryRun: ${{ inputs.dryRun }}", caller)
 
     def test_github_actions_use_current_node24_runtimes(self):
         github_files = sorted((ROOT / ".github").rglob("*.yml"))
@@ -1101,6 +1125,16 @@ class WorkerConfigTests(unittest.TestCase):
                 for target in dependency_cache["targets"]
             },
         )
+
+    def test_config_preserves_explicit_release_and_source_snapshot_versions(self):
+        config = prepare_worker.worker_config(
+            self.args(
+                release_version="1.0.0-M3",
+                snapshot_version="1.0.0-SNAPSHOT",
+            )
+        )
+        self.assertEqual("1.0.0-M3", config["releaseVersion"])
+        self.assertEqual("1.0.0-SNAPSHOT", config["snapshotVersion"])
 
     def test_dgx_cross_config_uses_refreshable_local_compiler_snapshot(self):
         config = prepare_worker.worker_config(

@@ -36,6 +36,7 @@ CudaGraphReplayHandle::CudaGraphReplayHandle(int deviceId)
 }
 
 CudaGraphReplayHandle::~CudaGraphReplayHandle() {
+  destroyGraphBeforeCapturedResources();
   // Release workspace via pool.free — no registry available at destruction time.
   // Pool-aware callers should call releaseWorkspace(registry, segIdx) explicitly
   // before destroying the handle. This is the safety net for direct allocations.
@@ -50,10 +51,18 @@ CudaGraphReplayHandle::~CudaGraphReplayHandle() {
     captureWorkspacePtr_ = nullptr;
     captureWorkspaceBytes_ = 0;
   }
-  // Free pinned host pointers
+  // The graph is gone, so its pinned H2D sources and modules can now be released.
   freeHostPointers();
-  // handle_ shared_ptr cleans up CudaGraphHandle automatically.
   // Capture buffers and external addresses cleaned by base class destructor.
+}
+
+void CudaGraphReplayHandle::destroyGraphBeforeCapturedResources() {
+  if (handle_ != nullptr) {
+    DSP_DIAG_DEV(EXECUTE, deviceId_,
+                 "CudaGraphReplayHandle: destroying graph before captured resources handle=%p",
+                 static_cast<void*>(handle_.get()));
+    handle_.reset();
+  }
 }
 
 bool CudaGraphReplayHandle::beginCapture(void* stream) {
@@ -235,6 +244,9 @@ bool CudaGraphReplayHandle::allocateWorkspace(size_t bytes, int deviceId,
 }
 
 void CudaGraphReplayHandle::releaseWorkspace(void* registryPtr, int segIdx) {
+  // Captured kernels may retain workspace addresses. Destroy the graph first;
+  // freeing the workspace under a live graph corrupts later plan lifecycles.
+  destroyGraphBeforeCapturedResources();
   if (captureWorkspacePtr_ == nullptr) return;
 
   if (workspaceIsExternal_) {
@@ -266,6 +278,9 @@ void CudaGraphReplayHandle::releaseWorkspace(void* registryPtr, int segIdx) {
 }
 
 void CudaGraphReplayHandle::freeHostPointers() {
+  // H2D memcpy nodes retain pinned source addresses and kernel nodes retain
+  // CUmodule functions. Neither may be released while the graph is alive.
+  destroyGraphBeforeCapturedResources();
   for (auto* ptr : capturedHostPtrs_) {
     if (ptr != nullptr) cudaFreeHost(ptr);
   }

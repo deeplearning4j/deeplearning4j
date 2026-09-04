@@ -28,6 +28,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -129,18 +130,17 @@ public class DequantizerFactory {
         }
 
         DataType nativeTargetType = directNativeTargetType(targetType);
-        int nativeType = mapToNativeQuantType(type);
-        // Q5_0 and Q5_1: skip native op path because the GPU kernel currently falls to a
-        // zero-fill branch for these types. Use the correct Java dequantizer directly.
-        // When the native binary is rebuilt with the fixed CUDA kernel, remove this guard.
-        if (type == GGMLDataType.GGML_TYPE_Q5_0 || type == GGMLDataType.GGML_TYPE_Q5_1) {
-            nativeType = -1;
-        }
+        int nativeType = nativeQuantType(type);
         if (nativeType >= 0) {
-            INDArray nativeResult;
-            try (INDArray rawBytes = Nd4j.createFromArray(data).castTo(DataType.INT8)) {
-                GGMLDequantize op = new GGMLDequantize(rawBytes, nativeType, nativeTargetType, shape);
-                nativeResult = Nd4j.exec(op)[0];
+            INDArray nativeResult = Nd4j.createUninitialized(nativeTargetType, shape);
+            boolean dequantized = false;
+            try (INDArray rawBytes = Nd4j.create(data, new long[]{data.length}, DataType.INT8)) {
+                dequantizeInto(rawBytes, type, shape, nativeResult);
+                dequantized = true;
+            } finally {
+                if (!dequantized) {
+                    nativeResult.close();
+                }
             }
 
             if (nativeTargetType == targetType) {
@@ -163,6 +163,74 @@ public class DequantizerFactory {
         } finally {
             fp32.close();
         }
+    }
+
+    /**
+     * Returns whether {@link #dequantizeInto(INDArray, GGMLDataType, long[], INDArray)}
+     * can execute the type through the native op.
+     */
+    public static boolean supportsNativeDequantization(GGMLDataType type) {
+        return nativeQuantType(type) >= 0;
+    }
+
+    /**
+     * Dequantize into caller-owned buffers without allocating an input cast, output array,
+     * or output shape. This is the reusable-buffer path for streamed model ingestion.
+     */
+    public static void dequantizeInto(INDArray rawBytes, GGMLDataType type,
+                                      long[] shape, INDArray output) {
+        if (rawBytes == null || rawBytes.dataType() != DataType.INT8) {
+            throw new IllegalArgumentException("Native GGML dequantization requires an INT8 input array");
+        }
+        if (rawBytes.isView()) {
+            throw new IllegalArgumentException("Native GGML dequantization input must own a contiguous buffer");
+        }
+        if (output == null || !output.dataType().isFPType()
+                || directNativeTargetType(output.dataType()) != output.dataType()) {
+            throw new IllegalArgumentException(
+                    "Native GGML dequantization output must be FLOAT, HALF, or BFLOAT16");
+        }
+        if (shape == null || shape.length == 0) {
+            throw new IllegalArgumentException("Native GGML dequantization requires a non-empty shape");
+        }
+        long expectedLength = 1;
+        for (long dimension : shape) {
+            if (dimension < 0) {
+                throw new IllegalArgumentException("Negative GGML dequantization dimension: " + dimension);
+            }
+            expectedLength = Math.multiplyExact(expectedLength, dimension);
+        }
+        if (output.length() != expectedLength) {
+            throw new IllegalArgumentException("GGML dequantization output length mismatch: expected "
+                    + expectedLength + " but got " + output.length());
+        }
+        if (output.isView() || !Arrays.equals(shape, output.shape())) {
+            throw new IllegalArgumentException("Native GGML dequantization output must own a contiguous buffer "
+                    + "with shape " + Arrays.toString(shape));
+        }
+        long requiredInputBytes = type.calculateStorageBytes(expectedLength);
+        if (rawBytes.length() < requiredInputBytes) {
+            throw new IllegalArgumentException("GGML dequantization input is too short: requires "
+                    + requiredInputBytes + " bytes but got " + rawBytes.length());
+        }
+
+        int nativeType = nativeQuantType(type);
+        if (nativeType < 0) {
+            throw new IllegalArgumentException("No native GGML dequantizer is available for " + type);
+        }
+        GGMLDequantize op = new GGMLDequantize(rawBytes, nativeType, output.dataType(), shape);
+        op.addOutputArgument(output);
+        Nd4j.exec(op);
+    }
+
+    private static int nativeQuantType(GGMLDataType type) {
+        // Q5_0 and Q5_1: skip native op path because the GPU kernel currently falls to a
+        // zero-fill branch for these types. Use the correct Java dequantizer directly.
+        // When the native binary is rebuilt with the fixed CUDA kernel, remove this guard.
+        if (type == GGMLDataType.GGML_TYPE_Q5_0 || type == GGMLDataType.GGML_TYPE_Q5_1) {
+            return -1;
+        }
+        return mapToNativeQuantType(type);
     }
 
     private static DataType directNativeTargetType(DataType targetType) {

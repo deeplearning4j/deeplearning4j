@@ -352,6 +352,25 @@ public final class SdxRuntime implements AutoCloseable {
         return SdxNative.sdxGetRuntimeAbiVersion();
     }
 
+    /** Configure diagnostics in the backend library selected by this SDX transport. */
+    public void configureDiagnostics(int categoryMask, int level, String jsonPath) {
+        ensureOpen();
+        Objects.requireNonNull(jsonPath, "jsonPath");
+        checkStatus(
+                SdxNative.sdxConfigureDiagnostics(
+                        runtimeHandle, categoryMask, level, jsonPath),
+                "sdxConfigureDiagnostics");
+    }
+
+    /** Record a diagnostic event in the backend library selected by this SDX transport. */
+    public void recordDiagnosticEvent(int category, String message) {
+        ensureOpen();
+        Objects.requireNonNull(message, "message");
+        checkStatus(
+                SdxNative.sdxRecordDiagnosticEvent(runtimeHandle, category, message),
+                "sdxRecordDiagnosticEvent");
+    }
+
     /** Clear diagnostics in the backend library selected by this SDX transport. */
     public void clearDiagnostics() {
         ensureOpen();
@@ -451,9 +470,14 @@ public final class SdxRuntime implements AutoCloseable {
          * returned JavaCPP facade contains no tensor, KV-cache, or sampling loop.
          */
         public synchronized SdxTextSession createTextSession() {
+            return createTextSession(0);
+        }
+
+        /** Create and precompile one session-owned plan at the requested capacity. */
+        public synchronized SdxTextSession createTextSession(int fixedContextCapacity) {
             ensureModelOpen();
             SdxTextSession session = SdxTextSession.create(
-                    SdxRuntime.this, this, modelHandle);
+                    SdxRuntime.this, this, modelHandle, fixedContextCapacity);
             openTextSessions++;
             return session;
         }

@@ -34,6 +34,7 @@
 #include <graph/ModeContract.h>
 #include <graph/CaptureStateGuard.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspPhaseUtils.h>
 #include <graph/DspHashUtils.h>
 #include <graph/DspThreadState.h>
 #include <graph/DspVerifyUtils.h>
@@ -56,16 +57,42 @@
 #include <system/env_functions.h>
 #include <algorithm>
 #include <atomic>
+#include <cstdarg>
 #include <condition_variable>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <mutex>
+#include <new>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 
 namespace sd {
 
 namespace graph {
+
+static Status cudaGraphFailure(const char* format, ...) {
+  char message[512];
+  va_list args;
+  va_start(args, format);
+  std::vsnprintf(message, sizeof(message), format, args);
+  va_end(args);
+  auto* errorReference = LaunchContext::defaultContext()->errorReference();
+  errorReference->setErrorCode(static_cast<int>(Status::KERNEL_FAILURE));
+  errorReference->setErrorMessage(message);
+  return Status::KERNEL_FAILURE;
+}
+
+static void recordCudaGraphStatusDetailIfMissing(Status status,
+                                                  const std::string& detail) {
+  auto* errorReference = LaunchContext::defaultContext()->errorReference();
+  const char* existing = errorReference->errorMessage();
+  if (existing == nullptr || existing[0] == '\0') {
+    errorReference->setErrorMessage(detail);
+  }
+  errorReference->setErrorCode(static_cast<int>(status));
+}
 
 // Per-GPU capture/execution coordination (defined in _cuda.cu, namespace sd::graph)
 extern std::atomic<bool> g_captureActive[16];
@@ -291,8 +318,11 @@ const char* NativeDynamicShapePlan::getFingerprintJson() {
 // FNV-1a hash of slot output specialBuffer() addresses for a segment.
 // Verified before replay — mismatch means output buffers were reallocated
 // and the CUDA graph has stale baked-in addresses (would SIGSEGV or corrupt).
-static LongType computeSlotAddrHash(NDArray** outputSlots, int startSlot, int endSlot, int totalSlots) {
-  return dsp::computeSlotAddrHash(outputSlots, startSlot, endSlot, totalSlots,
+static LongType computeSlotAddrHash(const NativeSlot* slots, int numSlots,
+                                    NDArray** outputSlots, int startSlot,
+                                    int endSlot, int totalSlots) {
+  return dsp::computeSegmentSlotAddrHash(slots, numSlots, outputSlots,
+      startSlot, endSlot, totalSlots,
       [](NDArray* a) -> void* { return a->specialBuffer(); });
 }
 
@@ -644,13 +674,27 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
           execCtx->execTarget = ExecTarget::GRAPH_REPLAY;
         }
       }
-      externalArrays = performPreReplaySync(externalArrays, numExt, stream, "cudagraph_replay");
+      DspStagingSyncResult syncResult = performPreReplaySync(
+          externalArrays, numExt, stream, "cudagraph_replay");
+      if (!syncResult.ok() || syncResult.effectiveExternals == nullptr) {
+        DSP_DIAG(EXECUTE,
+                 "CUDA graph replay input staging failed status=%d cudaError=%d — aborting",
+                 static_cast<int>(syncResult.status), syncResult.cudaError);
+        return cudaGraphFailure(
+            "CUDA graph replay input staging failed: syncStatus=%d, "
+            "cudaError=%d (%s), seg[%d-%d]",
+            static_cast<int>(syncResult.status), syncResult.cudaError,
+            cudaGetErrorString(static_cast<cudaError_t>(syncResult.cudaError)),
+            seg.def.startSlot, seg.def.endSlot);
+      }
+      externalArrays = syncResult.effectiveExternals;
 
       // Slot address drift check: graph bakes slot output device pointers.
       // If any slot was reallocated, the graph has stale addresses and must rebuild.
       if (seg.exec.capturedSlotAddrHash != 0) {
         LongType currentAddrHash = computeSlotAddrHash(
-            outputSlots_, seg.def.startSlot, seg.def.endSlot, totalOutputSlots_);
+            slots_, numSlots_, outputSlots_, seg.def.startSlot, seg.def.endSlot,
+            totalOutputSlots_);
         if (seg.exec.slotAddrDrifted(currentAddrHash)) {
           seg.exec.handleTracker.record(ReplayHandleEvent::Kind::ADDRESS_DRIFT,
                                         seg.exec.executionCount, 0, 0, "slot_addr_drift");
@@ -658,18 +702,22 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                    "captured=0x%llx current=0x%llx — invalidating replay handle",
                    seg.def.startSlot, seg.def.endSlot,
                    (long long)seg.exec.capturedSlotAddrHash, (long long)currentAddrHash);
-          clearGraphStreamError(cudaStr);
-          platformCleanupSegmentForRebuild(seg);
-          replayInputsStable = false;
+          return rebuildSegmentAfterPreLaunchReplayDrift(
+              seg, externalArrays, numExt, stream,
+              "cuda_graph_slot_addr_drift");
         }
       }
 
       if (replayInputsStable) {
         auto replayStatus = replayMonolithicGraph(seg, externalArrays, numExt,
                                                   stream, "cudagraph_replay");
+        if (replayStatus == Status::MAYBE) {
+          return rebuildSegmentAfterPreLaunchReplayDrift(
+              seg, externalArrays, numExt, stream,
+              "monolithic_slot_addr_drift");
+        }
         if (replayStatus != Status::OK) {
           clearGraphStreamError(cudaStr);
-          platformCleanupSegmentForRebuild(seg);
           DSP_THROW_SEG(EXECUTE, seg.def.startSlot,
                         "CUDA graph replay failed for seg[%d-%d]",
                         seg.def.startSlot, seg.def.endSlot);
@@ -677,11 +725,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         return Status::OK;
       }
     } else {
-      clearGraphStreamError(cudaStr);
-      platformCleanupSegmentForRebuild(seg);
-      DSP_THROW_SEG(EXECUTE, seg.def.startSlot,
-                    "CUDA graph replay invalidated for seg[%d-%d]: input addresses drifted since capture",
-                    seg.def.startSlot, seg.def.endSlot);
+      return rebuildSegmentAfterPreLaunchReplayDrift(
+          seg, externalArrays, numExt, stream,
+          "cuda_graph_input_addr_drift");
     }
   }
 
@@ -874,7 +920,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     // over the working set covers runtime overhead without over-estimating.
     size_t captureOverhead = estimatedCaptureBytes / 5;  // 20% margin
     size_t requiredFree = captureOverhead;
-    if (requiredFree > gpuFree) {
+      if (requiredFree > gpuFree) {
       DSP_DIAG_SEG(MEMORY, 0, "insufficient GPU memory for graph capture seg[%d-%d] (%d ops): "
                     "estimated overhead %zuMB (20%% of %zuMB working set) > free %zuMB (total %zuMB) "
                     "— returning KERNEL_FAILURE (memory-budget segmentation should prevent this)",
@@ -883,7 +929,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                     estimatedCaptureBytes / (1024 * 1024),
                     gpuFree / (1024 * 1024),
                     gpuTotal / (1024 * 1024));
-      return Status::KERNEL_FAILURE;
+      return cudaGraphFailure(
+          "CUDA graph capture memory check failed for seg[%d-%d]: "
+          "requiredFree=%zuMB, gpuFree=%zuMB, workingSet=%zuMB, gpuTotal=%zuMB",
+          seg.def.startSlot, seg.def.endSlot, requiredFree / (1024 * 1024),
+          gpuFree / (1024 * 1024), estimatedCaptureBytes / (1024 * 1024),
+          gpuTotal / (1024 * 1024));
     }
   }
 
@@ -1054,7 +1105,24 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       // capture needs its own staging pass with stream synchronization.
       execCtx->resetSyncPhase();
     }
-    captureExternals = performPreReplaySync(externalArrays, numExt, stream, "cudagraph_capture");
+    DspStagingSyncResult syncResult = performPreReplaySync(
+        externalArrays, numExt, stream, "cudagraph_capture");
+    if (!syncResult.ok() || syncResult.effectiveExternals == nullptr) {
+      DSP_DIAG_SEG(COMPILE, segIdx,
+                   "CUDA graph capture input staging failed status=%d cudaError=%d",
+                   static_cast<int>(syncResult.status), syncResult.cudaError);
+      platformCleanupSegmentForRebuild(seg);
+      SegmentLifecycle::markFailed(
+          seg.exec, "cuda_graph_capture_staging_failed",
+          seg.def.startSlot, seg.def.endSlot);
+      return cudaGraphFailure(
+          "CUDA graph capture input staging failed: syncStatus=%d, "
+          "cudaError=%d (%s), seg[%d-%d]",
+          static_cast<int>(syncResult.status), syncResult.cudaError,
+          cudaGetErrorString(static_cast<cudaError_t>(syncResult.cudaError)),
+          seg.def.startSlot, seg.def.endSlot);
+    }
+    captureExternals = syncResult.effectiveExternals;
 
     // View wrappers must be rebuilt after staging has been established.  If a
     // view aliases a placeholder, capturing the pre-staging wrapper bakes the
@@ -1070,7 +1138,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       SegmentLifecycle::markFailed(
           seg.exec, "cuda_graph_capture_view_refresh_failed",
           seg.def.startSlot, seg.def.endSlot);
-      return Status::KERNEL_FAILURE;
+      return cudaGraphFailure(
+          "CUDA graph capture preparation failed while refreshing staged view "
+          "wrappers for seg[%d-%d]",
+          seg.def.startSlot, seg.def.endSlot);
     }
     if (viewRefreshResult > 0) {
       DSP_DIAG_SEG(MEMORY, segIdx,
@@ -1279,8 +1350,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         cudaError_t slotErr = cudaPeekAtLastError();
         DSP_DIAG_SLOT(COMPILE, stepIdx,
                       "op execution during capture failed at slot %d "
-                      "(status=%d cudaErr=%d)",
-                      stepIdx, static_cast<int>(status),
+                      "(status=%s (%d) cudaErr=%d)",
+                      stepIdx, dsp::dspStatusName(status), static_cast<int>(status),
                       static_cast<int>(slotErr));
         captureOk = false;
         captureFailure = isCaptureOom(slotErr)
@@ -1443,6 +1514,13 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   }
 
   if (!captureOk) {
+    auto* captureErrorReference =
+        sd::LaunchContext::defaultContext()->errorReference();
+    const char* existingCaptureDetail = captureErrorReference->errorMessage();
+    const std::string originatingCaptureDetail =
+        existingCaptureDetail != nullptr && existingCaptureDetail[0] != '\0'
+            ? std::string(existingCaptureDetail)
+            : std::string();
     handle->endCapture(cudaStr);
 
     cudaGetLastError();
@@ -1471,11 +1549,30 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     }
 
     // Arrays persist across capture failures — only slot state needs restoring.
-
     platformCleanupSegmentForRebuild(seg);
 
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(0);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("");
+    const char* failureKind =
+        captureFailure == CaptureFailureKind::SLOT_EXECUTION
+            ? "SLOT_EXECUTION"
+            : (captureFailure == CaptureFailureKind::CAPTURE_API
+                   ? "CAPTURE_API"
+                   : (captureFailure == CaptureFailureKind::OOM ? "OOM" : "UNKNOWN"));
+    const char* opName =
+        lastCaptureSlot >= 0 && lastCaptureSlot < numSlots_
+            ? slots_[lastCaptureSlot].ident.opName.c_str()
+            : "<out-of-range>";
+    if (!originatingCaptureDetail.empty()) {
+      cudaGraphFailure(
+          "%s [CUDA graph capture kind=%s seg[%d-%d] slot=%d op=%s]",
+          originatingCaptureDetail.c_str(), failureKind,
+          seg.def.startSlot, seg.def.endSlot, lastCaptureSlot, opName);
+    } else {
+      cudaGraphFailure(
+          "CUDA graph capture failed: kind=%s seg[%d-%d] slot=%d op=%s; "
+          "the capture API/slot path returned no lower-level detail",
+          failureKind, seg.def.startSlot, seg.def.endSlot,
+          lastCaptureSlot, opName);
+    }
     std::memcpy(outputSlots_, preCapOutputSlots.data(), sizeof(NDArray*) * totalOutputSlots_);
     for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
       slots_[s].slotPhase = savedSlotPhases[s - seg.def.startSlot];  // PRIMARY restore
@@ -1515,7 +1612,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     DSP_DIAG_SEG(COMPILE, 0, "CUDA graph endCapture failed for seg[%d-%d] "
                   "— returning KERNEL_FAILURE to caller",
                   seg.def.startSlot, seg.def.endSlot);
-    return Status::KERNEL_FAILURE;
+    return cudaGraphFailure(
+        "CUDA graph endCapture failed for seg[%d-%d]: the capture stream was "
+        "invalidated or produced no graph",
+        seg.def.startSlot, seg.def.endSlot);
   }
 
   seg.exec.handleTracker.record(ReplayHandleEvent::Kind::CAPTURE_END,
@@ -1523,11 +1623,15 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                                 static_cast<int>(handle->getNumNodes()), 0, "monolithic");
 
   if (!handle->instantiate()) {
+    // platformCleanupSegmentForRebuild() below destroys the replay handle. Keep
+    // the native error snapshot now so the diagnostic never dereferences it after cleanup.
+    const int instantiateError = handle->getLastInstantiateError();
+    const bool instantiateWasOom = handle->wasLastInstantiateOom();
     // ── OOM eviction: free smallest captured graphs to reclaim GPU memory ──
     // instantiate() destroys _graph on failure, so we defer re-capture to the
     // next execution via captureRetryAfterExec.
     int numEvicted = 0;
-    if (handle->wasLastInstantiateOom()) {
+    if (instantiateWasOom) {
       DSP_DIAG(MEMORY, "graph instantiate OOM for seg[%d-%d], attempting eviction (up to %d segments)",
                seg.def.startSlot, seg.def.endSlot, GraphSegment::maxOomRetries());
 
@@ -1579,7 +1683,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     // failure.
     cudaGetLastError();
 
-    if (handle->wasLastInstantiateOom() && seg.exec.captureOomRetries < GraphSegment::maxOomRetries()) {
+    if (instantiateWasOom && seg.exec.captureOomRetries < GraphSegment::maxOomRetries()) {
       // Use the OOM retry mechanism: defer re-capture to a future execution.
       // If we evicted segments above, retry on the very next execution (interval=1)
       // since the freed memory should be immediately available. Otherwise use
@@ -1600,6 +1704,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                                    seg.def.startSlot, seg.def.endSlot);
     }
 
+    const int instantiateRetries = seg.exec.captureOomRetries;
     // Guard destructor frees host ptrs (commit() not called).
     clearGraphStreamError(cudaStr);
     cleanupCaptureBuffersOnFailure();
@@ -1609,9 +1714,15 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     DSP_DIAG_SEG(COMPILE, 0, "CUDA graph instantiate failed for seg[%d-%d] (oom=%s, retries=%d, evicted=%d) "
                   "— returning KERNEL_FAILURE to caller",
                   seg.def.startSlot, seg.def.endSlot,
-                  handle->wasLastInstantiateOom() ? "true" : "false",
-                  seg.exec.captureOomRetries, numEvicted);
-    return Status::KERNEL_FAILURE;
+                  instantiateWasOom ? "true" : "false",
+                  instantiateRetries, numEvicted);
+    return cudaGraphFailure(
+        "CUDA graph instantiate failed for seg[%d-%d]: cudaError=%d (%s), "
+        "oom=%d, retries=%d, evicted=%d",
+        seg.def.startSlot, seg.def.endSlot, instantiateError,
+        cudaGetErrorString(static_cast<cudaError_t>(instantiateError)),
+        instantiateWasOom ? 1 : 0,
+        instantiateRetries, numEvicted);
   }
 
   cudaGetLastError();
@@ -1642,6 +1753,19 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       SegmentLifecycle::markZeroKernel(seg.exec, "empty_cuda_graph", seg.def.startSlot, seg.def.endSlot);
       tl_captureReplicateCache.clear();
       platformCleanupSegmentForRebuild(seg);
+      if (graphExecutionMode_ == GraphExecutionMode::GEM_PORTABLE_REPLAY) {
+        // Portable replay promises an executable recorder even when CUDA graph
+        // capture contributes no nodes (identity/view-only ranges). Transfer
+        // ownership to the functional recorder before the next invocation;
+        // never re-enter CUDA capture for this segment.
+        seg.def.selectedBackend = SelectedBackend::EMULATED_REPLAY;
+        SegmentLifecycle::prepareFunctionalReplayHandoff(
+            seg.exec, seg.def.startSlot, seg.def.endSlot);
+        DSP_DIAG_SEG(EXECUTE, segIdx,
+                     "PORTABLE_REPLAY: empty CUDA graph transferred to FunctionalReplay "
+                     "for seg[%d-%d]",
+                     seg.def.startSlot, seg.def.endSlot);
+      }
       dspSegIncrementExecCount(seg, "cuda-graph-zero-kernel");
       return Status::OK;
     }
@@ -1692,9 +1816,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
           slots_[s].slotPhase = savedSlotPhases[s - seg.def.startSlot];
         }
         invalidateSegmentShapeState(seg);
-        sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(0);
-        sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("");
-        return Status::KERNEL_FAILURE;
+        return cudaGraphFailure(
+            "CUDA graph capture coverage failed for seg[%d-%d]: a host-only "
+            "materializing slot precedes a downstream GPU slot",
+            seg.def.startSlot, seg.def.endSlot);
       }
     }
   }
@@ -1743,7 +1868,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   seg.exec.sealCapture(
       computeSegmentInputAddrKey(seg, captureExternals, numExt),
       computeCreateOpValueKey(seg, captureExternals, numExt),
-      computeSlotAddrHash(outputSlots_, seg.def.startSlot, seg.def.endSlot, totalOutputSlots_),
+      computeSlotAddrHash(slots_, numSlots_, outputSlots_, seg.def.startSlot,
+                          seg.def.endSlot, totalOutputSlots_),
       "CUDA",
       /*gapsCaptured=*/false);
   snapshotExternalAddrs(seg, captureExternals, numExt);
@@ -1839,6 +1965,196 @@ void NativeDynamicShapePlan::performReplayVerify(
   // verbosity of every category for the rest of the process. Respect the configured level.
   DspDiagnostics::getInstance().enableCategories(DSP_DIAG_VERIFY);
 
+  auto reportUnavailable = [&](const char* reason) {
+    DSP_DIAG(VERIFY,
+             "REPLAY_VERIFY UNAVAILABLE path=%s reason=%s comparedElements=0 "
+             "replayExecCount=%d",
+             pathLabel ? pathLabel : "unknown", reason,
+             seg.exec.executionCount);
+  };
+
+  // A cloned serialized plan gives verification a separate lifecycle, slot
+  // array, ownership set, and replay state. FlatGraph plans and stateful paths
+  // cannot be cloned safely at this boundary, so they must not mutate the live
+  // plan merely to manufacture a reference result.
+  if (serializedPlanBytes_.empty()) {
+    reportUnavailable("serialized_plan_unavailable");
+    return;
+  }
+  if (externalArrays == nullptr || numExt != numExternalInputs_ ||
+      hasControlFlow_ || kvScatterConfigured_) {
+    reportUnavailable("stateful_or_control_flow_inputs");
+    return;
+  }
+  for (int slotIndex = seg.def.startSlot;
+       slotIndex <= seg.def.endSlot && slotIndex < numSlots_; ++slotIndex) {
+    if (slots_[slotIndex].isInPlaceFused()) {
+      reportUnavailable("in_place_slot_execution");
+      return;
+    }
+  }
+
+  cudaStream_t verificationStream =
+      stream != nullptr ? *static_cast<cudaStream_t*>(stream) : nullptr;
+  struct ReplaySample {
+    int slotIndex = -1;
+    DataType dtype = DataType::UNKNOWN;
+    int elementCount = 0;
+    std::vector<uint8_t> replay;
+    std::vector<uint8_t> reference;
+  };
+  std::vector<ReplaySample> samples;
+  std::unordered_set<int> seenSlots;
+  constexpr int kMaxSampleElements = 16;
+
+  for (int slotIndex = seg.def.startSlot;
+       slotIndex <= seg.def.endSlot && slotIndex < numSlots_; ++slotIndex) {
+    const NativeSlot& slot = slots_[slotIndex];
+    for (int output = 0; output < slot.wiring.numOutputs; ++output) {
+      const int outputSlot = slot.wiring.outputSlotIndices[output];
+      if (outputSlot < 0 || outputSlot >= totalOutputSlots_ ||
+          !seenSlots.insert(outputSlot).second) {
+        continue;
+      }
+      NDArray* array = outputSlots_[outputSlot];
+      if (array == nullptr || array->lengthOf() <= 0 ||
+          array->specialBuffer() == nullptr ||
+          !DataTypeUtils::isR(array->dataType())) {
+        continue;
+      }
+      const int elementSize = DataTypeUtils::sizeOf(array->dataType());
+      const int elementCount = std::min<LongType>(
+          array->lengthOf(), kMaxSampleElements);
+      if (elementSize <= 0 || elementCount <= 0) continue;
+      ReplaySample sample;
+      sample.slotIndex = outputSlot;
+      sample.dtype = array->dataType();
+      sample.elementCount = elementCount;
+      sample.replay.resize(static_cast<size_t>(elementSize) * elementCount);
+      const cudaError_t copyStatus = cudaMemcpyAsync(
+          sample.replay.data(), array->specialBuffer(), sample.replay.size(),
+          cudaMemcpyDeviceToHost, verificationStream);
+      if (copyStatus != cudaSuccess) {
+        cudaGetLastError();
+        reportUnavailable("replay_output_copy_failed");
+        return;
+      }
+      samples.push_back(std::move(sample));
+    }
+  }
+  if (samples.empty()) {
+    reportUnavailable("no_numeric_replay_outputs");
+    return;
+  }
+  if (cudaStreamSynchronize(verificationStream) != cudaSuccess) {
+    cudaGetLastError();
+    reportUnavailable("replay_output_sync_failed");
+    return;
+  }
+
+  std::unique_ptr<NativeDynamicShapePlan> referencePlan;
+  try {
+    referencePlan.reset(NativeDynamicShapePlan::fromSerializedPlan(
+        serializedPlanBytes_.data(),
+        static_cast<LongType>(serializedPlanBytes_.size()),
+        GraphExecutionMode::GEM_SLOT_BY_SLOT));
+  } catch (...) {
+    referencePlan.reset();
+  }
+  if (!referencePlan) {
+    reportUnavailable("reference_plan_clone_failed");
+    return;
+  }
+
+  // The live plan is still inside NativeDynamicShapePlan::execute() here and
+  // may hold the device warmup-serialization guard. Calling a second top-level
+  // execute lifecycle would deadlock on that guard. Dispatch the isolated plan's
+  // segments directly instead: it keeps separate slots/ownership while avoiding
+  // the live plan's lock, counters, and lifecycle state.
+  Status referenceStatus = Status::OK;
+  for (auto& referenceSegment : referencePlan->segments_) {
+    if (!referencePlan->platformBindSegmentDevice(referenceSegment)) {
+      referenceStatus = Status::KERNEL_FAILURE;
+      break;
+    }
+    const Status migrationStatus = referencePlan->platformMigrateSegmentInputs(
+        referenceSegment, externalArrays, numExt);
+    if (migrationStatus != Status::OK) {
+      referencePlan->platformCleanupMigratedInputs();
+      referencePlan->platformRestoreSegmentDevice();
+      referenceStatus = migrationStatus;
+      break;
+    }
+    referenceStatus = referencePlan->executeSegmentSlotBySlot(
+        referenceSegment, externalArrays, numExt, stream);
+    referencePlan->platformCleanupMigratedInputs();
+    referencePlan->platformRestoreSegmentDevice();
+    if (referenceStatus != Status::OK) break;
+  }
+  if (referenceStatus != Status::OK) {
+    reportUnavailable("reference_execution_failed");
+    return;
+  }
+
+  for (auto& sample : samples) {
+    NDArray* referenceArray =
+        referencePlan->getSlotOutputArray(sample.slotIndex);
+    if (referenceArray == nullptr ||
+        referenceArray->dataType() != sample.dtype ||
+        referenceArray->lengthOf() < sample.elementCount ||
+        referenceArray->specialBuffer() == nullptr) {
+      reportUnavailable("reference_output_unpublished");
+      return;
+    }
+    sample.reference.resize(sample.replay.size());
+    const cudaError_t copyStatus = cudaMemcpyAsync(
+        sample.reference.data(), referenceArray->specialBuffer(),
+        sample.reference.size(), cudaMemcpyDeviceToHost, verificationStream);
+    if (copyStatus != cudaSuccess) {
+      cudaGetLastError();
+      reportUnavailable("reference_output_copy_failed");
+      return;
+    }
+  }
+  if (cudaStreamSynchronize(verificationStream) != cudaSuccess) {
+    cudaGetLastError();
+    reportUnavailable("reference_output_sync_failed");
+    return;
+  }
+
+  long long comparedElements = 0;
+  int mismatchCount = 0;
+  float worstMaxDiff = 0.0f;
+  int firstMismatchSlot = -1;
+  for (const auto& sample : samples) {
+    const float maxDiff = dspMaxDiff(
+        sample.replay.data(), sample.reference.data(), sample.dtype,
+        sample.elementCount);
+    comparedElements += sample.elementCount;
+    worstMaxDiff = std::max(worstMaxDiff, maxDiff);
+    if (maxDiff > 1e-3f) {
+      ++mismatchCount;
+      if (firstMismatchSlot < 0) firstMismatchSlot = sample.slotIndex;
+    }
+  }
+
+  if (comparedElements <= 0) {
+    reportUnavailable("zero_comparison_elements");
+  } else if (mismatchCount > 0) {
+    DSP_DIAG(VERIFY,
+             "REPLAY_VERIFY MISMATCH path=%s comparedElements=%lld "
+             "mismatchedSlots=%d firstMismatchSlot=%d worstMaxDiff=%.6g",
+             pathLabel ? pathLabel : "unknown", comparedElements,
+             mismatchCount, firstMismatchSlot, worstMaxDiff);
+  } else {
+    DSP_DIAG(VERIFY,
+             "REPLAY_VERIFY VERIFIED path=%s comparedElements=%lld "
+             "sampledSlots=%zu worstMaxDiff=%.6g",
+             pathLabel ? pathLabel : "unknown", comparedElements,
+             samples.size(), worstMaxDiff);
+  }
+
+#if 0
   cudaStream_t cudaStr = stream ? *static_cast<cudaStream_t*>(stream) : nullptr;
 
   // Find final output slot for argmax
@@ -1847,7 +2163,9 @@ void NativeDynamicShapePlan::performReplayVerify(
     finalOutputSlot = slots_[seg.def.endSlot].wiring.outputSlotIndices[0];
   }
   if (finalOutputSlot < 0 || finalOutputSlot >= totalOutputSlots_) {
-    finalOutputSlot = seg.def.endSlot;
+    finalOutputSlot = dsp::firstSegmentOutputSlot(
+        slots_, numSlots_, seg.def.startSlot, seg.def.endSlot,
+        totalOutputSlots_);
   }
 
   // 1. Compute argmax from REPLAY output
@@ -2033,6 +2351,7 @@ void NativeDynamicShapePlan::performReplayVerify(
     DSP_DIAG(VERIFY, "REPLAY_VERIFY SUMMARY: ALL MATCH (%zu slots, maxDiff=%.6g) path=%s execCount=%d",
               snaps.size(), worstMaxDiff, pathLabel, executeCount_);
   }
+#endif
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -2162,8 +2481,15 @@ Status NativeDynamicShapePlan::postReplayFixupRange(
         SyncOverride reExecSync(*this, diagTag);
         auto slotStatus = executeSlot(entry.slotIndex, externalArrays, numExt, stream);
         if (slotStatus != Status::OK) {
-          DSP_DIAG(EXECUTE, "%s: re-exec slot %d FAILED status=%d",
-                   diagTag, entry.slotIndex, (int)slotStatus);
+          DSP_DIAG(EXECUTE, "%s: re-exec slot %d FAILED status=%s (%d)",
+                   diagTag, entry.slotIndex, dsp::dspStatusName(slotStatus),
+                   static_cast<int>(slotStatus));
+          recordCudaGraphStatusDetailIfMissing(
+              slotStatus,
+              std::string("CUDA graph replay fixup slot ") +
+                  std::to_string(entry.slotIndex) + " (" + entry.opName +
+                  ") returned " + dsp::dspStatusName(slotStatus) + " (" +
+                  std::to_string(static_cast<int>(slotStatus)) + ")");
           return slotStatus;
         }
       }
@@ -2213,9 +2539,12 @@ Status NativeDynamicShapePlan::replayMonolithicGraph(
     auto* tritonBackend =
         dynamic_cast<TritonGraphBackend*>(seg.resolvedGraphBackend);
     if (tritonBackend != nullptr) {
-      tritonBackend->refreshArgTablesForReplay(seg, externalArrays, numExt,
-                                               outputSlots_, totalOutputSlots_,
-                                               stream);
+      auto refreshStatus = tritonBackend->refreshArgTablesForReplay(
+          seg, externalArrays, numExt, outputSlots_, totalOutputSlots_, stream);
+      if (refreshStatus != Status::OK) {
+        seg.exec.markArgsStale();
+        return refreshStatus;
+      }
       tritonBackend->copyConsolidatedArgTableToDevice(seg, stream);
     }
 #endif
@@ -2238,23 +2567,24 @@ Status NativeDynamicShapePlan::replayMonolithicGraph(
   //
   // Detection: re-compute the FNV1a hash of all slot specialBuffer() addresses
   // in this segment and compare against capturedSlotAddrHash (set at sealCapture).
-  // Mismatch → invalidate + return KERNEL_FAILURE so the caller triggers recapture.
+  // Mismatch is detected before graph launch. Return the typed pre-launch rebuild
+  // signal; the caller owns the atomic invalidate -> warmup -> recompile cycle.
   //
   // This mirrors the SLOT_ADDR_DRIFT check in executeSegmentWithCudaGraph (the
   // composite-replay path) but is placed here for the monolithic-replay path.
   if (seg.exec.capturedSlotAddrHash != 0) {
     LongType currentSlotHash = computeSlotAddrHash(
-        outputSlots_, seg.def.startSlot, seg.def.endSlot, totalOutputSlots_);
+        slots_, numSlots_, outputSlots_, seg.def.startSlot, seg.def.endSlot,
+        totalOutputSlots_);
     if (seg.exec.slotAddrDrifted(currentSlotHash)) {
       DSP_DIAG(EXECUTE,
                "%s: MONOLITHIC_SLOT_ADDR_DRIFT seg[%d-%d] "
                "captured=0x%llx current=0x%llx — cuBLAS args are stale, "
-               "invalidating for recapture",
+               "requesting pre-launch rebuild",
                diagTag, seg.def.startSlot, seg.def.endSlot,
                (long long)seg.exec.capturedSlotAddrHash,
                (long long)currentSlotHash);
-      SegmentLifecycle::invalidateForRebuild(this, seg, "monolithic_slot_addr_drift");
-      return Status::KERNEL_FAILURE;
+      return Status::MAYBE;
     }
     DSP_DIAG(EXECUTE, "%s: slot addr hash stable seg[%d-%d] hash=0x%llx",
              diagTag, seg.def.startSlot, seg.def.endSlot,
@@ -2278,11 +2608,13 @@ Status NativeDynamicShapePlan::replayMonolithicGraph(
           (slotTraits & sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE) != 0) {
         auto liveStatus = executeSlot(s, externalArrays, numExt, stream);
         if (liveStatus != Status::OK) {
-          DSP_DIAG(EXECUTE, "%s: live create-op slot %d (%s) FAILED status=%d",
-                   diagTag, s, slots_[s].ident.opName.c_str(), static_cast<int>(liveStatus));
-          // Non-fatal: the graph will use stale values from a prior step (still
-          // better than invalidating the entire graph).  Do NOT return failure —
-          // the graph replay may still produce usable output.
+          DSP_DIAG(EXECUTE,
+                   "%s: live create-op slot %d (%s) FAILED status=%s (%d)",
+                   diagTag, s, slots_[s].ident.opName.c_str(),
+                   dsp::dspStatusName(liveStatus), static_cast<int>(liveStatus));
+          // This value feeds the captured graph. Launching after a failed update
+          // would knowingly consume stale state, so fail before graph launch.
+          return liveStatus;
         }
         liveCreateCount++;
       }
@@ -2315,7 +2647,20 @@ Status NativeDynamicShapePlan::replayMonolithicGraph(
                                   seg.exec.executionCount, 0, 0, "monolithic_replay_failed");
     DSP_DIAG(EXECUTE, "%s: monolithic replay FAILED seg[%d-%d]",
              diagTag, seg.def.startSlot, seg.def.endSlot);
-    return Status::KERNEL_FAILURE;
+    auto* replayErrorReference =
+        LaunchContext::defaultContext()->errorReference();
+    const char* replayDetail = replayErrorReference->errorMessage();
+    if (replayDetail != nullptr && replayDetail[0] != '\0') {
+      const std::string originatingReplayDetail(replayDetail);
+      return cudaGraphFailure(
+          "%s [monolithic CUDA graph replay seg[%d-%d] tag=%s]",
+          originatingReplayDetail.c_str(), seg.def.startSlot,
+          seg.def.endSlot, diagTag);
+    }
+    return cudaGraphFailure(
+        "monolithic CUDA graph replay failed for seg[%d-%d] tag=%s without "
+        "a replay-handle error detail",
+        seg.def.startSlot, seg.def.endSlot, diagTag);
   }
 
   // ── Step 5: Counter increments ──
@@ -2348,11 +2693,54 @@ Status NativeDynamicShapePlan::replayMonolithicGraph(
 // in CUDA graph arg tables remain valid for the plan's lifetime regardless
 // of how Java allocates its input arrays.
 // ═══════════════════════════════════════════════════════════════════════════
-NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
+DspStagingSyncResult NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
     NDArray** externalArrays, int numExt, void* stream) {
   if (planLifecycle_.isSlotBySlot() || externalInputIsVariable_.empty() || numExt <= 0) {
-    return externalArrays;
+    return {externalArrays, DspStagingSyncStatus::NOT_REQUIRED, 0, false};
   }
+
+  auto fail = [&](DspStagingSyncStatus status, cudaError_t error,
+                  const char* stage) -> DspStagingSyncResult {
+    stagingMaintainedThisExec_ = false;
+    char detail[768];
+    std::snprintf(detail, sizeof(detail),
+                  "DSP staging failed: stage=%s status=%d cudaError=%d (%s)",
+                  stage != nullptr ? stage : "unknown",
+                  static_cast<int>(status), static_cast<int>(error),
+                  cudaGetErrorString(error));
+    auto* errorReference = LaunchContext::defaultContext()->errorReference();
+    if (errorReference != nullptr) errorReference->setErrorMessage(detail);
+    DSP_DIAG(EXECUTE,
+             "STAGING_FAIL stage=%s status=%d cudaError=%d (%s) — graph execution must abort",
+             stage, static_cast<int>(status), static_cast<int>(error),
+             cudaGetErrorString(error));
+    return {nullptr, status, static_cast<int>(error), false};
+  };
+
+  auto failTransfer = [&](DspStagingSyncStatus status, cudaError_t error,
+                          const char* stage, int extIdx, const void* src,
+                          const void* dst, size_t bytes, int sourceDevice,
+                          int targetDevice) -> DspStagingSyncResult {
+    char detail[512];
+    const char* name = extIdx >= 0 &&
+                               extIdx < static_cast<int>(externalInputNames_.size())
+                           ? externalInputNames_[extIdx].c_str()
+                           : "?";
+    std::snprintf(detail, sizeof(detail),
+                  "%s ext=%d name='%s' src=%p dst=%p bytes=%zu srcDevice=%d targetDevice=%d",
+                  stage, extIdx, name, src, dst, bytes, sourceDevice, targetDevice);
+    return fail(status, error, detail);
+  };
+
+  if (externalArrays == nullptr || stream == nullptr) {
+    return fail(DspStagingSyncStatus::SYNCHRONIZATION_FAILED,
+                cudaErrorInvalidValue, "invalid_input_or_stream");
+  }
+
+  const char* injectedFault = std::getenv("ND4J_DSP_STAGING_FAULT");
+  auto faultRequested = [&](const char* name) {
+    return injectedFault != nullptr && std::strcmp(injectedFault, name) == 0;
+  };
 
   // One-time activation of fingerprint ring (checks env BUF_FP_RING=1)
   maybeInitFingerprintRing();
@@ -2360,9 +2748,10 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
   cudaStream_t cudaStr = (stream != nullptr)
       ? *static_cast<cudaStream_t*>(stream) : nullptr;
 
-  // Staging content will match THIS exec's externals once the copies below
-  // are issued — gate resolveViewInput's staging preference on it.
-  stagingMaintainedThisExec_ = true;
+  // Staging content is not current until every allocation, transfer, and
+  // ordering operation below has succeeded.  In particular, callers must not
+  // fall back to raw external arrays after a partial staging failure.
+  stagingMaintainedThisExec_ = false;
 
   // ── LC→DSP ordering barrier ─────────────────────────────────────────────
   // Step 2 of performPreReplaySync H2Ds fresh external values via
@@ -2383,11 +2772,32 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
         !DebugHelper::streamIsCapturing(&captureProbe)) {
       static thread_local cudaEvent_t tlStagingOrderEvt = nullptr;
       if (tlStagingOrderEvt == nullptr) {
-        cudaEventCreateWithFlags(&tlStagingOrderEvt, cudaEventDisableTiming);
+        if (faultRequested("cross_stream")) {
+          return fail(DspStagingSyncStatus::SYNCHRONIZATION_FAILED,
+                      cudaErrorUnknown, "cross_stream_injected");
+        }
+        cudaError_t createErr = cudaEventCreateWithFlags(&tlStagingOrderEvt,
+                                                         cudaEventDisableTiming);
+        if (createErr != cudaSuccess) {
+          return fail(DspStagingSyncStatus::SYNCHRONIZATION_FAILED,
+                      createErr, "cross_stream_event_create");
+        }
       }
       if (tlStagingOrderEvt != nullptr) {
-        cudaEventRecord(tlStagingOrderEvt, lcStream2);
-        cudaStreamWaitEvent(cudaStr, tlStagingOrderEvt, 0);
+        if (faultRequested("cross_stream")) {
+          return fail(DspStagingSyncStatus::SYNCHRONIZATION_FAILED,
+                      cudaErrorUnknown, "cross_stream_injected");
+        }
+        cudaError_t recordErr = cudaEventRecord(tlStagingOrderEvt, lcStream2);
+        if (recordErr != cudaSuccess) {
+          return fail(DspStagingSyncStatus::SYNCHRONIZATION_FAILED,
+                      recordErr, "cross_stream_event_record");
+        }
+        cudaError_t waitErr = cudaStreamWaitEvent(cudaStr, tlStagingOrderEvt, 0);
+        if (waitErr != cudaSuccess) {
+          return fail(DspStagingSyncStatus::SYNCHRONIZATION_FAILED,
+                      waitErr, "cross_stream_event_wait");
+        }
         DSP_DIAG(EXECUTE,
                  "STAGING_D2D: LC->DSP order event (lc=%p dsp=%p) — H2D of fresh "
                  "externals ordered before staging D2D",
@@ -2402,11 +2812,16 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
   // pointer. Keep the device-0 raw array for compatibility and use vectors for
   // secondary devices; activeStagingBuffers_ is the only array consumed below.
   int currentDevice = 0;
+  if (faultRequested("cuda_get_device")) {
+    return fail(DspStagingSyncStatus::DEVICE_SELECTION_FAILED,
+                cudaErrorUnknown, "cuda_get_device_injected");
+  }
   auto deviceStatus = cudaGetDevice(&currentDevice);
   if (deviceStatus != cudaSuccess) {
     DSP_DIAG(MEMORY, "STAGING_DEVICE: cudaGetDevice failed: %s",
              cudaGetErrorString(deviceStatus));
-    return nullptr;
+    return fail(DspStagingSyncStatus::DEVICE_SELECTION_FAILED,
+                deviceStatus, "cuda_get_device");
   }
   if (activeStagingDevice_ != -1 && activeStagingDevice_ != currentDevice) {
     // Address checks are per-device; comparing a dev0 capture against a dev1
@@ -2415,20 +2830,29 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
   }
   activeStagingDevice_ = currentDevice;
 
-  if (currentDevice == 0) {
-    if (placeholderStagingBuffers_ == nullptr) {
-      placeholderStagingBuffers_ = new NDArray*[numExt]();  // zero-initialized
-    }
-    activeStagingBuffers_ = placeholderStagingBuffers_;
-  } else {
-    auto& perDevice = deviceStagingBuffers_[currentDevice];
-    if (perDevice.size() != static_cast<size_t>(numExt)) {
-      perDevice.resize(static_cast<size_t>(numExt), nullptr);
-    }
-    activeStagingBuffers_ = perDevice.data();
+  if (faultRequested("allocation")) {
+    return fail(DspStagingSyncStatus::ALLOCATION_FAILED,
+                cudaErrorMemoryAllocation, "allocation_injected");
   }
-  if (effectiveExternals_ == nullptr) {
-    effectiveExternals_ = new NDArray*[numExt]();
+  try {
+    if (currentDevice == 0) {
+      if (placeholderStagingBuffers_ == nullptr) {
+        placeholderStagingBuffers_ = new NDArray*[numExt]();  // zero-initialized
+      }
+      activeStagingBuffers_ = placeholderStagingBuffers_;
+    } else {
+      auto& perDevice = deviceStagingBuffers_[currentDevice];
+      if (perDevice.size() != static_cast<size_t>(numExt)) {
+        perDevice.resize(static_cast<size_t>(numExt), nullptr);
+      }
+      activeStagingBuffers_ = perDevice.data();
+    }
+    if (effectiveExternals_ == nullptr) {
+      effectiveExternals_ = new NDArray*[numExt]();
+    }
+  } catch (const std::bad_alloc&) {
+    return fail(DspStagingSyncStatus::ALLOCATION_FAILED,
+                cudaErrorMemoryAllocation, "staging_array_allocation");
   }
 
   auto isPlanManagedDeviceBuffer = [&](int extIdx, NDArray* ext) -> bool {
@@ -2527,6 +2951,10 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
       }
 
       NDArray* staging = activeStagingBuffers_[i];
+      if (staging == nullptr) {
+        return fail(DspStagingSyncStatus::ALLOCATION_FAILED,
+                    cudaErrorMemoryAllocation, "fast_path_missing_staging");
+      }
 
       // If JNI wrote directly to staging via writeDeviceBuffer*, skip D2D overwrite
       // — the staging buffer already has the fresh data from the JNI write.
@@ -2545,11 +2973,21 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
 
       void* dstBuf = staging->specialBuffer();
       void* srcBuf = ext->specialBuffer();
+      const size_t bytes = static_cast<size_t>(ext->lengthOf()) * ext->sizeOfT();
+      if (bytes > 0 && (dstBuf == nullptr || srcBuf == nullptr)) {
+        return failTransfer(DspStagingSyncStatus::TRANSFER_FAILED,
+                            cudaErrorInvalidDevicePointer,
+                            "fast_path_null_transfer_buffer", i, srcBuf, dstBuf,
+                            bytes, -1, currentDevice);
+      }
       DSP_LIFECYCLE_EVENT(executeCount_, i, "STAGING_D2D_SRC", ext);
       DSP_LIFECYCLE_EVENT(executeCount_, i, "STAGING_D2D_DST_BEFORE", staging);
       if (dstBuf != nullptr && srcBuf != nullptr) {
-        size_t bytes = static_cast<size_t>(ext->lengthOf()) * ext->sizeOfT();
         if (bytes > 0) {
+          if (faultRequested("d2d_copy")) {
+            return fail(DspStagingSyncStatus::TRANSFER_FAILED,
+                        cudaErrorUnknown, "d2d_copy_injected");
+          }
           // A non-contiguous VIEW source (e.g. a KV-cache slice past_key = staticKey[:,:,0:N,:])
           // MUST NOT be staged with a raw contiguous cudaMemcpyAsync: that copies bytes by linear
           // offset, pulling in data OUTSIDE the view (a scatter to staticKey[:,:,N,:]) and skipping
@@ -2618,11 +3056,20 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
                        i, sourceDevice, currentDevice, bytes,
                        cudaGetErrorString(copyErr));
               cudaGetLastError();
-              return nullptr;
+              return failTransfer(DspStagingSyncStatus::TRANSFER_FAILED,
+                                  copyErr, "fast_path_transfer", i, srcBuf,
+                                  dstBuf, bytes, sourceDevice, currentDevice);
             }
           } else {
             ScopedDspGapStream gapToCudaStr(cudaStr);
+            cudaGetLastError();
             staging->assign(ext);
+            cudaError_t assignErr = cudaGetLastError();
+            if (assignErr != cudaSuccess) {
+              return failTransfer(DspStagingSyncStatus::TRANSFER_FAILED,
+                                  assignErr, "fast_path_assign", i, srcBuf,
+                                  dstBuf, bytes, -1, currentDevice);
+            }
           }
           DSP_LIFECYCLE_RAW(executeCount_, i, "STAGING_D2D_ISSUED",
                             (void*)ext, (void*)ext->dataBuffer(), srcBuf, ext->buffer(),
@@ -2704,7 +3151,8 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
              copiedCount, skippedEmpty, skippedNullBuf, skippedManaged,
              static_cast<int>(cachedVariableExtIndices_.size()));
 
-    return effectiveExternals_;
+    stagingMaintainedThisExec_ = true;
+    return {effectiveExternals_, DspStagingSyncStatus::SUCCESS, 0, true};
   }
 
   for (int i = 0; i < numExt; i++) {
@@ -2752,8 +3200,17 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
     // NDArray and its device buffer persist for the plan's lifetime,
     // giving all arg tables a stable specialBuffer() pointer.
     if (staging == nullptr) {
-      staging = new NDArray(ext->ordering(), *ext->getShapeAsVector(),
-                            ext->dataType(), LaunchContext::defaultContext());
+      if (faultRequested("allocation")) {
+        return fail(DspStagingSyncStatus::ALLOCATION_FAILED,
+                    cudaErrorMemoryAllocation, "staging_buffer_allocation_injected");
+      }
+      try {
+        staging = new NDArray(ext->ordering(), *ext->getShapeAsVector(),
+                              ext->dataType(), LaunchContext::defaultContext());
+      } catch (const std::bad_alloc&) {
+        return fail(DspStagingSyncStatus::ALLOCATION_FAILED,
+                    cudaErrorMemoryAllocation, "staging_buffer_allocation");
+      }
       activeStagingBuffers_[i] = staging;
       DSP_DIAG(MEMORY,
                "STAGING_ALLOC: ext[%d] name='%s' dtype=%d len=%lld bytes=%lld "
@@ -2793,9 +3250,19 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
       // Async on the execution stream — no CPU sync needed.
       void* dstBuf = staging->specialBuffer();
       void* srcBuf = ext->specialBuffer();
+      const size_t bytes = static_cast<size_t>(ext->lengthOf()) * ext->sizeOfT();
+      if (bytes > 0 && (dstBuf == nullptr || srcBuf == nullptr)) {
+        return failTransfer(DspStagingSyncStatus::TRANSFER_FAILED,
+                            cudaErrorInvalidDevicePointer,
+                            "slow_path_null_transfer_buffer", i, srcBuf, dstBuf,
+                            bytes, -1, currentDevice);
+      }
       if (dstBuf != nullptr && srcBuf != nullptr) {
-        size_t bytes = static_cast<size_t>(ext->lengthOf()) * ext->sizeOfT();
         if (bytes > 0) {
+          if (faultRequested("d2d_copy")) {
+            return fail(DspStagingSyncStatus::TRANSFER_FAILED,
+                        cudaErrorUnknown, "d2d_copy_injected");
+          }
           // Stride-aware staging: a non-contiguous VIEW source (e.g. a KV-cache slice
           // past_key = staticKey[:,:,0:N,:]) MUST NOT be raw-copied contiguously — that reads
           // linear bytes OUTSIDE the view (a scatter to staticKey[:,:,N,:]) and skips strided
@@ -2862,11 +3329,20 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
                        i, sourceDevice, currentDevice, bytes,
                        cudaGetErrorString(copyErr));
               cudaGetLastError();
-              return nullptr;
+              return failTransfer(DspStagingSyncStatus::TRANSFER_FAILED,
+                                  copyErr, "slow_path_transfer", i, srcBuf,
+                                  dstBuf, bytes, sourceDevice, currentDevice);
             }
           } else {
             ScopedDspGapStream gapToCudaStr(cudaStr);
+            cudaGetLastError();
             staging->assign(ext);
+            cudaError_t assignErr = cudaGetLastError();
+            if (assignErr != cudaSuccess) {
+              return failTransfer(DspStagingSyncStatus::TRANSFER_FAILED,
+                                  assignErr, "slow_path_assign", i, srcBuf,
+                                  dstBuf, bytes, -1, currentDevice);
+            }
           }
           DSP_DIAG(MEMORY,
                    "STAGING_D2D_SLOW[%d]: name='%s' srcBuf=%p dstBuf=%p bytes=%zu "
@@ -2907,7 +3383,8 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
     effectiveExternals_[i] = staging;
   }
 
-  return effectiveExternals_;
+  stagingMaintainedThisExec_ = true;
+  return {effectiveExternals_, DspStagingSyncStatus::SUCCESS, 0, true};
 }
 
 }  // namespace graph

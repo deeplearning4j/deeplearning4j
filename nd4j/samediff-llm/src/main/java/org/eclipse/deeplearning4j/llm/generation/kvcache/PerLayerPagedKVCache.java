@@ -109,8 +109,10 @@ public class PerLayerPagedKVCache implements AutoCloseable {
     /**
      * Append new KV entries to a specific layer for a specific sequence.
      *
-     * <p>If the layer's policy uses a sliding window and the append would
-     * exceed the window size, oldest blocks are evicted first.</p>
+     * <p>If the layer's policy uses a sliding window and the append would push the
+     * sequence beyond the window size, the oldest blocks are evicted first so the
+     * invariant {@code sequenceLength <= windowSize + newLen} holds and the append
+     * itself always fits inside the window.</p>
      *
      * @param layerIdx  layer index (0-based)
      * @param seqIdx    batch index of the sequence
@@ -122,14 +124,23 @@ public class PerLayerPagedKVCache implements AutoCloseable {
 
         PerLayerKVPolicy.LayerPolicy layerPolicy = policy.getPolicy(layerIdx);
 
-        // Enforce sliding window before append if needed
+        // Evict before appending when the POST-append length would exceed the window:
+        // evicting before the append keeps the append inside the window instead of
+        // leaving the sequence over the window until some later append triggers.
         if (layerPolicy.isSlidingWindow()) {
             long newLen = newKeys.rank() == 4 ? newKeys.size(1) : newKeys.size(0);
             int currentLen = layerCaches[layerIdx].getSequenceLength(seqIdx);
             int totalLen = currentLen + (int) newLen;
 
             if (totalLen > layerPolicy.getWindowSize()) {
-                enforceSlidingWindow(layerIdx, seqIdx);
+                // Keep at most (windowSize - newLen) existing tokens so the
+                // appended tokens fit entirely inside the window.
+                int keepTokens = Math.max(0, layerPolicy.getWindowSize() - (int) newLen);
+                int blocksToEvict = (layerCaches[layerIdx].getSequenceLength(seqIdx)
+                        - keepTokens + blockSize - 1) / blockSize;
+                if (blocksToEvict > 0) {
+                    enforceSlidingWindow(layerIdx, seqIdx, blocksToEvict);
+                }
             }
         }
 
@@ -139,8 +150,8 @@ public class PerLayerPagedKVCache implements AutoCloseable {
     /**
      * Enforce the sliding window for a specific layer and sequence.
      *
-     * <p>Evicts the oldest blocks to keep the sequence length within
-     * the layer's configured window size.</p>
+     * <p>Evicts the oldest blocks (with page-table shift and length update) so the
+     * sequence stays within the layer's configured window size.</p>
      *
      * @param layerIdx layer index
      * @param seqIdx   sequence batch index
@@ -158,30 +169,32 @@ public class PerLayerPagedKVCache implements AutoCloseable {
             return; // Within bounds
         }
 
-        // Calculate how many blocks to evict
-        int excessTokens = currentLen - windowSize;
-        int blocksToEvict = (excessTokens + blockSize - 1) / blockSize;
+        int blocksToEvict = (currentLen - windowSize + blockSize - 1) / blockSize;
+        enforceSlidingWindow(layerIdx, seqIdx, blocksToEvict);
+    }
 
-        log.trace("Sliding window eviction: layer={}, seqIdx={}, currentLen={}, window={}, evicting {} blocks",
-                layerIdx, seqIdx, currentLen, windowSize, blocksToEvict);
+    /**
+     * Evict a specific number of oldest blocks from a layer's sequence. This delegates
+     * to {@link PagedKVCache#evictOldestBlocks(int, int)}, which shifts the page table
+     * and updates the sequence length, so freed blocks can never be double-freed by a
+     * later {@link #freeSequence(int)} and appends always land in valid blocks.
+     *
+     * @param layerIdx        layer index
+     * @param seqIdx          sequence batch index
+     * @param blocksToEvict   number of oldest blocks to evict
+     * @return the number of blocks actually evicted
+     */
+    public int enforceSlidingWindow(int layerIdx, int seqIdx, int blocksToEvict) {
+        validateLayerIdx(layerIdx);
 
-        // Free the oldest blocks for this sequence
-        // Note: This is a simplified implementation; a full implementation would
-        // need to shift the page table and update sequence length
-        int numAllocated = cache.getNumAllocatedBlocks(seqIdx);
-        int toEvict = Math.min(blocksToEvict, numAllocated);
+        PagedKVCache cache = layerCaches[layerIdx];
+        int evicted = cache.evictOldestBlocks(seqIdx, blocksToEvict);
 
-        // Get the page table to identify oldest blocks
-        INDArray pageTable = cache.getPageTableArray(seqIdx);
-        int[] blockIds = pageTable.toIntVector();
-        pageTable.close();
-
-        // Free the oldest blocks (first in page table = oldest)
-        for (int i = 0; i < toEvict; i++) {
-            if (blockIds[i] >= 0) {
-                cache.freeBlocks.push(blockIds[i]);
-            }
+        if (evicted > 0 && log.isTraceEnabled()) {
+            log.trace("Sliding window eviction: layer={}, seqIdx={}, evicted {} blocks, length now {}",
+                    layerIdx, seqIdx, evicted, cache.getSequenceLength(seqIdx));
         }
+        return evicted;
     }
 
     /**

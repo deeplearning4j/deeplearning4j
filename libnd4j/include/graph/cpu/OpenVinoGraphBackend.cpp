@@ -2817,6 +2817,15 @@ Status OpenVinoGraphBackend::executeSegment(
   }
 
   auto& compiled = *compiledHandle;
+  auto fail = [&](const std::string& reason) {
+    const std::string message =
+        reason + " [OpenVINO segment " +
+        std::to_string(seg.def.startSlot) + "-" +
+        std::to_string(seg.def.endSlot) +
+        ", status=KERNEL_FAILURE (50)]";
+    safeSetErrorContext(static_cast<int>(Status::KERNEL_FAILURE), message.c_str());
+    return Status::KERNEL_FAILURE;
+  };
 
   // Lambda to execute a single OV island — captures mapDataType via class scope
   auto runIsland = [&](OvIsland& island) -> Status {
@@ -2865,7 +2874,9 @@ Status OpenVinoGraphBackend::executeSegment(
         }
         DSP_DIAG(EXECUTE, "OpenVINO: input array for source %d has NULL buffer (len=%lld)",
                  srcIdx, (long long)arr->lengthOf());
-        return Status::KERNEL_FAILURE;
+        return fail("OpenVINO input has a null host buffer: source=" +
+                    std::to_string(srcIdx) + ", length=" +
+                    std::to_string(arr->lengthOf()));
       }
       auto& shape = island.cachedInputShapes[i];
       int rank = arr->rankOf();
@@ -2949,7 +2960,8 @@ Status OpenVinoGraphBackend::executeSegment(
       NDArray* arr = outputSlots[outIdx];
       if (arr->buffer() == nullptr) {
         DSP_DIAG(EXECUTE, "OpenVINO: output slot %d has NULL buffer", outIdx);
-        return Status::KERNEL_FAILURE;
+        return fail("OpenVINO output has a null host buffer: slot=" +
+                    std::to_string(outIdx));
       }
 
       auto modelOutType = compiledModel.output(static_cast<int>(i)).get_element_type();
@@ -3010,7 +3022,9 @@ Status OpenVinoGraphBackend::executeSegment(
                  i, outIdx, e.what(),
                  modelOutputShape.to_string().c_str(),
                  (long long)arr->lengthOf());
-        return Status::KERNEL_FAILURE;
+        return fail("OpenVINO set_output_tensor failed for output " +
+                    std::to_string(i) + ", slot=" +
+                    std::to_string(outIdx) + ": " + e.what());
       }
     }
 
@@ -3019,7 +3033,7 @@ Status OpenVinoGraphBackend::executeSegment(
       request.infer();
     } catch (const std::exception& e) {
       DSP_DIAG(EXECUTE, "OpenVINO: infer() failed: %s", e.what());
-      return Status::KERNEL_FAILURE;
+      return fail(std::string("OpenVINO InferRequest::infer threw: ") + e.what());
     }
 
     // Post-inference output validation: OV may infer a dynamic output shape that differs
@@ -3040,7 +3054,10 @@ Status OpenVinoGraphBackend::executeSegment(
         DSP_DIAG(EXECUTE, "OpenVINO: POST-INFER output[%zu] slot %d actual shape exceeds buffer! "
                  "actualElems=%zu bufCap=%zu",
                  i, outIdx, actualElements, bufCapacity);
-        return Status::KERNEL_FAILURE;
+        return fail("OpenVINO inferred output exceeds its NDArray buffer: output=" +
+                    std::to_string(i) + ", slot=" + std::to_string(outIdx) +
+                    ", actualElements=" + std::to_string(actualElements) +
+                    ", capacity=" + std::to_string(bufCapacity));
       }
 
       // ISA-promotion saturating copy: f32 OV tensor → f16 NDArray buffer.
@@ -3118,7 +3135,9 @@ Status OpenVinoGraphBackend::executeSegment(
         if (!nativeExecutor_) {
           DSP_DIAG(EXECUTE, "OpenVINO: native range [%d-%d] requires NativeSlotExecutor but none is set",
                    range.startSlot, range.endSlot);
-          return Status::KERNEL_FAILURE;
+          return fail("OpenVINO mixed segment requires NativeSlotExecutor for range " +
+                      std::to_string(range.startSlot) + "-" +
+                      std::to_string(range.endSlot) + " but none is installed");
         }
         Status st = nativeExecutor_(range.startSlot, range.endSlot);
         if (st != Status::OK) {
@@ -3134,11 +3153,11 @@ Status OpenVinoGraphBackend::executeSegment(
   } catch (const std::exception& e) {
     DSP_DIAG(EXECUTE, "OpenVINO: executeSegment[%d-%d] exception: %s",
              seg.def.startSlot, seg.def.endSlot, e.what());
-    return Status::KERNEL_FAILURE;
+    return fail(std::string("OpenVINO segment execution threw: ") + e.what());
   } catch (...) {
     DSP_DIAG(EXECUTE, "OpenVINO: executeSegment[%d-%d] unknown exception",
              seg.def.startSlot, seg.def.endSlot);
-    return Status::KERNEL_FAILURE;
+    return fail("OpenVINO segment execution threw an unknown exception");
   }
 }
 

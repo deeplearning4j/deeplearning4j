@@ -265,6 +265,31 @@ public class GGUFReader implements Closeable {
     }
 
     /**
+     * Read a bounded byte range from one tensor directly into a {@link ByteBuffer}
+     * without materializing the whole tensor. Direct buffers avoid JVM heap copies
+     * for large streamed loads.
+     *
+     * @param tensorInfo tensor descriptor returned by this reader
+     * @param tensorByteOffset byte offset relative to the start of the tensor payload
+     * @param destination destination buffer; filled from position() to limit()
+     */
+    public void readTensorDataRange(GGMLTensorInfo tensorInfo, long tensorByteOffset,
+                                    ByteBuffer destination)
+            throws IOException {
+        int length = destination.remaining();
+        if (tensorByteOffset < 0 || length < 0
+                || tensorByteOffset > tensorInfo.getDataSize()
+                || length > tensorInfo.getDataSize() - tensorByteOffset) {
+            throw new IOException("Tensor byte range outside " + tensorInfo.getName()
+                    + ": offset=" + tensorByteOffset + ", length=" + length
+                    + ", tensorBytes=" + tensorInfo.getDataSize());
+        }
+        long absoluteOffset = Math.addExact(
+                Math.addExact(dataOffset, tensorInfo.getDataOffset()), tensorByteOffset);
+        readFullyAt(destination, absoluteOffset);
+    }
+
+    /**
      * Get the metadata from the header
      */
     public GGMLMetadata getMetadata() throws IOException, GGMLImportException {

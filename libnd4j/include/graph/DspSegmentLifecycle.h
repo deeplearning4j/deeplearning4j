@@ -595,13 +595,34 @@ static inline void copyCompilationState(GraphSegmentExec& dst, const GraphSegmen
   dst.compilationFailed = src.compilationFailed;
 }
 
-// Reset outcome and compilationFailed for GPU resource teardown functions
-// (platformCleanupSegmentForRebuild, platformFreePlanResources,
-//  platformReleaseSegmentGpuResources). These are called when GPU resources
-// are being freed and the segment returns to a clean state.
+// Reset a segment after GPU resource teardown. Resource release destroys the
+// replay handle, so a sealed phase with PENDING outcome would be incoherent:
+// the next dispatch could attempt capture on SEALED state. Return the whole
+// segment lifecycle to a clean warmup state, including legacy mirrors and
+// captured-address keys.
 static inline void resetForResourceRelease(GraphSegmentExec& exec) {
+  // An empty capture is a valid terminal zero-kernel outcome. Its replay
+  // handle still needs to be destroyed, but changing SEALED back to WARMUP
+  // would make the next dispatch attempt to capture the same graph forever.
+  if (exec.outcome == SegmentExecOutcome::ZERO_KERNEL_SBS &&
+      exec.segPhase.isSealed()) {
+    exec.compilationFailed = false;
+    exec.resetCaptureKeys();
+    exec.markArgsStale();
+    return;
+  }
+  exec.segPhase.reset();
+  exec.lifecycleState = SLS::NEEDS_WARMUP;
+  exec.executionCount = 0;
+  exec.lastReplayExecCount = 0;
   exec.outcome = SegmentExecOutcome::PENDING;
   exec.compilationFailed = false;
+  exec.noFusibleOps = false;
+  exec.captureProducedNoKernels = false;
+  exec.terminalReason = nullptr;
+  exec.compiledByBackend.clear();
+  exec.resetCaptureKeys();
+  exec.markArgsStale();
 }
 
 // Reset outcome and compilationFailed for cache invalidation

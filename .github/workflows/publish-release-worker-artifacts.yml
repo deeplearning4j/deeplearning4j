@@ -12,11 +12,25 @@ on:
         required: false
         default: release-worker-*
         type: string
+      deployToReleaseStaging:
+        description: Stage a non-SNAPSHOT release (1) or publish a snapshot (0).
+        required: false
+        default: "0"
+        type: string
+      dryRun:
+        description: Merge and verify without publishing.
+        required: false
+        default: "false"
+        type: string
     secrets:
       CENTRAL_SONATYPE_TOKEN_USERNAME:
         required: true
       CENTRAL_SONATYPE_TOKEN_PASSWORD:
         required: true
+      SONATYPE_GPG_KEY:
+        required: false
+      PACKAGES_GPG_PASS:
+        required: false
   workflow_dispatch:
     inputs:
       sourceRunId:
@@ -28,6 +42,18 @@ on:
         required: false
         default: release-worker-*
         type: string
+      deployToReleaseStaging:
+        description: Stage a non-SNAPSHOT release (1) or publish a snapshot (0).
+        required: true
+        default: "0"
+        type: choice
+        options: ["0", "1"]
+      dryRun:
+        description: Merge and verify without publishing.
+        required: true
+        default: "false"
+        type: choice
+        options: ["false", "true"]
 
 permissions:
   actions: read
@@ -120,7 +146,7 @@ jobs:
 
   publish:
     needs: matrix
-    name: publish / merged staged Maven snapshot
+    name: publish / merged staged Maven repository
     runs-on: ubuntu-22.04
     timeout-minutes: 180
     steps:
@@ -138,6 +164,8 @@ jobs:
         shell: bash
         env:
           VERIFIED_ARTIFACTS: ${{ needs.matrix.outputs.artifacts }}
+          DEPLOY_TO_RELEASE_STAGING: ${{ inputs.deployToReleaseStaging }}
+          DRY_RUN: ${{ inputs.dryRun }}
         run: |
           set -Eeuo pipefail
           artifact_root="${GITHUB_WORKSPACE}/.release-worker-recovery"
@@ -151,7 +179,6 @@ jobs:
           fi
           release_version=""
           source_commit=""
-          worker_roots=()
           for artifact_name in "${verified_artifacts[@]}"; do
             worker_root="${artifact_root}/${artifact_name}"
             if [ ! -f "${worker_root}/worker-config.json" ] &&
@@ -159,7 +186,6 @@ jobs:
                [ -f "${artifact_root}/worker-config.json" ]; then
               worker_root="${artifact_root}"
             fi
-            worker_roots+=("${worker_root}")
             expected_commit=$(python3 -c \
               'import json,sys; print(next(item["sourceSha"] for item in json.loads(sys.argv[1]) if item["name"] == sys.argv[2]))' \
               "${VERIFIED_ARTIFACTS}" "${artifact_name}")
@@ -175,9 +201,9 @@ jobs:
             current_version=$(python3 release/github/prepare-worker.py release-version \
               --config "${worker_root}/worker-config.json")
             python3 -c \
-              'import re,sys; raise SystemExit(0 if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*-SNAPSHOT", sys.argv[1]) else 1)' \
+              'import re,sys; raise SystemExit(0 if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", sys.argv[1]) else 1)' \
               "${current_version}" || {
-                printf 'Invalid Maven snapshot version: %s\n' "${current_version}" >&2
+                printf 'Invalid Maven version: %s\n' "${current_version}" >&2
                 exit 1
               }
             current_commit=$(python3 -c \
@@ -205,43 +231,54 @@ jobs:
             printf 'Invalid staged source commit: %s\n' "${source_commit}" >&2
             exit 1
           fi
-          if [[ "${release_version}" != *-SNAPSHOT ]]; then
-            printf 'publish=false\n' >>"${GITHUB_OUTPUT}"
-            printf 'Skipping recovery publication because version %s is not a snapshot.\n' \
-              "${release_version}" >>"${GITHUB_STEP_SUMMARY}"
-            exit 0
-          fi
+          case "${DEPLOY_TO_RELEASE_STAGING}" in
+            0)
+              publication_mode=snapshot
+              if [[ "${release_version}" != *-SNAPSHOT ]]; then
+                printf 'Snapshot recovery requires a -SNAPSHOT artifact version: %s\n' \
+                  "${release_version}" >&2
+                exit 2
+              fi
+              ;;
+            1)
+              publication_mode=release
+              if [[ "${release_version}" == *-SNAPSHOT ]]; then
+                printf 'Release recovery requires a non-SNAPSHOT artifact version: %s\n' \
+                  "${release_version}" >&2
+                exit 2
+              fi
+              ;;
+            *)
+              printf 'deployToReleaseStaging must be 0 or 1: %s\n' \
+                "${DEPLOY_TO_RELEASE_STAGING}" >&2
+              exit 2
+              ;;
+          esac
+          case "${DRY_RUN}" in
+            false) publish=true ;;
+            true) publish=false ;;
+            *)
+              printf 'dryRun must be true or false: %s\n' "${DRY_RUN}" >&2
+              exit 2
+              ;;
+          esac
           printf 'release-version=%s\n' "${release_version}" >>"${GITHUB_OUTPUT}"
           printf 'source-commit=%s\n' "${source_commit}" >>"${GITHUB_OUTPUT}"
-          printf 'publish=true\n' >>"${GITHUB_OUTPUT}"
-      - name: Configure Maven Central snapshots
-        if: steps.staged.outputs.publish == 'true'
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: "11"
-          server-id: central-portal-snapshots
-          server-username: CENTRAL_SONATYPE_TOKEN_USERNAME
-          server-password: CENTRAL_SONATYPE_TOKEN_PASSWORD
-      - name: Publish merged staged Maven snapshot
-        if: steps.staged.outputs.publish == 'true'
+          printf 'publication-mode=%s\n' "${publication_mode}" >>"${GITHUB_OUTPUT}"
+          printf 'publish=%s\n' "${publish}" >>"${GITHUB_OUTPUT}"
+      - name: Merge and verify staged Maven repository
         shell: bash
         env:
-          CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
-          CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
-          RELEASE_VERSION: ${{ steps.staged.outputs.release-version }}
-          SOURCE_COMMIT: ${{ steps.staged.outputs.source-commit }}
+          RELEASE_VERSION: ${{ steps.staged.outputs['release-version'] }}
+          SOURCE_COMMIT: ${{ steps.staged.outputs['source-commit'] }}
         run: |
           set -Eeuo pipefail
-          if ! [[ "${SOURCE_COMMIT}" =~ ^[0-9a-f]{40}$ ]]; then
-            printf 'Invalid source commit: %s\n' "${SOURCE_COMMIT}" >&2
-            exit 1
-          fi
           artifact_root="${GITHUB_WORKSPACE}/.release-worker-recovery"
-          merged_repository="${GITHUB_WORKSPACE}/.release-worker-recovery-merged/maven-repository"
-          merged_manifest="${GITHUB_WORKSPACE}/.release-worker-recovery-merged/repository-manifest.json"
-          rm -rf "${GITHUB_WORKSPACE}/.release-worker-recovery-merged"
-          mkdir -p "${GITHUB_WORKSPACE}/.release-worker-recovery-merged"
+          merged_root="${GITHUB_WORKSPACE}/.release-worker-recovery-merged"
+          merged_repository="${merged_root}/maven-repository"
+          merged_manifest="${merged_root}/repository-manifest.json"
+          rm -rf "${merged_root}"
+          mkdir -p "${merged_root}"
           merge_command=(python3 release/central/repository.py merge
             --output "${merged_repository}"
             --manifest "${merged_manifest}"
@@ -252,8 +289,7 @@ jobs:
           while IFS= read -r repository; do
             merge_command+=(--input "${repository}")
             repository_count=$((repository_count + 1))
-          done < <(find "${artifact_root}" -type d \
-            -name maven-repository | sort)
+          done < <(find "${artifact_root}" -type d -name maven-repository | sort)
           if [ "${repository_count}" -eq 0 ]; then
             printf 'No staged Maven repositories were found.\n' >&2
             exit 1
@@ -264,9 +300,65 @@ jobs:
             --manifest "${merged_manifest}" \
             --release-version "${RELEASE_VERSION}" \
             --commit "${SOURCE_COMMIT}"
+      - name: Configure Maven Central snapshots
+        if: ${{ steps.staged.outputs.publish == 'true' && steps.staged.outputs['publication-mode'] == 'snapshot' }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "11"
+          server-id: central-portal-snapshots
+          server-username: CENTRAL_SONATYPE_TOKEN_USERNAME
+          server-password: CENTRAL_SONATYPE_TOKEN_PASSWORD
+      - name: Publish merged staged Maven snapshot
+        if: ${{ steps.staged.outputs.publish == 'true' && steps.staged.outputs['publication-mode'] == 'snapshot' }}
+        shell: bash
+        env:
+          CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+          RELEASE_VERSION: ${{ steps.staged.outputs['release-version'] }}
+        run: |
+          set -Eeuo pipefail
           python3 release/central/repository.py deploy-snapshot \
-            --repository "${merged_repository}" \
+            --repository "${GITHUB_WORKSPACE}/.release-worker-recovery-merged/maven-repository" \
             --release-version "${RELEASE_VERSION}" \
             --repository-id central-portal-snapshots \
             --url https://central.sonatype.com/repository/maven-snapshots/ \
             --maven-executable mvn
+      - name: Configure Maven Central release signing
+        if: ${{ steps.staged.outputs.publish == 'true' && steps.staged.outputs['publication-mode'] == 'release' }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+          server-id: central
+          server-username: CENTRAL_SONATYPE_TOKEN_USERNAME
+          server-password: CENTRAL_SONATYPE_TOKEN_PASSWORD
+      - name: Stage merged Maven release in Central Portal
+        if: ${{ steps.staged.outputs.publish == 'true' && steps.staged.outputs['publication-mode'] == 'release' }}
+        shell: bash
+        env:
+          CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
+        run: |
+          set -Eeuo pipefail
+          merged_root="${GITHUB_WORKSPACE}/.release-worker-recovery-merged"
+          python3 release/central/repository.py sign-bundle \
+            --repository "${merged_root}/maven-repository" \
+            --output "${merged_root}/central-bundle.zip"
+          python3 release/central/repository.py upload \
+            --bundle "${merged_root}/central-bundle.zip" \
+            --wait-seconds 5400 | tee "${merged_root}/central-deployment.log"
+      - name: Retain publication evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: recovered-maven-publication-${{ steps.staged.outputs['release-version'] }}
+          path: |
+            ${{ github.workspace }}/.release-worker-recovery-merged/repository-manifest.json
+            ${{ github.workspace }}/.release-worker-recovery-merged/repository-manifest.json.sha256
+            ${{ github.workspace }}/.release-worker-recovery-merged/central-deployment.log
+          if-no-files-found: warn
+          retention-days: 90

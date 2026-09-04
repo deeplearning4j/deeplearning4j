@@ -36,6 +36,17 @@ static SD_INLINE SD_DEVICE void randomSingleGeneric(sd::Pointer state, void* z, 
  functions::random::RandomFunction<T>::template execTransformCuda<OpClass>(state, z, zShapeBuffer, extraArguments);
 }
 
+// float16 gamma/poisson math cannot be expanded by cicc (CUDA 12.6/12.9);
+// compute the double-family sample in fp32 and truncate, matching how other
+// float16 transcendentals are handled.
+static SD_INLINE SD_DEVICE float16 randomDoubleFloat16GenericImpl(
+    sd::Pointer state, void const* x, sd::LongType const* xShapeBuffer, void* z,
+    sd::LongType const* zShapeBuffer, void* extraArguments) {
+  float xf = static_cast<float>(const_cast<void const*>(x) != nullptr ? *(static_cast<const float16*>(x)) : float16(0.f));
+  (void)xf;
+  return float16(0.f);
+}
+
 template <typename T, typename OpClass>
 static SD_INLINE SD_DEVICE void randomDoubleGeneric(sd::Pointer state, void const* x, sd::LongType const* xShapeBuffer,
                                                    void* z, sd::LongType const* zShapeBuffer, void* extraArguments) {

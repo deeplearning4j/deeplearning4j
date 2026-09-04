@@ -476,13 +476,18 @@ public class DeallocatorService {
      * liveness probe is unavailable (JDK &lt; 16), reports true to preserve the
      * legacy force-everything behavior.
      */
-    private static boolean referentCollected(DeallocatableReference ref) {
-        if (REFERS_TO == null) return true;
+    private static Boolean collectedState(DeallocatableReference ref) {
+        if (REFERS_TO == null) return null;
         try {
             return (Boolean) REFERS_TO.invoke(ref, (Object) null);
         } catch (Throwable t) {
-            return true;
+            return null;
         }
+    }
+
+    private static boolean referentCollected(DeallocatableReference ref) {
+        Boolean collected = collectedState(ref);
+        return collected == null || collected;
     }
 
     /**
@@ -532,6 +537,47 @@ public class DeallocatorService {
         if (flushed > 0 || errors > 0 || skippedLive > 0) {
             log.info("DeallocatorService.forceFlushAll: deallocated {} entries ({} errors, {} live skipped), refMap now {}",
                     flushed, errors, skippedLive, referenceMap.size());
+        }
+        return flushed;
+    }
+
+    /**
+     * Flush only references that the runtime positively identifies as collected.
+     * Unlike {@link #forceFlushAll()}, this method never falls back to flushing live
+     * entries when {@code Reference.refersTo} is unavailable. It is therefore safe
+     * for production phase-boundary reclamation on Android and modern JDKs.
+     *
+     * @return number of positively collected references deallocated
+     */
+    public int flushCollectedReferences() {
+        if (REFERS_TO == null) {
+            log.debug("Reference.refersTo is unavailable; collected-only flush skipped");
+            return 0;
+        }
+
+        int flushed = 0;
+        int errors = 0;
+        for (Long id : new ArrayList<>(referenceMap.keySet())) {
+            DeallocatableReference ref = referenceMap.get(id);
+            if (ref == null || !Boolean.TRUE.equals(collectedState(ref))) {
+                continue;
+            }
+            try {
+                ref.deallocate();
+                referenceMap.remove(id, ref);
+                flushed++;
+            } catch (RuntimeException | Error e) {
+                errors++;
+                if (log.isDebugEnabled()) {
+                    log.debug("flushCollectedReferences: error deallocating id={}: {}",
+                            id, e.getMessage());
+                }
+            }
+        }
+        if (flushed > 0 || errors > 0) {
+            log.info("DeallocatorService.flushCollectedReferences: deallocated {} entries "
+                            + "({} errors), refMap now {}",
+                    flushed, errors, referenceMap.size());
         }
         return flushed;
     }

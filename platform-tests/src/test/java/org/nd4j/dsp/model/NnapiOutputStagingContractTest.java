@@ -8,9 +8,227 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag("source-lint")
 class NnapiOutputStagingContractTest {
+
+    @Test
+    void deferredNnapiCompilationCannotReturnToHostWarmupAfterReplayStarts()
+            throws Exception {
+        Path root = Path.of("").toAbsolutePath().normalize().resolve("..").normalize();
+        String segments = Files.readString(root.resolve(
+                "libnd4j/include/graph/impl/NativeDynamicShapePlan_segments.cpp"));
+        String runtimePlan = Files.readString(root.resolve(
+                "libnd4j/include/graph/impl/NativeDynamicShapePlan.cpp"));
+        String compiler = Files.readString(root.resolve(
+                "libnd4j/include/graph/impl/NativePlanCompiler.cpp"));
+        String cpuPlatform = Files.readString(root.resolve(
+                "libnd4j/include/graph/cpu/NativeDynamicShapePlan_cuda_stubs.cpp"));
+        String outputUtils = Files.readString(root.resolve(
+                "libnd4j/include/graph/DspSegmentOutputUtils.h"));
+        String plan = Files.readString(root.resolve(
+                "libnd4j/include/graph/NativeDynamicShapePlan.h"));
+
+        assertTrue(plan.contains(
+                        "bool isShapesFrozen() const { return planLifecycle_.isShapesFrozen() || planLifecycle_.isReplaying(); }"),
+                "The canonical frozen predicate must include replay steady state");
+        assertTrue(segments.contains("GRAPH_BACKEND_PREREQUISITE_BLOCKED")
+                        && segments.contains("lowering.prerequisiteBlocked()")
+                        && cpuPlatform.contains("lowering.prerequisiteBlocked()")
+                        && cpuPlatform.contains("DSP_THROW(COMPILE, \"%s\", message.c_str())"),
+                "Missing finalized compiler inputs must be terminal before fallback or sealing");
+        assertTrue(segments.contains("attemptedArtifactMatchesCurrentShape")
+                        && segments.contains("COMMITTED_GRAPH_BACKEND_FAILURE")
+                        && segments.contains("STALE_GRAPH_BACKEND_ARTIFACT_REJECTED")
+                        && segments.contains(
+                                "return DspExecutionResult(result.status, true, false);"),
+                "A current-shape committed NNAPI failure must remain terminal while obsolete shape-drift artifacts return to pre-execution resolution");
+        assertTrue(runtimePlan.contains("compiler-required phase cannot seal")
+                        && compiler.contains("compiler calibration: preserved")
+                        && outputUtils.contains("disableInPlaceConsumersOfSlots("),
+                "Legacy warmup preservation may remain for other backends, but compiler sealing must stay fail closed");
+    }
+
+    @Test
+    void tensorG3UsesCalibratedSignedPointwiseEdgeTpuIslands() throws Exception {
+        Path root = Path.of("").toAbsolutePath().normalize().resolve("..").normalize();
+        String source = Files.readString(
+                root.resolve("libnd4j/include/graph/cpu/NnapiGraphBackend.cpp"));
+        String artifact = Files.readString(
+                root.resolve("libnd4j/include/graph/cpu/NnapiGraphBackend.h"));
+
+        assertTrue(source.contains(
+                        "nnapi-edgetpu-signed-pointwise-v7-dynamic-boundary-safe")
+                        && source.contains(
+                                "std::string(deviceName) != requiredDeviceName_")
+                        && source.contains("isSignedPointwiseSegment(")
+                        && source.contains("name == \"add\"")
+                        && source.contains("name == \"multiply\"")
+                        && source.contains("name == \"sigmoid\"")
+                        && source.contains(
+                                "slot.wiring.inputSourceIndices[0] == slot.wiring.inputSourceIndices[1]")
+                        && source.contains(
+                                "selectedDeviceFeatureLevel_ < ANEURALNETWORKS_FEATURE_LEVEL_4"),
+                "Tensor G3 admission must be exact-device, signed-INT8, and exclude precision-critical normalization squares");
+        assertTrue(source.contains("kCompiledBoundaryCalibrationHeadroom = 2.0")
+                        && source.contains("deriveGuardedCalibrationBucket(")
+                        && source.contains("observedAbsoluteMaximum <= 0.0f")
+                        && source.contains(
+                                "signed pointwise calibration requires a positive observed range")
+                        && source.contains("std::frexp(guarded, &exponent)")
+                        && source.contains("std::ldexp(1.0, exponent)")
+                        && !source.contains(
+                                "digest.mixValue(operand.observedAbsoluteMaximum)"),
+                "Signed pointwise calibration must reserve deterministic bucketed headroom and avoid cache churn within a bucket");
+        assertTrue(source.contains("broadcastPointwiseDimensions(")
+                        && source.contains(
+                                "first->admittedAbsoluteMaximum) +")
+                        && source.contains(
+                                "first->admittedAbsoluteMaximum) *")
+                        && source.contains("output.scale = 1.0f / 256.0f")
+                        && source.contains("output.zeroPoint = -128")
+                        && source.contains("output.scale > inputScaleProduct")
+                        && source.contains("std::nextafter("),
+                "ADD/MUL ranges and LOGISTIC's fixed signed quantization contract must be explicit");
+        assertTrue(source.contains(
+                        "NNAPI_SIGNED_POINTWISE_LOWERING_COMMITTED")
+                        && source.contains(
+                                "NNAPI_SIGNED_POINTWISE_PLAN_RANGE_REJECTED")
+                        && source.contains(
+                                "CompiledModel::BoundaryTransform::QUANTIZE_ASYMM_SIGNED")
+                        && source.contains(
+                                "CompiledModel::BoundaryTransform::DEQUANTIZE_ASYMM_SIGNED")
+                        && source.contains(
+                                "compiled->backendCacheAbi.c_str()")
+                        && source.contains("makeRequestedOutputIdentity(")
+                        && source.contains("NNAPI_MODEL_IO_IDENTITY")
+                        && source.contains(
+                                "existing->requestedOutputIdentity ==")
+                        && source.contains(
+                                "completeArtifactDigest.mixString(compiled.modelIoIdentity)")
+                        && source.contains(
+                                "entry.wasCompiled = compiledSourceSlots.count(i) != 0"),
+                "Pointwise islands must reuse guarded INT8 staging and cache/audit the emitted device artifact");
+        assertTrue(source.contains("nnapi-q4k-conv-v14-finalized-per-op-calibration")
+                        && source.contains("sdx.nnapi.q4.calibration.v1")
+                        && source.contains("parseFinalizedQ4KCalibration(")
+                        && source.contains("calibration sample count must be an integer of at least 32")
+                        && source.contains("calibration dataset digest must be lowercase SHA-256")
+                        && source.contains("NNAPI_FINALIZED_Q4K_CALIBRATION")
+                        && source.contains("kCompiledQ4OutputInteriorQuantMax = 126.0f")
+                        && source.contains(
+                                "contract.outputScale * kCompiledQ4OutputInteriorQuantMax")
+                        && !source.contains("kCompiledQ4UnstableFourActivationBucket")
+                        && !source.contains("kCompiledQ4UnstableUnitOutputBucket"),
+                "Q4 ranges must come from source-bound per-op calibration while code 127 stays an overflow sentinel");
+        assertTrue(source.contains("findPublishedBoundaryCalibration(")
+                        && source.contains("NNAPI_INHERITED_BOUNDARY")
+                        && source.contains("NNAPI_FINALIZED_Q4K_CALIBRATION")
+                        && source.contains(
+                                "signed pointwise internal qmatmul input requires an")
+                        && source.contains("isRmsNormalizationOutputSource(")
+                        && source.contains(
+                                "signed pointwise RMS-normalization input requires")
+                        && source.contains(
+                                "signed pointwise dynamic internal input requires an inherited")
+                        && source.contains("!slots[producerSlot].frozenConstantSlot()")
+                        && source.contains(
+                                "mapping.sourceBufferIdentity != sourceBuffer")
+                        && source.contains(
+                                "(!signedPointwise && mapping.quantizationZeroPoint != 0)")
+                        && source.contains("const bool affineSigned =")
+                        && artifact.contains(
+                                "DataBuffer* sourceBufferIdentity = nullptr"),
+                "Adjacent compiled artifacts must inherit plan-scoped quantization envelopes, reject unbounded host matmul inputs, and preserve affine zero points");
+        assertTrue(source.contains("NNAPI_Q4K_OUTPUT_RANGE_REJECTED")
+                        && source.contains("quantized_endpoint_saturation")
+                        && source.contains("observed_min=%.8g observed_max=%.8g observed_absmax=%.8g")
+                        && source.contains("quantizedValues[element] < -126")
+                        && source.contains("quantizedValues[element] > 126")
+                        && source.contains("return Status::KERNEL_FAILURE;"),
+                "Q4 output endpoint saturation must fail closed before dequantized copyback");
+        assertTrue(artifact.contains(
+                        "float calibrationAbsoluteMaximum = -1.0f")
+                        && artifact.contains("std::string backendCacheAbi;")
+                        && artifact.contains("std::string requestedOutputIdentity;")
+                        && artifact.contains("std::string modelIoIdentity;"),
+                "The compiled artifact must own its admitted range, lowering ABI, and exact model I/O identity");
+        assertTrue(source.contains(
+                        "isQ4KQMatMul(slots[slotIndex]) ||")
+                        && source.contains("NNAPI_COMPILATION_AUDIT_REJECTED")
+                        && source.contains("reason=uncovered_source_slot"),
+                "Q4 feature gating and complete source-slot audit must fail before artifact publication");
+    }
+
+    @Test
+    void tensorG3TextSessionOwnsOneFixedPrecompiledRollingPlan() throws Exception {
+        Path root = Path.of("").toAbsolutePath().normalize().resolve("..").normalize();
+        String generation = Files.readString(root.resolve(
+                "libnd4j/include/legacy/impl/SdxGenerationSession.cpp"));
+        String runtimeHeader = Files.readString(root.resolve(
+                "libnd4j/include/dsp/runtime/dsp_runtime_c.h"));
+        String metadata = Files.readString(root.resolve(
+                "libnd4j/include/legacy/impl/SdxTextGenerationMetadata.cpp"));
+        String nativeOps = Files.readString(root.resolve(
+                "libnd4j/include/legacy/impl/NativeOps_dsp_shared.cpp"));
+        String sdk = Files.readString(root.resolve(
+                "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-model/src/main/java/"
+                        + "org/nd4j/dsp/model/SdxPlatformSdk.java"));
+
+        assertTrue(runtimeHeader.contains("int32_t fixed_context_capacity;")
+                        && runtimeHeader.contains("sdxGetGenerationContextCapacity"),
+                "The stable session ABI must carry and expose one fixed physical capacity");
+        int contextFactory = generation.indexOf("createBoundContext(");
+        int soleContextCall = generation.indexOf("createBoundContext(", contextFactory + 1);
+        assertTrue(contextFactory >= 0 && soleContextCall > contextFactory
+                        && generation.indexOf("createBoundContext(", soleContextCall + 1) < 0,
+                "A generation session must contain one context factory and exactly one context/plan call");
+        assertTrue(!generation.contains("prefillContext")
+                        && !generation.contains("clearExecutionState")
+                        && generation.contains("initializeFixedPlan(session.get())")
+                        && generation.contains("precompileBoundContext(")
+                        && generation.contains("kMaxFixedPlanConvergencePasses")
+                        && generation.contains("while ((!session->hasExecutionReport ||")
+                        && generation.contains("SDX_FIXED_PLAN_CONVERGENCE")
+                        && !generation.contains("stablePass < 2")
+                        && generation.contains("plan_phase != 2")
+                        && generation.contains("resetFixedExecutionState(session, &error)")
+                        && generation.contains("droppedPromptTokens")
+                        && generation.contains("effectivePrompt =")
+                        && generation.contains("generateToContextLimit")
+                        && generation.contains("modelVariableShape(")
+                        && generation.contains("FIXED_PLAN_KV_SHAPES_DERIVED"),
+                "Load, prompt ingestion, rolling-window generation, and reset must reuse one REPLAYING plan");
+        assertTrue(generation.contains(
+                        "bool resetFixedExecutionState(\n    sdx_generation_session_t* session, std::string* error)")
+                        && generation.contains(
+                                "if (array == nullptr) array = findNamed(session->decodeOwned, name);")
+                        && generation.contains(
+                                "fixed execution reset could not resolve input:")
+                        && generation.contains(
+                                "return fail(session, SDX_STATUS_EXECUTION_FAILED, error);"),
+                "Fixed-state reset must validate every KV/recurrent binding and propagate failure");
+        int convergenceLoop = generation.indexOf(
+                "while ((!session->hasExecutionReport ||");
+        int convergenceReset = generation.indexOf(
+                "resetFixedExecutionState(session, &error)", convergenceLoop);
+        int convergenceExecute = generation.indexOf(
+                "status = executeFixedStep(", convergenceLoop);
+        assertTrue(convergenceLoop >= 0
+                        && convergenceReset > convergenceLoop
+                        && convergenceExecute > convergenceReset,
+                "Every lifecycle-convergence pass must reset recurrent/KV state before executing the fixed plan");
+        assertTrue(metadata.contains("readOptionalKvShapeTemplates(")
+                        && metadata.contains(
+                                "KV shape arrays must both be absent or match the KV layer count")
+                        && nativeOps.contains("getLoadedModelVariableShape(")
+                        && nativeOps.contains("variable->shape()"),
+                "Legacy bundles may omit duplicated KV templates only when the loaded FlatGraph supplies them");
+        assertTrue(sdk.contains("false,\n                256))"),
+                "Tensor G3 capacity must be provider-owned rather than app-owned");
+    }
 
     @Test
     void q4KMatmulLoweringIsBackendOwnedQuantizedAndCacheSeparated()
@@ -19,6 +237,10 @@ class NnapiOutputStagingContractTest {
         Path backend = root.resolve("libnd4j/include/graph/cpu/NnapiGraphBackend.cpp");
         Path header = backend.resolveSibling("NnapiGraphBackend.h");
         Path plan = root.resolve("libnd4j/include/graph/impl/NativeDynamicShapePlan.cpp");
+        Path segments = root.resolve(
+                "libnd4j/include/graph/impl/NativeDynamicShapePlan_segments.cpp");
+        Path backendContract = root.resolve("libnd4j/include/graph/GraphBackend.h");
+        Path resolver = root.resolve("libnd4j/include/graph/GraphBackendResolver.h");
         assertTrue(Files.isRegularFile(backend), "NNAPI backend source was not found");
         assertTrue(Files.isRegularFile(header), "NNAPI backend header was not found");
         assertTrue(Files.isRegularFile(plan), "DSP execution-plan source was not found");
@@ -26,10 +248,13 @@ class NnapiOutputStagingContractTest {
         String source = Files.readString(backend);
         String artifact = Files.readString(header);
         String executionPlan = Files.readString(plan);
+        String segmentExecution = Files.readString(segments);
+        String backendPolicy = Files.readString(backendContract);
+        String resolverPolicy = Files.readString(resolver);
 
         assertTrue(source.contains("name == \"ggml_qmatmul\"")
                         && source.contains("args.iArgs[0] != 8")
-                        && source.contains("Q4_K packed weights must be an inference-static external source")
+                        && source.contains("Q4_K packed weights must be an immutable external constant")
                         && source.contains("non_standalone_compile"),
                 "Only standalone immutable Q4_K ggml_qmatmul contracts may enter NNAPI lowering");
         assertTrue(source.contains("decodeQ4KBlock(")
@@ -39,19 +264,25 @@ class NnapiOutputStagingContractTest {
         assertTrue(source.contains("ANEURALNETWORKS_TENSOR_QUANT8_ASYMM_SIGNED")
                         && source.contains("ANEURALNETWORKS_TENSOR_QUANT8_SYMM_PER_CHANNEL")
                         && source.contains("ANeuralNetworksModel_setOperandSymmPerChannelQuantParams(")
+                        && source.contains("artifact.perChannelBiasScales")
+                        && source.contains("activationScale * channelScale")
+                        && source.contains("effective channel scales are implicitly")
+                        && !source.contains("reason=bias_per_channel_params")
                         && source.contains("NNAPI_Q4K_EMITTED slot=%d op=CONV_2D emitted_ops=1")
                         && source.contains("shape_adaptation=metadata_only"),
                 "The EdgeTPU artifact must be one signed-INT8 per-channel 1x1 convolution");
         assertTrue(artifact.contains("std::vector<int8_t> filter;")
                         && artifact.contains("std::vector<float> perChannelScales;")
+                        && artifact.contains("std::vector<float> perChannelBiasScales;")
                         && artifact.contains("std::vector<int32_t> zeroBias;")
                         && artifact.contains("std::vector<QuantizedQ4KConstant> q4kConstants;")
                         && artifact.contains("std::mutex executionMutex;"),
                 "Converted constants and execution ownership must remain in the segment artifact");
-        assertTrue(source.contains("derivePlanSymmetricInt8Scale(")
-                        && source.contains("reduceNumber(reduce::AMax)")
-                        && source.contains("policy.precompileBeforeFirstExecution = false")
-                        && source.contains("policy.allowsShapeOnlyWarmup = false")
+        assertTrue(source.contains("parseFinalizedQ4KCalibration(")
+                        && source.contains("policy.precompileBeforeFirstExecution = true")
+                        && source.contains("policy.allowsShapeOnlyWarmup = true")
+                        && source.contains("policy.deferCompilationUntilPlanFreeze = false")
+                        && source.contains("policy.requiresPrecommitFunctionalWarmup = false")
                         && source.contains("QUANTIZE_ASYMM_SIGNED")
                         && source.contains("DEQUANTIZE_ASYMM_SIGNED")
                         && source.contains("quantizeSymmetricInt8(")
@@ -59,8 +290,15 @@ class NnapiOutputStagingContractTest {
                         && source.contains("NNAPI_Q4K_INPUT_QUANTIZED")
                         && source.contains("NNAPI_Q4K_OUTPUT_DEQUANTIZED")
                         && source.contains("NNAPI_Q4K_PLAN_RANGE_REJECTED")
-                        && source.contains("return Status::BAD_GRAPH;"),
-                "DSP must value-warm the plan, derive per-slot ranges, and use the shared quantizer for NNAPI boundaries");
+                        && source.contains("return Status::KERNEL_FAILURE;"),
+                "DSP must compile from finalized metadata before the first value-producing NNAPI execution");
+        assertTrue(backendPolicy.contains("GraphBackendCompilationReadiness")
+                        && backendPolicy.contains("compilationReadiness(")
+                        && resolverPolicy.contains("backend->compilationReadiness(")
+                        && resolverPolicy.contains("prerequisiteBlockedBackend")
+                        && segmentExecution.contains("GRAPH_BACKEND_PREREQUISITE_BLOCKED")
+                        && executionPlan.contains("BACKEND_PRECOMPILE_FASTPATH"),
+                "Every graph backend must share one fail-closed compilation-readiness lifecycle");
         assertTrue(!source.contains("kTensorG3Q4ActivationScale")
                         && !source.contains("kTensorG3Q4OutputScale")
                         && !source.contains("0.03125f")
@@ -120,10 +358,20 @@ class NnapiOutputStagingContractTest {
         Path root = Path.of("").toAbsolutePath().normalize().resolve("..").normalize();
         Path producer = root.resolve(
                 "nd4j/sdx-aot/src/main/android/build-android-cpu-importer-sdk.sh");
+        Path acceleratorProducer = root.resolve(
+                "libnd4j/tools/mobile/build-android-accelerator.sh");
+        Path nativePom = root.resolve(
+                "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/pom.xml");
         assertTrue(Files.isRegularFile(producer),
                 "Android CPU importer producer was not found");
+        assertTrue(Files.isRegularFile(acceleratorProducer),
+                "Android accelerator producer was not found");
+        assertTrue(Files.isRegularFile(nativePom),
+                "ND4J native Maven descriptor was not found");
 
         String source = Files.readString(producer);
+        String acceleratorSource = Files.readString(acceleratorProducer);
+        String nativePomSource = Files.readString(nativePom);
         assertTrue(source.contains("run_native_platform_stage compile -Dlibnd4j.triton=OFF")
                         && source.contains("-Dlibnd4j.triton=OFF \\")
                         && source.contains("'triton=off'")
@@ -139,6 +387,102 @@ class NnapiOutputStagingContractTest {
         assertTrue(!source.contains("run_native_platform_stage compile -Dlibnd4j.triton=ON")
                         && !source.contains("Triton CPU and its LLVM/MLIR runtime closure remain"),
                 "The importer producer must not retain the obsolete compiler-enabled contract");
+        assertTrue(source.contains("':(exclude,glob)libnd4j/**/*.cu'")
+                        && source.contains("':(exclude,glob)libnd4j/**/*.cuh'")
+                        && source.contains("unrelated CUDA edits must")
+                        && source.contains("nd4j/nd4j-backends/nd4j-api-parent/nd4j-api"),
+                "Android CPU cache/source manifests must exclude CUDA translation units while retaining managed DSP lifecycle sources");
+        assertTrue(source.contains("dd if=\"$source_library\" of=\"$destination_library\"")
+                        && source.contains("iflag=fullblock")
+                        && source.contains("managed native byte copy changed content")
+                        && source.contains(
+                                "managed native payload changed during Android CPU importer publication"),
+                "Deployment stripping must operate on verified userspace-copied bytes and revalidate the immutable managed payload");
+        assertTrue(nativePomSource.contains("<exclude name=\"*.so.tmp*\"/>")
+                        && source.contains(
+                                "stale_native_linker_outputs=(\"$NATIVE_BUILD_DIR\"/*.so.tmp*)")
+                        && acceleratorSource.contains(
+                                "stale_native_linker_outputs=(\"$NATIVE_BUILD_DIR\"/*.so.tmp*)")
+                        && source.contains("rm -f -- \"${stale_native_linker_outputs[@]}\"")
+                        && acceleratorSource.contains(
+                                "rm -f -- \"${stale_native_linker_outputs[@]}\""),
+                "Android native packaging must exclude and remove abandoned atomic-linker temporary libraries");
+    }
+
+    @Test
+    void androidPlanTeardownReleasesAndAccountsForNnapiConstants() throws Exception {
+        Path root = Path.of("").toAbsolutePath().normalize().resolve("..").normalize();
+        String planHeader = Files.readString(
+                root.resolve("libnd4j/include/graph/NativeDynamicShapePlan.h"));
+        String cpuLifecycle = Files.readString(root.resolve(
+                "libnd4j/include/graph/cpu/NativeDynamicShapePlan_cuda_stubs.cpp"));
+        String nnapiHeader = Files.readString(
+                root.resolve("libnd4j/include/graph/cpu/NnapiGraphBackend.h"));
+        String nnapiSource = Files.readString(
+                root.resolve("libnd4j/include/graph/cpu/NnapiGraphBackend.cpp"));
+
+        assertTrue(cpuLifecycle.contains("platformReleaseSegmentGpuResources()")
+                        && cpuLifecycle.contains("seg.resetGraphBackend();"),
+                "CPU/Android session teardown must release direct graph backend artifacts");
+        assertTrue(planHeader.contains("compiledGraphBackendArtifactOwnedBytes")
+                        && planHeader.contains(
+                                "total += segment.compiledGraphBackendArtifactOwnedBytes")
+                        && planHeader.contains("compiledGraphBackendArtifactOwnedBytes = 0;"),
+                "The plan cache must count and clear opaque backend artifact memory");
+        assertTrue(nnapiHeader.contains("size_t ownedBytes() const")
+                        && nnapiHeader.contains(
+                                "std::vector<QuantizedQ4KConstant>().swap(q4kConstants)")
+                        && nnapiSource.contains(
+                                "this, shapeKey, compiled, compiled->ownedBytes()"),
+                "NNAPI must publish its Q4 constant footprint and free capacity after model teardown");
+    }
+
+    @Test
+    void cudaPlanTeardownReleasesAndAccountsForCaptureWorkspaces() throws Exception {
+        Path root = Path.of("").toAbsolutePath().normalize().resolve("..").normalize();
+        String planHeader = Files.readString(
+                root.resolve("libnd4j/include/graph/NativeDynamicShapePlan.h"));
+        String planLifecycle = Files.readString(root.resolve(
+                "libnd4j/include/graph/impl/NativeDynamicShapePlan.cpp"));
+        String cudaLifecycle = Files.readString(root.resolve(
+                "libnd4j/include/graph/impl/NativeDynamicShapePlan_cuda.cu"));
+
+        assertTrue(planHeader.contains("total += sharedCaptureWorkspaceBytes_")
+                        && planHeader.contains("total += cublasWorkspaceSize_")
+                        && planHeader.contains("!handle->isWorkspaceExternal()")
+                        && planHeader.contains("total += handle->getWorkspaceBytes()"),
+                "The plan-cache budget must include shared and handle-owned replay/cuBLAS workspaces");
+        int releaseStart = planLifecycle.indexOf(
+                "int NativeDynamicShapePlan::releaseGpuIntermediates()");
+        int graphsQuiesced = planLifecycle.indexOf(
+                "platformReleaseSegmentGpuResources();", releaseStart);
+        int deferredDeletesFlushed = planLifecycle.indexOf(
+                "flushDeferredSlotDeletes();", releaseStart);
+        int untrackedRetired = planLifecycle.indexOf(
+                "std::memset(untrackedOutputCache_", releaseStart);
+        int captureArenaReleased = planLifecycle.indexOf(
+                "platformFreeCaptureWorkspace();", untrackedRetired);
+        assertTrue(releaseStart >= 0 && graphsQuiesced > releaseStart
+                        && deferredDeletesFlushed > graphsQuiesced
+                        && untrackedRetired > deferredDeletesFlushed
+                        && captureArenaReleased > untrackedRetired,
+                "Graphs must quiesce before buffer retirement, while capture arenas stay registered until all interior DataBuffers retire");
+        assertTrue(cudaLifecycle.contains(
+                                "pool.unregisterCaptureWorkspace(sharedCaptureWorkspace_)")
+                        && cudaLifecycle.contains(
+                                "pool.free(sharedCaptureWorkspace_, workspaceDevice, nullptr)")
+                        && cudaLifecycle.contains("handle->releaseWorkspace(")
+                        && cudaLifecycle.contains("removeDirtyStream(")
+                        && cudaLifecycle.contains("ownedStreamDeviceId_")
+                        && cudaLifecycle.contains("invalidateCacheForSegments(")
+                        && cudaLifecycle.contains("sharedCaptureWorkspace_ = nullptr")
+                        && cudaLifecycle.contains("sharedCaptureWorkspaceBytes_ = 0"),
+                "Session reset/passivation must release shared and handle-owned capture arenas after safe retirement");
+        assertTrue(planLifecycle.contains(
+                                "std::memset(untrackedOutputCache_")
+                        && !planLifecycle.substring(releaseStart).contains(
+                                "untrackedOutputCacheSize_ = 0"),
+                "A cold cached plan must retain its untracked-output pointer table for re-warmup");
     }
 
     @Test
@@ -219,16 +563,15 @@ class NnapiOutputStagingContractTest {
         String header = Files.readString(backendHeader);
         String segmentSource = Files.readString(segmentExecutor);
         String lifecycleSource = Files.readString(planLifecycle);
-        int descriptorValidation = source.indexOf(
-                "matchesCompiledDescriptor(arr, mapping.sourceDataType,");
         int paddingOptIn = source.indexOf(
                 "ANeuralNetworksExecution_enableInputAndOutputPadding(execution, true);");
-        int staging = source.indexOf(
-                "struct StagedOutputBuffer {",
-                descriptorValidation);
+        int staging = source.indexOf("struct StagedOutputBuffer {");
+        int descriptorValidation = source.indexOf(
+                "matchesCompiledDescriptor(arr, mapping.sourceDataType,",
+                staging);
         int alignmentQuery = source.indexOf(
                 "ANeuralNetworksCompilation_getPreferredMemoryAlignmentForOutput(",
-                staging);
+                descriptorValidation);
         int paddingQuery = source.indexOf(
                 "ANeuralNetworksCompilation_getPreferredMemoryPaddingForOutput(",
                 alignmentQuery);
@@ -315,8 +658,8 @@ class NnapiOutputStagingContractTest {
                 "Live DSP output metadata must match the compiled operand descriptor");
         assertTrue(paddingOptIn >= 0 && paddingOptIn < staging,
                 "NNAPI padding support must be enabled before any operand is bound");
-        assertTrue(staging > descriptorValidation,
-                "Every output must receive independent aligned staging storage");
+        assertTrue(descriptorValidation > staging,
+                "Every staged output must validate the live array against its compiled descriptor");
         assertTrue(alignmentQuery > staging,
                 "Output staging must query the selected compilation's preferred alignment");
         assertTrue(paddingQuery > alignmentQuery,
@@ -668,6 +1011,52 @@ class NnapiOutputStagingContractTest {
     }
 
     @Test
+    void tensorG3RawQ4PreparationProducesCalibrationAfterCanonicalization()
+            throws Exception {
+        Path importer = Path.of("")
+                .toAbsolutePath()
+                .normalize()
+                .resolve("../nd4j/sdx-aot/src/main/java/org/eclipse/deeplearning4j/sdx/aot/SdxGgufModelPreparer.java")
+                .normalize();
+        String source = Files.readString(importer);
+
+        int canonicalIdentity = source.indexOf(
+                "canonicalIdentity = SdxSourceIdentity.identify(canonical)");
+        int calibration = source.indexOf("prepareTensorG3Q4Calibration(", canonicalIdentity);
+        assertTrue(canonicalIdentity >= 0
+                        && calibration > canonicalIdentity
+                        && source.contains("SdxTensorG3Q4Calibration.calibrate(")
+                        && source.contains("writeTensorG3Q4Profile(")
+                        && source.contains("cachedTargetMatchesCanonicalProfile(")
+                        && source.contains("compileOptionsBuilder.quantizationConfig(quantizationConfig)")
+                        && source.contains("targetSoc, quantizationConfig != null")
+                        && !source.contains("options.path(\"quantizationConfigPath\").asText(null)")
+                        && !source.contains("requiresFinalizedQ4Calibration()"),
+                "Raw Tensor G3 Q4 import must generate source-bound calibration internally after canonical SDZ identity exists");
+    }
+
+    @Test
+    void generationPipelineRetiresFrozenBorrowerBeforeClosingRetainedInputs()
+            throws Exception {
+        Path pipeline = Path.of("")
+                .toAbsolutePath()
+                .normalize()
+                .resolve("../nd4j/samediff-llm/src/main/java/org/eclipse/deeplearning4j/llm/generation/GenerationPipeline.java")
+                .normalize();
+        String source = Files.readString(pipeline);
+        int close = source.indexOf(
+                "Every retained generation state below owns arrays");
+        int reset = source.indexOf("decoder.resetSession()", close);
+        int clear = source.indexOf("decoder.clearDynamicShapePlanCache()", reset);
+        int retainedState = source.indexOf("InGraphKvState cachedOneShot", clear);
+        int stateClose = source.indexOf("cachedOneShot.close()", retainedState);
+
+        assertTrue(close >= 0 && reset > close && clear > reset
+                        && retainedState > clear && stateClose > retainedState,
+                "Pipeline close must retire the decoder session/native plan before releasing retained fixed-buffer inputs");
+    }
+
+    @Test
     void androidAotObjectCacheIncludesExactManagedClassBytes() throws Exception {
         Path identity = Path.of("")
                 .toAbsolutePath()
@@ -691,6 +1080,12 @@ class NnapiOutputStagingContractTest {
                         && builderSource.contains("source_manifest_sha256=*) continue")
                         && !builderSource.contains("classes_sha256=*) continue"),
                 "Compatible object reuse may ignore final-link source paths, but never managed class bytes");
+        assertTrue(builderSource.contains("nd4j/nd4j-ggml")
+                        && builderSource.contains("[nd4j-ggml]=\"$FRESH_CLASSES_ROOT/nd4j-ggml\"")
+                        && builderSource.contains("[nd4j-ggml]=\"org/nd4j/ggml/GGMLModelImport.class\"")
+                        && builderSource.contains("CURRENT_CLASSPATH_IDS=(nd4j-native-runtime tokenizers-native-preset tokenizers-native nd4j-ggml")
+                        && builderSource.contains("  nd4j-ggml\n"),
+                "Android AOT cache identity must compile and hash exact nd4j-ggml classes instead of reusing a SNAPSHOT jar");
     }
 
     @Test

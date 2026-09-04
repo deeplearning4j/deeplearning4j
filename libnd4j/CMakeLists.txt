@@ -21,6 +21,11 @@ if(SD_USE_SCCACHE_VAL)
     if(NOT SCCACHE_PROGRAM AND (WIN32 OR CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows"))
         find_program(SCCACHE_PROGRAM sccache.exe PATHS "$ENV{USERPROFILE}/sccache" NO_DEFAULT_PATH)
     endif()
+else()
+    # A persistent Android build tree may previously have used sccache. Do not
+    # let that cached discovery silently override the caller's current ccache
+    # selection after SD_USE_SCCACHE has been removed from the environment.
+    unset(SCCACHE_PROGRAM CACHE)
 endif()
 
 if(SCCACHE_PROGRAM)

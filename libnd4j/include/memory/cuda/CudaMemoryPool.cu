@@ -1464,6 +1464,14 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
       cudaError_t err = streamOrderedFree(ptr, s);
       if (err == cudaSuccess) {
         eraseDiagnosticPoolAllocation(ptr);
+#if !defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
+        // Direct async allocations use their dedicated allocation stream. Track
+        // that stream exactly like ordinary pool frees so trimPool() and
+        // trimPoolOnStream() synchronize the deferred free before reclaiming it.
+        int trackDevice = (dev >= 0 && dev < MAX_DEVICES) ? dev : 0;
+        std::lock_guard<std::mutex> dirtyLock(dirtyStreamsMutex_[trackDevice]);
+        dirtyFreeStreams_[trackDevice].insert(s);
+#endif
       } else {
         // Clear and leak rather than risk a context-corrupting cudaFree on pool memory.
         cudaGetLastError();

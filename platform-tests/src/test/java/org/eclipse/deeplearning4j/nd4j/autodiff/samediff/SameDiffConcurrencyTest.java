@@ -38,8 +38,11 @@ import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.memory.deallocation.DeallocatorService;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.nativeblas.OpaqueDataBuffer;
+import org.nd4j.nativeblas.OpaqueNDArray;
 
 @Slf4j
 @NativeTag
@@ -857,14 +860,17 @@ public class SameDiffConcurrencyTest extends BaseNd4jTestWithBackends {
                         INDArray arr2 = Nd4j.randn(DataType.FLOAT, 64, 32 + threadId);
                         INDArray arr3 = Nd4j.zeros(DataType.FLOAT, 16, 16);
 
-                        org.nd4j.nativeblas.OpaqueNDArray opaque1 = org.nd4j.nativeblas.OpaqueNDArray.fromINDArray(arr1);
-                        org.nd4j.nativeblas.OpaqueNDArray opaque2 = org.nd4j.nativeblas.OpaqueNDArray.fromINDArray(arr2);
-                        org.nd4j.nativeblas.OpaqueNDArray opaque3 = org.nd4j.nativeblas.OpaqueNDArray.fromINDArray(arr3);
+                        OpaqueNDArray opaque1 = OpaqueNDArray.fromINDArray(arr1);
+                        OpaqueNDArray opaque2 = OpaqueNDArray.fromINDArray(arr2);
+                        OpaqueNDArray opaque3 = OpaqueNDArray.fromINDArray(arr3);
 
                         assertFalse(opaque1.isNull());
                         assertFalse(opaque2.isNull());
                         assertFalse(opaque3.isNull());
 
+                        opaque1.close();
+                        opaque2.close();
+                        opaque3.close();
                         arr1.close();
                         arr2.close();
                         arr3.close();
@@ -897,6 +903,48 @@ public class SameDiffConcurrencyTest extends BaseNd4jTestWithBackends {
 
         assertEquals(nThreads * nIterationsPerThread, successCount.get());
         log.info("Concurrent OpaqueNDArray deallocator test passed: {} successful iterations", successCount.get());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testOpaqueNDArrayPhantomCleanup(Nd4jBackend backend) throws Exception {
+        DeallocatorService service = Nd4j.getDeallocatorService();
+
+        try (INDArray parent = Nd4j.ones(DataType.FLOAT, 32, 32)) {
+            OpaqueNDArray explicitlyClosed = OpaqueNDArray.fromINDArray(parent);
+            long explicitId = explicitlyClosed.getDeallocator().getUniqueId();
+            OpaqueNDArray cleanupFacade = explicitlyClosed.getDeallocator().getArray();
+            assertNotSame(explicitlyClosed, cleanupFacade);
+            assertNotEquals(explicitlyClosed.address(), cleanupFacade.address());
+            assertEquals(parent.length(), cleanupFacade.length());
+            assertTrue(service.getReferenceMap().containsKey(explicitId));
+            service.flushCollectedReferences();
+            assertTrue(service.getReferenceMap().containsKey(explicitId),
+                    "Collected-only flush must preserve a live array registration");
+            explicitlyClosed.close();
+            assertTrue(explicitlyClosed.isNull());
+            assertFalse(service.getReferenceMap().containsKey(explicitId),
+                    "Explicit close must retire its array phantom registration immediately");
+        }
+
+        AtomicLong phantomId = new AtomicLong(-1L);
+        Thread allocator = new Thread(() -> {
+            INDArray parent = Nd4j.ones(DataType.FLOAT, 32, 32);
+            OpaqueNDArray unclosed = OpaqueNDArray.fromINDArray(parent);
+            phantomId.set(unclosed.getDeallocator().getUniqueId());
+        }, "OpaqueNDArray-Phantom-Allocator");
+        allocator.start();
+        allocator.join();
+
+        for (int attempt = 0;
+             attempt < 40 && service.getReferenceMap().containsKey(phantomId.get());
+             attempt++) {
+            System.gc();
+            Thread.sleep(25L);
+            service.flushCollectedReferences();
+        }
+        assertFalse(service.getReferenceMap().containsKey(phantomId.get()),
+                "GC-only OpaqueNDArray cleanup must not be retained by its cleanup action");
     }
 
     /**
@@ -990,14 +1038,14 @@ public class SameDiffConcurrencyTest extends BaseNd4jTestWithBackends {
                     startLatch.await();
 
                     for (int i = 0; i < nIterationsPerThread; i++) {
-                        org.nd4j.nativeblas.OpaqueDataBuffer buffer1 =
-                            org.nd4j.nativeblas.OpaqueDataBuffer.allocateDataBuffer(
+                        OpaqueDataBuffer buffer1 =
+                            OpaqueDataBuffer.allocateDataBuffer(
                                 1024 + threadId * 10, DataType.FLOAT, true);
-                        org.nd4j.nativeblas.OpaqueDataBuffer buffer2 =
-                            org.nd4j.nativeblas.OpaqueDataBuffer.allocateDataBuffer(
+                        OpaqueDataBuffer buffer2 =
+                            OpaqueDataBuffer.allocateDataBuffer(
                                 512 + threadId * 5, DataType.DOUBLE, true);
-                        org.nd4j.nativeblas.OpaqueDataBuffer buffer3 =
-                            org.nd4j.nativeblas.OpaqueDataBuffer.allocateDataBuffer(
+                        OpaqueDataBuffer buffer3 =
+                            OpaqueDataBuffer.allocateDataBuffer(
                                 256 + i, DataType.INT, true);
 
                         assertFalse(buffer1.isNull());
@@ -1036,6 +1084,45 @@ public class SameDiffConcurrencyTest extends BaseNd4jTestWithBackends {
 
         assertEquals(nThreads * nIterationsPerThread, successCount.get());
         log.info("Concurrent OpaqueDataBuffer deallocator test passed: {} successful iterations", successCount.get());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testOpaqueDataBufferPhantomCleanup(Nd4jBackend backend) throws Exception {
+        DeallocatorService service = Nd4j.getDeallocatorService();
+
+        OpaqueDataBuffer explicitlyClosed =
+                OpaqueDataBuffer.allocateDataBuffer(4096, DataType.FLOAT, true);
+        long explicitId = explicitlyClosed.getDeallocator().getUniqueId();
+        OpaqueDataBuffer cleanupFacade = explicitlyClosed.getDeallocator().getBuffer();
+        assertNotSame(explicitlyClosed, cleanupFacade);
+        assertEquals(explicitlyClosed.address(), cleanupFacade.address());
+        assertTrue(service.getReferenceMap().containsKey(explicitId));
+        service.flushCollectedReferences();
+        assertTrue(service.getReferenceMap().containsKey(explicitId),
+                "Collected-only flush must preserve a live buffer registration");
+        explicitlyClosed.closeBuffer();
+        assertFalse(service.getReferenceMap().containsKey(explicitId),
+                "Explicit close must retire its phantom registration immediately");
+
+        AtomicLong phantomId = new AtomicLong(-1L);
+        Thread allocator = new Thread(() -> {
+            OpaqueDataBuffer unclosed =
+                    OpaqueDataBuffer.allocateDataBuffer(4096, DataType.FLOAT, true);
+            phantomId.set(unclosed.getDeallocator().getUniqueId());
+        }, "OpaqueDataBuffer-Phantom-Allocator");
+        allocator.start();
+        allocator.join();
+
+        for (int attempt = 0;
+             attempt < 40 && service.getReferenceMap().containsKey(phantomId.get());
+             attempt++) {
+            System.gc();
+            Thread.sleep(25L);
+            service.flushCollectedReferences();
+        }
+        assertFalse(service.getReferenceMap().containsKey(phantomId.get()),
+                "GC-only OpaqueDataBuffer cleanup must not be retained by its cleanup action");
     }
 
     /**

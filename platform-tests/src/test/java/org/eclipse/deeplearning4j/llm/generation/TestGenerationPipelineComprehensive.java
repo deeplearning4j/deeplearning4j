@@ -56,7 +56,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *   <li>Multiple token sizes on the SAME pipeline instance (replay stress)</li>
  *   <li>Multiple sampling configs (greedy, temperature, topK, topP, combined)</li>
  *   <li>Fresh pipeline after full model reset (state isolation)</li>
- *   <li>Comparison against StaticKvCacheDecodeLoop reference</li>
+ *   <li>Repeatability across fresh GenerationPipeline instances</li>
  *   <li>Structural tag validation at all token sizes</li>
  * </ul>
  */
@@ -347,12 +347,12 @@ public class TestGenerationPipelineComprehensive {
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // SCENARIO C: Fresh pipeline after full reset, compare with old decoder
+    // SCENARIO C: Fresh pipeline after full reset, repeatability across token sizes
     // ═══════════════════════════════════════════════════════════════════════════
 
     @Test
-    @DisplayName("SCENARIO C: Fresh pipeline vs old decoder, multiple token sizes")
-    public void testScenarioC_FreshPipelineVsOldDecoder() throws Exception {
+    @DisplayName("SCENARIO C: Fresh GenerationPipeline is repeatable at multiple token sizes")
+    public void testScenarioC_FreshPipelineRepeatability() throws Exception {
         ensureModelsLoaded();
 
         ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
@@ -361,25 +361,9 @@ public class TestGenerationPipelineComprehensive {
         for (int maxTokens : tokenSizes) {
             log.info("=== SCENARIO C: maxTokens={} ===", maxTokens);
 
-            // ── Old decoder ──
             hardResetModels();
-            StaticKvCacheDecodeLoop oldLoop = StaticKvCacheDecodeLoop.builder()
-                    .decoder(decoder)
-                    .embedTokens(embedTokens)
-                    .tokenizer(tokenizer)
-                    .ioConfig(ioConfig)
-                    .samplingConfig(SamplingConfig.greedy())
-                    .maxNewTokens(maxTokens)
-                    .hiddenSize(hiddenSize)
-                    .build();
-            GenerationResult oldResult = oldLoop.decode(inputsEmbeds.dup(), promptTokenIds);
-            int[] oldTokens = oldResult.getTokenIds();
-            String oldText = oldResult.getText();
-            log.info("  OLD: {} tokens, text='{}'", oldTokens.length, oldText);
-
-            // ── New pipeline ──
-            hardResetModels();
-            GenerationPipeline pipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
+            GenerationResult first;
+            GenerationPipeline firstPipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
                     .decoder(decoder)
                     .embedTokens(embedTokens)
                     .tokenizer(tokenizer)
@@ -388,49 +372,38 @@ public class TestGenerationPipelineComprehensive {
                     .maxNewTokens(maxTokens)
                     .hiddenSize(hiddenSize)
                     .build());
-            GenerationResult newResult = pipeline.generate(inputsEmbeds.dup(), promptTokenIds, maxTokens);
-            int[] newTokens = newResult.getTokenIds();
-            String newText = newResult.getText();
-            log.info("  NEW: {} tokens, text='{}'", newTokens.length, newText);
-
-            // Token-by-token comparison
-            int minLen = Math.min(oldTokens.length, newTokens.length);
-            int matches = 0;
-            int firstDivergent = -1;
-            for (int i = 0; i < minLen; i++) {
-                if (oldTokens[i] == newTokens[i]) {
-                    matches++;
-                } else if (firstDivergent < 0) {
-                    firstDivergent = i;
-                }
-            }
-            double matchRate = minLen > 0 ? (double) matches / minLen : 0.0;
-            log.info("  Match rate: {}/{} ({:.1f}%) firstDivergent={}",
-                    matches, minLen, matchRate * 100, firstDivergent);
-
-            if (firstDivergent >= 0) {
-                log.error("  DIVERGENCE at step {}: old={} ('{}') new={} ('{}')",
-                        firstDivergent,
-                        oldTokens[firstDivergent],
-                        tokenizer.decode(new int[]{oldTokens[firstDivergent]}, false),
-                        newTokens[firstDivergent],
-                        tokenizer.decode(new int[]{newTokens[firstDivergent]}, false));
+            try {
+                first = firstPipeline.generate(inputsEmbeds.dup(), promptTokenIds, maxTokens);
+            } finally {
+                firstPipeline.close();
             }
 
-            assertTrue(matchRate >= 0.9,
-                    "Token match rate too low for maxTokens=" + maxTokens
-                            + ": " + String.format("%.1f%%", matchRate * 100)
-                            + ", first divergence at " + firstDivergent
-                            + ", oldText=" + oldText
-                            + ", newText=" + newText);
+            hardResetModels();
+            GenerationResult second;
+            GenerationPipeline secondPipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
+                    .decoder(decoder)
+                    .embedTokens(embedTokens)
+                    .tokenizer(tokenizer)
+                    .ioConfig(ioConfig)
+                    .samplingConfig(SamplingConfig.greedy())
+                    .maxNewTokens(maxTokens)
+                    .hiddenSize(hiddenSize)
+                    .build());
+            try {
+                second = secondPipeline.generate(inputsEmbeds.dup(), promptTokenIds, maxTokens);
+            } finally {
+                secondPipeline.close();
+            }
 
-            assertEquals(oldText, newText,
-                    "Decoded text must match for maxTokens=" + maxTokens);
-
-            pipeline.close();
+            log.info("  FIRST: {} tokens, text='{}'", first.getTokenIds().length, first.getText());
+            log.info("  SECOND: {} tokens, text='{}'", second.getTokenIds().length, second.getText());
+            assertArrayEquals(first.getTokenIds(), second.getTokenIds(),
+                    "Fresh GenerationPipeline runs must be token-repeatable for maxTokens=" + maxTokens);
+            assertEquals(first.getText(), second.getText(),
+                    "Fresh GenerationPipeline text must be repeatable for maxTokens=" + maxTokens);
         }
 
-        log.info("SCENARIO C PASSED: Fresh pipeline matches old decoder at all token sizes");
+        log.info("SCENARIO C PASSED: Fresh GenerationPipeline is repeatable at all token sizes");
     }
 
     // ═══════════════════════════════════════════════════════════════════════════

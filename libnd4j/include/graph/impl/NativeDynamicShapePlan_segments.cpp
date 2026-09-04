@@ -35,6 +35,7 @@
 #include <graph/DspThreadState.h>
 #include <graph/DspSegmentLifecycle.h>
 #include <graph/DspDeviceDispatch.h>
+#include <execution/LaunchContext.h>
 #if !defined(SD_VULKAN)
 #include <graph/cpu/FunctionalReplayHandle.h>
 #endif
@@ -120,6 +121,18 @@ static constexpr LongType kOpSanityMaxScannedValues = 524288;
 // Status enum string helper — delegates to shared dsp::dspStatusName in DspPhaseUtils.h.
 const char* statusName_seg(Status status) {
   return dsp::dspStatusName(status);
+}
+
+void recordFailureDetailIfMissing(Status status, const std::string& detail) {
+  auto* launchContext = LaunchContext::defaultContext();
+  auto* errorReference =
+      launchContext != nullptr ? launchContext->errorReference() : nullptr;
+  if (errorReference == nullptr) return;
+  const char* existing = errorReference->errorMessage();
+  if (existing == nullptr || existing[0] == '\0') {
+    errorReference->setErrorMessage(detail);
+  }
+  errorReference->setErrorCode(static_cast<int>(status));
 }
 
 struct OpSanitySummary {
@@ -874,14 +887,9 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
     }
   }
 
-  // NOTE: Value-dependent-shape ops (reshape, broadcast_to, etc.) do NOT
-  // need data value hashing at the segment level. Reasons:
-  //   1. During warmup (execCount==0), segments always run slot-by-slot.
-  //   2. The per-slot computeShapeKey() in _slotexec.cpp hashes values
-  //      gated on outputShapeDependsOnInputValues — handles correctness.
-  //   3. After shapes freeze, the frozen fast-path returns the cached key.
-  //   4. iArgs (already hashed above) encode the same shape info for most ops.
-  // Removing syncToHost here eliminates GPU→CPU sync during key computation.
+  // Segment identity is shape/layout based. Value-dependent slots validate their
+  // bounded controls on the live slot path; hashing every small integral external
+  // here would turn unrelated token/payload changes into segment recompiles.
 
   // NOTE: Do NOT set seg.exec.cachedShapeKey here. It must only be written after
   // a successful compile+execute in executeSegmentWithSpecificBackend() (line ~681).
@@ -1005,7 +1013,7 @@ NativeDynamicShapePlan::getResolvedGraphBackendExecutionPolicy() {
 
 // ─── Segment execution: generic graph backend cascade ─────────────────────
 
-Status NativeDynamicShapePlan::executeSegmentWithGraphBackend(
+DspExecutionResult NativeDynamicShapePlan::executeSegmentWithGraphBackend(
     GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
   DSP_REQUIRE_PLAN_PHASE_AT_LEAST(PlanPhase::SLOT_BY_SLOT, "executeSegmentWithGraphBackend");
 
@@ -1048,6 +1056,47 @@ Status NativeDynamicShapePlan::executeSegmentWithGraphBackend(
     return Status::KERNEL_FAILURE;
   }
 
+  // Some compiled backends need values from one complete, internally consistent
+  // functional execution before any segment is lowered. Do not compile and run
+  // early segments while later calibration tensors are still being produced: that
+  // both contaminates calibration and retains a throwaway model-sized artifact set
+  // that must be rebuilt after freeze. The plan-level compile phase owns lowering.
+  const auto cascadePlanningPolicy =
+      GraphBackendResolver::aggregatePlanningPolicy(request, chain);
+  // The plan-level predicate deliberately treats REPLAYING as frozen. Checking
+  // PlanLifecycle::isShapesFrozen() directly would become false again after the
+  // SHAPES_FROZEN -> REPLAYING transition and would incorrectly run provisional
+  // host calibration forever instead of the committed graph backend.
+  if (cascadePlanningPolicy.deferCompilationUntilPlanFreeze &&
+      !isShapesFrozen()) {
+    if (!cascadePlanningPolicy.requiresPrecommitFunctionalWarmup) {
+      DSP_DIAG(COMPILE,
+               "GRAPH_BACKEND_PRECOMMIT_REJECTED seg[%d-%d] deferred compilation "
+               "has no explicit functional-warmup contract",
+               seg.def.startSlot, seg.def.endSlot);
+      return DspExecutionResult(Status::BAD_GRAPH, false, false);
+    }
+    ++seg.exec.precommitFunctionalWarmupCount;
+    DSP_DIAG(BACKEND,
+             "PRECOMMIT_FUNCTIONAL_WARMUP seg[%d-%d] count=%d "
+             "owner=provisional backend=calibration",
+             seg.def.startSlot, seg.def.endSlot,
+             seg.exec.precommitFunctionalWarmupCount);
+    auto warmupStatus =
+        executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+    DSP_DIAG(
+        EXECUTE,
+        "GRAPH_BACKEND_FUNCTIONAL_WARMUP seg[%d-%d] status=%s (%d) "
+        "executionCount=%d compile=deferred_until_plan_freeze",
+        seg.def.startSlot, seg.def.endSlot, statusName_seg(warmupStatus),
+        static_cast<int>(warmupStatus),
+        seg.exec.executionCount);
+    if (warmupStatus == Status::OK && seg.exec.segPhase.needsWarmup()) {
+      SegmentLifecycle::markWarmupDone(seg.exec);
+    }
+    return warmupStatus;
+  }
+
   // Warmup must happen before any backend tries to compile (needs output shapes)
   bool warmedUpThisCall = false;
   if (seg.exec.executionCount == 0) {
@@ -1068,12 +1117,19 @@ Status NativeDynamicShapePlan::executeSegmentWithGraphBackend(
   for (size_t i = 0; i < admitted.size(); i++) {
     GraphBackend* backend = admitted[i];
     const char* backendName = backend->name();
+    const bool hadCommittedDirectArtifact =
+        backend == seg.resolvedGraphBackend &&
+        seg.resolvedGraphBackendPolicy.artifactKind ==
+            GraphBackendArtifactKind::DIRECT_COMPILED &&
+        seg.compiledGraphBackendArtifactOwner == backend &&
+        seg.compiledGraphBackendArtifact != nullptr;
+    const LongType attemptedArtifactShapeKey = hadCommittedDirectArtifact
+        ? seg.compiledGraphBackendArtifactShapeKey : 0;
 
     // Attempt lower + validate + execute with this backend.
-    bool executionStarted = false;
-    auto status = executeSegmentWithSpecificBackend(
-        seg, backend, externalArrays, numExt, stream, &executionStarted);
-    if (status == Status::OK) {
+    DspExecutionResult result = executeSegmentWithSpecificBackend(
+        seg, backend, externalArrays, numExt, stream);
+    if (result.ok()) {
       // Cache backend identity and its exact lifecycle policy atomically.
       seg.setResolvedGraphBackend(backend, request);
       DSP_DIAG(BACKEND,
@@ -1081,23 +1137,62 @@ Status NativeDynamicShapePlan::executeSegmentWithGraphBackend(
                "(admitted position %d/%d)",
                seg.def.startSlot, seg.def.endSlot, backendName,
                static_cast<int>(i) + 1, static_cast<int>(admitted.size()));
-      return Status::OK;
+      return result;
     }
 
-    if (executionStarted || status != Status::BAD_GRAPH) {
+    // Once a direct artifact is committed, the resolver no longer owns a
+    // candidate choice. A descriptor, calibration, or execution rejection is
+    // terminal even when it occurs before the device API starts: compiling a
+    // different backend during REPLAYING would violate ownership and could
+    // silently change numerical semantics mid-session.
+    const bool committedDirectArtifactAfterAttempt =
+        backend == seg.resolvedGraphBackend &&
+        seg.resolvedGraphBackendPolicy.artifactKind ==
+            GraphBackendArtifactKind::DIRECT_COMPILED &&
+        seg.compiledGraphBackendArtifactOwner == backend &&
+        seg.compiledGraphBackendArtifact != nullptr &&
+        seg.compiledGraphBackendArtifactShapeKey ==
+            seg.def.shapeKeyState.lastComputedKey;
+    const bool attemptedArtifactMatchesCurrentShape =
+        attemptedArtifactShapeKey != 0 &&
+        attemptedArtifactShapeKey == seg.def.shapeKeyState.lastComputedKey;
+    if (attemptedArtifactMatchesCurrentShape ||
+        committedDirectArtifactAfterAttempt) {
+      DSP_DIAG(BACKEND,
+               "COMMITTED_GRAPH_BACKEND_FAILURE seg[%d-%d] backend=%s "
+               "status=%s (%d) terminal=1",
+               seg.def.startSlot, seg.def.endSlot, backendName,
+               statusName_seg(result.status),
+               static_cast<int>(result.status));
+      return DspExecutionResult(result.status, true, false);
+    }
+
+    if (hadCommittedDirectArtifact &&
+        attemptedArtifactShapeKey != seg.def.shapeKeyState.lastComputedKey) {
+      DSP_DIAG(BACKEND,
+               "STALE_GRAPH_BACKEND_ARTIFACT_REJECTED seg[%d-%d] backend=%s "
+               "artifactKey=%lld currentKey=%lld terminal=0",
+               seg.def.startSlot, seg.def.endSlot, backendName,
+               static_cast<long long>(attemptedArtifactShapeKey),
+               static_cast<long long>(seg.def.shapeKeyState.lastComputedKey));
+    }
+
+    if (!result.preExecutionRejection()) {
       DSP_DIAG(BACKEND,
                "cascade: backend=%s execution failed for seg[%d-%d] "
-               "(status=%d); post-start failover is forbidden",
+               "(status=%s (%d)); post-start failover is forbidden",
                backendName, seg.def.startSlot, seg.def.endSlot,
-               static_cast<int>(status));
-      return status;
+               statusName_seg(result.status),
+               static_cast<int>(result.status));
+      return result;
     }
 
     DSP_DIAG(BACKEND,
              "cascade: backend=%s rejected lowering for seg[%d-%d], "
-             "trying next admitted backend",
+             "status=%s (%d); trying next admitted backend",
              backendName, seg.def.startSlot, seg.def.endSlot,
-             static_cast<int>(status));
+             statusName_seg(result.status),
+             static_cast<int>(result.status));
     seg.resetGraphBackend();
     // compilationFailed is managed by lifecycle — no raw reset needed here.
     // The markFailed() call below handles the terminal case; individual backend
@@ -1115,7 +1210,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGraphBackend(
     DSP_DIAG(BACKEND,
              "cascade: concrete lowering rejected seg[%d-%d]; ownership -> explicit replay",
              seg.def.startSlot, seg.def.endSlot);
-    if (warmedUpThisCall) return Status::OK;
+    if (warmedUpThisCall) {
+      return DspExecutionResult(Status::OK, false, true);
+    }
     return executeSegmentEmulatedReplay(
         seg, externalArrays, numExt, stream);
   }
@@ -1126,16 +1223,21 @@ Status NativeDynamicShapePlan::executeSegmentWithGraphBackend(
            "graph backend cascade: all %d candidates failed lowering seg[%d-%d]",
            static_cast<int>(admitted.size()), seg.def.startSlot,
            seg.def.endSlot);
+  recordFailureDetailIfMissing(
+      Status::KERNEL_FAILURE,
+      "graph backend lowering failed for segment [" +
+          std::to_string(seg.def.startSlot) + "-" +
+          std::to_string(seg.def.endSlot) +
+          "]: every admitted backend rejected the concrete dtype/layout/argument contract");
   return Status::KERNEL_FAILURE;
 }
 
 // ─── Execute segment with a specific backend (shared logic) ─────────────────
 
-Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
+DspExecutionResult NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
     GraphSegment& seg, GraphBackend* backend, NDArray** externalArrays, int numExt,
-    void* stream, bool* executionStarted) {
+    void* stream) {
   DSP_REQUIRE_PLAN_PHASE_AT_LEAST(PlanPhase::SLOT_BY_SLOT, "executeSegmentWithSpecificBackend");
-  if (executionStarted != nullptr) *executionStarted = false;
 
   const char* backendName = backend->name();
   const GraphBackendRequest request = makeGraphBackendRequest();
@@ -1154,6 +1256,7 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
                       backendIdentityChanged;
   const bool isRecompileDueToShapeChange =
       seg.def.shapeKeyState.hasDrifted();
+  bool invocationSatisfiedByWarmup = false;
 
   // ── Phase guard: compilation must not happen during REPLAYING ────────────
   if (needsCompile && planLifecycle_.isReplaying() && !isRecompileDueToShapeChange) {
@@ -1180,6 +1283,7 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
         seg, externalArrays, numExt, stream);
     if (warmupStatus != Status::OK) return warmupStatus;
     SegmentLifecycle::markWarmupDone(seg.exec);
+    invocationSatisfiedByWarmup = true;
     segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
     seg.def.shapeKeyState.recordComputed(segShapeKey);
     needsCompile = true;
@@ -1205,6 +1309,23 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
     if (!lowering.succeeded()) {
       if (!lowering.attempts.empty()) {
         lastCompilationAudit_ = lowering.attempts.back().audit;
+      }
+      if (lowering.prerequisiteBlocked()) {
+        const std::string message =
+            std::string("graph backend compilation prerequisite missing for ") +
+            lowering.prerequisiteBlockedBackend->name() + " seg[" +
+            std::to_string(seg.def.startSlot) + "-" +
+            std::to_string(seg.def.endSlot) + "]: " +
+            lowering.prerequisiteFailureReason;
+        sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(
+            message.c_str());
+        DSP_DIAG(COMPILE,
+                 "GRAPH_BACKEND_PREREQUISITE_BLOCKED backend=%s seg[%d-%d] "
+                 "reason=%s terminal=1",
+                 lowering.prerequisiteBlockedBackend->name(),
+                 seg.def.startSlot, seg.def.endSlot,
+                 lowering.prerequisiteFailureReason.c_str());
+        return Status::KERNEL_FAILURE;
       }
       DSP_DIAG(
           COMPILE,
@@ -1305,6 +1426,39 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
              backendName, seg.def.startSlot, seg.def.endSlot);
     return Status::BAD_GRAPH;
   }
+
+  // A shape-drift warmup already produced this invocation's stateful output.
+  // The replacement artifact is compiled and audited above, but executing it
+  // now would apply in-place/scatter/accumulation effects twice. Publish the
+  // compiled lifecycle state and defer execution/capture to the next call.
+  if (invocationSatisfiedByWarmup) {
+    if (!seg.exec.segPhase.isSealed()) {
+      if (seg.resolvedGraphBackendPolicy.artifactKind ==
+              GraphBackendArtifactKind::DIRECT_COMPILED &&
+          seg.compiledGraphBackendArtifactOwner == backend &&
+          seg.compiledGraphBackendArtifactShapeKey == segShapeKey &&
+          seg.compiledGraphBackendArtifact) {
+        SegmentLifecycle::markDirectGraphBackendCompiled(
+            seg.exec, backendName, segShapeKey,
+            seg.def.startSlot, seg.def.endSlot);
+      } else if (seg.resolvedGraphBackendPolicy.artifactKind ==
+                     GraphBackendArtifactKind::BACKEND_REPLAY_HANDLE &&
+                 seg.exec.replayHandle && seg.exec.replayHandle->isReady()) {
+        SegmentLifecycle::markBackendReplayHandleSealed(
+            seg.exec, backendName, segShapeKey,
+            seg.def.startSlot, seg.def.endSlot);
+      } else if (seg.exec.segPhase.needsCompile()) {
+        SegmentLifecycle::markCompiled(seg.exec, backendName, segShapeKey);
+      }
+    }
+    DSP_DIAG(EXECUTE,
+             "SHAPE_CHANGE_WARMUP_OUTPUT_COMMITTED: seg[%d-%d] key=%lld — "
+             "compiled execution deferred to next invocation",
+             seg.def.startSlot, seg.def.endSlot,
+             static_cast<long long>(segShapeKey));
+    return DspExecutionResult(Status::OK, false, true);
+  }
+
   // tl_graphExecutionActive must NOT be set here — it is a CUDA-graph-capture
   // guard that suppresses frees and skips syncs. This function drives non-capture
   // paths (CPU backends, Triton warmup). Capture manages the flag internally.
@@ -1312,10 +1466,12 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
            seg.def.startSlot, seg.def.endSlot, backendName, (long long)segShapeKey);
 
 #if !defined(SD_VULKAN)
+  bool nativeExecutionStarted = false;
   // NativeSlotExecutor callback — shared by OneDNN and OpenVINO backends.
   // Uses persistent GraphSegments per native range so FunctionalReplayHandle
   // accumulates and CPU_FROZEN_REPLAY fires after the first call.
-  auto nativeSlotCallback = [this, &externalArrays, numExt, &stream, &backendName]
+  auto nativeSlotCallback = [this, &externalArrays, numExt, &stream, &backendName,
+                             &nativeExecutionStarted]
       (int nativeStart, int nativeEnd) -> Status {
     auto key = nativeRangeKey(nativeStart, nativeEnd);
     auto& nativeSeg = nativeRangeSegments_[key];
@@ -1366,6 +1522,7 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
 
     Status status = Status::OK;
     try {
+      nativeExecutionStarted = true;
       status = executeSegmentSlotBySlot(
           nativeSeg, externalArrays, numExt, stream);
     } catch (...) {
@@ -1411,27 +1568,37 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
   backend->setNativeSlotExecutor(nativeSlotCallback);
 #endif
 
-  if (executionStarted != nullptr) *executionStarted = false;
   auto status = backend->executeSegment(
       request, seg, slots_, externalArrays, numExt, outputSlots_,
       totalOutputSlots_, stream);
   // GraphBackend contract: BAD_GRAPH is a pre-execution rejection. Any status
   // after work starts must be reported as a non-BAD_GRAPH failure so the
   // resolver never retries after partial execution.
-  if (executionStarted != nullptr) {
-    *executionStarted = status != Status::BAD_GRAPH;
-  }
+  const bool executionStarted = nativeExecutionStarted || status != Status::BAD_GRAPH;
 
 #if !defined(SD_VULKAN)
   backend->clearNativeSlotExecutor();
 #endif
 
-  DSP_DIAG(EXECUTE, "POST-EXECUTE: seg[%d-%d] backend=%s status=%d",
-           seg.def.startSlot, seg.def.endSlot, backendName, (int)status);
+  DSP_DIAG(EXECUTE, "POST-EXECUTE: seg[%d-%d] backend=%s status=%s (%d)",
+           seg.def.startSlot, seg.def.endSlot, backendName,
+           statusName_seg(status), static_cast<int>(status));
 
-  DSP_DIAG(EXECUTE, "executeSegmentWithSpecificBackend: exec%d seg[%d-%d]: backend=%s status=%d(%s)",
+  DSP_DIAG(EXECUTE, "executeSegmentWithSpecificBackend: exec%d seg[%d-%d]: backend=%s status=%s (%d)",
             seg.exec.executionCount, seg.def.startSlot, seg.def.endSlot, backendName,
-            static_cast<int>(status), statusName_seg(status));
+            statusName_seg(status), static_cast<int>(status));
+
+  if (status != Status::OK && status != Status::BAD_GRAPH) {
+    recordFailureDetailIfMissing(
+        status,
+        std::string("graph backend ") + backendName + " returned " +
+            statusName_seg(status) + " (" +
+            std::to_string(static_cast<int>(status)) + ") after starting segment [" +
+            std::to_string(seg.def.startSlot) + "-" +
+            std::to_string(seg.def.endSlot) + "] in phase " +
+            seg.exec.displayPhaseName() +
+            "; the backend did not publish a lower-level failure detail");
+  }
 
   if (status == Status::OK) {
     // Publish backend identity on every successful path, including a sticky
@@ -1470,7 +1637,7 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
         seg.resolvedGraphBackendPolicy.materializesAllFrameworkSlots) {
       char segErr[512] = {};
       int segInvalid = validateSlotRange(
-          seg.def.startSlot, seg.def.endSlot,
+          slots_, numSlots_, seg.def.startSlot, seg.def.endSlot,
           outputSlots_, totalOutputSlots_,
           executeCount_, planLifecycle_.toLegacyCode(),
           segErr, sizeof(segErr));
@@ -1492,7 +1659,7 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
         requestedOutputSlotIndices_, numRequestedOutputs_, diagnosticExecuteCount());
   }
 
-  return status;
+  return DspExecutionResult(status, executionStarted, false);
 }
 
 // ─── Native range segment invalidation ───────────────────────────────────────
@@ -1836,9 +2003,18 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
     Status replayStatus = functionalHandle->replayWithContext(replayContext);
     if (replayStatus != Status::OK) {
       DSP_DIAG(EXECUTE,
-               "FUNCTIONAL_REPLAY: seg[%d-%d] failed status=%d",
+               "FUNCTIONAL_REPLAY: seg[%d-%d] failed status=%s (%d)",
                seg.def.startSlot, seg.def.endSlot,
+               statusName_seg(replayStatus),
                static_cast<int>(replayStatus));
+      recordFailureDetailIfMissing(
+          replayStatus,
+          "functional replay returned " +
+              std::string(statusName_seg(replayStatus)) + " (" +
+              std::to_string(static_cast<int>(replayStatus)) +
+              ") for segment [" + std::to_string(seg.def.startSlot) + "-" +
+              std::to_string(seg.def.endSlot) +
+              "] without command-level failure detail");
       return replayStatus;
     }
     functionalReplayCompleted = true;
@@ -2045,9 +2221,10 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
           }
           // Batched GEMM failure is a hard error — do not silently fall back to individual execution
           DSP_THROW(EXECUTE,
-                    "batched GEMM group %d failed (status=%d) at slot %d (%s). "
+                    "batched GEMM group %d failed with %s (%d) at slot %d (%s). "
                     "Fix the batched GEMM execution — silent fallback to individual execution is not permitted.",
-                    bgIdx, (int)batchStatus, stepIdx, slots_[stepIdx].ident.opName.c_str());
+                    bgIdx, statusName_seg(batchStatus), static_cast<int>(batchStatus),
+                    stepIdx, slots_[stepIdx].ident.opName.c_str());
         } else {
           // Non-first member: output already computed by the trigger's batch call.
           // Release schedule removed: arrays persist (one array per slot)
@@ -2302,16 +2479,25 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
       }
 
       char buf[1024];
-      const char* existingMsg =
-          sd::LaunchContext::defaultContext()->errorReference()->errorMessage();
+      auto* errorReference =
+          sd::LaunchContext::defaultContext()->errorReference();
+      const char* existingMsg = errorReference->errorMessage();
       if (existingMsg != nullptr && existingMsg[0] != '\0') {
-        snprintf(buf, sizeof(buf), "slot %d (%s) failed with status %d: %s",
-                 stepIdx, slots_[stepIdx].ident.opName.c_str(),
-                 static_cast<int>(status), existingMsg);
+        // Keep the originating exception first so the fixed ErrorReference buffer
+        // cannot truncate it behind repeated status-wrapper prefixes.
+        snprintf(buf, sizeof(buf), "%s [slot %d (%s) returned %s (%d)]",
+                 existingMsg, stepIdx, slots_[stepIdx].ident.opName.c_str(),
+                 statusName_seg(status), static_cast<int>(status));
       } else {
-        snprintf(buf, sizeof(buf), "slot %d (%s) failed with status %d",
-                 stepIdx, slots_[stepIdx].ident.opName.c_str(), static_cast<int>(status));
+        snprintf(buf, sizeof(buf),
+                 "slot %d (%s) returned %s (%d) without native failure detail; "
+                 "the op/platform implementation returned an error status without "
+                 "setting LaunchContext::errorReference",
+                 stepIdx, slots_[stepIdx].ident.opName.c_str(),
+                 statusName_seg(status), static_cast<int>(status));
       }
+      errorReference->setErrorCode(static_cast<int>(status));
+      errorReference->setErrorMessage(buf);
 
       // Log full input details for the failing slot
       auto& failedSlot = slots_[stepIdx];
@@ -2444,7 +2630,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
   if (executeCount_ < 4) {
     char segErr[512] = {};
     int segInvalid = validateSlotRange(
-        seg.def.startSlot, seg.def.endSlot,
+        slots_, numSlots_, seg.def.startSlot, seg.def.endSlot,
         outputSlots_, totalOutputSlots_,
         executeCount_, planLifecycle_.toLegacyCode(),
         segErr, sizeof(segErr));
@@ -2782,14 +2968,18 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
   // stale view wrappers BEFORE any key computation or slot execution to
   // prevent downstream slots from reading UNKNOWN dtype from freed memory.
   //
-  // The guard uses outputSlots_[seg.def.startSlot] != nullptr rather than
-  // execCount > 0 because the segment's executionCount can be reset to 0 by
-  // platformReleaseSegmentGpuResources (releaseGpuIntermediates teardown)
-  // while the output slot arrays from a previous execution persist. In this
-  // case execCount is 0 but the slots hold stale views that need refresh.
-  bool hasPopulatedSlots = (outputSlots_ != nullptr &&
-      seg.def.startSlot < totalOutputSlots_ &&
-      outputSlots_[seg.def.startSlot] != nullptr);
+  // The guard resolves the first produced output slot rather than treating
+  // the operation start index as a flat output index. This matters when an
+  // earlier operation has multiple outputs and the segment's first output is
+  // not numerically equal to its first operation. The segment executionCount
+  // can also be reset by platformReleaseSegmentGpuResources while output
+  // arrays from a previous execution persist, so populated outputs still need
+  // refresh in that case.
+  const int firstOutputSlot = dsp::firstSegmentOutputSlot(
+      slots_, numSlots_, seg.def.startSlot, seg.def.endSlot,
+      totalOutputSlots_);
+  bool hasPopulatedSlots = (outputSlots_ != nullptr && firstOutputSlot >= 0 &&
+      outputSlots_[firstOutputSlot] != nullptr);
   if (hasPopulatedSlots) {
     // refreshStaleViewWrappersInSegment self-marks args stale (markArgsStale) when
     // it refreshes or demotes any view wrapper — no manual bump+reset needed here.
@@ -3211,8 +3401,9 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
     if (pointerStatus != Status::OK) {
       DSP_DIAG(EMULATED_REPLAY,
                "  ** FUNCTIONAL POINTER PREFLIGHT FAILED: seg[%d-%d] "
-               "status=%d bindings=%zu",
+               "status=%s (%d) bindings=%zu",
                seg.def.startSlot, seg.def.endSlot,
+               statusName_seg(pointerStatus),
                static_cast<int>(pointerStatus),
                functionalPointerSnapshot.size());
       SegmentLifecycle::invalidateSegmentCaptures(
@@ -3225,8 +3416,20 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
   auto tSlotStart = std::chrono::high_resolution_clock::now();
   Status status = Status::OK;
   try {
-    status = executeSegmentSlotBySlot(
-        seg, externalArrays, numExt, stream);
+    if (functionalCaptureStarted || functionalReplayExpected) {
+      // Functional replay owns the alias publication for this invocation. A
+      // fresh placeholder wrapper is expected when callers replace/close
+      // inputs between calls, so allow identity/view publication to refresh
+      // under the existing narrow shape-change guard without relaxing the
+      // ordinary frozen-phase ownership checks elsewhere.
+      ShapeChangeWarmupGuard functionalPublicationGuard(
+          *this, seg.def.startSlot, seg.def.endSlot);
+      status = executeSegmentSlotBySlot(
+          seg, externalArrays, numExt, stream);
+    } else {
+      status = executeSegmentSlotBySlot(
+          seg, externalArrays, numExt, stream);
+    }
   } catch (...) {
 #if !defined(SD_VULKAN)
     if (functionalCaptureStarted && functionalHandle != nullptr) {
@@ -3276,8 +3479,8 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
   if (status != Status::OK) {
     seg.exec.markArgsStale();
     DSP_DIAG(EMULATED_REPLAY,
-             "  ** EXECUTION FAILED: status=%d",
-             (int)status);
+             "  ** EXECUTION FAILED: status=%s (%d)",
+             statusName_seg(status), static_cast<int>(status));
 #if !defined(SD_VULKAN)
     if (functionalCaptureStarted && functionalHandle != nullptr) {
       functionalHandle->abortCapture();
@@ -3338,9 +3541,10 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
     if (pointerStatus != Status::OK) {
       DSP_DIAG(EMULATED_REPLAY,
                "  ** FUNCTIONAL POINTER COMMIT FAILED: seg[%d-%d] "
-               "phase=%s status=%d bindings=%zu",
+               "phase=%s status=%s (%d) bindings=%zu",
                seg.def.startSlot, seg.def.endSlot,
                functionalCaptureStarted ? "capture" : "replay",
+               statusName_seg(pointerStatus),
                static_cast<int>(pointerStatus),
                functionalPointerSnapshot.size());
       SegmentLifecycle::invalidateSegmentCaptures(

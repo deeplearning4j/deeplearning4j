@@ -78,6 +78,9 @@ class NnapiGraphBackend : public GraphBackend {
   int resolutionPriority(const GraphBackendRequest& request) const override;
   GraphBackendPlanningPolicy planningPolicy(
       const GraphBackendRequest& request) const override;
+  GraphBackendCompilationReadiness compilationReadiness(
+      const GraphBackendRequest& request, NativeSlot* slots, int start,
+      int end) const override;
   bool canResolveSlot(const GraphBackendRequest& request, NativeSlot* slots,
                       int slotIndex) override;
   bool canResolveSegment(const GraphBackendRequest& request, NativeSlot* slots,
@@ -127,6 +130,7 @@ class NnapiGraphBackend : public GraphBackend {
   int apiLevel_ = 0;
   int preference_ = ANEURALNETWORKS_PREFER_SUSTAINED_SPEED;
   const ANeuralNetworksDevice* requiredDevice_ = nullptr;
+  int selectedDeviceIndex_ = -1;
   std::string requiredDeviceName_;
   std::string selectedDeviceName_;
   std::string selectedDeviceVersion_;
@@ -176,6 +180,7 @@ class NnapiGraphBackend : public GraphBackend {
       float outputScale = 0.0f;
       std::vector<int8_t> filter;
       std::vector<float> perChannelScales;
+      std::vector<float> perChannelBiasScales;
       std::vector<int32_t> zeroBias;
       std::string packedWeightDigest;
       std::string loweringDigest;
@@ -183,6 +188,7 @@ class NnapiGraphBackend : public GraphBackend {
       size_t ownedBytes() const {
         return filter.size() * sizeof(int8_t) +
                perChannelScales.size() * sizeof(float) +
+               perChannelBiasScales.size() * sizeof(float) +
                zeroBias.size() * sizeof(int32_t);
       }
     };
@@ -206,6 +212,13 @@ class NnapiGraphBackend : public GraphBackend {
       BoundaryTransform boundaryTransform = BoundaryTransform::NONE;
       float quantizationScale = 0.0f;
       int32_t quantizationZeroPoint = 0;
+      // Maximum absolute framework value admitted by the frozen calibration
+      // contract. Negative disables the additional range check for ordinary
+      // non-quantized bindings.
+      float calibrationAbsoluteMaximum = -1.0f;
+      // Non-owning framework-buffer identity for plan-scoped boundary reuse.
+      // sourceIndex alone is not unique across plans in this singleton backend.
+      DataBuffer* sourceBufferIdentity = nullptr;
     };
     std::vector<OperandMapping> inputMappings;
     std::vector<OperandMapping> outputMappings;
@@ -217,10 +230,21 @@ class NnapiGraphBackend : public GraphBackend {
     std::string sourceWeightIdentity;
     std::string sourceLoweringIdentity;
     std::string loweringCacheIdentity;
+    std::string backendCacheAbi;
+    std::string requestedOutputIdentity;
+    std::string modelIoIdentity;
 
     // Compilation audit
     std::vector<CompilationAuditEntry> compilationAudit;
     std::mutex executionMutex;
+
+    size_t ownedBytes() const {
+      size_t total = 0;
+      for (const auto& constant : q4kConstants) {
+        total += constant.ownedBytes();
+      }
+      return total;
+    }
 
     void invalidate() {
       std::lock_guard<std::mutex> lock(executionMutex);
@@ -232,6 +256,16 @@ class NnapiGraphBackend : public GraphBackend {
         ANeuralNetworksModel_free(model);
         model = nullptr;
       }
+      // Large operand buffers must outlive the NNAPI model, but not the model
+      // itself. Release their capacity immediately after model teardown so a
+      // cache invalidation does not retain dense INT8 copies until plan deletion.
+      std::vector<QuantizedQ4KConstant>().swap(q4kConstants);
+      sourceWeightIdentity.clear();
+      sourceLoweringIdentity.clear();
+      loweringCacheIdentity.clear();
+      backendCacheAbi.clear();
+      requestedOutputIdentity.clear();
+      modelIoIdentity.clear();
       valid = false;
     }
 
@@ -252,6 +286,11 @@ class NnapiGraphBackend : public GraphBackend {
   std::mutex cacheMtx_;
   uint64_t cacheGeneration_ = 0;
   std::vector<CompilationAuditEntry> lastCompilationAudit_;
+
+  bool findPublishedBoundaryCalibration(
+      int sourceIndex, NDArray* sourceArray,
+      float& admittedAbsoluteMaximum, float& scale,
+      int32_t& zeroPoint);
 
   // Build the NNAPI model for a segment — adds operands and operations
   bool buildModel(ANeuralNetworksModel* model, CompiledModel& compiled,

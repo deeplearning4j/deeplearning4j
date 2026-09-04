@@ -208,6 +208,7 @@
                                         <include name="*.so"/>
                                         <include name="*.so.*"/>
                                         <exclude name="libnd4jcpu.so"/>
+                                        <exclude name="*.so.tmp*"/>
                                     </fileset>
                                 </copy>
                             </target>
@@ -981,9 +982,8 @@
                                 <linkPath>${env.OPENBLAS_PATH}/</linkPath>
 
                                 <!-- Android NDK library paths -->
-                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/21</linkPath>
+                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/${libnd4j.android.api}</linkPath>
                                 <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android</linkPath>
-                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/17/lib/linux</linkPath>
                                 <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib</linkPath>
                                 <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib</linkPath>
                             </linkPaths>
@@ -992,10 +992,8 @@
                                 <compilerOption>${platform.linker.flag.no.undefined}</compilerOption>
                                 <!-- Add explicit sysroot to compiler options -->
                                 <compilerOption>--sysroot=${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</compilerOption>
-                                <!-- Add multiple -B flags for different possible CRT locations -->
-                                <compilerOption>-B${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/17/lib/linux</compilerOption>
-                                <compilerOption>-B${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/17/lib/linux/x86_64</compilerOption>
-                                <compilerOption>-B${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/21</compilerOption>
+                                <!-- Select the API-specific CRT without hardcoding the NDK's Clang resource version. -->
+                                <compilerOption>-B${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/${libnd4j.android.api}</compilerOption>
                                 <!-- Explicitly tell linker where to find CRT objects -->
                                 <compilerOption>-Wl,--dynamic-linker=/system/bin/linker64</compilerOption>
                             </compilerOptions>

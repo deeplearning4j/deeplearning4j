@@ -28,6 +28,7 @@
 
 #include <ops/declarable/headers/llm.h>
 #include <ops/declarable/helpers/dual_rope.h>
+#include <array/DataTypeUtils.h>
 
 namespace sd {
 namespace ops {
@@ -55,16 +56,37 @@ CUSTOM_OP_IMPL(dual_rope, 1, 1, false, 0, 0) {
   double localFreqScale  = block.getTArguments()->size() > 2 ? T_ARG(2) : 1.0;
   double globalFreqScale = block.getTArguments()->size() > 3 ? T_ARG(3) : 1.0;
 
-  helpers::dualRoPE(block.launchContext(), input, output,
-                    attentionType, positionOffset,
-                    localFreqBase, globalFreqBase,
-                    localFreqScale, globalFreqScale);
+  if (block.width() >= 2) {
+    // Dynamic-position form: the base position comes from an INT64 tensor input
+    // (in-graph KV-cache decode); positionOffset iArg is ignored in this form.
+    // MARKER-DUALROPE-DYNAMIC-V2
+    auto positionArr = INPUT_VARIABLE(1);
+    REQUIRE_TRUE(positionArr->isScalar() || positionArr->lengthOf() == 1, 0,
+                 "dual_rope: position input must be a scalar or single-element tensor, got %lld elements",
+                 positionArr->lengthOf());
+    REQUIRE_TRUE(positionArr->dataType() == DataType::INT64, 0,
+                 "dual_rope: position input must be INT64 (MARKER-DUALROPE-DYNAMIC-V2), got %s",
+                 DataTypeUtils::asString(positionArr->dataType()).c_str());
+
+    helpers::dualRoPE(block.launchContext(), input, output, positionArr,
+                      attentionType, localFreqBase, globalFreqBase,
+                      localFreqScale, globalFreqScale);
+  } else {
+    helpers::dualRoPE(block.launchContext(), input, output,
+                      attentionType, positionOffset,
+                      localFreqBase, globalFreqBase,
+                      localFreqScale, globalFreqScale);
+  }
 
   return sd::Status::OK;
 }
 
 DECLARE_TYPES(dual_rope) {
-  getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
+  // Input 0: floating-point activations. Input 1 (optional): position tensor
+  // (INT64; some backends accept FLOAT — integer values are exact in fp32 up to 2^24).
+  // Global list covers both forms — same convention as fused_rope. The executing
+  // impl validates the position scalar's dtype and shape.
+  getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS, ALL_INTS});
   getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
   getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING);
 }

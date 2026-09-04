@@ -20,8 +20,10 @@
 
 package org.nd4j.linalg.api.memory.deallocation;
 
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.bytedeco.javacpp.LongPointer;
+import org.bytedeco.javacpp.Pointer;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.nativeblas.NativeBufferOwner;
@@ -33,23 +35,20 @@ import org.nd4j.nativeblas.OpaqueNDArray;
  * ensuring reliable cleanup of native memory without relying on
  * unreliable Java finalizers.
  *
- * <p>When an OpaqueNDArray is created, an instance of this deallocator
- * is registered with the DeallocatorService, which will call deallocate()
- * when the Java object becomes unreachable.</p>
+ * <p>When an OpaqueNDArray is created, this registration object is observed
+ * through a PhantomReference. The cleanup action retained by that reference
+ * owns a detached raw-address facade, never the public array or this phantom
+ * referent; otherwise the cleanup action itself would prevent collection.</p>
  *
  * @author Adam Gibson
  * @see DeallocatorService
  * @see OpaqueNDArray
  */
 @Slf4j
-public class OpaqueNDArrayDeallocator implements Deallocatable, Deallocator {
-    @Getter
-    private OpaqueNDArray array;
+public class OpaqueNDArrayDeallocator implements Deallocatable {
     private final long uniqueId;
     private final int targetDevice;
-    private final NativeBufferOwner owner;
-    private volatile boolean deallocated = false;
-    private volatile boolean constant = false;
+    private final ArrayDeallocator innerDeallocator;
 
     /**
      * Creates a new deallocator for the given OpaqueNDArray.
@@ -70,10 +69,9 @@ public class OpaqueNDArrayDeallocator implements Deallocatable, Deallocator {
         if (owner == null) {
             throw new IllegalArgumentException("NativeBufferOwner cannot be null");
         }
-        this.array = array;
         this.uniqueId = uniqueId;
         this.targetDevice = targetDevice;
-        this.owner = owner;
+        this.innerDeallocator = new ArrayDeallocator(array, uniqueId, targetDevice, owner);
     }
 
     private static NativeBufferOwner requireOwner(OpaqueNDArray array) {
@@ -83,74 +81,8 @@ public class OpaqueNDArrayDeallocator implements Deallocatable, Deallocator {
         return array.backendOwner();
     }
 
-    @Override
     public void deallocate() {
-        // Check constant flag first - constant arrays should never be freed
-        // This mirrors the behavior in OpaqueDataBufferDeallocator
-        if (constant) {
-            return;
-        }
-
-        if (deallocated) {
-            return;
-        }
-
-        // During JVM shutdown, skip native deallocation to avoid calling free()
-        // on potentially corrupted heap metadata. The OS reclaims all process memory on exit.
-        if (DeallocatorService.getShutdownInProgress().get()) {
-            return;
-        }
-
-        synchronized (this) {
-            if (constant || deallocated) {
-                return;
-            }
-
-            try {
-                if (array != null && !array.isNull()) {
-                    if (log.isTraceEnabled()) {
-                        log.trace("Deallocating OpaqueNDArray with uniqueId: {}", uniqueId);
-                    }
-
-                    int deviceCount = owner.deviceCount();
-                    if (targetDevice < 0 || targetDevice >= deviceCount) {
-                        throw new IllegalStateException(
-                                "Invalid allocation device " + targetDevice
-                                        + " for owning backend with " + deviceCount + " devices");
-                    }
-
-                    int currentDevice = owner.currentDevice();
-                    boolean switchedDevice = currentDevice != targetDevice;
-                    if (switchedDevice) {
-                        owner.setDevice(targetDevice);
-                    }
-
-                    try {
-                        owner.commit();
-                        owner.nativeOps().deleteNDArray(array);
-                        array.setNull();
-                    } finally {
-                        if (switchedDevice) {
-                            owner.setDevice(currentDevice);
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                log.error("Error deallocating OpaqueNDArray with uniqueId: " + uniqueId, e);
-            } finally {
-                array = null;
-                deallocated = true;
-                // Remove from referenceMap — mirrors BaseDataBuffer.release() (line 2250)
-                // and prevents unbounded refMap growth across model close/reimport cycles.
-                // Without this, each model close leaves ~500+ stale OpaqueNDArray entries
-                // that persist until GC enqueues the corresponding PhantomReference.
-                try {
-                    owner.deallocatorService().getReferenceMap().remove(uniqueId);
-                } catch (Exception ignored) {
-                    // DeallocatorService may be shut down
-                }
-            }
-        }
+        innerDeallocator.deallocate();
     }
 
     @Override
@@ -160,7 +92,7 @@ public class OpaqueNDArrayDeallocator implements Deallocatable, Deallocator {
 
     @Override
     public Deallocator deallocator() {
-        return this;
+        return innerDeallocator;
     }
 
     @Override
@@ -168,30 +100,163 @@ public class OpaqueNDArrayDeallocator implements Deallocatable, Deallocator {
         return targetDevice;
     }
 
-    @Override
-    public boolean isConstant() {
-        return constant;
+    public OpaqueNDArray getArray() {
+        return innerDeallocator.getArray();
     }
 
-    @Override
+    public boolean isConstant() {
+        return innerDeallocator.isConstant();
+    }
+
     public void setConstant(boolean constant) {
-        this.constant = constant;
-        // Mirror BaseDataBuffer.setConstant() behavior: when marked constant,
-        // remove from DeallocatorService.referenceMap since the deallocator will
-        // never fire (deallocate() returns early when constant=true). Without this,
-        // OpaqueNDArrays for constant model weights permanently occupy refMap slots.
-        if (constant) {
-            owner.deallocatorService().getReferenceMap().remove(uniqueId);
+        innerDeallocator.setConstant(constant);
+    }
+
+    public void retainDataBuffers(DataBuffer shapeInfo, DataBuffer data, DataBuffer special) {
+        innerDeallocator.retainDataBuffers(shapeInfo, data, special);
+    }
+
+    public boolean isDeallocated() {
+        return innerDeallocator.isDeallocated();
+    }
+
+    /** Raw-address facade with no Java path back to the registered public array. */
+    private static final class DetachedCleanupArray extends OpaqueNDArray {
+        private LongPointer pointerStorage;
+
+        private DetachedCleanupArray(OpaqueNDArray source, NativeBufferOwner owner) {
+            super((Pointer) null);
+            // OpaqueNDArray is @ByVal: source.address() is a JavaCPP pointer-cell
+            // address, while the actual sd::NDArray* is the cell's first word.
+            // Own an independent cell so the cleanup facade never references source.
+            pointerStorage = new LongPointer(1L);
+            pointerStorage.put(0L, new LongPointer(source).get(0L));
+            this.address = pointerStorage.address();
+            this.position = 0L;
+            this.limit = 1L;
+            this.capacity = 1L;
+            attachOwner(owner);
+        }
+
+        private void releasePointerStorage() {
+            if (pointerStorage != null) {
+                pointerStorage.close();
+                pointerStorage = null;
+            }
         }
     }
 
-    /**
-     * Returns whether this deallocator has already been invoked.
-     *
-     * @return true if deallocate() has been called
-     */
-    public boolean isDeallocated() {
-        return deallocated;
-    }
+    /** Cleanup action retained by DeallocatableReference. */
+    @Slf4j
+    private static final class ArrayDeallocator implements Deallocator {
+        private OpaqueNDArray array;
+        private final long uniqueId;
+        private final int targetDevice;
+        private final NativeBufferOwner owner;
+        private final DeallocatorService service;
+        private DataBuffer shapeInfoBufferRef;
+        private DataBuffer dataBufferRef;
+        private DataBuffer specialBufferRef;
+        private volatile boolean deallocated;
+        private volatile boolean constant;
 
+        private ArrayDeallocator(OpaqueNDArray array, long uniqueId, int targetDevice,
+                                 NativeBufferOwner owner) {
+            this.array = new DetachedCleanupArray(array, owner);
+            this.uniqueId = uniqueId;
+            this.targetDevice = targetDevice;
+            this.owner = owner;
+            this.service = owner.deallocatorService();
+        }
+
+        private synchronized void retainDataBuffers(
+                DataBuffer shapeInfo, DataBuffer data, DataBuffer special) {
+            if (deallocated) {
+                throw new IllegalStateException("Cannot retain buffers for a deallocated OpaqueNDArray");
+            }
+            // Retain the DataBuffer referents themselves. Holding only their
+            // OpaqueDataBuffer facades does not stop BaseDataBuffer phantom cleanup.
+            shapeInfoBufferRef = shapeInfo;
+            dataBufferRef = data;
+            specialBufferRef = special;
+        }
+
+        @Override
+        public void deallocate() {
+            if (constant || deallocated || DeallocatorService.getShutdownInProgress().get()) {
+                return;
+            }
+
+            synchronized (this) {
+                if (constant || deallocated) {
+                    return;
+                }
+
+                try {
+                    if (array != null && !array.isNull()) {
+                        int deviceCount = owner.deviceCount();
+                        if (targetDevice < 0 || targetDevice >= deviceCount) {
+                            throw new IllegalStateException(
+                                    "Invalid allocation device " + targetDevice
+                                            + " for owning backend with " + deviceCount + " devices");
+                        }
+
+                        int currentDevice = owner.currentDevice();
+                        boolean switchedDevice = currentDevice != targetDevice;
+                        if (switchedDevice) {
+                            owner.setDevice(targetDevice);
+                        }
+
+                        try {
+                            owner.commit();
+                            owner.nativeOps().deleteNDArray(array);
+                            array.setNull();
+                        } finally {
+                            if (switchedDevice) {
+                                owner.setDevice(currentDevice);
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error("Error deallocating OpaqueNDArray with uniqueId: " + uniqueId, e);
+                } finally {
+                    markDeallocated();
+                }
+            }
+        }
+
+        @Override
+        public boolean isConstant() {
+            return constant;
+        }
+
+        @Override
+        public void setConstant(boolean constant) {
+            this.constant = constant;
+            if (constant) {
+                service.getReferenceMap().remove(uniqueId);
+            }
+        }
+
+        private boolean isDeallocated() {
+            return deallocated;
+        }
+
+        private OpaqueNDArray getArray() {
+            return array;
+        }
+
+        private void markDeallocated() {
+            if (array != null) {
+                array.setNull();
+                ((DetachedCleanupArray) array).releasePointerStorage();
+            }
+            array = null;
+            shapeInfoBufferRef = null;
+            dataBufferRef = null;
+            specialBufferRef = null;
+            deallocated = true;
+            service.getReferenceMap().remove(uniqueId);
+        }
+    }
 }

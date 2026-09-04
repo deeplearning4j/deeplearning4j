@@ -1,0 +1,18 @@
+{
+  "updatedAt" : "2026-09-02T14:21:56.371419332Z",
+  "count" : 1,
+  "crawls" : [ {
+    "profileId" : "sdx-aot-knowledge",
+    "name" : "sdx-aot",
+    "status" : "COMPLETED",
+    "finishedAt" : "2026-09-02T14:21:56.368204671Z",
+    "loader" : null,
+    "chunker" : null,
+    "collection" : null,
+    "factSheetName" : null,
+    "markdownPath" : null,
+    "documentCount" : 0,
+    "markdownCount" : 0,
+    "chunkCount" : 0
+  } ]
+}

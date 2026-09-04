@@ -336,28 +336,33 @@ public final class SdxTextSession implements AutoCloseable {
 
     private final SdxRuntime runtime;
     private final SdxRuntime.SdxModel modelOwner;
+    private final int fixedContextCapacity;
     private final ReentrantReadWriteLock lifecycleLock = new ReentrantReadWriteLock();
     private sdx_generation_session_t sessionHandle;
 
     private SdxTextSession(
             SdxRuntime runtime,
             SdxRuntime.SdxModel modelOwner,
-            sdx_generation_session_t sessionHandle) {
+            sdx_generation_session_t sessionHandle,
+            int fixedContextCapacity) {
         this.runtime = runtime;
         this.modelOwner = modelOwner;
         this.sessionHandle = sessionHandle;
+        this.fixedContextCapacity = fixedContextCapacity;
     }
 
     static SdxTextSession create(
             SdxRuntime runtime,
             SdxRuntime.SdxModel modelOwner,
-            sdx_model_t modelHandle) {
+            sdx_model_t modelHandle,
+            int fixedContextCapacity) {
         Objects.requireNonNull(runtime, "runtime");
         Objects.requireNonNull(modelOwner, "modelOwner");
 
         try (sdx_generation_session_options_t options =
                      new sdx_generation_session_options_t()) {
             options.struct_size(options.sizeof());
+            options.fixed_context_capacity(fixedContextCapacity);
             sdx_generation_session_t outSession =
                     new sdx_generation_session_t();
             int status = SdxNative.sdxCreateGenerationSession(
@@ -367,8 +372,21 @@ public final class SdxTextSession implements AutoCloseable {
                         "sdxCreateGenerationSession failed: "
                                 + runtime.lastError() + " (status=" + status + ")");
             }
-            return new SdxTextSession(runtime, modelOwner, outSession);
+            int effectiveCapacity =
+                    SdxNative.sdxGetGenerationContextCapacity(outSession);
+            if (effectiveCapacity < 2) {
+                SdxNative.sdxDestroyGenerationSession(outSession);
+                throw new IllegalStateException(
+                        "SDX generation session returned invalid fixed capacity "
+                                + effectiveCapacity);
+            }
+            return new SdxTextSession(
+                    runtime, modelOwner, outSession, effectiveCapacity);
         }
+    }
+
+    public int fixedContextCapacity() {
+        return fixedContextCapacity;
     }
 
     public GenerationResult generate(long[] promptTokenIds) {

@@ -13,6 +13,7 @@
 
 #include <dsp/runtime/dsp_runtime_c.h>
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -37,9 +38,21 @@ namespace detail {
  */
 void setModelError(sdx_model_t* model, const std::string& error);
 
+/** Read a variable's declared FlatGraph shape without materializing its data. */
+bool modelVariableShape(
+    sdx_model_t* model,
+    const std::string& variableName,
+    std::vector<int64_t>* shape);
+
 sdx_status_t runOwnedArrays(
     sdx_context_t* context,
     const std::vector<NDArray*>& publicInputs);
+
+/** Preserve the concrete plan/context failure across higher-level session seams. */
+std::string contextError(const sdx_context_t* context);
+
+/** Seal the already-bound context's sole plan before user generation begins. */
+sdx_status_t precompileBoundContext(sdx_context_t* context);
 
 NDArray* contextOutputArray(sdx_context_t* context, int32_t outputIndex);
 

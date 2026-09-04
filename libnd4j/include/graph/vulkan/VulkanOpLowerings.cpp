@@ -8554,7 +8554,9 @@ mlir::LogicalResult DataMovementToSpirv::matchAndRewrite(
         return op.emitOpError("random metadata contract mismatch");
       }
 
-      auto [flat, outputIndices] = launchOutput();
+      auto launchResult = launchOutput();
+      mlir::Value flat = launchResult.first;
+      auto outputIndices = std::move(launchResult.second);
       auto i32 = rewriter.getI32Type();
       auto i32Constant = [&](uint32_t bits) -> mlir::Value {
         auto value = static_cast<int64_t>(static_cast<int32_t>(bits));

@@ -691,6 +691,99 @@ public class DspMixedPrecisionReplayTest {
     }
 
     @Test
+    @DisplayName("Triton GDN K-normalization production prefill shape matches native CUDA raw bits")
+    public void testTritonGdnKNormalizationMatchesNativeAtProductionPrefillShape() {
+        final int sequence = 662;
+        final int heads = 16;
+        final int headDim = 128;
+        final int length = sequence * heads * headDim;
+        float[] values = new float[length];
+        for (int row = 0; row < sequence * heads; row++) {
+            for (int k = 0; k < headDim; k++) {
+                float mantissa = 1.0f + (((k * 13) + (row * 7)) & 31) / 64.0f;
+                float value = Math.scalb(mantissa, (((k * 5) + (row * 3)) & 15) - 8);
+                values[row * headDim + k] = ((k + row) & 1) == 0 ? value : -value;
+            }
+        }
+
+        INDArray inputData;
+        try (INDArray floatInput = Nd4j.createFromArray(values)
+                .reshape(1, sequence, heads, headDim)) {
+            inputData = floatInput.castTo(DataType.HALF);
+        }
+        Map<String, INDArray> placeholders = new LinkedHashMap<>();
+        placeholders.put("input", inputData);
+
+        INDArray reference;
+        try (SameDiff ref = SameDiff.create()) {
+            SDVariable input = ref.placeHolder(
+                    "input", DataType.HALF, 1, sequence, heads, headDim);
+            SDVariable inputF32 = input.castTo("input_f32", DataType.FLOAT);
+            SDVariable normSq = inputF32.mul(inputF32).sum("norm_sq", true, -1);
+            SDVariable norm = ref.math.sqrt("norm", normSq.add(1e-6));
+            SDVariable normalized = input.div(
+                    "normalized", norm.castTo("norm_cast", input.dataType()));
+            normalized.castTo("output", DataType.FLOAT);
+            ref.setGraphExecutionMode(GraphExecutionMode.SLOT_BY_SLOT);
+            reference = ref.output(placeholders, "output").get("output").dup('c');
+        }
+        float[] expected = reference.data().asFloat();
+
+        Environment environment = Nd4j.getEnvironment();
+        boolean compileAllBefore = environment.tritonCompileAll();
+        boolean alwaysCompileBefore = environment.tritonAlwaysCompile();
+        String includeTypesBefore = environment.tritonIncludeTypes();
+        try {
+            environment.setTritonCompileAll(true);
+            environment.setTritonAlwaysCompile(true);
+            environment.setTritonIncludeTypes("REDUCTION,ELEMENTWISE");
+
+            sd = SameDiff.create();
+            SDVariable input = sd.placeHolder(
+                    "input", DataType.HALF, 1, sequence, heads, headDim);
+            SDVariable inputF32 = input.castTo("input_f32", DataType.FLOAT);
+            SDVariable normSq = inputF32.mul(inputF32).sum("norm_sq", true, -1);
+            SDVariable norm = sd.math.sqrt("norm", normSq.add(1e-6));
+            SDVariable normalized = input.div(
+                    "normalized", norm.castTo("norm_cast", input.dataType()));
+            normalized.castTo("output", DataType.FLOAT);
+            sd.setGraphExecutionMode(GraphExecutionMode.TRITON);
+
+            for (int step = 0; step < 4; step++) {
+                INDArray actual = sd.output(placeholders, "output").get("output");
+                float[] actualValues = actual.data().asFloat();
+                assertEquals(expected.length, actualValues.length,
+                        "Production-shaped normalization output length changed");
+                for (int i = 0; i < expected.length; i++) {
+                    int expectedBits = Float.floatToRawIntBits(expected[i]);
+                    int actualBits = Float.floatToRawIntBits(actualValues[i]);
+                    if (expectedBits != actualBits) {
+                        int row = i / headDim;
+                        int dimension = i % headDim;
+                        int head = row % heads;
+                        int token = row / heads;
+                        fail(String.format(
+                                "production K-normalization step %d token %d head %d dimension %d: "
+                                        + "native=0x%08x triton=0x%08x",
+                                step, token, head, dimension, expectedBits, actualBits));
+                    }
+                }
+            }
+
+            DspPlanAssertions.assertPhaseReached(sd, PlanPhase.SHAPES_FROZEN,
+                    "TRITON production-shaped GDN K-normalization parity");
+            DspPlanAssertions.assertNoPhaseContractViolations(sd,
+                    "TRITON production-shaped GDN K-normalization parity");
+        } finally {
+            environment.setTritonCompileAll(compileAllBefore);
+            environment.setTritonAlwaysCompile(alwaysCompileBefore);
+            environment.setTritonIncludeTypes(includeTypesBefore);
+            reference.close();
+            inputData.close();
+        }
+    }
+
+    @Test
     @DisplayName("Attribute GDN K-normalization mismatch to its first arithmetic stage")
     public void testTritonGdnKNormalizationStageAttribution() {
         final int rows = 16;

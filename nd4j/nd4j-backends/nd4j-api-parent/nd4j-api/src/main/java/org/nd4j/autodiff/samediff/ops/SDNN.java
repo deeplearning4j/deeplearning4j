@@ -1499,6 +1499,35 @@ public class SDNN extends SDOps {
   }
 
   /**
+   * Dual Rotary Position Embedding (Gemma 4) with an in-graph position tensor.<br>
+   * <br>
+   * Same rotation as the int-offset overloads, but the base position is read from
+   * a device-resident INT64 tensor input (scalar or single-element) instead of a
+   * static argument. This lets decode loops advance the KV-cache position by
+   * feeding a placeholder without rebuilding the graph.<br>
+   * <br>
+   * Applies two different RoPE configurations depending on attention type:<br>
+   * - Standard RoPE (localFreqBase) for sliding-window (local) attention layers<br>
+   * - Proportional RoPE (globalFreqBase) for global full-context attention layers<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor [batch, seqLen, numHeads, headDim] - headDim must be even (NUMERIC type)
+   * @param position INT64 position tensor (scalar or single element) holding the base position
+   * @param attentionType Attention type (0=local/sliding-window, 1=global/full-context)
+   * @param localFreqBase RoPE frequency base for local/sliding-window layers
+   * @param globalFreqBase RoPE frequency base for global/full-context layers
+   * @param localFreqScale RoPE frequency scale for local layers
+   * @param globalFreqScale RoPE frequency scale for global layers
+   * @return output Output with rotary embeddings applied [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public SDVariable dualRoPE(String name, SDVariable input, SDVariable position, int attentionType,
+      double localFreqBase, double globalFreqBase, double localFreqScale, double globalFreqScale) {
+    SDValidation.validateNumerical("dualRoPE", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(sd,input, position, attentionType, localFreqBase, globalFreqBase, localFreqScale, globalFreqScale).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Element-wise exponential linear unit (ELU) function:<br>
    * out = x if x > 0<br>
    * out = a * (exp(x) - 1) if x <= 0<br>

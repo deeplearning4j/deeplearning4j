@@ -210,6 +210,20 @@ public class DspSlotLifecycleAuditTest {
         try {
             for (int replay = 0; replay < REPLAYS; replay++) {
                 Map<String, INDArray> actual = sd.output(inputs, outputNames);
+                if (replay == 0) {
+                    DspHandle handle = sd.dsp();
+                    int valuesSlot = handle.slotIndexForOutput("top_values");
+                    int indicesSlot = handle.slotIndexForOutput("top_indices");
+                    int viewSlot = handle.slotIndexForOutput("view");
+                    assertTrue(valuesSlot >= 0 && indicesSlot >= 0 && viewSlot >= 0,
+                            "all multi-output/view results must resolve to flat output slots");
+                    assertTrue(valuesSlot != indicesSlot && valuesSlot != viewSlot &&
+                                    indicesSlot != viewSlot,
+                            "multi-output producer and view must not collapse output-slot identities");
+                    assertTrue(handle.totalSlots() > Math.max(valuesSlot,
+                                    Math.max(indicesSlot, viewSlot)),
+                            "resolved output slots must be within the plan's flat output-slot domain");
+                }
                 if (reference == null) {
                     reference = new INDArray[outputNames.length];
                     for (int i = 0; i < outputNames.length; i++) {
@@ -225,6 +239,32 @@ public class DspSlotLifecycleAuditTest {
             closeAll(reference);
             closeAll(inputs);
         }
+    }
+
+    @Test
+    @DisplayName("Identity publication must not transfer placeholder ownership to the native plan")
+    public void testIdentityPlaceholderRemainsCallerOwnedAfterPlanClose() {
+        SameDiff graph = SameDiff.create();
+        SDVariable x = graph.placeHolder("x", DataType.FLOAT, 1, 8);
+        graph.identity("out", x);
+        configureDsp(graph, GraphExecutionMode.AUTO);
+
+        INDArray input = Nd4j.arange(8).reshape(1, 8).castTo(DataType.FLOAT);
+        Map<String, INDArray> inputs = new LinkedHashMap<>();
+        inputs.put("x", input);
+        try {
+            for (int replay = 0; replay < REPLAYS; replay++) {
+                Map<String, INDArray> result = graph.output(inputs, "out");
+                INDArray output = result.get("out");
+                assertNotNull(output, "identity output must be published");
+                if (output != input) output.close();
+            }
+        } finally {
+            graph.close();
+        }
+        assertTrue(!input.wasClosed(),
+                "closing the DSP plan must not close the caller-owned placeholder array");
+        input.close();
     }
 
     /** Build a graph with deterministic weights. Resets the

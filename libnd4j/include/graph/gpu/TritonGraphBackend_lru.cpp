@@ -208,7 +208,13 @@ void TritonGraphBackend::evictIfOverBudget(int deviceId, CompiledKernel* dontEvi
 // set.  Loads the cached PTX, calls cuModuleLoadDataEx + cuModuleGetFunction,
 // re-records the module bytes, and re-registers with the residency cache.
 Status TritonGraphBackend::reloadModuleIfEvicted(CompiledKernel* k) {
-  if (k == nullptr) return Status::KERNEL_FAILURE;
+  auto fail = [&](const std::string& reason) {
+    const std::string message =
+        reason + " [Triton module reload status=KERNEL_FAILURE (50)]";
+    safeSetErrorContext(static_cast<int>(Status::KERNEL_FAILURE), message.c_str());
+    return Status::KERNEL_FAILURE;
+  };
+  if (k == nullptr) return fail("Triton module reload received a null compiled kernel");
   if (k->gpuModule != nullptr) return Status::OK;  // not evicted
 
   if (k->diskCacheHash.empty() || k->kernelName.empty()) {
@@ -216,7 +222,12 @@ Status TritonGraphBackend::reloadModuleIfEvicted(CompiledKernel* k) {
               "[%d-%d] — diskCacheHash or kernelName is empty (was the kernel "
               "loaded with residency tracking enabled?).\n",
               k->startSlot_, k->endSlot_);
-    return Status::KERNEL_FAILURE;
+    return fail(
+        "Triton module reload metadata is incomplete for kernel range " +
+        std::to_string(k->startSlot_) + "-" + std::to_string(k->endSlot_) +
+        ": diskCacheHashEmpty=" +
+        std::to_string(k->diskCacheHash.empty() ? 1 : 0) +
+        ", kernelNameEmpty=" + std::to_string(k->kernelName.empty() ? 1 : 0));
   }
 
   int currentDevice = tritonGetCurrentDevice();
@@ -228,7 +239,10 @@ Status TritonGraphBackend::reloadModuleIfEvicted(CompiledKernel* k) {
               "evicted kernel [%d-%d] hash=%s — cannot recover.  Disk cache "
               "may have been wiped or the cache path is misconfigured.\n",
               k->startSlot_, k->endSlot_, k->diskCacheHash.c_str());
-    return Status::KERNEL_FAILURE;
+    return fail("Triton disk cache miss while reloading evicted kernel " +
+                std::to_string(k->startSlot_) + "-" +
+                std::to_string(k->endSlot_) + ", name=" + k->kernelName +
+                ", hash=" + k->diskCacheHash);
   }
 
   void* gpuModule = TritonTargetDispatch::loadModule(binary);
@@ -237,7 +251,10 @@ Status TritonGraphBackend::reloadModuleIfEvicted(CompiledKernel* k) {
               "failed for evicted kernel [%d-%d] hash=%s\n",
               k->startSlot_, k->endSlot_, k->diskCacheHash.c_str());
     delete[] static_cast<char*>(binary.data);
-    return Status::KERNEL_FAILURE;
+    return fail("TritonTargetDispatch::loadModule failed while reloading kernel " +
+                std::to_string(k->startSlot_) + "-" +
+                std::to_string(k->endSlot_) + ", name=" + k->kernelName +
+                ", hash=" + k->diskCacheHash);
   }
 
   void* kernelFunc = TritonTargetDispatch::getKernelFunction(gpuModule, k->kernelName);
@@ -248,7 +265,10 @@ Status TritonGraphBackend::reloadModuleIfEvicted(CompiledKernel* k) {
               k->diskCacheHash.c_str());
     TritonTargetDispatch::unloadModule(gpuModule);
     delete[] static_cast<char*>(binary.data);
-    return Status::KERNEL_FAILURE;
+    return fail("TritonTargetDispatch::getKernelFunction failed while reloading kernel " +
+                std::to_string(k->startSlot_) + "-" +
+                std::to_string(k->endSlot_) + ", name=" + k->kernelName +
+                ", hash=" + k->diskCacheHash);
   }
 
   // Successful reload — patch the kernel and account for the new bytes.

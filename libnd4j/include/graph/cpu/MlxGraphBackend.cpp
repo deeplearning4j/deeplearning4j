@@ -201,6 +201,13 @@ Status MlxGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                                         void* stream) {
   int startSlot = seg.def.startSlot;
   int endSlot = seg.def.endSlot;
+  auto fail = [&](const std::string& reason) {
+    const std::string message =
+        reason + " [MLX segment " + std::to_string(startSlot) + "-" +
+        std::to_string(endSlot) + ", status=KERNEL_FAILURE (50)]";
+    safeSetErrorContext(static_cast<int>(Status::KERNEL_FAILURE), message.c_str());
+    return Status::KERNEL_FAILURE;
+  };
   SegmentCacheKey key{startSlot, endSlot, seg.def.shapeKeyState.compiledShapeKey};
 
   CompiledSegment* compiled = nullptr;
@@ -209,14 +216,14 @@ Status MlxGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     auto it = cache_.find(key);
     if (it == cache_.end() || !it->second.valid) {
       DSP_DIAG(EXECUTE, "MlxGraphBackend::executeSegment [%d-%d]: no compiled graph found", startSlot, endSlot);
-      return Status::KERNEL_FAILURE;
+      return fail("compiled MLX graph is absent from the segment cache");
     }
     compiled = &it->second;
   }
 
   if (!compiled->mlxGraph.valid) {
     DSP_DIAG(EXECUTE, "MlxGraphBackend::executeSegment [%d-%d]: graph invalid", startSlot, endSlot);
-    return Status::KERNEL_FAILURE;
+    return fail("compiled MLX graph is invalid");
   }
 
   DSP_DIAG(EXECUTE, "MlxGraphBackend::executeSegment [%d-%d]: executing MLX graph", startSlot, endSlot);
@@ -231,7 +238,7 @@ Status MlxGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   } catch (const std::exception& e) {
     DSP_DIAG(EXECUTE, "MlxGraphBackend: execution failed for segment [%d-%d]: %s",
               startSlot, endSlot, e.what());
-    return Status::KERNEL_FAILURE;
+    return fail(std::string("MLX output evaluation/copyback threw: ") + e.what());
   }
 
   return Status::OK;

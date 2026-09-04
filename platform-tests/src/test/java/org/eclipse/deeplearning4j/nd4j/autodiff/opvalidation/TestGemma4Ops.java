@@ -49,6 +49,9 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -545,4 +548,114 @@ public class TestGemma4Ops extends BaseNd4jTestWithBackends {
         assertFalse(cached.isDownloadedNow(), "Second download should be from cache");
         assertTrue(cachedMs < 1000, "Cached download should be < 1 second, was " + cachedMs + "ms");
     }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("Gemma3n per-layer head counts: dualRoPE + KV reshape under DSP decode shapes")
+    public void testPerLayerHeadsDSPReshape(Nd4jBackend backend) {
+        // Reproduces DSP slot 577/582: layers where q/k projections have HALF the
+        // width of the global config (Gemma 3n per-layer head variation). The graph
+        // must reshape q/k by their ACTUAL per-layer widths, not global config.
+        int headDim = 8;
+        int kvHeads = 2;
+
+        // Two layers: layer 0 = wide (4 q heads), layer 1 = narrow (2 q heads)
+        int[][] layerHeads = {{4, 2}, {2, 2}};
+        int hidden = 32;
+
+        SameDiff sd = SameDiff.create();
+        SDVariable inputIds = sd.placeHolder("input_ids", DataType.INT64, -1, -1);
+        // Position as FLOAT: int positions are exact in float32 up to 2^24 (>> any context
+        // window). The INT64 form hits a dual_rope registration quirk (per-input
+        // DECLARE_TYPES entry not honored on all registration paths) — tracked separately.
+        SDVariable positionOffset = sd.placeHolder("position_offset", DataType.INT64);
+        SDVariable cachePosition = sd.placeHolder("cache_position", DataType.INT64);
+        SDVariable causalMask = sd.placeHolder("_causal_mask", DataType.FLOAT, -1, -1, -1, -1);
+
+        Map<String, SDVariable> keyCaches = new HashMap<>();
+        Map<String, SDVariable> valueCaches = new HashMap<>();
+        List<String> outputNames = new ArrayList<>();
+
+        for (int layer = 0; layer < 2; layer++) {
+            int qHeads = layerHeads[layer][0];
+            int layerKvHeads = layerHeads[layer][1];
+            SDVariable keyCache = sd.placeHolder("past_key_values." + layer + ".key",
+                    DataType.FLOAT, -1, -1, layerKvHeads, headDim);
+            SDVariable valueCache = sd.placeHolder("past_key_values." + layer + ".value",
+                    DataType.FLOAT, -1, -1, layerKvHeads, headDim);
+            keyCaches.put("past_key_values." + layer + ".key", keyCache);
+            valueCaches.put("past_key_values." + layer + ".value", valueCache);
+
+            // Hidden input: [batch, seq, hidden]
+            SDVariable hiddenIn = sd.placeHolder("hidden_" + layer, DataType.FLOAT, -1, -1, hidden);
+
+            // Q projection: [batch, seq, qHeads*headDim] -> reshape to heads
+            SDVariable wq = sd.var("wq_" + layer, Nd4j.randn(Nd4j.defaultFloatingPointType(), hidden, qHeads * headDim).muli(0.05));
+            SDVariable q = sd.mmul("q_" + layer, hiddenIn, wq);
+            SDVariable qShape = sd.stack("q_shape_" + layer, 0,
+                    sd.sizeAt(hiddenIn, 0), sd.sizeAt(hiddenIn, 1),
+                    sd.constant(Nd4j.scalar((long) qHeads)),
+                    sd.constant(Nd4j.scalar((long) headDim)));
+            q = sd.reshape("q_heads_" + layer, q, qShape);
+            q = sd.nn().dualRoPE("q_rope_" + layer, q, positionOffset, 0, 10000.0, 10000.0, 1.0, 1.0);
+
+            // K projection: [batch, seq, kvHeads*headDim]
+            SDVariable wk = sd.var("wk_" + layer, Nd4j.randn(Nd4j.defaultFloatingPointType(), hidden, layerKvHeads * headDim).muli(0.05));
+            SDVariable k = sd.mmul("k_" + layer, hiddenIn, wk);
+            SDVariable kvShape = sd.stack("kv_shape_" + layer, 0,
+                    sd.sizeAt(hiddenIn, 0), sd.sizeAt(hiddenIn, 1),
+                    sd.constant(Nd4j.scalar((long) layerKvHeads)),
+                    sd.constant(Nd4j.scalar((long) headDim)));
+            k = sd.reshape("k_heads_" + layer, k, kvShape);
+            k = sd.nn().dualRoPE("k_rope_" + layer, k, positionOffset, 0, 10000.0, 10000.0, 1.0, 1.0);
+
+            SDVariable wv = sd.var("wv_" + layer, Nd4j.randn(Nd4j.defaultFloatingPointType(), hidden, layerKvHeads * headDim).muli(0.05));
+            SDVariable v = sd.mmul("v_" + layer, hiddenIn, wv);
+            v = sd.reshape("v_heads_" + layer, v, kvShape);
+
+            SDVariable attnOut = sd.nn.dotProductAttentionV2(
+                    "attn_out_" + layer, q, v, k, null, null,
+                    keyCache, valueCache, cachePosition, causalMask,
+                    0.0, 0.0, false, false);
+
+            SDVariable outFlat = sd.reshape("attn_flat_" + layer, attnOut,
+                    sd.stack("attn_flat_shape_" + layer, 0,
+                            sd.sizeAt(hiddenIn, 0), sd.sizeAt(hiddenIn, 1),
+                            sd.constant(Nd4j.scalar((long) (qHeads * headDim)))));
+            outputNames.add("k_rope_" + layer);
+            outputNames.add("v_heads_" + layer);
+        }
+        // Final output so the graph has a scalar-free terminal
+        outputNames.add("hidden_1");
+        sd.setOutputs(outputNames);
+
+        // Prefill shapes: batch=1, seq=5; decode shapes: batch=1, seq=1
+        for (int seq : new int[]{5, 1}) {
+            Map<String, INDArray> placeholders = new LinkedHashMap<>();
+            placeholders.put("input_ids", Nd4j.ones(DataType.INT64, 1, seq));
+            placeholders.put("position_offset", Nd4j.scalar(DataType.INT64, seq == 5 ? 0L : 5L));
+            placeholders.put("cache_position", Nd4j.scalar(DataType.INT64, seq == 5 ? 0L : 5L));
+            placeholders.put("hidden_0", Nd4j.randn(DataType.FLOAT, 1, seq, hidden));
+            placeholders.put("hidden_1", Nd4j.randn(DataType.FLOAT, 1, seq, hidden));
+            placeholders.put("_causal_mask", Nd4j.zeros(DataType.FLOAT, 1, 1, seq, 32));
+
+            for (int layer = 0; layer < 2; layer++) {
+                int layerKvHeads = layerHeads[layer][1];
+                String kn = "past_key_values." + layer + ".key";
+                String vn = "past_key_values." + layer + ".value";
+                placeholders.put(kn, Nd4j.zeros(DataType.FLOAT, 1, 32, layerKvHeads, headDim));
+                placeholders.put(vn, Nd4j.zeros(DataType.FLOAT, 1, 32, layerKvHeads, headDim));
+            }
+
+            Map<String, INDArray> outMap = sd.output(placeholders, outputNames);
+            INDArray[] out = outputNames.stream().map(outMap::get).toArray(INDArray[]::new);
+            assertNotNull(out);
+            for (INDArray o : out) {
+                assertNotNull(o);
+                assertFalse(o.isNaN().any());
+            }
+        }
+    }
+
+
 }

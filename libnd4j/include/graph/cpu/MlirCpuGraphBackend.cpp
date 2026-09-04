@@ -186,6 +186,13 @@ Status MlirCpuGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                                             void* stream) {
   int startSlot = seg.def.startSlot;
   int endSlot = seg.def.endSlot;
+  auto fail = [&](const std::string& reason) {
+    const std::string message =
+        reason + " [MLIR CPU segment " + std::to_string(startSlot) + "-" +
+        std::to_string(endSlot) + ", status=KERNEL_FAILURE (50)]";
+    safeSetErrorContext(static_cast<int>(Status::KERNEL_FAILURE), message.c_str());
+    return Status::KERNEL_FAILURE;
+  };
   SegmentCacheKey key{startSlot, endSlot, seg.def.shapeKeyState.compiledShapeKey};
 
   // Look up cached kernel
@@ -196,14 +203,14 @@ Status MlirCpuGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     if (it == cache_.end() || !it->second.valid) {
       DSP_DIAG(EXECUTE, "MlirCpuGraphBackend::executeSegment [%d-%d]: no compiled kernel found",
                startSlot, endSlot);
-      return Status::KERNEL_FAILURE;
+      return fail("compiled MLIR JIT kernel is absent from the segment cache");
     }
     compiled = &it->second;
   }
 
   if (!compiled->kernel || !compiled->kernel->isValid()) {
     DSP_DIAG(EXECUTE, "MlirCpuGraphBackend::executeSegment [%d-%d]: kernel invalid", startSlot, endSlot);
-    return Status::KERNEL_FAILURE;
+    return fail("compiled MLIR JIT kernel handle is null or invalid");
   }
 
   DSP_DIAG(EXECUTE, "MlirCpuGraphBackend::executeSegment [%d-%d]: executing with %d args",
@@ -226,7 +233,8 @@ Status MlirCpuGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     if (!arr) {
       DSP_DIAG(EXECUTE, "MlirCpuGraphBackend: null array for arg sourceIndex=%d in segment [%d-%d]",
                 mapping.sourceIndex, startSlot, endSlot);
-      return Status::KERNEL_FAILURE;
+      return fail("JIT kernel argument resolved to a null array: sourceIndex=" +
+                  std::to_string(mapping.sourceIndex));
     }
 
     if (mapping.isOutput) {
@@ -241,7 +249,7 @@ Status MlirCpuGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   if (!ok) {
     DSP_DIAG(EXECUTE, "MlirCpuGraphBackend: JIT execution failed for segment [%d-%d]",
               startSlot, endSlot);
-    return Status::KERNEL_FAILURE;
+    return fail("compiled MLIR JIT kernel execution returned false");
   }
 
   return Status::OK;

@@ -122,6 +122,18 @@ class InGraphKvState implements AutoCloseable {
      */
     Map<String, INDArray> prefillInputMap;
 
+    /**
+     * Reusable host-side scratch for the per-sample re-prefill temporaries (fresh
+     * input-ids array, fresh causal-mask array). Each one-shot {@code generate()}
+     * call builds these fresh and drops them right after {@code assign} into the
+     * stable-address inputs; allocating them from a retained scratch pool instead of
+     * fresh memory keeps a long calibration/decode run from churning native allocator
+     * arenas (glibc never returns those to the OS, so RSS ratchets up ~50MB per
+     * sample on Android). Contents are fully overwritten by the builder before use,
+     * and the pool is sized to the fixed-buffer prefill geometry, so reuse is safe.
+     */
+    final Map<String, INDArray> reusedScratch = new java.util.HashMap<>();
+
     // ── Bundled Qwen3.5 MTP predictor state ─────────────────────────────────────────────────────
     /** Independent predictor KV cache. The target and predictor never share mutable cache storage. */
     Map<String, INDArray> mtpKvBuffers;
@@ -316,6 +328,7 @@ class InGraphKvState implements AutoCloseable {
         closeAll(quantizedKvBuffers);
         closeAll(kvScaleBuffers);
         closeAll(prefillInputMap);
+        closeAll(reusedScratch);
     }
 
     private static void closeAll(Map<String, INDArray> buffers) {

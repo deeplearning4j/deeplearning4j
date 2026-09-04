@@ -53,6 +53,28 @@ SD_LIB_HIDDEN void dualRoPE(LaunchContext* context, NDArray* input, NDArray* out
                              double localFreqBase, double globalFreqBase,
                              double localFreqScale, double globalFreqScale);
 
+/**
+ * Dynamic-position variant: the base position is read from a device-resident
+ * INT64 tensor (rank 0 or single-element) rather than a host-side int argument.
+ * This lets SameDiff decode loops advance positions without rebuilding the graph,
+ * and is capture-safe on CUDA (the kernel reads the position from the device
+ * pointer — no host synchronization).
+ *
+ * @param context       launch context
+ * @param input         input tensor [batch, seq_len, num_heads, head_dim]
+ * @param output        output tensor [batch, seq_len, num_heads, head_dim]
+ * @param positionArr   INT64 tensor holding the base position (rank 0 or 1 element)
+ * @param attentionType 0 = local (sliding window), 1 = global
+ * @param localFreqBase  freq_base for local attention (default 10000)
+ * @param globalFreqBase freq_base for global attention (default 1000000)
+ * @param localFreqScale  frequency scaling for local attention (default 1.0)
+ * @param globalFreqScale frequency scaling for global attention (default 1.0)
+ */
+SD_LIB_HIDDEN void dualRoPE(LaunchContext* context, NDArray* input, NDArray* output,
+                             NDArray* positionArr, int attentionType,
+                             double localFreqBase, double globalFreqBase,
+                             double localFreqScale, double globalFreqScale);
+
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

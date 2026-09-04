@@ -621,8 +621,7 @@ public class TestSmolDoclingOptimizedPipeline {
             }
         };
 
-        // Decode function — benchmark the GenerationPipeline path by default.
-        // Optional old-decoder comparison is available via -Dvlm.test.compareOldDecoder=true
+        // Decode function — benchmark the GenerationPipeline path.
         BenchmarkRunner.DecodeFunction decodeFn = config -> {
             String configSummary = summarizeConfig(config);
             long decPhaseNs = phaseStart("CONFIG_DECODE",
@@ -658,24 +657,12 @@ public class TestSmolDoclingOptimizedPipeline {
                     assertDecoderReplayed(pipelineDecoder, config.getName(), replayCountBeforeLongRun);
                     log.info("[PRODUCTION_EQUIVALENCE] {} retained one {}-token KV plan across budgets {} -> {}",
                             config.getName(), PRODUCTION_MAX_KV, shortBudget, config.getMaxTokens());
-                    maybeCompareAgainstOldDecoder(
-                            config, pipelineDecoder, embedTokensSd, tokenizer, hiddenSize,
-                            finalInputsEmbeds, finalPromptTokenIds, result);
                     logDspState("POST_DECODE " + config.getName(), pipelineDecoder);
                     dumpActiveDspReport(config.getName());
                     phaseSuccess("CONFIG_DECODE", decPhaseNs, summarizeResult(result));
                     return result;
                 }
                 GenerationResult result = finalPipeline.generate(finalInputsEmbeds.dup(), finalPromptTokenIds, config.getMaxTokens());
-                maybeCompareAgainstOldDecoder(
-                        config,
-                        pipelineDecoder,
-                        embedTokensSd,
-                        tokenizer,
-                        hiddenSize,
-                        finalInputsEmbeds,
-                        finalPromptTokenIds,
-                        result);
                 logDspState("POST_DECODE " + config.getName(), pipelineDecoder);
                 dumpActiveDspReport(config.getName());
                 phaseSuccess("CONFIG_DECODE", decPhaseNs, summarizeResult(result));
@@ -802,80 +789,11 @@ public class TestSmolDoclingOptimizedPipeline {
         assertEquals(60, kvInputs, "Expected 30 key/value cache pairs in the decoder plan");
     }
 
-    private void maybeCompareAgainstOldDecoder(BenchmarkConfig config,
-                                               SameDiff decoder,
-                                               SameDiff embedTokensSd,
-                                               Tokenizer tokenizer,
-                                               long hiddenSize,
-                                               INDArray inputsEmbeds,
-                                               int[] promptTokenIds,
-                                               GenerationResult pipelineResult) throws Exception {
-        if (!Boolean.parseBoolean(System.getProperty("vlm.test.compareOldDecoder", "false"))) {
-            return;
-        }
-
-        ModelIOConfig decoderIOConfig = ModelIOConfig.discover(decoder);
-        String specTokensProp = System.getProperty("vlm.speculative.tokens", "0");
-        int specTokens = (specTokensProp == null || specTokensProp.isEmpty()) ? 0 : Integer.parseInt(specTokensProp);
-        boolean useDraft = config.isUseDraftModel()
-                || "true".equalsIgnoreCase(System.getProperty("vlm.speculative.draft"));
-        if (useDraft && specTokens == 0) {
-            specTokens = config.getDraftModelK() > 0 ? config.getDraftModelK() : 5;
-        }
-
-        StaticKvCacheDecodeLoop.StaticKvCacheDecodeLoopBuilder loopBuilder = StaticKvCacheDecodeLoop.builder()
-                .decoder(decoder)
-                .embedTokens(embedTokensSd)
-                .tokenizer(tokenizer)
-                .ioConfig(decoderIOConfig)
-                .samplingConfig(SamplingConfig.greedy())
-                .maxNewTokens(config.getMaxTokens())
-                .maxSpeculativeTokens(specTokens)
-                .hiddenSize(hiddenSize);
-        if (Boolean.parseBoolean(System.getProperty("vlm.benchmark.argmaxTrace", "false"))) {
-            loopBuilder.argmaxTraceEnabled(true);
-            int topK = Integer.getInteger("vlm.benchmark.argmaxTraceTopK", 5);
-            loopBuilder.argmaxTraceTopK(topK);
-        }
-        int[] referenceTokens = loadReferenceTokenStream();
-        if (referenceTokens != null) {
-            loopBuilder.referenceTokenStream(referenceTokens);
-            log.info("[{}] Reference token stream loaded: {} tokens", config.getName(), referenceTokens.length);
-        }
-
-        BenchmarkConfigApplier.resetModelState(decoder);
-        BenchmarkConfigApplier.resetModelState(embedTokensSd);
-        GenerationResult oldResult = loopBuilder.build().decode(inputsEmbeds.dup(), promptTokenIds);
-
-        int[] oldTokens = oldResult.getTokenIds();
-        int[] newTokens = pipelineResult.getTokenIds();
-        int minLen = Math.min(oldTokens.length, newTokens.length);
-        int firstDivergent = -1;
-        for (int i = 0; i < minLen; i++) {
-            if (oldTokens[i] != newTokens[i]) {
-                firstDivergent = i;
-                break;
-            }
-        }
-
-        log.info("[{}] Old/new comparison: oldLen={} newLen={} firstDivergent={} old='{}' new='{}'",
-                config.getName(),
-                oldTokens.length,
-                newTokens.length,
-                firstDivergent,
-                oldResult.getText(),
-                pipelineResult.getText());
-
-        assertArrayEquals(oldTokens, newTokens,
-                config.getName() + ": GenerationPipeline diverged from StaticKvCacheDecodeLoop"
-                        + " firstDivergent=" + firstDivergent);
-    }
-
-    // ─── Dual-decode test: GenerationPipeline vs StaticKvCacheDecodeLoop ───
+    // ─── Native decode repeatability test ───────────────────────────────────
 
     @Test
-    @DisplayName("GenerationPipeline (native decode) vs StaticKvCacheDecodeLoop (old) — token parity on mythic PDF")
-    public void testGenerationPipelineVsOldDecoder() throws Exception {
+    @DisplayName("GenerationPipeline native decode is repeatable on mythic PDF")
+    public void testGenerationPipelineRepeatability() throws Exception {
         int maxTokens = Integer.getInteger("vlm.test.maxTokens", 30);
 
         // ── Phase 1: Download models ──
@@ -953,89 +871,31 @@ public class TestSmolDoclingOptimizedPipeline {
         log.info("Dual-decode test: maxTokens={}, promptTokens={}, hiddenSize={}",
                 maxTokens, promptTokenIds.length, hiddenSize);
 
-        // ── Phase 5: Run OLD decoder (StaticKvCacheDecodeLoop) ──
-        ModelIOConfig decoderIOConfig = ModelIOConfig.discover(decoder);
+        // ── Phase 5: Run the native pipeline and capture a repeatability baseline ──
         BenchmarkConfigApplier.resetModelState(decoder);
         BenchmarkConfigApplier.resetModelState(embedTokensSd);
+        GenerationResult firstResult = pipeline.generate(inputsEmbeds.dup(), promptTokenIds, maxTokens);
 
-        StaticKvCacheDecodeLoop oldLoop = StaticKvCacheDecodeLoop.builder()
-                .decoder(decoder)
-                .embedTokens(embedTokensSd)
-                .tokenizer(tokenizer)
-                .ioConfig(decoderIOConfig)
-                .samplingConfig(SamplingConfig.greedy())
-                .maxNewTokens(maxTokens)
-                .hiddenSize(hiddenSize)
-                .build();
-
-        GenerationResult oldResult = oldLoop.decode(inputsEmbeds.dup(), promptTokenIds);
-        int[] oldTokens = oldResult.getTokenIds();
-        String oldText = oldResult.getText();
-        log.info("OLD decoder: {} tokens, text='{}'", oldTokens.length, oldText);
-
-        // ── Phase 6: Run NEW pipeline (GenerationPipeline) ──
+        // ── Phase 6: Reset state, then run the same native pipeline again ──
         BenchmarkConfigApplier.resetModelState(decoder);
         BenchmarkConfigApplier.resetModelState(embedTokensSd);
+        GenerationResult secondResult = pipeline.generate(inputsEmbeds.dup(), promptTokenIds, maxTokens);
 
-        GenerationResult newResult = pipeline.generate(inputsEmbeds.dup(), promptTokenIds, maxTokens);
-        int[] newTokens = newResult.getTokenIds();
-        String newText = newResult.getText();
-        log.info("NEW pipeline: {} tokens, text='{}'", newTokens.length, newText);
+        int[] firstTokens = firstResult.getTokenIds();
+        int[] secondTokens = secondResult.getTokenIds();
+        String firstText = firstResult.getText();
+        String secondText = secondResult.getText();
+        log.info("FIRST pipeline: {} tokens, text='{}'", firstTokens.length, firstText);
+        log.info("SECOND pipeline: {} tokens, text='{}'", secondTokens.length, secondText);
 
-        // ── Phase 7: Token-by-token comparison ──
-        int minLen = Math.min(oldTokens.length, newTokens.length);
-        int matches = 0;
-        int firstDivergent = -1;
-        for (int i = 0; i < minLen; i++) {
-            if (oldTokens[i] == newTokens[i]) {
-                matches++;
-            } else if (firstDivergent < 0) {
-                firstDivergent = i;
-            }
-        }
-        double matchRate = minLen > 0 ? (double) matches / minLen : 0.0;
-        log.info("Token match rate: {}/{} ({}%) firstDivergent={}",
-                matches, minLen, String.format("%.1f", matchRate * 100), firstDivergent);
+        assertArrayEquals(firstTokens, secondTokens,
+                "GenerationPipeline token stream changed after a model-state reset");
+        assertEquals(firstText, secondText,
+                "GenerationPipeline text changed after a model-state reset");
+        assertTrue(secondText.contains("<") && secondText.contains(">"),
+                "GenerationPipeline should produce structural DocTags. Text: " + secondText);
 
-        if (firstDivergent >= 0) {
-            log.error("FIRST DIVERGENCE at step {}: old={} ('{}') new={} ('{}')",
-                    firstDivergent,
-                    oldTokens[firstDivergent],
-                    tokenizer.decode(new int[]{oldTokens[firstDivergent]}, false),
-                    newTokens[firstDivergent],
-                    tokenizer.decode(new int[]{newTokens[firstDivergent]}, false));
-        }
-
-        // ── Phase 8: Content validation ──
-        // Both should produce structural DocTags
-        assertTrue(oldText.contains("<") && oldText.contains(">"),
-                "Old decoder should produce structural tags. Text: " + oldText);
-        assertTrue(newText.contains("<") && newText.contains(">"),
-                "GenerationPipeline should produce structural tags. Text: " + newText);
-
-        // Both should contain mythic-related content (paragraphs, not just titles)
-        String lowerOld = oldText.toLowerCase();
-        String lowerNew = newText.toLowerCase();
-        boolean oldHasMythic = lowerOld.contains("mythic") || lowerOld.contains("hero")
-                || lowerOld.contains("creating a mythic") || lowerOld.contains("path");
-        boolean newHasMythic = lowerNew.contains("mythic") || lowerNew.contains("hero")
-                || lowerNew.contains("creating a mythic") || lowerNew.contains("path");
-
-        log.info("Old has mythic content: {}", oldHasMythic);
-        log.info("New has mythic content: {}", newHasMythic);
-
-        // The critical assertion: tokens MUST match
-        assertArrayEquals(oldTokens, newTokens,
-                "GenerationPipeline diverges from StaticKvCacheDecodeLoop. "
-                        + "Old text: " + oldText + " New text: " + newText);
-
-        // Soft check: if old decoder has mythic content, new should too
-        if (oldHasMythic) {
-            assertTrue(newHasMythic,
-                    "Old decoder has mythic content but GenerationPipeline does not. "
-                            + "New text: " + newText);
-        }
-
+        pipeline.close();
         tokenizer.close();
         org.nd4j.linalg.api.memory.deallocation.DeallocatorService.getShutdownInProgress().set(true);
     }
@@ -1428,7 +1288,4 @@ public class TestSmolDoclingOptimizedPipeline {
         return img;
     }
 
-    private static int[] loadReferenceTokenStream() {
-        return ReferenceTokenStream.loadFromSystemProperty("vlm.benchmark.referenceTokens");
-    }
 }

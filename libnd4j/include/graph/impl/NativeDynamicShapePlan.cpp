@@ -26,6 +26,7 @@
 #include <system/op_boilerplate.h>
 #include <graph/DspStreamGuard.h>
 #include <graph/DspAnalysisUtils.h>
+#include <graph/DspSegmentOutputUtils.h>
 #include <graph/DspPhaseUtils.h>
 #include <sstream>
 #include <graph/gpu/SymbolicShapeRanges.h>
@@ -127,6 +128,16 @@ SD_LIB_EXPORT void notifyFrozenPinTrackerOfDestruction(DataBuffer* db) {
 }
 
 namespace graph {
+
+void NativeDynamicShapePlan::recordPlanFailureIfMissing(
+    Status status, const std::string& detail) {
+  auto* errorReference = LaunchContext::defaultContext()->errorReference();
+  const char* existing = errorReference->errorMessage();
+  if (existing == nullptr || existing[0] == '\0') {
+    errorReference->setErrorMessage(detail);
+  }
+  errorReference->setErrorCode(static_cast<int>(status));
+}
 
 static void releasePlanFrozenRefsForTeardown(
     const char* owner,
@@ -434,20 +445,38 @@ bool segmentBlocksPlanPhase(const GraphSegment& seg) {
 // This is the standalone equivalent of NativeDynamicShapePlan::hasCompositeHandles().
 bool segmentHasReadyCompositeHandles(const GraphSegment& seg) {
   auto& sched = seg.exec.compositeReplaySchedule;
-  // Check merged replay handles first
-  for (auto& h : sched.mergedReplayHandles) {
-    if (h != nullptr && h->isReady()) return true;
-  }
-  // Fallback: check individual composite handles (unmerged islands)
+  if (sched.units.empty()) return false;
+  std::vector<bool> requiredMerged(sched.mergedReplayHandles.size(), false);
+  std::vector<bool> mergedLeader(sched.mergedReplayHandles.size(), false);
+  bool hasIsland = false;
   for (auto& u : sched.units) {
-    if (u.kind == REPLAY_UNIT_TRITON_ISLAND && u.mergedGroupId < 0) {
-      int idx = u.islandIndex;
-      if (idx >= 0 && idx < static_cast<int>(sched.compositeReplayHandles.size()) &&
-          sched.compositeReplayHandles[idx] != nullptr &&
-          sched.compositeReplayHandles[idx]->isReady()) {
-        return true;
-      }
+    if (u.kind != REPLAY_UNIT_TRITON_ISLAND) continue;
+    hasIsland = true;
+    if (u.mergedGroupId >= 0) {
+      if (u.mergedGroupId >= static_cast<int>(requiredMerged.size())) return false;
+      requiredMerged[u.mergedGroupId] = true;
+      if (u.isMergedLeader) mergedLeader[u.mergedGroupId] = true;
+      continue;
     }
+    int idx = u.islandIndex;
+    if (idx < 0 || idx >= static_cast<int>(sched.compositeReplayHandles.size()) ||
+        sched.compositeReplayHandles[idx] == nullptr ||
+        !sched.compositeReplayHandles[idx]->isReady()) return false;
+  }
+  bool hasReadyGroup = false;
+  for (size_t group = 0; group < requiredMerged.size(); group++) {
+    if (!requiredMerged[group]) continue;
+    if (!mergedLeader[group] || sched.mergedReplayHandles[group] == nullptr ||
+        !sched.mergedReplayHandles[group]->isReady()) return false;
+    hasReadyGroup = true;
+  }
+  if (hasIsland || hasReadyGroup) return true;
+  if (seg.exec.segPhase.isSealed() &&
+      seg.exec.replayUnitCount == static_cast<int>(sched.units.size())) {
+    for (const auto& unit : sched.units) {
+      if (unit.kind != REPLAY_UNIT_GAP || unit.mergedGroupId >= 0) return false;
+    }
+    return true;
   }
   return false;
 }
@@ -807,7 +836,12 @@ void NativeDynamicShapePlan::pinSegmentGraphBakedSlots(GraphSegment& seg, NDArra
     DataBuffer* db = slotArr->dataBuffer();
     if (db == nullptr || !db->isValid() || db->special() == nullptr) return;  // closed/garbage → skip
     void* addr = db->special();                          // for a VIEW this is its base buffer's addr
-    for (const auto& pa : graphPinnedAddrs_) { if (pa.ptr == addr) return; }  // idempotent
+    for (const auto& pa : graphPinnedAddrs_) {
+      // The CUDA pool pin is reference-counted per graph/segment. The same
+      // address may be baked into multiple sealed segments, so deduplicate only
+      // within this segment rather than plan-wide.
+      if (pa.ptr == addr && pa.segStartSlot == seg.def.startSlot) return;
+    }
     int dbDev = db->deviceId();
     platformPinGraphBakedAddress(addr, dbDev);
     graphPinnedAddrs_.push_back({addr, dbDev, seg.def.startSlot, externalOwned});
@@ -818,13 +852,18 @@ void NativeDynamicShapePlan::pinSegmentGraphBakedSlots(GraphSegment& seg, NDArra
   // slot) — pin it ALWAYS (this is the close-weight dangling buffer: a reshape view over a
   // weight, reached as outputSlots_[slot]). An OWNED intermediate is pinned only when its raw
   // address was baked into the captured graph (pinOwnedOutputs).
-  for (int ps = seg.def.startSlot; ps <= seg.def.endSlot && ps < totalOutputSlots_; ps++) {
-    NDArray* out = outputSlots_[ps];
-    if (out == nullptr) continue;
-    // A VIEW shares an externally-owned base (externalOwned=true → defer free to teardown). An
-    // OWNED graph-baked intermediate (pinOwnedOutputs) is plan-owned (externalOwned=false).
-    if (out->isView() || pinOwnedOutputs) pinOne(out, ps, /*externalOwned=*/out->isView());
-  }
+  dsp::forEachSegmentOutputSlot(
+      slots_, numSlots_, seg.def.startSlot, seg.def.endSlot,
+      totalOutputSlots_, [&](int opIndex, int outputSlot, int) {
+        NDArray* out = outputSlots_[outputSlot];
+        if (out == nullptr) return;
+        // A VIEW shares an externally-owned base (externalOwned=true → defer
+        // free to teardown). An OWNED graph-baked intermediate is plan-owned.
+        if (out->isView() || pinOwnedOutputs) {
+          pinOne(out, outputSlot, /*externalOwned=*/out->isView());
+        }
+        (void)opIndex;
+      });
   // (2) SOURCE_VARIABLE input buffers (trainable weights) and device-managed external state.
   // The graph bakes their RAW device address (vs staged addresses for ordinary placeholders).
   // A weight/state buffer is reached through
@@ -985,8 +1024,11 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
       // the op executes because the placeholder has no device buffer to capture.
       const bool isOptionalOutputTag =
           tag != nullptr && strcmp(tag, "optional-output-placeholder") == 0;
+      const bool isFunctionalReplayAliasTag =
+          inShapeChangeWarmup_ && tag != nullptr &&
+          strcmp(tag, "functional-replay-identity") == 0 && newDbValid;
       if (!sameView && !allowSameBufferViewSwap && !allowViewProducerDbSwap &&
-          !isCfTag && !isOptionalOutputTag) {
+          !isCfTag && !isOptionalOutputTag && !isFunctionalReplayAliasTag) {
         DSP_THROW(EXECUTE,
                  "LIFECYCLE VIOLATION: NDArray pointer replacement at slot %d (tag=%s) "
                  "during frozen phase (phase=%s execCount=%d). old=%p new=%p "
@@ -1072,11 +1114,26 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
 
   const bool isOptionalOutputPlaceholder =
       tag != nullptr && strcmp(tag, "optional-output-placeholder") == 0;
-  if (value != nullptr && value != old &&
+  // Direct identity/control-flow/in-place publication can hand the plan the
+  // caller's exact external wrapper. A new wrapper does not imply ownership:
+  // only arrays allocated/materialized by this plan may enter planOwnedArrays_.
+  const bool isBorrowedExternal =
+      value != nullptr &&
+      std::find(lastExternalInputsCopy_.begin(), lastExternalInputsCopy_.end(), value) !=
+          lastExternalInputsCopy_.end();
+  // View wrappers minted by the plan are owned even when their backing buffer
+  // is a protected weight. The wrapper itself must be retired; only the exact
+  // caller-provided external wrapper is borrowed.
+  const bool isPlanCreatedViewWrapper =
+      value != nullptr && !isBorrowedExternal && value->isView();
+  const bool hasProtectedBacking =
+      value != nullptr && value->dataBuffer() != nullptr &&
+      protectedWeightBuffers_.count(value->dataBuffer()) != 0;
+  if (value != nullptr && value != old && !isBorrowedExternal &&
       planOwnedArrays_.count(value) == 0 &&
       (value->dataBuffer() != nullptr || isOptionalOutputPlaceholder) &&
-      (value->dataBuffer() == nullptr ||
-       protectedWeightBuffers_.count(value->dataBuffer()) == 0)) {
+      (value->dataBuffer() == nullptr || !hasProtectedBacking ||
+       isPlanCreatedViewWrapper)) {
     planOwnedArrays_.insert(value);
   }
 
@@ -1172,8 +1229,10 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
             int sealedSegStart = -1;
             if (oldSpecial != nullptr) {
               for (const auto& seg : segments_) {
-                if (seg.exec.segPhase.isSealed() &&
-                    slotIdx >= seg.def.startSlot && slotIdx <= seg.def.endSlot) {
+                const int producerOp = dsp::findSegmentOutputProducer(
+                    slots_, numSlots_, seg.def.startSlot, seg.def.endSlot,
+                    totalOutputSlots_, slotIdx);
+                if (seg.exec.segPhase.isSealed() && producerOp >= 0) {
                   sealedSegStart = seg.def.startSlot;
                   break;
                 }
@@ -1428,11 +1487,15 @@ void NativeDynamicShapePlan::materializeViewSlot(int slotIdx, const char* tag) {
   }
   outputSlots_[slotIdx] = dup;
 
-  // Retire the old wrapper at the plan boundary. Materialization runs while
-  // requested outputs are being published, and deleting the view inline here
-  // still mutates allocator state before the execution traversal has fully
-  // completed.
-  deferredSlotDeletes_.push_back(viewArr);
+  // Retire only plan-created wrappers. A requested output may be the caller's
+  // exact external view wrapper; materializing it must not transfer ownership
+  // or delete the caller's array during teardown.
+  const bool borrowedExternal =
+      std::find(lastExternalInputsCopy_.begin(), lastExternalInputsCopy_.end(), viewArr) !=
+          lastExternalInputsCopy_.end();
+  if (!borrowedExternal) {
+    deferredSlotDeletes_.push_back(viewArr);
+  }
 }
 
 void NativeDynamicShapePlan::setGraphExecutionMode(GraphExecutionMode mode) {
@@ -1789,6 +1852,9 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
   }
 
   auto* plan = new NativeDynamicShapePlan();
+  plan->serializedPlanBytes_.assign(
+      static_cast<const uint8_t*>(data),
+      static_cast<const uint8_t*>(data) + size);
   plan->numSlots_ = reader.read<int32_t>();
   plan->totalOutputSlots_ = reader.read<int32_t>();
   plan->dirtySlotGenerations_.resize(plan->totalOutputSlots_, 0);
@@ -1802,9 +1868,9 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
                plan->totalOutputSlots_, plan->numSlots_);
   REQUIRE_TRUE(plan->numExternalInputs_ >= 0 && plan->numExternalInputs_ < 100000, 0,
                "NativeDynamicShapePlan::fromSerializedPlan: invalid numExternalInputs %d", plan->numExternalInputs_);
-  // numRequestedOutputs_ can exceed totalOutputSlots_ because requested outputs
-  // may reference external inputs (constants/variables/placeholders) not produced by any slot.
-  // Those entries have slotIdx = -1 in requestedOutputSlotIndices_ and are handled downstream.
+  // Native requested outputs must all be produced by a plan slot. External
+  // passthrough outputs are resolved before native serialization/execution and
+  // therefore must never appear as -1 entries in this array.
   REQUIRE_TRUE(plan->numRequestedOutputs_ >= 0 && plan->numRequestedOutputs_ < 500000, 0,
                "NativeDynamicShapePlan::fromSerializedPlan: invalid numRequestedOutputs %d (totalOutputSlots=%d)",
                plan->numRequestedOutputs_, plan->totalOutputSlots_);
@@ -2232,6 +2298,13 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
   // Read requested output slot indices
   plan->requestedOutputSlotIndices_ = new int[plan->numRequestedOutputs_];
   reader.readArray(plan->requestedOutputSlotIndices_, plan->numRequestedOutputs_);
+  for (int i = 0; i < plan->numRequestedOutputs_; ++i) {
+    const int slotIdx = plan->requestedOutputSlotIndices_[i];
+    REQUIRE_TRUE(slotIdx >= 0 && slotIdx < plan->totalOutputSlots_, 0,
+                 "NativeDynamicShapePlan::fromSerializedPlan: requested output %d "
+                 "has unresolved slot index %d (valid range [0,%d))",
+                 i, slotIdx, plan->totalOutputSlots_);
+  }
 
   // Read external input names (v4+)
   if (version >= 4) {
@@ -2424,6 +2497,24 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
       }
       disableFusedChainsAcrossSegmentBoundaries(
           plan->slots_, plan->numSlots_, plan->segments_, "initial-fusion");
+    }
+  }
+
+  {
+    const auto request = plan->makeGraphBackendRequest();
+    const auto calibrationOutputs =
+        dsp::collectPrecommitCalibrationOutputSlots(
+            request, plan->getGraphBackendCandidates(), plan->slots_,
+            plan->numSlots_, plan->totalOutputSlots_);
+    const int disabledForCalibration =
+        dsp::disableInPlaceConsumersOfSlots(
+            plan->slots_, plan->numSlots_, calibrationOutputs);
+    if (disabledForCalibration > 0) {
+      DSP_DIAG(
+          FUSION,
+          "precommit calibration: preserved %zu backend outputs by disabling "
+          "%d in-place consumers",
+          calibrationOutputs.size(), disabledForCalibration);
     }
   }
 
@@ -3282,14 +3373,16 @@ Status NativeDynamicShapePlan::execute(
     if (prePassStatus != Status::OK) {
       if (requiresSuccessfulShapePrePass) {
         DSP_DIAG(SHAPE,
-                 "AUTO_SHAPE_PREPASS: required preparation failed status=%d",
+                 "AUTO_SHAPE_PREPASS: required preparation failed status=%s (%d)",
+                 dsp::dspStatusName(prePassStatus),
                  static_cast<int>(prePassStatus));
         return prePassStatus;
       }
       // Functional execution can still derive shapes while executing kernels.
       shapePrePassDone_ = true;
-      DSP_DIAG(SHAPE, "AUTO_SHAPE_PREPASS: failed (status=%d), falling through to functional execution",
-               static_cast<int>(prePassStatus));
+      DSP_DIAG(SHAPE,
+               "AUTO_SHAPE_PREPASS: failed (status=%s (%d)), falling through to functional execution",
+               dsp::dspStatusName(prePassStatus), static_cast<int>(prePassStatus));
     } else {
       shapePrePassDone_ = true;
       if (requiresSuccessfulShapePrePass && !shapePrePassComplete_) {
@@ -3307,6 +3400,8 @@ Status NativeDynamicShapePlan::execute(
         }
         sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(
             prePassError.c_str());
+        sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(
+            static_cast<int>(Status::KERNEL_FAILURE));
         return Status::KERNEL_FAILURE;
       }
       DSP_DIAG(SHAPE,
@@ -3321,13 +3416,15 @@ Status NativeDynamicShapePlan::execute(
   // leave the plan SHAPES_FROZEN with compilationDone=false, and the old
   // SLOT_BY_SLOT-only gate sent that state directly into compiled replay.
   if (backendPlanningPolicy.precompileBeforeFirstExecution &&
+      !backendPlanningPolicy.deferCompilationUntilPlanFreeze &&
       shapePrePassDone_ && !planLifecycle_.compilationDone) {
     DSP_DIAG(COMPILE,
              "BACKEND_PRECOMPILE_FASTPATH: starting before first functional dispatch");
     Status backendPrecompileStatus =
         precompilePlan(externalInputs, numExternalInputs, stream);
     if (backendPrecompileStatus != Status::OK) {
-      DSP_DIAG(COMPILE, "BACKEND_PRECOMPILE_FASTPATH: failed status=%d",
+      DSP_DIAG(COMPILE, "BACKEND_PRECOMPILE_FASTPATH: failed status=%s (%d)",
+               dsp::dspStatusName(backendPrecompileStatus),
                static_cast<int>(backendPrecompileStatus));
       return backendPrecompileStatus;
     }
@@ -3356,7 +3453,8 @@ Status NativeDynamicShapePlan::execute(
                          static_cast<int>(GraphExecutionMode::GEM_SHAPE_INFERENCE_ONLY));
     Status siStatus = phaseShapeInferenceOnly(externalInputs, numExternalInputs, stream);
     if (siStatus != Status::OK) {
-      DSP_DIAG(SHAPE, "SHAPE_INFERENCE_ONLY: phase failed status=%d", static_cast<int>(siStatus));
+      DSP_DIAG(SHAPE, "SHAPE_INFERENCE_ONLY: phase failed status=%s (%d)",
+               dsp::dspStatusName(siStatus), static_cast<int>(siStatus));
       execCtx->endDiag(executeCount_);
       activeExecCtx_ = nullptr;
       flushDeferredSlotDeletes();
@@ -3367,9 +3465,21 @@ Status NativeDynamicShapePlan::execute(
     // Extract outputs — shape-only arrays are in outputSlots_
     for (int i = 0; i < numRequestedOutputs_; i++) {
       int slotIdx = requestedOutputSlotIndices_[i];
-      if (slotIdx >= 0 && slotIdx < totalOutputSlots_ && outputSlots_[slotIdx] != nullptr) {
-        requestedOutputs[i] = outputSlots_[slotIdx];
+      if (slotIdx < 0 || slotIdx >= totalOutputSlots_ ||
+          outputSlots_[slotIdx] == nullptr) {
+        sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(
+            "DSP shape-only output publication rejected");
+        DSP_DIAG(SHAPE,
+                 "SHAPE_INFERENCE_ONLY: required output unpublished index=%d slot=%d",
+                 i, slotIdx);
+        activeExecCtx_ = nullptr;
+        flushDeferredSlotDeletes();
+        platformEndGuard.dismiss();
+        platformEndExecution(executionStatePtr, stream,
+                             planLifecycle_.isInFrozenOrReplayState(), executeCount_);
+        return Status::BAD_OUTPUT;
       }
+      requestedOutputs[i] = outputSlots_[slotIdx];
     }
     DSP_DIAG(SHAPE, "SHAPE_INFERENCE_ONLY: done, %d outputs populated", numRequestedOutputs_);
     execCtx->endDiag(executeCount_);
@@ -3423,8 +3533,17 @@ Status NativeDynamicShapePlan::execute(
       phaseStatus = phaseSlotBySlot(externalInputs, numExternalInputs, stream, &phaseStats);
       break;
   }
-  DSP_DIAG(EXECUTE, "PHASE_DISPATCH: phase returned status=%d", static_cast<int>(phaseStatus));
+  DSP_DIAG(EXECUTE, "PHASE_DISPATCH: phase returned status=%s (%d)",
+           dsp::dspStatusName(phaseStatus), static_cast<int>(phaseStatus));
   if (phaseStatus != Status::OK) {
+    recordPlanFailureIfMissing(
+        phaseStatus,
+        std::string("DSP ") + PlanExecutionContext::execPhaseName(execPhase) +
+            " phase returned " + dsp::dspStatusName(phaseStatus) + " (" +
+            std::to_string(static_cast<int>(phaseStatus)) +
+            ") without a slot or backend failure detail [planPhase=" +
+            planLifecycle_.displayName() + ", executionCount=" +
+            std::to_string(executeCount_) + "]");
     // Structured trace: record the error and dump the last 128 events for diagnostics.
     DSP_TRACE_ERROR(trace_, -1, -1,
                     static_cast<uint32_t>(executeCount_),
@@ -3501,38 +3620,61 @@ Status NativeDynamicShapePlan::execute(
 
   for (int i = 0; i < numRequestedOutputs_; i++) {
     int slotIdx = requestedOutputSlotIndices_[i];
-    if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
-      NDArray* outArr = outputSlots_[slotIdx];
-      // Lifecycle validation: catch corrupted output slots before returning to Java
-      if (outArr != nullptr) {
-        uintptr_t addr = reinterpret_cast<uintptr_t>(outArr);
-        if (addr < 0x10000) {
-          char msg[512];
-          snprintf(msg, sizeof(msg),
-                   "DSP LIFECYCLE ERROR: requestedOutput[%d] from outputSlots_[%d] "
-                   "is a stale/freed pointer %p. execCount=%d planPhase=%s",
-                   i, slotIdx, (void*)outArr, executeCount_, planLifecycle_.displayName());
-          THROW_EXCEPTION(msg);
-        }
-        // Validate the array's shape info is not corrupted
-        if (!outArr->hasValidShapeInfo()) {
-          char msg[512];
-          snprintf(msg, sizeof(msg),
-                   "DSP LIFECYCLE ERROR: requestedOutput[%d] from outputSlots_[%d] "
-                   "has invalid shapeInfo (use-after-free or corruption). "
-                   "NDArray=%p execCount=%d planPhase=%s",
-                   i, slotIdx, (void*)outArr, executeCount_, planLifecycle_.displayName());
-          THROW_EXCEPTION(msg);
-        }
-      }
-      // Multi-GPU shard: if this output was produced on a secondary device, migrate
-      // it asynchronously to device-0 before returning to Java.  The plan keeps the
-      // original device-N buffer in outputSlots_[slotIdx] for the next execution step;
-      // only the copy returned here is handed to Java (Java owns it).
-      // On CPU or single-GPU this is a no-op returning outArr unchanged.
-      requestedOutputs[i] = platformGetOutputForDevice0(outArr, slotIdx, i);
-    } else {
-      requestedOutputs[i] = nullptr;
+    if (slotIdx < 0 || slotIdx >= totalOutputSlots_) {
+      const char* message =
+          "DSP output publication rejected: requested output has no valid native slot";
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(message);
+      DSP_DIAG(EXECUTE,
+               "OUTPUT_UNRESOLVED: requestedOutput[%d] slotIdx=%d "
+               "execCount=%d planPhase=%s",
+               i, slotIdx, executeCount_, planLifecycle_.displayName());
+      return Status::BAD_OUTPUT;
+    }
+
+    NDArray* outArr = outputSlots_[slotIdx];
+    if (outArr == nullptr) {
+      const char* message =
+          "DSP output publication rejected: required output slot was not populated";
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(message);
+      DSP_DIAG(EXECUTE,
+               "OUTPUT_UNPUBLISHED: requestedOutput[%d] slot=%d "
+               "execCount=%d planPhase=%s",
+               i, slotIdx, executeCount_, planLifecycle_.displayName());
+      return Status::BAD_OUTPUT;
+    }
+
+    // Lifecycle validation: catch corrupted output slots before returning to Java
+    uintptr_t addr = reinterpret_cast<uintptr_t>(outArr);
+    if (addr < 0x10000) {
+      char msg[512];
+      snprintf(msg, sizeof(msg),
+               "DSP LIFECYCLE ERROR: requestedOutput[%d] from outputSlots_[%d] "
+               "is a stale/freed pointer %p. execCount=%d planPhase=%s",
+               i, slotIdx, (void*)outArr, executeCount_, planLifecycle_.displayName());
+      THROW_EXCEPTION(msg);
+    }
+    // Validate the array's shape info is not corrupted
+    if (!outArr->hasValidShapeInfo()) {
+      char msg[512];
+      snprintf(msg, sizeof(msg),
+               "DSP LIFECYCLE ERROR: requestedOutput[%d] from outputSlots_[%d] "
+               "has invalid shapeInfo (use-after-free or corruption). "
+               "NDArray=%p execCount=%d planPhase=%s",
+               i, slotIdx, (void*)outArr, executeCount_, planLifecycle_.displayName());
+      THROW_EXCEPTION(msg);
+    }
+
+    // Multi-GPU shard: if this output was produced on a secondary device, migrate
+    // it asynchronously to device-0 before returning to Java. The plan keeps the
+    // original device-N buffer in outputSlots_[slotIdx] for the next execution step;
+    // only the copy returned here is handed to Java (Java owns it).
+    requestedOutputs[i] = platformGetOutputForDevice0(outArr, slotIdx, i);
+    if (requestedOutputs[i] == nullptr) {
+      const char* message =
+          "DSP output publication rejected: device output migration returned null";
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(message);
+      DSP_DIAG(EXECUTE, "OUTPUT_MIGRATION_FAILED: requestedOutput[%d] slot=%d", i, slotIdx);
+      return Status::BAD_OUTPUT;
     }
   }
 
@@ -4238,12 +4380,21 @@ Status NativeDynamicShapePlan::executeSteadyState(
       }
       for (int i = 0; i < numRequestedOutputs; i++) {
         int slotIdx = requestedOutputSlotIndices_[i];
-        if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
-          NDArray* mappedOutput = outputSlots_[slotIdx];
-          requestedOutputs[i] =
-              platformGetOutputForDevice0(mappedOutput, slotIdx, i);
-        } else {
-          requestedOutputs[i] = nullptr;
+        if (slotIdx < 0 || slotIdx >= totalOutputSlots_ ||
+            outputSlots_[slotIdx] == nullptr) {
+          sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(
+              "DSP steady-state output publication rejected");
+          DSP_DIAG(EXECUTE,
+                   "STEADY_FALLBACK_OUTPUT_UNPUBLISHED: requestedOutput[%d] slot=%d",
+                   i, slotIdx);
+          return Status::BAD_OUTPUT;
+        }
+        requestedOutputs[i] = platformGetOutputForDevice0(
+            outputSlots_[slotIdx], slotIdx, i);
+        if (requestedOutputs[i] == nullptr) {
+          sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(
+              "DSP steady-state output migration returned null");
+          return Status::BAD_OUTPUT;
         }
       }
     }
@@ -4265,15 +4416,24 @@ Status NativeDynamicShapePlan::executeSteadyState(
     }
     DSP_DIAG(EXECUTE,
              "STEADY_FALLBACK_OUTPUTS: plan=%p exec=%d requested=%d "
-             "callerBefore=%d callerAfter=%d mappedLive=%d mismatched=%d status=%d",
+             "callerBefore=%d callerAfter=%d mappedLive=%d mismatched=%d status=%s (%d)",
              (void*)this, executeCount_, numRequestedOutputs,
              callerPopulatedBefore, callerPopulatedAfter, mappedSlotsLive,
-             mappedPointerMismatches, static_cast<int>(result));
+             mappedPointerMismatches, dsp::dspStatusName(result),
+             static_cast<int>(result));
   } else if (result == Status::OK) {
     usedFrozenFastPath = true;
   }
 
   if (result != Status::OK) {
+    recordPlanFailureIfMissing(
+        result,
+        std::string("DSP steady-state execution returned ") +
+            dsp::dspStatusName(result) + " (" +
+            std::to_string(static_cast<int>(result)) +
+            ") without a slot/backend detail [executionCount=" +
+            std::to_string(executeCount_) + ", planPhase=" +
+            planLifecycle_.displayName() + "]");
     activeExecCtx_ = nullptr;
     // Retire wrappers only after the complete steady-state traversal. This is
     // the same safe boundary used by execute() immediately before its platform
@@ -4326,7 +4486,7 @@ Status NativeDynamicShapePlan::executeSteadyState(
         if (untrackedOutputCache_[i] != nullptr) untrackedLive++;
       }
     }
-    const size_t slotOwnedBytes = estimatedOwnedBytes();
+    const size_t totalRetainedBytes = estimatedOwnedBytes();
     size_t captureWorkspaceBytes = 0;
     size_t cublasWorkspaceBytes = 0;
 #ifdef SD_CUDA
@@ -4338,12 +4498,12 @@ Status NativeDynamicShapePlan::executeSteadyState(
     auto poolReport = DspBufferPool::forCurrentDevice().report();
     DSP_DIAG(
         MEMORY,
-        "DSP_STEADY_MEMORY: plan=%p exec=%d planOwned=%zu slotOwnedBytes=%zuMB "
+        "DSP_STEADY_MEMORY: plan=%p exec=%d planOwned=%zu totalRetainedBytes=%zuMB "
         "captureWorkspace=%zuMB cublasWorkspace=%zuMB deferred=%zu "
         "untrackedLive=%d untrackedCapacity=%d poolDevice=%d poolBytes=%zuMB "
         "poolCount=%d totalAcquired=%zu totalReused=%zu",
         (void*)this, executeCount_, planOwnedArrays_.size(),
-        slotOwnedBytes / (1024 * 1024),
+        totalRetainedBytes / (1024 * 1024),
         captureWorkspaceBytes / (1024 * 1024),
         cublasWorkspaceBytes / (1024 * 1024),
         deferredSlotDeletes_.size(), untrackedLive, untrackedOutputCacheSize_,
@@ -4574,9 +4734,9 @@ void NativeDynamicShapePlan::setShapesFrozen(bool frozen) {
   auto status = phaseFreeze();
   if (status != Status::OK) {
     DSP_THROW(COMPILE,
-             "setShapesFrozen(true): phaseFreeze failed with status %d — "
+             "setShapesFrozen(true): phaseFreeze failed with %s (%d) — "
              "plan NOT frozen (would leave partially-frozen inconsistent state)",
-             static_cast<int>(status));
+             dsp::dspStatusName(status), static_cast<int>(status));
   }
 }
 
@@ -4820,6 +4980,24 @@ Status NativeDynamicShapePlan::phaseFreeze() {
     }
   }
 
+  {
+    const auto request = makeGraphBackendRequest();
+    const auto calibrationOutputs =
+        dsp::collectPrecommitCalibrationOutputSlots(
+            request, getGraphBackendCandidates(), slots_, numSlots_,
+            totalOutputSlots_);
+    const int disabledForCalibration =
+        dsp::disableInPlaceConsumersOfSlots(
+            slots_, numSlots_, calibrationOutputs);
+    if (disabledForCalibration > 0) {
+      DSP_DIAG(
+          FUSION,
+          "freeze calibration: preserved %zu backend outputs by disabling "
+          "%d in-place consumers",
+          calibrationOutputs.size(), disabledForCalibration);
+    }
+  }
+
   // Fusion can be enabled by the compiler before shape inference or by the
   // freeze-time FusionPass above. In either case, publish the source NDArray in
   // the output slot now, while replacement is legal, so SHAPES_FROZEN starts
@@ -5027,6 +5205,8 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
              "phaseWarmup: required backend shape prepass incomplete");
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(
         "required backend shape prepass is incomplete before warmup");
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(
+        static_cast<int>(Status::KERNEL_FAILURE));
     return Status::KERNEL_FAILURE;
   }
 
@@ -5095,6 +5275,11 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
              segIdx, segment.def.startSlot, segment.def.endSlot,
              static_cast<int>(segment.def.isCapturable));
     if (!platformBindSegmentDevice(segment)) {
+      recordPlanFailureIfMissing(
+          Status::KERNEL_FAILURE,
+          "phaseWarmup could not bind segment [" +
+              std::to_string(segment.def.startSlot) + "-" +
+              std::to_string(segment.def.endSlot) + "] to its target device");
       return Status::KERNEL_FAILURE;
     }
     auto migrationStatus = platformMigrateSegmentInputs(segment, externalInputs, numExternalInputs);
@@ -5108,8 +5293,10 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
 
     auto tSegStart = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
     auto status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
-    DSP_DIAG(EXECUTE, "phaseWarmup: seg[%d] slots=[%d-%d] completed status=%d",
-             segIdx, segment.def.startSlot, segment.def.endSlot, static_cast<int>(status));
+    DSP_DIAG(EXECUTE,
+             "phaseWarmup: seg[%d] slots=[%d-%d] completed status=%s (%d)",
+             segIdx, segment.def.startSlot, segment.def.endSlot,
+             dsp::dspStatusName(status), static_cast<int>(status));
     segIdx++;
     if (status != Status::OK) return status;
 
@@ -5621,6 +5808,18 @@ void NativeDynamicShapePlan::recordMidExecutionCompile(int startSlot, int endSlo
 
 Status NativeDynamicShapePlan::precompilePlan(NDArray** externalInputs, int numExternalInputs,
                                               void* stream) {
+  // precompilePlan can execute identity/control-flow/in-place paths before
+  // execute() has populated the persistent external-wrapper snapshot. Publish
+  // the current borrowed wrappers first so warmup never enrolls caller arrays
+  // in planOwnedArrays_.
+  lastExternalInputsCopy_.clear();
+  if (externalInputs != nullptr && numExternalInputs > 0) {
+    lastExternalInputsCopy_.assign(externalInputs, externalInputs + numExternalInputs);
+  }
+  lastExternalInputs_ = lastExternalInputsCopy_.empty()
+                            ? nullptr : lastExternalInputsCopy_.data();
+  lastNumExternalInputs_ = numExternalInputs;
+
   DSP_DIAG(COMPILE,
            "precompilePlan: BEGIN segments=%d extInputs=%d frozen=%d executeCount=%d sealed=%d",
            (int)segments_.size(), numExternalInputs,
@@ -5661,6 +5860,8 @@ Status NativeDynamicShapePlan::precompilePlan(NDArray** externalInputs, int numE
                  "precompilePlan: required backend shape-only prepass was incomplete");
         sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(
             "required backend shape prepass did not resolve every live slot output");
+        sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(
+            static_cast<int>(Status::KERNEL_FAILURE));
         return Status::KERNEL_FAILURE;
       }
       DSP_DIAG(SHAPE,
@@ -5669,8 +5870,8 @@ Status NativeDynamicShapePlan::precompilePlan(NDArray** externalInputs, int numE
     } else {
       DSP_DIAG(
           SHAPE,
-          "precompilePlan: backend shape-only prepass failed status=%d",
-          static_cast<int>(shapeStatus));
+          "precompilePlan: backend shape-only prepass failed status=%s (%d)",
+          dsp::dspStatusName(shapeStatus), static_cast<int>(shapeStatus));
       if (precompileBackendPolicy.requiresSuccessfulShapePrePass) {
         return shapeStatus;
       }
@@ -5681,7 +5882,8 @@ Status NativeDynamicShapePlan::precompilePlan(NDArray** externalInputs, int numE
     DSP_DIAG(COMPILE, "precompilePlan: auto-freezing plan (phaseFreeze)");
     auto freezeStatus = phaseFreeze();
     if (freezeStatus != Status::OK) {
-      DSP_DIAG(COMPILE, "precompilePlan: phaseFreeze FAILED status=%d", (int)freezeStatus);
+      DSP_DIAG(COMPILE, "precompilePlan: phaseFreeze FAILED status=%s (%d)",
+               dsp::dspStatusName(freezeStatus), static_cast<int>(freezeStatus));
       return freezeStatus;
     }
   }
@@ -5690,7 +5892,8 @@ Status NativeDynamicShapePlan::precompilePlan(NDArray** externalInputs, int numE
     DSP_DIAG(COMPILE, "precompilePlan: running phaseWarmup to populate shape caches");
     auto warmupStatus = phaseWarmup(externalInputs, numExternalInputs, stream, nullptr);
     if (warmupStatus != Status::OK) {
-      DSP_DIAG(COMPILE, "precompilePlan: phaseWarmup FAILED status=%d", (int)warmupStatus);
+      DSP_DIAG(COMPILE, "precompilePlan: phaseWarmup FAILED status=%s (%d)",
+               dsp::dspStatusName(warmupStatus), static_cast<int>(warmupStatus));
       return warmupStatus;
     }
     incrementExecuteCount("warmup_done");  // phaseCompile's guard passes once counted.
@@ -5702,6 +5905,11 @@ Status NativeDynamicShapePlan::precompilePlan(NDArray** externalInputs, int numE
              "precompilePlan: phaseCompile did not reach sealed state "
              "(segments=%d executeCount=%d)",
              (int)segments_.size(), executeCount_);
+    recordPlanFailureIfMissing(
+        Status::KERNEL_FAILURE,
+        "precompilePlan failed: phaseCompile did not seal every segment "
+        "[segments=" + std::to_string(segments_.size()) +
+        ", executionCount=" + std::to_string(executeCount_) + "]");
     return Status::KERNEL_FAILURE;
   }
 
@@ -5987,6 +6195,8 @@ Status NativeDynamicShapePlan::phaseShapeInferenceOnly(
                  stepIdx, slot.ident.opName.c_str(), e.what());
         std::string errMsg = "shape inference failed at slot " + std::to_string(stepIdx) +
             " (" + slot.ident.opName + "): " + e.what();
+        sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(
+            static_cast<int>(Status::KERNEL_FAILURE));
         sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(errMsg.c_str());
         return Status::KERNEL_FAILURE;
       }
@@ -5996,6 +6206,8 @@ Status NativeDynamicShapePlan::phaseShapeInferenceOnly(
                stepIdx, slot.ident.opName.c_str());
       std::string errMsg = "shape inference returned null at slot " + std::to_string(stepIdx) +
           " (" + slot.ident.opName + ")";
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(
+          static_cast<int>(Status::KERNEL_FAILURE));
       sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(errMsg.c_str());
       return Status::KERNEL_FAILURE;
     }
@@ -6217,12 +6429,14 @@ Status NativeDynamicShapePlan::phaseShapeInferenceOnly(
       if (materializeStatus != Status::OK) {
         if (incompleteReasons[stepIdx].empty()) {
           incompleteReasons[stepIdx] =
-              "bounded control materialization failed with status " +
-              std::to_string(static_cast<int>(materializeStatus));
+              "bounded control materialization failed with " +
+              std::string(dsp::dspStatusName(materializeStatus)) + " (" +
+              std::to_string(static_cast<int>(materializeStatus)) + ")";
         }
         DSP_DIAG(SHAPE,
-                 "SHAPE_CONTROL_MATERIALIZE_FAILED: slot=%d op=%s status=%d reason=%s",
+                 "SHAPE_CONTROL_MATERIALIZE_FAILED: slot=%d op=%s status=%s (%d) reason=%s",
                  stepIdx, slot.ident.opName.c_str(),
+                 dsp::dspStatusName(materializeStatus),
                  static_cast<int>(materializeStatus),
                  incompleteReasons[stepIdx].c_str());
         continue;
@@ -6367,6 +6581,12 @@ Status NativeDynamicShapePlan::dispatchSegment(
              seg.def.startSlot, seg.def.endSlot,
              static_cast<int>(seg.def.selectedBackend),
              segmentExecOutcomeName(seg.exec.outcome), reason);
+    recordPlanFailureIfMissing(
+        Status::KERNEL_FAILURE,
+        "complete graph lowering required but segment [" +
+            std::to_string(seg.def.startSlot) + "-" +
+            std::to_string(seg.def.endSlot) + "] reached outcome=" +
+            segmentExecOutcomeName(seg.exec.outcome) + ", reason=" + reason);
     return Status::KERNEL_FAILURE;
   };
 
@@ -6477,7 +6697,22 @@ Status NativeDynamicShapePlan::dispatchSegment(
     if (execCtx != nullptr) {
       execCtx->execTarget = ExecTarget::SBS_ON_LC_STREAM;
     }
-    externalArrays = performPreReplaySync(externalArrays, numExt, stream, "terminal_sbs");
+    DspStagingSyncResult syncResult =
+        performPreReplaySync(externalArrays, numExt, stream, "terminal_sbs");
+    if (!syncResult.ok() || syncResult.effectiveExternals == nullptr) {
+      DSP_DIAG(EXECUTE,
+               "dispatchSegment: terminal SBS input preparation failed status=%d cudaError=%d",
+               static_cast<int>(syncResult.status), syncResult.cudaError);
+      recordPlanFailureIfMissing(
+          Status::KERNEL_FAILURE,
+          "terminal slot-by-slot input preparation failed for segment [" +
+              std::to_string(seg.def.startSlot) + "-" +
+              std::to_string(seg.def.endSlot) + "]: syncStatus=" +
+              std::to_string(static_cast<int>(syncResult.status)) +
+              ", deviceError=" + std::to_string(syncResult.cudaError));
+      return Status::KERNEL_FAILURE;
+    }
+    externalArrays = syncResult.effectiveExternals;
 
     SyncOverride terminalSync(*this, "terminal_outcome_sbs");
     return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
@@ -6504,7 +6739,22 @@ Status NativeDynamicShapePlan::dispatchSegment(
     }
   }
 
-  externalArrays = performPreReplaySync(externalArrays, numExt, stream, "dispatchSegment");
+  DspStagingSyncResult syncResult =
+      performPreReplaySync(externalArrays, numExt, stream, "dispatchSegment");
+  if (!syncResult.ok() || syncResult.effectiveExternals == nullptr) {
+    DSP_DIAG(EXECUTE,
+             "dispatchSegment: input staging failed status=%d cudaError=%d — aborting",
+             static_cast<int>(syncResult.status), syncResult.cudaError);
+    recordPlanFailureIfMissing(
+        Status::KERNEL_FAILURE,
+        "graph input staging failed for segment [" +
+            std::to_string(seg.def.startSlot) + "-" +
+            std::to_string(seg.def.endSlot) + "]: syncStatus=" +
+            std::to_string(static_cast<int>(syncResult.status)) +
+            ", deviceError=" + std::to_string(syncResult.cudaError));
+    return Status::KERNEL_FAILURE;
+  }
+  externalArrays = syncResult.effectiveExternals;
 
   if (!externalInputIsVariable_.empty()) {
     for (int i : cachedVariableExtIndices_) {
@@ -6614,6 +6864,11 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
   for (size_t segIdx = 0; segIdx < segments_.size(); segIdx++) {
     auto& segment = segments_[segIdx];
     if (!platformBindSegmentDevice(segment)) {
+      recordPlanFailureIfMissing(
+          Status::KERNEL_FAILURE,
+          "phaseReplay could not bind segment [" +
+              std::to_string(segment.def.startSlot) + "-" +
+              std::to_string(segment.def.endSlot) + "] to its target device");
       return Status::KERNEL_FAILURE;
     }
     auto migrationStatus = platformMigrateSegmentInputs(segment, externalInputs, numExternalInputs);
@@ -7002,7 +7257,7 @@ void NativeDynamicShapePlan::processPendingExternalViewReacquire(NDArray** exter
 
 
 int NativeDynamicShapePlan::releaseGpuIntermediates() {
-  const size_t slotOwnedBytesBeforeRelease = estimatedOwnedBytes();
+  const size_t totalOwnedBytesBeforeRelease = estimatedOwnedBytes();
   size_t captureWorkspaceBytesBeforeRelease = 0;
   size_t cublasWorkspaceBytesBeforeRelease = 0;
 #ifdef SD_CUDA
@@ -7013,9 +7268,10 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
 #endif
   DSP_DIAG(MEMORY,
            "releaseGpuIntermediates: START plan=%p numSlots=%d totalOutputSlots=%d "
-           "planOwned=%zu slotOwnedBytes=%zuMB captureWorkspace=%zuMB cublasWorkspace=%zuMB",
+           "planOwned=%zu totalRetainedBytes=%zuMB sharedCaptureWorkspace=%zuMB "
+           "cublasWorkspace=%zuMB",
            this, numSlots_, totalOutputSlots_, planOwnedArrays_.size(),
-           slotOwnedBytesBeforeRelease / (1024 * 1024),
+           totalOwnedBytesBeforeRelease / (1024 * 1024),
            captureWorkspaceBytesBeforeRelease / (1024 * 1024),
            cublasWorkspaceBytesBeforeRelease / (1024 * 1024));
 
@@ -7056,6 +7312,12 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   const bool hadFrozenRefsOnEntry =
       planLifecycle_.isInFrozenOrReplayState() ||
       hasTrackedPlanFrozenRefs(frozenProtectedRefBuffers_, frozenOutputRefBuffers_);
+
+  // Destroy graph executables and invalidate plan-owned compiler cache entries
+  // before any wrapper deletion, buffer-color ejection, or graph-pin release.
+  // Replay handles and registered capture arenas remain alive until the later
+  // DataBuffer retirement boundary, so workspace-interior frees are still gated.
+  platformReleaseSegmentGpuResources();
 
   // ── Buffer coloring: eject before teardown ─────────────────────────────
   // Undo coloring so each slot gets its own buffer before the deletion loop.
@@ -7102,12 +7364,6 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
       frozenSnapshot_.clear();
     }
   }
-
-  // ── Step 1: Free per-segment GPU resources (CUDA graphs, capture workspaces,
-  //            pinned host pointers) ──────────────────────────────────────────
-  // This is the same cleanup as the destructor's platformFreePlanResources(),
-  // but we keep the segment metadata (slot ranges, op definitions) intact.
-  platformReleaseSegmentGpuResources();
 
   // ── Step 2: Free non-weight NDArrays from outputSlots_ ─────────────────
   // Only free SLOT_OWNED buffers. Views and weights are externally owned.
@@ -7460,11 +7716,21 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
         freedUntracked++;
       }
     }
-    delete[] untrackedOutputCache_;
-    untrackedOutputCache_ = nullptr;
-    untrackedOutputCacheSize_ = 0;
+    // Preserve the pointer table and capacity. A passivated/session-reset plan
+    // reuses its deserialized structure; negative/overflow outputs need this
+    // cache again during re-warmup and CUDA graph capture. Only the entries own
+    // GPU buffers, and every entry is null now. The destructor deletes the table.
+    std::memset(untrackedOutputCache_, 0,
+                sizeof(NDArray*) * untrackedOutputCacheSize_);
     DSP_DIAG(MEMORY, "releaseGpuIntermediates: freed %d untracked output cache entries", freedUntracked);
   }
+
+  // The shared capture arena remains registered while output, staging, compiled
+  // backend, and untracked DataBuffers are retired above. Some of those buffers
+  // can be interior pointers into this arena; CudaMemoryPool uses the registration
+  // to suppress invalid per-buffer frees. Only now is it safe to unregister and
+  // release the plan-owned arena. This is the same ordering used by the destructor.
+  platformFreeCaptureWorkspace();
 
   // ── Step 5: Reset execution state so plan re-warms on next execute() ────
   viewProducerDetectionDone_ = false;
@@ -7501,7 +7767,7 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   // Clear GPU backend failed-segment cache
   clearGpuBackendFailedCache();
 
-  const size_t slotOwnedBytesAfterRelease = estimatedOwnedBytes();
+  const size_t totalOwnedBytesAfterRelease = estimatedOwnedBytes();
   size_t captureWorkspaceBytesAfterRelease = 0;
   size_t cublasWorkspaceBytesAfterRelease = 0;
 #ifdef SD_CUDA
@@ -7512,10 +7778,10 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
 #endif
   DSP_DIAG(MEMORY,
            "releaseGpuIntermediates: DONE plan=%p freed=%d planOwned=%zu "
-           "slotOwnedBytes=%zuMB captureWorkspace=%zuMB cublasWorkspace=%zuMB. "
+           "totalOwnedBytes=%zuMB captureWorkspace=%zuMB cublasWorkspace=%zuMB. "
            "Plan is now cold — next execute() will re-warm.",
            this, freedCount, planOwnedArrays_.size(),
-           slotOwnedBytesAfterRelease / (1024 * 1024),
+           totalOwnedBytesAfterRelease / (1024 * 1024),
            captureWorkspaceBytesAfterRelease / (1024 * 1024),
            cublasWorkspaceBytesAfterRelease / (1024 * 1024));
 
@@ -7547,10 +7813,28 @@ void NativeDynamicShapePlan::setOutputSlotMaxSizes(const int* slotIndices, const
         auto* db = existing->dataBuffer();
         size_t beforeBytes = db->getLenInBytes();
         if (maxBytes > beforeBytes) {
-          db->expand(maxBytes);
-          expandedCount++;
+          // Frozen buffers must not be grown in place: their addresses are baked into frozen
+          // slot contexts / CUDA graph replay handles. Record outputSlotMaxSizes_ (done above)
+          // and leave the slot OUT of maxAllocatedSlots_: the per-step creation path's
+          // max-allocation branch then performs the grow ONCE — it creates a fresh
+          // max-sized buffer for the slot and inserts the marker itself (slotexec). New-buffer
+          // creation is not a frozen-identity mutation, and that creation path runs during
+          // frozen decode for shape-varying slots. Inserting the marker HERE would make the
+          // creation path skip its max-allocation branch entirely, so per-step shape growth
+          // would fall through to the general fresh-allocation path — recreating the churn.
+          if (db->isFrozenPlanRegistered()) {
+            DSP_DIAG_SLOT(MEMORY, slotIdx,
+                      "setOutputSlotMaxSizes: slot=%d frozen (bytes=%zu < maxBytes=%zu) — "
+                      "deferring grow to next slot-buffer creation",
+                      slotIdx, beforeBytes, maxBytes);
+          } else {
+            db->expand(maxBytes);
+            expandedCount++;
+            maxAllocatedSlots_.insert(slotIdx);
+          }
+        } else {
+          maxAllocatedSlots_.insert(slotIdx);
         }
-        maxAllocatedSlots_.insert(slotIdx);
 
         DSP_DIAG(MEMORY,
                  "setOutputSlotMaxSizes: slot=%d currentElements=%lld maxElements=%lld "

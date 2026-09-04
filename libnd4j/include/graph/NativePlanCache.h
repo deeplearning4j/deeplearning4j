@@ -46,10 +46,10 @@ namespace graph {
  *
  * Budget policy (both enforced on every insert):
  *   1. Hard cap:    lru_.size() > DspConfig::planCacheMaxPlans()  → evict LRU until satisfied.
- *   2. Memory soft: estimated cache footprint > planCacheBudgetFraction * freeDeviceMem
- *      → evict LRU until under budget.  "Estimated footprint" is currently approximated
- *      as (entry_count * kBytesPerPlanEstimate); this is a conservative flat estimate
- *      until NativeDynamicShapePlan exposes a memoryUsage() API.
+ *   2. Memory soft: estimated cache footprint > planCacheBudgetFraction * totalDeviceMem
+ *      → passivate/evict LRU plans until under budget. NativeDynamicShapePlan reports
+ *      owned arrays, compiled artifacts, and replay/capture/cuBLAS workspaces; the flat
+ *      kBytesPerPlanEstimate is used only while a plan reports no retained bytes.
  *
  * Ownership: the cache owns every NativeDynamicShapePlan* it stores and deletes them on
  * eviction or destruction.
@@ -152,22 +152,26 @@ class SD_LIB_EXPORT NativePlanCache {
    * If not found, call `factory()` to create a new plan, insert it at MRU, run
    * budget enforcement (evictIfOverBudgetLocked), then return the new plan.
    *
-   * The returned plan is automatically pinned (protected from eviction).
-   * The caller MUST call unpinPlan() on the previously-held plan handle before
-   * or after obtaining a new one, so it becomes eligible for eviction.
+   * A cache miss acquires the initial borrower lease. A cache hit acquires an
+   * additional lease only when acquireLease is true. Each lease protects the
+   * plan from eviction until one matching unpinPlan() call releases it.
    *
    * Returns the plan pointer (owned by the cache).  Returns nullptr only if
    * `factory()` itself returns nullptr.
+   *
+   * @param acquireLease true to acquire an additional borrower lease on a
+   *        cache hit; cache misses always acquire the initial lease.
    */
   NativeDynamicShapePlan* getOrInsert(
       const Key& key,
-      const std::function<NativeDynamicShapePlan*()>& factory);
+      const std::function<NativeDynamicShapePlan*()>& factory,
+      bool acquireLease = true);
 
   /**
    * Unpin a plan that was previously returned by getOrInsert().
    * Once unpinned, the plan becomes eligible for LRU eviction.
-   * Safe to call with nullptr or a plan not in the cache (no-op).
-   * Triggers eviction check after unpinning.
+   * Safe to call with nullptr or a plan not in the cache (no-op). One call
+   * releases one borrower lease; the plan becomes evictable only at zero.
    */
   void unpinPlan(NativeDynamicShapePlan* plan);
 
@@ -192,12 +196,16 @@ class SD_LIB_EXPORT NativePlanCache {
   LruList lru_;
   std::unordered_map<Key, ListIter, KeyHasher> map_;
 
-  // Plans currently in use by a Java executor. Eviction skips these.
-  std::unordered_set<NativeDynamicShapePlan*> pinnedPlans_;
+  // Borrower lease counts per cached plan. Eviction skips every plan with a
+  // non-zero count; one unpin releases exactly one borrower lease.
+  std::unordered_map<NativeDynamicShapePlan*, size_t> pinCounts_;
+  bool clearPending_ = false;
 
-  // Process-global shutdown flag.  Set from JVM shutdown hook to prevent
-  // CUDA API calls during context teardown.
+  // Process-global shutdown flag. Set from the JVM shutdown hook. The mutex
+  // serializes the flag transition with cache teardown so shutdown cannot begin
+  // between the safety check and CUDA resource destruction.
   static std::atomic<bool> shutdownInProgress_;
+  static std::mutex shutdownMutex_;
 
   /**
    * Collect LRU entries that exceed the hard-count cap and memory-fraction
@@ -209,9 +217,8 @@ class SD_LIB_EXPORT NativePlanCache {
    */
   std::vector<NativeDynamicShapePlan*> evictIfOverBudgetLocked();
 
-  // Rough per-plan memory estimate used for the soft memory budget.
-  // NativeDynamicShapePlan does not expose a memoryUsage() API; this flat constant
-  // is used as a conservative per-plan upper bound until accurate accounting is added.
+  // Fallback per-plan estimate used before a new/cold plan has allocated retained
+  // arrays, compiled artifacts, or replay workspaces.
   static constexpr size_t kBytesPerPlanEstimate = 64ULL * 1024 * 1024;  // 64 MiB
 };
 

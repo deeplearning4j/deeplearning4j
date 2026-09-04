@@ -31,6 +31,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -102,6 +103,18 @@ public class KvPrefixBlockPool implements AutoCloseable {
 
     /** Monotonically-increasing block-ID allocator. */
     private final AtomicInteger nextBlockId = new AtomicInteger(0);
+
+    /** Total radix-trie lookups issued through this pool (hit or miss). */
+    private final AtomicLong totalLookups = new AtomicLong();
+
+    /** Lookups whose matched token count was positive (usable cache hit). */
+    private final AtomicLong totalHits = new AtomicLong();
+
+    /** Sum of tokens restored from cache across all hits. */
+    private final AtomicLong totalHitTokens = new AtomicLong();
+
+    /** Total prefill tokens covered by registered prefixes. */
+    private final AtomicLong totalStoredTokens = new AtomicLong();
 
     /** Lock for all pool state. */
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -226,6 +239,11 @@ public class KvPrefixBlockPool implements AutoCloseable {
     public int restoreBlocks(int[] tokenIds, Map<String, INDArray> staticKvBuffers,
                              List<String> layerNames) {
         PrefixLookupResult result = radixCache.lookup(tokenIds);
+        totalLookups.incrementAndGet();
+        if (result.hasMatch() && result.getMatchedTokenCount() > 0) {
+            totalHits.incrementAndGet();
+            totalHitTokens.addAndGet(result.getMatchedTokenCount());
+        }
         if (!result.hasMatch()) return 0;
 
         lock.readLock().lock();
@@ -369,6 +387,7 @@ public class KvPrefixBlockPool implements AutoCloseable {
         System.arraycopy(tokenIds, 0, prefixTokenIds, 0, coveredTokens);
         int[] blockIdsArr = allocatedBlockIds.stream().mapToInt(Integer::intValue).toArray();
         registerPrefix(prefixTokenIds, blockIdsArr);
+        totalStoredTokens.addAndGet(coveredTokens);
 
         // Store recurrent snapshot if we have exactly block-aligned coverage
         if (recurrentState != null && !recurrentState.isEmpty()
@@ -388,6 +407,64 @@ public class KvPrefixBlockPool implements AutoCloseable {
         lock.readLock().lock();
         try { return currentBytes; }
         finally { lock.readLock().unlock(); }
+    }
+
+    /** Total radix-trie lookups issued through this pool (hit or miss). */
+    public long getTotalLookups() { return totalLookups.get(); }
+
+    /**
+     * Record an externally-issued radix lookup (for callers that use
+     * {@code getRadixCache().lookup} directly, e.g. hit-probing before buffer
+     * allocation). Safe to call alongside {@link #restoreBlocks}, which records
+     * its own lookup; double-counting within one request is acceptable because
+     * both calls represent real lookups.
+     */
+    public void recordLookup(PrefixLookupResult result) {
+        totalLookups.incrementAndGet();
+        if (result != null && result.hasMatch() && result.getMatchedTokenCount() > 0) {
+            totalHits.incrementAndGet();
+            totalHitTokens.addAndGet(result.getMatchedTokenCount());
+        }
+    }
+
+    /** Lookups that found a usable cached prefix. */
+    public long getTotalHits() { return totalHits.get(); }
+
+    /** Cache hit rate in [0,1]; 0 when no lookups have been issued. */
+    public double getHitRate() {
+        long lookups = totalLookups.get();
+        return lookups == 0 ? 0.0d : (double) totalHits.get() / lookups;
+    }
+
+    /** Sum of tokens restored from cache across all hits. */
+    public long getTotalHitTokens() { return totalHitTokens.get(); }
+
+    /** Total prefill tokens covered by registered prefixes. */
+    public long getTotalStoredTokens() { return totalStoredTokens.get(); }
+
+    /** Current number of distinct stored blocks resident in the pool. */
+    public int getResidentBlockCount() {
+        lock.readLock().lock();
+        try {
+            return blockData.size();
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    /** Immutable snapshot of pool observability counters for status endpoints. */
+    public Map<String, Object> toStatsMap() {
+        Map<String, Object> stats = new LinkedHashMap<>();
+        stats.put("blockSize", blockSize);
+        stats.put("maxByteBudget", maxByteBudget);
+        stats.put("residentBlocks", getResidentBlockCount());
+        stats.put("currentBytes", getCurrentBytes());
+        stats.put("totalLookups", getTotalLookups());
+        stats.put("totalHits", getTotalHits());
+        stats.put("hitRate", getHitRate());
+        stats.put("totalHitTokens", getTotalHitTokens());
+        stats.put("totalStoredTokens", getTotalStoredTokens());
+        return stats;
     }
 
     /**

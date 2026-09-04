@@ -341,6 +341,14 @@ Status HexagonGraphBackend::executeSegment(
     NDArray** externalInputs, int numExternalInputs, NDArray** outputSlots,
     int totalOutputSlots, void* stream) {
   std::lock_guard<std::mutex> lock(cacheMtx_);
+  auto fail = [&](const std::string& reason) {
+    const std::string message =
+        reason + " [Hexagon segment " + std::to_string(seg.def.startSlot) +
+        "-" + std::to_string(seg.def.endSlot) +
+        ", status=KERNEL_FAILURE (50)]";
+    safeSetErrorContext(static_cast<int>(Status::KERNEL_FAILURE), message.c_str());
+    return Status::KERNEL_FAILURE;
+  };
 
   // Resolve the exact kernel domain. A strict AOT context must never reuse a
   // process-wide entry created by a JIT-enabled context with the same shapes.
@@ -355,7 +363,7 @@ Status HexagonGraphBackend::executeSegment(
   if (compiled == nullptr || compiled->kernelHandle == nullptr) {
     DSP_DIAG(EXECUTE, "HexagonGraphBackend::executeSegment: [%d, %d] no compiled "
              "kernel found", seg.def.startSlot, seg.def.endSlot);
-    return Status::KERNEL_FAILURE;
+    return fail("compiled Hexagon kernel/context is absent from the exact AOT/JIT cache domain");
   }
 
   auto& runtime = HexagonRuntimeManager::getInstance();
@@ -414,14 +422,15 @@ Status HexagonGraphBackend::executeSegment(
                                static_cast<int>(kernelArgs.size()))) {
     DSP_DIAG(EXECUTE, "HexagonGraphBackend::executeSegment: [%d, %d] dispatch failed",
              seg.def.startSlot, seg.def.endSlot);
-    return Status::KERNEL_FAILURE;
+    return fail("HexagonRuntimeManager::dispatchKernel returned false: args=" +
+                std::to_string(kernelArgs.size()));
   }
 
   // Wait for NPU completion
   if (!runtime.waitForCompletion(compiled->npuContext)) {
     DSP_DIAG(EXECUTE, "HexagonGraphBackend::executeSegment: [%d, %d] "
              "waitForCompletion failed", seg.def.startSlot, seg.def.endSlot);
-    return Status::KERNEL_FAILURE;
+    return fail("HexagonRuntimeManager::waitForCompletion returned false");
   }
 
   DSP_DIAG(EXECUTE, "HexagonGraphBackend::executeSegment: [%d, %d] executed "

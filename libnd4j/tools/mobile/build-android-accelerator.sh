@@ -55,12 +55,19 @@ SDX_MODEL_MODULE="$REPO_ROOT/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-mode
 SDX_PRESET_MODULE="$REPO_ROOT/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-preset"
 VERIFY_SCRIPT="$SCRIPT_DIR/verify-android-accelerator-aar.sh"
 BUILD_ENV="$SCRIPT_DIR/android-build-env.sh"
+COMPILER_CACHE_ENV="$REPO_ROOT/build-scripts/android-compiler-cache.sh"
 [[ -r "$BUILD_ENV" ]] || {
     echo "Shared Android build discovery is missing: $BUILD_ENV" >&2
     exit 1
 }
 # shellcheck source=android-build-env.sh
 source "$BUILD_ENV"
+[[ -r "$COMPILER_CACHE_ENV" ]] || {
+    echo "Shared Android compiler-cache discovery is missing: $COMPILER_CACHE_ENV" >&2
+    exit 1
+}
+# shellcheck source=../../../build-scripts/android-compiler-cache.sh
+source "$COMPILER_CACHE_ENV"
 
 PROFILE=""
 ANDROID_NDK_ARG=""
@@ -212,9 +219,11 @@ printf '  variant:      %s\n' "$SDX_VARIANT"
 printf '  Android NDK:  %s\n' "$ANDROID_NDK_ARG"
 printf '  JDK 17:       %s\n' "$JAVA_HOME_REAL"
 printf '  Maven:        %s\n' "$MVN_REAL"
+dl4j_enable_android_compiler_cache_environment "Android accelerator builds"
 printf '  output root:  %s\n' "$OUTPUT_ROOT"
 printf '  offline:      %s\n' "$OFFLINE"
 printf '  jobs:         %s\n' "$JOBS"
+printf '  cache:        %s\n' "$DL4J_COMPILER_CACHE"
 [[ "$PRINT_CONFIG" == 0 ]] || exit 0
 
 command -v flock >/dev/null 2>&1 ||
@@ -573,6 +582,15 @@ if [[ "$SKIP_NATIVE" != "1" ]]; then
     cmake --build "$NATIVE_BUILD_DIR" \
         --target sdx_runtime_bindings \
         --parallel "$JOBS"
+fi
+
+shopt -s nullglob
+stale_native_linker_outputs=("$NATIVE_BUILD_DIR"/*.so.tmp*)
+shopt -u nullglob
+if ((${#stale_native_linker_outputs[@]} > 0)); then
+    rm -f -- "${stale_native_linker_outputs[@]}"
+    printf 'Removed %s stale native linker temporary file(s) before Java packaging.\n' \
+        "${#stale_native_linker_outputs[@]}"
 fi
 
 if [[ ! -s "$NATIVE_AAR" ]]; then

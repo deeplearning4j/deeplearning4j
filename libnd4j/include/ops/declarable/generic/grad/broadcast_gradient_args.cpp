@@ -31,8 +31,9 @@ namespace ops {
  * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
  */
 OP_IMPL(broadcastgradientargs, 2, 2, true) {
-  sd_printf("BroadcastGradientArgs: Not implemented yet\n", "");
-
+  const char* message =
+      "broadcastgradientargs is reserved but not implemented; no native kernel exists for this op";
+  safeSetErrorContext(static_cast<int>(Status::KERNEL_FAILURE), message);
   return Status::KERNEL_FAILURE;
 }
 DECLARE_SYN(BroadcastGradientArgs, broadcastgradientargs);

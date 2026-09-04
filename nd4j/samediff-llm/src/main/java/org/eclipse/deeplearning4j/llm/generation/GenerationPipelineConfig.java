@@ -249,6 +249,21 @@ public class GenerationPipelineConfig {
      */
     private final String chatTemplate;
 
+    /**
+     * Model-owned generation metadata for a caller-supplied decoder graph.
+     *
+     * <p>When a caller builds the pipeline around an ALREADY-imported SameDiff
+     * ({@code .decoder(...)}), the import boundary would otherwise discard the source
+     * container's protocol metadata (BOS/EOS/pad ids, chat template, special tokens) and
+     * every caller has to re-derive it by hand. Loaders recover this automatically via
+     * {@code ModelLoader#getModelMetadata}; this field is the equivalent seam for callers
+     * that imported the graph themselves (e.g. via GGUF import with metadata) and hand the
+     * graph to the pipeline. Explicit config wins over loader-provided metadata.</p>
+     */
+    @Builder.Default
+    private final GenerationPipeline.ModelMetadata modelMetadata =
+            GenerationPipeline.ModelMetadata.empty();
+
     /** Shape used when exposing tool definitions to the active template. */
     @Builder.Default
     private final org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolDefinitionFormat toolDefinitionFormat =

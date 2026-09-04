@@ -46,6 +46,7 @@
 #include <system/common.h>
 
 #include <cuda_runtime.h>
+#include <cstdlib>
 #include <cstring>
 
 namespace sd {
@@ -198,29 +199,27 @@ void NativeDynamicShapePlan::verifyStagingNotStale(
 //                (implies cross-stream, H2D, and D2D all complete)
 //                effectiveExternals_ is up to date for this step
 // ═══════════════════════════════════════════════════════════════════════════
-NDArray** NativeDynamicShapePlan::performPreReplaySync(
+DspStagingSyncResult NativeDynamicShapePlan::performPreReplaySync(
     NDArray** externalArrays, int numExt, void* stream, const char* diagTag) {
+
+  if (numExt <= 0) {
+    return {externalArrays, DspStagingSyncStatus::NOT_REQUIRED, 0, false};
+  }
+  if (externalArrays == nullptr || stream == nullptr) {
+    DSP_DIAG(EXECUTE, "%s performPreReplaySync: invalid external array/stream",
+             diagTag);
+    return {nullptr, DspStagingSyncStatus::SYNCHRONIZATION_FAILED,
+            static_cast<int>(cudaErrorInvalidValue), false};
+  }
 
   auto* execCtx = static_cast<PlanExecutionContext*>(activeExecutionContext());
   if (execCtx == nullptr) {
     DSP_DIAG(EXECUTE,
-             "%s performPreReplaySync: NO PlanExecutionContext — falling back to "
-             "prepareSpecialUse for all %d ext inputs. "
-             "This path should NOT occur in production.",
+             "%s performPreReplaySync: NO PlanExecutionContext — refusing raw "
+             "external-array fallback for %d ext inputs.",
              diagTag, numExt);
-    std::vector<NDArray*> readList;
-    readList.reserve(static_cast<size_t>(numExt));
-    for (int ei = 0; ei < numExt; ei++) {
-      if (externalArrays[ei] != nullptr && !externalArrays[ei]->isEmpty() &&
-          externalArrays[ei]->lengthOf() > 0) {
-        readList.push_back(externalArrays[ei]);
-      }
-    }
-    if (!readList.empty()) {
-      NDArray::prepareSpecialUse({}, readList);
-      NDArray::registerSpecialUse({}, readList);
-    }
-    return externalArrays;
+    return {nullptr, DspStagingSyncStatus::MISSING_EXECUTION_CONTEXT,
+            static_cast<int>(cudaErrorInvalidValue), false};
   }
 
   cudaStream_t cudaStr = (stream != nullptr)
@@ -231,6 +230,7 @@ NDArray** NativeDynamicShapePlan::performPreReplaySync(
                            target == ExecTarget::GRAPH_REPLAY);
   bool needsStaging     = (target == ExecTarget::GRAPH_CAPTURE ||
                            target == ExecTarget::GRAPH_REPLAY);
+  const char* injectedFault = std::getenv("ND4J_DSP_STAGING_FAULT");
 
   // A single plan can dispatch adjacent graph segments on different CUDA
   // devices.  The per-execution sync phase is otherwise deduplicated across
@@ -240,8 +240,22 @@ NDArray** NativeDynamicShapePlan::performPreReplaySync(
   // device's stable buffers and the graph address check starts a new device
   // epoch.  This does not reload the plan or rebuild already-captured graphs.
   int currentDevice = -1;
-  if (cudaGetDevice(&currentDevice) == cudaSuccess &&
-      needsStaging &&
+  if (needsStaging) {
+    const char* injectedFault = std::getenv("ND4J_DSP_STAGING_FAULT");
+    if (injectedFault != nullptr && std::strcmp(injectedFault, "cuda_get_device") == 0) {
+      DSP_DIAG(STREAM_SYNC, "%s injected cudaGetDevice failure", diagTag);
+      return {nullptr, DspStagingSyncStatus::DEVICE_SELECTION_FAILED,
+              static_cast<int>(cudaErrorUnknown), false};
+    }
+    cudaError_t deviceErr = cudaGetDevice(&currentDevice);
+    if (deviceErr != cudaSuccess) {
+      DSP_DIAG(STREAM_SYNC, "%s cudaGetDevice failed: %s", diagTag,
+               cudaGetErrorString(deviceErr));
+      return {nullptr, DspStagingSyncStatus::DEVICE_SELECTION_FAILED,
+              static_cast<int>(deviceErr), false};
+    }
+  }
+  if (needsStaging &&
       (activeStagingDevice_ == -1 || activeStagingDevice_ != currentDevice)) {
     const int previousDevice = activeStagingDevice_;
     execCtx->resetSyncPhase();
@@ -269,22 +283,40 @@ NDArray** NativeDynamicShapePlan::performPreReplaySync(
       defaultStream = *defaultStreamPtr;
     }
     cudaEvent_t crossEvt = reinterpret_cast<cudaEvent_t>(execCtx->crossStreamEvent);
+    const char* injectedFault = std::getenv("ND4J_DSP_STAGING_FAULT");
+    if (cudaStr == nullptr || defaultStream == nullptr ||
+        (defaultStream != cudaStr && crossEvt == nullptr)) {
+      DSP_DIAG(STREAM_SYNC,
+               "%s cross-stream sync unavailable: default=%p dsp=%p event=%p",
+               diagTag, (void*)defaultStream, (void*)cudaStr,
+               execCtx->crossStreamEvent);
+      return {nullptr, DspStagingSyncStatus::SYNCHRONIZATION_FAILED,
+              static_cast<int>(cudaErrorInvalidValue), false};
+    }
     if (defaultStream != nullptr && defaultStream != cudaStr &&
         crossEvt != nullptr) {
-      cudaEventRecord(crossEvt, defaultStream);
-      cudaStreamWaitEvent(cudaStr, crossEvt, 0);
+      if (injectedFault != nullptr && std::strcmp(injectedFault, "cross_stream") == 0) {
+        DSP_DIAG(STREAM_SYNC, "%s injected cross-stream synchronization failure", diagTag);
+        return {nullptr, DspStagingSyncStatus::SYNCHRONIZATION_FAILED,
+                static_cast<int>(cudaErrorUnknown), false};
+      }
+      cudaError_t recordErr = cudaEventRecord(crossEvt, defaultStream);
+      if (recordErr != cudaSuccess) {
+        return {nullptr, DspStagingSyncStatus::SYNCHRONIZATION_FAILED,
+                static_cast<int>(recordErr), false};
+      }
+      cudaError_t waitErr = cudaStreamWaitEvent(cudaStr, crossEvt, 0);
+      if (waitErr != cudaSuccess) {
+        return {nullptr, DspStagingSyncStatus::SYNCHRONIZATION_FAILED,
+                static_cast<int>(waitErr), false};
+      }
       DSP_DIAG(STREAM_SYNC,
                "%s cross-stream sync: recordedOn=defaultStream=%p waitedOn=dspStream=%p",
                diagTag, (void*)defaultStream, (void*)cudaStr);
-    } else {
+    } else if (defaultStream == cudaStr) {
       DSP_DIAG(STREAM_SYNC,
-               "%s cross-stream sync SKIPPED: defaultStream=%p dspStream=%p "
-               "crossStreamEvent=%p — reason: %s",
-               diagTag, (void*)defaultStream, (void*)cudaStr,
-               execCtx->crossStreamEvent,
-               (defaultStream == nullptr) ? "defaultStream is null" :
-               (defaultStream == cudaStr)  ? "same stream — no ordering needed" :
-                                             "crossStreamEvent is null");
+               "%s cross-stream sync: same stream=%p — no ordering needed",
+               diagTag, (void*)defaultStream);
     }
     execCtx->markCrossStreamSynced();
   } else if (needsCrossStream) {
@@ -430,7 +462,16 @@ NDArray** NativeDynamicShapePlan::performPreReplaySync(
   NDArray** result = externalArrays;
   if (needsStaging && !execCtx->isStagingBuffersSynced()) {
     if (!planLifecycle_.isSlotBySlot() && !externalInputIsVariable_.empty()) {
-      NDArray** staged = ensureAndSyncStagingBuffers(externalArrays, numExt, stream);
+      DspStagingSyncResult stagingResult =
+          ensureAndSyncStagingBuffers(externalArrays, numExt, stream);
+      if (!stagingResult.ok() || stagingResult.effectiveExternals == nullptr) {
+        DSP_DIAG(EXECUTE,
+                 "%s: staging preparation failed status=%d cudaError=%d — aborting",
+                 diagTag, static_cast<int>(stagingResult.status),
+                 stagingResult.cudaError);
+        return stagingResult;
+      }
+      NDArray** staged = stagingResult.effectiveExternals;
       if (staged != nullptr) {
         // Cross-stream ordering: DSP stream → LC stream.
         // ensureAndSyncStagingBuffers enqueues D2D copies on cudaStr (DSP stream).
@@ -442,18 +483,42 @@ NDArray** NativeDynamicShapePlan::performPreReplaySync(
           cudaStream_t lcStream = (lcStreamPtr != nullptr) ? *lcStreamPtr : nullptr;
           cudaEvent_t stageEvt = reinterpret_cast<cudaEvent_t>(execCtx->crossStreamEvent);
           if (lcStream != nullptr && lcStream != cudaStr && cudaStr != nullptr) {
+            if (injectedFault != nullptr && std::strcmp(injectedFault, "stream_sync") == 0) {
+              return {nullptr, DspStagingSyncStatus::SYNCHRONIZATION_FAILED,
+                      static_cast<int>(cudaErrorUnknown), false};
+            }
             if (stageEvt != nullptr) {
-              cudaEventRecord(stageEvt, cudaStr);
-              cudaStreamWaitEvent(lcStream, stageEvt, 0);
+              cudaError_t recordErr = cudaEventRecord(stageEvt, cudaStr);
+              if (recordErr != cudaSuccess) {
+                return {nullptr, DspStagingSyncStatus::SYNCHRONIZATION_FAILED,
+                        static_cast<int>(recordErr), false};
+              }
+              cudaError_t waitErr = cudaStreamWaitEvent(lcStream, stageEvt, 0);
+              if (waitErr != cudaSuccess) {
+                return {nullptr, DspStagingSyncStatus::SYNCHRONIZATION_FAILED,
+                        static_cast<int>(waitErr), false};
+              }
 	      DSP_DIAG(STREAM_SYNC,
 	               "%s: D2D→slot ordering: event on dspStream=%p, wait on lcStream=%p",
 	               diagTag, (void*)cudaStr, (void*)lcStream);
 	    } else {
 	      cudaEvent_t localEvent = nullptr;
-	      cudaEventCreateWithFlags(&localEvent, cudaEventDisableTiming);
-	      cudaEventRecord(localEvent, cudaStr);
-	      cudaStreamWaitEvent(lcStream, localEvent, 0);
-	      cudaEventDestroy(localEvent);
+	      cudaError_t createErr = cudaEventCreateWithFlags(&localEvent, cudaEventDisableTiming);
+	      if (createErr != cudaSuccess) {
+	        return {nullptr, DspStagingSyncStatus::SYNCHRONIZATION_FAILED,
+	                static_cast<int>(createErr), false};
+	      }
+	      cudaError_t recordErr = cudaEventRecord(localEvent, cudaStr);
+	      cudaError_t waitErr = (recordErr == cudaSuccess)
+	          ? cudaStreamWaitEvent(lcStream, localEvent, 0) : recordErr;
+	      cudaError_t destroyErr = cudaEventDestroy(localEvent);
+	      if (recordErr != cudaSuccess || waitErr != cudaSuccess || destroyErr != cudaSuccess) {
+	        cudaError_t error = recordErr != cudaSuccess ? recordErr
+
+            : (waitErr != cudaSuccess ? waitErr : destroyErr);
+        return {nullptr, DspStagingSyncStatus::SYNCHRONIZATION_FAILED,
+                static_cast<int>(error), false};
+      }
 	      DSP_DIAG(STREAM_SYNC,
 	               "%s: D2D→slot ordering: local event on dspStream=%p, wait on lcStream=%p",
 	               diagTag, (void*)cudaStr, (void*)lcStream);
@@ -470,13 +535,20 @@ NDArray** NativeDynamicShapePlan::performPreReplaySync(
         // at this boundary so a consumer on any context stream cannot race the
         // freshly copied external value.
         if (target == ExecTarget::GRAPH_REPLAY && cudaStr != nullptr) {
+          if (injectedFault != nullptr && std::strcmp(injectedFault, "stream_sync") == 0) {
+            stagingMaintainedThisExec_ = false;
+            return {nullptr, DspStagingSyncStatus::SYNCHRONIZATION_FAILED,
+                    static_cast<int>(cudaErrorUnknown), false};
+          }
           const auto stagingSyncErr = cudaStreamSynchronize(cudaStr);
           if (stagingSyncErr != cudaSuccess) {
             DSP_DIAG(STREAM_SYNC,
                      "%s: staging stream synchronization failed stream=%p err=%s",
                      diagTag, (void*)cudaStr, cudaGetErrorString(stagingSyncErr));
             cudaGetLastError();
-            return externalArrays;
+            stagingMaintainedThisExec_ = false;
+            return {nullptr, DspStagingSyncStatus::SYNCHRONIZATION_FAILED,
+                    static_cast<int>(stagingSyncErr), false};
           }
           DSP_DIAG(STREAM_SYNC,
                    "%s: staging stream synchronized before slot dispatch stream=%p",
@@ -486,13 +558,6 @@ NDArray** NativeDynamicShapePlan::performPreReplaySync(
                  "using staged pointers (effectiveExternals_=%p) execTarget=%s",
                  diagTag, numExt, (void*)staged, execCtx->execTargetName());
         result = staged;
-      } else {
-        DSP_DIAG(EXECUTE,
-                 "%s: ensureAndSyncStagingBuffers returned NULL — "
-                 "using raw externalArrays (no staging). isSlotBySlot=%s varEmpty=%s",
-                 diagTag,
-                 planLifecycle_.isSlotBySlot() ? "true" : "false",
-                 externalInputIsVariable_.empty() ? "true" : "false");
       }
     } else {
       DSP_DIAG(EXECUTE,
@@ -526,6 +591,8 @@ NDArray** NativeDynamicShapePlan::performPreReplaySync(
              planLifecycle_.isSlotBySlot() ? "true" : "false",
              externalInputIsVariable_.empty() ? "true" : "false",
              (void*)effectiveExternals_);
+    return {nullptr, DspStagingSyncStatus::SYNCHRONIZATION_FAILED,
+            static_cast<int>(cudaErrorInvalidValue), false};
   }
 
   // ── Step 4: Staleness verification ─────────────────────────────────────
@@ -552,7 +619,7 @@ NDArray** NativeDynamicShapePlan::performPreReplaySync(
     }
   }
 
-  return result;
+  return {result, DspStagingSyncStatus::SUCCESS, 0, result != externalArrays};
 }
 
 }  // namespace graph

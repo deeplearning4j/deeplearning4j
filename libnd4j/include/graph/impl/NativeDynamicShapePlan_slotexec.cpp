@@ -27,6 +27,7 @@
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/ModeContract.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspPhaseUtils.h>
 #include <graph/DspThreadState.h>
 #include <graph/gpu/DspCudaDispatch.h>
 #include <graph/DspHashUtils.h>
@@ -2057,11 +2058,23 @@ static void dspPropagateSlotError(int stepIdx, const NativeSlot& slot,
                                    const std::string& outShapes,
                                    const std::string& iArgs) {
   char errBuf[1024];
-  snprintf(errBuf, sizeof(errBuf),
-           "slot %d (%s) %s | inputs=[%s] outputs=[%s] iArgs=[%s]",
-           stepIdx, slot.ident.opName.c_str(), detail,
-           inShapes.c_str(), outShapes.c_str(), iArgs.c_str());
-  sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(errBuf);
+  auto* errorReference =
+      sd::LaunchContext::defaultContext()->errorReference();
+  const char* existing = errorReference->errorMessage();
+  if (existing != nullptr && existing[0] != '\0') {
+    // Keep the originating backend/op detail first; the fixed-size error buffer
+    // otherwise truncates it behind this slot-context wrapper.
+    snprintf(errBuf, sizeof(errBuf),
+             "%s [slot %d (%s): %s | inputs=[%s] outputs=[%s] iArgs=[%s]]",
+             existing, stepIdx, slot.ident.opName.c_str(), detail,
+             inShapes.c_str(), outShapes.c_str(), iArgs.c_str());
+  } else {
+    snprintf(errBuf, sizeof(errBuf),
+             "slot %d (%s) %s | inputs=[%s] outputs=[%s] iArgs=[%s]",
+             stepIdx, slot.ident.opName.c_str(), detail,
+             inShapes.c_str(), outShapes.c_str(), iArgs.c_str());
+  }
+  errorReference->setErrorMessage(errBuf);
 }
 
 // ─── Per-slot execution ─────────────────────────────────────────────────────
@@ -2777,8 +2790,15 @@ Status NativeDynamicShapePlan::executeSlot(
         }
       } else {
         DSP_DIAG_SLOT(EXECUTE, stepIdx,
-            "FF_FAST_PATH_FAIL: slot=%d op=%s status=%d executeCount=%d",
-            stepIdx, slot.ident.opName.c_str(), static_cast<int>(ffStatus), executeCount_);
+            "FF_FAST_PATH_FAIL: slot=%d op=%s status=%s (%d) executeCount=%d",
+            stepIdx, slot.ident.opName.c_str(),
+            dsp::dspStatusName(ffStatus), static_cast<int>(ffStatus), executeCount_);
+        dspPropagateSlotError(
+            stepIdx, slot,
+            (std::string("fast frozen execution returned ") +
+             dsp::dspStatusName(ffStatus) + " (" +
+             std::to_string(static_cast<int>(ffStatus)) + ")").c_str(),
+            "", "", "");
       }
       return ffStatus;
     }
@@ -3466,6 +3486,10 @@ Status NativeDynamicShapePlan::executeSlot(
                 "CAPTURE_FROZEN_VIEW_MISMATCH: slot=%d op=%s — refusing capture-time "
                 "shape resolution or wrapper construction",
                 stepIdx, slot.ident.opName.c_str());
+            dspPropagateSlotError(
+                stepIdx, slot,
+                "capture-time frozen view shape/wrapper was not prepared during warmup",
+                "", "", "");
             return Status::KERNEL_FAILURE;
           }
 
@@ -4266,6 +4290,12 @@ Status NativeDynamicShapePlan::executeSlot(
         DSP_DIAG_SLOT(STREAM_SYNC, stepIdx,
             "VALUE_SHAPE_PRODUCER_SYNC_FAILED: slot=%d op=%s stream=%p exec=%d",
             stepIdx, slot.ident.opName.c_str(), executionStream, executeCount_);
+        dspPropagateSlotError(
+            stepIdx, slot,
+            (std::string("value-dependent shape producer stream synchronization failed: stream=") +
+             std::to_string(reinterpret_cast<uintptr_t>(executionStream)) +
+             ", executionCount=" + std::to_string(executeCount_)).c_str(),
+            "", "", "");
         return Status::KERNEL_FAILURE;
       }
       DSP_DIAG_SLOT(STREAM_SYNC, stepIdx,
@@ -4620,7 +4650,8 @@ Status NativeDynamicShapePlan::executeSlot(
     } catch (const std::exception& e) {
       DSP_DIAG_SLOT(SHAPE, stepIdx, "shape inference EXCEPTION at slot %d (%s): %s",
                 stepIdx, slot.ident.opName.c_str(), e.what());
-      // Propagate error detail to Java via errorReference (otherwise Java only sees "status 50")
+      // Propagate the root shape-inference detail; KERNEL_FAILURE (50) is only
+      // the transport status and must never be the sole Java-visible message.
       std::string inputShapeStr;
       for (int ii = 0; ii < slot.wiring.numInputs; ii++) {
         if (ii > 0) inputShapeStr += ", ";
@@ -4757,6 +4788,8 @@ Status NativeDynamicShapePlan::executeSlot(
               eReadPtr, eReadVal, db->primary(), db->special());
         }
       }
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(
+          static_cast<int>(Status::KERNEL_FAILURE));
       sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(errMsg.c_str());
       return Status::KERNEL_FAILURE;
     }
@@ -4766,6 +4799,8 @@ Status NativeDynamicShapePlan::executeSlot(
       char errBuf[512];
       snprintf(errBuf, sizeof(errBuf), "slot %d (%s) shape inference returned null/empty",
                stepIdx, slot.ident.opName.c_str());
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(
+          static_cast<int>(Status::KERNEL_FAILURE));
       sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(errBuf);
       return Status::KERNEL_FAILURE;
     }
@@ -4785,6 +4820,11 @@ Status NativeDynamicShapePlan::executeSlot(
         DSP_DIAG_SLOT(SHAPE, stepIdx, "shape cache interning EXCEPTION at slot %d (%s) output[%d]: %s",
                   stepIdx, slot.ident.opName.c_str(), i, e.what());
         delete shapeList;
+        dspPropagateSlotError(
+            stepIdx, slot,
+            (std::string("shape cache interning failed for output ") +
+             std::to_string(i) + ": " + e.what()).c_str(),
+            "", "", "");
         return Status::KERNEL_FAILURE;
       }
     }
@@ -5175,6 +5215,10 @@ Status NativeDynamicShapePlan::executeSlot(
         DSP_DIAG_SLOT(EXECUTE, stepIdx,
             "CAPTURE_VIEW_REUSE_REQUIRED: slot=%d op=%s installed=%p input=%p",
             stepIdx, slot.ident.opName.c_str(), (void*)installedView, (void*)input0);
+        dspPropagateSlotError(
+            stepIdx, slot,
+            "CUDA graph capture required a warmup-installed view wrapper, but none was reusable",
+            "", "", "");
         return Status::KERNEL_FAILURE;
       } else if (tl_graphExecutionActive) {
         // Some view-capable ops legitimately materialize an owned output. A
@@ -5714,6 +5758,11 @@ Status NativeDynamicShapePlan::executeSlot(
     } catch (const std::exception& e) {
       DSP_DIAG_SLOT(MEMORY, stepIdx, "output ALLOC EXCEPTION at slot %d (%s) output[%d]: %s",
                 stepIdx, slot.ident.opName.c_str(), i, e.what());
+      dspPropagateSlotError(
+          stepIdx, slot,
+          (std::string("output allocation failed for output ") +
+           std::to_string(i) + ": " + e.what()).c_str(),
+          "", "", "");
       return Status::KERNEL_FAILURE;
     }
 
@@ -6146,11 +6195,14 @@ Status NativeDynamicShapePlan::executeSlot(
                              inputShapes, outputShapesStr, iArgsStr);
     // Propagate error detail to Java via errorReference
     dspPropagateSlotError(stepIdx, slot,
-                           (std::string("exec failed status=") + std::to_string(static_cast<int>(status))).c_str(),
+                           (std::string("execution returned ") +
+                            dsp::dspStatusName(status) + " (" +
+                            std::to_string(static_cast<int>(status)) + ")").c_str(),
                            inputShapes, outputShapesStr, iArgsStr);
-    DSP_DIAG(EXECUTE, "SLOT EXEC FAIL: slot %d (%s) status=%d, inputs=[%s], outputs=[%s], iArgs=[%s], "
+    DSP_DIAG(EXECUTE, "SLOT EXEC FAIL: slot %d (%s) status=%s (%d), inputs=[%s], outputs=[%s], iArgs=[%s], "
               "cacheHit=%d executeCount=%d shapesFrozen=%d",
-              stepIdx, slot.ident.opName.c_str(), static_cast<int>(status),
+              stepIdx, slot.ident.opName.c_str(), dsp::dspStatusName(status),
+              static_cast<int>(status),
               inputShapes.c_str(), outputShapesStr.c_str(), iArgsStr.c_str(),
               (int)cacheHit, executeCount_, (int)planLifecycle_.isShapesFrozen());
   }
@@ -6421,10 +6473,19 @@ Status NativeDynamicShapePlan::executeSlotGapFast(
   Status result = platformExecuteSlot(slot, ctx);
   ctx.allowHelpers(helpersWereAllowed);
 
-  if (DSP_DIAG_ENABLED(EXECUTE) && result != Status::OK) {
-    DSP_DIAG_SLOT(EXECUTE, slotIdx,
-        "GAP_FAST_EXEC_FAIL: slot=%d op=%s status=%d executeCount=%d",
-        slotIdx, slot.ident.opName.c_str(), static_cast<int>(result), executeCount_);
+  if (result != Status::OK) {
+    if (DSP_DIAG_ENABLED(EXECUTE)) {
+      DSP_DIAG_SLOT(EXECUTE, slotIdx,
+          "GAP_FAST_EXEC_FAIL: slot=%d op=%s status=%s (%d) executeCount=%d",
+          slotIdx, slot.ident.opName.c_str(), dsp::dspStatusName(result),
+          static_cast<int>(result), executeCount_);
+    }
+    dspPropagateSlotError(
+        slotIdx, slot,
+        (std::string("gap fast execution returned ") +
+         dsp::dspStatusName(result) + " (" +
+         std::to_string(static_cast<int>(result)) + ")").c_str(),
+        "", "", "");
   }
   if (result == Status::OK) {
     auto& fpOut = ctx.fastpath_out();

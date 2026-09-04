@@ -68,6 +68,7 @@ class SdxPlatformSdkTest {
         assertSame(tensorG3, SdxTargetProfile.fromId("tensor-g3"));
         assertSame(tensorG3, SdxTargetProfile.fromId("pixel-8a"));
         assertFalse(tensorG3.platformProvider().allowsCpuFallback());
+        assertEquals(256, tensorG3.platformProvider().fixedTextContextCapacity());
     }
 
     @Test

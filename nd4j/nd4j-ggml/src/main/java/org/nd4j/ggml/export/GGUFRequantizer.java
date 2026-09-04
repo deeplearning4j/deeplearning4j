@@ -40,6 +40,7 @@ import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -167,16 +168,22 @@ public final class GGUFRequantizer {
         }
 
         String name = tensor.getName();
-        if (name.contains("norm")) {
+        String normalizedName = name.toLowerCase(Locale.ROOT);
+        if (normalizedName.contains("norm")) {
             return GGMLDataType.GGML_TYPE_F32;
+        }
+        // Embeddings are consumed by gather, not a quantized linear operation. Keeping the
+        // authored dtype avoids a Q8 round trip before canonical SDZ serialization and keeps
+        // token lookup accuracy independent from the selected linear-weight quantization.
+        if (normalizedName.contains("token_embd") || normalizedName.contains("embedding")) {
+            return sourceType;
         }
         if (tensor.getNumDimensions() < 2 || !requestedType.isQuantized()) {
             return tensor.getNumDimensions() < 2 ? sourceType : requestedType;
         }
 
         GGMLDataType preferredType = requestedType;
-        if (isFourBit(requestedType)
-                && (name.contains("token_embd") || name.contains("output.weight"))) {
+        if (isFourBit(requestedType) && normalizedName.contains("output.weight")) {
             preferredType = GGMLDataType.GGML_TYPE_Q8_0;
         }
         if (hasBlockCompatibleRows(tensor, preferredType)) {

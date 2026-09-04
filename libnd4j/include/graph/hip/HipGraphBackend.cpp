@@ -282,13 +282,24 @@ Status HipGraphBackend::executeSegment(
     NDArray** outputSlots, int totalOutputSlots,
     void* stream) {
 
+  auto fail = [&](const std::string& reason) {
+    const std::string message =
+        reason + " [HIP segment " + std::to_string(seg.def.startSlot) + "-" +
+        std::to_string(seg.def.endSlot) + ", status=KERNEL_FAILURE (50)]";
+    safeSetErrorContext(static_cast<int>(Status::KERNEL_FAILURE), message.c_str());
+    return Status::KERNEL_FAILURE;
+  };
+
   // Requires ROCm/HIP runtime — not validated on non-AMD hosts.
   if (!isAvailable()) {
     DSP_DIAG(BACKEND,
              "HipGraphBackend::executeSegment: seg[%d-%d] "
              "— requires ROCm/HIP runtime",
              seg.def.startSlot, seg.def.endSlot);
-    return Status::KERNEL_FAILURE;
+    const auto& runtimeError = HipRuntimeManager::getInstance().getLastError();
+    return fail(runtimeError.empty()
+                    ? "ROCm/HIP runtime is unavailable"
+                    : "ROCm/HIP runtime is unavailable: " + runtimeError);
   }
 
   std::lock_guard<std::mutex> lock(mutex_);
@@ -300,7 +311,7 @@ Status HipGraphBackend::executeSegment(
              "HipGraphBackend::executeSegment: no compiled capture for "
              "seg[%d-%d] — compileSegment() must run first",
              seg.def.startSlot, seg.def.endSlot);
-    return Status::KERNEL_FAILURE;
+    return fail("compiled HIP graph capture is absent; compileSegment must run first");
   }
 
   HipSegmentCapture& cap = it->second;
@@ -318,7 +329,10 @@ Status HipGraphBackend::executeSegment(
                  "HipGraphBackend::executeSegment: hipGraphLaunch failed "
                  "(rc=%d, %s) for island [%d-%d]",
                  rc, mgr.getErrorString(rc), h.beginSlot, h.endSlot);
-        return Status::KERNEL_FAILURE;
+        return fail("hipGraphLaunch returned rc=" + std::to_string(rc) +
+                    " (" + mgr.getErrorString(rc) + ") for island " +
+                    std::to_string(h.beginSlot) + "-" +
+                    std::to_string(h.endSlot));
       }
       DSP_DIAG(BACKEND,
                "HipGraphBackend::executeSegment: replayed island [%d-%d] "

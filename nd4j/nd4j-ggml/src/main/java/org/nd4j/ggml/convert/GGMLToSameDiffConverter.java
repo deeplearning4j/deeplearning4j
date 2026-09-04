@@ -21,6 +21,8 @@
 package org.nd4j.ggml.convert;
 
 import lombok.extern.slf4j.Slf4j;
+import org.bytedeco.javacpp.BytePointer;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.serde.ModelLoadingContext;
 import org.nd4j.autodiff.samediff.serde.ModelSizeInfo;
@@ -35,13 +37,18 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.device.DeviceDescriptor;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -70,6 +77,7 @@ public class GGMLToSameDiffConverter {
      */
     public SameDiff convert(File ggmlFile) throws GGMLImportException {
         // Create a context for optimized batch loading
+        validateSourceFile(ggmlFile);
         ModelSizeInfo sizeInfo = estimateModelSize(ggmlFile);
         try (ModelLoadingContext context = ModelLoadingContext.builder()
                 .sizeInfo(sizeInfo)
@@ -97,6 +105,7 @@ public class GGMLToSameDiffConverter {
         if (targetDevice == null) {
             throw new IllegalArgumentException("targetDevice must not be null");
         }
+        validateSourceFile(ggmlFile);
         ModelSizeInfo sizeInfo = estimateModelSize(ggmlFile);
         try (ModelLoadingContext context = ModelLoadingContext.builder()
                 .sizeInfo(sizeInfo)
@@ -105,6 +114,23 @@ public class GGMLToSameDiffConverter {
                 .useBatchedNativeTransfer(true)
                 .build()) {
             return convert(ggmlFile, context);
+        }
+    }
+
+    /**
+     * Fail-fast source validation shared by every convert entry point. A missing or
+     * unreadable source must surface as {@link GGMLImportException} at the import
+     * boundary instead of an admission-time IllegalStateException.
+     */
+    private static void validateSourceFile(File ggmlFile) throws GGMLImportException {
+        if (ggmlFile == null) {
+            throw new GGMLImportException("GGML file must not be null");
+        }
+        if (!ggmlFile.exists()) {
+            throw new GGMLImportException("GGML file does not exist: " + ggmlFile);
+        }
+        if (!ggmlFile.isFile()) {
+            throw new GGMLImportException("GGML path is not a regular file: " + ggmlFile);
         }
     }
 
@@ -118,11 +144,8 @@ public class GGMLToSameDiffConverter {
      * @throws GGMLImportException if conversion fails
      */
     public SameDiff convert(File ggmlFile, ModelLoadingContext context) throws GGMLImportException {
+        validateSourceFile(ggmlFile);
         try {
-            // Validate file
-            if (!ggmlFile.exists()) {
-                throw new GGMLImportException("File not found: " + ggmlFile);
-            }
 
             if (options.getMaxFileSize() > 0 && ggmlFile.length() > options.getMaxFileSize()) {
                 throw new GGMLImportException("File too large: " + ggmlFile.length() +
@@ -347,10 +370,19 @@ public class GGMLToSameDiffConverter {
                 INDArray array;
                 if (info.getDataType().isQuantized()) {
                     // Quantized tensors need dequantization or runtime-packed matmul storage.
-                    byte[] data = reader.readTensorData(info);
                     boolean runtimePackedMatmul = shouldUseRuntimeQuantizedMatmul(info);
-                    array = convertTensorData(data, info, runtimePackedMatmul,
-                            getTargetDataType(info, compactTokenEmbedding));
+                    if (runtimePackedMatmul || options.getQuantizationMode()
+                            == ConversionOptions.QuantizationMode.PRESERVE_QUANTIZATION) {
+                        // Packed storage keeps the complete payload: read it in one pass.
+                        byte[] data = reader.readTensorData(info);
+                        array = convertTensorData(data, info, runtimePackedMatmul,
+                                getTargetDataType(info, compactTokenEmbedding));
+                    } else {
+                        // Dense dequantization streams the payload in bounded, block-aligned
+                        // chunks so the full packed bytes never coexist with the full output.
+                        array = dequantizeTensorStreaming(reader, info,
+                                getTargetDataType(info, compactTokenEmbedding));
+                    }
                     // For RUNTIME_QUANTIZED_MATMUL: store companion metadata so the
                     // architecture builder can emit ggml_qmatmul instead of normal mmul.
                     // Key: tensorName + ".__q__"  Value: long[3] = [ggmlQuantType, N, K]
@@ -379,9 +411,9 @@ public class GGMLToSameDiffConverter {
                 }
 
                 loadedCount++;
-                if (log.isDebugEnabled()) {
-                    log.debug("Loaded tensor {}/{}: {} shape={} type={}",
-                            loadedCount, totalTensors, info.getName(), info.getShapeString(), info.getDataType());
+                if (MEMORY_TRACE) {
+                    log.info("MEM_TRACE tensor {}/{} {} bytes={} rssKb={}",
+                            loadedCount, totalTensors, info.getName(), info.getDataSize(), currentRssKb());
                 } else if (loadedCount % 50 == 0 || loadedCount == totalTensors) {
                     log.info("Loading progress: {}/{} tensors ({}%)",
                             loadedCount, totalTensors, (loadedCount * 100) / totalTensors);
@@ -415,17 +447,22 @@ public class GGMLToSameDiffConverter {
             return;
         }
         if (!info.getDataType().isQuantized()) {
+            // Non-quantized linear weights (e.g. a lone BF16 projection inside a Q4_K_M
+            // GGUF) never violate the packed contract: they simply execute densely, the
+            // same way RUNTIME_QUANTIZED_MATMUL's fallback handles them. Throwing here
+            // would reject an otherwise fully-packed model over one small dense tensor.
+            log.info("Executing linear weight {} densely ({} storage) under packed policy {}",
+                    info.getName(), info.getDataType(), options.getQuantizationMode());
+            return;
+        }
+        if (!isRuntimeQuantizationTypeAllowed(info.getDataType())) {
             if (options.getQuantizationMode()
                     == ConversionOptions.QuantizationMode.RUNTIME_QUANTIZED_MATMUL) {
-                log.info("Using dense runtime fallback for linear weight {} shape={} type={}",
+                log.info("Using dense runtime fallback for unsupported quantized linear weight "
+                                + "{} shape={} type={}",
                         info.getName(), info.getShapeString(), info.getDataType());
                 return;
             }
-            throw new IllegalStateException("Packed " + options.getQuantizationMode()
-                    + " requested, but linear weight " + info.getName()
-                    + " is stored as " + info.getDataType());
-        }
-        if (!isRuntimeQuantizationTypeAllowed(info.getDataType())) {
             throw new IllegalStateException("Packed " + options.getQuantizationMode()
                     + " requested, but linear weight " + info.getName()
                     + " uses unsupported GGUF type " + info.getDataType());
@@ -593,6 +630,196 @@ public class GGMLToSameDiffConverter {
             throw new IllegalStateException("No dequantizer is registered for GGUF tensor type " + dataType);
         }
         return DequantizerFactory.dequantizeToArray(data, dataType, shape, targetType);
+    }
+
+    /**
+     * Streaming chunk size for dense dequantization, in elements. Chunks are rounded up
+     * to whole quantization blocks; 2^23 elements bounds one FLOAT32 chunk at 32 MiB.
+     */
+    private static final int STREAM_DEQUANT_CHUNK_ELEMENTS = 1 << 23;
+
+    /**
+     * Dense dequantization streams only tensors large enough for the transient bound to
+     * matter; smaller tensors keep the original whole-tensor semantics (and exotic
+     * target dtypes keep it unconditionally, since interval assignment is only
+     * supported for the common float storage types).
+     */
+    private static final long STREAM_DEQUANT_MIN_TENSOR_BYTES = 16L * 1024 * 1024;
+
+    /** Opt-in per-tensor RSS trace: -Dnd4j.ggml.memoryTrace=true (used for import peak attribution). */
+    private static final boolean MEMORY_TRACE =
+            Boolean.getBoolean("nd4j.ggml.memoryTrace");
+
+    private static long currentRssKb() {
+        if (!MEMORY_TRACE) {
+            return 0L;
+        }
+        try {
+            for (String line : java.nio.file.Files.readAllLines(
+                    java.nio.file.Paths.get("/proc/self/status"))) {
+                if (line.startsWith("VmRSS:")) {
+                    return Long.parseLong(line.replaceAll("\\D+", ""));
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return -1L;
+    }
+
+    /**
+     * Dequantize a quantized GGUF tensor by streaming block-aligned chunks through the
+     * canonical dequantizer into one preallocated dense output. Peak transient memory is
+     * bounded to the current chunk (packed bytes + native chunk copy + dequantized chunk)
+     * plus the final output, regardless of tensor size.
+     */
+    private INDArray dequantizeTensorStreaming(GGUFReader reader, GGMLTensorInfo info,
+                                               DataType targetType) throws IOException {
+        GGMLDataType dataType = info.getDataType();
+        if (!DequantizerFactory.hasDequantizer(dataType)) {
+            throw new IllegalStateException("No dequantizer is registered for GGUF tensor type " + dataType);
+        }
+        long[] shape = reverseShape(info.getShape());
+        boolean streamableTarget = targetType == DataType.FLOAT || targetType == DataType.HALF
+                || targetType == DataType.BFLOAT16;
+        if (MEMORY_TRACE) {
+            log.info("MEM_TRACE dequant_route tensor={} dataSize={} target={} streamable={}",
+                    info.getName(), info.getDataSize(), targetType, streamableTarget);
+        }
+        if (!streamableTarget || info.getDataSize() < STREAM_DEQUANT_MIN_TENSOR_BYTES) {
+            return dequantizeRequired(reader.readTensorData(info), dataType, shape, targetType);
+        }
+        int blockSize = Math.max(1, dataType.getBlockSize());
+        long numElements = 1;
+        for (long dim : shape) {
+            numElements *= dim;
+        }
+        long tensorBytes = info.getDataSize();
+        if (numElements < 1 || numElements % blockSize != 0
+                || tensorBytes <= 0 || tensorBytes > Integer.MAX_VALUE) {
+            return dequantizeRequired(reader.readTensorData(info), dataType, shape, targetType);
+        }
+        long totalBlocks = numElements / blockSize;
+        long bytesPerBlock = tensorBytes / totalBlocks;
+        if (bytesPerBlock <= 0 || totalBlocks * bytesPerBlock != tensorBytes) {
+            // Irregular block geometry: keep the complete-tensor read semantics.
+            return dequantizeRequired(reader.readTensorData(info), dataType, shape, targetType);
+        }
+        long chunkBlocks = Math.max(1, STREAM_DEQUANT_CHUNK_ELEMENTS / blockSize);
+        long chunkBytes = chunkBlocks * bytesPerBlock;
+        byte[] chunk = new byte[(int) Math.min(tensorBytes, chunkBytes)];
+
+        // Give every chunk its own cycle in one reusable workspace. A single scope around
+        // the complete tensor does not reuse memory: each chunk advances the workspace
+        // offset, and all external spills remain live until that scope exits. On the Qwen
+        // token embedding that retained more than 4 GiB of transient allocations.
+        WorkspaceConfiguration streamWsCfg = WorkspaceConfiguration.builder()
+                .initialSize(chunkBytes * 4L)
+                .maxSize(chunkBytes * 8L)
+                .overallocationLimit(0.0)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .build();
+        // The chunk loop speaks flat element offsets. Allocate the TENSOR-SHAPED array
+        // directly (weights must not be view-backed arrays downstream — DSP capture and
+        // constant serialization assume native allocations), and merge chunks through a
+        // contiguous 1-D view of that same allocation. reshape on a freshly allocated
+        // C-order array is guaranteed to return a view, so writes through it land in
+        // the output buffer.
+        INDArray output = Nd4j.zeros(targetType, shape);
+        INDArray flatOutput = output.reshape(new long[]{numElements});
+        MemoryWorkspace streamWorkspace = Nd4j.getWorkspaceManager()
+                .createNewWorkspace(streamWsCfg, "gguf-stream-dequant");
+        try {
+            boolean nativeInto = DequantizerFactory.supportsNativeDequantization(dataType);
+            long tailElements = numElements % chunkBlocks;
+            // Host staging via one reusable DIRECT ByteBuffer (off-heap, no JVM heap churn);
+            // the reader fills it straight from the file channel and Nd4j.createBuffer wraps
+            // it as the packed input for the native dequant op. Sized to the full chunk;
+            // the tail chunk reads a bounded limit().
+            ByteBuffer packedHost = nativeInto
+                    ? ByteBuffer.allocateDirect((int) Math.min(tensorBytes, chunkBytes))
+                            .order(ByteOrder.LITTLE_ENDIAN) : null;
+            try (INDArray fullChunk = nativeInto
+                         ? Nd4j.createUninitialized(targetType, chunkBlocks) : null;
+                 INDArray tailChunk = nativeInto && tailElements != 0
+                         ? Nd4j.createUninitialized(targetType, tailElements) : null) {
+                if (MEMORY_TRACE) {
+                    log.info("MEM_TRACE stream_alloc output_mb={} rssKb={}",
+                            numElements * targetType.width() / (1024 * 1024), currentRssKb());
+                }
+                long copied = 0;
+                while (copied < numElements) {
+                    long elements = Math.min(numElements - copied, chunkBlocks);
+                    int bytes = (int) ((elements / blockSize) * bytesPerBlock);
+                    INDArray chunkArray = null;
+                    boolean closeChunkArray = false;
+                    try (MemoryWorkspace ignored = streamWorkspace.notifyScopeEntered()) {
+                        if (nativeInto) {
+                            // Device-aware path: the file channel reads straight into the
+                            // direct ByteBuffer (off-heap), Nd4j.createBuffer wraps it as a
+                            // host DataBuffer, and each GGMLDequantize execution performs its
+                            // own implicit H2D of that input and runs the dequant kernel
+                            // device→device into chunkArray. The chunk merge is one assign op
+                            // (device→device on CUDA).
+                            //
+                            // CORRECTNESS: packedHost is REUSED across chunks. The
+                            // dequantizeInto H2D of chunk N is asynchronous — overwriting
+                            // packedHost with chunk N+1's bytes before that H2D retires would
+                            // feed chunk N+1's bytes to chunk N's dequant (silently wrong
+                            // weights). A commit() per chunk orders H2D before the host
+                            // rewrite. Import remains ~2 minutes (vs 45+ minutes for the old
+                            // sync-storm path); the commit is the price of staging reuse.
+                            packedHost.clear();
+                            packedHost.limit(bytes);
+                            reader.readTensorDataRange(info,
+                                    (copied / blockSize) * bytesPerBlock,
+                                    packedHost);
+                            packedHost.rewind();
+                            DataBuffer packedBuffer = Nd4j.createBuffer(
+                                    packedHost, DataType.INT8, bytes);
+                            INDArray rawBytes = Nd4j.create(
+                                    packedBuffer, new long[]{bytes},
+                                    new long[]{1}, 0, 'c');
+                            chunkArray = elements == chunkBlocks ? fullChunk : tailChunk;
+                            DequantizerFactory.dequantizeInto(
+                                    rawBytes, dataType, new long[]{elements}, chunkArray);
+                            INDArray target = flatOutput.get(
+                                    NDArrayIndex.interval(copied, copied + elements));
+                            target.assign(chunkArray);
+                            // Order before the next packedHost rewrite (see comment above).
+                            Nd4j.getExecutioner().commit();
+                        } else {
+                            reader.readTensorDataRange(info,
+                                    (copied / blockSize) * bytesPerBlock,
+                                    chunk, 0, bytes);
+                            byte[] packedChunk = bytes == chunk.length
+                                    ? chunk : Arrays.copyOf(chunk, bytes);
+                            chunkArray = DequantizerFactory.dequantizeToArray(
+                                    packedChunk, dataType, new long[]{elements}, targetType);
+                            closeChunkArray = true;
+                            // CPU dequantizer fallback: genuinely host-side buffers, host copy.
+                            chunkArray.data().copyAtStride(
+                                    output.data(), elements, 1, 1, 0, copied);
+                        }
+                    } finally {
+                        if (closeChunkArray && chunkArray != null) {
+                            chunkArray.close();
+                        }
+                    }
+                    copied += elements;
+                    if (MEMORY_TRACE
+                            && copied % (4L * STREAM_DEQUANT_CHUNK_ELEMENTS) == 0) {
+                        log.info("MEM_TRACE stream_chunk copied_mb={} rssKb={}",
+                                copied * targetType.width() / (1024 * 1024), currentRssKb());
+                    }
+                }
+                return output;
+            }
+        } catch (RuntimeException | Error failure) {
+            output.close();
+            throw failure;
+        } finally {
+            Nd4j.getWorkspaceManager().destroyWorkspace(streamWorkspace);
+        }
     }
 
     /**

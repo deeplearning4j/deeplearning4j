@@ -99,6 +99,8 @@ public final class SdxTextGenerationConfig {
         }
         putStrings(io, "kvKeyInputs", kv.keyInputs);
         putStrings(io, "kvValueInputs", kv.valueInputs);
+        putKvShapeTemplates(graph, io, "kvKeyShapes", kv.keyInputs);
+        putKvShapeTemplates(graph, io, "kvValueShapes", kv.valueInputs);
         putStrings(io, "prefillKeyOutputs", kv.keyOutputs);
         putStrings(io, "prefillValueOutputs", kv.valueOutputs);
 
@@ -284,6 +286,25 @@ public final class SdxTextGenerationConfig {
                     + inputName);
         }
         return Arrays.copyOf(shape, shape.length);
+    }
+
+    private static void putKvShapeTemplates(
+            SameDiff graph, ObjectNode io, String field, List<String> inputNames)
+            throws IOException {
+        ArrayNode shapes = io.putArray(field);
+        for (String inputName : inputNames) {
+            SDVariable variable = graph.getVariable(inputName);
+            long[] shape = variable == null ? null : variable.getShape();
+            if (shape == null || shape.length != 4 || shape[2] <= 0 || shape[3] <= 0) {
+                throw new IOException("Could not derive a BSHD KV shape template for "
+                        + inputName);
+            }
+            ArrayNode shapeNode = shapes.addArray();
+            shapeNode.add(1L);
+            shapeNode.add(-1L);
+            shapeNode.add(shape[2]);
+            shapeNode.add(shape[3]);
+        }
     }
 
     private static boolean positiveShape(long[] shape) {

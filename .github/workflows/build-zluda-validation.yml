@@ -32,7 +32,7 @@ on:
         type: choice
         options:
           - nd4j-cuda-12.9
-          - nd4j-cuda-12.6
+          - nd4j-cuda-12.9
 
       zludaVersion:
         description: 'ZLUDA release tag to validate from vosen/ZLUDA (v7-preview.8 or v6)'

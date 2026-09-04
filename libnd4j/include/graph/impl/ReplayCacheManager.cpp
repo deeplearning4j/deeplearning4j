@@ -8,10 +8,15 @@
 #endif
 
 #include <algorithm>
+#include <cerrno>
+#include <chrono>
+#include <cctype>
 #include <cstdint>
 #include <cstring>
 #include <ctime>
+#include <cstdlib>
 #include <fstream>
+#include <limits>
 #include <mutex>
 #include <sstream>
 
@@ -47,6 +52,147 @@ namespace fs = std::filesystem;
 
 namespace sd {
 namespace graph {
+
+namespace {
+
+constexpr int kReplayCacheMetadataSchema = 1;
+constexpr size_t kMaxReplayCacheMetadataBytes = 64 * 1024;
+
+bool isLowerHex64(const std::string& value) {
+  if (value.size() != 64) return false;
+  return std::all_of(value.begin(), value.end(), [](unsigned char c) {
+    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
+  });
+}
+
+bool isSafeMetadataText(const std::string& value, size_t maxLength = 256) {
+  if (value.empty() || value.size() > maxLength) return false;
+  return std::all_of(value.begin(), value.end(), [](unsigned char c) {
+    return std::isalnum(c) || c == ' ' || c == '_' || c == '-' || c == '.' || c == ':';
+  });
+}
+
+bool extractJsonString(const std::string& content, const std::string& field,
+                       std::string& value) {
+  const std::string marker = "\"" + field + "\":\"";
+  auto begin = content.find(marker);
+  if (begin == std::string::npos) return false;
+  begin += marker.size();
+  auto end = content.find('"', begin);
+  if (end == std::string::npos) return false;
+  value = content.substr(begin, end - begin);
+  return value.find('\\') == std::string::npos;
+}
+
+bool extractJsonLong(const std::string& content, const std::string& field,
+                     LongType& value) {
+  const std::string marker = "\"" + field + "\":";
+  auto begin = content.find(marker);
+  if (begin == std::string::npos) return false;
+  begin += marker.size();
+  char* end = nullptr;
+  errno = 0;
+  const long long parsed = std::strtoll(content.c_str() + begin, &end, 10);
+  if (errno != 0 || end == content.c_str() + begin) return false;
+  value = static_cast<LongType>(parsed);
+  return true;
+}
+
+bool extractJsonInt(const std::string& content, const std::string& field,
+                    int& value) {
+  LongType parsed = 0;
+  if (!extractJsonLong(content, field, parsed) ||
+      parsed < std::numeric_limits<int>::min() ||
+      parsed > std::numeric_limits<int>::max()) {
+    return false;
+  }
+  value = static_cast<int>(parsed);
+  return true;
+}
+
+bool extractJsonBool(const std::string& content, const std::string& field,
+                     bool& value) {
+  const std::string marker = "\"" + field + "\":";
+  auto begin = content.find(marker);
+  if (begin == std::string::npos) return false;
+  begin += marker.size();
+  if (content.compare(begin, 4, "true") == 0) {
+    value = true;
+    return true;
+  }
+  if (content.compare(begin, 5, "false") == 0) {
+    value = false;
+    return true;
+  }
+  return false;
+}
+
+bool validateEntry(const ReplayCacheEntry& entry) {
+  return entry.schemaVersion == kReplayCacheMetadataSchema &&
+         entry.cacheKey != 0 && isLowerHex64(entry.artifactIdentity) &&
+         isLowerHex64(entry.modelKey) && entry.startSlot >= 0 &&
+         entry.endSlot >= entry.startSlot && entry.shapeKey != 0 &&
+         isSafeMetadataText(entry.backendName) &&
+         isSafeMetadataText(entry.backendCacheAbi) &&
+         isLowerHex64(entry.deviceFingerprint) && entry.timestamp > 0 &&
+         entry.numCaptureBuffers >= 0;
+}
+
+bool parseEntry(const std::string& content, ReplayCacheEntry& entry) {
+  LongType workspaceHint = 0;
+  LongType timestamp = 0;
+  if (!extractJsonInt(content, "schemaVersion", entry.schemaVersion) ||
+      !extractJsonLong(content, "cacheKey", entry.cacheKey) ||
+      !extractJsonString(content, "artifactIdentity", entry.artifactIdentity) ||
+      !extractJsonString(content, "modelKey", entry.modelKey) ||
+      !extractJsonInt(content, "startSlot", entry.startSlot) ||
+      !extractJsonInt(content, "endSlot", entry.endSlot) ||
+      !extractJsonLong(content, "shapeKey", entry.shapeKey) ||
+      !extractJsonString(content, "backendName", entry.backendName) ||
+      !extractJsonString(content, "backendCacheAbi", entry.backendCacheAbi) ||
+      !extractJsonString(content, "deviceFingerprint", entry.deviceFingerprint) ||
+      !extractJsonLong(content, "workspaceHint", workspaceHint) ||
+      !extractJsonInt(content, "numCaptureBuffers", entry.numCaptureBuffers) ||
+      !extractJsonLong(content, "timestamp", timestamp) ||
+      !extractJsonBool(content, "deviceCachingConfigured",
+                       entry.deviceCachingConfigured) ||
+      workspaceHint < 0 || timestamp <= 0) {
+    return false;
+  }
+  entry.workspaceHint = static_cast<size_t>(workspaceHint);
+  entry.timestamp = static_cast<int64_t>(timestamp);
+  return validateEntry(entry);
+}
+
+std::string serializeEntry(const ReplayCacheEntry& entry) {
+  std::ostringstream output;
+  output << "{\n"
+         << "\"schemaVersion\":" << entry.schemaVersion << ",\n"
+         << "\"cacheKey\":" << entry.cacheKey << ",\n"
+         << "\"artifactIdentity\":\"" << entry.artifactIdentity << "\",\n"
+         << "\"modelKey\":\"" << entry.modelKey << "\",\n"
+         << "\"startSlot\":" << entry.startSlot << ",\n"
+         << "\"endSlot\":" << entry.endSlot << ",\n"
+         << "\"shapeKey\":" << entry.shapeKey << ",\n"
+         << "\"backendName\":\"" << entry.backendName << "\",\n"
+         << "\"backendCacheAbi\":\"" << entry.backendCacheAbi << "\",\n"
+         << "\"deviceFingerprint\":\"" << entry.deviceFingerprint << "\",\n"
+         << "\"workspaceHint\":" << entry.workspaceHint << ",\n"
+         << "\"numCaptureBuffers\":" << entry.numCaptureBuffers << ",\n"
+         << "\"timestamp\":" << entry.timestamp << ",\n"
+         << "\"deviceCachingConfigured\":"
+         << (entry.deviceCachingConfigured ? "true" : "false") << "\n}\n";
+  return output.str();
+}
+
+bool isSafeNamespace(const std::string& value) {
+  return !value.empty() && value.size() <= 64 &&
+         std::all_of(value.begin(), value.end(), [](unsigned char c) {
+           return std::isalnum(c) || c == '_' || c == '-' || c == '.';
+         });
+}
+
+}  // namespace
 
 // ── ReplayCacheDeviceKey ──
 
@@ -161,6 +307,7 @@ bool ReplayCacheManager::isEnabled() const {
 }
 
 std::string ReplayCacheManager::getCacheDir() const {
+  std::lock_guard<std::mutex> lock(mutex_);
   return cacheDir_;
 }
 
@@ -168,76 +315,201 @@ std::string ReplayCacheManager::getDeviceCacheDir(const ReplayCacheDeviceKey& de
   return cacheDir_ + "/" + device.toString();
 }
 
+bool ReplayCacheManager::configureCacheRoot(const std::string& cacheRoot) {
+  if (cacheRoot.empty()) return false;
+  std::lock_guard<std::mutex> lock(mutex_);
+#if HAS_FILESYSTEM
+  const std::string normalized = fs::path(cacheRoot).lexically_normal().string();
+#else
+  const std::string normalized = cacheRoot;
+#endif
+  if (normalized == cacheDir_) {
+    cacheRootSealed_ = true;
+    return true;
+  }
+  // A process may host multiple plans, but every plan must share one cache root.
+  // Once any device namespace has been observed, redirecting later publications
+  // would separate metadata from the opaque driver artifact it describes.
+  if (cacheRootSealed_) return false;
+  cacheDir_ = normalized;
+  cacheRootSealed_ = true;
+  cacheHits_ = 0;
+  cacheMisses_ = 0;
+  return true;
+}
+
+std::string ReplayCacheManager::getOrCreateBackendCacheDir(
+    const ReplayCacheDeviceKey& device, const std::string& backendNamespace) {
+  if (!enabled_ || !isSafeNamespace(backendNamespace)) return "";
+#if HAS_FILESYSTEM
+  try {
+    std::lock_guard<std::mutex> lock(mutex_);
+    cacheRootSealed_ = true;
+    const fs::path directory =
+        fs::path(getDeviceCacheDir(device)) / "artifacts" / backendNamespace;
+    fs::create_directories(directory);
+    if (fs::is_symlink(directory) || !fs::is_directory(directory)) return "";
+    return directory.string();
+  } catch (...) {
+    return "";
+  }
+#else
+  return "";
+#endif
+}
+
 int ReplayCacheManager::loadAllForDevice(const ReplayCacheDeviceKey& device) {
   if (!enabled_) return 0;
 
 #if HAS_FILESYSTEM
   try {
-    std::string dir = getDeviceCacheDir(device);
-    if (!fs::exists(dir)) return 0;
-
     int count = 0;
     std::lock_guard<std::mutex> lock(mutex_);
+    cacheRootSealed_ = true;
+    std::string dir = getDeviceCacheDir(device);
+    if (!fs::exists(dir)) return 0;
     std::string deviceKey = device.toString();
+    if (loadedDeviceKeys_.find(deviceKey) != loadedDeviceKeys_.end()) return 0;
     auto& entries = deviceCaches_[deviceKey];
 
-    for (const auto& entry : fs::directory_iterator(dir)) {
-      if (entry.path().extension() == ".meta") {
-        // Simple JSON parsing - read file and extract fields
-        std::ifstream file(entry.path());
+    for (const auto& diskEntry : fs::directory_iterator(dir)) {
+      try {
+        if (diskEntry.path().extension() != ".meta" ||
+            fs::is_symlink(diskEntry.path()) ||
+            !fs::is_regular_file(diskEntry.path()) ||
+            fs::file_size(diskEntry.path()) == 0 ||
+            fs::file_size(diskEntry.path()) > kMaxReplayCacheMetadataBytes) {
+          continue;
+        }
+        std::ifstream file(diskEntry.path(), std::ios::binary);
         if (!file.is_open()) continue;
-
         std::string content((std::istreambuf_iterator<char>(file)),
                             std::istreambuf_iterator<char>());
-
         ReplayCacheEntry cacheEntry;
-        // Basic JSON field extraction
-        auto extractLong = [&](const std::string& field) -> LongType {
-          auto pos = content.find("\"" + field + "\":");
-          if (pos == std::string::npos) return 0;
-          pos = content.find(':', pos) + 1;
-          return std::stoll(content.substr(pos));
-        };
-        auto extractInt = [&](const std::string& field) -> int {
-          auto pos = content.find("\"" + field + "\":");
-          if (pos == std::string::npos) return 0;
-          pos = content.find(':', pos) + 1;
-          return std::stoi(content.substr(pos));
-        };
-        auto extractString = [&](const std::string& field) -> std::string {
-          auto pos = content.find("\"" + field + "\":\"");
-          if (pos == std::string::npos) return "";
-          pos = content.find(":\"", pos) + 2;
-          auto end = content.find("\"", pos);
-          return content.substr(pos, end - pos);
-        };
-
-        cacheEntry.cacheKey = extractLong("cacheKey");
-        cacheEntry.startSlot = extractInt("startSlot");
-        cacheEntry.endSlot = extractInt("endSlot");
-        cacheEntry.shapeKey = extractLong("shapeKey");
-        cacheEntry.backendName = extractString("backendName");
-        cacheEntry.workspaceHint = static_cast<size_t>(extractLong("workspaceHint"));
-        cacheEntry.numCaptureBuffers = extractInt("numCaptureBuffers");
-        cacheEntry.timestamp = extractLong("timestamp");
-
-        // Check for duplicates
-        bool found = false;
-        for (const auto& e : entries) {
-          if (e.cacheKey == cacheEntry.cacheKey) { found = true; break; }
+        const std::string metadataName = diskEntry.path().filename().string();
+        if (!parseEntry(content, cacheEntry) ||
+            (metadataName != cacheEntry.artifactIdentity + ".meta" &&
+             metadataName.rfind(cacheEntry.artifactIdentity + ".", 0) != 0)) {
+          continue;
         }
-        if (!found) {
-          entries.push_back(cacheEntry);
+        auto found = std::find_if(
+            entries.begin(), entries.end(), [&](const ReplayCacheEntry& existing) {
+              return existing.artifactIdentity == cacheEntry.artifactIdentity;
+            });
+        if (found == entries.end()) {
+          entries.push_back(std::move(cacheEntry));
           count++;
         }
+      } catch (...) {
+        // One malformed or concurrently replaced entry must not hide valid peers.
       }
     }
+    loadedDeviceKeys_.insert(deviceKey);
     return count;
   } catch (...) {
     return 0;
   }
 #else
   return 0;
+#endif
+}
+
+bool ReplayCacheManager::findEntry(const ReplayCacheDeviceKey& device,
+                                   const std::string& artifactIdentity,
+                                   ReplayCacheEntry* entry) {
+  if (!enabled_ || !isLowerHex64(artifactIdentity)) return false;
+  loadAllForDevice(device);
+  std::lock_guard<std::mutex> lock(mutex_);
+  auto cache = deviceCaches_.find(device.toString());
+  if (cache != deviceCaches_.end()) {
+    auto found = std::find_if(
+        cache->second.begin(), cache->second.end(),
+        [&](const ReplayCacheEntry& candidate) {
+          return candidate.artifactIdentity == artifactIdentity;
+        });
+    if (found != cache->second.end()) {
+      if (entry != nullptr) *entry = *found;
+      cacheHits_++;
+      return true;
+    }
+  }
+  cacheMisses_++;
+  return false;
+}
+
+bool ReplayCacheManager::saveEntry(const ReplayCacheDeviceKey& device,
+                                   const ReplayCacheEntry& entry) {
+  if (!enabled_ || !validateEntry(entry)) return false;
+#if HAS_FILESYSTEM
+  try {
+    std::lock_guard<std::mutex> lock(mutex_);
+    cacheRootSealed_ = true;
+    const fs::path directory(getDeviceCacheDir(device));
+    fs::create_directories(directory);
+    if (fs::is_symlink(directory) || !fs::is_directory(directory)) return false;
+    auto& entries = deviceCaches_[device.toString()];
+    auto found = std::find_if(
+        entries.begin(), entries.end(), [&](const ReplayCacheEntry& existing) {
+          return existing.artifactIdentity == entry.artifactIdentity;
+        });
+    if (found != entries.end()) {
+      // Metadata identities are immutable. A candidate already loaded from disk
+      // describes the same opaque artifact and must not be replaced in place.
+      return true;
+    }
+    const auto nonce = std::chrono::steady_clock::now().time_since_epoch().count();
+    fs::path reservation;
+    std::string immutableSuffix;
+    for (int attempt = 0; attempt < 1024; ++attempt) {
+      immutableSuffix = std::to_string(static_cast<long long>(nonce)) + "." +
+                        std::to_string(attempt);
+      reservation = directory / (".immutable." + entry.artifactIdentity + "." +
+                                   immutableSuffix);
+      std::error_code reservationError;
+      if (fs::create_directory(reservation, reservationError)) break;
+      reservation.clear();
+    }
+    if (reservation.empty()) return false;
+    const fs::path destination = directory /
+        (entry.artifactIdentity + "." + immutableSuffix + ".meta");
+    const fs::path temporary = reservation / "metadata.tmp";
+    {
+      std::ofstream output(temporary, std::ios::binary | std::ios::trunc);
+      if (!output.is_open()) {
+        fs::remove(reservation);
+        return false;
+      }
+      output << serializeEntry(entry);
+      output.flush();
+      if (!output.good()) {
+        output.close();
+        fs::remove(temporary);
+        fs::remove(reservation);
+        return false;
+      }
+    }
+    std::error_code renameError;
+    fs::rename(temporary, destination, renameError);
+    if (renameError) {
+      std::error_code cleanupError;
+      fs::remove(temporary, cleanupError);
+      fs::remove(reservation, cleanupError);
+      return false;
+    }
+    // The atomic rename publishes the immutable metadata outside the reservation.
+    // Remove the now-empty reservation directory on success as well; otherwise
+    // every cache insertion leaks one .immutable.* directory indefinitely.
+    std::error_code reservationCleanupError;
+    fs::remove(reservation, reservationCleanupError);
+
+    entries.push_back(entry);
+    loadedDeviceKeys_.insert(device.toString());
+    return true;
+  } catch (...) {
+    return false;
+  }
+#else
+  return false;
 #endif
 }
 
@@ -259,7 +531,10 @@ std::vector<ReplayCacheDeviceKey> ReplayCacheManager::getCachedDevices() const {
         else if (typeStr == "cuda") key.type = DeviceType::CUDA_GPU;
         else if (typeStr == "metal") key.type = DeviceType::METAL_GPU;
         else if (typeStr == "vulkan") key.type = DeviceType::VULKAN_GPU;
-        else key.type = DeviceType::CPU;
+        else if (typeStr == "opencl") key.type = DeviceType::OPENCL_GPU;
+        else if (typeStr == "tpu") key.type = DeviceType::TPU;
+        else if (typeStr == "accel") key.type = DeviceType::ACCELERATOR;
+        else continue;
         key.localIndex = std::stoi(deviceKeyStr.substr(pos1 + 1, pos2 - pos1 - 1));
         key.archId = deviceKeyStr.substr(pos2 + 1);
         result.push_back(key);
@@ -281,6 +556,7 @@ int ReplayCacheManager::getDeviceCacheEntryCount(const ReplayCacheDeviceKey& dev
 void ReplayCacheManager::clearDevice(const ReplayCacheDeviceKey& device) {
   std::lock_guard<std::mutex> lock(mutex_);
   deviceCaches_.erase(device.toString());
+  loadedDeviceKeys_.erase(device.toString());
 
 #if HAS_FILESYSTEM
   try {
@@ -356,6 +632,7 @@ std::vector<ReplayCacheDeviceKey> ReplayCacheManager::discoverCurrentDevices() c
 void ReplayCacheManager::clearAll() {
   std::lock_guard<std::mutex> lock(mutex_);
   deviceCaches_.clear();
+  loadedDeviceKeys_.clear();
   cacheHits_ = 0;
   cacheMisses_ = 0;
 

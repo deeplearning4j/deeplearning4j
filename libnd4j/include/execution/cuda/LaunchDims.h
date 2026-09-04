@@ -88,10 +88,6 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define BLOCK_SIZE_MATRIX_BAND getEnvVariable("BLOCK_SIZE_MATRIX_BAND", 512)
 #define SHARED_MEM_SIZE_MATRIX_BAND getEnvVariable("SHARED_MEM_SIZE_MATRIX_BAND", 8192)
 
-#define GRID_SIZE_LUP getEnvVariable("GRID_SIZE_LUP", 256)
-#define BLOCK_SIZE_LUP getEnvVariable("BLOCK_SIZE_LUP", 256)
-#define SHARED_MEM_SIZE_LUP getEnvVariable("SHARED_MEM_SIZE_LUP", 256)
-
 #define GRID_SIZE_ISMAX getEnvVariable("GRID_SIZE_ISMAX", 256)
 #define BLOCK_SIZE_ISMAX getEnvVariable("BLOCK_SIZE_ISMAX", 256)
 #define SHARED_MEM_SIZE_ISMAX getEnvVariable("SHARED_MEM_SIZE_ISMAX", 16384)
@@ -101,21 +97,9 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define BLOCK_SIZE_ISMAX_FILL getEnvVariable("BLOCK_SIZE_ISMAXBLOCK_SIZE_ISMAX_FILL", 512)
 #define SHARED_MEM_SIZE_ISMAX_FILL getEnvVariable("SHARED_MEM_SIZE_ISMAXSHARED_MEM_SIZE_ISMAX_FILL", 1024)
 
-#define GRID_SIZE_IMAGE_RESIZE getEnvVariable("GRID_SIZE_IMAGE_RESIZE", 256)
-#define BLOCK_SIZE_IMAGE_RESIZE getEnvVariable("BLOCK_SIZE_IMAGE_RESIZE", 256)
-#define SHARED_MEM_SIZE_IMAGE_RESIZE getEnvVariable("SHARED_MEM_SIZE_IMAGE_RESIZE", 256)
-
 #define GRID_SIZE_DIAG getEnvVariable("GRID_SIZE_DIAG", 256)
 #define BLOCK_SIZE_DIAG getEnvVariable("BLOCK_SIZE_DIAG", 256)
 #define SHARED_MEM_SIZE_DIAG getEnvVariable("SHARED_MEM_SIZE_DIAG", 256)
-
-#define GRID_SIZE_CONFUSION_MATRIX getEnvVariable("GRID_SIZE_CONFUSION_MATRIX", 32)
-#define BLOCK_SIZE_CONFUSION_MATRIX getEnvVariable("BLOCK_SIZE_CONFUSION_MATRIX", 32)
-#define SHARED_MEM_SIZE_CONFUSION_MATRIX getEnvVariable("SHARED_MEM_SIZE_CONFUSION_MATRIX", 1024)
-
-#define GRID_SIZE_TILE getEnvVariable("GRID_SIZE_TILE", 256)
-#define BLOCK_SIZE_TILE getEnvVariable("BLOCK_SIZE_TILE", 512)
-#define SHARED_MEM_SIZE_TILE getEnvVariable("SHARED_MEM_SIZE_TILE", 8192)
 
 #define GRID_SIZE_DIAGONAL getEnvVariable("GRID_SIZE_DIAGONAL", 256)
 #define BLOCK_SIZE_DIAGONAL getEnvVariable("BLOCK_SIZE_DIAGONAL", 512)
@@ -278,14 +262,6 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define BLOCK_SIZE_UPSAMPLING getEnvVariable("BLOCK_SIZE_UPSAMPLING", 512)
 #define SHARED_MEM_SIZE_UPSAMPLING getEnvVariable("SHARED_MEM_SIZE_UPSAMPLING", 8192)
 
-
-#define GRID_SIZE_UPSAMPLING getEnvVariable("GRID_SIZE_PRELU", 256)
-#define BLOCK_SIZE_UPSAMPLING getEnvVariable("BLOCK_SIZE_PRELU", 512)
-#define SHARED_MEM_SIZE_UPSAMPLING getEnvVariable("SHARED_MEM_SIZE_PRELU", 512)
-
-#define GRID_SIZE_UPSAMPLING getEnvVariable("GRID_SIZE_ADJUST", 256)
-#define BLOCK_SIZE_UPSAMPLING getEnvVariable("BLOCK_SIZE_ADJUST", 512)
-#define SHARED_MEM_SIZE_UPSAMPLING getEnvVariable("SHARED_MEM_SIZE_ADJUST", 512)
 
 #define GRID_SIZE_BATCHNORM getEnvVariable("GRID_SIZE_BATCHNORM", 256)
 #define BLOCK_SIZE_BATCHNORM getEnvVariable("BLOCK_SIZE_BATCHNORM", 512)
@@ -463,11 +439,6 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define BLOCK_SIZE_LSTSQ_REG getEnvVariable("BLOCK_SIZE_LSTSQ_REG",256)
 #define SHARED_MEM_SIZE_LSTSQ_REG getEnvVariable("SHARED_MEM_SIZE_LSTSQ_REG", 128)
 
-#define GRID_SIZE_LUP getEnvVariable("GRID_SIZE_LUP", 256)
-#define GRID_SIZE_LUP getEnvVariable("GRID_SIZE_LUP",256)
-#define SHARED_MEM_SIZE_LUP getEnvVariable("SHARED_MEM_SIZE_LUP", 512)
-
-
 #define GRID_SIZE_LUP_LOW getEnvVariable("GRID_SIZE_LUP_LOW", 256)
 #define BLOCK_SIZE_LUP_LOW getEnvVariable("BLOCK_SIZE_LUP_LOW",256)
 #define SHARED_MEM_SIZE_LUP_LOW getEnvVariable("SHARED_MEM_SIZE_LUP_LOW", 512)
@@ -637,10 +608,6 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define BLOCK_SIZE_UNSORTEDSEGMENT_PROD_2 getEnvVariable("BLOCK_SIZE_UNSORTEDSEGMENT_PROD_2",256)
 #define SHARED_MEM_SIZE_UNSORTEDSEGMENT_PROD_2 getEnvVariable("SHARED_MEM_SIZE_UNSORTEDSEGMENT_PROD_2", 256)
 
-#define GRID_SIZE_SOLVE getEnvVariable("GRID_SIZE_SOLVE", 128)
-#define BLOCK_SIZE_SOLVE getEnvVariable("BLOCK_SIZE_SOLVE",256)
-#define SHARED_MEM_SIZE_SOLVE getEnvVariable("SHARED_MEM_SIZE_SOLVE", 256)
-
 #define GRID_SIZE_SRU_BI getEnvVariable("GRID_SIZE_SRU_BI", 128)
 #define BLOCK_SIZE_SRU_BI getEnvVariable("BLOCK_SIZE_SRU_BI",256)
 #define SHARED_MEM_SIZE_SRU_BI getEnvVariable("SHARED_MEM_SIZE_SRU_BI", 256)
@@ -700,7 +667,7 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 
 #define GRID_SIZE_AVG_POOLING getEnvVariable("GRID_SIZE_AVG_POOLING", 512)
 #define BLOCK_SIZE_AVG_POOLING getEnvVariable("BLOCK_SIZE_AVG_POOLING",512)
-#define SHARED_MEM_SIZE_POOLING getEnvVariable("SHARED_MEM_SIZE_POOLING", 4192)
+#define SHARED_MEM_SIZE_AVG_POOLING getEnvVariable("SHARED_MEM_SIZE_AVG_POOLING", 4192)
 
 // Grid, block, and shared memory size definitions using environment variables
 #define GRID_SIZE_MMUL getEnvVariable("GRID_SIZE_MMUL", 256)

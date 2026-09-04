@@ -289,6 +289,20 @@ class QLoRAConversionOptionsTest {
         return buffer.array();
     }
 
+    private File createTinyQ5KGGUFFile() throws IOException {
+        File file = tempDir.resolve("tiny_q5_k_mixed.gguf").toFile();
+        try (GGUFWriter writer = new GGUFWriter(file, 2)) {
+            writer.addMetadataString("general.architecture", "generic");
+            writer.registerTensor("blk.0.attn_q.weight", new long[]{256, 2},
+                    GGMLDataType.GGML_TYPE_Q5_K);
+            writer.writeHeader();
+            // Q5_K: 176 bytes per 256-element row, two rows.
+            writer.writeTensorData("blk.0.attn_q.weight", new byte[352]);
+            writer.finalizeFile();
+        }
+        return file;
+    }
+
     private static short fp32ToFp16(float value) {
         int bits = Float.floatToIntBits(value);
         int sign = (bits >>> 16) & 0x8000;
@@ -458,6 +472,21 @@ class QLoRAConversionOptionsTest {
         assertArrayEquals(new long[]{32L, 4L}, dense.shape());
         assertNull(sd.getVariable("blk_0_ssm_conv_weight___q__"),
                 "Dense fallback weights must not receive packed qmatmul metadata");
+    }
+
+    @Test
+    @DisplayName("runtime quantized matmul dequantizes unsupported Q5_K linear weights")
+    void testRuntimeQuantizedMatmulDequantizesUnsupportedQ5K()
+            throws IOException, GGMLImportException {
+        try (SameDiff graph = GGMLModelImport.importModel(
+                createTinyQ5KGGUFFile(), ConversionOptions.runtimeQuantizedMatmul())) {
+            INDArray dense = graph.getVariable("blk_0_attn_q_weight").getArr();
+            assertNotNull(dense);
+            assertNotEquals(DataType.INT8, dense.dataType());
+            assertArrayEquals(new long[]{2L, 256L}, dense.shape());
+            assertNull(graph.getVariable("blk_0_attn_q_weight___q__"),
+                    "Unsupported packed types must not receive qmatmul metadata");
+        }
     }
 
     @Test

@@ -31,8 +31,10 @@
 #include <graph/GraphBackendResolver.h>
 #include <graph/ModeContract.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspPhaseUtils.h>
 #include <graph/DspSegmentLifecycle.h>
 #include <graph/gpu/DspCudaDispatch.h>
+#include <execution/LaunchContext.h>
 #include <system/op_boilerplate.h>
 #include <system/Environment.h>
 #include <config.h>
@@ -46,6 +48,21 @@
 
 namespace sd {
 namespace graph {
+
+namespace {
+
+Status gpuDispatchFailure(GraphSegment& seg, const std::string& detail) {
+  const std::string message =
+      detail + " [GPU graph segment " + std::to_string(seg.def.startSlot) +
+      "-" + std::to_string(seg.def.endSlot) + ", phase=" +
+      seg.exec.displayPhaseName() + "]";
+  auto* errorReference = LaunchContext::defaultContext()->errorReference();
+  errorReference->setErrorCode(static_cast<int>(Status::KERNEL_FAILURE));
+  errorReference->setErrorMessage(message);
+  return Status::KERNEL_FAILURE;
+}
+
+}  // namespace
 
 // File-level alias for the nested enum.
 using SegmentLifecycleState = GraphSegmentExec::SegmentLifecycleState;
@@ -130,32 +147,37 @@ void NativeDynamicShapePlan::dumpSegmentGraphState(const char* tag) const {
 // ═══════════════════════════════════════════════════════════════════════════════
 bool NativeDynamicShapePlan::hasCompositeHandles(const GraphSegment& seg) const {
   auto& sched = seg.exec.compositeReplaySchedule;
-  bool hasIslandUnits = false;
-  // Check merged replay handles — at least one merged group must be ready
-  for (auto& h : sched.mergedReplayHandles) {
-    if (h != nullptr && h->isReady()) return true;
-  }
-  // Fallback: check individual composite handles (backward compat)
+  if (sched.units.empty()) return false;
+  std::vector<bool> requiredMerged(sched.mergedReplayHandles.size(), false);
+  std::vector<bool> mergedLeader(sched.mergedReplayHandles.size(), false);
+  bool hasIsland = false;
   for (auto& u : sched.units) {
-    if (u.kind == REPLAY_UNIT_TRITON_ISLAND && u.mergedGroupId < 0) {
-      hasIslandUnits = true;
+    if (u.kind != REPLAY_UNIT_TRITON_ISLAND) continue;
+    hasIsland = true;
+    if (u.mergedGroupId >= 0) {
+      if (u.mergedGroupId >= static_cast<int>(requiredMerged.size())) return false;
+      requiredMerged[u.mergedGroupId] = true;
+      if (u.isMergedLeader) mergedLeader[u.mergedGroupId] = true;
+    } else {
       int idx = u.islandIndex;
-      if (idx >= 0 && idx < static_cast<int>(sched.compositeReplayHandles.size()) &&
-          sched.compositeReplayHandles[idx] != nullptr &&
-          sched.compositeReplayHandles[idx]->isReady()) {
-        return true;
-      }
-    } else if (u.kind == REPLAY_UNIT_TRITON_ISLAND) {
-      hasIslandUnits = true;
+      if (idx < 0 || idx >= static_cast<int>(sched.compositeReplayHandles.size()) ||
+          sched.compositeReplayHandles[idx] == nullptr ||
+          !sched.compositeReplayHandles[idx]->isReady()) return false;
     }
   }
-
-  // A sealed schedule with no islands is an intentional live-gap-only
-  // composite plan. It has no CUDA replay handles by construction: every unit
-  // executes live in program order. Treat it as replay-ready so it cannot fall
-  // through to monolithic capture and bake value-dependent range/create data.
-  if (!sched.units.empty() && !hasIslandUnits && seg.exec.segPhase.isSealed() &&
+  bool hasReadyGroup = false;
+  for (size_t group = 0; group < requiredMerged.size(); group++) {
+    if (!requiredMerged[group]) continue;
+    if (!mergedLeader[group] || sched.mergedReplayHandles[group] == nullptr ||
+        !sched.mergedReplayHandles[group]->isReady()) return false;
+    hasReadyGroup = true;
+  }
+  if (hasIsland || hasReadyGroup) return true;
+  if (seg.exec.segPhase.isSealed() &&
       seg.exec.replayUnitCount == static_cast<int>(sched.units.size())) {
+    for (const auto& unit : sched.units) {
+      if (unit.kind != REPLAY_UNIT_GAP || unit.mergedGroupId >= 0) return false;
+    }
     return true;
   }
   return false;
@@ -320,8 +342,9 @@ Status NativeDynamicShapePlan::runBoundedSegmentRebuildWarmup(
   }
   if (warmupStatus != Status::OK) {
     DSP_DIAG(COMPILE,
-             "bounded rebuild warmup FAILED for seg[%d-%d] reason=%s status=%d",
+             "bounded rebuild warmup FAILED for seg[%d-%d] reason=%s status=%s (%d)",
              seg.def.startSlot, seg.def.endSlot, reason ? reason : "?",
+             dsp::dspStatusName(warmupStatus),
              static_cast<int>(warmupStatus));
     return warmupStatus;
   }
@@ -332,6 +355,30 @@ Status NativeDynamicShapePlan::runBoundedSegmentRebuildWarmup(
            "bounded rebuild warmup OK for seg[%d-%d] reason=%s",
            seg.def.startSlot, seg.def.endSlot, reason ? reason : "?");
   return Status::OK;
+}
+
+Status NativeDynamicShapePlan::rebuildSegmentAfterPreLaunchReplayDrift(
+    GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream,
+    const char* reason) {
+  const SelectedBackend backendOwnership = seg.def.selectedBackend;
+  auto rebuildStatus = runBoundedSegmentRebuildWarmup(
+      seg, externalArrays, numExt, stream, reason);
+  if (rebuildStatus != Status::OK) return rebuildStatus;
+
+  if (backendOwnership != SelectedBackend::GRAPH_BACKEND) {
+    // Recorder-owned segments (for example DEVICE_REPLAY in CUDA_GRAPHS or an
+    // explicit fallback segment in AUTO) compile by capturing. The bounded warmup
+    // produced this invocation's outputs and left the segment ready for recapture.
+    return Status::OK;
+  }
+
+  LongType rebuiltShapeKey = computeSegmentShapeKey(
+      seg, externalArrays, numExt);
+  recordMidExecutionCompile(seg.def.startSlot, seg.def.endSlot, reason);
+  bool invocationSatisfiedByWarmup = false;
+  return segDispatchCompile(
+      seg, externalArrays, numExt, stream, rebuiltShapeKey,
+      invocationSatisfiedByWarmup);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -348,7 +395,9 @@ Status NativeDynamicShapePlan::segDispatchCompile(
     backend = resolvedCandidates.front();
   }
   if (backend == nullptr) {
-    return Status::KERNEL_FAILURE;
+    return gpuDispatchFailure(
+        seg,
+        "GPU graph compilation has no resolved or candidate backend for the requested mode");
   }
   const char* backendName = backend->name();
   bool shapeChangeWarmupCompleted = false;
@@ -536,10 +585,17 @@ Status NativeDynamicShapePlan::segDispatchCompile(
     }
 
     if (!lowering.succeeded()) {
-      lastCompileFailureDetail_ = cascadeFailures.empty()
-          ? "no resolver candidate admitted the segment"
-          : cascadeFailures;
-      return Status::KERNEL_FAILURE;
+      if (lowering.prerequisiteBlocked()) {
+        lastCompileFailureDetail_ =
+            std::string("compilation prerequisite missing for ") +
+            lowering.prerequisiteBlockedBackend->name() + ": " +
+            lowering.prerequisiteFailureReason;
+      } else {
+        lastCompileFailureDetail_ = cascadeFailures.empty()
+            ? "no resolver candidate admitted the segment"
+            : cascadeFailures;
+      }
+      return gpuDispatchFailure(seg, lastCompileFailureDetail_);
     }
     backend = lowering.backend;
     seg.setResolvedGraphBackend(backend, request);
@@ -590,7 +646,10 @@ Status NativeDynamicShapePlan::segDispatchCompile(
                       static_cast<uint32_t>(executeCount_),
                       static_cast<uint64_t>(Status::KERNEL_FAILURE));
       SegmentLifecycle::markFailed(seg.exec, "zero_compiled_ops", seg.def.startSlot, seg.def.endSlot);
-      return Status::KERNEL_FAILURE;
+      return gpuDispatchFailure(
+          seg, std::string(backendName) +
+                   " compilation audit reported zero compiled or native-handled operations; " +
+                   std::to_string(failedCount) + " operation(s) failed admission");
     }
     if (compiledCount == 0 && failedCount == 0) {
       DSP_DIAG(COMPILE, "%s: segment [%d-%d] has only native ordered sections (no Triton kernels needed, "
@@ -605,7 +664,11 @@ Status NativeDynamicShapePlan::segDispatchCompile(
                       static_cast<uint32_t>(executeCount_),
                       static_cast<uint64_t>(Status::KERNEL_FAILURE));
       SegmentLifecycle::markFailed(seg.exec, "partial_compile_failure", seg.def.startSlot, seg.def.endSlot);
-      return Status::KERNEL_FAILURE;
+      return gpuDispatchFailure(
+          seg, std::string(backendName) + " compilation audit was incomplete: compiled=" +
+                   std::to_string(compiledCount) + ", nativeHandled=" +
+                   std::to_string(nativeHandledCount) + ", failed=" +
+                   std::to_string(failedCount));
     }
     if (nativeHandledCount > 0) {
       DSP_DIAG(COMPILE, "%s: segment [%d-%d] mixed compile OK (compiled=%d nativeHandled=%d). "

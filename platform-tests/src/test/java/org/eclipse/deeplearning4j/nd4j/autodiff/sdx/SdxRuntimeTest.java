@@ -39,6 +39,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOps;
 
 import java.io.File;
+import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -410,6 +411,34 @@ public class SdxRuntimeTest extends BaseND4JTest {
     public void testLoadNonexistentFileReturnsNull() {
         Pointer handle = nativeOps.loadModelFromFile("/tmp/nonexistent-model-12345.sdz");
         assertNull(handle, "loadModelFromFile should return null for nonexistent file");
+    }
+
+    @Test
+    public void testLoadedPlaceholderShapeIsAvailableWithoutMaterializingArray() throws Exception {
+        SameDiff sd = SameDiff.create();
+        String kvName = "past_key_values.0.key";
+        SDVariable kv = sd.placeHolder(kvName, DataType.FLOAT, 1, -1, 2, 4);
+        sd.identity("output", kv);
+        File sdzFile = saveSdzToTemp(sd, "sdx-placeholder-shape-");
+
+        Pointer modelHandle = nativeOps.loadModelFromFile(sdzFile.getAbsolutePath());
+        assertNotNull(modelHandle, "loadModelFromFile should preserve placeholder metadata");
+        try {
+            Method shapeMethod = nativeOps.getClass().getMethod(
+                    "getLoadedModelVariableShape",
+                    Pointer.class, String.class, long[].class, int.class);
+            int rank = (Integer) shapeMethod.invoke(
+                    nativeOps, modelHandle, kvName, null, 0);
+            assertEquals(4, rank, "FlatVariable must retain the placeholder rank");
+            long[] shape = new long[rank];
+            int copiedRank = (Integer) shapeMethod.invoke(
+                    nativeOps, modelHandle, kvName, shape, shape.length);
+            assertEquals(rank, copiedRank);
+            assertArrayEquals(new long[]{1, -1, 2, 4}, shape,
+                    "Fixed-plan KV geometry must come from FlatVariable.shape");
+        } finally {
+            nativeOps.freeLoadedModel(modelHandle);
+        }
     }
 
 

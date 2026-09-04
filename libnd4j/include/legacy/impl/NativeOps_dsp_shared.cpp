@@ -86,6 +86,47 @@ void resetPlanMidExecutionCompileCount(sd::Pointer planHandle) {
   plan->resetMidExecutionCompileCount();
 }
 
+const char* getPlanLifecycleSnapshot(sd::Pointer planHandle) {
+  static thread_local std::string result;
+  if (planHandle == nullptr) {
+    result = "valid=false";
+    return result.c_str();
+  }
+
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  const auto& lifecycle = plan->planLifecycle();
+  const auto& segments = plan->getSegments();
+  int buildingSegments = 0;
+  int sealedSegments = 0;
+  int failedSegments = 0;
+  for (const auto& segment : segments) {
+    switch (segment.exec.graphNodePhase()) {
+      case sd::graph::GraphNodePhase::BUILDING:
+        ++buildingSegments;
+        break;
+      case sd::graph::GraphNodePhase::SEALED:
+        ++sealedSegments;
+        break;
+      case sd::graph::GraphNodePhase::FAILED:
+        ++failedSegments;
+        break;
+    }
+  }
+
+  result = "valid=true;planPhase=" + std::to_string(lifecycle.toLegacyCode()) +
+           ";graphNodePhase=" + std::to_string(static_cast<int>(lifecycle.phase)) +
+           ";buildStage=" + std::to_string(static_cast<int>(lifecycle.buildStage)) +
+           ";executionCount=" + std::to_string(plan->getExecuteCount()) +
+           ";postFreezeExecutionCount=" + std::to_string(lifecycle.postFreezeExecCount) +
+           ";pointersStableCount=" + std::to_string(lifecycle.pointersStableCount) +
+           ";compilationDone=" + (lifecycle.compilationDone ? "true" : "false") +
+           ";segmentCount=" + std::to_string(static_cast<int>(segments.size())) +
+           ";buildingSegments=" + std::to_string(buildingSegments) +
+           ";sealedSegments=" + std::to_string(sealedSegments) +
+           ";failedSegments=" + std::to_string(failedSegments);
+  return result.c_str();
+}
+
 sd::Pointer loadModelFromFile(const char* filePath) {
   return loadModelFromFileWithOptions(filePath, false);
 }
@@ -177,6 +218,36 @@ OpaqueNDArray getLoadedModelVariable(sd::Pointer modelHandle,
   auto* handle = reinterpret_cast<LoadedModelHandle*>(modelHandle);
   auto it = handle->model.variables.find(variableName);
   return it == handle->model.variables.end() ? nullptr : it->second;
+}
+
+int getLoadedModelVariableShape(sd::Pointer modelHandle,
+                                const char* variableName,
+                                sd::LongType* dimensions,
+                                int maxRank) {
+  if (modelHandle == nullptr || variableName == nullptr || maxRank < 0) return -1;
+  auto* handle = reinterpret_cast<LoadedModelHandle*>(modelHandle);
+  const auto* graph = handle->model.graph;
+  const auto* variables = graph == nullptr ? nullptr : graph->variables();
+  if (variables == nullptr) return -1;
+
+  for (unsigned int index = 0; index < variables->size(); ++index) {
+    const auto* variable = variables->Get(index);
+    if (variable == nullptr || variable->name() == nullptr ||
+        variable->name()->str() != variableName) {
+      continue;
+    }
+    const auto* shape = variable->shape();
+    if (shape == nullptr || shape->size() == 0) return -1;
+    const int rank = static_cast<int>(shape->size());
+    if (dimensions != nullptr) {
+      if (maxRank < rank) return -1;
+      for (int axis = 0; axis < rank; ++axis) {
+        dimensions[axis] = static_cast<sd::LongType>(shape->Get(axis));
+      }
+    }
+    return rank;
+  }
+  return -1;
 }
 
 sd::Pointer compileModelPlan(sd::Pointer modelHandle,

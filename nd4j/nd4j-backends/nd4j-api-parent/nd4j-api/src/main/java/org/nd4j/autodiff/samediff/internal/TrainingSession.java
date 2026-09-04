@@ -91,6 +91,28 @@ public class TrainingSession extends InferenceSession {
         super(sameDiff);
     }
 
+    private static void closeOwnedGradient(INDArray gradient) {
+        if (gradient != null && !gradient.wasClosed()) gradient.close();
+    }
+
+    private static void closeOwnedGradients(Map<String, INDArray> gradients) {
+        if (gradients == null) return;
+        for (INDArray gradient : gradients.values()) closeOwnedGradient(gradient);
+        gradients.clear();
+    }
+
+    private void discardAccumulatedGradients() {
+        closeOwnedGradients(accumulatedGradients);
+        accumulatedGradients = null;
+        accumulationStep = 0;
+    }
+
+    @Override
+    public void closePooledResources() {
+        discardAccumulatedGradients();
+        super.closePooledResources();
+    }
+
     @Override
     protected Collection<String> dspMutableExternalInputNames() {
         if (gradVarToVarMap == null || gradVarToVarMap.isEmpty()) {
@@ -467,7 +489,7 @@ public class TrainingSession extends InferenceSession {
      */
     private void commitAndTrimAfterDspStep() {
         dspStepCount++;
-        DynamicShapePlanExecutor dspExec = dynamicShapePlanExecutorTl.get();
+        DynamicShapePlanExecutor dspExec = dynamicShapePlanExecutor;
         boolean frozen = dspExec != null && dspExec.isShapesFrozen();
 
         boolean shouldTrim = !frozen || dspStepCount <= 2 || (dspStepCount % TRIM_INTERVAL == 0);
@@ -519,6 +541,7 @@ public class TrainingSession extends InferenceSession {
                     log.debug("Gradient overflow detected for variable '{}' during collection", varName);
                     currentIterationOverflow = true;
                     skipped++;
+                    closeOwnedGradient(gradCopy);
                     continue;
                 }
             }
@@ -559,6 +582,7 @@ public class TrainingSession extends InferenceSession {
                 if (!lossScaler.areGradientsFinite(gradCopy)) {
                     log.debug("Gradient overflow detected for variable '{}' during DSP collection", varName);
                     currentIterationOverflow = true;
+                    closeOwnedGradient(gradCopy);
                     continue;
                 }
             }
@@ -582,26 +606,40 @@ public class TrainingSession extends InferenceSession {
             // Callers (collectGradientsFromResults / collectGradientsFromDsp) already dup'd them,
             // so no second dup is needed here — we just own the map.
             accumulatedGradients = new LinkedHashMap<>(collected);
+            collected.clear();
             return;
         }
-        // Subsequent micro-batches: add in-place
+        // Validate every overlapping shape before mutating either owner map. On a
+        // mismatch, release the complete prior cycle and transfer this micro-batch.
         for (Map.Entry<String, INDArray> e : collected.entrySet()) {
             INDArray existing = accumulatedGradients.get(e.getKey());
-            if (existing == null) {
-                // New gradient variable appeared mid-cycle (shouldn't happen, be safe)
-                accumulatedGradients.put(e.getKey(), e.getValue().dup());
-            } else if (!java.util.Arrays.equals(existing.shape(), e.getValue().shape())) {
+            if (existing != null && !java.util.Arrays.equals(existing.shape(), e.getValue().shape())) {
                 log.warn("Gradient shape changed mid-accumulation for '{}': expected {} got {}. " +
-                         "Clearing accumulated state and restarting accumulation cycle.",
+                                "Clearing accumulated state and restarting accumulation cycle.",
                         e.getKey(), java.util.Arrays.toString(existing.shape()),
                         java.util.Arrays.toString(e.getValue().shape()));
-                accumulatedGradients = null;
-                accumulationStep = 0;
-                // Restart with just this micro-batch (collected values are already dup'd)
-                accumulateGradients(collected);
+                discardAccumulatedGradients();
+                accumulatedGradients = new LinkedHashMap<>(collected);
+                collected.clear();
                 return;
+            }
+        }
+        // Subsequent micro-batches: add in-place
+        Iterator<Map.Entry<String, INDArray>> iterator = collected.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<String, INDArray> e = iterator.next();
+            INDArray existing = accumulatedGradients.get(e.getKey());
+            if (existing == null) {
+                // Transfer the incoming owned copy directly into the accumulated map.
+                accumulatedGradients.put(e.getKey(), e.getValue());
+                iterator.remove();
             } else {
-                existing.addi(e.getValue());
+                try {
+                    existing.addi(e.getValue());
+                } finally {
+                    closeOwnedGradient(e.getValue());
+                    iterator.remove();
+                }
             }
         }
     }
@@ -620,22 +658,21 @@ public class TrainingSession extends InferenceSession {
         if (accumulatedGradients == null || accumulatedGradients.isEmpty()) {
             return;
         }
-        for (Map.Entry<String, INDArray> e : accumulatedGradients.entrySet()) {
-            String gradName = e.getKey();
-            String varName = gradVarToVarMap.get(gradName);
-            if (varName == null) {
-                continue;
-            }
-            INDArray accGrad = e.getValue();
-            // Divide by number of accumulated micro-batches to get the mean gradient
-            if (n > 1) {
-                accGrad.divi(n);
-            }
-            // Delegate to the pre-unscaled updater path (loss scaling already applied at collect time)
-            applyUpdaterForGradientPreUnscaled(varName, gradName, accGrad, at);
-        }
+        Map<String, INDArray> toApply = accumulatedGradients;
         accumulatedGradients = null;
         accumulationStep = 0;
+        try {
+            for (Map.Entry<String, INDArray> e : toApply.entrySet()) {
+                String gradName = e.getKey();
+                String varName = gradVarToVarMap.get(gradName);
+                if (varName == null) continue;
+                INDArray accGrad = e.getValue();
+                if (n > 1) accGrad.divi(n);
+                applyUpdaterForGradientPreUnscaled(varName, gradName, accGrad, at);
+            }
+        } finally {
+            closeOwnedGradients(toApply);
+        }
         log.debug("Applied accumulated gradients over {} micro-batches", n);
     }
 
@@ -651,13 +688,16 @@ public class TrainingSession extends InferenceSession {
             // If the legacy getOutputs() path already pre-populated accumulatedGradients
             // (which should not happen when n<=1, but guard defensively), ignore them.
             Map<String, INDArray> collected = collectGradientsFromResults(results, at);
-            for (Map.Entry<String, INDArray> e : collected.entrySet()) {
-                String gradName = e.getKey();
-                String varName = gradVarToVarMap.get(gradName);
-                if (varName != null) {
-                    // Loss scaler already handled in collectGradientsFromResults; use pre-unscaled path
-                    applyUpdaterForGradientPreUnscaled(varName, gradName, e.getValue(), at);
+            try {
+                for (Map.Entry<String, INDArray> e : collected.entrySet()) {
+                    String gradName = e.getKey();
+                    String varName = gradVarToVarMap.get(gradName);
+                    if (varName != null) {
+                        applyUpdaterForGradientPreUnscaled(varName, gradName, e.getValue(), at);
+                    }
                 }
+            } finally {
+                closeOwnedGradients(collected);
             }
         } else {
             // Gradient accumulation path.
@@ -683,14 +723,17 @@ public class TrainingSession extends InferenceSession {
                     }
                 } else {
                     log.debug("Gradient overflow (legacy path) during accumulation step {}; discarding micro-batch", accumulationStep);
-                    accumulatedGradients = null;
-                    accumulationStep = 0;
+                    discardAccumulatedGradients();
                 }
             } else {
                 // New DAG path: collect gradients from the results map.
                 Map<String, INDArray> collected = collectGradientsFromResults(results, at);
                 if (!currentIterationOverflow) {
-                    accumulateGradients(collected);
+                    try {
+                        accumulateGradients(collected);
+                    } finally {
+                        closeOwnedGradients(collected);
+                    }
                     accumulationStep++;
                     log.debug("Gradient accumulation: step {}/{}", accumulationStep, n);
                     if (accumulationStep >= n) {
@@ -699,8 +742,8 @@ public class TrainingSession extends InferenceSession {
                 } else {
                     // Overflow: discard this micro-batch, reset accumulation cycle
                     log.debug("Gradient overflow in standard path during accumulation step {}; discarding micro-batch", accumulationStep);
-                    accumulatedGradients = null;
-                    accumulationStep = 0;
+                    closeOwnedGradients(collected);
+                    discardAccumulatedGradients();
                 }
             }
         }
@@ -716,18 +759,26 @@ public class TrainingSession extends InferenceSession {
         if (n <= 1) {
             // Fast path: no accumulation — collect and apply immediately
             Map<String, INDArray> collected = collectGradientsFromDsp(results, at);
-            for (Map.Entry<String, INDArray> e : collected.entrySet()) {
-                String gradName = e.getKey();
-                String varName = gradVarToVarMap.get(gradName);
-                if (varName != null) {
-                    applyUpdaterForGradientPreUnscaled(varName, gradName, e.getValue(), at);
+            try {
+                for (Map.Entry<String, INDArray> e : collected.entrySet()) {
+                    String gradName = e.getKey();
+                    String varName = gradVarToVarMap.get(gradName);
+                    if (varName != null) {
+                        applyUpdaterForGradientPreUnscaled(varName, gradName, e.getValue(), at);
+                    }
                 }
+            } finally {
+                closeOwnedGradients(collected);
             }
         } else {
             // Gradient accumulation path
             Map<String, INDArray> collected = collectGradientsFromDsp(results, at);
             if (!currentIterationOverflow) {
-                accumulateGradients(collected);
+                try {
+                    accumulateGradients(collected);
+                } finally {
+                    closeOwnedGradients(collected);
+                }
                 accumulationStep++;
                 log.debug("DSP gradient accumulation: step {}/{}", accumulationStep, n);
                 if (accumulationStep >= n) {
@@ -736,8 +787,8 @@ public class TrainingSession extends InferenceSession {
             } else {
                 // Overflow: discard this micro-batch, reset accumulation cycle
                 log.debug("Gradient overflow in DSP path during accumulation step {}; discarding micro-batch", accumulationStep);
-                accumulatedGradients = null;
-                accumulationStep = 0;
+                closeOwnedGradients(collected);
+                discardAccumulatedGradients();
             }
         }
     }
@@ -783,14 +834,18 @@ public class TrainingSession extends InferenceSession {
                 SDValue gradVal = results.get(gradName);
                 if (gradVal != null && gradVal.getTensorValue() != null) {
                     INDArray gradArr = gradVal.getTensorValue().dup();
-                    if (lossScaler != null) {
-                        lossScaler.unscaleGradients(gradArr);
-                        if (!lossScaler.areGradientsFinite(gradArr)) {
-                            currentIterationOverflow = true;
-                            continue;
+                    try {
+                        if (lossScaler != null) {
+                            lossScaler.unscaleGradients(gradArr);
+                            if (!lossScaler.areGradientsFinite(gradArr)) {
+                                currentIterationOverflow = true;
+                                continue;
+                            }
                         }
+                        applyUpdaterForGradientPreUnscaled(varName, gradName, gradArr, at);
+                    } finally {
+                        closeOwnedGradient(gradArr);
                     }
-                    applyUpdaterForGradientPreUnscaled(varName, gradName, gradArr, at);
                 }
                 continue;
             }
@@ -869,14 +924,18 @@ public class TrainingSession extends InferenceSession {
                 SDValue gradVal = results.get(gradName);
                 if (gradVal != null && gradVal.getTensorValue() != null) {
                     INDArray gradArr = gradVal.getTensorValue().dup();
-                    if (lossScaler != null) {
-                        lossScaler.unscaleGradients(gradArr);
-                        if (!lossScaler.areGradientsFinite(gradArr)) {
-                            currentIterationOverflow = true;
-                            continue;
+                    try {
+                        if (lossScaler != null) {
+                            lossScaler.unscaleGradients(gradArr);
+                            if (!lossScaler.areGradientsFinite(gradArr)) {
+                                currentIterationOverflow = true;
+                                continue;
+                            }
                         }
+                        applyUpdaterForGradientPreUnscaled(skippedVar, gradName, gradArr, at);
+                    } finally {
+                        closeOwnedGradient(gradArr);
                     }
-                    applyUpdaterForGradientPreUnscaled(skippedVar, gradName, gradArr, at);
                 }
             }
         }
@@ -1020,7 +1079,7 @@ public class TrainingSession extends InferenceSession {
             return;
         }
 
-        DynamicShapePlanExecutor executor = dynamicShapePlanExecutorTl.get();
+        DynamicShapePlanExecutor executor = dynamicShapePlanExecutor;
         if (executor == null) {
             return;
         }
@@ -1098,7 +1157,7 @@ public class TrainingSession extends InferenceSession {
      */
     public void loadReplayProfiles(ReplayProfileManager.ReplayProfileCollection profiles) {
         this.replayProfiles_ = profiles;
-        DynamicShapePlanExecutor executor = dynamicShapePlanExecutorTl.get();
+        DynamicShapePlanExecutor executor = dynamicShapePlanExecutor;
         if (executor != null && profiles != null) {
             org.bytedeco.javacpp.Pointer planHandle = executor.getNativePlanHandle();
             if (planHandle != null && previousPlaceholderShapes != null) {
@@ -1175,7 +1234,11 @@ public class TrainingSession extends InferenceSession {
                 if (n <= 1) {
                     // No accumulation: apply updater immediately (original behaviour).
                     // applyUpdaterForGradient handles unscaling internally.
-                    applyUpdaterForGradient(varName, s, gradArr, at);
+                    try {
+                        applyUpdaterForGradient(varName, s, gradArr, at);
+                    } finally {
+                        closeOwnedGradient(gradArr);
+                    }
                 } else {
                     // Gradient accumulation: collect into accumulatedGradients.
                     // The map is keyed by gradient variable name so applyUpdatersFromResults
@@ -1187,6 +1250,7 @@ public class TrainingSession extends InferenceSession {
                             log.debug("Gradient overflow detected for variable '{}' in getOutputs (accumulation step {})",
                                     varName, accumulationStep);
                             currentIterationOverflow = true;
+                            closeOwnedGradient(gradArr);
                             outIdx++;
                             continue;
                         }
@@ -1204,12 +1268,15 @@ public class TrainingSession extends InferenceSession {
                                  "expected {} got {}. Clearing accumulated state.",
                                 s, java.util.Arrays.toString(existing.shape()),
                                 java.util.Arrays.toString(gradArr.shape()));
-                        accumulatedGradients = null;
-                        accumulationStep = 0;
+                        discardAccumulatedGradients();
                         accumulatedGradients = new LinkedHashMap<>();
                         accumulatedGradients.put(s, gradArr);
                     } else {
-                        existing.addi(gradArr);
+                        try {
+                            existing.addi(gradArr);
+                        } finally {
+                            closeOwnedGradient(gradArr);
+                        }
                     }
                     // NOTE: applyUpdatersFromResults will detect that accumulatedGradients is
                     // already populated (from getOutputs) and will skip the results-based collection,

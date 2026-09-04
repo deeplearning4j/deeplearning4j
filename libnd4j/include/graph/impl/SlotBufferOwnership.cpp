@@ -17,6 +17,8 @@
  ******************************************************************************/
 
 #include <graph/SlotBufferOwnership.h>
+#include <graph/NativeDynamicShapePlan.h>
+#include <graph/DspSegmentOutputUtils.h>
 #include <graph/DspDiagnostics.h>
 #include <array/NDArray.h>
 #include <graph/DspDeviceDispatch.h>
@@ -1315,52 +1317,48 @@ int validateSlotOutputs(
 }
 
 int validateSlotRange(
-    int startSlot, int endSlot,
+    const NativeSlot* slots, int numSlots,
+    int firstOp, int lastOp,
     NDArray** outputSlots, int totalOutputSlots,
     int executeCount, int planPhase,
     char* errMsg, int errMsgLen) {
 
-  if (outputSlots == nullptr) return 0;
+  if (slots == nullptr || outputSlots == nullptr) return 0;
 
   int invalidCount = 0;
   bool firstError = true;
 
-  // Clamp range to valid bounds
-  if (startSlot < 0) startSlot = 0;
-  if (endSlot >= totalOutputSlots) endSlot = totalOutputSlots - 1;
+  dsp::forEachSegmentOutputSlot(
+      slots, numSlots, firstOp, lastOp, totalOutputSlots,
+      [&](int opIndex, int outputSlot, int) {
+        NDArray* arr = outputSlots[outputSlot];
+        // Null slots are legitimate (dead branches, conditional outputs).
+        if (arr == nullptr) return;
 
-  for (int i = startSlot; i <= endSlot; i++) {
-    NDArray* arr = outputSlots[i];
-    // Null slots are legitimate (dead branches, conditional outputs).
-    if (arr == nullptr) continue;
+        ArrayInvalidReason reason = validateArrayForExecution(arr);
+        if (reason == ArrayInvalidReason::VALID) return;
 
-    ArrayInvalidReason reason = validateArrayForExecution(arr);
-    if (reason != ArrayInvalidReason::VALID) {
-      invalidCount++;
-      if (firstError && errMsg != nullptr && errMsgLen > 0) {
-        firstError = false;
-        DataBuffer* db = nullptr;
-        if (reason != ArrayInvalidReason::NULL_ARRAY &&
-            reason != ArrayInvalidReason::NULL_SHAPE_INFO) {
-          db = arr->dataBuffer();
+        invalidCount++;
+        if (firstError && errMsg != nullptr && errMsgLen > 0) {
+          firstError = false;
+          DataBuffer* db = nullptr;
+          if (reason != ArrayInvalidReason::NULL_ARRAY &&
+              reason != ArrayInvalidReason::NULL_SHAPE_INFO) {
+            db = arr->dataBuffer();
+          }
+          snprintf(errMsg, errMsgLen,
+                   "ARRAY_INVALID at output slot %d (producer op %d, op range [%d-%d]): reason=%s "
+                   "DataBuffer=%p exec=%d phase=%d",
+                   outputSlot, opIndex, firstOp, lastOp,
+                   arrayInvalidReasonName(reason), (void*)db,
+                   executeCount, planPhase);
         }
-        snprintf(errMsg, errMsgLen,
-                 "ARRAY_INVALID at slot %d (range [%d-%d]): reason=%s "
-                 "DataBuffer=%p "
+        DSP_DIAG(MEMORY,
+                 "ARRAY_INVALID_RANGE: outputSlot=%d producerOp=%d opRange=[%d-%d] reason=%s "
                  "exec=%d phase=%d",
-                 i, startSlot, endSlot,
-                 arrayInvalidReasonName(reason),
-                 (void*)db,
-                 executeCount, planPhase);
-      }
-      DSP_DIAG(MEMORY,
-               "ARRAY_INVALID_RANGE: slot=%d range=[%d-%d] reason=%s "
-               "exec=%d phase=%d",
-               i, startSlot, endSlot,
-               arrayInvalidReasonName(reason),
-               executeCount, planPhase);
-    }
-  }
+                 outputSlot, opIndex, firstOp, lastOp,
+                 arrayInvalidReasonName(reason), executeCount, planPhase);
+      });
 
   return invalidCount;
 }

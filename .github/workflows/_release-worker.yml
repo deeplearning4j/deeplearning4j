@@ -10,6 +10,22 @@ on:
         type: string
         required: false
         default: ""
+      releaseVersion:
+        type: string
+        required: false
+        default: 1.0.0-M3
+      snapshotVersion:
+        type: string
+        required: false
+        default: 1.0.0-SNAPSHOT
+      deployToReleaseStaging:
+        type: string
+        required: false
+        default: "0"
+      dryRun:
+        type: string
+        required: false
+        default: "false"
       runnerOverride:
         type: string
         required: false
@@ -49,6 +65,10 @@ on:
         required: true
       CENTRAL_SONATYPE_TOKEN_PASSWORD:
         required: true
+      SONATYPE_GPG_KEY:
+        required: false
+      PACKAGES_GPG_PASS:
+        required: false
 
 permissions:
   contents: read
@@ -60,6 +80,10 @@ jobs:
       source: ${{ steps.source.outputs.result }}
       linux: ${{ steps.rows.outputs.linux }}
       host: ${{ steps.rows.outputs.host }}
+      release-version: ${{ steps.publication.outputs.release-version }}
+      snapshot-version: ${{ steps.publication.outputs.snapshot-version }}
+      publication-mode: ${{ steps.publication.outputs.publication-mode }}
+      publish: ${{ steps.publication.outputs.publish }}
     steps:
       - name: Resolve source ref
         id: source
@@ -79,6 +103,54 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ steps.source.outputs.result }}
+      - name: Validate publication configuration
+        id: publication
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ inputs.releaseVersion }}
+          SNAPSHOT_VERSION: ${{ inputs.snapshotVersion }}
+          DEPLOY_TO_RELEASE_STAGING: ${{ inputs.deployToReleaseStaging }}
+          DRY_RUN: ${{ inputs.dryRun }}
+        run: |
+          set -Eeuo pipefail
+          if [[ ! "${SNAPSHOT_VERSION}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*-SNAPSHOT$ ]]; then
+            printf 'snapshotVersion must be a valid version ending in -SNAPSHOT: %s\n' \
+              "${SNAPSHOT_VERSION}" >&2
+            exit 2
+          fi
+          case "${DEPLOY_TO_RELEASE_STAGING}" in
+            0)
+              publication_mode=snapshot
+              effective_release_version="${SNAPSHOT_VERSION}"
+              ;;
+            1)
+              publication_mode=release
+              effective_release_version="${RELEASE_VERSION}"
+              if [[ ! "${effective_release_version}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] ||
+                 [[ "${effective_release_version}" == *-SNAPSHOT ]]; then
+                printf 'releaseVersion must be a valid non-SNAPSHOT version: %s\n' \
+                  "${effective_release_version}" >&2
+                exit 2
+              fi
+              ;;
+            *)
+              printf 'deployToReleaseStaging must be 0 or 1: %s\n' \
+                "${DEPLOY_TO_RELEASE_STAGING}" >&2
+              exit 2
+              ;;
+          esac
+          case "${DRY_RUN}" in
+            false) publish=true ;;
+            true) publish=false ;;
+            *)
+              printf 'dryRun must be true or false: %s\n' "${DRY_RUN}" >&2
+              exit 2
+              ;;
+          esac
+          printf 'release-version=%s\n' "${effective_release_version}" >>"${GITHUB_OUTPUT}"
+          printf 'snapshot-version=%s\n' "${SNAPSHOT_VERSION}" >>"${GITHUB_OUTPUT}"
+          printf 'publication-mode=%s\n' "${publication_mode}" >>"${GITHUB_OUTPUT}"
+          printf 'publish=%s\n' "${publish}" >>"${GITHUB_OUTPUT}"
       - name: Resolve canonical worker matrix
         id: rows
         shell: bash
@@ -133,6 +205,8 @@ jobs:
           shard: ${{ matrix.shard }}
           variant: ${{ matrix.variant }}
           source-commit: ${{ needs.matrix.outputs.source }}
+          release-version: ${{ needs.matrix.outputs['release-version'] }}
+          snapshot-version: ${{ needs.matrix.outputs['snapshot-version'] }}
           build-threads: ${{ inputs.buildThreads }}
           maven-flags: ${{ inputs.mvnFlags }}
           libnd4j-url: ${{ inputs.libnd4jUrl }}
@@ -178,6 +252,8 @@ jobs:
           shard: ${{ matrix.shard }}
           variant: ${{ matrix.variant }}
           source-commit: ${{ needs.matrix.outputs.source }}
+          release-version: ${{ needs.matrix.outputs['release-version'] }}
+          snapshot-version: ${{ needs.matrix.outputs['snapshot-version'] }}
           build-threads: ${{ inputs.buildThreads }}
           maven-flags: ${{ inputs.mvnFlags }}
           libnd4j-url: ${{ inputs.libnd4jUrl }}
@@ -201,7 +277,7 @@ jobs:
       (needs.linux.result == 'success' || needs.linux.result == 'skipped') &&
       (needs.host.result == 'success' || needs.host.result == 'skipped') &&
       (needs.matrix.outputs.linux != '[]' || needs.matrix.outputs.host != '[]') }}
-    name: publish / staged Maven snapshot
+    name: publish / staged Maven repository
     runs-on: ubuntu-22.04
     timeout-minutes: 180
     steps:
@@ -219,6 +295,9 @@ jobs:
         shell: bash
         env:
           EXPECTED_SOURCE_COMMIT: ${{ needs.matrix.outputs.source }}
+          EXPECTED_RELEASE_VERSION: ${{ needs.matrix.outputs['release-version'] }}
+          PUBLICATION_MODE: ${{ needs.matrix.outputs['publication-mode'] }}
+          PUBLISH: ${{ needs.matrix.outputs.publish }}
         run: |
           set -Eeuo pipefail
           artifact_root="${GITHUB_WORKSPACE}/.release-worker-publish"
@@ -230,7 +309,6 @@ jobs:
             printf 'No staged worker configurations were downloaded.\n' >&2
             exit 1
           fi
-          release_version=""
           for worker_root in "${worker_roots[@]}"; do
             if [ ! -f "${worker_root}/worker-success" ]; then
               printf 'Worker did not complete successfully: %s\n' "${worker_root}" >&2
@@ -250,42 +328,19 @@ jobs:
                 "${EXPECTED_SOURCE_COMMIT}" "${current_commit}" "${worker_root}" >&2
               exit 1
             fi
-            python3 -c \
-              'import re,sys; raise SystemExit(0 if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*-SNAPSHOT", sys.argv[1]) else 1)' \
-              "${current_version}" || {
-                printf 'Invalid Maven snapshot version: %s\n' "${current_version}" >&2
-                exit 1
-              }
-            if [ -z "${release_version}" ]; then
-              release_version="${current_version}"
-            elif [ "${release_version}" != "${current_version}" ]; then
-              printf 'Staged workers disagree on release version: %s vs %s\n' \
-                "${release_version}" "${current_version}" >&2
+            if [ "${current_version}" != "${EXPECTED_RELEASE_VERSION}" ]; then
+              printf 'Worker release version mismatch: expected %s, got %s (%s)\n' \
+                "${EXPECTED_RELEASE_VERSION}" "${current_version}" "${worker_root}" >&2
               exit 1
             fi
           done
-          printf 'release-version=%s\n' "${release_version}" >>"${GITHUB_OUTPUT}"
-          if [[ "${release_version}" == *-SNAPSHOT ]]; then
-            printf 'publish=true\n' >>"${GITHUB_OUTPUT}"
-          else
-            printf 'publish=false\n' >>"${GITHUB_OUTPUT}"
-          fi
-      - name: Configure Maven Central snapshots
-        if: steps.staged.outputs.publish == 'true'
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: "11"
-          server-id: central-portal-snapshots
-          server-username: CENTRAL_SONATYPE_TOKEN_USERNAME
-          server-password: CENTRAL_SONATYPE_TOKEN_PASSWORD
-      - name: Publish merged staged Maven snapshot
-        if: steps.staged.outputs.publish == 'true'
+          printf 'release-version=%s\n' "${EXPECTED_RELEASE_VERSION}" >>"${GITHUB_OUTPUT}"
+          printf 'publication-mode=%s\n' "${PUBLICATION_MODE}" >>"${GITHUB_OUTPUT}"
+          printf 'publish=%s\n' "${PUBLISH}" >>"${GITHUB_OUTPUT}"
+      - name: Merge and verify staged Maven repository
         shell: bash
         env:
-          CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
-          CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
-          RELEASE_VERSION: ${{ steps.staged.outputs.release-version }}
+          RELEASE_VERSION: ${{ steps.staged.outputs['release-version'] }}
           SOURCE_COMMIT: ${{ needs.matrix.outputs.source }}
         run: |
           set -Eeuo pipefail
@@ -294,10 +349,11 @@ jobs:
             exit 1
           fi
           artifact_root="${GITHUB_WORKSPACE}/.release-worker-publish"
-          merged_repository="${GITHUB_WORKSPACE}/.release-worker-merged/maven-repository"
-          merged_manifest="${GITHUB_WORKSPACE}/.release-worker-merged/repository-manifest.json"
-          rm -rf "${GITHUB_WORKSPACE}/.release-worker-merged"
-          mkdir -p "${GITHUB_WORKSPACE}/.release-worker-merged"
+          merged_root="${GITHUB_WORKSPACE}/.release-worker-merged"
+          merged_repository="${merged_root}/maven-repository"
+          merged_manifest="${merged_root}/repository-manifest.json"
+          rm -rf "${merged_root}"
+          mkdir -p "${merged_root}"
           merge_command=(python3 release/central/repository.py merge
             --output "${merged_repository}"
             --manifest "${merged_manifest}"
@@ -319,9 +375,65 @@ jobs:
             --manifest "${merged_manifest}" \
             --release-version "${RELEASE_VERSION}" \
             --commit "${SOURCE_COMMIT}"
+      - name: Configure Maven Central snapshots
+        if: ${{ steps.staged.outputs.publish == 'true' && steps.staged.outputs['publication-mode'] == 'snapshot' }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "11"
+          server-id: central-portal-snapshots
+          server-username: CENTRAL_SONATYPE_TOKEN_USERNAME
+          server-password: CENTRAL_SONATYPE_TOKEN_PASSWORD
+      - name: Publish merged staged Maven snapshot
+        if: ${{ steps.staged.outputs.publish == 'true' && steps.staged.outputs['publication-mode'] == 'snapshot' }}
+        shell: bash
+        env:
+          CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+          RELEASE_VERSION: ${{ steps.staged.outputs['release-version'] }}
+        run: |
+          set -Eeuo pipefail
           python3 release/central/repository.py deploy-snapshot \
-            --repository "${merged_repository}" \
+            --repository "${GITHUB_WORKSPACE}/.release-worker-merged/maven-repository" \
             --release-version "${RELEASE_VERSION}" \
             --repository-id central-portal-snapshots \
             --url https://central.sonatype.com/repository/maven-snapshots/ \
             --maven-executable mvn
+      - name: Configure Maven Central release signing
+        if: ${{ steps.staged.outputs.publish == 'true' && steps.staged.outputs['publication-mode'] == 'release' }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+          server-id: central
+          server-username: CENTRAL_SONATYPE_TOKEN_USERNAME
+          server-password: CENTRAL_SONATYPE_TOKEN_PASSWORD
+      - name: Stage merged Maven release in Central Portal
+        if: ${{ steps.staged.outputs.publish == 'true' && steps.staged.outputs['publication-mode'] == 'release' }}
+        shell: bash
+        env:
+          CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
+        run: |
+          set -Eeuo pipefail
+          merged_root="${GITHUB_WORKSPACE}/.release-worker-merged"
+          python3 release/central/repository.py sign-bundle \
+            --repository "${merged_root}/maven-repository" \
+            --output "${merged_root}/central-bundle.zip"
+          python3 release/central/repository.py upload \
+            --bundle "${merged_root}/central-bundle.zip" \
+            --wait-seconds 5400 | tee "${merged_root}/central-deployment.log"
+      - name: Retain publication evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: maven-publication-${{ needs.matrix.outputs['release-version'] }}
+          path: |
+            ${{ github.workspace }}/.release-worker-merged/repository-manifest.json
+            ${{ github.workspace }}/.release-worker-merged/repository-manifest.json.sha256
+            ${{ github.workspace }}/.release-worker-merged/central-deployment.log
+          if-no-files-found: warn
+          retention-days: 90

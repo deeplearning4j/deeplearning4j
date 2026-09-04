@@ -38,7 +38,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.config.MemoryConfig;
 import org.nd4j.nativeblas.NativeOps;
-import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.*;
 
@@ -85,14 +84,20 @@ public class DspMemoryPressureOomTest {
 
     @BeforeEach
     void setUp() {
-        nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        // Trigger backend discovery before requesting NativeOps. This class is
+        // frequently run as a single focused test; unlike parameterized backend tests,
+        // it otherwise has no earlier ND4J access to initialize the selected backend.
+        Nd4j.getExecutioner();
+        nativeOps = Nd4j.getNativeOps();
         memMgr = DeviceMemoryManager.getInstance();
     }
 
     @AfterEach
     void tearDown() {
-        memMgr.clearStubTopology();
-        memMgr.clearAllMemorySimulation();
+        if (memMgr != null) {
+            memMgr.clearStubTopology();
+            memMgr.clearAllMemorySimulation();
+        }
     }
 
     // =========================================================================

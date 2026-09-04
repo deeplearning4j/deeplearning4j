@@ -413,6 +413,8 @@ public final class SdxModelCompiler {
         SdxPlatformProviderDescriptor provider = target.platformProvider();
         material.put("providerId", provider.providerId());
         material.put("providerAbiVersion", Integer.toString(provider.providerAbiVersion()));
+        material.put("fixedTextContextCapacity",
+                Integer.toString(provider.fixedTextContextCapacity()));
         material.put("artifactFormat", provider.artifactFormat());
         material.put(
                 "artifactFormatVersion",
@@ -747,6 +749,8 @@ public final class SdxModelCompiler {
                 .append(provider.allowsRuntimeJit())
                 .append(",\"allowCpuFallback\":")
                 .append(provider.allowsCpuFallback())
+                .append(",\"fixedTextContextCapacity\":")
+                .append(provider.fixedTextContextCapacity())
                 .append("},\n")
                 .append("  \"compiledArtifacts\": ")
                 .append(compiledArtifactsJson).append(",\n")

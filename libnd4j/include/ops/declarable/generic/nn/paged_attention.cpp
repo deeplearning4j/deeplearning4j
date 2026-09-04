@@ -170,15 +170,20 @@ CUSTOM_OP_IMPL(paged_kv_append, 6, 1, false, 0, 1) {
 }
 
 DECLARE_TYPES(paged_kv_append) {
-  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
+  // Output is a pure VIEW of input 0 (see DECLARE_SHAPE_FN:
+  // ARRAY_COPY_OFFSET_INPUT_0). Shape derives from input shape + iArgs only —
+  // NOT value-dependent. Tagging it value-dependent causes SHAPES_FROZEN
+  // LIFECYCLE_ERROR false positives in DSP shape-prepass/replay when input
+  // shapes change.
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()
-      ->setAllowedInputTypes(0, {ALL_FLOATS})
-      ->setAllowedInputTypes(1, {ALL_FLOATS})
-      ->setAllowedInputTypes(2, {ALL_FLOATS})
-      ->setAllowedInputTypes(3, {ALL_FLOATS})
+      ->setAllowedInputTypes(0, {FLOAT32, HALF})
+      ->setAllowedInputTypes(1, {FLOAT32, HALF})
+      ->setAllowedInputTypes(2, {FLOAT32, HALF})
+      ->setAllowedInputTypes(3, {FLOAT32, HALF})
       ->setAllowedInputTypes(4, {INT32})
       ->setAllowedInputTypes(5, {INT32})
-      ->setAllowedOutputTypes(0, {ALL_FLOATS});
+      ->setAllowedOutputTypes(0, {FLOAT32, HALF});
 }
 
 DECLARE_SHAPE_FN(paged_kv_append) {

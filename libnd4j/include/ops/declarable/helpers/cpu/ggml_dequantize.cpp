@@ -25,8 +25,9 @@
 #include <math/templatemath.h>
 #include <ops/declarable/helpers/ggml_dequantize.h>
 #include <types/float16.h>
-#include <cstring>
 #include <cmath>
+#include <cstring>
+#include <vector>
 
 #if NOT_EXCLUDED(OP_ggml_dequantize)
 
@@ -1035,21 +1036,25 @@ void ggmlDequantize(
         // Direct dequantize to F32
         dequantizeToFloat32(rawBytes, output->bufferAsT<float>(), quantType, numElements);
     } else {
-        // Dequantize to temporary F32 buffer, then convert
-        std::vector<float> tmpBuf(numElements);
-        dequantizeToFloat32(rawBytes, tmpBuf.data(), quantType, numElements);
+        // HALF/BFLOAT16 use FLOAT32 accumulation, but repeatedly allocating this scratch
+        // buffer makes the Android allocator retain one model-sized arena per streamed
+        // chunk. Reuse one scratch allocation per calling thread instead.
+        thread_local std::vector<float> tmpBuf;
+        tmpBuf.resize(static_cast<size_t>(numElements));
+        float* tmpData = tmpBuf.data();
+        dequantizeToFloat32(rawBytes, tmpData, quantType, numElements);
 
         if (outputDtype == DataType::HALF) {
             auto* dst = reinterpret_cast<float16*>(output->buffer());
             PRAGMA_OMP_PARALLEL_FOR
             for (LongType i = 0; i < numElements; i++) {
-                dst[i] = static_cast<float16>(tmpBuf[i]);
+                dst[i] = static_cast<float16>(tmpData[i]);
             }
         } else if (outputDtype == DataType::BFLOAT16) {
             auto* dst = reinterpret_cast<bfloat16*>(output->buffer());
             PRAGMA_OMP_PARALLEL_FOR
             for (LongType i = 0; i < numElements; i++) {
-                dst[i] = static_cast<bfloat16>(tmpBuf[i]);
+                dst[i] = static_cast<bfloat16>(tmpData[i]);
             }
         } else {
             THROW_EXCEPTION("ggmlDequantize: unsupported output type");

@@ -247,10 +247,11 @@ public class SpeculativeKVCacheManager {
         int[] currentPageTable = currentPageTableArr.toIntVector();
         currentPageTableArr.close();
 
-        // Free blocks that were allocated after the checkpoint
+        // Free blocks that were allocated after the checkpoint (refcount-aware:
+        // shared blocks only decrement, never return to the pool while referenced)
         for (int b = cp.numAllocatedBlocks; b < currentAllocated; b++) {
             if (b < currentPageTable.length && currentPageTable[b] >= 0) {
-                cache.freeBlocks.push(currentPageTable[b]);
+                cache.freeBlock(currentPageTable[b]);
                 log.trace("Freed post-checkpoint block {} (physical={})", b, currentPageTable[b]);
             }
         }
@@ -297,13 +298,13 @@ public class SpeculativeKVCacheManager {
             acceptedBlocks.add(logicalBlock);
         }
 
-        // Free blocks that don't contain any accepted positions
+        // Free blocks that don't contain any accepted positions (refcount-aware)
         int numAllocated = cache.getNumAllocatedBlocks(seqIdx);
         for (int b = 0; b < numAllocated; b++) {
             if (!acceptedBlocks.contains(b)) {
                 int blockId = cache.pageTables[seqIdx][b];
                 if (blockId >= 0) {
-                    cache.freeBlocks.push(blockId);
+                    cache.freeBlock(blockId);
                     cache.pageTables[seqIdx][b] = -1;
                     log.trace("Freed rejected branch block {} (logical={}, physical={})", b, b, blockId);
                 }

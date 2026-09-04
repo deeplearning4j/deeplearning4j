@@ -24,6 +24,8 @@
 #include <graph/gpu/TritonGraphBackend_internal.h>
 #include <graph/gpu/TritonTargetDispatch.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspPhaseUtils.h>
+#include <graph/DspSegmentOutputUtils.h>
 #include <graph/LegacyOpTypeCodes.h>
 #include <system/Environment.h>
 #include <helpers/logger.h>
@@ -215,7 +217,10 @@ static void detectBufferAliasing(int ki,
   if (!outputRanges.empty()) {
     int aliasCount = 0;
     for (int si = 0; si < totalOutputSlots; si++) {
-      if (si >= skStartSlot && si <= skEndSlot) continue;
+      const int producerOp = dsp::findSegmentOutputProducer(
+          slots, segEndSlot + 1, skStartSlot, skEndSlot,
+          totalOutputSlots, si);
+      if (producerOp >= skStartSlot && producerOp <= skEndSlot) continue;
       if (!outputSlots[si] || !outputSlots[si]->specialBuffer()) continue;
       uintptr_t extStart = reinterpret_cast<uintptr_t>(outputSlots[si]->specialBuffer());
       size_t extBytes = outputSlots[si]->lengthOf() * outputSlots[si]->sizeOfT();
@@ -225,8 +230,11 @@ static void detectBufferAliasing(int ki,
         if (outRange.start < extEnd && extStart < outRange.end) {
           aliasCount++;
           if (aliasCount <= 20) {
-            const char* extSlotName = (si <= segEndSlot)
-                ? slots[si].ident.opName.c_str() : "?";
+            const int extProducerOp = dsp::findSegmentOutputProducer(
+                slots, segEndSlot + 1, skStartSlot, skEndSlot,
+                totalOutputSlots, si);
+            const char* extSlotName = extProducerOp >= 0
+                ? slots[extProducerOp].ident.opName.c_str() : "?";
             DSP_DIAG(VERIFY, "BUFFER OVERLAP: subK[%d] [%d-%d] output arg[%d](slot=%d) "
                      "[%p-%p] overlaps slot %d (%s) [%p-%p]",
                      ki, skStartSlot, skEndSlot,
@@ -256,7 +264,10 @@ static void detectBufferAliasing(int ki,
       }
     }
     for (int si = 0; si < totalOutputSlots; si++) {
-      if (si >= skStartSlot && si <= skEndSlot) continue;
+      const int producerOp = dsp::findSegmentOutputProducer(
+          slots, segEndSlot + 1, skStartSlot, skEndSlot,
+          totalOutputSlots, si);
+      if (producerOp >= skStartSlot && producerOp <= skEndSlot) continue;
       if (!outputSlots[si] || !outputSlots[si]->dataBuffer()) continue;
       auto it = outputDbSlots.find(outputSlots[si]->dataBuffer());
       if (it != outputDbSlots.end()) {
@@ -264,7 +275,12 @@ static void detectBufferAliasing(int ki,
                  "external slot %d (%s) share same DataBuffer %p",
                  ki, skStartSlot, skEndSlot,
                  it->second, si,
-                 (si <= segEndSlot) ? slots[si].ident.opName.c_str() : "?",
+                 [&]() {
+                   const int producerOp = dsp::findSegmentOutputProducer(
+                       slots, segEndSlot + 1, skStartSlot, skEndSlot,
+                       totalOutputSlots, si);
+                   return producerOp >= 0 ? slots[producerOp].ident.opName.c_str() : "?";
+                 }(),
                  static_cast<void*>(outputSlots[si]->dataBuffer()));
       }
     }
@@ -279,8 +295,10 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                                           void* stream) {
   void* actualStream = (stream != nullptr) ? *static_cast<void**>(stream) : nullptr;
   auto failSegment = [&](const std::string& reason) {
-    std::string message = "Triton segment [" + std::to_string(seg.def.startSlot) + "-" +
-                          std::to_string(seg.def.endSlot) + "]: " + reason;
+    std::string message = reason + " [Triton segment " +
+                          std::to_string(seg.def.startSlot) + "-" +
+                          std::to_string(seg.def.endSlot) +
+                          ", status=KERNEL_FAILURE (50)]";
     auto* errorRef = LaunchContext::defaultContext()->errorReference();
     errorRef->setErrorCode(static_cast<int>(Status::KERNEL_FAILURE));
     errorRef->setErrorMessage(message);
@@ -337,13 +355,29 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     }
     if (compiledSeg == nullptr) {
       int cachedDeviceId = -999;
+      const size_t indexedDtypeHash = lookupDtypeHash(
+          seg.def.startSlot, seg.def.endSlot,
+          seg.def.shapeKeyState.compiledShapeKey, execDevice, &seg);
+      int liveSegmentCandidates = 0;
+      std::string candidateSummary;
       for (const auto& entry : cache_) {
-        if (entry.first.startSlot == seg.def.startSlot &&
-            entry.first.endSlot == seg.def.endSlot &&
-            entry.first.shapeKey == seg.def.shapeKeyState.compiledShapeKey &&
-            entry.first.segmentInstance == &seg) {
-          cachedDeviceId = entry.first.deviceId;
-          break;
+        const SegmentCacheKey& cached = entry.first;
+        if (cached.startSlot == seg.def.startSlot &&
+            cached.endSlot == seg.def.endSlot &&
+            cached.segmentInstance == &seg) {
+          liveSegmentCandidates++;
+          if (candidateSummary.size() < 1024) {
+            if (!candidateSummary.empty()) candidateSummary += ",";
+            candidateSummary += "{shape=" + std::to_string(cached.shapeKey)
+                + ",device=" + std::to_string(cached.deviceId)
+                + ",dtype=" + std::to_string(cached.segInternalDtypeHash)
+                + ",compileAll=" + std::to_string(cached.compileAll ? 1 : 0)
+                + ",graphCapture=" + std::to_string(cached.graphCapture ? 1 : 0)
+                + "}";
+          }
+          if (cached.shapeKey == seg.def.shapeKeyState.compiledShapeKey) {
+            cachedDeviceId = cached.deviceId;
+          }
         }
       }
       if (cachedDeviceId != -999) {
@@ -363,8 +397,19 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                    entry.first.deviceId, entry.first.compileAll ? 1 : 0, entry.first.excludeOpsHash);
         }
       }
-      return failSegment(cachedDeviceId != -999 ? "compiled kernel is on another device"
-                                                : "compiled kernel cache entry is missing");
+      std::string reason = cachedDeviceId != -999 && cachedDeviceId != execDevice
+          ? "compiled kernel is on another device"
+          : "compiled kernel cache entry is missing";
+      reason += " requested={shape="
+          + std::to_string(seg.def.shapeKeyState.compiledShapeKey)
+          + ",device=" + std::to_string(execDevice)
+          + ",dtype=" + std::to_string(key.segInternalDtypeHash)
+          + ",indexedDtype=" + std::to_string(indexedDtypeHash)
+          + ",compileAll=" + std::to_string(key.compileAll ? 1 : 0)
+          + ",graphCapture=" + std::to_string(key.graphCapture ? 1 : 0)
+          + "} liveSegmentCandidates=" + std::to_string(liveSegmentCandidates)
+          + " [" + candidateSummary + "]";
+      return failSegment(reason);
     }
   }
 
@@ -681,8 +726,10 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       }
       auto gapStatus = orderedRangeExecutor_(nextSlotToRun, subKernel.startSlot_ - 1);
       if (gapStatus != Status::OK) {
-        DSP_DIAG(FALLBACK, "TritonGraphBackend::executeSegment: ordered native range [%d-%d] failed with status=%d",
-                  nextSlotToRun, subKernel.startSlot_ - 1, static_cast<int>(gapStatus));
+        DSP_DIAG(FALLBACK,
+                 "TritonGraphBackend::executeSegment: ordered native range [%d-%d] failed with %s (%d)",
+                 nextSlotToRun, subKernel.startSlot_ - 1,
+                 dsp::dspStatusName(gapStatus), static_cast<int>(gapStatus));
         return gapStatus;
       }
       // markOrderedRangeDeviceCurrent DISABLED: orderedRangeExecutor_ already handles
@@ -906,8 +953,10 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         }
         auto skipStatus = orderedRangeExecutor_(subKernel.startSlot_, subKernel.endSlot_);
         if (skipStatus != Status::OK) {
-          DSP_DIAG(FALLBACK, "TritonGraphBackend::executeSegment: native ordered range for skipped kernel [%d-%d] failed with status=%d",
-                 subKernel.startSlot_, subKernel.endSlot_, static_cast<int>(skipStatus));
+          DSP_DIAG(FALLBACK,
+                   "TritonGraphBackend::executeSegment: native ordered range for skipped kernel [%d-%d] failed with %s (%d)",
+                   subKernel.startSlot_, subKernel.endSlot_,
+                   dsp::dspStatusName(skipStatus), static_cast<int>(skipStatus));
           return skipStatus;
         }
         // markOrderedRangeDeviceCurrent DISABLED: orderedRangeExecutor_ already handles
@@ -1044,12 +1093,19 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                                          seg.slotArrayCache
                                          );
       if (status != Status::OK) {
-        DSP_DIAG(EXECUTE, "TritonGraphBackend::executeSegment: sub-kernel %d/%d [%d-%d] FAILED status=%d",
+        DSP_DIAG(EXECUTE,
+                  "TritonGraphBackend::executeSegment: sub-kernel %d/%d [%d-%d] FAILED status=%s (%d)",
                   i + 1, (int)compiledSeg->subKernels.size(),
-                  subKernel.startSlot_, subKernel.endSlot_, static_cast<int>(status));
+                  subKernel.startSlot_, subKernel.endSlot_,
+                  dsp::dspStatusName(status), static_cast<int>(status));
         const char* kernelDetail = LaunchContext::defaultContext()->errorReference()->errorMessage();
         if (kernelDetail == nullptr || kernelDetail[0] == '\0') {
-          failSegment("sub-kernel returned status=" + std::to_string(static_cast<int>(status)));
+          failSegment(
+              "sub-kernel [" + std::to_string(subKernel.startSlot_) + "-" +
+              std::to_string(subKernel.endSlot_) + "] returned " +
+              dsp::dspStatusName(status) + " (" +
+              std::to_string(static_cast<int>(status)) +
+              ") without kernel-level failure detail");
         }
         for (auto& kv : savedOutputs) delete kv.second;
         return status;
@@ -1165,8 +1221,11 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                   if (beforeBytes[b] != afterBytes[b]) { firstDiffByte = (int)b; break; }
                 }
                 const char* slotName = "external";
-                if (slotIdx >= 0 && slotIdx <= seg.def.endSlot) {
-                  slotName = slots[slotIdx].ident.opName.c_str();
+                if (slotIdx >= 0) {
+                  const int producerOp = dsp::findSegmentOutputProducer(
+                      slots, seg.def.endSlot + 1, subKernel.startSlot_,
+                      subKernel.endSlot_, totalOutputSlots, slotIdx);
+                  if (producerOp >= 0) slotName = slots[producerOp].ident.opName.c_str();
                 }
                 DSP_DIAG(VERIFY, "TRITON VERIFY CORRUPTION: subK[%d] [%d-%d] damaged %s slot %d (%s) "
                         "len=%zu firstDiffByte=%d gpuAddr=%p",
@@ -1232,8 +1291,10 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         // Run native slot-by-slot
         auto nativeStatus = orderedRangeExecutor_(subKernel.startSlot_, subKernel.endSlot_);
         if (nativeStatus != Status::OK) {
-          DSP_DIAG(VERIFY, "TRITON VERIFY: native ordered range for [%d-%d] FAILED (status=%d)",
-                   subKernel.startSlot_, subKernel.endSlot_, static_cast<int>(nativeStatus));
+          DSP_DIAG(VERIFY,
+                   "TRITON VERIFY: native ordered range for [%d-%d] FAILED with %s (%d)",
+                   subKernel.startSlot_, subKernel.endSlot_,
+                   dsp::dspStatusName(nativeStatus), static_cast<int>(nativeStatus));
           // Don't abort — continue with Triton results
           // Restore Triton outputs since native failed
           for (auto& kv2 : tritonRawOutputs) {
@@ -1394,7 +1455,14 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
             DSP_DIAG(VERIFY, "DSP_FINGERPRINT_TRITON subkernel=%d-%d slot=%d op=%s "
                      "shape=%s dtype=%s len=%lld asyncValues=true",
                      subKernel.startSlot_, subKernel.endSlot_, outIdx,
-                     slots[outIdx].ident.opName.c_str(),
+                     (dsp::findSegmentOutputProducer(
+                         slots, subKernel.endSlot_ + 1, subKernel.startSlot_,
+                         subKernel.endSlot_, totalOutputSlots, outIdx) >= 0
+                          ? slots[dsp::findSegmentOutputProducer(
+                                slots, subKernel.endSlot_ + 1, subKernel.startSlot_,
+                                subKernel.endSlot_, totalOutputSlots, outIdx)]
+                                .ident.opName.c_str()
+                          : "?"),
                      ShapeUtils::shapeAsString(arr).c_str(),
                      DataTypeUtils::asString(arr->dataType()).c_str(),
                      (long long)arr->lengthOf());
@@ -1426,8 +1494,10 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     }
     auto gapStatus = orderedRangeExecutor_(nextSlotToRun, seg.def.endSlot);
     if (gapStatus != Status::OK) {
-      DSP_DIAG(FALLBACK, "TritonGraphBackend::executeSegment: trailing ordered native range [%d-%d] failed with status=%d",
-                nextSlotToRun, seg.def.endSlot, static_cast<int>(gapStatus));
+      DSP_DIAG(FALLBACK,
+               "TritonGraphBackend::executeSegment: trailing ordered native range [%d-%d] failed with %s (%d)",
+               nextSlotToRun, seg.def.endSlot,
+               dsp::dspStatusName(gapStatus), static_cast<int>(gapStatus));
       return gapStatus;
     }
     markOrderedRangeDeviceCurrent(nextSlotToRun, seg.def.endSlot, slots,
@@ -1756,13 +1826,12 @@ void TritonGraphBackend::invalidateCache() {
     // because per-kernel pointers are offsets into these buffers).
     if (seg.useConsolidatedArgTable) {
       if (seg.consolidatedArgTableDevice != nullptr) {
-        recordModuleFree(seg.consolidatedArgTableDeviceId >= 0 ? seg.consolidatedArgTableDeviceId : segDeviceId,
-                         seg.consolidatedArgTableBytes);
-        // Guard: capture workspace interior pointers cannot be individually freed.
-        // The workspace base is freed separately by releaseWorkspace/unregisterCaptureWorkspace.
-        if (!sd::memory::CudaMemoryPool::getInstance().isInCaptureWorkspace(seg.consolidatedArgTableDevice)) {
-          cudaFree(seg.consolidatedArgTableDevice);
-        }
+        auto& memPool = sd::memory::CudaMemoryPool::getInstance();
+        const int allocationDevice = seg.consolidatedArgTableDeviceId >= 0
+            ? seg.consolidatedArgTableDeviceId
+            : segDeviceId;
+        recordModuleFree(allocationDevice, seg.consolidatedArgTableBytes);
+        memPool.free(seg.consolidatedArgTableDevice, allocationDevice);
         seg.consolidatedArgTableDevice = nullptr;
         seg.consolidatedArgTableBytes = 0;
       }
@@ -1943,15 +2012,12 @@ void TritonGraphBackend::invalidateCacheForSegments(
     // Free resources (same logic as invalidateCache)
     if (seg.useConsolidatedArgTable) {
       if (seg.consolidatedArgTableDevice != nullptr) {
-        recordModuleFree(seg.consolidatedArgTableDeviceId >= 0 ? seg.consolidatedArgTableDeviceId : segDeviceId,
-                         seg.consolidatedArgTableBytes);
-        // Guard: capture workspace interior pointers cannot be individually freed with cudaFree.
-        // The workspace base is freed by releaseWorkspace/unregisterCaptureWorkspace (called
-        // AFTER invalidateCacheForSegments in platformFreePlanResources). Skip cudaFree here;
-        // the memory will be reclaimed when the workspace block is freed.
-        if (!sd::memory::CudaMemoryPool::getInstance().isInCaptureWorkspace(seg.consolidatedArgTableDevice)) {
-          cudaFree(seg.consolidatedArgTableDevice);
-        }
+        auto& memPool = sd::memory::CudaMemoryPool::getInstance();
+        const int allocationDevice = seg.consolidatedArgTableDeviceId >= 0
+            ? seg.consolidatedArgTableDeviceId
+            : segDeviceId;
+        recordModuleFree(allocationDevice, seg.consolidatedArgTableBytes);
+        memPool.free(seg.consolidatedArgTableDevice, allocationDevice);
       }
       if (seg.consolidatedArgTableHostPinned != nullptr) {
         auto& memPool = sd::memory::CudaMemoryPool::getInstance();

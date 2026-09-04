@@ -88,6 +88,68 @@ class SdxQuantizationContractTest {
     }
 
     @Test
+    void acceptsSourceBoundPerOperatorQ4Calibration() throws Exception {
+        String sourceSha = repeat('b', 64);
+        SdxQuantizationContract contract = SdxQuantizationContract.parse(
+                validQ4Contract(sourceSha, "decoder.q_proj", 0.03125, 0.0625));
+
+        SdxQuantizationContract.OperatorCalibration calibration =
+                contract.operatorCalibration("decoder.q_proj");
+        assertEquals("ggml_qmatmul", calibration.opType());
+        assertEquals(0.03125f, calibration.activationScale());
+        assertEquals(0.0625f, calibration.outputScale());
+        assertEquals(64, contract.calibrationSampleCount());
+        assertEquals(repeat('a', 64), contract.calibrationDatasetSha256());
+        assertEquals(java.util.List.of(
+                        "sdx.nnapi.q4.calibration.v1", "64", repeat('a', 64),
+                        "0.03125", "0.0625"),
+                java.util.Arrays.asList(calibration.nnapiQ4SArguments(
+                        contract.calibrationSampleCount(),
+                        contract.calibrationDatasetSha256())));
+        assertTrue(contract.summaryJson().contains("decoder.q_proj"));
+        assertTrue(contract.summaryJson().contains("\"activationScale\":0.03125"));
+        assertTrue(contract.summaryJson().contains("\"interiorQuantizationMax\":126"));
+    }
+
+    @Test
+    void rejectsUnboundOrUnderSampledPerOperatorQ4Calibration() {
+        String sourceSha = repeat('b', 64);
+        String valid = validQ4Contract(sourceSha, "decoder.q_proj", 0.03125, 0.0625);
+
+        IOException unbound = assertThrows(IOException.class,
+                () -> SdxQuantizationContract.parse(valid.replace(
+                        "\"sourceModelSha256\":\"" + sourceSha + "\",", "")));
+        assertTrue(unbound.getMessage().contains("sourceModelSha256"));
+
+        IOException underSampled = assertThrows(IOException.class,
+                () -> SdxQuantizationContract.parse(
+                        valid.replace("\"sampleCount\":64", "\"sampleCount\":31")));
+        assertTrue(underSampled.getMessage().contains("at least 32"));
+
+        IOException wrongType = assertThrows(IOException.class,
+                () -> SdxQuantizationContract.parse(
+                        valid.replace("\"opType\":\"ggml_qmatmul\"",
+                                "\"opType\":\"matmul\"")));
+        assertTrue(wrongType.getMessage().contains("opType"));
+
+        IOException underflow = assertThrows(IOException.class,
+                () -> SdxQuantizationContract.parse(
+                        valid.replace("\"scale\":0.03125", "\"scale\":1e-1000")));
+        assertTrue(underflow.getMessage().contains("finite and positive"));
+
+        IOException overflow = assertThrows(IOException.class,
+                () -> SdxQuantizationContract.parse(
+                        valid.replace("\"scale\":0.03125", "\"scale\":3e38")));
+        assertTrue(overflow.getMessage().contains("overflows its INT8 calibration envelope"));
+
+        IOException missingInteriorMaximum = assertThrows(IOException.class,
+                () -> SdxQuantizationContract.parse(
+                        valid.replace(",\"interiorQuantizationMax\":126", "")));
+        assertTrue(missingInteriorMaximum.getMessage().contains(
+                "interiorQuantizationMax"));
+    }
+
+    @Test
     void rejectsPerChannelContractForNnapiButPreservesHexagonAndTensorG5Support()
             throws Exception {
         SdxQuantizationContract hexagon =
@@ -225,6 +287,34 @@ class SdxQuantizationContractTest {
                 + "\"outputs\":{\"dtype\":\"INT8\","
                 + "\"scaleDtype\":\"FLOAT32\",\"granularity\":\"per-tensor\","
                 + "\"scale\":0.0625,\"zeroPoint\":0},"
+                + "\"excludedOps\":[]"
+                + "}";
+    }
+
+    private static String validQ4Contract(
+            String sourceSha, String opName, double activationScale, double outputScale) {
+        return "{"
+                + "\"formatVersion\":1,"
+                + "\"scheme\":\"q4-k-per-op-int8-boundaries\","
+                + "\"provider\":\"sdx-graph\","
+                + "\"targetSocs\":[\"Tensor_G3\"],"
+                + "\"deviceOnly\":true,"
+                + "\"allowFloatFallback\":false,"
+                + "\"requireVendorAot\":true,"
+                + "\"sourceModelSha256\":\"" + sourceSha + "\","
+                + "\"weights\":{\"dtype\":\"INT8\",\"scaleDtype\":\"FLOAT32\","
+                + "\"granularity\":\"per-tensor\",\"symmetric\":true,\"zeroPoint\":0},"
+                + "\"activations\":{\"dtype\":\"INT8\",\"calibration\":{"
+                + "\"method\":\"minmax\",\"sampleCount\":64,"
+                + "\"datasetSha256\":\"" + repeat('a', 64) + "\"}},"
+                + "\"operatorCalibrations\":{\"" + opName + "\":{"
+                + "\"opType\":\"ggml_qmatmul\","
+                + "\"activations\":{\"scaleDtype\":\"FLOAT32\","
+                + "\"granularity\":\"per-tensor\",\"scale\":" + activationScale
+                + ",\"zeroPoint\":0},"
+                + "\"outputs\":{\"scaleDtype\":\"FLOAT32\","
+                + "\"granularity\":\"per-tensor\",\"scale\":" + outputScale
+                + ",\"zeroPoint\":0,\"interiorQuantizationMax\":126}}},"
                 + "\"excludedOps\":[]"
                 + "}";
     }

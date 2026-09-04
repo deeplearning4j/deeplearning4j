@@ -26,14 +26,18 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 /**
@@ -44,6 +48,76 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.*;
  *   output_t = S_t^T * q_t
  */
 public class TestGatedDeltaRule {
+
+    @Test
+    public void testDirectFloatStateIsStableUnderSoftLimitPressure() {
+        String backendName = Nd4j.getBackend().getClass().getSimpleName().toLowerCase();
+        assumeTrue(backendName.contains("cuda") || backendName.contains("jcublas"),
+                "Test requires CUDA backend");
+        assumeTrue(Nd4j.getAffinityManager().getNumberOfDevices() >= 2,
+                "Test requires two CUDA devices to exercise peer failover pressure");
+
+        int B = 1, L = 4, H = 2, Dk = 8, Dv = 8;
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        int previousSoftLimit = nativeOps.getMemoryPoolSoftLimitPercent();
+        nativeOps.setMemoryPoolSoftLimitPercent(0);
+
+        try (INDArray q = Nd4j.randn(DataType.FLOAT, B, L, H, Dk).muli(0.1);
+             INDArray k = Nd4j.randn(DataType.FLOAT, B, L, H, Dk).muli(0.1);
+             INDArray v = Nd4j.randn(DataType.FLOAT, B, L, H, Dv).muli(0.1);
+             INDArray beta = Nd4j.rand(DataType.FLOAT, B, L, H);
+             INDArray gate = Nd4j.randn(DataType.FLOAT, B, L, H).muli(-0.1);
+             INDArray stateIn = Nd4j.zeros(DataType.FLOAT, B, H, Dk, Dv);
+             INDArray actualLength = Nd4j.scalar(DataType.INT64, L);
+             INDArray baselineOutput = Nd4j.createUninitialized(DataType.FLOAT, B, L, H, Dv);
+             INDArray baselineState = Nd4j.createUninitialized(DataType.FLOAT, B, H, Dk, Dv);
+             INDArray output = Nd4j.createUninitialized(DataType.FLOAT, B, L, H, Dv);
+             INDArray stateOut = Nd4j.createUninitialized(DataType.FLOAT, B, H, Dk, Dv)) {
+
+            INDArray[] residentArrays = {
+                    q, k, v, beta, gate, stateIn, actualLength,
+                    baselineOutput, baselineState, output, stateOut
+            };
+            for (INDArray array : residentArrays) {
+                Nd4j.getAffinityManager().ensureLocation(array, AffinityManager.Location.DEVICE);
+            }
+            Nd4j.getExecutioner().commit();
+
+            // Omit actualLength here to force the established local-scratch path;
+            // the pressured execution below supplies it and exercises direct state.
+            GatedDeltaRule baselineOp = new GatedDeltaRule(
+                    q, k, v, beta, gate, stateIn);
+            baselineOp.addOutputArgument(baselineOutput, baselineState);
+            Nd4j.getExecutioner().exec(baselineOp);
+            Nd4j.getExecutioner().commit();
+
+            GatedDeltaRule op = new GatedDeltaRule(
+                    q, k, v, beta, gate, stateIn, actualLength);
+            op.addOutputArgument(output, stateOut);
+
+            try {
+                // FLOAT + actualLength uses the dense state output directly as the
+                // recurrent working state, so soft-limit pressure must not alter
+                // placement, arithmetic, or results.
+                nativeOps.setMemoryPoolSoftLimitPercent(1);
+                Nd4j.getExecutioner().exec(op);
+                Nd4j.getExecutioner().commit();
+            } finally {
+                nativeOps.setMemoryPoolSoftLimitPercent(previousSoftLimit);
+            }
+
+            assertFalse(output.isNaN().any(), "GDR output contains NaN under soft-limit pressure");
+            assertFalse(output.isInfinite().any(), "GDR output contains Inf under soft-limit pressure");
+            assertFalse(stateOut.isNaN().any(), "GDR state contains NaN under soft-limit pressure");
+            assertFalse(stateOut.isInfinite().any(), "GDR state contains Inf under soft-limit pressure");
+            assertEquals(0.0, baselineOutput.sub(output).amaxNumber().doubleValue(), 0.0,
+                    "Soft-limit pressure changed GDR output");
+            assertEquals(0.0, baselineState.sub(stateOut).amaxNumber().doubleValue(), 0.0,
+                    "Soft-limit pressure changed GDR state");
+        } finally {
+            nativeOps.setMemoryPoolSoftLimitPercent(previousSoftLimit);
+        }
+    }
 
     private static float reproducibleExp(float value) {
         if (Float.isNaN(value)) {
@@ -360,7 +434,8 @@ public class TestGatedDeltaRule {
         INDArray beta = Nd4j.createFromArray(new double[]{beta0}).reshape(B, L, H);
         INDArray gate = Nd4j.zeros(DataType.DOUBLE, B, L, H);
 
-        INDArray[] result = Nd4j.exec(new GatedDeltaRule(q, k, v, beta, gate));
+        INDArray[] result = Nd4j.exec(new GatedDeltaRule(
+                q, k, v, beta, gate, null, Nd4j.scalar(DataType.INT64, L)));
 
         double betaDelta = beta0 * v0;
         double expectedState0 = betaDelta * k0;

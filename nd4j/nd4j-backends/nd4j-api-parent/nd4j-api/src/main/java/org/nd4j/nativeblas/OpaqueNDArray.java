@@ -410,6 +410,7 @@ public class OpaqueNDArray extends Pointer {
             // This should only happen for OpaqueNDArrays created without registration
             delete(this);
         }
+        setNull();
 
         // Clear buffer references to allow them to be freed by DeallocatorService
         // The native NDArray is already deleted at this point, so we no longer need
@@ -445,6 +446,10 @@ public class OpaqueNDArray extends Pointer {
                 bufferIsEmpty ? null : buffer.opaqueBuffer(),
                 array.offset()
         );
+        opaque.retainDataBuffers(
+                shapeInfo,
+                bufferIsEmpty ? null : buffer,
+                bufferIsEmpty ? null : buffer);
 
         if (opaque != null && !array.closeable()) {
             // Only mark the OpaqueNDArray deallocator as constant to prevent GC
@@ -498,7 +503,10 @@ public class OpaqueNDArray extends Pointer {
 
         OpaqueDataBuffer shapeOpaque = shapeInfo.opaqueBuffer();
         OpaqueDataBuffer dataOpaque = arrayEmpty ? null : buffer.opaqueBuffer();
-        return create(owner, shapeOpaque, dataOpaque, dataOpaque, array.offset());
+        OpaqueNDArray opaque = create(owner, shapeOpaque, dataOpaque, dataOpaque, array.offset());
+        opaque.retainDataBuffers(shapeInfo, arrayEmpty ? null : buffer,
+                arrayEmpty ? null : buffer);
+        return opaque;
     }
 
     /**
@@ -767,6 +775,13 @@ public class OpaqueNDArray extends Pointer {
      */
     public OpaqueNDArrayDeallocator getDeallocator() {
         return deallocator;
+    }
+
+    public void retainDataBuffers(DataBuffer shapeInfo, DataBuffer data, DataBuffer special) {
+        if (deallocator == null) {
+            throw new IllegalStateException("OpaqueNDArray is not registered for cleanup");
+        }
+        deallocator.retainDataBuffers(shapeInfo, data, special);
     }
 
     /**

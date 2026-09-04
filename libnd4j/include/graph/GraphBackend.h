@@ -63,7 +63,10 @@ struct GraphBackendRequest {
   GraphExecutionMode executionMode;
   bool runtimeCompilationAllowed = true;
   std::string runtimeArtifactDirectory;
+  // Application-owned DSP disk-cache root. Backends create device/ABI-specific
+  // subdirectories; callers clear this root only after retiring live plans.
   std::string deviceCompilationCacheDirectory;
+  // Content-addressed model identity mixed into every persistent artifact key.
   std::string deviceCompilationCacheModelKey;
 
   GraphCompilationPolicy compilationPolicy() const {
@@ -90,6 +93,16 @@ struct GraphBackendPlanningPolicy {
   bool requiresSuccessfulShapePrePass = false;
   bool precompileBeforeFirstExecution = false;
   bool allowsShapeOnlyWarmup = false;
+  // Keep every segment on the functional slot path until the complete plan has
+  // produced values and frozen its shapes. Backends that calibrate fixed operand
+  // metadata use the later plan compilation phase to lower exactly once.
+  bool deferCompilationUntilPlanFreeze = false;
+  // Explicitly authorizes one precommit functional warmup to produce values
+  // required by calibration. This is not fallback: the segment remains
+  // provisionally owned until compile/audit succeeds, and post-commit failures
+  // remain terminal. A backend must opt in rather than inheriting raw warmup
+  // from deferCompilationUntilPlanFreeze alone.
+  bool requiresPrecommitFunctionalWarmup = false;
   // Split generic DSP segments whenever the ordered set of backends capable of
   // lowering an individual slot changes. Backends own the slot capability
   // predicate; the plan owns the partitioning mechanics.
@@ -130,6 +143,27 @@ struct GraphBackendExecutionPolicy {
   bool allowPlatformGraphReplay = false;
   // Route through the full execution path so compiled results can be verified.
   bool verifyCompiledExecution = false;
+};
+
+/**
+ * Backend-neutral result for immutable inputs required before lowering.
+ *
+ * Structural admission answers whether a backend understands a segment. This
+ * separate gate answers whether the deployment supplied every finalized input
+ * needed to compile it (for example calibrated quantization metadata). A
+ * missing prerequisite is terminal: trying another backend or functional
+ * replay would silently change the requested deployment contract.
+ */
+struct GraphBackendCompilationReadiness {
+  bool ready = true;
+  std::string reason;
+
+  static GraphBackendCompilationReadiness blocked(std::string message) {
+    GraphBackendCompilationReadiness result;
+    result.ready = false;
+    result.reason = std::move(message);
+    return result;
+  }
 };
 
 /**
@@ -207,6 +241,20 @@ class SD_LIB_EXPORT GraphBackend {
   virtual GraphBackendExecutionPolicy executionPolicy(
       const GraphBackendRequest& request) const {
     (void)request;
+    return {};
+  }
+
+  /**
+   * Validate immutable compilation prerequisites after structural admission
+   * and before compileSegment(). The default keeps existing backends ready.
+   */
+  virtual GraphBackendCompilationReadiness compilationReadiness(
+      const GraphBackendRequest& request, NativeSlot* slots, int start,
+      int end) const {
+    (void)request;
+    (void)slots;
+    (void)start;
+    (void)end;
     return {};
   }
 

@@ -11,6 +11,12 @@ inputs:
   source-commit:
     required: true
     description: Resolved source commit used for the worker checkout.
+  release-version:
+    required: true
+    description: Exact version to stage in the worker Maven repository.
+  snapshot-version:
+    required: true
+    description: Current source version replaced before the worker build.
   build-threads:
     required: false
     default: ""
@@ -61,7 +67,7 @@ runs:
 
     - name: Set up Python
       if: inputs.shard != 'linux-x86_64-compat'
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: "3.10"
 
@@ -71,8 +77,7 @@ runs:
       run: |
         ndk=""
         case "${{ inputs.shard }}" in
-          android-arm64|android-arm64-vulkan) ndk=r27d ;;
-          android-x86_64) ndk=r26d ;;
+          android-arm64|android-arm64-vulkan|android-x86_64) ndk=r27d ;;
         esac
         bash release/github/bootstrap-worker.sh "${{ inputs.shard }}" "$ndk" "${{ inputs.variant }}"
 
@@ -160,6 +165,8 @@ runs:
         INPUT_SHARD: ${{ inputs.shard }}
         INPUT_VARIANT: ${{ inputs.variant }}
         INPUT_SOURCE_COMMIT: ${{ inputs.source-commit }}
+        INPUT_RELEASE_VERSION: ${{ inputs.release-version }}
+        INPUT_SNAPSHOT_VERSION: ${{ inputs.snapshot-version }}
         INPUT_BUILD_THREADS: ${{ inputs.build-threads }}
         INPUT_MAVEN_FLAGS: ${{ inputs.maven-flags }}
         INPUT_LIBND4J_URL: ${{ inputs.libnd4j-url }}
@@ -182,6 +189,8 @@ runs:
           --output "${config}"
           --shard "${INPUT_SHARD}"
           --variant "${INPUT_VARIANT}"
+          --release-version "${INPUT_RELEASE_VERSION}"
+          --snapshot-version "${INPUT_SNAPSHOT_VERSION}"
           --build-threads "${INPUT_BUILD_THREADS}"
           --maven-flags "${INPUT_MAVEN_FLAGS}"
           --libnd4j-url "${INPUT_LIBND4J_URL}"

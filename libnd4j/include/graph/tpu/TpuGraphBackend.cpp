@@ -236,9 +236,16 @@ Status TpuGraphBackend::executeSegment(
     NDArray** outputSlots, int totalOutputSlots,
     void* stream) {
   (void)slots;
+  auto fail = [&](const std::string& reason) {
+    const std::string message =
+        reason + " [TPU segment " + std::to_string(seg.def.startSlot) + "-" +
+        std::to_string(seg.def.endSlot) + ", status=KERNEL_FAILURE (50)]";
+    safeSetErrorContext(static_cast<int>(Status::KERNEL_FAILURE), message.c_str());
+    return Status::KERNEL_FAILURE;
+  };
   if (!seg.exec.replayHandle || !seg.exec.replayHandle->isReady() ||
       std::string(seg.exec.replayHandle->backendName()) != "TPU (PJRT)") {
-    return Status::KERNEL_FAILURE;
+    return fail("TPU replay handle is absent, not ready, or owned by another backend");
   }
   auto* handle = static_cast<TpuReplayHandle*>(seg.exec.replayHandle.get());
 
@@ -248,7 +255,10 @@ Status TpuGraphBackend::executeSegment(
     NDArray* array = resolveBoundaryArray(source, externalInputs,
                                           numExternalInputs, outputSlots,
                                           totalOutputSlots);
-    if (array == nullptr) return Status::KERNEL_FAILURE;
+    if (array == nullptr) {
+      return fail("TPU boundary input resolved to null: source=" +
+                  std::to_string(source));
+    }
     inputs.push_back(array);
   }
 
@@ -257,7 +267,9 @@ Status TpuGraphBackend::executeSegment(
   for (int outputIndex : handle->outputSlotIndices()) {
     if (outputIndex < 0 || outputIndex >= totalOutputSlots ||
         outputSlots == nullptr || outputSlots[outputIndex] == nullptr) {
-      return Status::KERNEL_FAILURE;
+      return fail("TPU boundary output is unavailable: outputSlot=" +
+                  std::to_string(outputIndex) + ", totalOutputSlots=" +
+                  std::to_string(totalOutputSlots));
     }
     outputs.push_back(outputSlots[outputIndex]);
   }
@@ -266,7 +278,14 @@ Status TpuGraphBackend::executeSegment(
                      static_cast<int>(inputs.size()),
                      outputs.empty() ? nullptr : outputs.data(),
                      static_cast<int>(outputs.size()));
-  return handle->replay(stream) ? Status::OK : Status::KERNEL_FAILURE;
+  if (!handle->replay(stream)) {
+    const std::string runtimeError =
+        PjrtClientManager::getInstance().getLastError();
+    return fail(runtimeError.empty()
+                    ? "TPU PJRT replay returned false without runtime detail"
+                    : "TPU PJRT replay failed: " + runtimeError);
+  }
+  return Status::OK;
 }
 
 void TpuGraphBackend::invalidateCache() {

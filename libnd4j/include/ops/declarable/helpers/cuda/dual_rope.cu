@@ -23,6 +23,7 @@
 #include <cuda_runtime.h>
 #include <helpers/DebugHelper.h>
 #include <array/NDArray.h>
+#include <array/NDArrayFactory.h>
 #include <execution/cuda/LaunchDims.h>
 #include <types/float16.h>
 #include <ops/declarable/helpers/dual_rope.h>
@@ -42,7 +43,7 @@ SD_KERNEL void dualRoPEKernel(
     const LongType seqLen,
     const LongType numHeads,
     const LongType headDim,
-    const int positionOffset,
+    const LongType* __restrict__ positionPtr,
     const double freqBase,
     const double freqScale,
     const LongType xStride0, const LongType xStride1,
@@ -66,7 +67,8 @@ SD_KERNEL void dualRoPEKernel(
     const LongType s   = tmp2 % seqLen;
     const LongType b   = tmp2 / seqLen;
 
-    const LongType position = static_cast<LongType>(positionOffset) + s;
+    // Device-side position read: capture-safe, no host sync (fused_rope pattern)
+    const LongType position = positionPtr[0] + s;
 
     // theta_i = freq_base ^ (-2i / head_dim) * freq_scale
     const double exponent = -2.0 * static_cast<double>(i) / static_cast<double>(headDim);
@@ -89,19 +91,16 @@ SD_KERNEL void dualRoPEKernel(
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Launcher
+// Launcher: takes NDArray pointers; typed casts happen inside (selector passes
+// NDArray* args — the activation_mul.cu convention).
 ///////////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void launchDualRoPEKernel(
-    const T* input, T* output,
+    NDArray* input, NDArray* output, NDArray* positionArr,
     LongType batch, LongType seqLen, LongType numHeads, LongType headDim,
-    int positionOffset, double freqBase, double freqScale,
-    LongType xStride0, LongType xStride1, LongType xStride2, LongType xStride3,
-    LongType zStride0, LongType zStride1, LongType zStride2, LongType zStride3,
-    cudaStream_t stream) {
+    double freqBase, double freqScale, cudaStream_t stream) {
 
-  const LongType halfDim = headDim / 2;
-  const LongType totalPairs = batch * seqLen * numHeads * halfDim;
+  const LongType totalPairs = batch * seqLen * numHeads * (headDim / 2);
 
   dim3 launchDims = getLaunchDims("dual_rope");
   int threadsPerBlock = launchDims.y;
@@ -112,48 +111,28 @@ static void launchDualRoPEKernel(
   }
 
   dualRoPEKernel<T><<<blocksPerGrid, threadsPerBlock, launchDims.z, stream>>>(
-      input, output,
+      reinterpret_cast<const T*>(input->specialBuffer()),
+      reinterpret_cast<T*>(output->specialBuffer()),
       batch, seqLen, numHeads, headDim,
-      positionOffset, freqBase, freqScale,
-      xStride0, xStride1, xStride2, xStride3,
-      zStride0, zStride1, zStride2, zStride3);
+      reinterpret_cast<const LongType*>(positionArr->specialBuffer()),
+      freqBase, freqScale,
+      input->strideAt(0), input->strideAt(1), input->strideAt(2), input->strideAt(3),
+      output->strideAt(0), output->strideAt(1), output->strideAt(2), output->strideAt(3));
 
   DebugHelper::checkGlobalErrorCode("dualRoPEKernel failed");
 }
 
-// Explicit instantiations
-template void launchDualRoPEKernel<float>(
-    const float*, float*,
-    LongType, LongType, LongType, LongType,
-    int, double, double,
-    LongType, LongType, LongType, LongType,
-    LongType, LongType, LongType, LongType,
-    cudaStream_t);
-
-template void launchDualRoPEKernel<double>(
-    const double*, double*,
-    LongType, LongType, LongType, LongType,
-    int, double, double,
-    LongType, LongType, LongType, LongType,
-    LongType, LongType, LongType, LongType,
-    cudaStream_t);
-
-template void launchDualRoPEKernel<float16>(
-    const float16*, float16*,
-    LongType, LongType, LongType, LongType,
-    int, double, double,
-    LongType, LongType, LongType, LongType,
-    LongType, LongType, LongType, LongType,
-    cudaStream_t);
-
 ///////////////////////////////////////////////////////////////////////////////
 // Public interface
 ///////////////////////////////////////////////////////////////////////////////
+
+// Legacy host-offset entry point (position supplied as a static int argument).
+// Kept for backward compatibility with existing graphs; new code should use the
+// dynamic-position overload below.
 void dualRoPE(LaunchContext* context, NDArray* input, NDArray* output,
               int attentionType, int positionOffset,
               double localFreqBase, double globalFreqBase,
               double localFreqScale, double globalFreqScale) {
-
   // Select freq_base and freq_scale based on attention type
   const double freqBase  = (attentionType == 0) ? localFreqBase : globalFreqBase;
   const double freqScale = (attentionType == 0) ? localFreqScale : globalFreqScale;
@@ -166,40 +145,46 @@ void dualRoPE(LaunchContext* context, NDArray* input, NDArray* output,
   NDArray::prepareSpecialUse({output}, {input});
 
   auto stream = context->getCudaStream();
-  auto dtype = input->dataType();
 
-  if (dtype == DataType::FLOAT32) {
-    launchDualRoPEKernel<float>(
-        reinterpret_cast<const float*>(input->specialBuffer()),
-        reinterpret_cast<float*>(output->specialBuffer()),
-        batch, seqLen, numHeads, headDim,
-        positionOffset, freqBase, freqScale,
-        input->strideAt(0), input->strideAt(1), input->strideAt(2), input->strideAt(3),
-        output->strideAt(0), output->strideAt(1), output->strideAt(2), output->strideAt(3),
-        *stream);
-  } else if (dtype == DataType::DOUBLE) {
-    launchDualRoPEKernel<double>(
-        reinterpret_cast<const double*>(input->specialBuffer()),
-        reinterpret_cast<double*>(output->specialBuffer()),
-        batch, seqLen, numHeads, headDim,
-        positionOffset, freqBase, freqScale,
-        input->strideAt(0), input->strideAt(1), input->strideAt(2), input->strideAt(3),
-        output->strideAt(0), output->strideAt(1), output->strideAt(2), output->strideAt(3),
-        *stream);
-  } else if (dtype == DataType::HALF) {
-    launchDualRoPEKernel<float16>(
-        reinterpret_cast<const float16*>(input->specialBuffer()),
-        reinterpret_cast<float16*>(output->specialBuffer()),
-        batch, seqLen, numHeads, headDim,
-        positionOffset, freqBase, freqScale,
-        input->strideAt(0), input->strideAt(1), input->strideAt(2), input->strideAt(3),
-        output->strideAt(0), output->strideAt(1), output->strideAt(2), output->strideAt(3),
-        *stream);
-  } else {
-    THROW_EXCEPTION("dualRoPE CUDA: Unsupported data type");
+  // Stage the static offset into a device scalar so the kernel keeps one
+  // position-pointer contract (fused_rope does the same for its iArg fallback).
+  auto posArr = NDArrayFactory::create_<LongType>(static_cast<LongType>(positionOffset), context);
+
+  BUILD_SINGLE_SELECTOR(input->dataType(), launchDualRoPEKernel,
+      (input, output, posArr, batch, seqLen, numHeads, headDim,
+       freqBase, freqScale, *stream), SD_FLOAT_TYPES);
+
+  delete posArr;
+  NDArray::registerSpecialUse({output}, {input});
+}
+
+// Dynamic-position entry point: the base position lives in a device-resident
+// INT64 tensor. The kernel dereferences it on-device — capture-safe, no host sync.
+void dualRoPE(LaunchContext* context, NDArray* input, NDArray* output,
+              NDArray* positionArr, int attentionType,
+              double localFreqBase, double globalFreqBase,
+              double localFreqScale, double globalFreqScale) {
+  if (!(positionArr->isScalar() || positionArr->lengthOf() == 1)) {
+    THROW_EXCEPTION("dualRoPE CUDA: positionArr must be a scalar or single-element tensor");
   }
 
-  NDArray::registerSpecialUse({output}, {input});
+  const double freqBase  = (attentionType == 0) ? localFreqBase : globalFreqBase;
+  const double freqScale = (attentionType == 0) ? localFreqScale : globalFreqScale;
+
+  const LongType batch    = input->sizeAt(0);
+  const LongType seqLen   = input->sizeAt(1);
+  const LongType numHeads = input->sizeAt(2);
+  const LongType headDim  = input->sizeAt(3);
+
+  NDArray::prepareSpecialUse({output}, {input, positionArr});
+
+  auto stream = context->getCudaStream();
+
+  BUILD_SINGLE_SELECTOR(input->dataType(), launchDualRoPEKernel,
+      (input, output, positionArr, batch, seqLen, numHeads, headDim,
+       freqBase, freqScale, *stream), SD_FLOAT_TYPES);
+
+  NDArray::registerSpecialUse({output}, {input, positionArr});
 }
 
 }  // namespace helpers

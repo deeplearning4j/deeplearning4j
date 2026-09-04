@@ -56,11 +56,11 @@ on:
         options: ["0", "1"]
         default: "0"
       releaseVersion:
-        description: Release or current snapshot version for Java-only publishing.
+        description: Release version when deployToReleaseStaging=1.
         required: false
-        default: 1.0.0-SNAPSHOT
+        default: 1.0.0-M3
       snapshotVersion:
-        description: Snapshot version ending in -SNAPSHOT.
+        description: Current snapshot version ending in -SNAPSHOT.
         required: false
         default: 1.0.0-SNAPSHOT
       serverId:
@@ -69,11 +69,15 @@ on:
         default: central
       deployToReleaseStaging:
         description: Deploy to release staging (1) or snapshots (0).
-        required: false
+        required: true
+        type: choice
+        options: ["0", "1"]
         default: "0"
       dryRun:
         description: Build without deploying.
-        required: false
+        required: true
+        type: choice
+        options: ["false", "true"]
         default: "false"
       publishSourceRunId:
         description: Publish staged release-worker artifacts from this run ID without rebuilding.
@@ -118,6 +122,10 @@ jobs:
       libnd4jUrl: ${{ inputs.libnd4jUrl }}
       buildAot: ${{ inputs.buildAot }}
       aotAllSpins: ${{ inputs.aotAllSpins }}
+      releaseVersion: ${{ inputs.releaseVersion }}
+      snapshotVersion: ${{ inputs.snapshotVersion }}
+      deployToReleaseStaging: ${{ inputs.deployToReleaseStaging }}
+      dryRun: ${{ inputs.dryRun }}
     secrets: inherit
 
   publish-staged:
@@ -126,4 +134,6 @@ jobs:
     with:
       sourceRunId: ${{ inputs.publishSourceRunId }}
       artifactPattern: ${{ inputs.publishArtifactPattern }}
+      deployToReleaseStaging: ${{ inputs.deployToReleaseStaging }}
+      dryRun: ${{ inputs.dryRun }}
     secrets: inherit

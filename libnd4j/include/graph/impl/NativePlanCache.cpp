@@ -35,8 +35,10 @@ namespace graph {
 // ---------------------------------------------------------------------------
 
 std::atomic<bool> NativePlanCache::shutdownInProgress_{false};
+std::mutex NativePlanCache::shutdownMutex_;
 
 void NativePlanCache::setShutdownInProgress(bool inProgress) {
+  std::lock_guard<std::mutex> lock(shutdownMutex_);
   shutdownInProgress_.store(inProgress, std::memory_order_release);
 }
 
@@ -51,19 +53,17 @@ static void logPlanCacheMemoryState(
 
   auto& dsp = sd::Environment::getInstance().dsp();
   const size_t totalBytes = dspGetDeviceTotalMemory();
-  const size_t slotOwnedBytes = plan != nullptr ? plan->estimatedOwnedBytes() : 0;
   DSP_DIAG(
       MEMORY,
       "PLAN_CACHE_STATE event=%s entries=%zu pinned=%zu maxPlans=%d "
       "budgetFraction=%.4f gpuTotal=%zuMB plan=%p "
-      "planPassivated=%d slotOwnedBytes=%zuMB thread=0x%llx "
+      "thread=0x%llx "
       "shapeHash=0x%llx contentHash=0x%llx",
       event, entries, pinned,
       dspHasDeviceMemory() ? dsp.planCacheMaxPlans() : dsp.planCacheMaxPlansCpu(),
       dsp.planCacheBudgetFraction(),
       totalBytes / (1024 * 1024),
-      (void*)plan, plan != nullptr && plan->isPassivated() ? 1 : 0,
-      slotOwnedBytes / (1024 * 1024),
+      (void*)plan,
       key != nullptr ? (unsigned long long)key->threadId : 0ULL,
       key != nullptr ? (unsigned long long)key->phShapeContentHash : 0ULL,
       key != nullptr ? (unsigned long long)key->planContentHash : 0ULL);
@@ -119,25 +119,36 @@ size_t NativePlanCache::size() const {
 // ---------------------------------------------------------------------------
 
 void NativePlanCache::clear() {
-  // During JVM shutdown, skip all CUDA teardown — the CUDA context may
-  // already be destroyed.  The OS reclaims all memory on process exit.
-  if (isShutdownInProgress()) {
-    return;
-  }
+  // Serialize shutdown transitions with CUDA teardown. During JVM shutdown,
+  // skip all CUDA teardown — the OS reclaims the remaining memory on exit.
+  std::lock_guard<std::mutex> shutdownLock(shutdownMutex_);
+  if (isShutdownInProgress()) return;
 
-  // Collect all plans under the lock, then delete outside to avoid
-  // running CUDA teardown (platformFreePlanResources) under mutex_.
+  // Collect only unleased plans. A live executor may still hold a raw plan
+  // handle, so clear must not delete a leased entry; it remains in the cache
+  // until the final borrower releases it.
   std::vector<NativeDynamicShapePlan*> toDelete;
+  size_t leasedRemaining = 0;
+  size_t entriesRemaining = 0;
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    toDelete.reserve(lru_.size());
-    for (auto& entry : lru_) {
-      toDelete.push_back(entry.second);
+    for (auto it = lru_.begin(); it != lru_.end();) {
+      NativeDynamicShapePlan* plan = it->second;
+      if (pinCounts_.count(plan) != 0) {
+        ++it;
+        continue;
+      }
+      toDelete.push_back(plan);
+      map_.erase(it->first);
+      it = lru_.erase(it);
     }
-    lru_.clear();
-    map_.clear();
-    pinnedPlans_.clear();
+    leasedRemaining = pinCounts_.size();
+    entriesRemaining = lru_.size();
+    clearPending_ = leasedRemaining != 0;
   }
+
+  DSP_DIAG(MEMORY, "PLAN_CACHE_CLEAR: deleting=%zu leasedRemaining=%zu entriesRemaining=%zu",
+           toDelete.size(), leasedRemaining, entriesRemaining);
 
   // Teardown is deliberately two-phase. Cached shape plans can share the same
   // external weight DataBuffers and each frozen plan pins those device pointers.
@@ -166,7 +177,11 @@ void NativePlanCache::clear() {
 
 NativeDynamicShapePlan* NativePlanCache::getOrInsert(
     const Key& key,
-    const std::function<NativeDynamicShapePlan*()>& factory) {
+    const std::function<NativeDynamicShapePlan*()>& factory,
+    bool acquireLease) {
+
+  std::lock_guard<std::mutex> shutdownLock(shutdownMutex_);
+  if (isShutdownInProgress()) return nullptr;
 
   NativeDynamicShapePlan* result = nullptr;
   std::vector<NativeDynamicShapePlan*> victims;
@@ -174,12 +189,13 @@ NativeDynamicShapePlan* NativePlanCache::getOrInsert(
   {
     std::lock_guard<std::mutex> lock(mutex_);
 
-    // Cache hit: splice to front (MRU), pin, and return.
+    // Cache hit: splice to front (MRU), optionally acquire a borrower lease,
+    // and return. Same-borrower redispatch passes acquireLease=false.
     auto it = map_.find(key);
     if (it != map_.end()) {
       lru_.splice(lru_.begin(), lru_, it->second);
       NativeDynamicShapePlan* plan = it->second->second;
-      pinnedPlans_.insert(plan);
+      if (acquireLease) ++pinCounts_[plan];
       // Reactivate passivated plans — execute path re-warms automatically.
       if (plan->isPassivated()) {
         plan->reactivate();
@@ -191,7 +207,7 @@ NativeDynamicShapePlan* NativePlanCache::getOrInsert(
                  (unsigned long long)key.threadId, (void*)plan,
                  (unsigned long long)key.phShapeContentHash);
       }
-      logPlanCacheMemoryState("HIT_PINNED", &key, plan, lru_.size(), pinnedPlans_.size());
+      logPlanCacheMemoryState("HIT_PINNED", &key, plan, lru_.size(), pinCounts_.size());
       result = plan;
     } else {
       // Cache miss: build a new plan for this thread.
@@ -227,18 +243,19 @@ NativeDynamicShapePlan* NativePlanCache::getOrInsert(
                  (unsigned long long)key.phShapeContentHash);
       }
 
-      // Insert at MRU (front) and pin.
+      // Insert at MRU (front) and acquire the initial borrower lease. A
+      // cache miss always belongs to the caller even when acquireLease=false.
       lru_.emplace_front(key, plan);
       map_[key] = lru_.begin();
-      pinnedPlans_.insert(plan);
+      pinCounts_[plan] = 1;
       logPlanCacheMemoryState(
-          "INSERT_BEFORE_BUDGET", &key, plan, lru_.size(), pinnedPlans_.size());
+          "INSERT_BEFORE_BUDGET", &key, plan, lru_.size(), pinCounts_.size());
 
       // Enforce count and memory budgets (skips pinned plans).
       // Victims are returned, NOT deleted under the lock.
       victims = evictIfOverBudgetLocked();
       logPlanCacheMemoryState(
-          "INSERT_AFTER_BUDGET", &key, plan, lru_.size(), pinnedPlans_.size());
+          "INSERT_AFTER_BUDGET", &key, plan, lru_.size(), pinCounts_.size());
 
       result = plan;
     }
@@ -279,11 +296,30 @@ void NativePlanCache::unpinPlan(NativeDynamicShapePlan* plan) {
   //   5. Plan must re-warm (4+ executions to reach REPLAYING)
   //   6. Gets passivated again before reaching REPLAYING → never stabilizes
   // Memory-budget eviction only fires on getOrInsert() when new plans enter.
-  std::lock_guard<std::mutex> lock(mutex_);
-  const size_t erased = pinnedPlans_.erase(plan);
-  logPlanCacheMemoryState(
-      erased > 0 ? "UNPIN" : "UNPIN_NOT_PINNED",
-      nullptr, plan, lru_.size(), pinnedPlans_.size());
+  bool clearAfterRelease = false;
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto it = pinCounts_.find(plan);
+    if (it == pinCounts_.end()) {
+      logPlanCacheMemoryState("UNPIN_NOT_PINNED", nullptr, plan,
+                              lru_.size(), pinCounts_.size());
+      return;
+    }
+    if (it->second > 1) {
+      --it->second;
+      logPlanCacheMemoryState("UNPIN_LEASE_RELEASED", nullptr, plan,
+                              lru_.size(), pinCounts_.size());
+    } else {
+      pinCounts_.erase(it);
+      clearAfterRelease = clearPending_;
+      logPlanCacheMemoryState("UNPIN", nullptr, plan,
+                              lru_.size(), pinCounts_.size());
+    }
+  }
+
+  // A prior clear intentionally retained leased entries. Once this release
+  // reaches zero, rerun the safe clear path so the entry cannot be reused.
+  if (clearAfterRelease) clear();
 }
 
 // ---------------------------------------------------------------------------
@@ -292,7 +328,7 @@ void NativePlanCache::unpinPlan(NativeDynamicShapePlan* plan) {
 
 size_t NativePlanCache::pinnedCount() const {
   std::lock_guard<std::mutex> lock(mutex_);
-  return pinnedPlans_.size();
+  return pinCounts_.size();
 }
 
 // ---------------------------------------------------------------------------
@@ -312,13 +348,21 @@ std::vector<NativeDynamicShapePlan*> NativePlanCache::evictIfOverBudgetLocked() 
   // Device-resident plans share the accelerator cache budget independent of vendor.
   const int maxPlans = dspHasDeviceMemory() ? dsp.planCacheMaxPlans() : dsp.planCacheMaxPlansCpu();
   const float fraction = dsp.planCacheBudgetFraction();
+  const size_t pinnedPlanEstimate = dspHasDeviceMemory()
+      ? kBytesPerPlanEstimate +
+            static_cast<size_t>(std::max(0, dsp.captureWorkspaceMb())) *
+                1024ULL * 1024ULL +
+            static_cast<size_t>(std::max(
+                0, sd::Environment::getInstance().dspCublasWorkspaceMb())) *
+                1024ULL * 1024ULL
+      : kBytesPerPlanEstimate;
   logPlanCacheMemoryState(
-      "BUDGET_CHECK", nullptr, nullptr, lru_.size(), pinnedPlans_.size());
+      "BUDGET_CHECK", nullptr, nullptr, lru_.size(), pinCounts_.size());
 
   // Helper lambda: find oldest unpinned, non-passivated plan (LRU end toward MRU front)
   auto findPassivationCandidate = [&]() -> LruList::iterator {
     for (auto it = std::prev(lru_.end()); ; ) {
-      if (pinnedPlans_.count(it->second) == 0 && !it->second->isPassivated()) {
+      if (pinCounts_.count(it->second) == 0 && !it->second->isPassivated()) {
         return it;
       }
       if (it == lru_.begin()) break;
@@ -330,7 +374,7 @@ std::vector<NativeDynamicShapePlan*> NativePlanCache::evictIfOverBudgetLocked() 
   // Helper lambda: find oldest unpinned plan (for full eviction, includes passivated)
   auto findEvictionCandidate = [&]() -> LruList::iterator {
     for (auto it = std::prev(lru_.end()); ; ) {
-      if (pinnedPlans_.count(it->second) == 0) {
+      if (pinCounts_.count(it->second) == 0) {
         return it;
       }
       if (it == lru_.begin()) break;
@@ -344,6 +388,13 @@ std::vector<NativeDynamicShapePlan*> NativePlanCache::evictIfOverBudgetLocked() 
     size_t total = 0;
     for (auto& entry : lru_) {
       if (entry.second->isPassivated()) continue;  // holds zero GPU memory
+      // A leased plan can be mutating its slot/handle vectors on another
+      // execution thread. It cannot be evicted anyway, so charge a conservative
+      // configured workspace estimate without dereferencing mutable plan state.
+      if (pinCounts_.count(entry.second) != 0) {
+        total += pinnedPlanEstimate;
+        continue;
+      }
       size_t planBytes = entry.second->estimatedOwnedBytes();
       total += (planBytes > 0) ? planBytes : kBytesPerPlanEstimate;
     }
@@ -371,7 +422,7 @@ std::vector<NativeDynamicShapePlan*> NativePlanCache::evictIfOverBudgetLocked() 
       DSP_DIAG(MEMORY,
                "PLAN_CACHE_BUDGET_BLOCKED reason=count_cap_all_pinned entries=%zu "
                "pinned=%zu maxPlans=%d",
-               lru_.size(), pinnedPlans_.size(), maxPlans);
+               lru_.size(), pinCounts_.size(), maxPlans);
       break;
     }
     DSP_DIAG(MEMORY, "PLAN_CACHE evict LRU (count cap %d): outputSetHash=%llu phCount=%lld contentHash=0x%016llx",
@@ -403,7 +454,7 @@ std::vector<NativeDynamicShapePlan*> NativePlanCache::evictIfOverBudgetLocked() 
           DSP_DIAG(MEMORY,
                    "PLAN_CACHE_BUDGET_BLOCKED reason=memory_all_pinned_or_passivated "
                    "entries=%zu pinned=%zu cache=%zuMB budget=%zuMB",
-                   lru_.size(), pinnedPlans_.size(),
+                   lru_.size(), pinCounts_.size(),
                    totalCacheBytes / (1024 * 1024),
                    budgetBytes / (1024 * 1024));
           break;
@@ -446,7 +497,7 @@ std::vector<NativeDynamicShapePlan*> NativePlanCache::evictIfOverBudgetLocked() 
           DSP_DIAG(MEMORY,
                    "PLAN_CACHE_BUDGET_BLOCKED reason=eviction_all_pinned "
                    "entries=%zu pinned=%zu cache=%zuMB budget=%zuMB",
-                   lru_.size(), pinnedPlans_.size(),
+                   lru_.size(), pinCounts_.size(),
                    totalCacheBytes / (1024 * 1024),
                    budgetBytes / (1024 * 1024));
           break;

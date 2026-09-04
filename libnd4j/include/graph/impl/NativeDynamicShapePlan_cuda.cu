@@ -89,6 +89,8 @@ namespace sd { namespace cuda { void clearCudaGraphSchedulerCache(); } }
 
 #include <algorithm>
 #include <chrono>
+#include <cstdarg>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <cstdint>
@@ -98,6 +100,7 @@ namespace sd { namespace cuda { void clearCudaGraphSchedulerCache(); } }
 #include <condition_variable>
 #include <mutex>
 #include <numeric>
+#include <string>
 #include <unordered_set>
 
 extern thread_local cudaStream_t tl_dspGapStream;
@@ -115,6 +118,59 @@ namespace sd {
 void dspPublishThreadCompletionEvent(void* streamPtr);
 
 namespace graph {
+
+namespace {
+
+void setCudaPlanFailureDetailV(const char* format, va_list args) {
+  char message[512];
+  std::vsnprintf(message, sizeof(message), format, args);
+  auto* errorReference = LaunchContext::defaultContext()->errorReference();
+  errorReference->setErrorCode(static_cast<int>(Status::KERNEL_FAILURE));
+  errorReference->setErrorMessage(message);
+}
+
+Status cudaPlanFailure(const char* format, ...) {
+  va_list args;
+  va_start(args, format);
+  setCudaPlanFailureDetailV(format, args);
+  va_end(args);
+  return Status::KERNEL_FAILURE;
+}
+
+bool cudaPlanFailureBool(const char* format, ...) {
+  va_list args;
+  va_start(args, format);
+  setCudaPlanFailureDetailV(format, args);
+  va_end(args);
+  return false;
+}
+
+void destroyReplayGraph(GraphReplayHandle* handle) {
+  if (handle == nullptr) return;
+  int currentDevice = -1;
+  cudaGetDevice(&currentDevice);
+  const int handleDevice = handle->getDeviceId();
+  const bool switchedDevice =
+      handleDevice >= 0 && currentDevice >= 0 && handleDevice != currentDevice;
+  if (switchedDevice) cudaSetDevice(handleDevice);
+  auto* cudaHandle = dynamic_cast<CudaGraphReplayHandle*>(handle);
+  if (cudaHandle != nullptr) {
+    cudaHandle->destroyGraphBeforeCapturedResources();
+  }
+  if (switchedDevice) cudaSetDevice(currentDevice);
+}
+
+void destroySegmentReplayGraphs(GraphSegment& seg) {
+  destroyReplayGraph(seg.exec.replayHandle.get());
+  for (auto& handle : seg.exec.compositeReplaySchedule.mergedReplayHandles) {
+    destroyReplayGraph(handle.get());
+  }
+  for (auto& handle : seg.exec.compositeReplaySchedule.compositeReplayHandles) {
+    destroyReplayGraph(handle.get());
+  }
+}
+
+}  // namespace
 
 // Passive BUF_FP diagnostic bridge for strided-batched matmuls.
 // The bge lifecycle path invokes four accepted batched GEMMs during re-warmup
@@ -192,8 +248,11 @@ using namespace SegmentLifecycle;
 
 namespace {
 
-LongType computeSlotAddrHash(NDArray** outputSlots, int startSlot, int endSlot, int totalSlots) {
-  return dsp::computeSlotAddrHash(outputSlots, startSlot, endSlot, totalSlots,
+LongType computeSlotAddrHash(const NativeSlot* slots, int numSlots,
+                             NDArray** outputSlots, int startSlot, int endSlot,
+                             int totalSlots) {
+  return dsp::computeSegmentSlotAddrHash(slots, numSlots, outputSlots,
+      startSlot, endSlot, totalSlots,
       [](NDArray* a) -> void* { return a->specialBuffer(); });
 }
 
@@ -217,14 +276,23 @@ bool bindSegmentCudaDevice(const GraphSegment& segment,
                phase, segment.def.startSlot, segment.def.endSlot, targetDevice,
                cudaGetErrorString(countErr));
       cudaGetLastError();
-      return false;
+      return cudaPlanFailureBool(
+          "CUDA segment device binding failed during %s for seg[%d-%d]: "
+          "cudaGetDeviceCount returned %d (%s), targetDevice=%d, deviceCount=%d",
+          phase, segment.def.startSlot, segment.def.endSlot,
+          static_cast<int>(countErr), cudaGetErrorString(countErr),
+          targetDevice, deviceCount);
     }
     cachedDeviceCount = deviceCount;
   }
   if (targetDevice >= cachedDeviceCount) {
     DSP_DIAG(BACKEND, "NativeDSP::execute: %s seg[%d-%d] invalid targetDeviceId=%d (deviceCount=%d)",
              phase, segment.def.startSlot, segment.def.endSlot, targetDevice, cachedDeviceCount);
-    return false;
+    return cudaPlanFailureBool(
+        "CUDA segment device binding failed during %s for seg[%d-%d]: "
+        "targetDevice=%d is outside deviceCount=%d",
+        phase, segment.def.startSlot, segment.def.endSlot,
+        targetDevice, cachedDeviceCount);
   }
 
   // Multi-GPU sharding: query the ACTUAL current device each time (do NOT cache it). The
@@ -238,7 +306,11 @@ bool bindSegmentCudaDevice(const GraphSegment& segment,
     DSP_DIAG(BACKEND, "NativeDSP::execute: %s seg[%d-%d] failed to query current CUDA device: %s",
              phase, segment.def.startSlot, segment.def.endSlot, cudaGetErrorString(getErr));
     cudaGetLastError();
-    return false;
+    return cudaPlanFailureBool(
+        "CUDA segment device binding failed during %s for seg[%d-%d]: "
+        "cudaGetDevice returned %d (%s)",
+        phase, segment.def.startSlot, segment.def.endSlot,
+        static_cast<int>(getErr), cudaGetErrorString(getErr));
   }
   if (currentDevice != targetDevice) {
     cudaError_t setErr = cudaSetDevice(targetDevice);
@@ -247,7 +319,12 @@ bool bindSegmentCudaDevice(const GraphSegment& segment,
                phase, segment.def.startSlot, segment.def.endSlot,
                currentDevice, targetDevice, cudaGetErrorString(setErr));
       cudaGetLastError();
-      return false;
+      return cudaPlanFailureBool(
+          "CUDA segment device binding failed during %s for seg[%d-%d]: "
+          "cudaSetDevice(%d) from device %d returned %d (%s)",
+          phase, segment.def.startSlot, segment.def.endSlot,
+          targetDevice, currentDevice, static_cast<int>(setErr),
+          cudaGetErrorString(setErr));
     }
     DSP_DIAG(BACKEND, "NativeDSP::execute: %s seg[%d-%d] switched CUDA device %d->%d",
              phase, segment.def.startSlot, segment.def.endSlot, currentDevice, targetDevice);
@@ -370,7 +447,19 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       execCtx->execTarget = ExecTarget::GRAPH_REPLAY;
     }
   }
-  externalInputs = performPreReplaySync(externalInputs, numExternalInputs, stream, "frozen_fast_path");
+  DspStagingSyncResult syncResult = performPreReplaySync(
+      externalInputs, numExternalInputs, stream, "frozen_fast_path");
+  if (!syncResult.ok() || syncResult.effectiveExternals == nullptr) {
+    DSP_DIAG(EXECUTE,
+             "FROZEN_FAST_PATH: input staging failed status=%d cudaError=%d — aborting",
+             static_cast<int>(syncResult.status), syncResult.cudaError);
+    return cudaPlanFailure(
+        "CUDA frozen fast-path input staging failed: syncStatus=%d, "
+        "cudaError=%d (%s)",
+        static_cast<int>(syncResult.status), syncResult.cudaError,
+        cudaGetErrorString(static_cast<cudaError_t>(syncResult.cudaError)));
+  }
+  externalInputs = syncResult.effectiveExternals;
 
   // ── NO gap-stream guard at this layer (by design — do not re-add) ─────────
   // The frozen fast path must NOT install a GapStreamGuard. Gap-stream ownership
@@ -436,13 +525,42 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     if (seg.exec.capturedSlotAddrHash == 0) continue;
 
     LongType currentAddrHash = computeSlotAddrHash(
-        outputSlots_, seg.def.startSlot, seg.def.endSlot, totalOutputSlots_);
+        slots_, numSlots_, outputSlots_, seg.def.startSlot, seg.def.endSlot,
+        totalOutputSlots_);
     if (seg.exec.slotAddrDrifted(currentAddrHash)) {
       DSP_DIAG(EXECUTE,
                "FROZEN_FAST_PATH: SLOT_ADDR_DRIFT for seg[%d-%d] "
                "captured=0x%llx current=0x%llx — falling back to normal path for recapture",
                seg.def.startSlot, seg.def.endSlot,
                (long long)seg.exec.capturedSlotAddrHash, (long long)currentAddrHash);
+      return Status::MAYBE;
+    }
+  }
+
+  // Every soft refresh fallback must be decided before the first replay launch.
+  // Returning MAYBE from inside the loop can restart ordered execution at segment
+  // zero after earlier stateful segments already ran, duplicating their updates.
+  for (const auto& seg : segments_) {
+    if (seg.def.allFrozenConstants || isTerminalOutcome(seg.exec.outcome) ||
+        !seg.def.isCapturable) {
+      continue;
+    }
+    if (seg.exec.needsArgRefresh()) {
+      DSP_DIAG(EXECUTE,
+               "FROZEN_FAST_PATH: preflight arg refresh required for seg[%d-%d] — "
+               "returning MAYBE before any segment launches",
+               seg.def.startSlot, seg.def.endSlot);
+      return Status::MAYBE;
+    }
+    const bool monolithicReady =
+        seg.exec.replayHandle != nullptr && seg.exec.replayHandle->isReady();
+    const bool compositeReady =
+        !seg.exec.compositeReplaySchedule.units.empty();
+    if (!monolithicReady && !compositeReady) {
+      DSP_DIAG(EXECUTE,
+               "FROZEN_FAST_PATH: preflight found no replay handle for seg[%d-%d] — "
+               "returning MAYBE before any segment launches",
+               seg.def.startSlot, seg.def.endSlot);
       return Status::MAYBE;
     }
   }
@@ -479,9 +597,10 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       SyncOverride frozenSbsSync(*this, "frozenFastPath_terminal_sbs");
       auto sbsStatus = executeSegmentSlotBySlot(seg, externalInputs, numExternalInputs, stream);
       if (sbsStatus != Status::OK) {
-        DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: slot-by-slot FAILED seg[%d-%d] status=%d "
+        DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: slot-by-slot FAILED seg[%d-%d] status=%s (%d) "
                  "(outcome=%d isCapturable=%d)",
-                 seg.def.startSlot, seg.def.endSlot, (int)sbsStatus,
+                 seg.def.startSlot, seg.def.endSlot,
+                 dsp::dspStatusName(sbsStatus), static_cast<int>(sbsStatus),
                  (int)seg.exec.outcome, (int)seg.def.isCapturable);
         return sbsStatus;
       }
@@ -513,11 +632,10 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       // cleared here — the normal path's segment dispatch will call
       // markArgsCurrent() after the recapture is committed.
       if (seg.exec.needsArgRefresh()) {
-        DSP_DIAG(EXECUTE,
-                 "FROZEN_FAST_PATH: needsArgRefresh seg[%d-%d] "
-                 "(view-of-ext-input addr changed, stale baked addr) — returning MAYBE",
-                 seg.def.startSlot, seg.def.endSlot);
-        return Status::MAYBE;
+        recordPlanFailureIfMissing(
+            Status::KERNEL_FAILURE,
+            "DSP frozen replay arg-refresh state changed after replay iteration began");
+        return Status::KERNEL_FAILURE;
       }
 
       DSP_DIAG(STREAM_SYNC,
@@ -530,17 +648,16 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
 
       auto replayStatus = replayMonolithicGraph(seg, externalInputs, numExternalInputs,
                                                 stream, "frozen_fast_path");
-      if (replayStatus == Status::KERNEL_FAILURE) {
-        // MONOLITHIC_SLOT_ADDR_DRIFT: the monolithic CUDA graph has stale cuBLAS
-        // args (view-slot buffer addresses changed since capture).
-        // invalidateForRebuild() was called inside replayMonolithicGraph.
-        // Return MAYBE so the caller falls back to full execute() which will
-        // re-warmup and re-capture with the correct device addresses.
+      if (replayStatus == Status::MAYBE) {
         DSP_DIAG(EXECUTE,
-                 "FROZEN_FAST_PATH: replayMonolithicGraph KERNEL_FAILURE seg[%d-%d] "
-                 "(monolithic_slot_addr_drift) — returning MAYBE for recapture",
+                 "FROZEN_FAST_PATH: monolithic replay requested pre-launch rebuild "
+                 "for seg[%d-%d]",
                  seg.def.startSlot, seg.def.endSlot);
-        return Status::MAYBE;
+        auto rebuildStatus = rebuildSegmentAfterPreLaunchReplayDrift(
+            seg, externalInputs, numExternalInputs, stream,
+            "monolithic_slot_addr_drift");
+        if (rebuildStatus != Status::OK) return rebuildStatus;
+        continue;
       }
       if (replayStatus != Status::OK) return replayStatus;
 
@@ -566,33 +683,32 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       // The arg generation is NOT cleared here — the normal path's segment
       // dispatch will call markArgsCurrent() after recapture is committed.
       if (seg.exec.needsArgRefresh()) {
-        DSP_DIAG(EXECUTE,
-                 "FROZEN_FAST_PATH: needsArgRefresh seg[%d-%d] "
-                 "(composite: stale baked cuBLAS addr, drift-check skipped) — returning MAYBE",
-                 seg.def.startSlot, seg.def.endSlot);
-        return Status::MAYBE;
+        recordPlanFailureIfMissing(
+            Status::KERNEL_FAILURE,
+            "DSP frozen composite arg-refresh state changed after replay iteration began");
+        return Status::KERNEL_FAILURE;
       }
 
       auto replayStatus = compositeReplay(seg, seg.exec.compositeReplaySchedule,
                                           externalInputs, numExternalInputs, stream);
+      if (replayStatus == Status::MAYBE) {
+        DSP_DIAG(EXECUTE,
+                 "FROZEN_FAST_PATH: composite replay requested pre-launch rebuild "
+                 "for seg[%d-%d]",
+                 seg.def.startSlot, seg.def.endSlot);
+        auto rebuildStatus = rebuildSegmentAfterPreLaunchReplayDrift(
+            seg, externalInputs, numExternalInputs, stream,
+            "merged_graph_addr_drift");
+        if (rebuildStatus != Status::OK) return rebuildStatus;
+        // The bounded warmup produced this segment's outputs. Do not count it as
+        // a graph replay; continue so every later segment executes exactly once.
+        continue;
+      }
       if (replayStatus != Status::OK) {
-        DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: composite replay FAILED seg[%d-%d] status=%d",
-                 seg.def.startSlot, seg.def.endSlot, (int)replayStatus);
-        // KERNEL_FAILURE from compositeReplay due to merged graph addr drift:
-        // invalidateForRebuild() was called inside compositeReplay, clearing all
-        // handles and resetting state for re-capture. Return MAYBE so the caller
-        // falls back to full execute() which handles re-warmup and re-capture.
-        // Without this, KERNEL_FAILURE propagates to autoregressive_decode which
-        // treats it as a fatal non-recoverable error.
-        if (replayStatus == Status::KERNEL_FAILURE &&
-            seg.exec.replayHandle == nullptr &&
-            seg.exec.compositeReplaySchedule.units.empty()) {
-          DSP_DIAG(EXECUTE,
-                   "FROZEN_FAST_PATH: composite replay invalidated seg[%d-%d] "
-                   "(merged_graph_addr_drift) — returning MAYBE for full execute() fallback",
-                   seg.def.startSlot, seg.def.endSlot);
-          return Status::MAYBE;
-        }
+        DSP_DIAG(EXECUTE,
+                 "FROZEN_FAST_PATH: composite replay FAILED seg[%d-%d] status=%s (%d)",
+                 seg.def.startSlot, seg.def.endSlot,
+                 dsp::dspStatusName(replayStatus), static_cast<int>(replayStatus));
         return replayStatus;
       }
       totalGraphReplays_++;
@@ -605,14 +721,17 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       // so the caller falls back to full execute() which handles re-warmup
       // and re-capture. NEVER silently fall back to slot-by-slot here —
       // that hides bugs and makes it impossible to tell which path ran.
-      DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: BUG — no replay handles for seg[%d-%d] "
+      DSP_DIAG(EXECUTE, "FROZEN_FAST_PATH: BUG — replay handles disappeared mid-iteration for seg[%d-%d] "
                "(capturable=%d outcome=%d compileFailed=%d execCount=%d compiledBy=%s) "
-               "— returning MAYBE for full execute() re-warmup",
+               "— failing closed",
                seg.def.startSlot, seg.def.endSlot,
                (int)seg.def.isCapturable, (int)seg.exec.outcome,
                (int)seg.exec.compilationFailed, seg.exec.executionCount,
                seg.exec.compiledByBackend.c_str());
-      return Status::MAYBE;
+      recordPlanFailureIfMissing(
+          Status::KERNEL_FAILURE,
+          "DSP frozen replay handles disappeared after replay iteration began");
+      return Status::KERNEL_FAILURE;
     }
   }
 
@@ -640,11 +759,14 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
   // Populate requested outputs from (potentially-materialized) slots
   for (int i = 0; i < numRequestedOutputs_; i++) {
     int slotIdx = requestedOutputSlotIndices_[i];
-    if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
-      requestedOutputs[i] = outputSlots_[slotIdx];
-    } else {
-      requestedOutputs[i] = nullptr;
+    if (slotIdx < 0 || slotIdx >= totalOutputSlots_ ||
+        outputSlots_[slotIdx] == nullptr) {
+      DSP_DIAG(EXECUTE,
+               "FROZEN_FAST_PATH: required output unpublished index=%d slot=%d",
+               i, slotIdx);
+      return Status::BAD_OUTPUT;
     }
+    requestedOutputs[i] = outputSlots_[slotIdx];
   }
   incrementExecuteCount("native_replay");
 
@@ -884,6 +1006,13 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
       seg.def.shapeKeyState.markCompiled(task.shapeKey);
       precompileOk++;
     } else {
+      if (lowering.prerequisiteBlocked()) {
+        DSP_DIAG(COMPILE,
+                 "NativeDSP::precompile: prerequisite blocked segment %d "
+                 "backend=%s reason=%s",
+                 task.segIdx, lowering.prerequisiteBlockedBackend->name(),
+                 lowering.prerequisiteFailureReason.c_str());
+      }
       precompileFail++;
     }
   }
@@ -945,7 +1074,10 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
         Status preloadStatus = tritonBackend->preloadAllModules(d);
         if (preloadStatus != Status::OK) {
           cudaSetDevice(prevDev);
-          DSP_THROW(COMPILE, "NativeDSP::precompile: preloadAllModules(device=%d) failed", d);
+          DSP_THROW(COMPILE,
+                    "NativeDSP::precompile: preloadAllModules(device=%d) returned %s (%d)",
+                    d, dsp::dspStatusName(preloadStatus),
+                    static_cast<int>(preloadStatus));
         }
       }
       cudaSetDevice(prevDev);
@@ -1124,7 +1256,11 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
                slotIdx, originalDev, sourceDevice, cudaGetErrorString(originalAttrErr));
       cudaGetLastError();
       if (savedDevice >= 0) cudaSetDevice(savedDevice);
-      return Status::KERNEL_FAILURE;
+      return cudaPlanFailure(
+          "CUDA cross-device migration rejected source pointer: slot=%d ptr=%p "
+          "metadataDevice=%d cudaError=%d (%s)",
+          slotIdx, originalDev, sourceDevice, static_cast<int>(originalAttrErr),
+          cudaGetErrorString(originalAttrErr));
     }
     if (originalAttrs.device != sourceDevice) {
       DSP_DIAG(MULTI_DEVICE,
@@ -1156,7 +1292,10 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
                  "sourceDevice=%d targetDevice=%d",
                  slotIdx, sourceDevice, targetDevice);
         if (savedDevice >= 0) cudaSetDevice(savedDevice);
-        return Status::KERNEL_FAILURE;
+        return cudaPlanFailure(
+            "CUDA cross-device migration could not materialize view slot=%d "
+            "from device %d to device %d",
+            slotIdx, sourceDevice, targetDevice);
       }
       srcArr = srcMat;
       // NDArray::dup fills on srcMat's context stream, not the target peer-copy stream. Record
@@ -1182,7 +1321,11 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
       cudaGetLastError();
       if (srcMat != nullptr) delete srcMat;
       if (savedDevice >= 0) cudaSetDevice(savedDevice);
-      return Status::KERNEL_FAILURE;
+      return cudaPlanFailure(
+          "CUDA cross-device migration source synchronization failed: slot=%d "
+          "device=%d targetDevice=%d cudaError=%d (%s)",
+          slotIdx, sourceDevice, targetDevice,
+          static_cast<int>(sourceSyncErr), cudaGetErrorString(sourceSyncErr));
     }
     void* srcDev = (srcArr->dataBuffer() != nullptr) ? srcArr->dataBuffer()->special() : nullptr;
 
@@ -1203,7 +1346,12 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
       cudaGetLastError();
       if (srcMat != nullptr) delete srcMat;
       if (savedDevice >= 0) cudaSetDevice(savedDevice);
-      return Status::KERNEL_FAILURE;
+      return cudaPlanFailure(
+          "CUDA cross-device migration rejected materialized source pointer: "
+          "slot=%d ptr=%p expectedDevice=%d actualDevice=%d cudaError=%d (%s)",
+          slotIdx, srcDev, sourceDevice,
+          srcAttrErr == cudaSuccess ? srcAttrs.device : -1,
+          static_cast<int>(srcAttrErr), cudaGetErrorString(srcAttrErr));
     }
     auto srcLength = srcArr->lengthOf();
     auto elementBytes = DataTypeUtils::sizeOf(srcArr->dataType());
@@ -1216,7 +1364,10 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
                slotIdx, static_cast<long long>(srcLength), elementBytes);
       if (srcMat != nullptr) delete srcMat;
       if (savedDevice >= 0) cudaSetDevice(savedDevice);
-      return Status::KERNEL_FAILURE;
+      return cudaPlanFailure(
+          "CUDA cross-device migration computed an invalid transfer size: "
+          "slot=%d length=%lld elementBytes=%zu",
+          slotIdx, static_cast<long long>(srcLength), elementBytes);
     }
     const size_t srcLen = static_cast<size_t>(srcLength) * elementBytes;
 
@@ -1251,7 +1402,10 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
                slotIdx, sourceDevice, targetDevice, srcLen, freeBytes, poolReusable, totalBytes);
       if (srcMat != nullptr) delete srcMat;
       if (savedDevice >= 0) cudaSetDevice(savedDevice);
-      return Status::KERNEL_FAILURE;
+      return cudaPlanFailure(
+          "CUDA cross-device migration has insufficient target capacity: "
+          "slot=%d device=%d bytes=%zu free=%zu poolReusable=%zu total=%zu",
+          slotIdx, targetDevice, srcLen, freeBytes, poolReusable, totalBytes);
     }
 
     // Create new array on target device with same shape and data type
@@ -1267,12 +1421,18 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
                slotIdx, targetDevice, srcLen, freeBytes, poolReusable);
       if (srcMat != nullptr) delete srcMat;
       if (savedDevice >= 0) cudaSetDevice(savedDevice);
-      return Status::KERNEL_FAILURE;
+      return cudaPlanFailure(
+          "CUDA cross-device migration destination allocation threw: "
+          "slot=%d device=%d bytes=%zu free=%zu poolReusable=%zu",
+          slotIdx, targetDevice, srcLen, freeBytes, poolReusable);
     }
     if (copy == nullptr) {
       if (srcMat != nullptr) delete srcMat;
       if (savedDevice >= 0) cudaSetDevice(savedDevice);
-      return Status::KERNEL_FAILURE;
+      return cudaPlanFailure(
+          "CUDA cross-device migration destination allocation returned null: "
+          "slot=%d device=%d bytes=%zu",
+          slotIdx, targetDevice, srcLen);
     }
 
     std::vector<NDArray*> writes{copy};
@@ -1294,7 +1454,12 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
       if (srcMat != nullptr) delete srcMat;
       cudaGetLastError();
       if (savedDevice >= 0) cudaSetDevice(savedDevice);
-      return Status::KERNEL_FAILURE;
+      return cudaPlanFailure(
+          "CUDA cross-device migration rejected destination pointer: slot=%d "
+          "ptr=%p targetDevice=%d actualDevice=%d cudaError=%d (%s) bytes=%zu",
+          slotIdx, dstDev, targetDevice,
+          dstAttrErr == cudaSuccess ? dstAttrs.device : -1,
+          static_cast<int>(dstAttrErr), cudaGetErrorString(dstAttrErr), srcLen);
     }
     if (srcLen > 0) {
       auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
@@ -1354,7 +1519,12 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
         delete copy;
         if (srcMat != nullptr) delete srcMat;
         if (savedDevice >= 0) cudaSetDevice(savedDevice);
-        return Status::KERNEL_FAILURE;
+        return cudaPlanFailure(
+            "CUDA cross-device migration transfer failed: sourceDevice=%d "
+            "targetDevice=%d bytes=%zu p2p=%d cudaError=%d (%s)",
+            sourceDevice, targetDevice, srcLen,
+            canAccessForward && canAccessReverse ? 1 : 0,
+            static_cast<int>(copyErr), cudaGetErrorString(copyErr));
       }
     }
     NDArray::registerSpecialUse(writes, reads);
@@ -1750,7 +1920,10 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
         backendErrorDetail = backendError;
       } else {
         backendErrorDetail =
-            "backend returned no detail (phase=" + std::string(segment.exec.segPhase.displayName()) +
+            "graph backend returned " + std::string(dsp::dspStatusName(status)) + " (" +
+            std::to_string(static_cast<int>(status)) +
+            ") without native failure detail (phase=" +
+            std::string(segment.exec.segPhase.displayName()) +
             ", outcome=" + segmentExecOutcomeName(segment.exec.outcome) +
             ", executionCount=" + std::to_string(segment.exec.executionCount) +
             ", replayHandle=" + std::to_string(segment.exec.replayHandle != nullptr ? 1 : 0) +
@@ -1759,13 +1932,13 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
       }
       SegmentLifecycle::markFailed(segment.exec, "gpu_backend_exec_failed", segment.def.startSlot, segment.def.endSlot);
       DSP_THROW_SEG(COMPILE, segment.def.startSlot,
-                    "NativeDSP::execute: exec%d seg[%d-%d] graphBackend=%s FAILED status=%d. "
-                    "detail=%s. Graph backend compilation/capture failed — fix the root cause.",
-                    executeCount_, segment.def.startSlot, segment.def.endSlot,
+                    "%s [NativeDSP graph backend=%s seg[%d-%d] exec=%d returned %s (%d)]",
+                    backendErrorDetail.c_str(),
                     segment.resolvedGraphBackend != nullptr
                         ? segment.resolvedGraphBackend->name()
                         : "<unresolved>",
-                    static_cast<int>(status), backendErrorDetail.c_str());
+                    segment.def.startSlot, segment.def.endSlot, executeCount_,
+                    dsp::dspStatusName(status), static_cast<int>(status));
     }
 
     case SelectedBackend::DEVICE_REPLAY: {
@@ -1794,10 +1967,18 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
                                        segment.def.startSlot,
                                        segment.def.endSlot);
         }
+        auto* errorReference =
+            LaunchContext::defaultContext()->errorReference();
+        const char* captureError = errorReference->errorMessage();
+        std::string captureDetail =
+            captureError != nullptr && captureError[0] != '\0'
+                ? std::string(captureError)
+                : std::string("CUDA graph capture returned without native failure detail");
         DSP_THROW_SEG(COMPILE, segment.def.startSlot,
-                      "NativeDSP::execute: CUDA graph capture failed for seg[%d-%d] status=%d. "
-                      "Fix the capture root cause — do NOT fall back to slot-by-slot.",
-                      segment.def.startSlot, segment.def.endSlot, static_cast<int>(status));
+                      "%s [CUDA graph seg[%d-%d] returned %s (%d)]",
+                      captureDetail.c_str(), segment.def.startSlot,
+                      segment.def.endSlot, dsp::dspStatusName(status),
+                      static_cast<int>(status));
       }
 
       // executeSegmentWithGraph can also return OK while an OOM retry remains
@@ -1871,6 +2052,9 @@ void NativeDynamicShapePlan::platformFlushGraphBakedPins(void* streamVoid) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg) {
+  // Merged capture transfers all pinned/module ownership to handle 0 even when
+  // later group graphs reference those resources. Destroy every graph first.
+  destroySegmentReplayGraphs(seg);
 #if HAVE_TRITON
   // Compiled Triton runtime state is keyed by this live GraphSegment identity.
   // Evict it before resegmentation destroys the object and permits address reuse.
@@ -2003,9 +2187,20 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
   if (ownedStream_ != nullptr) {
     DSP_DIAG(MEMORY, "platformFreePlanResources: destroying plan-owned stream=%p",
              static_cast<void*>(*ownedStream_));
+    int currentDevice = -1;
+    cudaGetDevice(&currentDevice);
+    const bool switchedDevice = ownedStreamDeviceId_ >= 0 &&
+        currentDevice >= 0 && ownedStreamDeviceId_ != currentDevice;
+    if (switchedDevice) cudaSetDevice(ownedStreamDeviceId_);
+    if (ownedStreamDeviceId_ >= 0) {
+      memory::CudaMemoryPool::getInstance().removeDirtyStream(
+          ownedStreamDeviceId_, *ownedStream_);
+    }
     cudaStreamDestroy(*ownedStream_);
+    if (switchedDevice) cudaSetDevice(currentDevice);
     delete ownedStream_;
     ownedStream_ = nullptr;
+    ownedStreamDeviceId_ = -1;
   }
 
   // Free sync-free buffer fingerprint ring (BUF_FP_RING instrumentation).
@@ -2068,6 +2263,13 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
     steadyStateExecCtx_ = nullptr;
   }
 
+  // Destroy every graph before releasing compiled-cache ownership. Successful
+  // merged captures aggregate captured modules and pinned sources on handle 0,
+  // while later graph handles may still reference them.
+  for (auto& seg : segments_) {
+    destroySegmentReplayGraphs(seg);
+  }
+
   // Always invalidate Triton singleton cache entries for this plan's segments.
   // Each compiled CUmodule, arg table device buffer, sync counter, and global
   // scratch allocation stays in the singleton cache across plan lifetimes.
@@ -2105,42 +2307,13 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
     graphPinnedAddrs_.clear();
   }
 
-  // Free replay workspaces and JIT kernels from all segments.
-  // Must explicitly clean up monolithic, merged, AND composite replay handles
-  // with proper pool deregistration (releaseWorkspace) before RAII destruction.
+  // Graphs and compiled-cache ownership are already gone, but keep every replay
+  // handle alive until the destructor has retired plan-owned DataBuffers. Handle
+  // workspaces are registered capture arenas, and those DataBuffers may contain
+  // interior pointers into them. platformFreeCaptureWorkspace() performs the
+  // deferred workspace/host-pointer release after the array teardown boundary.
   for (auto& seg : segments_) {
-    if (seg.exec.replayHandle) {
-      if (seg.exec.replayHandle->getWorkspacePtr() != nullptr) {
-        seg.exec.replayHandle->releaseWorkspace(nullptr, seg.def.startSlot);
-      }
-      seg.exec.replayHandle->freeHostPointers();
-      seg.exec.replayHandle->clearExternalAddresses();
-      seg.exec.replayHandle.reset();
-      SegmentLifecycle::resetForResourceRelease(seg.exec);
-    }
-    // Clean up merged replay handles (island-merged capture groups)
-    for (auto& h : seg.exec.compositeReplaySchedule.mergedReplayHandles) {
-      if (h) {
-        if (h->getWorkspacePtr() != nullptr) {
-          h->releaseWorkspace(nullptr, seg.def.startSlot);
-        }
-        h->freeHostPointers();
-        h->clearExternalAddresses();
-        h.reset();
-      }
-    }
-    seg.exec.compositeReplaySchedule.mergedReplayHandles.clear();
-    // Clean up composite (per-island) replay handles
-    for (auto& h : seg.exec.compositeReplaySchedule.compositeReplayHandles) {
-      if (h) {
-        if (h->getWorkspacePtr() != nullptr) {
-          h->releaseWorkspace(nullptr, seg.def.startSlot);
-        }
-        h->freeHostPointers();
-        h->clearExternalAddresses();
-        h.reset();
-      }
-    }
+    SegmentLifecycle::resetForResourceRelease(seg.exec);
     seg.exec.markArgsStale();
     seg.exec.gapOpsCapturedInGraph = false;
     seg.resetGraphBackend();
@@ -2148,30 +2321,6 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
     seg.exec.jitKernel = nullptr;
   }
 
-  // Destroy replay handles before releasing the plan-owned arena whose
-  // addresses they retain. The arena came from allocateLocalAsync(), so release it
-  // through the CUDA pool on its recorded allocation device. Do not route this free
-  // through tl_dspExecutionStream: the plan-owned stream was destroyed above and a
-  // cudaFreeAsync on that stale handle silently leaks one arena per plan lifecycle.
-  if (sharedCaptureWorkspace_ != nullptr) {
-    auto& pool = memory::CudaMemoryPool::getInstance();
-    const int workspaceDevice = sharedCaptureWorkspaceDevice_;
-    size_t poolUsedBefore = 0;
-    size_t poolReservedBefore = 0;
-    if (workspaceDevice >= 0) {
-      pool.getStats(workspaceDevice, poolUsedBefore, poolReservedBefore);
-    }
-    pool.unregisterCaptureWorkspace(sharedCaptureWorkspace_);
-    pool.free(sharedCaptureWorkspace_, workspaceDevice, nullptr);
-    DSP_DIAG(MEMORY,
-             "platformFreePlanResources: released PLAN-OWNED capture workspace "
-             "%zuMB on device %d poolUsedBefore=%zuMB poolReservedBefore=%zuMB",
-             sharedCaptureWorkspaceBytes_ / (1024*1024), workspaceDevice,
-             poolUsedBefore / (1024*1024), poolReservedBefore / (1024*1024));
-    sharedCaptureWorkspace_ = nullptr;
-    sharedCaptureWorkspaceBytes_ = 0;
-    sharedCaptureWorkspaceDevice_ = -1;
-  }
   // Free pre-allocated cuBLAS workspace
   if (cublasWorkspaceBuffer_ != nullptr && cublasWorkspaceDevice_ >= 0) {
     memory::CudaMemoryPool::getInstance().free(cublasWorkspaceBuffer_, cublasWorkspaceDevice_);
@@ -2226,6 +2375,20 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
   // Free batched GEMM resources
   freeBatchedGemmResources();
 
+  // Reclaim stream-ordered frees at the plan lifetime boundary. Plan teardown
+  // has already destroyed every graph and released every plan-owned workspace,
+  // so synchronizing dirty free streams here cannot race a live replay. This
+  // also drains the dedicated allocateDirect() stream; without this call, its
+  // cudaFreeAsync operations remain pending until an allocation failure and a
+  // sequence of short-lived plans can exhaust the process-wide CUDA pool.
+  cudaGetLastError();
+  int trimDevice = -1;
+  if (cudaGetDevice(&trimDevice) == cudaSuccess) {
+    memory::CudaMemoryPool::getInstance().trimPool(trimDevice);
+  } else {
+    cudaGetLastError();
+  }
+
   // Clear any sticky CUDA errors accumulated during teardown.
   // Without this, the next plan on this thread inherits the error —
   // cudaStreamBeginCapture fails immediately with the stale error,
@@ -2256,16 +2419,65 @@ int NativeDynamicShapePlan::platformCountCapturedGraphSegments() const {
 }
 
 void NativeDynamicShapePlan::platformFreeCaptureWorkspace() {
+  // All plan-owned DataBuffers have been retired before this deferred boundary,
+  // so it is now safe to unregister and release handle-owned capture arenas.
+  // Keep this after compiled-cache invalidation: captured pinned host sources and
+  // modules may also be referenced by the Triton singleton until then.
+  std::unordered_set<int> releasedWorkspaceDevices;
+  for (auto& seg : segments_) {
+    auto releaseHandle = [&](auto& handle) {
+      if (handle == nullptr) return;
+      int currentDevice = -1;
+      cudaGetDevice(&currentDevice);
+      const int handleDevice = handle->getDeviceId();
+      const bool switchedDevice = handleDevice >= 0 && currentDevice >= 0 &&
+          handleDevice != currentDevice;
+      if (switchedDevice) cudaSetDevice(handleDevice);
+      if (handle->getWorkspacePtr() != nullptr) {
+        const int workspaceDevice = handleDevice;
+        if (workspaceDevice >= 0) releasedWorkspaceDevices.insert(workspaceDevice);
+        handle->releaseWorkspace(nullptr, seg.def.startSlot);
+      }
+      handle->freeHostPointers();
+      handle->clearExternalAddresses();
+      handle.reset();
+      if (switchedDevice) cudaSetDevice(currentDevice);
+    };
+    releaseHandle(seg.exec.replayHandle);
+    for (auto& handle :
+         seg.exec.compositeReplaySchedule.mergedReplayHandles) {
+      releaseHandle(handle);
+    }
+    for (auto& handle :
+         seg.exec.compositeReplaySchedule.compositeReplayHandles) {
+      releaseHandle(handle);
+    }
+    seg.exec.compositeReplaySchedule.mergedReplayHandles.clear();
+    seg.exec.compositeReplaySchedule.compositeReplayHandles.clear();
+    seg.exec.compositeReplaySchedule.units.clear();
+  }
+
+  // Triton handles borrow this one plan-owned arena. Release it only after all
+  // external handle references above have been cleared.
   if (sharedCaptureWorkspace_ != nullptr) {
     auto& pool = memory::CudaMemoryPool::getInstance();
     const int workspaceDevice = sharedCaptureWorkspaceDevice_;
+    if (workspaceDevice >= 0) releasedWorkspaceDevices.insert(workspaceDevice);
     pool.unregisterCaptureWorkspace(sharedCaptureWorkspace_);
     pool.free(sharedCaptureWorkspace_, workspaceDevice, nullptr);
-    DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: released PLAN-OWNED capture workspace %zuMB on device %d",
+    DSP_DIAG(MEMORY, "platformFreeCaptureWorkspace: released PLAN-OWNED capture workspace %zuMB on device %d",
              sharedCaptureWorkspaceBytes_ / (1024*1024), workspaceDevice);
     sharedCaptureWorkspace_ = nullptr;
     sharedCaptureWorkspaceBytes_ = 0;
     sharedCaptureWorkspaceDevice_ = -1;
+  }
+
+  // Workspace frees are stream ordered. Drain the pool's tracked free streams
+  // and release newly unreserved pages at this ownership boundary so sequential
+  // plan lifecycles cannot accumulate retired capture arenas.
+  auto& pool = memory::CudaMemoryPool::getInstance();
+  for (int device : releasedWorkspaceDevices) {
+    pool.trimPool(device);
   }
 }
 
@@ -2449,6 +2661,8 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
   // is created once and reused for all subsequent executions.
   if (ownedStream_ == nullptr) {
     ownedStream_ = new cudaStream_t();
+    int streamDevice = -1;
+    cudaGetDevice(&streamDevice);
     auto err = cudaStreamCreateWithFlags(ownedStream_, cudaStreamNonBlocking);
     if (err != cudaSuccess) {
       DSP_DIAG(EXECUTE, "platformBeginExecution: failed to create plan-owned stream: %s (%d)",
@@ -2456,7 +2670,9 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
       cudaGetLastError();  // clear this error too
       delete ownedStream_;
       ownedStream_ = nullptr;
+      ownedStreamDeviceId_ = -1;
     } else {
+      ownedStreamDeviceId_ = streamDevice;
       DSP_DIAG(EXECUTE, "platformBeginExecution: created plan-owned stream=%p",
                static_cast<void*>(*ownedStream_));
     }
@@ -3361,48 +3577,20 @@ size_t NativeDynamicShapePlan::platformEstimateSegmentCaptureBytes(int startSlot
 
 void NativeDynamicShapePlan::platformReleaseSegmentGpuResources() {
   if (segments_.empty()) {
-    DSP_DIAG(MEMORY, "platformReleaseSegmentGpuResources: no segments — nothing to release");
-    return;
+    DSP_DIAG(MEMORY,
+             "platformReleaseSegmentGpuResources: no segments — releasing plan-level resources only");
   }
   logGpuMemState("STEP-0-ENTRY");
+
+  // Destroy graph executables now so no subsequent teardown step can launch
+  // against retiring arrays. Keep the handle objects and their registered
+  // workspaces until platformFreeCaptureWorkspace(), after all DataBuffers that
+  // may point inside those arenas have been retired.
   for (auto& seg : segments_) {
-    // Clean up monolithic replay handle
-    if (seg.exec.replayHandle) {
-      if (seg.exec.replayHandle->getWorkspacePtr() != nullptr) {
-        seg.exec.replayHandle->releaseWorkspace(nullptr, seg.def.startSlot);
-      }
-      seg.exec.replayHandle->freeHostPointers();
-      seg.exec.replayHandle->clearExternalAddresses();
-      seg.exec.replayHandle.reset();
-    }
-    // Clean up merged replay handles (island-merged capture groups).
-    // Must call releaseWorkspace explicitly for pool deregistration —
-    // RAII destruction only calls cudaFree, skipping pool-aware cleanup.
-    for (auto& h : seg.exec.compositeReplaySchedule.mergedReplayHandles) {
-      if (h) {
-        if (h->getWorkspacePtr() != nullptr) {
-          h->releaseWorkspace(nullptr, seg.def.startSlot);
-        }
-        h->freeHostPointers();
-        h->clearExternalAddresses();
-        h.reset();
-      }
-    }
-    seg.exec.compositeReplaySchedule.mergedReplayHandles.clear();
+    destroySegmentReplayGraphs(seg);
     for (auto& u : seg.exec.compositeReplaySchedule.units) {
       u.mergedGroupId = -1;
       u.isMergedLeader = false;
-    }
-    // Clean up composite (per-island) replay handles
-    for (auto& h : seg.exec.compositeReplaySchedule.compositeReplayHandles) {
-      if (h) {
-        if (h->getWorkspacePtr() != nullptr) {
-          h->releaseWorkspace(nullptr, seg.def.startSlot);
-        }
-        h->freeHostPointers();
-        h->clearExternalAddresses();
-        h.reset();
-      }
     }
     seg.exec.gapOpsCapturedInGraph = false;
     seg.exec.markArgsStale();
@@ -3419,6 +3607,23 @@ void NativeDynamicShapePlan::platformReleaseSegmentGpuResources() {
     seg.exec.jitCompileFailed = false;
     seg.def.shapeKeyState.reset();
   }
+
+  // Graph executables are gone, so singleton Triton resources owned by these
+  // exact segment instances can no longer be launched. Invalidate them before
+  // any plan-owned array or graph-baked pin is retired; capture-owned pinned
+  // sources remain valid in the deferred replay handles until the final arena
+  // release boundary.
+#if HAVE_TRITON
+  {
+    std::vector<const GraphSegment*> segmentInstances;
+    segmentInstances.reserve(segments_.size());
+    for (auto& seg : segments_) segmentInstances.push_back(&seg);
+    if (!segmentInstances.empty()) {
+      TritonGraphBackend::getInstance().invalidateCacheForSegments(
+          segmentInstances);
+    }
+  }
+#endif
   logGpuMemState("STEP-1-AFTER-SEGMENTS");
 
   // Free cuBLAS workspace
@@ -3446,15 +3651,11 @@ void NativeDynamicShapePlan::platformMigrateWeightsAndClearCaches() {
   // device pointers and ConstantShapeBuffer* interiors that were never
   // standalone malloc'd blocks.
 
-  // Reset MmulHelper cast-cache INDICES only (do NOT free the NDArray buffers).
-  // platformMigrateWeightsAndClearCaches() runs during releaseGpuIntermediates()
-  // while the plan's CUDA graphs are still live.  Those graphs have tl_castB /
-  // tl_castA device addresses BAKED as kernel arguments — freeing the NDArrays
-  // here causes a stale-pointer read (NaN) on the next replay of ANY plan that
-  // shares this thread-local cache.  Index-only reset is the same safe pattern
-  // used at phaseFreeze / phaseWarmup boundaries (MmulHelper.cu ~231).
-  // The actual NDArray memory is freed in the destructor (platformFreePlanResources
-  // line ~1544) after all CUDA graphs for this plan have been torn down.
+  // Reset MmulHelper cast-cache INDICES only. The graph executables have already
+  // been destroyed, but the process-wide cache can still be shared by other live
+  // plans on this thread. Index-only reset is the same safe pattern used at
+  // phaseFreeze / phaseWarmup boundaries; global cache destruction is not a
+  // per-plan operation.
   MmulHelper::resetCastCacheIndices();
   logGpuMemState("STEP-4-AFTER-CAST-CACHE");
 

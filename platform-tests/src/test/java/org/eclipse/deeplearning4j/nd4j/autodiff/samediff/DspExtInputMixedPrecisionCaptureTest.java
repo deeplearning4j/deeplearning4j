@@ -61,7 +61,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 @Tag(TagNames.FULL_CI)
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
-public class DspExtInputMixedPrecisionCaptureTest {
+public class DspExtInputMixedPrecisionCaptureTest extends DspExtInputTestSupport {
 
     private SameDiff sd;
 
@@ -75,137 +75,6 @@ public class DspExtInputMixedPrecisionCaptureTest {
     // ═══════════════════════════════════════════════════════════════════════════
     // GRAPH FIXTURES
     // ═══════════════════════════════════════════════════════════════════════════
-
-    /** Single placeholder x → matmul(w) + b → out. Weights always positive. */
-    private SameDiff buildSinglePlaceholder(int inDim, int outDim) {
-        SameDiff g = SameDiff.create();
-        SDVariable x = g.placeHolder("x", DataType.FLOAT, 1, inDim);
-        SDVariable w = g.var("w", Transforms.abs(Nd4j.randn(DataType.FLOAT, inDim, outDim)).addi(0.1f));
-        SDVariable b = g.var("b", Nd4j.ones(DataType.FLOAT, 1, outDim));
-        SDVariable mm = g.mmul("mm", x, w);
-        mm.add("out", b);
-        return g;
-    }
-
-    /** Build single placeholder graph with pre-generated weights (for reference comparison). */
-    private SameDiff buildSinglePlaceholder(int inDim, int outDim, INDArray wArr, INDArray bArr) {
-        SameDiff g = SameDiff.create();
-        SDVariable x = g.placeHolder("x", DataType.FLOAT, 1, inDim);
-        SDVariable w = g.var("w", wArr.dup());
-        SDVariable b = g.var("b", bArr.dup());
-        SDVariable mm = g.mmul("mm", x, w);
-        mm.add("out", b);
-        return g;
-    }
-
-    /** Multi-placeholder: matmul(x, w_ph) + b_ph → out */
-    private SameDiff buildMultiPlaceholder(int inDim, int outDim) {
-        SameDiff g = SameDiff.create();
-        SDVariable x = g.placeHolder("x", DataType.FLOAT, 1, inDim);
-        SDVariable w = g.placeHolder("w", DataType.FLOAT, inDim, outDim);
-        SDVariable b = g.placeHolder("b", DataType.FLOAT, 1, outDim);
-        SDVariable mm = g.mmul("mm", x, w);
-        g.math().add("out", mm, b);
-        return g;
-    }
-
-    /** Large decoder-like graph: embed + multiple attention-like layers.
-     *  Creates enough ops for multiple segments with gaps. */
-    private SameDiff buildLargeDecoderGraph(int embedDim, int numLayers) {
-        SameDiff g = SameDiff.create();
-        SDVariable embed = g.placeHolder("inputs_embeds", DataType.FLOAT, 1, 1, embedDim);
-        SDVariable posIds = g.placeHolder("position_ids", DataType.FLOAT, 1, 1);
-
-        // Position encoding (add scalar)
-        SDVariable x = embed.add("pos_add", posIds);
-
-        for (int layer = 0; layer < numLayers; layer++) {
-            String prefix = "layer_" + layer + "_";
-            // KV cache placeholders (simulate 30 layers × 2 = 60 KV inputs)
-            SDVariable kv = g.placeHolder(prefix + "kv", DataType.FLOAT, 1, 4, embedDim);
-
-            // Attention: Q=x*Wq, K=kv, V=kv, out = softmax(Q*K^T)*V (simplified as matmul chain)
-            SDVariable wq = g.var(prefix + "wq", Transforms.abs(Nd4j.randn(DataType.FLOAT, embedDim, embedDim)).addi(0.01f));
-            SDVariable wv = g.var(prefix + "wv", Transforms.abs(Nd4j.randn(DataType.FLOAT, embedDim, embedDim)).addi(0.01f));
-
-            // Reshape x from [1,1,embed] to [1,embed] for matmul
-            SDVariable xFlat = g.reshape(prefix + "xflat", x, 1, embedDim);
-            SDVariable q = g.mmul(prefix + "q", xFlat, wq);
-
-            // KV: take mean along seq dim → [1, embedDim]
-            SDVariable kvMean = g.mean(prefix + "kv_mean", kv, 1);
-
-            // Attention score (simplified): q * kvMean^T → [1, 1]
-            SDVariable kvMeanT = g.permute(prefix + "kvt", kvMean, 1, 0);
-            SDVariable score = g.mmul(prefix + "score", q, kvMeanT);
-
-            // Output projection
-            SDVariable attnOut = g.mmul(prefix + "attn_out", score, g.reshape(prefix + "kvr", kvMean, 1, embedDim));
-
-            // Residual + layer norm (simplified as add + tanh for nonlinearity)
-            SDVariable residual = xFlat.add(prefix + "residual", attnOut);
-            x = g.reshape(prefix + "out", residual, 1, 1, embedDim);
-        }
-
-        // Final projection to logits
-        SDVariable wFinal = g.var("w_final", Transforms.abs(Nd4j.randn(DataType.FLOAT, embedDim, 32)).addi(0.01f));
-        SDVariable xFinal = g.reshape("x_final_flat", x, 1, embedDim);
-        g.mmul("out", xFinal, wFinal);
-        return g;
-    }
-
-    /** Graph with gap-inducing ops (reshapes between matmuls) */
-    private SameDiff buildGappyGraph(int dim) {
-        SameDiff g = SameDiff.create();
-        SDVariable x = g.placeHolder("x", DataType.FLOAT, 1, dim);
-        SDVariable w1 = g.var("w1", Transforms.abs(Nd4j.randn(DataType.FLOAT, dim, dim)).addi(0.1f));
-        SDVariable w2 = g.var("w2", Transforms.abs(Nd4j.randn(DataType.FLOAT, dim, dim)).addi(0.1f));
-        SDVariable w3 = g.var("w3", Transforms.abs(Nd4j.randn(DataType.FLOAT, dim, dim)).addi(0.1f));
-
-        SDVariable mm1 = g.mmul("mm1", x, w1);
-        // Gap: reshape (non-capturable in some configs)
-        SDVariable reshaped = g.reshape("reshape1", mm1, 1, dim);
-        SDVariable mm2 = g.mmul("mm2", reshaped, w2);
-        SDVariable reshaped2 = g.reshape("reshape2", mm2, 1, dim);
-        g.mmul("out", reshaped2, w3);
-        return g;
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // SHARED HELPERS
-    // ═══════════════════════════════════════════════════════════════════════════
-
-    private void configureMode(SameDiff sd, GraphExecutionMode mode) {
-        sd.getSessions().clear();
-        sd.setGraphExecutionMode(mode);
-        sd.setDspAutoCompileEnabled(true);
-        sd.setDspNativeAutoCompileEnabled(true);
-    }
-
-    private Map<String, INDArray> singlePh(String name, INDArray arr) {
-        Map<String, INDArray> ph = new LinkedHashMap<>();
-        ph.put(name, arr);
-        return ph;
-    }
-
-    /** Run N warmup steps to get plan to REPLAYING state */
-    private void warmup(SameDiff sd, Map<String, INDArray> ph, String outName, int steps) {
-        for (int i = 0; i < steps; i++) {
-            sd.output(ph, outName);
-        }
-    }
-
-    /** Run N warmup steps mutating placeholder value each step */
-    private void warmupWithChangingInput(SameDiff sd, String phName, INDArray arr,
-                                          String outName, int steps, long[] shape) {
-        Map<String, INDArray> ph = new LinkedHashMap<>();
-        ph.put(phName, arr);
-        for (int i = 0; i < steps; i++) {
-            arr.assign(Nd4j.valueArrayOf(shape, (double)(i + 1)));
-            sd.output(ph, outName);
-        }
-    }
-
 
     // CATEGORY 10: MIXED PRECISION CAST CACHE STALENESS
     //
@@ -2358,61 +2227,6 @@ public class DspExtInputMixedPrecisionCaptureTest {
                     String.format("[SELF_CONSIST_NATIVE] %d/20 diverge (worst=%.6f at step %d). " +
                             "Native-only execution is nondeterministic!",
                             mismatchCount, worstDiff, worstStep));
-        } finally {
-            resetCaptureFlags();
-        }
-    }
-
-    // ---- 9j: Fine-grained divergence tracking ----
-
-    /**
-     * Runs capture=true graph once, logs per-step output sum to find the FIRST step
-     * where capture causes different output vs no-capture.
-     */
-    @Test
-    @DisplayName("MATMUL_ONLY: locate first divergence step (capture=true vs false)")
-    void testLocateDivergenceStep() {
-        int dim = 64;
-        int steps = 30;
-        try {
-            // No-capture baseline
-            withCaptureFlags(false, true, false, false, false, false);
-            java.util.Random rng1 = new java.util.Random(999L);
-            SameDiff g1 = buildMatmulOnlyGraph(rng1, dim);
-            g1.setDspAutoCompileEnabled(true);
-            g1.setDspNativeAutoCompileEnabled(true);
-            g1.setGraphExecutionMode(GraphExecutionMode.AUTO);
-            List<INDArray> noCapOutputs = runDeterministic(g1, dim, steps);
-            g1.close();
-
-            // Capture
-            withCaptureFlags(true, true, false, false, false, false);
-            java.util.Random rng2 = new java.util.Random(999L);
-            SameDiff g2 = buildMatmulOnlyGraph(rng2, dim);
-            g2.setDspAutoCompileEnabled(true);
-            g2.setDspNativeAutoCompileEnabled(true);
-            g2.setGraphExecutionMode(GraphExecutionMode.AUTO);
-            List<INDArray> capOutputs = runDeterministic(g2, dim, steps);
-            g2.close();
-
-            int firstDiv = -1;
-            for (int step = 0; step < steps; step++) {
-                double sum1 = noCapOutputs.get(step).sumNumber().doubleValue();
-                double sum2 = capOutputs.get(step).sumNumber().doubleValue();
-                double maxDiff = noCapOutputs.get(step).sub(capOutputs.get(step)).amaxNumber().doubleValue();
-                boolean matches = maxDiff < 1e-4;
-                log.info("[DIVERGE_LOCATE] step {}: noCap_sum={} cap_sum={} maxDiff={} {}",
-                        step, String.format("%.8f", sum1), String.format("%.8f", sum2),
-                        String.format("%.8f", maxDiff), matches ? "OK" : "DIVERGED");
-                if (!matches && firstDiv < 0) firstDiv = step;
-            }
-
-            if (firstDiv >= 0) {
-                log.warn("[DIVERGE_LOCATE] First divergence at step {}. " +
-                        "captureMinExec=2, so capture fires around step 2-4. " +
-                        "If firstDiv matches, capture execution itself is the cause.", firstDiv);
-            }
-            // This test is informational — don't assert, just log
         } finally {
             resetCaptureFlags();
         }

@@ -562,6 +562,14 @@ TritonGpuTarget TritonTargetDispatch::detectTarget() {
   static std::mutex detectTargetMutex;
   std::lock_guard<std::mutex> lock(detectTargetMutex);
   if (targetDetected_) return cachedTarget_;
+
+  // Clear sticky CUDA errors before probing. If this function's FIRST caller
+  // runs while a stale CUDA error is pending (e.g. an init-time OOM on another
+  // GPU), cudaGetDeviceCount would fail and we would cache UNKNOWN for the
+  // whole process — permanently disabling Triton even after CUDA is healthy.
+  // A successful detection caches normally; a failed one stays retryable.
+  cudaGetLastError();
+
   targetDetected_ = true;
 
   // Detection priority:
@@ -687,7 +695,10 @@ TritonGpuTarget TritonTargetDispatch::detectTarget() {
   }
   }  // end dspIsCudaBuild() block
 
-  DSP_DIAG(BACKEND, "TritonTargetDispatch: no supported GPU target detected");
+  // No target found this attempt. Leave targetDetected_ == false so a later
+  // call (once CUDA is initialized/healthy) retries instead of inheriting a
+  // permanent UNKNOWN cached from a transient early failure.
+  DSP_DIAG(BACKEND, "TritonTargetDispatch: no supported GPU target detected (will retry)");
   cachedTarget_ = TritonGpuTarget::UNKNOWN;
   return cachedTarget_;
 }

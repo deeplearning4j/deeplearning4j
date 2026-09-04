@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace sd {
 namespace graph {
@@ -54,22 +55,29 @@ struct SD_LIB_EXPORT ReplayCacheDeviceKey {
  * Cached metadata for a single segment on a specific device.
  */
 struct ReplayCacheEntry {
-  LongType cacheKey;           // FNV1a hash of {slot_range, op_names, shape_key, device_key}
-  int startSlot;
-  int endSlot;
-  LongType shapeKey;
+  int schemaVersion = 1;
+  LongType cacheKey = 0;       // Compact diagnostic/index hash; never authoritative.
+  std::string artifactIdentity; // Full backend artifact identity (64 lowercase hex chars).
+  std::string modelKey;         // Content-addressed model compile key.
+  int startSlot = 0;
+  int endSlot = 0;
+  LongType shapeKey = 0;
   std::string backendName;     // "Triton", "oneDNN", "CUDA", etc.
-  size_t workspaceHint;        // Workspace size that worked
-  int numCaptureBuffers;       // Number of staging buffers needed
-  int64_t timestamp;           // When this entry was created
+  std::string backendCacheAbi; // Versioned lowering/cache contract.
+  std::string deviceFingerprint;
+  size_t workspaceHint = 0;    // Workspace size that worked
+  int numCaptureBuffers = 0;   // Number of staging buffers needed
+  int64_t timestamp = 0;       // When this entry was created
+  bool deviceCachingConfigured = false;
 };
 
 /**
  * Multi-platform per-device replay cache manager.
  *
- * Caches compilation metadata (workspace sizes, capture buffer layout, backend hints)
- * to enable faster warm re-capture on process restart. Does NOT cache compiled GPU
- * artifacts (those are device-bound), only the metadata needed to speed up re-capture.
+ * Caches compilation metadata (workspace sizes, capture buffer layout, backend hints,
+ * and exact persistent-artifact identities) to enable faster warm startup on process
+ * restart. Device APIs may place opaque artifacts in backend-owned subdirectories;
+ * process-local handles are never serialized or restored by this manager.
  */
 class SD_LIB_EXPORT ReplayCacheManager {
  public:
@@ -79,6 +87,22 @@ class SD_LIB_EXPORT ReplayCacheManager {
 
   /** Load ALL cached segments for a device (bulk warm-start). Returns count loaded. */
   int loadAllForDevice(const ReplayCacheDeviceKey& device);
+
+  /** Configure an application-owned cache root before compiling plans. */
+  bool configureCacheRoot(const std::string& cacheRoot);
+
+  /** Create and return a backend-owned artifact directory below the device namespace. */
+  std::string getOrCreateBackendCacheDir(const ReplayCacheDeviceKey& device,
+                                         const std::string& backendNamespace);
+
+  /** Exact metadata lookup. A hit is a candidate artifact, not proof of driver restoration. */
+  bool findEntry(const ReplayCacheDeviceKey& device,
+                 const std::string& artifactIdentity,
+                 ReplayCacheEntry* entry = nullptr);
+
+  /** Atomically publish or replace one strict metadata entry. */
+  bool saveEntry(const ReplayCacheDeviceKey& device,
+                 const ReplayCacheEntry& entry);
 
   // ── Per-device management ──
 
@@ -116,7 +140,9 @@ class SD_LIB_EXPORT ReplayCacheManager {
   // In-memory cache (loaded from disk)
   mutable std::mutex mutex_;
   std::unordered_map<std::string, std::vector<ReplayCacheEntry>> deviceCaches_;
+  std::unordered_set<std::string> loadedDeviceKeys_;
   std::string cacheDir_;
+  bool cacheRootSealed_ = false;
   bool enabled_;
 
   std::atomic<int> cacheHits_{0};

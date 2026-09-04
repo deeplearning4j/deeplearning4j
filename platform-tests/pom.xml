@@ -62,6 +62,9 @@
         <cuda.version>12.9</cuda.version>
         <platform.classifier>${javacpp.platform}</platform.classifier>
         <backend.artifactId>nd4j-cuda-${cuda.version}</backend.artifactId>
+        <!-- Forwarded into Surefire so backend-specific profiles select the intended runtime. -->
+        <org.nd4j.cpu.priority>0</org.nd4j.cpu.priority>
+        <org.nd4j.gpu.priority>100</org.nd4j.gpu.priority>
         <cublas.workspace.config></cublas.workspace.config>
         <!-- UDF package names for TestUdf -->
         <org.nd4j.linalg.api.ops.udf.classes></org.nd4j.linalg.api.ops.udf.classes>
@@ -607,6 +610,11 @@
         <dependency>
             <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-sdx-model</artifactId>
+            <version>${dl4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>sdx-aot</artifactId>
             <version>${dl4j.version}</version>
         </dependency>
         <dependency>
@@ -1891,6 +1899,8 @@
                         <ND4J_DSP_DIAGNOSTICS>${nd4j.dsp.diagnostics}</ND4J_DSP_DIAGNOSTICS>
                         <ND4J_DSP_DIAGNOSTICS_LEVEL>${nd4j.dsp.diagnostics.level}</ND4J_DSP_DIAGNOSTICS_LEVEL>
                         <ND4J_DSP_DIAGNOSTICS_FILE>${nd4j.dsp.diagnostics.file}</ND4J_DSP_DIAGNOSTICS_FILE>
+                        <!-- Opt-in native staging fault injection for fail-closed DSP tests. -->
+                        <ND4J_DSP_STAGING_FAULT>${nd4j.dsp.stagingFault}</ND4J_DSP_STAGING_FAULT>
                         <ND4J_DSP_NATIVE_DUMP_OUTPUTS>${nd4j.dsp.native.dumpOutputs}</ND4J_DSP_NATIVE_DUMP_OUTPUTS>
                         <ND4J_DSP_DIAG_EXEC_LIMIT>${nd4j.dsp.diagExecLimit}</ND4J_DSP_DIAG_EXEC_LIMIT>
                         <ONEDNN_VERBOSE>${onednn.verbose}</ONEDNN_VERBOSE>
@@ -1946,6 +1956,9 @@
                         <ND4J_TRITON_INCLUDE_TYPES>${nd4j.triton.includeTypes}</ND4J_TRITON_INCLUDE_TYPES>
                     </environmentVariables>
                     <systemPropertyVariables>
+                        <!-- Backend profiles must reach the forked JVM; Maven properties alone do not. -->
+                        <org.nd4j.cpu.priority>${org.nd4j.cpu.priority}</org.nd4j.cpu.priority>
+                        <org.nd4j.gpu.priority>${org.nd4j.gpu.priority}</org.nd4j.gpu.priority>
                         <!-- libnd4j native test configuration -->
                         <org.nd4j.libnd4j.test.enabled>${libnd4j.test.enabled}</org.nd4j.libnd4j.test.enabled>
                         <org.nd4j.libnd4j.chip>${libnd4j.test.chip}</org.nd4j.libnd4j.chip>

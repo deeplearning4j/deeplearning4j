@@ -704,9 +704,17 @@ Status AclGraphBackend::executeSegment(
     NDArray** outputSlots, int totalOutputSlots,
     void* stream) {
 
+  auto fail = [&](const std::string& reason) {
+    const std::string message =
+        reason + " [ACL segment " + std::to_string(seg.def.startSlot) + "-" +
+        std::to_string(seg.def.endSlot) + ", status=KERNEL_FAILURE (50)]";
+    safeSetErrorContext(static_cast<int>(Status::KERNEL_FAILURE), message.c_str());
+    return Status::KERNEL_FAILURE;
+  };
+
   if (seg.compiledGraphBackendArtifactOwner != this ||
       !seg.compiledGraphBackendArtifact) {
-    return Status::KERNEL_FAILURE;
+    return fail("ACL execution has no segment-owned compiled artifact");
   }
   auto compiled = std::static_pointer_cast<AclFunctionGroup>(
       seg.compiledGraphBackendArtifact);
@@ -714,7 +722,12 @@ Status AclGraphBackend::executeSegment(
   if (!compiled->valid || compiled->startSlot != seg.def.startSlot ||
       compiled->endSlot != seg.def.endSlot ||
       compiled->shapeKey != seg.def.shapeKeyState.compiledShapeKey) {
-    return Status::KERNEL_FAILURE;
+    return fail(
+        "ACL compiled artifact is invalid or stale: artifactSlots=" +
+        std::to_string(compiled->startSlot) + "-" +
+        std::to_string(compiled->endSlot) + ", artifactShapeKey=" +
+        std::to_string(compiled->shapeKey) + ", planShapeKey=" +
+        std::to_string(seg.def.shapeKeyState.compiledShapeKey));
   }
 
   auto bindTensor = [](NDArray* array,
@@ -749,7 +762,10 @@ Status AclGraphBackend::executeSegment(
     if (slotIdx >= 0 && slotIdx < totalOutputSlots && outputSlots[slotIdx] != nullptr) {
       NDArray* arr = outputSlots[slotIdx];
       bool staged = false;
-      if (!bindTensor(arr, tensor, staged)) return Status::KERNEL_FAILURE;
+      if (!bindTensor(arr, tensor, staged)) {
+        return fail("ACL output-slot tensor binding failed: slot=" +
+                    std::to_string(slotIdx));
+      }
       if (staged && compiled->producedSlots.count(slotIdx) != 0) {
         stagedProducedSlots.insert(slotIdx);
       }
@@ -760,7 +776,10 @@ Status AclGraphBackend::executeSegment(
     if (extIdx >= 0 && extIdx < numExternalInputs && externalInputs[extIdx] != nullptr) {
       NDArray* arr = externalInputs[extIdx];
       bool staged = false;
-      if (!bindTensor(arr, tensor, staged)) return Status::KERNEL_FAILURE;
+      if (!bindTensor(arr, tensor, staged)) {
+        return fail("ACL external-input tensor binding failed: externalIndex=" +
+                    std::to_string(extIdx));
+      }
     }
   }
 
@@ -783,7 +802,8 @@ Status AclGraphBackend::executeSegment(
         DSP_DIAG(EXECUTE,
                  "ACL_GATHER_STAGING_FAILED seg[%d-%d] source_slot=%d",
                  seg.def.startSlot, seg.def.endSlot, gather->sourceIndex());
-        return Status::KERNEL_FAILURE;
+        return fail("ACL gather index staging failed: sourceSlot=" +
+                    std::to_string(gather->sourceIndex()));
       }
     } else if (auto* subtract = dynamic_cast<CompiledAclInt64SubtractFunction*>(
                    entry.function.get())) {
@@ -799,7 +819,11 @@ Status AclGraphBackend::executeSegment(
                  "right=%d output=%d",
                  seg.def.startSlot, seg.def.endSlot, subtract->leftSource(),
                  subtract->rightSource(), subtract->outputSlot());
-        return Status::KERNEL_FAILURE;
+        return fail(
+            "ACL INT64 subtract binding validation failed: left=" +
+            std::to_string(subtract->leftSource()) + ", right=" +
+            std::to_string(subtract->rightSource()) + ", output=" +
+            std::to_string(subtract->outputSlot()));
       }
     }
     entry.function->run();

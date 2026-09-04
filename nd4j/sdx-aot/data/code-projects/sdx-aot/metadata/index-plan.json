@@ -1,0 +1,13 @@
+{
+  "codeProjectId" : "sdx-aot",
+  "sourceRoot" : "/home/agibsonccc/Documents/GitHub/deeplearning4j/nd4j/sdx-aot",
+  "actualIndexer" : "LocalCodeIndexer",
+  "actualIndexPath" : "/home/agibsonccc/.kompile/code-index/sdx-aot",
+  "includePatterns" : [ ],
+  "requestedExcludePatterns" : [ ],
+  "defaultExcludePatterns" : [ ".git", ".svn", ".hg", ".kompile", ".claude", ".codex", ".gemini", ".opencode", ".cursor", ".idea", ".vscode", ".settings", ".gradle", "target", "build", "dist", "out", "node_modules", "__pycache__", ".tox", ".mypy_cache", ".pytest_cache", ".angular", ".next", ".nuxt", "coverage", ".cache", "bin", "obj" ],
+  "effectiveExcludePatterns" : [ ".git", ".svn", ".hg", ".kompile", ".claude", ".codex", ".gemini", ".opencode", ".cursor", ".idea", ".vscode", ".settings", ".gradle", "target", "build", "dist", "out", "node_modules", "__pycache__", ".tox", ".mypy_cache", ".pytest_cache", ".angular", ".next", ".nuxt", "coverage", ".cache", "bin", "obj" ],
+  "indexPath" : "data/code-projects/sdx-aot/indexes",
+  "latestIndexPath" : "data/code-projects/sdx-aot/indexes/latest",
+  "autoIndex" : true
+}

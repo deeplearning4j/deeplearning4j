@@ -72,7 +72,6 @@ public class UnifiedKvCacheManager implements KvCacheManager {
     private final ModelIOConfig ioConfig;
 
     // ── Common state ──
-    @Getter
     private Map<String, INDArray> staticKvBuffers;
     @Getter
     private long maxKvLen;
@@ -1195,39 +1194,50 @@ public class UnifiedKvCacheManager implements KvCacheManager {
     private void scatterPagedEntries(Map<String, INDArray> decoderOutputs,
                                       ModelIOConfig.KVCacheNames kvNames,
                                       int numEntries) {
-        for (int i = 0; i < numEntries; i++) {
-            for (int layer = 0; layer < numLayers; layer++) {
-                String keyPresentName = kvNames.keyNames.get(layer);
-                String valPresentName = kvNames.valueNames.get(layer);
+        for (int layer = 0; layer < numLayers; layer++) {
+            String keyPresentName = kvNames.keyNames.get(layer);
+            String valPresentName = kvNames.valueNames.get(layer);
 
-                INDArray presentKey = decoderOutputs.get(keyPresentName);
-                INDArray presentVal = decoderOutputs.get(valPresentName);
-                if (presentKey == null || presentVal == null) continue;
+            INDArray presentKey = decoderOutputs.get(keyPresentName);
+            INDArray presentVal = decoderOutputs.get(valPresentName);
+            if (presentKey == null || presentVal == null) continue;
 
-                long srcPos = presentKey.size(2) - numEntries + i;
-                INDArray keySlice = presentKey.get(NDArrayIndex.all(), NDArrayIndex.all(),
-                        NDArrayIndex.point(srcPos), NDArrayIndex.all());
-                INDArray valSlice = presentVal.get(NDArrayIndex.all(), NDArrayIndex.all(),
-                        NDArrayIndex.point(srcPos), NDArrayIndex.all());
+            // Batched: take all numEntries tokens from the tail of the present
+            // tensors in ONE layerCache.append (one native paged_kv_append kernel
+            // per layer) instead of numEntries single-token appends.
+            long srcStart = presentKey.size(2) - numEntries;
+            INDArray keySlice = presentKey.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                    NDArrayIndex.interval(srcStart, srcStart + numEntries), NDArrayIndex.all());
+            INDArray valSlice = presentVal.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                    NDArrayIndex.interval(srcStart, srcStart + numEntries), NDArrayIndex.all());
 
-                layerCaches[layer].append(0,
-                        keySlice.reshape(1, 1, numHeads, headDim),
-                        valSlice.reshape(1, 1, numHeads, headDim));
+            // [batch, heads, numEntries, dim] -> [1, numEntries, heads, dim] view;
+            // append normalizes to C-contiguity for the native kernel internally.
+            layerCaches[layer].append(0,
+                    keySlice.permute(0, 2, 1, 3).reshape(1, numEntries, numHeads, headDim),
+                    valSlice.permute(0, 2, 1, 3).reshape(1, numEntries, numHeads, headDim));
 
-                String keyPastName = ioConfig.presentToInputName(keyPresentName);
-                String valPastName = ioConfig.presentToInputName(valPresentName);
+            String keyPastName = ioConfig.presentToInputName(keyPresentName);
+            String valPastName = ioConfig.presentToInputName(valPresentName);
+
+            // Mirror into the pointer-stable dense buffers the captured graph reads.
+            for (int i = 0; i < numEntries; i++) {
+                INDArray tokenKey = keySlice.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.point(i), NDArrayIndex.all());
+                INDArray tokenVal = valSlice.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.point(i), NDArrayIndex.all());
 
                 INDArray keyBuf = staticKvBuffers.get(keyPastName);
                 if (keyBuf != null) {
                     keyBuf.get(NDArrayIndex.all(), NDArrayIndex.all(),
                             NDArrayIndex.point(cachePosition + i), NDArrayIndex.all())
-                            .assign(keySlice);
+                            .assign(tokenKey);
                 }
                 INDArray valBuf = staticKvBuffers.get(valPastName);
                 if (valBuf != null) {
                     valBuf.get(NDArrayIndex.all(), NDArrayIndex.all(),
                             NDArrayIndex.point(cachePosition + i), NDArrayIndex.all())
-                            .assign(valSlice);
+                            .assign(tokenVal);
                 }
             }
         }

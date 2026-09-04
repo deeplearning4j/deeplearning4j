@@ -2606,10 +2606,11 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         }
 
 
+        // TrainingSession is intentionally detached from the normal per-thread sessions map
+        // so its DSP state remains available for post-fit diagnostics. Close the previous
+        // detached owner before replacing it; otherwise repeated fit() leaks its native leases.
+        closeLastTrainingSession();
         TrainingSession ts = new TrainingSession(gradInstance);
-        // Retain for diagnostics: training executes on the gradient-function instance in
-        // this session, which is otherwise unreachable after fit() returns. DspHandle
-        // (sd.dsp()) falls back to it so DSP plan state can be inspected post-fit.
         this.lastTrainingSession = ts;
         gradInstance.setTrainingConfig(this.trainingConfig);     //In case any listeners want to use it
 
@@ -3779,12 +3780,41 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
 
         validateListenerActivations(activeListeners, operation);
 
+        Set<String> listenerRequiredActivations = new LinkedHashSet<>();
+        for (Listener listener : activeListeners) {
+            ListenerVariables required = listener.requiredVariables(this);
+            if (required != null) {
+                listenerRequiredActivations.addAll(
+                        required.requiredVariables(operation));
+            }
+        }
+        At executionAt = At.defaultAt(operation);
+        for (Listener listener : activeListeners) {
+            ListenerVariables required = listener.requiredVariables(this);
+            if (required == null) {
+                continue;
+            }
+            for (String variableName : required.requiredVariables(operation)) {
+                SDVariable variable = getVariable(variableName);
+                if (variable == null
+                        || variable.getVariableType() != VariableType.PLACEHOLDER) {
+                    continue;
+                }
+                INDArray placeholder = placeholders == null
+                        ? null : placeholders.get(variableName);
+                if (placeholder != null) {
+                    listener.activationAvailable(
+                            this, executionAt, null, null, variableName, placeholder);
+                }
+            }
+        }
+
         ExecutionResult ret;
         try {
             ret = directExecHelper(placeholders,
                     otherPlaceholders,
-                    At.defaultAt(operation),
-                    null, Collections.emptyList(),
+                    executionAt,
+                    null, listenerRequiredActivations,
                     activeListeners,
                     outputs);
         } finally {
@@ -4685,32 +4715,15 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         closeAllSessions();
         for (DynamicShapePlan plan : dynamicShapePlanCache.values()) {
             if (plan != null) {
-                try {
-                    plan.close();
-                } catch (Exception e) {
-                    log.warn("Error closing DynamicShapePlan during cache clear: {}", e.getMessage());
-                }
+                plan.close();
             }
+        }
+        if (nativePlanCache != null && !nativePlanCache.isNull()) {
+            // A clear failure means some cache-owned resource may still be live. Retain the
+            // exact cache handle and propagate; replacing/nulling it loses the only retry path.
+            Nd4j.getNativeOps().clearNativePlanCacheHandle(nativePlanCache);
         }
         dynamicShapePlanCache.clear();
-        if (nativePlanCache != null && !nativePlanCache.isNull()) {
-            try {
-                Nd4j.getNativeOps().clearNativePlanCacheHandle(nativePlanCache);
-            } catch (Exception e) {
-                // Swallowing this leaves a REPLAYING CUDA-graph plan in the native cache whose
-                // baked device addresses can be freed/reallocated before the next replay, yielding
-                // silently-wrong gradients (the appnp/rgcn full-suite flake). Replace the cache so
-                // the next dispatch builds a fresh SLOT_BY_SLOT plan with no stale baked addresses.
-                log.warn("clearNativePlanCacheHandle failed — replacing native plan cache to avoid " +
-                        "stale REPLAYING-plan reuse: {}", e.getMessage());
-                try {
-                    nativePlanCache = Nd4j.getNativeOps().createNativePlanCache();
-                } catch (Exception e2) {
-                    log.warn("createNativePlanCache also failed; nulling native plan cache: {}", e2.getMessage());
-                    nativePlanCache = null;
-                }
-            }
-        }
     }
 
     /**
@@ -4736,6 +4749,16 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      */
     public Pointer getNativePlanCache() {
         return nativePlanCache;
+    }
+
+    /** Free the current native plan cache, retaining ownership if native teardown fails. */
+    private synchronized void freeNativePlanCacheHandle() {
+        Pointer cache = nativePlanCache;
+        if (cache == null || cache.isNull()) return;
+        Nd4j.getNativeOps().freeNativePlanCache(cache);
+        if (nativePlanCache == cache) {
+            nativePlanCache = null;
+        }
     }
 
     /**
@@ -5109,11 +5132,27 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
 
     /**
      * The most recent training session created by fit(), or null if this instance
-     * has never been trained. The executor it exposes is thread-local: it is only
-     * populated on the thread that ran fit().
+     * has never been trained. The session owns one executor and remains inspectable
+     * after fit completes.
      */
     public InferenceSession getLastTrainingSession() {
         return lastTrainingSession;
+    }
+
+    /**
+     * Close the detached training session and the gradient graph's execution runtime
+     * without closing arrays shared with this parent graph. Ownership is cleared only
+     * after every native lease and cache resource was released successfully.
+     */
+    private void closeLastTrainingSession() {
+        TrainingSession session = lastTrainingSession;
+        if (session == null) return;
+
+        SameDiff owner = session.getSessionSameDiff();
+        owner.destroySession(session);
+        owner.clearDynamicShapePlanCache();
+        owner.freeNativePlanCacheHandle();
+        lastTrainingSession = null;
     }
 
     /**
@@ -5138,7 +5177,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      */
     public void resetSession() {
         long threadId = Thread.currentThread().getId();
-        InferenceSession session = sessions.remove(threadId);
+        InferenceSession session = sessions.get(threadId);
         if (session != null) {
             // DSP execution may finish asynchronously on its dedicated stream and publish
             // completion to the default stream through an event. Drain that dependency
@@ -5146,6 +5185,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             // still in flight can dereference recycled allocations and poison the CUDA stream.
             Nd4j.getExecutioner().commit();
             int closedCount = destroySession(session);
+            sessions.remove(threadId, session);
             log.info("SameDiff: Reset session for thread {} - closed {} unique data buffers, workspace memory released",
                     threadId, closedCount);
         }
@@ -5204,18 +5244,10 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             if (execProtected != null) {
                 protectedBuffers.putAll(execProtected);
             }
-            // Release GPU intermediates (CUDA graphs, replay workspaces, plan-owned
-            // output slot arrays) BEFORE the session buffer cleanup below. Without
-            // this, gigabytes of intermediate GPU buffers survive destroySession()
-            // and leak until the native plan cache is cleared or GC finalizes them.
-            // This is the authoritative cleanup path — releaseGpuIntermediates()
-            // re-classifies buffer ownership and frees only SLOT_OWNED intermediates
-            // while protecting weights and requested outputs.
-            try {
-                executor.releaseGpuIntermediates();
-            } catch (Exception e) {
-                log.warn("destroySession: releaseGpuIntermediates failed — GPU memory may leak: {}", e.getMessage(), e);
-            }
+            // Close on the executor's owning device under its replay lock. This releases
+            // GPU intermediates and every native-cache lease before Java buffers below.
+            // Failure propagates so the session remains registered and teardown is retryable.
+            session.closeDynamicShapePlanExecutor();
         }
 
         IdentityHashMap<DataBuffer, Boolean> uniqueBuffers = new IdentityHashMap<>();
@@ -5316,18 +5348,16 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         log.info("SameDiff session cleanup: closed={}, skipped(released={}, attached={}, protected={}), force-unpoisoned={}",
                 closedCount, skippedReleased, skippedAttached, skippedProtected, forceClosedConstant);
 
+        // Closes the session-owned DynamicShapePlanExecutor and releases every
+        // native plan-cache lease before clearDynamicShapePlanCache() runs.
         session.closePooledResources();
 
         SessionMemMgr memMgr = session.getMmgr();
         if (memMgr != null) {
-            try {
-                if (memMgr instanceof ArrayCacheMemoryMgr) {
-                    ((ArrayCacheMemoryMgr) memMgr).close(protectedBuffers);
-                } else {
-                    memMgr.close();
-                }
-            } catch (Exception e) {
-                log.warn("Error closing SessionMemMgr during session cleanup: {}", e.getMessage());
+            if (memMgr instanceof ArrayCacheMemoryMgr) {
+                ((ArrayCacheMemoryMgr) memMgr).close(protectedBuffers);
+            } else {
+                memMgr.close();
             }
         }
         return closedCount;
@@ -5360,25 +5390,24 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * This prevents native memory leaks from OpContext objects when sessions are cleared.
      */
     private void closeAllSessions() {
-        java.util.List<InferenceSession> sessionList;
-        try {
-            sessionList = new java.util.ArrayList<>(sessions.values());
-        } catch (Exception e) {
-            log.warn("Error getting session list for cleanup: {}", e.getMessage());
-            sessions.clear();
-            return;
-        }
+        java.util.List<Map.Entry<Long, InferenceSession>> sessionEntries =
+                new java.util.ArrayList<>(sessions.entrySet());
+        RuntimeException cleanupFailure = null;
 
-        for (InferenceSession session : sessionList) {
-            if (session != null) {
-                try {
-                    destroySession(session);
-                } catch (Exception e) {
-                    log.warn("Error cleaning up session: {}", e.getMessage());
-                }
+        for (Map.Entry<Long, InferenceSession> entry : sessionEntries) {
+            InferenceSession session = entry.getValue();
+            if (session == null) continue;
+            try {
+                destroySession(session);
+                sessions.remove(entry.getKey(), session);
+            } catch (Exception e) {
+                IllegalStateException one = new IllegalStateException(
+                        "Error cleaning up SameDiff session for thread " + entry.getKey(), e);
+                if (cleanupFailure == null) cleanupFailure = one;
+                else cleanupFailure.addSuppressed(one);
             }
         }
-        sessions.clear();
+        if (cleanupFailure != null) throw cleanupFailure;
     }
 
     /**
@@ -5713,16 +5742,10 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     @Override
     public void close() {
         log.debug("Closing SameDiff instance");
+        closeLastTrainingSession();
         closeAllSessions();
         clearDynamicShapePlanCache();
-        if (nativePlanCache != null && !nativePlanCache.isNull()) {
-            try {
-                Nd4j.getNativeOps().freeNativePlanCache(nativePlanCache);
-            } catch (Exception e) {
-                log.debug("Error freeing native plan cache: {}", e.getMessage());
-            }
-            nativePlanCache = null;
-        }
+        freeNativePlanCacheHandle();
         trimSessionMemory();
 
         // Explicitly close CONSTANT and VARIABLE data buffers. These are marked
@@ -6129,11 +6152,25 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                 SameDiffOp o = ops.get(op);
                 List<String> inVars = o.getInputsToOp();
                 List<DataType> inDTypes = new ArrayList<>();
+                boolean hasUnknownInput = false;
                 if(inVars != null) {
                     for (String s : inVars) {
                         SDVariable v = variables.get(s).getVariable();
-                        inDTypes.add(v.dataType());
+                        DataType dt = v.dataType();
+                        if (dt == null || dt == DataType.UNKNOWN) {
+                            // Dtype-less variable (e.g. a graph-rewrite/dup artifact whose array
+                            // was never bound). Propagating UNKNOWN into calculateOutputDataTypes
+                            // makes dtype-sensitive ops (mmul, etc.) throw; execution resolves
+                            // real dtypes when arrays are bound, so leave this op's declared
+                            // outputs untouched and keep the walk going.
+                            hasUnknownInput = true;
+                            break;
+                        }
+                        inDTypes.add(dt);
                     }
+                }
+                if (hasUnknownInput) {
+                    continue;
                 }
                 List<DataType> outDtypes = o.getOp().calculateOutputDataTypes(inDTypes);
                 List<String> outVars = o.getOutputsOfOp();

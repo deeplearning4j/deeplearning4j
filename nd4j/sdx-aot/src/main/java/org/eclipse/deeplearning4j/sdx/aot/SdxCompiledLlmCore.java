@@ -5,6 +5,7 @@
 package org.eclipse.deeplearning4j.sdx.aot;
 
 import org.eclipse.deeplearning4j.llm.generation.ChatGenerationResult;
+import org.eclipse.deeplearning4j.llm.generation.GenerationPipeline;
 import org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate;
 import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
 import org.nd4j.dsp.model.SdxTargetProfile;
@@ -34,19 +35,22 @@ final class SdxCompiledLlmCore implements SdxLlmModel {
     private final HuggingFaceTokenizer tokenizer;
     private final SdxTargetProfile target;
     private final int defaultMaxNewTokens;
+    private final int fixedContextCapacity;
     private volatile SdxTextSession.GenerationReport lastReport;
     private volatile long[] lastPromptTokenIds = new long[0];
     private volatile long[] lastGeneratedTokenIds = new long[0];
 
     private SdxCompiledLlmCore(SdxRuntime runtime, SdxRuntime.SdxModel model,
                                SdxTextSession session, HuggingFaceTokenizer tokenizer,
-                               SdxTargetProfile target, int defaultMaxNewTokens) {
+                               SdxTargetProfile target, int defaultMaxNewTokens,
+                               int fixedContextCapacity) {
         this.runtime = runtime;
         this.model = model;
         this.session = session;
         this.tokenizer = tokenizer;
         this.target = target;
         this.defaultMaxNewTokens = defaultMaxNewTokens;
+        this.fixedContextCapacity = fixedContextCapacity;
     }
 
     static SdxCompiledLlmCore load(String bundlePath, String tokenizerPath,
@@ -80,10 +84,11 @@ final class SdxCompiledLlmCore implements SdxLlmModel {
                 throw new IOException("tokenizer_config.json is required beside " + tokenizerFile);
             }
             tokenizer = HuggingFaceTokenizer.fromFile(tokenizerFile.toFile());
-            session = model.createTextSession();
+            session = model.createTextSession(
+                    target.platformProvider().fixedTextContextCapacity());
             int defaultMaxNewTokens = positive(options.path("maxNewTokens").asInt(128), "maxNewTokens");
             return new SdxCompiledLlmCore(runtime, model, session, tokenizer,
-                    target, defaultMaxNewTokens);
+                    target, defaultMaxNewTokens, session.fixedContextCapacity());
         } catch (Throwable failure) {
             closeQuietly(session);
             closeQuietly(tokenizer);
@@ -144,14 +149,17 @@ final class SdxCompiledLlmCore implements SdxLlmModel {
     public String parseChatResult(String requestJson, String rawText) throws IOException {
         ChatTemplate.Request request = SdxLlmCore.parseChatRequest(requestJson);
         String templateSource = tokenizer.getChatTemplate();
+        ChatTemplate.ToolCallFormat toolCallFormat = request.getToolCallFormat();
         ChatGenerationResult result;
         if (templateSource == null || templateSource.isBlank()) {
-            result = new ChatGenerationResult(rawText, request.getTools(), request.getToolCallFormat());
+            result = new ChatGenerationResult(rawText, request.getTools(), toolCallFormat);
         } else {
             ChatTemplate template = new ChatTemplate(templateSource,
                     tokenizer.getBosToken(), tokenizer.getEosToken());
+            toolCallFormat = GenerationPipeline.selectModelToolCallFormat(
+                    toolCallFormat, template, tokenizer);
             result = new ChatGenerationResult(rawText, template.parseAssistantOutput(rawText),
-                    request.getTools(), request.getToolCallFormat(), request.getToolChoice());
+                    request.getTools(), toolCallFormat, request.getToolChoice());
         }
         return SdxLlmCore.chatResultJson(result);
     }
@@ -229,6 +237,7 @@ final class SdxCompiledLlmCore implements SdxLlmModel {
         result.put("executionMode", "compiled-sdx");
         result.put("targetProfile", target.id());
         result.put("runtimeAbiVersion", runtime.abiVersion());
+        result.put("fixedContextCapacity", fixedContextCapacity);
         result.put("vocabSize", tokenizer.getVocabSize());
         result.put("bosTokenId", tokenizer.getBosTokenId());
         result.put("eosTokenId", tokenizer.getEosTokenId());

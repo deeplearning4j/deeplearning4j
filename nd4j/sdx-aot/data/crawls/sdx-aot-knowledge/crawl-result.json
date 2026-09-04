@@ -1,0 +1,13 @@
+{
+  "profileId" : "sdx-aot-knowledge",
+  "name" : "sdx-aot",
+  "status" : "COMPLETED",
+  "backend" : "project-local",
+  "finishedAt" : "2026-09-02T14:21:56.368204671Z",
+  "sources" : [ ],
+  "graphPath" : "/home/agibsonccc/Documents/GitHub/deeplearning4j/nd4j/sdx-aot/data/crawls/sdx-aot-knowledge/graph.kgraph",
+  "graphEntityCount" : 930,
+  "graphRelationCount" : 2616,
+  "codeEntityCount" : 610,
+  "codeProjectionVersion" : 2
+}

@@ -294,15 +294,31 @@ public class DspPlanDiskCache {
     // ── Write path ─────────────────────────────────────────────────────────
 
     /**
-     * Check whether a cached entry exists for the given structure hash.
+     * Check whether a <em>usable</em> cached entry exists for the given structure
+     * hash. An entry whose .meta sidecar fails validation (wrong dspVersion,
+     * missing native build fingerprint, or fingerprint from a different .so
+     * build) is treated as absent, so {@link #store} will overwrite it instead
+     * of leaving a permanently-stale tombstone that blocks refresh.
      */
     public static boolean exists(long structureHash) {
-        String binName = binFileName(structureHash);
-        File cacheBin = new File(getCacheDir(), binName);
-        if (cacheBin.exists()) return true;
+        return existsUsable(structureHash, getCacheDir())
+                || existsUsable(structureHash, getOverrideDir());
+    }
 
-        File overrideBin = new File(getOverrideDir(), binName);
-        return overrideBin.exists();
+    private static boolean existsUsable(long structureHash, String dir) {
+        File binFile = new File(dir, binFileName(structureHash));
+        if (!binFile.exists()) return false;
+        File metaFile = new File(dir, metaFileName(structureHash));
+        if (!metaFile.exists()) return false;
+
+        // Same validation order as tryLoadFromDir: an entry we would reject on
+        // load must not count as existing, otherwise the store path is skipped
+        // forever and every run re-pays the full plan build after a .so rebuild.
+        int metaVersion = readMetaVersion(metaFile);
+        if (metaVersion > 0 && metaVersion != CURRENT_DSP_VERSION) return false;
+        String cachedFingerprint = readMetaFingerprint(metaFile);
+        if (cachedFingerprint == null || cachedFingerprint.isEmpty()) return false;
+        return getNativeBuildFingerprint().equals(cachedFingerprint);
     }
 
     /**

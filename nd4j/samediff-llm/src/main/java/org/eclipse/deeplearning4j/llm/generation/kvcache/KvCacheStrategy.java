@@ -69,8 +69,12 @@ public enum KvCacheStrategy {
      *   <li>O(1) slot reassignment for continuous batching</li>
      * </ul>
      *
-     * <p>Note: CUDA graph replay is not compatible with paged attention because
-     * page tables and context lengths change every step.</p>
+     * <p>Graph compatibility: {@link UnifiedKvCacheManager} PAGED mode mirrors the
+     * paged pool into dense, pointer-stable {@code staticKvBuffers}, which is what
+     * the captured graph actually reads — so {@code supportsCudaGraphReplay()} is
+     * true for this strategy. The paged pool itself is NOT captured: its page
+     * tables and context lengths change every step, so any direct page-table-driven
+     * attention under capture/replay is still unsupported.</p>
      */
     PAGED,
 

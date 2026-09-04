@@ -15,7 +15,7 @@ dl4j_resolve_android_compiler_cache() {
     local candidate="${DL4J_COMPILER_CACHE:-}"
 
     if [[ -z "${candidate}" ]]; then
-        candidate="$(command -v sccache 2>/dev/null || command -v ccache 2>/dev/null || true)"
+        candidate="$(command -v ccache 2>/dev/null || command -v sccache 2>/dev/null || true)"
     elif [[ "${candidate}" != */* ]]; then
         candidate="$(command -v "${candidate}" 2>/dev/null || true)"
     fi
@@ -44,6 +44,7 @@ dl4j_enable_android_compiler_cache_environment() {
     export DL4J_COMPILER_CACHE
     case "$(basename "${DL4J_COMPILER_CACHE}")" in
         sccache*) export SD_USE_SCCACHE=1 ;;
+        ccache*) unset SD_USE_SCCACHE ;;
     esac
     case ":${PATH}:" in
         *":$(dirname "${DL4J_COMPILER_CACHE}"):"*) ;;

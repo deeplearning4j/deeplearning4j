@@ -1,0 +1,16 @@
+{
+  "id" : "sdx-aot",
+  "codeProjectId" : "sdx-aot",
+  "name" : "Code project (sdx-aot)",
+  "rootPath" : "/home/agibsonccc/Documents/GitHub/deeplearning4j/nd4j/sdx-aot",
+  "contextPath" : "data/code-projects/sdx-aot",
+  "agentsMdPath" : "data/code-projects/sdx-aot/AGENTS.md",
+  "chatsPath" : "data/code-projects/sdx-aot/chats",
+  "metadataPath" : "data/code-projects/sdx-aot/metadata",
+  "indexPath" : "data/code-projects/sdx-aot/indexes",
+  "includePatterns" : [ ],
+  "excludePatterns" : [ ],
+  "autoIndex" : true,
+  "tags" : [ "code", "auto-detected", "directory-project" ],
+  "updatedAt" : "2026-09-02T14:21:56.369767092Z"
+}

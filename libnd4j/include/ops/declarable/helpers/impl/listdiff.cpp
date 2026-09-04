@@ -25,6 +25,7 @@
 #if NOT_EXCLUDED(OP_listdiff)
 #include <ops/declarable/helpers/listdiff.h>
 
+#include <string>
 #include <vector>
 
 namespace sd {
@@ -115,7 +116,11 @@ sd::Status listDiffFunctor(sd::LaunchContext* context, NDArray* values, NDArray*
   } else if (DataTypeUtils::isZ(xType)) {
     BUILD_SINGLE_SELECTOR(xType, result = listDiffFunctor_, (values, keep, output1, output2), SD_INTEGER_TYPES);
   } else {
-   return sd::Status::KERNEL_FAILURE;
+    const std::string message =
+        "listDiffFunctor: unsupported values dtype " +
+        std::to_string(static_cast<int>(xType));
+    safeSetErrorContext(static_cast<int>(Status::KERNEL_FAILURE), message.c_str());
+    return Status::KERNEL_FAILURE;
   }
 
   NDArray::registerPrimaryUse({output1, output2}, {values, keep});

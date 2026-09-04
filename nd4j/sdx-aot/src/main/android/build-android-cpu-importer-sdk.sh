@@ -101,6 +101,12 @@ NATIVE_SOURCE_ROOTS=(
   pom.xml
   build-scripts/release/native-platform.sh
   libnd4j
+  # Android CPU/NNAPI never compiles CUDA translation units. Excluding them is
+  # required for both correctness and cache locality: unrelated CUDA edits must
+  # not change NATIVE_STAGE_KEY or trip the CPU producer's source-stability gate.
+  # Shared DSP headers and managed DynamicShapePlan sources remain tracked.
+  ':(exclude,glob)libnd4j/**/*.cu'
+  ':(exclude,glob)libnd4j/**/*.cuh'
   # The CPU/NNAPI build excludes Vulkan sources, while CMake regenerates this catalog
   # in-place during configuration. It is build output, not an input to this producer.
   ':(exclude)libnd4j/include/graph/vulkan/VulkanKernelEmitterCatalog.cpp'
@@ -381,6 +387,14 @@ process_blas_symbols_capability=$PROCESS_BLAS_SYMBOLS_ABI
 RECEIPT
   mv -f -- "$native_receipt_tmp" "$NATIVE_STAGE_RECEIPT"
 fi
+shopt -s nullglob
+stale_native_linker_outputs=("$NATIVE_BUILD_DIR"/*.so.tmp*)
+shopt -u nullglob
+if ((${#stale_native_linker_outputs[@]} > 0)); then
+  rm -f -- "${stale_native_linker_outputs[@]}"
+  printf 'Removed %s stale native linker temporary file(s) before Maven packaging.\n' \
+    "${#stale_native_linker_outputs[@]}"
+fi
 NATIVE_CPU_SHA256="$(sha256_file "$NATIVE_CPU_BACKEND")"
 
 MANAGED_STAGE_KEY="$({
@@ -549,7 +563,18 @@ METADATA_DIR="$STAGE/metadata"
 mkdir -p "$JNI_DIR" "$METADATA_DIR"
 cp -- "$MANAGED_STAGE_DIR/classpath-bytes.txt" "$METADATA_DIR/classpath-bytes.txt"
 CLASSPATH_BYTES="$METADATA_DIR/classpath-bytes.txt"
-cp -- "$MANAGED_NATIVE_PAYLOAD"/*.so "$JNI_DIR/"
+# Deployment copies are stripped below. Force userspace read/write copies: GNU cp can
+# still use copy_file_range even with --reflink=never --sparse=never, and on Btrfs an
+# encoded/reflinked source extent can then produce different destination bytes. Stripping
+# that corrupt copy reduces an ELF to a tiny non-ELF file. Bind every copied byte before
+# any in-place rewrite instead of trusting filesystem extent-copy semantics.
+for source_library in "$MANAGED_NATIVE_PAYLOAD"/*.so; do
+  destination_library="$JNI_DIR/$(basename -- "$source_library")"
+  dd if="$source_library" of="$destination_library" bs=1M iflag=fullblock status=none ||
+    fail "could not independently copy managed native library: $(basename -- "$source_library")"
+  [[ "$(sha256_file "$destination_library")" == "$(sha256_file "$source_library")" ]] ||
+    fail "managed native byte copy changed content: $(basename -- "$source_library")"
+done
 
 # The managed stage snapshots the complete native closure before Maven's mutable local
 # repository can be changed by another build. Publication now depends only on immutable,

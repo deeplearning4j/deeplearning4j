@@ -23,8 +23,10 @@
 #include <ops/declarable/helpers/token_sample.h>
 #include <ops/declarable/helpers/kv_scatter.h>
 #include <ops/declarable/helpers/kv_cache_quantize.h>
+#include <execution/LaunchContext.h>
 #include <graph/Context.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspPhaseUtils.h>
 #include <graph/NativeDynamicShapePlan.h>
 #include <array/NDArray.h>
 #include <array/NDArrayFactory.h>
@@ -35,6 +37,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -43,6 +46,15 @@
 namespace sd {
 namespace ops {
 namespace helpers {
+
+static std::string nestedPlanFailureDetail() {
+    auto* launchContext = LaunchContext::defaultContext();
+    auto* errorReference = launchContext != nullptr ? launchContext->errorReference() : nullptr;
+    const char* detail = errorReference != nullptr ? errorReference->errorMessage() : nullptr;
+    return detail != nullptr && detail[0] != '\0'
+               ? std::string(detail)
+               : std::string("nested plan returned without native failure detail");
+}
 
 // ─── CUDA Kernels ────────────────────────────────────────────────────────────
 
@@ -1267,9 +1279,12 @@ void autoregressiveDecode(
             mtpExtInputs, mtpNumExtInputs,
             mtpPlanOutputs, mtpNumOutputs,
             reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)));
+        std::string mtpFailureDetail;
+        if (mtpStatus != Status::OK) mtpFailureDetail = nestedPlanFailureDetail();
         REQUIRE_TRUE(mtpStatus == Status::OK, 0,
-                     "autoregressive_decode: CUDA MTP plan failed at position %lld with status %d",
-                     (long long)position, static_cast<int>(mtpStatus));
+                     "%s [autoregressive_decode nested CUDA MTP plan position=%lld, status=%s (%d)]",
+                     mtpFailureDetail.c_str(), (long long)position,
+                     graph::dsp::dspStatusName(mtpStatus), static_cast<int>(mtpStatus));
         REQUIRE_TRUE(config->mtpLogitsOutputIdx >= 0
                          && config->mtpLogitsOutputIdx < mtpNumOutputs
                          && mtpPlanOutputs[config->mtpLogitsOutputIdx] != nullptr,
@@ -1751,11 +1766,13 @@ void autoregressiveDecode(
 
         // Validate plan output every step — these are O(1) pointer/flag checks,
         // negligible cost compared to the plan execution itself.
+        std::string planFailureDetail;
+        if (planStatus != Status::OK) planFailureDetail = nestedPlanFailureDetail();
         REQUIRE_TRUE(planStatus == Status::OK, 0,
-                     "autoregressive_decode: plan execution FAILED at step %d with status %d. "
-                     "Plan state: frozen=%d numExt=%d numOutputs=%d. "
-                     "This is NOT recoverable — fix the plan execution failure.",
-                     step, static_cast<int>(planStatus),
+                     "%s [autoregressive_decode nested plan step=%d, status=%s (%d), "
+                     "frozen=%d, numExt=%d, numOutputs=%d]",
+                     planFailureDetail.c_str(), step,
+                     graph::dsp::dspStatusName(planStatus), static_cast<int>(planStatus),
                      plan->isShapesFrozen() ? 1 : 0,
                      numExtInputs, numPlanOutputs);
 
@@ -2137,10 +2154,14 @@ void autoregressiveDecode(
                 if (config->kvQuantFormat > 0 && config->kvScaleBuffers != nullptr) {
                     clearKvScaleRegistry();
                 }
+                std::string rerunFailureDetail;
+                if (rerunStatus != Status::OK) rerunFailureDetail = nestedPlanFailureDetail();
                 REQUIRE_TRUE(rerunStatus == Status::OK, 0,
-                             "autoregressive_decode: accepted-prefix state re-execution FAILED "
-                             "at step %d with status %d (accepted=%d of %d).",
-                             step, static_cast<int>(rerunStatus), acceptedDrafts, proposedCount);
+                             "%s [autoregressive_decode accepted-prefix re-execution step=%d, "
+                             "status=%s (%d), accepted=%d of %d]",
+                             rerunFailureDetail.c_str(), step,
+                             graph::dsp::dspStatusName(rerunStatus),
+                             static_cast<int>(rerunStatus), acceptedDrafts, proposedCount);
             }
             // Commit recurrent state from the (possibly re-run) accepted-prefix pass.
             commitRecurrentState();

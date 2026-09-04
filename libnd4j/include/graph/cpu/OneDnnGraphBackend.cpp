@@ -774,12 +774,22 @@ Status OneDnnGraphBackend::executeSegment(
     NDArray** outputSlots, int totalOutputSlots,
     void* stream) {
 
+  auto fail = [&](const std::string& reason) {
+    const std::string message =
+        reason + " [oneDNN Graph segment " +
+        std::to_string(seg.def.startSlot) + "-" +
+        std::to_string(seg.def.endSlot) +
+        ", status=KERNEL_FAILURE (50)]";
+    safeSetErrorContext(static_cast<int>(Status::KERNEL_FAILURE), message.c_str());
+    return Status::KERNEL_FAILURE;
+  };
+
   if (seg.compiledGraphBackendArtifactOwner != this ||
       !seg.compiledGraphBackendArtifact) {
     DSP_DIAG(EXECUTE,
              "OneDnnGraphBackend::executeSegment [%d-%d]: no owned artifact",
              seg.def.startSlot, seg.def.endSlot);
-    return Status::KERNEL_FAILURE;
+    return fail("oneDNN Graph execution has no segment-owned compiled artifact");
   }
   auto compiledHandle = std::static_pointer_cast<CompiledSegment>(
       seg.compiledGraphBackendArtifact);
@@ -793,7 +803,12 @@ Status OneDnnGraphBackend::executeSegment(
              seg.def.startSlot, seg.def.endSlot,
              (long long)compiled->shapeKey,
              (long long)seg.def.shapeKeyState.compiledShapeKey);
-    return Status::KERNEL_FAILURE;
+    return fail(
+        "oneDNN Graph compiled artifact is invalid or stale: artifactShapeKey=" +
+        std::to_string(compiled->shapeKey) + ", planShapeKey=" +
+        std::to_string(seg.def.shapeKeyState.compiledShapeKey) +
+        ", ownedShapeKey=" +
+        std::to_string(seg.compiledGraphBackendArtifactShapeKey));
   }
 
   auto& strm = getThreadStream();
@@ -888,7 +903,8 @@ Status OneDnnGraphBackend::executeSegment(
           size_t tid = part.inputTensorIds[i];
           if (compiled->tensorIdToSlotMap.find(tid) ==
               compiled->tensorIdToSlotMap.end()) {
-            return Status::KERNEL_FAILURE;
+            return fail("oneDNN pure partition input tensor has no slot mapping: tensorId=" +
+                        std::to_string(tid));
           }
           part.cachedInputTensors[i].lt =
               part.compiledPartition.query_logical_tensor(tid);
@@ -900,7 +916,8 @@ Status OneDnnGraphBackend::executeSegment(
           size_t tid = part.outputTensorIds[i];
           if (compiled->tensorIdToSlotMap.find(tid) ==
               compiled->tensorIdToSlotMap.end()) {
-            return Status::KERNEL_FAILURE;
+            return fail("oneDNN pure partition output tensor has no slot mapping: tensorId=" +
+                        std::to_string(tid));
           }
           part.cachedOutputTensors[i].lt =
               part.compiledPartition.query_logical_tensor(tid);
@@ -913,7 +930,9 @@ Status OneDnnGraphBackend::executeSegment(
         auto slotIt = compiled->tensorIdToSlotMap.find(part.inputTensorIds[i]);
         NDArray* arr = resolveArray(slotIt->second);
         if (!matchesCompiledDescriptor(arr, part.cachedInputTensors[i].lt)) {
-          return Status::KERNEL_FAILURE;
+          return fail("oneDNN pure partition input descriptor mismatch: tensorId=" +
+                      std::to_string(part.inputTensorIds[i]) + ", sourceSlot=" +
+                      std::to_string(slotIt->second));
         }
         inputTensors.emplace_back(part.cachedInputTensors[i].lt, engine_, arr->buffer());
       }
@@ -924,7 +943,9 @@ Status OneDnnGraphBackend::executeSegment(
         auto slotIt = compiled->tensorIdToSlotMap.find(part.outputTensorIds[i]);
         NDArray* arr = resolveArray(slotIt->second);
         if (!matchesCompiledDescriptor(arr, part.cachedOutputTensors[i].lt)) {
-          return Status::KERNEL_FAILURE;
+          return fail("oneDNN pure partition output descriptor mismatch: tensorId=" +
+                      std::to_string(part.outputTensorIds[i]) + ", sourceSlot=" +
+                      std::to_string(slotIt->second));
         }
         outputTensors.emplace_back(part.cachedOutputTensors[i].lt, engine_, arr->buffer());
       }
@@ -933,7 +954,7 @@ Status OneDnnGraphBackend::executeSegment(
         part.compiledPartition.execute(strm, inputTensors, outputTensors);
       } catch (const std::exception& e) {
         DSP_DIAG(EXECUTE, "OneDnnGraphBackend: partition execute failed: %s", e.what());
-        return Status::KERNEL_FAILURE;
+        return fail(std::string("oneDNN pure partition execution threw: ") + e.what());
       }
     }
 
@@ -953,7 +974,9 @@ Status OneDnnGraphBackend::executeSegment(
     DSP_DIAG(EXECUTE, "OneDnnGraphBackend::executeSegment [%d-%d]: MISSING NativeSlotExecutor "
              "for mixed segment (%d native ranges). Call setNativeSlotExecutor() before execute.",
              seg.def.startSlot, seg.def.endSlot, (int)compiled->nativeRanges.size());
-    return Status::KERNEL_FAILURE;
+    return fail("oneDNN mixed segment has " +
+                std::to_string(compiled->nativeRanges.size()) +
+                " native range(s) but no NativeSlotExecutor");
   }
 
   for (const auto& step : compiled->executionSchedule) {
@@ -964,8 +987,10 @@ Status OneDnnGraphBackend::executeSegment(
                nr.startSlot, nr.endSlot, step.index);
       auto nativeStatus = nativeExecutor_(nr.startSlot, nr.endSlot);
       if (nativeStatus != Status::OK) {
-        DSP_DIAG(EXECUTE, "OneDnnGraphBackend: native range [%d-%d] failed with status=%d",
-                 nr.startSlot, nr.endSlot, static_cast<int>(nativeStatus));
+        DSP_DIAG(EXECUTE,
+                 "OneDnnGraphBackend: native range [%d-%d] failed with %s (%d)",
+                 nr.startSlot, nr.endSlot, sd::statusName(nativeStatus),
+                 static_cast<int>(nativeStatus));
         return nativeStatus;
       }
     } else {
@@ -980,7 +1005,9 @@ Status OneDnnGraphBackend::executeSegment(
           size_t tid = part.inputTensorIds[i];
           if (compiled->tensorIdToSlotMap.find(tid) ==
               compiled->tensorIdToSlotMap.end()) {
-            return Status::KERNEL_FAILURE;
+            return fail("oneDNN mixed partition input tensor has no slot mapping: tensorId=" +
+                        std::to_string(tid) + ", partition=" +
+                        std::to_string(step.index));
           }
           part.cachedInputTensors[i].lt =
               part.compiledPartition.query_logical_tensor(tid);
@@ -992,7 +1019,9 @@ Status OneDnnGraphBackend::executeSegment(
           size_t tid = part.outputTensorIds[i];
           if (compiled->tensorIdToSlotMap.find(tid) ==
               compiled->tensorIdToSlotMap.end()) {
-            return Status::KERNEL_FAILURE;
+            return fail("oneDNN mixed partition output tensor has no slot mapping: tensorId=" +
+                        std::to_string(tid) + ", partition=" +
+                        std::to_string(step.index));
           }
           part.cachedOutputTensors[i].lt =
               part.compiledPartition.query_logical_tensor(tid);
@@ -1005,7 +1034,10 @@ Status OneDnnGraphBackend::executeSegment(
         auto slotIt = compiled->tensorIdToSlotMap.find(part.inputTensorIds[i]);
         NDArray* arr = resolveArray(slotIt->second);
         if (!matchesCompiledDescriptor(arr, part.cachedInputTensors[i].lt)) {
-          return Status::KERNEL_FAILURE;
+          return fail("oneDNN mixed partition input descriptor mismatch: tensorId=" +
+                      std::to_string(part.inputTensorIds[i]) + ", sourceSlot=" +
+                      std::to_string(slotIt->second) + ", partition=" +
+                      std::to_string(step.index));
         }
         inputTensors.emplace_back(part.cachedInputTensors[i].lt, engine_, arr->buffer());
       }
@@ -1016,7 +1048,10 @@ Status OneDnnGraphBackend::executeSegment(
         auto slotIt = compiled->tensorIdToSlotMap.find(part.outputTensorIds[i]);
         NDArray* arr = resolveArray(slotIt->second);
         if (!matchesCompiledDescriptor(arr, part.cachedOutputTensors[i].lt)) {
-          return Status::KERNEL_FAILURE;
+          return fail("oneDNN mixed partition output descriptor mismatch: tensorId=" +
+                      std::to_string(part.outputTensorIds[i]) + ", sourceSlot=" +
+                      std::to_string(slotIt->second) + ", partition=" +
+                      std::to_string(step.index));
         }
         outputTensors.emplace_back(part.cachedOutputTensors[i].lt, engine_, arr->buffer());
       }
@@ -1028,7 +1063,9 @@ Status OneDnnGraphBackend::executeSegment(
       } catch (const std::exception& e) {
         DSP_DIAG(EXECUTE, "OneDnnGraphBackend: mixed partition [%d-%d] execute failed: %s",
                  part.startSlot, part.endSlot, e.what());
-        return Status::KERNEL_FAILURE;
+        return fail(
+            "oneDNN mixed partition " + std::to_string(part.startSlot) + "-" +
+            std::to_string(part.endSlot) + " execution threw: " + e.what());
       }
     }
   }

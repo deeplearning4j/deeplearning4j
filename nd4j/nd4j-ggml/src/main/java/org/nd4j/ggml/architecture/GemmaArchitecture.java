@@ -31,6 +31,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
 
@@ -134,6 +136,43 @@ public class GemmaArchitecture implements ModelArchitecture {
                 slidingWindow, sharedKvStartLayer, sharedKvSourceLayer,
                 localFreqBase, globalFreqBase, dtype);
 
+        // Autoregressive-decode infrastructure (GGUF in-graph KV contract). The
+        // GenerationPipeline detects in-graph KV by the presence of
+        // past_key_values.<layer>.key/value inputs and the absence of present_* outputs;
+        // without these the loaded graph cannot decode at all.
+        // position_offset: scalar INT64 — current position for DualRoPE (enables DSP replay)
+        SDVariable positionOffset = sd.placeHolder("position_offset", DataType.INT64);
+        // cache_position: scalar INT64 — write position in the KV cache buffers
+        SDVariable cachePosition = sd.placeHolder("cache_position", DataType.INT64);
+        // _causal_mask: [1, 1, Tq, maxKvLen] — attention bias masking padded cache positions.
+        // Sliding-window layers get their local window baked into this bias by the pipeline.
+        SDVariable causalMask = sd.placeHolder("_causal_mask", DataType.FLOAT, -1, -1, -1, -1);
+
+        // Per-layer KV cache placeholders: [batch, maxKvLen, numKvHeads, headDim].
+        // Shared-KV layers own a cache too; the runtime writes the donor layer's post-RoPE K/V
+        // into every shared layer's buffer so each layer's cache is self-contained by name.
+        Map<Integer, SDVariable> keyCachePlaceholders = new HashMap<>();
+        Map<Integer, SDVariable> valueCachePlaceholders = new HashMap<>();
+        for (int layer = 0; layer < numLayers; layer++) {
+            // Per-layer KV width: Gemma 3n layers vary in KV head count, so derive
+            // each placeholder's kv-heads from that layer's actual attn_k weight.
+            int layerKvHeads = numKvHeads;
+            INDArray kWeightL = weights.get("blk." + layer + ".attn_k.weight");
+            if (kWeightL != null && headDim > 0) {
+                int kOutDim = QuantizedLinear.logicalOutputDim(
+                        weights, "blk." + layer + ".attn_k.weight", kWeightL);
+                if (kOutDim % headDim == 0) {
+                    layerKvHeads = kOutDim / headDim;
+                }
+            }
+            SDVariable keyCache = sd.placeHolder("past_key_values." + layer + ".key",
+                    dtype, -1, -1, layerKvHeads, headDim);
+            SDVariable valueCache = sd.placeHolder("past_key_values." + layer + ".value",
+                    dtype, -1, -1, layerKvHeads, headDim);
+            keyCachePlaceholders.put(layer, keyCache);
+            valueCachePlaceholders.put(layer, valueCache);
+        }
+
         // Input placeholder: [batch, seq_len]
         SDVariable inputIds = sd.placeHolder("input_ids", DataType.INT64, -1, -1);
 
@@ -154,6 +193,7 @@ public class GemmaArchitecture implements ModelArchitecture {
         // Track shared K/V outputs for shared-KV layers
         SDVariable sharedKey = null;
         SDVariable sharedValue = null;
+        List<String> outputNames = new ArrayList<>();
 
         // Build transformer layers
         for (int layer = 0; layer < numLayers; layer++) {
@@ -174,25 +214,39 @@ public class GemmaArchitecture implements ModelArchitecture {
 
             // Attention
             SDVariable attnOut;
+            SDVariable keyCache = keyCachePlaceholders.get(layer);
+            SDVariable valueCache = valueCachePlaceholders.get(layer);
             if (isSharedKvLayer) {
-                // Use shared K/V from the source layer
+                // Shared-KV layer: Q projected locally; K/V attended from the donor layer's
+                // cache (same post-RoPE tensors the donor wrote), so decode stays correct as
+                // the cache grows. RoPE for Q uses the shared position offset.
                 attnOut = buildSharedKvAttention(sd, normed, sharedKey, sharedValue,
+                        keyCache, valueCache, cachePosition, causalMask, positionOffset,
                         layer, config, weights, dtype, isGlobalAttention, slidingWindow);
             } else {
                 // Standard attention with per-layer Q/K/V
                 SDVariable[] qkv = buildQKV(sd, normed, layer, config, weights, dtype, isGlobalAttention,
-                        localFreqBase, globalFreqBase, localFreqScale, globalFreqScale);
+                        positionOffset, localFreqBase, globalFreqBase, localFreqScale, globalFreqScale);
                 SDVariable q = qkv[0];
                 SDVariable k = qkv[1];
                 SDVariable v = qkv[2];
 
-                // Capture K/V at the source layer for sharing
+                // Capture K/V at the source layer for sharing (prefill path only)
                 if (isSharedKvSource) {
                     sharedKey = k;
                     sharedValue = v;
                 }
 
-                attnOut = buildAttention(sd, q, k, v, layer, config, isGlobalAttention, slidingWindow);
+                // Per-layer head count: Gemma 3n layers vary (LLaMA pattern: qOutDim/headDim)
+                int qOutDim = QuantizedLinear.logicalOutputDim(
+                        weights, "blk." + layer + ".attn_q.weight",
+                        weights.get("blk." + layer + ".attn_q.weight"));
+
+                int actualNumHeads = headDim > 0 && qOutDim % headDim == 0
+                        ? qOutDim / headDim : numHeads;
+                attnOut = buildAttention(sd, q, k, v, keyCache, valueCache,
+                        cachePosition, causalMask, layer, actualNumHeads, config,
+                        isGlobalAttention, slidingWindow);
             }
 
             // Output projection
@@ -201,6 +255,13 @@ public class GemmaArchitecture implements ModelArchitecture {
                 SDVariable wo = sd.var("model.layers." + layer + ".self_attn.o_proj.weight", oWeight);
                 attnOut = QuantizedLinear.matMul(sd, "attn_proj_" + layer, attnOut, wo, weights, "blk." + layer + ".attn_output.weight", dtype);
             }
+
+            // Register per-layer post-RoPE K/V as graph outputs for prefill extraction:
+            // GenerationPipeline reads k_rope_<layer>/v_heads_<layer> to fill each layer's
+            // past_key_values buffers. Shared layers emit the donor tensors under their own
+            // layer names so their caches fill identically by name.
+            outputNames.add("k_rope_" + layer);
+            outputNames.add("v_heads_" + layer);
 
             // Post-attention residual
             SDVariable postAttn = hidden.add("post_attn_" + layer, attnOut);
@@ -230,7 +291,9 @@ public class GemmaArchitecture implements ModelArchitecture {
 
         // Logits: [batch, seq_len, vocab_size]
         QuantizedLinear.matMul(sd, "logits", hidden, lmHead, weights, "output.weight", dtype);
+        outputNames.add("logits");
 
+        sd.setOutputs(outputNames);
         return sd;
     }
 
@@ -257,7 +320,8 @@ public class GemmaArchitecture implements ModelArchitecture {
 
     private SDVariable[] buildQKV(SameDiff sd, SDVariable input, int layerIdx,
                                   ArchitectureConfig config, Map<String, INDArray> weights, DataType dtype,
-                                  boolean isGlobalAttention, double localFreqBase, double globalFreqBase,
+                                  boolean isGlobalAttention, SDVariable positionOffset,
+                                  double localFreqBase, double globalFreqBase,
                                   double localFreqScale, double globalFreqScale) {
         String prefix = "blk." + layerIdx;
         int numHeads = config.getNumAttentionHeads();
@@ -270,6 +334,30 @@ public class GemmaArchitecture implements ModelArchitecture {
 
         if (qWeight == null || kWeight == null || vWeight == null) {
             throw new IllegalStateException("Missing Q/K/V weights for layer " + layerIdx);
+        }
+
+        // Gemma 3n layers vary in attention-head count; derive per-layer Q/KV head
+        // counts from the actual projection widths instead of the global config
+        // (LLaMA pattern: actualNumHeads = qOutDim / headDim). Prevents reshape
+        // product mismatches (DSP slots 577/582).
+        int kOutDim = QuantizedLinear.logicalOutputDim(weights, prefix + ".attn_k.weight", kWeight);
+        // Derive headDim from the K width first: this GGUF's metadata head dimension
+        // can disagree with the actual projections (config said 512 while every layer's
+        // q/k/v widths are exact multiples of 256). K/V widths must divide evenly into
+        // numKvHeads * headDim, so K pins the true head dimension; Q then validates
+        // against it and falls back to config only when inconsistent.
+        if (headDim <= 0 || kOutDim % headDim != 0) {
+            int derivedHeadDim = numKvHeads > 0 ? kOutDim / numKvHeads : 0;
+            if (derivedHeadDim > 0) {
+                headDim = derivedHeadDim;
+            }
+        }
+        int qOutDim = QuantizedLinear.logicalOutputDim(weights, prefix + ".attn_q.weight", qWeight);
+        if (headDim > 0 && qOutDim % headDim == 0 && qOutDim / headDim != numHeads) {
+            numHeads = qOutDim / headDim;
+        }
+        if (headDim > 0 && kOutDim % headDim == 0 && kOutDim / headDim != numKvHeads) {
+            numKvHeads = kOutDim / headDim;
         }
 
         String attnPrefix = "model.layers." + layerIdx + ".self_attn.";
@@ -310,10 +398,12 @@ public class GemmaArchitecture implements ModelArchitecture {
         // Apply Dual RoPE (Gemma 4) or standard RoPE (earlier Gemma)
         int attentionType = isGlobalAttention ? DualRoPE.ATTENTION_TYPE_GLOBAL : DualRoPE.ATTENTION_TYPE_LOCAL;
 
-        q = sd.nn().dualRoPE("q_rope_" + layerIdx, q, attentionType, 0,
+        // Position offset enables DSP replay during decode: RoPE rotates by the absolute
+        // position rather than the in-graph sequence index.
+        q = sd.nn().dualRoPE("q_rope_" + layerIdx, q, positionOffset, attentionType,
                 localFreqBase, globalFreqBase, localFreqScale, globalFreqScale);
 
-        k = sd.nn().dualRoPE("k_rope_" + layerIdx, k, attentionType, 0,
+        k = sd.nn().dualRoPE("k_rope_" + layerIdx, k, positionOffset, attentionType,
                 localFreqBase, globalFreqBase, localFreqScale, globalFreqScale);
 
         return new SDVariable[]{q, k, v};
@@ -324,9 +414,11 @@ public class GemmaArchitecture implements ModelArchitecture {
     // ========================================================================
 
     private SDVariable buildAttention(SameDiff sd, SDVariable q, SDVariable k, SDVariable v,
-                                      int layerIdx, ArchitectureConfig config,
+                                      SDVariable keyCache, SDVariable valueCache,
+                                      SDVariable cachePosition, SDVariable causalMask,
+                                      int layerIdx, int layerNumHeads, ArchitectureConfig config,
                                       boolean isGlobalAttention, int slidingWindow) {
-        int numHeads = config.getNumAttentionHeads();
+        int numHeads = layerNumHeads;
         int headDim = config.getHeadDimension();
 
         // DualRoPE promotes HALF→FLOAT internally; V must match Q/K dtype
@@ -334,11 +426,15 @@ public class GemmaArchitecture implements ModelArchitecture {
             v = v.castTo("v_cast_" + layerIdx, q.dataType());
         }
 
-        // Dot-product attention (causal)
+        // Attention with in-graph KV cache: dotProductAttentionV2 scatters this batch's K/V
+        // into the cache at cache_position and attends over the full buffer. Masking is fully
+        // driven by _causal_mask (padded positions masked; sliding window applied there), so
+        // useCausalMask stays false — matching the LLaMA architecture pattern.
         SDVariable attnOut = sd.nn.dotProductAttentionV2(
                 "attn_out_" + layerIdx,
                 q, v, k, null, null,
-                0.0, 0.0, true, false
+                keyCache, valueCache, cachePosition, causalMask,
+                0.0, 0.0, false, false
         );
 
         // Reshape: [batch, seq, numHeads, headDim] -> [batch, seq, numHeads * headDim]
@@ -353,6 +449,9 @@ public class GemmaArchitecture implements ModelArchitecture {
 
     private SDVariable buildSharedKvAttention(SameDiff sd, SDVariable input,
                                               SDVariable sharedKey, SDVariable sharedValue,
+                                              SDVariable keyCache, SDVariable valueCache,
+                                              SDVariable cachePosition, SDVariable causalMask,
+                                              SDVariable positionOffset,
                                               int layerIdx, ArchitectureConfig config,
                                               Map<String, INDArray> weights, DataType dtype,
                                               boolean isGlobalAttention, int slidingWindow) {
@@ -365,6 +464,12 @@ public class GemmaArchitecture implements ModelArchitecture {
         INDArray qWeight = weights.get(prefix + ".attn_q.weight");
         if (qWeight == null) {
             throw new IllegalStateException("Missing Q weights for shared-KV layer " + layerIdx);
+        }
+
+        // Per-layer Q head count from the actual projection width (Gemma 3n layers vary).
+        int qOutDim = QuantizedLinear.logicalOutputDim(weights, prefix + ".attn_q.weight", qWeight);
+        if (headDim > 0 && qOutDim % headDim == 0 && qOutDim / headDim != numHeads) {
+            numHeads = qOutDim / headDim;
         }
 
         String attnPrefix = "model.layers." + layerIdx + ".self_attn.";
@@ -381,17 +486,21 @@ public class GemmaArchitecture implements ModelArchitecture {
                 sd.constant(Nd4j.scalar((long) headDim)));
         q = sd.reshape("q_heads_" + layerIdx, q, qShapeVar);
 
-        // Apply RoPE to Q only (K/V already have RoPE from source layer)
-        q = sd.nn().dualRoPE("q_rope_" + layerIdx, q,
+        // Apply RoPE to Q only (K/V already have RoPE from source layer, cached at the donor's
+        // absolute positions). Position offset keeps decode correct as positions advance.
+        q = sd.nn().dualRoPE("q_rope_" + layerIdx, q, positionOffset,
                 isGlobalAttention ? DualRoPE.ATTENTION_TYPE_GLOBAL : DualRoPE.ATTENTION_TYPE_LOCAL,
-                0, DEFAULT_LOCAL_FREQ_BASE, DEFAULT_GLOBAL_FREQ_BASE, 1.0, 1.0);
+                DEFAULT_LOCAL_FREQ_BASE, DEFAULT_GLOBAL_FREQ_BASE, 1.0, 1.0);
 
-        // Use SharedKvAttention op
-        double scale = 1.0 / Math.sqrt(headDim);
-        SDVariable attnOut = sd.nn().sharedKvAttention(
-                "shared_kv_attn_out_" + layerIdx, q, sharedKey, sharedValue, null,
-                numHeads, numKvHeads, 1,
-                isGlobalAttention ? 0 : slidingWindow, scale);
+        // Attend over the donor layer's cache contents, mirrored into this layer's
+        // past_key_values.<layer>.* buffers by the runtime. GQA is handled by the V2 op
+        // (fewer KV heads than query heads); masking fully via _causal_mask.
+        SDVariable attnOut = sd.nn.dotProductAttentionV2(
+                "shared_kv_attn_out_" + layerIdx,
+                q, sharedValue, sharedKey, null, null,
+                keyCache, valueCache, cachePosition, causalMask,
+                0.0, 0.0, false, false
+        );
 
         // Reshape: [batch, seq, numHeads, headDim] -> [batch, seq, numHeads * headDim]
         int attnOutDim = numHeads * headDim;

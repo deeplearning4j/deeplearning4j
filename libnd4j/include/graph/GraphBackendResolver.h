@@ -119,15 +119,22 @@ class GraphBackendResolver {
   struct LoweringAttempt {
     GraphBackend* backend = nullptr;
     bool succeeded = false;
+    bool prerequisitesReady = true;
+    std::string prerequisiteFailureReason;
     std::vector<CompilationAuditEntry> audit;
   };
 
   struct LoweringResult {
     GraphBackend* backend = nullptr;
     std::vector<LoweringAttempt> attempts;
+    GraphBackend* prerequisiteBlockedBackend = nullptr;
+    std::string prerequisiteFailureReason;
 
     bool anyBackendAdmitted() const { return !attempts.empty(); }
     bool succeeded() const { return backend != nullptr; }
+    bool prerequisiteBlocked() const {
+      return prerequisiteBlockedBackend != nullptr;
+    }
   };
 
   /**
@@ -148,6 +155,18 @@ class GraphBackendResolver {
     result.attempts.reserve(admitted.size());
     for (GraphBackend* backend : admitted) {
       segment.compilationAudit.clear();
+      const auto readiness =
+          backend->compilationReadiness(request, slots, start, end);
+      if (!readiness.ready) {
+        LoweringAttempt attempt;
+        attempt.backend = backend;
+        attempt.prerequisitesReady = false;
+        attempt.prerequisiteFailureReason = readiness.reason;
+        result.attempts.push_back(std::move(attempt));
+        result.prerequisiteBlockedBackend = backend;
+        result.prerequisiteFailureReason = readiness.reason;
+        break;
+      }
       const bool succeeded = backend->compileSegment(
           request, segment, slots, externalInputs, numExternalInputs,
           outputSlots, totalOutputSlots, shapeKey, totalSlots,
@@ -155,7 +174,11 @@ class GraphBackendResolver {
       const auto audit = !segment.compilationAudit.empty()
                              ? segment.compilationAudit
                              : backend->getLastCompilationAudit();
-      result.attempts.push_back(LoweringAttempt{backend, succeeded, audit});
+      LoweringAttempt attempt;
+      attempt.backend = backend;
+      attempt.succeeded = succeeded;
+      attempt.audit = audit;
+      result.attempts.push_back(std::move(attempt));
       if (succeeded) {
         result.backend = backend;
         break;
@@ -182,6 +205,10 @@ class GraphBackendResolver {
       combined.precompileBeforeFirstExecution |=
           policy.precompileBeforeFirstExecution;
       combined.allowsShapeOnlyWarmup |= policy.allowsShapeOnlyWarmup;
+      combined.deferCompilationUntilPlanFreeze |=
+          policy.deferCompilationUntilPlanFreeze;
+      combined.requiresPrecommitFunctionalWarmup |=
+          policy.requiresPrecommitFunctionalWarmup;
       combined.requiresCapabilityPartitioning |=
           policy.requiresCapabilityPartitioning;
       combined.requiresCompleteLowering |= policy.requiresCompleteLowering;

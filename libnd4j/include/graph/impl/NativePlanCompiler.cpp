@@ -23,6 +23,8 @@
 #include <graph/PlanDefinition.h>
 #include <graph/ExecutionState.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspSegmentOutputUtils.h>
+#include <graph/GraphBackendResolver.h>
 #include <graph/Node.h>
 #include <graph/generated/graph_generated.h>
 #include <helpers/helper_hash.h>
@@ -915,7 +917,9 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
       finalOutputSlots.insert(it->second);
       slotLastConsumerStep[it->second] = INT32_MAX;
     } else {
-      plan->requestedOutputSlotIndices_[i] = -1;
+      delete plan;
+      return fail("requested output has no valid producer/output slot: " +
+                  requestedOutputs[i]);
     }
   }
 
@@ -1140,6 +1144,24 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
 
   // Build CUDA graph segments
   plan->buildSegments();
+
+  {
+    const auto request = plan->makeGraphBackendRequest();
+    const auto calibrationOutputs =
+        dsp::collectPrecommitCalibrationOutputSlots(
+            request, plan->getGraphBackendCandidates(), plan->slots_,
+            plan->numSlots_, plan->totalOutputSlots_);
+    const int disabledForCalibration =
+        dsp::disableInPlaceConsumersOfSlots(
+            plan->slots_, plan->numSlots_, calibrationOutputs);
+    if (disabledForCalibration > 0) {
+      DSP_DIAG(
+          FUSION,
+          "compiler calibration: preserved %zu backend outputs by disabling "
+          "%d in-place consumers",
+          calibrationOutputs.size(), disabledForCalibration);
+    }
+  }
 
   // ── Build shared immutable PlanDefinition ───────────────────────────────
   {

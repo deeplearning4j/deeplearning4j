@@ -150,6 +150,62 @@ enum class SelectedBackend : uint8_t {
 };
 
 /**
+ * Result of preparing external inputs for a captured/replayed backend.
+ *
+ * A null effective-external pointer is intentionally not the only failure
+ * signal: callers must distinguish a successful passthrough (no staging was
+ * required) from a failed staging operation.  Graph capture/replay must abort
+ * on every failure rather than baking raw caller addresses into a graph.
+ */
+enum class DspStagingSyncStatus : uint8_t {
+  SUCCESS = 0,
+  NOT_REQUIRED = 1,
+  MISSING_EXECUTION_CONTEXT = 2,
+  DEVICE_SELECTION_FAILED = 3,
+  ALLOCATION_FAILED = 4,
+  TRANSFER_FAILED = 5,
+  SYNCHRONIZATION_FAILED = 6,
+};
+
+struct DspStagingSyncResult {
+  NDArray** effectiveExternals = nullptr;
+  DspStagingSyncStatus status = DspStagingSyncStatus::SYNCHRONIZATION_FAILED;
+  int cudaError = 0;
+  bool usedStaging = false;
+
+  SD_INLINE bool ok() const {
+    return status == DspStagingSyncStatus::SUCCESS ||
+           status == DspStagingSyncStatus::NOT_REQUIRED;
+  }
+};
+
+/**
+ * Backend-neutral result for one segment execution attempt.
+ *
+ * BAD_GRAPH is reserved for a pre-execution backend rejection and may be
+ * offered to the next admitted backend.  Once executionStarted is true, the
+ * caller must not fall back because stateful/in-place/scatter operations may
+ * already have mutated plan state.  invocationSatisfiedByWarmup prevents a
+ * shape-drift warmup from being followed by a second compiled execution in
+ * the same invocation.
+ */
+struct DspExecutionResult {
+  Status status = Status::KERNEL_FAILURE;
+  bool executionStarted = false;
+  bool invocationSatisfiedByWarmup = false;
+
+  DspExecutionResult() = default;
+  DspExecutionResult(Status value, bool started = false, bool warmupSatisfied = false)
+      : status(value), executionStarted(started),
+        invocationSatisfiedByWarmup(warmupSatisfied) {}
+
+  SD_INLINE bool ok() const { return status == Status::OK; }
+  SD_INLINE bool preExecutionRejection() const {
+    return status == Status::BAD_GRAPH && !executionStarted;
+  }
+};
+
+/**
  * PlanDestructionReason — records WHY a plan was destroyed or reset.
  * Set via setDestructionReason() before releasing resources.
  * Useful for post-mortem diagnostics and distinguishing expected vs unexpected teardown.
@@ -1006,6 +1062,11 @@ struct GraphSegmentExec {
   SegmentLifecycleState lifecycleState = SegmentLifecycleState::NEEDS_WARMUP;
 
   int executionCount = 0;
+  // Count of intentional value-producing warmups performed before a backend
+  // commitment. Non-zero is allowed only when the resolved planning policy
+  // explicitly requiresPrecommitFunctionalWarmup; it is never an implicit
+  // slot-by-slot fallback after commitment.
+  int precommitFunctionalWarmupCount = 0;
 
   // A successful segment-local rebuild performs one bounded functional warmup
   // and then compiles the replacement artifact without executing it again in
@@ -1228,6 +1289,7 @@ struct GraphSegmentExec {
   // + phaseWarmup) in NativeDynamicShapePlan.cpp.
   void resetForWarmup() {
     executionCount = 0;
+    precommitFunctionalWarmupCount = 0;
     captureOomRetries = 0;
     captureRetryAfterExec = 0;
     resetCaptureKeys();
@@ -1410,6 +1472,7 @@ struct GraphSegmentExec {
     // Legacy field sync
     lifecycleState = SegmentLifecycleState::NEEDS_WARMUP;
     executionCount = 0;
+    precommitFunctionalWarmupCount = 0;
     compilationFailed = false;
     captureProducedNoKernels = false;
     noFusibleOps = false;
@@ -1465,6 +1528,10 @@ struct GraphSegment {
   GraphBackend* compiledGraphBackendArtifactOwner = nullptr;
   LongType compiledGraphBackendArtifactShapeKey = 0;
   std::shared_ptr<void> compiledGraphBackendArtifact;
+  // Host/device bytes retained exclusively by the opaque backend artifact.
+  // The generic plan cache cannot inspect std::shared_ptr<void>, so the owning
+  // backend records the footprint when publishing the artifact.
+  size_t compiledGraphBackendArtifactOwnedBytes = 0;
   std::vector<CompilationAuditEntry> compilationAudit;
 
   // Pointer to NativeDynamicShapePlan slot array cache — allows GPU backends
@@ -1484,16 +1551,19 @@ struct GraphSegment {
   }
 
   void setCompiledGraphBackendArtifact(
-      GraphBackend* owner, LongType shapeKey, std::shared_ptr<void> artifact) {
+      GraphBackend* owner, LongType shapeKey, std::shared_ptr<void> artifact,
+      size_t ownedBytes = 0) {
     compiledGraphBackendArtifactOwner = owner;
     compiledGraphBackendArtifactShapeKey = shapeKey;
     compiledGraphBackendArtifact = std::move(artifact);
+    compiledGraphBackendArtifactOwnedBytes = ownedBytes;
   }
 
   void clearCompiledGraphBackendArtifact() {
     compiledGraphBackendArtifact.reset();
     compiledGraphBackendArtifactOwner = nullptr;
     compiledGraphBackendArtifactShapeKey = 0;
+    compiledGraphBackendArtifactOwnedBytes = 0;
     compilationAudit.clear();
   }
 
@@ -2059,18 +2129,84 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   int getTotalOutputSlots() const { return totalOutputSlots_; }
 
   /**
-   * Estimate memory used by this plan's owned intermediate arrays.
-   * Sums NDArray::memoryFootprint() for every plan-owned array in outputSlots_.
-   * Returns 0 if slots have not been populated yet.
+   * Estimate memory retained by this plan: owned intermediate arrays,
+   * backend-owned compiled artifacts, replay-handle workspaces, and CUDA
+   * shared-capture/cuBLAS workspaces.
+   * NativePlanCache uses this value for its device-memory budget, so every
+   * plan-lifetime allocation must be represented here.
    */
   size_t estimatedOwnedBytes() const {
-    if (outputSlots_ == nullptr || totalOutputSlots_ <= 0) return 0;
     size_t total = 0;
-    for (int i = 0; i < totalOutputSlots_; i++) {
-      NDArray* arr = outputSlots_[i];
-      if (arr == nullptr) continue;
-      if (planOwnedArrays_.count(arr) > 0) {
-        total += static_cast<size_t>(arr->memoryFootprint());
+    std::vector<std::pair<uintptr_t, size_t>> captureWorkspaceRanges;
+    auto addReplayWorkspace = [&total, &captureWorkspaceRanges](
+                                  const auto& handle) {
+      if (handle == nullptr || handle->getWorkspacePtr() == nullptr ||
+          handle->getWorkspaceBytes() == 0) {
+        return;
+      }
+      captureWorkspaceRanges.emplace_back(
+          reinterpret_cast<uintptr_t>(handle->getWorkspacePtr()),
+          handle->getWorkspaceBytes());
+      if (!handle->isWorkspaceExternal()) {
+        total += handle->getWorkspaceBytes();
+      }
+    };
+    for (const auto& segment : segments_) {
+      total += segment.compiledGraphBackendArtifactOwnedBytes;
+      addReplayWorkspace(segment.exec.replayHandle);
+      for (const auto& handle :
+           segment.exec.compositeReplaySchedule.mergedReplayHandles) {
+        addReplayWorkspace(handle);
+      }
+      for (const auto& handle :
+           segment.exec.compositeReplaySchedule.compositeReplayHandles) {
+        addReplayWorkspace(handle);
+      }
+    }
+#ifdef SD_CUDA
+    if (sharedCaptureWorkspace_ != nullptr) {
+      captureWorkspaceRanges.emplace_back(
+          reinterpret_cast<uintptr_t>(sharedCaptureWorkspace_),
+          sharedCaptureWorkspaceBytes_);
+      total += sharedCaptureWorkspaceBytes_;
+    }
+    if (cublasWorkspaceBuffer_ != nullptr) {
+      total += cublasWorkspaceSize_;
+    }
+#endif
+
+    // Count every unique plan-owned DataBuffer once. Capture-workspace interior
+    // pointers are already represented by their arena above and must not be
+    // charged again. Include staging and untracked caches in addition to slot
+    // outputs so the plan-cache budget reflects the complete retained footprint.
+    std::unordered_set<DataBuffer*> countedBuffers;
+    auto addArray = [&total, &captureWorkspaceRanges, &countedBuffers](
+                        NDArray* arr) {
+      if (arr == nullptr) return;
+      DataBuffer* db = arr->dataBuffer();
+      if (db == nullptr || !db->isValid() || !countedBuffers.insert(db).second) {
+        return;
+      }
+      const uintptr_t special = reinterpret_cast<uintptr_t>(db->special());
+      for (const auto& range : captureWorkspaceRanges) {
+        if (special >= range.first && special - range.first < range.second) {
+          return;
+        }
+      }
+      total += static_cast<size_t>(arr->memoryFootprint());
+    };
+    for (NDArray* arr : planOwnedArrays_) addArray(arr);
+    if (placeholderStagingBuffers_ != nullptr) {
+      for (int i = 0; i < numExternalInputs_; ++i) {
+        addArray(placeholderStagingBuffers_[i]);
+      }
+    }
+    for (const auto& entry : deviceStagingBuffers_) {
+      for (NDArray* arr : entry.second) addArray(arr);
+    }
+    if (untrackedOutputCache_ != nullptr) {
+      for (int i = 0; i < untrackedOutputCacheSize_; ++i) {
+        addArray(untrackedOutputCache_[i]);
       }
     }
     return total;
@@ -2676,7 +2812,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * original pointers for non-variable inputs). Only active when frozen.
    * Called once per step (gated by PlanExecutionContext dedup flag).
    */
-  NDArray** ensureAndSyncStagingBuffers(NDArray** externalArrays, int numExt, void* stream);
+  DspStagingSyncResult ensureAndSyncStagingBuffers(NDArray** externalArrays, int numExt, void* stream);
 
   /**
    * Unified pre-replay synchronization. Handles all three sync concerns:
@@ -2694,8 +2830,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * PRECONDITION: activeExecutionContext() returns valid PlanExecutionContext*.
    *               DspStreamGuard is active (caller owns it).
    */
-  NDArray** performPreReplaySync(NDArray** externalArrays, int numExt,
-                                 void* stream, const char* diagTag);
+  DspStagingSyncResult performPreReplaySync(NDArray** externalArrays, int numExt,
+                                            void* stream, const char* diagTag);
 
   /**
    * Staleness detector — verifies variable inputs are fresh before graph replay.
@@ -2953,6 +3089,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 
  private:
   NativeDynamicShapePlan();
+  static void recordPlanFailureIfMissing(Status status, const std::string& detail);
 
   // ── Shared immutable plan definition (Phase 3) ────────────────────────
   // Contains all data that does NOT change between executions:
@@ -2962,6 +3099,11 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Currently populated alongside existing fields (behavioral no-op).
   // Future phases will migrate reads to use planDef_ instead.
   PlanDefinition* planDef_ = nullptr;
+
+  // Immutable source bytes for an isolated replay-verification plan. Plans
+  // created from FlatGraph do not have this payload and report verification as
+  // UNAVAILABLE rather than mutating the live plan to manufacture a reference.
+  std::vector<uint8_t> serializedPlanBytes_;
 
   // ── Per-plan-instance resource state ───────────────────────────────────
   // Owns slotArrays, ownership, protectedWeightBuffers, segment device/stream
@@ -3490,15 +3632,17 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Unified pre-segment zero pass — zeroes outputs for slots with needsZeroedOutput.
   // Safe to call during CUDA graph capture (memsets get recorded into the graph).
   void prezeroSegmentOutputs(const GraphSegment& seg, void* stream);
-  Status executeSegmentWithGraphBackend(GraphSegment& seg, NDArray** externalArrays,
-                                    int numExt, void* stream);
+  DspExecutionResult executeSegmentWithGraphBackend(GraphSegment& seg,
+                                                    NDArray** externalArrays,
+                                                    int numExt, void* stream);
   GraphBackendRequest makeGraphBackendRequest() const;
   const std::vector<GraphBackend*>& getGraphBackendCandidates();
   GraphBackendPlanningPolicy getResolvedGraphBackendPlanningPolicy();
   GraphBackendExecutionPolicy getResolvedGraphBackendExecutionPolicy();
-  Status executeSegmentWithSpecificBackend(GraphSegment& seg, GraphBackend* backend,
-                                           NDArray** externalArrays, int numExt, void* stream,
-                                           bool* executionStarted = nullptr);
+  DspExecutionResult executeSegmentWithSpecificBackend(GraphSegment& seg,
+                                                       GraphBackend* backend,
+                                                       NDArray** externalArrays,
+                                                       int numExt, void* stream);
 
   // ── Emulated graph replay (NativeDynamicShapePlan_segments.cpp) ──
   Status executeSegmentEmulatedReplay(GraphSegment& seg, NDArray** externalArrays,
@@ -3515,17 +3659,16 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
                                  int numExt, void* stream);
 
   /**
-   * Replay verification: snapshot replay outputs, re-execute slot-by-slot with
-   * frozen context reset, and compare to detect divergence.
-   *
-   * Reusable by both the Triton path (gpubackend.cpp) and the CUDA_GRAPHS
-   * frozen fast path (cuda.cu). Caller must provide GPU timeline ordering.
+   * Verify a monolithic replay against an isolated slot-by-slot reference plan.
+   * The live plan is never mutated. Verification reports VERIFIED only after
+   * positive numeric comparison; unsupported/stateful cases report UNAVAILABLE.
+   * Caller must provide GPU timeline ordering.
    *
    * @param seg        The segment that was just replayed
    * @param externalArrays External input arrays
    * @param numExt     Number of external inputs
    * @param stream     CUDA stream (for sync/memcpy)
-   * @param pathLabel  Label for log output (e.g. "TRITON" or "CUDA_GRAPHS")
+   * @param pathLabel  Label for log output (e.g. "cudagraph_replay")
    */
   void performReplayVerify(GraphSegment& seg, NDArray** externalArrays,
                            int numExt, void* stream, const char* pathLabel);
@@ -3652,7 +3795,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * pinned only when pinOwnedOutputs (a captured graph baked their raw address). externalArrays/
    * numExt are the segment's external table (resolves external-encoded weight inputs, identical
    * to the slot executor). Records into graphPinnedAddrs_ (released at teardown by
-   * platformFlushGraphBakedPins). Idempotent (dedup by address, plan-wide).
+   * platformFlushGraphBakedPins). Idempotent per address and sealed segment.
    */
   void pinSegmentGraphBakedSlots(GraphSegment& seg, NDArray** externalArrays,
                                  int numExt, bool pinOwnedOutputs);
@@ -3687,6 +3830,12 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // invalidation, coherency, shape replacement authorization, lifecycle
   // advancement, and capture-readiness credit.
   Status runBoundedSegmentRebuildWarmup(
+      GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream,
+      const char* reason);
+  // Recover a segment whose replay address validation failed before any replay
+  // unit launched. Owns the complete segment-local invalidate -> warmup ->
+  // immediate recompile transaction so every caller observes one atomic result.
+  Status rebuildSegmentAfterPreLaunchReplayDrift(
       GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream,
       const char* reason);
   // segDispatchCompile — handles one compile cycle for a segment.
@@ -3757,6 +3906,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // thread captures while another thread's Java syncToDevice() runs
   // cudaMemcpyAsync on the same stream.
   cudaStream_t* ownedStream_ = nullptr;
+  int ownedStreamDeviceId_ = -1;
 
   // Pre-allocated cuBLAS workspace for GPU graph capture.
   void* cublasWorkspaceBuffer_ = nullptr;

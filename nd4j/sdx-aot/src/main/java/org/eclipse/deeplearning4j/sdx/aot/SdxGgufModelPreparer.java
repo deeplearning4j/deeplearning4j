@@ -5,7 +5,13 @@
 package org.eclipse.deeplearning4j.sdx.aot;
 
 import org.eclipse.deeplearning4j.llm.generation.SdxTextGenerationConfig;
+import org.eclipse.deeplearning4j.llm.generation.GenerationPipeline;
+import org.eclipse.deeplearning4j.llm.generation.SameDiffMemoryUtils;
+import org.eclipse.deeplearning4j.llm.generation.GenerationPipelineConfig;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.KvCacheStrategy;
+import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
 import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
+import org.eclipse.deeplearning4j.model.benchmark.BenchmarkConfig;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.serde.SDZSerializer;
 import org.nd4j.common.config.ND4JSystemProperties;
@@ -13,8 +19,11 @@ import org.nd4j.dsp.model.SdxCompiledModel;
 import org.nd4j.dsp.model.SdxModelCache;
 import org.nd4j.dsp.model.SdxModelCompiler;
 import org.nd4j.dsp.model.SdxPlatformProviderDescriptor;
+import org.nd4j.dsp.model.SdxQuantizationContract;
 import org.nd4j.dsp.model.SdxSourceIdentity;
 import org.nd4j.dsp.model.SdxTargetProfile;
+import org.nd4j.dsp.model.SdxTensorG3NnapiCompiler;
+import org.nd4j.dsp.model.SdxTensorG3Q4Calibration;
 import org.nd4j.dsp.model.SdxTextModelAssets;
 import org.nd4j.ggml.GGMLImportException;
 import org.nd4j.ggml.GGMLExportException;
@@ -31,6 +40,7 @@ import org.nd4j.shade.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -49,12 +59,14 @@ import java.util.Map;
  * shared; only the {@link SdxTargetProfile} compiler/provider policy is backend specific.
  */
 final class SdxGgufModelPreparer {
-    static final String PREPARED_SCHEMA = "sdx-prepared-text-model-v5";
+    static final String PREPARED_SCHEMA = "sdx-prepared-text-model-v6";
     // Bump this whenever GGUF tensor materialization or graph-import semantics change.
     // The profile digest is part of the prepared-cache path, so old canonical SDZ files
     // cannot silently survive an importer fix and produce stale logits.
-    static final String GRAPH_IMPORT_ABI = "ggml-runtime-packed-gdn-v7";
+    static final String GRAPH_IMPORT_ABI = "ggml-fixed-plan-rolling-context-q4-linears-v9";
     static final String RESOLVED_SCHEMA = "sdx-resolved-text-model-v1";
+    private static final String TENSOR_G3_Q4_PROFILE_ABI =
+            "sdx-tensor-g3-q4-profile-v1";
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -72,6 +84,12 @@ final class SdxGgufModelPreparer {
 
         JsonNode options = parseObject(optionsJson);
         PreparationProfile profile = PreparationProfile.from(options);
+        if (options.path("quantizationConfigPath").isTextual()
+                && !options.path("quantizationConfigPath").asText().isBlank()) {
+            throw new IOException(
+                    "Raw model preparation generates Tensor G3 calibration internally; "
+                            + "quantizationConfigPath is only valid for canonical SDX compiler APIs");
+        }
         String diagnosticMode = configureDiagnostics(options);
         RawSourceIdentity sourceIdentity = RawSourceIdentity.identify(source);
         verifyAttestation(sourceIdentity, options);
@@ -89,10 +107,17 @@ final class SdxGgufModelPreparer {
                 canonical == null ? null : SdxSourceIdentity.identify(canonical);
         if (canonical != null) {
             try {
-                SdxCompiledModel cached = cache.resolve(canonical, target);
+                SdxCompiledModel cached = cache.resolveVerified(canonical, target);
                 SdxTextModelAssets cachedAssets = cached.requireTextModelAssets();
                 if (cachedTextAssetsMatch(cachedAssets, tokenizerSources)
-                        && isNativeTextGenerationContract(cachedAssets.textGenerationConfig())) {
+                        && isNativeTextGenerationContract(cachedAssets.textGenerationConfig())
+                        && cachedTargetMatchesCanonicalProfile(
+                                cached,
+                                canonical,
+                                canonicalIdentity,
+                                preparedRoot,
+                                target,
+                                tokenizerAssetIdentity)) {
                     validateCanonicalTokenizer(cachedAssets.tokenizer().getParent());
                     int cachedContextLength = contextLength(source);
                     requireUnchangedRawSource(source, sourceIdentity);
@@ -105,6 +130,11 @@ final class SdxGgufModelPreparer {
         }
 
         Files.createDirectories(preparedRoot);
+        // The canonical graph must be imported from the optimized derivative. Importing a
+        // dense BF16 source under RUNTIME_QUANTIZED_MATMUL emits ordinary matmul operations,
+        // leaving Tensor G3 with no Q4_K ggml_qmatmul units that NNAPI can lower. The
+        // derivative is produced by the bounded streaming requantizer, which preserves the
+        // source token-embedding dtype while packing linear weights for runtime execution.
         optimizedSource = profile.materializeOptimizedSource(source, preparedRoot, temporaryRoot);
         TokenizerAssets tokenizerAssets = materializeTokenizerAssets(
                 source, tokenizerSources, preparedRoot.resolve("text-assets"));
@@ -128,27 +158,237 @@ final class SdxGgufModelPreparer {
             throw new IOException("Derived text-generation metadata does not satisfy the native SDX contract: "
                     + tokenizerAssets.textGenerationConfig);
         }
+        // convertToSdz has now closed the import graph. Reclaim its unreachable native
+        // wrappers and allocator arenas BEFORE calibration loads the graph again.
+        SameDiffMemoryUtils.reclaimClosedGraphResources();
 
         requireUnchangedRawSource(source, sourceIdentity);
         if (publishCanonicalPointer) {
             writeCanonicalPointer(canonicalPointer, canonical);
         }
+        Path quantizationConfig = target == SdxTargetProfile.ANDROID_ARM64_NNAPI_ACCELERATOR
+                ? prepareTensorG3Q4Calibration(
+                        canonical,
+                        canonicalIdentity,
+                        preparedRoot,
+                        tokenizerAssets,
+                        tokenizerAssetIdentity,
+                        profile)
+                : null;
+        if (target == SdxTargetProfile.ANDROID_ARM64_NNAPI_ACCELERATOR) {
+            // Calibration has closed its full graph and DSP plans. Reclaim all collected
+            // wrapper layers before the compiler loads the same graph again.
+            SameDiffMemoryUtils.reclaimClosedGraphResources();
+        }
         SdxPlatformProviderDescriptor provider = target.platformProvider();
         String targetSoc = provider.defaultTargetSoc();
         SdxModelCompiler compiler = new SdxModelCompiler(cache);
-        SdxModelCompiler.CompileOptions compileOptions = SdxModelCompiler.CompileOptions.builder()
+        SdxModelCompiler.CompileOptions.Builder compileOptionsBuilder =
+                SdxModelCompiler.CompileOptions.builder()
                 .tokenizer(tokenizerAssets.tokenizer)
                 .tokenizerConfig(tokenizerAssets.tokenizerConfig)
                 .textGenerationConfig(tokenizerAssets.textGenerationConfig)
-                .targetSoc(targetSoc)
-                .build();
+                .targetSoc(targetSoc);
+        if (quantizationConfig != null) {
+            compileOptionsBuilder.quantizationConfig(quantizationConfig);
+        }
+        SdxModelCompiler.CompileOptions compileOptions = compileOptionsBuilder.build();
         SdxCompiledModel compiled = compiler.compile(
                 canonical,
                 target,
-                SdxModelCompiler.requireBuiltInTargetCompiler(target, targetSoc, false),
+                SdxModelCompiler.requireBuiltInTargetCompiler(
+                        target, targetSoc, quantizationConfig != null),
                 compileOptions);
+        // compiler.compile() closes its canonical graph before returning. Complete the
+        // final phantom and allocator reclamation before returning from the importer.
+        SameDiffMemoryUtils.reclaimClosedGraphResources();
         return preparedJson(sourceIdentity, canonicalIdentity, canonical, compiled, false,
                 tokenizerAssets.contextLength, target, profile, diagnosticMode, optimizedSource);
+    }
+
+    private static boolean cachedTargetMatchesCanonicalProfile(
+            SdxCompiledModel cached,
+            Path canonical,
+            SdxSourceIdentity canonicalIdentity,
+            Path preparedRoot,
+            SdxTargetProfile target,
+            String tokenizerAssetIdentity) throws IOException {
+        if (target != SdxTargetProfile.ANDROID_ARM64_NNAPI_ACCELERATOR) {
+            return true;
+        }
+        Boolean requiresCalibration = requiresCalibrationFromMarker(
+                canonicalIdentity, preparedRoot);
+        if (Boolean.FALSE.equals(requiresCalibration)) {
+            return true;
+        }
+        if (requiresCalibration == null) {
+            // No marker yet: cannot prove this cached target satisfies the current
+            // calibration requirement. Fall through to the calibration path, which
+            // derives the requirement inside its single canonical graph load.
+            return false;
+        }
+        if (!SdxTensorG3NnapiCompiler.COMPILER_ID.equals(cached.compilerId())
+                || !SdxTensorG3NnapiCompiler.COMPILER_VERSION.equals(
+                        cached.compilerVersion())
+                || cached.quantizationConfigPath().isEmpty()) {
+            return false;
+        }
+        String expectedDataset = SdxTensorG3Q4Calibration.datasetSha256(
+                tokenizerAssetIdentity,
+                SdxTensorG3Q4Calibration.calibrationPrompts());
+        SdxQuantizationContract contract = SdxQuantizationContract.load(
+                cached.quantizationConfigPath().orElseThrow());
+        contract.validateForCompilation(
+                cached.sourceIdentity(), target, SdxTensorG3NnapiCompiler.TARGET_SOC);
+        return contract.isTensorG3Q4PerOperator()
+                && expectedDataset.equals(contract.calibrationDatasetSha256());
+    }
+
+    private static Path prepareTensorG3Q4Calibration(
+            Path canonical,
+            SdxSourceIdentity canonicalIdentity,
+            Path preparedRoot,
+            TokenizerAssets tokenizerAssets,
+            String tokenizerAssetIdentity,
+            PreparationProfile profile) throws IOException {
+        Boolean markerRequirement = requiresCalibrationFromMarker(
+                canonicalIdentity, preparedRoot);
+        if (Boolean.FALSE.equals(markerRequirement)) {
+            return null;
+        }
+        try (SameDiff graph = SDZSerializer.load(canonical.toFile(), false)) {
+            if (markerRequirement == null) {
+                // First pass for this canonical: derive and persist the calibration
+                // requirement inside this single graph load instead of a separate
+                // full-SDZ scan materialization.
+                boolean required = SdxTensorG3Q4Calibration.requiresCalibration(graph);
+                writeAtomicText(preparedRoot.resolve("canonical-q4-profile.txt"),
+                        TENSOR_G3_Q4_PROFILE_ABI + "\n" + canonicalIdentity.sha256()
+                                + "\n" + required + "\n");
+                if (!required) {
+                    return null;
+                }
+            }
+            try (HuggingFaceTokenizer tokenizer = HuggingFaceTokenizer.fromDirectory(
+                    tokenizerAssets.tokenizer.getParent().toFile())) {
+                List<String> calibrationPrompts = new ArrayList<>(
+                        SdxTensorG3Q4Calibration.calibrationPrompts());
+                int maxPrefillLength = 0;
+                for (String prompt : calibrationPrompts) {
+                    int tokenCount = tokenizer.encodePrompt(prompt).getIds().length;
+                    if (tokenCount <= 0 || tokenCount >= tokenizerAssets.contextLength) {
+                        throw new IOException("Tensor G3 calibration prompt has invalid token count "
+                                + tokenCount + " for context length "
+                                + tokenizerAssets.contextLength);
+                    }
+                    maxPrefillLength = Math.max(maxPrefillLength, tokenCount);
+                }
+
+                String datasetSha256 = SdxTensorG3Q4Calibration.datasetSha256(
+                        tokenizerAssetIdentity, calibrationPrompts);
+                Path calibrationPath = preparedRoot.resolve("calibration").resolve(
+                        SdxTensorG3Q4Calibration.CALIBRATION_ABI.replace('.', '-')
+                                + "-" + datasetSha256 + ".json");
+                if (Files.isRegularFile(calibrationPath)) {
+                    SdxQuantizationContract cached =
+                            SdxQuantizationContract.load(calibrationPath);
+                    cached.validateForCompilation(
+                            canonicalIdentity,
+                            SdxTargetProfile.ANDROID_ARM64_NNAPI_ACCELERATOR,
+                            SdxTensorG3NnapiCompiler.TARGET_SOC);
+                    if (!cached.isTensorG3Q4PerOperator()
+                            || !datasetSha256.equals(cached.calibrationDatasetSha256())) {
+                        throw new IOException(
+                                "Cached Tensor G3 calibration does not match the active dataset ABI");
+                    }
+                    return calibrationPath;
+                }
+
+                GenerationPipelineConfig.GenerationPipelineConfigBuilder pipelineBuilder =
+                        GenerationPipelineConfig.builder()
+                                .decoder(graph)
+                                .tokenizer(tokenizer)
+                                .samplingConfig(SamplingConfig.greedy())
+                                .maxNewTokens(1)
+                                .maxPrefillLength(maxPrefillLength)
+                                .maxKvCacheLength(maxPrefillLength + 1)
+                                .graphOptimizerEnabled(false)
+                                .dspEnabled(true)
+                                .benchmarkConfig(BenchmarkConfig.cpuCascade());
+                if (profile.kvQuantFormat > 0) {
+                    pipelineBuilder.kvCacheStrategy(KvCacheStrategy.QUANTIZED)
+                            .kvQuantFormat(profile.kvQuantFormat);
+                }
+                SdxTensorG3Q4Calibration.Result calibration;
+                // Retained generation state and the frozen DSP plan stay live across samples.
+                // After each completed generate() call, collect only unreachable native
+                // wrappers so per-op temporary layers cannot accumulate over all 32 prompts.
+                try (GenerationPipeline pipeline =
+                                 GenerationPipeline.create(pipelineBuilder.build())) {
+                    calibration = SdxTensorG3Q4Calibration.calibrate(
+                            graph,
+                            tokenizerAssetIdentity,
+                            calibrationPrompts,
+                            prompt -> {
+                                pipeline.generate(prompt, 1, SamplingConfig.greedy());
+                                SameDiffMemoryUtils.reclaimCollectedNativeResources();
+                            });
+                }
+                SdxSourceIdentity afterCalibration = SdxSourceIdentity.identify(canonical);
+                if (!canonicalIdentity.sha256().equals(afterCalibration.sha256())
+                        || canonicalIdentity.logicalBytes()
+                        != afterCalibration.logicalBytes()) {
+                    throw new IOException(
+                            "Canonical SDZ identity changed during Tensor G3 calibration");
+                }
+                SdxQuantizationContract.writeTensorG3Q4Profile(
+                        calibrationPath, canonicalIdentity, calibration);
+                return calibrationPath;
+            }
+        } catch (RuntimeException failure) {
+            throw new IOException("Tensor G3 Q4 calibration failed for canonical SDZ "
+                    + canonical, failure);
+        }
+    }
+
+    /**
+     * Marker-only calibration requirement lookup. Returns TRUE or FALSE from the
+     * persisted marker, or null when no valid marker exists. It never loads the
+     * canonical SDZ; the requirement scan runs inside the calibration graph load.
+     */
+    private static Boolean requiresCalibrationFromMarker(
+            SdxSourceIdentity canonicalIdentity,
+            Path preparedRoot) throws IOException {
+        Path marker = preparedRoot.resolve("canonical-q4-profile.txt");
+        if (!Files.isRegularFile(marker)) {
+            return null;
+        }
+        List<String> lines = Files.readAllLines(marker, StandardCharsets.UTF_8);
+        if (lines.size() != 3
+                || !TENSOR_G3_Q4_PROFILE_ABI.equals(lines.get(0))
+                || !canonicalIdentity.sha256().equals(lines.get(1))
+                || !("true".equals(lines.get(2)) || "false".equals(lines.get(2)))) {
+            throw new IOException("Tensor G3 canonical Q4 profile marker is invalid: "
+                    + marker);
+        }
+        return Boolean.parseBoolean(lines.get(2));
+    }
+
+    private static void writeAtomicText(Path output, String value) throws IOException {
+        Files.createDirectories(output.getParent());
+        Path temporary = Files.createTempFile(output.getParent(),
+                "." + output.getFileName() + ".", ".pending");
+        try {
+            Files.writeString(temporary, value, StandardCharsets.UTF_8);
+            try {
+                Files.move(temporary, output, StandardCopyOption.ATOMIC_MOVE,
+                        StandardCopyOption.REPLACE_EXISTING);
+            } catch (AtomicMoveNotSupportedException unsupported) {
+                Files.move(temporary, output, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } finally {
+            Files.deleteIfExists(temporary);
+        }
     }
 
     static String resolve(String sourceSdz, String targetProfile, String cacheDirectory)
@@ -203,7 +443,11 @@ final class SdxGgufModelPreparer {
         result.put("compileKey", compiled.compileKey());
         result.put("targetSoc", provider.defaultTargetSoc());
         result.put("contextLength", contextLength);
-        result.put("maxPrefillLength", Math.max(1, contextLength - 1));
+        int providerCapacity = provider.fixedTextContextCapacity();
+        int effectiveCapacity = providerCapacity > 0
+                ? Math.min(contextLength - 1, providerCapacity)
+                : contextLength - 1;
+        result.put("maxPrefillLength", Math.max(1, effectiveCapacity));
         result.put("executionProvider", provider.providerId());
         result.put("conversionProfileSha256", profile.sha256());
         result.set("conversionProfile", profile.json().deepCopy());
@@ -231,7 +475,7 @@ final class SdxGgufModelPreparer {
         try {
             Files.move(temporary, pointer, StandardCopyOption.ATOMIC_MOVE,
                     StandardCopyOption.REPLACE_EXISTING);
-        } catch (java.nio.file.AtomicMoveNotSupportedException unsupported) {
+        } catch (AtomicMoveNotSupportedException unsupported) {
             Files.move(temporary, pointer, StandardCopyOption.REPLACE_EXISTING);
         }
     }
@@ -411,6 +655,11 @@ final class SdxGgufModelPreparer {
             PreparationProfile profile) throws IOException {
         try (SameDiff graph = GGMLModelImport.importModel(
                 source.toFile(), profile.conversionOptions())) {
+            // Post-import trim: the import loop's retained native arrays (~1.4GB) sit on
+            // top of allocator arenas grown by per-tensor transients. Returning the
+            // trim-able tail before serialization keeps the process under the LMK
+            // watermark while the SDZ streams to disk on memory-constrained devices.
+            SameDiffMemoryUtils.trimAllDevicePools();
             SdxTextGenerationConfig.write(
                     graph, tokenizerAssets.generationOptions, tokenizerAssets.textGenerationConfig);
             Map<String, String> metadata = new HashMap<>();
@@ -461,7 +710,8 @@ final class SdxGgufModelPreparer {
             if (!hasNonEmptyText(io, "inputIds", "causalMask", "positionOffset",
                     "cachePosition", "actualSequenceLength", "logits")
                     || !hasNonEmptyTextArray(io, "kvKeyInputs", "kvValueInputs",
-                    "prefillKeyOutputs", "prefillValueOutputs")) {
+                    "prefillKeyOutputs", "prefillValueOutputs")
+                    || !hasKvShapeTemplates(io, "kvKeyShapes", "kvValueShapes")) {
                 return false;
             }
             JsonNode execution = root.path("execution");
@@ -509,6 +759,23 @@ final class SdxGgufModelPreparer {
             if (!values.isArray() || values.isEmpty()) return false;
             for (JsonNode value : values) {
                 if (!value.isTextual() || value.asText().isBlank()) return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean hasKvShapeTemplates(JsonNode object, String... fields) {
+        for (String field : fields) {
+            JsonNode shapes = object.path(field);
+            if (!shapes.isArray() || shapes.isEmpty()) return false;
+            for (JsonNode shape : shapes) {
+                if (!shape.isArray() || shape.size() != 4
+                        || shape.get(0).asLong() != 1L
+                        || shape.get(1).asLong() != -1L
+                        || shape.get(2).asLong() <= 0L
+                        || shape.get(3).asLong() <= 0L) {
+                    return false;
+                }
             }
         }
         return true;
@@ -903,7 +1170,7 @@ final class SdxGgufModelPreparer {
                 GGMLModelExport.requantize(source.toFile(), temporary.toFile(), requantizeType);
                 try {
                     Files.move(temporary, optimized, StandardCopyOption.ATOMIC_MOVE);
-                } catch (java.nio.file.AtomicMoveNotSupportedException unsupported) {
+                } catch (AtomicMoveNotSupportedException unsupported) {
                     Files.move(temporary, optimized);
                 }
                 published = true;

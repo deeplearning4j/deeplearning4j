@@ -42,7 +42,9 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.OpaqueDataBuffer;
 
 import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.device.DeviceType;
@@ -53,6 +55,8 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.IntConsumer;
 import java.util.stream.Stream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -483,6 +487,176 @@ public class DspLifecycleValidationTest {
         return sd;
     }
 
+    /**
+     * Dynamic-sequence variant used by the real prefill-to-decode lifecycle test.
+     * Prefill accepts [1,S,H] with empty past K/V; decode accepts [1,1,H] with
+     * fixed-capacity past K/V, producing one appended physical row at the end.
+     */
+    private static SameDiff buildPrefillDecodeKvDecoder(
+            INDArray wqArray, INDArray wkArray, INDArray wvArray,
+            INDArray woArray, INDArray wlogitsArray) {
+        SameDiff sd = SameDiff.create();
+        SDVariable inputEmbeds = sd.placeHolder(
+                "input_embeds", DataType.FLOAT, 1, -1, KV_HIDDEN);
+        SDVariable attentionMask = sd.placeHolder(
+                "attention_mask", DataType.FLOAT, 1, 1, -1, -1);
+        SDVariable pastKey = sd.placeHolder(
+                "past_key", DataType.FLOAT, 1, KV_HEADS, -1, KV_HEAD_DIM);
+        SDVariable pastValue = sd.placeHolder(
+                "past_value", DataType.FLOAT, 1, KV_HEADS, -1, KV_HEAD_DIM);
+
+        SDVariable wq = sd.var("wq", wqArray);
+        SDVariable wk = sd.var("wk", wkArray);
+        SDVariable wv = sd.var("wv", wvArray);
+        SDVariable wo = sd.var("wo", woArray);
+        SDVariable wlogits = sd.var("wlogits", wlogitsArray);
+
+        SDVariable qProjected = sd.mmul("q_projected", inputEmbeds, wq);
+        SDVariable kProjected = sd.mmul("k_projected", inputEmbeds, wk);
+        SDVariable vProjected = sd.mmul("v_projected", inputEmbeds, wv);
+        SDVariable qBshd = sd.reshape(
+                "q_bshd", qProjected, 1, -1, KV_HEADS, KV_HEAD_DIM);
+        SDVariable kBshd = sd.reshape(
+                "k_bshd", kProjected, 1, -1, KV_HEADS, KV_HEAD_DIM);
+        SDVariable vBshd = sd.reshape(
+                "v_bshd", vProjected, 1, -1, KV_HEADS, KV_HEAD_DIM);
+        SDVariable q = sd.permute("q", qBshd, 0, 2, 1, 3);
+        SDVariable k = sd.permute("k", kBshd, 0, 2, 1, 3);
+        SDVariable v = sd.permute("v", vBshd, 0, 2, 1, 3);
+
+        SDVariable presentKey = sd.concat("present_key", 2, pastKey, k);
+        SDVariable presentValue = sd.concat("present_value", 2, pastValue, v);
+        SDVariable keyTranspose = sd.permute("key_transpose", presentKey, 0, 1, 3, 2);
+        SDVariable scores = sd.mmul("scores", q, keyTranspose);
+        SDVariable scaled = scores.mul("scaled", 1.0 / Math.sqrt(KV_HEAD_DIM));
+        SDVariable masked = scaled.add("masked", attentionMask);
+        SDVariable probs = sd.nn.softmax("probs", masked, -1);
+        SDVariable attention = sd.mmul("attention", probs, presentValue);
+        SDVariable attentionBshd = sd.permute("attention_bshd", attention, 0, 2, 1, 3);
+        SDVariable attentionFlat = sd.reshape(
+                "attention_flat", attentionBshd, 1, -1, KV_HIDDEN);
+        SDVariable projected = sd.mmul("projected", attentionFlat, wo);
+        SDVariable logits = sd.mmul("logits", projected, wlogits);
+        sd.setOutputs("logits", "present_key", "present_value");
+        return sd;
+    }
+
+    private static Map<String, INDArray> actualPrefillInputs(INDArray embeddings) {
+        int sequence = (int) embeddings.size(1);
+        Map<String, INDArray> inputs = new LinkedHashMap<>();
+        inputs.put("input_embeds", embeddings);
+        INDArray mask = Nd4j.zeros(DataType.FLOAT, 1, 1, sequence, sequence);
+        for (int row = 0; row < sequence; row++) {
+            if (row + 1 < sequence) {
+                mask.get(
+                        NDArrayIndex.point(0), NDArrayIndex.point(0),
+                        NDArrayIndex.point(row), NDArrayIndex.interval(row + 1, sequence))
+                        .assign(-1e9f);
+            }
+        }
+        inputs.put("attention_mask", mask);
+        inputs.put("past_key", Nd4j.zeros(
+                DataType.FLOAT, 1, KV_HEADS, 0, KV_HEAD_DIM));
+        inputs.put("past_value", Nd4j.zeros(
+                DataType.FLOAT, 1, KV_HEADS, 0, KV_HEAD_DIM));
+        return inputs;
+    }
+
+    private static Map<String, INDArray> fixedDecodeInputs(int capacity) {
+        Map<String, INDArray> inputs = new LinkedHashMap<>();
+        inputs.put("input_embeds", Nd4j.zeros(DataType.FLOAT, 1, 1, KV_HIDDEN));
+        inputs.put("attention_mask", Nd4j.valueArrayOf(
+                new long[]{1, 1, 1, capacity + 1}, -1e9, DataType.FLOAT));
+        inputs.put("past_key", Nd4j.zeros(
+                DataType.FLOAT, 1, KV_HEADS, capacity, KV_HEAD_DIM));
+        inputs.put("past_value", Nd4j.zeros(
+                DataType.FLOAT, 1, KV_HEADS, capacity, KV_HEAD_DIM));
+        return inputs;
+    }
+
+    private static void copyPrefillToFixedCache(
+            Map<String, INDArray> prefillOutputs,
+            Map<String, INDArray> decodeInputs, int prefillLength) {
+        decodeInputs.get("past_key").get(
+                NDArrayIndex.all(), NDArrayIndex.all(),
+                NDArrayIndex.interval(0, prefillLength), NDArrayIndex.all())
+                .assign(prefillOutputs.get("present_key"));
+        decodeInputs.get("past_value").get(
+                NDArrayIndex.all(), NDArrayIndex.all(),
+                NDArrayIndex.interval(0, prefillLength), NDArrayIndex.all())
+                .assign(prefillOutputs.get("present_value"));
+        Nd4j.getExecutioner().commit();
+    }
+
+    private static void prepareFixedDecodeStep(
+            Map<String, INDArray> decodeInputs, INDArray embedding,
+            int logicalPosition, int capacity) {
+        decodeInputs.get("input_embeds").assign(embedding);
+        INDArray mask = decodeInputs.get("attention_mask");
+        mask.assign(-1e9f);
+        if (logicalPosition > 0) {
+            mask.get(
+                    NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.point(0),
+                    NDArrayIndex.interval(0, logicalPosition)).assign(0.0f);
+        }
+        mask.putScalar(new long[]{0, 0, 0, capacity}, 0.0f);
+    }
+
+    private static void scatterDecodedKv(
+            Map<String, INDArray> outputs, Map<String, INDArray> decodeInputs,
+            int logicalPosition, int capacity) {
+        decodeInputs.get("past_key").get(
+                NDArrayIndex.all(), NDArrayIndex.all(),
+                NDArrayIndex.point(logicalPosition), NDArrayIndex.all())
+                .assign(outputs.get("present_key").get(
+                        NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.point(capacity), NDArrayIndex.all()));
+        decodeInputs.get("past_value").get(
+                NDArrayIndex.all(), NDArrayIndex.all(),
+                NDArrayIndex.point(logicalPosition), NDArrayIndex.all())
+                .assign(outputs.get("present_value").get(
+                        NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.point(capacity), NDArrayIndex.all()));
+        Nd4j.getExecutioner().commit();
+    }
+
+    private List<Map<String, INDArray>> runActualPrefillDecodeLifecycle(
+            SameDiff sd, BenchmarkConfig cfg, INDArray prefillEmbeddings,
+            List<INDArray> decodeEmbeddings, int capacity) {
+        return runActualPrefillDecodeLifecycle(
+                sd, cfg, prefillEmbeddings, decodeEmbeddings, capacity, null);
+    }
+
+    private List<Map<String, INDArray>> runActualPrefillDecodeLifecycle(
+            SameDiff sd, BenchmarkConfig cfg, INDArray prefillEmbeddings,
+            List<INDArray> decodeEmbeddings, int capacity,
+            IntConsumer afterDecodeStep) {
+        List<Map<String, INDArray>> snapshots = new ArrayList<>();
+        Map<String, INDArray> prefillInputs = actualPrefillInputs(prefillEmbeddings);
+        Map<String, INDArray> decodeInputs = fixedDecodeInputs(capacity);
+        try {
+            Map<String, INDArray> prefillOutputs = runWithConfig(
+                    sd, cfg, prefillInputs, "logits", "present_key", "present_value");
+            snapshots.add(prefillOutputs);
+            copyPrefillToFixedCache(prefillOutputs, decodeInputs, LARGE_PREFILL);
+
+            for (int step = 0; step < decodeEmbeddings.size(); step++) {
+                int logicalPosition = LARGE_PREFILL + step;
+                prepareFixedDecodeStep(
+                        decodeInputs, decodeEmbeddings.get(step), logicalPosition, capacity);
+                Map<String, INDArray> outputs = runWithConfig(
+                        sd, cfg, decodeInputs, "logits", "present_key", "present_value");
+                snapshots.add(outputs);
+                scatterDecodedKv(outputs, decodeInputs, logicalPosition, capacity);
+                if (afterDecodeStep != null) afterDecodeStep.accept(step);
+            }
+            return snapshots;
+        } finally {
+            closeAll(prefillInputs);
+            closeAll(decodeInputs);
+        }
+    }
+
     private static SameDiff buildWhereBroadcast() {
         SameDiff sd = SameDiff.create();
         // base: [1, 4, 8] FLOAT
@@ -862,45 +1036,170 @@ public class DspLifecycleValidationTest {
     public void testStaticKvLargePrefillDecode(BenchmarkConfig cfg) {
         assumeBackendAvailable(cfg);
         int maxKvLen = LARGE_PREFILL + 16;
-        SameDiff sd = buildStaticKvDecoder(maxKvLen);
+        Nd4j.getRandom().setSeed(123456L);
+        INDArray wq = Nd4j.randn(DataType.FLOAT, KV_HIDDEN, KV_HIDDEN).muli(0.05);
+        INDArray wk = Nd4j.randn(DataType.FLOAT, KV_HIDDEN, KV_HIDDEN).muli(0.05);
+        INDArray wv = Nd4j.randn(DataType.FLOAT, KV_HIDDEN, KV_HIDDEN).muli(0.05);
+        INDArray wo = Nd4j.randn(DataType.FLOAT, KV_HIDDEN, KV_HIDDEN).muli(0.05);
+        INDArray wlogits = Nd4j.randn(DataType.FLOAT, KV_HIDDEN, KV_VOCAB).muli(0.05);
+        SameDiff reference = buildPrefillDecodeKvDecoder(
+                wq.dup(), wk.dup(), wv.dup(), wo.dup(), wlogits.dup());
+        SameDiff tested = buildPrefillDecodeKvDecoder(
+                wq.dup(), wk.dup(), wv.dup(), wo.dup(), wlogits.dup());
+        List<Map<String, INDArray>> refLifecycle = new ArrayList<>();
+        List<Map<String, INDArray>> testLifecycle = new ArrayList<>();
+        INDArray prefillEmbeddings = Nd4j.randn(
+                DataType.FLOAT, 1, LARGE_PREFILL, KV_HIDDEN).muli(0.1);
+        List<INDArray> decodeEmbeddings = new ArrayList<>();
+        for (int step = 0; step < 10; step++) {
+            decodeEmbeddings.add(Nd4j.randn(DataType.FLOAT, 1, 1, KV_HIDDEN).muli(0.1));
+        }
         try {
-            // Treat the first call as a "prefill" by giving position=LARGE_PREFILL-1
-            Map<String, INDArray> prefillInputs = staticKvInputs(maxKvLen, LARGE_PREFILL - 1);
             BenchmarkConfig refCfg = BenchmarkConfig.create("REF_SLOT_BY_SLOT")
                     .executionMode(GraphExecutionMode.SLOT_BY_SLOT);
-            Map<String, INDArray> refPrefill = runWithConfig(sd, refCfg,
-                    copyInputs(prefillInputs), "logits", "present_key", "present_value");
-            resetBetweenRuns(sd);
-            Map<String, INDArray> testPrefill = runWithConfig(sd, cfg,
-                    copyInputs(prefillInputs), "logits", "present_key", "present_value");
+            refLifecycle = runActualPrefillDecodeLifecycle(
+                    reference, refCfg, prefillEmbeddings.dup(), decodeEmbeddings, maxKvLen);
+            testLifecycle = runActualPrefillDecodeLifecycle(
+                    tested, cfg, prefillEmbeddings.dup(), decodeEmbeddings, maxKvLen);
             double[] tol = tolerances(cfg);
-            assertOutputsClose(refPrefill, testPrefill, tol[0], tol[1],
-                    cfg.getName() + " prefill");
-            closeAll(refPrefill);
-            closeAll(testPrefill);
-            closeAll(prefillInputs);
-            resetBetweenRuns(sd);
+            assertTrue(refLifecycle.size() == testLifecycle.size(),
+                    cfg.getName() + ": lifecycle output count differs");
+            for (int invocation = 0; invocation < refLifecycle.size(); invocation++) {
+                assertOutputsClose(
+                        refLifecycle.get(invocation), testLifecycle.get(invocation),
+                        tol[0], tol[1], cfg.getName() + " invocation=" + invocation);
+            }
 
-            // 10 decode steps
-            int decodeSteps = 10;
-            for (int s = 0; s < decodeSteps; s++) {
-                long position = LARGE_PREFILL + s;
-                Map<String, INDArray> stepIn = staticKvInputs(maxKvLen, position);
-                Map<String, INDArray> refOut = runWithConfig(sd, refCfg,
-                        copyInputs(stepIn), "logits", "present_key", "present_value");
-                resetBetweenRuns(sd);
-                Map<String, INDArray> testOut = runWithConfig(sd, cfg,
-                        copyInputs(stepIn), "logits", "present_key", "present_value");
-                assertOutputsClose(refOut, testOut, tol[0], tol[1],
-                        cfg.getName() + " decode step=" + s);
-                closeAll(refOut);
-                closeAll(testOut);
-                closeAll(stepIn);
-                resetBetweenRuns(sd);
+            if (cfg.getExecutionMode() != GraphExecutionMode.SLOT_BY_SLOT) {
+                DspPlanAssertions.assertNoCaptureFailures(tested, cfg.getName());
+                DspPlanAssertions.assertNoPhaseContractViolations(tested, cfg.getName());
+                DspPlanAssertions.assertFullyReplaying(tested, cfg.getName());
             }
         } finally {
-            sd.close();
+            for (Map<String, INDArray> outputs : refLifecycle) closeAll(outputs);
+            for (Map<String, INDArray> outputs : testLifecycle) closeAll(outputs);
+            prefillEmbeddings.close();
+            for (INDArray embedding : decodeEmbeddings) embedding.close();
+            wq.close();
+            wk.close();
+            wv.close();
+            wo.close();
+            wlogits.close();
+            reference.close();
+            tested.close();
         }
+    }
+
+    @Test
+    @DisplayName("Static KV prefill/decode recovers from transient pool pressure")
+    public void testStaticKvLargePrefillDecodeRecoversAfterPoolPressure() {
+        assumeTrue(Nd4j.backends().isCudaAvailable(), "CUDA required");
+        assumeTrue(isTritonAvailable(), "Triton required");
+        final long mib = 1024L * 1024L;
+        final int maxKvLen = LARGE_PREFILL + 16;
+
+        Nd4j.getRandom().setSeed(654321L);
+        INDArray wq = Nd4j.randn(DataType.FLOAT, KV_HIDDEN, KV_HIDDEN).muli(0.05);
+        INDArray wk = Nd4j.randn(DataType.FLOAT, KV_HIDDEN, KV_HIDDEN).muli(0.05);
+        INDArray wv = Nd4j.randn(DataType.FLOAT, KV_HIDDEN, KV_HIDDEN).muli(0.05);
+        INDArray wo = Nd4j.randn(DataType.FLOAT, KV_HIDDEN, KV_HIDDEN).muli(0.05);
+        INDArray wlogits = Nd4j.randn(DataType.FLOAT, KV_HIDDEN, KV_VOCAB).muli(0.05);
+        SameDiff reference = buildPrefillDecodeKvDecoder(
+                wq.dup(), wk.dup(), wv.dup(), wo.dup(), wlogits.dup());
+        SameDiff tested = buildPrefillDecodeKvDecoder(
+                wq.dup(), wk.dup(), wv.dup(), wo.dup(), wlogits.dup());
+        INDArray prefillEmbeddings = Nd4j.randn(
+                DataType.FLOAT, 1, LARGE_PREFILL, KV_HIDDEN).muli(0.1);
+        List<INDArray> decodeEmbeddings = new ArrayList<>();
+        for (int step = 0; step < 12; step++) {
+            decodeEmbeddings.add(Nd4j.randn(DataType.FLOAT, 1, 1, KV_HIDDEN).muli(0.1));
+        }
+
+        NativeOps nativeOps = Nd4j.getNativeOps();
+        int device = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        List<OpaqueDataBuffer> ballast = new ArrayList<>();
+        AtomicBoolean pressureReleased = new AtomicBoolean(false);
+        List<Map<String, INDArray>> refLifecycle = new ArrayList<>();
+        List<Map<String, INDArray>> testLifecycle = new ArrayList<>();
+        try {
+            BenchmarkConfig refCfg = modeConfig(
+                    "pressure_REF_SLOT_BY_SLOT", GraphExecutionMode.SLOT_BY_SLOT);
+            BenchmarkConfig testCfg = modeConfig(
+                    "pressure_TRITON", GraphExecutionMode.TRITON);
+            refLifecycle = runActualPrefillDecodeLifecycle(
+                    reference, refCfg, prefillEmbeddings.dup(), decodeEmbeddings, maxKvLen);
+
+            long targetFree = 192L * mib;
+            long free = nativeOps.getDeviceFreeMemory(device);
+            while (free > targetFree + 8L * mib) {
+                long chunkBytes = Math.max(8L * mib,
+                        Math.min(256L * mib, free - targetFree - 4L * mib));
+                OpaqueDataBuffer chunk = OpaqueDataBuffer.allocateDataBuffer(
+                        chunkBytes / DataType.FLOAT.width(), DataType.FLOAT, false);
+                assertNotNull(chunk, "pool ballast allocation returned null");
+                ballast.add(chunk);
+                long nextFree = nativeOps.getDeviceFreeMemory(device);
+                if (nextFree >= free - chunkBytes / 2) {
+                    log.info("pool ballast stopped reducing device free: {}MB -> {}MB",
+                            free / mib, nextFree / mib);
+                    break;
+                }
+                free = nextFree;
+            }
+            log.info("pool-backed pressure established: free={}MB chunks={} target={}MB",
+                    free / mib, ballast.size(), targetFree / mib);
+            assertTrue(free < 320L * mib,
+                    "pool ballast did not establish capture pressure: free=" + (free / mib) + "MB");
+
+            testLifecycle = runActualPrefillDecodeLifecycle(
+                    tested, testCfg, prefillEmbeddings.dup(), decodeEmbeddings, maxKvLen,
+                    step -> {
+                        if (step == 2 && pressureReleased.compareAndSet(false, true)) {
+                            closePoolBallast(ballast, nativeOps, device);
+                            log.info("pool-backed pressure released after decode step {}", step);
+                        }
+                    });
+
+            assertTrue(refLifecycle.size() == testLifecycle.size(),
+                    "pressure lifecycle output count differs");
+            double[] tol = tolerances(testCfg);
+            for (int invocation = 0; invocation < refLifecycle.size(); invocation++) {
+                assertOutputsClose(
+                        refLifecycle.get(invocation), testLifecycle.get(invocation),
+                        tol[0], tol[1], "pressure lifecycle invocation=" + invocation);
+            }
+            assertTrue(pressureReleased.get(), "pressure release hook did not execute");
+            DspPlanAssertions.assertNoCaptureFailures(tested, "transient pool pressure");
+            DspPlanAssertions.assertNoPhaseContractViolations(
+                    tested, "transient pool pressure");
+            DspPlanAssertions.assertFullyReplaying(tested, "transient pool pressure");
+        } finally {
+            closePoolBallast(ballast, nativeOps, device);
+            for (Map<String, INDArray> outputs : refLifecycle) closeAll(outputs);
+            for (Map<String, INDArray> outputs : testLifecycle) closeAll(outputs);
+            prefillEmbeddings.close();
+            for (INDArray embedding : decodeEmbeddings) embedding.close();
+            wq.close();
+            wk.close();
+            wv.close();
+            wo.close();
+            wlogits.close();
+            reference.close();
+            tested.close();
+        }
+    }
+
+    private static void closePoolBallast(
+            List<OpaqueDataBuffer> ballast, NativeOps nativeOps, int device) {
+        for (OpaqueDataBuffer buffer : ballast) {
+            try {
+                nativeOps.dbClose(buffer);
+            } catch (Throwable closeFailure) {
+                log.warn("pool ballast close failed: {}", closeFailure.toString());
+            }
+        }
+        ballast.clear();
+        nativeOps.trimMemoryPool(device);
     }
 
     // ─── Knob bisection tests ──────────────────────────────────────────────

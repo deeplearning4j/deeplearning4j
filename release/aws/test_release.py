@@ -383,6 +383,59 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("-DHAVE_LIBRT=OFF", dependencies)
         self.assertNotIn("-DCMAKE_THREAD_LIBS_INIT", dependencies)
 
+    def test_android_x86_javacpp_uses_selected_api_for_crt_and_link_paths(self):
+        root = Path(__file__).parents[2]
+        pom = (
+            root
+            / "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/pom.xml"
+        ).read_text(encoding="utf-8")
+        api_path = "x86_64-linux-android/${libnd4j.android.api}"
+        self.assertEqual(2, pom.count(api_path))
+        self.assertNotIn("x86_64-linux-android/21", pom)
+        self.assertNotIn("lib64/clang/17", pom)
+        action = (root / ".github/actions/run-release-worker/action.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(
+            "android-arm64|android-arm64-vulkan|android-x86_64) ndk=r27d ;;",
+            action,
+        )
+        self.assertNotIn("android-x86_64) ndk=r26d", action)
+
+    def test_github_workers_use_supported_action_and_cuda_126_toolchains(self):
+        root = Path(__file__).parents[2]
+        action = (root / ".github/actions/run-release-worker/action.yml").read_text(
+            encoding="utf-8"
+        )
+        bootstrap = (root / "release/github/bootstrap-worker.ps1").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("actions/setup-python@v6", action)
+        self.assertNotIn("actions/setup-python@v5", action)
+        self.assertIn(
+            "Microsoft.VisualStudio.Component.VC.14.38.17.8.x86.x64",
+            bootstrap,
+        )
+        self.assertIn("-vcvars_ver=$vcVarsVersion", bootstrap)
+        self.assertNotIn("--allow-unsupported-compiler", bootstrap)
+
+    def test_cuda_launch_dimension_macros_have_single_owners(self):
+        root = Path(__file__).parents[2]
+        header = (
+            root / "libnd4j/include/execution/cuda/LaunchDims.h"
+        ).read_text(encoding="utf-8")
+        owners = {}
+        duplicates = []
+        for line_number, line in enumerate(header.splitlines(), start=1):
+            if not line.startswith("#define "):
+                continue
+            name = line.split(maxsplit=2)[1]
+            if name in owners:
+                duplicates.append((name, owners[name], line_number))
+            else:
+                owners[name] = line_number
+        self.assertEqual([], duplicates)
+
     def test_windows_vulkan_uses_static_mlir_spirv_graph(self):
         root = Path(__file__).parents[2]
         dependencies = (root / "libnd4j/cmake/Dependencies.cmake").read_text(
@@ -3917,12 +3970,18 @@ class ReleaseValidationTest(unittest.TestCase):
 
         android_x86 = command(
             DL4J_FAMILY="android-x86_64",
-            DL4J_ANDROID_API="21",
+            DL4J_ANDROID_API="23",
             DL4J_CMAKE_ARGS="-DSD_BUILD_WITH_JAVA=OFF",
-            ANDROID_NDK="/opt/android/android-ndk-r26d",
+            ANDROID_NDK="/opt/android/android-ndk-r27d",
         )
-        self.assertIn("-Dlibnd4j.android.api=21", android_x86)
+        self.assertIn("-Dlibnd4j.android.api=23", android_x86)
         self.assertIn("-Dlibnd4j.build.with.java=OFF", android_x86)
+        self.assertIn(
+            "-Djavacpp.platform.compiler=/opt/android/android-ndk-r27d/"
+            "toolchains/llvm/prebuilt/linux-x86_64/bin/"
+            "x86_64-linux-android23-clang++",
+            android_x86,
+        )
 
         android_vulkan = command(
             DL4J_FAMILY="android-arm64-vulkan",

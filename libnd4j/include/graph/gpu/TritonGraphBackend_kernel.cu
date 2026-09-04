@@ -61,8 +61,10 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
   int numBufferArgs = static_cast<int>(compiled.argSlotMapping.size());
   void* actualStream = (stream != nullptr) ? *static_cast<void**>(stream) : nullptr;
   auto failKernel = [&](const std::string& reason) {
-    std::string message = "Triton kernel [" + std::to_string(compiled.startSlot_) + "-" +
-                          std::to_string(compiled.endSlot_) + "]: " + reason;
+    std::string message = reason + " [Triton kernel " +
+                          std::to_string(compiled.startSlot_) + "-" +
+                          std::to_string(compiled.endSlot_) +
+                          ", status=KERNEL_FAILURE (50)]";
     auto* errorRef = LaunchContext::defaultContext()->errorReference();
     errorRef->setErrorCode(static_cast<int>(Status::KERNEL_FAILURE));
     errorRef->setErrorMessage(message);
@@ -1087,12 +1089,43 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
         compiledSeg = findCompiledSegmentForLiveSegment(key);
       }
       if (compiledSeg == nullptr) {
+        // Last resort: does an entry exist for THIS SEGMENT + compiled shape key under a
+        // different device? That is a device mismatch (this lookup was keyed on the
+        // calling thread's cached device while compile published under the segment's
+        // compile-time device), not a missing kernel. Same-arch GPUs share the binary;
+        // arg-table refresh only patches host-side pointer values, so the entry's device
+        // does not change which pointers get refreshed.
+        for (auto& entry : cache_) {
+          const auto& k = entry.first;
+          if (k.startSlot == seg.def.startSlot &&
+              k.endSlot == seg.def.endSlot &&
+              k.shapeKey == seg.def.shapeKeyState.compiledShapeKey &&
+              k.segmentInstance == &seg) {
+            DSP_DIAG(EXECUTE, "TritonGraphBackend::refreshArgTablesForReplay: device mismatch for [%d-%d]: "
+                     "lookup device=%d, published entry deviceId=%d — using published entry",
+                     seg.def.startSlot, seg.def.endSlot, currentDevice, k.deviceId);
+            compiledSeg = &entry.second;
+            break;
+          }
+        }
+      }
+      if (compiledSeg == nullptr) {
         DSP_DIAG(EXECUTE, "TritonGraphBackend::refreshArgTablesForReplay: no compiled segment for [%d-%d] "
                   "(shapeKey=%lld, device=%d) → marking args current (no arg tables to refresh)",
                   seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey, currentDevice);
         // No Triton sub-kernels = no arg tables to refresh. Mark stable so fast replay
         // path can be used (skip iterating over all external inputs for sync checks).
         seg.exec.markArgsCurrent();
+        const std::string message =
+            "Triton argument-table refresh found no compiled segment for range [" +
+            std::to_string(seg.def.startSlot) + "-" +
+            std::to_string(seg.def.endSlot) + "], shapeKey=" +
+            std::to_string(seg.def.shapeKeyState.compiledShapeKey) +
+            ", lookupDevice=" + std::to_string(currentDevice) +
+            " [DSP status=KERNEL_FAILURE (50)]";
+        auto* errorReference = LaunchContext::defaultContext()->errorReference();
+        errorReference->setErrorCode(static_cast<int>(Status::KERNEL_FAILURE));
+        errorReference->setErrorMessage(message);
         return Status::KERNEL_FAILURE;
       }
     }
@@ -1100,7 +1133,6 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
 
   bool useDirtyTracking = Environment::getInstance().tritonArgDirtyTracking()
                           && compiledSeg->hasDirtyTrackingInfo();
-
   // specialBuffer() addresses are CPU-side pointer values set during allocation
   // (cudaMallocAsync returns pointers synchronously). No stream sync needed
   // to read them — actual data ordering is handled by graph launch on cudaStr.
@@ -1284,6 +1316,25 @@ void TritonGraphBackend::copyConsolidatedArgTableToDevice(GraphSegment& seg, voi
       compiledSeg = findCompiledSegmentAnyDtype(key);
       if (compiledSeg == nullptr) {
         compiledSeg = findCompiledSegmentForLiveSegment(key);
+      }
+      if (compiledSeg == nullptr) {
+        // Same cross-device recovery as refreshArgTablesForReplay: an entry for THIS
+        // SEGMENT + compiled shape key published under a different device is a device
+        // mismatch (lookup keyed on the calling thread's cached device), not a missing
+        // kernel. Skipping silently here would leave the device arg table stale.
+        for (auto& entry : cache_) {
+          const auto& k = entry.first;
+          if (k.startSlot == seg.def.startSlot &&
+              k.endSlot == seg.def.endSlot &&
+              k.shapeKey == seg.def.shapeKeyState.compiledShapeKey &&
+              k.segmentInstance == &seg) {
+            DSP_DIAG(EXECUTE, "TritonGraphBackend::copyConsolidatedArgTableToDevice: device mismatch for [%d-%d]: "
+                     "lookup device=%d, published entry deviceId=%d — using published entry",
+                     seg.def.startSlot, seg.def.endSlot, currentDevice, k.deviceId);
+            compiledSeg = &entry.second;
+            break;
+          }
+        }
       }
       if (compiledSeg == nullptr) {
         // No compiled segment - nothing to copy

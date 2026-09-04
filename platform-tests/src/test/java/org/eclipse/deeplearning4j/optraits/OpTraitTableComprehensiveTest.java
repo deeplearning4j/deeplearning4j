@@ -429,7 +429,9 @@ public class OpTraitTableComprehensiveTest {
                 Arguments.of("kv_cache_update", DATA_MOVE_VALDEP),
                 Arguments.of("kv_cache_quantize", CONST_GEN_VALDEP),
                 Arguments.of("kv_cache_dequantize", UNARY_EW),
-                Arguments.of("paged_kv_append", DATA_MOVE_VALDEP),
+                // paged_kv_append's output is a VIEW of input 0 (ARRAY_COPY_OFFSET_INPUT_0):
+        // shape comes from the input shape only, so it is DATA_MOVE, not VALDEP.
+        Arguments.of("paged_kv_append", DATA_MOVE),
 
                 // ── Rotary / positional embedding ─────────────────────
                 // Rotary embeddings are pairwise data transforms, not
@@ -514,7 +516,11 @@ public class OpTraitTableComprehensiveTest {
                 "gather", "gather_nd", "repeat",
                 "concat", "stack", "split", "split_v",
                 "expand_dims", "squeeze",
-                "flatten", "flatten_2d", "permute");
+                "flatten", "flatten_2d", "permute",
+                // in-place KV writes whose output is a view of an input — shape
+                // from input shape + iArgs only (SHAPES_FROZEN false-positive
+                // regression family, same root cause as gather above)
+                "kv_scatter", "paged_kv_append");
     }
 
     @ParameterizedTest(name = "{0} is NOT value-dependent")
@@ -546,7 +552,7 @@ public class OpTraitTableComprehensiveTest {
                 "pad", "reshape", "reshape_no_copy", "strided_slice",
                 "create",
                 "slice", "tile",
-                "kv_cache_update", "kv_cache_quantize", "paged_kv_append",
+                "kv_cache_update", "kv_cache_quantize",
                 "per_layer_embedding");
     }
 

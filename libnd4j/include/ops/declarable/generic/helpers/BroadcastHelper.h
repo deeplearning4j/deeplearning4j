@@ -88,8 +88,15 @@ class BroadcastHelper {
     } else {
       auto sx = ShapeUtils::shapeAsString(x);
       auto sy = ShapeUtils::shapeAsString(y);
-      sd_printf("Broadcast: shapes should be equal, or broadcastable. But got %s vs %s instead\n", sx.c_str(),
-                sy.c_str());
+      const std::string message =
+          "BroadcastHelper::broadcastApply cannot broadcast numeric inputs: "
+          "x shape=" + sx + " dtype=" +
+          std::to_string(static_cast<int>(x->dataType())) + ", y shape=" + sy +
+          " dtype=" + std::to_string(static_cast<int>(y->dataType())) +
+          ", output shape=" + ShapeUtils::shapeAsString(z);
+#ifndef __JAVACPP_HACK__
+      safeSetErrorContext(static_cast<int>(Status::KERNEL_FAILURE), message.c_str());
+#endif
       return nullptr;
     }
 
@@ -132,6 +139,16 @@ class BroadcastHelper {
       x->applyTrueBroadcast(op, y, z, true, extraArgs);
       return z;
     } else {
+      const std::string message =
+          "BroadcastHelper::broadcastApply cannot broadcast boolean inputs: "
+          "x shape=" + ShapeUtils::shapeAsString(x) + " dtype=" +
+          std::to_string(static_cast<int>(x->dataType())) + ", y shape=" +
+          ShapeUtils::shapeAsString(y) + " dtype=" +
+          std::to_string(static_cast<int>(y->dataType())) +
+          ", output shape=" + ShapeUtils::shapeAsString(z);
+#ifndef __JAVACPP_HACK__
+      safeSetErrorContext(static_cast<int>(Status::KERNEL_FAILURE), message.c_str());
+#endif
       return nullptr;
     }
 

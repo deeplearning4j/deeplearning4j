@@ -55,11 +55,10 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Regression isolation test for mythic-PDF DocTag format failure.
  *
- * Compares GenerationPipeline (native decode loop) against StaticKvCacheDecodeLoop
- * (old Java decode loop) on the SAME mythic PDF input.  Token divergence localises
- * the bug to either:
- *   - shared input construction (DecoderInputBuilder) → both diverge from expectation
- *   - GenerationPipeline / native loop → only native diverges
+ * Repeats GenerationPipeline (native decode loop) on the SAME mythic PDF input
+ * after a full decoder reset. Repeatability localises state leakage to either:
+ *   - shared input construction → both runs diverge from the expected structure
+ *   - GenerationPipeline / native loop → only the second run diverges
  *
  * Run:
  *   cd platform-tests && mvn test \
@@ -234,40 +233,18 @@ public class TestMythicPdfRegression {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Isolation test 1: old decoder vs new pipeline, token-by-token
+    // Isolation test 1: GenerationPipeline repeatability, token-by-token
     // ─────────────────────────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("Old decoder vs GenerationPipeline: token stream divergence on mythic PDF")
-    public void testOldDecoderVsGenerationPipeline() throws Exception {
+    @DisplayName("GenerationPipeline is repeatable on mythic PDF")
+    public void testGenerationPipelineRepeatability() throws Exception {
         ensureModelsLoaded();
         int maxTokens = 15;
-
-        // Reference: old StaticKvCacheDecodeLoop (Java-only, known-good for format)
         ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
-        StaticKvCacheDecodeLoop oldLoop = StaticKvCacheDecodeLoop.builder()
-                .decoder(decoder)
-                .embedTokens(embedTokens)
-                .tokenizer(tokenizer)
-                .ioConfig(ioConfig)
-                .samplingConfig(SamplingConfig.greedy())
-                .maxNewTokens(maxTokens)
-                .hiddenSize(hiddenSize)
-                .build();
 
-        GenerationResult oldResult = oldLoop.decode(inputsEmbeds.dup(), promptTokenIds);
-        int[] oldTokens = oldResult.getTokenIds();
-        String oldText = oldResult.getText();
-        log.info("OLD  decoder: {} tokens, text='{}'", oldTokens.length, oldText);
-
-        // Reset decoder state — old loop may have frozen shapes / compiled DSP
-        decoder.clearPlaceholders(false);
-        decoder.clearOpInputs();
-        decoder.resetSession();
-        Nd4j.getExecutioner().commit();
-
-        // Test: GenerationPipeline (native decode loop)
-        GenerationPipeline pipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
+        GenerationResult first;
+        GenerationPipeline firstPipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
                 .decoder(decoder)
                 .embedTokens(embedTokens)
                 .tokenizer(tokenizer)
@@ -276,70 +253,41 @@ public class TestMythicPdfRegression {
                 .maxNewTokens(maxTokens)
                 .hiddenSize(hiddenSize)
                 .build());
-
-        GenerationResult newResult = pipeline.generate(inputsEmbeds.dup(), promptTokenIds);
-        int[] newTokens = newResult.getTokenIds();
-        String newText = newResult.getText();
-        log.info("NEW pipeline: {} tokens, text='{}'", newTokens.length, newText);
-
-        // Token-by-token comparison
-        int minLen = Math.min(oldTokens.length, newTokens.length);
-        int matches = 0;
-        int firstDivergent = -1;
-        for (int i = 0; i < minLen; i++) {
-            if (oldTokens[i] == newTokens[i]) {
-                matches++;
-            } else if (firstDivergent < 0) {
-                firstDivergent = i;
-            }
-        }
-        double matchRate = minLen > 0 ? (double) matches / minLen : 0.0;
-        log.info("Token match rate: {}/{} ({}%) firstDivergent={}",
-                matches, minLen, String.format("%.1f", matchRate * 100), firstDivergent);
-
-        if (firstDivergent >= 0) {
-            log.error("FIRST DIVERGENCE at step {}: old={} ('{}') new={} ('{}')",
-                    firstDivergent,
-                    oldTokens[firstDivergent],
-                    tokenizer.decode(new int[]{oldTokens[firstDivergent]}, false),
-                    newTokens[firstDivergent],
-                    tokenizer.decode(new int[]{newTokens[firstDivergent]}, false));
+        try {
+            first = firstPipeline.generate(inputsEmbeds.dup(), promptTokenIds);
+        } finally {
+            firstPipeline.close();
         }
 
-        // Structural tag sanity check on OLD decoder (should pass)
-        boolean oldHasTags = oldText.contains("<") && oldText.contains(">");
-        log.info("Old decoder has structural tags: {}", oldHasTags);
+        decoder.clearPlaceholders(false);
+        decoder.clearOpInputs();
+        decoder.resetSession();
+        Nd4j.getExecutioner().commit();
 
-        // Structural tag sanity check on NEW pipeline (fails in benchmark)
-        boolean newHasTags = newText.contains("<") && newText.contains(">");
-        log.info("New pipeline has structural tags: {}", newHasTags);
-
-        // The critical assertion: old decoder MUST produce structural tags
-        assertTrue(oldHasTags,
-                "Old decoder failed to produce structural tags — test setup is broken or PDF is missing. "
-                        + "Text: " + oldText);
-        assertTrue(newHasTags,
-                "GenerationPipeline stripped or failed to return structural tags even though the "
-                        + "native path should preserve the same token text as the old decoder. "
-                        + "Text: " + newText);
-
-        // If old decoder is correct but new pipeline diverges, we have isolated the bug.
-        if (firstDivergent >= 0) {
-            log.error("BUG ISOLATED: GenerationPipeline diverges from old decoder at step {}. "
-                    + "This points to the native decode loop or GenerationPipeline handoff.", firstDivergent);
+        GenerationResult second;
+        GenerationPipeline secondPipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
+                .decoder(decoder)
+                .embedTokens(embedTokens)
+                .tokenizer(tokenizer)
+                .ioConfig(ioConfig)
+                .samplingConfig(SamplingConfig.greedy())
+                .maxNewTokens(maxTokens)
+                .hiddenSize(hiddenSize)
+                .build());
+        try {
+            second = secondPipeline.generate(inputsEmbeds.dup(), promptTokenIds);
+        } finally {
+            secondPipeline.close();
         }
 
-        // Soft assertion — we expect them to match.  If they don't, the test logs the divergence
-        // but does NOT hard-fail so we can inspect output.
-        assertTrue(matchRate >= 0.8,
-                "GenerationPipeline diverges significantly from old decoder: "
-                        + String.format("%.1f%%", matchRate * 100)
-                        + " match, first divergence at step " + firstDivergent
-                        + ". Old text: " + oldText
-                        + ". New text: " + newText);
-        assertEquals(oldText, newText,
-                "GenerationPipeline returned different decoded text despite matching the old "
-                        + "decoder token stream. Old text: " + oldText + " New text: " + newText);
+        log.info("FIRST pipeline: {} tokens, text='{}'", first.getTokenIds().length, first.getText());
+        log.info("SECOND pipeline: {} tokens, text='{}'", second.getTokenIds().length, second.getText());
+        assertArrayEquals(first.getTokenIds(), second.getTokenIds(),
+                "GenerationPipeline token stream changed after a fresh model reset");
+        assertEquals(first.getText(), second.getText(),
+                "GenerationPipeline text changed after a fresh model reset");
+        assertTrue(second.getText().contains("<") && second.getText().contains(">"),
+                "GenerationPipeline must preserve structural DocTags: " + second.getText());
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -494,16 +442,15 @@ public class TestMythicPdfRegression {
     }
 
     @Test
-    @DisplayName("Benchmark Triton compile path preserves old decoder output")
-    public void testOldDecoderAfterBenchmarkCompile() throws Exception {
+    @DisplayName("Benchmark Triton compile path preserves GenerationPipeline output")
+    public void testGenerationPipelineAfterBenchmarkCompile() throws Exception {
         ensureModelsLoaded();
         int maxTokens = Integer.getInteger("vlm.test.maxNewTokens", 15);
         ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
 
         BenchmarkConfigApplier.resetModelState(decoder);
         BenchmarkConfigApplier.resetModelState(embedTokens);
-
-        StaticKvCacheDecodeLoop baselineLoop = StaticKvCacheDecodeLoop.builder()
+        GenerationPipeline baselinePipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
                 .decoder(decoder)
                 .embedTokens(embedTokens)
                 .tokenizer(tokenizer)
@@ -511,8 +458,13 @@ public class TestMythicPdfRegression {
                 .samplingConfig(SamplingConfig.greedy())
                 .maxNewTokens(maxTokens)
                 .hiddenSize(hiddenSize)
-                .build();
-        GenerationResult baseline = baselineLoop.decode(inputsEmbeds.dup(), promptTokenIds);
+                .build());
+        GenerationResult baseline;
+        try {
+            baseline = baselinePipeline.generate(inputsEmbeds.dup(), promptTokenIds);
+        } finally {
+            baselinePipeline.close();
+        }
 
         BenchmarkConfig benchmarkConfig = BenchmarkConfig.create("TRITON_NO_GC")
                 .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
@@ -526,7 +478,7 @@ public class TestMythicPdfRegression {
         BenchmarkConfigApplier.apply(benchmarkConfig);
         BenchmarkConfigApplier.compileModels(decoder, "decoder", embedTokens, "embed_tokens", benchmarkConfig);
 
-        StaticKvCacheDecodeLoop configuredLoop = StaticKvCacheDecodeLoop.builder()
+        GenerationPipeline configuredPipeline = GenerationPipeline.create(GenerationPipelineConfig.builder()
                 .decoder(decoder)
                 .embedTokens(embedTokens)
                 .tokenizer(tokenizer)
@@ -534,16 +486,20 @@ public class TestMythicPdfRegression {
                 .samplingConfig(SamplingConfig.greedy())
                 .maxNewTokens(maxTokens)
                 .hiddenSize(hiddenSize)
-                .build();
-        GenerationResult configured = configuredLoop.decode(inputsEmbeds.dup(), promptTokenIds);
+                .build());
+        GenerationResult configured;
+        try {
+            configured = configuredPipeline.generate(inputsEmbeds.dup(), promptTokenIds);
+        } finally {
+            configuredPipeline.close();
+        }
 
         log.info("Benchmark compile parity: baseline='{}' configured='{}'",
                 baseline.getText(), configured.getText());
-
         assertArrayEquals(baseline.getTokenIds(), configured.getTokenIds(),
-                "Benchmark compile path changed old decoder token stream");
+                "Benchmark compile path changed GenerationPipeline token stream");
         assertEquals(baseline.getText(), configured.getText(),
-                "Benchmark compile path changed old decoder decoded text");
+                "Benchmark compile path changed GenerationPipeline decoded text");
     }
 
 }

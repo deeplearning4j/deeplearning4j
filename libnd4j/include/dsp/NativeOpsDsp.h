@@ -105,13 +105,13 @@ SD_LIB_EXPORT void clearNativePlanCacheHandle(sd::Pointer cacheHandle);
  * @param phShapeInfoPtrs       array of shape-info pointers (from ConstantShapeHelper); identity = key equality
  * @param numPlaceholders       length of phShapeInfoPtrs
  * @param graphExecutionMode    GraphExecutionMode ordinal — each mode gets its own plan
- * @param newBorrower           nonzero when this dispatch is the FIRST from its Java
- *                              executor instance (nativePlanHandle was null). A cache
- *                              HIT then means the plan is switching borrowers: view
- *                              wrappers minted over the previous borrower's external
- *                              arrays dangle once it closed its inputs, and must be
- *                              invalidated. Same-borrower re-dispatches (shape change)
- *                              pass 0 so live captured-graph state is never disturbed.
+ * @param newBorrower           nonzero when this dispatch acquires a new borrower
+ *                              lease for the returned shape-keyed plan. Java passes
+ *                              this for the first executor dispatch and first use of
+ *                              a shape; same-executor same-shape redispatches pass 0
+ *                              so lease counts do not grow per token. A nonzero cache
+ *                              hit also invalidates external-fed views minted by a
+ *                              previous borrower.
  * @return                      NativeDynamicShapePlan* as opaque sd::Pointer; owned by cache
  */
 SD_LIB_EXPORT sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
@@ -126,8 +126,9 @@ SD_LIB_EXPORT sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
 
 /**
  * Unpin a plan handle, making it eligible for LRU eviction.
- * Must be called when Java swaps to a different plan handle or closes
- * the executor. Paired with the automatic pinning done by dispatchNativePlan().
+ * Must be called once for every borrower lease acquired from dispatchNativePlan,
+ * when Java swaps away from a plan or closes the executor. The cache keeps the
+ * plan eviction-protected until the final lease is released.
  *
  * @param cacheHandle  cache from createNativePlanCache (non-null)
  * @param planHandle   plan handle from dispatchNativePlan (safe to pass null — no-op)
@@ -193,6 +194,13 @@ SD_LIB_EXPORT int getPlanReplayUnitCount(sd::Pointer planHandle, int segIdx);
  * @return Current plan phase (0-2), or -1 on error
  */
 SD_LIB_EXPORT int getPlanPhase(sd::Pointer planHandle);
+
+/**
+ * Get one immutable point-in-time snapshot of the native plan lifecycle.
+ * The result is a thread-local key/value payload consumed by the Java
+ * DspLifecycleSnapshot value type. Returns "valid=false" for an invalid handle.
+ */
+SD_LIB_EXPORT const char* getPlanLifecycleSnapshot(sd::Pointer planHandle);
 
 /**
  * Get the execution count for a segment (number of times executed).
@@ -309,6 +317,18 @@ SD_LIB_EXPORT sd::Pointer loadModelFromFileWithOptions(
  */
 SD_LIB_EXPORT OpaqueNDArray getLoadedModelVariable(
     sd::Pointer modelHandle, const char* variableName);
+
+/**
+ * Read the declared FlatGraph shape for any loaded model variable, including
+ * placeholders that do not own an NDArray. Pass dimensions=nullptr to query
+ * the rank before allocating the output buffer.
+ *
+ * @return Declared rank, or -1 when the variable/shape is unavailable or the
+ *         supplied dimensions buffer is too small.
+ */
+SD_LIB_EXPORT int getLoadedModelVariableShape(
+    sd::Pointer modelHandle, const char* variableName,
+    sd::LongType* dimensions, int maxRank);
 
 /**
  * Compile a loaded model into a native execution plan.

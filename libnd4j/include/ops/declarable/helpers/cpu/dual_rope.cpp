@@ -109,6 +109,21 @@ void dualRoPE(LaunchContext* context, NDArray* input, NDArray* output,
   NDArray::registerPrimaryUse({output}, {input});
 }
 
+void dualRoPE(LaunchContext* context, NDArray* input, NDArray* output,
+              NDArray* positionArr, int attentionType,
+              double localFreqBase, double globalFreqBase,
+              double localFreqScale, double globalFreqScale) {
+  // CPU: the position tensor is host-accessible, so read the scalar directly
+  // (same pattern as helpers::fusedRoPE in fused_llm_ops.cpp).
+  if (!(positionArr->isScalar() || positionArr->lengthOf() == 1)) {
+    THROW_EXCEPTION("dualRoPE: positionArr must be a scalar or single-element tensor");
+  }
+  const int positionOffset = static_cast<int>(positionArr->e<LongType>(0));
+
+  dualRoPE(context, input, output, attentionType, positionOffset,
+           localFreqBase, globalFreqBase, localFreqScale, globalFreqScale);
+}
+
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

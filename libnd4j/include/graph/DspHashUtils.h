@@ -25,8 +25,10 @@
 #define LIBND4J_DSP_HASH_UTILS_H
 
 #include <graph/DspConstants.h>
+#include <graph/DspSegmentOutputUtils.h>
 #include <system/common.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -67,23 +69,45 @@ SD_INLINE uint64_t fnv1a64String(const std::string& s) {
   return fnv1a64(s.data(), s.size());
 }
 
-// ─── Slot address hashing ───────────────────────────────────────────────────
+// ─── Flat output-slot address hashing ───────────────────────────────────────
 //
-// Computes FNV-1a hash of buffer addresses for a range of output slots.
-// Used to verify that output buffer pointers haven't been reallocated between
-// CUDA graph capture and replay — stale addresses cause SIGSEGV or corruption.
-//
-// bufferGetter: callable(NDArray*) -> void*  returning the relevant buffer ptr.
-// Example: [](NDArray* a) { return a->specialBuffer(); }
-//
+// This helper is only for an already-resolved flat output-slot range. Segment
+// operation ranges must use computeSegmentSlotAddrHash below instead.
 template <typename NDArrayT, typename BufferGetter>
-SD_INLINE uint64_t computeSlotAddrHash(NDArrayT** outputSlots, int startSlot, int endSlot,
-                                        int totalSlots, BufferGetter bufferGetter) {
+SD_INLINE uint64_t computeOutputSlotAddrHash(
+    NDArrayT** outputSlots, int firstOutputSlot, int lastOutputSlot,
+    int totalOutputSlots, BufferGetter bufferGetter) {
   uint64_t hash = FNV1A64_OFFSET_BASIS;
-  for (int si = startSlot; si <= endSlot && si < totalSlots; si++) {
-    void* addr = (outputSlots[si] != nullptr) ? bufferGetter(outputSlots[si]) : nullptr;
+  if (outputSlots == nullptr || totalOutputSlots <= 0 ||
+      lastOutputSlot < firstOutputSlot) {
+    return hash;
+  }
+  const int begin = std::max(0, firstOutputSlot);
+  const int end = std::min(lastOutputSlot, totalOutputSlots - 1);
+  for (int outputSlot = begin; outputSlot <= end; ++outputSlot) {
+    void* addr = (outputSlots[outputSlot] != nullptr)
+                     ? bufferGetter(outputSlots[outputSlot]) : nullptr;
     fnv1aMixValue(hash, reinterpret_cast<uintptr_t>(addr));
   }
+  return hash;
+}
+
+// Hash the buffers produced by an operation range.  The operation bounds and
+// flattened output-slot indices are intentionally separate in this overload.
+template <typename SlotT, typename NDArrayT, typename BufferGetter>
+SD_INLINE uint64_t computeSegmentSlotAddrHash(
+    const SlotT* slots, int numSlots, NDArrayT** outputSlots,
+    int firstOp, int lastOp, int totalOutputSlots,
+    BufferGetter bufferGetter) {
+  uint64_t hash = FNV1A64_OFFSET_BASIS;
+  forEachSegmentOutputSlot(
+      slots, numSlots, firstOp, lastOp, totalOutputSlots,
+      [&](int, int outputSlot, int) {
+        void* addr = (outputSlots[outputSlot] != nullptr)
+                         ? bufferGetter(outputSlots[outputSlot])
+                         : nullptr;
+        fnv1aMixValue(hash, reinterpret_cast<uintptr_t>(addr));
+      });
   return hash;
 }
 

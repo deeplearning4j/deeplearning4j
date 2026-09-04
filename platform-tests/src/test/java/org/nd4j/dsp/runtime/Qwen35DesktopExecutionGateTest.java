@@ -25,6 +25,8 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.io.File;
 import java.nio.ByteBuffer;
@@ -86,11 +88,11 @@ class Qwen35DesktopExecutionGateTest {
             assertTrue("1".equals(nativeDumpEnvironment)
                             || Boolean.parseBoolean(nativeDumpEnvironment),
                     "The native op-sanity system property must reach the native runtime environment");
-            // Load the selected ND4J backend before the backend-neutral SDX JNI
-            // transport. With pathsFirst this makes incremental native tests use
-            // the freshly rebuilt library rather than a same-version JavaCPP cache.
-            Nd4j.getEnvironment();
         }
+        // Load the selected ND4J backend before the backend-neutral SDX JNI
+        // transport. With pathsFirst this makes incremental native tests use
+        // the freshly rebuilt library rather than a same-version JavaCPP cache.
+        Nd4j.getEnvironment();
         String ggufValue = System.getProperty(MODEL_PROPERTY);
         Path gguf = ggufValue == null || ggufValue.trim().isEmpty()
                 ? null
@@ -139,7 +141,7 @@ class Qwen35DesktopExecutionGateTest {
                 : bundle.getFileName().toString() + "/model.sdz";
         try (SdxRuntime runtime = SdxRuntime.create();
              SdxRuntime.SdxModel loaded = runtime.loadModel(
-                     bundle.toString(), desktopStrictCpuOptions());
+                     bundle.toString(), desktopCpuReplayOptions());
              SdxTextSession session = loaded.createTextSession();
              HuggingFaceTokenizer tokenizer =
                      HuggingFaceTokenizer.fromFile(tokenizerPath.toFile())) {
@@ -223,11 +225,14 @@ class Qwen35DesktopExecutionGateTest {
                     "Raw ByteLevel vocabulary symbols escaped the Hugging Face decoder: " + decoded);
             assertTrue(report.backendReportAvailable(),
                     "A requested route is not execution proof; the native report is required");
-            assertEquals(SdxRuntime.SDX_BACKEND_SLOT_BY_SLOT, report.requestedBackend());
-            assertEquals(SdxRuntime.SDX_BACKEND_SLOT_BY_SLOT, report.appliedBackend());
+            assertEquals(SdxRuntime.SDX_BACKEND_AUTO, report.requestedBackend());
+            assertEquals(SdxRuntime.SDX_BACKEND_AUTO, report.appliedBackend(),
+                    "CPU AUTO must retain its compiler-resolved mixed execution contract");
             assertEquals(SdxRuntime.SDX_STATUS_OK, report.backendStatusCode());
             assertEquals(0, report.usedFallback(),
-                    "Slot-by-slot/host fallback is forbidden by this gate");
+                    "Runtime backend substitution is forbidden by this gate");
+            assertEquals(2, report.planPhase(),
+                    "CPU AUTO must seal explicit functional replay before generation");
             assertTrue(report.executionCount() >= 1,
                     "The applied-backend report must come from an executed context");
         }
@@ -257,7 +262,7 @@ class Qwen35DesktopExecutionGateTest {
         }
         try (SdxRuntime runtime = SdxRuntime.create();
              SdxRuntime.SdxModel loaded = runtime.loadModel(
-                     bundle.toString(), desktopStrictCpuOptions());
+                     bundle.toString(), desktopCpuReplayOptions());
              SdxRuntime.SdxContext context = loaded.createInferenceContext(intermediateNames)) {
             Map<String, INDArray> ownedInputs = new HashMap<>();
             ownedInputs.put("input_ids", Nd4j.createFromArray(GRAPH_ASSISTANT_PROMPT_IDS)
@@ -341,6 +346,44 @@ class Qwen35DesktopExecutionGateTest {
                     chunked[1].getDouble(0),
                     chunked[1].minNumber().doubleValue(), chunked[1].maxNumber().doubleValue());
 
+            try (INDArray tokenState = zeroState.dup();
+                 INDArray tokenOutputs = Nd4j.createUninitialized(DataType.FLOAT, q.shape());
+                 INDArray oneStepLength = Nd4j.scalar(DataType.INT64, 1L)) {
+                for (int token = 0; token < q.size(1); token++) {
+                    INDArrayIndex[] tokenSlice = {
+                            NDArrayIndex.all(), NDArrayIndex.interval(token, token + 1),
+                            NDArrayIndex.all(), NDArrayIndex.all()
+                    };
+                    INDArrayIndex[] scalarTokenSlice = {
+                            NDArrayIndex.all(), NDArrayIndex.interval(token, token + 1),
+                            NDArrayIndex.all()
+                    };
+                    try (INDArray tokenQ = q.get(tokenSlice).dup();
+                         INDArray tokenK = k.get(tokenSlice).dup();
+                         INDArray tokenV = v.get(tokenSlice).dup();
+                         INDArray tokenBeta = beta.get(scalarTokenSlice).dup();
+                         INDArray tokenGate = gate.get(scalarTokenSlice).dup()) {
+                        INDArray[] step = Nd4j.exec(new GatedDeltaRule(
+                                tokenQ, tokenK, tokenV, tokenBeta, tokenGate,
+                                tokenState, oneStepLength));
+                        try {
+                            tokenOutputs.get(tokenSlice).assign(step[0]);
+                            tokenState.assign(step[1]);
+                        } finally {
+                            step[0].close();
+                            step[1].close();
+                        }
+                    }
+                }
+                try (INDArray outputDifference = tokenOutputs.sub(sequential[0]);
+                     INDArray stateDifference = tokenState.sub(sequential[1])) {
+                    assertEquals(0.0, outputDifference.amaxNumber().doubleValue(), 1e-5,
+                            "One-token GDR replay must match sequential production output");
+                    assertEquals(0.0, stateDifference.amaxNumber().doubleValue(), 1e-5,
+                            "One-token GDR feedback must match sequential production state");
+                }
+            }
+
             assertEquals(0x2114163817fe43eaL, sequentialOutputHash,
                     "actualLen=72 must retain the known-good sequential output");
             assertEquals(0x9fbf870820c29e4eL, sequentialStateHash,
@@ -369,9 +412,9 @@ class Qwen35DesktopExecutionGateTest {
         return hash;
     }
 
-    private static SdxRuntime.ModelOptions desktopStrictCpuOptions() {
+    private static SdxRuntime.ModelOptions desktopCpuReplayOptions() {
         return new SdxRuntime.ModelOptions()
-                .backend(SdxRuntime.SDX_BACKEND_SLOT_BY_SLOT)
+                .backend(SdxRuntime.SDX_BACKEND_AUTO)
                 .strictBackend(true)
                 .allowRuntimeJit(true);
     }

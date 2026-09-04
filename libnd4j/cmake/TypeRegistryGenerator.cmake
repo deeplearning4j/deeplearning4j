@@ -269,6 +269,51 @@ SD_STRING_TYPES
             "-I${CMAKE_CURRENT_BINARY_DIR}"
     )
 
+    # CUDA headers are transitively included when SD_CUDA is defined. The
+    # standalone preprocessor invocation does not inherit target include paths,
+    # so resolve them from the imported toolkit target first, then retain the
+    # normal-variable and toolkit-root fallbacks used by CudaConfiguration.
+    if(SD_CUDA)
+        set(type_registry_cuda_include_dirs "")
+        if(TARGET CUDA::toolkit)
+            get_target_property(type_registry_cuda_target_includes
+                    CUDA::toolkit INTERFACE_INCLUDE_DIRECTORIES)
+            if(type_registry_cuda_target_includes AND
+                    NOT type_registry_cuda_target_includes MATCHES "-NOTFOUND$")
+                list(APPEND type_registry_cuda_include_dirs
+                        ${type_registry_cuda_target_includes})
+            endif()
+        endif()
+        list(APPEND type_registry_cuda_include_dirs
+                ${CUDA_INCLUDE_DIRS}
+                ${CUDAToolkit_INCLUDE_DIRS}
+                ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+        foreach(cuda_toolkit_root IN ITEMS
+                "${CUDAToolkit_ROOT}"
+                "${CUDA_TOOLKIT_ROOT_DIR}"
+                "$ENV{CUDA_HOME}"
+                "$ENV{CUDA_PATH}")
+            if(cuda_toolkit_root)
+                list(APPEND type_registry_cuda_include_dirs
+                        "${cuda_toolkit_root}/include")
+            endif()
+        endforeach()
+
+        set(type_registry_cuda_header_found FALSE)
+        foreach(cuda_include_dir IN LISTS type_registry_cuda_include_dirs)
+            if(EXISTS "${cuda_include_dir}/cuda_runtime.h")
+                list(APPEND include_flags "-I${cuda_include_dir}")
+                set(type_registry_cuda_header_found TRUE)
+            endif()
+        endforeach()
+        list(REMOVE_DUPLICATES include_flags)
+        if(NOT type_registry_cuda_header_found)
+            message(FATAL_ERROR
+                    "CUDA type macro extraction could not locate cuda_runtime.h")
+        endif()
+        message(STATUS "CUDA type macro extraction include flags: ${include_flags}")
+    endif()
+
     # Add FlatBuffers if available
     if(EXISTS "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src/include")
         list(APPEND include_flags "-I${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src/include")
@@ -300,6 +345,7 @@ SD_STRING_TYPES
     string(APPEND output_content "Generated: ${current_time}\n")
     string(APPEND output_content "Compiler: ${CMAKE_CXX_COMPILER}\n\n")
 
+    set(extraction_succeeded FALSE)
     if(compiler_result EQUAL 0 AND preprocessed_output)
         message(STATUS "✅ Macro extraction succeeded")
 
@@ -339,6 +385,13 @@ SD_STRING_TYPES
         endforeach()
 
         message(STATUS "📊 Found ${found_macros} expanded macros")
+        if(found_macros GREATER 0)
+            set(extraction_succeeded TRUE)
+        else()
+            string(APPEND output_content
+                    "ERROR: Preprocessor produced no expanded type macros\n")
+            message(STATUS "❌ Macro extraction produced no expanded macros")
+        endif()
     else()
         string(APPEND output_content "ERROR: Preprocessor failed\nResult: ${compiler_result}\n")
         if(compiler_errors)
@@ -353,5 +406,10 @@ SD_STRING_TYPES
 
     # Cleanup
     file(REMOVE "${extraction_file}" "${stub_header}")
+
+    if(NOT extraction_succeeded)
+        message(FATAL_ERROR
+                "Type macro extraction failed; see ${output_file}")
+    endif()
 
 endfunction()

@@ -199,8 +199,20 @@ Status launchKernel(NvrtcKernelHandle* handle,
                     NDArray** externalInputs, int numExternalInputs,
                     NDArray** outputSlots, int totalOutputSlots,
                     void* stream) {
-  if (handle == nullptr || !handle->valid) {
+  auto fail = [&](const std::string& reason) {
+    const std::string kernelName =
+        handle != nullptr && !handle->kernelName.empty()
+            ? handle->kernelName
+            : "<unknown>";
+    const std::string message =
+        reason + " [NVRTC kernel=" + kernelName +
+        ", status=KERNEL_FAILURE (50)]";
+    safeSetErrorContext(static_cast<int>(Status::KERNEL_FAILURE), message.c_str());
     return Status::KERNEL_FAILURE;
+  };
+  if (handle == nullptr || !handle->valid) {
+    return fail(handle == nullptr ? "NVRTC launch received a null kernel handle"
+                                  : "NVRTC launch received an invalid kernel handle");
   }
 
   // Build the argument array — each entry is a pointer to the argument value
@@ -226,7 +238,10 @@ Status launchKernel(NvrtcKernelHandle* handle,
         int extIdx = binding.externalInputIdx;
         if (extIdx < 0 || extIdx >= numExternalInputs || externalInputs[extIdx] == nullptr) {
           DSP_DIAG(EXECUTE, "NVRTC launch: invalid external input index %d", extIdx);
-          return Status::KERNEL_FAILURE;
+          return fail("NVRTC input argument is unavailable: parameter=" +
+                      std::to_string(i) + ", externalIndex=" +
+                      std::to_string(extIdx) + ", numExternalInputs=" +
+                      std::to_string(numExternalInputs));
         }
         ptrValues[i] = externalInputs[extIdx]->specialBuffer();
         args[i] = &ptrValues[i];
@@ -237,7 +252,10 @@ Status launchKernel(NvrtcKernelHandle* handle,
         int slotIdx = binding.slotIdx;
         if (slotIdx < 0 || slotIdx >= totalOutputSlots || outputSlots[slotIdx] == nullptr) {
           DSP_DIAG(EXECUTE, "NVRTC launch: invalid cross-segment slot index %d", slotIdx);
-          return Status::KERNEL_FAILURE;
+          return fail("NVRTC cross-segment argument is unavailable: parameter=" +
+                      std::to_string(i) + ", slot=" +
+                      std::to_string(slotIdx) + ", totalOutputSlots=" +
+                      std::to_string(totalOutputSlots));
         }
         ptrValues[i] = outputSlots[slotIdx]->specialBuffer();
         args[i] = &ptrValues[i];
@@ -248,7 +266,10 @@ Status launchKernel(NvrtcKernelHandle* handle,
         int slotIdx = binding.slotIdx;
         if (slotIdx < 0 || slotIdx >= totalOutputSlots || outputSlots[slotIdx] == nullptr) {
           DSP_DIAG(EXECUTE, "NVRTC launch: invalid output slot index %d", slotIdx);
-          return Status::KERNEL_FAILURE;
+          return fail("NVRTC output argument is unavailable: parameter=" +
+                      std::to_string(i) + ", slot=" +
+                      std::to_string(slotIdx) + ", totalOutputSlots=" +
+                      std::to_string(totalOutputSlots));
         }
         ptrValues[i] = outputSlots[slotIdx]->specialBuffer();
         args[i] = &ptrValues[i];
@@ -283,7 +304,12 @@ Status launchKernel(NvrtcKernelHandle* handle,
     DSP_DIAG(EXECUTE, "NVRTC: cuLaunchKernel failed for '%s': %d (%s)",
              handle->kernelName.c_str(), static_cast<int>(cuRes),
              errStr ? errStr : "unknown");
-    return Status::KERNEL_FAILURE;
+    return fail("cuLaunchKernel returned CUDA driver error " +
+                std::to_string(static_cast<int>(cuRes)) + " (" +
+                (errStr != nullptr ? errStr : "unknown") + ") grid=" +
+                std::to_string(gridSize) + ", block=" +
+                std::to_string(blockSize) + ", elements=" +
+                std::to_string(elementCount));
   }
 
   return Status::OK;

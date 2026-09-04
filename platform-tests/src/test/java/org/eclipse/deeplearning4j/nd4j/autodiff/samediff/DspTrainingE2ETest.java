@@ -33,6 +33,7 @@ import org.nd4j.autodiff.listeners.records.History;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.TrainingConfig;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
@@ -57,6 +58,8 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.nd4j.linalg.api.buffer.DataType.FLOAT;
 
@@ -619,5 +622,6 @@ public class DspTrainingE2ETest {
 
         assertTrue(delta <= tolerance,
                 "Potential memory leak: delta=" + delta + " bytes exceeds tolerance=" + tolerance);
+        sd.close();
     }
 }

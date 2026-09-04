@@ -6607,6 +6607,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                     bufferIsEmpty ? null : buffer.opaqueBuffer(),
                     offset()
             );
+            ret.retainDataBuffers(
+                    shapeInfo,
+                    bufferIsEmpty ? null : buffer,
+                    bufferIsEmpty ? null : buffer);
             opaqueNDArray = ret;
 
             return ret;

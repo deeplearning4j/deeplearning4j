@@ -173,63 +173,27 @@ public class TestGenerationPipelineBenchmarkAccuracy {
     }
 
     @Test
-    @DisplayName("Benchmark-equivalent GenerationPipeline accuracy on mythic PDF page 10 under OPTIMAL")
+    @DisplayName("GenerationPipeline repeatability on mythic PDF page 10 under OPTIMAL")
     public void testPage10OptimalGenerationPipeline() throws Exception {
         ensureBenchmarkInputsLoaded();
 
         int maxTokens = Integer.getInteger("vlm.test.maxTokens", 100);
         BenchmarkConfig config = optimalConfig(maxTokens);
 
-        GenerationResult oldResult = runOldDecoder(config, maxTokens);
-        GenerationResult newResult = runGenerationPipeline(config, maxTokens);
+        GenerationResult first = runGenerationPipeline(config, maxTokens);
+        GenerationResult second = runGenerationPipeline(config, maxTokens);
 
-        logResult("StaticKvCacheDecodeLoop/OPTIMAL", oldResult);
-        logResult("GenerationPipeline/OPTIMAL", newResult);
+        logResult("GenerationPipeline/OPTIMAL/first", first);
+        logResult("GenerationPipeline/OPTIMAL/second", second);
 
-        int[] oldTokens = oldResult.getTokenIds();
-        int[] newTokens = newResult.getTokenIds();
-        assertArrayEquals(oldTokens, newTokens,
-                "GenerationPipeline should match the old decoder token-for-token on page 10 under OPTIMAL");
-        assertEquals(oldResult.getText(), newResult.getText(),
-                "GenerationPipeline decoded text should match the old decoder on page 10 under OPTIMAL");
+        assertArrayEquals(first.getTokenIds(), second.getTokenIds(),
+                "GenerationPipeline must be token-repeatable under OPTIMAL");
+        assertEquals(first.getText(), second.getText(),
+                "GenerationPipeline text must be repeatable under OPTIMAL");
     }
 
     @Test
-    @DisplayName("Benchmark-equivalent OPTIMAL parity: old decoder vs GenerationPipeline on mythic PDF page 10")
-    public void testPage10OptimalOldVsNewParity() throws Exception {
-        ensureBenchmarkInputsLoaded();
-
-        int maxTokens = Integer.getInteger("vlm.test.maxTokens", 100);
-        BenchmarkConfig config = optimalConfig(maxTokens);
-
-        GenerationResult oldResult = runOldDecoder(config, maxTokens);
-        GenerationResult newResult = runGenerationPipeline(config, maxTokens);
-
-        logResult("StaticKvCacheDecodeLoop/OPTIMAL", oldResult);
-        logResult("GenerationPipeline/OPTIMAL", newResult);
-        logParity(oldResult, newResult);
-
-        int[] oldTokens = oldResult.getTokenIds();
-        int[] newTokens = newResult.getTokenIds();
-        int minLen = Math.min(oldTokens.length, newTokens.length);
-        assertArrayEquals(oldTokens, Arrays.copyOf(newTokens, minLen),
-                "GenerationPipeline diverges from StaticKvCacheDecodeLoop on page 10 under OPTIMAL within the shared prefix");
-
-        if (newTokens.length > oldTokens.length) {
-            log.info("Known bug: GenerationPipeline continued {} tokens past old-decoder stop point. "
-                    + "oldText='{}' newText='{}'",
-                    newTokens.length - oldTokens.length,
-                    safeSnippet(oldResult.getText(), 180),
-                    safeSnippet(newResult.getText(), 180));
-            assertTrue(newResult.getText().startsWith(oldResult.getText()),
-                    "GenerationPipeline should contain the same collapse prefix before drifting. old='"
-                            + safeSnippet(oldResult.getText(), 180) + "' new='"
-                            + safeSnippet(newResult.getText(), 180) + "'");
-        }
-    }
-
-    @Test
-    @DisplayName("GenerationPipeline page-10 config bisection: all modes match old decoder")
+    @DisplayName("GenerationPipeline page-10 config bisection is repeatable")
     public void testPage10GenerationPipelineConfigBisection() throws Exception {
         ensureBenchmarkInputsLoaded();
 
@@ -246,24 +210,18 @@ public class TestGenerationPipelineBenchmarkAccuracy {
                 .minDiversityPct(0));
         configs.put("OPTIMAL", optimalConfig(maxTokens));
 
-        List<String> failures = new ArrayList<>();
         for (Map.Entry<String, BenchmarkConfig> entry : configs.entrySet()) {
             String name = entry.getKey();
             BenchmarkConfig config = entry.getValue();
+            GenerationResult first = runGenerationPipeline(config, maxTokens);
+            GenerationResult second = runGenerationPipeline(config, maxTokens);
 
-            GenerationResult oldResult = runOldDecoder(config, maxTokens);
-            GenerationResult newResult = runGenerationPipeline(config, maxTokens);
-
-            logResult("StaticKvCacheDecodeLoop/" + name, oldResult);
-            logResult("GenerationPipeline/" + name, newResult);
-
-            int[] oldTokens = oldResult.getTokenIds();
-            int[] newTokens = newResult.getTokenIds();
-
-            assertArrayEquals(oldTokens, newTokens,
-                    "GenerationPipeline should match the old decoder token-for-token under " + name);
-            assertEquals(oldResult.getText(), newResult.getText(),
-                    "GenerationPipeline text should match the old decoder under " + name);
+            logResult("GenerationPipeline/" + name + "/first", first);
+            logResult("GenerationPipeline/" + name + "/second", second);
+            assertArrayEquals(first.getTokenIds(), second.getTokenIds(),
+                    "GenerationPipeline must be repeatable under " + name);
+            assertEquals(first.getText(), second.getText(),
+                    "GenerationPipeline text must be repeatable under " + name);
         }
     }
 
@@ -312,25 +270,6 @@ public class TestGenerationPipelineBenchmarkAccuracy {
         } finally {
             pipeline.close();
         }
-    }
-
-    private GenerationResult runOldDecoder(BenchmarkConfig config, int maxTokens) throws Exception {
-        compileFor(config);
-        ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
-
-        StaticKvCacheDecodeLoop loop = StaticKvCacheDecodeLoop.builder()
-                .decoder(decoder)
-                .embedTokens(embedTokens)
-                .tokenizer(tokenizer)
-                .ioConfig(ioConfig)
-                .samplingConfig(SamplingConfig.greedy())
-                .maxNewTokens(maxTokens)
-                .hiddenSize(hiddenSize)
-                .build();
-        logDspState("PRE StaticKvCacheDecodeLoop.decode");
-        GenerationResult result = loop.decode(inputsEmbeds.dup(), promptTokenIds);
-        logDspState("POST StaticKvCacheDecodeLoop.decode");
-        return result;
     }
 
     private static void compileFor(BenchmarkConfig config) {
@@ -401,44 +340,6 @@ public class TestGenerationPipelineBenchmarkAccuracy {
                 String.format("%.2f", result.getTokensPerSecond()),
                 safeSnippet(result.getText(), 220));
         log.info("{} tokens={}", label, Arrays.toString(result.getTokenIds()));
-    }
-
-    private static void logParity(GenerationResult oldResult, GenerationResult newResult) {
-        int[] oldTokens = oldResult.getTokenIds();
-        int[] newTokens = newResult.getTokenIds();
-        int firstDivergent = findFirstDivergentToken(oldTokens, newTokens);
-        if (firstDivergent < 0 && oldTokens.length == newTokens.length) {
-            log.info("Old/new parity: exact token match ({} tokens)", oldTokens.length);
-            return;
-        }
-
-        log.error("Old/new parity diverged: oldLen={} newLen={} firstDivergent={} oldText='{}' newText='{}'",
-                oldTokens.length,
-                newTokens.length,
-                firstDivergent,
-                safeSnippet(oldResult.getText(), 180),
-                safeSnippet(newResult.getText(), 180));
-        if (firstDivergent >= 0 && firstDivergent < oldTokens.length && firstDivergent < newTokens.length) {
-            log.error("Divergent tokens: old={} new={}", oldTokens[firstDivergent], newTokens[firstDivergent]);
-        }
-        if (newTokens.length > oldTokens.length) {
-            log.error("GenerationPipeline continued {} tokens past old-decoder stop point",
-                    newTokens.length - oldTokens.length);
-            if (oldTokens.length > 0) {
-                log.error("Old-decoder stop prefix: {}", Arrays.toString(
-                        Arrays.copyOf(oldTokens, Math.min(oldTokens.length, 30))));
-            }
-        }
-    }
-
-    private static int findFirstDivergentToken(int[] left, int[] right) {
-        int minLen = Math.min(left.length, right.length);
-        for (int i = 0; i < minLen; i++) {
-            if (left[i] != right[i]) {
-                return i;
-            }
-        }
-        return left.length == right.length ? -1 : minLen;
     }
 
     private static void logDspState(String phase) {

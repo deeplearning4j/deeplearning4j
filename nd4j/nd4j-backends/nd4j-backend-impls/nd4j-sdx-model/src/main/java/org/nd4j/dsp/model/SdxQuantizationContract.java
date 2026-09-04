@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -37,7 +38,7 @@ public final class SdxQuantizationContract {
     private static final Set<String> CALIBRATION_METHODS =
             Set.of("minmax", "percentile", "entropy");
     private static final Set<String> SCHEMES =
-            Set.of("int8-per-channel", "int8-per-tensor");
+            Set.of("int8-per-channel", "int8-per-tensor", "q4-k-per-op-int8-boundaries");
 
     private final String scheme;
     private final String provider;
@@ -47,6 +48,10 @@ public final class SdxQuantizationContract {
     private final BigDecimal weightScale;
     private final BigDecimal activationScale;
     private final BigDecimal outputScale;
+    private final String calibrationMethod;
+    private final int calibrationSampleCount;
+    private final String calibrationDatasetSha256;
+    private final Map<String, OperatorCalibration> operatorCalibrations;
     private final String sourceModelSha256;
     private final String aotArtifactSha256;
 
@@ -59,6 +64,10 @@ public final class SdxQuantizationContract {
             BigDecimal weightScale,
             BigDecimal activationScale,
             BigDecimal outputScale,
+            String calibrationMethod,
+            int calibrationSampleCount,
+            String calibrationDatasetSha256,
+            Map<String, OperatorCalibration> operatorCalibrations,
             String sourceModelSha256,
             String aotArtifactSha256) {
         this.scheme = scheme;
@@ -69,6 +78,11 @@ public final class SdxQuantizationContract {
         this.weightScale = weightScale;
         this.activationScale = activationScale;
         this.outputScale = outputScale;
+        this.calibrationMethod = calibrationMethod;
+        this.calibrationSampleCount = calibrationSampleCount;
+        this.calibrationDatasetSha256 = calibrationDatasetSha256;
+        this.operatorCalibrations = Collections.unmodifiableMap(
+                new LinkedHashMap<>(operatorCalibrations));
         this.sourceModelSha256 = sourceModelSha256;
         this.aotArtifactSha256 = aotArtifactSha256;
     }
@@ -93,7 +107,8 @@ public final class SdxQuantizationContract {
         requireInteger(root.get("formatVersion"), "formatVersion", 1);
         String scheme = string(root.get("scheme"), "scheme");
         if (!SCHEMES.contains(scheme)) {
-            throw invalid("scheme must be int8-per-channel or int8-per-tensor");
+            throw invalid("scheme must be int8-per-channel, int8-per-tensor, "
+                    + "or q4-k-per-op-int8-boundaries");
         }
 
         String provider = string(root.get("provider"), "provider");
@@ -128,6 +143,7 @@ public final class SdxQuantizationContract {
         requireBoolean(weights.get("symmetric"), "weights.symmetric", true);
         requireInteger(weights.get("zeroPoint"), "weights.zeroPoint", 0);
         BigDecimal weightScale = "per-tensor".equals(weightGranularity)
+                        && !"q4-k-per-op-int8-boundaries".equals(scheme)
                 ? validatePerTensorScaleMetadata(weights, "weights", false)
                 : null;
 
@@ -141,6 +157,9 @@ public final class SdxQuantizationContract {
 
         Object calibrationValue = activations.get("calibration");
         BigDecimal activationScale = null;
+        String calibrationMethod = null;
+        int calibrationSampleCount = 0;
+        String calibrationDatasetSha256 = null;
         if ("INT8".equals(activationDtype)) {
             Map<String, Object> calibration =
                     object(calibrationValue, "activations.calibration");
@@ -176,6 +195,9 @@ public final class SdxQuantizationContract {
             }
             activationScale = validatePerTensorScaleMetadata(
                     activations, "activations", false);
+            calibrationMethod = method;
+            calibrationSampleCount = samples;
+            calibrationDatasetSha256 = datasetSha;
         } else if (calibrationValue != null) {
             throw invalid("calibration is only valid for INT8 activations");
         }
@@ -187,6 +209,12 @@ public final class SdxQuantizationContract {
             requireString(outputs.get("dtype"), "outputs.dtype", "INT8");
             outputScale = validatePerTensorScaleMetadata(
                     outputs, "outputs", true);
+        }
+
+        Map<String, OperatorCalibration> operatorCalibrations =
+                parseOperatorCalibrations(root.get("operatorCalibrations"));
+        if (!operatorCalibrations.isEmpty() && sourceSha == null) {
+            throw invalid("operatorCalibrations require sourceModelSha256");
         }
 
         Object excluded = root.get("excludedOps");
@@ -203,6 +231,10 @@ public final class SdxQuantizationContract {
                 weightScale,
                 activationScale,
                 outputScale,
+                calibrationMethod,
+                calibrationSampleCount,
+                calibrationDatasetSha256,
+                operatorCalibrations,
                 sourceSha,
                 artifactSha);
     }
@@ -263,7 +295,85 @@ public final class SdxQuantizationContract {
                 + "}";
         SdxQuantizationContract contract = parse(json);
         contract.validateTarget(target);
+        writeContractAtomically(output, json);
+        return contract;
+    }
 
+    /**
+     * Atomically materialize compiler-owned Tensor G3 Q4_K calibration for the
+     * exact canonical SDZ. Applications never construct or interpret this file.
+     */
+    public static SdxQuantizationContract writeTensorG3Q4Profile(
+            Path output,
+            SdxSourceIdentity sourceIdentity,
+            SdxTensorG3Q4Calibration.Result calibration) throws IOException {
+        Objects.requireNonNull(output, "output");
+        Objects.requireNonNull(sourceIdentity, "sourceIdentity");
+        Objects.requireNonNull(calibration, "calibration");
+        if (calibration.sampleCount() < SdxTensorG3Q4Calibration.REQUIRED_SAMPLE_COUNT) {
+            throw invalid("Tensor G3 Q4 calibration requires at least "
+                    + SdxTensorG3Q4Calibration.REQUIRED_SAMPLE_COUNT + " samples");
+        }
+        if (!SHA256.matcher(calibration.datasetSha256()).matches()) {
+            throw invalid("Tensor G3 Q4 calibration dataset digest must be lowercase SHA-256");
+        }
+        if (!calibration.hasQ4Operations()) {
+            throw invalid("Tensor G3 Q4 calibration contains no Q4 operations");
+        }
+
+        StringBuilder json = new StringBuilder(1024);
+        json.append('{')
+                .append("\"formatVersion\":1")
+                .append(",\"scheme\":\"q4-k-per-op-int8-boundaries\"")
+                .append(",\"provider\":\"sdx-graph\"")
+                .append(",\"targetSocs\":[\"Tensor_G3\"]")
+                .append(",\"deviceOnly\":true")
+                .append(",\"allowFloatFallback\":false")
+                .append(",\"requireVendorAot\":true")
+                .append(",\"sourceModelSha256\":\"")
+                .append(sourceIdentity.sha256()).append('"')
+                .append(",\"weights\":{\"dtype\":\"INT8\"")
+                .append(",\"scaleDtype\":\"FLOAT32\"")
+                .append(",\"granularity\":\"per-tensor\"")
+                .append(",\"symmetric\":true,\"zeroPoint\":0}")
+                .append(",\"activations\":{\"dtype\":\"INT8\",\"calibration\":{")
+                .append("\"method\":\"minmax\",\"sampleCount\":")
+                .append(calibration.sampleCount())
+                .append(",\"datasetSha256\":\"")
+                .append(calibration.datasetSha256()).append("\"}}")
+                .append(",\"operatorCalibrations\":{");
+        boolean first = true;
+        for (Map.Entry<String, SdxTensorG3Q4Calibration.OperatorCalibration> entry
+                : new java.util.TreeMap<>(calibration.operatorCalibrations()).entrySet()) {
+            if (!first) {
+                json.append(',');
+            }
+            first = false;
+            SdxTensorG3Q4Calibration.OperatorCalibration value = entry.getValue();
+            json.append('"').append(json(entry.getKey())).append("\":{")
+                    .append("\"opType\":\"ggml_qmatmul\"")
+                    .append(",\"activations\":{\"scaleDtype\":\"FLOAT32\"")
+                    .append(",\"granularity\":\"per-tensor\",\"scale\":")
+                    .append(Float.toString(value.activationScale()))
+                    .append(",\"zeroPoint\":0}")
+                    .append(",\"outputs\":{\"scaleDtype\":\"FLOAT32\"")
+                    .append(",\"granularity\":\"per-tensor\",\"scale\":")
+                    .append(Float.toString(value.outputScale()))
+                    .append(",\"zeroPoint\":0,\"interiorQuantizationMax\":126}}");
+        }
+        json.append("},\"excludedOps\":[]}");
+
+        String encoded = json.toString();
+        SdxQuantizationContract contract = parse(encoded);
+        contract.validateForCompilation(
+                sourceIdentity,
+                SdxTargetProfile.ANDROID_ARM64_NNAPI_ACCELERATOR,
+                SdxTensorG3NnapiCompiler.TARGET_SOC);
+        writeContractAtomically(output, encoded);
+        return contract;
+    }
+
+    private static void writeContractAtomically(Path output, String json) throws IOException {
         Path destination = output.toAbsolutePath().normalize();
         if (Files.isSymbolicLink(destination)) {
             throw new IOException(
@@ -289,7 +399,6 @@ public final class SdxQuantizationContract {
         } finally {
             Files.deleteIfExists(temporary);
         }
-        return contract;
     }
 
     public void validateForCompilation(
@@ -336,6 +445,20 @@ public final class SdxQuantizationContract {
                     throw invalid(
                             "targetSocs must include Tensor_G3 or Android_NNAPI for "
                                     + target.id());
+                }
+                boolean q4OperatorCalibration = !operatorCalibrations.isEmpty();
+                if (q4OperatorCalibration) {
+                    if (!"q4-k-per-op-int8-boundaries".equals(scheme)
+                            || !"per-tensor".equals(weightGranularity)
+                            || !"INT8".equals(activationDtype)
+                            || sourceModelSha256 == null
+                            || calibrationSampleCount < 32
+                            || calibrationDatasetSha256 == null) {
+                        throw invalid(
+                                "Tensor G3 Q4_K requires source-bound per-op INT8 boundary "
+                                        + "calibration from at least 32 samples");
+                    }
+                    break;
                 }
                 if (!"int8-per-tensor".equals(scheme)
                         || !"per-tensor".equals(weightGranularity)) {
@@ -407,6 +530,27 @@ public final class SdxQuantizationContract {
         return requiredScale(outputScale, "outputs.scale");
     }
 
+    public Map<String, OperatorCalibration> operatorCalibrations() {
+        return operatorCalibrations;
+    }
+
+    public boolean isTensorG3Q4PerOperator() {
+        return "q4-k-per-op-int8-boundaries".equals(scheme)
+                && !operatorCalibrations.isEmpty();
+    }
+
+    public OperatorCalibration operatorCalibration(String opName) {
+        return operatorCalibrations.get(opName);
+    }
+
+    public int calibrationSampleCount() {
+        return calibrationSampleCount;
+    }
+
+    public String calibrationDatasetSha256() {
+        return calibrationDatasetSha256;
+    }
+
     private static float requiredScale(BigDecimal value, String field) {
         if (value == null) {
             throw new IllegalStateException(field + " is not present in this quantization contract");
@@ -433,16 +577,77 @@ public final class SdxQuantizationContract {
         requireString(scaleDtype, field + ".scaleDtype", "FLOAT32");
         requireString(granularity, field + ".granularity", "per-tensor");
         BigDecimal parsedScale = number(scale, field + ".scale");
+        float convertedScale = parsedScale.floatValue();
         if (parsedScale.compareTo(BigDecimal.ZERO) <= 0
-                || !Float.isFinite(parsedScale.floatValue())) {
+                || !Float.isFinite(convertedScale) || convertedScale <= 0.0f) {
             throw invalid(field + ".scale must be finite and positive");
         }
         requireInteger(zeroPoint, field + ".zeroPoint", 0);
         return parsedScale;
     }
 
+    private static Map<String, OperatorCalibration> parseOperatorCalibrations(
+            Object value) throws IOException {
+        if (value == null) {
+            return Collections.emptyMap();
+        }
+        Map<String, Object> entries = object(value, "operatorCalibrations");
+        if (entries.isEmpty()) {
+            throw invalid("operatorCalibrations must not be empty when present");
+        }
+        Map<String, OperatorCalibration> result = new java.util.TreeMap<>();
+        for (Map.Entry<String, Object> entry : entries.entrySet()) {
+            String opName = entry.getKey();
+            if (opName == null || opName.trim().isEmpty()
+                    || opName.indexOf('\n') >= 0 || opName.indexOf('\r') >= 0) {
+                throw invalid("operatorCalibrations keys must be non-empty single-line op names");
+            }
+            Map<String, Object> calibration = object(
+                    entry.getValue(), "operatorCalibrations." + opName);
+            String opType = string(
+                    calibration.get("opType"),
+                    "operatorCalibrations." + opName + ".opType");
+            if (!"ggml_qmatmul".equals(opType)) {
+                throw invalid("operatorCalibrations." + opName
+                        + ".opType must be ggml_qmatmul");
+            }
+            BigDecimal activation = validatePerTensorScaleMetadata(
+                    object(calibration.get("activations"),
+                            "operatorCalibrations." + opName + ".activations"),
+                    "operatorCalibrations." + opName + ".activations", true);
+            BigDecimal output = validatePerTensorScaleMetadata(
+                    object(calibration.get("outputs"),
+                            "operatorCalibrations." + opName + ".outputs"),
+                    "operatorCalibrations." + opName + ".outputs", true);
+            validateQ4EnvelopeScale(
+                    activation, 127,
+                    "operatorCalibrations." + opName + ".activations.scale");
+            validateQ4EnvelopeScale(
+                    output, 126,
+                    "operatorCalibrations." + opName + ".outputs.scale");
+            Map<String, Object> outputMetadata = object(
+                    calibration.get("outputs"),
+                    "operatorCalibrations." + opName + ".outputs");
+            requireInteger(
+                    outputMetadata.get("interiorQuantizationMax"),
+                    "operatorCalibrations." + opName
+                            + ".outputs.interiorQuantizationMax",
+                    126);
+            result.put(opName, new OperatorCalibration(opType, activation, output));
+        }
+        return result;
+    }
+
+    private static void validateQ4EnvelopeScale(
+            BigDecimal scale, int quantizationMaximum, String field) throws IOException {
+        float envelope = scale.floatValue() * quantizationMaximum;
+        if (!Float.isFinite(envelope) || envelope <= 0.0f) {
+            throw invalid(field + " overflows its INT8 calibration envelope");
+        }
+    }
+
     public String summaryJson() {
-        StringBuilder out = new StringBuilder(192);
+        StringBuilder out = new StringBuilder(512);
         out.append("{\"activationDtype\":\"")
                 .append(json(activationDtype))
                 .append("\",\"allowFloatFallback\":false,\"deviceOnly\":true")
@@ -458,7 +663,84 @@ public final class SdxQuantizationContract {
             }
             out.append('\"').append(json(targetSocs.get(i))).append('\"');
         }
-        return out.append("],\"weightDtype\":\"INT8\"}").toString();
+        out.append("],\"weightDtype\":\"INT8\"");
+        if (sourceModelSha256 != null) {
+            out.append(",\"sourceModelSha256\":\"")
+                    .append(sourceModelSha256).append('"');
+        }
+        if (calibrationMethod != null) {
+            out.append(",\"calibration\":{\"method\":\"")
+                    .append(json(calibrationMethod))
+                    .append("\",\"sampleCount\":")
+                    .append(calibrationSampleCount)
+                    .append(",\"datasetSha256\":\"")
+                    .append(calibrationDatasetSha256).append("\"}");
+        }
+        if (weightScale != null) {
+            out.append(",\"weightScale\":").append(weightScale.toPlainString());
+        }
+        if (activationScale != null) {
+            out.append(",\"activationScale\":").append(activationScale.toPlainString());
+        }
+        if (outputScale != null) {
+            out.append(",\"outputScale\":").append(outputScale.toPlainString());
+        }
+        if (!operatorCalibrations.isEmpty()) {
+            out.append(",\"operatorCalibrations\":{");
+            boolean first = true;
+            for (Map.Entry<String, OperatorCalibration> entry
+                    : operatorCalibrations.entrySet()) {
+                if (!first) out.append(',');
+                first = false;
+                out.append('"').append(json(entry.getKey())).append("\":")
+                        .append(entry.getValue().summaryJson());
+            }
+            out.append('}');
+        }
+        return out.append('}').toString();
+    }
+
+    public static final class OperatorCalibration {
+        private final String opType;
+        private final BigDecimal activationScale;
+        private final BigDecimal outputScale;
+
+        private OperatorCalibration(
+                String opType, BigDecimal activationScale, BigDecimal outputScale) {
+            this.opType = opType;
+            this.activationScale = activationScale;
+            this.outputScale = outputScale;
+        }
+
+        public String opType() {
+            return opType;
+        }
+
+        public float activationScale() {
+            return activationScale.floatValue();
+        }
+
+        public float outputScale() {
+            return outputScale.floatValue();
+        }
+
+        public String[] nnapiQ4SArguments(
+                int sampleCount, String datasetSha256) {
+            return new String[] {
+                    "sdx.nnapi.q4.calibration.v1",
+                    Integer.toString(sampleCount),
+                    datasetSha256,
+                    Float.toString(activationScale()),
+                    Float.toString(outputScale())
+            };
+        }
+
+        private String summaryJson() {
+            return "{\"opType\":\"" + json(opType)
+                    + "\",\"activationScale\":" + activationScale.toPlainString()
+                    + ",\"outputScale\":" + outputScale.toPlainString()
+                    + ",\"interiorQuantizationMax\":126}";
+        }
     }
 
     private void requireProviderAndSoc(
@@ -575,7 +857,27 @@ public final class SdxQuantizationContract {
     }
 
     private static String json(String value) {
-        return value.replace("\\", "\\\\").replace("\"", "\\\"");
+        StringBuilder escaped = new StringBuilder(value.length());
+        for (int index = 0; index < value.length(); index++) {
+            char character = value.charAt(index);
+            switch (character) {
+                case '\\': escaped.append("\\\\"); break;
+                case '"': escaped.append("\\\""); break;
+                case '\b': escaped.append("\\b"); break;
+                case '\f': escaped.append("\\f"); break;
+                case '\n': escaped.append("\\n"); break;
+                case '\r': escaped.append("\\r"); break;
+                case '\t': escaped.append("\\t"); break;
+                default:
+                    if (character < 0x20) {
+                        escaped.append(String.format(
+                                java.util.Locale.ROOT, "\\u%04x", (int) character));
+                    } else {
+                        escaped.append(character);
+                    }
+            }
+        }
+        return escaped.toString();
     }
 
     /** Strict JSON parser for small compiler metadata documents. */

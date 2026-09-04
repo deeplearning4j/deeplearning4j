@@ -27,6 +27,8 @@
 #include <graph/Variable.h>
 #include <ops/declarable/helpers/unique.h>
 
+#include <string>
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -113,8 +115,11 @@ Status uniqueFunctor(LaunchContext* context, NDArray* input, NDArray* values, ND
 
   if (counts != nullptr) counts->syncToDevice();
 
-
-  return sd::Status::KERNEL_FAILURE;
+  const std::string message =
+      "uniqueFunctor: unsupported input dtype " +
+      std::to_string(static_cast<int>(input->dataType()));
+  safeSetErrorContext(static_cast<int>(Status::KERNEL_FAILURE), message.c_str());
+  return Status::KERNEL_FAILURE;
 }
 
 BUILD_SINGLE_TEMPLATE( sd::Status uniqueFunctor_,

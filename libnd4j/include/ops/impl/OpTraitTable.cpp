@@ -408,7 +408,7 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"kv_cache_update",     DATA_MOVE_VALDEP},
         {"kv_cache_quantize",   CONST_GEN_VALDEP},
         {"kv_cache_dequantize", UNARY_EW},
-        {"paged_kv_append",     DATA_MOVE_VALDEP},
+        {"paged_kv_append",     DATA_MOVE},  // output is a VIEW of input 0 — not value-dependent
 
         // ── Rotary / positional embedding ──────────────────────────────────
         {"rope",         DATA_MOVE},

@@ -38,7 +38,7 @@ on:
         type: choice
         options:
           - nd4j-cuda-12.9
-          - nd4j-cuda-12.6
+          - nd4j-cuda-12.9
 
       classifier:
         description: 'Platform classifier for the backend jars'

@@ -193,9 +193,10 @@ ErrorResult conditionHelper(const char *file, int line, int condition, int argNu
     va_end(args_copy);
     va_end(args);
 
-    // Build the complete error message with file/line context
+    // Keep the semantic failure first. Native ErrorReference storage is bounded,
+    // so a long source path prefix used to truncate the actual validation cause.
     char locationBuf[256];
-    snprintf(locationBuf, sizeof(locationBuf), "Error at [%s:%d:%d]: ", file, line, argNumber);
+    snprintf(locationBuf, sizeof(locationBuf), " [at %s:%d, argument %d]", file, line, argNumber);
 
     // Allocate buffer for the formatted message
     std::string formattedMsg;
@@ -209,7 +210,7 @@ ErrorResult conditionHelper(const char *file, int line, int condition, int argNu
 
     ErrorResult errorResult;
     errorResult.status = Status::BAD_ARGUMENTS;
-    errorResult.message = std::string(locationBuf) + formattedMsg;
+    errorResult.message = formattedMsg + locationBuf;
     return errorResult;
   }
   ErrorResult errorResult;

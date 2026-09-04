@@ -147,9 +147,10 @@ class GGMLModelImportTest {
         ConversionOptions options = ConversionOptions.forInference();
 
         assertFalse(options.isForTraining());
-        // forInference() uses FLOAT32 to avoid cumulative precision loss from
-        // FP16 cast ops over many transformer layers (intentional design choice)
-        assertEquals(ConversionOptions.QuantizationMode.DEQUANTIZE_TO_FLOAT32,
+        // forInference() follows the process-wide FP16 weight-storage contract
+        // (ND4JInferenceWeightDataType.resolve(): "With no configuration, FP16 is the
+        // default"), matching the DSP weight-dtype property table.
+        assertEquals(ConversionOptions.QuantizationMode.DEQUANTIZE_TO_FLOAT16,
                 options.getQuantizationMode());
     }
 

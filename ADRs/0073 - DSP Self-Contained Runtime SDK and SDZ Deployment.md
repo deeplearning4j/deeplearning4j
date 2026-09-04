@@ -39,7 +39,14 @@ The runtime must load `.sdz` and `.sdnb` directly. The application and deploymen
 
 An enriched SDZ may contain immutable target objects under `META-INF/sdx-cache/`. These objects are derived from the canonical SameDiff source during host compilation; their physical formats are private to the target compiler and runtime provider.
 
-`sdxLoadBundle(...)` continues to accept direct SDZ/SDNB files, unpacked manifest directories, manifest JSON, and legacy packed `.dspb` archives for compatibility. New tooling does not produce DSPB. Mobile resolves the selected target from the SDZ into an app-owned cache and passes only the opaque runtime path to the provider. It never compiles or falls back on-device.
+`sdxLoadBundle(...)` continues to accept direct SDZ/SDNB files, unpacked manifest directories, manifest JSON, and legacy packed `.dspb` archives for compatibility. New tooling does not produce DSPB. The mobile accelerator runtime resolves the selected target from the SDZ into an app-owned cache and passes only the opaque runtime path to the provider. That runtime never compiles target metadata or falls back on-device.
+
+The optional raw-GGUF mobile preparation service is a staging process, not the
+accelerator runtime. It runs in an isolated CPU importer before the provider
+process starts, creates the canonical SDZ, invokes the same `TargetCompiler`
+contract as host tooling, and retires before accelerator loading. The provider
+runtime remains extraction-only and cannot synthesize target metadata or fall
+back after commitment.
 
 ### 2. Public C ABI Contract
 
@@ -220,6 +227,17 @@ The backend-neutral `nd4j-sdx-model` module owns:
 - extraction-only fail-closed resolution on mobile.
 
 The original and enriched SDZ therefore share the same logical source identity. Changing compiler version, command fingerprint, target profile, quantization metadata, tokenizer, generation configuration, or explicit cache-key properties creates a new object. The application never chooses or parses a provider extension.
+
+Tensor G3 Q4 activation calibration follows the same boundary. Calibration is
+generated only after the canonical SDZ identity and final SameDiff operation
+names exist. The target compiler executes a deterministic representative corpus
+through that exact graph, records scalar per-operation activation/output
+envelopes, and stores the source-bound contract as immutable compiler metadata.
+Applications do not supply a provider-specific calibration sidecar. Raw mobile
+preparation performs this step internally in the isolated CPU importer; host
+staging may precompute and embed the same target object. The accelerator runtime
+accepts only the finalized metadata embedded in the derived SDZ and remains
+fail-closed when it is absent or invalid.
 
 `libnd4j/tools/sdx-compile.sh` is only a launcher for this Java API. The former shell/Python DSPB construction logic is retired.
 

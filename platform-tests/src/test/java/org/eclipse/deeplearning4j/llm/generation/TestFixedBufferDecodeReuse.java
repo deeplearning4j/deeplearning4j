@@ -26,6 +26,7 @@ import org.eclipse.deeplearning4j.llm.data.LLMModelDownloader;
 import org.eclipse.deeplearning4j.llm.data.LLMModelDownloader.DownloadResult;
 import org.eclipse.deeplearning4j.llm.data.LLMModelDownloader.LLMModel;
 import org.eclipse.deeplearning4j.llm.data.LLMModelDownloader.QuantType;
+import org.eclipse.deeplearning4j.llm.generation.constraint.ConstraintConfig;
 import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
 import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
@@ -1160,6 +1161,55 @@ public class TestFixedBufferDecodeReuse {
                     + "  g1=" + Arrays.toString(g1) + "\n  g2=" + Arrays.toString(g2));
         } finally {
             pipe.close();
+        }
+    }
+
+    /**
+     * Regression for the serving/crawl handoff: structured requests execute the frozen
+     * decoder through the constrained Java loop, while the next ordinary request hands
+     * the same retained fixed-buffer state to the native autoregressive op. Existing
+     * reuse tests exercise native-to-native transitions only.
+     */
+    @Test
+    @DisplayName("fixed-buffer state survives constrained→native request handoff")
+    public void constrainedThenNativeHandoffUsesValidStagingInputs() throws Exception {
+        String sdzPath = System.getProperty("qwen.sdz.path");
+        org.junit.jupiter.api.Assumptions.assumeTrue(
+                sdzPath != null && new File(sdzPath).isFile(),
+                "Set -Dqwen.sdz.path to the staged Qwen SDZ used by serving");
+        GenerationPipelineConfig config = GenerationPipelineConfig.builder()
+                .decoderPath(sdzPath)
+                .tokenizer(tokenizer)
+                .samplingConfig(SamplingConfig.greedy())
+                .maxNewTokens(N)
+                .maxPrefillLength(64)
+                .maxKvCacheLength(128)
+                .graphOptimizerEnabled(true)
+                .dspEnabled(true)
+                .build();
+        GenerationPipeline pipe = GenerationPipeline.create(config);
+        try {
+            SamplingConfig constrained = SamplingConfig.greedy().toBuilder()
+                    .constraintConfig(ConstraintConfig.jsonObject())
+                    .build();
+
+            GenerationResult structuredA = pipe.generate(
+                    "Return exactly one JSON object: {\"phase\":\"schema-a\"}", N,
+                    constrained);
+            assertTrue(structuredA.getGeneratedTokenCount() > 0,
+                    "first constrained request emitted no tokens");
+
+            GenerationResult structuredB = pipe.generate(
+                    "Return exactly one JSON object: {\"phase\":\"schema-b\"}", N,
+                    constrained);
+            assertTrue(structuredB.getGeneratedTokenCount() > 0,
+                    "second constrained request emitted no tokens");
+
+            GenerationResult nativeResult = pipe.generate(PROMPT, N, SamplingConfig.greedy());
+            assertTrue(nativeResult.getGeneratedTokenCount() > 0,
+                    "native request emitted no tokens after constrained fixed-buffer reuse");
+        } finally {
+            closePipelineWithBufferDiagnostics(pipe);
         }
     }
 }

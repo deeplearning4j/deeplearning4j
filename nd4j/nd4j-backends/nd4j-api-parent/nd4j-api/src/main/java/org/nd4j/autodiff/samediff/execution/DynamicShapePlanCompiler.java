@@ -1206,8 +1206,8 @@ public class DynamicShapePlanCompiler {
         // so serialize() writes indices in the same order as getRequestedOutputs().
         //
         // If any requested output is an external input (placeholder or variable), it has
-        // no slot in the plan — the DSP executor cannot return external inputs as outputs.
-        // Fall back to standard execution in this case to get correct values.
+        // no native slot. This is the explicit passthrough boundary: leave DSP before
+        // serialization so the standard SameDiff path resolves the caller-owned array.
         // This occurs when GradCheckUtil requests gradient variable names that coincide with
         // the forward graph's placeholder/variable names in the grad function's SameDiff.
         Set<String> externalInputSet = new java.util.HashSet<>(externalInputKeys);
@@ -1220,7 +1220,7 @@ public class DynamicShapePlanCompiler {
         }
 
         Map<String, Integer> outputNameToSlotIndex = new java.util.LinkedHashMap<>();
-        int missingOutputCount = 0;
+        List<String> missingOutputs = new ArrayList<>();
         for (String outputName : requestedOutputs) {
             Integer slot = varToOutputSlot.get(outputName);
             if (slot != null) {
@@ -1248,12 +1248,14 @@ public class DynamicShapePlanCompiler {
                     log.info("DSP compile: output '{}' -> slot {} (producer: {} inputs: [{}])", outputName, slot, producerInfo, inputInfo);
                 }
             } else {
-                missingOutputCount++;
-                log.warn("DSP compile: requested output '{}' NOT FOUND in varToOutputSlot (will be slot -1)", outputName);
+                missingOutputs.add(outputName);
+                log.error("DSP compile: requested output '{}' has no valid producer/output slot", outputName);
             }
         }
-        if (missingOutputCount > 0) {
-            log.warn("DSP compile: {} of {} requested outputs have no slot (will return zeros)", missingOutputCount, requestedOutputs.size());
+        if (!missingOutputs.isEmpty()) {
+            throw new IllegalStateException(
+                    "DSP compile rejected unresolved requested output(s): " + missingOutputs +
+                    ". Only explicit external passthrough outputs may leave DSP before native serialization.");
         }
 
         log.debug("DynamicShapePlan compiled: {} ops, {} output slots, {} external inputs, {} final outputs, {} root slots",

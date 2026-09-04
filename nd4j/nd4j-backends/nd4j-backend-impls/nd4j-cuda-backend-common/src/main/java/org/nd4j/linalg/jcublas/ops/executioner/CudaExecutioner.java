@@ -337,6 +337,37 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         int numDevices = getDeviceCount();
         if (numDevices <= 1) return 0;
 
+        // An allocated output is part of the caller's storage contract. SameDiff/DSP may
+        // retain its pointer across executions, so replacing it with an allocation on a
+        // capacity-selected device would orphan the caller's buffer. All allocated outputs
+        // must therefore agree on the execution device and take precedence over input
+        // locality and memory-pressure routing.
+        int outputDevice = -1;
+        if (outputs != null) {
+            for (INDArray output : outputs) {
+                if (output == null || output.data() == null) {
+                    continue;
+                }
+                int deviceId = AtomicAllocator.getInstance().getDeviceId(output);
+                if (deviceId < 0) {
+                    continue;
+                }
+                if (deviceId >= numDevices) {
+                    throw new ND4JIllegalStateException("CUDA output is assigned to unavailable device "
+                            + deviceId + " (available devices=" + numDevices + ")");
+                }
+                if (outputDevice < 0) {
+                    outputDevice = deviceId;
+                } else if (outputDevice != deviceId) {
+                    throw new ND4JIllegalStateException("CUDA op outputs span multiple devices: first="
+                            + outputDevice + ", conflicting=" + deviceId);
+                }
+            }
+        }
+        if (outputDevice >= 0) {
+            return outputDevice;
+        }
+
         // When cross-device routing is suppressed (InferenceSession/DSP execution/decode loop),
         // always stay on the current thread's device. The CUDA async memory pool can reuse
         // freed entries via cudaMallocAsync even when cudaMemGetInfo reports near-zero free
@@ -438,7 +469,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     previousDevice, targetDeviceId, "target-device-selected");
         }
 
-        // Migrate any inputs/outputs not on the target device.
+        // Migrate inputs not on the target device. Allocated outputs define the target
+        // device in selectTargetDevice and must never be replaced here.
         // Set skipDeviceCoherency to prevent infinite recursion:
         // replicateToDevice -> dup -> assign -> exec -> ensureDeviceCoherency
         skipDeviceCoherency.set(true);
@@ -467,31 +499,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             long[] rc = replicationCounter.get();
                             rc[0]++;
                             rc[1] += input.length() * input.data().getElementSize();
-                        }
-                    }
-                }
-            }
-            // Also migrate output arrays — native ops write results to the output buffer,
-            // which must be on the same device as the execution context (streams, workspace).
-            // Without this, cross-device writes cause "invalid resource handle" errors.
-            if (outputs != null) {
-                for (int i = 0; i < outputs.size(); i++) {
-                    INDArray output = outputs.get(i);
-                    if (output != null && output.data() != null) {
-                        int outputDeviceId = AtomicAllocator.getInstance().getDeviceId(output);
-                        if (outputDeviceId >= 0 && outputDeviceId != targetDeviceId) {
-                            // For outputs, create a fresh buffer on the target device (no data to copy).
-                            // The old output buffer belongs to the caller — do NOT close it here.
-                            long[] expectedDescriptor = output.shapeInfoJava().clone();
-                            INDArray migrated = Nd4j.createUninitialized(output.dataType(), output.shape(), output.ordering());
-                            long[] migratedDescriptor = migrated.shapeInfoJava();
-                            if (!Arrays.equals(expectedDescriptor, migratedDescriptor)) {
-                                throw new ND4JIllegalStateException("CUDA output migration changed its shape descriptor: sourceDevice="
-                                        + outputDeviceId + ", targetDevice=" + targetDeviceId
-                                        + ", expected=" + Arrays.toString(expectedDescriptor)
-                                        + ", migrated=" + Arrays.toString(migratedDescriptor));
-                            }
-                            oc.setOutputArray(i, migrated);
                         }
                     }
                 }
@@ -564,25 +571,24 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(BroadcastOp op) {
-        // Device coherency: ensure all arrays are on the same device
-        if (!skipDeviceCoherency.get()) {
-            ensureDeviceCoherencyForOp(op);
-        }
-
         // Handle in-place broadcast on views: dup to contiguous, execute, assign back.
         // Without this, the CUDA kernel writes to a shared DataBuffer region but only
         // updates the view's portion, leaving the host-side stale for the parent array.
         boolean viewInPlace = false;
         INDArray originalView = null;
-        if (op.x() == op.z() && op.x() != null && op.x().isView()) {
-            viewInPlace = true;
-            originalView = op.x();
-            INDArray xDup = op.x().dup(op.x().ordering());
-            op.setX(xDup);
-            op.setZ(xDup);
-        }
-
         try {
+            // Coherency setup and any view duplication are inside the cleanup scope so
+            // a setup exception cannot leak replicas, depth, or caller affinity.
+            if (!skipDeviceCoherency.get()) {
+                ensureDeviceCoherencyForOp(op);
+            }
+            if (op.x() == op.z() && op.x() != null && op.x().isView()) {
+                viewInPlace = true;
+                originalView = op.x();
+                INDArray xDup = op.x().dup(op.x().ordering());
+                op.setX(xDup);
+                op.setZ(xDup);
+            }
             long st = profilingConfigurableHookIn(op);
 
             checkForCompression(op);
@@ -714,11 +720,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             if (dimension[i] >= op.x().rank())
                 throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension)
                         + " contains element that higher then rank of op.X: [" + op.x().rank() + "]");
-
-        // Device coherency: ensure all arrays are on the same device
-        if (!skipDeviceCoherency.get()) {
-            ensureDeviceCoherencyForOp(op);
-        }
 
         val context = AtomicAllocator.getInstance().getDeviceContext();
 
@@ -921,12 +922,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(ReduceOp op) {
-        // Device coherency: ensure all arrays are on the same device
-        if (!skipDeviceCoherency.get()) {
-            ensureDeviceCoherencyForOp(op);
-        }
-
         try {
+            if (!skipDeviceCoherency.get()) {
+                ensureDeviceCoherencyForOp(op);
+            }
             checkForCompression(op);
 
             if(op instanceof BaseReduceOp && ((BaseReduceOp)op).isEmptyReduce()) {
@@ -1030,12 +1029,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(IndexAccumulation op) {
-        // Device coherency: ensure all arrays are on the same device
-        if (!skipDeviceCoherency.get()) {
-            ensureDeviceCoherencyForOp(op);
-        }
-
         try {
+            if (!skipDeviceCoherency.get()) {
+                ensureDeviceCoherencyForOp(op);
+            }
             // Check for null dimensions or null data buffer before calling toLongVector()
             INDArray dimArray = op.dimensions();
             long[] dimLong = null;
@@ -1140,25 +1137,22 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(Op op, OpContext oc) {
-        // Device coherency: ensure all arrays are on the same device
-        // and the CUDA context is set to the target device for op execution.
-        // Skipped when DSP parallel workers handle device placement themselves.
-        if (!skipDeviceCoherency.get()) {
-            if (oc != null) {
-                ensureDeviceCoherency(oc.getInputArrays(), oc.getOutputArrays(), oc);
-            } else {
-                ensureDeviceCoherencyForOp(op);
-            }
-        }
-
-        if (MultiGpuTracer.ENABLED) {
-            int currentDev = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-            MultiGpuTracer.verifyDeviceContext(op.opName(), currentDev, currentDev);
-        }
-
-        checkForCompression(op);
-
         try {
+            // Keep setup inside the cleanup boundary so tracer/compression failures cannot
+            // strand a switched device or pending input replicas.
+            if (!skipDeviceCoherency.get()) {
+                if (oc != null) {
+                    ensureDeviceCoherency(oc.getInputArrays(), oc.getOutputArrays(), oc);
+                } else {
+                    ensureDeviceCoherencyForOp(op);
+                }
+            }
+            if (MultiGpuTracer.ENABLED) {
+                int currentDev = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+                MultiGpuTracer.verifyDeviceContext(op.opName(), currentDev, currentDev);
+            }
+            checkForCompression(op);
+
             if (op instanceof TransformOp) {
                 TransformOp t = (TransformOp) op;
                 invoke(t, oc);
@@ -2140,12 +2134,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     }
 
     public INDArray exec(RandomOp op, OpContext oc, Random rng) {
-        // Device coherency: ensure all arrays are on the same device
-        if (!skipDeviceCoherency.get()) {
-            ensureDeviceCoherencyForOp(op);
-        }
-
         try {
+            if (!skipDeviceCoherency.get()) {
+                if (oc != null) {
+                    ensureDeviceCoherency(oc.getInputArrays(), oc.getOutputArrays(), oc);
+                } else {
+                    ensureDeviceCoherencyForOp(op);
+                }
+            }
             INDArray x = getX(op, oc);
             INDArray y = getY(op, oc);
             INDArray z = getZ(op, oc);
@@ -2345,62 +2341,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
      */
     @Override
     public  INDArray[] exec(@NonNull CustomOp op) {
-        // Device-aware execution: ensure all inputs are on the same device as the output
-        // When an output is pre-specified (e.g., a.add(b) creates result on current device),
-        // we use the OUTPUT's device as target because the caller expects result there.
-        // This handles cross-device operations by migrating inputs to the output's device.
-        List<INDArray> inputs = op.inputArguments();
-        List<INDArray> outputs = op.outputArguments();
-
-        // Determine target device: prefer output's device, fall back to first input's device
-        int targetDeviceId = -1;
-        if (outputs != null && !outputs.isEmpty()) {
-            INDArray firstOutput = outputs.get(0);
-            if (firstOutput != null && !firstOutput.isEmpty() && firstOutput.data() != null) {
-                targetDeviceId = AtomicAllocator.getInstance().getDeviceId(firstOutput);
-            }
-        }
-        if (targetDeviceId < 0 && inputs != null && !inputs.isEmpty()) {
-            INDArray firstInput = inputs.get(0);
-            if (firstInput != null && !firstInput.isEmpty() && firstInput.data() != null) {
-                targetDeviceId = AtomicAllocator.getInstance().getDeviceId(firstInput);
-            }
-        }
-
-        if (targetDeviceId >= 0) {
-            int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-
-            // Switch to target device
-            if (targetDeviceId != currentDeviceId) {
-                DeviceMemoryManager.getInstance().switchDevice(targetDeviceId, "CudaExecutioner.exec", "input-device-align");
-            }
-
-            // Migrate inputs that are on different devices to the target device
-            if (inputs != null) {
-                boolean migrationOccurred = false;
-
-                // Migrate all inputs that are on different devices
-                for (int i = 0; i < inputs.size(); i++) {
-                    INDArray input = inputs.get(i);
-                    if (input != null && !input.isEmpty() && input.data() != null) {
-                        int inputDeviceId = AtomicAllocator.getInstance().getDeviceId(input);
-                        if (inputDeviceId >= 0 && inputDeviceId != targetDeviceId) {
-                            // Migrate this input to the target device
-                            INDArray migrated = Nd4j.getAffinityManager().replicateToDevice(targetDeviceId, input);
-                            // Replace in the input list directly
-                            inputs.set(i, migrated);
-                            migrationOccurred = true;
-                        }
-                    }
-                }
-
-                // Sync after migration to ensure data is fully transferred
-                if (migrationOccurred) {
-                    Nd4j.getExecutioner().commit();
-                }
-            }
-        }
-
+        // Device placement is centralized in exec(op, context) after finalized outputs
+        // have been installed. A second pre-context migration scope here used to switch
+        // affinity without restoring it and leaked untracked input replicas.
         val name = op.opName();
         // Set allocation context BEFORE any native calls so allocations are tagged with op name
         if (name != null) {
@@ -2478,19 +2421,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray[] exec(CustomOp op, OpContext context) {
-        // Device coherency: ensure all arrays are on the same device
-        // and the CUDA context is set to the target device for op execution.
-        // Skipped when DSP parallel workers handle device placement themselves.
-        if (!skipDeviceCoherency.get()) {
-            ensureDeviceCoherency(context.getInputArrays(), context.getOutputArrays(), context);
-        }
-
-        if (MultiGpuTracer.ENABLED) {
-            int currentDev = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-            MultiGpuTracer.verifyDeviceContext(op.opName(), currentDev, currentDev);
-        }
-
         try {
+            if (!skipDeviceCoherency.get()) {
+                ensureDeviceCoherency(context.getInputArrays(), context.getOutputArrays(), context);
+            }
+            if (MultiGpuTracer.ENABLED) {
+                int currentDev = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+                MultiGpuTracer.verifyDeviceContext(op.opName(), currentDev, currentDev);
+            }
             Nd4j.getExecutioner().commit();
             long st = profilingConfigurableHookIn(op, context);
             if(op instanceof UserDefinedCustomOp) {

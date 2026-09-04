@@ -33,6 +33,9 @@
 
 
 #include <fcntl.h>
+#if defined(__ANDROID__) || defined(__linux__)
+#include <malloc.h>
+#endif
 #include <array/DataTypeUtils.h>
 #include <helpers/BlasHelper.h>
 #include <helpers/helper_ptrmap.h>
@@ -363,13 +366,38 @@ void getMemoryPoolStats(int deviceId, sd::LongType* usedBytes, sd::LongType* res
 
 /**
  * CPU implementation - no-op since memory pools are CUDA-only.
+ *
+ * On Android/Linux the CPU backend allocates graph weights directly through the
+ * system allocator, so after a large import the allocator holds fragmented arenas
+ * (glibc never returns them to the OS on its own). Returning that trim-able tail
+ * here lets the importer process survive low-memory pressure on devices while it
+ * serializes the imported model. On other platforms malloc_trim(0) is a cheap
+ * no-op-equivalent call, so this is unconditional for glibc builds.
+ */
+/**
+ * CPU implementation - releases allocator-held free pages back to the OS.
+ *
+ * On Android the CPU backend allocates graph weights directly through bionic,
+ * and after a large import the allocator holds fragmented arenas that inflate
+ * RSS past the device LMK watermark while the model serializes. Bionic exposes
+ * no malloc_trim; the supported equivalent is mallopt(M_PURGE) (API 26+),
+ * which immediately purges decayed allocator pages. On glibc/Linux keep the
+ * classic malloc_trim(0). Elsewhere this is a no-op.
  */
 void trimMemoryPool(int deviceId) {
-  // no-op for CPU
+#if defined(__ANDROID__)
+  mallopt(M_PURGE, 0);
+#elif defined(__linux__)
+  malloc_trim(0);
+#endif
 }
 
 void trimMemoryPoolOnStream(int deviceId, void *stream) {
-  // no-op for CPU
+#if defined(__ANDROID__)
+  mallopt(M_PURGE, 0);
+#elif defined(__linux__)
+  malloc_trim(0);
+#endif
 }
 
 sd::LongType getPinnedHostBytesUsed() {

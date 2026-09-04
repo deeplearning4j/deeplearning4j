@@ -43,6 +43,7 @@ public final class SdxPlatformProviderDescriptor {
     private final boolean allowsRuntimeJit;
     private final boolean allowsCpuFallback;
     private final boolean supportedOnSimulator;
+    private final int fixedTextContextCapacity;
 
     SdxPlatformProviderDescriptor(
             SdxTargetProfile targetProfile,
@@ -57,7 +58,8 @@ public final class SdxPlatformProviderDescriptor {
             boolean requiresAotArtifact,
             boolean allowsRuntimeJit,
             boolean allowsCpuFallback,
-            boolean supportedOnSimulator) {
+            boolean supportedOnSimulator,
+            int fixedTextContextCapacity) {
         this.targetProfile = Objects.requireNonNull(targetProfile, "targetProfile");
         this.providerId = requireIdentity(providerId, "providerId");
         if (providerAbiVersion <= 0) {
@@ -77,6 +79,10 @@ public final class SdxPlatformProviderDescriptor {
         this.allowsRuntimeJit = allowsRuntimeJit;
         this.allowsCpuFallback = allowsCpuFallback;
         this.supportedOnSimulator = supportedOnSimulator;
+        if (fixedTextContextCapacity < 0) {
+            throw new IllegalArgumentException("fixedTextContextCapacity must not be negative");
+        }
+        this.fixedTextContextCapacity = fixedTextContextCapacity;
         if (requiresAotArtifact == allowsRuntimeJit) {
             throw new IllegalArgumentException(
                     "A mobile provider must select exactly one compilation owner: "
@@ -148,6 +154,14 @@ public final class SdxPlatformProviderDescriptor {
      */
     public boolean supportedOnSimulator() {
         return supportedOnSimulator;
+    }
+
+    /**
+     * Fixed physical token capacity for one reusable compiled text plan.
+     * Zero delegates capacity selection to bundle metadata.
+     */
+    public int fixedTextContextCapacity() {
+        return fixedTextContextCapacity;
     }
 
     private static String requireIdentity(String value, String name) {

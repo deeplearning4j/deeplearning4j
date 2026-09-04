@@ -104,6 +104,25 @@ public class DualRoPE extends DynamicCustomOp {
     }
 
     /**
+     * Dynamic-position constructor: the base position is supplied as an SDVariable
+     * input (typically a scalar INT64 placeholder) instead of a static iArg. This
+     * lets decode loops advance positions by feeding the placeholder without
+     * rebuilding the graph. iArguments contains only attentionType in this form.
+     */
+    public DualRoPE(SameDiff sd, SDVariable input, SDVariable position, int attentionType,
+                    double localFreqBase, double globalFreqBase,
+                    double localFreqScale, double globalFreqScale) {
+        super(null, sd, new SDVariable[]{input, position}, false);
+        this.attentionType = attentionType;
+        this.localFreqBase = localFreqBase;
+        this.globalFreqBase = globalFreqBase;
+        this.localFreqScale = localFreqScale;
+        this.globalFreqScale = globalFreqScale;
+        addIArgument(attentionType);
+        addTArgument(localFreqBase, globalFreqBase, localFreqScale, globalFreqScale);
+    }
+
+    /**
      * Convenience constructor for local (sliding-window) attention layers.
      */
     public DualRoPE(SameDiff sd, SDVariable input, double localFreqBase, double globalFreqBase) {

@@ -82,6 +82,19 @@ public class TestGenerationPipeline {
     }
 
     @Test
+    @DisplayName("KV cache configuration maps to the native quantization enum")
+    public void testKvQuantFormatMapsToNativeEnum() {
+        assertEquals(0, GenerationPipeline.mapConfiguredKvQuantFormat(1));
+        assertEquals(1, GenerationPipeline.mapConfiguredKvQuantFormat(2));
+        assertEquals(2, GenerationPipeline.mapConfiguredKvQuantFormat(3));
+        assertEquals(3, GenerationPipeline.mapConfiguredKvQuantFormat(4));
+        assertThrows(IllegalArgumentException.class,
+                () -> GenerationPipeline.mapConfiguredKvQuantFormat(0));
+        assertThrows(IllegalArgumentException.class,
+                () -> GenerationPipeline.mapConfiguredKvQuantFormat(5));
+    }
+
+    @Test
     @DisplayName("In-graph native handoff consumes the sampled token at the advanced position")
     public void testInGraphNativeDecodeHandoffAdvancesTokenAndPosition() {
         INDArray inputIds = Nd4j.createFromArray(10L).reshape(1, 1);

@@ -23,10 +23,13 @@
 
 #include <graph/gpu/JitGraphBackendCommon.h>
 #include <graph/DspDiagnostics.h>
+#include <execution/LaunchContext.h>
 #include <system/common.h>
 
 #include <cuda.h>
 #include <cuda_runtime.h>
+
+#include <string>
 
 namespace sd {
 namespace graph {
@@ -72,6 +75,17 @@ Status jitExecuteSegment(
     NDArray** outputSlots, int totalOutputSlots,
     void* stream) {
 
+  auto failSegment = [&](const std::string& reason) {
+    const std::string message =
+        reason + " [" + backendName + " JIT segment " +
+        std::to_string(key.startSlot) + "-" +
+        std::to_string(key.endSlot) + ", DSP status=KERNEL_FAILURE (50)]";
+    auto* errorReference = LaunchContext::defaultContext()->errorReference();
+    errorReference->setErrorCode(static_cast<int>(Status::KERNEL_FAILURE));
+    errorReference->setErrorMessage(message);
+    return Status::KERNEL_FAILURE;
+  };
+
   JitCompiledKernel* compiled = nullptr;
   {
     std::lock_guard<std::mutex> lock(cacheMtx);
@@ -79,7 +93,7 @@ Status jitExecuteSegment(
     if (it == cache.end()) {
       DSP_DIAG(EXECUTE, "%s::executeSegment: no compiled kernel for segment [%d-%d]",
                backendName, key.startSlot, key.endSlot);
-      return Status::KERNEL_FAILURE;
+      return failSegment("compiled kernel is absent from the shape/device cache");
     }
     compiled = &it->second;
   }
@@ -108,7 +122,12 @@ Status jitExecuteSegment(
 
     if (!arr) {
       DSP_DIAG(EXECUTE, "%s::executeSegment: null array for arg slot %d", backendName, am.slotIndex);
-      return Status::KERNEL_FAILURE;
+      return failSegment(
+          "kernel argument resolved to a null array: slot=" +
+          std::to_string(am.slotIndex) +
+          (am.slotIndex < 0
+               ? ", externalIndex=" + std::to_string(-(am.slotIndex + 1))
+               : std::string()));
     }
 
     argValues.push_back(arr->specialBuffer());
@@ -147,7 +166,12 @@ Status jitExecuteSegment(
   if (!ok) {
     DSP_DIAG(EXECUTE, "%s::executeSegment: kernel launch failed for segment [%d-%d]",
              backendName, key.startSlot, key.endSlot);
-    return Status::KERNEL_FAILURE;
+    return failSegment(
+        "GpuKernelLauncher::launchKernel failed: grid=" +
+        std::to_string(gridSize) + ", block=" +
+        std::to_string(blockSize) + ", args=" +
+        std::to_string(argPtrs.size()) + ", elements=" +
+        std::to_string(nElements));
   }
 
   return Status::OK;

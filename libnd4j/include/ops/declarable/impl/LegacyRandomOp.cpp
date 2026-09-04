@@ -280,7 +280,10 @@ Status LegacyRandomOp::validateAndExecute_(Context& block) {
                   (finish->e<double>(0) - start->e<double>(0)) / (numOfElements->e<LongType>(0) - 1.));
     } break;
     default: {
-      sd_printf("Unknown random op requested: [%i]\n", opNum);
+      const std::string message =
+          "LegacyRandomOp: unknown random operation number " +
+          std::to_string(opNum);
+      safeSetErrorContext(static_cast<int>(Status::KERNEL_FAILURE), message.c_str());
       return Status::KERNEL_FAILURE;
     }
   }
@@ -293,7 +296,11 @@ Status LegacyRandomOp::validateAndExecute_(Context& block) {
 Status LegacyRandomOp::validateAndExecute(Context& block) {
   auto z = OUTPUT_VARIABLE(0);
   BUILD_SINGLE_SELECTOR(z->dataType(), return validateAndExecute_, (block), SD_FLOAT_TYPES);
-  return sd::Status::KERNEL_FAILURE;
+  const std::string message =
+      "LegacyRandomOp: unsupported output dtype " +
+      std::to_string(static_cast<int>(z->dataType()));
+  safeSetErrorContext(static_cast<int>(Status::KERNEL_FAILURE), message.c_str());
+  return Status::KERNEL_FAILURE;
 }
 
 /**

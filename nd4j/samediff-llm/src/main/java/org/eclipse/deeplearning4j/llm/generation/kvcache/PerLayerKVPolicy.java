@@ -256,6 +256,30 @@ public class PerLayerKVPolicy {
     }
 
     /**
+     * Create a uniform policy with sliding-window eviction enabled for every layer.
+     *
+     * <p>Sliding-window layers evict their oldest blocks (with page-table shift) whenever
+     * an append would push the sequence past {@code windowSize}, so the layer's cache
+     * stays bounded while the appended tokens always fit inside the window.</p>
+     *
+     * @param numLayers  total number of transformer layers
+     * @param windowSize window size for all layers
+     * @param blockSize  tokens per block
+     * @param dataType   KV cache data type
+     * @return a uniform sliding-window per-layer policy
+     */
+    public static PerLayerKVPolicy uniformSlidingWindow(int numLayers, int windowSize, int blockSize, DataType dataType) {
+        List<LayerPolicy> policies = new ArrayList<>(numLayers);
+        int maxBlocks = (windowSize + blockSize - 1) / blockSize;
+
+        for (int layer = 0; layer < numLayers; layer++) {
+            policies.add(new LayerPolicy(windowSize, maxBlocks, dataType, 5, true));
+        }
+
+        return new PerLayerKVPolicy(policies);
+    }
+
+    /**
      * Get the policy for a specific layer.
      *
      * @param layerIdx layer index (0-based)

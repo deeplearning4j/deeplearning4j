@@ -72,6 +72,8 @@ struct TextGenerationMetadata {
   std::string prefillLogits;
   std::vector<std::string> kvKeyInputs;
   std::vector<std::string> kvValueInputs;
+  std::vector<std::vector<int64_t>> kvKeyShapes;
+  std::vector<std::vector<int64_t>> kvValueShapes;
   std::vector<std::string> prefillKeyOutputs;
   std::vector<std::string> prefillValueOutputs;
   std::vector<TextGenerationRecurrentState> recurrentStates;

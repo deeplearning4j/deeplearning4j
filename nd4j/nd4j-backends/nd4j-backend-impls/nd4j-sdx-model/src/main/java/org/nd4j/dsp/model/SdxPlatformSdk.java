@@ -25,7 +25,7 @@ import java.util.Optional;
  * provider or CPU boundaries.</p>
  */
 public final class SdxPlatformSdk {
-    public static final int PROVIDER_ABI_VERSION = 1;
+    public static final int PROVIDER_ABI_VERSION = 2;
     public static final int ARTIFACT_FORMAT_VERSION = 1;
 
     private static final Map<SdxTargetProfile, SdxPlatformProviderDescriptor> BY_TARGET;
@@ -48,7 +48,8 @@ public final class SdxPlatformSdk {
                 true,
                 false,
                 false,
-                false));
+                false,
+                0));
         register(targets, providerIds, descriptor(
                 SdxTargetProfile.ANDROID_ARM64_HEXAGON_HTP,
                 "sdx.hexagon-htp.v1",
@@ -59,7 +60,8 @@ public final class SdxPlatformSdk {
                 true,
                 false,
                 false,
-                false));
+                false,
+                0));
         register(targets, providerIds, descriptor(
                 SdxTargetProfile.ANDROID_ARM64_NNAPI_ACCELERATOR,
                 "sdx.nnapi-tensor-g3.v1",
@@ -70,7 +72,8 @@ public final class SdxPlatformSdk {
                 true,
                 false,
                 false,
-                false));
+                false,
+                256));
         register(targets, providerIds, descriptor(
                 SdxTargetProfile.ANDROID_ARM64_GOOGLE_TENSOR_G5,
                 "sdx.litert-tensor-g5.v1",
@@ -81,7 +84,8 @@ public final class SdxPlatformSdk {
                 true,
                 false,
                 false,
-                false));
+                false,
+                0));
         register(targets, providerIds, descriptor(
                 SdxTargetProfile.IOS_ARM64_METAL,
                 "sdx.metal.v1",
@@ -92,7 +96,8 @@ public final class SdxPlatformSdk {
                 false,
                 true,
                 false,
-                true));
+                true,
+                0));
         register(targets, providerIds, descriptor(
                 SdxTargetProfile.IOS_ARM64_COREML_ANE,
                 "sdx.coreml-ane.v1",
@@ -103,7 +108,8 @@ public final class SdxPlatformSdk {
                 true,
                 false,
                 true,
-                false));
+                false,
+                0));
 
         if (targets.size() != SdxTargetProfile.values().length) {
             throw new ExceptionInInitializerError(
@@ -159,7 +165,8 @@ public final class SdxPlatformSdk {
             boolean requiresAotArtifact,
             boolean allowsRuntimeJit,
             boolean allowsCpuFallback,
-            boolean supportedOnSimulator) {
+            boolean supportedOnSimulator,
+            int fixedTextContextCapacity) {
         return new SdxPlatformProviderDescriptor(
                 target,
                 providerId,
@@ -173,7 +180,8 @@ public final class SdxPlatformSdk {
                 requiresAotArtifact,
                 allowsRuntimeJit,
                 allowsCpuFallback,
-                supportedOnSimulator);
+                supportedOnSimulator,
+                fixedTextContextCapacity);
     }
 
     private static void register(

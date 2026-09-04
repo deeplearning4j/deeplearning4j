@@ -130,7 +130,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     protected static final String KERAS_TRAIN_TEST = "keras_learning_phase";
     //freed array ids to track for allocation, sometimes SDValues contain dup arrays that get freed twice.
     //we track the ids to avoid double frees
-    protected final ThreadLocal<Set<Long>> freedArraysTl = ThreadLocal.withInitial(LinkedHashSet::new);
+    protected final Set<Long> freedArrayIds = new LinkedHashSet<>();
 
     @Getter
     @Setter
@@ -139,18 +139,17 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
      * Array use tracker: What needs to happen before the array can be closed/released?
      * As the name suggests, the INDArrays are tracked using object identity, not equality
      */
-    private final ThreadLocal<AbstractDependencyTracker<SDValue, Dep>> arrayUseTrackerTl =
-            ThreadLocal.withInitial(HashDependencyTracker::new);
+    private AbstractDependencyTracker<SDValue, Dep> arrayUseTracker =
+            new HashDependencyTracker<>();
 
 
-    // Use per-thread OpContexts to prevent sharing across concurrent execution.
-    private final ThreadLocal<Map<String,OpContext>> opContextsTl =
-            ThreadLocal.withInitial(ConcurrentHashMap::new);
+    // SameDiff creates one InferenceSession per thread. Keep native contexts on the
+    // session itself so a different thread can deterministically close the worker's state.
+    private final Map<String,OpContext> opContexts = new ConcurrentHashMap<>();
 
-    // Thread-local OpContext pool: reuse OpContexts via purge() instead of close()/rebuild.
+    // Session-local OpContext pool: reuse OpContexts via purge() instead of close()/rebuild.
     // This avoids the native alloc/dealloc cost of creating a new OpContext per op per step.
-    private final ThreadLocal<Deque<OpContext>> opContextPoolTl =
-            ThreadLocal.withInitial(ArrayDeque::new);
+    private final Deque<OpContext> opContextPool = new ArrayDeque<>();
 
     // DAG cache for avoiding expensive convergence process
     protected final DAGCache dagCache = new DAGCache();
@@ -164,19 +163,16 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
     // Shape cache: keyed by (opName hash + input shapes hash) to avoid redundant calculateOutputShape JNI calls.
     // For autoregressive generation, most ops have identical input shapes across decode steps.
-    private final ThreadLocal<Map<Long, List<DataBuffer>>> outputShapeCacheTl =
-            ThreadLocal.withInitial(HashMap::new);
+    private final Map<Long, List<DataBuffer>> outputShapeCache = new HashMap<>();
 
     // Output array cache: reuse intermediate arrays whose shapes don't change between steps.
     // Keyed by variable name. Only non-output (intermediate) arrays are cached.
-    private final ThreadLocal<Map<String, INDArray>> outputArrayCacheTl =
-            ThreadLocal.withInitial(HashMap::new);
+    private final Map<String, INDArray> outputArrayCache = new HashMap<>();
 
     // Requested outer-frame outputs from the most recent execution. These provide the
     // post-inference ARRAY lookup contract used by SameDiff/SDVariable without restoring
     // the old behavior of retaining every intermediate in nodeValueOutputs.
-    private final ThreadLocal<Map<String, SDValue>> latestRequestedOutputsTl =
-            ThreadLocal.withInitial(LinkedHashMap::new);
+    private final Map<String, SDValue> latestRequestedOutputs = new LinkedHashMap<>();
 
     // The current DAG being executed. Set at the start of executeOperations() so that
     // sub-methods (executeNode, executeRegularOperation, etc.) can look up variable consumers
@@ -195,11 +191,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     // object. Object-identity keying counted those as 1 each, so freeing the upstream array
     // (e.g. repeat_kv Unsqueeze_5) while its no-op consumer's output still aliased that memory
     // dangled the buffer -> reshape_no_copy read <released> -> K/V=0 -> dead GQA attention.
-    private final ThreadLocal<HashMap<Long, Integer>>
-            liveDataBufferRefsTl = ThreadLocal.withInitial(HashMap::new);
+    private final HashMap<Long, Integer> liveDataBufferRefs = new HashMap<>();
 
     private HashMap<Long, Integer> liveDataBufferRefs() {
-        return liveDataBufferRefsTl.get();
+        return liveDataBufferRefs;
     }
 
     /** Increment live reference count for the DataBuffer of the given array. */
@@ -327,7 +322,12 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     }
 
     protected volatile DynamicShapePlan dynamicShapePlan;
-    protected final ThreadLocal<DynamicShapePlanExecutor> dynamicShapePlanExecutorTl = new ThreadLocal<>();
+    /**
+     * One executor per InferenceSession. SameDiff already keys InferenceSession by
+     * thread ID, so a nested ThreadLocal only hides the worker-owned executor when
+     * the model is closed from another thread and prevents native-plan unpinning.
+     */
+    protected volatile DynamicShapePlanExecutor dynamicShapePlanExecutor;
 
     /**
      * When true, the current call was initiated from SameDiff.outputDirect().
@@ -377,11 +377,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     protected volatile boolean variablesSyncedBeforeCapture = false;
 
     private Set<Long> freedArrays() {
-        return freedArraysTl.get();
+        return freedArrayIds;
     }
 
     private AbstractDependencyTracker<SDValue, Dep> arrayUseTracker() {
-        return arrayUseTrackerTl.get();
+        return arrayUseTracker;
     }
 
     public AbstractDependencyTracker<SDValue, Dep> getArrayUseTracker() {
@@ -389,11 +389,30 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     }
 
     /**
-     * Get the DynamicShapePlanExecutor for the current thread (if any).
-     * Can be used to configure native plan settings like shapesFrozen mode.
+     * Get the executor owned by this per-thread InferenceSession (if any).
+     * The direct field remains visible when a different thread performs model teardown.
      */
     public DynamicShapePlanExecutor getDynamicShapePlanExecutor() {
-        return dynamicShapePlanExecutorTl.get();
+        return dynamicShapePlanExecutor;
+    }
+
+    /** Graph that owns this session; used for detached training-session teardown. */
+    public SameDiff getSessionSameDiff() {
+        return sameDiff;
+    }
+
+    /**
+     * Close the session-owned executor and clear the field only after all native
+     * intermediates and cache leases were released successfully.
+     */
+    public boolean closeDynamicShapePlanExecutor() {
+        DynamicShapePlanExecutor executor = dynamicShapePlanExecutor;
+        if (executor == null) return false;
+        executor.close();
+        if (dynamicShapePlanExecutor == executor) {
+            dynamicShapePlanExecutor = null;
+        }
+        return true;
     }
 
     /** Set whether the current call was initiated from SameDiff.outputDirect(). */
@@ -434,10 +453,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                                                             GraphExecutionMode requestedMode,
                                                             boolean fallbackToAutoIfTritonUnavailable) {
         DynamicShapePlan plan = compileDynamicShapePlan(requestedOutputs);
-        DynamicShapePlanExecutor executor = dynamicShapePlanExecutorTl.get();
+        DynamicShapePlanExecutor executor = dynamicShapePlanExecutor;
         if (executor == null) {
             executor = new DynamicShapePlanExecutor(sameDiff, mmgr);
-            dynamicShapePlanExecutorTl.set(executor);
+            dynamicShapePlanExecutor = executor;
         }
 
         GraphExecutionMode effectiveMode = executor.compileNativePlan(
@@ -496,15 +515,15 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     }
 
     public void setArrayUseTracker(AbstractDependencyTracker<SDValue, Dep> tracker) {
-        arrayUseTrackerTl.set(tracker);
+        arrayUseTracker = tracker;
     }
 
     public Map<String,OpContext> getOpContexts() {
-        return opContextsTl.get();
+        return opContexts;
     }
 
     private Map<String,OpContext> opContexts() {
-        return opContextsTl.get();
+        return opContexts;
     }
 
     private void collectCloseableBuffers(SDValue value, IdentityHashMap<DataBuffer, Boolean> buffers) {
@@ -512,9 +531,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     }
 
     private int closeLatestRequestedOutputBuffers() {
-        Map<String, SDValue> latestOutputs = latestRequestedOutputsTl.get();
         IdentityHashMap<DataBuffer, Boolean> protectedBuffers = snapshotProtectedBuffersForCleanup();
-        return bufferLifecycleManager.closeLatestRequestedOutputBuffers(latestOutputs, protectedBuffers);
+        return bufferLifecycleManager.closeLatestRequestedOutputBuffers(latestRequestedOutputs, protectedBuffers);
     }
 
     private IdentityHashMap<DataBuffer, Boolean> snapshotProtectedBuffersForCleanup() {
@@ -537,7 +555,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // Include DataBuffers captured by the executor at compile time.
         // These may no longer be reachable via sameDiff.variables() if a constant's
         // array was swapped during execution (associateArrayWithVariable).
-        DynamicShapePlanExecutor exec = dynamicShapePlanExecutorTl.get();
+        DynamicShapePlanExecutor exec = dynamicShapePlanExecutor;
         if (exec != null) {
             IdentityHashMap<DataBuffer, Boolean> execProtected = exec.getProtectedConstantBuffers();
             if (execProtected != null) {
@@ -558,51 +576,64 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     }
 
     /**
-     * Close all pooled OpContexts and clear accumulated thread-local state.
+     * Close all pooled OpContexts and clear accumulated session-local state.
      * Must be called during resetSession() to prevent stale native pointers
      * from being reused in subsequent sessions.
      */
     public void closePooledResources() {
-        Map<String, OpContext> activeContexts = opContextsTl.get();
+        // Release CUDA graphs, replay workspaces, and native cache leases before any
+        // Java/native context or cached buffer that those plans may reference.
+        boolean planExecutorClosed = closeDynamicShapePlanExecutor();
+
+        Map<String, OpContext> activeContexts = opContexts;
         int activeClosed = 0;
-        for (OpContext ctx : activeContexts.values()) {
+        RuntimeException contextCloseFailure = null;
+        for (Map.Entry<String, OpContext> entry : new ArrayList<>(activeContexts.entrySet())) {
+            OpContext ctx = entry.getValue();
             if (ctx != null) {
                 try {
                     ctx.close();
                     activeClosed++;
+                    activeContexts.remove(entry.getKey(), ctx);
                 } catch (Exception e) {
-                    // Already closed or invalid; ignore
+                    IllegalStateException one = new IllegalStateException(
+                            "Failed to close active OpContext '" + entry.getKey() + "'", e);
+                    if (contextCloseFailure == null) contextCloseFailure = one;
+                    else contextCloseFailure.addSuppressed(one);
                 }
             }
         }
-        activeContexts.clear();
 
         // Close pooled OpContexts that were returned via purge() during execution.
         // These hold live native pointers that become stale after session reset.
-        Deque<OpContext> pool = opContextPoolTl.get();
+        Deque<OpContext> pool = opContextPool;
         int pooledClosed = 0;
-        for (OpContext ctx : pool) {
+        for (OpContext ctx : new ArrayList<>(pool)) {
             if (ctx != null) {
                 try {
                     ctx.close();
                     pooledClosed++;
+                    pool.remove(ctx);
                 } catch (Exception e) {
-                    // Already closed or invalid; ignore
+                    IllegalStateException one = new IllegalStateException(
+                            "Failed to close pooled OpContext", e);
+                    if (contextCloseFailure == null) contextCloseFailure = one;
+                    else contextCloseFailure.addSuppressed(one);
                 }
             }
         }
-        pool.clear();
+        if (contextCloseFailure != null) throw contextCloseFailure;
 
         // Clear freed arrays tracker to avoid stale entries
-        freedArraysTl.get().clear();
+        freedArrayIds.clear();
 
         // Clear dependency tracking and live buffer refs held by this thread's last execution.
-        arrayUseTrackerTl.get().clear();
+        arrayUseTracker.clear();
         liveDataBufferRefs().clear();
 
         // Clear output shape and array caches
-        outputShapeCacheTl.get().clear();
-        outputArrayCacheTl.get().clear();
+        outputShapeCache.clear();
+        outputArrayCache.clear();
 
         // Flush any cast placeholder copies still pending deferred close (the
         // per-call deferral in the DSP path holds at most ONE call's copies; this
@@ -610,12 +641,26 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // session — preserving the leak guarantee of eb949f1a99 while keeping the
         // task #52 dangling-view fix (views may reference the copies mid-session).
         if (!pendingCastPlaceholderCloses.isEmpty()) {
+            RuntimeException castCloseFailure = null;
+            // Remove by identity: ArrayList.remove(Object) would call equals() on a
+            // closed INDArray and throw "Passed in array was closed" during teardown.
+            List<INDArray> remaining = new ArrayList<>();
             for (INDArray prevCast : pendingCastPlaceholderCloses) {
                 if (prevCast != null && !prevCast.wasClosed()) {
-                    try { prevCast.close(); } catch (Exception ignored) { }
+                    try {
+                        prevCast.close();
+                    } catch (Exception e) {
+                        IllegalStateException one = new IllegalStateException(
+                                "Failed to close deferred cast placeholder", e);
+                        if (castCloseFailure == null) castCloseFailure = one;
+                        else castCloseFailure.addSuppressed(one);
+                        remaining.add(prevCast);
+                    }
                 }
             }
             pendingCastPlaceholderCloses.clear();
+            pendingCastPlaceholderCloses.addAll(remaining);
+            if (castCloseFailure != null) throw castCloseFailure;
         }
         // Reset DSP step counter so the next session starts with immediate trim
         dspStepCount = 0;
@@ -633,33 +678,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         dynamicShapePlan = null;
         dagCache.clear();
 
-        // Close the DynamicShapePlanExecutor (slot cache, native workspace, dedup sets).
-        // The executor holds GPU-allocated arrays in its slot cache; closing it frees them
-        // and trims the pool, making memory available for subsequent model phases (e.g.,
-        // decoder after vision encoder). A new executor is created on the next output() call.
-        boolean planExecutorClosed = false;
-        DynamicShapePlanExecutor executor = dynamicShapePlanExecutorTl.get();
-        if (executor != null) {
-            try {
-                executor.close();
-                planExecutorClosed = true;
-            } catch (Exception e) {
-                log.warn("Error closing DynamicShapePlanExecutor during session cleanup: {}", e.getMessage());
-            }
-            dynamicShapePlanExecutorTl.remove();
-        }
-
         int latestOutputsClosed = closeLatestRequestedOutputBuffers();
         externalPlaceholderBuffers.clear();
 
-        opContextsTl.remove();
-        opContextPoolTl.remove();
-        freedArraysTl.remove();
-        arrayUseTrackerTl.remove();
-        outputShapeCacheTl.remove();
-        outputArrayCacheTl.remove();
-        latestRequestedOutputsTl.remove();
-        liveDataBufferRefsTl.remove();
+        latestRequestedOutputs.clear();
+        liveDataBufferRefs.clear();
 
         // Sync streams and trim pool to release freed memory back to the driver.
         try {
@@ -722,7 +745,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
         // Clear freed arrays tracking from previous execution
         freedArrays().clear();
-        latestRequestedOutputsTl.get().clear();
+        latestRequestedOutputs.clear();
 
         // Clear and repopulate externally-provided placeholder DataBuffers.
         // Without clearing, this map accumulates references to DataBuffers from ALL previous
@@ -941,7 +964,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     // starts, the plan re-resolves/re-mints views over the new casts, so the
                     // previous copies are safe to free here.
                     if (pendingCastPlaceholderCloses != null && !pendingCastPlaceholderCloses.isEmpty()) {
-                        DynamicShapePlanExecutor retainedExecutor = dynamicShapePlanExecutorTl.get();
+                        DynamicShapePlanExecutor retainedExecutor = dynamicShapePlanExecutor;
                         for (INDArray prevCast : pendingCastPlaceholderCloses) {
                             if (prevCast != null && !prevCast.wasClosed()) {
                                 DataBuffer buffer = prevCast.data();
@@ -960,7 +983,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     // callbacks for every executed op, matching the standard execution path.
                     // Gated on listeners being present to avoid performance cost in production.
                     Set<String> dspAllRequired = allRequired;
-                    if (listeners != null && !listeners.isEmpty()) {
+                    boolean listenerNeedsEveryOutput = listeners != null
+                            && listeners.stream().anyMatch(Listener::requiresAllActivations);
+                    if (listenerNeedsEveryOutput) {
                         dspAllRequired = new LinkedHashSet<>(allRequired);
                         List<ExecutionNode> dagExecOrder = dag.getExecutionOrder();
                         for (ExecutionNode node : dagExecOrder) {
@@ -1001,7 +1026,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         // When frozen, the C++ fast path already does cudaStreamSynchronize before
                         // graph launch, so outputs are ready when executeDynamicShapePlan() returns.
                         // We can skip commit() and make trim periodic to save ~2-5ms/step.
-                        DynamicShapePlanExecutor dspExec = dynamicShapePlanExecutorTl.get();
+                        DynamicShapePlanExecutor dspExec = dynamicShapePlanExecutor;
                         boolean frozen = dspExec != null && dspExec.isShapesFrozen();
 
                         // Periodically trim the CUDA memory pool to reclaim freed memory.
@@ -1041,10 +1066,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         }
                         // Restore cross-device routing suppression before returning.
                         OpaqueDataBuffer.suppressCrossDeviceRouting(false);
-                        // Populate latestRequestedOutputsTl so that subsequent getArr() calls
+                        // Populate latestRequestedOutputs so that subsequent getArr() calls
                         // on ARRAY-type output variables can find the computed values.
                         // Without this, sd.outputAll() succeeds but variable.getArr() returns null.
-                        latestRequestedOutputsTl.get().putAll(filteredResults);
+                        latestRequestedOutputs.putAll(filteredResults);
 
                         // Fire listener callbacks after DSP execution.
                         // DSP executes the entire plan natively as a single unit. We iterate
@@ -1093,6 +1118,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                                     }
                                 }
                             }
+
                         }
 
                         // Filter DSP results to only include the originally requested output variables.
@@ -1334,7 +1360,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             log.debug("CLEANUP: all phases complete");
         }
 
-        latestRequestedOutputsTl.get().putAll(filteredResults);
+        latestRequestedOutputs.putAll(filteredResults);
         return ExecutionResult.builder().valueOutputs(filteredResults).build();
     }
 
@@ -1345,7 +1371,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         }
 
         return isLatestRequestedOutputLookup(frame, iteration, parentFrameIter)
-                && latestRequestedOutputsTl.get().containsKey(variable);
+                && latestRequestedOutputs.containsKey(variable);
     }
 
     @Override
@@ -1357,8 +1383,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         }
 
         if (isLatestRequestedOutputLookup(frame, iteration, parentFrameIter)) {
-            SDValue latest = latestRequestedOutputsTl.get().get(variable);
-            if (latest != null || latestRequestedOutputsTl.get().containsKey(variable)) {
+            SDValue latest = latestRequestedOutputs.get(variable);
+            if (latest != null || latestRequestedOutputs.containsKey(variable)) {
                 return latest;
             }
         }
@@ -1494,13 +1520,13 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             return null;
         }
 
-        // Get or create DynamicShapePlanExecutor (ThreadLocal per InferenceSession).
+        // Get or create the executor owned by this per-thread InferenceSession.
         // The executor persists between output() calls on the same session, so the slot
         // array cache enables O(1) array reuse in autoregressive decode steps.
-        DynamicShapePlanExecutor executor = dynamicShapePlanExecutorTl.get();
+        DynamicShapePlanExecutor executor = dynamicShapePlanExecutor;
         if (executor == null) {
             executor = new DynamicShapePlanExecutor(sameDiff, mmgr);
-            dynamicShapePlanExecutorTl.set(executor);
+            dynamicShapePlanExecutor = executor;
         }
 
         // Propagate directOutputMode to the executor. This controls whether zeroCopyOutputCache
@@ -3236,7 +3262,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
         // Reuse OpContext from pool when available, avoiding native alloc/dealloc per op.
         long tOpCtx0 = TIMING_ENABLED ? System.nanoTime() : 0;
-        Deque<OpContext> pool = opContextPoolTl.get();
+        Deque<OpContext> pool = opContextPool;
         OpContext opContext = pool.pollFirst();
         if (opContext == null) {
             opContext = Nd4j.getExecutioner().buildContext();
@@ -3512,7 +3538,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             // purge() clears input/output arrays but keeps the native context alive for reuse.
             try {
                 opContext.purgeForReuse();
-                opContextPoolTl.get().offerFirst(opContext);
+                opContextPool.offerFirst(opContext);
             } catch (Exception e) {
                 try { opContext.close(); } catch (Exception ignored) {}
                 if (log.isTraceEnabled()) {
@@ -3564,7 +3590,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         Map<Long, List<DataBuffer>> shapeCache = null;
         long shapeKey = 0;
         if (cacheable) {
-            shapeCache = outputShapeCacheTl.get();
+            shapeCache = outputShapeCache;
             shapeKey = computeShapeKey(customOp.opName(), opContext);
             outShape = shapeCache.get(shapeKey);
         }

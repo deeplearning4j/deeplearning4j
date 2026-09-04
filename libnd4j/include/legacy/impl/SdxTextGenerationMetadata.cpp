@@ -437,6 +437,73 @@ bool readIntArray(const JsonValue& parent, const char* name,
   return true;
 }
 
+bool readKvShapeTemplates(
+    const JsonValue& parent,
+    const char* name,
+    std::vector<std::vector<int64_t>>* out,
+    std::string* error) {
+  const JsonValue* value = member(parent, name);
+  if (value == nullptr || value->kind != JsonKind::Array || value->array.empty()) {
+    if (error != nullptr) {
+      *error = std::string("metadata field '") + name +
+               "' must be a non-empty array of BSHD shapes";
+    }
+    return false;
+  }
+  out->clear();
+  for (size_t index = 0; index < value->array.size(); ++index) {
+    const JsonValue& shape = value->array[index];
+    if (shape.kind != JsonKind::Array || shape.array.size() != 4) {
+      if (error != nullptr) {
+        *error = std::string("metadata field '") + name + "[" +
+                 std::to_string(index) + "]' must be a rank-4 BSHD shape";
+      }
+      return false;
+    }
+    std::vector<int64_t> dimensions;
+    dimensions.reserve(4);
+    for (const auto& dimension : shape.array) {
+      if (dimension.kind != JsonKind::Number ||
+          !std::isfinite(dimension.number) ||
+          std::floor(dimension.number) != dimension.number ||
+          dimension.number < -1.0 ||
+          dimension.number >= 9223372036854775808.0) {
+        if (error != nullptr) {
+          *error = std::string("metadata field '") + name + "[" +
+                   std::to_string(index) + "]' contains an invalid dimension";
+        }
+        return false;
+      }
+      dimensions.push_back(static_cast<int64_t>(dimension.number));
+    }
+    if (dimensions[0] != 1 || dimensions[1] != -1 ||
+        dimensions[2] <= 0 || dimensions[3] <= 0) {
+      if (error != nullptr) {
+        *error = std::string("metadata field '") + name + "[" +
+                 std::to_string(index) +
+                 "]' must be [1,-1,numKvHeads,headDim]";
+      }
+      return false;
+    }
+    out->push_back(std::move(dimensions));
+  }
+  return true;
+}
+
+bool readOptionalKvShapeTemplates(
+    const JsonValue& parent,
+    const char* name,
+    std::vector<std::vector<int64_t>>* out,
+    std::string* error) {
+  const JsonValue* value = member(parent, name);
+  if (value == nullptr ||
+      (value->kind == JsonKind::Array && value->array.empty())) {
+    out->clear();
+    return true;
+  }
+  return readKvShapeTemplates(parent, name, out, error);
+}
+
 std::string upper(std::string value) {
   std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c) {
     return static_cast<char>(std::toupper(c));
@@ -675,6 +742,8 @@ bool loadTextGenerationMetadata(
       !readString(*io, "prefillLogits", false, &metadata.prefillLogits, error) ||
       !readStringArray(*io, "kvKeyInputs", &metadata.kvKeyInputs, error) ||
       !readStringArray(*io, "kvValueInputs", &metadata.kvValueInputs, error) ||
+      !readOptionalKvShapeTemplates(*io, "kvKeyShapes", &metadata.kvKeyShapes, error) ||
+      !readOptionalKvShapeTemplates(*io, "kvValueShapes", &metadata.kvValueShapes, error) ||
       !readStringArray(*io, "prefillKeyOutputs",
                        &metadata.prefillKeyOutputs, error) ||
       !readStringArray(*io, "prefillValueOutputs",
@@ -696,6 +765,16 @@ bool loadTextGenerationMetadata(
       metadata.prefillValueOutputs.size() != layers) {
     if (error != nullptr) {
       *error = "KV input and prefill output arrays must have the same non-zero layer count";
+    }
+    return false;
+  }
+  const bool hasKeyShapes = !metadata.kvKeyShapes.empty();
+  const bool hasValueShapes = !metadata.kvValueShapes.empty();
+  if (hasKeyShapes != hasValueShapes ||
+      (hasKeyShapes && (metadata.kvKeyShapes.size() != layers ||
+                        metadata.kvValueShapes.size() != layers))) {
+    if (error != nullptr) {
+      *error = "KV shape arrays must both be absent or match the KV layer count";
     }
     return false;
   }

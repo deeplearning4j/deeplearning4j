@@ -574,8 +574,9 @@ public class DynamicShapePlan implements Closeable {
         int numLoopRegions = (loopRegions != null) ? loopRegions.length : 0;
         size += 4 + numLoopRegions * 24; // count(int32) + 6 ints per region
 
-        // Requested outputs — one slot-index per requestedOutputs entry (may be -1 if unresolved).
-        // Header numRequestedOutputs and body must match; iterate on requestedOutputs in both.
+        // Requested outputs — one valid native slot-index per requestedOutputs entry.
+        // External passthrough outputs leave DSP before serialization; -1 is never
+        // a valid native output mapping.
         size += requestedOutputs.size() * 4;
 
         // External input names (v4+): count + per-name (int32 len + UTF-8 bytes)
@@ -694,7 +695,13 @@ public class DynamicShapePlan implements Closeable {
         // because Java executeNative() maps results using new ArrayList<>(getRequestedOutputs()).
         for (String outputName : requestedOutputs) {
             Integer slotIdx = outputNameToSlotIndex.get(outputName);
-            buf.putInt(slotIdx != null ? slotIdx : -1);
+            if (slotIdx == null || slotIdx < 0 || slotIdx >= totalOutputSlots) {
+                throw new IllegalStateException(
+                        "Cannot serialize unresolved requested output '" + outputName +
+                        "': native DSP plans require a valid producer/output slot. " +
+                        "External passthrough outputs must be handled before native serialization.");
+            }
+            buf.putInt(slotIdx);
         }
 
         // External input names (v4+)

@@ -6,6 +6,7 @@
 #include <dsp/NativeOpsDsp.h>
 #include <execution/vulkan/VulkanExecutionStream.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspPhaseUtils.h>
 #include <graph/DspSegmentLifecycle.h>
 #include <graph/DspVerifyUtils.h>
 #include <graph/NativeDynamicShapePlan.h>
@@ -274,11 +275,20 @@ int executeDynamicShapePlan(sd::Pointer planHandle, OpaqueContext* opContext,
       const char* detail =
           sd::LaunchContext::defaultContext()->errorReference()->errorMessage();
       char message[512];
-      std::snprintf(message, sizeof(message),
-                    "executeDynamicShapePlan: plan execution failed with status %d%s%s",
-                    static_cast<int>(status),
-                    detail != nullptr && detail[0] != '\0' ? ": " : "",
-                    detail != nullptr ? detail : "");
+      if (detail != nullptr && detail[0] != '\0') {
+        // Root detail precedes wrapper metadata so ErrorReference truncation cannot
+        // hide the Vulkan operation that actually failed.
+        std::snprintf(message, sizeof(message),
+                      "%s [executeDynamicShapePlan returned %s (%d)]",
+                      detail, dsp::dspStatusName(status),
+                      static_cast<int>(status));
+      } else {
+        std::snprintf(message, sizeof(message),
+                      "executeDynamicShapePlan returned %s (%d) without native "
+                      "failure detail; the Vulkan plan path did not set "
+                      "LaunchContext::errorReference",
+                      dsp::dspStatusName(status), static_cast<int>(status));
+      }
       setPlanError(static_cast<int>(status), message);
       return static_cast<int>(status);
     }
@@ -311,7 +321,12 @@ sd::Pointer createNativePlanCache() {
 }
 
 void freeNativePlanCache(sd::Pointer handle) {
-  delete reinterpret_cast<NativePlanCache*>(handle);
+  if (handle == nullptr) return;
+  auto* cache = reinterpret_cast<NativePlanCache*>(handle);
+  // Never destroy a cache while a borrower still owns a raw plan handle.
+  cache->clear();
+  if (cache->pinnedCount() != 0) return;
+  delete cache;
 }
 
 void clearNativePlanCacheHandle(sd::Pointer handle) {
@@ -370,7 +385,9 @@ sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle, sd::Pointer planBytes,
           planBytes, planBytesLen,
           static_cast<GraphExecutionMode>(graphExecutionMode));
     };
-    auto* plan = cache->getOrInsert(key, factory);
+    // Cache hits acquire a lease only for a distinct borrower. Same-executor
+    // redispatches pass newBorrower=0 and must not accumulate pins.
+    auto* plan = cache->getOrInsert(key, factory, newBorrower != 0);
     if (plan != nullptr && newBorrower != 0)
       plan->invalidateExternalViewSlotsOnReacquire();
     return reinterpret_cast<sd::Pointer>(plan);
@@ -411,6 +428,38 @@ int getPlanNumSlots(sd::Pointer h) { return h ? planOf(h)->getNumSlots() : -1; }
 int getPlanNumSegments(sd::Pointer h) { return h ? static_cast<int>(planOf(h)->getSegments().size()) : -1; }
 int getPlanSegmentCount(sd::Pointer h) { return getPlanNumSegments(h); }
 int getPlanPhase(sd::Pointer h) { return h ? planOf(h)->getPlanPhaseCode() : -1; }
+const char* getPlanLifecycleSnapshot(sd::Pointer h) {
+  thread_local std::string result;
+  if (h == nullptr) {
+    result = "valid=false";
+    return result.c_str();
+  }
+  auto* plan = planOf(h);
+  const auto& lifecycle = plan->planLifecycle();
+  const auto& segments = plan->getSegments();
+  int buildingSegments = 0;
+  int sealedSegments = 0;
+  int failedSegments = 0;
+  for (const auto& segment : segments) {
+    switch (segment.exec.graphNodePhase()) {
+      case GraphNodePhase::BUILDING: ++buildingSegments; break;
+      case GraphNodePhase::SEALED: ++sealedSegments; break;
+      case GraphNodePhase::FAILED: ++failedSegments; break;
+    }
+  }
+  result = "valid=true;planPhase=" + std::to_string(lifecycle.toLegacyCode()) +
+           ";graphNodePhase=" + std::to_string(static_cast<int>(lifecycle.phase)) +
+           ";buildStage=" + std::to_string(static_cast<int>(lifecycle.buildStage)) +
+           ";executionCount=" + std::to_string(plan->getExecuteCount()) +
+           ";postFreezeExecutionCount=" + std::to_string(lifecycle.postFreezeExecCount) +
+           ";pointersStableCount=" + std::to_string(lifecycle.pointersStableCount) +
+           ";compilationDone=" + (lifecycle.compilationDone ? "true" : "false") +
+           ";segmentCount=" + std::to_string(static_cast<int>(segments.size())) +
+           ";buildingSegments=" + std::to_string(buildingSegments) +
+           ";sealedSegments=" + std::to_string(sealedSegments) +
+           ";failedSegments=" + std::to_string(failedSegments);
+  return result.c_str();
+}
 // Compilation-seal counters are provided by legacy/impl/NativeOps_dsp_shared.cpp.
 
 void setPlanCudaGraphsEnabled(sd::Pointer h, bool v) { if (h) planOf(h)->setCudaGraphsEnabled(v); }

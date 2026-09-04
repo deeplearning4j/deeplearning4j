@@ -27,16 +27,19 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.Collections;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Regression tests for SameDiff/DSP teardown ordering.
@@ -140,6 +143,65 @@ public class DspTeardownOrderTest {
             b.close();
             SameDiffMemoryUtils.freeModelArrays(b);
         });
+    }
+
+    @Test
+    @DisplayName("Successive CUDA-captured plans destroy graphs before captured resources")
+    public void testSuccessiveCapturedPlanResetsDoNotPoisonNextPlan() {
+        assumeTrue(Nd4j.getBackend().getClass().getSimpleName().contains("JCublas"),
+                "CUDA-specific captured-resource lifecycle regression");
+        assumeTrue(NativeOpsHolder.getInstance().getDeviceNativeOps().isTritonAvailable(),
+                "Triton is required for mixed CUDA graph capture");
+
+        var environment = Nd4j.getEnvironment();
+        boolean previousCapture = environment.tritonGraphCapture();
+        boolean previousCompileAll = environment.tritonCompileAll();
+        boolean previousSectionFusion = environment.tritonSectionFusion();
+        boolean previousConsolidated = environment.tritonConsolidatedArgTable();
+        boolean previousDirtyTracking = environment.tritonArgDirtyTracking();
+
+        SameDiff sd = SameDiff.create();
+        try {
+            environment.setTritonGraphCapture(true);
+            environment.setTritonCompileAll(true);
+            environment.setTritonSectionFusion(true);
+            environment.setTritonConsolidatedArgTable(true);
+            environment.setTritonArgDirtyTracking(true);
+
+            SDVariable x = sd.placeHolder("x", DataType.FLOAT, -1, 128);
+            SDVariable value = sd.nn.tanh("captured_tanh", x.mul(1.25).add(0.125));
+            value.mul("out", value.add(0.5));
+            sd.setOutputs("out");
+            sd.setGraphExecutionMode(GraphExecutionMode.TRITON);
+
+            int[] planLengths = {64, 65, 31};
+            for (int cycle = 0; cycle < planLengths.length; cycle++) {
+                for (int execution = 0; execution < 4; execution++) {
+                    try (INDArray feed = Nd4j.linspace(DataType.FLOAT, -1.0, 1.0,
+                            planLengths[cycle] * 128L).reshape(planLengths[cycle], 128)) {
+                        INDArray result = sd.output(Map.of("x", feed), "out").get("out");
+                        assertNotNull(result, "cycle " + cycle + " produced no output");
+                        assertFalse(result.isNaN().any(),
+                                "cycle " + cycle + " execution " + execution
+                                        + " became non-finite after captured-plan teardown");
+                    }
+                }
+
+                if (cycle + 1 < planLengths.length) {
+                    sd.resetSession();
+                    sd.clearDynamicShapePlanCache();
+                    SameDiffMemoryUtils.trimAllDevicePools();
+                }
+            }
+        } finally {
+            sd.close();
+            SameDiffMemoryUtils.freeModelArrays(sd);
+            environment.setTritonGraphCapture(previousCapture);
+            environment.setTritonCompileAll(previousCompileAll);
+            environment.setTritonSectionFusion(previousSectionFusion);
+            environment.setTritonConsolidatedArgTable(previousConsolidated);
+            environment.setTritonArgDirtyTracking(previousDirtyTracking);
+        }
     }
 
     /**

@@ -10,9 +10,28 @@ For access to the existing Azure Blob sccache, define the optional repository or
 
 When that secret is unavailable, such as on an untrusted fork, the existing GitHub Actions sccache setup is used as the fallback.
 
-## Sonatype snapshots
+## Sonatype publication
 
-Every successful worker publishes its verified staged Maven coordinates to the Central Portal snapshots repository at `https://central.sonatype.com/repository/maven-snapshots/`. The reusable workflow requires the existing `CENTRAL_SONATYPE_TOKEN_USERNAME` and `CENTRAL_SONATYPE_TOKEN_PASSWORD` secrets, configures Maven server ID `central-portal-snapshots`, and invokes `release/central/repository.py deploy-snapshot` against the prebuilt staging tree. Publication does not rebuild the module, and a failed build still retains its worker artifact without attempting a deploy.
+The one dispatcher retains the historical snapshot-versus-release switch:
+
+- `deployToReleaseStaging=0` builds `snapshotVersion`, merges the selected logical matrix once, and publishes it to `https://central.sonatype.com/repository/maven-snapshots/`.
+- `deployToReleaseStaging=1` rewrites the same source snapshot to `releaseVersion`, builds and merges the selected logical matrix, signs the merged repository with `SONATYPE_GPG_KEY`, and uploads it to Central Portal as a user-managed deployment. It stops after validation for manual review; it never requests automatic publication.
+- `dryRun=true` performs the complete build, merge, and verification without contacting Sonatype.
+
+The release plumbing reuses `release/aws/build-platform.py` for version setup and `release/central/repository.py` for merge, signing, snapshot deployment, and release staging. A failed publication can be retried without rebuilding by setting `publishSourceRunId` to the original workflow run, retaining the same `deployToReleaseStaging` mode.
+
+For example, stage one complete logical release matrix for manual Central review:
+
+```bash
+gh workflow run build-deploy-cross-platform.yml \
+  --ref ag_new_release_updates_2 \
+  -f workflow=build-deploy-linux-x86_64.yml \
+  -f commitId=FULL_40_CHARACTER_SHA \
+  -f deployToReleaseStaging=1 \
+  -f releaseVersion=1.0.0-M3 \
+  -f snapshotVersion=1.0.0-SNAPSHOT \
+  -f dryRun=false
+```
 
 ## Matrix maintenance
 

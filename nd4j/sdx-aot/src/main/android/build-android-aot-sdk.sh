@@ -188,6 +188,7 @@ DL4J_AOT_SOURCE_ROOTS=(
   nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native
   nd4j/nd4j-tokenizers/tokenizers-native-preset
   nd4j/nd4j-tokenizers/tokenizers-native
+  nd4j/nd4j-ggml
   nd4j/samediff-llm
   nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx
   nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-model
@@ -595,6 +596,7 @@ declare -A MODULE_ROOTS=(
   [nd4j-native]="nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native"
   [tokenizers-native-preset]="nd4j/nd4j-tokenizers/tokenizers-native-preset"
   [tokenizers-native]="nd4j/nd4j-tokenizers/tokenizers-native"
+  [nd4j-ggml]="nd4j/nd4j-ggml"
   [samediff-llm]="nd4j/samediff-llm"
   [nd4j-sdx-preset]="nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-preset"
   [nd4j-sdx-model]="nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-model"
@@ -610,6 +612,7 @@ declare -A MODULE_CLASS_DIRS=(
   [nd4j-native]="$NATIVE_RUNTIME_CLASSES"
   [tokenizers-native-preset]="$FRESH_CLASSES_ROOT/tokenizers-native-preset"
   [tokenizers-native]="$FRESH_CLASSES_ROOT/tokenizers-native"
+  [nd4j-ggml]="$FRESH_CLASSES_ROOT/nd4j-ggml"
   [samediff-llm]="$FRESH_CLASSES_ROOT/samediff-llm"
   [nd4j-sdx-preset]="$FRESH_CLASSES_ROOT/nd4j-sdx-preset"
   [nd4j-sdx-model]="$FRESH_CLASSES_ROOT/nd4j-sdx-model"
@@ -625,6 +628,7 @@ declare -A MODULE_PROBE_CLASSES=(
   [nd4j-native]="org/nd4j/linalg/cpu/nativecpu/CpuBackend.class"
   [tokenizers-native-preset]="org/eclipse/deeplearning4j/tokenizers/presets/TokenizersPresets.class"
   [tokenizers-native]="org/eclipse/deeplearning4j/tokenizers/NativeTokenizer.class"
+  [nd4j-ggml]="org/nd4j/ggml/GGMLModelImport.class"
   [samediff-llm]="org/eclipse/deeplearning4j/llm/tokenizer/HuggingFaceTokenizer.class"
   [nd4j-sdx-preset]="org/nd4j/dsp/runtime/presets/SdxRuntimePresets.class"
   [nd4j-sdx-model]="org/nd4j/dsp/model/SdxLlmNative.class"
@@ -640,6 +644,7 @@ FRESH_COMPILE_ORDER=(
   nd4j-native
   tokenizers-native-preset
   tokenizers-native
+  nd4j-ggml
   samediff-llm
   nd4j-sdx-preset
   nd4j-sdx-model
@@ -659,7 +664,7 @@ MAVEN_DEPENDENCY_ARGUMENTS_SHA256="$(
   printf '%s\n' \
     "profile=cpu-managed" \
     "reactor_modules=nd4j-api,nd4j-native-api,nd4j-presets-common,nd4j-native-preset,nd4j-cpu-backend-common,nd4j-native" \
-    "target_modules=tokenizers-native-preset,tokenizers-native,samediff-llm,nd4j-sdx-preset,nd4j-sdx-model,nd4j-sdx,sdx-aot" \
+    "target_modules=tokenizers-native-preset,tokenizers-native,nd4j-ggml,samediff-llm,nd4j-sdx-preset,nd4j-sdx-model,nd4j-sdx,sdx-aot" \
     "dependency_scope=runtime" \
     "compiler_goal=compiler:compile" \
     "${maven_compile_flags[@]}" |
@@ -684,7 +689,7 @@ for module_id in nd4j-api nd4j-native-api nd4j-presets-common nd4j-native-preset
     fail "fresh Maven reactor compilation omitted ${MODULE_PROBE_CLASSES[$module_id]} for $module_id"
 done
 
-for module_id in tokenizers-native-preset tokenizers-native samediff-llm nd4j-sdx-preset nd4j-sdx-model nd4j-sdx sdx-aot; do
+for module_id in tokenizers-native-preset tokenizers-native nd4j-ggml samediff-llm nd4j-sdx-preset nd4j-sdx-model nd4j-sdx sdx-aot; do
   module_root="$DL4J_ROOT/${MODULE_ROOTS[$module_id]}"
   module_classes="${MODULE_CLASS_DIRS[$module_id]}"
   mkdir -p "$module_classes"
@@ -757,12 +762,13 @@ declare -A CURRENT_CLASSPATH_DIRS=(
   [nd4j-native-runtime]="$NATIVE_RUNTIME_CLASSES"
   [tokenizers-native-preset]="$FRESH_CLASSES_ROOT/tokenizers-native-preset"
   [tokenizers-native]="$FRESH_CLASSES_ROOT/tokenizers-native"
+  [nd4j-ggml]="$FRESH_CLASSES_ROOT/nd4j-ggml"
   [samediff-llm]="$FRESH_CLASSES_ROOT/samediff-llm"
   [nd4j-sdx]="$FRESH_CLASSES_ROOT/nd4j-sdx"
   [nd4j-sdx-model]="$FRESH_CLASSES_ROOT/nd4j-sdx-model"
   [nd4j-sdx-preset]="$FRESH_CLASSES_ROOT/nd4j-sdx-preset"
 )
-CURRENT_CLASSPATH_IDS=(nd4j-native-runtime tokenizers-native-preset tokenizers-native samediff-llm nd4j-sdx nd4j-sdx-model nd4j-sdx-preset)
+CURRENT_CLASSPATH_IDS=(nd4j-native-runtime tokenizers-native-preset tokenizers-native nd4j-ggml samediff-llm nd4j-sdx nd4j-sdx-model nd4j-sdx-preset)
 OVERRIDDEN_CLASSPATH_ARTIFACT_IDS=(
   nd4j-api
   nd4j-native-api
@@ -772,6 +778,7 @@ OVERRIDDEN_CLASSPATH_ARTIFACT_IDS=(
   nd4j-native
   tokenizers-native-preset
   tokenizers-native
+  nd4j-ggml
   samediff-llm
   nd4j-sdx
   nd4j-sdx-model

@@ -46,6 +46,7 @@ import java.util.Set;
  */
 @Slf4j
 public final class SameDiffMemoryUtils {
+    private static final int CLOSED_GRAPH_RECLAIM_PASSES = 3;
 
     private SameDiffMemoryUtils() {}
 
@@ -239,5 +240,36 @@ public final class SameDiffMemoryUtils {
         } catch (Exception e) {
             log.debug("Failed to trim memory pools: {}", e.getMessage());
         }
+    }
+
+    /**
+     * Reclaim phantom-managed native wrappers after a complete graph owner closes.
+     * Multiple bounded passes are required because OpaqueNDArray cleanup releases
+     * DataBuffer referents that become collectible only in the following GC pass.
+     * Live references are never flushed: DeallocatorService requires a positive
+     * runtime liveness verdict for this production path.
+     *
+     * @return number of collected registrations reclaimed across all passes
+     */
+    public static int reclaimClosedGraphResources() {
+        int reclaimed = 0;
+        for (int pass = 0; pass < CLOSED_GRAPH_RECLAIM_PASSES; pass++) {
+            reclaimed += reclaimCollectedNativeResources();
+        }
+        trimAllDevicePools();
+        log.info("Closed-graph reclamation freed {} collected native registrations; {} remain",
+                reclaimed, Nd4j.getDeallocatorService().getReferenceMap().size());
+        return reclaimed;
+    }
+
+    /**
+     * Run one collected-only reclamation pass at a completed execution boundary.
+     * Live graph, plan, constant, and retained-state registrations remain untouched.
+     *
+     * @return number of positively collected registrations reclaimed
+     */
+    public static int reclaimCollectedNativeResources() {
+        Nd4j.getMemoryManager().invokeGc();
+        return Nd4j.getDeallocatorService().flushCollectedReferences();
     }
 }

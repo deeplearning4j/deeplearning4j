@@ -230,7 +230,8 @@ public class DspLifecycleExhaustiveTest {
         sd.output(ph, "out");
 
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         // Mark IMMEDIATELY (before any warmup with the variable)
         int extIdx = h.extInputIndex("x");
@@ -275,7 +276,8 @@ public class DspLifecycleExhaustiveTest {
         }
 
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         int phaseBefore = h.planPhase();
         log.info("[MARK_AFTER] mode={} phase before markVariable: {}", mode, phaseBefore);
@@ -333,7 +335,8 @@ public class DspLifecycleExhaustiveTest {
         }
 
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         // First markVariable — x
         int xIdx = h.extInputIndex("x");
@@ -398,7 +401,8 @@ public class DspLifecycleExhaustiveTest {
         }
 
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         int extIdx = h.extInputIndex("x");
         h.markVariable(extIdx);
@@ -469,7 +473,8 @@ public class DspLifecycleExhaustiveTest {
         }
 
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         int extIdx = h.extInputIndex("x");
         h.markVariable(extIdx);
@@ -509,7 +514,8 @@ public class DspLifecycleExhaustiveTest {
         sd.output(ph, "out");
 
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         int extIdx = h.extInputIndex("x");
         h.markVariable(extIdx);
@@ -556,7 +562,8 @@ public class DspLifecycleExhaustiveTest {
         }
 
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         int numSegs = h.numSegments();
         log.info("[SEG_LIFECYCLE] mode={} segments={}", mode, numSegs);
@@ -603,7 +610,8 @@ public class DspLifecycleExhaustiveTest {
         }
 
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         // Mark variable and run more steps
         int extIdx = h.extInputIndex("x");
@@ -705,7 +713,8 @@ public class DspLifecycleExhaustiveTest {
         }
 
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         // First call: establish baseline
         h.replay(ph);
@@ -758,7 +767,8 @@ public class DspLifecycleExhaustiveTest {
         }
 
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         // Mark ALL placeholders as variable
         int xIdx = h.extInputIndex("x");
@@ -807,7 +817,8 @@ public class DspLifecycleExhaustiveTest {
         // Capture weight values AFTER execution, so device buffer is synced
         INDArray wBefore = sd.getVariable("w").getArr().dup();
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         int extIdx = h.extInputIndex("x");
         h.markVariable(extIdx);
@@ -841,7 +852,8 @@ public class DspLifecycleExhaustiveTest {
 
         sd.output(ph, "out");
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         int countAfterFirst = h.executeCount();
         assertTrue(countAfterFirst >= 1, "executeCount should be >= 1 after first output");
@@ -876,7 +888,8 @@ public class DspLifecycleExhaustiveTest {
         }
 
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         input.assign(Nd4j.randn(DataType.FLOAT, 1, 8));
         h.replay(ph);
@@ -901,7 +914,8 @@ public class DspLifecycleExhaustiveTest {
 
         sd.output(ph, "out");
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         int extIdx = h.extInputIndex("x");
         h.markPlaceholder(extIdx);
@@ -942,7 +956,8 @@ public class DspLifecycleExhaustiveTest {
         }
 
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         int captured = h.numCapturedGraphSegments();
         int total = h.numSegments();
@@ -980,7 +995,8 @@ public class DspLifecycleExhaustiveTest {
         }
 
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         int phaseBefore = h.planPhase();
         int extIdx = h.extInputIndex("x");
@@ -1055,7 +1071,8 @@ public class DspLifecycleExhaustiveTest {
         }
 
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         int phaseBefore = h.planPhase();
         log.info("[PHASE_DROP] mode={} phaseBefore={}", mode, phaseBefore);
@@ -1116,7 +1133,8 @@ public class DspLifecycleExhaustiveTest {
         }
 
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         // Check segment state BEFORE markVariable
         int numSegs = h.numSegments();
@@ -1195,7 +1213,8 @@ public class DspLifecycleExhaustiveTest {
         }
 
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         int phasePre = h.planPhase();
         int capturedPre = h.numCapturedGraphSegments();
@@ -1274,7 +1293,8 @@ public class DspLifecycleExhaustiveTest {
         }
 
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         int extIdx = h.extInputIndex("x");
         h.markVariable(extIdx);
@@ -1379,7 +1399,8 @@ public class DspLifecycleExhaustiveTest {
         }
 
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         // Compare replay vs sd.output for 8 steps
         for (int step = 0; step < 8; step++) {
@@ -1520,7 +1541,8 @@ public class DspLifecycleExhaustiveTest {
         }
 
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         int extIdx = h.extInputIndex("x");
 
@@ -1629,7 +1651,8 @@ public class DspLifecycleExhaustiveTest {
         sd.output(ph, "out");
 
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         int numExt = h.numExternalInputs();
         log.info("[EXT_INPUT] numExternalInputs={}", numExt);
@@ -1672,7 +1695,8 @@ public class DspLifecycleExhaustiveTest {
         }
 
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         int extIdx = h.extInputIndex("x");
 
@@ -1735,7 +1759,8 @@ public class DspLifecycleExhaustiveTest {
         }
 
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         // Step 1-3: normal execution
         List<Double> sums = new ArrayList<>();
@@ -1807,7 +1832,8 @@ public class DspLifecycleExhaustiveTest {
         }
 
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         int extIdx = h.extInputIndex("x");
         h.markVariable(extIdx);
@@ -1906,7 +1932,8 @@ public class DspLifecycleExhaustiveTest {
         }
 
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         int extIdx = h.extInputIndex("x");
         h.markVariable(extIdx);
@@ -1958,7 +1985,8 @@ public class DspLifecycleExhaustiveTest {
         }
 
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         int extIdx = h.extInputIndex("x");
         h.markVariable(extIdx);
@@ -2014,7 +2042,8 @@ public class DspLifecycleExhaustiveTest {
         }
 
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         int extIdx = h.extInputIndex("x");
         h.markVariable(extIdx);
@@ -2070,7 +2099,8 @@ public class DspLifecycleExhaustiveTest {
         }
 
         DspHandle h = sd.dsp();
-        if (!h.isCompiled()) return;
+        org.junit.jupiter.api.Assumptions.assumeTrue(h.isCompiled(),
+                "DSP plan did not compile");
 
         int extIdx = h.extInputIndex("x");
         h.markVariable(extIdx);

@@ -1,0 +1,53 @@
+# Build output
+target/
+*.class
+
+# Runtime databases (not portable)
+data/*.db
+data/*.db.trace.db
+data/*.db.mv.db
+data/orchestrator-db*
+data/chat-history*
+
+# Runtime state
+data/logs/
+data/pids/
+
+# Staging server binaries
+staging/
+
+# Per-project config is versioned, EXCEPT files that hold secrets.
+# Keep API keys / tokens out of git; reference them via env placeholders.
+config/secrets/
+config/*.secret.json
+config/oauth-settings.json
+config/oauth-encryption.key
+config/channel-admin.token
+.env*
+!.env.example
+
+# Crash dumps
+hs_err_pid*.log
+hotspot_pid*.log
+*.hprof
+*.heapdump
+compute_sanitizer_*.log
+replay_pid*.log
+
+# Lucene write locks (created at runtime)
+**/write.lock
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/

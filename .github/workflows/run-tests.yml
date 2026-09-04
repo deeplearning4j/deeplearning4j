@@ -35,7 +35,7 @@ on:
         options:
           - nd4j-native
           - nd4j-cuda-12.9
-          - nd4j-cuda-12.6
+          - nd4j-cuda-12.9
 
       classifier:
         description: 'Full platform classifier (e.g. linux-x86_64, linux-x86_64-onednn, linux-arm64-compile, macosx-arm64). Empty = linux-x86_64.'

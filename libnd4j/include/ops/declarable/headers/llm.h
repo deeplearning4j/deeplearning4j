@@ -908,13 +908,22 @@ DECLARE_CUSTOM_OP(mamba2_ssm, 5, 2, false, 0, 3);
  *
  * Input:
  *   0: input tensor [batch, seq_len, num_heads, head_dim]
+ *   1: (optional) INT64 position tensor, scalar or single-element. When present,
+ *      the base position is read from this tensor (device-resident, decode-safe);
+ *      the position_offset iArg is ignored in this form. When absent, the base
+ *      position is the position_offset iArg (legacy form).
+ *
+ * Call forms:
+ *   dual_rope(input, attention_type, position_offset, ...)             - legacy host-side offset
+ *   dual_rope(input, position_tensor, attention_type, ...)             - in-graph dynamic position
  *
  * Output:
  *   0: tensor with rotary embeddings applied [batch, seq_len, num_heads, head_dim]
  *
  * Integer arguments:
  *   0: attention_type (0=sliding/local, 1=global/full-context)
- *   1: position_offset (for KV cache continuation, default: 0)
+ *   1: position_offset (for KV cache continuation, default: 0; ignored when the
+ *      optional position tensor input is supplied)
  *
  * Float arguments:
  *   0: local_freq_base (for sliding window layers, default: 10000.0)

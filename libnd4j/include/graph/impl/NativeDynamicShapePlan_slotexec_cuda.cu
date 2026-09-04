@@ -168,7 +168,7 @@ void NativeDynamicShapePlan::platformPrezeroSegmentOutputs(const GraphSegment& s
     for (int o = 0; o < slot.wiring.numOutputs; o++) {
       int outIdx = slot.wiring.outputSlotIndices[o];
       if (outIdx < 0 || outIdx >= totalOutputSlots_) continue;
-      if (slots_[outIdx].slotPhase.isViewProducer) continue;
+      if (slot.slotPhase.isViewProducer) continue;
       NDArray* arr = outputSlots_[outIdx];
       if (arr == nullptr) continue;
       if (arr->isView()) continue;

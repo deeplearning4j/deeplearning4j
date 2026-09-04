@@ -31,6 +31,7 @@
 #include <graph/DspSegmentLifecycle.h>
 #include <graph/DspBufferPool.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspPhaseUtils.h>
 #include <graph/DspVerifyUtils.h>
 #include <legacy/NativeOps.h>
 #include <graph/NativeDynamicShapePlan.h>
@@ -213,11 +214,15 @@ int executeDynamicShapePlan(
       const char* existingMsg = sd::LaunchContext::defaultContext()->errorReference()->errorMessage();
       char buf[512];
       if (existingMsg != nullptr && existingMsg[0] != '\0') {
-        snprintf(buf, sizeof(buf), "executeDynamicShapePlan: plan execution failed with status %d: %s",
-                 static_cast<int>(status), existingMsg);
+        // Keep the originating detail first: ErrorReference stores only 256 bytes,
+        // so a wrapper prefix here used to truncate the actual slot/backend cause.
+        snprintf(buf, sizeof(buf), "%s [executeDynamicShapePlan returned %s (%d)]",
+                 existingMsg, dsp::dspStatusName(status), static_cast<int>(status));
       } else {
-        snprintf(buf, sizeof(buf), "executeDynamicShapePlan: plan execution failed with status %d",
-                 static_cast<int>(status));
+        snprintf(buf, sizeof(buf),
+                 "executeDynamicShapePlan returned %s (%d) without native failure detail; "
+                 "the originating plan path did not set LaunchContext::errorReference",
+                 dsp::dspStatusName(status), static_cast<int>(status));
       }
       DSP_DIAG(EXECUTE, "%s", buf);
       setError(static_cast<int>(status), buf);
@@ -258,7 +263,16 @@ sd::Pointer createNativePlanCache() {
 
 void freeNativePlanCache(sd::Pointer cacheHandle) {
   if (!cacheHandle) return;
-  delete reinterpret_cast<sd::graph::NativePlanCache*>(cacheHandle);
+  auto* cache = reinterpret_cast<sd::graph::NativePlanCache*>(cacheHandle);
+  // Never destroy a cache while a borrower still owns a raw plan handle.
+  // The caller can retry after releasing all executor leases.
+  cache->clear();
+  if (cache->pinnedCount() != 0) {
+    DSP_DIAG(MEMORY, "freeNativePlanCache: refused while %zu plan lease(s) remain",
+             cache->pinnedCount());
+    return;
+  }
+  delete cache;
 }
 
 void clearNativePlanCacheHandle(sd::Pointer cacheHandle) {
@@ -326,7 +340,9 @@ sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
           static_cast<sd::graph::GraphExecutionMode>(graphExecutionMode));
     };
 
-    auto* plan = cache->getOrInsert(key, factory);
+    // Cache hits acquire a lease only for a distinct borrower. Same-executor
+    // redispatches pass newBorrower=0 and must not accumulate pins.
+    auto* plan = cache->getOrInsert(key, factory, newBorrower != 0);
     if (plan && newBorrower != 0) {
       // Borrower switch on cache HIT — see NativeOpsDsp.h contract.
       plan->invalidateExternalViewSlotsOnReacquire();
@@ -860,13 +876,15 @@ const char* getReplayCacheDeviceStatsJson() {
 
 int getReplayCacheDeviceEntryCount(int deviceType, int deviceIndex) {
   using namespace sd::graph;
-  auto key = ReplayCacheDeviceKey(static_cast<sd::modelparallel::DeviceType>(deviceType), deviceIndex, "");
+  auto key = ReplayCacheDeviceKey::fromDeviceManager(
+      static_cast<sd::modelparallel::DeviceType>(deviceType), deviceIndex);
   return ReplayCacheManager::getInstance().getDeviceCacheEntryCount(key);
 }
 
 void clearReplayCacheForDevice(int deviceType, int deviceIndex) {
   using namespace sd::graph;
-  auto key = ReplayCacheDeviceKey(static_cast<sd::modelparallel::DeviceType>(deviceType), deviceIndex, "");
+  auto key = ReplayCacheDeviceKey::fromDeviceManager(
+      static_cast<sd::modelparallel::DeviceType>(deviceType), deviceIndex);
   ReplayCacheManager::getInstance().clearDevice(key);
 }
 

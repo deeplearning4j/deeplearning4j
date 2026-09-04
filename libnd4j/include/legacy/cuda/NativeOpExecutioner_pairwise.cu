@@ -57,7 +57,13 @@ void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext* lc, int opNum
                                                 sd::LongType const* hYShapeInfo, void const* dY,
                                                 sd::LongType const* dYShapeInfo, void* hZ, sd::LongType const* hZShapeInfo,
                                                 void* dZ, sd::LongType const* dZShapeInfo, void* extraParams) {
+  if (lc == nullptr) {
+    THROW_EXCEPTION("NativeOpExecutioner::execPairwiseTransform: launch context cannot be nullptr")
+  }
   auto stream = lc->getCudaStream();
+  if (stream == nullptr) {
+    THROW_EXCEPTION("NativeOpExecutioner::execPairwiseTransform: CUDA stream cannot be nullptr")
+  }
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
@@ -76,25 +82,15 @@ void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext* lc, int opNum
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
-  if (xType != zType && yType != zType) {
+  if (xType != zType || yType != zType) {
     std::string errorMessage;
-    errorMessage += "NativeOpExecutioner::execPairwiseTransform both operands must have same data type";
+    errorMessage += "NativeOpExecutioner::execPairwiseTransform requires all operands to have the same data type. ";
     errorMessage += "X type: ";
     errorMessage += sd::DataTypeUtils::asString(xType);
-    errorMessage += "Y type: ";
+    errorMessage += " Y type: ";
     errorMessage += sd::DataTypeUtils::asString(yType);
-    errorMessage += "Z type: ";
+    errorMessage += " Z type: ";
     errorMessage += sd::DataTypeUtils::asString(zType);
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-  if (lc == nullptr) {
-    std::string errorMessage;
-    errorMessage += "NativeOpExecutioner::execPairwiseTransform: launch context cannot be nullptr !";
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-  if (stream == nullptr) {
-    std::string errorMessage;
-    errorMessage += "NativeOpExecutioner::execPairwiseTransform: CUDA stream cannot be nullptr !";
     THROW_EXCEPTION(errorMessage.c_str());
   }
   dim3 launchDims = getLaunchDims("pairwiseTransforms");
@@ -113,7 +109,13 @@ void NativeOpExecutioner::execPairwiseBoolTransform(sd::LaunchContext* lc, int o
                                                     sd::LongType const* hYShapeInfo, void const* dY,
                                                     sd::LongType const* dYShapeInfo, void* hZ, sd::LongType const* hZShapeInfo,
                                                     void* dZ, sd::LongType const* dZShapeInfo, void* extraParams) {
+  if (lc == nullptr) {
+    THROW_EXCEPTION("NativeOpExecutioner::execPairwiseBoolTransform: launch context cannot be nullptr")
+  }
   auto stream = lc->getCudaStream();
+  if (stream == nullptr) {
+    THROW_EXCEPTION("NativeOpExecutioner::execPairwiseBoolTransform: CUDA stream cannot be nullptr")
+  }
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
@@ -159,7 +161,13 @@ void NativeOpExecutioner::execPairwiseIntTransform(sd::LaunchContext* lc, int op
                                                    sd::LongType const* hYShapeInfo, void const* dY,
                                                    sd::LongType const* dYShapeInfo, void* hZ, sd::LongType const* hZShapeInfo,
                                                    void* dZ, sd::LongType const* dZShapeInfo, void* extraParams) {
+  if (lc == nullptr) {
+    THROW_EXCEPTION("NativeOpExecutioner::execPairwiseIntTransform: launch context cannot be nullptr")
+  }
   auto stream = lc->getCudaStream();
+  if (stream == nullptr) {
+    THROW_EXCEPTION("NativeOpExecutioner::execPairwiseIntTransform: CUDA stream cannot be nullptr")
+  }
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);

@@ -29,6 +29,8 @@
 namespace sd {
 namespace graph {
 
+struct NativeSlot;
+
 /**
  * Describes who owns a slot's output buffer. Replaces ad-hoc tracking
  * (protectedWeightBuffers_, slotViewOutputs_, dedup sets) with a single
@@ -496,7 +498,8 @@ int validateSlotOutputs(
  * On failure, populates errMsg with details about the FIRST invalid array.
  */
 int validateSlotRange(
-    int startSlot, int endSlot,
+    const NativeSlot* slots, int numSlots,
+    int firstOp, int lastOp,
     NDArray** outputSlots, int totalOutputSlots,
     int executeCount, int planPhase,
     char* errMsg, int errMsgLen);

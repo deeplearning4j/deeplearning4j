@@ -1054,6 +1054,58 @@ SDX_API void sdxDestroyRuntime(sdx_runtime_t* runtime) {
   delete runtime;
 }
 
+SDX_API sdx_status_t sdxConfigureDiagnostics(
+    sdx_runtime_t* runtime,
+    uint32_t category_mask,
+    int32_t level,
+    const char* json_path) {
+  if (runtime == nullptr) return SDX_STATUS_INVALID_ARGUMENT;
+  if ((category_mask & ~sd::graph::DSP_DIAG_ALL) != 0) {
+    setLastError(runtime, "diagnostic category mask contains unsupported bits");
+    return SDX_STATUS_INVALID_ARGUMENT;
+  }
+  if (level < static_cast<int32_t>(sd::graph::DSP_LEVEL_SUMMARY) ||
+      level > static_cast<int32_t>(sd::graph::DSP_LEVEL_FULL)) {
+    setLastError(runtime, "diagnostic level must be summary, detailed, or full");
+    return SDX_STATUS_INVALID_ARGUMENT;
+  }
+  if (json_path == nullptr) {
+    setLastError(runtime, "diagnostic JSON path is null");
+    return SDX_STATUS_INVALID_ARGUMENT;
+  }
+
+  auto& diagnostics = sd::graph::DspDiagnostics::getInstance();
+  diagnostics.setCategories(category_mask);
+  diagnostics.setLevel(static_cast<sd::graph::DspDiagLevel>(level));
+  diagnostics.setJsonPath(json_path);
+  setLastError(runtime, "");
+  return SDX_STATUS_OK;
+}
+
+SDX_API sdx_status_t sdxRecordDiagnosticEvent(
+    sdx_runtime_t* runtime,
+    uint32_t category,
+    const char* message) {
+  if (runtime == nullptr) return SDX_STATUS_INVALID_ARGUMENT;
+  if (category == 0 || (category & ~sd::graph::DSP_DIAG_ALL) != 0 ||
+      (category & (category - 1)) != 0) {
+    setLastError(runtime, "diagnostic event requires one supported category");
+    return SDX_STATUS_INVALID_ARGUMENT;
+  }
+  if (message == nullptr) {
+    setLastError(runtime, "diagnostic event message is null");
+    return SDX_STATUS_INVALID_ARGUMENT;
+  }
+
+  auto& diagnostics = sd::graph::DspDiagnostics::getInstance();
+  if (diagnostics.isEnabled(category)) {
+    diagnostics.recordEvent(
+        category, -1, -1, -1, nullptr, 0, "%s", message);
+  }
+  setLastError(runtime, "");
+  return SDX_STATUS_OK;
+}
+
 SDX_API void sdxClearDiagnostics(void) {
   sd::graph::DspDiagnostics::getInstance().clear();
 }
@@ -1929,10 +1981,18 @@ static sdx_status_t runInternal(
       if (nativeError != nullptr && nativeError[0] != '\0') {
         setContextError(context, nativeError);
       } else {
-        setContextError(
-            context,
-            "executeDynamicShapePlan failed with status " +
-                std::to_string(execCode));
+        if (execCode == static_cast<int>(sd::Status::KERNEL_FAILURE)) {
+          setContextError(
+              context,
+              "executeDynamicShapePlan returned KERNEL_FAILURE (50) without "
+              "native failure detail; the originating plan path did not set "
+              "LaunchContext::errorReference");
+        } else {
+          setContextError(
+              context,
+              "executeDynamicShapePlan failed with status " +
+                  std::to_string(execCode));
+        }
       }
     }
     return status;
@@ -2259,6 +2319,31 @@ void setModelError(sdx_model_t* model, const std::string& error) {
   }
 }
 
+bool modelVariableShape(
+    sdx_model_t* model,
+    const std::string& variableName,
+    std::vector<int64_t>* shape) {
+  if (model == nullptr || model->model_handle == nullptr || shape == nullptr ||
+      variableName.empty()) {
+    return false;
+  }
+  const int rank = getLoadedModelVariableShape(
+      model->model_handle, variableName.c_str(), nullptr, 0);
+  if (rank <= 0) return false;
+  std::vector<LongType> dimensions(static_cast<size_t>(rank));
+  if (getLoadedModelVariableShape(
+          model->model_handle, variableName.c_str(), dimensions.data(), rank) !=
+      rank) {
+    return false;
+  }
+  shape->assign(dimensions.begin(), dimensions.end());
+  return true;
+}
+
+std::string contextError(const sdx_context_t* context) {
+  return context == nullptr ? std::string() : context->last_error;
+}
+
 sdx_status_t runOwnedArrays(
     sdx_context_t* context,
     const std::vector<NDArray*>& publicInputs) {
@@ -2321,6 +2406,43 @@ sdx_status_t runOwnedArrays(
       views.empty() ? nullptr : views.data(),
       static_cast<int32_t>(views.size()),
       nullptr);
+}
+
+sdx_status_t precompileBoundContext(sdx_context_t* context) {
+  if (context == nullptr || context->plan_handle == nullptr ||
+      context->graph_context == nullptr) {
+    return SDX_STATUS_INVALID_ARGUMENT;
+  }
+  auto* plan = reinterpret_cast<graph::NativeDynamicShapePlan*>(
+      context->plan_handle);
+  std::vector<NDArray*> inputs(static_cast<size_t>(context->plan_num_inputs));
+  for (int32_t index = 0; index < context->plan_num_inputs; ++index) {
+    inputs[static_cast<size_t>(index)] = context->graph_context->array(index);
+    if (inputs[static_cast<size_t>(index)] == nullptr) {
+      setContextError(
+          context,
+          "precompileBoundContext has no bound array at plan input " +
+              std::to_string(index));
+      return SDX_STATUS_EXECUTION_FAILED;
+    }
+  }
+  void* stream = sd::graph::dspHasDeviceMemory()
+                     ? sd::graph::dspGetExecutionStream()
+                     : nullptr;
+  const Status status = plan->precompilePlan(
+      inputs.empty() ? nullptr : inputs.data(),
+      static_cast<int>(inputs.size()), stream);
+  if (status != Status::OK) {
+    const char* nativeError = lastErrorMessage();
+    setContextError(
+        context,
+        nativeError != nullptr && nativeError[0] != '\0'
+            ? std::string(nativeError)
+            : "precompileBoundContext failed");
+    return SDX_STATUS_EXECUTION_FAILED;
+  }
+  setContextError(context, "");
+  return SDX_STATUS_OK;
 }
 
 NDArray* contextOutputArray(sdx_context_t* context, int32_t outputIndex) {

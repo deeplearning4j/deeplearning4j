@@ -182,6 +182,14 @@ public final class DspHandle {
         return nativeOps().getPlanExecuteCount(requireHandle());
     }
 
+    /**
+     * Get one immutable point-in-time snapshot of the native DSP lifecycle.
+     * The snapshot is read from the native plan; it is not a Java-side phase mirror.
+     */
+    public DspLifecycleSnapshot lifecycleSnapshot() {
+        return requireExecutor().getLifecycleSnapshot();
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // Staging buffer introspection (CUDA graph replay debugging)
     // ─────────────────────────────────────────────────────────────────────────
@@ -750,17 +758,20 @@ public final class DspHandle {
 
     /** Current plan phase ordinal (see PlanPhase). */
     public int planPhase() {
-        return nativeOps().getPlanPhase(requireHandle());
+        PlanPhase phase = lifecycleSnapshot().getPlanPhase();
+        return phase == null ? -1 : phase.getNativeCode();
     }
 
     /** Whether buffer pointers are stable across executions. */
     public boolean pointersStable() {
-        return nativeOps().getPlanPointersStable(requireHandle()) == 1;
+        return lifecycleSnapshot().getPointersStableCount() >= 2;
     }
 
     /** Number of executions since shapes were frozen. -1 if not frozen. */
     public int frozenExecCount() {
-        return nativeOps().getPlanFrozenExecutionCount(requireHandle());
+        DspLifecycleSnapshot snapshot = lifecycleSnapshot();
+        return snapshot.isValid() && snapshot.isShapesFrozenOrReplaying()
+                ? snapshot.getPostFreezeExecutionCount() : -1;
     }
 
     /** Number of mid-execution recompiles (should be 0 after seal). */

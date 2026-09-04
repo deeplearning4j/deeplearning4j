@@ -1435,15 +1435,12 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
   auto cleanupCompiledWorkspace = [&]() {
     if (compiledSeg.consolidatedArgTableDevice != nullptr) {
-      auto freeErr = freeDeviceBufferAsync(compiledSeg.consolidatedArgTableDevice, preallocStream);
-      if (freeErr != cudaSuccess) {
-        DSP_DIAG(MEMORY, "TritonGraphBackend: failed freeing consolidated arg table for [%d-%d]: %s",
-                  seg.def.startSlot, seg.def.endSlot, cudaGetErrorString(freeErr));
-        cudaGetLastError();
-      } else {
-        recordModuleFree(compiledSeg.consolidatedArgTableDeviceId >= 0 ? compiledSeg.consolidatedArgTableDeviceId : compileDevice,
-                         compiledSeg.consolidatedArgTableBytes);
-      }
+      auto& memPool = sd::memory::CudaMemoryPool::getInstance();
+      const int allocationDevice = compiledSeg.consolidatedArgTableDeviceId >= 0
+          ? compiledSeg.consolidatedArgTableDeviceId
+          : compileDevice;
+      memPool.free(compiledSeg.consolidatedArgTableDevice, allocationDevice, preallocStream);
+      recordModuleFree(allocationDevice, compiledSeg.consolidatedArgTableBytes);
       compiledSeg.consolidatedArgTableDevice = nullptr;
       compiledSeg.consolidatedArgTableBytes = 0;
       compiledSeg.consolidatedArgTableDeviceId = -1;
@@ -1677,21 +1674,20 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     }
 
     if (totalArgTableBytes > 0) {
-      // Allocate consolidated device buffer
-      auto allocErr = allocateDeviceBufferAsync(&compiledSeg.consolidatedArgTableDevice,
-                                                  totalArgTableBytes, preallocStream);
-      if (allocErr != cudaSuccess) {
-        DSP_DIAG(MEMORY, "TritonGraphBackend: failed allocating consolidated arg table (%zu bytes): %s",
-                  totalArgTableBytes, cudaGetErrorString(allocErr));
-        cudaGetLastError();
+      auto& memPool = sd::memory::CudaMemoryPool::getInstance();
+      int allocationDevice = compileDevice;
+      compiledSeg.consolidatedArgTableDevice =
+          memPool.allocate(totalArgTableBytes, compileDevice, preallocStream, &allocationDevice);
+      if (compiledSeg.consolidatedArgTableDevice == nullptr) {
+        DSP_DIAG(MEMORY, "TritonGraphBackend: failed allocating consolidated arg table (%zu bytes) via CUDA memory pool",
+                  totalArgTableBytes);
         cleanupCompiledWorkspace();
         return false;
       }
       compiledSeg.consolidatedArgTableBytes = totalArgTableBytes;
-      compiledSeg.consolidatedArgTableDeviceId = compileDevice;
-      recordModuleAlloc(compileDevice, totalArgTableBytes);
+      compiledSeg.consolidatedArgTableDeviceId = allocationDevice;
+      recordModuleAlloc(allocationDevice, totalArgTableBytes);
       // Allocate consolidated pinned host buffer via pool tracking
-      auto& memPool = sd::memory::CudaMemoryPool::getInstance();
       compiledSeg.consolidatedArgTableHostPinned = static_cast<char*>(memPool.allocatePinnedHost(totalArgTableBytes));
       if (compiledSeg.consolidatedArgTableHostPinned == nullptr) {
         DSP_DIAG(MEMORY, "TritonGraphBackend: failed allocating consolidated pinned arg table (%zu bytes) via pool",

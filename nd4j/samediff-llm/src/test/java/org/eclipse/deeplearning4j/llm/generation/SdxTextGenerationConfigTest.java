@@ -85,6 +85,14 @@ class SdxTextGenerationConfigTest {
                 config.path("io").path("prefillKeyOutputs").get(0).asText());
         assertEquals("v_heads_0",
                 config.path("io").path("prefillValueOutputs").get(0).asText());
+        assertEquals(Arrays.asList(1L, -1L, 2L, 4L),
+                Arrays.asList(
+                        config.path("io").path("kvKeyShapes").get(0).get(0).asLong(),
+                        config.path("io").path("kvKeyShapes").get(0).get(1).asLong(),
+                        config.path("io").path("kvKeyShapes").get(0).get(2).asLong(),
+                        config.path("io").path("kvKeyShapes").get(0).get(3).asLong()));
+        assertEquals(config.path("io").path("kvKeyShapes"),
+                config.path("io").path("kvValueShapes"));
 
         JsonNode states = config.path("io").path("recurrentStates");
         assertEquals(1, states.size());

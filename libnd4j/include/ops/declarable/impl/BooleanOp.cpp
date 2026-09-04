@@ -22,8 +22,10 @@
 #include "ops/declarable/BooleanOp.h"
 
 #include <array/NDArrayFactory.h>
+#include <execution/LaunchContext.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <initializer_list>
+#include <string>
 #include <vector>
 
 namespace sd {
@@ -57,8 +59,12 @@ bool BooleanOp::verify(Context &block) {
   else if (status == Status::EQ_FALSE)
     return false;
   else {
-    sd_printf("Got error %i during [%s] evaluation: ", (int)status, this->getOpDescriptor()->getOpName()->c_str());
-    THROW_EXCEPTION("Internal error");
+    const std::string message =
+        "Boolean op '" + *this->getOpDescriptor()->getOpName() +
+        "' returned " + sd::statusName(status) + " (" +
+        std::to_string(static_cast<int>(status)) +
+        ") instead of EQ_TRUE or EQ_FALSE";
+    THROW_EXCEPTION(message.c_str());
   }
 
   return false;
@@ -113,8 +119,15 @@ Status BooleanOp::execute(Context *block) {
 
   if (status == Status::EQ_FALSE || status == Status::EQ_TRUE) return Status::OK;
 
-  sd_printf("%s: node_%i got unexpected result instead of boolean: [%i]\n", this->getOpName()->c_str(), block->nodeId(),
-            status);
+  const std::string message =
+      *this->getOpName() + ": node_" + std::to_string(block->nodeId()) +
+      " returned " + sd::statusName(status) + " (" +
+      std::to_string(static_cast<int>(status)) +
+      ") instead of EQ_TRUE or EQ_FALSE";
+  sd_printf("%s\n", message.c_str());
+  auto* errorReference = LaunchContext::defaultContext()->errorReference();
+  errorReference->setErrorCode(static_cast<int>(Status::KERNEL_FAILURE));
+  errorReference->setErrorMessage(message);
 
 
   traceExecIfNeeded(*block);

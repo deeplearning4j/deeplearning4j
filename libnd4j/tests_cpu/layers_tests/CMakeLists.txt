@@ -234,6 +234,18 @@ list(APPEND GTEST_LIST "SliceMatrixTest;TestConcat;TestReverseCopy;TestRemoveInd
 list(APPEND GTEST_LIST ";ShapeUtilsTests;SingleDimTests;SortCpuTests;SparseUtilsTest;StashTests;StringTests;SwitchTests;TadTests;ThreadsTests;TypeCastTests;VariableProxyTests")
 list(APPEND GTEST_LIST "VariableSpaceTest;VariableTests;WorkspaceTests")
 
+# These fixture suites are compiled into runtests but were historically omitted
+# from CTest discovery. Keep their behavioral coverage visible to the native
+# test runner. Standalone policy smoke drivers (for example
+# NnapiRecoveryPolicyTests.cpp and IslandCapturePolicyTests.cpp) intentionally
+# remain outside this list because they provide their own main() under an
+# explicit standalone define.
+list(APPEND GTEST_LIST "GraphBackendResolverTests;OpTraitTableTests;SdxTextGenerationMetadataTests;ArmHybridLifecycleTests;QuantizedMatmulTests;PointerValidationTests")
+
+# NativePlanCacheTests.cpp is not registered until its test-only callers are
+# migrated from the removed NativePlanConfig/legacy dispatch ABI. Registering
+# it now would make the optional native test target fail at compile time.
+
 #Generate ctest from gtests entries
 foreach(GTEST_ENTRY ${GTEST_LIST})
     add_test(NAME "${GTEST_ENTRY}" COMMAND runtests "--gtest_filter=${GTEST_ENTRY}.*" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/tests_cpu)

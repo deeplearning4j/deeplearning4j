@@ -12,12 +12,18 @@
 package org.nd4j.dsp.runtime;
 
 import org.bytedeco.javacpp.BytePointer;
+import org.eclipse.deeplearning4j.llm.generation.GenerationPipeline;
+import org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate;
+import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.diagnostics.DspDiagnostics;
 import org.nd4j.dsp.runtime.bindings.SdxNative;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.lang.reflect.Proxy;
+import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,20 +43,27 @@ class SdxRuntimeJavaCppTest {
     @Test
     void selectedBackendTransportOwnsDiagnosticsLifecycle() throws Exception {
         Path report = Files.createTempFile("sdx-selected-backend-diagnostics", ".json");
-        String previousPath = DspDiagnostics.getJsonPath();
         try (SdxRuntime runtime = SdxRuntime.create()) {
-            DspDiagnostics.setJsonPath(report.toString());
-            DspDiagnostics.setCategories(DspDiagnostics.VERIFY);
-            runtime.clearDiagnostics();
-            DspDiagnostics.record(DspDiagnostics.VERIFY, "SDX_SELECTED_BACKEND_MARKER");
+            runtime.configureDiagnostics(
+                    DspDiagnostics.VERIFY,
+                    DspDiagnostics.LEVEL_FULL,
+                    report.toString());
+            try {
+                runtime.clearDiagnostics();
+                runtime.recordDiagnosticEvent(
+                        DspDiagnostics.VERIFY, "SDX_SELECTED_BACKEND_MARKER");
 
-            runtime.flushDiagnostics();
+                runtime.flushDiagnostics();
 
-            assertTrue(Files.readString(report).contains("SDX_SELECTED_BACKEND_MARKER"));
+                assertTrue(Files.readString(report).contains("SDX_SELECTED_BACKEND_MARKER"));
+            } finally {
+                runtime.configureDiagnostics(
+                        DspDiagnostics.NONE,
+                        DspDiagnostics.LEVEL_SUMMARY,
+                        "");
+                runtime.clearDiagnostics();
+            }
         } finally {
-            DspDiagnostics.setJsonPath(previousPath);
-            DspDiagnostics.setCategories(DspDiagnostics.NONE);
-            DspDiagnostics.clear();
             Files.deleteIfExists(report);
         }
     }
@@ -70,6 +83,48 @@ class SdxRuntimeJavaCppTest {
     }
 
     @Test
+    void compiledChatParsingUsesTheImportedModelToolProtocolByDefault() throws Exception {
+        Path source = Path.of("../nd4j/sdx-aot/src/main/java/org/eclipse/deeplearning4j/sdx/aot",
+                "SdxCompiledLlmCore.java");
+        String compiledCore = Files.readString(source);
+
+        assertTrue(compiledCore.contains(
+                "ChatTemplate.ToolCallFormat toolCallFormat = request.getToolCallFormat()"));
+        assertTrue(compiledCore.contains(
+                        "GenerationPipeline.selectModelToolCallFormat(\n                    toolCallFormat, template, tokenizer)"),
+                "A provider-neutral request must inherit template and tokenizer protocol metadata");
+        assertTrue(compiledCore.contains(
+                "request.getTools(), toolCallFormat, request.getToolChoice()"));
+        assertTrue(compiledCore.contains(
+                "int maxNewTokens = positive(options.path(\"maxNewTokens\")"));
+        assertFalse(compiledCore.contains("int maxNewTokens = fixedContextCapacity"),
+                "Per-request generation length must not be replaced by plan capacity");
+    }
+
+    @Test
+    void modelToolProtocolUsesDecodedTokenizerSentinelsWithoutReverseLookup() {
+        Tokenizer tokenizer = nativeSentinelTokenizer(Map.of(), Set.of(10, 11));
+        ChatTemplate template = new ChatTemplate("plain JSON chat template", "", "");
+
+        assertEquals(ChatTemplate.ToolCallFormat.NATIVE,
+                GenerationPipeline.selectModelToolCallFormat(template, tokenizer));
+    }
+
+    @Test
+    void modelToolProtocolUsesAddedTokenizerSentinelsAndPreservesExplicitOverride() {
+        Tokenizer tokenizer = nativeSentinelTokenizer(Map.of(
+                ChatTemplate.NATIVE_TOOL_CALL_START, 10,
+                ChatTemplate.NATIVE_TOOL_CALL_END, 11), Set.of());
+        ChatTemplate template = new ChatTemplate("plain JSON chat template", "", "");
+
+        assertEquals(ChatTemplate.ToolCallFormat.NATIVE,
+                GenerationPipeline.selectModelToolCallFormat(template, tokenizer));
+        assertEquals(ChatTemplate.ToolCallFormat.JSON,
+                GenerationPipeline.selectModelToolCallFormat(
+                        ChatTemplate.ToolCallFormat.JSON, template, tokenizer));
+    }
+
+    @Test
     void mobileLoaderReleasesPartialOwnershipAndRequiresMappedArmHybridWeights()
             throws Exception {
         Path legacy = Path.of("../libnd4j/include/legacy/impl");
@@ -85,6 +140,21 @@ class SdxRuntimeJavaCppTest {
                 "A failed mapped-model load must release its partial owner");
         assertTrue(runtime.contains(
                 "backend == static_cast<int>(SDX_BACKEND_ARM_HYBRID)"));
+    }
+
+    @Test
+    void fixedGenerationPreservesTheConcreteNativeContextFailure() throws Exception {
+        Path detail = Path.of("../libnd4j/include/dsp/runtime/detail/DspRuntimeInternal.h");
+        Path legacy = Path.of("../libnd4j/include/legacy/impl");
+        String bridge = Files.readString(detail);
+        String runtime = Files.readString(legacy.resolve("DspRuntimeC.cpp"));
+        String generation = Files.readString(legacy.resolve("SdxGenerationSession.cpp"));
+
+        assertTrue(bridge.contains("std::string contextError(const sdx_context_t* context);"));
+        assertTrue(runtime.contains("return context == nullptr ? std::string() : context->last_error;"));
+        assertTrue(generation.contains(
+                "*error = sd::dsp::runtime::detail::contextError(session->decodeContext);"));
+        assertTrue(generation.contains("fixed generation step failed with status"));
     }
 
     @Test
@@ -166,5 +236,30 @@ class SdxRuntimeJavaCppTest {
         SdxRuntime.RunOptions openVinoRun = SdxRuntime.RunOptions.desktopOpenVino();
         assertEquals(SdxRuntime.SDX_BACKEND_OPENVINO, openVinoRun.backend);
         assertEquals(SdxRuntime.SDX_GPU_TARGET_AUTO, openVinoRun.gpu_target);
+    }
+
+    private static Tokenizer nativeSentinelTokenizer(
+            Map<String, Integer> addedTokens, Set<Integer> specialTokenIds) {
+        return (Tokenizer) Proxy.newProxyInstance(
+                Tokenizer.class.getClassLoader(),
+                new Class<?>[]{Tokenizer.class},
+                (proxy, method, args) -> {
+                    if ("getTokenId".equals(method.getName()) || "getToken".equals(method.getName())) {
+                        return null;
+                    }
+                    if ("getAddedTokens".equals(method.getName())) {
+                        return addedTokens;
+                    }
+                    if ("getSpecialTokenIds".equals(method.getName())) {
+                        return specialTokenIds;
+                    }
+                    if ("decode".equals(method.getName())) {
+                        int tokenId = ((int[]) args[0])[0];
+                        return tokenId == 10
+                                ? ChatTemplate.NATIVE_TOOL_CALL_START
+                                : ChatTemplate.NATIVE_TOOL_CALL_END;
+                    }
+                    throw new UnsupportedOperationException(method.getName());
+                });
     }
 }

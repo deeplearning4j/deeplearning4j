@@ -20,10 +20,8 @@
 // Created by agibsonccc on 3/10/25.
 //
 
-// MEMORY OPTIMIZATION: Define op group to compile only a subset of operations
-// This reduces per-file memory usage by ~66%
-#define SCALAR_OP_GROUP @OP_GROUP@
-
+// This template is the sole owner of each externally visible dtype
+// instantiation, and every instantiation contains the complete op dispatcher.
 #include <loops/cuda/scalar.chpp>
 #include <system/type_boilerplate.h>
 #include <loops/pairwise_instantiations_single.h>

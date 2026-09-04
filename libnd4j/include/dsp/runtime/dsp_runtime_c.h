@@ -143,6 +143,8 @@ typedef struct {
  */
 typedef struct {
   uint32_t struct_size;
+  /** One physical plan/buffer capacity. Zero uses limits.maxPrefillLength. */
+  int32_t fixed_context_capacity;
 } sdx_generation_session_options_t;
 
 /**
@@ -244,11 +246,24 @@ SDX_API sdx_status_t sdxCreateRuntime(const sdx_runtime_options_t* options, sdx_
 SDX_API void sdxDestroyRuntime(sdx_runtime_t* runtime);
 
 /**
- * Clear and persist diagnostics owned by the selected SDX backend library.
- * These functions intentionally live on the backend-neutral SDX transport:
- * an Android accelerator process may also contain an embedded CPU backend,
- * but only the selected provider owns the active compiled plan and its ring.
+ * Configure, record, clear, and persist diagnostics owned by the selected SDX
+ * backend library. These functions intentionally live on the backend-neutral
+ * SDX transport: an Android accelerator process may also contain an embedded
+ * CPU backend, but only the selected provider owns the active compiled plan
+ * and its diagnostic ring.
+ *
+ * category_mask/category use the DspDiagCategory bit assignments and level is
+ * 0=summary, 1=detailed, or 2=full. An empty json_path disables file output.
  */
+SDX_API sdx_status_t sdxConfigureDiagnostics(
+    sdx_runtime_t* runtime,
+    uint32_t category_mask,
+    int32_t level,
+    const char* json_path);
+SDX_API sdx_status_t sdxRecordDiagnosticEvent(
+    sdx_runtime_t* runtime,
+    uint32_t category,
+    const char* message);
 SDX_API void sdxClearDiagnostics(void);
 SDX_API void sdxFlushDiagnostics(void);
 
@@ -279,11 +294,14 @@ SDX_API sdx_status_t sdxCreateGenerationSession(
     sdx_model_t* model,
     const sdx_generation_session_options_t* options,
     sdx_generation_session_t** out_session);
+/** Effective fixed physical capacity after model-envelope clamping. */
+SDX_API int32_t sdxGetGenerationContextCapacity(
+    const sdx_generation_session_t* session);
 SDX_API void sdxDestroyGenerationSession(sdx_generation_session_t* session);
 
 /**
- * Clear prompt/KV/decode state while retaining parsed metadata and the model.
- * Contexts are rebuilt lazily on the next generation call.
+ * Clear logical prompt/KV/recurrent state while retaining the session's sole
+ * precompiled context, fixed buffers, and plan.
  */
 SDX_API sdx_status_t sdxResetGenerationSession(
     sdx_generation_session_t* session);
@@ -296,8 +314,8 @@ SDX_API sdx_status_t sdxResetGenerationSession(
 SDX_API void sdxCancelGeneration(sdx_generation_session_t* session);
 
 /**
- * Reset the session, prefill prompt_token_ids, warm/freeze the fixed decode
- * plan, and generate up to options.max_new_tokens. Tokens are returned in
+ * Reset logical state, ingest a rolling prompt window through the precompiled
+ * fixed plan, and generate to EOS/cancellation/context capacity. Tokens are returned in
  * out_token_ids and optionally streamed through callbacks on the calling
  * thread. out_capacity must be at least max_new_tokens when out_token_ids is
  * non-NULL; out_count is always required.

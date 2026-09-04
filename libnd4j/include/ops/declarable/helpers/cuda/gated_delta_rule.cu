@@ -25,6 +25,13 @@
 #include <types/float16.h>
 #include <ops/declarable/helpers/gated_delta_rule.h>
 #include <ops/declarable/helpers/reproducible_math.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cmath>
+#include <algorithm>
+#include <cstdint>
+#include <string>
+#include <type_traits>
 
 namespace sd {
 namespace ops {
@@ -738,17 +745,92 @@ static void gatedDeltaRuleFromArrays(
     const auto D_v = V->sizeAt(3);
 
     auto stream = context->getCudaStream();
+    static unsigned long long gdrTraceCallCount = 0;
+    const unsigned long long gdrCallId = gdrTraceCallCount++;
     const LongType stateElems = B * H * D_k * D_v;
+    const size_t stateBytes = stateElems * sizeof(AccT);
     int deviceId = sd::AffinityManager::currentDeviceId();
-    AccT* workingState = reinterpret_cast<AccT*>(
-        sd::memory::CudaMemoryPool::getInstance().allocate(
-            stateElems * sizeof(AccT), deviceId, *stream));
+    bool directState = false;
+    if constexpr (std::is_same<T, AccT>::value) {
+        const bool denseStateOut = stateOut->ordering() == 'c'
+            && shape::strideDescendingCAscendingF(stateOut->shapeInfo());
+        bool compatibleStateIn = stateIn == nullptr;
+        if (stateIn != nullptr && stateIn->ordering() == 'c'
+                && shape::strideDescendingCAscendingF(stateIn->shapeInfo())) {
+            const auto inStart = reinterpret_cast<std::uintptr_t>(stateIn->specialBuffer());
+            const auto outStart = reinterpret_cast<std::uintptr_t>(stateOut->specialBuffer());
+            const bool overlaps = inStart < outStart + stateBytes
+                && outStart < inStart + stateBytes;
+            compatibleStateIn = !overlaps || inStart == outStart;
+        }
+        // actualLen forces the sequential path. Keep chunked and low-precision
+        // execution on their existing promoted scratch contracts.
+        directState = actualLen != nullptr && denseStateOut && compatibleStateIn;
+    }
+    AccT* workingState = directState
+        ? reinterpret_cast<AccT*>(stateOut->specialBuffer())
+        : reinterpret_cast<AccT*>(
+            sd::memory::CudaMemoryPool::getInstance().allocate(
+                stateBytes, deviceId, *stream));
+    if (workingState == nullptr) {
+        THROW_EXCEPTION("gatedDeltaRule: recurrent state allocation failed");
+    }
+
+    // GDR_PRECHECK: env-gated (ND4J_GDR_POSTCHECK=1 shares the switch). Syncs the
+    // stream THEN scans every input for non-finite values AT LAUNCH TIME. This is
+    // the at-launch counterpart to GDR_POSTCHECK: the fixture capture happens at
+    // lineage-dump time (after failure), so clean fixture inputs do NOT prove the
+    // kernel received clean inputs. If this fires, an input was corrupted between
+    // its producing op and this call; if clean while the output postcheck fails,
+    // the corruption is generated INSIDE the call (scratch/state race).
+    static const bool gdrPreCheck = [] {
+        const char* e = std::getenv("ND4J_GDR_POSTCHECK");
+        return e != nullptr && e[0] == '1';
+    }();
+    if (gdrPreCheck && L <= 16) {
+        // NEVER sync a stream that is capturing a CUDA graph — the sync invalidates
+        // the capture and fails the whole plan execution (status 50 KERNEL_FAILURE).
+        cudaStreamCaptureStatus captureStatus = cudaStreamCaptureStatusNone;
+        cudaStreamIsCapturing(*stream, &captureStatus);
+        if (captureStatus != cudaStreamCaptureStatusNone) {
+            fprintf(stderr, "[GDR-PRECHECK] call=%llu L=%lld SKIP: stream capturing\n",
+                    gdrCallId, (long long)L);
+        } else {
+        cudaStreamSynchronize(*stream);
+        auto scanArr = [](const char* name, NDArray* a) -> std::string {
+            if (a == nullptr) return name + std::string("=null");
+            const LongType n = a->lengthOf();
+            unsigned long long nanC = 0, infC = 0;
+            double mn = 0.0, mx = 0.0;
+            bool first = true;
+            for (LongType i = 0; i < n; ++i) {
+                const double v = static_cast<double>(a->e<AccT>(i));
+                if (std::isnan(v)) { nanC++; continue; }
+                if (std::isinf(v)) { infC++; continue; }
+                if (first) { mn = mx = v; first = false; }
+                else { mn = std::min(mn, v); mx = std::max(mx, v); }
+            }
+            char buf[192];
+            snprintf(buf, sizeof(buf), "%s[n=%lld nan=%llu inf=%llu min=%.6g max=%.6g]",
+                     name, (long long)n, nanC, infC, mn, mx);
+            return std::string(buf);
+        };
+        fprintf(stderr, "[GDR-PRECHECK] call=%llu L=%lld ws=%p %s %s %s %s %s %s\n",
+                gdrCallId, (long long)L, (void*)workingState,
+                scanArr("Q", Q).c_str(), scanArr("K", K).c_str(), scanArr("V", V).c_str(),
+                scanArr("beta", beta).c_str(), scanArr("gate", gate).c_str(),
+                scanArr("sIn", stateIn).c_str());
+        fflush(stderr);
+        }
+    }
 
     if (stateIn != nullptr) {
-        int initBlocks = (stateElems + 255) / 256;
-        convertStateKernel<T, AccT><<<initBlocks, 256, 0, *stream>>>(
-            reinterpret_cast<const T*>(stateIn->specialBuffer()), workingState, stateElems);
-        DebugHelper::checkGlobalErrorCode("gatedDeltaRule state initialization failed");
+        if (stateIn->specialBuffer() != workingState) {
+            int initBlocks = (stateElems + 255) / 256;
+            convertStateKernel<T, AccT><<<initBlocks, 256, 0, *stream>>>(
+                reinterpret_cast<const T*>(stateIn->specialBuffer()), workingState, stateElems);
+            DebugHelper::checkGlobalErrorCode("gatedDeltaRule state initialization failed");
+        }
     } else {
         cudaMemsetAsync(workingState, 0, stateElems * sizeof(AccT), *stream);
     }
@@ -769,6 +851,45 @@ static void gatedDeltaRuleFromArrays(
         && (D_k <= 128)
         && (chunkIntraSharedMemory <= static_cast<size_t>(maxSharedMemory))
         && (chunkScanSharedMemory <= static_cast<size_t>(maxSharedMemory));
+
+    // GDR_LAUNCH_TRACE: host-side only (no sync, no device reads, no value dumps).
+    // Enabled via ND4J_GDR_LAUNCH_TRACE=1. Records exactly what device memory the
+    // kernels were handed at launch time so a post-mortem lineage dump can be
+    // diffed against it (catches stale input pointers, recycled pool scratch,
+    // stream switches, and stale actualLen host mirror without perturbing timing).
+    static const bool gdrLaunchTrace = [] {
+        const char* e = std::getenv("ND4J_GDR_LAUNCH_TRACE");
+        return e != nullptr && e[0] == '1';
+    }();
+    if (gdrLaunchTrace) {
+        static void* gdrTraceLastWorkingState = nullptr;
+        static void* gdrTraceLastStream = nullptr;
+        const LongType lenHost =
+            (actualLen != nullptr && actualLen->buffer() != nullptr)
+                ? *reinterpret_cast<const LongType*>(actualLen->buffer())
+                : -1;
+        fprintf(stderr,
+                "[GDR-TRACE] call=%llu seq=%d L=%lld B=%lld H=%lld dk=%lld dv=%lld "
+                "Q=%p K=%p V=%p beta=%p gate=%p sIn=%p len=%p lenHost=%lld "
+                "out=%p sOut=%p ws=%p wsPrev=%p stream=%p streamPrev=%p useChunked=%d directState=%d\n",
+                gdrCallId,
+                actualLen != nullptr ? 1 : 0,
+                (long long)L, (long long)B, (long long)H,
+                (long long)D_k, (long long)D_v,
+                (void*)Q->specialBuffer(), (void*)K->specialBuffer(),
+                (void*)V->specialBuffer(), (void*)beta->specialBuffer(),
+                (void*)gate->specialBuffer(),
+                stateIn != nullptr ? (void*)stateIn->specialBuffer() : nullptr,
+                actualLen != nullptr ? (void*)actualLen->specialBuffer() : nullptr,
+                (long long)lenHost,
+                (void*)output->specialBuffer(), (void*)stateOut->specialBuffer(),
+                (void*)workingState, gdrTraceLastWorkingState,
+                (void*)*stream, gdrTraceLastStream,
+                useChunked ? 1 : 0, directState ? 1 : 0);
+        fflush(stderr);
+        gdrTraceLastWorkingState = (void*)workingState;
+        gdrTraceLastStream = (void*)*stream;
+    }
 
     if (useChunked) {
         AccT* workingStateOut = reinterpret_cast<AccT*>(
@@ -816,13 +937,67 @@ static void gatedDeltaRuleFromArrays(
             output->strideAt(0), output->strideAt(1), output->strideAt(2), output->strideAt(3),
             *stream);
 
-        int copyBlocks = (stateElems + 255) / 256;
-        convertStateKernel<AccT, T><<<copyBlocks, 256, 0, *stream>>>(
-            workingState, reinterpret_cast<T*>(stateOut->specialBuffer()), stateElems);
+        if (!directState) {
+            int copyBlocks = (stateElems + 255) / 256;
+            convertStateKernel<AccT, T><<<copyBlocks, 256, 0, *stream>>>(
+                workingState, reinterpret_cast<T*>(stateOut->specialBuffer()), stateElems);
+        }
     }
 
-    sd::memory::CudaMemoryPool::getInstance().free(workingState, deviceId, *stream);
+    if (!directState) {
+        sd::memory::CudaMemoryPool::getInstance().free(workingState, deviceId, *stream);
+    }
     DebugHelper::checkGlobalErrorCode("gatedDeltaRule state write-back failed");
+
+    // GDR_POSTCHECK: env-gated (ND4J_GDR_POSTCHECK=1) immediate post-call verification.
+    // ONE cudaStreamSynchronize then a finite scan of output + stateOut. This pins down
+    // WHEN slot 460 becomes garbage: if the scan right here reports non-finite values,
+    // the GDR execution itself produced them (kernel/harness bug despite good inputs);
+    // if it reports finite, something AFTER the call overwrote the buffers (post-call
+    // clobber by another op / stale baked-address reader). Expensive — diagnostics only.
+    static const bool gdrPostCheck = [] {
+        const char* e = std::getenv("ND4J_GDR_POSTCHECK");
+        return e != nullptr && e[0] == '1';
+    }();
+    if (gdrPostCheck && L > 1) {
+        cudaStreamCaptureStatus captureStatus = cudaStreamCaptureStatusNone;
+        cudaStreamIsCapturing(*stream, &captureStatus);
+        if (captureStatus != cudaStreamCaptureStatusNone) {
+            fprintf(stderr, "[GDR-POSTCHECK] call=%llu L=%lld SKIP: stream capturing\n",
+                    gdrCallId, (long long)L);
+        } else {
+        cudaError_t syncErr = cudaStreamSynchronize(*stream);
+        const auto L_ = static_cast<LongType>(L);
+        (void)syncErr;
+        const auto outElems = output->lengthOf();
+        unsigned long long outNan = 0, outInf = 0, stNan = 0, stInf = 0;
+        double outMin = 0.0, outMax = 0.0;
+        bool first = true;
+        for (LongType i = 0; i < outElems; ++i) {
+            const double v = static_cast<double>(output->e<AccT>(i));
+            if (std::isnan(v)) { outNan++; continue; }
+            if (std::isinf(v)) { outInf++; continue; }
+            if (first) { outMin = outMax = v; first = false; }
+            else { outMin = std::min(outMin, v); outMax = std::max(outMax, v); }
+        }
+        const LongType stElems = stateOut->lengthOf();
+        for (LongType i = 0; i < stElems; ++i) {
+            const double v = static_cast<double>(stateOut->e<AccT>(i));
+            if (std::isnan(v)) stNan++;
+            else if (std::isinf(v)) stInf++;
+        }
+        fprintf(stderr,
+                "[GDR-POSTCHECK] call=%llu L=%lld out=%p(%lld elems) outNan=%llu outInf=%llu "
+                "min=%.6g max=%.6g | sOut=%p stNan=%llu stInf=%llu syncErr=%d\n",
+                gdrCallId, (long long)L_, (void*)output->specialBuffer(), (long long)outElems,
+                outNan, outInf, outMin, outMax,
+                (void*)stateOut->specialBuffer(), stNan, stInf, (int)syncErr);
+        if (outNan || outInf || stNan || stInf) {
+            fprintf(stderr,
+                    "[GDR-POSTCHECK] *** NON-FINITE DETECTED AT GDR OUTPUT — GDR produced the garbage itself ***\n");
+        }
+        }
+    }
 }
 
 void gatedDeltaRule(LaunchContext* context, NDArray* Q, NDArray* K, NDArray* V,
