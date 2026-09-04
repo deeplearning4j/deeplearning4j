@@ -60,7 +60,6 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.exception.ND4JOpExceptionUtils;
 import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.nativeblas.OpaqueDataBuffer;
 import org.nd4j.linalg.jcublas.bindings.Nd4jCuda;
 import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
@@ -366,16 +365,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         }
         if (outputDevice >= 0) {
             return outputDevice;
-        }
-
-        // When cross-device routing is suppressed (InferenceSession/DSP execution/decode loop),
-        // always stay on the current thread's device. The CUDA async memory pool can reuse
-        // freed entries via cudaMallocAsync even when cudaMemGetInfo reports near-zero free
-        // (pool-reserved memory is reported as "used" but is instantly reclaimable by trim).
-        // Routing away from the model's home device during DSP execution invalidates baked
-        // graph pointers and causes migrate() H2D failures on non-peer devices.
-        if (OpaqueDataBuffer.isCrossDeviceRoutingSuppressed()) {
-            return Nd4j.getAffinityManager().getDeviceForCurrentThread();
         }
 
         // Delegate to DeviceMemoryManager which handles memory pressure,

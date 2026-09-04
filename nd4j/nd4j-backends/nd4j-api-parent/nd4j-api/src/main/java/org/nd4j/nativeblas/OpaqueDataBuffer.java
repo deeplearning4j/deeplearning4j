@@ -465,7 +465,7 @@ public class OpaqueDataBuffer extends Pointer {
                         // retry there. This is the automatic "one GPU full -> use the other"
                         // failover; it fires only on the slow OOM path, so the common case is
                         // unaffected. Cross-device data is handled by DeviceAwareOpExecutioner.
-                        if (shouldAttemptCrossDeviceFailover(failedOver)) {
+                        if (!failedOver) {
                             int failedDevice = (selectedDevice != null && selectedDevice.getDeviceType().isGpu())
                                     ? selectedDevice.getDeviceIndex()
                                     : memoryManager.getCurrentDeviceId();
@@ -597,7 +597,7 @@ public class OpaqueDataBuffer extends Pointer {
                         // retry there. This is the automatic "one GPU full -> use the other"
                         // failover; it fires only on the slow OOM path, so the common case is
                         // unaffected. Cross-device data is handled by DeviceAwareOpExecutioner.
-                        if (shouldAttemptCrossDeviceFailover(failedOver)) {
+                        if (!failedOver) {
                             int failedDevice = (selectedDevice != null && selectedDevice.getDeviceType().isGpu())
                                     ? selectedDevice.getDeviceIndex()
                                     : memoryManager.getCurrentDeviceId();
@@ -1148,51 +1148,6 @@ public class OpaqueDataBuffer extends Pointer {
                 deviceMemoryManager.recordDeallocation(device, bytes);
             }
         };
-    }
-
-    /**
-     * Minimum device headroom in bytes (128MB). Allocations will not be placed on a device
-     * if doing so would leave less than this amount free. This reserves space for CUDA
-     * ContextBuffers (2x8MB workspace + streams), DSP capture workspace (up to 512MB),
-     * CudaMemoryPool reserved blocks, and other C++ runtime overhead that bypasses Java routing.
-     */
-    private static final long MIN_DEVICE_HEADROOM = 128L * 1024 * 1024;
-
-    /**
-     * Thread-local flag to suppress cross-device routing during CUDA graph
-     * capture/replay. When true, allocations stay on the current device even
-     * if memory is low — the C++ layer handles OOM via its own failover.
-     * Routing to another device during graph execution would invalidate the
-     * captured graph (different device pointers).
-     */
-    private static final ThreadLocal<Boolean> tl_suppressCrossDeviceRouting = ThreadLocal.withInitial(() -> false);
-    // Global suppress flag for async transfers that run on different threads.
-    // Set by InferenceSession during executeOperations() to prevent spurious
-    // multi-GPU routing caused by CUDA pool holding freed entries.
-    private static volatile boolean globalSuppressCrossDeviceRouting = false;
-
-    public static void suppressCrossDeviceRouting(boolean suppress) {
-        tl_suppressCrossDeviceRouting.set(suppress);
-        globalSuppressCrossDeviceRouting = suppress;
-    }
-
-    /**
-     * Check if cross-device routing is currently suppressed (either thread-local or global).
-     * Used by CudaExecutioner's selectTargetDevice to avoid unnecessary cross-device migration
-     * when the CUDA pool has reusable freed entries.
-     */
-    public static boolean isCrossDeviceRoutingSuppressed() {
-        return tl_suppressCrossDeviceRouting.get() || globalSuppressCrossDeviceRouting;
-    }
-
-    /**
-     * Returns whether an allocation retry may move to another GPU.
-     * The argument is the per-allocation failover state: once an allocation has
-     * already failed over, it must remain pinned to that device for subsequent
-     * retries. Graph capture/replay also pins allocations to the current device.
-     */
-    public static boolean shouldAttemptCrossDeviceFailover(boolean failedOver) {
-        return !failedOver && !isCrossDeviceRoutingSuppressed();
     }
 
     private static DeviceDescriptor selectDeviceForAllocation(long bytes, DeviceMemoryManager memoryManager) {

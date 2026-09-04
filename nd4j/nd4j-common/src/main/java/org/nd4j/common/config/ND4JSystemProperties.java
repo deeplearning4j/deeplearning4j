@@ -499,29 +499,6 @@ public class ND4JSystemProperties {
     public static final String DSP_SINGLE_GPU = "nd4j.dsp.singleGpu";
 
     /**
-     * Applicability: DynamicShapePlan-based inference with non-P2P multi-GPU<br>
-     * Description: Fraction of available memory to use as budget for non-P2P secondary GPUs.
-     * Non-P2P devices use host-staged transfers which may need extra headroom.
-     * <p>
-     * Default: 1.0 (use full available memory)
-     */
-    public static final String DSP_NON_P2P_BUDGET_FRACTION = "nd4j.dsp.nonP2pBudgetFraction";
-
-    /**
-     * Applicability: DynamicShapePlan-based inference with non-P2P multi-GPU<br>
-     * Description: When true, allow non-peer-access secondary GPUs to receive compute
-     * assignments (op-segment sharding).  Without this flag, non-P2P devices have a
-     * budget of zero and receive no op assignments (safe single-GPU default).
-     * <p>
-     * Enables: full-memory budget for non-P2P devices, async cross-device output
-     * migration back to device-0 after each execution, and slot-by-slot fallback for
-     * secondary-device segments (CUDA-graph capture workspace lives only on device-0).
-     * <p>
-     * Default: false (single-GPU, byte-identical to previous behaviour)
-     */
-    public static final String DSP_MULTI_GPU_SHARD = "nd4j.dsp.multiGpuShard";
-
-    /**
      * Applicability: DynamicShapePlan-based inference<br>
      * Description: When true, serialize parallel worker op execution (only one worker thread
      * executes at a time). For debugging concurrent CUDA issues.

@@ -945,13 +945,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             if (DYNAMIC_SHAPE_PLAN_ENABLED &&
                 (otherPlaceHolderValues == null || otherPlaceHolderValues.isEmpty())) {
                 try {
-                    // Suppress cross-device routing during DSP execution.
-                    // Without this, selectTargetDevice() in CudaExecutioner can migrate
-                    // input tensors to a different GPU when memory pressure is detected
-                    // (cudaMemGetInfo reports low free memory). During frozen DSP decode,
-                    // all data should stay on the model's home device — cross-device
-                    // migration causes stale CUDA context state → SIGSEGV.
-                    OpaqueDataBuffer.suppressCrossDeviceRouting(true);
                     // Lightweight type casting: cast mismatched placeholder dtypes without
                     // the full preprocessPlaceholders overhead (arrayUseTracker iteration).
                     //
@@ -1064,8 +1057,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                                 }
                             }
                         }
-                        // Restore cross-device routing suppression before returning.
-                        OpaqueDataBuffer.suppressCrossDeviceRouting(false);
                         // Populate latestRequestedOutputs so that subsequent getArr() calls
                         // on ARRAY-type output variables can find the computed values.
                         // Without this, sd.outputAll() succeeds but variable.getArr() returns null.
@@ -1172,10 +1163,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     log.error("DynamicShapePlan-based execution failed — no fallback allowed: {}", e.getMessage());
                     throw new RuntimeException("DSP execution failed. No fallback to standard path. " +
                             "Fix the DSP executor. Error: " + e.getMessage(), e);
-                } finally {
-                    // Always restore cross-device routing when leaving the DSP path,
-                    // whether it succeeded, fell through, or threw an exception.
-                    OpaqueDataBuffer.suppressCrossDeviceRouting(false);
                 }
             }
 
@@ -1194,14 +1181,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             // closes DataBuffers of intermediate variables, which destroys shared buffers for
             // view-producing ops (reshape_no_copy, permute, etc.).
             Map<String, SDValue> processedOtherPlaceholders = preprocessValuePlaceholders(otherPlaceHolderValues, at);
-            // Suppress cross-device routing during execution.
-            OpaqueDataBuffer.suppressCrossDeviceRouting(true);
             // Execute with corrected ordering
             long tExec0 = TIMING_ENABLED ? System.nanoTime() : 0;
             Map<String, SDValue> results = executeOperations(dag, processedPlaceholders,
                     processedOtherPlaceholders, allRequired, listeners, at, batch);
             if (TIMING_ENABLED) timing.execLoopNs = System.nanoTime() - tExec0;
-            OpaqueDataBuffer.suppressCrossDeviceRouting(false);
 
             // Commit all pending operations before accessing results.
             // This ensures async operations (CUDA streams, etc.) complete before values are read.
@@ -2014,8 +1998,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             }
             throw execException;
         } finally {
-            // Restore autoGc window and cross-device routing to previous values
-            OpaqueDataBuffer.suppressCrossDeviceRouting(false);
             Nd4j.getMemoryManager().setAutoGcWindow(savedAutoGcWindow);
             currentExecutionDAG = null;
         }

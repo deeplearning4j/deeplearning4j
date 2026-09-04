@@ -36,7 +36,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.nativeblas.NativeOpsHolder;
-import org.nd4j.nativeblas.OpaqueDataBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -475,16 +474,9 @@ public class CudaAffinityManager extends BasicAffinityManager {
             DeviceMemoryManager.getInstance().switchDevice(deviceId, "CudaAffinityManager.replicateToDevice", "target-device-buffer");
         }
 
-        // Suppress OpaqueDataBuffer's cross-device routing during replicateToDevice.
-        // The caller explicitly chose deviceId as the target — the Java-level routing
-        // must not override this by rerouting to a device with more free memory.
-        // If the target device truly OOMs, the C++ allocateFailover handles it.
         DataBuffer dstBuffer;
-        OpaqueDataBuffer.suppressCrossDeviceRouting(true);
         try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
             dstBuffer = Nd4j.createBuffer(buffer.dataType(), buffer.length(), false);
-        } finally {
-            OpaqueDataBuffer.suppressCrossDeviceRouting(false);
         }
 
         // memcpy handles cross-device copying (source is already synced to host)

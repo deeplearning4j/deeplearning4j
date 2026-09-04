@@ -328,8 +328,17 @@ SD_STRING_TYPES
         set(extractor_cuda_defines "")
     endif()
     
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        # MSVC's /P writes preprocessed output to a side file, leaving
+        # OUTPUT_VARIABLE empty. /EP emits to stdout without line directives,
+        # which is the same contract as GCC/Clang's -E -P combination.
+        set(type_registry_preprocessor_flags /nologo /EP /w)
+    else()
+        set(type_registry_preprocessor_flags -E -P -w -std=c++11)
+    endif()
+
     execute_process(
-            COMMAND ${CMAKE_CXX_COMPILER} -E -P -w -std=c++11
+            COMMAND ${CMAKE_CXX_COMPILER} ${type_registry_preprocessor_flags}
             ${include_flags}
             ${extractor_cuda_defines} -DHAVE_ONEDNN=0 -DHAVE_ARMCOMPUTE=0
             "${extraction_file}"

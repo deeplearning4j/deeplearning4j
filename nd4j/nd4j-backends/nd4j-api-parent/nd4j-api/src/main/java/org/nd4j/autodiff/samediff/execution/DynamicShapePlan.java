@@ -248,16 +248,10 @@ public class DynamicShapePlan implements Closeable {
 
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
-        // Include ALL devices. Cross-device data transfer for non-P2P devices
-        // stages through host memory via replicateToDevice() (views auto-dup'd).
-        // Use pool-aware memory accounting: cudaMemGetInfo reports free memory MINUS
-        // pool reserved, but cudaMallocAsync can reuse reserved pool memory. Without
-        // accounting for this, devices that previously ran a large graph (e.g., vision
-        // encoder) appear nearly full even though their pool has GB of reusable memory.
-        // available = cudaFree + (poolReserved - poolUsed)
-        //
-        // For non-P2P secondary devices, use only a fraction of available memory as
-        // the budget for op assignment.
+        // Include every available device. Non-P2P boundaries are handled by the native
+        // segment input/output migration path, so peer topology must not remove a GPU
+        // from placement. Use pool-aware capacity because cudaMemGetInfo excludes
+        // reserved-but-reusable cudaMallocAsync blocks.
         Map<Integer, Long> freeMemory = new LinkedHashMap<>();
         for (int d = 0; d < numDevices; d++) {
             long cudaFree = nativeOps.getDeviceFreeMemory(d);
@@ -277,37 +271,13 @@ public class DynamicShapePlan implements Closeable {
             } catch (Exception ignored) {}
 
             long available = cudaFree + poolReusable;
-            // Non-P2P secondary devices: when nd4j.dsp.multiGpuShard=true the caller
-            // explicitly requests op-segment sharding across all GPUs.  In that mode give
-            // non-P2P devices their full available budget so the placement policy assigns
-            // tail segments to the secondary GPU (fitting the oversized model).  Outputs
-            // produced on the secondary device are migrated back to device-0 asynchronously
-            // after each execution (platformGetOutputForDevice0 in the CUDA backend).
-            // Without the flag (default) the budget is zero: non-P2P devices receive no ops
-            // and behaviour is byte-identical to single-GPU.  The explicit fraction override
-            // (nd4j.dsp.nonP2pBudgetFraction) still applies on top of the flag.
-            boolean multiGpuShard = Boolean.getBoolean(ND4JSystemProperties.DSP_MULTI_GPU_SHARD);
-            // Helper: parse double property, returning defaultVal when absent or empty string.
-            // Surefire can inject empty strings for <systemPropertyVariables> entries that have
-            // no corresponding -D flag on the Maven command line; Double.parseDouble("") throws.
-            String nonP2pPropRaw = System.getProperty(ND4JSystemProperties.DSP_NON_P2P_BUDGET_FRACTION);
-            String nonP2pProp = (nonP2pPropRaw != null) ? nonP2pPropRaw.trim() : null;
-            double nonP2pFraction = multiGpuShard ? 1.0 :
-                    ((nonP2pProp != null && !nonP2pProp.isEmpty()) ? Double.parseDouble(nonP2pProp) : 0.0);
-            // Allow explicit fraction override even in shard mode (e.g. 0.8 to leave headroom)
-            if (multiGpuShard && nonP2pProp != null && !nonP2pProp.isEmpty()) {
-                nonP2pFraction = Double.parseDouble(nonP2pProp);
+            if (available > 0) {
+                freeMemory.put(d, available);
             }
-            long budget = (d == 0 || p2p) ? available : (long)(available * nonP2pFraction);
-            if (budget > 0) {
-                freeMemory.put(d, budget);
-            }
-            log.debug("  Device {}: {}MB cudaFree + {}MB poolReusable = {}MB available / {}MB total (P2P: {}){}",
+            log.debug("  Device {}: {}MB cudaFree + {}MB poolReusable = {}MB available / {}MB total (P2P: {})",
                     d, cudaFree / (1024 * 1024), poolReusable / (1024 * 1024),
                     available / (1024 * 1024), total / (1024 * 1024),
-                    d == 0 ? "self" : p2p ? "yes" : "no (host-staged transfers)",
-                    budget <= 0 ? " [excluded from compute]" :
-                    ((!p2p && d != 0 && nonP2pFraction < 1.0) ? " [budget: " + (budget / (1024 * 1024)) + "MB @ " + (int)(nonP2pFraction * 100) + "%]" : ""));
+                    d == 0 ? "self" : p2p ? "yes" : "no (host-staged transfers)");
         }
         if (freeMemory.size() <= 1) return; // Only one usable device
         MultiGpuTracer.traceParallelExec("device-discovery",
@@ -337,8 +307,6 @@ public class DynamicShapePlan implements Closeable {
         if (totalMem <= 0) return;
 
         // Sort devices largest-first so the primary GPU gets the bulk of ops.
-        // With a 24GB RTX 4090 + 8GB RTX 3070 Ti (30% budget = 2.4GB), device 0 gets
-        // ~91% of ops. The secondary GPU only gets overflow ops at the end of the graph.
         // This minimizes cross-device data transfers and ensures the primary GPU (which
         // holds all model constants) runs most ops without needing constant replication.
         List<Map.Entry<Integer, Long>> sorted = new ArrayList<>(deviceMemoryBudgets.entrySet());
