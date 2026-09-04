@@ -372,6 +372,17 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("mingw-w64-x86_64-vulkan-headers", action_source)
         self.assertIn("mingw-w64-x86_64-vulkan-loader", action_source)
 
+    def test_android_managed_llvm_uses_bionic_libc_contract(self):
+        root = Path(__file__).parents[2]
+        dependencies = (root / "libnd4j/cmake/Dependencies.cmake").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("-DLLVM_ENABLE_THREADS=OFF", dependencies)
+        self.assertIn("-DHAVE_LIBPTHREAD=OFF", dependencies)
+        self.assertIn("-DPTHREAD_IN_LIBC=ON", dependencies)
+        self.assertIn("-DHAVE_LIBRT=OFF", dependencies)
+        self.assertNotIn("-DCMAKE_THREAD_LIBS_INIT", dependencies)
+
     def test_windows_vulkan_uses_static_mlir_spirv_graph(self):
         root = Path(__file__).parents[2]
         dependencies = (root / "libnd4j/cmake/Dependencies.cmake").read_text(

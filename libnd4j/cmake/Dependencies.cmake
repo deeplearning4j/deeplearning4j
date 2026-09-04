@@ -2641,14 +2641,22 @@ function(setup_triton)
                 -DLLVM_USE_HOST_TOOLS=ON
                 -DLLVM_BUILD_UTILS=OFF)
         endif()
-        # Android bionic has no libpthread/librt; LLVM's pthreads probe then
-        # falls back to "-lpthreads", which fails the tblgen link ("unable to
-        # find library -lpthreads"). Threads are not required for the cross
-        # codegen path, so disable them whenever the target is Android.
-        # Note: the triton subproject receives the toolchain via forwarded
-        # CMAKE_SYSTEM_NAME, so ANDROID itself may be undefined here.
+        # Android bionic provides pthread and shm_open in libc; it has no
+        # separate libpthread or librt. LLVM's generic probes can nevertheless
+        # report those host-style libraries as present under an NDK toolchain,
+        # after which FindThreads selects nonexistent -lpthreads and LLVM
+        # Support adds nonexistent -lrt. Correct the target cache inputs at
+        # configure time. The NATIVE TableGen subproject is a separate host
+        # build and performs its normal host probes, so these target-only facts
+        # do not weaken or bypass host-tool generation.
+        # Note: the external project receives the Android toolchain through the
+        # forwarded target args, so ANDROID itself may be undefined here.
         if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "Android")
-            list(APPEND TRITON_LLVM_CMAKE_ARGS -DLLVM_ENABLE_THREADS=OFF)
+            list(APPEND TRITON_LLVM_CMAKE_ARGS
+                -DLLVM_ENABLE_THREADS=OFF
+                -DHAVE_LIBPTHREAD=OFF
+                -DPTHREAD_IN_LIBC=ON
+                -DHAVE_LIBRT=OFF)
         endif()
 
         if(_TRITON_MINGW_VULKAN_STATIC)
