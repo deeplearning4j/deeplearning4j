@@ -336,41 +336,6 @@ function(collect_all_sources out_source_list)
         split_heavy_op(LOOPS_SOURCES_CUDA reduce_same.cu       loops/cuda/reduce/reduce_same.cu          12)
         split_heavy_op(LOOPS_SOURCES_CUDA bitonicSortStep.cu   loops/cuda/specials/bitonicSortStep.cu    12)
         split_heavy_op(LOOPS_SOURCES_CUDA bitonicArbitraryStep.cu loops/cuda/specials/bitonicArbitraryStep.cu 12)
-        # random_kernels_{double,float16-family} TUs deterministically crash
-        # nvcc: cicc segfaults on the double-float16 TUs (CUDA 12.6/12.9
-        # Linux) and Windows cudafe1/ptxas access-violates on the
-        # double-family float16/bfloat16 TUs — always in the half-precision
-        # double-family expansion at compute_90. Compile those TUs at -O0
-        # (plus -Xptxas -O0 for the ptxas access violation): the crash is in
-        # the compiler's optimized codegen path and -O0 output is functionally
-        # identical for these launch-only kernels.
-        # NOTE: random_kernels_double_float16 lives only as generated per-op
-        # TUs random_kernels_double_float16_op<N>.cu (checked in) since the
-        # per-op split; match the whole family by file NAME against the
-        # collected source list so the property paths always equal the
-        # target's source paths (a literal relative path that does not match
-        # the glob result is silently ignored by set_source_files_properties,
-        # which previously disabled this entire workaround).
-        set(_SD_RANDOM_HALF_PRECISION_TUS "")
-        foreach(_sd_src IN LISTS LOOPS_SOURCES_CUDA)
-            get_filename_component(_sd_name "${_sd_src}" NAME)
-            if(_sd_name MATCHES
-                "^random_kernels_(double_float16(_op[0-9]+)?|double_bfloat16|single_float16|single_bfloat16|triple_float16|triple_bfloat16)\\.cu$")
-                list(APPEND _SD_RANDOM_HALF_PRECISION_TUS "${_sd_src}")
-            endif()
-        endforeach()
-        if(NOT _SD_RANDOM_HALF_PRECISION_TUS)
-            message(FATAL_ERROR
-                "No half-precision random TUs found for the nvcc -O0 crash "
-                "avoidance list — the source collection changed; update the "
-                "random_kernels pattern in MainBuildFlow.cmake.")
-        endif()
-        set_source_files_properties(${_SD_RANDOM_HALF_PRECISION_TUS}
-            PROPERTIES COMPILE_FLAGS "-O0 -Xptxas -O0")
-        list(LENGTH _SD_RANDOM_HALF_PRECISION_TUS _SD_RANDOM_HALF_COUNT)
-        message(STATUS
-            "Compiling ${_SD_RANDOM_HALF_COUNT} half-precision random TUs at -O0 "
-            "(nvcc optimized-codegen crash avoidance)")
         split_heavy_op(LOOPS_SOURCES_CUDA oesTad.cu            loops/cuda/specials/oesTad.cu             12)
         # NOTE: where.cu intentionally NOT split — its object weight is the shared
         # device-kernel impl (compiled into every TU), not the type instantiations
