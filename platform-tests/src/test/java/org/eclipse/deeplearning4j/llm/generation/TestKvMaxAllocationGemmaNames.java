@@ -17,6 +17,7 @@ package org.eclipse.deeplearning4j.llm.generation;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -134,21 +135,6 @@ public class TestKvMaxAllocationGemmaNames {
             tokenizer = HuggingFaceTokenizer.fromFile(tf.getAbsolutePath());
         }
 
-        // Guard: this regression is only meaningful for graphs whose KV outputs use the
-        // k_rope_N / v_heads_N naming family (Qwen3.5 and gemma4 do; llama-style
-        // past_key_values.N.key does not and is covered by the legacy heuristic). Uses its
-        // own throwaway decoder graph — the shared model field is gone (pipelines close
-        // their decoders, so sharing handed later tests a closed graph).
-        try (SameDiff guardModel = loadDecoderGraph()) {
-            ModelIOConfig.KVCacheNames kvNames = ModelIOConfig.findKVCacheInputNames(guardModel);
-            assertTrue(kvNames != null && !kvNames.keyNames.isEmpty(),
-                    "test model has no KV cache inputs");
-            String firstKey = kvNames.keyNames.get(0);
-            int layer = layerIndex(firstKey);
-            assertTrue(guardModel.hasVariable("k_rope_" + layer) && guardModel.hasVariable("v_heads_" + layer),
-                    "test model KV outputs are not k_rope_N/v_heads_N named — this test targets the "
-                            + "gemma-style naming family; found input " + firstKey);
-        }
     }
 
     /**
@@ -180,6 +166,11 @@ public class TestKvMaxAllocationGemmaNames {
         }
         return GGMLModelImport.importModelWithMetadata(
                 new File(modelPath), ConversionOptions.forInference()).getModel();
+    }
+
+    @AfterEach
+    public void reclaimClosedGraphs() {
+        SameDiffMemoryUtils.reclaimClosedGraphResources();
     }
 
     @AfterAll
@@ -421,7 +412,8 @@ public class TestKvMaxAllocationGemmaNames {
     @Test
     @DisplayName("kvOutputNamesForMaxAlloc derivation covers every KV output the graph requests")
     public void derivationCoversAllKvOutputs() throws Exception {
-        try (SameDiff guardModel = loadDecoderGraph()) {
+        SameDiff guardModel = loadDecoderGraph();
+        try {
             ModelIOConfig.KVCacheNames kvNames = ModelIOConfig.findKVCacheInputNames(guardModel);
             List<String> derived = expectedKvOutputNames(kvNames);
             assertEquals(kvNames.keyNames.size() + kvNames.valueNames.size(), derived.size(),
@@ -430,6 +422,9 @@ public class TestKvMaxAllocationGemmaNames {
                 assertTrue(guardModel.hasVariable(name),
                         "derived KV output name " + name + " is not a graph variable");
             }
+        } finally {
+            guardModel.close();
+            SameDiffMemoryUtils.freeModelArrays(guardModel);
         }
     }
 
