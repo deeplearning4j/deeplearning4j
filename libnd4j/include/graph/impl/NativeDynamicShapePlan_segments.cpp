@@ -1465,8 +1465,8 @@ DspExecutionResult NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
   DSP_DIAG(EXECUTE, "PRE-EXECUTE: seg[%d-%d] backend=%s shapeKey=%lld",
            seg.def.startSlot, seg.def.endSlot, backendName, (long long)segShapeKey);
 
-#if !defined(SD_VULKAN)
   bool nativeExecutionStarted = false;
+#if !defined(SD_VULKAN)
   // NativeSlotExecutor callback — shared by OneDNN and OpenVINO backends.
   // Uses persistent GraphSegments per native range so FunctionalReplayHandle
   // accumulates and CPU_FROZEN_REPLAY fires after the first call.
@@ -3329,9 +3329,9 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
   bool functionalRecordable = false;
   bool functionalReplaySucceeded = false;
   bool functionalProgramReady = false;
-#if !defined(SD_VULKAN)
   bool functionalCaptureStarted = false;
   bool functionalReplayExpected = false;
+#if !defined(SD_VULKAN)
   int functionalReplayCountBefore = 0;
   int functionalReplayDelta = 0;
   std::vector<FunctionalReplayPointerBinding> functionalPointerSnapshot;
