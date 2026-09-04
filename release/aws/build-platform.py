@@ -3558,7 +3558,10 @@ def android_cmake_args(source: Path, build: dict, variant: dict, env: dict[str, 
         raise ValueError("Android builds require ANDROID_NDK and OPENBLAS_PATH")
     arm64 = build["javacppPlatform"] == "android-arm64"
     abi, toolchain = ("arm64-v8a", "android-arm64.cmake") if arm64 else ("x86_64", "android-x86_64.cmake")
-    api = android_api_level(variant)
+    # build must be forwarded so the android-x86_64 default (API 23, where
+    # bionic exports the stderr/stdout data symbols) applies to the cmake
+    # ANDROID_PLATFORM; a variant-level androidApi field still wins.
+    api = android_api_level(variant, build)
     openblas_library = Path(
         env.get("OPENBLAS_LIBRARY", str(Path(env["OPENBLAS_PATH"]) / "libopenblas.so"))
     )
@@ -3767,7 +3770,10 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
                 f"{existing_mvn_flags} {compile_flags}".strip()
             )
         if build["javacppPlatform"].startswith("android-"):
-            variant_env["DL4J_ANDROID_API"] = str(android_api_level(variant))
+            # Forward build so DL4J_ANDROID_API agrees with android_cmake_args
+            # (android-x86_64 defaults to API 23; the previous API-21 triple
+            # failed to link libTritonCPURuntime.so on undefined stderr/stdout).
+            variant_env["DL4J_ANDROID_API"] = str(android_api_level(variant, build))
             variant_env["DL4J_CMAKE_ARGS"] = android_cmake_args(source, build, variant, variant_env)
         if cuda_sbsa_cross_enabled(build):
             variant_env["DL4J_CUDA_CROSS_SBSA"] = "1"

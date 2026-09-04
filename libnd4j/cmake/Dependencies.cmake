@@ -2617,17 +2617,29 @@ function(setup_triton)
         # though the compilers target a foreign triple.
         list(APPEND TRITON_LLVM_CMAKE_ARGS
             ${_TRITON_TARGET_CMAKE_ARGS})
-        # The host tblgen must be used whenever the managed host-tools recipe
-        # is part of this lane, independent of configure-time file existence —
-        # add_dependencies(triton_llvm_external triton_llvm_host_tools_external)
-        # guarantees the tools are installed before the target LLVM builds, but
-        # the files do not exist yet when THIS cmake configure runs.
-        # Gate on the tool dir variable being set instead of file existence.
-        if(_TRITON_LLVM_NATIVE_TOOL_DIR)
+        # The target tblgen executables must never be built with the target
+        # toolchain: on cross lanes they cannot run on the host (and bionic
+        # lacks -lpthreads/-lrt, failing the link), and on native lanes a
+        # dangling -DLLVM_TABLEGEN path produces "No rule to make target
+        # .../llvm-tblgen" because the file is only produced by `make install`
+        # after the build. Use LLVM's own cross-compilation machinery instead:
+        # LLVM_USE_HOST_TOOLS=ON (auto-set when the sub-build is cross) makes
+        # add_tablegen route .inc generation through the NATIVE subproject
+        # (host compilers, ordered via the ${target}-host dependency), and
+        # LLVM_BUILD_UTILS=OFF makes it EXCLUDE_FROM_ALL the cross-linked
+        # llvm-tblgen/mlir-tblgen so `--target all` never builds them, and
+        # removes their install() rules so `cmake --install` never needs the
+        # excluded binaries. Passing -DLLVM_NATIVE_TOOL_DIR would flip
+        # ${project}_TABLEGEN to the native file and defeat that exclusion,
+        # so it is deliberately NOT forwarded to the sub-build here.
+        set(_TRITON_LLVM_HOST_TOOLS_IN_LANE FALSE)
+        if(_TRITON_MANAGED_HOST_TOOLS_READY OR TARGET triton_llvm_host_tools_external)
+            set(_TRITON_LLVM_HOST_TOOLS_IN_LANE TRUE)
+        endif()
+        if(_TRITON_LLVM_HOST_TOOLS_IN_LANE)
             list(APPEND TRITON_LLVM_CMAKE_ARGS
-                -DLLVM_NATIVE_TOOL_DIR=${_TRITON_LLVM_NATIVE_TOOL_DIR}
-                -DLLVM_TABLEGEN=${_TRITON_LLVM_NATIVE_TOOL_DIR}/llvm-tblgen${_TRITON_HOST_EXE_SUFFIX}
-                -DMLIR_TABLEGEN=${_TRITON_LLVM_NATIVE_TOOL_DIR}/mlir-tblgen${_TRITON_HOST_EXE_SUFFIX})
+                -DLLVM_USE_HOST_TOOLS=ON
+                -DLLVM_BUILD_UTILS=OFF)
         endif()
         # Android bionic has no libpthread/librt; LLVM's pthreads probe then
         # falls back to "-lpthreads", which fails the tblgen link ("unable to
