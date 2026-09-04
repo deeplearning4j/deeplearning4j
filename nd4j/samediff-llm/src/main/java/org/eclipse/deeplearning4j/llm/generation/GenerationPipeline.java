@@ -64,7 +64,6 @@ import org.nd4j.autodiff.samediff.execution.DynamicShapeSlot;
 import org.nd4j.autodiff.samediff.execution.PlanPhase;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
-import org.nd4j.nativeblas.OpaqueDataBuffer;
 import org.bytedeco.javacpp.Pointer;
 
 import java.io.File;
@@ -795,16 +794,9 @@ public class GenerationPipeline implements AutoCloseable {
 
     private GenerationResult generateTokenIds(int[] promptTokenIds, int maxNewTokens) {
         int restoreDevice = switchToDecoderDevice("text-generation");
-        // Suppress cross-device routing for the entire generation. Model weights,
-        // prompt tensors, and KV caches must stay on the decoder's execution device.
-        // The CUDA async memory pool reports pool-reserved memory as "used" to
-        // cudaMemGetInfo, causing false OOM detection and unnecessary cross-device
-        // routing. The pool handles actual OOM via trim+retry.
-        OpaqueDataBuffer.suppressCrossDeviceRouting(true);
         try {
             return generateInternal(promptTokenIds, maxNewTokens);
         } finally {
-            OpaqueDataBuffer.suppressCrossDeviceRouting(false);
             restoreDevice(restoreDevice, "text-generation");
         }
     }
@@ -4317,7 +4309,6 @@ public class GenerationPipeline implements AutoCloseable {
      */
     public GenerationSession startSession(String prompt, int capacity) {
         int restoreDevice = switchToDecoderDevice("start-session");
-        OpaqueDataBuffer.suppressCrossDeviceRouting(true);
         try {
             if (embedTokens != null || !ModelIOConfig.isInGraphKvCache(decoder)) {
                 throw new UnsupportedOperationException(
@@ -4397,7 +4388,6 @@ public class GenerationPipeline implements AutoCloseable {
                     state.sessionId, promptTokenIds.length, resolvedCapacity, state.maxKvLen);
             return session;
         } finally {
-            OpaqueDataBuffer.suppressCrossDeviceRouting(false);
             restoreDevice(restoreDevice, "start-session");
         }
     }
@@ -4476,7 +4466,6 @@ public class GenerationPipeline implements AutoCloseable {
     /** Device-guarded native decode step for a session (with capacity clamp for continuation). */
     GenerationResult decodeInSession(InGraphKvState state, int maxNewTokens, boolean isContinuation) {
         int restoreDevice = switchToDecoderDevice("session-decode");
-        OpaqueDataBuffer.suppressCrossDeviceRouting(true);
         try {
             if (isContinuation) {
                 int available = state.remainingCapacity();
@@ -4493,7 +4482,6 @@ public class GenerationPipeline implements AutoCloseable {
             }
             return runInGraphNativeDecode(state, maxNewTokens, isContinuation, System.currentTimeMillis());
         } finally {
-            OpaqueDataBuffer.suppressCrossDeviceRouting(false);
             restoreDevice(restoreDevice, "session-decode");
         }
     }
@@ -4509,7 +4497,6 @@ public class GenerationPipeline implements AutoCloseable {
     void appendInSession(InGraphKvState state, int[] tokens) {
         if (tokens == null || tokens.length == 0) return;
         int restoreDevice = switchToDecoderDevice("session-append");
-        OpaqueDataBuffer.suppressCrossDeviceRouting(true);
         try {
             // Tokens whose K/V must be committed now: [oldLast, tokens[0..k-2]]. tokens[k-1] becomes the
             // new unwritten last.
@@ -4596,7 +4583,6 @@ public class GenerationPipeline implements AutoCloseable {
             state.lastGeneratedToken = tokens[tokens.length - 1];
             if (state.stopTokenIds.contains(state.lastGeneratedToken)) state.eosReached = true;
         } finally {
-            OpaqueDataBuffer.suppressCrossDeviceRouting(false);
             restoreDevice(restoreDevice, "session-append");
         }
     }
@@ -6554,9 +6540,6 @@ public class GenerationPipeline implements AutoCloseable {
     public GenerationResult generate(INDArray prefillEmbeddings, int[] promptTokenIds,
                                      int maxNewTokens, DecodeOptions options) {
         int restoreDevice = switchToDecoderDevice("embedding-generation");
-        // Suppress cross-device routing for the entire generation (same rationale
-        // as generate(String, int): pool-reserved memory causes false OOM routing).
-        OpaqueDataBuffer.suppressCrossDeviceRouting(true);
         try {
             // Use the native AutoregressiveDecode C++ op for maximum performance.
             // The native path does: prefill → warmup → freeze → C++ decode loop with
@@ -6565,7 +6548,6 @@ public class GenerationPipeline implements AutoCloseable {
             // mixed-type GEMV handling.
             return generateNative(prefillEmbeddings, promptTokenIds, maxNewTokens, options);
         } finally {
-            OpaqueDataBuffer.suppressCrossDeviceRouting(false);
             restoreDevice(restoreDevice, "embedding-generation");
         }
     }

@@ -25,6 +25,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.tests.BaseND4JTest;
@@ -33,15 +35,16 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
- * Isolated behavior tests for DSP multi-GPU op-segment sharding
- * ({@code -Dnd4j.dsp.multiGpuShard=true}).
+ * Isolated behavior tests for automatic DSP multi-GPU op-segment sharding.
  *
  * <p>These flesh out the non-P2P cross-device execution path — input migration,
  * secondary-device constant replication, and output-back-migration — on minimal
@@ -89,23 +92,45 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
     }
 
     /**
-     * Run {@code sd} once with DSP enabled and the shard flag set to {@code shard}.
+     * Run {@code sd} once with DSP enabled. Automatic multi-GPU placement is the default;
+     * {@code singleGpu} exercises the explicit opt-out used for a reference result.
      * Returns a {@code dup()} of the output (avoids CUDA view-staleness on the caller side).
-     * Saves and restores both the DSP-enabled flag and the shard system property.
+     * Saves and restores both the DSP-enabled flag and the single-GPU system property.
      */
-    private static INDArray runOnce(SameDiff sd, INDArray x, boolean shard) {
+    private static INDArray runOnce(SameDiff sd, INDArray x, boolean singleGpu) {
         boolean prevDsp = InferenceSession.isDynamicShapePlanEnabled();
-        String prevShard = System.getProperty(ND4JSystemProperties.DSP_MULTI_GPU_SHARD);
+        String prevSingleGpu = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         InferenceSession.setDynamicShapePlanEnabled(true);
-        System.setProperty(ND4JSystemProperties.DSP_MULTI_GPU_SHARD, Boolean.toString(shard));
+        if (singleGpu) System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, "true");
+        else System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         try {
             Map<String, INDArray> res = sd.output(Collections.singletonMap("x", x), "out");
             return res.get("out").dup();
         } finally {
             InferenceSession.setDynamicShapePlanEnabled(prevDsp);
-            if (prevShard != null) System.setProperty(ND4JSystemProperties.DSP_MULTI_GPU_SHARD, prevShard);
-            else System.clearProperty(ND4JSystemProperties.DSP_MULTI_GPU_SHARD);
+            if (prevSingleGpu != null) System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, prevSingleGpu);
+            else System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         }
+    }
+
+    private static void assertUsesEveryCudaDevice(SameDiff sd) {
+        DynamicShapePlanExecutor executor = sd.getOrCreateSession().getDynamicShapePlanExecutor();
+        assertNotNull(executor, "automatic multi-GPU run did not create a DSP executor");
+        DynamicShapePlan plan = executor.getCurrentPlan();
+        assertNotNull(plan, "automatic multi-GPU run did not retain its DSP plan");
+
+        Set<Integer> assignedDevices = new HashSet<>();
+        for (var slot : plan.getSlots()) {
+            if (slot.getTargetDeviceId() >= 0) assignedDevices.add(slot.getTargetDeviceId());
+        }
+        int availableDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        for (int device = 0; device < availableDevices; device++) {
+            assertTrue(assignedDevices.contains(device),
+                    "automatic DSP placement omitted CUDA device " + device + ": "
+                            + plan.getDeviceAssignmentSummary());
+        }
+        assertEquals(availableDevices, plan.getNumDistinctDevices(),
+                "DSP plan must report every available CUDA device");
     }
 
     // -----------------------------------------------------------------------
@@ -126,8 +151,9 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         SameDiff single  = buildMlp(64, 128, 6, 16, 12345L);
         SameDiff sharded = buildMlp(64, 128, 6, 16, 12345L);
 
-        INDArray ref = runOnce(single,  x.dup(), false);
-        INDArray got = runOnce(sharded, x.dup(), true);
+        INDArray ref = runOnce(single,  x.dup(), true);
+        INDArray got = runOnce(sharded, x.dup(), false);
+        assertUsesEveryCudaDevice(sharded);
 
         assertArrayEquals(ref.shape(), got.shape(), "sharded output shape must match single-GPU");
         double maxDiff = ref.sub(got).amaxNumber().doubleValue();
@@ -161,19 +187,20 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
 
         // Single-GPU reference evaluated once — its output is stable.
         SameDiff single = buildMlp(64, 128, 6, 16, 42L);
-        INDArray ref = runOnce(single, x.dup(), false);
+        INDArray ref = runOnce(single, x.dup(), true);
 
         // ONE sharded instance reused across all iterations to exercise steady state.
         SameDiff sharded = buildMlp(64, 128, 6, 16, 42L);
 
         boolean prevDsp   = InferenceSession.isDynamicShapePlanEnabled();
-        String prevShard  = System.getProperty(ND4JSystemProperties.DSP_MULTI_GPU_SHARD);
+        String prevSingleGpu = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         InferenceSession.setDynamicShapePlanEnabled(true);
-        System.setProperty(ND4JSystemProperties.DSP_MULTI_GPU_SHARD, "true");
+        System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         try {
             for (int i = 0; i < REPLAY_ITERATIONS; i++) {
                 Map<String, INDArray> res = sharded.output(Collections.singletonMap("x", x.dup()), "out");
                 INDArray got = res.get("out").dup();
+                assertUsesEveryCudaDevice(sharded);
 
                 assertArrayEquals(ref.shape(), got.shape(),
                         "sharded output shape mismatch at iteration " + i);
@@ -188,8 +215,8 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             }
         } finally {
             InferenceSession.setDynamicShapePlanEnabled(prevDsp);
-            if (prevShard != null) System.setProperty(ND4JSystemProperties.DSP_MULTI_GPU_SHARD, prevShard);
-            else System.clearProperty(ND4JSystemProperties.DSP_MULTI_GPU_SHARD);
+            if (prevSingleGpu != null) System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, prevSingleGpu);
+            else System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         }
     }
 
@@ -221,8 +248,9 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         SameDiff single  = buildMlp(32, 64, 2, 8, seed);
         SameDiff sharded = buildMlp(32, 64, 2, 8, seed);
 
-        INDArray ref = runOnce(single,  x.dup(), false);
-        INDArray got = runOnce(sharded, x.dup(), true);
+        INDArray ref = runOnce(single,  x.dup(), true);
+        INDArray got = runOnce(sharded, x.dup(), false);
+        assertUsesEveryCudaDevice(sharded);
 
         assertArrayEquals(ref.shape(), got.shape(),
                 "cross-device: output shape must match single-GPU");
@@ -265,8 +293,9 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         SameDiff single  = buildMlp(64, 128, 6, 16, 55555L);
         SameDiff sharded = buildMlp(64, 128, 6, 16, 55555L);
 
-        INDArray ref = runOnce(single,  x.dup(), false);
-        INDArray got = runOnce(sharded, x.dup(), true);
+        INDArray ref = runOnce(single,  x.dup(), true);
+        INDArray got = runOnce(sharded, x.dup(), false);
+        assertUsesEveryCudaDevice(sharded);
 
         assertArrayEquals(new long[]{batch, 16}, got.shape(),
                 "unexpected output shape for batch=" + batch);
@@ -283,15 +312,14 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
     }
 
     // -----------------------------------------------------------------------
-    // Test 5 — flag-off is deterministic / identical to single-GPU
+    // Test 5 — explicit single-GPU override is deterministic
     // -----------------------------------------------------------------------
 
     /**
-     * Behavior 5 (safety): with {@code DSP_MULTI_GPU_SHARD=false}, both runs are
-     * byte-identical (the flag must be a no-op on single-device execution).
+     * Behavior 5 (safety): the explicit single-GPU override remains deterministic.
      */
     @Test
-    public void testFlagOffIsSingleGpuIdentical() {
+    public void testSingleGpuOverrideIsDeterministic() {
         assumeTrue(Nd4j.getAffinityManager().getNumberOfDevices() > 1,
                 "requires >1 CUDA device");
 
@@ -299,10 +327,10 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         SameDiff a = buildMlp(64, 128, 6, 16, 999L);
         SameDiff b = buildMlp(64, 128, 6, 16, 999L);
 
-        INDArray r1 = runOnce(a, x.dup(), false);
-        INDArray r2 = runOnce(b, x.dup(), false);
+        INDArray r1 = runOnce(a, x.dup(), true);
+        INDArray r2 = runOnce(b, x.dup(), true);
 
-        assertTrue(r1.equalsWithEps(r2, 1e-6), "flag-off runs must be deterministic/identical");
+        assertTrue(r1.equalsWithEps(r2, 1e-6), "single-GPU runs must be deterministic/identical");
     }
 
     // -----------------------------------------------------------------------
@@ -354,18 +382,19 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         INDArray x = Nd4j.rand(DataType.FLOAT, 8, 64);
 
         SameDiff single = buildViewMlp(64, 128, 6, 16, 7L);
-        INDArray ref = runOnce(single, x.dup(), false);
+        INDArray ref = runOnce(single, x.dup(), true);
 
         SameDiff sharded = buildViewMlp(64, 128, 6, 16, 7L);
 
         boolean prevDsp  = InferenceSession.isDynamicShapePlanEnabled();
-        String prevShard = System.getProperty(ND4JSystemProperties.DSP_MULTI_GPU_SHARD);
+        String prevSingleGpu = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         InferenceSession.setDynamicShapePlanEnabled(true);
-        System.setProperty(ND4JSystemProperties.DSP_MULTI_GPU_SHARD, "true");
+        System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         try {
             for (int i = 0; i < REPLAY_ITERATIONS; i++) {
                 Map<String, INDArray> res = sharded.output(Collections.singletonMap("x", x.dup()), "out");
                 INDArray got = res.get("out").dup();
+                assertUsesEveryCudaDevice(sharded);
 
                 assertArrayEquals(ref.shape(), got.shape(),
                         "sharded view-op output shape mismatch at iteration " + i);
@@ -379,55 +408,28 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             }
         } finally {
             InferenceSession.setDynamicShapePlanEnabled(prevDsp);
-            if (prevShard != null) System.setProperty(ND4JSystemProperties.DSP_MULTI_GPU_SHARD, prevShard);
-            else System.clearProperty(ND4JSystemProperties.DSP_MULTI_GPU_SHARD);
+            if (prevSingleGpu != null) System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, prevSingleGpu);
+            else System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         }
     }
 
-    /**
-     * Behavior 7: force the dev0-&gt;dev1 shard boundary across op positions by sweeping the
-     * non-P2P budget fraction (assignDevices assigns ops in execution order proportional to the
-     * per-device budget). At some ratios a permute (view) lands at the boundary and is migrated
-     * as a cross-segment VIEW input (its buffer is the parent's, so it must be materialized on
-     * the source device). Sharded output must match single-GPU at EVERY split ratio. The
-     * migration-point MULTI_DEVICE diag prints isView=1 when the view-input path actually runs.
-     */
+    /** Behavior 7: automatic placement must exercise a non-P2P view boundary correctly. */
     @Test
-    public void testShardedViewInputBoundarySweep() {
+    public void testAutomaticShardedViewInputBoundary() {
         assumeTrue(Nd4j.getAffinityManager().getNumberOfDevices() > 1,
                 "multi-GPU sharding requires >1 CUDA device");
 
         INDArray x = Nd4j.rand(DataType.FLOAT, 8, 64);
         SameDiff single = buildViewMlp(64, 128, 6, 16, 99L);
-        INDArray ref = runOnce(single, x.dup(), false);
+        SameDiff sharded = buildViewMlp(64, 128, 6, 16, 99L);
+        INDArray ref = runOnce(single, x.dup(), true);
+        INDArray got = runOnce(sharded, x.dup(), false);
 
-        boolean prevDsp  = InferenceSession.isDynamicShapePlanEnabled();
-        String prevShard = System.getProperty(ND4JSystemProperties.DSP_MULTI_GPU_SHARD);
-        String prevFrac  = System.getProperty(ND4JSystemProperties.DSP_NON_P2P_BUDGET_FRACTION);
-        InferenceSession.setDynamicShapePlanEnabled(true);
-        System.setProperty(ND4JSystemProperties.DSP_MULTI_GPU_SHARD, "true");
-        try {
-            double[] fractions = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9};
-            for (double frac : fractions) {
-                System.setProperty(ND4JSystemProperties.DSP_NON_P2P_BUDGET_FRACTION, Double.toString(frac));
-                SameDiff sharded = buildViewMlp(64, 128, 6, 16, 99L);
-                Map<String, INDArray> res = sharded.output(Collections.singletonMap("x", x.dup()), "out");
-                INDArray got = res.get("out").dup();
-                assertArrayEquals(ref.shape(), got.shape(),
-                        "sharded output shape mismatch at nonP2pFraction=" + frac);
-                assertFalse(got.isNaN().any(), "sharded output has NaN at nonP2pFraction=" + frac);
-                double maxDiff = ref.sub(got).amaxNumber().doubleValue();
-                log.info("BOUNDARY-SWEEP nonP2pFraction={} maxAbsDiff={}", frac, maxDiff);
-                assertTrue(got.equalsWithEps(ref, 1e-3),
-                        "sharded view output diverged at nonP2pFraction=" + frac
-                                + " (maxAbsDiff=" + maxDiff + ")");
-            }
-        } finally {
-            InferenceSession.setDynamicShapePlanEnabled(prevDsp);
-            if (prevShard != null) System.setProperty(ND4JSystemProperties.DSP_MULTI_GPU_SHARD, prevShard);
-            else System.clearProperty(ND4JSystemProperties.DSP_MULTI_GPU_SHARD);
-            if (prevFrac != null) System.setProperty(ND4JSystemProperties.DSP_NON_P2P_BUDGET_FRACTION, prevFrac);
-            else System.clearProperty(ND4JSystemProperties.DSP_NON_P2P_BUDGET_FRACTION);
-        }
+        assertUsesEveryCudaDevice(sharded);
+        assertArrayEquals(ref.shape(), got.shape(), "automatic sharded output shape mismatch");
+        assertFalse(got.isNaN().any(), "automatic sharded output has NaN");
+        double maxDiff = ref.sub(got).amaxNumber().doubleValue();
+        assertTrue(got.equalsWithEps(ref, 1e-3),
+                "automatic sharded view output diverged (maxAbsDiff=" + maxDiff + ")");
     }
 }

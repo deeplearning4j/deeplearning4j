@@ -50,7 +50,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.bytedeco.javacpp.LongPointer;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.nativeblas.OpaqueDataBuffer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -402,18 +401,6 @@ public class StaticKvCacheDecodeLoop {
         boolean loggedDirectPath = false;
 
         GenerationResult.FinishReason finishReason = GenerationResult.FinishReason.MAX_TOKENS;
-
-        // Suppress cross-device routing for the ENTIRE decode loop.
-        // Without this, ops that run outside InferenceSession (token_sample, embedding
-        // lookup) can trigger cross-device migration when GPU memory is tight. Under
-        // memory pressure (pool_used near GPU total), selectTargetDevice() sees <128MB
-        // free via cudaMemGetInfo and routes to a second GPU. This creates replicas on
-        // device 1, and the subsequent frozen DSP execution on device 0 encounters stale
-        // CUDA context state → SIGSEGV. The CUDA async memory pool can reuse freed entries
-        // that cudaMemGetInfo doesn't report as free, so the pressure is overstated.
-        // Suppressing routing keeps all decode-loop ops on the model's home device.
-        OpaqueDataBuffer.suppressCrossDeviceRouting(true);
-        try {
 
         // Pin thread to the decoder's execution device before the loop.
         // Vision encoder or model loading may have left the thread on a different
@@ -979,19 +966,11 @@ public class StaticKvCacheDecodeLoop {
                 reusableTokenSampler.close();
                 // Re-query maxKvLen — it was -1 at loop entry (before prefill initialized the cache)
                 long specMaxKvLen = kvCacheManager.getMaxKvLen();
-                // Lift cross-device suppression before entering speculative path
-                // (it will manage its own suppression if needed)
-                OpaqueDataBuffer.suppressCrossDeviceRouting(false);
                 return decodeSpeculative(kvCacheManager, specMaxKvLen, cachePos,
                         resolvedIOConfig, embeddingTable, resolvedHiddenSize,
                         stopTokenIds, generatedTokens, prefillTimeMs, decodeStart,
                         promptTokenIds);
             }
-        }
-
-        } finally {
-            // Always restore cross-device routing when leaving the decode loop
-            OpaqueDataBuffer.suppressCrossDeviceRouting(false);
         }
 
         // Release reusable input arrays

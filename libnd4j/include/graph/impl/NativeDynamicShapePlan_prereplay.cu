@@ -40,6 +40,7 @@
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/PlanExecutionContext.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspDeviceDispatch.h>
 #include <graph/DspStreamGuard.h>
 #include <helpers/DebugHelper.h>
 #include <system/Environment.h>
@@ -205,12 +206,20 @@ DspStagingSyncResult NativeDynamicShapePlan::performPreReplaySync(
   if (numExt <= 0) {
     return {externalArrays, DspStagingSyncStatus::NOT_REQUIRED, 0, false};
   }
-  if (externalArrays == nullptr || stream == nullptr) {
+  // Segment binding installs the target device's canonical stream in DSP TLS.
+  // Prefer it over the execute entry-point stream, which belongs to the plan's
+  // primary device and is invalid after switching to a secondary GPU.
+  void* boundStream = dspGetExecutionStream();
+  cudaStream_t cudaStr = boundStream != nullptr
+      ? reinterpret_cast<cudaStream_t>(boundStream)
+      : ((stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr);
+  if (externalArrays == nullptr || cudaStr == nullptr) {
     DSP_DIAG(EXECUTE, "%s performPreReplaySync: invalid external array/stream",
              diagTag);
     return {nullptr, DspStagingSyncStatus::SYNCHRONIZATION_FAILED,
             static_cast<int>(cudaErrorInvalidValue), false};
   }
+  void* activeStreamPtr = static_cast<void*>(&cudaStr);
 
   auto* execCtx = static_cast<PlanExecutionContext*>(activeExecutionContext());
   if (execCtx == nullptr) {
@@ -221,9 +230,6 @@ DspStagingSyncResult NativeDynamicShapePlan::performPreReplaySync(
     return {nullptr, DspStagingSyncStatus::MISSING_EXECUTION_CONTEXT,
             static_cast<int>(cudaErrorInvalidValue), false};
   }
-
-  cudaStream_t cudaStr = (stream != nullptr)
-      ? *static_cast<cudaStream_t*>(stream) : nullptr;
 
   ExecTarget target = execCtx->execTarget;
   bool needsCrossStream = (target == ExecTarget::GRAPH_CAPTURE ||
@@ -463,7 +469,7 @@ DspStagingSyncResult NativeDynamicShapePlan::performPreReplaySync(
   if (needsStaging && !execCtx->isStagingBuffersSynced()) {
     if (!planLifecycle_.isSlotBySlot() && !externalInputIsVariable_.empty()) {
       DspStagingSyncResult stagingResult =
-          ensureAndSyncStagingBuffers(externalArrays, numExt, stream);
+          ensureAndSyncStagingBuffers(externalArrays, numExt, activeStreamPtr);
       if (!stagingResult.ok() || stagingResult.effectiveExternals == nullptr) {
         DSP_DIAG(EXECUTE,
                  "%s: staging preparation failed status=%d cudaError=%d — aborting",
@@ -598,7 +604,7 @@ DspStagingSyncResult NativeDynamicShapePlan::performPreReplaySync(
   // ── Step 4: Staleness verification ─────────────────────────────────────
   // Only run for graph targets where staging matters.
   if (needsStaging) {
-    verifyStagingNotStale(externalArrays, result, numExt, stream, diagTag);
+    verifyStagingNotStale(externalArrays, result, numExt, activeStreamPtr, diagTag);
   }
 
   // Sync-free external-input discriminator. The existing trace-slot setting
@@ -615,7 +621,7 @@ DspStagingSyncResult NativeDynamicShapePlan::performPreReplaySync(
       }
     }
     if (traceExt >= 0 && traceExt < numExt && result[traceExt] != nullptr) {
-      platformDumpExtInputGpuValues(result[traceExt], traceExt, executeCount_, stream);
+      platformDumpExtInputGpuValues(result[traceExt], traceExt, executeCount_, activeStreamPtr);
     }
   }
 

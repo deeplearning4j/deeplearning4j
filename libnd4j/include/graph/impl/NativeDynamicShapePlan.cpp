@@ -6886,7 +6886,11 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
     {
       auto status = dispatchSegment(segment, externalInputs, numExternalInputs,
                                     stream, segUsedGraph);
-      if (status != Status::OK) return status;
+      if (status != Status::OK) {
+        platformCleanupMigratedInputs();
+        platformRestoreSegmentDevice();
+        return status;
+      }
     }
 
     if (executionTimingEnabled_) {

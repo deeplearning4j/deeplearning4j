@@ -428,39 +428,8 @@ int getPlanNumSlots(sd::Pointer h) { return h ? planOf(h)->getNumSlots() : -1; }
 int getPlanNumSegments(sd::Pointer h) { return h ? static_cast<int>(planOf(h)->getSegments().size()) : -1; }
 int getPlanSegmentCount(sd::Pointer h) { return getPlanNumSegments(h); }
 int getPlanPhase(sd::Pointer h) { return h ? planOf(h)->getPlanPhaseCode() : -1; }
-const char* getPlanLifecycleSnapshot(sd::Pointer h) {
-  thread_local std::string result;
-  if (h == nullptr) {
-    result = "valid=false";
-    return result.c_str();
-  }
-  auto* plan = planOf(h);
-  const auto& lifecycle = plan->planLifecycle();
-  const auto& segments = plan->getSegments();
-  int buildingSegments = 0;
-  int sealedSegments = 0;
-  int failedSegments = 0;
-  for (const auto& segment : segments) {
-    switch (segment.exec.graphNodePhase()) {
-      case GraphNodePhase::BUILDING: ++buildingSegments; break;
-      case GraphNodePhase::SEALED: ++sealedSegments; break;
-      case GraphNodePhase::FAILED: ++failedSegments; break;
-    }
-  }
-  result = "valid=true;planPhase=" + std::to_string(lifecycle.toLegacyCode()) +
-           ";graphNodePhase=" + std::to_string(static_cast<int>(lifecycle.phase)) +
-           ";buildStage=" + std::to_string(static_cast<int>(lifecycle.buildStage)) +
-           ";executionCount=" + std::to_string(plan->getExecuteCount()) +
-           ";postFreezeExecutionCount=" + std::to_string(lifecycle.postFreezeExecCount) +
-           ";pointersStableCount=" + std::to_string(lifecycle.pointersStableCount) +
-           ";compilationDone=" + (lifecycle.compilationDone ? "true" : "false") +
-           ";segmentCount=" + std::to_string(static_cast<int>(segments.size())) +
-           ";buildingSegments=" + std::to_string(buildingSegments) +
-           ";sealedSegments=" + std::to_string(sealedSegments) +
-           ";failedSegments=" + std::to_string(failedSegments);
-  return result.c_str();
-}
-// Compilation-seal counters are provided by legacy/impl/NativeOps_dsp_shared.cpp.
+// Lifecycle snapshots and compilation-seal counters are provided by
+// legacy/impl/NativeOps_dsp_shared.cpp for every backend.
 
 void setPlanCudaGraphsEnabled(sd::Pointer h, bool v) { if (h) planOf(h)->setCudaGraphsEnabled(v); }
 void setPlanShapesFrozen(sd::Pointer h, bool v) { if (h) planOf(h)->setShapesFrozen(v); }
