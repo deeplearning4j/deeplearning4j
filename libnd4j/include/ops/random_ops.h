@@ -172,6 +172,8 @@ class PoissonDistribution {
 template <>
 class PoissonDistribution<float16> {
  public:
+  using T = float16;
+
   no_exec_special no_exec_special_cuda
 
       method_XY
@@ -183,7 +185,7 @@ class PoissonDistribution<float16> {
                                                 sd::DataTypeUtils::max<float>() / 10);
     return x <= 0.f ? float16(0.f)
                     : static_cast<float16>(
-                          sd::math::sd_igammac<float, float, float>(sd::math::sd_floor<float>(x), lambda));
+                          sd::math::sd_igammac<float, float, float>(sd::math::sd_floor<float, float>(x), lambda));
   }
 
   static SD_INLINE SD_HOST_DEVICE float16 op(float16 valueX, sd::LongType idx, sd::LongType length,
@@ -193,7 +195,7 @@ class PoissonDistribution<float16> {
     return vx <= 0.f
                ? float16(0.f)
                : static_cast<float16>(
-                     sd::math::sd_igammac<float, float, float>(sd::math::sd_floor<float>(vx), lambda));
+                     sd::math::sd_igammac<float, float, float>(sd::math::sd_floor<float, float>(vx), lambda));
   }
 };
 
@@ -226,6 +228,8 @@ class GammaDistribution {
 template <>
 class GammaDistribution<float16> {
  public:
+  using T = float16;
+
   no_exec_special no_exec_special_cuda
 
       method_XY
