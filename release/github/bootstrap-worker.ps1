@@ -95,18 +95,18 @@ Write-Host "[dl4j-bootstrap] flatc=$flatcVersion path=$flatcPath"
     throw 'Visual Studio 2022 C++ Build Tools installation was not found'
   }
   $vcVarsVersion = $null
-  if ($Shard -match 'cuda-12-6') {
-    # CUDA 12.6 supports Visual Studio 2022 only with the MSVC 193x
+  if ($Shard -match 'cuda-(12-6|13-1)') {
+    # CUDA 12.6 and 13.1 support Visual Studio 2022 with the MSVC 193x
     # compiler family. Current hosted runners default to a newer 194x
-    # compiler, so install and select the last supported toolset explicitly.
-    $cuda126ToolsetVersion = '14.38'
-    $cuda126ToolsetComponent = 'Microsoft.VisualStudio.Component.VC.14.38.17.8.x86.x64'
+    # compiler, so install and select a supported toolset explicitly.
+    $cudaSupportedToolsetVersion = '14.38'
+    $cudaSupportedToolsetComponent = 'Microsoft.VisualStudio.Component.VC.14.38.17.8.x86.x64'
     $toolsetRoot = Join-Path $vsInstall 'VC\Tools\MSVC'
-    $cuda126Toolset = Get-ChildItem -LiteralPath $toolsetRoot -Directory -ErrorAction SilentlyContinue |
-      Where-Object { $_.Name -like "$cuda126ToolsetVersion.*" } |
+    $cudaSupportedToolset = Get-ChildItem -LiteralPath $toolsetRoot -Directory -ErrorAction SilentlyContinue |
+      Where-Object { $_.Name -like "$cudaSupportedToolsetVersion.*" } |
       Sort-Object Name -Descending |
       Select-Object -First 1
-    if ($null -eq $cuda126Toolset) {
+    if ($null -eq $cudaSupportedToolset) {
       $vsSetup = Join-Path $vsWhereRoot 'Microsoft Visual Studio\Installer\setup.exe'
       if (-not (Test-Path -LiteralPath $vsSetup)) {
         throw "Visual Studio installer was not found at $vsSetup"
@@ -115,22 +115,22 @@ Write-Host "[dl4j-bootstrap] flatc=$flatcVersion path=$flatcPath"
         'modify', '--installPath', "`"$vsInstall`"",
         '--channelId', 'VisualStudio.17.Release',
         '--productId', 'Microsoft.VisualStudio.Product.Enterprise',
-        '--add', $cuda126ToolsetComponent,
+        '--add', $cudaSupportedToolsetComponent,
         '--quiet', '--norestart'
       )
       $setup = Start-Process -FilePath $vsSetup -ArgumentList $setupArguments -Wait -PassThru
       if ($setup.ExitCode -notin @(0, 3010)) {
-        throw "Installing $cuda126ToolsetComponent failed with exit code $($setup.ExitCode)"
+        throw "Installing $cudaSupportedToolsetComponent failed with exit code $($setup.ExitCode)"
       }
-      $cuda126Toolset = Get-ChildItem -LiteralPath $toolsetRoot -Directory -ErrorAction SilentlyContinue |
-        Where-Object { $_.Name -like "$cuda126ToolsetVersion.*" } |
+      $cudaSupportedToolset = Get-ChildItem -LiteralPath $toolsetRoot -Directory -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -like "$cudaSupportedToolsetVersion.*" } |
         Sort-Object Name -Descending |
         Select-Object -First 1
     }
-    if ($null -eq $cuda126Toolset) {
-      throw "CUDA 12.6 requires MSVC 193x, but toolset $cuda126ToolsetVersion was not installed"
+    if ($null -eq $cudaSupportedToolset) {
+      throw "CUDA shard $Shard requires MSVC 193x, but toolset $cudaSupportedToolsetVersion was not installed"
     }
-    $vcVarsVersion = $cuda126ToolsetVersion
+    $vcVarsVersion = $cudaSupportedToolsetVersion
   }
   $vcVars = Join-Path $vsInstall 'VC\Auxiliary\Build\vcvars64.bat'
   if (-not (Test-Path -LiteralPath $vcVars)) {
@@ -157,7 +157,7 @@ Write-Host "[dl4j-bootstrap] flatc=$flatcVersion path=$flatcPath"
     throw 'Visual Studio environment did not expose cl.exe on PATH'
   }
   if ($vcVarsVersion -and $env:VCToolsVersion -notlike "$vcVarsVersion.*") {
-    throw "Requested MSVC $vcVarsVersion for CUDA 12.6, but vcvars selected $($env:VCToolsVersion)"
+    throw "Requested MSVC $vcVarsVersion for CUDA shard $Shard, but vcvars selected $($env:VCToolsVersion)"
   }
 
   $vsEnvironmentNames = @(
@@ -188,14 +188,53 @@ Write-Host "[dl4j-bootstrap] flatc=$flatcVersion path=$flatcPath"
   }
   Write-Host "[dl4j-bootstrap] visual-studio=$vsInstall cl=$((Get-Command cl.exe).Source)"
 
-if ($Shard -match 'cuda-12-([69])' -or $Shard -match 'zluda') {
-  $cudaVersion = if ($Shard -match '12-6') { '12.6' } else { '12.9' }
-  $installer = Join-Path $env:RUNNER_TEMP 'install_cuda_windows.ps1'
-  Invoke-WebRequest 'https://raw.githubusercontent.com/KonduitAI/cuda-install/1bd33888dea7d372de612ec9ecc87343ec8dba4a/.github/actions/install-cuda-windows/install_cuda_windows.ps1' -OutFile $installer -UseBasicParsing
-  $env:CUDA_VERSION = $cudaVersion
-  & $installer
-
+if ($Shard -match 'cuda-(12-([69])|13-1)' -or $Shard -match 'zluda') {
+  $cudaVersion = if ($Shard -match '13-1') {
+    '13.1'
+  } elseif ($Shard -match '12-6') {
+    '12.6'
+  } else {
+    '12.9'
+  }
   $cudaPath = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v$cudaVersion"
+  if ($cudaVersion -eq '13.1') {
+    $cudaInstaller = Join-Path $env:RUNNER_TEMP 'cuda_13.1.2_windows_network.exe'
+    $cudaInstallerUrl = 'https://developer.download.nvidia.com/compute/cuda/13.1.2/network_installers/cuda_13.1.2_windows_network.exe'
+    $cudaInstallerMd5 = '2d5ebeee9c16f9fbe7186ac663bc0d58'
+    Invoke-WebRequest $cudaInstallerUrl -OutFile $cudaInstaller -UseBasicParsing
+    $actualCudaInstallerMd5 = (Get-FileHash -LiteralPath $cudaInstaller -Algorithm MD5).Hash.ToLowerInvariant()
+    if ($actualCudaInstallerMd5 -ne $cudaInstallerMd5) {
+      throw "CUDA 13.1.2 installer MD5 mismatch: expected $cudaInstallerMd5, got $actualCudaInstallerMd5"
+    }
+    $cudaPackages = 'nvcc_13.1 visual_studio_integration_13.1 cublas_dev_13.1 cusolver_dev_13.1 curand_dev_13.1 nvrtc_dev_13.1 cudart_13.1 cusparse_dev_13.1'
+    $cudaInstall = Start-Process -FilePath $cudaInstaller -ArgumentList "-s -n $cudaPackages" -Wait -PassThru
+    if ($cudaInstall.ExitCode -ne 0) {
+      throw "CUDA 13.1.2 installer failed with exit code $($cudaInstall.ExitCode)"
+    }
+
+    $cudnnVersion = '9.19.1.2'
+    $cudnnSha256 = 'ffe9788ec702b8b0d26f43cf1fd6f099e312e62dd0b82e9793ff5ee21bd8e00a'
+    $cudnnZip = Join-Path $env:RUNNER_TEMP "cudnn-$cudnnVersion-cuda13.zip"
+    $cudnnDir = Join-Path $env:RUNNER_TEMP "cudnn-$cudnnVersion-cuda13"
+    Invoke-WebRequest "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/windows-x86_64/cudnn-windows-x86_64-$($cudnnVersion)_cuda13-archive.zip" -OutFile $cudnnZip -UseBasicParsing
+    $actualCudnnSha256 = (Get-FileHash -LiteralPath $cudnnZip -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($actualCudnnSha256 -ne $cudnnSha256) {
+      throw "cuDNN $cudnnVersion archive SHA-256 mismatch: expected $cudnnSha256, got $actualCudnnSha256"
+    }
+    Remove-Item -LiteralPath $cudnnDir -Recurse -Force -ErrorAction SilentlyContinue
+    Expand-Archive -LiteralPath $cudnnZip -DestinationPath $cudnnDir -Force
+    $cudnnRoot = Get-ChildItem -LiteralPath $cudnnDir -Directory | Select-Object -First 1
+    if ($null -eq $cudnnRoot) {
+      throw "cuDNN $cudnnVersion archive did not contain a redistribution root"
+    }
+    Copy-Item "$($cudnnRoot.FullName)\*" $cudaPath -Recurse -Force
+  } else {
+    $installer = Join-Path $env:RUNNER_TEMP 'install_cuda_windows.ps1'
+    Invoke-WebRequest 'https://raw.githubusercontent.com/KonduitAI/cuda-install/1bd33888dea7d372de612ec9ecc87343ec8dba4a/.github/actions/install-cuda-windows/install_cuda_windows.ps1' -OutFile $installer -UseBasicParsing
+    $env:CUDA_VERSION = $cudaVersion
+    & $installer
+  }
+
   if (-not (Test-Path -LiteralPath (Join-Path $cudaPath 'bin\nvcc.exe'))) {
     throw "CUDA bootstrap did not create nvcc.exe under $cudaPath"
   }
@@ -203,11 +242,26 @@ if ($Shard -match 'cuda-12-([69])' -or $Shard -match 'zluda') {
   # The upstream installer omits cuSPARSE. libnd4j includes cusparse_v2.h and
   # links its import library, so install the version from the matching CUDA
   # redistribution manifest into the same toolkit root.
-  $sparseVersion = if ($cudaVersion -eq '12.9') { '12.5.10.65' } else { '12.5.4.2' }
+  $sparseSha256 = ''
+  switch ($cudaVersion) {
+    '12.6' { $sparseVersion = '12.5.4.2' }
+    '12.9' { $sparseVersion = '12.5.10.65' }
+    '13.1' {
+      $sparseVersion = '12.7.3.1'
+      $sparseSha256 = '602cf803627f75a2b123bbf7bf735389721274d0ad486697b43c1f1f74eb29cf'
+    }
+    default { throw "No cuSPARSE redistribution is pinned for CUDA $cudaVersion" }
+  }
   if (-not (Test-Path -LiteralPath (Join-Path $cudaPath 'include\cusparse_v2.h'))) {
     $sparseZip = Join-Path $env:RUNNER_TEMP "cusparse-$cudaVersion.zip"
     $sparseDir = Join-Path $env:RUNNER_TEMP "cusparse-$cudaVersion"
     Invoke-WebRequest "https://developer.download.nvidia.com/compute/cuda/redist/libcusparse/windows-x86_64/libcusparse-windows-x86_64-$sparseVersion-archive.zip" -OutFile $sparseZip -UseBasicParsing
+    if ($sparseSha256) {
+      $actualSparseSha256 = (Get-FileHash -LiteralPath $sparseZip -Algorithm SHA256).Hash.ToLowerInvariant()
+      if ($actualSparseSha256 -ne $sparseSha256) {
+        throw "cuSPARSE $sparseVersion archive SHA-256 mismatch: expected $sparseSha256, got $actualSparseSha256"
+      }
+    }
     Remove-Item -LiteralPath $sparseDir -Recurse -Force -ErrorAction SilentlyContinue
     Expand-Archive -LiteralPath $sparseZip -DestinationPath $sparseDir -Force
     $sparseRoot = Get-ChildItem -LiteralPath $sparseDir -Directory | Select-Object -First 1

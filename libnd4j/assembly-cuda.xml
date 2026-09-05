@@ -40,6 +40,9 @@
                 <exclude>**/CMakeFiles/**</exclude>
                 <exclude>**/CMakeCache.txt</exclude>
                 <exclude>**/.ccache_hashes/**</exclude>
+                <!-- Python bytecode caches are generated runtime files, not release inputs. -->
+                <exclude>**/__pycache__/**</exclude>
+                <exclude>**/*.pyc</exclude>
                 <exclude>%regex[(?!.*cuda/).*blasbuild.*]</exclude>
                 <exclude>%regex[.*/lib/googletest.*]</exclude>
             </excludes>

@@ -340,6 +340,7 @@ class ReleasePlanTests(unittest.TestCase):
         ids = {
             "linux-x86_64-cuda-12-6",
             "linux-x86_64-cuda-12-9",
+            "linux-x86_64-cuda-13-1",
             "linux-x86_64-vulkan",
             "linux-x86_64-vulkan-mlir",
             "linux-x86_64-hexagon",

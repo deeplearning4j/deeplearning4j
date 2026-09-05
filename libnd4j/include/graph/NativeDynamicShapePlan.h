@@ -1777,8 +1777,10 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * PHASE: Shape inference only — propagates shapes without executing ops.
    *
    * Iterates all slots in order, gathering inputs, calling calculateOutputShape()
-   * to determine output shapes, and allocating output arrays with the correct
-   * shapes. No op kernels are executed, no host/device sync is performed, and
+   * to determine output shapes, and publishing output arrays with the correct
+   * shapes. When metadataOnlyOutputs is true, non-control outputs do not allocate
+   * payload buffers; tiny integral shape controls remain materialized. No model
+   * op kernels are executed, no host/device sync is performed, and
    * no phase advancement or frozen detection occurs.
    *
    * Use this for pre-computing output shapes, memory planning, or validating
@@ -1786,7 +1788,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    *
    * @return Status::OK on success, KERNEL_FAILURE if shape inference fails.
    */
-  Status phaseShapeInferenceOnly(NDArray** externalInputs, int numExternalInputs, void* stream);
+  Status phaseShapeInferenceOnly(NDArray** externalInputs, int numExternalInputs,
+                                 void* stream, bool metadataOnlyOutputs = false);
 
   /**
    * Advance plan phase based on observed stability.
@@ -3934,6 +3937,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     int outputSlotIdx;       // Which outputSlots_[] entry was replaced
     NDArray* original;       // Original array (on source device) - restore after segment
     NDArray* migrated;       // Migrated copy (on target device) - delete after segment
+    NDArray** externalInputTable = nullptr;  // Non-null when an external input was replaced
+    int externalInputIdx = -1;
   };
   std::vector<MigratedInput> migratedInputs_;
 

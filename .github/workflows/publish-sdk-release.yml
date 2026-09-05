@@ -59,7 +59,7 @@ jobs:
           Each asset contains the C++ runtime library, C header, language binding wrappers, and manifest schema for a specific platform/variant combination.
 
           **Platforms:** Linux x86_64, Linux ARM64, macOS x86_64, macOS ARM64, Windows x86_64, Android ARM64, Android x86_64
-          **Variants:** CPU, CUDA 12.6, CUDA 12.9 (with optional cuDNN, compile/MLIR, oneDNN, AVX2/AVX512 extensions)
+          **Variants:** CPU, CUDA 12.6, CUDA 12.9, CUDA 13.1 (with optional cuDNN, compile/MLIR, oneDNN, AVX2/AVX512 extensions)
 
           **Usage:**
           1. Download the SDK zip for your platform
@@ -77,7 +77,7 @@ jobs:
           Each asset contains the C++ runtime library, C header, language binding wrappers, and manifest schema for a specific platform/variant combination.
 
           **Platforms:** Linux x86_64, Linux ARM64, macOS x86_64, macOS ARM64, Windows x86_64, Android ARM64, Android x86_64
-          **Variants:** CPU, CUDA 12.6, CUDA 12.9 (with optional cuDNN, compile/MLIR, oneDNN, AVX2/AVX512 extensions)
+          **Variants:** CPU, CUDA 12.6, CUDA 12.9, CUDA 13.1 (with optional cuDNN, compile/MLIR, oneDNN, AVX2/AVX512 extensions)
 
           **Usage:**
           1. Download the SDK zip for your platform

@@ -25,20 +25,6 @@
 
 #include "../pairwise_transform.h"
 
-// MEMORY OPTIMIZATION: Use PAIRWISE_OP_GROUP to compile only a subset of operations
-// This reduces per-file memory usage by ~66% (44 ops -> ~15 ops per file)
-// Define PAIRWISE_OP_GROUP=1, 2, or 3 to compile only that group
-// If not defined, compile all ops (backward compatible)
-#if defined(PAIRWISE_OP_GROUP) && PAIRWISE_OP_GROUP == 1
-  #define PAIRWISE_TRANSFORM_OPS_ACTIVE PAIRWISE_TRANSFORM_OPS_PART1
-#elif defined(PAIRWISE_OP_GROUP) && PAIRWISE_OP_GROUP == 2
-  #define PAIRWISE_TRANSFORM_OPS_ACTIVE PAIRWISE_TRANSFORM_OPS_PART2
-#elif defined(PAIRWISE_OP_GROUP) && PAIRWISE_OP_GROUP == 3
-  #define PAIRWISE_TRANSFORM_OPS_ACTIVE PAIRWISE_TRANSFORM_OPS_PART3
-#else
-  #define PAIRWISE_TRANSFORM_OPS_ACTIVE PAIRWISE_TRANSFORM_OPS
-#endif
-
 using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -107,6 +93,13 @@ SD_KERNEL void pairwiseSimpleShaped(void const* vx, sd::LongType const* xShapeIn
 namespace functions {
 namespace pairwise_transforms {
 
+template <int Group, typename X, typename Y, typename Z>
+void SD_HOST executeCudaShapedGroup(dim3& launchDims, cudaStream_t* stream, int opNum,
+                                    void const* vx, sd::LongType const* xShapeInfo,
+                                    void const* vy, sd::LongType const* yShapeInfo,
+                                    void* vz, sd::LongType const* zShapeInfo,
+                                    void* vextraParams);
+
 ////////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y, typename Z>
 template <typename OpType>
@@ -128,6 +121,38 @@ void SD_HOST PairWiseTransform<X, Y, Z>::intermediateShaped(dim3& launchDims,
   sd::DebugHelper::checkErrorCode(stream, "PairWiseTransform intermediateShaped(...) failed");
 }
 
+#if defined(PAIRWISE_DEFINE_GROUP_HELPERS)
+////////////////////////////////////////////////////////////////////////////////
+// Each Group specialization owns a disjoint operation range. Keeping this
+// definition out of the public dispatcher translation units prevents implicit
+// instantiation from rebuilding all three groups in one CUDA compilation.
+template <int Group, typename X, typename Y, typename Z>
+void SD_HOST executeCudaShapedGroup(dim3& launchDims, cudaStream_t* stream, int opNum,
+                                    void const* vx, sd::LongType const* xShapeInfo,
+                                    void const* vy, sd::LongType const* yShapeInfo,
+                                    void* vz, sd::LongType const* zShapeInfo,
+                                    void* vextraParams) {
+  using Transform = PairWiseTransform<X, Y, Z>;
+  static_assert(Group >= 1 && Group <= 3, "Pairwise CUDA operation group must be 1, 2, or 3");
+  if constexpr (Group == 1) {
+    DISPATCH_BY_OPNUM_TTT(
+        Transform::template intermediateShaped,
+        PARAMS(launchDims, stream, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams),
+        PAIRWISE_TRANSFORM_OPS_PART1);
+  } else if constexpr (Group == 2) {
+    DISPATCH_BY_OPNUM_TTT(
+        Transform::template intermediateShaped,
+        PARAMS(launchDims, stream, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams),
+        PAIRWISE_TRANSFORM_OPS_PART2);
+  } else {
+    DISPATCH_BY_OPNUM_TTT(
+        Transform::template intermediateShaped,
+        PARAMS(launchDims, stream, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams),
+        PAIRWISE_TRANSFORM_OPS_PART3);
+  }
+}
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y, typename Z>
 void SD_HOST PairWiseTransform<X, Y, Z>::executeCudaShaped(dim3& launchDims,
@@ -140,10 +165,18 @@ void SD_HOST PairWiseTransform<X, Y, Z>::executeCudaShaped(dim3& launchDims,
                                                            void* vz,
                                                            sd::LongType const* zShapeInfo,
                                                            void* vextraParams) {
-  DISPATCH_BY_OPNUM_TTT(
-      intermediateShaped,
-      PARAMS(launchDims, stream, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams),
-      PAIRWISE_TRANSFORM_OPS_ACTIVE);
+  if (opNum >= 0 && opNum <= 14) {
+    executeCudaShapedGroup<1, X, Y, Z>(
+        launchDims, stream, opNum, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams);
+  } else if (opNum <= 29) {
+    executeCudaShapedGroup<2, X, Y, Z>(
+        launchDims, stream, opNum, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams);
+  } else if (opNum <= 43) {
+    executeCudaShapedGroup<3, X, Y, Z>(
+        launchDims, stream, opNum, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams);
+  } else {
+    printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__);
+  }
 }
 
 }  // namespace pairwise_transforms

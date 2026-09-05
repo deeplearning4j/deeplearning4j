@@ -795,6 +795,10 @@ endfunction()
 function(handle_pairwise t1 t2 t3 content_var is_cuda)
     set(content "${${content_var}}")
     set(dedupe_set "")
+    set(op_group "")
+    if(ARGC GREATER 5)
+        set(op_group "${ARGV5}")
+    endif()
     message(STATUS "DEBUG: handle_pairwise called with t1='${t1}', t2='${t2}', t3='${t3}'")
 
     # Normalize types first
@@ -828,7 +832,11 @@ function(handle_pairwise t1 t2 t3 content_var is_cuda)
 
     # Generate instantiations using NORMALIZED types (which are same as originals now due to check above)
     if(is_cuda)
-        add_unique_instantiation("template void functions::pairwise_transforms::PairWiseTransform<${norm_t1}, ${norm_t2}, ${norm_t3}>::executeCudaShaped(dim3& launchDims, cudaStream_t* stream, int opNum, const void *vx, const sd::LongType *xShapeInfo, const void *vy, const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo, void *vextraParams);" dedupe_set content)
+        if(op_group)
+            add_unique_instantiation("template void functions::pairwise_transforms::executeCudaShapedGroup<${op_group}, ${norm_t1}, ${norm_t2}, ${norm_t3}>(dim3& launchDims, cudaStream_t* stream, int opNum, const void *vx, const sd::LongType *xShapeInfo, const void *vy, const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo, void *vextraParams);" dedupe_set content)
+        else()
+            add_unique_instantiation("template void functions::pairwise_transforms::PairWiseTransform<${norm_t1}, ${norm_t2}, ${norm_t3}>::executeCudaShaped(dim3& launchDims, cudaStream_t* stream, int opNum, const void *vx, const sd::LongType *xShapeInfo, const void *vy, const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo, void *vextraParams);" dedupe_set content)
+        endif()
     else()
         add_unique_instantiation("template void functions::pairwise_transforms::PairWiseTransform<${norm_t1}, ${norm_t2}, ${norm_t3}>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo, void *extraParams, sd::LongType start, sd::LongType stop);" dedupe_set content)
         add_unique_instantiation("template void functions::pairwise_transforms::PairWiseTransform<${norm_t1}, ${norm_t2}, ${norm_t3}>::exec(int opNum, const void *x, sd::LongType xStride, const void *y, sd::LongType yStride, void *z, sd::LongType resultStride, void *extraParams, sd::LongType len, sd::LongType start, sd::LongType stop);" dedupe_set content)
@@ -1736,7 +1744,8 @@ function(create_direct_instantiation_file_impl template_file combinations output
     # Other templates retain the normal adaptive chunk size, and CPU generation
     # is deliberately unaffected despite sharing the same template stem.
     set(direct_chunk_size "${MULTI_PASS_CHUNK_SIZE}")
-    if(IS_CUDA_FILE AND template_name STREQUAL "pairwise_instantiation_template_3")
+    if(IS_CUDA_FILE AND
+       template_name MATCHES "^pairwise(_group[123])?_instantiation_template_3$")
         set(direct_chunk_size 1)
     endif()
     
@@ -2143,6 +2152,10 @@ function(dispatch_to_handler template_name t1 t2 t3 parts_count content_var is_c
         endforeach()
         
     elseif(template_name MATCHES "pairwise" AND parts_count EQUAL 3)
+        set(pairwise_group "")
+        if(template_name MATCHES "^pairwise_group([123])_instantiation_template_3$")
+            set(pairwise_group "${CMAKE_MATCH_1}")
+        endif()
         foreach(v1 IN LISTS t1_list)
             foreach(v2 IN LISTS t2_list)
                 foreach(v3 IN LISTS t3_list)
@@ -2159,7 +2172,7 @@ function(dispatch_to_handler template_name t1 t2 t3 parts_count content_var is_c
                         if(NOT v1_enum STREQUAL "" AND NOT v2_enum STREQUAL "" AND NOT v3_enum STREQUAL "")
                             _internal_srcore_is_valid_triple("${v1_enum}" "${v2_enum}" "${v3_enum}" is_valid)
                             if(is_valid)
-                                handle_pairwise("${norm_v1}" "${norm_v2}" "${norm_v3}" content ${is_cuda})
+                                handle_pairwise("${norm_v1}" "${norm_v2}" "${norm_v3}" content ${is_cuda} "${pairwise_group}")
                                 list(APPEND template_dedupe_set "${combo_key}")
                             endif()
                         endif()
@@ -2563,12 +2576,18 @@ function(process_cuda_comb_templates output_dir generated_sources_var)
         "${cuda_comb_template_dir}/reduce3_instantiation_template_2.cu.in"
         "${cuda_comb_template_dir}/reduce_float_instantiation_template_2.cu.in"
         "${cuda_comb_template_dir}/scalar_instantiation_template_3.cu.in")
+    set(PAIRWISE_GROUP_TEMPLATE
+        "${cuda_comb_template_dir}/pairwise_group_instantiation_template_3.cu.in")
     foreach(cuda_comb_template IN LISTS CUDA_COMB_TEMPLATES)
         if(NOT EXISTS "${cuda_comb_template}")
             message(FATAL_ERROR
                 "Canonical CUDA instantiation template is missing: ${cuda_comb_template}")
         endif()
     endforeach()
+    if(NOT EXISTS "${PAIRWISE_GROUP_TEMPLATE}")
+        message(FATAL_ERROR
+            "Canonical CUDA pairwise group template is missing: ${PAIRWISE_GROUP_TEMPLATE}")
+    endif()
 
     if(NOT DEFINED UNIFIED_COMBINATIONS_2 OR NOT DEFINED UNIFIED_COMBINATIONS_3)
         message(FATAL_ERROR "❌ CUDA processing requires selective rendering combinations!")
@@ -2652,6 +2671,23 @@ function(process_cuda_comb_templates output_dir generated_sources_var)
         endif()
 
         create_direct_instantiation_file("${TEMPLATE_FILE}" "${combinations_to_use}" "${output_dir}" local_generated_sources)
+    endforeach()
+
+    # The public pairwise wrapper remains a single ABI owner per dtype. Its
+    # three uniquely named implementation helpers are generated separately so
+    # CUDA 12.6 never has to instantiate all 44 FLOAT16 kernels in one function
+    # or translation unit.
+    foreach(pairwise_group RANGE 1 3)
+        set(pairwise_group_name
+            "pairwise_group${pairwise_group}_instantiation_template_3")
+        message(STATUS
+            "🔄 Processing pairwise CUDA operation group ${pairwise_group}: ${pairwise_group_name}")
+        create_direct_instantiation_file_impl(
+            "${PAIRWISE_GROUP_TEMPLATE}"
+            "${COMBINATIONS_3_SAME}"
+            "${output_dir}"
+            local_generated_sources
+            "${pairwise_group_name}")
     endforeach()
 
     set(${generated_sources_var} ${local_generated_sources} PARENT_SCOPE)
@@ -2889,13 +2925,27 @@ function(setup_template_processing)
     # normal configure pass reconstructs the canonical manifest.
     if(SD_CUDA AND cached_sources)
         set(has_legacy_cuda_instantiations FALSE)
+        set(has_pairwise_group1 FALSE)
+        set(has_pairwise_group2 FALSE)
+        set(has_pairwise_group3 FALSE)
         foreach(cached_source IN LISTS cached_sources)
             if(cached_source MATCHES "_g[123]_direct_" OR
                cached_source MATCHES "(pairwise_exec_cuda_shaped|scalar_exec_cuda_shaped|scalar_exec_cuda_along_dimension|broadcast_exec_broadcast_with_dimension|broadcast_exec_inverse_broadcast)")
                 set(has_legacy_cuda_instantiations TRUE)
                 break()
             endif()
+            if(cached_source MATCHES "pairwise_group1_instantiation_template_3_direct_")
+                set(has_pairwise_group1 TRUE)
+            elseif(cached_source MATCHES "pairwise_group2_instantiation_template_3_direct_")
+                set(has_pairwise_group2 TRUE)
+            elseif(cached_source MATCHES "pairwise_group3_instantiation_template_3_direct_")
+                set(has_pairwise_group3 TRUE)
+            endif()
         endforeach()
+        if(NOT has_pairwise_group1 OR NOT has_pairwise_group2 OR
+           NOT has_pairwise_group3)
+            set(has_legacy_cuda_instantiations TRUE)
+        endif()
         if(has_legacy_cuda_instantiations)
             message(STATUS
                 "🔄 Invalidating legacy duplicate CUDA instantiation source manifest")

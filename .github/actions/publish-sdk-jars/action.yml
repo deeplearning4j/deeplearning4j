@@ -155,7 +155,7 @@ runs:
         Contains both native C++ SDK packages and platform-classified Java JAR artifacts.
 
         **Platforms:** Linux x86_64, Linux ARM64, macOS x86_64, macOS ARM64, Windows x86_64, Android ARM64, Android x86_64
-        **Variants:** CPU, CUDA 12.6, CUDA 12.9 (with optional cuDNN, compile/MLIR, oneDNN, AVX2/AVX512 extensions)" \
+        **Variants:** CPU, CUDA 12.6, CUDA 12.9, CUDA 13.1 (with optional cuDNN, compile/MLIR, oneDNN, AVX2/AVX512 extensions)" \
             --prerelease \
           || echo "Release may have been created by another job (expected in parallel builds)"
         fi

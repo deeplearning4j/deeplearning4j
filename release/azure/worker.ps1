@@ -701,11 +701,48 @@ function Import-VisualStudioEnvironment {
     throw 'Visual Studio 2022 C++ Build Tools installation was not found'
   }
   $VsInstall = $VsInstall.Trim()
+  $VcVarsVersion = $null
+  if ($Shard.build.backend -eq 'cuda' -and $Shard.build.cudaVersion -in @('12.6', '13.1')) {
+    $SupportedToolsetVersion = '14.38'
+    $SupportedToolsetComponent = 'Microsoft.VisualStudio.Component.VC.14.38.17.8.x86.x64'
+    $ToolsetRoot = Join-Path $VsInstall 'VC\Tools\MSVC'
+    $SupportedToolset = Get-ChildItem -LiteralPath $ToolsetRoot -Directory -ErrorAction SilentlyContinue |
+      Where-Object { $_.Name -like "$SupportedToolsetVersion.*" } |
+      Sort-Object Name -Descending |
+      Select-Object -First 1
+    if ($null -eq $SupportedToolset) {
+      $VsSetup = Join-Path $VsWhereRoot 'Microsoft Visual Studio\Installer\setup.exe'
+      if (-not (Test-Path -LiteralPath $VsSetup)) {
+        throw "Visual Studio installer was not found at $VsSetup"
+      }
+      $SetupArguments = @(
+        'modify', '--installPath', "`"$VsInstall`"",
+        '--channelId', 'VisualStudio.17.Release',
+        '--productId', 'Microsoft.VisualStudio.Product.BuildTools',
+        '--add', $SupportedToolsetComponent,
+        '--quiet', '--norestart'
+      )
+      $Setup = Start-Process -FilePath $VsSetup -ArgumentList $SetupArguments -Wait -PassThru
+      if ($Setup.ExitCode -notin @(0, 3010)) {
+        throw "Installing $SupportedToolsetComponent failed with exit code $($Setup.ExitCode)"
+      }
+      $SupportedToolset = Get-ChildItem -LiteralPath $ToolsetRoot -Directory -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -like "$SupportedToolsetVersion.*" } |
+        Sort-Object Name -Descending |
+        Select-Object -First 1
+    }
+    if ($null -eq $SupportedToolset) {
+      throw "CUDA $($Shard.build.cudaVersion) requires MSVC 193x, but toolset $SupportedToolsetVersion was not installed"
+    }
+    $VcVarsVersion = $SupportedToolsetVersion
+  }
   $VcVars = Join-Path $VsInstall 'VC\Auxiliary\Build\vcvars64.bat'
   if (-not (Test-Path -LiteralPath $VcVars)) {
     throw "Visual Studio x64 environment script was not found at $VcVars"
   }
-  $EnvironmentLines = & $env:ComSpec /d /s /c "`"$VcVars`" >nul && set"
+  $VcVarsCommand = "`"$VcVars`""
+  if ($VcVarsVersion) { $VcVarsCommand += " -vcvars_ver=$VcVarsVersion" }
+  $EnvironmentLines = & $env:ComSpec /d /s /c "$VcVarsCommand >nul && set"
   if ($LASTEXITCODE -ne 0) {
     throw "Visual Studio x64 environment initialization failed with exit code $LASTEXITCODE"
   }
@@ -722,7 +759,10 @@ function Import-VisualStudioEnvironment {
   if (-not (Get-Command cl.exe -ErrorAction SilentlyContinue)) {
     throw 'Visual Studio environment did not expose cl.exe on PATH'
   }
-  Write-Phase 'visual-studio-environment' 'complete' "installation=$VsInstall"
+  if ($VcVarsVersion -and $env:VCToolsVersion -notlike "$VcVarsVersion.*") {
+    throw "Requested MSVC $VcVarsVersion for CUDA $($Shard.build.cudaVersion), but vcvars selected $($env:VCToolsVersion)"
+  }
+  Write-Phase 'visual-studio-environment' 'complete' "installation=$VsInstall toolset=$($env:VCToolsVersion)"
 }
 
 function Install-CommonToolchains {
@@ -1026,30 +1066,77 @@ function Install-ShardCuda {
   $env:CUDA_VERSION = $Shard.build.cudaVersion
   $CudaPath = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v$($Shard.build.cudaVersion)"
   if (-not (Test-Path "$CudaPath\bin\nvcc.exe")) {
-    $Installer = Join-Path $ToolchainRoot 'install_cuda_windows.ps1'
-    Invoke-WebRequest 'https://raw.githubusercontent.com/KonduitAI/cuda-install/1bd33888dea7d372de612ec9ecc87343ec8dba4a/.github/actions/install-cuda-windows/install_cuda_windows.ps1' -OutFile $Installer -UseBasicParsing
-    $PreviousGithubEnv = $env:GITHUB_ENV
-    if ([string]::IsNullOrWhiteSpace($PreviousGithubEnv)) {
-      $env:GITHUB_ENV = Join-Path $ToolchainRoot 'cuda-installer-github-env.txt'
-    }
-    try {
-      & $Installer
-    } finally {
+    if ($Shard.build.cudaVersion -eq '13.1') {
+      $CudaInstaller = Join-Path $ToolchainRoot 'cuda_13.1.2_windows_network.exe'
+      $CudaInstallerUrl = 'https://developer.download.nvidia.com/compute/cuda/13.1.2/network_installers/cuda_13.1.2_windows_network.exe'
+      $CudaInstallerMd5 = '2d5ebeee9c16f9fbe7186ac663bc0d58'
+      Invoke-WebRequestWithRetry -Uri $CudaInstallerUrl -OutFile $CudaInstaller -Description 'CUDA 13.1.2 network installer'
+      $ActualCudaInstallerMd5 = (Get-FileHash -LiteralPath $CudaInstaller -Algorithm MD5).Hash.ToLowerInvariant()
+      if ($ActualCudaInstallerMd5 -ne $CudaInstallerMd5) {
+        throw "CUDA 13.1.2 installer MD5 mismatch: expected $CudaInstallerMd5, got $ActualCudaInstallerMd5"
+      }
+      $CudaPackages = 'nvcc_13.1 visual_studio_integration_13.1 cublas_dev_13.1 cusolver_dev_13.1 curand_dev_13.1 nvrtc_dev_13.1 cudart_13.1 cusparse_dev_13.1'
+      $CudaInstall = Start-Process -FilePath $CudaInstaller -ArgumentList "-s -n $CudaPackages" -Wait -PassThru
+      if ($CudaInstall.ExitCode -ne 0) {
+        throw "CUDA 13.1.2 installer failed with exit code $($CudaInstall.ExitCode)"
+      }
+    } else {
+      $Installer = Join-Path $ToolchainRoot 'install_cuda_windows.ps1'
+      Invoke-WebRequest 'https://raw.githubusercontent.com/KonduitAI/cuda-install/1bd33888dea7d372de612ec9ecc87343ec8dba4a/.github/actions/install-cuda-windows/install_cuda_windows.ps1' -OutFile $Installer -UseBasicParsing
+      $PreviousGithubEnv = $env:GITHUB_ENV
       if ([string]::IsNullOrWhiteSpace($PreviousGithubEnv)) {
-        Remove-Item Env:GITHUB_ENV -ErrorAction SilentlyContinue
-      } else {
-        $env:GITHUB_ENV = $PreviousGithubEnv
+        $env:GITHUB_ENV = Join-Path $ToolchainRoot 'cuda-installer-github-env.txt'
+      }
+      try {
+        & $Installer
+      } finally {
+        if ([string]::IsNullOrWhiteSpace($PreviousGithubEnv)) {
+          Remove-Item Env:GITHUB_ENV -ErrorAction SilentlyContinue
+        } else {
+          $env:GITHUB_ENV = $PreviousGithubEnv
+        }
       }
     }
     if (-not (Test-Path "$CudaPath\bin\nvcc.exe")) {
       throw "CUDA $($Shard.build.cudaVersion) installation did not provide nvcc.exe at $CudaPath"
     }
   }
-  $SparseVersion = if ($Shard.build.cudaVersion -eq '12.9') { '12.5.10.65' } else { '12.5.4.2' }
+  if ($Shard.build.cudaVersion -eq '13.1' -and -not (Test-Path "$CudaPath\include\cudnn.h")) {
+    $CudnnVersion = '9.19.1.2'
+    $CudnnSha256 = 'ffe9788ec702b8b0d26f43cf1fd6f099e312e62dd0b82e9793ff5ee21bd8e00a'
+    $CudnnZip = Join-Path $env:TEMP "cudnn-$CudnnVersion-cuda13.zip"
+    $CudnnDir = Join-Path $ToolchainRoot "cudnn-$CudnnVersion-cuda13"
+    Invoke-WebRequestWithRetry -Uri "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/windows-x86_64/cudnn-windows-x86_64-$($CudnnVersion)_cuda13-archive.zip" -OutFile $CudnnZip -Description "cuDNN $CudnnVersion CUDA 13 archive"
+    $ActualCudnnSha256 = (Get-FileHash -LiteralPath $CudnnZip -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($ActualCudnnSha256 -ne $CudnnSha256) {
+      throw "cuDNN $CudnnVersion archive SHA-256 mismatch: expected $CudnnSha256, got $ActualCudnnSha256"
+    }
+    Remove-Item -LiteralPath $CudnnDir -Recurse -Force -ErrorAction SilentlyContinue
+    Expand-Archive -LiteralPath $CudnnZip -DestinationPath $CudnnDir -Force
+    $CudnnRoot = Get-ChildItem -LiteralPath $CudnnDir -Directory | Select-Object -First 1
+    if ($null -eq $CudnnRoot) { throw "cuDNN $CudnnVersion archive did not contain a redistribution root" }
+    Copy-Item "$($CudnnRoot.FullName)\*" $CudaPath -Recurse -Force
+  }
+  $SparseSha256 = ''
+  switch ($Shard.build.cudaVersion) {
+    '12.6' { $SparseVersion = '12.5.4.2' }
+    '12.9' { $SparseVersion = '12.5.10.65' }
+    '13.1' {
+      $SparseVersion = '12.7.3.1'
+      $SparseSha256 = '602cf803627f75a2b123bbf7bf735389721274d0ad486697b43c1f1f74eb29cf'
+    }
+    default { throw "No cuSPARSE redistribution is pinned for CUDA $($Shard.build.cudaVersion)" }
+  }
   if (-not (Test-Path "$CudaPath\include\cusparse_v2.h")) {
     $SparseZip = Join-Path $env:TEMP "cusparse-$($Shard.build.cudaVersion).zip"
     $SparseDir = Join-Path $ToolchainRoot "cusparse-$($Shard.build.cudaVersion)"
     Invoke-WebRequest "https://developer.download.nvidia.com/compute/cuda/redist/libcusparse/windows-x86_64/libcusparse-windows-x86_64-$SparseVersion-archive.zip" -OutFile $SparseZip -UseBasicParsing
+    if ($SparseSha256) {
+      $ActualSparseSha256 = (Get-FileHash -LiteralPath $SparseZip -Algorithm SHA256).Hash.ToLowerInvariant()
+      if ($ActualSparseSha256 -ne $SparseSha256) {
+        throw "cuSPARSE $SparseVersion archive SHA-256 mismatch: expected $SparseSha256, got $ActualSparseSha256"
+      }
+    }
     Expand-Archive $SparseZip $SparseDir -Force
     $SparseRoot = Get-ChildItem $SparseDir -Directory | Select-Object -First 1
     Copy-Item "$($SparseRoot.FullName)\include\*" "$CudaPath\include\" -Recurse -Force

@@ -1,0 +1,19 @@
+/* ******************************************************************************
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *******************************************************************************/
+
+#ifndef LIBND4J_CUDA_PAIRWISE_GROUP_CU
+#define LIBND4J_CUDA_PAIRWISE_GROUP_CU
+
+// Group implementation translation units define the same helper template and
+// instantiate one distinct operation group. The public dispatcher translation
+// units include pairwise.chpp directly and therefore see declarations only.
+#define PAIRWISE_DEFINE_GROUP_HELPERS 1
+#include <loops/cuda/pairwise.chpp>
+
+#endif  // LIBND4J_CUDA_PAIRWISE_GROUP_CU

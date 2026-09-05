@@ -1185,26 +1185,35 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
 
   migratedInputs_.clear();
 
-  // Collect unique input slot indices that this segment reads from prior segments
-  std::unordered_set<int> neededInputSlots;
+  // Collect every unique input publication consumed by the segment. Internal
+  // publications use their non-negative output-slot index; external inputs keep
+  // their normal negative encoding -(externalIndex + 1).
+  std::unordered_set<int> neededInputSources;
   for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
     const NativeSlot& slot = slots_[s];
     for (int i = 0; i < slot.wiring.numInputs; i++) {
       int srcIdx = slot.wiring.inputSourceIndices[i];
       if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
-        // This is an internal input from a prior slot's output
-        // Only migrate if the source slot is on a different device
         if (outputSlots_[srcIdx] != nullptr) {
-          neededInputSlots.insert(srcIdx);
+          neededInputSources.insert(srcIdx);
+        }
+      } else if (srcIdx < 0 && externalInputs != nullptr) {
+        const int extIdx = -(srcIdx + 1);
+        if (extIdx >= 0 && extIdx < numExternalInputs &&
+            externalInputs[extIdx] != nullptr) {
+          neededInputSources.insert(srcIdx);
         }
       }
-      // External inputs (srcIdx < 0) are handled by the caller
     }
   }
 
   int migrated = 0;
-  for (int slotIdx : neededInputSlots) {
-    NDArray* arr = outputSlots_[slotIdx];
+  for (int sourceIdx : neededInputSources) {
+    const bool externalSource = sourceIdx < 0;
+    const int slotIdx = externalSource ? -1 : sourceIdx;
+    const int externalInputIdx = externalSource ? -(sourceIdx + 1) : -1;
+    NDArray* arr = externalSource ? externalInputs[externalInputIdx]
+                                  : outputSlots_[slotIdx];
     if (arr == nullptr || arr->isEmpty()) continue;
 
     // Check if this array's GPU data is on a different device
@@ -1215,17 +1224,19 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     // where the special (GPU) buffer lives. If targetDevice differs from where
     // the data was produced, we need to migrate.
     // Find which device produced this output by checking the source slot's targetDeviceId
-    int sourceDevice = -1;
-    // Walk backwards to find which slot produced this output
-    for (int s = 0; s < numSlots_; s++) {
-      const NativeSlot& srcSlot = slots_[s];
-      for (int o = 0; o < srcSlot.wiring.numOutputs; o++) {
-        if (srcSlot.wiring.outputSlotIndices[o] == slotIdx) {
-          sourceDevice = srcSlot.targetDeviceId;
-          break;
+    int sourceDevice = externalSource ? db->deviceId() : -1;
+    if (!externalSource) {
+      // Walk backwards to find which slot produced this output.
+      for (int s = 0; s < numSlots_; s++) {
+        const NativeSlot& srcSlot = slots_[s];
+        for (int o = 0; o < srcSlot.wiring.numOutputs; o++) {
+          if (srcSlot.wiring.outputSlotIndices[o] == slotIdx) {
+            sourceDevice = srcSlot.targetDeviceId;
+            break;
+          }
         }
+        if (sourceDevice >= 0) break;
       }
-      if (sourceDevice >= 0) break;
     }
 
     if (sourceDevice < 0) {
@@ -1240,10 +1251,24 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
 
     cudaSetDevice(sourceDevice);
 
+    // Automatic shape preparation publishes metadata-only wrappers. Internal
+    // producer/consumer edges on this segment's own device need no migration and
+    // acquire their real payload when the producer executes below. Do not reject
+    // those wrappers merely because migration inspected them before execution.
+    void* originalDev = (arr->dataBuffer() != nullptr) ? arr->dataBuffer()->special() : nullptr;
+    if (!externalSource && originalDev == nullptr &&
+        sourceDevice == targetDevice) {
+      DSP_DIAG(MULTI_DEVICE,
+               "migrateSlotInputsToTargetDevice: defer same-device metadata-only "
+               "slot=%d device=%d",
+               slotIdx, targetDevice);
+      if (savedDevice >= 0) cudaSetDevice(savedDevice);
+      continue;
+    }
+
     // Slot placement is a plan hint, not authoritative pointer metadata. Validate the
     // original allocation before materializing a view so a stale slot device cannot make
     // NDArray::dup allocate the temporary on the wrong GPU.
-    void* originalDev = (arr->dataBuffer() != nullptr) ? arr->dataBuffer()->special() : nullptr;
     cudaPointerAttributes originalAttrs;
     auto originalAttrErr = originalDev != nullptr
         ? cudaPointerGetAttributes(&originalAttrs, originalDev)
@@ -1534,12 +1559,15 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     // retention across timed-out generations.
     if (savedDevice >= 0) cudaSetDevice(savedDevice);
 
-    // Record migration and replace in outputSlots_. mi.original is the ORIGINAL input (restored
-    // at cleanup); the materialized-view temp (if any) is a slot-less entry, just freed.
+    // Record migration and replace the exact publication table consumed by the
+    // slot executor. mi.original is restored after the segment; the
+    // materialized-view temp (if any) is a slot-less entry, just freed.
     MigratedInput mi;
     mi.outputSlotIdx = slotIdx;
     mi.original = arr;
     mi.migrated = copy;
+    mi.externalInputTable = externalSource ? externalInputs : nullptr;
+    mi.externalInputIdx = externalInputIdx;
     migratedInputs_.push_back(mi);
     if (srcMat != nullptr) {
       MigratedInput tmp;
@@ -1549,7 +1577,11 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
       migratedInputs_.push_back(tmp);
     }
 
-    outputSlots_[slotIdx] = copy;
+    if (externalSource) {
+      externalInputs[externalInputIdx] = copy;
+    } else {
+      outputSlots_[slotIdx] = copy;
+    }
     migrated++;
   }
 
@@ -1585,10 +1617,13 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
              currentDevice, static_cast<int>(migratedInputs_.size()));
   }
 
-  // Restore original arrays in outputSlots_ and delete migrated copies
+  // Restore original arrays in the publication table and delete migrated copies.
   for (auto& mi : migratedInputs_) {
     if (outputSlots_ != nullptr && mi.outputSlotIdx >= 0 && mi.outputSlotIdx < totalOutputSlots_) {
       outputSlots_[mi.outputSlotIdx] = mi.original;
+    }
+    if (mi.externalInputTable != nullptr && mi.externalInputIdx >= 0) {
+      mi.externalInputTable[mi.externalInputIdx] = mi.original;
     }
     if (mi.migrated != nullptr) {
       delete mi.migrated;

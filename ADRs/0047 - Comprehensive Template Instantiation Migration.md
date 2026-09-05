@@ -168,6 +168,32 @@ else()
 endif()
 ```
 
+### CUDA Dispatcher Ownership and Operation-Group Sharding
+
+CUDA dispatcher chunking must preserve the C++ one-definition rule. Splitting one
+explicit `PairWiseTransform<T,T,T>::executeCudaShaped` specialization into several
+translation units with different operation lists is invalid because every file would
+define the same public symbol with a different body.
+
+The CUDA pairwise path therefore uses two ownership layers:
+
+1. Exactly one generated wrapper specialization owns the public
+   `executeCudaShaped` ABI for each enabled dtype. It only maps the stable legacy
+   `opNum` ranges to implementation groups.
+2. Three uniquely named `executeCudaShapedGroup<Group,T,T,T>` helper
+   specializations own the disjoint operation ranges from `legacy_ops.h`. Each
+   dtype/group pair is generated in its own translation unit, so CUDA frontends do
+   not instantiate all pairwise kernels in one function or compilation unit.
+
+The helper template definition is identical wherever emitted, and each concrete
+`<Group,T,T,T>` specialization has one source owner. Cached CUDA source manifests
+must contain all three group families; older manifests are invalidated and rebuilt
+without deleting generated files or compiler-cache entries.
+
+This structure preserves every selective-rendering dtype and legacy operation
+number while avoiding both duplicate definitions and deterministic CUDA compiler
+crashes on large low-precision dispatchers.
+
 ### Diagnostic Infrastructure
 
 Comprehensive diagnostics help debug type issues:

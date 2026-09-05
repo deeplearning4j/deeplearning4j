@@ -2934,9 +2934,7 @@ Status NativeDynamicShapePlan::executeSlot(
           db != nullptr && db->isValid() ? 1 : 0,
           db != nullptr && db->isClosed() ? 1 : 0,
           executeCount_);
-      if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
-        outputSlots_[slotIdx] = nullptr;
-      }
+      discardCachedSlotArray(slotIdx, cached, tag);
       return nullptr;
     }
 

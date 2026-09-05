@@ -36,6 +36,9 @@
 #if defined(__ANDROID__) || defined(__linux__)
 #include <malloc.h>
 #endif
+#if defined(__ANDROID__)
+#include <dlfcn.h>
+#endif
 #include <array/DataTypeUtils.h>
 #include <helpers/BlasHelper.h>
 #include <helpers/helper_ptrmap.h>
@@ -95,7 +98,18 @@
 
 #include <system/selective_rendering.h>
 
-
+namespace {
+#if defined(__ANDROID__)
+void purgeAndroidAllocator() {
+  using MalloptFunction = int (*)(int, int);
+  static auto malloptFunction =
+      reinterpret_cast<MalloptFunction>(dlsym(RTLD_DEFAULT, "mallopt"));
+  if (malloptFunction != nullptr) {
+    malloptFunction(M_PURGE, 0);
+  }
+}
+#endif
+}  // namespace
 
 //these are mainly for cuda
 sd::Pointer lcScalarPointer(OpaqueLaunchContext lc) { return nullptr; }
@@ -365,28 +379,19 @@ void getMemoryPoolStats(int deviceId, sd::LongType* usedBytes, sd::LongType* res
 }
 
 /**
- * CPU implementation - no-op since memory pools are CUDA-only.
- *
- * On Android/Linux the CPU backend allocates graph weights directly through the
- * system allocator, so after a large import the allocator holds fragmented arenas
- * (glibc never returns them to the OS on its own). Returning that trim-able tail
- * here lets the importer process survive low-memory pressure on devices while it
- * serializes the imported model. On other platforms malloc_trim(0) is a cheap
- * no-op-equivalent call, so this is unconditional for glibc builds.
- */
-/**
  * CPU implementation - releases allocator-held free pages back to the OS.
  *
  * On Android the CPU backend allocates graph weights directly through bionic,
  * and after a large import the allocator holds fragmented arenas that inflate
- * RSS past the device LMK watermark while the model serializes. Bionic exposes
- * no malloc_trim; the supported equivalent is mallopt(M_PURGE) (API 26+),
- * which immediately purges decayed allocator pages. On glibc/Linux keep the
- * classic malloc_trim(0). Elsewhere this is a no-op.
+ * RSS past the device LMK watermark while the model serializes. Bionic's
+ * mallopt entry point starts at API 26 and M_PURGE at API 28, while libnd4j must
+ * remain linkable at lower minimum APIs. Resolve mallopt at runtime so modern
+ * devices retain allocator purging without introducing an unavailable symbol
+ * into API 21-27 artifacts. On glibc/Linux keep the classic malloc_trim(0).
  */
 void trimMemoryPool(int deviceId) {
 #if defined(__ANDROID__)
-  mallopt(M_PURGE, 0);
+  purgeAndroidAllocator();
 #elif defined(__linux__)
   malloc_trim(0);
 #endif
@@ -394,7 +399,7 @@ void trimMemoryPool(int deviceId) {
 
 void trimMemoryPoolOnStream(int deviceId, void *stream) {
 #if defined(__ANDROID__)
-  mallopt(M_PURGE, 0);
+  purgeAndroidAllocator();
 #elif defined(__linux__)
   malloc_trim(0);
 #endif

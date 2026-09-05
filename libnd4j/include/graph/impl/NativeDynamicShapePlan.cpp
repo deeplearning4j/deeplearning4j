@@ -3369,7 +3369,14 @@ Status NativeDynamicShapePlan::execute(
   if (!shapePrePassDone_ && needsAutomaticShapePrePass && !modeContract.isShapeInferenceOnly) {
     DSP_DIAG(SHAPE, "AUTO_SHAPE_PREPASS: running shape pre-pass before first execution "
              "(slots=%d extInputs=%d)", numSlots_, numExternalInputs);
-    Status prePassStatus = phaseShapeInferenceOnly(externalInputs, numExternalInputs, stream);
+    Status prePassStatus = phaseShapeInferenceOnly(
+        externalInputs, numExternalInputs, stream,
+#if defined(SD_CUDA)
+        true
+#else
+        false
+#endif
+    );
     if (prePassStatus != Status::OK) {
       if (requiresSuccessfulShapePrePass) {
         DSP_DIAG(SHAPE,
@@ -3451,7 +3458,8 @@ Status NativeDynamicShapePlan::execute(
     DSP_DIAG(SHAPE, "SHAPE_INFERENCE_ONLY: entering shape-only path (slots=%d)", numSlots_);
     execCtx->recordFlow(PlanExecutionContext::FlowEventType::PHASE_DISPATCH,
                          static_cast<int>(GraphExecutionMode::GEM_SHAPE_INFERENCE_ONLY));
-    Status siStatus = phaseShapeInferenceOnly(externalInputs, numExternalInputs, stream);
+    Status siStatus = phaseShapeInferenceOnly(
+        externalInputs, numExternalInputs, stream, false);
     if (siStatus != Status::OK) {
       DSP_DIAG(SHAPE, "SHAPE_INFERENCE_ONLY: phase failed status=%s (%d)",
                dsp::dspStatusName(siStatus), static_cast<int>(siStatus));
@@ -5850,8 +5858,14 @@ Status NativeDynamicShapePlan::precompilePlan(NDArray** externalInputs, int numE
   if (precompileBackendPolicy.requiresShapePrePass &&
       planLifecycle_.isSlotBySlot() && !shapePrePassDone_) {
     DSP_DIAG(SHAPE, "precompilePlan: backend shape-only prepass BEGIN");
-    auto shapeStatus =
-        phaseShapeInferenceOnly(externalInputs, numExternalInputs, stream);
+    auto shapeStatus = phaseShapeInferenceOnly(
+        externalInputs, numExternalInputs, stream,
+#if defined(SD_CUDA)
+        true
+#else
+        false
+#endif
+    );
     if (shapeStatus == Status::OK) {
       shapePrePassDone_ = true;
       if (precompileBackendPolicy.requiresSuccessfulShapePrePass &&
@@ -5935,14 +5949,16 @@ Status NativeDynamicShapePlan::phaseSlotBySlot(NDArray** externalInputs, int num
 
 // ─── Shape inference only phase ───────────────────────────────────────────────
 // Propagates shapes through the graph without executing any op kernels.
-// For each slot: gather inputs → calculateOutputShape → allocate outputs → cache shapes.
+// For each slot: gather inputs → calculateOutputShape → publish outputs → cache shapes.
 // Skips: op execution, host/device sync, frozen detection, phase advancement,
 // context pool management, view sharing, fused chain handling, KV scatter.
 
 Status NativeDynamicShapePlan::phaseShapeInferenceOnly(
-    NDArray** externalInputs, int numExternalInputs, void* stream) {
-  DSP_DIAG(SHAPE, "phaseShapeInferenceOnly: BEGIN numSlots=%d extInputs=%d",
-           numSlots_, numExternalInputs);
+    NDArray** externalInputs, int numExternalInputs, void* stream,
+    bool metadataOnlyOutputs) {
+  DSP_DIAG(SHAPE,
+           "phaseShapeInferenceOnly: BEGIN numSlots=%d extInputs=%d metadataOnly=%d",
+           numSlots_, numExternalInputs, metadataOnlyOutputs ? 1 : 0);
   shapePrePassComplete_ = false;
   shapePrePassFirstIncompleteSlot_ = -1;
   shapePrePassIncompleteReason_.clear();
@@ -6256,7 +6272,7 @@ Status NativeDynamicShapePlan::phaseShapeInferenceOnly(
     }
     delete shapeList;
 
-    // ── Step 5: Allocate output arrays (shape + buffer, no compute) ──────
+    // ── Step 5: Publish output shape wrappers (payload optional) ─────────
     int numWiredOutputs = slot.wiring.numOutputs;
     for (int i = 0; i < numShapeOutputs; i++) {
       int slotIdx = (i < numWiredOutputs) ? slot.wiring.outputSlotIndices[i] : -1;
@@ -6284,7 +6300,12 @@ Status NativeDynamicShapePlan::phaseShapeInferenceOnly(
             alias != nullptr && alias->hasValidShapeInfo() &&
             shape::equalsSoft(alias->shapeInfo(), siOutputShapes[i]) &&
             alias->dataType() == ArrayOptions::dataType(siOutputShapes[i]);
-        if (stableOwnedSource && compatible) {
+        auto* aliasBuffer = alias != nullptr ? alias->dataBuffer() : nullptr;
+        const bool aliasHasPayload =
+            aliasBuffer != nullptr &&
+            (aliasBuffer->primary() != nullptr || aliasBuffer->special() != nullptr);
+        if (stableOwnedSource && compatible &&
+            (!metadataOnlyOutputs || aliasHasPayload)) {
           writeOutputSlot(slotIdx, alias, "shape-prepass-in-place-alias");
           DSP_DIAG(SHAPE,
                    "SHAPE_PRE_PASS_IN_PLACE_ALIAS: slot %d (%s) outSlotIdx=%d "
@@ -6294,15 +6315,27 @@ Status NativeDynamicShapePlan::phaseShapeInferenceOnly(
           continue;
         }
 
-        // In-place execution is an optimization, but stable ownership is a
-        // correctness requirement. Keep the ordinary independently-owned output
-        // when the source is borrowed/view-producing, missing, or incompatible.
-        slot.disableInPlaceFusion();
-        DSP_DIAG(FUSION,
-                 "SHAPE_PRE_PASS_IN_PLACE_DISABLED: slot %d (%s) sourceSlotIdx=%d "
-                 "producerStep=%d stable=%d compatible=%d",
-                 stepIdx, slot.ident.opName.c_str(), sourceSlotIdx, producerStep,
-                 stableOwnedSource ? 1 : 0, compatible ? 1 : 0);
+        // Automatic CUDA preparation intentionally carries no payload for large
+        // tensors. Preserve the in-place contract, but defer publishing the alias
+        // until functional execution has materialized the source buffer.
+        if (metadataOnlyOutputs && stableOwnedSource && compatible &&
+            !aliasHasPayload) {
+          DSP_DIAG(SHAPE,
+                   "SHAPE_PRE_PASS_IN_PLACE_DEFERRED: slot %d (%s) "
+                   "sourceSlotIdx=%d metadata-only source",
+                   stepIdx, slot.ident.opName.c_str(), sourceSlotIdx);
+        } else {
+          // In-place execution is an optimization, but stable ownership is a
+          // correctness requirement. Keep the ordinary independently-owned output
+          // when the source is borrowed/view-producing, missing, or incompatible.
+          slot.disableInPlaceFusion();
+          DSP_DIAG(FUSION,
+                   "SHAPE_PRE_PASS_IN_PLACE_DISABLED: slot %d (%s) sourceSlotIdx=%d "
+                   "producerStep=%d stable=%d compatible=%d payload=%d",
+                   stepIdx, slot.ident.opName.c_str(), sourceSlotIdx, producerStep,
+                   stableOwnedSource ? 1 : 0, compatible ? 1 : 0,
+                   aliasHasPayload ? 1 : 0);
+        }
       }
 
       // Reuse existing array if shape already matches
@@ -6345,7 +6378,7 @@ Status NativeDynamicShapePlan::phaseShapeInferenceOnly(
         outputSlots_[slotIdx] = nullptr;
       }
 
-      // Allocate an owned placeholder for downstream shape inference. A
+      // Publish an owned placeholder for downstream shape inference. A
       // view-capable op's cached output shape intentionally carries
       // ARRAY_IS_VIEW, but this prepass placeholder owns a newly allocated
       // DataBuffer. Passing the view-marked shape to NDArray makes its
@@ -6363,12 +6396,46 @@ Status NativeDynamicShapePlan::phaseShapeInferenceOnly(
             ConstantShapeHelper::getInstance().createFromExisting(ownedShape);
         delete[] ownedShape;
       }
-      NDArray* outArr =
-          new NDArray(const_cast<LongType*>(allocationShape), true);
+      const auto outputType = ArrayOptions::dataType(allocationShape);
+      const auto outputLength = shape::length(allocationShape);
+      const bool boundedIntegralControl =
+          (outputType == INT32 || outputType == INT64 || outputType == BOOL) &&
+          outputLength > 0 && outputLength <= 32;
+      const bool allocatePayload =
+          !metadataOnlyOutputs || boundedIntegralControl;
+
+      // Device placement is already part of the serialized slot contract. Tiny
+      // controls and explicit shape-only outputs allocate on their target device.
+      // Automatic CUDA preparation publishes metadata-only wrappers for all large
+      // tensors so shape propagation cannot consume both GPUs before the first
+      // functional slot has executed and liveness reuse can begin.
+      const int allocationDevice = slot.targetDeviceId;
+      const int previousDevice = sd::graph::dspGetCurrentDevice();
+      const bool switchedDevice = allocationDevice >= 0 && previousDevice >= 0 &&
+                                  allocationDevice != previousDevice;
+      if (switchedDevice) {
+        sd::graph::dspSetCurrentDevice(allocationDevice);
+      }
+      NDArray* outArr = nullptr;
+      try {
+        outArr = allocatePayload
+                     ? new NDArray(const_cast<LongType*>(allocationShape), true)
+                     : new NDArray(nullptr,
+                                   const_cast<LongType*>(allocationShape),
+                                   LaunchContext::defaultContext(), false, 0);
+      } catch (...) {
+        if (switchedDevice) sd::graph::dspSetCurrentDevice(previousDevice);
+        throw;
+      }
+      if (switchedDevice) {
+        sd::graph::dspSetCurrentDevice(previousDevice);
+      }
       outputSlots_[slotIdx] = outArr;
       planOwnedArrays_.insert(outArr);
-      DSP_DIAG(SHAPE, "SHAPE_PRE_PASS_ALLOC: slot %d (%s) outSlotIdx=%d allocated dtype=%s shape=%s",
+      DSP_DIAG(SHAPE, "SHAPE_PRE_PASS_ALLOC: slot %d (%s) outSlotIdx=%d device=%d payload=%d dtype=%s shape=%s",
                stepIdx, slot.ident.opName.c_str(), slotIdx,
+               allocationDevice,
+               allocatePayload ? 1 : 0,
                DataTypeUtils::asString(outArr->dataType()).c_str(),
                ShapeUtils::shapeAsString(outArr).c_str());
     }

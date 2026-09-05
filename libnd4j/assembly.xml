@@ -43,6 +43,9 @@
                 <exclude>**/CMakeCache.txt</exclude>
                 <!-- Smart-ccache hashes are mutable build metadata, not release artifacts. -->
                 <exclude>**/.ccache_hashes/**</exclude>
+                <!-- Python bytecode caches are generated runtime files, not release inputs. -->
+                <exclude>**/__pycache__/**</exclude>
+                <exclude>**/*.pyc</exclude>
                 <exclude>%regex[(?!.*${libnd4j.chip}/).*blasbuild.*]</exclude>
                 <exclude>%regex[.*/lib/googletest.*]</exclude>
             </excludes>

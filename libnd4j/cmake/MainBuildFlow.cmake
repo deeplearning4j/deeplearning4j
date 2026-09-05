@@ -820,6 +820,14 @@ function(configure_vulkan_linking main_target_name)
     find_package(OpenMP QUIET)
     if(OpenMP_CXX_FOUND)
         target_link_libraries(${main_target_name} PUBLIC OpenMP::OpenMP_CXX)
+        # The Android NDK imported target supplies compile options but does not
+        # reliably carry its static runtime through this shared-library link.
+        # Resolve every __kmpc_* reference from the NDK's libomp explicitly.
+        if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "Android")
+            target_link_libraries(${main_target_name} PUBLIC "-fopenmp" "-static-openmp")
+            message(STATUS
+                "🔗 Android Vulkan OpenMP runtime: ${main_target_name} -> static NDK libomp")
+        endif()
     endif()
 
     # SDZ archives are common backend metadata.

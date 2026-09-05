@@ -383,6 +383,33 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("-DHAVE_LIBRT=OFF", dependencies)
         self.assertNotIn("-DCMAKE_THREAD_LIBS_INIT", dependencies)
 
+    def test_android_allocator_trim_resolves_versioned_bionic_api_at_runtime(self):
+        root = Path(__file__).parents[2]
+        native_ops = (
+            root / "libnd4j/include/legacy/cpu/NativeOps.cpp"
+        ).read_text(encoding="utf-8")
+        self.assertIn('#include <dlfcn.h>', native_ops)
+        self.assertIn('dlsym(RTLD_DEFAULT, "mallopt")', native_ops)
+        self.assertEqual(2, native_ops.count("purgeAndroidAllocator();"))
+        self.assertNotIn("\n  mallopt(M_PURGE, 0);", native_ops)
+
+    def test_android_vulkan_links_ndk_openmp_runtime(self):
+        root = Path(__file__).parents[2]
+        main_flow = (root / "libnd4j/cmake/MainBuildFlow.cmake").read_text(
+            encoding="utf-8"
+        )
+        vulkan_linking = main_flow.split(
+            "function(configure_vulkan_linking main_target_name)", 1
+        )[1].split("endfunction()", 1)[0]
+        self.assertIn(
+            'if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "Android")',
+            vulkan_linking,
+        )
+        self.assertIn(
+            'target_link_libraries(${main_target_name} PUBLIC "-fopenmp" "-static-openmp")',
+            vulkan_linking,
+        )
+
     def test_android_x86_javacpp_uses_selected_api_for_crt_and_link_paths(self):
         root = Path(__file__).parents[2]
         pom = (
@@ -402,22 +429,73 @@ class ReleaseValidationTest(unittest.TestCase):
         )
         self.assertNotIn("android-x86_64) ndk=r26d", action)
 
-    def test_github_workers_use_supported_action_and_cuda_126_toolchains(self):
+    def test_windows_workers_use_supported_cuda_toolchains(self):
         root = Path(__file__).parents[2]
         action = (root / ".github/actions/run-release-worker/action.yml").read_text(
             encoding="utf-8"
         )
-        bootstrap = (root / "release/github/bootstrap-worker.ps1").read_text(
-            encoding="utf-8"
-        )
         self.assertIn("actions/setup-python@v6", action)
         self.assertNotIn("actions/setup-python@v5", action)
-        self.assertIn(
-            "Microsoft.VisualStudio.Component.VC.14.38.17.8.x86.x64",
-            bootstrap,
+        workers = (
+            root / "release/github/bootstrap-worker.ps1",
+            root / "release/aws/worker.ps1",
+            root / "release/azure/worker.ps1",
+            root / "release/gcp/worker.ps1",
         )
-        self.assertIn("-vcvars_ver=$vcVarsVersion", bootstrap)
-        self.assertNotIn("--allow-unsupported-compiler", bootstrap)
+        for worker in workers:
+            source = worker.read_text(encoding="utf-8")
+            self.assertIn(
+                "Microsoft.VisualStudio.Component.VC.14.38.17.8.x86.x64",
+                source,
+                worker,
+            )
+            self.assertIn("-vcvars_ver=$VcVarsVersion".lower(), source.lower(), worker)
+            self.assertIn("cuda_13.1.2_windows_network.exe", source, worker)
+            self.assertIn("2d5ebeee9c16f9fbe7186ac663bc0d58", source, worker)
+            self.assertIn("9.19.1.2", source, worker)
+            self.assertIn(
+                "ffe9788ec702b8b0d26f43cf1fd6f099e312e62dd0b82e9793ff5ee21bd8e00a",
+                source,
+                worker,
+            )
+            self.assertIn("12.7.3.1", source, worker)
+            self.assertIn(
+                "602cf803627f75a2b123bbf7bf735389721274d0ad486697b43c1f1f74eb29cf",
+                source,
+                worker,
+            )
+            self.assertNotIn("--allow-unsupported-compiler", source, worker)
+
+    def test_cuda_13_1_x86_lanes_are_complete_across_release_providers(self):
+        root = Path(__file__).parents[2]
+        for provider in ("aws", "azure", "gcp"):
+            plan = json.loads(
+                (root / f"release/{provider}/release-plan.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            shards = {shard["id"]: shard for shard in plan["shards"]}
+            for shard_id, platform in (
+                ("linux-x86_64-cuda-13-1", "linux-x86_64"),
+                ("windows-x86_64-cuda-13-1", "windows-x86_64"),
+            ):
+                shard = shards[shard_id]
+                build = shard["build"]
+                self.assertEqual("13.1", build["cudaVersion"], provider)
+                self.assertEqual(platform, build["javacppPlatform"], provider)
+                self.assertEqual(
+                    ["base", "cudnn", "compile"],
+                    [variant["name"] for variant in build["variants"]],
+                    provider,
+                )
+                self.assertIn(":nd4j-cuda-13.1-platform", build["modules"], provider)
+                self.assertIn(
+                    "nd4j-cuda-13.1-platform",
+                    shard["artifactRules"]["artifactIds"],
+                    provider,
+                )
+            self.assertIn("build-deploy-linux-cuda-13.1.yml", plan["coveredWorkflows"])
+            self.assertIn("build-deploy-windows-cuda-13.1.yml", plan["coveredWorkflows"])
 
     def test_cuda_launch_dimension_macros_have_single_owners(self):
         root = Path(__file__).parents[2]
@@ -435,6 +513,39 @@ class ReleaseValidationTest(unittest.TestCase):
             else:
                 owners[name] = line_number
         self.assertEqual([], duplicates)
+
+    def test_cuda_pairwise_dispatch_has_one_public_owner_and_split_group_helpers(self):
+        root = Path(__file__).parents[2]
+        pairwise = (root / "libnd4j/include/loops/cuda/pairwise.chpp").read_text(
+            encoding="utf-8"
+        )
+        group_include = (
+            root / "libnd4j/include/loops/cuda/pairwise_group.chpp"
+        ).read_text(encoding="utf-8")
+        group_template = (
+            root
+            / "libnd4j/include/loops/cuda/comb_compilation_units/"
+            "pairwise_group_instantiation_template_3.cu.in"
+        ).read_text(encoding="utf-8")
+        generator = (root / "libnd4j/cmake/TemplateProcessing.cmake").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("executeCudaShapedGroup<1, X, Y, Z>", pairwise)
+        self.assertIn("executeCudaShapedGroup<2, X, Y, Z>", pairwise)
+        self.assertIn("executeCudaShapedGroup<3, X, Y, Z>", pairwise)
+        self.assertIn("PAIRWISE_TRANSFORM_OPS_PART1", pairwise)
+        self.assertIn("PAIRWISE_TRANSFORM_OPS_PART2", pairwise)
+        self.assertIn("PAIRWISE_TRANSFORM_OPS_PART3", pairwise)
+        self.assertNotIn("PAIRWISE_TRANSFORM_OPS_ACTIVE", pairwise)
+        self.assertIn("#define PAIRWISE_DEFINE_GROUP_HELPERS 1", group_include)
+        self.assertIn("#include <loops/cuda/pairwise_group.chpp>", group_template)
+        self.assertIn(
+            '"pairwise_group${pairwise_group}_instantiation_template_3"',
+            generator,
+        )
+        self.assertIn("executeCudaShapedGroup<${op_group}", generator)
+        self.assertIn("foreach(pairwise_group RANGE 1 3)", generator)
 
     def test_windows_vulkan_uses_static_mlir_spirv_graph(self):
         root = Path(__file__).parents[2]
@@ -1820,8 +1931,13 @@ class ReleaseValidationTest(unittest.TestCase):
                 )
                 self.assertIn("-version '[17.0,18.0)'", worker)
                 self.assertIn(r"VC\Auxiliary\Build\vcvars64.bat", worker)
+                self.assertIn('$VcVarsCommand = "`"$VcVars`""', worker)
                 self.assertIn(
-                    '$env:ComSpec /d /s /c "`"$VcVars`" >nul && set"',
+                    '$VcVarsCommand += " -vcvars_ver=$VcVarsVersion"',
+                    worker,
+                )
+                self.assertIn(
+                    '$env:ComSpec /d /s /c "$VcVarsCommand >nul && set"',
                     worker,
                 )
                 self.assertIn(

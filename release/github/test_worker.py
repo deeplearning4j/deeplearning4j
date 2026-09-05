@@ -260,6 +260,57 @@ class WorkflowMatrixTests(unittest.TestCase):
             "nd4j-cuda-13.1-platform", shard["artifactRules"]["artifactIds"]
         )
 
+    def test_linux_and_windows_x86_cuda_13_1_are_complete_matrices(self):
+        linux_rows = prepare_worker.workflow_rows(
+            self.plan,
+            self.matrix,
+            "build-deploy-linux-cuda-13.1.yml",
+            "linux",
+        )
+        windows_rows = prepare_worker.workflow_rows(
+            self.plan,
+            self.matrix,
+            "build-deploy-windows-cuda-13.1.yml",
+            "host",
+        )
+        expected_variants = ["base", "cudnn", "compile"]
+        self.assertEqual(expected_variants, [row["variant"] for row in linux_rows])
+        self.assertEqual(expected_variants, [row["variant"] for row in windows_rows])
+        self.assertEqual(
+            [
+                "linux-x86_64-cuda-13-1",
+                "linux-x86_64-cuda-13-1-cudnn",
+                "linux-x86_64-cuda-13-1-compile",
+            ],
+            [row["artifactId"] for row in linux_rows],
+        )
+        self.assertEqual(
+            [
+                "windows-x86_64-cuda-13-1",
+                "windows-x86_64-cuda-13-1-cudnn",
+                "windows-x86_64-cuda-13-1-compile",
+            ],
+            [row["artifactId"] for row in windows_rows],
+        )
+        self.assertEqual(
+            {"nvidia/cuda:13.1.2-cudnn-devel-ubuntu24.04"},
+            {row["container"] for row in linux_rows},
+        )
+        self.assertEqual({"windows-2022"}, {row["runner"] for row in windows_rows})
+        shards = prepare_worker.plan_shards(self.plan)
+        for shard_id, platform in (
+            ("linux-x86_64-cuda-13-1", "linux-x86_64"),
+            ("windows-x86_64-cuda-13-1", "windows-x86_64"),
+        ):
+            shard = shards[shard_id]
+            self.assertEqual("13.1", shard["build"]["cudaVersion"])
+            self.assertEqual(platform, shard["build"]["javacppPlatform"])
+            self.assertIn(
+                "nd4j-cuda-13.1-platform",
+                shard["artifactRules"]["artifactIds"],
+            )
+            self.assertIn(":nd4j-cuda-13.1-platform", shard["build"]["modules"])
+
     def test_android_arm64_workflow_includes_cpu_and_vulkan_shards(self):
         rows = prepare_worker.workflow_rows(
             self.plan, self.matrix, "build-deploy-android-arm64.yml", "linux"
