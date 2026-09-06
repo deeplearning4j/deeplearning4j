@@ -190,7 +190,8 @@ try {
       if ($ActualCudaInstallerMd5 -ne $CudaInstallerMd5) {
         throw "CUDA 13.1.2 installer MD5 mismatch: expected $CudaInstallerMd5, got $ActualCudaInstallerMd5"
       }
-      $CudaPackages = 'nvcc_13.1 visual_studio_integration_13.1 cublas_dev_13.1 cusolver_dev_13.1 curand_dev_13.1 nvrtc_dev_13.1 cudart_13.1 cusparse_dev_13.1'
+      # CUDA 13.1 Update 2 ships CRT, NVVM and CCCL separately from nvcc.
+      $CudaPackages = 'nvcc_13.1 crt_13.1 nvvm_13.1 thrust_13.1 visual_studio_integration_13.1 cublas_dev_13.1 cusolver_dev_13.1 curand_dev_13.1 nvrtc_dev_13.1 cudart_13.1 cusparse_dev_13.1'
       $CudaInstall = Start-Process -FilePath $CudaInstaller -ArgumentList "-s -n $CudaPackages" -Wait -PassThru
       if ($CudaInstall.ExitCode -ne 0) {
         throw "CUDA 13.1.2 installer failed with exit code $($CudaInstall.ExitCode)"
@@ -216,6 +217,9 @@ try {
       & $Installer
     }
     if (-not (Test-Path "$CudaPath\bin\nvcc.exe")) { throw "CUDA installation is incomplete under $CudaPath" }
+    if (-not (Test-Path "$CudaPath\include\crt\host_config.h")) {
+      throw "CUDA installation is missing compiler runtime headers under $CudaPath"
+    }
     $SparseSha256 = ''
     switch ($Shard.build.cudaVersion) {
       '12.6' { $SparseVersion = '12.5.4.2' }

@@ -452,6 +452,9 @@ class ReleaseValidationTest(unittest.TestCase):
             self.assertIn("-vcvars_ver=$VcVarsVersion".lower(), source.lower(), worker)
             self.assertIn("cuda_13.1.2_windows_network.exe", source, worker)
             self.assertIn("2d5ebeee9c16f9fbe7186ac663bc0d58", source, worker)
+            self.assertIn("nvcc_13.1 crt_13.1 nvvm_13.1 thrust_13.1", source, worker)
+            self.assertIn(r"include\crt\host_config.h", source, worker)
+            self.assertIn("CUDA installation is missing compiler runtime headers", source, worker)
             self.assertIn("9.19.1.2", source, worker)
             self.assertIn(
                 "ffe9788ec702b8b0d26f43cf1fd6f099e312e62dd0b82e9793ff5ee21bd8e00a",

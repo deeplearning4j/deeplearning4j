@@ -206,7 +206,8 @@ if ($Shard -match 'cuda-(12-([69])|13-1)' -or $Shard -match 'zluda') {
     if ($actualCudaInstallerMd5 -ne $cudaInstallerMd5) {
       throw "CUDA 13.1.2 installer MD5 mismatch: expected $cudaInstallerMd5, got $actualCudaInstallerMd5"
     }
-    $cudaPackages = 'nvcc_13.1 visual_studio_integration_13.1 cublas_dev_13.1 cusolver_dev_13.1 curand_dev_13.1 nvrtc_dev_13.1 cudart_13.1 cusparse_dev_13.1'
+    # CUDA 13.1 Update 2 ships CRT, NVVM and CCCL separately from nvcc.
+    $cudaPackages = 'nvcc_13.1 crt_13.1 nvvm_13.1 thrust_13.1 visual_studio_integration_13.1 cublas_dev_13.1 cusolver_dev_13.1 curand_dev_13.1 nvrtc_dev_13.1 cudart_13.1 cusparse_dev_13.1'
     $cudaInstall = Start-Process -FilePath $cudaInstaller -ArgumentList "-s -n $cudaPackages" -Wait -PassThru
     if ($cudaInstall.ExitCode -ne 0) {
       throw "CUDA 13.1.2 installer failed with exit code $($cudaInstall.ExitCode)"
@@ -237,6 +238,9 @@ if ($Shard -match 'cuda-(12-([69])|13-1)' -or $Shard -match 'zluda') {
 
   if (-not (Test-Path -LiteralPath (Join-Path $cudaPath 'bin\nvcc.exe'))) {
     throw "CUDA bootstrap did not create nvcc.exe under $cudaPath"
+  }
+  if (-not (Test-Path "$cudaPath\include\crt\host_config.h")) {
+    throw "CUDA installation is missing compiler runtime headers under $cudaPath"
   }
 
   # The upstream installer omits cuSPARSE. libnd4j includes cusparse_v2.h and

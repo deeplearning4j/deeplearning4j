@@ -1065,7 +1065,8 @@ function Install-ShardCuda {
   Write-Phase 'cuda-toolchain' 'started' "version=$($Shard.build.cudaVersion)"
   $env:CUDA_VERSION = $Shard.build.cudaVersion
   $CudaPath = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v$($Shard.build.cudaVersion)"
-  if (-not (Test-Path "$CudaPath\bin\nvcc.exe")) {
+  if (-not (Test-Path "$CudaPath\bin\nvcc.exe") -or
+      -not (Test-Path "$CudaPath\include\crt\host_config.h")) {
     if ($Shard.build.cudaVersion -eq '13.1') {
       $CudaInstaller = Join-Path $ToolchainRoot 'cuda_13.1.2_windows_network.exe'
       $CudaInstallerUrl = 'https://developer.download.nvidia.com/compute/cuda/13.1.2/network_installers/cuda_13.1.2_windows_network.exe'
@@ -1075,7 +1076,8 @@ function Install-ShardCuda {
       if ($ActualCudaInstallerMd5 -ne $CudaInstallerMd5) {
         throw "CUDA 13.1.2 installer MD5 mismatch: expected $CudaInstallerMd5, got $ActualCudaInstallerMd5"
       }
-      $CudaPackages = 'nvcc_13.1 visual_studio_integration_13.1 cublas_dev_13.1 cusolver_dev_13.1 curand_dev_13.1 nvrtc_dev_13.1 cudart_13.1 cusparse_dev_13.1'
+      # CUDA 13.1 Update 2 ships CRT, NVVM and CCCL separately from nvcc.
+      $CudaPackages = 'nvcc_13.1 crt_13.1 nvvm_13.1 thrust_13.1 visual_studio_integration_13.1 cublas_dev_13.1 cusolver_dev_13.1 curand_dev_13.1 nvrtc_dev_13.1 cudart_13.1 cusparse_dev_13.1'
       $CudaInstall = Start-Process -FilePath $CudaInstaller -ArgumentList "-s -n $CudaPackages" -Wait -PassThru
       if ($CudaInstall.ExitCode -ne 0) {
         throw "CUDA 13.1.2 installer failed with exit code $($CudaInstall.ExitCode)"
@@ -1100,6 +1102,9 @@ function Install-ShardCuda {
     if (-not (Test-Path "$CudaPath\bin\nvcc.exe")) {
       throw "CUDA $($Shard.build.cudaVersion) installation did not provide nvcc.exe at $CudaPath"
     }
+  }
+  if (-not (Test-Path "$CudaPath\include\crt\host_config.h")) {
+    throw "CUDA installation is missing compiler runtime headers under $CudaPath"
   }
   if ($Shard.build.cudaVersion -eq '13.1' -and -not (Test-Path "$CudaPath\include\cudnn.h")) {
     $CudnnVersion = '9.19.1.2'
