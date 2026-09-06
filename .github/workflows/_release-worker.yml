@@ -167,6 +167,28 @@ jobs:
           printf 'snapshot-version=%s\n' "${SNAPSHOT_VERSION}" >>"${GITHUB_OUTPUT}"
           printf 'publication-mode=%s\n' "${publication_mode}" >>"${GITHUB_OUTPUT}"
           printf 'publish=%s\n' "${publish}" >>"${GITHUB_OUTPUT}"
+      - name: Validate full repository contracts before native fanout
+        if: inputs.workflow == 'all'
+        working-directory: platform-tests
+        shell: bash
+        env:
+          PYTHONPATH: ..
+        run: |
+          set -Eeuo pipefail
+          python3 -m unittest \
+            test_full_release_repository test_release_publication_safety \
+            release.github.test_worker release.central.test_repository \
+            release.aws.test_release release.azure.test_release \
+            release.azure.test_dependency_cache release.gcp.test_release \
+            2>&1 | tee "${RUNNER_TEMP}/release-contracts.log"
+      - name: Retain release contract evidence
+        if: ${{ always() && inputs.workflow == 'all' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-contracts
+          path: ${{ runner.temp }}/release-contracts.log
+          if-no-files-found: warn
+          retention-days: 90
       - name: Resolve canonical worker matrix
         id: rows
         shell: bash
@@ -234,7 +256,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: release-worker-${{ matrix.artifactId }}
-          path: ${{ github.workspace }}/.release-worker/${{ matrix.shard }}/${{ matrix.variant }}
+          path: |
+            ${{ github.workspace }}/.release-worker/${{ matrix.shard }}/${{ matrix.variant }}
+            !${{ github.workspace }}/.release-worker/${{ matrix.shard }}/${{ matrix.variant }}/${{ inputs.workflow == 'all' && 'sdk-assets' || 'full-repository-exclusion-unused' }}/**
           if-no-files-found: error
           include-hidden-files: true
           compression-level: 0
@@ -281,7 +305,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: release-worker-${{ matrix.artifactId }}
-          path: ${{ github.workspace }}/.release-worker/${{ matrix.shard }}/${{ matrix.variant }}
+          path: |
+            ${{ github.workspace }}/.release-worker/${{ matrix.shard }}/${{ matrix.variant }}
+            !${{ github.workspace }}/.release-worker/${{ matrix.shard }}/${{ matrix.variant }}/${{ inputs.workflow == 'all' && 'sdk-assets' || 'full-repository-exclusion-unused' }}/**
           if-no-files-found: error
           include-hidden-files: true
           compression-level: 0
@@ -302,6 +328,20 @@ jobs:
         with:
           ref: ${{ github.workflow_sha }}
           persist-credentials: false
+      - name: Checkout immutable source for full Java assembly
+        if: inputs.workflow == 'all'
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.matrix.outputs.source }}
+          path: .release-source
+          persist-credentials: false
+      - name: Configure Java for full repository assembly
+        if: inputs.workflow == 'all'
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          overwrite-settings: false
       - name: Download staged worker results
         uses: actions/download-artifact@v8
         with:
@@ -355,7 +395,26 @@ jobs:
           printf 'release-version=%s\n' "${EXPECTED_RELEASE_VERSION}" >>"${GITHUB_OUTPUT}"
           printf 'publication-mode=%s\n' "${PUBLICATION_MODE}" >>"${GITHUB_OUTPUT}"
           printf 'publish=%s\n' "${PUBLISH}" >>"${GITHUB_OUTPUT}"
+      - name: Assemble and verify full Maven repository
+        if: inputs.workflow == 'all'
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ steps.staged.outputs['release-version'] }}
+          SNAPSHOT_VERSION: ${{ needs.matrix.outputs['snapshot-version'] }}
+          SOURCE_COMMIT: ${{ needs.matrix.outputs.source }}
+        run: |
+          set -Eeuo pipefail
+          python3 release/github/full-repository.py \
+            --workers "${GITHUB_WORKSPACE}/.release-worker-publish" \
+            --source "${GITHUB_WORKSPACE}/.release-source" \
+            --local-repository "${GITHUB_WORKSPACE}/.release-assembly-m2" \
+            --output "${GITHUB_WORKSPACE}/.release-worker-merged" \
+            --release-version "${RELEASE_VERSION}" \
+            --snapshot-version "${SNAPSHOT_VERSION}" \
+            --commit "${SOURCE_COMMIT}" \
+            --run-id "github-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
       - name: Merge and verify staged Maven repository
+        if: inputs.workflow != 'all'
         shell: bash
         env:
           RELEASE_VERSION: ${{ steps.staged.outputs['release-version'] }}
@@ -470,5 +529,7 @@ jobs:
             ${{ github.workspace }}/.release-worker-merged/repository-manifest.json
             ${{ github.workspace }}/.release-worker-merged/repository-manifest.json.sha256
             ${{ github.workspace }}/.release-worker-merged/central-deployment.log
+            ${{ github.workspace }}/.release-worker-merged/*effective-pom.xml
+            ${{ github.workspace }}/.release-worker-merged/consumers/
           if-no-files-found: warn
           retention-days: 90

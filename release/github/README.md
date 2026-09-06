@@ -16,9 +16,9 @@ The one dispatcher retains the historical snapshot-versus-release switch:
 
 - `deployToReleaseStaging=0` builds `snapshotVersion`, merges the selected logical matrix once, and publishes it to `https://central.sonatype.com/repository/maven-snapshots/`.
 - `deployToReleaseStaging=1` rewrites the same source snapshot to `releaseVersion`, builds and merges the selected logical matrix, signs the merged repository with `GPG_PRIVATE_KEY`, and uploads it to Central Portal as a user-managed deployment. It stops after validation for manual review; it never requests automatic publication.
-- `dryRun=true` builds the **selected logical matrix**, merges and verifies its repository, and does not upload to Sonatype. The merged repository is retained as an Actions artifact for seven days, including hidden directory contents. A logical matrix is not the full release: the dispatcher's default matrix currently contains only four CPU base variants.
+- `dryRun=true` builds and verifies a repository without signing or uploading to Sonatype. The repository is retained as an Actions artifact for seven days, including hidden directory contents. Use `workflow=all` for full Maven repository assembly. The dispatcher's default matrix still contains only four CPU base variants and is not a full release.
 
-The release plumbing reuses `release/aws/build-platform.py` for version setup and `release/central/repository.py` for merge, signing, snapshot deployment, and release staging. A failed publication can be retried without rebuilding by setting `publishSourceRunId` to the original workflow run, retaining the same `deployToReleaseStaging` mode. Publication tooling comes from the workflow revision; worker manifests must still match the immutable build source SHA and version.
+The release plumbing reuses `release/aws/build-platform.py` for version setup and `release/central/repository.py` for merge, signing, snapshot deployment, and release staging. `publishSourceRunId` recovers selected worker artifacts, not a full assembled repository: it does not reconstruct the Java reactor or apply full-matrix ownership. For a failed full assembly, rerun failed jobs in the original Actions run so the successful worker artifacts remain available. Publication tooling comes from the workflow revision; worker manifests must still match the immutable build source SHA and version.
 
 Non-SNAPSHOT merges reject conflicting duplicate artifacts, rather than choosing the first POM or binary. Release verification additionally checks the `org.eclipse.deeplearning4j` namespace, POM coordinates, local parent closure, required POM metadata, main artifacts, and sources/javadoc attachments. Signing repeats these checks before invoking GPG. These are local prerequisite checks, **not** proof of full module/classifier coverage, effective Maven dependency resolution, signing validity, or Central namespace authorization.
 
@@ -41,16 +41,32 @@ gh workflow run build-deploy-cross-platform.yml \
 
 ## Full-release readiness gate
 
-The current dispatcher is suitable for selected native snapshot matrices, but does not yet assemble a complete release repository. Do not equate a successful selected matrix with a release-ready build. Before staging a full release:
+`workflow=all` derives every native variant from the canonical release plan (currently 68 variants), rejects partial classifier filters, and runs the Python release contract suites before any native jobs start. A successful contract check is not a successful native build.
 
-1. Add an explicit full-release selection covering the canonical plan (currently 66 native variants in 26 shards), plus an inventory check that rejects missing workers. There is currently no `all` logical matrix.
-2. Give shared Java artifacts and parent POMs one explicit build owner. All current CPU workers disable `buildCrossPlatformJava`; the Java hotfix workflow is a separate partial reactor, not a repository-assembly owner. Generate sources/javadoc for every applicable published component, including native binding components; copying existing metadata is not generation.
-3. Resolve the CUDA shared-GAV contract: CUDA 12.6, 12.9, and 13.1 rewrite different CUDA dependencies into the same `nd4j-cuda-backend-common` POM coordinate. A full release must not arbitrarily select one. Define a compatible common dependency contract or distinct coordinates before merging.
-4. Reconcile platform-module POM dependencies with the actual classifier inventory. In particular, `nd4j-native-platform` still references targets absent from the current plan. Validate same-release parents and dependencies against the assembled repository, not cached snapshots.
-5. Complete the whole matrix at one source SHA and verify its attested Maven and SDK outputs. Measure the actual signed ZIP size against Central's 1 GB bundle limit and design component-preserving partitioning if necessary; raw shard sizes alone are not a compressed bundle measurement.
-6. Verify signing and namespace authorization, then upload only a user-managed deployment. Require Central `VALIDATED` and human review before publication. Consider protected-environment approval in addition to the manual Portal release step.
+After all workers succeed, `full-repository.py`:
 
-The safe first full run should be `deployToReleaseStaging=1` with `dryRun=true` after these assembly gaps are closed. No release should be uploaded merely to discover missing components.
+1. Requires exactly the canonical worker set, one immutable source SHA/version/run, matching plan digests, successful completion receipts, and attested classifier archives. Successful artifacts from earlier attempts of the same run may be reused.
+2. Selects one declared owner for each shared native component. CPU base Linux owns CPU common, tokenizers, and SDX components; each CUDA version owns distinct backend/common coordinates such as `nd4j-cuda-12.9-backend-common`. It never resolves release conflicts by taking the first duplicate.
+3. Builds the default Java reactor and its parent POMs from the same source in a fresh Maven repository seeded only with the attested native outputs. It then builds native, Vulkan, ZLUDA, and all three CUDA platform modules. Non-SNAPSHOT components must supply their generated sources and javadoc attachments.
+4. Resolves each shipped binary independently using its installed POM, rejecting any DL4J dependency obtained remotely rather than produced by this run. This checks consumer resolution on the Linux assembly host; it does not certify every optional dependency or OS-activated Maven profile.
+5. Emits `repository-manifest.json` with per-file owners, sizes, and SHA-256 hashes, verifies release metadata, and retains the repository under `merged-maven-repository-<version>/maven-repository/org/eclipse/deeplearning4j/`. Contract logs, effective reactor POMs, dependency-resolution evidence, and the manifest are retained for 90 days.
+
+The full Maven run does not claim to package optional Spark/profile-only reactors, standalone SDK archives, or optional SDX AOT outputs. SDK payloads are excluded from full-run worker uploads to avoid duplicating them in the Maven assembly job.
+
+Build-only qualification command (no signing, upload, tags, or automatic release):
+
+```bash
+gh workflow run build-deploy-cross-platform.yml \
+  --ref ag_new_release_updates_2 \
+  -f workflow=all \
+  -f commitId=FULL_40_CHARACTER_SHA \
+  -f deployToReleaseStaging=1 \
+  -f releaseVersion=1.0.0-M3 \
+  -f snapshotVersion=1.0.0-SNAPSHOT \
+  -f dryRun=true
+```
+
+Release approval still requires a completed full run and inspection of its manifest, signing/key validity, Central namespace authorization, and measurement of the signed ZIP against Central's 1 GB bundle limit. The existing publisher rejects an oversized single bundle; component-preserving partitioning must be qualified if the assembled release exceeds that limit. A dry run proves none of the credential/Portal checks. Only an explicitly approved subsequent staging operation may upload a user-managed deployment; Central `VALIDATED` and human review are required before publication.
 
 ## Matrix maintenance
 
