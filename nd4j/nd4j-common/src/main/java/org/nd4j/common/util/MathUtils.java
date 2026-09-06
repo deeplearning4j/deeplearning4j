@@ -1368,7 +1368,7 @@ public class MathUtils {
 
     /**
      * Shuffle the first N elements of the array using the specified Random instance.<br>
-     * If shuffleFirst < array.length, only the elements 0 to shuffleFirst-1 are modified; values at indices shuffleFirst to
+     * If {@code shuffleFirst < array.length}, only the elements 0 to shuffleFirst-1 are modified; values at indices shuffleFirst to
      * array.length-1 are not changed.
      * Uses Fisher Yates shuffle internally: <a href="https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm">
      * https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm</a>

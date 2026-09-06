@@ -80,7 +80,7 @@ public class BTools {
 	 * <b>getSpaces</b><br>
 	 * public static String getSpaces( int SpacesCount )<br>
 	 * Returns asked count of spaces.<br>
-	 * If count of spaces is < 0 returns '?'. 
+	 * If {@code SpacesCount < 0}, returns '?'.
 	 * @param SpacesCount = spaces count
 	 * @return spaces
 	 */
@@ -129,7 +129,7 @@ public class BTools {
 	 * public static String getSDbl( double Value, int DecPrec )<br>
 	 * Returns double converted to string.<br>
 	 * If Value is Double.NaN returns "NaN".<br>
-	 * If DecPrec is < 0 is DecPrec set 0.<br>
+	 * If {@code DecPrec < 0}, DecPrec is set to 0.<br>
 	 * 
 	 * @param Value - value
 	 * @param DecPrec - decimal precision
@@ -177,7 +177,7 @@ public class BTools {
 	 * public static String getSDbl( double Value, int DecPrec, boolean ShowPlusSign )<br>
 	 * Returns double converted to string.<br>
 	 * If Value is Double.NaN returns "NaN".<br>
-	 * If DecPrec is < 0 is DecPrec set 0.<br>
+	 * If {@code DecPrec < 0}, DecPrec is set to 0.<br>
 	 * If ShowPlusSign is true:<br>
 	 *   - If Value is > 0 sign is '+'.<br>
 	 *   - If Value is 0 sign is ' '.<br>
@@ -201,13 +201,13 @@ public class BTools {
 	 * public static String getSDbl( double Value, int DecPrec, boolean ShowPlusSign, int StringLength )<br>
 	 * Returns double converted to string.<br>
 	 * If Value is Double.NaN returns "NaN".<br>
-	 * If DecPrec is < 0 is DecPrec set 0.<br>
+	 * If {@code DecPrec < 0}, DecPrec is set to 0.<br>
 	 * If ShowPlusSign is true:<br>
 	 *   - If Value is > 0 sign is '+'.<br>
 	 *   - If Value is 0 sign is ' '.<br>
 	 * If StringLength is > base double string length<br>
 	 *   before base double string adds relevant spaces.<br>
-	 * If StringLength is <= base double string length<br>
+	 * If StringLength is less than or equal to the base double string length<br>
 	 *   returns base double string.<br>
 	 * @param Value - value
 	 * @param DecPrec - decimal precision
@@ -237,7 +237,7 @@ public class BTools {
 	 * Returns int converted to string.<br>
 	 * If CharsCount > base int string length<br>
 	 *   before base int string adds relevant spaces.<br>
-	 * If CharsCount <= base int string length<br>
+	 * If CharsCount is less than or equal to the base int string length<br>
 	 *   returns base int string.<br>
 	 * @param Value - value
 	 * @param CharsCount - chars count
@@ -254,7 +254,7 @@ public class BTools {
 	 * Returns int converted to string.<br>
 	 * If CharsCount > base int string length<br>
 	 *   before base int string adds relevant leading chars.<br>
-	 * If CharsCount <= base int string length<br>
+	 * If CharsCount is less than or equal to the base int string length<br>
 	 *   returns base int string.<br>
 	 * 
 	 * @param Value - value

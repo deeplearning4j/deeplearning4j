@@ -87,8 +87,8 @@ public class MultiDimensionalMap<K, T, V> implements Serializable {
 
     /**
      * Returns the number of key-value mappings in this map.  If the
-     * map contains more than <tt>Integer.MAX_VALUE</tt> elements, returns
-     * <tt>Integer.MAX_VALUE</tt>.
+     * map contains more than <code>Integer.MAX_VALUE</code> elements, returns
+     * <code>Integer.MAX_VALUE</code>.
      *
      * @return the number of key-value mappings in this map
      */
@@ -97,30 +97,30 @@ public class MultiDimensionalMap<K, T, V> implements Serializable {
     }
 
     /**
-     * Returns <tt>true</tt> if this map contains no key-value mappings.
+     * Returns <code>true</code> if this map contains no key-value mappings.
      *
-     * @return <tt>true</tt> if this map contains no key-value mappings
+     * @return <code>true</code> if this map contains no key-value mappings
      */
     public boolean isEmpty() {
         return backedMap.isEmpty();
     }
 
     /**
-     * Returns <tt>true</tt> if this map contains a mapping for the specified
-     * key.  More formally, returns <tt>true</tt> if and only if
-     * this map contains a mapping for a key <tt>k</tt> such that
-     * <tt>(key==null ? k==null : key.equals(k))</tt>.  (There can be
+     * Returns <code>true</code> if this map contains a mapping for the specified
+     * key.  More formally, returns <code>true</code> if and only if
+     * this map contains a mapping for a key <code>k</code> such that
+     * <code>(key==null ? k==null : key.equals(k))</code>.  (There can be
      * at most one such mapping.)
      *
      * @param key key whose presence in this map is to be tested
-     * @return <tt>true</tt> if this map contains a mapping for the specified
+     * @return <code>true</code> if this map contains a mapping for the specified
      * key
      * @throws ClassCastException   if the key is of an inappropriate type for
      *                              this map
-     *                              (<a href="Collection.html#optional-restrictions">optional</a>)
+     *                              ({@link Collection optional})
      * @throws NullPointerException if the specified key is null and this map
      *                              does not permit null keys
-     *                              (<a href="Collection.html#optional-restrictions">optional</a>)
+     *                              ({@link Collection optional})
      */
 
     public boolean containsKey(Object key) {
@@ -128,22 +128,22 @@ public class MultiDimensionalMap<K, T, V> implements Serializable {
     }
 
     /**
-     * Returns <tt>true</tt> if this map maps one or more keys to the
-     * specified value.  More formally, returns <tt>true</tt> if and only if
-     * this map contains at least one mapping to a value <tt>v</tt> such that
-     * <tt>(value==null ? v==null : value.equals(v))</tt>.  This operation
+     * Returns <code>true</code> if this map maps one or more keys to the
+     * specified value.  More formally, returns <code>true</code> if and only if
+     * this map contains at least one mapping to a value <code>v</code> such that
+     * <code>(value==null ? v==null : value.equals(v))</code>.  This operation
      * will probably require time linear in the map size for most
-     * implementations of the <tt>Map</tt> interface.
+     * implementations of the <code>Map</code> interface.
      *
      * @param value value whose presence in this map is to be tested
-     * @return <tt>true</tt> if this map maps one or more keys to the
+     * @return <code>true</code> if this map maps one or more keys to the
      * specified value
      * @throws ClassCastException   if the value is of an inappropriate type for
      *                              this map
-     *                              (<a href="Collection.html#optional-restrictions">optional</a>)
+     *                              ({@link Collection optional})
      * @throws NullPointerException if the specified value is null and this
      *                              map does not permit null values
-     *                              (<a href="Collection.html#optional-restrictions">optional</a>)
+     *                              ({@link Collection optional})
      */
 
     public boolean containsValue(Object value) {
@@ -153,12 +153,12 @@ public class MultiDimensionalMap<K, T, V> implements Serializable {
     /**
      * Returns the value to which the specified key is mapped,
      * or {@code null} if this map contains no mapping for the key.
-     * <p/>
+     *
      * <p>More formally, if this map contains a mapping from a key
      * {@code k} to a value {@code v} such that {@code (key==null ? k==null :
      * key.equals(k))}, then this method returns {@code v}; otherwise
      * it returns {@code null}.  (There can be at most one such mapping.)
-     * <p/>
+     *
      * <p>If this map permits null values, then a return value of
      * {@code null} does not <i>necessarily</i> indicate that the map
      * contains no mapping for the key; it's also possible that the map
@@ -170,10 +170,10 @@ public class MultiDimensionalMap<K, T, V> implements Serializable {
      * {@code null} if this map contains no mapping for the key
      * @throws ClassCastException   if the key is of an inappropriate type for
      *                              this map
-     *                              (<a href="Collection.html#optional-restrictions">optional</a>)
+     *                              ({@link Collection optional})
      * @throws NullPointerException if the specified key is null and this map
      *                              does not permit null keys
-     *                              (<a href="Collection.html#optional-restrictions">optional</a>)
+     *                              ({@link Collection optional})
      */
 
     public V get(Object key) {
@@ -184,18 +184,18 @@ public class MultiDimensionalMap<K, T, V> implements Serializable {
      * Associates the specified value with the specified key in this map
      * (optional operation).  If the map previously contained a mapping for
      * the key, the old value is replaced by the specified value.  (A map
-     * <tt>m</tt> is said to contain a mapping for a key <tt>k</tt> if and only
+     * <code>m</code> is said to contain a mapping for a key <code>k</code> if and only
      * if {@link #containsKey(Object) m.containsKey(k)} would return
-     * <tt>true</tt>.)
+     * <code>true</code>.)
      *
      * @param key   key with which the specified value is to be associated
      * @param value value to be associated with the specified key
-     * @return the previous value associated with <tt>key</tt>, or
-     * <tt>null</tt> if there was no mapping for <tt>key</tt>.
-     * (A <tt>null</tt> return can also indicate that the map
-     * previously associated <tt>null</tt> with <tt>key</tt>,
-     * if the implementation supports <tt>null</tt> values.)
-     * @throws UnsupportedOperationException if the <tt>put</tt> operation
+     * @return the previous value associated with <code>key</code>, or
+     * <code>null</code> if there was no mapping for <code>key</code>.
+     * (A <code>null</code> return can also indicate that the map
+     * previously associated <code>null</code> with <code>key</code>,
+     * if the implementation supports <code>null</code> values.)
+     * @throws UnsupportedOperationException if the <code>put</code> operation
      *                                       is not supported by this map
      * @throws ClassCastException            if the class of the specified key or value
      *                                       prevents it from being stored in this map
@@ -212,32 +212,32 @@ public class MultiDimensionalMap<K, T, V> implements Serializable {
     /**
      * Removes the mapping for a key from this map if it is present
      * (optional operation).   More formally, if this map contains a mapping
-     * from key <tt>k</tt> to value <tt>v</tt> such that
+     * from key <code>k</code> to value <code>v</code> such that
      * <code>(key==null ?  k==null : key.equals(k))</code>, that mapping
      * is removed.  (The map can contain at most one such mapping.)
-     * <p/>
+     *
      * <p>Returns the value to which this map previously associated the key,
-     * or <tt>null</tt> if the map contained no mapping for the key.
-     * <p/>
+     * or <code>null</code> if the map contained no mapping for the key.
+     *
      * <p>If this map permits null values, then a return value of
-     * <tt>null</tt> does not <i>necessarily</i> indicate that the map
+     * <code>null</code> does not <i>necessarily</i> indicate that the map
      * contained no mapping for the key; it's also possible that the map
-     * explicitly mapped the key to <tt>null</tt>.
-     * <p/>
+     * explicitly mapped the key to <code>null</code>.
+     *
      * <p>The map will not contain a mapping for the specified key once the
      * call returns.
      *
      * @param key key whose mapping is to be removed from the map
-     * @return the previous value associated with <tt>key</tt>, or
-     * <tt>null</tt> if there was no mapping for <tt>key</tt>.
-     * @throws UnsupportedOperationException if the <tt>remove</tt> operation
+     * @return the previous value associated with <code>key</code>, or
+     * <code>null</code> if there was no mapping for <code>key</code>.
+     * @throws UnsupportedOperationException if the <code>remove</code> operation
      *                                       is not supported by this map
      * @throws ClassCastException            if the key is of an inappropriate type for
      *                                       this map
-     *                                       (<a href="Collection.html#optional-restrictions">optional</a>)
+     *                                       ({@link Collection optional})
      * @throws NullPointerException          if the specified key is null and this
      *                                       map does not permit null keys
-     *                                       (<a href="Collection.html#optional-restrictions">optional</a>)
+     *                                       ({@link Collection optional})
      */
 
     public V remove(Object key) {
@@ -247,13 +247,13 @@ public class MultiDimensionalMap<K, T, V> implements Serializable {
     /**
      * Copies all of the mappings from the specified map to this map
      * (optional operation).  The effect of this call is equivalent to that
-     * of calling {@link Map<>#put(k, v)} on this map once
-     * for each mapping from key <tt>k</tt> to value <tt>v</tt> in the
+     * of calling {@link Map#put(Object, Object) Map.put(k, v)} on this map once
+     * for each mapping from key <code>k</code> to value <code>v</code> in the
      * specified map.  The behavior of this operation is undefined if the
      * specified map is modified while the operation is in progress.
      *
      * @param m mappings to be stored in this map
-     * @throws UnsupportedOperationException if the <tt>putAll</tt> operation
+     * @throws UnsupportedOperationException if the <code>putAll</code> operation
      *                                       is not supported by this map
      * @throws ClassCastException            if the class of a key or value in the
      *                                       specified map prevents it from being stored in this map
@@ -272,7 +272,7 @@ public class MultiDimensionalMap<K, T, V> implements Serializable {
      * Removes all of the mappings from this map (optional operation).
      * The map will be empty after this call returns.
      *
-     * @throws UnsupportedOperationException if the <tt>clear</tt> operation
+     * @throws UnsupportedOperationException if the <code>clear</code> operation
      *                                       is not supported by this map
      */
 
@@ -285,12 +285,12 @@ public class MultiDimensionalMap<K, T, V> implements Serializable {
      * The applyTransformToDestination is backed by the map, so changes to the map are
      * reflected in the applyTransformToDestination, and vice-versa.  If the map is modified
      * while an iteration over the applyTransformToDestination is in progress (except through
-     * the iterator's own <tt>remove</tt> operation), the results of
+     * the iterator's own <code>remove</code> operation), the results of
      * the iteration are undefined.  The applyTransformToDestination supports element removal,
      * which removes the corresponding mapping from the map, via the
-     * <tt>Iterator.remove</tt>, <tt>Set.remove</tt>,
-     * <tt>removeAll</tt>, <tt>retainAll</tt>, and <tt>clear</tt>
-     * operations.  It does not support the <tt>add</tt> or <tt>addAll</tt>
+     * <code>Iterator.remove</code>, <code>Set.remove</code>,
+     * <code>removeAll</code>, <code>retainAll</code>, and <code>clear</code>
+     * operations.  It does not support the <code>add</code> or <code>addAll</code>
      * operations.
      *
      * @return a applyTransformToDestination view of the keys contained in this map
@@ -305,13 +305,13 @@ public class MultiDimensionalMap<K, T, V> implements Serializable {
      * The collection is backed by the map, so changes to the map are
      * reflected in the collection, and vice-versa.  If the map is
      * modified while an iteration over the collection is in progress
-     * (except through the iterator's own <tt>remove</tt> operation),
+     * (except through the iterator's own <code>remove</code> operation),
      * the results of the iteration are undefined.  The collection
      * supports element removal, which removes the corresponding
-     * mapping from the map, via the <tt>Iterator.remove</tt>,
-     * <tt>Collection.remove</tt>, <tt>removeAll</tt>,
-     * <tt>retainAll</tt> and <tt>clear</tt> operations.  It does not
-     * support the <tt>add</tt> or <tt>addAll</tt> operations.
+     * mapping from the map, via the <code>Iterator.remove</code>,
+     * <code>Collection.remove</code>, <code>removeAll</code>,
+     * <code>retainAll</code> and <code>clear</code> operations.  It does not
+     * support the <code>add</code> or <code>addAll</code> operations.
      *
      * @return a collection view of the values contained in this map
      */
@@ -325,14 +325,14 @@ public class MultiDimensionalMap<K, T, V> implements Serializable {
      * The applyTransformToDestination is backed by the map, so changes to the map are
      * reflected in the applyTransformToDestination, and vice-versa.  If the map is modified
      * while an iteration over the applyTransformToDestination is in progress (except through
-     * the iterator's own <tt>remove</tt> operation, or through the
-     * <tt>setValue</tt> operation on a map entry returned by the
+     * the iterator's own <code>remove</code> operation, or through the
+     * <code>setValue</code> operation on a map entry returned by the
      * iterator) the results of the iteration are undefined.  The applyTransformToDestination
      * supports element removal, which removes the corresponding
-     * mapping from the map, via the <tt>Iterator.remove</tt>,
-     * <tt>Set.remove</tt>, <tt>removeAll</tt>, <tt>retainAll</tt> and
-     * <tt>clear</tt> operations.  It does not support the
-     * <tt>add</tt> or <tt>addAll</tt> operations.
+     * mapping from the map, via the <code>Iterator.remove</code>,
+     * <code>Set.remove</code>, <code>removeAll</code>, <code>retainAll</code> and
+     * <code>clear</code> operations.  It does not support the
+     * <code>add</code> or <code>addAll</code> operations.
      *
      * @return a applyTransformToDestination view of the mappings contained in this map
      */
@@ -418,11 +418,11 @@ public class MultiDimensionalMap<K, T, V> implements Serializable {
          * Replaces the value corresponding to this entry with the specified
          * value (optional operation).  (Writes through to the map.)  The
          * behavior of this call is undefined if the mapping has already been
-         * removed from the map (by the iterator's <tt>remove</tt> operation).
+         * removed from the map (by the iterator's <code>remove</code> operation).
          *
          * @param value new value to be stored in this entry
          * @return old value corresponding to the entry
-         * @throws UnsupportedOperationException if the <tt>put</tt> operation
+         * @throws UnsupportedOperationException if the <code>put</code> operation
          *                                       is not supported by the backing map
          * @throws ClassCastException            if the class of the specified value
          *                                       prevents it from being stored in the backing map

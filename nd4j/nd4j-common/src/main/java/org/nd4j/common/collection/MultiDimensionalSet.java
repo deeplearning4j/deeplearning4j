@@ -51,8 +51,8 @@ public class MultiDimensionalSet<K, V> implements Set<Pair<K, V>> {
 
     /**
      * Returns the number of elements in this applyTransformToDestination (its cardinality).  If this
-     * applyTransformToDestination contains more than <tt>Integer.MAX_VALUE</tt> elements, returns
-     * <tt>Integer.MAX_VALUE</tt>.
+     * applyTransformToDestination contains more than <code>Integer.MAX_VALUE</code> elements, returns
+     * <code>Integer.MAX_VALUE</code>.
      *
      * @return the number of elements in this applyTransformToDestination (its cardinality)
      */
@@ -62,9 +62,9 @@ public class MultiDimensionalSet<K, V> implements Set<Pair<K, V>> {
     }
 
     /**
-     * Returns <tt>true</tt> if this applyTransformToDestination contains no elements.
+     * Returns <code>true</code> if this applyTransformToDestination contains no elements.
      *
-     * @return <tt>true</tt> if this applyTransformToDestination contains no elements
+     * @return <code>true</code> if this applyTransformToDestination contains no elements
      */
     @Override
     public boolean isEmpty() {
@@ -72,19 +72,19 @@ public class MultiDimensionalSet<K, V> implements Set<Pair<K, V>> {
     }
 
     /**
-     * Returns <tt>true</tt> if this applyTransformToDestination contains the specified element.
-     * More formally, returns <tt>true</tt> if and only if this applyTransformToDestination
-     * contains an element <tt>e</tt> such that
-     * <tt>(o==null&nbsp;?&nbsp;e==null&nbsp;:&nbsp;o.equals(e))</tt>.
+     * Returns <code>true</code> if this applyTransformToDestination contains the specified element.
+     * More formally, returns <code>true</code> if and only if this applyTransformToDestination
+     * contains an element <code>e</code> such that
+     * <code>(o==null&nbsp;?&nbsp;e==null&nbsp;:&nbsp;o.equals(e))</code>.
      *
      * @param o element whose presence in this applyTransformToDestination is to be tested
-     * @return <tt>true</tt> if this applyTransformToDestination contains the specified element
+     * @return <code>true</code> if this applyTransformToDestination contains the specified element
      * @throws ClassCastException   if the type of the specified element
      *                              is incompatible with this applyTransformToDestination
-     *                              (<a href="Collection.html#optional-restrictions">optional</a>)
+     *                              ({@link Collection optional})
      * @throws NullPointerException if the specified element is null and this
      *                              applyTransformToDestination does not permit null elements
-     *                              (<a href="Collection.html#optional-restrictions">optional</a>)
+     *                              ({@link Collection optional})
      */
     @Override
     public boolean contains(Object o) {
@@ -108,12 +108,12 @@ public class MultiDimensionalSet<K, V> implements Set<Pair<K, V>> {
      * If this applyTransformToDestination makes any guarantees as to what order its elements
      * are returned by its iterator, this method must return the
      * elements in the same order.
-     * <p/>
+     *
      * <p>The returned array will be "safe" in that no references to it
      * are maintained by this applyTransformToDestination.  (In other words, this method must
      * allocate a new array even if this applyTransformToDestination is backed by an array).
      * The caller is thus free to modify the returned array.
-     * <p/>
+     *
      * <p>This method acts as bridge between array-based and collection-based
      * APIs.
      *
@@ -130,32 +130,32 @@ public class MultiDimensionalSet<K, V> implements Set<Pair<K, V>> {
      * If the applyTransformToDestination fits in the specified array, it is returned therein.
      * Otherwise, a new array is allocated with the runtime type of the
      * specified array and the size of this applyTransformToDestination.
-     * <p/>
+     *
      * <p>If this applyTransformToDestination fits in the specified array with room to spare
      * (i.e., the array has more elements than this applyTransformToDestination), the element in
      * the array immediately following the end of the applyTransformToDestination is applyTransformToDestination to
-     * <tt>null</tt>.  (This is useful in determining the length of this
+     * <code>null</code>.  (This is useful in determining the length of this
      * applyTransformToDestination <i>only</i> if the caller knows that this applyTransformToDestination does not contain
      * any null elements.)
-     * <p/>
+     *
      * <p>If this applyTransformToDestination makes any guarantees as to what order its elements
      * are returned by its iterator, this method must return the elements
      * in the same order.
-     * <p/>
+     *
      * <p>Like the {@link #toArray()} method, this method acts as bridge between
      * array-based and collection-based APIs.  Further, this method allows
      * precise control over the runtime type of the output array, and may,
      * under certain circumstances, be used to save allocation costs.
-     * <p/>
-     * <p>Suppose <tt>x</tt> is a applyTransformToDestination known to contain only strings.
+     *
+     * <p>Suppose <code>x</code> is a applyTransformToDestination known to contain only strings.
      * The following code can be used to dump the applyTransformToDestination into a newly allocated
-     * array of <tt>String</tt>:
-     * <p/>
+     * array of <code>String</code>:
+     *
      * <pre>
      *     String[] y = x.toArray(new String[0]);</pre>
      *
-     * Note that <tt>toArray(new Object[0])</tt> is identical in function to
-     * <tt>toArray()</tt>.
+     * Note that <code>toArray(new Object[0])</code> is identical in function to
+     * <code>toArray()</code>.
      *
      * @param a the array into which the elements of this applyTransformToDestination are to be
      *          stored, if it is big enough; otherwise, a new array of the same
@@ -174,25 +174,25 @@ public class MultiDimensionalSet<K, V> implements Set<Pair<K, V>> {
     /**
      * Adds the specified element to this applyTransformToDestination if it is not already present
      * (optional operation).  More formally, adds the specified element
-     * <tt>e</tt> to this applyTransformToDestination if the applyTransformToDestination contains no element <tt>e2</tt>
+     * <code>e</code> to this applyTransformToDestination if the applyTransformToDestination contains no element <code>e2</code>
      * such that
-     * <tt>(e==null&nbsp;?&nbsp;e2==null&nbsp;:&nbsp;e.equals(e2))</tt>.
+     * <code>(e==null&nbsp;?&nbsp;e2==null&nbsp;:&nbsp;e.equals(e2))</code>.
      * If this applyTransformToDestination already contains the element, the call leaves the applyTransformToDestination
-     * unchanged and returns <tt>false</tt>.  In combination with the
+     * unchanged and returns <code>false</code>.  In combination with the
      * restriction on constructors, this ensures that sets never contain
      * duplicate elements.
-     * <p/>
+     *
      * <p>The stipulation above does not imply that sets must accept all
      * elements; sets may refuse to add any particular element, including
-     * <tt>null</tt>, and throw an exception, as described in the
+     * <code>null</code>, and throw an exception, as described in the
      * specification for {@link Collection#add Collection.add}.
      * Individual applyTransformToDestination implementations should clearly document any
      * restrictions on the elements that they may contain.
      *
      * @param kvPair element to be added to this applyTransformToDestination
-     * @return <tt>true</tt> if this applyTransformToDestination did not already contain the specified
+     * @return <code>true</code> if this applyTransformToDestination did not already contain the specified
      * element
-     * @throws UnsupportedOperationException if the <tt>add</tt> operation
+     * @throws UnsupportedOperationException if the <code>add</code> operation
      *                                       is not supported by this applyTransformToDestination
      * @throws ClassCastException            if the class of the specified element
      *                                       prevents it from being added to this applyTransformToDestination
@@ -208,23 +208,23 @@ public class MultiDimensionalSet<K, V> implements Set<Pair<K, V>> {
 
     /**
      * Removes the specified element from this applyTransformToDestination if it is present
-     * (optional operation).  More formally, removes an element <tt>e</tt>
+     * (optional operation).  More formally, removes an element <code>e</code>
      * such that
-     * <tt>(o==null&nbsp;?&nbsp;e==null&nbsp;:&nbsp;o.equals(e))</tt>, if
-     * this applyTransformToDestination contains such an element.  Returns <tt>true</tt> if this applyTransformToDestination
+     * <code>(o==null&nbsp;?&nbsp;e==null&nbsp;:&nbsp;o.equals(e))</code>, if
+     * this applyTransformToDestination contains such an element.  Returns <code>true</code> if this applyTransformToDestination
      * contained the element (or equivalently, if this applyTransformToDestination changed as a
      * result of the call).  (This applyTransformToDestination will not contain the element once the
      * call returns.)
      *
      * @param o object to be removed from this applyTransformToDestination, if present
-     * @return <tt>true</tt> if this applyTransformToDestination contained the specified element
+     * @return <code>true</code> if this applyTransformToDestination contained the specified element
      * @throws ClassCastException            if the type of the specified element
      *                                       is incompatible with this applyTransformToDestination
-     *                                       (<a href="Collection.html#optional-restrictions">optional</a>)
+     *                                       ({@link Collection optional})
      * @throws NullPointerException          if the specified element is null and this
      *                                       applyTransformToDestination does not permit null elements
-     *                                       (<a href="Collection.html#optional-restrictions">optional</a>)
-     * @throws UnsupportedOperationException if the <tt>remove</tt> operation
+     *                                       ({@link Collection optional})
+     * @throws UnsupportedOperationException if the <code>remove</code> operation
      *                                       is not supported by this applyTransformToDestination
      */
     @Override
@@ -233,21 +233,21 @@ public class MultiDimensionalSet<K, V> implements Set<Pair<K, V>> {
     }
 
     /**
-     * Returns <tt>true</tt> if this applyTransformToDestination contains all of the elements of the
+     * Returns <code>true</code> if this applyTransformToDestination contains all of the elements of the
      * specified collection.  If the specified collection is also a applyTransformToDestination, this
-     * method returns <tt>true</tt> if it is a <i>subset</i> of this applyTransformToDestination.
+     * method returns <code>true</code> if it is a <i>subset</i> of this applyTransformToDestination.
      *
      * @param c collection to be checked for containment in this applyTransformToDestination
-     * @return <tt>true</tt> if this applyTransformToDestination contains all of the elements of the
+     * @return <code>true</code> if this applyTransformToDestination contains all of the elements of the
      * specified collection
      * @throws ClassCastException   if the types of one or more elements
      *                              in the specified collection are incompatible with this
      *                              applyTransformToDestination
-     *                              (<a href="Collection.html#optional-restrictions">optional</a>)
+     *                              ({@link Collection optional})
      * @throws NullPointerException if the specified collection contains one
      *                              or more null elements and this applyTransformToDestination does not permit null
      *                              elements
-     *                              (<a href="Collection.html#optional-restrictions">optional</a>),
+     *                              ({@link Collection optional}),
      *                              or if the specified collection is null
      * @see #contains(Object)
      */
@@ -259,14 +259,14 @@ public class MultiDimensionalSet<K, V> implements Set<Pair<K, V>> {
     /**
      * Adds all of the elements in the specified collection to this applyTransformToDestination if
      * they're not already present (optional operation).  If the specified
-     * collection is also a applyTransformToDestination, the <tt>addAll</tt> operation effectively
+     * collection is also a applyTransformToDestination, the <code>addAll</code> operation effectively
      * modifies this applyTransformToDestination so that its value is the <i>union</i> of the two
      * sets.  The behavior of this operation is undefined if the specified
      * collection is modified while the operation is in progress.
      *
      * @param c collection containing elements to be added to this applyTransformToDestination
-     * @return <tt>true</tt> if this applyTransformToDestination changed as a result of the call
-     * @throws UnsupportedOperationException if the <tt>addAll</tt> operation
+     * @return <code>true</code> if this applyTransformToDestination changed as a result of the call
+     * @throws UnsupportedOperationException if the <code>addAll</code> operation
      *                                       is not supported by this applyTransformToDestination
      * @throws ClassCastException            if the class of an element of the
      *                                       specified collection prevents it from being added to this applyTransformToDestination
@@ -275,7 +275,7 @@ public class MultiDimensionalSet<K, V> implements Set<Pair<K, V>> {
      *                                       elements, or if the specified collection is null
      * @throws IllegalArgumentException      if some property of an element of the
      *                                       specified collection prevents it from being added to this applyTransformToDestination
-     * @see #add(Object)
+     * @see #add(Pair)
      */
     @Override
     public boolean addAll(Collection<? extends Pair<K, V>> c) {
@@ -291,15 +291,15 @@ public class MultiDimensionalSet<K, V> implements Set<Pair<K, V>> {
      * <i>intersection</i> of the two sets.
      *
      * @param c collection containing elements to be retained in this applyTransformToDestination
-     * @return <tt>true</tt> if this applyTransformToDestination changed as a result of the call
-     * @throws UnsupportedOperationException if the <tt>retainAll</tt> operation
+     * @return <code>true</code> if this applyTransformToDestination changed as a result of the call
+     * @throws UnsupportedOperationException if the <code>retainAll</code> operation
      *                                       is not supported by this applyTransformToDestination
      * @throws ClassCastException            if the class of an element of this applyTransformToDestination
      *                                       is incompatible with the specified collection
-     *                                       (<a href="Collection.html#optional-restrictions">optional</a>)
+     *                                       ({@link Collection optional})
      * @throws NullPointerException          if this applyTransformToDestination contains a null element and the
      *                                       specified collection does not permit null elements
-     *                                       (<a href="Collection.html#optional-restrictions">optional</a>),
+     *                                       ({@link Collection optional}),
      *                                       or if the specified collection is null
      * @see #remove(Object)
      */
@@ -316,15 +316,15 @@ public class MultiDimensionalSet<K, V> implements Set<Pair<K, V>> {
      * the two sets.
      *
      * @param c collection containing elements to be removed from this applyTransformToDestination
-     * @return <tt>true</tt> if this applyTransformToDestination changed as a result of the call
-     * @throws UnsupportedOperationException if the <tt>removeAll</tt> operation
+     * @return <code>true</code> if this applyTransformToDestination changed as a result of the call
+     * @throws UnsupportedOperationException if the <code>removeAll</code> operation
      *                                       is not supported by this applyTransformToDestination
      * @throws ClassCastException            if the class of an element of this applyTransformToDestination
      *                                       is incompatible with the specified collection
-     *                                       (<a href="Collection.html#optional-restrictions">optional</a>)
+     *                                       ({@link Collection optional})
      * @throws NullPointerException          if this applyTransformToDestination contains a null element and the
      *                                       specified collection does not permit null elements
-     *                                       (<a href="Collection.html#optional-restrictions">optional</a>),
+     *                                       ({@link Collection optional}),
      *                                       or if the specified collection is null
      * @see #remove(Object)
      * @see #contains(Object)
@@ -338,7 +338,7 @@ public class MultiDimensionalSet<K, V> implements Set<Pair<K, V>> {
      * Removes all of the elements from this applyTransformToDestination (optional operation).
      * The applyTransformToDestination will be empty after this call returns.
      *
-     * @throws UnsupportedOperationException if the <tt>clear</tt> method
+     * @throws UnsupportedOperationException if the <code>clear</code> method
      *                                       is not supported by this applyTransformToDestination
      */
     @Override

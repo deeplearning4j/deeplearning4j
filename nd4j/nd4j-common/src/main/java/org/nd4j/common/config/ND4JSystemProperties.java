@@ -21,6 +21,8 @@
 package org.nd4j.common.config;
 
 
+import org.apache.commons.io.FileUtils;
+
 import java.io.File;
 import java.net.URL;
 
@@ -135,7 +137,7 @@ public class ND4JSystemProperties {
     public static final String AERON_TERM_BUFFER_PROP = "aeron.term.buffer.length";
 
     /**
-     * Applicability: nd4j-common {@link Resources} class (and hence {@link StrumpfResolver})<br>
+     * Applicability: the resources module's {@code Resources} class and {@code StrumpfResolver}<br>
      * Description: When resolving resources from a Strumpf resource file (Example: {@code Resources.asFile("myFile.txt")}
      * where should the remote files be downloaded to?<br>
      * This is generally used for resolving test resources, but can be used for Strumpf resource files generally.
@@ -143,23 +145,23 @@ public class ND4JSystemProperties {
     public static final String RESOURCES_CACHE_DIR = "org.nd4j.test.resources.cache.dir";
 
     /**
-     * Applicability: nd4j-common {@link Resources} class (and hence {@link StrumpfResolver})<br>
+     * Applicability: the resources module's {@code Resources} class and {@code StrumpfResolver}<br>
      * Description: When resolving resources from a Strumpf resource file (Example: {@code Resources.asFile("myFile.txt")}
-     * what should be the connection timeout, as used by {@link org.apache.commons.io.FileUtils#copyURLToFile(URL, File, int, int)}<br>
-     * Default: {@link ResourceFile#DEFAULT_CONNECTION_TIMEOUT}
+     * what should be the connection timeout, as used by {@link FileUtils#copyURLToFile(URL, File, int, int)}<br>
+     * Default: 60000 milliseconds (defined by {@code ResourceFile.DEFAULT_CONNECTION_TIMEOUT} in the resources module).
      */
     public static final String RESOURCES_CONNECTION_TIMEOUT = "org.nd4j.resources.download.connectiontimeout";
 
     /**
-     * Applicability: nd4j-common {@link Resources} class (and hence {@link StrumpfResolver})<br>
+     * Applicability: the resources module's {@code Resources} class and {@code StrumpfResolver}<br>
      * Description: When resolving resources from a Strumpf resource file (Example: {@code Resources.asFile("myFile.txt")}
-     * what should be the connection timeout, as used by {@link org.apache.commons.io.FileUtils#copyURLToFile(URL, File, int, int)}<br>
-     * Default: {@link ResourceFile#DEFAULT_READ_TIMEOUT}
+     * what should be the connection timeout, as used by {@link FileUtils#copyURLToFile(URL, File, int, int)}<br>
+     * Default: 60000 milliseconds (defined by {@code ResourceFile.DEFAULT_READ_TIMEOUT} in the resources module).
      */
     public static final String RESOURCES_READ_TIMEOUT = "org.nd4j.resources.download.readtimeout";
 
     /**
-     * Applicability: nd4j-common {@link Resources} class (and hence {@link StrumpfResolver})<br>
+     * Applicability: the resources module's {@code Resources} class and {@code StrumpfResolver}<br>
      * Description: When resolving resources, what local directories should be checked (in addition to the classpath) for files?
      * This is optional. Multiple directories may be specified, using comma-separated paths
      */
@@ -194,7 +196,7 @@ public class ND4JSystemProperties {
      * Whether to initialize the native ops holder or not.
      * Depending on whether we are running in native image or not, disabling automatic initialization
      * and setting the relevant native ops elsewhere might be necessary.
-     * For more see {@link org.nd4j.nativeblas.NativeOpsHolder }
+     * For more see {@code NativeOpsHolder} in the native API module.
      */
     public final static String INIT_NATIVEOPS_HOLDER = "org.nd4j.nativeblas.nativeops.init";
 
@@ -1700,7 +1702,7 @@ public class ND4JSystemProperties {
     public static final String ENV_VULKAN_PIPELINE_CACHE_DIR = "nd4j.environment.vulkanPipelineCacheDir";
     /** Tier-2 blob size budget in bytes; larger blobs are dropped and regenerate. Env var: ND4J_VULKAN_PIPELINE_CACHE_MAX_BYTES. Default: 67108864. */
     public static final String ENV_VULKAN_PIPELINE_CACHE_MAX_BYTES = "nd4j.environment.vulkanPipelineCacheMaxBytes";
-    /** Dump the input MLIR module (<key>.mlir) next to stored Tier-1 entries. Env var: ND4J_VULKAN_KERNEL_DUMP. Default: false. */
+    /** Dump the input MLIR module ({@code <key>.mlir}) next to stored Tier-1 entries. Env var: ND4J_VULKAN_KERNEL_DUMP. Default: false. */
     public static final String ENV_VULKAN_KERNEL_DUMP = "nd4j.environment.vulkanKernelDump";
 
     // ---- Array cache properties ----

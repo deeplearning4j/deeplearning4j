@@ -309,7 +309,7 @@ public class ND4JEnvironmentVars {
 
     /**
      * Applicability: nd4j-cuda with Triton GPU backend
-     * Description: Directory for override Triton kernels loaded by hash (ttir_<hash>.ptx).
+     * Description: Directory for override Triton kernels loaded by hash ({@code ttir_<hash>.ptx}).
      */
     public static final String ND4J_TRITON_OVERRIDE_DIR = "ND4J_TRITON_OVERRIDE_DIR";
 
@@ -336,7 +336,7 @@ public class ND4JEnvironmentVars {
 
     /**
      * Applicability: nd4j-vulkan backend (ADR 0115 Tier 1)
-     * Description: Directory for cached SPIR-V modules (spv_<hash>.spv + .meta).
+     * Description: Directory for cached SPIR-V modules ({@code spv_<hash>.spv} + {@code .meta}).
      * Default: ~/.kompile/cache/vulkan/spirv_cache/
      */
     public static final String ND4J_VULKAN_SPIRV_CACHE_DIR = "ND4J_VULKAN_SPIRV_CACHE_DIR";
@@ -367,7 +367,7 @@ public class ND4JEnvironmentVars {
     /**
      * Applicability: nd4j-vulkan backend (ADR 0115 Tier 2)
      * Description: Directory for persisted driver pipeline-cache blobs
-     * (vkpc_<hash>.bin, one per physical device).
+     * ({@code vkpc_<hash>.bin}, one per physical device).
      * Default: ~/.kompile/cache/vulkan/pipeline_cache/
      */
     public static final String ND4J_VULKAN_PIPELINE_CACHE_DIR = "ND4J_VULKAN_PIPELINE_CACHE_DIR";
@@ -382,7 +382,7 @@ public class ND4JEnvironmentVars {
 
     /**
      * Applicability: nd4j-vulkan backend (ADR 0115 Tier 1)
-     * Description: Dump the input MLIR module (<key>.mlir) next to stored
+     * Description: Dump the input MLIR module ({@code <key>.mlir}) next to stored
      * SPIR-V cache entries.
      * Valid values: "true", "false", default: "false"
      */

@@ -100,10 +100,10 @@ public class SerializationUtils {
     }
 
     /**
-     * Deserializes object from InputStream
-     * @param bytes
-     * @param <T>
-     * @return
+     * Deserializes an object from an input stream.
+     * @param is the input stream to read from
+     * @param <T> the expected object type
+     * @return the deserialized object
      */
     public static <T> T deserialize(InputStream is) {
         return readObject(is);
@@ -127,8 +127,8 @@ public class SerializationUtils {
     /**
      * Writes the object to the output stream
      * THIS DOES NOT FLUSH THE STREAM
-     * @param toSave the object to save
-     * @param writeTo the output stream to write to
+     * @param object the object to save
+     * @param os the output stream to write to
      */
     public static void serialize(Serializable object, OutputStream os) {
         writeObject(object, os);

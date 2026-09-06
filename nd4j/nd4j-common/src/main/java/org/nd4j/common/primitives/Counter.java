@@ -141,7 +141,7 @@ public class Counter<T> implements Serializable {
     }
 
     /**
-     * This method returns Set<Entry> of this counter
+     * This method returns the set of {@link Map.Entry} values of this counter.
      * @return
      */
     public Set<Map.Entry<T, AtomicDouble>> entrySet() {
