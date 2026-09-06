@@ -263,9 +263,8 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
      *
      * where scale = max_abs(x) / 127 (for INT8 range -127 to 127)
      *
-     * Note: After quantization, use {@link #dequantizeAllConstants(SameDiff)} to restore FP32
-     * for inference, or use {@link #quantizeToInt8(INDArray, QuantizationInfo)} with stored
-     * QuantizationInfo for manual dequantization.
+     * After quantization, use {@link #dequantizeFromInt8(INDArray, QuantizationInfo)}
+     * with the stored {@link QuantizationInfo} to restore each array to FP32.
      */
     public static class QuantizeConstantsToINT8 implements Optimizer {
 

@@ -40,7 +40,7 @@ import java.util.List;
  *
  * fp32 accumulation; output type matches expertOutputs type.
  *
- * <h3>Dense mode (mode=0, default)</h3>
+ * <h2>Dense mode (mode=0, default)</h2>
  * <pre>
  *   Inputs:
  *     0: expertOutputs [T, topK, D]  — stacked expert outputs per token
@@ -49,7 +49,7 @@ import java.util.List;
  *     0: [T, D]
  * </pre>
  *
- * <h3>Flat/segment_gemm mode (mode=1)</h3>
+ * <h2>Flat/segment_gemm mode (mode=1)</h2>
  * <pre>
  *   Inputs:
  *     0: expertOutputs [totalRows, D] — sorted flat output from segment_gemm

@@ -34,7 +34,7 @@ import org.nd4j.nativeblas.NativeOps;
  * <p>This class implements {@link AutoCloseable} for proper cleanup.
  * Use try-with-resources or explicit {@link #close()} to free native memory.</p>
  *
- * <h3>Device Types:</h3>
+ * <h2>Device Types:</h2>
  * <ul>
  *   <li>0 = CPU</li>
  *   <li>1 = CUDA GPU</li>
@@ -43,7 +43,7 @@ import org.nd4j.nativeblas.NativeOps;
  *   <li>4 = Vulkan GPU</li>
  * </ul>
  *
- * <h3>Coherence States:</h3>
+ * <h2>Coherence States:</h2>
  * <ul>
  *   <li>0 = INVALID (stale/not present)</li>
  *   <li>1 = SHARED (valid, shared with other devices)</li>

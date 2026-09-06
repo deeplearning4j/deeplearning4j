@@ -40,7 +40,7 @@ import java.util.*;
  * op level. Use this to find which ops in a segment are causing errors, detect
  * NaN/Inf/stale data, and identify risky ops before they cause CUDA graph failures.</p>
  *
- * <h3>Usage:</h3>
+ * <h2>Usage:</h2>
  * <pre>
  *   SameDiff sd = ...;
  *   DspDebugger debugger = DspDebugger.attach(sd);

@@ -22,6 +22,8 @@ package org.nd4j.autodiff.samediff;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.autodiff.listeners.Listener;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.autodiff.samediff.config.LossScaleConfig;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
@@ -59,7 +61,7 @@ import java.util.*;
  *     .build();
  * }</pre>
  *
- * @see SameDiff#fit(org.nd4j.linalg.dataset.api.iterator.DataSetIterator, int)
+ * @see SameDiff#fit(DataSetIterator, int, Listener...)
  */
 @Data
 @NoArgsConstructor

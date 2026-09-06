@@ -36,7 +36,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
  * - MQA (Multi-Query Attention) - all query heads share single KV head
  *
  * Usage example:
- * <pre>
+ * <pre>{@code
  * // Create cache for a model with 8 layers, 32 heads, 128 dim, max 2048 tokens
  * KVCache cache = new KVCache(2048, 8, 128, 1, DataType.FLOAT);
  *
@@ -52,7 +52,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
  *
  *     // Compute attention with cached KV...
  * }
- * </pre>
+ * }</pre>
  *
  * @author Adam Gibson
  */

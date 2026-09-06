@@ -56,11 +56,8 @@ public interface ArrayRegistry {
 
 
     /**
-     * Returns true if the given array
-     * is registered with this registry
-     * @param array the array to check
-     * @return true if the given array
-     * is registered with this registry
+     * Registers the given array with this registry.
+     * @param array the array to register
      */
 
     void register(INDArray array);

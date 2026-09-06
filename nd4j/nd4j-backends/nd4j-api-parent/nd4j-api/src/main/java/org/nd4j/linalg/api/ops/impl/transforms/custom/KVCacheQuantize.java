@@ -43,14 +43,12 @@ import java.util.List;
  *   <li>2 = FP8_E5M2: FP8 with 5-bit exponent, 2-bit mantissa</li>
  *   <li>3 = INT4: scale = max(abs(row)) / 7, packed 2 per byte</li>
  * </ul>
- * </p>
  *
  * <p>Produces two outputs:
  * <ol>
  *   <li>quantized tensor (INT8 dtype)</li>
  *   <li>scales tensor (FLOAT32 dtype, one scale per row)</li>
  * </ol>
- * </p>
  *
  * @author Adam Gibson
  */

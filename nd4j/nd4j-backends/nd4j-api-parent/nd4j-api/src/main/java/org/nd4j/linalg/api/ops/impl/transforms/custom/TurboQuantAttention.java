@@ -41,7 +41,7 @@ import java.util.List;
  * score(q, k) ≈ <q, k_mse> + ||r|| * sqrt(π/2)/m * <S@q, signs>
  * }</pre>
  *
- * <h3>Inputs</h3>
+ * <h2>Inputs</h2>
  * <ol start="0">
  *   <li>Q — [B, H, Sq, D] query tensor</li>
  *   <li>K_mse — [B, H, Sk, D] pre-reconstructed MSE keys (FLOAT16)</li>
@@ -52,21 +52,21 @@ import java.util.List;
  *   <li>Attention_mask — [B, 1, 1, Sk] or compatible shape</li>
  * </ol>
  *
- * <h3>Integer Args</h3>
+ * <h2>Integer Args</h2>
  * <ul>
  *   <li>0: numHeads</li>
  *   <li>1: headDim</li>
  * </ul>
  *
- * <h3>Float Args</h3>
+ * <h2>Float Args</h2>
  * <ul>
  *   <li>0: scale (default 1/√headDim)</li>
  * </ul>
  *
- * <h3>Output</h3>
+ * <h2>Output</h2>
  * <p>[B, H, Sq, D] attention output</p>
  *
- * @see org.eclipse.deeplearning4j.llm.generation.UnifiedKvCacheManager
+ * @see "UnifiedKvCacheManager in the samediff-llm module"
  */
 @NoArgsConstructor
 public class TurboQuantAttention extends DynamicCustomOp {

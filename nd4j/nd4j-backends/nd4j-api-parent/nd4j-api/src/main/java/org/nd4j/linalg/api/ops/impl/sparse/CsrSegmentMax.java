@@ -36,9 +36,9 @@ import java.util.List;
  * <p>For each target node {@code i} (row), collects the feature vectors of its source
  * neighbours {@code j} (given by {@code colIdx} entries in row {@code i}), then takes the
  * element-wise maximum:
- * <pre>
+ * <pre>{@code
  *   out[i, f] = max_{k: rowPtr[i] <= k < rowPtr[i+1]} X[colIdx[k], f]
- * </pre>
+ * }</pre>
  * This is the max-aggregator in GraphSAGE (Hamilton et al. 2017) and is used for
  * inductive representation learning on large graphs.  Rows with no neighbours
  * (empty adjacency row) produce {@code -Infinity} (or the backend's corresponding

@@ -22,7 +22,6 @@ package org.nd4j.linalg.profiler.data.eventlogger;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.primitives.AtomicBoolean;
-import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.profiler.data.RunTimeMemory;
 import org.nd4j.linalg.profiler.data.WorkspaceInfo;
@@ -39,18 +38,13 @@ import java.util.List;
  * {@link #setEnabled(boolean)} to true
  * Note that when turning this on there might be slight overhead when de allocating objects.
  *
- * In order to track deallocation events all {@link org.nd4j.linalg.api.memory.Deallocator}
- * have an associated {@link Deallocator#logEvent()}
- * that is null when the {@link EventLogger} is enabled.
- *
- * This is due to us needing to avoid having a reference to the object we're deallocating but instead
- * just retaining relevant metadata.
+ * Submit event metadata through {@link #log(LogEvent)}. Deallocation metadata should
+ * not retain a reference to the object being deallocated.
  *
  * Please only turn this on when debugging something that is hard to track down such as deallocations.
  *
- * Note for ease of use we also exposed this in {@link org.nd4j.linalg.profiler.UnifiedProfiler#enableLogEvents(boolean)}
- * The logger is also automatically turned on when using {@link UnifiedProfiler#start()}
- * and disabled with {@link UnifiedProfiler#stop()}
+ * Use {@link #getInstance()} to access the shared logger and {@link #setEnabled(boolean)}
+ * to enable or disable its stream output.
  *
  * Of note when logging events, all event types of:
  * {@link EventType#values()} can be found in {@link #getEventTypesToLog()}

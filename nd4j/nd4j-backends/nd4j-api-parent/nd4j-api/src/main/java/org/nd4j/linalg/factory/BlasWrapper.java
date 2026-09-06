@@ -35,7 +35,7 @@ public interface BlasWrapper {
      */
 
     /**
-     * Compute x <-> y (swap two matrices)
+     * Compute {@code x <-> y} (swap two matrices)
      */
     INDArray swap(INDArray x, INDArray y);
 
@@ -89,14 +89,14 @@ public interface BlasWrapper {
     INDArray scal(double alpha, INDArray x);
 
     /**
-     * Compute x <- alpha * x (scale a matrix)
+     * Compute {@code x <- alpha * x} (scale a matrix)
      */
     @Deprecated
     INDArray scal(float alpha, INDArray x);
 
 
     /**
-     * Compute y <- x (copy a matrix)
+     * Compute {@code y <- x} (copy a matrix)
      */
     INDArray copy(INDArray x, INDArray y);
 
@@ -104,13 +104,13 @@ public interface BlasWrapper {
     INDArray axpy(double da, INDArray dx, INDArray dy);
 
     /**
-     * Compute y <- alpha * x + y (elementwise addition)
+     * Compute {@code y <- alpha * x + y} (elementwise addition)
      */
     @Deprecated
     INDArray axpy(float da, INDArray dx, INDArray dy);
 
     /**
-     * Compute y <- y + x * alpha
+     * Compute {@code y <- y + x * alpha}
      * @param da the alpha to multiply by
      * @param dx
      * @param dy
@@ -150,7 +150,7 @@ public interface BlasWrapper {
     INDArray gemv(double alpha, INDArray a, INDArray x, double beta, INDArray y);
 
     /**
-     * Compute y <- alpha*op(a)*x + beta * y (general matrix vector
+     * Compute {@code y <- alpha*op(a)*x + beta * y} (general matrix vector
      * multiplication)
      */
     @Deprecated
@@ -162,7 +162,7 @@ public interface BlasWrapper {
     INDArray ger(double alpha, INDArray x, INDArray y, INDArray a);
 
     /**
-     * Compute A <- alpha * x * y^T + A (general rank-1 update)
+     * Compute {@code A <- alpha * x * y^T + A} (general rank-1 update)
      */
     INDArray ger(float alpha, INDArray x, INDArray y, INDArray a);
     
@@ -213,13 +213,13 @@ public interface BlasWrapper {
 
     /**
      * Generalized Least Squares via *GELSD.
-     * <p/>
+     * <p>
      * Note that B must be padded to contain the solution matrix. This occurs when A has fewer rows
      * than columns.
-     * <p/>
-     * For example: in A * X = B, A is (m,n), X is (n,k) and B is (m,k). Now if m < n, since B is overwritten to contain
+     * <p>
+     * For example: in A * X = B, A is (m,n), X is (n,k) and B is (m,k). Now if {@code m < n}, since B is overwritten to contain
      * the solution (in classical LAPACK style), B needs to be padded to be an (n,k) matrix.
-     * <p/>
+     * <p>
      * Likewise, if m > n, the solution consists only of the first n rows of B.
      *
      * @param A an (m,n) matrix

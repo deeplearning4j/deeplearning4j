@@ -44,11 +44,11 @@ public interface GradientUpdater<T extends IUpdater> {
     void setStateViewArray(INDArray viewArray, long[] gradientShape, char gradientOrder, boolean initialize);
 
     /**
-     * Modify the gradient to be an update. Note that this is be done in-place
+     * Modify the gradient in-place to be an update.
      *
-     * @param gradient  the gradient to modify
-     * @param iteration
-     * @return the modified gradient
+     * @param gradient the gradient to modify
+     * @param iteration the current iteration
+     * @param epoch the current epoch
      */
     void applyUpdater(INDArray gradient, int iteration, int epoch);
 }

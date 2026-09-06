@@ -43,7 +43,7 @@ import java.util.Map;
  * for rank-16 adapters on 7B-parameter models. Warm adapters require a host-to-GPU
  * transfer but avoid disk I/O.</p>
  *
- * <h3>Architecture</h3>
+ * <h2>Architecture</h2>
  * <pre>
  * Tier 1 - GPU (hot):    LRU cache of adapter weight maps, already on device
  *                         Swap = overwrite graph variables (memcpy D2D, &lt;1ms)
@@ -55,7 +55,7 @@ import java.util.Map;
  *                         Swap = load + H2D + overwrite (~50-200ms)
  * </pre>
  *
- * <h3>Usage</h3>
+ * <h2>Usage</h2>
  * <pre>
  * // Create cache
  * LoraAdapterCache cache = new LoraAdapterCache(maxGpuAdapters, maxHostAdapters);
@@ -72,7 +72,7 @@ import java.util.Map;
  * cache.applyAdapter("style-casual", model);   // &lt;1ms if hot
  * </pre>
  *
- * <h3>Memory budget</h3>
+ * <h2>Memory budget</h2>
  * <p>For a 7B model with rank-16 LoRA on Q/K/V/O projections (4 targets, 32 layers):</p>
  * <ul>
  *   <li>Per adapter: 4 targets * 32 layers * 2 matrices * r * d * 2 bytes ~= 32MB (FP16)</li>

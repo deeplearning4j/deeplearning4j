@@ -33,7 +33,7 @@ import java.util.List;
  * Configuration for Low-Rank Adaptation (LoRA).
  * <p>
  * LoRA decomposes weight updates into low-rank matrices: W = W₀ + BA
- * where B ∈ R^{d×r} and A ∈ R^{r×k} with rank r << min(d, k).
+ * where B ∈ R^{d×r} and A ∈ R^{r×k} with rank r &lt;&lt; min(d, k).
  * <p>
  * This significantly reduces trainable parameters while maintaining
  * performance comparable to full fine-tuning. For example, with GPT-3 175B,
@@ -47,7 +47,7 @@ import java.util.List;
  *   W₀ ∈ R^{d×k} is the frozen pretrained weight
  *   B ∈ R^{d×r} is the down-projection matrix (initialized to zero)
  *   A ∈ R^{r×k} is the up-projection matrix (initialized randomly)
- *   r is the rank (r << min(d, k))
+ *   r is the rank (r &lt;&lt; min(d, k))
  *
  * Scaling: output = W₀x + (α/r) × BAx
  * </pre>

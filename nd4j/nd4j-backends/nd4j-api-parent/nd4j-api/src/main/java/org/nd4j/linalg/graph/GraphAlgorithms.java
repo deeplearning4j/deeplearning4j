@@ -36,8 +36,8 @@ import java.util.Arrays;
  * <p>All methods require the adjacency matrix to be in {@link SparseFormat#CSR} format.
  * Convert with {@link SparseNDArray#toCsr()} if needed.
  *
- * <h3>Algorithm — semiring mapping</h3>
  * <table>
+ *   <caption>Algorithm — semiring mapping</caption>
  *   <tr><th>Method</th><th>Semiring</th><th>Description</th></tr>
  *   <tr><td>{@link #bfs}</td><td>OR_AND</td>
  *       <td>Frontier propagation: vertex is reached if any in-neighbour was in the frontier</td></tr>

@@ -21,7 +21,7 @@
 package org.nd4j.autodiff.samediff.execution;
 
 /**
- * Classification of how a buffer slot in an {@link ExecutionPlan} should be allocated.
+ * Classification of how a buffer slot in a static execution plan should be allocated.
  * Mirrors the allocation kinds used by ONNX Runtime's AllocationPlanner:
  * <ul>
  *   <li>{@link #PRE_EXISTING} — Placeholder inputs owned by the caller</li>

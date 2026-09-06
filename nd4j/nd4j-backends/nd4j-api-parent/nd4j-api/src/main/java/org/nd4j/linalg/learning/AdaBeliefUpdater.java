@@ -86,11 +86,11 @@ public class AdaBeliefUpdater implements GradientUpdater<AdaBelief> {
     }
 
     /**
-     * Calculate the update based on the given gradient
+     * Calculate the update in-place based on the given gradient.
      *
-     * @param gradient  the gradient to get the update for
-     * @param iteration
-     * @return the gradient
+     * @param gradient the gradient to modify
+     * @param iteration the current iteration
+     * @param epoch the current epoch
      */
     @Override
     public void applyUpdater(INDArray gradient, int iteration, int epoch) {

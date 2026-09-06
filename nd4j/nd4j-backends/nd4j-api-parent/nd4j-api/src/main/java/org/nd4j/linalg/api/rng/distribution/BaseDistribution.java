@@ -58,7 +58,7 @@ public abstract class BaseDistribution implements Distribution {
      * takes a value between {@code x0} and {@code x1}, excluding the lower
      * and including the upper endpoint.
      * @throws NumberIsTooLargeException if {@code x0 > x1}.
-     *                                                                      <p/>
+     *                                                                      <p>
      *                                                                      The default implementation uses the identity
      *                                                                      {@code P(x0 < X <= x1) = P(X <= x1) - P(X <= x0)}
      * @since 3.1
@@ -73,7 +73,7 @@ public abstract class BaseDistribution implements Distribution {
 
     /**
      * {@inheritDoc}
-     * <p/>
+     * <p>
      * The default implementation returns
      * <ul>
      * <li>{@link #getSupportLowerBound()} for {@code p = 0},</li>
@@ -203,7 +203,7 @@ public abstract class BaseDistribution implements Distribution {
 
     /**
      * {@inheritDoc}
-     * <p/>
+     * <p>
      * The default implementation uses the
      * <a href="http://en.wikipedia.org/wiki/Inverse_transform_sampling">
      * inversion method.
@@ -216,7 +216,7 @@ public abstract class BaseDistribution implements Distribution {
 
     /**
      * {@inheritDoc}
-     * <p/>
+     * <p>
      * The default implementation generates the sample by calling
      * {@link #sample()} in a loop.
      */

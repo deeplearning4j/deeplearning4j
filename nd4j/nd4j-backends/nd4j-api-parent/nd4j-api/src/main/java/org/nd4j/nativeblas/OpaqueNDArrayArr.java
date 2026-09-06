@@ -47,8 +47,7 @@ import java.util.List;
  *     // Use arr...
  * }
  * }</pre>
- * Or rely on automatic cleanup via DeallocatorService when the object becomes unreachable.
- * </p>
+ * <p>Or rely on automatic cleanup via DeallocatorService when the object becomes unreachable.</p>
  *
  * @see OpaqueNDArray
  * @see OpaqueNDArrayArrDeallocator
@@ -91,7 +90,7 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
      *   <li>The PointerPointer has exactly 1 slot: slot[0] = {@code ndPtrBuffer.address()}.</li>
      *   <li>JNI dereferences once → C++ receives {@code x = ndPtrBuffer.address() = sd::NDArray**}.</li>
      *   <li>C++ does {@code x[i]} → reads the i-th {@code sd::NDArray*} value from the buffer. Correct.</li>
-     * </ul></p>
+     * </ul>
      */
     private LongPointer ndPtrBuffer;
 

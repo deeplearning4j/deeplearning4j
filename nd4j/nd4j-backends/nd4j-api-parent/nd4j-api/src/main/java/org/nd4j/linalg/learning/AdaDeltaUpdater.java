@@ -82,13 +82,11 @@ public class AdaDeltaUpdater implements GradientUpdater<AdaDelta> {
     }
 
     /**
-     * Get the updated gradient for the given gradient
-     * and also update the state of ada delta.
+     * Update the gradient in-place and update the AdaDelta state.
      *
-     * @param gradient  the gradient to get the
-     *                  updated gradient for
-     * @param iteration
-     * @return the update gradient
+     * @param gradient the gradient to modify
+     * @param iteration the current iteration
+     * @param epoch the current epoch
      */
     @Override
     public void applyUpdater(INDArray gradient, int iteration, int epoch) {

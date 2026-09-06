@@ -45,7 +45,6 @@ import java.util.List;
  *   <li>2 = FP8_E5M2</li>
  *   <li>3 = INT4</li>
  * </ul>
- * </p>
  *
  * @author Adam Gibson
  */

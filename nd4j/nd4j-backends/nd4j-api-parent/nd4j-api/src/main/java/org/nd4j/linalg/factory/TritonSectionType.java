@@ -2,18 +2,14 @@ package org.nd4j.linalg.factory;
 
 /**
  * Mirror of the C++ KernelSectionType enum used by the Triton GPU compiler backend.
- * Each value corresponds to a bit position in the fallback/mergeable section bitmasks
- * configurable via {@link Environment#setTritonFallbackSections(int)} and
- * {@link Environment#setTritonMergeableSections(int)}.
+ * Each value corresponds to a bit position in a section bitmask.
+ * Use {@link #mask(TritonSectionType...)} to combine section types.
  *
- * <p>Usage example (from a test):
- * <pre>
- * // Compile only ELEMENTWISE and REDUCTION; everything else falls back to native
- * int fallback = TritonSectionType.allBits()
- *     & ~TritonSectionType.ELEMENTWISE.bit()
- *     & ~TritonSectionType.REDUCTION.bit();
- * Nd4j.getEnvironment().setTritonFallbackSections(fallback);
- * </pre>
+ * <p>Example of constructing a section mask:
+ * <pre>{@code
+ * int selected = TritonSectionType.mask(
+ *     TritonSectionType.ELEMENTWISE, TritonSectionType.REDUCTION);
+ * }</pre>
  */
 public enum TritonSectionType {
     ELEMENTWISE(0),

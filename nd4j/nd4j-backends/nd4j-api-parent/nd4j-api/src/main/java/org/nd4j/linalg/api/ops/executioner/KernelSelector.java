@@ -37,7 +37,6 @@ import java.util.Map;
  *   <li>Multiple selection strategies</li>
  *   <li>Engine preference configuration</li>
  * </ul>
- * </p>
  * <p>
  * Example usage:
  * <pre>{@code
@@ -55,7 +54,6 @@ import java.util.Map;
  * // Get performance statistics
  * System.out.println(selector.getPerformanceSummary());
  * }</pre>
- * </p>
  *
  * @author Adam Gibson
  */

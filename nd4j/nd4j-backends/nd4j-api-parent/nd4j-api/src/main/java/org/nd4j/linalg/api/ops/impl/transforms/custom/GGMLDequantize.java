@@ -62,7 +62,6 @@ import java.util.List;
  *   <li>21 = TQ1_0</li>
  *   <li>22 = TQ2_0</li>
  * </ul>
- * </p>
  *
  * <p>Output data type codes:
  * <ul>
@@ -70,7 +69,6 @@ import java.util.List;
  *   <li>1 = FLOAT16</li>
  *   <li>2 = BFLOAT16</li>
  * </ul>
- * </p>
  *
  * @author Adam Gibson
  */

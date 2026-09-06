@@ -32,6 +32,7 @@ package org.nd4j.linalg.api.ops.impl.sparse;
  * starting from the additive identity.
  *
  * <table>
+ *   <caption>Semiring operations and additive identities</caption>
  *   <tr><th>Enum</th><th>mul</th><th>add</th><th>identity</th></tr>
  *   <tr><td>PLUS_TIMES</td><td>×</td><td>+</td><td>0</td></tr>
  *   <tr><td>MIN_PLUS</td><td>+</td><td>min</td><td>+∞</td></tr>

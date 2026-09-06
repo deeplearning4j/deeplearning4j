@@ -60,7 +60,7 @@ import lombok.extern.slf4j.Slf4j;
  *       cache growing by 1 token per decode step).</li>
  * </ol>
  *
- * <h3>DSP interaction</h3>
+ * <h2>DSP interaction</h2>
  * <p>During Dynamic Shape Plan (DSP) execution the same memory manager instance is reused across
  * successive plan executions. At the end of each step, intermediate arrays are handed back via
  * {@link #release(org.nd4j.linalg.api.ndarray.INDArray)}, re-entering the capacity pool. The next
@@ -69,7 +69,7 @@ import lombok.extern.slf4j.Slf4j;
  * autoregressive decode sequences. Use {@link #withGrowthFactor(double)} to scope the growth
  * factor to DSP execution paths only, preventing leakage into standard op-by-op execution.
  *
- * <h3>View handling</h3>
+ * <h2>View handling</h2>
  * <p>View arrays share a {@link org.nd4j.linalg.api.buffer.DataBuffer} with their source array.
  * Closing a view's buffer would corrupt all other arrays that reference the same underlying
  * storage, producing NaN values or crashes. This class handles views as follows:
@@ -87,7 +87,7 @@ import lombok.extern.slf4j.Slf4j;
  * batch (after all ops complete) to safely close DataBuffers that were deferred during
  * {@code release}.
  *
- * <h3>Growth factor and buffer over-allocation</h3>
+ * <h2>Growth factor and buffer over-allocation</h2>
  * <p>On a cache miss, buffers are over-allocated by {@link #DEFAULT_GROWTH_FACTOR} (default
  * {@code 1.05}) so that the next iteration's slightly larger request (e.g. KV cache growing one
  * token per step) can match the cached buffer via capacity matching instead of hitting the native
@@ -96,7 +96,7 @@ import lombok.extern.slf4j.Slf4j;
  * {@code 1.0} disables over-allocation. Use {@link #withGrowthFactor(double)} for a scoped
  * per-thread override that restores automatically via try-with-resources.
  *
- * <h3>Thread safety</h3>
+ * <h2>Thread safety</h2>
  * <p>All mutable cache state ({@code capacityArrays}, {@code lruCacheValues},
  * {@code deferredCloseBuffers}, {@code released}) is stored in {@link ThreadLocal} fields so that
  * threads running independent SameDiff sessions never contend on the same structures. The only
@@ -105,7 +105,7 @@ import lombok.extern.slf4j.Slf4j;
  * {@link java.util.concurrent.atomic.AtomicLong} /
  * {@link org.nd4j.common.primitives.AtomicDouble} for safe concurrent mutation.
  *
- * <h3>Key methods</h3>
+ * <h2>Key methods</h2>
  * <ul>
  *   <li>{@link #allocate(boolean, org.nd4j.linalg.api.buffer.DataType, long...)} — returns a
  *       capacity-matched cached array if one is available, otherwise allocates a new over-sized
@@ -121,7 +121,7 @@ import lombok.extern.slf4j.Slf4j;
  *       closes all held buffers (skipping any in the protected set), and resets counters.</li>
  * </ul>
  *
- * <h3>Configuration defaults</h3>
+ * <h2>Configuration defaults</h2>
  * <ul>
  *   <li>{@link #DEFAULT_MAX_MEM_FRACTION} = {@code 0.25} — fraction of device memory used as
  *       cache budget (system property:

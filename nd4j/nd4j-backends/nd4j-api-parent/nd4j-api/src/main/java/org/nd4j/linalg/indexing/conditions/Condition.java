@@ -45,8 +45,6 @@ import org.nd4j.common.function.Function;
  * 12: absolute difference greater or equal to
  * 13: absolute difference less than or equal to
  * 14: is finite
- *
- * @return
  */
 public interface Condition extends Function<Number, Boolean> {
 

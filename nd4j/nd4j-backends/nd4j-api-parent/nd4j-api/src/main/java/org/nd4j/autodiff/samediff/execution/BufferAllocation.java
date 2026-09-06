@@ -26,7 +26,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 
 /**
  * Describes how a single intermediate tensor is placed within the pre-allocated
- * workspace buffer of an {@link ExecutionPlan}.
+ * workspace buffer of a static execution plan.
  *
  * <p>For {@link BufferAllocKind#ALLOCATE} and {@link BufferAllocKind#OUTPUT} kinds,
  * {@code offsetInPool} is the byte offset from the start of the workspace where

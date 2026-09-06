@@ -33,7 +33,7 @@ import java.util.*;
  * KernelConfiguration provides a fluent API for configuring kernel/backend
  * selection for SameDiff models.
  *
- * <h3>Example Usage:</h3>
+ * <h2>Example Usage:</h2>
  * <pre>{@code
  * SameDiff sd = SameDiff.create();
  *

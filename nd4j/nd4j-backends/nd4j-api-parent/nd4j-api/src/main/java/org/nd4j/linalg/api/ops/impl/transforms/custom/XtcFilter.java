@@ -47,7 +47,7 @@ import java.util.List;
  *
  * Float args:
  *   0: xtcProbability (0.0 = off)
- *   1: xtcThreshold — per-token probability threshold (must be < 0.5)
+ *   1: xtcThreshold — per-token probability threshold (must be &lt; 0.5)
  *
  * Int args:
  *   0: seed

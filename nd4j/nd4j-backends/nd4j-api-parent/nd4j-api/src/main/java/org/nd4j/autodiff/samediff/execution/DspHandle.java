@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 /**
  * Thin facade over SameDiff for direct DSP plan replay and buffer inspection.
  *
- * <h3>Usage</h3>
+ * <h2>Usage</h2>
  * <pre>
  *   // Warm the plan
  *   sd.output(placeholders, "logits");
@@ -54,7 +54,7 @@ import java.util.stream.Collectors;
  *       System.out.println(summary));
  * </pre>
  *
- * <h3>Thread safety</h3>
+ * <h2>Thread safety</h2>
  * Not thread-safe. Must be used on the same thread that called sd.dsp().
  * Shares the underlying executor with InferenceSession.
  *

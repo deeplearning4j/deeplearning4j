@@ -31,7 +31,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 /**
  * Utility class for magnitude-based weight pruning and a structured-sparse linear layer.
  *
- * <h3>Design constraints</h3>
+ * <h2>Design constraints</h2>
  * <ul>
  *   <li>All compute runs on the active ND4J backend via existing ops — no host element
  *       loops over weight data, no manual syncToHost/syncToDevice, no silent fallback.</li>
@@ -44,7 +44,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  *       a "host loop over weight data."</li>
  * </ul>
  *
- * <h3>Threshold semantics</h3>
+ * <h2>Threshold semantics</h2>
  * {@code dense_to_csr} keeps entries where {@code |x| > threshold} (strict inequality).
  * We set {@code threshold = nextDown(minKept)} computed in the weight's native precision
  * (float {@code nextDown} for FLOAT/HALF inputs, double for DOUBLE) so the k-th largest
@@ -138,11 +138,11 @@ public final class SparsePruning {
     /**
      * A pruned linear layer holding a sparse CSR weight matrix.
      *
-     * <h3>Forward pass</h3>
+     * <h2>Forward pass</h2>
      * {@code C = W · x} computed via {@code csr_spmm} — the existing differentiable
      * SpMM op.  No dense materialisation of W is needed.
      *
-     * <h3>Structured weight gradient</h3>
+     * <h2>Structured weight gradient</h2>
      * {@code dL/dW} sampled only at W's kept (non-zero) positions via {@code sddmm}:
      * <pre>
      *   dW_values[k] = sum_b  gradOut[i(k), b] · x[j(k), b]

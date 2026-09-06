@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * {@link GraphExecutionMode}. Recommendations are cached per shape key so repeated
  * compilations with the same shapes reuse prior decisions.</p>
  *
- * <h3>Cost model heuristics</h3>
+ * <h2>Cost model heuristics</h2>
  * <ul>
  *   <li><b>Small graphs</b> ({@code <=5} slots): SLOT_BY_SLOT avoids compile overhead</li>
  *   <li><b>Value-dependent shapes</b> (>50% slots): SLOT_BY_SLOT since graph capture cannot
@@ -47,7 +47,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li><b>Mixed graphs</b>: AUTO lets the C++ backend make per-segment decisions</li>
  * </ul>
  *
- * <h3>Profiling integration</h3>
+ * <h2>Profiling integration</h2>
  * <p>After warmup executions, {@link #recordTrialResult(String, GraphExecutionMode, long)}
  * feeds back actual timing data. The tuner overrides the cost model with empirical
  * measurements when available.</p>

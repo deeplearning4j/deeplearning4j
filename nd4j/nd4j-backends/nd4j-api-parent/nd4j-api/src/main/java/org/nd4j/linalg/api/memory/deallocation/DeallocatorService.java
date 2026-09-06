@@ -28,6 +28,7 @@ import org.nd4j.common.primitives.Counter;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.memory.Deallocatable;
+import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeBufferOwner;

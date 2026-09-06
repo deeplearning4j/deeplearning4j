@@ -44,7 +44,7 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutionDelegator;
  * route to the best available device. Arrays are also automatically transferred
  * when passed to ops on different devices.</p>
  *
- * <h3>Basic Usage:</h3>
+ * <h2>Basic Usage:</h2>
  * <pre>{@code
  * // Enable device routing (done once at startup)
  * DeviceAwareNd4j.enableDeviceRouting();
@@ -60,7 +60,7 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutionDelegator;
  * INDArray gpuArr = DeviceAwareNd4j.createOnDevice(new long[]{1000, 1000}, DeviceDescriptor.cuda(0));
  * }</pre>
  *
- * <h3>Automatic Transfer:</h3>
+ * <h2>Automatic Transfer:</h2>
  * <pre>{@code
  * INDArray cpuArray = Nd4j.create(new float[]{1, 2, 3, 4});
  * INDArray gpuArray = DeviceAwareNd4j.createOnDevice(new long[]{4}, DeviceDescriptor.cuda(0));

@@ -41,7 +41,7 @@ import java.util.*;
 /**
  * A compiled execution plan for autoregressive inference with dynamic shapes.
  *
- * <p>Unlike {@link ExecutionPlan} which pre-allocates a fixed workspace for static shapes,
+ * <p>Unlike a static execution plan which pre-allocates a fixed workspace,
  * DynamicShapePlan handles the case where shapes change every step (e.g., growing KV cache).
  * It pre-compiles the graph wiring (input/output index mapping, liveness schedule) once,
  * then uses flat array-indexed slots instead of string-keyed HashMaps on each step.</p>

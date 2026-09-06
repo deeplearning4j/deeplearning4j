@@ -38,7 +38,7 @@ import java.util.Map;
  * DSP plan introspection - provides detailed inspection of DynamicShapePlan models.
  * 
  * Usage:
- * <pre>
+ * <pre>{@code
  *   DspPlanIntrospection introspection = Nd4j.framework.execution().dsp().introspection();
  *   
  *   // Get plan from current session/executor
@@ -55,7 +55,7 @@ import java.util.Map;
  *   
  *   // Get device placement
  *   Map<Integer, List<Integer>> devicePlacement = introspection.getDevicePlacement(plan);
- * </pre>
+ * }</pre>
  * 
  * @author ND4J Team
  */

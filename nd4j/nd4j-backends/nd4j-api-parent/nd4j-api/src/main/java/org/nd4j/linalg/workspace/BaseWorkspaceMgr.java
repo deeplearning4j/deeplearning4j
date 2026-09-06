@@ -47,7 +47,7 @@ import static org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner.allOpenWo
  * are in the correct workspace, and leveraging arrays to the correct workspace.<br>
  * <br>
  * <b>Usage:</b><br>
- * {@code
+ * <pre>{@code
  * WorkspaceConfiguration conf = WorkspaceConfiguration.builder()
  *     .initialSize(10 * 1024L * 1024L)  //10MB initial workspace size
  *     .overallocationLimit(3.0)         //Allocate 3x initialSize as workspace grows
@@ -67,6 +67,7 @@ import static org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner.allOpenWo
  *                                                  //Use NONE to disable spilling. Once the workspace is full, any further
  *                                                  // attempt to allocate memory will result in an exception
  *                                                  //Use ALWAYS if you want workspaces to always spill to disk when full
+ * }</pre>
  *
  * @param <T> Enum type for the array type
  */

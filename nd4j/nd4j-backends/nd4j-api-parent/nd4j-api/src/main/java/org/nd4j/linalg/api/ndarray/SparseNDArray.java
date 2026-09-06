@@ -52,7 +52,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  * A plain container for a sparse tensor stored in CSR (Compressed Sparse Row), COO
  * (Coordinate), or CSC (Compressed Sparse Column) format.
  *
- * <h3>CSR layout</h3>
+ * <h2>CSR layout</h2>
  * <ul>
  *   <li>{@code values}  – 1D [nnz], floating dtype — the non-zero values</li>
  *   <li>{@code colIdx}  – 1D [nnz], INT32 — column index for each non-zero</li>
@@ -60,13 +60,13 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  *       non-zeros in row r)</li>
  * </ul>
  *
- * <h3>COO layout</h3>
+ * <h2>COO layout</h2>
  * <ul>
  *   <li>{@code indices} – 2D [nnz, 2], INT64 — (row, col) pairs for each non-zero</li>
  *   <li>{@code values}  – 1D [nnz], floating dtype — the non-zero values</li>
  * </ul>
  *
- * <h3>CSC layout</h3>
+ * <h2>CSC layout</h2>
  * <ul>
  *   <li>{@code values}  – 1D [nnz], floating dtype — the non-zero values in column-major order</li>
  *   <li>row-index array – 1D [nnz], INT32 — row index for each non-zero

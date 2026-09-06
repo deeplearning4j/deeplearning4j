@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
  * This class allows fine-grained control over which backend implementations
  * (CPU, CUDA, oneDNN, MPS, etc.) are used for each operation.
  *
- * <h3>Example Usage:</h3>
+ * <h2>Example Usage:</h2>
  * <pre>{@code
  * // Get the kernel manager instance
  * KernelManager km = KernelManager.getInstance();

@@ -55,7 +55,7 @@ public interface MultiDataNormalization extends Normalizer<MultiDataSet>, MultiD
 
     /**
      * Undo (revert) the normalization applied by this DataNormalization instance to the specified labels array.
-     * If labels normalization is disabled (i.e., {@link #isFitLabel()} == false) then this is a no-op.
+     * If label normalization is disabled then this is a no-op.
      * Can also be used to undo normalization for network output arrays, in the case of regression.
      *
      * @param labels    Labels array to revert the normalization on
@@ -65,7 +65,7 @@ public interface MultiDataNormalization extends Normalizer<MultiDataSet>, MultiD
 
     /**
      * Undo (revert) the normalization applied by this DataNormalization instance to the specified labels array.
-     * If labels normalization is disabled (i.e., {@link #isFitLabel()} == false) then this is a no-op.
+     * If label normalization is disabled then this is a no-op.
      * Can also be used to undo normalization for network output arrays, in the case of regression.
      *
      * @param labels Labels array to revert the normalization on

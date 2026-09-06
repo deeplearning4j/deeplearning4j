@@ -30,9 +30,11 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 
 /**
+ * <pre>{@code
  *        ⎧  1, if x >  1
- f(x) =   ⎨ -1, if x < -1
-          ⎩  x, otherwise
+ * f(x) = ⎨ -1, if x < -1
+ *        ⎩  x, otherwise
+ * }</pre>
  */
 @EqualsAndHashCode(callSuper = false)
 @Getter

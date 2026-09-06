@@ -77,7 +77,7 @@ public interface DataNormalization extends Normalizer<DataSet>, DataSetPreProces
 
     /**
      * Undo (revert) the normalization applied by this DataNormalization instance to the specified labels array.
-     * If labels normalization is disabled (i.e., {@link #isFitLabels()} == false) then this is a no-op.
+     * If labels normalization is disabled (i.e., {@link #isFitLabel()} == false) then this is a no-op.
      * Can also be used to undo normalization for network output arrays, in the case of regression.
      *
      * @param labels    Labels array to revert the normalization on
@@ -86,7 +86,7 @@ public interface DataNormalization extends Normalizer<DataSet>, DataSetPreProces
 
     /**
      * Undo (revert) the normalization applied by this DataNormalization instance to the specified labels array.
-     * If labels normalization is disabled (i.e., {@link #isFitLabels()} == false) then this is a no-op.
+     * If labels normalization is disabled (i.e., {@link #isFitLabel()} == false) then this is a no-op.
      * Can also be used to undo normalization for network output arrays, in the case of regression.
      *
      * @param labels    Labels array to revert the normalization on

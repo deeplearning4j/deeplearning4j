@@ -38,7 +38,6 @@ import java.util.Map;
  *   <li>Hot-swapping kernels without recompilation</li>
  *   <li>Plugin architecture for operations</li>
  * </ul>
- * </p>
  * <p>
  * Example usage:
  * <pre>{@code
@@ -55,7 +54,6 @@ import java.util.Map;
  * // Unload a plugin
  * manager.unloadPlugin("MyKernels");
  * }</pre>
- * </p>
  *
  * @author Adam Gibson
  */

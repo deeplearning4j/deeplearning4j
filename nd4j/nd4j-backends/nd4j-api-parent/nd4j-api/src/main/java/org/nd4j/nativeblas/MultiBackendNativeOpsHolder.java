@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *   <li>Cross-device operations automatically transfer data as needed</li>
  * </ul>
  *
- * <h3>Supported Backends:</h3>
+ * <h2>Supported Backends:</h2>
  * <ul>
  *   <li><b>CPU (nd4j-native)</b> - Standard CPU execution with OneDNN/MKL helpers</li>
  *   <li><b>CUDA (nd4j-cuda)</b> - NVIDIA GPU execution with cuDNN helpers</li>
@@ -55,7 +55,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *   <li><b>Metal</b> - Apple GPU (future)</li>
  * </ul>
  *
- * <h3>Usage:</h3>
+ * <h2>Usage:</h2>
  * <pre>{@code
  * // Enable multi-backend mode (discovers and loads all available backends)
  * MultiBackendNativeOpsHolder.enableMultiBackend();

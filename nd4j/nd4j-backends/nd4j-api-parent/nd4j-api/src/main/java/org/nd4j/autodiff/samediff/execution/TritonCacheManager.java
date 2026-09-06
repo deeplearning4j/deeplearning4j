@@ -38,7 +38,7 @@ import java.nio.file.Path;
  * their metadata. Imported bundles are placed in the Triton override directory,
  * which has highest priority in the kernel lookup chain.</p>
  *
- * <h3>Usage:</h3>
+ * <h2>Usage:</h2>
  * <pre>{@code
  * // After running a model to populate the cache:
  * TritonCacheManager.exportCache(Path.of("/tmp/model.tkcache"));

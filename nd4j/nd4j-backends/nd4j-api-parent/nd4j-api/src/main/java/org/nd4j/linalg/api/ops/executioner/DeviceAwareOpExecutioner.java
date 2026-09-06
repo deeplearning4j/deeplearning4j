@@ -63,7 +63,7 @@ import org.nd4j.linalg.factory.Nd4j;
  *   <li>Records transfer statistics for monitoring</li>
  * </ul>
  *
- * <h3>Usage:</h3>
+ * <h2>Usage:</h2>
  * <pre>{@code
  * // Install the device-aware executor wrapper
  * DeviceAwareOpExecutioner.install();

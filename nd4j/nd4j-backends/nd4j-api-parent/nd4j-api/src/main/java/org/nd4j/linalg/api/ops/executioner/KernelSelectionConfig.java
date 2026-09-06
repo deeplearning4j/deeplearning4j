@@ -43,7 +43,7 @@ import java.util.Set;
  * Example usage:
  * <pre>{@code
  * KernelSelectionConfig config = KernelSelectionConfig.builder()
- *     .strategy(KernelSelectionStrategy.FASTEST)
+ *     .strategy(KernelSelectionConfig.Strategy.FASTEST)
  *     .autoTuneEnabled(true)
  *     .warmupRuns(2)
  *     .benchmarkRuns(5)
@@ -51,7 +51,6 @@ import java.util.Set;
  *
  * Nd4j.getKernelSelector().configure(config);
  * }</pre>
- * </p>
  *
  * @author Adam Gibson
  */

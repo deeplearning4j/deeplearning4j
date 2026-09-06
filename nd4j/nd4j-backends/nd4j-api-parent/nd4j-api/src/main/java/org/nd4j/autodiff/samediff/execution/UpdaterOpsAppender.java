@@ -52,7 +52,7 @@ import java.util.Map;
  * optimizer, and weight update — executes inside a single DynamicShapePlan
  * without a Java-C++ round-trip after the backward pass.
  *
- * <h3>Graph structure added per trainable variable {@code w}</h3>
+ * <h2>Graph structure added per trainable variable {@code w}</h2>
  * <pre>
  *   // Existing in grad graph after createGradFunction():
  *   w-grad  (ARRAY, output of backward op)
@@ -73,7 +73,7 @@ import java.util.Map;
  *   //   adam_updater output[2] → copies into m's backing array (new first moment)
  * </pre>
  *
- * <h3>State variables and post-execution sync</h3>
+ * <h2>State variables and post-execution sync</h2>
  * Updater state arrays (Adam M/V, Nesterovs velocity, etc.) are registered as
  * {@code VARIABLE} type in the grad SameDiff. The DynamicShapePlanCompiler picks
  * them up as VARIABLE external inputs and hydrates them from the SDVariable's
@@ -82,7 +82,7 @@ import java.util.Map;
  * after each DSP execution the caller copies those tensors back into the state
  * SDVariable backing arrays so the next execution reads the correct values.
  *
- * <h3>Iteration counter</h3>
+ * <h2>Iteration counter</h2>
  * Adam and similar updaters need the iteration count as an {@code iArg}. The
  * iteration is baked in at graph-append time. The caller must call
  * {@link #appendUpdaterOps} again (and recompile the DSP plan) when the iteration
@@ -91,7 +91,7 @@ import java.util.Map;
  * recompile at iteration 0 only and rely on the tArg frozen in the slot. Future
  * work can expose iteration as a placeholder input.
  *
- * <h3>Supported updaters</h3>
+ * <h2>Supported updaters</h2>
  * <ul>
  *   <li>SGD — no state</li>
  *   <li>Nesterovs — 1 state (velocity V)</li>

@@ -2429,7 +2429,7 @@ public class Shape {
 
     /**
      * Assert the both shapes are the same length
-     * and shape[i] < lessThan[i]
+     * and {@code shape[i] < lessThan[i]}
      * @param shape the shape to check
      * @param lessThan the shape to assert against
      */
@@ -2978,11 +2978,9 @@ public class Shape {
 
 
     /**
-     * Get the element wise stride for the
-     * shape info buffer
-     * @param buffer the buffer to get the element
-     *               wise stride from
-     * @return the element wise stride for the buffer
+     * Sets the stride metadata in the shape information buffer.
+     * @param buffer the shape information buffer to modify
+     * @param elementWiseStride the stride value to store
      */
     public static void setElementWiseStride(IntBuffer buffer, int elementWiseStride) {
         int length2 = shapeInfoLength(buffer.get(0));
@@ -2990,11 +2988,9 @@ public class Shape {
     }
 
     /**
-     * Get the element wise stride for the
-     * shape info buffer
-     * @param buffer the buffer to get the element
-     *               wise stride from
-     * @return the element wise stride for the buffer
+     * Sets the stride metadata in the shape information buffer.
+     * @param buffer the shape information buffer to modify
+     * @param elementWiseStride the stride value to store
      */
     public static void setElementWiseStride(DataBuffer buffer, int elementWiseStride) {
         int length2 = shapeInfoLength(Shape.rank(buffer));
@@ -3060,9 +3056,9 @@ public class Shape {
 
 
     /**
-     * Returns the order given the shape information
-     * @param buffer the buffer
-     * @return
+     * Sets the storage order in the shape information buffer.
+     * @param buffer the shape information buffer to modify
+     * @param order the storage order to store
      */
     public static void setOrder(long[] buffer, char order) {
         int length = Shape.shapeInfoLength(Shape.rank(buffer));
@@ -3183,7 +3179,8 @@ public class Shape {
      * Returns true if the given array
      * is meant for the whole dimension
      * @param arr the array to test
-     * @return true if arr.length == 1 && arr[0] is -1 (sentinel for "reduce all")
+     * @return true if {@code arr} is null, empty, or contains only
+     * {@link Integer#MAX_VALUE} (the legacy "reduce all" sentinel)
      */
     public static boolean wholeArrayDimension(long... arr) {
         // null or empty means "reduce all dimensions".

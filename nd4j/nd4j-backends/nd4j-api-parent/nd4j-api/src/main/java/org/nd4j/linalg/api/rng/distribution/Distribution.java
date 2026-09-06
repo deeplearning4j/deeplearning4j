@@ -89,8 +89,8 @@ public interface Distribution {
      * variable {@code X} distributed according to this distribution, the
      * returned value is
      * <ul>
-     * <li><code>inf{x in R | P(X<=x) >= p}</code> for {@code 0 < p <= 1},</li>
-     * <li><code>inf{x in R | P(X<=x) > 0}</code> for {@code p = 0}.</li>
+     * <li>{@code inf{x in R | P(X<=x) >= p}} for {@code 0 < p <= 1},</li>
+     * <li>{@code inf{x in R | P(X<=x) > 0}} for {@code p = 0}.</li>
      * </ul>
      *
      * @param p the cumulative probability
@@ -122,7 +122,7 @@ public interface Distribution {
      * Access the lower bound of the support. This method must return the same
      * value as {@code inverseCumulativeProbability(0)}. In other words, this
      * method must return
-     * <p><code>inf {x in R | P(X <= x) > 0}</code>.</p>
+     * <p>{@code inf {x in R | P(X <= x) > 0}}.</p>
      *
      * @return lower bound of the support (might be
      * {@code Double.NEGATIVE_INFINITY})
@@ -133,7 +133,7 @@ public interface Distribution {
      * Access the upper bound of the support. This method must return the same
      * value as {@code inverseCumulativeProbability(1)}. In other words, this
      * method must return
-     * <p><code>inf {x in R | P(X <= x) = 1}</code>.</p>
+     * <p>{@code inf {x in R | P(X <= x) = 1}}.</p>
      *
      * @return upper bound of the support (might be
      * {@code Double.POSITIVE_INFINITY})
