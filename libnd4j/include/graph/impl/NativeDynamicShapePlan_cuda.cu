@@ -65,6 +65,7 @@
 #include <graph/DspSegmentHelpers.h>
 #include <graph/cuda/CudaGraphReplayHandle.h>
 #include <graph/DspStreamGuard.h>
+#include <graph/DspThreadState.h>
 #include <graph/gpu/DspCudaDispatch.h>
 #include <graph/PlanExecutionContext.h>
 #include <helpers/MmulHelper.h>
@@ -1300,14 +1301,14 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
       continue;  // Same device, no migration needed
     }
 
+    NDArray* srcArr = arr;
+    NDArray* srcMat = nullptr;
+    static thread_local cudaEvent_t tl_inputDupEvent = nullptr;
     // If the cross-segment input is a VIEW, its DataBuffer is the PARENT's — copying the raw
     // buffer would migrate the parent's layout, not the view's permuted/sliced layout, silently
     // corrupting the consumer on the target device. Materialize the view into a contiguous array
     // (on the validated source device, in the view's logical order) and migrate THAT. The temp is
     // freed at segment cleanup via a slot-less migratedInputs_ entry.
-    NDArray* srcArr = arr;
-    NDArray* srcMat = nullptr;
-    static thread_local cudaEvent_t tl_inputDupEvent = nullptr;
     if (arr->isView()) {
       try {
         srcMat = arr->dup(arr->ordering());
@@ -1617,7 +1618,10 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
              currentDevice, static_cast<int>(migratedInputs_.size()));
   }
 
-  // Restore original arrays in the publication table and delete migrated copies.
+  // Restore original arrays in the publication table. A consumer view can still
+  // share a migrated owner's DataBuffer after this segment completes. Retire that
+  // owner through the plan-level deferred queue so it stays alive until the view
+  // is replaced; deleting it here leaves a dangling output-slot wrapper.
   for (auto& mi : migratedInputs_) {
     if (outputSlots_ != nullptr && mi.outputSlotIdx >= 0 && mi.outputSlotIdx < totalOutputSlots_) {
       outputSlots_[mi.outputSlotIdx] = mi.original;
@@ -1626,7 +1630,20 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
       mi.externalInputTable[mi.externalInputIdx] = mi.original;
     }
     if (mi.migrated != nullptr) {
-      delete mi.migrated;
+      int exactReferenceSlot = -1;
+      int sharedBufferSlot = -1;
+      const bool hasLiveAlias = findLiveSlotAlias(
+          mi.migrated, outputSlots_, totalOutputSlots_,
+          &exactReferenceSlot, &sharedBufferSlot);
+      if (hasLiveAlias) {
+        deferredSlotDeletes_.push_back(mi.migrated);
+        DSP_DIAG(MULTI_DEVICE,
+                 "platformCleanupMigratedInputs: deferred aliased migration owner=%p "
+                 "exactSlot=%d sharedBufferSlot=%d",
+                 (void*)mi.migrated, exactReferenceSlot, sharedBufferSlot);
+      } else {
+        delete mi.migrated;
+      }
       mi.migrated = nullptr;
     }
   }
@@ -3676,6 +3693,30 @@ void NativeDynamicShapePlan::platformReleaseSegmentGpuResources() {
 }
 
 void NativeDynamicShapePlan::platformMigrateWeightsAndClearCaches() {
+  // Cleanup can follow a failed execution. Do not replace its diagnostic with a
+  // secondary migration/ownership error (including one raised by a mutator).
+  auto* errorReference = LaunchContext::defaultContext()->errorReference();
+  cudaError_t priorCudaError = cudaGetLastError();
+  if (priorCudaError != cudaSuccess) {
+    DSP_DIAG(MEMORY, "Weight migration: prior CUDA error before cleanup: %s",
+             cudaGetErrorString(priorCudaError));
+    if (errorReference->errorCode() == 0) {
+      errorReference->setErrorCode(static_cast<int>(Status::KERNEL_FAILURE));
+      errorReference->setErrorMessage(cudaGetErrorString(priorCudaError));
+    }
+  }
+  struct PreserveExecutionError {
+    ErrorReference* reference;
+    int code;
+    std::string message;
+    ~PreserveExecutionError() {
+      if (code != 0) {
+        reference->setErrorCode(code);
+        reference->setErrorMessage(message.c_str());
+      }
+    }
+  } preserveError{errorReference, errorReference->errorCode(), errorReference->errorMessage()};
+
   DSP_DIAG(MEMORY, "releaseGpuIntermediates: freed intermediate NDArrays");
   logGpuMemState("STEP-2-AFTER-INTERMEDIATES");
 
@@ -3694,22 +3735,29 @@ void NativeDynamicShapePlan::platformMigrateWeightsAndClearCaches() {
   MmulHelper::resetCastCacheIndices();
   logGpuMemState("STEP-4-AFTER-CAST-CACHE");
 
-  // Migrate weight buffers from async pool to direct cudaMalloc
+  // Migrate weight buffers to persistent pool allocations outside DSP capture/replay.
   {
-    cudaGetLastError();
-    int deviceId = 0;
-    cudaGetDevice(&deviceId);
+    DspThreadState migrationState(
+        static_cast<void*>(nullptr), static_cast<void*>(nullptr), false, false);
+    int entryDevice = -1;
+    cudaError_t entryDeviceErr = cudaGetDevice(&entryDevice);
 
     int migratedCount = 0;
     int skippedDirect = 0;
     int skippedStillFrozen = 0;
     int skippedNonDevice = 0;
     int failedMigrations = 0;
-	    size_t migratedBytes = 0;
-	    size_t totalWeightBytes = 0;
-	    auto& pool = memory::CudaMemoryPool::getInstance();
-	    auto* lcStreamPtr = LaunchContext::defaultContext()->getCudaStream();
-	    cudaStream_t migrationStream = (lcStreamPtr != nullptr) ? *lcStreamPtr : nullptr;
+    size_t migratedBytes = 0;
+    size_t totalWeightBytes = 0;
+    auto& pool = memory::CudaMemoryPool::getInstance();
+    std::unordered_set<int> migrationDevices;
+    if (entryDeviceErr == cudaSuccess && entryDevice >= 0) migrationDevices.insert(entryDevice);
+
+    auto migrationFailed = [&](const char* stage, int device, size_t bytes, const char* detail) {
+      failedMigrations++;
+      DSP_DIAG(MEMORY, "Weight migration FAILED: stage=%s device=%d bytes=%zu: %s",
+               stage, device, bytes, detail);
+    };
 
     DSP_DIAG(MEMORY, "Weight migration: %zu protected weight buffers to check",
              protectedWeightBuffers_.size());
@@ -3733,14 +3781,21 @@ void NativeDynamicShapePlan::platformMigrateWeightsAndClearCaches() {
         continue;
       }
 
-      if (pool.isDirectAllocation(db->special())) {
+      void* oldPtr = db->special();
+      if (pool.isDirectAllocation(oldPtr)) {
         skippedDirect++;
         continue;
       }
+      if (bufSize == 0) continue;
+      if (entryDeviceErr != cudaSuccess || entryDevice < 0) {
+        migrationFailed("getDevice", entryDevice, bufSize, cudaGetErrorString(entryDeviceErr));
+        continue;
+      }
 
-      cudaPointerAttributes ptrAttrs;
-      cudaError_t attrErr = cudaPointerGetAttributes(&ptrAttrs, db->special());
+      cudaPointerAttributes ptrAttrs{};
+      cudaError_t attrErr = cudaPointerGetAttributes(&ptrAttrs, oldPtr);
       if (attrErr != cudaSuccess) {
+        migrationFailed("pointer attributes", -1, bufSize, cudaGetErrorString(attrErr));
         cudaGetLastError();
         continue;
       }
@@ -3749,38 +3804,84 @@ void NativeDynamicShapePlan::platformMigrateWeightsAndClearCaches() {
         continue;
       }
 
-      if (bufSize == 0) continue;
+      // Protected weights can reside on secondary GPUs. Resolve the context/stream
+      // only AFTER binding the pointer's actual device and clearing DSP TLS overrides.
+      const int deviceId = ptrAttrs.device;
+      DspStreamGuard migrationDeviceGuard(nullptr, deviceId);
+      int activeDevice = -1;
+      cudaError_t deviceErr = cudaGetDevice(&activeDevice);
+      if (deviceErr != cudaSuccess || activeDevice != deviceId) {
+        migrationFailed("bind device", deviceId, bufSize,
+                        deviceErr != cudaSuccess ? cudaGetErrorString(deviceErr) : "device switch failed");
+        cudaGetLastError();
+        continue;
+      }
+      migrationDevices.insert(deviceId);
+      cudaStream_t migrationStream = nullptr;
+      void* directPtr = nullptr;
+      try {
+        auto* lcStreamPtr = LaunchContext::defaultContext()->getCudaStream();
+        if (lcStreamPtr == nullptr || *lcStreamPtr == nullptr) {
+          migrationFailed("resolve stream", deviceId, bufSize, "no context stream");
+          continue;
+        }
+        migrationStream = *lcStreamPtr;
+        cudaStreamCaptureStatus captureStatus = cudaStreamCaptureStatusNone;
+        cudaError_t captureErr = cudaStreamIsCapturing(migrationStream, &captureStatus);
+        if (captureErr != cudaSuccess || captureStatus != cudaStreamCaptureStatusNone) {
+          migrationFailed("noncapture stream", deviceId, bufSize,
+                          captureErr != cudaSuccess ? cudaGetErrorString(captureErr) : "stream is capturing");
+          if (captureErr != cudaSuccess) cudaGetLastError();
+          continue;
+        }
 
-      // Capture-safe persistent allocation via the pool (cudaMallocAsync on a dedicated
-      // non-capturing stream) — no raw cudaMalloc. allocateDirect() tracks the pointer
-      // for cudaFreeAsync routing, so no registerDirectAllocation is needed below.
-      // NOTE(perf): this comes from the shared default mempool; for full weight/pool
-      // trim-separation a dedicated mempool for allocateDirect is a follow-up.
-      void* directPtr = pool.allocateDirect(bufSize, deviceId);
+        // allocateDirect() materializes and tracks the candidate on a dedicated
+        // non-capturing allocation stream. Keep this an equal-size, same-device
+        // replacement: DataBuffer accounting must not acquire/release another charge.
+        directPtr = pool.allocateDirect(bufSize, deviceId);
+      } catch (const std::exception& e) {
+        migrationFailed("prepare allocation", deviceId, bufSize, e.what());
+        continue;
+      }
       if (directPtr == nullptr) {
-        failedMigrations++;
-        DSP_DIAG(MEMORY,
-            "Weight migration FAILED for %zu bytes (%zu MB): allocateDirect returned null",
-            bufSize, bufSize / (1024*1024));
+        migrationFailed("allocateDirect", deviceId, bufSize, "returned null");
         continue;
       }
 
-	      cudaError_t copyErr = cudaMemcpyAsync(directPtr, db->special(), bufSize,
-	                                            cudaMemcpyDeviceToDevice, migrationStream);
-	      if (copyErr != cudaSuccess) {
-	        pool.free(directPtr, deviceId, migrationStream);
-	        cudaGetLastError();
-        DSP_DIAG(MEMORY, "releaseGpuIntermediates: weight migration memcpy failed for %zu bytes: %s",
-                 bufSize, cudaGetErrorString(copyErr));
+      cudaError_t copyErr = cudaMemcpyAsync(directPtr, oldPtr, bufSize,
+                                           cudaMemcpyDeviceToDevice, migrationStream);
+      if (copyErr != cudaSuccess) {
+        migrationFailed("memcpy", deviceId, bufSize, cudaGetErrorString(copyErr));
+        cudaGetLastError();
+        pool.free(directPtr, deviceId, migrationStream);
         continue;
-	      }
+      }
 
-	      void* oldPtr = db->special();
-	      pool.free(oldPtr, deviceId, migrationStream);
-      db->replaceSpecialBuffer(directPtr, true);
-      // allocateDirect() already tracks directPtr for capture-safe cudaFreeAsync routing;
-      // no separate registerDirectAllocation is needed here.
+      // This teardown-only ownership handoff MUST wait for the copy. pool.free()
+      // can select its own stream (not migrationStream), so enqueue ordering alone
+      // cannot protect either the old buffer or the replacement's consumers.
+      cudaError_t syncErr = cudaStreamSynchronize(migrationStream);
+      if (syncErr != cudaSuccess) {
+        migrationFailed("copy completion", deviceId, bufSize, cudaGetErrorString(syncErr));
+        DSP_DIAG(MEMORY,
+                 "Weight migration: retaining tracked candidate %p and original %p; "
+                 "copy completion is unproven, freeing on the allocation stream is unsafe",
+                 directPtr, oldPtr);
+        cudaGetLastError();
+        continue;
+      }
 
+      try {
+        // Publish before releasing oldPtr so a frozen-owner rejection leaves the
+        // original allocation intact. The copy has completed on every success path.
+        db->replaceSpecialBuffer(directPtr, true);
+      } catch (const std::exception& e) {
+        migrationFailed("replaceSpecialBuffer", deviceId, bufSize, e.what());
+        pool.free(directPtr, deviceId, migrationStream);
+        continue;
+      }
+      pool.free(oldPtr, deviceId, migrationStream);
+      // allocateDirect() already tracks directPtr for capture-safe free routing.
       migratedCount++;
       migratedBytes += bufSize;
     }
@@ -3791,14 +3892,14 @@ void NativeDynamicShapePlan::platformMigrateWeightsAndClearCaches() {
         totalWeightBytes / (1024*1024), migratedCount, migratedBytes / (1024*1024),
         skippedDirect, skippedStillFrozen, skippedNonDevice, failedMigrations);
 
-    pool.trimPool(deviceId);
+    for (int deviceId : migrationDevices) pool.trimPool(deviceId);
     logGpuMemState("STEP-4b-AFTER-MIGRATION-AND-TRIM");
 
     // Shape/TAD helper caches are process-wide metadata caches. They can back
     // shape-info pointers on Java-owned arrays that are still alive while a
     // native plan is being torn down, so a per-plan cleanup path must not clear
     // them. Trimming the CUDA pool after weight migration is still safe.
-    pool.trimPool(deviceId);
+    for (int deviceId : migrationDevices) pool.trimPool(deviceId);
     logGpuMemState("STEP-4c-AFTER-WEIGHT-MIGRATION-TRIM");
   }
 

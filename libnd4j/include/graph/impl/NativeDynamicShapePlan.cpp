@@ -25,6 +25,7 @@
 #include <graph/NativePlanCompiler.h>
 #include <system/op_boilerplate.h>
 #include <graph/DspStreamGuard.h>
+#include <graph/DspThreadState.h>
 #include <graph/DspAnalysisUtils.h>
 #include <graph/DspSegmentOutputUtils.h>
 #include <graph/DspPhaseUtils.h>
@@ -386,9 +387,14 @@ void NativeDynamicShapePlan::flushDeferredSlotDeletes() {
   // Exact live wrappers must survive. For distinct wrappers sharing a
   // DataBuffer, retain only an owning non-view wrapper: deleting borrowed or
   // view wrappers is safe and prevents transient aliases accumulating forever.
-  // Dedup remains order-preserving because deletion order is allocator-visible.
+  // Classify deletions so non-owning/view wrappers are destroyed before owners,
+  // matching the plan destructor. A migrated owner may precede a dependent view
+  // in the queue; deleting it first invalidates the view's DataBuffer metadata.
   std::unordered_set<NDArray*> seenPending;
-  size_t deleted = 0;
+  std::vector<NDArray*> nonOwningDeletes;
+  std::vector<NDArray*> owningDeletes;
+  nonOwningDeletes.reserve(pending.size());
+  owningDeletes.reserve(pending.size());
   size_t retained = 0;
   for (NDArray* arr : pending) {
     if (arr == nullptr) continue;
@@ -412,9 +418,15 @@ void NativeDynamicShapePlan::flushDeferredSlotDeletes() {
                arr->ownsDataBuffer() ? 1 : 0, arr->isView() ? 1 : 0);
       continue;
     }
-    delete arr;
-    deleted++;
+    if (arr->isView() || !arr->ownsDataBuffer()) {
+      nonOwningDeletes.push_back(arr);
+    } else {
+      owningDeletes.push_back(arr);
+    }
   }
+  for (NDArray* arr : nonOwningDeletes) delete arr;
+  for (NDArray* arr : owningDeletes) delete arr;
+  const size_t deleted = nonOwningDeletes.size() + owningDeletes.size();
   DSP_DIAG(MEMORY,
            "DEFERRED_DELETE_FLUSH: plan=%p queued=%zu unique=%zu deleted=%zu retained=%zu reentrant=%zu",
            (void*)this, pending.size(), seenPending.size(), deleted, retained,
@@ -825,11 +837,11 @@ void NativeDynamicShapePlan::pinSegmentGraphBakedSlots(GraphSegment& seg, NDArra
   // teardown (platformFlushGraphBakedPins). Two distinct hazard classes, both covered here:
   //   • VIEW slot outputs + SOURCE_VARIABLE inputs — their device buffer is owned EXTERNALLY (a
   //     weight/variable or a prior slot the user may close()/rebind). Pinned in EVERY mode,
-  //     including slot-by-slot (NOT_FUSIBLE), where this was previously uncovered.
+  //     except refreshed migration-temporary inputs in noncaptured execution (see below).
   //   • OWNED (non-view) intermediate outputs — pinned ONLY when a captured graph baked their
   //     raw address (pinOwnedOutputs). In slot-by-slot they are recomputed each exec and MUST
   //     stay freeable, so pinOwnedOutputs=false skips them (no transient-buffer leak).
-  // Idempotent (dedup by address, plan-wide). GENERALIZES the prior lazy WRITE_SLOT-only pin.
+  // Idempotent (dedup by address and segment). GENERALIZES the prior lazy WRITE_SLOT-only pin.
   const int safeNumExt = (externalArrays != nullptr) ? numExt : 0;  // guard null external table
   auto pinOne = [&](NDArray* slotArr, int slotForDiag, bool externalOwned) {
     if (slotArr == nullptr) return;
@@ -883,6 +895,27 @@ void NativeDynamicShapePlan::pinSegmentGraphBakedSlots(GraphSegment& seg, NDArra
       const bool rawBakedState = extIdx >= 0 && extIdx < safeNumExt &&
           isDeviceManagedExternalInput(extIdx, srcArr);
       if (!rawBakedWeight && !rawBakedState) continue;
+      if (!pinOwnedOutputs && srcArr != nullptr) {
+        // Functional/slot execution refreshes inputs from the current publication
+        // tables on every invocation. Migration replicas are restored and retired
+        // at segment cleanup, not cached weights requiring plan-lifetime pins.
+        // Match ownership records, not SOURCE_VARIABLE alone: genuine weights and
+        // state still need protection. Include wrappers sharing the replica buffer.
+        const DataBuffer* srcBuffer = srcArr->dataBuffer();
+        bool migrationTemporary = false;
+        for (const auto& mi : migratedInputs_) {
+          if (mi.migrated != nullptr &&
+              (mi.migrated == srcArr ||
+               (srcBuffer != nullptr && mi.migrated->dataBuffer() == srcBuffer))) {
+            migrationTemporary = true;
+            break;
+          }
+        }
+        // Output views were pinned independently above; their base ownership is
+        // unchanged. Captured graphs bypass this exclusion because they bake the
+        // replica's raw address even after the migration wrapper is retired.
+        if (migrationTemporary) continue;
+      }
       pinOne(srcArr, sourceIndex, /*externalOwned=*/true);
     }
   }
@@ -1452,22 +1485,21 @@ void NativeDynamicShapePlan::materializeViewSlot(int slotIdx, const char* tag) {
       if (slots_[s].wiring.outputSlotIndices[o] == slotIdx) { viewDev = slots_[s].targetDeviceId; break; }
     }
   }
-  int savedDev = -1;
-  bool switchedDev = false;
+  // Create an independent deep copy (on the view's device — see above). A completed
+  // secondary segment restores the primary device's DSP stream overrides before this
+  // output boundary runs. Clear those TLS overrides while duplicating on viewDev;
+  // otherwise LaunchContext::getCudaStream() returns a device-0 stream even though the
+  // active device and source buffer are on device 1, silently producing a zero copy.
+  // DspThreadState restores all prior TLS values on every exit path.
+  NDArray* dup = nullptr;
   if (viewDev > 0) {
-    savedDev = sd::graph::dspGetCurrentDevice();
-    if (savedDev != viewDev) {
-      sd::graph::dspSetCurrentDevice(viewDev);
-      switchedDev = true;
-    }
+    DspStreamGuard materializeDeviceGuard(nullptr, viewDev);
+    DspThreadState materializeState(
+        static_cast<void*>(nullptr), static_cast<void*>(nullptr), false, false);
+    dup = viewArr->dup(viewArr->ordering());
+  } else {
+    dup = viewArr->dup(viewArr->ordering());
   }
-
-  // Create an independent deep copy (on the view's device — see above). dup() already returns
-  // a heap-allocated NDArray*; wrapping it in `new NDArray(...)` copies it and leaks the dup()
-  // result — use the pointer directly.
-  NDArray* dup = viewArr->dup(viewArr->ordering());
-
-  if (switchedDev) sd::graph::dspSetCurrentDevice(savedDev);
 
   DSP_DIAG(LIFECYCLE, "MATERIALIZE_VIEW: slot=%d tag=%s "
            "oldArr=%p oldDb=%p newArr=%p newDb=%p shape=%s "

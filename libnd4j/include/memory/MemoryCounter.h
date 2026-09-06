@@ -85,6 +85,18 @@ class SD_LIB_EXPORT MemoryCounter {
   bool validateGroup(MemoryType group, LongType numBytes);
 
   /**
+   * Validate and atomically replace a DEVICE allocation charge. Zero bytes means
+   * no charge (borrowed/workspace/host-resident storage); its device ID is ignored.
+   * Limits apply only to positive NET deltas, so same-device replacements and
+   * DEVICE-group-neutral migrations do not require duplicate capacity.
+   * With commit=false this is only a preflight; callers must revalidate with
+   * commit=true after allocation/copy. False leaves every counter unchanged.
+   * No pool or backend calls are performed while holding the counter mutex.
+   */
+  bool transferDeviceAllocation(int fromDevice, LongType fromBytes,
+                                int toDevice, LongType toBytes, bool commit = true);
+
+  /**
    * This method adds specified number of bytes to specified counter
    * @param deviceId
    * @param numBytes

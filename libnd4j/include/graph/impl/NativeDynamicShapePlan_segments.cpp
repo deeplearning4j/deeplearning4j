@@ -2649,8 +2649,9 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
   // weight (e.g. a reshape-over-constant — outputSlots_[slot] shares the weight's device buffer)
   // and re-reads it every exec, but a user close()/rebind of that weight freed the buffer →
   // err700 illegal access on the next re-exec. Pin views + SOURCE_VARIABLE weights here once
-  // shapes are frozen (addresses stable); pinOwnedOutputs=false leaves recomputed intermediates
-  // freeable. Idempotent + frozen-gated, so steady-state cost is a bounded dedup scan.
+  // shapes are frozen; pinOwnedOutputs=false leaves recomputed intermediates and known
+  // migration-temporary inputs freeable. Those inputs are refreshed on every invocation,
+  // not stable cached addresses. Output-view pins remain protected independently.
   if (planLifecycle_.isShapesFrozen()) {
     pinSegmentGraphBakedSlots(seg, externalArrays, numExt, /*pinOwnedOutputs=*/false);
   }

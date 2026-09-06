@@ -3794,8 +3794,10 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * Pin every device buffer a sealed segment will re-read on a later replay/re-exec, at SEAL
    * time, so no free()/SDVariable.close()/rebind/pool-reuse can dangle it (→ err700). Covers two
    * hazard classes: (a) VIEW slot outputs + SOURCE_VARIABLE weight inputs — externally-owned,
-   * pinned in EVERY mode including slot-by-slot (NOT_FUSIBLE); (b) OWNED intermediate outputs —
-   * pinned only when pinOwnedOutputs (a captured graph baked their raw address). externalArrays/
+   * pinned in EVERY mode including slot-by-slot (NOT_FUSIBLE), except active migration-temporary
+   * inputs in noncaptured execution; output views remain protected. (b) OWNED intermediate outputs —
+   * pinned only when pinOwnedOutputs (a captured graph baked their raw address). Capture also pins
+   * migration-temporary inputs, since their raw addresses are baked into the graph. externalArrays/
    * numExt are the segment's external table (resolves external-encoded weight inputs, identical
    * to the slot executor). Records into graphPinnedAddrs_ (released at teardown by
    * platformFlushGraphBakedPins). Idempotent per address and sealed segment.

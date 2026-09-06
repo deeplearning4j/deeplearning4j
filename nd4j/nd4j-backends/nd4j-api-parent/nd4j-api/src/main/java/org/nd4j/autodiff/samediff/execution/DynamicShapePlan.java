@@ -37,7 +37,6 @@ import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * A compiled execution plan for autoregressive inference with dynamic shapes.
@@ -251,7 +250,8 @@ public class DynamicShapePlan implements Closeable {
         // Include every available device. Non-P2P boundaries are handled by the native
         // segment input/output migration path, so peer topology must not remove a GPU
         // from placement. Use pool-aware capacity because cudaMemGetInfo excludes
-        // reserved-but-reusable cudaMallocAsync blocks.
+        // reserved-but-reusable cudaMallocAsync blocks, then cap it by the remaining
+        // per-device allocation allowance when one is configured.
         Map<Integer, Long> freeMemory = new LinkedHashMap<>();
         for (int d = 0; d < numDevices; d++) {
             long cudaFree = nativeOps.getDeviceFreeMemory(d);
@@ -261,25 +261,33 @@ public class DynamicShapePlan implements Closeable {
             // Add reusable pool memory (reserved but not used by live allocations).
             // cudaMallocAsync can allocate from this without going to the driver.
             long poolReusable = 0;
-            try {
-                LongPointer usedPtr = new LongPointer(1);
-                LongPointer reservedPtr = new LongPointer(1);
+            try (LongPointer usedPtr = new LongPointer(1);
+                 LongPointer reservedPtr = new LongPointer(1)) {
                 nativeOps.getMemoryPoolStats(d, usedPtr, reservedPtr);
                 long poolUsed = usedPtr.get();
                 long poolReserved = reservedPtr.get();
                 poolReusable = Math.max(0, poolReserved - poolUsed);
             } catch (Exception ignored) {}
 
-            long available = cudaFree + poolReusable;
+            long physicalAvailable = cudaFree + poolReusable;
+            long deviceLimit = Nd4j.getEnvironment().getDeviceLimit(d);
+            long deviceAllocated = Nd4j.getEnvironment().getDeviceCounter(d);
+            long limitAvailable = deviceLimit > 0
+                    ? Math.max(0L, deviceLimit - deviceAllocated)
+                    : Long.MAX_VALUE;
+            long available = Math.min(physicalAvailable, limitAvailable);
             if (available > 0) {
                 freeMemory.put(d, available);
             }
-            log.debug("  Device {}: {}MB cudaFree + {}MB poolReusable = {}MB available / {}MB total (P2P: {})",
+            log.debug("  Device {}: {}MB cudaFree + {}MB poolReusable = {}MB physical, "
+                            + "{}MB placement budget / {}MB total (limit: {}, allocated: {}MB, P2P: {})",
                     d, cudaFree / (1024 * 1024), poolReusable / (1024 * 1024),
-                    available / (1024 * 1024), total / (1024 * 1024),
+                    physicalAvailable / (1024 * 1024), available / (1024 * 1024), total / (1024 * 1024),
+                    deviceLimit > 0 ? deviceLimit / (1024 * 1024) + "MB" : "unlimited",
+                    deviceAllocated / (1024 * 1024),
                     d == 0 ? "self" : p2p ? "yes" : "no (host-staged transfers)");
         }
-        if (freeMemory.size() <= 1) return; // Only one usable device
+        if (freeMemory.isEmpty()) return;
         MultiGpuTracer.traceParallelExec("device-discovery",
                 "found " + numDevices + " devices, " + freeMemory.size() + " usable");
         assignDevices(freeMemory);
@@ -291,54 +299,45 @@ public class DynamicShapePlan implements Closeable {
      * in execution order, so early ops (typically early layers) go to the
      * device with most memory.
      *
-     * After proportional assignment, parallel groups (ops sharing the same
-     * predecessor set) are split across devices so both GPUs have concurrent work.
-     *
      * @param deviceMemoryBudgets map of deviceId to available bytes for computation
      */
     public void assignDevices(Map<Integer, Long> deviceMemoryBudgets) {
-        if (deviceMemoryBudgets == null || deviceMemoryBudgets.size() <= 1
+        if (deviceMemoryBudgets == null || deviceMemoryBudgets.isEmpty()
                 || slots == null || slots.length == 0) return;
 
-        long totalMem = 0;
-        for (long mem : deviceMemoryBudgets.values()) {
-            totalMem += mem;
+        List<Map.Entry<Integer, Long>> sorted = new ArrayList<>();
+        double totalMem = 0.0;
+        for (Map.Entry<Integer, Long> entry : deviceMemoryBudgets.entrySet()) {
+            Long mem = entry.getValue();
+            if (mem != null && mem > 0) {
+                sorted.add(entry);
+                totalMem += mem;
+            }
         }
-        if (totalMem <= 0) return;
+        if (sorted.isEmpty() || totalMem <= 0.0) return;
 
-        // Sort devices largest-first so the primary GPU gets the bulk of ops.
-        // This minimizes cross-device data transfers and ensures the primary GPU (which
-        // holds all model constants) runs most ops without needing constant replication.
-        List<Map.Entry<Integer, Long>> sorted = new ArrayList<>(deviceMemoryBudgets.entrySet());
+        // Sort devices largest-first so the device with the largest usable budget gets
+        // the bulk of ops, minimizing cross-device data transfers.
         sorted.sort((a, b) -> Long.compare(b.getValue(), a.getValue()));
 
         int assigned = 0;
+        double cumulativeMem = 0.0;
         for (int i = 0; i < sorted.size(); i++) {
             int deviceId = sorted.get(i).getKey();
             long deviceMem = sorted.get(i).getValue();
+            cumulativeMem += deviceMem;
 
-            int slotsForDevice;
-            if (i == sorted.size() - 1) {
-                slotsForDevice = slots.length - assigned; // Last device gets remainder
-            } else {
-                slotsForDevice = (int) Math.round((double) deviceMem / totalMem * slots.length);
-            }
+            int cumulativeTarget = i == sorted.size() - 1
+                    ? slots.length
+                    : (int) Math.round(cumulativeMem / totalMem * slots.length);
+            int slotsForDevice = Math.max(0, cumulativeTarget - assigned);
 
             for (int s = 0; s < slotsForDevice && assigned < slots.length; s++, assigned++) {
                 slots[assigned].setTargetDeviceId(deviceId);
             }
             MultiGpuTracer.traceDeviceAssignment(deviceId, slotsForDevice, slots.length,
-                    deviceMem / (1024 * 1024), totalMem / (1024 * 1024),
+                    deviceMem / (1024 * 1024), (long) (totalMem / (1024 * 1024)),
                     true /* P2P status not tracked here, logged in assignDevices() */);
-        }
-
-        // Split parallel groups across devices. Ops sharing the same predecessor set
-        // can execute concurrently — assign alternate members to different devices.
-        // This ensures both GPUs have work within each transformer layer's parallel
-        // operations (Q/K/V projections, gate/up projections).
-        if (predecessors != null && deviceMemoryBudgets.size() > 1) {
-            int[] deviceIds = deviceMemoryBudgets.keySet().stream().mapToInt(Integer::intValue).toArray();
-            splitParallelGroups(deviceIds);
         }
 
         // Compute numDistinctDevices from actual assignments
@@ -346,41 +345,6 @@ public class DynamicShapePlan implements Closeable {
 
         log.debug("Device placement: {} slots across {} devices — {}",
                 slots.length, numDistinctDevices, getDeviceAssignmentSummary());
-    }
-
-    /**
-     * Split parallel groups across devices. Ops with identical predecessor sets
-     * form a parallel group and are distributed round-robin across available devices.
-     */
-    private void splitParallelGroups(int[] deviceIds) {
-        if (deviceIds.length <= 1 || predecessors == null) return;
-
-        // Group steps by their predecessor set
-        Map<List<Integer>, List<Integer>> parallelGroups = new HashMap<>();
-        for (int i = 0; i < slots.length; i++) {
-            int[] preds = predecessors[i];
-            if (preds == null || preds.length == 0) continue;
-            List<Integer> predKey = Arrays.stream(preds).sorted().boxed().collect(Collectors.toList());
-            parallelGroups.computeIfAbsent(predKey, k -> new ArrayList<>()).add(i);
-        }
-
-        int reassigned = 0;
-        for (List<Integer> group : parallelGroups.values()) {
-            if (group.size() > 1) {
-                for (int j = 0; j < group.size(); j++) {
-                    int slotIdx = group.get(j);
-                    int newDevice = deviceIds[j % deviceIds.length];
-                    if (slots[slotIdx].getTargetDeviceId() != newDevice) {
-                        slots[slotIdx].setTargetDeviceId(newDevice);
-                        reassigned++;
-                    }
-                }
-            }
-        }
-        if (reassigned > 0) {
-            log.debug("Parallel group splitting: reassigned {} ops across {} devices",
-                    reassigned, deviceIds.length);
-        }
     }
 
     /**

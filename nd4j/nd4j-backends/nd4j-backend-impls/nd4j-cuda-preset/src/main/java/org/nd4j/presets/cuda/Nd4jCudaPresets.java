@@ -56,6 +56,8 @@ import org.nd4j.presets.SharedCompilerRuntime;
                 "system/config/MemoryConfig.h",
                 "system/config/PrintConfig.h",
                 "system/Environment.h",
+                "memory/MemoryType.h",
+                "memory/MemoryCounter.h",
                 "generated/include_ops.h",
                 "array/DataBuffer.h",
                 "array/PointerDeallocator.h",
@@ -68,7 +70,6 @@ import org.nd4j.presets.SharedCompilerRuntime;
                 "execution/ErrorReference.h",
                 "execution/Engine.h",
                 "execution/ExecutionMode.h",
-                "memory/MemoryType.h",
                 "types/utf8string.h",
                 "legacy/NativeOps.h",
                 "dsp/NativeOpsDsp.h",
@@ -471,6 +472,11 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
                 "sd::ops::platforms::HelperVersionRegistry::getAllHelperInfo").skip());
         infoMap.put(new Info("sd::ops::platforms::HelperVersion::toString").javaNames("toVersionString"));
         infoMap.put(new Info("sd::ops::platforms::HelperInfo::getDetailedStatus").javaNames("getDetailedStatusString"));
+        // MemoryType maps to int in Java; keep group and device overloads distinct.
+        infoMap.put(new Info("sd::memory::MemoryCounter::countIn(sd::memory::MemoryType, sd::LongType)")
+                .javaNames("countInGroup"));
+        infoMap.put(new Info("sd::memory::MemoryCounter::countOut(sd::memory::MemoryType, sd::LongType)")
+                .javaNames("countOutGroup"));
         // Subsystem config classes — exposed to Java via env.triton(), env.dsp(), etc.
         // JavaCPP can't parse std::atomic<T>, so tell it to ignore those private members.
         // The public getter/setter methods return plain int/bool/int64_t and bind fine.

@@ -25,6 +25,8 @@
 #include <helpers/logger.h>
 #include <memory/MemoryUtils.h>
 #include <mutex>
+#include <limits>
+#include <sstream>
 #include <system/Environment.h>
 
 namespace sd {
@@ -106,6 +108,77 @@ bool MemoryCounter::validateGroup(MemoryType group, LongType numBytes) {
   auto gAlloc = _groupCounters[group];
 
   return numBytes + gAlloc <= gLimit;
+}
+
+bool MemoryCounter::transferDeviceAllocation(int fromDevice, LongType fromBytes,
+                                             int toDevice, LongType toBytes, bool commit) {
+  if (fromBytes < 0 || toBytes < 0 || (fromBytes > 0 && fromDevice < 0) ||
+      (toBytes > 0 && toDevice < 0)) {
+    THROW_EXCEPTION("MemoryCounter::transferDeviceAllocation: invalid allocation charge or device");
+  }
+
+  std::lock_guard<std::mutex> lock(_locker);
+  // Resolve all map entries before changing any counter (insertion can throw).
+  LongType* source = fromBytes > 0 ? &_deviceCounters[fromDevice] : nullptr;
+  LongType* target = toBytes > 0 ? &_deviceCounters[toDevice] : nullptr;
+  LongType& group = _groupCounters[DEVICE];
+  const LongType targetLimit = toBytes > 0 ? _deviceLimits[toDevice] : 0;
+  const LongType groupLimit = _groupLimits[DEVICE];
+  const LongType groupDelta = toBytes - fromBytes;
+  const bool sameDevice = source != nullptr && target != nullptr && fromDevice == toDevice;
+  const LongType targetDelta = toBytes - (sameDevice ? fromBytes : 0);
+
+  // Corrupt accounting is not an ordinary capacity refusal. Validate the full
+  // outgoing charge even for net-neutral/same-device transfers, before limits
+  // or mutation: a negative balance must never become apparent free capacity.
+  auto invalidAccounting = [&](const char* reason) {
+    std::ostringstream message;
+    message << "MemoryCounter::transferDeviceAllocation: accounting invariant violated (" << reason
+            << ") fromDevice=" << fromDevice << " fromBytes=" << fromBytes
+            << " toDevice=" << toDevice << " toBytes=" << toBytes
+            << " sourceCounter=" << (source ? *source : 0)
+            << " targetCounter=" << (target ? *target : 0)
+            << " groupCounter=" << group << " targetLimit=" << targetLimit
+            << " groupLimit=" << groupLimit << " commit=" << commit;
+    THROW_EXCEPTION(message.str().c_str());
+  };
+  if (source != nullptr && *source < 0) invalidAccounting("negative source");
+  if (target != nullptr && *target < 0) invalidAccounting("negative target");
+  if (group < 0) invalidAccounting("negative DEVICE group");
+  if (source != nullptr && *source < fromBytes) invalidAccounting("source debit exceeds charge");
+  if (group < fromBytes) invalidAccounting("DEVICE group debit exceeds charge");
+  if (target != nullptr && targetDelta > 0 &&
+      *target > std::numeric_limits<LongType>::max() - targetDelta)
+    invalidAccounting("target overflow");
+  if (groupDelta > 0 && group > std::numeric_limits<LongType>::max() - groupDelta)
+    invalidAccounting("DEVICE group overflow");
+
+  auto acceptsDelta = [](LongType allocated, LongType delta, LongType limit) {
+    return delta <= 0 || limit <= 0 || allocated + delta <= limit;
+  };
+  auto reject = [&](const char* reason) {
+    sd_printf("MEMORY_TRANSFER_REJECT reason=%s fromDevice=%d fromBytes=%lld toDevice=%d toBytes=%lld sourceCounter=%lld targetCounter=%lld targetDelta=%lld targetLimit=%lld groupCounter=%lld groupDelta=%lld groupLimit=%lld commit=%d\n",
+              reason, fromDevice, static_cast<long long>(fromBytes), toDevice,
+              static_cast<long long>(toBytes), static_cast<long long>(source ? *source : 0),
+              static_cast<long long>(target ? *target : 0), static_cast<long long>(targetDelta),
+              static_cast<long long>(targetLimit), static_cast<long long>(group),
+              static_cast<long long>(groupDelta), static_cast<long long>(groupLimit), static_cast<int>(commit));
+    return false;
+  };
+  if (target != nullptr && !acceptsDelta(*target, targetDelta, targetLimit)) return reject("target");
+  if (!acceptsDelta(group, groupDelta, groupLimit)) return reject("group");
+
+  if (commit) {
+    // Do not call countIn/countOut/validate here: _locker is nonrecursive.
+    if (sameDevice) {
+      *target += targetDelta;
+    } else {
+      if (source != nullptr) *source -= fromBytes;
+      if (target != nullptr) *target += toBytes;
+    }
+    group += groupDelta;
+  }
+  return true;
 }
 
 LongType MemoryCounter::allocatedDevice(int deviceId) {

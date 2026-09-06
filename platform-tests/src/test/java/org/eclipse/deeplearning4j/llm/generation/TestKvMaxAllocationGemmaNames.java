@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -74,6 +75,10 @@ public class TestKvMaxAllocationGemmaNames {
     private static String modelPath;
     private static Tokenizer tokenizer;
     private static GenerationPipeline.ModelMetadata modelMetadata;
+
+    private long[] originalDeviceMemoryLimits;
+    private long[] configuredDeviceMemoryLimits;
+    private int originalDevice = -1;
 
     private static final int N = 64; // long enough that the old unpinned path grows observably
     private static final long MAX_POOL_GROWTH_BYTES = 256L * 1024 * 1024;
@@ -168,9 +173,73 @@ public class TestKvMaxAllocationGemmaNames {
                 new File(modelPath), ConversionOptions.forInference()).getModel();
     }
 
+    @BeforeEach
+    public void configureDeviceMemoryLimits() {
+        String limitsProperty = System.getProperty("gemma.deviceMemoryLimitsMiB");
+        if (limitsProperty == null || limitsProperty.isBlank()) {
+            return;
+        }
+        int deviceCount = Nd4j.getAffinityManager().getNumberOfDevices();
+        String[] values = limitsProperty.split(",", -1);
+        assertEquals(deviceCount, values.length,
+                "gemma.deviceMemoryLimitsMiB must specify every logical device");
+        long[] requested = new long[deviceCount];
+        for (int device = 0; device < deviceCount; device++) {
+            long mib = Long.parseLong(values[device].trim());
+            assertTrue(mib > 0, "device memory allowances must be positive");
+            requested[device] = Math.multiplyExact(mib, 1024L * 1024);
+        }
+        long[] previous = new long[deviceCount];
+        long[] configured = new long[deviceCount];
+        for (int device = 0; device < deviceCount; device++) {
+            previous[device] = Nd4j.getEnvironment().getDeviceLimit(device);
+            configured[device] = previous[device] > 0
+                    ? Math.min(previous[device], requested[device]) : requested[device];
+            assertTrue(Nd4j.getEnvironment().getDeviceCounter(device) < configured[device],
+                    "existing allocations already exhaust logical device " + device);
+        }
+        originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        originalDeviceMemoryLimits = previous;
+        configuredDeviceMemoryLimits = configured;
+        for (int device = 0; device < deviceCount; device++) {
+            Nd4j.getEnvironment().setDeviceLimit(device, configured[device]);
+        }
+        Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
+        assertDeviceMemoryLimits("setup");
+    }
+
+    private void assertDeviceMemoryLimits(String phase) {
+        if (configuredDeviceMemoryLimits == null) {
+            return;
+        }
+        for (int device = 0; device < configuredDeviceMemoryLimits.length; device++) {
+            long allocated = Nd4j.getEnvironment().getDeviceCounter(device);
+            long limit = configuredDeviceMemoryLimits[device];
+            log.info("[GEMMA_DEVICE_LIMIT] phase={} logicalDevice={} liveBytes={} capBytes={}",
+                    phase, device, allocated, limit);
+            assertTrue(allocated <= limit,
+                    phase + ": allocator limit exceeded on logical device " + device);
+        }
+    }
+
     @AfterEach
     public void reclaimClosedGraphs() {
-        SameDiffMemoryUtils.reclaimClosedGraphResources();
+        try {
+            SameDiffMemoryUtils.reclaimClosedGraphResources();
+            assertDeviceMemoryLimits("cleanup");
+        } finally {
+            if (originalDeviceMemoryLimits != null) {
+                for (int device = 0; device < originalDeviceMemoryLimits.length; device++) {
+                    Nd4j.getEnvironment().setDeviceLimit(device, originalDeviceMemoryLimits[device]);
+                }
+                Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
+                log.info("[GEMMA_DEVICE_LIMIT] restored original limits and logical device {}",
+                        originalDevice);
+                originalDeviceMemoryLimits = null;
+                configuredDeviceMemoryLimits = null;
+                originalDevice = -1;
+            }
+        }
     }
 
     @AfterAll
@@ -220,14 +289,23 @@ public class TestKvMaxAllocationGemmaNames {
      * that a constrained-to-native transition failure is not caused by a changing KV ceiling.
      */
     private static GenerationPipeline productionEnvelopePipeline() throws Exception {
+        int maxNewTokens = Integer.getInteger("gemma.maxNewTokens", 512);
+        int maxPrefillLength = Integer.getInteger("gemma.maxPrefillLength", 2048);
+        int maxKvCacheLength = Integer.getInteger("gemma.maxKvCacheLength", 2560);
+        assertTrue(maxNewTokens > 0 && maxPrefillLength > 0 && maxKvCacheLength > 0,
+                "Gemma request envelope values must be positive");
+        assertTrue(maxKvCacheLength >= (long) maxPrefillLength + maxNewTokens,
+                "KV ceiling must cover the full prefill and generation envelope");
+        log.info("[GEMMA_ENVELOPE] maxNewTokens={} maxPrefillLength={} maxKvCacheLength={}",
+                maxNewTokens, maxPrefillLength, maxKvCacheLength);
         GenerationPipelineConfig cfg = GenerationPipelineConfig.builder()
                 .decoder(loadDecoderGraph())
                 .tokenizer(tokenizer)
                 .samplingConfig(SamplingConfig.greedy())
                 .modelMetadata(modelMetadata)
-                .maxNewTokens(512)
-                .maxPrefillLength(2048)
-                .maxKvCacheLength(2560)
+                .maxNewTokens(maxNewTokens)
+                .maxPrefillLength(maxPrefillLength)
+                .maxKvCacheLength(maxKvCacheLength)
                 .graphOptimizerEnabled(Boolean.parseBoolean(
                         System.getProperty("gemma.optimizer.enabled", "true")))
                 .dspEnabled(true)
@@ -588,6 +666,7 @@ public class TestKvMaxAllocationGemmaNames {
     public void constrainedSchemaCallsThenNativeGenerateDoNotFailStaging() throws Exception {
         GenerationPipeline pipe = productionEnvelopePipeline();
         try {
+            assertDeviceMemoryLimits("pipeline-created");
             Set<String> declaredMutable = pipe.getDecoder().getDynamicShapePlanMutableInputs();
             ModelIOConfig.KVCacheNames declaredKv =
                     ModelIOConfig.findKVCacheInputNames(pipe.getDecoder());
@@ -604,16 +683,19 @@ public class TestKvMaxAllocationGemmaNames {
             ChatGenerationResult nodeSchema = pipe.generateChat(
                     chatRequest("Classify organization types in: " + PROMPT), 96);
             assertNotNull(nodeSchema, "node-schema constrained call must return a result");
+            assertDeviceMemoryLimits("node-schema");
 
             ChatGenerationResult relationSchema = pipe.generateChat(
                     chatRequest("Classify organization relationships in: " + PROMPT
                             + " Acme Robotics partners with Nova Labs."), 96);
             assertNotNull(relationSchema, "relationship-schema constrained call must return a result");
+            assertDeviceMemoryLimits("relation-schema");
 
             GenerationResult extraction = pipe.generate(
                     "Extract the named organizations and partnership from: Acme Robotics partners "
                             + "with Nova Labs.", 3);
             assertNotNull(extraction, "native extraction must return a result");
+            assertDeviceMemoryLimits("native-extraction");
             assertTrue(extraction.getTokenIds().length >= 3,
                     "native extraction must reach the fused decode step; tokens="
                             + extraction.getTokenIds().length);

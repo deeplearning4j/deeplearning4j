@@ -239,7 +239,7 @@ int handleNonPeerFailover(void*& buffer, size_t allocSize, int requestedDevice, 
   return requestedDevice;
 }
 
-SD_INLINE bool isHostResidentSpecialAllocation(void* buffer, size_t allocSize) {
+SD_INLINE bool isHostResidentSpecialAllocation(void* buffer, size_t allocSize, bool requireKnown = false) {
   if (buffer == nullptr || allocSize == 0) return false;
   if (memory::CudaMemoryPool::getInstance().isPinnedHostAllocation(buffer)) return true;
 
@@ -247,6 +247,7 @@ SD_INLINE bool isHostResidentSpecialAllocation(void* buffer, size_t allocSize) {
   cudaError_t queryErr = cudaPointerGetAttributes(&attrs, buffer);
   if (queryErr != cudaSuccess) {
     cudaGetLastError();
+    if (requireKnown) throwCudaStatus("DataBuffer::migrate: cannot classify special allocation", queryErr);
     return false;
   }
 
@@ -260,11 +261,46 @@ SD_INLINE bool isHostResidentSpecialAllocation(void* buffer, size_t allocSize) {
                                                   buffer, allocSize);
   if (rangeErr != cudaSuccess) {
     cudaGetLastError();
+    if (requireKnown) throwCudaStatus("DataBuffer::migrate: cannot classify managed residency", rangeErr);
     return false;
   }
 
   return preferredLocation == cudaCpuDeviceId;
 }
+
+// Migration is a storage transaction, unlike an ordinary asynchronous kernel.
+// Keep CUDA/pool cleanup outside MemoryCounter's mutex, and never turn a cleanup
+// exception after publication into a failed migration with changed buffer state.
+struct MigrationDeviceScope {
+  int device;
+  ~MigrationDeviceScope() noexcept {
+    auto err = cudaSetDevice(device);
+    AffinityManager::syncThreadDeviceId(device);
+    if (err != cudaSuccess)
+      sd_printf("DataBuffer::migrate: failed to restore caller device %d: %s\n", device, cudaGetErrorString(err));
+  }
+};
+
+struct MigrationAllocation {
+  memory::CudaMemoryPool& pool;
+  int device;
+  void* pointer = nullptr;
+  bool owned = true;
+
+  MigrationAllocation(memory::CudaMemoryPool& pool, int device) : pool(pool), device(device) {}
+  ~MigrationAllocation() noexcept {
+    if (pointer == nullptr || !owned) return;
+    try {
+      // Also establishes the correct context for the pool's pinned-host path.
+      AffinityManager::setCurrentNativeDevice(device);
+      pool.free(pointer, device, cudaStreamPerThread);
+    } catch (...) {
+      // Pool free is best-effort and has no success return. Do not retry a free
+      // which might already have been enqueued, or mask the original exception.
+      sd_printf("DataBuffer::migrate: pool retirement failed for ptr=%p device=%d\n", pointer, device);
+    }
+  }
+};
 }  // namespace
 
 void dspPublishThreadCompletionEvent(void* streamPtr) {
@@ -2019,338 +2055,213 @@ void DataBuffer::memcpy(DataBuffer* dst, DataBuffer* src,
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::migrate() {
-  if (isConstant) {
+  // Captured/frozen storage addresses must remain stable for replay.
+  if (isConstant || DebugHelper::inGraphCapture(nullptr)) return;
+  std::lock_guard<std::mutex> lock(_deleteMutex);
+  if (closed || _frozenRefCount.load(std::memory_order_relaxed) > 0 || _lenInBytes == 0) return;
+
+  const int requestedDevice = AffinityManager::currentDeviceId();
+  MigrationDeviceScope restoreDevice{requestedDevice};
+  auto& pool = memory::CudaMemoryPool::getInstance();
+  auto& counter = memory::MemoryCounter::getInstance();
+
+  // Snapshot accounting identity separately from CUDA's physical copy/free
+  // device. A pointer-attribute correction must not lose the original charge.
+  void* const oldBuffer = _specialBuffer;
+  const int oldSpecialDevice = _specialDeviceId.load();
+  const int oldChargeDevice = oldSpecialDevice >= 0 ? oldSpecialDevice : _deviceId.load();
+  const bool oldOwner = _isOwnerSpecial;
+  memory::Workspace* const oldWorkspace = _workspace;
+  const LongType bytes = _lenInBytes;
+  const LongType oldAllocBytes = _specialAllocBytes;
+  constexpr LongType MAX_MIGRATE_BYTES = 16LL * 1024 * 1024 * 1024;
+  if (bytes <= 0 || bytes > MAX_MIGRATE_BYTES ||
+      static_cast<size_t>(bytes) < DataTypeUtils::sizeOfElement(_dataType))
+    THROW_EXCEPTION("DataBuffer::migrate: invalid allocation length");
+  if (oldBuffer != nullptr && oldAllocBytes > 0 && oldAllocBytes < bytes)
+    THROW_EXCEPTION("DataBuffer::migrate: source allocation is smaller than its logical length");
+
+  struct Location {
+    int device;
+    cudaMemoryType type;
+    bool host;
+  };
+  auto locate = [](void* pointer, size_t extent, int allocationDevice) {
+    cudaPointerAttributes attrs;
+    auto err = cudaPointerGetAttributes(&attrs, pointer);
+    if (err != cudaSuccess) throwCudaStatus("DataBuffer::migrate: invalid allocation pointer", err);
+    if (attrs.type != cudaMemoryTypeDevice && attrs.type != cudaMemoryTypeManaged && attrs.type != cudaMemoryTypeHost)
+      THROW_EXCEPTION("DataBuffer::migrate: unregistered special allocation");
+    // Host-preferred managed allocations deliberately carry a GPU allocation ID.
+    // Only device pointers have an authoritative physical device in attrs.device.
+    return Location{attrs.type == cudaMemoryTypeDevice ? attrs.device : allocationDevice,
+                    attrs.type, isHostResidentSpecialAllocation(pointer, extent, true)};
+  };
+
+  Location oldLocation{oldChargeDevice, cudaMemoryTypeHost, true};
+  if (oldBuffer != nullptr)
+    oldLocation = locate(oldBuffer, oldAllocBytes > 0 ? oldAllocBytes : bytes, oldChargeDevice);
+  const bool oldCaptureWorkspace = oldBuffer != nullptr && pool.isInCaptureWorkspace(oldBuffer);
+  const bool releaseOld = oldBuffer != nullptr && oldOwner && oldWorkspace == nullptr && !oldCaptureWorkspace;
+  const LongType oldCharge = releaseOld && !oldLocation.host ? bytes : 0;
+  const int numDevices = AffinityManager::numberOfDevices();
+  if (requestedDevice < 0 || requestedDevice >= numDevices ||
+      (oldBuffer != nullptr && !oldLocation.host && (oldLocation.device < 0 || oldLocation.device >= numDevices)) ||
+      (oldCharge > 0 && (oldChargeDevice < 0 || oldChargeDevice >= numDevices)))
+    THROW_EXCEPTION("DataBuffer::migrate: invalid device identity");
+
+  // A real same-device allocation is a no-op, but repair BOTH IDs, including
+  // the old pointer-attribute-correction early return. Host residency is not a
+  // same-device allocation: migrating it to VRAM must acquire a new charge.
+  if (oldBuffer != nullptr && !oldLocation.host && oldLocation.device == requestedDevice) {
+    if (!counter.transferDeviceAllocation(oldChargeDevice, oldCharge, requestedDevice, oldCharge))
+      THROW_EXCEPTION("DataBuffer::migrate: corrected device charge exceeds memory limits");
+    _deviceId.store(requestedDevice);
+    _specialDeviceId.store(requestedDevice);
     return;
   }
 
-  // During CUDA graph capture, migration is forbidden. It involves synchronous
-  // driver queries (cudaPointerGetAttributes), cross-device copies (cudaMemcpyPeer),
-  // and new allocations — all of which poison the capture stream. Buffers must be
-  // pre-positioned on the correct device before capture begins. Skip silently.
-  if (tl_graphExecutionActive) {
-    return;
+  // _workspace owns BOTH primary and special storage. Detaching just special
+  // by clearing it would make deletePrimary free an interior workspace pointer;
+  // leaving it set would leak the new pool allocation and suppress its charge.
+  // This representation cannot express split ownership. Reject before allocating
+  // rather than corrupt primary ownership or silently report a successful move.
+  if (oldWorkspace != nullptr)
+    THROW_EXCEPTION("DataBuffer::migrate: workspace-attached buffers require explicit detachment before migration");
+
+  // Requested-device admission happens before any target allocation. Padding is
+  // physical capacity only: MemoryCounter consistently charges logical bytes.
+  if (!counter.transferDeviceAllocation(oldChargeDevice, oldCharge, requestedDevice, bytes, false)) {
+    sd_printf("MIGRATION_ADMISSION_REJECT db=%p oldBuffer=%p physicalSourceDevice=%d oldChargeDevice=%d oldOwner=%d oldCaptureWorkspace=%d host=%d oldCharge=%lld bytes=%lld requestedDevice=%d\n",
+              static_cast<void*>(this), oldBuffer, oldLocation.device, oldChargeDevice,
+              static_cast<int>(oldOwner), static_cast<int>(oldCaptureWorkspace),
+              static_cast<int>(oldLocation.host), static_cast<long long>(oldCharge),
+              static_cast<long long>(bytes), requestedDevice);
+    THROW_EXCEPTION("DataBuffer::migrate: requested target exceeds device or DEVICE-group memory limits");
   }
 
-  // When this buffer is registered in a frozen NativeDynamicShapePlan (as an
-  // external input or retained weight), its _specialBuffer address is baked into
-  // frozen slot contexts and/or CUDA graph replay handles. Migrating would free
-  // the old pointer and allocate a new one on a different device, leaving the
-  // frozen plan with a dangling address → SIGSEGV on next replay.
-  // Skip silently: the buffer is already on the correct device (pinned there at
-  // freeze time). The device-ID mismatch that triggered syncToDevice → migrate
-  // is from a stale NDArray._deviceId, not a genuine need to relocate data.
-  if (_frozenRefCount.load(std::memory_order_relaxed) > 0) {
-    return;
-  }
+  auto* callerStream = LaunchContext::defaultContext()->getCudaStream();
+  if (DebugHelper::inGraphCapture(callerStream)) return;
+  const bool copyPrimary = _primaryBuffer != nullptr && (oldBuffer == nullptr || !isSpecialActual());
+  void* const copySource = copyPrimary ? _primaryBuffer : oldBuffer;
+  if (copyPrimary && _primaryAllocBytes > 0 && _primaryAllocBytes < bytes)
+    THROW_EXCEPTION("DataBuffer::migrate: primary allocation is smaller than its logical length");
 
-  auto currentDeviceId = AffinityManager::currentDeviceId();
-  // Use _specialDeviceId for the old buffer since we're migrating the special buffer
-  // This may differ from _deviceId due to failover during OOM
-  auto oldDeviceId = _specialDeviceId.load();
-  if (oldDeviceId < 0) {
-    oldDeviceId = _deviceId.load();  // Fallback for legacy code
-  }
-
-  // Don't migrate if already on the target device
-  if (oldDeviceId == currentDeviceId && _specialBuffer != nullptr) {
-    return;
-  }
-
-  // Guard against zero-length buffers — cudaMemcpy with 0 bytes returns
-  // "invalid argument" on some CUDA versions (e.g. zero-dim arrays like [1,3,0,64])
-  if (_lenInBytes == 0) {
-    return;
-  }
-
-  // Validate metadata hasn't been corrupted by heap overruns.
-  // Without jemalloc, C++ buffer overruns can stomp on adjacent DataBuffer objects,
-  // corrupting _specialDeviceId, _lenInBytes, or _specialBuffer pointer.
-  int numDevices = 0;
-  cudaGetDeviceCount(&numDevices);
-  if (oldDeviceId >= numDevices || currentDeviceId >= numDevices) {
-    sd_printf("DataBuffer::migrate: CORRUPTED device IDs detected! oldDeviceId=%d, currentDeviceId=%d, numDevices=%d. Skipping migration.\n",
-              oldDeviceId, currentDeviceId, numDevices);
-    return;
-  }
-
-  // Validate _lenInBytes is reasonable (max 16GB per buffer)
-  constexpr size_t MAX_MIGRATE_BYTES = 16ULL * 1024 * 1024 * 1024;
-  if (_lenInBytes > MAX_MIGRATE_BYTES) {
-    sd_printf("DataBuffer::migrate: CORRUPTED _lenInBytes=%zu (>16GB). Skipping migration.\n", _lenInBytes);
-    return;
-  }
-
-  // Validate _lenInBytes is consistent with _dataType. A buffer smaller than one
-  // element of its declared type is metadata corruption (e.g., heap overrun stomping
-  // _lenInBytes from a valid value to 1). Skip rather than copying 1 byte via
-  // cudaMemcpy — that fails with "invalid argument" when the source pointer is
-  // inside a CUDA allocation smaller than the advertised size.
-  {
-    auto elementSize = DataTypeUtils::sizeOfElement(_dataType);
-    if (elementSize > 0 && _lenInBytes < elementSize) {
-      sd_printf("DataBuffer::migrate: CORRUPTED _lenInBytes=%zu < sizeOfElement(%d)=%zu for dataType=%d. "
-                "primary=%p special=%p oldDevice=%d currentDevice=%d. Skipping migration.\n",
-                _lenInBytes, static_cast<int>(_dataType), elementSize,
-                static_cast<int>(_dataType),
-                _primaryBuffer, _specialBuffer, oldDeviceId, currentDeviceId);
-      return;
-    }
-  }
-
-  // Validate _specialBuffer pointer using cudaPointerGetAttributes.
-  // If the pointer is invalid or on a different device than expected,
-  // use the actual device from CUDA rather than our potentially-corrupted metadata.
-  if (_specialBuffer != nullptr) {
-    cudaPointerAttributes ptrAttrs;
-    auto attrRes = cudaPointerGetAttributes(&ptrAttrs, _specialBuffer);
-    if (attrRes != cudaSuccess) {
-      // Pointer is not recognized by CUDA — corrupted or already freed.
-      cudaGetLastError();  // Clear the error
-      sd_printf("DataBuffer::migrate: INVALID _specialBuffer=%p (cudaPointerGetAttributes failed: %s). Skipping migration.\n",
-                _specialBuffer, cudaGetErrorString(attrRes));
-      return;
-    }
-    // Check if CUDA reports a different device than our metadata
-    if (ptrAttrs.type == cudaMemoryTypeDevice && ptrAttrs.device != oldDeviceId) {
-      sd_printf("DataBuffer::migrate: Device mismatch! metadata says device %d, CUDA says device %d for ptr=%p. Using CUDA device.\n",
-                oldDeviceId, ptrAttrs.device, _specialBuffer);
-      oldDeviceId = ptrAttrs.device;
-      // If corrected device matches target, no migration needed
-      if (oldDeviceId == currentDeviceId) {
-        return;
-      }
-    }
-  }
-
-  // Clear any previous CUDA errors to ensure clean state
-  cudaError_t prevErr = cudaGetLastError();
-  if (prevErr != cudaSuccess) {
-    sd_debug("DataBuffer::migrate: Cleared previous CUDA error before migration: %s\n", cudaGetErrorString(prevErr));
-  }
-
-  // Verify we're on the expected device before starting
-  int actualDevice = -1;
-  cudaGetDevice(&actualDevice);
-  if (actualDevice != currentDeviceId) {
-    cudaSetDevice(currentDeviceId);
-  }
-
-  memory::Workspace* newWorkspace = nullptr;
-  void* newBuffer;
-  void* oldBuffer = _specialBuffer;  // Save old buffer pointer for deallocation
-
-  // Start timing the transfer
-  auto startTime = std::chrono::high_resolution_clock::now();
-
-  // Allocate on current (target) device, tracking actual device in case of failover
-  int actualMigrateDevice = currentDeviceId;
-  {
-    size_t allocSize = getLenInBytes() + 8;
-    newBuffer = reinterpret_cast<void*>(
-        memory::CudaMemoryPool::getInstance().allocate(allocSize, currentDeviceId, nullptr, &actualMigrateDevice));
-    if (newBuffer == nullptr) {
-      THROW_EXCEPTION("[DEVICE] migrate allocation failed");
-    }
-  }
-
-  // Use actual allocation device for all copy operations. CudaMemoryPool::allocate()
-  // may fail over to a different device than requested (e.g., device 1 full → device 0).
-  // Without this, we'd try cudaMemcpy H2D to a pointer on device 0 while cudaSetDevice(1)
-  // is active → "invalid argument" error.
-  int targetDevice = actualMigrateDevice;
-  if (targetDevice != currentDeviceId) {
-    sd_printf("DataBuffer::migrate: Allocation failed over from device %d to device %d for %zu bytes\n",
-              currentDeviceId, targetDevice, getLenInBytes());
-
-    // If failover landed on a non-peer device, switch to pinned host (UVA-accessible).
-    size_t migrateAllocSize = getLenInBytes() + 8;
-    targetDevice = handleNonPeerFailover(newBuffer, migrateAllocSize, currentDeviceId, targetDevice, "DataBuffer::migrate");
-    actualMigrateDevice = targetDevice;
-  }
-
-  if (_specialBuffer != nullptr) {
-    // Copy from old device to new device
-    if (oldDeviceId != targetDevice && oldDeviceId >= 0) {
-      // Belt-and-suspenders: re-validate source pointer device right before the copy.
-      // Metadata (_specialDeviceId / _deviceId) can become stale if setSpecial() was
-      // called from a thread whose affinity doesn't match the pointer's actual device.
-      // The earlier pre-check at line ~1572 may have been too far from this copy point.
-      {
-        cudaPointerAttributes preCopyAttrs;
-        auto preCopyRes = cudaPointerGetAttributes(&preCopyAttrs, _specialBuffer);
-        if (preCopyRes == cudaSuccess && preCopyAttrs.type == cudaMemoryTypeDevice) {
-          if (preCopyAttrs.device != oldDeviceId) {
-            sd_printf("DataBuffer::migrate: PRE-COPY device correction! metadata=%d, CUDA=%d for ptr=%p, bytes=%zu\n",
-                      oldDeviceId, preCopyAttrs.device, _specialBuffer, getLenInBytes());
-            oldDeviceId = preCopyAttrs.device;
-            // If corrected source == target, skip the copy entirely — just use same-device memcpy
-            if (oldDeviceId == targetDevice) {
-              cudaSetDevice(targetDevice);
-              auto res = cudaMemcpy(newBuffer, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToDevice);
-              if (res != cudaSuccess) {
-                std::string err = "DataBuffer::migrate: same-device cudaMemcpy D2D failed after correction! Error: " +
-                                  std::string(cudaGetErrorString(res)) + ", bytes: " + std::to_string(getLenInBytes());
-                THROW_EXCEPTION(err.c_str());
-              }
-              goto copyDone;
-            }
-          }
-        } else if (preCopyRes != cudaSuccess) {
-          cudaGetLastError();  // Clear error
-        }
-      }
-
-      // Cross-device copy via cudaMemcpyPeer — handles staging internally
-      // (uses peer DMA if available, otherwise stages through host automatically).
-      // Synchronize source device first to ensure prior operations complete.
-      auto setRes = cudaSetDevice(oldDeviceId);
-      if (setRes != cudaSuccess) {
-        cudaSetDevice(targetDevice);
-        std::string err = "DataBuffer::migrate: Failed to switch to source device " + std::to_string(oldDeviceId) +
-                          ": " + std::string(cudaGetErrorString(setRes));
-        THROW_EXCEPTION(err.c_str());
-      }
-
-      // getCudaStream() may trigger ContextBuffers initialization which can change the
-      // active CUDA device (via allocateFailover). We must restore oldDeviceId afterward.
-      auto srcStream = sd::LaunchContext::defaultContext()->getCudaStream();
-      if (srcStream != nullptr)
-        cudaStreamSynchronize(*srcStream);
-
-      // Restore source device — getCudaStream() may have changed it via ContextBuffers init.
-      cudaSetDevice(oldDeviceId);
-      cudaGetLastError();  // clear any sticky error from ContextBuffers init
-
-      auto peerRes = cudaMemcpyPeer(newBuffer, targetDevice, _specialBuffer, oldDeviceId, getLenInBytes());
-      if (peerRes != cudaSuccess) {
-        cudaGetLastError();  // clear sticky error from failed memcpyPeer
-
-        // Re-query pointer attributes — the source pointer may actually reside on
-        // targetDevice despite metadata claiming oldDeviceId. This happens when
-        // CudaMemoryPool failover placed an allocation on a different device than
-        // _specialDeviceId records, or when the async pool's physical placement
-        // differs from the logical device.
-        cudaPointerAttributes retryAttrs;
-        auto retryRes = cudaPointerGetAttributes(&retryAttrs, _specialBuffer);
-        cudaGetLastError();
-
-        if (retryRes == cudaSuccess && retryAttrs.type == cudaMemoryTypeDevice &&
-            retryAttrs.device == targetDevice) {
-          // Source pointer is actually on the target device — use same-device D2D copy
-          sd_printf("DataBuffer::migrate: cudaMemcpyPeer failed (metadata device=%d), but ptr is on target device %d. Using same-device D2D copy.\n",
-                    oldDeviceId, targetDevice);
-          cudaSetDevice(targetDevice);
-          auto d2dRes = cudaMemcpy(newBuffer, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToDevice);
-          if (d2dRes != cudaSuccess) {
-            std::string err = "DataBuffer::migrate: same-device D2D fallback failed! Error: " +
-                              std::string(cudaGetErrorString(d2dRes)) + ", bytes: " + std::to_string(getLenInBytes());
-            THROW_EXCEPTION(err.c_str());
-          }
-          goto copyDone;
-        }
-
-        cudaSetDevice(targetDevice);
-        std::string err = "DataBuffer::migrate: cudaMemcpyPeer failed! Error: " + std::string(cudaGetErrorString(peerRes)) +
-                          ", bytes: " + std::to_string(getLenInBytes()) +
-                          ", from device " + std::to_string(oldDeviceId) + " to device " + std::to_string(targetDevice);
-        if (retryRes == cudaSuccess) {
-          err += ", ptrAttrs: type=" + std::to_string(retryAttrs.type) +
-                 " device=" + std::to_string(retryAttrs.device);
-        } else {
-          err += ", ptr validation FAILED (pointer likely corrupted or freed)";
-        }
-        THROW_EXCEPTION(err.c_str());
-      }
-
-      // cudaMemcpyPeer is synchronous — no additional sync needed
-      cudaSetDevice(targetDevice);
-    } else {
-      // Same device copy or unknown source device
-      cudaSetDevice(targetDevice);
-      auto res = cudaMemcpy(newBuffer, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToDevice);
-      if (res != cudaSuccess) {
-        std::string err = "DataBuffer::migrate: cudaMemcpy D2D failed! Error: " + std::string(cudaGetErrorString(res)) +
-                          ", bytes: " + std::to_string(getLenInBytes()) + ", device " + std::to_string(targetDevice);
-        THROW_EXCEPTION(err.c_str());
-      }
-    }
-  } else if (_primaryBuffer != nullptr) {
-    // Copy from host to device if no special buffer exists
-    cudaSetDevice(targetDevice);
-    auto res = cudaMemcpy(newBuffer, _primaryBuffer, getLenInBytes(), cudaMemcpyHostToDevice);
-    if (res != cudaSuccess) {
-      std::string err = "DataBuffer::migrate: cudaMemcpy H2D failed! Error: " + std::string(cudaGetErrorString(res)) +
-                        ", bytes: " + std::to_string(getLenInBytes()) + ", to device " + std::to_string(targetDevice);
-      THROW_EXCEPTION(err.c_str());
-    }
-  }
-
-  copyDone:  // Target for pre-copy device correction (same-device copy after metadata fix)
-
-  auto endTime = std::chrono::high_resolution_clock::now();
-  auto durationNs = std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime).count();
-
-  // Record transfer metrics
+  // Source consumers/writers must finish before storage is retired. Check all
+  // statuses: ignoring a sync error here would publish a copy of invalid data.
   if (oldBuffer != nullptr) {
-    // Device to device transfer (possibly peer-to-peer)
-    TransferType transferType = (oldDeviceId != targetDevice) ?
-        TransferType::PEER_TO_PEER : TransferType::DEVICE_TO_DEVICE;
-    TransferMetrics::getInstance().recordTransfer(transferType, getLenInBytes(), durationNs,
-                                                   oldDeviceId, targetDevice);
-
-    // DSP diagnostics: D2D migrate
-    DSP_DIAG(TRANSFER, "D2D migrate: %lld bytes, from=%d to=%d, duration=%.2f us",
-             (long long)getLenInBytes(), oldDeviceId, targetDevice, durationNs / 1000.0);
-  } else if (_primaryBuffer != nullptr) {
-    // Host to device transfer
-    TransferMetrics::getInstance().recordTransfer(TransferType::HOST_TO_DEVICE, getLenInBytes(),
-                                                   durationNs, -1, targetDevice);
-
-    // DSP diagnostics: H2D via migrate
-    DSP_DIAG(TRANSFER, "H2D migrate: %lld bytes, to=%d, duration=%.2f us",
-             (long long)getLenInBytes(), targetDevice, durationNs / 1000.0);
-  }
-
-  if (_isOwnerSpecial && oldBuffer != nullptr) {
-    // Switch to old device to release memory
-    if (oldDeviceId != targetDevice && oldDeviceId >= 0) {
-      cudaSetDevice(oldDeviceId);
-    }
-
-    auto p = reinterpret_cast<int8_t*>(oldBuffer);
-    // Use device-aware free - critical for multi-GPU correctness
-    RELEASE_SPECIAL_WITH_DEVICE(p, oldDeviceId, _workspace);
-
-    // Switch back to target device (where new buffer lives)
-    if (oldDeviceId != targetDevice && oldDeviceId >= 0) {
-      cudaSetDevice(targetDevice);
+    const int sourceDevice = oldLocation.device >= 0 ? oldLocation.device : requestedDevice;
+    AffinityManager::setCurrentNativeDevice(sourceDevice);
+    auto* sourceStream = LaunchContext::defaultContext()->getCudaStream();
+    if (DebugHelper::inGraphCapture(sourceStream))
+      THROW_EXCEPTION("DataBuffer::migrate: source stream is capturing");
+    AffinityManager::setCurrentNativeDevice(sourceDevice);
+    if (sourceStream != nullptr) {
+      waitForSpecialWriteEvent(*sourceStream);
+      auto err = cudaStreamSynchronize(*sourceStream);
+      if (err != cudaSuccess) throwCudaStatus("DataBuffer::migrate: source stream failed", err);
     }
   }
 
-  // If CudaMemoryPool returned a capture-workspace interior pointer during CUDA
-  // graph capture (bump-allocated from the shared workspace), the workspace
-  // lifecycle manages this memory — not this DataBuffer. Setting _isOwnerSpecial=true
-  // would cause deleteSpecial() to call cudaFreeAsync on a workspace interior pointer
-  // after unregisterCaptureWorkspace → "illegal memory access" (error 700).
-  if (_workspace == nullptr &&
-      memory::CudaMemoryPool::getInstance().isInCaptureWorkspace(newBuffer)) {
-    _isOwnerSpecial = false;
-  } else {
-    _isOwnerSpecial = true;
+  const auto startTime = std::chrono::high_resolution_clock::now();
+  const size_t allocSize = static_cast<size_t>(bytes) + 8;
+  MigrationAllocation candidate(pool, requestedDevice);
+  MigrationAllocation retired(pool, oldLocation.device >= 0 ? oldLocation.device : requestedDevice);
+  AffinityManager::setCurrentNativeDevice(requestedDevice);
+  candidate.pointer = pool.allocate(allocSize, requestedDevice, cudaStreamPerThread, &candidate.device);
+  if (candidate.pointer == nullptr) THROW_EXCEPTION("[DEVICE] migrate allocation failed");
+  candidate.owned = !pool.isInCaptureWorkspace(candidate.pointer);
+  Location target = locate(candidate.pointer, allocSize, candidate.device);
+  candidate.device = target.device >= 0 ? target.device : requestedDevice;
+  if (candidate.device < 0 || candidate.device >= numDevices)
+    THROW_EXCEPTION("DataBuffer::migrate: pool returned an invalid target device");
+
+  // Preserve the non-peer safety policy without replacing an unguarded raw
+  // candidate in handleNonPeerFailover(). The pool's normal non-peer path is
+  // host-preferred managed memory; do NOT prefetch those pages back into VRAM.
+  if (target.type == cudaMemoryTypeDevice && candidate.device != requestedDevice &&
+      !pool.isPeerAccessEnabled(requestedDevice, candidate.device)) {
+    MigrationAllocation pinned(pool, requestedDevice);
+    pinned.pointer = pool.allocatePinnedHost(allocSize);
+    if (pinned.pointer == nullptr) THROW_EXCEPTION("DataBuffer::migrate: non-peer pinned allocation failed");
+    const auto pinnedLocation = locate(pinned.pointer, allocSize, requestedDevice);
+    // Both allocations remain scoped until the replacement is fully classified.
+    void* displaced = candidate.pointer;
+    const int displacedDevice = candidate.device;
+    const bool displacedOwner = candidate.owned;
+    candidate.pointer = pinned.pointer;
+    candidate.device = requestedDevice;
+    candidate.owned = true;
+    pinned.pointer = displaced;
+    pinned.device = displacedDevice;
+    pinned.owned = displacedOwner;
+    target = pinnedLocation;
   }
-   _specialBuffer = newBuffer;
 
-   // Store actual device where memory was allocated (may differ after failover)
-   _deviceId.store(actualMigrateDevice);
-   _specialDeviceId.store(actualMigrateDevice);  // Also update _specialDeviceId for consistency
+  // Use explicit non-capturing stream ordering. D2D cudaMemcpy is NOT a host
+  // completion barrier. The final stream wait is required by this transaction:
+  // copy completion precedes accounting commit, pointer publication and release.
+  AffinityManager::setCurrentNativeDevice(candidate.device);
+  cudaStream_t copyStream = cudaStreamPerThread;
+  if (DebugHelper::inGraphCapture(&copyStream))
+    THROW_EXCEPTION("DataBuffer::migrate: target stream is capturing");
+  if (copySource != nullptr) {
+    cudaError_t err;
+    if (!copyPrimary && oldLocation.type == cudaMemoryTypeDevice && target.type == cudaMemoryTypeDevice &&
+        oldLocation.device != candidate.device) {
+      err = cudaMemcpyPeerAsync(candidate.pointer, candidate.device, copySource, oldLocation.device, bytes, copyStream);
+    } else {
+      // Default direction handles pinned host and managed residency, as well as
+      // actual-target-equals-source failover (a real copy, not an early return).
+      err = cudaMemcpyAsync(candidate.pointer, copySource, bytes, cudaMemcpyDefault, copyStream);
+    }
+    if (err != cudaSuccess) throwCudaStatus("DataBuffer::migrate: copy failed", err);
+  }
+  auto copyErr = cudaStreamSynchronize(copyStream);
+  if (copyErr != cudaSuccess) throwCudaStatus("DataBuffer::migrate: copy completion failed", copyErr);
 
-  // Restore caller's expected device context. The caller called migrate() expecting
-  // to remain on currentDeviceId. Even though the buffer may have ended up on a
-  // different device (failover), the caller's CUDA context should be preserved.
-  int restoreDev = -1;
-  cudaGetDevice(&restoreDev);
-  if (restoreDev != currentDeviceId) {
-    cudaSetDevice(currentDeviceId);
+  const LongType newCharge = candidate.owned && !target.host ? bytes : 0;
+  // Restore the caller before the commit too: even a failed device switch must
+  // leave the original allocation and accounting untouched.
+  AffinityManager::setCurrentDevice(requestedDevice);
+  if (!counter.transferDeviceAllocation(oldChargeDevice, oldCharge, candidate.device, newCharge))
+    THROW_EXCEPTION("DataBuffer::migrate: actual target exceeds device or DEVICE-group memory limits");
+
+  // Commit contains no allocation, CUDA call or throwing diagnostics. Destructors
+  // retire old storage only AFTER publication and never count it out a second time.
+  _specialBuffer = candidate.pointer;
+  _specialAllocBytes = allocSize;
+  _isOwnerSpecial = candidate.owned;
+  _specialDeviceId.store(candidate.device);
+  _deviceId.store(candidate.device);
+  candidate.pointer = nullptr;
+  retired.pointer = releaseOld ? oldBuffer : nullptr;
+
+  // The copy is complete; the old per-buffer write event is no longer needed.
+  clearSpecialWriteEvent();
+  if (copyPrimary) readSpecial();
+  tl_dspAllocBytes += bytes;
+  tl_dspAllocCount++;
+  if (releaseOld) {
+    tl_dspFreeBytes += bytes;
+    tl_dspFreeCount++;
+  }
+
+  try {
+    const auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::high_resolution_clock::now() - startTime).count();
+    if (copySource != nullptr) {
+      const auto transferType = copyPrimary || oldLocation.host ? TransferType::HOST_TO_DEVICE :
+          target.host ? TransferType::DEVICE_TO_HOST :
+          oldLocation.device == candidate.device ? TransferType::DEVICE_TO_DEVICE : TransferType::PEER_TO_PEER;
+      TransferMetrics::getInstance().recordTransfer(transferType, bytes, duration,
+                                                     oldLocation.device, candidate.device);
+    }
+    DSP_DIAG(MEMORY, "DB_MIGRATE: db=%p old=%p new=%p bytes=%lld requested=%d actual=%d oldCharge=%lld newCharge=%lld",
+             (void*)this, oldBuffer, _specialBuffer, (long long)bytes, requestedDevice, candidate.device,
+             (long long)oldCharge, (long long)newCharge);
+  } catch (...) {
+    sd_printf("DataBuffer::migrate: diagnostics failed after successful migration\n", "");
   }
 }
 
