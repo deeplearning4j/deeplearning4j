@@ -1,0 +1,15 @@
+/* ******************************************************************************
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ * SPDX-License-Identifier: Apache-2.0
+ *******************************************************************************/
+
+#ifndef LIBND4J_CUDA_SCALAR_GROUP_CU
+#define LIBND4J_CUDA_SCALAR_GROUP_CU
+
+// Only helper units see the definitions; public dispatcher units see declarations.
+#define SCALAR_DEFINE_GROUP_HELPERS 1
+#include <loops/cuda/scalar.chpp>
+
+#endif  // LIBND4J_CUDA_SCALAR_GROUP_CU

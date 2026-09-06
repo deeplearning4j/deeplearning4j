@@ -244,7 +244,7 @@ case "${DL4J_FAMILY}" in
     [ -z "${DL4J_ROCM_VERSION}" ] || rocm_version=("-Drocm.version=${DL4J_ROCM_VERSION}")
     platform=linux-x86_64
     zluda_profiles=(-Pcuda -Pzluda -Pzluda-platform)
-    zluda_modules=:nd4j-cuda-backend-common,:nd4j-cuda-${DL4J_CUDA_VERSION}-preset,:nd4j-zluda-${DL4J_CUDA_VERSION},:nd4j-zluda-${DL4J_CUDA_VERSION}-platform
+    zluda_modules=:nd4j-cuda-${DL4J_CUDA_VERSION}-backend-common,:nd4j-cuda-${DL4J_CUDA_VERSION}-preset,:nd4j-zluda-${DL4J_CUDA_VERSION},:nd4j-zluda-${DL4J_CUDA_VERSION}-platform
     zluda_win=()
     if [ "${DL4J_FAMILY}" = windows-zluda ]; then
       platform=windows-x86_64

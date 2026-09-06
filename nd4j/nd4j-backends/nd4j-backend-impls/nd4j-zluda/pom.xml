@@ -71,7 +71,7 @@
              binding. Native payloads are supplied only by -platform. -->
         <dependency>
             <groupId>org.eclipse.deeplearning4j</groupId>
-            <artifactId>nd4j-cuda-backend-common</artifactId>
+            <artifactId>nd4j-cuda-12.9-backend-common</artifactId>
             <version>${project.version}</version>
         </dependency>
 

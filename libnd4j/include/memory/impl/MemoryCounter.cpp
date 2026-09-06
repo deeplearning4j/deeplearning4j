@@ -181,6 +181,31 @@ bool MemoryCounter::transferDeviceAllocation(int fromDevice, LongType fromBytes,
   return true;
 }
 
+bool MemoryCounter::reserveHostGrowth(LongType ownedBytes, LongType growth, bool commit) {
+  if (ownedBytes < 0 || growth < 0)
+    THROW_EXCEPTION("MemoryCounter::reserveHostGrowth: invalid HOST charge or growth");
+  std::lock_guard<std::mutex> lock(_locker);
+  LongType& allocated = _groupCounters.at(HOST);
+  const LongType limit = _groupLimits.at(HOST);
+  if (allocated < 0 || allocated < ownedBytes ||
+      allocated > std::numeric_limits<LongType>::max() - growth)
+    THROW_EXCEPTION("MemoryCounter::reserveHostGrowth: HOST accounting invariant violated");
+  // validateSoftLimit reads the HOST counter but does not acquire _locker.
+  // Keep both admission checks and publication in this same critical section.
+  if (growth > 0 && (!validateSoftLimit(growth) || (limit > 0 && allocated + growth > limit))) return false;
+  if (commit) allocated += growth;
+  return true;
+}
+
+void MemoryCounter::releaseHostGrowth(LongType bytes) {
+  if (bytes < 0) THROW_EXCEPTION("MemoryCounter::releaseHostGrowth: invalid HOST debit");
+  std::lock_guard<std::mutex> lock(_locker);
+  LongType& allocated = _groupCounters.at(HOST);
+  if (allocated < 0 || allocated < bytes)
+    THROW_EXCEPTION("MemoryCounter::releaseHostGrowth: HOST accounting invariant violated");
+  allocated -= bytes;
+}
+
 LongType MemoryCounter::allocatedDevice(int deviceId) {
   std::lock_guard<std::mutex> lock(_locker);
   return _deviceCounters[deviceId];

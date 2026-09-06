@@ -32,20 +32,6 @@
 #include "../../types/types.h"
 #include "loops/scalar.h"
 
-// MEMORY OPTIMIZATION: Use SCALAR_OP_GROUP to compile only a subset of operations
-// This reduces per-file memory usage by ~66% (49 ops -> ~16 ops per file)
-// Define SCALAR_OP_GROUP=1, 2, or 3 to compile only that group
-// If not defined, compile all ops (backward compatible)
-#if defined(SCALAR_OP_GROUP) && SCALAR_OP_GROUP == 1
-  #define SCALAR_OPS_ACTIVE SCALAR_OPS_PART1
-#elif defined(SCALAR_OP_GROUP) && SCALAR_OP_GROUP == 2
-  #define SCALAR_OPS_ACTIVE SCALAR_OPS_PART2
-#elif defined(SCALAR_OP_GROUP) && SCALAR_OP_GROUP == 3
-  #define SCALAR_OPS_ACTIVE SCALAR_OPS_PART3
-#else
-  #define SCALAR_OPS_ACTIVE SCALAR_OPS
-#endif
-
 using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -200,6 +186,24 @@ SD_KERNEL void scalarAlongDimension(
 namespace functions {
 namespace scalar {
 
+// Public dispatcher units see declarations only. Helper units instantiate one
+// operation group per dtype, without changing the public ScalarTransform ABI.
+template <int Group, typename X, typename Y, typename Z>
+void SD_HOST executeCudaShapedGroup(
+    dim3& launchDims, cudaStream_t* stream, int opNum, void const* vx,
+    sd::LongType const* xShapeInfo, sd::LongType const* hxShapeInfo, void* vz,
+    sd::LongType const* zShapeInfo, sd::LongType const* hzShapeInfo,
+    void const* vscalar, void* vextraParams);
+
+template <int Group, typename X, typename Y, typename Z>
+void SD_HOST executeCudaAlongDimensionGroup(
+    dim3& launchDims, cudaStream_t* stream, int opNum, void const* vx,
+    sd::LongType const* xShapeInfo, void* vz, sd::LongType const* zShapeInfo,
+    void const* vscalars, void* vextraParams, sd::LongType* dimension,
+    sd::LongType dimensionLength, sd::LongType const* tadShapeInfo,
+    sd::LongType const* tadOffsets, sd::LongType const* tadShapeInfoZ,
+    sd::LongType const* tadOffsetsZ);
+
 ////////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y, typename Z>
 template <typename OpType>
@@ -264,6 +268,58 @@ void SD_HOST ScalarTransform<X, Y, Z>::intermediateAlongDimension(
   sd::DebugHelper::checkErrorCode(stream, "scalarAlongDimension(...) failed");
 }
 
+#if defined(SCALAR_DEFINE_GROUP_HELPERS)
+// As for pairwise, the public wrappers must not see these definitions: doing
+// so would implicitly instantiate every operation in the wrapper's CUDA unit.
+template <int Group, typename X, typename Y, typename Z>
+void SD_HOST executeCudaShapedGroup(
+    dim3& launchDims, cudaStream_t* stream, int opNum, void const* vx,
+    sd::LongType const* xShapeInfo, sd::LongType const* hxShapeInfo, void* vz,
+    sd::LongType const* zShapeInfo, sd::LongType const* hzShapeInfo,
+    void const* vscalar, void* vextraParams) {
+  using Transform = ScalarTransform<X, Y, Z>;
+  static_assert(Group >= 1 && Group <= 3, "Scalar CUDA operation group must be 1, 2, or 3");
+  if constexpr (Group == 1) {
+    DISPATCH_BY_OPNUM_TTT(Transform::template intermediateShaped,
+        PARAMS(launchDims, stream, vx, xShapeInfo, hxShapeInfo, vz, zShapeInfo, hzShapeInfo,
+               vscalar, vextraParams, nullptr), SCALAR_OPS_PART1);
+  } else if constexpr (Group == 2) {
+    DISPATCH_BY_OPNUM_TTT(Transform::template intermediateShaped,
+        PARAMS(launchDims, stream, vx, xShapeInfo, hxShapeInfo, vz, zShapeInfo, hzShapeInfo,
+               vscalar, vextraParams, nullptr), SCALAR_OPS_PART2);
+  } else {
+    DISPATCH_BY_OPNUM_TTT(Transform::template intermediateShaped,
+        PARAMS(launchDims, stream, vx, xShapeInfo, hxShapeInfo, vz, zShapeInfo, hzShapeInfo,
+               vscalar, vextraParams, nullptr), SCALAR_OPS_PART3);
+  }
+}
+
+template <int Group, typename X, typename Y, typename Z>
+void SD_HOST executeCudaAlongDimensionGroup(
+    dim3& launchDims, cudaStream_t* stream, int opNum, void const* vx,
+    sd::LongType const* xShapeInfo, void* vz, sd::LongType const* zShapeInfo,
+    void const* vscalars, void* vextraParams, sd::LongType* dimension,
+    sd::LongType dimensionLength, sd::LongType const* tadShapeInfo,
+    sd::LongType const* tadOffsets, sd::LongType const* tadShapeInfoZ,
+    sd::LongType const* tadOffsetsZ) {
+  using Transform = ScalarTransform<X, Y, Z>;
+  static_assert(Group >= 1 && Group <= 3, "Scalar CUDA operation group must be 1, 2, or 3");
+  if constexpr (Group == 1) {
+    DISPATCH_BY_OPNUM_TTT(Transform::template intermediateAlongDimension,
+        PARAMS(launchDims, stream, vx, xShapeInfo, vz, zShapeInfo, vscalars, vextraParams,
+               dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), SCALAR_OPS_PART1);
+  } else if constexpr (Group == 2) {
+    DISPATCH_BY_OPNUM_TTT(Transform::template intermediateAlongDimension,
+        PARAMS(launchDims, stream, vx, xShapeInfo, vz, zShapeInfo, vscalars, vextraParams,
+               dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), SCALAR_OPS_PART2);
+  } else {
+    DISPATCH_BY_OPNUM_TTT(Transform::template intermediateAlongDimension,
+        PARAMS(launchDims, stream, vx, xShapeInfo, vz, zShapeInfo, vscalars, vextraParams,
+               dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), SCALAR_OPS_PART3);
+  }
+}
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y, typename Z>
 void ScalarTransform<X, Y, Z>::executeCudaShaped(
@@ -279,10 +335,16 @@ void ScalarTransform<X, Y, Z>::executeCudaShaped(
     void const* vscalar,
     void* vextraParams) {
 
-  DISPATCH_BY_OPNUM_TTT(
-      intermediateShaped,
-      PARAMS(launchDims, stream, vx, xShapeInfo, hxShapeInfo, vz, zShapeInfo, hzShapeInfo, vscalar, vextraParams, nullptr),
-      SCALAR_OPS_ACTIVE);
+  if (opNum <= 21) {
+    executeCudaShapedGroup<1, X, Y, Z>(launchDims, stream, opNum, vx, xShapeInfo, hxShapeInfo,
+                                     vz, zShapeInfo, hzShapeInfo, vscalar, vextraParams);
+  } else if (opNum <= 39) {
+    executeCudaShapedGroup<2, X, Y, Z>(launchDims, stream, opNum, vx, xShapeInfo, hxShapeInfo,
+                                     vz, zShapeInfo, hzShapeInfo, vscalar, vextraParams);
+  } else {
+    executeCudaShapedGroup<3, X, Y, Z>(launchDims, stream, opNum, vx, xShapeInfo, hxShapeInfo,
+                                     vz, zShapeInfo, hzShapeInfo, vscalar, vextraParams);
+  }
 }
 
 
@@ -305,11 +367,19 @@ void ScalarTransform<X, Y, Z>::executeCudaAlongDimension(
     sd::LongType const* tadShapeInfoZ,
     sd::LongType const* tadOffsetsZ) {
 
-  DISPATCH_BY_OPNUM_TTT(
-      intermediateAlongDimension,
-      PARAMS(launchDims, stream, vx, xShapeInfo, vz, zShapeInfo, vscalars, vextraParams, dimension, dimensionLength,
-             tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ),
-      SCALAR_OPS_ACTIVE);
+  if (opNum <= 21) {
+    executeCudaAlongDimensionGroup<1, X, Y, Z>(launchDims, stream, opNum, vx, xShapeInfo, vz,
+        zShapeInfo, vscalars, vextraParams, dimension, dimensionLength,
+        tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
+  } else if (opNum <= 39) {
+    executeCudaAlongDimensionGroup<2, X, Y, Z>(launchDims, stream, opNum, vx, xShapeInfo, vz,
+        zShapeInfo, vscalars, vextraParams, dimension, dimensionLength,
+        tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
+  } else {
+    executeCudaAlongDimensionGroup<3, X, Y, Z>(launchDims, stream, opNum, vx, xShapeInfo, vz,
+        zShapeInfo, vscalars, vextraParams, dimension, dimensionLength,
+        tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
+  }
 }
 
 }  // namespace scalar

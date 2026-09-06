@@ -364,6 +364,23 @@ class SD_LIB_EXPORT CudaMemoryPool {
    */
   void unregisterCaptureWorkspace(void* basePtr);
 
+  // Prepared while the DataBuffer still owns the allocation. Device addresses
+  // are pinned to the registered workspace lifetime without moving their charge.
+  // Heap primary storage is retained directly by that same workspace owner.
+  // After accounting commits, setting committed transfers ownership without any
+  // allocation/throwing work. An uncommitted record only releases its protection.
+  // The caller must finish expansion before this workspace can be unregistered.
+  struct CaptureRetirement {
+    void* pointer;
+    int deviceId;
+    int chargeDevice;
+    LongType logicalBytes;
+    bool primary;
+    bool committed = false;
+  };
+  CaptureRetirement* prepareCaptureRetirement(void* workspace, void* pointer, int deviceId,
+                                               int chargeDevice, LongType logicalBytes, bool primary);
+
   // =========================================================================
   // Graph-Baked Address Protection
   // =========================================================================
@@ -539,6 +556,7 @@ class SD_LIB_EXPORT CudaMemoryPool {
   // Used by free() to skip cudaFreeAsync on interior pointers of capture workspaces.
   mutable std::mutex captureWorkspaceMutex_;
   std::unordered_map<void*, size_t> captureWorkspaceRanges_;
+  std::unordered_map<void*, std::vector<CaptureRetirement*>> captureRetirements_;
 
   // Direct (non-pool) allocations: ptr → size.
   // Pointers allocated via cudaMalloc instead of cudaMallocAsync, registered by
@@ -643,7 +661,16 @@ class SD_LIB_EXPORT CudaMemoryPool {
   // if it was requested. A pinned buffer that is never free()'d (a SameDiff weight/
   // constant that outlives the plan) is therefore released by unpin WITHOUT a free —
   // it is externally owned and must not be freed by the plan.
-  struct GraphBakedInfo { int refCount; int deviceId; bool freeRequested; };
+  struct GraphBakedInfo {
+    int refCount = 0;
+    int deviceId = -1;
+    bool freeRequested = false;
+    // Expansion transfers its old logical charge here until the LAST graph pin
+    // dies; allocator padding is never charged to MemoryCounter.
+    bool retired = false;
+    int chargeDevice = -1;
+    LongType logicalBytes = 0;
+  };
   mutable std::mutex graphBakedMutex_;
   std::unordered_map<void*, GraphBakedInfo> graphBakedPins_;
 };

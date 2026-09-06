@@ -62,12 +62,12 @@ on:
       AZURE_SCCACHE_CONNECTION_STRING:
         required: false
       CENTRAL_SONATYPE_TOKEN_USERNAME:
-        required: true
-      CENTRAL_SONATYPE_TOKEN_PASSWORD:
-        required: true
-      SONATYPE_GPG_KEY:
         required: false
-      PACKAGES_GPG_PASS:
+      CENTRAL_SONATYPE_TOKEN_PASSWORD:
+        required: false
+      GPG_PRIVATE_KEY:
+        required: false
+      GPG_PASSPHRASE:
         required: false
 
 permissions:
@@ -111,6 +111,10 @@ jobs:
           SNAPSHOT_VERSION: ${{ inputs.snapshotVersion }}
           DEPLOY_TO_RELEASE_STAGING: ${{ inputs.deployToReleaseStaging }}
           DRY_RUN: ${{ inputs.dryRun }}
+          CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
           set -Eeuo pipefail
           if [[ ! "${SNAPSHOT_VERSION}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*-SNAPSHOT$ ]]; then
@@ -147,6 +151,18 @@ jobs:
               exit 2
               ;;
           esac
+          if [[ "${publish}" == true ]]; then
+            required_secrets=(CENTRAL_SONATYPE_TOKEN_USERNAME CENTRAL_SONATYPE_TOKEN_PASSWORD)
+            if [[ "${publication_mode}" == release ]]; then
+              required_secrets+=(GPG_PRIVATE_KEY GPG_PASSPHRASE)
+            fi
+            for secret in "${required_secrets[@]}"; do
+              if [[ -z "${!secret}" ]]; then
+                printf 'Missing required publication secret: %s\n' "${secret}" >&2
+                exit 2
+              fi
+            done
+          fi
           printf 'release-version=%s\n' "${effective_release_version}" >>"${GITHUB_OUTPUT}"
           printf 'snapshot-version=%s\n' "${SNAPSHOT_VERSION}" >>"${GITHUB_OUTPUT}"
           printf 'publication-mode=%s\n' "${publication_mode}" >>"${GITHUB_OUTPUT}"
@@ -281,9 +297,11 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 180
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout publication tooling from the workflow revision
+        uses: actions/checkout@v7
         with:
-          ref: ${{ needs.matrix.outputs.source }}
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
       - name: Download staged worker results
         uses: actions/download-artifact@v8
         with:
@@ -358,8 +376,11 @@ jobs:
             --output "${merged_repository}"
             --manifest "${merged_manifest}"
             --release-version "${RELEASE_VERSION}"
-            --commit "${SOURCE_COMMIT}"
-            --allow-unclassified-duplicates)
+            --commit "${SOURCE_COMMIT}")
+          # A release must not silently choose between conflicting POMs or binaries.
+          if [[ "${RELEASE_VERSION}" == *-SNAPSHOT ]]; then
+            merge_command+=(--allow-unclassified-duplicates)
+          fi
           repository_count=0
           while IFS= read -r repository; do
             merge_command+=(--input "${repository}")
@@ -370,11 +391,15 @@ jobs:
             exit 1
           fi
           "${merge_command[@]}"
+          metadata_args=()
+          if [[ "${RELEASE_VERSION}" != *-SNAPSHOT ]]; then
+            metadata_args+=(--release-metadata)
+          fi
           python3 release/central/repository.py verify \
             --repository "${merged_repository}" \
             --manifest "${merged_manifest}" \
             --release-version "${RELEASE_VERSION}" \
-            --commit "${SOURCE_COMMIT}"
+            --commit "${SOURCE_COMMIT}" "${metadata_args[@]}"
       - name: Configure Maven Central snapshots
         if: ${{ steps.staged.outputs.publish == 'true' && steps.staged.outputs['publication-mode'] == 'snapshot' }}
         uses: actions/setup-java@v5
@@ -405,7 +430,7 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
-          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
           server-id: central
           server-username: CENTRAL_SONATYPE_TOKEN_USERNAME
@@ -416,7 +441,7 @@ jobs:
         env:
           CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
           CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
           set -Eeuo pipefail
           merged_root="${GITHUB_WORKSPACE}/.release-worker-merged"
@@ -426,6 +451,16 @@ jobs:
           python3 release/central/repository.py upload \
             --bundle "${merged_root}/central-bundle.zip" \
             --wait-seconds 5400 | tee "${merged_root}/central-deployment.log"
+      - name: Retain merged Maven repository for build-only inspection
+        if: ${{ always() && steps.staged.outputs.publish == 'false' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: merged-maven-repository-${{ needs.matrix.outputs['release-version'] }}
+          path: ${{ github.workspace }}/.release-worker-merged/
+          include-hidden-files: true
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
       - name: Retain publication evidence
         if: always()
         uses: actions/upload-artifact@v7

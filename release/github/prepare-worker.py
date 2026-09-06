@@ -284,9 +284,15 @@ def workflow_rows(
     if matrix.get("schemaVersion") != 1:
         raise ValueError("workflow matrix schemaVersion must be 1")
     workflows = matrix.get("workflows", {})
-    if workflow not in workflows:
+    if workflow != "all" and workflow not in workflows:
         raise ValueError(f"unknown release workflow {workflow!r}")
     shards = plan_shards(plan)
+    # Derive the full build directly from the plan, not from overlapping logical
+    # workflows. Keep it out of retry-owner resolution (which must stay unique).
+    selections_for_workflow = (
+        [{"shard": shard_id} for shard_id in shards]
+        if workflow == "all" else workflows[workflow]
+    )
     runtimes = matrix.get("shards", {})
     requested = {
         canonical_selector(shards, classifier.strip())
@@ -302,6 +308,8 @@ def workflow_rows(
         )
     if selection_mode == "targeted" and not requested:
         raise ValueError("targeted matrix selection requires at least one classifier")
+    if workflow == "all" and selection_mode != "complete":
+        raise ValueError("the full repository build does not accept targeted retries")
 
     def available_selectors(workflow_name: str) -> set[str]:
         selectors: set[str] = set()
@@ -332,10 +340,11 @@ def workflow_rows(
         ]
         if len(owners) == 1:
             workflow = owners[0]
+            selections_for_workflow = workflows[workflow]
 
     selections: list[tuple[str, dict, dict[str, dict], list[str]]] = []
     available: set[str] = set()
-    for selection in workflows[workflow]:
+    for selection in selections_for_workflow:
         shard_id = str(selection["shard"])
         if shard_id not in shards:
             raise ValueError(f"workflow {workflow!r} references unknown shard {shard_id!r}")

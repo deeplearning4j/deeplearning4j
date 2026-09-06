@@ -289,8 +289,108 @@ def verify(repository: Path, manifest_path: Path | None, version: str | None, co
             raise ValueError(f"component is missing its POM: {directory.relative_to(repository)}")
         jars = [path for path in files if path.suffix == ".jar"]
         non_metadata_jars = [path for path in jars if not path.name.endswith(("-sources.jar", "-javadoc.jar"))]
-        if jars and not non_metadata_jars:
-            raise ValueError(f"component has no main/classifier JAR: {directory.relative_to(repository)}")
+        if jars and not non_metadata_jars and not suffixes.intersection({".aar", ".war"}):
+            raise ValueError(f"component has no main/classifier archive: {directory.relative_to(repository)}")
+
+
+def verify_release_metadata(repository: Path) -> None:
+    """Check local Central release prerequisites, not full matrix coverage or remote validation.
+
+    Generic shard verification intentionally accepts snapshots and classifier-only
+    slices. Those are not evidence that a standalone Central release is complete.
+    Metadata may be inherited from parents present in this repository. This is a
+    local presence check, not Maven model interpolation or external-parent resolution.
+    """
+    verify(repository, None, None, None)
+    errors: list[str] = []
+    projects: dict[Path, ET.Element] = {}
+    for path in sorted(repository.rglob("*")):
+        if not path.is_file() or path.suffix not in PRIMARY_SUFFIXES:
+            continue
+        relative = path.relative_to(repository)
+        if relative.parts[:3] != ("org", "eclipse", "deeplearning4j"):
+            errors.append(f"release artifact outside org.eclipse.deeplearning4j: {relative}")
+            continue
+        if path.parent.name.endswith("-SNAPSHOT"):
+            errors.append(f"SNAPSHOT artifact in release repository: {relative}")
+        if path.suffix != ".pom":
+            continue
+        try:
+            project = ET.parse(path).getroot()
+        except ET.ParseError as error:
+            errors.append(f"invalid POM {relative}: {error}")
+            continue
+        group = (project.findtext("{*}groupId") or project.findtext("{*}parent/{*}groupId") or "").strip()
+        artifact = (project.findtext("{*}artifactId") or "").strip()
+        version = (project.findtext("{*}version") or project.findtext("{*}parent/{*}version") or "").strip()
+        expected = Path(*group.split(".")) / artifact / version / f"{artifact}-{version}.pom"
+        if not group or not artifact or not version or relative != expected:
+            errors.append(f"POM coordinates do not match repository path: {relative}")
+            continue
+        projects[path] = project
+        packaging = (project.findtext("{*}packaging") or "jar").strip()
+        base = path.parent / f"{artifact}-{version}"
+        if packaging in {"jar", "aar", "war"}:
+            main = Path(str(base) + f".{packaging}")
+            if not main.is_file():
+                errors.append(f"missing main artifact: {main.relative_to(repository)}")
+        if packaging != "pom":
+            for classifier in ("sources", "javadoc"):
+                attachment = Path(str(base) + f"-{classifier}.jar")
+                if not attachment.is_file():
+                    errors.append(f"missing Central {classifier} attachment: {attachment.relative_to(repository)}")
+        parent = project.find("{*}parent")
+        if parent is not None:
+            parent_group = (parent.findtext("{*}groupId") or "").strip()
+            parent_artifact = (parent.findtext("{*}artifactId") or "").strip()
+            parent_version = (parent.findtext("{*}version") or "").strip()
+            if parent_version.endswith("-SNAPSHOT"):
+                errors.append(f"SNAPSHOT parent in release POM: {relative}")
+            if parent_version == version and (parent_group == "org.eclipse.deeplearning4j" or
+                                             parent_group.startswith("org.eclipse.deeplearning4j.")):
+                parent_pom = repository / Path(*parent_group.split(".")) / parent_artifact / parent_version / f"{parent_artifact}-{parent_version}.pom"
+                if not parent_pom.is_file():
+                    errors.append(f"missing same-release parent POM: {parent_pom.relative_to(repository)}")
+
+    for path, project in projects.items():
+        relative = path.relative_to(repository)
+        ancestry = [project]
+        seen = {path}
+        parent = project.find("{*}parent")
+        while parent is not None:
+            group = (parent.findtext("{*}groupId") or "").strip()
+            artifact = (parent.findtext("{*}artifactId") or "").strip()
+            version = (parent.findtext("{*}version") or "").strip()
+            parent_path = repository / Path(*group.split(".")) / artifact / version / f"{artifact}-{version}.pom"
+            if parent_path in seen:
+                errors.append(f"cyclic parent POM ancestry: {relative}")
+                break
+            inherited = projects.get(parent_path)
+            if inherited is None:
+                break
+            seen.add(parent_path)
+            ancestry.append(inherited)
+            parent = inherited.find("{*}parent")
+
+        for field in ("name", "description", "url", "scm/connection", "scm/developerConnection", "scm/url"):
+            xpath = "/".join("{*}" + part for part in field.split("/"))
+            if not any((ancestor.findtext(xpath) or "").strip() for ancestor in ancestry):
+                errors.append(f"missing Central POM {field} in staged ancestry: {relative}")
+        for collection, item, fields in (
+            ("licenses", "license", ("name", "url")),
+            ("developers", "developer", ("name", "id")),
+        ):
+            entries = next((elements for ancestor in ancestry
+                            if (elements := ancestor.findall(f"{{*}}{collection}/{{*}}{item}"))), [])
+            valid = bool(entries) and all(
+                (all if collection == "licenses" else any)(
+                    (entry.findtext("{*}" + field) or "").strip() for field in fields
+                ) for entry in entries
+            )
+            if not valid:
+                errors.append(f"missing Central POM {collection} in staged ancestry: {relative}")
+    if errors:
+        raise ValueError("Central release metadata validation failed:\n" + "\n".join(errors))
 
 
 def primary_files(repository: Path) -> list[Path]:
@@ -558,6 +658,7 @@ def materialize_test_repository(
 
 
 def sign_bundle(repository: Path, output: Path, gpg_executable: str = "gpg") -> None:
+    verify_release_metadata(repository)
     for path in primary_files(repository):
         signature = Path(str(path) + ".asc")
         command = [gpg_executable, "--batch", "--yes", "--armor", "--detach-sign", "--output", str(signature)]
@@ -724,6 +825,8 @@ def parse_args() -> argparse.Namespace:
     verify_cmd.add_argument("--manifest", type=Path)
     verify_cmd.add_argument("--release-version")
     verify_cmd.add_argument("--commit")
+    verify_cmd.add_argument("--release-metadata", action="store_true",
+                            help="Also require local Central release metadata and same-release parent POMs")
     sign_cmd = sub.add_parser("sign-bundle")
     sign_cmd.add_argument("--repository", type=Path, required=True)
     sign_cmd.add_argument("--output", type=Path, required=True)
@@ -758,6 +861,8 @@ def main() -> None:
         verify_release_assets(args.directory, args.manifest, args.release_version, args.commit)
     elif args.command == "verify":
         verify(args.repository, args.manifest, args.release_version, args.commit)
+        if args.release_metadata:
+            verify_release_metadata(args.repository)
     elif args.command == "sign-bundle":
         sign_bundle(args.repository, args.output, args.gpg_executable)
     elif args.command == "upload":

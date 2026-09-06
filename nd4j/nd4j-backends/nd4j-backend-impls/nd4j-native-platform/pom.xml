@@ -74,19 +74,7 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>${nd4j.backend}</artifactId>
             <version>${project.version}</version>
-            <classifier>${javacpp.platform.android-arm}</classifier>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>${nd4j.backend}</artifactId>
-            <version>${project.version}</version>
             <classifier>${javacpp.platform.android-arm64}</classifier>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>${nd4j.backend}</artifactId>
-            <version>${project.version}</version>
-            <classifier>${javacpp.platform.android-x86}</classifier>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -119,7 +107,7 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>${nd4j.backend}</artifactId>
             <version>${project.version}</version>
-            <classifier>${javacpp.platform.macosx-x86_64}</classifier>
+            <classifier>${javacpp.platform.macosx-arm64}</classifier>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -132,7 +120,7 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>${nd4j.backend}</artifactId>
             <version>${project.version}</version>
-            <classifier>${javacpp.platform.linux-armhf}</classifier>
+            <classifier>${javacpp.platform.linux-arm64}</classifier>
         </dependency>
     </dependencies>
 
@@ -157,7 +145,7 @@
                     <groupId>${project.groupId}</groupId>
                     <artifactId>${nd4j.backend}</artifactId>
                     <version>${project.version}</version>
-                    <classifier>${javacpp.platform.macosx-x86_64}-onednn</classifier>
+                    <classifier>${javacpp.platform.macosx-arm64}-onednn</classifier>
                 </dependency>
                 <dependency>
                     <groupId>${project.groupId}</groupId>
@@ -183,12 +171,6 @@
                     <artifactId>${nd4j.backend}</artifactId>
                     <version>${project.version}</version>
                     <classifier>${javacpp.platform.linux-x86_64}-avx2</classifier>
-                </dependency>
-                <dependency>
-                    <groupId>${project.groupId}</groupId>
-                    <artifactId>${nd4j.backend}</artifactId>
-                    <version>${project.version}</version>
-                    <classifier>${javacpp.platform.macosx-x86_64}-avx2</classifier>
                 </dependency>
                 <dependency>
                     <groupId>${project.groupId}</groupId>

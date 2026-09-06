@@ -657,6 +657,16 @@ endfunction()
 function(handle_scalar t1 t2 t3 content_var is_cuda)
     set(content "${${content_var}}")
     set(dedupe_set "")
+    set(op_group "")
+    if(ARGC GREATER 5)
+        set(op_group "${ARGV5}")
+    endif()
+    set(shaped_target "functions::scalar::ScalarTransform<${t1}, ${t2}, ${t3}>::executeCudaShaped")
+    set(along_target "functions::scalar::ScalarTransform<${t1}, ${t2}, ${t3}>::executeCudaAlongDimension")
+    if(op_group)
+        set(shaped_target "functions::scalar::executeCudaShapedGroup<${op_group}, ${t1}, ${t2}, ${t3}>")
+        set(along_target "functions::scalar::executeCudaAlongDimensionGroup<${op_group}, ${t1}, ${t2}, ${t3}>")
+    endif()
 
     # Normalize types
     normalize_to_canonical_type("${t1}" norm_t1)
@@ -688,8 +698,8 @@ function(handle_scalar t1 t2 t3 content_var is_cuda)
 
     # Generate instantiations using NORMALIZED types (which are same as originals now due to check above)
     if(is_cuda)
-        add_unique_instantiation("template void functions::scalar::ScalarTransform<${norm_t1}, ${norm_t2}, ${norm_t3}>::executeCudaShaped(dim3& launchDims, cudaStream_t* stream, int opNum, const void *vx, const sd::LongType *xShapeInfo, const sd::LongType *hxShapeInfo, void *vz, const sd::LongType *zShapeInfo, const sd::LongType *hzShapeInfo, const void *vscalar, void *vextraParams);" dedupe_set content)
-        add_unique_instantiation("template void functions::scalar::ScalarTransform<${norm_t1}, ${norm_t2}, ${norm_t3}>::executeCudaAlongDimension(dim3& launchDims, cudaStream_t* stream, int opNum, const void *vx, const sd::LongType *xShapeInfo, void *vz, const sd::LongType *zShapeInfo, const void *vscalars, void *vextraParams, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ);" dedupe_set content)
+        add_unique_instantiation("template void ${shaped_target}(dim3& launchDims, cudaStream_t* stream, int opNum, const void *vx, const sd::LongType *xShapeInfo, const sd::LongType *hxShapeInfo, void *vz, const sd::LongType *zShapeInfo, const sd::LongType *hzShapeInfo, const void *vscalar, void *vextraParams);" dedupe_set content)
+        add_unique_instantiation("template void ${along_target}(dim3& launchDims, cudaStream_t* stream, int opNum, const void *vx, const sd::LongType *xShapeInfo, void *vz, const sd::LongType *zShapeInfo, const void *vscalars, void *vextraParams, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ);" dedupe_set content)
     else()
         add_unique_instantiation("template void functions::scalar::ScalarTransform<${norm_t1}, ${norm_t2}, ${norm_t3}>::transform(int opNum, const void *x, const sd::LongType *xShapeInfo, void *result, const sd::LongType *resultShapeInfo, const void *scalar, void *extraParams, sd::LongType start, sd::LongType stop);" dedupe_set content)
         add_unique_instantiation("template void functions::scalar::ScalarTransform<${norm_t1}, ${norm_t2}, ${norm_t3}>::transform(int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *z, const sd::LongType *zShapeInfo, const void *scalars, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ, sd::LongType start, sd::LongType stop);" dedupe_set content)
@@ -854,6 +864,16 @@ endfunction()
 function(handle_scalar t1 t2 t3 content_var is_cuda)
     set(content "${${content_var}}")
     set(dedupe_set "")
+    set(op_group "")
+    if(ARGC GREATER 5)
+        set(op_group "${ARGV5}")
+    endif()
+    set(shaped_target "functions::scalar::ScalarTransform<${t1}, ${t2}, ${t3}>::executeCudaShaped")
+    set(along_target "functions::scalar::ScalarTransform<${t1}, ${t2}, ${t3}>::executeCudaAlongDimension")
+    if(op_group)
+        set(shaped_target "functions::scalar::executeCudaShapedGroup<${op_group}, ${t1}, ${t2}, ${t3}>")
+        set(along_target "functions::scalar::executeCudaAlongDimensionGroup<${op_group}, ${t1}, ${t2}, ${t3}>")
+    endif()
 
     # Normalize types
     normalize_to_canonical_type("${t1}" norm_t1)
@@ -885,8 +905,8 @@ function(handle_scalar t1 t2 t3 content_var is_cuda)
 
     # Generate instantiations using NORMALIZED types (which are same as originals now due to check above)
     if(is_cuda)
-        add_unique_instantiation("template void functions::scalar::ScalarTransform<${norm_t1}, ${norm_t2}, ${norm_t3}>::executeCudaShaped(dim3& launchDims, cudaStream_t* stream, int opNum, const void *vx, const sd::LongType *xShapeInfo, const sd::LongType *hxShapeInfo, void *vz, const sd::LongType *zShapeInfo, const sd::LongType *hzShapeInfo, const void *vscalar, void *vextraParams);" dedupe_set content)
-        add_unique_instantiation("template void functions::scalar::ScalarTransform<${norm_t1}, ${norm_t2}, ${norm_t3}>::executeCudaAlongDimension(dim3& launchDims, cudaStream_t* stream, int opNum, const void *vx, const sd::LongType *xShapeInfo, void *vz, const sd::LongType *zShapeInfo, const void *vscalars, void *vextraParams, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ);" dedupe_set content)
+        add_unique_instantiation("template void ${shaped_target}(dim3& launchDims, cudaStream_t* stream, int opNum, const void *vx, const sd::LongType *xShapeInfo, const sd::LongType *hxShapeInfo, void *vz, const sd::LongType *zShapeInfo, const sd::LongType *hzShapeInfo, const void *vscalar, void *vextraParams);" dedupe_set content)
+        add_unique_instantiation("template void ${along_target}(dim3& launchDims, cudaStream_t* stream, int opNum, const void *vx, const sd::LongType *xShapeInfo, void *vz, const sd::LongType *zShapeInfo, const void *vscalars, void *vextraParams, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ);" dedupe_set content)
     else()
         add_unique_instantiation("template void functions::scalar::ScalarTransform<${norm_t1}, ${norm_t2}, ${norm_t3}>::transform(int opNum, const void *x, const sd::LongType *xShapeInfo, void *result, const sd::LongType *resultShapeInfo, const void *scalar, void *extraParams, sd::LongType start, sd::LongType stop);" dedupe_set content)
         add_unique_instantiation("template void functions::scalar::ScalarTransform<${norm_t1}, ${norm_t2}, ${norm_t3}>::transform(int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *z, const sd::LongType *zShapeInfo, const void *scalars, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ, sd::LongType start, sd::LongType stop);" dedupe_set content)
@@ -1746,7 +1766,7 @@ function(create_direct_instantiation_file_impl template_file combinations output
     # is deliberately unaffected despite sharing the same template stem.
     set(direct_chunk_size "${MULTI_PASS_CHUNK_SIZE}")
     if(IS_CUDA_FILE AND
-       template_name MATCHES "^(pairwise(_group[123])?|scalar)_instantiation_template_3$")
+       template_name MATCHES "^(pairwise|scalar)(_group[123])?_instantiation_template_3$")
         set(direct_chunk_size 1)
     endif()
     
@@ -2183,6 +2203,10 @@ function(dispatch_to_handler template_name t1 t2 t3 parts_count content_var is_c
         endforeach()
         
     elseif(template_name MATCHES ".*scalar.*" AND parts_count EQUAL 3)
+        set(scalar_group "")
+        if(template_name MATCHES "^scalar_group([123])_instantiation_template_3$")
+            set(scalar_group "${CMAKE_MATCH_1}")
+        endif()
         foreach(v1 IN LISTS t1_list)
             foreach(v2 IN LISTS t2_list)
                 foreach(v3 IN LISTS t3_list)
@@ -2202,7 +2226,7 @@ function(dispatch_to_handler template_name t1 t2 t3 parts_count content_var is_c
                             _internal_srcore_is_valid_triple("${v1_enum}" "${v2_enum}" "${v3_enum}" valid_triple)
                             
                             if(valid_13 AND valid_23 AND valid_triple)
-                                handle_scalar("${norm_v1}" "${norm_v2}" "${norm_v3}" content ${is_cuda})
+                                handle_scalar("${norm_v1}" "${norm_v2}" "${norm_v3}" content ${is_cuda} "${scalar_group}")
                                 list(APPEND template_dedupe_set "${combo_key}")
                             endif()
                         endif()
@@ -2579,6 +2603,11 @@ function(process_cuda_comb_templates output_dir generated_sources_var)
         "${cuda_comb_template_dir}/scalar_instantiation_template_3.cu.in")
     set(PAIRWISE_GROUP_TEMPLATE
         "${cuda_comb_template_dir}/pairwise_group_instantiation_template_3.cu.in")
+    set(SCALAR_GROUP_TEMPLATE
+        "${cuda_comb_template_dir}/scalar_group_instantiation_template_3.cu.in")
+    if(NOT EXISTS "${SCALAR_GROUP_TEMPLATE}")
+        message(FATAL_ERROR "Canonical CUDA scalar group template is missing: ${SCALAR_GROUP_TEMPLATE}")
+    endif()
     foreach(cuda_comb_template IN LISTS CUDA_COMB_TEMPLATES)
         if(NOT EXISTS "${cuda_comb_template}")
             message(FATAL_ERROR
@@ -2689,6 +2718,17 @@ function(process_cuda_comb_templates output_dir generated_sources_var)
             "${output_dir}"
             local_generated_sources
             "${pairwise_group_name}")
+    endforeach()
+
+    # Dtype isolation alone still crashes CUDA 12.6 on the HALF scalar unit.
+    # Give each operation group its own helper ABI and translation unit.
+    foreach(scalar_group RANGE 1 3)
+        create_direct_instantiation_file_impl(
+            "${SCALAR_GROUP_TEMPLATE}"
+            "${COMBINATIONS_3_SAME}"
+            "${output_dir}"
+            local_generated_sources
+            "scalar_group${scalar_group}_instantiation_template_3")
     endforeach()
 
     set(${generated_sources_var} ${local_generated_sources} PARENT_SCOPE)
@@ -2929,6 +2969,9 @@ function(setup_template_processing)
         set(has_pairwise_group1 FALSE)
         set(has_pairwise_group2 FALSE)
         set(has_pairwise_group3 FALSE)
+        set(has_scalar_group1 FALSE)
+        set(has_scalar_group2 FALSE)
+        set(has_scalar_group3 FALSE)
         foreach(cached_source IN LISTS cached_sources)
             if(cached_source MATCHES "_g[123]_direct_" OR
                cached_source MATCHES "(pairwise_exec_cuda_shaped|scalar_exec_cuda_shaped|scalar_exec_cuda_along_dimension|broadcast_exec_broadcast_with_dimension|broadcast_exec_inverse_broadcast)")
@@ -2941,10 +2984,17 @@ function(setup_template_processing)
                 set(has_pairwise_group2 TRUE)
             elseif(cached_source MATCHES "pairwise_group3_instantiation_template_3_direct_")
                 set(has_pairwise_group3 TRUE)
+            elseif(cached_source MATCHES "scalar_group1_instantiation_template_3_direct_")
+                set(has_scalar_group1 TRUE)
+            elseif(cached_source MATCHES "scalar_group2_instantiation_template_3_direct_")
+                set(has_scalar_group2 TRUE)
+            elseif(cached_source MATCHES "scalar_group3_instantiation_template_3_direct_")
+                set(has_scalar_group3 TRUE)
             endif()
         endforeach()
         if(NOT has_pairwise_group1 OR NOT has_pairwise_group2 OR
-           NOT has_pairwise_group3)
+           NOT has_pairwise_group3 OR NOT has_scalar_group1 OR
+           NOT has_scalar_group2 OR NOT has_scalar_group3)
             set(has_legacy_cuda_instantiations TRUE)
         endif()
         if(has_legacy_cuda_instantiations)

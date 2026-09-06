@@ -1586,7 +1586,7 @@ class ReleaseValidationTest(unittest.TestCase):
                 "platform": "linux-x86_64",
                 "profiles": ["cuda", "sdx", "zluda", "zluda-platform"],
                 "modules": {
-                    ":nd4j-cuda-backend-common",
+                    ":nd4j-cuda-12.9-backend-common",
                     ":nd4j-cuda-12.9-preset",
                     ":nd4j-zluda-12.9",
                     ":nd4j-zluda-12.9-platform",
@@ -1594,14 +1594,14 @@ class ReleaseValidationTest(unittest.TestCase):
                     ":libnd4j",
                 },
                 "artifactIds": {
-                    "nd4j-cuda-backend-common",
+                    "nd4j-cuda-12.9-backend-common",
                     "nd4j-cuda-12.9-preset",
                     "nd4j-zluda-12.9",
                     "nd4j-zluda-12.9-platform",
                     "nd4j-presets-common",
                 },
                 "unclassifiedArtifactIds": [
-                    "nd4j-cuda-backend-common",
+                    "nd4j-cuda-12.9-backend-common",
                     "nd4j-cuda-12.9-preset",
                     "nd4j-zluda-12.9",
                     "nd4j-zluda-12.9-platform",
@@ -1613,7 +1613,7 @@ class ReleaseValidationTest(unittest.TestCase):
                 "platform": "windows-x86_64",
                 "profiles": ["cuda", "sdx", "zluda", "zluda-platform"],
                 "modules": {
-                    ":nd4j-cuda-backend-common",
+                    ":nd4j-cuda-12.9-backend-common",
                     ":nd4j-cuda-12.9-preset",
                     ":nd4j-zluda-12.9",
                     ":nd4j-zluda-12.9-platform",
@@ -1621,14 +1621,14 @@ class ReleaseValidationTest(unittest.TestCase):
                     ":libnd4j",
                 },
                 "artifactIds": {
-                    "nd4j-cuda-backend-common",
+                    "nd4j-cuda-12.9-backend-common",
                     "nd4j-cuda-12.9-preset",
                     "nd4j-zluda-12.9",
                     "nd4j-zluda-12.9-platform",
                     "nd4j-presets-common",
                 },
                 "unclassifiedArtifactIds": [
-                    "nd4j-cuda-backend-common",
+                    "nd4j-cuda-12.9-backend-common",
                     "nd4j-cuda-12.9-preset",
                     "nd4j-zluda-12.9",
                     "nd4j-zluda-12.9-platform",
@@ -2082,7 +2082,7 @@ class ReleaseValidationTest(unittest.TestCase):
             for item in zluda_pom.findall("m:dependencies/m:dependency", namespace)
         }
         self.assertNotIn("nd4j-cuda-${cuda.version}", runtime_dependencies)
-        self.assertIn("nd4j-cuda-backend-common", runtime_dependencies)
+        self.assertIn("nd4j-cuda-12.9-backend-common", runtime_dependencies)
         profile = next(
             item
             for item in zluda_pom.findall("m:profiles/m:profile", namespace)
@@ -2816,7 +2816,7 @@ class ReleaseValidationTest(unittest.TestCase):
                     "modules": [
                         ":nd4j-cuda-12.9-preset",
                         ":nd4j-zluda-12.9",
-                        ":nd4j-cuda-backend-common",
+                        ":nd4j-cuda-12.9-backend-common",
                         ":libnd4j",
                     ],
                 },
@@ -4161,7 +4161,7 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("-Pzluda", zluda)
         self.assertIn("-Pzluda-platform", zluda)
         self.assertEqual(
-            ":nd4j-cuda-backend-common,:nd4j-cuda-12.9-preset,:nd4j-zluda-12.9,"
+            ":nd4j-cuda-12.9-backend-common,:nd4j-cuda-12.9-preset,:nd4j-zluda-12.9,"
             ":nd4j-zluda-12.9-platform,:libnd4j",
             zluda[zluda.index("-pl") + 1],
         )
@@ -4180,7 +4180,7 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("-Dlibnd4j.oom.killer=OFF", windows_zluda)
         self.assertIn("-Pzluda-platform", windows_zluda)
         self.assertEqual(
-            ":nd4j-cuda-backend-common,:nd4j-cuda-12.9-preset,:nd4j-zluda-12.9,"
+            ":nd4j-cuda-12.9-backend-common,:nd4j-cuda-12.9-preset,:nd4j-zluda-12.9,"
             ":nd4j-zluda-12.9-platform,:libnd4j",
             windows_zluda[windows_zluda.index("-pl") + 1],
         )

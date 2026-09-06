@@ -20,9 +20,10 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>nd4j-cuda-backend-common</artifactId>
+    <!-- Generated bindings and dependencies are CUDA-version-specific. -->
+    <artifactId>nd4j-cuda-12.9-backend-common</artifactId>
     <packaging>jar</packaging>
-    <name>nd4j-cuda-backend-common</name>
+    <name>nd4j-cuda-12.9-backend-common</name>
 
     <properties>
         <skipPublishing>false</skipPublishing>

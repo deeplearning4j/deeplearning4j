@@ -97,6 +97,17 @@ class SD_LIB_EXPORT MemoryCounter {
                                 int toDevice, LongType toBytes, bool commit = true);
 
   /**
+   * Atomically check and reserve logical HOST growth under the counter mutex.
+   * ownedBytes is the existing owned charge to validate, not an additional debit.
+   * Invalid accounting throws before soft/group cap checks; refusal changes nothing.
+   * commit=false is a preflight only. No allocator or CUDA calls run under the lock.
+   */
+  bool reserveHostGrowth(LongType ownedBytes, LongType growth, bool commit = true);
+
+  /** Undo a HOST reservation, or release a retired HOST charge, without cap checks. */
+  void releaseHostGrowth(LongType bytes);
+
+  /**
    * This method adds specified number of bytes to specified counter
    * @param deviceId
    * @param numBytes

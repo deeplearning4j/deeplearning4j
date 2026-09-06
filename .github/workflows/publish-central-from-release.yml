@@ -15,11 +15,6 @@ on:
         description: 'Exact 40-character commit SHA used by every external builder'
         required: true
         type: string
-      automatic:
-        description: 'For non-SNAPSHOT releases, publish automatically after Central validation'
-        required: false
-        default: false
-        type: boolean
 
 env:
   PYTHONDONTWRITEBYTECODE: '1'
@@ -42,23 +37,37 @@ jobs:
         env:
           EXPECTED_COMMIT: ${{ inputs.expectedCommit }}
           RELEASE_VERSION: ${{ inputs.releaseVersion }}
+          CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
           set -euo pipefail
           [[ "${EXPECTED_COMMIT}" =~ ^[0-9a-f]{40}$ ]] || { echo 'expectedCommit must be a full lowercase commit SHA' >&2; exit 2; }
-          [[ -n "${RELEASE_VERSION}" ]] || { echo 'releaseVersion is required' >&2; exit 2; }
+          [[ "${RELEASE_VERSION}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || { echo 'releaseVersion must be a valid Maven version' >&2; exit 2; }
+          required_secrets=(CENTRAL_SONATYPE_TOKEN_USERNAME CENTRAL_SONATYPE_TOKEN_PASSWORD)
+          if [[ "${RELEASE_VERSION}" != *-SNAPSHOT ]]; then
+            required_secrets+=(GPG_PRIVATE_KEY GPG_PASSPHRASE)
+          fi
+          for secret in "${required_secrets[@]}"; do
+            if [[ -z "${!secret}" ]]; then
+              printf 'Missing required publication secret: %s\n' "${secret}" >&2
+              exit 2
+            fi
+          done
 
-      - name: Checkout the exact build commit
+      - name: Checkout publication tooling from the workflow revision
         uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.expectedCommit }}
+          ref: ${{ github.workflow_sha }}
           persist-credentials: false
 
-      - name: Import the existing release signing key
+      - name: Configure publication Java and release signing
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
-          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
+          gpg-private-key: ${{ !endsWith(inputs.releaseVersion, '-SNAPSHOT') && secrets.GPG_PRIVATE_KEY || '' }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
           server-id: central-portal-snapshots
           server-username: CENTRAL_SONATYPE_TOKEN_USERNAME
@@ -129,40 +138,38 @@ jobs:
           EXPECTED_COMMIT: ${{ inputs.expectedCommit }}
         run: |
           set -euo pipefail
+          metadata_args=()
+          if [[ "${RELEASE_VERSION}" != *-SNAPSHOT ]]; then
+            metadata_args+=(--release-metadata)
+          fi
           python3 release/central/repository.py verify \
             --repository central-repository \
             --manifest merged-release-manifest.json \
             --release-version "${RELEASE_VERSION}" \
-            --commit "${EXPECTED_COMMIT}"
+            --commit "${EXPECTED_COMMIT}" "${metadata_args[@]}"
 
       - name: Sign and create the Central Portal bundle
         if: ${{ !endsWith(inputs.releaseVersion, '-SNAPSHOT') }}
         shell: bash
         env:
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
           set -euo pipefail
           python3 release/central/repository.py sign-bundle \
             --repository central-repository \
             --output central-bundle.zip
 
-      - name: Upload and wait for Central validation/publication
+      - name: Stage in Central Portal and wait for manual review
         if: ${{ !endsWith(inputs.releaseVersion, '-SNAPSHOT') }}
         shell: bash
         env:
           CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
           CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
-          AUTOMATIC: ${{ inputs.automatic }}
         run: |
           set -euo pipefail
-          automatic_flag=()
-          if [ "${AUTOMATIC}" = 'true' ]; then
-            automatic_flag+=(--automatic)
-          fi
           python3 release/central/repository.py upload \
             --bundle central-bundle.zip \
-            --wait-seconds 5400 \
-            "${automatic_flag[@]}" | tee central-deployment.log
+            --wait-seconds 5400 | tee central-deployment.log
 
       - name: Deploy prebuilt components to Central Portal snapshots
         if: ${{ endsWith(inputs.releaseVersion, '-SNAPSHOT') }}

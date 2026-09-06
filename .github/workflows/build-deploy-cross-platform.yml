@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       workflow:
-        description: Canonical release workflow matrix to execute.
+        description: Canonical release workflow matrix to execute. Use all for the full native and Java repository.
         required: false
         default: build-deploy-cross-platform.yml
       commitId:
@@ -103,8 +103,8 @@ jobs:
       deployToReleaseStaging: ${{ inputs.deployToReleaseStaging }}
       dryRun: ${{ inputs.dryRun }}
     secrets:
-      SONATYPE_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
-      PACKAGES_GPG_PASS: ${{ secrets.PACKAGES_GPG_PASS }}
+      GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+      GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
       CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
       CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
 

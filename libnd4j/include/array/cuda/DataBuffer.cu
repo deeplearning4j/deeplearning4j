@@ -334,136 +334,258 @@ void dspPublishThreadCompletionEvent(void* streamPtr) {
 }
 
 void DataBuffer::expand(const uint64_t size) {
+  std::lock_guard<std::mutex> lock(_deleteMutex);
   throwIfFrozen("expand");
-  if (size > _lenInBytes) {
-    // allocate new buffer
-    int8_t* newBuffer = nullptr;
-    int8_t* newSpecialBuffer = nullptr;
-    auto currentDeviceId = AffinityManager::currentDeviceId();
-    // Use _specialDeviceId for the old buffer since we're freeing the special buffer
-    // This may differ from _deviceId due to failover during OOM
-    auto oldDeviceId = _specialDeviceId.load();
-    if (oldDeviceId < 0) {
-      oldDeviceId = _deviceId.load();  // Fallback for legacy code
+  if (closed || _lenInBytes < 0) THROW_EXCEPTION("DataBuffer::expand: invalid buffer state");
+  // _lenInBytes==0 still owns one dtype-width element for a scalar.
+  const LongType oldBytes = static_cast<LongType>(getLenInBytes());
+  if (size <= static_cast<uint64_t>(oldBytes)) return;
+  // Both the logical counters and the padded host allocator take signed lengths.
+  if (size > static_cast<uint64_t>(LLONG_MAX) - HOST_ALLOC_PADDING - SD_ALLOC_PADDING - 1)
+    THROW_EXCEPTION("DataBuffer::expand: allocation length overflow");
+
+  const LongType bytes = static_cast<LongType>(size);
+  void* const oldPrimary = _primaryBuffer;
+  void* const oldSpecial = _specialBuffer;
+  const bool oldPrimaryOwner = _isOwnerPrimary;
+  const int oldSpecialDevice = _specialDeviceId.load();
+  const int oldChargeDevice = oldSpecialDevice >= 0 ? oldSpecialDevice : _deviceId.load();
+  const int requestedDevice = AffinityManager::currentDeviceId();
+  MigrationDeviceScope restoreDevice{requestedDevice};
+  auto& pool = memory::CudaMemoryPool::getInstance();
+  auto& counter = memory::MemoryCounter::getInstance();
+  if ((oldPrimary != nullptr && _primaryAllocBytes > 0 && _primaryAllocBytes < oldBytes) ||
+      (oldSpecial != nullptr && _specialAllocBytes > 0 && _specialAllocBytes < oldBytes))
+    THROW_EXCEPTION("DataBuffer::expand: source allocation is smaller than its logical length");
+
+  struct Location {
+    int device;
+    cudaMemoryType type;
+    bool host;
+  };
+  auto locate = [](void* pointer, size_t extent, int device) {
+    cudaPointerAttributes attrs;
+    auto err = cudaPointerGetAttributes(&attrs, pointer);
+    if (err != cudaSuccess) throwCudaStatus("DataBuffer::expand: invalid special allocation", err);
+    if (attrs.type != cudaMemoryTypeDevice && attrs.type != cudaMemoryTypeManaged && attrs.type != cudaMemoryTypeHost)
+      THROW_EXCEPTION("DataBuffer::expand: unregistered special allocation");
+    return Location{attrs.type == cudaMemoryTypeDevice ? attrs.device : device, attrs.type,
+                    isHostResidentSpecialAllocation(pointer, extent, true)};
+  };
+  Location source{oldChargeDevice, cudaMemoryTypeHost, true};
+  if (oldSpecial != nullptr)
+    source = locate(oldSpecial, _specialAllocBytes > 0 ? _specialAllocBytes : oldBytes, oldChargeDevice);
+  const bool oldCaptureWorkspace = oldSpecial != nullptr && pool.isInCaptureWorkspace(oldSpecial);
+  const bool releaseSpecial = oldSpecial != nullptr && _isOwnerSpecial && _workspace == nullptr && !oldCaptureWorkspace;
+  const bool releasePrimary = oldPrimary != nullptr && oldPrimaryOwner && _workspace == nullptr;
+  const LongType oldCharge = releaseSpecial && !source.host ? oldBytes : 0;
+  const int numDevices = AffinityManager::numberOfDevices();
+  if (requestedDevice < 0 || requestedDevice >= numDevices ||
+      (oldSpecial != nullptr && !source.host && (source.device < 0 || source.device >= numDevices)) ||
+      (oldCharge > 0 && (oldChargeDevice < 0 || oldChargeDevice >= numDevices)))
+    THROW_EXCEPTION("DataBuffer::expand: invalid device identity");
+
+  cudaStream_t executionStream = asyncTransferStream(false);
+  const bool capturing = DebugHelper::inGraphCapture(&executionStream);
+  if (capturing && _workspace == nullptr && (!tl_graphExecutionActive || tl_captureWorkspace == nullptr))
+    THROW_EXCEPTION("DataBuffer::expand: capture expansion requires a capture workspace");
+
+  // A captured copy has not executed yet. The registered capture workspace will
+  // own the old allocation AND its logical charge until the last graph pin dies.
+  // Validate that retained charge too, without presenting it as spare capacity.
+  if (capturing && oldCharge > 0)
+    counter.transferDeviceAllocation(oldChargeDevice, oldCharge, oldChargeDevice, oldCharge, false);
+  const LongType outgoingCharge = capturing ? 0 : oldCharge;
+  const LongType requestedCharge = _workspace == nullptr && !capturing ? bytes : 0;
+  if (!counter.transferDeviceAllocation(oldChargeDevice, outgoingCharge, requestedDevice, requestedCharge, false))
+    THROW_EXCEPTION("DataBuffer::expand: requested target exceeds device or DEVICE-group memory limits");
+  const LongType ownedHostCharge = releasePrimary ? oldBytes : 0;
+  // A borrowed primary has no outgoing charge. Capture retains an owned old
+  // primary as well, so in either case reserve the FULL replacement charge.
+  const LongType hostDelta = oldPrimary != nullptr && _workspace == nullptr ?
+      bytes - (capturing ? 0 : ownedHostCharge) : 0;
+  if (!counter.reserveHostGrowth(ownedHostCharge, hostDelta, false))
+    THROW_EXCEPTION("DataBuffer::expand: HOST growth exceeds memory limits");
+  auto validateOldPrimaryCanary = [&]() {
+    if (!releasePrimary || _primaryAllocBytes <= oldBytes) return;
+    const size_t padding = std::min(static_cast<size_t>(HOST_ALLOC_PADDING),
+                                    static_cast<size_t>(_primaryAllocBytes - oldBytes));
+    for (size_t offset = 0; offset + sizeof(uint64_t) <= padding; offset += sizeof(uint64_t)) {
+      uint64_t canary;
+      std::memcpy(&canary, static_cast<const int8_t*>(oldPrimary) + oldBytes + offset, sizeof(canary));
+      if (canary != sd::CanaryConstants::DATA_BUFFER_CANARY)
+        THROW_EXCEPTION("DataBuffer::expand: old primary buffer canary corrupted");
     }
+  };
 
-    // Allocate new buffer, tracking actual device in case of failover
-    int actualExpandDevice = currentDeviceId;
-    if (_workspace == nullptr) {
-      size_t allocSize = size + 8;
-      newSpecialBuffer = reinterpret_cast<int8_t*>(
-          memory::CudaMemoryPool::getInstance().allocate(allocSize, currentDeviceId, nullptr, &actualExpandDevice));
-      if (newSpecialBuffer == nullptr) {
-        THROW_EXCEPTION("[DEVICE] expand allocation failed");
-      }
-      void* expandBuf = reinterpret_cast<void*>(newSpecialBuffer);
-      actualExpandDevice = handleNonPeerFailover(expandBuf, allocSize, currentDeviceId, actualExpandDevice, "DataBuffer::expand");
-      newSpecialBuffer = reinterpret_cast<int8_t*>(expandBuf);
-    } else {
-      size_t allocSize = size + 8;
-      DSP_DIAG(MEMORY, "DataBuffer::expand via workspace: db=%p ws=%p bytes=%zu",
-               (void*)this, (void*)_workspace, allocSize);
-      newSpecialBuffer = reinterpret_cast<int8_t*>(
-          _workspace->allocateBytes(memory::MemoryType::DEVICE, allocSize));
+  // Outside capture, source writers/consumers must finish before either old
+  // allocation can be retired. This is a storage transaction, not a kernel sync.
+  if (!capturing && (oldSpecial != nullptr || oldPrimary != nullptr)) {
+    auto completeSource = [&](cudaStream_t stream) {
+      if (DebugHelper::inGraphCapture(&stream))
+        THROW_EXCEPTION("DataBuffer::expand: source stream is capturing");
+      waitForSpecialWriteEvent(stream);
+      waitForLastDspCompletionIfNeeded(stream);
+      auto err = cudaStreamSynchronize(stream);
+      if (err != cudaSuccess) throwCudaStatus("DataBuffer::expand: source completion failed", err);
+    };
+    // Failover storage can still have consumers on the requesting GPU.
+    completeSource(executionStream);
+    if (oldSpecial != nullptr && source.device >= 0 && source.device != requestedDevice) {
+      AffinityManager::setCurrentNativeDevice(source.device);
+      auto* sourceStream = LaunchContext::defaultContext()->getCudaStream();
+      if (sourceStream != nullptr) completeSource(*sourceStream);
     }
-#if defined(SD_GCC_FUNCTRACE)
-    array::DataBufferLifecycleTracker::getInstance().recordAllocation(
-        newSpecialBuffer, size, _dataType,array::BufferType::SPECIAL, this, _workspace != nullptr);
-#endif
-
-    // copy data from existing buffer
-    size_t hostAllocSize = size + (_workspace == nullptr ? static_cast<size_t>(HOST_ALLOC_PADDING) : 0);
-    if (_primaryBuffer != nullptr) {
-      // there's non-zero chance that primary buffer doesn't exist yet
-      ALLOCATE(newBuffer, _workspace, hostAllocSize, int8_t);
-      if (_lenInBytes > 0) {
-        std::memcpy(newBuffer, _primaryBuffer, _lenInBytes);
-      }
-
-      // Write canary values in the padding region (same as allocatePrimary)
-      if (_workspace == nullptr) {
-        uint64_t* canary = reinterpret_cast<uint64_t*>(newBuffer + size);
-        for (size_t i = 0; i < (static_cast<size_t>(HOST_ALLOC_PADDING) / sizeof(uint64_t)); i++) {
-          canary[i] = sd::CanaryConstants::DATA_BUFFER_CANARY;
-        }
-      }
-
-      if (_isOwnerPrimary) {
-#if defined(SD_GCC_FUNCTRACE)
-        array::DataBufferLifecycleTracker::getInstance().recordDeallocation(
-            _primaryBuffer,array::BufferType::PRIMARY);
-#endif
-        auto ipb = reinterpret_cast<int8_t*>(_primaryBuffer);
-        RELEASE(ipb, _workspace);
-      }
-
-      _primaryBuffer = newBuffer;
-      _isOwnerPrimary = true;
-#if defined(SD_GCC_FUNCTRACE)
-      array::DataBufferLifecycleTracker::getInstance().recordAllocation(
-          _primaryBuffer, size, _dataType,array::BufferType::PRIMARY, this, _workspace != nullptr);
-#endif
-    }
-
-    // Cross-device copy — route through asyncTransferStream() rather than
-    // cudaStreamPerThread so that (a) a stream that is currently being captured
-    // (error 901) is avoided, and (b) we stay on the main execution stream when
-    // inside the composite-capture region.
-    {
-      cudaStream_t copyStream = asyncTransferStream(/*switchedDevice=*/true);
-      if (copyStream == nullptr) copyStream = cudaStreamPerThread;
-      cudaMemcpyAsync(newSpecialBuffer, _specialBuffer, _lenInBytes, cudaMemcpyDeviceToDevice, copyStream);
-      // Skip the host sync during CUDA-graph capture — a cudaStreamSynchronize on a capturing
-      // stream is illegal (error 900/901). The copy is recorded into the graph and ordered by
-      // stream semantics; outside capture we sync so the cross-device source can be released.
-      if (DebugHelper::currentCaptureStream() == nullptr) {
-        cudaStreamSynchronize(copyStream);
-      }
-    }
-
-    if (_isOwnerSpecial && _specialBuffer != nullptr) {
-      // Switch to old device to release memory
-      if (oldDeviceId != currentDeviceId && oldDeviceId >= 0) {
-        cudaSetDevice(oldDeviceId);
-      }
-
-#if defined(SD_GCC_FUNCTRACE)
-      array::DataBufferLifecycleTracker::getInstance().recordDeallocation(
-          _specialBuffer,array::BufferType::SPECIAL);
-#endif
-      auto isb = reinterpret_cast<int8_t*>(_specialBuffer);
-      // Use device-aware free - critical for multi-GPU correctness
-      RELEASE_SPECIAL_WITH_DEVICE(isb, oldDeviceId, _workspace);
-
-      // Switch back to current device
-      if (oldDeviceId != currentDeviceId && oldDeviceId >= 0) {
-        cudaSetDevice(currentDeviceId);
-      }
-    }
-
-    _specialBuffer = newSpecialBuffer;
-    _lenInBytes = size;
-    _specialAllocBytes = size + 8;  // match actual allocation (size + 8)
-    if (_primaryBuffer != nullptr) _primaryAllocBytes = hostAllocSize;
-
-    // If CudaMemoryPool returned a capture-workspace interior pointer (bump-allocated
-    // during CUDA graph capture), the workspace lifecycle manages this memory — not
-    // this DataBuffer. Setting _isOwnerSpecial=true would cause deleteSpecial() to
-    // call cudaFreeAsync on a workspace interior pointer after the workspace is
-    // unregistered → "illegal memory access" (error 700) → CUDA context corruption.
-    // Mirror the allocateSpecial() workspace path: set _isOwnerSpecial=false so
-    // deleteSpecial() skips the free entirely (workspace is freed as a whole unit).
-    if (_workspace == nullptr &&
-        memory::CudaMemoryPool::getInstance().isInCaptureWorkspace(newSpecialBuffer)) {
-      _isOwnerSpecial = false;
-    } else {
-      _isOwnerSpecial = true;
-    }
-
-    // Store actual device where memory was allocated (may differ from currentDeviceId after failover)
-    _deviceId.store(actualExpandDevice);
-    _specialDeviceId.store(actualExpandDevice);
   }
+  AffinityManager::setCurrentNativeDevice(requestedDevice);
+
+  struct PrimaryAllocation {
+    memory::Workspace* workspace;
+    int8_t* pointer = nullptr;
+    ~PrimaryAllocation() noexcept { RELEASE(pointer, workspace); }
+  };
+  validateOldPrimaryCanary();
+  PrimaryAllocation primary{_workspace};
+  PrimaryAllocation retiredPrimary{_workspace};
+  MigrationAllocation special(pool, requestedDevice);
+  MigrationAllocation retiredSpecial(pool, source.device >= 0 ? source.device : requestedDevice);
+  const size_t allocSize = static_cast<size_t>(bytes) + 8;
+  const size_t hostAllocSize = static_cast<size_t>(bytes) + (_workspace == nullptr ? HOST_ALLOC_PADDING : 0);
+  cudaStream_t copyStream = capturing ? executionStream : cudaStreamPerThread;
+  if (!capturing && DebugHelper::inGraphCapture(&copyStream))
+    THROW_EXCEPTION("DataBuffer::expand: allocation stream is capturing");
+  special.pointer = _workspace == nullptr ? pool.allocate(allocSize, requestedDevice, copyStream, &special.device) :
+      _workspace->allocateBytes(memory::MemoryType::DEVICE, allocSize);
+  if (special.pointer == nullptr) THROW_EXCEPTION("[DEVICE] expand allocation failed");
+  const bool targetCaptureWorkspace = pool.isInCaptureWorkspace(special.pointer);
+  special.owned = _workspace == nullptr && !targetCaptureWorkspace;
+  Location target = locate(special.pointer, allocSize, special.device);
+  special.device = target.device >= 0 ? target.device : requestedDevice;
+  if (special.device < 0 || special.device >= numDevices)
+    THROW_EXCEPTION("DataBuffer::expand: invalid target device");
+
+  // Preserve the existing non-peer policy, without replacing an unguarded raw
+  // pointer or prefetching host-preferred managed failover back into VRAM.
+  if (_workspace == nullptr && !capturing && target.type == cudaMemoryTypeDevice && special.device != requestedDevice &&
+      !pool.isPeerAccessEnabled(requestedDevice, special.device)) {
+    MigrationAllocation pinned(pool, requestedDevice);
+    pinned.pointer = pool.allocatePinnedHost(allocSize);
+    if (pinned.pointer == nullptr) THROW_EXCEPTION("DataBuffer::expand: non-peer pinned allocation failed");
+    const auto pinnedLocation = locate(pinned.pointer, allocSize, requestedDevice);
+    std::swap(special.pointer, pinned.pointer);
+    std::swap(special.device, pinned.device);
+    std::swap(special.owned, pinned.owned);
+    target = pinnedLocation;
+  }
+  const LongType newCharge = special.owned && !target.host ? bytes : 0;
+  if (!counter.transferDeviceAllocation(oldChargeDevice, outgoingCharge, special.device, newCharge, false))
+    THROW_EXCEPTION("DataBuffer::expand: actual target exceeds device or DEVICE-group memory limits");
+
+  if (oldPrimary != nullptr) {
+    ALLOCATE(primary.pointer, _workspace, hostAllocSize, int8_t);
+    if (oldBytes > 0) std::memcpy(primary.pointer, oldPrimary, oldBytes);
+    if (_workspace == nullptr) {
+      const uint64_t canary = sd::CanaryConstants::DATA_BUFFER_CANARY;
+      for (size_t offset = 0; offset < HOST_ALLOC_PADDING; offset += sizeof(canary))
+        std::memcpy(primary.pointer + bytes + offset, &canary, sizeof(canary));
+    }
+  }
+  const bool copyPrimary = oldPrimary != nullptr && (oldSpecial == nullptr || !isSpecialActual());
+  void* copySource = copyPrimary ? oldPrimary : oldSpecial;
+  if (capturing && copyPrimary && oldBytes > 0) {
+    // Never bake a caller-owned/ephemeral host address into a replayable copy.
+    // This pinned workspace is adopted by the existing replay-handle lifecycle.
+    const size_t aligned = (static_cast<size_t>(oldBytes) + 255) & ~size_t(255);
+    if (tl_captureHostWorkspace == nullptr || tl_captureHostWorkspaceOffset > tl_captureHostWorkspaceSize ||
+        aligned > tl_captureHostWorkspaceSize - tl_captureHostWorkspaceOffset)
+      THROW_EXCEPTION("DataBuffer::expand: capture host workspace exhausted while staging source");
+    copySource = static_cast<int8_t*>(tl_captureHostWorkspace) + tl_captureHostWorkspaceOffset;
+    tl_captureHostWorkspaceOffset += aligned;
+    std::memcpy(copySource, oldPrimary, oldBytes);
+  }
+  memory::CudaMemoryPool::CaptureRetirement* capturedSpecial = nullptr;
+  memory::CudaMemoryPool::CaptureRetirement* capturedPrimary = nullptr;
+  if (capturing) {
+    validateOldPrimaryCanary();
+    if (releaseSpecial)
+      capturedSpecial = pool.prepareCaptureRetirement(tl_captureWorkspace, oldSpecial, source.device,
+                                                       oldChargeDevice, oldCharge, false);
+    if (releasePrimary)
+      capturedPrimary = pool.prepareCaptureRetirement(tl_captureWorkspace, oldPrimary, requestedDevice,
+                                                       -1, ownedHostCharge, true);
+  }
+  if (!capturing) {
+    AffinityManager::setCurrentNativeDevice(special.device);
+    if (DebugHelper::inGraphCapture(&copyStream))
+      THROW_EXCEPTION("DataBuffer::expand: target stream is capturing");
+  }
+  if (copySource != nullptr && oldBytes > 0) {
+    cudaError_t err;
+    if (!copyPrimary && source.type == cudaMemoryTypeDevice && target.type == cudaMemoryTypeDevice &&
+        source.device != special.device) {
+      err = cudaMemcpyPeerAsync(special.pointer, special.device, copySource, source.device, oldBytes, copyStream);
+    } else {
+      err = cudaMemcpyAsync(special.pointer, copySource, oldBytes, cudaMemcpyDefault, copyStream);
+    }
+    if (err != cudaSuccess) throwCudaStatus("DataBuffer::expand: copy failed", err);
+  }
+  if (!capturing) {
+    auto err = cudaStreamSynchronize(copyStream);
+    if (err != cudaSuccess) throwCudaStatus("DataBuffer::expand: copy completion failed", err);
+  }
+  AffinityManager::setCurrentDevice(requestedDevice);
+  validateOldPrimaryCanary();
+
+  // HOST admission and growth are atomic across different buffers. Keep that
+  // reservation reversible until the DEVICE replacement commits; no CUDA/pool
+  // operations run under MemoryCounter's mutex, and refusal changes no state.
+  if (!counter.reserveHostGrowth(ownedHostCharge, hostDelta))
+    THROW_EXCEPTION("DataBuffer::expand: HOST growth exceeds memory limits");
+  try {
+    if (capturing && oldCharge > 0)
+      counter.transferDeviceAllocation(oldChargeDevice, oldCharge, oldChargeDevice, oldCharge, false);
+    if (!counter.transferDeviceAllocation(oldChargeDevice, outgoingCharge, special.device, newCharge))
+      THROW_EXCEPTION("DataBuffer::expand: actual target exceeds device or DEVICE-group memory limits");
+  } catch (...) {
+    counter.releaseHostGrowth(hostDelta);
+    throw;
+  }
+
+  // Preparation already allocated the capture-lifetime records and pins. These
+  // stores transfer ownership/charge without throwing after accounting commits.
+  if (capturedSpecial != nullptr) capturedSpecial->committed = true;
+  if (capturedPrimary != nullptr) capturedPrimary->committed = true;
+  // No throwing work between accounting commit and pointer publication. Scoped
+  // retirees free only non-captured owned storage, without a second countOut.
+  _specialBuffer = special.pointer;
+  _specialAllocBytes = allocSize;
+  _isOwnerSpecial = !targetCaptureWorkspace;
+  _deviceId.store(special.device);
+  _specialDeviceId.store(special.device);
+  special.pointer = nullptr;
+  if (oldPrimary != nullptr) {
+    _primaryBuffer = primary.pointer;
+    _primaryAllocBytes = hostAllocSize;
+    _isOwnerPrimary = true;
+    primary.pointer = nullptr;
+  }
+  _lenInBytes = bytes;
+  retiredSpecial.pointer = releaseSpecial && !capturing ? oldSpecial : nullptr;
+  retiredPrimary.pointer = releasePrimary && !capturing ? static_cast<int8_t*>(oldPrimary) : nullptr;
+  if (!capturing) clearSpecialWriteEvent();
+  if (copyPrimary) readSpecial();
+#if defined(SD_GCC_FUNCTRACE)
+  try {
+    auto& tracker = array::DataBufferLifecycleTracker::getInstance();
+    if (releaseSpecial) tracker.recordDeallocation(oldSpecial, array::BufferType::SPECIAL);
+    if (releasePrimary) tracker.recordDeallocation(oldPrimary, array::BufferType::PRIMARY);
+    tracker.recordAllocation(_specialBuffer, bytes, _dataType, array::BufferType::SPECIAL, this, _workspace != nullptr);
+    if (oldPrimary != nullptr)
+      tracker.recordAllocation(_primaryBuffer, bytes, _dataType, array::BufferType::PRIMARY, this, _workspace != nullptr);
+  } catch (...) {
+    sd_printf("DataBuffer::expand: lifecycle diagnostics failed after successful expansion\n", "");
+  }
+#endif
 }
 
 DataBuffer DataBuffer::dup() {

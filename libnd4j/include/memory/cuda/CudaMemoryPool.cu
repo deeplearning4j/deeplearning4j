@@ -1334,6 +1334,19 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
     return;  // No-op — arena freed as a block at releaseAll()
   }
 
+  // Record retirement BEFORE the capture/host/direct-allocation early returns.
+  // A graph pin protects every allocation kind, not just async-pool memory.
+  {
+    std::lock_guard<std::mutex> lock(graphBakedMutex_);
+    auto it = graphBakedPins_.find(ptr);
+    if (it != graphBakedPins_.end()) {
+      it->second.freeRequested = true;
+      DSP_DIAG(MEMORY, "GRAPH_PIN defer-free ptr=%p dev=%d refCount=%d freeRequested=1",
+               ptr, deviceId, it->second.refCount);
+      return;
+    }
+  }
+
   // During CUDA graph capture, skip ALL frees to avoid recording MemFree graph nodes.
   // Workspace addresses: managed by the workspace buffer lifecycle (bump allocator).
   // Non-workspace (graph-external) addresses: cudaFreeAsync records a MemFree graph node
@@ -1515,27 +1528,6 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
       // behind an event recorded on the consumer stream; it is reaped by
       // drainDeferredDirectFrees() once cudaEventQuery reports completion.
       deferDirectFree(ptr, freedSize, deviceId, /*isHostAlloc=*/false, freeStream);
-      if (needDeviceRestore) cudaSetDevice(savedDev);
-      return;
-    }
-  }
-
-  // Graph-baked address protection: this pointer is still referenced by a live
-  // segment (baked into a CUDA graph's captured nodes, or cached in a frozen
-  // slot-by-slot slot). Freeing it now would allow pool reuse at the same address
-  // while the segment is live — causing data corruption or CUDA err700 on the next
-  // replay/re-exec. DEFER the free and RECORD that the owner requested it; the free
-  // is issued by unpinGraphBakedAddress() at refCount==0 ONLY because freeRequested
-  // is set here. A pinned buffer that is never free()'d (a SameDiff weight/constant
-  // that outlives the plan) is thus NOT freed at unpin — it is externally owned.
-  {
-    std::lock_guard<std::mutex> lock(graphBakedMutex_);
-    auto it = graphBakedPins_.find(ptr);
-    if (it != graphBakedPins_.end()) {
-      it->second.freeRequested = true;
-      DSP_DIAG(MEMORY,
-               "GRAPH_PIN defer-free ptr=%p dev=%d refCount=%d freeRequested=1",
-               ptr, deviceId, it->second.refCount);
       if (needDeviceRestore) cudaSetDevice(savedDev);
       return;
     }
@@ -1941,13 +1933,83 @@ void CudaMemoryPool::registerCaptureWorkspace(void* basePtr, size_t bytes) {
            basePtr, bytes, captureWorkspaceRanges_.size());
 }
 
+CudaMemoryPool::CaptureRetirement* CudaMemoryPool::prepareCaptureRetirement(
+    void* workspace, void* pointer, int deviceId, int chargeDevice, LongType logicalBytes, bool primary) {
+  if (workspace == nullptr || pointer == nullptr || logicalBytes < 0 ||
+      (!primary && logicalBytes > 0 && chargeDevice < 0))
+    THROW_EXCEPTION("CudaMemoryPool::prepareCaptureRetirement: invalid source or charge");
+  std::lock_guard<std::mutex> workspaceLock(captureWorkspaceMutex_);
+  // Composite handles can use slices of a plan-owned registered workspace.
+  void* base = nullptr;
+  const auto address = reinterpret_cast<uintptr_t>(workspace);
+  for (const auto& range : captureWorkspaceRanges_) {
+    const auto start = reinterpret_cast<uintptr_t>(range.first);
+    if (address >= start && address - start < range.second) { base = range.first; break; }
+  }
+  if (base == nullptr)
+    THROW_EXCEPTION("CudaMemoryPool::prepareCaptureRetirement: capture workspace has no lifetime owner");
+  auto& records = captureRetirements_[base];
+  auto* record = new CaptureRetirement{pointer, deviceId, chargeDevice, logicalBytes, primary};
+  try {
+    records.push_back(record);
+  } catch (...) {
+    delete record;
+    throw;
+  }
+  try {
+    // No CUDA operations: source protection must be established before recording
+    // the copy, while the DataBuffer still owns and accounts for this allocation.
+    if (!primary) {
+      std::lock_guard<std::mutex> pinLock(graphBakedMutex_);
+      auto& info = graphBakedPins_[pointer];
+      info.refCount++;
+      info.deviceId = deviceId;
+    }
+  } catch (...) {
+    records.pop_back();
+    delete record;
+    throw;
+  }
+  return record;
+}
+
 void CudaMemoryPool::unregisterCaptureWorkspace(void* basePtr) {
   if (basePtr == nullptr) return;
-  std::lock_guard<std::mutex> lock(captureWorkspaceMutex_);
-  auto erased = captureWorkspaceRanges_.erase(basePtr);
-  if (erased > 0) {
-    sd_debug("CudaMemoryPool: unregistered capture workspace %p (%zu remaining ranges)\n",
-             basePtr, captureWorkspaceRanges_.size());
+  std::vector<CaptureRetirement*> retirements;
+  {
+    std::lock_guard<std::mutex> lock(captureWorkspaceMutex_);
+    auto records = captureRetirements_.find(basePtr);
+    if (records != captureRetirements_.end()) {
+      retirements.swap(records->second);
+      captureRetirements_.erase(records);
+    }
+    captureWorkspaceRanges_.erase(basePtr);
+  }
+  // The workspace owner destroys its graphs before unregistering (including all
+  // handles sharing a composite workspace). Keep each old charge until its last
+  // pin is gone, even if another live graph also references the retired source.
+  for (auto* record : retirements) {
+    if (record->primary) {
+      if (record->committed) {
+        MemoryCounter::getInstance().releaseHostGrowth(record->logicalBytes);
+        auto* host = static_cast<int8_t*>(record->pointer);
+        RELEASE(host, nullptr);
+      }
+      delete record;
+      continue;
+    }
+    if (record->committed) {
+      std::lock_guard<std::mutex> lock(graphBakedMutex_);
+      auto& info = graphBakedPins_.at(record->pointer);
+      if (info.retired)
+        THROW_EXCEPTION("CudaMemoryPool: duplicate captured allocation retirement");
+      info.freeRequested = true;
+      info.retired = true;
+      info.chargeDevice = record->chargeDevice;
+      info.logicalBytes = record->logicalBytes;
+    }
+    unpinGraphBakedAddress(record->pointer, record->deviceId);
+    delete record;
   }
 }
 
@@ -1975,17 +2037,24 @@ void CudaMemoryPool::unpinGraphBakedAddress(void* ptr, int deviceId, cudaStream_
       DSP_DIAG(MEMORY, "GRAPH_PIN unpin-missing ptr=%p dev=%d", ptr, deviceId);
       return;
     }
-    it->second.refCount--;
-    remainingRefCount = it->second.refCount;
+    remainingRefCount = it->second.refCount - 1;
     freeRequested = it->second.freeRequested;
-    if (it->second.refCount <= 0) {
+    if (remainingRefCount <= 0) {
       // Free ONLY if the owner actually requested a free() while the buffer was pinned.
       // A buffer that was pinned for protection but never free()'d (a SameDiff weight/
       // constant that outlives the plan) must NOT be freed here — it is externally owned;
       // freeing it would double-free a live weight (→ err700) or fail for a non-pool
       // constant (cudaFreeAsync "invalid argument" → leak).
       shouldFree = freeRequested;
+      if (it->second.retired) {
+        // Only expansion-retired allocations carry a logical counter charge;
+        // ordinary free() callers already released their own accounting.
+        MemoryCounter::getInstance().transferDeviceAllocation(
+            it->second.chargeDevice, it->second.logicalBytes, deviceId, 0);
+      }
       graphBakedPins_.erase(it);
+    } else {
+      it->second.refCount = remainingRefCount;
     }
   }
   DSP_DIAG(MEMORY,

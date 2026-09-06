@@ -20,6 +20,8 @@ import org.bytedeco.javacpp.FloatPointer;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.factory.Nd4j;
@@ -32,13 +34,14 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /** Native-only 68 -> 132 byte expansion checks; allocator padding is not a charge. */
 @Tag("cuda-only")
-@Isolated("Mutates process-wide native device and DEVICE-group limits")
+@Isolated("Mutates process-wide native device, DEVICE and HOST group limits")
 public class CudaDataBufferExpansionAccountingTest {
     private static final int ELEMENTS = 17;
     private static final int EXPANDED_ELEMENTS = 33;
     private static final long BYTES = ELEMENTS * 4L;
     private static final long EXPANDED_BYTES = EXPANDED_ELEMENTS * 4L;
     private static final int DEVICE_GROUP = 10; // memory::MemoryType::DEVICE
+    private static final int HOST_GROUP = 0; // memory::MemoryType::HOST
 
     @Test
     void expansionChargesLogicalDeltaAndMigratesAtExactCap() throws Exception {
@@ -103,8 +106,9 @@ public class CudaDataBufferExpansionAccountingTest {
         }
     }
 
-    @Test
-    void expansionRejectsOneByteShortGroupCapWithoutMutation() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void expansionRejectsOneByteShortCapWithoutMutation(boolean groupCap) throws Exception {
         NativeOps ops = cudaOps();
         Environment env = Nd4j.getEnvironment();
         int source = ops.getDevice();
@@ -135,10 +139,9 @@ public class CudaDataBufferExpansionAccountingTest {
                     baseSource + BYTES, baseTarget, baseGroup + BYTES, output, expected);
             long originalPointer = ops.dbSpecialBuffer(buffer).address();
 
-            // Source has exactly enough logical capacity; the group is one byte
-            // short, so moving the allocation to another GPU cannot satisfy it.
-            env.setDeviceLimit(source, baseSource + EXPANDED_BYTES);
-            env.setGroupLimit(DEVICE_GROUP, baseGroup + EXPANDED_BYTES - 1);
+            // Independently discriminate the device and DEVICE-group limits.
+            env.setDeviceLimit(source, baseSource + EXPANDED_BYTES - (groupCap ? 0 : 1));
+            env.setGroupLimit(DEVICE_GROUP, baseGroup + EXPANDED_BYTES - (groupCap ? 1 : 0));
             OpaqueDataBuffer expanding = buffer;
             assertThrows(RuntimeException.class, () -> ops.dbExpand(expanding, EXPANDED_ELEMENTS));
             ops.clearLastError();
@@ -146,8 +149,9 @@ public class CudaDataBufferExpansionAccountingTest {
             assertState(ops, env, buffer, ELEMENTS, source, source, target,
                     baseSource + BYTES, baseTarget, baseGroup + BYTES, output, expected);
 
-            // Raising ONLY the group cap by one byte must admit the same request.
-            env.setGroupLimit(DEVICE_GROUP, baseGroup + EXPANDED_BYTES);
+            // Raising ONLY the failing cap by one byte must admit the same request.
+            if (groupCap) env.setGroupLimit(DEVICE_GROUP, baseGroup + EXPANDED_BYTES);
+            else env.setDeviceLimit(source, baseSource + EXPANDED_BYTES);
             ops.dbExpand(buffer, EXPANDED_ELEMENTS);
             assertState(ops, env, buffer, EXPANDED_ELEMENTS, source, source, target,
                     baseSource + EXPANDED_BYTES, baseTarget, baseGroup + EXPANDED_BYTES, output, expected);
@@ -167,6 +171,97 @@ public class CudaDataBufferExpansionAccountingTest {
                 ops.setDevice(source);
             }
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void expansionWithPrimaryHonorsHostCapAndPreservesActualPrefix(boolean hostLatest) throws Exception {
+        NativeOps ops = cudaOps();
+        Environment env = Nd4j.getEnvironment();
+        int source = ops.getDevice();
+        int target = (source + 1) % ops.getAvailableDevices();
+        long sourceLimit = env.getDeviceLimit(source);
+        long targetLimit = env.getDeviceLimit(target);
+        long deviceGroupLimit = env.getGroupLimit(DEVICE_GROUP);
+        long hostLimit = env.getGroupLimit(HOST_GROUP);
+        OpaqueDataBuffer buffer = null;
+        float[] devicePrefix = prefix();
+        float[] hostPrefix = prefix();
+        for (int i = 0; i < hostPrefix.length; i++) hostPrefix[i] += 100.0f;
+
+        try (FloatPointer input = new FloatPointer(devicePrefix);
+             FloatPointer output = new FloatPointer(ELEMENTS)) {
+            env.setDeviceLimit(source, 0);
+            env.setDeviceLimit(target, 0);
+            env.setGroupLimit(DEVICE_GROUP, 0);
+            env.setGroupLimit(HOST_GROUP, 0);
+            warmDevice(ops, source);
+            warmDevice(ops, target);
+            long baseSource = env.getDeviceCounter(source);
+            long baseTarget = env.getDeviceCounter(target);
+            long baseDeviceGroup = groupCounter();
+            long baseHost = groupCounter(HOST_GROUP);
+            assertTrue(baseSource >= 0 && baseTarget >= 0 && baseDeviceGroup >= 0 && baseHost >= 0,
+                    "Pre-existing negative accounting must not be hidden");
+
+            assertEquals(1, ops.setDevice(source));
+            buffer = ops.allocateDataBuffer(ELEMENTS, DataType.FLOAT.toInt(), true);
+            assertNotNull(buffer, ops.lastErrorMessage());
+            assertFalse(buffer.isNull(), ops.lastErrorMessage());
+            initialize(ops, buffer, source, input);
+            assertNotNull(ops.dbPrimaryBuffer(buffer));
+            assertFalse(ops.dbPrimaryBuffer(buffer).isNull());
+            new FloatPointer(ops.dbPrimaryBuffer(buffer)).put(hostPrefix);
+            if (hostLatest) ops.dbTickHostWrite(buffer);
+            else ops.dbTickDeviceWrite(buffer);
+            assertEquals(baseHost + BYTES, groupCounter(HOST_GROUP), "initial owned HOST charge");
+            long originalPrimary = ops.dbPrimaryBuffer(buffer).address();
+            long originalSpecial = ops.dbSpecialBuffer(buffer).address();
+
+            env.setDeviceLimit(source, baseSource + EXPANDED_BYTES);
+            env.setGroupLimit(DEVICE_GROUP, baseDeviceGroup + EXPANDED_BYTES);
+            env.setGroupLimit(HOST_GROUP, baseHost + EXPANDED_BYTES - 1);
+            OpaqueDataBuffer expanding = buffer;
+            assertThrows(RuntimeException.class, () -> ops.dbExpand(expanding, EXPANDED_ELEMENTS));
+            ops.clearLastError();
+            assertEquals(originalPrimary, ops.dbPrimaryBuffer(buffer).address(), "rejected primary pointer");
+            assertEquals(originalSpecial, ops.dbSpecialBuffer(buffer).address(), "rejected special pointer");
+            assertEquals(baseHost + BYTES, groupCounter(HOST_GROUP), "HOST rejection changes no charge");
+            assertPrimaryPrefix(ops, buffer, hostPrefix);
+            assertState(ops, env, buffer, ELEMENTS, source, source, target,
+                    baseSource + BYTES, baseTarget, baseDeviceGroup + BYTES, output, devicePrefix);
+
+            env.setGroupLimit(HOST_GROUP, baseHost + EXPANDED_BYTES);
+            ops.dbExpand(buffer, EXPANDED_ELEMENTS);
+            assertEquals(baseHost + EXPANDED_BYTES, groupCounter(HOST_GROUP), "logical HOST growth only");
+            assertPrimaryPrefix(ops, buffer, hostPrefix);
+            assertState(ops, env, buffer, EXPANDED_ELEMENTS, source, source, target,
+                    baseSource + EXPANDED_BYTES, baseTarget, baseDeviceGroup + EXPANDED_BYTES,
+                    output, hostLatest ? hostPrefix : devicePrefix);
+            OpaqueDataBuffer completed = buffer;
+            buffer = null;
+            ops.deleteDataBuffer(completed);
+            assertEquals(baseSource, env.getDeviceCounter(source), "source after delete");
+            assertEquals(baseTarget, env.getDeviceCounter(target), "target after delete");
+            assertEquals(baseDeviceGroup, groupCounter(), "DEVICE group after delete");
+            assertEquals(baseHost, groupCounter(HOST_GROUP), "HOST group after delete");
+        } finally {
+            try {
+                if (buffer != null) ops.deleteDataBuffer(buffer);
+            } finally {
+                env.setDeviceLimit(source, sourceLimit);
+                env.setDeviceLimit(target, targetLimit);
+                env.setGroupLimit(DEVICE_GROUP, deviceGroupLimit);
+                env.setGroupLimit(HOST_GROUP, hostLimit);
+                ops.setDevice(source);
+            }
+        }
+    }
+
+    private static void assertPrimaryPrefix(NativeOps ops, OpaqueDataBuffer buffer, float[] expected) {
+        float[] actual = new float[expected.length];
+        new FloatPointer(ops.dbPrimaryBuffer(buffer)).get(actual);
+        assertArrayEquals(expected, actual, 0.0f, "primary prefix must survive expansion and refusal");
     }
 
     private static NativeOps cudaOps() {
@@ -230,9 +325,13 @@ public class CudaDataBufferExpansionAccountingTest {
     }
 
     private static long groupCounter() throws Exception {
+        return groupCounter(DEVICE_GROUP);
+    }
+
+    private static long groupCounter(int group) throws Exception {
         // Keep CUDA bindings off the compile-time classpath, as in the migration test.
         Class<?> type = Class.forName("org.nd4j.linalg.jcublas.bindings.Nd4jCuda$Environment");
         Object environment = type.getMethod("getInstance").invoke(null);
-        return ((Number) type.getMethod("getGroupCounter", int.class).invoke(environment, DEVICE_GROUP)).longValue();
+        return ((Number) type.getMethod("getGroupCounter", int.class).invoke(environment, group)).longValue();
     }
 }

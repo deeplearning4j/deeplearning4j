@@ -36,8 +36,11 @@ class WorkflowMatrixTests(unittest.TestCase):
             1, workflow.count("ref: ${{ steps.source.outputs.result }}")
         )
         self.assertEqual(
-            3, workflow.count("ref: ${{ needs.matrix.outputs.source }}")
+            2, workflow.count("ref: ${{ needs.matrix.outputs.source }}")
         )
+        # Workers build the pinned source; the publisher must use tooling that
+        # understands the invoking workflow's verification flags.
+        self.assertIn("ref: ${{ github.workflow_sha }}", workflow.split("\n  publish:", 1)[1])
         self.assertNotIn("ref: ${{ inputs.sourceRef }}", workflow)
 
     def test_single_dispatcher_supports_every_logical_release_matrix(self):
@@ -95,6 +98,20 @@ class WorkflowMatrixTests(unittest.TestCase):
             )
             actual.update(row["selector"] for row in rows)
         self.assertEqual(expected, actual)
+
+    def test_full_repository_matrix_covers_each_plan_variant_once(self):
+        rows = sum((prepare_worker.workflow_rows(
+            self.plan, self.matrix, "all", group
+        ) for group in ("linux", "host")), [])
+        expected = {(shard["id"], variant["name"])
+                    for shard in self.plan["shards"]
+                    for variant in shard["build"]["variants"]}
+        self.assertEqual(expected, {(row["shard"], row["variant"]) for row in rows})
+        self.assertEqual(len(expected), len(rows))
+        self.assertEqual(len(rows), len({row["artifactId"] for row in rows}))
+        with self.assertRaisesRegex(ValueError, "does not accept targeted"):
+            prepare_worker.workflow_rows(self.plan, self.matrix, "all", "linux",
+                                         classifiers="linux-x86_64", selection_mode="targeted")
 
     def test_public_artifact_id_does_not_duplicate_shard_suffix(self):
         self.assertEqual(
@@ -545,7 +562,9 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("source-commit:", action)
         self.assertIn('--commit "${INPUT_SOURCE_COMMIT}"', action)
         self.assertIn("source-commit: ${{ needs.matrix.outputs.source }}", workflow)
-        self.assertEqual(2, workflow.count("compression-level: 0"))
+        # Native worker uploads are distinct from the retained merged repository.
+        worker_jobs = workflow.split("\n  publish:", 1)[0]
+        self.assertEqual(2, worker_jobs.count("compression-level: 0"))
         self.assertIn(
             '<target if="dl4j.prune.native.intermediates">', vulkan_pom
         )
@@ -597,8 +616,9 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("snapshot-version:\n    required: true", action)
         self.assertIn('--release-version "${INPUT_RELEASE_VERSION}"', action)
         self.assertIn('--snapshot-version "${INPUT_SNAPSHOT_VERSION}"', action)
-        self.assertIn("CENTRAL_SONATYPE_TOKEN_USERNAME:\n        required: true", workflow)
-        self.assertIn("CENTRAL_SONATYPE_TOKEN_PASSWORD:\n        required: true", workflow)
+        self.assertIn("CENTRAL_SONATYPE_TOKEN_USERNAME:\n        required: false", workflow)
+        self.assertIn("CENTRAL_SONATYPE_TOKEN_PASSWORD:\n        required: false", workflow)
+        self.assertIn("Missing required publication secret:", workflow)
         self.assertIn("Validate publication configuration", workflow)
         self.assertIn("deployToReleaseStaging must be 0 or 1", workflow)
         self.assertEqual(1, workflow.count("name: Download staged worker results"))
