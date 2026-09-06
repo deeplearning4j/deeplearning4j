@@ -55,6 +55,12 @@ on:
         type: choice
         options: ["0", "1"]
         default: "0"
+      regenerateOps:
+        description: Regenerate op APIs in the Java-only dry run and retain a review patch.
+        required: false
+        type: choice
+        options: ["false", "true"]
+        default: "false"
       releaseVersion:
         description: Release version when deployToReleaseStaging=1.
         required: false
@@ -78,7 +84,7 @@ on:
         required: true
         type: choice
         options: ["false", "true"]
-        default: "false"
+        default: "true"
       publishSourceRunId:
         description: Publish staged release-worker artifacts from this run ID without rebuilding.
         required: false
@@ -102,6 +108,7 @@ jobs:
       serverId: ${{ inputs.serverId }}
       deployToReleaseStaging: ${{ inputs.deployToReleaseStaging }}
       dryRun: ${{ inputs.dryRun }}
+      regenerateOps: ${{ inputs.regenerateOps || 'false' }}
     secrets:
       GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
       GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}

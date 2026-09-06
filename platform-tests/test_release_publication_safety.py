@@ -173,6 +173,12 @@ class PublicationWorkflowSafetyTests(unittest.TestCase):
                 self.assertIn("regenerateOps must be true or false", result.stderr)
 
     def test_java_regeneration_is_remote_reviewable_and_never_a_deployment(self):
+        entrypoint = (WORKFLOWS / "build-deploy-cross-platform.yml").read_text()
+        java_job = entrypoint.split("  java-only:\n", 1)[1].split("\n  release:\n", 1)[0]
+        self.assertIn("if: inputs.javaOnly == '1'", java_job)
+        self.assertIn("regenerateOps: ${{ inputs.regenerateOps || 'false' }}", java_job)
+        dry_run_input = entrypoint.split("      dryRun:\n", 1)[1].split("      publishSourceRunId:\n", 1)[0]
+        self.assertIn('default: "true"', dry_run_input)
         source = (WORKFLOWS / "java-hotfix-release.yml").read_text()
         regeneration = source.split("      - name: Regenerate op APIs for build-only qualification\n", 1)[1]
         regeneration = regeneration.split("\n      - ", 1)[0]
