@@ -107,6 +107,32 @@ class PublicationWorkflowSafetyTests(unittest.TestCase):
         self.assertIsNone(metadata.find("m:activation", NS))
         self.assertIsNone(profiles["central-signing"].find("m:activation", NS))
 
+    def test_api_release_javadoc_expands_lombok_without_changing_compile_sources(self):
+        pom = ET.parse(ROOT / "nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/pom.xml").getroot()
+        profile = next(p for p in pom.findall("m:profiles/m:profile", NS)
+                       if p.findtext("m:id", namespaces=NS) == "central-release")
+        self.assertIsNone(profile.find("m:activation", NS))
+        plugins = {p.findtext("m:artifactId", namespaces=NS): p
+                   for p in profile.findall("m:build/m:plugins/m:plugin", NS)}
+        lombok = plugins["lombok-maven-plugin"]
+        self.assertEqual("1.18.20.0", lombok.findtext("m:version", namespaces=NS))
+        dependency = lombok.find("m:dependencies/m:dependency", NS)
+        self.assertEqual("lombok", dependency.findtext("m:artifactId", namespaces=NS))
+        self.assertEqual("${lombok.version}", dependency.findtext("m:version", namespaces=NS))
+        execution = lombok.find("m:executions/m:execution", NS)
+        self.assertEqual("prepare-package", execution.findtext("m:phase", namespaces=NS))
+        self.assertEqual("delombok", execution.findtext("m:goals/m:goal", namespaces=NS))
+        config = execution.find("m:configuration", NS)
+        self.assertEqual("${project.build.sourceDirectory}", config.findtext("m:sourceDirectory", namespaces=NS))
+        self.assertEqual("false", config.findtext("m:addOutputDirectory", namespaces=NS))
+        output = config.findtext("m:outputDirectory", namespaces=NS)
+        self.assertEqual("${project.build.directory}/delombok-javadoc", output)
+        javadoc = plugins["maven-javadoc-plugin"].find("m:configuration", NS)
+        self.assertEqual(output, javadoc.findtext("m:sourcepath", namespaces=NS))
+        self.assertIsNone(javadoc.find("m:failOnError", NS))  # Inherit the strict root policy.
+        self.assertIsNone(javadoc.find("m:doclint", NS))
+        self.assertIsNone(javadoc.find("m:excludePackageNames", NS))
+
     def test_publication_uses_workflow_tooling_without_changing_source_identity_checks(self):
         for name in ("_release-worker.yml", "publish-central-from-release.yml"):
             with self.subTest(workflow=name):

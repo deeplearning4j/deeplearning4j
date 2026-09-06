@@ -20,6 +20,7 @@ The release namespace is `org.eclipse.deeplearning4j`. A release must not silent
 - Resolve each shipped binary in its own consumer module to avoid dependency mediation between components concealing missing dependencies. Reject newly fetched DL4J artifacts outside this run's inventory.
 - Produce a hash/size/ownership manifest and retain the build-only Maven repository for inspection. Do not include standalone SDK archives in full Maven worker uploads.
 - Keep metadata generation separate from signing. `dryRun=true` neither signs nor uploads. Actual release staging uses Central `USER_MANAGED`; the Maven plugin defaults `autoPublish` to false. No workflow requests automatic release.
+- Generate `nd4j-api` release Javadoc from Lombok-expanded sources so generated public builder types are documented without changing their API. Run delombok with the reactor's Lombok version in `prepare-package`, after protobuf generation/relocation and compilation, and keep its output separate from compilation and the source JAR. Preserve strict Javadoc validation.
 
 ## Consequences and qualification
 
