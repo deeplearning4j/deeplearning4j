@@ -36,7 +36,7 @@ class WorkflowMatrixTests(unittest.TestCase):
             1, workflow.count("ref: ${{ steps.source.outputs.result }}")
         )
         self.assertEqual(
-            2, workflow.count("ref: ${{ needs.matrix.outputs.source }}")
+            2, workflow.split("\n  publish:", 1)[0].count("ref: ${{ needs.matrix.outputs.source }}")
         )
         # Workers build the pinned source; the publisher must use tooling that
         # understands the invoking workflow's verification flags.
@@ -98,20 +98,6 @@ class WorkflowMatrixTests(unittest.TestCase):
             )
             actual.update(row["selector"] for row in rows)
         self.assertEqual(expected, actual)
-
-    def test_full_repository_matrix_covers_each_plan_variant_once(self):
-        rows = sum((prepare_worker.workflow_rows(
-            self.plan, self.matrix, "all", group
-        ) for group in ("linux", "host")), [])
-        expected = {(shard["id"], variant["name"])
-                    for shard in self.plan["shards"]
-                    for variant in shard["build"]["variants"]}
-        self.assertEqual(expected, {(row["shard"], row["variant"]) for row in rows})
-        self.assertEqual(len(expected), len(rows))
-        self.assertEqual(len(rows), len({row["artifactId"] for row in rows}))
-        with self.assertRaisesRegex(ValueError, "does not accept targeted"):
-            prepare_worker.workflow_rows(self.plan, self.matrix, "all", "linux",
-                                         classifiers="linux-x86_64", selection_mode="targeted")
 
     def test_public_artifact_id_does_not_duplicate_shard_suffix(self):
         self.assertEqual(

@@ -18,6 +18,7 @@ import tempfile
 import time
 import urllib.error
 import urllib.request
+import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
 
@@ -1707,6 +1708,7 @@ def build_cross_platform(source: Path, build: dict, repository: Path, env: dict[
         "DL4J_OS": "windows" if platform == "windows-x86_64" else ("macos" if platform == "macosx-arm64" else "linux"),
         "DL4J_MAVEN_GOAL": "install",
         "DL4J_MAVEN_REPOSITORY": str(repository),
+        "DL4J_RELEASE_METADATA": "1" if build.get("releaseMetadata") else "0",
     })
     script = source / "build-scripts/release/cross-platform.sh"
     run(bash_command([str(script), "--run-tokenizers"], cross_env), source, cross_env)
@@ -3489,7 +3491,13 @@ def stage_repository(repository: Path, output: Path, rules: dict) -> None:
             artifact_id = relative_under_namespace.parts[0] if relative_under_namespace.parts else ""
             if mode == "classifier":
                 if artifact_id not in artifact_ids:
-                    continue
+                    # Parent descriptors are needed to resolve the native inputs
+                    # before the Java reactor can build the rest of the release.
+                    is_parent = (rules.get("includeParentPoms") and path.suffix == ".pom"
+                                 and ET.parse(path).getroot().findtext(
+                                     "{http://maven.apache.org/POM/4.0.0}packaging") == "pom")
+                    if not is_parent:
+                        continue
                 # A Maven component is never publishable without its POM. Keep
                 # POMs with every classifier-owned artifact even when optional
                 # sources, javadocs, and Gradle module metadata are omitted.

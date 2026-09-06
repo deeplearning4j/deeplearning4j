@@ -145,7 +145,7 @@
                     <groupId>${project.groupId}</groupId>
                     <artifactId>${nd4j.backend}</artifactId>
                     <version>${project.version}</version>
-                    <classifier>${javacpp.platform.macosx-arm64}-onednn</classifier>
+                    <classifier>${javacpp.platform.linux-arm64}-onednn</classifier>
                 </dependency>
                 <dependency>
                     <groupId>${project.groupId}</groupId>

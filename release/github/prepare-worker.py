@@ -464,6 +464,17 @@ def worker_config(args: argparse.Namespace) -> dict:
 
     current_version = infer_release_version(args.source)
     release_version = args.release_version or current_version
+    # Every non-snapshot worker produces Central attachments, including dry runs.
+    # Signing and uploading remain exclusively in the separately gated publisher.
+    if not release_version.endswith("-SNAPSHOT"):
+        shard["build"]["workflowMvnFlags"] += " -Pcentral-release"
+        shard["build"]["releaseMetadata"] = True
+        shard["artifactRules"]["includeMetadata"] = True
+    if shard["build"]["backend"] == "cpu":
+        for field in ("artifactIds", "unclassifiedArtifactIds"):
+            shard["artifactRules"].setdefault(field, []).append("nd4j-cpu-backend-common")
+        shard["build"]["modules"].append(":nd4j-cpu-backend-common")
+    shard["artifactRules"]["includeParentPoms"] = True
     config = {
         "schemaVersion": 1,
         "provider": "github-actions",
