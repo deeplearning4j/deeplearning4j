@@ -12,7 +12,7 @@ The release namespace is `org.eclipse.deeplearning4j`. A release must not silent
 
 ## Decision
 
-- Add an explicit `workflow=all` selection derived from the canonical provider plan, currently 68 variants. Reject partial selection. Run release contract tests before native fanout.
+- Add an explicit `workflow=all` selection derived from the canonical provider plan, currently 66 variants. Reject partial selection. Run release contract tests before native fanout.
 - Pin source to a full commit SHA. Require the exact worker set, matching source/version/run identity and plan digests, completion receipts, and archive attestations. Failed-job retries can reuse successful artifacts only from earlier attempts of the same run.
 - Give each native classifier a unique owner and each shared native component a declared owner. Separate CUDA common-module coordinates by CUDA version. Keep platform dependency declarations aligned with the published classifier inventory.
 - Assemble in a fresh, uncached Maven local repository. Seed attested native outputs and their actual parent chains, then replace bootstrap parents by building the default Java reactor from the same source. Build platform aggregators separately without native profiles or `--also-make`.

@@ -41,7 +41,7 @@ gh workflow run build-deploy-cross-platform.yml \
 
 ## Full-release readiness gate
 
-`workflow=all` derives every native variant from the canonical release plan (currently 68 variants), rejects partial classifier filters, and runs the Python release contract suites before any native jobs start. A successful contract check is not a successful native build.
+`workflow=all` derives every native variant from the canonical release plan (currently 66 variants), rejects partial classifier filters, and runs the Python release contract suites before any native jobs start. A successful contract check is not a successful native build.
 
 After all workers succeed, `full-repository.py`:
 

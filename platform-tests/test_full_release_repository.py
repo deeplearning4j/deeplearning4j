@@ -62,7 +62,7 @@ class FullRepositoryTest(unittest.TestCase):
             rows.extend(full.worker.workflow_rows(self.plan, self.matrix, "all", group))
         expected = {(shard["id"], variant["name"]) for shard in self.shards.values()
                     for variant in shard["build"]["variants"]}
-        self.assertEqual(68, len(expected))
+        self.assertEqual(66, len(expected))
         self.assertEqual(len(expected), len(rows))
         self.assertEqual(expected, {(row["shard"], row["variant"]) for row in rows})
         self.assertEqual(len(rows), len({row["artifactId"] for row in rows}))
@@ -77,7 +77,7 @@ class FullRepositoryTest(unittest.TestCase):
     def test_receipts_require_complete_same_source_same_run_matrix(self):
         workers = self.receipts()
         found = full.inspect_workers(workers, self.plan, VERSION, COMMIT, RUN)
-        self.assertEqual(68, len(found))
+        self.assertEqual(66, len(found))
         receipt = next(workers.rglob("worker-config.json"))
         original = full.load_json(receipt)
         for field, value in (("commit", "b" * 40), ("releaseVersion", "1.0.0-SNAPSHOT"),
@@ -163,7 +163,7 @@ class FullRepositoryTest(unittest.TestCase):
                 patch.object(full.driver, "attest_classifier_archive_contract") as archives:
             local = self.root / "m2"
             inventory = full.seed_native(found, self.plan, local, VERSION)
-        self.assertEqual(68, variants.call_count)
+        self.assertEqual(66, variants.call_count)
         self.assertEqual(len(expected), archives.call_count)
         self.assertTrue(expected.issubset({Path(p) for p in inventory}))
         self.assertFalse(any("/libnd4j/" in p for p in inventory))
