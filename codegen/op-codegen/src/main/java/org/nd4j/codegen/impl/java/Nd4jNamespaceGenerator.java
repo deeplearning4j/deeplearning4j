@@ -182,7 +182,15 @@ public class Nd4jNamespaceGenerator {
         jf.writeTo(sb);
 
         File outFile = new File(outputDirectory, packageToDirectory(opsPackage) + "/" + className + ".java");
-        FileUtils.writeStringToFile(outFile, sb.toString(), StandardCharsets.UTF_8);
+        writeJavaSource(outFile, sb);
+    }
+
+    private static void writeJavaSource(File outFile, StringBuilder source) throws IOException {
+        // JavaPoet preserves trailing spaces from DSL documentation and composition bodies.
+        // Normalize Java source line endings without changing indentation or blank lines.
+        // Markdown is written separately: trailing spaces there can encode a line break.
+        String formatted = source.toString().replaceAll("(?m)[ \\t]+$", "");
+        FileUtils.writeStringToFile(outFile, formatted, StandardCharsets.UTF_8);
     }
 
     private static String packageToDirectory(String packageName){
@@ -839,7 +847,7 @@ public class Nd4jNamespaceGenerator {
         jf.writeTo(sb);
 
         File outFile = new File(outputDirectory, packageToDirectory(targetPackage) + "/" + className + ".java");
-        FileUtils.writeStringToFile(outFile, sb.toString(), StandardCharsets.UTF_8);
+        writeJavaSource(outFile, sb);
     }
 
     private static void generateConfigs(File outputDirectory, String basePackage) throws IOException {
@@ -980,7 +988,7 @@ public class Nd4jNamespaceGenerator {
         jf.writeTo(sb);
 
         File outFile = new File(outputDirectory, packageToDirectory(targetPackage) + "/" + className + ".java");
-        FileUtils.writeStringToFile(outFile, sb.toString(), StandardCharsets.UTF_8);
+        writeJavaSource(outFile, sb);
     }
 
     private static void addConfigParam(TypeSpec.Builder builder, MethodSpec.Builder constructorBuilder, String paramName, TypeName paramType, String paramDescription, boolean addField) {
