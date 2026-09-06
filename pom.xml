@@ -755,6 +755,10 @@
                         <version>${maven-javadoc-plugin.version}</version>
                         <configuration>
                             <failOnError>true</failOnError>
+                            <!-- Report the full release documentation error inventory in CI. -->
+                            <additionalOptions>
+                                <additionalOption>-Xmaxerrs 10000</additionalOption>
+                            </additionalOptions>
                         </configuration>
                         <executions>
                             <execution>
