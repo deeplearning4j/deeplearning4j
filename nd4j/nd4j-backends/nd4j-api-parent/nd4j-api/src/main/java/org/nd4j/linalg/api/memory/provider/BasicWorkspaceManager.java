@@ -174,7 +174,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
     }
 
     /**
-     * This method gets & activates default workspace
+     * This method gets and activates default workspace
      *
      * @return
      */
@@ -184,7 +184,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
     }
 
     /**
-     * This method gets & activates workspace with a given Id
+     * This method gets and activates workspace with a given Id
      *
      * @param id
      * @return
@@ -195,7 +195,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
     }
 
     /**
-     * This method gets & activates default with a given configuration and Id
+     * This method gets and activates default with a given configuration and Id
      *
      * @param configuration
      * @param id

@@ -54,21 +54,21 @@ public interface DataBufferFactory {
 
 
     /**
-     * This method will create new DataBuffer of the same dataType & same length
+     * This method will create new DataBuffer of the same dataType and same length
      * @param buffer
      * @return
      */
     DataBuffer createSame(DataBuffer buffer, boolean init);
 
     /**
-     * This method will create new DataBuffer of the same dataType & same length
+     * This method will create new DataBuffer of the same dataType and same length
      * @param buffer
      * @return
      */
     DataBuffer createSame(DataBuffer buffer, boolean init, MemoryWorkspace workspace);
 
     /**
-     * This method will create new DataBuffer of the same dataType & same length
+     * This method will create new DataBuffer of the same dataType and same length
      * @param data the data to create the buffer from
      * @return the new buffer
      */

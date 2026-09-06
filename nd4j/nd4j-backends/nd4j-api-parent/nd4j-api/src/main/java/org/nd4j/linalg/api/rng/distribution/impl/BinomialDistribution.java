@@ -166,7 +166,7 @@ public class BinomialDistribution extends BaseDistribution {
 
     /**
      * {@inheritDoc}
-     * <p/>
+     * <p>
      * For {@code n} trials and probability parameter {@code p}, the mean is
      * {@code n * p}.
      */
@@ -177,7 +177,7 @@ public class BinomialDistribution extends BaseDistribution {
 
     /**
      * {@inheritDoc}
-     * <p/>
+     * <p>
      * For {@code n} trials and probability parameter {@code p}, the variance is
      * {@code n * p * (1 - p)}.
      */
@@ -189,7 +189,7 @@ public class BinomialDistribution extends BaseDistribution {
 
     /**
      * {@inheritDoc}
-     * <p/>
+     * <p>
      * The lower bound of the support is always 0 except for the probability
      * parameter {@code p = 1}.
      *
@@ -203,7 +203,7 @@ public class BinomialDistribution extends BaseDistribution {
 
     /**
      * {@inheritDoc}
-     * <p/>
+     * <p>
      * The upper bound of the support is the number of trials except for the
      * probability parameter {@code p = 0}.
      *
@@ -227,7 +227,7 @@ public class BinomialDistribution extends BaseDistribution {
 
     /**
      * {@inheritDoc}
-     * <p/>
+     * <p>
      * The support of this distribution is connected.
      *
      * @return {@code true}

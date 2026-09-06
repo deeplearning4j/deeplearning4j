@@ -176,7 +176,7 @@ public class NormalDistribution extends BaseDistribution {
 
     /**
      * {@inheritDoc}
-     * <p/>
+     * <p>
      * If {@code x} is more than 40 standard deviations from the mean, 0 or 1
      * is returned, as in these cases the actual value is within
      * {@code Double.MIN_VALUE} of 0 or 1.
@@ -242,7 +242,7 @@ public class NormalDistribution extends BaseDistribution {
 
     /**
      * {@inheritDoc}
-     * <p/>
+     * <p>
      * For mean parameter {@code mu}, the mean is {@code mu}.
      */
     public double getNumericalMean() {
@@ -251,7 +251,7 @@ public class NormalDistribution extends BaseDistribution {
 
     /**
      * {@inheritDoc}
-     * <p/>
+     * <p>
      * For standard deviation parameter {@code s}, the variance is {@code s^2}.
      */
     public double getNumericalVariance() {
@@ -261,7 +261,7 @@ public class NormalDistribution extends BaseDistribution {
 
     /**
      * {@inheritDoc}
-     * <p/>
+     * <p>
      * The lower bound of the support is always negative infinity
      * no matter the parameters.
      *
@@ -274,7 +274,7 @@ public class NormalDistribution extends BaseDistribution {
 
     /**
      * {@inheritDoc}
-     * <p/>
+     * <p>
      * The upper bound of the support is always positive infinity
      * no matter the parameters.
      *
@@ -301,7 +301,7 @@ public class NormalDistribution extends BaseDistribution {
 
     /**
      * {@inheritDoc}
-     * <p/>
+     * <p>
      * The support of this distribution is connected.
      *
      * @return {@code true}

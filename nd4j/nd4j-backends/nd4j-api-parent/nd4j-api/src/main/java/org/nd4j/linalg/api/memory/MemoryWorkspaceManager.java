@@ -137,7 +137,7 @@ public interface MemoryWorkspaceManager {
     void destroyWorkspace(MemoryWorkspace workspace);
 
     /**
-     * This method destroys & deallocates all Workspaces for a calling Thread
+     * This method destroys and deallocates all Workspaces for a calling Thread
      *
      * PLEASE NOTE: This method is NOT safe
      */
@@ -149,21 +149,21 @@ public interface MemoryWorkspaceManager {
     void destroyWorkspace();
 
     /**
-     * This method gets & activates default workspace
+     * This method gets and activates default workspace
      *
      * @return
      */
     MemoryWorkspace getAndActivateWorkspace();
 
     /**
-     * This method gets & activates workspace with a given Id
+     * This method gets and activates workspace with a given Id
      *
      * @return
      */
     MemoryWorkspace getAndActivateWorkspace(String id);
 
     /**
-     * This method gets & activates default with a given configuration and Id
+     * This method gets and activates default with a given configuration and Id
      *
      * @return
      */

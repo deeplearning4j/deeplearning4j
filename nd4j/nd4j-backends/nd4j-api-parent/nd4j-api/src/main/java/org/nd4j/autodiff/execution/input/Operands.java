@@ -90,7 +90,7 @@ public class Operands {
 
     /**
      * This method returns array identified its numeric id
-     * @param name
+     * @param id numeric identifier
      * @return
      */
     public INDArray getById(int id) {
@@ -99,7 +99,8 @@ public class Operands {
 
     /**
      * This method returns array identified its numeric id and index
-     * @param name
+     * @param id numeric identifier
+     * @param index output index
      * @return
      */
     public INDArray getById(int id, int index) {

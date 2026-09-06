@@ -30,7 +30,6 @@ public interface EnvironmentalAction {
     /**
      * This method will be executed with corresponding Env Var value
      *
-     * @param name
      * @param value
      */
     void process(String value);

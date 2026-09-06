@@ -84,7 +84,6 @@ public class SaddlePointExpansion {
      * href="http://mathworld.wolfram.com/StirlingsSeries.html">
      * http://mathworld.wolfram.com/StirlingsSeries.html</a></li>
      * </ol>
-     * </p>
      *
      * @param z the value.
      * @return the Striling's series error.
@@ -117,7 +116,6 @@ public class SaddlePointExpansion {
      * href="http://www.herine.net/stat/papers/dbinom.pdf">
      * http://www.herine.net/stat/papers/dbinom.pdf</a></li>
      * </ol>
-     * </p>
      *
      * @param x  the x value.
      * @param mu the average.

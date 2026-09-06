@@ -82,7 +82,7 @@ public class MultiLoraMatmulBp extends DynamicCustomOp {
     /**
      * INDArray constructor.
      *
-     * @return INDArray[3] = {dInput, dLoraA, dLoraB}
+     * The operation produces {@code INDArray[3] = {dInput, dLoraA, dLoraB}}.
      */
     public MultiLoraMatmulBp(INDArray input, INDArray baseWeight, INDArray loraA,
                              INDArray loraB, INDArray adapterIds, INDArray gradOut,

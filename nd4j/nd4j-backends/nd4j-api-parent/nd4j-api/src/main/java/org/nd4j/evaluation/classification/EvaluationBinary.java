@@ -599,7 +599,7 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
 
     /**
      * False Alarm Rate (FAR) reflects rate of misclassified to classified records
-     * <a href="http://ro.ecu.edu.au/cgi/viewcontent.cgi?article=1058&context=isw">http://ro.ecu.edu.au/cgi/viewcontent.cgi?article=1058&context=isw</a><br>
+     * <a href="http://ro.ecu.edu.au/cgi/viewcontent.cgi?article=1058&amp;context=isw">http://ro.ecu.edu.au/cgi/viewcontent.cgi?article=1058&amp;context=isw</a><br>
      *
      * @param outputNum Class index to calculate False Alarm Rate (FAR)
      * @return The FAR for the outcomes

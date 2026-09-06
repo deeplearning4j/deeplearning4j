@@ -631,12 +631,14 @@ public class ControlFlow {
     /**
      * Returns a lambda that takes in a custom condition and a built-in for
      * loop counter concept in the following manner:
+     * <pre>{@code
      * int currIteration = 0;
      * boolean cond = ...;
      * int maxIterations = ...;
      * for(int i = currIteration; i < maxIterations && cond; i++) {
      *     //body....
      * }
+     * }</pre>
      *
      * The inputs to the lambda are the following order:
      * currIteration (the starting iteration)

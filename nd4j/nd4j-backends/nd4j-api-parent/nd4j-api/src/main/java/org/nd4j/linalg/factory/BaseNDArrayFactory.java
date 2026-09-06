@@ -278,7 +278,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * Rotate a matrix 90 degrees
      *
      * @param toRotate the matrix to rotate
-     * @return the rotated matrix
      */
     @Override
     public void rot90(INDArray toRotate) {

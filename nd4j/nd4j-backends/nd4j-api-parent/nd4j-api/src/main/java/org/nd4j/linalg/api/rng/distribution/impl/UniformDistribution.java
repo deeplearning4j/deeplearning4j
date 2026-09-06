@@ -104,7 +104,7 @@ public class UniformDistribution extends BaseDistribution {
 
     /**
      * {@inheritDoc}
-     * <p/>
+     * <p>
      * For lower bound {@code lower} and upper bound {@code upper}, the mean is
      * {@code 0.5 * (lower + upper)}.
      */
@@ -114,7 +114,7 @@ public class UniformDistribution extends BaseDistribution {
 
     /**
      * {@inheritDoc}
-     * <p/>
+     * <p>
      * For lower bound {@code lower} and upper bound {@code upper}, the
      * variance is {@code (upper - lower)^2 / 12}.
      */
@@ -125,7 +125,7 @@ public class UniformDistribution extends BaseDistribution {
 
     /**
      * {@inheritDoc}
-     * <p/>
+     * <p>
      * The lower bound of the support is equal to the lower bound parameter
      * of the distribution.
      *
@@ -137,7 +137,7 @@ public class UniformDistribution extends BaseDistribution {
 
     /**
      * {@inheritDoc}
-     * <p/>
+     * <p>
      * The upper bound of the support is equal to the upper bound parameter
      * of the distribution.
      *
@@ -163,7 +163,7 @@ public class UniformDistribution extends BaseDistribution {
 
     /**
      * {@inheritDoc}
-     * <p/>
+     * <p>
      * The support of this distribution is connected.
      *
      * @return {@code true}

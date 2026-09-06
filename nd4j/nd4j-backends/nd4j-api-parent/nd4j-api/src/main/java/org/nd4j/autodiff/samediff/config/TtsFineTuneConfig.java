@@ -97,7 +97,7 @@ public class TtsFineTuneConfig implements Serializable {
 
     /**
      * Window length for the FFT analysis window.
-     * Must be <= fftSize. If < fftSize, the window is zero-padded.
+     * Must be {@code <= fftSize}. If {@code < fftSize}, the window is zero-padded.
      * Default: 1024
      */
     @Builder.Default

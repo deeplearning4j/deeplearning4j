@@ -34,7 +34,7 @@ import java.util.*;
 public class NDArrayCreationUtil {
     private NDArrayCreationUtil() {}
 
-    /** Get an array of INDArrays (2d) all with the specified shape. Pair<INDArray,String> returned to aid
+    /** Get an array of INDArrays (2d) all with the specified shape. {@code Pair<INDArray, String>} returned to aid
      * debugging: String contains information on how to reproduce the matrix (i.e., which function, and arguments)
      * Each NDArray in the returned array has been obtained by applying an operation such as transpose, tensorAlongDimension,
      * etc to an original array.
@@ -58,7 +58,7 @@ public class NDArrayCreationUtil {
     }
 
 
-    /** Get an array of INDArrays (2d) all with the specified shape. Pair<INDArray,String> returned to aid
+    /** Get an array of INDArrays (2d) all with the specified shape. {@code Pair<INDArray, String>} returned to aid
      * debugging: String contains information on how to reproduce the matrix (i.e., which function, and arguments)
      * Each NDArray in the returned array has been obtained by applying an operation such as transpose, tensorAlongDimension,
      * etc to an original array.

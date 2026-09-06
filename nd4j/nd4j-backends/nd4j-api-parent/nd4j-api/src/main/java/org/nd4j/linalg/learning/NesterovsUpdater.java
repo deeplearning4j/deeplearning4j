@@ -77,7 +77,6 @@ public class NesterovsUpdater implements GradientUpdater<Nesterovs> {
      *
      * @param gradient  the gradient to get the update for
      * @param iteration
-     * @return
      */
     @Override
     public void applyUpdater(INDArray gradient, int iteration, int epoch) {

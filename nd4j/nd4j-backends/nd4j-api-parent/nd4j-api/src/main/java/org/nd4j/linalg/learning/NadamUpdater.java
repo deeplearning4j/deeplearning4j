@@ -91,7 +91,6 @@ public class NadamUpdater implements GradientUpdater<Nadam> {
      *
      * @param gradient  the gradient to get the update for
      * @param iteration
-     * @return the gradient
      */
     @Override
     public void applyUpdater(INDArray gradient, int iteration, int epoch) {

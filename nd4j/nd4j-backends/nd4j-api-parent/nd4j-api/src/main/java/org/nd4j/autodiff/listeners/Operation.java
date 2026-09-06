@@ -35,8 +35,9 @@ public enum Operation {
      */
     TRAINING_VALIDATION,
     /**
-     * Inference operations: {@link SameDiff#output()}, {@link SameDiff#batchOutput()} and {@link SameDiff#exec(Map, String...)} ()} methods,
-     * as well as {@link SameDiff#execBackwards(Map, Operation, String...)} methods.
+     * Inference operations: {@link SameDiff#output()}, {@link SameDiff#batchOutput()} and
+     * {@link SameDiff#output(Map, String...)} methods, as well as
+     * {@link SameDiff#calculateGradients(Map, String...)} methods.
      */
     INFERENCE,
     /**

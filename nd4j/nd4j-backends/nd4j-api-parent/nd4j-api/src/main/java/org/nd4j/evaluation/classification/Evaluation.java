@@ -178,7 +178,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * Constructor to use for top N accuracy
      *
      * @param labels Labels for the classes (may be null)
-     * @param topN   Value to use for top N accuracy calculation (<=1: standard accuracy). Note that with top N
+     * @param topN   Value to use for top N accuracy calculation ({@code <=1}: standard accuracy). Note that with top N
      *               accuracy, an example is considered 'correct' if the probability for the true class is one of the
      *               highest N values
      */
@@ -1199,7 +1199,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
 
     /**
      * False Alarm Rate (FAR) reflects rate of misclassified to classified records
-     * <a href="http://ro.ecu.edu.au/cgi/viewcontent.cgi?article=1058&context=isw">http://ro.ecu.edu.au/cgi/viewcontent.cgi?article=1058&context=isw</a><br>
+     * <a href="http://ro.ecu.edu.au/cgi/viewcontent.cgi?article=1058&amp;context=isw">http://ro.ecu.edu.au/cgi/viewcontent.cgi?article=1058&amp;context=isw</a><br>
      * Note: value returned will differ depending on number of classes and settings.<br>
      * 1. For binary classification, if the positive class is set (via default value of 1, via constructor,
      *    or via {@link #setBinaryPositiveClass(Integer)}), the returned value will be for the specified positive class

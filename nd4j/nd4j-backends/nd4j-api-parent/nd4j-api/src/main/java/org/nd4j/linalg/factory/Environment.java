@@ -20,6 +20,7 @@
 package org.nd4j.linalg.factory;
 
 import org.nd4j.common.config.ND4JSystemProperties;
+import org.nd4j.linalg.api.memory.WorkspaceUseMetaData;
 import org.nd4j.linalg.factory.config.CoreEnvironmentConfig;
 import org.nd4j.linalg.factory.config.CudaEnvironmentConfig;
 import org.nd4j.linalg.factory.config.DspEnvironmentConfig;
@@ -423,7 +424,7 @@ public interface Environment extends CoreEnvironmentConfig, CudaEnvironmentConfi
      * Returns whether periodic file-based snapshots are enabled.
      * When enabled, lifecycle tracker writes timestamped snapshot files
      * (not just stderr output) at each report interval.
-     * Files are named: ndarray_snapshot_pid<PID>_<timestamp>_<sequence>.txt
+     * Files are named: {@code ndarray_snapshot_pid<PID>_<timestamp>_<sequence>.txt}
      *
      * @return true if file snapshots are enabled
      */
@@ -1542,7 +1543,7 @@ public interface Environment extends CoreEnvironmentConfig, CudaEnvironmentConfi
      * benchmark config is supplied. This method remains useful as an explicit
      * reset hook after tests or tools intentionally modify environment flags.
      *
-     * @see org.eclipse.deeplearning4j.model.benchmark.BenchmarkConfig#optimal()
+     * @see "BenchmarkConfig.optimal() in the model benchmark module"
      */
     default void applyOptimalLLMConfig() {
         // Reset diagnostic/debug toggles first, then apply the explicit LLM

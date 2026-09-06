@@ -2288,7 +2288,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * (CPU, CUDA, oneDNN, cuDNN, MPS, etc.) are used for each operation.
      * </p>
      *
-     * <h3>Example Usage:</h3>
+     * <h4>Example Usage:</h4>
      * <pre>{@code
      * SameDiff sd = SameDiff.create();
      *
@@ -4358,7 +4358,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * Removes the item from the sequence for name at the specified index.
      * @param varName the variable name of the sequence
      * @param indexOfItem the index to insert the item at. Index should be -n to n- 1 where is the length of the sequence
-     *                    atIndex is < 0, the index will be treated as counting backwards from the end.
+     *                    if the index is negative, it will be treated as counting backwards from the end.
      */
     public void removeItemFromSequence(String varName,int indexOfItem) {
         Preconditions.checkState(sequences.containsKey(varName),"No sequence found with name " + varName);
@@ -4390,7 +4390,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * @param varName the variable name to
      * @param item the item to add
      * @param atIndex the index to insert the item at. Index should be -n to n- 1 where is the length of the sequence
-     *                atIndex is < 0, the index will be treated as counting backwards from the end.
+     *                if the index is negative, it will be treated as counting backwards from the end.
      */
     public void addItemToSequence(String varName,INDArray item,int atIndex) {
         Preconditions.checkNotNull(item,"Items must n ot be null!");
@@ -4432,7 +4432,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * @param varName the name of the sequence
      * @param item the item to set
      * @param index the index to insert the item at. Index should be -n to n- 1 where is the length of the sequence
-     *             index is < 0, the index will be treated as counting backwards from the end.
+     *             if the index is negative, it will be treated as counting backwards from the end.
      */
     public void setItemForSequenceAtIndex(String varName,INDArray item,int index) {
         Preconditions.checkNotNull(item,"Items must n ot be null!");
@@ -5861,7 +5861,6 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * See also: {@link VariableType}
      *
      * @param variables Variables to convert to constants
-     * @return The (now constant) SDVariables
      */
     public void convertToConstants(List<SDVariable> variables) {
         convertToConstants(variables,true);
@@ -5876,7 +5875,6 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      *
      * @param variables Variables to convert to constants
      * @param recreateGradFunction whether to recreate the grad function or not
-     * @return The (now constant) SDVariables
      */
     public void convertToConstants(List<SDVariable> variables,boolean recreateGradFunction) {
         if (variables.size() == 0)
@@ -6053,7 +6051,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * For example, {@code z(float) = x(float)+y(float)}, changing both x and y to double results in {@code z(double) = x(double)+y(double)}
      * without doing anything to change z's datatype directly (z datatype is inferred from x + y + add op).<br>
      * ARRAY type SDVariables cannot be converted directly, as their datatypes are determined by the function +
-     * input datatypes.<b>
+     * input datatypes.<br>
      * Note that this method should be used with caution: incorrect datatype modifications may leave your network
      * in an incorrect state. For example, {@code op(x(float),y(float)) -> op(x(double),y(float))} may not be
      * supported by all ops.

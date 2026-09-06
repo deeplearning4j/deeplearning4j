@@ -132,7 +132,6 @@ public interface MemoryManager {
      *
      * @param pointer
      * @param kind
-     * @return
      */
     void release(Pointer pointer, MemoryKind kind);
 

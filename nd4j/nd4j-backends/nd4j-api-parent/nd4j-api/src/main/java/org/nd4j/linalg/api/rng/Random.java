@@ -80,7 +80,7 @@ public interface Random extends AutoCloseable {
     /**
      * Returns the next pseudorandom, uniformly distributed <code>int</code>
      * value from this random number generator's sequence.
-     * All 2<font size="-1"><sup>32</sup></font> possible <tt>int</tt> values
+     * All 2<sup>32</sup> possible {@code int} values
      * should be produced with  (approximately) equal probability.
      *
      * @return the next pseudorandom, uniformly distributed <code>int</code>
@@ -89,13 +89,13 @@ public interface Random extends AutoCloseable {
     int nextInt();
 
     /**
-     * Returns a pseudorandom, uniformly distributed <tt>int</tt> value
+     * Returns a pseudorandom, uniformly distributed {@code int} value
      * between 0 (inclusive) and the specified value (exclusive), drawn from
      * this random number generator's sequence.
      *
      * @param n the bound on the random number to be returned.  Must be
      *          positive.
-     * @return a pseudorandom, uniformly distributed <tt>int</tt>
+     * @return a pseudorandom, uniformly distributed {@code int}
      * value between 0 (inclusive) and n (exclusive).
      * @throws IllegalArgumentException if n is not positive.
      */
@@ -103,13 +103,13 @@ public interface Random extends AutoCloseable {
 
 
     /**
-     * Returns a pseudorandom, uniformly distributed <tt>int</tt> value
+     * Returns a pseudorandom, uniformly distributed {@code int} value
      * between 0 (inclusive) and the specified value (exclusive), drawn from
      * this random number generator's sequence.
      *
      * @param n the bound on the random number to be returned.  Must be
      *          positive.
-     * @return a pseudorandom, uniformly distributed <tt>int</tt>
+     * @return a pseudorandom, uniformly distributed {@code int}
      * value between 0 (inclusive) and n (exclusive).
      * @throws IllegalArgumentException if n is not positive.
      */
@@ -118,7 +118,7 @@ public interface Random extends AutoCloseable {
     /**
      * Returns the next pseudorandom, uniformly distributed <code>long</code>
      * value from this random number generator's sequence.  All
-     * 2<font size="-1"><sup>64</sup></font> possible <tt>long</tt> values
+     * 2<sup>64</sup> possible {@code long} values
      * should be produced with (approximately) equal probability.
      *
      * @return the next pseudorandom, uniformly distributed <code>long</code>
@@ -251,7 +251,7 @@ public interface Random extends AutoCloseable {
      * The reason for this is due to ints
      * having the same space usage as floats.
      * This also plays nice with blas.
-     * <p/>
+     * <p>
      * If the data opType is set to double,
      * then these will be whole doubles.
      *
@@ -272,7 +272,7 @@ public interface Random extends AutoCloseable {
      * The reason for this is due to ints
      * having the same space usage as floats.
      * This also plays nice with blas.
-     * <p/>
+     * <p>
      * If the data opType is set to double,
      * then these will be whole doubles.
      *

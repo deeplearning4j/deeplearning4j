@@ -38,7 +38,12 @@ on:
       dryRun:
         description: 'Dry run - build but do not deploy (true/false)'
         required: false
-        default: false
+        default: 'true'
+
+      regenerateOps:
+        description: 'Regenerate op APIs on Actions and retain the patch (dryRun=true only)'
+        required: false
+        default: 'false'
 
   workflow_call:
     inputs:
@@ -63,6 +68,11 @@ on:
       dryRun:
         description: Build without deploying.
         required: false
+        default: 'true'
+        type: string
+      regenerateOps:
+        description: Regenerate op APIs for build-only qualification; never publish generated changes.
+        required: false
         default: 'false'
         type: string
     secrets:
@@ -78,11 +88,14 @@ on:
 jobs:
   java-hotfix-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     env:
       RELEASE_VERSION: ${{ inputs.releaseVersion }}
       SNAPSHOT_VERSION: ${{ inputs.snapshotVersion }}
       DEPLOY_TO_RELEASE_STAGING: ${{ inputs.deployToReleaseStaging }}
       DRY_RUN: ${{ inputs.dryRun }}
+      REGENERATE_OPS: ${{ inputs.regenerateOps || 'false' }}
       SERVER_ID: ${{ inputs.serverId }}
     steps:
       - uses: actions/checkout@v7
@@ -99,6 +112,11 @@ jobs:
           [[ "${SNAPSHOT_VERSION}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*-SNAPSHOT$ ]] || { echo 'snapshotVersion must end with -SNAPSHOT' >&2; exit 2; }
           [[ "${DEPLOY_TO_RELEASE_STAGING}" =~ ^[01]$ ]] || { echo 'deployToReleaseStaging must be 0 or 1' >&2; exit 2; }
           [[ "${DRY_RUN}" =~ ^(true|false)$ ]] || { echo 'dryRun must be true or false' >&2; exit 2; }
+          [[ "${REGENERATE_OPS}" =~ ^(true|false)$ ]] || { echo 'regenerateOps must be true or false' >&2; exit 2; }
+          if [[ "${REGENERATE_OPS}" == true && "${DRY_RUN}" != true ]]; then
+            echo 'regenerateOps requires dryRun=true; generated changes must be reviewed before publication' >&2
+            exit 2
+          fi
           [[ "${SERVER_ID}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || { echo 'serverId must be a valid Maven server id' >&2; exit 2; }
           if [[ "${DEPLOY_TO_RELEASE_STAGING}" == 1 ]]; then
             [[ "${RELEASE_VERSION}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ && "${RELEASE_VERSION}" != *-SNAPSHOT ]] || { echo 'releaseVersion must be a valid non-SNAPSHOT version' >&2; exit 2; }
@@ -116,6 +134,13 @@ jobs:
             done
           fi
 
+      - name: Check publication safety contracts
+        shell: bash
+        working-directory: platform-tests
+        run: |
+          set -Eeuo pipefail
+          PYTHONPATH=.. python3 -m unittest test_release_publication_safety 2>&1 | tee ../release-safety-contracts.log
+
       - name: Set up Java for publishing
         uses: actions/setup-java@v5
         with:
@@ -127,6 +152,44 @@ jobs:
           gpg-private-key: ${{ inputs.deployToReleaseStaging == '1' && inputs.dryRun == 'false' && secrets.GPG_PRIVATE_KEY || '' }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
           cache: 'maven'
+
+      - name: Regenerate op APIs for build-only qualification
+        if: ${{ inputs.regenerateOps == 'true' && inputs.dryRun == 'true' }}
+        shell: bash
+        env:
+          MAVEN_OPTS: -Xmx2g
+        run: |
+          set -Eeuo pipefail
+          [[ "${DRY_RUN}" == true && "${REGENERATE_OPS}" == true ]] || exit 2
+          git rev-parse HEAD > op-codegen-source.sha
+          # Bootstrap only the Java generator and its Java dependencies at the source version.
+          # The next build still checks all generated output with strict central-release Javadoc.
+          mvn --no-transfer-progress --batch-mode -pl :op-codegen --also-make install \
+            -DskipTests -Dmaven.test.skip=true -Dsamediff.native.tests=false \
+            -DskipTestResourceEnforcement=true -Denforcer.skip \
+            -Dcentral.publishing.autoPublish=false 2>&1 | tee op-codegen-bootstrap.log
+          mvn --no-transfer-progress --batch-mode -f codegen/op-codegen/pom.xml \
+            org.codehaus.mojo:exec-maven-plugin:3.3.0:java \
+            -Dexec.mainClass=org.nd4j.codegen.cli.CLI \
+            "-Dexec.args=-dir ${GITHUB_WORKSPACE} -namespaces all -projects all" \
+            2>&1 | tee op-codegen-generation.log
+          # Include newly generated source files as well as updates in the review patch.
+          git add --intent-to-add -- nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java
+          git diff --check
+          git diff --binary -- nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java > op-codegen.patch
+          git diff --stat
+
+      - name: Retain generated source patch for review
+        if: ${{ always() && inputs.regenerateOps == 'true' && inputs.dryRun == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: op-codegen-${{ github.sha }}
+          path: |
+            op-codegen-source.sha
+            op-codegen.patch
+            op-codegen-bootstrap.log
+            op-codegen-generation.log
+          if-no-files-found: error
 
       - name: Set the requested publication version
         shell: bash
@@ -178,17 +241,36 @@ jobs:
           printf 'Running:'
           printf ' %q' "${DEPLOY_CMD[@]}"
           printf '\n'
-          "${DEPLOY_CMD[@]}"
+          "${DEPLOY_CMD[@]}" 2>&1 | tee java-release-build.log
 
-      - name: Verify deployed artifacts
+      - name: Verify built artifacts
         shell: bash
         run: |
+          set -Eeuo pipefail
           echo "=== Verifying built artifacts ==="
+          effective_version="${SNAPSHOT_VERSION}"
+          suffixes=(.jar)
+          if [[ "${DEPLOY_TO_RELEASE_STAGING}" == 1 ]]; then
+            effective_version="${RELEASE_VERSION}"
+            suffixes+=(-sources.jar -javadoc.jar)
+          fi
           for module in nd4j-common nd4j-api nd4j-ggml nd4j-sdx-preset nd4j-sdx-model nd4j-sdx-litertlm samediff-llm samediff-vlm samediff-pipeline-ggml samediff-audio; do
-            JAR=$(find . -path "*/${module}/target/${module}-*.jar" -not -name "*-sources.jar" -not -name "*-javadoc.jar" -not -name "*-tests.jar" | head -1)
-            if [ -n "${JAR}" ]; then
-              echo "OK: ${module} -> $(basename ${JAR}) ($(du -h ${JAR} | cut -f1))"
-            else
-              echo "WARNING: No JAR found for ${module}"
-            fi
+            for suffix in "${suffixes[@]}"; do
+              archive=$(find . -type f -path "*/${module}/target/${module}-${effective_version}${suffix}" -print)
+              if [[ -z "${archive}" || ! -s "${archive}" ]]; then
+                printf 'Missing or ambiguous built artifact: %s-%s%s\n' "${module}" "${effective_version}" "${suffix}" >&2
+                exit 1
+              fi
+              printf 'OK: %s\n' "${archive}"
+            done
           done
+
+      - name: Retain Java qualification logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: java-release-qualification-${{ github.sha }}
+          path: |
+            release-safety-contracts.log
+            java-release-build.log
+          if-no-files-found: warn

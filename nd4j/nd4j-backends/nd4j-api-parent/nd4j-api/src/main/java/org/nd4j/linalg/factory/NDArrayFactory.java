@@ -205,7 +205,6 @@ public interface NDArrayFactory {
      * Rotate a matrix 90 degrees
      *
      * @param toRotate the matrix to rotate
-     * @return the rotated matrix
      */
     void rot90(INDArray toRotate);
 
@@ -360,7 +359,6 @@ public interface NDArrayFactory {
      *
      * @param array the ndarray to shuffle
      * @param dimension the dimension to do the shuffle
-     * @return
      */
     void shuffle(INDArray array, Random rnd, long... dimension);
 
@@ -370,7 +368,6 @@ public interface NDArrayFactory {
      *
      * @param array the ndarray to shuffle
      * @param dimension the dimension to do the shuffle
-     * @return
      */
     void shuffle(Collection<INDArray> array, Random rnd, long... dimension);
 
@@ -380,7 +377,6 @@ public interface NDArrayFactory {
      *
      * @param array the ndarray to shuffle
      * @param dimensions the dimensions to do the shuffle
-     * @return
      */
     void shuffle(List<INDArray> array, Random rnd, List<long[]> dimensions);
 
@@ -1503,9 +1499,9 @@ public interface NDArrayFactory {
     INDArray createFromNpyFile(File file);
 
     /**
-     * Create a Map<String, INDArray> from given npz file.
+     * Create a {@code Map<String, INDArray>} from given npz file.
      * @param file the file to create the map from
-     * @return Map<String, INDArray>
+     * @return {@code Map<String, INDArray>}
      */
     public Map<String, INDArray> createFromNpzFile(File file) throws Exception;
 
@@ -1518,7 +1514,7 @@ public interface NDArrayFactory {
      * to this ndarray's underlying data.
      *
      * @param array the array to convert
-     * @returnthe created pointer representing
+     * @return the created pointer representing
      * a pointer to a numpy header
      */
     Pointer convertToNumpy(INDArray array);
@@ -1533,7 +1529,7 @@ public interface NDArrayFactory {
      *
      *
      * @param array the array to convert
-     * @returnthe created pointer representing
+     * @return the created pointer representing
      * a pointer to a numpy header
      */
     DataBuffer convertToNumpyBuffer(INDArray array);

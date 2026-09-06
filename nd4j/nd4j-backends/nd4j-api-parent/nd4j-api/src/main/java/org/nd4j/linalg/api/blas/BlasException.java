@@ -34,7 +34,7 @@ public class BlasException extends Error {
     }
 
     /**
-     * Principal constructor - error message & error code
+     * Principal constructor - error message and error code
      * @param message the error message to put into the Exception
      * @param errorCode the library error number
      */

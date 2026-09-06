@@ -909,7 +909,6 @@ public class Nd4j {
      *   <li>Disable certain engines</li>
      *   <li>View performance statistics</li>
      * </ul>
-     * </p>
      * <p>
      * Example usage:
      * <pre>{@code
@@ -917,7 +916,6 @@ public class Nd4j {
      * selector.setAutoTuneEnabled(true);
      * selector.setStrategy(KernelSelectionConfig.Strategy.FASTEST);
      * }</pre>
-     * </p>
      *
      * @return the kernel selector instance, or null if not supported by backend
      */
@@ -943,14 +941,12 @@ public class Nd4j {
      *   <li>Hot-reload plugins during development</li>
      *   <li>Query available plugins and kernels</li>
      * </ul>
-     * </p>
      * <p>
      * Example usage:
      * <pre>{@code
      * KernelPluginManager manager = Nd4j.getKernelPluginManager();
      * manager.loadPlugin("/path/to/my_kernels.so");
      * }</pre>
-     * </p>
      *
      * @return the kernel plugin manager instance, or null if not supported
      */
@@ -1882,7 +1878,7 @@ public class Nd4j {
     }
 
     /**
-     * See {@link  #createBuffer(DataType dataType, long length, boolean initialize) with default datatype.
+     * See {@link #createBuffer(DataType, long, boolean)} with default datatype.
      */
     public static DataBuffer createBuffer(long length, boolean initialize) {
         return  createBuffer(Nd4j.dataType(), length, initialize);
@@ -3332,7 +3328,7 @@ public class Nd4j {
     }
 
     /**
-     * @deprecated use {@link Nd4j#rand(DataType, char, long...))
+     * @deprecated use {@link Nd4j#rand(DataType, char, long...)}
      */
     @Deprecated
     public static INDArray rand(@NonNull DataType dataType, int[] shape, char order) {
@@ -4412,7 +4408,7 @@ public class Nd4j {
     }
 
     /**
-     * See {@link @see #create(int, int, int[], char)}
+     * See {@link #create(int, int, int[], char)}
      */
     public static INDArray zeros(int rows, int columns, int[] stride) {
         return create(rows, columns, stride, order());
@@ -7042,8 +7038,8 @@ public class Nd4j {
      * @param n number of rows in the array
      * @param m number of columns in the array ( can be just equal to n)
      * @param k    The sub-diagonal at and below which the array is filled.
-    `k` = 0 is the main diagonal, while `k` < 0 is below it,
-    and `k` > 0 is above.  The default is 0.
+     *             {@code k = 0} is the main diagonal, while {@code k < 0} is below it,
+     *             and {@code k > 0} is above. The default is 0.
      * @return array with ones at and below the given diagonal and zeros elsewhere
      */
     public static INDArray tri(int n,int m,int k) {

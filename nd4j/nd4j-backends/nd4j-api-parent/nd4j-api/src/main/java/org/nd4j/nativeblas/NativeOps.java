@@ -789,7 +789,6 @@ public interface NativeOps {
   * <li>sd_crash_*.log - Lifecycle tracker dump (NDArray allocations, etc.)</li>
   * <li>hs_err_pid*.log - JVM crash dump (full stack trace, thread info, etc.)</li>
   * </ul>
-  * </p>
   * <p>
   * Safe to call multiple times - only initializes once.
   * </p>
@@ -1582,7 +1581,7 @@ public interface NativeOps {
   * @param serializedPlan pointer to the serialized plan bytes
   * @param planSize size of the serialized plan in bytes
   * @return opaque handle to the compiled plan, or null on failure
-  * @deprecated Use {@link #dispatchNativePlan(Pointer, Pointer, long, PointerPointer, int, PointerPointer, int)}
+  * @deprecated Use {@link #dispatchNativePlan(Pointer, Pointer, long, Pointer, long, Pointer, long, int, int)}
   *             with a native plan cache instead — shape-keyed dispatch is required to avoid
   *             in-plan slot mutation across differing input shapes.
   */

@@ -197,7 +197,7 @@ public class NDArrayEvent implements Serializable {
      * in a given class and method
      * with the given event type.
      * This is a shortcut method for calling
-     * {@Link #groupedEvents(String, String, NDArrayEventType, List, List, boolean)}
+     * {@link #groupedEvents(NDArrayEventDictionary)}
      * followed by {@link NDArrayEventDictionary#stackTraceBreakdowns()}
      *
      * @param className            the class name to break down

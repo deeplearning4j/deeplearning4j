@@ -36,7 +36,7 @@ public enum PeftType {
     /**
      * Low-Rank Adaptation (LoRA).
      * Decomposes weight updates into low-rank matrices: W = W0 + BA
-     * where B ∈ R^{d×r} and A ∈ R^{r×k} with r << min(d, k).
+     * where B ∈ R^{d×r} and A ∈ R^{r×k} with {@code r << min(d, k)}.
      * <p>
      * Key parameters: rank (r), alpha, target_modules, dropout
      */

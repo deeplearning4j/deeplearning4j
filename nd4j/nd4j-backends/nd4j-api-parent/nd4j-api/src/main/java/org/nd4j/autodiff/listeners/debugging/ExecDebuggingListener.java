@@ -50,7 +50,7 @@ public class ExecDebuggingListener extends BaseListener {
 
     /**
      * @param printMode     Print mode, see {@link PrintMode}
-     * @param maxIterations Maximum number of iterations to print. <= 0 for "all iterations"
+     * @param maxIterations Maximum number of iterations to print. {@code <= 0} for "all iterations"
      * @param logIter       If true: prefix iteration/epoch, such as "(iter=1,epoch=0,op=3)" to the output
      */
     public ExecDebuggingListener(PrintMode printMode, int maxIterations, boolean logIter){

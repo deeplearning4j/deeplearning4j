@@ -96,7 +96,7 @@ fun NN() = Namespace("NN") {
             """
              Element-wise exponential linear unit (ELU) function:
              out = x if x > 0
-             out = a * (exp(x) - 1) if x <= 0
+             out = a * (exp(x) - 1) if x &lt;= 0
              with constant a = 1.0
              <p>
              See: <a href="https://arxiv.org/abs/1511.07289">https://arxiv.org/abs/1511.07289</a>
@@ -120,8 +120,8 @@ fun NN() = Namespace("NN") {
         Doc(Language.ANY, DocScope.ALL) {
             """
              Element-wise hard sigmoid function:
-             out[i] = 0 if in[i] <= -2.5
-             out[1] = 0.2*in[i]+0.5 if -2.5 < in[i] < 2.5
+             out[i] = 0 if in[i] &lt;= -2.5
+             out[i] = 0.2*in[i]+0.5 if -2.5 &lt; in[i] &lt; 2.5
              out[i] = 1 if in[i] >= 2.5
             """.trimIndent()
         }
@@ -131,8 +131,8 @@ fun NN() = Namespace("NN") {
         Doc(Language.ANY, DocScope.ALL) {
             """
              Element-wise hard tanh function:
-             out[i] = -1 if in[i] <= -1
-             out[1] = in[i] if -1 < in[i] < 1
+             out[i] = -1 if in[i] &lt;= -1
+             out[i] = in[i] if -1 &lt; in[i] &lt; 1
              out[i] = 1 if in[i] >= 1
             """.trimIndent()
         }
@@ -163,7 +163,7 @@ fun NN() = Namespace("NN") {
             """
              Element-wise leaky ReLU function:
              out = x if x >= 0.0
-             out = alpha * x if x < cutoff
+             out = alpha * x if x &lt; 0.0
              Alpha value is most commonly set to 0.01
             """.trimIndent()
         }
@@ -340,7 +340,7 @@ fun NN() = Namespace("NN") {
             """
              Element-wise SeLU function - Scaled exponential Lineal Unit: see <a href="https://arxiv.org/abs/1706.02515">Self-Normalizing Neural Networks</a>
              
-             out[i] = scale * alpha * (exp(in[i])-1) if in[i]>0, or 0 if in[i] <= 0
+             out[i] = scale * in[i] if in[i] > 0, or scale * alpha * (exp(in[i])-1) if in[i] &lt;= 0
              Uses default scale and alpha values.
             """.trimIndent()
         }
@@ -1131,7 +1131,7 @@ fun NN() = Namespace("NN") {
         javaOpClass = "XtcFilter"
         val logits = Input(NUMERIC, "logits") { description = "Logits tensor. Shape: [vocabSize] or [batch, vocabSize]" }
         val xtcProbability = Arg(FLOATING_POINT, "xtcProbability") { defaultValue = 0.0; description = "Probability of applying XTC. 0.0 = off" }
-        val xtcThreshold = Arg(FLOATING_POINT, "xtcThreshold") { defaultValue = 0.1; description = "Per-token probability threshold to qualify for exclusion. Must be < 0.5" }
+        val xtcThreshold = Arg(FLOATING_POINT, "xtcThreshold") { defaultValue = 0.1; description = "Per-token probability threshold to qualify for exclusion. Must be &lt; 0.5" }
         val seed = Arg(LONG, "seed") { defaultValue = 0; description = "Random seed for the stochastic apply/skip draw" }
         Output(NUMERIC, "output") { description = "Filtered logits (masked positions set to -inf). Same shape and type as input." }
         Signature(logits, xtcProbability, xtcThreshold, seed)
@@ -1996,7 +1996,7 @@ fun NN() = Namespace("NN") {
              from TurboQuant's two-stage quantization (ICLR 2026). The asymmetric inner
              product estimator combines MSE reconstruction with QJL correction:
 
-               score(q, k) ≈ <q, k_mse> + ||r|| * sqrt(π/2)/m * <S@q, signs>
+               score(q, k) ≈ &lt;q, k_mse&gt; + ||r|| * sqrt(π/2)/m * &lt;S@q, signs&gt;
 
              Keys use full two-stage compression (MSE + QJL) for asymmetric attention.
              Values use MSE-only decompression (error averages out in softmax-weighted sum).
@@ -2057,7 +2057,7 @@ fun NN() = Namespace("NN") {
                head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i
 
              Supports:
-             - Grouped Query Attention (GQA) when numKvHeads < numHeads
+             - Grouped Query Attention (GQA) when numKvHeads &lt; numHeads
              - KV cache concatenation (past + current → present)
              - In-place KV cache write via cachePosition
              - Causal masking for autoregressive decoding

@@ -42,7 +42,7 @@ public class ProfilerConfig {
     @Builder.Default private boolean checkWorkspaces = true;
 
     /**
-     * If enabled, thread<->device affinity will be checked on each call
+     * If enabled, thread-to-device affinity will be checked on each call
      *
      * PLEASE NOTE: everything will gets slower
      */

@@ -64,7 +64,7 @@ public abstract class BaseShapeInfoProvider implements ShapeInfoProvider {
     }
 
     /**
-     * This method creates shapeInformation buffer, based on shape & order being passed in
+     * This method creates shapeInformation buffer, based on shape and order being passed in
      *
      * @param shape
      * @param order

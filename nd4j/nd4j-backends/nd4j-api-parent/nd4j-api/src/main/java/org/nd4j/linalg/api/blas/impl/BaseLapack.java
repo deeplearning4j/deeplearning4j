@@ -203,7 +203,7 @@ public abstract class BaseLapack implements Lapack {
     *
     * @param jobz 'N' - no eigen vectors, 'V' - return eigenvectors
     * @param uplo upper or lower part of symmetric matrix to use
-    * @param N  the number of rows & cols in the matrix A
+    * @param N  the number of rows and cols in the matrix A
     * @param A  the matrix to calculate eigenvectors
     * @param R  an output array for eigenvalues ( may be null )
     */

@@ -518,7 +518,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Doc(Language.ANY, DocScope.ALL){
             """
                Returns a clipped ndarray such that the input is normalized so that its L2 norm 
-               is <= the specified value.
+               is &lt;= the specified value.
             """.trimIndent()
         }
     }
@@ -534,7 +534,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Doc(Language.ANY, DocScope.ALL){
             """
                  Returns a clipped ndarray such that the input is normalized so that its L2 norm 
-               is <= the specified value.
+               is &lt;= the specified value.
             """.trimIndent()
         }
     }
@@ -627,7 +627,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Output(NUMERIC, "output"){ description = "Boolean array out, with values true/false based on where the condition is satisfied" }
         Doc(Language.ANY, DocScope.ALL){
             """
-                Less than operation: elementwise x < y
+                Less than operation: elementwise x &lt; y
             """.trimIndent()
         }
         useMixin(booleanReturnDoc)
@@ -642,7 +642,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
         Doc(Language.ANY, DocScope.ALL){
             """ 
-                Less than operation: elementwise x < y
+                Less than operation: elementwise x &lt; y
                 If x and y arrays have equal shape, the output shape is the same as these inputs.
             """.trimIndent()
         }
@@ -659,7 +659,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Output(NUMERIC, "output"){ description = "Boolean array out, with values true/false based on where the condition is satisfied" }
         Doc(Language.ANY, DocScope.ALL){
             """
-                Less than or equals operation: elementwise x <= y
+                Less than or equals operation: elementwise x &lt;= y
             """.trimIndent()
         }
         useMixin(booleanReturnDoc)
@@ -673,7 +673,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Output(NUMERIC, "output"){ description = "Output Boolean array out, with values true/false based on where the condition is satisfied" }
         Doc(Language.ANY, DocScope.ALL){
             """ 
-                Less than or equal to operation: elementwise x <= y
+                Less than or equal to operation: elementwise x &lt;= y
                 If x and y arrays have equal shape, the output shape is the same as these inputs.
             """.trimIndent()
         }
@@ -1578,7 +1578,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Doc(Language.ANY, DocScope.ALL){
             """
                  Generate a sequence mask (with values 0 or 1) based on the specified lengths 
-                 Specifically, out[i, ..., k, j] = (j < lengths[i, ..., k] ? 1.0 : 0.0)
+                 Specifically, out[i, ..., k, j] = (j &lt; lengths[i, ..., k] ? 1.0 : 0.0)
             """.trimIndent()
         }
     }
@@ -1592,7 +1592,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Doc(Language.ANY, DocScope.ALL){
             """
                  Generate a sequence mask (with values 0 or 1) based on the specified lengths 
-                 Specifically, out[i, ..., k, j] = (j < lengths[i, ..., k] ? 1.0 : 0.0)
+                 Specifically, out[i, ..., k, j] = (j &lt; lengths[i, ..., k] ? 1.0 : 0.0)
             """.trimIndent()
         }
     }
@@ -1660,7 +1660,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
                 then slice(input, begin=[0,1], size=[2,1] will return:
                 [b]
                 [e]
-                Note that for each dimension i, begin[i] + size[i] <= input.size(i)
+                Note that for each dimension i, begin[i] + size[i] &lt;= input.size(i)
             """.trimIndent()
         }
     }
@@ -1680,7 +1680,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
                 then slice(input, begin=[0,1], size=[2,1] will return:
                 [b]
                 [e]
-                Note that for each dimension i, begin[i] + size[i] <= input.size(i)
+                Note that for each dimension i, begin[i] + size[i] &lt;= input.size(i)
             """.trimIndent()
         }
     }
@@ -2215,7 +2215,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Output(BOOL, "output"){ description = "Boolean AND result" }
         Doc(Language.ANY, DocScope.ALL){
             """
-                Boolean AND operation: elementwise x && y. Supports broadcasting.
+                Boolean AND operation: elementwise x &amp;&amp; y. Supports broadcasting.
             """.trimIndent()
         }
     }

@@ -409,7 +409,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
      *
      * @param column Column to evaluate
      * @return Pearson Correlation for the given column
-     * @see {@link #pearsonCorrelation(int)}
+     * @see #pearsonCorrelation(int)
      * @deprecated Use {@link #pearsonCorrelation(int)} instead.
      * For the R2 score use {@link #rSquared(int)}.
      */
@@ -534,7 +534,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
      * Legacy method for the correlation average across all columns.
      *
      * @return Pearson Correlation averaged over all columns
-     * @see {@link #averagePearsonCorrelation()}
+     * @see #averagePearsonCorrelation()
      * @deprecated Use {@link #averagePearsonCorrelation()} instead.
      * For the R2 score use {@link #averageRSquared()}.
      */

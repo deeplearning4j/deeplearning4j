@@ -132,13 +132,13 @@ public class Indices {
     /**
      * Fill in the missing indices to be the
      * same length as the original shape.
-     * <p/>
+     * <p>
      * Think of this as what fills in the indices for numpy or matlab:
      * Given a which is (4,3,2) in numpy:
-     * <p/>
+     * <p>
      * a[1:3] is filled in by the rest
      * to give back the full slice
-     * <p/>
+     * <p>
      * This algorithm fills in that delta
      *
      * @param shape   the original shape
@@ -203,7 +203,7 @@ public class Indices {
 
     /**
      * Calculate the shape for the given set of indices.
-     * <p/>
+     * <p>
      * The shape is defined as (for each dimension)
      * the difference between the end index + 1 and
      * the begin index
@@ -303,11 +303,11 @@ public class Indices {
 
     /**
      * Calculate the shape for the given set of indices and offsets.
-     * <p/>
+     * <p>
      * The shape is defined as (for each dimension)
      * the difference between the end index + 1 and
      * the begin index
-     * <p/>
+     * <p>
      * If specified, this will check for whether any of the indices are >= to end - 1
      * and if so, prune it down
      *

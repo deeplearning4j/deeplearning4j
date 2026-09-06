@@ -262,8 +262,8 @@ public interface WorkspaceMgr<T extends Enum<T>> {
     /**
      * Cast the specified array to the specified datatype.<br>
      * If the array is already the correct type, the bahaviour depends on the 'dupIfCorrectType' argument.<br>
-     * dupIfCorrectType = false && toCast.dataType() == dataType: return input array as-is (unless workspace is wrong)<br>
-     * dupIfCorrectType = true && toCast.dataType() == dataType: duplicate the array into the specified workspace<br>
+     * {@code dupIfCorrectType = false && toCast.dataType() == dataType}: return input array as-is (unless workspace is wrong)<br>
+     * {@code dupIfCorrectType = true && toCast.dataType() == dataType}: duplicate the array into the specified workspace<br>
      * @param arrayType        Array type
      * @param dataType         Data type
      * @param toCast           Array to cast

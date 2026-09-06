@@ -26,7 +26,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public interface Level1 {
     /**
      * computes a vector-vector dot product.
-     * @param n
+     * @param N
      * @param alpha
      * @param X
      * @param Y
@@ -65,7 +65,7 @@ public interface Level1 {
     /**
      * finds the element of a
      * vector that has the largest absolute value.
-     * @param n the length to iterate for
+     * @param N the length to iterate for
      * @param arr the array to get the max
      *            index for
      * @param stride  the stride for the array
@@ -105,7 +105,7 @@ public interface Level1 {
 
     /**
      *  computes a vector-scalar product and adds the result to a vector.
-     * @param n
+     * @param N
      * @param alpha
      * @param x
      * @param y
@@ -115,7 +115,7 @@ public interface Level1 {
     /**
      * computes a vector-scalar product and adds the result to a vector.
      * y = a*x + y
-     * @param n number of operations
+     * @param N number of operations
      * @param alpha
      * @param x X
      * @param offsetX offset of first element of X in buffer

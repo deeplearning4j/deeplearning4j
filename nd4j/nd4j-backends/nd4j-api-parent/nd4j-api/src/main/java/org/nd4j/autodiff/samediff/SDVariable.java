@@ -1987,17 +1987,15 @@ public class SDVariable implements Serializable {
 
 
     /**
-     * Create a graph that takes in the indices as a placeholder, loops over each element in the index vector
-     * and appends the slice to the end result. This graph is equivalent to something like:
-     * INDArray input = ....;
-     * INDArray indices = ...;
-     * INDArray result = input.get(NDArrayIndex.point(indices.getInt(0));
-     * for(int i = i; i < maxIndex && customInputResult; i++) {
-     * result = Nd4j.concat(0,input.get(NDArrayIndex.point(i)));
-     * }
-     * return result
-     * <p>
-     * Note this is similar to {@link INDArray#get(INDArray)}
+     * Create a loop body that assigns slices from the {@code toPut} placeholder into
+     * {@code assignTo}. The {@code indices} and {@code indicesPut} placeholders select
+     * the destination and source slices, respectively. Each iteration is equivalent to:
+     * <pre>{@code
+     * int destination = indices.getInt(i);
+     * int source = indicesPut.getInt(i);
+     * assignTo.get(NDArrayIndex.point(destination))
+     *         .assign(toPut.get(NDArrayIndex.point(source)));
+     * }</pre>
      *
      * @param relative the expected target input variable. We use this to pull expected
      *                 return data type for the result
@@ -2043,15 +2041,14 @@ public class SDVariable implements Serializable {
 
 
     /**
-     * Create a graph that takes in the indices as a placeholder, loops over each element in the index vector
-     * and appends the slice to the end result. This graph is equivalent to something like:
-     * INDArray input = ....;
-     * INDArray indices = ...;
-     * INDArray result = input.get(NDArrayIndex.point(indices.getInt(0));
-     * for(int i = i; i < maxIndex && customInputResult; i++) {
-     *      result = Nd4j.concat(0,input.get(NDArrayIndex.point(i)));
-     * }
-     * return result
+     * Create a loop body that appends a selected slice of {@code pullFrom} to the
+     * accumulated {@code input}. The selected index comes from the {@code indices}
+     * placeholder. Each iteration is equivalent to:
+     * <pre>{@code
+     * int selected = indices.getInt(i);
+     * INDArray slice = pullFrom.get(NDArrayIndex.point(selected));
+     * INDArray output = Nd4j.concat(0, input, Nd4j.expandDims(slice, 0));
+     * }</pre>
      *
      * Note this is similar to {@link INDArray#get(INDArray)}
      * @param relative the expected target input variable. We use this to pull expected

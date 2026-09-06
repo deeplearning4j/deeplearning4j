@@ -73,14 +73,10 @@ public class Max extends BaseReduceSameOp {
     }
 
     /**
-     * Initialize with the given
-     * input, pairwise transform, result, and number
-     * of elements
+     * Initialize with the input and reduction axes.
      *
      * @param x the input
-     * @param y the pairwise transform
-     * @param z the result
-     * @param n the number of elements
+     * @param axis the reduction axes
      */
     public Max(INDArray x, long... axis) {
         super(x, null, null, axis);

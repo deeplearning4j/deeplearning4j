@@ -89,7 +89,7 @@ public class CLI {
             if (project == NS_PROJECT.ND4J) {
                 ns = Namespace.fromString(s);
                 if (ns == null) {
-                    log.error("Invalid/unknown ND4J namespace provided: " + s);
+                    throw new IllegalArgumentException("Invalid/unknown ND4J namespace provided: " + s);
                 }
                 else {
                     usedNamespaces.add(ns);
@@ -98,7 +98,7 @@ public class CLI {
             else {
                 ns = Namespace.fromString(s);
                 if (ns == null) {
-                    log.error("Invalid/unknown SD namespace provided: " + s);
+                    throw new IllegalArgumentException("Invalid/unknown SD namespace provided: " + s);
                 }
                 else {
                     usedNamespaces.add(ns);
@@ -159,7 +159,7 @@ public class CLI {
             }
 
             outputDir = new File(dir, relativePath);
-            if (!outputDir.exists() || !dir.isDirectory()) {
+            if (!outputDir.exists() || !outputDir.isDirectory()) {
                 throw new IllegalStateException("Expected output directory does not exist: " + outputDir.getAbsolutePath());
             }
         }
@@ -168,18 +168,12 @@ public class CLI {
             throw new IllegalStateException("No namespaces were provided");
         }
 
-        try {
-            if (projects == null)
-                projects.add(allProjects);
-            boolean forAllProjects = projects.isEmpty() || projects.contains(allProjects);
-            if (forAllProjects || projects.contains(ndProject)) {
-                generateNamespaces(NS_PROJECT.ND4J, outputDir, "org.nd4j.linalg.factory");
-            }
-            if (forAllProjects || projects.contains(sdProject)) {
-                generateNamespaces(NS_PROJECT.SAMEDIFF, outputDir, "org.nd4j.autodiff.samediff");
-            }
-        } catch (Exception e) {
-            log.error(e.toString());
+        boolean forAllProjects = projects == null || projects.isEmpty() || projects.contains(allProjects);
+        if (forAllProjects || projects.contains(ndProject)) {
+            generateNamespaces(NS_PROJECT.ND4J, outputDir, "org.nd4j.linalg.factory");
+        }
+        if (forAllProjects || projects.contains(sdProject)) {
+            generateNamespaces(NS_PROJECT.SAMEDIFF, outputDir, "org.nd4j.autodiff.samediff");
         }
     }
 }

@@ -77,7 +77,7 @@ fun SDImage() =  Namespace("Image"){
         Arg(NUMERIC, "iouThreshold") { description = "threshold for deciding whether boxes overlap too much with respect to IOU" }
         Arg(NUMERIC, "scoreThreshold") { description = "threshold for deciding when to remove boxes based on score" }
 
-        Output(NUMERIC, "output"){ description = "vectort of shape [M] representing the selected indices from the boxes tensor, where M <= max_output_size" }
+        Output(NUMERIC, "output"){ description = "vector of shape [M] representing the selected indices from the boxes tensor, where M &lt;= max_output_size" }
 
         Doc(Language.ANY, DocScope.ALL){
             """

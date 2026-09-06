@@ -57,7 +57,7 @@ fun GNN() = Namespace("GNN") {
         """.trimIndent())
         Doc(Language.ANY, DocScope.ALL) {
             """
-            Graph Convolutional Network layer (Kipf & Welling 2017).
+            Graph Convolutional Network layer (Kipf and Welling 2017).
             out = relu?( A_norm · X · W + bias )
             """.trimIndent()
         }
@@ -372,7 +372,7 @@ fun GNN() = Namespace("GNN") {
         """.trimIndent())
         Doc(Language.ANY, DocScope.ALL) {
             """
-            PairNorm (Zhao & Akoglu 2020): parameter-free normalisation that keeps total pairwise feature distance constant.
+            PairNorm (Zhao and Akoglu 2020): parameter-free normalisation that keeps total pairwise feature distance constant.
             """.trimIndent()
         }
     }
@@ -591,7 +591,7 @@ fun GNN() = Namespace("GNN") {
         """.trimIndent())
         Doc(Language.ANY, DocScope.ALL) {
             """
-            VGAE reparameterisation trick (Kipf & Welling 2016): z = mu + exp(0.5*logvar) * noise
+            VGAE reparameterisation trick (Kipf and Welling 2016): z = mu + exp(0.5*logvar) * noise
             """.trimIndent()
         }
     }
@@ -606,7 +606,7 @@ fun GNN() = Namespace("GNN") {
         """.trimIndent())
         Doc(Language.ANY, DocScope.ALL) {
             """
-            VGAE KL-divergence regulariser (Kipf & Welling 2016): 0.5 * mean(exp(logvar) + mu^2 - logvar - 1)
+            VGAE KL-divergence regulariser (Kipf and Welling 2016): 0.5 * mean(exp(logvar) + mu^2 - logvar - 1)
             """.trimIndent()
         }
     }
@@ -619,7 +619,7 @@ fun GNN() = Namespace("GNN") {
         """.trimIndent())
         Doc(Language.ANY, DocScope.ALL) {
             """
-            Inner-product link decoder (Kipf & Welling 2016): Z*Z^T. Apply sigmoid downstream for edge probabilities.
+            Inner-product link decoder (Kipf and Welling 2016): Z*Z^T. Apply sigmoid downstream for edge probabilities.
             """.trimIndent()
         }
     }
@@ -693,7 +693,7 @@ fun GNN() = Namespace("GNN") {
         """.trimIndent())
         Doc(Language.ANY, DocScope.ALL) {
             """
-            Single-head Graph Transformer layer (Dwivedi & Bresson 2021, simplified):
+            Single-head Graph Transformer layer (Dwivedi and Bresson 2021, simplified):
             scaled dot-product self-attention, optionally restricted via additive mask.
             """.trimIndent()
         }
@@ -732,7 +732,7 @@ fun GNN() = Namespace("GNN") {
         """.trimIndent())
         Doc(Language.ANY, DocScope.ALL) {
             """
-            Edge-conditioned convolution / NNConv (Simonovsky & Komodakis 2017; Gilmer et al. MPNN 2017).
+            Edge-conditioned convolution / NNConv (Simonovsky and Komodakis 2017; Gilmer et al. MPNN 2017).
             An edge network maps edge features to [Fin, Fout] weight matrices applied to neighbour features.
             """.trimIndent()
         }

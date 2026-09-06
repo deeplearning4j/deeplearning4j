@@ -40,7 +40,6 @@ public class TensorflowDescriptorParser {
     /**
      * Get the op descriptors for tensorflow
      * @return the op descriptors for tensorflow
-     * @throws Exception
      */
     public static synchronized Map<String,OpDef> opDescs() {
         if(DESCRIPTORS != null){

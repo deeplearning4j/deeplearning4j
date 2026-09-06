@@ -574,7 +574,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
 
     /**
-     * @Deprecated
+     * @deprecated
      * Subtract by the column means and divide by the standard deviation
      */
     @Deprecated

@@ -192,7 +192,7 @@ public class SDValue implements IDependeeGroup<INDArray> {
     }
 
     /**
-     * Wrap an {@link Map<String<INDArray>} in a value
+     * Wrap a {@code Map<String, INDArray>} in a value
      * with an {@link SDValueType#DICT} type
      *
      * @param inputValue the input value

@@ -249,14 +249,7 @@ public class Nd4jNamespaceGenerator {
             for(DocSection ds : doc){
                 if(ds.applies(Language.JAVA, CodeComponent.OP_CREATOR)){
                     String text = DocTokens.processDocText(ds.getText(), op, DocTokens.GenerationType.ND4J);
-                    //Add <br> tags at the end of each line, where none already exists
-                    String[] lines = text.split("\n");
-                    for( int i = 0; i < lines.length; i++) {
-                        if(!lines[i].endsWith("<br>")){
-                            lines[i] = lines[i] + "<br>";
-                        }
-                    }
-                    text = String.join("\n", lines);
+                    // Preserve authored HTML: inserting line breaks inside lists produces invalid Javadoc.
                     c.addJavadoc(text + "\n\n");
                 }
             }
@@ -269,7 +262,7 @@ public class Nd4jNamespaceGenerator {
         if(!constraints.isEmpty()){
             c.addJavadoc("Inputs must satisfy the following constraints: <br>\n");
             for (Constraint constraint : constraints) {
-                c.addJavadoc(constraint.getMessage() +": " + constraintCodeGenerator.generateExpression(constraint.getCheck()) + "<br>\n");
+                c.addJavadoc(constraint.getMessage() +": {@code " + constraintCodeGenerator.generateExpression(constraint.getCheck()) + "}<br>\n");
             }
 
             c.addJavadoc("\n");
@@ -956,14 +949,7 @@ public class Nd4jNamespaceGenerator {
             for(DocSection ds : doc){
                 if(ds.applies(Language.JAVA, CodeComponent.OP_CREATOR)){
                     String text = ds.getText();
-                    //Add <br> tags at the end of each line, where none already exists
-                    String[] lines = text.split("\n");
-                    for( int i=0; i<lines.length; i++ ){
-                        if(!lines[i].endsWith("<br>")){
-                            lines[i] = lines[i] + "<br>";
-                        }
-                    }
-                    text = String.join("\n", lines);
+                    // Preserve authored HTML, including list and preformatted block boundaries.
                     holder.addJavadoc(text + "\n\n");
                 }
             }
@@ -975,7 +961,7 @@ public class Nd4jNamespaceGenerator {
         if(!constraints.isEmpty()){
             holder.addJavadoc("Inputs must satisfy the following constraints: <br>\n");
             for (Constraint constraint : constraints) {
-                holder.addJavadoc(constraint.getMessage() +": " + constraintCodeGenerator.generateExpression(constraint.getCheck()) + "<br>\n");
+                holder.addJavadoc(constraint.getMessage() +": {@code " + constraintCodeGenerator.generateExpression(constraint.getCheck()) + "}<br>\n");
             }
 
             holder.addJavadoc("\n");

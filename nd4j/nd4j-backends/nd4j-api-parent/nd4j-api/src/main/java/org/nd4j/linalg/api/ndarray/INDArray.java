@@ -2271,7 +2271,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * Dimshuffle: an extension of permute that adds the ability
      * to broadcast various dimensions.
      * This will only accept integers and xs.
-     * <p/>
+     * <p>
      * An x indicates a dimension should be broadcasted rather than permuted.
      *
      * Examples originally from the theano docs:
@@ -2299,7 +2299,7 @@ public interface INDArray extends Serializable, AutoCloseable {
     INDArray dimShuffle(Object[] rearrange, int[] newOrder, boolean[] broadCastable);
 
     /**
-     * See {@link #dimShuffle(Object[], int[], boolean[])
+     * See {@link #dimShuffle(Object[], int[], boolean[])}
      */
     INDArray dimShuffle(Object[] rearrange, long[] newOrder, boolean[] broadCastable);
 

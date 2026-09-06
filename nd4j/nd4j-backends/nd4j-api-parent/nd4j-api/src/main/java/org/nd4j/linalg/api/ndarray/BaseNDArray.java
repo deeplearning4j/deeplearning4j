@@ -646,7 +646,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
     /**
-     * Creates a new <i>n</i> times <i>m</i> <tt>DoubleMatrix</tt>.
+     * Creates a new <i>n</i> times <i>m</i> {@code DoubleMatrix}.
      *
      * @param newRows    the number of rows (<i>n</i>) of the new matrix.
      * @param newColumns the number of columns (<i>m</i>) of the new matrix.
@@ -1105,7 +1105,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
     /**
-     * Creates a new <i>n</i> times <i>m</i> <tt>DoubleMatrix</tt>.
+     * Creates a new <i>n</i> times <i>m</i> {@code DoubleMatrix}.
      *
      * @param newRows    the number of rows (<i>n</i>) of the new matrix.
      * @param newColumns the number of columns (<i>m</i>) of the new matrix.
@@ -5434,10 +5434,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     /**
      * Dimshuffle: an extension of permute that adds the ability
      * to broadcast various dimensions.
-     * <p/>
+     * <p>
      * See theano for more examples.
      * This will only accept integers and xs.
-     * <p/>
+     * <p>
      * An x indicates a dimension should be broadcasted rather than permuted.
      *
      * @param rearrange the dimensions to swap to

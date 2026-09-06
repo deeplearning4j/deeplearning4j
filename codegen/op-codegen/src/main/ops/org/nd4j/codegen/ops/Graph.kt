@@ -527,7 +527,7 @@ fun Graph() = Namespace("Graph") {
         """.trimIndent())
         Doc(Language.ANY, DocScope.ALL) {
             """
-            Correct & Smooth post-processing (Huang et al. 2020): two-phase label diffusion over a graph.
+            Correct &amp; Smooth post-processing (Huang et al. 2020): two-phase label diffusion over a graph.
             Phase 1 (Correct, iter1 steps): spreads label residuals E over the graph while retaining a
             fraction (1-alpha1) of the original residuals at every step, then adds the spread residuals to
             the base predictions. Phase 2 (Smooth, iter2 steps): diffuses the corrected predictions while
@@ -539,7 +539,7 @@ fun Graph() = Namespace("Graph") {
 
     Op("katzIndex") {
         Input(FLOATING_POINT, "adj")  { description = "Adjacency matrix [n, n]" }
-        Arg(FLOATING_POINT, "beta")   { description = "Attenuation factor (0 < beta < 1 / spectral_radius(A))" }
+        Arg(FLOATING_POINT, "beta")   { description = "Attenuation factor (0 &lt; beta &lt; 1 / spectral_radius(A))" }
         Arg(INT, "L")                 { description = "Truncation depth: number of path-length terms (>= 1)" }
         Output(FLOATING_POINT, "out") { description = "Katz similarity matrix [n, n]" }
         Composition("""
@@ -559,7 +559,7 @@ fun Graph() = Namespace("Graph") {
             paths between pairs of nodes, exponentially down-weighted by path length.
             S = sum_{l=1}^{L} beta^l A^l  (truncated finite-sum approximation).
             Unlike the closed-form (I - beta*A)^{-1} - I this formulation uses only matrix multiplication
-            and is fully differentiable via standard mmul backward. Requires 0 < beta < 1/spectral_radius(A)
+            and is fully differentiable via standard mmul backward. Requires 0 &lt; beta &lt; 1/spectral_radius(A)
             for the series to be meaningful; in practice beta = 0.05..0.1 and L = 3..5 works well.
             """.trimIndent()
         }
@@ -583,7 +583,7 @@ fun Graph() = Namespace("Graph") {
         """.trimIndent())
         Doc(Language.ANY, DocScope.ALL) {
             """
-            SimRank node-similarity (Jeh & Widom 2002): two nodes are similar if their in-neighbors are
+            SimRank node-similarity (Jeh and Widom 2002): two nodes are similar if their in-neighbors are
             similar. Converges via the fixed-point iteration S_{t+1} = C * W^T S_t W (diagonal forced to 1),
             where W is the column-normalized adjacency. The diagonal reset is implemented in a gradient-clean
             elementwise form: S_new = prop * (ones - I) + I.
@@ -636,7 +636,7 @@ fun Graph() = Namespace("Graph") {
         """.trimIndent())
         Doc(Language.ANY, DocScope.ALL) {
             """
-            Top-k node pooling (Gao & Ji 2019 / Cangea et al. 2018; the selection mechanism of SAGPool):
+            Top-k node pooling (Gao and Ji 2019 / Cangea et al. 2018; the selection mechanism of SAGPool):
             keeps the k highest-scoring nodes and gates their features by sigmoid(score) so the score stays
             differentiable. The top-k rows are gathered as oneHot(topIndices, n) @ features (avoiding a
             separate gather op). Pass scores from a learned projection or a graph-attention layer for SAGPool.

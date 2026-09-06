@@ -76,7 +76,7 @@ public class WorkspaceAllocationsTracker {
     /**
      * Current number of bytes allocated externally for a given device.
      *
-     * @see {@link Nd4jWorkspace#getNumberOfExternalAllocations()}
+     * @see Nd4jWorkspace#getNumberOfExternalAllocations()
      * @param memoryKind the kind of memory to check for
      * @return
      */
@@ -87,7 +87,7 @@ public class WorkspaceAllocationsTracker {
     /**
      * The current number of spilled bytes for a
      * given device.
-     * @see {@link Nd4jWorkspace#getSpilledSize()}
+     * @see Nd4jWorkspace#getSpilledSize()
      * @param memoryKind
      * @return
      */
@@ -115,7 +115,7 @@ public class WorkspaceAllocationsTracker {
 
     /**
      * Current number of pinned bytes for a given memory type
-     * @see {@link Nd4jWorkspace#getPinnedSize()}
+     * @see Nd4jWorkspace#getPinnedSize()
      * @param memoryKind
      * @return
      */
@@ -126,7 +126,7 @@ public class WorkspaceAllocationsTracker {
 
     /**
      * Get the total number of external allocations
-     * @see {@link Nd4jWorkspace#getNumberOfExternalAllocations()}
+     * @see Nd4jWorkspace#getNumberOfExternalAllocations()
      * @return
      */
     public long totalExternalAllocationCount() {
@@ -136,7 +136,7 @@ public class WorkspaceAllocationsTracker {
     /**
      * Get the total number of allocations across all data types
      * and workspaces
-     * @see {@link Nd4jWorkspace#getPrimaryOffset()}
+     * @see Nd4jWorkspace#getPrimaryOffset()
      * @return
      */
     public long totalAllocationCount() {
@@ -147,7 +147,7 @@ public class WorkspaceAllocationsTracker {
      * Get the total number of spilled allocations
      * aggregated by data type.
      *
-     * @see {@link Nd4jWorkspace#getSpilledSize()}
+     * @see Nd4jWorkspace#getSpilledSize()
      * @return
      */
     public long totalSpilledAllocationCount() {
@@ -157,7 +157,7 @@ public class WorkspaceAllocationsTracker {
     /**
      * Get the total number of pinned allocations
      * aggregated by data type.
-     * @see {@link Nd4jWorkspace#getNumberOfPinnedAllocations()}
+     * @see Nd4jWorkspace#getNumberOfPinnedAllocations()
      * @return
      */
     public long totalPinnedAllocationCount() {
@@ -178,7 +178,7 @@ public class WorkspaceAllocationsTracker {
     /**
      * Get the number of pinned allocations for a given data type.
      *
-     * @see {@link Nd4jWorkspace#getNumberOfPinnedAllocations()}
+     * @see Nd4jWorkspace#getNumberOfPinnedAllocations()
      * @param toCount
      * @return
      */
@@ -200,8 +200,8 @@ public class WorkspaceAllocationsTracker {
     /**
      * Get the current number of allocations for a given data type
      * and requested aligned memory size.
-     * @see {@link Nd4jWorkspace#alignMemory(long)}
-     * @see {@link Nd4jWorkspace#getPrimaryOffset()}
+     * @see Nd4jWorkspace#alignMemory(long)
+     * @see Nd4jWorkspace#getPrimaryOffset()
      * @param toCount the data type to get the counts for
      * @return
      */

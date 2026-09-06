@@ -54,7 +54,7 @@ class PublicationWorkflowSafetyTests(unittest.TestCase):
         env.update({name: "" for name in SECRET_NAMES})
         env.update(RELEASE_VERSION="1.0.0-M3", SNAPSHOT_VERSION="1.0.0-SNAPSHOT",
                    DEPLOY_TO_RELEASE_STAGING="1", DRY_RUN="false", SERVER_ID="central",
-                   EXPECTED_COMMIT="a" * 40)
+                   EXPECTED_COMMIT="a" * 40, REGENERATE_OPS="false")
         env.update(overrides)
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "github-output"
@@ -154,6 +154,48 @@ class PublicationWorkflowSafetyTests(unittest.TestCase):
                     self.assertEqual(0, result.returncode, result.stderr)
                     if filename == "_release-worker.yml":
                         self.assertIn("publish=false", outputs)
+
+    def test_java_regeneration_requires_explicit_build_only_mode(self):
+        script = step_script("java-hotfix-release.yml", "Validate publication inputs and credentials")
+        credentials = {name: f"sensitive-{name}" for name in SECRET_NAMES}
+        for mode in ("0", "1"):
+            for dry_run in ("true", "false"):
+                with self.subTest(mode=mode, dry_run=dry_run):
+                    result, _ = self.run_script(script, DEPLOY_TO_RELEASE_STAGING=mode,
+                                                DRY_RUN=dry_run, REGENERATE_OPS="true", **credentials)
+                    self.assertEqual(0 if dry_run == "true" else 2, result.returncode, result.stderr)
+                    if dry_run == "false":
+                        self.assertIn("regenerateOps requires dryRun=true", result.stderr)
+        for value in ("TRUE", "1", ""):
+            with self.subTest(value=value):
+                result, _ = self.run_script(script, DRY_RUN="true", REGENERATE_OPS=value)
+                self.assertEqual(2, result.returncode)
+                self.assertIn("regenerateOps must be true or false", result.stderr)
+
+    def test_java_regeneration_is_remote_reviewable_and_never_a_deployment(self):
+        source = (WORKFLOWS / "java-hotfix-release.yml").read_text()
+        regeneration = source.split("      - name: Regenerate op APIs for build-only qualification\n", 1)[1]
+        regeneration = regeneration.split("\n      - ", 1)[0]
+        self.assertIn("inputs.regenerateOps == 'true' && inputs.dryRun == 'true'", regeneration)
+        self.assertIn('[[ "${DRY_RUN}" == true && "${REGENERATE_OPS}" == true ]] || exit 2', regeneration)
+        self.assertIn("-pl :op-codegen --also-make install", regeneration)
+        self.assertIn("org.codehaus.mojo:exec-maven-plugin:3.3.0:java", regeneration)
+        self.assertIn("-namespaces all -projects all", regeneration)
+        self.assertNotIn(" deploy", regeneration)
+        self.assertNotIn(" clean", regeneration)
+        self.assertNotIn("-Pcentral-signing", regeneration)
+        self.assertIn("op-codegen-source.sha", regeneration)
+        self.assertIn("op-codegen.patch", regeneration)
+        self.assertIn("git add --intent-to-add -- nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java", regeneration)
+        self.assertLess(source.index("name: Retain generated source patch for review"),
+                        source.index("name: Set the requested publication version"))
+        self.assertIn("-Pcentral-release", step_script("java-hotfix-release.yml", "Build and deploy Java-only modules"))
+
+    def test_java_artifact_verification_fails_when_required_archive_is_absent(self):
+        script = step_script("java-hotfix-release.yml", "Verify built artifacts")
+        result, _ = self.run_script('find() { return 0; }\n' + script, DRY_RUN="true")
+        self.assertEqual(1, result.returncode, result.stderr)
+        self.assertIn("Missing or ambiguous built artifact: nd4j-common-1.0.0-M3.jar", result.stderr)
 
     def test_release_preflight_checks_each_secret_without_disclosing_values(self):
         credentials = {name: f"sensitive-{name}" for name in SECRET_NAMES}

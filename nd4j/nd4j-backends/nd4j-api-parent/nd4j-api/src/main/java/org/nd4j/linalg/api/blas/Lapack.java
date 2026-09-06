@@ -28,15 +28,15 @@ public interface Lapack {
      * LU decomposiiton of a matrix
      * Factorize a matrix A
      *
-     * The matrix A is overridden by the L & U combined.
+     * The matrix A is overridden by the L and U combined.
      * The permutation results are returned directly as a vector. To 
      * create the permutation matrix use getPFactor method
-     * To split out the L & U matrix use getLFactor and getUFactor methods
+     * To split out the L and U matrix use getLFactor and getUFactor methods
      *
      * getrf = triangular factorization (TRF) of a general matrix (GE)
      *
      * @param A the input matrix, it will be overwritten with the factors
-     * @returns Permutation array
+     * @return Permutation array
      * @throws Error - with a message to indicate failure (usu. bad params)
      */
     INDArray getrf(INDArray A);
@@ -53,7 +53,7 @@ public interface Lapack {
      *         matrix Q and an upper triangular R matrix
      *
      * @param A the input matrix, it will be overwritten with the factors
-     * @param The R array if null R is not returned
+     * @param R the output R array; if null, R is not returned
      * @throws Error - with a message to indicate failure (usu. bad params)
      */
     void geqrf(INDArray A, INDArray R);
@@ -71,8 +71,7 @@ public interface Lapack {
      *         lower L ( or upper U ) triangular matrix
      *
      * @param A the input matrix, it will be overwritten with the factors
-     * @param whether to return the upper (false) or lower factor
-     * @returns Permutation array
+     * @param lower whether to compute the lower (true) or upper (false) factor
      * @throws Error - with a message to indicate failure (usu. bad params)
      */
     void potrf(INDArray A, boolean lower);
@@ -122,7 +121,7 @@ public interface Lapack {
     *
     * @param M - the size of the permutation matrix ( usu. the # rows in factored matrix )
     * @param ipiv - the vector returned from a refactoring
-    * @returned the square permutation matrix - size is the M x M
+    * @return the square permutation matrix - size is the M x M
     */
     INDArray getPFactor(int M, INDArray ipiv);
 
@@ -131,8 +130,8 @@ public interface Lapack {
     * extracts the L (lower triangular) matrix from the LU factor result
     * L will be the same dimensions as A
     *
-    * @param A - the combined L & U matrices returned from factorization
-    * @returned the lower triangular with unit diagonal
+    * @param A - the combined L and U matrices returned from factorization
+    * @return the lower triangular with unit diagonal
     */
     INDArray getLFactor(INDArray A);
 
@@ -141,8 +140,8 @@ public interface Lapack {
     * extracts the U (upper triangular) matrix from the LU factor result
     * U will be n x n matrix where n = num cols in A
     *
-    * @param A - the combined L & U matrices returned from factorization
-    * @returned the upper triangular matrix
+    * @param A - the combined L and U matrices returned from factorization
+    * @return the upper triangular matrix
     */
     INDArray getUFactor(INDArray A);
 

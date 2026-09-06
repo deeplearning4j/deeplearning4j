@@ -312,7 +312,7 @@ public abstract class RLAlignmentTrainer<C extends RLAlignmentConfig> {
      * @param inputs   Model inputs
      * @param tokens   Token IDs [batch, seq]
      * @param logitVar Name of the logit output variable
-     * @param vocabSize Vocabulary size
+     * @param vocabSizeArg Vocabulary size
      * @return Per-sequence log probabilities [batch]
      */
     protected INDArray computeExternalLogProbs(SameDiff model, Map<String, INDArray> inputs,

@@ -23,6 +23,7 @@ package org.nd4j.linalg.api.ops.impl.graph;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.impl.sparse.CsrSpmm;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * DiffPool: differentiable hierarchical graph pooling (Ying et al. 2018).

@@ -36,7 +36,7 @@ public interface ShapeInfoProvider {
     Pair<DataBuffer, long[]> createShapeInformation(long[] shape, DataType dataType);
 
     /**
-     * This method creates long shapeInformation buffer, based on shape & order being passed in
+     * This method creates long shapeInformation buffer, based on shape and order being passed in
      * @param shape
      * @return
      */

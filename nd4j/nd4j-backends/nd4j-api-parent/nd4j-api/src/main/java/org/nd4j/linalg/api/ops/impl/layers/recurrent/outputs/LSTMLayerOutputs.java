@@ -42,6 +42,7 @@ public class LSTMLayerOutputs {
 
     /**
      * output h:
+     * <pre>{@code
      * [sL, bS, nOut]    when directionMode <= 2 && dataFormat == 0
      * [bS, sL, nOut]    when directionMode <= 2 && dataFormat == 1
      * [bS, nOut, sL]    when directionMode <= 2 && dataFormat == 2
@@ -49,6 +50,7 @@ public class LSTMLayerOutputs {
      * [bS, sL, 2*nOut]  when directionMode == 3 && dataFormat == 1
      * [bS, 2*nOut, sL]  when directionMode == 3 && dataFormat == 2
      * [sL, 2, bS, nOut] when directionMode == 4 && dataFormat == 3
+     * }</pre>
      * numbers mean index in corresponding enums {@link LSTMDataFormat} and {@link LSTMDirectionMode}
      */
     private SDVariable timeSeriesOutput;

@@ -651,6 +651,7 @@ public class SparseNDArray {
      * starting from the semiring's additive identity.
      *
      * <table>
+     *   <caption>Semiring operations and additive identities</caption>
      *   <tr><th>Semiring</th><th>mul</th><th>add</th><th>identity</th></tr>
      *   <tr><td>PLUS_TIMES</td><td>&times;</td><td>+</td><td>0</td></tr>
      *   <tr><td>MIN_PLUS</td><td>+</td><td>min</td><td>+&infin;</td></tr>

@@ -144,7 +144,7 @@ fun Math() =  Namespace("Math") {
         Output(BOOL, "output"){ description = "%INPUT_TYPE% with values 0 and 1 based on where the condition is satisfied" }
         Doc(Language.ANY, DocScope.ALL){
             """
-                 Boolean AND operation: elementwise (x != 0) && (y != 0)
+                 Boolean AND operation: elementwise (x != 0) &amp;&amp; (y != 0)
                  If x and y arrays have equal shape, the output shape is the same as these inputs.
                  Note: supports broadcasting if x and y have different shapes and are broadcastable.
                  Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
@@ -232,7 +232,7 @@ fun Math() =  Namespace("Math") {
         Doc(Language.ANY, DocScope.ALL){
             """ 
                 Clipping by L2 norm, optionally along dimension(s)
-                if l2Norm(x,dimension) < clipValue, then input is returned unmodifed
+                if l2Norm(x,dimension) &lt; clipValue, then input is returned unmodified
                 Otherwise, out[i] = in[i] * clipValue / l2Norm(in, dimensions) where each value is clipped according
                 to the corresponding l2Norm along the specified dimensions
             """.trimIndent()
@@ -249,8 +249,8 @@ fun Math() =  Namespace("Math") {
         Doc(Language.ANY, DocScope.ALL){
             """
                 Element-wise clipping function:
-                out[i] = in[i] if in[i] >= clipValueMin and in[i] <= clipValueMax
-                out[i] = clipValueMin if in[i] < clipValueMin
+                out[i] = in[i] if in[i] >= clipValueMin and in[i] &lt;= clipValueMax
+                out[i] = clipValueMin if in[i] &lt; clipValueMin
                 out[i] = clipValueMax if in[i] > clipValueMax
             """.trimIndent()
         }
@@ -733,7 +733,7 @@ fun Math() =  Namespace("Math") {
         Doc(Language.ANY, DocScope.ALL){
             """
                 Is the array non decreasing?
-                An array is non-decreasing if for every valid i, x[i] <= x[i+1]. For Rank 2+ arrays, values are compared
+                An array is non-decreasing if for every valid i, x[i] &lt;= x[i+1]. For Rank 2+ arrays, values are compared
                 in 'c' (row major) order
             """.trimIndent()
         }
@@ -746,7 +746,7 @@ fun Math() =  Namespace("Math") {
         Doc(Language.ANY, DocScope.ALL){
             """
                 Is the array strictly increasing?
-                An array is strictly increasing if for every valid i, x[i] < x[i+1]. For Rank 2+ arrays, values are compared
+                An array is strictly increasing if for every valid i, x[i] &lt; x[i+1]. For Rank 2+ arrays, values are compared
                 in 'c' (row major) order
             """.trimIndent()
         }
@@ -1252,7 +1252,7 @@ fun Math() =  Namespace("Math") {
         Doc(Language.ANY, DocScope.ALL){
             """
                 Element-wise sign (signum) function:
-                out = -1 if in < 0
+                out = -1 if in &lt; 0
                 out = 0 if in = 0
                 out = 1 if in > 0
             """.trimIndent()

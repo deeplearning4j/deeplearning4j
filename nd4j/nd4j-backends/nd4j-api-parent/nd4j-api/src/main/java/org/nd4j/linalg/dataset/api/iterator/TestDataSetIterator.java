@@ -49,7 +49,6 @@ public class TestDataSetIterator implements DataSetIterator {
      * Initializes with a default batch of 5
      *
      * @param dataset the dataset to make the iterator from
-     * @param batch   the batchsize for the iterator
      */
     public TestDataSetIterator(DataSet dataset) {
         this(dataset, 5);

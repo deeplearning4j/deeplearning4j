@@ -302,7 +302,7 @@ public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Seri
      * Get the example metadata, or null if no metadata has been set
      *
      * @return List of metadata instances
-     * @see {@link #getExampleMetaData(Class)} for convenience method for types
+     * @see #getExampleMetaData(Class) convenience method for typed metadata
      */
     List<Serializable> getExampleMetaData();
 

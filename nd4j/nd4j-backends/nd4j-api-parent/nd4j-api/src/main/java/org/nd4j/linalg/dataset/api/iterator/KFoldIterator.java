@@ -116,8 +116,6 @@ public class KFoldIterator implements DataSetIterator {
 
     /**
      * Shuffles the dataset and resets to the first fold
-     *
-     * @return void
      */
     @Override
     public void reset() {

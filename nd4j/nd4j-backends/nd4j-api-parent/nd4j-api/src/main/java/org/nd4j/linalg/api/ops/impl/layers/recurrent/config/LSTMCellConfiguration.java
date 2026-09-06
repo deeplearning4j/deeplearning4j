@@ -32,6 +32,7 @@ import java.util.Map;
 @Data
 public class LSTMCellConfiguration {
     /**
+     * <pre>{@code
      *   NDArray<T>* xt   = INPUT_VARIABLE(0);                   // input [batchSize x inSize]
      NDArray<T>* ht_1 = INPUT_VARIABLE(1);                   // previous cell output [batchSize x numProj],  that is at previous time step t-1, in case of projection=false -> numProj=numUnits!!!
      NDArray<T>* ct_1 = INPUT_VARIABLE(2);                   // previous cell state  [batchSize x numUnits], that is at previous time step t-1
@@ -50,7 +51,7 @@ public class LSTMCellConfiguration {
      T clippingCellValue   = T_ARG(0);                       // clipping value for ct, if it is not equal to zero, then cell state is clipped
      T clippingProjValue   = T_ARG(1);                       // clipping value for projected ht, if it is not equal to zero, then projected cell output is clipped
      const T forgetBias    = T_ARG(2);
-
+     * }</pre>
      */
 
     private boolean peepHole;
