@@ -1738,14 +1738,15 @@ function(create_direct_instantiation_file_impl template_file combinations output
         set(file_extension "cpp")
     endif()
 
-    # CUDA 12.6's front end and ptxas crash on the oversized pairwise shards
-    # produced on low-core runners. Each pairwise specialization contains the
-    # complete legacy op dispatcher, so isolate one dtype per translation unit.
+    # CUDA 12.6's front end and ptxas crash on oversized legacy dispatcher
+    # shards produced on low-core runners. Keep pairwise and scalar dtype
+    # specializations in separate translation units; scalar includes both
+    # shaped and along-dimension dispatchers for every enabled scalar op.
     # Other templates retain the normal adaptive chunk size, and CPU generation
     # is deliberately unaffected despite sharing the same template stem.
     set(direct_chunk_size "${MULTI_PASS_CHUNK_SIZE}")
     if(IS_CUDA_FILE AND
-       template_name MATCHES "^pairwise(_group[123])?_instantiation_template_3$")
+       template_name MATCHES "^(pairwise(_group[123])?|scalar)_instantiation_template_3$")
         set(direct_chunk_size 1)
     endif()
     
