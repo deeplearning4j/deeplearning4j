@@ -745,6 +745,55 @@ class NnapiOutputStagingContractTest {
     }
 
     @Test
+    void aclValidatesConcreteContractsBeforeConfiguringVendorKernels() throws Exception {
+        Path root = Path.of("").toAbsolutePath().normalize().resolve("..").normalize();
+        String source = Files.readString(root.resolve(
+                "libnd4j/include/graph/cpu/AclGraphBackend.cpp"));
+        int build = source.indexOf("AclGraphBackend::buildFunctions(");
+        int compile = source.indexOf("bool AclGraphBackend::compileSegment(", build);
+        String lowering = source.substring(build, compile);
+
+        // A valid ACL dtype enum is not evidence that any particular kernel
+        // supports it. Production configure() can omit internal validation:
+        // BF16 activation used to enter a null kernel in ACL v25.04 here.
+        for (String[] kernel : new String[][] {
+                {"NEGather", "gather"}, {"NEGEMM", "gemm"},
+                {"NEArithmeticAddition", "addLayer"},
+                {"NEPixelWiseMultiplication", "mulLayer"},
+                {"NESoftmaxLayer", "smLayer"}, {"NEActivationLayer", "actLayer"}}) {
+            int validation = lowering.indexOf("arm_compute::" + kernel[0] + "::validate(");
+            int accepted = lowering.indexOf("if (acceptValidation(validation))", validation);
+            int owned = lowering.indexOf("entry.function.reset(" + kernel[1] + ");", validation);
+            int configure = lowering.indexOf(kernel[1] + "->configure(", validation);
+            assertTrue(validation >= 0 && accepted > validation && owned > accepted
+                            && configure > owned,
+                    kernel[0] + " must validate actual tensor descriptors before configure, "
+                            + "with ownership established before vendor code can throw");
+            assertTrue(lowering.substring(validation, accepted).contains("outTensor->info()"),
+                    kernel[0] + " validation must include the actual output descriptor");
+        }
+
+        int descriptorGuard = lowering.indexOf("if (!supportedDescriptors)");
+        int tensorCreation = lowering.indexOf("auto outTensor = getOrCreateTensor(");
+        assertTrue(descriptorGuard >= 0 && tensorCreation > descriptorGuard
+                        && lowering.substring(descriptorGuard, tensorCreation).contains("continue;")
+                        && lowering.contains("supportsDescriptor(outArr)")
+                        && lowering.contains("supportsDescriptor(inputArrays[i])")
+                        && lowering.contains("isDenseCOrder(arr)"),
+                "Missing arrays and unsupported dtype/layout must reject before vendor tensor creation");
+        assertTrue(source.contains("default: return arm_compute::DataType::UNKNOWN;")
+                        && lowering.contains("!= arm_compute::DataType::UNKNOWN")
+                        && source.contains("case DataType::BFLOAT16: return arm_compute::DataType::BFLOAT16;"),
+                "Keep BF16 descriptors for per-operation validation; never reinterpret unknown dtypes as F32");
+        assertTrue(lowering.contains("rejectionReason = \"ACL validation: \" + validation.error_description();")
+                        && lowering.contains("auditEntry.wasCompiled = false;")
+                        && lowering.contains("auditEntry.reason = reason;")
+                        && lowering.contains("recordRejection(s, rejectionReason);")
+                        && lowering.contains("functionsBuilt == expectedFunctions && completeAudit"),
+                "Concrete capability rejection must preserve the vendor reason and invalidate the entire segment");
+    }
+
+    @Test
     void armHybridKeepsQwenShapeOpsInsideCompiledBackends()
             throws Exception {
         Path backend = Path.of("")

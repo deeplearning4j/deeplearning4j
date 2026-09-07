@@ -561,6 +561,21 @@ public class DynamicShapePlanExecutor implements Closeable {
      *  on every decode step. Cleared on close() and when nativeExecutionDevice changes. */
     private Map<Integer, INDArray> nativeConstantReplicaCache;
 
+    /** Mutable destinations belong to an input of one native plan lease, not a caller
+     * array identity. Refresh their contents on EVERY call; A/B/A keeps separate owners. */
+    private final Map<Long, Map<String, INDArray>> nativeMutableReplicaCaches = new HashMap<>();
+
+    /** Packed copy sources owned by this call, retained until their async readers complete.
+     * Never contains caller arrays, graph-baked replicas, or native output aliases. */
+    private final List<INDArray> retiredMigrationArrays = new ArrayList<>();
+    private final Set<String> pendingMutableReplicaNames = new HashSet<>();
+    private final Set<Integer> migrationCopyDevices = new HashSet<>();
+    // Native output delivery arrays remain borrowed until these thread-local copies finish.
+    private final Set<Integer> outputReadbackDevices = new LinkedHashSet<>();
+    private Thread outputReadbackThread;
+    private boolean migrationInputsBound;
+    private boolean migrationCleanupPending;
+
     /** Maximum KV cache length for pre-allocation. When > 0 and CUDA graphs enabled,
      *  output slots for KV cache are pre-allocated at max size to keep addresses stable.
      *  Can be set programmatically via setMaxKvCacheLength() or via system property
@@ -599,6 +614,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         int callerDevice = currentDeviceForTeardown();
         try {
         if (closed) throw new IllegalStateException("Cannot initialize a closed DSP executor");
+        if (migrationCleanupPending) cleanupFailedMigrations();
         ensureExecutionDevice();
         // ALWAYS clear shape caches to avoid stale DataBuffer references from previous sessions.
         plan.clearAllShapeCaches();
@@ -793,6 +809,11 @@ public class DynamicShapePlanExecutor implements Closeable {
     private boolean isProtectedExternalBuffer(DataBuffer buf) {
         if (isCurrentExternalInputBuffer(buf)) return true;
         if (protectedConstantBuffers != null && protectedConstantBuffers.containsKey(buf)) return true;
+        for (Map<String, INDArray> replicas : nativeMutableReplicaCaches.values()) {
+            for (INDArray replica : replicas.values()) {
+                if (isArrayLive(replica) && replica.data() == buf) return true;
+            }
+        }
         return false;
     }
 
@@ -819,6 +840,251 @@ public class DynamicShapePlanExecutor implements Closeable {
         int closed = closeOwnedArrays(cache.values(), true);
         cache.clear();
         return closed;
+    }
+
+    private INDArray refreshMutableReplica(NativeOps nativeOps, String inputName,
+                                           INDArray source, int numDevices) {
+        Map<String, INDArray> replicas = nativeMutableReplicaCaches.computeIfAbsent(
+                nativePlanHandle.address(), ignored -> new HashMap<>());
+        INDArray replica = replicas.get(inputName);
+        if (replica == null) {
+            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                replica = Nd4j.createUninitialized(source.dataType(), source.shape(), source.ordering());
+            }
+            // Publish ownership before copying: an exception must not orphan the allocation.
+            replicas.put(inputName, replica);
+            pendingMutableReplicaNames.add(inputName);
+            PlanLeaseKey lease = leaseIdentityForHandle(nativePlanHandle);
+            if (lease != null) pinnedLeaseEstimatedBytes.merge(lease,
+                    replica.length() * replica.dataType().width(), Long::sum);
+        } else if (!isArrayLive(replica) || replica.isView() || replica.offset() != 0
+                || !Shape.hasDefaultStridesForShape(replica)
+                || replica.dataType() != source.dataType() || replica.ordering() != source.ordering()
+                || !Arrays.equals(replica.shape(), source.shape())) {
+            // Shape info (including dtype/order/strides) is part of native dispatch identity.
+            // Replacing storage inside this lease could free a graph-baked address.
+            throw new IllegalStateException("Mutable migration input '" + inputName
+                    + "' changed storage contract without a native plan lease change");
+        }
+
+        DeviceMemoryManager devices = DeviceMemoryManager.getInstance();
+        Throwable failure = null;
+        try {
+            int sourceDevice = resolveArrayDevice(source, numDevices, nativeExecutionDevice);
+            migrationCopyDevices.add(sourceDevice);
+            devices.switchDevice(sourceDevice, "DSP.refreshMutableReplica", "prepare-source");
+            INDArray packedSource = source;
+            if (source.isView() || source.offset() != 0 || !Shape.hasDefaultStridesForShape(source)) {
+                // Raw DataBuffer copies do not understand strides or array offsets. Materialize
+                // on the source device, outside workspaces, and retain through async readback.
+                try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    packedSource = source.dup(source.ordering());
+                }
+                retiredMigrationArrays.add(packedSource);
+                migrationCopyDevices.add(resolveArrayDevice(packedSource, numDevices, sourceDevice));
+            }
+            nativeOps.dbSyncToSpecial(packedSource.data().opaqueBuffer());
+            // Native pre-replay may have moved the destination to a secondary device.
+            // Allocation affinity is NOT authoritative. copyBuffer uses the destination
+            // LC stream and write events, like frozen output readback; pre-replay orders
+            // LC work before consumption rather than using the now-invalid primary stream.
+            int replicaDevice = resolveArrayDevice(replica, numDevices, nativeExecutionDevice);
+            migrationCopyDevices.add(replicaDevice);
+            devices.switchDevice(replicaDevice, "DSP.refreshMutableReplica", "refresh-owned-destination");
+            nativeOps.copyBuffer(replica.data().opaqueBuffer(), replica.length(),
+                    packedSource.data().opaqueBuffer(), 0, 0);
+            return replica;
+        } catch (RuntimeException | Error t) {
+            failure = t;
+            throw t;
+        } finally {
+            try {
+                devices.switchDevice(nativeExecutionDevice, "DSP.refreshMutableReplica", "restore-plan-device");
+            } catch (RuntimeException | Error restoreFailure) {
+                if (failure == null) throw restoreFailure;
+                failure.addSuppressed(restoreFailure);
+            }
+        }
+    }
+
+    /** Unpin alone leaves replay state alive. Drain/release native borrowers and detach the
+     * Java context BEFORE freeing our copies, while the lease still protects the handle. */
+    private void prepareMutableReplicaRelease(NativeOps nativeOps, Pointer handle) {
+        if (handle != null && nativeMutableReplicaCaches.containsKey(handle.address())) {
+            nativeOps.releaseGpuIntermediates(handle);
+            if (nativePlanHandle != null && nativePlanHandle.address() == handle.address()) {
+                resetReleasedMigrationPlanState();
+            }
+            detachMigrationContext(nativeOps);
+            closeMutableReplicas(handle, null);
+        }
+    }
+
+    private void resetReleasedMigrationPlanState() {
+        observedLifecycleSnapshot = DspLifecycleSnapshot.unavailable();
+        observedLifecycleHandleAddress = 0L;
+        frozenCallCount = 0;
+        frozenExtBufferSnapshot = null;
+        frozenExtShapeSnapshot = null;
+        frozenOutputsInitialized = false;
+        maxAllocationConfigured = false;
+    }
+
+    private void detachMigrationContext(NativeOps nativeOps) {
+        if (cachedOpContext != null) {
+            nativeOps.deleteGraphContext(cachedOpContext);
+            cachedOpContext = null;
+        }
+        cachedInputArrays = null;
+        cachedInputOpaques = null;
+        frozenExtInputsWorkingCopy = null;
+        // Keep exact wrappers for OTHER still-pinned plans alive until the next full
+        // context population replaces them. Deleting a context does not own its inputs.
+    }
+
+    /** Close only explicit owned destinations. Keep ownership/cost on any failed close so
+     * admission cannot count unfreed bytes as headroom, and teardown can retry. */
+    private void closeMutableReplicas(Pointer handle, Set<String> names) {
+        Map<String, INDArray> replicas = nativeMutableReplicaCaches.get(handle.address());
+        if (replicas == null) return;
+        PlanLeaseKey lease = leaseIdentityForHandle(handle);
+        for (Iterator<Map.Entry<String, INDArray>> it = replicas.entrySet().iterator(); it.hasNext();) {
+            Map.Entry<String, INDArray> entry = it.next();
+            if (names != null && !names.contains(entry.getKey())) continue;
+            INDArray owned = entry.getValue();
+            long bytes = owned.length() * owned.dataType().width();
+            closeMigrationArray(owned);
+            it.remove();
+            if (lease != null) pinnedLeaseEstimatedBytes.computeIfPresent(lease,
+                    (key, cost) -> Math.max(0L, cost - bytes));
+            if (externalInputs != null) {
+                for (int i = 0; i < externalInputs.length; i++) {
+                    if (externalInputs[i] == owned) externalInputs[i] = null;
+                }
+            }
+            INDArray[] retained = retainedExternalInputsByPlanHandle.get(handle.address());
+            if (retained != null) {
+                for (int i = 0; i < retained.length; i++) {
+                    if (retained[i] == owned) retained[i] = null;
+                }
+            }
+        }
+        if (replicas.isEmpty()) nativeMutableReplicaCaches.remove(handle.address());
+    }
+
+    private void closeMigrationArray(INDArray owned) {
+        DataBuffer buffer = owned.data();
+        owned.clearOpaqueNDArray();
+        if (buffer != null && !buffer.wasClosed()) {
+            if (buffer.isConstant()) buffer.setConstant(false);
+            buffer.close();
+        }
+    }
+
+    /** Only after successful readback, or explicit completion of failed-call copies. */
+    private void closeRetiredMigrationArrays() {
+        for (Iterator<INDArray> it = retiredMigrationArrays.iterator(); it.hasNext();) {
+            closeMigrationArray(it.next());
+            it.remove();
+        }
+    }
+
+    private void beginOutputReadback(INDArray destination) {
+        if (outputReadbackThread != null && outputReadbackThread != Thread.currentThread()) {
+            throw new IllegalStateException("Pending output readback must complete on its issuing thread");
+        }
+        DeviceMemoryManager devices = DeviceMemoryManager.getInstance();
+        int device = resolveArrayDevice(destination, Nd4j.getAffinityManager().getNumberOfDevices(),
+                nativeExecutionDevice);
+        if (!outputReadbackDevices.isEmpty() && !outputReadbackDevices.contains(device)) {
+            completeOutputReadbacks();
+        }
+        // Bind before copyBuffer: its destination-device switch otherwise uses a
+        // per-thread CUDA stream which commit() on the caller's LC does not drain.
+        devices.switchDevice(device, "DSP.outputReadback", "bind-destination");
+        outputReadbackThread = Thread.currentThread();
+        outputReadbackDevices.add(device);
+    }
+
+    private void completeOutputReadbacks() {
+        if (outputReadbackThread == null) return;
+        if (outputReadbackThread != Thread.currentThread()) {
+            throw new IllegalStateException("Pending output readback must complete on its issuing thread before release");
+        }
+        DeviceMemoryManager devices = DeviceMemoryManager.getInstance();
+        int originalDevice = devices.getCurrentDeviceId();
+        Throwable failure = null;
+        try {
+            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            for (int device : outputReadbackDevices) {
+                devices.switchDevice(device, "DSP.outputReadback", "complete-copy");
+                Nd4j.getExecutioner().commit();
+                // streamSynchronize may record a CUDA error while returning success.
+                // Retain both sides of the copy until completion is proven.
+                if (nativeOps.lastErrorCode() != 0) {
+                    throw new IllegalStateException("Output readback completion failed: " + nativeOps.lastErrorMessage());
+                }
+            }
+            outputReadbackDevices.clear();
+            outputReadbackThread = null;
+        } catch (RuntimeException | Error t) {
+            failure = t;
+            throw t;
+        } finally {
+            try {
+                devices.switchDevice(originalDevice, "DSP.outputReadback", "restore-device");
+            } catch (RuntimeException | Error restoreFailure) {
+                if (failure == null) throw restoreFailure;
+                failure.addSuppressed(restoreFailure);
+            }
+        }
+    }
+
+    private void cleanupFailedMigrations() {
+        // Complete on the issuing thread under nativeExecLock before retiring native
+        // delivery or Java destination storage. Failed completion retains ownership.
+        completeOutputReadbacks();
+        DeviceMemoryManager devices = DeviceMemoryManager.getInstance();
+        int originalDevice = devices.getCurrentDeviceId();
+        Throwable failure = null;
+        try {
+            // copyBuffer/packing use source and destination LaunchContexts, not necessarily
+            // the plan stream. This barrier is failure-only; successful readback already commits.
+            for (int device : migrationCopyDevices) {
+                devices.switchDevice(device, "DSP.cleanupFailedMigrations", "complete-copy");
+                Nd4j.getExecutioner().commit();
+            }
+            if (!pendingMutableReplicaNames.isEmpty()) {
+                devices.switchDevice(nativeExecutionDevice, "DSP.cleanupFailedMigrations", "release-plan-borrowers");
+                NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                if (migrationInputsBound) {
+                    nativeOps.releaseGpuIntermediates(nativePlanHandle);
+                    resetReleasedMigrationPlanState();
+                    // As on a frozen multi-plan switch, retain the frozen entry policy:
+                    // cold warmup must not clear cast caches borrowed by OTHER pinned graphs.
+                    if (hadFrozenPlan) nativeOps.setPlanShapesFrozen(nativePlanHandle, true);
+                }
+                detachMigrationContext(nativeOps);
+                // Earlier successful calls' graph-baked destinations remain owned and live.
+                // Only this failed call's new destinations are rolled back.
+                closeMutableReplicas(nativePlanHandle, pendingMutableReplicaNames);
+            }
+            closeRetiredMigrationArrays();
+            pendingMutableReplicaNames.clear();
+            migrationCopyDevices.clear();
+            migrationInputsBound = false;
+            migrationCleanupPending = false;
+        } catch (RuntimeException | Error t) {
+            failure = t;
+            throw t;
+        } finally {
+            try {
+                devices.switchDevice(originalDevice, "DSP.cleanupFailedMigrations", "restore-device");
+            } catch (RuntimeException | Error restoreFailure) {
+                if (failure == null) throw restoreFailure;
+                failure.addSuppressed(restoreFailure);
+            }
+        }
     }
 
     private int closeNativeConstantReplicaCache() {
@@ -855,6 +1121,8 @@ public class DynamicShapePlanExecutor implements Closeable {
         int callerDevice = currentDeviceForTeardown();
         try {
             ensureExecutionDevice();
+            // Mutable replicas remain owned by their live plan leases: clearing them here
+            // would invalidate native baked aliases. Lease retirement/close releases them.
             int nativeClosed = closeNativeConstantReplicaCache();
             if (nativeClosed > 0) {
                 log.info("DSP clearReplicaCaches: freed {} native replicas", nativeClosed);
@@ -877,6 +1145,7 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     private int closeZeroCopyOutputCache() {
+        completeOutputReadbacks();
         if (zeroCopyOutputCache == null || zeroCopyOutputCache.isEmpty()) {
             zeroCopyOutputCache = null;
             return 0;
@@ -1121,6 +1390,11 @@ public class DynamicShapePlanExecutor implements Closeable {
         for (INDArray[] inputs : retainedExternalInputsByPlanHandle.values()) {
             collectLiveInputBuffers(inputs, protectedBuffers);
         }
+        for (Map<String, INDArray> replicas : nativeMutableReplicaCaches.values()) {
+            for (INDArray replica : replicas.values()) {
+                if (isArrayLive(replica)) protectedBuffers.put(replica.data(), Boolean.TRUE);
+            }
+        }
         // Include the current inputs before the first native handle snapshot is published.
         collectLiveInputBuffers(externalInputs, protectedBuffers);
     }
@@ -1128,6 +1402,11 @@ public class DynamicShapePlanExecutor implements Closeable {
     /** Whether the exact INDArray is retained by any currently pinned native plan. */
     public boolean isRetainedExternalInput(INDArray candidate) {
         if (candidate == null) return false;
+        for (Map<String, INDArray> replicas : nativeMutableReplicaCaches.values()) {
+            for (INDArray replica : replicas.values()) {
+                if (replica == candidate) return true;
+            }
+        }
         for (INDArray[] inputs : retainedExternalInputsByPlanHandle.values()) {
             if (inputs == null) continue;
             for (INDArray input : inputs) {
@@ -2013,27 +2292,18 @@ public class DynamicShapePlanExecutor implements Closeable {
             Pointer handle = pinnedPlanHandles.get(handleAddress.longValue());
             if (handle == null) continue;
             long evictedBytes = pinnedLeaseEstimatedBytes.getOrDefault(victim, 0L);
-            try {
-                nativeOps.unpinNativePlan(cache, handle);
-            } catch (Throwable t) {
-                log.warn("Capacity-based plan ejection: unpinNativePlan failed for identity {} — "
-                        + "continuing with remaining candidates", victim, t);
-                continue;
-            }
+            // Fail closed if release/close/unpin fails. Keep the remaining lease and cost
+            // visible rather than admitting an incoming plan against imaginary headroom.
+            prepareMutableReplicaRelease(nativeOps, handle);
+            nativeOps.unpinNativePlan(cache, handle);
             pinnedPlanHandles.remove(handleAddress.longValue());
             pinnedPlanHandlesByIdentity.remove(victim);
             pinnedLeaseLastUseNanos.remove(victim);
             pinnedLeaseEstimatedBytes.remove(victim);
-            INDArray[] retained = retainedExternalInputsByPlanHandle.remove(handleAddress.longValue());
-            if (retained != null) {
-                for (INDArray arr : retained) {
-                    try {
-                        if (arr != null) arr.close();
-                    } catch (Exception ignore) {
-                        // best-effort release of the evicted plan's retained inputs
-                    }
-                }
-            }
+            // Borrowed caller placeholders/weights are only detached, never closed.
+            retainedExternalInputsByPlanHandle.remove(handleAddress.longValue());
+            configuredHandleAddresses.remove(handleAddress.longValue());
+            mutableExternalInputsConfiguredHandleAddresses.remove(handleAddress.longValue());
             total = Math.max(0, total - evictedBytes);
             log.info("Capacity-based plan ejection: unpinned lease {} (estimated {} MB) — "
                             + "projected pinned total now {} MB of {} MB budget",
@@ -2257,8 +2527,8 @@ public class DynamicShapePlanExecutor implements Closeable {
                         nativePlanHandle = newHandle;
                         observedLifecycleSnapshot = DspLifecycleSnapshot.unavailable();
                         observedLifecycleHandleAddress = 0L;
-                        pinnedLeaseLastUseNanos.remove(leaseIdentity);
-                        pinnedLeaseEstimatedBytes.remove(leaseIdentity);
+                        // Both handles remain leased: preserve their LRU/cost entries so
+                        // inactive mutable replica owners remain eligible for capacity eviction.
                         // Clear per-shape caches — the new plan has different input mappings.
                         // Keep the wrappers currently installed in cachedOpContext strongly reachable
                         // until executeNative() has populated every replacement and atomically swaps
@@ -2320,10 +2590,14 @@ public class DynamicShapePlanExecutor implements Closeable {
                         // This MUST happen before the new plan is pinned (which
                         // getOrInsert already did) to avoid dangling pointers — the
                         // old plan's GPU resources are freed on eviction.
+                        prepareMutableReplicaRelease(nativeOps, nativePlanHandle);
                         nativeOps.unpinNativePlan(cache, nativePlanHandle);
+                        retainedExternalInputsByPlanHandle.remove(nativePlanHandle.address());
                         pinnedPlanHandles.remove(nativePlanHandle.address());
                         pinnedPlanHandlesByIdentity.entrySet().removeIf(
                                 e -> e.getValue() == nativePlanHandle.address());
+                        pinnedLeaseLastUseNanos.keySet().retainAll(pinnedPlanHandlesByIdentity.keySet());
+                        pinnedLeaseEstimatedBytes.keySet().retainAll(pinnedPlanHandlesByIdentity.keySet());
                         configuredHandleAddresses.remove(nativePlanHandle.address());
                         mutableExternalInputsConfiguredHandleAddresses.remove(nativePlanHandle.address());
                         log.info("redispatchForCurrentShapes: plan swapped from {} to {} — resetting frozen state",
@@ -2929,6 +3203,7 @@ public class DynamicShapePlanExecutor implements Closeable {
      * execute() calls (e.g., between vision encoder chunks).
      */
     private void closeSlotArrayCache() {
+        completeOutputReadbacks();
         if (slotArrayCache == null) return;
         log.info("    closeSlotArrayCache: START (length={})", slotArrayCache.length);
 
@@ -3065,6 +3340,7 @@ public class DynamicShapePlanExecutor implements Closeable {
 
     /** Must be called with {@link #nativeExecLock} held on the plan's execution device. */
     private int releaseGpuIntermediatesLocked() {
+        if (migrationCleanupPending) cleanupFailedMigrations();
         log.info("releaseGpuIntermediates: START");
 
         // Step 1: Clear Java-side slot array cache (frees Java-managed DataBuffers)
@@ -3227,7 +3503,29 @@ public class DynamicShapePlanExecutor implements Closeable {
         nativeExecLock.lock();
         try {
             if (closed) throw new IllegalStateException("Cannot execute a closed DSP executor");
-            return executeNativeLocked(plan, placeholderArrays);
+            // A failed completion/close must be retried BEFORE another dispatch can evict
+            // leases or rebind contexts. Never free a still-pending async source on success.
+            if (migrationCleanupPending) cleanupFailedMigrations();
+            try {
+                Map<String, INDArray> result = executeNativeLocked(plan, placeholderArrays);
+                // Destinations now belong to a successful lease (possibly captured graphs).
+                pendingMutableReplicaNames.clear();
+                migrationCopyDevices.clear();
+                migrationInputsBound = false;
+                Set<INDArray> returnedArrays = Collections.newSetFromMap(new IdentityHashMap<>());
+                returnedArrays.addAll(result.values());
+                retiredMigrationArrays.removeIf(returnedArrays::contains);
+                closeRetiredMigrationArrays();
+                return result;
+            } catch (RuntimeException | Error failure) {
+                migrationCleanupPending = true;
+                try {
+                    cleanupFailedMigrations();
+                } catch (RuntimeException | Error cleanupFailure) {
+                    failure.addSuppressed(cleanupFailure);
+                }
+                throw failure;
+            }
         } finally {
             nativeExecLock.unlock();
         }
@@ -3738,6 +4036,22 @@ public class DynamicShapePlanExecutor implements Closeable {
                     INDArray arr = extInputs[i];
                     if (arr != null && arr.data() != null && !arr.data().wasClosed()) {
                         int arrDevice = resolveArrayDevice(arr, numDevices, nativeExecutionDevice);
+                        boolean mutablePlaceholder = placeholderArrays != null
+                                && placeholderArrays.containsKey(extKeys[i]);
+                        Map<String, INDArray> mutableReplicas =
+                                nativeMutableReplicaCaches.get(nativePlanHandle.address());
+                        boolean hasMutableReplica = mutableReplicas != null
+                                && mutableReplicas.containsKey(extKeys[i]);
+                        boolean secondaryOnly = extConsumerDevice != null
+                                && extConsumerDevice[i] >= 0
+                                && extConsumerDevice[i] != nativeExecutionDevice;
+                        if (mutablePlaceholder && (hasMutableReplica
+                                || (arrDevice != nativeExecutionDevice && !secondaryOnly))) {
+                            // Reuse storage, never values. Even a same-device replacement input
+                            // must refresh an already installed replica for this plan/input.
+                            extInputs[i] = refreshMutableReplica(nativeOps, extKeys[i], arr, numDevices);
+                            continue; // the placeholder binding loop below always rebinds it
+                        }
                         // Sharding: an input consumed solely by a secondary (non-primary) device
                         // stays on that device — the native per-segment path placed it there and
                         // the captured graph baked its address. Do NOT pull it to the primary.
@@ -3876,11 +4190,9 @@ public class DynamicShapePlanExecutor implements Closeable {
                     // on the DSP execution stream — the plan executes on the same stream,
                     // so CUDA stream ordering guarantees the copy completes first.
 
-                    // Invalidate zeroCopyOutputCache: migrated inputs mean the plan must
-                    // re-execute with the new data.
-                    if (zeroCopyOutputCache != null) {
-                        closeZeroCopyOutputCache();
-                    }
+                    // Value updates do not invalidate output storage: frozen direct readback
+                    // refreshes every cached output after execution. Shape/plan/dtype changes
+                    // still invalidate the cache at their structural lifecycle boundaries.
                     log.info("DSP native executor: migrated {} inputs ({}MB) to device {}, replicaCache={}",
                             migratedCount, migratedBytes / (1024 * 1024), nativeExecutionDevice,
                             nativeConstantReplicaCache != null ? nativeConstantReplicaCache.size() : 0);
@@ -3904,6 +4216,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             cachedOpContextOutputCount = numOutputs;
         }
         OpaqueContext opContext = cachedOpContext;
+        migrationInputsBound = true;
         {
             // Set inputs on context — when frozen, only update inputs that changed.
             if (isShapesFrozen() && cachedInputOpaques != null
@@ -4626,6 +4939,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                                             System.identityHashCode(cached),
                                             cached.wasClosed());
                                 }
+                                beginOutputReadback(cached);
                                 nativeOps.copyBuffer(dstOdb, length, srcOdb, 0, 0);
                             }
                         } finally {
@@ -4657,7 +4971,8 @@ public class DynamicShapePlanExecutor implements Closeable {
 
                 // Sync execution stream to ensure async D2D copies are complete before
                 // returning cached arrays. Same rationale as the non-frozen path below.
-                Nd4j.getExecutioner().commit();
+                if (outputReadbackThread == null) Nd4j.getExecutioner().commit();
+                else completeOutputReadbacks();
 
                 long copyMs = (System.nanoTime() - copyStart) / 1_000_000;
                 if (execMs > 100) {
@@ -4736,6 +5051,9 @@ public class DynamicShapePlanExecutor implements Closeable {
                 // function inherited the input's strides), using contiguous strides here
                 // would mis-interpret the buffer layout and produce wrong results.
                 result = Nd4j.createUninitialized(dtype, shape, strides, ordering);
+                // Retain failed-call destinations through completion. Successful
+                // results transfer to their caller in executeNative.
+                retiredMigrationArrays.add(result);
 
                 // Get raw pointers — prefer device buffer for D2D copy.
                 // On CUDA, getOpaqueNDArrayBuffer() calls buffer() which triggers
@@ -4765,6 +5083,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                                         Long.toHexString(dstPrimary != null ? dstPrimary.address() : 0L),
                                         System.identityHashCode(result));
                             }
+                            beginOutputReadback(result);
                             nativeOps.copyBuffer(dstOdb, length, srcOdb, 0, 0);
                         }
                     } finally {
@@ -4793,6 +5112,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                     }
                     if (!isContiguous) {
                         INDArray contiguous = result.dup(ordering);
+                        retiredMigrationArrays.add(contiguous);
                         result = contiguous;
                     }
                 }
@@ -4816,7 +5136,8 @@ public class DynamicShapePlanExecutor implements Closeable {
             // receives INDArrays whose device buffers may still have in-flight D2D memcpy
             // operations, causing zero/stale data on host read (syncToPrimary uses stream 0
             // which has no ordering guarantee with the LC default stream's async copies).
-            Nd4j.getExecutioner().commit();
+            if (outputReadbackThread == null) Nd4j.getExecutioner().commit();
+            else completeOutputReadbacks();
 
             // Populate the outputSlots array with the results at their corresponding slot indices.
             // The outputSlots field is allocated at plan initialization but was never populated
@@ -4923,6 +5244,7 @@ public class DynamicShapePlanExecutor implements Closeable {
      * @param reason descriptive reason for plan destruction (e.g., "SESSION_RESET", "PLAN_RECOMPILATION")
      */
     private void freeNativePlanHandle(String reason) {
+        if (migrationCleanupPending) cleanupFailedMigrations();
         if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
             log.info("PLAN_DESTRUCTION: reason='{}' handle={} execCount={} frozen={}",
                     reason, nativePlanHandle.address(), lifecycleExecutionCount(), isShapesFrozen());
@@ -4955,6 +5277,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                 Pointer handle = entry.getValue();
                 if (handle == null || handle.isNull()) continue;
                 try {
+                    prepareMutableReplicaRelease(nativeOps2, handle);
                     nativeOps2.unpinNativePlan(cache, handle);
                     released++;
                     long address = entry.getKey();
@@ -5010,6 +5333,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         cachedInputOpaques = null;
         cachedInputArrays = null;
         contextInputRefs = null;
+        closeRetiredMigrationArrays();
         inputIsPlaceholder = null;
         placeholderIndices = null;
         cachedVariableTypeIndices = null;

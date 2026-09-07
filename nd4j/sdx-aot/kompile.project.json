@@ -37,10 +37,10 @@
       "detection.language" : "Code",
       "knowledgeBaseId" : "sdx-aot-knowledge",
       "graphPath" : "data/crawls/sdx-aot-knowledge/graph.kgraph",
-      "codeProjectionVersion" : "2",
-      "codeProjectedAt" : "2026-09-02T14:21:56.369570672Z",
-      "codeIndexGeneration" : "2026-09-02T14:21:55.810656728Z",
-      "codeProjectionEntities" : "930",
+      "codeProjectionVersion" : "3",
+      "codeProjectedAt" : "2026-09-07T05:30:14.802620581Z",
+      "codeIndexGeneration" : "2026-09-07T05:30:14.196494604Z",
+      "codeProjectionEntities" : "1050",
       "codeProjectionRelations" : "2616",
       "codeProjectionCodeEntities" : "610",
       "codeProjectionFolderProjectId" : "sdx-aot",
@@ -49,7 +49,7 @@
       "codeProjectionExcludes" : ""
     },
     "createdAt" : "2026-08-31T12:43:28.005795372Z",
-    "updatedAt" : "2026-09-02T14:21:56.369767092Z"
+    "updatedAt" : "2026-09-07T05:30:14.802831097Z"
   } ],
   "models" : [ ],
   "pipelines" : [ ],
@@ -58,5 +58,5 @@
   "workflows" : [ ],
   "metadata" : { },
   "createdAt" : "2026-08-31T12:43:28.006981374Z",
-  "updatedAt" : "2026-09-02T14:21:56.370125627Z"
+  "updatedAt" : "2026-09-07T05:30:14.803427931Z"
 }

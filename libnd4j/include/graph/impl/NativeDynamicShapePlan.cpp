@@ -1655,6 +1655,8 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   // live alias is reclaimed when the plan itself is destroyed.
   for (NDArray* arr : planOwnedArrays_) gatherOwned(arr);
   for (NDArray* arr : deferredSlotDeletes_) gatherOwned(arr);
+  for (NDArray* arr : outputDeliveryBuffers_) gatherOwned(arr);
+  outputDeliveryBuffers_.clear();
 
   // Classify every live wrapper exactly once before deleting any of them.
   // A two-pass loop over ownedArrays is unsafe: after deleting a view in the
@@ -3707,7 +3709,7 @@ Status NativeDynamicShapePlan::execute(
     // Multi-GPU shard: if this output was produced on a secondary device, migrate
     // it asynchronously to device-0 before returning to Java. The plan keeps the
     // original device-N buffer in outputSlots_[slotIdx] for the next execution step;
-    // only the copy returned here is handed to Java (Java owns it).
+    // Java borrows the plan-owned delivery copy while filling its own result array.
     requestedOutputs[i] = platformGetOutputForDevice0(outArr, slotIdx, i);
     if (requestedOutputs[i] == nullptr) {
       const char* message =
@@ -7798,6 +7800,18 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   cachedVariableExtIndices_.clear();
   variableExternalInputIndices_.clear();
   variableIndicesCached_ = false;
+
+  // Delivery copies are not producer slots and have no capture aliases. The
+  // caller has completed output readback, and the release completion boundary
+  // above precedes this retirement. Count/reclaim them even on passivation.
+  for (NDArray*& delivery : outputDeliveryBuffers_) {
+    if (delivery != nullptr) {
+      delete delivery;
+      delivery = nullptr;
+      freedCount++;
+    }
+  }
+  outputDeliveryBuffers_.clear();
 
   // ── Step 4e: Free untracked output cache ────────────────────────────────
   // The untrackedOutputCache_ holds NDArrays created during slot execution

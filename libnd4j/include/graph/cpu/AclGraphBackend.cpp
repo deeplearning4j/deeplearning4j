@@ -214,7 +214,7 @@ arm_compute::DataType AclGraphBackend::mapDataType(DataType dt) {
     case DataType::INT8: return arm_compute::DataType::S8;
     case DataType::UINT8: return arm_compute::DataType::U8;
     case DataType::BOOL: return arm_compute::DataType::U8;
-    default: return arm_compute::DataType::F32;
+    default: return arm_compute::DataType::UNKNOWN;
   }
 }
 
@@ -390,39 +390,73 @@ std::shared_ptr<AclGraphBackend::AclFunctionGroup> AclGraphBackend::buildFunctio
     };
 
     int functionsBuilt = 0;
+    auto recordRejection = [&](int slotIndex, const std::string& reason) {
+      CompilationAuditEntry auditEntry;
+      auditEntry.slotIndex = slotIndex;
+      auditEntry.opName = slots[slotIndex].ident.opName;
+      auditEntry.wasCompiled = false;
+      auditEntry.reason = reason;
+      result->compilationAudit.push_back(std::move(auditEntry));
+      DSP_DIAG(COMPILE, "ACL_CONTRACT_REJECTED slot=%d op=%s: %s",
+               slotIndex, slots[slotIndex].ident.opName.c_str(), reason.c_str());
+    };
 
     for (int s = startSlot; s <= endSlot; s++) {
       NativeSlot& slot = slots[s];
       const bool gatherSlot = isGatherName(slot.ident.opName);
 
-      // Get input arrays
+      // Resolve actual arrays before creating vendor descriptors. Missing tensors
+      // must not become ACL auto-initialized outputs, nor unknown dtypes F32.
       std::vector<NDArray*> inputArrays(slot.wiring.numInputs);
-      std::vector<std::shared_ptr<arm_compute::Tensor>> inputTensors(slot.wiring.numInputs);
       for (int i = 0; i < slot.wiring.numInputs; i++) {
         int srcIdx = slot.wiring.inputSourceIndices[i];
         if (srcIdx >= 0) {
           inputArrays[i] = (srcIdx < totalOutputSlots) ? outputSlots[srcIdx] : nullptr;
-          if (!(gatherSlot && i == 1)) {
-            inputTensors[i] = getOrCreateTensor(srcIdx, inputArrays[i]);
-          }
         } else {
           int extIdx = -(srcIdx + 1);
           inputArrays[i] = (extIdx < numExternalInputs) ? externalInputs[extIdx] : nullptr;
-          if (!(gatherSlot && i == 1)) {
-            inputTensors[i] = getExternalTensor(extIdx);
-          }
         }
       }
 
-      // Get output array
       int outSlotIdx = (slot.wiring.numOutputs > 0) ? slot.wiring.outputSlotIndices[0] : -1;
       NDArray* outArr = (outSlotIdx >= 0 && outSlotIdx < totalOutputSlots)
                             ? outputSlots[outSlotIdx] : nullptr;
+      auto supportsDescriptor = [&](NDArray* arr) {
+        return isDenseCOrder(arr) &&
+               mapDataType(arr->dataType()) != arm_compute::DataType::UNKNOWN;
+      };
+      bool supportedDescriptors = supportsDescriptor(outArr);
+      for (int i = 0; i < slot.wiring.numInputs; ++i) {
+        // Gather stages checked INT32/INT64 indices separately, including views.
+        supportedDescriptors &= (gatherSlot && i == 1)
+            ? inputArrays[i] != nullptr : supportsDescriptor(inputArrays[i]);
+      }
+      if (!supportedDescriptors) {
+        recordRejection(s, "missing or unsupported ACL tensor descriptor (dtype/layout)");
+        continue;
+      }
+
+      std::vector<std::shared_ptr<arm_compute::Tensor>> inputTensors(slot.wiring.numInputs);
+      for (int i = 0; i < slot.wiring.numInputs; ++i) {
+        if (gatherSlot && i == 1) continue;
+        int srcIdx = slot.wiring.inputSourceIndices[i];
+        inputTensors[i] = srcIdx >= 0 ? getOrCreateTensor(srcIdx, inputArrays[i])
+                                     : getExternalTensor(-(srcIdx + 1));
+      }
       auto outTensor = getOrCreateTensor(outSlotIdx, outArr);
       if (outSlotIdx >= 0) result->producedSlots.insert(outSlotIdx);
 
       AclFunctionGroup::FunctionEntry entry;
       bool built = false;
+      std::string rejectionReason = "unsupported op contract";
+      // configure() may compile out its internal validation in production ACL.
+      // BF16 is a valid TensorInfo dtype but, e.g., has no activation kernel in
+      // ACL v25.04. Validate every concrete operation before any configure call.
+      auto acceptValidation = [&](const arm_compute::Status& validation) {
+        if (validation) return true;
+        rejectionReason = "ACL validation: " + validation.error_description();
+        return false;
+      };
 
       if (gatherSlot) {
         NDArray* table = inputArrays[0];
@@ -471,12 +505,12 @@ std::shared_ptr<AclGraphBackend::AclFunctionGroup> AclGraphBackend::buildFunctio
           const auto validation = arm_compute::NEGather::validate(
               inputTensors[0]->info(), indexTensor->info(), outTensor->info(),
               armAxis);
-          if (validation) {
+          if (acceptValidation(validation)) {
             auto* gather = new StagedAclGatherFunction(
                 indexSource, indices->dataType(), std::move(indexDimensions),
                 table->sizeAt(0), indexTensor);
-            gather->configure(inputTensors[0].get(), outTensor.get(), armAxis);
             entry.function.reset(gather);
+            gather->configure(inputTensors[0].get(), outTensor.get(), armAxis);
             entry.tensors = {inputTensors[0], indexTensor, outTensor};
             built = true;
             DSP_DIAG(COMPILE,
@@ -541,42 +575,63 @@ std::shared_ptr<AclGraphBackend::AclFunctionGroup> AclGraphBackend::buildFunctio
                    static_cast<void*>(outArr));
         }
       } else if (slot.ident.opName == "matmul" || slot.ident.opName == "mmul" || slot.ident.opName == "MatMul") {
-        if (slot.wiring.numInputs >= 2 && inputArrays[0] != nullptr && inputArrays[1] != nullptr) {
-          auto* gemm = new arm_compute::NEGEMM();
-          float alpha = 1.0f, beta = 0.0f;
-          gemm->configure(inputTensors[0].get(), inputTensors[1].get(), nullptr,
-                          outTensor.get(), alpha, beta, arm_compute::GEMMInfo());
-          entry.function.reset(gemm);
-          entry.tensors = {inputTensors[0], inputTensors[1], outTensor};
-          built = true;
+        if (slot.wiring.numInputs >= 2) {
+          const float alpha = 1.0f, beta = 0.0f;
+          const arm_compute::GEMMInfo gemmInfo;
+          const auto validation = arm_compute::NEGEMM::validate(
+              inputTensors[0]->info(), inputTensors[1]->info(), nullptr,
+              outTensor->info(), alpha, beta, gemmInfo);
+          if (acceptValidation(validation)) {
+            auto* gemm = new arm_compute::NEGEMM();
+            entry.function.reset(gemm);
+            gemm->configure(inputTensors[0].get(), inputTensors[1].get(), nullptr,
+                            outTensor.get(), alpha, beta, gemmInfo);
+            entry.tensors = {inputTensors[0], inputTensors[1], outTensor};
+            built = true;
+          }
         }
       } else if (slot.ident.opName == "add" || slot.ident.opName == "Add") {
         if (slot.wiring.numInputs >= 2) {
-          auto* addLayer = new arm_compute::NEArithmeticAddition();
-          addLayer->configure(inputTensors[0].get(), inputTensors[1].get(),
-                              outTensor.get(), arm_compute::ConvertPolicy::SATURATE);
-          entry.function.reset(addLayer);
-          entry.tensors = {inputTensors[0], inputTensors[1], outTensor};
-          built = true;
+          const auto validation = arm_compute::NEArithmeticAddition::validate(
+              inputTensors[0]->info(), inputTensors[1]->info(), outTensor->info(),
+              arm_compute::ConvertPolicy::SATURATE);
+          if (acceptValidation(validation)) {
+            auto* addLayer = new arm_compute::NEArithmeticAddition();
+            entry.function.reset(addLayer);
+            addLayer->configure(inputTensors[0].get(), inputTensors[1].get(),
+                                outTensor.get(), arm_compute::ConvertPolicy::SATURATE);
+            entry.tensors = {inputTensors[0], inputTensors[1], outTensor};
+            built = true;
+          }
         }
       } else if (slot.ident.opName == "multiply" || slot.ident.opName == "Mul") {
         if (slot.wiring.numInputs >= 2) {
-          auto* mulLayer = new arm_compute::NEPixelWiseMultiplication();
-          mulLayer->configure(inputTensors[0].get(), inputTensors[1].get(),
-                              outTensor.get(), 1.0f, arm_compute::ConvertPolicy::SATURATE,
-                              arm_compute::RoundingPolicy::TO_ZERO);
-          entry.function.reset(mulLayer);
-          entry.tensors = {inputTensors[0], inputTensors[1], outTensor};
-          built = true;
+          const auto validation = arm_compute::NEPixelWiseMultiplication::validate(
+              inputTensors[0]->info(), inputTensors[1]->info(), outTensor->info(),
+              1.0f, arm_compute::ConvertPolicy::SATURATE,
+              arm_compute::RoundingPolicy::TO_ZERO);
+          if (acceptValidation(validation)) {
+            auto* mulLayer = new arm_compute::NEPixelWiseMultiplication();
+            entry.function.reset(mulLayer);
+            mulLayer->configure(inputTensors[0].get(), inputTensors[1].get(),
+                                outTensor.get(), 1.0f, arm_compute::ConvertPolicy::SATURATE,
+                                arm_compute::RoundingPolicy::TO_ZERO);
+            entry.tensors = {inputTensors[0], inputTensors[1], outTensor};
+            built = true;
+          }
         }
       } else if (slot.ident.opName == "softmax" || slot.ident.opName == "Softmax") {
         if (slot.wiring.numInputs >= 1) {
-          auto* smLayer = new arm_compute::NESoftmaxLayer();
-          float beta = 1.0f;
-          smLayer->configure(inputTensors[0].get(), outTensor.get(), beta);
-          entry.function.reset(smLayer);
-          entry.tensors = {inputTensors[0], outTensor};
-          built = true;
+          const float beta = 1.0f;
+          const auto validation = arm_compute::NESoftmaxLayer::validate(
+              inputTensors[0]->info(), outTensor->info(), beta);
+          if (acceptValidation(validation)) {
+            auto* smLayer = new arm_compute::NESoftmaxLayer();
+            entry.function.reset(smLayer);
+            smLayer->configure(inputTensors[0].get(), outTensor.get(), beta);
+            entry.tensors = {inputTensors[0], outTensor};
+            built = true;
+          }
         }
       } else {
         // Check if it's a pure activation
@@ -586,12 +641,16 @@ std::shared_ptr<AclGraphBackend::AclFunctionGroup> AclGraphBackend::buildFunctio
           float alpha = 0.0f, beta = 0.0f;
           if (slot.args.numTArgs > 0) alpha = static_cast<float>(slot.args.tArgs[0]);
           if (slot.args.numTArgs > 1) beta = static_cast<float>(slot.args.tArgs[1]);
-          auto* actLayer = new arm_compute::NEActivationLayer();
-          actLayer->configure(inputTensors[0].get(), outTensor.get(),
-                              arm_compute::ActivationLayerInfo(actFn, alpha, beta));
-          entry.function.reset(actLayer);
-          entry.tensors = {inputTensors[0], outTensor};
-          built = true;
+          const arm_compute::ActivationLayerInfo activationInfo(actFn, alpha, beta);
+          const auto validation = arm_compute::NEActivationLayer::validate(
+              inputTensors[0]->info(), outTensor->info(), activationInfo);
+          if (acceptValidation(validation)) {
+            auto* actLayer = new arm_compute::NEActivationLayer();
+            entry.function.reset(actLayer);
+            actLayer->configure(inputTensors[0].get(), outTensor.get(), activationInfo);
+            entry.tensors = {inputTensors[0], outTensor};
+            built = true;
+          }
         }
       }
 
@@ -606,13 +665,7 @@ std::shared_ptr<AclGraphBackend::AclFunctionGroup> AclGraphBackend::buildFunctio
         auditEntry.wasCompiled = true;
         result->compilationAudit.push_back(std::move(auditEntry));
       } else {
-        // Record skipped op in audit
-        CompilationAuditEntry auditEntry;
-        auditEntry.slotIndex = s;
-        auditEntry.opName = slot.ident.opName;
-        auditEntry.wasCompiled = false;
-        auditEntry.reason = "unsupported op";
-        result->compilationAudit.push_back(std::move(auditEntry));
+        recordRejection(s, rejectionReason);
       }
     }
 

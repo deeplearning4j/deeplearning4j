@@ -1658,10 +1658,34 @@ NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int s
   // Fast path: no array, or array is empty — nothing to migrate.
   if (arr == nullptr || arr->isEmpty()) return arr;
 
-  int callerDevice = 0;
-  cudaGetDevice(&callerDevice);
+  auto checkCuda = [&](cudaError_t error, const char* operation) {
+    if (error != cudaSuccess) {
+      char message[512];
+      snprintf(message, sizeof(message),
+               "DSP output delivery failed: output=%d slot=%d %s: %s",
+               outputIdx, slotIdx, operation, cudaGetErrorString(error));
+      THROW_EXCEPTION(message);
+    }
+  };
+  int callerDevice = -1;
+  checkCuda(cudaGetDevice(&callerDevice), "get caller device");
+  NDArray* materializedView = nullptr;
+  // Restore the temporary and caller device on allocation/copy throws too.
+  // Delivery buffers themselves remain owned by the plan on every path.
+  struct DeliveryScope {
+    int device;
+    NDArray*& temporary;
+    ~DeliveryScope() {
+      delete temporary;
+      const auto error = cudaSetDevice(device);
+      if (error != cudaSuccess) {
+        std::fprintf(stderr, "DSP output delivery device restore failed: %s\n",
+                     cudaGetErrorString(error));
+      }
+    }
+  } deliveryScope{callerDevice, materializedView};
   auto restoreCallerDevice = [&]() {
-    if (callerDevice >= 0) cudaSetDevice(callerDevice);
+    checkCuda(cudaSetDevice(callerDevice), "restore caller device");
   };
 
   // Find the device that produced this output slot.
@@ -1688,7 +1712,7 @@ NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int s
 
   // ── Async copy from sourceDevice to device-0 ────────────────────────────────
   // 1. Switch to sourceDevice and ensure its stream has committed the write.
-  cudaSetDevice(sourceDevice);
+  checkCuda(cudaSetDevice(sourceDevice), "bind producer device");
   {
     std::vector<NDArray*> reads{arr};
     NDArray::prepareSpecialUse({}, reads);
@@ -1699,27 +1723,18 @@ NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int s
   // copy; otherwise a logically correct view/materialized array can still copy
   // its pre-write bytes.
   const auto sourceSyncErr = cudaDeviceSynchronize();
-  if (sourceSyncErr != cudaSuccess) {
-    DSP_DIAG(MULTI_DEVICE,
-             "platformGetOutputForDevice0: source device synchronization failed "
-             "output[%d] slotIdx=%d sourceDevice=%d err=%s",
-             outputIdx, slotIdx, sourceDevice, cudaGetErrorString(sourceSyncErr));
-    cudaGetLastError();
-    restoreCallerDevice();
-    return arr;
-  }
+  checkCuda(sourceSyncErr, "complete producer");
 
   // A view's logical elements are strided and are not represented by a
   // contiguous byte range. Materialize views on their producer device before
   // crossing the device boundary; copying the view's base bytes directly was
   // the source of the large deterministic maxAbsDiff in view replay tests.
   NDArray* sourceForCopy = arr;
-  NDArray* materializedView = nullptr;
-  if (arr->isView()) {
+  if (arr->isView() || arr->offset() != 0 ||
+      !shape::strideDescendingCAscendingF(arr->shapeInfo())) {
     materializedView = arr->dup('c');
     if (materializedView == nullptr) {
-      restoreCallerDevice();
-      return arr;
+      THROW_EXCEPTION("DSP output delivery failed: could not materialize source layout");
     }
     materializedView->syncToDevice();
     std::vector<NDArray*> reads{materializedView};
@@ -1727,7 +1742,7 @@ NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int s
     // dup() may enqueue a gather on the producer stream. Complete it before
     // submitting the cross-device transfer, then retain the temporary until
     // the destination stream has consumed it.
-    cudaDeviceSynchronize();
+    checkCuda(cudaDeviceSynchronize(), "complete source materialization");
     sourceForCopy = materializedView;
   }
 
@@ -1739,24 +1754,43 @@ NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int s
            "platformGetOutputForDevice0: output[%d] slotIdx=%d isView=%d layout-preserving copy",
            outputIdx, slotIdx, (int)arr->isView());
 
-  // 2. Allocate a matching buffer on device-0.
-  cudaSetDevice(0);
-  // Current device is 0 here (cudaSetDevice(0) above), so defaultContext() returns the device-0
-  // context, binding both the destination NDArray and the copy stream to device 0.
-  NDArray* copy = materializedView != nullptr
-      ? new NDArray('c', *sourceForCopy->getShapeAsVector(), sourceForCopy->dataType(),
-                    LaunchContext::defaultContext())
-      : new NDArray(const_cast<LongType*>(arr->shapeInfo()), /*copyStrides=*/true,
-                    LaunchContext::defaultContext(), /*nullify=*/false);
+  // 2. Reuse one delivery allocation per requested output in this native plan.
+  // Context output pointers are borrowed: Java copies them into separate arrays
+  // and never deletes these NDArrays. A fresh allocation per call leaked here.
+  checkCuda(cudaSetDevice(0), "bind delivery device");
+  if (outputIdx < 0 || outputIdx >= numRequestedOutputs_) {
+    THROW_EXCEPTION("DSP output delivery failed: requested output index out of range");
+  }
+  if (outputDeliveryBuffers_.empty()) {
+    outputDeliveryBuffers_.resize(numRequestedOutputs_, nullptr);
+  }
+  NDArray*& copy = outputDeliveryBuffers_[outputIdx];
+  const size_t srcLen = static_cast<size_t>(sourceForCopy->lengthOf()) *
+                        DataTypeUtils::sizeOf(sourceForCopy->dataType());
+  const bool reusable = copy != nullptr && copy->hasValidShapeInfo() &&
+      copy->dataType() == sourceForCopy->dataType() &&
+      copy->ordering() == sourceForCopy->ordering() &&
+      shape::haveSameShapeAndStrides(copy->shapeInfo(), sourceForCopy->shapeInfo()) &&
+      copy->dataBuffer() != nullptr && copy->dataBuffer()->isValid() &&
+      copy->dataBuffer()->deviceId() == 0 &&
+      copy->dataBuffer()->getLenInBytes() >= srcLen;
+  if (!reusable) {
+    // Previous readback must be complete before reuse/retirement. These are
+    // detached delivery copies, never captured producer buffers or aliases.
+    delete copy;
+    copy = nullptr;
+    copy = new NDArray(const_cast<LongType*>(sourceForCopy->shapeInfo()),
+                       /*copyStrides=*/true, LaunchContext::defaultContext(),
+                       /*nullify=*/false);
+  }
+  DSP_DIAG(MEMORY, "OUTPUT_DELIVERY: plan=%p output=%d array=%p bytes=%zu reused=%d",
+           this, outputIdx, copy, srcLen, (int)reusable);
   {
     std::vector<NDArray*> writes{copy};
     NDArray::prepareSpecialUse(writes, {});
   }
   auto* copyDb = copy->dataBuffer();
   void* dstDev = (copyDb != nullptr) ? copyDb->special() : nullptr;
-
-  auto srcLen = static_cast<size_t>(sourceForCopy->lengthOf()) *
-                DataTypeUtils::sizeOf(sourceForCopy->dataType());
 
   if (srcLen > 0 && srcDev != nullptr && dstDev != nullptr) {
     // 3. Enqueue the peer copy on device-0's stream (async, no device-wide sync).
@@ -1778,48 +1812,22 @@ NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int s
       const auto copySyncErr = copyStream != nullptr
           ? cudaStreamSynchronize(copyStream)
           : cudaDeviceSynchronize();
-      if (copySyncErr != cudaSuccess) {
-        DSP_DIAG(MULTI_DEVICE,
-                 "platformGetOutputForDevice0: destination synchronization failed "
-                 "output[%d] slotIdx=%d sourceDevice=%d err=%s",
-                 outputIdx, slotIdx, sourceDevice, cudaGetErrorString(copySyncErr));
-        cudaGetLastError();
-        if (materializedView != nullptr) delete materializedView;
-        delete copy;
-        restoreCallerDevice();
-        return arr;
-      }
+      checkCuda(copySyncErr, "complete delivery transfer");
       std::vector<NDArray*> writes{copy};
       std::vector<NDArray*> reads{sourceForCopy};
       NDArray::registerSpecialUse(writes, reads);
-      if (materializedView != nullptr) {
-        // The temporary source is not plan-owned and the transfer is complete.
-        delete materializedView;
-      }
       restoreCallerDevice();
       DSP_DIAG(MULTI_DEVICE,
                "platformGetOutputForDevice0: output[%d] slotIdx=%d migrated dev%d→dev0 "
                "bytes=%zu completed on dev0-stream", outputIdx, slotIdx, sourceDevice, srcLen);
-      // Return the device-0 copy; Java takes ownership and will eventually delete it.
+      // Borrowed until the next execution, intermediate release or plan destruction.
       // outputSlots_[slotIdx] is intentionally NOT changed: the plan keeps the device-N
       // buffer in place so subsequent executions can overwrite it without pointer churn.
       return copy;
     }
-    // Copy failed: log, clean up, fall through to return original (wrong device).
-    cudaGetLastError();
-    DSP_DIAG(MULTI_DEVICE,
-             "platformGetOutputForDevice0: cudaMemcpyPeerAsync FAILED output[%d] slotIdx=%d "
-             "dev%d→dev0 err=%s", outputIdx, slotIdx, sourceDevice, cudaGetErrorString(err));
+    checkCuda(err, "copy output to device 0");
   }
-
-  if (materializedView != nullptr) {
-    auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
-    if (streamPtr != nullptr && *streamPtr != nullptr) cudaStreamSynchronize(*streamPtr);
-    delete materializedView;
-  }
-  delete copy;
-  restoreCallerDevice();
-  return arr;  // Fallback: callers still get a valid pointer even if on wrong device.
+  THROW_EXCEPTION("DSP output delivery failed: nonempty output has no device storage");
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

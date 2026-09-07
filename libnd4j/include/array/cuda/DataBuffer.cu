@@ -2126,46 +2126,70 @@ void memcpyWithT(DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, 
   if (copyBytes > dstAvailable) copyBytes = dstAvailable;
   if (copyBytes <= 0) return;
 
-  auto dstDeviceId = dst->deviceId();
-  auto currentDeviceId = AffinityManager::currentDeviceId();
-  bool switchedDevice = false;
+  const bool specialSource = src->isSpecialActual();
+  if (!specialSource && !src->isPrimaryActual())
+    THROW_EXCEPTION("DataBuffer::memcpy: source has no actual storage");
+  if (dst->special() == nullptr || (specialSource ? src->special() : src->primary()) == nullptr)
+    THROW_EXCEPTION("DataBuffer::memcpy: missing copy storage");
+  void* dstPointer = dst->specialAtOffset<T>(dstOffset);
+  void* srcPointer = specialSource ? src->specialAtOffset<T>(startingOffset)
+                                   : src->primaryAtOffset<T>(startingOffset);
 
-  if (currentDeviceId != dstDeviceId) {
-    cudaSetDevice(dstDeviceId);
-    switchedDevice = true;
+  // Migration/failover can change physical ownership independently of affinity.
+  // Cross-device cudaMallocAsync allocations require the peer-copy API, even when
+  // the driver stages between non-peer GPUs. Ordinary D2D copying is not sufficient.
+  cudaPointerAttributes dstAttrs{}, srcAttrs{};
+  auto res = cudaPointerGetAttributes(&dstAttrs, dstPointer);
+  if (res != cudaSuccess) throwCudaStatus("DataBuffer::memcpy: destination attributes failed", res);
+  if (specialSource) {
+    res = cudaPointerGetAttributes(&srcAttrs, srcPointer);
+    if (res != cudaSuccess) throwCudaStatus("DataBuffer::memcpy: source attributes failed", res);
   }
-
-  // Cache the stream reference - must obtain AFTER device switch
-  cudaStream_t stream = asyncTransferStream(switchedDevice);
-
-  cudaError_t res = cudaSuccess;
-  if (src->isSpecialActual()) {
-    waitForLastDspCompletionIfNeeded(stream);
-    src->waitForSpecialWriteEvent(stream);
-    res = cudaMemcpyAsync(dst->specialAtOffset<T>(dstOffset), src->specialAtOffset<T>(startingOffset), copyBytes, cudaMemcpyDeviceToDevice,
-                          stream);
-  } else if (src->isPrimaryActual()) {
-    res = cudaMemcpyAsync(dst->specialAtOffset<T>(dstOffset), src->specialAtOffset<T>(startingOffset), copyBytes, cudaMemcpyHostToDevice,
-                          stream);
-  }
-
-  if (res != cudaSuccess) {
-    if (switchedDevice) {
-      cudaSetDevice(currentDeviceId);
-    }
-    throwCudaStatus("DataBuffer::memcpy: cudaMemcpyAsync failed", res);
-  }
-
-  // No stream sync needed here - subsequent GPU operations on same stream will
-  // automatically wait for memcpy to complete. This eliminates unnecessary CPU-GPU sync.
-  // The writeSpecial() below will track the write event for cross-thread sync if needed.
-  dst->recordSpecialWriteEvent(stream);
-
-  // Restore original device if we switched
+  const int dstDeviceId = dstAttrs.type == cudaMemoryTypeDevice ? dstAttrs.device : dst->deviceId();
+  int currentDeviceId;
+  res = cudaGetDevice(&currentDeviceId);
+  if (res != cudaSuccess) throwCudaStatus("DataBuffer::memcpy: current device query failed", res);
+  const bool switchedDevice = currentDeviceId != dstDeviceId;
   if (switchedDevice) {
-    cudaSetDevice(currentDeviceId);
+    res = cudaSetDevice(dstDeviceId);
+    if (res != cudaSuccess) throwCudaStatus("DataBuffer::memcpy: destination device switch failed", res);
   }
+  struct CopyDeviceScope {
+    int original;
+    bool switched;
+    ~CopyDeviceScope() noexcept {
+      if (switched) {
+        auto err = cudaSetDevice(original);
+        if (err != cudaSuccess)
+          sd_printf("DataBuffer::memcpy: device restore failed: %s\n", cudaGetErrorString(err));
+      }
+    }
+  } deviceScope{currentDeviceId, switchedDevice};
 
+  cudaStream_t stream = asyncTransferStream(switchedDevice);
+  waitForLastDspCompletionIfNeeded(stream);
+  dst->waitForSpecialWriteEvent(stream);
+  if (copyBytes < dst->getLenInBytes() && !dst->isSpecialActual() && dst->isPrimaryActual()) {
+    // A partial write must preserve the untouched primary-actual destination bytes.
+    res = cudaMemcpyAsync(dst->special(), dst->primary(), dst->getLenInBytes(), cudaMemcpyDefault, stream);
+    if (res != cudaSuccess) throwCudaStatus("DataBuffer::memcpy: destination preservation failed", res);
+  }
+  if (specialSource) {
+    src->waitForSpecialWriteEvent(stream);
+    if (srcAttrs.type == cudaMemoryTypeDevice && dstAttrs.type == cudaMemoryTypeDevice
+        && srcAttrs.device != dstAttrs.device) {
+      res = cudaMemcpyPeerAsync(dstPointer, dstAttrs.device, srcPointer, srcAttrs.device, copyBytes, stream);
+    } else {
+      res = cudaMemcpyAsync(dstPointer, srcPointer, copyBytes, cudaMemcpyDefault, stream);
+    }
+  } else {
+    // Host-actual input must read PRIMARY storage, not stale special storage.
+    res = cudaMemcpyAsync(dstPointer, srcPointer, copyBytes, cudaMemcpyDefault, stream);
+  }
+  if (res != cudaSuccess) throwCudaStatus("DataBuffer::memcpy: asynchronous copy failed", res);
+
+  // Publish the write for consumers on other streams without a host barrier.
+  dst->recordSpecialWriteEvent(stream);
   dst->writeSpecial();
 }
 BUILD_SINGLE_TEMPLATE(void memcpyWithT, (DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, sd::LongType dstOffset, sd::LongType n), SD_COMMON_TYPES);

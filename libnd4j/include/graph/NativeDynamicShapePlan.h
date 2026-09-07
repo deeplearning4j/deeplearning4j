@@ -2199,6 +2199,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
       total += static_cast<size_t>(arr->memoryFootprint());
     };
     for (NDArray* arr : planOwnedArrays_) addArray(arr);
+    for (NDArray* arr : outputDeliveryBuffers_) addArray(arr);
     if (placeholderStagingBuffers_ != nullptr) {
       for (int i = 0; i < numExternalInputs_; ++i) {
         addArray(placeholderStagingBuffers_[i]);
@@ -3482,6 +3483,11 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   int untrackedOutputCacheSize_;
   static constexpr int MAX_OUTPUTS_PER_SLOT = 8;  // Max outputs per op (most ops have 1-3)
 
+  // Device-0 delivery buffers, indexed by requested output (not producer slot).
+  // Native owns these detached copies. Java borrows them while copying into its
+  // own result arrays; they never replace captured producer pointers in outputSlots_.
+  std::vector<NDArray*> outputDeliveryBuffers_;
+
   // Internal methods
   // flushPendingClose REMOVED: arrays persist, view wrappers deleted inline
   void buildSegments();
@@ -3721,13 +3727,13 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * When op-segment sharding places the producer of a requested output on a secondary
    * device (targetDeviceId > 0), the Java side can only access device-0 memory.
    * This function checks whether `arr` lives on a non-primary device and, if so,
-   * asynchronously copies it to device-0 via cudaMemcpyPeerAsync (non-blocking on the
-   * device-0 stream).  The returned pointer is a NEW NDArray that the caller (Java)
-   * owns and must eventually deallocate; `arr` (and outputSlots_[slotIdx]) are NOT
-   * modified so the plan can continue using the device-N buffer on subsequent steps.
+   * copies it to a bounded, plan-owned device-0 delivery buffer. The returned
+   * pointer is borrowed until the next execution, GPU-intermediate release, or
+   * destruction of this plan. Callers must complete readback before that boundary.
+   * `arr` and outputSlots_[slotIdx] remain unchanged for captured producer replay.
    *
    * On CPU or when the output is already on device-0, returns `arr` unchanged (no copy).
-   * On error the original `arr` is returned so callers always get a valid pointer.
+   * Transfer/allocation failures throw; a wrong-device pointer is never published.
    */
   NDArray* platformGetOutputForDevice0(NDArray* arr, int slotIdx, int outputIdx);
   bool platformShouldUseGraph(const GraphSegment& seg);
