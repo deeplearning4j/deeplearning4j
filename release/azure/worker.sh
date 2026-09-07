@@ -340,7 +340,7 @@ ensure_common_toolchains() {
   phase package-index complete
   phase toolchain-packages started
   apt-get install -y --no-install-recommends autoconf automake build-essential     ca-certificates ccache cmake curl docker.io gfortran git gnupg jq     libdwarf-dev libdw-dev libelf-dev libgomp1 libomp-dev libopenblas-dev     libtool libusb-1.0-0-dev libvulkan-dev libvulkan1 maven     mesa-vulkan-drivers nasm ninja-build openjdk-11-jdk pinentry-curses     pkg-config python3 swig tar unzip vulkan-tools wget zip zlib1g-dev
-  apt-get install -y llvm-18-dev mlir-18-tools ||     apt-get install -y llvm-dev libmlir-dev mlir-tools || true
+  # Native builds provision the pinned, patched LLVM/MLIR producer; distro packages cannot replace it.
   systemctl start docker || true
   phase toolchain-packages complete
   java_arch=$(dpkg --print-architecture)

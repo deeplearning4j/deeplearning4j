@@ -114,7 +114,7 @@ public class FileBatch implements Serializable {
 
     /**
      * Set the maximum compression ratio allowed for ZIP entries.
-     * @param maxRatio Maximum ratio (must be >= 1.0)
+     * @param maxRatio Maximum ratio (must be at least 1.0)
      */
     public static void setMaxCompressionRatio(double maxRatio) {
         if (maxRatio < 1.0) throw new IllegalArgumentException("Max ratio must be >= 1.0, got " + maxRatio);

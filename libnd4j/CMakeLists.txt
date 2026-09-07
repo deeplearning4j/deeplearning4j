@@ -507,14 +507,14 @@ include(Dependencies)
 include(CompilerOptimizations)
 include(PlatformOptimizations)
 
-# A fresh Triton+MLIR build cannot discover MLIR package exports until the
+# A fresh MLIR build cannot discover MLIR package exports until the
 # project-managed, patched compiler stack has been built. The wrapper performs
 # this bootstrap configure/build before its normal configure, using the same
 # target toolchain and cache identity as the final build.
 if(SD_DEPENDENCY_BOOTSTRAP_ONLY)
-    if(NOT SD_TRITON OR NOT HELPERS_mlir)
+    if(NOT HELPERS_mlir)
         message(FATAL_ERROR
-            "SD_DEPENDENCY_BOOTSTRAP_ONLY requires SD_TRITON=ON and HELPERS_mlir=ON")
+            "SD_DEPENDENCY_BOOTSTRAP_ONLY requires HELPERS_mlir=ON")
     endif()
     setup_triton()
     if(NOT TARGET triton_external)

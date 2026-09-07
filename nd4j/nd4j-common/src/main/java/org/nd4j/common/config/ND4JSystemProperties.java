@@ -926,7 +926,7 @@ public class ND4JSystemProperties {
     /**
      * Applicability: CUDA matmul (MmulHelper)<br>
      * Description: Auto-cast FP32 matmul inputs to FP16 for TensorCore GEMM with FP32 accumulation.
-     * Provides 2x throughput on GPUs with compute capability >= 6.0.
+     * Provides 2x throughput on GPUs with compute capability 6.0 or higher.
      * <p>
      * Default: false
      */

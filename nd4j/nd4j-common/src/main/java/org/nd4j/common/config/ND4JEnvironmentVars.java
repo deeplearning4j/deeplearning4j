@@ -409,7 +409,7 @@ public class ND4JEnvironmentVars {
 
     /**
      * Applicability: nd4j-cuda with Triton GPU backend
-     * Description: Override Triton cluster CTAs for TTIR->TTGIR conversion (default: 1).
+     * Description: Override Triton cluster CTAs for TTIR-to-TTGIR conversion (default: 1).
      */
     public static final String ND4J_TRITON_NUM_CTAS = "ND4J_TRITON_NUM_CTAS";
 

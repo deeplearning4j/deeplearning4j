@@ -1105,19 +1105,22 @@ function(configure_cpu_linking main_target_name)
     # Keep CPU JavaCPP bindings aligned with the native build's managed runtime
     # dependencies. Plain CPU builds have no project-managed runtime DSOs, but they
     # still must emit an explicit zero-entry manifest; JavaCPP treats a missing
-    # manifest as an invalid native build. CPU Triton builds add the same pinned
-    # LLVM/MLIR DSOs that are staged by the CUDA path.
+    # manifest as an invalid native build. MLIR-only consumers also need their
+    # LLVM/MLIR and execution-engine DSOs, independently of the Triton compiler.
     set(_cpu_shared_runtimes "")
-    if(HAVE_TRITON_CPU)
-        foreach(_triton_runtime_target IN ITEMS triton_mlir_shared triton_llvm_shared)
-            if(NOT TARGET ${_triton_runtime_target})
-                message(FATAL_ERROR
-                    "Triton CPU requires normalized shared runtime target ${_triton_runtime_target}")
-            endif()
-            list(APPEND _cpu_shared_runtimes
-                "$<TARGET_FILE:${_triton_runtime_target}>")
-        endforeach()
+    set(_cpu_compiler_runtime_targets "")
+    if(HAVE_MLIR)
+        set(_cpu_compiler_runtime_targets MLIR MLIRExecutionEngineShared LLVM)
+    elseif(HAVE_TRITON_CPU)
+        set(_cpu_compiler_runtime_targets triton_mlir_shared triton_llvm_shared)
     endif()
+    foreach(_compiler_runtime_target IN LISTS _cpu_compiler_runtime_targets)
+        if(NOT TARGET ${_compiler_runtime_target})
+            message(FATAL_ERROR
+                "CPU compiler helpers require shared runtime target ${_compiler_runtime_target}")
+        endif()
+        list(APPEND _cpu_shared_runtimes "$<TARGET_FILE:${_compiler_runtime_target}>")
+    endforeach()
     list(JOIN _cpu_shared_runtimes "|" _cpu_shared_runtimes_pipe)
     add_custom_command(TARGET ${main_target_name} POST_BUILD
         COMMAND ${CMAKE_COMMAND}
@@ -1303,8 +1306,8 @@ function(create_and_link_library)
             endif()
         endif()
 
-        # Triton GPU compiler helper - MUST complete before object files that include Triton headers
-        if(HAVE_TRITON AND TARGET triton_external)
+        # Managed compiler headers must exist before compiling either MLIR or Triton consumers.
+        if(HAVE_MANAGED_LLVM_MLIR AND TARGET triton_external)
             message(STATUS "")
             message(STATUS "╔═══════════════════════════════════════════════════════════════════╗")
             message(STATUS "║  🔒 DEPENDENCY BLOCK: Triton                                       ║")

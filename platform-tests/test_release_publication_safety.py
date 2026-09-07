@@ -263,6 +263,58 @@ class PublicationWorkflowSafetyTests(unittest.TestCase):
             self.assertIn("include-hidden-files: true", retention)
             self.assertIn("if-no-files-found: error", retention)
 
+    def test_toolchain_downloads_use_existing_tls_retry_policy(self):
+        bootstrap = (ROOT / "release/github/bootstrap-worker.sh").read_text()
+        # curl --retry alone does not retry SSL connection resets (exit 35).
+        # Keep the capability probe: older release containers lack this flag.
+        self.assertIn('if curl --retry-all-errors --help', bootstrap)
+        self.assertIn('CURL_RETRY_ALL=(--retry-all-errors)', bootstrap)
+        self.assertIn('CURL_RETRY_ALL=()', bootstrap)
+        for function, timeout in (("ensure_protobuf", 300), ("ensure_protoc_21", 300),
+                                  ("ensure_android_ndk", 1800)):
+            with self.subTest(function=function):
+                body = bootstrap.split(f"{function}() {{\n", 1)[1].split("\n}\n", 1)[0]
+                self.assertIn('curl --fail --location --retry 5 "${CURL_RETRY_ALL[@]}"', body)
+                self.assertIn(f"--connect-timeout 20 --max-time {timeout}", body)
+                self.assertNotIn("--insecure", body)
+
+    def test_mlir_bootstrap_is_independent_of_triton_selection(self):
+        source = (ROOT / "libnd4j/buildnativeoperations.sh").read_text()
+        start = source.index('if [ "$MLIR" == "ON" ]; then\n    print_colored')
+        end = source.index("\n# The build tool must match", start)
+        recorder = (
+            'print_colored() { :; }\n'
+            'run_cmake_configure_logged() { printf "configure=%s\\n" "$1"; }\n'
+            'run_compiler_dependency_bootstrap() { printf "bootstrap\\n"; }\n'
+        )
+        for mlir in ("ON", "OFF"):
+            for triton in ("ON", "OFF"):
+                for cmake_only in ("ON", "OFF"):
+                    with self.subTest(mlir=mlir, triton=triton, cmake_only=cmake_only):
+                        result, _ = self.run_script(
+                            recorder + source[start:end], MLIR=mlir,
+                            TRITON=triton, CMAKE_ONLY=cmake_only)
+                        self.assertEqual(0, result.returncode, result.stderr)
+                        expected = ["configure=OFF"]
+                        if mlir == "ON":
+                            expected = ["configure=ON"]
+                            if cmake_only == "OFF":
+                                expected += ["bootstrap", "configure=OFF"]
+                        self.assertEqual(expected, result.stdout.splitlines())
+
+    def test_release_workers_do_not_substitute_distro_mlir_packages(self):
+        for filename in ("github/bootstrap-worker.sh", "aws/worker.sh",
+                         "azure/worker.sh", "gcp/worker.sh"):
+            with self.subTest(worker=filename):
+                source = (ROOT / "release" / filename).read_text()
+                self.assertNotIn("llvm-18-dev", source)
+                self.assertNotIn("libmlir-dev", source)
+                self.assertNotIn("mlir-tools", source)
+        bootstrap = (ROOT / "release/github/bootstrap-worker.sh").read_text()
+        sbsa = bootstrap.split("ensure_cuda_sbsa_cross() {\n", 1)[1].split("\n}\n", 1)[0]
+        self.assertIn("    zlib1g-dev:arm64\n", sbsa)
+        self.assertNotIn("continuing without target zlib", sbsa)
+
     def test_release_merge_does_not_allow_conflicting_unclassified_components(self):
         for filename in ("_release-worker.yml", "publish-release-worker-artifacts.yml"):
             source = step_script(filename, "Merge and verify staged Maven repository")

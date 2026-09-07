@@ -2935,7 +2935,7 @@ public class ArrayUtil {
 
     /** Calculate the shape of an arbitrary multi-dimensional array. Assumes:<br>
      * (a) array is rectangular (not ragged) and first elements (i.e., array[0][0][0]...) are non-null <br>
-     * (b) First elements have > 0 length. So array[0].length > 0, array[0][0].length > 0, etc.<br>
+     * (b) First elements have positive length: {@code array[0].length > 0}, {@code array[0][0].length > 0}, etc.<br>
      * Can pass any Java array opType: double[], Object[][][], float[][], etc.<br>
      * Length of returned array is number of dimensions; returned[i] is size of ith dimension.
      */

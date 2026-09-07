@@ -102,7 +102,7 @@ public class BTools {
 	 * <b>getSBln</b><br>
 	 * public static String getSBln( boolean... blnA )<br>
 	 * Returns boolean(s) converted to char (true = 'T'; false = 'F')<br>
-	 * If blnA.length is > 1 returns chars without separator.<br>
+	 * If {@code blnA.length > 1}, returns chars without separator.<br>
 	 * If blnA is '{ true, false, true }' returns 'TFT'.<br>
 	 * If blnA is null returns '?'.<br>
 	 * If blnA.length is 0 returns '?'.<br>
@@ -179,7 +179,7 @@ public class BTools {
 	 * If Value is Double.NaN returns "NaN".<br>
 	 * If {@code DecPrec < 0}, DecPrec is set to 0.<br>
 	 * If ShowPlusSign is true:<br>
-	 *   - If Value is > 0 sign is '+'.<br>
+	 *   - If {@code Value > 0}, sign is '+'.<br>
 	 *   - If Value is 0 sign is ' '.<br>
 	 * @param Value - value
 	 * @param DecPrec - decimal precision
@@ -203,9 +203,9 @@ public class BTools {
 	 * If Value is Double.NaN returns "NaN".<br>
 	 * If {@code DecPrec < 0}, DecPrec is set to 0.<br>
 	 * If ShowPlusSign is true:<br>
-	 *   - If Value is > 0 sign is '+'.<br>
+	 *   - If {@code Value > 0}, sign is '+'.<br>
 	 *   - If Value is 0 sign is ' '.<br>
-	 * If StringLength is > base double string length<br>
+	 * If StringLength is greater than the base double string length<br>
 	 *   before base double string adds relevant spaces.<br>
 	 * If StringLength is less than or equal to the base double string length<br>
 	 *   returns base double string.<br>
@@ -235,7 +235,7 @@ public class BTools {
 	 * <b>getSInt</b><br>
 	 * public static String getSInt( int Value, int CharsCount )<br>
 	 * Returns int converted to string.<br>
-	 * If CharsCount > base int string length<br>
+	 * If CharsCount is greater than the base int string length<br>
 	 *   before base int string adds relevant spaces.<br>
 	 * If CharsCount is less than or equal to the base int string length<br>
 	 *   returns base int string.<br>
@@ -252,7 +252,7 @@ public class BTools {
 	 * <b>getSInt</b><br>
 	 * public static String getSInt( int Value, int CharsCount, char LeadingChar )<br>
 	 * Returns int converted to string.<br>
-	 * If CharsCount > base int string length<br>
+	 * If CharsCount is greater than the base int string length<br>
 	 *   before base int string adds relevant leading chars.<br>
 	 * If CharsCount is less than or equal to the base int string length<br>
 	 *   returns base int string.<br>

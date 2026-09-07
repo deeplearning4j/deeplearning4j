@@ -573,28 +573,33 @@ function(configure_cuda_linking main_target_name)
         # HAVE_TRITON is provided via generated config.h, not as a global -D flag.
         message(STATUS "🔗 Linking Triton GPU compiler backend to ${main_target_name}")
 
-        # The classifier ships the pinned shared LLVM/MLIR runtimes explicitly
-        # selected by the native target configuration.
-        foreach(_triton_runtime_target IN ITEMS triton_mlir_shared triton_llvm_shared)
-            if(NOT TARGET ${_triton_runtime_target})
-                message(FATAL_ERROR
-                    "Triton requires normalized shared runtime target ${_triton_runtime_target}")
-            endif()
-            list(APPEND _cuda_shared_runtimes
-                "$<TARGET_FILE:${_triton_runtime_target}>")
-        endforeach()
-
     elseif(HAVE_TRITON)
         message(FATAL_ERROR
             "HAVE_TRITON=${HAVE_TRITON}, but the required triton_interface target is missing")
     endif()
 
-    if(APPLE AND (HAVE_TRITON OR SD_ZLUDA))
+    # MLIR-only consumers need the same managed package without enabling Triton,
+    # including the execution-engine DSO linked by MLIR::MLIR.
+    set(_cuda_compiler_runtime_targets "")
+    if(HAVE_MLIR)
+        set(_cuda_compiler_runtime_targets MLIR MLIRExecutionEngineShared LLVM)
+    elseif(HAVE_TRITON)
+        set(_cuda_compiler_runtime_targets triton_mlir_shared triton_llvm_shared)
+    endif()
+    foreach(_compiler_runtime_target IN LISTS _cuda_compiler_runtime_targets)
+        if(NOT TARGET ${_compiler_runtime_target})
+            message(FATAL_ERROR
+                "CUDA compiler helpers require shared runtime target ${_compiler_runtime_target}")
+        endif()
+        list(APPEND _cuda_shared_runtimes "$<TARGET_FILE:${_compiler_runtime_target}>")
+    endforeach()
+
+    if(APPLE AND (HAVE_TRITON OR HAVE_MLIR OR SD_ZLUDA))
         set_target_properties(${main_target_name} PROPERTIES
             BUILD_WITH_INSTALL_RPATH TRUE
             INSTALL_RPATH "@loader_path"
             INSTALL_RPATH_USE_LINK_PATH FALSE)
-    elseif(UNIX AND (HAVE_TRITON OR SD_ZLUDA))
+    elseif(UNIX AND (HAVE_TRITON OR HAVE_MLIR OR SD_ZLUDA))
         set_target_properties(${main_target_name} PROPERTIES
             BUILD_WITH_INSTALL_RPATH TRUE
             INSTALL_RPATH "$ORIGIN"

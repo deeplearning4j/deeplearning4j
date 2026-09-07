@@ -3634,10 +3634,10 @@ run_compiler_dependency_bootstrap() {
 }
 
 # MLIR package discovery consumes exports produced by the managed, patched
-# Triton LLVM build. Bootstrap that graph first on every Triton+MLIR build;
-# a warm dependency cache makes this a no-op, while a fresh build is now
-# deterministic on native and cross-compiled targets alike.
-if [ "$TRITON" == "ON" ] && [ "$MLIR" == "ON" ]; then
+# LLVM build. Every MLIR consumer needs that producer, even when the Triton
+# compiler is disabled. A warm dependency cache makes this a no-op; a cold
+# cache follows the same target toolchain without changing feature selection.
+if [ "$MLIR" == "ON" ]; then
     print_colored "cyan" "Configuring project-managed Triton/LLVM/MLIR dependency bootstrap..."
     run_cmake_configure_logged "ON"
     if [ "$CMAKE_ONLY" != "ON" ]; then

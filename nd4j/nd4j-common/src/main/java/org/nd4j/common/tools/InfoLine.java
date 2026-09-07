@@ -37,7 +37,7 @@ public class InfoLine {
 	 * Returns titles line as string appointed by title index (0..5).<br>
 	 * Columns are separated with char '|'.<br>
 	 * If {@code title_I < 0}, returns "?".<br>
-	 * If title index is > 5 returns "?".<br> 
+	 * If {@code title_I > 5}, returns "?".<br>
 	 * @param mtLv - method level
 	 * @param title_I - title index
 	 * @return titles line as string

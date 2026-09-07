@@ -226,35 +226,27 @@ set(MLIR_VERSION "18" CACHE STRING "MLIR/LLVM minimum version (18+)")
 option(MLIR_ENABLE_GPU "Enable MLIR GPU dialect and NVVM backend" OFF)
 ```
 
-**FindMLIR.cmake** searches for LLVM/MLIR in standard locations:
-- `/usr/lib/llvm-18`
-- `/usr/local/opt/llvm@18` (Homebrew on macOS)
-- Custom paths via `LLVM_ROOT`
+**Compiler dependency contract**:
 
-**Dependencies.cmake** provides `setup_mlir()` function:
-```cmake
-function(setup_mlir)
-    if(NOT HELPERS_mlir STREQUAL "ON")
-        message(STATUS "MLIR helper is disabled")
-        return()
-    endif()
+- `buildnativeoperations.sh` bootstraps the project-managed, pinned and patched
+  LLVM/MLIR producer before package discovery whenever `HELPERS_mlir=ON`, including
+  when `SD_TRITON=OFF`. A warm dependency cache uses the same producer contract.
+- `Dependencies.cmake::setup_triton()` provisions that shared dependency independently
+  of the Triton compiler. MLIR-only consumers do not enable `HAVE_TRITON` or
+  `HAVE_TRITON_CPU`, nor build an unrequested Triton compiler.
+- `FindMLIR.cmake` resolves the managed package selected by
+  `SD_TRITON_MANAGED_LLVM_ROOT`; ambient distro or Homebrew LLVM packages cannot
+  replace it. `setup_mlir()` fails if the requested package or lowering targets
+  are missing.
+- Cross-compilation keeps native host TableGen utilities separate from the target
+  LLVM/MLIR libraries. Android classifiers must not link host LLVM libraries.
+- `MLIR::MLIR` exposes the validated shared target graph; `MLIR::SPIRV` additionally
+  enforces the Vulkan lowering contract. Shared CPU/CUDA classifiers stage `MLIR`,
+  `MLIRExecutionEngineShared`, and `LLVM` in their runtime manifest even without
+  Triton. The existing MinGW Vulkan static-library contract remains separate.
 
-    find_package(LLVM ${MLIR_VERSION} REQUIRED CONFIG)
-    find_package(MLIR REQUIRED CONFIG)
-
-    # Create interface library
-    add_library(mlir_interface INTERFACE)
-    target_link_libraries(mlir_interface INTERFACE
-        MLIR::MLIRLinalgDialect
-        MLIR::MLIRVectorDialect
-        MLIR::MLIRExecutionEngine
-        # ... additional dialects
-    )
-
-    set(HAVE_MLIR TRUE PARENT_SCOPE)
-    add_compile_definitions(HAVE_MLIR=1)
-endfunction()
-```
+This dependency bootstrap supplies the selected compiler infrastructure; it does
+not change the requested execution backend or permit a runtime fallback.
 
 ### 2. SD Dialect Definition
 

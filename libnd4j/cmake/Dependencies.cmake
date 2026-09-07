@@ -1366,8 +1366,9 @@ function(setup_mlir)
 
     if(NOT MLIR_FOUND)
         message(FATAL_ERROR
-            "MLIR support was requested, but LLVM/MLIR ${MLIR_VERSION}+ was not found. "
-            "Set LLVM_DIR, MLIR_DIR, LLVM_ROOT, or CMAKE_PREFIX_PATH to a matching shared installation.")
+            "MLIR support was requested, but the project-managed LLVM/MLIR package was not found. "
+            "Build through buildnativeoperations.sh so the pinned compiler dependency bootstrap "
+            "completes before MLIR package discovery; ambient LLVM/MLIR installations are not supported.")
     endif()
 
     set(HAVE_MLIR TRUE PARENT_SCOPE)
@@ -1670,14 +1671,14 @@ function(setup_triton)
         set(_managed_llvm_root_from_config "${SD_TRITON_MANAGED_LLVM_ROOT}")
     endif()
 
-    # Vulkan replay consumes the pinned shared LLVM/MLIR package for native
-    # MLIR-to-SPIR-V lowering, but it does not consume or enable the Triton DSP
-    # compiler. Keep that infrastructure request independent of SD_TRITON.
+    # Every MLIR helper consumes the pinned LLVM/MLIR package. Its producer is
+    # independent of the Triton DSP compiler, including on a cold dependency
+    # cache (for example Android NNAPI compilation or Vulkan SPIR-V lowering).
     set(_managed_llvm_requested ${_triton_requested})
     if(NOT _managed_llvm_root_from_config STREQUAL "")
         set(_managed_llvm_requested ON)
     endif()
-    if(SD_VULKAN AND HELPERS_mlir STREQUAL "ON" AND MLIR_ENABLE_VULKAN)
+    if(HELPERS_mlir STREQUAL "ON")
         set(_managed_llvm_requested ON)
     endif()
 
@@ -1697,9 +1698,9 @@ function(setup_triton)
         set(TRITON "" PARENT_SCOPE)
         return()
     endif()
-    if(SD_VULKAN AND NOT _triton_requested)
+    if(NOT _triton_requested)
         message(STATUS
-            "Triton DSP compiler disabled; provisioning managed LLVM/MLIR for Vulkan replay")
+            "Triton DSP compiler disabled; provisioning the managed LLVM/MLIR dependency only")
     endif()
 
     # The pinned LLVM sources currently require headers that are incompatible
@@ -1729,9 +1730,9 @@ function(setup_triton)
             "SD_TRITON=ON has no compiler-package routing for the selected backend. "
             "Expected SD_CPU, SD_CUDA/SD_HIP/SD_LEVEL_ZERO, or SD_VULKAN.")
     endif()
-    # A restored package can satisfy MLIR discovery without asking setup_triton
-    # to build or link the Triton compiler itself.
-    if(NOT _triton_requested AND NOT _managed_llvm_root_from_config STREQUAL "")
+    # Both restored and freshly produced packages satisfy MLIR discovery
+    # without building or linking a Triton compiler that was not requested.
+    if(NOT _triton_requested)
         set(_TRITON_BUILDS_COMPILER FALSE)
     endif()
     set(SD_TRITON_CONSUMER_KIND "${_TRITON_CONSUMER_KIND}" CACHE INTERNAL
@@ -1922,7 +1923,7 @@ function(setup_triton)
         set(HAVE_TRITON ${_TRITON_BUILDS_COMPILER} CACHE BOOL
             "Triton availability" FORCE)
         set(HAVE_TRITON ${_TRITON_BUILDS_COMPILER} PARENT_SCOPE)
-        if(_TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER")
+        if(_TRITON_BUILDS_COMPILER AND _TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER")
             set(HAVE_TRITON_CPU ON CACHE BOOL "Triton CPU backend" FORCE)
             set(HAVE_TRITON_CPU ON PARENT_SCOPE)
         endif()
@@ -2100,7 +2101,7 @@ function(setup_triton)
         set(HAVE_TRITON ${_TRITON_BUILDS_COMPILER} CACHE BOOL
             "Triton availability" FORCE)
         set(HAVE_TRITON ${_TRITON_BUILDS_COMPILER} PARENT_SCOPE)
-        if(_TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER")
+        if(_TRITON_BUILDS_COMPILER AND _TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER")
             set(HAVE_TRITON_CPU ON CACHE BOOL "Triton CPU backend" FORCE)
             set(HAVE_TRITON_CPU ON PARENT_SCOPE)
         endif()
@@ -2115,7 +2116,7 @@ function(setup_triton)
     set(HAVE_TRITON ${_TRITON_BUILDS_COMPILER} CACHE BOOL
         "Triton availability" FORCE)
     set(HAVE_TRITON ${_TRITON_BUILDS_COMPILER} PARENT_SCOPE)
-    if(_TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER")
+    if(_TRITON_BUILDS_COMPILER AND _TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER")
         set(HAVE_TRITON_CPU ON CACHE BOOL "Triton CPU backend" FORCE)
         set(HAVE_TRITON_CPU ON PARENT_SCOPE)
     endif()
@@ -2778,7 +2779,7 @@ function(setup_triton)
     endif()
 
     set(_TRITON_EXTERNAL_DEPENDENCIES triton_llvm_external)
-    if(CMAKE_CROSSCOMPILING AND
+    if(CMAKE_CROSSCOMPILING AND _TRITON_BUILDS_COMPILER AND
        _TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER" AND
        NOT _TRITON_COMPILER_INSTALL_COMPLETE)
         # SLEEF generates target headers with native utilities such as mkrename.
@@ -3072,9 +3073,9 @@ function(setup_triton)
         )
     endif()
     else()
-        # MainBuildFlow depends on this stable compiler-package target. Vulkan
-        # has no Triton emitter build; its target represents only the managed
-        # shared LLVM/MLIR producer.
+        # MainBuildFlow depends on this stable compiler-package target. MLIR-only
+        # consumers have no Triton emitter build; the target represents just the
+        # managed LLVM/MLIR producer.
         add_custom_target(triton_external)
         add_dependencies(triton_external triton_llvm_external)
     endif()

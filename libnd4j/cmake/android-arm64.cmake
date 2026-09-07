@@ -150,23 +150,15 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG")
 
 
 # --- MLIR Cross-Compilation Support ---
-# When HELPERS_mlir=ON for Android builds, MLIR AOT compilation is used:
-# - Kernels are compiled on the host x86_64 machine targeting aarch64-linux-android
-# - Pre-compiled .o files are linked into the final .so (no LLVM JIT on device)
-# - The MLIR AArch64 backend is auto-enabled for cross-compilation
-#
-# To build with MLIR support for Android:
-#   cmake -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm64.cmake \
-#         -DHELPERS_mlir=ON \
-#         -DMLIR_ENABLE_VULKAN=ON \  # Optional: enable Vulkan GPU offload
-#         -DLLVM_DIR=/path/to/host/llvm \
-#         ..
-#
-# Note: LLVM_DIR should point to the HOST LLVM installation (not cross-compiled).
-# The host LLVM/MLIR is used for AOT compilation, producing ARM64 object code.
+# HELPERS_mlir=ON consumes the project-managed LLVM/MLIR package for the
+# Android target. buildnativeoperations.sh bootstraps it before discovery,
+# independently of whether the Triton compiler is enabled.
+# Native host TableGen utilities generate headers; target LLVM/MLIR libraries
+# support the selected on-device lowering backend. Never point LLVM_DIR at a
+# host installation: its libraries cannot be linked into the Android artifact.
 if(HELPERS_mlir)
     message(STATUS "MLIR: Cross-compilation mode for Android ARM64")
-    message(STATUS "  Kernels will be AOT-compiled on host targeting aarch64-linux-android")
+    message(STATUS "  Managed target LLVM/MLIR libraries with native host TableGen utilities")
     message(STATUS "  ARM features: NEON, dotprod (ARMv8.2-A)")
 endif()
 

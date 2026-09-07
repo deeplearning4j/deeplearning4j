@@ -23,9 +23,8 @@ install_linux_packages() {
       libssl-dev libtool libusb-1.0-0-dev libvulkan-dev libvulkan1 maven mesa-vulkan-drivers \
       nasm ninja-build openjdk-11-jdk pinentry-curses pkg-config python3 python3-pip \
       swig tar unzip vulkan-tools wget xz-utils zip zlib1g-dev
-    as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y llvm-18-dev mlir-18-tools ||
-      as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y llvm-dev libmlir-dev mlir-tools ||
-      true
+    # Native builds provision their pinned, patched LLVM/MLIR producer. Distro
+    # packages cannot satisfy that compiler-package contract.
   elif command -v dnf >/dev/null 2>&1; then
     as_root dnf install -y dnf-plugins-core epel-release
     as_root dnf config-manager --set-enabled powertools ||
@@ -101,7 +100,8 @@ ensure_protobuf() {
   fi
   work=$(mktemp -d)
   trap 'rm -rf "${work}"' RETURN
-  curl --fail --location --retry 5 \
+  curl --fail --location --retry 5 "${CURL_RETRY_ALL[@]}" \
+    --connect-timeout 20 --max-time 300 \
     https://github.com/google/protobuf/releases/download/v3.8.0/protobuf-cpp-3.8.0.tar.gz \
     -o "${work}/protobuf.tar.gz"
   tar -xzf "${work}/protobuf.tar.gz" -C "${work}"
@@ -128,7 +128,8 @@ ensure_protoc_21() {
   esac
   work=$(mktemp -d)
   trap 'rm -rf "${work}"' RETURN
-  curl --fail --location --retry 5 \
+  curl --fail --location --retry 5 "${CURL_RETRY_ALL[@]}" \
+    --connect-timeout 20 --max-time 300 \
     "https://github.com/protocolbuffers/protobuf/releases/download/v21.7/protoc-21.7-${protoc_target}.zip" \
     -o "${work}/protoc.zip"
   as_root mkdir -p "${toolchain_root}/protoc-21.7"
@@ -145,7 +146,8 @@ ensure_android_ndk() {
   if [ ! -d "${target}" ]; then
     work=$(mktemp -d)
     trap 'rm -rf "${work}"' RETURN
-    curl --fail --location --retry 5 \
+    curl --fail --location --retry 5 "${CURL_RETRY_ALL[@]}" \
+      --connect-timeout 20 --max-time 1800 \
       "https://dl.google.com/android/repository/android-ndk-${ndk_version}-linux.zip" \
       -o "${work}/android-ndk.zip"
     as_root mkdir -p "${toolchain_root}/android"
@@ -213,9 +215,7 @@ ensure_cuda_sbsa_cross() {
   as_root sed -i 's/^deb /deb [arch=amd64,i386] /' /etc/apt/sources.list 2>/dev/null || true
   as_root env DEBIAN_FRONTEND=noninteractive apt-get update
   as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    zlib1g-dev:arm64 || {
-      printf 'zlib1g-dev:arm64 unavailable; continuing without target zlib\n' >&2
-    }
+    zlib1g-dev:arm64
   as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     cuda-cross-sbsa-13-1
   if [ "${variant}" = cudnn ]; then
