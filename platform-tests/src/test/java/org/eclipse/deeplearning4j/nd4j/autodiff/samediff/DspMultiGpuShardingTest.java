@@ -123,6 +123,62 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         return sd;
     }
 
+    /** Device-local staging must not repeat plan-wide H2D preparation on a secondary GPU. */
+    @Test
+    public void testPreReplayKeepsPrimaryOnlyInputOnItsDevice() {
+        assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
+        assumeTrue(Nd4j.getAffinityManager().getNumberOfDevices() == 2, "requires two CUDA devices");
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
+        long originalLimit = Nd4j.getEnvironment().getDeviceLimit(1);
+        final int width = 4 * 1024 * 1024;
+        SameDiff sd = null;
+        INDArray input = null;
+        try {
+            InferenceSession.setDynamicShapePlanEnabled(true);
+            Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
+            input = Nd4j.create(DataType.FLOAT, 1, width).assign(1.0);
+            nativeOps.dbSyncToSpecial(input.data().opaqueBuffer());
+            sd = SameDiff.create();
+            SDVariable x = sd.placeHolder("primaryOnly", DataType.FLOAT, 1, width);
+            x.sum("primarySum", 1).add("out", 1.0);
+            DynamicShapePlan plan = sd.compileDynamicShapePlan("out");
+            for (var slot : plan.getSlots()) {
+                slot.setTargetDeviceId(Arrays.asList(slot.getOutputVarNames()).contains("out") ? 1 : 0);
+            }
+            sd.compileNativeDynamicShapePlan("out");
+            long limit = Nd4j.getEnvironment().getDeviceCounter(1) + 8L * 1024 * 1024;
+            if (originalLimit > 0) limit = Math.min(limit, originalLimit);
+            Nd4j.getEnvironment().setDeviceLimit(1, limit);
+            for (int iteration = 0; iteration < 6; iteration++) {
+                Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
+                input.assign((iteration + 1) * 0.125);
+                INDArray output = sd.output(Map.of("primaryOnly", input), "out").get("out");
+                try {
+                    assertEquals(0, nativeOps.dbDeviceId(input.data().opaqueBuffer()),
+                            "secondary staging must not migrate a primary-only input");
+                    assertTrue(Nd4j.getEnvironment().getDeviceCounter(1) <= limit);
+                    assertEquals(width * (iteration + 1) * 0.125 + 1.0, output.getDouble(0), 0.0);
+                } finally {
+                    SameDiffMemoryUtils.safeClose(output);
+                }
+            }
+            assertTrue(countAssignedSlots(plan, 0) > 0);
+            assertTrue(countAssignedSlots(plan, 1) > 0);
+        } finally {
+            try {
+                if (sd != null) sd.close();
+            } finally {
+                SameDiffMemoryUtils.safeClose(input);
+                Nd4j.getEnvironment().setDeviceLimit(1, originalLimit);
+                InferenceSession.setDynamicShapePlanEnabled(originalDsp);
+                Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
+                SameDiffMemoryUtils.reclaimClosedGraphResources();
+            }
+        }
+    }
+
     private static int countAssignedSlots(DynamicShapePlan plan, int deviceId) {
         int count = 0;
         for (var slot : plan.getSlots()) {

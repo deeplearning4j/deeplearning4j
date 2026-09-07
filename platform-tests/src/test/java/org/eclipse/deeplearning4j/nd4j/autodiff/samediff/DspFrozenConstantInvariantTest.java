@@ -29,7 +29,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.execution.DspHandle;
+import org.nd4j.autodiff.samediff.execution.DynamicShapeSlot;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
+import org.nd4j.autodiff.samediff.execution.SlotState;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -252,6 +255,123 @@ public class DspFrozenConstantInvariantTest {
             } else {
                 assertEquals(reference, current,
                     "Frozen output changed at execution " + i + " — buffer was corrupted");
+            }
+        }
+    }
+
+    /**
+     * A cast's inputs being constant does not make its output buffer immutable:
+     * a later layer may have reused that buffer before freeze detection runs.
+     * Skipping both casts on the next call then feeds the later layer's weights
+     * to the earlier layer. Requesting intermediate outputs would pin them and
+     * hide precisely the lifetime/reuse pattern under test.
+     */
+    @ParameterizedTest(name = "distinctBfloat16WeightCasts_{0}")
+    @EnumSource(value = GraphExecutionMode.class,
+                names = {"SLOT_BY_SLOT", "AUTO", "CUDA_GRAPHS"})
+    public void testDistinctBfloat16WeightCastsSurviveBufferReuse(GraphExecutionMode mode) {
+        final int layers = 6;
+        final int width = 8;
+        float[][] weights = new float[layers][width * width];
+        Map<String, float[]> castWeights = new LinkedHashMap<>();
+        sd = SameDiff.create();
+        SDVariable current = sd.placeHolder("X", DataType.FLOAT, width, width);
+        for (int layer = 0; layer < layers; layer++) {
+            // Dyadic values are exactly representable in BF16, so the reference
+            // needs neither a SameDiff execution nor an ND4J cast/matmul.
+            for (int row = 0; row < width; row++) {
+                weights[layer][row * width + row] = 0.5f + layer / 16.0f;
+                weights[layer][row * width + (row + layer + 1) % width] = (layer + 1) / 32.0f;
+            }
+            SDVariable weight;
+            try (INDArray source = Nd4j.createFromArray(weights[layer]).reshape(width, width)) {
+                weight = sd.constant("weight_" + layer, source.castTo(DataType.BFLOAT16));
+            }
+            String castName = "weight_float_" + layer;
+            SDVariable cast = weight.castTo(castName, DataType.FLOAT);
+            castWeights.put(castName, weights[layer]);
+            if (layer > 0) {
+                // Prevent the memory-aware scheduler from hoisting all casts.
+                // This orders execution only: the cast's DATA input remains
+                // exclusively the BF16 constant, hence eligible for freezing.
+                cast.addControlDependency(current);
+            }
+            current = sd.mmul("project_" + layer, current, cast);
+            // Three live ops separate the last weight read from the next cast,
+            // leaving several same-shape allocation/reuse opportunities.
+            current = current.add("shift_" + layer, 0.25)
+                    .mul("scale_" + layer, 0.5)
+                    .sub(layer == layers - 1 ? "output" : "layer_" + layer, 0.0625);
+        }
+        // No GraphOptimizer/saveOptimized call: BF16 -> FLOAT must stay an op.
+        sd.setOutputs("output");
+        sd.setGraphExecutionMode(mode);
+        DspHandle handle = new DspHandle(sd);
+
+        for (int execution = 0; execution < 10; execution++) {
+            float[] values = new float[width * width];
+            double[] expected = new double[values.length];
+            for (int i = 0; i < values.length; i++) {
+                // First two calls use identical input to isolate the immediate
+                // freeze bug; later calls also catch incorrectly frozen live ops.
+                values[i] = ((i % 11) - 5) / 16.0f + Math.max(0, execution - 1) / 32.0f;
+                expected[i] = values[i];
+            }
+            for (int layer = 0; layer < layers; layer++) {
+                double[] next = new double[expected.length];
+                for (int row = 0; row < width; row++) {
+                    for (int col = 0; col < width; col++) {
+                        double sum = 0;
+                        for (int k = 0; k < width; k++) {
+                            sum += expected[row * width + k] * weights[layer][k * width + col];
+                        }
+                        next[row * width + col] = (sum + 0.25) * 0.5 - 0.0625;
+                    }
+                }
+                expected = next;
+            }
+            String context = "mode=" + mode + ", execution=" + execution;
+            try (INDArray input = Nd4j.createFromArray(values).reshape(width, width)) {
+                INDArray actual = sd.output(Map.of("X", input), "output").get("output");
+                assertNotNull(actual, context);
+                assertEquals(DataType.FLOAT, actual.dataType(), context);
+                assertArrayEquals(new long[]{width, width}, actual.shape(), context);
+                try (INDArray snapshot = actual.dup('c')) {
+                    float[] observed = snapshot.data().asFloat();
+                    for (int i = 0; i < expected.length; i++) {
+                        assertEquals(expected[i], observed[i], 1e-5, context + ", element=" + i);
+                    }
+                }
+            }
+
+            assertTrue(handle.isCompiled(), "Must exercise native DSP: " + context);
+            assertEquals(layers, handle.allSlotsForOp("cast").size(),
+                    "Constant casts must not be folded away: " + context);
+            DynamicShapeSlot[] slots = sd.getOrCreateSession().getDynamicShapePlanExecutor()
+                    .getCurrentPlan().getSlots();
+            int previousCastSlot = -1;
+            for (int slotIndex : handle.allSlotsForOp("cast")) {
+                if (previousCastSlot >= 0) {
+                    assertTrue(slotIndex - previousCastSlot >= 5,
+                            "Cast lifetimes must remain separated: " + context);
+                }
+                previousCastSlot = slotIndex;
+                DynamicShapeSlot slot = slots[slotIndex];
+                assertArrayEquals(new byte[]{DynamicShapeSlot.SOURCE_CONSTANT},
+                        slot.getInputSourceTypes(), "Cast must retain its constant data input: " + context);
+                float[] ownWeights = castWeights.get(slot.getOutputVarNames()[0]);
+                assertNotNull(ownWeights, "Unexpected cast slot: " + context);
+                // Shared/reused outputs may correctly remain live. Only a cast
+                // actually marked FROZEN_CONSTANT promises to retain its values.
+                if (handle.slotState(slotIndex) == SlotState.FROZEN_CONSTANT.getNativeCode()) {
+                    try (INDArray frozen = handle.getSlotOutput(slot.getOutputSlotIndices()[0])) {
+                        assertNotNull(frozen, "Missing frozen cast output: " + context);
+                        assertEquals(DataType.FLOAT, frozen.dataType(), context);
+                        assertArrayEquals(ownWeights, frozen.data().asFloat(), 0.0f,
+                                "Frozen cast retained another layer's weights: "
+                                        + slot.getOutputVarNames()[0] + ", " + context);
+                    }
+                }
             }
         }
     }

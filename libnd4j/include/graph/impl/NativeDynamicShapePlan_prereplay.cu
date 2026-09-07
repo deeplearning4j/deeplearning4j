@@ -245,6 +245,7 @@ DspStagingSyncResult NativeDynamicShapePlan::performPreReplaySync(
   // device's replay so ensureAndSyncStagingBuffers selects/copies into that
   // device's stable buffers and the graph address check starts a new device
   // epoch.  This does not reload the plan or rebuild already-captured graphs.
+  const bool externalInputsPrepared = execCtx->isExtInputsSynced();
   int currentDevice = -1;
   if (needsStaging) {
     const char* injectedFault = std::getenv("ND4J_DSP_STAGING_FAULT");
@@ -337,6 +338,15 @@ DspStagingSyncResult NativeDynamicShapePlan::performPreReplaySync(
     DSP_DIAG(STREAM_SYNC,
              "%s cross-stream sync: SKIPPED (SBS_ON_LC_STREAM — same stream, inherent ordering)",
              diagTag);
+  }
+
+  // External preparation is per execute, unlike stream ordering and staging,
+  // which are per device. execute() prepared the originals before dispatch;
+  // platformMigrateSegmentInputs prepared any required device-local replicas.
+  // Resetting the staging epoch must not prepare the entire original input
+  // table again on this segment's device (including other GPUs' weights).
+  if (externalInputsPrepared && !execCtx->isExtInputsSynced()) {
+    execCtx->markExtInputsSynced();
   }
 
   // ── Step 2: Prepare external inputs through NDArray ownership ───────────

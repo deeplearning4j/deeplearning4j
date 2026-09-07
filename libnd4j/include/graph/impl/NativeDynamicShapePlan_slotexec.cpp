@@ -46,6 +46,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <unordered_map>
 #include <unordered_set>
 
 namespace sd {
@@ -1588,11 +1589,73 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
     }
   }
 
-  // ── Single-pass slot classification ────────────────────────────────────────
+  // Constant VALUES do not imply persistent STORAGE. Lifetime coloring/reuse
+  // can assign distinct constant producers the same DataBuffer. At the end of
+  // warmup it holds only the last producer's value; freezing every producer
+  // would make earlier consumers read that value on replay (e.g. layer QKV casts).
+  // Count materializing outputs, not metadata-only views of an input buffer.
+  std::unordered_map<sd::DataBuffer*, int> firstWriter;
+  std::unordered_set<sd::DataBuffer*> reusedBuffers;
+  for (int s = 0; s < numSlots_; s++) {
+    const auto& sl = slots_[s];
+    for (int o = 0; o < sl.wiring.numOutputs; o++) {
+      int si = sl.wiring.outputSlotIndices[o];
+      if (si < 0 || si >= totalOutputSlots_) continue;
+      NDArray* arr = outputSlots_[si];
+      if (arr == nullptr || arr->dataBuffer() == nullptr) continue;
+      auto* db = arr->dataBuffer();
+      if (colorMap_.isApplied() && si < colorMap_.totalSlots()) {
+        int color = colorMap_.colorOf(si);
+        if (color >= 0 && colorMap_.colorMemberCount(color) > 1) reusedBuffers.insert(db);
+      }
+      bool inputView = false;
+      if (sl.aliasesInput() && !sl.isInPlaceFused()) {
+        for (int i = 0; i < sl.wiring.numInputs; i++) {
+          int src = sl.wiring.inputSourceIndices[i];
+          if (src >= 0 && src < totalOutputSlots_ && outputSlots_[src] != nullptr &&
+              outputSlots_[src]->dataBuffer() == db) {
+            inputView = true;
+            break;
+          }
+        }
+      }
+      if (inputView) continue;
+      auto inserted = firstWriter.emplace(db, si);
+      if (!inserted.second && inserted.first->second != si) reusedBuffers.insert(db);
+    }
+  }
+  // Keep storage eligibility separate from semantic variable dependencies.
+  // Propagate through consumers too: a view of a recycled constant cannot retain
+  // its value merely because the logical input is constant. No allocation/copy
+  // here can recover the earlier values already overwritten during warmup.
+  std::vector<bool> transientStorage(totalOutputSlots_, false);
+  for (int si = 0; si < totalOutputSlots_; si++) {
+    NDArray* arr = outputSlots_[si];
+    transientStorage[si] = arr != nullptr && reusedBuffers.count(arr->dataBuffer()) != 0;
+  }
+  for (int s = 0; s < numSlots_; s++) {
+    const auto& sl = slots_[s];
+    bool transient = false;
+    for (int o = 0; o < sl.wiring.numOutputs; o++) {
+      int si = sl.wiring.outputSlotIndices[o];
+      if (si >= 0 && si < totalOutputSlots_ && transientStorage[si]) transient = true;
+    }
+    for (int i = 0; i < sl.wiring.numInputs; i++) {
+      int src = sl.wiring.inputSourceIndices[i];
+      if (src >= 0 && src < totalOutputSlots_ && transientStorage[src]) transient = true;
+    }
+    if (!transient) continue;
+    for (int o = 0; o < sl.wiring.numOutputs; o++) {
+      int si = sl.wiring.outputSlotIndices[o];
+      if (si >= 0 && si < totalOutputSlots_) transientStorage[si] = true;
+    }
+    DSP_DIAG(SHAPE, "FREEZE_SKIP_TRANSIENT_STORAGE: slot %d (%s)", s, sl.ident.opName.c_str());
+  }
+
+  // ── Slot classification ───────────────────────────────────────────────────
   //
-  // Every slot is classified in ONE forward pass (topological order guarantees
-  // all inputs are classified before the slot itself). The decision is IMMUTABLE.
-  // No unfreezing, no correction passes, no mutable state.
+  // Both value invariance and retained-storage safety are required. The safety
+  // passes below can further unfreeze aliases and value-dependent shape inputs.
   //
   // Classification:
   //
@@ -1615,17 +1678,6 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
   //       - May be overwritten each step
   //       - Sync per needsSync() policy
   //
-  // Why no view-alias unfreezing:
-  //   View ops share their input's DataBuffer. If the input is from an unstable
-  //   source, dependsOnExternal propagates through the view op — it won't be
-  //   frozen. If the input is from a frozen source, the shared buffer is read-only.
-  //   The only corruption path is in-place writes, which are blocked by the
-  //   in-place protection below. No separate view-alias pass needed.
-  //
-  // Why no value-dep unfreezing:
-  //   If a value-dep op reads shape data from a frozen upstream, that data is
-  //   correct and stable (frozen = never changes). Unfreezing the upstream is
-  //   unnecessary — it would just re-execute to produce the same result.
 
   int frozenConstCount = 0;
   int valueIndepCount = 0;
@@ -1640,13 +1692,17 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
     bool allOutputsConstant = true;
     for (int o = 0; o < sl.wiring.numOutputs; o++) {
       int si = sl.wiring.outputSlotIndices[o];
-      if (si >= 0 && si < totalOutputSlots_ && dependsOnExternal[si]) {
+      if (si >= 0 && si < totalOutputSlots_ &&
+          (dependsOnExternal[si] || transientStorage[si])) {
         allOutputsConstant = false;
         break;
       }
     }
 
-    // Freeze decision (immutable — never revisited)
+    if ((!allOutputsConstant || sl.flags.isDynamicShape) && sl.frozenConstantSlot()) {
+      sl.slotPhase.unseal();
+      sl.frozenOutputPtrs.clear();
+    }
     if (allOutputsConstant && !sl.flags.isDynamicShape) {
       // ── Pre-freeze validation ─────────────────────────────────────────
       // Every output slot MUST have a populated, valid buffer. Freezing a slot
