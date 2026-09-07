@@ -150,8 +150,9 @@ typedef struct {
 /**
  * Scalar generation policy consumed by the shared TokenSampleConfig primitive.
  * Zero-initialize, set struct_size, then override fields as required. A
- * temperature <= 0 selects greedy decoding. top_p <= 0 or >= 1 disables
- * nucleus filtering; repetition_penalty <= 0 is normalized to 1.
+ * nonpositive temperature selects greedy decoding. top_p outside the open
+ * interval (0, 1) disables nucleus filtering; nonpositive repetition_penalty
+ * is normalized to 1.
  */
 typedef struct {
   uint32_t struct_size;
