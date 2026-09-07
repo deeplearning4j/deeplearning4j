@@ -71,7 +71,7 @@ public class NDBitwise {
   }
 
   /**
-   * Roll integer bits to the left, i.e. var &lt;&lt; 4 | var >> (32 - 4)
+   * Roll integer bits to the left, i.e. var &lt;&lt; 4 | var &gt;&gt; (32 - 4)
    *
    * @param x Input 1 (INT type)
    * @param shift Number of bits to shift. (INT type)
@@ -95,7 +95,7 @@ public class NDBitwise {
   }
 
   /**
-   * Roll integer bits to the right, i.e. var >> 4 | var &lt;&lt; (32 - 4)
+   * Roll integer bits to the right, i.e. var &gt;&gt; 4 | var &lt;&lt; (32 - 4)
    *
    * @param x Input 1 (INT type)
    * @param shift Number of bits to shift. (INT type)
@@ -143,7 +143,7 @@ public class NDBitwise {
   }
 
   /**
-   * Shift integer bits to the right, i.e. var >> 4
+   * Shift integer bits to the right, i.e. var &gt;&gt; 4
    *
    * @param x Input 1 (INT type)
    * @param shift Number of bits to shift. (INT type)

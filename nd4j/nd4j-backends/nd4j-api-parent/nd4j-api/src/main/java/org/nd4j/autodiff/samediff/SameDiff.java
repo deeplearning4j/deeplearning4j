@@ -1116,7 +1116,8 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     }
 
     /**
-     * Get the function by the {@link DifferentialFunction#getOwnName()}
+     * Get the function by its {@link DifferentialFunction#ownName}, as returned by
+     * {@code DifferentialFunction.getOwnName()}.
      *
      * @param id the id of the function
      * @return the function for the given id if it exists
@@ -1803,7 +1804,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      *
      * <p>This is the graph-rewrite counterpart to {@link #replaceArgFor(int, SDVariable, DifferentialFunction)}.
      * Callers that need to change an op's arity must use this method instead of mutating
-     * {@link SameDiffOp#getInputsToOp()} directly.</p>
+     * the {@link SameDiffOp#inputsToOp} list returned by {@code getInputsToOp()} directly.</p>
      *
      * @param function existing function whose complete input list will be replaced
      * @param newArgs new ordered input variables

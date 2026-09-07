@@ -127,7 +127,8 @@ public class CheckpointOffloadManager {
     /**
      * Schedule an async D2H copy of {@code activation} to host memory.
      *
-     * <p>If the host memory budget ({@link GradientCheckpointConfig#getMaxHostMemoryMB()})
+     * <p>If the host memory budget (the {@code maxHostMemoryMB} property of
+     * {@link GradientCheckpointConfig}, read using {@code getMaxHostMemoryMB()})
      * would be exceeded the activation is skipped and a warning is logged.
      *
      * @param variableName logical name of the variable (used as key)
@@ -186,8 +187,9 @@ public class CheckpointOffloadManager {
     }
 
     /**
-     * Prefetch checkpoints for layers that will be needed within
-     * {@link GradientCheckpointConfig#getPrefetchDistance()} steps from the current layer.
+     * Prefetch checkpoints for layers that will be needed within the number of steps
+     * specified by the {@code prefetchDistance} property of {@link GradientCheckpointConfig}
+     * (read using {@code getPrefetchDistance()}) from the current layer.
      *
      * <p>Call this at the start of each backward layer before calling
      * {@link #getCheckpoint} for that layer.

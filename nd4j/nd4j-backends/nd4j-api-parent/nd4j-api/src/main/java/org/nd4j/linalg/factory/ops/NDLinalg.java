@@ -403,13 +403,13 @@ public class NDLinalg {
    * The equation string specifies the subscripts for each input tensor and the output tensor.
    *
    * Examples:
-   * - Matrix multiplication: "ij,jk->ik"
-   * - Transpose: "ij->ji"
-   * - Diagonal: "ii->i"
-   * - Trace: "ii->"
-   * - Batch matmul: "bij,bjk->bik"
-   * - Dot product: "i,i->"
-   * - Outer product: "i,j->ij"
+   * - Matrix multiplication: "ij,jk-&gt;ik"
+   * - Transpose: "ij-&gt;ji"
+   * - Diagonal: "ii-&gt;i"
+   * - Trace: "ii-&gt;"
+   * - Batch matmul: "bij,bjk-&gt;bik"
+   * - Dot product: "i,i-&gt;"
+   * - Outer product: "i,j-&gt;ij"
    *
    * @param inputs Input tensors (NUMERIC type)
    * @param equation Einstein summation equation string

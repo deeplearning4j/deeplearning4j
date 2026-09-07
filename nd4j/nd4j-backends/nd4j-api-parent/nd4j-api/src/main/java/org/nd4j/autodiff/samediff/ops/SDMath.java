@@ -685,9 +685,9 @@ public class SDMath extends SDOps {
 
   /**
    * Element-wise clipping function:
-   * out[i] = in[i] if in[i] >= clipValueMin and in[i] &lt;= clipValueMax
+   * out[i] = in[i] if in[i] &gt;= clipValueMin and in[i] &lt;= clipValueMax
    * out[i] = clipValueMin if in[i] &lt; clipValueMin
-   * out[i] = clipValueMax if in[i] > clipValueMax
+   * out[i] = clipValueMax if in[i] &gt; clipValueMax
    *
    * @param x Input variable (NUMERIC type)
    * @param clipValueMin Minimum value for clipping
@@ -701,9 +701,9 @@ public class SDMath extends SDOps {
 
   /**
    * Element-wise clipping function:
-   * out[i] = in[i] if in[i] >= clipValueMin and in[i] &lt;= clipValueMax
+   * out[i] = in[i] if in[i] &gt;= clipValueMin and in[i] &lt;= clipValueMax
    * out[i] = clipValueMin if in[i] &lt; clipValueMin
-   * out[i] = clipValueMax if in[i] > clipValueMax
+   * out[i] = clipValueMax if in[i] &gt; clipValueMax
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -4943,7 +4943,7 @@ public class SDMath extends SDOps {
    * Element-wise sign (signum) function:
    * out = -1 if in &lt; 0
    * out = 0 if in = 0
-   * out = 1 if in > 0
+   * out = 1 if in &gt; 0
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -4957,7 +4957,7 @@ public class SDMath extends SDOps {
    * Element-wise sign (signum) function:
    * out = -1 if in &lt; 0
    * out = 0 if in = 0
-   * out = 1 if in > 0
+   * out = 1 if in &gt; 0
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -5270,7 +5270,7 @@ public class SDMath extends SDOps {
 
   /**
    * Elementwise step function:
-   * out(x) = 1 if x >= cutoff
+   * out(x) = 1 if x &gt;= cutoff
    * out(x) = 0 otherwise
    *
    * @param x Input variable (NUMERIC type)
@@ -5284,7 +5284,7 @@ public class SDMath extends SDOps {
 
   /**
    * Elementwise step function:
-   * out(x) = 1 if x >= cutoff
+   * out(x) = 1 if x &gt;= cutoff
    * out(x) = 0 otherwise
    *
    * @param name name May be null. Name for the output variable

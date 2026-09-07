@@ -48,7 +48,8 @@ import java.util.Map;
  * </ol>
  *
  * <p>The vision encoder can be frozen (no gradient updates) or trained with LoRA,
- * as controlled by {@link VlmFineTuneConfig#isFreezeVisionEncoder()}.
+ * as controlled by the {@code freezeVisionEncoder} property of {@link VlmFineTuneConfig}
+ * (read using {@code isFreezeVisionEncoder()}).
  * When frozen, the encoder runs in inference mode and its parameters are excluded
  * from the optimizer's trainable parameter list.</p>
  *

@@ -537,7 +537,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Cast the array to a new datatype - for example, Integer -> Float
+   * Cast the array to a new datatype - for example, Integer -&gt; Float
    *
    * @param arg Input variable to cast (NDARRAY type)
    * @param datatype Datatype to cast to
@@ -548,7 +548,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Cast the array to a new datatype - for example, Integer -> Float
+   * Cast the array to a new datatype - for example, Integer -&gt; Float
    *
    * @param name name May be null. Name for the output variable
    * @param arg Input variable to cast (NDARRAY type)
@@ -1015,7 +1015,7 @@ public class SDBaseOps {
    *
    * @param x Input variable (NUMERIC type)
    * @param partitions 1D input with values 0 to numPartitions-1 (INT type)
-   * @param numPartitions Number of partitions, >= 1
+   * @param numPartitions Number of partitions, &gt;= 1
    * @return output Output variables (equal in number to numPartitions) (NUMERIC type)
    */
   public SDVariable[] dynamicPartition(SDVariable x, SDVariable partitions, int numPartitions) {
@@ -1038,7 +1038,7 @@ public class SDBaseOps {
    * @param names names May be null. Arrays of names for the output variables.
    * @param x Input variable (NUMERIC type)
    * @param partitions 1D input with values 0 to numPartitions-1 (INT type)
-   * @param numPartitions Number of partitions, >= 1
+   * @param numPartitions Number of partitions, &gt;= 1
    * @return output Output variables (equal in number to numPartitions) (NUMERIC type)
    */
   public SDVariable[] dynamicPartition(String[] names, SDVariable x, SDVariable partitions,
@@ -1052,7 +1052,7 @@ public class SDBaseOps {
   /**
    * Dynamically merge the specified input arrays into a single array, using the specified indices
    *
-   * @param indices Indices to use when merging. Must be >= 1, same length as input variables (INT type)
+   * @param indices Indices to use when merging. Must be &gt;= 1, same length as input variables (INT type)
    * @param x Input variables. (NUMERIC type)
    * @return output Merged output variable (NUMERIC type)
    */
@@ -1068,7 +1068,7 @@ public class SDBaseOps {
    * Dynamically merge the specified input arrays into a single array, using the specified indices
    *
    * @param name name May be null. Name for the output variable
-   * @param indices Indices to use when merging. Must be >= 1, same length as input variables (INT type)
+   * @param indices Indices to use when merging. Must be &gt;= 1, same length as input variables (INT type)
    * @param x Input variables. (NUMERIC type)
    * @return output Merged output variable (NUMERIC type)
    */
@@ -1346,7 +1346,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Greater than operation: elementwise x > y
+   * Greater than operation: elementwise x &gt; y
    *
    * Return boolean array with values true where satisfied, or false otherwise.
    *
@@ -1359,7 +1359,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Greater than operation: elementwise x > y
+   * Greater than operation: elementwise x &gt; y
    *
    * Return boolean array with values true where satisfied, or false otherwise.
    *
@@ -1374,7 +1374,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Greater than operation: elementwise x > y
+   * Greater than operation: elementwise x &gt; y
    * If x and y arrays have equal shape, the output shape is the same as these inputs.
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.
@@ -1392,7 +1392,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Greater than operation: elementwise x > y
+   * Greater than operation: elementwise x &gt; y
    * If x and y arrays have equal shape, the output shape is the same as these inputs.
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.
@@ -1412,7 +1412,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Greater than or equals operation: elementwise x >= y
+   * Greater than or equals operation: elementwise x &gt;= y
    *
    * Return boolean array with values true where satisfied, or false otherwise.
    *
@@ -1425,7 +1425,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Greater than or equals operation: elementwise x >= y
+   * Greater than or equals operation: elementwise x &gt;= y
    *
    * Return boolean array with values true where satisfied, or false otherwise.
    *
@@ -1440,7 +1440,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Greater than or equal to operation: elementwise x >= y
+   * Greater than or equal to operation: elementwise x &gt;= y
    * If x and y arrays have equal shape, the output shape is the same as these inputs.
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.
@@ -1458,7 +1458,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Greater than or equal to operation: elementwise x >= y
+   * Greater than or equal to operation: elementwise x &gt;= y
    * If x and y arrays have equal shape, the output shape is the same as these inputs.
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.

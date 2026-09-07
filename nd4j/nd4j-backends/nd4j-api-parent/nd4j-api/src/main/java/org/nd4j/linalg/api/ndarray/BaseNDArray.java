@@ -5735,7 +5735,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      *      - when abs value is less than or equal to 0.0001 and not zero
      *
      *  If the number of elements in the array is greater than 1000 (by default) only the first and last three elements
-     *  in a dimension are included. This can be changed globally using {@link NDArrayStrings#setMaxPrintElements(long)}
+     *  in a dimension are included. Change the global {@code maxPrintElements} setting on
+     *  {@link NDArrayStrings} using {@code NDArrayStrings.setMaxPrintElements(long)}.
      *
      *
      */

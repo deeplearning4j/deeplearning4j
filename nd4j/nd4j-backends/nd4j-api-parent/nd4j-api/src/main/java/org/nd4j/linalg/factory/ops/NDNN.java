@@ -534,7 +534,7 @@ public class NDNN {
    *
    * For example, with mergeRepeated=true and blankIndex=0:
    * Input:  [0, 1, 1, 0, 2, 2, 2, 0] (0=blank, 1='a', 2='b')
-   * Output: [1, 2] -> "ab"
+   * Output: [1, 2] -&gt; "ab"
    *
    * Note: This is greedy decoding. For better accuracy with language models,
    * use beam search decoding instead.
@@ -565,7 +565,7 @@ public class NDNN {
    *
    * For example, with mergeRepeated=true and blankIndex=0:
    * Input:  [0, 1, 1, 0, 2, 2, 2, 0] (0=blank, 1='a', 2='b')
-   * Output: [1, 2] -> "ab"
+   * Output: [1, 2] -&gt; "ab"
    *
    * Note: This is greedy decoding. For better accuracy with language models,
    * use beam search decoding instead.
@@ -676,7 +676,7 @@ public class NDNN {
    * @param values input 3D array "values" of shape [batchSize, featureValues, timesteps]
    * or 4D array of shape [batchSize, numHeads, featureValues, timesteps] (NUMERIC type)
    * @param mask OPTIONAL; array that defines which values should be skipped of shape [batchSize, timesteps] (NUMERIC type)
-   * @param scaled normalization, false -> do not apply normalization, true -> apply normalization
+   * @param scaled normalization, false -&gt; do not apply normalization, true -&gt; apply normalization
    * @return output  Attention result arrays of shape [batchSize, featureValues, queryCount] or [batchSize, numHeads, featureValues, queryCount],
    * (optionally) Attention Weights of shape [batchSize, timesteps, queryCount] or [batchSize, numHeads, timesteps, queryCount] (NUMERIC type)
    */
@@ -711,7 +711,7 @@ public class NDNN {
    * Flash attention features:
    * - O(N) memory complexity instead of O(N^2)
    * - Tiled computation with online softmax
-   * - Supports grouped query attention (GQA) where numHeads > numKvHeads
+   * - Supports grouped query attention (GQA) where numHeads &gt; numKvHeads
    * - Supports attention bias (relative position bias, ALiBi, etc.)
    *
    * KV Cache support for autoregressive generation:
@@ -771,7 +771,7 @@ public class NDNN {
    * Flash attention features:
    * - O(N) memory complexity instead of O(N^2)
    * - Tiled computation with online softmax
-   * - Supports grouped query attention (GQA) where numHeads > numKvHeads
+   * - Supports grouped query attention (GQA) where numHeads &gt; numKvHeads
    * - Supports attention bias (relative position bias, ALiBi, etc.)
    *
    * KV Cache support for autoregressive generation:
@@ -835,7 +835,7 @@ public class NDNN {
    * Flash attention features:
    * - O(N) memory complexity instead of O(N^2)
    * - Tiled computation with online softmax
-   * - Supports grouped query attention (GQA) where numHeads > numKvHeads
+   * - Supports grouped query attention (GQA) where numHeads &gt; numKvHeads
    * - Supports attention bias (relative position bias, ALiBi, etc.)
    *
    * KV Cache support for autoregressive generation:
@@ -1132,7 +1132,7 @@ public class NDNN {
 
   /**
    * Element-wise exponential linear unit (ELU) function:
-   * out = x if x > 0
+   * out = x if x &gt; 0
    * out = a * (exp(x) - 1) if x &lt;= 0
    * with constant a = 1.0
    * <p>
@@ -1216,7 +1216,7 @@ public class NDNN {
    * Uses tiled computation with online softmax to achieve O(N) memory complexity
    * instead of O(N^2) for standard attention.
    *
-   * Supports Grouped Query Attention (GQA) where numHeads > numKvHeads,
+   * Supports Grouped Query Attention (GQA) where numHeads &gt; numKvHeads,
    * allowing multiple query heads to share the same KV heads.
    *
    * out = softmax(Q * K^T / scale) * V
@@ -1976,7 +1976,7 @@ public class NDNN {
    * Element-wise hard sigmoid function:
    * out[i] = 0 if in[i] &lt;= -2.5
    * out[i] = 0.2*in[i]+0.5 if -2.5 &lt; in[i] &lt; 2.5
-   * out[i] = 1 if in[i] >= 2.5
+   * out[i] = 1 if in[i] &gt;= 2.5
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -1990,7 +1990,7 @@ public class NDNN {
    * Element-wise hard tanh function:
    * out[i] = -1 if in[i] &lt;= -1
    * out[i] = in[i] if -1 &lt; in[i] &lt; 1
-   * out[i] = 1 if in[i] >= 1
+   * out[i] = 1 if in[i] &gt;= 1
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -2144,7 +2144,7 @@ public class NDNN {
    * @param present Present KV tensor from decoder output. Shape: [batch, heads, seqLen, dim] (NUMERIC type)
    * @param staticBuffer Static KV cache buffer. Shape: [batch, heads, maxKvLen, dim]. Updated in-place. (NUMERIC type)
    * @param cachePos Position in static buffer to write the new entry
-   * @param numPairs Number of present/static KV pairs. When > 1, inputs are [present_0..N-1, static_0..N-1]
+   * @param numPairs Number of present/static KV pairs. When &gt; 1, inputs are [present_0..N-1, static_0..N-1]
    * @return output Scalar 0 on success (LONG type)
    */
   public INDArray kvScatter(INDArray present, INDArray staticBuffer, long cachePos, int numPairs) {
@@ -2230,7 +2230,7 @@ public class NDNN {
 
   /**
    * Element-wise leaky ReLU function:
-   * out = x if x >= 0.0
+   * out = x if x &gt;= 0.0
    * out = alpha * x if x &lt; 0.0
    * Alpha value is most commonly set to 0.01
    *
@@ -3136,7 +3136,7 @@ public class NDNN {
    * @param Wv input value projection weights of shape [numHeads, projectedValues, featureValues] (NUMERIC type)
    * @param Wo output projection weights of shape [numHeads * projectedValues, outSize] (NUMERIC type)
    * @param mask OPTIONAL; array that defines which values should be skipped of shape [batchSize, timesteps] (NUMERIC type)
-   * @param scaled normalization, false -> do not apply normalization, true -> apply normalization
+   * @param scaled normalization, false -&gt; do not apply normalization, true -&gt; apply normalization
    * @return output Attention result arrays of shape [batchSize, outSize, queryCount]
    * (optionally) Attention Weights of shape [batchSize, numHeads, timesteps, queryCount] (NUMERIC type)
    */
@@ -3332,7 +3332,7 @@ public class NDNN {
 
   /**
    * PReLU (Parameterized Rectified Linear Unit) operation.  Like LeakyReLU with a learnable alpha:
-   * out[i] = in[i] if in[i] >= 0
+   * out[i] = in[i] if in[i] &gt;= 0
    * out[i] = in[i] * alpha[i] otherwise
    *
    * sharedAxes allows you to share learnable parameters along axes.
@@ -3478,11 +3478,11 @@ public class NDNN {
 
   /**
    * Element-wise rectified linear function with specified cutoff:
-   * out[i] = in[i] if in[i] >= cutoff
+   * out[i] = in[i] if in[i] &gt;= cutoff
    * out[i] = 0 otherwise
    *
    * @param x Input (NUMERIC type)
-   * @param cutoff Cutoff value for ReLU operation - x > cutoff ? x : 0. Usually 0
+   * @param cutoff Cutoff value for ReLU operation - x &gt; cutoff ? x : 0. Usually 0
    * @return output Output (NUMERIC type)
    */
   public INDArray relu(INDArray x, double cutoff) {
@@ -3856,7 +3856,7 @@ public class NDNN {
   /**
    * Element-wise SeLU function - Scaled exponential Lineal Unit: see <a href="https://arxiv.org/abs/1706.02515">Self-Normalizing Neural Networks</a>
    *
-   * out[i] = scale * in[i] if in[i] > 0, or scale * alpha * (exp(in[i])-1) if in[i] &lt;= 0
+   * out[i] = scale * in[i] if in[i] &gt; 0, or scale * alpha * (exp(in[i])-1) if in[i] &lt;= 0
    * Uses default scale and alpha values.
    *
    * @param x Input variable (NUMERIC type)
@@ -4374,7 +4374,7 @@ public class NDNN {
    * Token sampling for LLM inference.
    *
    * Full sampling pipeline in a single native GPU call:
-   *   temperature scaling -> top-K filtering -> softmax -> top-P filtering -> sample/argmax
+   *   temperature scaling -&gt; top-K filtering -&gt; softmax -&gt; top-P filtering -&gt; sample/argmax
    *
    * For greedy decoding (temperature=0 or no top-k/top-p), performs GPU-side argmax
    * with shared-memory reduction — avoids transferring the full logits tensor to host.
@@ -4406,7 +4406,7 @@ public class NDNN {
    * Token sampling for LLM inference.
    *
    * Full sampling pipeline in a single native GPU call:
-   *   temperature scaling -> top-K filtering -> softmax -> top-P filtering -> sample/argmax
+   *   temperature scaling -&gt; top-K filtering -&gt; softmax -&gt; top-P filtering -&gt; sample/argmax
    *
    * For greedy decoding (temperature=0 or no top-k/top-p), performs GPU-side argmax
    * with shared-memory reduction — avoids transferring the full logits tensor to host.
@@ -4677,7 +4677,7 @@ public class NDNN {
    * - 1D windowed attention: for sequences [batch, seqLen, heads, dim]
    * - 2D windowed attention: for images [batch, height, width, heads, dim]
    *
-   * Shifted window attention (shiftSize > 0) enables cross-window connections
+   * Shifted window attention (shiftSize &gt; 0) enables cross-window connections
    * as used in Swin Transformer.
    *
    * Benefits:
@@ -4721,7 +4721,7 @@ public class NDNN {
    * - 1D windowed attention: for sequences [batch, seqLen, heads, dim]
    * - 2D windowed attention: for images [batch, height, width, heads, dim]
    *
-   * Shifted window attention (shiftSize > 0) enables cross-window connections
+   * Shifted window attention (shiftSize &gt; 0) enables cross-window connections
    * as used in Swin Transformer.
    *
    * Benefits:
@@ -4770,7 +4770,7 @@ public class NDNN {
   /**
    * Exclude Top Choices (XTC) logit filter.
    *
-   * With probability xtcProbability: among tokens whose softmax probability >= xtcThreshold,
+   * With probability xtcProbability: among tokens whose softmax probability &gt;= xtcThreshold,
    * if at least two qualify, mask all EXCEPT the lowest-probability one — encouraging
    * diversity. Otherwise the logits are unchanged. Stochastic; seeded by seed.
    *

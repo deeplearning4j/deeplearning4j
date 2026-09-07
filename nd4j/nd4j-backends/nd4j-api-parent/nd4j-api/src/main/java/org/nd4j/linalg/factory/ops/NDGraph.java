@@ -38,9 +38,9 @@ public class NDGraph {
   /**
    * Adamic-Adar link-prediction score: S[i,j] = sum_v A[i,v]·A[v,j] / log(deg_v), weighting each
    * shared neighbor v by the inverse log of its degree so that rare (low-degree) common neighbors
-   * contribute more than hubs. Assumes node degrees > 1 (so log(deg) > 0).
+   * contribute more than hubs. Assumes node degrees &gt; 1 (so log(deg) &gt; 0).
    *
-   * @param adj Adjacency matrix [n, n] with node degrees > 1 (FLOATING_POINT type)
+   * @param adj Adjacency matrix [n, n] with node degrees &gt; 1 (FLOATING_POINT type)
    * @return score Adamic-Adar score matrix [n, n] (FLOATING_POINT type)
    */
   public INDArray adamicAdar(INDArray adj) {
@@ -294,7 +294,7 @@ public class NDGraph {
    * sim[i,j] = exp( -||x_i - x_j||^2 / (2 sigma^2) ). Threshold or take per-row top-k for a kNN graph.
    *
    * @param features Node features [n, d] (FLOATING_POINT type)
-   * @param sigma RBF kernel bandwidth (> 0)
+   * @param sigma RBF kernel bandwidth (&gt; 0)
    * @return sim Gaussian-similarity matrix [n, n] with unit diagonal (FLOATING_POINT type)
    */
   public INDArray gaussianSimilarity(INDArray features, double sigma) {
@@ -430,7 +430,7 @@ public class NDGraph {
    *
    * @param adj Adjacency matrix [n, n] (FLOATING_POINT type)
    * @param beta Attenuation factor (0 &lt; beta &lt; 1 / spectral_radius(A))
-   * @param L Truncation depth: number of path-length terms (>= 1)
+   * @param L Truncation depth: number of path-length terms (&gt;= 1)
    * @return out Katz similarity matrix [n, n] (FLOATING_POINT type)
    */
   public INDArray katzIndex(INDArray adj, double beta, int L) {
@@ -672,7 +672,7 @@ public class NDGraph {
    * @param bZu Update-gate bias [1, d] (FLOATING_POINT type)
    * @param wC Candidate-state weights [2d, d] (FLOATING_POINT type)
    * @param bC Candidate-state bias [1, d] (FLOATING_POINT type)
-   * @param processingSteps Number of Set2Set processing steps (T >= 1)
+   * @param processingSteps Number of Set2Set processing steps (T &gt;= 1)
    * @param d Node embedding / GRU hidden dimension
    * @return readout Permutation-invariant graph readout [1, 2d] (FLOATING_POINT type)
    */

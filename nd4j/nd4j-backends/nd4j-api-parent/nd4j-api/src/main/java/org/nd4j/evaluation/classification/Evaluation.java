@@ -855,9 +855,10 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * Precision based on guesses so far.<br>
      * Note: value returned will differ depending on number of classes and settings.<br>
      * 1. For binary classification, if the positive class is set (via default value of 1, via constructor,
-     *    or via {@link #setBinaryPositiveClass(Integer)}), the returned value will be for the specified positive class
+     *    or via {@code setBinaryPositiveClass(Integer)} updating {@link #binaryPositiveClass}),
+     *    the returned value will be for the specified positive class
      *    only.<br>
-     * 2. For the multi-class case, or when {@link #getBinaryPositiveClass()} is null, the returned value is macro-averaged
+     * 2. For the multi-class case, or when {@link #binaryPositiveClass} (returned by {@code getBinaryPositiveClass()}) is null, the returned value is macro-averaged
      *    across all classes. i.e., is macro-averaged precision, equivalent to {@code precision(EvaluationAveraging.Macro)}<br>
      *
      * @return the total precision based on guesses so far
@@ -1001,9 +1002,10 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * Recall based on guesses so far<br>
      * Note: value returned will differ depending on number of classes and settings.<br>
      * 1. For binary classification, if the positive class is set (via default value of 1, via constructor,
-     *    or via {@link #setBinaryPositiveClass(Integer)}), the returned value will be for the specified positive class
+     *    or via {@code setBinaryPositiveClass(Integer)} updating {@link #binaryPositiveClass}),
+     *    the returned value will be for the specified positive class
      *    only.<br>
-     * 2. For the multi-class case, or when {@link #getBinaryPositiveClass()} is null, the returned value is macro-averaged
+     * 2. For the multi-class case, or when {@link #binaryPositiveClass} (returned by {@code getBinaryPositiveClass()}) is null, the returned value is macro-averaged
      *    across all classes. i.e., is macro-averaged recall, equivalent to {@code recall(EvaluationAveraging.Macro)}<br>
      *
      * @return the recall for the outcomes
@@ -1080,9 +1082,10 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * False positive rate based on guesses so far<br>
      * Note: value returned will differ depending on number of classes and settings.<br>
      * 1. For binary classification, if the positive class is set (via default value of 1, via constructor,
-     *    or via {@link #setBinaryPositiveClass(Integer)}), the returned value will be for the specified positive class
+     *    or via {@code setBinaryPositiveClass(Integer)} updating {@link #binaryPositiveClass}),
+     *    the returned value will be for the specified positive class
      *    only.<br>
-     * 2. For the multi-class case, or when {@link #getBinaryPositiveClass()} is null, the returned value is macro-averaged
+     * 2. For the multi-class case, or when {@link #binaryPositiveClass} (returned by {@code getBinaryPositiveClass()}) is null, the returned value is macro-averaged
      *    across all classes. i.e., is macro-averaged false positive rate, equivalent to
      *    {@code falsePositiveRate(EvaluationAveraging.Macro)}<br>
      *
@@ -1153,9 +1156,10 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * False negative rate based on guesses so far
      * Note: value returned will differ depending on number of classes and settings.<br>
      * 1. For binary classification, if the positive class is set (via default value of 1, via constructor,
-     *    or via {@link #setBinaryPositiveClass(Integer)}), the returned value will be for the specified positive class
+     *    or via {@code setBinaryPositiveClass(Integer)} updating {@link #binaryPositiveClass}),
+     *    the returned value will be for the specified positive class
      *    only.<br>
-     * 2. For the multi-class case, or when {@link #getBinaryPositiveClass()} is null, the returned value is macro-averaged
+     * 2. For the multi-class case, or when {@link #binaryPositiveClass} (returned by {@code getBinaryPositiveClass()}) is null, the returned value is macro-averaged
      *    across all classes. i.e., is macro-averaged false negative rate, equivalent to
      *    {@code falseNegativeRate(EvaluationAveraging.Macro)}<br>
      *
@@ -1202,9 +1206,10 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * <a href="http://ro.ecu.edu.au/cgi/viewcontent.cgi?article=1058&amp;context=isw">http://ro.ecu.edu.au/cgi/viewcontent.cgi?article=1058&amp;context=isw</a><br>
      * Note: value returned will differ depending on number of classes and settings.<br>
      * 1. For binary classification, if the positive class is set (via default value of 1, via constructor,
-     *    or via {@link #setBinaryPositiveClass(Integer)}), the returned value will be for the specified positive class
+     *    or via {@code setBinaryPositiveClass(Integer)} updating {@link #binaryPositiveClass}),
+     *    the returned value will be for the specified positive class
      *    only.<br>
-     * 2. For the multi-class case, or when {@link #getBinaryPositiveClass()} is null, the returned value is macro-averaged
+     * 2. For the multi-class case, or when {@link #binaryPositiveClass} (returned by {@code getBinaryPositiveClass()}) is null, the returned value is macro-averaged
      *    across all classes. i.e., is macro-averaged false alarm rate)
      *
      * @return the fpr for the outcomes
@@ -1269,9 +1274,10 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * <br>
      * Note: value returned will differ depending on number of classes and settings.<br>
      * 1. For binary classification, if the positive class is set (via default value of 1, via constructor,
-     *    or via {@link #setBinaryPositiveClass(Integer)}), the returned value will be for the specified positive class
+     *    or via {@code setBinaryPositiveClass(Integer)} updating {@link #binaryPositiveClass}),
+     *    the returned value will be for the specified positive class
      *    only.<br>
-     * 2. For the multi-class case, or when {@link #getBinaryPositiveClass()} is null, the returned value is macro-averaged
+     * 2. For the multi-class case, or when {@link #binaryPositiveClass} (returned by {@code getBinaryPositiveClass()}) is null, the returned value is macro-averaged
      *    across all classes. i.e., is macro-averaged f1, equivalent to {@code f1(EvaluationAveraging.Macro)}<br>
      *
      * @return the f1 score or harmonic mean of precision and recall based on current guesses

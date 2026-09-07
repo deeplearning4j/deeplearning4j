@@ -791,7 +791,7 @@ public class SDSparse extends SDOps {
    * Returns indices [nnz, 2] (INT64) and values [nnz] in corresponding order.
    *
    * @param dense 2D dense input matrix [rows, cols] (FLOATING_POINT type)
-   * @param threshold Keep entries where |x| > threshold (0.0 keeps all non-zeros)
+   * @param threshold Keep entries where |x| &gt; threshold (0.0 keeps all non-zeros)
    * @return indices 2D [nnz, 2] INT64 row/col index pairs for each non-zero (INT type)
    * @return values 1D [nnz] non-zero values (FLOATING_POINT type)
    */
@@ -806,7 +806,7 @@ public class SDSparse extends SDOps {
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param dense 2D dense input matrix [rows, cols] (FLOATING_POINT type)
-   * @param threshold Keep entries where |x| > threshold (0.0 keeps all non-zeros)
+   * @param threshold Keep entries where |x| &gt; threshold (0.0 keeps all non-zeros)
    * @return indices 2D [nnz, 2] INT64 row/col index pairs for each non-zero (INT type)
    * @return values 1D [nnz] non-zero values (FLOATING_POINT type)
    */
@@ -818,10 +818,10 @@ public class SDSparse extends SDOps {
 
   /**
    * Convert a dense matrix to CSC (Compressed Sparse Column) sparse representation.
-   * Only entries with |x| > threshold are kept.
+   * Only entries with |x| &gt; threshold are kept.
    *
    * @param dense 2D dense input matrix [rows, cols] (FLOATING_POINT type)
-   * @param threshold Keep entries where |x| > threshold (0.0 keeps all non-zeros)
+   * @param threshold Keep entries where |x| &gt; threshold (0.0 keeps all non-zeros)
    * @return cscValues 1D [nnz] non-zero values in column-major order (FLOATING_POINT type)
    * @return cscRowIdx 1D [nnz] row index for each non-zero (INT32) (INT type)
    * @return cscColPtr 1D [cols+1] column pointers (INT32) (INT type)
@@ -833,11 +833,11 @@ public class SDSparse extends SDOps {
 
   /**
    * Convert a dense matrix to CSC (Compressed Sparse Column) sparse representation.
-   * Only entries with |x| > threshold are kept.
+   * Only entries with |x| &gt; threshold are kept.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param dense 2D dense input matrix [rows, cols] (FLOATING_POINT type)
-   * @param threshold Keep entries where |x| > threshold (0.0 keeps all non-zeros)
+   * @param threshold Keep entries where |x| &gt; threshold (0.0 keeps all non-zeros)
    * @return cscValues 1D [nnz] non-zero values in column-major order (FLOATING_POINT type)
    * @return cscRowIdx 1D [nnz] row index for each non-zero (INT32) (INT type)
    * @return cscColPtr 1D [cols+1] column pointers (INT32) (INT type)
@@ -850,10 +850,10 @@ public class SDSparse extends SDOps {
 
   /**
    * Convert a dense matrix to CSR (Compressed Sparse Row) sparse representation.
-   * Only entries with |x| > threshold are kept; pass threshold=0.0 to retain all structurally non-zero entries.
+   * Only entries with |x| &gt; threshold are kept; pass threshold=0.0 to retain all structurally non-zero entries.
    *
    * @param dense 2D dense input matrix [rows, cols] (FLOATING_POINT type)
-   * @param threshold Keep entries where |x| > threshold (0.0 keeps all non-zeros)
+   * @param threshold Keep entries where |x| &gt; threshold (0.0 keeps all non-zeros)
    * @return values 1D [nnz] non-zero values (FLOATING_POINT type)
    * @return colIdx 1D [nnz] column indices (INT32) (INT type)
    * @return rowPtr 1D [rows+1] row pointers (INT32) (INT type)
@@ -865,11 +865,11 @@ public class SDSparse extends SDOps {
 
   /**
    * Convert a dense matrix to CSR (Compressed Sparse Row) sparse representation.
-   * Only entries with |x| > threshold are kept; pass threshold=0.0 to retain all structurally non-zero entries.
+   * Only entries with |x| &gt; threshold are kept; pass threshold=0.0 to retain all structurally non-zero entries.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param dense 2D dense input matrix [rows, cols] (FLOATING_POINT type)
-   * @param threshold Keep entries where |x| > threshold (0.0 keeps all non-zeros)
+   * @param threshold Keep entries where |x| &gt; threshold (0.0 keeps all non-zeros)
    * @return values 1D [nnz] non-zero values (FLOATING_POINT type)
    * @return colIdx 1D [nnz] column indices (INT32) (INT type)
    * @return rowPtr 1D [rows+1] row pointers (INT32) (INT type)

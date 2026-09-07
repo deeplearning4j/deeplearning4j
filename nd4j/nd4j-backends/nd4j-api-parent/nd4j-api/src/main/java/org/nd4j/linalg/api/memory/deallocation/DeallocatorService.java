@@ -66,7 +66,8 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * Note the service also checks "org.bytedeco.javacpp.noPointerGC"
  *
- * Also of note is you may access the references with {@link #getReferenceMap()}
+ * The reference map of this {@link DeallocatorService} is accessible through
+ * {@code getReferenceMap()}, keyed by each allocation's unique ID.
  * DO THIS AT YOUR OWN RISK. ONLY FOR advanced users.
  *
  *

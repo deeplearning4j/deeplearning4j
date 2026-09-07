@@ -90,7 +90,8 @@ import java.util.Map;
  * </pre>
  *
  * <h2>PEFT support</h2>
- * When {@link RLPipelineConfig#getPeftConfig()} is non-null the policy model is wrapped
+ * When the {@code peftConfig} property of {@link RLPipelineConfig} (read using
+ * {@code getPeftConfig()}) is non-null the policy model is wrapped
  * with {@link PeftModel} before training. After training call
  * {@link #mergeAndExport()} to get a standalone merged SameDiff model.
  *

@@ -117,9 +117,9 @@ public interface Nd4jEventLog {
     List<NDArrayEvent> arrayEventsForClassAndMethod(String className, String methodName);
 
     /**
-     * Returns the related {@link NDArrayEvent}
-     * based on the point of invocation found in
-     * {@link NDArrayEvent#getPointOfInvocation()}
+     * Returns the related {@link NDArrayEvent} entries whose {@code pointOfInvocation}
+     * (read using {@code getPointOfInvocation()}) matches the requested class, method,
+     * and line number.
      * @param className the class name to get the event for
      * @param methodName the method name to get the event for
      * @param lineNumber the line number to get the event for

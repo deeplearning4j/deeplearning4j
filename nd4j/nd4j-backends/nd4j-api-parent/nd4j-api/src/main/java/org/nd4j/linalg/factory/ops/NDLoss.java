@@ -672,7 +672,7 @@ public class NDLoss {
    * {@code -1/numExamples * sum_i (labels[i] * log(sigmoid(logits[i])) + (1-labels[i]) * log(1-sigmoid(logits[i])))}
    * though this is done in a mathematically equivalent but more numerical stable form.<br>
    * <br>
-   * When label smoothing is > 0, the following label smoothing is used:<br>
+   * When label smoothing is &gt; 0, the following label smoothing is used:<br>
    * <pre>
    * {@code numClasses = labels.size(1);
    * label = (1.0 - labelSmoothing) * label + 0.5 * labelSmoothing}
@@ -712,7 +712,7 @@ public class NDLoss {
    * {@code -1/numExamples * sum_i (labels[i] * log(sigmoid(logits[i])) + (1-labels[i]) * log(1-sigmoid(logits[i])))}
    * though this is done in a mathematically equivalent but more numerical stable form.<br>
    * <br>
-   * When label smoothing is > 0, the following label smoothing is used:<br>
+   * When label smoothing is &gt; 0, the following label smoothing is used:<br>
    * <pre>
    * {@code numClasses = labels.size(1);
    * label = (1.0 - labelSmoothing) * label + 0.5 * labelSmoothing}
@@ -747,7 +747,7 @@ public class NDLoss {
    * If LossReduce#NONE is used, returned shape is [numExamples] out for [numExamples, numClasses] predicitons/labels;
    * otherwise, the output is a scalar.<br>
    * <p>
-   * When label smoothing is > 0, the following label smoothing is used:<br>
+   * When label smoothing is &gt; 0, the following label smoothing is used:<br>
    * <pre>
    * {@code numClasses = labels.size(1);
    * oneHotLabel = (1.0 - labelSmoothing) * oneHotLabels + labelSmoothing/numClasses}
@@ -785,7 +785,7 @@ public class NDLoss {
    * If LossReduce#NONE is used, returned shape is [numExamples] out for [numExamples, numClasses] predicitons/labels;
    * otherwise, the output is a scalar.<br>
    * <p>
-   * When label smoothing is > 0, the following label smoothing is used:<br>
+   * When label smoothing is &gt; 0, the following label smoothing is used:<br>
    * <pre>
    * {@code numClasses = labels.size(1);
    * oneHotLabel = (1.0 - labelSmoothing) * oneHotLabels + labelSmoothing/numClasses}

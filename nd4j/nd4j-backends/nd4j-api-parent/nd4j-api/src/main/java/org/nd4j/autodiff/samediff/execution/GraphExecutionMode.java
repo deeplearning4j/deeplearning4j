@@ -20,9 +20,12 @@
 
 package org.nd4j.autodiff.samediff.execution;
 
+import org.nd4j.autodiff.samediff.SameDiff;
+
 /**
  * Controls how the DSP (Dynamic Shape Plan) executor runs graph segments.
- * Set via {@link org.nd4j.autodiff.samediff.SameDiff#setGraphExecutionMode(GraphExecutionMode)}.
+ * Stored in the {@code graphExecutionMode} property of {@link SameDiff},
+ * set using {@code setGraphExecutionMode(GraphExecutionMode)}.
  *
  * <p>Backends are tried in priority order when AUTO is selected.</p>
  * <p>CUDA builds: Triton → NVRTC → PTX → CUDA Graphs → slot-by-slot.</p>

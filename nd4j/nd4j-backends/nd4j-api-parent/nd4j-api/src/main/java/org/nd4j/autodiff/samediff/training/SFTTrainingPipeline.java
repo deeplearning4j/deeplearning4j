@@ -69,7 +69,8 @@ import java.util.Map;
  * </ol>
  *
  * <h2>PEFT integration</h2>
- * When {@link SFTConfig#getPeftConfig()} is non-null the pipeline wraps the base
+ * When the {@code peftConfig} property of {@link SFTConfig} (read using
+ * {@code getPeftConfig()}) is non-null the pipeline wraps the base
  * {@link SameDiff} model with {@link PeftModel} before training, so only adapter
  * weights are updated.  After training the adapters can be merged with
  * {@link #mergeAndExport()}.
@@ -123,7 +124,8 @@ public class SFTTrainingPipeline {
     private final SameDiff model;
 
     /**
-     * PEFT wrapper.  Non-null only when {@link SFTConfig#getPeftConfig()} is set.
+     * PEFT wrapper. Non-null only when the {@code peftConfig} property of
+     * {@link SFTConfig} (read using {@code getPeftConfig()}) is set.
      */
     @Getter
     private final PeftModel peftModel;
