@@ -172,7 +172,7 @@ public class YoloUtils {
      * @param boundingBoxPriors as given to Yolo2OutputLayer
      * @param networkOutput 4d activations out of the network
      * @param confThreshold Detection threshold, in range 0.0 (least strict) to 1.0 (most strict). Objects are returned
-     *                     where predicted confidence is >= confThreshold
+     *                     where predicted confidence is &gt;= confThreshold
      * @param nmsThreshold  passed to {@link #nms(List, double)} (0 == disabled) as the threshold for intersection over union (IOU)
      * @return List of detected objects
      */

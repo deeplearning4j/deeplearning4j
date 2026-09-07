@@ -44,7 +44,7 @@ public class SplitMaxLengthSequence implements SequenceSplit {
     /**
      * @param maxSequenceLength max length of sequences
      * @param equalSplits       if true: split larger sequences into equal sized subsequences. If false: split into
-     *                          n maxSequenceLength sequences, and (if necessary) 1 with 1 <= length < maxSequenceLength
+     *                          n maxSequenceLength sequences, and (if necessary) 1 with 1 &lt;= length &lt; maxSequenceLength
      */
     public SplitMaxLengthSequence(@JsonProperty("maxSequenceLength") int maxSequenceLength,
                     @JsonProperty("equalSplits") boolean equalSplits) {

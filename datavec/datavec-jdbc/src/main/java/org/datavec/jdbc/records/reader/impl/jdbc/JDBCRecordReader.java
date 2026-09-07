@@ -136,7 +136,7 @@ public class JDBCRecordReader extends BaseRecordReader {
      *     <li>JDBCRecordReader.TRIM_STRINGS : Whether or not read strings should be trimmed before being returned. False by default</li>
      *     <li>JDBCRecordReader.JDBC_URL : Jdbc url to use for datastource configuration (see JDBCRecordReaderTest for examples)</li>
      *     <li>JDBCRecordReader.JDBC_DRIVER_CLASS_NAME : Driver class to use for datasource configuration</li>
-     *     <li>JDBCRecordReader.JDBC_USERNAME && JDBC_PASSWORD : Username and password to use for datasource configuration</li>
+     *     <li>JDBCRecordReader.JDBC_USERNAME and JDBC_PASSWORD : Username and password to use for datasource configuration</li>
      *     <li>JDBCRecordReader.JDBC_RESULTSET_TYPE : ResultSet type to use (int value defined in jdbc doc)</li>
      * </ol>
      *

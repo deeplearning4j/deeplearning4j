@@ -441,7 +441,7 @@ public class IOUtils {
 
     /**
      * Serializes a long to a binary stream with zero-compressed encoding.
-     * For -112 <= i <= 127, only one byte is used with the actual value.
+     * For -112 &lt;= i &lt;= 127, only one byte is used with the actual value.
      * For other values of i, the first byte value indicates whether the
      * long is positive or negative, and the number of bytes that follow.
      * If the first byte value v is between -113 and -120, the following long

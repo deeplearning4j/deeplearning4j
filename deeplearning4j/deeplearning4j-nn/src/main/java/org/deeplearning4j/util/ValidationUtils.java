@@ -36,7 +36,7 @@ public class ValidationUtils {
     }
 
     /**
-     * Checks that the values is >= 0.
+     * Checks that the values is &gt;= 0.
      *
      * @param data      An int
      * @param paramName The param name, for error reporting
@@ -48,7 +48,7 @@ public class ValidationUtils {
 
 
     /**
-     * Checks that the values is >= 0.
+     * Checks that the values is &gt;= 0.
      *
      * @param data      An int
      * @param paramName The param name, for error reporting
@@ -59,7 +59,7 @@ public class ValidationUtils {
     }
 
     /**
-     * Checks that the values is >= 0.
+     * Checks that the values is &gt;= 0.
      *
      * @param data      An int
      * @param paramName The param name, for error reporting
@@ -71,7 +71,7 @@ public class ValidationUtils {
 
 
     /**
-     * Checks that all values are >= 0.
+     * Checks that all values are &gt;= 0.
      *
      * @param data      An array
      * @param paramName The param name, for error reporting
@@ -95,7 +95,7 @@ public class ValidationUtils {
     }
 
     /**
-     * Checks that all values are >= 0.
+     * Checks that all values are &gt;= 0.
      *
      * @param data      An array
      * @param paramName The param name, for error reporting
@@ -119,7 +119,7 @@ public class ValidationUtils {
     }
 
     /**
-     * Reformats the input array to a length 1 array and checks that all values are >= 0.
+     * Reformats the input array to a length 1 array and checks that all values are &gt;= 0.
      * <p>
      * If the array is length 1, returns the array
      *
@@ -163,7 +163,7 @@ public class ValidationUtils {
 
 
     /**
-     * Reformats the input array to a length 1 array and checks that all values are >= 0.
+     * Reformats the input array to a length 1 array and checks that all values are &gt;= 0.
      * <p>
      * If the array is length 1, returns the array
      *
@@ -200,7 +200,7 @@ public class ValidationUtils {
 
 
     /**
-     * Reformats the input array to a length 2 array and checks that all values are >= 0.
+     * Reformats the input array to a length 2 array and checks that all values are &gt;= 0.
      * <p>
      * If the array is length 1, returns [a, a]
      * If the array is length 2, returns the array.
@@ -216,7 +216,7 @@ public class ValidationUtils {
 
 
     /**
-     * Reformats the input array to a length 2 array and checks that all values are >= 0.
+     * Reformats the input array to a length 2 array and checks that all values are &gt;= 0.
      * <p>
      * If the array is length 1, returns [a, a]
      * If the array is length 2, returns the array.
@@ -232,7 +232,7 @@ public class ValidationUtils {
 
 
     /**
-     * Reformats the input array to a length 2 array and checks that all values are >= 0.
+     * Reformats the input array to a length 2 array and checks that all values are &gt;= 0.
      * <p>
      * If the array is length 1, returns [a, a]
      * If the array is length 2, returns the array.
@@ -342,7 +342,7 @@ public class ValidationUtils {
     }
 
     /**
-     * Reformats the input array to a 2x2 array and checks that all values are >= 0.
+     * Reformats the input array to a 2x2 array and checks that all values are &gt;= 0.
      * <p>
      * If the array is 2x1 ([[a], [b]]), returns [[a, a], [b, b]]
      * If the array is 1x2 ([[a, b]]), returns [[a, b], [a, b]]
@@ -359,7 +359,7 @@ public class ValidationUtils {
     }
 
     /**
-     * Reformats the input array to a 2x2 array and checks that all values are >= 0.
+     * Reformats the input array to a 2x2 array and checks that all values are &gt;= 0.
      * <p>
      * If the array is 2x1 ([[a], [b]]), returns [[a, a], [b, b]]
      * If the array is 1x2 ([[a, b]]), returns [[a, b], [a, b]]
@@ -435,7 +435,7 @@ public class ValidationUtils {
     }
 
     /**
-     * Reformats the input array to a length 3 array and checks that all values >= 0.
+     * Reformats the input array to a length 3 array and checks that all values &gt;= 0.
      * <p>
      * If the array is length 1, returns [a, a, a]
      * If the array is length 3, returns the array.
@@ -449,7 +449,7 @@ public class ValidationUtils {
     }
 
     /**
-     * Reformats the input array to a length 3 array and checks that all values >= 0.
+     * Reformats the input array to a length 3 array and checks that all values &gt;= 0.
      * <p>
      * If the array is length 1, returns [a, a, a]
      * If the array is length 3, returns the array.
@@ -504,7 +504,7 @@ public class ValidationUtils {
     }
 
     /**
-     * Reformats the input array to a length 4 array and checks that all values >= 0.
+     * Reformats the input array to a length 4 array and checks that all values &gt;= 0.
      * <p>
      * If the array is length 1, returns [a, a, a, a]
      * If the array is length 2, return [a, a, b, b]
@@ -519,7 +519,7 @@ public class ValidationUtils {
     }
 
     /**
-     * Reformats the input array to a length 4 array and checks that all values >= 0.
+     * Reformats the input array to a length 4 array and checks that all values &gt;= 0.
      * <p>
      * If the array is length 1, returns [a, a, a, a]
      * If the array is length 2, return [a, a, b, b]
@@ -579,7 +579,7 @@ public class ValidationUtils {
     }
 
     /**
-     * Reformats the input array to a length 6 array and checks that all values >= 0.
+     * Reformats the input array to a length 6 array and checks that all values &gt;= 0.
      * <p>
      * If the array is length 1, returns [a, a, a, a, a, a]
      * If the array is length 3, return [a, a, b, b, c, c]
@@ -611,7 +611,7 @@ public class ValidationUtils {
     }
 
     /**
-     * Reformats the input array to a length 6 array and checks that all values >= 0.
+     * Reformats the input array to a length 6 array and checks that all values &gt;= 0.
      * <p>
      * If the array is length 1, returns [a, a, a, a, a, a]
      * If the array is length 3, return [a, a, b, b, c, c]

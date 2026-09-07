@@ -98,7 +98,7 @@ public class GradientCheckUtil {
      * Check backprop gradients for a MultiLayerNetwork.
      * @param mln MultiLayerNetwork to test. This must be initialized.
      * @param epsilon Usually on the order/ of 1e-4 or so.
-     * @param maxRelError Maximum relative error. Usually < 1e-5 or so, though maybe more for deep networks or those with nonlinear activation
+     * @param maxRelError Maximum relative error. Usually &lt; 1e-5 or so, though maybe more for deep networks or those with nonlinear activation
      * @param minAbsoluteError Minimum absolute error to cause a failure. Numerical gradients can be non-zero due to precision issues.
      *                         For example, 0.0 vs. 1e-18: relative error is 1.0, but not really a failure
      * @param print Whether to print full pass/failure details for each parameter gradient

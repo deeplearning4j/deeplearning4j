@@ -234,7 +234,7 @@ public class RecordConverter {
     }
 
     /**
-     *  Convert a collection into a `List<Writable>`, i.e. a record that can be used with other datavec methods.
+     *  Convert a collection into a {@code List<Writable>}, i.e. a record that can be used with other datavec methods.
      *  Uses a schema to decide what kind of writable to use.
      *
      * @return a record

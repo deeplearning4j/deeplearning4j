@@ -42,7 +42,7 @@ public class LongColumnCondition extends BaseColumnCondition {
      * Uses default sequence condition mode, {@link BaseColumnCondition#DEFAULT_SEQUENCE_CONDITION_MODE}
      *
      * @param columnName Column to check for the condition
-     * @param op         Operation (<, >=, !=, etc)
+     * @param op         Operation (&lt;, &gt;=, !=, etc)
      * @param value      Value to use in the condition
      */
     public LongColumnCondition(String columnName, ConditionOp op, long value) {
@@ -54,7 +54,7 @@ public class LongColumnCondition extends BaseColumnCondition {
      *
      * @param column                Column to check for the condition
      * @param sequenceConditionMode Mode for handling sequence data
-     * @param op                    Operation (<, >=, !=, etc)
+     * @param op                    Operation (&lt;, &gt;=, !=, etc)
      * @param value                 Value to use in the condition
      */
     public LongColumnCondition(String column, SequenceConditionMode sequenceConditionMode, ConditionOp op, long value) {

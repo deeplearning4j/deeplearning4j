@@ -42,7 +42,7 @@ public class IntegerColumnCondition extends BaseColumnCondition {
      * Uses default sequence condition mode, {@link BaseColumnCondition#DEFAULT_SEQUENCE_CONDITION_MODE}
      *
      * @param columnName Column to check for the condition
-     * @param op         Operation (<, >=, !=, etc)
+     * @param op         Operation (&lt;, &gt;=, !=, etc)
      * @param value      Value to use in the condition
      */
     public IntegerColumnCondition(String columnName, ConditionOp op, int value) {
@@ -54,7 +54,7 @@ public class IntegerColumnCondition extends BaseColumnCondition {
      *
      * @param column                Column to check for the condition
      * @param sequenceConditionMode Mode for handling sequence data
-     * @param op                    Operation (<, >=, !=, etc)
+     * @param op                    Operation (&lt;, &gt;=, !=, etc)
      * @param value                 Value to use in the condition
      */
     public IntegerColumnCondition(String column, SequenceConditionMode sequenceConditionMode, ConditionOp op,

@@ -53,7 +53,7 @@ public class MultiDataSetIteratorSplitter {
      *
      * @param baseIterator
      * @param totalBatches - total number of batches in underlying iterator. this value will be used to determine number of test/train batches
-     * @param ratio - this value will be used as splitter. should be between in range of 0.0 > X < 1.0. I.e. if value 0.7 is provided, then 70% of total examples will be used for training, and 30% of total examples will be used for testing
+     * @param ratio - this value will be used as splitter. It must be strictly between 0.0 and 1.0. I.e. if value 0.7 is provided, then 70% of total examples will be used for training, and 30% of total examples will be used for testing
      */
     public MultiDataSetIteratorSplitter(@NonNull MultiDataSetIterator baseIterator, long totalBatches, double ratio) {
         if (!(ratio > 0.0 && ratio < 1.0))

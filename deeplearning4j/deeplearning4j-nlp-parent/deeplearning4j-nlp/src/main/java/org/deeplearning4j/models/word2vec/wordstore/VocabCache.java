@@ -50,7 +50,7 @@ public interface VocabCache<T extends SequenceElement> extends Serializable {
 
     /**
      * Returns all of the words in the vocab
-     * @returns all the words in the vocab
+     * @return all the words in the vocab
      */
     Collection<String> words();
 

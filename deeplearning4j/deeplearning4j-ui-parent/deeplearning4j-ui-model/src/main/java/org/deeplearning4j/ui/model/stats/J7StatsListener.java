@@ -49,7 +49,7 @@ public class J7StatsListener extends BaseStatsListener {
     }
 
     /**
-     * Create a StatsListener with network information collected every n >= 1 time steps
+     * Create a StatsListener with network information collected every n &gt;= 1 time steps
      *
      * @param router            Where/how to store the calculated stats. For example, {@link InMemoryStatsStorage} or
      *                          {@link FileStatsStorage}

@@ -55,7 +55,7 @@ public class JointMultiDataSetIterator implements MultiDataSetIterator {
 
     /**
      *
-     * @param outcome   Index to get the label from. If < 0, labels from all iterators will be used to create the
+     * @param outcome   Index to get the label from. If &lt; 0, labels from all iterators will be used to create the
      *                  final MultiDataSet
      * @param iterators Underlying iterators to wrap
      */

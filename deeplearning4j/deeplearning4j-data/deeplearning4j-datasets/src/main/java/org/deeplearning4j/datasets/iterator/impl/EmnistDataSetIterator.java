@@ -223,7 +223,7 @@ public class EmnistDataSetIterator extends BaseDatasetIterator {
     }
 
     /**
-     * Get the labels as a List<String>
+     * Get the labels as a {@code List<String>}
      *
      * @return Labels
      */
@@ -256,7 +256,7 @@ public class EmnistDataSetIterator extends BaseDatasetIterator {
     }
 
     /**
-     * Get the label assignments for the given set as a List<String>
+     * Get the label assignments for the given set as a {@code List<String>}
      *
      * @param dataSet DataSet to get the label assignment for
      * @return Label assignment and given dataset

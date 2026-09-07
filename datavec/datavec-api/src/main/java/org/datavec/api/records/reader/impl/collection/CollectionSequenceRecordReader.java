@@ -43,7 +43,7 @@ public class CollectionSequenceRecordReader extends BaseRecordReader implements 
 
     /**
      *
-     * @param records    Collection of sequences. For example, List<List<List<Writable>>> where the inner  two lists
+     * @param records    Collection of sequences. For example, {@code List<List<List<Writable>>>} where the inner two lists
      *                   are a sequence, and the outer list/collection is a list of sequences
      */
     public CollectionSequenceRecordReader(Collection<? extends Collection<? extends Collection<Writable>>> records) {

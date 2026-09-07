@@ -182,7 +182,7 @@ public class WordVectorSerializer {
 
     /**
      * Set the maximum compression ratio allowed for ZIP entries.
-     * @param maxRatio Maximum ratio (must be >= 1.0)
+     * @param maxRatio Maximum ratio (must be &gt;= 1.0)
      */
     public static void setMaxCompressionRatio(double maxRatio) {
         if (maxRatio < 1.0) throw new IllegalArgumentException("Max ratio must be >= 1.0, got " + maxRatio);
@@ -2728,7 +2728,7 @@ public class WordVectorSerializer {
      * Please note: Only weights will be loaded by this method.
      *
      * @param path  path to model file
-     * @param extendedModel  if TRUE, we'll try to load HS states & Huffman tree info, if FALSE, only weights will be loaded
+     * @param extendedModel  if TRUE, we'll try to load HS states &amp; Huffman tree info, if FALSE, only weights will be loaded
      * @return
      */
     public static Word2Vec readWord2VecModel(String path, boolean extendedModel) {
@@ -2759,7 +2759,7 @@ public class WordVectorSerializer {
      * Please note: if extended data isn't available, only weights will be loaded instead.
      *
      * @param file  model file
-     * @param extendedModel  if TRUE, we'll try to load HS states & Huffman tree info, if FALSE, only weights will be loaded
+     * @param extendedModel  if TRUE, we'll try to load HS states &amp; Huffman tree info, if FALSE, only weights will be loaded
      * @return word2vec model
      */
     public static Word2Vec readWord2VecModel(File file, boolean extendedModel) {

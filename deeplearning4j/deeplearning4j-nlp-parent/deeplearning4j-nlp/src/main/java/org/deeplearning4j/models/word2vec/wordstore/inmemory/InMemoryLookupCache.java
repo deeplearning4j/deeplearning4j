@@ -89,7 +89,7 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>, Serializable 
     /**
      * Returns all of the words in the vocab
      *
-     * @returns all the words in the vocab
+     * @return all the words in the vocab
      */
     @Override
     public synchronized Collection<String> words() {

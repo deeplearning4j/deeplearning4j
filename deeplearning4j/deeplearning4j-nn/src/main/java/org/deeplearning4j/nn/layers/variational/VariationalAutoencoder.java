@@ -899,7 +899,7 @@ public class VariationalAutoencoder implements Layer {
     }
 
     /**
-     * Calculate the reconstruction probability, as described in An & Cho, 2015 - "Variational Autoencoder based
+     * Calculate the reconstruction probability, as described in An &amp; Cho, 2015 - "Variational Autoencoder based
      * Anomaly Detection using Reconstruction Probability" (Algorithm 4)<br>
      * The authors describe it as follows: "This is essentially the probability of the data being generated from a given
      * latent variable drawn from the approximate posterior distribution."<br>
