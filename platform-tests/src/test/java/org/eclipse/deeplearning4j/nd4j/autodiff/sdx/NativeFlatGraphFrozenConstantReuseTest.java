@@ -7,12 +7,14 @@
  */
 package org.eclipse.deeplearning4j.nd4j.autodiff.sdx;
 
-import com.sun.jna.Library;
-import com.sun.jna.Native;
-import com.sun.jna.Pointer;
-import com.sun.jna.StringArray;
-import com.sun.jna.ptr.IntByReference;
-import org.bytedeco.javacpp.Loader;
+import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.BytePointer;
+import org.bytedeco.javacpp.FloatPointer;
+import org.bytedeco.javacpp.LongPointer;
+import org.bytedeco.javacpp.PointerPointer;
+import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.OpaqueContext;
+import org.nd4j.nativeblas.OpaqueNDArray;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -28,9 +30,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.Locale;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * CPU numerical regression for constant values whose colored storage is transient.
  * NativePlanCompiler, unlike the Java serialized-plan route, supplies slot liveness.
  * No SameDiff execution, optimizer, intermediate requested outputs, or execution-mode
- * overrides are used. CPU scope is intentional: raw JNA host reads below are not a
+ * overrides are used. CPU scope is intentional: raw host reads below are not a
  * device synchronization API and must not be presented as CUDA/Vulkan coverage.
  */
 public class NativeFlatGraphFrozenConstantReuseTest extends BaseND4JTest {
@@ -55,52 +55,17 @@ public class NativeFlatGraphFrozenConstantReuseTest extends BaseND4JTest {
         return 60_000L;
     }
 
-    /** Existing exported C functions only; C++ bool is one byte, not JNA BOOL. */
-    public interface DspApi extends Library {
-        Pointer loadModelFromFile(String path);
-        Pointer compileModelPlan(Pointer model, StringArray outputNames, int numOutputs);
-        void freeLoadedModel(Pointer model);
-        void freeDynamicShapePlan(Pointer plan);
-        void setPlanShapesFrozen(Pointer plan, byte frozen);
-        int executeDynamicShapePlan(Pointer plan, Pointer context, Pointer stream);
-        int getPlanNumSlots(Pointer plan);
-        int getTotalPlanOutputSlots(Pointer plan);
-        int getPlanNumRequestedOutputs(Pointer plan);
-        int getPlanNumExternalInputs(Pointer plan);
-        String getPlanExternalInputName(Pointer plan, int index);
-        Pointer getLoadedModelVariable(Pointer model, String name);
-        byte getPlanIsExternalInputVariable(Pointer plan, int index);
-        String getPlanSlotOpName(Pointer plan, int slot);
-        int getPlanSlotIOCounts(Pointer plan, int slot, IntByReference inputs, IntByReference outputs);
-        Pointer getPlanSlotOutputArray(Pointer plan, int slot);
-        byte getPlanBufferColoringApplied(Pointer plan);
-        int getPlanSlotColor(Pointer plan, int slot);
-        int getPlanSlotState(Pointer plan, int slot);
-        Pointer createGraphContext(int nodeId);
-        void deleteGraphContext(Pointer context);
-        void setGraphContextInputArray(Pointer context, int index, Pointer array);
-        Pointer getOutputArrayNative(Pointer context, int index);
-        Pointer getOpaqueNDArrayShapeInfo(Pointer array);
-        Pointer getOpaqueNDArrayBuffer(Pointer array);
-    }
-
     @Test
     public void testNativeFlatGraphReusedBf16CastsRemainNumericallyLive() throws Exception {
         assumeTrue(Nd4j.getBackend().getClass().getName().toLowerCase(Locale.ROOT).contains("cpu"),
                 "CPU-native regression; run with -Dbackend.artifactId=nd4j-native");
-        // Bind exactly the library JavaCPP loaded, not an arbitrary old cache hit
-        // or a concurrently-produced build-tree .so. Input NDArray pointers cross
-        // this boundary, so both bindings must address the same library instance.
-        Nd4j.getNativeOps();
-        Set<String> libraries = new LinkedHashSet<>();
-        String libraryName = System.mapLibraryName("nd4jcpu");
-        for (String path : Loader.getLoadedLibraries().values()) {
-            if (path != null && new File(path).getName().equals(libraryName)) {
-                libraries.add(new File(path).getCanonicalPath());
-            }
-        }
-        assertEquals(1, libraries.size(), "Need one loaded CPU library, found " + libraries);
-        DspApi api = Native.load(libraries.iterator().next(), DspApi.class);
+        NativeOps api = Nd4j.getNativeOps();
+        // These existing JavaCPP methods are not exposed by the common interface.
+        // Reflect only the concrete binding so this CPU test still compiles in CUDA reactors.
+        var externalInputName = api.getClass().getMethod("getPlanExternalInputName", Pointer.class, int.class);
+        var loadedVariable = api.getClass().getMethod("getLoadedModelVariable", Pointer.class, String.class);
+        var slotIOCounts = api.getClass().getMethod("getPlanSlotIOCounts", Pointer.class, int.class,
+                int[].class, int[].class);
 
         SameDiff sd = SameDiff.create();
         SDVariable activation = sd.placeHolder("x", DataType.FLOAT, 1, WIDTH);
@@ -108,7 +73,7 @@ public class NativeFlatGraphFrozenConstantReuseTest extends BaseND4JTest {
         INDArray[] weightArrays = new INDArray[LAYERS];
         Pointer model = null;
         Pointer plan = null;
-        Pointer context = null;
+        OpaqueContext context = null;
         INDArray input = Nd4j.create(DataType.FLOAT, 1, WIDTH);
         try {
             for (int layer = 0; layer < LAYERS; layer++) {
@@ -133,7 +98,11 @@ public class NativeFlatGraphFrozenConstantReuseTest extends BaseND4JTest {
             SDZSerializer.save(sd, bundle, false, Collections.emptyMap()); // NOT saveOptimized
             model = api.loadModelFromFile(bundle.getAbsolutePath());
             assertNotNull(model, "native loadModelFromFile failed");
-            plan = api.compileModelPlan(model, new StringArray(new String[]{"output"}), 1);
+            try (BytePointer outputName = new BytePointer("output");
+                 PointerPointer<BytePointer> outputNames = new PointerPointer<>(1)) {
+                outputNames.put(0, outputName);
+                plan = api.compileModelPlan(model, (Pointer) outputNames, 1);
+            }
             assertNotNull(plan, "native FlatGraph compilation failed");
             assertEquals(1, api.getPlanNumRequestedOutputs(plan), "Only the final output may be pinned");
             assertEquals(2 * LAYERS, api.getPlanNumSlots(plan), "Casts must survive compilation");
@@ -141,12 +110,12 @@ public class NativeFlatGraphFrozenConstantReuseTest extends BaseND4JTest {
             for (int slot = 0; slot < 2 * LAYERS; slot++) {
                 assertEquals(slot % 2 == 0 ? "cast" : "matmul", api.getPlanSlotOpName(plan, slot),
                         "Expected cast/consumer interleaving at slot " + slot);
-                IntByReference inputs = new IntByReference();
-                IntByReference outputs = new IntByReference();
-                assertEquals(0, api.getPlanSlotIOCounts(plan, slot, inputs, outputs));
-                assertEquals(slot % 2 == 0 ? 1 : 2, inputs.getValue());
+                int[] inputs = new int[1];
+                int[] outputs = new int[1];
+                assertEquals(0, (int) slotIOCounts.invoke(api, plan, slot, inputs, outputs));
+                assertEquals(slot % 2 == 0 ? 1 : 2, inputs[0]);
                 // One output per op establishes op-index == output-slot-index.
-                assertEquals(1, outputs.getValue());
+                assertEquals(1, outputs[0]);
             }
 
             context = api.createGraphContext(0);
@@ -154,22 +123,22 @@ public class NativeFlatGraphFrozenConstantReuseTest extends BaseND4JTest {
             assertEquals(LAYERS + 1, api.getPlanNumExternalInputs(plan));
             int liveInput = -1;
             for (int i = 0; i < api.getPlanNumExternalInputs(plan); i++) {
-                String name = api.getPlanExternalInputName(plan, i);
+                String name = (String) externalInputName.invoke(api, plan, i);
                 if ("x".equals(name)) {
                     assertEquals(-1, liveInput, "Duplicate placeholder");
                     liveInput = i;
-                    assertNotEquals(0, api.getPlanIsExternalInputVariable(plan, i), "x must remain live");
+                    assertTrue(api.getPlanIsExternalInputVariable(plan, i), "x must remain live");
                 } else {
                     assertTrue(name != null && name.matches("w[0-2]"), "Unexpected external " + name);
-                    assertEquals(0, api.getPlanIsExternalInputVariable(plan, i), "Weights must be constant");
-                    Pointer weight = api.getLoadedModelVariable(model, name);
+                    assertFalse(api.getPlanIsExternalInputVariable(plan, i), "Weights must be constant");
+                    OpaqueNDArray weight = (OpaqueNDArray) loadedVariable.invoke(api, model, name);
                     assertNotNull(weight, "Missing model-owned " + name);
                     assertNativeShapeAndType(api, weight, WIDTH, WIDTH, DataType.BFLOAT16);
                     api.setGraphContextInputArray(context, i, weight);
                 }
             }
             assertTrue(liveInput >= 0, "Native compiler lost the live input");
-            api.setPlanShapesFrozen(plan, (byte) 1); // compile -> freeze -> functional warmup
+            api.setPlanShapesFrozen(plan, true); // compile -> freeze -> functional warmup
             for (int execution = 0; execution < 6; execution++) {
                 double[] expected = new double[WIDTH];
                 for (int col = 0; col < WIDTH; col++) {
@@ -188,10 +157,10 @@ public class NativeFlatGraphFrozenConstantReuseTest extends BaseND4JTest {
                     expected = next;
                 }
                 api.setGraphContextInputArray(context, liveInput,
-                        new Pointer(input.getOrCreateOpaqueNDArray().address()));
+                        input.getOrCreateOpaqueNDArray());
                 assertEquals(0, api.executeDynamicShapePlan(plan, context, null),
                         "Native execution " + execution + " failed");
-                assertNotEquals(0, api.getPlanBufferColoringApplied(plan),
+                assertTrue(api.getPlanBufferColoringApplied(plan),
                         "Fixture did not exercise native coloring (not a numerical pass)");
                 int color = api.getPlanSlotColor(plan, 0);
                 assertTrue(color >= 0, "First BF16->FLOAT cast was not colored");
@@ -200,21 +169,22 @@ public class NativeFlatGraphFrozenConstantReuseTest extends BaseND4JTest {
                     int castSlot = 2 * layer;
                     assertEquals(color, api.getPlanSlotColor(plan, castSlot),
                             "Cast lifetimes must share one color, layer " + layer);
-                    Pointer castArray = api.getPlanSlotOutputArray(plan, castSlot);
+                    OpaqueNDArray castArray = api.getPlanSlotOutputArray(plan, castSlot);
                     assertNativeShapeAndType(api, castArray, WIDTH, WIDTH, DataType.FLOAT);
                     Pointer buffer = api.getOpaqueNDArrayBuffer(castArray);
                     assertNotNull(buffer, "Colored cast has no backing storage");
                     if (shared == null) shared = buffer;
-                    else assertEquals(Pointer.nativeValue(shared), Pointer.nativeValue(buffer),
+                    else assertEquals(shared.address(), buffer.address(),
                             "Equal color must actually share native storage");
                 }
-                Pointer output = api.getOutputArrayNative(context, 0);
+                OpaqueNDArray output = api.getOutputArrayNative(context, 0);
                 assertNativeShapeAndType(api, output, 1, WIDTH, DataType.FLOAT);
                 Pointer data = api.getOpaqueNDArrayBuffer(output);
                 assertNotNull(data);
                 // CPU output is synchronous. Read only the requested output; merely
                 // inspect cast metadata/addresses without wrapping or retaining them.
-                float[] actual = data.getFloatArray(0, WIDTH);
+                float[] actual = new float[WIDTH];
+                new FloatPointer(data).get(actual);
                 for (int col = 0; col < WIDTH; col++) {
                     assertEquals(expected[col], actual[col], 1e-5,
                             "execution=" + execution + ", col=" + col + ", castColor=" + color);
@@ -241,13 +211,14 @@ public class NativeFlatGraphFrozenConstantReuseTest extends BaseND4JTest {
         }
     }
 
-    private static void assertNativeShapeAndType(DspApi api, Pointer array, long rows, long cols,
+    private static void assertNativeShapeAndType(NativeOps api, OpaqueNDArray array, long rows, long cols,
                                                  DataType dtype) {
         assertNotNull(array, "Missing native array");
-        Pointer info = api.getOpaqueNDArrayShapeInfo(array);
+        LongPointer info = api.getOpaqueNDArrayShapeInfo(array);
         assertNotNull(info);
-        assertEquals(2L, info.getLong(0), "Expected rank two");
-        long[] shapeInfo = info.getLongArray(0, 8); // rank * 2 + 4
+        assertEquals(2L, info.get(0), "Expected rank two");
+        long[] shapeInfo = new long[8]; // rank * 2 + 4
+        info.get(shapeInfo);
         assertArrayEquals(new long[]{rows, cols}, Shape.shape(shapeInfo));
         assertEquals(dtype, ArrayOptionsHelper.dataType(Shape.extras(shapeInfo)));
         if (rows == 1) assertEquals(1L, Shape.stride(shapeInfo)[1], "Output must be contiguous");
