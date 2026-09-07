@@ -1937,6 +1937,7 @@ fun NN() = Namespace("NN") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
         javaOpClass = "DualRoPE"
         val input = Input(NUMERIC, "input") { description = "Input tensor [batch, seqLen, numHeads, headDim] - headDim must be even" }
+        val position = Input(INT, "position") { description = "Optional scalar INT64 base position for dynamic KV cache continuation"; defaultValue = null }
         val attentionType = Arg(INT, "attentionType") { description = "Attention type (0=local/sliding-window, 1=global/full-context)"; defaultValue = 0 }
         val positionOffset = Arg(INT, "positionOffset") { description = "Position offset for KV cache continuation"; defaultValue = 0 }
         val localFreqBase = Arg(FLOATING_POINT, "localFreqBase") { description = "RoPE frequency base for local/sliding-window layers"; defaultValue = 10000.0 }
@@ -1946,7 +1947,8 @@ fun NN() = Namespace("NN") {
 
         Output(NUMERIC, "output") { description = "Output with rotary embeddings applied [batch, seqLen, numHeads, headDim]" }
 
-        AllParamSignature()
+        Signature(input, attentionType, positionOffset, localFreqBase, globalFreqBase, localFreqScale, globalFreqScale)
+        Signature(input, position, attentionType, localFreqBase, globalFreqBase, localFreqScale, globalFreqScale)
         Signature(input)
         Signature(input, attentionType)
         Signature(input, attentionType, positionOffset)

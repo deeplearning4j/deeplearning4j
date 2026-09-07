@@ -78,28 +78,56 @@ public class DualRoPE extends DynamicCustomOp {
     public DualRoPE(INDArray input, int attentionType, int positionOffset,
                     double localFreqBase, double globalFreqBase,
                     double localFreqScale, double globalFreqScale) {
-        super(new INDArray[]{input}, null);
+        this(input, null, attentionType, positionOffset, localFreqBase, globalFreqBase,
+                localFreqScale, globalFreqScale);
+    }
+
+    /**
+     * Canonical eager constructor used by the generated API. A non-null position
+     * supplies the scalar INT64 base position; otherwise positionOffset is used.
+     */
+    public DualRoPE(INDArray input, INDArray position, int attentionType, int positionOffset,
+                    double localFreqBase, double globalFreqBase,
+                    double localFreqScale, double globalFreqScale) {
+        super(position == null ? new INDArray[]{input} : new INDArray[]{input, position}, null);
         this.attentionType = attentionType;
-        this.positionOffset = positionOffset;
+        this.positionOffset = position == null ? positionOffset : 0;
         this.localFreqBase = localFreqBase;
         this.globalFreqBase = globalFreqBase;
         this.localFreqScale = localFreqScale;
         this.globalFreqScale = globalFreqScale;
-        addIArgument(attentionType, positionOffset);
+        addIArgument(attentionType);
+        if (position == null) {
+            addIArgument(positionOffset);
+        }
         addTArgument(localFreqBase, globalFreqBase, localFreqScale, globalFreqScale);
     }
 
     public DualRoPE(SameDiff sd, SDVariable input, int attentionType, int positionOffset,
                     double localFreqBase, double globalFreqBase,
                     double localFreqScale, double globalFreqScale) {
-        super(null, sd, new SDVariable[]{input}, false);
+        this(sd, input, null, attentionType, positionOffset, localFreqBase, globalFreqBase,
+                localFreqScale, globalFreqScale);
+    }
+
+    /**
+     * Canonical SameDiff constructor used by the generated API. A non-null position
+     * supplies the scalar INT64 base position; otherwise positionOffset is used.
+     */
+    public DualRoPE(SameDiff sd, SDVariable input, SDVariable position, int attentionType, int positionOffset,
+                    double localFreqBase, double globalFreqBase,
+                    double localFreqScale, double globalFreqScale) {
+        super(null, sd, position == null ? new SDVariable[]{input} : new SDVariable[]{input, position}, false);
         this.attentionType = attentionType;
-        this.positionOffset = positionOffset;
+        this.positionOffset = position == null ? positionOffset : 0;
         this.localFreqBase = localFreqBase;
         this.globalFreqBase = globalFreqBase;
         this.localFreqScale = localFreqScale;
         this.globalFreqScale = globalFreqScale;
-        addIArgument(attentionType, positionOffset);
+        addIArgument(attentionType);
+        if (position == null) {
+            addIArgument(positionOffset);
+        }
         addTArgument(localFreqBase, globalFreqBase, localFreqScale, globalFreqScale);
     }
 
@@ -112,14 +140,8 @@ public class DualRoPE extends DynamicCustomOp {
     public DualRoPE(SameDiff sd, SDVariable input, SDVariable position, int attentionType,
                     double localFreqBase, double globalFreqBase,
                     double localFreqScale, double globalFreqScale) {
-        super(null, sd, new SDVariable[]{input, position}, false);
-        this.attentionType = attentionType;
-        this.localFreqBase = localFreqBase;
-        this.globalFreqBase = globalFreqBase;
-        this.localFreqScale = localFreqScale;
-        this.globalFreqScale = globalFreqScale;
-        addIArgument(attentionType);
-        addTArgument(localFreqBase, globalFreqBase, localFreqScale, globalFreqScale);
+        this(sd, input, position, attentionType, 0, localFreqBase, globalFreqBase,
+                localFreqScale, globalFreqScale);
     }
 
     /**
