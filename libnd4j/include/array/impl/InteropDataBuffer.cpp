@@ -185,12 +185,14 @@ InteropDataBuffer::InteropDataBuffer(size_t lenInBytes, DataType dtype, bool all
 
   _cachedLenInBytes = lenInBytes;
 
-  // FIX: Always create a DataBuffer, even for zero-length arrays.
-  // External data buffers (via dbCreateExternalDataBuffer) need a DataBuffer
-  // to manage external pointers set via setPrimary/setSpecial.
-  // The DataBuffer is created with lenInBytes=0 to avoid DEVICE allocation,
-  // and the actual length will be set by setPrimary/setSpecial.
-  DataBuffer* newBuffer = new DataBuffer(lenInBytes, dtype, nullptr, allocateBoth);
+  // Empty interop buffers are pointer shells, not scalars. The allocating
+  // DataBuffer constructor treats zero bytes as one dtype-width scalar; that
+  // allocation would be orphaned when an external wrapper drops ownership and
+  // installs its borrowed pointers. Use the existing nonallocating constructor
+  // for shells, leaving the native DataBuffer scalar contract unchanged.
+  DataBuffer* newBuffer = lenInBytes == 0
+      ? new DataBuffer(nullptr, nullptr, 0, dtype, false, false, nullptr)
+      : new DataBuffer(lenInBytes, dtype, nullptr, allocateBoth);
   _dataBuffer.store(newBuffer, std::memory_order_release);
   this->_dataType = dtype;
   this->markOwner(true);

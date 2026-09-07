@@ -1516,7 +1516,8 @@ static sdx_status_t runInternal(
     const sdx_tensor_view_t* outputs,
     int32_t num_outputs,
     const sdx_run_options_t* options,
-    bool copy_to_caller_outputs) {
+    bool copy_to_caller_outputs,
+    const std::vector<sd::NDArray*>* ownedInputs = nullptr) {
   if (context == nullptr || num_inputs < 0 ||
       (num_inputs > 0 && inputs == nullptr) ||
       (copy_to_caller_outputs &&
@@ -1725,6 +1726,30 @@ static sdx_status_t runInternal(
   bool anyInputChanged = false;
   for (int i = 0; i < context->num_inputs; i++) {
     const size_t idx = static_cast<size_t>(i);
+    if (ownedInputs != nullptr) {
+      // The session owns these arrays until after context destruction. Borrow the
+      // DataBuffer, not just its host address: a second DataBuffer would have
+      // independent host/device freshness counters and retain stale token data.
+      auto* source = (*ownedInputs)[idx];
+      auto* cached = context->input_wrappers[idx].get();
+      if (cached != nullptr && cached->dataBuffer() == source->dataBuffer() &&
+          cached->offset() == source->offset() &&
+          ::shape::equalsStrict(cached->shapeInfo(), source->shapeInfo())) {
+        continue;
+      }
+      try {
+        context->input_wrappers[idx] = std::make_unique<sd::NDArray>(
+            source->dataBuffer(), source->shapeInfo(), source->getContext(), source->offset());
+      } catch (const std::exception& e) {
+        setContextError(context, std::string("runOwnedArrays failed to bind input: ") + e.what());
+        return SDX_STATUS_EXECUTION_FAILED;
+      }
+      // A later raw C-ABI call must rebuild its contiguous wrapper even if
+      // its host address/dimensions match this potentially strided owned view.
+      context->cached_input_meta[idx] = {};
+      anyInputChanged = true;
+      continue;
+    }
     if (context->input_wrappers[idx] != nullptr && context->cached_input_meta[idx].matches(inputs[i])) {
       continue;  // Cache hit — skip allocation
     }
@@ -2401,11 +2426,11 @@ sdx_status_t runOwnedArrays(
     }
   }
 
-  return sdxRunAllocating(
+  return runInternal(
       context,
       views.empty() ? nullptr : views.data(),
       static_cast<int32_t>(views.size()),
-      nullptr);
+      nullptr, 0, nullptr, false, &publicInputs);
 }
 
 sdx_status_t precompileBoundContext(sdx_context_t* context) {

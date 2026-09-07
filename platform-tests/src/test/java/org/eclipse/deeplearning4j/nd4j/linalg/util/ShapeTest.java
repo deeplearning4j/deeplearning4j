@@ -28,10 +28,14 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+
+import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -41,6 +45,50 @@ import static org.junit.jupiter.api.Assertions.*;
 @Tag(TagNames.NDARRAY_INDEXING)
 @NativeTag
 public class ShapeTest extends BaseNd4jTestWithBackends {
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testDefaultStridesSingletonCOrder(Nd4jBackend backend) {
+        assertDefaultStridesWithSingletons('c');
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testDefaultStridesSingletonFOrder(Nd4jBackend backend) {
+        assertDefaultStridesWithSingletons('f');
+    }
+
+    private void assertDefaultStridesWithSingletons(char order) {
+        long[][] shapes = {{1, 1, 1, 640}, {640, 1, 1, 1}, {2, 1, 3},
+                {2, 3, 1}, {1, 2, 3}, {1, 1, 1}, {2, 3}, {1, 6}, {6, 1}, {6}, {}};
+        for (long[] shape : shapes) {
+            try (INDArray array = Nd4j.createUninitialized(
+                    DataType.FLOAT, shape, order)) {
+                assertTrue(Shape.hasDefaultStridesForShape(array),
+                        () -> "Packed " + order + " shape=" + Arrays.toString(shape)
+                                + " strides=" + Arrays.toString(array.stride()));
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testDefaultStridesRejectSteppedViews(Nd4jBackend backend) {
+        for (char order : new char[]{'c', 'f'}) {
+            try (INDArray parent = Nd4j.createUninitialized(
+                    DataType.FLOAT, new long[]{4, 6}, order)) {
+                INDArray stepped = parent.get(
+                        NDArrayIndex.interval(0, 2, 4),
+                        NDArrayIndex.interval(0, 2, 6));
+                assertFalse(Shape.hasDefaultStridesForShape(stepped),
+                        "Stepped storage must not be accepted as packed: " + order);
+                // This predicate describes strides, not ownership or base offset.
+                INDArray offset = order == 'c' ? parent.getRow(1) : parent.getColumn(1);
+                assertTrue(offset.offset() > 0);
+                assertTrue(Shape.hasDefaultStridesForShape(offset));
+            }
+        }
+    }
 
 
 

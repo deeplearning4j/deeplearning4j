@@ -3205,8 +3205,11 @@ DspStagingSyncResult NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
                     cudaErrorMemoryAllocation, "staging_buffer_allocation_injected");
       }
       try {
-        staging = new NDArray(ext->ordering(), *ext->getShapeAsVector(),
-                              ext->dataType(), LaunchContext::defaultContext());
+        // Copy/assign below initializes every element on cudaStr. A constructor
+        // memset would run on the context stream after our cross-stream barrier
+        // and could race that write. Materialize dense strides without zeroing.
+        staging = new NDArray(ext->shapeInfo(), ext->dataType(), false,
+                              LaunchContext::defaultContext(), false);
       } catch (const std::bad_alloc&) {
         return fail(DspStagingSyncStatus::ALLOCATION_FAILED,
                     cudaErrorMemoryAllocation, "staging_buffer_allocation");

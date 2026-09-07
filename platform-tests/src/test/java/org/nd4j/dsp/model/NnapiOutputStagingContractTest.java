@@ -15,6 +15,48 @@ import org.junit.jupiter.api.Test;
 class NnapiOutputStagingContractTest {
 
     @Test
+    void ownedGenerationInputsRetainTheirBufferCoherenceAndLayout() throws Exception {
+        Path root = Path.of("").toAbsolutePath().normalize().resolve("..").normalize();
+        String runtime = Files.readString(root.resolve(
+                "libnd4j/include/legacy/impl/DspRuntimeC.cpp"));
+        int owned = runtime.indexOf("sdx_status_t runOwnedArrays(");
+        int next = runtime.indexOf("sdx_status_t precompileBoundContext(", owned);
+        String entry = runtime.substring(owned, next);
+        assertTrue(entry.contains("return runInternal("));
+        assertTrue(entry.contains("false, &publicInputs)"),
+                "Owned inputs must not round-trip through the raw-host C ABI");
+        assertTrue(runtime.contains("cached->dataBuffer() == source->dataBuffer()"));
+        assertTrue(runtime.contains("cached->offset() == source->offset()"));
+        assertTrue(runtime.contains("context->cached_input_meta[idx] = {};"),
+                "A borrowed strided view must not satisfy a later contiguous raw-view cache hit");
+        assertTrue(runtime.contains("equalsStrict(cached->shapeInfo(), source->shapeInfo())"));
+        assertTrue(runtime.contains(
+                "source->dataBuffer(), source->shapeInfo(), source->getContext(), source->offset()"),
+                "Borrow the owner buffer with its complete view layout and freshness state");
+    }
+
+    @Test
+    void fixedContextCapacityNeverExpandsGenerationOrContinuationBudget() throws Exception {
+        Path root = Path.of("").toAbsolutePath().normalize().resolve("..").normalize();
+        String generation = Files.readString(root.resolve(
+                "libnd4j/include/legacy/impl/SdxGenerationSession.cpp"));
+        int generate = generation.indexOf("SDX_API sdx_status_t sdxGenerationGenerate(");
+        int continuation = generation.indexOf("SDX_API sdx_status_t sdxGenerationContinue(");
+        assertTrue(generate >= 0 && continuation > generate);
+        String clamp = "policy.maxNewTokens = std::min(policy.maxNewTokens, remainingContext);";
+        for (String entry : new String[] {
+                generation.substring(generate, continuation), generation.substring(continuation)}) {
+            int budget = entry.indexOf(clamp);
+            assertTrue(budget >= 0 && budget < entry.indexOf("validateCall("),
+                    "Generate and Continue must clamp the request before output-capacity validation");
+        }
+        assertTrue(!generation.contains("generateToContextLimit"),
+                "A fixed plan must not silently expand a 16-token request to the full context");
+        assertTrue(generation.contains("policy.maxNewTokens - *count"),
+                "Decode must subtract the first token already emitted by prefill");
+    }
+
+    @Test
     void deferredNnapiCompilationCannotReturnToHostWarmupAfterReplayStarts()
             throws Exception {
         Path root = Path.of("").toAbsolutePath().normalize().resolve("..").normalize();
@@ -197,7 +239,7 @@ class NnapiOutputStagingContractTest {
                         && generation.contains("resetFixedExecutionState(session, &error)")
                         && generation.contains("droppedPromptTokens")
                         && generation.contains("effectivePrompt =")
-                        && generation.contains("generateToContextLimit")
+                        && !generation.contains("generateToContextLimit")
                         && generation.contains("modelVariableShape(")
                         && generation.contains("FIXED_PLAN_KV_SHAPES_DERIVED"),
                 "Load, prompt ingestion, rolling-window generation, and reset must reuse one REPLAYING plan");

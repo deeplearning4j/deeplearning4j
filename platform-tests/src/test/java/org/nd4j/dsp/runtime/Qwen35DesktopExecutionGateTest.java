@@ -105,7 +105,8 @@ class Qwen35DesktopExecutionGateTest {
         Path bundle = Paths.get(System.getProperty(BUNDLE_PROPERTY, defaultBundle))
                 .toAbsolutePath().normalize();
         Path model = bundle.resolve("model.sdz");
-        Path generationConfig = bundle.resolve("text-generation.json");
+        Path generationConfig = bundle.resolve(System.getProperty(
+                "sdx.qwen.generationConfig", "text-generation.json"));
         Path manifest = bundle.resolve("manifest.json");
         Path tokenizerPath = Paths.get(System.getProperty(
                 TOKENIZER_PROPERTY,
@@ -136,13 +137,18 @@ class Qwen35DesktopExecutionGateTest {
             }
         }
 
+        // A captured mobile bundle may declare a large model maximum while the
+        // application uses a smaller session. Preserve its metadata and compare
+        // with the same explicit capacity instead of allocating the model maximum.
+        int contextCapacity = Integer.getInteger("sdx.qwen.contextCapacity", 0);
+        assertTrue(contextCapacity >= 0, "Context capacity must be non-negative");
         String modelSource = gguf != null
                 ? gguf.getFileName().toString()
                 : bundle.getFileName().toString() + "/model.sdz";
         try (SdxRuntime runtime = SdxRuntime.create();
              SdxRuntime.SdxModel loaded = runtime.loadModel(
                      bundle.toString(), desktopCpuReplayOptions());
-             SdxTextSession session = loaded.createTextSession();
+             SdxTextSession session = loaded.createTextSession(contextCapacity);
              HuggingFaceTokenizer tokenizer =
                      HuggingFaceTokenizer.fromFile(tokenizerPath.toFile())) {
             boolean androidSmokePrompt = Boolean.getBoolean(ANDROID_SMOKE_PROMPT_PROPERTY);

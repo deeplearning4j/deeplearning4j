@@ -980,6 +980,7 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             DynamicShapePlan plan = executor.getCurrentPlan();
             Map<String, INDArray> inputs = Map.of("mutableGdn", gdnView, "mutableKv", kvView);
             redispatchForCurrentShapes(executor, inputs, true);
+            long stridedHandle = executor.getNativePlanHandle().address();
             for (int device = 0; device < 2; device++) Nd4j.getEnvironment().setDeviceLimit(device,
                     Nd4j.getEnvironment().getDeviceCounter(device) + 64L * 1024 * 1024);
 
@@ -987,7 +988,23 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                 boolean afterBinding = attempt == 2;
                 boolean existingLease = attempt == 3;
                 if (existingLease) {
-                    for (int i = 0; i < 6; i++) runMutableReplicaInputs(sd, gdnView, kvView, 1.0 + i * 0.125);
+                    // Match the injection boundary: outputDirect materializes these views,
+                    // selecting a contiguous lease instead of the raw strided lease.
+                    for (int i = 0; i < 6; i++) {
+                        try {
+                            runMutableReplicaInputs(executor, gdnView, kvView, 1.0 + i * 0.125);
+                        } catch (AssertionError failure) {
+                            try {
+                                System.err.println("MUTABLE_FAILURE phase=existing-lease-warmup");
+                                snapshotMutableKvFailure(sd, plan, kvView, i);
+                            } catch (Exception | AssertionError diagnosticFailure) {
+                                failure.addSuppressed(diagnosticFailure);
+                            }
+                            throw failure;
+                        }
+                        assertEquals(stridedHandle, executor.getNativePlanHandle().address(),
+                                "warm-up must establish the same strided lease used by failure injection");
+                    }
                     DspPlanAssertions.assertPhaseReached(sd, PlanPhase.SHAPES_FROZEN, "retry before replay failure");
                     assertTrue(DspPlanAssertions.getTotalGraphReplays(sd) > 0);
                 }
@@ -1019,16 +1036,11 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                 long before = beforeDevices[0] + beforeDevices[1];
                 System.err.println("MUTABLE_FAILURE_ACCOUNTING before attempt=" + attempt
                         + " devices=" + Arrays.toString(beforeDevices));
-                String oldAllocationTrace = System.getProperty("nd4j.dsp.traceEightByteAllocations");
-                RuntimeException failure;
-                try {
-                    System.setProperty("nd4j.dsp.traceEightByteAllocations", "true");
-                    failure = assertThrows(RuntimeException.class, () -> executeNative(executor, plan, failing));
-                } finally {
-                    if (oldAllocationTrace == null) System.clearProperty("nd4j.dsp.traceEightByteAllocations");
-                    else System.setProperty("nd4j.dsp.traceEightByteAllocations", oldAllocationTrace);
-                }
+                RuntimeException failure = assertThrows(RuntimeException.class,
+                        () -> executeNative(executor, plan, failing));
                 assertSame(injected, failure, "cleanup replaced the original execution error");
+                assertEquals(stridedHandle, executor.getNativePlanHandle().address(),
+                        "failure injection must not switch shape leases");
                 assertEquals(0, failure.getSuppressed().length, "cleanup itself failed");
                 assertTrue(failedAllocations.size() >= (existingLease ? 1 : afterBinding ? 4 : 2),
                         "must exercise packed sources and new owned destinations at the requested failure boundary");
@@ -1036,7 +1048,8 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                         "failed call retained an owned copy until later execution/teardown");
                 assertTrue(packed.isEmpty(), "packed source cleanup must finish before returning the failure");
                 if (existingLease) {
-                    Map<String, INDArray> current = mutableReplicaCaches(executor).get(executor.getNativePlanHandle().address());
+                    Map<String, INDArray> current = mutableReplicaCaches(executor).get(stridedHandle);
+                    assertNotNull(current, "failure must retain the established strided lease's replicas");
                     for (Map.Entry<String, INDArray> entry : established.entrySet()) {
                         assertSame(entry.getValue(), current.get(entry.getKey()));
                         assertTrue(DynamicShapePlanExecutor.isArrayLive(entry.getValue()),
@@ -1057,8 +1070,22 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                 assertTrue(DynamicShapePlanExecutor.isArrayLive(gdnView));
                 assertTrue(DynamicShapePlanExecutor.isArrayLive(kvView));
             }
-            // Same executor, same shape, same caps: no reset/recompile/GC recovery.
-            for (int i = 0; i < 6; i++) runMutableReplicaInputs(sd, gdnView, kvView, 1.0 + i * 0.125);
+            // Same executor, same strided lease, same caps: no reset/recompile/GC recovery.
+            for (int i = 0; i < 6; i++) {
+                try {
+                    runMutableReplicaInputs(executor, gdnView, kvView, 1.0 + i * 0.125);
+                } catch (AssertionError failure) {
+                    try {
+                        System.err.println("MUTABLE_FAILURE phase=post-injection-retry");
+                        snapshotMutableKvFailure(sd, plan, kvView, i);
+                    } catch (Exception | AssertionError diagnosticFailure) {
+                        failure.addSuppressed(diagnosticFailure);
+                    }
+                    throw failure;
+                }
+                assertEquals(stridedHandle, executor.getNativePlanHandle().address(),
+                        "retry must execute the failed lease, not a normalized replacement");
+            }
             DspPlanAssertions.assertPhaseReached(sd, PlanPhase.SHAPES_FROZEN, "retry must reach frozen execution");
             assertTrue(DspPlanAssertions.getTotalGraphReplays(sd) > 0);
             DspPlanAssertions.assertNoCaptureFailures(sd, "mutable failure/retry");
@@ -1094,12 +1121,22 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
             Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
             sd = SameDiff.create();
-            configureMutableReplicaGraph(sd, 262144);
+            configureOutputReadbackGraph(sd, 262144);
             gdn = Nd4j.create(DataType.FLOAT, 1, 262144);
             kv = Nd4j.create(DataType.HALF, 1, 262144);
             for (boolean fresh : new boolean[]{false, true}) {
-                for (int i = 0; i < 6; i++) runMutableReplicaInputs(sd, gdn, kv, 0.125 * i);
+                for (int i = 0; i < 6; i++) {
+                    try {
+                        runMutableReplicaInputs(sd, gdn, kv, 0.125 * i);
+                    } catch (AssertionError failure) {
+                        snapshotMutableKvFailure(sd, sd.getOrCreateSession()
+                                .getDynamicShapePlanExecutor().getCurrentPlan(), kv, i);
+                        throw failure;
+                    }
+                }
                 DynamicShapePlanExecutor executor = sd.getOrCreateSession().getDynamicShapePlanExecutor();
+                assertTrue(mutableReplicaCaches(executor).isEmpty(),
+                        "output-only readback fixture must not need mutable input replicas");
                 if (fresh) closeZeroCopyOutputCache(executor);
                 List<String> names = cachedRequestedOutputNames(executor);
                 assertNotNull(names);
@@ -1115,7 +1152,7 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                             Set<Integer> pending = outputReadbackDevices(executor);
                             assertEquals(Set.of(0), pending);
                             Set<Integer> migrations = migrationCopyDevices(executor);
-                            assertTrue(migrations.isEmpty(), "readback completion must not rely on input migration");
+                            assertTrue(migrations.isEmpty(), "readback completion must not rely on input migration: " + migrations);
                             abandoned.addAll(retired);
                             throw injected;
                         }
@@ -1160,6 +1197,23 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         }
     }
 
+    /** Keep real two-device execution without Java mutable-input migration masking readback cleanup. */
+    private static void configureOutputReadbackGraph(SameDiff sd, int width) {
+        SDVariable gdn = sd.placeHolder("mutableGdn", DataType.FLOAT, -1, width);
+        SDVariable kv = sd.placeHolder("mutableKv", DataType.HALF, -1, width);
+        gdn.add("gdnPrimary", gdn).add("gdnOut", 1.0);
+        kv.add("kvPrimary", kv).add("kvOut", 1.0);
+        DynamicShapePlan plan = sd.compileDynamicShapePlan("gdnOut", "kvOut");
+        plan.assignDevices(Map.of(0, 1L, 1, 1L));
+        for (var slot : plan.getSlots()) {
+            boolean consumesInput = Arrays.asList(slot.getOutputVarNames()).contains("gdnPrimary")
+                    || Arrays.asList(slot.getOutputVarNames()).contains("kvPrimary");
+            // External inputs have one consumer device; only intermediates cross back to GPU0.
+            slot.setTargetDeviceId(consumesInput ? 1 : 0);
+        }
+        sd.compileNativeDynamicShapePlan("gdnOut", "kvOut");
+    }
+
     private static void configureMutableReplicaGraph(SameDiff sd, int width) {
         SDVariable gdn = sd.placeHolder("mutableGdn", DataType.FLOAT, -1, width);
         SDVariable kv = sd.placeHolder("mutableKv", DataType.HALF, -1, width);
@@ -1185,6 +1239,19 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         assertMutableMigrationValues(outputs.get("kvOut"), kv.shape(), DataType.HALF, 2 * value + 2, 0);
     }
 
+    /** Exercise the executor's packed-view migration, without session-side materialization. */
+    private static void runMutableReplicaInputs(DynamicShapePlanExecutor executor,
+                                                INDArray gdn, INDArray kv, double value) {
+        gdn.assign(value);
+        kv.assign(value + 0.5);
+        gdn.putScalar(new long[]{gdn.size(0) - 1, gdn.size(1) - 1}, value + 0.25);
+        kv.putScalar(new long[]{kv.size(0) - 1, kv.size(1) - 1}, value + 0.75);
+        Map<String, INDArray> outputs = executeNative(executor, executor.getCurrentPlan(),
+                Map.of("mutableGdn", gdn, "mutableKv", kv));
+        assertMutableMigrationValues(outputs.get("gdnOut"), gdn.shape(), DataType.FLOAT, 2 * value + 1, 0);
+        assertMutableMigrationValues(outputs.get("kvOut"), kv.shape(), DataType.HALF, 2 * value + 2, 0);
+    }
+
     private static long logicalDeviceBytes() {
         return Nd4j.getEnvironment().getDeviceCounter(0) + Nd4j.getEnvironment().getDeviceCounter(1);
     }
@@ -1197,8 +1264,9 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         int index = sd.dsp().extInputIndex("mutableKv");
         // This address was recorded during execute; querying it does not dereference
         // or migrate a native array. Do not dereference it after the call either.
-        log.error("MUTABLE_FAILURE iteration={} extIndex={} execute-recorded-address={}",
-                iteration, index, Long.toHexString(ops.getPlanLastExternalInputAddress(handle, index)));
+        // Keep failure evidence visible even with the test runtime's NOP SLF4J binding.
+        System.err.println("MUTABLE_FAILURE iteration=" + iteration + " extIndex=" + index
+                + " execute-recorded-address=" + Long.toHexString(ops.getPlanLastExternalInputAddress(handle, index)));
         for (int slot = 0; slot < plan.getSlots().length; slot++) {
             String[] names = plan.getSlots()[slot].getOutputVarNames();
             if (Arrays.asList(names).contains("kvPrimary") || Arrays.asList(names).contains("kvOut")) {
@@ -1219,7 +1287,7 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
 
     private static void logMutableSnapshot(int iteration, String label, INDArray snapshot) {
         if (snapshot == null) {
-            log.error("MUTABLE_FAILURE iteration={} {}=null", iteration, label);
+            System.err.println("MUTABLE_FAILURE iteration=" + iteration + " " + label + "=null");
             return;
         }
         if (snapshot.isView()) {
@@ -1231,9 +1299,10 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             return;
         }
         float[] values = snapshot.data().asFloat();
-        log.error("MUTABLE_FAILURE iteration={} {} dtype={} shape={} first={} middle={} last={}",
-                iteration, label, snapshot.dataType(), Arrays.toString(snapshot.shape()),
-                values[0], values[values.length / 2], values[values.length - 1]);
+        System.err.println("MUTABLE_FAILURE iteration=" + iteration + " " + label
+                + " dtype=" + snapshot.dataType() + " shape=" + Arrays.toString(snapshot.shape())
+                + " first=" + values[0] + " middle=" + values[values.length / 2]
+                + " last=" + values[values.length - 1]);
     }
 
     private static void assertMutableMigrationValues(INDArray output, long[] shape, DataType dtype,

@@ -1434,12 +1434,13 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
           slotIdx, targetDevice, srcLen, freeBytes, poolReusable, totalBytes);
     }
 
-    // Create new array on target device with same shape and data type
-    std::vector<LongType> shapeVec(*srcArr->getShapeAsVector());
+    // The transfer fully overwrites a dense destination. Do not enqueue a
+    // constructor memset on the context stream: the non-P2P copy below need
+    // not use that stream, so a late zero-fill could overwrite the fresh data.
     NDArray* copy = nullptr;
     try {
-      copy = new NDArray(srcArr->ordering(), shapeVec, srcArr->dataType(),
-                         LaunchContext::defaultContext());
+      copy = new NDArray(srcArr->shapeInfo(), srcArr->dataType(), false,
+                         LaunchContext::defaultContext(), false);
     } catch (...) {
       DSP_DIAG(MEMORY,
                "migrateSlotInputsToTargetDevice: destination allocation threw slot=%d "
@@ -1779,7 +1780,9 @@ NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int s
     // detached delivery copies, never captured producer buffers or aliases.
     delete copy;
     copy = nullptr;
-    copy = new NDArray(const_cast<LongType*>(sourceForCopy->shapeInfo()),
+    // Use the explicit-dtype overload: the convenience overload currently
+    // drops nullify. Delivery is another full overwrite, not a zeroed tensor.
+    copy = new NDArray(sourceForCopy->shapeInfo(), sourceForCopy->dataType(),
                        /*copyStrides=*/true, LaunchContext::defaultContext(),
                        /*nullify=*/false);
   }

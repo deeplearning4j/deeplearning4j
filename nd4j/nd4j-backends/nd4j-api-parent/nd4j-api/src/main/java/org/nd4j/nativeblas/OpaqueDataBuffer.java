@@ -416,11 +416,6 @@ public class OpaqueDataBuffer extends Pointer {
                 try {
                     // try to allocate data buffer
                     buffer = ops.allocateDataBuffer(numElements, dataType.toInt(), allocateBoth);
-                    if (bytes == 8 && Boolean.getBoolean("nd4j.dsp.traceEightByteAllocations")) {
-                        log.warn("MUTABLE_ALLOCATION bytes={} elements={} dtype={} device={} buffer={}",
-                                bytes, numElements, dataType, selectedDevice,
-                                buffer == null ? 0L : buffer.address(), new Exception("allocation owner"));
-                    }
 
                     // Check if allocation succeeded
                     if(buffer != null && !buffer.isNull()) {
@@ -553,11 +548,6 @@ public class OpaqueDataBuffer extends Pointer {
                 try {
                     // try to allocate data buffer
                     buffer = ops.allocateDataBuffer(numElements, dataType.toInt(), allocateBoth);
-                    if (bytes == 8 && Boolean.getBoolean("nd4j.dsp.traceEightByteAllocations")) {
-                        log.warn("MUTABLE_ALLOCATION bytes={} elements={} dtype={} device={} buffer={}",
-                                bytes, numElements, dataType, selectedDevice,
-                                buffer == null ? 0L : buffer.address(), new Exception("allocation owner"));
-                    }
 
                     // Check if allocation succeeded
                     if(buffer != null && !buffer.isNull()) {

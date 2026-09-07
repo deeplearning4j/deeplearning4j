@@ -689,7 +689,6 @@ struct sdx_generation_session {
   int32_t promptTokenCount = 0;
   int32_t cachePosition = 0;
   int32_t activeContextCapacity = 0;
-  bool generateToContextLimit = false;
   LongType lastToken = -1;
   int32_t totalGenerated = 0;
   std::vector<LongType> history;
@@ -1778,7 +1777,6 @@ SDX_API sdx_status_t sdxCreateGenerationSession(
       requestedCapacity > 0
           ? requestedCapacity
           : session->metadata.maxPrefillLength);
-  session->generateToContextLimit = requestedCapacity > 0;
   if (session->activeContextCapacity < 2) {
     sd::dsp::runtime::detail::setModelError(
         model, "fixed generation context capacity must be at least 2");
@@ -1865,9 +1863,8 @@ SDX_API sdx_status_t sdxGenerationGenerate(
       promptTokenIds + droppedPromptTokens;
   const int32_t remainingContext =
       session->activeContextCapacity - effectivePromptCount;
-  policy.maxNewTokens = session->generateToContextLimit
-                            ? remainingContext
-                            : std::min(policy.maxNewTokens, remainingContext);
+  // Physical buffer capacity is a ceiling, not a replacement for the request budget.
+  policy.maxNewTokens = std::min(policy.maxNewTokens, remainingContext);
   policy.minNewTokens = std::min(policy.minNewTokens, policy.maxNewTokens);
   sdx_status_t status = validateCall(
       session,
@@ -1959,9 +1956,8 @@ SDX_API sdx_status_t sdxGenerationContinue(
   std::lock_guard<std::mutex> lock(session->mutex);
   const int32_t remainingContext = std::max(
       0, session->activeContextCapacity - session->cachePosition);
-  policy.maxNewTokens = session->generateToContextLimit
-                            ? remainingContext
-                            : std::min(policy.maxNewTokens, remainingContext);
+  // Physical buffer capacity is a ceiling, not a replacement for the request budget.
+  policy.maxNewTokens = std::min(policy.maxNewTokens, remainingContext);
   policy.minNewTokens = std::min(policy.minNewTokens, policy.maxNewTokens);
   sdx_status_t status = validateCall(
       session,

@@ -3512,9 +3512,8 @@ public class Shape {
     public static boolean hasDefaultStridesForShape(INDArray input) {
         if(input.rank() == 0)
             return true;
-        if(!strideDescendingCAscendingF(input)){
-            return false;
-        }
+        // Singleton dimensions can give packed arrays equal adjacent strides.
+        // Compare the exact default strides instead of requiring strict monotonicity.
         char order = input.ordering();
         long[] defaultStrides;
         if(order == 'f'){

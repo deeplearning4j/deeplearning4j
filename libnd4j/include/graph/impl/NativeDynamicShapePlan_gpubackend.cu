@@ -4214,9 +4214,26 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
       NDArray** effectiveExternalsForCapture = externalArrays;
 #if HAVE_TRITON
       {
-        DspStagingSyncResult stagingResult =
-            ensureAndSyncStagingBuffers(externalArrays, numExt, stream);
+        const auto abortStagingCapture = [&]() {
+          abortCapture(seg, true, didPushCtx, tritonCaptureDevice,
+                       prevCaptureStream, savedSlotPhasesTriton, stream);
+          tritonOrderedRangeGuard.active = false;
+          TritonGraphBackend::clearOrderedRangeExecutor();
+        };
+        DspStagingSyncResult stagingResult;
+        try {
+          stagingResult = ensureAndSyncStagingBuffers(externalArrays, numExt, stream);
+        } catch (...) {
+          // Cleanup can itself allocate; retain the original staging exception.
+          try {
+            abortStagingCapture();
+          } catch (...) {
+            DSP_DIAG(EXECUTE, "pre-composite staging exception: capture cleanup also failed");
+          }
+          throw;
+        }
         if (!stagingResult.ok() || stagingResult.effectiveExternals == nullptr) {
+          abortStagingCapture();
           DSP_DIAG(EXECUTE,
                    "pre-composite-capture staging failed status=%d cudaError=%d — aborting",
                    static_cast<int>(stagingResult.status), stagingResult.cudaError);
@@ -6497,6 +6514,18 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     stream = static_cast<void*>(&tl_secondarySegStream);
   }
 
+  // Normalize the stream pointer for the entire dispatch, not only ctx.cudaStr.
+  // Capture callbacks and staging both consume cudaStream_t*, including when the
+  // caller omitted a stream. Keep the secondary-device override above intact.
+  // Dispatch is synchronous; ordered callbacks are cleared before this handle expires.
+  cudaStream_t cudaStr = (stream != nullptr)
+      ? *static_cast<cudaStream_t*>(stream) : nullptr;
+  if (cudaStr == nullptr) {
+    auto* defaultStreamPtr = LaunchContext::defaultContext()->getCudaStream();
+    if (defaultStreamPtr != nullptr) cudaStr = *defaultStreamPtr;
+  }
+  stream = static_cast<void*>(&cudaStr);
+
   // All-frozen-constant segments: outputs already populated from warmup.
   // Should have been caught earlier but defend here too.
   if (seg.def.allFrozenConstants) {
@@ -6932,22 +6961,6 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     // it was unconditional here, which on exec2 with changed shapes (KV cache
     // growth) overwrote compiledShapeKey with a value that had no compiled
     // kernel in the Triton cache — causing KERNEL_FAILURE on lookup.
-  }
-
-  cudaStream_t cudaStr = (stream != nullptr)
-                         ? *static_cast<cudaStream_t*>(stream) : nullptr;
-  // Resolve a null stream to the LaunchContext default BEFORE hasCudaStream gates
-  // capture (line ~5755). With no explicit stream threaded in (SameDiff direct
-  // exec; NVRTC/PTX modes), cudaStr is null and the monolithic capture path —
-  // gated by shouldCaptureTritonGraph -> hasCudaStream — never fires, so the graph
-  // handle never becomes ready and the segment is stuck not-replaying ("DSP MODE
-  // VIOLATION" after 10 frozen execs at NativeDynamicShapePlan.cpp:3948).
-  // cudaStreamBeginCapture uses the default stream when passed null anyway, so
-  // resolve it here to match — same pattern as the composite path near line 2928.
-  // (Triton/composite resolves its own stream internally and is unaffected.)
-  if (cudaStr == nullptr) {
-    auto* defaultStreamPtr = LaunchContext::defaultContext()->getCudaStream();
-    if (defaultStreamPtr != nullptr) cudaStr = *defaultStreamPtr;
   }
 
   // If any output slots were re-allocated at new addresses, the cached CUDA graph

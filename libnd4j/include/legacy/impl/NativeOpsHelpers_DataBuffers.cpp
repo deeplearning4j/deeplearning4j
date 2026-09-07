@@ -299,9 +299,8 @@ OpaqueDataBuffer *allocateDataBuffer(sd::LongType elements, int dataType, bool a
 }
 
 OpaqueDataBuffer *dbCreateExternalDataBuffer(sd::LongType elements, int dataType, sd::Pointer primary, sd::Pointer special) {
-  // Create an InteropDataBuffer and set external pointers
-  // Note: This allocates a small internal buffer which is then overwritten with external pointers.
-  // The external pointers (e.g., cached shape info) are NOT owned by this buffer.
+  // Create an allocation-free pointer shell. The external pointers
+  // (e.g., cached shape info) are borrowed, never owned by this buffer.
   auto buffer = dbAllocateDataBuffer(0, dataType, false);
 
   // Critical: check for null - allocation can fail under concurrent access or CUDA errors
@@ -311,22 +310,6 @@ OpaqueDataBuffer *dbCreateExternalDataBuffer(sd::LongType elements, int dataType
   }
 
   buffer->markOwner(false);
-
-  // Clean up stale auto-allocated buffers BEFORE setting external pointers.
-  // dbAllocateDataBuffer(0,...) creates a small internal buffer on CUDA (device side).
-  // If the caller only provides a host pointer (e.g., HOST_ONLY workspace), the stale
-  // auto-allocated device buffer must be cleared. Otherwise syncToPrimary will try to
-  // cudaMemcpyAsync from the tiny stale device buffer using the full _lenInBytes,
-  // causing "invalid argument" errors.
-  // We clear BEFORE setPrimary/setSpecial so that the final _lenInBytes is correct
-  // (setPrimary/setSpecial update _lenInBytes based on the element count).
-  if (special == nullptr && primary != nullptr) {
-    // Only host pointer provided (e.g., HOST_ONLY workspace) — clear stale device buffer.
-    // setSpecial(nullptr, 0) -> setSpecialBuffer(nullptr, 0) -> frees old device memory,
-    // nulls the pointer, and temporarily sets _lenInBytes=0.
-    // setPrimary below will restore _lenInBytes to the correct value.
-    buffer->setSpecial(nullptr, 0);
-  }
 
   if (primary != nullptr) buffer->setPrimary(primary, elements);
 
@@ -343,11 +326,7 @@ OpaqueDataBuffer *dbCreateExternalDataBuffer(sd::LongType elements, int dataType
       db->writeSpecial();
     }
   } else if (primary != nullptr) {
-    // After clearing the stale special buffer and setting primary, the sync counters
-    // still indicate "special is more recent" (from the initial writeSpecial() in the
-    // DataBuffer constructor). This causes isSpecialActual() to return true, and
-    // syncToSpecial() skips allocation+copy entirely — leaving no device buffer.
-    // Fix: mark primary as written so syncToSpecial() knows H2D transfer is needed.
+    // A host-only wrapper must request H2D synchronization on first device use.
     auto db = buffer->dataBuffer();
     if (db != nullptr) {
       db->writePrimary();
