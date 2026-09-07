@@ -807,11 +807,10 @@ fun Graph() = Namespace("Graph") {
     Op("graphDisjointUnion") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.sparse"
         javaOpClass = "GraphDisjointUnion"
-        Input(FLOATING_POINT, "Xs")         { description = "K node-feature matrices ragged [N_k, F]; pass as variadic concat with iArg K" }
-        Input(FLOATING_POINT, "vals")        { description = "K edge-weight arrays [nnz_k]" }
-        Input(INT, "colIdxs")               { description = "K column-index arrays [nnz_k]" }
-        Input(INT, "rowPtrs")               { description = "K row-pointer arrays [N_k+1]" }
-        Arg(INT, "K")                       { description = "Number of graphs in the batch" }
+        Input(FLOATING_POINT, "Xs")         { count = AtLeast(1); description = "K node-feature matrices [N_k, F]; K is inferred from the array length" }
+        Input(FLOATING_POINT, "vals")        { count = AtLeast(1); description = "K edge-weight arrays [nnz_k]" }
+        Input(INT, "colIdxs")               { count = AtLeast(1); description = "K column-index arrays [nnz_k]" }
+        Input(INT, "rowPtrs")               { count = AtLeast(1); description = "K row-pointer arrays [N_k+1]" }
         Output(FLOATING_POINT, "Xcombined") { description = "Combined node features [sumN, F]" }
         Output(FLOATING_POINT, "valsCombined") { description = "Combined edge weights [sumNnz]" }
         Output(INT, "colIdxCombined")       { description = "Combined shifted column indices [sumNnz]" }
@@ -822,21 +821,21 @@ fun Graph() = Namespace("Graph") {
             Assembles K variable-size graphs into one block-diagonal graph for batched message passing.
 
             The resulting block-diagonal CSR is compatible with all sd.gnn() message-passing ops.
-            Use batchVec with sd.math().segmentMean/Sum/Max for graph-level readout.
+            Use batchVec with sd.segmentMean/Sum/Max for graph-level readout.
             """.trimIndent()
         }
     }
 
     /**
      * Graph-level segment mean pooling: reduces node embeddings to graph-level embeddings.
-     * Wraps sd.math().segmentMean for clarity in the graph namespace.
+     * Wraps sd.segmentMean for clarity in the graph namespace.
      */
     Op("segmentMeanPool") {
         Input(FLOATING_POINT, "nodeEmb") { description = "Node embeddings [sumN, F]" }
         Input(INT, "batchVec")           { description = "Node-to-graph index [sumN] from graphDisjointUnion" }
         Output(FLOATING_POINT, "graphEmb") { description = "Graph-level embeddings [K, F]" }
         Composition("""
-            SDVariable graphEmb = sd.math().segmentMean(nodeEmb, batchVec);
+            SDVariable out = sd.segmentMean(nodeEmb, batchVec);
         """)
         Doc(Language.ANY, DocScope.ALL) {
             "Segment-mean pooling: produces one embedding per graph from batched node embeddings."
@@ -851,7 +850,7 @@ fun Graph() = Namespace("Graph") {
         Input(INT, "batchVec")           { description = "Node-to-graph index [sumN]" }
         Output(FLOATING_POINT, "graphEmb") { description = "Graph-level embeddings [K, F]" }
         Composition("""
-            SDVariable graphEmb = sd.math().segmentSum(nodeEmb, batchVec);
+            SDVariable out = sd.segmentSum(nodeEmb, batchVec);
         """)
         Doc(Language.ANY, DocScope.ALL) {
             "Segment-sum pooling: sums node embeddings per graph."
@@ -866,7 +865,7 @@ fun Graph() = Namespace("Graph") {
         Input(INT, "batchVec")           { description = "Node-to-graph index [sumN]" }
         Output(FLOATING_POINT, "graphEmb") { description = "Graph-level embeddings [K, F]" }
         Composition("""
-            SDVariable graphEmb = sd.math().segmentMax(nodeEmb, batchVec);
+            SDVariable out = sd.segmentMax(nodeEmb, batchVec);
         """)
         Doc(Language.ANY, DocScope.ALL) {
             "Segment-max pooling: takes max of node embeddings per graph."

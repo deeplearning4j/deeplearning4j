@@ -456,9 +456,8 @@ public class Nd4jNamespaceGenerator {
                 c.returns(INDArray[].class);
         }
 
-        // Pure-composition ops: emit the authored SameDiff body directly into the SD class method, and
-        // for the eager ND class wrap the same body in a one-shot SameDiff (lifting INDArray inputs to
-        // constants) and return out.eval(). No single native op is involved.
+        // Pure-composition ops: emit the authored SameDiff body into the SD method, and translate
+        // its facade calls to direct INDArray execution for the eager ND method.
         if (op.getCompositionBody() != null) {
             String body = op.getCompositionBody();
             // For default-value overloads, inject local variable declarations for any arg with a
@@ -479,7 +478,7 @@ public class Nd4jNamespaceGenerator {
             if (isSameDiff) {
                 if (!defaults.isEmpty()) c.addCode("$L", defaults);
                 List<Object> sdBodyTypeArgs = new ArrayList<>();
-                String sdProcessedBody = injectConfigTypeRefs(body, sdBodyTypeArgs);
+                String sdProcessedBody = injectCompositionTypeRefs(body, sdBodyTypeArgs);
                 if (sdBodyTypeArgs.isEmpty())
                     c.addCode("$L\n", sdProcessedBody);
                 else
@@ -494,28 +493,32 @@ public class Nd4jNamespaceGenerator {
                 String ndBody = body
                         .replace("SDVariable[]", "INDArray[]")
                         .replace("SDVariable ", "INDArray ")
-                        .replace("sd.math()", "org.nd4j.linalg.factory.Nd4j.math()")
-                        .replace("sd.nn()", "org.nd4j.linalg.factory.Nd4j.nn()")
-                        .replace("sd.cnn()", "org.nd4j.linalg.factory.Nd4j.cnn()")
-                        .replace("sd.sparse()", "org.nd4j.linalg.factory.Nd4j.sparse()")
-                        .replace("sd.signal()", "org.nd4j.linalg.factory.Nd4j.signal()")
-                        .replace("sd.sum(", "org.nd4j.linalg.factory.Nd4j.base().sum(")
-                        .replace("sd.mmul(", "org.nd4j.linalg.factory.Nd4j.base().mmul(")
-                        .replace("sd.reshape(", "org.nd4j.linalg.factory.Nd4j.base().reshape(")
-                        .replace("sd.concat(", "org.nd4j.linalg.factory.Nd4j.base().concat(")
-                        .replace("sd.expandDims(", "org.nd4j.linalg.factory.Nd4j.base().expandDims(")
-                        .replace("sd.onesLike(", "org.nd4j.linalg.factory.Nd4j.base().onesLike(")
-                        .replace("sd.zerosLike(", "org.nd4j.linalg.factory.Nd4j.base().zerosLike(")
-                        .replace("sd.oneHot(", "org.nd4j.linalg.factory.Nd4j.base().oneHot(")
-                        .replace("sd.mean(", "org.nd4j.linalg.factory.Nd4j.base().mean(")
-                        .replace("sd.gather(", "org.nd4j.linalg.factory.Nd4j.base().gather(")
-                        .replace("sd.transpose(", "org.nd4j.linalg.factory.Nd4j.base().transpose(")
-                        .replace("sd.gnn()", "org.nd4j.linalg.factory.Nd4j.gnn()")
-                        .replace("sd.graph()", "org.nd4j.linalg.factory.Nd4j.graph()")
-                        .replace("sd.kge()", "org.nd4j.linalg.factory.Nd4j.kge()")
+                        .replace("sd.math()", "Nd4j.math()")
+                        .replace("sd.nn()", "Nd4j.nn()")
+                        .replace("sd.cnn()", "Nd4j.cnn()")
+                        .replace("sd.sparse()", "Nd4j.sparse()")
+                        .replace("sd.signal()", "Nd4j.signal()")
+                        .replace("sd.sum(", "Nd4j.base().sum(")
+                        .replace("sd.mmul(", "Nd4j.base().mmul(")
+                        .replace("sd.reshape(", "Nd4j.base().reshape(")
+                        .replace("sd.concat(", "Nd4j.base().concat(")
+                        .replace("sd.expandDims(", "Nd4j.base().expandDims(")
+                        .replace("sd.onesLike(", "Nd4j.base().onesLike(")
+                        .replace("sd.zerosLike(", "Nd4j.base().zerosLike(")
+                        .replace("sd.oneHot(", "Nd4j.base().oneHot(")
+                        .replace("sd.mean(", "Nd4j.base().mean(")
+                        .replace("sd.segmentMean(", "Nd4j.base().segmentMean(")
+                        .replace("sd.segmentSum(", "Nd4j.base().segmentSum(")
+                        .replace("sd.segmentMax(", "Nd4j.base().segmentMax(")
+                        .replace("sd.unsortedSegmentMean(", "Nd4j.base().unsortedSegmentMean(")
+                        .replace("sd.gather(", "Nd4j.base().gather(")
+                        .replace("sd.transpose(", "Nd4j.base().transpose(")
+                        .replace("sd.gnn()", "Nd4j.gnn()")
+                        .replace("sd.graph()", "Nd4j.graph()")
+                        .replace("sd.kge()", "Nd4j.kge()")
                         .replace("new SDVariable[", "new INDArray[");
                 List<Object> ndBodyTypeArgs = new ArrayList<>();
-                ndBody = injectConfigTypeRefs(ndBody, ndBodyTypeArgs);
+                ndBody = injectCompositionTypeRefs(ndBody, ndBodyTypeArgs);
                 if (!defaults.isEmpty()) c.addCode("$L", defaults);
                 if (ndBodyTypeArgs.isEmpty())
                     c.addCode("$L\n", ndBody);
@@ -834,6 +837,14 @@ public class Nd4jNamespaceGenerator {
         for (String possibleValue : arg.getPossibleValues()) {
             builder.addEnumConstant(possibleValue);
         }
+        if (arg.getEnumIndexAccessor() != null) {
+            builder.addMethod(MethodSpec.methodBuilder(arg.getEnumIndexAccessor())
+                    .addModifiers(Modifier.PUBLIC)
+                    .returns(TypeName.INT)
+                    .addJavadoc("@return the zero-based method index used by the native operation\n")
+                    .addStatement("return ordinal()")
+                    .build());
+        }
 
         TypeSpec ts = builder.build();
 
@@ -1062,36 +1073,30 @@ public class Nd4jNamespaceGenerator {
     }
 
     /**
-     * Replaces config class FQCN and short-name references in a composition body string with
-     * JavaPoet {@code $T} placeholders, appending the corresponding {@link ClassName} to {@code typeArgs}.
-     * This allows JavaPoet to emit proper import statements for those types.
+     * Imports framework and config types referenced by a composition. Collect placeholders in
+     * source order so interleaved types receive the matching JavaPoet {@code $T} arguments.
      */
-    private static String injectConfigTypeRefs(String body, List<Object> typeArgs) {
-        for (TypeName tn : configMapping.values()) {
-            if (!(tn instanceof ClassName)) continue;
-            ClassName cn = (ClassName) tn;
-            // 1) Replace any FQCN occurrences (e.g. org.nd4j...Conv2DConfig)
-            String fqcn = cn.canonicalName();
-            while (body.contains(fqcn)) {
-                body = body.replaceFirst(Pattern.quote(fqcn), "\\$T");
-                typeArgs.add(cn);
-            }
-            // 2) Replace remaining short-name occurrences as a standalone type reference
-            //    (preceded by a non-word char, followed by '.' or ' ' or '(')
-            String simpleName = cn.simpleName();
-            Pattern p = Pattern.compile("(?<![\\w$])" + Pattern.quote(simpleName) + "(?=[. (])");
-            Matcher m = p.matcher(body);
-            if (m.find()) {
-                StringBuffer sbuf = new StringBuffer();
-                do {
-                    m.appendReplacement(sbuf, "\\$T");
-                    typeArgs.add(cn);
-                } while (m.find());
-                m.appendTail(sbuf);
-                body = sbuf.toString();
-            }
+    private static String injectCompositionTypeRefs(String body, List<Object> typeArgs) {
+        Map<String, ClassName> types = new LinkedHashMap<>();
+        List<TypeName> candidates = new ArrayList<>(configMapping.values());
+        candidates.add(ClassName.get(Nd4j.class));
+        for (TypeName candidate : candidates) {
+            if (!(candidate instanceof ClassName)) continue;
+            ClassName type = (ClassName) candidate;
+            types.put(type.canonicalName(), type);
+            types.put(type.simpleName(), type);
         }
-        return body;
+        String alternatives = types.keySet().stream()
+                .sorted(Comparator.comparingInt(String::length).reversed())
+                .map(Pattern::quote).collect(Collectors.joining("|"));
+        Matcher matcher = Pattern.compile("(?<![\\w$.])(" + alternatives + ")(?=[. (])").matcher(body);
+        StringBuffer result = new StringBuffer();
+        while (matcher.find()) {
+            typeArgs.add(types.get(matcher.group(1)));
+            matcher.appendReplacement(result, "\\$T");
+        }
+        matcher.appendTail(result);
+        return result.toString();
     }
 
     private static String anyToCode(Parameter parameter, Object v){

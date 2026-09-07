@@ -90,8 +90,9 @@ fun NamespaceOps.Op(name: String,
  * Define this op as a pure SameDiff composition rather than a single native op. [body] is Java
  * source spliced into the generated SameDiff (SDx) method: it may reference the op's Input / Arg
  * parameters by name and the SameDiff handle `sd`, and must assign the result to a variable named
- * `out` (an SDVariable). The eager (NDx) method is generated automatically by running the same
- * composition inside a one-shot SameDiff and returning `out.eval()`, so each method is authored once.
+ * `out` (an SDVariable). The eager (NDx) method translates the same composition to direct
+ * INDArray operations and Nd4j namespaces. Use supported `sd` facade calls rather than
+ * SameDiff-specific op constructors so both forms can be generated from the same body.
  */
 fun Op.Composition(body: String) {
     this.compositionBody = body

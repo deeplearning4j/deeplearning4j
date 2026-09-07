@@ -389,14 +389,14 @@ fun GNN() = Namespace("GNN") {
         Output(FLOATING_POINT, "out")     { description = "Normalized features [sumN, F]" }
         Composition("""
             // Segment mean center: subtract per-graph mean
-            SDVariable graphMeans = sd.math().unsortedSegmentMean(X, batchVec, (int)K);  // [K, F]
+            SDVariable graphMeans = sd.unsortedSegmentMean(X, batchVec, (int)K);  // [K, F]
             // Gather back to per-node
-            SDVariable nodeMeans = new org.nd4j.linalg.api.ops.impl.shape.Gather(sd, graphMeans, batchVec, 0).outputVariable();  // [sumN, F]
+            SDVariable nodeMeans = sd.gather(graphMeans, batchVec, 0);  // [sumN, F]
             SDVariable Xc = X.sub(nodeMeans);
             SDVariable rowSq = sd.sum(Xc.mul(Xc), true, 1);
             // Per-graph mean of squared norms
-            SDVariable graphSqMean = sd.math().unsortedSegmentMean(rowSq, batchVec, (int)K);  // [K, 1]
-            SDVariable nodeVarDenom = new org.nd4j.linalg.api.ops.impl.shape.Gather(sd, graphSqMean, batchVec, 0).outputVariable();  // [sumN, 1]
+            SDVariable graphSqMean = sd.unsortedSegmentMean(rowSq, batchVec, (int)K);  // [K, 1]
+            SDVariable nodeVarDenom = sd.gather(graphSqMean, batchVec, 0);  // [sumN, 1]
             SDVariable denom = sd.math().sqrt(nodeVarDenom.add(1e-6));
             SDVariable out = Xc.mul(scale).div(denom);
         """.trimIndent())
@@ -450,11 +450,11 @@ fun GNN() = Namespace("GNN") {
         Output(FLOATING_POINT, "out")     { description = "Normalized features [sumN, F]" }
         Composition("""
             // Per-graph per-feature mean: segmentMean → [K, F], then gather to [sumN, F]
-            SDVariable graphMean = sd.math().unsortedSegmentMean(X, batchVec, (int)K);
-            SDVariable nodeMean  = new org.nd4j.linalg.api.ops.impl.shape.Gather(sd, graphMean, batchVec, 0).outputVariable();
+            SDVariable graphMean = sd.unsortedSegmentMean(X, batchVec, (int)K);
+            SDVariable nodeMean  = sd.gather(graphMean, batchVec, 0);
             SDVariable centered  = X.sub(nodeMean);
-            SDVariable graphVar  = sd.math().unsortedSegmentMean(centered.mul(centered), batchVec, (int)K);
-            SDVariable nodeVar   = new org.nd4j.linalg.api.ops.impl.shape.Gather(sd, graphVar, batchVec, 0).outputVariable();
+            SDVariable graphVar  = sd.unsortedSegmentMean(centered.mul(centered), batchVec, (int)K);
+            SDVariable nodeVar   = sd.gather(graphVar, batchVec, 0);
             SDVariable normed    = centered.div(sd.math().sqrt(nodeVar.add(1e-5)));
             SDVariable out       = normed.mul(gamma).add(beta);
         """.trimIndent())

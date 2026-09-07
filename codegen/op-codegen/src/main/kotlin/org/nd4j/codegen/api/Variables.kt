@@ -105,6 +105,16 @@ data class Arg(
             throw IllegalArgumentException("Illegal default value for $this. Got ${value.toDescriptiveString()} (${value?.javaClass?.name})")
         }
 
+    /** Optional public accessor for the zero-based declaration index of a generated enum. */
+    var enumIndexAccessor: String? = null
+        set(value) {
+            require(type == DataType.ENUM) { "$this: Can not set enumIndexAccessor on non ENUM typed Arg." }
+            require(value == null || value.matches(Regex("[A-Za-z_][A-Za-z0-9_]*"))) {
+                "$this: enumIndexAccessor must be a Java method name."
+            }
+            field = value
+        }
+
     var possibleValues: List<String>? = null
         set(value) = if(type == DataType.ENUM) when {
             value == null -> field = null
