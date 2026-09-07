@@ -50,9 +50,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.lz4</groupId>
-            <artifactId>lz4-pure-java</artifactId>
-            <version>1.8.0</version>
+            <groupId>at.yawk.lz4</groupId>
+            <artifactId>lz4-java</artifactId>
         </dependency>
 
         <dependency>
@@ -82,6 +81,13 @@
             <groupId>org.mapdb</groupId>
             <artifactId>mapdb</artifactId>
             <version>${mapdb.version}</version>
+            <exclusions>
+                <!-- The maintained LZ4 fork above supplies the same packages. -->
+                <exclusion>
+                    <groupId>net.jpountz.lz4</groupId>
+                    <artifactId>lz4</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- SQLite - Used only for Java-7 Compatible StatsListener Storage -->
         <dependency>

@@ -5,7 +5,7 @@ open module deeplearning4j.ui.model {
     requires deeplearning4j.nn;
     requires mapdb;
     requires org.xerial.sqlitejdbc;
-    requires lz4.pure.java;
+    requires org.lz4.java;
     requires java.sql;
     requires io.aeron.all;
     exports org.deeplearning4j.ui.model;
