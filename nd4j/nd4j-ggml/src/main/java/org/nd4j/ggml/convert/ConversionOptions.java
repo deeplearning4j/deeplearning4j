@@ -129,8 +129,9 @@ public class ConversionOptions {
      *   <li>{@code 4} — INT4 packed (2 values/byte; 4x compression vs float)</li>
      * </ul>
      *
-     * <p>Pairing with {@link org.eclipse.deeplearning4j.llm.generation.kvcache.KvCacheStrategy#QUANTIZED}
-     * is required; setting this without {@code QUANTIZED} strategy has no effect at runtime.</p>
+     * <p>Pairing with {@code KvCacheStrategy.QUANTIZED} in the downstream
+     * {@code samediff-llm} module is required; setting this without the
+     * {@code QUANTIZED} strategy has no effect at runtime.</p>
      */
     @Builder.Default
     private int kvQuantFormat = 0;
