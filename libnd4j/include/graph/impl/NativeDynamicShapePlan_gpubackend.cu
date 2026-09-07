@@ -767,13 +767,16 @@ static bool probeCaptureStatusAlways(cudaStream_t stream, int slot, const char* 
   return true;
 }
 
-// Helper: extract specialBuffer() device addresses from NDArray** into void** for
-// address snapshot diagnostics. Thread-local to avoid repeated allocation.
+// Snapshot existing addresses without synchronizing, allocating, or migrating
+// arrays belonging to other devices. Preserve the view's byte offset.
 static void extractDeviceAddrs(NDArray** arrays, int count, std::vector<void*>& out) {
   out.resize(count);
   for (int i = 0; i < count; i++) {
-    out[i] = (arrays != nullptr && arrays[i] != nullptr)
-             ? DSP_BUF(arrays[i]) : nullptr;
+    NDArray* arr = arrays != nullptr ? arrays[i] : nullptr;
+    auto* db = arr != nullptr ? arr->dataBuffer() : nullptr;
+    void* base = db != nullptr && db->isValid() ? db->special() : nullptr;
+    out[i] = base != nullptr
+        ? static_cast<int8_t*>(base) + arr->offset() * arr->sizeOfT() : nullptr;
   }
 }
 

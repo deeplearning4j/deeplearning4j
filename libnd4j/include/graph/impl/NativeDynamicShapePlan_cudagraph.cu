@@ -2830,6 +2830,23 @@ DspStagingSyncResult NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
   }
   activeStagingDevice_ = currentDevice;
 
+  // The external table belongs to the whole plan, not this device. Preparing
+  // or staging an unrelated input can migrate a primary-only weight merely
+  // by asking for specialBuffer(). Include shared inputs on each consumer
+  // device; unassigned slots conservatively remain eligible on every device.
+  std::vector<bool> requiredOnDevice(static_cast<size_t>(numExt), false);
+  for (int s = 0; s < numSlots_; ++s) {
+    if (slots_[s].targetDeviceId >= 0 && slots_[s].targetDeviceId != currentDevice) continue;
+    const auto& wiring = slots_[s].wiring;
+    for (int j = 0; j < wiring.numInputs; ++j) {
+      const int source = wiring.inputSourceIndices[j];
+      if (source < 0) {
+        const int external = -(source + 1);
+        if (external >= 0 && external < numExt) requiredOnDevice[external] = true;
+      }
+    }
+  }
+
   if (faultRequested("allocation")) {
     return fail(DspStagingSyncStatus::ALLOCATION_FAILED,
                 cudaErrorMemoryAllocation, "allocation_injected");
@@ -2911,6 +2928,7 @@ DspStagingSyncResult NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
         allStagingAllocated = false;
         break;
       }
+      if (!requiredOnDevice[i]) continue;
       if (activeStagingBuffers_[i] == nullptr &&
           !isPlanManagedDeviceBuffer(i, externalArrays[i])) {
         allStagingAllocated = false;
@@ -2935,6 +2953,7 @@ DspStagingSyncResult NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
     for (int i : cachedVariableExtIndices_) {
       NDArray* ext = externalArrays[i];
       effectiveExternals_[i] = externalArrays[i];  // default passthrough
+      if (!requiredOnDevice[i]) continue;
       if (ext == nullptr || ext->isEmpty()) {
         skippedEmpty++;
         continue;
@@ -3178,6 +3197,11 @@ DspStagingSyncResult NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
     if (std::find(cachedVariableExtIndices_.begin(), cachedVariableExtIndices_.end(), i)
         == cachedVariableExtIndices_.end()) {
       cachedVariableExtIndices_.push_back(i);
+    }
+
+    if (!requiredOnDevice[i]) {
+      effectiveExternals_[i] = ext;
+      continue;
     }
 
     // Skip staging for device-managed buffers. KV caches and recurrent decode
