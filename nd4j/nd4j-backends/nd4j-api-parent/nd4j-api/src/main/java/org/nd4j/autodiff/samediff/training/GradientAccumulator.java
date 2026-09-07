@@ -79,7 +79,7 @@ public class GradientAccumulator {
      * Create a gradient accumulator with the specified number of accumulation steps.
      *
      * @param accumulationSteps Number of micro-batches to accumulate before updating.
-     *                          Must be >= 1. A value of 1 means no accumulation.
+     *                          Must be &gt;= 1. A value of 1 means no accumulation.
      */
     public GradientAccumulator(int accumulationSteps) {
         if (accumulationSteps < 1) {
@@ -144,7 +144,7 @@ public class GradientAccumulator {
     /**
      * Check if we've accumulated enough steps and should apply updates.
      *
-     * @return true if currentStep >= accumulationSteps
+     * @return true if currentStep &gt;= accumulationSteps
      */
     public boolean isReady() {
         return currentStep >= accumulationSteps;
@@ -204,7 +204,7 @@ public class GradientAccumulator {
     }
 
     /**
-     * Check if gradient accumulation is enabled (accumulationSteps > 1).
+     * Check if gradient accumulation is enabled (accumulationSteps &gt; 1).
      *
      * @return true if accumulation is enabled
      */

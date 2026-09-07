@@ -303,7 +303,7 @@ public class TrainingConfig {
     /**
      * Check if gradient accumulation is enabled.
      *
-     * @return true if gradient accumulation steps > 1
+     * @return true if gradient accumulation steps &gt; 1
      */
     public boolean isGradientAccumulationEnabled() {
         return gradientAccumulationSteps > 1;
@@ -396,7 +396,7 @@ public class TrainingConfig {
          * is limited.
          * Default: 1 (no accumulation)
          *
-         * @param steps Number of accumulation steps (must be >= 1)
+         * @param steps Number of accumulation steps (must be &gt;= 1)
          * @return this builder
          */
         public Builder gradientAccumulationSteps(int steps) {
@@ -448,7 +448,7 @@ public class TrainingConfig {
 
 
         /**
-         * Sets the L1 regularization coefficient for all trainable parameters. Must be >= 0.<br>
+         * Sets the L1 regularization coefficient for all trainable parameters. Must be &gt;= 0.<br>
          * See {@link L1Regularization} for more details
          * @param l1 L1 regularization coefficient
          */
@@ -460,7 +460,7 @@ public class TrainingConfig {
         }
 
         /**
-         Sets the L2 regularization coefficient for all trainable parameters. Must be >= 0.<br>
+         Sets the L2 regularization coefficient for all trainable parameters. Must be &gt;= 0.<br>
          * <b>Note</b>: Generally, {@link WeightDecay} (set via {@link #weightDecay(double,boolean)} should be preferred to
          * L2 regularization. See {@link WeightDecay} javadoc for further details.<br>
          * Note: L2 regularization and weight decay usually should not be used together; if any weight decay (or L2) has

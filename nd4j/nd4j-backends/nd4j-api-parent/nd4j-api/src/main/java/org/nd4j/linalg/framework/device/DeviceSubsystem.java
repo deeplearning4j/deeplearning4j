@@ -408,7 +408,7 @@ public final class DeviceSubsystem {
         }
         
         /**
-         * Check if device has memory pressure (>90% used)
+         * Check if device has memory pressure (&gt;90% used)
          */
         public boolean hasMemoryPressure(DeviceDescriptor device) {
             return DeviceMemoryManager.getInstance().hasMemoryPressure(device);

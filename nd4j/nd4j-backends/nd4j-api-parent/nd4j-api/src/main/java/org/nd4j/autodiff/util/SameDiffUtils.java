@@ -117,7 +117,7 @@ public class SameDiffUtils {
      * Add 1s as required to the array make an array possible to be broadcast with the original (pre-reduce) array.
      * <p>
      * Example: if doing [a,b,c].sum(1), result is [a,c]. To 'undo' this in a way that can be auto-broadcast,
-     * we want to expand as required - i.e., [a,c] -> [a,1,c] which can be auto-broadcast with the original [a,b,c].
+     * we want to expand as required - i.e., [a,c] -&gt; [a,1,c] which can be auto-broadcast with the original [a,b,c].
      * This is typically only used with reduction operations backprop.
      *
      * @param origRank   Rank of the original array, before the reduction was executed

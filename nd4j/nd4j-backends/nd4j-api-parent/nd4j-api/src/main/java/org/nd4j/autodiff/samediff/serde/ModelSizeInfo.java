@@ -202,7 +202,7 @@ public class ModelSizeInfo {
     }
 
     /**
-     * Check if this represents a large model (> 1GB total).
+     * Check if this represents a large model (&gt; 1GB total).
      *
      * @return true if total size exceeds 1GB
      */
@@ -211,7 +211,7 @@ public class ModelSizeInfo {
     }
 
     /**
-     * Check if any individual array is large (> 100MB).
+     * Check if any individual array is large (&gt; 100MB).
      * Large arrays benefit more from async transfer.
      *
      * @return true if largest array exceeds 100MB

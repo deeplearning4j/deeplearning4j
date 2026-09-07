@@ -65,7 +65,7 @@ public class RandomProjection {
      * The minimum number n' of components to guarantee the eps-embedding is
      * given by:
      *
-     * n' >= 4 log(n) / (eps² / 2 - eps³ / 3)
+     * n' &gt;= 4 log(n) / (eps² / 2 - eps³ / 3)
      *
      * see http://cseweb.ucsd.edu/~dasgupta/papers/jl.pdf §2.1
      * @param n Number of samples. If an array is given, it will compute

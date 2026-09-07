@@ -39,7 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <h2>Cost model heuristics</h2>
  * <ul>
  *   <li><b>Small graphs</b> ({@code <=5} slots): SLOT_BY_SLOT avoids compile overhead</li>
- *   <li><b>Value-dependent shapes</b> (>50% slots): SLOT_BY_SLOT since graph capture cannot
+ *   <li><b>Value-dependent shapes</b> (&gt;50% slots): SLOT_BY_SLOT since graph capture cannot
  *       handle dynamic shapes</li>
  *   <li><b>Compute-heavy graphs</b> (high matmul/conv ratio): TRITON benefits from kernel fusion</li>
  *   <li><b>Memory-bound graphs</b> (high element-wise ratio): CUDA_GRAPHS benefits from

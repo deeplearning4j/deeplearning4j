@@ -71,7 +71,7 @@ import static org.nd4j.linalg.api.buffer.DataType.FLOAT16;
 
 /**
  * SameDiffSerializer: Serializes/deserializes SameDiff instances.
- * Supports sharding and large models (>2GB) using a format where FlatBuffers
+ * Supports sharding and large models (&gt;2GB) using a format where FlatBuffers
  * handle metadata and large array data is appended as raw binary blobs within
  * each shard file, referenced by a manifest map within the same file.
  * File extension: .sdnb (SameDiff Native Blob)

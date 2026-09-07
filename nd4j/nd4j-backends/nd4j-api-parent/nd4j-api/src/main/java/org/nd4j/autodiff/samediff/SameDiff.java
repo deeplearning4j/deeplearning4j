@@ -2289,7 +2289,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * (CPU, CUDA, oneDNN, cuDNN, MPS, etc.) are used for each operation.
      * </p>
      *
-     * <h4>Example Usage:</h4>
+     * <h3>Example Usage:</h3>
      * <pre>{@code
      * SameDiff sd = SameDiff.create();
      *

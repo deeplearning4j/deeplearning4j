@@ -1843,7 +1843,7 @@ public class DynamicShapePlanExecutor implements Closeable {
 
     /**
      * Set the maximum KV cache length for pre-allocation.
-     * When set > 0 and CUDA graphs are enabled, output slots for KV cache
+     * When set &gt; 0 and CUDA graphs are enabled, output slots for KV cache
      * are pre-allocated at max size [batch, numHeads, maxLen, headDim] to keep
      * buffer addresses stable across decode steps. This enables CUDA graph capture.
      * 
@@ -2982,8 +2982,8 @@ public class DynamicShapePlanExecutor implements Closeable {
      * Execute the plan with the given placeholder arrays.
      *
      * @param plan              the compiled plan
-     * @param placeholderArrays placeholder name -> INDArray
-     * @return map of requested output variable name -> INDArray
+     * @param placeholderArrays placeholder name -&gt; INDArray
+     * @return map of requested output variable name -&gt; INDArray
      */
     public Map<String, INDArray> execute(DynamicShapePlan plan, Map<String, INDArray> placeholderArrays) {
         if (currentPlan != plan) {

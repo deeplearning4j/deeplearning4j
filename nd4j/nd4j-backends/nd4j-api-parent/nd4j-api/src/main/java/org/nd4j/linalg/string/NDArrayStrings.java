@@ -163,7 +163,7 @@ public class NDArrayStrings {
      * Format the given ndarray as a string
      *
      * @param arr       the array to format
-     * @param summarize If true and the number of elements in the array is greater than > 1000 only the first three and last elements in any dimension will print
+     * @param summarize If true and the number of elements in the array is greater than 1000 only the first three and last elements in any dimension will print
      * @return the formatted array
      */
     public String format(INDArray arr, boolean summarize) {

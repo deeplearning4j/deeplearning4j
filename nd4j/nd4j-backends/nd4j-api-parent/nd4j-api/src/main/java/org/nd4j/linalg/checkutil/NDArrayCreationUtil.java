@@ -88,7 +88,7 @@ public class NDArrayCreationUtil {
      * eg. rank 2: 1,1; 1,2; 2,1; 2,2; 3,4
      * Motivated by TADs that often hit bugs when a "1" occurs as the size of a dimension
      *
-     * @param rank any rank including true scalars i.e rank >= 0
+     * @param rank any rank including true scalars i.e rank &gt;= 0
      * @param order what order array to return i.e 'c' or 'f' order arrays
      * @return List of arrays and the shapes as strings
      */

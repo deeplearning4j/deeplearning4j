@@ -24,9 +24,9 @@ package org.nd4j.enums;
 
 /**
  *  The data format of the input. Input shape depends on data format (in config):<br>
- *  TNS -> [timeSteps, batchSize, inSize]<br>
- *  NST -> [batchSize, inSize, timeSteps]<br>
- *  NTS -> [batchSize, timeSteps, inSize]<br>
+ *  TNS -&gt; [timeSteps, batchSize, inSize]<br>
+ *  NST -&gt; [batchSize, inSize, timeSteps]<br>
+ *  NTS -&gt; [batchSize, timeSteps, inSize]<br>
  */
 public enum RnnDataFormat {
   TNS,

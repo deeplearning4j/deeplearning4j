@@ -647,7 +647,7 @@ public class DspDebugger {
         SLOT_WRITE_AFTER_FREEZE,
         /** A buffer address drifted (changed) when pointers should be stable */
         ADDRESS_DRIFT,
-        /** The plan phase went backward (e.g., SHAPES_FROZEN -> SLOT_BY_SLOT) */
+        /** The plan phase went backward (e.g., SHAPES_FROZEN -&gt; SLOT_BY_SLOT) */
         PHASE_DEMOTION,
         /** The plan was destroyed unexpectedly */
         PLAN_DESTRUCTION
@@ -1453,7 +1453,7 @@ public class DspDebugger {
             this.errorMessage = null;
         }
 
-        /** Get backend distribution: backendName -> count. */
+        /** Get backend distribution: backendName -&gt; count. */
         public Map<String, Integer> getBackendDistribution() {
             Map<String, Integer> dist = new LinkedHashMap<>();
             for (SegmentDeviceInfo s : segmentDevices) {

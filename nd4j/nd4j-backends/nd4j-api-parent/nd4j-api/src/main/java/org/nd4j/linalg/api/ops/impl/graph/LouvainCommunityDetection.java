@@ -63,7 +63,7 @@ public class LouvainCommunityDetection {
     public static class Result {
         /** Community label for each node (0-based, arbitrary but consistent). */
         public final int[] communities;
-        /** Final modularity Q (higher is better; >0 means better-than-random). */
+        /** Final modularity Q (higher is better; &gt;0 means better-than-random). */
         public final double modularity;
 
         public Result(int[] communities, double modularity) {

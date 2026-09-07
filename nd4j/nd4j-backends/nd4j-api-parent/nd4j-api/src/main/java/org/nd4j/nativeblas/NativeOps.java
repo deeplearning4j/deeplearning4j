@@ -1874,7 +1874,7 @@ public interface NativeOps {
   * Set the minimum segment size for CUDA graph capture.
   * Segments smaller than this are executed slot-by-slot. Default: 10.
   * @param planHandle handle from compileDynamicShapePlan()
-  * @param minSize minimum number of slots (clamped to >=1)
+  * @param minSize minimum number of slots (clamped to &gt;=1)
   */
  default void setPlanMinCaptureSegmentSize(Pointer planHandle, int minSize) {
      // No-op on backends that don't support CUDA Graphs

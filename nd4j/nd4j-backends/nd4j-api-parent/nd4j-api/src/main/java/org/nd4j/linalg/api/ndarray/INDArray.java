@@ -2281,15 +2281,15 @@ public interface INDArray extends Serializable, AutoCloseable {
 
      A few examples of patterns and their effect:
 
-     ('x') -> make a 0d (scalar) into a 1d vector
-     (0, 1) -> identity for 2d vectors
-     (1, 0) -> inverts the first and second dimensions
-     ('x', 0) -> make a row out of a 1d vector (N to 1xN)
-     (0, 'x') -> make a column out of a 1d vector (N to Nx1)
-     (2, 0, 1) -> AxBxC to CxAxB
-     (0, 'x', 1) -> AxB to Ax1xB
-     (1, 'x', 0) -> AxB to Bx1xA
-     (1,) -> This remove dimensions 0. It must be a broadcastable dimension (1xA to A)
+     ('x') -&gt; make a 0d (scalar) into a 1d vector
+     (0, 1) -&gt; identity for 2d vectors
+     (1, 0) -&gt; inverts the first and second dimensions
+     ('x', 0) -&gt; make a row out of a 1d vector (N to 1xN)
+     (0, 'x') -&gt; make a column out of a 1d vector (N to Nx1)
+     (2, 0, 1) -&gt; AxBxC to CxAxB
+     (0, 'x', 1) -&gt; AxB to Ax1xB
+     (1, 'x', 0) -&gt; AxB to Bx1xA
+     (1,) -&gt; This remove dimensions 0. It must be a broadcastable dimension (1xA to A)
 
      * @param rearrange     the dimensions to swap to
      * @param newOrder      the new order (think permute)
