@@ -6894,8 +6894,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
             LongType rank = shape::rank(shapeInfo);
             std::vector<LongType> shapeVec(rank);
             for (int d = 0; d < rank; d++) shapeVec[d] = shapeInfo[d + 1];
-            auto* arr = new NDArray(order, shapeVec, dt);
-            outputSlots_[slotIdx] = arr;
+            // Restoration allocates plan-owned storage just like normal slot execution.
+            // Register before publication so a validation exception still leaves an owner;
+            // replacements and teardown must not treat this allocation as a borrowed input.
+            auto* arr = registerOwned(new NDArray(order, shapeVec, dt));
+            writeOutputSlot(slotIdx, arr, "pre-exec-restore");
             preExecAllocCount++;
             {
               int ts = sd::graph::DspDiagnostics::getInstance().traceSlot();
