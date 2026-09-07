@@ -25,6 +25,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.generation.GenerationPipeline;
 import org.eclipse.deeplearning4j.llm.generation.GenerationResult;
 import org.eclipse.deeplearning4j.llm.generation.SameDiffMemoryUtils;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.KvCacheManager;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.KvCacheStrategy;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -59,7 +61,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li>Structured output parsing for each model type</li>
  *   <li>KV cache strategy support (STATIC, PAGED, QUANTIZED, TURBOQUANT)</li>
  *   <li>Uses native autoregressive decode
- *       for efficient autoregressive decoding with {@link org.eclipse.deeplearning4j.llm.generation.KvCacheManager}</li>
+ *       for efficient autoregressive decoding with {@link KvCacheManager}</li>
  * </ul>
  *
  * <p>Architecture:</p>
@@ -114,9 +116,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * @see MultiModelPipelineConfig
  * @see PipelineStage
  * @see PipelineResult
- * @see org.eclipse.deeplearning4j.llm.generation.GenerationPipeline
- * @see org.eclipse.deeplearning4j.llm.generation.KvCacheStrategy
- * @see org.eclipse.deeplearning4j.llm.generation.KvCacheManager
+ * @see GenerationPipeline
+ * @see KvCacheStrategy
+ * @see KvCacheManager
  */
 @Slf4j
 public class MultiModelPipeline implements AutoCloseable {

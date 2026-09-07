@@ -40,7 +40,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * policy: it does not track attention scores or maintain any per-token state. Eviction decisions
  * are purely based on position.</p>
  *
- * <h3>Reference</h3>
+ * <h2>Reference</h2>
  * <p>Xiao et al., "Efficient Streaming Language Models with Attention Sinks", ICLR 2024.</p>
  *
  * @author Eclipse Deeplearning4j Contributors

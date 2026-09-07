@@ -50,7 +50,7 @@ import java.util.concurrent.TimeUnit;
  * file channels for efficient I/O, with an LRU eviction policy for managing
  * the on-disk block limit.</p>
  *
- * <h3>Three-tier memory hierarchy</h3>
+ * <h2>Three-tier memory hierarchy</h2>
  * <pre>
  * GPU (hot):   [block pool] -- active sequences, fast access
  *                   | evict/restore (async DMA)
@@ -59,12 +59,12 @@ import java.util.concurrent.TimeUnit;
  * Disk (cold):  [SSD files] -- deep storage, prefetch for anticipated needs
  * </pre>
  *
- * <h3>File format</h3>
+ * <h2>File format</h2>
  * <p>Each block is stored as {@code block_${blockId}.kv} in the storage directory.
  * The file contains raw bytes: key data followed by value data, each of size
  * {@code blockSize * numKvHeads * headDim * dataType.width()}.</p>
  *
- * <h3>Async I/O</h3>
+ * <h2>Async I/O</h2>
  * <p>All disk operations are performed asynchronously using a fixed-size thread pool.
  * The {@link #prefetchBlocks(List)} method initiates reads for blocks that are
  * anticipated to be needed soon, allowing disk latency to be overlapped with

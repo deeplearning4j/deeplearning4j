@@ -43,16 +43,16 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * request arrives, the cache is searched for the longest matching prefix;
  * matching blocks can be reused directly, saving both computation and memory.</p>
  *
- * <h3>Data structure</h3>
+ * <h2>Data structure</h2>
  * <p>A radix trie where each node represents a block-aligned chunk of tokens.
  * Nodes are hashed using FNV-1a over their token content. A global LRU
  * tracks all registered prefixes for eviction when the cache is full.</p>
  *
- * <h3>Thread safety</h3>
+ * <h2>Thread safety</h2>
  * <p>Uses a {@link ReentrantReadWriteLock} to allow concurrent lookups
  * while serializing registration and eviction operations.</p>
  *
- * <h3>Serialization</h3>
+ * <h2>Serialization</h2>
  * <p>The cache can be saved to and loaded from disk for persistence across
  * server restarts.</p>
  *

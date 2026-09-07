@@ -33,13 +33,13 @@ import java.util.Map;
 /**
  * Manages evolving decode-style inputs for multi-step replay validation.
  *
- * <h3>What this does</h3>
+ * <h2>What this does</h2>
  * <p>During autoregressive decode, certain inputs change at each step while others
  * remain constant. This class manages the evolution of those changing inputs so
  * that validation tests can exercise the same compiled native handle across
  * multiple decode steps with realistic input changes.</p>
  *
- * <h3>Evolving Inputs</h3>
+ * <h2>Evolving Inputs</h2>
  * <ul>
  *   <li><b>position_ids</b> — Increments by 1 each decode step. Shape [1, 1] during
  *       decode (single token position). Starts at the prefill sequence length.</li>
@@ -51,7 +51,7 @@ import java.util.Map;
  *       for padded mode decode.</li>
  * </ul>
  *
- * <h3>Evolution Modes</h3>
+ * <h2>Evolution Modes</h2>
  * <ul>
  *   <li>{@link EvolutionMode#POSITION_IDS_ONLY} — Only position_ids change; mask and
  *       KV stay fixed. Useful for testing position-sensitive ops in isolation.</li>
@@ -63,7 +63,7 @@ import java.util.Map;
  *       decode-style validation — most realistic, catches all interaction bugs.</li>
  * </ul>
  *
- * <h3>Usage</h3>
+ * <h2>Usage</h2>
  * <pre>
  *   DecodeInputEvolutor evolutor = DecodeInputEvolutor.builder()
  *       .decoderInputs(allInputNames)

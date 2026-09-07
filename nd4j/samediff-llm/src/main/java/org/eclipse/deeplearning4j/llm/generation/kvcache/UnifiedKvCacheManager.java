@@ -48,7 +48,7 @@ import java.util.Random;
  * graph op ({@link KvScatter}), captured into CUDA graph replay like any other op.
  * There is no bespoke C++ lifecycle — the DSP plan is a pure graph executor.</p>
  *
- * <h3>Strategies</h3>
+ * <h2>Strategies</h2>
  * <ul>
  *   <li>{@link KvCacheStrategy#STATIC} — Dense pre-allocated buffers, CUDA graph compatible</li>
  *   <li>{@link KvCacheStrategy#QUANTIZED} — INT8/FP8 quantized storage with per-step dequant</li>
@@ -56,7 +56,7 @@ import java.util.Random;
  *   <li>{@link KvCacheStrategy#PAGED} — Block-based allocation via {@link PagedKVCache}</li>
  * </ul>
  *
- * <h3>In-Graph Scatter</h3>
+ * <h2>In-Graph Scatter</h2>
  * <p>Call {@link #buildInGraphScatterOps} after prefill to add KvScatter nodes
  * directly into the SameDiff graph. These ops execute as part of the graph plan
  * and are captured into CUDA graph replay. When in-graph scatter is active,

@@ -40,7 +40,7 @@ import java.util.List;
  * accumulate disproportionately high attention scores and are critical for generation
  * quality. Evicting low-score tokens has minimal impact on output quality.</p>
  *
- * <h3>Reference</h3>
+ * <h2>Reference</h2>
  * <p>Zhang et al., "H2O: Heavy-Hitter Oracle: Efficient Generative Inference of
  * Large Language Models with Heavy Hitters", NeurIPS 2023.</p>
  *

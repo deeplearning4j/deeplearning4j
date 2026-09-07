@@ -36,7 +36,7 @@ import java.util.List;
  * global patterns, and late layers again focus locally. Per-layer policies exploit this
  * by allocating different amounts of KV cache memory per layer.</p>
  *
- * <h3>Policy presets</h3>
+ * <h2>Policy presets</h2>
  * <ul>
  *   <li><b>Pyramid:</b> Early layers get small windows, deep layers get large windows.
  *       Suitable for models where deep layers need the most context.</li>

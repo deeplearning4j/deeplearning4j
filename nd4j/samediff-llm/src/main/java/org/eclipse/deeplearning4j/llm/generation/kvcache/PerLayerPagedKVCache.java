@@ -31,13 +31,13 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * sequence length derived from the per-layer policy. Layers with sliding
  * window policies automatically evict oldest blocks when the window is exceeded.</p>
  *
- * <h3>Sliding window</h3>
+ * <h2>Sliding window</h2>
  * <p>For layers configured with {@code slidingWindow=true}, the
  * {@link #enforceSlidingWindow(int, int)} method evicts the oldest blocks
  * to keep within the layer's window size. This is called automatically
  * during append if the policy dictates it.</p>
  *
- * <h3>Memory efficiency</h3>
+ * <h2>Memory efficiency</h2>
  * <p>By giving different window sizes to different layers, total memory usage
  * can be significantly reduced compared to a uniform maximum sequence length.
  * For example, with a pyramid policy, early layers may only keep the last 128

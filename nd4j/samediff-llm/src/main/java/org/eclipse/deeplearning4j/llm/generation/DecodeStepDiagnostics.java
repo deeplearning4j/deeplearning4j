@@ -36,7 +36,7 @@ import java.util.Map;
  * can call {@link #diagnoseStep} after each decoder invocation. All output goes
  * through SLF4J at INFO level, gated by {@link #enabled}.</p>
  *
- * <h3>Configurable via system properties</h3>
+ * <h2>Configurable via system properties</h2>
  * <ul>
  *   <li>{@code vlm.decode.diagnostics=true} — enable all diagnostics</li>
  *   <li>{@code vlm.decode.diagnostics.steps=N} — only diagnose steps 0..N (default: all when enabled)</li>
@@ -45,7 +45,7 @@ import java.util.Map;
  *   <li>{@code vlm.decode.diagnostics.autoOnFailure=true} — auto-enable on accuracy failure (default: true)</li>
  * </ul>
  *
- * <h3>Usage</h3>
+ * <h2>Usage</h2>
  * <pre>
  * DecodeStepDiagnostics diag = new DecodeStepDiagnostics();
  * // In decode loop:

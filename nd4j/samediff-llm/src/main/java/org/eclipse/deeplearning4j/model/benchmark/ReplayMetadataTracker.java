@@ -32,7 +32,7 @@ import lombok.Getter;
  * identity/signature stability, replay unit counts, execution counts, and phase
  * violations.
  *
- * <h3>What this tracks</h3>
+ * <h2>What this tracks</h2>
  * <ul>
  *   <li><b>Phase progression</b> — COMPILE → CAPTURE → REPLAY transitions per iteration</li>
  *   <li><b>Replay signature stability</b> — Hash of each segment's replay identity; must
@@ -45,12 +45,12 @@ import lombok.Getter;
  *       after shapes are frozen, or fallback to slot-by-slot when replay should be active)</li>
  * </ul>
  *
- * <h3>Integration with NativeOps</h3>
+ * <h2>Integration with NativeOps</h2>
  * <p>When a compiled native plan handle is available, this tracker reads metadata
  * via JNI hooks on NativeOps: {@code getPlanSegmentCount}, {@code getPlanReplaySignatureHash},
  * {@code getPlanReplayUnitCount}, {@code getSegmentExecutionCount}.</p>
  *
- * <h3>Usage</h3>
+ * <h2>Usage</h2>
  * <pre>
  *   ReplayMetadataTracker tracker = new ReplayMetadataTracker("OPTIMAL");
  *   tracker.recordIteration(0, nativeOps, planHandle);  // warmup

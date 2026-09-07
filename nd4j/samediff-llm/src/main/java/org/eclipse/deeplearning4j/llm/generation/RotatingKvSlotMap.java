@@ -51,7 +51,7 @@ import lombok.Getter;
  *   <li>Ring: the {@code min(ringSize, globalPosition - sinkCount)} most recently written slots
  *       within sinkCount .. maxKvLen-1 are unmasked; the rest are masked.</li>
  * </ul>
- * Use {@link #buildRotatingDecodeMask(long, long, float)} to compute the mask data array for a
+ * Use {@link #buildRotatingDecodeMask(int, float)} to compute the mask data array for a
  * given global position. The mask is always of length {@code maxKvLen} (matching the fixed buffer).
  *
  * <h2>RoPE quality caveat (MUST READ)</h2>
@@ -142,14 +142,14 @@ public class RotatingKvSlotMap {
     /**
      * Build the attention-bias mask data array for a single decode step in rotating mode.
      *
-     * <p>Returns a float array of length {@code maxKvLen} where:
+     * <p>Returns a float array of length {@code maxKvLen} where:</p>
      * <ul>
      *   <li>Sink slots 0..min(sinkCount-1, globalPos) are 0.0f (unmasked, always valid after
      *       the first sinkCount global positions have been committed).</li>
      *   <li>Ring slots containing live data are 0.0f (unmasked).</li>
      *   <li>All other slots are {@code maskVal} (masked).</li>
      * </ul>
-     * The array is suitable for wrapping into a {@code [1,1,1,maxKvLen]} tensor and assigning
+     * <p>The array is suitable for wrapping into a {@code [1,1,1,maxKvLen]} tensor and assigning
      * into the existing {@code decodeCausalMask} buffer in-place.</p>
      *
      * <p>CUDA-graph safety: this method computes data values only; no buffer shape changes occur.</p>

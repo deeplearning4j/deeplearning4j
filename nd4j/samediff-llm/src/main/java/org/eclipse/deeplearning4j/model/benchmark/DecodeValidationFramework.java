@@ -35,13 +35,13 @@ import java.util.*;
 /**
  * Main orchestration framework for benchmark-faithful correctness validation.
  *
- * <h3>What this does</h3>
+ * <h2>What this does</h2>
  * <p>Runs a SameDiff model through multi-step decode-style validation, comparing
  * a test execution mode against a trustworthy oracle (SLOT_BY_SLOT or manual
  * baseline). Validates correctness at multiple levels, tracks replay metadata,
  * and produces actionable failure diagnostics.</p>
  *
- * <h3>Key Design Principles</h3>
+ * <h2>Key Design Principles</h2>
  * <ul>
  *   <li><b>Same compiled native handle</b> — The test mode uses one compiled plan
  *       handle across all iterations. No recompilation between steps.</li>
@@ -55,7 +55,7 @@ import java.util.*;
  *       and ReplayMetadataTracker. No ad-hoc printf logging.</li>
  * </ul>
  *
- * <h3>Execution Mode Matrix</h3>
+ * <h2>Execution Mode Matrix</h2>
  * <ul>
  *   <li><b>SLOT_BY_SLOT</b> — Reference oracle. Standard op-by-op execution.</li>
  *   <li><b>TRITON_NO_GC</b> — Triton compilation without CUDA graph capture.
@@ -66,7 +66,7 @@ import java.util.*;
  *       benchmark configuration.</li>
  * </ul>
  *
- * <h3>Oracle Levels</h3>
+ * <h2>Oracle Levels</h2>
  * <ul>
  *   <li><b>SLOT_BY_SLOT reference</b> — Run the same model with SLOT_BY_SLOT mode
  *       and compare. Best for when you have a working reference implementation.</li>
@@ -74,7 +74,7 @@ import java.util.*;
  *       KV + contiguous mask + output()). Best for end-to-end pipeline validation.</li>
  * </ul>
  *
- * <h3>When to use each comparison level</h3>
+ * <h2>When to use each comparison level</h2>
  * <pre>
  *   TENSOR       → Root-cause analysis. Find the exact divergent op.
  *                  Use DspAccuracyValidator.validatePerOp() instead.
@@ -92,7 +92,7 @@ import java.util.*;
  *                  block (seg[2676-2730]) produce correct intermediates?"
  * </pre>
  *
- * <h3>How to run same-handle multi-step replay validation</h3>
+ * <h2>How to run same-handle multi-step replay validation</h2>
  * <pre>
  *   // 1. Build the framework with oracle and test configs
  *   DecodeValidationFramework framework = DecodeValidationFramework.builder()
@@ -119,7 +119,7 @@ import java.util.*;
  *   framework.close();
  * </pre>
  *
- * <h3>How a separate agent writes concrete benchmark-subgraph tests</h3>
+ * <h2>How a separate agent writes concrete benchmark-subgraph tests</h2>
  * <pre>
  *   // Create framework with specific subgraph test config
  *   DecodeValidationFramework framework = DecodeValidationFramework.builder()

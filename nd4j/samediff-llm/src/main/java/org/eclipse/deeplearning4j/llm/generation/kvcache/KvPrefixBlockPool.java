@@ -41,20 +41,20 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * available for reuse when a subsequent request shares a token prefix. Paired with
  * {@link RadixPrefixCache} for trie-based longest-prefix lookup.</p>
  *
- * <h3>Block layout</h3>
+ * <h2>Block layout</h2>
  * <p>Each block covers {@code blockSize} consecutive token positions and stores the
  * full KV slice {@code [1, blockSize, numKVHeads, headDim]} per layer. Blocks are
  * identified by a monotonically-increasing integer ID allocated by
  * {@link #allocateBlockId()}.</p>
  *
- * <h3>Memory budget</h3>
+ * <h2>Memory budget</h2>
  * <p>Total device bytes across all stored blocks is tracked and bounded by
  * {@code maxByteBudget}. When a new block would exceed the budget, the LRU block is
  * evicted (freeing its {@link INDArray} data) before the new block is stored. The
  * radix trie is notified of evictions so stale block IDs are not returned by
  * subsequent lookups.</p>
  *
- * <h3>Recurrent state snapshots</h3>
+ * <h2>Recurrent state snapshots</h2>
  * <p>For GDN/recurrent-state models, the recurrent state at the end of the full prefill
  * is stored as a per-prefix snapshot (keyed by the number of prefix tokens that were
  * cached). This snapshot is valid ONLY for exact-full-boundary reuse: the cached
@@ -63,7 +63,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * to a full re-prefill of the uncached suffix from position 0 with the recurrent state
  * properly derived.</p>
  *
- * <h3>Thread safety</h3>
+ * <h2>Thread safety</h2>
  * <p>All public methods are guarded by an internal {@link ReentrantReadWriteLock}.</p>
  *
  * @see RadixPrefixCache

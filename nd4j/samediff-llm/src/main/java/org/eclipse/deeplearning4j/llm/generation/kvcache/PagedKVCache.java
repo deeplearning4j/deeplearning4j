@@ -41,38 +41,38 @@ import java.util.Deque;
  * this cache uses fixed-size blocks that are allocated on demand from a shared pool.
  * Each sequence maintains a page table mapping logical block indices to physical blocks.</p>
  *
- * <h3>Block layout</h3>
+ * <h2>Block layout</h2>
  * <p>Each block stores {@code blockSize} token positions for all KV heads:
  * {@code [blockSize, numKvHeads, headDim]} for both key and value.
  * The block pool is a single pre-allocated tensor:
  * {@code [numBlocks, blockSize, numKvHeads, headDim]} for keys and values separately.</p>
  *
- * <h3>Page table</h3>
+ * <h2>Page table</h2>
  * <p>Each sequence has an {@code int[]} mapping logical block index → physical block ID.
  * Logical block 0 covers tokens 0..blockSize-1, block 1 covers blockSize..2*blockSize-1, etc.
  * The attention kernel uses this table to gather K/V from scattered physical blocks.</p>
  *
- * <h3>Native append path</h3>
+ * <h2>Native append path</h2>
  * <p>Appends route through the batched native {@code paged_kv_append} op: one kernel
  * scatter per append instead of per-token view/assign dispatches. Only the page-table
  * bookkeeping (block allocation) stays on the host. Inputs are normalized to a
  * C-contiguous [1, newLen, numKvHeads, headDim] view before the op call.</p>
  *
- * <h3>Slack pool</h3>
+ * <h2>Slack pool</h2>
  * <p>Recently freed blocks are kept in a small {@link #reservedBlocks} band (analogous to
  * kvcached's reserved-page list) and are reused first, improving device cache locality for
  * the hot free/alloc churn of continuous batching. Overflow beyond
  * {@link #reservedBlockLimit} spills to the general LIFO free list. Reserved blocks still
  * count as free capacity in {@link #getNumFreeBlocks()}.</p>
  *
- * <h3>Shared blocks (zero-copy prefix sharing)</h3>
+ * <h2>Shared blocks (zero-copy prefix sharing)</h2>
  * <p>Physical blocks carry a reference count. {@link #sharePrefixBlocks(int, int, int)}
  * points a destination sequence's leading page-table entries at a source sequence's
  * physical blocks without copying any data. Freeing a sequence decrements counts; a block
  * only returns to the free pool when its count reaches zero. This is the substrate for
  * cross-request prefix sharing and O(1) beam forks.</p>
  *
- * <h3>Benefits</h3>
+ * <h2>Benefits</h2>
  * <ul>
  *   <li>No per-sequence pre-allocation of maxSeqLen — blocks allocated as tokens arrive</li>
  *   <li>Finished sequences return blocks to the pool — immediate reuse without copying</li>

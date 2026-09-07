@@ -52,7 +52,7 @@ import java.util.function.Function;
  * the effective throughput approaches {@code (K+1) / (draftTime + targetTime)} tokens per
  * unit time, versus {@code 1 / targetTime} without speculation.</p>
  *
- * <h3>KV Cache Management</h3>
+ * <h2>KV Cache Management</h2>
  * <p>Uses pre-allocated static KV buffers with scatter-based writes instead of dup/close.
  * Checkpoint and rollback are zero-copy via {@link SpeculativeKVCacheManager} -- only the
  * cache position pointer is saved/restored, since positions beyond draftPastSeqLen are

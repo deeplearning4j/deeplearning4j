@@ -102,6 +102,46 @@
          out of Java-only snapshot publication, which deliberately skips tests. -->
     <profiles>
         <profile>
+            <id>central-release</id>
+            <build>
+                <plugins>
+                    <!-- Javadoc does not run Lombok's annotation processor. Document
+                         generated accessors and builders without changing compilation. -->
+                    <plugin>
+                        <groupId>org.projectlombok</groupId>
+                        <artifactId>lombok-maven-plugin</artifactId>
+                        <version>1.18.20.0</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                                <version>${lombok.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <executions>
+                            <execution>
+                                <id>central-delombok</id>
+                                <phase>prepare-package</phase>
+                                <goals><goal>delombok</goal></goals>
+                                <configuration>
+                                    <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+                                    <outputDirectory>${project.build.directory}/delombok-javadoc</outputDirectory>
+                                    <addOutputDirectory>false</addOutputDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <configuration>
+                            <sourcepath>${project.build.directory}/delombok-javadoc</sourcepath>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
             <id>samediff-native-test-dependencies</id>
             <activation>
                 <property>

@@ -32,13 +32,13 @@ import java.util.Set;
  * remaining candidates, selects the oldest {@code blocksNeeded} blocks for
  * eviction.</p>
  *
- * <h3>Block-level protection</h3>
+ * <h2>Block-level protection</h2>
  * <p>Since KV cache blocks span multiple token positions (blockSize tokens each),
  * a block is considered protected if any token position within it is classified as
  * an attention sink. This is conservative but safe: evicting a block that contains
  * even one sink position would degrade attention quality for that head.</p>
  *
- * <h3>Fallback behavior</h3>
+ * <h2>Fallback behavior</h2>
  * <p>If there are not enough non-sink candidates to satisfy {@code blocksNeeded},
  * the policy returns as many as available. The caller should handle the case where
  * fewer blocks are returned than requested.</p>

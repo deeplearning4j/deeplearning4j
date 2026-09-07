@@ -41,7 +41,7 @@ import java.util.Map;
  * into fixed-size chunks and processes each chunk sequentially, building up the KV cache
  * incrementally.</p>
  *
- * <h3>Algorithm</h3>
+ * <h2>Algorithm</h2>
  * <ol>
  *   <li>Split input embeddings into chunks of {@code chunkSize} tokens</li>
  *   <li>For each chunk:

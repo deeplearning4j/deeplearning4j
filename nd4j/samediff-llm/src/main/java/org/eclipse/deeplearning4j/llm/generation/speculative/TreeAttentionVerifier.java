@@ -42,7 +42,7 @@ import java.util.List;
  * speculation hypotheses simultaneously, increasing the probability of accepting at
  * least one long branch.</p>
  *
- * <h3>How it works</h3>
+ * <h2>How it works</h2>
  * <p>Given a token tree where each node can have multiple children (candidate next tokens),
  * we flatten the tree into a sequence and build a custom attention mask that encodes the
  * tree structure:</p>
@@ -67,7 +67,7 @@ import java.util.List;
  * longest accepted path. This is more efficient than running separate forward passes
  * for each branch.</p>
  *
- * <h3>Usage with speculative decoding</h3>
+ * <h2>Usage with speculative decoding</h2>
  * <ol>
  *   <li>Draft model generates a tree of candidate tokens (e.g., top-2 at each position)</li>
  *   <li>TreeAttentionVerifier flattens the tree and builds the attention mask</li>

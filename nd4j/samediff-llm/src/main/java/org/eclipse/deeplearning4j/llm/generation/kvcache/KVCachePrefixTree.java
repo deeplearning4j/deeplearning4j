@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * This class tracks token prefix to physical block ID mappings with reference
  * counting, enabling copy-on-write sharing of KV cache blocks.</p>
  *
- * <h3>How it works</h3>
+ * <h2>How it works</h2>
  * <p>Each trie node represents a block-aligned token range. When a sequence is registered,
  * the prefix tree walks the token sequence block-by-block, matching or creating nodes.
  * Physical block IDs are stored at each node, and a reference count tracks how many
@@ -56,12 +56,12 @@ import java.util.concurrent.atomic.AtomicInteger;
  *           └─ [90,91,92,93] → block 2 (refCount=1)  ← seq B only
  * </pre>
  *
- * <h3>Copy-on-Write</h3>
+ * <h2>Copy-on-Write</h2>
  * <p>When a sequence needs to modify a shared block (e.g., appending tokens to a
  * partially-filled shared block), the block must be copied first. The trie's
  * reference count determines whether a copy is needed (refCount > 1).</p>
  *
- * <h3>Integration with PagedKVCache</h3>
+ * <h2>Integration with PagedKVCache</h2>
  * <p>This trie maps logical token prefixes to physical block IDs managed by
  * {@link PagedKVCache}. The paged cache handles allocation/deallocation; this
  * trie handles sharing and prefix matching.</p>

@@ -34,13 +34,12 @@ import java.util.Set;
 /**
  * Defines a model type with built-in prompt templates for specific tasks.
  *
- * <p>Each model type encapsulates:
+ * <p>Each model type encapsulates:</p>
  * <ul>
  *   <li>A default prompt template for the task</li>
  *   <li>Input/output format specifications</li>
  *   <li>Post-processing logic for structured outputs</li>
  * </ul>
- * </p>
  *
  * <p>Built-in model types:</p>
  * <ul>

@@ -35,13 +35,13 @@ import java.util.List;
  * only at the most recent tokens. Without sharing, each beam would need a full copy
  * of the KV cache, multiplying memory by the beam width.</p>
  *
- * <h3>Copy-on-Write (CoW)</h3>
+ * <h2>Copy-on-Write (CoW)</h2>
  * <p>Beams share page tables via the {@link KVCachePrefixTree}. When a beam forks
  * (is selected as a parent for the next step), the child inherits the parent's page
  * table with shared reference counts. Physical block data is only copied when a shared
  * block needs modification (a new token appended to a shared last block).</p>
  *
- * <h3>Beam lifecycle</h3>
+ * <h2>Beam lifecycle</h2>
  * <ol>
  *   <li>{@link #initializeBeams(int[])} -- register prompt, create initial beam slots</li>
  *   <li>{@link #appendToken(int, int, INDArray, INDArray)} -- append decoded token to a beam</li>

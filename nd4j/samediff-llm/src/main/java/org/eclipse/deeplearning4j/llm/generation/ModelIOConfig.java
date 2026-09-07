@@ -23,6 +23,7 @@ package org.eclipse.deeplearning4j.llm.generation;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.deeplearning4j.llm.generation.speculative.DraftModelSpeculator;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -684,7 +685,7 @@ public class ModelIOConfig {
     /**
      * Auto-discover a ModelIOConfig from a SameDiff model graph.
      *
-     * <p>Inspects the model's input and output variable names to find:
+     * <p>Inspects the model's input and output variable names to find:</p>
      * <ul>
      *   <li>Input embeddings: first input containing "embed"</li>
      *   <li>Input IDs: first input containing "input_id"</li>
@@ -694,7 +695,7 @@ public class ModelIOConfig {
      *   <li>KV cache prefix: detected from first input starting with common KV prefixes</li>
      *   <li>Logits output: via {@link #findLogitsOutputName(SameDiff)}</li>
      *   <li>KV cache outputs: via {@link #findKVCacheOutputNames(SameDiff)}</li>
-     * </ul></p>
+     * </ul>
      *
      * @param model the SameDiff model to inspect
      * @return a ModelIOConfig with discovered names (with sensible defaults for any not found)

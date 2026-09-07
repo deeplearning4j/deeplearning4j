@@ -45,7 +45,7 @@ import java.util.Set;
  *   <li>The first step where sampled tokens diverge</li>
  * </ul>
  *
- * <h3>Usage</h3>
+ * <h2>Usage</h2>
  * <p>Callers collect logits from two decode runs (e.g., one with SLOT_BY_SLOT mode,
  * one with OPTIMAL), then pass them here for comparison:</p>
  * <pre>

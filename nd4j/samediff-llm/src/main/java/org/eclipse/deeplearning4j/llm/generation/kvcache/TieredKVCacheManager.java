@@ -39,13 +39,13 @@ import java.util.concurrent.CompletableFuture;
  * storage. Restoration follows the reverse path, pulling from the
  * deepest available tier.</p>
  *
- * <h3>Pressure thresholds</h3>
+ * <h2>Pressure thresholds</h2>
  * <ul>
  *   <li>GPU: evict when free blocks &lt; 10% of total pool</li>
  *   <li>Host: evict to disk when host pool is full</li>
  * </ul>
  *
- * <h3>Priority ordering</h3>
+ * <h2>Priority ordering</h2>
  * <ul>
  *   <li>GPU hot: actively used by running sequences</li>
  *   <li>Host warm: recently evicted, fast to restore</li>

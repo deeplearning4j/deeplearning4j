@@ -37,14 +37,14 @@ import java.util.Map;
  * Compares DSP execution outputs against a reference (standard op-by-op) path
  * to identify the exact source of inaccuracies.
  *
- * <h3>Usage modes</h3>
+ * <h2>Usage modes</h2>
  * <ul>
  *   <li>{@link #validateOutputs} — compares final outputs only (fast, low memory)</li>
  *   <li>{@link #validatePerOp} — compares every intermediate variable (finds first divergent op)</li>
  *   <li>{@link #compareOutputMaps} — static utility for comparing two output maps</li>
  * </ul>
  *
- * <h3>Example</h3>
+ * <h2>Example</h2>
  * <pre>
  *   DspAccuracyValidator validator = new DspAccuracyValidator(model, ValidationConfig.standard());
  *   DivergenceReport report = validator.validateOutputs(placeholders, "logits");

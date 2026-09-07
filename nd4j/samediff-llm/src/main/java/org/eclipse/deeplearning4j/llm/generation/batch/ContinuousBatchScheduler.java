@@ -41,7 +41,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * be assigned to a new request from the waiting queue — without waiting for the
  * entire batch to complete.</p>
  *
- * <h3>Design</h3>
+ * <h2>Design</h2>
  * <ul>
  *   <li><b>Fixed max batch size</b>: Pre-allocated for maxBatchSize slots. The decoder
  *       plan is compiled once for this size; active count varies.</li>
@@ -55,7 +55,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *       for autoregressive generation (seqLen=1 per step).</li>
  * </ul>
  *
- * <h3>Usage</h3>
+ * <h2>Usage</h2>
  * <pre>{@code
  * ContinuousBatchScheduler scheduler = new ContinuousBatchScheduler(32);
  *

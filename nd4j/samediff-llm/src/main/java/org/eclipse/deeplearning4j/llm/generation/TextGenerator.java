@@ -749,7 +749,7 @@ public class TextGenerator {
      *
      * @param text source text
      * @param chunkTokenSize max tokens per chunk (must be > 0)
-     * @param overlapTokens overlap between chunks (must be >= 0 and < chunkTokenSize)
+     * @param overlapTokens overlap between chunks (must be {@code >= 0} and {@code < chunkTokenSize})
      * @param maxNewTokens maximum tokens to generate per chunk
      * @return generation results aligned with chunk order
      */
@@ -763,7 +763,7 @@ public class TextGenerator {
      *
      * @param text source text
      * @param chunkTokenSize max tokens per chunk (must be > 0)
-     * @param overlapTokens overlap between chunks (must be >= 0 and < chunkTokenSize)
+     * @param overlapTokens overlap between chunks (must be {@code >= 0} and {@code < chunkTokenSize})
      * @param maxNewTokens maximum tokens to generate per chunk
      * @param chunkDelimiter delimiter inserted between chunk outputs
      * @return combined chunk output
@@ -789,7 +789,7 @@ public class TextGenerator {
      *
      * @param text source text
      * @param chunkTokenSize max tokens per chunk (must be > 0)
-     * @param overlapTokens overlap between chunks (must be >= 0 and < chunkTokenSize)
+     * @param overlapTokens overlap between chunks (must be {@code >= 0} and {@code < chunkTokenSize})
      * @param chunkDelimiter delimiter inserted between chunk outputs
      * @return combined chunk output
      */

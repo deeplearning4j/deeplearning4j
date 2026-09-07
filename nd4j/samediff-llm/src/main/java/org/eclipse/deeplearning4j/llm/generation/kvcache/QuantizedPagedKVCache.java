@@ -39,7 +39,7 @@ import java.util.Deque;
  * rather than full precision. This reduces memory usage by 2-4x with minimal accuracy loss,
  * enabling longer context lengths and larger batch sizes.</p>
  *
- * <h3>Quantization formats</h3>
+ * <h2>Quantization formats</h2>
  * <ul>
  *   <li>{@link QuantFormat#INT8}: 8-bit integer, symmetric per-row quantization (2x compression)</li>
  *   <li>{@link QuantFormat#FP8_E4M3}: 8-bit float with 4-bit exponent (2x compression)</li>
@@ -47,7 +47,7 @@ import java.util.Deque;
  *   <li>{@link QuantFormat#INT4}: 4-bit integer, packed 2 per byte (4x compression)</li>
  * </ul>
  *
- * <h3>Usage</h3>
+ * <h2>Usage</h2>
  * <pre>{@code
  * var cache = new QuantizedPagedKVCache(
  *     batchSize, maxSeqLen, numKvHeads, headDim,

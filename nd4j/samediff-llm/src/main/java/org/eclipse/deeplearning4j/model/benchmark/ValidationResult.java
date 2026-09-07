@@ -34,7 +34,7 @@ import lombok.Getter;
  * comparison. Encapsulates all validation levels, replay metadata, and
  * actionable failure diagnostics in a single record.</p>
  *
- * <h3>Validation Levels (most to least strict)</h3>
+ * <h2>Validation Levels (most to least strict)</h2>
  * <ul>
  *   <li><b>TENSOR</b> — Exact tensor equality or strict tolerance for ALL intermediates</li>
  *   <li><b>LOGITS</b> — Logits comparison at each decode step (max abs diff, mean abs diff)</li>
@@ -43,7 +43,7 @@ import lombok.Getter;
  *   <li><b>INTERMEDIATE</b> — Targeted intermediate tensor capture/comparison at specific steps</li>
  * </ul>
  *
- * <h3>When to use each level</h3>
+ * <h2>When to use each level</h2>
  * <ul>
  *   <li><b>TENSOR</b> — Root-cause analysis when you need to find the exact divergent op.
  *       Most expensive, highest diagnostic value. Use {@link DspAccuracyValidator#validatePerOp}.</li>
@@ -54,10 +54,11 @@ import lombok.Getter;
  *   <li><b>TOKEN_TOPK</b> — Relaxed correctness for TF32/low-precision configs where exact
  *       token match is unlikely but top-K overlap indicates semantic equivalence.</li>
  *   <li><b>INTERMEDIATE</b> — Targeted validation of specific subgraphs (attention-prep,
- *       KV-prep, mask-reformat). Use {@link CapturedComparison} with specific variable names.</li>
+ *       KV-prep, mask-reformat). Compare selected captured tensors with
+ *       {@link MultiLevelComparator#compareTensors}.</li>
  * </ul>
  *
- * <h3>Replay Metadata</h3>
+ * <h2>Replay Metadata</h2>
  * <p>Each result includes replay metadata for introspection:</p>
  * <ul>
  *   <li>Phase progression (COMPILE → CAPTURE → REPLAY)</li>

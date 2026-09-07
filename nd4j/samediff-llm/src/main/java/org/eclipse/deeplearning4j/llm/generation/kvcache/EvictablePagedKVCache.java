@@ -39,7 +39,7 @@ import java.util.List;
  * exceeds a token budget, the eviction policy selects which tokens to remove, and
  * this class handles the physical removal and block compaction.</p>
  *
- * <h3>Eviction flow</h3>
+ * <h2>Eviction flow</h2>
  * <ol>
  *   <li>Tokens are appended normally via {@link #append(int, INDArray, INDArray)}</li>
  *   <li>After appending, if the sequence length exceeds the budget and a policy is set,
@@ -48,7 +48,7 @@ import java.util.List;
  *   <li>Partially-empty blocks are compacted to free whole blocks back to the pool</li>
  * </ol>
  *
- * <h3>Block compaction</h3>
+ * <h2>Block compaction</h2>
  * <p>After removing tokens from scattered positions, some blocks may have gaps.
  * {@link #compactBlocks(int)} consolidates tokens from partially-filled blocks
  * into fewer fully-packed blocks, freeing the emptied blocks back to the pool.</p>

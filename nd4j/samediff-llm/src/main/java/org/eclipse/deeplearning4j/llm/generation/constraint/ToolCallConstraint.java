@@ -36,7 +36,7 @@ import java.util.List;
  * <p>This constraint enforces the <em>canonical spaced form</em> shown above.
  * LLM prompts that use this constraint should explicitly request:
  * {@code Respond ONLY with JSON in the form: {"tool": "toolname", "args": {...}}}</p>
- * <p>Specifically, the literal substrings {@code {"tool": "} and {@code ", "args": }
+ * <p>Specifically, the literal substrings <code>&#123;"tool": "</code> and {@code ", "args": }
  * are enforced character-for-character. This makes the automaton O(n) simple string
  * matching rather than a general parser. The LLM's in-context instruction is responsible
  * for requesting this format.</p>
@@ -45,7 +45,7 @@ import java.util.List;
  * <p>The constraint advances through five phases, determined purely from the emitted text
  * (no mutable state is kept between calls):</p>
  * <ol>
- *   <li>{@link Phase#PREFIX} — waiting for the literal {@code {"tool": "}</li>
+ *   <li>{@link Phase#PREFIX} — waiting for the literal <code>&#123;"tool": "</code></li>
  *   <li>{@link Phase#TOOL_NAME} — collecting the tool name; only prefixes of at least one
  *       known tool name are allowed</li>
  *   <li>{@link Phase#AFTER_NAME} — waiting for the literal {@code ", "args": }</li>

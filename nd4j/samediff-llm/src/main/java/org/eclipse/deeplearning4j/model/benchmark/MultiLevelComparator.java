@@ -33,7 +33,7 @@ import java.util.*;
 /**
  * Multi-level tensor comparison engine for benchmark-faithful correctness validation.
  *
- * <h3>Comparison Levels (most to least strict)</h3>
+ * <h2>Comparison Levels (most to least strict)</h2>
  * <ul>
  *   <li><b>TENSOR</b> — Full tensor equality with configurable abs/rel tolerance.
  *       Compares shape, dtype, then element-wise absolute and relative differences.
@@ -49,7 +49,7 @@ import java.util.*;
  *       (attention-prep, KV-prep, mask-reformat).</li>
  * </ul>
  *
- * <h3>How to choose</h3>
+ * <h2>How to choose</h2>
  * <ul>
  *   <li>Use <b>TOKEN_PREFIX</b> for quick benchmark validation — "does the replay produce
  *       the same first N tokens?"</li>

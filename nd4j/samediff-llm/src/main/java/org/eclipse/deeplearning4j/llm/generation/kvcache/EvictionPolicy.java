@@ -46,7 +46,7 @@ public interface EvictionPolicy {
      * @param candidatePositions positions eligible for eviction (sorted by age, oldest first)
      * @param sinkPositions      positions that should be protected from eviction
      * @param blocksNeeded       number of blocks that need to be freed
-     * @return array of positions to evict, length <= blocksNeeded
+     * @return array of positions to evict, {@code length <= blocksNeeded}
      */
     int[] selectForEviction(int[] candidatePositions, Set<Integer> sinkPositions, int blocksNeeded);
 

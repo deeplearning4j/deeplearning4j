@@ -44,17 +44,17 @@ import java.util.Map;
  * Supports both static KV cache (dense pre-allocated buffers) and paged KV cache
  * (block-based) snapshots.</p>
  *
- * <h3>Static KV cache checkpointing</h3>
+ * <h2>Static KV cache checkpointing</h2>
  * <p>For static KV caches, only the valid portion (up to cachePosition) of each
  * buffer is copied. This enables efficient fork/rollback for speculative decoding
  * and branch-and-bound search.</p>
  *
- * <h3>Incremental deltas</h3>
+ * <h2>Incremental deltas</h2>
  * <p>The {@link #incrementalDelta(KVCacheCheckpoint)} method creates a checkpoint
  * that stores only the data added since a base checkpoint. This reduces memory
  * usage for frequent checkpoints during long generations.</p>
  *
- * <h3>Disk persistence</h3>
+ * <h2>Disk persistence</h2>
  * <p>Checkpoints can be saved to and loaded from disk for persistence across
  * restarts or for offline analysis.</p>
  *

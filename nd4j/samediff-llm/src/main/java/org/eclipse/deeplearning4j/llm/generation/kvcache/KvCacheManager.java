@@ -39,7 +39,7 @@ import java.util.Map;
  *       (STATIC, PAGED, QUANTIZED, TURBOQUANT) with in-graph KvScatter support</li>
  * </ul>
  *
- * <h3>Lifecycle</h3>
+ * <h2>Lifecycle</h2>
  * <ol>
  *   <li>{@link #initializeFromPrefill} - Called once after prefill to set up cache buffers</li>
  *   <li>{@link #prepareInputs} - Called each decode step to add KV cache entries to input map</li>

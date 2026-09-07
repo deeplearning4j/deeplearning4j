@@ -37,7 +37,7 @@ import java.util.Set;
  * mechanism. Evicting these positions from the KV cache causes severe degradation in
  * generation quality.</p>
  *
- * <h3>Detection algorithm</h3>
+ * <h2>Detection algorithm</h2>
  * <ol>
  *   <li>At each decoding step, accumulate attention weights summed across all heads</li>
  *   <li>After a warmup period, compute the mean cumulative score across all positions</li>
@@ -45,7 +45,7 @@ import java.util.Set;
  *   <li>Cap the total number of sinks at {@code maxSinks}</li>
  * </ol>
  *
- * <h3>Usage with eviction policies</h3>
+ * <h2>Usage with eviction policies</h2>
  * <p>The detected sink positions are passed to {@link EvictionPolicy} implementations
  * (e.g., {@link SinkAwareEvictionPolicy}) to protect important tokens during
  * KV cache eviction.</p>

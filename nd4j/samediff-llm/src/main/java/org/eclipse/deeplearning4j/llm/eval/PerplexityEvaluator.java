@@ -74,7 +74,7 @@ public class PerplexityEvaluator {
      * @param tokenizer the tokenizer
      * @param text evaluation text
      * @param contextLength max context window for the model
-     * @param stride step size between windows (stride < contextLength for overlap)
+     * @param stride step size between windows ({@code stride < contextLength} for overlap)
      * @return perplexity result
      */
     public static PerplexityResult evaluate(SameDiff model, Tokenizer tokenizer,

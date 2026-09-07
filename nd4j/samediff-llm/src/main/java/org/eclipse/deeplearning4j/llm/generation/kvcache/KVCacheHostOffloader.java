@@ -39,24 +39,24 @@ import java.util.Map;
  * can be evicted to pinned host memory. This class manages a pool of pinned host buffers
  * and provides async-capable copy operations for eviction and restoration.</p>
  *
- * <h3>Two-tier memory hierarchy</h3>
+ * <h2>Two-tier memory hierarchy</h2>
  * <pre>
  * GPU (hot):   [block pool] ← active sequences, fast access
  *                   ↕ evict/restore (async DMA)
  * Host (warm):  [pinned buffers] ← idle sequences, async restore overlapped with decode
  * </pre>
  *
- * <h3>Eviction policy</h3>
+ * <h2>Eviction policy</h2>
  * <p>Uses LRU (Least Recently Used) to select which host-side blocks to discard when
  * the host buffer pool is full. Host eviction is less costly than GPU eviction since
  * the blocks can always be recomputed from the token sequence.</p>
  *
- * <h3>Async overlap</h3>
+ * <h2>Async overlap</h2>
  * <p>Restoration of a KV cache block from host to GPU is initiated before the sequence
  * needs it (when the scheduler decides to resume a previously-paused sequence).
  * The host-to-GPU DMA transfer overlaps with other sequences' decode steps.</p>
  *
- * <h3>Usage with PagedKVCache</h3>
+ * <h2>Usage with PagedKVCache</h2>
  * <pre>
  * // Evict blocks when GPU is low
  * for (int blockId : blocksToEvict) {

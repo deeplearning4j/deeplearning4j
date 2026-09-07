@@ -38,13 +38,13 @@ import java.util.UUID;
  * maximum count. When the limit is exceeded, the oldest checkpoints are
  * automatically deleted (FIFO eviction).</p>
  *
- * <h3>Checkpoint IDs</h3>
+ * <h2>Checkpoint IDs</h2>
  * <p>Each checkpoint is assigned a unique UUID-based ID upon creation. This ID
  * is used for retrieval and deletion. IDs are returned by
  * {@link #createCheckpoint(Map, int)} and can be listed with
  * {@link #listCheckpoints()}.</p>
  *
- * <h3>Memory management</h3>
+ * <h2>Memory management</h2>
  * <p>Deleting a checkpoint via {@link #deleteCheckpoint(String)} frees all
  * INDArray buffers associated with that checkpoint. Checkpoints that are
  * evicted due to the max count limit are also properly closed.</p>

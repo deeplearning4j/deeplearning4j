@@ -455,7 +455,7 @@ public interface Tokenizer extends AutoCloseable {
      *
      * @param encoding the encoding to validate
      * @param vocabSize the vocabulary size to validate against (typically from the model's embedding table)
-     * @throws TokenizerException if any token ID >= vocabSize or < 0
+     * @throws TokenizerException if any token ID is {@code >= vocabSize} or {@code < 0}
      */
     default void validateTokenIds(Encoding encoding, int vocabSize) {
         if (encoding == null || encoding.getIds() == null) return;

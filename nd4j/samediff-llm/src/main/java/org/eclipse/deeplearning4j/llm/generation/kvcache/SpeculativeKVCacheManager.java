@@ -37,18 +37,18 @@ import java.util.concurrent.atomic.AtomicInteger;
  * after K must be rolled back. This class provides efficient checkpoint and
  * rollback operations for both static and paged KV caches.</p>
  *
- * <h3>Static KV cache insight</h3>
+ * <h2>Static KV cache insight</h2>
  * <p>For static KV caches, rollback is zero-copy: simply resetting the
  * cachePosition pointer is sufficient because positions beyond cachePos are
  * masked out by the attention mask. Any stale data in those positions is
  * harmless and will be overwritten on the next append.</p>
  *
- * <h3>Paged KV cache rollback</h3>
+ * <h2>Paged KV cache rollback</h2>
  * <p>For paged KV caches, rollback requires freeing blocks that were allocated
  * after the checkpoint. The page table is restored to its checkpointed state,
  * and newly allocated blocks are returned to the free pool.</p>
  *
- * <h3>Tree-based speculative decoding</h3>
+ * <h2>Tree-based speculative decoding</h2>
  * <p>The {@link #compactAcceptedPath(PagedKVCache, int, int[])} method supports
  * tree-structured speculation where multiple candidate branches are evaluated
  * in parallel. After verification, only the accepted path's blocks are kept

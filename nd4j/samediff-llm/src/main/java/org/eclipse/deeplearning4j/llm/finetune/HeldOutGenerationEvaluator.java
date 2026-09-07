@@ -17,7 +17,7 @@ import java.util.*;
  * {@code GeneratedTrainingExample} and generic text validators without any
  * dependency on teacher requests or training pipelines.</p>
  *
- * <h3>Usage</h3>
+ * <h2>Usage</h2>
  * <pre>{@code
  * HeldOutGenerationEvaluator evaluator = new HeldOutGenerationEvaluator(
  *     (prompt, maxTokens) -> pipeline.generate(prompt, maxTokens).getText(),

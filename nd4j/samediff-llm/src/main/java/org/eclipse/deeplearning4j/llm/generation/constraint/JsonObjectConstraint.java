@@ -31,7 +31,7 @@ package org.eclipse.deeplearning4j.llm.generation.constraint;
  * <ul>
  *   <li>String boundaries ({@code "}) — including backslash escape handling inside strings</li>
  *   <li>Brace depth ({@code { }}) — must never go negative; object is complete when it
- *       returns to 0 after the opening {@code {}</li>
+ *       returns to 0 after the opening <code>&#123;</code></li>
  *   <li>Bracket depth ({@code [ ]}) — must never go negative</li>
  * </ul>
  *
@@ -43,7 +43,7 @@ package org.eclipse.deeplearning4j.llm.generation.constraint;
  * <h2>Acceptance rule</h2>
  * <p>A string is <em>accepting</em> (complete) when:</p>
  * <ul>
- *   <li>It starts with {@code {}</li>
+ *   <li>It starts with <code>&#123;</code></li>
  *   <li>brace depth == 0</li>
  *   <li>bracket depth == 0</li>
  *   <li>not inside a string literal</li>
@@ -54,7 +54,7 @@ package org.eclipse.deeplearning4j.llm.generation.constraint;
  * <p>{@code canExtend(currentText, piece)} returns {@code true} when
  * {@code currentText + piece} is still a valid JSON-object prefix — i.e., the state
  * machine reports brace_depth &gt;= 0 and bracket_depth &gt;= 0 and the combined string
- * starts with (or could start with) {@code {}.</p>
+ * starts with (or could start with) <code>&#123;</code>.</p>
  *
  * @author Eclipse Deeplearning4j Contributors
  * @see ToolCallConstraint
