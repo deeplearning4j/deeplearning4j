@@ -319,7 +319,7 @@ class SD_LIB_EXPORT DataBuffer {
   /**
    * Increment the frozen plan reference count. Call when this buffer is
    * registered in a frozen NativeDynamicShapePlan as an external input
-   * or retained weight. While the count is > 0, migrate() is blocked to
+   * or retained weight. While the count is &gt; 0, migrate() is blocked to
    * prevent invalidating baked-in GPU addresses used by frozen replay.
    */
   void addFrozenRef() { _frozenRefCount.fetch_add(1, std::memory_order_relaxed); }
@@ -337,7 +337,7 @@ class SD_LIB_EXPORT DataBuffer {
 
   /**
    * Check whether this buffer is registered in any frozen plan.
-   * @return true if frozen ref count > 0
+   * @return true if frozen ref count &gt; 0
    */
   bool isFrozenPlanRegistered() const { return _frozenRefCount.load(std::memory_order_relaxed) > 0; }
 

@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * arising from random orthogonal rotation of unit-norm vectors.
  *
  * <p>After rotating a d-dimensional unit vector by a random orthogonal matrix,
- * each coordinate is approximately distributed as N(0, 1/d) (accurate for d >= 64).
+ * each coordinate is approximately distributed as N(0, 1/d) (accurate for d &gt;= 64).
  * The Lloyd-Max algorithm solves continuous 1-D k-means to find optimal centroids
  * that minimize mean squared quantization error.</p>
  *

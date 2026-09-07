@@ -234,7 +234,7 @@ public class DynamicShapeSlot {
     /**
      * Target device for this op's execution and output allocation.
      * -1 (default) means use the current thread's device (no override).
-     * >= 0 means switch to this CUDA device before allocating outputs and executing.
+     * &gt;= 0 means switch to this CUDA device before allocating outputs and executing.
      * Set during device placement optimization or explicitly via DynamicShapePlan.assignDevices().
      */
     @Builder.Default
@@ -242,7 +242,7 @@ public class DynamicShapeSlot {
 
     /**
      * Get the device ID for this slot.
-     * @return device ID (0 for CPU, >=0 for CUDA devices, -1 for default/current device)
+     * @return device ID (0 for CPU, &gt;=0 for CUDA devices, -1 for default/current device)
      */
     public int getDeviceId() {
         return targetDeviceId >= 0 ? targetDeviceId : 0;

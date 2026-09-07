@@ -42,7 +42,7 @@ public class LSTMParamInitializer implements ParamInitializer {
         return INSTANCE;
     }
 
-    /** Weights for previous time step -> current time step connections */
+    /** Weights for previous time step -&gt; current time step connections */
     public final static String RECURRENT_WEIGHT_KEY = "RW";
     public final static String BIAS_KEY = DefaultParamInitializer.BIAS_KEY;
     public final static String INPUT_WEIGHT_KEY = DefaultParamInitializer.WEIGHT_KEY;

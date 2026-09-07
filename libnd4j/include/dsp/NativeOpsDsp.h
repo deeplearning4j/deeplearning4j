@@ -229,7 +229,7 @@ SD_LIB_EXPORT int isPlanCompilationSealed(sd::Pointer planHandle);
 
 /**
  * Returns the count of compileSegment() calls that happened AFTER compilation
- * was sealed. Any value > 0 is a correctness red flag — it means the plan
+ * was sealed. Any value &gt; 0 is a correctness red flag — it means the plan
  * re-compiled a segment mid-execution which breaks the freeze/capture contract.
  *
  * @param planHandle  Handle from compileDynamicShapePlan()
@@ -421,7 +421,7 @@ SD_LIB_EXPORT void setPlanCudaGraphsEnabled(sd::Pointer planHandle, bool enabled
  * Default: 10. Set to 1 for testing.
  *
  * @param planHandle  Handle from compileDynamicShapePlan()
- * @param minSize  Minimum number of slots for capture (clamped to >=1)
+ * @param minSize  Minimum number of slots for capture (clamped to &gt;=1)
  */
 SD_LIB_EXPORT void setPlanMinCaptureSegmentSize(sd::Pointer planHandle, int minSize);
 
@@ -448,7 +448,7 @@ SD_LIB_EXPORT void setPlanShapesFrozen(sd::Pointer planHandle, bool frozen);
 /**
  * Enable/disable shape-only dry-run mode for a compiled plan.
  * When enabled, executeSlot() runs all dispatch infrastructure (shape caching,
- * frozen detection, output allocation, segment dispatch) but SKIPS op->execute().
+ * frozen detection, output allocation, segment dispatch) but SKIPS op-&gt;execute().
  * Use to measure pure dispatch/infrastructure overhead separately from compute.
  *
  * @param planHandle  Handle from compileDynamicShapePlan()
@@ -715,7 +715,7 @@ SD_LIB_EXPORT const char* getPlanSlotOpName(sd::Pointer planHandle, int slotIdx)
  *   bit 7: needsZeroedOutput
  *   bit 8: needsIntLongSync
  *   bit 9: shapeStatic
- *   bit 10: frozenConstantSlot (state >= FROZEN_CONSTANT)
+ *   bit 10: frozenConstantSlot (state &gt;= FROZEN_CONSTANT)
  * Returns -1 if invalid.
  */
 SD_LIB_EXPORT int getPlanSlotFlags(sd::Pointer planHandle, int slotIdx);

@@ -227,7 +227,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         javaOpClass = "DynamicPartition"
         Input(NUMERIC, "x") { description = "Input variable" }
         Input(INT, "partitions") { description = "1D input with values 0 to numPartitions-1" }
-        Arg(INT, "numPartitions") { description = "Number of partitions, >= 1" }
+        Arg(INT, "numPartitions") { description = "Number of partitions, &gt;= 1" }
         Output(NUMERIC, "output"){ multiOutput=true; description = "Output variables (equal in number to numPartitions)" }
 
         Doc(Language.ANY, DocScope.ALL){
@@ -265,7 +265,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
     Op("dynamicStitch") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
         javaOpClass = "DynamicStitch"
-        Input(INT, "indices") {count = AtLeast(1); description = "Indices to use when merging. Must be >= 1, same length as input variables" }
+        Input(INT, "indices") {count = AtLeast(1); description = "Indices to use when merging. Must be &gt;= 1, same length as input variables" }
         Input(NUMERIC, "x") { count = AtLeast(1); description = "Input variables." }
         Output(NUMERIC, "output"){ description = "Merged output variable" }
 
@@ -388,7 +388,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Output(NUMERIC, "output"){ description = "Boolean array out, with values true/false based on where the condition is satisfied" }
         Doc(Language.ANY, DocScope.ALL){
             """
-                Greater than operation: elementwise x > y
+                Greater than operation: elementwise x &gt; y
             """.trimIndent()
         }
         useMixin(booleanReturnDoc)
@@ -403,7 +403,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
         Doc(Language.ANY, DocScope.ALL){
             """
-                Greater than operation: elementwise x > y
+                Greater than operation: elementwise x &gt; y
                 If x and y arrays have equal shape, the output shape is the same as these inputs.
             """.trimIndent()
         }
@@ -420,7 +420,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Output(NUMERIC, "output"){ description = "Output Boolean array out, with values true/false based on where the condition is satisfied" }
         Doc(Language.ANY, DocScope.ALL){
             """
-                Greater than or equals operation: elementwise x >= y
+                Greater than or equals operation: elementwise x &gt;= y
             """.trimIndent()
         }
         useMixin(booleanReturnDoc)
@@ -434,7 +434,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Output(NDARRAY, "output"){ description = "" }
         Doc(Language.ANY, DocScope.ALL){
             """
-                Greater than or equal to operation: elementwise x >= y
+                Greater than or equal to operation: elementwise x &gt;= y
                 If x and y arrays have equal shape, the output shape is the same as these inputs.
             """.trimIndent()
         }
@@ -2148,7 +2148,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Output(NDARRAY, "output"){ description = "Output array (after casting)"}
         Doc(Language.ANY, DocScope.ALL){
             """
-                Cast the array to a new datatype - for example, Integer -> Float
+                Cast the array to a new datatype - for example, Integer -&gt; Float
             """.trimIndent()
         }
     }

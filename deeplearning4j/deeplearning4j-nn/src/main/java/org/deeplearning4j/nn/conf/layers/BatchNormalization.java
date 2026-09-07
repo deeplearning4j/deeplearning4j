@@ -262,7 +262,7 @@ public class BatchNormalization extends FeedForwardLayer {
 
         /**
          * If set to true: lock the gamma and beta parameters to the values for each activation, specified by {@link
-         * #gamma(double)} and {@link #beta(double)}. Default: false -> learn gamma and beta parameter values during
+         * #gamma(double)} and {@link #beta(double)}. Default: false -&gt; learn gamma and beta parameter values during
          * network training.
          *
          */
@@ -413,7 +413,7 @@ public class BatchNormalization extends FeedForwardLayer {
 
         /**
          * If set to true: lock the gamma and beta parameters to the values for each activation, specified by {@link
-         * #gamma(double)} and {@link #beta(double)}. Default: false -> learn gamma and beta parameter values during
+         * #gamma(double)} and {@link #beta(double)}. Default: false -&gt; learn gamma and beta parameter values during
          * network training.
          *
          * @param lockGammaBeta If true: use fixed beta/gamma values. False: learn during

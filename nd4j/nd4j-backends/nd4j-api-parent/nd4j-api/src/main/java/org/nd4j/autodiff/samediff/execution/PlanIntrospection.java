@@ -262,7 +262,7 @@ public final class PlanIntrospection {
     }
 
     /**
-     * Get upstream slot step indices that feed into this slot (from inputSourceIndices >= 0).
+     * Get upstream slot step indices that feed into this slot (from inputSourceIndices &gt;= 0).
      */
     public static List<Integer> getProducersOf(DynamicShapePlan plan, int slotIndex) {
         int[][] predecessors = plan.getPredecessors();
@@ -603,7 +603,7 @@ public final class PlanIntrospection {
      * Export the plan as a DOT format string for Graphviz visualization.
      *
      * <p>Nodes = slots (box shaped, labeled with slot# and opName).
-     * Edges = data dependencies from inputSourceIndices >= 0.
+     * Edges = data dependencies from inputSourceIndices &gt;= 0.
      * External inputs = diamond-shaped nodes.
      * Segments = cluster subgraphs.
      * Color coding: data-dependent (red border), value-dependent-shape (orange),

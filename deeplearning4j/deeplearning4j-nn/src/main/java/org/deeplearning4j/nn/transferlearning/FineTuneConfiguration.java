@@ -688,7 +688,7 @@ public class FineTuneConfiguration {
          * This is the k1 parameter on pg23 of
          * <a href="http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf">http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf</a>
          *
-         * @param tbpttFwdLength Forward length > 0, >= backwardLength
+         * @param tbpttFwdLength Forward length &gt; 0, &gt;= backwardLength
          */
         public Builder tbpttFwdLength(int tbpttFwdLength) {
             this.tbpttFwdLength = tbpttFwdLength;
@@ -701,7 +701,7 @@ public class FineTuneConfiguration {
          * This is the k2 parameter on pg23 of
          * <a href="http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf">http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf</a>
          *
-         * @param tbpttBackLength <= forwardLength
+         * @param tbpttBackLength &lt;= forwardLength
          */
         public Builder tbpttBackLength(int tbpttBackLength) {
             this.tbpttBackLength = tbpttBackLength;

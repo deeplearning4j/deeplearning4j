@@ -210,7 +210,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
         }
 
         /**
-         * Stride for the convolution. Must be > 0
+         * Stride for the convolution. Must be &gt; 0
          *
          * @param stride Stride
          */

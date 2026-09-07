@@ -47,7 +47,7 @@ import java.util.List;
 public class LinearFusionOptimizations extends BaseOptimizerSet {
 
     /**
-     * Fuses [matmul(x, w) -> add(bias)] into xw_plus_b(x, w, bias)
+     * Fuses [matmul(x, w) -&gt; add(bias)] into xw_plus_b(x, w, bias)
      * This is a common pattern in transformer linear layers.
      *
      * Requirements for fusion:
@@ -222,7 +222,7 @@ public class LinearFusionOptimizations extends BaseOptimizerSet {
     }
 
     /**
-     * Fuses [tensormmul(x, w) -> add(bias)] into xw_plus_b(x, w, bias)
+     * Fuses [tensormmul(x, w) -&gt; add(bias)] into xw_plus_b(x, w, bias)
      * when tensormmul is used as a standard matrix multiplication.
      *
      * This pattern is common when ONNX models are imported where MatMul

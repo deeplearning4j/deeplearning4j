@@ -41,7 +41,7 @@ import java.util.List;
  * <p>
  * Algorithm:
  * <ol>
- *   <li>Decompress: latentKVCache @ kvDownProj -> K, V</li>
+ *   <li>Decompress: latentKVCache @ kvDownProj -&gt; K, V</li>
  *   <li>Attention: softmax(Q @ K^T * scale) @ V</li>
  *   <li>GQA head mapping if numHeads != numKvHeads</li>
  * </ol>

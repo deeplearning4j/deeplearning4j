@@ -87,7 +87,7 @@ public class InMemoryGraphLookupTable implements GraphVectorLookupTable {
     /** Returns vertex vector and vector gradients, plus inner node vectors and inner node gradients<br>
      * Specifically, out[0] are vectors, out[1] are gradients for the corresponding vectors<br>
      * out[0][0] is vector for first vertex; out[0][1] is gradient for this vertex vector<br>
-     * out[0][i] (i>0) is the inner node vector along path to second vertex; out[1][i] is gradient for inner node vertex<br>
+     * out[0][i] (i&gt;0) is the inner node vector along path to second vertex; out[1][i] is gradient for inner node vertex<br>
      * This design is used primarily to aid in testing (numerical gradient checks)
      * @param first first (input) vertex index
      * @param second second (output) vertex index

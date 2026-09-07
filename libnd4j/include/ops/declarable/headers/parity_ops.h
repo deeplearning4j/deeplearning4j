@@ -141,13 +141,13 @@ DECLARE_CUSTOM_OP(matrix_diag, 1, 1, false, 0, 0);
 /**
  * This op calculates regularized incomplete beta integral Ix(a, b).
  * Implementation is based on two algorithms depending on input values of a and b:
- * - when a and b are both >  maxValue (3000.), then Gauss-Legendre quadrature method is applied
- * - when a and b are both <= maxValue (3000.), then modified Lentz's algorithm for continued fractions is applied
+ * - when a and b are both &gt;  maxValue (3000.), then Gauss-Legendre quadrature method is applied
+ * - when a and b are both &lt;= maxValue (3000.), then modified Lentz's algorithm for continued fractions is applied
  *
  * Input arrays:
- *    a: defines power t^{a-1}, must be > 0, type float.
- *    b: defines power (1-t)^{b-1}, must be > 0, type float.
- *    x: defines upper limit of integration, must be within (0 <= x <= 1) range, type float.
+ *    a: defines power t^{a-1}, must be &gt; 0, type float.
+ *    b: defines power (1-t)^{b-1}, must be &gt; 0, type float.
+ *    x: defines upper limit of integration, must be within (0 &lt;= x &lt;= 1) range, type float.
  *
  * Output array:
  *    0: values of  regularized incomplete beta integral that corresponds to variable upper limit x, type float
@@ -191,7 +191,7 @@ DECLARE_CUSTOM_OP(diag_part, 1, 1, false, 0, 0);
  * It is an op inverse to matrix_set_giag.
  * Using input tensor as batched 2D diagonals flat them to vector (1D) with diagonal values.
  *
- * Input : batched tensor with rank >=2
+ * Input : batched tensor with rank &gt;=2
  * Output: tensor with rank lesser by 1 from input
  */
 #if NOT_EXCLUDED(OP_matrix_diag_part)
@@ -500,7 +500,7 @@ DECLARE_CUSTOM_OP(stack, -1, 1, false, 0, 0);
  * Expected arguments:
  * input: N-dimensional array
  *
- * TODO: make this operation reduction, to allow TAD -> size
+ * TODO: make this operation reduction, to allow TAD -&gt; size
  */
 #if NOT_EXCLUDED(OP_size)
 DECLARE_CUSTOM_OP(size, 1, 1, false, 0, 0);  // add DeclarableScalarOp?
@@ -551,8 +551,8 @@ DECLARE_OP(square, 1, 1, true);
  * Implementation is based on Euler-Maclaurin summation formula
  *
  *   Input arrays:
- *   x: define power {-x}, must be > 1, type float.
- *   q: define summand in denominator, must be > 0, type float.
+ *   x: define power {-x}, must be &gt; 1, type float.
+ *   q: define summand in denominator, must be &gt; 0, type float.
  *
  * Output array:
  *    0: corresponding values of Hurwitz zeta function
@@ -653,7 +653,7 @@ DECLARE_CUSTOM_OP(split, 1, -1, false, 0, 1);
 /**
  * This operation adjusts image hue by delta
  * Input arrays:
- * 0 - input array with rank >= 3, must have at least one dimension equal 3, that is dimension containing channels.
+ * 0 - input array with rank &gt;= 3, must have at least one dimension equal 3, that is dimension containing channels.
  * 1 - optional argument, input scalar-array containing delta
  *
  * T arguments:
@@ -669,7 +669,7 @@ DECLARE_CONFIGURABLE_OP(adjust_hue, 1, 1, true, 0, 0);
 /**
  * This operation adjusts image saturation by delta
  * Input arrays:
- * 0 - input array with rank >= 3, must have at least one dimension equal 3, that is dimension containing channels.
+ * 0 - input array with rank &gt;= 3, must have at least one dimension equal 3, that is dimension containing channels.
  * 1 - optional argument, input scalar-array containing saturation factor
  *
  * T arguments:
@@ -685,7 +685,7 @@ DECLARE_CONFIGURABLE_OP(adjust_saturation, 1, 1, true, 0, 0);
 /**
  * This operation adjusts image contrast by given factor ( z = (x - mean) * factor + mean )
  * Input arrays:
- * 0 - input array with rank >= 3, must have last one dimension equal 3, that is dimension containing channels.
+ * 0 - input array with rank &gt;= 3, must have last one dimension equal 3, that is dimension containing channels.
  * 1 - optional argument, input scalar-array containing saturation contrast factor
  *
  * T arguments:
@@ -1281,12 +1281,12 @@ DECLARE_CUSTOM_OP(lu, 1, 2, false, 0, 0);
 #endif
 
 /**
- * sequence_mask op. - make mask for given tensor filled by (j > x[i_1, i_2,...,i_n]) -> z[i_1, i_2,...,i_n,j]
+ * sequence_mask op. - make mask for given tensor filled by (j &gt; x[i_1, i_2,...,i_n]) -&gt; z[i_1, i_2,...,i_n,j]
  *
  * input params:
  *    0 - the ND-tensor filled by integer-like values
  *
- * optional int param - maxlength (maxlength >= max(x)). By default maxlength = max(x).
+ * optional int param - maxlength (maxlength &gt;= max(x)). By default maxlength = max(x).
  * return value:
  *    (N+1)D tensor filled by 0 and 1 accordingly the mask
  */
@@ -1532,7 +1532,7 @@ DECLARE_OP(draw_bounding_boxes, 3, 1, true);
  *    ...
  *    N - axe N
  *
- *    All axes are optional and should be between 0 and input->rankOf(). Of course, all axes can be repeated.
+ *    All axes are optional and should be between 0 and input-&gt;rankOf(). Of course, all axes can be repeated.
  *
  * output:
  *    0 - NDArray with the same shape as input.
@@ -1575,7 +1575,7 @@ DECLARE_CUSTOM_OP(lin_space, 0, 1, false, 0, 0);
  *    ...
  *    N-1 axe N
  *
- *    All axes are optional and should be between 0 and input->rankOf() - 1
+ *    All axes are optional and should be between 0 and input-&gt;rankOf() - 1
  *
  * output:
  *    0 - NDArray with reduces shape accordingly to axes (the scalar in default case).
@@ -1600,7 +1600,7 @@ DECLARE_CUSTOM_OP(reduce_sum_bp, -1, 1, false, 0, 0);
  *    ...
  *    N-1 axe N
  *
- *    All axes are optional and should be between 0 and input->rankOf() - 1
+ *    All axes are optional and should be between 0 and input-&gt;rankOf() - 1
  *
  * output:
  *    0 - NDArray with reduces shape accordingly to axes (the scalar in default case).
@@ -1835,7 +1835,7 @@ DECLARE_CUSTOM_OP(reduce_dot_bp, -1, 2, false, 0, 0);
  *    ...
  *    N-1 axe N
  *
- *  CAUTION: All axes are optional and should be between 0 and input->rankOf() - 1
+ *  CAUTION: All axes are optional and should be between 0 and input-&gt;rankOf() - 1
  *  and put either with second param or as integers but not both
  *
  * output:

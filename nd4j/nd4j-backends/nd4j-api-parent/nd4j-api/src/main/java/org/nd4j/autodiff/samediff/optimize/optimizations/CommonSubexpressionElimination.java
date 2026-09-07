@@ -62,7 +62,7 @@ public class CommonSubexpressionElimination extends BaseOptimizerSet {
         private static final String RANDOM_OPS_PACKAGE = "org.nd4j.linalg.api.ops.random";
 
         /**
-         * Signature -> canonical output variable names.
+         * Signature -&gt; canonical output variable names.
          * Persists across ops within one optimizer pass and across iterations.
          * Stale entries are detected by checking that canonical outputs still exist.
          */

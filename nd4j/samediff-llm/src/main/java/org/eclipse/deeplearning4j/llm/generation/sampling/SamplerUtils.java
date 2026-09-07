@@ -214,7 +214,7 @@ public final class SamplerUtils {
      *   1. p = softmax(logits)
      *   2. H = -sum_i p_i * log(p_i)  (Shannon entropy)
      *   3. deviation_i = |(-log p_i) - H|
-     *   4. Sort by deviation ascending; accumulate mass until >= typicalP
+     *   4. Sort by deviation ascending; accumulate mass until &gt;= typicalP
      *   5. Mask the rest to -inf
      *
      * typicalP in (0, 1) enables; 1.0 is a no-op.
@@ -238,8 +238,8 @@ public final class SamplerUtils {
     /**
      * Apply XTC (Exclude Top Choices) sampling filter to logits.
      *
-     * With probability xtcProbability: among tokens whose softmax probability >= xtcThreshold,
-     * if there are >= 2 such tokens, mask all EXCEPT the lowest-probability one.
+     * With probability xtcProbability: among tokens whose softmax probability &gt;= xtcThreshold,
+     * if there are &gt;= 2 such tokens, mask all EXCEPT the lowest-probability one.
      * This encourages diversity by excluding the most confident choices.
      *
      * With probability (1 - xtcProbability) the logits are returned unchanged.

@@ -43,7 +43,7 @@ public interface ColumnReduction extends Serializable, ColumnOp {
 
     /**
      * Post-reduce: what is the name of the column?
-     * For example, "myColumn" -> "mean(myColumn)"
+     * For example, "myColumn" -&gt; "mean(myColumn)"
      *
      * @param columnInputName Name of the column before reduction
      * @return Name of the column after the reduction

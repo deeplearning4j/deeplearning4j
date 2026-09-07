@@ -54,8 +54,8 @@ public class BenchmarkDataSetIterator implements DataSetIterator {
      * @param featuresShape   Shape of the features data to randomly generate
      * @param numLabels       Number of label classes (for classification)
      * @param totalIterations Total number of iterations
-     * @param gridWidth       If > 0, use to create 4d labels
-     * @param gridHeight      If > 0, use to create 4d labels
+     * @param gridWidth       If &gt; 0, use to create 4d labels
+     * @param gridHeight      If &gt; 0, use to create 4d labels
      */
     public BenchmarkDataSetIterator(int[] featuresShape, int numLabels, int totalIterations, int gridWidth, int gridHeight) {
         this.baseFeatures = Nd4j.rand(featuresShape);

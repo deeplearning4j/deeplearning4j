@@ -100,7 +100,7 @@ public class VideoPreprocessor {
     /**
      * Preprocess a list of video frames into a 5D tensor.
      *
-     * <p>Uses parallel preprocessing when numPreprocessThreads > 1.</p>
+     * <p>Uses parallel preprocessing when numPreprocessThreads &gt; 1.</p>
      *
      * @param frames the extracted video frames
      * @return preprocessed tensor [1, numFrames, 3, targetHeight, targetWidth]

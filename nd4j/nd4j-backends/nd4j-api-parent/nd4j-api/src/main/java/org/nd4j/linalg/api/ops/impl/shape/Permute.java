@@ -43,7 +43,7 @@ public class Permute extends Transpose {
 
     /**
      * Normalize negative permutation indices to positive equivalents given the rank.
-     * For example, -1 with rank=3 -> 2, -2 with rank=3 -> 1, etc.
+     * For example, -1 with rank=3 -&gt; 2, -2 with rank=3 -&gt; 1, etc.
      */
     private static long[] normalizePermuteDims(long[] permuteDims, int rank) {
         if (permuteDims == null || rank <= 0) return permuteDims;

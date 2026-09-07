@@ -48,8 +48,8 @@ import java.util.List;
  * These optimizations fuse common LLM activation patterns for better performance.
  *
  * Supported fusions:
- * - swish(x) * y -> swiGLU pattern (common in LLaMA, Mistral)
- * - sigmoid(x) * x -> swish(x) (SiLU activation)
+ * - swish(x) * y -&gt; swiGLU pattern (common in LLaMA, Mistral)
+ * - sigmoid(x) * x -&gt; swish(x) (SiLU activation)
  *
  * Note: Full SwiGLU (swish(x @ W_gate) * (x @ W_up)) requires the fused op to be
  * implemented in libnd4j. This optimization prepares for that by detecting the pattern.
@@ -58,7 +58,7 @@ import java.util.List;
 public class ActivationFusionOptimizations extends BaseOptimizerSet {
 
     /**
-     * Fuses sigmoid(x) * x -> swish(x)
+     * Fuses sigmoid(x) * x -&gt; swish(x)
      *
      * This pattern is the definition of the Swish/SiLU activation:
      * swish(x) = x * sigmoid(x)
@@ -183,7 +183,7 @@ public class ActivationFusionOptimizations extends BaseOptimizerSet {
     }
 
     /**
-     * Fuses SwiGLU pattern: swish(x) * y -> swish_mul(x, y)
+     * Fuses SwiGLU pattern: swish(x) * y -&gt; swish_mul(x, y)
      *
      * SwiGLU is used in modern LLMs like LLaMA:
      * output = swish(x @ W_gate) * (x @ W_up)

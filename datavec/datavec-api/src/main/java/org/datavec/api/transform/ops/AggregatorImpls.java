@@ -347,7 +347,7 @@ public class AggregatorImpls {
      * of the square root of the arithmetic mean of squared differences to the mean, corrected with Bessel's correction.
      *
      * See <a href="https://en.wikipedia.org/wiki/Unbiased_estimation_of_standard_deviation">https://en.wikipedia.org/wiki/Unbiased_estimation_of_standard_deviation</a>
-     * This is computed with Welford's method for increased numerical stability & aggregability.
+     * This is computed with Welford's method for increased numerical stability &amp; aggregability.
      */
     public static class AggregableStdDev<T extends Number> implements IAggregableReduceOp<T, Writable> {
 
@@ -378,15 +378,26 @@ public class AggregatorImpls {
             if (this.getClass().isAssignableFrom(acc.getClass())) {
                 AggregableStdDev<T> accu = (AggregableStdDev<T>) acc;
 
-                Long totalCount = count + accu.getCount();
-                Double totalMean = (accu.getMean() * accu.getCount() + mean * count) / totalCount;
-                // the variance of the union is the sum of variances
-                Double variance = variation / (count - 1);
-                Double otherVariance = accu.getVariation() / (accu.getCount() - 1);
-                Double totalVariation = (variance + otherVariance) * (totalCount - 1);
+                long otherCount = accu.getCount();
+                if (otherCount == 0) {
+                    return;
+                }
+                if (count == 0) {
+                    count = otherCount;
+                    mean = accu.getMean();
+                    variation = accu.getVariation();
+                    return;
+                }
+
+                long totalCount = count + otherCount;
+                double delta = accu.getMean() - mean;
+                double otherWeight = (double) otherCount / totalCount;
+                double totalMean = mean + delta * otherWeight;
+                // Merge Welford M2 values, including the shift between partition means.
+                double totalVariation = variation + accu.getVariation() + delta * delta * count * otherWeight;
                 count = totalCount;
                 mean = totalMean;
-                variation = variation;
+                variation = totalVariation;
             } else
                 throw new UnsupportedOperationException("Tried to combine() incompatible " + acc.getClass().getName()
                                 + " operator where " + this.getClass().getName() + " expected");
@@ -402,7 +413,7 @@ public class AggregatorImpls {
      * of the square root of the arithmetic mean of squared differences to the mean.
      *
      * See <a href="https://en.wikipedia.org/wiki/Unbiased_estimation_of_standard_deviation">https://en.wikipedia.org/wiki/Unbiased_estimation_of_standard_deviation</a>
-     * This is computed with Welford's method for increased numerical stability & aggregability.
+     * This is computed with Welford's method for increased numerical stability &amp; aggregability.
      */
     public static class AggregableUncorrectedStdDev<T extends Number> extends AggregableStdDev<T> {
 
@@ -418,7 +429,7 @@ public class AggregatorImpls {
      * of the arithmetic mean of squared differences to the mean, corrected with Bessel's correction.
      *
      * See <a href="https://en.wikipedia.org/wiki/Unbiased_estimation_of_standard_deviation">https://en.wikipedia.org/wiki/Unbiased_estimation_of_standard_deviation</a>
-     * This is computed with Welford's method for increased numerical stability & aggregability.
+     * This is computed with Welford's method for increased numerical stability &amp; aggregability.
      */
     public static class AggregableVariance<T extends Number> implements IAggregableReduceOp<T, Writable> {
 
@@ -449,15 +460,26 @@ public class AggregatorImpls {
             if (this.getClass().isAssignableFrom(acc.getClass())) {
                 AggregableVariance<T> accu = (AggregableVariance<T>) acc;
 
-                Long totalCount = count + accu.getCount();
-                Double totalMean = (accu.getMean() * accu.getCount() + mean * count) / totalCount;
-                // the variance of the union is the sum of variances
-                Double variance = variation / (count - 1);
-                Double otherVariance = accu.getVariation() / (accu.getCount() - 1);
-                Double totalVariation = (variance + otherVariance) * (totalCount - 1);
+                long otherCount = accu.getCount();
+                if (otherCount == 0) {
+                    return;
+                }
+                if (count == 0) {
+                    count = otherCount;
+                    mean = accu.getMean();
+                    variation = accu.getVariation();
+                    return;
+                }
+
+                long totalCount = count + otherCount;
+                double delta = accu.getMean() - mean;
+                double otherWeight = (double) otherCount / totalCount;
+                double totalMean = mean + delta * otherWeight;
+                // Merge Welford M2 values, including the shift between partition means.
+                double totalVariation = variation + accu.getVariation() + delta * delta * count * otherWeight;
                 count = totalCount;
                 mean = totalMean;
-                variation = variation;
+                variation = totalVariation;
             } else
                 throw new UnsupportedOperationException("Tried to combine() incompatible " + acc.getClass().getName()
                                 + " operator where " + this.getClass().getName() + " expected");
@@ -474,7 +496,7 @@ public class AggregatorImpls {
      * of the arithmetic mean of squared differences to the mean.
      *
      * See <a href="https://en.wikipedia.org/wiki/Variance#Population_variance_and_sample_variance">https://en.wikipedia.org/wiki/Variance#Population_variance_and_sample_variance</a>
-     * This is computed with Welford's method for increased numerical stability & aggregability.
+     * This is computed with Welford's method for increased numerical stability &amp; aggregability.
      */
     public static class AggregablePopulationVariance<T extends Number> extends AggregableVariance<T> {
 
@@ -491,7 +513,7 @@ public class AggregatorImpls {
      * <a href="http://dx.doi.org/10.1145/2452376.2452456">here</a>.
      *
      * The relative accuracy is approximately `1.054 / sqrt(2^p)`. Setting
-     * a nonzero `sp > p` in HyperLogLogPlus(p, sp) would trigger sparse
+     * a nonzero `sp &gt; p` in HyperLogLogPlus(p, sp) would trigger sparse
      * representation of registers, which may reduce the memory consumption
      * and increase accuracy when the cardinality is small.
      * @param <T>

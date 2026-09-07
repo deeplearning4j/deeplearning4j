@@ -454,7 +454,7 @@ public class PhiArchitecture implements ModelArchitecture {
     // ========================================================================
 
     /**
-     * GELU FFN for Phi-2: up_proj -> GELU -> down_proj (no gate).
+     * GELU FFN for Phi-2: up_proj -&gt; GELU -&gt; down_proj (no gate).
      */
     private SDVariable buildGELUFFN(SameDiff sd, SDVariable input, int layerIdx,
                                      Map<String, INDArray> weights, DataType dtype) {
@@ -494,7 +494,7 @@ public class PhiArchitecture implements ModelArchitecture {
     }
 
     /**
-     * SwiGLU FFN for Phi-3+: gate_proj -> SiLU, up_proj, gate * up -> down_proj.
+     * SwiGLU FFN for Phi-3+: gate_proj -&gt; SiLU, up_proj, gate * up -&gt; down_proj.
      */
     private SDVariable buildSwiGLUFFN(SameDiff sd, SDVariable input, int layerIdx,
                                        Map<String, INDArray> weights, DataType dtype) {

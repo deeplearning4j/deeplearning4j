@@ -45,7 +45,7 @@ import java.util.Set;
 public class ShapeFunctionOptimizations extends BaseOptimizerSet {
 
     /**
-     * Fuse [permute1 -> permute2 -> ... -> permuteN] into a single permute op,
+     * Fuse [permute1 -&gt; permute2 -&gt; ... -&gt; permuteN] into a single permute op,
      * as long as the intermediate permute outputs aren't needed for another op.
      *
      * For example: permute(permute(x, [1,0,2]), [2,1,0]) can be fused into permute(x, [2,0,1])
@@ -232,7 +232,7 @@ public class ShapeFunctionOptimizations extends BaseOptimizerSet {
     }
 
     /**
-     * Fuse [reshape1 -> reshape2 -> ... -> reshapeN] into a single reshape op,
+     * Fuse [reshape1 -&gt; reshape2 -&gt; ... -&gt; reshapeN] into a single reshape op,
      * as long as the intermediate reshape ops aren't needed for another op.
      *
      * Multiple consecutive reshapes can be replaced with a single reshape to the final shape.

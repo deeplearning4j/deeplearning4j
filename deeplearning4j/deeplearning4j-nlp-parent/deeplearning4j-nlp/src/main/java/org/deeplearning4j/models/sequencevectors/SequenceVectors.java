@@ -697,7 +697,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         }
 
         /**
-         * This method defines batchSize option, viable only if iterations > 1
+         * This method defines batchSize option, viable only if iterations &gt; 1
          *
          * @param batchSize
          * @return
@@ -1033,7 +1033,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         }
 
         /**
-         * This method creates new WeightLookupTable<T> and VocabCache<T> if there were none set
+         * This method creates new {@code WeightLookupTable<T>} and {@code VocabCache<T>} if there were none set
          */
         protected void presetTables() {
             if (lookupTable == null) {
@@ -1191,7 +1191,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     }
 
     /**
-     * This class is used to fetch data from iterator in background thread, and convert it to List<VocabularyWord>
+     * This class is used to fetch data from iterator in background thread, and convert it to {@code List<VocabularyWord>}
      *
      * It becomes very useful if text processing pipeline behind iterator is complex, and we're not loading data from simple text file with whitespaces as separator.
      * Since this method allows you to hide preprocessing latency in background.

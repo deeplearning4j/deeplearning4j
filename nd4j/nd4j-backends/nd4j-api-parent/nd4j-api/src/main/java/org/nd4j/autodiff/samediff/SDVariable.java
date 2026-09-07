@@ -1589,7 +1589,7 @@ public class SDVariable implements Serializable {
     /**
      * Add a control dependency for this variable on the specified variable.<br>
      * Control dependencies can be used to enforce the execution order.
-     * For example, if a control dependency X->Y exists, then Y will only be executed after X is executed - even
+     * For example, if a control dependency X-&gt;Y exists, then Y will only be executed after X is executed - even
      * if Y wouldn't normally depend on the result/values of X.
      *
      * @param controlDependency Control dependency to add for this variable

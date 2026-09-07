@@ -59,7 +59,7 @@ public class SpectralClustering {
      * Cluster an undirected graph into k groups using spectral clustering.
      *
      * @param adjacency  square symmetric adjacency matrix (DOUBLE or will be cast), shape [n, n]
-     * @param k          number of clusters (>= 1)
+     * @param k          number of clusters (&gt;= 1)
      * @param maxKmeansIter  maximum k-means iterations (typically 100-300 is sufficient)
      * @param seed       random seed for k-means initialisation
      * @return int array of length n where result[i] is the cluster index of node i (0-based)

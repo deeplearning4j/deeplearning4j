@@ -43,11 +43,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
-import org.nd4j.nativeblas.OpaqueDataBuffer;
-import org.nd4j.nativeblas.OpaqueNDArray;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -57,10 +53,10 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
-import java.util.concurrent.locks.ReentrantLock;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutorTestAccess.*;
 
 /**
  * Isolated behavior tests for automatic DSP multi-GPU op-segment sharding.
@@ -746,7 +742,17 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                 }
                 DynamicShapePlanExecutor executor = sd.getOrCreateSession().getDynamicShapePlanExecutor();
                 INDArray[] installed = executor.getExternalInputsSnapshot();
-                INDArray[] previous = ownersByLease.putIfAbsent(executor.getNativePlanHandle().address(), installed);
+                long handleAddress = executor.getNativePlanHandle().address();
+                Map<Long, INDArray[]> retainedByHandle = retainedExternalInputsByPlanHandle(executor);
+                INDArray[] retained = retainedByHandle.get(handleAddress);
+                assertNotNull(retained, "Successful execution must publish its retained input owners");
+                assertEquals(installed.length, retained.length);
+                for (int index = 0; index < installed.length; index++) {
+                    assertSame(installed[index], retained[index],
+                            "Retained snapshot still names a pre-migration source: iteration=" + iteration
+                                    + " input=" + index);
+                }
+                INDArray[] previous = ownersByLease.putIfAbsent(handleAddress, installed);
                 for (String name : inputs.keySet()) {
                     int index = Arrays.asList(plan.getExternalInputKeys()).indexOf(name);
                     assertNotSame(inputs.get(name), installed[index], "caller buffer must not become the owned replica");
@@ -865,10 +871,10 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
 
             // Dispatch A without rebinding: B is inactive, but cachedOpContext still has B's
             // raw input pointers. Eviction must detach this precise hazardous context too.
-            invokeExecutor(executor, "redispatchForCurrentShapes", new Class<?>[]{Map.class, boolean.class},
+            redispatchForCurrentShapes(executor,
                     Map.of("mutableGdn", aGdn, "mutableKv", aKv), true);
             assertEquals(aHandle, executor.getNativePlanHandle().address());
-            assertNotNull(executorField(executor, "cachedOpContext"));
+            assertNotNull(executor.getCachedOpContext());
             long ownedBytes = victims.stream().mapToLong(a -> a.length() * a.dataType().width()).sum();
             INDArray admissionTemplate = victims.get(0);
             int admissionDevice = nativeOps.dbDeviceId(admissionTemplate.data().opaqueBuffer());
@@ -882,16 +888,12 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                 Nd4j.getEnvironment().setDeviceLimit(device, tightLimits[device]);
             }
             assertTrue(admissionBytes > 4096, "incoming allocation must not fit before eviction");
-            Class<?> keyType = Class.forName(DynamicShapePlanExecutor.class.getName() + "$PlanLeaseKey");
-            var constructor = keyType.getDeclaredConstructor(long.class, int.class);
-            constructor.setAccessible(true);
-            Object pending = constructor.newInstance(Long.MIN_VALUE, -1);
-            invokeExecutor(executor, "evictPinnedLeasesForCapacity", new Class<?>[]{keyType}, pending);
+            evictPinnedLeasesForCapacity(executor, Long.MIN_VALUE, -1);
 
             // No incoming execution, GC, pool trimming or extra commit between eviction and
             // these checks: queued retirement until a future successful call fails decisively.
             assertFalse(mutableReplicaCaches(executor).containsKey(bHandle));
-            assertNull(executorField(executor, "cachedOpContext"));
+            assertNull(executor.getCachedOpContext());
             assertTrue(before - logicalDeviceBytes() >= ownedBytes,
                     "eviction did not immediately return owned replica bytes to logical admission");
             for (INDArray victim : victims) assertFalse(DynamicShapePlanExecutor.isArrayLive(victim));
@@ -899,9 +901,9 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                     "eviction closed an active graph-baked replica");
             for (INDArray caller : callers) assertTrue(DynamicShapePlanExecutor.isArrayLive(caller),
                     "eviction closed caller-owned storage");
-            assertTrue(((List<?>) executorField(executor, "retiredMigrationArrays")).isEmpty());
-            Map<?, Long> identities = executorField(executor, "pinnedPlanHandlesByIdentity");
-            Map<?, Long> costs = executorField(executor, "pinnedLeaseEstimatedBytes");
+            assertTrue(retiredMigrationArrays(executor).isEmpty());
+            Map<?, Long> identities = pinnedPlanHandlesByIdentity(executor);
+            Map<?, Long> costs = pinnedLeaseEstimatedBytes(executor);
             assertFalse(identities.containsValue(bHandle));
             assertEquals(identities.keySet(), costs.keySet(), "eviction left stale lease costs");
 
@@ -952,7 +954,19 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             INDArray primeGdn = Nd4j.create(DataType.FLOAT, 1, width);
             INDArray primeKv = Nd4j.create(DataType.HALF, 1, width);
             Collections.addAll(callers, primeGdn, primeKv);
-            for (int i = 0; i < 6; i++) runMutableReplicaInputs(sd, primeGdn, primeKv, 0.0);
+            for (int i = 0; i < 6; i++) {
+                try {
+                    runMutableReplicaInputs(sd, primeGdn, primeKv, 0.0);
+                } catch (AssertionError failure) {
+                    try {
+                        snapshotMutableKvFailure(sd,
+                                sd.getOrCreateSession().getDynamicShapePlanExecutor().getCurrentPlan(), primeKv, i);
+                    } catch (Exception | AssertionError diagnosticFailure) {
+                        failure.addSuppressed(diagnosticFailure);
+                    }
+                    throw failure;
+                }
+            }
             Nd4j.getAffinityManager().setDeviceForCurrentThread(1);
             INDArray gdnRoot = Nd4j.create(DataType.FLOAT, 3, 2L * width + 1).assign(-123.0);
             INDArray kvRoot = Nd4j.create(DataType.HALF, 3, 2L * width + 1).assign(-123.0);
@@ -965,7 +979,7 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             DynamicShapePlanExecutor executor = sd.getOrCreateSession().getDynamicShapePlanExecutor();
             DynamicShapePlan plan = executor.getCurrentPlan();
             Map<String, INDArray> inputs = Map.of("mutableGdn", gdnView, "mutableKv", kvView);
-            invokeExecutor(executor, "redispatchForCurrentShapes", new Class<?>[]{Map.class, boolean.class}, inputs, true);
+            redispatchForCurrentShapes(executor, inputs, true);
             for (int device = 0; device < 2; device++) Nd4j.getEnvironment().setDeviceLimit(device,
                     Nd4j.getEnvironment().getDeviceCounter(device) + 64L * 1024 * 1024);
 
@@ -981,7 +995,7 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                         ? new LinkedHashMap<>(mutableReplicaCaches(executor).get(executor.getNativePlanHandle().address()))
                         : Collections.emptyMap();
                 RuntimeException injected = new IllegalStateException("abort after packed mutable migration " + attempt);
-                List<INDArray> packed = executorField(executor, "retiredMigrationArrays");
+                List<INDArray> packed = retiredMigrationArrays(executor);
                 List<INDArray> failedAllocations = new ArrayList<>();
                 Map<String, INDArray> failing = new LinkedHashMap<>(inputs) {
                     @Override
@@ -989,7 +1003,7 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                         // The migration loop checks the next input only AFTER the first
                         // refresh has allocated, packed, and enqueued its real device copy.
                         if (!packed.isEmpty() && (!afterBinding
-                                || Boolean.TRUE.equals(executorField(executor, "migrationInputsBound")))) {
+                                || migrationInputsBound(executor))) {
                             failedAllocations.addAll(packed);
                             Map<String, INDArray> owned = mutableReplicaCaches(executor)
                                     .get(executor.getNativePlanHandle().address());
@@ -1000,9 +1014,13 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                         return super.containsKey(key);
                     }
                 };
-                long before = logicalDeviceBytes();
-                RuntimeException failure = assertThrows(RuntimeException.class, () -> invokeExecutor(executor,
-                        "executeNative", new Class<?>[]{DynamicShapePlan.class, Map.class}, plan, failing));
+                long[] beforeDevices = {Nd4j.getEnvironment().getDeviceCounter(0),
+                        Nd4j.getEnvironment().getDeviceCounter(1)};
+                long before = beforeDevices[0] + beforeDevices[1];
+                System.err.println("MUTABLE_FAILURE_ACCOUNTING before attempt=" + attempt
+                        + " devices=" + Arrays.toString(beforeDevices));
+                RuntimeException failure = assertThrows(RuntimeException.class, () -> executeNative(executor,
+                        plan, failing));
                 assertSame(injected, failure, "cleanup replaced the original execution error");
                 assertEquals(0, failure.getSuppressed().length, "cleanup itself failed");
                 assertTrue(failedAllocations.size() >= (existingLease ? 1 : afterBinding ? 4 : 2),
@@ -1020,7 +1038,14 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                 } else {
                     assertFalse(mutableReplicaCaches(executor).containsKey(executor.getNativePlanHandle().address()));
                 }
-                assertTrue(logicalDeviceBytes() <= before, "failure leaked logical device bytes");
+                long[] afterDevices = {Nd4j.getEnvironment().getDeviceCounter(0),
+                        Nd4j.getEnvironment().getDeviceCounter(1)};
+                long after = afterDevices[0] + afterDevices[1];
+                System.err.println("MUTABLE_FAILURE_ACCOUNTING after attempt=" + attempt
+                        + " devices=" + Arrays.toString(afterDevices) + " delta=" + (after - before));
+                assertTrue(after <= before, "failure leaked logical device bytes: attempt=" + attempt
+                        + " before=" + Arrays.toString(beforeDevices) + " after=" + Arrays.toString(afterDevices)
+                        + " delta=" + (after - before));
                 for (INDArray caller : callers) assertTrue(DynamicShapePlanExecutor.isArrayLive(caller));
                 assertTrue(DynamicShapePlanExecutor.isArrayLive(gdnView));
                 assertTrue(DynamicShapePlanExecutor.isArrayLive(kvView));
@@ -1068,23 +1093,21 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             for (boolean fresh : new boolean[]{false, true}) {
                 for (int i = 0; i < 6; i++) runMutableReplicaInputs(sd, gdn, kv, 0.125 * i);
                 DynamicShapePlanExecutor executor = sd.getOrCreateSession().getDynamicShapePlanExecutor();
-                if (fresh) invokeExecutor(executor, "closeZeroCopyOutputCache", new Class<?>[0]);
-                List<String> names = executorField(executor, "cachedRequestedOutputNames");
+                if (fresh) closeZeroCopyOutputCache(executor);
+                List<String> names = cachedRequestedOutputNames(executor);
                 assertNotNull(names);
-                List<INDArray> retired = executorField(executor, "retiredMigrationArrays");
+                List<INDArray> retired = retiredMigrationArrays(executor);
                 List<INDArray> abandoned = new ArrayList<>();
                 RuntimeException injected = new IllegalStateException("abort after first output readback fresh=" + fresh);
-                var namesField = DynamicShapePlanExecutor.class.getDeclaredField("cachedRequestedOutputNames");
-                namesField.setAccessible(true);
-                namesField.set(executor, new java.util.AbstractList<String>() {
+                setCachedRequestedOutputNames(executor, new java.util.AbstractList<String>() {
                     @Override public int size() { return names.size(); }
                     @Override public String get(int index) {
                         if (index == 1) {
-                            assertSame(Thread.currentThread(), executorField(executor, "outputReadbackThread"),
+                            assertSame(Thread.currentThread(), outputReadbackThread(executor),
                                     "first real copy must be pending at injection");
-                            Set<Integer> pending = executorField(executor, "outputReadbackDevices");
+                            Set<Integer> pending = outputReadbackDevices(executor);
                             assertEquals(Set.of(0), pending);
-                            Set<Integer> migrations = executorField(executor, "migrationCopyDevices");
+                            Set<Integer> migrations = migrationCopyDevices(executor);
                             assertTrue(migrations.isEmpty(), "readback completion must not rely on input migration");
                             abandoned.addAll(retired);
                             throw injected;
@@ -1094,21 +1117,21 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                 });
                 Map<String, INDArray> inputs = Map.of("mutableGdn", gdn, "mutableKv", kv);
                 try {
-                    RuntimeException failure = assertThrows(RuntimeException.class, () -> invokeExecutor(executor,
-                            "executeNative", new Class<?>[]{DynamicShapePlan.class, Map.class}, executor.getCurrentPlan(), inputs));
+                    RuntimeException failure = assertThrows(RuntimeException.class, () -> executeNative(executor,
+                            executor.getCurrentPlan(), inputs));
                     assertSame(injected, failure);
                     assertEquals(0, failure.getSuppressed().length);
                 } finally {
-                    namesField.set(executor, names);
+                    setCachedRequestedOutputNames(executor, names);
                 }
-                assertNull(executorField(executor, "outputReadbackThread"), "completion precedes exception return");
-                assertTrue(((Set<?>) executorField(executor, "outputReadbackDevices")).isEmpty());
+                assertNull(outputReadbackThread(executor), "completion precedes exception return");
+                assertTrue(outputReadbackDevices(executor).isEmpty());
                 assertTrue(retired.isEmpty());
                 if (fresh) assertFalse(abandoned.isEmpty(), "fresh destination must have been retained");
                 for (INDArray array : abandoned) assertFalse(DynamicShapePlanExecutor.isArrayLive(array));
                 // No test-side commit, host read, GC or trim before release on a different LC/thread.
                 releaser.submit(() -> {
-                    assertNull(executorField(executor, "outputReadbackThread"));
+                    assertNull(outputReadbackThread(executor));
                     executor.releaseGpuIntermediates();
                 }).get(30, java.util.concurrent.TimeUnit.SECONDS);
                 for (int i = 0; i < 6; i++) runMutableReplicaInputs(sd, gdn, kv, 1.0 + 0.125 * i);
@@ -1159,85 +1182,45 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         return Nd4j.getEnvironment().getDeviceCounter(0) + Nd4j.getEnvironment().getDeviceCounter(1);
     }
 
-    @SuppressWarnings("unchecked")
-    private static <T> T executorField(DynamicShapePlanExecutor executor, String name) {
-        try {
-            var field = DynamicShapePlanExecutor.class.getDeclaredField(name);
-            field.setAccessible(true);
-            return (T) field.get(executor);
-        } catch (ReflectiveOperationException e) {
-            throw new AssertionError(e);
-        }
-    }
-
-    private static Map<Long, Map<String, INDArray>> mutableReplicaCaches(DynamicShapePlanExecutor executor) {
-        return executorField(executor, "nativeMutableReplicaCaches");
-    }
-
-    private static Object invokeExecutor(DynamicShapePlanExecutor executor, String name,
-                                         Class<?>[] parameterTypes, Object... args) throws Exception {
-        Method method = DynamicShapePlanExecutor.class.getDeclaredMethod(name, parameterTypes);
-        method.setAccessible(true);
-        ReentrantLock lock = executorField(executor, "nativeExecLock");
-        lock.lock();
-        try {
-            return method.invoke(executor, args);
-        } catch (InvocationTargetException e) {
-            if (e.getCause() instanceof RuntimeException) throw (RuntimeException) e.getCause();
-            if (e.getCause() instanceof Error) throw (Error) e.getCause();
-            throw e;
-        } finally {
-            lock.unlock();
-        }
-    }
-
     /** Capture only after an assertion fails, so diagnostics cannot repair staging before execution. */
     private static void snapshotMutableKvFailure(SameDiff sd, DynamicShapePlan plan, INDArray caller, int iteration) {
         NativeOps ops = NativeOpsHolder.getInstance().getDeviceNativeOps();
         DynamicShapePlanExecutor executor = sd.getOrCreateSession().getDynamicShapePlanExecutor();
         Pointer handle = executor.getNativePlanHandle();
         int index = sd.dsp().extInputIndex("mutableKv");
+        // This address was recorded during execute; querying it does not dereference
+        // or migrate a native array. Do not dereference it after the call either.
+        log.error("MUTABLE_FAILURE iteration={} extIndex={} execute-recorded-address={}",
+                iteration, index, Long.toHexString(ops.getPlanLastExternalInputAddress(handle, index)));
         for (int slot = 0; slot < plan.getSlots().length; slot++) {
             String[] names = plan.getSlots()[slot].getOutputVarNames();
             if (Arrays.asList(names).contains("kvPrimary") || Arrays.asList(names).contains("kvOut")) {
                 try (INDArray snapshot = sd.dsp().getSlotOutput(slot)) {
-                    logMutableSnapshot(iteration, "slot=" + slot + " " + Arrays.toString(names), snapshot);
+                    // getSlotOutput is a synchronizing readback, not a raw device probe.
+                    logMutableSnapshot(iteration, "post-failure-readback slot=" + slot + " "
+                            + Arrays.toString(names), snapshot);
                 }
             }
         }
-        // copyPlanStagingToBuffer refreshes staging from the external input: do NOT use it here.
-        OpaqueNDArray staging = ops.getPlanStagingBufferArray(handle, index);
-        if (staging != null && !staging.isNull()) {
-            snapshotMutableDevicePointer(iteration, "placeholder-staging", ops.getOpaqueNDArraySpecialBuffer(staging),
-                    caller.length());
-        }
-        long active = ops.getPlanStagingBufferAddress(handle, index);
-        if (active != 0) snapshotMutableDevicePointer(iteration, "active-staging",
-                ops.pointerForAddress(active), caller.length());
-        // Read caller/replica last: host synchronization must not influence native snapshots above.
-        logMutableSnapshot(iteration, "owned-replica", executor.getExternalInputsSnapshot()[index]);
-        logMutableSnapshot(iteration, "caller", caller);
-    }
-
-    private static void snapshotMutableDevicePointer(int iteration, String label, Pointer source, long length) {
-        if (source == null || source.isNull()) return;
-        NativeOps ops = NativeOpsHolder.getInstance().getDeviceNativeOps();
-        try (INDArray snapshot = Nd4j.createUninitialized(DataType.HALF, length)) {
-            OpaqueDataBuffer borrowed = ops.dbCreateExternalDataBuffer(length, DataType.HALF.toInt(), null, source);
-            try {
-                ops.copyBuffer(snapshot.data().opaqueBuffer(), length, borrowed, 0, 0);
-                Nd4j.getExecutioner().commit();
-                logMutableSnapshot(iteration, label + "@" + Long.toHexString(source.address()), snapshot);
-            } finally {
-                // Deletes only the non-owning wrapper, not the plan's device allocation.
-                ops.deleteDataBuffer(borrowed);
-            }
-        }
+        // Do not inspect staging through specialBuffer(): both the opaque-array
+        // getter and getPlanStagingBufferAddress can migrate the buffer. Likewise,
+        // copyPlanStagingToBuffer refreshes it. None proves its execution-time contents.
+        // Use native pre-replay tracing for that evidence, not these post-failure reads.
+        logMutableSnapshot(iteration, "post-failure-owned-replica", executor.getExternalInputsSnapshot()[index]);
+        logMutableSnapshot(iteration, "post-failure-caller", caller);
     }
 
     private static void logMutableSnapshot(int iteration, String label, INDArray snapshot) {
         if (snapshot == null) {
             log.error("MUTABLE_FAILURE iteration={} {}=null", iteration, label);
+            return;
+        }
+        if (snapshot.isView()) {
+            // A stepped view's DataBuffer is the caller's entire root, including
+            // sentinel gaps. Materialize only for this already-failed diagnostic.
+            try (INDArray logicalCopy = snapshot.dup('c')) {
+                logMutableSnapshot(iteration, label + " (logical-view-copy)", logicalCopy);
+            }
             return;
         }
         float[] values = snapshot.data().asFloat();

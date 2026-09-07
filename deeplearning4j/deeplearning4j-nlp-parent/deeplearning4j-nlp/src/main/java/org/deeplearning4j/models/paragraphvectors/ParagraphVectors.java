@@ -133,7 +133,7 @@ public class ParagraphVectors extends Word2Vec {
 
     /**
      * This method defines SequenceIterator instance, that will be used as training corpus source.
-     * Main difference with other iterators here: it allows you to pass already tokenized Sequence<VocabWord> for training
+     * Main difference with other iterators here: it allows you to pass already tokenized {@code Sequence<VocabWord>} for training
      *
      * @param iterator
      */
@@ -1395,7 +1395,7 @@ public class ParagraphVectors extends Word2Vec {
         /**
          * This method defines whether subsampling should be used or not
          *
-         * @param sampling set > 0 to subsampling argument, or 0 to disable
+         * @param sampling set &gt; 0 to subsampling argument, or 0 to disable
          * @return
          */
         @Override
@@ -1423,7 +1423,7 @@ public class ParagraphVectors extends Word2Vec {
          *
          * Default value: 0
          *
-         * @param negative set > 0 as negative sampling argument, or 0 to disable
+         * @param negative set &gt; 0 as negative sampling argument, or 0 to disable
          * @return
          */
         @Override

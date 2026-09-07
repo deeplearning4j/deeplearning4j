@@ -126,7 +126,7 @@ public class ModelRegistryEntry {
         private int numAttentionHeads;
         private int numKVHeads;
         private int feedForwardDimension;
-        /** 0 for dense models, >0 for Mixture-of-Experts */
+        /** 0 for dense models, &gt;0 for Mixture-of-Experts */
         private int expertCount;
         /** Estimated total parameter count */
         private long parameterCount;

@@ -39,7 +39,7 @@ import java.util.Map;
  * - Standard Adam: 2 * numParams * 4 bytes (FP32 m + FP32 v)
  * - Adam8bit: 2 * numParams * 1 byte + scales overhead (INT8 m + INT8 v)
  *
- * For a 7B parameter model: 56GB -> ~14GB optimizer state.
+ * For a 7B parameter model: 56GB -&gt; ~14GB optimizer state.
  *
  * The optimizer works by:
  * 1. Dequantizing the relevant block of m/v state from INT8 to FP32

@@ -41,7 +41,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * </ul>
  *
  * <p>The pixel unshuffle operation rearranges spatial patches into the channel dimension:
- * [B, C, H, W] -> [B, C*r*r, H/r, W/r], then the result is reshaped into a sequence
+ * [B, C, H, W] -&gt; [B, C*r*r, H/r, W/r], then the result is reshaped into a sequence
  * of compressed tokens for the language model.</p>
  *
  * <p>Example usage:</p>

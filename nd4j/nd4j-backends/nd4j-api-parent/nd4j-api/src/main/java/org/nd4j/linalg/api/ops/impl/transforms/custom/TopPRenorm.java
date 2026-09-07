@@ -35,7 +35,7 @@ import java.util.List;
  * Top-P (nucleus) filtering with renormalization.
  *
  * Sorts tokens by descending probability, accumulates until cumulative
- * probability >= p, zeros the rest, then renormalizes.
+ * probability &gt;= p, zeros the rest, then renormalizes.
  *
  * Input:
  *   0: logits [batch, vocabSize] or [vocabSize]

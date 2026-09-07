@@ -206,7 +206,7 @@ public class DeviceMemoryManager {
     private volatile boolean memorySimulationEnabled = false;
 
     /**
-     * Simulated free memory per device (deviceId -> bytes).
+     * Simulated free memory per device (deviceId -&gt; bytes).
      * Uses integer device IDs: GPU indices (0, 1, 2...) or CPU_DEVICE_ID (-1).
      */
     private final Map<Integer, Long> simulatedFreeMemory = new ConcurrentHashMap<>();

@@ -63,8 +63,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * Basically that's sophisticated garbage collector for both zero-copy memory, and multiple device memory.
  *
  * There's multiple possible data movement directions, but general path is:
- * host memory (issued on JVM side) ->
- *          zero-copy pinned memory (which is allocated for everything out there) ->
+ * host memory (issued on JVM side) -&gt;
+ *          zero-copy pinned memory (which is allocated for everything out there) -&gt;
  *                  device memory (where data gets moved from zero-copy, if used actively enough)
  *
  * And the backward movement, if memory isn't used anymore (like if originating INDArray was trashed by JVM GC), or it's not popular enough to hold in device memory
@@ -73,8 +73,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * Tick: memory chunk (or its part) is accessed on device
  * Tack: memory chink (or its part) device access session was finished
  * Toe: memory chunk is locked for some reason. Possible reasons:
- *              Memory synchronization is ongoing, host->gpu or gpu->host
- *              Memory relocation is ongoing, zero->gpu, or gpu->zero, or gpu->host
+ *              Memory synchronization is ongoing, host-&gt;gpu or gpu-&gt;host
+ *              Memory relocation is ongoing, zero-&gt;gpu, or gpu-&gt;zero, or gpu-&gt;host
  *              Memory removal is ongoing.
  *
  * So, basically memory being used for internal calculations, not interfered with manual changes (aka putRow etc), are always available without locks
@@ -623,7 +623,7 @@ public class AtomicAllocator implements Allocator {
 
     /**
      * This method returns deviceId for current thread
-     * All values >= 0 are considered valid device IDs, all values < 0 are considered stubs.
+     * All values &gt;= 0 are considered valid device IDs, all values &lt; 0 are considered stubs.
      *
      * @return
      */

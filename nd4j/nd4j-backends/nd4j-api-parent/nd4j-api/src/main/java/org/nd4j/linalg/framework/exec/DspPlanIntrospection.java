@@ -431,7 +431,7 @@ public final class DspPlanIntrospection {
     // =========================================================================
     
     /**
-     * Get device placement map (deviceId -> list of slot indices)
+     * Get device placement map (deviceId -&gt; list of slot indices)
      */
     public Map<Integer, List<Integer>> getDevicePlacement(DynamicShapePlan plan) {
         return PlanIntrospection.getDevicePlacement(plan);

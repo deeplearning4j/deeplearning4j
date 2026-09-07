@@ -73,7 +73,7 @@ import java.util.List;
  * <p>Example — pretraining:
  * <pre>
  * TokenizedTextDataIterator iter = TokenizedTextDataIterator.forPretraining(
- *     text -> myTokenizer.encode(text), texts, 2048, 8);
+ *     text -&gt; myTokenizer.encode(text), texts, 2048, 8);
  * workflow.train(iter, totalSteps);
  * </pre>
  *
@@ -81,7 +81,7 @@ import java.util.List;
  * <pre>
  * List&lt;FormattedExample&gt; examples = formatter.format(conversations);
  * TokenizedTextDataIterator iter = TokenizedTextDataIterator.forSFT(
- *     text -> myTokenizer.encode(text), examples, 2048, 4);
+ *     text -&gt; myTokenizer.encode(text), examples, 2048, 4);
  * pipeline.train(iter, totalSteps);
  * </pre>
  *
@@ -101,7 +101,7 @@ public class TokenizedTextDataIterator implements MultiDataSetIterator {
      *
      * <pre>
      * // Lambda using a HuggingFace tokenizer wrapper
-     * TokenizerFunction fn = text -> hfTokenizer.encode(text).getIds();
+     * TokenizerFunction fn = text -&gt; hfTokenizer.encode(text).getIds();
      *
      * // Lambda using a custom BPE tokenizer
      * TokenizerFunction fn = myBpe::tokenize;

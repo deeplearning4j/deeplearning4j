@@ -39,7 +39,7 @@ public interface EntityResolutionStrategy {
 
     /**
      * Normalize a mention into its canonical form for this entity type.
-     * For example, "Dr. Barack H. Obama Jr." -> "barack obama" for PERSON.
+     * For example, "Dr. Barack H. Obama Jr." -&gt; "barack obama" for PERSON.
      *
      * @param mention raw mention text
      * @return normalized canonical form

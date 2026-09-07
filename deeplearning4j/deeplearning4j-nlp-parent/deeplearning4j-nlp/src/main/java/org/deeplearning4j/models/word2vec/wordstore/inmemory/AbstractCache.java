@@ -94,7 +94,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
     }
 
     /**
-     * Returns true, if number of elements in vocabulary > 0, false otherwise
+     * Returns true, if number of elements in vocabulary &gt; 0, false otherwise
      *
      * @return
      */
@@ -215,7 +215,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      * Returns Huffman index for specified label
      *
      * @param label the label to get index for
-     * @return >=0 if label exists, -1 if Huffman tree wasn't built yet, -2 if specified label wasn't found
+     * @return &gt;=0 if label exists, -1 if Huffman tree wasn't built yet, -2 if specified label wasn't found
      */
     @Override
     public int indexOf(String label) {

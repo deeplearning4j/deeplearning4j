@@ -373,8 +373,8 @@ public class Convolution1DUtils {
     }
 
     /**
-     * Perform validation on the CNN layer kernel/stride/padding. Expect int, with values > 0 for kernel size and
-     * stride, and values >= 0 for padding.
+     * Perform validation on the CNN layer kernel/stride/padding. Expect int, with values &gt; 0 for kernel size and
+     * stride, and values &gt;= 0 for padding.
      *
      * @param kernel  Kernel size  to check
      * @param stride  Stride to check

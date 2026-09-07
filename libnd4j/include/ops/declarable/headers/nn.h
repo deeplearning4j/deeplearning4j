@@ -146,8 +146,8 @@ DECLARE_CONFIGURABLE_OP(apply_sgd, 2, 1, true, -2, 0);
  * 0: epsilon, it is optional argument, default value is 0.001, this is small number to be added to the variance of x
  *
  * integer input arguments:
- * 0: dataFormat, may have two values: zero -> NHWC, unity -> NCHW
- * 1: isTraining, may have two values: zero -> inference, unity -> training
+ * 0: dataFormat, may have two values: zero -&gt; NHWC, unity -&gt; NCHW
+ * 1: isTraining, may have two values: zero -&gt; inference, unity -&gt; training
  */
 #if NOT_EXCLUDED(OP_fused_batch_norm)
 DECLARE_CUSTOM_OP(fused_batch_norm, 3, 1, false, 0, 2);
@@ -201,8 +201,8 @@ DECLARE_CUSTOM_OP(layer_norm_bp, 4, 1, false, 0, -2);
  * which values should be skipped of shape [batchSize, timesteps]
  *
  * integer input arguments:
- * 0: normalization, may have two values: zero -> do not apply normalization, one -> apply normalization
- * 1: withWeights, may have two values: zero -> do not return weights, one -> return weights
+ * 0: normalization, may have two values: zero -&gt; do not apply normalization, one -&gt; apply normalization
+ * 1: withWeights, may have two values: zero -&gt; do not return weights, one -&gt; return weights
  *
  * Output Arrays:
  * 0: Attention result arrays of shape [batchSize, featureValues, queryCount] or [batchSize, numHeads, featureValues,
@@ -240,8 +240,8 @@ DECLARE_CUSTOM_OP(dot_product_attention_bp, 4, 3, false, 0, 1);
  * which values should be skipped of shape [batchSize, timesteps]
  *
  * integer input arguments:
- * 0: normalization, may have two values: zero -> do not apply normalization, one -> apply normalization
- * 1: withWeights, may have two values: zero -> do not return weights, one -> return weights
+ * 0: normalization, may have two values: zero -&gt; do not apply normalization, one -&gt; apply normalization
+ * 1: withWeights, may have two values: zero -&gt; do not return weights, one -&gt; return weights
  *
  * Output Arrays:
  * 0: Attention result arrays of shape [batchSize, featureValues, queryCount] or [batchSize, numHeads, featureValues,
@@ -310,8 +310,8 @@ REGISTER_H(dot_product_attention_v2_bp)
  * mask: OPTIONAL; array that defines which values should be skipped of shape [batchSize, timesteps]
  *
  * integer input arguments:
- * 0: normalization, may have two values: zero -> do not apply normalization, one -> apply normalization
- * 1: withWeights, may have two values: zero -> do not return weights, one -> return weights
+ * 0: normalization, may have two values: zero -&gt; do not apply normalization, one -&gt; apply normalization
+ * 1: withWeights, may have two values: zero -&gt; do not return weights, one -&gt; return weights
  *
  * Output Arrays:
  * 0: Attention result arrays of shape [batchSize, outSize, queryCount]
@@ -638,7 +638,7 @@ DECLARE_CUSTOM_OP(relative_position_bias, 1, 1, false, 0, 3);
  * token_sample - Token sampling for LLM inference
  *
  * Full sampling pipeline in a single native call:
- *   temperature scaling -> top-K -> softmax -> top-P -> sample/argmax
+ *   temperature scaling -&gt; top-K -&gt; softmax -&gt; top-P -&gt; sample/argmax
  *
  * Input:
  *   0: logits [batch, vocabSize], [vocabSize], or [batch, seqLen, vocabSize]
@@ -672,7 +672,7 @@ DECLARE_CUSTOM_OP(token_sample, 1, 1, false, 0, 0);
  *   0: penalized logits (same shape/type as input 0)
  *
  * Float args:
- *   0: repetitionPenalty (1.0 = off, >1.0 penalizes repetition)
+ *   0: repetitionPenalty (1.0 = off, &gt;1.0 penalizes repetition)
  *   1: frequencyPenalty  (0.0 = off, positive penalizes by count)
  *   2: presencePenalty   (0.0 = off, positive penalizes any presence)
  *   3: minP              (0.0 = off, 0.05-0.1 typical)
@@ -691,7 +691,7 @@ DECLARE_CUSTOM_OP(typical_p_filter, 1, 1, false, 1, 0);
 
 /**
  * xtc_filter - Exclude Top Choices (XTC) logit filter (stochastic; masks to -inf).
- * Float args: 0: xtcProbability (0.0 = off), 1: xtcThreshold (< 0.5)
+ * Float args: 0: xtcProbability (0.0 = off), 1: xtcThreshold (&lt; 0.5)
  * Int args:   0: seed
  */
 #if NOT_EXCLUDED(OP_xtc_filter)
@@ -845,7 +845,7 @@ DECLARE_CUSTOM_OP(kv_scatter, 2, 1, false, 0, 1);
  * from TurboQuant's two-stage quantization (ICLR 2026). The asymmetric inner
  * product estimator combines MSE reconstruction with QJL correction:
  *
- *   score(q, k) ≈ <q, k_mse> + ||r|| * sqrt(π/2)/m * <S@q, signs>
+ *   score(q, k) ≈ &lt;q, k_mse&gt; + ||r|| * sqrt(π/2)/m * &lt;S@q, signs&gt;
  *
  * Input 0: Q              [B, H, Sq, D] query
  * Input 1: K_mse          [B, H, Sk, D] MSE-reconstructed keys (FLOAT16)
@@ -895,7 +895,7 @@ DECLARE_CUSTOM_OP(top_k_renorm, 1, 1, false, 0, 1);
  * top_p_renorm - Top-P (nucleus) filtering with renormalization.
  *
  * Sorts tokens by descending probability, accumulates until cumulative
- * probability >= p, zeros the rest, then renormalizes.
+ * probability &gt;= p, zeros the rest, then renormalizes.
  *
  * Input:
  *   0: logits [batch, vocabSize] or [vocabSize] — pre-softmax logits

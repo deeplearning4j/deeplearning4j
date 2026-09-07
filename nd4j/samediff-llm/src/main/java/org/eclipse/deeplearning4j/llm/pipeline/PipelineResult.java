@@ -51,7 +51,7 @@ import java.util.*;
 @Getter
 public class PipelineResult {
 
-    /** Stage outputs: stageId -> StageOutput */
+    /** Stage outputs: stageId -&gt; StageOutput */
     private final Map<String, StageOutput> stageOutputs;
 
     /** Execution order of stages (for ordered iteration). */

@@ -24,7 +24,7 @@ import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
 
 /**
- * Wrapper for DoublePointer -> LongPointer
+ * Wrapper exposing a Pointer as a LongPointer.
  */
 public class LongPointerWrapper extends LongPointer {
 

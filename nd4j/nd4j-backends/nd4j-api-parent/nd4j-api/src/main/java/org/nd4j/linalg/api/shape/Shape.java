@@ -1584,7 +1584,7 @@ public class Shape {
      * If a shape array is ony 1 in length
      * it returns a row vector
      * @param shape the shape of the array
-     * @return the shape as is if its already >= 2 in length
+     * @return the shape as is if its already &gt;= 2 in length
      * otherwise a row vector shape
      */
     public static long[] ensureAtMinRowVector(long... shape) {

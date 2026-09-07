@@ -46,7 +46,7 @@ DECLARE_CUSTOM_OP(csr_to_dense, 3, 1, false, 0, 2);
  * Input:
  *   [0] dense [rows, cols]
  * TArgs:
- *   [0] threshold (default 0.0 — keep entries where |x| > threshold)
+ *   [0] threshold (default 0.0 — keep entries where |x| &gt; threshold)
  * Outputs:
  *   [0] values  – 1D [nnz], same dtype as input
  *   [1] colIdx  – 1D [nnz], INT32
@@ -119,7 +119,7 @@ DECLARE_CUSTOM_OP(sddmm, 4, 1, false, 0, 2);
  * Input:
  *   [0] dense [rows, cols], floating dtype
  * TArgs:
- *   [0] threshold (default 0.0 — keep entries where |x| > threshold)
+ *   [0] threshold (default 0.0 — keep entries where |x| &gt; threshold)
  * Outputs:
  *   [0] indices [nnz, 2], INT64
  *       indices[k, 0] = row index of the k-th non-zero (row-major scan order)
@@ -298,7 +298,7 @@ DECLARE_CUSTOM_OP(csc_to_dense, 3, 1, false, 0, 2);
  * Input:
  *   [0] dense [rows, cols], floating dtype
  * TArgs:
- *   [0] threshold (default 0.0 — keep entries where |x| > threshold)
+ *   [0] threshold (default 0.0 — keep entries where |x| &gt; threshold)
  * Outputs:
  *   [0] cscValues  [nnz],     same dtype as input
  *   [1] cscRowIdx  [nnz],     INT32
@@ -480,7 +480,7 @@ DECLARE_CUSTOM_OP(csr_edge_aggregate_bp, 3, 1, false, 0, 2);
 /**
  * Extracts the induced subgraph for a selected set of K nodes from a CSR graph.
  *
- * Keeps edge (i -> j) iff BOTH i and j appear in nodeIdx (sorted ascending).
+ * Keeps edge (i -&gt; j) iff BOTH i and j appear in nodeIdx (sorted ascending).
  * Remaps both endpoints to their 0-based position in nodeIdx.
  * nnz' is data-dependent and is counted exactly in DECLARE_SHAPE_FN.
  *
@@ -504,7 +504,7 @@ DECLARE_CUSTOM_OP(csr_subgraph_extract, 4, 3, false, 0, 2);
 /**
  * Backward pass for csr_subgraph_extract.
  *
- * Gradient flows only through values: for each kept edge e -> e',
+ * Gradient flows only through values: for each kept edge e -&gt; e',
  *   dValues[e] = dNewValues[e']
  * Dropped edges get zero gradient. Structural inputs receive zero gradients.
  *

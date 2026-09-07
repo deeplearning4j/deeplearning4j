@@ -39,7 +39,7 @@ import java.util.List;
  * <ol>
  *   <li>dense – 2D matrix [rows, cols]</li>
  * </ol>
- * Float args: threshold (default 0.0 — keep entries where |x| > threshold)
+ * Float args: threshold (default 0.0 — keep entries where |x| &gt; threshold)
  *
  * <p>Outputs:
  * <ol>
@@ -59,7 +59,7 @@ public class DenseToCsc extends DynamicCustomOp {
      * Construct from a dense matrix with an explicit threshold.
      *
      * @param dense     2D input matrix [rows, cols]
-     * @param threshold keep entries where |x| > threshold (pass 0.0 to keep all non-zeros)
+     * @param threshold keep entries where |x| &gt; threshold (pass 0.0 to keep all non-zeros)
      */
     public DenseToCsc(INDArray dense, double threshold) {
         super(new INDArray[]{dense}, null);

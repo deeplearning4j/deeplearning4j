@@ -1286,7 +1286,7 @@ class SD_LIB_EXPORT NDArray {
    * are equal to this array elements target and this array should have same shapes, except when this_rank = 1 (in that
    * case should be target_rank = 2)
    *
-   * includeEdges handles the cases where we need to include edges (basically >= or <= 0 and edges of the triangle)
+   * includeEdges handles the cases where we need to include edges (basically &gt;= or &lt;= 0 and edges of the triangle)
    */
   template <typename T>
   void fillAsTriangular(const float value, int lower, int upper, NDArray &target, const char direction = 'b',const bool includeEdges = true);
@@ -1546,7 +1546,7 @@ class SD_LIB_EXPORT NDArray {
 
   /**
    *  returns true if all dimensions of array except one are unities, for example: [1,1,n,1], [n,1,1], [n], ...
-   *  posOfNonUnityDim - one dimension with value > 1
+   *  posOfNonUnityDim - one dimension with value &gt; 1
    */
   SD_INLINE bool isCommonVector(LongType &posOfNonUnityDim);
 

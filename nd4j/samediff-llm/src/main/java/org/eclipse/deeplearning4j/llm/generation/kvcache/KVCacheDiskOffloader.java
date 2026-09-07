@@ -43,7 +43,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Disk-based third tier for KV cache offloading (GPU -> Host -> SSD).
+ * Disk-based third tier for KV cache offloading (GPU -&gt; Host -&gt; SSD).
  *
  * <p>When host memory is also constrained, KV cache blocks can be further evicted
  * to disk storage. This class provides async read/write operations using NIO

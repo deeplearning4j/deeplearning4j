@@ -308,7 +308,7 @@ public class Indices {
      * the difference between the end index + 1 and
      * the begin index
      * <p>
-     * If specified, this will check for whether any of the indices are >= to end - 1
+     * If specified, this will check for whether any of the indices are &gt;= to end - 1
      * and if so, prune it down
      *
      * @param shape   the original shape

@@ -190,7 +190,7 @@ fun Bitwise() = Namespace("Bitwise"){
         Output(INT, "output"){ description = "SDVariable with shifted bits" }
         Doc(Language.ANY, DocScope.ALL){
             """
-                Shift integer bits to the right, i.e. var >> 4
+                Shift integer bits to the right, i.e. var &gt;&gt; 4
             """.trimIndent()
         }
     }
@@ -204,7 +204,7 @@ fun Bitwise() = Namespace("Bitwise"){
 
         Doc(Language.ANY, DocScope.ALL){
             """
-                Roll integer bits to the left, i.e. var &lt;&lt; 4 | var >> (32 - 4)
+                Roll integer bits to the left, i.e. var &lt;&lt; 4 | var &gt;&gt; (32 - 4)
             """.trimIndent()
         }
     }
@@ -218,7 +218,7 @@ fun Bitwise() = Namespace("Bitwise"){
 
         Doc(Language.ANY, DocScope.ALL){
             """
-                Roll integer bits to the right, i.e. var >> 4 | var &lt;&lt; (32 - 4)
+                Roll integer bits to the right, i.e. var &gt;&gt; 4 | var &lt;&lt; (32 - 4)
             """.trimIndent()
         }
     }

@@ -60,7 +60,7 @@ struct SD_LIB_EXPORT HelperVersion {
   /**
    * Check if this version meets the minimum required version
    * @param min Minimum required version
-   * @return true if this version >= min
+   * @return true if this version &gt;= min
    */
   bool meetsMinimum(const HelperVersion& min) const {
     if (majorVersion > min.majorVersion) return true;
@@ -74,7 +74,7 @@ struct SD_LIB_EXPORT HelperVersion {
    * Check if this version is within a range [min, max]
    * @param min Minimum version (inclusive)
    * @param max Maximum version (inclusive)
-   * @return true if min <= this <= max
+   * @return true if min &lt;= this &lt;= max
    */
   bool inRange(const HelperVersion& min, const HelperVersion& max) const {
     return meetsMinimum(min) && max.meetsMinimum(*this);
@@ -314,7 +314,7 @@ class SD_LIB_EXPORT HelperVersionRegistry {
    * Check if a helper meets minimum version requirements
    * @param name Library name
    * @param minVersion Minimum required version
-   * @return true if available and version >= minVersion
+   * @return true if available and version &gt;= minVersion
    */
   bool checkVersion(const std::string& name, const HelperVersion& minVersion);
 

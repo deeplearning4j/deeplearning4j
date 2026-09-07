@@ -95,7 +95,7 @@ fun NN() = Namespace("NN") {
         Doc(Language.ANY, DocScope.ALL) {
             """
              Element-wise exponential linear unit (ELU) function:
-             out = x if x > 0
+             out = x if x &gt; 0
              out = a * (exp(x) - 1) if x &lt;= 0
              with constant a = 1.0
              <p>
@@ -122,7 +122,7 @@ fun NN() = Namespace("NN") {
              Element-wise hard sigmoid function:
              out[i] = 0 if in[i] &lt;= -2.5
              out[i] = 0.2*in[i]+0.5 if -2.5 &lt; in[i] &lt; 2.5
-             out[i] = 1 if in[i] >= 2.5
+             out[i] = 1 if in[i] &gt;= 2.5
             """.trimIndent()
         }
     }
@@ -133,7 +133,7 @@ fun NN() = Namespace("NN") {
              Element-wise hard tanh function:
              out[i] = -1 if in[i] &lt;= -1
              out[i] = in[i] if -1 &lt; in[i] &lt; 1
-             out[i] = 1 if in[i] >= 1
+             out[i] = 1 if in[i] &gt;= 1
             """.trimIndent()
         }
     }
@@ -162,7 +162,7 @@ fun NN() = Namespace("NN") {
         Doc(Language.ANY, DocScope.ALL) {
             """
              Element-wise leaky ReLU function:
-             out = x if x >= 0.0
+             out = x if x &gt;= 0.0
              out = alpha * x if x &lt; 0.0
              Alpha value is most commonly set to 0.01
             """.trimIndent()
@@ -257,13 +257,13 @@ fun NN() = Namespace("NN") {
         javaOpClass = "RectifiedLinear"
         legacy = true
         Input(NUMERIC, "x") { description = "Input" }
-        Arg(NUMERIC, "cutoff") { description = "Cutoff value for ReLU operation - x > cutoff ? x : 0. Usually 0" }
+        Arg(NUMERIC, "cutoff") { description = "Cutoff value for ReLU operation - x &gt; cutoff ? x : 0. Usually 0" }
         Output(NUMERIC, "output") { description = "Output" }
 
         Doc(Language.ANY, DocScope.ALL) {
             """
              Element-wise rectified linear function with specified cutoff:
-             out[i] = in[i] if in[i] >= cutoff
+             out[i] = in[i] if in[i] &gt;= cutoff
              out[i] = 0 otherwise
             """.trimIndent()
         }
@@ -323,7 +323,7 @@ fun NN() = Namespace("NN") {
         Doc(Language.ANY, DocScope.ALL) {
             """
              PReLU (Parameterized Rectified Linear Unit) operation.  Like LeakyReLU with a learnable alpha:
-             out[i] = in[i] if in[i] >= 0
+             out[i] = in[i] if in[i] &gt;= 0
              out[i] = in[i] * alpha[i] otherwise
             
              sharedAxes allows you to share learnable parameters along axes.
@@ -340,7 +340,7 @@ fun NN() = Namespace("NN") {
             """
              Element-wise SeLU function - Scaled exponential Lineal Unit: see <a href="https://arxiv.org/abs/1706.02515">Self-Normalizing Neural Networks</a>
              
-             out[i] = scale * in[i] if in[i] > 0, or scale * alpha * (exp(in[i])-1) if in[i] &lt;= 0
+             out[i] = scale * in[i] if in[i] &gt; 0, or scale * alpha * (exp(in[i])-1) if in[i] &lt;= 0
              Uses default scale and alpha values.
             """.trimIndent()
         }
@@ -554,7 +554,7 @@ fun NN() = Namespace("NN") {
              Flash attention features:
              - O(N) memory complexity instead of O(N^2)
              - Tiled computation with online softmax
-             - Supports grouped query attention (GQA) where numHeads > numKvHeads
+             - Supports grouped query attention (GQA) where numHeads &gt; numKvHeads
              - Supports attention bias (relative position bias, ALiBi, etc.)
 
              KV Cache support for autoregressive generation:
@@ -578,8 +578,8 @@ fun NN() = Namespace("NN") {
         val v = Input(NUMERIC, "values") { description = "input 3D array \"values\" of shape [batchSize, featureValues, timesteps]\n" +
                 "or 4D array of shape [batchSize, numHeads, featureValues, timesteps]" }
         val m = Input(NUMERIC, "mask") { description = "OPTIONAL; array that defines which values should be skipped of shape [batchSize, timesteps]" }
-        val s = Arg(BOOL, "scaled") { description = "normalization, false -> do not apply normalization, true -> apply normalization" }
-        Arg(BOOL, "withWeights") { defaultValue = false; description = "withWeights return attention weights as well, false -> only one output, true -> two outputs" }
+        val s = Arg(BOOL, "scaled") { description = "normalization, false -&gt; do not apply normalization, true -&gt; apply normalization" }
+        Arg(BOOL, "withWeights") { defaultValue = false; description = "withWeights return attention weights as well, false -&gt; only one output, true -&gt; two outputs" }
 
         Output(NUMERIC, "output") { description = " Attention result arrays of shape [batchSize, featureValues, queryCount] or [batchSize, numHeads, featureValues, queryCount],\n" +
                 "(optionally) Attention Weights of shape [batchSize, timesteps, queryCount] or [batchSize, numHeads, timesteps, queryCount]" }
@@ -622,8 +622,8 @@ fun NN() = Namespace("NN") {
         val wv = Input(NUMERIC, "Wv") { description = "input value projection weights of shape [numHeads, projectedValues, featureValues]" }
         val wo = Input(NUMERIC, "Wo") { description = "output projection weights of shape [numHeads * projectedValues, outSize]" }
         val m = Input(NUMERIC, "mask") { description = "OPTIONAL; array that defines which values should be skipped of shape [batchSize, timesteps]" }
-        val s = Arg(BOOL, "scaled") { description = "normalization, false -> do not apply normalization, true -> apply normalization" }
-        Arg(BOOL, "withWeights") { defaultValue = false; description = "return attention weights as well, false -> only one output, true -> two outputs" }
+        val s = Arg(BOOL, "scaled") { description = "normalization, false -&gt; do not apply normalization, true -&gt; apply normalization" }
+        Arg(BOOL, "withWeights") { defaultValue = false; description = "return attention weights as well, false -&gt; only one output, true -&gt; two outputs" }
 
         Output(NUMERIC, "output") { description = "Attention result arrays of shape [batchSize, outSize, queryCount]\n" +
                 "(optionally) Attention Weights of shape [batchSize, numHeads, timesteps, queryCount]" }
@@ -668,7 +668,7 @@ fun NN() = Namespace("NN") {
              Uses tiled computation with online softmax to achieve O(N) memory complexity
              instead of O(N^2) for standard attention.
 
-             Supports Grouped Query Attention (GQA) where numHeads > numKvHeads,
+             Supports Grouped Query Attention (GQA) where numHeads &gt; numKvHeads,
              allowing multiple query heads to share the same KV heads.
 
              out = softmax(Q * K^T / scale) * V
@@ -842,7 +842,7 @@ fun NN() = Namespace("NN") {
              - 1D windowed attention: for sequences [batch, seqLen, heads, dim]
              - 2D windowed attention: for images [batch, height, width, heads, dim]
 
-             Shifted window attention (shiftSize > 0) enables cross-window connections
+             Shifted window attention (shiftSize &gt; 0) enables cross-window connections
              as used in Swin Transformer.
 
              Benefits:
@@ -1013,7 +1013,7 @@ fun NN() = Namespace("NN") {
 
              For example, with mergeRepeated=true and blankIndex=0:
              Input:  [0, 1, 1, 0, 2, 2, 2, 0] (0=blank, 1='a', 2='b')
-             Output: [1, 2] -> "ab"
+             Output: [1, 2] -&gt; "ab"
 
              Note: This is greedy decoding. For better accuracy with language models,
              use beam search decoding instead.
@@ -1096,7 +1096,7 @@ fun NN() = Namespace("NN") {
              Token sampling for LLM inference.
 
              Full sampling pipeline in a single native GPU call:
-               temperature scaling -> top-K filtering -> softmax -> top-P filtering -> sample/argmax
+               temperature scaling -&gt; top-K filtering -&gt; softmax -&gt; top-P filtering -&gt; sample/argmax
 
              For greedy decoding (temperature=0 or no top-k/top-p), performs GPU-side argmax
              with shared-memory reduction — avoids transferring the full logits tensor to host.
@@ -1139,7 +1139,7 @@ fun NN() = Namespace("NN") {
             """
              Exclude Top Choices (XTC) logit filter.
 
-             With probability xtcProbability: among tokens whose softmax probability >= xtcThreshold,
+             With probability xtcProbability: among tokens whose softmax probability &gt;= xtcThreshold,
              if at least two qualify, mask all EXCEPT the lowest-probability one — encouraging
              diversity. Otherwise the logits are unchanged. Stochastic; seeded by seed.
             """.trimIndent()
@@ -1153,7 +1153,7 @@ fun NN() = Namespace("NN") {
         val staticBuf = Input(NUMERIC, "staticBuffer") { description = "Static KV cache buffer. Shape: [batch, heads, maxKvLen, dim]. Updated in-place." }
 
         val cachePos = Arg(LONG, "cachePos") { description = "Position in static buffer to write the new entry" }
-        val numPairs = Arg(INT, "numPairs") { defaultValue = 1; description = "Number of present/static KV pairs. When > 1, inputs are [present_0..N-1, static_0..N-1]" }
+        val numPairs = Arg(INT, "numPairs") { defaultValue = 1; description = "Number of present/static KV pairs. When &gt; 1, inputs are [present_0..N-1, static_0..N-1]" }
 
         Output(LONG, "output") { description = "Scalar 0 on success" }
 
@@ -1782,6 +1782,7 @@ fun NN() = Namespace("NN") {
         Output(NUMERIC, "stateOut") { description = "Final recurrent state [batch, numHeads, headDimK, headDimV]" }
 
         AllParamSignature()
+        Signature(q, k, v, beta, gate, stateIn)
         Signature(q, k, v, beta, gate)
 
         Doc(Language.ANY, DocScope.ALL) {
@@ -1817,6 +1818,7 @@ fun NN() = Namespace("NN") {
         Signature(x, weight, bias)
         Signature(x, weight, bias, stateIn)
         Signature(x, weight, bias, stateIn, activation)
+        Signature(x, weight, bias, stateIn, activation, wFormat)
 
         Doc(Language.ANY, DocScope.ALL) {
             """

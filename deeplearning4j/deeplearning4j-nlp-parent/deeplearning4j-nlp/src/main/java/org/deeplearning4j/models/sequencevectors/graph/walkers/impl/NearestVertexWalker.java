@@ -223,7 +223,7 @@ public class NearestVertexWalker<V extends SequenceElement> implements GraphWalk
         /**
          * This method defines sorting which will be used to generate walks.
          *
-         * PLEASE NOTE: This option has effect only if walkLength is limited (>0).
+         * PLEASE NOTE: This option has effect only if walkLength is limited (&gt;0).
          *
          * @param mode
          * @return

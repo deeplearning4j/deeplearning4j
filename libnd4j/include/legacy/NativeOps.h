@@ -835,7 +835,7 @@ SD_LIB_EXPORT const char* getLifecycleOpContext();
  * are logged to a file with full unified C++/Java stack traces.
  * The log file survives crashes and can be used for post-mortem debugging.
  *
- * Log files are located at: /tmp/nd4j_op_execution_<PID>.log
+ * Log files are located at: /tmp/nd4j_op_execution_&lt;PID&gt;.log
  * (or $SD_OP_LOG_DIR if set)
  *
  * NOTE: Only available when built with -Dlibnd4j.calltrace=ON
@@ -898,7 +898,7 @@ SD_LIB_EXPORT void dumpOpExecutionState(const char* message);
  * Allocation logging is always active in functrace builds (SD_GCC_FUNCTRACE).
  * Returns empty string if functrace is not enabled.
  *
- * Log file location: /tmp/nd4j_allocations_<PID>.log (configurable via SD_ALLOCATION_LOG_DIR)
+ * Log file location: /tmp/nd4j_allocations_&lt;PID&gt;.log (configurable via SD_ALLOCATION_LOG_DIR)
  *
  * @return C-string containing the log file path (caller must NOT free this)
  */
@@ -1153,13 +1153,13 @@ SD_LIB_EXPORT void initializeLifecycleCrashHandlers();
  *
  * JSON format:
  * {
- *   "total_allocations": <count>,
- *   "total_deallocations": <count>,
- *   "current_live": <count>,
- *   "peak_live": <count>,
- *   "current_bytes": <bytes>,
- *   "peak_bytes": <bytes>,
- *   "double_frees": <count>
+ *   "total_allocations": &lt;count&gt;,
+ *   "total_deallocations": &lt;count&gt;,
+ *   "current_live": &lt;count&gt;,
+ *   "peak_live": &lt;count&gt;,
+ *   "current_bytes": &lt;bytes&gt;,
+ *   "peak_bytes": &lt;bytes&gt;,
+ *   "double_frees": &lt;count&gt;
  * }
  *
  * NOTE: Returns empty JSON "{}" when SD_GCC_FUNCTRACE is not defined.
@@ -1173,20 +1173,20 @@ SD_LIB_EXPORT const char* getNDArrayLifecycleStats();
  * JSON format:
  * {
  *   "primary": {
- *     "total_allocations": <count>,
- *     "total_deallocations": <count>,
- *     "current_live": <count>,
- *     "current_bytes": <bytes>,
- *     "peak_bytes": <bytes>
+ *     "total_allocations": &lt;count&gt;,
+ *     "total_deallocations": &lt;count&gt;,
+ *     "current_live": &lt;count&gt;,
+ *     "current_bytes": &lt;bytes&gt;,
+ *     "peak_bytes": &lt;bytes&gt;
  *   },
  *   "special": {
- *     "total_allocations": <count>,
- *     "total_deallocations": <count>,
- *     "current_live": <count>,
- *     "current_bytes": <bytes>,
- *     "peak_bytes": <bytes>
+ *     "total_allocations": &lt;count&gt;,
+ *     "total_deallocations": &lt;count&gt;,
+ *     "current_live": &lt;count&gt;,
+ *     "current_bytes": &lt;bytes&gt;,
+ *     "peak_bytes": &lt;bytes&gt;
  *   },
- *   "double_frees": <count>
+ *   "double_frees": &lt;count&gt;
  * }
  *
  * NOTE: Returns empty JSON "{}" when SD_GCC_FUNCTRACE is not defined.

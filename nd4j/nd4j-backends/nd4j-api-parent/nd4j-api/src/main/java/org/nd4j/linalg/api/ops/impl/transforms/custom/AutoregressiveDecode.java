@@ -304,7 +304,7 @@ public class AutoregressiveDecode extends DynamicCustomOp {
      * @param logitsOutputIdx    which plan output is the logits tensor
      * @param attnMaskReformatExtIdx index of attn_mask_reformat (-1 if unused)
      * @param cachePositionExtIdx ext input index for cache_position / seqlens_k (-1 if unused).
-     *                            When >= 0, enables in-place KV write: the onnx_mha op writes
+     *                            When &gt;= 0, enables in-place KV write: the onnx_mha op writes
      *                            new K/V at this position into pastKey/pastValue, skipping the
      *                            bulk past→present copy. The decode loop updates the device-side
      *                            value each step. Sets planOwnsKvScatter to skip external KV scatter.

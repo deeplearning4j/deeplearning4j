@@ -30,7 +30,7 @@ import java.nio.ByteOrder;
  *
  * Uses 2-bit encoding for ternary values {-1, 0, +1}.
  * Each byte stores 4 ternary values in 2-bit pairs.
- * Mapping: 0b00 -> +1, 0b01 -> 0, 0b10 -> -1, 0b11 -> 0 (unused/padding)
+ * Mapping: 0b00 -&gt; +1, 0b01 -&gt; 0, 0b10 -&gt; -1, 0b11 -&gt; 0 (unused/padding)
  *
  * Block layout (QK_K = 256):
  *   uint8_t qs[64]       -- 64 bytes, 2-bit encoded ternary (4 values/byte)

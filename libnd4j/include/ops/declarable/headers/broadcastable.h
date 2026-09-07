@@ -275,7 +275,7 @@ DECLARE_BROADCASTABLE_BOOL_OP(not_equals, 0, 0);
 
 /**
  * This op takes 2 equally shaped arrays as input, and provides binary matrix as output.
- * Math is: _x <= _y ? (T) 1.0f : (T) 0.0f;
+ * Math is: _x &lt;= _y ? (T) 1.0f : (T) 0.0f;
  */
 #if NOT_EXCLUDED(OP_less_equal)
 DECLARE_BROADCASTABLE_BOOL_OP(less_equal, 0, 0);
@@ -283,7 +283,7 @@ DECLARE_BROADCASTABLE_BOOL_OP(less_equal, 0, 0);
 
 /**
  * This op takes 2 equally shaped arrays as input, and provides binary matrix as output.
- * Math is: _x >= _y ? (T) 1.0f : (T) 0.0f;
+ * Math is: _x &gt;= _y ? (T) 1.0f : (T) 0.0f;
  */
 #if NOT_EXCLUDED(OP_greater_equal)
 DECLARE_BROADCASTABLE_BOOL_OP(greater_equal, 0, 0);
@@ -291,7 +291,7 @@ DECLARE_BROADCASTABLE_BOOL_OP(greater_equal, 0, 0);
 
 /**
  * This op takes 2 equally shaped arrays as input, and provides binary matrix as output.
- * Math is: _x < _y ? (T) 1.0f : (T) 0.0f;
+ * Math is: _x &lt; _y ? (T) 1.0f : (T) 0.0f;
  */
 #if NOT_EXCLUDED(OP_less)
 DECLARE_BROADCASTABLE_BOOL_OP(less, 0, 0);
@@ -299,7 +299,7 @@ DECLARE_BROADCASTABLE_BOOL_OP(less, 0, 0);
 
 /**
  * This op takes 2 equally shaped arrays as input, and provides binary matrix as output.
- * Math is: _x > _y ? (T) 1.0f : (T) 0.0f;
+ * Math is: _x &gt; _y ? (T) 1.0f : (T) 0.0f;
  */
 #if NOT_EXCLUDED(OP_greater)
 DECLARE_BROADCASTABLE_BOOL_OP(greater, 0, 0);
@@ -329,7 +329,7 @@ DECLARE_BROADCASTABLE_BOOL_OP(boolean_xor, 0, 0);
 /**
  * This operation performs calculation of percentile of input array along given axises
  *
- * Input - tensor with rank N > 0
+ * Input - tensor with rank N &gt; 0
  * Output - tensor with rank (N - length(axis)) or scalar if number of Integer arguments is zero
  * Float arguments:
  *   0: percentile (scalar) in range [0,100] (inclusively)

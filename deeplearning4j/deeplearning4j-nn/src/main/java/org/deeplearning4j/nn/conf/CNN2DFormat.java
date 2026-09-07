@@ -26,8 +26,8 @@ public enum CNN2DFormat implements DataFormat {
 
     /**
      * Returns a string that explains the dimensions:<br>
-     * NCHW -> returns "[minibatch, channels, height, width]"<br>
-     * NHWC -> returns "[minibatch, height, width, channels]"
+     * NCHW -&gt; returns "[minibatch, channels, height, width]"<br>
+     * NHWC -&gt; returns "[minibatch, height, width, channels]"
      */
     public String dimensionNames(){
         switch (this){

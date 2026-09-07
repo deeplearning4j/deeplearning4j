@@ -442,7 +442,7 @@ public class TransformProcess implements Serializable {
     /**
      * Infer the categories for the given record reader for a particular column
      *  Note that each "column index" is a column in the context of:
-     * List<Writable> record = ...;
+     * {@code List<Writable> record = ...;}
      * record.get(columnIndex);
      *
      *  Note that anything passed in as a column will be automatically converted to a
@@ -476,7 +476,7 @@ public class TransformProcess implements Serializable {
      * if you have more than one column you plan on inferring categories for)
      *
      * Note that each "column index" is a column in the context of:
-     * List<Writable> record = ...;
+     * {@code List<Writable> record = ...;}
      * record.get(columnIndex);
      *
      *
@@ -1267,7 +1267,7 @@ public class TransformProcess implements Serializable {
          * not be modified.
          *
          * @param columnName Name of the column in which to do replacement
-         * @param mapping    Map of oldValues -> newValues
+         * @param mapping    Map of oldValues -&gt; newValues
          */
         public Builder stringMapTransform(String columnName, Map<String, String> mapping) {
             return transform(new StringMapTransform(columnName, mapping));

@@ -72,7 +72,7 @@ public interface ModelArchitecture {
      * and values are the corresponding SameDiff names.
      *
      * Example:
-     * "blk.{layer}.attn_q.weight" -> "model.layers.{layer}.self_attn.q_proj.weight"
+     * "blk.{layer}.attn_q.weight" -&gt; "model.layers.{layer}.self_attn.q_proj.weight"
      */
     Map<String, String> getTensorNamePatterns();
 

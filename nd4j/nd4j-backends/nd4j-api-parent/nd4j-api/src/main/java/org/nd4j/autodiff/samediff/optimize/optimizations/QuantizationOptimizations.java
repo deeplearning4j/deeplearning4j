@@ -276,7 +276,7 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
 
         /**
          * Apply INT8 quantization to all FP32 constants in the graph.
-         * Returns a map of constant name -> quantization info (scale, zero_point)
+         * Returns a map of constant name -&gt; quantization info (scale, zero_point)
          *
          * @param sd SameDiff graph
          * @return map of constant names to quantization info

@@ -69,7 +69,7 @@ public class TorchScriptNode {
     private String scope;
 
     /**
-     * Get the schema name (e.g., "aten::conv2d" -> "conv2d").
+     * Get the schema name (e.g., "aten::conv2d" -&gt; "conv2d").
      *
      * @return the base operation name without namespace
      */
@@ -85,7 +85,7 @@ public class TorchScriptNode {
     }
 
     /**
-     * Get the namespace (e.g., "aten::conv2d" -> "aten").
+     * Get the namespace (e.g., "aten::conv2d" -&gt; "aten").
      *
      * @return the namespace or null
      */

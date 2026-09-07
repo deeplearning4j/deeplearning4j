@@ -166,7 +166,7 @@ public class MemoryEnvironmentAccess {
     }
     
     /**
-     * Parse device index from device ID string (e.g., "cuda:gpu:0" -> 0).
+     * Parse device index from device ID string (e.g., "cuda:gpu:0" -&gt; 0).
      */
     private int parseDeviceIndex(String deviceId) {
         if (deviceId == null || deviceId.isEmpty()) return 0;

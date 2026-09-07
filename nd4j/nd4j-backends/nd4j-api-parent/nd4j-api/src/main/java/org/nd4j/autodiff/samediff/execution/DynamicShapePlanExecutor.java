@@ -199,7 +199,7 @@ public class DynamicShapePlanExecutor implements Closeable {
      * different SameDiff worker sessions receive independent mutable C++ plans; this lock
      * protects one executor from concurrent close/reset while its own plan is in use.
      */
-    private final ReentrantLock nativeExecLock =
+    final ReentrantLock nativeExecLock =
             new ReentrantLock();
 
     /** Native C++ plan handle. Compiled once from the serialized plan on first native
@@ -246,11 +246,11 @@ public class DynamicShapePlanExecutor implements Closeable {
     private final Map<Long, Pointer> pinnedPlanHandles = new HashMap<>();
 
     /** Complete native cache identity owned by one executor lease. */
-    private static final class PlanLeaseKey {
+    static final class PlanLeaseKey {
         private final long shapeHash;
         private final int graphMode;
 
-        private PlanLeaseKey(long shapeHash, int graphMode) {
+        PlanLeaseKey(long shapeHash, int graphMode) {
             this.shapeHash = shapeHash;
             this.graphMode = graphMode;
         }
@@ -270,13 +270,13 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     /** Shape+mode identity to native handle mapping for idempotent A/B/A redispatch leases. */
-    private final Map<PlanLeaseKey, Long> pinnedPlanHandlesByIdentity = new HashMap<>();
+    final Map<PlanLeaseKey, Long> pinnedPlanHandlesByIdentity = new HashMap<>();
 
     /** Identity → last-use nanos for capacity-aware LRU ejection of pinned leases. */
     private final Map<PlanLeaseKey, Long> pinnedLeaseLastUseNanos = new HashMap<>();
 
     /** Identity → estimated device bytes held by that pinned plan (KV pinning + inputs). */
-    private final Map<PlanLeaseKey, Long> pinnedLeaseEstimatedBytes = new HashMap<>();
+    final Map<PlanLeaseKey, Long> pinnedLeaseEstimatedBytes = new HashMap<>();
 
     /**
      * Fraction of total device memory that pinned plan leases may collectively occupy.
@@ -324,7 +324,7 @@ public class DynamicShapePlanExecutor implements Closeable {
      * pointers. Keep one Java snapshot per pinned handle so per-execution cache cleanup cannot
      * close an inactive plan's buffers before that handle is unpinned.</p>
      */
-    private final Map<Long, INDArray[]> retainedExternalInputsByPlanHandle = new HashMap<>();
+    final Map<Long, INDArray[]> retainedExternalInputsByPlanHandle = new HashMap<>();
 
     /**
      * External inputs that are mutable at runtime even though their SameDiff
@@ -429,7 +429,7 @@ public class DynamicShapePlanExecutor implements Closeable {
     private boolean frozenOutputsInitialized;
 
     /** Cached requested output names list — avoids allocating a new ArrayList per step. */
-    private List<String> cachedRequestedOutputNames;
+    List<String> cachedRequestedOutputNames;
 
     /**
      * When true, the current call was initiated from SameDiff.outputDirect() — meaning
@@ -563,17 +563,17 @@ public class DynamicShapePlanExecutor implements Closeable {
 
     /** Mutable destinations belong to an input of one native plan lease, not a caller
      * array identity. Refresh their contents on EVERY call; A/B/A keeps separate owners. */
-    private final Map<Long, Map<String, INDArray>> nativeMutableReplicaCaches = new HashMap<>();
+    final Map<Long, Map<String, INDArray>> nativeMutableReplicaCaches = new HashMap<>();
 
     /** Packed copy sources owned by this call, retained until their async readers complete.
      * Never contains caller arrays, graph-baked replicas, or native output aliases. */
-    private final List<INDArray> retiredMigrationArrays = new ArrayList<>();
+    final List<INDArray> retiredMigrationArrays = new ArrayList<>();
     private final Set<String> pendingMutableReplicaNames = new HashSet<>();
-    private final Set<Integer> migrationCopyDevices = new HashSet<>();
+    final Set<Integer> migrationCopyDevices = new HashSet<>();
     // Native output delivery arrays remain borrowed until these thread-local copies finish.
-    private final Set<Integer> outputReadbackDevices = new LinkedHashSet<>();
-    private Thread outputReadbackThread;
-    private boolean migrationInputsBound;
+    final Set<Integer> outputReadbackDevices = new LinkedHashSet<>();
+    Thread outputReadbackThread;
+    boolean migrationInputsBound;
     private boolean migrationCleanupPending;
 
     /** Maximum KV cache length for pre-allocation. When > 0 and CUDA graphs enabled,
@@ -1144,7 +1144,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         }
     }
 
-    private int closeZeroCopyOutputCache() {
+    int closeZeroCopyOutputCache() {
         completeOutputReadbacks();
         if (zeroCopyOutputCache == null || zeroCopyOutputCache.isEmpty()) {
             zeroCopyOutputCache = null;
@@ -2262,7 +2262,7 @@ public class DynamicShapePlanExecutor implements Closeable {
      *
      * @param pendingIdentity identity about to be leased (never evicted)
      */
-    private void evictPinnedLeasesForCapacity(PlanLeaseKey pendingIdentity) {
+    void evictPinnedLeasesForCapacity(PlanLeaseKey pendingIdentity) {
         long budget = planLeaseBudgetBytes();
         long incomingCost = pinnedLeaseEstimatedBytes.getOrDefault(pendingIdentity,
                 DEFAULT_LEASE_COST_ESTIMATE_BYTES);
@@ -2354,7 +2354,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         }
     }
 
-    private void redispatchForCurrentShapes(Map<String, INDArray> placeholderArrays,
+    void redispatchForCurrentShapes(Map<String, INDArray> placeholderArrays,
                                             boolean isShapeChangeExpected) {
         if (cachedSerializedPlan == null) {
             throw new IllegalStateException(
@@ -3499,7 +3499,7 @@ public class DynamicShapePlanExecutor implements Closeable {
      *         is not available (e.g., backend doesn't support it)
      * @throws RuntimeException if native execution fails (caller should fall back to Java)
      */
-    private Map<String, INDArray> executeNative(DynamicShapePlan plan, Map<String, INDArray> placeholderArrays) {
+    Map<String, INDArray> executeNative(DynamicShapePlan plan, Map<String, INDArray> placeholderArrays) {
         nativeExecLock.lock();
         try {
             if (closed) throw new IllegalStateException("Cannot execute a closed DSP executor");
@@ -3508,6 +3508,11 @@ public class DynamicShapePlanExecutor implements Closeable {
             if (migrationCleanupPending) cleanupFailedMigrations();
             try {
                 Map<String, INDArray> result = executeNativeLocked(plan, placeholderArrays);
+                // Commit the actual installed inputs only after migration, execution and
+                // readback succeed. Inactive handle snapshots retain their own borrowers.
+                if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
+                    retainExternalInputsForPlan(nativePlanHandle.address(), externalInputs);
+                }
                 // Destinations now belong to a successful lease (possibly captured graphs).
                 pendingMutableReplicaNames.clear();
                 migrationCopyDevices.clear();
@@ -3802,12 +3807,9 @@ public class DynamicShapePlanExecutor implements Closeable {
             }
         }
 
-        // Publish the resolved external input array so snapshots and lifecycle
-        // checks see the same buffers that will be bound into the native context.
+        // Publish in-flight inputs for failure protection. Do not overwrite the committed
+        // handle snapshot yet: migration can replace these entries with owned replicas.
         this.externalInputs = extInputs;
-        if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
-            retainExternalInputsForPlan(nativePlanHandle.address(), extInputs);
-        }
 
         // Debug metadata only; value reductions would force host reads on CUDA.
         if (Nd4j.getEnvironment().isDebug() && extInputs.length > 1331 && extInputs[1331] != null) {

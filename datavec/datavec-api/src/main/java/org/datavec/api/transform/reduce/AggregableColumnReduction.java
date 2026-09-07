@@ -37,14 +37,13 @@ public interface AggregableColumnReduction extends Serializable, ColumnOp {
      * and NOT the single row
      * (as is usually the case for {@code List<Writable>} instances
      *
-     * @param columnData The Writable objects for a column
-     * @return Writable containing the reduced data
+     * @return Reduction operation that accumulates a column's Writable objects
      */
     IAggregableReduceOp<Writable, List<Writable>> reduceOp();
 
     /**
      * Post-reduce: what is the name of the column?
-     * For example, "myColumn" -> "mean(myColumn)"
+     * For example, "myColumn" -&gt; "mean(myColumn)"
      *
      * @param columnInputName Name of the column before reduction
      * @return Name of the column after the reduction

@@ -49,7 +49,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * AffinityManager implementation for CUDA.
  *
- * This implementation recognizes both GPU devices (device IDs >= 0) and the CPU
+ * This implementation recognizes both GPU devices (device IDs &gt;= 0) and the CPU
  * as a valid device (CPU_DEVICE_ID = -1). This allows seamless data transfer between
  * CPU and GPU memory, enabling hybrid CPU-GPU computation patterns.
  *
@@ -87,7 +87,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
      * Returns the device type for the given device ID.
      *
      * @param deviceId the device ID to query
-     * @return CPU for deviceId == -1, CUDA_GPU for deviceId >= 0
+     * @return CPU for deviceId == -1, CUDA_GPU for deviceId &gt;= 0
      */
     @Override
     public DeviceType getDeviceType(int deviceId) {
@@ -283,10 +283,10 @@ public class CudaAffinityManager extends BasicAffinityManager {
     /**
      * This method replicates given INDArray, and places it to target device.
      *
-     * Supports both GPU devices (deviceId >= 0) and CPU (deviceId == CPU_DEVICE_ID).
+     * Supports both GPU devices (deviceId &gt;= 0) and CPU (deviceId == CPU_DEVICE_ID).
      * When targeting CPU, data is synchronized to host memory and a host-resident copy is created.
      *
-     * @param deviceId target deviceId (use CPU_DEVICE_ID for CPU, >= 0 for GPU)
+     * @param deviceId target deviceId (use CPU_DEVICE_ID for CPU, &gt;= 0 for GPU)
      * @param array    INDArray to replicate
      * @return the replicated array on the target device
      */
@@ -427,10 +427,10 @@ public class CudaAffinityManager extends BasicAffinityManager {
     /**
      * This method replicates given DataBuffer, and places it to target device.
      *
-     * Supports both GPU devices (deviceId >= 0) and CPU (deviceId == CPU_DEVICE_ID).
+     * Supports both GPU devices (deviceId &gt;= 0) and CPU (deviceId == CPU_DEVICE_ID).
      * When targeting CPU, data is synchronized to host memory and a host-resident copy is created.
      *
-     * @param deviceId target deviceId (use CPU_DEVICE_ID for CPU, >= 0 for GPU)
+     * @param deviceId target deviceId (use CPU_DEVICE_ID for CPU, &gt;= 0 for GPU)
      * @param buffer   the DataBuffer to replicate
      * @return the replicated buffer on the target device
      */

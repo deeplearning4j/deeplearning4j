@@ -385,7 +385,7 @@ public class TextGenerator {
      *
      * @param prompt the input prompt
      * @param maxNewTokens maximum tokens
-     * @param logitsProcessor function that processes logits: (logits, generatedTokens) -> processedLogits
+     * @param logitsProcessor function that processes logits: (logits, generatedTokens) -&gt; processedLogits
      * @return generated text
      */
     public String generateWithProcessor(String prompt, int maxNewTokens,
@@ -713,7 +713,7 @@ public class TextGenerator {
      * Split text into overlapping token chunks.
      *
      * @param text source text to chunk
-     * @param chunkTokenSize max tokens per chunk (must be > 0)
+     * @param chunkTokenSize max tokens per chunk (must be &gt; 0)
      * @param overlapTokens overlap between consecutive chunks (must be &gt;= 0 and &lt; chunkTokenSize)
      * @return ordered chunk strings
      */
@@ -748,7 +748,7 @@ public class TextGenerator {
      * Chunk text by token count, then generate one output per chunk.
      *
      * @param text source text
-     * @param chunkTokenSize max tokens per chunk (must be > 0)
+     * @param chunkTokenSize max tokens per chunk (must be &gt; 0)
      * @param overlapTokens overlap between chunks (must be {@code >= 0} and {@code < chunkTokenSize})
      * @param maxNewTokens maximum tokens to generate per chunk
      * @return generation results aligned with chunk order
@@ -762,7 +762,7 @@ public class TextGenerator {
      * Chunk text by token count and generate one combined output.
      *
      * @param text source text
-     * @param chunkTokenSize max tokens per chunk (must be > 0)
+     * @param chunkTokenSize max tokens per chunk (must be &gt; 0)
      * @param overlapTokens overlap between chunks (must be {@code >= 0} and {@code < chunkTokenSize})
      * @param maxNewTokens maximum tokens to generate per chunk
      * @param chunkDelimiter delimiter inserted between chunk outputs
@@ -788,7 +788,7 @@ public class TextGenerator {
      * Chunk text by token count and generate one combined output using default max token settings.
      *
      * @param text source text
-     * @param chunkTokenSize max tokens per chunk (must be > 0)
+     * @param chunkTokenSize max tokens per chunk (must be &gt; 0)
      * @param overlapTokens overlap between chunks (must be {@code >= 0} and {@code < chunkTokenSize})
      * @param chunkDelimiter delimiter inserted between chunk outputs
      * @return combined chunk output

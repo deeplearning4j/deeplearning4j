@@ -1009,8 +1009,8 @@ public class ConvolutionUtils {
 
 
     /**
-     * Perform validation on the CNN layer kernel/stride/padding. Expect 2d int[], with values > 0 for kernel size and
-     * stride, and values >= 0 for padding.
+     * Perform validation on the CNN layer kernel/stride/padding. Expect 2d int[], with values &gt; 0 for kernel size and
+     * stride, and values &gt;= 0 for padding.
      *
      * @param kernelSize Kernel size array to check
      * @param stride     Stride array to check
@@ -1053,8 +1053,8 @@ public class ConvolutionUtils {
 
 
     /**
-     * Perform validation on the CNN layer kernel/stride/padding. Expect 2d int[], with values > 0 for kernel size and
-     * stride, and values >= 0 for padding.
+     * Perform validation on the CNN layer kernel/stride/padding. Expect 2d int[], with values &gt; 0 for kernel size and
+     * stride, and values &gt;= 0 for padding.
      *
      * @param kernelSize Kernel size array to check
      * @param stride     Stride array to check
@@ -1362,7 +1362,7 @@ public class ConvolutionUtils {
 
     /**
      * Reduce a 2d CNN layer mask array (of 0s and 1s) according to the layer configuration. Note that when a CNN layer
-     * changes the shape of the activations (for example, stride > 1) the corresponding mask array needs to change shape
+     * changes the shape of the activations (for example, stride &gt; 1) the corresponding mask array needs to change shape
      * also (as there is a correspondence between the two). This method performs the forward pass for the mask.
      * @param inMask          Input mask array - rank 4, shape [mb,c,h,1] or [mb,c,w,1] or [mb,c,h,w]
      * @param kernel          Kernel configuration for the layer
@@ -1378,7 +1378,7 @@ public class ConvolutionUtils {
 
     /**
      * Reduce a 2d CNN layer mask array (of 0s and 1s) according to the layer configuration. Note that when a CNN layer
-     * changes the shape of the activations (for example, stride > 1) the corresponding mask array needs to change shape
+     * changes the shape of the activations (for example, stride &gt; 1) the corresponding mask array needs to change shape
      * also (as there is a correspondence between the two). This method performs the forward pass for the mask.
      * @param inMask          Input mask array - rank 4, shape [mb,c,h,1] or [mb,c,w,1] or [mb,c,h,w]
      * @param kernel          Kernel configuration for the layer

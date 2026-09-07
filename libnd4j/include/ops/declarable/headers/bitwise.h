@@ -38,7 +38,7 @@ DECLARE_OP(toggle_bits, -1, -1, true);
 #endif
 
 /**
- * This operation shift individual bits of each element in array to the left: <<
+ * This operation shift individual bits of each element in array to the left: &lt;&lt;
  *
  * PLEASE NOTE: This operation is applicable only to integer data types
  *
@@ -49,7 +49,7 @@ DECLARE_BROADCASTABLE_OP(shift_bits, 0, 0);
 #endif
 
 /**
- * This operation shift individual bits of each element in array to the right: >>
+ * This operation shift individual bits of each element in array to the right: &gt;&gt;
  *
  * PLEASE NOTE: This operation is applicable only to integer data types
  *

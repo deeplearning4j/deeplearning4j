@@ -42,7 +42,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Orchestrates benchmark runs: reset -> configure -> compile -> execute -> validate -> report.
+ * Orchestrates benchmark runs: reset -&gt; configure -&gt; compile -&gt; execute -&gt; validate -&gt; report.
  *
  * Provides the main loop that test classes use. Tests supply:
  * - A list of models to reset/compile

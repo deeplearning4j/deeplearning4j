@@ -393,7 +393,7 @@ public class Configuration implements Serializable {
     /**
      * This method allows you to specify max per-device memory use.
      *
-     * PLEASE NOTE: Accepted value range is 0.01 > x < 0.95
+     * PLEASE NOTE: Accepted values range from 0.02 to 0.95, inclusive.
      *
      * @param percentage
      */

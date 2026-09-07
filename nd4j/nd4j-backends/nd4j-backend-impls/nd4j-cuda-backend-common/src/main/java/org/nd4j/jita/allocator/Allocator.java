@@ -120,7 +120,7 @@ public interface Allocator {
 
     /**
      * This method returns deviceId for current thread
-     * All values >= 0 are considered valid device IDs, all values < 0 are considered stubs.
+     * All values &gt;= 0 are considered valid device IDs, all values &lt; 0 are considered stubs.
      *
      * @return
      */

@@ -123,7 +123,7 @@ public class GraphScope implements AutoCloseable {
      * Record an op into the hidden SameDiff graph.
      *
      * For each input:
-     * - If LazyINDArray: look up its SDVariable name -> wire as graph intermediate
+     * - If LazyINDArray: look up its SDVariable name -&gt; wire as graph intermediate
      * - If real INDArray: register as placeholder (deduplicated by identity)
      *
      * Creates a DynamicCustomOp in the hidden graph, infers output shapes,

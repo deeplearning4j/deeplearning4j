@@ -40,7 +40,7 @@ import java.util.Set;
  * Per-tensor dynamic scaling tracks the amax (absolute maximum) history
  * to compute optimal scale factors that prevent overflow/underflow.
  *
- * Requires GPU compute capability >= 8.9 (Ada Lovelace / Hopper).
+ * Requires GPU compute capability &gt;= 8.9 (Ada Lovelace / Hopper).
  *
  * Adam Gibson
  */

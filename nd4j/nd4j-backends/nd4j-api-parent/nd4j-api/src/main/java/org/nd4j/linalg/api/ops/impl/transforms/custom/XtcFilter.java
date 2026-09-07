@@ -34,7 +34,7 @@ import java.util.List;
 /**
  * Exclude Top Choices (XTC) logit filter.
  *
- * With probability xtcProbability: among tokens whose softmax probability >= xtcThreshold,
+ * With probability xtcProbability: among tokens whose softmax probability &gt;= xtcThreshold,
  * if at least two qualify, mask all EXCEPT the lowest-probability one (encouraging diversity).
  * With probability (1 - xtcProbability) the logits are returned unchanged. Stochastic:
  * the apply/skip draw uses a native RNG seeded by {@code seed}. Masked positions are -inf.

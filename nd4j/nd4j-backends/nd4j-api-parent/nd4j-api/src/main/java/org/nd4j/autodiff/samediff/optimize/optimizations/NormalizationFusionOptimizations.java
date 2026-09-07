@@ -510,7 +510,7 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
     }
 
     /**
-     * Fuses mean(x^2) pattern: mean(mul(x, x)) -> mean_square(x).
+     * Fuses mean(x^2) pattern: mean(mul(x, x)) -&gt; mean_square(x).
      * This is useful both standalone and as an enabler for RMSNorm fusion.
      */
     public static class FuseMeanSquarePattern implements Optimizer {

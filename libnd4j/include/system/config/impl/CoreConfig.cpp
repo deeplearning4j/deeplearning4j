@@ -142,9 +142,6 @@ void CoreConfig::initFromEnvironment() {
   // OpenBLAS if OMP-built, etc.). Tuned for inference (low-latency,
   // single-request, sequential execution).
 #ifdef _OPENMP
-  // Set thread count to match our configured value.
-  omp_set_num_threads(_maxThreads.load());
-
   // KMP_BLOCKTIME: Intel OpenMP spin-wait time (ms) after parallel region.
   // Default is 200ms — threads burn CPU waiting for work between ops.
   // For inference, each op is a brief burst followed by host-side work;
@@ -169,6 +166,10 @@ void CoreConfig::initFromEnvironment() {
   if (!std::getenv("GOMP_SPINCOUNT")) {
     sd_setenv("GOMP_SPINCOUNT", "0", 0);
   }
+
+  // The first OpenMP API call can initialize the runtime and cache its environment.
+  // Install all defaults above before applying our configured thread count.
+  omp_set_num_threads(_maxThreads.load());
 #endif
 
   // NOTE: Do NOT configure OpenBLAS threads here. This runs inside Environment's

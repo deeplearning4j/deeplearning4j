@@ -367,7 +367,7 @@ public class Mmul extends DynamicCustomOp {
 
     /**
      * Calculate matmul output shape directly from input arrays in Java, avoiding JNI overhead.
-     * For A[..., M, K] x B[..., K, N] -> output[..., M, N] with batch dimension broadcasting.
+     * For A[..., M, K] x B[..., K, N] -&gt; output[..., M, N] with batch dimension broadcasting.
      */
     @Override
     public List<DataBuffer> calculateOutputShapeFromInputs(OpContext oc) {

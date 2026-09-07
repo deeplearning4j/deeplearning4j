@@ -43,7 +43,7 @@ import java.util.Map;
  * outputs through einsum equations.
  *
  * Keras config fields:
- * - equation: The einsum equation (e.g., "ab,bc->ac" for standard dense)
+ * - equation: The einsum equation (e.g., "ab,bc-&gt;ac" for standard dense)
  * - output_shape: Shape of output tensor (excluding batch)
  * - bias_axes: Axes for which bias is added
  * - kernel_initializer: Weight initializer

@@ -33,7 +33,7 @@ import java.util.List;
  *
  * Given a:          This is a list of flattened arrays:
  * 1 1 1 1          1 1 2 2
- * 2 2 2 2 ---->    1 1 2 2
+ * 2 2 2 2 ----&gt;    1 1 2 2
  * 3 3 3 3          3 3 4 4
  * 4 4 4 4          3 3 4 4
  *

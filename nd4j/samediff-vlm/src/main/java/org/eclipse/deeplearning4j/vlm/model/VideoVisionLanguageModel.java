@@ -118,7 +118,7 @@ public class VideoVisionLanguageModel implements AutoCloseable {
     /**
      * Generate text from a video file and prompt.
      *
-     * <p>Performs the full pipeline: extract frames -> sample -> preprocess -> encode -> decode.</p>
+     * <p>Performs the full pipeline: extract frames -&gt; sample -&gt; preprocess -&gt; encode -&gt; decode.</p>
      *
      * @param videoFile the video file (MP4, AVI, MKV, WebM, etc.)
      * @param prompt the text prompt

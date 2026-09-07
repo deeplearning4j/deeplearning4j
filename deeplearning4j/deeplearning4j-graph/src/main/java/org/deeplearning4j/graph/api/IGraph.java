@@ -73,7 +73,7 @@ public interface IGraph<V, E> {
     public int getVertexDegree(int vertex);
 
     /** Randomly sample a vertex connected to a given vertex. Sampling is done uniformly at random.
-     * Specifically, returns a random X such that either a directed edge (vertex -> X) exists,
+     * Specifically, returns a random X such that either a directed edge (vertex -&gt; X) exists,
      * or an undirected edge (vertex -- X) exists<br>
      * Can be used for example to implement a random walk on the graph (specifically: a unweighted random walk)
      * @param vertex vertex to randomly sample from
@@ -86,7 +86,7 @@ public interface IGraph<V, E> {
 
     /**Get a list of all of the vertices that the specified vertex is connected to<br>
      * Specifically, for undirected graphs return list of all X such that (vertex -- X) exists<br>
-     * For directed graphs, return list of all X such that (vertex -> X) exists
+     * For directed graphs, return list of all X such that (vertex -&gt; X) exists
      * @param vertex Index of the vertex
      * @return list of vertices that the specified vertex is connected to
      */
@@ -94,7 +94,7 @@ public interface IGraph<V, E> {
 
     /**Return an array of indexes of vertices that the specified vertex is connected to.<br>
      * Specifically, for undirected graphs return int[] of all X.vertexID() such that (vertex -- X) exists<br>
-     * For directed graphs, return int[] of all X.vertexID() such that (vertex -> X) exists
+     * For directed graphs, return int[] of all X.vertexID() such that (vertex -&gt; X) exists
      * @param vertex index of the vertex
      * @return list of vertices that the specified vertex is connected to
      * @see #getConnectedVertices(int)

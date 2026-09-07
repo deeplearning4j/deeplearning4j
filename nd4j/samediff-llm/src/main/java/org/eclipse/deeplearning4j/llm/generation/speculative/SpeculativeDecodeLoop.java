@@ -87,10 +87,10 @@ public class SpeculativeDecodeLoop {
     }
 
     /**
-     * Probe whether the decoder model supports multi-token input (seqLen > 1).
+     * Probe whether the decoder model supports multi-token input (seqLen &gt; 1).
      *
      * <p>Some models (e.g., SmolDocling) have internal ONNX Expand ops that create
-     * a causal mask of shape [1,1,seqLen,seqLen]. When seqLen > 1 and pastSeqLen > 0,
+     * a causal mask of shape [1,1,seqLen,seqLen]. When seqLen &gt; 1 and pastSeqLen &gt; 0,
      * this can't broadcast with the external attention mask [1,1,seqLen,totalSeqLen],
      * causing a shape error on every speculative attempt.</p>
      *

@@ -304,7 +304,7 @@ public class SerializableCSVParser implements Serializable {
     }
 
     /**
-     * precondition: sb.length() > 0
+     * precondition: sb.length() &gt; 0
      *
      * @param sb A sequence of characters to examine
      * @return true if every character in the sequence is whitespace

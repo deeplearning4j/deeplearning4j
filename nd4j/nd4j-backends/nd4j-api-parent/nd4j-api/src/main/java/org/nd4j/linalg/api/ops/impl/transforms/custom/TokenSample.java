@@ -35,7 +35,7 @@ import java.util.List;
  * Token sampling for LLM inference.
  *
  * Full sampling pipeline in a single native call:
- *   temperature scaling -> top-K filtering -> softmax -> top-P filtering -> sample/argmax
+ *   temperature scaling -&gt; top-K filtering -&gt; softmax -&gt; top-P filtering -&gt; sample/argmax
  *
  * For greedy decoding (temperature=0 or no top-k/top-p), performs GPU-side argmax
  * with shared-memory reduction — avoids transferring the full logits tensor to host.

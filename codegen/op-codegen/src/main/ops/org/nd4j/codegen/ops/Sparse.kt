@@ -57,7 +57,7 @@ fun Sparse() = Namespace("Sparse") {
         javaOpClass = "DenseToCsr"
 
         Input(FLOATING_POINT, "dense")   { description = "2D dense input matrix [rows, cols]" }
-        Arg(FLOATING_POINT, "threshold") { description = "Keep entries where |x| > threshold (0.0 keeps all non-zeros)" }
+        Arg(FLOATING_POINT, "threshold") { description = "Keep entries where |x| &gt; threshold (0.0 keeps all non-zeros)" }
 
         Output(FLOATING_POINT, "values") { description = "1D [nnz] non-zero values" }
         Output(INT, "colIdx")            { description = "1D [nnz] column indices (INT32)" }
@@ -66,7 +66,7 @@ fun Sparse() = Namespace("Sparse") {
         Doc(Language.ANY, DocScope.ALL) {
             """
             Convert a dense matrix to CSR (Compressed Sparse Row) sparse representation.
-            Only entries with |x| > threshold are kept; pass threshold=0.0 to retain all structurally non-zero entries.
+            Only entries with |x| &gt; threshold are kept; pass threshold=0.0 to retain all structurally non-zero entries.
             """.trimIndent()
         }
     }
@@ -117,7 +117,7 @@ fun Sparse() = Namespace("Sparse") {
         javaOpClass = "DenseToCsc"
 
         Input(FLOATING_POINT, "dense")   { description = "2D dense input matrix [rows, cols]" }
-        Arg(FLOATING_POINT, "threshold") { description = "Keep entries where |x| > threshold (0.0 keeps all non-zeros)" }
+        Arg(FLOATING_POINT, "threshold") { description = "Keep entries where |x| &gt; threshold (0.0 keeps all non-zeros)" }
 
         Output(FLOATING_POINT, "cscValues") { description = "1D [nnz] non-zero values in column-major order" }
         Output(INT, "cscRowIdx")            { description = "1D [nnz] row index for each non-zero (INT32)" }
@@ -126,7 +126,7 @@ fun Sparse() = Namespace("Sparse") {
         Doc(Language.ANY, DocScope.ALL) {
             """
             Convert a dense matrix to CSC (Compressed Sparse Column) sparse representation.
-            Only entries with |x| > threshold are kept.
+            Only entries with |x| &gt; threshold are kept.
             """.trimIndent()
         }
     }
@@ -136,7 +136,7 @@ fun Sparse() = Namespace("Sparse") {
         javaOpClass = "DenseToCoo"
 
         Input(FLOATING_POINT, "dense")   { description = "2D dense input matrix [rows, cols]" }
-        Arg(FLOATING_POINT, "threshold") { description = "Keep entries where |x| > threshold (0.0 keeps all non-zeros)" }
+        Arg(FLOATING_POINT, "threshold") { description = "Keep entries where |x| &gt; threshold (0.0 keeps all non-zeros)" }
 
         Output(INT, "indices")           { description = "2D [nnz, 2] INT64 row/col index pairs for each non-zero" }
         Output(FLOATING_POINT, "values") { description = "1D [nnz] non-zero values" }

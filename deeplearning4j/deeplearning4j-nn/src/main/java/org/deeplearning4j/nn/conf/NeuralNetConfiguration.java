@@ -344,7 +344,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * Only applies for line search optimizers: Line Search SGD, Conjugate Gradient, LBFGS
          * is NOT applicable for standard SGD
          *
-         * @param maxNumLineSearchIterations > 0
+         * @param maxNumLineSearchIterations &gt; 0
          * @return
          */
         public Builder maxNumLineSearchIterations(int maxNumLineSearchIterations) {

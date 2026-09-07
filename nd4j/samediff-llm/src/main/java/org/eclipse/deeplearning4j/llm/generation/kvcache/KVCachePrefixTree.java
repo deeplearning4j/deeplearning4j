@@ -59,7 +59,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <h2>Copy-on-Write</h2>
  * <p>When a sequence needs to modify a shared block (e.g., appending tokens to a
  * partially-filled shared block), the block must be copied first. The trie's
- * reference count determines whether a copy is needed (refCount > 1).</p>
+ * reference count determines whether a copy is needed (refCount &gt; 1).</p>
  *
  * <h2>Integration with PagedKVCache</h2>
  * <p>This trie maps logical token prefixes to physical block IDs managed by
@@ -91,7 +91,7 @@ public class KVCachePrefixTree {
         /** Children indexed by the hash of their block tokens. */
         private final Map<Long, TrieNode> children;
 
-        /** Number of valid tokens in this block (may be < blockSize for last block). */
+        /** Number of valid tokens in this block (may be &lt; blockSize for last block). */
         @Getter
         private int validTokenCount;
 
@@ -118,7 +118,7 @@ public class KVCachePrefixTree {
             return refCount.get();
         }
 
-        /** Whether this block is shared (refCount > 1). */
+        /** Whether this block is shared (refCount &gt; 1). */
         boolean isShared() {
             return refCount.get() > 1;
         }
@@ -139,7 +139,7 @@ public class KVCachePrefixTree {
     /** Total number of nodes in the trie. */
     private int nodeCount;
 
-    /** Total number of shared blocks (blocks with refCount > 1). */
+    /** Total number of shared blocks (blocks with refCount &gt; 1). */
     private int sharedBlockCount;
 
     /**

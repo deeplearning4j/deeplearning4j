@@ -1008,14 +1008,14 @@ public interface Environment extends CoreEnvironmentConfig, CudaEnvironmentConfi
     default void setTritonNumStages(int numStages) {}
 
     /**
-     * Returns Triton cluster CTA override used during TTIR->TTGIR conversion.
+     * Returns Triton cluster CTA override used during TTIR-&gt;TTGIR conversion.
      */
     default int tritonNumCTAs() {
         return 1;
     }
 
     /**
-     * Set Triton cluster CTA override used during TTIR->TTGIR conversion.
+     * Set Triton cluster CTA override used during TTIR-&gt;TTGIR conversion.
      */
     default void setTritonNumCTAs(int numCTAs) {}
 
@@ -1196,7 +1196,7 @@ public interface Environment extends CoreEnvironmentConfig, CudaEnvironmentConfi
 
     /**
      * Max sub-kernel index to run via Triton (-1 = unlimited).
-     * Sub-kernels with index > max run native fallback instead.
+     * Sub-kernels with index &gt; max run native fallback instead.
      * Used for binary search to find which sub-kernel causes corruption.
      */
     default int tritonMaxSubKernelIndex() {
@@ -1364,7 +1364,7 @@ public interface Environment extends CoreEnvironmentConfig, CudaEnvironmentConfi
 
     /**
      * Whether cast elimination pass is enabled in FusionPass.
-     * Removes redundant cast pairs (e.g., FP16->FP32 followed by FP32->FP16).
+     * Removes redundant cast pairs (e.g., FP16-&gt;FP32 followed by FP32-&gt;FP16).
      * @return true if cast elimination is enabled (default: true)
      */
     default boolean dspCastElimination() {

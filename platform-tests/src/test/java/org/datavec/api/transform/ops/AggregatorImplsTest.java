@@ -22,11 +22,17 @@ package org.datavec.api.transform.ops;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.datavec.api.writable.Writable;
 import org.nd4j.common.tests.BaseND4JTest;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -195,7 +201,7 @@ class AggregatorImplsTest extends BaseND4JTest {
             reverse.accept(intList.get(intList.size() - i - 1));
         }
         sd.combine(reverse);
-        assertTrue(Math.abs(sd.get().toDouble() - 1.8787) < 0.0001,"" + sd.get().toDouble());
+        assertEquals(Math.sqrt(120D / 17), sd.get().toDouble(), 1e-12);
     }
 
     @Test
@@ -211,7 +217,7 @@ class AggregatorImplsTest extends BaseND4JTest {
             reverse.accept(intList.get(intList.size() - i - 1));
         }
         sd.combine(reverse);
-        assertTrue(Math.abs(sd.get().toDouble() - 3.5294) < 0.0001,"" + sd.get().toDouble());
+        assertEquals(120D / 17, sd.get().toDouble(), 1e-12);
     }
 
     @Test
@@ -227,7 +233,7 @@ class AggregatorImplsTest extends BaseND4JTest {
             reverse.accept(intList.get(intList.size() - i - 1));
         }
         sd.combine(reverse);
-        assertTrue(Math.abs(sd.get().toDouble() - 1.8257) < 0.0001,"" + sd.get().toDouble());
+        assertEquals(Math.sqrt(120D / 18), sd.get().toDouble(), 1e-12);
     }
 
     @Test
@@ -243,7 +249,76 @@ class AggregatorImplsTest extends BaseND4JTest {
             reverse.accept(intList.get(intList.size() - i - 1));
         }
         sd.combine(reverse);
-        assertTrue(Math.abs(sd.get().toDouble() - 30D / 9) < 0.0001,"" + sd.get().toDouble());
+        assertEquals(120D / 18, sd.get().toDouble(), 1e-12);
+    }
+
+    static Stream<Arguments> varianceAggregators() {
+        return Stream.of(
+                Arguments.of("sample variance", (Supplier<IAggregableReduceOp<Double, Writable>>)
+                        AggregatorImpls.AggregableVariance::new, true, false),
+                Arguments.of("population variance", (Supplier<IAggregableReduceOp<Double, Writable>>)
+                        AggregatorImpls.AggregablePopulationVariance::new, false, false),
+                Arguments.of("sample standard deviation", (Supplier<IAggregableReduceOp<Double, Writable>>)
+                        AggregatorImpls.AggregableStdDev::new, true, true),
+                Arguments.of("population standard deviation", (Supplier<IAggregableReduceOp<Double, Writable>>)
+                        AggregatorImpls.AggregableUncorrectedStdDev::new, false, true));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("varianceAggregators")
+    void varianceCombinationTest(String name, Supplier<IAggregableReduceOp<Double, Writable>> factory,
+                                 boolean sample, boolean standardDeviation) {
+        double[][] data = {
+                {1, 9},
+                {1, 2, 3, 10, 20},
+                {4, 4, 4, 4, 4},
+                {1e12 + 1, 1e12 + 2, 1e12 + 3, 1e12 + 4, 1e12 + 5,
+                        1e12 + 6, 1e12 + 7, 1e12 + 8, 1e12 + 9}
+        };
+        for (double[] values : data) {
+            // Large-offset partitions accumulate rounding at the scale of the input's ULP.
+            double tolerance = values[0] >= 1e12 ? 1e-3 : 1e-12;
+            double expected = batchStatistic(values, sample, standardDeviation);
+            for (int split = 0; split <= values.length; split++) {
+                IAggregableReduceOp<Double, Writable> left = factory.get();
+                IAggregableReduceOp<Double, Writable> right = factory.get();
+                for (int i = 0; i < split; i++) {
+                    left.accept(values[i]);
+                }
+                for (int i = split; i < values.length; i++) {
+                    right.accept(values[i]);
+                }
+                double rightBefore = right.get().toDouble();
+                left.combine(right);
+                String context = name + ", values=" + Arrays.toString(values) + ", split=" + split;
+                assertEquals(expected, left.get().toDouble(), tolerance, context);
+                assertEquals(rightBefore, right.get().toDouble(), context + " mutated the other partition");
+
+                left.accept(17D);
+                double[] extended = Arrays.copyOf(values, values.length + 1);
+                extended[values.length] = 17D;
+                double extendedExpected = batchStatistic(extended, sample, standardDeviation);
+                assertEquals(extendedExpected, left.get().toDouble(),
+                        Math.max(tolerance, Math.abs(extendedExpected) * 1e-12), context + " then accept");
+            }
+        }
+
+        IAggregableReduceOp<Double, Writable> empty = factory.get();
+        empty.combine(factory.get());
+        empty.accept(2D);
+        empty.accept(6D);
+        assertEquals(batchStatistic(new double[]{2, 6}, sample, standardDeviation),
+                empty.get().toDouble(), 1e-12, name + " empty identity");
+        empty.combine(empty);
+        assertEquals(batchStatistic(new double[]{2, 6, 2, 6}, sample, standardDeviation),
+                empty.get().toDouble(), 1e-12, name + " self combine");
+    }
+
+    private static double batchStatistic(double[] values, boolean sample, boolean standardDeviation) {
+        double mean = Arrays.stream(values).average().getAsDouble();
+        double squaredDifferences = Arrays.stream(values).map(value -> (value - mean) * (value - mean)).sum();
+        double variance = squaredDifferences / (values.length - (sample ? 1 : 0));
+        return standardDeviation ? Math.sqrt(variance) : variance;
     }
 
     @Test

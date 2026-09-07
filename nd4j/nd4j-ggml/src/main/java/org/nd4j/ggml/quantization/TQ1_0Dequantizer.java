@@ -38,7 +38,7 @@ import java.nio.ByteOrder;
  *
  * Decoding: for each byte b, extract 5 trits via repeated div/mod 3:
  *   trit = (b / 3^i) % 3  for i in 0..4
- *   value = (trit - 1) * d   maps {0,1,2} -> {-1,0,+1}
+ *   value = (trit - 1) * d   maps {0,1,2} -&gt; {-1,0,+1}
  *
  * Note: Reference fallback. Native llamacpp path preferred.
  */

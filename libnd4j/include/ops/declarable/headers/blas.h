@@ -93,7 +93,7 @@ DECLARE_CUSTOM_OP(batched_gemm_bp, -1, -1, false, 0, 2);
  * in input array: x[..., :, :] = u[..., :, :] * s[...,:] * transpose(v[..., :, :])
  *
  * Input array:
- * x[..., Rows, Cols], the necessary condition is: rank of x >= 2
+ * x[..., Rows, Cols], the necessary condition is: rank of x &gt;= 2
  *
  * Outputs arrays:
  * s[..., diagSize] - array with singular values which are stored in decreasing order, diagSize is smaller among Rows
@@ -104,7 +104,7 @@ DECLARE_CUSTOM_OP(batched_gemm_bp, -1, -1, false, 0, 2);
  * IArgs[0] - bool, whether to calculate u and v, s is calculated in any case
  * IArgs[1] - bool, whether to calculate full-sized u and v
  * IArgs[2] - the number of cols or rows which determines what algorithm to use. More precisely:
- *            if diagSize < IArgs[2] then Jacobi algorithm is used, in opposite case the Divide-And-Conquer is applied
+ *            if diagSize &lt; IArgs[2] then Jacobi algorithm is used, in opposite case the Divide-And-Conquer is applied
  *            Recommended value is 16.
  */
 #if NOT_EXCLUDED(OP_svd)
@@ -116,7 +116,7 @@ DECLARE_CUSTOM_OP(svd, 1, 1, false, 0, 3);
  * x[..., M, M] = z[..., M, M] x z[..., M, M]
  *
  * Input array:
- * x[..., M, M],  the necessary condition is: rank of x >= 2 and equality of last two dimensions
+ * x[..., M, M],  the necessary condition is: rank of x &gt;= 2 and equality of last two dimensions
  *
  * Outputs arrays:
  * z - same shape as x

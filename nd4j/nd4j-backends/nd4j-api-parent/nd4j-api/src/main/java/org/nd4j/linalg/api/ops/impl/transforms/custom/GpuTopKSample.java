@@ -39,7 +39,7 @@ import java.util.List;
  * eliminating the device-to-host transfer overhead for logits. Uses CUB radix sort
  * for efficient top-K selection.
  * <p>
- * Pipeline: logits -> temperature scaling -> top-K filter -> softmax -> multinomial sample
+ * Pipeline: logits -&gt; temperature scaling -&gt; top-K filter -&gt; softmax -&gt; multinomial sample
  * <p>
  * Inputs:
  * <ul>

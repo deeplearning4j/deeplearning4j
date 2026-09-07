@@ -38,7 +38,7 @@ namespace ops {
  *    0: blank_index the index of the blank label in logits. default is last class. CLASS_LEN-1
  *    1: beam_width  the width of the beam search. default is 25
  *    2: nbest_len  the number of top best results that should be returned. default is 1
- *    NOTE:  if it is > beam_width it will be defaulted to beam_width size.
+ *    NOTE:  if it is &gt; beam_width it will be defaulted to beam_width size.
  * Input bool argument (BArgs):
  *    0: normalize_logit when its true it will normalize logits. by default it is assumed logit contains already
  * normalized log-probabilities Output array: 0: result_sequences NDArray {BATCH_LEN, NBEST, MAX_FRAME_LEN} result
@@ -48,7 +48,7 @@ namespace ops {
  * integer NOTE: result_sequence_length NdArray should be c order and have ews == 1
  *
  *  NOTE:
- *   maximum value of integer indexing type should be >= CLASS_LEN to make sense. And also it should consider frame
+ *   maximum value of integer indexing type should be &gt;= CLASS_LEN to make sense. And also it should consider frame
  * lengthes as well. For now this case is mostly fine as only Indexing types are allowed as integer.
  */
 #if NOT_EXCLUDED(OP_ctc_beam)

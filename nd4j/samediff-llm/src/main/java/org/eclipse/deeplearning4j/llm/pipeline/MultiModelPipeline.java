@@ -126,13 +126,13 @@ public class MultiModelPipeline implements AutoCloseable {
     private final MultiModelPipelineConfig config;
     private final Tokenizer tokenizer;
 
-    /** Registered models: modelId -> RegisteredModel */
+    /** Registered models: modelId -&gt; RegisteredModel */
     private final Map<String, MultiModelPipelineConfig.RegisteredModel> modelRegistry;
 
-    /** Loaded GenerationPipelines: modelId -> GenerationPipeline */
+    /** Loaded GenerationPipelines: modelId -&gt; GenerationPipeline */
     private final Map<String, GenerationPipeline> generationPipelines;
 
-    /** Model reuse tracking: SameDiff hash -> modelId */
+    /** Model reuse tracking: SameDiff hash -&gt; modelId */
     private final Map<Integer, String> modelIdentityMap;
 
     /** Whether the pipeline has been closed */

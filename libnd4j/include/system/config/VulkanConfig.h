@@ -30,11 +30,11 @@ namespace config {
  * Vulkan backend disk-cache configuration (ADR 0115).
  *
  * Tier 1 — SPIR-V module disk cache: persists MLIR→SPIR-V lowering results
- * (spv_<16hex>.spv + .meta) so warm process starts skip the MLIR pass
+ * (spv_&lt;16hex&gt;.spv + .meta) so warm process starts skip the MLIR pass
  * pipeline entirely. Mirrors the Triton kernel disk cache.
  *
  * Tier 2 — VkPipelineCache driver-blob persistence: persists the driver's
- * pipeline cache (vkpc_<16hex>.bin, keyed by pipelineCacheUUID) so warm
+ * pipeline cache (vkpc_&lt;16hex&gt;.bin, keyed by pipelineCacheUUID) so warm
  * starts also skip the driver's SPIR-V→ISA compile.
  *
  * This class stays free of Vulkan API dependencies, but its implementation and
@@ -42,8 +42,8 @@ namespace config {
  *
  * Directory resolution for each dir option: explicit value here (set from a
  * Java system property via the Environment setter, or from the matching
- * ND4J_VULKAN_* env var at initFromEnvironment) → ~/.kompile/cache/vulkan/<leaf>
- * → .kompile/cache/vulkan/<leaf> when $HOME is empty.
+ * ND4J_VULKAN_* env var at initFromEnvironment) → ~/.kompile/cache/vulkan/&lt;leaf&gt;
+ * → .kompile/cache/vulkan/&lt;leaf&gt; when $HOME is empty.
  */
 class SD_LIB_EXPORT VulkanConfig {
  private:

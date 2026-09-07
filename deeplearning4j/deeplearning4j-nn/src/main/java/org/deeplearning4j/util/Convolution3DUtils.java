@@ -307,8 +307,8 @@ public class Convolution3DUtils {
     }
 
     /**
-     * Perform validation on the CNN3D layer kernel/stride/padding. Expect 3d int[], with values > 0 for kernel size and
-     * stride, and values >= 0 for padding.
+     * Perform validation on the CNN3D layer kernel/stride/padding. Expect 3d int[], with values &gt; 0 for kernel size and
+     * stride, and values &gt;= 0 for padding.
      *
      * @param kernelSize Kernel size array to check
      * @param stride     Stride array to check
@@ -319,8 +319,8 @@ public class Convolution3DUtils {
     }
 
     /**
-     * Perform validation on the CNN3D layer kernel/stride/padding. Expect 3d long[], with values > 0 for kernel size and
-     * stride, and values >= 0 for padding.
+     * Perform validation on the CNN3D layer kernel/stride/padding. Expect 3d long[], with values &gt; 0 for kernel size and
+     * stride, and values &gt;= 0 for padding.
      *
      * @param kernelSize Kernel size array to check
      * @param stride     Stride array to check

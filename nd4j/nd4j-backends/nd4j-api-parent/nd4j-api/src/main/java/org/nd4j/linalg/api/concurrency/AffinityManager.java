@@ -217,7 +217,7 @@ public interface AffinityManager {
      * For GPU backend, this moves/copies data to the specified GPU.
      *
      * @param array the array to transfer
-     * @param gpuDeviceId the target GPU device ID (must be >= 0)
+     * @param gpuDeviceId the target GPU device ID (must be &gt;= 0)
      * @return an array with data on the specified GPU
      */
     default INDArray transferToGpu(INDArray array, int gpuDeviceId) {
@@ -254,7 +254,7 @@ public interface AffinityManager {
     /**
      * Get a DeviceDescriptor for the given device ID.
      *
-     * @param deviceId the device ID (CPU_DEVICE_ID for CPU, >= 0 for GPU)
+     * @param deviceId the device ID (CPU_DEVICE_ID for CPU, &gt;= 0 for GPU)
      * @return the device descriptor
      */
     default DeviceDescriptor getDeviceDescriptor(int deviceId) {

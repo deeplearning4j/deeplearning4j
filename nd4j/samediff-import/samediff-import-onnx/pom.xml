@@ -35,7 +35,7 @@
 
   <name>samediff-import-onnx</name>
   <properties>
-    <jgit.version>5.10.0.202012080955-r</jgit.version>
+    <jgit.version>5.13.4.202507202350-r</jgit.version>
     <test.offheap.size>12g</test.offheap.size>
     <test.heap.size>12g</test.heap.size>
     <module.name>samediff.modelimport.onnx</module.name>

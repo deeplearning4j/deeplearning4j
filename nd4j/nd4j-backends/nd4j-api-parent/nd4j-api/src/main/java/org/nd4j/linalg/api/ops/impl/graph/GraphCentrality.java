@@ -39,7 +39,7 @@ import java.util.*;
  *   closeness(v) = (R_v - 1) / sum_{u reachable, u != v} dist(v, u)
  * </pre>
  * where R_v is the number of nodes reachable from v (including v itself only if
- * R_v > 1). Isolated nodes receive closeness 0.
+ * R_v &gt; 1). Isolated nodes receive closeness 0.
  * <p>Uses BFS for unweighted graphs (any non-zero adjacency entry = edge of weight 1).
  *
  * <h2>Betweenness Centrality</h2>

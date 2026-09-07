@@ -328,7 +328,7 @@ public class Qwen3VLArchitecture implements ModelArchitecture {
      * <p>Architecture summary:</p>
      * <ul>
      *   <li>Patch embedding (conv-equivalent projection)</li>
-     *   <li>27 ViT blocks: LayerNorm -> Self-Attn -> residual -> LayerNorm -> FFN -> residual</li>
+     *   <li>27 ViT blocks: LayerNorm -&gt; Self-Attn -&gt; residual -&gt; LayerNorm -&gt; FFN -&gt; residual</li>
      *   <li>DeepStack: intermediate features are extracted at layers [8, 16, 24] and
      *       concatenated channel-wise to the final output</li>
      *   <li>Final LayerNorm</li>
@@ -399,7 +399,7 @@ public class Qwen3VLArchitecture implements ModelArchitecture {
     /**
      * Build a single ViT transformer block.
      *
-     * <p>Block structure: pre-norm -> self-attention -> residual -> pre-norm -> FFN -> residual.</p>
+     * <p>Block structure: pre-norm -&gt; self-attention -&gt; residual -&gt; pre-norm -&gt; FFN -&gt; residual.</p>
      * <p>ViT uses standard LayerNorm (not RMSNorm) and GELU activation.</p>
      */
     private SDVariable buildVitBlock(SameDiff sd, SDVariable input, int layerIdx,
@@ -531,7 +531,7 @@ public class Qwen3VLArchitecture implements ModelArchitecture {
     /**
      * Build the two-layer MLP projector that maps vision features to LLM hidden size.
      *
-     * <p>Projector structure: Linear -> GELU -> Linear (matching Qwen-VL reference).</p>
+     * <p>Projector structure: Linear -&gt; GELU -&gt; Linear (matching Qwen-VL reference).</p>
      * <p>Tensor names follow the GGUF convention: {@code mm.0.weight}, {@code mm.2.weight}.</p>
      *
      * @param sd      SameDiff graph

@@ -59,7 +59,7 @@ public class CSVVariableSlidingWindowRecordReader extends CSVRecordReader implem
 
     /**
      * @param maxLinesPerSequence Number of lines in each sequence, use default delemiter(,) between entries in the same line
-     * @param stride Number of lines between records (increment window > 1 line)
+     * @param stride Number of lines between records (increment window &gt; 1 line)
      */
     public CSVVariableSlidingWindowRecordReader(int maxLinesPerSequence, int stride) {
         this(maxLinesPerSequence, 0, stride, CSVRecordReader.DEFAULT_DELIMITER);
@@ -67,7 +67,7 @@ public class CSVVariableSlidingWindowRecordReader extends CSVRecordReader implem
 
     /**
      * @param maxLinesPerSequence Number of lines in each sequence, use default delemiter(,) between entries in the same line
-     * @param stride Number of lines between records (increment window > 1 line)
+     * @param stride Number of lines between records (increment window &gt; 1 line)
      * @deprecated Use the constructor using char for delimiter instead
      */
     @Deprecated
@@ -79,7 +79,7 @@ public class CSVVariableSlidingWindowRecordReader extends CSVRecordReader implem
      *
      * @param maxLinesPerSequence Number of lines in each sequences
      * @param skipNumLines Number of lines to skip at the start of the file (only skipped once, not per sequence)
-     * @param stride Number of lines between records (increment window > 1 line)
+     * @param stride Number of lines between records (increment window &gt; 1 line)
      * @param delimiter Delimiter between entries in the same line, for example ","
      * @deprecated Use the constructor using char for delimiter instead
      */
@@ -97,7 +97,7 @@ public class CSVVariableSlidingWindowRecordReader extends CSVRecordReader implem
 
     /**
      * @param maxLinesPerSequence Number of lines in each sequence, use default delemiter(,) between entries in the same line
-     * @param stride Number of lines between records (increment window > 1 line)
+     * @param stride Number of lines between records (increment window &gt; 1 line)
      */
     public CSVVariableSlidingWindowRecordReader(int maxLinesPerSequence, int stride, char delimiter) {
         this(maxLinesPerSequence, 0, stride, delimiter);
@@ -107,7 +107,7 @@ public class CSVVariableSlidingWindowRecordReader extends CSVRecordReader implem
      *
      * @param maxLinesPerSequence Number of lines in each sequences
      * @param skipNumLines Number of lines to skip at the start of the file (only skipped once, not per sequence)
-     * @param stride Number of lines between records (increment window > 1 line)
+     * @param stride Number of lines between records (increment window &gt; 1 line)
      * @param delimiter Delimiter between entries in the same line, for example ","
      */
     public CSVVariableSlidingWindowRecordReader(int maxLinesPerSequence, int skipNumLines, int stride, char delimiter) {

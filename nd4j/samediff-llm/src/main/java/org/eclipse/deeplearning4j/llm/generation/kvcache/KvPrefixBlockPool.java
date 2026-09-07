@@ -134,7 +134,7 @@ public class KvPrefixBlockPool implements AutoCloseable {
     /**
      * Create a block pool.
      *
-     * @param blockSize      tokens per block (must be >= 1)
+     * @param blockSize      tokens per block (must be &gt;= 1)
      * @param maxByteBudget  maximum total device bytes across all blocks (0 = unlimited)
      * @param bytesPerBlock  estimated bytes per block for the radix trie's savings estimate
      * @param maxCacheEntries maximum registered prefix entries in the radix trie

@@ -412,7 +412,7 @@ public class NetworkUtils {
     /**
      * Rebuild the updater state after a learning rate change.
      * With updaters like Adam, they have 2 components... m and v array, for a total updater state size of 2*numParams.
-     * Because we combine across parameters and layers where possible (smaller number of larger operations -> more efficient)
+     * Because we combine across parameters and layers where possible (smaller number of larger operations -&gt; more efficient)
      * we can sometimes need to rearrange the updater state array.
      * For example, if the original updater state for Adam is organized like [mParam1, mParam2, vParam1, vParam2] in one block
      * and we change the learning rate for one of the layers, param 1 and param2 now belong to different updater blocks.

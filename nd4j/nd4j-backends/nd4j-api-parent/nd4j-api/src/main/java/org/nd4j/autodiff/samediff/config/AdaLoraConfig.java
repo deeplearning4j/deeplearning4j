@@ -64,7 +64,7 @@ public class AdaLoraConfig extends LoraConfig {
 
     /**
      * Initial rank for all LoRA modules before pruning.
-     * Should be >= targetRank.
+     * Should be &gt;= targetRank.
      * Default: 12
      */
     @Builder.Default

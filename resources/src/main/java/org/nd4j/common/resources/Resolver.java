@@ -84,7 +84,7 @@ public interface Resolver {
 
     /**
      * Normalize the path that may be a resource reference.
-     * For example: "someDir/myFile.zip.resource_reference" --> "someDir/myFile.zip"
+     * For example: "someDir/myFile.zip.resource_reference" --&gt; "someDir/myFile.zip"
      * Returns null if the file cannot be resolved.
      * If the file is not a reference, the original path is returned
      */

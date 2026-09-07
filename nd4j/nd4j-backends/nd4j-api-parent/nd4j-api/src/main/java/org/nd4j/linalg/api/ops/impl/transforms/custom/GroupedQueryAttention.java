@@ -40,7 +40,7 @@ import java.util.List;
  * maintaining model quality.
  *
  * - MHA (Multi-Head Attention): numHeads == numKvHeads
- * - GQA (Grouped Query Attention): numHeads > numKvHeads (e.g., 32 query heads, 8 KV heads)
+ * - GQA (Grouped Query Attention): numHeads &gt; numKvHeads (e.g., 32 query heads, 8 KV heads)
  * - MQA (Multi-Query Attention): numKvHeads == 1
  *
  * @author Adam Gibson

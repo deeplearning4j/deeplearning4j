@@ -86,7 +86,7 @@ public class RLPipelineConfig {
 
     /**
      * Number of micro-batches to accumulate gradients over before each weight update.
-     * Set to > 1 when the per-step batch does not fit in memory.
+     * Set to &gt; 1 when the per-step batch does not fit in memory.
      * Default: 1
      */
     @Builder.Default

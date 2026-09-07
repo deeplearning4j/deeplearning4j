@@ -533,7 +533,7 @@ public class MiniCPMVArchitecture implements ModelArchitecture {
     }
 
     /**
-     * Vision FFN: Linear -> GELU -> Linear (SigLIP2 style, no gate).
+     * Vision FFN: Linear -&gt; GELU -&gt; Linear (SigLIP2 style, no gate).
      */
     private SDVariable buildVisionGELUFFN(SameDiff sd, SDVariable input, int layerIdx,
                                           String prefix, Map<String, INDArray> weights,

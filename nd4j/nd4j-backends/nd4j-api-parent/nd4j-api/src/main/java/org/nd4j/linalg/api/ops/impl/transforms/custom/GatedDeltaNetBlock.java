@@ -33,8 +33,8 @@ import java.util.List;
 /**
  * Full Gated Delta Network layer.
  *
- * Fuses: linear projection -> causal_conv1d + SiLU -> gated_delta_rule
- *        -> RMSNorm + Swish gate -> output projection
+ * Fuses: linear projection -&gt; causal_conv1d + SiLU -&gt; gated_delta_rule
+ *        -&gt; RMSNorm + Swish gate -&gt; output projection
  *
  * Inputs:
  *   0: x          [B, L, D]

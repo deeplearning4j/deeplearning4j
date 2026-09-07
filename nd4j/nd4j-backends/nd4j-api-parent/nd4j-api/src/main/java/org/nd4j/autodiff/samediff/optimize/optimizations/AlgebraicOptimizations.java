@@ -48,13 +48,13 @@ import java.util.Set;
  * These optimizations eliminate identity operations and simplify expressions.
  *
  * Supported simplifications:
- * - x + 0 -> x (AddZero)
- * - x - 0 -> x (SubtractZero)
- * - x * 1 -> x (MultiplyOne)
- * - x * 0 -> 0 (MultiplyZero)
- * - x - x -> 0 (SubtractSelf)
- * - x / 1 -> x (DivideOne)
- * - x / x -> 1 (DivideSelf)
+ * - x + 0 -&gt; x (AddZero)
+ * - x - 0 -&gt; x (SubtractZero)
+ * - x * 1 -&gt; x (MultiplyOne)
+ * - x * 0 -&gt; 0 (MultiplyZero)
+ * - x - x -&gt; 0 (SubtractSelf)
+ * - x / 1 -&gt; x (DivideOne)
+ * - x / x -&gt; 1 (DivideSelf)
  */
 @Slf4j
 public class AlgebraicOptimizations extends BaseOptimizerSet {
@@ -135,8 +135,8 @@ public class AlgebraicOptimizations extends BaseOptimizerSet {
     }
 
     /**
-     * Simplifies x + 0 -> x
-     * Also handles 0 + x -> x
+     * Simplifies x + 0 -&gt; x
+     * Also handles 0 + x -&gt; x
      */
     public static class AddZero implements Optimizer {
         @Override
@@ -176,7 +176,7 @@ public class AlgebraicOptimizations extends BaseOptimizerSet {
     }
 
     /**
-     * Simplifies x - 0 -> x
+     * Simplifies x - 0 -&gt; x
      * Note: 0 - x is NOT simplified (that would be -x, not x)
      */
     public static class SubtractZero implements Optimizer {
@@ -212,8 +212,8 @@ public class AlgebraicOptimizations extends BaseOptimizerSet {
     }
 
     /**
-     * Simplifies x * 1 -> x
-     * Also handles 1 * x -> x
+     * Simplifies x * 1 -&gt; x
+     * Also handles 1 * x -&gt; x
      */
     public static class MultiplyOne implements Optimizer {
         @Override
@@ -253,8 +253,8 @@ public class AlgebraicOptimizations extends BaseOptimizerSet {
     }
 
     /**
-     * Simplifies x * 0 -> 0
-     * Also handles 0 * x -> 0
+     * Simplifies x * 0 -&gt; 0
+     * Also handles 0 * x -&gt; 0
      */
     public static class MultiplyZero implements Optimizer {
         @Override
@@ -294,7 +294,7 @@ public class AlgebraicOptimizations extends BaseOptimizerSet {
     }
 
     /**
-     * Simplifies x - x -> 0
+     * Simplifies x - x -&gt; 0
      * Detects when both inputs to subtraction are the same variable.
      */
     public static class SubtractSelf implements Optimizer {
@@ -346,7 +346,7 @@ public class AlgebraicOptimizations extends BaseOptimizerSet {
     }
 
     /**
-     * Simplifies x / 1 -> x
+     * Simplifies x / 1 -&gt; x
      */
     public static class DivideOne implements Optimizer {
         @Override
@@ -380,7 +380,7 @@ public class AlgebraicOptimizations extends BaseOptimizerSet {
     }
 
     /**
-     * Simplifies x / x -> 1.
+     * Simplifies x / x -&gt; 1.
      * Detects when both inputs to division are the same variable.
      */
     public static class DivideSelf implements Optimizer {

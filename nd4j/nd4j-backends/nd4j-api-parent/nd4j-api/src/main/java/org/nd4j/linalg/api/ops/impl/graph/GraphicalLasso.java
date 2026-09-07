@@ -62,7 +62,7 @@ public class GraphicalLasso {
      * and delegates to {@link #fitFromCovariance(INDArray, double, double, int, double)}.
      *
      * @param data   observations matrix [n, p] (DOUBLE or will be cast)
-     * @param lambda L1 regularization strength on off-diagonal entries (> 0)
+     * @param lambda L1 regularization strength on off-diagonal entries (&gt; 0)
      * @param rho    ADMM penalty parameter (default 1.0 usually works)
      * @param maxIter maximum ADMM iterations
      * @param tol    convergence tolerance for primal + dual residuals
@@ -91,7 +91,7 @@ public class GraphicalLasso {
      * Fit a sparse precision matrix from a pre-computed covariance matrix.
      *
      * @param S      empirical covariance matrix [p, p], symmetric positive semi-definite
-     * @param lambda L1 regularization strength on off-diagonal entries (> 0)
+     * @param lambda L1 regularization strength on off-diagonal entries (&gt; 0)
      * @param rho    ADMM penalty parameter (1.0 is a good starting point)
      * @param maxIter maximum ADMM iterations (200-500 is usually sufficient)
      * @param tol    convergence tolerance (e.g. 1e-6)

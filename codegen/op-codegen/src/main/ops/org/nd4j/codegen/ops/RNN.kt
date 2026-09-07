@@ -32,9 +32,9 @@ fun SDRNN() = Namespace("RNN") {
 
         Arg(ENUM, "RnnDataFormat") {
             possibleValues = listOf("TNS", "NST", "NTS"); description = " The data format of the input. Input shape depends on data format (in config):<br>\n" +
-                " TNS -> [timeSteps, batchSize, inSize]<br>\n" +
-                " NST -> [batchSize, inSize, timeSteps]<br>\n" +
-                " NTS -> [batchSize, timeSteps, inSize]<br>"
+                " TNS -&gt; [timeSteps, batchSize, inSize]<br>\n" +
+                " NST -&gt; [batchSize, inSize, timeSteps]<br>\n" +
+                " NTS -&gt; [batchSize, timeSteps, inSize]<br>"
         }
 
 
@@ -172,8 +172,8 @@ fun SDRNN() = Namespace("RNN") {
                 " 2) shapes `[2, 4*nOut]` for BIDIR_SUM, BIDIR_CONCAT and BIDIR_EXTRA_DIM"
                   defaultValue=null}
         Input(NUMERIC, "peepholeWeights") {description="peephole weights Wp:\n" +
-                "  1) `[3*nOut]`    when directionMode <  2\n" +
-                "  2) `[2, 3*nOut]`  when directionMode >= 2"; defaultValue=null}
+                "  1) `[3*nOut]`    when directionMode &lt;  2\n" +
+                "  2) `[2, 3*nOut]`  when directionMode &gt;= 2"; defaultValue=null}
 
 
         javaClassOverride = "org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMLayerWeights"

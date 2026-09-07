@@ -49,7 +49,7 @@ import java.util.List;
  * <p>
  * Usage:
  * <pre>
- *   // multiply(x, y) -> sigmoid
+ *   // multiply(x, y) -&gt; sigmoid
  *   FusedElementwiseChain.builder()
  *       .input(x)
  *       .multiply(y)

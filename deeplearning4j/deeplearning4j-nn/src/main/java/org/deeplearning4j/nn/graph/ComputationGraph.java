@@ -197,13 +197,13 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
     /**
      * The number of input arrays to the network. Many networks only have 1 input; however, a ComputationGraph may
-     * have an arbitrary number (>=1) separate input arrays
+     * have an arbitrary number (&gt;=1) separate input arrays
      */
     @Getter
     private int numInputArrays;
     /**
      * The number of output arrays to the network. Many networks only have 1 output; however, a ComputationGraph may
-     * have an arbitrary number (>=1) separate output arrays
+     * have an arbitrary number (&gt;=1) separate output arrays
      */
     @Getter
     private int numOutputArrays;
@@ -976,7 +976,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Equvalent to calling {@link #fit(DataSetIterator)} numEpochs times in a loop
      *
      * @param iterator  Training data (DataSetIterator). Iterator must support resetting
-     * @param numEpochs Number of training epochs, >= 1
+     * @param numEpochs Number of training epochs, &gt;= 1
      */
     public void fit(@NonNull DataSetIterator iterator, int numEpochs){
         Preconditions.checkArgument(numEpochs > 0, "Number of epochs much be > 0. Got numEpochs = %s", numEpochs);
@@ -1014,7 +1014,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Equvalent to calling {@link #fit(MultiDataSetIterator)} numEpochs times in a loop
      *
      * @param iterator  Training data (DataSetIterator). Iterator must support resetting
-     * @param numEpochs Number of training epochs, >= 1
+     * @param numEpochs Number of training epochs, &gt;= 1
      */
     public void fit(@NonNull MultiDataSetIterator iterator, int numEpochs){
         Preconditions.checkArgument(numEpochs > 0, "Number of epochs much be > 0. Got numEpochs = %s", numEpochs);
@@ -1173,8 +1173,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     /**
      * Calculate the indices needed for the network:<br>
      * (a) topological sort order<br>
-     * (b) Map: vertex index -> vertex name<br>
-     * (c) Map: vertex name -> vertex index<br>
+     * (b) Map: vertex index -&gt; vertex name<br>
+     * (c) Map: vertex name -&gt; vertex index<br>
      *
      * @return Calculated indices
      */
@@ -1689,7 +1689,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param inputs Input arrays to the netwonk
      * @param inputMasks Optional input mask arrays (may be null)
      * @param labelMasks Optional label mask arrays (may be null
-     * @param outputAdapter OutputAdapter<T> instance
+     * @param outputAdapter {@code OutputAdapter<T>} instance
      * @param <T> T extends Object
      * @return T instance produced by OutputAdapter
      */
@@ -2575,7 +2575,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Do backprop (gradient calculation)
      *
      * @param truncatedBPTT    false: normal backprop. true: calculate gradients using truncated BPTT for RNN layers
-     * @param externalEpsilons null usually (for typical supervised learning). If not null (and length > 0) then assume that
+     * @param externalEpsilons null usually (for typical supervised learning). If not null (and length &gt; 0) then assume that
      *                         the user has provided some errors externally, as they would do for example in reinforcement
      *                         learning situations.
      */

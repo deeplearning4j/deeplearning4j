@@ -290,7 +290,7 @@ public final class DspHandle {
 
     /**
      * Snapshot staging buffer state for all variable ext inputs.
-     * Returns map: extIndex -> {name, stagingAddr, effectiveAddr, match, stagingSum}.
+     * Returns map: extIndex -&gt; {name, stagingAddr, effectiveAddr, match, stagingSum}.
      * The "match" flag indicates whether staging and effective addresses are the same
      * (they should be for variables with staging buffers during replay).
      */
@@ -667,7 +667,7 @@ public final class DspHandle {
 
     /**
      * Check all segments for pointer drift (captured addr != current addr).
-     * Returns map: segmentIdx -> true if all pointers match, false if drift detected.
+     * Returns map: segmentIdx -&gt; true if all pointers match, false if drift detected.
      */
     public Map<Integer, Boolean> allSegmentsPointersMatch() {
         Pointer handle = requireHandle();

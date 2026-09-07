@@ -39,8 +39,8 @@ import java.util.List;
  *
  * <ul>
  *   <li><b>Repetition penalty</b>: Multiplicative, direction-aware.
- *       logit = logit > 0 ? logit / repPenalty : logit * repPenalty.
- *       Value of 1.0 = off, >1.0 penalizes repetition.</li>
+ *       logit = logit &gt; 0 ? logit / repPenalty : logit * repPenalty.
+ *       Value of 1.0 = off, &gt;1.0 penalizes repetition.</li>
  *   <li><b>Frequency penalty</b>: Subtracts count(token) * freqPenalty.
  *       Proportional to how often a token has appeared.</li>
  *   <li><b>Presence penalty</b>: Subtracts presPenalty for any token that

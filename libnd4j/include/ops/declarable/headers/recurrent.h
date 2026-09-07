@@ -124,7 +124,7 @@ DECLARE_CUSTOM_OP(sru_bi_bp, 8, 4, true, 0, 0);
  *
  * Input arrays:
  *    0: input with shape [batchSize x inSize], batchSize - batch size, inSize - number of features
- *    1: previous cell output [batchSize x numProj],  that is at previous time step t-1, in case of projection=false ->
+ *    1: previous cell output [batchSize x numProj],  that is at previous time step t-1, in case of projection=false -&gt;
  * numProj=numUnits!!! 2: previous cell state  [batchSize x numUnits], that is at previous time step t-1 3:
  * input-to-hidden  weights, [inSize  x 4*numUnits] 4: hidden-to-hidden weights, [numProj x 4*numUnits] 5: diagonal
  * weights for peephole connections [3*numUnits] 6: projection weights [numUnits x numProj] 7: biases, [4*numUnits]
@@ -195,9 +195,9 @@ DECLARE_CUSTOM_OP(lstmBlockCell, 8, 7, false, 2, 1);
  * Implementation of operation for LSTM layer with optional peep hole connections.
  * See lstmBlockCell for details. lstmBlockCell is used internally for computation.
  * This method expects as input (and returns as output) sequences in one of 3 formats, depending on the data format arg:
- * dataFormat = 0 -> TNS: shape [timeLength, numExamples, inOutSize] - sometimes referred to as "time major"
- * dataFormat = 1 -> NST: shape [numExamples, inOutSize, timeLength]
- * dataFormat = 2 -> NTS: shape [numExamples, timeLength, inOutSize] - TF "time_major=false" layout
+ * dataFormat = 0 -&gt; TNS: shape [timeLength, numExamples, inOutSize] - sometimes referred to as "time major"
+ * dataFormat = 1 -&gt; NST: shape [numExamples, inOutSize, timeLength]
+ * dataFormat = 2 -&gt; NTS: shape [numExamples, timeLength, inOutSize] - TF "time_major=false" layout
  *
  *
  * Input arrays:
@@ -289,7 +289,7 @@ DECLARE_CUSTOM_OP(gruCell_bp, 10, 6, false, 0, 0);
  * Input arrays:
  *    0: input with shape [time x batchSize x inSize], time - number of time steps, batchSize - batch size, inSize -
  * number of features 1: initial cell output [batchSize x numProj],  that is at time step = 0, in case of
- * projection=false -> numProj=numUnits!!! 2: initial cell state  [batchSize x numUnits], that is at time step = 0 3:
+ * projection=false -&gt; numProj=numUnits!!! 2: initial cell state  [batchSize x numUnits], that is at time step = 0 3:
  * input-to-hidden  weights, [inSize  x 4*numUnits] 4: hidden-to-hidden weights, [numProj x 4*numUnits] 5: diagonal
  * weights for peephole connections [3*numUnits] 6: projection weights [numUnits x numProj] 7: biases, [4*numUnits]
  *
@@ -336,7 +336,7 @@ DECLARE_CUSTOM_OP(gru_bp, 6, 5, false, 0, 0);
  * number of features 1: input-to-hidden  weights, [inSize   x numUnits] 2: hidden-to-hidden weights, [numUnits x
  * numUnits] 3: biases, [2*numUnits] 4: (optional) initial cell output [batchSize x numUnits], that is at time step = 0
  *    5: (optional) vector with shape [batchSize] containing integer values within [0,time), each element of this vector
- * set max time step per each input in batch, this provides no calculations for time >= maxTimeStep
+ * set max time step per each input in batch, this provides no calculations for time &gt;= maxTimeStep
  *
  * Output arrays:
  *    0: cell outputs [time x batchSize x numUnits]
@@ -355,7 +355,7 @@ DECLARE_CUSTOM_OP(static_rnn, 4, 2, false, 0, 0);
  * hidden-to-hidden weights, [numUnits x numUnits] 3: biases, [2*numUnits] 4: (optional) initial cell output [batchSize
  * x numUnits], that is at time step = 0 5: (optional) vector with shape [batchSize] containing integer values within
  * [0,time), each element of this vector set max time step per each input in batch, this provides no calculations for
- * time >= maxTimeStep
+ * time &gt;= maxTimeStep
  *
  *  Input integer arguments:
  *    0: (optional) timeMajor - if non zero then input shape is [time, batchSize, ...], else [batchSize, time, ...]
@@ -379,7 +379,7 @@ DECLARE_CUSTOM_OP(dynamic_rnn, 4, 2, false, 0, 0);
  * biases for backward RNN, [2*numUnitsBW] 7: (optional) initial cell output for forward RNN [batchSize x numUnitsFW],
  * that is at time step = 0 8: (optional) initial cell output for backward RNN [batchSize x numUnitsBW], that is at time
  * step = 0 9: (optional) vector with shape [batchSize] containing integer values within [0,time), each element of this
- * vector set max time step per each input in batch, this provides no calculations for time >= maxTimeStep
+ * vector set max time step per each input in batch, this provides no calculations for time &gt;= maxTimeStep
  *
  * Output arrays:
  *    0: cell outputs [time x batchSize x (numUnitsFW + numUnitsBW)]
@@ -402,7 +402,7 @@ DECLARE_CUSTOM_OP(static_bidirectional_rnn, 7, 3, false, 0, 0);
  * for forward RNN [batchSize x numUnitsFW], that is at time step = 0 8: (optional) initial cell output for backward RNN
  * [batchSize x numUnitsBW], that is at time step = 0 9: (optional) vector with shape [batchSize] containing integer
  * values within [0,time), each element of this vector set max time step per each input in batch, this provides no
- * calculations for time >= maxTimeStep
+ * calculations for time &gt;= maxTimeStep
  *
  *  Input integer arguments:
  *    0: (optional) timeMajor - if non zero then input shape is [time, batchSize, ...], else [batchSize, time, ...]

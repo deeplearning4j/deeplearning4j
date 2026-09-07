@@ -373,7 +373,7 @@ public class MistralArchitecture implements ModelArchitecture {
 
     /**
      * Standard dense SwiGLU feed-forward network.
-     * gate_proj, up_proj -> SiLU(gate) * up -> down_proj
+     * gate_proj, up_proj -&gt; SiLU(gate) * up -&gt; down_proj
      */
     private SDVariable buildSwiGLUFFN(SameDiff sd, SDVariable input, int layerIdx,
             ArchitectureConfig config, Map<String, INDArray> weights, DataType dtype) {

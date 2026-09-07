@@ -68,7 +68,7 @@ public class SequenceDifferenceTransform implements Transform {
      *
      * @param columnName    Name of the column to perform the operation on.
      * @param newColumnName New name for the column. May be same as the origina lcolumn name
-     * @param lookback      Lookback period, in number of time steps. Must be > 0
+     * @param lookback      Lookback period, in number of time steps. Must be &gt; 0
      */
     public SequenceDifferenceTransform(String columnName, String newColumnName, int lookback) {
         this(columnName, newColumnName, lookback, FirstStepMode.Default, null);
@@ -80,7 +80,7 @@ public class SequenceDifferenceTransform implements Transform {
      *
      * @param columnName             Name of the column to perform the operation on.
      * @param newColumnName          New name for the column. May be same as the origina lcolumn name
-     * @param lookback               Lookback period, in number of time steps. Must be > 0
+     * @param lookback               Lookback period, in number of time steps. Must be &gt; 0
      * @param firstStepMode          see {@link FirstStepMode}
      * @param specifiedValueWritable Must be null if using FirstStepMode.Default, or non-null if using FirstStepMode.SpecifiedValue
      */

@@ -50,7 +50,7 @@ import java.util.Set;
 @Slf4j
 public class SinkAwareEvictionPolicy implements EvictionPolicy {
 
-    /** Block size in tokens, used for sink position -> block mapping. */
+    /** Block size in tokens, used for sink position -&gt; block mapping. */
     private final int blockSize;
 
     /**

@@ -736,7 +736,7 @@ public class DspDebugger {
      * <p>Validates:</p>
      * <ul>
      *   <li>Segment capturable flags vs actual capture success</li>
-     *   <li>Phase progression (WARMUP -> COMPILING -> COMPILED -> REPLAYING)</li>
+     *   <li>Phase progression (WARMUP -&gt; COMPILING -&gt; COMPILED -&gt; REPLAYING)</li>
      *   <li>Pointer stability for replay-ready segments</li>
      *   <li>Capture buffer counts and tracked pointer consistency</li>
      * </ul>

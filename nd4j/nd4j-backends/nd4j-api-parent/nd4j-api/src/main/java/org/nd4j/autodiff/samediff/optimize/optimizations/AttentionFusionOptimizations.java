@@ -63,7 +63,7 @@ import java.util.Set;
  * Detects manual attention patterns and replaces them with optimized attention ops.
  *
  * Common patterns detected:
- * 1. matmul(Q, K^T) -> scale -> softmax -> matmul(_, V) => dot_product_attention_v2
+ * 1. matmul(Q, K^T) -&gt; scale -&gt; softmax -&gt; matmul(_, V) =&gt; dot_product_attention_v2
  * 2. Fuses attention output with subsequent linear projection
  */
 @Slf4j
@@ -497,10 +497,10 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
         /**
          * Traces back from softmax input to find Q @ K^T pattern and optional scaling/masking.
          * Supports patterns:
-         * 1. matmul(Q, K^T) -> softmax
-         * 2. matmul(Q, K^T) -> scale -> softmax
-         * 3. matmul(Q, K^T) -> add(mask) -> softmax
-         * 4. matmul(Q, K^T) -> scale -> add(mask) -> softmax
+         * 1. matmul(Q, K^T) -&gt; softmax
+         * 2. matmul(Q, K^T) -&gt; scale -&gt; softmax
+         * 3. matmul(Q, K^T) -&gt; add(mask) -&gt; softmax
+         * 4. matmul(Q, K^T) -&gt; scale -&gt; add(mask) -&gt; softmax
          */
         private AttentionComponents traceAttentionScores(SameDiff sd, OptimizationHelper helper, String varName) {
             Variable v = helper.getVariable(varName);
@@ -566,7 +566,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
 
         /**
          * Traces through an add operation that applies a mask to attention scores.
-         * Pattern: matmul(Q, K^T) [-> scale] -> add(mask) -> softmax
+         * Pattern: matmul(Q, K^T) [-&gt; scale] -&gt; add(mask) -&gt; softmax
          */
         private AttentionComponents traceAttentionWithMask(SameDiff sd, OptimizationHelper helper, SameDiffOp addOp, String addOutputVar) {
             log.debug("[ATTN-MASK] === Entering traceAttentionWithMask for " + addOp.getName() + " ===");
@@ -1492,7 +1492,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
 
     /**
      * Detects attention patterns with causal (autoregressive) masking and fuses them.
-     * Pattern: matmul(Q, K^T) [-> scale] -> add(causal_mask) -> softmax -> matmul(_, V)
+     * Pattern: matmul(Q, K^T) [-&gt; scale] -&gt; add(causal_mask) -&gt; softmax -&gt; matmul(_, V)
      *
      * The causal mask is typically a lower triangular matrix with -inf in upper positions.
      * This optimizer detects the mask add, traces forward to find the complete pattern,
@@ -1913,7 +1913,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
 
     /**
      * Checks if the given array looks like a causal (lower triangular) mask.
-     * Handles arrays of any rank >= 2 by using full-dimensional indexing.
+     * Handles arrays of any rank &gt;= 2 by using full-dimensional indexing.
      */
     static boolean isCausalMaskArray(INDArray arr) {
         if (arr.rank() < 2) return false;
@@ -1945,7 +1945,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
 
     /**
      * Detects attention patterns with general additive masks (e.g., padding masks) and fuses them.
-     * Pattern: matmul(Q, K^T) [-> scale] -> add(mask) -> softmax -> matmul(_, V)
+     * Pattern: matmul(Q, K^T) [-&gt; scale] -&gt; add(mask) -&gt; softmax -&gt; matmul(_, V)
      *
      * Unlike FuseAttentionWithCausalMask, this handles arbitrary additive masks that are
      * passed as value masks to the attention operation.

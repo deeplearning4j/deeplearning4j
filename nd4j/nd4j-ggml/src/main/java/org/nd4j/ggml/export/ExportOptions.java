@@ -123,13 +123,13 @@ public class ExportOptions {
     private boolean includeTokenizer = true;
 
     /**
-     * Per-layer quantization overrides (tensor name pattern -> quantization type)
+     * Per-layer quantization overrides (tensor name pattern -&gt; quantization type)
      * Allows different quantization for different layers (e.g., keep embeddings in FP16)
      */
     private Map<String, QuantizationType> layerQuantizationOverrides;
 
     /**
-     * Custom tensor name mapping (SameDiff name -> GGML name)
+     * Custom tensor name mapping (SameDiff name -&gt; GGML name)
      */
     private Map<String, String> tensorNameMapping;
 

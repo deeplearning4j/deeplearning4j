@@ -735,7 +735,7 @@ DECLARE_CUSTOM_OP(causal_conv1d, 2, 2, false, 0, 0);
 /**
  * gated_delta_net_block - Full Gated Delta Network layer
  *
- * Fuses: linear projection -> causal_conv1d + SiLU -> gated_delta_rule -> RMSNorm + Swish gate -> output projection
+ * Fuses: linear projection -&gt; causal_conv1d + SiLU -&gt; gated_delta_rule -&gt; RMSNorm + Swish gate -&gt; output projection
  *
  * Input:
  *   0: x [B, L, D] - input
@@ -836,7 +836,7 @@ DECLARE_CUSTOM_OP(per_layer_embedding, 3, 1, false, 0, 0);
  *   0: num_heads (query heads)
  *   1: num_kv_heads
  *   2: causal (0=bidirectional, 1=causal, default: 1)
- *   3: sliding_window_size (0=full context, >0=local window, default: 0)
+ *   3: sliding_window_size (0=full context, &gt;0=local window, default: 0)
  *
  * Float arguments:
  *   0: attention_scale (default: 1/sqrt(head_dim))
@@ -1135,7 +1135,7 @@ DECLARE_CUSTOM_OP(checkpoint_prefetch_h2d, 1, 1, false, 0, 1);
  *   0: kl_div [scalar] — mean KL divergence over all rows (batch * seq positions)
  *
  * Notes:
- * - Identical inputs produce KL = 0; divergent inputs produce KL > 0.
+ * - Identical inputs produce KL = 0; divergent inputs produce KL &gt; 0.
  * - KL(P||Q) != KL(Q||P) in general (not symmetric).
  */
 #if NOT_EXCLUDED(OP_kl_divergence_per_layer)

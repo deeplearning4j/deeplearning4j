@@ -144,7 +144,7 @@ public class TensorParallelConfig {
     }
 
     /**
-     * Returns true if tensor parallelism is actually enabled (size > 1).
+     * Returns true if tensor parallelism is actually enabled (size &gt; 1).
      */
     public boolean isEnabled() {
         return tensorParallelSize > 1;

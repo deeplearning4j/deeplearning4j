@@ -59,8 +59,8 @@ DECLARE_CUSTOM_OP(hinge_loss_grad, 3, 3, false, 0, 1);
 //////////////////////////////////////////////////////////////////////////
 /**
  * Implementation of Huber loss function:
- *    0.5 * (labels-predictions)^2                                if |labels-predictions| <= delta
- *    0.5 * delta^2 + delta * (|labels-predictions| - delta)      if |labels-predictions| >  delta
+ *    0.5 * (labels-predictions)^2                                if |labels-predictions| &lt;= delta
+ *    0.5 * delta^2 + delta * (|labels-predictions| - delta)      if |labels-predictions| &gt;  delta
  *
  * Input arrays:
  *    0: predictions - the predicted values, type float

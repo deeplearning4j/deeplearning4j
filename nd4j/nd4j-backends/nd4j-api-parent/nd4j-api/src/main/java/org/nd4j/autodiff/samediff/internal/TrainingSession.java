@@ -326,6 +326,7 @@ public class TrainingSession extends InferenceSession {
             Map<String, SDValue> results = executeDynamicShapePlanBased(
                     dag, dspPlaceholders, dspAllRequired, effectiveOutputVars);
             if (results == null) {
+                releaseUnretainedPlaceholderCopies(Collections.emptyMap());
                 return false;
             }
 
@@ -338,6 +339,9 @@ public class TrainingSession extends InferenceSession {
 
             log.debug("DSP training iteration completed successfully");
             return true;
+        } catch (RuntimeException | Error failure) {
+            releaseUnretainedPlaceholderCopiesAfterFailure(failure);
+            throw failure;
         } finally {
             getMmgr().scopeOut();
         }

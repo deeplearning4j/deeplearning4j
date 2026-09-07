@@ -129,7 +129,7 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
      * @param reader SequenceRecordReader with data
      * @param miniBatchSize size of each minibatch
      * @param numPossibleLabels number of labels/classes for classification
-     * @param labelIndex index in input of the label index. If in regression mode and numPossibleLabels > 1, labelIndex denotes the
+     * @param labelIndex index in input of the label index. If in regression mode and numPossibleLabels &gt; 1, labelIndex denotes the
      *                   first index for labels. Everything before that index will be treated as input(s) and
      *                   everything from that index (inclusive) to the end will be treated as output(s)
      */
@@ -143,7 +143,7 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
      * @param reader SequenceRecordReader with data
      * @param miniBatchSize size of each minibatch
      * @param numPossibleLabels number of labels/classes for classification
-     * @param labelIndex index in input of the label index. If in regression mode and numPossibleLabels > 1, labelIndex denotes the
+     * @param labelIndex index in input of the label index. If in regression mode and numPossibleLabels &gt; 1, labelIndex denotes the
      *                   first index for labels. Everything before that index will be treated as input(s) and
      *                   everything from that index (inclusive) to the end will be treated as output(s)
      * @param regression Whether output is for regression or classification

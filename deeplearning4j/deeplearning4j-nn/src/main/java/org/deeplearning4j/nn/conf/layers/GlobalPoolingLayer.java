@@ -234,16 +234,16 @@ public class GlobalPoolingLayer extends NoParamLayer {
 
         /**
          * Whether to collapse dimensions when pooling or not. Usually you *do* want to do this. Default: true. If
-         * true:<br> - 3d (time series) input with shape [miniBatchSize, vectorSize, timeSeriesLength] -> 2d output
-         * [miniBatchSize, vectorSize]<br> - 4d (CNN) input with shape [miniBatchSize, channels, height, width] -> 2d
+         * true:<br> - 3d (time series) input with shape [miniBatchSize, vectorSize, timeSeriesLength] -&gt; 2d output
+         * [miniBatchSize, vectorSize]<br> - 4d (CNN) input with shape [miniBatchSize, channels, height, width] -&gt; 2d
          * output [miniBatchSize, channels]<br> - 5d (CNN3D) input with shape [miniBatchSize, channels, depth, height,
-         * width] -> 2d output [miniBatchSize, channels]<br>
+         * width] -&gt; 2d output [miniBatchSize, channels]<br>
          *
          *
-         * If false:<br> - 3d (time series) input with shape [miniBatchSize, vectorSize, timeSeriesLength] -> 3d output
-         * [miniBatchSize, vectorSize, 1]<br> - 4d (CNN) input with shape [miniBatchSize, channels, height, width] -> 2d
+         * If false:<br> - 3d (time series) input with shape [miniBatchSize, vectorSize, timeSeriesLength] -&gt; 3d output
+         * [miniBatchSize, vectorSize, 1]<br> - 4d (CNN) input with shape [miniBatchSize, channels, height, width] -&gt; 2d
          * output [miniBatchSize, channels, 1, 1]<br> - 5d (CNN3D) input with shape [miniBatchSize, channels, depth,
-         * height, width] -> 2d output [miniBatchSize, channels, 1, 1, 1]<br>
+         * height, width] -&gt; 2d output [miniBatchSize, channels, 1, 1, 1]<br>
          *
          */
         private boolean collapseDimensions = true;
@@ -278,16 +278,16 @@ public class GlobalPoolingLayer extends NoParamLayer {
 
         /**
          * Whether to collapse dimensions when pooling or not. Usually you *do* want to do this. Default: true. If
-         * true:<br> - 3d (time series) input with shape [miniBatchSize, vectorSize, timeSeriesLength] -> 2d output
-         * [miniBatchSize, vectorSize]<br> - 4d (CNN) input with shape [miniBatchSize, channels, height, width] -> 2d
+         * true:<br> - 3d (time series) input with shape [miniBatchSize, vectorSize, timeSeriesLength] -&gt; 2d output
+         * [miniBatchSize, vectorSize]<br> - 4d (CNN) input with shape [miniBatchSize, channels, height, width] -&gt; 2d
          * output [miniBatchSize, channels]<br> - 5d (CNN3D) input with shape [miniBatchSize, channels, depth, height,
-         * width] -> 2d output [miniBatchSize, channels]<br>
+         * width] -&gt; 2d output [miniBatchSize, channels]<br>
          *
          *
-         * If false:<br> - 3d (time series) input with shape [miniBatchSize, vectorSize, timeSeriesLength] -> 3d output
-         * [miniBatchSize, vectorSize, 1]<br> - 4d (CNN) input with shape [miniBatchSize, channels, height, width] -> 2d
+         * If false:<br> - 3d (time series) input with shape [miniBatchSize, vectorSize, timeSeriesLength] -&gt; 3d output
+         * [miniBatchSize, vectorSize, 1]<br> - 4d (CNN) input with shape [miniBatchSize, channels, height, width] -&gt; 2d
          * output [miniBatchSize, channels, 1, 1]<br> - 5d (CNN3D) input with shape [miniBatchSize, channels, depth,
-         * height, width] -> 2d output [miniBatchSize, channels, 1, 1, 1]<br>
+         * height, width] -&gt; 2d output [miniBatchSize, channels, 1, 1, 1]<br>
          *
          * @param collapseDimensions Whether to collapse the dimensions or not
          */

@@ -315,7 +315,7 @@ fun Graph() = Namespace("Graph") {
 
     Op("gaussianSimilarity") {
         Input(FLOATING_POINT, "features") { description = "Node features [n, d]" }
-        Arg(FLOATING_POINT, "sigma")      { description = "RBF kernel bandwidth (> 0)" }
+        Arg(FLOATING_POINT, "sigma")      { description = "RBF kernel bandwidth (&gt; 0)" }
         Output(FLOATING_POINT, "sim")     { description = "Gaussian-similarity matrix [n, n] with unit diagonal" }
         Composition("""
             SDVariable xi = sd.expandDims(features, 1);
@@ -430,7 +430,7 @@ fun Graph() = Namespace("Graph") {
     }
 
     Op("adamicAdar") {
-        Input(FLOATING_POINT, "adj")    { description = "Adjacency matrix [n, n] with node degrees > 1" }
+        Input(FLOATING_POINT, "adj")    { description = "Adjacency matrix [n, n] with node degrees &gt; 1" }
         Output(FLOATING_POINT, "score") { description = "Adamic-Adar score matrix [n, n]" }
         Composition("""
             SDVariable deg = sd.sum(adj, false, 1);
@@ -442,7 +442,7 @@ fun Graph() = Namespace("Graph") {
             """
             Adamic-Adar link-prediction score: S[i,j] = sum_v A[i,v]·A[v,j] / log(deg_v), weighting each
             shared neighbor v by the inverse log of its degree so that rare (low-degree) common neighbors
-            contribute more than hubs. Assumes node degrees > 1 (so log(deg) > 0).
+            contribute more than hubs. Assumes node degrees &gt; 1 (so log(deg) &gt; 0).
             """.trimIndent()
         }
     }
@@ -541,7 +541,7 @@ fun Graph() = Namespace("Graph") {
     Op("katzIndex") {
         Input(FLOATING_POINT, "adj")  { description = "Adjacency matrix [n, n]" }
         Arg(FLOATING_POINT, "beta")   { description = "Attenuation factor (0 &lt; beta &lt; 1 / spectral_radius(A))" }
-        Arg(INT, "L")                 { description = "Truncation depth: number of path-length terms (>= 1)" }
+        Arg(INT, "L")                 { description = "Truncation depth: number of path-length terms (&gt;= 1)" }
         Output(FLOATING_POINT, "out") { description = "Katz similarity matrix [n, n]" }
         Composition("""
             SDVariable S = adj.mul(beta);
@@ -730,7 +730,7 @@ fun Graph() = Namespace("Graph") {
         Input(FLOATING_POINT, "bZu")     { description = "Update-gate bias [1, d]" }
         Input(FLOATING_POINT, "wC")      { description = "Candidate-state weights [2d, d]" }
         Input(FLOATING_POINT, "bC")      { description = "Candidate-state bias [1, d]" }
-        Arg(INT, "processingSteps")      { description = "Number of Set2Set processing steps (T >= 1)" }
+        Arg(INT, "processingSteps")      { description = "Number of Set2Set processing steps (T &gt;= 1)" }
         Arg(LONG, "d")                   { description = "Node embedding / GRU hidden dimension" }
         Output(FLOATING_POINT, "readout"){ description = "Permutation-invariant graph readout [1, 2d]" }
         Composition("""

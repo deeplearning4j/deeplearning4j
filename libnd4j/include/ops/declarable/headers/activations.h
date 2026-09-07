@@ -80,7 +80,7 @@ DECLARE_CONFIGURABLE_OP(selu_bp, 2, 1, true, 0, 0);
 
 /**
  * This is Leaky RELU activation function.
- * Math is: x < 0 ?  alpha * x : x;
+ * Math is: x &lt; 0 ?  alpha * x : x;
  */
 #if NOT_EXCLUDED(OP_lrelu)
 DECLARE_CONFIGURABLE_OP(lrelu, 1, 1, true, -2, 0);
@@ -89,7 +89,7 @@ DECLARE_CONFIGURABLE_OP(lrelu_bp, 2, 1, true, -2, 0);
 
 /**
  * This op is ELU activation function.
- * Math is: x >= 0 ? x : exp(x) - 1;
+ * Math is: x &gt;= 0 ? x : exp(x) - 1;
  */
 #if NOT_EXCLUDED(OP_elu)
 DECLARE_CONFIGURABLE_OP(elu, 1, 1, true, -2, 0);
@@ -124,7 +124,7 @@ DECLARE_CONFIGURABLE_OP(rationaltanh_bp, 2, 1, true, 0, 0);
 
 /**
  * This is HardTanh activation function.
- * Math is: x < -1.0 ? -1.0 : x > 1.0 ? 1.0 : x;
+ * Math is: x &lt; -1.0 ? -1.0 : x &gt; 1.0 ? 1.0 : x;
  */
 #if NOT_EXCLUDED(OP_hardtanh)
 DECLARE_CONFIGURABLE_OP(hardtanh, 1, 1, true, 0, 0);
@@ -176,7 +176,7 @@ DECLARE_CONFIGURABLE_OP(relu6_bp, 2, 1, true, 0, 0);
 
 /**
  * Parametric Rectified Linear Unit
- * f(x) = alpha * x for x < 0, f(x) = x for x >= 0
+ * f(x) = alpha * x for x &lt; 0, f(x) = x for x &gt;= 0
  */
 #if NOT_EXCLUDED(OP_prelu)
 DECLARE_CONFIGURABLE_OP(prelu, 2, 1, true, 0, 0);
@@ -185,8 +185,8 @@ DECLARE_CONFIGURABLE_OP(prelu_bp, 3, 2, true, 0, 0);
 
 /**
  * Thresholded Rectified Linear Unit
- * f(x) = x for x > theta, f(x) = 0 otherwise
- * theta must be >= 0
+ * f(x) = x for x &gt; theta, f(x) = 0 otherwise
+ * theta must be &gt;= 0
  */
 #if NOT_EXCLUDED(OP_thresholdedrelu)
 DECLARE_CONFIGURABLE_OP(thresholdedrelu, 1, 1, true, 0, 0);

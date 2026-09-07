@@ -1162,7 +1162,7 @@ public abstract class AbstractSession<T, O> {
     }
 
     /**
-     * Add the control dependency from Op -> variable
+     * Add the control dependency from Op -&gt; variable
      *
      * @param es Execution step for the variable
      * @param v  Variable
@@ -1423,7 +1423,7 @@ public abstract class AbstractSession<T, O> {
 
     /**
      * Update the descendant dependencies
-     * So if the graph structure is X -> A, then add all (X,Y,Z,...) -> A to the
+     * So if the graph structure is X -&gt; A, then add all (X,Y,Z,...) -&gt; A to the
      * dependency tracker
      * This is for a specific frame and iteration, for both sides of the dependency
      * (in and out)
@@ -1500,7 +1500,7 @@ public abstract class AbstractSession<T, O> {
 
     /**
      * Suppose operation X has just been executed.
-     * For X -> someOp, add all dependencies for someOp, i.e., all Z -> someOp
+     * For X -&gt; someOp, add all dependencies for someOp, i.e., all Z -&gt; someOp
      * (which includes X, but may not only be X)
      *
      * @param opName       Name of the op

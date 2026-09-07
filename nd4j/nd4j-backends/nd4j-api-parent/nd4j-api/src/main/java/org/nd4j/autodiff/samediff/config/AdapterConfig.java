@@ -30,7 +30,7 @@ import java.util.List;
  * Configuration for Adapter layers.
  * <p>
  * Adapter layers insert small bottleneck layers between transformer layers.
- * The adapter consists of: down-projection -> activation -> up-projection + residual.
+ * The adapter consists of: down-projection -&gt; activation -&gt; up-projection + residual.
  * <p>
  * Structure:
  * <pre>

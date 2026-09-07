@@ -149,7 +149,7 @@ public class BatchCompactor {
      * <p>Each KV cache entry has shape [batch, numHeads, seqLen, headDim].
      * The batch dimension is sliced to keep only active sequences.</p>
      *
-     * @param kvCache the current KV cache map (presentName -> tensor)
+     * @param kvCache the current KV cache map (presentName -&gt; tensor)
      * @param finished which sequences are finished
      * @return new KV cache map with compacted tensors
      */

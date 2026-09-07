@@ -220,7 +220,7 @@ public interface BlasWrapper {
      * For example: in A * X = B, A is (m,n), X is (n,k) and B is (m,k). Now if {@code m < n}, since B is overwritten to contain
      * the solution (in classical LAPACK style), B needs to be padded to be an (n,k) matrix.
      * <p>
-     * Likewise, if m > n, the solution consists only of the first n rows of B.
+     * Likewise, if m &gt; n, the solution consists only of the first n rows of B.
      *
      * @param A an (m,n) matrix
      * @param B an (max(m,n), k) matrix (well, at least)

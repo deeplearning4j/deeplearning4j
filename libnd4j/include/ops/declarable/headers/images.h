@@ -35,7 +35,7 @@ namespace ops {
 /**
  * Rgb To Hsv
  * Input arrays:
- * 0 - input array with rank >= 1, must have at least one dimension equal 3, that is dimension containing channels.
+ * 0 - input array with rank &gt;= 1, must have at least one dimension equal 3, that is dimension containing channels.
  * Int arguments:
  * 0 - optional argument, corresponds to dimension with 3 channels
  */
@@ -46,7 +46,7 @@ DECLARE_CONFIGURABLE_OP(rgb_to_hsv, 1, 1, true, 0, 0);
 /**
  * Hsv To Rgb
  * Input arrays:
- * 0 - input array with rank >= 1, must have at least one dimension equal 3, that is dimension containing channels.
+ * 0 - input array with rank &gt;= 1, must have at least one dimension equal 3, that is dimension containing channels.
  * Int arguments:
  * 0 - optional argument, corresponds to dimension with 3 channels
  */
@@ -57,7 +57,7 @@ DECLARE_CONFIGURABLE_OP(hsv_to_rgb, 1, 1, true, 0, 0);
 /**
  * Rgb To GrayScale
  * Input arrays:
- * 0 - input array with rank >= 1, the RGB tensor to convert. Last dimension must have size 3 and should contain RGB
+ * 0 - input array with rank &gt;= 1, the RGB tensor to convert. Last dimension must have size 3 and should contain RGB
  * values.
  */
 #if NOT_EXCLUDED(OP_rgb_to_grs)
@@ -67,7 +67,7 @@ DECLARE_CUSTOM_OP(rgb_to_grs, 1, 1, false, 0, 0);
 /**
  * Rgb To Yuv
  * Input arrays:
- * 0 - input array with rank >= 1, must have at least one dimension equal 3, that is dimension containing channels.
+ * 0 - input array with rank &gt;= 1, must have at least one dimension equal 3, that is dimension containing channels.
  * Int arguments:
  * 0 - optional argument, corresponds to dimension with 3 channels
  */
@@ -78,7 +78,7 @@ DECLARE_CONFIGURABLE_OP(rgb_to_yuv, 1, 1, true, 0, 0);
 /**
  * Yuv To Rgb
  * Input arrays:
- * 0 - input array with rank >= 1, must have at least one dimension equal 3, that is dimension containing channels.
+ * 0 - input array with rank &gt;= 1, must have at least one dimension equal 3, that is dimension containing channels.
  * Int arguments:
  * 0 - optional argument, corresponds to dimension with 3 channels
  */
@@ -89,7 +89,7 @@ DECLARE_CONFIGURABLE_OP(yuv_to_rgb, 1, 1, true, 0, 0);
 /**
  * Rgb To Yiq
  * Input arrays:
- * 0 - input array with rank >= 1, must have at least one dimension equal 3, that is dimension containing channels.
+ * 0 - input array with rank &gt;= 1, must have at least one dimension equal 3, that is dimension containing channels.
  * Int arguments:
  * 0 - optional argument, corresponds to dimension with 3 channels
  */
@@ -100,7 +100,7 @@ DECLARE_CONFIGURABLE_OP(rgb_to_yiq, 1, 1, true, 0, 0);
 /**
  * Yiq To Rgb
  * Input arrays:
- * 0 - input array with rank >= 1, must have at least one dimension equal 3, that is dimension containing channels.
+ * 0 - input array with rank &gt;= 1, must have at least one dimension equal 3, that is dimension containing channels.
  * Int arguments:
  * 0 - optional argument, corresponds to dimension with 3 channels
  */

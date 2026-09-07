@@ -102,7 +102,7 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter, Serializa
 
     /**
      * @param address            Address of the remote UI: for example, "http://localhost:9000"
-     * @param path               Path/endpoint to post to: for example "remoteReceive" -> added to path to become like
+     * @param path               Path/endpoint to post to: for example "remoteReceive" -&gt; added to path to become like
      *                           "http://localhost:9000/remoteReceive"
      * @param maxRetryCount      Maximum number of retries before failing. Set to -1 to always retry
      * @param retryDelayMS       Base delay before retrying, in milliseconds

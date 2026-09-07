@@ -118,7 +118,7 @@ public class AudioDataProcessor {
     /**
      * Run the full audio preprocessing pipeline.
      *
-     * Pipeline: normalize -> mel spectrogram
+     * Pipeline: normalize -&gt; mel spectrogram
      *
      * @param rawAudio raw audio waveform [batch, samples] or [samples]
      * @return mel spectrogram [batch, numMelBins, numFrames]

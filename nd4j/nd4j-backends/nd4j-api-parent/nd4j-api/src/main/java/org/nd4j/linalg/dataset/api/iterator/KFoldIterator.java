@@ -127,7 +127,7 @@ public class KFoldIterator implements DataSetIterator {
 
     /**
      * The number of examples in every fold is (N / k), 
-     * except when (N % k) > 0, when the first (N % k) folds contain (N / k) + 1 examples  
+     * except when (N % k) &gt; 0, when the first (N % k) folds contain (N / k) + 1 examples
      *
      * @return examples in a fold
      */

@@ -343,12 +343,14 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     // nothing meaningful to return. Only trim periodically and always on step 0/1
     // (prefill→decode transition where large buffers are freed).
     protected int dspStepCount = 0;
-    /** Cast placeholder copies from the PREVIOUS DSP execution, awaiting close.
-     *  Non-staging DSP modes (e.g. EMULATED_REPLAY) install view slots directly
-     *  over these copies' DataBuffers — closing them immediately after execute
-     *  leaves those views dangling (task #52). Flushed at the start of the next
-     *  DSP execution, once the plan has re-minted its views over fresh casts. */
+    /** Session-owned materializations. Reclaim only after successful rebind/readback
+     *  proves that no pinned plan or returned output still borrows their storage. */
     protected final List<INDArray> pendingCastPlaceholderCloses = new ArrayList<>();
+    private final IdentityHashMap<INDArray, DataBuffer> castPlaceholderBuffers = new IdentityHashMap<>();
+    // Failed native rebinding is not proof of release. Returned aliases can also outlive
+    // latestRequestedOutputs (which is cleared at the start of each call).
+    private final Set<INDArray> castPlaceholdersUntilTeardown =
+            Collections.newSetFromMap(new IdentityHashMap<>());
     protected static final int TRIM_INTERVAL = Integer.getInteger(ND4JSystemProperties.DSP_TRIM_INTERVAL, 10);
 
     // ---- Variable sync tracking ----
@@ -635,33 +637,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         outputShapeCache.clear();
         outputArrayCache.clear();
 
-        // Flush any cast placeholder copies still pending deferred close (the
-        // per-call deferral in the DSP path holds at most ONE call's copies; this
-        // reset-site flush closes the LAST call's copies so nothing outlives the
-        // session — preserving the leak guarantee of eb949f1a99 while keeping the
-        // task #52 dangling-view fix (views may reference the copies mid-session).
-        if (!pendingCastPlaceholderCloses.isEmpty()) {
-            RuntimeException castCloseFailure = null;
-            // Remove by identity: ArrayList.remove(Object) would call equals() on a
-            // closed INDArray and throw "Passed in array was closed" during teardown.
-            List<INDArray> remaining = new ArrayList<>();
-            for (INDArray prevCast : pendingCastPlaceholderCloses) {
-                if (prevCast != null && !prevCast.wasClosed()) {
-                    try {
-                        prevCast.close();
-                    } catch (Exception e) {
-                        IllegalStateException one = new IllegalStateException(
-                                "Failed to close deferred cast placeholder", e);
-                        if (castCloseFailure == null) castCloseFailure = one;
-                        else castCloseFailure.addSuppressed(one);
-                        remaining.add(prevCast);
-                    }
-                }
-            }
-            pendingCastPlaceholderCloses.clear();
-            pendingCastPlaceholderCloses.addAll(remaining);
-            if (castCloseFailure != null) throw castCloseFailure;
-        }
+        // Executor and contexts have closed successfully, including all inactive pins.
+        // Failed/no-op closes remain owned so a subsequent teardown can retry them.
+        castPlaceholdersUntilTeardown.clear();
+        closeCastPlaceholderCopies(new ArrayList<>(pendingCastPlaceholderCloses));
         // Reset DSP step counter so the next session starts with immediate trim
         dspStepCount = 0;
         // Reset variable sync flag — weights may have changed between sessions
@@ -947,29 +926,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 try {
                     // Lightweight type casting: cast mismatched placeholder dtypes without
                     // the full preprocessPlaceholders overhead (arrayUseTracker iteration).
-                    //
-                    // First: close the PREVIOUS call's cast copies. They could not be closed
-                    // at the end of that call — DSP plans in modes that don't stage externals
-                    // (e.g. EMULATED_REPLAY) install view slots directly over the cast copy's
-                    // DataBuffer, and closing it post-exec left those views dangling
-                    // (DspHandle.getSlotOutput -> "null output slots in REPLAYING phase",
-                    // longViewChain/EMULATED_REPLAY, task #52). By the time the NEXT execution
-                    // starts, the plan re-resolves/re-mints views over the new casts, so the
-                    // previous copies are safe to free here.
-                    if (pendingCastPlaceholderCloses != null && !pendingCastPlaceholderCloses.isEmpty()) {
-                        DynamicShapePlanExecutor retainedExecutor = dynamicShapePlanExecutor;
-                        for (INDArray prevCast : pendingCastPlaceholderCloses) {
-                            if (prevCast != null && !prevCast.wasClosed()) {
-                                DataBuffer buffer = prevCast.data();
-                                // A frozen plan may still own this exact cast placeholder across a
-                                // prefill/decode shape switch. Plan-retained identity is authoritative.
-                                if ((retainedExecutor != null
-                                        && retainedExecutor.isRetainedExternalInput(prevCast))) continue;
-                                try { prevCast.close(); } catch (Exception ignored) { }
-                            }
-                        }
-                        pendingCastPlaceholderCloses.clear();
-                    }
                     Map<String, INDArray> dspPlaceholders = castPlaceholderTypes(placeholderValues);
                     // When listeners are active, augment allRequired with all op output variables
                     // so that DSP returns intermediate arrays. This enables activationAvailable
@@ -994,20 +950,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     Map<String, SDValue> dynamicPlanResults = executeDynamicShapePlanBased(
                             dag, dspPlaceholders, dspAllRequired, variables);
                     if (dynamicPlanResults == null) {
-                        // DSP not available — close any cast copies to prevent GPU memory leak.
-                        // castPlaceholderTypes returns a NEW map with cast arrays when types mismatch.
-                        // Without closing, these cast arrays leak each output() call.
-                        if (dspPlaceholders != placeholderValues && dspPlaceholders != null) {
-                            for (Map.Entry<String, INDArray> entry : dspPlaceholders.entrySet()) {
-                                INDArray castArr = entry.getValue();
-                                // Only close arrays that are NOT the same object as the original placeholder
-                                if (placeholderValues != null && castArr != placeholderValues.get(entry.getKey())) {
-                                    if (castArr != null && !castArr.wasClosed()) {
-                                        castArr.close();
-                                    }
-                                }
-                            }
-                        }
+                        releaseUnretainedPlaceholderCopies(Collections.emptyMap());
                     }
                     if (dynamicPlanResults != null) {
                         log.info("[EXEC-PATH] DSP path succeeded for {} outputs", dynamicPlanResults.size());
@@ -1038,25 +981,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         // in the correct order. Closing the workspace here causes the finally
                         // block's detach() to fail with "leaked workspace pointer" because
                         // the workspace is no longer active when detach checks isScopeActive().
-                        // DEFER (not close) the cast placeholder copies. The plan may have
-                        // installed view slots directly over a cast copy's DataBuffer (modes
-                        // that don't stage externals, e.g. EMULATED_REPLAY) — closing here
-                        // left those views dangling and DspHandle.getSlotOutput read a closed
-                        // parent ("1 null output slots in REPLAYING phase",
-                        // longViewChain/EMULATED_REPLAY, task #52; ground-truth trail:
-                        // DB_DELETE_BUFFERS of the view's parent fired between AUTO_SEAL and
-                        // the handle read). They are closed at the START of the next DSP
-                        // execution, after views re-mint over the fresh casts.
-                        if (dspPlaceholders != placeholderValues && dspPlaceholders != null) {
-                            for (Map.Entry<String, INDArray> entry : dspPlaceholders.entrySet()) {
-                                INDArray castArr = entry.getValue();
-                                if (placeholderValues != null && castArr != placeholderValues.get(entry.getKey())) {
-                                    if (castArr != null && !castArr.wasClosed()) {
-                                        pendingCastPlaceholderCloses.add(castArr);
-                                    }
-                                }
-                            }
-                        }
                         // Populate latestRequestedOutputs so that subsequent getArr() calls
                         // on ARRAY-type output variables can find the computed values.
                         // Without this, sd.outputAll() succeeds but variable.getArr() returns null.
@@ -1159,7 +1083,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         }
                         return ExecutionResult.builder().valueOutputs(returnableResults).build();
                     }
+                } catch (Error e) {
+                    releaseUnretainedPlaceholderCopiesAfterFailure(e);
+                    throw e;
                 } catch (Exception e) {
+                    releaseUnretainedPlaceholderCopiesAfterFailure(e);
                     log.error("DynamicShapePlan-based execution failed — no fallback allowed: {}", e.getMessage());
                     throw new RuntimeException("DSP execution failed. No fallback to standard path. " +
                             "Fix the DSP executor. Error: " + e.getMessage(), e);
@@ -1634,11 +1562,18 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         Map<String, INDArray> rawResults;
         try (AutoCloseable gfScope = ArrayCacheMemoryMgr.withGrowthFactor(1.0)) {
             rawResults = executor.execute(plan, placeholderArrays);
-        } catch (RuntimeException e) {
+        } catch (RuntimeException | Error e) {
+            // A partial native rebind may still borrow both old and new materializations.
+            // A later success on another handle must not reclaim these owners.
+            castPlaceholdersUntilTeardown.addAll(pendingCastPlaceholderCloses);
             throw e;
         } catch (Exception e) {
+            castPlaceholdersUntilTeardown.addAll(pendingCastPlaceholderCloses);
             throw new RuntimeException("DSP execution failed", e);
         }
+        // Shared inference/training boundary: native execution and readback are complete.
+        // Do this before debug reads, output wrapping, listeners or trimming can fail.
+        releaseUnretainedPlaceholderCopies(rawResults);
 
         // Debug: log key output values for diagnosis
         if (rawResults != null) {
@@ -4138,23 +4073,96 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             return placeholders;
         }
         Map<String, INDArray> out = null;
-        for (Map.Entry<String, INDArray> e : placeholders.entrySet()) {
-            SDVariable var = sameDiff.getVariable(e.getKey());
-            if (var != null && e.getValue() != null && e.getValue().dataType() != var.dataType()) {
-                if (out == null) {
-                    out = new HashMap<>(placeholders);
+        List<INDArray> created = new ArrayList<>();
+        // Pinned shape handles can outlive the caller's active workspace.
+        try (MemoryWorkspace ignored = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            for (Map.Entry<String, INDArray> e : placeholders.entrySet()) {
+                INDArray source = e.getValue();
+                if (source == null) continue;
+                SDVariable var = sameDiff.getVariable(e.getKey());
+                boolean cast = var != null && source.dataType() != var.dataType();
+                if (!cast && !source.isView()) continue;
+                if (out == null) out = new HashMap<>(placeholders);
+                INDArray copy = cast ? source.castTo(var.dataType()) : source.dup();
+                if (copy != source && !castPlaceholderBuffers.containsKey(copy)) {
+                    // Register before publishing or attempting the next materialization.
+                    pendingCastPlaceholderCloses.add(copy);
+                    castPlaceholderBuffers.put(copy, copy.isEmpty() ? null : copy.data());
+                    created.add(copy);
                 }
-                out.put(e.getKey(), e.getValue().castTo(var.dataType()));
-            } else if (e.getValue() != null && e.getValue().isView()) {
-                // Same boundary materialization as preprocessPlaceholders: strided
-                // views are mis-read by contiguous-assuming native paths.
-                if (out == null) {
-                    out = new HashMap<>(placeholders);
-                }
-                out.put(e.getKey(), e.getValue().dup());
+                out.put(e.getKey(), copy);
             }
+        } catch (RuntimeException | Error failure) {
+            // No new copy has reached DSP yet. Earlier calls' owners are unaffected.
+            try {
+                closeCastPlaceholderCopies(created);
+            } catch (RuntimeException | Error cleanupFailure) {
+                if (cleanupFailure != failure) failure.addSuppressed(cleanupFailure);
+            }
+            throw failure;
         }
         return out != null ? out : placeholders;
+    }
+
+    /** Close only unborrowed session allocations; caller inputs are never registered here. */
+    protected void releaseUnretainedPlaceholderCopies(Map<String, INDArray> rawResults) {
+        if (pendingCastPlaceholderCloses.isEmpty()) return;
+        IdentityHashMap<DataBuffer, Boolean> protectedBuffers = new IdentityHashMap<>();
+        if (dynamicShapePlanExecutor != null) {
+            dynamicShapePlanExecutor.collectRetainedExternalInputBuffers(protectedBuffers);
+        }
+        IdentityHashMap<DataBuffer, Boolean> returnedBuffers = new IdentityHashMap<>();
+        if (rawResults != null) {
+            for (INDArray result : rawResults.values()) {
+                if (result != null && !result.wasClosed() && !result.isEmpty()) {
+                    returnedBuffers.put(result.data(), Boolean.TRUE);
+                }
+            }
+        }
+        List<INDArray> reclaimable = new ArrayList<>();
+        for (INDArray copy : pendingCastPlaceholderCloses) {
+            DataBuffer buffer = castPlaceholderBuffers.get(copy);
+            if (buffer != null && returnedBuffers.containsKey(buffer)) {
+                castPlaceholdersUntilTeardown.add(copy);
+            }
+            if (!castPlaceholdersUntilTeardown.contains(copy)
+                    && !protectedBuffers.containsKey(buffer)) reclaimable.add(copy);
+        }
+        closeCastPlaceholderCopies(reclaimable);
+    }
+
+    protected void releaseUnretainedPlaceholderCopiesAfterFailure(Throwable failure) {
+        try {
+            releaseUnretainedPlaceholderCopies(Collections.emptyMap());
+        } catch (RuntimeException | Error cleanupFailure) {
+            if (cleanupFailure != failure) failure.addSuppressed(cleanupFailure);
+        }
+    }
+
+    private void closeCastPlaceholderCopies(Collection<INDArray> copies) {
+        RuntimeException closeFailure = null;
+        for (INDArray copy : copies) {
+            try {
+                DataBuffer buffer = castPlaceholderBuffers.get(copy);
+                // Empty arrays have no allocation and their close() is intentionally a no-op.
+                if (buffer != null) {
+                    if (!copy.wasClosed()) copy.close();
+                    if (!copy.wasClosed() || !buffer.wasClosed()) {
+                        throw new IllegalStateException("Placeholder materialization close did not release storage");
+                    }
+                }
+                // Never INDArray.equals/hashCode: they may read released device data.
+                pendingCastPlaceholderCloses.removeIf(candidate -> candidate == copy);
+                castPlaceholderBuffers.remove(copy);
+                castPlaceholdersUntilTeardown.remove(copy);
+            } catch (RuntimeException e) {
+                IllegalStateException one = new IllegalStateException(
+                        "Failed to close owned placeholder materialization", e);
+                if (closeFailure == null) closeFailure = one;
+                else closeFailure.addSuppressed(one);
+            }
+        }
+        if (closeFailure != null) throw closeFailure;
     }
 
     @Override

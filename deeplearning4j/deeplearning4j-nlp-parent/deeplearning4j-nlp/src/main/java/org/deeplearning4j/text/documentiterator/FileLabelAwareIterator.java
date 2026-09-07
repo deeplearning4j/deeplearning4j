@@ -116,7 +116,7 @@ public class FileLabelAwareIterator implements LabelAwareIterator {
         }
 
         /**
-         * Root folder for labels -> documents.
+         * Root folder for labels -&gt; documents.
          * Each subfolder name will be presented as label, and contents of this folder will be represented as LabelledDocument, with label attached
          *
          * @param folder folder to be scanned for labels and files

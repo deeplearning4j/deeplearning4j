@@ -489,7 +489,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      * {@link InputType} class, in the same order in which the inputs were defined in the original configuration.<br>
      * For example, in a network with two inputs: a convolutional input (28x28x1 images) and feed forward inputs, use
      * {@code .addPreProcessors(InputType.convolutional(28,28,1),InputType.feedForward())}.<br>
-     * For the CNN->Dense and CNN->RNN transitions, the nIns on the Dense/RNN layers will also be added automatically.
+     * For the CNN-&gt;Dense and CNN-&gt;RNN transitions, the nIns on the Dense/RNN layers will also be added automatically.
      * <b>NOTE</b>: This method will be called automatically when using the
      * {@link GraphBuilder#setInputTypes(InputType...)} functionality.
      * See that method for details.
@@ -503,7 +503,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      * {@link InputType} class, in the same order in which the inputs were defined in the original configuration.<br>
      * For example, in a network with two inputs: a convolutional input (28x28x1 images) and feed forward inputs, use
      * {@code .addPreProcessors(InputType.convolutional(28,28,1),InputType.feedForward())}.<br>
-     * For the CNN->Dense and CNN->RNN transitions, the nIns on the Dense/RNN layers will also be added automatically.
+     * For the CNN-&gt;Dense and CNN-&gt;RNN transitions, the nIns on the Dense/RNN layers will also be added automatically.
      * <b>NOTE</b>: This method will be called automatically when using the
      * {@link GraphBuilder#setInputTypes(InputType...)} functionality.
      * See that method for details.
@@ -520,7 +520,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      * {@link InputType} class, in the same order in which the inputs were defined in the original configuration.<br>
      * For example, in a network with two inputs: a convolutional input (28x28x1 images) and feed forward inputs, use
      * {@code .addPreProcessors(InputType.convolutional(28,28,1),InputType.feedForward())}.<br>
-     * For the CNN->Dense and CNN->RNN transitions, the nIns on the Dense/RNN layers will also be added automatically.
+     * For the CNN-&gt;Dense and CNN-&gt;RNN transitions, the nIns on the Dense/RNN layers will also be added automatically.
      * <b>NOTE</b>: This method will be called automatically when using the
      * {@link GraphBuilder#setInputTypes(InputType...)} functionality.
      * See that method for details.
@@ -548,7 +548,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     /**
      * For the given input shape/type for the network, return a map of activation sizes for each layer and vertex
      * in the graph. Note that this method can also add preprocessors if required (to handle transitions between some
-     * layer types such as convolutional -> dense, for example)
+     * layer types such as convolutional -&gt; dense, for example)
      * @param addPreprocIfNecessary     If true: add any required preprocessors, in the process of calculating the layer
      *                                  activation sizes
      * @param overrideInputs            whether to forcibly override inputs when
@@ -629,7 +629,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     /**
      * For the given input shape/type for the network, return a map of activation sizes for each layer and vertex
      * in the graph. Note that this method can also add preprocessors if required (to handle transitions between some
-     * layer types such as convolutional -> dense, for example)
+     * layer types such as convolutional -&gt; dense, for example)
      * @param addPreprocIfNecessary     If true: add any required preprocessors, in the process of calculating the layer
      *                                  activation sizes
      * @param inputTypes                Input types for the network
@@ -848,7 +848,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * This is the k1 parameter on pg23 of
          * <a href="http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf">http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf</a>
          *
-         * @param forwardLength Forward length > 0, >= backwardLength
+         * @param forwardLength Forward length &gt; 0, &gt;= backwardLength
          */
         public GraphBuilder tBPTTForwardLength(int forwardLength) {
             this.tbpttFwdLength = forwardLength;
@@ -861,7 +861,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * This is the k2 parameter on pg23 of
          * <a href="http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf">http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf</a>
          *
-         * @param backwardLength <= forwardLength
+         * @param backwardLength &lt;= forwardLength
          */
         public GraphBuilder tBPTTBackwardLength(int backwardLength) {
             this.tbpttBackLength = backwardLength;
@@ -873,7 +873,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * Only applicable when doing backpropType(BackpropType.TruncatedBPTT)<br>
          * See: <a href="http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf">http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf</a>
          *
-         * @param tbpttLength length > 0
+         * @param tbpttLength length &gt; 0
          */
         public GraphBuilder tBPTTLength(int tbpttLength){
             tBPTTForwardLength(tbpttLength);

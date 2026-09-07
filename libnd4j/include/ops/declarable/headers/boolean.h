@@ -31,7 +31,7 @@ namespace ops {
  * This is scalar boolean op.
  * Both operands should be scalars.
  *
- * Returns true if x < y
+ * Returns true if x &lt; y
  */
 #if NOT_EXCLUDED(OP_lt_scalar)
 DECLARE_BOOLEAN_OP(lt_scalar, 2, true);
@@ -41,7 +41,7 @@ DECLARE_BOOLEAN_OP(lt_scalar, 2, true);
  * This is scalar boolean op.
  * Both operands should be scalars.
  *
- * Returns true if x > y
+ * Returns true if x &gt; y
  */
 #if NOT_EXCLUDED(OP_gt_scalar)
 DECLARE_BOOLEAN_OP(gt_scalar, 2, true);
@@ -51,7 +51,7 @@ DECLARE_BOOLEAN_OP(gt_scalar, 2, true);
  * This is scalar boolean op.
  * Both operands should be scalars.
  *
- * Returns true if x <= y
+ * Returns true if x &lt;= y
  */
 #if NOT_EXCLUDED(OP_lte_scalar)
 DECLARE_BOOLEAN_OP(lte_scalar, 2, true);
@@ -61,7 +61,7 @@ DECLARE_BOOLEAN_OP(lte_scalar, 2, true);
  * This is scalar boolean op.
  * Both operands should be scalars.
  *
- * Returns true if x >= y
+ * Returns true if x &gt;= y
  */
 #if NOT_EXCLUDED(OP_gte_scalar)
 DECLARE_BOOLEAN_OP(gte_scalar, 2, true);
@@ -115,9 +115,9 @@ DECLARE_CUSTOM_OP(select, 3, 1, false, 0, 0);
  *  The output of the op is dynamic in size and returns a flat vector of elements
  *  that return true on the given condition.
  *  In numpy parlance, most people might understand:
- *  a[a > 2]
+ *  a[a &gt; 2]
  *  where a is a numpy array and the condition is true when an element is
- *  > 2. Libnd4j already implements a number of pre defined conditions.
+ *  &gt; 2. Libnd4j already implements a number of pre defined conditions.
  * @tparam T
  */
 #if NOT_EXCLUDED(OP_choose)
@@ -125,14 +125,14 @@ DECLARE_CUSTOM_OP(choose, -1, 2, false, -2, -1);
 #endif
 
 /**
- * This op takes 1 n-dimensional array as input, and returns true if for every adjacent pair we have x[i] <= x[i+1].
+ * This op takes 1 n-dimensional array as input, and returns true if for every adjacent pair we have x[i] &lt;= x[i+1].
  */
 #if NOT_EXCLUDED(OP_is_non_decreasing)
 DECLARE_BOOLEAN_OP(is_non_decreasing, 1, true);
 #endif
 
 /**
- * This op takes 1 n-dimensional array as input, and returns true if for every adjacent pair we have x[i] < x[i+1].
+ * This op takes 1 n-dimensional array as input, and returns true if for every adjacent pair we have x[i] &lt; x[i+1].
  */
 #if NOT_EXCLUDED(OP_is_strictly_increasing)
 DECLARE_BOOLEAN_OP(is_strictly_increasing, 1, true);

@@ -36,7 +36,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * [1, 2, 3, 1] -> [0, 0, 1, 0]
+ * [1, 2, 3, 1] -&gt; [0, 0, 1, 0]
  * @author Adam Gibson
  */
 public class IsMax extends DynamicCustomOp {

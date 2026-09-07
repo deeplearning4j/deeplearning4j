@@ -32,7 +32,7 @@ import java.util.Random;
  * <p>This sampler applies transformations in order:</p>
  * <ol>
  *   <li>Temperature scaling (if temperature != 1.0)</li>
- *   <li>Top-K filtering (if topK > 0)</li>
+ *   <li>Top-K filtering (if topK &gt; 0)</li>
  *   <li>Top-P (nucleus) filtering (if {@code topP < 1.0})</li>
  *   <li>Softmax normalization</li>
  *   <li>Multinomial sampling</li>

@@ -113,7 +113,7 @@ public class TensorNameMapper {
 
     /**
      * Extract the layer name from a parameter name.
-     * For example, "layer1.0.conv1.weight" -> "layer1.0.conv1"
+     * For example, "layer1.0.conv1.weight" -&gt; "layer1.0.conv1"
      *
      * @param paramName the parameter name
      * @return the layer name
@@ -128,7 +128,7 @@ public class TensorNameMapper {
 
     /**
      * Extract the parameter type from a name.
-     * For example, "layer1.0.conv1.weight" -> "weight"
+     * For example, "layer1.0.conv1.weight" -&gt; "weight"
      *
      * @param paramName the parameter name
      * @return the parameter type

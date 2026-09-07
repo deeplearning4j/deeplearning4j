@@ -56,12 +56,12 @@ public abstract class AbstractDependencyTracker<T, D> {
     }
 
     /**
-     * @return A new map where the dependents (i.e., Y in "X -> Y") are the key
+     * @return A new map where the dependents (i.e., Y in "X -&gt; Y") are the key
      */
     protected abstract IDependencyMap<T, ?> newTMap();
 
     /**
-     * @return A new set where the dependents (i.e., Y in "X -> Y") are the key
+     * @return A new set where the dependents (i.e., Y in "X -&gt; Y") are the key
      */
     protected abstract Set<T> newTSet();
 
@@ -177,8 +177,8 @@ public abstract class AbstractDependencyTracker<T, D> {
 
     /**
      * Mark the specified value as satisfied.
-     * For example, if two dependencies have been previously added (X -> Y) and (X
-     * -> A) then after the markSatisfied(X, true)
+     * For example, if two dependencies have been previously added (X -&gt; Y) and (X
+     * -&gt; A) then after the markSatisfied(X, true)
      * call, both of these dependencies are considered satisfied.
      *
      * @param x         Value to mark
@@ -271,7 +271,7 @@ public abstract class AbstractDependencyTracker<T, D> {
     }
 
     /**
-     * Check whether any dependencies x -> y exist, for y (i.e., anything previously
+     * Check whether any dependencies x -&gt; y exist, for y (i.e., anything previously
      * added by {@link #addDependency(Object, Object)}
      * or {@link #addOrDependency(Object, Object, Object)}
      *
@@ -283,7 +283,7 @@ public abstract class AbstractDependencyTracker<T, D> {
     }
 
     /**
-     * Get all dependencies x, for x -> y, and (x1 or x2) -> y
+     * Get all dependencies x, for x -&gt; y, and (x1 or x2) -&gt; y
      *
      * @param y Dependent to get dependencies for
      * @return List of dependencies
@@ -296,7 +296,7 @@ public abstract class AbstractDependencyTracker<T, D> {
     }
 
     /**
-     * Add a dependency: y depends on x, as in x -> y
+     * Add a dependency: y depends on x, as in x -&gt; y
      *
      * @param y The dependent
      * @param x The dependee that is required for Y
@@ -379,7 +379,7 @@ public abstract class AbstractDependencyTracker<T, D> {
     }
 
     /**
-     * Remove a dependency (x -> y)
+     * Remove a dependency (x -&gt; y)
      *
      * @param y The dependent that currently requires X
      * @param x The dependee that is no longer required for Y
@@ -428,7 +428,7 @@ public abstract class AbstractDependencyTracker<T, D> {
     }
 
     /**
-     * Add an "Or" dependency: Y requires either x1 OR x2 - i.e., (x1 or x2) -> Y<br>
+     * Add an "Or" dependency: Y requires either x1 OR x2 - i.e., (x1 or x2) -&gt; Y<br>
      * If either x1 or x2 (or both) are marked satisfied via
      * {@link #markSatisfied(Object, boolean)} then the
      * dependency is considered satisfied
@@ -455,18 +455,18 @@ public abstract class AbstractDependencyTracker<T, D> {
 
     /**
      * @return True if there are any new/unprocessed "all satisfied dependents" (Ys
-     *         in X->Y)
+     *         in X-&gt;Y)
      */
     public boolean hasNewAllSatisfied() {
         return !allSatisfiedQueue.isEmpty();
     }
 
     /**
-     * Returns the next new dependent (Y in X->Y) that has all dependees (Xs) marked
+     * Returns the next new dependent (Y in X-&gt;Y) that has all dependees (Xs) marked
      * as satisfied via {@link #markSatisfied(Object, boolean)}
      * Throws an exception if {@link #hasNewAllSatisfied()} returns false.<br>
      * Note that once a value has been retrieved from here, no new dependencies of
-     * the form (X -> Y) can be added for this value;
+     * the form (X -&gt; Y) can be added for this value;
      * the value is considered "processed" at this point.
      *
      * @return The next new "all satisfied dependent"

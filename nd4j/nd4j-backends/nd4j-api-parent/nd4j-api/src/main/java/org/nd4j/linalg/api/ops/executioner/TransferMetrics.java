@@ -581,7 +581,7 @@ public class TransferMetrics {
     }
 
     /**
-     * Statistics for a specific transfer route (source -> target).
+     * Statistics for a specific transfer route (source -&gt; target).
      */
     private static class RouteStats {
         final DeviceDescriptor source;

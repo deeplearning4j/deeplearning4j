@@ -122,7 +122,7 @@ public class Operands {
     }
 
     /**
-     * This method returns contents of this entity as collection of key->value pairs
+     * This method returns contents of this entity as collection of key-&gt;value pairs
      * @return
      */
     public Collection<Pair<NodeDescriptor, INDArray>> asCollection() {

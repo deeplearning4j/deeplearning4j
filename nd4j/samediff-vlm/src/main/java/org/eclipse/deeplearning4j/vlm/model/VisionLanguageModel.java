@@ -148,7 +148,7 @@ public class VisionLanguageModel implements AutoCloseable {
 
     /**
      * Cached GenerationPipeline for multi-page decode reuse.
-     * Created on first page with fixedBuffers enabled (maxPrefillLength > 0)
+     * Created on first page with fixedBuffers enabled (maxPrefillLength &gt; 0)
      * so the frozen DSP plan is reused across pages without recompilation.
      */
     private GenerationPipeline cachedPipeline;

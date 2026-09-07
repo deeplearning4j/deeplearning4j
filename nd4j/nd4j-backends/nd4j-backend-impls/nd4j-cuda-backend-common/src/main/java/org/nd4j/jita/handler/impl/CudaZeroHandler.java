@@ -201,7 +201,7 @@ public class CudaZeroHandler implements MemoryHandler {
     /**
      * Copies specific chunk of memory from one storage to another
      *
-     * Possible directions:  HOST -> DEVICE, DEVICE -> HOST
+     * Possible directions:  HOST -&gt; DEVICE, DEVICE -&gt; HOST
      *
      * @param currentStatus
      * @param targetStatus
@@ -377,7 +377,7 @@ public class CudaZeroHandler implements MemoryHandler {
     /**
      * Special memcpy version, addressing shapeInfoDataBuffer copies
      *
-     * PLEASE NOTE: Blocking H->H, Async H->D
+     * PLEASE NOTE: Blocking H-&gt;H, Async H-&gt;D
      *
      * @param dstBuffer
      * @param srcPointer

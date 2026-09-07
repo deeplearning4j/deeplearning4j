@@ -167,9 +167,9 @@ public class TensorParallelRunner implements Closeable {
      * <p>
      * Convention:
      * <ul>
-     *   <li>Names containing "gate_proj" or "up_proj" or "q_proj" or "k_proj" or "v_proj" -> COLUMN</li>
-     *   <li>Names containing "down_proj" or "o_proj" -> ROW</li>
-     *   <li>Everything else -> REPLICATE</li>
+     *   <li>Names containing "gate_proj" or "up_proj" or "q_proj" or "k_proj" or "v_proj" -&gt; COLUMN</li>
+     *   <li>Names containing "down_proj" or "o_proj" -&gt; ROW</li>
+     *   <li>Everything else -&gt; REPLICATE</li>
      * </ul>
      *
      * @return this runner for chaining

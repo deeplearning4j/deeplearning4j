@@ -144,7 +144,7 @@ DECLARE_CUSTOM_OP(pad, 2, 1, false, 0, 1);
  * TArgs[0] - type of elements of output array, default value is 5 (float)
  *
  * Input integer arguments:
- * IArgs[0]       - order of output identity matrix, 99 -> 'c'-order, 102 -> 'f'-order
+ * IArgs[0]       - order of output identity matrix, 99 -&gt; 'c'-order, 102 -&gt; 'f'-order
  * IArgs[1]       - the number of rows in output inner-most 2D identity matrix
  * IArgs[2]       - optional, the number of columns in output inner-most 2D identity matrix, if this argument is not
  * provided then it is taken to be equal to number of rows IArgs[3,4,...] - optional, shape of batch, output matrix will

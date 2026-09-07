@@ -129,7 +129,7 @@ public abstract class BaseBuilder {
      * Only applicable when doing backpropType(BackpropType.TruncatedBPTT)<br>
      * See: <a href="http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf">http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf</a>
      *
-     * @param bpttLength length > 0
+     * @param bpttLength length &gt; 0
      */
     public  <T extends BaseBuilder> T tBPTTLength(int bpttLength) {
         tBPTTForwardLength(bpttLength);
@@ -146,7 +146,7 @@ public abstract class BaseBuilder {
      * This is the k1 parameter on pg23 of
      * <a href="http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf">http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf</a>
      *
-     * @param forwardLength Forward length > 0, >= backwardLength
+     * @param forwardLength Forward length &gt; 0, &gt;= backwardLength
      */
     public  <T extends BaseBuilder> T tBPTTForwardLength(int forwardLength) {
         this.tbpttFwdLength = forwardLength;
@@ -159,7 +159,7 @@ public abstract class BaseBuilder {
      * This is the k2 parameter on pg23 of
      * <a href="http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf">http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf</a>
      *
-     * @param backwardLength <= forwardLength
+     * @param backwardLength &lt;= forwardLength
      */
     public  <T extends BaseBuilder> T tBPTTBackwardLength(int backwardLength) {
         this.tbpttBackLength = backwardLength;

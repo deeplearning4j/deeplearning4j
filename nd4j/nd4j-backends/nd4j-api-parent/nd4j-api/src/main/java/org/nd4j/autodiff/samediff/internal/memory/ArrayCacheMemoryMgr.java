@@ -457,7 +457,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
     /**
      * Try to find a cached array with a buffer large enough for the requested shape.
-     * Uses TreeMap.ceilingEntry to find the smallest buffer >= requiredElements.
+     * Uses TreeMap.ceilingEntry to find the smallest buffer &gt;= requiredElements.
      * Returns null if no suitable buffer is found.
      *
      * @param dataType the data type

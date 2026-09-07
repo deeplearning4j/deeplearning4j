@@ -1428,7 +1428,7 @@ public final class DspPlanAssertions {
 
     /**
      * Assert no segment is executing in SLOT_BY_SLOT fallback mode.
-     * Checks that every segment has a replay mode > 0 (i.e., not slot-by-slot).
+     * Checks that every segment has a replay mode &gt; 0 (i.e., not slot-by-slot).
      */
     public static void assertNoSlotBySlotFallback(SameDiff sd) {
         assertNoSlotBySlotFallback(sd, null);
@@ -1756,7 +1756,7 @@ public final class DspPlanAssertions {
     // ═══════════════════════════════════════════════════════════════════════
 
     /**
-     * Assert the frozen plan is fully sealed (build pass count >= 2).
+     * Assert the frozen plan is fully sealed (build pass count &gt;= 2).
      * A build pass count of 0 means the plan hasn't warmed up,
      * 1 means it hasn't compiled, 2+ means it's sealed and ready for replay.
      */
@@ -2205,8 +2205,8 @@ public final class DspPlanAssertions {
     }
 
     /**
-     * Assert that buffer coloring is consistent: if applied, numColors > 0
-     * and bytesSaved >= 0. If not applied, numColors == 0.
+     * Assert that buffer coloring is consistent: if applied, numColors &gt; 0
+     * and bytesSaved &gt;= 0. If not applied, numColors == 0.
      */
     public static void assertColoringConsistent(DspHandle handle, String context) {
         boolean applied = handle.bufferColoringApplied();

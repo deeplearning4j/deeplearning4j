@@ -32,7 +32,7 @@ import org.nd4j.common.primitives.Pair;
 /**
  * Thresholded RELU
  *
- * f(x) = x for x > theta, f(x) = 0 otherwise. theta defaults to 1.0
+ * f(x) = x for x &gt; theta, f(x) = 0 otherwise. theta defaults to 1.0
  *
  * @author Max Pumperla
  */

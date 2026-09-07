@@ -322,7 +322,7 @@ public class HorizontalFusionOptimizations extends BaseOptimizerSet {
          * resolveRank wrapper that returns -1 when rank cannot be determined.
          * Returns -1 to signal that fusion should be skipped (unknown rank makes
          * stridedSlice configuration unsafe — guessing 2 when truth is 3 causes
-         * strided_slice end_index > dimension errors at runtime).
+         * strided_slice end_index &gt; dimension errors at runtime).
          */
         private int resolveRankSafe(SameDiff sd, String varName, INDArray weight) {
             int rank = resolveRank(sd, varName, weight);

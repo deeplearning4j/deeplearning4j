@@ -2374,7 +2374,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * A {@link TrainingConfig} must be set via {@link #setTrainingConfig(TrainingConfig)} before
      * training can be performed.
      *
-     * @param placeholders name -> array map holding every feature and label placeholder for one minibatch
+     * @param placeholders name -&gt; array map holding every feature and label placeholder for one minibatch
      * @param listeners    additional listeners to use during this operation
      * @return a {@link History} object containing the history information for this training iteration
      */
@@ -2419,7 +2419,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * A special case of {@link #fit()}.
      *
      * @param iter                The iterator to train the SameDiff instance with
-     * @param numEpochs           The number of epochs for training. Must be > 0
+     * @param numEpochs           The number of epochs for training. Must be &gt; 0
      * @param validationIter      The DataSetIterator to use for validation (null to skip validation)
      * @param validationFrequency The frequency with which to run validation.  1 is every epoch, 2 is every other, etc.
      * @param listeners           Additional listeners to use during this operation
@@ -2436,7 +2436,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * A special case of {@link #fit()}.
      *
      * @param iter      The iterator to train the SameDiff instance with
-     * @param numEpochs The number of epochs for training. Must be > 0
+     * @param numEpochs The number of epochs for training. Must be &gt; 0
      * @param listeners Additional listeners to use during this operation
      * @return a {@link History} object containing the history information for this training operation
      * (evaluations specified in the {@link TrainingConfig}, loss values, and timing information).
@@ -2454,7 +2454,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * A special case of {@link #fit()}.
      *
      * @param iter                The iterator to train the SameDiff instance with
-     * @param numEpochs           The number of epochs for training. Must be > 0
+     * @param numEpochs           The number of epochs for training. Must be &gt; 0
      * @param validationIter      The MultiDataSetIterator to use for validation (null to skip validation)
      * @param validationFrequency The frequency with which to run validation.  1 is every epoch, 2 is every other, etc.
      * @param listeners           Additional listeners to use during this operation
@@ -2471,7 +2471,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * A special case of {@link #fit()}.
      *
      * @param iter      The iterator to train the SameDiff instance with
-     * @param numEpochs The number of epochs for training. Must be > 0
+     * @param numEpochs The number of epochs for training. Must be &gt; 0
      * @param listeners Additional listeners to use during this operation
      * @return a {@link History} object containing the history information for this training operation
      * (evaluations specified in the {@link TrainingConfig}, loss values, and timing information).
@@ -8776,7 +8776,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     /**
      * Save an optimized SameDiff instance to a ZIP file (.sdz format).
      * Graph optimizations are applied before saving to produce a more efficient model for inference.
-     * This includes operator fusion (e.g., matmul+add -> xw_plus_b), constant folding, and dead code elimination.
+     * This includes operator fusion (e.g., matmul+add -&gt; xw_plus_b), constant folding, and dead code elimination.
      *
      * @param file             The file to save to (should end with .sdz)
      * @param saveUpdaterState Whether to save updater state (typically false for inference)

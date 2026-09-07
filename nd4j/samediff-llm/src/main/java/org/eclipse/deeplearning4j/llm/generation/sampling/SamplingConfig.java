@@ -36,7 +36,7 @@ import org.eclipse.deeplearning4j.llm.generation.constraint.ConstraintConfig;
  *   <li><b>Greedy:</b> Always select the highest probability token (temperature=0 or doSample=false)</li>
  *   <li><b>Temperature:</b> Scale logits before softmax to control randomness</li>
  *   <li><b>Top-K:</b> Only sample from the K highest probability tokens</li>
- *   <li><b>Top-P (Nucleus):</b> Sample from smallest set of tokens with cumulative probability >= p</li>
+ *   <li><b>Top-P (Nucleus):</b> Sample from smallest set of tokens with cumulative probability &gt;= p</li>
  *   <li><b>Repetition Penalty:</b> Reduce probability of recently generated tokens</li>
  * </ul>
  *
@@ -99,7 +99,7 @@ public class SamplingConfig {
 
     /**
      * Penalty applied to tokens that have already been generated.
-     * Values > 1.0 discourage repetition.
+     * Values &gt; 1.0 discourage repetition.
      * Values &lt; 1.0 encourage repetition.
      * Default: 1.0 (no penalty)
      */
@@ -141,7 +141,7 @@ public class SamplingConfig {
     /**
      * Typical-p (locally typical sampling) threshold — Meister et al. 2023.
      * Keeps tokens with the smallest entropy deviation |−log p_i − H| until their
-     * cumulative mass >= typicalP, then masks the rest to -inf.
+     * cumulative mass &gt;= typicalP, then masks the rest to -inf.
      * Values in (0, 1) enable the filter; 1.0 (default) = off.
      * Applied after temperature scaling and standard truncation filters.
      * Validation: must be in (0, 1] — values outside this range are rejected by validate().
@@ -152,7 +152,7 @@ public class SamplingConfig {
     /**
      * XTC (Exclude Top Choices) probability — probability of applying XTC each step.
      * 0.0 (default) = always skip; 1.0 = always apply.
-     * When applied: among tokens with softmax probability >= xtcThreshold, mask all
+     * When applied: among tokens with softmax probability &gt;= xtcThreshold, mask all
      * EXCEPT the lowest-probability one, encouraging diversity by removing the model's
      * most confident choices.
      * Validation: must be in [0, 1].
@@ -161,7 +161,7 @@ public class SamplingConfig {
     private double xtcProbability = 0.0;
 
     /**
-     * XTC per-token probability threshold — a token must have softmax probability >= this
+     * XTC per-token probability threshold — a token must have softmax probability &gt;= this
      * value to be eligible for XTC exclusion. Default 0.1.
      * Validation: must be in (0, 0.5].
      */

@@ -3775,7 +3775,7 @@ public class Nd4j {
      * Generate an array with random values generated according to a binomial distribution with the specified
      * number of trials and probability
      *
-     * @param nTrials Number of trials. Must be >= 0
+     * @param nTrials Number of trials. Must be &gt;= 0
      * @param p       Probability. Must be in range 0 to 1
      * @param shape   Shape of the result array
      * @return Result array
@@ -3788,7 +3788,7 @@ public class Nd4j {
      * Fill the target array with random values generated according to a binomial distribution with the specified
      * number of trials and probability
      *
-     * @param nTrials Number of trials. Must be >= 0
+     * @param nTrials Number of trials. Must be &gt;= 0
      * @param p       Probability. Must be in range 0 to 1
      * @param target  Result array
      * @return Result array
@@ -3802,7 +3802,7 @@ public class Nd4j {
     /**
      * Exponential distribution: P(x) = lambda * exp(-lambda * x)
      *
-     * @param lambda Must be > 0
+     * @param lambda Must be &gt; 0
      * @param shape  Shape of the array to generate
      */
     public static INDArray randomExponential(double lambda, long... shape) {
@@ -3812,7 +3812,7 @@ public class Nd4j {
     /**
      * Exponential distribution: P(x) = lambda * exp(-lambda * x)
      *
-     * @param lambda Must be > 0
+     * @param lambda Must be &gt; 0
      * @param target Array to hold the result
      */
     public static INDArray randomExponential(double lambda, INDArray target) {
@@ -5130,7 +5130,7 @@ public class Nd4j {
 
     /**
      * Concatenates two matrices vertically. Matrices must have identical numbers of columns.<br>
-     * Note that for vstack on rank 1 arrays, this is equivalent to {@link Nd4j#pile(INDArray...)}. Example: vstack([3],[3]) -> [2,3]
+     * Note that for vstack on rank 1 arrays, this is equivalent to {@link Nd4j#pile(INDArray...)}. Example: vstack([3],[3]) -&gt; [2,3]
      *
      * @param arrs Arrays to vstack
      */
@@ -5146,7 +5146,7 @@ public class Nd4j {
 
     /**
      * Concatenates two matrices vertically. Matrices must have identical numbers of columns.<br>
-     * Note that for vstack on rank 1 arrays, this is equivalent to {@link Nd4j#pile(INDArray...)}. Example: vstack([3],[3]) -> [2,3]
+     * Note that for vstack on rank 1 arrays, this is equivalent to {@link Nd4j#pile(INDArray...)}. Example: vstack([3],[3]) -&gt; [2,3]
      *
      * @param arrs Arrays to vstack
      */
@@ -8253,7 +8253,7 @@ public class Nd4j {
      *
      * Usage:
      * <pre>
-     * CompiledGraphFunction fn = Nd4j.compile(2, inputs -> {
+     * CompiledGraphFunction fn = Nd4j.compile(2, inputs -&gt; {
      *     INDArray mm = Nd4j.matmul(inputs[0], inputs[1]);
      *     return new INDArray[]{Nd4j.nn.relu(mm)};
      * });

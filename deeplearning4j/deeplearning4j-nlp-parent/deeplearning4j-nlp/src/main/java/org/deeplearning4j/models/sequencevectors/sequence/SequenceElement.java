@@ -199,7 +199,7 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
     /**
      *  Returns index in Huffman tree
      *
-     * @return index >= 0, if tree was built, -1 otherwise
+     * @return index &gt;= 0, if tree was built, -1 otherwise
      */
     public int getIndex() {
         return index;

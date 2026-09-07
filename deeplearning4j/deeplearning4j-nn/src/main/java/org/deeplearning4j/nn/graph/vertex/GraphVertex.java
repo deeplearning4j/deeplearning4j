@@ -41,7 +41,7 @@ public interface GraphVertex extends Trainable, Serializable {
     int getVertexIndex();
 
     /** Get the number of input arrays. For example, a Layer may have only one input array, but in general a GraphVertex
-     * may have an arbtrary (>=1) number of input arrays (for example, from multiple other layers)
+     * may have an arbtrary (&gt;=1) number of input arrays (for example, from multiple other layers)
      */
     int getNumInputArrays();
 

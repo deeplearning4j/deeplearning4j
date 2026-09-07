@@ -113,7 +113,7 @@ public class Buffer implements Comparable, Cloneable {
 
     /**
      * Change the capacity of the backing storage.
-     * The data is preserved if newCapacity >= getCount().
+     * The data is preserved if newCapacity &gt;= getCount().
      * @param newCapacity The new capacity in bytes.
      */
     public void setCapacity(int newCapacity) {

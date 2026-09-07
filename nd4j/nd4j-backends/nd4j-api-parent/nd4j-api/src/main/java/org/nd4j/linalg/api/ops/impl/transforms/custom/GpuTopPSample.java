@@ -38,7 +38,7 @@ import java.util.List;
  * computes cumulative sums to find the smallest set of tokens whose cumulative
  * probability exceeds p, then samples from that nucleus.
  * <p>
- * Pipeline: logits -> temperature scaling -> softmax -> sort -> cumsum -> nucleus filter -> sample
+ * Pipeline: logits -&gt; temperature scaling -&gt; softmax -&gt; sort -&gt; cumsum -&gt; nucleus filter -&gt; sample
  * <p>
  * Supports additional penalty parameters for controlling repetition:
  * <ul>

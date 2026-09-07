@@ -47,7 +47,7 @@ public class KTOConfig extends RLAlignmentConfig {
 
     /**
      * Loss aversion weight for undesirable responses.
-     * Values > 1.0 penalize undesirable responses more heavily.
+     * Values &gt; 1.0 penalize undesirable responses more heavily.
      * Default: 1.0
      */
     @lombok.Builder.Default

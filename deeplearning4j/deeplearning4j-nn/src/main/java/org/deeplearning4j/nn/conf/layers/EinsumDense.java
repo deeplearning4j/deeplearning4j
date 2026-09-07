@@ -42,9 +42,9 @@ import java.util.*;
  * how input dimensions are contracted with weight dimensions to produce output.
  *
  * Common equations:
- * - "ab,bc->ac": Standard dense layer (input: [batch, features], output: [batch, units])
- * - "abc,cd->abd": Dense on last dimension (input: [batch, seq, features], output: [batch, seq, units])
- * - "...x,xy->...y": Dense on last dimension for arbitrary input rank
+ * - "ab,bc-&gt;ac": Standard dense layer (input: [batch, features], output: [batch, units])
+ * - "abc,cd-&gt;abd": Dense on last dimension (input: [batch, seq, features], output: [batch, seq, units])
+ * - "...x,xy-&gt;...y": Dense on last dimension for arbitrary input rank
  *
  * @author Adam Gibson
  */
@@ -148,7 +148,7 @@ public class EinsumDense extends SameDiffLayer {
 
         /**
          * Set the einsum equation.
-         * The equation should have format "input_subscripts,weight_subscripts->output_subscripts"
+         * The equation should have format "input_subscripts,weight_subscripts-&gt;output_subscripts"
          *
          * @param equation The einsum equation string
          */
