@@ -90,7 +90,7 @@ public class ValidationConfig {
 
     /**
      * Returns the absolute tolerance for a given op name.
-     * Falls back to {@link #getDefaultAbsTol()} if no per-op override exists.
+     * Uses the default absolute tolerance (available via {@code getDefaultAbsTol()}) if no per-op override exists.
      */
     public double getAbsTolForOp(String opName) {
         Double override = opAbsTol.get(opName);

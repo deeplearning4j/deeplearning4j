@@ -71,7 +71,6 @@
         <lombok.version>1.18.44</lombok.version>
         <derby.version>10.13.1.1</derby.version>
         <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
-        <logback.version>1.2.3</logback.version>
         <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
         <jdk9.exports>--add-opens java.base/java.lang.ref=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED  --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/sun.nio.cs=ALL-UNNAMED --add-opens=java.base/sun.security.action=ALL-UNNAMED --add-opens=java.base/sun.util.calendar=ALL-UNNAMED --add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED --add-exports java.base/jdk.internal.misc=ALL-UNNAMED --add-exports java.base/java.nio=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED</jdk9.exports>
         <maven.compiler.source>11</maven.compiler.source>
@@ -88,8 +87,6 @@
 
         <java.version>11</java.version>
         <maven-shade-plugin.version>3.5.1</maven-shade-plugin.version>
-        <log4j2.version>2.17.2</log4j2.version>
-        <netty.version>4.1.74.Final</netty.version>
         <test.heap.size>8g</test.heap.size>
         <!-- maxPhysicalBytes must be larger than heap to accommodate off-heap NDArrays + CUDA driver overhead -->
         <test.offheap.size>24g</test.offheap.size>
@@ -187,7 +184,7 @@
 
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-slf4j-impl</artifactId>
+                <artifactId>log4j-slf4j2-impl</artifactId>
                 <version>${log4j2.version}</version>
             </dependency>
             <dependency>

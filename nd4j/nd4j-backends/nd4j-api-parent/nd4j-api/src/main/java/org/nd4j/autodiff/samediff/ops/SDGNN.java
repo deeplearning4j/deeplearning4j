@@ -35,8 +35,8 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Approximate Personalized Propagation of Neural Predictions (Klicpera et al. 2019).<br>
-   * Decouples prediction from propagation: k steps of personalized PageRank with teleport alpha.<br>
+   * Approximate Personalized Propagation of Neural Predictions (Klicpera et al. 2019).
+   * Decouples prediction from propagation: k steps of personalized PageRank with teleport alpha.
    *
    * @param X Node features [rows, F] (FLOATING_POINT type)
    * @param W Prediction weight [F, H] (FLOATING_POINT type)
@@ -72,8 +72,8 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Approximate Personalized Propagation of Neural Predictions (Klicpera et al. 2019).<br>
-   * Decouples prediction from propagation: k steps of personalized PageRank with teleport alpha.<br>
+   * Approximate Personalized Propagation of Neural Predictions (Klicpera et al. 2019).
+   * Decouples prediction from propagation: k steps of personalized PageRank with teleport alpha.
    *
    * @param name name May be null. Name for the output variable
    * @param X Node features [rows, F] (FLOATING_POINT type)
@@ -111,8 +111,8 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Chebyshev spectral graph convolution (Defferrard et al. 2016).<br>
-   * T_0=X, T_1=L_hat*X, T_k=2*L_hat*T_{k-1}-T_{k-2}; out=sum_k T_k*W_k<br>
+   * Chebyshev spectral graph convolution (Defferrard et al. 2016).
+   * T_0=X, T_1=L_hat*X, T_k=2*L_hat*T_{k-1}-T_{k-2}; out=sum_k T_k*W_k
    *
    * @param X Node features [rows, F] (FLOATING_POINT type)
    * @param weights K Chebyshev-coefficient matrices, each [F, H] (FLOATING_POINT type)
@@ -148,8 +148,8 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Chebyshev spectral graph convolution (Defferrard et al. 2016).<br>
-   * T_0=X, T_1=L_hat*X, T_k=2*L_hat*T_{k-1}-T_{k-2}; out=sum_k T_k*W_k<br>
+   * Chebyshev spectral graph convolution (Defferrard et al. 2016).
+   * T_0=X, T_1=L_hat*X, T_k=2*L_hat*T_{k-1}-T_{k-2}; out=sum_k T_k*W_k
    *
    * @param name name May be null. Name for the output variable
    * @param X Node features [rows, F] (FLOATING_POINT type)
@@ -186,8 +186,8 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * CompGCN convolution (Vashishth et al. 2020): multi-relational GNN composing entity+relation embeddings.<br>
-   * compOp=0: sub (TransE-style); else: elementwise mult (DistMult-style).<br>
+   * CompGCN convolution (Vashishth et al. 2020): multi-relational GNN composing entity+relation embeddings.
+   * compOp=0: sub (TransE-style); else: elementwise mult (DistMult-style).
    *
    * @param X Entity embeddings [n, dim] (FLOATING_POINT type)
    * @param relEmb Relation embeddings [numRelations, dim] (FLOATING_POINT type)
@@ -222,8 +222,8 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * CompGCN convolution (Vashishth et al. 2020): multi-relational GNN composing entity+relation embeddings.<br>
-   * compOp=0: sub (TransE-style); else: elementwise mult (DistMult-style).<br>
+   * CompGCN convolution (Vashishth et al. 2020): multi-relational GNN composing entity+relation embeddings.
+   * compOp=0: sub (TransE-style); else: elementwise mult (DistMult-style).
    *
    * @param name name May be null. Name for the output variable
    * @param X Entity embeddings [n, dim] (FLOATING_POINT type)
@@ -259,7 +259,7 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Single-head Graph Attention Network convolution (Veličković et al. 2018).<br>
+   * Single-head Graph Attention Network convolution (Veličković et al. 2018).
    *
    * @param X Node features [N, F] (FLOATING_POINT type)
    * @param W Linear weight [F, H] (FLOATING_POINT type)
@@ -296,7 +296,7 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Single-head Graph Attention Network convolution (Veličković et al. 2018).<br>
+   * Single-head Graph Attention Network convolution (Veličković et al. 2018).
    *
    * @param name name May be null. Name for the output variable
    * @param X Node features [N, F] (FLOATING_POINT type)
@@ -334,8 +334,8 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Single-head GATv2 convolution (Brody et al. 2021). GATv2 applies the nonlinearity before<br>
-   * the attention projection (dynamic attention), fixing the static attention limitation of GAT v1.<br>
+   * Single-head GATv2 convolution (Brody et al. 2021). GATv2 applies the nonlinearity before
+   * the attention projection (dynamic attention), fixing the static attention limitation of GAT v1.
    *
    * @param X Node features [N, F] (FLOATING_POINT type)
    * @param W Linear weight [F, H] (FLOATING_POINT type)
@@ -368,8 +368,8 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Single-head GATv2 convolution (Brody et al. 2021). GATv2 applies the nonlinearity before<br>
-   * the attention projection (dynamic attention), fixing the static attention limitation of GAT v1.<br>
+   * Single-head GATv2 convolution (Brody et al. 2021). GATv2 applies the nonlinearity before
+   * the attention projection (dynamic attention), fixing the static attention limitation of GAT v1.
    *
    * @param name name May be null. Name for the output variable
    * @param X Node features [N, F] (FLOATING_POINT type)
@@ -404,8 +404,8 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Graph Convolutional Network layer (Kipf & Welling 2017).<br>
-   * out = relu?( A_norm · X · W + bias )<br>
+   * Graph Convolutional Network layer (Kipf and Welling 2017).
+   * out = relu?( A_norm · X · W + bias )
    *
    * @param X Node features [rows, F] (FLOATING_POINT type)
    * @param W Weight matrix [F, H] (FLOATING_POINT type)
@@ -436,8 +436,8 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Graph Convolutional Network layer (Kipf & Welling 2017).<br>
-   * out = relu?( A_norm · X · W + bias )<br>
+   * Graph Convolutional Network layer (Kipf and Welling 2017).
+   * out = relu?( A_norm · X · W + bias )
    *
    * @param name name May be null. Name for the output variable
    * @param X Node features [rows, F] (FLOATING_POINT type)
@@ -470,8 +470,8 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * GCNII convolution (Chen et al. 2020): deep GCN layer combining initial residual connection<br>
-   * with identity mapping. M = (1-alpha)*(A_norm*H) + alpha*H0; out = sigma((1-beta)*M + beta*(M*W))<br>
+   * GCNII convolution (Chen et al. 2020): deep GCN layer combining initial residual connection
+   * with identity mapping. M = (1-alpha)*(A_norm*H) + alpha*H0; out = sigma((1-beta)*M + beta*(M*W))
    *
    * @param H Current layer representation [rows, F] (FLOATING_POINT type)
    * @param H0 Initial (input-projected) representation [rows, F] (FLOATING_POINT type)
@@ -506,8 +506,8 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * GCNII convolution (Chen et al. 2020): deep GCN layer combining initial residual connection<br>
-   * with identity mapping. M = (1-alpha)*(A_norm*H) + alpha*H0; out = sigma((1-beta)*M + beta*(M*W))<br>
+   * GCNII convolution (Chen et al. 2020): deep GCN layer combining initial residual connection
+   * with identity mapping. M = (1-alpha)*(A_norm*H) + alpha*H0; out = sigma((1-beta)*M + beta*(M*W))
    *
    * @param name name May be null. Name for the output variable
    * @param H Current layer representation [rows, F] (FLOATING_POINT type)
@@ -543,8 +543,8 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Gated Graph Neural Network (Li et al. 2016): steps rounds of neighbour aggregation + GRU update.<br>
-   * Uses concat([in1,in2])*concat([W1,W2]) gate form for correct CUDA backward.<br>
+   * Gated Graph Neural Network (Li et al. 2016): steps rounds of neighbour aggregation + GRU update.
+   * Uses concat([in1,in2])*concat([W1,W2]) gate form for correct CUDA backward.
    *
    * @param X Initial node states [rows, H] (FLOATING_POINT type)
    * @param aggW Message transform [H, H] (FLOATING_POINT type)
@@ -592,8 +592,8 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Gated Graph Neural Network (Li et al. 2016): steps rounds of neighbour aggregation + GRU update.<br>
-   * Uses concat([in1,in2])*concat([W1,W2]) gate form for correct CUDA backward.<br>
+   * Gated Graph Neural Network (Li et al. 2016): steps rounds of neighbour aggregation + GRU update.
+   * Uses concat([in1,in2])*concat([W1,W2]) gate form for correct CUDA backward.
    *
    * @param name name May be null. Name for the output variable
    * @param X Initial node states [rows, H] (FLOATING_POINT type)
@@ -642,7 +642,7 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Graph Isomorphism Network convolution (Xu et al. 2019) with optional Layer Normalisation.<br>
+   * Graph Isomorphism Network convolution (Xu et al. 2019) with optional Layer Normalisation.
    *
    * @param X Node features [rows, F] (FLOATING_POINT type)
    * @param w1 First MLP weight [F, H] (FLOATING_POINT type)
@@ -683,7 +683,7 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Graph Isomorphism Network convolution (Xu et al. 2019) with optional Layer Normalisation.<br>
+   * Graph Isomorphism Network convolution (Xu et al. 2019) with optional Layer Normalisation.
    *
    * @param name name May be null. Name for the output variable
    * @param X Node features [rows, F] (FLOATING_POINT type)
@@ -725,7 +725,7 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Graph Isomorphism Network convolution (Xu et al. 2019) with optional Layer Normalisation.<br>
+   * Graph Isomorphism Network convolution (Xu et al. 2019) with optional Layer Normalisation.
    *
    * @param X Node features [rows, F] (FLOATING_POINT type)
    * @param w1 First MLP weight [F, H] (FLOATING_POINT type)
@@ -765,7 +765,7 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Graph Isomorphism Network convolution (Xu et al. 2019) with optional Layer Normalisation.<br>
+   * Graph Isomorphism Network convolution (Xu et al. 2019) with optional Layer Normalisation.
    *
    * @param name name May be null. Name for the output variable
    * @param X Node features [rows, F] (FLOATING_POINT type)
@@ -806,8 +806,8 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * GraphNorm (Cai et al. 2021): learnable graph-level normalisation. Implemented in transposed<br>
-   * [F, rows] layout for correct CUDA gradient flow on per-feature alpha scaling.<br>
+   * GraphNorm (Cai et al. 2021): learnable graph-level normalisation. Implemented in transposed
+   * [F, rows] layout for correct CUDA gradient flow on per-feature alpha scaling.
    *
    * @param X Node features [rows, F] (FLOATING_POINT type)
    * @param gamma Learnable scale [F] (FLOATING_POINT type)
@@ -834,8 +834,8 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * GraphNorm (Cai et al. 2021): learnable graph-level normalisation. Implemented in transposed<br>
-   * [F, rows] layout for correct CUDA gradient flow on per-feature alpha scaling.<br>
+   * GraphNorm (Cai et al. 2021): learnable graph-level normalisation. Implemented in transposed
+   * [F, rows] layout for correct CUDA gradient flow on per-feature alpha scaling.
    *
    * @param name name May be null. Name for the output variable
    * @param X Node features [rows, F] (FLOATING_POINT type)
@@ -864,8 +864,65 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Single-head Graph Transformer layer (Dwivedi & Bresson 2021, simplified):<br>
-   * scaled dot-product self-attention, optionally restricted via additive mask.<br>
+   * Batch-aware GraphNorm: normalizes within each graph's node set.
+   * Safe to use with block-diagonal batching (graphDisjointUnion).
+   *
+   * @param X Node features [sumN, F] (FLOATING_POINT type)
+   * @param gamma Scale parameter [F] (FLOATING_POINT type)
+   * @param beta Shift parameter [F] (FLOATING_POINT type)
+   * @param batchVec Node-to-graph index [sumN] (INT type)
+   * @param K Number of graphs
+   * @return out Normalized features [sumN, F] (FLOATING_POINT type)
+   */
+  public SDVariable graphNormBatched(SDVariable X, SDVariable gamma, SDVariable beta,
+      SDVariable batchVec, long K) {
+    SDValidation.validateFloatingPoint("graphNormBatched", "X", X);
+    SDValidation.validateFloatingPoint("graphNormBatched", "gamma", gamma);
+    SDValidation.validateFloatingPoint("graphNormBatched", "beta", beta);
+    SDValidation.validateInteger("graphNormBatched", "batchVec", batchVec);
+    // Per-graph per-feature mean: segmentMean → [K, F], then gather to [sumN, F]
+    SDVariable graphMean = sd.unsortedSegmentMean(X, batchVec, (int)K);
+    SDVariable nodeMean  = sd.gather(graphMean, batchVec, 0);
+    SDVariable centered  = X.sub(nodeMean);
+    SDVariable graphVar  = sd.unsortedSegmentMean(centered.mul(centered), batchVec, (int)K);
+    SDVariable nodeVar   = sd.gather(graphVar, batchVec, 0);
+    SDVariable normed    = centered.div(sd.math().sqrt(nodeVar.add(1e-5)));
+    SDVariable out       = normed.mul(gamma).add(beta);
+    return out;
+  }
+
+  /**
+   * Batch-aware GraphNorm: normalizes within each graph's node set.
+   * Safe to use with block-diagonal batching (graphDisjointUnion).
+   *
+   * @param name name May be null. Name for the output variable
+   * @param X Node features [sumN, F] (FLOATING_POINT type)
+   * @param gamma Scale parameter [F] (FLOATING_POINT type)
+   * @param beta Shift parameter [F] (FLOATING_POINT type)
+   * @param batchVec Node-to-graph index [sumN] (INT type)
+   * @param K Number of graphs
+   * @return out Normalized features [sumN, F] (FLOATING_POINT type)
+   */
+  public SDVariable graphNormBatched(String name, SDVariable X, SDVariable gamma, SDVariable beta,
+      SDVariable batchVec, long K) {
+    SDValidation.validateFloatingPoint("graphNormBatched", "X", X);
+    SDValidation.validateFloatingPoint("graphNormBatched", "gamma", gamma);
+    SDValidation.validateFloatingPoint("graphNormBatched", "beta", beta);
+    SDValidation.validateInteger("graphNormBatched", "batchVec", batchVec);
+    // Per-graph per-feature mean: segmentMean → [K, F], then gather to [sumN, F]
+    SDVariable graphMean = sd.unsortedSegmentMean(X, batchVec, (int)K);
+    SDVariable nodeMean  = sd.gather(graphMean, batchVec, 0);
+    SDVariable centered  = X.sub(nodeMean);
+    SDVariable graphVar  = sd.unsortedSegmentMean(centered.mul(centered), batchVec, (int)K);
+    SDVariable nodeVar   = sd.gather(graphVar, batchVec, 0);
+    SDVariable normed    = centered.div(sd.math().sqrt(nodeVar.add(1e-5)));
+    SDVariable out       = normed.mul(gamma).add(beta);
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Single-head Graph Transformer layer (Dwivedi and Bresson 2021, simplified):
+   * scaled dot-product self-attention, optionally restricted via additive mask.
    *
    * @param X Node features [N, F] (FLOATING_POINT type)
    * @param wq Query weight [F, d] (FLOATING_POINT type)
@@ -898,8 +955,8 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Single-head Graph Transformer layer (Dwivedi & Bresson 2021, simplified):<br>
-   * scaled dot-product self-attention, optionally restricted via additive mask.<br>
+   * Single-head Graph Transformer layer (Dwivedi and Bresson 2021, simplified):
+   * scaled dot-product self-attention, optionally restricted via additive mask.
    *
    * @param name name May be null. Name for the output variable
    * @param X Node features [N, F] (FLOATING_POINT type)
@@ -933,10 +990,10 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Heterogeneous Attention Network (Wang et al. 2019).<br>
-   * For each meta-path: run a single-head node-level GAT (gatConvHead), then compute a semantic<br>
-   * attention score via tanh(Z*semW + semB)*semQ. Softmax over meta-path scores gives mixing<br>
-   * weights beta_p; final output = sum_p(beta_p * Z_p).<br>
+   * Heterogeneous Attention Network (Wang et al. 2019).
+   * For each meta-path: run a single-head node-level GAT (gatConvHead), then compute a semantic
+   * attention score via tanh(Z*semW + semB)*semQ. Softmax over meta-path scores gives mixing
+   * weights beta_p; final output = sum_p(beta_p * Z_p).
    *
    * @param X Node features [N, F] (FLOATING_POINT type)
    * @param metaW Per-meta-path linear weight [F, H], one per meta-path (FLOATING_POINT type)
@@ -995,10 +1052,10 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Heterogeneous Attention Network (Wang et al. 2019).<br>
-   * For each meta-path: run a single-head node-level GAT (gatConvHead), then compute a semantic<br>
-   * attention score via tanh(Z*semW + semB)*semQ. Softmax over meta-path scores gives mixing<br>
-   * weights beta_p; final output = sum_p(beta_p * Z_p).<br>
+   * Heterogeneous Attention Network (Wang et al. 2019).
+   * For each meta-path: run a single-head node-level GAT (gatConvHead), then compute a semantic
+   * attention score via tanh(Z*semW + semB)*semQ. Softmax over meta-path scores gives mixing
+   * weights beta_p; final output = sum_p(beta_p * Z_p).
    *
    * @param name name May be null. Name for the output variable
    * @param X Node features [N, F] (FLOATING_POINT type)
@@ -1058,8 +1115,8 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Simplified single-head Heterogeneous Graph Transformer (Hu et al. 2020):<br>
-   * scaled dot-product attention where relation embedding modulates the key.<br>
+   * Simplified single-head Heterogeneous Graph Transformer (Hu et al. 2020):
+   * scaled dot-product attention where relation embedding modulates the key.
    *
    * @param X Node features [N, F] (FLOATING_POINT type)
    * @param wq Query weight [F, d] (FLOATING_POINT type)
@@ -1102,8 +1159,8 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Simplified single-head Heterogeneous Graph Transformer (Hu et al. 2020):<br>
-   * scaled dot-product attention where relation embedding modulates the key.<br>
+   * Simplified single-head Heterogeneous Graph Transformer (Hu et al. 2020):
+   * scaled dot-product attention where relation embedding modulates the key.
    *
    * @param name name May be null. Name for the output variable
    * @param X Node features [N, F] (FLOATING_POINT type)
@@ -1147,7 +1204,7 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Inner-product link decoder (Kipf & Welling 2016): Z*Z^T. Apply sigmoid downstream for edge probabilities.<br>
+   * Inner-product link decoder (Kipf and Welling 2016): Z*Z^T. Apply sigmoid downstream for edge probabilities.
    *
    * @param z Node latents [N, d] (FLOATING_POINT type)
    * @return out Edge logits [N, N] (FLOATING_POINT type)
@@ -1159,7 +1216,7 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Inner-product link decoder (Kipf & Welling 2016): Z*Z^T. Apply sigmoid downstream for edge probabilities.<br>
+   * Inner-product link decoder (Kipf and Welling 2016): Z*Z^T. Apply sigmoid downstream for edge probabilities.
    *
    * @param name name May be null. Name for the output variable
    * @param z Node latents [N, d] (FLOATING_POINT type)
@@ -1172,8 +1229,8 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Jumping-Knowledge concatenation aggregator (Xu et al. 2018).<br>
-   * Concatenates per-layer representations along the feature dimension.<br>
+   * Jumping-Knowledge concatenation aggregator (Xu et al. 2018).
+   * Concatenates per-layer representations along the feature dimension.
    *
    * @param layerOutputs Per-layer node representations, each [rows, H_l] (FLOATING_POINT type)
    * @return out Concatenated representation [rows, sum(H_l)] (FLOATING_POINT type)
@@ -1186,8 +1243,8 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Jumping-Knowledge concatenation aggregator (Xu et al. 2018).<br>
-   * Concatenates per-layer representations along the feature dimension.<br>
+   * Jumping-Knowledge concatenation aggregator (Xu et al. 2018).
+   * Concatenates per-layer representations along the feature dimension.
    *
    * @param name name May be null. Name for the output variable
    * @param layerOutputs Per-layer node representations, each [rows, H_l] (FLOATING_POINT type)
@@ -1201,8 +1258,8 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Jumping-Knowledge max-pooling aggregator (Xu et al. 2018).<br>
-   * Element-wise maximum across per-layer node representations.<br>
+   * Jumping-Knowledge max-pooling aggregator (Xu et al. 2018).
+   * Element-wise maximum across per-layer node representations.
    *
    * @param layerOutputs Per-layer node representations, each [rows, H] (FLOATING_POINT type)
    * @return out Element-wise max across layers [rows, H] (FLOATING_POINT type)
@@ -1218,8 +1275,8 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Jumping-Knowledge max-pooling aggregator (Xu et al. 2018).<br>
-   * Element-wise maximum across per-layer node representations.<br>
+   * Jumping-Knowledge max-pooling aggregator (Xu et al. 2018).
+   * Element-wise maximum across per-layer node representations.
    *
    * @param name name May be null. Name for the output variable
    * @param layerOutputs Per-layer node representations, each [rows, H] (FLOATING_POINT type)
@@ -1236,8 +1293,8 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Edge-conditioned convolution / NNConv (Simonovsky & Komodakis 2017; Gilmer et al. MPNN 2017).<br>
-   * An edge network maps edge features to [Fin, Fout] weight matrices applied to neighbour features.<br>
+   * Edge-conditioned convolution / NNConv (Simonovsky and Komodakis 2017; Gilmer et al. MPNN 2017).
+   * An edge network maps edge features to [Fin, Fout] weight matrices applied to neighbour features.
    *
    * @param X Node features [rows, Fin] (FLOATING_POINT type)
    * @param edgeFeatures Per-edge features [nnz, edgeF] (FLOATING_POINT type)
@@ -1279,8 +1336,8 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Edge-conditioned convolution / NNConv (Simonovsky & Komodakis 2017; Gilmer et al. MPNN 2017).<br>
-   * An edge network maps edge features to [Fin, Fout] weight matrices applied to neighbour features.<br>
+   * Edge-conditioned convolution / NNConv (Simonovsky and Komodakis 2017; Gilmer et al. MPNN 2017).
+   * An edge network maps edge features to [Fin, Fout] weight matrices applied to neighbour features.
    *
    * @param name name May be null. Name for the output variable
    * @param X Node features [rows, Fin] (FLOATING_POINT type)
@@ -1323,7 +1380,7 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * PairNorm (Zhao & Akoglu 2020): parameter-free normalisation that keeps total pairwise feature distance constant.<br>
+   * PairNorm (Zhao and Akoglu 2020): parameter-free normalisation that keeps total pairwise feature distance constant.
    *
    * @param X Node features [rows, F] (FLOATING_POINT type)
    * @param scale Target row-norm scale s (typically ~1.0)
@@ -1340,7 +1397,7 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * PairNorm (Zhao & Akoglu 2020): parameter-free normalisation that keeps total pairwise feature distance constant.<br>
+   * PairNorm (Zhao and Akoglu 2020): parameter-free normalisation that keeps total pairwise feature distance constant.
    *
    * @param name name May be null. Name for the output variable
    * @param X Node features [rows, F] (FLOATING_POINT type)
@@ -1358,8 +1415,64 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Principal Neighbourhood Aggregation convolution (Corso et al. 2020).<br>
-   * Combines mean, max, min and std aggregators, concatenated and linearly projected.<br>
+   * Batch-aware PairNorm: normalizes within each graph rather than globally.
+   * Safe to use with block-diagonal batching (graphDisjointUnion).
+   *
+   * @param X Node features [sumN, F] (FLOATING_POINT type)
+   * @param batchVec Node-to-graph index [sumN] INT32 (INT type)
+   * @param K Number of graphs
+   * @param scale Scale factor (default 1.0)
+   * @return out Normalized features [sumN, F] (FLOATING_POINT type)
+   */
+  public SDVariable pairNormBatched(SDVariable X, SDVariable batchVec, long K, double scale) {
+    SDValidation.validateFloatingPoint("pairNormBatched", "X", X);
+    SDValidation.validateInteger("pairNormBatched", "batchVec", batchVec);
+    // Segment mean center: subtract per-graph mean
+    SDVariable graphMeans = sd.unsortedSegmentMean(X, batchVec, (int)K);  // [K, F]
+    // Gather back to per-node
+    SDVariable nodeMeans = sd.gather(graphMeans, batchVec, 0);  // [sumN, F]
+    SDVariable Xc = X.sub(nodeMeans);
+    SDVariable rowSq = sd.sum(Xc.mul(Xc), true, 1);
+    // Per-graph mean of squared norms
+    SDVariable graphSqMean = sd.unsortedSegmentMean(rowSq, batchVec, (int)K);  // [K, 1]
+    SDVariable nodeVarDenom = sd.gather(graphSqMean, batchVec, 0);  // [sumN, 1]
+    SDVariable denom = sd.math().sqrt(nodeVarDenom.add(1e-6));
+    SDVariable out = Xc.mul(scale).div(denom);
+    return out;
+  }
+
+  /**
+   * Batch-aware PairNorm: normalizes within each graph rather than globally.
+   * Safe to use with block-diagonal batching (graphDisjointUnion).
+   *
+   * @param name name May be null. Name for the output variable
+   * @param X Node features [sumN, F] (FLOATING_POINT type)
+   * @param batchVec Node-to-graph index [sumN] INT32 (INT type)
+   * @param K Number of graphs
+   * @param scale Scale factor (default 1.0)
+   * @return out Normalized features [sumN, F] (FLOATING_POINT type)
+   */
+  public SDVariable pairNormBatched(String name, SDVariable X, SDVariable batchVec, long K,
+      double scale) {
+    SDValidation.validateFloatingPoint("pairNormBatched", "X", X);
+    SDValidation.validateInteger("pairNormBatched", "batchVec", batchVec);
+    // Segment mean center: subtract per-graph mean
+    SDVariable graphMeans = sd.unsortedSegmentMean(X, batchVec, (int)K);  // [K, F]
+    // Gather back to per-node
+    SDVariable nodeMeans = sd.gather(graphMeans, batchVec, 0);  // [sumN, F]
+    SDVariable Xc = X.sub(nodeMeans);
+    SDVariable rowSq = sd.sum(Xc.mul(Xc), true, 1);
+    // Per-graph mean of squared norms
+    SDVariable graphSqMean = sd.unsortedSegmentMean(rowSq, batchVec, (int)K);  // [K, 1]
+    SDVariable nodeVarDenom = sd.gather(graphSqMean, batchVec, 0);  // [sumN, 1]
+    SDVariable denom = sd.math().sqrt(nodeVarDenom.add(1e-6));
+    SDVariable out = Xc.mul(scale).div(denom);
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Principal Neighbourhood Aggregation convolution (Corso et al. 2020).
+   * Combines mean, max, min and std aggregators, concatenated and linearly projected.
    *
    * @param X Node features [rows, F] (FLOATING_POINT type)
    * @param W Weight matrix [4F, H] (FLOATING_POINT type)
@@ -1396,8 +1509,8 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Principal Neighbourhood Aggregation convolution (Corso et al. 2020).<br>
-   * Combines mean, max, min and std aggregators, concatenated and linearly projected.<br>
+   * Principal Neighbourhood Aggregation convolution (Corso et al. 2020).
+   * Combines mean, max, min and std aggregators, concatenated and linearly projected.
    *
    * @param name name May be null. Name for the output variable
    * @param X Node features [rows, F] (FLOATING_POINT type)
@@ -1435,7 +1548,7 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Single-head relational GAT: graph attention with relation embedding modulating each edge's message.<br>
+   * Single-head relational GAT: graph attention with relation embedding modulating each edge's message.
    *
    * @param X Node features [N, F] (FLOATING_POINT type)
    * @param W Linear weight [F, H] (FLOATING_POINT type)
@@ -1475,7 +1588,7 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Single-head relational GAT: graph attention with relation embedding modulating each edge's message.<br>
+   * Single-head relational GAT: graph attention with relation embedding modulating each edge's message.
    *
    * @param name name May be null. Name for the output variable
    * @param X Node features [N, F] (FLOATING_POINT type)
@@ -1516,8 +1629,8 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Relational Graph Convolutional Network layer (Schlichtkrull et al. 2018).<br>
-   * out = X*W_self + sum_r(A_r*X*W_r) + bias<br>
+   * Relational Graph Convolutional Network layer (Schlichtkrull et al. 2018).
+   * out = X*W_self + sum_r(A_r*X*W_r) + bias
    *
    * @param X Node features [rows, F] (FLOATING_POINT type)
    * @param relVals Per-relation CSR values, relVals[r]=[nnz_r] (FLOATING_POINT type)
@@ -1560,8 +1673,8 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Relational Graph Convolutional Network layer (Schlichtkrull et al. 2018).<br>
-   * out = X*W_self + sum_r(A_r*X*W_r) + bias<br>
+   * Relational Graph Convolutional Network layer (Schlichtkrull et al. 2018).
+   * out = X*W_self + sum_r(A_r*X*W_r) + bias
    *
    * @param name name May be null. Name for the output variable
    * @param X Node features [rows, F] (FLOATING_POINT type)
@@ -1605,7 +1718,7 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * GraphSAGE max aggregation.<br>
+   * GraphSAGE max aggregation.
    *
    * @param X Node features [rows, F] (FLOATING_POINT type)
    * @param W Weight matrix [2F, H] (FLOATING_POINT type)
@@ -1633,7 +1746,7 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * GraphSAGE max aggregation.<br>
+   * GraphSAGE max aggregation.
    *
    * @param name name May be null. Name for the output variable
    * @param X Node features [rows, F] (FLOATING_POINT type)
@@ -1662,7 +1775,7 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * GraphSAGE mean aggregation (Hamilton et al. 2017).<br>
+   * GraphSAGE mean aggregation (Hamilton et al. 2017).
    *
    * @param X Node features [rows, F] (FLOATING_POINT type)
    * @param W Weight matrix [2F, H] (FLOATING_POINT type)
@@ -1692,7 +1805,7 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * GraphSAGE mean aggregation (Hamilton et al. 2017).<br>
+   * GraphSAGE mean aggregation (Hamilton et al. 2017).
    *
    * @param name name May be null. Name for the output variable
    * @param X Node features [rows, F] (FLOATING_POINT type)
@@ -1723,7 +1836,7 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * GraphSAGE pool aggregation: apply an MLP to each neighbour, max-aggregate, then predict.<br>
+   * GraphSAGE pool aggregation: apply an MLP to each neighbour, max-aggregate, then predict.
    *
    * @param X Node features [rows, F] (FLOATING_POINT type)
    * @param wPool MLP weight for neighbours [F, H_pool] (FLOATING_POINT type)
@@ -1758,7 +1871,7 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * GraphSAGE pool aggregation: apply an MLP to each neighbour, max-aggregate, then predict.<br>
+   * GraphSAGE pool aggregation: apply an MLP to each neighbour, max-aggregate, then predict.
    *
    * @param name name May be null. Name for the output variable
    * @param X Node features [rows, F] (FLOATING_POINT type)
@@ -1794,10 +1907,10 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Temporal Graph Convolutional Network: weight-shared spatial GCN applied at each timestep,<br>
-   * fused by temporal attention. For each timestep t: h[t] = gcnConv(X_t, W, bias, A_norm).<br>
-   * Temporal attention score = mean(tanh(h[t]*tempW)*tempQ). Softmax gives beta_t;<br>
-   * out = sum_t(beta_t * h[t]).<br>
+   * Temporal Graph Convolutional Network: weight-shared spatial GCN applied at each timestep,
+   * fused by temporal attention. For each timestep t: h[t] = gcnConv(X_t, W, bias, A_norm).
+   * Temporal attention score = mean(tanh(h[t]*tempW)*tempQ). Softmax gives beta_t;
+   * out = sum_t(beta_t * h[t]).
    *
    * @param Xt Per-timestep node features, each [N, F] (FLOATING_POINT type)
    * @param W Shared spatial GCN weight [F, H] (FLOATING_POINT type)
@@ -1844,10 +1957,10 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * Temporal Graph Convolutional Network: weight-shared spatial GCN applied at each timestep,<br>
-   * fused by temporal attention. For each timestep t: h[t] = gcnConv(X_t, W, bias, A_norm).<br>
-   * Temporal attention score = mean(tanh(h[t]*tempW)*tempQ). Softmax gives beta_t;<br>
-   * out = sum_t(beta_t * h[t]).<br>
+   * Temporal Graph Convolutional Network: weight-shared spatial GCN applied at each timestep,
+   * fused by temporal attention. For each timestep t: h[t] = gcnConv(X_t, W, bias, A_norm).
+   * Temporal attention score = mean(tanh(h[t]*tempW)*tempQ). Softmax gives beta_t;
+   * out = sum_t(beta_t * h[t]).
    *
    * @param name name May be null. Name for the output variable
    * @param Xt Per-timestep node features, each [N, F] (FLOATING_POINT type)
@@ -1895,7 +2008,7 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * VGAE KL-divergence regulariser (Kipf & Welling 2016): 0.5 * mean(exp(logvar) + mu^2 - logvar - 1)<br>
+   * VGAE KL-divergence regulariser (Kipf and Welling 2016): 0.5 * mean(exp(logvar) + mu^2 - logvar - 1)
    *
    * @param mu Latent mean [N, d] (FLOATING_POINT type)
    * @param logvar Latent log-variance [N, d] (FLOATING_POINT type)
@@ -1910,7 +2023,7 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * VGAE KL-divergence regulariser (Kipf & Welling 2016): 0.5 * mean(exp(logvar) + mu^2 - logvar - 1)<br>
+   * VGAE KL-divergence regulariser (Kipf and Welling 2016): 0.5 * mean(exp(logvar) + mu^2 - logvar - 1)
    *
    * @param name name May be null. Name for the output variable
    * @param mu Latent mean [N, d] (FLOATING_POINT type)
@@ -1926,7 +2039,7 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * VGAE reparameterisation trick (Kipf & Welling 2016): z = mu + exp(0.5*logvar) * noise<br>
+   * VGAE reparameterisation trick (Kipf and Welling 2016): z = mu + exp(0.5*logvar) * noise
    *
    * @param mu Latent mean [N, d] (FLOATING_POINT type)
    * @param logvar Latent log-variance [N, d] (FLOATING_POINT type)
@@ -1942,7 +2055,7 @@ public class SDGNN extends SDOps {
   }
 
   /**
-   * VGAE reparameterisation trick (Kipf & Welling 2016): z = mu + exp(0.5*logvar) * noise<br>
+   * VGAE reparameterisation trick (Kipf and Welling 2016): z = mu + exp(0.5*logvar) * noise
    *
    * @param name name May be null. Name for the output variable
    * @param mu Latent mean [N, d] (FLOATING_POINT type)

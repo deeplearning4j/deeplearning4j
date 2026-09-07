@@ -39,7 +39,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Boolean and array reduction operation, optionally along specified dimensions<br>
+   * Boolean and array reduction operation, optionally along specified dimensions
    *
    * @param x Input variable (NDARRAY type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -51,7 +51,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Boolean and array reduction operation, optionally along specified dimensions<br>
+   * Boolean and array reduction operation, optionally along specified dimensions
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NDARRAY type)
@@ -65,7 +65,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Boolean or array reduction operation, optionally along specified dimensions<br>
+   * Boolean or array reduction operation, optionally along specified dimensions
    *
    * @param x  Input variable (NDARRAY type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -77,7 +77,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Boolean or array reduction operation, optionally along specified dimensions<br>
+   * Boolean or array reduction operation, optionally along specified dimensions
    *
    * @param name name May be null. Name for the output variable
    * @param x  Input variable (NDARRAY type)
@@ -91,15 +91,15 @@ public class SDBaseOps {
   }
 
   /**
-   * Argmax array reduction operation, optionally along specified dimensions.<br>
-   * Output values are the index of the maximum value of each slice along the specified dimension.<br>
+   * Argmax array reduction operation, optionally along specified dimensions.
+   * Output values are the index of the maximum value of each slice along the specified dimension.
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param in Input variable (NUMERIC type)
    * @param keepDims If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
@@ -114,15 +114,15 @@ public class SDBaseOps {
   }
 
   /**
-   * Argmax array reduction operation, optionally along specified dimensions.<br>
-   * Output values are the index of the maximum value of each slice along the specified dimension.<br>
+   * Argmax array reduction operation, optionally along specified dimensions.
+   * Output values are the index of the maximum value of each slice along the specified dimension.
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -139,15 +139,15 @@ public class SDBaseOps {
   }
 
   /**
-   * Argmax array reduction operation, optionally along specified dimensions.<br>
-   * Output values are the index of the maximum value of each slice along the specified dimension.<br>
+   * Argmax array reduction operation, optionally along specified dimensions.
+   * Output values are the index of the maximum value of each slice along the specified dimension.
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -161,15 +161,15 @@ public class SDBaseOps {
   }
 
   /**
-   * Argmax array reduction operation, optionally along specified dimensions.<br>
-   * Output values are the index of the maximum value of each slice along the specified dimension.<br>
+   * Argmax array reduction operation, optionally along specified dimensions.
+   * Output values are the index of the maximum value of each slice along the specified dimension.
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -185,19 +185,19 @@ public class SDBaseOps {
   }
 
   /**
-   * Argmin array reduction operation, optionally along specified dimensions.<br>
-   * Output values are the index of the minimum value of each slice along the specified dimension.<br>
+   * Argmin array reduction operation, optionally along specified dimensions.
+   * Output values are the index of the minimum value of each slice along the specified dimension.
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param in Input variable (NUMERIC type)
    * @param keepDims If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
@@ -211,19 +211,19 @@ public class SDBaseOps {
   }
 
   /**
-   * Argmin array reduction operation, optionally along specified dimensions.<br>
-   * Output values are the index of the minimum value of each slice along the specified dimension.<br>
+   * Argmin array reduction operation, optionally along specified dimensions.
+   * Output values are the index of the minimum value of each slice along the specified dimension.
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -239,19 +239,19 @@ public class SDBaseOps {
   }
 
   /**
-   * Argmin array reduction operation, optionally along specified dimensions.<br>
-   * Output values are the index of the minimum value of each slice along the specified dimension.<br>
+   * Argmin array reduction operation, optionally along specified dimensions.
+   * Output values are the index of the minimum value of each slice along the specified dimension.
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -264,19 +264,19 @@ public class SDBaseOps {
   }
 
   /**
-   * Argmin array reduction operation, optionally along specified dimensions.<br>
-   * Output values are the index of the minimum value of each slice along the specified dimension.<br>
+   * Argmin array reduction operation, optionally along specified dimensions.
+   * Output values are the index of the minimum value of each slice along the specified dimension.
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -291,8 +291,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Assign the contents of y to x.<br>
-   * Y must be broadcastable to x or the same shape.<br>
+   * Assign the contents of y to x.
+   * Y must be broadcastable to x or the same shape.
    *
    * @param x The variable to assign to (NDARRAY type)
    * @param y The variable to assign (NDARRAY type)
@@ -303,8 +303,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Assign the contents of y to x.<br>
-   * Y must be broadcastable to x or the same shape.<br>
+   * Assign the contents of y to x.
+   * Y must be broadcastable to x or the same shape.
    *
    * @param name name May be null. Name for the output variable
    * @param x The variable to assign to (NDARRAY type)
@@ -317,13 +317,13 @@ public class SDBaseOps {
   }
 
   /**
-   * Matrix multiply a batch of matrices. matricesA and matricesB have to be arrays of same<br>
-   * length and each pair taken from these sets has to have dimensions (M, N) and (N, K),<br>
-   * respectively. If transposeA is true, matrices from matricesA will have shape (N, M) instead.<br>
-   * Likewise, if transposeB is true, matrices from matricesB will have shape (K, N).<br>
-   * <br>
-   * The result of this operation will be a batch of multiplied matrices. The<br>
-   * result has the same length as both input batches and each output matrix is of shape (M, K).<br>
+   * Matrix multiply a batch of matrices. matricesA and matricesB have to be arrays of same
+   * length and each pair taken from these sets has to have dimensions (M, N) and (N, K),
+   * respectively. If transposeA is true, matrices from matricesA will have shape (N, M) instead.
+   * Likewise, if transposeB is true, matrices from matricesB will have shape (K, N).
+   *
+   * The result of this operation will be a batch of multiplied matrices. The
+   * result has the same length as both input batches and each output matrix is of shape (M, K).
    *
    * @param alphas Alphas for the gemm equation. (NUMERIC type)
    * @param betas Betas for the gemm equation. (NUMERIC type)
@@ -331,6 +331,7 @@ public class SDBaseOps {
    * @param inputsB  Second array of input matrices, all of shape (N, K) or (K, N) (NUMERIC type)
    * @param transposeA Whether to transpose A arrays or not
    * @param transposeB Whether to transpose B arrays or not
+   * @return output1 Array of multiplied SDVariables of shape (M, K) (NUMERIC type)
    */
   public SDVariable[] batchMmul(SDVariable alphas, SDVariable betas, SDVariable[] inputsA,
       SDVariable[] inputsB, boolean transposeA, boolean transposeB) {
@@ -344,13 +345,13 @@ public class SDBaseOps {
   }
 
   /**
-   * Matrix multiply a batch of matrices. matricesA and matricesB have to be arrays of same<br>
-   * length and each pair taken from these sets has to have dimensions (M, N) and (N, K),<br>
-   * respectively. If transposeA is true, matrices from matricesA will have shape (N, M) instead.<br>
-   * Likewise, if transposeB is true, matrices from matricesB will have shape (K, N).<br>
-   * <br>
-   * The result of this operation will be a batch of multiplied matrices. The<br>
-   * result has the same length as both input batches and each output matrix is of shape (M, K).<br>
+   * Matrix multiply a batch of matrices. matricesA and matricesB have to be arrays of same
+   * length and each pair taken from these sets has to have dimensions (M, N) and (N, K),
+   * respectively. If transposeA is true, matrices from matricesA will have shape (N, M) instead.
+   * Likewise, if transposeB is true, matrices from matricesB will have shape (K, N).
+   *
+   * The result of this operation will be a batch of multiplied matrices. The
+   * result has the same length as both input batches and each output matrix is of shape (M, K).
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param alphas Alphas for the gemm equation. (NUMERIC type)
@@ -359,6 +360,7 @@ public class SDBaseOps {
    * @param inputsB  Second array of input matrices, all of shape (N, K) or (K, N) (NUMERIC type)
    * @param transposeA Whether to transpose A arrays or not
    * @param transposeB Whether to transpose B arrays or not
+   * @return output1 Array of multiplied SDVariables of shape (M, K) (NUMERIC type)
    */
   public SDVariable[] batchMmul(String[] names, SDVariable alphas, SDVariable betas,
       SDVariable[] inputsA, SDVariable[] inputsB, boolean transposeA, boolean transposeB) {
@@ -373,18 +375,19 @@ public class SDBaseOps {
   }
 
   /**
-   * Matrix multiply a batch of matrices. matricesA and matricesB have to be arrays of same<br>
-   * length and each pair taken from these sets has to have dimensions (M, N) and (N, K),<br>
-   * respectively. If transposeA is true, matrices from matricesA will have shape (N, M) instead.<br>
-   * Likewise, if transposeB is true, matrices from matricesB will have shape (K, N).<br>
-   * <br>
-   * The result of this operation will be a batch of multiplied matrices. The<br>
-   * result has the same length as both input batches and each output matrix is of shape (M, K).<br>
+   * Matrix multiply a batch of matrices. matricesA and matricesB have to be arrays of same
+   * length and each pair taken from these sets has to have dimensions (M, N) and (N, K),
+   * respectively. If transposeA is true, matrices from matricesA will have shape (N, M) instead.
+   * Likewise, if transposeB is true, matrices from matricesB will have shape (K, N).
+   *
+   * The result of this operation will be a batch of multiplied matrices. The
+   * result has the same length as both input batches and each output matrix is of shape (M, K).
    *
    * @param alphas Alphas for the gemm equation. (NUMERIC type)
    * @param betas Betas for the gemm equation. (NUMERIC type)
    * @param inputsA First array of input matrices, all of shape (M, N) or (N, M) (NUMERIC type)
    * @param inputsB  Second array of input matrices, all of shape (N, K) or (K, N) (NUMERIC type)
+   * @return output1 Array of multiplied SDVariables of shape (M, K) (NUMERIC type)
    */
   public SDVariable[] batchMmul(SDVariable alphas, SDVariable betas, SDVariable[] inputsA,
       SDVariable... inputsB) {
@@ -398,19 +401,20 @@ public class SDBaseOps {
   }
 
   /**
-   * Matrix multiply a batch of matrices. matricesA and matricesB have to be arrays of same<br>
-   * length and each pair taken from these sets has to have dimensions (M, N) and (N, K),<br>
-   * respectively. If transposeA is true, matrices from matricesA will have shape (N, M) instead.<br>
-   * Likewise, if transposeB is true, matrices from matricesB will have shape (K, N).<br>
-   * <br>
-   * The result of this operation will be a batch of multiplied matrices. The<br>
-   * result has the same length as both input batches and each output matrix is of shape (M, K).<br>
+   * Matrix multiply a batch of matrices. matricesA and matricesB have to be arrays of same
+   * length and each pair taken from these sets has to have dimensions (M, N) and (N, K),
+   * respectively. If transposeA is true, matrices from matricesA will have shape (N, M) instead.
+   * Likewise, if transposeB is true, matrices from matricesB will have shape (K, N).
+   *
+   * The result of this operation will be a batch of multiplied matrices. The
+   * result has the same length as both input batches and each output matrix is of shape (M, K).
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param alphas Alphas for the gemm equation. (NUMERIC type)
    * @param betas Betas for the gemm equation. (NUMERIC type)
    * @param inputsA First array of input matrices, all of shape (M, N) or (N, M) (NUMERIC type)
    * @param inputsB  Second array of input matrices, all of shape (N, K) or (K, N) (NUMERIC type)
+   * @return output1 Array of multiplied SDVariables of shape (M, K) (NUMERIC type)
    */
   public SDVariable[] batchMmul(String[] names, SDVariable alphas, SDVariable betas,
       SDVariable[] inputsA, SDVariable... inputsB) {
@@ -425,7 +429,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Boolean AND operation: elementwise x && y. Supports broadcasting.<br>
+   * Boolean AND operation: elementwise x &amp;&amp; y. Supports broadcasting.
    *
    * @param x First input boolean array (BOOL type)
    * @param y Second input boolean array (BOOL type)
@@ -438,7 +442,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Boolean AND operation: elementwise x && y. Supports broadcasting.<br>
+   * Boolean AND operation: elementwise x &amp;&amp; y. Supports broadcasting.
    *
    * @param name name May be null. Name for the output variable
    * @param x First input boolean array (BOOL type)
@@ -453,7 +457,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Boolean NOT operation: elementwise !x<br>
+   * Boolean NOT operation: elementwise !x
    *
    * @param x Input boolean array (BOOL type)
    * @return output Boolean NOT result (BOOL type)
@@ -464,7 +468,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Boolean NOT operation: elementwise !x<br>
+   * Boolean NOT operation: elementwise !x
    *
    * @param name name May be null. Name for the output variable
    * @param x Input boolean array (BOOL type)
@@ -477,7 +481,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Boolean OR operation: elementwise x || y. Supports broadcasting.<br>
+   * Boolean OR operation: elementwise x || y. Supports broadcasting.
    *
    * @param x First input boolean array (BOOL type)
    * @param y Second input boolean array (BOOL type)
@@ -490,7 +494,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Boolean OR operation: elementwise x || y. Supports broadcasting.<br>
+   * Boolean OR operation: elementwise x || y. Supports broadcasting.
    *
    * @param name name May be null. Name for the output variable
    * @param x First input boolean array (BOOL type)
@@ -505,7 +509,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Boolean XOR operation: elementwise x ^ y. Supports broadcasting.<br>
+   * Boolean XOR operation: elementwise x ^ y. Supports broadcasting.
    *
    * @param x First input boolean array (BOOL type)
    * @param y Second input boolean array (BOOL type)
@@ -518,7 +522,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Boolean XOR operation: elementwise x ^ y. Supports broadcasting.<br>
+   * Boolean XOR operation: elementwise x ^ y. Supports broadcasting.
    *
    * @param name name May be null. Name for the output variable
    * @param x First input boolean array (BOOL type)
@@ -533,7 +537,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Cast the array to a new datatype - for example, Integer -> Float<br>
+   * Cast the array to a new datatype - for example, Integer -> Float
    *
    * @param arg Input variable to cast (NDARRAY type)
    * @param datatype Datatype to cast to
@@ -544,7 +548,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Cast the array to a new datatype - for example, Integer -> Float<br>
+   * Cast the array to a new datatype - for example, Integer -> Float
    *
    * @param name name May be null. Name for the output variable
    * @param arg Input variable to cast (NDARRAY type)
@@ -557,8 +561,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Returns a clipped ndarray such that the input is normalized so that its L2 norm <br>
-   * is <= the specified value.<br>
+   * Returns a clipped ndarray such that the input is normalized so that its L2 norm
+   * is &lt;= the specified value.
    *
    * @param x Input variable to clip (NUMERIC type)
    * @param clipValue The value max for clipping
@@ -570,8 +574,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Returns a clipped ndarray such that the input is normalized so that its L2 norm <br>
-   * is <= the specified value.<br>
+   * Returns a clipped ndarray such that the input is normalized so that its L2 norm
+   * is &lt;= the specified value.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable to clip (NUMERIC type)
@@ -585,8 +589,8 @@ public class SDBaseOps {
   }
 
   /**
-   *   Returns a clipped ndarray such that the input is normalized so that its L2 norm <br>
-   * is <= the specified value.<br>
+   *   Returns a clipped ndarray such that the input is normalized so that its L2 norm
+   * is &lt;= the specified value.
    *
    * @param x Input variable to clip (NUMERIC type)
    * @param clipValue The value max value for clipping (NUMERIC type)
@@ -601,8 +605,8 @@ public class SDBaseOps {
   }
 
   /**
-   *   Returns a clipped ndarray such that the input is normalized so that its L2 norm <br>
-   * is <= the specified value.<br>
+   *   Returns a clipped ndarray such that the input is normalized so that its L2 norm
+   * is &lt;= the specified value.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable to clip (NUMERIC type)
@@ -620,7 +624,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Return the clipped ndarray containing values no smaller or larger than the given min and max.<br>
+   * Return the clipped ndarray containing values no smaller or larger than the given min and max.
    *
    * @param x Input variable to cip (NUMERIC type)
    * @param clipValueMin The value min for clipping
@@ -633,7 +637,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Return the clipped ndarray containing values no smaller or larger than the given min and max.<br>
+   * Return the clipped ndarray containing values no smaller or larger than the given min and max.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable to cip (NUMERIC type)
@@ -649,7 +653,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Return the clipped ndarray containing values no smaller or larger than the given min and max.<br>
+   * Return the clipped ndarray containing values no smaller or larger than the given min and max.
    *
    * @param x Input variable to cip (NUMERIC type)
    * @param clipValueMin The value min for clipping (NUMERIC type)
@@ -664,7 +668,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Return the clipped ndarray containing values no smaller or larger than the given min and max.<br>
+   * Return the clipped ndarray containing values no smaller or larger than the given min and max.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable to cip (NUMERIC type)
@@ -682,48 +686,50 @@ public class SDBaseOps {
   }
 
   /**
-   * Concatenate a set of inputs along the specified dimension.<br>
-   * Note that inputs must have identical rank and identical dimensions, other than the dimension to stack on.<br>
-   * For example, if 2 inputs have shape [a, x, c] and [a, y, c] and dimension = 1, then the output has shape [a, x+y, c]<br>
+   * Concatenate a set of inputs along the specified dimension.
+   * Note that inputs must have identical rank and identical dimensions, other than the dimension to stack on.
+   * For example, if 2 inputs have shape [a, x, c] and [a, y, c] and dimension = 1, then the output has shape [a, x+y, c]
    *
    * Inputs must satisfy the following constraints: <br>
-   * Input arrays must all be the same datatype: isSameType(inputs)<br>
+   * Input arrays must all be the same datatype: {@code isSameType(inputs)}<br>
    *
-   * @param inputs Input variables (NUMERIC type)
+   * @param inputs Input variables (NDARRAY type)
    * @param dimension Dimension to concatenate on
-   * @return output  (NUMERIC type)
+   * @return output  (NDARRAY type)
    */
-  public SDVariable concat(int dimension, SDVariable... inputs) {    Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
+  public SDVariable concat(int dimension, SDVariable... inputs) {
+    Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
     Preconditions.checkArgument(isSameType(inputs), "Input arrays must all be the same datatype");
     return new org.nd4j.linalg.api.ops.impl.shape.Concat(sd,inputs, dimension).outputVariable();
   }
 
   /**
-   * Concatenate a set of inputs along the specified dimension.<br>
-   * Note that inputs must have identical rank and identical dimensions, other than the dimension to stack on.<br>
-   * For example, if 2 inputs have shape [a, x, c] and [a, y, c] and dimension = 1, then the output has shape [a, x+y, c]<br>
+   * Concatenate a set of inputs along the specified dimension.
+   * Note that inputs must have identical rank and identical dimensions, other than the dimension to stack on.
+   * For example, if 2 inputs have shape [a, x, c] and [a, y, c] and dimension = 1, then the output has shape [a, x+y, c]
    *
    * Inputs must satisfy the following constraints: <br>
-   * Input arrays must all be the same datatype: isSameType(inputs)<br>
+   * Input arrays must all be the same datatype: {@code isSameType(inputs)}<br>
    *
    * @param name name May be null. Name for the output variable
    * @param dimension Dimension to concatenate on
-   * @param inputs Input variables (NUMERIC type)
-   * @return output  (NUMERIC type)
+   * @param inputs Input variables (NDARRAY type)
+   * @return output  (NDARRAY type)
    */
-  public SDVariable concat(String name, int dimension, SDVariable... inputs) {    Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
+  public SDVariable concat(String name, int dimension, SDVariable... inputs) {
+    Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
     Preconditions.checkArgument(isSameType(inputs), "Input arrays must all be the same datatype");
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.Concat(sd,inputs, dimension).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
   /**
-   * Return a newly created variable,  with the specified shape and data type.<br>
+   * Return a newly created variable,  with the specified shape and data type.
    *
    * @param shape Input INDArray  (NUMERIC type)
    * @param dataType Data type of array
-   * @param order Order of array 
-   * @param initialize Whether to initialize the array or not 
+   * @param order Order of array
+   * @param initialize Whether to initialize the array or not
    * @return output A new INDArray  with the same (dynamic) shape as the input (NUMERIC type)
    */
   public SDVariable create(SDVariable shape, DataType dataType, String order, boolean initialize) {
@@ -732,13 +738,13 @@ public class SDBaseOps {
   }
 
   /**
-   * Return a newly created variable,  with the specified shape and data type.<br>
+   * Return a newly created variable,  with the specified shape and data type.
    *
    * @param name name May be null. Name for the output variable
    * @param shape Input INDArray  (NUMERIC type)
    * @param dataType Data type of array
-   * @param order Order of array 
-   * @param initialize Whether to initialize the array or not 
+   * @param order Order of array
+   * @param initialize Whether to initialize the array or not
    * @return output A new INDArray  with the same (dynamic) shape as the input (NUMERIC type)
    */
   public SDVariable create(String name, SDVariable shape, DataType dataType, String order,
@@ -749,7 +755,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Return a newly created variable,  with the specified shape and data type.<br>
+   * Return a newly created variable,  with the specified shape and data type.
    *
    * @param shape Input INDArray  (NUMERIC type)
    * @param dataType Data type of array
@@ -761,7 +767,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Return a newly created variable,  with the specified shape and data type.<br>
+   * Return a newly created variable,  with the specified shape and data type.
    *
    * @param name name May be null. Name for the output variable
    * @param shape Input INDArray  (NUMERIC type)
@@ -775,7 +781,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Return a newly created variable,  with the specified shape and data type.<br>
+   * Return a newly created variable,  with the specified shape and data type.
    *
    * @param input Input INDArray  (NDARRAY type)
    * @param indices  (NDARRAY type)
@@ -787,7 +793,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Return a newly created variable,  with the specified shape and data type.<br>
+   * Return a newly created variable,  with the specified shape and data type.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input INDArray  (NDARRAY type)
@@ -801,12 +807,12 @@ public class SDBaseOps {
   }
 
   /**
-   * Cumulative product operation.<br>
-   * For input: [ a, b, c], output is:<br>
-   * exclusive=false, reverse=false: [a, a*b, a*b*c]<br>
-   * exclusive=true, reverse=false, [0, a, a*b]<br>
-   * exclusive=false, reverse=true: [a*b*c, b*c, c]<br>
-   * exclusive=true, reverse=true: [b*c, c, 0]<br>
+   * Cumulative product operation.
+   * For input: [ a, b, c], output is:
+   * exclusive=false, reverse=false: [a, a*b, a*b*c]
+   * exclusive=true, reverse=false, [0, a, a*b]
+   * exclusive=false, reverse=true: [a*b*c, b*c, c]
+   * exclusive=true, reverse=true: [b*c, c, 0]
    *
    * @param in Input variable (NUMERIC type)
    * @param exclusive If true: exclude the first value
@@ -821,12 +827,12 @@ public class SDBaseOps {
   }
 
   /**
-   * Cumulative product operation.<br>
-   * For input: [ a, b, c], output is:<br>
-   * exclusive=false, reverse=false: [a, a*b, a*b*c]<br>
-   * exclusive=true, reverse=false, [0, a, a*b]<br>
-   * exclusive=false, reverse=true: [a*b*c, b*c, c]<br>
-   * exclusive=true, reverse=true: [b*c, c, 0]<br>
+   * Cumulative product operation.
+   * For input: [ a, b, c], output is:
+   * exclusive=false, reverse=false: [a, a*b, a*b*c]
+   * exclusive=true, reverse=false, [0, a, a*b]
+   * exclusive=false, reverse=true: [a*b*c, b*c, c]
+   * exclusive=true, reverse=true: [b*c, c, 0]
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -844,12 +850,12 @@ public class SDBaseOps {
   }
 
   /**
-   * Cumulative product operation.<br>
-   * For input: [ a, b, c], output is:<br>
-   * exclusive=false, reverse=false: [a, a*b, a*b*c]<br>
-   * exclusive=true, reverse=false, [0, a, a*b]<br>
-   * exclusive=false, reverse=true: [a*b*c, b*c, c]<br>
-   * exclusive=true, reverse=true: [b*c, c, 0]<br>
+   * Cumulative product operation.
+   * For input: [ a, b, c], output is:
+   * exclusive=false, reverse=false: [a, a*b, a*b*c]
+   * exclusive=true, reverse=false, [0, a, a*b]
+   * exclusive=false, reverse=true: [a*b*c, b*c, c]
+   * exclusive=true, reverse=true: [b*c, c, 0]
    *
    * @param in Input variable (NUMERIC type)
    * @param axis Scalar axis argument for dimension to perform cumululative sum operations along (Size: AtLeast(min=1))
@@ -862,12 +868,12 @@ public class SDBaseOps {
   }
 
   /**
-   * Cumulative product operation.<br>
-   * For input: [ a, b, c], output is:<br>
-   * exclusive=false, reverse=false: [a, a*b, a*b*c]<br>
-   * exclusive=true, reverse=false, [0, a, a*b]<br>
-   * exclusive=false, reverse=true: [a*b*c, b*c, c]<br>
-   * exclusive=true, reverse=true: [b*c, c, 0]<br>
+   * Cumulative product operation.
+   * For input: [ a, b, c], output is:
+   * exclusive=false, reverse=false: [a, a*b, a*b*c]
+   * exclusive=true, reverse=false, [0, a, a*b]
+   * exclusive=false, reverse=true: [a*b*c, b*c, c]
+   * exclusive=true, reverse=true: [b*c, c, 0]
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -882,12 +888,12 @@ public class SDBaseOps {
   }
 
   /**
-   * Cumulative sum operation.<br>
-   * For input: [ a, b, c], output is:<br>
-   * exclusive=false, reverse=false: [a, a+b, a+b+c]<br>
-   * exclusive=true, reverse=false, [0, a, a+b]<br>
-   * exclusive=false, reverse=true: [a+b+c, b+c, c]<br>
-   * exclusive=true, reverse=true: [b+c, c, 0]<br>
+   * Cumulative sum operation.
+   * For input: [ a, b, c], output is:
+   * exclusive=false, reverse=false: [a, a+b, a+b+c]
+   * exclusive=true, reverse=false, [0, a, a+b]
+   * exclusive=false, reverse=true: [a+b+c, b+c, c]
+   * exclusive=true, reverse=true: [b+c, c, 0]
    *
    * @param in Input variable (NUMERIC type)
    * @param exclusive If true: exclude the first value
@@ -902,12 +908,12 @@ public class SDBaseOps {
   }
 
   /**
-   * Cumulative sum operation.<br>
-   * For input: [ a, b, c], output is:<br>
-   * exclusive=false, reverse=false: [a, a+b, a+b+c]<br>
-   * exclusive=true, reverse=false, [0, a, a+b]<br>
-   * exclusive=false, reverse=true: [a+b+c, b+c, c]<br>
-   * exclusive=true, reverse=true: [b+c, c, 0]<br>
+   * Cumulative sum operation.
+   * For input: [ a, b, c], output is:
+   * exclusive=false, reverse=false: [a, a+b, a+b+c]
+   * exclusive=true, reverse=false, [0, a, a+b]
+   * exclusive=false, reverse=true: [a+b+c, b+c, c]
+   * exclusive=true, reverse=true: [b+c, c, 0]
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -925,12 +931,12 @@ public class SDBaseOps {
   }
 
   /**
-   * Cumulative sum operation.<br>
-   * For input: [ a, b, c], output is:<br>
-   * exclusive=false, reverse=false: [a, a+b, a+b+c]<br>
-   * exclusive=true, reverse=false, [0, a, a+b]<br>
-   * exclusive=false, reverse=true: [a+b+c, b+c, c]<br>
-   * exclusive=true, reverse=true: [b+c, c, 0]<br>
+   * Cumulative sum operation.
+   * For input: [ a, b, c], output is:
+   * exclusive=false, reverse=false: [a, a+b, a+b+c]
+   * exclusive=true, reverse=false, [0, a, a+b]
+   * exclusive=false, reverse=true: [a+b+c, b+c, c]
+   * exclusive=true, reverse=true: [b+c, c, 0]
    *
    * @param in Input variable (NUMERIC type)
    * @param axis Scalar axis argument for dimension to perform cumululative sum operations along (Size: AtLeast(min=1))
@@ -943,12 +949,12 @@ public class SDBaseOps {
   }
 
   /**
-   * Cumulative sum operation.<br>
-   * For input: [ a, b, c], output is:<br>
-   * exclusive=false, reverse=false: [a, a+b, a+b+c]<br>
-   * exclusive=true, reverse=false, [0, a, a+b]<br>
-   * exclusive=false, reverse=true: [a+b+c, b+c, c]<br>
-   * exclusive=true, reverse=true: [b+c, c, 0]<br>
+   * Cumulative sum operation.
+   * For input: [ a, b, c], output is:
+   * exclusive=false, reverse=false: [a, a+b, a+b+c]
+   * exclusive=true, reverse=false, [0, a, a+b]
+   * exclusive=false, reverse=true: [a+b+c, b+c, c]
+   * exclusive=true, reverse=true: [b+c, c, 0]
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -963,8 +969,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Pairwise dot product reduction along dimension<br>
-   * output = sum(i=0 ... size(dim)-1) x[i] * y[i]<br>
+   * Pairwise dot product reduction along dimension
+   * output = sum(i=0 ... size(dim)-1) x[i] * y[i]
    *
    * @param x first input (NUMERIC type)
    * @param y second input (NUMERIC type)
@@ -979,8 +985,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Pairwise dot product reduction along dimension<br>
-   * output = sum(i=0 ... size(dim)-1) x[i] * y[i]<br>
+   * Pairwise dot product reduction along dimension
+   * output = sum(i=0 ... size(dim)-1) x[i] * y[i]
    *
    * @param name name May be null. Name for the output variable
    * @param x first input (NUMERIC type)
@@ -997,19 +1003,20 @@ public class SDBaseOps {
   }
 
   /**
-   * Dynamically partition the input variable values into the specified number of paritions, using the indices.<br>
-   * Example:<br>
-   * <pre><br>
-   * input = [1,2,3,4,5]<br>
-   * numPartitions = 2<br>
-   * partitions = [1,0,0,1,0]<br>
-   * out[0] = [2,3,5]<br>
-   * out[1] = [1,4] }<br>
-   * </pre><br>
+   * Dynamically partition the input variable values into the specified number of paritions, using the indices.
+   * Example:
+   * <pre>
+   * input = [1,2,3,4,5]
+   * numPartitions = 2
+   * partitions = [1,0,0,1,0]
+   * out[0] = [2,3,5]
+   * out[1] = [1,4] }
+   * </pre>
    *
    * @param x Input variable (NUMERIC type)
    * @param partitions 1D input with values 0 to numPartitions-1 (INT type)
    * @param numPartitions Number of partitions, >= 1
+   * @return output Output variables (equal in number to numPartitions) (NUMERIC type)
    */
   public SDVariable[] dynamicPartition(SDVariable x, SDVariable partitions, int numPartitions) {
     SDValidation.validateNumerical("dynamicPartition", "x", x);
@@ -1018,20 +1025,21 @@ public class SDBaseOps {
   }
 
   /**
-   * Dynamically partition the input variable values into the specified number of paritions, using the indices.<br>
-   * Example:<br>
-   * <pre><br>
-   * input = [1,2,3,4,5]<br>
-   * numPartitions = 2<br>
-   * partitions = [1,0,0,1,0]<br>
-   * out[0] = [2,3,5]<br>
-   * out[1] = [1,4] }<br>
-   * </pre><br>
+   * Dynamically partition the input variable values into the specified number of paritions, using the indices.
+   * Example:
+   * <pre>
+   * input = [1,2,3,4,5]
+   * numPartitions = 2
+   * partitions = [1,0,0,1,0]
+   * out[0] = [2,3,5]
+   * out[1] = [1,4] }
+   * </pre>
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param x Input variable (NUMERIC type)
    * @param partitions 1D input with values 0 to numPartitions-1 (INT type)
    * @param numPartitions Number of partitions, >= 1
+   * @return output Output variables (equal in number to numPartitions) (NUMERIC type)
    */
   public SDVariable[] dynamicPartition(String[] names, SDVariable x, SDVariable partitions,
       int numPartitions) {
@@ -1042,7 +1050,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Dynamically merge the specified input arrays into a single array, using the specified indices<br>
+   * Dynamically merge the specified input arrays into a single array, using the specified indices
    *
    * @param indices Indices to use when merging. Must be >= 1, same length as input variables (INT type)
    * @param x Input variables. (NUMERIC type)
@@ -1057,7 +1065,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Dynamically merge the specified input arrays into a single array, using the specified indices<br>
+   * Dynamically merge the specified input arrays into a single array, using the specified indices
    *
    * @param name name May be null. Name for the output variable
    * @param indices Indices to use when merging. Must be >= 1, same length as input variables (INT type)
@@ -1074,9 +1082,9 @@ public class SDBaseOps {
   }
 
   /**
-   * Equals operation: elementwise x == y<br>
+   * Equals operation: elementwise x == y
    *
-   * Return boolean array with values true where satisfied, or false otherwise.<br>
+   * Return boolean array with values true where satisfied, or false otherwise.
    *
    * @param x Input array (NUMERIC type)
    * @param y Double value argument to use in operation
@@ -1088,9 +1096,9 @@ public class SDBaseOps {
   }
 
   /**
-   * Equals operation: elementwise x == y<br>
+   * Equals operation: elementwise x == y
    *
-   * Return boolean array with values true where satisfied, or false otherwise.<br>
+   * Return boolean array with values true where satisfied, or false otherwise.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input array (NUMERIC type)
@@ -1104,14 +1112,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Equal to operation: elementwise x == y<br>
-   * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+   * Equal to operation: elementwise x == y
+   * If x and y arrays have equal shape, the output shape is the same as these inputs.
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
-   * Return boolean array with values true where satisfied, or false otherwise.<br>
+   * Return boolean array with values true where satisfied, or false otherwise.
    *
    * @param x Input 1 (NDARRAY type)
    * @param y Input 2 (NDARRAY type)
@@ -1122,14 +1130,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Equal to operation: elementwise x == y<br>
-   * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+   * Equal to operation: elementwise x == y
+   * If x and y arrays have equal shape, the output shape is the same as these inputs.
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
-   * Return boolean array with values true where satisfied, or false otherwise.<br>
+   * Return boolean array with values true where satisfied, or false otherwise.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input 1 (NDARRAY type)
@@ -1142,11 +1150,11 @@ public class SDBaseOps {
   }
 
   /**
-   * Reshape the input by adding a 1 at the specified location.<br>
-   * For example, if input has shape [a, b], then output shape is:<br>
-   * axis = 0: [1, a, b]<br>
-   * axis = 1: [a, 1, b]<br>
-   * axis = 2: [a, b, 1]<br>
+   * Reshape the input by adding a 1 at the specified location.
+   * For example, if input has shape [a, b], then output shape is:
+   * axis = 0: [1, a, b]
+   * axis = 1: [a, 1, b]
+   * axis = 2: [a, b, 1]
    *
    * @param x Input variable (NDARRAY type)
    * @param axis Axis to expand
@@ -1157,11 +1165,11 @@ public class SDBaseOps {
   }
 
   /**
-   * Reshape the input by adding a 1 at the specified location.<br>
-   * For example, if input has shape [a, b], then output shape is:<br>
-   * axis = 0: [1, a, b]<br>
-   * axis = 1: [a, 1, b]<br>
-   * axis = 2: [a, b, 1]<br>
+   * Reshape the input by adding a 1 at the specified location.
+   * For example, if input has shape [a, b], then output shape is:
+   * axis = 0: [1, a, b]
+   * axis = 1: [a, 1, b]
+   * axis = 2: [a, b, 1]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NDARRAY type)
@@ -1174,7 +1182,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Generate an output variable with the specified (dynamic) shape with all elements set to the specified value<br>
+   * Generate an output variable with the specified (dynamic) shape with all elements set to the specified value
    *
    * @param shape Shape: must be a 1D array/variable (INT type)
    * @param dataType Datatype of the output array
@@ -1187,7 +1195,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Generate an output variable with the specified (dynamic) shape with all elements set to the specified value<br>
+   * Generate an output variable with the specified (dynamic) shape with all elements set to the specified value
    *
    * @param name name May be null. Name for the output variable
    * @param shape Shape: must be a 1D array/variable (INT type)
@@ -1202,7 +1210,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Return a flattened variable with the specified ordering<br>
+   * Return a flattened variable with the specified ordering
    *
    * @param inputs Input variables (NDARRAY type)
    * @param order ordering for the variable
@@ -1214,7 +1222,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Return a flattened variable with the specified ordering<br>
+   * Return a flattened variable with the specified ordering
    *
    * @param name name May be null. Name for the output variable
    * @param inputs Input variables (NDARRAY type)
@@ -1228,7 +1236,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Return a flattened variable with the specified ordering<br>
+   * Return a flattened variable with the specified ordering
    *
    * @param inputs Input variables (NDARRAY type)
    * @return output Output variable (NUMERIC type)
@@ -1239,7 +1247,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Return a flattened variable with the specified ordering<br>
+   * Return a flattened variable with the specified ordering
    *
    * @param name name May be null. Name for the output variable
    * @param inputs Input variables (NDARRAY type)
@@ -1252,8 +1260,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Gather slices from the input variable where the indices are specified as fixed int[] values.<br>
-   * Output shape is same as input shape, except for axis dimension, which has size equal to indices.length.<br>
+   * Gather slices from the input variable where the indices are specified as fixed int[] values.
+   * Output shape is same as input shape, except for axis dimension, which has size equal to indices.length.
    *
    * @param df Input variable (NDARRAY type)
    * @param indices Indices to get (Size: AtLeast(min=1))
@@ -1266,8 +1274,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Gather slices from the input variable where the indices are specified as fixed int[] values.<br>
-   * Output shape is same as input shape, except for axis dimension, which has size equal to indices.length.<br>
+   * Gather slices from the input variable where the indices are specified as fixed int[] values.
+   * Output shape is same as input shape, except for axis dimension, which has size equal to indices.length.
    *
    * @param name name May be null. Name for the output variable
    * @param df Input variable (NDARRAY type)
@@ -1282,8 +1290,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Gather slices from the input variable where the indices are specified as dynamic array values.<br>
-   * Output shape is same as input shape, except for axis dimension, which has size equal to indices.length.<br>
+   * Gather slices from the input variable where the indices are specified as dynamic array values.
+   * Output shape is same as input shape, except for axis dimension, which has size equal to indices.length.
    *
    * @param df Input variable (NDARRAY type)
    * @param indices Indices to get slices for. Rank 0 or 1 input (INT type)
@@ -1296,8 +1304,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Gather slices from the input variable where the indices are specified as dynamic array values.<br>
-   * Output shape is same as input shape, except for axis dimension, which has size equal to indices.length.<br>
+   * Gather slices from the input variable where the indices are specified as dynamic array values.
+   * Output shape is same as input shape, except for axis dimension, which has size equal to indices.length.
    *
    * @param name name May be null. Name for the output variable
    * @param df Input variable (NDARRAY type)
@@ -1312,7 +1320,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Gather slices from df with shape specified by indices. <br>
+   * Gather slices from df with shape specified by indices.
    *
    * @param df  (NDARRAY type)
    * @param indices  (NUMERIC type)
@@ -1324,7 +1332,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Gather slices from df with shape specified by indices. <br>
+   * Gather slices from df with shape specified by indices.
    *
    * @param name name May be null. Name for the output variable
    * @param df  (NDARRAY type)
@@ -1338,9 +1346,9 @@ public class SDBaseOps {
   }
 
   /**
-   * Greater than operation: elementwise x > y<br>
+   * Greater than operation: elementwise x > y
    *
-   * Return boolean array with values true where satisfied, or false otherwise.<br>
+   * Return boolean array with values true where satisfied, or false otherwise.
    *
    * @param x Input array (NDARRAY type)
    * @param y Double value argument to use in operation
@@ -1351,9 +1359,9 @@ public class SDBaseOps {
   }
 
   /**
-   * Greater than operation: elementwise x > y<br>
+   * Greater than operation: elementwise x > y
    *
-   * Return boolean array with values true where satisfied, or false otherwise.<br>
+   * Return boolean array with values true where satisfied, or false otherwise.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input array (NDARRAY type)
@@ -1366,14 +1374,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Greater than operation: elementwise x > y<br>
-   * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+   * Greater than operation: elementwise x > y
+   * If x and y arrays have equal shape, the output shape is the same as these inputs.
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
-   * Return boolean array with values true where satisfied, or false otherwise.<br>
+   * Return boolean array with values true where satisfied, or false otherwise.
    *
    * @param x Input 1 (NDARRAY type)
    * @param y Input 2 (NDARRAY type)
@@ -1384,14 +1392,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Greater than operation: elementwise x > y<br>
-   * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+   * Greater than operation: elementwise x > y
+   * If x and y arrays have equal shape, the output shape is the same as these inputs.
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
-   * Return boolean array with values true where satisfied, or false otherwise.<br>
+   * Return boolean array with values true where satisfied, or false otherwise.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input 1 (NDARRAY type)
@@ -1404,9 +1412,9 @@ public class SDBaseOps {
   }
 
   /**
-   * Greater than or equals operation: elementwise x >= y<br>
+   * Greater than or equals operation: elementwise x >= y
    *
-   * Return boolean array with values true where satisfied, or false otherwise.<br>
+   * Return boolean array with values true where satisfied, or false otherwise.
    *
    * @param x Input array (NDARRAY type)
    * @param y Double value argument to use in operation
@@ -1417,9 +1425,9 @@ public class SDBaseOps {
   }
 
   /**
-   * Greater than or equals operation: elementwise x >= y<br>
+   * Greater than or equals operation: elementwise x >= y
    *
-   * Return boolean array with values true where satisfied, or false otherwise.<br>
+   * Return boolean array with values true where satisfied, or false otherwise.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input array (NDARRAY type)
@@ -1432,14 +1440,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Greater than or equal to operation: elementwise x >= y<br>
-   * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+   * Greater than or equal to operation: elementwise x >= y
+   * If x and y arrays have equal shape, the output shape is the same as these inputs.
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
-   * Return boolean array with values true where satisfied, or false otherwise.<br>
+   * Return boolean array with values true where satisfied, or false otherwise.
    *
    * @param x Input 1 (NDARRAY type)
    * @param y Input 2 (NDARRAY type)
@@ -1450,14 +1458,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Greater than or equal to operation: elementwise x >= y<br>
-   * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+   * Greater than or equal to operation: elementwise x >= y
+   * If x and y arrays have equal shape, the output shape is the same as these inputs.
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
-   * Return boolean array with values true where satisfied, or false otherwise.<br>
+   * Return boolean array with values true where satisfied, or false otherwise.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input 1 (NDARRAY type)
@@ -1470,7 +1478,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Elementwise identity operation: out = x<br>
+   * Elementwise identity operation: out = x
    *
    * @param input Input variable (NDARRAY type)
    * @return output Output variable (NDARRAY type)
@@ -1480,7 +1488,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Elementwise identity operation: out = x<br>
+   * Elementwise identity operation: out = x
    *
    * @param name name May be null. Name for the output variable
    * @param input Input variable (NDARRAY type)
@@ -1492,9 +1500,9 @@ public class SDBaseOps {
   }
 
   /**
-   * Compute the inverse permutation indices for a permutation operation<br>
-   * Example: if input is [2, 0, 1] then output is [1, 2, 0]<br>
-   * The idea is that x.permute(input).permute(invertPermutation(input)) == x<br>
+   * Compute the inverse permutation indices for a permutation operation
+   * Example: if input is [2, 0, 1] then output is [1, 2, 0]
+   * The idea is that x.permute(input).permute(invertPermutation(input)) == x
    *
    * @param input 1D indices for permutation (INT type)
    * @return output 1D inverted permutation (INT type)
@@ -1505,9 +1513,9 @@ public class SDBaseOps {
   }
 
   /**
-   * Compute the inverse permutation indices for a permutation operation<br>
-   * Example: if input is [2, 0, 1] then output is [1, 2, 0]<br>
-   * The idea is that x.permute(input).permute(invertPermutation(input)) == x<br>
+   * Compute the inverse permutation indices for a permutation operation
+   * Example: if input is [2, 0, 1] then output is [1, 2, 0]
+   * The idea is that x.permute(input).permute(invertPermutation(input)) == x
    *
    * @param name name May be null. Name for the output variable
    * @param input 1D indices for permutation (INT type)
@@ -1520,7 +1528,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Is the director a numeric tensor? In the current version of ND4J/SameDiff, this always returns true/1<br>
+   * Is the director a numeric tensor? In the current version of ND4J/SameDiff, this always returns true/1
    *
    * @param x Input variable (NUMERIC type)
    * @return output scalar boolean with value true or false (NDARRAY type)
@@ -1531,7 +1539,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Is the director a numeric tensor? In the current version of ND4J/SameDiff, this always returns true/1<br>
+   * Is the director a numeric tensor? In the current version of ND4J/SameDiff, this always returns true/1
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -1544,8 +1552,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Create a new 1d array with values evenly spaced between values 'start' and 'stop'<br>
-   * For example, linspace(start=3.0, stop=4.0, number=3) will generate [3.0, 3.5, 4.0]<br>
+   * Create a new 1d array with values evenly spaced between values 'start' and 'stop'
+   * For example, linspace(start=3.0, stop=4.0, number=3) will generate [3.0, 3.5, 4.0]
    *
    * @param dataType Data type of the output array
    * @param start Start value
@@ -1558,8 +1566,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Create a new 1d array with values evenly spaced between values 'start' and 'stop'<br>
-   * For example, linspace(start=3.0, stop=4.0, number=3) will generate [3.0, 3.5, 4.0]<br>
+   * Create a new 1d array with values evenly spaced between values 'start' and 'stop'
+   * For example, linspace(start=3.0, stop=4.0, number=3) will generate [3.0, 3.5, 4.0]
    *
    * @param name name May be null. Name for the output variable
    * @param dataType Data type of the output array
@@ -1575,8 +1583,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Create a new 1d array with values evenly spaced between values 'start' and 'stop'<br>
-   * For example, linspace(start=3.0, stop=4.0, number=3) will generate [3.0, 3.5, 4.0]<br>
+   * Create a new 1d array with values evenly spaced between values 'start' and 'stop'
+   * For example, linspace(start=3.0, stop=4.0, number=3) will generate [3.0, 3.5, 4.0]
    *
    * @param start Start value (NUMERIC type)
    * @param stop Stop value (NUMERIC type)
@@ -1593,8 +1601,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Create a new 1d array with values evenly spaced between values 'start' and 'stop'<br>
-   * For example, linspace(start=3.0, stop=4.0, number=3) will generate [3.0, 3.5, 4.0]<br>
+   * Create a new 1d array with values evenly spaced between values 'start' and 'stop'
+   * For example, linspace(start=3.0, stop=4.0, number=3) will generate [3.0, 3.5, 4.0]
    *
    * @param name name May be null. Name for the output variable
    * @param start Start value (NUMERIC type)
@@ -1613,9 +1621,9 @@ public class SDBaseOps {
   }
 
   /**
-   * Less than operation: elementwise x < y<br>
+   * Less than operation: elementwise x &lt; y
    *
-   * Return boolean array with values true where satisfied, or false otherwise.<br>
+   * Return boolean array with values true where satisfied, or false otherwise.
    *
    * @param x Input array (NDARRAY type)
    * @param y Double value argument to use in operation
@@ -1626,9 +1634,9 @@ public class SDBaseOps {
   }
 
   /**
-   * Less than operation: elementwise x < y<br>
+   * Less than operation: elementwise x &lt; y
    *
-   * Return boolean array with values true where satisfied, or false otherwise.<br>
+   * Return boolean array with values true where satisfied, or false otherwise.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input array (NDARRAY type)
@@ -1641,14 +1649,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Less than operation: elementwise x < y<br>
-   * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+   * Less than operation: elementwise x &lt; y
+   * If x and y arrays have equal shape, the output shape is the same as these inputs.
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
-   * Return boolean array with values true where satisfied, or false otherwise.<br>
+   * Return boolean array with values true where satisfied, or false otherwise.
    *
    * @param x Input 1 (NDARRAY type)
    * @param y Input 2 (NDARRAY type)
@@ -1659,14 +1667,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Less than operation: elementwise x < y<br>
-   * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+   * Less than operation: elementwise x &lt; y
+   * If x and y arrays have equal shape, the output shape is the same as these inputs.
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
-   * Return boolean array with values true where satisfied, or false otherwise.<br>
+   * Return boolean array with values true where satisfied, or false otherwise.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input 1 (NDARRAY type)
@@ -1679,9 +1687,9 @@ public class SDBaseOps {
   }
 
   /**
-   * Less than or equals operation: elementwise x <= y<br>
+   * Less than or equals operation: elementwise x &lt;= y
    *
-   * Return boolean array with values true where satisfied, or false otherwise.<br>
+   * Return boolean array with values true where satisfied, or false otherwise.
    *
    * @param x Input array (NDARRAY type)
    * @param y Double value argument to use in operation
@@ -1692,9 +1700,9 @@ public class SDBaseOps {
   }
 
   /**
-   * Less than or equals operation: elementwise x <= y<br>
+   * Less than or equals operation: elementwise x &lt;= y
    *
-   * Return boolean array with values true where satisfied, or false otherwise.<br>
+   * Return boolean array with values true where satisfied, or false otherwise.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input array (NDARRAY type)
@@ -1707,14 +1715,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Less than or equal to operation: elementwise x <= y<br>
-   * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+   * Less than or equal to operation: elementwise x &lt;= y
+   * If x and y arrays have equal shape, the output shape is the same as these inputs.
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
-   * Return boolean array with values true where satisfied, or false otherwise.<br>
+   * Return boolean array with values true where satisfied, or false otherwise.
    *
    * @param x Input 1 (NUMERIC type)
    * @param y Input 2 (NUMERIC type)
@@ -1727,14 +1735,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Less than or equal to operation: elementwise x <= y<br>
-   * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+   * Less than or equal to operation: elementwise x &lt;= y
+   * If x and y arrays have equal shape, the output shape is the same as these inputs.
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
-   * Return boolean array with values true where satisfied, or false otherwise.<br>
+   * Return boolean array with values true where satisfied, or false otherwise.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input 1 (NUMERIC type)
@@ -1749,7 +1757,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Returns a boolean mask of equal shape to the input, where the condition is satisfied - value 1 where satisfied, 0 otherwise<br>
+   * Returns a boolean mask of equal shape to the input, where the condition is satisfied - value 1 where satisfied, 0 otherwise
    *
    * @param in Input (NUMERIC type)
    * @param condition Condition
@@ -1761,7 +1769,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Returns a boolean mask of equal shape to the input, where the condition is satisfied - value 1 where satisfied, 0 otherwise<br>
+   * Returns a boolean mask of equal shape to the input, where the condition is satisfied - value 1 where satisfied, 0 otherwise
    *
    * @param name name May be null. Name for the output variable
    * @param in Input (NUMERIC type)
@@ -1775,7 +1783,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Returns a count of the number of elements that satisfy the condition<br>
+   * Returns a count of the number of elements that satisfy the condition
    *
    * @param in Input (NUMERIC type)
    * @param condition Condition
@@ -1787,7 +1795,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Returns a count of the number of elements that satisfy the condition<br>
+   * Returns a count of the number of elements that satisfy the condition
    *
    * @param name name May be null. Name for the output variable
    * @param in Input (NUMERIC type)
@@ -1801,14 +1809,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Returns a count of the number of elements that satisfy the condition (for each slice along the specified dimensions)<br>
+   * Returns a count of the number of elements that satisfy the condition (for each slice along the specified dimensions)
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param in Input variable (NUMERIC type)
    * @param condition Condition
@@ -1824,14 +1832,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Returns a count of the number of elements that satisfy the condition (for each slice along the specified dimensions)<br>
+   * Returns a count of the number of elements that satisfy the condition (for each slice along the specified dimensions)
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -1849,14 +1857,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Returns a count of the number of elements that satisfy the condition (for each slice along the specified dimensions)<br>
+   * Returns a count of the number of elements that satisfy the condition (for each slice along the specified dimensions)
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param in Input variable (NUMERIC type)
    * @param condition Condition
@@ -1870,14 +1878,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Returns a count of the number of elements that satisfy the condition (for each slice along the specified dimensions)<br>
+   * Returns a count of the number of elements that satisfy the condition (for each slice along the specified dimensions)
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -1894,14 +1902,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Max array reduction operation, optionally along specified dimensions<br>
+   * Max array reduction operation, optionally along specified dimensions
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x Input variable (NUMERIC type)
    * @param keepDims If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
@@ -1915,14 +1923,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Max array reduction operation, optionally along specified dimensions<br>
+   * Max array reduction operation, optionally along specified dimensions
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -1938,14 +1946,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Max array reduction operation, optionally along specified dimensions<br>
+   * Max array reduction operation, optionally along specified dimensions
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -1958,14 +1966,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Max array reduction operation, optionally along specified dimensions<br>
+   * Max array reduction operation, optionally along specified dimensions
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -1980,11 +1988,11 @@ public class SDBaseOps {
   }
 
   /**
-   * Element-wise maximum operation: out[i] = max(first[i], second[i])<br>
+   * Element-wise maximum operation: out[i] = max(first[i], second[i])
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param first First input array (NUMERIC type)
    * @param second Second input array (NUMERIC type)
@@ -1997,11 +2005,11 @@ public class SDBaseOps {
   }
 
   /**
-   * Element-wise maximum operation: out[i] = max(first[i], second[i])<br>
+   * Element-wise maximum operation: out[i] = max(first[i], second[i])
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param name name May be null. Name for the output variable
    * @param first First input array (NUMERIC type)
@@ -2016,14 +2024,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Mean (average) array reduction operation, optionally along specified dimensions<br>
+   * Mean (average) array reduction operation, optionally along specified dimensions
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x Input variable (NUMERIC type)
    * @param keepDims If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
@@ -2037,14 +2045,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Mean (average) array reduction operation, optionally along specified dimensions<br>
+   * Mean (average) array reduction operation, optionally along specified dimensions
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -2060,14 +2068,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Mean (average) array reduction operation, optionally along specified dimensions<br>
+   * Mean (average) array reduction operation, optionally along specified dimensions
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -2080,14 +2088,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Mean (average) array reduction operation, optionally along specified dimensions<br>
+   * Mean (average) array reduction operation, optionally along specified dimensions
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -2102,14 +2110,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Mean (average) array reduction operation, optionally along specified dimensions<br>
+   * Mean (average) array reduction operation, optionally along specified dimensions
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (INT type)
@@ -2123,14 +2131,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Mean (average) array reduction operation, optionally along specified dimensions<br>
+   * Mean (average) array reduction operation, optionally along specified dimensions
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -2146,14 +2154,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Mean (average) array reduction operation, optionally along specified dimensions<br>
+   * Mean (average) array reduction operation, optionally along specified dimensions
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (INT type)
@@ -2166,14 +2174,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Mean (average) array reduction operation, optionally along specified dimensions<br>
+   * Mean (average) array reduction operation, optionally along specified dimensions
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -2188,9 +2196,9 @@ public class SDBaseOps {
   }
 
   /**
-   * The merge operation is a control operation that forwards the either of the inputs to the output, when<br>
-   * the first of them becomes available. If both are available, the output is undefined (either input could<br>
-   * be forwarded to the output)<br>
+   * The merge operation is a control operation that forwards the either of the inputs to the output, when
+   * the first of them becomes available. If both are available, the output is undefined (either input could
+   * be forwarded to the output)
    *
    * @param x Input variable (NDARRAY type)
    * @param y Input variable (NDARRAY type)
@@ -2201,9 +2209,9 @@ public class SDBaseOps {
   }
 
   /**
-   * The merge operation is a control operation that forwards the either of the inputs to the output, when<br>
-   * the first of them becomes available. If both are available, the output is undefined (either input could<br>
-   * be forwarded to the output)<br>
+   * The merge operation is a control operation that forwards the either of the inputs to the output, when
+   * the first of them becomes available. If both are available, the output is undefined (either input could
+   * be forwarded to the output)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NDARRAY type)
@@ -2216,14 +2224,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Minimum array reduction operation, optionally along specified dimensions. out = min(in)<br>
+   * Minimum array reduction operation, optionally along specified dimensions. out = min(in)
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x Input variable (NUMERIC type)
    * @param keepDims If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
@@ -2237,14 +2245,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Minimum array reduction operation, optionally along specified dimensions. out = min(in)<br>
+   * Minimum array reduction operation, optionally along specified dimensions. out = min(in)
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -2260,14 +2268,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Minimum array reduction operation, optionally along specified dimensions. out = min(in)<br>
+   * Minimum array reduction operation, optionally along specified dimensions. out = min(in)
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -2280,14 +2288,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Minimum array reduction operation, optionally along specified dimensions. out = min(in)<br>
+   * Minimum array reduction operation, optionally along specified dimensions. out = min(in)
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -2302,11 +2310,11 @@ public class SDBaseOps {
   }
 
   /**
-   * Element-wise minimum operation: out[i] = min(first[i], second[i])<br>
+   * Element-wise minimum operation: out[i] = min(first[i], second[i])
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param first First input array (NUMERIC type)
    * @param second Second input array (NUMERIC type)
@@ -2319,11 +2327,11 @@ public class SDBaseOps {
   }
 
   /**
-   * Element-wise minimum operation: out[i] = min(first[i], second[i])<br>
+   * Element-wise minimum operation: out[i] = min(first[i], second[i])
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param name name May be null. Name for the output variable
    * @param first First input array (NUMERIC type)
@@ -2338,7 +2346,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Return a scalar array reflecting the min or max value for a given data type.<br>
+   * Return a scalar array reflecting the min or max value for a given data type.
    *
    * @param datatype The input target data type represented as an int
    * @param minOrMax The min or max (0 or 1) value to return
@@ -2349,7 +2357,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Return a scalar array reflecting the min or max value for a given data type.<br>
+   * Return a scalar array reflecting the min or max value for a given data type.
    *
    * @param name name May be null. Name for the output variable
    * @param datatype The input target data type represented as an int
@@ -2362,8 +2370,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Matrix multiplication: out = mmul(x,y)<br>
-   * Supports specifying transpose argument to perform operation such as mmul(a^T, b), etc.<br>
+   * Matrix multiplication: out = mmul(x,y)
+   * Supports specifying transpose argument to perform operation such as mmul(a^T, b), etc.
    *
    * @param x First input variable (NUMERIC type)
    * @param y Second input variable (NUMERIC type)
@@ -2380,8 +2388,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Matrix multiplication: out = mmul(x,y)<br>
-   * Supports specifying transpose argument to perform operation such as mmul(a^T, b), etc.<br>
+   * Matrix multiplication: out = mmul(x,y)
+   * Supports specifying transpose argument to perform operation such as mmul(a^T, b), etc.
    *
    * @param name name May be null. Name for the output variable
    * @param x First input variable (NUMERIC type)
@@ -2400,8 +2408,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Matrix multiplication: out = mmul(x,y)<br>
-   * Supports specifying transpose argument to perform operation such as mmul(a^T, b), etc.<br>
+   * Matrix multiplication: out = mmul(x,y)
+   * Supports specifying transpose argument to perform operation such as mmul(a^T, b), etc.
    *
    * @param x First input variable (NUMERIC type)
    * @param y Second input variable (NUMERIC type)
@@ -2414,8 +2422,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Matrix multiplication: out = mmul(x,y)<br>
-   * Supports specifying transpose argument to perform operation such as mmul(a^T, b), etc.<br>
+   * Matrix multiplication: out = mmul(x,y)
+   * Supports specifying transpose argument to perform operation such as mmul(a^T, b), etc.
    *
    * @param name name May be null. Name for the output variable
    * @param x First input variable (NUMERIC type)
@@ -2430,9 +2438,9 @@ public class SDBaseOps {
   }
 
   /**
-   * Not equals operation: elementwise x != y<br>
+   * Not equals operation: elementwise x != y
    *
-   * Return boolean array with values true where satisfied, or false otherwise.<br>
+   * Return boolean array with values true where satisfied, or false otherwise.
    *
    * @param x Input array (NDARRAY type)
    * @param y Double value argument to use in operation
@@ -2443,9 +2451,9 @@ public class SDBaseOps {
   }
 
   /**
-   * Not equals operation: elementwise x != y<br>
+   * Not equals operation: elementwise x != y
    *
-   * Return boolean array with values true where satisfied, or false otherwise.<br>
+   * Return boolean array with values true where satisfied, or false otherwise.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input array (NDARRAY type)
@@ -2458,14 +2466,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Not equal to operation: elementwise x != y<br>
-   * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+   * Not equal to operation: elementwise x != y
+   * If x and y arrays have equal shape, the output shape is the same as these inputs.
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
-   * Return boolean array with values true where satisfied, or false otherwise.<br>
+   * Return boolean array with values true where satisfied, or false otherwise.
    *
    * @param x Input 1 (NDARRAY type)
    * @param y Input 2 (NDARRAY type)
@@ -2476,14 +2484,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Not equal to operation: elementwise x != y<br>
-   * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+   * Not equal to operation: elementwise x != y
+   * If x and y arrays have equal shape, the output shape is the same as these inputs.
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
-   * Return boolean array with values true where satisfied, or false otherwise.<br>
+   * Return boolean array with values true where satisfied, or false otherwise.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input 1 (NDARRAY type)
@@ -2496,15 +2504,15 @@ public class SDBaseOps {
   }
 
   /**
-   * Norm1 (L1 norm) reduction operation: The output contains the L1 norm for each tensor/subset along the specified dimensions: <br>
-   * out = sum_i abs(x[i])<br>
+   * Norm1 (L1 norm) reduction operation: The output contains the L1 norm for each tensor/subset along the specified dimensions:
+   * out = sum_i abs(x[i])
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x Input variable (NUMERIC type)
    * @param keepDims If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
@@ -2518,15 +2526,15 @@ public class SDBaseOps {
   }
 
   /**
-   * Norm1 (L1 norm) reduction operation: The output contains the L1 norm for each tensor/subset along the specified dimensions: <br>
-   * out = sum_i abs(x[i])<br>
+   * Norm1 (L1 norm) reduction operation: The output contains the L1 norm for each tensor/subset along the specified dimensions:
+   * out = sum_i abs(x[i])
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -2542,15 +2550,15 @@ public class SDBaseOps {
   }
 
   /**
-   * Norm1 (L1 norm) reduction operation: The output contains the L1 norm for each tensor/subset along the specified dimensions: <br>
-   * out = sum_i abs(x[i])<br>
+   * Norm1 (L1 norm) reduction operation: The output contains the L1 norm for each tensor/subset along the specified dimensions:
+   * out = sum_i abs(x[i])
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x Input variable (NUMERIC type)
    * @param dimensions dimensions to reduce over (Size: AtLeast(min=0))
@@ -2563,15 +2571,15 @@ public class SDBaseOps {
   }
 
   /**
-   * Norm1 (L1 norm) reduction operation: The output contains the L1 norm for each tensor/subset along the specified dimensions: <br>
-   * out = sum_i abs(x[i])<br>
+   * Norm1 (L1 norm) reduction operation: The output contains the L1 norm for each tensor/subset along the specified dimensions:
+   * out = sum_i abs(x[i])
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -2586,15 +2594,15 @@ public class SDBaseOps {
   }
 
   /**
-   * Norm2 (L2 norm) reduction operation: The output contains the L2 norm for each tensor/subset along the specified dimensions:<br>
-   * out = sqrt(sum_i x[i]^2)<br>
+   * Norm2 (L2 norm) reduction operation: The output contains the L2 norm for each tensor/subset along the specified dimensions:
+   * out = sqrt(sum_i x[i]^2)
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x Input variable (NUMERIC type)
    * @param keepDims If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
@@ -2608,15 +2616,15 @@ public class SDBaseOps {
   }
 
   /**
-   * Norm2 (L2 norm) reduction operation: The output contains the L2 norm for each tensor/subset along the specified dimensions:<br>
-   * out = sqrt(sum_i x[i]^2)<br>
+   * Norm2 (L2 norm) reduction operation: The output contains the L2 norm for each tensor/subset along the specified dimensions:
+   * out = sqrt(sum_i x[i]^2)
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -2632,15 +2640,15 @@ public class SDBaseOps {
   }
 
   /**
-   * Norm2 (L2 norm) reduction operation: The output contains the L2 norm for each tensor/subset along the specified dimensions:<br>
-   * out = sqrt(sum_i x[i]^2)<br>
+   * Norm2 (L2 norm) reduction operation: The output contains the L2 norm for each tensor/subset along the specified dimensions:
+   * out = sqrt(sum_i x[i]^2)
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x Input variable (NUMERIC type)
    * @param dimensions dimensions dimensions to reduce over (Size: AtLeast(min=0))
@@ -2653,15 +2661,15 @@ public class SDBaseOps {
   }
 
   /**
-   * Norm2 (L2 norm) reduction operation: The output contains the L2 norm for each tensor/subset along the specified dimensions:<br>
-   * out = sqrt(sum_i x[i]^2)<br>
+   * Norm2 (L2 norm) reduction operation: The output contains the L2 norm for each tensor/subset along the specified dimensions:
+   * out = sqrt(sum_i x[i]^2)
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -2676,16 +2684,16 @@ public class SDBaseOps {
   }
 
   /**
-   * Max norm (infinity norm) reduction operation: The output contains the max norm for each tensor/subset along the<br>
-   * specified dimensions:<br>
-   * out = max(abs(x[i]))<br>
+   * Max norm (infinity norm) reduction operation: The output contains the max norm for each tensor/subset along the
+   * specified dimensions:
+   * out = max(abs(x[i]))
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x Input variable (NUMERIC type)
    * @param keepDims If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
@@ -2699,16 +2707,16 @@ public class SDBaseOps {
   }
 
   /**
-   * Max norm (infinity norm) reduction operation: The output contains the max norm for each tensor/subset along the<br>
-   * specified dimensions:<br>
-   * out = max(abs(x[i]))<br>
+   * Max norm (infinity norm) reduction operation: The output contains the max norm for each tensor/subset along the
+   * specified dimensions:
+   * out = max(abs(x[i]))
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -2724,16 +2732,16 @@ public class SDBaseOps {
   }
 
   /**
-   * Max norm (infinity norm) reduction operation: The output contains the max norm for each tensor/subset along the<br>
-   * specified dimensions:<br>
-   * out = max(abs(x[i]))<br>
+   * Max norm (infinity norm) reduction operation: The output contains the max norm for each tensor/subset along the
+   * specified dimensions:
+   * out = max(abs(x[i]))
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x Input variable (NUMERIC type)
    * @param dimensions dimensions to reduce over (Size: AtLeast(min=0))
@@ -2746,16 +2754,16 @@ public class SDBaseOps {
   }
 
   /**
-   * Max norm (infinity norm) reduction operation: The output contains the max norm for each tensor/subset along the<br>
-   * specified dimensions:<br>
-   * out = max(abs(x[i]))<br>
+   * Max norm (infinity norm) reduction operation: The output contains the max norm for each tensor/subset along the
+   * specified dimensions:
+   * out = max(abs(x[i]))
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -2770,15 +2778,15 @@ public class SDBaseOps {
   }
 
   /**
-   * Convert the array to a one-hot array with values and  for each entry<br>
-   * If input has shape [ a, ..., n] then output has shape [ a, ..., n, depth],<br>
-   * with {out[i, ..., j, in[i,...,j]]  with other values being set to<br>
+   * Convert the array to a one-hot array with values and  for each entry
+   * If input has shape [ a, ..., n] then output has shape [ a, ..., n, depth],
+   * with {out[i, ..., j, in[i,...,j]]  with other values being set to
    *
    * @param indices Indices - value 0 to depth-1 (NUMERIC type)
    * @param depth Number of classes
-   * @param axis 
-   * @param on 
-   * @param off 
+   * @param axis
+   * @param on
+   * @param off
    * @param dataType Output data type
    * @return output Output variable (NUMERIC type)
    */
@@ -2789,16 +2797,16 @@ public class SDBaseOps {
   }
 
   /**
-   * Convert the array to a one-hot array with values and  for each entry<br>
-   * If input has shape [ a, ..., n] then output has shape [ a, ..., n, depth],<br>
-   * with {out[i, ..., j, in[i,...,j]]  with other values being set to<br>
+   * Convert the array to a one-hot array with values and  for each entry
+   * If input has shape [ a, ..., n] then output has shape [ a, ..., n, depth],
+   * with {out[i, ..., j, in[i,...,j]]  with other values being set to
    *
    * @param name name May be null. Name for the output variable
    * @param indices Indices - value 0 to depth-1 (NUMERIC type)
    * @param depth Number of classes
-   * @param axis 
-   * @param on 
-   * @param off 
+   * @param axis
+   * @param on
+   * @param off
    * @param dataType Output data type
    * @return output Output variable (NUMERIC type)
    */
@@ -2810,15 +2818,15 @@ public class SDBaseOps {
   }
 
   /**
-   * Convert the array to a one-hot array with values and  for each entry<br>
-   * If input has shape [ a, ..., n] then output has shape [ a, ..., n, depth],<br>
-   * with {out[i, ..., j, in[i,...,j]]  with other values being set to<br>
+   * Convert the array to a one-hot array with values and  for each entry
+   * If input has shape [ a, ..., n] then output has shape [ a, ..., n, depth],
+   * with {out[i, ..., j, in[i,...,j]]  with other values being set to
    *
    * @param indices Indices - value 0 to depth-1 (NUMERIC type)
    * @param depth Number of classes
-   * @param axis 
-   * @param on 
-   * @param off 
+   * @param axis
+   * @param on
+   * @param off
    * @return output Output variable (NUMERIC type)
    */
   public SDVariable oneHot(SDVariable indices, int depth, int axis, double on, double off) {
@@ -2827,16 +2835,16 @@ public class SDBaseOps {
   }
 
   /**
-   * Convert the array to a one-hot array with values and  for each entry<br>
-   * If input has shape [ a, ..., n] then output has shape [ a, ..., n, depth],<br>
-   * with {out[i, ..., j, in[i,...,j]]  with other values being set to<br>
+   * Convert the array to a one-hot array with values and  for each entry
+   * If input has shape [ a, ..., n] then output has shape [ a, ..., n, depth],
+   * with {out[i, ..., j, in[i,...,j]]  with other values being set to
    *
    * @param name name May be null. Name for the output variable
    * @param indices Indices - value 0 to depth-1 (NUMERIC type)
    * @param depth Number of classes
-   * @param axis 
-   * @param on 
-   * @param off 
+   * @param axis
+   * @param on
+   * @param off
    * @return output Output variable (NUMERIC type)
    */
   public SDVariable oneHot(String name, SDVariable indices, int depth, int axis, double on,
@@ -2847,10 +2855,10 @@ public class SDBaseOps {
   }
 
   /**
-   * Convert the array to a one-hot array with values 0 and 1 for each entry<br>
-   * If input has shape [ a, ..., n] then output has shape [ a, ..., n, depth],<br>
-   * with out[i, ..., j, in[i,...,j]] = 1 with other values being set to 0<br>
-   * see oneHot(SDVariable, int, int, double, double)<br>
+   * Convert the array to a one-hot array with values 0 and 1 for each entry
+   * If input has shape [ a, ..., n] then output has shape [ a, ..., n, depth],
+   * with out[i, ..., j, in[i,...,j]] = 1 with other values being set to 0
+   * see oneHot(SDVariable, int, int, double, double)
    *
    * @param indices Indices - value 0 to depth-1 (NUMERIC type)
    * @param depth Number of classes
@@ -2862,10 +2870,10 @@ public class SDBaseOps {
   }
 
   /**
-   * Convert the array to a one-hot array with values 0 and 1 for each entry<br>
-   * If input has shape [ a, ..., n] then output has shape [ a, ..., n, depth],<br>
-   * with out[i, ..., j, in[i,...,j]] = 1 with other values being set to 0<br>
-   * see oneHot(SDVariable, int, int, double, double)<br>
+   * Convert the array to a one-hot array with values 0 and 1 for each entry
+   * If input has shape [ a, ..., n] then output has shape [ a, ..., n, depth],
+   * with out[i, ..., j, in[i,...,j]] = 1 with other values being set to 0
+   * see oneHot(SDVariable, int, int, double, double)
    *
    * @param name name May be null. Name for the output variable
    * @param indices Indices - value 0 to depth-1 (NUMERIC type)
@@ -2879,8 +2887,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Return a variable of all 1s, with the same shape as the input variable. Note that this is dynamic:<br>
-   * if the input shape changes in later execution, the returned variable's shape will also be updated<br>
+   * Return a variable of all 1s, with the same shape as the input variable. Note that this is dynamic:
+   * if the input shape changes in later execution, the returned variable's shape will also be updated
    *
    * @param input Input INDArray  (NDARRAY type)
    * @return output A new INDArray  with the same (dynamic) shape as the input (NUMERIC type)
@@ -2890,8 +2898,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Return a variable of all 1s, with the same shape as the input variable. Note that this is dynamic:<br>
-   * if the input shape changes in later execution, the returned variable's shape will also be updated<br>
+   * Return a variable of all 1s, with the same shape as the input variable. Note that this is dynamic:
+   * if the input shape changes in later execution, the returned variable's shape will also be updated
    *
    * @param name name May be null. Name for the output variable
    * @param input Input INDArray  (NDARRAY type)
@@ -2903,10 +2911,10 @@ public class SDBaseOps {
   }
 
   /**
-   * As per onesLike(String, SDVariable) but the output datatype may be specified<br>
+   * As per onesLike(String, SDVariable) but the output datatype may be specified
    *
    * @param input  (NDARRAY type)
-   * @param dataType 
+   * @param dataType
    * @return output  (NUMERIC type)
    */
   public SDVariable onesLike(SDVariable input, DataType dataType) {
@@ -2914,11 +2922,11 @@ public class SDBaseOps {
   }
 
   /**
-   * As per onesLike(String, SDVariable) but the output datatype may be specified<br>
+   * As per onesLike(String, SDVariable) but the output datatype may be specified
    *
    * @param name name May be null. Name for the output variable
    * @param input  (NDARRAY type)
-   * @param dataType 
+   * @param dataType
    * @return output  (NUMERIC type)
    */
   public SDVariable onesLike(String name, SDVariable input, DataType dataType) {
@@ -2927,8 +2935,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Array permutation operation: permute the dimensions according to the specified permutation indices.<br>
-   * Example: if input has shape [a,b,c] and dimensions = [2,0,1] the output has shape [c,a,b]<br>
+   * Array permutation operation: permute the dimensions according to the specified permutation indices.
+   * Example: if input has shape [a,b,c] and dimensions = [2,0,1] the output has shape [c,a,b]
    *
    * @param x Input variable (NDARRAY type)
    * @param dimensions Permute dimensions (INT type)
@@ -2940,8 +2948,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Array permutation operation: permute the dimensions according to the specified permutation indices.<br>
-   * Example: if input has shape [a,b,c] and dimensions = [2,0,1] the output has shape [c,a,b]<br>
+   * Array permutation operation: permute the dimensions according to the specified permutation indices.
+   * Example: if input has shape [a,b,c] and dimensions = [2,0,1] the output has shape [c,a,b]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NDARRAY type)
@@ -2955,8 +2963,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Array permutation operation: permute the dimensions according to the specified permutation indices.<br>
-   * Example: if input has shape [a,b,c] and dimensions = [2,0,1] the output has shape [c,a,b]<br>
+   * Array permutation operation: permute the dimensions according to the specified permutation indices.
+   * Example: if input has shape [a,b,c] and dimensions = [2,0,1] the output has shape [c,a,b]
    *
    * @param x Input variable (NDARRAY type)
    * @param dimensions  (Size: AtLeast(min=0))
@@ -2968,8 +2976,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Array permutation operation: permute the dimensions according to the specified permutation indices.<br>
-   * Example: if input has shape [a,b,c] and dimensions = [2,0,1] the output has shape [c,a,b]<br>
+   * Array permutation operation: permute the dimensions according to the specified permutation indices.
+   * Example: if input has shape [a,b,c] and dimensions = [2,0,1] the output has shape [c,a,b]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NDARRAY type)
@@ -2983,14 +2991,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Product array reduction operation, optionally along specified dimensions<br>
+   * Product array reduction operation, optionally along specified dimensions
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x Input variable (NUMERIC type)
    * @param keepDims If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
@@ -3004,14 +3012,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Product array reduction operation, optionally along specified dimensions<br>
+   * Product array reduction operation, optionally along specified dimensions
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -3027,14 +3035,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Product array reduction operation, optionally along specified dimensions<br>
+   * Product array reduction operation, optionally along specified dimensions
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -3047,14 +3055,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Product array reduction operation, optionally along specified dimensions<br>
+   * Product array reduction operation, optionally along specified dimensions
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -3069,14 +3077,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Product array reduction operation, optionally along specified dimensions<br>
+   * Product array reduction operation, optionally along specified dimensions
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (INT type)
@@ -3090,14 +3098,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Product array reduction operation, optionally along specified dimensions<br>
+   * Product array reduction operation, optionally along specified dimensions
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -3113,14 +3121,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Product array reduction operation, optionally along specified dimensions<br>
+   * Product array reduction operation, optionally along specified dimensions
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (INT type)
@@ -3133,14 +3141,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Product array reduction operation, optionally along specified dimensions<br>
+   * Product array reduction operation, optionally along specified dimensions
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -3155,14 +3163,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Create a new variable with a 1d array, where the values start at from and increment by step<br>
-   * up to (but not including) limit.<br>
-   * For example, range(1.0, 3.0, 0.5) will return [1.0, 1.5, 2.0, 2.5]<br>
+   * Create a new variable with a 1d array, where the values start at from and increment by step
+   * up to (but not including) limit.
+   * For example, range(1.0, 3.0, 0.5) will return [1.0, 1.5, 2.0, 2.5]
    *
    * @param from Initial/smallest value
    * @param to Largest value (exclusive)
    * @param step Step size
-   * @param dataType 
+   * @param dataType
    * @return output INDArray  with the specified values (NUMERIC type)
    */
   public SDVariable range(double from, double to, double step, DataType dataType) {
@@ -3170,15 +3178,15 @@ public class SDBaseOps {
   }
 
   /**
-   * Create a new variable with a 1d array, where the values start at from and increment by step<br>
-   * up to (but not including) limit.<br>
-   * For example, range(1.0, 3.0, 0.5) will return [1.0, 1.5, 2.0, 2.5]<br>
+   * Create a new variable with a 1d array, where the values start at from and increment by step
+   * up to (but not including) limit.
+   * For example, range(1.0, 3.0, 0.5) will return [1.0, 1.5, 2.0, 2.5]
    *
    * @param name name May be null. Name for the output variable
    * @param from Initial/smallest value
    * @param to Largest value (exclusive)
    * @param step Step size
-   * @param dataType 
+   * @param dataType
    * @return output INDArray  with the specified values (NUMERIC type)
    */
   public SDVariable range(String name, double from, double to, double step, DataType dataType) {
@@ -3187,14 +3195,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Create a new variable with a 1d array, where the values start at from and increment by step<br>
-   * up to (but not including) limit.<br>
-   * For example, range(1.0, 3.0, 0.5) will return [1.0, 1.5, 2.0, 2.5]<br>
+   * Create a new variable with a 1d array, where the values start at from and increment by step
+   * up to (but not including) limit.
+   * For example, range(1.0, 3.0, 0.5) will return [1.0, 1.5, 2.0, 2.5]
    *
    * @param from Initial/smallest value (NUMERIC type)
    * @param to Largest value (exclusive) (NUMERIC type)
    * @param step Step size (NUMERIC type)
-   * @param dataType 
+   * @param dataType
    * @return output INDArray  with the specified values (NUMERIC type)
    */
   public SDVariable range(SDVariable from, SDVariable to, SDVariable step, DataType dataType) {
@@ -3205,15 +3213,15 @@ public class SDBaseOps {
   }
 
   /**
-   * Create a new variable with a 1d array, where the values start at from and increment by step<br>
-   * up to (but not including) limit.<br>
-   * For example, range(1.0, 3.0, 0.5) will return [1.0, 1.5, 2.0, 2.5]<br>
+   * Create a new variable with a 1d array, where the values start at from and increment by step
+   * up to (but not including) limit.
+   * For example, range(1.0, 3.0, 0.5) will return [1.0, 1.5, 2.0, 2.5]
    *
    * @param name name May be null. Name for the output variable
    * @param from Initial/smallest value (NUMERIC type)
    * @param to Largest value (exclusive) (NUMERIC type)
    * @param step Step size (NUMERIC type)
-   * @param dataType 
+   * @param dataType
    * @return output INDArray  with the specified values (NUMERIC type)
    */
   public SDVariable range(String name, SDVariable from, SDVariable to, SDVariable step,
@@ -3226,7 +3234,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Returns the rank (number of dimensions, i.e., length(shape)) of the specified INDArray  as a 0D scalar variable<br>
+   * Returns the rank (number of dimensions, i.e., length(shape)) of the specified INDArray  as a 0D scalar variable
    *
    * @param in Input variable (NDARRAY type)
    * @return output (scalar) output variable with value equal to the rank of the input variable (NUMERIC type)
@@ -3236,7 +3244,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Returns the rank (number of dimensions, i.e., length(shape)) of the specified INDArray  as a 0D scalar variable<br>
+   * Returns the rank (number of dimensions, i.e., length(shape)) of the specified INDArray  as a 0D scalar variable
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NDARRAY type)
@@ -3248,7 +3256,7 @@ public class SDBaseOps {
   }
 
   /**
-   * A tensor with the shape of input minus the specified axis with elements repeated along the specified axis.<br>
+   * A tensor with the shape of input minus the specified axis with elements repeated along the specified axis.
    *
    * @param input Input value to repeat (NUMERIC type)
    * @param repeats A 1d input representing the number of inputs of repeats for each element. (NUMERIC type)
@@ -3262,7 +3270,7 @@ public class SDBaseOps {
   }
 
   /**
-   * A tensor with the shape of input minus the specified axis with elements repeated along the specified axis.<br>
+   * A tensor with the shape of input minus the specified axis with elements repeated along the specified axis.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input value to repeat (NUMERIC type)
@@ -3278,9 +3286,9 @@ public class SDBaseOps {
   }
 
   /**
-   * Element-wise replace where condition:<br>
-   * out[i] = from[i] if condition(update[i]) is satisfied, or<br>
-   * out[i] = update[i] if condition(update[i]) is NOT satisfied<br>
+   * Element-wise replace where condition:
+   * out[i] = from[i] if condition(update[i]) is satisfied, or
+   * out[i] = update[i] if condition(update[i]) is NOT satisfied
    *
    * @param update Source array (NUMERIC type)
    * @param from Replacement values array (used conditionally). Must be same shape as 'update' array (NUMERIC type)
@@ -3294,9 +3302,9 @@ public class SDBaseOps {
   }
 
   /**
-   * Element-wise replace where condition:<br>
-   * out[i] = from[i] if condition(update[i]) is satisfied, or<br>
-   * out[i] = update[i] if condition(update[i]) is NOT satisfied<br>
+   * Element-wise replace where condition:
+   * out[i] = from[i] if condition(update[i]) is satisfied, or
+   * out[i] = update[i] if condition(update[i]) is NOT satisfied
    *
    * @param name name May be null. Name for the output variable
    * @param update Source array (NUMERIC type)
@@ -3313,9 +3321,9 @@ public class SDBaseOps {
   }
 
   /**
-   * Element-wise replace where condition:<br>
-   * out[i] = value if condition(update[i]) is satisfied, or<br>
-   * out[i] = update[i] if condition(update[i]) is NOT satisfied<br>
+   * Element-wise replace where condition:
+   * out[i] = value if condition(update[i]) is satisfied, or
+   * out[i] = update[i] if condition(update[i]) is NOT satisfied
    *
    * @param update Source array (NUMERIC type)
    * @param value Value to set at the output, if the condition is satisfied
@@ -3328,9 +3336,9 @@ public class SDBaseOps {
   }
 
   /**
-   * Element-wise replace where condition:<br>
-   * out[i] = value if condition(update[i]) is satisfied, or<br>
-   * out[i] = update[i] if condition(update[i]) is NOT satisfied<br>
+   * Element-wise replace where condition:
+   * out[i] = value if condition(update[i]) is satisfied, or
+   * out[i] = update[i] if condition(update[i]) is NOT satisfied
    *
    * @param name name May be null. Name for the output variable
    * @param update Source array (NUMERIC type)
@@ -3346,9 +3354,9 @@ public class SDBaseOps {
   }
 
   /**
-   * Reshape the input variable to the specified (fixed) shape. The output variable will have the same values as the<br>
-   * input, but with the specified shape.<br>
-   * Note that prod(shape) must match length(input) == prod(input.shape)<br>
+   * Reshape the input variable to the specified (fixed) shape. The output variable will have the same values as the
+   * input, but with the specified shape.
+   * Note that prod(shape) must match length(input) == prod(input.shape)
    *
    * @param x Input variable (NDARRAY type)
    * @param shape New shape for variable (NUMERIC type)
@@ -3360,9 +3368,9 @@ public class SDBaseOps {
   }
 
   /**
-   * Reshape the input variable to the specified (fixed) shape. The output variable will have the same values as the<br>
-   * input, but with the specified shape.<br>
-   * Note that prod(shape) must match length(input) == prod(input.shape)<br>
+   * Reshape the input variable to the specified (fixed) shape. The output variable will have the same values as the
+   * input, but with the specified shape.
+   * Note that prod(shape) must match length(input) == prod(input.shape)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NDARRAY type)
@@ -3376,9 +3384,9 @@ public class SDBaseOps {
   }
 
   /**
-   * Reshape the input variable to the specified (fixed) shape. The output variable will have the same values as the<br>
-   * input, but with the specified shape.<br>
-   * Note that prod(shape) must match length(input) == prod(input.shape)<br>
+   * Reshape the input variable to the specified (fixed) shape. The output variable will have the same values as the
+   * input, but with the specified shape.
+   * Note that prod(shape) must match length(input) == prod(input.shape)
    *
    * @param x Input variable (NDARRAY type)
    * @param shape New shape for variable (Size: AtLeast(min=0))
@@ -3390,9 +3398,9 @@ public class SDBaseOps {
   }
 
   /**
-   * Reshape the input variable to the specified (fixed) shape. The output variable will have the same values as the<br>
-   * input, but with the specified shape.<br>
-   * Note that prod(shape) must match length(input) == prod(input.shape)<br>
+   * Reshape the input variable to the specified (fixed) shape. The output variable will have the same values as the
+   * input, but with the specified shape.
+   * Note that prod(shape) must match length(input) == prod(input.shape)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NDARRAY type)
@@ -3406,17 +3414,17 @@ public class SDBaseOps {
   }
 
   /**
-   * Reverse the values of an array for the specified dimensions<br>
-   * If input is:<br>
-   * [ 1, 2, 3]<br>
-   * [ 4, 5, 6]<br>
-   * then<br>
-   * reverse(in, 0):<br>
-   * [3, 2, 1]<br>
-   * [6, 5, 4]<br>
-   * reverse(in, 1):<br>
-   * [4, 5, 6]<br>
-   * [1, 2 3]<br>
+   * Reverse the values of an array for the specified dimensions
+   * If input is:
+   * [ 1, 2, 3]
+   * [ 4, 5, 6]
+   * then
+   * reverse(in, 0):
+   * [3, 2, 1]
+   * [6, 5, 4]
+   * reverse(in, 1):
+   * [4, 5, 6]
+   * [1, 2 3]
    *
    * @param x Input variable (NDARRAY type)
    * @param dimensions Input variable (Size: AtLeast(min=0))
@@ -3428,17 +3436,17 @@ public class SDBaseOps {
   }
 
   /**
-   * Reverse the values of an array for the specified dimensions<br>
-   * If input is:<br>
-   * [ 1, 2, 3]<br>
-   * [ 4, 5, 6]<br>
-   * then<br>
-   * reverse(in, 0):<br>
-   * [3, 2, 1]<br>
-   * [6, 5, 4]<br>
-   * reverse(in, 1):<br>
-   * [4, 5, 6]<br>
-   * [1, 2 3]<br>
+   * Reverse the values of an array for the specified dimensions
+   * If input is:
+   * [ 1, 2, 3]
+   * [ 4, 5, 6]
+   * then
+   * reverse(in, 0):
+   * [3, 2, 1]
+   * [6, 5, 4]
+   * reverse(in, 1):
+   * [4, 5, 6]
+   * [1, 2 3]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NDARRAY type)
@@ -3452,7 +3460,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Reverse sequence op: for each slice along dimension seqDimension, the first seqLength values are reversed<br>
+   * Reverse sequence op: for each slice along dimension seqDimension, the first seqLength values are reversed
    *
    * @param x Input variable (NDARRAY type)
    * @param seq_lengths Length of the sequences (INT type)
@@ -3467,7 +3475,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Reverse sequence op: for each slice along dimension seqDimension, the first seqLength values are reversed<br>
+   * Reverse sequence op: for each slice along dimension seqDimension, the first seqLength values are reversed
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NDARRAY type)
@@ -3484,7 +3492,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Reverse sequence op: for each slice along dimension seqDimension, the first seqLength values are reversed<br>
+   * Reverse sequence op: for each slice along dimension seqDimension, the first seqLength values are reversed
    *
    * @param x Input variable (NDARRAY type)
    * @param seq_lengths Length of the sequences (INT type)
@@ -3496,7 +3504,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Reverse sequence op: for each slice along dimension seqDimension, the first seqLength values are reversed<br>
+   * Reverse sequence op: for each slice along dimension seqDimension, the first seqLength values are reversed
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NDARRAY type)
@@ -3510,8 +3518,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Element-wise scalar floor modulus operation: out = floorMod(in, value).<br>
-   * i.e., returns the remainder after division by 'value'<br>
+   * Element-wise scalar floor modulus operation: out = floorMod(in, value).
+   * i.e., returns the remainder after division by 'value'
    *
    * @param in Input variable (NUMERIC type)
    * @param value Scalar value to compare
@@ -3523,8 +3531,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Element-wise scalar floor modulus operation: out = floorMod(in, value).<br>
-   * i.e., returns the remainder after division by 'value'<br>
+   * Element-wise scalar floor modulus operation: out = floorMod(in, value).
+   * i.e., returns the remainder after division by 'value'
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -3538,7 +3546,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Element-wise scalar maximum operation: out = max(in, value)<br>
+   * Element-wise scalar maximum operation: out = max(in, value)
    *
    * @param in Input variable (NUMERIC type)
    * @param value Scalar value to compare
@@ -3550,7 +3558,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Element-wise scalar maximum operation: out = max(in, value)<br>
+   * Element-wise scalar maximum operation: out = max(in, value)
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -3564,7 +3572,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Element-wise scalar minimum operation: out = min(in, value)<br>
+   * Element-wise scalar minimum operation: out = min(in, value)
    *
    * @param in Input variable (NUMERIC type)
    * @param value Scalar value to compare
@@ -3576,7 +3584,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Element-wise scalar minimum operation: out = min(in, value)<br>
+   * Element-wise scalar minimum operation: out = min(in, value)
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -3590,7 +3598,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Return a variable with equal shape to the input, but all elements set to value 'set'<br>
+   * Return a variable with equal shape to the input, but all elements set to value 'set'
    *
    * @param in Input variable (NUMERIC type)
    * @param set Value to set
@@ -3602,7 +3610,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Return a variable with equal shape to the input, but all elements set to value 'set'<br>
+   * Return a variable with equal shape to the input, but all elements set to value 'set'
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -3616,12 +3624,12 @@ public class SDBaseOps {
   }
 
   /**
-   * Scatter addition operation.<br>
+   * Scatter addition operation.
    *
-   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
-   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
-   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
-   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...])
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
    *
    * @param ref Initial/source variable (NUMERIC type)
    * @param indices Indices array (NUMERIC type)
@@ -3636,12 +3644,12 @@ public class SDBaseOps {
   }
 
   /**
-   * Scatter addition operation.<br>
+   * Scatter addition operation.
    *
-   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
-   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
-   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
-   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...])
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
    *
    * @param name name May be null. Name for the output variable
    * @param ref Initial/source variable (NUMERIC type)
@@ -3659,12 +3667,12 @@ public class SDBaseOps {
   }
 
   /**
-   * Scatter division operation.<br>
+   * Scatter division operation.
    *
-   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
-   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
-   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
-   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...])
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
    *
    * @param ref Initial/source variable (NUMERIC type)
    * @param indices Indices array (NUMERIC type)
@@ -3679,12 +3687,12 @@ public class SDBaseOps {
   }
 
   /**
-   * Scatter division operation.<br>
+   * Scatter division operation.
    *
-   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
-   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
-   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
-   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...])
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
    *
    * @param name name May be null. Name for the output variable
    * @param ref Initial/source variable (NUMERIC type)
@@ -3702,14 +3710,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Scatter max operation.<br>
-   * Maximizes values from the input tensor<br>
-   * along the indices specified.<br>
+   * Scatter max operation.
+   * Maximizes values from the input tensor
+   * along the indices specified.
    *
-   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
-   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
-   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
-   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...])
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
    *
    * @param ref Initial/source variable (NUMERIC type)
    * @param indices Indices array (NUMERIC type)
@@ -3724,14 +3732,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Scatter max operation.<br>
-   * Maximizes values from the input tensor<br>
-   * along the indices specified.<br>
+   * Scatter max operation.
+   * Maximizes values from the input tensor
+   * along the indices specified.
    *
-   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
-   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
-   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
-   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...])
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
    *
    * @param name name May be null. Name for the output variable
    * @param ref Initial/source variable (NUMERIC type)
@@ -3749,14 +3757,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Scatter min operation.<br>
-   *  Minimizes values from the input tensor<br>
-   * along the indices specified.<br>
+   * Scatter min operation.
+   *  Minimizes values from the input tensor
+   * along the indices specified.
    *
-   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
-   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
-   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
-   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...])
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
    *
    * @param ref Initial/source variable (NUMERIC type)
    * @param indices Indices array (NUMERIC type)
@@ -3771,14 +3779,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Scatter min operation.<br>
-   *  Minimizes values from the input tensor<br>
-   * along the indices specified.<br>
+   * Scatter min operation.
+   *  Minimizes values from the input tensor
+   * along the indices specified.
    *
-   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
-   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
-   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
-   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...])
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
    *
    * @param name name May be null. Name for the output variable
    * @param ref Initial/source variable (NUMERIC type)
@@ -3796,14 +3804,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Scatter multiplication operation.<br>
-   *  Multiplies values from the input tensor<br>
-   * along the indices specified.<br>
+   * Scatter multiplication operation.
+   *  Multiplies values from the input tensor
+   * along the indices specified.
    *
-   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
-   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
-   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
-   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...])
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
    *
    * @param ref Initial/source variable (NUMERIC type)
    * @param indices Indices array (NUMERIC type)
@@ -3818,14 +3826,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Scatter multiplication operation.<br>
-   *  Multiplies values from the input tensor<br>
-   * along the indices specified.<br>
+   * Scatter multiplication operation.
+   *  Multiplies values from the input tensor
+   * along the indices specified.
    *
-   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
-   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
-   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
-   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...])
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
    *
    * @param name name May be null. Name for the output variable
    * @param ref Initial/source variable (NUMERIC type)
@@ -3843,15 +3851,15 @@ public class SDBaseOps {
   }
 
   /**
-   * Scatter ND Add.<br>
-   * Multiple dimension version of scatter add<br>
-   * that allows addition along multi dimensional<br>
-   * indexes.<br>
+   * Scatter ND Add.
+   * Multiple dimension version of scatter add
+   * that allows addition along multi dimensional
+   * indexes.
    *
-   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
-   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
-   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
-   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...])
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
    *
    * @param ref Initial/source variable (NUMERIC type)
    * @param indices Indices array (NUMERIC type)
@@ -3866,15 +3874,15 @@ public class SDBaseOps {
   }
 
   /**
-   * Scatter ND Add.<br>
-   * Multiple dimension version of scatter add<br>
-   * that allows addition along multi dimensional<br>
-   * indexes.<br>
+   * Scatter ND Add.
+   * Multiple dimension version of scatter add
+   * that allows addition along multi dimensional
+   * indexes.
    *
-   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
-   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
-   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
-   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...])
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
    *
    * @param name name May be null. Name for the output variable
    * @param ref Initial/source variable (NUMERIC type)
@@ -3892,15 +3900,15 @@ public class SDBaseOps {
   }
 
   /**
-   * Scatter ND Subtraction operation.<br>
-   *  Subtract dimension version of scatter add<br>
-   * that allows addition along multi dimensional<br>
-   * indexes.<br>
+   * Scatter ND Subtraction operation.
+   *  Subtract dimension version of scatter add
+   * that allows addition along multi dimensional
+   * indexes.
    *
-   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
-   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
-   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
-   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...])
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
    *
    * @param ref Initial/source variable (NUMERIC type)
    * @param indices Indices array (NUMERIC type)
@@ -3915,15 +3923,15 @@ public class SDBaseOps {
   }
 
   /**
-   * Scatter ND Subtraction operation.<br>
-   *  Subtract dimension version of scatter add<br>
-   * that allows addition along multi dimensional<br>
-   * indexes.<br>
+   * Scatter ND Subtraction operation.
+   *  Subtract dimension version of scatter add
+   * that allows addition along multi dimensional
+   * indexes.
    *
-   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
-   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
-   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
-   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...])
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
    *
    * @param name name May be null. Name for the output variable
    * @param ref Initial/source variable (NUMERIC type)
@@ -3941,15 +3949,15 @@ public class SDBaseOps {
   }
 
   /**
-   * Scatter ND update operation.<br>
-   *  Assign dimension version of scatter add<br>
-   * that allows addition along multi dimensional<br>
-   * indexes.<br>
+   * Scatter ND update operation.
+   *  Assign dimension version of scatter add
+   * that allows addition along multi dimensional
+   * indexes.
    *
-   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
-   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
-   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
-   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...])
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
    *
    * @param ref Initial/source variable (NUMERIC type)
    * @param indices Indices array (NUMERIC type)
@@ -3964,15 +3972,15 @@ public class SDBaseOps {
   }
 
   /**
-   * Scatter ND update operation.<br>
-   *  Assign dimension version of scatter add<br>
-   * that allows addition along multi dimensional<br>
-   * indexes.<br>
+   * Scatter ND update operation.
+   *  Assign dimension version of scatter add
+   * that allows addition along multi dimensional
+   * indexes.
    *
-   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
-   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
-   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
-   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...])
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
    *
    * @param name name May be null. Name for the output variable
    * @param ref Initial/source variable (NUMERIC type)
@@ -3990,14 +3998,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Scatter subtraction operation.<br>
-   *  Subtracts values from the input tensor<br>
-   * along the indices specified.<br>
+   * Scatter subtraction operation.
+   *  Subtracts values from the input tensor
+   * along the indices specified.
    *
-   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
-   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
-   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
-   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...])
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
    *
    * @param ref Initial/source variable (NUMERIC type)
    * @param indices Indices array (NUMERIC type)
@@ -4012,14 +4020,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Scatter subtraction operation.<br>
-   *  Subtracts values from the input tensor<br>
-   * along the indices specified.<br>
+   * Scatter subtraction operation.
+   *  Subtracts values from the input tensor
+   * along the indices specified.
    *
-   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
-   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
-   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
-   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...])
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
    *
    * @param name name May be null. Name for the output variable
    * @param ref Initial/source variable (NUMERIC type)
@@ -4037,14 +4045,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Scatter update operation.<br>
-   *  Assigns values from the input tensor<br>
-   * along the indices specified.<br>
+   * Scatter update operation.
+   *  Assigns values from the input tensor
+   * along the indices specified.
    *
-   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
-   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
-   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
-   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...])
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
    *
    * @param ref Initial/source variable (NUMERIC type)
    * @param indices Indices array (NUMERIC type)
@@ -4059,14 +4067,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Scatter update operation.<br>
-   *  Assigns values from the input tensor<br>
-   * along the indices specified.<br>
+   * Scatter update operation.
+   *  Assigns values from the input tensor
+   * along the indices specified.
    *
-   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
-   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
-   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
-   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...])
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
    *
    * @param name name May be null. Name for the output variable
    * @param ref Initial/source variable (NUMERIC type)
@@ -4084,14 +4092,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Segment max operation.<br>
+   * Segment max operation.
    *
-   * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
-   * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
-   * then output = [6, 9, 8] = [op(3,6), op(1,4,9), op(2,8)]<br>
-   * Note that the segment IDs must be sorted from smallest to largest segment.<br>
-   * See {unsortedSegment (String, SDVariable, SDVariable, int) ops<br>
-   * for the same op without this sorted requirement<br>
+   * If data =     [3, 6, 1, 4, 9, 2, 8]
+   * segmentIds =  [0, 0, 1, 1, 1, 2, 2]
+   * then output = [6, 9, 8] = [op(3,6), op(1,4,9), op(2,8)]
+   * Note that the segment IDs must be sorted from smallest to largest segment.
+   * See {unsortedSegment (String, SDVariable, SDVariable, int) ops
+   * for the same op without this sorted requirement
    *
    * @param data Data to perform segment max on (NDARRAY type)
    * @param segmentIds Variable for the segment IDs (NUMERIC type)
@@ -4103,14 +4111,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Segment max operation.<br>
+   * Segment max operation.
    *
-   * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
-   * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
-   * then output = [6, 9, 8] = [op(3,6), op(1,4,9), op(2,8)]<br>
-   * Note that the segment IDs must be sorted from smallest to largest segment.<br>
-   * See {unsortedSegment (String, SDVariable, SDVariable, int) ops<br>
-   * for the same op without this sorted requirement<br>
+   * If data =     [3, 6, 1, 4, 9, 2, 8]
+   * segmentIds =  [0, 0, 1, 1, 1, 2, 2]
+   * then output = [6, 9, 8] = [op(3,6), op(1,4,9), op(2,8)]
+   * Note that the segment IDs must be sorted from smallest to largest segment.
+   * See {unsortedSegment (String, SDVariable, SDVariable, int) ops
+   * for the same op without this sorted requirement
    *
    * @param name name May be null. Name for the output variable
    * @param data Data to perform segment max on (NDARRAY type)
@@ -4124,14 +4132,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Segment mean operation.<br>
+   * Segment mean operation.
    *
-   * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
-   * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
-   * then output = [6, 9, 8] = [op(3,6), op(1,4,9), op(2,8)]<br>
-   * Note that the segment IDs must be sorted from smallest to largest segment.<br>
-   * See {unsortedSegment (String, SDVariable, SDVariable, int) ops<br>
-   * for the same op without this sorted requirement<br>
+   * If data =     [3, 6, 1, 4, 9, 2, 8]
+   * segmentIds =  [0, 0, 1, 1, 1, 2, 2]
+   * then output = [6, 9, 8] = [op(3,6), op(1,4,9), op(2,8)]
+   * Note that the segment IDs must be sorted from smallest to largest segment.
+   * See {unsortedSegment (String, SDVariable, SDVariable, int) ops
+   * for the same op without this sorted requirement
    *
    * @param data Data to perform segment max on (NDARRAY type)
    * @param segmentIds Variable for the segment IDs (NUMERIC type)
@@ -4143,14 +4151,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Segment mean operation.<br>
+   * Segment mean operation.
    *
-   * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
-   * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
-   * then output = [6, 9, 8] = [op(3,6), op(1,4,9), op(2,8)]<br>
-   * Note that the segment IDs must be sorted from smallest to largest segment.<br>
-   * See {unsortedSegment (String, SDVariable, SDVariable, int) ops<br>
-   * for the same op without this sorted requirement<br>
+   * If data =     [3, 6, 1, 4, 9, 2, 8]
+   * segmentIds =  [0, 0, 1, 1, 1, 2, 2]
+   * then output = [6, 9, 8] = [op(3,6), op(1,4,9), op(2,8)]
+   * Note that the segment IDs must be sorted from smallest to largest segment.
+   * See {unsortedSegment (String, SDVariable, SDVariable, int) ops
+   * for the same op without this sorted requirement
    *
    * @param name name May be null. Name for the output variable
    * @param data Data to perform segment max on (NDARRAY type)
@@ -4164,14 +4172,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Segment min operation.<br>
+   * Segment min operation.
    *
-   * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
-   * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
-   * then output = [6, 9, 8] = [op(3,6), op(1,4,9), op(2,8)]<br>
-   * Note that the segment IDs must be sorted from smallest to largest segment.<br>
-   * See {unsortedSegment (String, SDVariable, SDVariable, int) ops<br>
-   * for the same op without this sorted requirement<br>
+   * If data =     [3, 6, 1, 4, 9, 2, 8]
+   * segmentIds =  [0, 0, 1, 1, 1, 2, 2]
+   * then output = [6, 9, 8] = [op(3,6), op(1,4,9), op(2,8)]
+   * Note that the segment IDs must be sorted from smallest to largest segment.
+   * See {unsortedSegment (String, SDVariable, SDVariable, int) ops
+   * for the same op without this sorted requirement
    *
    * @param data Data to perform segment max on (NDARRAY type)
    * @param segmentIds Variable for the segment IDs (NUMERIC type)
@@ -4183,14 +4191,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Segment min operation.<br>
+   * Segment min operation.
    *
-   * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
-   * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
-   * then output = [6, 9, 8] = [op(3,6), op(1,4,9), op(2,8)]<br>
-   * Note that the segment IDs must be sorted from smallest to largest segment.<br>
-   * See {unsortedSegment (String, SDVariable, SDVariable, int) ops<br>
-   * for the same op without this sorted requirement<br>
+   * If data =     [3, 6, 1, 4, 9, 2, 8]
+   * segmentIds =  [0, 0, 1, 1, 1, 2, 2]
+   * then output = [6, 9, 8] = [op(3,6), op(1,4,9), op(2,8)]
+   * Note that the segment IDs must be sorted from smallest to largest segment.
+   * See {unsortedSegment (String, SDVariable, SDVariable, int) ops
+   * for the same op without this sorted requirement
    *
    * @param name name May be null. Name for the output variable
    * @param data Data to perform segment max on (NDARRAY type)
@@ -4204,14 +4212,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Segment product operation.<br>
+   * Segment product operation.
    *
-   * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
-   * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
-   * then output = [6, 9, 8] = [op(3,6), op(1,4,9), op(2,8)]<br>
-   * Note that the segment IDs must be sorted from smallest to largest segment.<br>
-   * See {unsortedSegment (String, SDVariable, SDVariable, int) ops<br>
-   * for the same op without this sorted requirement<br>
+   * If data =     [3, 6, 1, 4, 9, 2, 8]
+   * segmentIds =  [0, 0, 1, 1, 1, 2, 2]
+   * then output = [6, 9, 8] = [op(3,6), op(1,4,9), op(2,8)]
+   * Note that the segment IDs must be sorted from smallest to largest segment.
+   * See {unsortedSegment (String, SDVariable, SDVariable, int) ops
+   * for the same op without this sorted requirement
    *
    * @param data Data to perform segment max on (NDARRAY type)
    * @param segmentIds Variable for the segment IDs (NUMERIC type)
@@ -4223,14 +4231,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Segment product operation.<br>
+   * Segment product operation.
    *
-   * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
-   * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
-   * then output = [6, 9, 8] = [op(3,6), op(1,4,9), op(2,8)]<br>
-   * Note that the segment IDs must be sorted from smallest to largest segment.<br>
-   * See {unsortedSegment (String, SDVariable, SDVariable, int) ops<br>
-   * for the same op without this sorted requirement<br>
+   * If data =     [3, 6, 1, 4, 9, 2, 8]
+   * segmentIds =  [0, 0, 1, 1, 1, 2, 2]
+   * then output = [6, 9, 8] = [op(3,6), op(1,4,9), op(2,8)]
+   * Note that the segment IDs must be sorted from smallest to largest segment.
+   * See {unsortedSegment (String, SDVariable, SDVariable, int) ops
+   * for the same op without this sorted requirement
    *
    * @param name name May be null. Name for the output variable
    * @param data Data to perform segment max on (NDARRAY type)
@@ -4244,14 +4252,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Segment sum operation.<br>
+   * Segment sum operation.
    *
-   * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
-   * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
-   * then output = [6, 9, 8] = [op(3,6), op(1,4,9), op(2,8)]<br>
-   * Note that the segment IDs must be sorted from smallest to largest segment.<br>
-   * See {unsortedSegment (String, SDVariable, SDVariable, int) ops<br>
-   * for the same op without this sorted requirement<br>
+   * If data =     [3, 6, 1, 4, 9, 2, 8]
+   * segmentIds =  [0, 0, 1, 1, 1, 2, 2]
+   * then output = [6, 9, 8] = [op(3,6), op(1,4,9), op(2,8)]
+   * Note that the segment IDs must be sorted from smallest to largest segment.
+   * See {unsortedSegment (String, SDVariable, SDVariable, int) ops
+   * for the same op without this sorted requirement
    *
    * @param data Data to perform segment max on (NDARRAY type)
    * @param segmentIds Variable for the segment IDs (NUMERIC type)
@@ -4263,14 +4271,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Segment sum operation.<br>
+   * Segment sum operation.
    *
-   * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
-   * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
-   * then output = [6, 9, 8] = [op(3,6), op(1,4,9), op(2,8)]<br>
-   * Note that the segment IDs must be sorted from smallest to largest segment.<br>
-   * See {unsortedSegment (String, SDVariable, SDVariable, int) ops<br>
-   * for the same op without this sorted requirement<br>
+   * If data =     [3, 6, 1, 4, 9, 2, 8]
+   * segmentIds =  [0, 0, 1, 1, 1, 2, 2]
+   * then output = [6, 9, 8] = [op(3,6), op(1,4,9), op(2,8)]
+   * Note that the segment IDs must be sorted from smallest to largest segment.
+   * See {unsortedSegment (String, SDVariable, SDVariable, int) ops
+   * for the same op without this sorted requirement
    *
    * @param name name May be null. Name for the output variable
    * @param data Data to perform segment max on (NDARRAY type)
@@ -4284,12 +4292,12 @@ public class SDBaseOps {
   }
 
   /**
-   * Generate a sequence mask (with values 0 or 1) based on the specified lengths <br>
-   * Specifically, out[i, ..., k, j] = (j < lengths[i, ..., k] ? 1.0 : 0.0)<br>
+   * Generate a sequence mask (with values 0 or 1) based on the specified lengths
+   * Specifically, out[i, ..., k, j] = (j &lt; lengths[i, ..., k] ? 1.0 : 0.0)
    *
    * @param lengths Lengths of the sequences (NUMERIC type)
    * @param maxLen Maximum sequence length
-   * @param dataType 
+   * @param dataType
    * @return output Output variable (NUMERIC type)
    */
   public SDVariable sequenceMask(SDVariable lengths, int maxLen, DataType dataType) {
@@ -4298,13 +4306,13 @@ public class SDBaseOps {
   }
 
   /**
-   * Generate a sequence mask (with values 0 or 1) based on the specified lengths <br>
-   * Specifically, out[i, ..., k, j] = (j < lengths[i, ..., k] ? 1.0 : 0.0)<br>
+   * Generate a sequence mask (with values 0 or 1) based on the specified lengths
+   * Specifically, out[i, ..., k, j] = (j &lt; lengths[i, ..., k] ? 1.0 : 0.0)
    *
    * @param name name May be null. Name for the output variable
    * @param lengths Lengths of the sequences (NUMERIC type)
    * @param maxLen Maximum sequence length
-   * @param dataType 
+   * @param dataType
    * @return output Output variable (NUMERIC type)
    */
   public SDVariable sequenceMask(String name, SDVariable lengths, int maxLen, DataType dataType) {
@@ -4314,12 +4322,12 @@ public class SDBaseOps {
   }
 
   /**
-   * Generate a sequence mask (with values 0 or 1) based on the specified lengths <br>
-   * Specifically, out[i, ..., k, j] = (j < lengths[i, ..., k] ? 1.0 : 0.0)<br>
+   * Generate a sequence mask (with values 0 or 1) based on the specified lengths
+   * Specifically, out[i, ..., k, j] = (j &lt; lengths[i, ..., k] ? 1.0 : 0.0)
    *
    * @param lengths Lengths of the sequences (NUMERIC type)
    * @param maxLen Maximum sequence length (INT type)
-   * @param dataType 
+   * @param dataType
    * @return output Output variable (NUMERIC type)
    */
   public SDVariable sequenceMask(SDVariable lengths, SDVariable maxLen, DataType dataType) {
@@ -4329,13 +4337,13 @@ public class SDBaseOps {
   }
 
   /**
-   * Generate a sequence mask (with values 0 or 1) based on the specified lengths <br>
-   * Specifically, out[i, ..., k, j] = (j < lengths[i, ..., k] ? 1.0 : 0.0)<br>
+   * Generate a sequence mask (with values 0 or 1) based on the specified lengths
+   * Specifically, out[i, ..., k, j] = (j &lt; lengths[i, ..., k] ? 1.0 : 0.0)
    *
    * @param name name May be null. Name for the output variable
    * @param lengths Lengths of the sequences (NUMERIC type)
    * @param maxLen Maximum sequence length (INT type)
-   * @param dataType 
+   * @param dataType
    * @return output Output variable (NUMERIC type)
    */
   public SDVariable sequenceMask(String name, SDVariable lengths, SDVariable maxLen,
@@ -4347,10 +4355,10 @@ public class SDBaseOps {
   }
 
   /**
-   * see sequenceMask(String, SDVariable, SDVariable, DataType)<br>
+   * see sequenceMask(String, SDVariable, SDVariable, DataType)
    *
    * @param lengths  (NUMERIC type)
-   * @param dataType 
+   * @param dataType
    * @return output  (NUMERIC type)
    */
   public SDVariable sequenceMask(SDVariable lengths, DataType dataType) {
@@ -4359,11 +4367,11 @@ public class SDBaseOps {
   }
 
   /**
-   * see sequenceMask(String, SDVariable, SDVariable, DataType)<br>
+   * see sequenceMask(String, SDVariable, SDVariable, DataType)
    *
    * @param name name May be null. Name for the output variable
    * @param lengths  (NUMERIC type)
-   * @param dataType 
+   * @param dataType
    * @return output  (NUMERIC type)
    */
   public SDVariable sequenceMask(String name, SDVariable lengths, DataType dataType) {
@@ -4373,7 +4381,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Sets an inplace shape on the passed in input.<br>
+   * Sets an inplace shape on the passed in input.
    *
    * @param input The input to set the shape of (NDARRAY type)
    * @param shape The shape to set the input to (NUMERIC type)
@@ -4384,7 +4392,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Sets an inplace shape on the passed in input.<br>
+   * Sets an inplace shape on the passed in input.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param input The input to set the shape of (NDARRAY type)
@@ -4397,7 +4405,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Returns the shape of the specified INDArray  as a 1D INDArray <br>
+   * Returns the shape of the specified INDArray  as a 1D INDArray
    *
    * @param input Input variable (NDARRAY type)
    * @return output 1D output variable with contents equal to the shape of the input (NUMERIC type)
@@ -4407,7 +4415,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Returns the shape of the specified INDArray  as a 1D INDArray <br>
+   * Returns the shape of the specified INDArray  as a 1D INDArray
    *
    * @param name name May be null. Name for the output variable
    * @param input Input variable (NDARRAY type)
@@ -4419,7 +4427,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Returns the size (number of elements, i.e., prod(shape)) of the specified INDArray  as a 0D scalar variable<br>
+   * Returns the size (number of elements, i.e., prod(shape)) of the specified INDArray  as a 0D scalar variable
    *
    * @param in Input variable (NDARRAY type)
    * @return output 0D (scalar) output variable with value equal to the number of elements in the specified array (NUMERIC type)
@@ -4429,7 +4437,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Returns the size (number of elements, i.e., prod(shape)) of the specified INDArray  as a 0D scalar variable<br>
+   * Returns the size (number of elements, i.e., prod(shape)) of the specified INDArray  as a 0D scalar variable
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NDARRAY type)
@@ -4441,8 +4449,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Returns a rank 0 (scalar) variable for the size of the specified dimension.<br>
-   * For example, if X has shape [10,20,30] then sizeAt(X,1)=20. Similarly, sizeAt(X,-1)=30<br>
+   * Returns a rank 0 (scalar) variable for the size of the specified dimension.
+   * For example, if X has shape [10,20,30] then sizeAt(X,1)=20. Similarly, sizeAt(X,-1)=30
    *
    * @param in Input variable (NDARRAY type)
    * @param dimension Dimension to get size of
@@ -4453,8 +4461,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Returns a rank 0 (scalar) variable for the size of the specified dimension.<br>
-   * For example, if X has shape [10,20,30] then sizeAt(X,1)=20. Similarly, sizeAt(X,-1)=30<br>
+   * Returns a rank 0 (scalar) variable for the size of the specified dimension.
+   * For example, if X has shape [10,20,30] then sizeAt(X,1)=20. Similarly, sizeAt(X,-1)=30
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NDARRAY type)
@@ -4467,14 +4475,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Get a subset of the specified input, by specifying the first element and the size of the array.<br>
-   * For example, if input is:<br>
-   * [a, b, c]<br>
-   * [d, e, f]<br>
-   * then slice(input, begin=[0,1], size=[2,1] will return:<br>
-   * [b]<br>
-   * [e]<br>
-   * Note that for each dimension i, begin[i] + size[i] <= input.size(i)<br>
+   * Get a subset of the specified input, by specifying the first element and the size of the array.
+   * For example, if input is:
+   * [a, b, c]
+   * [d, e, f]
+   * then slice(input, begin=[0,1], size=[2,1] will return:
+   * [b]
+   * [e]
+   * Note that for each dimension i, begin[i] + size[i] &lt;= input.size(i)
    *
    * @param input input Variable to get subset of (NDARRAY type)
    * @param begin Beginning index. Must be same length as rank of input array (Size: AtLeast(min=1))
@@ -4488,14 +4496,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Get a subset of the specified input, by specifying the first element and the size of the array.<br>
-   * For example, if input is:<br>
-   * [a, b, c]<br>
-   * [d, e, f]<br>
-   * then slice(input, begin=[0,1], size=[2,1] will return:<br>
-   * [b]<br>
-   * [e]<br>
-   * Note that for each dimension i, begin[i] + size[i] <= input.size(i)<br>
+   * Get a subset of the specified input, by specifying the first element and the size of the array.
+   * For example, if input is:
+   * [a, b, c]
+   * [d, e, f]
+   * then slice(input, begin=[0,1], size=[2,1] will return:
+   * [b]
+   * [e]
+   * Note that for each dimension i, begin[i] + size[i] &lt;= input.size(i)
    *
    * @param name name May be null. Name for the output variable
    * @param input input Variable to get subset of (NDARRAY type)
@@ -4511,14 +4519,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Get a subset of the specified input, by specifying the first element and the size of the array.<br>
-   * For example, if input is:<br>
-   * [a, b, c]<br>
-   * [d, e, f]<br>
-   * then slice(input, begin=[0,1], size=[2,1] will return:<br>
-   * [b]<br>
-   * [e]<br>
-   * Note that for each dimension i, begin[i] + size[i] <= input.size(i)<br>
+   * Get a subset of the specified input, by specifying the first element and the size of the array.
+   * For example, if input is:
+   * [a, b, c]
+   * [d, e, f]
+   * then slice(input, begin=[0,1], size=[2,1] will return:
+   * [b]
+   * [e]
+   * Note that for each dimension i, begin[i] + size[i] &lt;= input.size(i)
    *
    * @param input input Variable to get subset of (NDARRAY type)
    * @param begin Beginning index. Must be same length as rank of input array (INT type)
@@ -4532,14 +4540,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Get a subset of the specified input, by specifying the first element and the size of the array.<br>
-   * For example, if input is:<br>
-   * [a, b, c]<br>
-   * [d, e, f]<br>
-   * then slice(input, begin=[0,1], size=[2,1] will return:<br>
-   * [b]<br>
-   * [e]<br>
-   * Note that for each dimension i, begin[i] + size[i] <= input.size(i)<br>
+   * Get a subset of the specified input, by specifying the first element and the size of the array.
+   * For example, if input is:
+   * [a, b, c]
+   * [d, e, f]
+   * then slice(input, begin=[0,1], size=[2,1] will return:
+   * [b]
+   * [e]
+   * Note that for each dimension i, begin[i] + size[i] &lt;= input.size(i)
    *
    * @param name name May be null. Name for the output variable
    * @param input input Variable to get subset of (NDARRAY type)
@@ -4555,7 +4563,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Create a dense matrix equivalent of a sparse matrix based on the given input.<br>
+   * Create a dense matrix equivalent of a sparse matrix based on the given input.
    *
    * @param indices The indices of the sparse matrix (NUMERIC type)
    * @param shape The output shape (NUMERIC type)
@@ -4570,7 +4578,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Create a dense matrix equivalent of a sparse matrix based on the given input.<br>
+   * Create a dense matrix equivalent of a sparse matrix based on the given input.
    *
    * @param name name May be null. Name for the output variable
    * @param indices The indices of the sparse matrix (NUMERIC type)
@@ -4588,7 +4596,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Create a dense matrix equivalent of a sparse matrix based on the given input.<br>
+   * Create a dense matrix equivalent of a sparse matrix based on the given input.
    *
    * @param indices The indices of the sparse matrix (NUMERIC type)
    * @param shape The output shape (NUMERIC type)
@@ -4606,7 +4614,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Create a dense matrix equivalent of a sparse matrix based on the given input.<br>
+   * Create a dense matrix equivalent of a sparse matrix based on the given input.
    *
    * @param name name May be null. Name for the output variable
    * @param indices The indices of the sparse matrix (NUMERIC type)
@@ -4626,7 +4634,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Split a value in to a list of ndarrays.<br>
+   * Split a value in to a list of ndarrays.
    *
    * @param input Input to split (NDARRAY type)
    * @param numSplit Number of splits
@@ -4637,7 +4645,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Split a value in to a list of ndarrays.<br>
+   * Split a value in to a list of ndarrays.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param input Input to split (NDARRAY type)
@@ -4650,7 +4658,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Split a value in to a list of ndarrays.<br>
+   * Split a value in to a list of ndarrays.
    *
    * @param input Input to split (NUMERIC type)
    * @param numSplit Number of splits (NUMERIC type)
@@ -4663,7 +4671,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Split a value in to a list of ndarrays.<br>
+   * Split a value in to a list of ndarrays.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param input Input to split (NUMERIC type)
@@ -4678,8 +4686,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Split a value in to a list of ndarrays with varying sizes <br>
-   * according to the sizes parameter.<br>
+   * Split a value in to a list of ndarrays with varying sizes
+   * according to the sizes parameter.
    *
    * @param input Input to split (NDARRAY type)
    * @param sizes The sizes to split by (NDARRAY type)
@@ -4691,8 +4699,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Split a value in to a list of ndarrays with varying sizes <br>
-   * according to the sizes parameter.<br>
+   * Split a value in to a list of ndarrays with varying sizes
+   * according to the sizes parameter.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param input Input to split (NDARRAY type)
@@ -4707,17 +4715,17 @@ public class SDBaseOps {
   }
 
   /**
-   * Squared L2 norm: see norm2(String, SDVariable, boolean, int...)<br>
+   * Squared L2 norm: see norm2(String, SDVariable, boolean, int...)
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x  (NUMERIC type)
-   * @param keepDims 
+   * @param keepDims
    * @param dimensions  (Size: AtLeast(min=0))
    * @return output  (NUMERIC type)
    */
@@ -4728,18 +4736,18 @@ public class SDBaseOps {
   }
 
   /**
-   * Squared L2 norm: see norm2(String, SDVariable, boolean, int...)<br>
+   * Squared L2 norm: see norm2(String, SDVariable, boolean, int...)
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x  (NUMERIC type)
-   * @param keepDims 
+   * @param keepDims
    * @param dimensions  (Size: AtLeast(min=0))
    * @return output  (NUMERIC type)
    */
@@ -4751,14 +4759,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Squared L2 norm: see norm2(String, SDVariable, boolean, int...)<br>
+   * Squared L2 norm: see norm2(String, SDVariable, boolean, int...)
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x  (NUMERIC type)
    * @param dimensions  (Size: AtLeast(min=0))
@@ -4771,14 +4779,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Squared L2 norm: see norm2(String, SDVariable, boolean, int...)<br>
+   * Squared L2 norm: see norm2(String, SDVariable, boolean, int...)
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x  (NUMERIC type)
@@ -4793,8 +4801,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Remove a single dimension of size 1.<br>
-   * For example, if input has shape [a,b,1,c] then squeeze(input, 2) returns an array of shape [a,b,c]<br>
+   * Remove a single dimension of size 1.
+   * For example, if input has shape [a,b,1,c] then squeeze(input, 2) returns an array of shape [a,b,c]
    *
    * @param x Input variable (NUMERIC type)
    * @param axis Size 1 dimension to remove
@@ -4806,8 +4814,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Remove a single dimension of size 1.<br>
-   * For example, if input has shape [a,b,1,c] then squeeze(input, 2) returns an array of shape [a,b,c]<br>
+   * Remove a single dimension of size 1.
+   * For example, if input has shape [a,b,1,c] then squeeze(input, 2) returns an array of shape [a,b,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -4821,9 +4829,9 @@ public class SDBaseOps {
   }
 
   /**
-   * Remove all dimensions of size 1 from the input tensor.<br>
-   * For example, if input has shape [a,1,b,1,c] then squeezeAll(input) returns an array of shape [a,b,c]<br>
-   * This is the NumPy-style squeeze with no axis specified.<br>
+   * Remove all dimensions of size 1 from the input tensor.
+   * For example, if input has shape [a,1,b,1,c] then squeezeAll(input) returns an array of shape [a,b,c]
+   * This is the NumPy-style squeeze with no axis specified.
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -4834,9 +4842,9 @@ public class SDBaseOps {
   }
 
   /**
-   * Remove all dimensions of size 1 from the input tensor.<br>
-   * For example, if input has shape [a,1,b,1,c] then squeezeAll(input) returns an array of shape [a,b,c]<br>
-   * This is the NumPy-style squeeze with no axis specified.<br>
+   * Remove all dimensions of size 1 from the input tensor.
+   * For example, if input has shape [a,1,b,1,c] then squeezeAll(input) returns an array of shape [a,b,c]
+   * This is the NumPy-style squeeze with no axis specified.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -4849,13 +4857,13 @@ public class SDBaseOps {
   }
 
   /**
-   * Stack a set of N INDArray of rank X into one rank X+1 variable.<br>
-   * If inputs have shape [a,b,c] then output has shape:<br>
-   * axis = 0: [N,a,b,c]<br>
-   * axis = 1: [a,N,b,c]<br>
-   * axis = 2: [a,b,N,c]<br>
-   * axis = 3: [a,b,c,N]<br>
-   * see unstack(String[], SDVariable, int, int)<br>
+   * Stack a set of N INDArray of rank X into one rank X+1 variable.
+   * If inputs have shape [a,b,c] then output has shape:
+   * axis = 0: [N,a,b,c]
+   * axis = 1: [a,N,b,c]
+   * axis = 2: [a,b,N,c]
+   * axis = 3: [a,b,c,N]
+   * see unstack(String[], SDVariable, int, int)
    *
    * @param values Input variables to stack. Must have the same shape for all inputs (NDARRAY type)
    * @param axis Axis to stack on
@@ -4867,13 +4875,13 @@ public class SDBaseOps {
   }
 
   /**
-   * Stack a set of N INDArray of rank X into one rank X+1 variable.<br>
-   * If inputs have shape [a,b,c] then output has shape:<br>
-   * axis = 0: [N,a,b,c]<br>
-   * axis = 1: [a,N,b,c]<br>
-   * axis = 2: [a,b,N,c]<br>
-   * axis = 3: [a,b,c,N]<br>
-   * see unstack(String[], SDVariable, int, int)<br>
+   * Stack a set of N INDArray of rank X into one rank X+1 variable.
+   * If inputs have shape [a,b,c] then output has shape:
+   * axis = 0: [N,a,b,c]
+   * axis = 1: [a,N,b,c]
+   * axis = 2: [a,b,N,c]
+   * axis = 3: [a,b,c,N]
+   * see unstack(String[], SDVariable, int, int)
    *
    * @param name name May be null. Name for the output variable
    * @param axis Axis to stack on
@@ -4887,14 +4895,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Standard deviation array reduction operation, optionally along specified dimensions<br>
+   * Standard deviation array reduction operation, optionally along specified dimensions
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x Input variable (NUMERIC type)
    * @param biasCorrected If true: divide by (N-1) (i.e., sample stdev). If false: divide by N (population stdev)
@@ -4910,14 +4918,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Standard deviation array reduction operation, optionally along specified dimensions<br>
+   * Standard deviation array reduction operation, optionally along specified dimensions
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -4935,14 +4943,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Standard deviation array reduction operation, optionally along specified dimensions<br>
+   * Standard deviation array reduction operation, optionally along specified dimensions
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x Input variable (NUMERIC type)
    * @param biasCorrected If true: divide by (N-1) (i.e., sample stdev). If false: divide by N (population stdev)
@@ -4956,14 +4964,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Standard deviation array reduction operation, optionally along specified dimensions<br>
+   * Standard deviation array reduction operation, optionally along specified dimensions
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -4980,14 +4988,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Get a subset of the specified input, by specifying the first element, last element, and the strides.<br>
-   * For example, if input is:<br>
-   * [a, b, c]<br>
-   * [d, e, f]<br>
-   * [g, h, i]<br>
-   * then stridedSlice(input, begin=[0,1], end=[2,2], strides=[2,1], all masks = 0) will return:<br>
-   * [b, c]<br>
-   * [h, i]<br>
+   * Get a subset of the specified input, by specifying the first element, last element, and the strides.
+   * For example, if input is:
+   * [a, b, c]
+   * [d, e, f]
+   * [g, h, i]
+   * then stridedSlice(input, begin=[0,1], end=[2,2], strides=[2,1], all masks = 0) will return:
+   * [b, c]
+   * [h, i]
    *
    * @param in Variable to get subset of (NDARRAY type)
    * @param begin Beginning index (Size: AtLeast(min=1))
@@ -5009,14 +5017,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Get a subset of the specified input, by specifying the first element, last element, and the strides.<br>
-   * For example, if input is:<br>
-   * [a, b, c]<br>
-   * [d, e, f]<br>
-   * [g, h, i]<br>
-   * then stridedSlice(input, begin=[0,1], end=[2,2], strides=[2,1], all masks = 0) will return:<br>
-   * [b, c]<br>
-   * [h, i]<br>
+   * Get a subset of the specified input, by specifying the first element, last element, and the strides.
+   * For example, if input is:
+   * [a, b, c]
+   * [d, e, f]
+   * [g, h, i]
+   * then stridedSlice(input, begin=[0,1], end=[2,2], strides=[2,1], all masks = 0) will return:
+   * [b, c]
+   * [h, i]
    *
    * @param name name May be null. Name for the output variable
    * @param in Variable to get subset of (NDARRAY type)
@@ -5041,14 +5049,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Get a subset of the specified input, by specifying the first element, last element, and the strides.<br>
-   * For example, if input is:<br>
-   * [a, b, c]<br>
-   * [d, e, f]<br>
-   * [g, h, i]<br>
-   * then stridedSlice(input, begin=[0,1], end=[2,2], strides=[2,1], all masks = 0) will return:<br>
-   * [b, c]<br>
-   * [h, i]<br>
+   * Get a subset of the specified input, by specifying the first element, last element, and the strides.
+   * For example, if input is:
+   * [a, b, c]
+   * [d, e, f]
+   * [g, h, i]
+   * then stridedSlice(input, begin=[0,1], end=[2,2], strides=[2,1], all masks = 0) will return:
+   * [b, c]
+   * [h, i]
    *
    * @param in Variable to get subset of (NDARRAY type)
    * @param begin Beginning index (Size: AtLeast(min=1))
@@ -5064,14 +5072,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Get a subset of the specified input, by specifying the first element, last element, and the strides.<br>
-   * For example, if input is:<br>
-   * [a, b, c]<br>
-   * [d, e, f]<br>
-   * [g, h, i]<br>
-   * then stridedSlice(input, begin=[0,1], end=[2,2], strides=[2,1], all masks = 0) will return:<br>
-   * [b, c]<br>
-   * [h, i]<br>
+   * Get a subset of the specified input, by specifying the first element, last element, and the strides.
+   * For example, if input is:
+   * [a, b, c]
+   * [d, e, f]
+   * [g, h, i]
+   * then stridedSlice(input, begin=[0,1], end=[2,2], strides=[2,1], all masks = 0) will return:
+   * [b, c]
+   * [h, i]
    *
    * @param name name May be null. Name for the output variable
    * @param in Variable to get subset of (NDARRAY type)
@@ -5090,14 +5098,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Get a subset of the specified input, by specifying the first element, last element, and the strides.<br>
-   * For example, if input is:<br>
-   * [a, b, c]<br>
-   * [d, e, f]<br>
-   * [g, h, i]<br>
-   * then stridedSlice(input, begin=[0,1], end=[2,2], strides=[2,1], all masks = 0) will return:<br>
-   * [b, c]<br>
-   * [h, i]<br>
+   * Get a subset of the specified input, by specifying the first element, last element, and the strides.
+   * For example, if input is:
+   * [a, b, c]
+   * [d, e, f]
+   * [g, h, i]
+   * then stridedSlice(input, begin=[0,1], end=[2,2], strides=[2,1], all masks = 0) will return:
+   * [b, c]
+   * [h, i]
    *
    * @param in Variable to get subset of (NDARRAY type)
    * @param begin The beginning indices for the slice (NUMERIC type)
@@ -5120,14 +5128,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Get a subset of the specified input, by specifying the first element, last element, and the strides.<br>
-   * For example, if input is:<br>
-   * [a, b, c]<br>
-   * [d, e, f]<br>
-   * [g, h, i]<br>
-   * then stridedSlice(input, begin=[0,1], end=[2,2], strides=[2,1], all masks = 0) will return:<br>
-   * [b, c]<br>
-   * [h, i]<br>
+   * Get a subset of the specified input, by specifying the first element, last element, and the strides.
+   * For example, if input is:
+   * [a, b, c]
+   * [d, e, f]
+   * [g, h, i]
+   * then stridedSlice(input, begin=[0,1], end=[2,2], strides=[2,1], all masks = 0) will return:
+   * [b, c]
+   * [h, i]
    *
    * @param name name May be null. Name for the output variable
    * @param in Variable to get subset of (NDARRAY type)
@@ -5152,14 +5160,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Get a subset of the specified input, by specifying the first element, last element, and the strides.<br>
-   * For example, if input is:<br>
-   * [a, b, c]<br>
-   * [d, e, f]<br>
-   * [g, h, i]<br>
-   * then stridedSlice(input, begin=[0,1], end=[2,2], strides=[2,1], all masks = 0) will return:<br>
-   * [b, c]<br>
-   * [h, i]<br>
+   * Get a subset of the specified input, by specifying the first element, last element, and the strides.
+   * For example, if input is:
+   * [a, b, c]
+   * [d, e, f]
+   * [g, h, i]
+   * then stridedSlice(input, begin=[0,1], end=[2,2], strides=[2,1], all masks = 0) will return:
+   * [b, c]
+   * [h, i]
    *
    * @param in Variable to get subset of (NDARRAY type)
    * @param begin The beginning indices for the slice (NUMERIC type)
@@ -5176,14 +5184,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Get a subset of the specified input, by specifying the first element, last element, and the strides.<br>
-   * For example, if input is:<br>
-   * [a, b, c]<br>
-   * [d, e, f]<br>
-   * [g, h, i]<br>
-   * then stridedSlice(input, begin=[0,1], end=[2,2], strides=[2,1], all masks = 0) will return:<br>
-   * [b, c]<br>
-   * [h, i]<br>
+   * Get a subset of the specified input, by specifying the first element, last element, and the strides.
+   * For example, if input is:
+   * [a, b, c]
+   * [d, e, f]
+   * [g, h, i]
+   * then stridedSlice(input, begin=[0,1], end=[2,2], strides=[2,1], all masks = 0) will return:
+   * [b, c]
+   * [h, i]
    *
    * @param name name May be null. Name for the output variable
    * @param in Variable to get subset of (NDARRAY type)
@@ -5202,14 +5210,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Sum array reduction operation, optionally along specified dimensions.<br>
+   * Sum array reduction operation, optionally along specified dimensions.
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x Input variable (NUMERIC type)
    * @param keepDims If true: keep the dimensions that are reduced on (as length 1). False: remove the reduction dimensions
@@ -5223,14 +5231,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Sum array reduction operation, optionally along specified dimensions.<br>
+   * Sum array reduction operation, optionally along specified dimensions.
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -5246,14 +5254,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Sum array reduction operation, optionally along specified dimensions.<br>
+   * Sum array reduction operation, optionally along specified dimensions.
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -5266,14 +5274,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Sum array reduction operation, optionally along specified dimensions.<br>
+   * Sum array reduction operation, optionally along specified dimensions.
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -5288,11 +5296,13 @@ public class SDBaseOps {
   }
 
   /**
-   * Switch operation<br>
-   * Predicate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output<br>
+   * Switch operation
+   * Predicate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output
    *
    * @param x Input variable (NDARRAY type)
    * @param predicate Predictate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output (BOOL type)
+   * @return outputLeft Output when predicate is false (NUMERIC type)
+   * @return outputRight Output when predicate is false (NUMERIC type)
    */
   public SDVariable[] switchOp(SDVariable x, SDVariable predicate) {
     SDValidation.validateBool("switchOp", "predicate", predicate);
@@ -5300,12 +5310,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Switch operation<br>
-   * Predicate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output<br>
+   * Switch operation
+   * Predicate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param x Input variable (NDARRAY type)
    * @param predicate Predictate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output (BOOL type)
+   * @return outputLeft Output when predicate is false (NUMERIC type)
+   * @return outputRight Output when predicate is false (NUMERIC type)
    */
   public SDVariable[] switchOp(String[] names, SDVariable x, SDVariable predicate) {
     SDValidation.validateBool("switchOp", "predicate", predicate);
@@ -5314,7 +5326,7 @@ public class SDBaseOps {
   }
 
   /**
-   * //TODO: Ops must be documented.<br>
+   * //TODO: Ops must be documented.
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
@@ -5335,7 +5347,7 @@ public class SDBaseOps {
   }
 
   /**
-   * //TODO: Ops must be documented.<br>
+   * //TODO: Ops must be documented.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable x (NUMERIC type)
@@ -5358,7 +5370,7 @@ public class SDBaseOps {
   }
 
   /**
-   * //TODO: Ops must be documented.<br>
+   * //TODO: Ops must be documented.
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
@@ -5375,7 +5387,7 @@ public class SDBaseOps {
   }
 
   /**
-   * //TODO: Ops must be documented.<br>
+   * //TODO: Ops must be documented.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable x (NUMERIC type)
@@ -5395,16 +5407,16 @@ public class SDBaseOps {
   }
 
   /**
-   * Repeat (tile) the input tensor the specified number of times.<br>
-   * For example, if input is<br>
-   * [1, 2]<br>
-   * [3, 4]<br>
-   * and repeat is [2, 3]<br>
-   * then output is<br>
-   * [1, 2, 1, 2, 1, 2]<br>
-   * [3, 4, 3, 4, 3, 4]<br>
-   * [1, 2, 1, 2, 1, 2]<br>
-   * [3, 4, 3, 4, 3, 4]<br>
+   * Repeat (tile) the input tensor the specified number of times.
+   * For example, if input is
+   * [1, 2]
+   * [3, 4]
+   * and repeat is [2, 3]
+   * then output is
+   * [1, 2, 1, 2, 1, 2]
+   * [3, 4, 3, 4, 3, 4]
+   * [1, 2, 1, 2, 1, 2]
+   * [3, 4, 3, 4, 3, 4]
    *
    * @param x Input variable (NDARRAY type)
    * @param repeat Number of times to repeat in each axis. Must have length equal to the rank of the input array (INT type)
@@ -5416,16 +5428,16 @@ public class SDBaseOps {
   }
 
   /**
-   * Repeat (tile) the input tensor the specified number of times.<br>
-   * For example, if input is<br>
-   * [1, 2]<br>
-   * [3, 4]<br>
-   * and repeat is [2, 3]<br>
-   * then output is<br>
-   * [1, 2, 1, 2, 1, 2]<br>
-   * [3, 4, 3, 4, 3, 4]<br>
-   * [1, 2, 1, 2, 1, 2]<br>
-   * [3, 4, 3, 4, 3, 4]<br>
+   * Repeat (tile) the input tensor the specified number of times.
+   * For example, if input is
+   * [1, 2]
+   * [3, 4]
+   * and repeat is [2, 3]
+   * then output is
+   * [1, 2, 1, 2, 1, 2]
+   * [3, 4, 3, 4, 3, 4]
+   * [1, 2, 1, 2, 1, 2]
+   * [3, 4, 3, 4, 3, 4]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NDARRAY type)
@@ -5439,7 +5451,7 @@ public class SDBaseOps {
   }
 
   /**
-   * see tile(String, SDVariable, int...)<br>
+   * see tile(String, SDVariable, int...)
    *
    * @param x  (NDARRAY type)
    * @param repeat  (Size: AtLeast(min=1))
@@ -5451,7 +5463,7 @@ public class SDBaseOps {
   }
 
   /**
-   * see tile(String, SDVariable, int...)<br>
+   * see tile(String, SDVariable, int...)
    *
    * @param name name May be null. Name for the output variable
    * @param x  (NDARRAY type)
@@ -5465,7 +5477,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Matrix transpose operation: If input has shape [a,b] output has shape [b,a]<br>
+   * Matrix transpose operation: If input has shape [a,b] output has shape [b,a]
    *
    * @param x Input variable (NDARRAY type)
    * @return output transposed input (NDARRAY type)
@@ -5475,7 +5487,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Matrix transpose operation: If input has shape [a,b] output has shape [b,a]<br>
+   * Matrix transpose operation: If input has shape [a,b] output has shape [b,a]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NDARRAY type)
@@ -5487,11 +5499,11 @@ public class SDBaseOps {
   }
 
   /**
-   * Unsorted segment max operation. As per segmentMax(String, SDVariable, SDVariable) but without<br>
-   * the requirement for the indices to be sorted.<br>
-   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
-   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
-   * then output = [6, 9, 8] = [max(3,6), max(1,4,9), max(2,8)]<br>
+   * Unsorted segment max operation. As per segmentMax(String, SDVariable, SDVariable) but without
+   * the requirement for the indices to be sorted.
+   * If data =     [1, 3, 2, 6, 4, 9, 8]
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+   * then output = [6, 9, 8] = [max(3,6), max(1,4,9), max(2,8)]
    *
    * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
    * @param segmentIds Variable for the segment IDs (NUMERIC type)
@@ -5505,11 +5517,11 @@ public class SDBaseOps {
   }
 
   /**
-   * Unsorted segment max operation. As per segmentMax(String, SDVariable, SDVariable) but without<br>
-   * the requirement for the indices to be sorted.<br>
-   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
-   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
-   * then output = [6, 9, 8] = [max(3,6), max(1,4,9), max(2,8)]<br>
+   * Unsorted segment max operation. As per segmentMax(String, SDVariable, SDVariable) but without
+   * the requirement for the indices to be sorted.
+   * If data =     [1, 3, 2, 6, 4, 9, 8]
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+   * then output = [6, 9, 8] = [max(3,6), max(1,4,9), max(2,8)]
    *
    * @param name name May be null. Name for the output variable
    * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
@@ -5526,11 +5538,11 @@ public class SDBaseOps {
   }
 
   /**
-   * Unsorted segment max operation. As per segmentMax(String, SDVariable, SDVariable) but without<br>
-   * the requirement for the indices to be sorted.<br>
-   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
-   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
-   * then output = [6, 9, 8] = [max(3,6), max(1,4,9), max(2,8)]<br>
+   * Unsorted segment max operation. As per segmentMax(String, SDVariable, SDVariable) but without
+   * the requirement for the indices to be sorted.
+   * If data =     [1, 3, 2, 6, 4, 9, 8]
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+   * then output = [6, 9, 8] = [max(3,6), max(1,4,9), max(2,8)]
    *
    * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
    * @param segmentIds Variable for the segment IDs (NUMERIC type)
@@ -5546,11 +5558,11 @@ public class SDBaseOps {
   }
 
   /**
-   * Unsorted segment max operation. As per segmentMax(String, SDVariable, SDVariable) but without<br>
-   * the requirement for the indices to be sorted.<br>
-   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
-   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
-   * then output = [6, 9, 8] = [max(3,6), max(1,4,9), max(2,8)]<br>
+   * Unsorted segment max operation. As per segmentMax(String, SDVariable, SDVariable) but without
+   * the requirement for the indices to be sorted.
+   * If data =     [1, 3, 2, 6, 4, 9, 8]
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+   * then output = [6, 9, 8] = [max(3,6), max(1,4,9), max(2,8)]
    *
    * @param name name May be null. Name for the output variable
    * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
@@ -5568,11 +5580,11 @@ public class SDBaseOps {
   }
 
   /**
-   * Unsorted segment mean operation. As per segmentMean(String, SDVariable, SDVariable) but without<br>
-   * the requirement for the indices to be sorted.<br>
-   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
-   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
-   * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]<br>
+   * Unsorted segment mean operation. As per segmentMean(String, SDVariable, SDVariable) but without
+   * the requirement for the indices to be sorted.
+   * If data =     [1, 3, 2, 6, 4, 9, 8]
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+   * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]
    *
    * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
    * @param segmentIds Variable for the segment IDs (NUMERIC type)
@@ -5586,11 +5598,11 @@ public class SDBaseOps {
   }
 
   /**
-   * Unsorted segment mean operation. As per segmentMean(String, SDVariable, SDVariable) but without<br>
-   * the requirement for the indices to be sorted.<br>
-   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
-   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
-   * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]<br>
+   * Unsorted segment mean operation. As per segmentMean(String, SDVariable, SDVariable) but without
+   * the requirement for the indices to be sorted.
+   * If data =     [1, 3, 2, 6, 4, 9, 8]
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+   * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]
    *
    * @param name name May be null. Name for the output variable
    * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
@@ -5607,11 +5619,11 @@ public class SDBaseOps {
   }
 
   /**
-   * Unsorted segment mean operation. As per segmentMean(String, SDVariable, SDVariable) but without<br>
-   * the requirement for the indices to be sorted.<br>
-   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
-   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
-   * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]<br>
+   * Unsorted segment mean operation. As per segmentMean(String, SDVariable, SDVariable) but without
+   * the requirement for the indices to be sorted.
+   * If data =     [1, 3, 2, 6, 4, 9, 8]
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+   * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]
    *
    * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
    * @param segmentIds Variable for the segment IDs (NUMERIC type)
@@ -5627,11 +5639,11 @@ public class SDBaseOps {
   }
 
   /**
-   * Unsorted segment mean operation. As per segmentMean(String, SDVariable, SDVariable) but without<br>
-   * the requirement for the indices to be sorted.<br>
-   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
-   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
-   * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]<br>
+   * Unsorted segment mean operation. As per segmentMean(String, SDVariable, SDVariable) but without
+   * the requirement for the indices to be sorted.
+   * If data =     [1, 3, 2, 6, 4, 9, 8]
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+   * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]
    *
    * @param name name May be null. Name for the output variable
    * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
@@ -5649,11 +5661,11 @@ public class SDBaseOps {
   }
 
   /**
-   * Unsorted segment min operation. As per segmentMin(String, SDVariable, SDVariable) but without<br>
-   * the requirement for the indices to be sorted.<br>
-   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
-   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
-   * then output = [3, 1, 2] = [min(3,6), min(1,4,9), min(2,8)]<br>
+   * Unsorted segment min operation. As per segmentMin(String, SDVariable, SDVariable) but without
+   * the requirement for the indices to be sorted.
+   * If data =     [1, 3, 2, 6, 4, 9, 8]
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+   * then output = [3, 1, 2] = [min(3,6), min(1,4,9), min(2,8)]
    *
    * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
    * @param segmentIds Variable for the segment IDs (NUMERIC type)
@@ -5667,11 +5679,11 @@ public class SDBaseOps {
   }
 
   /**
-   * Unsorted segment min operation. As per segmentMin(String, SDVariable, SDVariable) but without<br>
-   * the requirement for the indices to be sorted.<br>
-   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
-   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
-   * then output = [3, 1, 2] = [min(3,6), min(1,4,9), min(2,8)]<br>
+   * Unsorted segment min operation. As per segmentMin(String, SDVariable, SDVariable) but without
+   * the requirement for the indices to be sorted.
+   * If data =     [1, 3, 2, 6, 4, 9, 8]
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+   * then output = [3, 1, 2] = [min(3,6), min(1,4,9), min(2,8)]
    *
    * @param name name May be null. Name for the output variable
    * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
@@ -5688,11 +5700,11 @@ public class SDBaseOps {
   }
 
   /**
-   * Unsorted segment min operation. As per segmentMin(String, SDVariable, SDVariable) but without<br>
-   * the requirement for the indices to be sorted.<br>
-   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
-   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
-   * then output = [3, 1, 2] = [min(3,6), min(1,4,9), min(2,8)]<br>
+   * Unsorted segment min operation. As per segmentMin(String, SDVariable, SDVariable) but without
+   * the requirement for the indices to be sorted.
+   * If data =     [1, 3, 2, 6, 4, 9, 8]
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+   * then output = [3, 1, 2] = [min(3,6), min(1,4,9), min(2,8)]
    *
    * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
    * @param segmentIds Variable for the segment IDs (NUMERIC type)
@@ -5708,11 +5720,11 @@ public class SDBaseOps {
   }
 
   /**
-   * Unsorted segment min operation. As per segmentMin(String, SDVariable, SDVariable) but without<br>
-   * the requirement for the indices to be sorted.<br>
-   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
-   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
-   * then output = [3, 1, 2] = [min(3,6), min(1,4,9), min(2,8)]<br>
+   * Unsorted segment min operation. As per segmentMin(String, SDVariable, SDVariable) but without
+   * the requirement for the indices to be sorted.
+   * If data =     [1, 3, 2, 6, 4, 9, 8]
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+   * then output = [3, 1, 2] = [min(3,6), min(1,4,9), min(2,8)]
    *
    * @param name name May be null. Name for the output variable
    * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
@@ -5730,11 +5742,11 @@ public class SDBaseOps {
   }
 
   /**
-   * Unsorted segment product operation. As per segmentProd(String, SDVariable, SDVariable) but without<br>
-   * the requirement for the indices to be sorted.<br>
-   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
-   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
-   * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]<br>
+   * Unsorted segment product operation. As per segmentProd(String, SDVariable, SDVariable) but without
+   * the requirement for the indices to be sorted.
+   * If data =     [1, 3, 2, 6, 4, 9, 8]
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+   * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]
    *
    * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
    * @param segmentIds Variable for the segment IDs (NUMERIC type)
@@ -5748,11 +5760,11 @@ public class SDBaseOps {
   }
 
   /**
-   * Unsorted segment product operation. As per segmentProd(String, SDVariable, SDVariable) but without<br>
-   * the requirement for the indices to be sorted.<br>
-   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
-   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
-   * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]<br>
+   * Unsorted segment product operation. As per segmentProd(String, SDVariable, SDVariable) but without
+   * the requirement for the indices to be sorted.
+   * If data =     [1, 3, 2, 6, 4, 9, 8]
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+   * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]
    *
    * @param name name May be null. Name for the output variable
    * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
@@ -5769,11 +5781,11 @@ public class SDBaseOps {
   }
 
   /**
-   * Unsorted segment product operation. As per segmentProd(String, SDVariable, SDVariable) but without<br>
-   * the requirement for the indices to be sorted.<br>
-   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
-   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
-   * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]<br>
+   * Unsorted segment product operation. As per segmentProd(String, SDVariable, SDVariable) but without
+   * the requirement for the indices to be sorted.
+   * If data =     [1, 3, 2, 6, 4, 9, 8]
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+   * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]
    *
    * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
    * @param segmentIds Variable for the segment IDs (NUMERIC type)
@@ -5789,11 +5801,11 @@ public class SDBaseOps {
   }
 
   /**
-   * Unsorted segment product operation. As per segmentProd(String, SDVariable, SDVariable) but without<br>
-   * the requirement for the indices to be sorted.<br>
-   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
-   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
-   * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]<br>
+   * Unsorted segment product operation. As per segmentProd(String, SDVariable, SDVariable) but without
+   * the requirement for the indices to be sorted.
+   * If data =     [1, 3, 2, 6, 4, 9, 8]
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+   * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]
    *
    * @param name name May be null. Name for the output variable
    * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
@@ -5811,10 +5823,10 @@ public class SDBaseOps {
   }
 
   /**
-   * Unsorted segment sqrtN operation. Simply returns the sqrt of the count of the number of values in each segment<br>
-   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
-   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
-   * then output = [1.414, 1.732, 1.414] = [sqrt(2), sqrtN(3), sqrtN(2)]<br>
+   * Unsorted segment sqrtN operation. Simply returns the sqrt of the count of the number of values in each segment
+   * If data =     [1, 3, 2, 6, 4, 9, 8]
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+   * then output = [1.414, 1.732, 1.414] = [sqrt(2), sqrtN(3), sqrtN(2)]
    *
    * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
    * @param segmentIds Variable for the segment IDs (NUMERIC type)
@@ -5828,10 +5840,10 @@ public class SDBaseOps {
   }
 
   /**
-   * Unsorted segment sqrtN operation. Simply returns the sqrt of the count of the number of values in each segment<br>
-   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
-   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
-   * then output = [1.414, 1.732, 1.414] = [sqrt(2), sqrtN(3), sqrtN(2)]<br>
+   * Unsorted segment sqrtN operation. Simply returns the sqrt of the count of the number of values in each segment
+   * If data =     [1, 3, 2, 6, 4, 9, 8]
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+   * then output = [1.414, 1.732, 1.414] = [sqrt(2), sqrtN(3), sqrtN(2)]
    *
    * @param name name May be null. Name for the output variable
    * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
@@ -5848,10 +5860,10 @@ public class SDBaseOps {
   }
 
   /**
-   * Unsorted segment sqrtN operation. Simply returns the sqrt of the count of the number of values in each segment<br>
-   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
-   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
-   * then output = [1.414, 1.732, 1.414] = [sqrt(2), sqrtN(3), sqrtN(2)]<br>
+   * Unsorted segment sqrtN operation. Simply returns the sqrt of the count of the number of values in each segment
+   * If data =     [1, 3, 2, 6, 4, 9, 8]
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+   * then output = [1.414, 1.732, 1.414] = [sqrt(2), sqrtN(3), sqrtN(2)]
    *
    * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
    * @param segmentIds Variable for the segment IDs (NUMERIC type)
@@ -5867,10 +5879,10 @@ public class SDBaseOps {
   }
 
   /**
-   * Unsorted segment sqrtN operation. Simply returns the sqrt of the count of the number of values in each segment<br>
-   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
-   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
-   * then output = [1.414, 1.732, 1.414] = [sqrt(2), sqrtN(3), sqrtN(2)]<br>
+   * Unsorted segment sqrtN operation. Simply returns the sqrt of the count of the number of values in each segment
+   * If data =     [1, 3, 2, 6, 4, 9, 8]
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+   * then output = [1.414, 1.732, 1.414] = [sqrt(2), sqrtN(3), sqrtN(2)]
    *
    * @param name name May be null. Name for the output variable
    * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
@@ -5888,11 +5900,11 @@ public class SDBaseOps {
   }
 
   /**
-   * Unsorted segment sum operation. As per segmentSum(String, SDVariable, SDVariable) but without<br>
-   * the requirement for the indices to be sorted.<br>
-   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
-   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
-   * then output = [9, 14, 10] = [sum(3,6), sum(1,4,9), sum(2,8)]<br>
+   * Unsorted segment sum operation. As per segmentSum(String, SDVariable, SDVariable) but without
+   * the requirement for the indices to be sorted.
+   * If data =     [1, 3, 2, 6, 4, 9, 8]
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+   * then output = [9, 14, 10] = [sum(3,6), sum(1,4,9), sum(2,8)]
    *
    * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
    * @param segmentIds Variable for the segment IDs (NUMERIC type)
@@ -5906,11 +5918,11 @@ public class SDBaseOps {
   }
 
   /**
-   * Unsorted segment sum operation. As per segmentSum(String, SDVariable, SDVariable) but without<br>
-   * the requirement for the indices to be sorted.<br>
-   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
-   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
-   * then output = [9, 14, 10] = [sum(3,6), sum(1,4,9), sum(2,8)]<br>
+   * Unsorted segment sum operation. As per segmentSum(String, SDVariable, SDVariable) but without
+   * the requirement for the indices to be sorted.
+   * If data =     [1, 3, 2, 6, 4, 9, 8]
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+   * then output = [9, 14, 10] = [sum(3,6), sum(1,4,9), sum(2,8)]
    *
    * @param name name May be null. Name for the output variable
    * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
@@ -5927,11 +5939,11 @@ public class SDBaseOps {
   }
 
   /**
-   * Unsorted segment sum operation. As per segmentSum(String, SDVariable, SDVariable) but without<br>
-   * the requirement for the indices to be sorted.<br>
-   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
-   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
-   * then output = [9, 14, 10] = [sum(3,6), sum(1,4,9), sum(2,8)]<br>
+   * Unsorted segment sum operation. As per segmentSum(String, SDVariable, SDVariable) but without
+   * the requirement for the indices to be sorted.
+   * If data =     [1, 3, 2, 6, 4, 9, 8]
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+   * then output = [9, 14, 10] = [sum(3,6), sum(1,4,9), sum(2,8)]
    *
    * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
    * @param segmentIds Variable for the segment IDs (NUMERIC type)
@@ -5947,11 +5959,11 @@ public class SDBaseOps {
   }
 
   /**
-   * Unsorted segment sum operation. As per segmentSum(String, SDVariable, SDVariable) but without<br>
-   * the requirement for the indices to be sorted.<br>
-   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
-   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
-   * then output = [9, 14, 10] = [sum(3,6), sum(1,4,9), sum(2,8)]<br>
+   * Unsorted segment sum operation. As per segmentSum(String, SDVariable, SDVariable) but without
+   * the requirement for the indices to be sorted.
+   * If data =     [1, 3, 2, 6, 4, 9, 8]
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+   * then output = [9, 14, 10] = [sum(3,6), sum(1,4,9), sum(2,8)]
    *
    * @param name name May be null. Name for the output variable
    * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
@@ -5969,11 +5981,11 @@ public class SDBaseOps {
   }
 
   /**
-   * Unstack a variable of rank X into N rank X-1 variables by taking slices along the specified axis.<br>
-   * If input has shape [a,b,c] then output has shape:<br>
-   * axis = 0: [b,c]<br>
-   * axis = 1: [a,c]<br>
-   * axis = 2: [a,b]<br>
+   * Unstack a variable of rank X into N rank X-1 variables by taking slices along the specified axis.
+   * If input has shape [a,b,c] then output has shape:
+   * axis = 0: [b,c]
+   * axis = 1: [a,c]
+   * axis = 2: [a,b]
    *
    * @param value Input variable to unstack (NDARRAY type)
    * @param axis Axis to unstack on
@@ -5984,11 +5996,11 @@ public class SDBaseOps {
   }
 
   /**
-   * Unstack a variable of rank X into N rank X-1 variables by taking slices along the specified axis.<br>
-   * If input has shape [a,b,c] then output has shape:<br>
-   * axis = 0: [b,c]<br>
-   * axis = 1: [a,c]<br>
-   * axis = 2: [a,b]<br>
+   * Unstack a variable of rank X into N rank X-1 variables by taking slices along the specified axis.
+   * If input has shape [a,b,c] then output has shape:
+   * axis = 0: [b,c]
+   * axis = 1: [a,c]
+   * axis = 2: [a,b]
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param value Input variable to unstack (NDARRAY type)
@@ -6001,14 +6013,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Variance array reduction operation, optionally along specified dimensions<br>
+   * Variance array reduction operation, optionally along specified dimensions
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x Input variable (NUMERIC type)
    * @param biasCorrected If true: divide by (N-1) (i.e., sample variable). If false: divide by N (population variance)
@@ -6024,14 +6036,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Variance array reduction operation, optionally along specified dimensions<br>
+   * Variance array reduction operation, optionally along specified dimensions
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -6049,14 +6061,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Variance array reduction operation, optionally along specified dimensions<br>
+   * Variance array reduction operation, optionally along specified dimensions
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x Input variable (NUMERIC type)
    * @param biasCorrected If true: divide by (N-1) (i.e., sample variable). If false: divide by N (population variance)
@@ -6070,14 +6082,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Variance array reduction operation, optionally along specified dimensions<br>
+   * Variance array reduction operation, optionally along specified dimensions
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -6093,14 +6105,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Similar to numpy where, takes elements from x or y depending on whether the condition at a given element is true or false<br>
+   * Similar to numpy where, takes elements from x or y depending on whether the condition at a given element is true or false
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x The first array (NDARRAY type)
    * @param y The second array (NDARRAY type)
@@ -6113,14 +6125,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Similar to numpy where, takes elements from x or y depending on whether the condition at a given element is true or false<br>
+   * Similar to numpy where, takes elements from x or y depending on whether the condition at a given element is true or false
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x The first array (NDARRAY type)
@@ -6135,14 +6147,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Similar to numpy where, takes elements from x or y depending on whether the condition at a given element is true or false<br>
+   * Similar to numpy where, takes elements from x or y depending on whether the condition at a given element is true or false
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x The first array (NUMERIC type)
    * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (BOOL type)
@@ -6155,14 +6167,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Similar to numpy where, takes elements from x or y depending on whether the condition at a given element is true or false<br>
+   * Similar to numpy where, takes elements from x or y depending on whether the condition at a given element is true or false
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x The first array (NUMERIC type)
@@ -6177,14 +6189,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Returns elements that are true from the given condition array<br>
+   * Returns elements that are true from the given condition array
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (BOOL type)
    * @return output Number of elements that the condition is satisfied for (NUMERIC type)
@@ -6195,14 +6207,14 @@ public class SDBaseOps {
   }
 
   /**
-   * Returns elements that are true from the given condition array<br>
+   * Returns elements that are true from the given condition array
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (BOOL type)
@@ -6215,14 +6227,14 @@ public class SDBaseOps {
   }
 
   /**
-   * As implemented in numpy, Return elements chosen from x or y depending on condition.<br>
+   * As implemented in numpy, Return elements chosen from x or y depending on condition.
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param x The first array (NDARRAY type)
    * @param y The second array (NDARRAY type)
@@ -6235,14 +6247,14 @@ public class SDBaseOps {
   }
 
   /**
-   * As implemented in numpy, Return elements chosen from x or y depending on condition.<br>
+   * As implemented in numpy, Return elements chosen from x or y depending on condition.
    *
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param x The first array (NDARRAY type)
@@ -6257,8 +6269,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Return a variable of all 0s, with the same shape as the input variable. Note that this is dynamic:<br>
-   * if the input shape changes in later execution, the returned variable's shape will also be updated<br>
+   * Return a variable of all 0s, with the same shape as the input variable. Note that this is dynamic:
+   * if the input shape changes in later execution, the returned variable's shape will also be updated
    *
    * @param input Input  (NDARRAY type)
    * @return output A new Variable with the same (dynamic) shape as the input (NUMERIC type)
@@ -6268,8 +6280,8 @@ public class SDBaseOps {
   }
 
   /**
-   * Return a variable of all 0s, with the same shape as the input variable. Note that this is dynamic:<br>
-   * if the input shape changes in later execution, the returned variable's shape will also be updated<br>
+   * Return a variable of all 0s, with the same shape as the input variable. Note that this is dynamic:
+   * if the input shape changes in later execution, the returned variable's shape will also be updated
    *
    * @param name name May be null. Name for the output variable
    * @param input Input  (NDARRAY type)

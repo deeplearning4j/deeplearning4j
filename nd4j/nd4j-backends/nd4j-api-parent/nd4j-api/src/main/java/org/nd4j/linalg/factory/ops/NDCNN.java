@@ -27,6 +27,30 @@ import static org.nd4j.linalg.factory.NDValidation.isSameType;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.enums.DataFormat;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.image.ExtractImagePatches;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveAvgPooling2D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveAvgPooling3D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveMaxPooling2D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling2D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling3D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Col2Im;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv1D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv2D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.DeformableConv2D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.DepthToSpace;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.LocalResponseNormalization;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPoolWithArgmax;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPooling2D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPooling3D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.SConv2D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.SpaceToDepth;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling2d;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling3d;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv1DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
@@ -36,6 +60,9 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeformableConv2DCo
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.LocalResponseNormalizationConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.BatchToSpace;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Dilation2D;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SpaceToBatch;
 import org.nd4j.linalg.factory.NDValidation;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -44,12 +71,12 @@ public class NDCNN {
   }
 
   /**
-   * Adaptive Average Pooling 2D operation.<br>
-   * <br>
-   * Automatically computes kernel size and stride to produce output of the specified<br>
-   * spatial dimensions. Common in vision models like ResNet, VGG for global pooling.<br>
-   * <br>
-   * For global average pooling, use outputHeight=1, outputWidth=1.<br>
+   * Adaptive Average Pooling 2D operation.
+   *
+   * Automatically computes kernel size and stride to produce output of the specified
+   * spatial dimensions. Common in vision models like ResNet, VGG for global pooling.
+   *
+   * For global average pooling, use outputHeight=1, outputWidth=1.
    *
    * @param input Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param outputHeight Target output height
@@ -60,7 +87,7 @@ public class NDCNN {
   public INDArray adaptiveAvgPooling2d(INDArray input, int outputHeight, int outputWidth,
       boolean nchw) {
     NDValidation.validateNumerical("adaptiveAvgPooling2d", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveAvgPooling2D(input, outputHeight, outputWidth, nchw));
+    INDArray[] __tmp = Nd4j.exec(new AdaptiveAvgPooling2D(input, outputHeight, outputWidth, nchw));
     try {
       return __tmp[0];
     } finally {
@@ -75,12 +102,12 @@ public class NDCNN {
   }
 
   /**
-   * Adaptive Average Pooling 2D operation.<br>
-   * <br>
-   * Automatically computes kernel size and stride to produce output of the specified<br>
-   * spatial dimensions. Common in vision models like ResNet, VGG for global pooling.<br>
-   * <br>
-   * For global average pooling, use outputHeight=1, outputWidth=1.<br>
+   * Adaptive Average Pooling 2D operation.
+   *
+   * Automatically computes kernel size and stride to produce output of the specified
+   * spatial dimensions. Common in vision models like ResNet, VGG for global pooling.
+   *
+   * For global average pooling, use outputHeight=1, outputWidth=1.
    *
    * @param input Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param outputHeight Target output height
@@ -89,7 +116,7 @@ public class NDCNN {
    */
   public INDArray adaptiveAvgPooling2d(INDArray input, int outputHeight, int outputWidth) {
     NDValidation.validateNumerical("adaptiveAvgPooling2d", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveAvgPooling2D(input, outputHeight, outputWidth, true));
+    INDArray[] __tmp = Nd4j.exec(new AdaptiveAvgPooling2D(input, outputHeight, outputWidth, true));
     try {
       return __tmp[0];
     } finally {
@@ -104,12 +131,12 @@ public class NDCNN {
   }
 
   /**
-   * Adaptive Average Pooling 3D operation.<br>
-   * <br>
-   * Automatically computes kernel size and stride to produce output of the specified<br>
-   * spatial dimensions. For 3D data like video or volumetric data.<br>
-   * <br>
-   * For global average pooling, use outputDepth=1, outputHeight=1, outputWidth=1.<br>
+   * Adaptive Average Pooling 3D operation.
+   *
+   * Automatically computes kernel size and stride to produce output of the specified
+   * spatial dimensions. For 3D data like video or volumetric data.
+   *
+   * For global average pooling, use outputDepth=1, outputHeight=1, outputWidth=1.
    *
    * @param input Input tensor - 5d activations in NCDHW format (shape [minibatch, channels, depth, height, width]) or NDHWC format (NUMERIC type)
    * @param outputDepth Target output depth
@@ -121,7 +148,7 @@ public class NDCNN {
   public INDArray adaptiveAvgPooling3d(INDArray input, int outputDepth, int outputHeight,
       int outputWidth, boolean ncdhw) {
     NDValidation.validateNumerical("adaptiveAvgPooling3d", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveAvgPooling3D(input, outputDepth, outputHeight, outputWidth, ncdhw));
+    INDArray[] __tmp = Nd4j.exec(new AdaptiveAvgPooling3D(input, outputDepth, outputHeight, outputWidth, ncdhw));
     try {
       return __tmp[0];
     } finally {
@@ -136,12 +163,12 @@ public class NDCNN {
   }
 
   /**
-   * Adaptive Average Pooling 3D operation.<br>
-   * <br>
-   * Automatically computes kernel size and stride to produce output of the specified<br>
-   * spatial dimensions. For 3D data like video or volumetric data.<br>
-   * <br>
-   * For global average pooling, use outputDepth=1, outputHeight=1, outputWidth=1.<br>
+   * Adaptive Average Pooling 3D operation.
+   *
+   * Automatically computes kernel size and stride to produce output of the specified
+   * spatial dimensions. For 3D data like video or volumetric data.
+   *
+   * For global average pooling, use outputDepth=1, outputHeight=1, outputWidth=1.
    *
    * @param input Input tensor - 5d activations in NCDHW format (shape [minibatch, channels, depth, height, width]) or NDHWC format (NUMERIC type)
    * @param outputDepth Target output depth
@@ -152,7 +179,7 @@ public class NDCNN {
   public INDArray adaptiveAvgPooling3d(INDArray input, int outputDepth, int outputHeight,
       int outputWidth) {
     NDValidation.validateNumerical("adaptiveAvgPooling3d", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveAvgPooling3D(input, outputDepth, outputHeight, outputWidth, true));
+    INDArray[] __tmp = Nd4j.exec(new AdaptiveAvgPooling3D(input, outputDepth, outputHeight, outputWidth, true));
     try {
       return __tmp[0];
     } finally {
@@ -167,12 +194,12 @@ public class NDCNN {
   }
 
   /**
-   * Adaptive Max Pooling 2D operation.<br>
-   * <br>
-   * Automatically computes kernel size and stride to produce output of the specified<br>
-   * spatial dimensions. Common in vision models for flexible output sizing.<br>
-   * <br>
-   * For global max pooling, use outputHeight=1, outputWidth=1.<br>
+   * Adaptive Max Pooling 2D operation.
+   *
+   * Automatically computes kernel size and stride to produce output of the specified
+   * spatial dimensions. Common in vision models for flexible output sizing.
+   *
+   * For global max pooling, use outputHeight=1, outputWidth=1.
    *
    * @param input Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param outputHeight Target output height
@@ -183,7 +210,7 @@ public class NDCNN {
   public INDArray adaptiveMaxPooling2d(INDArray input, int outputHeight, int outputWidth,
       boolean nchw) {
     NDValidation.validateNumerical("adaptiveMaxPooling2d", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveMaxPooling2D(input, outputHeight, outputWidth, nchw));
+    INDArray[] __tmp = Nd4j.exec(new AdaptiveMaxPooling2D(input, outputHeight, outputWidth, nchw));
     try {
       return __tmp[0];
     } finally {
@@ -198,12 +225,12 @@ public class NDCNN {
   }
 
   /**
-   * Adaptive Max Pooling 2D operation.<br>
-   * <br>
-   * Automatically computes kernel size and stride to produce output of the specified<br>
-   * spatial dimensions. Common in vision models for flexible output sizing.<br>
-   * <br>
-   * For global max pooling, use outputHeight=1, outputWidth=1.<br>
+   * Adaptive Max Pooling 2D operation.
+   *
+   * Automatically computes kernel size and stride to produce output of the specified
+   * spatial dimensions. Common in vision models for flexible output sizing.
+   *
+   * For global max pooling, use outputHeight=1, outputWidth=1.
    *
    * @param input Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param outputHeight Target output height
@@ -212,7 +239,7 @@ public class NDCNN {
    */
   public INDArray adaptiveMaxPooling2d(INDArray input, int outputHeight, int outputWidth) {
     NDValidation.validateNumerical("adaptiveMaxPooling2d", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveMaxPooling2D(input, outputHeight, outputWidth, true));
+    INDArray[] __tmp = Nd4j.exec(new AdaptiveMaxPooling2D(input, outputHeight, outputWidth, true));
     try {
       return __tmp[0];
     } finally {
@@ -227,7 +254,7 @@ public class NDCNN {
   }
 
   /**
-   * 2D Convolution layer operation - average pooling 2d<br>
+   * 2D Convolution layer operation - average pooling 2d
    *
    * @param input the input to average pooling 2d operation - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param Pooling2DConfig Configuration Object
@@ -235,7 +262,7 @@ public class NDCNN {
    */
   public INDArray avgPooling2d(INDArray input, Pooling2DConfig Pooling2DConfig) {
     NDValidation.validateNumerical("avgPooling2d", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling2D(input, Pooling2DConfig));
+    INDArray[] __tmp = Nd4j.exec(new AvgPooling2D(input, Pooling2DConfig));
     try {
       return __tmp[0];
     } finally {
@@ -250,7 +277,7 @@ public class NDCNN {
   }
 
   /**
-   * 3D convolution layer operation - average pooling 3d <br>
+   * 3D convolution layer operation - average pooling 3d
    *
    * @param input the input to average pooling 3d operation - 5d activations in NCDHW format (shape [minibatch, channels, depth, height, width]) or NDHWC format (shape [minibatch, depth, height, width, channels]) (NUMERIC type)
    * @param Pooling3DConfig Configuration Object
@@ -258,7 +285,7 @@ public class NDCNN {
    */
   public INDArray avgPooling3d(INDArray input, Pooling3DConfig Pooling3DConfig) {
     NDValidation.validateNumerical("avgPooling3d", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling3D(input, Pooling3DConfig));
+    INDArray[] __tmp = Nd4j.exec(new AvgPooling3D(input, Pooling3DConfig));
     try {
       return __tmp[0];
     } finally {
@@ -273,8 +300,8 @@ public class NDCNN {
   }
 
   /**
-   * Convolution 2d layer batch to space operation on 4d input.<br>
-   * Reduces input batch dimension by rearranging data into a larger spatial dimensions<br>
+   * Convolution 2d layer batch to space operation on 4d input.
+   * Reduces input batch dimension by rearranging data into a larger spatial dimensions
    *
    * @param x Input variable. 4d input (NUMERIC type)
    * @param blocks Block size, in the height/width dimension (Size: Exactly(count=2))
@@ -287,7 +314,7 @@ public class NDCNN {
     Preconditions.checkArgument(blocks.length == 2, "blocks has incorrect size/length. Expected: blocks.length == 2, got %s", blocks.length);
     Preconditions.checkArgument(croppingTop.length == 2, "croppingTop has incorrect size/length. Expected: croppingTop.length == 2, got %s", croppingTop.length);
     Preconditions.checkArgument(croppingBottom.length == 2, "croppingBottom has incorrect size/length. Expected: croppingBottom.length == 2, got %s", croppingBottom.length);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.BatchToSpace(x, blocks, croppingTop, croppingBottom));
+    INDArray[] __tmp = Nd4j.exec(new BatchToSpace(x, blocks, croppingTop, croppingBottom));
     try {
       return __tmp[0];
     } finally {
@@ -302,8 +329,8 @@ public class NDCNN {
   }
 
   /**
-   * col2im operation for use in 2D convolution operations. Outputs a 4d array with shape<br>
-   * [minibatch, inputChannels, height, width]<br>
+   * col2im operation for use in 2D convolution operations. Outputs a 4d array with shape
+   * [minibatch, inputChannels, height, width]
    *
    * @param in Input - rank 6 input with shape [minibatch, inputChannels, kernelHeight, kernelWidth, outputHeight, outputWidth] (NUMERIC type)
    * @param Conv2DConfig Configuration Object
@@ -311,7 +338,7 @@ public class NDCNN {
    */
   public INDArray col2Im(INDArray in, Conv2DConfig Conv2DConfig) {
     NDValidation.validateNumerical("col2Im", "in", in);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Col2Im(in, Conv2DConfig));
+    INDArray[] __tmp = Nd4j.exec(new Col2Im(in, Conv2DConfig));
     try {
       return __tmp[0];
     } finally {
@@ -326,7 +353,7 @@ public class NDCNN {
   }
 
   /**
-   * Conv1d operation.<br>
+   * Conv1d operation.
    *
    * @param input the inputs to conv1d (NUMERIC type)
    * @param weights weights for conv1d op - rank 3 array with shape [kernelSize, inputChannels, outputChannels] (NUMERIC type)
@@ -341,7 +368,7 @@ public class NDCNN {
     if (bias != null) {
       NDValidation.validateNumerical("conv1d", "bias", bias);
     }
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv1D(input, weights, bias, Conv1DConfig));
+    INDArray[] __tmp = Nd4j.exec(new Conv1D(input, weights, bias, Conv1DConfig));
     try {
       return __tmp[0];
     } finally {
@@ -356,7 +383,7 @@ public class NDCNN {
   }
 
   /**
-   * Conv1d operation.<br>
+   * Conv1d operation.
    *
    * @param input the inputs to conv1d (NUMERIC type)
    * @param weights weights for conv1d op - rank 3 array with shape [kernelSize, inputChannels, outputChannels] (NUMERIC type)
@@ -366,7 +393,7 @@ public class NDCNN {
   public INDArray conv1d(INDArray input, INDArray weights, Conv1DConfig Conv1DConfig) {
     NDValidation.validateNumerical("conv1d", "input", input);
     NDValidation.validateNumerical("conv1d", "weights", weights);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv1D(input, weights, null, Conv1DConfig));
+    INDArray[] __tmp = Nd4j.exec(new Conv1D(input, weights, null, Conv1DConfig));
     try {
       return __tmp[0];
     } finally {
@@ -381,7 +408,7 @@ public class NDCNN {
   }
 
   /**
-   * 2D Convolution operation with optional bias<br>
+   * 2D Convolution operation with optional bias
    *
    * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format (NUMERIC type)
    * @param weights Weights for the convolution operation. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, outputChannels] (NUMERIC type)
@@ -396,7 +423,7 @@ public class NDCNN {
     if (bias != null) {
       NDValidation.validateNumerical("conv2d", "bias", bias);
     }
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D(layerInput, weights, bias, Conv2DConfig));
+    INDArray[] __tmp = Nd4j.exec(new Conv2D(layerInput, weights, bias, Conv2DConfig));
     try {
       return __tmp[0];
     } finally {
@@ -411,7 +438,7 @@ public class NDCNN {
   }
 
   /**
-   * 2D Convolution operation with optional bias<br>
+   * 2D Convolution operation with optional bias
    *
    * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format (NUMERIC type)
    * @param weights Weights for the convolution operation. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, outputChannels] (NUMERIC type)
@@ -421,7 +448,7 @@ public class NDCNN {
   public INDArray conv2d(INDArray layerInput, INDArray weights, Conv2DConfig Conv2DConfig) {
     NDValidation.validateNumerical("conv2d", "layerInput", layerInput);
     NDValidation.validateNumerical("conv2d", "weights", weights);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D(layerInput, weights, null, Conv2DConfig));
+    INDArray[] __tmp = Nd4j.exec(new Conv2D(layerInput, weights, null, Conv2DConfig));
     try {
       return __tmp[0];
     } finally {
@@ -436,7 +463,7 @@ public class NDCNN {
   }
 
   /**
-   * Convolution 3D operation with optional bias <br>
+   * Convolution 3D operation with optional bias
    *
    * @param input the input to average pooling 3d operation - 5d activations in NCDHW format (shape [minibatch, channels, depth, height, width]) or NDHWC format (shape [minibatch, depth, height, width, channels]) (NUMERIC type)
    * @param weights  Weights for conv3d. Rank 5 with shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels]. (NUMERIC type)
@@ -451,7 +478,7 @@ public class NDCNN {
     if (bias != null) {
       NDValidation.validateNumerical("conv3d", "bias", bias);
     }
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3D(input, weights, bias, Conv3DConfig));
+    INDArray[] __tmp = Nd4j.exec(new Conv3D(input, weights, bias, Conv3DConfig));
     try {
       return __tmp[0];
     } finally {
@@ -466,7 +493,7 @@ public class NDCNN {
   }
 
   /**
-   * Convolution 3D operation with optional bias <br>
+   * Convolution 3D operation with optional bias
    *
    * @param input the input to average pooling 3d operation - 5d activations in NCDHW format (shape [minibatch, channels, depth, height, width]) or NDHWC format (shape [minibatch, depth, height, width, channels]) (NUMERIC type)
    * @param weights  Weights for conv3d. Rank 5 with shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels]. (NUMERIC type)
@@ -476,7 +503,7 @@ public class NDCNN {
   public INDArray conv3d(INDArray input, INDArray weights, Conv3DConfig Conv3DConfig) {
     NDValidation.validateNumerical("conv3d", "input", input);
     NDValidation.validateNumerical("conv3d", "weights", weights);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3D(input, weights, null, Conv3DConfig));
+    INDArray[] __tmp = Nd4j.exec(new Conv3D(input, weights, null, Conv3DConfig));
     try {
       return __tmp[0];
     } finally {
@@ -491,7 +518,7 @@ public class NDCNN {
   }
 
   /**
-   * 2D deconvolution operation with optional bias<br>
+   * 2D deconvolution operation with optional bias
    *
    * @param layerInput the input to deconvolution 2d operation - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param weights Weights for the 2d deconvolution operation. 4 dimensions with format [inputChannels, outputChannels, kernelHeight, kernelWidth] (NUMERIC type)
@@ -506,7 +533,7 @@ public class NDCNN {
     if (bias != null) {
       NDValidation.validateNumerical("deconv2d", "bias", bias);
     }
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv2D(layerInput, weights, bias, DeConv2DConfig));
+    INDArray[] __tmp = Nd4j.exec(new DeConv2D(layerInput, weights, bias, DeConv2DConfig));
     try {
       return __tmp[0];
     } finally {
@@ -521,7 +548,7 @@ public class NDCNN {
   }
 
   /**
-   * 2D deconvolution operation with optional bias<br>
+   * 2D deconvolution operation with optional bias
    *
    * @param layerInput the input to deconvolution 2d operation - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param weights Weights for the 2d deconvolution operation. 4 dimensions with format [inputChannels, outputChannels, kernelHeight, kernelWidth] (NUMERIC type)
@@ -531,7 +558,7 @@ public class NDCNN {
   public INDArray deconv2d(INDArray layerInput, INDArray weights, DeConv2DConfig DeConv2DConfig) {
     NDValidation.validateNumerical("deconv2d", "layerInput", layerInput);
     NDValidation.validateNumerical("deconv2d", "weights", weights);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv2D(layerInput, weights, null, DeConv2DConfig));
+    INDArray[] __tmp = Nd4j.exec(new DeConv2D(layerInput, weights, null, DeConv2DConfig));
     try {
       return __tmp[0];
     } finally {
@@ -546,7 +573,7 @@ public class NDCNN {
   }
 
   /**
-   * 3D CNN deconvolution operation with or without optional bias<br>
+   * 3D CNN deconvolution operation with or without optional bias
    *
    * @param input Input array - shape [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW) (NUMERIC type)
    * @param weights Weights array - shape [kD, kH, kW, oC, iC] (NUMERIC type)
@@ -561,7 +588,7 @@ public class NDCNN {
     if (bias != null) {
       NDValidation.validateNumerical("deconv3d", "bias", bias);
     }
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3D(input, weights, bias, DeConv3DConfig));
+    INDArray[] __tmp = Nd4j.exec(new DeConv3D(input, weights, bias, DeConv3DConfig));
     try {
       return __tmp[0];
     } finally {
@@ -576,7 +603,7 @@ public class NDCNN {
   }
 
   /**
-   * 3D CNN deconvolution operation with or without optional bias<br>
+   * 3D CNN deconvolution operation with or without optional bias
    *
    * @param input Input array - shape [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW) (NUMERIC type)
    * @param weights Weights array - shape [kD, kH, kW, oC, iC] (NUMERIC type)
@@ -586,7 +613,7 @@ public class NDCNN {
   public INDArray deconv3d(INDArray input, INDArray weights, DeConv3DConfig DeConv3DConfig) {
     NDValidation.validateNumerical("deconv3d", "input", input);
     NDValidation.validateNumerical("deconv3d", "weights", weights);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3D(input, weights, null, DeConv3DConfig));
+    INDArray[] __tmp = Nd4j.exec(new DeConv3D(input, weights, null, DeConv3DConfig));
     try {
       return __tmp[0];
     } finally {
@@ -601,17 +628,17 @@ public class NDCNN {
   }
 
   /**
-   * Deformable Convolution 2D operation.<br>
-   * <br>
-   * Implements deformable convolution where learned offsets are added to the regular<br>
-   * sampling grid, allowing the convolution to adapt to geometric transformations<br>
-   * in the input. Used in object detection models like Deformable DETR.<br>
-   * <br>
-   * v1 (without mask): Uses only offsets for deformation<br>
-   * v2 (with mask): Adds modulation mask for learnable importance weights<br>
-   * <br>
-   * Reference: "Deformable Convolutional Networks" (Dai et al., 2017)<br>
-   *            "Deformable ConvNets v2" (Zhu et al., 2019)<br>
+   * Deformable Convolution 2D operation.
+   *
+   * Implements deformable convolution where learned offsets are added to the regular
+   * sampling grid, allowing the convolution to adapt to geometric transformations
+   * in the input. Used in object detection models like Deformable DETR.
+   *
+   * v1 (without mask): Uses only offsets for deformation
+   * v2 (with mask): Adds modulation mask for learnable importance weights
+   *
+   * Reference: "Deformable Convolutional Networks" (Dai et al., 2017)
+   *            "Deformable ConvNets v2" (Zhu et al., 2019)
    *
    * @param input Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (NUMERIC type)
    * @param weights Convolution weights. Shape: [outputChannels, inputChannels/groups, kernelHeight, kernelWidth] (NUMERIC type)
@@ -632,7 +659,7 @@ public class NDCNN {
     if (mask != null) {
       NDValidation.validateNumerical("deformableConv2d", "mask", mask);
     }
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DeformableConv2D(input, weights, offset, bias, mask, DeformableConv2DConfig));
+    INDArray[] __tmp = Nd4j.exec(new DeformableConv2D(input, weights, offset, bias, mask, DeformableConv2DConfig));
     try {
       return __tmp[0];
     } finally {
@@ -647,17 +674,17 @@ public class NDCNN {
   }
 
   /**
-   * Deformable Convolution 2D operation.<br>
-   * <br>
-   * Implements deformable convolution where learned offsets are added to the regular<br>
-   * sampling grid, allowing the convolution to adapt to geometric transformations<br>
-   * in the input. Used in object detection models like Deformable DETR.<br>
-   * <br>
-   * v1 (without mask): Uses only offsets for deformation<br>
-   * v2 (with mask): Adds modulation mask for learnable importance weights<br>
-   * <br>
-   * Reference: "Deformable Convolutional Networks" (Dai et al., 2017)<br>
-   *            "Deformable ConvNets v2" (Zhu et al., 2019)<br>
+   * Deformable Convolution 2D operation.
+   *
+   * Implements deformable convolution where learned offsets are added to the regular
+   * sampling grid, allowing the convolution to adapt to geometric transformations
+   * in the input. Used in object detection models like Deformable DETR.
+   *
+   * v1 (without mask): Uses only offsets for deformation
+   * v2 (with mask): Adds modulation mask for learnable importance weights
+   *
+   * Reference: "Deformable Convolutional Networks" (Dai et al., 2017)
+   *            "Deformable ConvNets v2" (Zhu et al., 2019)
    *
    * @param input Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (NUMERIC type)
    * @param weights Convolution weights. Shape: [outputChannels, inputChannels/groups, kernelHeight, kernelWidth] (NUMERIC type)
@@ -670,7 +697,7 @@ public class NDCNN {
     NDValidation.validateNumerical("deformableConv2d", "input", input);
     NDValidation.validateNumerical("deformableConv2d", "weights", weights);
     NDValidation.validateNumerical("deformableConv2d", "offset", offset);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DeformableConv2D(input, weights, offset, null, null, DeformableConv2DConfig));
+    INDArray[] __tmp = Nd4j.exec(new DeformableConv2D(input, weights, offset, null, null, DeformableConv2DConfig));
     try {
       return __tmp[0];
     } finally {
@@ -687,8 +714,8 @@ public class NDCNN {
   /**
    * Convolution 2d layer batch to space operation on 4d input.<br>
    * Reduces input channels dimension by rearranging data into a larger spatial dimensions<br>
-   * Example: if input has shape [mb, 8, 2, 2] and block size is 2, then output size is [mb, 8/(2*2), 2*2, 2*2]<br>
-   * = [mb, 2, 4, 4]<br>
+   * Example: if input has shape [mb, 8, 2, 2] and block size is 2, then output size is [mb, 8/(2*2), 2*2, 2*2]
+   * = [mb, 2, 4, 4]
    *
    * @param x the input to depth to space pooling 2d operation - 4d activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param blockSize Block size, in the height/width dimension
@@ -697,7 +724,7 @@ public class NDCNN {
    */
   public INDArray depthToSpace(INDArray x, int blockSize, DataFormat dataFormat) {
     NDValidation.validateNumerical("depthToSpace", "x", x);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DepthToSpace(x, blockSize, dataFormat));
+    INDArray[] __tmp = Nd4j.exec(new DepthToSpace(x, blockSize, dataFormat));
     try {
       return __tmp[0];
     } finally {
@@ -712,7 +739,7 @@ public class NDCNN {
   }
 
   /**
-   * Depth-wise 2D convolution operation with optional bias <br>
+   * Depth-wise 2D convolution operation with optional bias
    *
    * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format (NUMERIC type)
    * @param depthWeights Depth-wise conv2d weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier] (NUMERIC type)
@@ -727,7 +754,7 @@ public class NDCNN {
     if (bias != null) {
       NDValidation.validateNumerical("depthWiseConv2d", "bias", bias);
     }
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2D(layerInput, depthWeights, bias, Conv2DConfig));
+    INDArray[] __tmp = Nd4j.exec(new DepthwiseConv2D(layerInput, depthWeights, bias, Conv2DConfig));
     try {
       return __tmp[0];
     } finally {
@@ -742,7 +769,7 @@ public class NDCNN {
   }
 
   /**
-   * Depth-wise 2D convolution operation with optional bias <br>
+   * Depth-wise 2D convolution operation with optional bias
    *
    * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format (NUMERIC type)
    * @param depthWeights Depth-wise conv2d weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier] (NUMERIC type)
@@ -753,7 +780,7 @@ public class NDCNN {
       Conv2DConfig Conv2DConfig) {
     NDValidation.validateNumerical("depthWiseConv2d", "layerInput", layerInput);
     NDValidation.validateNumerical("depthWiseConv2d", "depthWeights", depthWeights);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2D(layerInput, depthWeights, null, Conv2DConfig));
+    INDArray[] __tmp = Nd4j.exec(new DepthwiseConv2D(layerInput, depthWeights, null, Conv2DConfig));
     try {
       return __tmp[0];
     } finally {
@@ -768,7 +795,7 @@ public class NDCNN {
   }
 
   /**
-   * TODO doc string<br>
+   * TODO doc string
    *
    * @param df  (NUMERIC type)
    * @param weights df (NUMERIC type)
@@ -783,7 +810,7 @@ public class NDCNN {
     NDValidation.validateNumerical("dilation2D", "weights", weights);
     Preconditions.checkArgument(strides.length == 2, "strides has incorrect size/length. Expected: strides.length == 2, got %s", strides.length);
     Preconditions.checkArgument(rates.length == 2, "rates has incorrect size/length. Expected: rates.length == 2, got %s", rates.length);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Dilation2D(df, weights, strides, rates, isSameMode));
+    INDArray[] __tmp = Nd4j.exec(new Dilation2D(df, weights, strides, rates, isSameMode));
     try {
       return __tmp[0];
     } finally {
@@ -798,7 +825,7 @@ public class NDCNN {
   }
 
   /**
-   * Extract image patches <br>
+   * Extract image patches
    *
    * @param input Input array. Must be rank 4, with shape [minibatch, height, width, channels] (NUMERIC type)
    * @param kH Kernel height
@@ -813,7 +840,7 @@ public class NDCNN {
   public INDArray extractImagePatches(INDArray input, int kH, int kW, int sH, int sW, int rH,
       int rW, boolean sameMode) {
     NDValidation.validateNumerical("extractImagePatches", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.ExtractImagePatches(input, kH, kW, sH, sW, rH, rW, sameMode));
+    INDArray[] __tmp = Nd4j.exec(new ExtractImagePatches(input, kH, kW, sH, sW, rH, rW, sameMode));
     try {
       return __tmp[0];
     } finally {
@@ -828,8 +855,8 @@ public class NDCNN {
   }
 
   /**
-   * im2col operation for use in 2D convolution operations. Outputs a 6d array with shape<br>
-   * [minibatch, inputChannels, kernelHeight, kernelWidth, outputHeight, outputWidth]   <br>
+   * im2col operation for use in 2D convolution operations. Outputs a 6d array with shape
+   * [minibatch, inputChannels, kernelHeight, kernelWidth, outputHeight, outputWidth]
    *
    * @param in Input - rank 4 input with shape [minibatch, inputChannels, height, width] (NUMERIC type)
    * @param Conv2DConfig Configuration Object
@@ -837,7 +864,7 @@ public class NDCNN {
    */
   public INDArray im2Col(INDArray in, Conv2DConfig Conv2DConfig) {
     NDValidation.validateNumerical("im2Col", "in", in);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col(in, Conv2DConfig));
+    INDArray[] __tmp = Nd4j.exec(new Im2col(in, Conv2DConfig));
     try {
       return __tmp[0];
     } finally {
@@ -852,7 +879,7 @@ public class NDCNN {
   }
 
   /**
-   * 2D convolution layer operation - local response normalization<br>
+   * 2D convolution layer operation - local response normalization
    *
    * @param input the inputs to lrn (NUMERIC type)
    * @param LocalResponseNormalizationConfig Configuration Object
@@ -861,7 +888,7 @@ public class NDCNN {
   public INDArray localResponseNormalization(INDArray input,
       LocalResponseNormalizationConfig LocalResponseNormalizationConfig) {
     NDValidation.validateNumerical("localResponseNormalization", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.LocalResponseNormalization(input, LocalResponseNormalizationConfig));
+    INDArray[] __tmp = Nd4j.exec(new LocalResponseNormalization(input, LocalResponseNormalizationConfig));
     try {
       return __tmp[0];
     } finally {
@@ -876,18 +903,20 @@ public class NDCNN {
   }
 
   /**
-   * 2D Convolution layer operation - Max pooling on the input and outputs both max values and indices <br>
+   * 2D Convolution layer operation - Max pooling on the input and outputs both max values and indices
    *
    * @param input the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param Pooling2DConfig Configuration Object
+   * @return output Result after applying max pooling on the input (NUMERIC type)
+   * @return indexes Argmax array (NUMERIC type)
    */
   public INDArray[] maxPoolWithArgmax(INDArray input, Pooling2DConfig Pooling2DConfig) {
     NDValidation.validateNumerical("maxPoolWithArgmax", "input", input);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPoolWithArgmax(input, Pooling2DConfig));
+    return Nd4j.exec(new MaxPoolWithArgmax(input, Pooling2DConfig));
   }
 
   /**
-   * 2D Convolution layer operation - max pooling 2d <br>
+   * 2D Convolution layer operation - max pooling 2d
    *
    * @param input the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param Pooling2DConfig Configuration Object
@@ -895,7 +924,7 @@ public class NDCNN {
    */
   public INDArray maxPooling2d(INDArray input, Pooling2DConfig Pooling2DConfig) {
     NDValidation.validateNumerical("maxPooling2d", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPooling2D(input, Pooling2DConfig));
+    INDArray[] __tmp = Nd4j.exec(new MaxPooling2D(input, Pooling2DConfig));
     try {
       return __tmp[0];
     } finally {
@@ -910,7 +939,7 @@ public class NDCNN {
   }
 
   /**
-   * 3D convolution layer operation - max pooling 3d operation.<br>
+   * 3D convolution layer operation - max pooling 3d operation.
    *
    * @param input the input to average pooling 3d operation - 5d activations in NCDHW format (shape [minibatch, channels, depth, height, width]) or NDHWC format (shape [minibatch, depth, height, width, channels]) (NUMERIC type)
    * @param Pooling3DConfig Configuration Object
@@ -918,7 +947,7 @@ public class NDCNN {
    */
   public INDArray maxPooling3d(INDArray input, Pooling3DConfig Pooling3DConfig) {
     NDValidation.validateNumerical("maxPooling3d", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPooling3D(input, Pooling3DConfig));
+    INDArray[] __tmp = Nd4j.exec(new MaxPooling3D(input, Pooling3DConfig));
     try {
       return __tmp[0];
     } finally {
@@ -933,7 +962,7 @@ public class NDCNN {
   }
 
   /**
-   * Separable 2D convolution operation with optional bias <br>
+   * Separable 2D convolution operation with optional bias
    *
    * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param depthWeights Separable conv2d depth weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier] (NUMERIC type)
@@ -950,7 +979,7 @@ public class NDCNN {
     if (bias != null) {
       NDValidation.validateNumerical("separableConv2d", "bias", bias);
     }
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.SConv2D(layerInput, depthWeights, pointWeights, bias, Conv2DConfig));
+    INDArray[] __tmp = Nd4j.exec(new SConv2D(layerInput, depthWeights, pointWeights, bias, Conv2DConfig));
     try {
       return __tmp[0];
     } finally {
@@ -965,7 +994,7 @@ public class NDCNN {
   }
 
   /**
-   * Separable 2D convolution operation with optional bias <br>
+   * Separable 2D convolution operation with optional bias
    *
    * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param depthWeights Separable conv2d depth weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier] (NUMERIC type)
@@ -978,7 +1007,7 @@ public class NDCNN {
     NDValidation.validateNumerical("separableConv2d", "layerInput", layerInput);
     NDValidation.validateNumerical("separableConv2d", "depthWeights", depthWeights);
     NDValidation.validateNumerical("separableConv2d", "pointWeights", pointWeights);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.SConv2D(layerInput, depthWeights, pointWeights, null, Conv2DConfig));
+    INDArray[] __tmp = Nd4j.exec(new SConv2D(layerInput, depthWeights, pointWeights, null, Conv2DConfig));
     try {
       return __tmp[0];
     } finally {
@@ -993,8 +1022,8 @@ public class NDCNN {
   }
 
   /**
-   * Convolution 2d layer space to batch operation on 4d input.<br>
-   * Increases input batch dimension by rearranging data from spatial dimensions into batch dimension <br>
+   * Convolution 2d layer space to batch operation on 4d input.
+   * Increases input batch dimension by rearranging data from spatial dimensions into batch dimension
    *
    * @param x Input variable. 4d input (NUMERIC type)
    * @param blocks Block size, in the height/width dimension (Size: Exactly(count=2))
@@ -1007,7 +1036,7 @@ public class NDCNN {
     Preconditions.checkArgument(blocks.length == 2, "blocks has incorrect size/length. Expected: blocks.length == 2, got %s", blocks.length);
     Preconditions.checkArgument(paddingTop.length == 2, "paddingTop has incorrect size/length. Expected: paddingTop.length == 2, got %s", paddingTop.length);
     Preconditions.checkArgument(paddingBottom.length == 2, "paddingBottom has incorrect size/length. Expected: paddingBottom.length == 2, got %s", paddingBottom.length);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SpaceToBatch(x, blocks, paddingTop, paddingBottom));
+    INDArray[] __tmp = Nd4j.exec(new SpaceToBatch(x, blocks, paddingTop, paddingBottom));
     try {
       return __tmp[0];
     } finally {
@@ -1024,8 +1053,8 @@ public class NDCNN {
   /**
    * Convolution 2d layer space to depth operation on 4d input.<br>
    * Increases input channels (reduced spatial dimensions) by rearranging data into a larger channels dimension<br>
-   * Example: if input has shape [mb, 2, 4, 4] and block size is 2, then output size is [mb, 8/(2*2), 2*2, 2*2]<br>
-   * = [mb, 2, 4, 4] <br>
+   * Example: if input has shape [mb, 2, 4, 4] and block size is 2, then output size is [mb, 8/(2*2), 2*2, 2*2]
+   * = [mb, 2, 4, 4]
    *
    * @param x the input to depth to space pooling 2d operation - 4d activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param blockSize  Block size, in the height/width dimension
@@ -1034,7 +1063,7 @@ public class NDCNN {
    */
   public INDArray spaceToDepth(INDArray x, int blockSize, DataFormat dataFormat) {
     NDValidation.validateNumerical("spaceToDepth", "x", x);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.SpaceToDepth(x, blockSize, dataFormat));
+    INDArray[] __tmp = Nd4j.exec(new SpaceToDepth(x, blockSize, dataFormat));
     try {
       return __tmp[0];
     } finally {
@@ -1049,8 +1078,8 @@ public class NDCNN {
   }
 
   /**
-   * Upsampling layer for 2D inputs.<br>
-   * scale is used for both height and width dimensions. <br>
+   * Upsampling layer for 2D inputs.
+   * scale is used for both height and width dimensions.
    *
    * @param input Input in NCHW format (NUMERIC type)
    * @param scale The scale for both height and width dimensions.
@@ -1058,7 +1087,7 @@ public class NDCNN {
    */
   public INDArray upsampling2d(INDArray input, int scale) {
     NDValidation.validateNumerical("upsampling2d", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling2d(input, scale));
+    INDArray[] __tmp = Nd4j.exec(new Upsampling2d(input, scale));
     try {
       return __tmp[0];
     } finally {
@@ -1073,7 +1102,7 @@ public class NDCNN {
   }
 
   /**
-   * 2D Convolution layer operation - Upsampling 2d <br>
+   * 2D Convolution layer operation - Upsampling 2d
    *
    * @param input Input in NCHW format (NUMERIC type)
    * @param scaleH Scale to upsample in height dimension
@@ -1083,7 +1112,7 @@ public class NDCNN {
    */
   public INDArray upsampling2d(INDArray input, int scaleH, int scaleW, boolean nchw) {
     NDValidation.validateNumerical("upsampling2d", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling2d(input, scaleH, scaleW, nchw));
+    INDArray[] __tmp = Nd4j.exec(new Upsampling2d(input, scaleH, scaleW, nchw));
     try {
       return __tmp[0];
     } finally {
@@ -1098,7 +1127,7 @@ public class NDCNN {
   }
 
   /**
-   * 3D Convolution layer operation - Upsampling 3d<br>
+   * 3D Convolution layer operation - Upsampling 3d
    *
    * @param input Input in NCHW format (NUMERIC type)
    * @param ncdhw If true: input is in NCDHW (minibatch, channels, depth, height, width) format. False: NDHWC format
@@ -1109,7 +1138,7 @@ public class NDCNN {
    */
   public INDArray upsampling3d(INDArray input, boolean ncdhw, int scaleD, int scaleH, int scaleW) {
     NDValidation.validateNumerical("upsampling3d", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling3d(input, ncdhw, scaleD, scaleH, scaleW));
+    INDArray[] __tmp = Nd4j.exec(new Upsampling3d(input, ncdhw, scaleD, scaleH, scaleW));
     try {
       return __tmp[0];
     } finally {

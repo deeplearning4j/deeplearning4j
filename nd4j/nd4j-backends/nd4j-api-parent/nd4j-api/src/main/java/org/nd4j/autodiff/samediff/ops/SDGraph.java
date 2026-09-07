@@ -27,6 +27,7 @@ import static org.nd4j.autodiff.samediff.ops.SDValidation.isSameType;
 import java.lang.String;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 
 public class SDGraph extends SDOps {
@@ -35,9 +36,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Adamic-Adar link-prediction score: S[i,j] = sum_v A[i,v]·A[v,j] / log(deg_v), weighting each<br>
-   * shared neighbor v by the inverse log of its degree so that rare (low-degree) common neighbors<br>
-   * contribute more than hubs. Assumes node degrees > 1 (so log(deg) > 0).<br>
+   * Adamic-Adar link-prediction score: S[i,j] = sum_v A[i,v]·A[v,j] / log(deg_v), weighting each
+   * shared neighbor v by the inverse log of its degree so that rare (low-degree) common neighbors
+   * contribute more than hubs. Assumes node degrees > 1 (so log(deg) > 0).
    *
    * @param adj Adjacency matrix [n, n] with node degrees > 1 (FLOATING_POINT type)
    * @return score Adamic-Adar score matrix [n, n] (FLOATING_POINT type)
@@ -52,9 +53,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Adamic-Adar link-prediction score: S[i,j] = sum_v A[i,v]·A[v,j] / log(deg_v), weighting each<br>
-   * shared neighbor v by the inverse log of its degree so that rare (low-degree) common neighbors<br>
-   * contribute more than hubs. Assumes node degrees > 1 (so log(deg) > 0).<br>
+   * Adamic-Adar link-prediction score: S[i,j] = sum_v A[i,v]·A[v,j] / log(deg_v), weighting each
+   * shared neighbor v by the inverse log of its degree so that rare (low-degree) common neighbors
+   * contribute more than hubs. Assumes node degrees > 1 (so log(deg) > 0).
    *
    * @param name name May be null. Name for the output variable
    * @param adj Adjacency matrix [n, n] with node degrees > 1 (FLOATING_POINT type)
@@ -70,12 +71,12 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * BGRL (Bootstrap Your Own Latent for Graphs, Thakoor et al. 2022) self-supervised loss.<br>
-   * Computes the row-normalized cosine similarity between the online prediction (onlineZ @ predW)<br>
-   * and the target embedding (targetZ), then takes the mean of (2 - 2·cosine). The minimum loss<br>
-   * is 0 (perfect alignment); gradients flow only through onlineZ and predW -- declare targetZ as<br>
-   * sd.constant(...) in the calling code to implement the stop-gradient.<br>
-   * loss = mean_i( 2 - 2 * cosine( (onlineZ @ predW)_i, targetZ_i ) )<br>
+   * BGRL (Bootstrap Your Own Latent for Graphs, Thakoor et al. 2022) self-supervised loss.
+   * Computes the row-normalized cosine similarity between the online prediction (onlineZ @ predW)
+   * and the target embedding (targetZ), then takes the mean of (2 - 2·cosine). The minimum loss
+   * is 0 (perfect alignment); gradients flow only through onlineZ and predW -- declare targetZ as
+   * sd.constant(...) in the calling code to implement the stop-gradient.
+   * loss = mean_i( 2 - 2 * cosine( (onlineZ @ predW)_i, targetZ_i ) )
    *
    * @param onlineZ Online encoder node embeddings [n, d] (FLOATING_POINT type)
    * @param targetZ Target (stop-grad) node embeddings [n, d] (FLOATING_POINT type)
@@ -95,12 +96,12 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * BGRL (Bootstrap Your Own Latent for Graphs, Thakoor et al. 2022) self-supervised loss.<br>
-   * Computes the row-normalized cosine similarity between the online prediction (onlineZ @ predW)<br>
-   * and the target embedding (targetZ), then takes the mean of (2 - 2·cosine). The minimum loss<br>
-   * is 0 (perfect alignment); gradients flow only through onlineZ and predW -- declare targetZ as<br>
-   * sd.constant(...) in the calling code to implement the stop-gradient.<br>
-   * loss = mean_i( 2 - 2 * cosine( (onlineZ @ predW)_i, targetZ_i ) )<br>
+   * BGRL (Bootstrap Your Own Latent for Graphs, Thakoor et al. 2022) self-supervised loss.
+   * Computes the row-normalized cosine similarity between the online prediction (onlineZ @ predW)
+   * and the target embedding (targetZ), then takes the mean of (2 - 2·cosine). The minimum loss
+   * is 0 (perfect alignment); gradients flow only through onlineZ and predW -- declare targetZ as
+   * sd.constant(...) in the calling code to implement the stop-gradient.
+   * loss = mean_i( 2 - 2 * cosine( (onlineZ @ predW)_i, targetZ_i ) )
    *
    * @param name name May be null. Name for the output variable
    * @param onlineZ Online encoder node embeddings [n, d] (FLOATING_POINT type)
@@ -122,10 +123,10 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Local clustering coefficient per node: C_i = (closed triangles through i) / (possible pairs) =<br>
-   * (A^3)_ii / (deg_i (deg_i - 1)). (A^3)_ii counts the length-3 closed walks through node i (= twice<br>
-   * its triangle count), computed as diag(A·A·A) via an identity-mask extraction. Measures how<br>
-   * tightly each node's neighborhood is interconnected. Pass identity = sd.constant(Nd4j.eye(n)).<br>
+   * Local clustering coefficient per node: C_i = (closed triangles through i) / (possible pairs) =
+   * (A^3)_ii / (deg_i (deg_i - 1)). (A^3)_ii counts the length-3 closed walks through node i (= twice
+   * its triangle count), computed as diag(A·A·A) via an identity-mask extraction. Measures how
+   * tightly each node's neighborhood is interconnected. Pass identity = sd.constant(Nd4j.eye(n)).
    *
    * @param adj Adjacency matrix [n, n] (symmetric for undirected graphs) (FLOATING_POINT type)
    * @param identity Identity matrix [n, n] -- pass sd.constant(Nd4j.eye(n)) (FLOATING_POINT type)
@@ -144,10 +145,10 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Local clustering coefficient per node: C_i = (closed triangles through i) / (possible pairs) =<br>
-   * (A^3)_ii / (deg_i (deg_i - 1)). (A^3)_ii counts the length-3 closed walks through node i (= twice<br>
-   * its triangle count), computed as diag(A·A·A) via an identity-mask extraction. Measures how<br>
-   * tightly each node's neighborhood is interconnected. Pass identity = sd.constant(Nd4j.eye(n)).<br>
+   * Local clustering coefficient per node: C_i = (closed triangles through i) / (possible pairs) =
+   * (A^3)_ii / (deg_i (deg_i - 1)). (A^3)_ii counts the length-3 closed walks through node i (= twice
+   * its triangle count), computed as diag(A·A·A) via an identity-mask extraction. Measures how
+   * tightly each node's neighborhood is interconnected. Pass identity = sd.constant(Nd4j.eye(n)).
    *
    * @param name name May be null. Name for the output variable
    * @param adj Adjacency matrix [n, n] (symmetric for undirected graphs) (FLOATING_POINT type)
@@ -167,9 +168,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Common-Neighbors link-prediction score: S = A·A, so S[i,j] counts the (weighted) paths of<br>
-   * length two between i and j -- the number of neighbors they share. The simplest topological<br>
-   * link predictor; higher scores indicate more likely missing edges.<br>
+   * Common-Neighbors link-prediction score: S = A·A, so S[i,j] counts the (weighted) paths of
+   * length two between i and j -- the number of neighbors they share. The simplest topological
+   * link predictor; higher scores indicate more likely missing edges.
    *
    * @param adj Adjacency matrix [n, n] (symmetric for undirected graphs) (FLOATING_POINT type)
    * @return score Common-neighbor score matrix [n, n] (FLOATING_POINT type)
@@ -181,9 +182,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Common-Neighbors link-prediction score: S = A·A, so S[i,j] counts the (weighted) paths of<br>
-   * length two between i and j -- the number of neighbors they share. The simplest topological<br>
-   * link predictor; higher scores indicate more likely missing edges.<br>
+   * Common-Neighbors link-prediction score: S = A·A, so S[i,j] counts the (weighted) paths of
+   * length two between i and j -- the number of neighbors they share. The simplest topological
+   * link predictor; higher scores indicate more likely missing edges.
    *
    * @param name name May be null. Name for the output variable
    * @param adj Adjacency matrix [n, n] (symmetric for undirected graphs) (FLOATING_POINT type)
@@ -196,9 +197,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * ComplEx (Trouillon et al. 2016): a complex-valued bilinear product whose real part scores the<br>
-   * triple; the imaginary parts let it model asymmetric relations.<br>
-   * score = Re( sum_d head_d * relation_d * conj(tail_d) )<br>
+   * ComplEx (Trouillon et al. 2016): a complex-valued bilinear product whose real part scores the
+   * triple; the imaginary parts let it model asymmetric relations.
+   * score = Re( sum_d head_d * relation_d * conj(tail_d) )
    *
    * @param hRe Real part of head embeddings [batch, dim] (FLOATING_POINT type)
    * @param hIm Imag part of head embeddings [batch, dim] (FLOATING_POINT type)
@@ -222,9 +223,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * ComplEx (Trouillon et al. 2016): a complex-valued bilinear product whose real part scores the<br>
-   * triple; the imaginary parts let it model asymmetric relations.<br>
-   * score = Re( sum_d head_d * relation_d * conj(tail_d) )<br>
+   * ComplEx (Trouillon et al. 2016): a complex-valued bilinear product whose real part scores the
+   * triple; the imaginary parts let it model asymmetric relations.
+   * score = Re( sum_d head_d * relation_d * conj(tail_d) )
    *
    * @param name name May be null. Name for the output variable
    * @param hRe Real part of head embeddings [batch, dim] (FLOATING_POINT type)
@@ -249,9 +250,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * ConvE (Dettmers et al. 2018): reshape head + relation into 2D images, stack, run a 2D<br>
-   * convolution + fully-connected projection, then score against the tail. A strong,<br>
-   * parameter-efficient KGE baseline.<br>
+   * ConvE (Dettmers et al. 2018): reshape head + relation into 2D images, stack, run a 2D
+   * convolution + fully-connected projection, then score against the tail. A strong,
+   * parameter-efficient KGE baseline.
    *
    * @param head Head-entity embeddings [batch, de] (de = embH*embW) (FLOATING_POINT type)
    * @param relation Relation embeddings [batch, de] (FLOATING_POINT type)
@@ -288,9 +289,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * ConvE (Dettmers et al. 2018): reshape head + relation into 2D images, stack, run a 2D<br>
-   * convolution + fully-connected projection, then score against the tail. A strong,<br>
-   * parameter-efficient KGE baseline.<br>
+   * ConvE (Dettmers et al. 2018): reshape head + relation into 2D images, stack, run a 2D
+   * convolution + fully-connected projection, then score against the tail. A strong,
+   * parameter-efficient KGE baseline.
    *
    * @param name name May be null. Name for the output variable
    * @param head Head-entity embeddings [batch, de] (de = embH*embW) (FLOATING_POINT type)
@@ -329,12 +330,12 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Correct & Smooth post-processing (Huang et al. 2020): two-phase label diffusion over a graph.<br>
-   * Phase 1 (Correct, iter1 steps): spreads label residuals E over the graph while retaining a<br>
-   * fraction (1-alpha1) of the original residuals at every step, then adds the spread residuals to<br>
-   * the base predictions. Phase 2 (Smooth, iter2 steps): diffuses the corrected predictions while<br>
-   * retaining fraction (1-alpha2) of the corrected values. Both phases use the same normalized<br>
-   * adjacency A_norm.<br>
+   * Correct &amp; Smooth post-processing (Huang et al. 2020): two-phase label diffusion over a graph.
+   * Phase 1 (Correct, iter1 steps): spreads label residuals E over the graph while retaining a
+   * fraction (1-alpha1) of the original residuals at every step, then adds the spread residuals to
+   * the base predictions. Phase 2 (Smooth, iter2 steps): diffuses the corrected predictions while
+   * retaining fraction (1-alpha2) of the corrected values. Both phases use the same normalized
+   * adjacency A_norm.
    *
    * @param basePreds Base per-node predictions / logits [n, c] (FLOATING_POINT type)
    * @param aNorm Dense (row- or sym-) normalized adjacency [n, n] (FLOATING_POINT type)
@@ -364,12 +365,12 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Correct & Smooth post-processing (Huang et al. 2020): two-phase label diffusion over a graph.<br>
-   * Phase 1 (Correct, iter1 steps): spreads label residuals E over the graph while retaining a<br>
-   * fraction (1-alpha1) of the original residuals at every step, then adds the spread residuals to<br>
-   * the base predictions. Phase 2 (Smooth, iter2 steps): diffuses the corrected predictions while<br>
-   * retaining fraction (1-alpha2) of the corrected values. Both phases use the same normalized<br>
-   * adjacency A_norm.<br>
+   * Correct &amp; Smooth post-processing (Huang et al. 2020): two-phase label diffusion over a graph.
+   * Phase 1 (Correct, iter1 steps): spreads label residuals E over the graph while retaining a
+   * fraction (1-alpha1) of the original residuals at every step, then adds the spread residuals to
+   * the base predictions. Phase 2 (Smooth, iter2 steps): diffuses the corrected predictions while
+   * retaining fraction (1-alpha2) of the corrected values. Both phases use the same normalized
+   * adjacency A_norm.
    *
    * @param name name May be null. Name for the output variable
    * @param basePreds Base per-node predictions / logits [n, c] (FLOATING_POINT type)
@@ -400,9 +401,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Pearson correlation matrix among the columns (variables) of a data matrix -- the basis of a<br>
-   * correlation graph. Threshold |corr| with sd.sparse().denseToCsr(...) to obtain a sparse<br>
-   * correlation-graph adjacency.<br>
+   * Pearson correlation matrix among the columns (variables) of a data matrix -- the basis of a
+   * correlation graph. Threshold |corr| with sd.sparse().denseToCsr(...) to obtain a sparse
+   * correlation-graph adjacency.
    *
    * @param data Observations x variables [n, d] (FLOATING_POINT type)
    * @return corr Pearson correlation matrix [d, d] with unit diagonal (FLOATING_POINT type)
@@ -420,9 +421,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Pearson correlation matrix among the columns (variables) of a data matrix -- the basis of a<br>
-   * correlation graph. Threshold |corr| with sd.sparse().denseToCsr(...) to obtain a sparse<br>
-   * correlation-graph adjacency.<br>
+   * Pearson correlation matrix among the columns (variables) of a data matrix -- the basis of a
+   * correlation graph. Threshold |corr| with sd.sparse().denseToCsr(...) to obtain a sparse
+   * correlation-graph adjacency.
    *
    * @param name name May be null. Name for the output variable
    * @param data Observations x variables [n, d] (FLOATING_POINT type)
@@ -441,8 +442,8 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Cosine-similarity affinity between the rows (nodes) of a feature matrix.<br>
-   * sim[i,j] = (x_i . x_j) / (||x_i|| ||x_j||). A standard input to a kNN / thresholded similarity graph.<br>
+   * Cosine-similarity affinity between the rows (nodes) of a feature matrix.
+   * sim[i,j] = (x_i . x_j) / (||x_i|| ||x_j||). A standard input to a kNN / thresholded similarity graph.
    *
    * @param features Node features [n, d] (FLOATING_POINT type)
    * @return sim Cosine-similarity matrix [n, n] with unit diagonal (FLOATING_POINT type)
@@ -456,8 +457,8 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Cosine-similarity affinity between the rows (nodes) of a feature matrix.<br>
-   * sim[i,j] = (x_i . x_j) / (||x_i|| ||x_j||). A standard input to a kNN / thresholded similarity graph.<br>
+   * Cosine-similarity affinity between the rows (nodes) of a feature matrix.
+   * sim[i,j] = (x_i . x_j) / (||x_i|| ||x_j||). A standard input to a kNN / thresholded similarity graph.
    *
    * @param name name May be null. Name for the output variable
    * @param features Node features [n, d] (FLOATING_POINT type)
@@ -472,9 +473,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Deep Graph Infomax loss (Velickovic et al. 2019): maximizes mutual information between each<br>
-   * node's encoding and a global graph summary via a bilinear discriminator that tells real node<br>
-   * encodings from encodings of a corrupted graph. Yields label-free node embeddings.<br>
+   * Deep Graph Infomax loss (Velickovic et al. 2019): maximizes mutual information between each
+   * node's encoding and a global graph summary via a bilinear discriminator that tells real node
+   * encodings from encodings of a corrupted graph. Yields label-free node embeddings.
    *
    * @param H Node encodings of the real graph [n, d] (FLOATING_POINT type)
    * @param Hneg Node encodings of the corrupted graph [n, d] (FLOATING_POINT type)
@@ -496,9 +497,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Deep Graph Infomax loss (Velickovic et al. 2019): maximizes mutual information between each<br>
-   * node's encoding and a global graph summary via a bilinear discriminator that tells real node<br>
-   * encodings from encodings of a corrupted graph. Yields label-free node embeddings.<br>
+   * Deep Graph Infomax loss (Velickovic et al. 2019): maximizes mutual information between each
+   * node's encoding and a global graph summary via a bilinear discriminator that tells real node
+   * encodings from encodings of a corrupted graph. Yields label-free node embeddings.
    *
    * @param name name May be null. Name for the output variable
    * @param H Node encodings of the real graph [n, d] (FLOATING_POINT type)
@@ -521,8 +522,8 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * DistMult (Yang et al. 2015): a symmetric trilinear product.<br>
-   * score = sum_d head_d * relation_d * tail_d<br>
+   * DistMult (Yang et al. 2015): a symmetric trilinear product.
+   * score = sum_d head_d * relation_d * tail_d
    *
    * @param head Head-entity embeddings [batch, dim] (FLOATING_POINT type)
    * @param relation Relation embeddings [batch, dim] (FLOATING_POINT type)
@@ -538,8 +539,8 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * DistMult (Yang et al. 2015): a symmetric trilinear product.<br>
-   * score = sum_d head_d * relation_d * tail_d<br>
+   * DistMult (Yang et al. 2015): a symmetric trilinear product.
+   * score = sum_d head_d * relation_d * tail_d
    *
    * @param name name May be null. Name for the output variable
    * @param head Head-entity embeddings [batch, dim] (FLOATING_POINT type)
@@ -556,8 +557,8 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Gaussian (RBF) similarity affinity between the rows (nodes) of a feature matrix.<br>
-   * sim[i,j] = exp( -||x_i - x_j||^2 / (2 sigma^2) ). Threshold or take per-row top-k for a kNN graph.<br>
+   * Gaussian (RBF) similarity affinity between the rows (nodes) of a feature matrix.
+   * sim[i,j] = exp( -||x_i - x_j||^2 / (2 sigma^2) ). Threshold or take per-row top-k for a kNN graph.
    *
    * @param features Node features [n, d] (FLOATING_POINT type)
    * @param sigma RBF kernel bandwidth (> 0)
@@ -574,8 +575,8 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Gaussian (RBF) similarity affinity between the rows (nodes) of a feature matrix.<br>
-   * sim[i,j] = exp( -||x_i - x_j||^2 / (2 sigma^2) ). Threshold or take per-row top-k for a kNN graph.<br>
+   * Gaussian (RBF) similarity affinity between the rows (nodes) of a feature matrix.
+   * sim[i,j] = exp( -||x_i - x_j||^2 / (2 sigma^2) ). Threshold or take per-row top-k for a kNN graph.
    *
    * @param name name May be null. Name for the output variable
    * @param features Node features [n, d] (FLOATING_POINT type)
@@ -593,11 +594,11 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * GRACE graph-contrastive loss (Zhu et al. 2020): an InfoNCE objective over two augmented views.<br>
-   * For each node i, the positive pair is (z1_i, z2_i) and the negatives are all z2_j (j != i):<br>
-   * loss = -mean( cosine(z1_i,z2_i)/tau - logsumexp_j cosine(z1_i,z2_j)/tau ).<br>
-   * Yields label-free node embeddings. Pass identity = sd.constant(Nd4j.eye(n).castTo(DataType.DOUBLE))<br>
-   * so the diagonal (positive) similarities are extracted with a gradient-clean elementwise mask.<br>
+   * GRACE graph-contrastive loss (Zhu et al. 2020): an InfoNCE objective over two augmented views.
+   * For each node i, the positive pair is (z1_i, z2_i) and the negatives are all z2_j (j != i):
+   * loss = -mean( cosine(z1_i,z2_i)/tau - logsumexp_j cosine(z1_i,z2_j)/tau ).
+   * Yields label-free node embeddings. Pass identity = sd.constant(Nd4j.eye(n).castTo(DataType.DOUBLE))
+   * so the diagonal (positive) similarities are extracted with a gradient-clean elementwise mask.
    *
    * @param z1 Node embeddings of augmented view 1 [n, d] (FLOATING_POINT type)
    * @param z2 Node embeddings of augmented view 2 [n, d] (FLOATING_POINT type)
@@ -619,11 +620,11 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * GRACE graph-contrastive loss (Zhu et al. 2020): an InfoNCE objective over two augmented views.<br>
-   * For each node i, the positive pair is (z1_i, z2_i) and the negatives are all z2_j (j != i):<br>
-   * loss = -mean( cosine(z1_i,z2_i)/tau - logsumexp_j cosine(z1_i,z2_j)/tau ).<br>
-   * Yields label-free node embeddings. Pass identity = sd.constant(Nd4j.eye(n).castTo(DataType.DOUBLE))<br>
-   * so the diagonal (positive) similarities are extracted with a gradient-clean elementwise mask.<br>
+   * GRACE graph-contrastive loss (Zhu et al. 2020): an InfoNCE objective over two augmented views.
+   * For each node i, the positive pair is (z1_i, z2_i) and the negatives are all z2_j (j != i):
+   * loss = -mean( cosine(z1_i,z2_i)/tau - logsumexp_j cosine(z1_i,z2_j)/tau ).
+   * Yields label-free node embeddings. Pass identity = sd.constant(Nd4j.eye(n).castTo(DataType.DOUBLE))
+   * so the diagonal (positive) similarities are extracted with a gradient-clean elementwise mask.
    *
    * @param name name May be null. Name for the output variable
    * @param z1 Node embeddings of augmented view 1 [n, d] (FLOATING_POINT type)
@@ -647,11 +648,71 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * HolE -- Holographic Embeddings (Nickel et al. 2016): scores a triple by the relation's<br>
-   * agreement with the circular correlation of head and tail,<br>
-   * score = relation . ccorr(head, tail), where ccorr(a,b) = IDFT(conj(DFT(a)) * DFT(b)).<br>
-   * Circular correlation gives ComplEx-level expressiveness (asymmetric relations) at O(d log d)<br>
-   * via the Fourier domain; here it is composed from the differentiable DFT op.<br>
+   * Assembles K variable-size graphs into one block-diagonal graph for batched message passing.
+   *
+   * The resulting block-diagonal CSR is compatible with all sd.gnn() message-passing ops.
+   * Use batchVec with sd.segmentMean/Sum/Max for graph-level readout.
+   *
+   * @param Xs K node-feature matrices [N_k, F]; K is inferred from the array length (FLOATING_POINT type)
+   * @param vals K edge-weight arrays [nnz_k] (FLOATING_POINT type)
+   * @param colIdxs K column-index arrays [nnz_k] (INT type)
+   * @param rowPtrs K row-pointer arrays [N_k+1] (INT type)
+   * @return Xcombined Combined node features [sumN, F] (FLOATING_POINT type)
+   * @return valsCombined Combined edge weights [sumNnz] (FLOATING_POINT type)
+   * @return colIdxCombined Combined shifted column indices [sumNnz] (INT type)
+   * @return rowPtrCombined Combined stitched row pointers [sumN+1] (INT type)
+   * @return batchVec Node-to-graph assignment [sumN] (INT type)
+   */
+  public SDVariable[] graphDisjointUnion(SDVariable[] Xs, SDVariable[] vals, SDVariable[] colIdxs,
+      SDVariable... rowPtrs) {
+    SDValidation.validateFloatingPoint("graphDisjointUnion", "Xs", Xs);
+    Preconditions.checkArgument(Xs.length >= 1, "Xs has incorrect size/length. Expected: Xs.length >= 1, got %s", Xs.length);
+    SDValidation.validateFloatingPoint("graphDisjointUnion", "vals", vals);
+    Preconditions.checkArgument(vals.length >= 1, "vals has incorrect size/length. Expected: vals.length >= 1, got %s", vals.length);
+    SDValidation.validateInteger("graphDisjointUnion", "colIdxs", colIdxs);
+    Preconditions.checkArgument(colIdxs.length >= 1, "colIdxs has incorrect size/length. Expected: colIdxs.length >= 1, got %s", colIdxs.length);
+    SDValidation.validateInteger("graphDisjointUnion", "rowPtrs", rowPtrs);
+    Preconditions.checkArgument(rowPtrs.length >= 1, "rowPtrs has incorrect size/length. Expected: rowPtrs.length >= 1, got %s", rowPtrs.length);
+    return new org.nd4j.linalg.api.ops.impl.sparse.GraphDisjointUnion(sd,Xs, vals, colIdxs, rowPtrs).outputVariables();
+  }
+
+  /**
+   * Assembles K variable-size graphs into one block-diagonal graph for batched message passing.
+   *
+   * The resulting block-diagonal CSR is compatible with all sd.gnn() message-passing ops.
+   * Use batchVec with sd.segmentMean/Sum/Max for graph-level readout.
+   *
+   * @param names names May be null. Arrays of names for the output variables.
+   * @param Xs K node-feature matrices [N_k, F]; K is inferred from the array length (FLOATING_POINT type)
+   * @param vals K edge-weight arrays [nnz_k] (FLOATING_POINT type)
+   * @param colIdxs K column-index arrays [nnz_k] (INT type)
+   * @param rowPtrs K row-pointer arrays [N_k+1] (INT type)
+   * @return Xcombined Combined node features [sumN, F] (FLOATING_POINT type)
+   * @return valsCombined Combined edge weights [sumNnz] (FLOATING_POINT type)
+   * @return colIdxCombined Combined shifted column indices [sumNnz] (INT type)
+   * @return rowPtrCombined Combined stitched row pointers [sumN+1] (INT type)
+   * @return batchVec Node-to-graph assignment [sumN] (INT type)
+   */
+  public SDVariable[] graphDisjointUnion(String[] names, SDVariable[] Xs, SDVariable[] vals,
+      SDVariable[] colIdxs, SDVariable... rowPtrs) {
+    SDValidation.validateFloatingPoint("graphDisjointUnion", "Xs", Xs);
+    Preconditions.checkArgument(Xs.length >= 1, "Xs has incorrect size/length. Expected: Xs.length >= 1, got %s", Xs.length);
+    SDValidation.validateFloatingPoint("graphDisjointUnion", "vals", vals);
+    Preconditions.checkArgument(vals.length >= 1, "vals has incorrect size/length. Expected: vals.length >= 1, got %s", vals.length);
+    SDValidation.validateInteger("graphDisjointUnion", "colIdxs", colIdxs);
+    Preconditions.checkArgument(colIdxs.length >= 1, "colIdxs has incorrect size/length. Expected: colIdxs.length >= 1, got %s", colIdxs.length);
+    SDValidation.validateInteger("graphDisjointUnion", "rowPtrs", rowPtrs);
+    Preconditions.checkArgument(rowPtrs.length >= 1, "rowPtrs has incorrect size/length. Expected: rowPtrs.length >= 1, got %s", rowPtrs.length);
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.sparse.GraphDisjointUnion(sd,Xs, vals, colIdxs, rowPtrs).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
+   * HolE -- Holographic Embeddings (Nickel et al. 2016): scores a triple by the relation's
+   * agreement with the circular correlation of head and tail,
+   * score = relation . ccorr(head, tail), where ccorr(a,b) = IDFT(conj(DFT(a)) * DFT(b)).
+   * Circular correlation gives ComplEx-level expressiveness (asymmetric relations) at O(d log d)
+   * via the Fourier domain; here it is composed from the differentiable DFT op.
    *
    * @param head Head entity embeddings [batch, dim] (FLOATING_POINT type)
    * @param relation Relation embeddings [batch, dim] (FLOATING_POINT type)
@@ -685,11 +746,11 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * HolE -- Holographic Embeddings (Nickel et al. 2016): scores a triple by the relation's<br>
-   * agreement with the circular correlation of head and tail,<br>
-   * score = relation . ccorr(head, tail), where ccorr(a,b) = IDFT(conj(DFT(a)) * DFT(b)).<br>
-   * Circular correlation gives ComplEx-level expressiveness (asymmetric relations) at O(d log d)<br>
-   * via the Fourier domain; here it is composed from the differentiable DFT op.<br>
+   * HolE -- Holographic Embeddings (Nickel et al. 2016): scores a triple by the relation's
+   * agreement with the circular correlation of head and tail,
+   * score = relation . ccorr(head, tail), where ccorr(a,b) = IDFT(conj(DFT(a)) * DFT(b)).
+   * Circular correlation gives ComplEx-level expressiveness (asymmetric relations) at O(d log d)
+   * via the Fourier domain; here it is composed from the differentiable DFT op.
    *
    * @param name name May be null. Name for the output variable
    * @param head Head entity embeddings [batch, dim] (FLOATING_POINT type)
@@ -724,9 +785,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Topological Jaccard link-prediction score: S[i,j] = |N(i) ∩ N(j)| / |N(i) ∪ N(j)|, computed<br>
-   * as commonNeighbors(i,j) / (deg_i + deg_j - commonNeighbors(i,j)). Unlike feature-vector<br>
-   * Jaccard distance, this measures overlap of graph neighborhoods, normalizing for node degree.<br>
+   * Topological Jaccard link-prediction score: S[i,j] = |N(i) ∩ N(j)| / |N(i) ∪ N(j)|, computed
+   * as commonNeighbors(i,j) / (deg_i + deg_j - commonNeighbors(i,j)). Unlike feature-vector
+   * Jaccard distance, this measures overlap of graph neighborhoods, normalizing for node degree.
    *
    * @param adj Adjacency matrix [n, n] (symmetric for undirected graphs) (FLOATING_POINT type)
    * @return score Topological Jaccard score matrix [n, n] (FLOATING_POINT type)
@@ -744,9 +805,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Topological Jaccard link-prediction score: S[i,j] = |N(i) ∩ N(j)| / |N(i) ∪ N(j)|, computed<br>
-   * as commonNeighbors(i,j) / (deg_i + deg_j - commonNeighbors(i,j)). Unlike feature-vector<br>
-   * Jaccard distance, this measures overlap of graph neighborhoods, normalizing for node degree.<br>
+   * Topological Jaccard link-prediction score: S[i,j] = |N(i) ∩ N(j)| / |N(i) ∪ N(j)|, computed
+   * as commonNeighbors(i,j) / (deg_i + deg_j - commonNeighbors(i,j)). Unlike feature-vector
+   * Jaccard distance, this measures overlap of graph neighborhoods, normalizing for node degree.
    *
    * @param name name May be null. Name for the output variable
    * @param adj Adjacency matrix [n, n] (symmetric for undirected graphs) (FLOATING_POINT type)
@@ -765,15 +826,15 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Katz similarity index (Katz 1953): a link-prediction / node-similarity score that counts all<br>
-   * paths between pairs of nodes, exponentially down-weighted by path length.<br>
-   * S = sum_{l=1}^{L} beta^l A^l  (truncated finite-sum approximation).<br>
-   * Unlike the closed-form (I - beta*A)^{-1} - I this formulation uses only matrix multiplication<br>
-   * and is fully differentiable via standard mmul backward. Requires 0 < beta < 1/spectral_radius(A)<br>
-   * for the series to be meaningful; in practice beta = 0.05..0.1 and L = 3..5 works well.<br>
+   * Katz similarity index (Katz 1953): a link-prediction / node-similarity score that counts all
+   * paths between pairs of nodes, exponentially down-weighted by path length.
+   * S = sum_{l=1}^{L} beta^l A^l  (truncated finite-sum approximation).
+   * Unlike the closed-form (I - beta*A)^{-1} - I this formulation uses only matrix multiplication
+   * and is fully differentiable via standard mmul backward. Requires 0 &lt; beta &lt; 1/spectral_radius(A)
+   * for the series to be meaningful; in practice beta = 0.05..0.1 and L = 3..5 works well.
    *
    * @param adj Adjacency matrix [n, n] (FLOATING_POINT type)
-   * @param beta Attenuation factor (0 < beta < 1 / spectral_radius(A))
+   * @param beta Attenuation factor (0 &lt; beta &lt; 1 / spectral_radius(A))
    * @param L Truncation depth: number of path-length terms (>= 1)
    * @return out Katz similarity matrix [n, n] (FLOATING_POINT type)
    */
@@ -792,16 +853,16 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Katz similarity index (Katz 1953): a link-prediction / node-similarity score that counts all<br>
-   * paths between pairs of nodes, exponentially down-weighted by path length.<br>
-   * S = sum_{l=1}^{L} beta^l A^l  (truncated finite-sum approximation).<br>
-   * Unlike the closed-form (I - beta*A)^{-1} - I this formulation uses only matrix multiplication<br>
-   * and is fully differentiable via standard mmul backward. Requires 0 < beta < 1/spectral_radius(A)<br>
-   * for the series to be meaningful; in practice beta = 0.05..0.1 and L = 3..5 works well.<br>
+   * Katz similarity index (Katz 1953): a link-prediction / node-similarity score that counts all
+   * paths between pairs of nodes, exponentially down-weighted by path length.
+   * S = sum_{l=1}^{L} beta^l A^l  (truncated finite-sum approximation).
+   * Unlike the closed-form (I - beta*A)^{-1} - I this formulation uses only matrix multiplication
+   * and is fully differentiable via standard mmul backward. Requires 0 &lt; beta &lt; 1/spectral_radius(A)
+   * for the series to be meaningful; in practice beta = 0.05..0.1 and L = 3..5 works well.
    *
    * @param name name May be null. Name for the output variable
    * @param adj Adjacency matrix [n, n] (FLOATING_POINT type)
-   * @param beta Attenuation factor (0 < beta < 1 / spectral_radius(A))
+   * @param beta Attenuation factor (0 &lt; beta &lt; 1 / spectral_radius(A))
    * @param L Truncation depth: number of path-length terms (>= 1)
    * @return out Katz similarity matrix [n, n] (FLOATING_POINT type)
    */
@@ -820,13 +881,13 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * k-nearest-neighbor graph construction from a similarity/affinity matrix: each node (row) keeps<br>
-   * only its k highest-similarity neighbors, zeroing the rest, yielding a sparse weighted adjacency.<br>
-   * Built by scattering the per-row top-k values back to their column positions<br>
-   * (sum over k of oneHot(topIndices, n) * topValues), so it is differentiable w.r.t. the kept<br>
-   * similarities through the TopK gradient. Pair with sd.graph().cosineSimilarity / gaussianSimilarity<br>
-   * / correlationMatrix to go from raw features straight to a learnable kNN graph. `n` is the node<br>
-   * count (matrix dimension), used as the one-hot depth.<br>
+   * k-nearest-neighbor graph construction from a similarity/affinity matrix: each node (row) keeps
+   * only its k highest-similarity neighbors, zeroing the rest, yielding a sparse weighted adjacency.
+   * Built by scattering the per-row top-k values back to their column positions
+   * (sum over k of oneHot(topIndices, n) * topValues), so it is differentiable w.r.t. the kept
+   * similarities through the TopK gradient. Pair with sd.graph().cosineSimilarity / gaussianSimilarity
+   * / correlationMatrix to go from raw features straight to a learnable kNN graph. `n` is the node
+   * count (matrix dimension), used as the one-hot depth.
    *
    * @param similarity Pairwise similarity / affinity matrix [n, n] (FLOATING_POINT type)
    * @param k Number of nearest neighbors to keep per row
@@ -843,13 +904,13 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * k-nearest-neighbor graph construction from a similarity/affinity matrix: each node (row) keeps<br>
-   * only its k highest-similarity neighbors, zeroing the rest, yielding a sparse weighted adjacency.<br>
-   * Built by scattering the per-row top-k values back to their column positions<br>
-   * (sum over k of oneHot(topIndices, n) * topValues), so it is differentiable w.r.t. the kept<br>
-   * similarities through the TopK gradient. Pair with sd.graph().cosineSimilarity / gaussianSimilarity<br>
-   * / correlationMatrix to go from raw features straight to a learnable kNN graph. `n` is the node<br>
-   * count (matrix dimension), used as the one-hot depth.<br>
+   * k-nearest-neighbor graph construction from a similarity/affinity matrix: each node (row) keeps
+   * only its k highest-similarity neighbors, zeroing the rest, yielding a sparse weighted adjacency.
+   * Built by scattering the per-row top-k values back to their column positions
+   * (sum over k of oneHot(topIndices, n) * topValues), so it is differentiable w.r.t. the kept
+   * similarities through the TopK gradient. Pair with sd.graph().cosineSimilarity / gaussianSimilarity
+   * / correlationMatrix to go from raw features straight to a learnable kNN graph. `n` is the node
+   * count (matrix dimension), used as the one-hot depth.
    *
    * @param name name May be null. Name for the output variable
    * @param similarity Pairwise similarity / affinity matrix [n, n] (FLOATING_POINT type)
@@ -867,9 +928,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Personalized-PageRank label propagation (Zhou et al. 2004; APPNP propagation of labels).<br>
-   * Diffuses seed/observed label rows over the graph while retaining a fraction alpha of the seed<br>
-   * at every step: Y = (1-alpha)*(A_norm . Y) + alpha*seedY. A transductive (semi-supervised) classifier.<br>
+   * Personalized-PageRank label propagation (Zhou et al. 2004; APPNP propagation of labels).
+   * Diffuses seed/observed label rows over the graph while retaining a fraction alpha of the seed
+   * at every step: Y = (1-alpha)*(A_norm . Y) + alpha*seedY. A transductive (semi-supervised) classifier.
    *
    * @param seedY Seed label distribution per node [n, c] (FLOATING_POINT type)
    * @param aNormVals CSR values of the normalized adjacency [nnz] (FLOATING_POINT type)
@@ -897,9 +958,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Personalized-PageRank label propagation (Zhou et al. 2004; APPNP propagation of labels).<br>
-   * Diffuses seed/observed label rows over the graph while retaining a fraction alpha of the seed<br>
-   * at every step: Y = (1-alpha)*(A_norm . Y) + alpha*seedY. A transductive (semi-supervised) classifier.<br>
+   * Personalized-PageRank label propagation (Zhou et al. 2004; APPNP propagation of labels).
+   * Diffuses seed/observed label rows over the graph while retaining a fraction alpha of the seed
+   * at every step: Y = (1-alpha)*(A_norm . Y) + alpha*seedY. A transductive (semi-supervised) classifier.
    *
    * @param name name May be null. Name for the output variable
    * @param seedY Seed label distribution per node [n, c] (FLOATING_POINT type)
@@ -928,9 +989,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Margin ranking loss for KGE training: pushes positive triples to score higher than negatives<br>
-   * by at least margin.<br>
-   * loss = mean( max(0, margin - posScore + negScore) )<br>
+   * Margin ranking loss for KGE training: pushes positive triples to score higher than negatives
+   * by at least margin.
+   * loss = mean( max(0, margin - posScore + negScore) )
    *
    * @param posScore Scores of true triples [batch] (FLOATING_POINT type)
    * @param negScore Scores of corrupted (negative) triples [batch] (FLOATING_POINT type)
@@ -946,9 +1007,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Margin ranking loss for KGE training: pushes positive triples to score higher than negatives<br>
-   * by at least margin.<br>
-   * loss = mean( max(0, margin - posScore + negScore) )<br>
+   * Margin ranking loss for KGE training: pushes positive triples to score higher than negatives
+   * by at least margin.
+   * loss = mean( max(0, margin - posScore + negScore) )
    *
    * @param name name May be null. Name for the output variable
    * @param posScore Scores of true triples [batch] (FLOATING_POINT type)
@@ -966,12 +1027,12 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Personalized PageRank (PPR) via power iteration: r_{t+1} = alpha * A_norm * r_t + (1-alpha) * seed.<br>
-   * At each step the walker follows graph edges (alpha) or teleports back to the personalization seed<br>
-   * (1-alpha). After `iterations` steps the result approximates (I - alpha*A_norm)^{-1}*(1-alpha)*seed<br>
-   * without ever forming a matrix inverse, making it fully differentiable through mmul and scalar ops.<br>
-   * Use aNorm = row-normalized adjacency (each row sums to 1). For node-classification, seed = one-hot<br>
-   * class indicators [n,c]; for link prediction, seed = one-hot per-query-node vectors [n,n].<br>
+   * Personalized PageRank (PPR) via power iteration: r_{t+1} = alpha * A_norm * r_t + (1-alpha) * seed.
+   * At each step the walker follows graph edges (alpha) or teleports back to the personalization seed
+   * (1-alpha). After `iterations` steps the result approximates (I - alpha*A_norm)^{-1}*(1-alpha)*seed
+   * without ever forming a matrix inverse, making it fully differentiable through mmul and scalar ops.
+   * Use aNorm = row-normalized adjacency (each row sums to 1). For node-classification, seed = one-hot
+   * class indicators [n,c]; for link prediction, seed = one-hot per-query-node vectors [n,n].
    *
    * @param aNorm Row-normalized adjacency [n, n] (FLOATING_POINT type)
    * @param seed Personalization / seed distribution [n, c] (FLOATING_POINT type)
@@ -992,12 +1053,12 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Personalized PageRank (PPR) via power iteration: r_{t+1} = alpha * A_norm * r_t + (1-alpha) * seed.<br>
-   * At each step the walker follows graph edges (alpha) or teleports back to the personalization seed<br>
-   * (1-alpha). After `iterations` steps the result approximates (I - alpha*A_norm)^{-1}*(1-alpha)*seed<br>
-   * without ever forming a matrix inverse, making it fully differentiable through mmul and scalar ops.<br>
-   * Use aNorm = row-normalized adjacency (each row sums to 1). For node-classification, seed = one-hot<br>
-   * class indicators [n,c]; for link prediction, seed = one-hot per-query-node vectors [n,n].<br>
+   * Personalized PageRank (PPR) via power iteration: r_{t+1} = alpha * A_norm * r_t + (1-alpha) * seed.
+   * At each step the walker follows graph edges (alpha) or teleports back to the personalization seed
+   * (1-alpha). After `iterations` steps the result approximates (I - alpha*A_norm)^{-1}*(1-alpha)*seed
+   * without ever forming a matrix inverse, making it fully differentiable through mmul and scalar ops.
+   * Use aNorm = row-normalized adjacency (each row sums to 1). For node-classification, seed = one-hot
+   * class indicators [n,c]; for link prediction, seed = one-hot per-query-node vectors [n,n].
    *
    * @param name name May be null. Name for the output variable
    * @param aNorm Row-normalized adjacency [n, n] (FLOATING_POINT type)
@@ -1019,9 +1080,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Preferential-Attachment link-prediction score: S[i,j] = deg_i · deg_j (the outer product of<br>
-   * the degree vector). Encodes the "rich get richer" hypothesis that high-degree nodes are more<br>
-   * likely to acquire new links, independent of any shared neighborhood.<br>
+   * Preferential-Attachment link-prediction score: S[i,j] = deg_i · deg_j (the outer product of
+   * the degree vector). Encodes the "rich get richer" hypothesis that high-degree nodes are more
+   * likely to acquire new links, independent of any shared neighborhood.
    *
    * @param adj Adjacency matrix [n, n] (FLOATING_POINT type)
    * @return score Preferential-attachment score matrix [n, n] (FLOATING_POINT type)
@@ -1034,9 +1095,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Preferential-Attachment link-prediction score: S[i,j] = deg_i · deg_j (the outer product of<br>
-   * the degree vector). Encodes the "rich get richer" hypothesis that high-degree nodes are more<br>
-   * likely to acquire new links, independent of any shared neighborhood.<br>
+   * Preferential-Attachment link-prediction score: S[i,j] = deg_i · deg_j (the outer product of
+   * the degree vector). Encodes the "rich get richer" hypothesis that high-degree nodes are more
+   * likely to acquire new links, independent of any shared neighborhood.
    *
    * @param name name May be null. Name for the output variable
    * @param adj Adjacency matrix [n, n] (FLOATING_POINT type)
@@ -1050,9 +1111,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Resource-Allocation link-prediction score: S[i,j] = sum_v A[i,v]·A[v,j] / deg_v. Like<br>
-   * Adamic-Adar but penalizes high-degree shared neighbors even more strongly (inverse degree<br>
-   * rather than inverse log-degree). Often the strongest of the simple topological predictors.<br>
+   * Resource-Allocation link-prediction score: S[i,j] = sum_v A[i,v]·A[v,j] / deg_v. Like
+   * Adamic-Adar but penalizes high-degree shared neighbors even more strongly (inverse degree
+   * rather than inverse log-degree). Often the strongest of the simple topological predictors.
    *
    * @param adj Adjacency matrix [n, n] with positive node degrees (FLOATING_POINT type)
    * @return score Resource-allocation score matrix [n, n] (FLOATING_POINT type)
@@ -1066,9 +1127,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Resource-Allocation link-prediction score: S[i,j] = sum_v A[i,v]·A[v,j] / deg_v. Like<br>
-   * Adamic-Adar but penalizes high-degree shared neighbors even more strongly (inverse degree<br>
-   * rather than inverse log-degree). Often the strongest of the simple topological predictors.<br>
+   * Resource-Allocation link-prediction score: S[i,j] = sum_v A[i,v]·A[v,j] / deg_v. Like
+   * Adamic-Adar but penalizes high-degree shared neighbors even more strongly (inverse degree
+   * rather than inverse log-degree). Often the strongest of the simple topological predictors.
    *
    * @param name name May be null. Name for the output variable
    * @param adj Adjacency matrix [n, n] with positive node degrees (FLOATING_POINT type)
@@ -1083,9 +1144,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * RotatE (Sun et al. 2019): models each relation as an element-wise rotation in complex space<br>
-   * (capturing symmetry, inversion and composition).<br>
-   * r = (cos(phase), sin(phase)); score = -||head o r - tail||<br>
+   * RotatE (Sun et al. 2019): models each relation as an element-wise rotation in complex space
+   * (capturing symmetry, inversion and composition).
+   * r = (cos(phase), sin(phase)); score = -||head o r - tail||
    *
    * @param hRe Real part of head embeddings [batch, dim] (FLOATING_POINT type)
    * @param hIm Imag part of head embeddings [batch, dim] (FLOATING_POINT type)
@@ -1111,9 +1172,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * RotatE (Sun et al. 2019): models each relation as an element-wise rotation in complex space<br>
-   * (capturing symmetry, inversion and composition).<br>
-   * r = (cos(phase), sin(phase)); score = -||head o r - tail||<br>
+   * RotatE (Sun et al. 2019): models each relation as an element-wise rotation in complex space
+   * (capturing symmetry, inversion and composition).
+   * r = (cos(phase), sin(phase)); score = -||head o r - tail||
    *
    * @param name name May be null. Name for the output variable
    * @param hRe Real part of head embeddings [batch, dim] (FLOATING_POINT type)
@@ -1140,17 +1201,116 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Set2Set graph readout (Vinyals et al. 2016): runs processingSteps rounds of scaled dot-product<br>
-   * attention over node embeddings (using the fused sd.nn().dotProductAttentionV2) followed by a GRU<br>
-   * state update; produces a permutation-invariant graph-level embedding of size 2d.<br>
-   * <br>
-   * At each step t the query h [1,d] attends over keys/values nodeEmb [n,d] via<br>
-   * dotProductAttentionV2([1,1,d], [1,n,d], [1,n,d]) → attended memory m [1,d], then a GRU cell<br>
-   * (same concat-weight form as the library's GGNN for correct CUDA backward) updates h from m.<br>
-   * Output = concat(m_T, h_T) [1, 2d].<br>
-   * <br>
-   * Weights: wZr, wZu [2d, d] (reset / update gate); wC [2d, d] (candidate); bZr, bZu, bC [1, d].<br>
-   * Pass qInit = zeros [1,d] at inference; declare as sd.var for end-to-end training.<br>
+   * Segment-max pooling: takes max of node embeddings per graph.
+   *
+   * @param nodeEmb Node embeddings [sumN, F] (FLOATING_POINT type)
+   * @param batchVec Node-to-graph index [sumN] (INT type)
+   * @return graphEmb Graph-level embeddings [K, F] (FLOATING_POINT type)
+   */
+  public SDVariable segmentMaxPool(SDVariable nodeEmb, SDVariable batchVec) {
+    SDValidation.validateFloatingPoint("segmentMaxPool", "nodeEmb", nodeEmb);
+    SDValidation.validateInteger("segmentMaxPool", "batchVec", batchVec);
+
+                SDVariable out = sd.segmentMax(nodeEmb, batchVec);
+
+    return out;
+  }
+
+  /**
+   * Segment-max pooling: takes max of node embeddings per graph.
+   *
+   * @param name name May be null. Name for the output variable
+   * @param nodeEmb Node embeddings [sumN, F] (FLOATING_POINT type)
+   * @param batchVec Node-to-graph index [sumN] (INT type)
+   * @return graphEmb Graph-level embeddings [K, F] (FLOATING_POINT type)
+   */
+  public SDVariable segmentMaxPool(String name, SDVariable nodeEmb, SDVariable batchVec) {
+    SDValidation.validateFloatingPoint("segmentMaxPool", "nodeEmb", nodeEmb);
+    SDValidation.validateInteger("segmentMaxPool", "batchVec", batchVec);
+
+                SDVariable out = sd.segmentMax(nodeEmb, batchVec);
+
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Segment-mean pooling: produces one embedding per graph from batched node embeddings.
+   *
+   * @param nodeEmb Node embeddings [sumN, F] (FLOATING_POINT type)
+   * @param batchVec Node-to-graph index [sumN] from graphDisjointUnion (INT type)
+   * @return graphEmb Graph-level embeddings [K, F] (FLOATING_POINT type)
+   */
+  public SDVariable segmentMeanPool(SDVariable nodeEmb, SDVariable batchVec) {
+    SDValidation.validateFloatingPoint("segmentMeanPool", "nodeEmb", nodeEmb);
+    SDValidation.validateInteger("segmentMeanPool", "batchVec", batchVec);
+
+                SDVariable out = sd.segmentMean(nodeEmb, batchVec);
+
+    return out;
+  }
+
+  /**
+   * Segment-mean pooling: produces one embedding per graph from batched node embeddings.
+   *
+   * @param name name May be null. Name for the output variable
+   * @param nodeEmb Node embeddings [sumN, F] (FLOATING_POINT type)
+   * @param batchVec Node-to-graph index [sumN] from graphDisjointUnion (INT type)
+   * @return graphEmb Graph-level embeddings [K, F] (FLOATING_POINT type)
+   */
+  public SDVariable segmentMeanPool(String name, SDVariable nodeEmb, SDVariable batchVec) {
+    SDValidation.validateFloatingPoint("segmentMeanPool", "nodeEmb", nodeEmb);
+    SDValidation.validateInteger("segmentMeanPool", "batchVec", batchVec);
+
+                SDVariable out = sd.segmentMean(nodeEmb, batchVec);
+
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Segment-sum pooling: sums node embeddings per graph.
+   *
+   * @param nodeEmb Node embeddings [sumN, F] (FLOATING_POINT type)
+   * @param batchVec Node-to-graph index [sumN] (INT type)
+   * @return graphEmb Graph-level embeddings [K, F] (FLOATING_POINT type)
+   */
+  public SDVariable segmentSumPool(SDVariable nodeEmb, SDVariable batchVec) {
+    SDValidation.validateFloatingPoint("segmentSumPool", "nodeEmb", nodeEmb);
+    SDValidation.validateInteger("segmentSumPool", "batchVec", batchVec);
+
+                SDVariable out = sd.segmentSum(nodeEmb, batchVec);
+
+    return out;
+  }
+
+  /**
+   * Segment-sum pooling: sums node embeddings per graph.
+   *
+   * @param name name May be null. Name for the output variable
+   * @param nodeEmb Node embeddings [sumN, F] (FLOATING_POINT type)
+   * @param batchVec Node-to-graph index [sumN] (INT type)
+   * @return graphEmb Graph-level embeddings [K, F] (FLOATING_POINT type)
+   */
+  public SDVariable segmentSumPool(String name, SDVariable nodeEmb, SDVariable batchVec) {
+    SDValidation.validateFloatingPoint("segmentSumPool", "nodeEmb", nodeEmb);
+    SDValidation.validateInteger("segmentSumPool", "batchVec", batchVec);
+
+                SDVariable out = sd.segmentSum(nodeEmb, batchVec);
+
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Set2Set graph readout (Vinyals et al. 2016): runs processingSteps rounds of scaled dot-product
+   * attention over node embeddings (using the fused sd.nn().dotProductAttentionV2) followed by a GRU
+   * state update; produces a permutation-invariant graph-level embedding of size 2d.
+   *
+   * At each step t the query h [1,d] attends over keys/values nodeEmb [n,d] via
+   * dotProductAttentionV2([1,1,d], [1,n,d], [1,n,d]) → attended memory m [1,d], then a GRU cell
+   * (same concat-weight form as the library's GGNN for correct CUDA backward) updates h from m.
+   * Output = concat(m_T, h_T) [1, 2d].
+   *
+   * Weights: wZr, wZu [2d, d] (reset / update gate); wC [2d, d] (candidate); bZr, bZu, bC [1, d].
+   * Pass qInit = zeros [1,d] at inference; declare as sd.var for end-to-end training.
    *
    * @param nodeEmb Node feature matrix [n, d] (FLOATING_POINT type)
    * @param qInit Initial GRU query state [1, d] (caller passes zeros) (FLOATING_POINT type)
@@ -1193,17 +1353,17 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Set2Set graph readout (Vinyals et al. 2016): runs processingSteps rounds of scaled dot-product<br>
-   * attention over node embeddings (using the fused sd.nn().dotProductAttentionV2) followed by a GRU<br>
-   * state update; produces a permutation-invariant graph-level embedding of size 2d.<br>
-   * <br>
-   * At each step t the query h [1,d] attends over keys/values nodeEmb [n,d] via<br>
-   * dotProductAttentionV2([1,1,d], [1,n,d], [1,n,d]) → attended memory m [1,d], then a GRU cell<br>
-   * (same concat-weight form as the library's GGNN for correct CUDA backward) updates h from m.<br>
-   * Output = concat(m_T, h_T) [1, 2d].<br>
-   * <br>
-   * Weights: wZr, wZu [2d, d] (reset / update gate); wC [2d, d] (candidate); bZr, bZu, bC [1, d].<br>
-   * Pass qInit = zeros [1,d] at inference; declare as sd.var for end-to-end training.<br>
+   * Set2Set graph readout (Vinyals et al. 2016): runs processingSteps rounds of scaled dot-product
+   * attention over node embeddings (using the fused sd.nn().dotProductAttentionV2) followed by a GRU
+   * state update; produces a permutation-invariant graph-level embedding of size 2d.
+   *
+   * At each step t the query h [1,d] attends over keys/values nodeEmb [n,d] via
+   * dotProductAttentionV2([1,1,d], [1,n,d], [1,n,d]) → attended memory m [1,d], then a GRU cell
+   * (same concat-weight form as the library's GGNN for correct CUDA backward) updates h from m.
+   * Output = concat(m_T, h_T) [1, 2d].
+   *
+   * Weights: wZr, wZu [2d, d] (reset / update gate); wC [2d, d] (candidate); bZr, bZu, bC [1, d].
+   * Pass qInit = zeros [1,d] at inference; declare as sd.var for end-to-end training.
    *
    * @param name name May be null. Name for the output variable
    * @param nodeEmb Node feature matrix [n, d] (FLOATING_POINT type)
@@ -1248,11 +1408,11 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * SimRank node-similarity (Jeh & Widom 2002): two nodes are similar if their in-neighbors are<br>
-   * similar. Converges via the fixed-point iteration S_{t+1} = C * W^T S_t W (diagonal forced to 1),<br>
-   * where W is the column-normalized adjacency. The diagonal reset is implemented in a gradient-clean<br>
-   * elementwise form: S_new = prop * (ones - I) + I.<br>
-   * Pass identity = sd.constant(Nd4j.eye(n).castTo(DataType.DOUBLE)) so its gradient is not tracked.<br>
+   * SimRank node-similarity (Jeh and Widom 2002): two nodes are similar if their in-neighbors are
+   * similar. Converges via the fixed-point iteration S_{t+1} = C * W^T S_t W (diagonal forced to 1),
+   * where W is the column-normalized adjacency. The diagonal reset is implemented in a gradient-clean
+   * elementwise form: S_new = prop * (ones - I) + I.
+   * Pass identity = sd.constant(Nd4j.eye(n).castTo(DataType.DOUBLE)) so its gradient is not tracked.
    *
    * @param W Column-normalized adjacency [n, n] (each column sums to 1) (FLOATING_POINT type)
    * @param identity Identity matrix [n, n] -- pass sd.constant(Nd4j.eye(n)) (FLOATING_POINT type)
@@ -1275,11 +1435,11 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * SimRank node-similarity (Jeh & Widom 2002): two nodes are similar if their in-neighbors are<br>
-   * similar. Converges via the fixed-point iteration S_{t+1} = C * W^T S_t W (diagonal forced to 1),<br>
-   * where W is the column-normalized adjacency. The diagonal reset is implemented in a gradient-clean<br>
-   * elementwise form: S_new = prop * (ones - I) + I.<br>
-   * Pass identity = sd.constant(Nd4j.eye(n).castTo(DataType.DOUBLE)) so its gradient is not tracked.<br>
+   * SimRank node-similarity (Jeh and Widom 2002): two nodes are similar if their in-neighbors are
+   * similar. Converges via the fixed-point iteration S_{t+1} = C * W^T S_t W (diagonal forced to 1),
+   * where W is the column-normalized adjacency. The diagonal reset is implemented in a gradient-clean
+   * elementwise form: S_new = prop * (ones - I) + I.
+   * Pass identity = sd.constant(Nd4j.eye(n).castTo(DataType.DOUBLE)) so its gradient is not tracked.
    *
    * @param name name May be null. Name for the output variable
    * @param W Column-normalized adjacency [n, n] (each column sums to 1) (FLOATING_POINT type)
@@ -1304,13 +1464,13 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * SortPool (Zhang et al. 2018, DGCNN): sorts all n nodes by a scalar sort key (e.g. the last<br>
-   * GNN channel) in descending order and keeps the top-k rows, producing a fixed-size graph-level<br>
-   * representation [k, d] regardless of graph size. Unlike topKPool there is no sigmoid gate --<br>
-   * the selection is purely order-based, which preserves the structural ordering signal used by<br>
-   * DGCNN's subsequent 1-D convolution. Differentiable w.r.t. features through the top-k gather<br>
-   * (oneHot @ features); the sort key selects WHICH rows are kept but its gradient is zero (as for<br>
-   * topKPool / knnGraph -- it enters only through the index, not the value).<br>
+   * SortPool (Zhang et al. 2018, DGCNN): sorts all n nodes by a scalar sort key (e.g. the last
+   * GNN channel) in descending order and keeps the top-k rows, producing a fixed-size graph-level
+   * representation [k, d] regardless of graph size. Unlike topKPool there is no sigmoid gate --
+   * the selection is purely order-based, which preserves the structural ordering signal used by
+   * DGCNN's subsequent 1-D convolution. Differentiable w.r.t. features through the top-k gather
+   * (oneHot @ features); the sort key selects WHICH rows are kept but its gradient is zero (as for
+   * topKPool / knnGraph -- it enters only through the index, not the value).
    *
    * @param features Node feature matrix [n, d] (FLOATING_POINT type)
    * @param sortKey Per-node sort scores [n] (e.g. last GNN channel) (FLOATING_POINT type)
@@ -1328,13 +1488,13 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * SortPool (Zhang et al. 2018, DGCNN): sorts all n nodes by a scalar sort key (e.g. the last<br>
-   * GNN channel) in descending order and keeps the top-k rows, producing a fixed-size graph-level<br>
-   * representation [k, d] regardless of graph size. Unlike topKPool there is no sigmoid gate --<br>
-   * the selection is purely order-based, which preserves the structural ordering signal used by<br>
-   * DGCNN's subsequent 1-D convolution. Differentiable w.r.t. features through the top-k gather<br>
-   * (oneHot @ features); the sort key selects WHICH rows are kept but its gradient is zero (as for<br>
-   * topKPool / knnGraph -- it enters only through the index, not the value).<br>
+   * SortPool (Zhang et al. 2018, DGCNN): sorts all n nodes by a scalar sort key (e.g. the last
+   * GNN channel) in descending order and keeps the top-k rows, producing a fixed-size graph-level
+   * representation [k, d] regardless of graph size. Unlike topKPool there is no sigmoid gate --
+   * the selection is purely order-based, which preserves the structural ordering signal used by
+   * DGCNN's subsequent 1-D convolution. Differentiable w.r.t. features through the top-k gather
+   * (oneHot @ features); the sort key selects WHICH rows are kept but its gradient is zero (as for
+   * topKPool / knnGraph -- it enters only through the index, not the value).
    *
    * @param name name May be null. Name for the output variable
    * @param features Node feature matrix [n, d] (FLOATING_POINT type)
@@ -1353,10 +1513,10 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Top-k node pooling (Gao & Ji 2019 / Cangea et al. 2018; the selection mechanism of SAGPool):<br>
-   * keeps the k highest-scoring nodes and gates their features by sigmoid(score) so the score stays<br>
-   * differentiable. The top-k rows are gathered as oneHot(topIndices, n) @ features (avoiding a<br>
-   * separate gather op). Pass scores from a learned projection or a graph-attention layer for SAGPool.<br>
+   * Top-k node pooling (Gao and Ji 2019 / Cangea et al. 2018; the selection mechanism of SAGPool):
+   * keeps the k highest-scoring nodes and gates their features by sigmoid(score) so the score stays
+   * differentiable. The top-k rows are gathered as oneHot(topIndices, n) @ features (avoiding a
+   * separate gather op). Pass scores from a learned projection or a graph-attention layer for SAGPool.
    *
    * @param scores Per-node selection scores [n] (e.g. a learned projection) (FLOATING_POINT type)
    * @param features Node features [n, d] (FLOATING_POINT type)
@@ -1376,10 +1536,10 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Top-k node pooling (Gao & Ji 2019 / Cangea et al. 2018; the selection mechanism of SAGPool):<br>
-   * keeps the k highest-scoring nodes and gates their features by sigmoid(score) so the score stays<br>
-   * differentiable. The top-k rows are gathered as oneHot(topIndices, n) @ features (avoiding a<br>
-   * separate gather op). Pass scores from a learned projection or a graph-attention layer for SAGPool.<br>
+   * Top-k node pooling (Gao and Ji 2019 / Cangea et al. 2018; the selection mechanism of SAGPool):
+   * keeps the k highest-scoring nodes and gates their features by sigmoid(score) so the score stays
+   * differentiable. The top-k rows are gathered as oneHot(topIndices, n) @ features (avoiding a
+   * separate gather op). Pass scores from a learned projection or a graph-attention layer for SAGPool.
    *
    * @param name name May be null. Name for the output variable
    * @param scores Per-node selection scores [n] (e.g. a learned projection) (FLOATING_POINT type)
@@ -1400,8 +1560,8 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * TransE (Bordes et al. 2013): models a relation as a translation, h + r ~ t.<br>
-   * score = -||head + relation - tail||<br>
+   * TransE (Bordes et al. 2013): models a relation as a translation, h + r ~ t.
+   * score = -||head + relation - tail||
    *
    * @param head Head-entity embeddings [batch, dim] (FLOATING_POINT type)
    * @param relation Relation embeddings [batch, dim] (FLOATING_POINT type)
@@ -1419,8 +1579,8 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * TransE (Bordes et al. 2013): models a relation as a translation, h + r ~ t.<br>
-   * score = -||head + relation - tail||<br>
+   * TransE (Bordes et al. 2013): models a relation as a translation, h + r ~ t.
+   * score = -||head + relation - tail||
    *
    * @param name name May be null. Name for the output variable
    * @param head Head-entity embeddings [batch, dim] (FLOATING_POINT type)
@@ -1439,9 +1599,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Time-aware TransE (TTransE, Jiang et al. 2016) for temporal knowledge graphs: the timestamp<br>
-   * embedding is an additional translation.<br>
-   * score = -||head + relation + time - tail||<br>
+   * Time-aware TransE (TTransE, Jiang et al. 2016) for temporal knowledge graphs: the timestamp
+   * embedding is an additional translation.
+   * score = -||head + relation + time - tail||
    *
    * @param head Head-entity embeddings [batch, dim] (FLOATING_POINT type)
    * @param relation Relation embeddings [batch, dim] (FLOATING_POINT type)
@@ -1462,9 +1622,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * Time-aware TransE (TTransE, Jiang et al. 2016) for temporal knowledge graphs: the timestamp<br>
-   * embedding is an additional translation.<br>
-   * score = -||head + relation + time - tail||<br>
+   * Time-aware TransE (TTransE, Jiang et al. 2016) for temporal knowledge graphs: the timestamp
+   * embedding is an additional translation.
+   * score = -||head + relation + time - tail||
    *
    * @param name name May be null. Name for the output variable
    * @param head Head-entity embeddings [batch, dim] (FLOATING_POINT type)
@@ -1486,9 +1646,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * TransH (Wang et al. 2014): like TransE, but head and tail are projected onto a relation-specific<br>
-   * hyperplane (normal wr), so an entity can play different roles under different relations.<br>
-   * score = -||hPerp + relation - tPerp||<br>
+   * TransH (Wang et al. 2014): like TransE, but head and tail are projected onto a relation-specific
+   * hyperplane (normal wr), so an entity can play different roles under different relations.
+   * score = -||hPerp + relation - tPerp||
    *
    * @param head Head-entity embeddings [batch, dim] (FLOATING_POINT type)
    * @param wr Relation hyperplane normals [batch, dim] (ideally unit-norm) (FLOATING_POINT type)
@@ -1510,9 +1670,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * TransH (Wang et al. 2014): like TransE, but head and tail are projected onto a relation-specific<br>
-   * hyperplane (normal wr), so an entity can play different roles under different relations.<br>
-   * score = -||hPerp + relation - tPerp||<br>
+   * TransH (Wang et al. 2014): like TransE, but head and tail are projected onto a relation-specific
+   * hyperplane (normal wr), so an entity can play different roles under different relations.
+   * score = -||hPerp + relation - tPerp||
    *
    * @param name name May be null. Name for the output variable
    * @param head Head-entity embeddings [batch, dim] (FLOATING_POINT type)
@@ -1536,9 +1696,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * TuckER (Balazevic et al. 2019): a Tucker-decomposition bilinear model with a learnable core<br>
-   * tensor shared across all triples; subsumes DistMult / ComplEx / SimplE.<br>
-   * score = W x1 head x2 relation x3 tail<br>
+   * TuckER (Balazevic et al. 2019): a Tucker-decomposition bilinear model with a learnable core
+   * tensor shared across all triples; subsumes DistMult / ComplEx / SimplE.
+   * score = W x1 head x2 relation x3 tail
    *
    * @param head Head-entity embeddings [batch, de] (FLOATING_POINT type)
    * @param relation Relation embeddings [batch, dr] (FLOATING_POINT type)
@@ -1563,9 +1723,9 @@ public class SDGraph extends SDOps {
   }
 
   /**
-   * TuckER (Balazevic et al. 2019): a Tucker-decomposition bilinear model with a learnable core<br>
-   * tensor shared across all triples; subsumes DistMult / ComplEx / SimplE.<br>
-   * score = W x1 head x2 relation x3 tail<br>
+   * TuckER (Balazevic et al. 2019): a Tucker-decomposition bilinear model with a learnable core
+   * tensor shared across all triples; subsumes DistMult / ComplEx / SimplE.
+   * score = W x1 head x2 relation x3 tail
    *
    * @param name name May be null. Name for the output variable
    * @param head Head-entity embeddings [batch, de] (FLOATING_POINT type)

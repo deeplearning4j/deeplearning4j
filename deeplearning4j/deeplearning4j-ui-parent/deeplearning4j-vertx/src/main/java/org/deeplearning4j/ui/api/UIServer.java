@@ -54,9 +54,9 @@ public interface UIServer {
      * Singleton pattern - all calls to getInstance() will return the same UI instance.
      *
      * @param multiSession         in multi-session mode, multiple training sessions can be visualized in separate browser tabs.
-     *                             <br/>URL path will include session ID as a parameter, i.e.: /train becomes /train/:sessionId
+     *                             <br>URL path will include session ID as a parameter, i.e.: /train becomes /train/:sessionId
      * @param statsStorageProvider function that returns a StatsStorage containing the given session ID.
-     *                             <br/>Use this to auto-attach StatsStorage if an unknown session ID is passed
+     *                             <br>Use this to auto-attach StatsStorage if an unknown session ID is passed
      *                             as URL path parameter in multi-session mode, or leave it {@code null}.
      * @return UI instance for this JVM
      * @throws DL4JException if UI server failed to start;

@@ -25,6 +25,28 @@ package org.nd4j.linalg.factory.ops;
 import static org.nd4j.linalg.factory.NDValidation.isSameType;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.sparse.BsrSpmm;
+import org.nd4j.linalg.api.ops.impl.sparse.BsrToDense;
+import org.nd4j.linalg.api.ops.impl.sparse.CooToCsr;
+import org.nd4j.linalg.api.ops.impl.sparse.CscToDense;
+import org.nd4j.linalg.api.ops.impl.sparse.CsrAdd;
+import org.nd4j.linalg.api.ops.impl.sparse.CsrDiagMm;
+import org.nd4j.linalg.api.ops.impl.sparse.CsrEdgeAggregate;
+import org.nd4j.linalg.api.ops.impl.sparse.CsrEdgeGather;
+import org.nd4j.linalg.api.ops.impl.sparse.CsrRowSoftmax;
+import org.nd4j.linalg.api.ops.impl.sparse.CsrSddmmSparse;
+import org.nd4j.linalg.api.ops.impl.sparse.CsrSegmentMax;
+import org.nd4j.linalg.api.ops.impl.sparse.CsrSpgemm;
+import org.nd4j.linalg.api.ops.impl.sparse.CsrSpmm;
+import org.nd4j.linalg.api.ops.impl.sparse.CsrSpmv;
+import org.nd4j.linalg.api.ops.impl.sparse.CsrToBsr;
+import org.nd4j.linalg.api.ops.impl.sparse.CsrToCsc;
+import org.nd4j.linalg.api.ops.impl.sparse.CsrToDense;
+import org.nd4j.linalg.api.ops.impl.sparse.DenseToCoo;
+import org.nd4j.linalg.api.ops.impl.sparse.DenseToCsc;
+import org.nd4j.linalg.api.ops.impl.sparse.DenseToCsr;
+import org.nd4j.linalg.api.ops.impl.sparse.Sddmm;
+import org.nd4j.linalg.api.ops.impl.sparse.Spdiags;
 import org.nd4j.linalg.factory.NDValidation;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -33,9 +55,9 @@ public class NDSparse {
   }
 
   /**
-   * BSR sparse matrix-dense matrix multiplication: C = A_bsr·B.<br>
-   * A is in BSR format; B and C are dense.<br>
-   * Equivalent to toDense(A_bsr).mmul(B) but skips zero blocks.<br>
+   * BSR sparse matrix-dense matrix multiplication: C = A_bsr·B.
+   * A is in BSR format; B and C are dense.
+   * Equivalent to toDense(A_bsr).mmul(B) but skips zero blocks.
    *
    * @param bsrValues 1D [nnzb * blockDim * blockDim] BSR non-zero block values of A (FLOATING_POINT type)
    * @param bsrColIdx 1D [nnzb] block-column indices of A (INT32) (INT type)
@@ -52,7 +74,7 @@ public class NDSparse {
     NDValidation.validateInteger("bsrSpmm", "bsrColIdx", bsrColIdx);
     NDValidation.validateInteger("bsrSpmm", "bsrRowPtr", bsrRowPtr);
     NDValidation.validateFloatingPoint("bsrSpmm", "B", B);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.sparse.BsrSpmm(bsrValues, bsrColIdx, bsrRowPtr, B, rows, cols, blockDim));
+    INDArray[] __tmp = Nd4j.exec(new BsrSpmm(bsrValues, bsrColIdx, bsrRowPtr, B, rows, cols, blockDim));
     try {
       return __tmp[0];
     } finally {
@@ -67,7 +89,7 @@ public class NDSparse {
   }
 
   /**
-   * Convert a BSR (Block Sparse Row) sparse matrix to a dense matrix.<br>
+   * Convert a BSR (Block Sparse Row) sparse matrix to a dense matrix.
    *
    * @param bsrValues 1D [nnzb * blockDim * blockDim] BSR non-zero block values (FLOATING_POINT type)
    * @param bsrColIdx 1D [nnzb] block-column indices (INT32) (INT type)
@@ -82,7 +104,7 @@ public class NDSparse {
     NDValidation.validateFloatingPoint("bsrToDense", "bsrValues", bsrValues);
     NDValidation.validateInteger("bsrToDense", "bsrColIdx", bsrColIdx);
     NDValidation.validateInteger("bsrToDense", "bsrRowPtr", bsrRowPtr);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.sparse.BsrToDense(bsrValues, bsrColIdx, bsrRowPtr, rows, cols, blockDim));
+    INDArray[] __tmp = Nd4j.exec(new BsrToDense(bsrValues, bsrColIdx, bsrRowPtr, rows, cols, blockDim));
     try {
       return __tmp[0];
     } finally {
@@ -97,22 +119,25 @@ public class NDSparse {
   }
 
   /**
-   * Convert a COO (Coordinate) sparse matrix to CSR (Compressed Sparse Row) format.<br>
-   * The COO entries are sorted into row-major order by the native op.<br>
+   * Convert a COO (Coordinate) sparse matrix to CSR (Compressed Sparse Row) format.
+   * The COO entries are sorted into row-major order by the native op.
    *
    * @param indices 2D [nnz, 2] INT64 row/col index pairs for each non-zero (INT type)
    * @param values 1D [nnz] non-zero values (FLOATING_POINT type)
    * @param rows Number of rows in the logical dense shape
    * @param cols Number of columns in the logical dense shape
+   * @return csrValues 1D [nnz] non-zero values in CSR row-major order (FLOATING_POINT type)
+   * @return colIdx 1D [nnz] column indices (INT32) (INT type)
+   * @return rowPtr 1D [rows+1] row pointers (INT32) (INT type)
    */
   public INDArray[] cooToCsr(INDArray indices, INDArray values, int rows, int cols) {
     NDValidation.validateInteger("cooToCsr", "indices", indices);
     NDValidation.validateFloatingPoint("cooToCsr", "values", values);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.sparse.CooToCsr(indices, values, rows, cols));
+    return Nd4j.exec(new CooToCsr(indices, values, rows, cols));
   }
 
   /**
-   * Convert a CSC (Compressed Sparse Column) sparse matrix to a dense matrix.<br>
+   * Convert a CSC (Compressed Sparse Column) sparse matrix to a dense matrix.
    *
    * @param cscValues 1D [nnz] CSC non-zero values in column-major order (FLOATING_POINT type)
    * @param cscRowIdx 1D [nnz] row index for each non-zero (INT32) (INT type)
@@ -126,7 +151,7 @@ public class NDSparse {
     NDValidation.validateFloatingPoint("cscToDense", "cscValues", cscValues);
     NDValidation.validateInteger("cscToDense", "cscRowIdx", cscRowIdx);
     NDValidation.validateInteger("cscToDense", "cscColPtr", cscColPtr);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.sparse.CscToDense(cscValues, cscRowIdx, cscColPtr, rows, cols));
+    INDArray[] __tmp = Nd4j.exec(new CscToDense(cscValues, cscRowIdx, cscColPtr, rows, cols));
     try {
       return __tmp[0];
     } finally {
@@ -141,9 +166,9 @@ public class NDSparse {
   }
 
   /**
-   * Elementwise CSR sparse matrix addition: C = A + B.<br>
-   * Both A and B must have the same logical shape [m, n].<br>
-   * This op is forward-only; automatic differentiation is not supported.<br>
+   * Elementwise CSR sparse matrix addition: C = A + B.
+   * Both A and B must have the same logical shape [m, n].
+   * This op is forward-only; automatic differentiation is not supported.
    *
    * @param aValues 1D [nnzA] non-zero values of A (FLOATING_POINT type)
    * @param aColIdx 1D [nnzA] column indices of A (INT32) (INT type)
@@ -153,6 +178,9 @@ public class NDSparse {
    * @param bRowPtr 1D [m+1] row pointers of B (INT32) (INT type)
    * @param m Number of rows (same for A and B)
    * @param n Number of columns (same for A and B)
+   * @return cValues 1D [cnnz] non-zero values of C = A + B (FLOATING_POINT type)
+   * @return cColIdx 1D [cnnz] column indices of C (INT32) (INT type)
+   * @return cRowPtr 1D [m+1] row pointers of C (INT32) (INT type)
    */
   public INDArray[] csrAdd(INDArray aValues, INDArray aColIdx, INDArray aRowPtr, INDArray bValues,
       INDArray bColIdx, INDArray bRowPtr, int m, int n) {
@@ -162,12 +190,12 @@ public class NDSparse {
     NDValidation.validateFloatingPoint("csrAdd", "bValues", bValues);
     NDValidation.validateInteger("csrAdd", "bColIdx", bColIdx);
     NDValidation.validateInteger("csrAdd", "bRowPtr", bRowPtr);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.sparse.CsrAdd(aValues, aColIdx, aRowPtr, bValues, bColIdx, bRowPtr, m, n));
+    return Nd4j.exec(new CsrAdd(aValues, aColIdx, aRowPtr, bValues, bColIdx, bRowPtr, m, n));
   }
 
   /**
-   * Diagonal-scaled sparse matrix product: out[e] = dl[i]*aValues[e]*dr[j] for each non-zero (i,j).<br>
-   * Computes the non-zero values of Dl·A·Dr where Dl=diag(dl), Dr=diag(dr), keeping the sparsity pattern intact.<br>
+   * Diagonal-scaled sparse matrix product: out[e] = dl[i]*aValues[e]*dr[j] for each non-zero (i,j).
+   * Computes the non-zero values of Dl·A·Dr where Dl=diag(dl), Dr=diag(dr), keeping the sparsity pattern intact.
    *
    * @param aValues 1D [nnz] CSR non-zero values of A (FLOATING_POINT type)
    * @param aColIdx 1D [nnz] column indices of A (INT32) (INT type)
@@ -185,7 +213,7 @@ public class NDSparse {
     NDValidation.validateInteger("csrDiagMm", "aRowPtr", aRowPtr);
     NDValidation.validateFloatingPoint("csrDiagMm", "dl", dl);
     NDValidation.validateFloatingPoint("csrDiagMm", "dr", dr);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.sparse.CsrDiagMm(aValues, aColIdx, aRowPtr, dl, dr, rows, cols));
+    INDArray[] __tmp = Nd4j.exec(new CsrDiagMm(aValues, aColIdx, aRowPtr, dl, dr, rows, cols));
     try {
       return __tmp[0];
     } finally {
@@ -200,8 +228,8 @@ public class NDSparse {
   }
 
   /**
-   * Segment scatter-reduce: aggregate per-edge messages to per-node outputs (the N-step of MPNN).<br>
-   * mode: 0=SUM, 1=MEAN, 2=MAX.<br>
+   * Segment scatter-reduce: aggregate per-edge messages to per-node outputs (the N-step of MPNN).
+   * mode: 0=SUM, 1=MEAN, 2=MAX.
    *
    * @param rowPtr 1D [rows+1] INT32 CSR row pointers (INT type)
    * @param edgeMsg 2D [nnz, F] per-edge message vectors (FLOATING_POINT type)
@@ -212,7 +240,7 @@ public class NDSparse {
   public INDArray csrEdgeAggregate(INDArray rowPtr, INDArray edgeMsg, int rows, int mode) {
     NDValidation.validateInteger("csrEdgeAggregate", "rowPtr", rowPtr);
     NDValidation.validateFloatingPoint("csrEdgeAggregate", "edgeMsg", edgeMsg);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.sparse.CsrEdgeAggregate(rowPtr, edgeMsg, rows, mode));
+    INDArray[] __tmp = Nd4j.exec(new CsrEdgeAggregate(rowPtr, edgeMsg, rows, mode));
     try {
       return __tmp[0];
     } finally {
@@ -227,9 +255,9 @@ public class NDSparse {
   }
 
   /**
-   * Edge-gather primitive: pull node-feature vectors onto edges.<br>
-   * For each edge e and feature f: edgeFeat[e,f] = X[colIdx[e],f].<br>
-   * n = X.shape[0] (number of nodes); required by the backward op to reconstruct dX shape [n, F].<br>
+   * Edge-gather primitive: pull node-feature vectors onto edges.
+   * For each edge e and feature f: edgeFeat[e,f] = X[colIdx[e],f].
+   * n = X.shape[0] (number of nodes); required by the backward op to reconstruct dX shape [n, F].
    *
    * @param colIdx 1D [nnz] INT32 source-node ids for each edge (INT type)
    * @param X 2D [n, F] dense node-feature matrix (FLOATING_POINT type)
@@ -239,7 +267,7 @@ public class NDSparse {
   public INDArray csrEdgeGather(INDArray colIdx, INDArray X, int n) {
     NDValidation.validateInteger("csrEdgeGather", "colIdx", colIdx);
     NDValidation.validateFloatingPoint("csrEdgeGather", "X", X);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.sparse.CsrEdgeGather(colIdx, X, n));
+    INDArray[] __tmp = Nd4j.exec(new CsrEdgeGather(colIdx, X, n));
     try {
       return __tmp[0];
     } finally {
@@ -254,8 +282,8 @@ public class NDSparse {
   }
 
   /**
-   * Per-row softmax over CSR non-zero values: the GAT edge-softmax primitive.<br>
-   * For each row i: alpha[k] = exp(values[k]) / sum_{k' in row i} exp(values[k']).<br>
+   * Per-row softmax over CSR non-zero values: the GAT edge-softmax primitive.
+   * For each row i: alpha[k] = exp(values[k]) / sum_{k' in row i} exp(values[k']).
    *
    * @param values 1D [nnz] non-zero attention logits (FLOATING_POINT type)
    * @param rowPtr 1D [rows+1] INT32 CSR row pointers (INT type)
@@ -265,7 +293,7 @@ public class NDSparse {
   public INDArray csrRowSoftmax(INDArray values, INDArray rowPtr, int rows) {
     NDValidation.validateFloatingPoint("csrRowSoftmax", "values", values);
     NDValidation.validateInteger("csrRowSoftmax", "rowPtr", rowPtr);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.sparse.CsrRowSoftmax(values, rowPtr, rows));
+    INDArray[] __tmp = Nd4j.exec(new CsrRowSoftmax(values, rowPtr, rows));
     try {
       return __tmp[0];
     } finally {
@@ -280,8 +308,8 @@ public class NDSparse {
   }
 
   /**
-   * Sparse-sparse SDDMM: sample L·Mᵀ at positions given by the target CSR sparsity pattern.<br>
-   * Used as the SpGEMM gradient kernel. Forward-only (no autodiff).<br>
+   * Sparse-sparse SDDMM: sample L·Mᵀ at positions given by the target CSR sparsity pattern.
+   * Used as the SpGEMM gradient kernel. Forward-only (no autodiff).
    *
    * @param targetRowPtr 1D [P+1] INT32 row pointers of the target sparsity pattern (INT type)
    * @param targetColIdx 1D [tnnz] INT32 column indices of the target pattern (INT type)
@@ -307,7 +335,7 @@ public class NDSparse {
     NDValidation.validateFloatingPoint("csrSddmmSparse", "Mvalues", Mvalues);
     NDValidation.validateInteger("csrSddmmSparse", "McolIdx", McolIdx);
     NDValidation.validateInteger("csrSddmmSparse", "MrowPtr", MrowPtr);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.sparse.CsrSddmmSparse(targetRowPtr, targetColIdx, Lvalues, LcolIdx, LrowPtr, Mvalues, McolIdx, MrowPtr, P, Q, R));
+    INDArray[] __tmp = Nd4j.exec(new CsrSddmmSparse(targetRowPtr, targetColIdx, Lvalues, LcolIdx, LrowPtr, Mvalues, McolIdx, MrowPtr, P, Q, R));
     try {
       return __tmp[0];
     } finally {
@@ -322,8 +350,8 @@ public class NDSparse {
   }
 
   /**
-   * Neighbourhood max-aggregation over a CSR graph: the GraphSAGE-max primitive.<br>
-   * For each row i and feature f: out[i,f] = max over source neighbours j of X[j,f].<br>
+   * Neighbourhood max-aggregation over a CSR graph: the GraphSAGE-max primitive.
+   * For each row i and feature f: out[i,f] = max over source neighbours j of X[j,f].
    *
    * @param colIdx 1D [nnz] INT32 column (source-node) indices (INT type)
    * @param rowPtr 1D [rows+1] INT32 row (segment) pointers (INT type)
@@ -335,7 +363,7 @@ public class NDSparse {
     NDValidation.validateInteger("csrSegmentMax", "colIdx", colIdx);
     NDValidation.validateInteger("csrSegmentMax", "rowPtr", rowPtr);
     NDValidation.validateFloatingPoint("csrSegmentMax", "X", X);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.sparse.CsrSegmentMax(colIdx, rowPtr, X, rows));
+    INDArray[] __tmp = Nd4j.exec(new CsrSegmentMax(colIdx, rowPtr, X, rows));
     try {
       return __tmp[0];
     } finally {
@@ -350,9 +378,9 @@ public class NDSparse {
   }
 
   /**
-   * CSR sparse matrix-matrix multiplication (SpGEMM): C = A·B.<br>
-   * Both A and B are in CSR format; output C is also in CSR format.<br>
-   * The output nnz is data-dependent and determined by the native shape function.<br>
+   * CSR sparse matrix-matrix multiplication (SpGEMM): C = A·B.
+   * Both A and B are in CSR format; output C is also in CSR format.
+   * The output nnz is data-dependent and determined by the native shape function.
    *
    * @param aValues 1D [nnzA] non-zero values of A (FLOATING_POINT type)
    * @param aColIdx 1D [nnzA] column indices of A (INT32) (INT type)
@@ -363,6 +391,9 @@ public class NDSparse {
    * @param m Number of rows of A (= rows of C)
    * @param k Number of columns of A (= rows of B)
    * @param n Number of columns of B (= columns of C)
+   * @return cValues 1D [cnnz] non-zero values of C; cnnz is data-dependent (FLOATING_POINT type)
+   * @return cColIdx 1D [cnnz] column indices of C (INT32) (INT type)
+   * @return cRowPtr 1D [m+1] row pointers of C (INT32) (INT type)
    */
   public INDArray[] csrSpgemm(INDArray aValues, INDArray aColIdx, INDArray aRowPtr,
       INDArray bValues, INDArray bColIdx, INDArray bRowPtr, int m, int k, int n) {
@@ -372,11 +403,11 @@ public class NDSparse {
     NDValidation.validateFloatingPoint("csrSpgemm", "bValues", bValues);
     NDValidation.validateInteger("csrSpgemm", "bColIdx", bColIdx);
     NDValidation.validateInteger("csrSpgemm", "bRowPtr", bRowPtr);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.sparse.CsrSpgemm(aValues, aColIdx, aRowPtr, bValues, bColIdx, bRowPtr, m, k, n));
+    return Nd4j.exec(new CsrSpgemm(aValues, aColIdx, aRowPtr, bValues, bColIdx, bRowPtr, m, k, n));
   }
 
   /**
-   * CSR sparse matrix-matrix product: C = A·B (or Aᵀ·B when transposeA=true).<br>
+   * CSR sparse matrix-matrix product: C = A·B (or Aᵀ·B when transposeA=true).
    *
    * @param values 1D [nnz] CSR non-zero values (FLOATING_POINT type)
    * @param colIdx 1D [nnz] CSR column indices (INT32) (INT type)
@@ -393,7 +424,7 @@ public class NDSparse {
     NDValidation.validateInteger("csrSpmm", "colIdx", colIdx);
     NDValidation.validateInteger("csrSpmm", "rowPtr", rowPtr);
     NDValidation.validateFloatingPoint("csrSpmm", "B", B);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.sparse.CsrSpmm(values, colIdx, rowPtr, B, rows, cols, transposeA));
+    INDArray[] __tmp = Nd4j.exec(new CsrSpmm(values, colIdx, rowPtr, B, rows, cols, transposeA));
     try {
       return __tmp[0];
     } finally {
@@ -408,7 +439,7 @@ public class NDSparse {
   }
 
   /**
-   * CSR sparse matrix-vector product: y = A·x (or Aᵀ·x when transposeA=true).<br>
+   * CSR sparse matrix-vector product: y = A·x (or Aᵀ·x when transposeA=true).
    *
    * @param values 1D [nnz] CSR non-zero values (FLOATING_POINT type)
    * @param colIdx 1D [nnz] CSR column indices (INT32) (INT type)
@@ -425,7 +456,7 @@ public class NDSparse {
     NDValidation.validateInteger("csrSpmv", "colIdx", colIdx);
     NDValidation.validateInteger("csrSpmv", "rowPtr", rowPtr);
     NDValidation.validateFloatingPoint("csrSpmv", "x", x);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.sparse.CsrSpmv(values, colIdx, rowPtr, x, rows, cols, transposeA));
+    INDArray[] __tmp = Nd4j.exec(new CsrSpmv(values, colIdx, rowPtr, x, rows, cols, transposeA));
     try {
       return __tmp[0];
     } finally {
@@ -440,8 +471,8 @@ public class NDSparse {
   }
 
   /**
-   * Convert a CSR sparse matrix to BSR (Block Sparse Row) format.<br>
-   * Both rows and cols must be exact multiples of blockDim.<br>
+   * Convert a CSR sparse matrix to BSR (Block Sparse Row) format.
+   * Both rows and cols must be exact multiples of blockDim.
    *
    * @param csrValues 1D [nnz] CSR non-zero values (FLOATING_POINT type)
    * @param csrColIdx 1D [nnz] CSR column indices (INT32) (INT type)
@@ -449,36 +480,42 @@ public class NDSparse {
    * @param rows Number of rows (must be a multiple of blockDim)
    * @param cols Number of columns (must be a multiple of blockDim)
    * @param blockDim Square block size; rows and cols must be exact multiples
+   * @return bsrValues 1D [nnzb * blockDim * blockDim] BSR non-zero block values (FLOATING_POINT type)
+   * @return bsrColIdx 1D [nnzb] block-column indices (INT32) (INT type)
+   * @return bsrRowPtr 1D [mb+1] block-row pointers (INT32), mb = rows / blockDim (INT type)
    */
   public INDArray[] csrToBsr(INDArray csrValues, INDArray csrColIdx, INDArray csrRowPtr, int rows,
       int cols, int blockDim) {
     NDValidation.validateFloatingPoint("csrToBsr", "csrValues", csrValues);
     NDValidation.validateInteger("csrToBsr", "csrColIdx", csrColIdx);
     NDValidation.validateInteger("csrToBsr", "csrRowPtr", csrRowPtr);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.sparse.CsrToBsr(csrValues, csrColIdx, csrRowPtr, rows, cols, blockDim));
+    return Nd4j.exec(new CsrToBsr(csrValues, csrColIdx, csrRowPtr, rows, cols, blockDim));
   }
 
   /**
-   * Convert a CSR sparse matrix to CSC (Compressed Sparse Column) format.<br>
-   * The CSC of A is algebraically identical to the CSR of Aᵀ, so the output also provides a free sparse transpose.<br>
+   * Convert a CSR sparse matrix to CSC (Compressed Sparse Column) format.
+   * The CSC of A is algebraically identical to the CSR of Aᵀ, so the output also provides a free sparse transpose.
    *
    * @param values 1D [nnz] CSR non-zero values (FLOATING_POINT type)
    * @param colIdx 1D [nnz] CSR column indices (INT32) (INT type)
    * @param rowPtr 1D [rows+1] CSR row pointers (INT32) (INT type)
    * @param rows Number of rows in the logical matrix
    * @param cols Number of columns in the logical matrix
+   * @return cscValues 1D [nnz] non-zero values in column-major order (FLOATING_POINT type)
+   * @return cscRowIdx 1D [nnz] row indices for each non-zero (INT32) (INT type)
+   * @return cscColPtr 1D [cols+1] column pointers (INT32) (INT type)
    */
   public INDArray[] csrToCsc(INDArray values, INDArray colIdx, INDArray rowPtr, int rows,
       int cols) {
     NDValidation.validateFloatingPoint("csrToCsc", "values", values);
     NDValidation.validateInteger("csrToCsc", "colIdx", colIdx);
     NDValidation.validateInteger("csrToCsc", "rowPtr", rowPtr);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.sparse.CsrToCsc(values, colIdx, rowPtr, rows, cols));
+    return Nd4j.exec(new CsrToCsc(values, colIdx, rowPtr, rows, cols));
   }
 
   /**
-   * Convert a CSR (Compressed Sparse Row) sparse matrix to a dense matrix.<br>
-   * Inputs are the three CSR component arrays (values, colIdx, rowPtr) plus integer shape arguments rows and cols.<br>
+   * Convert a CSR (Compressed Sparse Row) sparse matrix to a dense matrix.
+   * Inputs are the three CSR component arrays (values, colIdx, rowPtr) plus integer shape arguments rows and cols.
    *
    * @param values 1D [nnz] non-zero values of the CSR matrix (FLOATING_POINT type)
    * @param colIdx 1D [nnz] column indices (INT32/INT64) (INT type)
@@ -492,7 +529,7 @@ public class NDSparse {
     NDValidation.validateFloatingPoint("csrToDense", "values", values);
     NDValidation.validateInteger("csrToDense", "colIdx", colIdx);
     NDValidation.validateInteger("csrToDense", "rowPtr", rowPtr);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.sparse.CsrToDense(values, colIdx, rowPtr, rows, cols));
+    INDArray[] __tmp = Nd4j.exec(new CsrToDense(values, colIdx, rowPtr, rows, cols));
     try {
       return __tmp[0];
     } finally {
@@ -507,44 +544,52 @@ public class NDSparse {
   }
 
   /**
-   * Convert a dense matrix to COO (Coordinate) sparse representation.<br>
-   * Returns indices [nnz, 2] (INT64) and values [nnz] in corresponding order.<br>
+   * Convert a dense matrix to COO (Coordinate) sparse representation.
+   * Returns indices [nnz, 2] (INT64) and values [nnz] in corresponding order.
    *
    * @param dense 2D dense input matrix [rows, cols] (FLOATING_POINT type)
    * @param threshold Keep entries where |x| > threshold (0.0 keeps all non-zeros)
+   * @return indices 2D [nnz, 2] INT64 row/col index pairs for each non-zero (INT type)
+   * @return values 1D [nnz] non-zero values (FLOATING_POINT type)
    */
   public INDArray[] denseToCoo(INDArray dense, double threshold) {
     NDValidation.validateFloatingPoint("denseToCoo", "dense", dense);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.sparse.DenseToCoo(dense, threshold));
+    return Nd4j.exec(new DenseToCoo(dense, threshold));
   }
 
   /**
-   * Convert a dense matrix to CSC (Compressed Sparse Column) sparse representation.<br>
-   * Only entries with |x| > threshold are kept.<br>
+   * Convert a dense matrix to CSC (Compressed Sparse Column) sparse representation.
+   * Only entries with |x| > threshold are kept.
    *
    * @param dense 2D dense input matrix [rows, cols] (FLOATING_POINT type)
    * @param threshold Keep entries where |x| > threshold (0.0 keeps all non-zeros)
+   * @return cscValues 1D [nnz] non-zero values in column-major order (FLOATING_POINT type)
+   * @return cscRowIdx 1D [nnz] row index for each non-zero (INT32) (INT type)
+   * @return cscColPtr 1D [cols+1] column pointers (INT32) (INT type)
    */
   public INDArray[] denseToCsc(INDArray dense, double threshold) {
     NDValidation.validateFloatingPoint("denseToCsc", "dense", dense);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.sparse.DenseToCsc(dense, threshold));
+    return Nd4j.exec(new DenseToCsc(dense, threshold));
   }
 
   /**
-   * Convert a dense matrix to CSR (Compressed Sparse Row) sparse representation.<br>
-   * Only entries with |x| > threshold are kept; pass threshold=0.0 to retain all structurally non-zero entries.<br>
+   * Convert a dense matrix to CSR (Compressed Sparse Row) sparse representation.
+   * Only entries with |x| > threshold are kept; pass threshold=0.0 to retain all structurally non-zero entries.
    *
    * @param dense 2D dense input matrix [rows, cols] (FLOATING_POINT type)
    * @param threshold Keep entries where |x| > threshold (0.0 keeps all non-zeros)
+   * @return values 1D [nnz] non-zero values (FLOATING_POINT type)
+   * @return colIdx 1D [nnz] column indices (INT32) (INT type)
+   * @return rowPtr 1D [rows+1] row pointers (INT32) (INT type)
    */
   public INDArray[] denseToCsr(INDArray dense, double threshold) {
     NDValidation.validateFloatingPoint("denseToCsr", "dense", dense);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.sparse.DenseToCsr(dense, threshold));
+    return Nd4j.exec(new DenseToCsr(dense, threshold));
   }
 
   /**
-   * Sampled Dense-Dense Matrix Multiplication (SDDMM).<br>
-   * For each non-zero position (i,j) in the sparsity pattern computes sum_l D1[i,l]*D2[j,l].<br>
+   * Sampled Dense-Dense Matrix Multiplication (SDDMM).
+   * For each non-zero position (i,j) in the sparsity pattern computes sum_l D1[i,l]*D2[j,l].
    *
    * @param rowPtr 1D [rows+1] INT32 row pointers of the sparsity pattern (INT type)
    * @param colIdx 1D [nnz] INT32 column indices of the sparsity pattern (INT type)
@@ -560,7 +605,7 @@ public class NDSparse {
     NDValidation.validateInteger("sddmm", "colIdx", colIdx);
     NDValidation.validateFloatingPoint("sddmm", "D1", D1);
     NDValidation.validateFloatingPoint("sddmm", "D2", D2);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.sparse.Sddmm(rowPtr, colIdx, D1, D2, rows, cols));
+    INDArray[] __tmp = Nd4j.exec(new Sddmm(rowPtr, colIdx, D1, D2, rows, cols));
     try {
       return __tmp[0];
     } finally {
@@ -575,14 +620,17 @@ public class NDSparse {
   }
 
   /**
-   * Build an n×n diagonal CSR sparse matrix from a 1D diagonal vector.<br>
-   * The result has exactly n non-zeros, one per diagonal entry.<br>
+   * Build an n×n diagonal CSR sparse matrix from a 1D diagonal vector.
+   * The result has exactly n non-zeros, one per diagonal entry.
    *
    * @param diag 1D [n] diagonal values (FLOATING_POINT type)
    * @param n Size of the resulting n×n square matrix
+   * @return values 1D [n] non-zero values (identical to diag) (FLOATING_POINT type)
+   * @return colIdx 1D [n] column indices [0,1,...,n-1] (INT32) (INT type)
+   * @return rowPtr 1D [n+1] row pointers [0,1,...,n] (INT32) (INT type)
    */
   public INDArray[] spdiags(INDArray diag, int n) {
     NDValidation.validateFloatingPoint("spdiags", "diag", diag);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.sparse.Spdiags(diag, n));
+    return Nd4j.exec(new Spdiags(diag, n));
   }
 }

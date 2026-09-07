@@ -78,7 +78,7 @@ import org.nd4j.linalg.jcublas.JCublasNDArray;
 
 /**
  * JCuda executioner.
- * <p/>
+ * <p>
  * Runs ops directly on the gpu
  *
  * If requested Op doesn't exist within GPU context, DefaultOpExecutioner will be used, with arrays/buffers updated after that.

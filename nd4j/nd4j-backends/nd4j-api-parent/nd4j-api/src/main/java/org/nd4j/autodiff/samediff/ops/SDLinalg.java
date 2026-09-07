@@ -36,7 +36,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Computes the Cholesky decomposition of one or more square matrices.<br>
+   * Computes the Cholesky decomposition of one or more square matrices.
    *
    * @param input Input tensor with inner-most 2 dimensions forming square matrices (NUMERIC type)
    * @return output Transformed tensor (NUMERIC type)
@@ -47,7 +47,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Computes the Cholesky decomposition of one or more square matrices.<br>
+   * Computes the Cholesky decomposition of one or more square matrices.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input tensor with inner-most 2 dimensions forming square matrices (NUMERIC type)
@@ -60,7 +60,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Solver for linear squares problems.<br>
+   * Solver for linear squares problems.
    *
    * @param matrix input tensor (NUMERIC type)
    * @param rhs input tensor (NUMERIC type)
@@ -75,7 +75,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Solver for linear squares problems.<br>
+   * Solver for linear squares problems.
    *
    * @param name name May be null. Name for the output variable
    * @param matrix input tensor (NUMERIC type)
@@ -93,7 +93,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Solver for linear squares problems.<br>
+   * Solver for linear squares problems.
    *
    * @param matrix input tensor (NUMERIC type)
    * @param rhs input tensor (NUMERIC type)
@@ -107,7 +107,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Solver for linear squares problems.<br>
+   * Solver for linear squares problems.
    *
    * @param name name May be null. Name for the output variable
    * @param matrix input tensor (NUMERIC type)
@@ -123,7 +123,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Computes LU decomposition.<br>
+   * Computes LU decomposition.
    *
    * @param input input tensor (NUMERIC type)
    * @return output  (FLOATING_POINT type)
@@ -134,7 +134,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Computes LU decomposition.<br>
+   * Computes LU decomposition.
    *
    * @param name name May be null. Name for the output variable
    * @param input input tensor (NUMERIC type)
@@ -147,14 +147,14 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Performs matrix multiplication on input tensors.<br>
+   * Performs matrix multiplication on input tensors.
    *
    * @param a input tensor (NUMERIC type)
    * @param b input tensor (NUMERIC type)
-   * @param alpha Defaults to 1.0: the scalar multiplier for the product of a* b 
-   * @param beta Defaults to 0.0: the scalar multiplier for c 
-   * @param transA Whether to transpose a when running multiply 
-   * @param transB Whether to transpose b when running multiply 
+   * @param alpha Defaults to 1.0: the scalar multiplier for the product of a* b
+   * @param beta Defaults to 0.0: the scalar multiplier for c
+   * @param transA Whether to transpose a when running multiply
+   * @param transB Whether to transpose b when running multiply
    * @return output  (FLOATING_POINT type)
    */
   public SDVariable matmul(SDVariable a, SDVariable b, double alpha, double beta, boolean transA,
@@ -165,15 +165,15 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Performs matrix multiplication on input tensors.<br>
+   * Performs matrix multiplication on input tensors.
    *
    * @param name name May be null. Name for the output variable
    * @param a input tensor (NUMERIC type)
    * @param b input tensor (NUMERIC type)
-   * @param alpha Defaults to 1.0: the scalar multiplier for the product of a* b 
-   * @param beta Defaults to 0.0: the scalar multiplier for c 
-   * @param transA Whether to transpose a when running multiply 
-   * @param transB Whether to transpose b when running multiply 
+   * @param alpha Defaults to 1.0: the scalar multiplier for the product of a* b
+   * @param beta Defaults to 0.0: the scalar multiplier for c
+   * @param transA Whether to transpose a when running multiply
+   * @param transB Whether to transpose b when running multiply
    * @return output  (FLOATING_POINT type)
    */
   public SDVariable matmul(String name, SDVariable a, SDVariable b, double alpha, double beta,
@@ -185,7 +185,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Performs matrix multiplication on input tensors.<br>
+   * Performs matrix multiplication on input tensors.
    *
    * @param a input tensor (NUMERIC type)
    * @param b input tensor (NUMERIC type)
@@ -198,7 +198,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Performs matrix multiplication on input tensors.<br>
+   * Performs matrix multiplication on input tensors.
    *
    * @param name name May be null. Name for the output variable
    * @param a input tensor (NUMERIC type)
@@ -213,7 +213,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Copy a tensor setting outside a central band in each innermost matrix.<br>
+   * Copy a tensor setting outside a central band in each innermost matrix.
    *
    * @param input input tensor (NUMERIC type)
    * @param minLower lower diagonal count
@@ -227,7 +227,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Copy a tensor setting outside a central band in each innermost matrix.<br>
+   * Copy a tensor setting outside a central band in each innermost matrix.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param input input tensor (NUMERIC type)
@@ -243,7 +243,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Computes the QR decompositions of input matrix.<br>
+   * Computes the QR decompositions of input matrix.
    *
    * @param input input tensor (NUMERIC type)
    * @param full full matrices mode
@@ -256,7 +256,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Computes the QR decompositions of input matrix.<br>
+   * Computes the QR decompositions of input matrix.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param input input tensor (NUMERIC type)
@@ -271,7 +271,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Computes the QR decompositions of input matrix.<br>
+   * Computes the QR decompositions of input matrix.
    *
    * @param input input tensor (NUMERIC type)
    * @return outputQ  (FLOATING_POINT type)
@@ -283,7 +283,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Computes the QR decompositions of input matrix.<br>
+   * Computes the QR decompositions of input matrix.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param input input tensor (NUMERIC type)
@@ -297,7 +297,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Solver for systems of linear equations.<br>
+   * Solver for systems of linear equations.
    *
    * @param matrix input tensor (NUMERIC type)
    * @param rhs input tensor (NUMERIC type)
@@ -311,7 +311,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Solver for systems of linear equations.<br>
+   * Solver for systems of linear equations.
    *
    * @param name name May be null. Name for the output variable
    * @param matrix input tensor (NUMERIC type)
@@ -327,7 +327,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Solver for systems of linear equations.<br>
+   * Solver for systems of linear equations.
    *
    * @param matrix input tensor (NUMERIC type)
    * @param rhs input tensor (NUMERIC type)
@@ -340,7 +340,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Solver for systems of linear equations.<br>
+   * Solver for systems of linear equations.
    *
    * @param name name May be null. Name for the output variable
    * @param matrix input tensor (NUMERIC type)
@@ -355,7 +355,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Solver for systems of linear questions.<br>
+   * Solver for systems of linear questions.
    *
    * @param matrix input tensor (NUMERIC type)
    * @param rhs input tensor (NUMERIC type)
@@ -371,7 +371,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Solver for systems of linear questions.<br>
+   * Solver for systems of linear questions.
    *
    * @param name name May be null. Name for the output variable
    * @param matrix input tensor (NUMERIC type)
@@ -389,7 +389,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Computes pairwise cross product.<br>
+   * Computes pairwise cross product.
    *
    * @param a  (NUMERIC type)
    * @param b  (NUMERIC type)
@@ -402,7 +402,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Computes pairwise cross product.<br>
+   * Computes pairwise cross product.
    *
    * @param name name May be null. Name for the output variable
    * @param a  (NUMERIC type)
@@ -417,7 +417,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Calculates diagonal tensor.<br>
+   * Calculates diagonal tensor.
    *
    * @param input  (NUMERIC type)
    * @return output  (FLOATING_POINT type)
@@ -428,7 +428,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Calculates diagonal tensor.<br>
+   * Calculates diagonal tensor.
    *
    * @param name name May be null. Name for the output variable
    * @param input  (NUMERIC type)
@@ -441,7 +441,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Calculates diagonal tensor.<br>
+   * Calculates diagonal tensor.
    *
    * @param input  (NUMERIC type)
    * @return output  (FLOATING_POINT type)
@@ -452,7 +452,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Calculates diagonal tensor.<br>
+   * Calculates diagonal tensor.
    *
    * @param name name May be null. Name for the output variable
    * @param input  (NUMERIC type)
@@ -465,7 +465,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Calculates eigen values<br>
+   * Calculates eigen values
    *
    * @param input  (NUMERIC type)
    * @return eigenValues  (FLOATING_POINT type)
@@ -477,7 +477,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Calculates eigen values<br>
+   * Calculates eigen values
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param input  (NUMERIC type)
@@ -491,19 +491,19 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Einsum (Einstein summation) operation.<br>
-   * <br>
-   * Provides a powerful way to express tensor operations using Einstein summation notation.<br>
-   * The equation string specifies the subscripts for each input tensor and the output tensor.<br>
-   * <br>
-   * Examples:<br>
-   * - Matrix multiplication: "ij,jk->ik"<br>
-   * - Transpose: "ij->ji"<br>
-   * - Diagonal: "ii->i"<br>
-   * - Trace: "ii->"<br>
-   * - Batch matmul: "bij,bjk->bik"<br>
-   * - Dot product: "i,i->"<br>
-   * - Outer product: "i,j->ij"<br>
+   * Einsum (Einstein summation) operation.
+   *
+   * Provides a powerful way to express tensor operations using Einstein summation notation.
+   * The equation string specifies the subscripts for each input tensor and the output tensor.
+   *
+   * Examples:
+   * - Matrix multiplication: "ij,jk->ik"
+   * - Transpose: "ij->ji"
+   * - Diagonal: "ii->i"
+   * - Trace: "ii->"
+   * - Batch matmul: "bij,bjk->bik"
+   * - Dot product: "i,i->"
+   * - Outer product: "i,j->ij"
    *
    * @param inputs Input tensors (NUMERIC type)
    * @param equation Einstein summation equation string
@@ -516,19 +516,19 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Einsum (Einstein summation) operation.<br>
-   * <br>
-   * Provides a powerful way to express tensor operations using Einstein summation notation.<br>
-   * The equation string specifies the subscripts for each input tensor and the output tensor.<br>
-   * <br>
-   * Examples:<br>
-   * - Matrix multiplication: "ij,jk->ik"<br>
-   * - Transpose: "ij->ji"<br>
-   * - Diagonal: "ii->i"<br>
-   * - Trace: "ii->"<br>
-   * - Batch matmul: "bij,bjk->bik"<br>
-   * - Dot product: "i,i->"<br>
-   * - Outer product: "i,j->ij"<br>
+   * Einsum (Einstein summation) operation.
+   *
+   * Provides a powerful way to express tensor operations using Einstein summation notation.
+   * The equation string specifies the subscripts for each input tensor and the output tensor.
+   *
+   * Examples:
+   * - Matrix multiplication: "ij,jk->ik"
+   * - Transpose: "ij->ji"
+   * - Diagonal: "ii->i"
+   * - Trace: "ii->"
+   * - Batch matmul: "bij,bjk->bik"
+   * - Dot product: "i,i->"
+   * - Outer product: "i,j->ij"
    *
    * @param name name May be null. Name for the output variable
    * @param inputs Input tensors (NUMERIC type)
@@ -543,7 +543,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Calculates log of determinant.<br>
+   * Calculates log of determinant.
    *
    * @param input  (NUMERIC type)
    * @return output  (FLOATING_POINT type)
@@ -554,7 +554,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Calculates log of determinant.<br>
+   * Calculates log of determinant.
    *
    * @param name name May be null. Name for the output variable
    * @param input  (NUMERIC type)
@@ -567,7 +567,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Calculates matrix determinant.<br>
+   * Calculates matrix determinant.
    *
    * @param input  (NUMERIC type)
    * @return output  (FLOATING_POINT type)
@@ -578,7 +578,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Calculates matrix determinant.<br>
+   * Calculates matrix determinant.
    *
    * @param name name May be null. Name for the output variable
    * @param input  (NUMERIC type)
@@ -591,7 +591,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Inverts a matrix<br>
+   * Inverts a matrix
    *
    * @param input  (NUMERIC type)
    * @return output  (FLOATING_POINT type)
@@ -602,7 +602,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Inverts a matrix<br>
+   * Inverts a matrix
    *
    * @param name name May be null. Name for the output variable
    * @param input  (NUMERIC type)
@@ -615,8 +615,8 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Matrix multiplication: out = mmul(x,y)<br>
-   * Supports specifying transpose argument to perform operation such as mmul(a^T, b), etc.<br>
+   * Matrix multiplication: out = mmul(x,y)
+   * Supports specifying transpose argument to perform operation such as mmul(a^T, b), etc.
    *
    * @param x First input variable (NUMERIC type)
    * @param y Second input variable (NUMERIC type)
@@ -633,8 +633,8 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Matrix multiplication: out = mmul(x,y)<br>
-   * Supports specifying transpose argument to perform operation such as mmul(a^T, b), etc.<br>
+   * Matrix multiplication: out = mmul(x,y)
+   * Supports specifying transpose argument to perform operation such as mmul(a^T, b), etc.
    *
    * @param name name May be null. Name for the output variable
    * @param x First input variable (NUMERIC type)
@@ -653,8 +653,8 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Matrix multiplication: out = mmul(x,y)<br>
-   * Supports specifying transpose argument to perform operation such as mmul(a^T, b), etc.<br>
+   * Matrix multiplication: out = mmul(x,y)
+   * Supports specifying transpose argument to perform operation such as mmul(a^T, b), etc.
    *
    * @param x First input variable (NUMERIC type)
    * @param y Second input variable (NUMERIC type)
@@ -667,8 +667,8 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Matrix multiplication: out = mmul(x,y)<br>
-   * Supports specifying transpose argument to perform operation such as mmul(a^T, b), etc.<br>
+   * Matrix multiplication: out = mmul(x,y)
+   * Supports specifying transpose argument to perform operation such as mmul(a^T, b), etc.
    *
    * @param name name May be null. Name for the output variable
    * @param x First input variable (NUMERIC type)
@@ -683,12 +683,12 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Calculates singular value decomposition.<br>
+   * Calculates singular value decomposition.
    *
    * @param input  (NUMERIC type)
-   * @param fullUV 
-   * @param computeUV 
-   * @param switchNum 
+   * @param fullUV
+   * @param computeUV
+   * @param switchNum
    * @return output  (FLOATING_POINT type)
    */
   public SDVariable svd(SDVariable input, boolean fullUV, boolean computeUV, int switchNum) {
@@ -697,13 +697,13 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Calculates singular value decomposition.<br>
+   * Calculates singular value decomposition.
    *
    * @param name name May be null. Name for the output variable
    * @param input  (NUMERIC type)
-   * @param fullUV 
-   * @param computeUV 
-   * @param switchNum 
+   * @param fullUV
+   * @param computeUV
+   * @param switchNum
    * @return output  (FLOATING_POINT type)
    */
   public SDVariable svd(String name, SDVariable input, boolean fullUV, boolean computeUV,
@@ -714,11 +714,11 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Calculates singular value decomposition.<br>
+   * Calculates singular value decomposition.
    *
    * @param input  (NUMERIC type)
-   * @param fullUV 
-   * @param computeUV 
+   * @param fullUV
+   * @param computeUV
    * @return output  (FLOATING_POINT type)
    */
   public SDVariable svd(SDVariable input, boolean fullUV, boolean computeUV) {
@@ -727,12 +727,12 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Calculates singular value decomposition.<br>
+   * Calculates singular value decomposition.
    *
    * @param name name May be null. Name for the output variable
    * @param input  (NUMERIC type)
-   * @param fullUV 
-   * @param computeUV 
+   * @param fullUV
+   * @param computeUV
    * @return output  (FLOATING_POINT type)
    */
   public SDVariable svd(String name, SDVariable input, boolean fullUV, boolean computeUV) {
@@ -742,12 +742,12 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * An array with ones at and below the given diagonal and zeros elsewhere.<br>
+   * An array with ones at and below the given diagonal and zeros elsewhere.
    *
    * @param dataType Data type
-   * @param row 
-   * @param column 
-   * @param diagonal 
+   * @param row
+   * @param column
+   * @param diagonal
    * @return output  (FLOATING_POINT type)
    */
   public SDVariable tri(DataType dataType, int row, int column, int diagonal) {
@@ -755,13 +755,13 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * An array with ones at and below the given diagonal and zeros elsewhere.<br>
+   * An array with ones at and below the given diagonal and zeros elsewhere.
    *
    * @param name name May be null. Name for the output variable
    * @param dataType Data type
-   * @param row 
-   * @param column 
-   * @param diagonal 
+   * @param row
+   * @param column
+   * @param diagonal
    * @return output  (FLOATING_POINT type)
    */
   public SDVariable tri(String name, DataType dataType, int row, int column, int diagonal) {
@@ -770,10 +770,10 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * An array with ones at and below the given diagonal and zeros elsewhere.<br>
+   * An array with ones at and below the given diagonal and zeros elsewhere.
    *
-   * @param row 
-   * @param column 
+   * @param row
+   * @param column
    * @return output  (FLOATING_POINT type)
    */
   public SDVariable tri(int row, int column) {
@@ -781,11 +781,11 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * An array with ones at and below the given diagonal and zeros elsewhere.<br>
+   * An array with ones at and below the given diagonal and zeros elsewhere.
    *
    * @param name name May be null. Name for the output variable
-   * @param row 
-   * @param column 
+   * @param row
+   * @param column
    * @return output  (FLOATING_POINT type)
    */
   public SDVariable tri(String name, int row, int column) {
@@ -794,10 +794,10 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Upper triangle of an array. Return a copy of a input tensor with the elements below the k-th diagonal zeroed.<br>
+   * Upper triangle of an array. Return a copy of a input tensor with the elements below the k-th diagonal zeroed.
    *
    * @param input  (NUMERIC type)
-   * @param diag 
+   * @param diag
    * @return output  (FLOATING_POINT type)
    */
   public SDVariable triu(SDVariable input, int diag) {
@@ -806,11 +806,11 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Upper triangle of an array. Return a copy of a input tensor with the elements below the k-th diagonal zeroed.<br>
+   * Upper triangle of an array. Return a copy of a input tensor with the elements below the k-th diagonal zeroed.
    *
    * @param name name May be null. Name for the output variable
    * @param input  (NUMERIC type)
-   * @param diag 
+   * @param diag
    * @return output  (FLOATING_POINT type)
    */
   public SDVariable triu(String name, SDVariable input, int diag) {
@@ -820,7 +820,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Upper triangle of an array. Return a copy of a input tensor with the elements below the k-th diagonal zeroed.<br>
+   * Upper triangle of an array. Return a copy of a input tensor with the elements below the k-th diagonal zeroed.
    *
    * @param input  (NUMERIC type)
    * @return output  (FLOATING_POINT type)
@@ -831,7 +831,7 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Upper triangle of an array. Return a copy of a input tensor with the elements below the k-th diagonal zeroed.<br>
+   * Upper triangle of an array. Return a copy of a input tensor with the elements below the k-th diagonal zeroed.
    *
    * @param name name May be null. Name for the output variable
    * @param input  (NUMERIC type)

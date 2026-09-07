@@ -90,6 +90,15 @@ public abstract class PeftConfig implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
+     * Common builder type for PEFT configurations. Lombok supplies the fluent members.
+     *
+     * @param <C> configuration type
+     * @param <B> concrete builder type
+     */
+    public abstract static class PeftConfigBuilder<C extends PeftConfig, B extends PeftConfigBuilder<C, B>> {
+    }
+
+    /**
      * The type of PEFT method.
      */
     protected PeftType peftType;

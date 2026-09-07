@@ -25,6 +25,11 @@ package org.nd4j.linalg.factory.ops;
 import static org.nd4j.linalg.factory.NDValidation.isSameType;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.signal.BlackmanWindow;
+import org.nd4j.linalg.api.ops.impl.signal.DFT;
+import org.nd4j.linalg.api.ops.impl.signal.HammingWindow;
+import org.nd4j.linalg.api.ops.impl.signal.HannWindow;
+import org.nd4j.linalg.api.ops.impl.signal.STFT;
 import org.nd4j.linalg.factory.NDValidation;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -33,9 +38,9 @@ public class NDSignal {
   }
 
   /**
-   * Generates a Blackman window function.<br>
-   * The Blackman window is defined as: w(n) = 0.42 - 0.5*cos(2*pi*n/(N-1)) + 0.08*cos(4*pi*n/(N-1))<br>
-   * Used for spectral analysis and STFT preprocessing.<br>
+   * Generates a Blackman window function.
+   * The Blackman window is defined as: w(n) = 0.42 - 0.5*cos(2*pi*n/(N-1)) + 0.08*cos(4*pi*n/(N-1))
+   * Used for spectral analysis and STFT preprocessing.
    *
    * @param size Window size (INT type)
    * @param periodic If true, generate a periodic window for spectral analysis
@@ -43,7 +48,7 @@ public class NDSignal {
    */
   public INDArray blackmanWindow(INDArray size, boolean periodic) {
     NDValidation.validateInteger("blackmanWindow", "size", size);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.signal.BlackmanWindow(size, periodic));
+    INDArray[] __tmp = Nd4j.exec(new BlackmanWindow(size, periodic));
     try {
       return __tmp[0];
     } finally {
@@ -58,16 +63,16 @@ public class NDSignal {
   }
 
   /**
-   * Generates a Blackman window function.<br>
-   * The Blackman window is defined as: w(n) = 0.42 - 0.5*cos(2*pi*n/(N-1)) + 0.08*cos(4*pi*n/(N-1))<br>
-   * Used for spectral analysis and STFT preprocessing.<br>
+   * Generates a Blackman window function.
+   * The Blackman window is defined as: w(n) = 0.42 - 0.5*cos(2*pi*n/(N-1)) + 0.08*cos(4*pi*n/(N-1))
+   * Used for spectral analysis and STFT preprocessing.
    *
    * @param size Window size (INT type)
    * @return output Blackman window tensor of shape [size] (NUMERIC type)
    */
   public INDArray blackmanWindow(INDArray size) {
     NDValidation.validateInteger("blackmanWindow", "size", size);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.signal.BlackmanWindow(size, true));
+    INDArray[] __tmp = Nd4j.exec(new BlackmanWindow(size, true));
     try {
       return __tmp[0];
     } finally {
@@ -82,9 +87,9 @@ public class NDSignal {
   }
 
   /**
-   * Discrete Fourier Transform operation.<br>
-   * Computes the DFT of the input tensor along the specified axis.<br>
-   * For real input, can optionally return only positive frequencies (onesided=true).<br>
+   * Discrete Fourier Transform operation.
+   * Computes the DFT of the input tensor along the specified axis.
+   * For real input, can optionally return only positive frequencies (onesided=true).
    *
    * @param input Complex input tensor. Last dimension should be 2 for [real, imag] or treated as real-only (NUMERIC type)
    * @param axis Axis along which to compute the DFT
@@ -94,7 +99,7 @@ public class NDSignal {
    */
   public INDArray dft(INDArray input, int axis, boolean inverse, boolean onesided) {
     NDValidation.validateNumerical("dft", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.signal.DFT(input, axis, inverse, onesided));
+    INDArray[] __tmp = Nd4j.exec(new DFT(input, axis, inverse, onesided));
     try {
       return __tmp[0];
     } finally {
@@ -109,16 +114,16 @@ public class NDSignal {
   }
 
   /**
-   * Discrete Fourier Transform operation.<br>
-   * Computes the DFT of the input tensor along the specified axis.<br>
-   * For real input, can optionally return only positive frequencies (onesided=true).<br>
+   * Discrete Fourier Transform operation.
+   * Computes the DFT of the input tensor along the specified axis.
+   * For real input, can optionally return only positive frequencies (onesided=true).
    *
    * @param input Complex input tensor. Last dimension should be 2 for [real, imag] or treated as real-only (NUMERIC type)
    * @return output DFT output - complex tensor with last dimension 2 for [real, imag] (NUMERIC type)
    */
   public INDArray dft(INDArray input) {
     NDValidation.validateNumerical("dft", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.signal.DFT(input, -2, false, false));
+    INDArray[] __tmp = Nd4j.exec(new DFT(input, -2, false, false));
     try {
       return __tmp[0];
     } finally {
@@ -133,9 +138,9 @@ public class NDSignal {
   }
 
   /**
-   * Generates a Hamming window function.<br>
-   * The Hamming window is defined as: w(n) = 0.54 - 0.46 * cos(2*pi*n/(N-1))<br>
-   * Used for spectral analysis and STFT preprocessing.<br>
+   * Generates a Hamming window function.
+   * The Hamming window is defined as: w(n) = 0.54 - 0.46 * cos(2*pi*n/(N-1))
+   * Used for spectral analysis and STFT preprocessing.
    *
    * @param size Window size (INT type)
    * @param periodic If true, generate a periodic window for spectral analysis
@@ -143,7 +148,7 @@ public class NDSignal {
    */
   public INDArray hammingWindow(INDArray size, boolean periodic) {
     NDValidation.validateInteger("hammingWindow", "size", size);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.signal.HammingWindow(size, periodic));
+    INDArray[] __tmp = Nd4j.exec(new HammingWindow(size, periodic));
     try {
       return __tmp[0];
     } finally {
@@ -158,16 +163,16 @@ public class NDSignal {
   }
 
   /**
-   * Generates a Hamming window function.<br>
-   * The Hamming window is defined as: w(n) = 0.54 - 0.46 * cos(2*pi*n/(N-1))<br>
-   * Used for spectral analysis and STFT preprocessing.<br>
+   * Generates a Hamming window function.
+   * The Hamming window is defined as: w(n) = 0.54 - 0.46 * cos(2*pi*n/(N-1))
+   * Used for spectral analysis and STFT preprocessing.
    *
    * @param size Window size (INT type)
    * @return output Hamming window tensor of shape [size] (NUMERIC type)
    */
   public INDArray hammingWindow(INDArray size) {
     NDValidation.validateInteger("hammingWindow", "size", size);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.signal.HammingWindow(size, true));
+    INDArray[] __tmp = Nd4j.exec(new HammingWindow(size, true));
     try {
       return __tmp[0];
     } finally {
@@ -182,9 +187,9 @@ public class NDSignal {
   }
 
   /**
-   * Generates a Hann window function.<br>
-   * The Hann window is defined as: w(n) = 0.5 * (1 - cos(2*pi*n/(N-1)))<br>
-   * Used for spectral analysis and STFT preprocessing.<br>
+   * Generates a Hann window function.
+   * The Hann window is defined as: w(n) = 0.5 * (1 - cos(2*pi*n/(N-1)))
+   * Used for spectral analysis and STFT preprocessing.
    *
    * @param size Window size (INT type)
    * @param periodic If true, generate a periodic window for spectral analysis
@@ -192,7 +197,7 @@ public class NDSignal {
    */
   public INDArray hannWindow(INDArray size, boolean periodic) {
     NDValidation.validateInteger("hannWindow", "size", size);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.signal.HannWindow(size, periodic));
+    INDArray[] __tmp = Nd4j.exec(new HannWindow(size, periodic));
     try {
       return __tmp[0];
     } finally {
@@ -207,16 +212,16 @@ public class NDSignal {
   }
 
   /**
-   * Generates a Hann window function.<br>
-   * The Hann window is defined as: w(n) = 0.5 * (1 - cos(2*pi*n/(N-1)))<br>
-   * Used for spectral analysis and STFT preprocessing.<br>
+   * Generates a Hann window function.
+   * The Hann window is defined as: w(n) = 0.5 * (1 - cos(2*pi*n/(N-1)))
+   * Used for spectral analysis and STFT preprocessing.
    *
    * @param size Window size (INT type)
    * @return output Hann window tensor of shape [size] (NUMERIC type)
    */
   public INDArray hannWindow(INDArray size) {
     NDValidation.validateInteger("hannWindow", "size", size);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.signal.HannWindow(size, true));
+    INDArray[] __tmp = Nd4j.exec(new HannWindow(size, true));
     try {
       return __tmp[0];
     } finally {
@@ -231,9 +236,9 @@ public class NDSignal {
   }
 
   /**
-   * Short-Time Fourier Transform operation.<br>
-   * Computes STFT by applying DFT to windowed overlapping segments of the input signal.<br>
-   * Used for time-frequency analysis of signals.<br>
+   * Short-Time Fourier Transform operation.
+   * Computes STFT by applying DFT to windowed overlapping segments of the input signal.
+   * Used for time-frequency analysis of signals.
    *
    * @param signal Input signal tensor (NUMERIC type)
    * @param frameStep Number of samples to step between frames (hop length) (INT type)
@@ -248,7 +253,7 @@ public class NDSignal {
     NDValidation.validateInteger("stft", "frameStep", frameStep);
     NDValidation.validateNumerical("stft", "window", window);
     NDValidation.validateInteger("stft", "frameLength", frameLength);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.signal.STFT(signal, frameStep, window, frameLength, onesided));
+    INDArray[] __tmp = Nd4j.exec(new STFT(signal, frameStep, window, frameLength, onesided));
     try {
       return __tmp[0];
     } finally {
@@ -263,9 +268,9 @@ public class NDSignal {
   }
 
   /**
-   * Short-Time Fourier Transform operation.<br>
-   * Computes STFT by applying DFT to windowed overlapping segments of the input signal.<br>
-   * Used for time-frequency analysis of signals.<br>
+   * Short-Time Fourier Transform operation.
+   * Computes STFT by applying DFT to windowed overlapping segments of the input signal.
+   * Used for time-frequency analysis of signals.
    *
    * @param signal Input signal tensor (NUMERIC type)
    * @param frameStep Number of samples to step between frames (hop length) (INT type)
@@ -278,7 +283,7 @@ public class NDSignal {
     NDValidation.validateInteger("stft", "frameStep", frameStep);
     NDValidation.validateNumerical("stft", "window", window);
     NDValidation.validateInteger("stft", "frameLength", frameLength);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.signal.STFT(signal, frameStep, window, frameLength, true));
+    INDArray[] __tmp = Nd4j.exec(new STFT(signal, frameStep, window, frameLength, true));
     try {
       return __tmp[0];
     } finally {
@@ -293,8 +298,8 @@ public class NDSignal {
   }
 
   /**
-   * Short-Time Fourier Transform operation (simplified version without window/frameLength).<br>
-   * Computes STFT by applying DFT to overlapping segments of the input signal.<br>
+   * Short-Time Fourier Transform operation (simplified version without window/frameLength).
+   * Computes STFT by applying DFT to overlapping segments of the input signal.
    *
    * @param signal Input signal tensor (NUMERIC type)
    * @param frameStep Number of samples to step between frames (hop length) (INT type)
@@ -304,7 +309,7 @@ public class NDSignal {
   public INDArray stftSimple(INDArray signal, INDArray frameStep, boolean onesided) {
     NDValidation.validateNumerical("stftSimple", "signal", signal);
     NDValidation.validateInteger("stftSimple", "frameStep", frameStep);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.signal.STFT(signal, frameStep, onesided));
+    INDArray[] __tmp = Nd4j.exec(new STFT(signal, frameStep, onesided));
     try {
       return __tmp[0];
     } finally {
@@ -319,8 +324,8 @@ public class NDSignal {
   }
 
   /**
-   * Short-Time Fourier Transform operation (simplified version without window/frameLength).<br>
-   * Computes STFT by applying DFT to overlapping segments of the input signal.<br>
+   * Short-Time Fourier Transform operation (simplified version without window/frameLength).
+   * Computes STFT by applying DFT to overlapping segments of the input signal.
    *
    * @param signal Input signal tensor (NUMERIC type)
    * @param frameStep Number of samples to step between frames (hop length) (INT type)
@@ -329,7 +334,7 @@ public class NDSignal {
   public INDArray stftSimple(INDArray signal, INDArray frameStep) {
     NDValidation.validateNumerical("stftSimple", "signal", signal);
     NDValidation.validateInteger("stftSimple", "frameStep", frameStep);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.signal.STFT(signal, frameStep, true));
+    INDArray[] __tmp = Nd4j.exec(new STFT(signal, frameStep, true));
     try {
       return __tmp[0];
     } finally {

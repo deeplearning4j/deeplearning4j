@@ -365,7 +365,7 @@ public class UnifiedKvCacheManager implements KvCacheManager {
      * handles all KV updates. The caller must:</p>
      * <ol>
      *   <li>Add {@code kv_cache_position} (INT64, shape [1]) to the input map each step</li>
-     *   <li>Request {@link #getScatterOutputNames()} as graph outputs to ensure scatter ops execute</li>
+     *   <li>Request the names returned by {@code getScatterOutputNames()} as graph outputs to ensure scatter ops execute</li>
      *   <li>No longer call {@link #scatterNewEntries} or {@link #scatterMultipleEntries}</li>
      * </ol>
      *

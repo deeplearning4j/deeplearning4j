@@ -38,8 +38,6 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <commons.dbutils.version>1.7</commons.dbutils.version>
     <lombok.version>1.18.42</lombok.version>
-    <logback.version>1.2.3</logback.version>
-    <commons-collections4.version>4.1</commons-collections4.version>
     <module.name>samediff.modelimport.api</module.name>
   </properties>
 
@@ -90,13 +88,13 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>1.7.28</version>
+      <version>${slf4j.version}</version>
     </dependency>
     <!-- Redirect jackson to slf4j.  -->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>log4j-over-slf4j</artifactId>
-      <version>1.7.28</version>
+      <version>${slf4j.version}</version>
     </dependency>
 
     <dependency>

@@ -34,9 +34,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Compute A-weighting filter values for given frequencies.<br>
-   * A-weighting (IEC 61672) approximates the frequency response of human hearing,<br>
-   * de-emphasizing very low and very high frequencies. Returns weights in dB.<br>
+   * Compute A-weighting filter values for given frequencies.
+   * A-weighting (IEC 61672) approximates the frequency response of human hearing,
+   * de-emphasizing very low and very high frequencies. Returns weights in dB.
    *
    * @param frequencies Frequency values in Hz to compute weights for (NUMERIC type)
    * @return output A-weighting values in dB for each input frequency (NUMERIC type)
@@ -47,9 +47,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Compute A-weighting filter values for given frequencies.<br>
-   * A-weighting (IEC 61672) approximates the frequency response of human hearing,<br>
-   * de-emphasizing very low and very high frequencies. Returns weights in dB.<br>
+   * Compute A-weighting filter values for given frequencies.
+   * A-weighting (IEC 61672) approximates the frequency response of human hearing,
+   * de-emphasizing very low and very high frequencies. Returns weights in dB.
    *
    * @param name name May be null. Name for the output variable
    * @param frequencies Frequency values in Hz to compute weights for (NUMERIC type)
@@ -62,9 +62,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Normalize audio to a target peak or RMS level.<br>
-   * Scales the audio signal so that its peak amplitude or RMS value matches the target.<br>
-   * Essential preprocessing step for consistent audio feature extraction.<br>
+   * Normalize audio to a target peak or RMS level.
+   * Scales the audio signal so that its peak amplitude or RMS value matches the target.
+   * Essential preprocessing step for consistent audio feature extraction.
    *
    * @param input Audio waveform of shape [batch, samples] or [samples] (NUMERIC type)
    * @param targetLevel Target peak or RMS level
@@ -77,9 +77,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Normalize audio to a target peak or RMS level.<br>
-   * Scales the audio signal so that its peak amplitude or RMS value matches the target.<br>
-   * Essential preprocessing step for consistent audio feature extraction.<br>
+   * Normalize audio to a target peak or RMS level.
+   * Scales the audio signal so that its peak amplitude or RMS value matches the target.
+   * Essential preprocessing step for consistent audio feature extraction.
    *
    * @param name name May be null. Name for the output variable
    * @param input Audio waveform of shape [batch, samples] or [samples] (NUMERIC type)
@@ -95,9 +95,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Normalize audio to a target peak or RMS level.<br>
-   * Scales the audio signal so that its peak amplitude or RMS value matches the target.<br>
-   * Essential preprocessing step for consistent audio feature extraction.<br>
+   * Normalize audio to a target peak or RMS level.
+   * Scales the audio signal so that its peak amplitude or RMS value matches the target.
+   * Essential preprocessing step for consistent audio feature extraction.
    *
    * @param input Audio waveform of shape [batch, samples] or [samples] (NUMERIC type)
    * @return output Normalized audio with same shape as input (NUMERIC type)
@@ -108,9 +108,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Normalize audio to a target peak or RMS level.<br>
-   * Scales the audio signal so that its peak amplitude or RMS value matches the target.<br>
-   * Essential preprocessing step for consistent audio feature extraction.<br>
+   * Normalize audio to a target peak or RMS level.
+   * Scales the audio signal so that its peak amplitude or RMS value matches the target.
+   * Essential preprocessing step for consistent audio feature extraction.
    *
    * @param name name May be null. Name for the output variable
    * @param input Audio waveform of shape [batch, samples] or [samples] (NUMERIC type)
@@ -123,9 +123,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Resample audio from one sample rate to another using sinc interpolation.<br>
-   * Uses a windowed sinc (Lanczos) kernel for high-quality sample rate conversion.<br>
-   * Supports both upsampling and downsampling.<br>
+   * Resample audio from one sample rate to another using sinc interpolation.
+   * Uses a windowed sinc (Lanczos) kernel for high-quality sample rate conversion.
+   * Supports both upsampling and downsampling.
    *
    * @param input Audio waveform of shape [batch, samples] or [samples] (NUMERIC type)
    * @param origSampleRate Original sample rate in Hz
@@ -138,9 +138,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Resample audio from one sample rate to another using sinc interpolation.<br>
-   * Uses a windowed sinc (Lanczos) kernel for high-quality sample rate conversion.<br>
-   * Supports both upsampling and downsampling.<br>
+   * Resample audio from one sample rate to another using sinc interpolation.
+   * Uses a windowed sinc (Lanczos) kernel for high-quality sample rate conversion.
+   * Supports both upsampling and downsampling.
    *
    * @param name name May be null. Name for the output variable
    * @param input Audio waveform of shape [batch, samples] or [samples] (NUMERIC type)
@@ -156,9 +156,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Compute chroma features (pitch class profile) from a magnitude spectrogram.<br>
-   * Maps the spectrogram onto 12 bins representing the 12 distinct semitones (pitch classes)<br>
-   * of the musical octave. Useful for music analysis and chord recognition.<br>
+   * Compute chroma features (pitch class profile) from a magnitude spectrogram.
+   * Maps the spectrogram onto 12 bins representing the 12 distinct semitones (pitch classes)
+   * of the musical octave. Useful for music analysis and chord recognition.
    *
    * @param input Magnitude spectrogram of shape [batch, freqBins, numFrames] (NUMERIC type)
    * @param sampleRate Audio sample rate in Hz
@@ -172,9 +172,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Compute chroma features (pitch class profile) from a magnitude spectrogram.<br>
-   * Maps the spectrogram onto 12 bins representing the 12 distinct semitones (pitch classes)<br>
-   * of the musical octave. Useful for music analysis and chord recognition.<br>
+   * Compute chroma features (pitch class profile) from a magnitude spectrogram.
+   * Maps the spectrogram onto 12 bins representing the 12 distinct semitones (pitch classes)
+   * of the musical octave. Useful for music analysis and chord recognition.
    *
    * @param name name May be null. Name for the output variable
    * @param input Magnitude spectrogram of shape [batch, freqBins, numFrames] (NUMERIC type)
@@ -191,9 +191,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Compute chroma features (pitch class profile) from a magnitude spectrogram.<br>
-   * Maps the spectrogram onto 12 bins representing the 12 distinct semitones (pitch classes)<br>
-   * of the musical octave. Useful for music analysis and chord recognition.<br>
+   * Compute chroma features (pitch class profile) from a magnitude spectrogram.
+   * Maps the spectrogram onto 12 bins representing the 12 distinct semitones (pitch classes)
+   * of the musical octave. Useful for music analysis and chord recognition.
    *
    * @param input Magnitude spectrogram of shape [batch, freqBins, numFrames] (NUMERIC type)
    * @return output Chroma features of shape [batch, numChroma, numFrames] (NUMERIC type)
@@ -204,9 +204,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Compute chroma features (pitch class profile) from a magnitude spectrogram.<br>
-   * Maps the spectrogram onto 12 bins representing the 12 distinct semitones (pitch classes)<br>
-   * of the musical octave. Useful for music analysis and chord recognition.<br>
+   * Compute chroma features (pitch class profile) from a magnitude spectrogram.
+   * Maps the spectrogram onto 12 bins representing the 12 distinct semitones (pitch classes)
+   * of the musical octave. Useful for music analysis and chord recognition.
    *
    * @param name name May be null. Name for the output variable
    * @param input Magnitude spectrogram of shape [batch, freqBins, numFrames] (NUMERIC type)
@@ -219,9 +219,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Reconstruct an audio waveform from a magnitude spectrogram using the Griffin-Lim algorithm.<br>
-   * Iteratively estimates phase information to invert the STFT. Used in audio synthesis<br>
-   * and vocoder applications (e.g., text-to-speech).<br>
+   * Reconstruct an audio waveform from a magnitude spectrogram using the Griffin-Lim algorithm.
+   * Iteratively estimates phase information to invert the STFT. Used in audio synthesis
+   * and vocoder applications (e.g., text-to-speech).
    *
    * @param magnitudeSpectrogram Magnitude spectrogram of shape [batch, freqBins, numFrames] (NUMERIC type)
    * @param fftSize FFT window size
@@ -236,9 +236,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Reconstruct an audio waveform from a magnitude spectrogram using the Griffin-Lim algorithm.<br>
-   * Iteratively estimates phase information to invert the STFT. Used in audio synthesis<br>
-   * and vocoder applications (e.g., text-to-speech).<br>
+   * Reconstruct an audio waveform from a magnitude spectrogram using the Griffin-Lim algorithm.
+   * Iteratively estimates phase information to invert the STFT. Used in audio synthesis
+   * and vocoder applications (e.g., text-to-speech).
    *
    * @param name name May be null. Name for the output variable
    * @param magnitudeSpectrogram Magnitude spectrogram of shape [batch, freqBins, numFrames] (NUMERIC type)
@@ -255,9 +255,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Reconstruct an audio waveform from a magnitude spectrogram using the Griffin-Lim algorithm.<br>
-   * Iteratively estimates phase information to invert the STFT. Used in audio synthesis<br>
-   * and vocoder applications (e.g., text-to-speech).<br>
+   * Reconstruct an audio waveform from a magnitude spectrogram using the Griffin-Lim algorithm.
+   * Iteratively estimates phase information to invert the STFT. Used in audio synthesis
+   * and vocoder applications (e.g., text-to-speech).
    *
    * @param magnitudeSpectrogram Magnitude spectrogram of shape [batch, freqBins, numFrames] (NUMERIC type)
    * @return output Reconstructed waveform of shape [batch, samples] (NUMERIC type)
@@ -268,9 +268,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Reconstruct an audio waveform from a magnitude spectrogram using the Griffin-Lim algorithm.<br>
-   * Iteratively estimates phase information to invert the STFT. Used in audio synthesis<br>
-   * and vocoder applications (e.g., text-to-speech).<br>
+   * Reconstruct an audio waveform from a magnitude spectrogram using the Griffin-Lim algorithm.
+   * Iteratively estimates phase information to invert the STFT. Used in audio synthesis
+   * and vocoder applications (e.g., text-to-speech).
    *
    * @param name name May be null. Name for the output variable
    * @param magnitudeSpectrogram Magnitude spectrogram of shape [batch, freqBins, numFrames] (NUMERIC type)
@@ -283,9 +283,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Create a mel-scale triangular filterbank matrix.<br>
-   * Maps linear frequency spectrogram bins to mel-frequency bins using<br>
-   * overlapping triangular filters. Used as a component of mel spectrogram and MFCC extraction.<br>
+   * Create a mel-scale triangular filterbank matrix.
+   * Maps linear frequency spectrogram bins to mel-frequency bins using
+   * overlapping triangular filters. Used as a component of mel spectrogram and MFCC extraction.
    *
    * @param numMelBins Number of mel frequency bins
    * @param fftSize FFT size (number of frequency bins in the spectrogram)
@@ -300,9 +300,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Create a mel-scale triangular filterbank matrix.<br>
-   * Maps linear frequency spectrogram bins to mel-frequency bins using<br>
-   * overlapping triangular filters. Used as a component of mel spectrogram and MFCC extraction.<br>
+   * Create a mel-scale triangular filterbank matrix.
+   * Maps linear frequency spectrogram bins to mel-frequency bins using
+   * overlapping triangular filters. Used as a component of mel spectrogram and MFCC extraction.
    *
    * @param name name May be null. Name for the output variable
    * @param numMelBins Number of mel frequency bins
@@ -319,9 +319,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Create a mel-scale triangular filterbank matrix.<br>
-   * Maps linear frequency spectrogram bins to mel-frequency bins using<br>
-   * overlapping triangular filters. Used as a component of mel spectrogram and MFCC extraction.<br>
+   * Create a mel-scale triangular filterbank matrix.
+   * Maps linear frequency spectrogram bins to mel-frequency bins using
+   * overlapping triangular filters. Used as a component of mel spectrogram and MFCC extraction.
    *
    * @param numMelBins Number of mel frequency bins
    * @param fftSize FFT size (number of frequency bins in the spectrogram)
@@ -333,9 +333,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Create a mel-scale triangular filterbank matrix.<br>
-   * Maps linear frequency spectrogram bins to mel-frequency bins using<br>
-   * overlapping triangular filters. Used as a component of mel spectrogram and MFCC extraction.<br>
+   * Create a mel-scale triangular filterbank matrix.
+   * Maps linear frequency spectrogram bins to mel-frequency bins using
+   * overlapping triangular filters. Used as a component of mel spectrogram and MFCC extraction.
    *
    * @param name name May be null. Name for the output variable
    * @param numMelBins Number of mel frequency bins
@@ -349,9 +349,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Compute mel spectrogram from audio waveform.<br>
-   * Applies STFT, converts to power/amplitude spectrogram, then maps through<br>
-   * a mel filterbank. This is the standard front-end for many audio ML models.<br>
+   * Compute mel spectrogram from audio waveform.
+   * Applies STFT, converts to power/amplitude spectrogram, then maps through
+   * a mel filterbank. This is the standard front-end for many audio ML models.
    *
    * @param input Audio waveform tensor of shape [batch, samples] or [samples] (NUMERIC type)
    * @param sampleRate Audio sample rate in Hz
@@ -370,9 +370,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Compute mel spectrogram from audio waveform.<br>
-   * Applies STFT, converts to power/amplitude spectrogram, then maps through<br>
-   * a mel filterbank. This is the standard front-end for many audio ML models.<br>
+   * Compute mel spectrogram from audio waveform.
+   * Applies STFT, converts to power/amplitude spectrogram, then maps through
+   * a mel filterbank. This is the standard front-end for many audio ML models.
    *
    * @param name name May be null. Name for the output variable
    * @param input Audio waveform tensor of shape [batch, samples] or [samples] (NUMERIC type)
@@ -393,9 +393,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Compute mel spectrogram from audio waveform.<br>
-   * Applies STFT, converts to power/amplitude spectrogram, then maps through<br>
-   * a mel filterbank. This is the standard front-end for many audio ML models.<br>
+   * Compute mel spectrogram from audio waveform.
+   * Applies STFT, converts to power/amplitude spectrogram, then maps through
+   * a mel filterbank. This is the standard front-end for many audio ML models.
    *
    * @param input Audio waveform tensor of shape [batch, samples] or [samples] (NUMERIC type)
    * @return output Mel spectrogram of shape [batch, numMelBins, numFrames] (NUMERIC type)
@@ -406,9 +406,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Compute mel spectrogram from audio waveform.<br>
-   * Applies STFT, converts to power/amplitude spectrogram, then maps through<br>
-   * a mel filterbank. This is the standard front-end for many audio ML models.<br>
+   * Compute mel spectrogram from audio waveform.
+   * Applies STFT, converts to power/amplitude spectrogram, then maps through
+   * a mel filterbank. This is the standard front-end for many audio ML models.
    *
    * @param name name May be null. Name for the output variable
    * @param input Audio waveform tensor of shape [batch, samples] or [samples] (NUMERIC type)
@@ -421,9 +421,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Compute Mel-Frequency Cepstral Coefficients (MFCCs) from audio waveform.<br>
-   * Applies mel spectrogram extraction, log scaling, and DCT-II to produce<br>
-   * cepstral coefficients. MFCCs are widely used features for speech and audio recognition.<br>
+   * Compute Mel-Frequency Cepstral Coefficients (MFCCs) from audio waveform.
+   * Applies mel spectrogram extraction, log scaling, and DCT-II to produce
+   * cepstral coefficients. MFCCs are widely used features for speech and audio recognition.
    *
    * @param input Audio waveform tensor of shape [batch, samples] or [samples] (NUMERIC type)
    * @param sampleRate Audio sample rate in Hz
@@ -442,9 +442,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Compute Mel-Frequency Cepstral Coefficients (MFCCs) from audio waveform.<br>
-   * Applies mel spectrogram extraction, log scaling, and DCT-II to produce<br>
-   * cepstral coefficients. MFCCs are widely used features for speech and audio recognition.<br>
+   * Compute Mel-Frequency Cepstral Coefficients (MFCCs) from audio waveform.
+   * Applies mel spectrogram extraction, log scaling, and DCT-II to produce
+   * cepstral coefficients. MFCCs are widely used features for speech and audio recognition.
    *
    * @param name name May be null. Name for the output variable
    * @param input Audio waveform tensor of shape [batch, samples] or [samples] (NUMERIC type)
@@ -465,9 +465,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Compute Mel-Frequency Cepstral Coefficients (MFCCs) from audio waveform.<br>
-   * Applies mel spectrogram extraction, log scaling, and DCT-II to produce<br>
-   * cepstral coefficients. MFCCs are widely used features for speech and audio recognition.<br>
+   * Compute Mel-Frequency Cepstral Coefficients (MFCCs) from audio waveform.
+   * Applies mel spectrogram extraction, log scaling, and DCT-II to produce
+   * cepstral coefficients. MFCCs are widely used features for speech and audio recognition.
    *
    * @param input Audio waveform tensor of shape [batch, samples] or [samples] (NUMERIC type)
    * @return output MFCC coefficients of shape [batch, numMfcc, numFrames] (NUMERIC type)
@@ -478,9 +478,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Compute Mel-Frequency Cepstral Coefficients (MFCCs) from audio waveform.<br>
-   * Applies mel spectrogram extraction, log scaling, and DCT-II to produce<br>
-   * cepstral coefficients. MFCCs are widely used features for speech and audio recognition.<br>
+   * Compute Mel-Frequency Cepstral Coefficients (MFCCs) from audio waveform.
+   * Applies mel spectrogram extraction, log scaling, and DCT-II to produce
+   * cepstral coefficients. MFCCs are widely used features for speech and audio recognition.
    *
    * @param name name May be null. Name for the output variable
    * @param input Audio waveform tensor of shape [batch, samples] or [samples] (NUMERIC type)
@@ -493,9 +493,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Detect fundamental frequency (pitch) using autocorrelation method.<br>
-   * Estimates the fundamental frequency of an audio signal per frame by finding<br>
-   * the peak of the autocorrelation function within the expected frequency range.<br>
+   * Detect fundamental frequency (pitch) using autocorrelation method.
+   * Estimates the fundamental frequency of an audio signal per frame by finding
+   * the peak of the autocorrelation function within the expected frequency range.
    *
    * @param input Audio waveform of shape [batch, samples] or [samples] (NUMERIC type)
    * @param sampleRate Audio sample rate in Hz
@@ -512,9 +512,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Detect fundamental frequency (pitch) using autocorrelation method.<br>
-   * Estimates the fundamental frequency of an audio signal per frame by finding<br>
-   * the peak of the autocorrelation function within the expected frequency range.<br>
+   * Detect fundamental frequency (pitch) using autocorrelation method.
+   * Estimates the fundamental frequency of an audio signal per frame by finding
+   * the peak of the autocorrelation function within the expected frequency range.
    *
    * @param name name May be null. Name for the output variable
    * @param input Audio waveform of shape [batch, samples] or [samples] (NUMERIC type)
@@ -533,9 +533,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Detect fundamental frequency (pitch) using autocorrelation method.<br>
-   * Estimates the fundamental frequency of an audio signal per frame by finding<br>
-   * the peak of the autocorrelation function within the expected frequency range.<br>
+   * Detect fundamental frequency (pitch) using autocorrelation method.
+   * Estimates the fundamental frequency of an audio signal per frame by finding
+   * the peak of the autocorrelation function within the expected frequency range.
    *
    * @param input Audio waveform of shape [batch, samples] or [samples] (NUMERIC type)
    * @return output Detected fundamental frequency per frame of shape [batch, numFrames] (NUMERIC type)
@@ -546,9 +546,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Detect fundamental frequency (pitch) using autocorrelation method.<br>
-   * Estimates the fundamental frequency of an audio signal per frame by finding<br>
-   * the peak of the autocorrelation function within the expected frequency range.<br>
+   * Detect fundamental frequency (pitch) using autocorrelation method.
+   * Estimates the fundamental frequency of an audio signal per frame by finding
+   * the peak of the autocorrelation function within the expected frequency range.
    *
    * @param name name May be null. Name for the output variable
    * @param input Audio waveform of shape [batch, samples] or [samples] (NUMERIC type)
@@ -561,9 +561,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Apply pre-emphasis filter to an audio signal.<br>
-   * Computes y[n] = x[n] - coefficient * x[n-1], a first-order high-pass filter<br>
-   * that amplifies high frequencies. Standard preprocessing for speech recognition.<br>
+   * Apply pre-emphasis filter to an audio signal.
+   * Computes y[n] = x[n] - coefficient * x[n-1], a first-order high-pass filter
+   * that amplifies high frequencies. Standard preprocessing for speech recognition.
    *
    * @param input Audio waveform of shape [batch, samples] or [samples] (NUMERIC type)
    * @param coefficient Pre-emphasis coefficient (typically 0.95-0.97)
@@ -575,9 +575,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Apply pre-emphasis filter to an audio signal.<br>
-   * Computes y[n] = x[n] - coefficient * x[n-1], a first-order high-pass filter<br>
-   * that amplifies high frequencies. Standard preprocessing for speech recognition.<br>
+   * Apply pre-emphasis filter to an audio signal.
+   * Computes y[n] = x[n] - coefficient * x[n-1], a first-order high-pass filter
+   * that amplifies high frequencies. Standard preprocessing for speech recognition.
    *
    * @param name name May be null. Name for the output variable
    * @param input Audio waveform of shape [batch, samples] or [samples] (NUMERIC type)
@@ -591,9 +591,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Apply pre-emphasis filter to an audio signal.<br>
-   * Computes y[n] = x[n] - coefficient * x[n-1], a first-order high-pass filter<br>
-   * that amplifies high frequencies. Standard preprocessing for speech recognition.<br>
+   * Apply pre-emphasis filter to an audio signal.
+   * Computes y[n] = x[n] - coefficient * x[n-1], a first-order high-pass filter
+   * that amplifies high frequencies. Standard preprocessing for speech recognition.
    *
    * @param input Audio waveform of shape [batch, samples] or [samples] (NUMERIC type)
    * @return output Pre-emphasized signal with same shape as input (NUMERIC type)
@@ -604,9 +604,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Apply pre-emphasis filter to an audio signal.<br>
-   * Computes y[n] = x[n] - coefficient * x[n-1], a first-order high-pass filter<br>
-   * that amplifies high frequencies. Standard preprocessing for speech recognition.<br>
+   * Apply pre-emphasis filter to an audio signal.
+   * Computes y[n] = x[n] - coefficient * x[n-1], a first-order high-pass filter
+   * that amplifies high frequencies. Standard preprocessing for speech recognition.
    *
    * @param name name May be null. Name for the output variable
    * @param input Audio waveform of shape [batch, samples] or [samples] (NUMERIC type)
@@ -619,9 +619,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Compute the spectral centroid of a magnitude spectrogram.<br>
-   * The spectral centroid is the weighted mean of frequencies by their magnitudes,<br>
-   * indicating the "center of mass" of the spectrum. It is a measure of spectral brightness.<br>
+   * Compute the spectral centroid of a magnitude spectrogram.
+   * The spectral centroid is the weighted mean of frequencies by their magnitudes,
+   * indicating the "center of mass" of the spectrum. It is a measure of spectral brightness.
    *
    * @param input Magnitude spectrogram of shape [batch, freqBins, numFrames] (NUMERIC type)
    * @param sampleRate Audio sample rate in Hz
@@ -634,9 +634,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Compute the spectral centroid of a magnitude spectrogram.<br>
-   * The spectral centroid is the weighted mean of frequencies by their magnitudes,<br>
-   * indicating the "center of mass" of the spectrum. It is a measure of spectral brightness.<br>
+   * Compute the spectral centroid of a magnitude spectrogram.
+   * The spectral centroid is the weighted mean of frequencies by their magnitudes,
+   * indicating the "center of mass" of the spectrum. It is a measure of spectral brightness.
    *
    * @param name name May be null. Name for the output variable
    * @param input Magnitude spectrogram of shape [batch, freqBins, numFrames] (NUMERIC type)
@@ -651,9 +651,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Compute the spectral centroid of a magnitude spectrogram.<br>
-   * The spectral centroid is the weighted mean of frequencies by their magnitudes,<br>
-   * indicating the "center of mass" of the spectrum. It is a measure of spectral brightness.<br>
+   * Compute the spectral centroid of a magnitude spectrogram.
+   * The spectral centroid is the weighted mean of frequencies by their magnitudes,
+   * indicating the "center of mass" of the spectrum. It is a measure of spectral brightness.
    *
    * @param input Magnitude spectrogram of shape [batch, freqBins, numFrames] (NUMERIC type)
    * @return output Spectral centroid per frame of shape [batch, numFrames] (NUMERIC type)
@@ -664,9 +664,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Compute the spectral centroid of a magnitude spectrogram.<br>
-   * The spectral centroid is the weighted mean of frequencies by their magnitudes,<br>
-   * indicating the "center of mass" of the spectrum. It is a measure of spectral brightness.<br>
+   * Compute the spectral centroid of a magnitude spectrogram.
+   * The spectral centroid is the weighted mean of frequencies by their magnitudes,
+   * indicating the "center of mass" of the spectrum. It is a measure of spectral brightness.
    *
    * @param name name May be null. Name for the output variable
    * @param input Magnitude spectrogram of shape [batch, freqBins, numFrames] (NUMERIC type)
@@ -679,9 +679,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Compute the spectral rolloff frequency.<br>
-   * The rolloff frequency is the frequency below which a specified percentage<br>
-   * of the total spectral energy falls. Useful for distinguishing voiced/unvoiced speech.<br>
+   * Compute the spectral rolloff frequency.
+   * The rolloff frequency is the frequency below which a specified percentage
+   * of the total spectral energy falls. Useful for distinguishing voiced/unvoiced speech.
    *
    * @param input Magnitude spectrogram of shape [batch, freqBins, numFrames] (NUMERIC type)
    * @param sampleRate Audio sample rate in Hz
@@ -696,9 +696,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Compute the spectral rolloff frequency.<br>
-   * The rolloff frequency is the frequency below which a specified percentage<br>
-   * of the total spectral energy falls. Useful for distinguishing voiced/unvoiced speech.<br>
+   * Compute the spectral rolloff frequency.
+   * The rolloff frequency is the frequency below which a specified percentage
+   * of the total spectral energy falls. Useful for distinguishing voiced/unvoiced speech.
    *
    * @param name name May be null. Name for the output variable
    * @param input Magnitude spectrogram of shape [batch, freqBins, numFrames] (NUMERIC type)
@@ -715,9 +715,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Compute the spectral rolloff frequency.<br>
-   * The rolloff frequency is the frequency below which a specified percentage<br>
-   * of the total spectral energy falls. Useful for distinguishing voiced/unvoiced speech.<br>
+   * Compute the spectral rolloff frequency.
+   * The rolloff frequency is the frequency below which a specified percentage
+   * of the total spectral energy falls. Useful for distinguishing voiced/unvoiced speech.
    *
    * @param input Magnitude spectrogram of shape [batch, freqBins, numFrames] (NUMERIC type)
    * @return output Spectral rolloff frequency per frame of shape [batch, numFrames] (NUMERIC type)
@@ -728,9 +728,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Compute the spectral rolloff frequency.<br>
-   * The rolloff frequency is the frequency below which a specified percentage<br>
-   * of the total spectral energy falls. Useful for distinguishing voiced/unvoiced speech.<br>
+   * Compute the spectral rolloff frequency.
+   * The rolloff frequency is the frequency below which a specified percentage
+   * of the total spectral energy falls. Useful for distinguishing voiced/unvoiced speech.
    *
    * @param name name May be null. Name for the output variable
    * @param input Magnitude spectrogram of shape [batch, freqBins, numFrames] (NUMERIC type)
@@ -743,9 +743,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Compute the zero crossing rate of an audio signal.<br>
-   * The zero crossing rate is the rate at which the signal changes sign,<br>
-   * computed per frame. Useful for speech/music discrimination and onset detection.<br>
+   * Compute the zero crossing rate of an audio signal.
+   * The zero crossing rate is the rate at which the signal changes sign,
+   * computed per frame. Useful for speech/music discrimination and onset detection.
    *
    * @param input Audio waveform of shape [batch, samples] or [samples] (NUMERIC type)
    * @param frameLength Length of each analysis frame
@@ -758,9 +758,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Compute the zero crossing rate of an audio signal.<br>
-   * The zero crossing rate is the rate at which the signal changes sign,<br>
-   * computed per frame. Useful for speech/music discrimination and onset detection.<br>
+   * Compute the zero crossing rate of an audio signal.
+   * The zero crossing rate is the rate at which the signal changes sign,
+   * computed per frame. Useful for speech/music discrimination and onset detection.
    *
    * @param name name May be null. Name for the output variable
    * @param input Audio waveform of shape [batch, samples] or [samples] (NUMERIC type)
@@ -776,9 +776,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Compute the zero crossing rate of an audio signal.<br>
-   * The zero crossing rate is the rate at which the signal changes sign,<br>
-   * computed per frame. Useful for speech/music discrimination and onset detection.<br>
+   * Compute the zero crossing rate of an audio signal.
+   * The zero crossing rate is the rate at which the signal changes sign,
+   * computed per frame. Useful for speech/music discrimination and onset detection.
    *
    * @param input Audio waveform of shape [batch, samples] or [samples] (NUMERIC type)
    * @return output Zero crossing rate per frame of shape [batch, numFrames] (NUMERIC type)
@@ -789,9 +789,9 @@ public class SDAudio extends SDOps {
   }
 
   /**
-   * Compute the zero crossing rate of an audio signal.<br>
-   * The zero crossing rate is the rate at which the signal changes sign,<br>
-   * computed per frame. Useful for speech/music discrimination and onset detection.<br>
+   * Compute the zero crossing rate of an audio signal.
+   * The zero crossing rate is the rate at which the signal changes sign,
+   * computed per frame. Useful for speech/music discrimination and onset detection.
    *
    * @param name name May be null. Name for the output variable
    * @param input Audio waveform of shape [batch, samples] or [samples] (NUMERIC type)

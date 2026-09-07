@@ -100,9 +100,9 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
      * Get (and, initialize if necessary) the UI server. This synchronous function will wait until the server started.
      * @param port TCP socket port for {@link HttpServer} to listen
      * @param multiSession         in multi-session mode, multiple training sessions can be visualized in separate browser tabs.
-     *                             <br/>URL path will include session ID as a parameter, i.e.: /train becomes /train/:sessionId
+     *                             <br>URL path will include session ID as a parameter, i.e.: /train becomes /train/:sessionId
      * @param statsStorageProvider function that returns a StatsStorage containing the given session ID.
-     *                             <br/>Use this to auto-attach StatsStorage if an unknown session ID is passed
+     *                             <br>Use this to auto-attach StatsStorage if an unknown session ID is passed
      *                             as URL path parameter in multi-session mode, or leave it {@code null}.
      * @return UI instance for this JVM
      * @throws DL4JException if UI server failed to start;
@@ -120,9 +120,9 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
      * (synchronous way), or pass the given callback to handle success or failure (asynchronous way).
      * @param port TCP socket port for {@link HttpServer} to listen
      * @param multiSession         in multi-session mode, multiple training sessions can be visualized in separate browser tabs.
-     *                             <br/>URL path will include session ID as a parameter, i.e.: /train becomes /train/:sessionId
+     *                             <br>URL path will include session ID as a parameter, i.e.: /train becomes /train/:sessionId
      * @param statsStorageProvider function that returns a StatsStorage containing the given session ID.
-     *                             <br/>Use this to auto-attach StatsStorage if an unknown session ID is passed
+     *                             <br>Use this to auto-attach StatsStorage if an unknown session ID is passed
      *                             as URL path parameter in multi-session mode, or leave it {@code null}.
      * @param startCallback asynchronous deployment handler callback that will be notify of success or failure.
      *                      If {@code null} given, then this method will wait until deployment is complete.

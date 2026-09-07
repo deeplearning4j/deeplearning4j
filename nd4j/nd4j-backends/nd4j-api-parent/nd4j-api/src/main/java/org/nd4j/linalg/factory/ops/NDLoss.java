@@ -26,6 +26,20 @@ import static org.nd4j.linalg.factory.NDValidation.isSameType;
 
 import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.loss.AbsoluteDifferenceLoss;
+import org.nd4j.linalg.api.ops.impl.loss.ContrastiveLoss;
+import org.nd4j.linalg.api.ops.impl.loss.CosineDistanceLoss;
+import org.nd4j.linalg.api.ops.impl.loss.CtcLoss;
+import org.nd4j.linalg.api.ops.impl.loss.HingeLoss;
+import org.nd4j.linalg.api.ops.impl.loss.HuberLoss;
+import org.nd4j.linalg.api.ops.impl.loss.L2Loss;
+import org.nd4j.linalg.api.ops.impl.loss.LogLoss;
+import org.nd4j.linalg.api.ops.impl.loss.LogPoissonLoss;
+import org.nd4j.linalg.api.ops.impl.loss.MeanPairwiseSquaredErrorLoss;
+import org.nd4j.linalg.api.ops.impl.loss.MeanSquaredErrorLoss;
+import org.nd4j.linalg.api.ops.impl.loss.SigmoidCrossEntropyLoss;
+import org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss;
+import org.nd4j.linalg.api.ops.impl.loss.SparseSoftmaxCrossEntropyLossWithLogits;
 import org.nd4j.linalg.factory.NDValidation;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -34,7 +48,7 @@ public class NDLoss {
   }
 
   /**
-   * Absolute difference loss: {@code sum_i abs( label[i] - predictions[i] )}<br>
+   * Absolute difference loss: {@code sum_i abs( label[i] - predictions[i] )}
    *
    * @param label Label array (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
@@ -47,7 +61,7 @@ public class NDLoss {
     NDValidation.validateNumerical("absoluteDifference", "label", label);
     NDValidation.validateNumerical("absoluteDifference", "predictions", predictions);
     NDValidation.validateNumerical("absoluteDifference", "weights", weights);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.AbsoluteDifferenceLoss(label, predictions, weights, lossReduce));
+    INDArray[] __tmp = Nd4j.exec(new AbsoluteDifferenceLoss(label, predictions, weights, lossReduce));
     try {
       return __tmp[0];
     } finally {
@@ -62,7 +76,7 @@ public class NDLoss {
   }
 
   /**
-   * Absolute difference loss: {@code sum_i abs( label[i] - predictions[i] )}<br>
+   * Absolute difference loss: {@code sum_i abs( label[i] - predictions[i] )}
    *
    * @param label Label array (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
@@ -73,7 +87,7 @@ public class NDLoss {
     NDValidation.validateNumerical("absoluteDifference", "label", label);
     NDValidation.validateNumerical("absoluteDifference", "predictions", predictions);
     NDValidation.validateNumerical("absoluteDifference", "weights", weights);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.AbsoluteDifferenceLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT));
+    INDArray[] __tmp = Nd4j.exec(new AbsoluteDifferenceLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT));
     try {
       return __tmp[0];
     } finally {
@@ -88,10 +102,10 @@ public class NDLoss {
   }
 
   /**
-   * InfoNCE contrastive loss for CLIP-style contrastive alignment.<br>
-   * Computes symmetric cross-entropy over the cosine similarity matrix of<br>
-   * L2-normalized image and text embeddings. Used for training vision-language<br>
-   * models where matching image-text pairs should have high similarity.<br>
+   * InfoNCE contrastive loss for CLIP-style contrastive alignment.
+   * Computes symmetric cross-entropy over the cosine similarity matrix of
+   * L2-normalized image and text embeddings. Used for training vision-language
+   * models where matching image-text pairs should have high similarity.
    *
    * @param imageEmbeddings L2-normalized image embeddings [batch, embedDim] (NUMERIC type)
    * @param textEmbeddings L2-normalized text embeddings [batch, embedDim] (NUMERIC type)
@@ -102,7 +116,7 @@ public class NDLoss {
       double temperature) {
     NDValidation.validateNumerical("contrastiveLoss", "imageEmbeddings", imageEmbeddings);
     NDValidation.validateNumerical("contrastiveLoss", "textEmbeddings", textEmbeddings);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.ContrastiveLoss(imageEmbeddings, textEmbeddings, temperature));
+    INDArray[] __tmp = Nd4j.exec(new ContrastiveLoss(imageEmbeddings, textEmbeddings, temperature));
     try {
       return __tmp[0];
     } finally {
@@ -117,10 +131,10 @@ public class NDLoss {
   }
 
   /**
-   * InfoNCE contrastive loss for CLIP-style contrastive alignment.<br>
-   * Computes symmetric cross-entropy over the cosine similarity matrix of<br>
-   * L2-normalized image and text embeddings. Used for training vision-language<br>
-   * models where matching image-text pairs should have high similarity.<br>
+   * InfoNCE contrastive loss for CLIP-style contrastive alignment.
+   * Computes symmetric cross-entropy over the cosine similarity matrix of
+   * L2-normalized image and text embeddings. Used for training vision-language
+   * models where matching image-text pairs should have high similarity.
    *
    * @param imageEmbeddings L2-normalized image embeddings [batch, embedDim] (NUMERIC type)
    * @param textEmbeddings L2-normalized text embeddings [batch, embedDim] (NUMERIC type)
@@ -129,7 +143,7 @@ public class NDLoss {
   public INDArray contrastiveLoss(INDArray imageEmbeddings, INDArray textEmbeddings) {
     NDValidation.validateNumerical("contrastiveLoss", "imageEmbeddings", imageEmbeddings);
     NDValidation.validateNumerical("contrastiveLoss", "textEmbeddings", textEmbeddings);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.ContrastiveLoss(imageEmbeddings, textEmbeddings, 1.0));
+    INDArray[] __tmp = Nd4j.exec(new ContrastiveLoss(imageEmbeddings, textEmbeddings, 1.0));
     try {
       return __tmp[0];
     } finally {
@@ -144,11 +158,11 @@ public class NDLoss {
   }
 
   /**
-   * Cosine distance loss: {@code 1 - cosineSimilarity(x,y)} or {@code 1 - sum_i label[i] * prediction[i]}, which is<br>
+   * Cosine distance loss: {@code 1 - cosineSimilarity(x,y)} or {@code 1 - sum_i label[i] * prediction[i]}, which is
    * equivalent to cosine distance when both the predictions and labels are normalized.<br>
-   * <b>Note</b>: This loss function assumes that both the predictions and labels are normalized to have unit l2 norm.<br>
-   * If this is not the case, you should normalize them first by dividing by norm2(String, SDVariable, boolean, int...)<br>
-   * along the cosine distance dimension (with keepDims=true).<br>
+   * <b>Note</b>: This loss function assumes that both the predictions and labels are normalized to have unit l2 norm.
+   * If this is not the case, you should normalize them first by dividing by norm2(String, SDVariable, boolean, int...)
+   * along the cosine distance dimension (with keepDims=true).
    *
    * @param label Label array (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
@@ -162,7 +176,7 @@ public class NDLoss {
     NDValidation.validateNumerical("cosineDistance", "label", label);
     NDValidation.validateNumerical("cosineDistance", "predictions", predictions);
     NDValidation.validateNumerical("cosineDistance", "weights", weights);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.CosineDistanceLoss(label, predictions, weights, lossReduce, dimension));
+    INDArray[] __tmp = Nd4j.exec(new CosineDistanceLoss(label, predictions, weights, lossReduce, dimension));
     try {
       return __tmp[0];
     } finally {
@@ -177,11 +191,11 @@ public class NDLoss {
   }
 
   /**
-   * Cosine distance loss: {@code 1 - cosineSimilarity(x,y)} or {@code 1 - sum_i label[i] * prediction[i]}, which is<br>
+   * Cosine distance loss: {@code 1 - cosineSimilarity(x,y)} or {@code 1 - sum_i label[i] * prediction[i]}, which is
    * equivalent to cosine distance when both the predictions and labels are normalized.<br>
-   * <b>Note</b>: This loss function assumes that both the predictions and labels are normalized to have unit l2 norm.<br>
-   * If this is not the case, you should normalize them first by dividing by norm2(String, SDVariable, boolean, int...)<br>
-   * along the cosine distance dimension (with keepDims=true).<br>
+   * <b>Note</b>: This loss function assumes that both the predictions and labels are normalized to have unit l2 norm.
+   * If this is not the case, you should normalize them first by dividing by norm2(String, SDVariable, boolean, int...)
+   * along the cosine distance dimension (with keepDims=true).
    *
    * @param label Label array (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
@@ -194,7 +208,7 @@ public class NDLoss {
     NDValidation.validateNumerical("cosineDistance", "label", label);
     NDValidation.validateNumerical("cosineDistance", "predictions", predictions);
     NDValidation.validateNumerical("cosineDistance", "weights", weights);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.CosineDistanceLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, dimension));
+    INDArray[] __tmp = Nd4j.exec(new CosineDistanceLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, dimension));
     try {
       return __tmp[0];
     } finally {
@@ -209,8 +223,8 @@ public class NDLoss {
   }
 
   /**
-   * CTC Loss: Connectionist Temporal Classification Loss. See:<br>
-   * https://dl.acm.org/citation.cfm?id=1143891<br>
+   * CTC Loss: Connectionist Temporal Classification Loss. See:
+   * https://dl.acm.org/citation.cfm?id=1143891
    *
    * @param targetLabels Label array (NUMERIC type)
    * @param logitInput Inputs (NUMERIC type)
@@ -225,7 +239,7 @@ public class NDLoss {
     NDValidation.validateNumerical("ctcLoss", "logitInput", logitInput);
     NDValidation.validateNumerical("ctcLoss", "targetLabelLengths", targetLabelLengths);
     NDValidation.validateNumerical("ctcLoss", "logitInputLengths", logitInputLengths);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.CtcLoss(targetLabels, logitInput, targetLabelLengths, logitInputLengths, blankIndex));
+    INDArray[] __tmp = Nd4j.exec(new CtcLoss(targetLabels, logitInput, targetLabelLengths, logitInputLengths, blankIndex));
     try {
       return __tmp[0];
     } finally {
@@ -240,8 +254,8 @@ public class NDLoss {
   }
 
   /**
-   * CTC Loss: Connectionist Temporal Classification Loss. See:<br>
-   * https://dl.acm.org/citation.cfm?id=1143891<br>
+   * CTC Loss: Connectionist Temporal Classification Loss. See:
+   * https://dl.acm.org/citation.cfm?id=1143891
    *
    * @param targetLabels Label array (NUMERIC type)
    * @param logitInput Inputs (NUMERIC type)
@@ -255,7 +269,7 @@ public class NDLoss {
     NDValidation.validateNumerical("ctcLoss", "logitInput", logitInput);
     NDValidation.validateNumerical("ctcLoss", "targetLabelLengths", targetLabelLengths);
     NDValidation.validateNumerical("ctcLoss", "logitInputLengths", logitInputLengths);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.CtcLoss(targetLabels, logitInput, targetLabelLengths, logitInputLengths, 0));
+    INDArray[] __tmp = Nd4j.exec(new CtcLoss(targetLabels, logitInput, targetLabelLengths, logitInputLengths, 0));
     try {
       return __tmp[0];
     } finally {
@@ -270,9 +284,9 @@ public class NDLoss {
   }
 
   /**
-   * Hinge loss: a loss function used for training classifiers.<br>
-   * Implements {@code L = max(0, 1 - t * predictions)} where t is the label values after internally converting to {-1,1}<br>
-   * from the user specified {0,1}. Note that Labels should be provided with values {0,1}.<br>
+   * Hinge loss: a loss function used for training classifiers.
+   * Implements {@code L = max(0, 1 - t * predictions)} where t is the label values after internally converting to {-1,1}
+   * from the user specified {0,1}. Note that Labels should be provided with values {0,1}.
    *
    * @param label Label array. Each value should be 0.0 or 1.0 (internally -1 to 1 is used) (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
@@ -285,7 +299,7 @@ public class NDLoss {
     NDValidation.validateNumerical("hingeLoss", "label", label);
     NDValidation.validateNumerical("hingeLoss", "predictions", predictions);
     NDValidation.validateNumerical("hingeLoss", "weights", weights);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.HingeLoss(label, predictions, weights, lossReduce));
+    INDArray[] __tmp = Nd4j.exec(new HingeLoss(label, predictions, weights, lossReduce));
     try {
       return __tmp[0];
     } finally {
@@ -300,9 +314,9 @@ public class NDLoss {
   }
 
   /**
-   * Hinge loss: a loss function used for training classifiers.<br>
-   * Implements {@code L = max(0, 1 - t * predictions)} where t is the label values after internally converting to {-1,1}<br>
-   * from the user specified {0,1}. Note that Labels should be provided with values {0,1}.<br>
+   * Hinge loss: a loss function used for training classifiers.
+   * Implements {@code L = max(0, 1 - t * predictions)} where t is the label values after internally converting to {-1,1}
+   * from the user specified {0,1}. Note that Labels should be provided with values {0,1}.
    *
    * @param label Label array. Each value should be 0.0 or 1.0 (internally -1 to 1 is used) (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
@@ -313,7 +327,7 @@ public class NDLoss {
     NDValidation.validateNumerical("hingeLoss", "label", label);
     NDValidation.validateNumerical("hingeLoss", "predictions", predictions);
     NDValidation.validateNumerical("hingeLoss", "weights", weights);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.HingeLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT));
+    INDArray[] __tmp = Nd4j.exec(new HingeLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT));
     try {
       return __tmp[0];
     } finally {
@@ -328,13 +342,13 @@ public class NDLoss {
   }
 
   /**
-   * Huber loss function, used for robust regression. It is similar both squared error loss and absolute difference loss,<br>
+   * Huber loss function, used for robust regression. It is similar both squared error loss and absolute difference loss,
    * though is less sensitive to outliers than squared error.<br>
-   * Huber loss implements:<br>
-   * <pre><br>
-   * {@code L = 0.5 * (label[i] - predictions[i])^2 if abs(label[i] - predictions[i]) < delta}<br>
-   * {@code L = delta * abs(label[i] - predictions[i]) - 0.5 * delta^2 otherwise}<br>
-   * </pre><br>
+   * Huber loss implements:
+   * <pre>
+   * {@code L = 0.5 * (label[i] - predictions[i])^2 if abs(label[i] - predictions[i]) < delta}
+   * {@code L = delta * abs(label[i] - predictions[i]) - 0.5 * delta^2 otherwise}
+   * </pre>
    *
    * @param label Label array (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
@@ -348,7 +362,7 @@ public class NDLoss {
     NDValidation.validateNumerical("huberLoss", "label", label);
     NDValidation.validateNumerical("huberLoss", "predictions", predictions);
     NDValidation.validateNumerical("huberLoss", "weights", weights);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.HuberLoss(label, predictions, weights, lossReduce, delta));
+    INDArray[] __tmp = Nd4j.exec(new HuberLoss(label, predictions, weights, lossReduce, delta));
     try {
       return __tmp[0];
     } finally {
@@ -363,13 +377,13 @@ public class NDLoss {
   }
 
   /**
-   * Huber loss function, used for robust regression. It is similar both squared error loss and absolute difference loss,<br>
+   * Huber loss function, used for robust regression. It is similar both squared error loss and absolute difference loss,
    * though is less sensitive to outliers than squared error.<br>
-   * Huber loss implements:<br>
-   * <pre><br>
-   * {@code L = 0.5 * (label[i] - predictions[i])^2 if abs(label[i] - predictions[i]) < delta}<br>
-   * {@code L = delta * abs(label[i] - predictions[i]) - 0.5 * delta^2 otherwise}<br>
-   * </pre><br>
+   * Huber loss implements:
+   * <pre>
+   * {@code L = 0.5 * (label[i] - predictions[i])^2 if abs(label[i] - predictions[i]) < delta}
+   * {@code L = delta * abs(label[i] - predictions[i]) - 0.5 * delta^2 otherwise}
+   * </pre>
    *
    * @param label Label array (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
@@ -381,7 +395,7 @@ public class NDLoss {
     NDValidation.validateNumerical("huberLoss", "label", label);
     NDValidation.validateNumerical("huberLoss", "predictions", predictions);
     NDValidation.validateNumerical("huberLoss", "weights", weights);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.HuberLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, delta));
+    INDArray[] __tmp = Nd4j.exec(new HuberLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, delta));
     try {
       return __tmp[0];
     } finally {
@@ -396,14 +410,14 @@ public class NDLoss {
   }
 
   /**
-   * L2 loss: 1/2 * sum(x^2)<br>
+   * L2 loss: 1/2 * sum(x^2)
    *
    * @param var Variable to calculate L2 loss of (NUMERIC type)
    * @return output L2 loss (NUMERIC type)
    */
   public INDArray l2Loss(INDArray var) {
     NDValidation.validateNumerical("l2Loss", "var", var);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.L2Loss(var));
+    INDArray[] __tmp = Nd4j.exec(new L2Loss(var));
     try {
       return __tmp[0];
     } finally {
@@ -418,8 +432,8 @@ public class NDLoss {
   }
 
   /**
-   * Log loss, i.e., binary cross entropy loss, usually used for binary multi-label classification. Implements:<br>
-   * {@code -1/numExamples * sum_i (labels[i] * log(predictions[i] + epsilon) + (1-labels[i]) * log(1-predictions[i] + epsilon))}<br>
+   * Log loss, i.e., binary cross entropy loss, usually used for binary multi-label classification. Implements:
+   * {@code -1/numExamples * sum_i (labels[i] * log(predictions[i] + epsilon) + (1-labels[i]) * log(1-predictions[i] + epsilon))}
    *
    * @param label Label array (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
@@ -435,7 +449,7 @@ public class NDLoss {
     if (weights != null) {
       NDValidation.validateNumerical("logLoss", "weights", weights);
     }
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.LogLoss(label, predictions, weights, lossReduce, epsilon));
+    INDArray[] __tmp = Nd4j.exec(new LogLoss(label, predictions, weights, lossReduce, epsilon));
     try {
       return __tmp[0];
     } finally {
@@ -450,8 +464,8 @@ public class NDLoss {
   }
 
   /**
-   * Log loss, i.e., binary cross entropy loss, usually used for binary multi-label classification. Implements:<br>
-   * {@code -1/numExamples * sum_i (labels[i] * log(predictions[i] + epsilon) + (1-labels[i]) * log(1-predictions[i] + epsilon))}<br>
+   * Log loss, i.e., binary cross entropy loss, usually used for binary multi-label classification. Implements:
+   * {@code -1/numExamples * sum_i (labels[i] * log(predictions[i] + epsilon) + (1-labels[i]) * log(1-predictions[i] + epsilon))}
    *
    * @param label Label array (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
@@ -460,7 +474,7 @@ public class NDLoss {
   public INDArray logLoss(INDArray label, INDArray predictions) {
     NDValidation.validateNumerical("logLoss", "label", label);
     NDValidation.validateNumerical("logLoss", "predictions", predictions);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.LogLoss(label, predictions, null, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, 0.0));
+    INDArray[] __tmp = Nd4j.exec(new LogLoss(label, predictions, null, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, 0.0));
     try {
       return __tmp[0];
     } finally {
@@ -475,8 +489,8 @@ public class NDLoss {
   }
 
   /**
-   * Log poisson loss: a loss function used for training classifiers.<br>
-   * Implements {@code L = exp(c) - z * c} where c is log(predictions) and z is labels.<br>
+   * Log poisson loss: a loss function used for training classifiers.
+   * Implements {@code L = exp(c) - z * c} where c is log(predictions) and z is labels.
    *
    * @param label Label array. Each value should be 0.0 or 1.0 (NUMERIC type)
    * @param predictions Predictions array (has to be log(x) of actual predictions) (NUMERIC type)
@@ -490,7 +504,7 @@ public class NDLoss {
     NDValidation.validateNumerical("logPoisson", "label", label);
     NDValidation.validateNumerical("logPoisson", "predictions", predictions);
     NDValidation.validateNumerical("logPoisson", "weights", weights);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.LogPoissonLoss(label, predictions, weights, lossReduce, full));
+    INDArray[] __tmp = Nd4j.exec(new LogPoissonLoss(label, predictions, weights, lossReduce, full));
     try {
       return __tmp[0];
     } finally {
@@ -505,8 +519,8 @@ public class NDLoss {
   }
 
   /**
-   * Log poisson loss: a loss function used for training classifiers.<br>
-   * Implements {@code L = exp(c) - z * c} where c is log(predictions) and z is labels.<br>
+   * Log poisson loss: a loss function used for training classifiers.
+   * Implements {@code L = exp(c) - z * c} where c is log(predictions) and z is labels.
    *
    * @param label Label array. Each value should be 0.0 or 1.0 (NUMERIC type)
    * @param predictions Predictions array (has to be log(x) of actual predictions) (NUMERIC type)
@@ -518,7 +532,7 @@ public class NDLoss {
     NDValidation.validateNumerical("logPoisson", "label", label);
     NDValidation.validateNumerical("logPoisson", "predictions", predictions);
     NDValidation.validateNumerical("logPoisson", "weights", weights);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.LogPoissonLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, full));
+    INDArray[] __tmp = Nd4j.exec(new LogPoissonLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, full));
     try {
       return __tmp[0];
     } finally {
@@ -534,8 +548,8 @@ public class NDLoss {
 
   /**
    * Mean pairwise squared error.<br>
-   * MPWSE loss calculates the difference between pairs of consecutive elements in the predictions and labels arrays.<br>
-   * For example, if predictions = [p0, p1, p2] and labels are [l0, l1, l2] then MPWSE is:<br>
+   * MPWSE loss calculates the difference between pairs of consecutive elements in the predictions and labels arrays.
+   * For example, if predictions = [p0, p1, p2] and labels are [l0, l1, l2] then MPWSE is:
    * {@code [((p0-p1) - (l0-l1))^2 + ((p0-p2) - (l0-l2))^2 + ((p1-p2) - (l1-l2))^2] / 3}<br>
    *
    * @param label Label array (NUMERIC type)
@@ -549,7 +563,7 @@ public class NDLoss {
     NDValidation.validateNumerical("meanPairwiseSquaredError", "label", label);
     NDValidation.validateNumerical("meanPairwiseSquaredError", "predictions", predictions);
     NDValidation.validateNumerical("meanPairwiseSquaredError", "weights", weights);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.MeanPairwiseSquaredErrorLoss(label, predictions, weights, lossReduce));
+    INDArray[] __tmp = Nd4j.exec(new MeanPairwiseSquaredErrorLoss(label, predictions, weights, lossReduce));
     try {
       return __tmp[0];
     } finally {
@@ -565,8 +579,8 @@ public class NDLoss {
 
   /**
    * Mean pairwise squared error.<br>
-   * MPWSE loss calculates the difference between pairs of consecutive elements in the predictions and labels arrays.<br>
-   * For example, if predictions = [p0, p1, p2] and labels are [l0, l1, l2] then MPWSE is:<br>
+   * MPWSE loss calculates the difference between pairs of consecutive elements in the predictions and labels arrays.
+   * For example, if predictions = [p0, p1, p2] and labels are [l0, l1, l2] then MPWSE is:
    * {@code [((p0-p1) - (l0-l1))^2 + ((p0-p2) - (l0-l2))^2 + ((p1-p2) - (l1-l2))^2] / 3}<br>
    *
    * @param label Label array (NUMERIC type)
@@ -578,7 +592,7 @@ public class NDLoss {
     NDValidation.validateNumerical("meanPairwiseSquaredError", "label", label);
     NDValidation.validateNumerical("meanPairwiseSquaredError", "predictions", predictions);
     NDValidation.validateNumerical("meanPairwiseSquaredError", "weights", weights);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.MeanPairwiseSquaredErrorLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT));
+    INDArray[] __tmp = Nd4j.exec(new MeanPairwiseSquaredErrorLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT));
     try {
       return __tmp[0];
     } finally {
@@ -593,9 +607,9 @@ public class NDLoss {
   }
 
   /**
-   * Mean squared error loss function. Implements {@code (label[i] - prediction[i])^2} - i.e., squared error on a per-element basis.<br>
-   * When averaged (using LossReduce#MEAN_BY_WEIGHT or LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT (the default))<br>
-   * this is the mean squared error loss function.<br>
+   * Mean squared error loss function. Implements {@code (label[i] - prediction[i])^2} - i.e., squared error on a per-element basis.
+   * When averaged (using LossReduce#MEAN_BY_WEIGHT or LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT (the default))
+   * this is the mean squared error loss function.
    *
    * @param label Label array (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
@@ -608,7 +622,7 @@ public class NDLoss {
     NDValidation.validateNumerical("meanSquaredError", "label", label);
     NDValidation.validateNumerical("meanSquaredError", "predictions", predictions);
     NDValidation.validateNumerical("meanSquaredError", "weights", weights);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.MeanSquaredErrorLoss(label, predictions, weights, lossReduce));
+    INDArray[] __tmp = Nd4j.exec(new MeanSquaredErrorLoss(label, predictions, weights, lossReduce));
     try {
       return __tmp[0];
     } finally {
@@ -623,9 +637,9 @@ public class NDLoss {
   }
 
   /**
-   * Mean squared error loss function. Implements {@code (label[i] - prediction[i])^2} - i.e., squared error on a per-element basis.<br>
-   * When averaged (using LossReduce#MEAN_BY_WEIGHT or LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT (the default))<br>
-   * this is the mean squared error loss function.<br>
+   * Mean squared error loss function. Implements {@code (label[i] - prediction[i])^2} - i.e., squared error on a per-element basis.
+   * When averaged (using LossReduce#MEAN_BY_WEIGHT or LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT (the default))
+   * this is the mean squared error loss function.
    *
    * @param label Label array (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
@@ -636,7 +650,7 @@ public class NDLoss {
     NDValidation.validateNumerical("meanSquaredError", "label", label);
     NDValidation.validateNumerical("meanSquaredError", "predictions", predictions);
     NDValidation.validateNumerical("meanSquaredError", "weights", weights);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.MeanSquaredErrorLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT));
+    INDArray[] __tmp = Nd4j.exec(new MeanSquaredErrorLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT));
     try {
       return __tmp[0];
     } finally {
@@ -651,18 +665,18 @@ public class NDLoss {
   }
 
   /**
-   * Sigmoid cross entropy: applies the sigmoid activation function on the input logits (input "pre-sigmoid preductions")<br>
-   * and implements the binary cross entropy loss function. This implementation is numerically more stable than using<br>
+   * Sigmoid cross entropy: applies the sigmoid activation function on the input logits (input "pre-sigmoid preductions")
+   * and implements the binary cross entropy loss function. This implementation is numerically more stable than using
    * standard (but separate) sigmoid activation function and log loss (binary cross entropy) loss function.<br>
-   * Implements:<br>
-   * {@code -1/numExamples * sum_i (labels[i] * log(sigmoid(logits[i])) + (1-labels[i]) * log(1-sigmoid(logits[i])))}<br>
+   * Implements:
+   * {@code -1/numExamples * sum_i (labels[i] * log(sigmoid(logits[i])) + (1-labels[i]) * log(1-sigmoid(logits[i])))}
    * though this is done in a mathematically equivalent but more numerical stable form.<br>
    * <br>
    * When label smoothing is > 0, the following label smoothing is used:<br>
-   * <pre><br>
-   * {@code numClasses = labels.size(1);<br>
-   * label = (1.0 - labelSmoothing) * label + 0.5 * labelSmoothing}<br>
-   * </pre><br>
+   * <pre>
+   * {@code numClasses = labels.size(1);
+   * label = (1.0 - labelSmoothing) * label + 0.5 * labelSmoothing}
+   * </pre>
    *
    * @param label Label array (NUMERIC type)
    * @param predictionLogits Predictions array (NUMERIC type)
@@ -676,7 +690,7 @@ public class NDLoss {
     NDValidation.validateNumerical("sigmoidCrossEntropy", "label", label);
     NDValidation.validateNumerical("sigmoidCrossEntropy", "predictionLogits", predictionLogits);
     NDValidation.validateNumerical("sigmoidCrossEntropy", "weights", weights);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.SigmoidCrossEntropyLoss(label, predictionLogits, weights, lossReduce, labelSmoothing));
+    INDArray[] __tmp = Nd4j.exec(new SigmoidCrossEntropyLoss(label, predictionLogits, weights, lossReduce, labelSmoothing));
     try {
       return __tmp[0];
     } finally {
@@ -691,18 +705,18 @@ public class NDLoss {
   }
 
   /**
-   * Sigmoid cross entropy: applies the sigmoid activation function on the input logits (input "pre-sigmoid preductions")<br>
-   * and implements the binary cross entropy loss function. This implementation is numerically more stable than using<br>
+   * Sigmoid cross entropy: applies the sigmoid activation function on the input logits (input "pre-sigmoid preductions")
+   * and implements the binary cross entropy loss function. This implementation is numerically more stable than using
    * standard (but separate) sigmoid activation function and log loss (binary cross entropy) loss function.<br>
-   * Implements:<br>
-   * {@code -1/numExamples * sum_i (labels[i] * log(sigmoid(logits[i])) + (1-labels[i]) * log(1-sigmoid(logits[i])))}<br>
+   * Implements:
+   * {@code -1/numExamples * sum_i (labels[i] * log(sigmoid(logits[i])) + (1-labels[i]) * log(1-sigmoid(logits[i])))}
    * though this is done in a mathematically equivalent but more numerical stable form.<br>
    * <br>
    * When label smoothing is > 0, the following label smoothing is used:<br>
-   * <pre><br>
-   * {@code numClasses = labels.size(1);<br>
-   * label = (1.0 - labelSmoothing) * label + 0.5 * labelSmoothing}<br>
-   * </pre><br>
+   * <pre>
+   * {@code numClasses = labels.size(1);
+   * label = (1.0 - labelSmoothing) * label + 0.5 * labelSmoothing}
+   * </pre>
    *
    * @param label Label array (NUMERIC type)
    * @param predictionLogits Predictions array (NUMERIC type)
@@ -713,7 +727,7 @@ public class NDLoss {
     NDValidation.validateNumerical("sigmoidCrossEntropy", "label", label);
     NDValidation.validateNumerical("sigmoidCrossEntropy", "predictionLogits", predictionLogits);
     NDValidation.validateNumerical("sigmoidCrossEntropy", "weights", weights);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.SigmoidCrossEntropyLoss(label, predictionLogits, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, 0.0));
+    INDArray[] __tmp = Nd4j.exec(new SigmoidCrossEntropyLoss(label, predictionLogits, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, 0.0));
     try {
       return __tmp[0];
     } finally {
@@ -730,14 +744,14 @@ public class NDLoss {
   /**
    * Applies the softmax activation function to the input, then implement multi-class cross entropy:<br>
    * {@code -sum_classes label[i] * log(p[c])} where {@code p = softmax(logits)}<br>
-   * If LossReduce#NONE is used, returned shape is [numExamples] out for [numExamples, numClasses] predicitons/labels;<br>
+   * If LossReduce#NONE is used, returned shape is [numExamples] out for [numExamples, numClasses] predicitons/labels;
    * otherwise, the output is a scalar.<br>
-   * <p><br>
+   * <p>
    * When label smoothing is > 0, the following label smoothing is used:<br>
-   * <pre><br>
-   * {@code numClasses = labels.size(1);<br>
-   * oneHotLabel = (1.0 - labelSmoothing) * oneHotLabels + labelSmoothing/numClasses}<br>
-   * </pre><br>
+   * <pre>
+   * {@code numClasses = labels.size(1);
+   * oneHotLabel = (1.0 - labelSmoothing) * oneHotLabels + labelSmoothing/numClasses}
+   * </pre>
    *
    * @param oneHotLabels Label array. Should be one-hot per example and same shape as predictions (for example, [mb, nOut]) (NUMERIC type)
    * @param logitPredictions Predictions array (pre-softmax) (NUMERIC type)
@@ -751,7 +765,7 @@ public class NDLoss {
     NDValidation.validateNumerical("softmaxCrossEntropy", "oneHotLabels", oneHotLabels);
     NDValidation.validateNumerical("softmaxCrossEntropy", "logitPredictions", logitPredictions);
     NDValidation.validateNumerical("softmaxCrossEntropy", "weights", weights);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss(oneHotLabels, logitPredictions, weights, lossReduce, labelSmoothing));
+    INDArray[] __tmp = Nd4j.exec(new SoftmaxCrossEntropyLoss(oneHotLabels, logitPredictions, weights, lossReduce, labelSmoothing));
     try {
       return __tmp[0];
     } finally {
@@ -768,14 +782,14 @@ public class NDLoss {
   /**
    * Applies the softmax activation function to the input, then implement multi-class cross entropy:<br>
    * {@code -sum_classes label[i] * log(p[c])} where {@code p = softmax(logits)}<br>
-   * If LossReduce#NONE is used, returned shape is [numExamples] out for [numExamples, numClasses] predicitons/labels;<br>
+   * If LossReduce#NONE is used, returned shape is [numExamples] out for [numExamples, numClasses] predicitons/labels;
    * otherwise, the output is a scalar.<br>
-   * <p><br>
+   * <p>
    * When label smoothing is > 0, the following label smoothing is used:<br>
-   * <pre><br>
-   * {@code numClasses = labels.size(1);<br>
-   * oneHotLabel = (1.0 - labelSmoothing) * oneHotLabels + labelSmoothing/numClasses}<br>
-   * </pre><br>
+   * <pre>
+   * {@code numClasses = labels.size(1);
+   * oneHotLabel = (1.0 - labelSmoothing) * oneHotLabels + labelSmoothing/numClasses}
+   * </pre>
    *
    * @param oneHotLabels Label array. Should be one-hot per example and same shape as predictions (for example, [mb, nOut]) (NUMERIC type)
    * @param logitPredictions Predictions array (pre-softmax) (NUMERIC type)
@@ -787,7 +801,7 @@ public class NDLoss {
     NDValidation.validateNumerical("softmaxCrossEntropy", "oneHotLabels", oneHotLabels);
     NDValidation.validateNumerical("softmaxCrossEntropy", "logitPredictions", logitPredictions);
     NDValidation.validateNumerical("softmaxCrossEntropy", "weights", weights);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss(oneHotLabels, logitPredictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, 0.0));
+    INDArray[] __tmp = Nd4j.exec(new SoftmaxCrossEntropyLoss(oneHotLabels, logitPredictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, 0.0));
     try {
       return __tmp[0];
     } finally {
@@ -802,9 +816,9 @@ public class NDLoss {
   }
 
   /**
-   * As per softmaxCrossEntropy(String, SDVariable, SDVariable, LossReduce) but the labels variable<br>
+   * As per softmaxCrossEntropy(String, SDVariable, SDVariable, LossReduce) but the labels variable
    * is represented as an integer array instead of the equivalent one-hot array.<br>
-   * i.e., if logits are rank N, then labels have rank N-1<br>
+   * i.e., if logits are rank N, then labels have rank N-1
    *
    * @param logits Logits array ("pre-softmax activations") (NUMERIC type)
    * @param labels Labels array. Must be an integer type. (INT type)
@@ -813,7 +827,7 @@ public class NDLoss {
   public INDArray sparseSoftmaxCrossEntropy(INDArray logits, INDArray labels) {
     NDValidation.validateNumerical("sparseSoftmaxCrossEntropy", "logits", logits);
     NDValidation.validateInteger("sparseSoftmaxCrossEntropy", "labels", labels);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.SparseSoftmaxCrossEntropyLossWithLogits(logits, labels));
+    INDArray[] __tmp = Nd4j.exec(new SparseSoftmaxCrossEntropyLossWithLogits(logits, labels));
     try {
       return __tmp[0];
     } finally {

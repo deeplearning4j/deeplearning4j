@@ -36,9 +36,9 @@ public class SDRandom extends SDOps {
   }
 
   /**
-   * Generate a new random INDArray, where values are randomly sampled according to a Bernoulli distribution,<br>
-   * with the specified probability. Array values will have value 1 with probability P and value 0 with probability<br>
-   * 1-P.<br>
+   * Generate a new random INDArray, where values are randomly sampled according to a Bernoulli distribution,
+   * with the specified probability. Array values will have value 1 with probability P and value 0 with probability
+   * 1-P.
    *
    * @param p Probability of value 1
    * @param datatype Data type of the output variable
@@ -51,9 +51,9 @@ public class SDRandom extends SDOps {
   }
 
   /**
-   * Generate a new random INDArray, where values are randomly sampled according to a Bernoulli distribution,<br>
-   * with the specified probability. Array values will have value 1 with probability P and value 0 with probability<br>
-   * 1-P.<br>
+   * Generate a new random INDArray, where values are randomly sampled according to a Bernoulli distribution,
+   * with the specified probability. Array values will have value 1 with probability P and value 0 with probability
+   * 1-P.
    *
    * @param name name May be null. Name for the output variable
    * @param p Probability of value 1
@@ -68,8 +68,8 @@ public class SDRandom extends SDOps {
   }
 
   /**
-   * Generate a new random INDArray, where values are randomly sampled according to a Binomial distribution,<br>
-   * with the specified number of trials and probability.<br>
+   * Generate a new random INDArray, where values are randomly sampled according to a Binomial distribution,
+   * with the specified number of trials and probability.
    *
    * @param nTrials Number of trials parameter for the binomial distribution
    * @param p Probability of success for each trial
@@ -83,8 +83,8 @@ public class SDRandom extends SDOps {
   }
 
   /**
-   * Generate a new random INDArray, where values are randomly sampled according to a Binomial distribution,<br>
-   * with the specified number of trials and probability.<br>
+   * Generate a new random INDArray, where values are randomly sampled according to a Binomial distribution,
+   * with the specified number of trials and probability.
    *
    * @param name name May be null. Name for the output variable
    * @param nTrials Number of trials parameter for the binomial distribution
@@ -100,11 +100,11 @@ public class SDRandom extends SDOps {
   }
 
   /**
-   * Generate a new random INDArray, where values are randomly sampled according to a exponential distribution:<br>
-   * P(x) = lambda * exp(-lambda * x)<br>
+   * Generate a new random INDArray, where values are randomly sampled according to a exponential distribution:
+   * P(x) = lambda * exp(-lambda * x)
    *
    * Inputs must satisfy the following constraints: <br>
-   * Must be positive: lambda > 0<br>
+   * Must be positive: {@code lambda > 0}<br>
    *
    * @param lambda lambda parameter
    * @param datatype Data type of the output variable
@@ -118,11 +118,11 @@ public class SDRandom extends SDOps {
   }
 
   /**
-   * Generate a new random INDArray, where values are randomly sampled according to a exponential distribution:<br>
-   * P(x) = lambda * exp(-lambda * x)<br>
+   * Generate a new random INDArray, where values are randomly sampled according to a exponential distribution:
+   * P(x) = lambda * exp(-lambda * x)
    *
    * Inputs must satisfy the following constraints: <br>
-   * Must be positive: lambda > 0<br>
+   * Must be positive: {@code lambda > 0}<br>
    *
    * @param name name May be null. Name for the output variable
    * @param lambda lambda parameter
@@ -138,8 +138,8 @@ public class SDRandom extends SDOps {
   }
 
   /**
-   * Generate a new random INDArray, where values are randomly sampled according to a Log Normal distribution,<br>
-   * i.e., {@code log(x) ~ N(mean, stdev)}<br>
+   * Generate a new random INDArray, where values are randomly sampled according to a Log Normal distribution,
+   * i.e., {@code log(x) ~ N(mean, stdev)}
    *
    * @param mean Mean value for the random array
    * @param stddev Standard deviation for the random array
@@ -153,8 +153,8 @@ public class SDRandom extends SDOps {
   }
 
   /**
-   * Generate a new random INDArray, where values are randomly sampled according to a Log Normal distribution,<br>
-   * i.e., {@code log(x) ~ N(mean, stdev)}<br>
+   * Generate a new random INDArray, where values are randomly sampled according to a Log Normal distribution,
+   * i.e., {@code log(x) ~ N(mean, stdev)}
    *
    * @param name name May be null. Name for the output variable
    * @param mean Mean value for the random array
@@ -171,7 +171,7 @@ public class SDRandom extends SDOps {
   }
 
   /**
-   * Generate a new random INDArray, where values are randomly sampled according to a Gaussian (normal) distribution,<br>
+   * Generate a new random INDArray, where values are randomly sampled according to a Gaussian (normal) distribution,
    * N(mean, stdev)<br>
    *
    * @param mean Mean value for the random array
@@ -186,7 +186,7 @@ public class SDRandom extends SDOps {
   }
 
   /**
-   * Generate a new random INDArray, where values are randomly sampled according to a Gaussian (normal) distribution,<br>
+   * Generate a new random INDArray, where values are randomly sampled according to a Gaussian (normal) distribution,
    * N(mean, stdev)<br>
    *
    * @param name name May be null. Name for the output variable
@@ -204,8 +204,8 @@ public class SDRandom extends SDOps {
   }
 
   /**
-   * Generate a new random INDArray, where values are randomly sampled according to a Gaussian (normal) distribution,<br>
-   * N(mean, stdev). However, any values more than 1 standard deviation from the mean are dropped and re-sampled<br>
+   * Generate a new random INDArray, where values are randomly sampled according to a Gaussian (normal) distribution,
+   * N(mean, stdev). However, any values more than 1 standard deviation from the mean are dropped and re-sampled
    *
    * @param mean Mean value for the random array
    * @param stddev Standard deviation for the random array
@@ -219,8 +219,8 @@ public class SDRandom extends SDOps {
   }
 
   /**
-   * Generate a new random INDArray, where values are randomly sampled according to a Gaussian (normal) distribution,<br>
-   * N(mean, stdev). However, any values more than 1 standard deviation from the mean are dropped and re-sampled<br>
+   * Generate a new random INDArray, where values are randomly sampled according to a Gaussian (normal) distribution,
+   * N(mean, stdev). However, any values more than 1 standard deviation from the mean are dropped and re-sampled
    *
    * @param name name May be null. Name for the output variable
    * @param mean Mean value for the random array
@@ -237,8 +237,8 @@ public class SDRandom extends SDOps {
   }
 
   /**
-   * Generate a new random INDArray, where values are randomly sampled according to a uniform distribution,<br>
-   * U(min,max)<br>
+   * Generate a new random INDArray, where values are randomly sampled according to a uniform distribution,
+   * U(min,max)
    *
    * @param min Minimum value
    * @param max Maximum value.
@@ -252,8 +252,8 @@ public class SDRandom extends SDOps {
   }
 
   /**
-   * Generate a new random INDArray, where values are randomly sampled according to a uniform distribution,<br>
-   * U(min,max)<br>
+   * Generate a new random INDArray, where values are randomly sampled according to a uniform distribution,
+   * U(min,max)
    *
    * @param name name May be null. Name for the output variable
    * @param min Minimum value

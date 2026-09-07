@@ -26,35 +26,25 @@ package org.nd4j.enums;
  * Activations
  */
 public enum GateAct {
-  TANH(0),
+  TANH,
 
-  RELU(1),
+  RELU,
 
-  SIGMOID(2),
+  SIGMOID,
 
-  AFFINE(3),
+  AFFINE,
 
-  LEAKY_RELU(4),
+  LEAKY_RELU,
 
-  THRESHHOLD_RELU(5),
+  THRESHHOLD_RELU,
 
-  SCALED_TAHN(6),
+  SCALED_TAHN,
 
-  HARD_SIGMOID(7),
+  HARD_SIGMOID,
 
-  ELU(8),
+  ELU,
 
-  SOFTSIGN(9),
+  SOFTSIGN,
 
-  SOFTPLUS(10);
-
-  private final int methodIndex;
-
-  GateAct(int index) {
-    this.methodIndex = index;
-  }
-
-  public int methodIndex() {
-    return methodIndex;
-  }
+  SOFTPLUS
 }

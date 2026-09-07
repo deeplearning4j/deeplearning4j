@@ -34,11 +34,11 @@ public class SDTraining extends SDOps {
   }
 
   /**
-   * AdaBelief updater.<br>
-   * Adapts the step size by the difference between the predicted and observed gradients<br>
-   * (the 'belief' in the gradient direction).<br>
-   * See: Zhuang et al. (2020) - AdaBelief Optimizer: Adapting Stepsizes by the Belief in Observed Gradients<br>
-   * https://arxiv.org/pdf/2010.07468.pdf<br>
+   * AdaBelief updater.
+   * Adapts the step size by the difference between the predicted and observed gradients
+   * (the 'belief' in the gradient direction).
+   * See: Zhuang et al. (2020) - AdaBelief Optimizer: Adapting Stepsizes by the Belief in Observed Gradients
+   * https://arxiv.org/pdf/2010.07468.pdf
    *
    * @param gradients Gradients array (NUMERIC type)
    * @param stateU Updater state: exponential moving average of squared gradient deviation (NUMERIC type)
@@ -61,11 +61,11 @@ public class SDTraining extends SDOps {
   }
 
   /**
-   * AdaBelief updater.<br>
-   * Adapts the step size by the difference between the predicted and observed gradients<br>
-   * (the 'belief' in the gradient direction).<br>
-   * See: Zhuang et al. (2020) - AdaBelief Optimizer: Adapting Stepsizes by the Belief in Observed Gradients<br>
-   * https://arxiv.org/pdf/2010.07468.pdf<br>
+   * AdaBelief updater.
+   * Adapts the step size by the difference between the predicted and observed gradients
+   * (the 'belief' in the gradient direction).
+   * See: Zhuang et al. (2020) - AdaBelief Optimizer: Adapting Stepsizes by the Belief in Observed Gradients
+   * https://arxiv.org/pdf/2010.07468.pdf
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param gradients Gradients array (NUMERIC type)
@@ -90,9 +90,9 @@ public class SDTraining extends SDOps {
   }
 
   /**
-   * AdaDelta updater.<br>
-   * An adaptive learning rate method that uses a moving window of gradient updates to adapt the learning rate.<br>
-   * See: Zeiler (2012) - ADADELTA: An Adaptive Learning Rate Method<br>
+   * AdaDelta updater.
+   * An adaptive learning rate method that uses a moving window of gradient updates to adapt the learning rate.
+   * See: Zeiler (2012) - ADADELTA: An Adaptive Learning Rate Method
    *
    * @param gradients Gradients array (NUMERIC type)
    * @param stateMsg Updater state: mean squared gradients (NUMERIC type)
@@ -112,9 +112,9 @@ public class SDTraining extends SDOps {
   }
 
   /**
-   * AdaDelta updater.<br>
-   * An adaptive learning rate method that uses a moving window of gradient updates to adapt the learning rate.<br>
-   * See: Zeiler (2012) - ADADELTA: An Adaptive Learning Rate Method<br>
+   * AdaDelta updater.
+   * An adaptive learning rate method that uses a moving window of gradient updates to adapt the learning rate.
+   * See: Zeiler (2012) - ADADELTA: An Adaptive Learning Rate Method
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param gradients Gradients array (NUMERIC type)
@@ -136,9 +136,9 @@ public class SDTraining extends SDOps {
   }
 
   /**
-   * AdaGrad updater.<br>
-   * Adapts the learning rate for each parameter based on accumulated squared gradients.<br>
-   * See: Duchi et al. (2011) - Adaptive Subgradient Methods<br>
+   * AdaGrad updater.
+   * Adapts the learning rate for each parameter based on accumulated squared gradients.
+   * See: Duchi et al. (2011) - Adaptive Subgradient Methods
    *
    * @param gradients Gradients array (NUMERIC type)
    * @param state Updater state (accumulated squared gradients) (NUMERIC type)
@@ -155,9 +155,9 @@ public class SDTraining extends SDOps {
   }
 
   /**
-   * AdaGrad updater.<br>
-   * Adapts the learning rate for each parameter based on accumulated squared gradients.<br>
-   * See: Duchi et al. (2011) - Adaptive Subgradient Methods<br>
+   * AdaGrad updater.
+   * Adapts the learning rate for each parameter based on accumulated squared gradients.
+   * See: Duchi et al. (2011) - Adaptive Subgradient Methods
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param gradients Gradients array (NUMERIC type)
@@ -176,9 +176,9 @@ public class SDTraining extends SDOps {
   }
 
   /**
-   * AdaMax updater.<br>
-   * A variant of Adam based on the infinity norm, which can be more stable in some settings.<br>
-   * See: Kingma and Ba (2014) - Adam: A Method for Stochastic Optimization (Section 7.1)<br>
+   * AdaMax updater.
+   * A variant of Adam based on the infinity norm, which can be more stable in some settings.
+   * See: Kingma and Ba (2014) - Adam: A Method for Stochastic Optimization (Section 7.1)
    *
    * @param gradients Gradients array (NUMERIC type)
    * @param stateU Updater state: infinity norm (max) (NUMERIC type)
@@ -201,9 +201,9 @@ public class SDTraining extends SDOps {
   }
 
   /**
-   * AdaMax updater.<br>
-   * A variant of Adam based on the infinity norm, which can be more stable in some settings.<br>
-   * See: Kingma and Ba (2014) - Adam: A Method for Stochastic Optimization (Section 7.1)<br>
+   * AdaMax updater.
+   * A variant of Adam based on the infinity norm, which can be more stable in some settings.
+   * See: Kingma and Ba (2014) - Adam: A Method for Stochastic Optimization (Section 7.1)
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param gradients Gradients array (NUMERIC type)
@@ -228,9 +228,9 @@ public class SDTraining extends SDOps {
   }
 
   /**
-   * Adam updater.<br>
-   * Adaptive Moment Estimation - computes adaptive learning rates for each parameter.<br>
-   * See: Kingma and Ba (2014) - Adam: A Method for Stochastic Optimization<br>
+   * Adam updater.
+   * Adaptive Moment Estimation - computes adaptive learning rates for each parameter.
+   * See: Kingma and Ba (2014) - Adam: A Method for Stochastic Optimization
    *
    * @param gradients Gradients array (NUMERIC type)
    * @param stateU Updater state: first moment (mean) (NUMERIC type)
@@ -253,9 +253,9 @@ public class SDTraining extends SDOps {
   }
 
   /**
-   * Adam updater.<br>
-   * Adaptive Moment Estimation - computes adaptive learning rates for each parameter.<br>
-   * See: Kingma and Ba (2014) - Adam: A Method for Stochastic Optimization<br>
+   * Adam updater.
+   * Adaptive Moment Estimation - computes adaptive learning rates for each parameter.
+   * See: Kingma and Ba (2014) - Adam: A Method for Stochastic Optimization
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param gradients Gradients array (NUMERIC type)
@@ -280,10 +280,10 @@ public class SDTraining extends SDOps {
   }
 
   /**
-   * AMSGrad updater.<br>
-   * A variant of Adam that uses the maximum of past squared gradients to provide<br>
-   * better convergence guarantees.<br>
-   * See: Reddi et al. (2018) - On the Convergence of Adam and Beyond<br>
+   * AMSGrad updater.
+   * A variant of Adam that uses the maximum of past squared gradients to provide
+   * better convergence guarantees.
+   * See: Reddi et al. (2018) - On the Convergence of Adam and Beyond
    *
    * @param gradients Gradients array (NUMERIC type)
    * @param stateV Updater state: second moment (uncentered variance) (NUMERIC type)
@@ -309,10 +309,10 @@ public class SDTraining extends SDOps {
   }
 
   /**
-   * AMSGrad updater.<br>
-   * A variant of Adam that uses the maximum of past squared gradients to provide<br>
-   * better convergence guarantees.<br>
-   * See: Reddi et al. (2018) - On the Convergence of Adam and Beyond<br>
+   * AMSGrad updater.
+   * A variant of Adam that uses the maximum of past squared gradients to provide
+   * better convergence guarantees.
+   * See: Reddi et al. (2018) - On the Convergence of Adam and Beyond
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param gradients Gradients array (NUMERIC type)
@@ -341,8 +341,8 @@ public class SDTraining extends SDOps {
   }
 
   /**
-   * Nadam updater.<br>
-   * Adam with Nesterov momentum. Combines Adam and Nesterov accelerated gradient.<br>
+   * Nadam updater.
+   * Adam with Nesterov momentum. Combines Adam and Nesterov accelerated gradient.
    *
    * @param gradients Gradients array (NUMERIC type)
    * @param stateV Updater state: second moment (uncentered variance) (NUMERIC type)
@@ -365,8 +365,8 @@ public class SDTraining extends SDOps {
   }
 
   /**
-   * Nadam updater.<br>
-   * Adam with Nesterov momentum. Combines Adam and Nesterov accelerated gradient.<br>
+   * Nadam updater.
+   * Adam with Nesterov momentum. Combines Adam and Nesterov accelerated gradient.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param gradients Gradients array (NUMERIC type)
@@ -391,8 +391,8 @@ public class SDTraining extends SDOps {
   }
 
   /**
-   * Nesterov momentum SGD updater.<br>
-   * Applies Nesterov accelerated gradient update using momentum.<br>
+   * Nesterov momentum SGD updater.
+   * Applies Nesterov accelerated gradient update using momentum.
    *
    * @param gradients Gradients array (NUMERIC type)
    * @param state Updater state (velocity) (NUMERIC type)
@@ -409,8 +409,8 @@ public class SDTraining extends SDOps {
   }
 
   /**
-   * Nesterov momentum SGD updater.<br>
-   * Applies Nesterov accelerated gradient update using momentum.<br>
+   * Nesterov momentum SGD updater.
+   * Applies Nesterov accelerated gradient update using momentum.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param gradients Gradients array (NUMERIC type)
@@ -429,8 +429,8 @@ public class SDTraining extends SDOps {
   }
 
   /**
-   * RMSProp updater.<br>
-   * Divides the learning rate by a running average of the magnitudes of recent gradients.<br>
+   * RMSProp updater.
+   * Divides the learning rate by a running average of the magnitudes of recent gradients.
    *
    * @param gradients Gradients array (NUMERIC type)
    * @param state Updater state (mean squared gradients) (NUMERIC type)
@@ -448,8 +448,8 @@ public class SDTraining extends SDOps {
   }
 
   /**
-   * RMSProp updater.<br>
-   * Divides the learning rate by a running average of the magnitudes of recent gradients.<br>
+   * RMSProp updater.
+   * Divides the learning rate by a running average of the magnitudes of recent gradients.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param gradients Gradients array (NUMERIC type)
@@ -469,8 +469,8 @@ public class SDTraining extends SDOps {
   }
 
   /**
-   * SGD (Stochastic Gradient Descent) updater.<br>
-   * Applies gradient update: param -= lr * gradient<br>
+   * SGD (Stochastic Gradient Descent) updater.
+   * Applies gradient update: param -= lr * gradient
    *
    * @param gradients Gradients array (NUMERIC type)
    * @param lr Learning rate
@@ -482,8 +482,8 @@ public class SDTraining extends SDOps {
   }
 
   /**
-   * SGD (Stochastic Gradient Descent) updater.<br>
-   * Applies gradient update: param -= lr * gradient<br>
+   * SGD (Stochastic Gradient Descent) updater.
+   * Applies gradient update: param -= lr * gradient
    *
    * @param name name May be null. Name for the output variable
    * @param gradients Gradients array (NUMERIC type)

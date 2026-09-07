@@ -29,21 +29,11 @@ package org.nd4j.enums;
  *    T2NS: 3 = [timeLength, 2, numExamples, inOutSize] (for ONNX)
  */
 public enum LSTMDataFormat {
-  TNS(0),
+  TNS,
 
-  NST(1),
+  NST,
 
-  NTS(2),
+  NTS,
 
-  T2NS(3);
-
-  private final int methodIndex;
-
-  LSTMDataFormat(int index) {
-    this.methodIndex = index;
-  }
-
-  public int methodIndex() {
-    return methodIndex;
-  }
+  T2NS
 }

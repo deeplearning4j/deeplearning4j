@@ -26,17 +26,7 @@ package org.nd4j.enums;
  * Data format: "NCHW" or "NHWC"
  */
 public enum DataFormat {
-  NCHW(0),
+  NCHW,
 
-  NHWC(1);
-
-  private final int methodIndex;
-
-  DataFormat(int index) {
-    this.methodIndex = index;
-  }
-
-  public int methodIndex() {
-    return methodIndex;
-  }
+  NHWC
 }

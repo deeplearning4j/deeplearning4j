@@ -465,19 +465,6 @@ SD_HOST_DEVICE SD_INLINE Z sd_atanh(T val);
 // CONDITIONAL SPECIALIZATIONS BASED ON HAS_* MACROS
 // ============================================================================
 
-// fp32 computation used by the half-precision overloads below: the series
-// convergence threshold is 1.0e-12, which underflows to zero in half types.
-static SD_HOST_DEVICE SD_INLINE float sd_igamma_f32(float a, float x) {
-  float aim = p_pow<float>(x, a) / (expf(x) * lgammaf(a));
-  float sum = 0.f;
-  float denom = 1.f;
-  for (int i = 0; 1.f / denom > 1.0e-12f; i++) {
-    denom *= a + i;
-    sum += p_pow<float>(x, (float)i) / denom;
-  }
-  return aim * sum;
-}
-
 #ifdef HAS_FLOAT16
 template <>
 SD_HOST_DEVICE SD_INLINE float16 sd_abs<float16, float16>(float16 value) {
@@ -934,18 +921,12 @@ SD_HOST_DEVICE SD_INLINE Z sd_igamma(X a, Y x) {
   if (a <= X(0.000001)) {
    result = Z(0);
   } else {
-   // Convert x to type X to avoid type mismatch errors when Y is bool or other incompatible type
-   X x_converted = static_cast<X>(x);
-   // Convert a to type Y for sd_gamma function call
-   Y a_converted = static_cast<Y>(a);
-   Z aim = sd_pow<X, X, Z>(x_converted, a) / (sd_exp<X, Z>(x_converted) * sd_gamma<Y, Z>(a_converted));
-   // The series convergence threshold is 1.0e-12; for Z in {float16,
-   // bfloat16} Z(1.0e-12) underflows to zero and the loop never terminates
-   // at compile time in cicc (segfault). Accumulate the series in double and
-   // truncate once at the end — identical values for float/double and
-   // correct, terminating half-precision results.
-   double d_x = static_cast<double>(x_converted);
-   double d_a = static_cast<double>(a_converted);
+   // Widen each input independently: converting through the other input's
+   // storage type can lose values in mixed-type instantiations. Keep the
+   // convergence threshold and normalization in the accumulator type; do not
+   // instantiate an unused storage-precision gamma/power/exp expression here.
+   double d_x = static_cast<double>(x);
+   double d_a = static_cast<double>(a);
    double d_aim = sd_pow<double, double, double>(d_x, d_a) /
                   (sd_exp<double, double>(d_x) * sd_gamma<double, double>(d_a));
    double d_sum = 0.;
@@ -956,50 +937,37 @@ SD_HOST_DEVICE SD_INLINE Z sd_igamma(X a, Y x) {
    }
    double d_result = d_aim * d_sum;
    result = static_cast<Z>(d_result);
-   (void)aim;
-   (void)d_aim;
   }
   SD_PRINT_MATH_FUNC2("sd_igamma", a, x, result, Z);
   return result;
 }
 
 #ifdef HAS_FLOAT16
-// float16 cannot represent the 1.0e-12 convergence threshold (underflows to
-// zero, making the series loop non-terminating at half precision) and cicc
-// crashes while expanding the unbounded loop for half. Compute in fp32 and
-// truncate to half — matching the precision of the surrounding fp16 math.
-// These are plain overloads (not template specializations) so every compiler
-// accepts them; a non-template exact match also beats the primary template
-// during overload resolution.
+// Deduced low-precision calls and explicit template dispatch use the same
+// promoted implementation, including gamma (not log-gamma) normalization.
 SD_HOST_DEVICE SD_INLINE float16 sd_igamma(float16 a, float16 x) {
-  float result = sd_igamma_f32(static_cast<float>(a), static_cast<float>(x));
-  return static_cast<float16>(result);
+  return sd_igamma<float16, float16, float16>(a, x);
 }
 
 SD_HOST_DEVICE SD_INLINE float16 sd_igammac(float16 a, float16 x) {
-  float result = 1.f - sd_igamma_f32(static_cast<float>(a), static_cast<float>(x));
-  return static_cast<float16>(result);
+  return static_cast<float16>(1. - sd_igamma<float16, float16, double>(a, x));
 }
 #endif // HAS_FLOAT16
 
 #ifdef HAS_BFLOAT16
-// Same rationale as the float16 overloads above: the half-precision
-// convergence threshold underflows, so the regularized incomplete gamma is
-// computed in fp32 for bfloat16.
+// Use the same accumulator and normalization for bfloat16.
 SD_HOST_DEVICE SD_INLINE bfloat16 sd_igamma(bfloat16 a, bfloat16 x) {
-  float result = sd_igamma_f32(static_cast<float>(a), static_cast<float>(x));
-  return static_cast<bfloat16>(result);
+  return sd_igamma<bfloat16, bfloat16, bfloat16>(a, x);
 }
 
 SD_HOST_DEVICE SD_INLINE bfloat16 sd_igammac(bfloat16 a, bfloat16 x) {
-  float result = 1.f - sd_igamma_f32(static_cast<float>(a), static_cast<float>(x));
-  return static_cast<bfloat16>(result);
+  return static_cast<bfloat16>(1. - sd_igamma<bfloat16, bfloat16, double>(a, x));
 }
 #endif // HAS_BFLOAT16
 
 template <typename X, typename Y, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_igammac(X a, Y x) {
-  Z result = Z(1.) - sd_igamma<X, Y, Z>(a, x);
+  Z result = static_cast<Z>(1. - sd_igamma<X, Y, double>(a, x));
   SD_PRINT_MATH_FUNC2("sd_igammac", a, x, result,Z);
   return result;
 }

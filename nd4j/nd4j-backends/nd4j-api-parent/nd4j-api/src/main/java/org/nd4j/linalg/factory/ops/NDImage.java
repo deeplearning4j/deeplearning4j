@@ -28,6 +28,24 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.enums.ImageResizeMethod;
 import org.nd4j.enums.Mode;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.custom.AdjustContrast;
+import org.nd4j.linalg.api.ops.custom.AdjustHue;
+import org.nd4j.linalg.api.ops.custom.AdjustSaturation;
+import org.nd4j.linalg.api.ops.custom.HsvToRgb;
+import org.nd4j.linalg.api.ops.custom.RandomCrop;
+import org.nd4j.linalg.api.ops.custom.RgbToHsv;
+import org.nd4j.linalg.api.ops.custom.RgbToYiq;
+import org.nd4j.linalg.api.ops.custom.RgbToYuv;
+import org.nd4j.linalg.api.ops.custom.YiqToRgb;
+import org.nd4j.linalg.api.ops.custom.YuvToRgb;
+import org.nd4j.linalg.api.ops.impl.image.AffineGrid;
+import org.nd4j.linalg.api.ops.impl.image.CropAndResize;
+import org.nd4j.linalg.api.ops.impl.image.ExtractImagePatches;
+import org.nd4j.linalg.api.ops.impl.image.ImageResize;
+import org.nd4j.linalg.api.ops.impl.image.NonMaxSuppression;
+import org.nd4j.linalg.api.ops.impl.image.ResizeBicubic;
+import org.nd4j.linalg.api.ops.impl.image.ResizeBilinear;
+import org.nd4j.linalg.api.ops.impl.transforms.Pad;
 import org.nd4j.linalg.factory.NDValidation;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -36,7 +54,7 @@ public class NDImage {
   }
 
   /**
-   * Given an input image and some crop boxes, extract out the image subsets and resize them to the specified size.<br>
+   * Given an input image and some crop boxes, extract out the image subsets and resize them to the specified size.
    *
    * @param image Input image, with shape [batch, height, width, channels] (NUMERIC type)
    * @param cropBoxes Float32 crop, shape [numBoxes, 4] with values in range 0 to 1 (NUMERIC type)
@@ -51,7 +69,7 @@ public class NDImage {
     NDValidation.validateNumerical("CropAndResize", "cropBoxes", cropBoxes);
     NDValidation.validateNumerical("CropAndResize", "boxIndices", boxIndices);
     NDValidation.validateInteger("CropAndResize", "cropOutSize", cropOutSize);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.CropAndResize(image, cropBoxes, boxIndices, cropOutSize, extrapolationValue));
+    INDArray[] __tmp = Nd4j.exec(new CropAndResize(image, cropBoxes, boxIndices, cropOutSize, extrapolationValue));
     try {
       return __tmp[0];
     } finally {
@@ -66,7 +84,7 @@ public class NDImage {
   }
 
   /**
-   * Given an input image and some crop boxes, extract out the image subsets and resize them to the specified size.<br>
+   * Given an input image and some crop boxes, extract out the image subsets and resize them to the specified size.
    *
    * @param image Input image, with shape [batch, height, width, channels] (NUMERIC type)
    * @param cropBoxes Float32 crop, shape [numBoxes, 4] with values in range 0 to 1 (NUMERIC type)
@@ -80,7 +98,7 @@ public class NDImage {
     NDValidation.validateNumerical("CropAndResize", "cropBoxes", cropBoxes);
     NDValidation.validateNumerical("CropAndResize", "boxIndices", boxIndices);
     NDValidation.validateInteger("CropAndResize", "cropOutSize", cropOutSize);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.CropAndResize(image, cropBoxes, boxIndices, cropOutSize, 0.0));
+    INDArray[] __tmp = Nd4j.exec(new CropAndResize(image, cropBoxes, boxIndices, cropOutSize, 0.0));
     try {
       return __tmp[0];
     } finally {
@@ -95,7 +113,7 @@ public class NDImage {
   }
 
   /**
-   * Adjusts contrast of RGB or grayscale images.<br>
+   * Adjusts contrast of RGB or grayscale images.
    *
    * @param in images to adjust. 3D shape or higher (NUMERIC type)
    * @param factor multiplier for adjusting contrast
@@ -103,7 +121,7 @@ public class NDImage {
    */
   public INDArray adjustContrast(INDArray in, double factor) {
     NDValidation.validateNumerical("adjustContrast", "in", in);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.custom.AdjustContrast(in, factor));
+    INDArray[] __tmp = Nd4j.exec(new AdjustContrast(in, factor));
     try {
       return __tmp[0];
     } finally {
@@ -118,7 +136,7 @@ public class NDImage {
   }
 
   /**
-   * Adjust hue of RGB image <br>
+   * Adjust hue of RGB image
    *
    * @param in image as 3D array (NUMERIC type)
    * @param delta value to add to hue channel
@@ -126,7 +144,7 @@ public class NDImage {
    */
   public INDArray adjustHue(INDArray in, double delta) {
     NDValidation.validateNumerical("adjustHue", "in", in);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.custom.AdjustHue(in, delta));
+    INDArray[] __tmp = Nd4j.exec(new AdjustHue(in, delta));
     try {
       return __tmp[0];
     } finally {
@@ -141,7 +159,7 @@ public class NDImage {
   }
 
   /**
-   * Adjust saturation of RGB images<br>
+   * Adjust saturation of RGB images
    *
    * @param in RGB image as 3D array (NUMERIC type)
    * @param factor factor for saturation
@@ -149,7 +167,7 @@ public class NDImage {
    */
   public INDArray adjustSaturation(INDArray in, double factor) {
     NDValidation.validateNumerical("adjustSaturation", "in", in);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.custom.AdjustSaturation(in, factor));
+    INDArray[] __tmp = Nd4j.exec(new AdjustSaturation(in, factor));
     try {
       return __tmp[0];
     } finally {
@@ -164,9 +182,9 @@ public class NDImage {
   }
 
   /**
-   * Generates a 2D or 3D sampling grid from affine transformation matrices.<br>
-   * Used with grid_sample for spatial transformer networks.<br>
-   * The grid contains normalized coordinates in range [-1, 1].<br>
+   * Generates a 2D or 3D sampling grid from affine transformation matrices.
+   * Used with grid_sample for spatial transformer networks.
+   * The grid contains normalized coordinates in range [-1, 1].
    *
    * @param theta Affine transformation matrix with shape [N, 2, 3] for 2D or [N, 3, 4] for 3D (NUMERIC type)
    * @param size Output size - 1D array specifying [N, H, W] for 2D or [N, D, H, W] for 3D (INT type)
@@ -176,7 +194,7 @@ public class NDImage {
   public INDArray affineGrid(INDArray theta, INDArray size, boolean alignCorners) {
     NDValidation.validateNumerical("affineGrid", "theta", theta);
     NDValidation.validateInteger("affineGrid", "size", size);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.AffineGrid(theta, size, alignCorners));
+    INDArray[] __tmp = Nd4j.exec(new AffineGrid(theta, size, alignCorners));
     try {
       return __tmp[0];
     } finally {
@@ -191,9 +209,9 @@ public class NDImage {
   }
 
   /**
-   * Generates a 2D or 3D sampling grid from affine transformation matrices.<br>
-   * Used with grid_sample for spatial transformer networks.<br>
-   * The grid contains normalized coordinates in range [-1, 1].<br>
+   * Generates a 2D or 3D sampling grid from affine transformation matrices.
+   * Used with grid_sample for spatial transformer networks.
+   * The grid contains normalized coordinates in range [-1, 1].
    *
    * @param theta Affine transformation matrix with shape [N, 2, 3] for 2D or [N, 3, 4] for 3D (NUMERIC type)
    * @param size Output size - 1D array specifying [N, H, W] for 2D or [N, D, H, W] for 3D (INT type)
@@ -202,7 +220,7 @@ public class NDImage {
   public INDArray affineGrid(INDArray theta, INDArray size) {
     NDValidation.validateNumerical("affineGrid", "theta", theta);
     NDValidation.validateInteger("affineGrid", "size", size);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.AffineGrid(theta, size, false));
+    INDArray[] __tmp = Nd4j.exec(new AffineGrid(theta, size, false));
     try {
       return __tmp[0];
     } finally {
@@ -217,7 +235,7 @@ public class NDImage {
   }
 
   /**
-   * Given an input image, extract out image patches (of size kSizes - h x w) and place them in the depth dimension. <br>
+   * Given an input image, extract out image patches (of size kSizes - h x w) and place them in the depth dimension.
    *
    * @param image Input image to extract image patches from - shape [batch, height, width, channels] (NUMERIC type)
    * @param kSizes Kernel size - size of the image patches, [height, width] (Size: Exactly(count=2))
@@ -234,7 +252,7 @@ public class NDImage {
     Preconditions.checkArgument(kSizes.length == 2, "kSizes has incorrect size/length. Expected: kSizes.length == 2, got %s", kSizes.length);
     Preconditions.checkArgument(strides.length == 2, "strides has incorrect size/length. Expected: strides.length == 2, got %s", strides.length);
     Preconditions.checkArgument(rates.length >= 0, "rates has incorrect size/length. Expected: rates.length >= 0, got %s", rates.length);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.ExtractImagePatches(image, kSizes, strides, rates, sameMode));
+    INDArray[] __tmp = Nd4j.exec(new ExtractImagePatches(image, kSizes, strides, rates, sameMode));
     try {
       return __tmp[0];
     } finally {
@@ -249,14 +267,14 @@ public class NDImage {
   }
 
   /**
-   * Converting image from HSV to RGB format <br>
+   * Converting image from HSV to RGB format
    *
    * @param input 3D image (NUMERIC type)
    * @return output 3D image (NUMERIC type)
    */
   public INDArray hsvToRgb(INDArray input) {
     NDValidation.validateNumerical("hsvToRgb", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.custom.HsvToRgb(input));
+    INDArray[] __tmp = Nd4j.exec(new HsvToRgb(input));
     try {
       return __tmp[0];
     } finally {
@@ -271,7 +289,7 @@ public class NDImage {
   }
 
   /**
-   * Resize images to size using the specified method.<br>
+   * Resize images to size using the specified method.
    *
    * @param input 4D image [NHWC] (NUMERIC type)
    * @param size new height and width (INT type)
@@ -290,7 +308,7 @@ public class NDImage {
       boolean antialias, ImageResizeMethod ImageResizeMethod) {
     NDValidation.validateNumerical("imageResize", "input", input);
     NDValidation.validateInteger("imageResize", "size", size);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.ImageResize(input, size, preserveAspectRatio, antialias, ImageResizeMethod));
+    INDArray[] __tmp = Nd4j.exec(new ImageResize(input, size, preserveAspectRatio, antialias, ImageResizeMethod));
     try {
       return __tmp[0];
     } finally {
@@ -305,7 +323,7 @@ public class NDImage {
   }
 
   /**
-   * Resize images to size using the specified method.<br>
+   * Resize images to size using the specified method.
    *
    * @param input 4D image [NHWC] (NUMERIC type)
    * @param size new height and width (INT type)
@@ -321,7 +339,7 @@ public class NDImage {
   public INDArray imageResize(INDArray input, INDArray size, ImageResizeMethod ImageResizeMethod) {
     NDValidation.validateNumerical("imageResize", "input", input);
     NDValidation.validateInteger("imageResize", "size", size);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.ImageResize(input, size, false, false, ImageResizeMethod));
+    INDArray[] __tmp = Nd4j.exec(new ImageResize(input, size, false, false, ImageResizeMethod));
     try {
       return __tmp[0];
     } finally {
@@ -336,20 +354,20 @@ public class NDImage {
   }
 
   /**
-   * Greedily selects a subset of bounding boxes in descending order of score<br>
+   * Greedily selects a subset of bounding boxes in descending order of score
    *
    * @param boxes Might be null. Name for the output variable (NUMERIC type)
    * @param scores vector of shape [num_boxes] (NUMERIC type)
    * @param maxOutSize scalar representing the maximum number of boxes to be selected
    * @param iouThreshold threshold for deciding whether boxes overlap too much with respect to IOU
    * @param scoreThreshold threshold for deciding when to remove boxes based on score
-   * @return output vectort of shape [M] representing the selected indices from the boxes tensor, where M <= max_output_size (NUMERIC type)
+   * @return output vector of shape [M] representing the selected indices from the boxes tensor, where M &lt;= max_output_size (NUMERIC type)
    */
   public INDArray nonMaxSuppression(INDArray boxes, INDArray scores, int maxOutSize,
       double iouThreshold, double scoreThreshold) {
     NDValidation.validateNumerical("nonMaxSuppression", "boxes", boxes);
     NDValidation.validateNumerical("nonMaxSuppression", "scores", scores);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.NonMaxSuppression(boxes, scores, maxOutSize, iouThreshold, scoreThreshold));
+    INDArray[] __tmp = Nd4j.exec(new NonMaxSuppression(boxes, scores, maxOutSize, iouThreshold, scoreThreshold));
     try {
       return __tmp[0];
     } finally {
@@ -364,7 +382,7 @@ public class NDImage {
   }
 
   /**
-   * Pads an image according to the given padding type<br>
+   * Pads an image according to the given padding type
    *
    * @param input input array (NUMERIC type)
    * @param padding padding input (NUMERIC type)
@@ -375,7 +393,7 @@ public class NDImage {
   public INDArray pad(INDArray input, INDArray padding, Mode Mode, double padValue) {
     NDValidation.validateNumerical("pad", "input", input);
     NDValidation.validateNumerical("pad", "padding", padding);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.Pad(input, padding, Mode, padValue));
+    INDArray[] __tmp = Nd4j.exec(new Pad(input, padding, Mode, padValue));
     try {
       return __tmp[0];
     } finally {
@@ -390,7 +408,7 @@ public class NDImage {
   }
 
   /**
-   * Randomly crops image<br>
+   * Randomly crops image
    *
    * @param input input array (NUMERIC type)
    * @param shape shape for crop (INT type)
@@ -399,7 +417,7 @@ public class NDImage {
   public INDArray randomCrop(INDArray input, INDArray shape) {
     NDValidation.validateNumerical("randomCrop", "input", input);
     NDValidation.validateInteger("randomCrop", "shape", shape);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.custom.RandomCrop(input, shape));
+    INDArray[] __tmp = Nd4j.exec(new RandomCrop(input, shape));
     try {
       return __tmp[0];
     } finally {
@@ -414,7 +432,7 @@ public class NDImage {
   }
 
   /**
-   * Resize images to size using the specified method.<br>
+   * Resize images to size using the specified method.
    *
    * @param input 4D image (NUMERIC type)
    * @param size the target size to resize to  (INT type)
@@ -426,7 +444,7 @@ public class NDImage {
       boolean alignPixelCenters) {
     NDValidation.validateNumerical("resizeBiCubic", "input", input);
     NDValidation.validateInteger("resizeBiCubic", "size", size);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.ResizeBicubic(input, size, alignCorners, alignPixelCenters));
+    INDArray[] __tmp = Nd4j.exec(new ResizeBicubic(input, size, alignCorners, alignPixelCenters));
     try {
       return __tmp[0];
     } finally {
@@ -441,10 +459,10 @@ public class NDImage {
   }
 
   /**
-   * Resize images to size using the specified method.<br>
+   * Resize images to size using the specified method.
    *
    * @param input 4D image (NUMERIC type)
-   * @param height target height for resizing to 
+   * @param height target height for resizing to
    * @param width target width for resizing to
    * @param alignCorners whether to align corners during resizing. Images are aligned to preserve corners.
    * @param halfPixelCenters When resizing, assumes pixels are centered at 0.5.
@@ -453,7 +471,7 @@ public class NDImage {
   public INDArray resizeBiLinear(INDArray input, int height, int width, boolean alignCorners,
       boolean halfPixelCenters) {
     NDValidation.validateNumerical("resizeBiLinear", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.ResizeBilinear(input, height, width, alignCorners, halfPixelCenters));
+    INDArray[] __tmp = Nd4j.exec(new ResizeBilinear(input, height, width, alignCorners, halfPixelCenters));
     try {
       return __tmp[0];
     } finally {
@@ -468,14 +486,14 @@ public class NDImage {
   }
 
   /**
-   * Converting array from HSV to RGB format<br>
+   * Converting array from HSV to RGB format
    *
    * @param input 3D image (NUMERIC type)
    * @return output 3D image (NUMERIC type)
    */
   public INDArray rgbToHsv(INDArray input) {
     NDValidation.validateNumerical("rgbToHsv", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.custom.RgbToHsv(input));
+    INDArray[] __tmp = Nd4j.exec(new RgbToHsv(input));
     try {
       return __tmp[0];
     } finally {
@@ -490,14 +508,14 @@ public class NDImage {
   }
 
   /**
-   * Converting array from RGB to YIQ format <br>
+   * Converting array from RGB to YIQ format
    *
    * @param input 3D image (NUMERIC type)
    * @return output 3D image (NUMERIC type)
    */
   public INDArray rgbToYiq(INDArray input) {
     NDValidation.validateNumerical("rgbToYiq", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.custom.RgbToYiq(input));
+    INDArray[] __tmp = Nd4j.exec(new RgbToYiq(input));
     try {
       return __tmp[0];
     } finally {
@@ -512,14 +530,14 @@ public class NDImage {
   }
 
   /**
-   * Converting array from RGB to YUV format <br>
+   * Converting array from RGB to YUV format
    *
    * @param input 3D image (NUMERIC type)
    * @return output 3D image (NUMERIC type)
    */
   public INDArray rgbToYuv(INDArray input) {
     NDValidation.validateNumerical("rgbToYuv", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.custom.RgbToYuv(input));
+    INDArray[] __tmp = Nd4j.exec(new RgbToYuv(input));
     try {
       return __tmp[0];
     } finally {
@@ -534,14 +552,14 @@ public class NDImage {
   }
 
   /**
-   * Converting image from YIQ to RGB format <br>
+   * Converting image from YIQ to RGB format
    *
    * @param input 3D image (NUMERIC type)
    * @return output 3D image (NUMERIC type)
    */
   public INDArray yiqToRgb(INDArray input) {
     NDValidation.validateNumerical("yiqToRgb", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.custom.YiqToRgb(input));
+    INDArray[] __tmp = Nd4j.exec(new YiqToRgb(input));
     try {
       return __tmp[0];
     } finally {
@@ -556,14 +574,14 @@ public class NDImage {
   }
 
   /**
-   * Converting image from YUV to RGB format <br>
+   * Converting image from YUV to RGB format
    *
    * @param input 3D image (NUMERIC type)
    * @return output 3D image (NUMERIC type)
    */
   public INDArray yuvToRgb(INDArray input) {
     NDValidation.validateNumerical("yuvToRgb", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.custom.YuvToRgb(input));
+    INDArray[] __tmp = Nd4j.exec(new YuvToRgb(input));
     try {
       return __tmp[0];
     } finally {

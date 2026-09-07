@@ -34,9 +34,9 @@ public class SDSignal extends SDOps {
   }
 
   /**
-   * Generates a Blackman window function.<br>
-   * The Blackman window is defined as: w(n) = 0.42 - 0.5*cos(2*pi*n/(N-1)) + 0.08*cos(4*pi*n/(N-1))<br>
-   * Used for spectral analysis and STFT preprocessing.<br>
+   * Generates a Blackman window function.
+   * The Blackman window is defined as: w(n) = 0.42 - 0.5*cos(2*pi*n/(N-1)) + 0.08*cos(4*pi*n/(N-1))
+   * Used for spectral analysis and STFT preprocessing.
    *
    * @param size Window size (INT type)
    * @param periodic If true, generate a periodic window for spectral analysis
@@ -48,9 +48,9 @@ public class SDSignal extends SDOps {
   }
 
   /**
-   * Generates a Blackman window function.<br>
-   * The Blackman window is defined as: w(n) = 0.42 - 0.5*cos(2*pi*n/(N-1)) + 0.08*cos(4*pi*n/(N-1))<br>
-   * Used for spectral analysis and STFT preprocessing.<br>
+   * Generates a Blackman window function.
+   * The Blackman window is defined as: w(n) = 0.42 - 0.5*cos(2*pi*n/(N-1)) + 0.08*cos(4*pi*n/(N-1))
+   * Used for spectral analysis and STFT preprocessing.
    *
    * @param name name May be null. Name for the output variable
    * @param size Window size (INT type)
@@ -64,9 +64,9 @@ public class SDSignal extends SDOps {
   }
 
   /**
-   * Generates a Blackman window function.<br>
-   * The Blackman window is defined as: w(n) = 0.42 - 0.5*cos(2*pi*n/(N-1)) + 0.08*cos(4*pi*n/(N-1))<br>
-   * Used for spectral analysis and STFT preprocessing.<br>
+   * Generates a Blackman window function.
+   * The Blackman window is defined as: w(n) = 0.42 - 0.5*cos(2*pi*n/(N-1)) + 0.08*cos(4*pi*n/(N-1))
+   * Used for spectral analysis and STFT preprocessing.
    *
    * @param size Window size (INT type)
    * @return output Blackman window tensor of shape [size] (NUMERIC type)
@@ -77,9 +77,9 @@ public class SDSignal extends SDOps {
   }
 
   /**
-   * Generates a Blackman window function.<br>
-   * The Blackman window is defined as: w(n) = 0.42 - 0.5*cos(2*pi*n/(N-1)) + 0.08*cos(4*pi*n/(N-1))<br>
-   * Used for spectral analysis and STFT preprocessing.<br>
+   * Generates a Blackman window function.
+   * The Blackman window is defined as: w(n) = 0.42 - 0.5*cos(2*pi*n/(N-1)) + 0.08*cos(4*pi*n/(N-1))
+   * Used for spectral analysis and STFT preprocessing.
    *
    * @param name name May be null. Name for the output variable
    * @param size Window size (INT type)
@@ -92,9 +92,9 @@ public class SDSignal extends SDOps {
   }
 
   /**
-   * Discrete Fourier Transform operation.<br>
-   * Computes the DFT of the input tensor along the specified axis.<br>
-   * For real input, can optionally return only positive frequencies (onesided=true).<br>
+   * Discrete Fourier Transform operation.
+   * Computes the DFT of the input tensor along the specified axis.
+   * For real input, can optionally return only positive frequencies (onesided=true).
    *
    * @param input Complex input tensor. Last dimension should be 2 for [real, imag] or treated as real-only (NUMERIC type)
    * @param axis Axis along which to compute the DFT
@@ -108,9 +108,9 @@ public class SDSignal extends SDOps {
   }
 
   /**
-   * Discrete Fourier Transform operation.<br>
-   * Computes the DFT of the input tensor along the specified axis.<br>
-   * For real input, can optionally return only positive frequencies (onesided=true).<br>
+   * Discrete Fourier Transform operation.
+   * Computes the DFT of the input tensor along the specified axis.
+   * For real input, can optionally return only positive frequencies (onesided=true).
    *
    * @param name name May be null. Name for the output variable
    * @param input Complex input tensor. Last dimension should be 2 for [real, imag] or treated as real-only (NUMERIC type)
@@ -127,9 +127,9 @@ public class SDSignal extends SDOps {
   }
 
   /**
-   * Discrete Fourier Transform operation.<br>
-   * Computes the DFT of the input tensor along the specified axis.<br>
-   * For real input, can optionally return only positive frequencies (onesided=true).<br>
+   * Discrete Fourier Transform operation.
+   * Computes the DFT of the input tensor along the specified axis.
+   * For real input, can optionally return only positive frequencies (onesided=true).
    *
    * @param input Complex input tensor. Last dimension should be 2 for [real, imag] or treated as real-only (NUMERIC type)
    * @return output DFT output - complex tensor with last dimension 2 for [real, imag] (NUMERIC type)
@@ -140,9 +140,9 @@ public class SDSignal extends SDOps {
   }
 
   /**
-   * Discrete Fourier Transform operation.<br>
-   * Computes the DFT of the input tensor along the specified axis.<br>
-   * For real input, can optionally return only positive frequencies (onesided=true).<br>
+   * Discrete Fourier Transform operation.
+   * Computes the DFT of the input tensor along the specified axis.
+   * For real input, can optionally return only positive frequencies (onesided=true).
    *
    * @param name name May be null. Name for the output variable
    * @param input Complex input tensor. Last dimension should be 2 for [real, imag] or treated as real-only (NUMERIC type)
@@ -155,9 +155,9 @@ public class SDSignal extends SDOps {
   }
 
   /**
-   * Generates a Hamming window function.<br>
-   * The Hamming window is defined as: w(n) = 0.54 - 0.46 * cos(2*pi*n/(N-1))<br>
-   * Used for spectral analysis and STFT preprocessing.<br>
+   * Generates a Hamming window function.
+   * The Hamming window is defined as: w(n) = 0.54 - 0.46 * cos(2*pi*n/(N-1))
+   * Used for spectral analysis and STFT preprocessing.
    *
    * @param size Window size (INT type)
    * @param periodic If true, generate a periodic window for spectral analysis
@@ -169,9 +169,9 @@ public class SDSignal extends SDOps {
   }
 
   /**
-   * Generates a Hamming window function.<br>
-   * The Hamming window is defined as: w(n) = 0.54 - 0.46 * cos(2*pi*n/(N-1))<br>
-   * Used for spectral analysis and STFT preprocessing.<br>
+   * Generates a Hamming window function.
+   * The Hamming window is defined as: w(n) = 0.54 - 0.46 * cos(2*pi*n/(N-1))
+   * Used for spectral analysis and STFT preprocessing.
    *
    * @param name name May be null. Name for the output variable
    * @param size Window size (INT type)
@@ -185,9 +185,9 @@ public class SDSignal extends SDOps {
   }
 
   /**
-   * Generates a Hamming window function.<br>
-   * The Hamming window is defined as: w(n) = 0.54 - 0.46 * cos(2*pi*n/(N-1))<br>
-   * Used for spectral analysis and STFT preprocessing.<br>
+   * Generates a Hamming window function.
+   * The Hamming window is defined as: w(n) = 0.54 - 0.46 * cos(2*pi*n/(N-1))
+   * Used for spectral analysis and STFT preprocessing.
    *
    * @param size Window size (INT type)
    * @return output Hamming window tensor of shape [size] (NUMERIC type)
@@ -198,9 +198,9 @@ public class SDSignal extends SDOps {
   }
 
   /**
-   * Generates a Hamming window function.<br>
-   * The Hamming window is defined as: w(n) = 0.54 - 0.46 * cos(2*pi*n/(N-1))<br>
-   * Used for spectral analysis and STFT preprocessing.<br>
+   * Generates a Hamming window function.
+   * The Hamming window is defined as: w(n) = 0.54 - 0.46 * cos(2*pi*n/(N-1))
+   * Used for spectral analysis and STFT preprocessing.
    *
    * @param name name May be null. Name for the output variable
    * @param size Window size (INT type)
@@ -213,9 +213,9 @@ public class SDSignal extends SDOps {
   }
 
   /**
-   * Generates a Hann window function.<br>
-   * The Hann window is defined as: w(n) = 0.5 * (1 - cos(2*pi*n/(N-1)))<br>
-   * Used for spectral analysis and STFT preprocessing.<br>
+   * Generates a Hann window function.
+   * The Hann window is defined as: w(n) = 0.5 * (1 - cos(2*pi*n/(N-1)))
+   * Used for spectral analysis and STFT preprocessing.
    *
    * @param size Window size (INT type)
    * @param periodic If true, generate a periodic window for spectral analysis
@@ -227,9 +227,9 @@ public class SDSignal extends SDOps {
   }
 
   /**
-   * Generates a Hann window function.<br>
-   * The Hann window is defined as: w(n) = 0.5 * (1 - cos(2*pi*n/(N-1)))<br>
-   * Used for spectral analysis and STFT preprocessing.<br>
+   * Generates a Hann window function.
+   * The Hann window is defined as: w(n) = 0.5 * (1 - cos(2*pi*n/(N-1)))
+   * Used for spectral analysis and STFT preprocessing.
    *
    * @param name name May be null. Name for the output variable
    * @param size Window size (INT type)
@@ -243,9 +243,9 @@ public class SDSignal extends SDOps {
   }
 
   /**
-   * Generates a Hann window function.<br>
-   * The Hann window is defined as: w(n) = 0.5 * (1 - cos(2*pi*n/(N-1)))<br>
-   * Used for spectral analysis and STFT preprocessing.<br>
+   * Generates a Hann window function.
+   * The Hann window is defined as: w(n) = 0.5 * (1 - cos(2*pi*n/(N-1)))
+   * Used for spectral analysis and STFT preprocessing.
    *
    * @param size Window size (INT type)
    * @return output Hann window tensor of shape [size] (NUMERIC type)
@@ -256,9 +256,9 @@ public class SDSignal extends SDOps {
   }
 
   /**
-   * Generates a Hann window function.<br>
-   * The Hann window is defined as: w(n) = 0.5 * (1 - cos(2*pi*n/(N-1)))<br>
-   * Used for spectral analysis and STFT preprocessing.<br>
+   * Generates a Hann window function.
+   * The Hann window is defined as: w(n) = 0.5 * (1 - cos(2*pi*n/(N-1)))
+   * Used for spectral analysis and STFT preprocessing.
    *
    * @param name name May be null. Name for the output variable
    * @param size Window size (INT type)
@@ -271,9 +271,9 @@ public class SDSignal extends SDOps {
   }
 
   /**
-   * Short-Time Fourier Transform operation.<br>
-   * Computes STFT by applying DFT to windowed overlapping segments of the input signal.<br>
-   * Used for time-frequency analysis of signals.<br>
+   * Short-Time Fourier Transform operation.
+   * Computes STFT by applying DFT to windowed overlapping segments of the input signal.
+   * Used for time-frequency analysis of signals.
    *
    * @param signal Input signal tensor (NUMERIC type)
    * @param frameStep Number of samples to step between frames (hop length) (INT type)
@@ -292,9 +292,9 @@ public class SDSignal extends SDOps {
   }
 
   /**
-   * Short-Time Fourier Transform operation.<br>
-   * Computes STFT by applying DFT to windowed overlapping segments of the input signal.<br>
-   * Used for time-frequency analysis of signals.<br>
+   * Short-Time Fourier Transform operation.
+   * Computes STFT by applying DFT to windowed overlapping segments of the input signal.
+   * Used for time-frequency analysis of signals.
    *
    * @param name name May be null. Name for the output variable
    * @param signal Input signal tensor (NUMERIC type)
@@ -315,9 +315,9 @@ public class SDSignal extends SDOps {
   }
 
   /**
-   * Short-Time Fourier Transform operation.<br>
-   * Computes STFT by applying DFT to windowed overlapping segments of the input signal.<br>
-   * Used for time-frequency analysis of signals.<br>
+   * Short-Time Fourier Transform operation.
+   * Computes STFT by applying DFT to windowed overlapping segments of the input signal.
+   * Used for time-frequency analysis of signals.
    *
    * @param signal Input signal tensor (NUMERIC type)
    * @param frameStep Number of samples to step between frames (hop length) (INT type)
@@ -335,9 +335,9 @@ public class SDSignal extends SDOps {
   }
 
   /**
-   * Short-Time Fourier Transform operation.<br>
-   * Computes STFT by applying DFT to windowed overlapping segments of the input signal.<br>
-   * Used for time-frequency analysis of signals.<br>
+   * Short-Time Fourier Transform operation.
+   * Computes STFT by applying DFT to windowed overlapping segments of the input signal.
+   * Used for time-frequency analysis of signals.
    *
    * @param name name May be null. Name for the output variable
    * @param signal Input signal tensor (NUMERIC type)
@@ -357,8 +357,8 @@ public class SDSignal extends SDOps {
   }
 
   /**
-   * Short-Time Fourier Transform operation (simplified version without window/frameLength).<br>
-   * Computes STFT by applying DFT to overlapping segments of the input signal.<br>
+   * Short-Time Fourier Transform operation (simplified version without window/frameLength).
+   * Computes STFT by applying DFT to overlapping segments of the input signal.
    *
    * @param signal Input signal tensor (NUMERIC type)
    * @param frameStep Number of samples to step between frames (hop length) (INT type)
@@ -372,8 +372,8 @@ public class SDSignal extends SDOps {
   }
 
   /**
-   * Short-Time Fourier Transform operation (simplified version without window/frameLength).<br>
-   * Computes STFT by applying DFT to overlapping segments of the input signal.<br>
+   * Short-Time Fourier Transform operation (simplified version without window/frameLength).
+   * Computes STFT by applying DFT to overlapping segments of the input signal.
    *
    * @param name name May be null. Name for the output variable
    * @param signal Input signal tensor (NUMERIC type)
@@ -390,8 +390,8 @@ public class SDSignal extends SDOps {
   }
 
   /**
-   * Short-Time Fourier Transform operation (simplified version without window/frameLength).<br>
-   * Computes STFT by applying DFT to overlapping segments of the input signal.<br>
+   * Short-Time Fourier Transform operation (simplified version without window/frameLength).
+   * Computes STFT by applying DFT to overlapping segments of the input signal.
    *
    * @param signal Input signal tensor (NUMERIC type)
    * @param frameStep Number of samples to step between frames (hop length) (INT type)
@@ -404,8 +404,8 @@ public class SDSignal extends SDOps {
   }
 
   /**
-   * Short-Time Fourier Transform operation (simplified version without window/frameLength).<br>
-   * Computes STFT by applying DFT to overlapping segments of the input signal.<br>
+   * Short-Time Fourier Transform operation (simplified version without window/frameLength).
+   * Computes STFT by applying DFT to overlapping segments of the input signal.
    *
    * @param name name May be null. Name for the output variable
    * @param signal Input signal tensor (NUMERIC type)

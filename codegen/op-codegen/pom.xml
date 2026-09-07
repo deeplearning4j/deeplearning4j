@@ -18,7 +18,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <commons.dbutils.version>1.7</commons.dbutils.version>
         <lombok.version>1.18.42</lombok.version>
-        <logback.version>1.2.3</logback.version>
         <junit.version>5.8.0-M1</junit.version>
         <junit.platform.launcher.version>1.8.0-M1</junit.platform.launcher.version>
         <junit-jupiter.version>5.4.2</junit-jupiter.version>
@@ -42,13 +41,13 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>1.7.28</version>
+            <version>${slf4j.version}</version>
         </dependency>
         <!-- Redirect jackson to slf4j.  -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>log4j-over-slf4j</artifactId>
-            <version>1.7.28</version>
+            <version>${slf4j.version}</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>

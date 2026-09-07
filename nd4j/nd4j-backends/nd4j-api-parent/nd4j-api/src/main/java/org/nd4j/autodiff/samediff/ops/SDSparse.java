@@ -34,9 +34,9 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * BSR sparse matrix-dense matrix multiplication: C = A_bsr·B.<br>
-   * A is in BSR format; B and C are dense.<br>
-   * Equivalent to toDense(A_bsr).mmul(B) but skips zero blocks.<br>
+   * BSR sparse matrix-dense matrix multiplication: C = A_bsr·B.
+   * A is in BSR format; B and C are dense.
+   * Equivalent to toDense(A_bsr).mmul(B) but skips zero blocks.
    *
    * @param bsrValues 1D [nnzb * blockDim * blockDim] BSR non-zero block values of A (FLOATING_POINT type)
    * @param bsrColIdx 1D [nnzb] block-column indices of A (INT32) (INT type)
@@ -57,9 +57,9 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * BSR sparse matrix-dense matrix multiplication: C = A_bsr·B.<br>
-   * A is in BSR format; B and C are dense.<br>
-   * Equivalent to toDense(A_bsr).mmul(B) but skips zero blocks.<br>
+   * BSR sparse matrix-dense matrix multiplication: C = A_bsr·B.
+   * A is in BSR format; B and C are dense.
+   * Equivalent to toDense(A_bsr).mmul(B) but skips zero blocks.
    *
    * @param name name May be null. Name for the output variable
    * @param bsrValues 1D [nnzb * blockDim * blockDim] BSR non-zero block values of A (FLOATING_POINT type)
@@ -82,7 +82,7 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Convert a BSR (Block Sparse Row) sparse matrix to a dense matrix.<br>
+   * Convert a BSR (Block Sparse Row) sparse matrix to a dense matrix.
    *
    * @param bsrValues 1D [nnzb * blockDim * blockDim] BSR non-zero block values (FLOATING_POINT type)
    * @param bsrColIdx 1D [nnzb] block-column indices (INT32) (INT type)
@@ -101,7 +101,7 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Convert a BSR (Block Sparse Row) sparse matrix to a dense matrix.<br>
+   * Convert a BSR (Block Sparse Row) sparse matrix to a dense matrix.
    *
    * @param name name May be null. Name for the output variable
    * @param bsrValues 1D [nnzb * blockDim * blockDim] BSR non-zero block values (FLOATING_POINT type)
@@ -122,8 +122,8 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Convert a COO (Coordinate) sparse matrix to CSR (Compressed Sparse Row) format.<br>
-   * The COO entries are sorted into row-major order by the native op.<br>
+   * Convert a COO (Coordinate) sparse matrix to CSR (Compressed Sparse Row) format.
+   * The COO entries are sorted into row-major order by the native op.
    *
    * @param indices 2D [nnz, 2] INT64 row/col index pairs for each non-zero (INT type)
    * @param values 1D [nnz] non-zero values (FLOATING_POINT type)
@@ -140,8 +140,8 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Convert a COO (Coordinate) sparse matrix to CSR (Compressed Sparse Row) format.<br>
-   * The COO entries are sorted into row-major order by the native op.<br>
+   * Convert a COO (Coordinate) sparse matrix to CSR (Compressed Sparse Row) format.
+   * The COO entries are sorted into row-major order by the native op.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param indices 2D [nnz, 2] INT64 row/col index pairs for each non-zero (INT type)
@@ -161,7 +161,7 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Convert a CSC (Compressed Sparse Column) sparse matrix to a dense matrix.<br>
+   * Convert a CSC (Compressed Sparse Column) sparse matrix to a dense matrix.
    *
    * @param cscValues 1D [nnz] CSC non-zero values in column-major order (FLOATING_POINT type)
    * @param cscRowIdx 1D [nnz] row index for each non-zero (INT32) (INT type)
@@ -179,7 +179,7 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Convert a CSC (Compressed Sparse Column) sparse matrix to a dense matrix.<br>
+   * Convert a CSC (Compressed Sparse Column) sparse matrix to a dense matrix.
    *
    * @param name name May be null. Name for the output variable
    * @param cscValues 1D [nnz] CSC non-zero values in column-major order (FLOATING_POINT type)
@@ -199,9 +199,9 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Elementwise CSR sparse matrix addition: C = A + B.<br>
-   * Both A and B must have the same logical shape [m, n].<br>
-   * This op is forward-only; automatic differentiation is not supported.<br>
+   * Elementwise CSR sparse matrix addition: C = A + B.
+   * Both A and B must have the same logical shape [m, n].
+   * This op is forward-only; automatic differentiation is not supported.
    *
    * @param aValues 1D [nnzA] non-zero values of A (FLOATING_POINT type)
    * @param aColIdx 1D [nnzA] column indices of A (INT32) (INT type)
@@ -227,9 +227,9 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Elementwise CSR sparse matrix addition: C = A + B.<br>
-   * Both A and B must have the same logical shape [m, n].<br>
-   * This op is forward-only; automatic differentiation is not supported.<br>
+   * Elementwise CSR sparse matrix addition: C = A + B.
+   * Both A and B must have the same logical shape [m, n].
+   * This op is forward-only; automatic differentiation is not supported.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param aValues 1D [nnzA] non-zero values of A (FLOATING_POINT type)
@@ -258,8 +258,8 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Diagonal-scaled sparse matrix product: out[e] = dl[i]*aValues[e]*dr[j] for each non-zero (i,j).<br>
-   * Computes the non-zero values of Dl·A·Dr where Dl=diag(dl), Dr=diag(dr), keeping the sparsity pattern intact.<br>
+   * Diagonal-scaled sparse matrix product: out[e] = dl[i]*aValues[e]*dr[j] for each non-zero (i,j).
+   * Computes the non-zero values of Dl·A·Dr where Dl=diag(dl), Dr=diag(dr), keeping the sparsity pattern intact.
    *
    * @param aValues 1D [nnz] CSR non-zero values of A (FLOATING_POINT type)
    * @param aColIdx 1D [nnz] column indices of A (INT32) (INT type)
@@ -281,8 +281,8 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Diagonal-scaled sparse matrix product: out[e] = dl[i]*aValues[e]*dr[j] for each non-zero (i,j).<br>
-   * Computes the non-zero values of Dl·A·Dr where Dl=diag(dl), Dr=diag(dr), keeping the sparsity pattern intact.<br>
+   * Diagonal-scaled sparse matrix product: out[e] = dl[i]*aValues[e]*dr[j] for each non-zero (i,j).
+   * Computes the non-zero values of Dl·A·Dr where Dl=diag(dl), Dr=diag(dr), keeping the sparsity pattern intact.
    *
    * @param name name May be null. Name for the output variable
    * @param aValues 1D [nnz] CSR non-zero values of A (FLOATING_POINT type)
@@ -306,8 +306,8 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Segment scatter-reduce: aggregate per-edge messages to per-node outputs (the N-step of MPNN).<br>
-   * mode: 0=SUM, 1=MEAN, 2=MAX.<br>
+   * Segment scatter-reduce: aggregate per-edge messages to per-node outputs (the N-step of MPNN).
+   * mode: 0=SUM, 1=MEAN, 2=MAX.
    *
    * @param rowPtr 1D [rows+1] INT32 CSR row pointers (INT type)
    * @param edgeMsg 2D [nnz, F] per-edge message vectors (FLOATING_POINT type)
@@ -322,8 +322,8 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Segment scatter-reduce: aggregate per-edge messages to per-node outputs (the N-step of MPNN).<br>
-   * mode: 0=SUM, 1=MEAN, 2=MAX.<br>
+   * Segment scatter-reduce: aggregate per-edge messages to per-node outputs (the N-step of MPNN).
+   * mode: 0=SUM, 1=MEAN, 2=MAX.
    *
    * @param name name May be null. Name for the output variable
    * @param rowPtr 1D [rows+1] INT32 CSR row pointers (INT type)
@@ -341,9 +341,9 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Edge-gather primitive: pull node-feature vectors onto edges.<br>
-   * For each edge e and feature f: edgeFeat[e,f] = X[colIdx[e],f].<br>
-   * n = X.shape[0] (number of nodes); required by the backward op to reconstruct dX shape [n, F].<br>
+   * Edge-gather primitive: pull node-feature vectors onto edges.
+   * For each edge e and feature f: edgeFeat[e,f] = X[colIdx[e],f].
+   * n = X.shape[0] (number of nodes); required by the backward op to reconstruct dX shape [n, F].
    *
    * @param colIdx 1D [nnz] INT32 source-node ids for each edge (INT type)
    * @param X 2D [n, F] dense node-feature matrix (FLOATING_POINT type)
@@ -357,9 +357,9 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Edge-gather primitive: pull node-feature vectors onto edges.<br>
-   * For each edge e and feature f: edgeFeat[e,f] = X[colIdx[e],f].<br>
-   * n = X.shape[0] (number of nodes); required by the backward op to reconstruct dX shape [n, F].<br>
+   * Edge-gather primitive: pull node-feature vectors onto edges.
+   * For each edge e and feature f: edgeFeat[e,f] = X[colIdx[e],f].
+   * n = X.shape[0] (number of nodes); required by the backward op to reconstruct dX shape [n, F].
    *
    * @param name name May be null. Name for the output variable
    * @param colIdx 1D [nnz] INT32 source-node ids for each edge (INT type)
@@ -375,8 +375,8 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Per-row softmax over CSR non-zero values: the GAT edge-softmax primitive.<br>
-   * For each row i: alpha[k] = exp(values[k]) / sum_{k' in row i} exp(values[k']).<br>
+   * Per-row softmax over CSR non-zero values: the GAT edge-softmax primitive.
+   * For each row i: alpha[k] = exp(values[k]) / sum_{k' in row i} exp(values[k']).
    *
    * @param values 1D [nnz] non-zero attention logits (FLOATING_POINT type)
    * @param rowPtr 1D [rows+1] INT32 CSR row pointers (INT type)
@@ -390,8 +390,8 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Per-row softmax over CSR non-zero values: the GAT edge-softmax primitive.<br>
-   * For each row i: alpha[k] = exp(values[k]) / sum_{k' in row i} exp(values[k']).<br>
+   * Per-row softmax over CSR non-zero values: the GAT edge-softmax primitive.
+   * For each row i: alpha[k] = exp(values[k]) / sum_{k' in row i} exp(values[k']).
    *
    * @param name name May be null. Name for the output variable
    * @param values 1D [nnz] non-zero attention logits (FLOATING_POINT type)
@@ -407,8 +407,8 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Sparse-sparse SDDMM: sample L·Mᵀ at positions given by the target CSR sparsity pattern.<br>
-   * Used as the SpGEMM gradient kernel. Forward-only (no autodiff).<br>
+   * Sparse-sparse SDDMM: sample L·Mᵀ at positions given by the target CSR sparsity pattern.
+   * Used as the SpGEMM gradient kernel. Forward-only (no autodiff).
    *
    * @param targetRowPtr 1D [P+1] INT32 row pointers of the target sparsity pattern (INT type)
    * @param targetColIdx 1D [tnnz] INT32 column indices of the target pattern (INT type)
@@ -438,8 +438,8 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Sparse-sparse SDDMM: sample L·Mᵀ at positions given by the target CSR sparsity pattern.<br>
-   * Used as the SpGEMM gradient kernel. Forward-only (no autodiff).<br>
+   * Sparse-sparse SDDMM: sample L·Mᵀ at positions given by the target CSR sparsity pattern.
+   * Used as the SpGEMM gradient kernel. Forward-only (no autodiff).
    *
    * @param name name May be null. Name for the output variable
    * @param targetRowPtr 1D [P+1] INT32 row pointers of the target sparsity pattern (INT type)
@@ -471,8 +471,8 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Neighbourhood max-aggregation over a CSR graph: the GraphSAGE-max primitive.<br>
-   * For each row i and feature f: out[i,f] = max over source neighbours j of X[j,f].<br>
+   * Neighbourhood max-aggregation over a CSR graph: the GraphSAGE-max primitive.
+   * For each row i and feature f: out[i,f] = max over source neighbours j of X[j,f].
    *
    * @param colIdx 1D [nnz] INT32 column (source-node) indices (INT type)
    * @param rowPtr 1D [rows+1] INT32 row (segment) pointers (INT type)
@@ -488,8 +488,8 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Neighbourhood max-aggregation over a CSR graph: the GraphSAGE-max primitive.<br>
-   * For each row i and feature f: out[i,f] = max over source neighbours j of X[j,f].<br>
+   * Neighbourhood max-aggregation over a CSR graph: the GraphSAGE-max primitive.
+   * For each row i and feature f: out[i,f] = max over source neighbours j of X[j,f].
    *
    * @param name name May be null. Name for the output variable
    * @param colIdx 1D [nnz] INT32 column (source-node) indices (INT type)
@@ -508,9 +508,9 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * CSR sparse matrix-matrix multiplication (SpGEMM): C = A·B.<br>
-   * Both A and B are in CSR format; output C is also in CSR format.<br>
-   * The output nnz is data-dependent and determined by the native shape function.<br>
+   * CSR sparse matrix-matrix multiplication (SpGEMM): C = A·B.
+   * Both A and B are in CSR format; output C is also in CSR format.
+   * The output nnz is data-dependent and determined by the native shape function.
    *
    * @param aValues 1D [nnzA] non-zero values of A (FLOATING_POINT type)
    * @param aColIdx 1D [nnzA] column indices of A (INT32) (INT type)
@@ -537,9 +537,9 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * CSR sparse matrix-matrix multiplication (SpGEMM): C = A·B.<br>
-   * Both A and B are in CSR format; output C is also in CSR format.<br>
-   * The output nnz is data-dependent and determined by the native shape function.<br>
+   * CSR sparse matrix-matrix multiplication (SpGEMM): C = A·B.
+   * Both A and B are in CSR format; output C is also in CSR format.
+   * The output nnz is data-dependent and determined by the native shape function.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param aValues 1D [nnzA] non-zero values of A (FLOATING_POINT type)
@@ -569,7 +569,7 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * CSR sparse matrix-matrix product: C = A·B (or Aᵀ·B when transposeA=true).<br>
+   * CSR sparse matrix-matrix product: C = A·B (or Aᵀ·B when transposeA=true).
    *
    * @param values 1D [nnz] CSR non-zero values (FLOATING_POINT type)
    * @param colIdx 1D [nnz] CSR column indices (INT32) (INT type)
@@ -590,7 +590,7 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * CSR sparse matrix-matrix product: C = A·B (or Aᵀ·B when transposeA=true).<br>
+   * CSR sparse matrix-matrix product: C = A·B (or Aᵀ·B when transposeA=true).
    *
    * @param name name May be null. Name for the output variable
    * @param values 1D [nnz] CSR non-zero values (FLOATING_POINT type)
@@ -613,7 +613,7 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * CSR sparse matrix-vector product: y = A·x (or Aᵀ·x when transposeA=true).<br>
+   * CSR sparse matrix-vector product: y = A·x (or Aᵀ·x when transposeA=true).
    *
    * @param values 1D [nnz] CSR non-zero values (FLOATING_POINT type)
    * @param colIdx 1D [nnz] CSR column indices (INT32) (INT type)
@@ -634,7 +634,7 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * CSR sparse matrix-vector product: y = A·x (or Aᵀ·x when transposeA=true).<br>
+   * CSR sparse matrix-vector product: y = A·x (or Aᵀ·x when transposeA=true).
    *
    * @param name name May be null. Name for the output variable
    * @param values 1D [nnz] CSR non-zero values (FLOATING_POINT type)
@@ -657,8 +657,8 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Convert a CSR sparse matrix to BSR (Block Sparse Row) format.<br>
-   * Both rows and cols must be exact multiples of blockDim.<br>
+   * Convert a CSR sparse matrix to BSR (Block Sparse Row) format.
+   * Both rows and cols must be exact multiples of blockDim.
    *
    * @param csrValues 1D [nnz] CSR non-zero values (FLOATING_POINT type)
    * @param csrColIdx 1D [nnz] CSR column indices (INT32) (INT type)
@@ -679,8 +679,8 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Convert a CSR sparse matrix to BSR (Block Sparse Row) format.<br>
-   * Both rows and cols must be exact multiples of blockDim.<br>
+   * Convert a CSR sparse matrix to BSR (Block Sparse Row) format.
+   * Both rows and cols must be exact multiples of blockDim.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param csrValues 1D [nnz] CSR non-zero values (FLOATING_POINT type)
@@ -703,8 +703,8 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Convert a CSR sparse matrix to CSC (Compressed Sparse Column) format.<br>
-   * The CSC of A is algebraically identical to the CSR of Aᵀ, so the output also provides a free sparse transpose.<br>
+   * Convert a CSR sparse matrix to CSC (Compressed Sparse Column) format.
+   * The CSC of A is algebraically identical to the CSR of Aᵀ, so the output also provides a free sparse transpose.
    *
    * @param values 1D [nnz] CSR non-zero values (FLOATING_POINT type)
    * @param colIdx 1D [nnz] CSR column indices (INT32) (INT type)
@@ -724,8 +724,8 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Convert a CSR sparse matrix to CSC (Compressed Sparse Column) format.<br>
-   * The CSC of A is algebraically identical to the CSR of Aᵀ, so the output also provides a free sparse transpose.<br>
+   * Convert a CSR sparse matrix to CSC (Compressed Sparse Column) format.
+   * The CSC of A is algebraically identical to the CSR of Aᵀ, so the output also provides a free sparse transpose.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param values 1D [nnz] CSR non-zero values (FLOATING_POINT type)
@@ -747,8 +747,8 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Convert a CSR (Compressed Sparse Row) sparse matrix to a dense matrix.<br>
-   * Inputs are the three CSR component arrays (values, colIdx, rowPtr) plus integer shape arguments rows and cols.<br>
+   * Convert a CSR (Compressed Sparse Row) sparse matrix to a dense matrix.
+   * Inputs are the three CSR component arrays (values, colIdx, rowPtr) plus integer shape arguments rows and cols.
    *
    * @param values 1D [nnz] non-zero values of the CSR matrix (FLOATING_POINT type)
    * @param colIdx 1D [nnz] column indices (INT32/INT64) (INT type)
@@ -766,8 +766,8 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Convert a CSR (Compressed Sparse Row) sparse matrix to a dense matrix.<br>
-   * Inputs are the three CSR component arrays (values, colIdx, rowPtr) plus integer shape arguments rows and cols.<br>
+   * Convert a CSR (Compressed Sparse Row) sparse matrix to a dense matrix.
+   * Inputs are the three CSR component arrays (values, colIdx, rowPtr) plus integer shape arguments rows and cols.
    *
    * @param name name May be null. Name for the output variable
    * @param values 1D [nnz] non-zero values of the CSR matrix (FLOATING_POINT type)
@@ -787,8 +787,8 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Convert a dense matrix to COO (Coordinate) sparse representation.<br>
-   * Returns indices [nnz, 2] (INT64) and values [nnz] in corresponding order.<br>
+   * Convert a dense matrix to COO (Coordinate) sparse representation.
+   * Returns indices [nnz, 2] (INT64) and values [nnz] in corresponding order.
    *
    * @param dense 2D dense input matrix [rows, cols] (FLOATING_POINT type)
    * @param threshold Keep entries where |x| > threshold (0.0 keeps all non-zeros)
@@ -801,8 +801,8 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Convert a dense matrix to COO (Coordinate) sparse representation.<br>
-   * Returns indices [nnz, 2] (INT64) and values [nnz] in corresponding order.<br>
+   * Convert a dense matrix to COO (Coordinate) sparse representation.
+   * Returns indices [nnz, 2] (INT64) and values [nnz] in corresponding order.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param dense 2D dense input matrix [rows, cols] (FLOATING_POINT type)
@@ -817,8 +817,8 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Convert a dense matrix to CSC (Compressed Sparse Column) sparse representation.<br>
-   * Only entries with |x| > threshold are kept.<br>
+   * Convert a dense matrix to CSC (Compressed Sparse Column) sparse representation.
+   * Only entries with |x| > threshold are kept.
    *
    * @param dense 2D dense input matrix [rows, cols] (FLOATING_POINT type)
    * @param threshold Keep entries where |x| > threshold (0.0 keeps all non-zeros)
@@ -832,8 +832,8 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Convert a dense matrix to CSC (Compressed Sparse Column) sparse representation.<br>
-   * Only entries with |x| > threshold are kept.<br>
+   * Convert a dense matrix to CSC (Compressed Sparse Column) sparse representation.
+   * Only entries with |x| > threshold are kept.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param dense 2D dense input matrix [rows, cols] (FLOATING_POINT type)
@@ -849,8 +849,8 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Convert a dense matrix to CSR (Compressed Sparse Row) sparse representation.<br>
-   * Only entries with |x| > threshold are kept; pass threshold=0.0 to retain all structurally non-zero entries.<br>
+   * Convert a dense matrix to CSR (Compressed Sparse Row) sparse representation.
+   * Only entries with |x| > threshold are kept; pass threshold=0.0 to retain all structurally non-zero entries.
    *
    * @param dense 2D dense input matrix [rows, cols] (FLOATING_POINT type)
    * @param threshold Keep entries where |x| > threshold (0.0 keeps all non-zeros)
@@ -864,8 +864,8 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Convert a dense matrix to CSR (Compressed Sparse Row) sparse representation.<br>
-   * Only entries with |x| > threshold are kept; pass threshold=0.0 to retain all structurally non-zero entries.<br>
+   * Convert a dense matrix to CSR (Compressed Sparse Row) sparse representation.
+   * Only entries with |x| > threshold are kept; pass threshold=0.0 to retain all structurally non-zero entries.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param dense 2D dense input matrix [rows, cols] (FLOATING_POINT type)
@@ -881,8 +881,8 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Sampled Dense-Dense Matrix Multiplication (SDDMM).<br>
-   * For each non-zero position (i,j) in the sparsity pattern computes sum_l D1[i,l]*D2[j,l].<br>
+   * Sampled Dense-Dense Matrix Multiplication (SDDMM).
+   * For each non-zero position (i,j) in the sparsity pattern computes sum_l D1[i,l]*D2[j,l].
    *
    * @param rowPtr 1D [rows+1] INT32 row pointers of the sparsity pattern (INT type)
    * @param colIdx 1D [nnz] INT32 column indices of the sparsity pattern (INT type)
@@ -902,8 +902,8 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Sampled Dense-Dense Matrix Multiplication (SDDMM).<br>
-   * For each non-zero position (i,j) in the sparsity pattern computes sum_l D1[i,l]*D2[j,l].<br>
+   * Sampled Dense-Dense Matrix Multiplication (SDDMM).
+   * For each non-zero position (i,j) in the sparsity pattern computes sum_l D1[i,l]*D2[j,l].
    *
    * @param name name May be null. Name for the output variable
    * @param rowPtr 1D [rows+1] INT32 row pointers of the sparsity pattern (INT type)
@@ -925,8 +925,8 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Build an n×n diagonal CSR sparse matrix from a 1D diagonal vector.<br>
-   * The result has exactly n non-zeros, one per diagonal entry.<br>
+   * Build an n×n diagonal CSR sparse matrix from a 1D diagonal vector.
+   * The result has exactly n non-zeros, one per diagonal entry.
    *
    * @param diag 1D [n] diagonal values (FLOATING_POINT type)
    * @param n Size of the resulting n×n square matrix
@@ -940,8 +940,8 @@ public class SDSparse extends SDOps {
   }
 
   /**
-   * Build an n×n diagonal CSR sparse matrix from a 1D diagonal vector.<br>
-   * The result has exactly n non-zeros, one per diagonal entry.<br>
+   * Build an n×n diagonal CSR sparse matrix from a 1D diagonal vector.
+   * The result has exactly n non-zeros, one per diagonal entry.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param diag 1D [n] diagonal values (FLOATING_POINT type)

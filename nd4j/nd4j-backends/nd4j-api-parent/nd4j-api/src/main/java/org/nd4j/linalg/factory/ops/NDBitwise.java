@@ -26,6 +26,14 @@ import static org.nd4j.linalg.factory.NDValidation.isSameType;
 
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.BitsHammingDistance;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.BitwiseAnd;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.BitwiseOr;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.BitwiseXor;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicRShiftBits;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicShiftBits;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.RShiftBits;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.ShiftBits;
 import org.nd4j.linalg.factory.NDValidation;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -34,11 +42,11 @@ public class NDBitwise {
   }
 
   /**
-   * Bitwise AND operation. Supports broadcasting.<br>
+   * Bitwise AND operation. Supports broadcasting.
    *
    * Inputs must satisfy the following constraints: <br>
-   * Must be same types: isSameType(x, y)<br>
-   * Must have broadcastable shapes: isBroadcastableShapes(x, y)<br>
+   * Must be same types: {@code isSameType(x, y)}<br>
+   * Must have broadcastable shapes: {@code isBroadcastableShapes(x, y)}<br>
    *
    * @param x First input array (INT type)
    * @param y Second input array (INT type)
@@ -48,7 +56,7 @@ public class NDBitwise {
     NDValidation.validateInteger("and", "x", x);
     NDValidation.validateInteger("and", "y", y);
     Preconditions.checkArgument(isSameType(x, y), "Must be same types");
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.BitwiseAnd(x, y));
+    INDArray[] __tmp = Nd4j.exec(new BitwiseAnd(x, y));
     try {
       return __tmp[0];
     } finally {
@@ -63,7 +71,7 @@ public class NDBitwise {
   }
 
   /**
-   * Roll integer bits to the left, i.e. var << 4 | var >> (32 - 4)<br>
+   * Roll integer bits to the left, i.e. var &lt;&lt; 4 | var >> (32 - 4)
    *
    * @param x Input 1 (INT type)
    * @param shift Number of bits to shift. (INT type)
@@ -72,7 +80,7 @@ public class NDBitwise {
   public INDArray bitRotl(INDArray x, INDArray shift) {
     NDValidation.validateInteger("bitRotl", "x", x);
     NDValidation.validateInteger("bitRotl", "shift", shift);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicShiftBits(x, shift));
+    INDArray[] __tmp = Nd4j.exec(new CyclicShiftBits(x, shift));
     try {
       return __tmp[0];
     } finally {
@@ -87,7 +95,7 @@ public class NDBitwise {
   }
 
   /**
-   * Roll integer bits to the right, i.e. var >> 4 | var << (32 - 4)<br>
+   * Roll integer bits to the right, i.e. var >> 4 | var &lt;&lt; (32 - 4)
    *
    * @param x Input 1 (INT type)
    * @param shift Number of bits to shift. (INT type)
@@ -96,7 +104,7 @@ public class NDBitwise {
   public INDArray bitRotr(INDArray x, INDArray shift) {
     NDValidation.validateInteger("bitRotr", "x", x);
     NDValidation.validateInteger("bitRotr", "shift", shift);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicRShiftBits(x, shift));
+    INDArray[] __tmp = Nd4j.exec(new CyclicRShiftBits(x, shift));
     try {
       return __tmp[0];
     } finally {
@@ -111,7 +119,7 @@ public class NDBitwise {
   }
 
   /**
-   * Shift integer bits to the left, i.e. var << 4<br>
+   * Shift integer bits to the left, i.e. var &lt;&lt; 4
    *
    * @param x Input 1 (INT type)
    * @param shift Number of bits to shift. (INT type)
@@ -120,7 +128,7 @@ public class NDBitwise {
   public INDArray bitShift(INDArray x, INDArray shift) {
     NDValidation.validateInteger("bitShift", "x", x);
     NDValidation.validateInteger("bitShift", "shift", shift);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.ShiftBits(x, shift));
+    INDArray[] __tmp = Nd4j.exec(new ShiftBits(x, shift));
     try {
       return __tmp[0];
     } finally {
@@ -135,7 +143,7 @@ public class NDBitwise {
   }
 
   /**
-   * Shift integer bits to the right, i.e. var >> 4<br>
+   * Shift integer bits to the right, i.e. var >> 4
    *
    * @param x Input 1 (INT type)
    * @param shift Number of bits to shift. (INT type)
@@ -144,7 +152,7 @@ public class NDBitwise {
   public INDArray bitShiftRight(INDArray x, INDArray shift) {
     NDValidation.validateInteger("bitShiftRight", "x", x);
     NDValidation.validateInteger("bitShiftRight", "shift", shift);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RShiftBits(x, shift));
+    INDArray[] __tmp = Nd4j.exec(new RShiftBits(x, shift));
     try {
       return __tmp[0];
     } finally {
@@ -160,10 +168,10 @@ public class NDBitwise {
 
   /**
    * Bitwise Hamming distance reduction over all elements of both input arrays.<br>
-   * For example, if x=01100000 and y=1010000 then the bitwise Hamming distance is 2 (due to differences at positions 0 and 1)<br>
+   * For example, if x=01100000 and y=1010000 then the bitwise Hamming distance is 2 (due to differences at positions 0 and 1)
    *
    * Inputs must satisfy the following constraints: <br>
-   * Must be same types: isSameType(x, y)<br>
+   * Must be same types: {@code isSameType(x, y)}<br>
    *
    * @param x First input array. (INT type)
    * @param y Second input array. (INT type)
@@ -173,7 +181,7 @@ public class NDBitwise {
     NDValidation.validateInteger("bitsHammingDistance", "x", x);
     NDValidation.validateInteger("bitsHammingDistance", "y", y);
     Preconditions.checkArgument(isSameType(x, y), "Must be same types");
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.BitsHammingDistance(x, y));
+    INDArray[] __tmp = Nd4j.exec(new BitsHammingDistance(x, y));
     try {
       return __tmp[0];
     } finally {
@@ -188,7 +196,7 @@ public class NDBitwise {
   }
 
   /**
-   * Bitwise left shift operation. Supports broadcasting.<br>
+   * Bitwise left shift operation. Supports broadcasting.
    *
    * @param x Input to be bit shifted (INT type)
    * @param y Amount to shift elements of x array (INT type)
@@ -197,7 +205,7 @@ public class NDBitwise {
   public INDArray leftShift(INDArray x, INDArray y) {
     NDValidation.validateInteger("leftShift", "x", x);
     NDValidation.validateInteger("leftShift", "y", y);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.ShiftBits(x, y));
+    INDArray[] __tmp = Nd4j.exec(new ShiftBits(x, y));
     try {
       return __tmp[0];
     } finally {
@@ -212,9 +220,9 @@ public class NDBitwise {
   }
 
   /**
-   * Bitwise left cyclical shift operation. Supports broadcasting.<br>
-   * Unlike #leftShift(INDArray, INDArray) the bits will "wrap around":<br>
-   * {@code leftShiftCyclic(01110000, 2) -> 11000001}<br>
+   * Bitwise left cyclical shift operation. Supports broadcasting.
+   * Unlike #leftShift(INDArray, INDArray) the bits will "wrap around":
+   * {@code leftShiftCyclic(01110000, 2) -> 11000001}
    *
    * @param x Input to be bit shifted (INT type)
    * @param y Amount to shift elements of x array (INT type)
@@ -223,7 +231,7 @@ public class NDBitwise {
   public INDArray leftShiftCyclic(INDArray x, INDArray y) {
     NDValidation.validateInteger("leftShiftCyclic", "x", x);
     NDValidation.validateInteger("leftShiftCyclic", "y", y);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicShiftBits(x, y));
+    INDArray[] __tmp = Nd4j.exec(new CyclicShiftBits(x, y));
     try {
       return __tmp[0];
     } finally {
@@ -238,11 +246,11 @@ public class NDBitwise {
   }
 
   /**
-   * Bitwise OR operation. Supports broadcasting.<br>
+   * Bitwise OR operation. Supports broadcasting.
    *
    * Inputs must satisfy the following constraints: <br>
-   * Must be same types: isSameType(x, y)<br>
-   * Must have broadcastable shapes: isBroadcastableShapes(x, y)<br>
+   * Must be same types: {@code isSameType(x, y)}<br>
+   * Must have broadcastable shapes: {@code isBroadcastableShapes(x, y)}<br>
    *
    * @param x First input array (INT type)
    * @param y First input array (INT type)
@@ -252,7 +260,7 @@ public class NDBitwise {
     NDValidation.validateInteger("or", "x", x);
     NDValidation.validateInteger("or", "y", y);
     Preconditions.checkArgument(isSameType(x, y), "Must be same types");
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.BitwiseOr(x, y));
+    INDArray[] __tmp = Nd4j.exec(new BitwiseOr(x, y));
     try {
       return __tmp[0];
     } finally {
@@ -267,7 +275,7 @@ public class NDBitwise {
   }
 
   /**
-   * Bitwise right shift operation. Supports broadcasting. <br>
+   * Bitwise right shift operation. Supports broadcasting.
    *
    * @param x Input to be bit shifted (INT type)
    * @param y Amount to shift elements of x array (INT type)
@@ -276,7 +284,7 @@ public class NDBitwise {
   public INDArray rightShift(INDArray x, INDArray y) {
     NDValidation.validateInteger("rightShift", "x", x);
     NDValidation.validateInteger("rightShift", "y", y);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RShiftBits(x, y));
+    INDArray[] __tmp = Nd4j.exec(new RShiftBits(x, y));
     try {
       return __tmp[0];
     } finally {
@@ -291,9 +299,9 @@ public class NDBitwise {
   }
 
   /**
-   * Bitwise right cyclical shift operation. Supports broadcasting.<br>
-   * Unlike rightShift(INDArray, INDArray) the bits will "wrap around":<br>
-   * {@code rightShiftCyclic(00001110, 2) -> 10000011}<br>
+   * Bitwise right cyclical shift operation. Supports broadcasting.
+   * Unlike rightShift(INDArray, INDArray) the bits will "wrap around":
+   * {@code rightShiftCyclic(00001110, 2) -> 10000011}
    *
    * @param x Input to be bit shifted (INT type)
    * @param y Amount to shift elements of x array (INT type)
@@ -302,7 +310,7 @@ public class NDBitwise {
   public INDArray rightShiftCyclic(INDArray x, INDArray y) {
     NDValidation.validateInteger("rightShiftCyclic", "x", x);
     NDValidation.validateInteger("rightShiftCyclic", "y", y);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicRShiftBits(x, y));
+    INDArray[] __tmp = Nd4j.exec(new CyclicRShiftBits(x, y));
     try {
       return __tmp[0];
     } finally {
@@ -317,11 +325,11 @@ public class NDBitwise {
   }
 
   /**
-   * Bitwise XOR operation (exclusive OR). Supports broadcasting.<br>
+   * Bitwise XOR operation (exclusive OR). Supports broadcasting.
    *
    * Inputs must satisfy the following constraints: <br>
-   * Must be same types: isSameType(x, y)<br>
-   * Must have broadcastable shapes: isBroadcastableShapes(x, y)<br>
+   * Must be same types: {@code isSameType(x, y)}<br>
+   * Must have broadcastable shapes: {@code isBroadcastableShapes(x, y)}<br>
    *
    * @param x First input array (INT type)
    * @param y First input array (INT type)
@@ -331,7 +339,7 @@ public class NDBitwise {
     NDValidation.validateInteger("xor", "x", x);
     NDValidation.validateInteger("xor", "y", y);
     Preconditions.checkArgument(isSameType(x, y), "Must be same types");
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.BitwiseXor(x, y));
+    INDArray[] __tmp = Nd4j.exec(new BitwiseXor(x, y));
     try {
       return __tmp[0];
     } finally {

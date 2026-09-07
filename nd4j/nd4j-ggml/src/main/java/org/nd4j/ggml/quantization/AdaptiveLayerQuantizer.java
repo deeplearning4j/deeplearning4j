@@ -49,17 +49,16 @@ import java.util.Map;
  *       {@code Y_q = X @ dequant(quant(W)).T}.</li>
  *   <li>Compute KL divergence KL(softmax(Y) || softmax(Y_q)) as the sensitivity
  *       score for this layer.</li>
- *   <li>Rank layers by sensitivity. Layers in the top
- *       {@link AdaptiveQuantConfig#getHighSensitivityPercentile()} fraction receive
- *       the highest quality type; layers in the bottom
- *       {@link AdaptiveQuantConfig#getLowSensitivityPercentile()} fraction receive
- *       the most aggressive type. Middle layers are distributed across the remaining
- *       candidate types.</li>
- *   <li>Layers named in {@link AdaptiveQuantConfig#getPreserveLayers()} always
+ *   <li>Rank layers by sensitivity. The top fraction of layers, selected by
+ *       {@code highSensitivityPercentile} in {@link AdaptiveQuantConfig}, receives
+ *       the highest quality type. The bottom fraction, selected by
+ *       {@code lowSensitivityPercentile}, receives the most aggressive type.
+ *       Middle layers are distributed across the remaining candidate types.</li>
+ *   <li>Layers named in {@code preserveLayers} in {@link AdaptiveQuantConfig} always
  *       receive the highest quality type regardless of their sensitivity score.</li>
  * </ol>
  *
- * <p>If {@link AdaptiveQuantConfig#getTargetBitsPerWeight()} is non-zero the
+ * <p>If {@code targetBitsPerWeight} in {@link AdaptiveQuantConfig} is non-zero the
  * assignment iterates sensitivity-rank order and upgrades layers until the average
  * bits-per-weight target is met.
  *
@@ -372,8 +371,8 @@ public class AdaptiveLayerQuantizer {
 
     /**
      * Assign quant types by sensitivity rank without a bits budget.
-     * Top {@link AdaptiveQuantConfig#getHighSensitivityPercentile()} get highest quality;
-     * bottom {@link AdaptiveQuantConfig#getLowSensitivityPercentile()} get lowest quality;
+     * Top {@code highSensitivityPercentile} in {@link AdaptiveQuantConfig} get highest quality;
+     * bottom {@code lowSensitivityPercentile} in {@link AdaptiveQuantConfig} get lowest quality;
      * middle layers are distributed evenly across remaining candidate types.
      */
     private void assignByRank(

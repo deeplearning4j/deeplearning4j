@@ -170,6 +170,13 @@ public class VisionLanguageModel implements AutoCloseable {
     @Getter
     private final VisionEncoderIOConfig visionEncoderIOConfig;
 
+    /**
+     * Builder for model components and their configuration.
+     * Lombok supplies the fluent members and invokes the model constructor on build.
+     */
+    public static class VisionLanguageModelBuilder {
+    }
+
     @Builder
     private VisionLanguageModel(
             SameDiff visionEncoder,

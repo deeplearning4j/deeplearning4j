@@ -37,7 +37,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Given an input image and some crop boxes, extract out the image subsets and resize them to the specified size.<br>
+   * Given an input image and some crop boxes, extract out the image subsets and resize them to the specified size.
    *
    * @param image Input image, with shape [batch, height, width, channels] (NUMERIC type)
    * @param cropBoxes Float32 crop, shape [numBoxes, 4] with values in range 0 to 1 (NUMERIC type)
@@ -56,7 +56,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Given an input image and some crop boxes, extract out the image subsets and resize them to the specified size.<br>
+   * Given an input image and some crop boxes, extract out the image subsets and resize them to the specified size.
    *
    * @param name name May be null. Name for the output variable
    * @param image Input image, with shape [batch, height, width, channels] (NUMERIC type)
@@ -77,7 +77,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Given an input image and some crop boxes, extract out the image subsets and resize them to the specified size.<br>
+   * Given an input image and some crop boxes, extract out the image subsets and resize them to the specified size.
    *
    * @param image Input image, with shape [batch, height, width, channels] (NUMERIC type)
    * @param cropBoxes Float32 crop, shape [numBoxes, 4] with values in range 0 to 1 (NUMERIC type)
@@ -95,7 +95,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Given an input image and some crop boxes, extract out the image subsets and resize them to the specified size.<br>
+   * Given an input image and some crop boxes, extract out the image subsets and resize them to the specified size.
    *
    * @param name name May be null. Name for the output variable
    * @param image Input image, with shape [batch, height, width, channels] (NUMERIC type)
@@ -115,7 +115,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Adjusts contrast of RGB or grayscale images.<br>
+   * Adjusts contrast of RGB or grayscale images.
    *
    * @param in images to adjust. 3D shape or higher (NUMERIC type)
    * @param factor multiplier for adjusting contrast
@@ -127,7 +127,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Adjusts contrast of RGB or grayscale images.<br>
+   * Adjusts contrast of RGB or grayscale images.
    *
    * @param name name May be null. Name for the output variable
    * @param in images to adjust. 3D shape or higher (NUMERIC type)
@@ -141,7 +141,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Adjust hue of RGB image <br>
+   * Adjust hue of RGB image
    *
    * @param in image as 3D array (NUMERIC type)
    * @param delta value to add to hue channel
@@ -153,7 +153,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Adjust hue of RGB image <br>
+   * Adjust hue of RGB image
    *
    * @param name name May be null. Name for the output variable
    * @param in image as 3D array (NUMERIC type)
@@ -167,7 +167,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Adjust saturation of RGB images<br>
+   * Adjust saturation of RGB images
    *
    * @param in RGB image as 3D array (NUMERIC type)
    * @param factor factor for saturation
@@ -179,7 +179,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Adjust saturation of RGB images<br>
+   * Adjust saturation of RGB images
    *
    * @param name name May be null. Name for the output variable
    * @param in RGB image as 3D array (NUMERIC type)
@@ -193,9 +193,9 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Generates a 2D or 3D sampling grid from affine transformation matrices.<br>
-   * Used with grid_sample for spatial transformer networks.<br>
-   * The grid contains normalized coordinates in range [-1, 1].<br>
+   * Generates a 2D or 3D sampling grid from affine transformation matrices.
+   * Used with grid_sample for spatial transformer networks.
+   * The grid contains normalized coordinates in range [-1, 1].
    *
    * @param theta Affine transformation matrix with shape [N, 2, 3] for 2D or [N, 3, 4] for 3D (NUMERIC type)
    * @param size Output size - 1D array specifying [N, H, W] for 2D or [N, D, H, W] for 3D (INT type)
@@ -209,9 +209,9 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Generates a 2D or 3D sampling grid from affine transformation matrices.<br>
-   * Used with grid_sample for spatial transformer networks.<br>
-   * The grid contains normalized coordinates in range [-1, 1].<br>
+   * Generates a 2D or 3D sampling grid from affine transformation matrices.
+   * Used with grid_sample for spatial transformer networks.
+   * The grid contains normalized coordinates in range [-1, 1].
    *
    * @param name name May be null. Name for the output variable
    * @param theta Affine transformation matrix with shape [N, 2, 3] for 2D or [N, 3, 4] for 3D (NUMERIC type)
@@ -228,9 +228,9 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Generates a 2D or 3D sampling grid from affine transformation matrices.<br>
-   * Used with grid_sample for spatial transformer networks.<br>
-   * The grid contains normalized coordinates in range [-1, 1].<br>
+   * Generates a 2D or 3D sampling grid from affine transformation matrices.
+   * Used with grid_sample for spatial transformer networks.
+   * The grid contains normalized coordinates in range [-1, 1].
    *
    * @param theta Affine transformation matrix with shape [N, 2, 3] for 2D or [N, 3, 4] for 3D (NUMERIC type)
    * @param size Output size - 1D array specifying [N, H, W] for 2D or [N, D, H, W] for 3D (INT type)
@@ -243,9 +243,9 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Generates a 2D or 3D sampling grid from affine transformation matrices.<br>
-   * Used with grid_sample for spatial transformer networks.<br>
-   * The grid contains normalized coordinates in range [-1, 1].<br>
+   * Generates a 2D or 3D sampling grid from affine transformation matrices.
+   * Used with grid_sample for spatial transformer networks.
+   * The grid contains normalized coordinates in range [-1, 1].
    *
    * @param name name May be null. Name for the output variable
    * @param theta Affine transformation matrix with shape [N, 2, 3] for 2D or [N, 3, 4] for 3D (NUMERIC type)
@@ -260,7 +260,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Given an input image, extract out image patches (of size kSizes - h x w) and place them in the depth dimension. <br>
+   * Given an input image, extract out image patches (of size kSizes - h x w) and place them in the depth dimension.
    *
    * @param image Input image to extract image patches from - shape [batch, height, width, channels] (NUMERIC type)
    * @param kSizes Kernel size - size of the image patches, [height, width] (Size: Exactly(count=2))
@@ -281,7 +281,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Given an input image, extract out image patches (of size kSizes - h x w) and place them in the depth dimension. <br>
+   * Given an input image, extract out image patches (of size kSizes - h x w) and place them in the depth dimension.
    *
    * @param name name May be null. Name for the output variable
    * @param image Input image to extract image patches from - shape [batch, height, width, channels] (NUMERIC type)
@@ -304,7 +304,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Converting image from HSV to RGB format <br>
+   * Converting image from HSV to RGB format
    *
    * @param input 3D image (NUMERIC type)
    * @return output 3D image (NUMERIC type)
@@ -315,7 +315,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Converting image from HSV to RGB format <br>
+   * Converting image from HSV to RGB format
    *
    * @param name name May be null. Name for the output variable
    * @param input 3D image (NUMERIC type)
@@ -328,7 +328,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Resize images to size using the specified method.<br>
+   * Resize images to size using the specified method.
    *
    * @param input 4D image [NHWC] (NUMERIC type)
    * @param size new height and width (INT type)
@@ -351,7 +351,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Resize images to size using the specified method.<br>
+   * Resize images to size using the specified method.
    *
    * @param name name May be null. Name for the output variable
    * @param input 4D image [NHWC] (NUMERIC type)
@@ -376,7 +376,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Resize images to size using the specified method.<br>
+   * Resize images to size using the specified method.
    *
    * @param input 4D image [NHWC] (NUMERIC type)
    * @param size new height and width (INT type)
@@ -397,7 +397,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Resize images to size using the specified method.<br>
+   * Resize images to size using the specified method.
    *
    * @param name name May be null. Name for the output variable
    * @param input 4D image [NHWC] (NUMERIC type)
@@ -420,14 +420,14 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Greedily selects a subset of bounding boxes in descending order of score<br>
+   * Greedily selects a subset of bounding boxes in descending order of score
    *
    * @param boxes Might be null. Name for the output variable (NUMERIC type)
    * @param scores vector of shape [num_boxes] (NUMERIC type)
    * @param maxOutSize scalar representing the maximum number of boxes to be selected
    * @param iouThreshold threshold for deciding whether boxes overlap too much with respect to IOU
    * @param scoreThreshold threshold for deciding when to remove boxes based on score
-   * @return output vectort of shape [M] representing the selected indices from the boxes tensor, where M <= max_output_size (NUMERIC type)
+   * @return output vector of shape [M] representing the selected indices from the boxes tensor, where M &lt;= max_output_size (NUMERIC type)
    */
   public SDVariable nonMaxSuppression(SDVariable boxes, SDVariable scores, int maxOutSize,
       double iouThreshold, double scoreThreshold) {
@@ -437,7 +437,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Greedily selects a subset of bounding boxes in descending order of score<br>
+   * Greedily selects a subset of bounding boxes in descending order of score
    *
    * @param name name May be null. Name for the output variable
    * @param boxes Might be null. Name for the output variable (NUMERIC type)
@@ -445,7 +445,7 @@ public class SDImage extends SDOps {
    * @param maxOutSize scalar representing the maximum number of boxes to be selected
    * @param iouThreshold threshold for deciding whether boxes overlap too much with respect to IOU
    * @param scoreThreshold threshold for deciding when to remove boxes based on score
-   * @return output vectort of shape [M] representing the selected indices from the boxes tensor, where M <= max_output_size (NUMERIC type)
+   * @return output vector of shape [M] representing the selected indices from the boxes tensor, where M &lt;= max_output_size (NUMERIC type)
    */
   public SDVariable nonMaxSuppression(String name, SDVariable boxes, SDVariable scores,
       int maxOutSize, double iouThreshold, double scoreThreshold) {
@@ -456,7 +456,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Pads an image according to the given padding type<br>
+   * Pads an image according to the given padding type
    *
    * @param input input array (NUMERIC type)
    * @param padding padding input (NUMERIC type)
@@ -471,7 +471,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Pads an image according to the given padding type<br>
+   * Pads an image according to the given padding type
    *
    * @param name name May be null. Name for the output variable
    * @param input input array (NUMERIC type)
@@ -489,7 +489,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Randomly crops image<br>
+   * Randomly crops image
    *
    * @param input input array (NUMERIC type)
    * @param shape shape for crop (INT type)
@@ -502,7 +502,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Randomly crops image<br>
+   * Randomly crops image
    *
    * @param name name May be null. Name for the output variable
    * @param input input array (NUMERIC type)
@@ -517,7 +517,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Resize images to size using the specified method.<br>
+   * Resize images to size using the specified method.
    *
    * @param input 4D image (NUMERIC type)
    * @param size the target size to resize to  (INT type)
@@ -533,7 +533,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Resize images to size using the specified method.<br>
+   * Resize images to size using the specified method.
    *
    * @param name name May be null. Name for the output variable
    * @param input 4D image (NUMERIC type)
@@ -551,10 +551,10 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Resize images to size using the specified method.<br>
+   * Resize images to size using the specified method.
    *
    * @param input 4D image (NUMERIC type)
-   * @param height target height for resizing to 
+   * @param height target height for resizing to
    * @param width target width for resizing to
    * @param alignCorners whether to align corners during resizing. Images are aligned to preserve corners.
    * @param halfPixelCenters When resizing, assumes pixels are centered at 0.5.
@@ -567,11 +567,11 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Resize images to size using the specified method.<br>
+   * Resize images to size using the specified method.
    *
    * @param name name May be null. Name for the output variable
    * @param input 4D image (NUMERIC type)
-   * @param height target height for resizing to 
+   * @param height target height for resizing to
    * @param width target width for resizing to
    * @param alignCorners whether to align corners during resizing. Images are aligned to preserve corners.
    * @param halfPixelCenters When resizing, assumes pixels are centered at 0.5.
@@ -585,7 +585,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Converting array from HSV to RGB format<br>
+   * Converting array from HSV to RGB format
    *
    * @param input 3D image (NUMERIC type)
    * @return output 3D image (NUMERIC type)
@@ -596,7 +596,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Converting array from HSV to RGB format<br>
+   * Converting array from HSV to RGB format
    *
    * @param name name May be null. Name for the output variable
    * @param input 3D image (NUMERIC type)
@@ -609,7 +609,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Converting array from RGB to YIQ format <br>
+   * Converting array from RGB to YIQ format
    *
    * @param input 3D image (NUMERIC type)
    * @return output 3D image (NUMERIC type)
@@ -620,7 +620,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Converting array from RGB to YIQ format <br>
+   * Converting array from RGB to YIQ format
    *
    * @param name name May be null. Name for the output variable
    * @param input 3D image (NUMERIC type)
@@ -633,7 +633,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Converting array from RGB to YUV format <br>
+   * Converting array from RGB to YUV format
    *
    * @param input 3D image (NUMERIC type)
    * @return output 3D image (NUMERIC type)
@@ -644,7 +644,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Converting array from RGB to YUV format <br>
+   * Converting array from RGB to YUV format
    *
    * @param name name May be null. Name for the output variable
    * @param input 3D image (NUMERIC type)
@@ -657,7 +657,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Converting image from YIQ to RGB format <br>
+   * Converting image from YIQ to RGB format
    *
    * @param input 3D image (NUMERIC type)
    * @return output 3D image (NUMERIC type)
@@ -668,7 +668,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Converting image from YIQ to RGB format <br>
+   * Converting image from YIQ to RGB format
    *
    * @param name name May be null. Name for the output variable
    * @param input 3D image (NUMERIC type)
@@ -681,7 +681,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Converting image from YUV to RGB format <br>
+   * Converting image from YUV to RGB format
    *
    * @param input 3D image (NUMERIC type)
    * @return output 3D image (NUMERIC type)
@@ -692,7 +692,7 @@ public class SDImage extends SDOps {
   }
 
   /**
-   * Converting image from YUV to RGB format <br>
+   * Converting image from YUV to RGB format
    *
    * @param name name May be null. Name for the output variable
    * @param input 3D image (NUMERIC type)

@@ -266,11 +266,11 @@ public class JDBCRecordReader extends BaseRecordReader {
     }
 
     /**
-     * Record metadata for this reader consist in two elements :<br />
+     * Record metadata for this reader consist in two elements :<br>
      *
-     * - a parametrized query used to retrieve one item<br />
+     * - a parametrized query used to retrieve one item<br>
      *
-     * - a set a values to use to prepare the statement<br /><br />
+     * - a set a values to use to prepare the statement<br><br>
      *
      * The parametrized query is passed at construction time and it should fit the main record's reader query. For
      * instance, one could have to following reader query : "SELECT * FROM Items", and a corresponding metadata query

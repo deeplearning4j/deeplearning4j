@@ -38,7 +38,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Clips tensor values to a maximum average L2-norm.<br>
+   * Clips tensor values to a maximum average L2-norm.
    *
    * @param x Input variable (NUMERIC type)
    * @param clipValue Value for clipping
@@ -52,7 +52,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Clips tensor values to a maximum average L2-norm.<br>
+   * Clips tensor values to a maximum average L2-norm.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -68,7 +68,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Looks up ids in a list of embedding tensors.<br>
+   * Looks up ids in a list of embedding tensors.
+   *
    *
    * @param x Input tensor (NUMERIC type)
    * @param indices A Tensor containing the ids to be looked up. (INT type)
@@ -84,7 +85,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Looks up ids in a list of embedding tensors.<br>
+   * Looks up ids in a list of embedding tensors.
+   *
    *
    * @param name name May be null. Name for the output variable
    * @param x Input tensor (NUMERIC type)
@@ -102,7 +104,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Return array of max elements indices with along tensor dimensions <br>
+   * Return array of max elements indices with along tensor dimensions
    *
    * @param x Input tensor (NUMERIC type)
    * @param dataType Data type
@@ -115,7 +117,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Return array of max elements indices with along tensor dimensions <br>
+   * Return array of max elements indices with along tensor dimensions
    *
    * @param name name May be null. Name for the output variable
    * @param x Input tensor (NUMERIC type)
@@ -130,7 +132,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Return array of max elements indices with along tensor dimensions <br>
+   * Return array of max elements indices with along tensor dimensions
    *
    * @param x Input tensor (NUMERIC type)
    * @return output Array max elements indices with along dimensions. (INT type)
@@ -142,7 +144,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Return array of max elements indices with along tensor dimensions <br>
+   * Return array of max elements indices with along tensor dimensions
    *
    * @param name name May be null. Name for the output variable
    * @param x Input tensor (NUMERIC type)
@@ -156,7 +158,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise absolute value operation: out = abs(x)<br>
+   * Elementwise absolute value operation: out = abs(x)
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -167,7 +169,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise absolute value operation: out = abs(x)<br>
+   * Elementwise absolute value operation: out = abs(x)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -180,7 +182,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise acos (arccosine, inverse cosine) operation: out = arccos(x)<br>
+   * Elementwise acos (arccosine, inverse cosine) operation: out = arccos(x)
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -191,7 +193,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise acos (arccosine, inverse cosine) operation: out = arccos(x)<br>
+   * Elementwise acos (arccosine, inverse cosine) operation: out = arccos(x)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -204,7 +206,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise acosh (inverse hyperbolic cosine) function: out = acosh(x)<br>
+   * Elementwise acosh (inverse hyperbolic cosine) function: out = acosh(x)
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -215,7 +217,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise acosh (inverse hyperbolic cosine) function: out = acosh(x)<br>
+   * Elementwise acosh (inverse hyperbolic cosine) function: out = acosh(x)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -228,11 +230,11 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Pairwise addition operation, out = x + y<br>
+   * Pairwise addition operation, out = x + y
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param x Input variable (NUMERIC type)
    * @param y Input variable (NUMERIC type)
@@ -245,11 +247,11 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Pairwise addition operation, out = x + y<br>
+   * Pairwise addition operation, out = x + y
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -264,7 +266,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Scalar add operation, out = in + scalar<br>
+   * Scalar add operation, out = in + scalar
    *
    * @param x Input variable (NUMERIC type)
    * @param value Scalar value for op
@@ -276,7 +278,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Scalar add operation, out = in + scalar<br>
+   * Scalar add operation, out = in + scalar
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -290,10 +292,10 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Boolean AND operation: elementwise (x != 0) && (y != 0)<br>
-   * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.<br>
+   * Boolean AND operation: elementwise (x != 0) &amp;&amp; (y != 0)
+   * If x and y arrays have equal shape, the output shape is the same as these inputs.
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
    *
    * @param x Input 1 (BOOL type)
    * @param y Input 2 (BOOL type)
@@ -302,14 +304,14 @@ public class SDMath extends SDOps {
   public SDVariable and(SDVariable x, SDVariable y) {
     SDValidation.validateBool("and", "x", x);
     SDValidation.validateBool("and", "y", y);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanAnd(sd,x, y).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.LogicalAnd(sd,x, y).outputVariable();
   }
 
   /**
-   * Boolean AND operation: elementwise (x != 0) && (y != 0)<br>
-   * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.<br>
+   * Boolean AND operation: elementwise (x != 0) &amp;&amp; (y != 0)
+   * If x and y arrays have equal shape, the output shape is the same as these inputs.
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input 1 (BOOL type)
@@ -319,12 +321,12 @@ public class SDMath extends SDOps {
   public SDVariable and(String name, SDVariable x, SDVariable y) {
     SDValidation.validateBool("and", "x", x);
     SDValidation.validateBool("and", "y", y);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanAnd(sd,x, y).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.LogicalAnd(sd,x, y).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
   /**
-   * Elementwise asin (arcsin, inverse sine) operation: out = arcsin(x)<br>
+   * Elementwise asin (arcsin, inverse sine) operation: out = arcsin(x)
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -335,7 +337,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise asin (arcsin, inverse sine) operation: out = arcsin(x)<br>
+   * Elementwise asin (arcsin, inverse sine) operation: out = arcsin(x)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -348,7 +350,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise asinh (inverse hyperbolic sine) function: out = asinh(x)<br>
+   * Elementwise asinh (inverse hyperbolic sine) function: out = asinh(x)
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -359,7 +361,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise asinh (inverse hyperbolic sine) function: out = asinh(x)<br>
+   * Elementwise asinh (inverse hyperbolic sine) function: out = asinh(x)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -372,7 +374,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Absolute sum array reduction operation, optionally along specified dimensions: out = sum(abs(x))<br>
+   * Absolute sum array reduction operation, optionally along specified dimensions: out = sum(abs(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
@@ -386,7 +388,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Absolute sum array reduction operation, optionally along specified dimensions: out = sum(abs(x))<br>
+   * Absolute sum array reduction operation, optionally along specified dimensions: out = sum(abs(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -402,7 +404,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Absolute sum array reduction operation, optionally along specified dimensions: out = sum(abs(x))<br>
+   * Absolute sum array reduction operation, optionally along specified dimensions: out = sum(abs(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -415,7 +417,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Absolute sum array reduction operation, optionally along specified dimensions: out = sum(abs(x))<br>
+   * Absolute sum array reduction operation, optionally along specified dimensions: out = sum(abs(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -430,7 +432,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise atan (arctangent, inverse tangent) operation: out = arctangent(x)<br>
+   * Elementwise atan (arctangent, inverse tangent) operation: out = arctangent(x)
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -441,7 +443,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise atan (arctangent, inverse tangent) operation: out = arctangent(x)<br>
+   * Elementwise atan (arctangent, inverse tangent) operation: out = arctangent(x)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -454,8 +456,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise atan (arctangent, inverse tangent) operation: out = atan2(x,y).<br>
-   * Similar to atan(y/x) but sigts of x and y are used to determine the location of the result<br>
+   * Elementwise atan (arctangent, inverse tangent) operation: out = atan2(x,y).
+   * Similar to atan(y/x) but sigts of x and y are used to determine the location of the result
    *
    * @param y Input Y variable (NUMERIC type)
    * @param x Input X variable (NUMERIC type)
@@ -468,8 +470,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise atan (arctangent, inverse tangent) operation: out = atan2(x,y).<br>
-   * Similar to atan(y/x) but sigts of x and y are used to determine the location of the result<br>
+   * Elementwise atan (arctangent, inverse tangent) operation: out = atan2(x,y).
+   * Similar to atan(y/x) but sigts of x and y are used to determine the location of the result
    *
    * @param name name May be null. Name for the output variable
    * @param y Input Y variable (NUMERIC type)
@@ -484,7 +486,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise atanh (inverse hyperbolic tangent) function: out = atanh(x)<br>
+   * Elementwise atanh (inverse hyperbolic tangent) function: out = atanh(x)
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -495,7 +497,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise atanh (inverse hyperbolic tangent) function: out = atanh(x)<br>
+   * Elementwise atanh (inverse hyperbolic tangent) function: out = atanh(x)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -508,7 +510,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Bit shift operation<br>
+   * Bit shift operation
    *
    * @param x input (NUMERIC type)
    * @param shift shift value (NUMERIC type)
@@ -521,7 +523,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Bit shift operation<br>
+   * Bit shift operation
    *
    * @param name name May be null. Name for the output variable
    * @param x input (NUMERIC type)
@@ -536,7 +538,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Right bit shift operation<br>
+   * Right bit shift operation
    *
    * @param x Input tensor (NUMERIC type)
    * @param shift shift argument (NUMERIC type)
@@ -549,7 +551,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Right bit shift operation<br>
+   * Right bit shift operation
    *
    * @param name name May be null. Name for the output variable
    * @param x Input tensor (NUMERIC type)
@@ -564,7 +566,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Cyclic bit shift operation<br>
+   * Cyclic bit shift operation
    *
    * @param x Input tensor (NUMERIC type)
    * @param shift shift argy=ument (NUMERIC type)
@@ -577,7 +579,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Cyclic bit shift operation<br>
+   * Cyclic bit shift operation
    *
    * @param name name May be null. Name for the output variable
    * @param x Input tensor (NUMERIC type)
@@ -592,7 +594,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Cyclic right shift operation<br>
+   * Cyclic right shift operation
    *
    * @param x Input tensor (NUMERIC type)
    * @param shift Shift argument (NUMERIC type)
@@ -605,7 +607,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Cyclic right shift operation<br>
+   * Cyclic right shift operation
    *
    * @param name name May be null. Name for the output variable
    * @param x Input tensor (NUMERIC type)
@@ -620,8 +622,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise ceiling function: out = ceil(x).<br>
-   * Rounds each value up to the nearest integer value (if not already an integer)<br>
+   * Element-wise ceiling function: out = ceil(x).
+   * Rounds each value up to the nearest integer value (if not already an integer)
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -632,8 +634,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise ceiling function: out = ceil(x).<br>
-   * Rounds each value up to the nearest integer value (if not already an integer)<br>
+   * Element-wise ceiling function: out = ceil(x).
+   * Rounds each value up to the nearest integer value (if not already an integer)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -646,10 +648,10 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Clipping by L2 norm, optionally along dimension(s)<br>
-   * if l2Norm(x,dimension) < clipValue, then input is returned unmodifed<br>
-   * Otherwise, out[i] = in[i] * clipValue / l2Norm(in, dimensions) where each value is clipped according<br>
-   * to the corresponding l2Norm along the specified dimensions<br>
+   * Clipping by L2 norm, optionally along dimension(s)
+   * if l2Norm(x,dimension) &lt; clipValue, then input is returned unmodified
+   * Otherwise, out[i] = in[i] * clipValue / l2Norm(in, dimensions) where each value is clipped according
+   * to the corresponding l2Norm along the specified dimensions
    *
    * @param x Input variable (NUMERIC type)
    * @param clipValue Clipping value (maximum l2 norm)
@@ -663,10 +665,10 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Clipping by L2 norm, optionally along dimension(s)<br>
-   * if l2Norm(x,dimension) < clipValue, then input is returned unmodifed<br>
-   * Otherwise, out[i] = in[i] * clipValue / l2Norm(in, dimensions) where each value is clipped according<br>
-   * to the corresponding l2Norm along the specified dimensions<br>
+   * Clipping by L2 norm, optionally along dimension(s)
+   * if l2Norm(x,dimension) &lt; clipValue, then input is returned unmodified
+   * Otherwise, out[i] = in[i] * clipValue / l2Norm(in, dimensions) where each value is clipped according
+   * to the corresponding l2Norm along the specified dimensions
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -682,10 +684,10 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise clipping function:<br>
-   * out[i] = in[i] if in[i] >= clipValueMin and in[i] <= clipValueMax<br>
-   * out[i] = clipValueMin if in[i] < clipValueMin<br>
-   * out[i] = clipValueMax if in[i] > clipValueMax<br>
+   * Element-wise clipping function:
+   * out[i] = in[i] if in[i] >= clipValueMin and in[i] &lt;= clipValueMax
+   * out[i] = clipValueMin if in[i] &lt; clipValueMin
+   * out[i] = clipValueMax if in[i] > clipValueMax
    *
    * @param x Input variable (NUMERIC type)
    * @param clipValueMin Minimum value for clipping
@@ -698,10 +700,10 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise clipping function:<br>
-   * out[i] = in[i] if in[i] >= clipValueMin and in[i] <= clipValueMax<br>
-   * out[i] = clipValueMin if in[i] < clipValueMin<br>
-   * out[i] = clipValueMax if in[i] > clipValueMax<br>
+   * Element-wise clipping function:
+   * out[i] = in[i] if in[i] >= clipValueMin and in[i] &lt;= clipValueMax
+   * out[i] = clipValueMin if in[i] &lt; clipValueMin
+   * out[i] = clipValueMax if in[i] > clipValueMax
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -717,12 +719,12 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Compute the 2d confusion matrix of size [numClasses, numClasses] from a pair of labels and predictions, both of<br>
-   * which are represented as integer values. This version assumes the number of classes is 1 + max(max(labels), max(pred))<br>
-   * For example, if labels = [0, 1, 1] and predicted = [0, 2, 1] then output is:<br>
-   * [1, 0, 0]<br>
-   * [0, 1, 1]<br>
-   * [0, 0, 0]<br>
+   * Compute the 2d confusion matrix of size [numClasses, numClasses] from a pair of labels and predictions, both of
+   * which are represented as integer values. This version assumes the number of classes is 1 + max(max(labels), max(pred))
+   * For example, if labels = [0, 1, 1] and predicted = [0, 2, 1] then output is:
+   * [1, 0, 0]
+   * [0, 1, 1]
+   * [0, 0, 0]
    *
    * @param labels Labels - 1D array of integer values representing label values (NUMERIC type)
    * @param pred Predictions - 1D array of integer values representing predictions. Same length as labels (NUMERIC type)
@@ -736,12 +738,12 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Compute the 2d confusion matrix of size [numClasses, numClasses] from a pair of labels and predictions, both of<br>
-   * which are represented as integer values. This version assumes the number of classes is 1 + max(max(labels), max(pred))<br>
-   * For example, if labels = [0, 1, 1] and predicted = [0, 2, 1] then output is:<br>
-   * [1, 0, 0]<br>
-   * [0, 1, 1]<br>
-   * [0, 0, 0]<br>
+   * Compute the 2d confusion matrix of size [numClasses, numClasses] from a pair of labels and predictions, both of
+   * which are represented as integer values. This version assumes the number of classes is 1 + max(max(labels), max(pred))
+   * For example, if labels = [0, 1, 1] and predicted = [0, 2, 1] then output is:
+   * [1, 0, 0]
+   * [0, 1, 1]
+   * [0, 0, 0]
    *
    * @param name name May be null. Name for the output variable
    * @param labels Labels - 1D array of integer values representing label values (NUMERIC type)
@@ -758,13 +760,13 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Compute the 2d confusion matrix of size [numClasses, numClasses] from a pair of labels and predictions, both of<br>
-   * which are represented as integer values.<br>
-   * For example, if labels = [0, 1, 1], predicted = [0, 2, 1], and numClasses=4 then output is:<br>
-   * [1, 0, 0, 0]<br>
-   * [0, 1, 1, 0]<br>
-   * [0, 0, 0, 0]<br>
-   * [0, 0, 0, 0]<br>
+   * Compute the 2d confusion matrix of size [numClasses, numClasses] from a pair of labels and predictions, both of
+   * which are represented as integer values.
+   * For example, if labels = [0, 1, 1], predicted = [0, 2, 1], and numClasses=4 then output is:
+   * [1, 0, 0, 0]
+   * [0, 1, 1, 0]
+   * [0, 0, 0, 0]
+   * [0, 0, 0, 0]
    *
    * @param labels Labels - 1D array of integer values representing label values (NUMERIC type)
    * @param pred Predictions - 1D array of integer values representing predictions. Same length as labels (NUMERIC type)
@@ -778,13 +780,13 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Compute the 2d confusion matrix of size [numClasses, numClasses] from a pair of labels and predictions, both of<br>
-   * which are represented as integer values.<br>
-   * For example, if labels = [0, 1, 1], predicted = [0, 2, 1], and numClasses=4 then output is:<br>
-   * [1, 0, 0, 0]<br>
-   * [0, 1, 1, 0]<br>
-   * [0, 0, 0, 0]<br>
-   * [0, 0, 0, 0]<br>
+   * Compute the 2d confusion matrix of size [numClasses, numClasses] from a pair of labels and predictions, both of
+   * which are represented as integer values.
+   * For example, if labels = [0, 1, 1], predicted = [0, 2, 1], and numClasses=4 then output is:
+   * [1, 0, 0, 0]
+   * [0, 1, 1, 0]
+   * [0, 0, 0, 0]
+   * [0, 0, 0, 0]
    *
    * @param name name May be null. Name for the output variable
    * @param labels Labels - 1D array of integer values representing label values (NUMERIC type)
@@ -801,12 +803,12 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Compute the 2d confusion matrix of size [numClasses, numClasses] from a pair of labels and predictions, both of<br>
-   * which are represented as integer values. This version assumes the number of classes is 1 + max(max(labels), max(pred))<br>
-   * For example, if labels = [0, 1, 1], predicted = [0, 2, 1] and weights = [1, 2, 3]<br>
-   * [1, 0, 0]<br>
-   * [0, 3, 2]<br>
-   * [0, 0, 0]<br>
+   * Compute the 2d confusion matrix of size [numClasses, numClasses] from a pair of labels and predictions, both of
+   * which are represented as integer values. This version assumes the number of classes is 1 + max(max(labels), max(pred))
+   * For example, if labels = [0, 1, 1], predicted = [0, 2, 1] and weights = [1, 2, 3]
+   * [1, 0, 0]
+   * [0, 3, 2]
+   * [0, 0, 0]
    *
    * @param labels Labels - 1D array of integer values representing label values (NUMERIC type)
    * @param pred Predictions - 1D array of integer values representing predictions. Same length as labels (NUMERIC type)
@@ -821,12 +823,12 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Compute the 2d confusion matrix of size [numClasses, numClasses] from a pair of labels and predictions, both of<br>
-   * which are represented as integer values. This version assumes the number of classes is 1 + max(max(labels), max(pred))<br>
-   * For example, if labels = [0, 1, 1], predicted = [0, 2, 1] and weights = [1, 2, 3]<br>
-   * [1, 0, 0]<br>
-   * [0, 3, 2]<br>
-   * [0, 0, 0]<br>
+   * Compute the 2d confusion matrix of size [numClasses, numClasses] from a pair of labels and predictions, both of
+   * which are represented as integer values. This version assumes the number of classes is 1 + max(max(labels), max(pred))
+   * For example, if labels = [0, 1, 1], predicted = [0, 2, 1] and weights = [1, 2, 3]
+   * [1, 0, 0]
+   * [0, 3, 2]
+   * [0, 0, 0]
    *
    * @param name name May be null. Name for the output variable
    * @param labels Labels - 1D array of integer values representing label values (NUMERIC type)
@@ -844,18 +846,18 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Compute the 2d confusion matrix of size [numClasses, numClasses] from a pair of labels and predictions, both of<br>
-   * which are represented as integer values.<br>
-   * For example, if labels = [0, 1, 1], predicted = [0, 2, 1], numClasses = 4, and weights = [1, 2, 3]<br>
-   * [1, 0, 0, 0]<br>
-   * [0, 3, 2, 0]<br>
-   * [0, 0, 0, 0]<br>
-   * [0, 0, 0, 0]<br>
+   * Compute the 2d confusion matrix of size [numClasses, numClasses] from a pair of labels and predictions, both of
+   * which are represented as integer values.
+   * For example, if labels = [0, 1, 1], predicted = [0, 2, 1], numClasses = 4, and weights = [1, 2, 3]
+   * [1, 0, 0, 0]
+   * [0, 3, 2, 0]
+   * [0, 0, 0, 0]
+   * [0, 0, 0, 0]
    *
    * @param labels Labels - 1D array of integer values representing label values (NUMERIC type)
    * @param pred Predictions - 1D array of integer values representing predictions. Same length as labels (NUMERIC type)
    * @param weights Weights - 1D array of values (may be real/decimal) representing the weight/contribution of each prediction. Must be same length as both labels and predictions arrays (NUMERIC type)
-   * @param numClasses 
+   * @param numClasses
    * @return output Output variable (2D, shape [numClasses, numClasses}) (NUMERIC type)
    */
   public SDVariable confusionMatrix(SDVariable labels, SDVariable pred, SDVariable weights,
@@ -867,19 +869,19 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Compute the 2d confusion matrix of size [numClasses, numClasses] from a pair of labels and predictions, both of<br>
-   * which are represented as integer values.<br>
-   * For example, if labels = [0, 1, 1], predicted = [0, 2, 1], numClasses = 4, and weights = [1, 2, 3]<br>
-   * [1, 0, 0, 0]<br>
-   * [0, 3, 2, 0]<br>
-   * [0, 0, 0, 0]<br>
-   * [0, 0, 0, 0]<br>
+   * Compute the 2d confusion matrix of size [numClasses, numClasses] from a pair of labels and predictions, both of
+   * which are represented as integer values.
+   * For example, if labels = [0, 1, 1], predicted = [0, 2, 1], numClasses = 4, and weights = [1, 2, 3]
+   * [1, 0, 0, 0]
+   * [0, 3, 2, 0]
+   * [0, 0, 0, 0]
+   * [0, 0, 0, 0]
    *
    * @param name name May be null. Name for the output variable
    * @param labels Labels - 1D array of integer values representing label values (NUMERIC type)
    * @param pred Predictions - 1D array of integer values representing predictions. Same length as labels (NUMERIC type)
    * @param weights Weights - 1D array of values (may be real/decimal) representing the weight/contribution of each prediction. Must be same length as both labels and predictions arrays (NUMERIC type)
-   * @param numClasses 
+   * @param numClasses
    * @return output Output variable (2D, shape [numClasses, numClasses}) (NUMERIC type)
    */
   public SDVariable confusionMatrix(String name, SDVariable labels, SDVariable pred,
@@ -892,7 +894,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise cosine operation: out = cos(x)<br>
+   * Elementwise cosine operation: out = cos(x)
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -903,7 +905,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise cosine operation: out = cos(x)<br>
+   * Elementwise cosine operation: out = cos(x)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -916,7 +918,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise cosh (hyperbolic cosine) operation: out = cosh(x)<br>
+   * Elementwise cosh (hyperbolic cosine) operation: out = cosh(x)
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -927,7 +929,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise cosh (hyperbolic cosine) operation: out = cosh(x)<br>
+   * Elementwise cosh (hyperbolic cosine) operation: out = cosh(x)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -940,9 +942,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Cosine distance reduction operation. The output contains the cosine distance for each<br>
-   * tensor/subset along the specified dimensions:<br>
-   * out = 1.0 - cosineSimilarity(x,y)<br>
+   * Cosine distance reduction operation. The output contains the cosine distance for each
+   * tensor/subset along the specified dimensions:
+   * out = 1.0 - cosineSimilarity(x,y)
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
@@ -960,9 +962,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Cosine distance reduction operation. The output contains the cosine distance for each<br>
-   * tensor/subset along the specified dimensions:<br>
-   * out = 1.0 - cosineSimilarity(x,y)<br>
+   * Cosine distance reduction operation. The output contains the cosine distance for each
+   * tensor/subset along the specified dimensions:
+   * out = 1.0 - cosineSimilarity(x,y)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable x (NUMERIC type)
@@ -982,9 +984,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Cosine distance reduction operation. The output contains the cosine distance for each<br>
-   * tensor/subset along the specified dimensions:<br>
-   * out = 1.0 - cosineSimilarity(x,y)<br>
+   * Cosine distance reduction operation. The output contains the cosine distance for each
+   * tensor/subset along the specified dimensions:
+   * out = 1.0 - cosineSimilarity(x,y)
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
@@ -999,9 +1001,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Cosine distance reduction operation. The output contains the cosine distance for each<br>
-   * tensor/subset along the specified dimensions:<br>
-   * out = 1.0 - cosineSimilarity(x,y)<br>
+   * Cosine distance reduction operation. The output contains the cosine distance for each
+   * tensor/subset along the specified dimensions:
+   * out = 1.0 - cosineSimilarity(x,y)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable x (NUMERIC type)
@@ -1018,9 +1020,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Cosine similarity pairwise reduction operation. The output contains the cosine similarity for each tensor/subset<br>
-   * along the specified dimensions:<br>
-   * out = (sum_i x[i] * y[i]) / ( sqrt(sum_i x[i]^2) * sqrt(sum_i y[i]^2)<br>
+   * Cosine similarity pairwise reduction operation. The output contains the cosine similarity for each tensor/subset
+   * along the specified dimensions:
+   * out = (sum_i x[i] * y[i]) / ( sqrt(sum_i x[i]^2) * sqrt(sum_i y[i]^2)
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
@@ -1038,9 +1040,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Cosine similarity pairwise reduction operation. The output contains the cosine similarity for each tensor/subset<br>
-   * along the specified dimensions:<br>
-   * out = (sum_i x[i] * y[i]) / ( sqrt(sum_i x[i]^2) * sqrt(sum_i y[i]^2)<br>
+   * Cosine similarity pairwise reduction operation. The output contains the cosine similarity for each tensor/subset
+   * along the specified dimensions:
+   * out = (sum_i x[i] * y[i]) / ( sqrt(sum_i x[i]^2) * sqrt(sum_i y[i]^2)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable x (NUMERIC type)
@@ -1060,9 +1062,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Cosine similarity pairwise reduction operation. The output contains the cosine similarity for each tensor/subset<br>
-   * along the specified dimensions:<br>
-   * out = (sum_i x[i] * y[i]) / ( sqrt(sum_i x[i]^2) * sqrt(sum_i y[i]^2)<br>
+   * Cosine similarity pairwise reduction operation. The output contains the cosine similarity for each tensor/subset
+   * along the specified dimensions:
+   * out = (sum_i x[i] * y[i]) / ( sqrt(sum_i x[i]^2) * sqrt(sum_i y[i]^2)
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
@@ -1077,9 +1079,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Cosine similarity pairwise reduction operation. The output contains the cosine similarity for each tensor/subset<br>
-   * along the specified dimensions:<br>
-   * out = (sum_i x[i] * y[i]) / ( sqrt(sum_i x[i]^2) * sqrt(sum_i y[i]^2)<br>
+   * Cosine similarity pairwise reduction operation. The output contains the cosine similarity for each tensor/subset
+   * along the specified dimensions:
+   * out = (sum_i x[i] * y[i]) / ( sqrt(sum_i x[i]^2) * sqrt(sum_i y[i]^2)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable x (NUMERIC type)
@@ -1096,7 +1098,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Count non zero array reduction operation, optionally along specified dimensions: out = count(x != 0)<br>
+   * Count non zero array reduction operation, optionally along specified dimensions: out = count(x != 0)
    *
    * @param in Input variable (NUMERIC type)
    * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
@@ -1110,7 +1112,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Count non zero array reduction operation, optionally along specified dimensions: out = count(x != 0)<br>
+   * Count non zero array reduction operation, optionally along specified dimensions: out = count(x != 0)
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -1126,7 +1128,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Count non zero array reduction operation, optionally along specified dimensions: out = count(x != 0)<br>
+   * Count non zero array reduction operation, optionally along specified dimensions: out = count(x != 0)
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -1139,7 +1141,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Count non zero array reduction operation, optionally along specified dimensions: out = count(x != 0)<br>
+   * Count non zero array reduction operation, optionally along specified dimensions: out = count(x != 0)
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -1154,7 +1156,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Count zero array reduction operation, optionally along specified dimensions: out = count(x == 0)<br>
+   * Count zero array reduction operation, optionally along specified dimensions: out = count(x == 0)
    *
    * @param in Input variable (NUMERIC type)
    * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
@@ -1168,7 +1170,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Count zero array reduction operation, optionally along specified dimensions: out = count(x == 0)<br>
+   * Count zero array reduction operation, optionally along specified dimensions: out = count(x == 0)
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -1184,7 +1186,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Count zero array reduction operation, optionally along specified dimensions: out = count(x == 0)<br>
+   * Count zero array reduction operation, optionally along specified dimensions: out = count(x == 0)
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -1197,7 +1199,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Count zero array reduction operation, optionally along specified dimensions: out = count(x == 0)<br>
+   * Count zero array reduction operation, optionally along specified dimensions: out = count(x == 0)
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -1212,8 +1214,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Returns the pair-wise cross product of equal size arrays a and b: a x b = ||a||x||b|| sin(theta).<br>
-   * Can take rank 1 or above inputs (of equal shapes), but note that the last dimension must have dimension 3<br>
+   * Returns the pair-wise cross product of equal size arrays a and b: a x b = ||a||x||b|| sin(theta).
+   * Can take rank 1 or above inputs (of equal shapes), but note that the last dimension must have dimension 3
    *
    * @param a First input (NUMERIC type)
    * @param b Second input (NUMERIC type)
@@ -1226,8 +1228,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Returns the pair-wise cross product of equal size arrays a and b: a x b = ||a||x||b|| sin(theta).<br>
-   * Can take rank 1 or above inputs (of equal shapes), but note that the last dimension must have dimension 3<br>
+   * Returns the pair-wise cross product of equal size arrays a and b: a x b = ||a||x||b|| sin(theta).
+   * Can take rank 1 or above inputs (of equal shapes), but note that the last dimension must have dimension 3
    *
    * @param name name May be null. Name for the output variable
    * @param a First input (NUMERIC type)
@@ -1242,7 +1244,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise cube function: out = x^3<br>
+   * Element-wise cube function: out = x^3
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -1253,7 +1255,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise cube function: out = x^3<br>
+   * Element-wise cube function: out = x^3
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -1266,14 +1268,14 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Returns an output variable with diagonal values equal to the specified values; off-diagonal values will be set to 0<br>
-   * For example, if input = [1,2,3], then output is given by:<br>
-   * [ 1, 0, 0]<br>
-   * [ 0, 2, 0]<br>
-   * [ 0, 0, 3]<br>
-   * <br>
-   * Higher input ranks are also supported: if input has shape [a,...,R-1] then output[i,...,k,i,...,k] = input[i,...,k].<br>
-   * i.e., for input rank R, output has rank 2R<br>
+   * Returns an output variable with diagonal values equal to the specified values; off-diagonal values will be set to 0
+   * For example, if input = [1,2,3], then output is given by:
+   * [ 1, 0, 0]
+   * [ 0, 2, 0]
+   * [ 0, 0, 3]
+   *
+   * Higher input ranks are also supported: if input has shape [a,...,R-1] then output[i,...,k,i,...,k] = input[i,...,k].
+   * i.e., for input rank R, output has rank 2R
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -1284,14 +1286,14 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Returns an output variable with diagonal values equal to the specified values; off-diagonal values will be set to 0<br>
-   * For example, if input = [1,2,3], then output is given by:<br>
-   * [ 1, 0, 0]<br>
-   * [ 0, 2, 0]<br>
-   * [ 0, 0, 3]<br>
-   * <br>
-   * Higher input ranks are also supported: if input has shape [a,...,R-1] then output[i,...,k,i,...,k] = input[i,...,k].<br>
-   * i.e., for input rank R, output has rank 2R<br>
+   * Returns an output variable with diagonal values equal to the specified values; off-diagonal values will be set to 0
+   * For example, if input = [1,2,3], then output is given by:
+   * [ 1, 0, 0]
+   * [ 0, 2, 0]
+   * [ 0, 0, 3]
+   *
+   * Higher input ranks are also supported: if input has shape [a,...,R-1] then output[i,...,k,i,...,k] = input[i,...,k].
+   * i.e., for input rank R, output has rank 2R
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -1304,13 +1306,13 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Extract the diagonal part from the input array.<br>
-   * If input is<br>
-   * [ 1, 0, 0]<br>
-   * [ 0, 2, 0]<br>
-   * [ 0, 0, 3]<br>
-   * then output is [1, 2, 3].<br>
-   * Supports higher dimensions: in general, out[i,...,k] = in[i,...,k,i,...,k]<br>
+   * Extract the diagonal part from the input array.
+   * If input is
+   * [ 1, 0, 0]
+   * [ 0, 2, 0]
+   * [ 0, 0, 3]
+   * then output is [1, 2, 3].
+   * Supports higher dimensions: in general, out[i,...,k] = in[i,...,k,i,...,k]
    *
    * @param x Input variable (NUMERIC type)
    * @return output Diagonal part of the input (NUMERIC type)
@@ -1321,13 +1323,13 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Extract the diagonal part from the input array.<br>
-   * If input is<br>
-   * [ 1, 0, 0]<br>
-   * [ 0, 2, 0]<br>
-   * [ 0, 0, 3]<br>
-   * then output is [1, 2, 3].<br>
-   * Supports higher dimensions: in general, out[i,...,k] = in[i,...,k,i,...,k]<br>
+   * Extract the diagonal part from the input array.
+   * If input is
+   * [ 1, 0, 0]
+   * [ 0, 2, 0]
+   * [ 0, 0, 3]
+   * then output is [1, 2, 3].
+   * Supports higher dimensions: in general, out[i,...,k] = in[i,...,k,i,...,k]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -1340,11 +1342,11 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Pairwise division operation, out = x / y<br>
+   * Pairwise division operation, out = x / y
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param x Input variable (NUMERIC type)
    * @param y Input variable (NUMERIC type)
@@ -1357,11 +1359,11 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Pairwise division operation, out = x / y<br>
+   * Pairwise division operation, out = x / y
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -1376,7 +1378,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Scalar division operation, out = in / scalar<br>
+   * Scalar division operation, out = in / scalar
    *
    * @param x Input variable (NUMERIC type)
    * @param value Scalar value for op
@@ -1388,7 +1390,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Scalar division operation, out = in / scalar<br>
+   * Scalar division operation, out = in / scalar
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -1402,7 +1404,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Entropy reduction: -sum(x * log(x))<br>
+   * Entropy reduction: -sum(x * log(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
@@ -1416,7 +1418,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Entropy reduction: -sum(x * log(x))<br>
+   * Entropy reduction: -sum(x * log(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -1432,7 +1434,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Entropy reduction: -sum(x * log(x))<br>
+   * Entropy reduction: -sum(x * log(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -1445,7 +1447,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Entropy reduction: -sum(x * log(x))<br>
+   * Entropy reduction: -sum(x * log(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -1460,7 +1462,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise Gaussian error function - out = erf(in)<br>
+   * Element-wise Gaussian error function - out = erf(in)
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -1471,7 +1473,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise Gaussian error function - out = erf(in)<br>
+   * Element-wise Gaussian error function - out = erf(in)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -1484,7 +1486,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise complementary Gaussian error function - out = erfc(in) = 1 - erf(in)<br>
+   * Element-wise complementary Gaussian error function - out = erfc(in) = 1 - erf(in)
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -1495,7 +1497,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise complementary Gaussian error function - out = erfc(in) = 1 - erf(in)<br>
+   * Element-wise complementary Gaussian error function - out = erfc(in) = 1 - erf(in)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -1508,9 +1510,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Euclidean distance (l2 norm, l2 distance) reduction operation. The output contains the Euclidean distance for each<br>
-   * tensor/subset along the specified dimensions:<br>
-   * out = sqrt( sum_i (x[i] - y[i])^2 )<br>
+   * Euclidean distance (l2 norm, l2 distance) reduction operation. The output contains the Euclidean distance for each
+   * tensor/subset along the specified dimensions:
+   * out = sqrt( sum_i (x[i] - y[i])^2 )
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
@@ -1528,9 +1530,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Euclidean distance (l2 norm, l2 distance) reduction operation. The output contains the Euclidean distance for each<br>
-   * tensor/subset along the specified dimensions:<br>
-   * out = sqrt( sum_i (x[i] - y[i])^2 )<br>
+   * Euclidean distance (l2 norm, l2 distance) reduction operation. The output contains the Euclidean distance for each
+   * tensor/subset along the specified dimensions:
+   * out = sqrt( sum_i (x[i] - y[i])^2 )
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable x (NUMERIC type)
@@ -1550,9 +1552,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Euclidean distance (l2 norm, l2 distance) reduction operation. The output contains the Euclidean distance for each<br>
-   * tensor/subset along the specified dimensions:<br>
-   * out = sqrt( sum_i (x[i] - y[i])^2 )<br>
+   * Euclidean distance (l2 norm, l2 distance) reduction operation. The output contains the Euclidean distance for each
+   * tensor/subset along the specified dimensions:
+   * out = sqrt( sum_i (x[i] - y[i])^2 )
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
@@ -1567,9 +1569,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Euclidean distance (l2 norm, l2 distance) reduction operation. The output contains the Euclidean distance for each<br>
-   * tensor/subset along the specified dimensions:<br>
-   * out = sqrt( sum_i (x[i] - y[i])^2 )<br>
+   * Euclidean distance (l2 norm, l2 distance) reduction operation. The output contains the Euclidean distance for each
+   * tensor/subset along the specified dimensions:
+   * out = sqrt( sum_i (x[i] - y[i])^2 )
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable x (NUMERIC type)
@@ -1586,7 +1588,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise exponent function: out = exp(x) = 2.71828...^x<br>
+   * Elementwise exponent function: out = exp(x) = 2.71828...^x
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -1597,7 +1599,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise exponent function: out = exp(x) = 2.71828...^x<br>
+   * Elementwise exponent function: out = exp(x) = 2.71828...^x
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -1610,7 +1612,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise 1.0 - exponent function: out = 1.0 - exp(x) = 1.0 - 2.71828...^x<br>
+   * Elementwise 1.0 - exponent function: out = 1.0 - exp(x) = 1.0 - 2.71828...^x
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -1621,7 +1623,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise 1.0 - exponent function: out = 1.0 - exp(x) = 1.0 - 2.71828...^x<br>
+   * Elementwise 1.0 - exponent function: out = 1.0 - exp(x) = 1.0 - 2.71828...^x
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -1634,7 +1636,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Generate an identity matrix with the specified number of rows and columns.<br>
+   * Generate an identity matrix with the specified number of rows and columns.
    *
    * @param rows Number of rows
    * @return output Identity matrix (NUMERIC type)
@@ -1644,7 +1646,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Generate an identity matrix with the specified number of rows and columns.<br>
+   * Generate an identity matrix with the specified number of rows and columns.
    *
    * @param name name May be null. Name for the output variable
    * @param rows Number of rows
@@ -1656,7 +1658,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * As per eye(String, int, int, DataType) but with the default datatype, Eye.DEFAULT_DTYPE<br>
+   * As per eye(String, int, int, DataType) but with the default datatype, Eye.DEFAULT_DTYPE
    *
    * @param rows Number of rows
    * @param cols Number of columns
@@ -1667,7 +1669,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * As per eye(String, int, int, DataType) but with the default datatype, Eye.DEFAULT_DTYPE<br>
+   * As per eye(String, int, int, DataType) but with the default datatype, Eye.DEFAULT_DTYPE
    *
    * @param name name May be null. Name for the output variable
    * @param rows Number of rows
@@ -1680,15 +1682,15 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Generate an identity matrix with the specified number of rows and columns<br>
-   * Example:<br>
-   * <pre><br>
-   * {@code INDArray eye = eye(3,2)<br>
-   * eye:<br>
-   * [ 1, 0]<br>
-   * [ 0, 1]<br>
-   * [ 0, 0]}<br>
-   * </pre><br>
+   * Generate an identity matrix with the specified number of rows and columns
+   * Example:
+   * <pre>
+   * {@code INDArray eye = eye(3,2)
+   * eye:
+   * [ 1, 0]
+   * [ 0, 1]
+   * [ 0, 0]}
+   * </pre>
    *
    * @param rows Number of rows
    * @param cols Number of columns
@@ -1702,15 +1704,15 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Generate an identity matrix with the specified number of rows and columns<br>
-   * Example:<br>
-   * <pre><br>
-   * {@code INDArray eye = eye(3,2)<br>
-   * eye:<br>
-   * [ 1, 0]<br>
-   * [ 0, 1]<br>
-   * [ 0, 0]}<br>
-   * </pre><br>
+   * Generate an identity matrix with the specified number of rows and columns
+   * Example:
+   * <pre>
+   * {@code INDArray eye = eye(3,2)
+   * eye:
+   * [ 1, 0]
+   * [ 0, 1]
+   * [ 0, 0]}
+   * </pre>
    *
    * @param name name May be null. Name for the output variable
    * @param rows Number of rows
@@ -1726,7 +1728,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * As per eye(int, int) bit with the number of rows/columns specified as scalar INDArrays<br>
+   * As per eye(int, int) bit with the number of rows/columns specified as scalar INDArrays
    *
    * @param rows Number of rows (INT type)
    * @param cols Number of columns (INT type)
@@ -1739,7 +1741,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * As per eye(int, int) bit with the number of rows/columns specified as scalar INDArrays<br>
+   * As per eye(int, int) bit with the number of rows/columns specified as scalar INDArrays
    *
    * @param name name May be null. Name for the output variable
    * @param rows Number of rows (INT type)
@@ -1754,7 +1756,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * As per eye(String, int) but with the number of rows specified as a scalar INDArray<br>
+   * As per eye(String, int) but with the number of rows specified as a scalar INDArray
    *
    * @param rows Number of rows (INT type)
    * @return output SDVaribable identity matrix (NUMERIC type)
@@ -1765,7 +1767,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * As per eye(String, int) but with the number of rows specified as a scalar INDArray<br>
+   * As per eye(String, int) but with the number of rows specified as a scalar INDArray
    *
    * @param name name May be null. Name for the output variable
    * @param rows Number of rows (INT type)
@@ -1778,15 +1780,15 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * First index reduction operation.<br>
-   * Returns a variable that contains the index of the first element that matches the specified condition (for each<br>
-   * slice along the specified dimensions)<br>
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * First index reduction operation.
+   * Returns a variable that contains the index of the first element that matches the specified condition (for each
+   * slice along the specified dimensions)
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param in Input variable (NUMERIC type)
    * @param condition Condition to check on input variable
@@ -1800,15 +1802,15 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * First index reduction operation.<br>
-   * Returns a variable that contains the index of the first element that matches the specified condition (for each<br>
-   * slice along the specified dimensions)<br>
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * First index reduction operation.
+   * Returns a variable that contains the index of the first element that matches the specified condition (for each
+   * slice along the specified dimensions)
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -1825,15 +1827,15 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * First index reduction operation.<br>
-   * Returns a variable that contains the index of the first element that matches the specified condition (for each<br>
-   * slice along the specified dimensions)<br>
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * First index reduction operation.
+   * Returns a variable that contains the index of the first element that matches the specified condition (for each
+   * slice along the specified dimensions)
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param in Input variable (NUMERIC type)
    * @param condition Condition to check on input variable
@@ -1849,15 +1851,15 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * First index reduction operation.<br>
-   * Returns a variable that contains the index of the first element that matches the specified condition (for each<br>
-   * slice along the specified dimensions)<br>
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * First index reduction operation.
+   * Returns a variable that contains the index of the first element that matches the specified condition (for each
+   * slice along the specified dimensions)
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -1875,8 +1877,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise floor function: out = floor(x).<br>
-   * Rounds each value down to the nearest integer value (if not already an integer)<br>
+   * Element-wise floor function: out = floor(x).
+   * Rounds each value down to the nearest integer value (if not already an integer)
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -1887,8 +1889,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise floor function: out = floor(x).<br>
-   * Rounds each value down to the nearest integer value (if not already an integer)<br>
+   * Element-wise floor function: out = floor(x).
+   * Rounds each value down to the nearest integer value (if not already an integer)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -1901,11 +1903,11 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Pairwise floor division operation, out = floor(x / y)<br>
+   * Pairwise floor division operation, out = floor(x / y)
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param x Input variable (NUMERIC type)
    * @param y Input variable (NUMERIC type)
@@ -1918,11 +1920,11 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Pairwise floor division operation, out = floor(x / y)<br>
+   * Pairwise floor division operation, out = floor(x / y)
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -1937,11 +1939,11 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Pairwise Modulus division operation<br>
+   * Pairwise Modulus division operation
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param x Input variable (NUMERIC type)
    * @param y Input variable (NUMERIC type)
@@ -1954,11 +1956,11 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Pairwise Modulus division operation<br>
+   * Pairwise Modulus division operation
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -1973,7 +1975,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Scalar floor modulus operation<br>
+   * Scalar floor modulus operation
    *
    * @param x Input variable (NUMERIC type)
    * @param value Scalar value for op
@@ -1985,7 +1987,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Scalar floor modulus operation<br>
+   * Scalar floor modulus operation
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -1999,9 +2001,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Hamming distance reduction operation. The output contains the cosine distance for each<br>
-   * tensor/subset along the specified dimensions:<br>
-   * out = count( x[i] != y[i] )<br>
+   * Hamming distance reduction operation. The output contains the cosine distance for each
+   * tensor/subset along the specified dimensions:
+   * out = count( x[i] != y[i] )
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
@@ -2019,9 +2021,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Hamming distance reduction operation. The output contains the cosine distance for each<br>
-   * tensor/subset along the specified dimensions:<br>
-   * out = count( x[i] != y[i] )<br>
+   * Hamming distance reduction operation. The output contains the cosine distance for each
+   * tensor/subset along the specified dimensions:
+   * out = count( x[i] != y[i] )
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable x (NUMERIC type)
@@ -2041,9 +2043,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Hamming distance reduction operation. The output contains the cosine distance for each<br>
-   * tensor/subset along the specified dimensions:<br>
-   * out = count( x[i] != y[i] )<br>
+   * Hamming distance reduction operation. The output contains the cosine distance for each
+   * tensor/subset along the specified dimensions:
+   * out = count( x[i] != y[i] )
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
@@ -2058,9 +2060,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Hamming distance reduction operation. The output contains the cosine distance for each<br>
-   * tensor/subset along the specified dimensions:<br>
-   * out = count( x[i] != y[i] )<br>
+   * Hamming distance reduction operation. The output contains the cosine distance for each
+   * tensor/subset along the specified dimensions:
+   * out = count( x[i] != y[i] )
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable x (NUMERIC type)
@@ -2077,8 +2079,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Index of the max absolute value: argmax(abs(in))<br>
-   * see argmax(String, INDArray, boolean, int...)<br>
+   * Index of the max absolute value: argmax(abs(in))
+   * see argmax(String, INDArray, boolean, int...)
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
@@ -2091,8 +2093,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Index of the max absolute value: argmax(abs(in))<br>
-   * see argmax(String, INDArray, boolean, int...)<br>
+   * Index of the max absolute value: argmax(abs(in))
+   * see argmax(String, INDArray, boolean, int...)
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -2107,8 +2109,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Index of the max absolute value: argmax(abs(in))<br>
-   * see argmax(String, INDArray, boolean, int...)<br>
+   * Index of the max absolute value: argmax(abs(in))
+   * see argmax(String, INDArray, boolean, int...)
    *
    * @param in Input variable (NUMERIC type)
    * @param keepDims If true: keep the dimensions that are reduced on (as length 1). False: remove the reduction dimensions
@@ -2122,8 +2124,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Index of the max absolute value: argmax(abs(in))<br>
-   * see argmax(String, INDArray, boolean, int...)<br>
+   * Index of the max absolute value: argmax(abs(in))
+   * see argmax(String, INDArray, boolean, int...)
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -2139,8 +2141,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Index of the min absolute value: argmin(abs(in))<br>
-   * see argmin(String, INDArray, boolean, int...)<br>
+   * Index of the min absolute value: argmin(abs(in))
+   * see argmin(String, INDArray, boolean, int...)
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
@@ -2153,8 +2155,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Index of the min absolute value: argmin(abs(in))<br>
-   * see argmin(String, INDArray, boolean, int...)<br>
+   * Index of the min absolute value: argmin(abs(in))
+   * see argmin(String, INDArray, boolean, int...)
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -2169,8 +2171,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Index of the min absolute value: argmin(abs(in))<br>
-   * see argmin(String, INDArray, boolean, int...)<br>
+   * Index of the min absolute value: argmin(abs(in))
+   * see argmin(String, INDArray, boolean, int...)
    *
    * @param in Input variable (NUMERIC type)
    * @param keepDims If true: keep the dimensions that are reduced on (as length 1). False: remove the reduction dimensions
@@ -2184,8 +2186,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Index of the min absolute value: argmin(abs(in))<br>
-   * see argmin(String, INDArray, boolean, int...)<br>
+   * Index of the min absolute value: argmin(abs(in))
+   * see argmin(String, INDArray, boolean, int...)
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -2201,9 +2203,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Is finite operation: elementwise isFinite(x)<br>
-   * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or<br>
-   * value 0 otherwise<br>
+   * Is finite operation: elementwise isFinite(x)
+   * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
+   * value 0 otherwise
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -2214,9 +2216,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Is finite operation: elementwise isFinite(x)<br>
-   * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or<br>
-   * value 0 otherwise<br>
+   * Is finite operation: elementwise isFinite(x)
+   * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
+   * value 0 otherwise
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -2229,9 +2231,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Is infinite operation: elementwise isInfinite(x)<br>
-   * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or<br>
-   * value 0 otherwise<br>
+   * Is infinite operation: elementwise isInfinite(x)
+   * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
+   * value 0 otherwise
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -2242,9 +2244,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Is infinite operation: elementwise isInfinite(x)<br>
-   * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or<br>
-   * value 0 otherwise<br>
+   * Is infinite operation: elementwise isInfinite(x)
+   * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
+   * value 0 otherwise
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -2257,9 +2259,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Is maximum operation: elementwise x == max(x)<br>
-   * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or<br>
-   * value 0 otherwise<br>
+   * Is maximum operation: elementwise x == max(x)
+   * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
+   * value 0 otherwise
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -2270,9 +2272,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Is maximum operation: elementwise x == max(x)<br>
-   * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or<br>
-   * value 0 otherwise<br>
+   * Is maximum operation: elementwise x == max(x)
+   * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
+   * value 0 otherwise
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -2285,9 +2287,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Is Not a Number operation: elementwise isNaN(x)<br>
-   * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or<br>
-   * value 0 otherwise<br>
+   * Is Not a Number operation: elementwise isNaN(x)
+   * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
+   * value 0 otherwise
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -2298,9 +2300,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Is Not a Number operation: elementwise isNaN(x)<br>
-   * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or<br>
-   * value 0 otherwise<br>
+   * Is Not a Number operation: elementwise isNaN(x)
+   * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
+   * value 0 otherwise
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -2313,9 +2315,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Is the array non decreasing?<br>
-   * An array is non-decreasing if for every valid i, x[i] <= x[i+1]. For Rank 2+ arrays, values are compared<br>
-   * in 'c' (row major) order<br>
+   * Is the array non decreasing?
+   * An array is non-decreasing if for every valid i, x[i] &lt;= x[i+1]. For Rank 2+ arrays, values are compared
+   * in 'c' (row major) order
    *
    * @param x Input variable (NUMERIC type)
    * @return output Scalar variable with value 1 if non-decreasing, or 0 otherwise (NUMERIC type)
@@ -2326,9 +2328,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Is the array non decreasing?<br>
-   * An array is non-decreasing if for every valid i, x[i] <= x[i+1]. For Rank 2+ arrays, values are compared<br>
-   * in 'c' (row major) order<br>
+   * Is the array non decreasing?
+   * An array is non-decreasing if for every valid i, x[i] &lt;= x[i+1]. For Rank 2+ arrays, values are compared
+   * in 'c' (row major) order
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -2341,9 +2343,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Is the array strictly increasing?<br>
-   * An array is strictly increasing if for every valid i, x[i] < x[i+1]. For Rank 2+ arrays, values are compared<br>
-   * in 'c' (row major) order<br>
+   * Is the array strictly increasing?
+   * An array is strictly increasing if for every valid i, x[i] &lt; x[i+1]. For Rank 2+ arrays, values are compared
+   * in 'c' (row major) order
    *
    * @param x Input variable (NUMERIC type)
    * @return output Scalar variable with value 1 if strictly increasing, or 0 otherwise (NUMERIC type)
@@ -2354,9 +2356,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Is the array strictly increasing?<br>
-   * An array is strictly increasing if for every valid i, x[i] < x[i+1]. For Rank 2+ arrays, values are compared<br>
-   * in 'c' (row major) order<br>
+   * Is the array strictly increasing?
+   * An array is strictly increasing if for every valid i, x[i] &lt; x[i+1]. For Rank 2+ arrays, values are compared
+   * in 'c' (row major) order
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -2369,8 +2371,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Jaccard similarity reduction operation. The output contains the Jaccard distance for each<br>
-   *                 tensor along the specified dimensions.<br>
+   * Jaccard similarity reduction operation. The output contains the Jaccard distance for each
+   *                 tensor along the specified dimensions.
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
@@ -2388,8 +2390,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Jaccard similarity reduction operation. The output contains the Jaccard distance for each<br>
-   *                 tensor along the specified dimensions.<br>
+   * Jaccard similarity reduction operation. The output contains the Jaccard distance for each
+   *                 tensor along the specified dimensions.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable x (NUMERIC type)
@@ -2409,8 +2411,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Jaccard similarity reduction operation. The output contains the Jaccard distance for each<br>
-   *                 tensor along the specified dimensions.<br>
+   * Jaccard similarity reduction operation. The output contains the Jaccard distance for each
+   *                 tensor along the specified dimensions.
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
@@ -2425,8 +2427,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Jaccard similarity reduction operation. The output contains the Jaccard distance for each<br>
-   *                 tensor along the specified dimensions.<br>
+   * Jaccard similarity reduction operation. The output contains the Jaccard distance for each
+   *                 tensor along the specified dimensions.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable x (NUMERIC type)
@@ -2443,15 +2445,15 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Last index reduction operation.<br>
-   * Returns a variable that contains the index of the last element that matches the specified condition (for each<br>
-   * slice along the specified dimensions)<br>
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Last index reduction operation.
+   * Returns a variable that contains the index of the last element that matches the specified condition (for each
+   * slice along the specified dimensions)
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param in Input variable (NUMERIC type)
    * @param condition Condition to check on input variable
@@ -2465,15 +2467,15 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Last index reduction operation.<br>
-   * Returns a variable that contains the index of the last element that matches the specified condition (for each<br>
-   * slice along the specified dimensions)<br>
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Last index reduction operation.
+   * Returns a variable that contains the index of the last element that matches the specified condition (for each
+   * slice along the specified dimensions)
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -2489,15 +2491,15 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Last index reduction operation.<br>
-   * Returns a variable that contains the index of the last element that matches the specified condition (for each<br>
-   * slice along the specified dimensions)<br>
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Last index reduction operation.
+   * Returns a variable that contains the index of the last element that matches the specified condition (for each
+   * slice along the specified dimensions)
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param in Input variable (NUMERIC type)
    * @param condition Condition to check on input variable
@@ -2513,15 +2515,15 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Last index reduction operation.<br>
-   * Returns a variable that contains the index of the last element that matches the specified condition (for each<br>
-   * slice along the specified dimensions)<br>
-   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
-   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
-   * the mean along a dimension).<br>
-   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
-   * keepDims = true: [a,1,c]<br>
-   * keepDims = false: [a,c]<br>
+   * Last index reduction operation.
+   * Returns a variable that contains the index of the last element that matches the specified condition (for each
+   * slice along the specified dimensions)
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+   * the mean along a dimension).
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+   * keepDims = true: [a,1,c]
+   * keepDims = false: [a,c]
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -2539,10 +2541,12 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Calculates difference between inputs X and Y.<br>
+   * Calculates difference between inputs X and Y.
    *
    * @param x Input variable X (NUMERIC type)
    * @param y Input variable Y (NUMERIC type)
+   * @return output1 Calculated difference between X and Y (NUMERIC type)
+   * @return output2 Calculated difference between X and Y (NUMERIC type)
    */
   public SDVariable[] listDiff(SDVariable x, SDVariable y) {
     SDValidation.validateNumerical("listDiff", "x", x);
@@ -2551,11 +2555,13 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Calculates difference between inputs X and Y.<br>
+   * Calculates difference between inputs X and Y.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param x Input variable X (NUMERIC type)
    * @param y Input variable Y (NUMERIC type)
+   * @return output1 Calculated difference between X and Y (NUMERIC type)
+   * @return output2 Calculated difference between X and Y (NUMERIC type)
    */
   public SDVariable[] listDiff(String[] names, SDVariable x, SDVariable y) {
     SDValidation.validateNumerical("listDiff", "x", x);
@@ -2565,7 +2571,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise logarithm function (base e - natural logarithm): out = log(x)<br>
+   * Element-wise logarithm function (base e - natural logarithm): out = log(x)
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -2576,7 +2582,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise logarithm function (base e - natural logarithm): out = log(x)<br>
+   * Element-wise logarithm function (base e - natural logarithm): out = log(x)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -2589,7 +2595,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise logarithm function (with specified base): out = log_{base}(x)<br>
+   * Element-wise logarithm function (with specified base): out = log_{base}(x)
    *
    * @param x Input variable (NUMERIC type)
    * @param base Logarithm base
@@ -2601,7 +2607,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise logarithm function (with specified base): out = log_{base}(x)<br>
+   * Element-wise logarithm function (with specified base): out = log_{base}(x)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -2615,7 +2621,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise natural logarithm function: out = log_e (1 + x)<br>
+   * Elementwise natural logarithm function: out = log_e (1 + x)
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -2626,7 +2632,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise natural logarithm function: out = log_e (1 + x)<br>
+   * Elementwise natural logarithm function: out = log_e (1 + x)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -2639,7 +2645,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Log entropy reduction: log(-sum(x * log(x)))<br>
+   * Log entropy reduction: log(-sum(x * log(x)))
    *
    * @param in Input variable (NUMERIC type)
    * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
@@ -2653,7 +2659,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Log entropy reduction: log(-sum(x * log(x)))<br>
+   * Log entropy reduction: log(-sum(x * log(x)))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -2669,7 +2675,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Log entropy reduction: log(-sum(x * log(x)))<br>
+   * Log entropy reduction: log(-sum(x * log(x)))
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -2682,7 +2688,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Log entropy reduction: log(-sum(x * log(x)))<br>
+   * Log entropy reduction: log(-sum(x * log(x)))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -2697,8 +2703,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Log-sum-exp reduction (optionally along dimension).<br>
-   * Computes log(sum(exp(x))<br>
+   * Log-sum-exp reduction (optionally along dimension).
+   * Computes log(sum(exp(x))
    *
    * @param input Input variable (NUMERIC type)
    * @param dimensions Optional dimensions to reduce along (Size: AtLeast(min=0))
@@ -2711,8 +2717,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Log-sum-exp reduction (optionally along dimension).<br>
-   * Computes log(sum(exp(x))<br>
+   * Log-sum-exp reduction (optionally along dimension).
+   * Computes log(sum(exp(x))
    *
    * @param name name May be null. Name for the output variable
    * @param input Input variable (NUMERIC type)
@@ -2727,9 +2733,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Manhattan distance (l1 norm, l1 distance) reduction operation. The output contains the Manhattan distance for each<br>
-   * tensor/subset along the specified dimensions:<br>
-   * out = sum_i abs(x[i]-y[i])<br>
+   * Manhattan distance (l1 norm, l1 distance) reduction operation. The output contains the Manhattan distance for each
+   * tensor/subset along the specified dimensions:
+   * out = sum_i abs(x[i]-y[i])
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
@@ -2747,9 +2753,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Manhattan distance (l1 norm, l1 distance) reduction operation. The output contains the Manhattan distance for each<br>
-   * tensor/subset along the specified dimensions:<br>
-   * out = sum_i abs(x[i]-y[i])<br>
+   * Manhattan distance (l1 norm, l1 distance) reduction operation. The output contains the Manhattan distance for each
+   * tensor/subset along the specified dimensions:
+   * out = sum_i abs(x[i]-y[i])
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable x (NUMERIC type)
@@ -2769,9 +2775,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Manhattan distance (l1 norm, l1 distance) reduction operation. The output contains the Manhattan distance for each<br>
-   * tensor/subset along the specified dimensions:<br>
-   * out = sum_i abs(x[i]-y[i])<br>
+   * Manhattan distance (l1 norm, l1 distance) reduction operation. The output contains the Manhattan distance for each
+   * tensor/subset along the specified dimensions:
+   * out = sum_i abs(x[i]-y[i])
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
@@ -2786,9 +2792,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Manhattan distance (l1 norm, l1 distance) reduction operation. The output contains the Manhattan distance for each<br>
-   * tensor/subset along the specified dimensions:<br>
-   * out = sum_i abs(x[i]-y[i])<br>
+   * Manhattan distance (l1 norm, l1 distance) reduction operation. The output contains the Manhattan distance for each
+   * tensor/subset along the specified dimensions:
+   * out = sum_i abs(x[i]-y[i])
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable x (NUMERIC type)
@@ -2805,9 +2811,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Matrix determinant op. For 2D input, this returns the standard matrix determinant.<br>
-   * For higher dimensional input with shape [..., m, m] the matrix determinant is returned for each <br>
-   * shape [m,m] sub-matrix.<br>
+   * Matrix determinant op. For 2D input, this returns the standard matrix determinant.
+   * For higher dimensional input with shape [..., m, m] the matrix determinant is returned for each
+   * shape [m,m] sub-matrix.
    *
    * @param in Input (NUMERIC type)
    * @return output Matrix determinant variable (NUMERIC type)
@@ -2818,9 +2824,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Matrix determinant op. For 2D input, this returns the standard matrix determinant.<br>
-   * For higher dimensional input with shape [..., m, m] the matrix determinant is returned for each <br>
-   * shape [m,m] sub-matrix.<br>
+   * Matrix determinant op. For 2D input, this returns the standard matrix determinant.
+   * For higher dimensional input with shape [..., m, m] the matrix determinant is returned for each
+   * shape [m,m] sub-matrix.
    *
    * @param name name May be null. Name for the output variable
    * @param in Input (NUMERIC type)
@@ -2833,9 +2839,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Matrix inverse op. For 2D input, this returns the standard matrix inverse.<br>
-   * For higher dimensional input with shape [..., m, m] the matrix inverse is returned for each<br>
-   * shape [m,m] sub-matrix.<br>
+   * Matrix inverse op. For 2D input, this returns the standard matrix inverse.
+   * For higher dimensional input with shape [..., m, m] the matrix inverse is returned for each
+   * shape [m,m] sub-matrix.
    *
    * @param in Input (NUMERIC type)
    * @return output Matrix inverse variable (NUMERIC type)
@@ -2846,9 +2852,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Matrix inverse op. For 2D input, this returns the standard matrix inverse.<br>
-   * For higher dimensional input with shape [..., m, m] the matrix inverse is returned for each<br>
-   * shape [m,m] sub-matrix.<br>
+   * Matrix inverse op. For 2D input, this returns the standard matrix inverse.
+   * For higher dimensional input with shape [..., m, m] the matrix inverse is returned for each
+   * shape [m,m] sub-matrix.
    *
    * @param name name May be null. Name for the output variable
    * @param in Input (NUMERIC type)
@@ -2861,11 +2867,11 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Pairwise max operation, out = max(x, y)<br>
+   * Pairwise max operation, out = max(x, y)
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param x First input variable, x (NUMERIC type)
    * @param y Second input variable, y (NUMERIC type)
@@ -2878,11 +2884,11 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Pairwise max operation, out = max(x, y)<br>
+   * Pairwise max operation, out = max(x, y)
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param name name May be null. Name for the output variable
    * @param x First input variable, x (NUMERIC type)
@@ -2897,7 +2903,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))<br>
+   * Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
@@ -2911,7 +2917,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))<br>
+   * Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -2927,7 +2933,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))<br>
+   * Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -2940,7 +2946,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))<br>
+   * Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -2955,7 +2961,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))<br>
+   * Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce along (NUMERIC type)
@@ -2969,7 +2975,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))<br>
+   * Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -2985,7 +2991,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))<br>
+   * Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce along (NUMERIC type)
@@ -2998,7 +3004,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))<br>
+   * Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -3013,8 +3019,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Merge add function: merges an arbitrary number of equal shaped arrays using element-wise addition:<br>
-   * out = sum_i in[i]<br>
+   * Merge add function: merges an arbitrary number of equal shaped arrays using element-wise addition:
+   * out = sum_i in[i]
    *
    * @param inputs Input variables (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -3026,8 +3032,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Merge add function: merges an arbitrary number of equal shaped arrays using element-wise addition:<br>
-   * out = sum_i in[i]<br>
+   * Merge add function: merges an arbitrary number of equal shaped arrays using element-wise addition:
+   * out = sum_i in[i]
    *
    * @param name name May be null. Name for the output variable
    * @param inputs Input variables (NUMERIC type)
@@ -3041,8 +3047,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Merge average function: merges an arbitrary number of equal shaped arrays using element-wise mean operation:<br>
-   * out = mean_i in[i]<br>
+   * Merge average function: merges an arbitrary number of equal shaped arrays using element-wise mean operation:
+   * out = mean_i in[i]
    *
    * @param inputs Input variables (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -3054,8 +3060,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Merge average function: merges an arbitrary number of equal shaped arrays using element-wise mean operation:<br>
-   * out = mean_i in[i]<br>
+   * Merge average function: merges an arbitrary number of equal shaped arrays using element-wise mean operation:
+   * out = mean_i in[i]
    *
    * @param name name May be null. Name for the output variable
    * @param inputs Input variables (NUMERIC type)
@@ -3069,8 +3075,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Merge max function: merges an arbitrary number of equal shaped arrays using element-wise maximum operation:<br>
-   * out = max_i in[i]<br>
+   * Merge max function: merges an arbitrary number of equal shaped arrays using element-wise maximum operation:
+   * out = max_i in[i]
    *
    * @param inputs Input variables (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -3082,8 +3088,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Merge max function: merges an arbitrary number of equal shaped arrays using element-wise maximum operation:<br>
-   * out = max_i in[i]<br>
+   * Merge max function: merges an arbitrary number of equal shaped arrays using element-wise maximum operation:
+   * out = max_i in[i]
    *
    * @param name name May be null. Name for the output variable
    * @param inputs Input variables (NUMERIC type)
@@ -3097,10 +3103,12 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Broadcasts parameters for evaluation on an N-D grid.<br>
+   * Broadcasts parameters for evaluation on an N-D grid.
    *
    * @param inputs  (NUMERIC type)
-   * @param cartesian 
+   * @param cartesian
+   * @return output1 Output array (NUMERIC type)
+   * @return output2 Output array (NUMERIC type)
    */
   public SDVariable[] meshgrid(SDVariable[] inputs, boolean cartesian) {
     SDValidation.validateNumerical("meshgrid", "inputs", inputs);
@@ -3109,11 +3117,13 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Broadcasts parameters for evaluation on an N-D grid.<br>
+   * Broadcasts parameters for evaluation on an N-D grid.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param inputs  (NUMERIC type)
-   * @param cartesian 
+   * @param cartesian
+   * @return output1 Output array (NUMERIC type)
+   * @return output2 Output array (NUMERIC type)
    */
   public SDVariable[] meshgrid(String[] names, SDVariable[] inputs, boolean cartesian) {
     SDValidation.validateNumerical("meshgrid", "inputs", inputs);
@@ -3123,11 +3133,11 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Pairwise max operation, out = min(x, y)<br>
+   * Pairwise max operation, out = min(x, y)
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param x First input variable, x (NUMERIC type)
    * @param y Second input variable, y (NUMERIC type)
@@ -3140,11 +3150,11 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Pairwise max operation, out = min(x, y)<br>
+   * Pairwise max operation, out = min(x, y)
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param name name May be null. Name for the output variable
    * @param x First input variable, x (NUMERIC type)
@@ -3159,11 +3169,11 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Pairwise modulus (remainder) operation, out = x % y<br>
+   * Pairwise modulus (remainder) operation, out = x % y
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param x Input variable (NUMERIC type)
    * @param y Input variable (NUMERIC type)
@@ -3176,11 +3186,11 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Pairwise modulus (remainder) operation, out = x % y<br>
+   * Pairwise modulus (remainder) operation, out = x % y
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -3195,11 +3205,13 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Calculate the mean and (population) variance for the input variable, for the specified axis<br>
+   * Calculate the mean and (population) variance for the input variable, for the specified axis
    *
    * @param input Input to calculate moments for (NUMERIC type)
    * @param axes Dimensions to perform calculation over (Size: AtLeast(min=0))
-   * @param keepDims Whether to keep dimensions during reduction or not. 
+   * @param keepDims Whether to keep dimensions during reduction or not.
+   * @return output_mean Mean variable (NUMERIC type)
+   * @return output_variance Variance variable (NUMERIC type)
    */
   public SDVariable[] moments(SDVariable input, long[] axes, boolean keepDims) {
     SDValidation.validateNumerical("moments", "input", input);
@@ -3208,12 +3220,14 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Calculate the mean and (population) variance for the input variable, for the specified axis<br>
+   * Calculate the mean and (population) variance for the input variable, for the specified axis
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param input Input to calculate moments for (NUMERIC type)
    * @param axes Dimensions to perform calculation over (Size: AtLeast(min=0))
-   * @param keepDims Whether to keep dimensions during reduction or not. 
+   * @param keepDims Whether to keep dimensions during reduction or not.
+   * @return output_mean Mean variable (NUMERIC type)
+   * @return output_variance Variance variable (NUMERIC type)
    */
   public SDVariable[] moments(String[] names, SDVariable input, long[] axes, boolean keepDims) {
     SDValidation.validateNumerical("moments", "input", input);
@@ -3223,11 +3237,13 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Calculate the mean and (population) variance for the input variable, for the specified axis<br>
+   * Calculate the mean and (population) variance for the input variable, for the specified axis
    *
    * @param input Input to calculate moments for (NUMERIC type)
    * @param axes Dimensions to perform calculation over (NUMERIC type)
-   * @param keepDims Whether to keep dimensions during reduction or not. 
+   * @param keepDims Whether to keep dimensions during reduction or not.
+   * @return output_mean Mean variable (NUMERIC type)
+   * @return output_variance Variance variable (NUMERIC type)
    */
   public SDVariable[] moments(SDVariable input, SDVariable axes, boolean keepDims) {
     SDValidation.validateNumerical("moments", "input", input);
@@ -3236,12 +3252,14 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Calculate the mean and (population) variance for the input variable, for the specified axis<br>
+   * Calculate the mean and (population) variance for the input variable, for the specified axis
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param input Input to calculate moments for (NUMERIC type)
    * @param axes Dimensions to perform calculation over (NUMERIC type)
-   * @param keepDims Whether to keep dimensions during reduction or not. 
+   * @param keepDims Whether to keep dimensions during reduction or not.
+   * @return output_mean Mean variable (NUMERIC type)
+   * @return output_variance Variance variable (NUMERIC type)
    */
   public SDVariable[] moments(String[] names, SDVariable input, SDVariable axes, boolean keepDims) {
     SDValidation.validateNumerical("moments", "input", input);
@@ -3251,11 +3269,11 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Pairwise multiplication operation, out = x * y<br>
+   * Pairwise multiplication operation, out = x * y
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param x Input variable (NUMERIC type)
    * @param y Input variable (NUMERIC type)
@@ -3268,11 +3286,11 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Pairwise multiplication operation, out = x * y<br>
+   * Pairwise multiplication operation, out = x * y
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -3287,7 +3305,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Scalar multiplication operation, out = in * scalar<br>
+   * Scalar multiplication operation, out = in * scalar
    *
    * @param x Input variable (NUMERIC type)
    * @param value Scalar value for op
@@ -3299,7 +3317,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Scalar multiplication operation, out = in * scalar<br>
+   * Scalar multiplication operation, out = in * scalar
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -3313,7 +3331,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise negative operation: out = -x<br>
+   * Elementwise negative operation: out = -x
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -3324,7 +3342,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise negative operation: out = -x<br>
+   * Elementwise negative operation: out = -x
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -3337,7 +3355,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))<br>
+   * Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
@@ -3351,7 +3369,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))<br>
+   * Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -3367,7 +3385,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))<br>
+   * Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -3380,7 +3398,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))<br>
+   * Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -3395,7 +3413,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Sum of absolute differences.<br>
+   * Sum of absolute differences.
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce along (NUMERIC type)
@@ -3409,7 +3427,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Sum of absolute differences.<br>
+   * Sum of absolute differences.
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -3425,7 +3443,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Sum of absolute differences.<br>
+   * Sum of absolute differences.
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce along (NUMERIC type)
@@ -3438,7 +3456,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Sum of absolute differences.<br>
+   * Sum of absolute differences.
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -3453,7 +3471,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Euclidean norm: euclidean distance of a vector from the origin<br>
+   * Euclidean norm: euclidean distance of a vector from the origin
    *
    * @param in Input variable (NUMERIC type)
    * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
@@ -3467,7 +3485,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Euclidean norm: euclidean distance of a vector from the origin<br>
+   * Euclidean norm: euclidean distance of a vector from the origin
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -3483,7 +3501,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Euclidean norm: euclidean distance of a vector from the origin<br>
+   * Euclidean norm: euclidean distance of a vector from the origin
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -3496,7 +3514,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Euclidean norm: euclidean distance of a vector from the origin<br>
+   * Euclidean norm: euclidean distance of a vector from the origin
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -3511,7 +3529,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Euclidean norm: euclidean distance of a vector from the origin<br>
+   * Euclidean norm: euclidean distance of a vector from the origin
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce along (NUMERIC type)
@@ -3525,7 +3543,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Euclidean norm: euclidean distance of a vector from the origin<br>
+   * Euclidean norm: euclidean distance of a vector from the origin
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -3541,7 +3559,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Euclidean norm: euclidean distance of a vector from the origin<br>
+   * Euclidean norm: euclidean distance of a vector from the origin
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce along (NUMERIC type)
@@ -3554,7 +3572,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Euclidean norm: euclidean distance of a vector from the origin<br>
+   * Euclidean norm: euclidean distance of a vector from the origin
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -3569,7 +3587,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Differences between max absolute value<br>
+   * Differences between max absolute value
    *
    * @param in Input variable (NUMERIC type)
    * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
@@ -3583,7 +3601,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Differences between max absolute value<br>
+   * Differences between max absolute value
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -3599,7 +3617,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Differences between max absolute value<br>
+   * Differences between max absolute value
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -3612,7 +3630,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Differences between max absolute value<br>
+   * Differences between max absolute value
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -3627,7 +3645,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Differences between max absolute value<br>
+   * Differences between max absolute value
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce along (NUMERIC type)
@@ -3641,7 +3659,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Differences between max absolute value<br>
+   * Differences between max absolute value
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -3657,7 +3675,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Differences between max absolute value<br>
+   * Differences between max absolute value
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce along (NUMERIC type)
@@ -3670,7 +3688,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Differences between max absolute value<br>
+   * Differences between max absolute value
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -3685,12 +3703,14 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Calculate the mean and variance from the sufficient statistics<br>
+   * Calculate the mean and variance from the sufficient statistics
    *
    * @param counts Rank 0 (scalar) value with the total number of values used to calculate the sufficient statistics (NUMERIC type)
    * @param means Mean-value sufficient statistics: this is the SUM of all data values (NUMERIC type)
    * @param variances Variaance sufficient statistics: this is the squared sum of all data values (NUMERIC type)
    * @param shift Shift value, possibly 0, used when calculating the sufficient statistics (for numerical stability)
+   * @return output_mean Mean variable (NUMERIC type)
+   * @return output_population Population variable (NUMERIC type)
    */
   public SDVariable[] normalizeMoments(SDVariable counts, SDVariable means, SDVariable variances,
       double shift) {
@@ -3701,13 +3721,15 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Calculate the mean and variance from the sufficient statistics<br>
+   * Calculate the mean and variance from the sufficient statistics
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param counts Rank 0 (scalar) value with the total number of values used to calculate the sufficient statistics (NUMERIC type)
    * @param means Mean-value sufficient statistics: this is the SUM of all data values (NUMERIC type)
    * @param variances Variaance sufficient statistics: this is the squared sum of all data values (NUMERIC type)
    * @param shift Shift value, possibly 0, used when calculating the sufficient statistics (for numerical stability)
+   * @return output_mean Mean variable (NUMERIC type)
+   * @return output_population Population variable (NUMERIC type)
    */
   public SDVariable[] normalizeMoments(String[] names, SDVariable counts, SDVariable means,
       SDVariable variances, double shift) {
@@ -3719,10 +3741,10 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Boolean OR operation: elementwise (x != 0) || (y != 0)<br>
-   * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.<br>
+   * Boolean OR operation: elementwise (x != 0) || (y != 0)
+   * If x and y arrays have equal shape, the output shape is the same as these inputs.
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
    *
    * @param x Input 1 (BOOL type)
    * @param y Input 2 (BOOL type)
@@ -3731,14 +3753,14 @@ public class SDMath extends SDOps {
   public SDVariable or(SDVariable x, SDVariable y) {
     SDValidation.validateBool("or", "x", x);
     SDValidation.validateBool("or", "y", y);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanOr(sd,x, y).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.LogicalOr(sd,x, y).outputVariable();
   }
 
   /**
-   * Boolean OR operation: elementwise (x != 0) || (y != 0)<br>
-   * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.<br>
+   * Boolean OR operation: elementwise (x != 0) || (y != 0)
+   * If x and y arrays have equal shape, the output shape is the same as these inputs.
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input 1 (BOOL type)
@@ -3748,12 +3770,12 @@ public class SDMath extends SDOps {
   public SDVariable or(String name, SDVariable x, SDVariable y) {
     SDValidation.validateBool("or", "x", x);
     SDValidation.validateBool("or", "y", y);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanOr(sd,x, y).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.LogicalOr(sd,x, y).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
   /**
-   * Element-wise power function: out = x^value<br>
+   * Element-wise power function: out = x^value
    *
    * @param x Input variable (NUMERIC type)
    * @param value Scalar value for op
@@ -3765,7 +3787,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise power function: out = x^value<br>
+   * Element-wise power function: out = x^value
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -3779,7 +3801,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise (broadcastable) power function: out = x[i]^y[i]<br>
+   * Element-wise (broadcastable) power function: out = x[i]^y[i]
    *
    * @param x Input variable (NUMERIC type)
    * @param y Power (NUMERIC type)
@@ -3792,7 +3814,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise (broadcastable) power function: out = x[i]^y[i]<br>
+   * Element-wise (broadcastable) power function: out = x[i]^y[i]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -3807,7 +3829,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * The max of an array along each dimension<br>
+   * The max of an array along each dimension
    *
    * @param in Input variable (NUMERIC type)
    * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
@@ -3821,7 +3843,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * The max of an array along each dimension<br>
+   * The max of an array along each dimension
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -3837,7 +3859,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * The max of an array along each dimension<br>
+   * The max of an array along each dimension
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -3850,7 +3872,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * The max of an array along each dimension<br>
+   * The max of an array along each dimension
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -3865,7 +3887,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * The product of an array long each dimension<br>
+   * The product of an array long each dimension
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce along (NUMERIC type)
@@ -3879,7 +3901,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * The product of an array long each dimension<br>
+   * The product of an array long each dimension
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -3895,7 +3917,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * The product of an array long each dimension<br>
+   * The product of an array long each dimension
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce along (NUMERIC type)
@@ -3908,7 +3930,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * The product of an array long each dimension<br>
+   * The product of an array long each dimension
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -3923,9 +3945,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Rational Tanh Approximation elementwise function, as described in the paper:<br>
-   * Compact Convolutional Neural Network Cascade for Face Detection<br>
-   * This is a faster Tanh approximation<br>
+   * Rational Tanh Approximation elementwise function, as described in the paper:
+   * Compact Convolutional Neural Network Cascade for Face Detection
+   * This is a faster Tanh approximation
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -3936,9 +3958,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Rational Tanh Approximation elementwise function, as described in the paper:<br>
-   * Compact Convolutional Neural Network Cascade for Face Detection<br>
-   * This is a faster Tanh approximation<br>
+   * Rational Tanh Approximation elementwise function, as described in the paper:
+   * Compact Convolutional Neural Network Cascade for Face Detection
+   * This is a faster Tanh approximation
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -3951,11 +3973,11 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Pairwise reverse division operation, out = y / x<br>
+   * Pairwise reverse division operation, out = y / x
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param x Input variable (NUMERIC type)
    * @param y Input variable (NUMERIC type)
@@ -3968,11 +3990,11 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Pairwise reverse division operation, out = y / x<br>
+   * Pairwise reverse division operation, out = y / x
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -3987,7 +4009,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Scalar reverse division operation, out = scalar / in<br>
+   * Scalar reverse division operation, out = scalar / in
    *
    * @param x Input variable (NUMERIC type)
    * @param value Scalar value for op
@@ -3999,7 +4021,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Scalar reverse division operation, out = scalar / in<br>
+   * Scalar reverse division operation, out = scalar / in
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -4013,7 +4035,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise reciprocal (inverse) function: out[i] = 1 / in[i]<br>
+   * Element-wise reciprocal (inverse) function: out[i] = 1 / in[i]
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -4024,7 +4046,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise reciprocal (inverse) function: out[i] = 1 / in[i]<br>
+   * Element-wise reciprocal (inverse) function: out[i] = 1 / in[i]
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -4037,7 +4059,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Rectified tanh operation: max(0, tanh(in))<br>
+   * Rectified tanh operation: max(0, tanh(in))
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -4048,7 +4070,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Rectified tanh operation: max(0, tanh(in))<br>
+   * Rectified tanh operation: max(0, tanh(in))
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -4061,7 +4083,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Absolute max array reduction operation, optionally along specified dimensions: out = max(abs(x))<br>
+   * Absolute max array reduction operation, optionally along specified dimensions: out = max(abs(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
@@ -4075,7 +4097,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Absolute max array reduction operation, optionally along specified dimensions: out = max(abs(x))<br>
+   * Absolute max array reduction operation, optionally along specified dimensions: out = max(abs(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -4091,7 +4113,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Absolute max array reduction operation, optionally along specified dimensions: out = max(abs(x))<br>
+   * Absolute max array reduction operation, optionally along specified dimensions: out = max(abs(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -4104,7 +4126,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Absolute max array reduction operation, optionally along specified dimensions: out = max(abs(x))<br>
+   * Absolute max array reduction operation, optionally along specified dimensions: out = max(abs(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -4119,7 +4141,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Absolute max array reduction operation, optionally along specified dimensions: out = max(abs(x))<br>
+   * Absolute max array reduction operation, optionally along specified dimensions: out = max(abs(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce along (NUMERIC type)
@@ -4133,7 +4155,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Absolute max array reduction operation, optionally along specified dimensions: out = max(abs(x))<br>
+   * Absolute max array reduction operation, optionally along specified dimensions: out = max(abs(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -4150,7 +4172,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Absolute max array reduction operation, optionally along specified dimensions: out = max(abs(x))<br>
+   * Absolute max array reduction operation, optionally along specified dimensions: out = max(abs(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce along (NUMERIC type)
@@ -4163,7 +4185,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Absolute max array reduction operation, optionally along specified dimensions: out = max(abs(x))<br>
+   * Absolute max array reduction operation, optionally along specified dimensions: out = max(abs(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -4178,7 +4200,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Absolute mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))<br>
+   * Absolute mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
@@ -4192,7 +4214,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Absolute mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))<br>
+   * Absolute mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -4208,7 +4230,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Absolute mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))<br>
+   * Absolute mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -4221,7 +4243,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Absolute mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))<br>
+   * Absolute mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -4236,7 +4258,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Absolute mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))<br>
+   * Absolute mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce along (NUMERIC type)
@@ -4250,7 +4272,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Absolute mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))<br>
+   * Absolute mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -4267,7 +4289,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Absolute mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))<br>
+   * Absolute mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce along (NUMERIC type)
@@ -4280,7 +4302,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Absolute mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))<br>
+   * Absolute mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -4295,7 +4317,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Absolute min array reduction operation, optionally along specified dimensions: out = min(abs(x))<br>
+   * Absolute min array reduction operation, optionally along specified dimensions: out = min(abs(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
@@ -4309,7 +4331,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Absolute min array reduction operation, optionally along specified dimensions: out = min(abs(x))<br>
+   * Absolute min array reduction operation, optionally along specified dimensions: out = min(abs(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -4325,7 +4347,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Absolute min array reduction operation, optionally along specified dimensions: out = min(abs(x))<br>
+   * Absolute min array reduction operation, optionally along specified dimensions: out = min(abs(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -4338,7 +4360,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Absolute min array reduction operation, optionally along specified dimensions: out = min(abs(x))<br>
+   * Absolute min array reduction operation, optionally along specified dimensions: out = min(abs(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -4353,7 +4375,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Absolute min array reduction operation, optionally along specified dimensions: out = min(abs(x))<br>
+   * Absolute min array reduction operation, optionally along specified dimensions: out = min(abs(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce along (NUMERIC type)
@@ -4367,7 +4389,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Absolute min array reduction operation, optionally along specified dimensions: out = min(abs(x))<br>
+   * Absolute min array reduction operation, optionally along specified dimensions: out = min(abs(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -4384,7 +4406,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Absolute min array reduction operation, optionally along specified dimensions: out = min(abs(x))<br>
+   * Absolute min array reduction operation, optionally along specified dimensions: out = min(abs(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce along (NUMERIC type)
@@ -4397,7 +4419,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Absolute min array reduction operation, optionally along specified dimensions: out = min(abs(x))<br>
+   * Absolute min array reduction operation, optionally along specified dimensions: out = min(abs(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -4412,7 +4434,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * The max of an array along each dimension<br>
+   * The max of an array along each dimension
    *
    * @param in Input variable (NUMERIC type)
    * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
@@ -4426,7 +4448,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * The max of an array along each dimension<br>
+   * The max of an array along each dimension
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -4442,7 +4464,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * The max of an array along each dimension<br>
+   * The max of an array along each dimension
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -4455,7 +4477,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * The max of an array along each dimension<br>
+   * The max of an array along each dimension
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -4470,7 +4492,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * The max of an array long each dimension<br>
+   * The max of an array long each dimension
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce along (NUMERIC type)
@@ -4484,7 +4506,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * The max of an array long each dimension<br>
+   * The max of an array long each dimension
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -4500,7 +4522,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * The max of an array long each dimension<br>
+   * The max of an array long each dimension
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce along (NUMERIC type)
@@ -4513,7 +4535,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * The max of an array long each dimension<br>
+   * The max of an array long each dimension
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -4528,7 +4550,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * The minimum of an array along each dimension<br>
+   * The minimum of an array along each dimension
    *
    * @param in Input variable (NUMERIC type)
    * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
@@ -4542,7 +4564,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * The minimum of an array along each dimension<br>
+   * The minimum of an array along each dimension
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -4558,7 +4580,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * The minimum of an array along each dimension<br>
+   * The minimum of an array along each dimension
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -4571,7 +4593,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * The minimum of an array along each dimension<br>
+   * The minimum of an array along each dimension
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -4586,7 +4608,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * The minimum of an array long each dimension<br>
+   * The minimum of an array long each dimension
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce along (NUMERIC type)
@@ -4600,7 +4622,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * The minimum of an array long each dimension<br>
+   * The minimum of an array long each dimension
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -4616,7 +4638,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * The minimum of an array long each dimension<br>
+   * The minimum of an array long each dimension
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce along (NUMERIC type)
@@ -4629,7 +4651,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * The minimum of an array long each dimension<br>
+   * The minimum of an array long each dimension
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -4644,8 +4666,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise round function: out = round(x).<br>
-   * Rounds (up or down depending on value) to the nearest integer value.<br>
+   * Element-wise round function: out = round(x).
+   * Rounds (up or down depending on value) to the nearest integer value.
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -4656,8 +4678,8 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise round function: out = round(x).<br>
-   * Rounds (up or down depending on value) to the nearest integer value.<br>
+   * Element-wise round function: out = round(x).
+   * Rounds (up or down depending on value) to the nearest integer value.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -4670,7 +4692,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise reciprocal (inverse) of square root: out = 1.0 / sqrt(x)<br>
+   * Element-wise reciprocal (inverse) of square root: out = 1.0 / sqrt(x)
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -4681,7 +4703,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise reciprocal (inverse) of square root: out = 1.0 / sqrt(x)<br>
+   * Element-wise reciprocal (inverse) of square root: out = 1.0 / sqrt(x)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -4694,11 +4716,11 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Pairwise reverse subtraction operation, out = y - x<br>
+   * Pairwise reverse subtraction operation, out = y - x
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param x Input variable (NUMERIC type)
    * @param y Input variable (NUMERIC type)
@@ -4711,11 +4733,11 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Pairwise reverse subtraction operation, out = y - x<br>
+   * Pairwise reverse subtraction operation, out = y - x
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -4730,7 +4752,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Scalar reverse subtraction operation, out = scalar - in<br>
+   * Scalar reverse subtraction operation, out = scalar - in
    *
    * @param x Input variable (NUMERIC type)
    * @param value Scalar value for op
@@ -4742,7 +4764,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Scalar reverse subtraction operation, out = scalar - in<br>
+   * Scalar reverse subtraction operation, out = scalar - in
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -4756,15 +4778,15 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Set the diagonal value to the specified values<br>
-   * If input is<br>
-   * [ a, b, c]<br>
-   * [ d, e, f]<br>
-   * [ g, h, i]<br>
-   * and diag = [ 1, 2, 3] then output is<br>
-   * [ 1, b, c]<br>
-   * [ d, 2, f]<br>
-   * [ g, h, 3]<br>
+   * Set the diagonal value to the specified values
+   * If input is
+   * [ a, b, c]
+   * [ d, e, f]
+   * [ g, h, i]
+   * and diag = [ 1, 2, 3] then output is
+   * [ 1, b, c]
+   * [ d, 2, f]
+   * [ g, h, 3]
    *
    * @param in Input variable (NUMERIC type)
    * @param diag Diagonal (NUMERIC type)
@@ -4777,15 +4799,15 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Set the diagonal value to the specified values<br>
-   * If input is<br>
-   * [ a, b, c]<br>
-   * [ d, e, f]<br>
-   * [ g, h, i]<br>
-   * and diag = [ 1, 2, 3] then output is<br>
-   * [ 1, b, c]<br>
-   * [ d, 2, f]<br>
-   * [ g, h, 3]<br>
+   * Set the diagonal value to the specified values
+   * If input is
+   * [ a, b, c]
+   * [ d, e, f]
+   * [ g, h, i]
+   * and diag = [ 1, 2, 3] then output is
+   * [ 1, b, c]
+   * [ d, 2, f]
+   * [ g, h, 3]
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -4800,7 +4822,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Shannon Entropy reduction: -sum(x * log2(x))<br>
+   * Shannon Entropy reduction: -sum(x * log2(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
@@ -4814,7 +4836,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Shannon Entropy reduction: -sum(x * log2(x))<br>
+   * Shannon Entropy reduction: -sum(x * log2(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -4831,7 +4853,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Shannon Entropy reduction: -sum(x * log2(x))<br>
+   * Shannon Entropy reduction: -sum(x * log2(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -4844,7 +4866,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Shannon Entropy reduction: -sum(x * log2(x))<br>
+   * Shannon Entropy reduction: -sum(x * log2(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -4859,7 +4881,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Shannon Entropy reduction: -sum(x * log2(x))<br>
+   * Shannon Entropy reduction: -sum(x * log2(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce along (NUMERIC type)
@@ -4873,7 +4895,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Shannon Entropy reduction: -sum(x * log2(x))<br>
+   * Shannon Entropy reduction: -sum(x * log2(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -4890,7 +4912,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Shannon Entropy reduction: -sum(x * log2(x))<br>
+   * Shannon Entropy reduction: -sum(x * log2(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce along (NUMERIC type)
@@ -4903,7 +4925,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Shannon Entropy reduction: -sum(x * log2(x))<br>
+   * Shannon Entropy reduction: -sum(x * log2(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -4918,10 +4940,10 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise sign (signum) function:<br>
-   * out = -1 if in < 0<br>
-   * out = 0 if in = 0<br>
-   * out = 1 if in > 0<br>
+   * Element-wise sign (signum) function:
+   * out = -1 if in &lt; 0
+   * out = 0 if in = 0
+   * out = 1 if in > 0
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -4932,10 +4954,10 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise sign (signum) function:<br>
-   * out = -1 if in < 0<br>
-   * out = 0 if in = 0<br>
-   * out = 1 if in > 0<br>
+   * Element-wise sign (signum) function:
+   * out = -1 if in &lt; 0
+   * out = 0 if in = 0
+   * out = 1 if in > 0
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -4948,7 +4970,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise sine operation: out = sin(x)<br>
+   * Elementwise sine operation: out = sin(x)
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -4959,7 +4981,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise sine operation: out = sin(x)<br>
+   * Elementwise sine operation: out = sin(x)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -4972,7 +4994,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise sinh (hyperbolic sine) operation: out = sinh(x)<br>
+   * Elementwise sinh (hyperbolic sine) operation: out = sinh(x)
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -4983,7 +5005,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise sinh (hyperbolic sine) operation: out = sinh(x)<br>
+   * Elementwise sinh (hyperbolic sine) operation: out = sinh(x)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -4996,7 +5018,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise square root function: out = sqrt(x)<br>
+   * Element-wise square root function: out = sqrt(x)
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -5007,7 +5029,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise square root function: out = sqrt(x)<br>
+   * Element-wise square root function: out = sqrt(x)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -5020,7 +5042,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise square function: out = x^2<br>
+   * Element-wise square function: out = x^2
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -5031,7 +5053,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Element-wise square function: out = x^2<br>
+   * Element-wise square function: out = x^2
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -5044,11 +5066,11 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Pairwise squared difference operation.<br>
+   * Pairwise squared difference operation.
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param x Input variable (NUMERIC type)
    * @param y Input variable (NUMERIC type)
@@ -5061,11 +5083,11 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Pairwise squared difference operation.<br>
+   * Pairwise squared difference operation.
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -5080,7 +5102,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Sum of squared differences.<br>
+   * Sum of squared differences.
    *
    * @param in Input variable (NUMERIC type)
    * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
@@ -5094,7 +5116,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Sum of squared differences.<br>
+   * Sum of squared differences.
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -5110,7 +5132,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Sum of squared differences.<br>
+   * Sum of squared differences.
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -5123,7 +5145,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Sum of squared differences.<br>
+   * Sum of squared differences.
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -5138,7 +5160,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Sum of squared differences.<br>
+   * Sum of squared differences.
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce along (NUMERIC type)
@@ -5152,7 +5174,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Sum of squared differences.<br>
+   * Sum of squared differences.
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -5169,7 +5191,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Sum of squared differences.<br>
+   * Sum of squared differences.
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce along (NUMERIC type)
@@ -5182,7 +5204,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Sum of squared differences.<br>
+   * Sum of squared differences.
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -5197,18 +5219,18 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Standardize input variable along given axis<br>
-   * <p><br>
-   * out = (x - mean) / stdev<br>
-   * <p><br>
-   * with mean and stdev being calculated along the given dimension.<br>
-   * <p><br>
-   * For example: given x as a mini batch of the shape [numExamples, exampleLength]:<br>
-   * <ul> <br>
-   * <li>use dimension 1 too use the statistics (mean, stdev) for each example</li><br>
-   * <li>use dimension 0 if you want to use the statistics for each column across all examples</li><br>
-   * <li>use dimensions 0,1 if you want to use the statistics across all columns and examples</li><br>
-   * </ul><br>
+   * Standardize input variable along given axis
+   * <p>
+   * out = (x - mean) / stdev
+   * <p>
+   * with mean and stdev being calculated along the given dimension.
+   * <p>
+   * For example: given x as a mini batch of the shape [numExamples, exampleLength]:
+   * <ul>
+   * <li>use dimension 1 too use the statistics (mean, stdev) for each example</li>
+   * <li>use dimension 0 if you want to use the statistics for each column across all examples</li>
+   * <li>use dimensions 0,1 if you want to use the statistics across all columns and examples</li>
+   * </ul>
    *
    * @param x Input variable (NUMERIC type)
    * @param dimensions  (Size: AtLeast(min=1))
@@ -5221,18 +5243,18 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Standardize input variable along given axis<br>
-   * <p><br>
-   * out = (x - mean) / stdev<br>
-   * <p><br>
-   * with mean and stdev being calculated along the given dimension.<br>
-   * <p><br>
-   * For example: given x as a mini batch of the shape [numExamples, exampleLength]:<br>
-   * <ul> <br>
-   * <li>use dimension 1 too use the statistics (mean, stdev) for each example</li><br>
-   * <li>use dimension 0 if you want to use the statistics for each column across all examples</li><br>
-   * <li>use dimensions 0,1 if you want to use the statistics across all columns and examples</li><br>
-   * </ul><br>
+   * Standardize input variable along given axis
+   * <p>
+   * out = (x - mean) / stdev
+   * <p>
+   * with mean and stdev being calculated along the given dimension.
+   * <p>
+   * For example: given x as a mini batch of the shape [numExamples, exampleLength]:
+   * <ul>
+   * <li>use dimension 1 too use the statistics (mean, stdev) for each example</li>
+   * <li>use dimension 0 if you want to use the statistics for each column across all examples</li>
+   * <li>use dimensions 0,1 if you want to use the statistics across all columns and examples</li>
+   * </ul>
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -5247,9 +5269,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise step function:<br>
-   * out(x) = 1 if x >= cutoff<br>
-   * out(x) = 0 otherwise<br>
+   * Elementwise step function:
+   * out(x) = 1 if x >= cutoff
+   * out(x) = 0 otherwise
    *
    * @param x Input variable (NUMERIC type)
    * @param value Scalar value for op
@@ -5261,9 +5283,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise step function:<br>
-   * out(x) = 1 if x >= cutoff<br>
-   * out(x) = 0 otherwise<br>
+   * Elementwise step function:
+   * out(x) = 1 if x >= cutoff
+   * out(x) = 0 otherwise
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -5277,11 +5299,11 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Pairwise subtraction operation, out = x - y<br>
+   * Pairwise subtraction operation, out = x - y
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param x Input variable (NUMERIC type)
    * @param y Input variable (NUMERIC type)
@@ -5294,11 +5316,11 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Pairwise subtraction operation, out = x - y<br>
+   * Pairwise subtraction operation, out = x - y
    *
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
-   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -5313,7 +5335,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Scalar subtraction operation, out = in - scalar<br>
+   * Scalar subtraction operation, out = in - scalar
    *
    * @param x Input variable (NUMERIC type)
    * @param value Scalar value for op
@@ -5325,7 +5347,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Scalar subtraction operation, out = in - scalar<br>
+   * Scalar subtraction operation, out = in - scalar
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -5339,7 +5361,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Sum of an array, optionally along specified dimensions: out = sum(x))<br>
+   * Sum of an array, optionally along specified dimensions: out = sum(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
@@ -5353,7 +5375,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Sum of an array, optionally along specified dimensions: out = sum(x))<br>
+   * Sum of an array, optionally along specified dimensions: out = sum(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -5369,7 +5391,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Sum of an array, optionally along specified dimensions: out = sum(x))<br>
+   * Sum of an array, optionally along specified dimensions: out = sum(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -5382,7 +5404,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Sum of an array, optionally along specified dimensions: out = sum(x))<br>
+   * Sum of an array, optionally along specified dimensions: out = sum(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -5397,7 +5419,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Sum of an array, optionally along specified dimensions: out = sum(x))<br>
+   * Sum of an array, optionally along specified dimensions: out = sum(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce along (NUMERIC type)
@@ -5411,7 +5433,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Sum of an array, optionally along specified dimensions: out = sum(x))<br>
+   * Sum of an array, optionally along specified dimensions: out = sum(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -5427,7 +5449,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Sum of an array, optionally along specified dimensions: out = sum(x))<br>
+   * Sum of an array, optionally along specified dimensions: out = sum(x))
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce along (NUMERIC type)
@@ -5440,7 +5462,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Sum of an array, optionally along specified dimensions: out = sum(x))<br>
+   * Sum of an array, optionally along specified dimensions: out = sum(x))
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -5455,7 +5477,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise tangent operation: out = tan(x)<br>
+   * Elementwise tangent operation: out = tan(x)
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -5466,7 +5488,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise tangent operation: out = tan(x)<br>
+   * Elementwise tangent operation: out = tan(x)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -5479,7 +5501,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise tanh (hyperbolic tangent) operation: out = tanh(x)<br>
+   * Elementwise tanh (hyperbolic tangent) operation: out = tanh(x)
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -5490,7 +5512,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Elementwise tanh (hyperbolic tangent) operation: out = tanh(x)<br>
+   * Elementwise tanh (hyperbolic tangent) operation: out = tanh(x)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -5503,9 +5525,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Matrix trace operation<br>
-   * For rank 2 matrices, the output is a scalar with the trace - i.e., sum of the main diagonal.<br>
-   * For higher rank inputs, output[a,b,c] = trace(in[a,b,c,:,:])<br>
+   * Matrix trace operation
+   * For rank 2 matrices, the output is a scalar with the trace - i.e., sum of the main diagonal.
+   * For higher rank inputs, output[a,b,c] = trace(in[a,b,c,:,:])
    *
    * @param in Input variable (NUMERIC type)
    * @return output Trace (NUMERIC type)
@@ -5516,9 +5538,9 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Matrix trace operation<br>
-   * For rank 2 matrices, the output is a scalar with the trace - i.e., sum of the main diagonal.<br>
-   * For higher rank inputs, output[a,b,c] = trace(in[a,b,c,:,:])<br>
+   * Matrix trace operation
+   * For rank 2 matrices, the output is a scalar with the trace - i.e., sum of the main diagonal.
+   * For higher rank inputs, output[a,b,c] = trace(in[a,b,c,:,:])
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -5531,10 +5553,10 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Boolean XOR (exclusive OR) operation: elementwise (x != 0) XOR (y != 0)<br>
-   * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.<br>
+   * Boolean XOR (exclusive OR) operation: elementwise (x != 0) XOR (y != 0)
+   * If x and y arrays have equal shape, the output shape is the same as these inputs.
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
    *
    * @param x Input 1 (BOOL type)
    * @param y Input 2 (BOOL type)
@@ -5543,14 +5565,14 @@ public class SDMath extends SDOps {
   public SDVariable xor(SDVariable x, SDVariable y) {
     SDValidation.validateBool("xor", "x", x);
     SDValidation.validateBool("xor", "y", y);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanXor(sd,x, y).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.LogicalXor(sd,x, y).outputVariable();
   }
 
   /**
-   * Boolean XOR (exclusive OR) operation: elementwise (x != 0) XOR (y != 0)<br>
-   * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
-   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
-   * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.<br>
+   * Boolean XOR (exclusive OR) operation: elementwise (x != 0) XOR (y != 0)
+   * If x and y arrays have equal shape, the output shape is the same as these inputs.
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.
+   * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input 1 (BOOL type)
@@ -5560,12 +5582,12 @@ public class SDMath extends SDOps {
   public SDVariable xor(String name, SDVariable x, SDVariable y) {
     SDValidation.validateBool("xor", "x", x);
     SDValidation.validateBool("xor", "y", y);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanXor(sd,x, y).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.LogicalXor(sd,x, y).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
   /**
-   * Full array zero fraction array reduction operation, optionally along specified dimensions: out = (count(x == 0) / length(x))<br>
+   * Full array zero fraction array reduction operation, optionally along specified dimensions: out = (count(x == 0) / length(x))
    *
    * @param input Input variable (NUMERIC type)
    * @return output Reduced array of rank 0 (scalar) (NUMERIC type)
@@ -5576,7 +5598,7 @@ public class SDMath extends SDOps {
   }
 
   /**
-   * Full array zero fraction array reduction operation, optionally along specified dimensions: out = (count(x == 0) / length(x))<br>
+   * Full array zero fraction array reduction operation, optionally along specified dimensions: out = (count(x == 0) / length(x))
    *
    * @param name name May be null. Name for the output variable
    * @param input Input variable (NUMERIC type)

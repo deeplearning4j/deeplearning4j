@@ -32,27 +32,24 @@ package org.nd4j.enums;
  * ResizeMitchellcubic: Mitchell-Netravali Cubic non-interpolating filter. For synthetic images (especially those lacking proper prefiltering), less ringing than Keys cubic kernel but less sharp.
  */
 public enum ImageResizeMethod {
-  ResizeBilinear(0),
+  ResizeBilinear,
 
-  ResizeBicubic(1),
+  ResizeBicubic,
 
-  ResizeNearest(2),
+  ResizeNearest,
 
-  ResizeGaussian(3),
+  ResizeGaussian,
 
-  ResizeLanczos5(4),
+  ResizeLanczos5,
 
-  ResizeMitchellcubic(5),
+  ResizeMitchellcubic,
 
-  ResizeArea(6);
+  ResizeArea;
 
-  private final int methodIndex;
-
-  ImageResizeMethod(int index) {
-    this.methodIndex = index;
-  }
-
+  /**
+   * @return the zero-based method index used by the native operation
+   */
   public int methodIndex() {
-    return methodIndex;
+    return ordinal();
   }
 }

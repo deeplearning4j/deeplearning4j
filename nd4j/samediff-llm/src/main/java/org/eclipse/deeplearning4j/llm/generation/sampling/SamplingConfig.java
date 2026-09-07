@@ -22,6 +22,7 @@ package org.eclipse.deeplearning4j.llm.generation.sampling;
 
 import lombok.Builder;
 import lombok.Data;
+import org.eclipse.deeplearning4j.llm.generation.GenerationPipelineConfig;
 import org.eclipse.deeplearning4j.llm.generation.constraint.ConstraintConfig;
 
 /**
@@ -317,7 +318,7 @@ public class SamplingConfig {
 
     /**
      * Create a speculative decoding configuration. The verification width is supplied by
-     * {@link org.eclipse.deeplearning4j.llm.generation.GenerationPipelineConfig#getMaxSpeculativeTokens()}.
+     * the {@code maxSpeculativeTokens} setting in {@link GenerationPipelineConfig}.
      *
      * @return speculative decoding config
      */

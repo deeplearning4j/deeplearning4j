@@ -25,6 +25,13 @@ package org.nd4j.linalg.factory.ops;
 import static org.nd4j.linalg.factory.NDValidation.isSameType;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.GRU;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUCell;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlock;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlockCell;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.SRU;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.SRUCell;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMConfiguration;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMLayerConfig;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.GRUWeights;
@@ -39,7 +46,9 @@ public class NDRNN {
   }
 
   /**
-   * The GRU operation. Gated Recurrent Unit - Cho et al. 2014.<br>
+   * The GRU operation. Gated Recurrent Unit - Cho et al. 2014.
+   *
+   *
    *
    * @param x input [time, bS, nIn] (NUMERIC type)
    * @param hLast initial cell output (at time step = 0) [bS, nOut] (NUMERIC type)
@@ -54,7 +63,7 @@ public class NDRNN {
     NDValidation.validateNumerical("gru", "Wx", Wx);
     NDValidation.validateNumerical("gru", "Wh", Wh);
     NDValidation.validateNumerical("gru", "biases", biases);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.recurrent.GRU(x, hLast, Wx, Wh, biases));
+    INDArray[] __tmp = Nd4j.exec(new GRU(x, hLast, Wx, Wh, biases));
     try {
       return __tmp[0];
     } finally {
@@ -69,54 +78,65 @@ public class NDRNN {
   }
 
   /**
-   * The GRU cell.  Does a single time step operation<br>
+   * The GRU cell.  Does a single time step operation
    *
    * @param x Input, with shape [batchSize, inSize] (NUMERIC type)
    * @param hLast Output of the previous cell/time step, with shape [batchSize, numUnits] (NUMERIC type)
    * @param GRUWeights Configuration Object
+   * @return r Reset gate output (NUMERIC type)
+   * @return u Update gate output (NUMERIC type)
+   * @return c Cell gate output (NUMERIC type)
+   * @return h Cell output (NUMERIC type)
    */
   public INDArray[] gruCell(INDArray x, INDArray hLast, GRUWeights GRUWeights) {
     NDValidation.validateNumerical("gruCell", "x", x);
     NDValidation.validateNumerical("gruCell", "hLast", hLast);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUCell(x, hLast, GRUWeights));
+    return Nd4j.exec(new GRUCell(x, hLast, GRUWeights));
   }
 
   /**
-   * The LSTM cell.  Does a single time step operation.<br>
+   * The LSTM cell.  Does a single time step operation.
    *
    * @param x Input, with shape [batchSize, inSize] (NUMERIC type)
    * @param cLast Previous cell state, with shape [batchSize, numUnits] (NUMERIC type)
    * @param yLast revious cell output, with shape [batchSize, numUnits] (NUMERIC type)
    * @param LSTMWeights Configuration Object
    * @param LSTMConfiguration Configuration Object
+   * @return i Output - input modulation gate activations [batchSize, numUnits]. (NUMERIC type)
+   * @return c Output - Activations, cell state (pre tanh) [batchSize, numUnits]. (NUMERIC type)
+   * @return f Output - forget gate activations [batchSize, numUnits]. (NUMERIC type)
+   * @return o Output - output gate activations [batchSize, numUnits]. (NUMERIC type)
+   * @return z Output - input gate activations [batchSize, numUnits]. (NUMERIC type)
+   * @return h Cell state, post tanh [batchSize, numUnits]. (NUMERIC type)
+   * @return y Current cell output [batchSize, numUnits]. (NUMERIC type)
    */
   public INDArray[] lstmCell(INDArray x, INDArray cLast, INDArray yLast, LSTMWeights LSTMWeights,
       LSTMConfiguration LSTMConfiguration) {
     NDValidation.validateNumerical("lstmCell", "x", x);
     NDValidation.validateNumerical("lstmCell", "cLast", cLast);
     NDValidation.validateNumerical("lstmCell", "yLast", yLast);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlockCell(x, cLast, yLast, LSTMWeights, LSTMConfiguration));
+    return Nd4j.exec(new LSTMBlockCell(x, cLast, yLast, LSTMWeights, LSTMConfiguration));
   }
 
   /**
-   * Long Short-Term Memory layer - Hochreiter 1997.<br>
-   * SUPPORTS following data formats:<br>
-   * for unidirectional:<br>
-   * TNS: shapes [timeLength, numExamples, inOutSize]<br>
-   * NST: shapes [numExamples, inOutSize, timeLength]<br>
-   * NTS: shapes [numExamples, timeLength, inOutSize]<br>
-   * for bidirectional:<br>
-   * T2NS: shapes [timeLength, 2, numExamples, inOutSize] (for ONNX)<br>
-   * SUPPORTS following direction modes:<br>
-   * FWD: forward<br>
-   * BWD: backward<br>
-   * BIDIR_SUM: bidirectional sum<br>
-   * BIDIR_CONCAT: bidirectional concat<br>
-   * BIDIR_EXTRA_DIM: bidirectional extra output dim (in conjunction with format dataFormat - T2NS)<br>
-   * You may use different gate configurations:<br>
-   * specify gate/cell/out aplha/beta and numbers of activations for gate/cell/out described in activations enum<br>
-   * ("RELU","SIGMOID","AFFINE","LEAKY_RELU","THRESHHOLD_RELU","SCALED_TAHN","HARD_SIGMOID","ELU","SOFTSIGN","SOFTPLUS")<br>
-   * Also this layer supports MKLDNN (DNNL) and cuDNN acceleration<br>
+   * Long Short-Term Memory layer - Hochreiter 1997.
+   * SUPPORTS following data formats:
+   * for unidirectional:
+   * TNS: shapes [timeLength, numExamples, inOutSize]
+   * NST: shapes [numExamples, inOutSize, timeLength]
+   * NTS: shapes [numExamples, timeLength, inOutSize]
+   * for bidirectional:
+   * T2NS: shapes [timeLength, 2, numExamples, inOutSize] (for ONNX)
+   * SUPPORTS following direction modes:
+   * FWD: forward
+   * BWD: backward
+   * BIDIR_SUM: bidirectional sum
+   * BIDIR_CONCAT: bidirectional concat
+   * BIDIR_EXTRA_DIM: bidirectional extra output dim (in conjunction with format dataFormat - T2NS)
+   * You may use different gate configurations:
+   * specify gate/cell/out aplha/beta and numbers of activations for gate/cell/out described in activations enum
+   * ("RELU","SIGMOID","AFFINE","LEAKY_RELU","THRESHHOLD_RELU","SCALED_TAHN","HARD_SIGMOID","ELU","SOFTSIGN","SOFTPLUS")
+   * Also this layer supports MKLDNN (DNNL) and cuDNN acceleration
    *
    * @param x  Input, with shape dependent on the data format (in config). (NUMERIC type)
    * @param cLast Previous/initial cell state, with shape [batchSize, numUnits] (NUMERIC type)
@@ -124,6 +144,9 @@ public class NDRNN {
    * @param maxTSLength maxTSLength with shape [batchSize] (NUMERIC type)
    * @param LSTMLayerWeights Configuration Object
    * @param LSTMLayerConfig Configuration Object
+   * @return output The layer's outputs - full time series (NUMERIC type)
+   * @return yLast The layer's outputs - last time step activations (yLast) (NUMERIC type)
+   * @return cLast The layer's outputs - last time step cell state (cLast) (NUMERIC type)
    */
   public INDArray[] lstmLayer(INDArray x, INDArray cLast, INDArray yLast, INDArray maxTSLength,
       LSTMLayerWeights LSTMLayerWeights, LSTMLayerConfig LSTMLayerConfig) {
@@ -137,41 +160,44 @@ public class NDRNN {
     if (maxTSLength != null) {
       NDValidation.validateNumerical("lstmLayer", "maxTSLength", maxTSLength);
     }
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer(x, cLast, yLast, maxTSLength, LSTMLayerWeights, LSTMLayerConfig));
+    return Nd4j.exec(new LSTMLayer(x, cLast, yLast, maxTSLength, LSTMLayerWeights, LSTMLayerConfig));
   }
 
   /**
-   * Long Short-Term Memory layer - Hochreiter 1997.<br>
-   * SUPPORTS following data formats:<br>
-   * for unidirectional:<br>
-   * TNS: shapes [timeLength, numExamples, inOutSize]<br>
-   * NST: shapes [numExamples, inOutSize, timeLength]<br>
-   * NTS: shapes [numExamples, timeLength, inOutSize]<br>
-   * for bidirectional:<br>
-   * T2NS: shapes [timeLength, 2, numExamples, inOutSize] (for ONNX)<br>
-   * SUPPORTS following direction modes:<br>
-   * FWD: forward<br>
-   * BWD: backward<br>
-   * BIDIR_SUM: bidirectional sum<br>
-   * BIDIR_CONCAT: bidirectional concat<br>
-   * BIDIR_EXTRA_DIM: bidirectional extra output dim (in conjunction with format dataFormat - T2NS)<br>
-   * You may use different gate configurations:<br>
-   * specify gate/cell/out aplha/beta and numbers of activations for gate/cell/out described in activations enum<br>
-   * ("RELU","SIGMOID","AFFINE","LEAKY_RELU","THRESHHOLD_RELU","SCALED_TAHN","HARD_SIGMOID","ELU","SOFTSIGN","SOFTPLUS")<br>
-   * Also this layer supports MKLDNN (DNNL) and cuDNN acceleration<br>
+   * Long Short-Term Memory layer - Hochreiter 1997.
+   * SUPPORTS following data formats:
+   * for unidirectional:
+   * TNS: shapes [timeLength, numExamples, inOutSize]
+   * NST: shapes [numExamples, inOutSize, timeLength]
+   * NTS: shapes [numExamples, timeLength, inOutSize]
+   * for bidirectional:
+   * T2NS: shapes [timeLength, 2, numExamples, inOutSize] (for ONNX)
+   * SUPPORTS following direction modes:
+   * FWD: forward
+   * BWD: backward
+   * BIDIR_SUM: bidirectional sum
+   * BIDIR_CONCAT: bidirectional concat
+   * BIDIR_EXTRA_DIM: bidirectional extra output dim (in conjunction with format dataFormat - T2NS)
+   * You may use different gate configurations:
+   * specify gate/cell/out aplha/beta and numbers of activations for gate/cell/out described in activations enum
+   * ("RELU","SIGMOID","AFFINE","LEAKY_RELU","THRESHHOLD_RELU","SCALED_TAHN","HARD_SIGMOID","ELU","SOFTSIGN","SOFTPLUS")
+   * Also this layer supports MKLDNN (DNNL) and cuDNN acceleration
    *
    * @param x  Input, with shape dependent on the data format (in config). (NUMERIC type)
    * @param LSTMLayerWeights Configuration Object
    * @param LSTMLayerConfig Configuration Object
+   * @return output The layer's outputs - full time series (NUMERIC type)
+   * @return yLast The layer's outputs - last time step activations (yLast) (NUMERIC type)
+   * @return cLast The layer's outputs - last time step cell state (cLast) (NUMERIC type)
    */
   public INDArray[] lstmLayer(INDArray x, LSTMLayerWeights LSTMLayerWeights,
       LSTMLayerConfig LSTMLayerConfig) {
     NDValidation.validateNumerical("lstmLayer", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer(x, null, null, null, LSTMLayerWeights, LSTMLayerConfig));
+    return Nd4j.exec(new LSTMLayer(x, null, null, null, LSTMLayerWeights, LSTMLayerConfig));
   }
 
   /**
-   * The LSTM block<br>
+   * The LSTM block
    *
    * @param maxTSLength  (NUMERIC type)
    * @param x  Input, with shape dependent on the data format (in config). (NUMERIC type)
@@ -193,7 +219,7 @@ public class NDRNN {
     if (yLast != null) {
       NDValidation.validateNumerical("lstmblock", "yLast", yLast);
     }
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlock(maxTSLength, x, cLast, yLast, LSTMWeights, LSTMConfiguration));
+    INDArray[] __tmp = Nd4j.exec(new LSTMBlock(maxTSLength, x, cLast, yLast, LSTMWeights, LSTMConfiguration));
     try {
       return __tmp[0];
     } finally {
@@ -208,7 +234,7 @@ public class NDRNN {
   }
 
   /**
-   * The LSTM block<br>
+   * The LSTM block
    *
    * @param x  Input, with shape dependent on the data format (in config). (NUMERIC type)
    * @param LSTMWeights Configuration Object
@@ -218,7 +244,7 @@ public class NDRNN {
   public INDArray lstmblock(INDArray x, LSTMWeights LSTMWeights,
       LSTMConfiguration LSTMConfiguration) {
     NDValidation.validateNumerical("lstmblock", "x", x);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlock(null, x, null, null, LSTMWeights, LSTMConfiguration));
+    INDArray[] __tmp = Nd4j.exec(new LSTMBlock(null, x, null, null, LSTMWeights, LSTMConfiguration));
     try {
       return __tmp[0];
     } finally {
@@ -233,7 +259,7 @@ public class NDRNN {
   }
 
   /**
-   * The SRU layer.  Does a single time step operation.<br>
+   * The SRU layer.  Does a single time step operation.
    *
    * @param x Input, with shape [batchSize, inSize] (NUMERIC type)
    * @param initialC Initial cell state, with shape [batchSize, inSize] (NUMERIC type)
@@ -247,7 +273,7 @@ public class NDRNN {
     if (mask != null) {
       NDValidation.validateNumerical("sru", "mask", mask);
     }
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.recurrent.SRU(x, initialC, mask, SRUWeights));
+    INDArray[] __tmp = Nd4j.exec(new SRU(x, initialC, mask, SRUWeights));
     try {
       return __tmp[0];
     } finally {
@@ -262,7 +288,7 @@ public class NDRNN {
   }
 
   /**
-   * The SRU layer.  Does a single time step operation.<br>
+   * The SRU layer.  Does a single time step operation.
    *
    * @param x Input, with shape [batchSize, inSize] (NUMERIC type)
    * @param initialC Initial cell state, with shape [batchSize, inSize] (NUMERIC type)
@@ -272,7 +298,7 @@ public class NDRNN {
   public INDArray sru(INDArray x, INDArray initialC, SRUWeights SRUWeights) {
     NDValidation.validateNumerical("sru", "x", x);
     NDValidation.validateNumerical("sru", "initialC", initialC);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.recurrent.SRU(x, initialC, null, SRUWeights));
+    INDArray[] __tmp = Nd4j.exec(new SRU(x, initialC, null, SRUWeights));
     try {
       return __tmp[0];
     } finally {
@@ -287,7 +313,7 @@ public class NDRNN {
   }
 
   /**
-   * The SRU layer.  Does a single time step operation.<br>
+   * The SRU layer.  Does a single time step operation.
    *
    * @param x Input, with shape [batchSize, inSize] (NUMERIC type)
    * @param cLast Previous cell state, with shape [batchSize, inSize] (NUMERIC type)
@@ -297,7 +323,7 @@ public class NDRNN {
   public INDArray sruCell(INDArray x, INDArray cLast, SRUWeights SRUWeights) {
     NDValidation.validateNumerical("sruCell", "x", x);
     NDValidation.validateNumerical("sruCell", "cLast", cLast);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.recurrent.SRUCell(x, cLast, SRUWeights));
+    INDArray[] __tmp = Nd4j.exec(new SRUCell(x, cLast, SRUWeights));
     try {
       return __tmp[0];
     } finally {

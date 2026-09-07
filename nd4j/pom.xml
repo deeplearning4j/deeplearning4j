@@ -113,11 +113,6 @@
                 <version>${logback.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-log4j12</artifactId>
-                <version>${slf4j.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.eclipse.deeplearning4j</groupId>
                 <artifactId>nd4j-native-api</artifactId>
                 <version>${project.version}</version>

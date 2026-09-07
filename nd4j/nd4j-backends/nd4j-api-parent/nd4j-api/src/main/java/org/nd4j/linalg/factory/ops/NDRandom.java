@@ -27,6 +27,13 @@ import static org.nd4j.linalg.factory.NDValidation.isSameType;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
+import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
+import org.nd4j.linalg.api.ops.random.impl.BinomialDistribution;
+import org.nd4j.linalg.api.ops.random.impl.GaussianDistribution;
+import org.nd4j.linalg.api.ops.random.impl.LogNormalDistribution;
+import org.nd4j.linalg.api.ops.random.impl.TruncatedNormalDistribution;
+import org.nd4j.linalg.api.ops.random.impl.UniformDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 
 public class NDRandom {
@@ -34,9 +41,9 @@ public class NDRandom {
   }
 
   /**
-   * Generate a new random INDArray, where values are randomly sampled according to a Bernoulli distribution,<br>
-   * with the specified probability. Array values will have value 1 with probability P and value 0 with probability<br>
-   * 1-P.<br>
+   * Generate a new random INDArray, where values are randomly sampled according to a Bernoulli distribution,
+   * with the specified probability. Array values will have value 1 with probability P and value 0 with probability
+   * 1-P.
    *
    * @param p Probability of value 1
    * @param datatype Data type of the output variable
@@ -45,12 +52,12 @@ public class NDRandom {
    */
   public INDArray bernoulli(double p, DataType datatype, long... shape) {
     Preconditions.checkArgument(shape.length >= 0, "shape has incorrect size/length. Expected: shape.length >= 0, got %s", shape.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution(p, datatype, shape));
+    return Nd4j.exec(new BernoulliDistribution(p, datatype, shape));
   }
 
   /**
-   * Generate a new random INDArray, where values are randomly sampled according to a Binomial distribution,<br>
-   * with the specified number of trials and probability.<br>
+   * Generate a new random INDArray, where values are randomly sampled according to a Binomial distribution,
+   * with the specified number of trials and probability.
    *
    * @param nTrials Number of trials parameter for the binomial distribution
    * @param p Probability of success for each trial
@@ -60,15 +67,15 @@ public class NDRandom {
    */
   public INDArray binomial(int nTrials, double p, DataType datatype, long... shape) {
     Preconditions.checkArgument(shape.length >= 0, "shape has incorrect size/length. Expected: shape.length >= 0, got %s", shape.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.random.impl.BinomialDistribution(nTrials, p, datatype, shape));
+    return Nd4j.exec(new BinomialDistribution(nTrials, p, datatype, shape));
   }
 
   /**
-   * Generate a new random INDArray, where values are randomly sampled according to a exponential distribution:<br>
-   * P(x) = lambda * exp(-lambda * x)<br>
+   * Generate a new random INDArray, where values are randomly sampled according to a exponential distribution:
+   * P(x) = lambda * exp(-lambda * x)
    *
    * Inputs must satisfy the following constraints: <br>
-   * Must be positive: lambda > 0<br>
+   * Must be positive: {@code lambda > 0}<br>
    *
    * @param lambda lambda parameter
    * @param datatype Data type of the output variable
@@ -78,7 +85,7 @@ public class NDRandom {
   public INDArray exponential(double lambda, DataType datatype, long... shape) {
     Preconditions.checkArgument(shape.length >= 0, "shape has incorrect size/length. Expected: shape.length >= 0, got %s", shape.length);
     Preconditions.checkArgument(lambda > 0, "Must be positive");
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.random.custom.RandomExponential(lambda, datatype, shape));
+    INDArray[] __tmp = Nd4j.exec(new RandomExponential(lambda, datatype, shape));
     try {
       return __tmp[0];
     } finally {
@@ -93,8 +100,8 @@ public class NDRandom {
   }
 
   /**
-   * Generate a new random INDArray, where values are randomly sampled according to a Log Normal distribution,<br>
-   * i.e., {@code log(x) ~ N(mean, stdev)}<br>
+   * Generate a new random INDArray, where values are randomly sampled according to a Log Normal distribution,
+   * i.e., {@code log(x) ~ N(mean, stdev)}
    *
    * @param mean Mean value for the random array
    * @param stddev Standard deviation for the random array
@@ -104,11 +111,11 @@ public class NDRandom {
    */
   public INDArray logNormal(double mean, double stddev, DataType datatype, long... shape) {
     Preconditions.checkArgument(shape.length >= 0, "shape has incorrect size/length. Expected: shape.length >= 0, got %s", shape.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.random.impl.LogNormalDistribution(mean, stddev, datatype, shape));
+    return Nd4j.exec(new LogNormalDistribution(mean, stddev, datatype, shape));
   }
 
   /**
-   * Generate a new random INDArray, where values are randomly sampled according to a Gaussian (normal) distribution,<br>
+   * Generate a new random INDArray, where values are randomly sampled according to a Gaussian (normal) distribution,
    * N(mean, stdev)<br>
    *
    * @param mean Mean value for the random array
@@ -119,12 +126,12 @@ public class NDRandom {
    */
   public INDArray normal(double mean, double stddev, DataType datatype, long... shape) {
     Preconditions.checkArgument(shape.length >= 0, "shape has incorrect size/length. Expected: shape.length >= 0, got %s", shape.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.random.impl.GaussianDistribution(mean, stddev, datatype, shape));
+    return Nd4j.exec(new GaussianDistribution(mean, stddev, datatype, shape));
   }
 
   /**
-   * Generate a new random INDArray, where values are randomly sampled according to a Gaussian (normal) distribution,<br>
-   * N(mean, stdev). However, any values more than 1 standard deviation from the mean are dropped and re-sampled<br>
+   * Generate a new random INDArray, where values are randomly sampled according to a Gaussian (normal) distribution,
+   * N(mean, stdev). However, any values more than 1 standard deviation from the mean are dropped and re-sampled
    *
    * @param mean Mean value for the random array
    * @param stddev Standard deviation for the random array
@@ -134,12 +141,12 @@ public class NDRandom {
    */
   public INDArray normalTruncated(double mean, double stddev, DataType datatype, long... shape) {
     Preconditions.checkArgument(shape.length >= 0, "shape has incorrect size/length. Expected: shape.length >= 0, got %s", shape.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.random.impl.TruncatedNormalDistribution(mean, stddev, datatype, shape));
+    return Nd4j.exec(new TruncatedNormalDistribution(mean, stddev, datatype, shape));
   }
 
   /**
-   * Generate a new random INDArray, where values are randomly sampled according to a uniform distribution,<br>
-   * U(min,max)<br>
+   * Generate a new random INDArray, where values are randomly sampled according to a uniform distribution,
+   * U(min,max)
    *
    * @param min Minimum value
    * @param max Maximum value.
@@ -149,6 +156,6 @@ public class NDRandom {
    */
   public INDArray uniform(double min, double max, DataType datatype, long... shape) {
     Preconditions.checkArgument(shape.length >= 0, "shape has incorrect size/length. Expected: shape.length >= 0, got %s", shape.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.random.impl.UniformDistribution(min, max, datatype, shape));
+    return Nd4j.exec(new UniformDistribution(min, max, datatype, shape));
   }
 }

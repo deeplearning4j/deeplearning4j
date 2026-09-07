@@ -220,7 +220,7 @@ public class NDArray extends BaseNDArray {
     }
 
     /**
-     * Creates a new <i>n</i> times <i>m</i> <tt>DoubleMatrix</tt>.
+     * Creates a new <i>n</i> times <i>m</i> {@code DoubleMatrix}.
      *
      * @param newRows    the number of rows (<i>n</i>) of the new matrix.
      * @param newColumns the number of columns (<i>m</i>) of the new matrix.
@@ -325,7 +325,7 @@ public class NDArray extends BaseNDArray {
     }
 
     /**
-     * Creates a new <i>n</i> times <i>m</i> <tt>DoubleMatrix</tt>.
+     * Creates a new <i>n</i> times <i>m</i> {@code DoubleMatrix}.
      *
      * @param newRows    the number of rows (<i>n</i>) of the new matrix.
      * @param newColumns the number of columns (<i>m</i>) of the new matrix.

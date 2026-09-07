@@ -27,14 +27,15 @@ import static org.nd4j.linalg.factory.NDValidation.isSameType;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.NDValidation;
+import org.nd4j.linalg.factory.Nd4j;
 
 public class NDGNN {
   public NDGNN() {
   }
 
   /**
-   * Approximate Personalized Propagation of Neural Predictions (Klicpera et al. 2019).<br>
-   * Decouples prediction from propagation: k steps of personalized PageRank with teleport alpha.<br>
+   * Approximate Personalized Propagation of Neural Predictions (Klicpera et al. 2019).
+   * Decouples prediction from propagation: k steps of personalized PageRank with teleport alpha.
    *
    * @param X Node features [rows, F] (FLOATING_POINT type)
    * @param W Prediction weight [F, H] (FLOATING_POINT type)
@@ -56,13 +57,13 @@ public class NDGNN {
     NDValidation.validateFloatingPoint("appnp", "aNormVals", aNormVals);
     NDValidation.validateInteger("appnp", "aNormColIdx", aNormColIdx);
     NDValidation.validateInteger("appnp", "aNormRowPtr", aNormRowPtr);
-    INDArray H0 = org.nd4j.linalg.factory.Nd4j.base().mmul(X, W);
+    INDArray H0 = Nd4j.base().mmul(X, W);
     if (bias != null) {
         H0 = H0.add(bias);
     }
     INDArray H = H0;
     for (int i = 0; i < k; i++) {
-        INDArray AH = org.nd4j.linalg.factory.Nd4j.sparse().csrSpmm(aNormVals, aNormColIdx, aNormRowPtr, H, (int) rows, (int) cols, false);
+        INDArray AH = Nd4j.sparse().csrSpmm(aNormVals, aNormColIdx, aNormRowPtr, H, (int) rows, (int) cols, false);
         H = AH.mul(1.0 - alpha).add(H0.mul(alpha));
     }
     INDArray out = H;
@@ -70,8 +71,8 @@ public class NDGNN {
   }
 
   /**
-   * Chebyshev spectral graph convolution (Defferrard et al. 2016).<br>
-   * T_0=X, T_1=L_hat*X, T_k=2*L_hat*T_{k-1}-T_{k-2}; out=sum_k T_k*W_k<br>
+   * Chebyshev spectral graph convolution (Defferrard et al. 2016).
+   * T_0=X, T_1=L_hat*X, T_k=2*L_hat*T_{k-1}-T_{k-2}; out=sum_k T_k*W_k
    *
    * @param X Node features [rows, F] (FLOATING_POINT type)
    * @param weights K Chebyshev-coefficient matrices, each [F, H] (FLOATING_POINT type)
@@ -91,14 +92,14 @@ public class NDGNN {
     NDValidation.validateInteger("chebConv", "colIdx", colIdx);
     NDValidation.validateInteger("chebConv", "rowPtr", rowPtr);
     INDArray tPrev2 = X;
-    INDArray out = org.nd4j.linalg.factory.Nd4j.base().mmul(X, weights[0]);
+    INDArray out = Nd4j.base().mmul(X, weights[0]);
     if (weights.length >= 2) {
-        INDArray tPrev1 = org.nd4j.linalg.factory.Nd4j.sparse().csrSpmm(lapVals, colIdx, rowPtr, X, (int) rows, (int) cols, false);
-        out = out.add(org.nd4j.linalg.factory.Nd4j.base().mmul(tPrev1, weights[1]));
+        INDArray tPrev1 = Nd4j.sparse().csrSpmm(lapVals, colIdx, rowPtr, X, (int) rows, (int) cols, false);
+        out = out.add(Nd4j.base().mmul(tPrev1, weights[1]));
         for (int k = 2; k < weights.length; k++) {
-            INDArray lTk = org.nd4j.linalg.factory.Nd4j.sparse().csrSpmm(lapVals, colIdx, rowPtr, tPrev1, (int) rows, (int) cols, false);
+            INDArray lTk = Nd4j.sparse().csrSpmm(lapVals, colIdx, rowPtr, tPrev1, (int) rows, (int) cols, false);
             INDArray tk = lTk.mul(2.0).sub(tPrev2);
-            out = out.add(org.nd4j.linalg.factory.Nd4j.base().mmul(tk, weights[k]));
+            out = out.add(Nd4j.base().mmul(tk, weights[k]));
             tPrev2 = tPrev1;
             tPrev1 = tk;
         }
@@ -107,8 +108,8 @@ public class NDGNN {
   }
 
   /**
-   * CompGCN convolution (Vashishth et al. 2020): multi-relational GNN composing entity+relation embeddings.<br>
-   * compOp=0: sub (TransE-style); else: elementwise mult (DistMult-style).<br>
+   * CompGCN convolution (Vashishth et al. 2020): multi-relational GNN composing entity+relation embeddings.
+   * compOp=0: sub (TransE-style); else: elementwise mult (DistMult-style).
    *
    * @param X Entity embeddings [n, dim] (FLOATING_POINT type)
    * @param relEmb Relation embeddings [numRelations, dim] (FLOATING_POINT type)
@@ -130,19 +131,19 @@ public class NDGNN {
     NDValidation.validateFloatingPoint("compGcnConv", "W", W);
     NDValidation.validateInteger("compGcnConv", "colIdx", colIdx);
     NDValidation.validateInteger("compGcnConv", "rowPtr", rowPtr);
-    INDArray Xj = org.nd4j.linalg.factory.Nd4j.sparse().csrEdgeGather(colIdx, X, (int) n);
-    INDArray Rj = org.nd4j.linalg.factory.Nd4j.base().gather(relEmb, edgeRelIdx, 0);
+    INDArray Xj = Nd4j.sparse().csrEdgeGather(colIdx, X, (int) n);
+    INDArray Rj = Nd4j.base().gather(relEmb, edgeRelIdx, 0);
     INDArray phi = (compOp == 0) ? Xj.sub(Rj) : Xj.mul(Rj);
-    INDArray agg = org.nd4j.linalg.factory.Nd4j.sparse().csrEdgeAggregate(rowPtr, phi, (int) rows, 1);
-    INDArray out = org.nd4j.linalg.factory.Nd4j.base().mmul(agg, W);
+    INDArray agg = Nd4j.sparse().csrEdgeAggregate(rowPtr, phi, (int) rows, 1);
+    INDArray out = Nd4j.base().mmul(agg, W);
     if (applyRelu) {
-        out = org.nd4j.linalg.factory.Nd4j.nn().relu(out, 0.0);
+        out = Nd4j.nn().relu(out, 0.0);
     }
     return out;
   }
 
   /**
-   * Single-head Graph Attention Network convolution (Veličković et al. 2018).<br>
+   * Single-head Graph Attention Network convolution (Veličković et al. 2018).
    *
    * @param X Node features [N, F] (FLOATING_POINT type)
    * @param W Linear weight [F, H] (FLOATING_POINT type)
@@ -165,21 +166,21 @@ public class NDGNN {
     NDValidation.validateInteger("gatConvHead", "colIdx", colIdx);
     NDValidation.validateInteger("gatConvHead", "rowPtr", rowPtr);
     NDValidation.validateInteger("gatConvHead", "rowIdx", rowIdx);
-    INDArray Wh = org.nd4j.linalg.factory.Nd4j.base().mmul(X, W);
-    INDArray srcFeat = org.nd4j.linalg.factory.Nd4j.sparse().csrEdgeGather(colIdx, Wh, (int) N);
-    INDArray dstFeat = org.nd4j.linalg.factory.Nd4j.base().gather(Wh, rowIdx, 0);
-    INDArray eSrc = org.nd4j.linalg.factory.Nd4j.base().reshape(org.nd4j.linalg.factory.Nd4j.base().mmul(srcFeat, attSrc), nnz);
-    INDArray eDst = org.nd4j.linalg.factory.Nd4j.base().reshape(org.nd4j.linalg.factory.Nd4j.base().mmul(dstFeat, attDst), nnz);
-    INDArray eLogit = org.nd4j.linalg.factory.Nd4j.nn().leakyRelu(eSrc.add(eDst), leakyAlpha);
-    INDArray alpha = org.nd4j.linalg.factory.Nd4j.sparse().csrRowSoftmax(eLogit, rowPtr, (int) N);
-    INDArray weighted = srcFeat.mul(org.nd4j.linalg.factory.Nd4j.base().reshape(alpha, nnz, 1));
-    INDArray out = org.nd4j.linalg.factory.Nd4j.sparse().csrEdgeAggregate(rowPtr, weighted, (int) N, 0);
+    INDArray Wh = Nd4j.base().mmul(X, W);
+    INDArray srcFeat = Nd4j.sparse().csrEdgeGather(colIdx, Wh, (int) N);
+    INDArray dstFeat = Nd4j.base().gather(Wh, rowIdx, 0);
+    INDArray eSrc = Nd4j.base().reshape(Nd4j.base().mmul(srcFeat, attSrc), nnz);
+    INDArray eDst = Nd4j.base().reshape(Nd4j.base().mmul(dstFeat, attDst), nnz);
+    INDArray eLogit = Nd4j.nn().leakyRelu(eSrc.add(eDst), leakyAlpha);
+    INDArray alpha = Nd4j.sparse().csrRowSoftmax(eLogit, rowPtr, (int) N);
+    INDArray weighted = srcFeat.mul(Nd4j.base().reshape(alpha, nnz, 1));
+    INDArray out = Nd4j.sparse().csrEdgeAggregate(rowPtr, weighted, (int) N, 0);
     return out;
   }
 
   /**
-   * Single-head GATv2 convolution (Brody et al. 2021). GATv2 applies the nonlinearity before<br>
-   * the attention projection (dynamic attention), fixing the static attention limitation of GAT v1.<br>
+   * Single-head GATv2 convolution (Brody et al. 2021). GATv2 applies the nonlinearity before
+   * the attention projection (dynamic attention), fixing the static attention limitation of GAT v1.
    *
    * @param X Node features [N, F] (FLOATING_POINT type)
    * @param W Linear weight [F, H] (FLOATING_POINT type)
@@ -200,20 +201,20 @@ public class NDGNN {
     NDValidation.validateInteger("gatV2ConvHead", "colIdx", colIdx);
     NDValidation.validateInteger("gatV2ConvHead", "rowPtr", rowPtr);
     NDValidation.validateInteger("gatV2ConvHead", "rowIdx", rowIdx);
-    INDArray Wh = org.nd4j.linalg.factory.Nd4j.base().mmul(X, W);
-    INDArray srcFeat = org.nd4j.linalg.factory.Nd4j.sparse().csrEdgeGather(colIdx, Wh, (int) N);
-    INDArray dstFeat = org.nd4j.linalg.factory.Nd4j.base().gather(Wh, rowIdx, 0);
-    INDArray g = org.nd4j.linalg.factory.Nd4j.nn().leakyRelu(srcFeat.add(dstFeat), leakyAlpha);
-    INDArray eLogit = org.nd4j.linalg.factory.Nd4j.base().reshape(org.nd4j.linalg.factory.Nd4j.base().mmul(g, att), nnz);
-    INDArray alpha = org.nd4j.linalg.factory.Nd4j.sparse().csrRowSoftmax(eLogit, rowPtr, (int) N);
-    INDArray weighted = srcFeat.mul(org.nd4j.linalg.factory.Nd4j.base().reshape(alpha, nnz, 1));
-    INDArray out = org.nd4j.linalg.factory.Nd4j.sparse().csrEdgeAggregate(rowPtr, weighted, (int) N, 0);
+    INDArray Wh = Nd4j.base().mmul(X, W);
+    INDArray srcFeat = Nd4j.sparse().csrEdgeGather(colIdx, Wh, (int) N);
+    INDArray dstFeat = Nd4j.base().gather(Wh, rowIdx, 0);
+    INDArray g = Nd4j.nn().leakyRelu(srcFeat.add(dstFeat), leakyAlpha);
+    INDArray eLogit = Nd4j.base().reshape(Nd4j.base().mmul(g, att), nnz);
+    INDArray alpha = Nd4j.sparse().csrRowSoftmax(eLogit, rowPtr, (int) N);
+    INDArray weighted = srcFeat.mul(Nd4j.base().reshape(alpha, nnz, 1));
+    INDArray out = Nd4j.sparse().csrEdgeAggregate(rowPtr, weighted, (int) N, 0);
     return out;
   }
 
   /**
-   * Graph Convolutional Network layer (Kipf & Welling 2017).<br>
-   * out = relu?( A_norm · X · W + bias )<br>
+   * Graph Convolutional Network layer (Kipf and Welling 2017).
+   * out = relu?( A_norm · X · W + bias )
    *
    * @param X Node features [rows, F] (FLOATING_POINT type)
    * @param W Weight matrix [F, H] (FLOATING_POINT type)
@@ -234,18 +235,18 @@ public class NDGNN {
     NDValidation.validateFloatingPoint("gcnConv", "aNormVals", aNormVals);
     NDValidation.validateInteger("gcnConv", "aNormColIdx", aNormColIdx);
     NDValidation.validateInteger("gcnConv", "aNormRowPtr", aNormRowPtr);
-    INDArray AX = org.nd4j.linalg.factory.Nd4j.sparse().csrSpmm(aNormVals, aNormColIdx, aNormRowPtr, X, (int) rows, (int) cols, false);
-    INDArray AXW = org.nd4j.linalg.factory.Nd4j.base().mmul(AX, W);
+    INDArray AX = Nd4j.sparse().csrSpmm(aNormVals, aNormColIdx, aNormRowPtr, X, (int) rows, (int) cols, false);
+    INDArray AXW = Nd4j.base().mmul(AX, W);
     if (bias != null) {
         AXW = AXW.add(bias);
     }
-    INDArray out = applyRelu ? org.nd4j.linalg.factory.Nd4j.nn().relu(AXW, 0.0) : AXW;
+    INDArray out = applyRelu ? Nd4j.nn().relu(AXW, 0.0) : AXW;
     return out;
   }
 
   /**
-   * GCNII convolution (Chen et al. 2020): deep GCN layer combining initial residual connection<br>
-   * with identity mapping. M = (1-alpha)*(A_norm*H) + alpha*H0; out = sigma((1-beta)*M + beta*(M*W))<br>
+   * GCNII convolution (Chen et al. 2020): deep GCN layer combining initial residual connection
+   * with identity mapping. M = (1-alpha)*(A_norm*H) + alpha*H0; out = sigma((1-beta)*M + beta*(M*W))
    *
    * @param H Current layer representation [rows, F] (FLOATING_POINT type)
    * @param H0 Initial (input-projected) representation [rows, F] (FLOATING_POINT type)
@@ -269,19 +270,19 @@ public class NDGNN {
     NDValidation.validateFloatingPoint("gcniiConv", "aNormVals", aNormVals);
     NDValidation.validateInteger("gcniiConv", "aNormColIdx", aNormColIdx);
     NDValidation.validateInteger("gcniiConv", "aNormRowPtr", aNormRowPtr);
-    INDArray AH = org.nd4j.linalg.factory.Nd4j.sparse().csrSpmm(aNormVals, aNormColIdx, aNormRowPtr, H, (int) rows, (int) cols, false);
+    INDArray AH = Nd4j.sparse().csrSpmm(aNormVals, aNormColIdx, aNormRowPtr, H, (int) rows, (int) cols, false);
     INDArray M = AH.mul(1.0 - alpha).add(H0.mul(alpha));
-    INDArray MW = org.nd4j.linalg.factory.Nd4j.base().mmul(M, W);
+    INDArray MW = Nd4j.base().mmul(M, W);
     INDArray out = M.mul(1.0 - beta).add(MW.mul(beta));
     if (applyRelu) {
-        out = org.nd4j.linalg.factory.Nd4j.nn().relu(out, 0.0);
+        out = Nd4j.nn().relu(out, 0.0);
     }
     return out;
   }
 
   /**
-   * Gated Graph Neural Network (Li et al. 2016): steps rounds of neighbour aggregation + GRU update.<br>
-   * Uses concat([in1,in2])*concat([W1,W2]) gate form for correct CUDA backward.<br>
+   * Gated Graph Neural Network (Li et al. 2016): steps rounds of neighbour aggregation + GRU update.
+   * Uses concat([in1,in2])*concat([W1,W2]) gate form for correct CUDA backward.
    *
    * @param X Initial node states [rows, H] (FLOATING_POINT type)
    * @param aggW Message transform [H, H] (FLOATING_POINT type)
@@ -315,13 +316,13 @@ public class NDGNN {
     NDValidation.validateInteger("ggnn", "aNormRowPtr", aNormRowPtr);
     INDArray h = X;
     for (int t = 0; t < steps; t++) {
-        INDArray agg = org.nd4j.linalg.factory.Nd4j.sparse().csrSpmm(aNormVals, aNormColIdx, aNormRowPtr, h, (int) rows, (int) cols, false);
-        INDArray a = org.nd4j.linalg.factory.Nd4j.base().mmul(agg, aggW);
-        INDArray ah = org.nd4j.linalg.factory.Nd4j.base().concat(1, a, h);
-        INDArray z = org.nd4j.linalg.factory.Nd4j.nn().sigmoid(org.nd4j.linalg.factory.Nd4j.base().mmul(ah, org.nd4j.linalg.factory.Nd4j.base().concat(0, wz, uz)));
-        INDArray r = org.nd4j.linalg.factory.Nd4j.nn().sigmoid(org.nd4j.linalg.factory.Nd4j.base().mmul(ah, org.nd4j.linalg.factory.Nd4j.base().concat(0, wr, ur)));
-        INDArray arh = org.nd4j.linalg.factory.Nd4j.base().concat(1, a, r.mul(h));
-        INDArray hh = org.nd4j.linalg.factory.Nd4j.math().tanh(org.nd4j.linalg.factory.Nd4j.base().mmul(arh, org.nd4j.linalg.factory.Nd4j.base().concat(0, wh, uh)));
+        INDArray agg = Nd4j.sparse().csrSpmm(aNormVals, aNormColIdx, aNormRowPtr, h, (int) rows, (int) cols, false);
+        INDArray a = Nd4j.base().mmul(agg, aggW);
+        INDArray ah = Nd4j.base().concat(1, a, h);
+        INDArray z = Nd4j.nn().sigmoid(Nd4j.base().mmul(ah, Nd4j.base().concat(0, wz, uz)));
+        INDArray r = Nd4j.nn().sigmoid(Nd4j.base().mmul(ah, Nd4j.base().concat(0, wr, ur)));
+        INDArray arh = Nd4j.base().concat(1, a, r.mul(h));
+        INDArray hh = Nd4j.math().tanh(Nd4j.base().mmul(arh, Nd4j.base().concat(0, wh, uh)));
         h = h.mul(z.mul(-1.0).add(1.0)).add(z.mul(hh));
     }
     INDArray out = h;
@@ -329,7 +330,7 @@ public class NDGNN {
   }
 
   /**
-   * Graph Isomorphism Network convolution (Xu et al. 2019) with optional Layer Normalisation.<br>
+   * Graph Isomorphism Network convolution (Xu et al. 2019) with optional Layer Normalisation.
    *
    * @param X Node features [rows, F] (FLOATING_POINT type)
    * @param w1 First MLP weight [F, H] (FLOATING_POINT type)
@@ -354,22 +355,22 @@ public class NDGNN {
     NDValidation.validateFloatingPoint("ginConv", "eps", eps);
     NDValidation.validateInteger("ginConv", "colIdx", colIdx);
     NDValidation.validateInteger("ginConv", "rowPtr", rowPtr);
-    INDArray Xj = org.nd4j.linalg.factory.Nd4j.sparse().csrEdgeGather(colIdx, X, (int) n);
-    INDArray agg = org.nd4j.linalg.factory.Nd4j.sparse().csrEdgeAggregate(rowPtr, Xj, (int) rows, 0);
+    INDArray Xj = Nd4j.sparse().csrEdgeGather(colIdx, X, (int) n);
+    INDArray agg = Nd4j.sparse().csrEdgeAggregate(rowPtr, Xj, (int) rows, 0);
     INDArray hi = X.mul(eps.add(1.0)).add(agg);
-    INDArray h1 = org.nd4j.linalg.factory.Nd4j.nn().relu(org.nd4j.linalg.factory.Nd4j.base().mmul(hi, w1).add(b1), 0.0);
-    INDArray out = org.nd4j.linalg.factory.Nd4j.base().mmul(h1, w2).add(b2);
+    INDArray h1 = Nd4j.nn().relu(Nd4j.base().mmul(hi, w1).add(b1), 0.0);
+    INDArray out = Nd4j.base().mmul(h1, w2).add(b2);
     if (layerNorm) {
-        INDArray lnMean = org.nd4j.linalg.factory.Nd4j.base().mean(out, true, 1);
+        INDArray lnMean = Nd4j.base().mean(out, true, 1);
         INDArray d = out.sub(lnMean);
-        INDArray variance = org.nd4j.linalg.factory.Nd4j.base().mean(d.mul(d), true, 1);
-        out = d.div(org.nd4j.linalg.factory.Nd4j.math().sqrt(variance.add(1e-5)));
+        INDArray variance = Nd4j.base().mean(d.mul(d), true, 1);
+        out = d.div(Nd4j.math().sqrt(variance.add(1e-5)));
     }
     return out;
   }
 
   /**
-   * Graph Isomorphism Network convolution (Xu et al. 2019) with optional Layer Normalisation.<br>
+   * Graph Isomorphism Network convolution (Xu et al. 2019) with optional Layer Normalisation.
    *
    * @param X Node features [rows, F] (FLOATING_POINT type)
    * @param w1 First MLP weight [F, H] (FLOATING_POINT type)
@@ -394,23 +395,23 @@ public class NDGNN {
     NDValidation.validateInteger("ginConv", "colIdx", colIdx);
     NDValidation.validateInteger("ginConv", "rowPtr", rowPtr);
     boolean layerNorm = false;
-    INDArray Xj = org.nd4j.linalg.factory.Nd4j.sparse().csrEdgeGather(colIdx, X, (int) n);
-    INDArray agg = org.nd4j.linalg.factory.Nd4j.sparse().csrEdgeAggregate(rowPtr, Xj, (int) rows, 0);
+    INDArray Xj = Nd4j.sparse().csrEdgeGather(colIdx, X, (int) n);
+    INDArray agg = Nd4j.sparse().csrEdgeAggregate(rowPtr, Xj, (int) rows, 0);
     INDArray hi = X.mul(eps.add(1.0)).add(agg);
-    INDArray h1 = org.nd4j.linalg.factory.Nd4j.nn().relu(org.nd4j.linalg.factory.Nd4j.base().mmul(hi, w1).add(b1), 0.0);
-    INDArray out = org.nd4j.linalg.factory.Nd4j.base().mmul(h1, w2).add(b2);
+    INDArray h1 = Nd4j.nn().relu(Nd4j.base().mmul(hi, w1).add(b1), 0.0);
+    INDArray out = Nd4j.base().mmul(h1, w2).add(b2);
     if (layerNorm) {
-        INDArray lnMean = org.nd4j.linalg.factory.Nd4j.base().mean(out, true, 1);
+        INDArray lnMean = Nd4j.base().mean(out, true, 1);
         INDArray d = out.sub(lnMean);
-        INDArray variance = org.nd4j.linalg.factory.Nd4j.base().mean(d.mul(d), true, 1);
-        out = d.div(org.nd4j.linalg.factory.Nd4j.math().sqrt(variance.add(1e-5)));
+        INDArray variance = Nd4j.base().mean(d.mul(d), true, 1);
+        out = d.div(Nd4j.math().sqrt(variance.add(1e-5)));
     }
     return out;
   }
 
   /**
-   * GraphNorm (Cai et al. 2021): learnable graph-level normalisation. Implemented in transposed<br>
-   * [F, rows] layout for correct CUDA gradient flow on per-feature alpha scaling.<br>
+   * GraphNorm (Cai et al. 2021): learnable graph-level normalisation. Implemented in transposed
+   * [F, rows] layout for correct CUDA gradient flow on per-feature alpha scaling.
    *
    * @param X Node features [rows, F] (FLOATING_POINT type)
    * @param gamma Learnable scale [F] (FLOATING_POINT type)
@@ -423,22 +424,50 @@ public class NDGNN {
     NDValidation.validateFloatingPoint("graphNorm", "gamma", gamma);
     NDValidation.validateFloatingPoint("graphNorm", "beta", beta);
     NDValidation.validateFloatingPoint("graphNorm", "alpha", alpha);
-    INDArray Xt = org.nd4j.linalg.factory.Nd4j.base().transpose(X);
-    INDArray meanT = org.nd4j.linalg.factory.Nd4j.base().mean(Xt, true, 1);
-    INDArray alphaCol = org.nd4j.linalg.factory.Nd4j.base().reshape(alpha, -1, 1);
+    INDArray Xt = Nd4j.base().transpose(X);
+    INDArray meanT = Nd4j.base().mean(Xt, true, 1);
+    INDArray alphaCol = Nd4j.base().reshape(alpha, -1, 1);
     INDArray shiftedT = Xt.sub(meanT.mul(alphaCol));
-    INDArray varT = org.nd4j.linalg.factory.Nd4j.base().mean(shiftedT.mul(shiftedT), true, 1);
-    INDArray normT = shiftedT.div(org.nd4j.linalg.factory.Nd4j.math().sqrt(varT.add(1e-5)));
-    INDArray gammaCol = org.nd4j.linalg.factory.Nd4j.base().reshape(gamma, -1, 1);
-    INDArray betaCol = org.nd4j.linalg.factory.Nd4j.base().reshape(beta, -1, 1);
+    INDArray varT = Nd4j.base().mean(shiftedT.mul(shiftedT), true, 1);
+    INDArray normT = shiftedT.div(Nd4j.math().sqrt(varT.add(1e-5)));
+    INDArray gammaCol = Nd4j.base().reshape(gamma, -1, 1);
+    INDArray betaCol = Nd4j.base().reshape(beta, -1, 1);
     INDArray outT = normT.mul(gammaCol).add(betaCol);
-    INDArray out = org.nd4j.linalg.factory.Nd4j.base().transpose(outT);
+    INDArray out = Nd4j.base().transpose(outT);
     return out;
   }
 
   /**
-   * Single-head Graph Transformer layer (Dwivedi & Bresson 2021, simplified):<br>
-   * scaled dot-product self-attention, optionally restricted via additive mask.<br>
+   * Batch-aware GraphNorm: normalizes within each graph's node set.
+   * Safe to use with block-diagonal batching (graphDisjointUnion).
+   *
+   * @param X Node features [sumN, F] (FLOATING_POINT type)
+   * @param gamma Scale parameter [F] (FLOATING_POINT type)
+   * @param beta Shift parameter [F] (FLOATING_POINT type)
+   * @param batchVec Node-to-graph index [sumN] (INT type)
+   * @param K Number of graphs
+   * @return out Normalized features [sumN, F] (FLOATING_POINT type)
+   */
+  public INDArray graphNormBatched(INDArray X, INDArray gamma, INDArray beta, INDArray batchVec,
+      long K) {
+    NDValidation.validateFloatingPoint("graphNormBatched", "X", X);
+    NDValidation.validateFloatingPoint("graphNormBatched", "gamma", gamma);
+    NDValidation.validateFloatingPoint("graphNormBatched", "beta", beta);
+    NDValidation.validateInteger("graphNormBatched", "batchVec", batchVec);
+    // Per-graph per-feature mean: segmentMean → [K, F], then gather to [sumN, F]
+    INDArray graphMean = Nd4j.base().unsortedSegmentMean(X, batchVec, (int)K);
+    INDArray nodeMean  = Nd4j.base().gather(graphMean, batchVec, 0);
+    INDArray centered  = X.sub(nodeMean);
+    INDArray graphVar  = Nd4j.base().unsortedSegmentMean(centered.mul(centered), batchVec, (int)K);
+    INDArray nodeVar   = Nd4j.base().gather(graphVar, batchVec, 0);
+    INDArray normed    = centered.div(Nd4j.math().sqrt(nodeVar.add(1e-5)));
+    INDArray out       = normed.mul(gamma).add(beta);
+    return out;
+  }
+
+  /**
+   * Single-head Graph Transformer layer (Dwivedi and Bresson 2021, simplified):
+   * scaled dot-product self-attention, optionally restricted via additive mask.
    *
    * @param X Node features [N, F] (FLOATING_POINT type)
    * @param wq Query weight [F, d] (FLOATING_POINT type)
@@ -457,24 +486,24 @@ public class NDGNN {
     NDValidation.validateFloatingPoint("graphTransformer", "wv", wv);
     NDValidation.validateFloatingPoint("graphTransformer", "wo", wo);
     NDValidation.validateFloatingPoint("graphTransformer", "adjMask", adjMask);
-    INDArray q = org.nd4j.linalg.factory.Nd4j.base().mmul(X, wq);
-    INDArray k = org.nd4j.linalg.factory.Nd4j.base().mmul(X, wk);
-    INDArray v = org.nd4j.linalg.factory.Nd4j.base().mmul(X, wv);
-    INDArray scores = org.nd4j.linalg.factory.Nd4j.base().mmul(q, k, false, true, false).mul(scale);
+    INDArray q = Nd4j.base().mmul(X, wq);
+    INDArray k = Nd4j.base().mmul(X, wk);
+    INDArray v = Nd4j.base().mmul(X, wv);
+    INDArray scores = Nd4j.base().mmul(q, k, false, true, false).mul(scale);
     if (adjMask != null) {
         scores = scores.add(adjMask);
     }
-    INDArray attn = org.nd4j.linalg.factory.Nd4j.nn().softmax(scores, 1);
-    INDArray ctx = org.nd4j.linalg.factory.Nd4j.base().mmul(attn, v);
-    INDArray out = org.nd4j.linalg.factory.Nd4j.base().mmul(ctx, wo);
+    INDArray attn = Nd4j.nn().softmax(scores, 1);
+    INDArray ctx = Nd4j.base().mmul(attn, v);
+    INDArray out = Nd4j.base().mmul(ctx, wo);
     return out;
   }
 
   /**
-   * Heterogeneous Attention Network (Wang et al. 2019).<br>
-   * For each meta-path: run a single-head node-level GAT (gatConvHead), then compute a semantic<br>
-   * attention score via tanh(Z*semW + semB)*semQ. Softmax over meta-path scores gives mixing<br>
-   * weights beta_p; final output = sum_p(beta_p * Z_p).<br>
+   * Heterogeneous Attention Network (Wang et al. 2019).
+   * For each meta-path: run a single-head node-level GAT (gatConvHead), then compute a semantic
+   * attention score via tanh(Z*semW + semB)*semQ. Softmax over meta-path scores gives mixing
+   * weights beta_p; final output = sum_p(beta_p * Z_p).
    *
    * @param X Node features [N, F] (FLOATING_POINT type)
    * @param metaW Per-meta-path linear weight [F, H], one per meta-path (FLOATING_POINT type)
@@ -516,11 +545,11 @@ public class NDGNN {
     INDArray[] expw = new INDArray[P];
     INDArray sumExp = null;
     for (int p = 0; p < P; p++) {
-        z[p] = org.nd4j.linalg.factory.Nd4j.gnn().gatConvHead(X, metaW[p], attSrc[p], attDst[p],
+        z[p] = Nd4j.gnn().gatConvHead(X, metaW[p], attSrc[p], attDst[p],
                 colIdx[p], rowPtr[p], rowIdx[p], nnz[p], N, leakyAlpha);
-        INDArray proj  = org.nd4j.linalg.factory.Nd4j.math().tanh(org.nd4j.linalg.factory.Nd4j.base().mmul(z[p], semW).add(semB));
-        INDArray score = org.nd4j.linalg.factory.Nd4j.base().mean(org.nd4j.linalg.factory.Nd4j.base().mmul(proj, semQ), false);
-        expw[p] = org.nd4j.linalg.factory.Nd4j.math().exp(score);
+        INDArray proj  = Nd4j.math().tanh(Nd4j.base().mmul(z[p], semW).add(semB));
+        INDArray score = Nd4j.base().mean(Nd4j.base().mmul(proj, semQ), false);
+        expw[p] = Nd4j.math().exp(score);
         sumExp = (p == 0) ? expw[p] : sumExp.add(expw[p]);
     }
     INDArray out = null;
@@ -533,8 +562,8 @@ public class NDGNN {
   }
 
   /**
-   * Simplified single-head Heterogeneous Graph Transformer (Hu et al. 2020):<br>
-   * scaled dot-product attention where relation embedding modulates the key.<br>
+   * Simplified single-head Heterogeneous Graph Transformer (Hu et al. 2020):
+   * scaled dot-product attention where relation embedding modulates the key.
    *
    * @param X Node features [N, F] (FLOATING_POINT type)
    * @param wq Query weight [F, d] (FLOATING_POINT type)
@@ -562,35 +591,35 @@ public class NDGNN {
     NDValidation.validateInteger("hgtConvHead", "colIdx", colIdx);
     NDValidation.validateInteger("hgtConvHead", "rowPtr", rowPtr);
     NDValidation.validateInteger("hgtConvHead", "rowIdx", rowIdx);
-    INDArray q = org.nd4j.linalg.factory.Nd4j.base().mmul(X, wq);
-    INDArray k = org.nd4j.linalg.factory.Nd4j.base().mmul(X, wk);
-    INDArray v = org.nd4j.linalg.factory.Nd4j.base().mmul(X, wv);
-    INDArray qDst = org.nd4j.linalg.factory.Nd4j.base().gather(q, rowIdx, 0);
-    INDArray kSrc = org.nd4j.linalg.factory.Nd4j.sparse().csrEdgeGather(colIdx, k, (int) N);
-    INDArray vSrc = org.nd4j.linalg.factory.Nd4j.sparse().csrEdgeGather(colIdx, v, (int) N);
-    INDArray rel = org.nd4j.linalg.factory.Nd4j.base().gather(relEmb, edgeRelIdx, 0);
-    INDArray e = org.nd4j.linalg.factory.Nd4j.base().sum(qDst.mul(kSrc.add(rel)), false, 1).mul(scale);
-    INDArray alpha = org.nd4j.linalg.factory.Nd4j.sparse().csrRowSoftmax(e, rowPtr, (int) N);
-    INDArray weighted = vSrc.mul(org.nd4j.linalg.factory.Nd4j.base().reshape(alpha, nnz, 1));
-    INDArray out = org.nd4j.linalg.factory.Nd4j.sparse().csrEdgeAggregate(rowPtr, weighted, (int) N, 0);
+    INDArray q = Nd4j.base().mmul(X, wq);
+    INDArray k = Nd4j.base().mmul(X, wk);
+    INDArray v = Nd4j.base().mmul(X, wv);
+    INDArray qDst = Nd4j.base().gather(q, rowIdx, 0);
+    INDArray kSrc = Nd4j.sparse().csrEdgeGather(colIdx, k, (int) N);
+    INDArray vSrc = Nd4j.sparse().csrEdgeGather(colIdx, v, (int) N);
+    INDArray rel = Nd4j.base().gather(relEmb, edgeRelIdx, 0);
+    INDArray e = Nd4j.base().sum(qDst.mul(kSrc.add(rel)), false, 1).mul(scale);
+    INDArray alpha = Nd4j.sparse().csrRowSoftmax(e, rowPtr, (int) N);
+    INDArray weighted = vSrc.mul(Nd4j.base().reshape(alpha, nnz, 1));
+    INDArray out = Nd4j.sparse().csrEdgeAggregate(rowPtr, weighted, (int) N, 0);
     return out;
   }
 
   /**
-   * Inner-product link decoder (Kipf & Welling 2016): Z*Z^T. Apply sigmoid downstream for edge probabilities.<br>
+   * Inner-product link decoder (Kipf and Welling 2016): Z*Z^T. Apply sigmoid downstream for edge probabilities.
    *
    * @param z Node latents [N, d] (FLOATING_POINT type)
    * @return out Edge logits [N, N] (FLOATING_POINT type)
    */
   public INDArray innerProductDecoder(INDArray z) {
     NDValidation.validateFloatingPoint("innerProductDecoder", "z", z);
-    INDArray out = org.nd4j.linalg.factory.Nd4j.base().mmul(z, z, false, true, false);
+    INDArray out = Nd4j.base().mmul(z, z, false, true, false);
     return out;
   }
 
   /**
-   * Jumping-Knowledge concatenation aggregator (Xu et al. 2018).<br>
-   * Concatenates per-layer representations along the feature dimension.<br>
+   * Jumping-Knowledge concatenation aggregator (Xu et al. 2018).
+   * Concatenates per-layer representations along the feature dimension.
    *
    * @param layerOutputs Per-layer node representations, each [rows, H_l] (FLOATING_POINT type)
    * @return out Concatenated representation [rows, sum(H_l)] (FLOATING_POINT type)
@@ -598,13 +627,13 @@ public class NDGNN {
   public INDArray jkNetConcat(INDArray... layerOutputs) {
     NDValidation.validateFloatingPoint("jkNetConcat", "layerOutputs", layerOutputs);
     Preconditions.checkArgument(layerOutputs.length >= 1, "layerOutputs has incorrect size/length. Expected: layerOutputs.length >= 1, got %s", layerOutputs.length);
-    INDArray out = org.nd4j.linalg.factory.Nd4j.base().concat(1, layerOutputs);
+    INDArray out = Nd4j.base().concat(1, layerOutputs);
     return out;
   }
 
   /**
-   * Jumping-Knowledge max-pooling aggregator (Xu et al. 2018).<br>
-   * Element-wise maximum across per-layer node representations.<br>
+   * Jumping-Knowledge max-pooling aggregator (Xu et al. 2018).
+   * Element-wise maximum across per-layer node representations.
    *
    * @param layerOutputs Per-layer node representations, each [rows, H] (FLOATING_POINT type)
    * @return out Element-wise max across layers [rows, H] (FLOATING_POINT type)
@@ -614,14 +643,14 @@ public class NDGNN {
     Preconditions.checkArgument(layerOutputs.length >= 1, "layerOutputs has incorrect size/length. Expected: layerOutputs.length >= 1, got %s", layerOutputs.length);
     INDArray out = layerOutputs[0];
     for (int i = 1; i < layerOutputs.length; i++) {
-        out = org.nd4j.linalg.factory.Nd4j.math().max(out, layerOutputs[i]);
+        out = Nd4j.math().max(out, layerOutputs[i]);
     }
     return out;
   }
 
   /**
-   * Edge-conditioned convolution / NNConv (Simonovsky & Komodakis 2017; Gilmer et al. MPNN 2017).<br>
-   * An edge network maps edge features to [Fin, Fout] weight matrices applied to neighbour features.<br>
+   * Edge-conditioned convolution / NNConv (Simonovsky and Komodakis 2017; Gilmer et al. MPNN 2017).
+   * An edge network maps edge features to [Fin, Fout] weight matrices applied to neighbour features.
    *
    * @param X Node features [rows, Fin] (FLOATING_POINT type)
    * @param edgeFeatures Per-edge features [nnz, edgeF] (FLOATING_POINT type)
@@ -648,14 +677,14 @@ public class NDGNN {
     NDValidation.validateFloatingPoint("nnConv", "bias", bias);
     NDValidation.validateInteger("nnConv", "colIdx", colIdx);
     NDValidation.validateInteger("nnConv", "rowPtr", rowPtr);
-    INDArray Xj = org.nd4j.linalg.factory.Nd4j.sparse().csrEdgeGather(colIdx, X, (int) n);
-    INDArray eW = org.nd4j.linalg.factory.Nd4j.base().mmul(edgeFeatures, edgeNetW).add(edgeNetB);
-    INDArray eWr = org.nd4j.linalg.factory.Nd4j.base().reshape(eW, -1, fin, fout);
-    INDArray XjE = org.nd4j.linalg.factory.Nd4j.base().reshape(Xj, -1, fin, 1);
+    INDArray Xj = Nd4j.sparse().csrEdgeGather(colIdx, X, (int) n);
+    INDArray eW = Nd4j.base().mmul(edgeFeatures, edgeNetW).add(edgeNetB);
+    INDArray eWr = Nd4j.base().reshape(eW, -1, fin, fout);
+    INDArray XjE = Nd4j.base().reshape(Xj, -1, fin, 1);
     INDArray prod = XjE.mul(eWr);
-    INDArray msg = org.nd4j.linalg.factory.Nd4j.base().sum(prod, false, 1);
-    INDArray agg = org.nd4j.linalg.factory.Nd4j.sparse().csrEdgeAggregate(rowPtr, msg, (int) rows, 0);
-    INDArray out = agg.add(org.nd4j.linalg.factory.Nd4j.base().mmul(X, rootW));
+    INDArray msg = Nd4j.base().sum(prod, false, 1);
+    INDArray agg = Nd4j.sparse().csrEdgeAggregate(rowPtr, msg, (int) rows, 0);
+    INDArray out = agg.add(Nd4j.base().mmul(X, rootW));
     if (bias != null) {
         out = out.add(bias);
     }
@@ -663,7 +692,7 @@ public class NDGNN {
   }
 
   /**
-   * PairNorm (Zhao & Akoglu 2020): parameter-free normalisation that keeps total pairwise feature distance constant.<br>
+   * PairNorm (Zhao and Akoglu 2020): parameter-free normalisation that keeps total pairwise feature distance constant.
    *
    * @param X Node features [rows, F] (FLOATING_POINT type)
    * @param scale Target row-norm scale s (typically ~1.0)
@@ -671,17 +700,44 @@ public class NDGNN {
    */
   public INDArray pairNorm(INDArray X, double scale) {
     NDValidation.validateFloatingPoint("pairNorm", "X", X);
-    INDArray mean = org.nd4j.linalg.factory.Nd4j.base().mean(X, true, 0);
+    INDArray mean = Nd4j.base().mean(X, true, 0);
     INDArray Xc = X.sub(mean);
-    INDArray rowSq = org.nd4j.linalg.factory.Nd4j.base().sum(Xc.mul(Xc), true, 1);
-    INDArray denom = org.nd4j.linalg.factory.Nd4j.math().sqrt(org.nd4j.linalg.factory.Nd4j.base().mean(rowSq, false).add(1e-6));
+    INDArray rowSq = Nd4j.base().sum(Xc.mul(Xc), true, 1);
+    INDArray denom = Nd4j.math().sqrt(Nd4j.base().mean(rowSq, false).add(1e-6));
     INDArray out = Xc.mul(scale).div(denom);
     return out;
   }
 
   /**
-   * Principal Neighbourhood Aggregation convolution (Corso et al. 2020).<br>
-   * Combines mean, max, min and std aggregators, concatenated and linearly projected.<br>
+   * Batch-aware PairNorm: normalizes within each graph rather than globally.
+   * Safe to use with block-diagonal batching (graphDisjointUnion).
+   *
+   * @param X Node features [sumN, F] (FLOATING_POINT type)
+   * @param batchVec Node-to-graph index [sumN] INT32 (INT type)
+   * @param K Number of graphs
+   * @param scale Scale factor (default 1.0)
+   * @return out Normalized features [sumN, F] (FLOATING_POINT type)
+   */
+  public INDArray pairNormBatched(INDArray X, INDArray batchVec, long K, double scale) {
+    NDValidation.validateFloatingPoint("pairNormBatched", "X", X);
+    NDValidation.validateInteger("pairNormBatched", "batchVec", batchVec);
+    // Segment mean center: subtract per-graph mean
+    INDArray graphMeans = Nd4j.base().unsortedSegmentMean(X, batchVec, (int)K);  // [K, F]
+    // Gather back to per-node
+    INDArray nodeMeans = Nd4j.base().gather(graphMeans, batchVec, 0);  // [sumN, F]
+    INDArray Xc = X.sub(nodeMeans);
+    INDArray rowSq = Nd4j.base().sum(Xc.mul(Xc), true, 1);
+    // Per-graph mean of squared norms
+    INDArray graphSqMean = Nd4j.base().unsortedSegmentMean(rowSq, batchVec, (int)K);  // [K, 1]
+    INDArray nodeVarDenom = Nd4j.base().gather(graphSqMean, batchVec, 0);  // [sumN, 1]
+    INDArray denom = Nd4j.math().sqrt(nodeVarDenom.add(1e-6));
+    INDArray out = Xc.mul(scale).div(denom);
+    return out;
+  }
+
+  /**
+   * Principal Neighbourhood Aggregation convolution (Corso et al. 2020).
+   * Combines mean, max, min and std aggregators, concatenated and linearly projected.
    *
    * @param X Node features [rows, F] (FLOATING_POINT type)
    * @param W Weight matrix [4F, H] (FLOATING_POINT type)
@@ -700,25 +756,25 @@ public class NDGNN {
     NDValidation.validateFloatingPoint("pnaConv", "bias", bias);
     NDValidation.validateInteger("pnaConv", "colIdx", colIdx);
     NDValidation.validateInteger("pnaConv", "rowPtr", rowPtr);
-    INDArray Xj = org.nd4j.linalg.factory.Nd4j.sparse().csrEdgeGather(colIdx, X, (int) n);
-    INDArray mean = org.nd4j.linalg.factory.Nd4j.sparse().csrEdgeAggregate(rowPtr, Xj, (int) rows, 1);
-    INDArray max = org.nd4j.linalg.factory.Nd4j.sparse().csrEdgeAggregate(rowPtr, Xj, (int) rows, 2);
-    INDArray min = org.nd4j.linalg.factory.Nd4j.sparse().csrEdgeAggregate(rowPtr, Xj.mul(-1.0), (int) rows, 2).mul(-1.0);
-    INDArray meanSq = org.nd4j.linalg.factory.Nd4j.sparse().csrEdgeAggregate(rowPtr, Xj.mul(Xj), (int) rows, 1);
-    INDArray std = org.nd4j.linalg.factory.Nd4j.math().sqrt(meanSq.sub(mean.mul(mean)).add(1e-6));
-    INDArray agg = org.nd4j.linalg.factory.Nd4j.base().concat(1, mean, max, min, std);
-    INDArray out = org.nd4j.linalg.factory.Nd4j.base().mmul(agg, W);
+    INDArray Xj = Nd4j.sparse().csrEdgeGather(colIdx, X, (int) n);
+    INDArray mean = Nd4j.sparse().csrEdgeAggregate(rowPtr, Xj, (int) rows, 1);
+    INDArray max = Nd4j.sparse().csrEdgeAggregate(rowPtr, Xj, (int) rows, 2);
+    INDArray min = Nd4j.sparse().csrEdgeAggregate(rowPtr, Xj.mul(-1.0), (int) rows, 2).mul(-1.0);
+    INDArray meanSq = Nd4j.sparse().csrEdgeAggregate(rowPtr, Xj.mul(Xj), (int) rows, 1);
+    INDArray std = Nd4j.math().sqrt(meanSq.sub(mean.mul(mean)).add(1e-6));
+    INDArray agg = Nd4j.base().concat(1, mean, max, min, std);
+    INDArray out = Nd4j.base().mmul(agg, W);
     if (bias != null) {
         out = out.add(bias);
     }
     if (applyRelu) {
-        out = org.nd4j.linalg.factory.Nd4j.nn().relu(out, 0.0);
+        out = Nd4j.nn().relu(out, 0.0);
     }
     return out;
   }
 
   /**
-   * Single-head relational GAT: graph attention with relation embedding modulating each edge's message.<br>
+   * Single-head relational GAT: graph attention with relation embedding modulating each edge's message.
    *
    * @param X Node features [N, F] (FLOATING_POINT type)
    * @param W Linear weight [F, H] (FLOATING_POINT type)
@@ -744,22 +800,22 @@ public class NDGNN {
     NDValidation.validateInteger("rgatConvHead", "colIdx", colIdx);
     NDValidation.validateInteger("rgatConvHead", "rowPtr", rowPtr);
     NDValidation.validateInteger("rgatConvHead", "rowIdx", rowIdx);
-    INDArray Wh = org.nd4j.linalg.factory.Nd4j.base().mmul(X, W);
-    INDArray src = org.nd4j.linalg.factory.Nd4j.sparse().csrEdgeGather(colIdx, Wh, (int) N);
-    INDArray dst = org.nd4j.linalg.factory.Nd4j.base().gather(Wh, rowIdx, 0);
-    INDArray rel = org.nd4j.linalg.factory.Nd4j.base().gather(relEmb, edgeRelIdx, 0);
+    INDArray Wh = Nd4j.base().mmul(X, W);
+    INDArray src = Nd4j.sparse().csrEdgeGather(colIdx, Wh, (int) N);
+    INDArray dst = Nd4j.base().gather(Wh, rowIdx, 0);
+    INDArray rel = Nd4j.base().gather(relEmb, edgeRelIdx, 0);
     INDArray msg = src.add(rel);
-    INDArray g = org.nd4j.linalg.factory.Nd4j.nn().leakyRelu(msg.add(dst), leakyAlpha);
-    INDArray e = org.nd4j.linalg.factory.Nd4j.base().reshape(org.nd4j.linalg.factory.Nd4j.base().mmul(g, att), nnz);
-    INDArray alpha = org.nd4j.linalg.factory.Nd4j.sparse().csrRowSoftmax(e, rowPtr, (int) N);
-    INDArray weighted = msg.mul(org.nd4j.linalg.factory.Nd4j.base().reshape(alpha, nnz, 1));
-    INDArray out = org.nd4j.linalg.factory.Nd4j.sparse().csrEdgeAggregate(rowPtr, weighted, (int) N, 0);
+    INDArray g = Nd4j.nn().leakyRelu(msg.add(dst), leakyAlpha);
+    INDArray e = Nd4j.base().reshape(Nd4j.base().mmul(g, att), nnz);
+    INDArray alpha = Nd4j.sparse().csrRowSoftmax(e, rowPtr, (int) N);
+    INDArray weighted = msg.mul(Nd4j.base().reshape(alpha, nnz, 1));
+    INDArray out = Nd4j.sparse().csrEdgeAggregate(rowPtr, weighted, (int) N, 0);
     return out;
   }
 
   /**
-   * Relational Graph Convolutional Network layer (Schlichtkrull et al. 2018).<br>
-   * out = X*W_self + sum_r(A_r*X*W_r) + bias<br>
+   * Relational Graph Convolutional Network layer (Schlichtkrull et al. 2018).
+   * out = X*W_self + sum_r(A_r*X*W_r) + bias
    *
    * @param X Node features [rows, F] (FLOATING_POINT type)
    * @param relVals Per-relation CSR values, relVals[r]=[nnz_r] (FLOATING_POINT type)
@@ -787,22 +843,22 @@ public class NDGNN {
     Preconditions.checkArgument(relW.length >= 1, "relW has incorrect size/length. Expected: relW.length >= 1, got %s", relW.length);
     NDValidation.validateFloatingPoint("rgcnConv", "selfW", selfW);
     NDValidation.validateFloatingPoint("rgcnConv", "bias", bias);
-    INDArray out = org.nd4j.linalg.factory.Nd4j.base().mmul(X, selfW);
+    INDArray out = Nd4j.base().mmul(X, selfW);
     for (int r = 0; r < relW.length; r++) {
-        INDArray aX = org.nd4j.linalg.factory.Nd4j.sparse().csrSpmm(relVals[r], relColIdx[r], relRowPtr[r], X, (int) rows, (int) cols, false);
-        out = out.add(org.nd4j.linalg.factory.Nd4j.base().mmul(aX, relW[r]));
+        INDArray aX = Nd4j.sparse().csrSpmm(relVals[r], relColIdx[r], relRowPtr[r], X, (int) rows, (int) cols, false);
+        out = out.add(Nd4j.base().mmul(aX, relW[r]));
     }
     if (bias != null) {
         out = out.add(bias);
     }
     if (applyRelu) {
-        out = org.nd4j.linalg.factory.Nd4j.nn().relu(out, 0.0);
+        out = Nd4j.nn().relu(out, 0.0);
     }
     return out;
   }
 
   /**
-   * GraphSAGE max aggregation.<br>
+   * GraphSAGE max aggregation.
    *
    * @param X Node features [rows, F] (FLOATING_POINT type)
    * @param W Weight matrix [2F, H] (FLOATING_POINT type)
@@ -819,18 +875,18 @@ public class NDGNN {
     NDValidation.validateFloatingPoint("sageMax", "bias", bias);
     NDValidation.validateInteger("sageMax", "colIdx", colIdx);
     NDValidation.validateInteger("sageMax", "rowPtr", rowPtr);
-    INDArray agg = org.nd4j.linalg.factory.Nd4j.sparse().csrSegmentMax(colIdx, rowPtr, X, (int) rows);
-    INDArray cat = org.nd4j.linalg.factory.Nd4j.base().concat(1, X, agg);
-    INDArray h = org.nd4j.linalg.factory.Nd4j.base().mmul(cat, W);
+    INDArray agg = Nd4j.sparse().csrSegmentMax(colIdx, rowPtr, X, (int) rows);
+    INDArray cat = Nd4j.base().concat(1, X, agg);
+    INDArray h = Nd4j.base().mmul(cat, W);
     if (bias != null) {
         h = h.add(bias);
     }
-    INDArray out = org.nd4j.linalg.factory.Nd4j.nn().relu(h, 0.0);
+    INDArray out = Nd4j.nn().relu(h, 0.0);
     return out;
   }
 
   /**
-   * GraphSAGE mean aggregation (Hamilton et al. 2017).<br>
+   * GraphSAGE mean aggregation (Hamilton et al. 2017).
    *
    * @param X Node features [rows, F] (FLOATING_POINT type)
    * @param W Weight matrix [2F, H] (FLOATING_POINT type)
@@ -848,19 +904,19 @@ public class NDGNN {
     NDValidation.validateFloatingPoint("sageMean", "bias", bias);
     NDValidation.validateInteger("sageMean", "colIdx", colIdx);
     NDValidation.validateInteger("sageMean", "rowPtr", rowPtr);
-    INDArray Xj = org.nd4j.linalg.factory.Nd4j.sparse().csrEdgeGather(colIdx, X, (int) n);
-    INDArray agg = org.nd4j.linalg.factory.Nd4j.sparse().csrEdgeAggregate(rowPtr, Xj, (int) rows, 1);
-    INDArray cat = org.nd4j.linalg.factory.Nd4j.base().concat(1, X, agg);
-    INDArray h = org.nd4j.linalg.factory.Nd4j.base().mmul(cat, W);
+    INDArray Xj = Nd4j.sparse().csrEdgeGather(colIdx, X, (int) n);
+    INDArray agg = Nd4j.sparse().csrEdgeAggregate(rowPtr, Xj, (int) rows, 1);
+    INDArray cat = Nd4j.base().concat(1, X, agg);
+    INDArray h = Nd4j.base().mmul(cat, W);
     if (bias != null) {
         h = h.add(bias);
     }
-    INDArray out = org.nd4j.linalg.factory.Nd4j.nn().relu(h, 0.0);
+    INDArray out = Nd4j.nn().relu(h, 0.0);
     return out;
   }
 
   /**
-   * GraphSAGE pool aggregation: apply an MLP to each neighbour, max-aggregate, then predict.<br>
+   * GraphSAGE pool aggregation: apply an MLP to each neighbour, max-aggregate, then predict.
    *
    * @param X Node features [rows, F] (FLOATING_POINT type)
    * @param wPool MLP weight for neighbours [F, H_pool] (FLOATING_POINT type)
@@ -882,23 +938,23 @@ public class NDGNN {
     NDValidation.validateFloatingPoint("sagePool", "bOut", bOut);
     NDValidation.validateInteger("sagePool", "colIdx", colIdx);
     NDValidation.validateInteger("sagePool", "rowPtr", rowPtr);
-    INDArray Xj = org.nd4j.linalg.factory.Nd4j.sparse().csrEdgeGather(colIdx, X, (int) n);
-    INDArray hj = org.nd4j.linalg.factory.Nd4j.nn().relu(org.nd4j.linalg.factory.Nd4j.base().mmul(Xj, wPool).add(bPool), 0.0);
-    INDArray agg = org.nd4j.linalg.factory.Nd4j.sparse().csrEdgeAggregate(rowPtr, hj, (int) rows, 2);
-    INDArray cat = org.nd4j.linalg.factory.Nd4j.base().concat(1, X, agg);
-    INDArray out = org.nd4j.linalg.factory.Nd4j.base().mmul(cat, wOut);
+    INDArray Xj = Nd4j.sparse().csrEdgeGather(colIdx, X, (int) n);
+    INDArray hj = Nd4j.nn().relu(Nd4j.base().mmul(Xj, wPool).add(bPool), 0.0);
+    INDArray agg = Nd4j.sparse().csrEdgeAggregate(rowPtr, hj, (int) rows, 2);
+    INDArray cat = Nd4j.base().concat(1, X, agg);
+    INDArray out = Nd4j.base().mmul(cat, wOut);
     if (bOut != null) {
         out = out.add(bOut);
     }
-    out = org.nd4j.linalg.factory.Nd4j.nn().relu(out, 0.0);
+    out = Nd4j.nn().relu(out, 0.0);
     return out;
   }
 
   /**
-   * Temporal Graph Convolutional Network: weight-shared spatial GCN applied at each timestep,<br>
-   * fused by temporal attention. For each timestep t: h[t] = gcnConv(X_t, W, bias, A_norm).<br>
-   * Temporal attention score = mean(tanh(h[t]*tempW)*tempQ). Softmax gives beta_t;<br>
-   * out = sum_t(beta_t * h[t]).<br>
+   * Temporal Graph Convolutional Network: weight-shared spatial GCN applied at each timestep,
+   * fused by temporal attention. For each timestep t: h[t] = gcnConv(X_t, W, bias, A_norm).
+   * Temporal attention score = mean(tanh(h[t]*tempW)*tempQ). Softmax gives beta_t;
+   * out = sum_t(beta_t * h[t]).
    *
    * @param Xt Per-timestep node features, each [N, F] (FLOATING_POINT type)
    * @param W Shared spatial GCN weight [F, H] (FLOATING_POINT type)
@@ -930,9 +986,9 @@ public class NDGNN {
     INDArray[] expw = new INDArray[T];
     INDArray sumExp = null;
     for (int t = 0; t < T; t++) {
-        h[t] = org.nd4j.linalg.factory.Nd4j.gnn().gcnConv(Xt[t], W, bias, aNormVals, aNormColIdx, aNormRowPtr, rows, cols, applyRelu);
-        INDArray score = org.nd4j.linalg.factory.Nd4j.base().mean(org.nd4j.linalg.factory.Nd4j.base().mmul(org.nd4j.linalg.factory.Nd4j.math().tanh(org.nd4j.linalg.factory.Nd4j.base().mmul(h[t], tempW)), tempQ), false);
-        expw[t] = org.nd4j.linalg.factory.Nd4j.math().exp(score);
+        h[t] = Nd4j.gnn().gcnConv(Xt[t], W, bias, aNormVals, aNormColIdx, aNormRowPtr, rows, cols, applyRelu);
+        INDArray score = Nd4j.base().mean(Nd4j.base().mmul(Nd4j.math().tanh(Nd4j.base().mmul(h[t], tempW)), tempQ), false);
+        expw[t] = Nd4j.math().exp(score);
         sumExp = (t == 0) ? expw[t] : sumExp.add(expw[t]);
     }
     INDArray out = null;
@@ -945,7 +1001,7 @@ public class NDGNN {
   }
 
   /**
-   * VGAE KL-divergence regulariser (Kipf & Welling 2016): 0.5 * mean(exp(logvar) + mu^2 - logvar - 1)<br>
+   * VGAE KL-divergence regulariser (Kipf and Welling 2016): 0.5 * mean(exp(logvar) + mu^2 - logvar - 1)
    *
    * @param mu Latent mean [N, d] (FLOATING_POINT type)
    * @param logvar Latent log-variance [N, d] (FLOATING_POINT type)
@@ -954,13 +1010,13 @@ public class NDGNN {
   public INDArray vgaeKlLoss(INDArray mu, INDArray logvar) {
     NDValidation.validateFloatingPoint("vgaeKlLoss", "mu", mu);
     NDValidation.validateFloatingPoint("vgaeKlLoss", "logvar", logvar);
-    INDArray kl = org.nd4j.linalg.factory.Nd4j.math().exp(logvar).add(mu.mul(mu)).sub(logvar).sub(1.0);
-    INDArray out = org.nd4j.linalg.factory.Nd4j.base().mean(kl, false).mul(0.5);
+    INDArray kl = Nd4j.math().exp(logvar).add(mu.mul(mu)).sub(logvar).sub(1.0);
+    INDArray out = Nd4j.base().mean(kl, false).mul(0.5);
     return out;
   }
 
   /**
-   * VGAE reparameterisation trick (Kipf & Welling 2016): z = mu + exp(0.5*logvar) * noise<br>
+   * VGAE reparameterisation trick (Kipf and Welling 2016): z = mu + exp(0.5*logvar) * noise
    *
    * @param mu Latent mean [N, d] (FLOATING_POINT type)
    * @param logvar Latent log-variance [N, d] (FLOATING_POINT type)
@@ -971,7 +1027,7 @@ public class NDGNN {
     NDValidation.validateFloatingPoint("vgaeReparam", "mu", mu);
     NDValidation.validateFloatingPoint("vgaeReparam", "logvar", logvar);
     NDValidation.validateFloatingPoint("vgaeReparam", "noise", noise);
-    INDArray out = mu.add(org.nd4j.linalg.factory.Nd4j.math().exp(logvar.mul(0.5)).mul(noise));
+    INDArray out = mu.add(Nd4j.math().exp(logvar.mul(0.5)).mul(noise));
     return out;
   }
 }

@@ -75,6 +75,17 @@ import java.util.List;
 public class LoraConfig extends PeftConfig {
 
     /**
+     * Builder type returned by the LoRA configuration factories.
+     * Lombok supplies the fluent members and concrete implementation.
+     *
+     * @param <C> configuration type
+     * @param <B> concrete builder type
+     */
+    public abstract static class LoraConfigBuilder<C extends LoraConfig, B extends LoraConfigBuilder<C, B>>
+            extends PeftConfigBuilder<C, B> {
+    }
+
+    /**
      * The rank of the low-rank decomposition matrices.
      * Lower rank = fewer parameters but potentially lower expressiveness.
      * Recommended starting values: 8-32.

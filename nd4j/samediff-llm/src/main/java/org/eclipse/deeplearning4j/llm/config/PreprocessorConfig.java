@@ -208,7 +208,7 @@ public class PreprocessorConfig {
     /**
      * Creates a default PreprocessorConfig suitable for Vision Transformer (ViT) models.
      * Uses standard ImageNet normalization (mean=[0.5,0.5,0.5], std=[0.5,0.5,0.5]).
-     * The size must be set separately via {@link #setSize(ImageSize)}.
+     * The size must be set separately via {@code setSize(ImageSize)} using an {@link ImageSize}.
      *
      * @return a new PreprocessorConfig with ViT defaults
      */

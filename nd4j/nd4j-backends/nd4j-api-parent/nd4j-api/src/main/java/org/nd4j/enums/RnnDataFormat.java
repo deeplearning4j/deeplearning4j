@@ -29,19 +29,9 @@ package org.nd4j.enums;
  *  NTS -> [batchSize, timeSteps, inSize]<br>
  */
 public enum RnnDataFormat {
-  TNS(0),
+  TNS,
 
-  NST(1),
+  NST,
 
-  NTS(2);
-
-  private final int methodIndex;
-
-  RnnDataFormat(int index) {
-    this.methodIndex = index;
-  }
-
-  public int methodIndex() {
-    return methodIndex;
-  }
+  NTS
 }

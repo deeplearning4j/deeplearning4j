@@ -35,11 +35,11 @@ public class SDBitwise extends SDOps {
   }
 
   /**
-   * Bitwise AND operation. Supports broadcasting.<br>
+   * Bitwise AND operation. Supports broadcasting.
    *
    * Inputs must satisfy the following constraints: <br>
-   * Must be same types: isSameType(x, y)<br>
-   * Must have broadcastable shapes: isBroadcastableShapes(x, y)<br>
+   * Must be same types: {@code isSameType(x, y)}<br>
+   * Must have broadcastable shapes: {@code isBroadcastableShapes(x, y)}<br>
    *
    * @param x First input array (INT type)
    * @param y Second input array (INT type)
@@ -53,11 +53,11 @@ public class SDBitwise extends SDOps {
   }
 
   /**
-   * Bitwise AND operation. Supports broadcasting.<br>
+   * Bitwise AND operation. Supports broadcasting.
    *
    * Inputs must satisfy the following constraints: <br>
-   * Must be same types: isSameType(x, y)<br>
-   * Must have broadcastable shapes: isBroadcastableShapes(x, y)<br>
+   * Must be same types: {@code isSameType(x, y)}<br>
+   * Must have broadcastable shapes: {@code isBroadcastableShapes(x, y)}<br>
    *
    * @param name name May be null. Name for the output variable
    * @param x First input array (INT type)
@@ -73,7 +73,7 @@ public class SDBitwise extends SDOps {
   }
 
   /**
-   * Roll integer bits to the left, i.e. var << 4 | var >> (32 - 4)<br>
+   * Roll integer bits to the left, i.e. var &lt;&lt; 4 | var >> (32 - 4)
    *
    * @param x Input 1 (INT type)
    * @param shift Number of bits to shift. (INT type)
@@ -86,7 +86,7 @@ public class SDBitwise extends SDOps {
   }
 
   /**
-   * Roll integer bits to the left, i.e. var << 4 | var >> (32 - 4)<br>
+   * Roll integer bits to the left, i.e. var &lt;&lt; 4 | var >> (32 - 4)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input 1 (INT type)
@@ -101,7 +101,7 @@ public class SDBitwise extends SDOps {
   }
 
   /**
-   * Roll integer bits to the right, i.e. var >> 4 | var << (32 - 4)<br>
+   * Roll integer bits to the right, i.e. var >> 4 | var &lt;&lt; (32 - 4)
    *
    * @param x Input 1 (INT type)
    * @param shift Number of bits to shift. (INT type)
@@ -114,7 +114,7 @@ public class SDBitwise extends SDOps {
   }
 
   /**
-   * Roll integer bits to the right, i.e. var >> 4 | var << (32 - 4)<br>
+   * Roll integer bits to the right, i.e. var >> 4 | var &lt;&lt; (32 - 4)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input 1 (INT type)
@@ -129,7 +129,7 @@ public class SDBitwise extends SDOps {
   }
 
   /**
-   * Shift integer bits to the left, i.e. var << 4<br>
+   * Shift integer bits to the left, i.e. var &lt;&lt; 4
    *
    * @param x Input 1 (INT type)
    * @param shift Number of bits to shift. (INT type)
@@ -142,7 +142,7 @@ public class SDBitwise extends SDOps {
   }
 
   /**
-   * Shift integer bits to the left, i.e. var << 4<br>
+   * Shift integer bits to the left, i.e. var &lt;&lt; 4
    *
    * @param name name May be null. Name for the output variable
    * @param x Input 1 (INT type)
@@ -157,7 +157,7 @@ public class SDBitwise extends SDOps {
   }
 
   /**
-   * Shift integer bits to the right, i.e. var >> 4<br>
+   * Shift integer bits to the right, i.e. var >> 4
    *
    * @param x Input 1 (INT type)
    * @param shift Number of bits to shift. (INT type)
@@ -170,7 +170,7 @@ public class SDBitwise extends SDOps {
   }
 
   /**
-   * Shift integer bits to the right, i.e. var >> 4<br>
+   * Shift integer bits to the right, i.e. var >> 4
    *
    * @param name name May be null. Name for the output variable
    * @param x Input 1 (INT type)
@@ -186,10 +186,10 @@ public class SDBitwise extends SDOps {
 
   /**
    * Bitwise Hamming distance reduction over all elements of both input arrays.<br>
-   * For example, if x=01100000 and y=1010000 then the bitwise Hamming distance is 2 (due to differences at positions 0 and 1)<br>
+   * For example, if x=01100000 and y=1010000 then the bitwise Hamming distance is 2 (due to differences at positions 0 and 1)
    *
    * Inputs must satisfy the following constraints: <br>
-   * Must be same types: isSameType(x, y)<br>
+   * Must be same types: {@code isSameType(x, y)}<br>
    *
    * @param x First input array. (INT type)
    * @param y Second input array. (INT type)
@@ -204,10 +204,10 @@ public class SDBitwise extends SDOps {
 
   /**
    * Bitwise Hamming distance reduction over all elements of both input arrays.<br>
-   * For example, if x=01100000 and y=1010000 then the bitwise Hamming distance is 2 (due to differences at positions 0 and 1)<br>
+   * For example, if x=01100000 and y=1010000 then the bitwise Hamming distance is 2 (due to differences at positions 0 and 1)
    *
    * Inputs must satisfy the following constraints: <br>
-   * Must be same types: isSameType(x, y)<br>
+   * Must be same types: {@code isSameType(x, y)}<br>
    *
    * @param name name May be null. Name for the output variable
    * @param x First input array. (INT type)
@@ -223,7 +223,7 @@ public class SDBitwise extends SDOps {
   }
 
   /**
-   * Bitwise left shift operation. Supports broadcasting.<br>
+   * Bitwise left shift operation. Supports broadcasting.
    *
    * @param x Input to be bit shifted (INT type)
    * @param y Amount to shift elements of x array (INT type)
@@ -236,7 +236,7 @@ public class SDBitwise extends SDOps {
   }
 
   /**
-   * Bitwise left shift operation. Supports broadcasting.<br>
+   * Bitwise left shift operation. Supports broadcasting.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input to be bit shifted (INT type)
@@ -251,9 +251,9 @@ public class SDBitwise extends SDOps {
   }
 
   /**
-   * Bitwise left cyclical shift operation. Supports broadcasting.<br>
-   * Unlike #leftShift(INDArray, INDArray) the bits will "wrap around":<br>
-   * {@code leftShiftCyclic(01110000, 2) -> 11000001}<br>
+   * Bitwise left cyclical shift operation. Supports broadcasting.
+   * Unlike #leftShift(INDArray, INDArray) the bits will "wrap around":
+   * {@code leftShiftCyclic(01110000, 2) -> 11000001}
    *
    * @param x Input to be bit shifted (INT type)
    * @param y Amount to shift elements of x array (INT type)
@@ -266,9 +266,9 @@ public class SDBitwise extends SDOps {
   }
 
   /**
-   * Bitwise left cyclical shift operation. Supports broadcasting.<br>
-   * Unlike #leftShift(INDArray, INDArray) the bits will "wrap around":<br>
-   * {@code leftShiftCyclic(01110000, 2) -> 11000001}<br>
+   * Bitwise left cyclical shift operation. Supports broadcasting.
+   * Unlike #leftShift(INDArray, INDArray) the bits will "wrap around":
+   * {@code leftShiftCyclic(01110000, 2) -> 11000001}
    *
    * @param name name May be null. Name for the output variable
    * @param x Input to be bit shifted (INT type)
@@ -283,11 +283,11 @@ public class SDBitwise extends SDOps {
   }
 
   /**
-   * Bitwise OR operation. Supports broadcasting.<br>
+   * Bitwise OR operation. Supports broadcasting.
    *
    * Inputs must satisfy the following constraints: <br>
-   * Must be same types: isSameType(x, y)<br>
-   * Must have broadcastable shapes: isBroadcastableShapes(x, y)<br>
+   * Must be same types: {@code isSameType(x, y)}<br>
+   * Must have broadcastable shapes: {@code isBroadcastableShapes(x, y)}<br>
    *
    * @param x First input array (INT type)
    * @param y First input array (INT type)
@@ -301,11 +301,11 @@ public class SDBitwise extends SDOps {
   }
 
   /**
-   * Bitwise OR operation. Supports broadcasting.<br>
+   * Bitwise OR operation. Supports broadcasting.
    *
    * Inputs must satisfy the following constraints: <br>
-   * Must be same types: isSameType(x, y)<br>
-   * Must have broadcastable shapes: isBroadcastableShapes(x, y)<br>
+   * Must be same types: {@code isSameType(x, y)}<br>
+   * Must have broadcastable shapes: {@code isBroadcastableShapes(x, y)}<br>
    *
    * @param name name May be null. Name for the output variable
    * @param x First input array (INT type)
@@ -321,7 +321,7 @@ public class SDBitwise extends SDOps {
   }
 
   /**
-   * Bitwise right shift operation. Supports broadcasting. <br>
+   * Bitwise right shift operation. Supports broadcasting.
    *
    * @param x Input to be bit shifted (INT type)
    * @param y Amount to shift elements of x array (INT type)
@@ -334,7 +334,7 @@ public class SDBitwise extends SDOps {
   }
 
   /**
-   * Bitwise right shift operation. Supports broadcasting. <br>
+   * Bitwise right shift operation. Supports broadcasting.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input to be bit shifted (INT type)
@@ -349,9 +349,9 @@ public class SDBitwise extends SDOps {
   }
 
   /**
-   * Bitwise right cyclical shift operation. Supports broadcasting.<br>
-   * Unlike rightShift(INDArray, INDArray) the bits will "wrap around":<br>
-   * {@code rightShiftCyclic(00001110, 2) -> 10000011}<br>
+   * Bitwise right cyclical shift operation. Supports broadcasting.
+   * Unlike rightShift(INDArray, INDArray) the bits will "wrap around":
+   * {@code rightShiftCyclic(00001110, 2) -> 10000011}
    *
    * @param x Input to be bit shifted (INT type)
    * @param y Amount to shift elements of x array (INT type)
@@ -364,9 +364,9 @@ public class SDBitwise extends SDOps {
   }
 
   /**
-   * Bitwise right cyclical shift operation. Supports broadcasting.<br>
-   * Unlike rightShift(INDArray, INDArray) the bits will "wrap around":<br>
-   * {@code rightShiftCyclic(00001110, 2) -> 10000011}<br>
+   * Bitwise right cyclical shift operation. Supports broadcasting.
+   * Unlike rightShift(INDArray, INDArray) the bits will "wrap around":
+   * {@code rightShiftCyclic(00001110, 2) -> 10000011}
    *
    * @param name name May be null. Name for the output variable
    * @param x Input to be bit shifted (INT type)
@@ -381,11 +381,11 @@ public class SDBitwise extends SDOps {
   }
 
   /**
-   * Bitwise XOR operation (exclusive OR). Supports broadcasting.<br>
+   * Bitwise XOR operation (exclusive OR). Supports broadcasting.
    *
    * Inputs must satisfy the following constraints: <br>
-   * Must be same types: isSameType(x, y)<br>
-   * Must have broadcastable shapes: isBroadcastableShapes(x, y)<br>
+   * Must be same types: {@code isSameType(x, y)}<br>
+   * Must have broadcastable shapes: {@code isBroadcastableShapes(x, y)}<br>
    *
    * @param x First input array (INT type)
    * @param y First input array (INT type)
@@ -399,11 +399,11 @@ public class SDBitwise extends SDOps {
   }
 
   /**
-   * Bitwise XOR operation (exclusive OR). Supports broadcasting.<br>
+   * Bitwise XOR operation (exclusive OR). Supports broadcasting.
    *
    * Inputs must satisfy the following constraints: <br>
-   * Must be same types: isSameType(x, y)<br>
-   * Must have broadcastable shapes: isBroadcastableShapes(x, y)<br>
+   * Must be same types: {@code isSameType(x, y)}<br>
+   * Must have broadcastable shapes: {@code isBroadcastableShapes(x, y)}<br>
    *
    * @param name name May be null. Name for the output variable
    * @param x First input array (INT type)

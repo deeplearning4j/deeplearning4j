@@ -40,7 +40,9 @@ public class SDRNN extends SDOps {
   }
 
   /**
-   * The GRU operation. Gated Recurrent Unit - Cho et al. 2014.<br>
+   * The GRU operation. Gated Recurrent Unit - Cho et al. 2014.
+   *
+   *
    *
    * @param x input [time, bS, nIn] (NUMERIC type)
    * @param hLast initial cell output (at time step = 0) [bS, nOut] (NUMERIC type)
@@ -60,7 +62,9 @@ public class SDRNN extends SDOps {
   }
 
   /**
-   * The GRU operation. Gated Recurrent Unit - Cho et al. 2014.<br>
+   * The GRU operation. Gated Recurrent Unit - Cho et al. 2014.
+   *
+   *
    *
    * @param name name May be null. Name for the output variable
    * @param x input [time, bS, nIn] (NUMERIC type)
@@ -82,11 +86,15 @@ public class SDRNN extends SDOps {
   }
 
   /**
-   * The GRU cell.  Does a single time step operation<br>
+   * The GRU cell.  Does a single time step operation
    *
    * @param x Input, with shape [batchSize, inSize] (NUMERIC type)
    * @param hLast Output of the previous cell/time step, with shape [batchSize, numUnits] (NUMERIC type)
    * @param GRUWeights Configuration Object
+   * @return r Reset gate output (NUMERIC type)
+   * @return u Update gate output (NUMERIC type)
+   * @return c Cell gate output (NUMERIC type)
+   * @return h Cell output (NUMERIC type)
    */
   public SDVariable[] gruCell(SDVariable x, SDVariable hLast, GRUWeights GRUWeights) {
     SDValidation.validateNumerical("gruCell", "x", x);
@@ -95,12 +103,16 @@ public class SDRNN extends SDOps {
   }
 
   /**
-   * The GRU cell.  Does a single time step operation<br>
+   * The GRU cell.  Does a single time step operation
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param x Input, with shape [batchSize, inSize] (NUMERIC type)
    * @param hLast Output of the previous cell/time step, with shape [batchSize, numUnits] (NUMERIC type)
    * @param GRUWeights Configuration Object
+   * @return r Reset gate output (NUMERIC type)
+   * @return u Update gate output (NUMERIC type)
+   * @return c Cell gate output (NUMERIC type)
+   * @return h Cell output (NUMERIC type)
    */
   public SDVariable[] gruCell(String[] names, SDVariable x, SDVariable hLast,
       GRUWeights GRUWeights) {
@@ -111,13 +123,20 @@ public class SDRNN extends SDOps {
   }
 
   /**
-   * The LSTM cell.  Does a single time step operation.<br>
+   * The LSTM cell.  Does a single time step operation.
    *
    * @param x Input, with shape [batchSize, inSize] (NUMERIC type)
    * @param cLast Previous cell state, with shape [batchSize, numUnits] (NUMERIC type)
    * @param yLast revious cell output, with shape [batchSize, numUnits] (NUMERIC type)
    * @param LSTMWeights Configuration Object
    * @param LSTMConfiguration Configuration Object
+   * @return i Output - input modulation gate activations [batchSize, numUnits]. (NUMERIC type)
+   * @return c Output - Activations, cell state (pre tanh) [batchSize, numUnits]. (NUMERIC type)
+   * @return f Output - forget gate activations [batchSize, numUnits]. (NUMERIC type)
+   * @return o Output - output gate activations [batchSize, numUnits]. (NUMERIC type)
+   * @return z Output - input gate activations [batchSize, numUnits]. (NUMERIC type)
+   * @return h Cell state, post tanh [batchSize, numUnits]. (NUMERIC type)
+   * @return y Current cell output [batchSize, numUnits]. (NUMERIC type)
    */
   public SDVariable[] lstmCell(SDVariable x, SDVariable cLast, SDVariable yLast,
       LSTMWeights LSTMWeights, LSTMConfiguration LSTMConfiguration) {
@@ -128,7 +147,7 @@ public class SDRNN extends SDOps {
   }
 
   /**
-   * The LSTM cell.  Does a single time step operation.<br>
+   * The LSTM cell.  Does a single time step operation.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param x Input, with shape [batchSize, inSize] (NUMERIC type)
@@ -136,6 +155,13 @@ public class SDRNN extends SDOps {
    * @param yLast revious cell output, with shape [batchSize, numUnits] (NUMERIC type)
    * @param LSTMWeights Configuration Object
    * @param LSTMConfiguration Configuration Object
+   * @return i Output - input modulation gate activations [batchSize, numUnits]. (NUMERIC type)
+   * @return c Output - Activations, cell state (pre tanh) [batchSize, numUnits]. (NUMERIC type)
+   * @return f Output - forget gate activations [batchSize, numUnits]. (NUMERIC type)
+   * @return o Output - output gate activations [batchSize, numUnits]. (NUMERIC type)
+   * @return z Output - input gate activations [batchSize, numUnits]. (NUMERIC type)
+   * @return h Cell state, post tanh [batchSize, numUnits]. (NUMERIC type)
+   * @return y Current cell output [batchSize, numUnits]. (NUMERIC type)
    */
   public SDVariable[] lstmCell(String[] names, SDVariable x, SDVariable cLast, SDVariable yLast,
       LSTMWeights LSTMWeights, LSTMConfiguration LSTMConfiguration) {
@@ -147,24 +173,24 @@ public class SDRNN extends SDOps {
   }
 
   /**
-   * Long Short-Term Memory layer - Hochreiter 1997.<br>
-   * SUPPORTS following data formats:<br>
-   * for unidirectional:<br>
-   * TNS: shapes [timeLength, numExamples, inOutSize]<br>
-   * NST: shapes [numExamples, inOutSize, timeLength]<br>
-   * NTS: shapes [numExamples, timeLength, inOutSize]<br>
-   * for bidirectional:<br>
-   * T2NS: shapes [timeLength, 2, numExamples, inOutSize] (for ONNX)<br>
-   * SUPPORTS following direction modes:<br>
-   * FWD: forward<br>
-   * BWD: backward<br>
-   * BIDIR_SUM: bidirectional sum<br>
-   * BIDIR_CONCAT: bidirectional concat<br>
-   * BIDIR_EXTRA_DIM: bidirectional extra output dim (in conjunction with format dataFormat - T2NS)<br>
-   * You may use different gate configurations:<br>
-   * specify gate/cell/out aplha/beta and numbers of activations for gate/cell/out described in activations enum<br>
-   * ("RELU","SIGMOID","AFFINE","LEAKY_RELU","THRESHHOLD_RELU","SCALED_TAHN","HARD_SIGMOID","ELU","SOFTSIGN","SOFTPLUS")<br>
-   * Also this layer supports MKLDNN (DNNL) and cuDNN acceleration<br>
+   * Long Short-Term Memory layer - Hochreiter 1997.
+   * SUPPORTS following data formats:
+   * for unidirectional:
+   * TNS: shapes [timeLength, numExamples, inOutSize]
+   * NST: shapes [numExamples, inOutSize, timeLength]
+   * NTS: shapes [numExamples, timeLength, inOutSize]
+   * for bidirectional:
+   * T2NS: shapes [timeLength, 2, numExamples, inOutSize] (for ONNX)
+   * SUPPORTS following direction modes:
+   * FWD: forward
+   * BWD: backward
+   * BIDIR_SUM: bidirectional sum
+   * BIDIR_CONCAT: bidirectional concat
+   * BIDIR_EXTRA_DIM: bidirectional extra output dim (in conjunction with format dataFormat - T2NS)
+   * You may use different gate configurations:
+   * specify gate/cell/out aplha/beta and numbers of activations for gate/cell/out described in activations enum
+   * ("RELU","SIGMOID","AFFINE","LEAKY_RELU","THRESHHOLD_RELU","SCALED_TAHN","HARD_SIGMOID","ELU","SOFTSIGN","SOFTPLUS")
+   * Also this layer supports MKLDNN (DNNL) and cuDNN acceleration
    *
    * @param x  Input, with shape dependent on the data format (in config). (NUMERIC type)
    * @param cLast Previous/initial cell state, with shape [batchSize, numUnits] (NUMERIC type)
@@ -172,6 +198,9 @@ public class SDRNN extends SDOps {
    * @param maxTSLength maxTSLength with shape [batchSize] (NUMERIC type)
    * @param LSTMLayerWeights Configuration Object
    * @param LSTMLayerConfig Configuration Object
+   * @return output The layer's outputs - full time series (NUMERIC type)
+   * @return yLast The layer's outputs - last time step activations (yLast) (NUMERIC type)
+   * @return cLast The layer's outputs - last time step cell state (cLast) (NUMERIC type)
    */
   public SDVariable[] lstmLayer(SDVariable x, SDVariable cLast, SDVariable yLast,
       SDVariable maxTSLength, LSTMLayerWeights LSTMLayerWeights, LSTMLayerConfig LSTMLayerConfig) {
@@ -189,24 +218,24 @@ public class SDRNN extends SDOps {
   }
 
   /**
-   * Long Short-Term Memory layer - Hochreiter 1997.<br>
-   * SUPPORTS following data formats:<br>
-   * for unidirectional:<br>
-   * TNS: shapes [timeLength, numExamples, inOutSize]<br>
-   * NST: shapes [numExamples, inOutSize, timeLength]<br>
-   * NTS: shapes [numExamples, timeLength, inOutSize]<br>
-   * for bidirectional:<br>
-   * T2NS: shapes [timeLength, 2, numExamples, inOutSize] (for ONNX)<br>
-   * SUPPORTS following direction modes:<br>
-   * FWD: forward<br>
-   * BWD: backward<br>
-   * BIDIR_SUM: bidirectional sum<br>
-   * BIDIR_CONCAT: bidirectional concat<br>
-   * BIDIR_EXTRA_DIM: bidirectional extra output dim (in conjunction with format dataFormat - T2NS)<br>
-   * You may use different gate configurations:<br>
-   * specify gate/cell/out aplha/beta and numbers of activations for gate/cell/out described in activations enum<br>
-   * ("RELU","SIGMOID","AFFINE","LEAKY_RELU","THRESHHOLD_RELU","SCALED_TAHN","HARD_SIGMOID","ELU","SOFTSIGN","SOFTPLUS")<br>
-   * Also this layer supports MKLDNN (DNNL) and cuDNN acceleration<br>
+   * Long Short-Term Memory layer - Hochreiter 1997.
+   * SUPPORTS following data formats:
+   * for unidirectional:
+   * TNS: shapes [timeLength, numExamples, inOutSize]
+   * NST: shapes [numExamples, inOutSize, timeLength]
+   * NTS: shapes [numExamples, timeLength, inOutSize]
+   * for bidirectional:
+   * T2NS: shapes [timeLength, 2, numExamples, inOutSize] (for ONNX)
+   * SUPPORTS following direction modes:
+   * FWD: forward
+   * BWD: backward
+   * BIDIR_SUM: bidirectional sum
+   * BIDIR_CONCAT: bidirectional concat
+   * BIDIR_EXTRA_DIM: bidirectional extra output dim (in conjunction with format dataFormat - T2NS)
+   * You may use different gate configurations:
+   * specify gate/cell/out aplha/beta and numbers of activations for gate/cell/out described in activations enum
+   * ("RELU","SIGMOID","AFFINE","LEAKY_RELU","THRESHHOLD_RELU","SCALED_TAHN","HARD_SIGMOID","ELU","SOFTSIGN","SOFTPLUS")
+   * Also this layer supports MKLDNN (DNNL) and cuDNN acceleration
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param x  Input, with shape dependent on the data format (in config). (NUMERIC type)
@@ -215,6 +244,9 @@ public class SDRNN extends SDOps {
    * @param maxTSLength maxTSLength with shape [batchSize] (NUMERIC type)
    * @param LSTMLayerWeights Configuration Object
    * @param LSTMLayerConfig Configuration Object
+   * @return output The layer's outputs - full time series (NUMERIC type)
+   * @return yLast The layer's outputs - last time step activations (yLast) (NUMERIC type)
+   * @return cLast The layer's outputs - last time step cell state (cLast) (NUMERIC type)
    */
   public SDVariable[] lstmLayer(String[] names, SDVariable x, SDVariable cLast, SDVariable yLast,
       SDVariable maxTSLength, LSTMLayerWeights LSTMLayerWeights, LSTMLayerConfig LSTMLayerConfig) {
@@ -233,28 +265,31 @@ public class SDRNN extends SDOps {
   }
 
   /**
-   * Long Short-Term Memory layer - Hochreiter 1997.<br>
-   * SUPPORTS following data formats:<br>
-   * for unidirectional:<br>
-   * TNS: shapes [timeLength, numExamples, inOutSize]<br>
-   * NST: shapes [numExamples, inOutSize, timeLength]<br>
-   * NTS: shapes [numExamples, timeLength, inOutSize]<br>
-   * for bidirectional:<br>
-   * T2NS: shapes [timeLength, 2, numExamples, inOutSize] (for ONNX)<br>
-   * SUPPORTS following direction modes:<br>
-   * FWD: forward<br>
-   * BWD: backward<br>
-   * BIDIR_SUM: bidirectional sum<br>
-   * BIDIR_CONCAT: bidirectional concat<br>
-   * BIDIR_EXTRA_DIM: bidirectional extra output dim (in conjunction with format dataFormat - T2NS)<br>
-   * You may use different gate configurations:<br>
-   * specify gate/cell/out aplha/beta and numbers of activations for gate/cell/out described in activations enum<br>
-   * ("RELU","SIGMOID","AFFINE","LEAKY_RELU","THRESHHOLD_RELU","SCALED_TAHN","HARD_SIGMOID","ELU","SOFTSIGN","SOFTPLUS")<br>
-   * Also this layer supports MKLDNN (DNNL) and cuDNN acceleration<br>
+   * Long Short-Term Memory layer - Hochreiter 1997.
+   * SUPPORTS following data formats:
+   * for unidirectional:
+   * TNS: shapes [timeLength, numExamples, inOutSize]
+   * NST: shapes [numExamples, inOutSize, timeLength]
+   * NTS: shapes [numExamples, timeLength, inOutSize]
+   * for bidirectional:
+   * T2NS: shapes [timeLength, 2, numExamples, inOutSize] (for ONNX)
+   * SUPPORTS following direction modes:
+   * FWD: forward
+   * BWD: backward
+   * BIDIR_SUM: bidirectional sum
+   * BIDIR_CONCAT: bidirectional concat
+   * BIDIR_EXTRA_DIM: bidirectional extra output dim (in conjunction with format dataFormat - T2NS)
+   * You may use different gate configurations:
+   * specify gate/cell/out aplha/beta and numbers of activations for gate/cell/out described in activations enum
+   * ("RELU","SIGMOID","AFFINE","LEAKY_RELU","THRESHHOLD_RELU","SCALED_TAHN","HARD_SIGMOID","ELU","SOFTSIGN","SOFTPLUS")
+   * Also this layer supports MKLDNN (DNNL) and cuDNN acceleration
    *
    * @param x  Input, with shape dependent on the data format (in config). (NUMERIC type)
    * @param LSTMLayerWeights Configuration Object
    * @param LSTMLayerConfig Configuration Object
+   * @return output The layer's outputs - full time series (NUMERIC type)
+   * @return yLast The layer's outputs - last time step activations (yLast) (NUMERIC type)
+   * @return cLast The layer's outputs - last time step cell state (cLast) (NUMERIC type)
    */
   public SDVariable[] lstmLayer(SDVariable x, LSTMLayerWeights LSTMLayerWeights,
       LSTMLayerConfig LSTMLayerConfig) {
@@ -263,29 +298,32 @@ public class SDRNN extends SDOps {
   }
 
   /**
-   * Long Short-Term Memory layer - Hochreiter 1997.<br>
-   * SUPPORTS following data formats:<br>
-   * for unidirectional:<br>
-   * TNS: shapes [timeLength, numExamples, inOutSize]<br>
-   * NST: shapes [numExamples, inOutSize, timeLength]<br>
-   * NTS: shapes [numExamples, timeLength, inOutSize]<br>
-   * for bidirectional:<br>
-   * T2NS: shapes [timeLength, 2, numExamples, inOutSize] (for ONNX)<br>
-   * SUPPORTS following direction modes:<br>
-   * FWD: forward<br>
-   * BWD: backward<br>
-   * BIDIR_SUM: bidirectional sum<br>
-   * BIDIR_CONCAT: bidirectional concat<br>
-   * BIDIR_EXTRA_DIM: bidirectional extra output dim (in conjunction with format dataFormat - T2NS)<br>
-   * You may use different gate configurations:<br>
-   * specify gate/cell/out aplha/beta and numbers of activations for gate/cell/out described in activations enum<br>
-   * ("RELU","SIGMOID","AFFINE","LEAKY_RELU","THRESHHOLD_RELU","SCALED_TAHN","HARD_SIGMOID","ELU","SOFTSIGN","SOFTPLUS")<br>
-   * Also this layer supports MKLDNN (DNNL) and cuDNN acceleration<br>
+   * Long Short-Term Memory layer - Hochreiter 1997.
+   * SUPPORTS following data formats:
+   * for unidirectional:
+   * TNS: shapes [timeLength, numExamples, inOutSize]
+   * NST: shapes [numExamples, inOutSize, timeLength]
+   * NTS: shapes [numExamples, timeLength, inOutSize]
+   * for bidirectional:
+   * T2NS: shapes [timeLength, 2, numExamples, inOutSize] (for ONNX)
+   * SUPPORTS following direction modes:
+   * FWD: forward
+   * BWD: backward
+   * BIDIR_SUM: bidirectional sum
+   * BIDIR_CONCAT: bidirectional concat
+   * BIDIR_EXTRA_DIM: bidirectional extra output dim (in conjunction with format dataFormat - T2NS)
+   * You may use different gate configurations:
+   * specify gate/cell/out aplha/beta and numbers of activations for gate/cell/out described in activations enum
+   * ("RELU","SIGMOID","AFFINE","LEAKY_RELU","THRESHHOLD_RELU","SCALED_TAHN","HARD_SIGMOID","ELU","SOFTSIGN","SOFTPLUS")
+   * Also this layer supports MKLDNN (DNNL) and cuDNN acceleration
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param x  Input, with shape dependent on the data format (in config). (NUMERIC type)
    * @param LSTMLayerWeights Configuration Object
    * @param LSTMLayerConfig Configuration Object
+   * @return output The layer's outputs - full time series (NUMERIC type)
+   * @return yLast The layer's outputs - last time step activations (yLast) (NUMERIC type)
+   * @return cLast The layer's outputs - last time step cell state (cLast) (NUMERIC type)
    */
   public SDVariable[] lstmLayer(String[] names, SDVariable x, LSTMLayerWeights LSTMLayerWeights,
       LSTMLayerConfig LSTMLayerConfig) {
@@ -295,7 +333,7 @@ public class SDRNN extends SDOps {
   }
 
   /**
-   * The LSTM block<br>
+   * The LSTM block
    *
    * @param maxTSLength  (NUMERIC type)
    * @param x  Input, with shape dependent on the data format (in config). (NUMERIC type)
@@ -321,7 +359,7 @@ public class SDRNN extends SDOps {
   }
 
   /**
-   * The LSTM block<br>
+   * The LSTM block
    *
    * @param name name May be null. Name for the output variable
    * @param maxTSLength  (NUMERIC type)
@@ -349,7 +387,7 @@ public class SDRNN extends SDOps {
   }
 
   /**
-   * The LSTM block<br>
+   * The LSTM block
    *
    * @param x  Input, with shape dependent on the data format (in config). (NUMERIC type)
    * @param LSTMWeights Configuration Object
@@ -363,7 +401,7 @@ public class SDRNN extends SDOps {
   }
 
   /**
-   * The LSTM block<br>
+   * The LSTM block
    *
    * @param name name May be null. Name for the output variable
    * @param x  Input, with shape dependent on the data format (in config). (NUMERIC type)
@@ -379,7 +417,7 @@ public class SDRNN extends SDOps {
   }
 
   /**
-   * The SRU layer.  Does a single time step operation.<br>
+   * The SRU layer.  Does a single time step operation.
    *
    * @param x Input, with shape [batchSize, inSize] (NUMERIC type)
    * @param initialC Initial cell state, with shape [batchSize, inSize] (NUMERIC type)
@@ -397,7 +435,7 @@ public class SDRNN extends SDOps {
   }
 
   /**
-   * The SRU layer.  Does a single time step operation.<br>
+   * The SRU layer.  Does a single time step operation.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input, with shape [batchSize, inSize] (NUMERIC type)
@@ -418,7 +456,7 @@ public class SDRNN extends SDOps {
   }
 
   /**
-   * The SRU layer.  Does a single time step operation.<br>
+   * The SRU layer.  Does a single time step operation.
    *
    * @param x Input, with shape [batchSize, inSize] (NUMERIC type)
    * @param initialC Initial cell state, with shape [batchSize, inSize] (NUMERIC type)
@@ -432,7 +470,7 @@ public class SDRNN extends SDOps {
   }
 
   /**
-   * The SRU layer.  Does a single time step operation.<br>
+   * The SRU layer.  Does a single time step operation.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input, with shape [batchSize, inSize] (NUMERIC type)
@@ -448,7 +486,7 @@ public class SDRNN extends SDOps {
   }
 
   /**
-   * The SRU layer.  Does a single time step operation.<br>
+   * The SRU layer.  Does a single time step operation.
    *
    * @param x Input, with shape [batchSize, inSize] (NUMERIC type)
    * @param cLast Previous cell state, with shape [batchSize, inSize] (NUMERIC type)
@@ -462,7 +500,7 @@ public class SDRNN extends SDOps {
   }
 
   /**
-   * The SRU layer.  Does a single time step operation.<br>
+   * The SRU layer.  Does a single time step operation.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input, with shape [batchSize, inSize] (NUMERIC type)

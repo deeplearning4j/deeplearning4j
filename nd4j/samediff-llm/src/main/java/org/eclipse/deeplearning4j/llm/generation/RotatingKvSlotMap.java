@@ -77,8 +77,10 @@ import lombok.Getter;
  * unchanged by enabling rotating KV.
  * </p>
  *
- * @see GenerationPipelineConfig#isRotatingKvEnabled()
- * @see GenerationPipelineConfig#getRotatingKvSinkCount()
+ * <p>Configure this mapping with {@code rotatingKvEnabled} and {@code rotatingKvSinkCount}
+ * in {@link GenerationPipelineConfig}.</p>
+ *
+ * @see GenerationPipelineConfig
  */
 public class RotatingKvSlotMap {
 

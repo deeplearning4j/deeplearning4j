@@ -221,7 +221,7 @@ class InGraphKvState implements AutoCloseable {
      * Null when rotating is disabled (default); all existing code paths are unchanged when null.
      *
      * @see RotatingKvSlotMap
-     * @see GenerationPipelineConfig#isRotatingKvEnabled()
+     * @see GenerationPipelineConfig
      */
     RotatingKvSlotMap rotatingSlotMap;
 

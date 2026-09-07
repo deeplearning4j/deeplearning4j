@@ -36,7 +36,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Concatenates a ReLU which selects only the positive part of the activation with a ReLU which selects only the negative part of the activation. Note that as a result this non-linearity doubles the depth of the activations.<br>
+   * Concatenates a ReLU which selects only the positive part of the activation with a ReLU which selects only the negative part of the activation. Note that as a result this non-linearity doubles the depth of the activations.
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -47,7 +47,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Concatenates a ReLU which selects only the positive part of the activation with a ReLU which selects only the negative part of the activation. Note that as a result this non-linearity doubles the depth of the activations.<br>
+   * Concatenates a ReLU which selects only the positive part of the activation with a ReLU which selects only the negative part of the activation. Note that as a result this non-linearity doubles the depth of the activations.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -60,7 +60,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Applies Attention with Linear Biases (ALiBi) position encoding to attention scores.<br>
+   * Applies Attention with Linear Biases (ALiBi) position encoding to attention scores.
    *
    * @param scores Attention scores [batch, num_heads, seq_len, kv_len] (NUMERIC type)
    * @param numHeads Number of attention heads
@@ -72,7 +72,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Applies Attention with Linear Biases (ALiBi) position encoding to attention scores.<br>
+   * Applies Attention with Linear Biases (ALiBi) position encoding to attention scores.
    *
    * @param name name May be null. Name for the output variable
    * @param scores Attention scores [batch, num_heads, seq_len, kv_len] (NUMERIC type)
@@ -86,7 +86,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Activation-aware Weight Quantization (AWQ) matrix multiplication.<br>
+   * Activation-aware Weight Quantization (AWQ) matrix multiplication.
    *
    * @param input Input tensor (NUMERIC type)
    * @param weightPacked AWQ-packed weight (NUMERIC type)
@@ -103,7 +103,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Activation-aware Weight Quantization (AWQ) matrix multiplication.<br>
+   * Activation-aware Weight Quantization (AWQ) matrix multiplication.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input tensor (NUMERIC type)
@@ -122,8 +122,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Neural network batch normalization operation.<br>
-   * For details, see <a href="https://arxiv.org/abs/1502.03167">https://arxiv.org/abs/1502.03167</a><br>
+   * Neural network batch normalization operation.
+   * For details, see <a href="https://arxiv.org/abs/1502.03167">https://arxiv.org/abs/1502.03167</a>
    *
    * @param input Input variable. (NUMERIC type)
    * @param mean Mean value. For 1d axis, this should match input.size(axis) (NUMERIC type)
@@ -148,8 +148,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Neural network batch normalization operation.<br>
-   * For details, see <a href="https://arxiv.org/abs/1502.03167">https://arxiv.org/abs/1502.03167</a><br>
+   * Neural network batch normalization operation.
+   * For details, see <a href="https://arxiv.org/abs/1502.03167">https://arxiv.org/abs/1502.03167</a>
    *
    * @param name name May be null. Name for the output variable
    * @param input Input variable. (NUMERIC type)
@@ -176,7 +176,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Bias addition operation: a special case of addition, typically used with CNN 4D activations and a 1D bias vector<br>
+   * Bias addition operation: a special case of addition, typically used with CNN 4D activations and a 1D bias vector
    *
    * @param input 4d input variable (NUMERIC type)
    * @param bias 1d bias (NUMERIC type)
@@ -191,7 +191,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Bias addition operation: a special case of addition, typically used with CNN 4D activations and a 1D bias vector<br>
+   * Bias addition operation: a special case of addition, typically used with CNN 4D activations and a 1D bias vector
    *
    * @param name name May be null. Name for the output variable
    * @param input 4d input variable (NUMERIC type)
@@ -208,12 +208,12 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Causal depthwise 1D convolution with state for autoregressive decoding.<br>
-   * <br>
-   * Performs a causal (left-padded) depthwise 1D convolution.<br>
-   * Used in Gated Delta Networks (GDN) and Mamba architectures.<br>
-   * The state output preserves the last (kernelSize-1) input elements<br>
-   * for use as initial state in the next autoregressive step.<br>
+   * Causal depthwise 1D convolution with state for autoregressive decoding.
+   *
+   * Performs a causal (left-padded) depthwise 1D convolution.
+   * Used in Gated Delta Networks (GDN) and Mamba architectures.
+   * The state output preserves the last (kernelSize-1) input elements
+   * for use as initial state in the next autoregressive step.
    *
    * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
    * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
@@ -242,12 +242,12 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Causal depthwise 1D convolution with state for autoregressive decoding.<br>
-   * <br>
-   * Performs a causal (left-padded) depthwise 1D convolution.<br>
-   * Used in Gated Delta Networks (GDN) and Mamba architectures.<br>
-   * The state output preserves the last (kernelSize-1) input elements<br>
-   * for use as initial state in the next autoregressive step.<br>
+   * Causal depthwise 1D convolution with state for autoregressive decoding.
+   *
+   * Performs a causal (left-padded) depthwise 1D convolution.
+   * Used in Gated Delta Networks (GDN) and Mamba architectures.
+   * The state output preserves the last (kernelSize-1) input elements
+   * for use as initial state in the next autoregressive step.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
@@ -278,12 +278,12 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Causal depthwise 1D convolution with state for autoregressive decoding.<br>
-   * <br>
-   * Performs a causal (left-padded) depthwise 1D convolution.<br>
-   * Used in Gated Delta Networks (GDN) and Mamba architectures.<br>
-   * The state output preserves the last (kernelSize-1) input elements<br>
-   * for use as initial state in the next autoregressive step.<br>
+   * Causal depthwise 1D convolution with state for autoregressive decoding.
+   *
+   * Performs a causal (left-padded) depthwise 1D convolution.
+   * Used in Gated Delta Networks (GDN) and Mamba architectures.
+   * The state output preserves the last (kernelSize-1) input elements
+   * for use as initial state in the next autoregressive step.
    *
    * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
    * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
@@ -297,12 +297,12 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Causal depthwise 1D convolution with state for autoregressive decoding.<br>
-   * <br>
-   * Performs a causal (left-padded) depthwise 1D convolution.<br>
-   * Used in Gated Delta Networks (GDN) and Mamba architectures.<br>
-   * The state output preserves the last (kernelSize-1) input elements<br>
-   * for use as initial state in the next autoregressive step.<br>
+   * Causal depthwise 1D convolution with state for autoregressive decoding.
+   *
+   * Performs a causal (left-padded) depthwise 1D convolution.
+   * Used in Gated Delta Networks (GDN) and Mamba architectures.
+   * The state output preserves the last (kernelSize-1) input elements
+   * for use as initial state in the next autoregressive step.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
@@ -318,12 +318,12 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Causal depthwise 1D convolution with state for autoregressive decoding.<br>
-   * <br>
-   * Performs a causal (left-padded) depthwise 1D convolution.<br>
-   * Used in Gated Delta Networks (GDN) and Mamba architectures.<br>
-   * The state output preserves the last (kernelSize-1) input elements<br>
-   * for use as initial state in the next autoregressive step.<br>
+   * Causal depthwise 1D convolution with state for autoregressive decoding.
+   *
+   * Performs a causal (left-padded) depthwise 1D convolution.
+   * Used in Gated Delta Networks (GDN) and Mamba architectures.
+   * The state output preserves the last (kernelSize-1) input elements
+   * for use as initial state in the next autoregressive step.
    *
    * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
    * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
@@ -341,12 +341,12 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Causal depthwise 1D convolution with state for autoregressive decoding.<br>
-   * <br>
-   * Performs a causal (left-padded) depthwise 1D convolution.<br>
-   * Used in Gated Delta Networks (GDN) and Mamba architectures.<br>
-   * The state output preserves the last (kernelSize-1) input elements<br>
-   * for use as initial state in the next autoregressive step.<br>
+   * Causal depthwise 1D convolution with state for autoregressive decoding.
+   *
+   * Performs a causal (left-padded) depthwise 1D convolution.
+   * Used in Gated Delta Networks (GDN) and Mamba architectures.
+   * The state output preserves the last (kernelSize-1) input elements
+   * for use as initial state in the next autoregressive step.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
@@ -367,12 +367,12 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Causal depthwise 1D convolution with state for autoregressive decoding.<br>
-   * <br>
-   * Performs a causal (left-padded) depthwise 1D convolution.<br>
-   * Used in Gated Delta Networks (GDN) and Mamba architectures.<br>
-   * The state output preserves the last (kernelSize-1) input elements<br>
-   * for use as initial state in the next autoregressive step.<br>
+   * Causal depthwise 1D convolution with state for autoregressive decoding.
+   *
+   * Performs a causal (left-padded) depthwise 1D convolution.
+   * Used in Gated Delta Networks (GDN) and Mamba architectures.
+   * The state output preserves the last (kernelSize-1) input elements
+   * for use as initial state in the next autoregressive step.
    *
    * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
    * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
@@ -395,12 +395,12 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Causal depthwise 1D convolution with state for autoregressive decoding.<br>
-   * <br>
-   * Performs a causal (left-padded) depthwise 1D convolution.<br>
-   * Used in Gated Delta Networks (GDN) and Mamba architectures.<br>
-   * The state output preserves the last (kernelSize-1) input elements<br>
-   * for use as initial state in the next autoregressive step.<br>
+   * Causal depthwise 1D convolution with state for autoregressive decoding.
+   *
+   * Performs a causal (left-padded) depthwise 1D convolution.
+   * Used in Gated Delta Networks (GDN) and Mamba architectures.
+   * The state output preserves the last (kernelSize-1) input elements
+   * for use as initial state in the next autoregressive step.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
@@ -425,12 +425,12 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Causal depthwise 1D convolution with state for autoregressive decoding.<br>
-   * <br>
-   * Performs a causal (left-padded) depthwise 1D convolution.<br>
-   * Used in Gated Delta Networks (GDN) and Mamba architectures.<br>
-   * The state output preserves the last (kernelSize-1) input elements<br>
-   * for use as initial state in the next autoregressive step.<br>
+   * Causal depthwise 1D convolution with state for autoregressive decoding.
+   *
+   * Performs a causal (left-padded) depthwise 1D convolution.
+   * Used in Gated Delta Networks (GDN) and Mamba architectures.
+   * The state output preserves the last (kernelSize-1) input elements
+   * for use as initial state in the next autoregressive step.
    *
    * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
    * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
@@ -454,12 +454,12 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Causal depthwise 1D convolution with state for autoregressive decoding.<br>
-   * <br>
-   * Performs a causal (left-padded) depthwise 1D convolution.<br>
-   * Used in Gated Delta Networks (GDN) and Mamba architectures.<br>
-   * The state output preserves the last (kernelSize-1) input elements<br>
-   * for use as initial state in the next autoregressive step.<br>
+   * Causal depthwise 1D convolution with state for autoregressive decoding.
+   *
+   * Performs a causal (left-padded) depthwise 1D convolution.
+   * Used in Gated Delta Networks (GDN) and Mamba architectures.
+   * The state output preserves the last (kernelSize-1) input elements
+   * for use as initial state in the next autoregressive step.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
@@ -485,10 +485,10 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * DINOv2 centering and sharpening operation.<br>
-   * Prevents mode collapse in self-supervised learning by centering the teacher output<br>
-   * and applying temperature-based sharpening:<br>
-   *   output = softmax((input - center) / temperature)<br>
+   * DINOv2 centering and sharpening operation.
+   * Prevents mode collapse in self-supervised learning by centering the teacher output
+   * and applying temperature-based sharpening:
+   *   output = softmax((input - center) / temperature)
    *
    * @param input Teacher output logits [batch, features] (NUMERIC type)
    * @param center Running center vector [features] (NUMERIC type)
@@ -502,10 +502,10 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * DINOv2 centering and sharpening operation.<br>
-   * Prevents mode collapse in self-supervised learning by centering the teacher output<br>
-   * and applying temperature-based sharpening:<br>
-   *   output = softmax((input - center) / temperature)<br>
+   * DINOv2 centering and sharpening operation.
+   * Prevents mode collapse in self-supervised learning by centering the teacher output
+   * and applying temperature-based sharpening:
+   *   output = softmax((input - center) / temperature)
    *
    * @param name name May be null. Name for the output variable
    * @param input Teacher output logits [batch, features] (NUMERIC type)
@@ -522,10 +522,10 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * DINOv2 centering and sharpening operation.<br>
-   * Prevents mode collapse in self-supervised learning by centering the teacher output<br>
-   * and applying temperature-based sharpening:<br>
-   *   output = softmax((input - center) / temperature)<br>
+   * DINOv2 centering and sharpening operation.
+   * Prevents mode collapse in self-supervised learning by centering the teacher output
+   * and applying temperature-based sharpening:
+   *   output = softmax((input - center) / temperature)
    *
    * @param input Teacher output logits [batch, features] (NUMERIC type)
    * @param center Running center vector [features] (NUMERIC type)
@@ -538,10 +538,10 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * DINOv2 centering and sharpening operation.<br>
-   * Prevents mode collapse in self-supervised learning by centering the teacher output<br>
-   * and applying temperature-based sharpening:<br>
-   *   output = softmax((input - center) / temperature)<br>
+   * DINOv2 centering and sharpening operation.
+   * Prevents mode collapse in self-supervised learning by centering the teacher output
+   * and applying temperature-based sharpening:
+   *   output = softmax((input - center) / temperature)
    *
    * @param name name May be null. Name for the output variable
    * @param input Teacher output logits [batch, features] (NUMERIC type)
@@ -556,8 +556,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Column-parallel linear layer for tensor parallelism.<br>
-   * Splits weight columns across tensor parallel ranks.<br>
+   * Column-parallel linear layer for tensor parallelism.
+   * Splits weight columns across tensor parallel ranks.
    *
    * @param input Input tensor (NUMERIC type)
    * @param weight Weight matrix (NUMERIC type)
@@ -574,8 +574,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Column-parallel linear layer for tensor parallelism.<br>
-   * Splits weight columns across tensor parallel ranks.<br>
+   * Column-parallel linear layer for tensor parallelism.
+   * Splits weight columns across tensor parallel ranks.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input tensor (NUMERIC type)
@@ -594,24 +594,24 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * CTC Greedy Decoder - Connectionist Temporal Classification decoding.<br>
-   * <br>
-   * Performs greedy (best path) decoding on CTC output. Used in:<br>
-   * - OCR (Optical Character Recognition) - PaddleOCR, CRNN<br>
-   * - Speech recognition - DeepSpeech, Wav2Vec<br>
-   * - Handwriting recognition<br>
-   * <br>
-   * Algorithm:<br>
-   * 1. At each timestep, select the class with highest probability<br>
-   * 2. Optionally merge consecutive repeated characters<br>
-   * 3. Remove blank labels from the output<br>
-   * <br>
-   * For example, with mergeRepeated=true and blankIndex=0:<br>
-   * Input:  [0, 1, 1, 0, 2, 2, 2, 0] (0=blank, 1='a', 2='b')<br>
-   * Output: [1, 2] -> "ab"<br>
-   * <br>
-   * Note: This is greedy decoding. For better accuracy with language models,<br>
-   * use beam search decoding instead.<br>
+   * CTC Greedy Decoder - Connectionist Temporal Classification decoding.
+   *
+   * Performs greedy (best path) decoding on CTC output. Used in:
+   * - OCR (Optical Character Recognition) - PaddleOCR, CRNN
+   * - Speech recognition - DeepSpeech, Wav2Vec
+   * - Handwriting recognition
+   *
+   * Algorithm:
+   * 1. At each timestep, select the class with highest probability
+   * 2. Optionally merge consecutive repeated characters
+   * 3. Remove blank labels from the output
+   *
+   * For example, with mergeRepeated=true and blankIndex=0:
+   * Input:  [0, 1, 1, 0, 2, 2, 2, 0] (0=blank, 1='a', 2='b')
+   * Output: [1, 2] -> "ab"
+   *
+   * Note: This is greedy decoding. For better accuracy with language models,
+   * use beam search decoding instead.
    *
    * @param logits Log probabilities from CTC output. Shape: [batch, timeSteps, numClasses] (NUMERIC type)
    * @param mergeRepeated Whether to merge repeated characters in output
@@ -625,24 +625,24 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * CTC Greedy Decoder - Connectionist Temporal Classification decoding.<br>
-   * <br>
-   * Performs greedy (best path) decoding on CTC output. Used in:<br>
-   * - OCR (Optical Character Recognition) - PaddleOCR, CRNN<br>
-   * - Speech recognition - DeepSpeech, Wav2Vec<br>
-   * - Handwriting recognition<br>
-   * <br>
-   * Algorithm:<br>
-   * 1. At each timestep, select the class with highest probability<br>
-   * 2. Optionally merge consecutive repeated characters<br>
-   * 3. Remove blank labels from the output<br>
-   * <br>
-   * For example, with mergeRepeated=true and blankIndex=0:<br>
-   * Input:  [0, 1, 1, 0, 2, 2, 2, 0] (0=blank, 1='a', 2='b')<br>
-   * Output: [1, 2] -> "ab"<br>
-   * <br>
-   * Note: This is greedy decoding. For better accuracy with language models,<br>
-   * use beam search decoding instead.<br>
+   * CTC Greedy Decoder - Connectionist Temporal Classification decoding.
+   *
+   * Performs greedy (best path) decoding on CTC output. Used in:
+   * - OCR (Optical Character Recognition) - PaddleOCR, CRNN
+   * - Speech recognition - DeepSpeech, Wav2Vec
+   * - Handwriting recognition
+   *
+   * Algorithm:
+   * 1. At each timestep, select the class with highest probability
+   * 2. Optionally merge consecutive repeated characters
+   * 3. Remove blank labels from the output
+   *
+   * For example, with mergeRepeated=true and blankIndex=0:
+   * Input:  [0, 1, 1, 0, 2, 2, 2, 0] (0=blank, 1='a', 2='b')
+   * Output: [1, 2] -> "ab"
+   *
+   * Note: This is greedy decoding. For better accuracy with language models,
+   * use beam search decoding instead.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param logits Log probabilities from CTC output. Shape: [batch, timeSteps, numClasses] (NUMERIC type)
@@ -659,24 +659,24 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * CTC Greedy Decoder - Connectionist Temporal Classification decoding.<br>
-   * <br>
-   * Performs greedy (best path) decoding on CTC output. Used in:<br>
-   * - OCR (Optical Character Recognition) - PaddleOCR, CRNN<br>
-   * - Speech recognition - DeepSpeech, Wav2Vec<br>
-   * - Handwriting recognition<br>
-   * <br>
-   * Algorithm:<br>
-   * 1. At each timestep, select the class with highest probability<br>
-   * 2. Optionally merge consecutive repeated characters<br>
-   * 3. Remove blank labels from the output<br>
-   * <br>
-   * For example, with mergeRepeated=true and blankIndex=0:<br>
-   * Input:  [0, 1, 1, 0, 2, 2, 2, 0] (0=blank, 1='a', 2='b')<br>
-   * Output: [1, 2] -> "ab"<br>
-   * <br>
-   * Note: This is greedy decoding. For better accuracy with language models,<br>
-   * use beam search decoding instead.<br>
+   * CTC Greedy Decoder - Connectionist Temporal Classification decoding.
+   *
+   * Performs greedy (best path) decoding on CTC output. Used in:
+   * - OCR (Optical Character Recognition) - PaddleOCR, CRNN
+   * - Speech recognition - DeepSpeech, Wav2Vec
+   * - Handwriting recognition
+   *
+   * Algorithm:
+   * 1. At each timestep, select the class with highest probability
+   * 2. Optionally merge consecutive repeated characters
+   * 3. Remove blank labels from the output
+   *
+   * For example, with mergeRepeated=true and blankIndex=0:
+   * Input:  [0, 1, 1, 0, 2, 2, 2, 0] (0=blank, 1='a', 2='b')
+   * Output: [1, 2] -> "ab"
+   *
+   * Note: This is greedy decoding. For better accuracy with language models,
+   * use beam search decoding instead.
    *
    * @param logits Log probabilities from CTC output. Shape: [batch, timeSteps, numClasses] (NUMERIC type)
    * @param sequenceLength Optional actual sequence lengths. Shape: [batch] (NUMERIC type)
@@ -695,24 +695,24 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * CTC Greedy Decoder - Connectionist Temporal Classification decoding.<br>
-   * <br>
-   * Performs greedy (best path) decoding on CTC output. Used in:<br>
-   * - OCR (Optical Character Recognition) - PaddleOCR, CRNN<br>
-   * - Speech recognition - DeepSpeech, Wav2Vec<br>
-   * - Handwriting recognition<br>
-   * <br>
-   * Algorithm:<br>
-   * 1. At each timestep, select the class with highest probability<br>
-   * 2. Optionally merge consecutive repeated characters<br>
-   * 3. Remove blank labels from the output<br>
-   * <br>
-   * For example, with mergeRepeated=true and blankIndex=0:<br>
-   * Input:  [0, 1, 1, 0, 2, 2, 2, 0] (0=blank, 1='a', 2='b')<br>
-   * Output: [1, 2] -> "ab"<br>
-   * <br>
-   * Note: This is greedy decoding. For better accuracy with language models,<br>
-   * use beam search decoding instead.<br>
+   * CTC Greedy Decoder - Connectionist Temporal Classification decoding.
+   *
+   * Performs greedy (best path) decoding on CTC output. Used in:
+   * - OCR (Optical Character Recognition) - PaddleOCR, CRNN
+   * - Speech recognition - DeepSpeech, Wav2Vec
+   * - Handwriting recognition
+   *
+   * Algorithm:
+   * 1. At each timestep, select the class with highest probability
+   * 2. Optionally merge consecutive repeated characters
+   * 3. Remove blank labels from the output
+   *
+   * For example, with mergeRepeated=true and blankIndex=0:
+   * Input:  [0, 1, 1, 0, 2, 2, 2, 0] (0=blank, 1='a', 2='b')
+   * Output: [1, 2] -> "ab"
+   *
+   * Note: This is greedy decoding. For better accuracy with language models,
+   * use beam search decoding instead.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param logits Log probabilities from CTC output. Shape: [batch, timeSteps, numClasses] (NUMERIC type)
@@ -733,8 +733,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Decoder-optimized masked multi-head attention.<br>
-   * Optimized for autoregressive decoding with incremental KV cache.<br>
+   * Decoder-optimized masked multi-head attention.
+   * Optimized for autoregressive decoding with incremental KV cache.
    *
    * @param query Query tensor (NUMERIC type)
    * @param key Key tensor (NUMERIC type)
@@ -752,8 +752,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Decoder-optimized masked multi-head attention.<br>
-   * Optimized for autoregressive decoding with incremental KV cache.<br>
+   * Decoder-optimized masked multi-head attention.
+   * Optimized for autoregressive decoding with incremental KV cache.
    *
    * @param name name May be null. Name for the output variable
    * @param query Query tensor (NUMERIC type)
@@ -773,8 +773,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Weight-Decomposed Low-Rank Adaptation (DoRA) fused matrix multiplication.<br>
-   * Decomposes weight into magnitude and direction, applies LoRA to direction only.<br>
+   * Weight-Decomposed Low-Rank Adaptation (DoRA) fused matrix multiplication.
+   * Decomposes weight into magnitude and direction, applies LoRA to direction only.
    *
    * @param input Input [batch, in_features] (NUMERIC type)
    * @param weight Base weight [out_features, in_features] (NUMERIC type)
@@ -795,8 +795,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Weight-Decomposed Low-Rank Adaptation (DoRA) fused matrix multiplication.<br>
-   * Decomposes weight into magnitude and direction, applies LoRA to direction only.<br>
+   * Weight-Decomposed Low-Rank Adaptation (DoRA) fused matrix multiplication.
+   * Decomposes weight into magnitude and direction, applies LoRA to direction only.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input [batch, in_features] (NUMERIC type)
@@ -819,24 +819,24 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * This operation performs dot product attention on the given timeseries input with the given queries<br>
-   * out = sum(similarity(k_i, q) * v_i)<br>
-   * <br>
-   * similarity(k, q) = softmax(k * q) where x * q is the dot product of x and q<br>
-   * <br>
-   * Optionally with normalization step:<br>
-   * similarity(k, q) = softmax(k * q / sqrt(size(q))<br>
-   * <br>
-   * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, p. 4, eq. 1)<br>
-   * <br>
-   * Note: This supports multiple queries at once, if only one query is available the queries vector still has to<br>
-   * be 3D but can have queryCount = 1<br>
-   * <br>
-   * Note: keys and values usually is the same array. If you want to use it as the same array, simply pass it for<br>
-   * both.<br>
-   * <br>
-   * Note: Queries, keys and values must either be all rank 3 or all rank 4 arrays. Mixing them doesn't work. The<br>
-   * output rank will depend on the input rank.<br>
+   * This operation performs dot product attention on the given timeseries input with the given queries
+   * out = sum(similarity(k_i, q) * v_i)
+   *
+   * similarity(k, q) = softmax(k * q) where x * q is the dot product of x and q
+   *
+   * Optionally with normalization step:
+   * similarity(k, q) = softmax(k * q / sqrt(size(q))
+   *
+   * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, p. 4, eq. 1)
+   *
+   * Note: This supports multiple queries at once, if only one query is available the queries vector still has to
+   * be 3D but can have queryCount = 1
+   *
+   * Note: keys and values usually is the same array. If you want to use it as the same array, simply pass it for
+   * both.
+   *
+   * Note: Queries, keys and values must either be all rank 3 or all rank 4 arrays. Mixing them doesn't work. The
+   * output rank will depend on the input rank.
    *
    * @param queries input 3D array "queries" of shape [batchSize, featureKeys, queryCount]
    * or 4D array of shape [batchSize, numHeads, featureKeys, queryCount] (NUMERIC type)
@@ -859,24 +859,24 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * This operation performs dot product attention on the given timeseries input with the given queries<br>
-   * out = sum(similarity(k_i, q) * v_i)<br>
-   * <br>
-   * similarity(k, q) = softmax(k * q) where x * q is the dot product of x and q<br>
-   * <br>
-   * Optionally with normalization step:<br>
-   * similarity(k, q) = softmax(k * q / sqrt(size(q))<br>
-   * <br>
-   * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, p. 4, eq. 1)<br>
-   * <br>
-   * Note: This supports multiple queries at once, if only one query is available the queries vector still has to<br>
-   * be 3D but can have queryCount = 1<br>
-   * <br>
-   * Note: keys and values usually is the same array. If you want to use it as the same array, simply pass it for<br>
-   * both.<br>
-   * <br>
-   * Note: Queries, keys and values must either be all rank 3 or all rank 4 arrays. Mixing them doesn't work. The<br>
-   * output rank will depend on the input rank.<br>
+   * This operation performs dot product attention on the given timeseries input with the given queries
+   * out = sum(similarity(k_i, q) * v_i)
+   *
+   * similarity(k, q) = softmax(k * q) where x * q is the dot product of x and q
+   *
+   * Optionally with normalization step:
+   * similarity(k, q) = softmax(k * q / sqrt(size(q))
+   *
+   * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, p. 4, eq. 1)
+   *
+   * Note: This supports multiple queries at once, if only one query is available the queries vector still has to
+   * be 3D but can have queryCount = 1
+   *
+   * Note: keys and values usually is the same array. If you want to use it as the same array, simply pass it for
+   * both.
+   *
+   * Note: Queries, keys and values must either be all rank 3 or all rank 4 arrays. Mixing them doesn't work. The
+   * output rank will depend on the input rank.
    *
    * @param name name May be null. Name for the output variable
    * @param queries input 3D array "queries" of shape [batchSize, featureKeys, queryCount]
@@ -901,27 +901,27 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Dot product attention operation with flash attention and KV cache support.<br>
-   * <br>
-   * out = softmax(Q * K^T / scale + attentionBias) * V<br>
-   * <br>
-   * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.<br>
-   * For 2D/3D inputs, uses standard attention computation.<br>
-   * <br>
-   * Flash attention features:<br>
-   * - O(N) memory complexity instead of O(N^2)<br>
-   * - Tiled computation with online softmax<br>
-   * - Supports grouped query attention (GQA) where numHeads > numKvHeads<br>
-   * - Supports attention bias (relative position bias, ALiBi, etc.)<br>
-   * <br>
-   * KV Cache support for autoregressive generation:<br>
-   * - Pass keyCache and valueCache tensors with cachePosition<br>
-   * - Current K/V are written at cachePosition in-place, then full cache used for attention<br>
-   * - attentionBias masks zero-padded cache positions (set -1e9 beyond cachePosition)<br>
-   * - All tensor shapes are fixed after first decode step, enabling DSP replay<br>
-   * <br>
-   * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)<br>
-   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
+   * Dot product attention operation with flash attention and KV cache support.
+   *
+   * out = softmax(Q * K^T / scale + attentionBias) * V
+   *
+   * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.
+   * For 2D/3D inputs, uses standard attention computation.
+   *
+   * Flash attention features:
+   * - O(N) memory complexity instead of O(N^2)
+   * - Tiled computation with online softmax
+   * - Supports grouped query attention (GQA) where numHeads > numKvHeads
+   * - Supports attention bias (relative position bias, ALiBi, etc.)
+   *
+   * KV Cache support for autoregressive generation:
+   * - Pass keyCache and valueCache tensors with cachePosition
+   * - Current K/V are written at cachePosition in-place, then full cache used for attention
+   * - attentionBias masks zero-padded cache positions (set -1e9 beyond cachePosition)
+   * - All tensor shapes are fixed after first decode step, enabling DSP replay
+   *
+   * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)
+   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)
    *
    * @param queries Query tensor. Shape: [batchSize, numQueries, queryDim] or [batchSize, numQueries, numHeads, headDim] for flash attention (NUMERIC type)
    * @param values Value tensor. Shape: [batchSize, numValues, valueDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
@@ -950,27 +950,27 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Dot product attention operation with flash attention and KV cache support.<br>
-   * <br>
-   * out = softmax(Q * K^T / scale + attentionBias) * V<br>
-   * <br>
-   * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.<br>
-   * For 2D/3D inputs, uses standard attention computation.<br>
-   * <br>
-   * Flash attention features:<br>
-   * - O(N) memory complexity instead of O(N^2)<br>
-   * - Tiled computation with online softmax<br>
-   * - Supports grouped query attention (GQA) where numHeads > numKvHeads<br>
-   * - Supports attention bias (relative position bias, ALiBi, etc.)<br>
-   * <br>
-   * KV Cache support for autoregressive generation:<br>
-   * - Pass keyCache and valueCache tensors with cachePosition<br>
-   * - Current K/V are written at cachePosition in-place, then full cache used for attention<br>
-   * - attentionBias masks zero-padded cache positions (set -1e9 beyond cachePosition)<br>
-   * - All tensor shapes are fixed after first decode step, enabling DSP replay<br>
-   * <br>
-   * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)<br>
-   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
+   * Dot product attention operation with flash attention and KV cache support.
+   *
+   * out = softmax(Q * K^T / scale + attentionBias) * V
+   *
+   * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.
+   * For 2D/3D inputs, uses standard attention computation.
+   *
+   * Flash attention features:
+   * - O(N) memory complexity instead of O(N^2)
+   * - Tiled computation with online softmax
+   * - Supports grouped query attention (GQA) where numHeads > numKvHeads
+   * - Supports attention bias (relative position bias, ALiBi, etc.)
+   *
+   * KV Cache support for autoregressive generation:
+   * - Pass keyCache and valueCache tensors with cachePosition
+   * - Current K/V are written at cachePosition in-place, then full cache used for attention
+   * - attentionBias masks zero-padded cache positions (set -1e9 beyond cachePosition)
+   * - All tensor shapes are fixed after first decode step, enabling DSP replay
+   *
+   * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)
+   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)
    *
    * @param name name May be null. Name for the output variable
    * @param queries Query tensor. Shape: [batchSize, numQueries, queryDim] or [batchSize, numQueries, numHeads, headDim] for flash attention (NUMERIC type)
@@ -1001,27 +1001,27 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Dot product attention operation with flash attention and KV cache support.<br>
-   * <br>
-   * out = softmax(Q * K^T / scale + attentionBias) * V<br>
-   * <br>
-   * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.<br>
-   * For 2D/3D inputs, uses standard attention computation.<br>
-   * <br>
-   * Flash attention features:<br>
-   * - O(N) memory complexity instead of O(N^2)<br>
-   * - Tiled computation with online softmax<br>
-   * - Supports grouped query attention (GQA) where numHeads > numKvHeads<br>
-   * - Supports attention bias (relative position bias, ALiBi, etc.)<br>
-   * <br>
-   * KV Cache support for autoregressive generation:<br>
-   * - Pass keyCache and valueCache tensors with cachePosition<br>
-   * - Current K/V are written at cachePosition in-place, then full cache used for attention<br>
-   * - attentionBias masks zero-padded cache positions (set -1e9 beyond cachePosition)<br>
-   * - All tensor shapes are fixed after first decode step, enabling DSP replay<br>
-   * <br>
-   * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)<br>
-   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
+   * Dot product attention operation with flash attention and KV cache support.
+   *
+   * out = softmax(Q * K^T / scale + attentionBias) * V
+   *
+   * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.
+   * For 2D/3D inputs, uses standard attention computation.
+   *
+   * Flash attention features:
+   * - O(N) memory complexity instead of O(N^2)
+   * - Tiled computation with online softmax
+   * - Supports grouped query attention (GQA) where numHeads > numKvHeads
+   * - Supports attention bias (relative position bias, ALiBi, etc.)
+   *
+   * KV Cache support for autoregressive generation:
+   * - Pass keyCache and valueCache tensors with cachePosition
+   * - Current K/V are written at cachePosition in-place, then full cache used for attention
+   * - attentionBias masks zero-padded cache positions (set -1e9 beyond cachePosition)
+   * - All tensor shapes are fixed after first decode step, enabling DSP replay
+   *
+   * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)
+   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)
    *
    * @param queries Query tensor. Shape: [batchSize, numQueries, queryDim] or [batchSize, numQueries, numHeads, headDim] for flash attention (NUMERIC type)
    * @param values Value tensor. Shape: [batchSize, numValues, valueDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
@@ -1054,27 +1054,27 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Dot product attention operation with flash attention and KV cache support.<br>
-   * <br>
-   * out = softmax(Q * K^T / scale + attentionBias) * V<br>
-   * <br>
-   * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.<br>
-   * For 2D/3D inputs, uses standard attention computation.<br>
-   * <br>
-   * Flash attention features:<br>
-   * - O(N) memory complexity instead of O(N^2)<br>
-   * - Tiled computation with online softmax<br>
-   * - Supports grouped query attention (GQA) where numHeads > numKvHeads<br>
-   * - Supports attention bias (relative position bias, ALiBi, etc.)<br>
-   * <br>
-   * KV Cache support for autoregressive generation:<br>
-   * - Pass keyCache and valueCache tensors with cachePosition<br>
-   * - Current K/V are written at cachePosition in-place, then full cache used for attention<br>
-   * - attentionBias masks zero-padded cache positions (set -1e9 beyond cachePosition)<br>
-   * - All tensor shapes are fixed after first decode step, enabling DSP replay<br>
-   * <br>
-   * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)<br>
-   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
+   * Dot product attention operation with flash attention and KV cache support.
+   *
+   * out = softmax(Q * K^T / scale + attentionBias) * V
+   *
+   * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.
+   * For 2D/3D inputs, uses standard attention computation.
+   *
+   * Flash attention features:
+   * - O(N) memory complexity instead of O(N^2)
+   * - Tiled computation with online softmax
+   * - Supports grouped query attention (GQA) where numHeads > numKvHeads
+   * - Supports attention bias (relative position bias, ALiBi, etc.)
+   *
+   * KV Cache support for autoregressive generation:
+   * - Pass keyCache and valueCache tensors with cachePosition
+   * - Current K/V are written at cachePosition in-place, then full cache used for attention
+   * - attentionBias masks zero-padded cache positions (set -1e9 beyond cachePosition)
+   * - All tensor shapes are fixed after first decode step, enabling DSP replay
+   *
+   * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)
+   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)
    *
    * @param name name May be null. Name for the output variable
    * @param queries Query tensor. Shape: [batchSize, numQueries, queryDim] or [batchSize, numQueries, numHeads, headDim] for flash attention (NUMERIC type)
@@ -1109,27 +1109,27 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Dot product attention operation with flash attention and KV cache support.<br>
-   * <br>
-   * out = softmax(Q * K^T / scale + attentionBias) * V<br>
-   * <br>
-   * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.<br>
-   * For 2D/3D inputs, uses standard attention computation.<br>
-   * <br>
-   * Flash attention features:<br>
-   * - O(N) memory complexity instead of O(N^2)<br>
-   * - Tiled computation with online softmax<br>
-   * - Supports grouped query attention (GQA) where numHeads > numKvHeads<br>
-   * - Supports attention bias (relative position bias, ALiBi, etc.)<br>
-   * <br>
-   * KV Cache support for autoregressive generation:<br>
-   * - Pass keyCache and valueCache tensors with cachePosition<br>
-   * - Current K/V are written at cachePosition in-place, then full cache used for attention<br>
-   * - attentionBias masks zero-padded cache positions (set -1e9 beyond cachePosition)<br>
-   * - All tensor shapes are fixed after first decode step, enabling DSP replay<br>
-   * <br>
-   * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)<br>
-   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
+   * Dot product attention operation with flash attention and KV cache support.
+   *
+   * out = softmax(Q * K^T / scale + attentionBias) * V
+   *
+   * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.
+   * For 2D/3D inputs, uses standard attention computation.
+   *
+   * Flash attention features:
+   * - O(N) memory complexity instead of O(N^2)
+   * - Tiled computation with online softmax
+   * - Supports grouped query attention (GQA) where numHeads > numKvHeads
+   * - Supports attention bias (relative position bias, ALiBi, etc.)
+   *
+   * KV Cache support for autoregressive generation:
+   * - Pass keyCache and valueCache tensors with cachePosition
+   * - Current K/V are written at cachePosition in-place, then full cache used for attention
+   * - attentionBias masks zero-padded cache positions (set -1e9 beyond cachePosition)
+   * - All tensor shapes are fixed after first decode step, enabling DSP replay
+   *
+   * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)
+   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)
    *
    * @param queries Query tensor. Shape: [batchSize, numQueries, queryDim] or [batchSize, numQueries, numHeads, headDim] for flash attention (NUMERIC type)
    * @param values Value tensor. Shape: [batchSize, numValues, valueDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
@@ -1175,27 +1175,27 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Dot product attention operation with flash attention and KV cache support.<br>
-   * <br>
-   * out = softmax(Q * K^T / scale + attentionBias) * V<br>
-   * <br>
-   * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.<br>
-   * For 2D/3D inputs, uses standard attention computation.<br>
-   * <br>
-   * Flash attention features:<br>
-   * - O(N) memory complexity instead of O(N^2)<br>
-   * - Tiled computation with online softmax<br>
-   * - Supports grouped query attention (GQA) where numHeads > numKvHeads<br>
-   * - Supports attention bias (relative position bias, ALiBi, etc.)<br>
-   * <br>
-   * KV Cache support for autoregressive generation:<br>
-   * - Pass keyCache and valueCache tensors with cachePosition<br>
-   * - Current K/V are written at cachePosition in-place, then full cache used for attention<br>
-   * - attentionBias masks zero-padded cache positions (set -1e9 beyond cachePosition)<br>
-   * - All tensor shapes are fixed after first decode step, enabling DSP replay<br>
-   * <br>
-   * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)<br>
-   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
+   * Dot product attention operation with flash attention and KV cache support.
+   *
+   * out = softmax(Q * K^T / scale + attentionBias) * V
+   *
+   * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.
+   * For 2D/3D inputs, uses standard attention computation.
+   *
+   * Flash attention features:
+   * - O(N) memory complexity instead of O(N^2)
+   * - Tiled computation with online softmax
+   * - Supports grouped query attention (GQA) where numHeads > numKvHeads
+   * - Supports attention bias (relative position bias, ALiBi, etc.)
+   *
+   * KV Cache support for autoregressive generation:
+   * - Pass keyCache and valueCache tensors with cachePosition
+   * - Current K/V are written at cachePosition in-place, then full cache used for attention
+   * - attentionBias masks zero-padded cache positions (set -1e9 beyond cachePosition)
+   * - All tensor shapes are fixed after first decode step, enabling DSP replay
+   *
+   * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)
+   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)
    *
    * @param name name May be null. Name for the output variable
    * @param queries Query tensor. Shape: [batchSize, numQueries, queryDim] or [batchSize, numQueries, numHeads, headDim] for flash attention (NUMERIC type)
@@ -1243,7 +1243,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Dropout operation<br>
+   * Dropout operation
    *
    * @param input Input array (NUMERIC type)
    * @param inverted Whether dropout should be inverted or not.
@@ -1257,7 +1257,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Dropout operation<br>
+   * Dropout operation
    *
    * @param name name May be null. Name for the output variable
    * @param input Input array (NUMERIC type)
@@ -1274,7 +1274,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Dropout operation<br>
+   * Dropout operation
    *
    * @param input Input array (NUMERIC type)
    * @param inverted Whether dropout should be inverted or not.
@@ -1287,7 +1287,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Dropout operation<br>
+   * Dropout operation
    *
    * @param name name May be null. Name for the output variable
    * @param input Input array (NUMERIC type)
@@ -1303,17 +1303,17 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Dual Rotary Position Embedding (Gemma 4).<br>
-   * <br>
-   * Applies two different RoPE configurations depending on attention type:<br>
-   * - Standard RoPE (localFreqBase) for sliding-window (local) attention layers<br>
-   * - Proportional RoPE (globalFreqBase) for global full-context attention layers<br>
-   * <br>
-   * This enables longer context windows by using different position encoding<br>
-   * frequencies for local vs global attention. For each dimension pair (2i, 2i+1):<br>
-   *   theta_i = freqBase ^ (-2i / headDim) * freqScale<br>
-   *   output[2i]   = input[2i] * cos(pos * theta) - input[2i+1] * sin(pos * theta)<br>
-   *   output[2i+1] = input[2i] * sin(pos * theta) + input[2i+1] * cos(pos * theta)<br>
+   * Dual Rotary Position Embedding (Gemma 4).
+   *
+   * Applies two different RoPE configurations depending on attention type:
+   * - Standard RoPE (localFreqBase) for sliding-window (local) attention layers
+   * - Proportional RoPE (globalFreqBase) for global full-context attention layers
+   *
+   * This enables longer context windows by using different position encoding
+   * frequencies for local vs global attention. For each dimension pair (2i, 2i+1):
+   *   theta_i = freqBase ^ (-2i / headDim) * freqScale
+   *   output[2i]   = input[2i] * cos(pos * theta) - input[2i+1] * sin(pos * theta)
+   *   output[2i+1] = input[2i] * sin(pos * theta) + input[2i+1] * cos(pos * theta)
    *
    * @param input Input tensor [batch, seqLen, numHeads, headDim] - headDim must be even (NUMERIC type)
    * @param attentionType Attention type (0=local/sliding-window, 1=global/full-context)
@@ -1327,21 +1327,21 @@ public class SDNN extends SDOps {
   public SDVariable dualRoPE(SDVariable input, int attentionType, int positionOffset,
       double localFreqBase, double globalFreqBase, double localFreqScale, double globalFreqScale) {
     SDValidation.validateNumerical("dualRoPE", "input", input);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(sd,input, attentionType, positionOffset, localFreqBase, globalFreqBase, localFreqScale, globalFreqScale).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(sd,input, null, attentionType, positionOffset, localFreqBase, globalFreqBase, localFreqScale, globalFreqScale).outputVariable();
   }
 
   /**
-   * Dual Rotary Position Embedding (Gemma 4).<br>
-   * <br>
-   * Applies two different RoPE configurations depending on attention type:<br>
-   * - Standard RoPE (localFreqBase) for sliding-window (local) attention layers<br>
-   * - Proportional RoPE (globalFreqBase) for global full-context attention layers<br>
-   * <br>
-   * This enables longer context windows by using different position encoding<br>
-   * frequencies for local vs global attention. For each dimension pair (2i, 2i+1):<br>
-   *   theta_i = freqBase ^ (-2i / headDim) * freqScale<br>
-   *   output[2i]   = input[2i] * cos(pos * theta) - input[2i+1] * sin(pos * theta)<br>
-   *   output[2i+1] = input[2i] * sin(pos * theta) + input[2i+1] * cos(pos * theta)<br>
+   * Dual Rotary Position Embedding (Gemma 4).
+   *
+   * Applies two different RoPE configurations depending on attention type:
+   * - Standard RoPE (localFreqBase) for sliding-window (local) attention layers
+   * - Proportional RoPE (globalFreqBase) for global full-context attention layers
+   *
+   * This enables longer context windows by using different position encoding
+   * frequencies for local vs global attention. For each dimension pair (2i, 2i+1):
+   *   theta_i = freqBase ^ (-2i / headDim) * freqScale
+   *   output[2i]   = input[2i] * cos(pos * theta) - input[2i+1] * sin(pos * theta)
+   *   output[2i+1] = input[2i] * sin(pos * theta) + input[2i+1] * cos(pos * theta)
    *
    * @param name name May be null. Name for the output variable
    * @param input Input tensor [batch, seqLen, numHeads, headDim] - headDim must be even (NUMERIC type)
@@ -1356,163 +1356,57 @@ public class SDNN extends SDOps {
   public SDVariable dualRoPE(String name, SDVariable input, int attentionType, int positionOffset,
       double localFreqBase, double globalFreqBase, double localFreqScale, double globalFreqScale) {
     SDValidation.validateNumerical("dualRoPE", "input", input);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(sd,input, attentionType, positionOffset, localFreqBase, globalFreqBase, localFreqScale, globalFreqScale).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(sd,input, null, attentionType, positionOffset, localFreqBase, globalFreqBase, localFreqScale, globalFreqScale).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
   /**
-   * Dual Rotary Position Embedding (Gemma 4).<br>
-   * <br>
-   * Applies two different RoPE configurations depending on attention type:<br>
-   * - Standard RoPE (localFreqBase) for sliding-window (local) attention layers<br>
-   * - Proportional RoPE (globalFreqBase) for global full-context attention layers<br>
-   * <br>
-   * This enables longer context windows by using different position encoding<br>
-   * frequencies for local vs global attention. For each dimension pair (2i, 2i+1):<br>
-   *   theta_i = freqBase ^ (-2i / headDim) * freqScale<br>
-   *   output[2i]   = input[2i] * cos(pos * theta) - input[2i+1] * sin(pos * theta)<br>
-   *   output[2i+1] = input[2i] * sin(pos * theta) + input[2i+1] * cos(pos * theta)<br>
+   * Dual Rotary Position Embedding (Gemma 4).
+   *
+   * Applies two different RoPE configurations depending on attention type:
+   * - Standard RoPE (localFreqBase) for sliding-window (local) attention layers
+   * - Proportional RoPE (globalFreqBase) for global full-context attention layers
+   *
+   * This enables longer context windows by using different position encoding
+   * frequencies for local vs global attention. For each dimension pair (2i, 2i+1):
+   *   theta_i = freqBase ^ (-2i / headDim) * freqScale
+   *   output[2i]   = input[2i] * cos(pos * theta) - input[2i+1] * sin(pos * theta)
+   *   output[2i+1] = input[2i] * sin(pos * theta) + input[2i+1] * cos(pos * theta)
    *
    * @param input Input tensor [batch, seqLen, numHeads, headDim] - headDim must be even (NUMERIC type)
+   * @param position Optional scalar INT64 base position for dynamic KV cache continuation (INT type)
+   * @param attentionType Attention type (0=local/sliding-window, 1=global/full-context)
+   * @param localFreqBase RoPE frequency base for local/sliding-window layers
+   * @param globalFreqBase RoPE frequency base for global/full-context layers
+   * @param localFreqScale RoPE frequency scale for local layers
+   * @param globalFreqScale RoPE frequency scale for global layers
    * @return output Output with rotary embeddings applied [batch, seqLen, numHeads, headDim] (NUMERIC type)
    */
-  public SDVariable dualRoPE(SDVariable input) {
+  public SDVariable dualRoPE(SDVariable input, SDVariable position, int attentionType,
+      double localFreqBase, double globalFreqBase, double localFreqScale, double globalFreqScale) {
     SDValidation.validateNumerical("dualRoPE", "input", input);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(sd,input, 0, 0, 10000.0, 1000000.0, 1.0, 1.0).outputVariable();
+    if (position != null) {
+      SDValidation.validateInteger("dualRoPE", "position", position);
+    }
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(sd,input, position, attentionType, 0, localFreqBase, globalFreqBase, localFreqScale, globalFreqScale).outputVariable();
   }
 
   /**
-   * Dual Rotary Position Embedding (Gemma 4).<br>
-   * <br>
-   * Applies two different RoPE configurations depending on attention type:<br>
-   * - Standard RoPE (localFreqBase) for sliding-window (local) attention layers<br>
-   * - Proportional RoPE (globalFreqBase) for global full-context attention layers<br>
-   * <br>
-   * This enables longer context windows by using different position encoding<br>
-   * frequencies for local vs global attention. For each dimension pair (2i, 2i+1):<br>
-   *   theta_i = freqBase ^ (-2i / headDim) * freqScale<br>
-   *   output[2i]   = input[2i] * cos(pos * theta) - input[2i+1] * sin(pos * theta)<br>
-   *   output[2i+1] = input[2i] * sin(pos * theta) + input[2i+1] * cos(pos * theta)<br>
+   * Dual Rotary Position Embedding (Gemma 4).
+   *
+   * Applies two different RoPE configurations depending on attention type:
+   * - Standard RoPE (localFreqBase) for sliding-window (local) attention layers
+   * - Proportional RoPE (globalFreqBase) for global full-context attention layers
+   *
+   * This enables longer context windows by using different position encoding
+   * frequencies for local vs global attention. For each dimension pair (2i, 2i+1):
+   *   theta_i = freqBase ^ (-2i / headDim) * freqScale
+   *   output[2i]   = input[2i] * cos(pos * theta) - input[2i+1] * sin(pos * theta)
+   *   output[2i+1] = input[2i] * sin(pos * theta) + input[2i+1] * cos(pos * theta)
    *
    * @param name name May be null. Name for the output variable
    * @param input Input tensor [batch, seqLen, numHeads, headDim] - headDim must be even (NUMERIC type)
-   * @return output Output with rotary embeddings applied [batch, seqLen, numHeads, headDim] (NUMERIC type)
-   */
-  public SDVariable dualRoPE(String name, SDVariable input) {
-    SDValidation.validateNumerical("dualRoPE", "input", input);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(sd,input, 0, 0, 10000.0, 1000000.0, 1.0, 1.0).outputVariable();
-    return sd.updateVariableNameAndReference(out, name);
-  }
-
-  /**
-   * Dual Rotary Position Embedding (Gemma 4).<br>
-   * <br>
-   * Applies two different RoPE configurations depending on attention type:<br>
-   * - Standard RoPE (localFreqBase) for sliding-window (local) attention layers<br>
-   * - Proportional RoPE (globalFreqBase) for global full-context attention layers<br>
-   * <br>
-   * This enables longer context windows by using different position encoding<br>
-   * frequencies for local vs global attention. For each dimension pair (2i, 2i+1):<br>
-   *   theta_i = freqBase ^ (-2i / headDim) * freqScale<br>
-   *   output[2i]   = input[2i] * cos(pos * theta) - input[2i+1] * sin(pos * theta)<br>
-   *   output[2i+1] = input[2i] * sin(pos * theta) + input[2i+1] * cos(pos * theta)<br>
-   *
-   * @param input Input tensor [batch, seqLen, numHeads, headDim] - headDim must be even (NUMERIC type)
-   * @param attentionType Attention type (0=local/sliding-window, 1=global/full-context)
-   * @return output Output with rotary embeddings applied [batch, seqLen, numHeads, headDim] (NUMERIC type)
-   */
-  public SDVariable dualRoPE(SDVariable input, int attentionType) {
-    SDValidation.validateNumerical("dualRoPE", "input", input);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(sd,input, attentionType, 0, 10000.0, 1000000.0, 1.0, 1.0).outputVariable();
-  }
-
-  /**
-   * Dual Rotary Position Embedding (Gemma 4).<br>
-   * <br>
-   * Applies two different RoPE configurations depending on attention type:<br>
-   * - Standard RoPE (localFreqBase) for sliding-window (local) attention layers<br>
-   * - Proportional RoPE (globalFreqBase) for global full-context attention layers<br>
-   * <br>
-   * This enables longer context windows by using different position encoding<br>
-   * frequencies for local vs global attention. For each dimension pair (2i, 2i+1):<br>
-   *   theta_i = freqBase ^ (-2i / headDim) * freqScale<br>
-   *   output[2i]   = input[2i] * cos(pos * theta) - input[2i+1] * sin(pos * theta)<br>
-   *   output[2i+1] = input[2i] * sin(pos * theta) + input[2i+1] * cos(pos * theta)<br>
-   *
-   * @param name name May be null. Name for the output variable
-   * @param input Input tensor [batch, seqLen, numHeads, headDim] - headDim must be even (NUMERIC type)
-   * @param attentionType Attention type (0=local/sliding-window, 1=global/full-context)
-   * @return output Output with rotary embeddings applied [batch, seqLen, numHeads, headDim] (NUMERIC type)
-   */
-  public SDVariable dualRoPE(String name, SDVariable input, int attentionType) {
-    SDValidation.validateNumerical("dualRoPE", "input", input);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(sd,input, attentionType, 0, 10000.0, 1000000.0, 1.0, 1.0).outputVariable();
-    return sd.updateVariableNameAndReference(out, name);
-  }
-
-  /**
-   * Dual Rotary Position Embedding (Gemma 4).<br>
-   * <br>
-   * Applies two different RoPE configurations depending on attention type:<br>
-   * - Standard RoPE (localFreqBase) for sliding-window (local) attention layers<br>
-   * - Proportional RoPE (globalFreqBase) for global full-context attention layers<br>
-   * <br>
-   * This enables longer context windows by using different position encoding<br>
-   * frequencies for local vs global attention. For each dimension pair (2i, 2i+1):<br>
-   *   theta_i = freqBase ^ (-2i / headDim) * freqScale<br>
-   *   output[2i]   = input[2i] * cos(pos * theta) - input[2i+1] * sin(pos * theta)<br>
-   *   output[2i+1] = input[2i] * sin(pos * theta) + input[2i+1] * cos(pos * theta)<br>
-   *
-   * @param input Input tensor [batch, seqLen, numHeads, headDim] - headDim must be even (NUMERIC type)
-   * @param attentionType Attention type (0=local/sliding-window, 1=global/full-context)
-   * @param positionOffset Position offset for KV cache continuation
-   * @return output Output with rotary embeddings applied [batch, seqLen, numHeads, headDim] (NUMERIC type)
-   */
-  public SDVariable dualRoPE(SDVariable input, int attentionType, int positionOffset) {
-    SDValidation.validateNumerical("dualRoPE", "input", input);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(sd,input, attentionType, positionOffset, 10000.0, 1000000.0, 1.0, 1.0).outputVariable();
-  }
-
-  /**
-   * Dual Rotary Position Embedding (Gemma 4).<br>
-   * <br>
-   * Applies two different RoPE configurations depending on attention type:<br>
-   * - Standard RoPE (localFreqBase) for sliding-window (local) attention layers<br>
-   * - Proportional RoPE (globalFreqBase) for global full-context attention layers<br>
-   * <br>
-   * This enables longer context windows by using different position encoding<br>
-   * frequencies for local vs global attention. For each dimension pair (2i, 2i+1):<br>
-   *   theta_i = freqBase ^ (-2i / headDim) * freqScale<br>
-   *   output[2i]   = input[2i] * cos(pos * theta) - input[2i+1] * sin(pos * theta)<br>
-   *   output[2i+1] = input[2i] * sin(pos * theta) + input[2i+1] * cos(pos * theta)<br>
-   *
-   * @param name name May be null. Name for the output variable
-   * @param input Input tensor [batch, seqLen, numHeads, headDim] - headDim must be even (NUMERIC type)
-   * @param attentionType Attention type (0=local/sliding-window, 1=global/full-context)
-   * @param positionOffset Position offset for KV cache continuation
-   * @return output Output with rotary embeddings applied [batch, seqLen, numHeads, headDim] (NUMERIC type)
-   */
-  public SDVariable dualRoPE(String name, SDVariable input, int attentionType, int positionOffset) {
-    SDValidation.validateNumerical("dualRoPE", "input", input);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(sd,input, attentionType, positionOffset, 10000.0, 1000000.0, 1.0, 1.0).outputVariable();
-    return sd.updateVariableNameAndReference(out, name);
-  }
-
-  /**
-   * Dual Rotary Position Embedding (Gemma 4) with an in-graph position tensor.<br>
-   * <br>
-   * Same rotation as the int-offset overloads, but the base position is read from
-   * a device-resident INT64 tensor input (scalar or single-element) instead of a
-   * static argument. This lets decode loops advance the KV-cache position by
-   * feeding a placeholder without rebuilding the graph.<br>
-   * <br>
-   * Applies two different RoPE configurations depending on attention type:<br>
-   * - Standard RoPE (localFreqBase) for sliding-window (local) attention layers<br>
-   * - Proportional RoPE (globalFreqBase) for global full-context attention layers<br>
-   *
-   * @param name name May be null. Name for the output variable
-   * @param input Input tensor [batch, seqLen, numHeads, headDim] - headDim must be even (NUMERIC type)
-   * @param position INT64 position tensor (scalar or single element) holding the base position
+   * @param position Optional scalar INT64 base position for dynamic KV cache continuation (INT type)
    * @param attentionType Attention type (0=local/sliding-window, 1=global/full-context)
    * @param localFreqBase RoPE frequency base for local/sliding-window layers
    * @param globalFreqBase RoPE frequency base for global/full-context layers
@@ -1523,17 +1417,158 @@ public class SDNN extends SDOps {
   public SDVariable dualRoPE(String name, SDVariable input, SDVariable position, int attentionType,
       double localFreqBase, double globalFreqBase, double localFreqScale, double globalFreqScale) {
     SDValidation.validateNumerical("dualRoPE", "input", input);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(sd,input, position, attentionType, localFreqBase, globalFreqBase, localFreqScale, globalFreqScale).outputVariable();
+    if (position != null) {
+      SDValidation.validateInteger("dualRoPE", "position", position);
+    }
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(sd,input, position, attentionType, 0, localFreqBase, globalFreqBase, localFreqScale, globalFreqScale).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
   /**
-   * Element-wise exponential linear unit (ELU) function:<br>
-   * out = x if x > 0<br>
-   * out = a * (exp(x) - 1) if x <= 0<br>
-   * with constant a = 1.0<br>
-   * <p><br>
-   * See: <a href="https://arxiv.org/abs/1511.07289">https://arxiv.org/abs/1511.07289</a><br>
+   * Dual Rotary Position Embedding (Gemma 4).
+   *
+   * Applies two different RoPE configurations depending on attention type:
+   * - Standard RoPE (localFreqBase) for sliding-window (local) attention layers
+   * - Proportional RoPE (globalFreqBase) for global full-context attention layers
+   *
+   * This enables longer context windows by using different position encoding
+   * frequencies for local vs global attention. For each dimension pair (2i, 2i+1):
+   *   theta_i = freqBase ^ (-2i / headDim) * freqScale
+   *   output[2i]   = input[2i] * cos(pos * theta) - input[2i+1] * sin(pos * theta)
+   *   output[2i+1] = input[2i] * sin(pos * theta) + input[2i+1] * cos(pos * theta)
+   *
+   * @param input Input tensor [batch, seqLen, numHeads, headDim] - headDim must be even (NUMERIC type)
+   * @return output Output with rotary embeddings applied [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public SDVariable dualRoPE(SDVariable input) {
+    SDValidation.validateNumerical("dualRoPE", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(sd,input, null, 0, 0, 10000.0, 1000000.0, 1.0, 1.0).outputVariable();
+  }
+
+  /**
+   * Dual Rotary Position Embedding (Gemma 4).
+   *
+   * Applies two different RoPE configurations depending on attention type:
+   * - Standard RoPE (localFreqBase) for sliding-window (local) attention layers
+   * - Proportional RoPE (globalFreqBase) for global full-context attention layers
+   *
+   * This enables longer context windows by using different position encoding
+   * frequencies for local vs global attention. For each dimension pair (2i, 2i+1):
+   *   theta_i = freqBase ^ (-2i / headDim) * freqScale
+   *   output[2i]   = input[2i] * cos(pos * theta) - input[2i+1] * sin(pos * theta)
+   *   output[2i+1] = input[2i] * sin(pos * theta) + input[2i+1] * cos(pos * theta)
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor [batch, seqLen, numHeads, headDim] - headDim must be even (NUMERIC type)
+   * @return output Output with rotary embeddings applied [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public SDVariable dualRoPE(String name, SDVariable input) {
+    SDValidation.validateNumerical("dualRoPE", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(sd,input, null, 0, 0, 10000.0, 1000000.0, 1.0, 1.0).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Dual Rotary Position Embedding (Gemma 4).
+   *
+   * Applies two different RoPE configurations depending on attention type:
+   * - Standard RoPE (localFreqBase) for sliding-window (local) attention layers
+   * - Proportional RoPE (globalFreqBase) for global full-context attention layers
+   *
+   * This enables longer context windows by using different position encoding
+   * frequencies for local vs global attention. For each dimension pair (2i, 2i+1):
+   *   theta_i = freqBase ^ (-2i / headDim) * freqScale
+   *   output[2i]   = input[2i] * cos(pos * theta) - input[2i+1] * sin(pos * theta)
+   *   output[2i+1] = input[2i] * sin(pos * theta) + input[2i+1] * cos(pos * theta)
+   *
+   * @param input Input tensor [batch, seqLen, numHeads, headDim] - headDim must be even (NUMERIC type)
+   * @param attentionType Attention type (0=local/sliding-window, 1=global/full-context)
+   * @return output Output with rotary embeddings applied [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public SDVariable dualRoPE(SDVariable input, int attentionType) {
+    SDValidation.validateNumerical("dualRoPE", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(sd,input, null, attentionType, 0, 10000.0, 1000000.0, 1.0, 1.0).outputVariable();
+  }
+
+  /**
+   * Dual Rotary Position Embedding (Gemma 4).
+   *
+   * Applies two different RoPE configurations depending on attention type:
+   * - Standard RoPE (localFreqBase) for sliding-window (local) attention layers
+   * - Proportional RoPE (globalFreqBase) for global full-context attention layers
+   *
+   * This enables longer context windows by using different position encoding
+   * frequencies for local vs global attention. For each dimension pair (2i, 2i+1):
+   *   theta_i = freqBase ^ (-2i / headDim) * freqScale
+   *   output[2i]   = input[2i] * cos(pos * theta) - input[2i+1] * sin(pos * theta)
+   *   output[2i+1] = input[2i] * sin(pos * theta) + input[2i+1] * cos(pos * theta)
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor [batch, seqLen, numHeads, headDim] - headDim must be even (NUMERIC type)
+   * @param attentionType Attention type (0=local/sliding-window, 1=global/full-context)
+   * @return output Output with rotary embeddings applied [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public SDVariable dualRoPE(String name, SDVariable input, int attentionType) {
+    SDValidation.validateNumerical("dualRoPE", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(sd,input, null, attentionType, 0, 10000.0, 1000000.0, 1.0, 1.0).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Dual Rotary Position Embedding (Gemma 4).
+   *
+   * Applies two different RoPE configurations depending on attention type:
+   * - Standard RoPE (localFreqBase) for sliding-window (local) attention layers
+   * - Proportional RoPE (globalFreqBase) for global full-context attention layers
+   *
+   * This enables longer context windows by using different position encoding
+   * frequencies for local vs global attention. For each dimension pair (2i, 2i+1):
+   *   theta_i = freqBase ^ (-2i / headDim) * freqScale
+   *   output[2i]   = input[2i] * cos(pos * theta) - input[2i+1] * sin(pos * theta)
+   *   output[2i+1] = input[2i] * sin(pos * theta) + input[2i+1] * cos(pos * theta)
+   *
+   * @param input Input tensor [batch, seqLen, numHeads, headDim] - headDim must be even (NUMERIC type)
+   * @param attentionType Attention type (0=local/sliding-window, 1=global/full-context)
+   * @param positionOffset Position offset for KV cache continuation
+   * @return output Output with rotary embeddings applied [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public SDVariable dualRoPE(SDVariable input, int attentionType, int positionOffset) {
+    SDValidation.validateNumerical("dualRoPE", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(sd,input, null, attentionType, positionOffset, 10000.0, 1000000.0, 1.0, 1.0).outputVariable();
+  }
+
+  /**
+   * Dual Rotary Position Embedding (Gemma 4).
+   *
+   * Applies two different RoPE configurations depending on attention type:
+   * - Standard RoPE (localFreqBase) for sliding-window (local) attention layers
+   * - Proportional RoPE (globalFreqBase) for global full-context attention layers
+   *
+   * This enables longer context windows by using different position encoding
+   * frequencies for local vs global attention. For each dimension pair (2i, 2i+1):
+   *   theta_i = freqBase ^ (-2i / headDim) * freqScale
+   *   output[2i]   = input[2i] * cos(pos * theta) - input[2i+1] * sin(pos * theta)
+   *   output[2i+1] = input[2i] * sin(pos * theta) + input[2i+1] * cos(pos * theta)
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor [batch, seqLen, numHeads, headDim] - headDim must be even (NUMERIC type)
+   * @param attentionType Attention type (0=local/sliding-window, 1=global/full-context)
+   * @param positionOffset Position offset for KV cache continuation
+   * @return output Output with rotary embeddings applied [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public SDVariable dualRoPE(String name, SDVariable input, int attentionType, int positionOffset) {
+    SDValidation.validateNumerical("dualRoPE", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(sd,input, null, attentionType, positionOffset, 10000.0, 1000000.0, 1.0, 1.0).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Element-wise exponential linear unit (ELU) function:
+   * out = x if x > 0
+   * out = a * (exp(x) - 1) if x &lt;= 0
+   * with constant a = 1.0
+   * <p>
+   * See: <a href="https://arxiv.org/abs/1511.07289">https://arxiv.org/abs/1511.07289</a>
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -1544,12 +1579,12 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Element-wise exponential linear unit (ELU) function:<br>
-   * out = x if x > 0<br>
-   * out = a * (exp(x) - 1) if x <= 0<br>
-   * with constant a = 1.0<br>
-   * <p><br>
-   * See: <a href="https://arxiv.org/abs/1511.07289">https://arxiv.org/abs/1511.07289</a><br>
+   * Element-wise exponential linear unit (ELU) function:
+   * out = x if x > 0
+   * out = a * (exp(x) - 1) if x &lt;= 0
+   * with constant a = 1.0
+   * <p>
+   * See: <a href="https://arxiv.org/abs/1511.07289">https://arxiv.org/abs/1511.07289</a>
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -1562,9 +1597,9 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Exponential Moving Average parameter update for DINOv2 teacher networks.<br>
-   * Computes: output = decay * shadow + (1 - decay) * model<br>
-   * Used in self-supervised learning to maintain a slowly-updated teacher model.<br>
+   * Exponential Moving Average parameter update for DINOv2 teacher networks.
+   * Computes: output = decay * shadow + (1 - decay) * model
+   * Used in self-supervised learning to maintain a slowly-updated teacher model.
    *
    * @param model Current model parameters (student) (NUMERIC type)
    * @param shadow EMA shadow parameters (teacher) (NUMERIC type)
@@ -1578,9 +1613,9 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Exponential Moving Average parameter update for DINOv2 teacher networks.<br>
-   * Computes: output = decay * shadow + (1 - decay) * model<br>
-   * Used in self-supervised learning to maintain a slowly-updated teacher model.<br>
+   * Exponential Moving Average parameter update for DINOv2 teacher networks.
+   * Computes: output = decay * shadow + (1 - decay) * model
+   * Used in self-supervised learning to maintain a slowly-updated teacher model.
    *
    * @param name name May be null. Name for the output variable
    * @param model Current model parameters (student) (NUMERIC type)
@@ -1596,9 +1631,9 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Exponential Moving Average parameter update for DINOv2 teacher networks.<br>
-   * Computes: output = decay * shadow + (1 - decay) * model<br>
-   * Used in self-supervised learning to maintain a slowly-updated teacher model.<br>
+   * Exponential Moving Average parameter update for DINOv2 teacher networks.
+   * Computes: output = decay * shadow + (1 - decay) * model
+   * Used in self-supervised learning to maintain a slowly-updated teacher model.
    *
    * @param model Current model parameters (student) (NUMERIC type)
    * @param shadow EMA shadow parameters (teacher) (NUMERIC type)
@@ -1611,9 +1646,9 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Exponential Moving Average parameter update for DINOv2 teacher networks.<br>
-   * Computes: output = decay * shadow + (1 - decay) * model<br>
-   * Used in self-supervised learning to maintain a slowly-updated teacher model.<br>
+   * Exponential Moving Average parameter update for DINOv2 teacher networks.
+   * Computes: output = decay * shadow + (1 - decay) * model
+   * Used in self-supervised learning to maintain a slowly-updated teacher model.
    *
    * @param name name May be null. Name for the output variable
    * @param model Current model parameters (student) (NUMERIC type)
@@ -1628,17 +1663,17 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Flash Attention - Memory-efficient attention computation.<br>
-   * <br>
-   * Uses tiled computation with online softmax to achieve O(N) memory complexity<br>
-   * instead of O(N^2) for standard attention.<br>
-   * <br>
-   * Supports Grouped Query Attention (GQA) where numHeads > numKvHeads,<br>
-   * allowing multiple query heads to share the same KV heads.<br>
-   * <br>
-   * out = softmax(Q * K^T / scale) * V<br>
-   * <br>
-   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
+   * Flash Attention - Memory-efficient attention computation.
+   *
+   * Uses tiled computation with online softmax to achieve O(N) memory complexity
+   * instead of O(N^2) for standard attention.
+   *
+   * Supports Grouped Query Attention (GQA) where numHeads > numKvHeads,
+   * allowing multiple query heads to share the same KV heads.
+   *
+   * out = softmax(Q * K^T / scale) * V
+   *
+   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)
    *
    * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
    * @param key Key tensor. Shape: [batch, seqLen, numKvHeads, headDim] (NUMERIC type)
@@ -1658,17 +1693,17 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Flash Attention - Memory-efficient attention computation.<br>
-   * <br>
-   * Uses tiled computation with online softmax to achieve O(N) memory complexity<br>
-   * instead of O(N^2) for standard attention.<br>
-   * <br>
-   * Supports Grouped Query Attention (GQA) where numHeads > numKvHeads,<br>
-   * allowing multiple query heads to share the same KV heads.<br>
-   * <br>
-   * out = softmax(Q * K^T / scale) * V<br>
-   * <br>
-   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
+   * Flash Attention - Memory-efficient attention computation.
+   *
+   * Uses tiled computation with online softmax to achieve O(N) memory complexity
+   * instead of O(N^2) for standard attention.
+   *
+   * Supports Grouped Query Attention (GQA) where numHeads > numKvHeads,
+   * allowing multiple query heads to share the same KV heads.
+   *
+   * out = softmax(Q * K^T / scale) * V
+   *
+   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)
    *
    * @param name name May be null. Name for the output variable
    * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
@@ -1690,7 +1725,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * FP8 matrix multiplication with per-tensor scaling.<br>
+   * FP8 matrix multiplication with per-tensor scaling.
    *
    * @param a First matrix (NUMERIC type)
    * @param b Second matrix (NUMERIC type)
@@ -1707,7 +1742,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * FP8 matrix multiplication with per-tensor scaling.<br>
+   * FP8 matrix multiplication with per-tensor scaling.
    *
    * @param name name May be null. Name for the output variable
    * @param a First matrix (NUMERIC type)
@@ -1727,7 +1762,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused bias addition, dropout, and residual connection in a single kernel.<br>
+   * Fused bias addition, dropout, and residual connection in a single kernel.
    *
    * @param input Input tensor (NUMERIC type)
    * @param bias Bias tensor (NUMERIC type)
@@ -1745,7 +1780,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused bias addition, dropout, and residual connection in a single kernel.<br>
+   * Fused bias addition, dropout, and residual connection in a single kernel.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input tensor (NUMERIC type)
@@ -1765,8 +1800,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Executes a fused chain of element-wise operations in a single kernel pass.<br>
-   * Intermediate values stay in registers instead of global memory. Replaces N separate kernel launches with 1.<br>
+   * Executes a fused chain of element-wise operations in a single kernel pass.
+   * Intermediate values stay in registers instead of global memory. Replaces N separate kernel launches with 1.
    *
    * @param input Primary input array (NUMERIC type)
    * @param secondaryInputs Optional secondary input arrays for binary ops (add, sub, mul, div) (NUMERIC type)
@@ -1783,8 +1818,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Executes a fused chain of element-wise operations in a single kernel pass.<br>
-   * Intermediate values stay in registers instead of global memory. Replaces N separate kernel launches with 1.<br>
+   * Executes a fused chain of element-wise operations in a single kernel pass.
+   * Intermediate values stay in registers instead of global memory. Replaces N separate kernel launches with 1.
    *
    * @param name name May be null. Name for the output variable
    * @param input Primary input array (NUMERIC type)
@@ -1803,7 +1838,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused Gaussian Error Linear Unit (GELU) activation function.<br>
+   * Fused Gaussian Error Linear Unit (GELU) activation function.
    *
    * @param input Input tensor (NUMERIC type)
    * @return output GELU(x) (NUMERIC type)
@@ -1814,7 +1849,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused Gaussian Error Linear Unit (GELU) activation function.<br>
+   * Fused Gaussian Error Linear Unit (GELU) activation function.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input tensor (NUMERIC type)
@@ -1827,7 +1862,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused GEMM + SwiGLU: combines two matrix multiplications with gated activation.<br>
+   * Fused GEMM + SwiGLU: combines two matrix multiplications with gated activation.
    *
    * @param input Input tensor (NUMERIC type)
    * @param wGate Gate projection weight (NUMERIC type)
@@ -1842,7 +1877,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused GEMM + SwiGLU: combines two matrix multiplications with gated activation.<br>
+   * Fused GEMM + SwiGLU: combines two matrix multiplications with gated activation.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input tensor (NUMERIC type)
@@ -1860,7 +1895,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused layer normalization. Computes mean, variance, normalize, scale and shift in one pass.<br>
+   * Fused layer normalization. Computes mean, variance, normalize, scale and shift in one pass.
    *
    * @param input Input tensor (NUMERIC type)
    * @param gamma Scale parameter (NUMERIC type)
@@ -1877,7 +1912,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused layer normalization. Computes mean, variance, normalize, scale and shift in one pass.<br>
+   * Fused layer normalization. Computes mean, variance, normalize, scale and shift in one pass.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input tensor (NUMERIC type)
@@ -1896,17 +1931,17 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused Multimodal Rotary Position Embedding (M-RoPE).<br>
-   * <br>
-   * Applies rotary embeddings with separate temporal/height/width position<br>
-   * encodings for multimodal models like Qwen3-VL and Qwen2.5-VL. The head<br>
-   * dimension is split into 3 frequency band sections, each rotated using<br>
-   * its own position vector.<br>
-   * <br>
-   * For Qwen3-VL with head_dim=64, default sections are [24, 20, 20]:<br>
-   *   Temporal band: dims [0..24) rotated by temporal positions<br>
-   *   Height band: dims [24..44) rotated by spatial height positions<br>
-   *   Width band: dims [44..64) rotated by spatial width positions<br>
+   * Fused Multimodal Rotary Position Embedding (M-RoPE).
+   *
+   * Applies rotary embeddings with separate temporal/height/width position
+   * encodings for multimodal models like Qwen3-VL and Qwen2.5-VL. The head
+   * dimension is split into 3 frequency band sections, each rotated using
+   * its own position vector.
+   *
+   * For Qwen3-VL with head_dim=64, default sections are [24, 20, 20]:
+   *   Temporal band: dims [0..24) rotated by temporal positions
+   *   Height band: dims [24..44) rotated by spatial height positions
+   *   Width band: dims [44..64) rotated by spatial width positions
    *
    * @param input Input tensor [batch, seq_len, num_heads, head_dim] (NUMERIC type)
    * @param posT Temporal position IDs [batch, seq_len] (INT type)
@@ -1929,17 +1964,17 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused Multimodal Rotary Position Embedding (M-RoPE).<br>
-   * <br>
-   * Applies rotary embeddings with separate temporal/height/width position<br>
-   * encodings for multimodal models like Qwen3-VL and Qwen2.5-VL. The head<br>
-   * dimension is split into 3 frequency band sections, each rotated using<br>
-   * its own position vector.<br>
-   * <br>
-   * For Qwen3-VL with head_dim=64, default sections are [24, 20, 20]:<br>
-   *   Temporal band: dims [0..24) rotated by temporal positions<br>
-   *   Height band: dims [24..44) rotated by spatial height positions<br>
-   *   Width band: dims [44..64) rotated by spatial width positions<br>
+   * Fused Multimodal Rotary Position Embedding (M-RoPE).
+   *
+   * Applies rotary embeddings with separate temporal/height/width position
+   * encodings for multimodal models like Qwen3-VL and Qwen2.5-VL. The head
+   * dimension is split into 3 frequency band sections, each rotated using
+   * its own position vector.
+   *
+   * For Qwen3-VL with head_dim=64, default sections are [24, 20, 20]:
+   *   Temporal band: dims [0..24) rotated by temporal positions
+   *   Height band: dims [24..44) rotated by spatial height positions
+   *   Width band: dims [44..64) rotated by spatial width positions
    *
    * @param name name May be null. Name for the output variable
    * @param input Input tensor [batch, seq_len, num_heads, head_dim] (NUMERIC type)
@@ -1965,17 +2000,17 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused Multimodal Rotary Position Embedding (M-RoPE).<br>
-   * <br>
-   * Applies rotary embeddings with separate temporal/height/width position<br>
-   * encodings for multimodal models like Qwen3-VL and Qwen2.5-VL. The head<br>
-   * dimension is split into 3 frequency band sections, each rotated using<br>
-   * its own position vector.<br>
-   * <br>
-   * For Qwen3-VL with head_dim=64, default sections are [24, 20, 20]:<br>
-   *   Temporal band: dims [0..24) rotated by temporal positions<br>
-   *   Height band: dims [24..44) rotated by spatial height positions<br>
-   *   Width band: dims [44..64) rotated by spatial width positions<br>
+   * Fused Multimodal Rotary Position Embedding (M-RoPE).
+   *
+   * Applies rotary embeddings with separate temporal/height/width position
+   * encodings for multimodal models like Qwen3-VL and Qwen2.5-VL. The head
+   * dimension is split into 3 frequency band sections, each rotated using
+   * its own position vector.
+   *
+   * For Qwen3-VL with head_dim=64, default sections are [24, 20, 20]:
+   *   Temporal band: dims [0..24) rotated by temporal positions
+   *   Height band: dims [24..44) rotated by spatial height positions
+   *   Width band: dims [44..64) rotated by spatial width positions
    *
    * @param input Input tensor [batch, seq_len, num_heads, head_dim] (NUMERIC type)
    * @param posT Temporal position IDs [batch, seq_len] (INT type)
@@ -1993,17 +2028,17 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused Multimodal Rotary Position Embedding (M-RoPE).<br>
-   * <br>
-   * Applies rotary embeddings with separate temporal/height/width position<br>
-   * encodings for multimodal models like Qwen3-VL and Qwen2.5-VL. The head<br>
-   * dimension is split into 3 frequency band sections, each rotated using<br>
-   * its own position vector.<br>
-   * <br>
-   * For Qwen3-VL with head_dim=64, default sections are [24, 20, 20]:<br>
-   *   Temporal band: dims [0..24) rotated by temporal positions<br>
-   *   Height band: dims [24..44) rotated by spatial height positions<br>
-   *   Width band: dims [44..64) rotated by spatial width positions<br>
+   * Fused Multimodal Rotary Position Embedding (M-RoPE).
+   *
+   * Applies rotary embeddings with separate temporal/height/width position
+   * encodings for multimodal models like Qwen3-VL and Qwen2.5-VL. The head
+   * dimension is split into 3 frequency band sections, each rotated using
+   * its own position vector.
+   *
+   * For Qwen3-VL with head_dim=64, default sections are [24, 20, 20]:
+   *   Temporal band: dims [0..24) rotated by temporal positions
+   *   Height band: dims [24..44) rotated by spatial height positions
+   *   Width band: dims [44..64) rotated by spatial width positions
    *
    * @param name name May be null. Name for the output variable
    * @param input Input tensor [batch, seq_len, num_heads, head_dim] (NUMERIC type)
@@ -2023,7 +2058,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused normalization + quantization in a single kernel.<br>
+   * Fused normalization + quantization in a single kernel.
    *
    * @param input Input tensor (NUMERIC type)
    * @param gamma Norm scale parameter (NUMERIC type)
@@ -2039,7 +2074,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused normalization + quantization in a single kernel.<br>
+   * Fused normalization + quantization in a single kernel.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input tensor (NUMERIC type)
@@ -2057,8 +2092,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused RMSNorm + SwiGLU activation. Combines normalization and gated activation<br>
-   * into a single kernel for better memory efficiency.<br>
+   * Fused RMSNorm + SwiGLU activation. Combines normalization and gated activation
+   * into a single kernel for better memory efficiency.
    *
    * @param input Input tensor (NUMERIC type)
    * @param gamma RMS norm scale (NUMERIC type)
@@ -2077,8 +2112,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused RMSNorm + SwiGLU activation. Combines normalization and gated activation<br>
-   * into a single kernel for better memory efficiency.<br>
+   * Fused RMSNorm + SwiGLU activation. Combines normalization and gated activation
+   * into a single kernel for better memory efficiency.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input tensor (NUMERIC type)
@@ -2099,14 +2134,14 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused Rotary Position Embedding (RoPE).<br>
-   * <br>
-   * Two modes:<br>
-   * 1. Precomputed cache: provide ropeCache with cos/sin values and startPosition<br>
-   * 2. Dynamic position: provide scalar positionOffset tensor for KV cache decode<br>
-   *    (enables DSP replay with fixed graph shapes)<br>
-   * <br>
-   * Supports RoPE variants: standard (LLaMA/Mistral), NeoX, GPT-J.<br>
+   * Fused Rotary Position Embedding (RoPE).
+   *
+   * Two modes:
+   * 1. Precomputed cache: provide ropeCache with cos/sin values and startPosition
+   * 2. Dynamic position: provide scalar positionOffset tensor for KV cache decode
+   *    (enables DSP replay with fixed graph shapes)
+   *
+   * Supports RoPE variants: standard (LLaMA/Mistral), NeoX, GPT-J.
    *
    * @param input Input tensor [batch, seq_len, num_heads, head_dim] (NUMERIC type)
    * @param ropeCache Precomputed RoPE cache (cos/sin) (NUMERIC type)
@@ -2122,14 +2157,14 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused Rotary Position Embedding (RoPE).<br>
-   * <br>
-   * Two modes:<br>
-   * 1. Precomputed cache: provide ropeCache with cos/sin values and startPosition<br>
-   * 2. Dynamic position: provide scalar positionOffset tensor for KV cache decode<br>
-   *    (enables DSP replay with fixed graph shapes)<br>
-   * <br>
-   * Supports RoPE variants: standard (LLaMA/Mistral), NeoX, GPT-J.<br>
+   * Fused Rotary Position Embedding (RoPE).
+   *
+   * Two modes:
+   * 1. Precomputed cache: provide ropeCache with cos/sin values and startPosition
+   * 2. Dynamic position: provide scalar positionOffset tensor for KV cache decode
+   *    (enables DSP replay with fixed graph shapes)
+   *
+   * Supports RoPE variants: standard (LLaMA/Mistral), NeoX, GPT-J.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input tensor [batch, seq_len, num_heads, head_dim] (NUMERIC type)
@@ -2148,14 +2183,14 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused Rotary Position Embedding (RoPE).<br>
-   * <br>
-   * Two modes:<br>
-   * 1. Precomputed cache: provide ropeCache with cos/sin values and startPosition<br>
-   * 2. Dynamic position: provide scalar positionOffset tensor for KV cache decode<br>
-   *    (enables DSP replay with fixed graph shapes)<br>
-   * <br>
-   * Supports RoPE variants: standard (LLaMA/Mistral), NeoX, GPT-J.<br>
+   * Fused Rotary Position Embedding (RoPE).
+   *
+   * Two modes:
+   * 1. Precomputed cache: provide ropeCache with cos/sin values and startPosition
+   * 2. Dynamic position: provide scalar positionOffset tensor for KV cache decode
+   *    (enables DSP replay with fixed graph shapes)
+   *
+   * Supports RoPE variants: standard (LLaMA/Mistral), NeoX, GPT-J.
    *
    * @param input Input tensor [batch, seq_len, num_heads, head_dim] (NUMERIC type)
    * @param positionOffset Scalar INT64 tensor with dynamic position offset for KV cache decode (NUMERIC type)
@@ -2175,14 +2210,14 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused Rotary Position Embedding (RoPE).<br>
-   * <br>
-   * Two modes:<br>
-   * 1. Precomputed cache: provide ropeCache with cos/sin values and startPosition<br>
-   * 2. Dynamic position: provide scalar positionOffset tensor for KV cache decode<br>
-   *    (enables DSP replay with fixed graph shapes)<br>
-   * <br>
-   * Supports RoPE variants: standard (LLaMA/Mistral), NeoX, GPT-J.<br>
+   * Fused Rotary Position Embedding (RoPE).
+   *
+   * Two modes:
+   * 1. Precomputed cache: provide ropeCache with cos/sin values and startPosition
+   * 2. Dynamic position: provide scalar positionOffset tensor for KV cache decode
+   *    (enables DSP replay with fixed graph shapes)
+   *
+   * Supports RoPE variants: standard (LLaMA/Mistral), NeoX, GPT-J.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input tensor [batch, seq_len, num_heads, head_dim] (NUMERIC type)
@@ -2204,17 +2239,17 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Full Gated Delta Network (GDN) layer block.<br>
-   * <br>
-   * Fuses the complete GDN layer pipeline:<br>
-   *   1. Linear projection (QKV + beta + gate)<br>
-   *   2. Causal depthwise conv1d with SiLU activation<br>
-   *   3. Gated delta rule recurrent state update<br>
-   *   4. RMSNorm + Swish gate<br>
-   *   5. Output linear projection<br>
-   * <br>
-   * This is the building block for Gated Delta Network architectures<br>
-   * (arXiv:2412.06464, ICLR 2025).<br>
+   * Full Gated Delta Network (GDN) layer block.
+   *
+   * Fuses the complete GDN layer pipeline:
+   *   1. Linear projection (QKV + beta + gate)
+   *   2. Causal depthwise conv1d with SiLU activation
+   *   3. Gated delta rule recurrent state update
+   *   4. RMSNorm + Swish gate
+   *   5. Output linear projection
+   *
+   * This is the building block for Gated Delta Network architectures
+   * (arXiv:2412.06464, ICLR 2025).
    *
    * @param x Input tensor [batch, seqLen, modelDim] (NUMERIC type)
    * @param wqkv QKV projection weights [modelDim, qkvDim] (NUMERIC type)
@@ -2250,17 +2285,17 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Full Gated Delta Network (GDN) layer block.<br>
-   * <br>
-   * Fuses the complete GDN layer pipeline:<br>
-   *   1. Linear projection (QKV + beta + gate)<br>
-   *   2. Causal depthwise conv1d with SiLU activation<br>
-   *   3. Gated delta rule recurrent state update<br>
-   *   4. RMSNorm + Swish gate<br>
-   *   5. Output linear projection<br>
-   * <br>
-   * This is the building block for Gated Delta Network architectures<br>
-   * (arXiv:2412.06464, ICLR 2025).<br>
+   * Full Gated Delta Network (GDN) layer block.
+   *
+   * Fuses the complete GDN layer pipeline:
+   *   1. Linear projection (QKV + beta + gate)
+   *   2. Causal depthwise conv1d with SiLU activation
+   *   3. Gated delta rule recurrent state update
+   *   4. RMSNorm + Swish gate
+   *   5. Output linear projection
+   *
+   * This is the building block for Gated Delta Network architectures
+   * (arXiv:2412.06464, ICLR 2025).
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param x Input tensor [batch, seqLen, modelDim] (NUMERIC type)
@@ -2298,17 +2333,17 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Full Gated Delta Network (GDN) layer block.<br>
-   * <br>
-   * Fuses the complete GDN layer pipeline:<br>
-   *   1. Linear projection (QKV + beta + gate)<br>
-   *   2. Causal depthwise conv1d with SiLU activation<br>
-   *   3. Gated delta rule recurrent state update<br>
-   *   4. RMSNorm + Swish gate<br>
-   *   5. Output linear projection<br>
-   * <br>
-   * This is the building block for Gated Delta Network architectures<br>
-   * (arXiv:2412.06464, ICLR 2025).<br>
+   * Full Gated Delta Network (GDN) layer block.
+   *
+   * Fuses the complete GDN layer pipeline:
+   *   1. Linear projection (QKV + beta + gate)
+   *   2. Causal depthwise conv1d with SiLU activation
+   *   3. Gated delta rule recurrent state update
+   *   4. RMSNorm + Swish gate
+   *   5. Output linear projection
+   *
+   * This is the building block for Gated Delta Network architectures
+   * (arXiv:2412.06464, ICLR 2025).
    *
    * @param x Input tensor [batch, seqLen, modelDim] (NUMERIC type)
    * @param wqkv QKV projection weights [modelDim, qkvDim] (NUMERIC type)
@@ -2338,17 +2373,17 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Full Gated Delta Network (GDN) layer block.<br>
-   * <br>
-   * Fuses the complete GDN layer pipeline:<br>
-   *   1. Linear projection (QKV + beta + gate)<br>
-   *   2. Causal depthwise conv1d with SiLU activation<br>
-   *   3. Gated delta rule recurrent state update<br>
-   *   4. RMSNorm + Swish gate<br>
-   *   5. Output linear projection<br>
-   * <br>
-   * This is the building block for Gated Delta Network architectures<br>
-   * (arXiv:2412.06464, ICLR 2025).<br>
+   * Full Gated Delta Network (GDN) layer block.
+   *
+   * Fuses the complete GDN layer pipeline:
+   *   1. Linear projection (QKV + beta + gate)
+   *   2. Causal depthwise conv1d with SiLU activation
+   *   3. Gated delta rule recurrent state update
+   *   4. RMSNorm + Swish gate
+   *   5. Output linear projection
+   *
+   * This is the building block for Gated Delta Network architectures
+   * (arXiv:2412.06464, ICLR 2025).
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param x Input tensor [batch, seqLen, modelDim] (NUMERIC type)
@@ -2380,14 +2415,14 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Gated Delta Rule (arXiv:2412.06464, ICLR 2025, NVIDIA Research).<br>
-   * <br>
-   * Recurrent linear attention with gated exponential decay and delta update rule:<br>
-   *   S_t = exp(g_t) * S_{t-1} + beta_t * k_t (x) (v_t - exp(g_t) * S_{t-1}^T * k_t)<br>
-   *   output_t = S_t^T * q_t<br>
-   * <br>
-   * State shape: [batch, numHeads, headDimK, headDimV].<br>
-   * Used in Gated Delta Networks (Qwen3.5 and other production models).<br>
+   * Gated Delta Rule (arXiv:2412.06464, ICLR 2025, NVIDIA Research).
+   *
+   * Recurrent linear attention with gated exponential decay and delta update rule:
+   *   S_t = exp(g_t) * S_{t-1} + beta_t * k_t (x) (v_t - exp(g_t) * S_{t-1}^T * k_t)
+   *   output_t = S_t^T * q_t
+   *
+   * State shape: [batch, numHeads, headDimK, headDimV].
+   * Used in Gated Delta Networks (Qwen3.5 and other production models).
    *
    * @param q Query tensor [batch, seqLen, numHeads, headDimK] (NUMERIC type)
    * @param k Key tensor [batch, seqLen, numHeads, headDimK] (L2-normalized) (NUMERIC type)
@@ -2416,14 +2451,14 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Gated Delta Rule (arXiv:2412.06464, ICLR 2025, NVIDIA Research).<br>
-   * <br>
-   * Recurrent linear attention with gated exponential decay and delta update rule:<br>
-   *   S_t = exp(g_t) * S_{t-1} + beta_t * k_t (x) (v_t - exp(g_t) * S_{t-1}^T * k_t)<br>
-   *   output_t = S_t^T * q_t<br>
-   * <br>
-   * State shape: [batch, numHeads, headDimK, headDimV].<br>
-   * Used in Gated Delta Networks (Qwen3.5 and other production models).<br>
+   * Gated Delta Rule (arXiv:2412.06464, ICLR 2025, NVIDIA Research).
+   *
+   * Recurrent linear attention with gated exponential decay and delta update rule:
+   *   S_t = exp(g_t) * S_{t-1} + beta_t * k_t (x) (v_t - exp(g_t) * S_{t-1}^T * k_t)
+   *   output_t = S_t^T * q_t
+   *
+   * State shape: [batch, numHeads, headDimK, headDimV].
+   * Used in Gated Delta Networks (Qwen3.5 and other production models).
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param q Query tensor [batch, seqLen, numHeads, headDimK] (NUMERIC type)
@@ -2454,14 +2489,14 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Gated Delta Rule (arXiv:2412.06464, ICLR 2025, NVIDIA Research).<br>
-   * <br>
-   * Recurrent linear attention with gated exponential decay and delta update rule:<br>
-   *   S_t = exp(g_t) * S_{t-1} + beta_t * k_t (x) (v_t - exp(g_t) * S_{t-1}^T * k_t)<br>
-   *   output_t = S_t^T * q_t<br>
-   * <br>
-   * State shape: [batch, numHeads, headDimK, headDimV].<br>
-   * Used in Gated Delta Networks (Qwen3.5 and other production models).<br>
+   * Gated Delta Rule (arXiv:2412.06464, ICLR 2025, NVIDIA Research).
+   *
+   * Recurrent linear attention with gated exponential decay and delta update rule:
+   *   S_t = exp(g_t) * S_{t-1} + beta_t * k_t (x) (v_t - exp(g_t) * S_{t-1}^T * k_t)
+   *   output_t = S_t^T * q_t
+   *
+   * State shape: [batch, numHeads, headDimK, headDimV].
+   * Used in Gated Delta Networks (Qwen3.5 and other production models).
    *
    * @param q Query tensor [batch, seqLen, numHeads, headDimK] (NUMERIC type)
    * @param k Key tensor [batch, seqLen, numHeads, headDimK] (L2-normalized) (NUMERIC type)
@@ -2482,14 +2517,14 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Gated Delta Rule (arXiv:2412.06464, ICLR 2025, NVIDIA Research).<br>
-   * <br>
-   * Recurrent linear attention with gated exponential decay and delta update rule:<br>
-   *   S_t = exp(g_t) * S_{t-1} + beta_t * k_t (x) (v_t - exp(g_t) * S_{t-1}^T * k_t)<br>
-   *   output_t = S_t^T * q_t<br>
-   * <br>
-   * State shape: [batch, numHeads, headDimK, headDimV].<br>
-   * Used in Gated Delta Networks (Qwen3.5 and other production models).<br>
+   * Gated Delta Rule (arXiv:2412.06464, ICLR 2025, NVIDIA Research).
+   *
+   * Recurrent linear attention with gated exponential decay and delta update rule:
+   *   S_t = exp(g_t) * S_{t-1} + beta_t * k_t (x) (v_t - exp(g_t) * S_{t-1}^T * k_t)
+   *   output_t = S_t^T * q_t
+   *
+   * State shape: [batch, numHeads, headDimK, headDimV].
+   * Used in Gated Delta Networks (Qwen3.5 and other production models).
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param q Query tensor [batch, seqLen, numHeads, headDimK] (NUMERIC type)
@@ -2512,9 +2547,9 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * GELU activation function - Gaussian Error Linear Units<br>
-   * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a><br>
-   * This method uses the sigmoid approximation<br>
+   * GELU activation function - Gaussian Error Linear Units
+   * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a>
+   * This method uses the sigmoid approximation
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -2525,9 +2560,9 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * GELU activation function - Gaussian Error Linear Units<br>
-   * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a><br>
-   * This method uses the sigmoid approximation<br>
+   * GELU activation function - Gaussian Error Linear Units
+   * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a>
+   * This method uses the sigmoid approximation
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -2540,8 +2575,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Runtime quantized matmul against GGML-packed weights: dequantizes the packed<br>
-   * weight on the fly (fp32 accumulation) without materializing a dense weight.<br>
+   * Runtime quantized matmul against GGML-packed weights: dequantizes the packed
+   * weight on the fly (fp32 accumulation) without materializing a dense weight.
    *
    * @param activations Activations [M, K] or [B, S, K] (FLOAT32 or HALF) (NUMERIC type)
    * @param packedWeights Packed GGML quantized weight bytes (INT8, rank 1) for a logical [N, K] weight (NUMERIC type)
@@ -2559,8 +2594,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Runtime quantized matmul against GGML-packed weights: dequantizes the packed<br>
-   * weight on the fly (fp32 accumulation) without materializing a dense weight.<br>
+   * Runtime quantized matmul against GGML-packed weights: dequantizes the packed
+   * weight on the fly (fp32 accumulation) without materializing a dense weight.
    *
    * @param name name May be null. Name for the output variable
    * @param activations Activations [M, K] or [B, S, K] (FLOAT32 or HALF) (NUMERIC type)
@@ -2580,8 +2615,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused QLoRA op: runtime quantized base matmul (frozen GGML-packed weight) plus a<br>
-   * trainable low-rank LoRA residual, computed in a single op.<br>
+   * Fused QLoRA op: runtime quantized base matmul (frozen GGML-packed weight) plus a
+   * trainable low-rank LoRA residual, computed in a single op.
    *
    * @param activations Activations [M, K] or [B, S, K] (NUMERIC type)
    * @param packedWeights Packed GGML quantized weight bytes (INT8) for a logical [N, K] weight (NUMERIC type)
@@ -2605,8 +2640,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused QLoRA op: runtime quantized base matmul (frozen GGML-packed weight) plus a<br>
-   * trainable low-rank LoRA residual, computed in a single op.<br>
+   * Fused QLoRA op: runtime quantized base matmul (frozen GGML-packed weight) plus a
+   * trainable low-rank LoRA residual, computed in a single op.
    *
    * @param name name May be null. Name for the output variable
    * @param activations Activations [M, K] or [B, S, K] (NUMERIC type)
@@ -2632,7 +2667,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * GPU-accelerated top-K sampling for autoregressive text generation.<br>
+   * GPU-accelerated top-K sampling for autoregressive text generation.
    *
    * @param logits Logit scores (NUMERIC type)
    * @param k Number of top candidates
@@ -2645,7 +2680,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * GPU-accelerated top-K sampling for autoregressive text generation.<br>
+   * GPU-accelerated top-K sampling for autoregressive text generation.
    *
    * @param name name May be null. Name for the output variable
    * @param logits Logit scores (NUMERIC type)
@@ -2660,7 +2695,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * GPU-accelerated nucleus (top-P) sampling for autoregressive text generation.<br>
+   * GPU-accelerated nucleus (top-P) sampling for autoregressive text generation.
    *
    * @param logits Logit scores (NUMERIC type)
    * @param p Cumulative probability threshold (nucleus)
@@ -2673,7 +2708,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * GPU-accelerated nucleus (top-P) sampling for autoregressive text generation.<br>
+   * GPU-accelerated nucleus (top-P) sampling for autoregressive text generation.
    *
    * @param name name May be null. Name for the output variable
    * @param logits Logit scores (NUMERIC type)
@@ -2688,19 +2723,19 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Grouped Query Attention (GQA) - Efficient attention with shared KV heads.<br>
-   * <br>
-   * Multiple query heads share the same key-value heads, reducing memory and<br>
-   * computation while maintaining model quality. Used in LLaMA 2, Mistral, etc.<br>
-   * <br>
-   * numHeads must be divisible by numKvHeads. Each KV head is repeated<br>
-   * (numHeads / numKvHeads) times to match query heads.<br>
-   * <br>
-   * Special cases:<br>
-   * - numKvHeads == numHeads: Standard Multi-Head Attention (MHA)<br>
-   * - numKvHeads == 1: Multi-Query Attention (MQA)<br>
-   * <br>
-   * See "GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints"<br>
+   * Grouped Query Attention (GQA) - Efficient attention with shared KV heads.
+   *
+   * Multiple query heads share the same key-value heads, reducing memory and
+   * computation while maintaining model quality. Used in LLaMA 2, Mistral, etc.
+   *
+   * numHeads must be divisible by numKvHeads. Each KV head is repeated
+   * (numHeads / numKvHeads) times to match query heads.
+   *
+   * Special cases:
+   * - numKvHeads == numHeads: Standard Multi-Head Attention (MHA)
+   * - numKvHeads == 1: Multi-Query Attention (MQA)
+   *
+   * See "GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints"
    *
    * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
    * @param key Key tensor. Shape: [batch, seqLen, numKvHeads, headDim] (NUMERIC type)
@@ -2720,19 +2755,19 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Grouped Query Attention (GQA) - Efficient attention with shared KV heads.<br>
-   * <br>
-   * Multiple query heads share the same key-value heads, reducing memory and<br>
-   * computation while maintaining model quality. Used in LLaMA 2, Mistral, etc.<br>
-   * <br>
-   * numHeads must be divisible by numKvHeads. Each KV head is repeated<br>
-   * (numHeads / numKvHeads) times to match query heads.<br>
-   * <br>
-   * Special cases:<br>
-   * - numKvHeads == numHeads: Standard Multi-Head Attention (MHA)<br>
-   * - numKvHeads == 1: Multi-Query Attention (MQA)<br>
-   * <br>
-   * See "GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints"<br>
+   * Grouped Query Attention (GQA) - Efficient attention with shared KV heads.
+   *
+   * Multiple query heads share the same key-value heads, reducing memory and
+   * computation while maintaining model quality. Used in LLaMA 2, Mistral, etc.
+   *
+   * numHeads must be divisible by numKvHeads. Each KV head is repeated
+   * (numHeads / numKvHeads) times to match query heads.
+   *
+   * Special cases:
+   * - numKvHeads == numHeads: Standard Multi-Head Attention (MHA)
+   * - numKvHeads == 1: Multi-Query Attention (MQA)
+   *
+   * See "GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints"
    *
    * @param name name May be null. Name for the output variable
    * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
@@ -2754,10 +2789,10 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Element-wise hard sigmoid function:<br>
-   * out[i] = 0 if in[i] <= -2.5<br>
-   * out[1] = 0.2*in[i]+0.5 if -2.5 < in[i] < 2.5<br>
-   * out[i] = 1 if in[i] >= 2.5<br>
+   * Element-wise hard sigmoid function:
+   * out[i] = 0 if in[i] &lt;= -2.5
+   * out[i] = 0.2*in[i]+0.5 if -2.5 &lt; in[i] &lt; 2.5
+   * out[i] = 1 if in[i] >= 2.5
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -2768,10 +2803,10 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Element-wise hard sigmoid function:<br>
-   * out[i] = 0 if in[i] <= -2.5<br>
-   * out[1] = 0.2*in[i]+0.5 if -2.5 < in[i] < 2.5<br>
-   * out[i] = 1 if in[i] >= 2.5<br>
+   * Element-wise hard sigmoid function:
+   * out[i] = 0 if in[i] &lt;= -2.5
+   * out[i] = 0.2*in[i]+0.5 if -2.5 &lt; in[i] &lt; 2.5
+   * out[i] = 1 if in[i] >= 2.5
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -2784,10 +2819,10 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Element-wise hard tanh function:<br>
-   * out[i] = -1 if in[i] <= -1<br>
-   * out[1] = in[i] if -1 < in[i] < 1<br>
-   * out[i] = 1 if in[i] >= 1<br>
+   * Element-wise hard tanh function:
+   * out[i] = -1 if in[i] &lt;= -1
+   * out[i] = in[i] if -1 &lt; in[i] &lt; 1
+   * out[i] = 1 if in[i] >= 1
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -2798,10 +2833,10 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Element-wise hard tanh function:<br>
-   * out[i] = -1 if in[i] <= -1<br>
-   * out[1] = in[i] if -1 < in[i] < 1<br>
-   * out[i] = 1 if in[i] >= 1<br>
+   * Element-wise hard tanh function:
+   * out[i] = -1 if in[i] &lt;= -1
+   * out[i] = in[i] if -1 &lt; in[i] &lt; 1
+   * out[i] = 1 if in[i] >= 1
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -2814,7 +2849,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Derivative (dOut/dIn) of the element-wise hard Tanh function - hardTanh(INDArray)<br>
+   * Derivative (dOut/dIn) of the element-wise hard Tanh function - hardTanh(INDArray)
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -2825,7 +2860,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Derivative (dOut/dIn) of the element-wise hard Tanh function - hardTanh(INDArray)<br>
+   * Derivative (dOut/dIn) of the element-wise hard Tanh function - hardTanh(INDArray)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -2838,7 +2873,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Dequantizes quantized KV cache tensors back to floating point.<br>
+   * Dequantizes quantized KV cache tensors back to floating point.
    *
    * @param input Quantized key or value tensor (NUMERIC type)
    * @param scale Quantization scales (NUMERIC type)
@@ -2852,7 +2887,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Dequantizes quantized KV cache tensors back to floating point.<br>
+   * Dequantizes quantized KV cache tensors back to floating point.
    *
    * @param name name May be null. Name for the output variable
    * @param input Quantized key or value tensor (NUMERIC type)
@@ -2869,7 +2904,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Quantizes KV cache tensors for memory-efficient inference.<br>
+   * Quantizes KV cache tensors for memory-efficient inference.
    *
    * @param input Key or value tensor to quantize (NUMERIC type)
    * @param quantType Quantization type
@@ -2882,7 +2917,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Quantizes KV cache tensors for memory-efficient inference.<br>
+   * Quantizes KV cache tensors for memory-efficient inference.
    *
    * @param name name May be null. Name for the output variable
    * @param input Key or value tensor to quantize (NUMERIC type)
@@ -2897,18 +2932,18 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * KV Cache Update - Updates key-value cache for autoregressive generation.<br>
-   * <br>
-   * During LLM inference, past key-value pairs are cached to avoid redundant<br>
-   * computation during token-by-token generation. This operation efficiently<br>
-   * inserts new keys/values at the specified position.<br>
-   * <br>
-   * Usage pattern:<br>
-   * 1. Initialize cache with zeros: [batch, maxSeqLen, numKvHeads, headDim]<br>
-   * 2. For each new token, compute new K/V and update cache<br>
-   * 3. Use full cached K/V for attention computation<br>
-   * <br>
-   * Returns updated keyCache and valueCache tensors.<br>
+   * KV Cache Update - Updates key-value cache for autoregressive generation.
+   *
+   * During LLM inference, past key-value pairs are cached to avoid redundant
+   * computation during token-by-token generation. This operation efficiently
+   * inserts new keys/values at the specified position.
+   *
+   * Usage pattern:
+   * 1. Initialize cache with zeros: [batch, maxSeqLen, numKvHeads, headDim]
+   * 2. For each new token, compute new K/V and update cache
+   * 3. Use full cached K/V for attention computation
+   *
+   * Returns updated keyCache and valueCache tensors.
    *
    * @param keyCache Existing key cache. Shape: [batch, maxSeqLen, numKvHeads, headDim] (NUMERIC type)
    * @param valueCache Existing value cache. Shape: [batch, maxSeqLen, numKvHeads, headDim] (NUMERIC type)
@@ -2928,18 +2963,18 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * KV Cache Update - Updates key-value cache for autoregressive generation.<br>
-   * <br>
-   * During LLM inference, past key-value pairs are cached to avoid redundant<br>
-   * computation during token-by-token generation. This operation efficiently<br>
-   * inserts new keys/values at the specified position.<br>
-   * <br>
-   * Usage pattern:<br>
-   * 1. Initialize cache with zeros: [batch, maxSeqLen, numKvHeads, headDim]<br>
-   * 2. For each new token, compute new K/V and update cache<br>
-   * 3. Use full cached K/V for attention computation<br>
-   * <br>
-   * Returns updated keyCache and valueCache tensors.<br>
+   * KV Cache Update - Updates key-value cache for autoregressive generation.
+   *
+   * During LLM inference, past key-value pairs are cached to avoid redundant
+   * computation during token-by-token generation. This operation efficiently
+   * inserts new keys/values at the specified position.
+   *
+   * Usage pattern:
+   * 1. Initialize cache with zeros: [batch, maxSeqLen, numKvHeads, headDim]
+   * 2. For each new token, compute new K/V and update cache
+   * 3. Use full cached K/V for attention computation
+   *
+   * Returns updated keyCache and valueCache tensors.
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param keyCache Existing key cache. Shape: [batch, maxSeqLen, numKvHeads, headDim] (NUMERIC type)
@@ -2961,18 +2996,18 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Batch KV cache scatter update for LLM autoregressive decoding.<br>
-   * <br>
-   * Copies a single time-step slice from each present KV tensor into the<br>
-   * corresponding static KV buffer at a given cache position. Replaces N<br>
-   * individual Java view+assign calls with a single native kernel launch.<br>
-   * <br>
-   * The present tensor has shape [batch, heads, seqLen, dim] where the new<br>
-   * token's KV entry is at the last sequence position. This entry is extracted<br>
-   * and written into the static buffer at cachePos.<br>
-   * <br>
-   * For multiple pairs, inputs are ordered as:<br>
-   * [present_0, ..., present_{N-1}, static_0, ..., static_{N-1}]<br>
+   * Batch KV cache scatter update for LLM autoregressive decoding.
+   *
+   * Copies a single time-step slice from each present KV tensor into the
+   * corresponding static KV buffer at a given cache position. Replaces N
+   * individual Java view+assign calls with a single native kernel launch.
+   *
+   * The present tensor has shape [batch, heads, seqLen, dim] where the new
+   * token's KV entry is at the last sequence position. This entry is extracted
+   * and written into the static buffer at cachePos.
+   *
+   * For multiple pairs, inputs are ordered as:
+   * [present_0, ..., present_{N-1}, static_0, ..., static_{N-1}]
    *
    * @param present Present KV tensor from decoder output. Shape: [batch, heads, seqLen, dim] (NUMERIC type)
    * @param staticBuffer Static KV cache buffer. Shape: [batch, heads, maxKvLen, dim]. Updated in-place. (NUMERIC type)
@@ -2986,18 +3021,18 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Batch KV cache scatter update for LLM autoregressive decoding.<br>
-   * <br>
-   * Copies a single time-step slice from each present KV tensor into the<br>
-   * corresponding static KV buffer at a given cache position. Replaces N<br>
-   * individual Java view+assign calls with a single native kernel launch.<br>
-   * <br>
-   * The present tensor has shape [batch, heads, seqLen, dim] where the new<br>
-   * token's KV entry is at the last sequence position. This entry is extracted<br>
-   * and written into the static buffer at cachePos.<br>
-   * <br>
-   * For multiple pairs, inputs are ordered as:<br>
-   * [present_0, ..., present_{N-1}, static_0, ..., static_{N-1}]<br>
+   * Batch KV cache scatter update for LLM autoregressive decoding.
+   *
+   * Copies a single time-step slice from each present KV tensor into the
+   * corresponding static KV buffer at a given cache position. Replaces N
+   * individual Java view+assign calls with a single native kernel launch.
+   *
+   * The present tensor has shape [batch, heads, seqLen, dim] where the new
+   * token's KV entry is at the last sequence position. This entry is extracted
+   * and written into the static buffer at cachePos.
+   *
+   * For multiple pairs, inputs are ordered as:
+   * [present_0, ..., present_{N-1}, static_0, ..., static_{N-1}]
    *
    * @param name name May be null. Name for the output variable
    * @param present Present KV tensor from decoder output. Shape: [batch, heads, seqLen, dim] (NUMERIC type)
@@ -3014,18 +3049,18 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Batch KV cache scatter update for LLM autoregressive decoding.<br>
-   * <br>
-   * Copies a single time-step slice from each present KV tensor into the<br>
-   * corresponding static KV buffer at a given cache position. Replaces N<br>
-   * individual Java view+assign calls with a single native kernel launch.<br>
-   * <br>
-   * The present tensor has shape [batch, heads, seqLen, dim] where the new<br>
-   * token's KV entry is at the last sequence position. This entry is extracted<br>
-   * and written into the static buffer at cachePos.<br>
-   * <br>
-   * For multiple pairs, inputs are ordered as:<br>
-   * [present_0, ..., present_{N-1}, static_0, ..., static_{N-1}]<br>
+   * Batch KV cache scatter update for LLM autoregressive decoding.
+   *
+   * Copies a single time-step slice from each present KV tensor into the
+   * corresponding static KV buffer at a given cache position. Replaces N
+   * individual Java view+assign calls with a single native kernel launch.
+   *
+   * The present tensor has shape [batch, heads, seqLen, dim] where the new
+   * token's KV entry is at the last sequence position. This entry is extracted
+   * and written into the static buffer at cachePos.
+   *
+   * For multiple pairs, inputs are ordered as:
+   * [present_0, ..., present_{N-1}, static_0, ..., static_{N-1}]
    *
    * @param present Present KV tensor from decoder output. Shape: [batch, heads, seqLen, dim] (NUMERIC type)
    * @param staticBuffer Static KV cache buffer. Shape: [batch, heads, maxKvLen, dim]. Updated in-place. (NUMERIC type)
@@ -3041,18 +3076,18 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Batch KV cache scatter update for LLM autoregressive decoding.<br>
-   * <br>
-   * Copies a single time-step slice from each present KV tensor into the<br>
-   * corresponding static KV buffer at a given cache position. Replaces N<br>
-   * individual Java view+assign calls with a single native kernel launch.<br>
-   * <br>
-   * The present tensor has shape [batch, heads, seqLen, dim] where the new<br>
-   * token's KV entry is at the last sequence position. This entry is extracted<br>
-   * and written into the static buffer at cachePos.<br>
-   * <br>
-   * For multiple pairs, inputs are ordered as:<br>
-   * [present_0, ..., present_{N-1}, static_0, ..., static_{N-1}]<br>
+   * Batch KV cache scatter update for LLM autoregressive decoding.
+   *
+   * Copies a single time-step slice from each present KV tensor into the
+   * corresponding static KV buffer at a given cache position. Replaces N
+   * individual Java view+assign calls with a single native kernel launch.
+   *
+   * The present tensor has shape [batch, heads, seqLen, dim] where the new
+   * token's KV entry is at the last sequence position. This entry is extracted
+   * and written into the static buffer at cachePos.
+   *
+   * For multiple pairs, inputs are ordered as:
+   * [present_0, ..., present_{N-1}, static_0, ..., static_{N-1}]
    *
    * @param name name May be null. Name for the output variable
    * @param present Present KV tensor from decoder output. Shape: [batch, heads, seqLen, dim] (NUMERIC type)
@@ -3070,9 +3105,9 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Apply Layer Normalization<br>
-   * <br>
-   * y = gain * standardize(x) + bias<br>
+   * Apply Layer Normalization
+   *
+   * y = gain * standardize(x) + bias
    *
    * @param input Input variable (NUMERIC type)
    * @param gain Gain (NUMERIC type)
@@ -3093,9 +3128,9 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Apply Layer Normalization<br>
-   * <br>
-   * y = gain * standardize(x) + bias<br>
+   * Apply Layer Normalization
+   *
+   * y = gain * standardize(x) + bias
    *
    * @param name name May be null. Name for the output variable
    * @param input Input variable (NUMERIC type)
@@ -3118,9 +3153,9 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Apply Layer Normalization<br>
-   * <br>
-   * y = gain * standardize(x) + bias<br>
+   * Apply Layer Normalization
+   *
+   * y = gain * standardize(x) + bias
    *
    * @param input Input variable (NUMERIC type)
    * @param gain Gain (NUMERIC type)
@@ -3137,9 +3172,9 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Apply Layer Normalization<br>
-   * <br>
-   * y = gain * standardize(x) + bias<br>
+   * Apply Layer Normalization
+   *
+   * y = gain * standardize(x) + bias
    *
    * @param name name May be null. Name for the output variable
    * @param input Input variable (NUMERIC type)
@@ -3158,10 +3193,10 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Element-wise leaky ReLU function:<br>
-   * out = x if x >= 0.0<br>
-   * out = alpha * x if x < cutoff<br>
-   * Alpha value is most commonly set to 0.01<br>
+   * Element-wise leaky ReLU function:
+   * out = x if x >= 0.0
+   * out = alpha * x if x &lt; 0.0
+   * Alpha value is most commonly set to 0.01
    *
    * @param x Input variable (NUMERIC type)
    * @param alpha Cutoff - commonly 0.01
@@ -3173,10 +3208,10 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Element-wise leaky ReLU function:<br>
-   * out = x if x >= 0.0<br>
-   * out = alpha * x if x < cutoff<br>
-   * Alpha value is most commonly set to 0.01<br>
+   * Element-wise leaky ReLU function:
+   * out = x if x >= 0.0
+   * out = alpha * x if x &lt; 0.0
+   * Alpha value is most commonly set to 0.01
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -3190,7 +3225,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Leaky ReLU derivative: dOut/dIn given input.<br>
+   * Leaky ReLU derivative: dOut/dIn given input.
    *
    * @param x Input variable (NUMERIC type)
    * @param alpha Cutoff - commonly 0.01
@@ -3202,7 +3237,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Leaky ReLU derivative: dOut/dIn given input.<br>
+   * Leaky ReLU derivative: dOut/dIn given input.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -3216,18 +3251,18 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Lightning Attention — O(N) linear attention with per-head exponential decay<br>
-   * via intra/inter-chunk decomposition.<br>
-   * <br>
-   * Based on Lightning Attention-2 (https://arxiv.org/abs/2405.17381).<br>
-   * <br>
-   * The algorithm decomposes each chunk into:<br>
-   *   Inter-chunk: O_inter = Q_i @ S_{i-1}<br>
-   *   Intra-chunk: A = tril(Q_i @ K_i^T) * decay_mask; O_intra = A @ V_i<br>
-   *   State update: S_i = decay^C * S_{i-1} + K_i^T @ V_i<br>
-   *   Combined:     O_i = O_inter + O_intra<br>
-   * <br>
-   * State shape: [batch, numHeads, headDim, headDim].<br>
+   * Lightning Attention — O(N) linear attention with per-head exponential decay
+   * via intra/inter-chunk decomposition.
+   *
+   * Based on Lightning Attention-2 (https://arxiv.org/abs/2405.17381).
+   *
+   * The algorithm decomposes each chunk into:
+   *   Inter-chunk: O_inter = Q_i @ S_{i-1}
+   *   Intra-chunk: A = tril(Q_i @ K_i^T) * decay_mask; O_intra = A @ V_i
+   *   State update: S_i = decay^C * S_{i-1} + K_i^T @ V_i
+   *   Combined:     O_i = O_inter + O_intra
+   *
+   * State shape: [batch, numHeads, headDim, headDim].
    *
    * @param query Query tensor [batch, seqLen, numHeads, headDim] (NUMERIC type)
    * @param key Key tensor [batch, seqLen, numHeads, headDim] (NUMERIC type)
@@ -3248,18 +3283,18 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Lightning Attention — O(N) linear attention with per-head exponential decay<br>
-   * via intra/inter-chunk decomposition.<br>
-   * <br>
-   * Based on Lightning Attention-2 (https://arxiv.org/abs/2405.17381).<br>
-   * <br>
-   * The algorithm decomposes each chunk into:<br>
-   *   Inter-chunk: O_inter = Q_i @ S_{i-1}<br>
-   *   Intra-chunk: A = tril(Q_i @ K_i^T) * decay_mask; O_intra = A @ V_i<br>
-   *   State update: S_i = decay^C * S_{i-1} + K_i^T @ V_i<br>
-   *   Combined:     O_i = O_inter + O_intra<br>
-   * <br>
-   * State shape: [batch, numHeads, headDim, headDim].<br>
+   * Lightning Attention — O(N) linear attention with per-head exponential decay
+   * via intra/inter-chunk decomposition.
+   *
+   * Based on Lightning Attention-2 (https://arxiv.org/abs/2405.17381).
+   *
+   * The algorithm decomposes each chunk into:
+   *   Inter-chunk: O_inter = Q_i @ S_{i-1}
+   *   Intra-chunk: A = tril(Q_i @ K_i^T) * decay_mask; O_intra = A @ V_i
+   *   State update: S_i = decay^C * S_{i-1} + K_i^T @ V_i
+   *   Combined:     O_i = O_inter + O_intra
+   *
+   * State shape: [batch, numHeads, headDim, headDim].
    *
    * @param name name May be null. Name for the output variable
    * @param query Query tensor [batch, seqLen, numHeads, headDim] (NUMERIC type)
@@ -3282,18 +3317,18 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Lightning Attention — O(N) linear attention with per-head exponential decay<br>
-   * via intra/inter-chunk decomposition.<br>
-   * <br>
-   * Based on Lightning Attention-2 (https://arxiv.org/abs/2405.17381).<br>
-   * <br>
-   * The algorithm decomposes each chunk into:<br>
-   *   Inter-chunk: O_inter = Q_i @ S_{i-1}<br>
-   *   Intra-chunk: A = tril(Q_i @ K_i^T) * decay_mask; O_intra = A @ V_i<br>
-   *   State update: S_i = decay^C * S_{i-1} + K_i^T @ V_i<br>
-   *   Combined:     O_i = O_inter + O_intra<br>
-   * <br>
-   * State shape: [batch, numHeads, headDim, headDim].<br>
+   * Lightning Attention — O(N) linear attention with per-head exponential decay
+   * via intra/inter-chunk decomposition.
+   *
+   * Based on Lightning Attention-2 (https://arxiv.org/abs/2405.17381).
+   *
+   * The algorithm decomposes each chunk into:
+   *   Inter-chunk: O_inter = Q_i @ S_{i-1}
+   *   Intra-chunk: A = tril(Q_i @ K_i^T) * decay_mask; O_intra = A @ V_i
+   *   State update: S_i = decay^C * S_{i-1} + K_i^T @ V_i
+   *   Combined:     O_i = O_inter + O_intra
+   *
+   * State shape: [batch, numHeads, headDim, headDim].
    *
    * @param query Query tensor [batch, seqLen, numHeads, headDim] (NUMERIC type)
    * @param key Key tensor [batch, seqLen, numHeads, headDim] (NUMERIC type)
@@ -3313,18 +3348,18 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Lightning Attention — O(N) linear attention with per-head exponential decay<br>
-   * via intra/inter-chunk decomposition.<br>
-   * <br>
-   * Based on Lightning Attention-2 (https://arxiv.org/abs/2405.17381).<br>
-   * <br>
-   * The algorithm decomposes each chunk into:<br>
-   *   Inter-chunk: O_inter = Q_i @ S_{i-1}<br>
-   *   Intra-chunk: A = tril(Q_i @ K_i^T) * decay_mask; O_intra = A @ V_i<br>
-   *   State update: S_i = decay^C * S_{i-1} + K_i^T @ V_i<br>
-   *   Combined:     O_i = O_inter + O_intra<br>
-   * <br>
-   * State shape: [batch, numHeads, headDim, headDim].<br>
+   * Lightning Attention — O(N) linear attention with per-head exponential decay
+   * via intra/inter-chunk decomposition.
+   *
+   * Based on Lightning Attention-2 (https://arxiv.org/abs/2405.17381).
+   *
+   * The algorithm decomposes each chunk into:
+   *   Inter-chunk: O_inter = Q_i @ S_{i-1}
+   *   Intra-chunk: A = tril(Q_i @ K_i^T) * decay_mask; O_intra = A @ V_i
+   *   State update: S_i = decay^C * S_{i-1} + K_i^T @ V_i
+   *   Combined:     O_i = O_inter + O_intra
+   *
+   * State shape: [batch, numHeads, headDim, headDim].
    *
    * @param name name May be null. Name for the output variable
    * @param query Query tensor [batch, seqLen, numHeads, headDim] (NUMERIC type)
@@ -3346,8 +3381,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Linear layer operation: out = mmul(in,w) + bias<br>
-   * Note that bias array is optional<br>
+   * Linear layer operation: out = mmul(in,w) + bias
+   * Note that bias array is optional
    *
    * @param input Input data (NUMERIC type)
    * @param weights Weights variable, shape [nIn, nOut] (NUMERIC type)
@@ -3366,8 +3401,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Linear layer operation: out = mmul(in,w) + bias<br>
-   * Note that bias array is optional<br>
+   * Linear layer operation: out = mmul(in,w) + bias
+   * Note that bias array is optional
    *
    * @param name name May be null. Name for the output variable
    * @param input Input data (NUMERIC type)
@@ -3388,8 +3423,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Linear layer operation: out = mmul(in,w) + bias<br>
-   * Note that bias array is optional<br>
+   * Linear layer operation: out = mmul(in,w) + bias
+   * Note that bias array is optional
    *
    * @param input Input data (NUMERIC type)
    * @param weights Weights variable, shape [nIn, nOut] (NUMERIC type)
@@ -3404,8 +3439,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Linear layer operation: out = mmul(in,w) + bias<br>
-   * Note that bias array is optional<br>
+   * Linear layer operation: out = mmul(in,w) + bias
+   * Note that bias array is optional
    *
    * @param name name May be null. Name for the output variable
    * @param input Input data (NUMERIC type)
@@ -3422,14 +3457,14 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Linear Attention Decode — single-token decode step for linear attention.<br>
-   * <br>
-   * Implements the recurrent form of linear attention:<br>
-   *   state_new = exp(-decay[h]) * state_old + k (x) v   (rank-1 outer-product update)<br>
-   *   output    = q @ state_new                            (matrix-vector product)<br>
-   * <br>
-   * State is always stored and computed as float32 regardless of input dtype.<br>
-   * State shape: [batch, numHeads, headDimV, headDimK].<br>
+   * Linear Attention Decode — single-token decode step for linear attention.
+   *
+   * Implements the recurrent form of linear attention:
+   *   state_new = exp(-decay[h]) * state_old + k (x) v   (rank-1 outer-product update)
+   *   output    = q @ state_new                            (matrix-vector product)
+   *
+   * State is always stored and computed as float32 regardless of input dtype.
+   * State shape: [batch, numHeads, headDimV, headDimK].
    *
    * @param query Query tensor [batch, 1, numHeads, headDimK] (NUMERIC type)
    * @param key Key tensor [batch, 1, numHeads, headDimK] (NUMERIC type)
@@ -3449,14 +3484,14 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Linear Attention Decode — single-token decode step for linear attention.<br>
-   * <br>
-   * Implements the recurrent form of linear attention:<br>
-   *   state_new = exp(-decay[h]) * state_old + k (x) v   (rank-1 outer-product update)<br>
-   *   output    = q @ state_new                            (matrix-vector product)<br>
-   * <br>
-   * State is always stored and computed as float32 regardless of input dtype.<br>
-   * State shape: [batch, numHeads, headDimV, headDimK].<br>
+   * Linear Attention Decode — single-token decode step for linear attention.
+   *
+   * Implements the recurrent form of linear attention:
+   *   state_new = exp(-decay[h]) * state_old + k (x) v   (rank-1 outer-product update)
+   *   output    = q @ state_new                            (matrix-vector product)
+   *
+   * State is always stored and computed as float32 regardless of input dtype.
+   * State shape: [batch, numHeads, headDimV, headDimK].
    *
    * @param name name May be null. Name for the output variable
    * @param query Query tensor [batch, 1, numHeads, headDimK] (NUMERIC type)
@@ -3478,7 +3513,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Creates a contiguous copy of the input tensor with linear (row-major) memory layout.<br>
+   * Creates a contiguous copy of the input tensor with linear (row-major) memory layout.
    *
    * @param input Source tensor (NUMERIC type)
    * @return output Contiguous copy of input (NUMERIC type)
@@ -3489,7 +3524,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Creates a contiguous copy of the input tensor with linear (row-major) memory layout.<br>
+   * Creates a contiguous copy of the input tensor with linear (row-major) memory layout.
    *
    * @param name name May be null. Name for the output variable
    * @param input Source tensor (NUMERIC type)
@@ -3502,7 +3537,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Element-wise sigmoid function: out[i] = log(sigmoid(in[i]))<br>
+   * Element-wise sigmoid function: out[i] = log(sigmoid(in[i]))
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -3513,7 +3548,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Element-wise sigmoid function: out[i] = log(sigmoid(in[i]))<br>
+   * Element-wise sigmoid function: out[i] = log(sigmoid(in[i]))
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -3526,7 +3561,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Log softmax activation<br>
+   * Log softmax activation
    *
    * @param x  (NUMERIC type)
    * @return output  (NUMERIC type)
@@ -3537,7 +3572,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Log softmax activation<br>
+   * Log softmax activation
    *
    * @param name name May be null. Name for the output variable
    * @param x  (NUMERIC type)
@@ -3550,7 +3585,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Log softmax activation<br>
+   * Log softmax activation
    *
    * @param x Input (NUMERIC type)
    * @param dimension Dimension along which to apply log softmax
@@ -3562,7 +3597,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Log softmax activation<br>
+   * Log softmax activation
    *
    * @param name name May be null. Name for the output variable
    * @param x Input (NUMERIC type)
@@ -3576,8 +3611,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Low-Rank Hadamard Product (LoHa) fused matrix multiplication.<br>
-   * Uses Hadamard product of two low-rank matrices as the adapter.<br>
+   * Low-Rank Hadamard Product (LoHa) fused matrix multiplication.
+   * Uses Hadamard product of two low-rank matrices as the adapter.
    *
    * @param input Input [batch, in_features] (NUMERIC type)
    * @param weight Base weight [out_features, in_features] (NUMERIC type)
@@ -3602,8 +3637,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Low-Rank Hadamard Product (LoHa) fused matrix multiplication.<br>
-   * Uses Hadamard product of two low-rank matrices as the adapter.<br>
+   * Low-Rank Hadamard Product (LoHa) fused matrix multiplication.
+   * Uses Hadamard product of two low-rank matrices as the adapter.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input [batch, in_features] (NUMERIC type)
@@ -3630,8 +3665,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Low-Rank Kronecker Product (LoKr) fused matrix multiplication.<br>
-   * Uses Kronecker product of matrices as the adapter.<br>
+   * Low-Rank Kronecker Product (LoKr) fused matrix multiplication.
+   * Uses Kronecker product of matrices as the adapter.
    *
    * @param input Input [batch, in_features] (NUMERIC type)
    * @param weight Base weight [out_features, in_features] (NUMERIC type)
@@ -3656,8 +3691,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Low-Rank Kronecker Product (LoKr) fused matrix multiplication.<br>
-   * Uses Kronecker product of matrices as the adapter.<br>
+   * Low-Rank Kronecker Product (LoKr) fused matrix multiplication.
+   * Uses Kronecker product of matrices as the adapter.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input [batch, in_features] (NUMERIC type)
@@ -3684,8 +3719,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Low-Rank Adaptation (LoRA) fused matrix multiplication.<br>
-   * Computes base weight matmul + low-rank adapter in a single operation.<br>
+   * Low-Rank Adaptation (LoRA) fused matrix multiplication.
+   * Computes base weight matmul + low-rank adapter in a single operation.
    *
    * @param input Input [batch, in_features] (NUMERIC type)
    * @param weight Base weight [out_features, in_features] (NUMERIC type)
@@ -3705,8 +3740,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Low-Rank Adaptation (LoRA) fused matrix multiplication.<br>
-   * Computes base weight matmul + low-rank adapter in a single operation.<br>
+   * Low-Rank Adaptation (LoRA) fused matrix multiplication.
+   * Computes base weight matmul + low-rank adapter in a single operation.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input [batch, in_features] (NUMERIC type)
@@ -3728,17 +3763,17 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Mamba-2 State Space Model (SSD) - head-structured recurrence.<br>
-   * <br>
-   * Implements the Mamba-2 SSD recurrence with scalar per-head decay:<br>
-   *   h_t = exp(A * dt) * h_{t-1} + (B * dt) outer x_t<br>
-   *   y_t = C * h_t + D * x_t<br>
-   * <br>
-   * Unlike Mamba-1 (selective_scan) which uses per-element diagonal state,<br>
-   * Mamba-2 uses head-structured state for improved hardware utilization.<br>
-   * <br>
-   * See "Transformers are SSMs: Generalized Models and Efficient Algorithms Through<br>
-   * Structured State Space Duality" (https://arxiv.org/abs/2405.21060)<br>
+   * Mamba-2 State Space Model (SSD) - head-structured recurrence.
+   *
+   * Implements the Mamba-2 SSD recurrence with scalar per-head decay:
+   *   h_t = exp(A * dt) * h_{t-1} + (B * dt) outer x_t
+   *   y_t = C * h_t + D * x_t
+   *
+   * Unlike Mamba-1 (selective_scan) which uses per-element diagonal state,
+   * Mamba-2 uses head-structured state for improved hardware utilization.
+   *
+   * See "Transformers are SSMs: Generalized Models and Efficient Algorithms Through
+   * Structured State Space Duality" (https://arxiv.org/abs/2405.21060)
    *
    * @param x Input tensor [batch, seqLen, D] where D = numHeads * headDim (NUMERIC type)
    * @param A Per-head scalar decay in log-space [numHeads] (NUMERIC type)
@@ -3762,17 +3797,17 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Mamba-2 State Space Model (SSD) - head-structured recurrence.<br>
-   * <br>
-   * Implements the Mamba-2 SSD recurrence with scalar per-head decay:<br>
-   *   h_t = exp(A * dt) * h_{t-1} + (B * dt) outer x_t<br>
-   *   y_t = C * h_t + D * x_t<br>
-   * <br>
-   * Unlike Mamba-1 (selective_scan) which uses per-element diagonal state,<br>
-   * Mamba-2 uses head-structured state for improved hardware utilization.<br>
-   * <br>
-   * See "Transformers are SSMs: Generalized Models and Efficient Algorithms Through<br>
-   * Structured State Space Duality" (https://arxiv.org/abs/2405.21060)<br>
+   * Mamba-2 State Space Model (SSD) - head-structured recurrence.
+   *
+   * Implements the Mamba-2 SSD recurrence with scalar per-head decay:
+   *   h_t = exp(A * dt) * h_{t-1} + (B * dt) outer x_t
+   *   y_t = C * h_t + D * x_t
+   *
+   * Unlike Mamba-1 (selective_scan) which uses per-element diagonal state,
+   * Mamba-2 uses head-structured state for improved hardware utilization.
+   *
+   * See "Transformers are SSMs: Generalized Models and Efficient Algorithms Through
+   * Structured State Space Duality" (https://arxiv.org/abs/2405.21060)
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param x Input tensor [batch, seqLen, D] where D = numHeads * headDim (NUMERIC type)
@@ -3798,7 +3833,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Computes the mean of squared values. Used in RMSNorm and similar operations.<br>
+   * Computes the mean of squared values. Used in RMSNorm and similar operations.
    *
    * @param input Input tensor (NUMERIC type)
    * @return output Mean of squared values (NUMERIC type)
@@ -3809,7 +3844,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Computes the mean of squared values. Used in RMSNorm and similar operations.<br>
+   * Computes the mean of squared values. Used in RMSNorm and similar operations.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input tensor (NUMERIC type)
@@ -3822,28 +3857,28 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Mixture of Experts (MoE) Layer.<br>
-   * <br>
-   * Implements sparse MoE routing where each token is processed by only the top-k<br>
-   * selected experts out of a larger pool. This enables scaling model capacity<br>
-   * without proportionally increasing computation.<br>
-   * <br>
-   * Used in large language models like:<br>
-   * - DeepSeek (DeepSeekMoE)<br>
-   * - Mixtral (Mistral AI)<br>
-   * - Switch Transformer (Google)<br>
-   * - GShard (Google)<br>
-   * <br>
-   * The router computes expert selection probabilities:<br>
-   * router_probs = softmax(input @ routerWeights)<br>
-   * <br>
-   * Top-k experts are selected and their outputs are weighted by normalized probs:<br>
-   * output = sum(normalized_prob[i] * expert[i](input) for i in top_k)<br>
-   * <br>
-   * Benefits:<br>
-   * - Scales model capacity with sublinear compute increase<br>
-   * - Enables very large models with efficient inference<br>
-   * - Supports expert parallelism across devices<br>
+   * Mixture of Experts (MoE) Layer.
+   *
+   * Implements sparse MoE routing where each token is processed by only the top-k
+   * selected experts out of a larger pool. This enables scaling model capacity
+   * without proportionally increasing computation.
+   *
+   * Used in large language models like:
+   * - DeepSeek (DeepSeekMoE)
+   * - Mixtral (Mistral AI)
+   * - Switch Transformer (Google)
+   * - GShard (Google)
+   *
+   * The router computes expert selection probabilities:
+   * router_probs = softmax(input @ routerWeights)
+   *
+   * Top-k experts are selected and their outputs are weighted by normalized probs:
+   * output = sum(normalized_prob[i] * expert[i](input) for i in top_k)
+   *
+   * Benefits:
+   * - Scales model capacity with sublinear compute increase
+   * - Enables very large models with efficient inference
+   * - Supports expert parallelism across devices
    *
    * @param input Input embeddings. Shape: [batch, seqLen, hiddenSize] (NUMERIC type)
    * @param routerWeights Router projection weights. Shape: [hiddenSize, numExperts] (NUMERIC type)
@@ -3863,28 +3898,28 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Mixture of Experts (MoE) Layer.<br>
-   * <br>
-   * Implements sparse MoE routing where each token is processed by only the top-k<br>
-   * selected experts out of a larger pool. This enables scaling model capacity<br>
-   * without proportionally increasing computation.<br>
-   * <br>
-   * Used in large language models like:<br>
-   * - DeepSeek (DeepSeekMoE)<br>
-   * - Mixtral (Mistral AI)<br>
-   * - Switch Transformer (Google)<br>
-   * - GShard (Google)<br>
-   * <br>
-   * The router computes expert selection probabilities:<br>
-   * router_probs = softmax(input @ routerWeights)<br>
-   * <br>
-   * Top-k experts are selected and their outputs are weighted by normalized probs:<br>
-   * output = sum(normalized_prob[i] * expert[i](input) for i in top_k)<br>
-   * <br>
-   * Benefits:<br>
-   * - Scales model capacity with sublinear compute increase<br>
-   * - Enables very large models with efficient inference<br>
-   * - Supports expert parallelism across devices<br>
+   * Mixture of Experts (MoE) Layer.
+   *
+   * Implements sparse MoE routing where each token is processed by only the top-k
+   * selected experts out of a larger pool. This enables scaling model capacity
+   * without proportionally increasing computation.
+   *
+   * Used in large language models like:
+   * - DeepSeek (DeepSeekMoE)
+   * - Mixtral (Mistral AI)
+   * - Switch Transformer (Google)
+   * - GShard (Google)
+   *
+   * The router computes expert selection probabilities:
+   * router_probs = softmax(input @ routerWeights)
+   *
+   * Top-k experts are selected and their outputs are weighted by normalized probs:
+   * output = sum(normalized_prob[i] * expert[i](input) for i in top_k)
+   *
+   * Benefits:
+   * - Scales model capacity with sublinear compute increase
+   * - Enables very large models with efficient inference
+   * - Supports expert parallelism across devices
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param input Input embeddings. Shape: [batch, seqLen, hiddenSize] (NUMERIC type)
@@ -3906,28 +3941,28 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Mixture of Experts (MoE) Layer.<br>
-   * <br>
-   * Implements sparse MoE routing where each token is processed by only the top-k<br>
-   * selected experts out of a larger pool. This enables scaling model capacity<br>
-   * without proportionally increasing computation.<br>
-   * <br>
-   * Used in large language models like:<br>
-   * - DeepSeek (DeepSeekMoE)<br>
-   * - Mixtral (Mistral AI)<br>
-   * - Switch Transformer (Google)<br>
-   * - GShard (Google)<br>
-   * <br>
-   * The router computes expert selection probabilities:<br>
-   * router_probs = softmax(input @ routerWeights)<br>
-   * <br>
-   * Top-k experts are selected and their outputs are weighted by normalized probs:<br>
-   * output = sum(normalized_prob[i] * expert[i](input) for i in top_k)<br>
-   * <br>
-   * Benefits:<br>
-   * - Scales model capacity with sublinear compute increase<br>
-   * - Enables very large models with efficient inference<br>
-   * - Supports expert parallelism across devices<br>
+   * Mixture of Experts (MoE) Layer.
+   *
+   * Implements sparse MoE routing where each token is processed by only the top-k
+   * selected experts out of a larger pool. This enables scaling model capacity
+   * without proportionally increasing computation.
+   *
+   * Used in large language models like:
+   * - DeepSeek (DeepSeekMoE)
+   * - Mixtral (Mistral AI)
+   * - Switch Transformer (Google)
+   * - GShard (Google)
+   *
+   * The router computes expert selection probabilities:
+   * router_probs = softmax(input @ routerWeights)
+   *
+   * Top-k experts are selected and their outputs are weighted by normalized probs:
+   * output = sum(normalized_prob[i] * expert[i](input) for i in top_k)
+   *
+   * Benefits:
+   * - Scales model capacity with sublinear compute increase
+   * - Enables very large models with efficient inference
+   * - Supports expert parallelism across devices
    *
    * @param input Input embeddings. Shape: [batch, seqLen, hiddenSize] (NUMERIC type)
    * @param routerWeights Router projection weights. Shape: [hiddenSize, numExperts] (NUMERIC type)
@@ -3954,28 +3989,28 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Mixture of Experts (MoE) Layer.<br>
-   * <br>
-   * Implements sparse MoE routing where each token is processed by only the top-k<br>
-   * selected experts out of a larger pool. This enables scaling model capacity<br>
-   * without proportionally increasing computation.<br>
-   * <br>
-   * Used in large language models like:<br>
-   * - DeepSeek (DeepSeekMoE)<br>
-   * - Mixtral (Mistral AI)<br>
-   * - Switch Transformer (Google)<br>
-   * - GShard (Google)<br>
-   * <br>
-   * The router computes expert selection probabilities:<br>
-   * router_probs = softmax(input @ routerWeights)<br>
-   * <br>
-   * Top-k experts are selected and their outputs are weighted by normalized probs:<br>
-   * output = sum(normalized_prob[i] * expert[i](input) for i in top_k)<br>
-   * <br>
-   * Benefits:<br>
-   * - Scales model capacity with sublinear compute increase<br>
-   * - Enables very large models with efficient inference<br>
-   * - Supports expert parallelism across devices<br>
+   * Mixture of Experts (MoE) Layer.
+   *
+   * Implements sparse MoE routing where each token is processed by only the top-k
+   * selected experts out of a larger pool. This enables scaling model capacity
+   * without proportionally increasing computation.
+   *
+   * Used in large language models like:
+   * - DeepSeek (DeepSeekMoE)
+   * - Mixtral (Mistral AI)
+   * - Switch Transformer (Google)
+   * - GShard (Google)
+   *
+   * The router computes expert selection probabilities:
+   * router_probs = softmax(input @ routerWeights)
+   *
+   * Top-k experts are selected and their outputs are weighted by normalized probs:
+   * output = sum(normalized_prob[i] * expert[i](input) for i in top_k)
+   *
+   * Benefits:
+   * - Scales model capacity with sublinear compute increase
+   * - Enables very large models with efficient inference
+   * - Supports expert parallelism across devices
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param input Input embeddings. Shape: [batch, seqLen, hiddenSize] (NUMERIC type)
@@ -4004,8 +4039,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Multi-head Latent Attention (MLA) from DeepSeek-V2.<br>
-   * Uses low-rank KV compression for efficient long-context inference.<br>
+   * Multi-head Latent Attention (MLA) from DeepSeek-V2.
+   * Uses low-rank KV compression for efficient long-context inference.
    *
    * @param input Input hidden states (NUMERIC type)
    * @param kvDownProj KV down-projection weight (NUMERIC type)
@@ -4021,8 +4056,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Multi-head Latent Attention (MLA) from DeepSeek-V2.<br>
-   * Uses low-rank KV compression for efficient long-context inference.<br>
+   * Multi-head Latent Attention (MLA) from DeepSeek-V2.
+   * Uses low-rank KV compression for efficient long-context inference.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input hidden states (NUMERIC type)
@@ -4040,8 +4075,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Mixture of Experts (MoE) gating/routing function.<br>
-   * Selects top-K experts and computes routing weights.<br>
+   * Mixture of Experts (MoE) gating/routing function.
+   * Selects top-K experts and computes routing weights.
    *
    * @param input Input hidden states (NUMERIC type)
    * @param gateWeights Router gate weights (NUMERIC type)
@@ -4056,8 +4091,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Mixture of Experts (MoE) gating/routing function.<br>
-   * Selects top-K experts and computes routing weights.<br>
+   * Mixture of Experts (MoE) gating/routing function.
+   * Selects top-K experts and computes routing weights.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input hidden states (NUMERIC type)
@@ -4075,20 +4110,20 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Mixture of Experts with Shared Experts (IBM Granite 4.0 pattern).<br>
-   * <br>
-   * Extends MoE with an always-on shared expert pathway. The shared expert<br>
-   * processes every token unconditionally using SwiGLU activation, while<br>
-   * routed experts are selected via top-K gating.<br>
-   * <br>
-   * output = shared_expert(input) + weighted_sum(routed_experts(input))<br>
-   * <br>
-   * where shared_expert uses SwiGLU:<br>
-   * shared_out = down_proj(silu(gate_proj(x)) * up_proj(x))<br>
-   * <br>
-   * Used in:<br>
-   * - IBM Granite 4.0 (granitemoeshared architecture)<br>
-   * - DeepSeek V2/V3 (shared expert variant)<br>
+   * Mixture of Experts with Shared Experts (IBM Granite 4.0 pattern).
+   *
+   * Extends MoE with an always-on shared expert pathway. The shared expert
+   * processes every token unconditionally using SwiGLU activation, while
+   * routed experts are selected via top-K gating.
+   *
+   * output = shared_expert(input) + weighted_sum(routed_experts(input))
+   *
+   * where shared_expert uses SwiGLU:
+   * shared_out = down_proj(silu(gate_proj(x)) * up_proj(x))
+   *
+   * Used in:
+   * - IBM Granite 4.0 (granitemoeshared architecture)
+   * - DeepSeek V2/V3 (shared expert variant)
    *
    * @param input Input embeddings. Shape: [batch, seqLen, hiddenSize] (NUMERIC type)
    * @param routerWeights Router projection weights. Shape: [hiddenSize, numRoutedExperts] (NUMERIC type)
@@ -4115,20 +4150,20 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Mixture of Experts with Shared Experts (IBM Granite 4.0 pattern).<br>
-   * <br>
-   * Extends MoE with an always-on shared expert pathway. The shared expert<br>
-   * processes every token unconditionally using SwiGLU activation, while<br>
-   * routed experts are selected via top-K gating.<br>
-   * <br>
-   * output = shared_expert(input) + weighted_sum(routed_experts(input))<br>
-   * <br>
-   * where shared_expert uses SwiGLU:<br>
-   * shared_out = down_proj(silu(gate_proj(x)) * up_proj(x))<br>
-   * <br>
-   * Used in:<br>
-   * - IBM Granite 4.0 (granitemoeshared architecture)<br>
-   * - DeepSeek V2/V3 (shared expert variant)<br>
+   * Mixture of Experts with Shared Experts (IBM Granite 4.0 pattern).
+   *
+   * Extends MoE with an always-on shared expert pathway. The shared expert
+   * processes every token unconditionally using SwiGLU activation, while
+   * routed experts are selected via top-K gating.
+   *
+   * output = shared_expert(input) + weighted_sum(routed_experts(input))
+   *
+   * where shared_expert uses SwiGLU:
+   * shared_out = down_proj(silu(gate_proj(x)) * up_proj(x))
+   *
+   * Used in:
+   * - IBM Granite 4.0 (granitemoeshared architecture)
+   * - DeepSeek V2/V3 (shared expert variant)
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param input Input embeddings. Shape: [batch, seqLen, hiddenSize] (NUMERIC type)
@@ -4157,20 +4192,20 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Mixture of Experts with Shared Experts (IBM Granite 4.0 pattern).<br>
-   * <br>
-   * Extends MoE with an always-on shared expert pathway. The shared expert<br>
-   * processes every token unconditionally using SwiGLU activation, while<br>
-   * routed experts are selected via top-K gating.<br>
-   * <br>
-   * output = shared_expert(input) + weighted_sum(routed_experts(input))<br>
-   * <br>
-   * where shared_expert uses SwiGLU:<br>
-   * shared_out = down_proj(silu(gate_proj(x)) * up_proj(x))<br>
-   * <br>
-   * Used in:<br>
-   * - IBM Granite 4.0 (granitemoeshared architecture)<br>
-   * - DeepSeek V2/V3 (shared expert variant)<br>
+   * Mixture of Experts with Shared Experts (IBM Granite 4.0 pattern).
+   *
+   * Extends MoE with an always-on shared expert pathway. The shared expert
+   * processes every token unconditionally using SwiGLU activation, while
+   * routed experts are selected via top-K gating.
+   *
+   * output = shared_expert(input) + weighted_sum(routed_experts(input))
+   *
+   * where shared_expert uses SwiGLU:
+   * shared_out = down_proj(silu(gate_proj(x)) * up_proj(x))
+   *
+   * Used in:
+   * - IBM Granite 4.0 (granitemoeshared architecture)
+   * - DeepSeek V2/V3 (shared expert variant)
    *
    * @param input Input embeddings. Shape: [batch, seqLen, hiddenSize] (NUMERIC type)
    * @param routerWeights Router projection weights. Shape: [hiddenSize, numRoutedExperts] (NUMERIC type)
@@ -4204,20 +4239,20 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Mixture of Experts with Shared Experts (IBM Granite 4.0 pattern).<br>
-   * <br>
-   * Extends MoE with an always-on shared expert pathway. The shared expert<br>
-   * processes every token unconditionally using SwiGLU activation, while<br>
-   * routed experts are selected via top-K gating.<br>
-   * <br>
-   * output = shared_expert(input) + weighted_sum(routed_experts(input))<br>
-   * <br>
-   * where shared_expert uses SwiGLU:<br>
-   * shared_out = down_proj(silu(gate_proj(x)) * up_proj(x))<br>
-   * <br>
-   * Used in:<br>
-   * - IBM Granite 4.0 (granitemoeshared architecture)<br>
-   * - DeepSeek V2/V3 (shared expert variant)<br>
+   * Mixture of Experts with Shared Experts (IBM Granite 4.0 pattern).
+   *
+   * Extends MoE with an always-on shared expert pathway. The shared expert
+   * processes every token unconditionally using SwiGLU activation, while
+   * routed experts are selected via top-K gating.
+   *
+   * output = shared_expert(input) + weighted_sum(routed_experts(input))
+   *
+   * where shared_expert uses SwiGLU:
+   * shared_out = down_proj(silu(gate_proj(x)) * up_proj(x))
+   *
+   * Used in:
+   * - IBM Granite 4.0 (granitemoeshared architecture)
+   * - DeepSeek V2/V3 (shared expert variant)
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param input Input embeddings. Shape: [batch, seqLen, hiddenSize] (NUMERIC type)
@@ -4253,20 +4288,20 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Multi-head attention (ONNX-compatible).<br>
-   * <br>
-   * Takes pre-projected Q, K, V tensors and computes multi-head attention:<br>
-   *   output = concat(head_1, ..., head_h)<br>
-   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i<br>
-   * <br>
-   * Supports:<br>
-   * - Grouped Query Attention (GQA) when numKvHeads < numHeads<br>
-   * - KV cache concatenation (past + current → present)<br>
-   * - In-place KV cache write via cachePosition<br>
-   * - Causal masking for autoregressive decoding<br>
-   * - Fused GQA decode kernel for seqQ=1<br>
-   * <br>
-   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)<br>
+   * Multi-head attention (ONNX-compatible).
+   *
+   * Takes pre-projected Q, K, V tensors and computes multi-head attention:
+   *   output = concat(head_1, ..., head_h)
+   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i
+   *
+   * Supports:
+   * - Grouped Query Attention (GQA) when numKvHeads &lt; numHeads
+   * - KV cache concatenation (past + current → present)
+   * - In-place KV cache write via cachePosition
+   * - Causal masking for autoregressive decoding
+   * - Fused GQA decode kernel for seqQ=1
+   *
+   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)
    *
    * @param query Query tensor [batch, seqQ, hidden] (NUMERIC type)
    * @param key Key tensor [batch, seqKV, hidden] (NUMERIC type)
@@ -4287,20 +4322,20 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Multi-head attention (ONNX-compatible).<br>
-   * <br>
-   * Takes pre-projected Q, K, V tensors and computes multi-head attention:<br>
-   *   output = concat(head_1, ..., head_h)<br>
-   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i<br>
-   * <br>
-   * Supports:<br>
-   * - Grouped Query Attention (GQA) when numKvHeads < numHeads<br>
-   * - KV cache concatenation (past + current → present)<br>
-   * - In-place KV cache write via cachePosition<br>
-   * - Causal masking for autoregressive decoding<br>
-   * - Fused GQA decode kernel for seqQ=1<br>
-   * <br>
-   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)<br>
+   * Multi-head attention (ONNX-compatible).
+   *
+   * Takes pre-projected Q, K, V tensors and computes multi-head attention:
+   *   output = concat(head_1, ..., head_h)
+   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i
+   *
+   * Supports:
+   * - Grouped Query Attention (GQA) when numKvHeads &lt; numHeads
+   * - KV cache concatenation (past + current → present)
+   * - In-place KV cache write via cachePosition
+   * - Causal masking for autoregressive decoding
+   * - Fused GQA decode kernel for seqQ=1
+   *
+   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param query Query tensor [batch, seqQ, hidden] (NUMERIC type)
@@ -4323,20 +4358,20 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Multi-head attention (ONNX-compatible).<br>
-   * <br>
-   * Takes pre-projected Q, K, V tensors and computes multi-head attention:<br>
-   *   output = concat(head_1, ..., head_h)<br>
-   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i<br>
-   * <br>
-   * Supports:<br>
-   * - Grouped Query Attention (GQA) when numKvHeads < numHeads<br>
-   * - KV cache concatenation (past + current → present)<br>
-   * - In-place KV cache write via cachePosition<br>
-   * - Causal masking for autoregressive decoding<br>
-   * - Fused GQA decode kernel for seqQ=1<br>
-   * <br>
-   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)<br>
+   * Multi-head attention (ONNX-compatible).
+   *
+   * Takes pre-projected Q, K, V tensors and computes multi-head attention:
+   *   output = concat(head_1, ..., head_h)
+   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i
+   *
+   * Supports:
+   * - Grouped Query Attention (GQA) when numKvHeads &lt; numHeads
+   * - KV cache concatenation (past + current → present)
+   * - In-place KV cache write via cachePosition
+   * - Causal masking for autoregressive decoding
+   * - Fused GQA decode kernel for seqQ=1
+   *
+   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)
    *
    * @param query Query tensor [batch, seqQ, hidden] (NUMERIC type)
    * @param key Key tensor [batch, seqKV, hidden] (NUMERIC type)
@@ -4361,20 +4396,20 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Multi-head attention (ONNX-compatible).<br>
-   * <br>
-   * Takes pre-projected Q, K, V tensors and computes multi-head attention:<br>
-   *   output = concat(head_1, ..., head_h)<br>
-   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i<br>
-   * <br>
-   * Supports:<br>
-   * - Grouped Query Attention (GQA) when numKvHeads < numHeads<br>
-   * - KV cache concatenation (past + current → present)<br>
-   * - In-place KV cache write via cachePosition<br>
-   * - Causal masking for autoregressive decoding<br>
-   * - Fused GQA decode kernel for seqQ=1<br>
-   * <br>
-   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)<br>
+   * Multi-head attention (ONNX-compatible).
+   *
+   * Takes pre-projected Q, K, V tensors and computes multi-head attention:
+   *   output = concat(head_1, ..., head_h)
+   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i
+   *
+   * Supports:
+   * - Grouped Query Attention (GQA) when numKvHeads &lt; numHeads
+   * - KV cache concatenation (past + current → present)
+   * - In-place KV cache write via cachePosition
+   * - Causal masking for autoregressive decoding
+   * - Fused GQA decode kernel for seqQ=1
+   *
+   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param query Query tensor [batch, seqQ, hidden] (NUMERIC type)
@@ -4401,20 +4436,20 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Multi-head attention (ONNX-compatible).<br>
-   * <br>
-   * Takes pre-projected Q, K, V tensors and computes multi-head attention:<br>
-   *   output = concat(head_1, ..., head_h)<br>
-   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i<br>
-   * <br>
-   * Supports:<br>
-   * - Grouped Query Attention (GQA) when numKvHeads < numHeads<br>
-   * - KV cache concatenation (past + current → present)<br>
-   * - In-place KV cache write via cachePosition<br>
-   * - Causal masking for autoregressive decoding<br>
-   * - Fused GQA decode kernel for seqQ=1<br>
-   * <br>
-   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)<br>
+   * Multi-head attention (ONNX-compatible).
+   *
+   * Takes pre-projected Q, K, V tensors and computes multi-head attention:
+   *   output = concat(head_1, ..., head_h)
+   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i
+   *
+   * Supports:
+   * - Grouped Query Attention (GQA) when numKvHeads &lt; numHeads
+   * - KV cache concatenation (past + current → present)
+   * - In-place KV cache write via cachePosition
+   * - Causal masking for autoregressive decoding
+   * - Fused GQA decode kernel for seqQ=1
+   *
+   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)
    *
    * @param query Query tensor [batch, seqQ, hidden] (NUMERIC type)
    * @param key Key tensor [batch, seqKV, hidden] (NUMERIC type)
@@ -4443,20 +4478,20 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Multi-head attention (ONNX-compatible).<br>
-   * <br>
-   * Takes pre-projected Q, K, V tensors and computes multi-head attention:<br>
-   *   output = concat(head_1, ..., head_h)<br>
-   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i<br>
-   * <br>
-   * Supports:<br>
-   * - Grouped Query Attention (GQA) when numKvHeads < numHeads<br>
-   * - KV cache concatenation (past + current → present)<br>
-   * - In-place KV cache write via cachePosition<br>
-   * - Causal masking for autoregressive decoding<br>
-   * - Fused GQA decode kernel for seqQ=1<br>
-   * <br>
-   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)<br>
+   * Multi-head attention (ONNX-compatible).
+   *
+   * Takes pre-projected Q, K, V tensors and computes multi-head attention:
+   *   output = concat(head_1, ..., head_h)
+   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i
+   *
+   * Supports:
+   * - Grouped Query Attention (GQA) when numKvHeads &lt; numHeads
+   * - KV cache concatenation (past + current → present)
+   * - In-place KV cache write via cachePosition
+   * - Causal masking for autoregressive decoding
+   * - Fused GQA decode kernel for seqQ=1
+   *
+   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param query Query tensor [batch, seqQ, hidden] (NUMERIC type)
@@ -4488,20 +4523,20 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Multi-head attention (ONNX-compatible).<br>
-   * <br>
-   * Takes pre-projected Q, K, V tensors and computes multi-head attention:<br>
-   *   output = concat(head_1, ..., head_h)<br>
-   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i<br>
-   * <br>
-   * Supports:<br>
-   * - Grouped Query Attention (GQA) when numKvHeads < numHeads<br>
-   * - KV cache concatenation (past + current → present)<br>
-   * - In-place KV cache write via cachePosition<br>
-   * - Causal masking for autoregressive decoding<br>
-   * - Fused GQA decode kernel for seqQ=1<br>
-   * <br>
-   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)<br>
+   * Multi-head attention (ONNX-compatible).
+   *
+   * Takes pre-projected Q, K, V tensors and computes multi-head attention:
+   *   output = concat(head_1, ..., head_h)
+   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i
+   *
+   * Supports:
+   * - Grouped Query Attention (GQA) when numKvHeads &lt; numHeads
+   * - KV cache concatenation (past + current → present)
+   * - In-place KV cache write via cachePosition
+   * - Causal masking for autoregressive decoding
+   * - Fused GQA decode kernel for seqQ=1
+   *
+   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)
    *
    * @param query Query tensor [batch, seqQ, hidden] (NUMERIC type)
    * @param key Key tensor [batch, seqKV, hidden] (NUMERIC type)
@@ -4535,20 +4570,20 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Multi-head attention (ONNX-compatible).<br>
-   * <br>
-   * Takes pre-projected Q, K, V tensors and computes multi-head attention:<br>
-   *   output = concat(head_1, ..., head_h)<br>
-   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i<br>
-   * <br>
-   * Supports:<br>
-   * - Grouped Query Attention (GQA) when numKvHeads < numHeads<br>
-   * - KV cache concatenation (past + current → present)<br>
-   * - In-place KV cache write via cachePosition<br>
-   * - Causal masking for autoregressive decoding<br>
-   * - Fused GQA decode kernel for seqQ=1<br>
-   * <br>
-   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)<br>
+   * Multi-head attention (ONNX-compatible).
+   *
+   * Takes pre-projected Q, K, V tensors and computes multi-head attention:
+   *   output = concat(head_1, ..., head_h)
+   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i
+   *
+   * Supports:
+   * - Grouped Query Attention (GQA) when numKvHeads &lt; numHeads
+   * - KV cache concatenation (past + current → present)
+   * - In-place KV cache write via cachePosition
+   * - Causal masking for autoregressive decoding
+   * - Fused GQA decode kernel for seqQ=1
+   *
+   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param query Query tensor [batch, seqQ, hidden] (NUMERIC type)
@@ -4584,20 +4619,20 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Multi-head attention (ONNX-compatible).<br>
-   * <br>
-   * Takes pre-projected Q, K, V tensors and computes multi-head attention:<br>
-   *   output = concat(head_1, ..., head_h)<br>
-   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i<br>
-   * <br>
-   * Supports:<br>
-   * - Grouped Query Attention (GQA) when numKvHeads < numHeads<br>
-   * - KV cache concatenation (past + current → present)<br>
-   * - In-place KV cache write via cachePosition<br>
-   * - Causal masking for autoregressive decoding<br>
-   * - Fused GQA decode kernel for seqQ=1<br>
-   * <br>
-   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)<br>
+   * Multi-head attention (ONNX-compatible).
+   *
+   * Takes pre-projected Q, K, V tensors and computes multi-head attention:
+   *   output = concat(head_1, ..., head_h)
+   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i
+   *
+   * Supports:
+   * - Grouped Query Attention (GQA) when numKvHeads &lt; numHeads
+   * - KV cache concatenation (past + current → present)
+   * - In-place KV cache write via cachePosition
+   * - Causal masking for autoregressive decoding
+   * - Fused GQA decode kernel for seqQ=1
+   *
+   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)
    *
    * @param query Query tensor [batch, seqQ, hidden] (NUMERIC type)
    * @param key Key tensor [batch, seqKV, hidden] (NUMERIC type)
@@ -4635,20 +4670,20 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Multi-head attention (ONNX-compatible).<br>
-   * <br>
-   * Takes pre-projected Q, K, V tensors and computes multi-head attention:<br>
-   *   output = concat(head_1, ..., head_h)<br>
-   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i<br>
-   * <br>
-   * Supports:<br>
-   * - Grouped Query Attention (GQA) when numKvHeads < numHeads<br>
-   * - KV cache concatenation (past + current → present)<br>
-   * - In-place KV cache write via cachePosition<br>
-   * - Causal masking for autoregressive decoding<br>
-   * - Fused GQA decode kernel for seqQ=1<br>
-   * <br>
-   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)<br>
+   * Multi-head attention (ONNX-compatible).
+   *
+   * Takes pre-projected Q, K, V tensors and computes multi-head attention:
+   *   output = concat(head_1, ..., head_h)
+   *   head_i = softmax(Q_i * K_i^T / scale + attnBias) * V_i
+   *
+   * Supports:
+   * - Grouped Query Attention (GQA) when numKvHeads &lt; numHeads
+   * - KV cache concatenation (past + current → present)
+   * - In-place KV cache write via cachePosition
+   * - Causal masking for autoregressive decoding
+   * - Fused GQA decode kernel for seqQ=1
+   *
+   * See "Attention Is All You Need" (https://arxiv.org/abs/1706.03762)
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param query Query tensor [batch, seqQ, hidden] (NUMERIC type)
@@ -4688,16 +4723,16 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * This performs multi-headed dot product attention on the given timeseries input<br>
-   * out = concat(head_1, head_2, ..., head_n) * Wo<br>
-   * head_i = dot_product_attention(Wq_i*q, Wk_i*k, Wv_i*v)<br>
-   * <br>
-   * Optionally with normalization when calculating the attention for each head.<br>
-   * <br>
-   * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, pp. 4,5, "3.2.2 Multi-Head Attention")<br>
-   * <br>
-   * This makes use of dot_product_attention OP support for rank 4 inputs.<br>
-   * see dotProductAttention(INDArray, INDArray, INDArray, INDArray, boolean, boolean)<br>
+   * This performs multi-headed dot product attention on the given timeseries input
+   * out = concat(head_1, head_2, ..., head_n) * Wo
+   * head_i = dot_product_attention(Wq_i*q, Wk_i*k, Wv_i*v)
+   *
+   * Optionally with normalization when calculating the attention for each head.
+   *
+   * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, pp. 4,5, "3.2.2 Multi-Head Attention")
+   *
+   * This makes use of dot_product_attention OP support for rank 4 inputs.
+   * see dotProductAttention(INDArray, INDArray, INDArray, INDArray, boolean, boolean)
    *
    * @param queries input 3D array "queries" of shape [batchSize, featureKeys, queryCount] (NUMERIC type)
    * @param keys input 3D array "keys" of shape [batchSize, featureKeys, timesteps] (NUMERIC type)
@@ -4726,16 +4761,16 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * This performs multi-headed dot product attention on the given timeseries input<br>
-   * out = concat(head_1, head_2, ..., head_n) * Wo<br>
-   * head_i = dot_product_attention(Wq_i*q, Wk_i*k, Wv_i*v)<br>
-   * <br>
-   * Optionally with normalization when calculating the attention for each head.<br>
-   * <br>
-   * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, pp. 4,5, "3.2.2 Multi-Head Attention")<br>
-   * <br>
-   * This makes use of dot_product_attention OP support for rank 4 inputs.<br>
-   * see dotProductAttention(INDArray, INDArray, INDArray, INDArray, boolean, boolean)<br>
+   * This performs multi-headed dot product attention on the given timeseries input
+   * out = concat(head_1, head_2, ..., head_n) * Wo
+   * head_i = dot_product_attention(Wq_i*q, Wk_i*k, Wv_i*v)
+   *
+   * Optionally with normalization when calculating the attention for each head.
+   *
+   * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, pp. 4,5, "3.2.2 Multi-Head Attention")
+   *
+   * This makes use of dot_product_attention OP support for rank 4 inputs.
+   * see dotProductAttention(INDArray, INDArray, INDArray, INDArray, boolean, boolean)
    *
    * @param name name May be null. Name for the output variable
    * @param queries input 3D array "queries" of shape [batchSize, featureKeys, queryCount] (NUMERIC type)
@@ -4766,7 +4801,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Multi-adapter LoRA matrix multiplication. Selects different LoRA adapters per batch element.<br>
+   * Multi-adapter LoRA matrix multiplication. Selects different LoRA adapters per batch element.
    *
    * @param input Input tensor (NUMERIC type)
    * @param baseWeight Base weight matrix (NUMERIC type)
@@ -4787,7 +4822,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Multi-adapter LoRA matrix multiplication. Selects different LoRA adapters per batch element.<br>
+   * Multi-adapter LoRA matrix multiplication. Selects different LoRA adapters per batch element.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input tensor (NUMERIC type)
@@ -4810,7 +4845,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Padding operation<br>
+   * Padding operation
    *
    * @param input Input tensor (NUMERIC type)
    * @param padding Padding value (NUMERIC type)
@@ -4825,7 +4860,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Padding operation<br>
+   * Padding operation
    *
    * @param name name May be null. Name for the output variable
    * @param input Input tensor (NUMERIC type)
@@ -4843,7 +4878,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Padding operation<br>
+   * Padding operation
    *
    * @param input Input tensor (NUMERIC type)
    * @param padding Padding value (NUMERIC type)
@@ -4857,7 +4892,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Padding operation<br>
+   * Padding operation
    *
    * @param name name May be null. Name for the output variable
    * @param input Input tensor (NUMERIC type)
@@ -4873,15 +4908,15 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Per-Layer Embedding (Gemma 4).<br>
-   * <br>
-   * Adds a per-layer residual from a second embedding table to the hidden states:<br>
-   *   output = hiddenStates + pleWeight[tokenIds] * scale<br>
-   * <br>
-   * Each decoder layer receives a small additive signal from a dedicated<br>
-   * embedding table indexed by the original token IDs. This is computed once<br>
-   * before multimodal features merge into the embedding sequence, since PLE<br>
-   * relies on token IDs that are lost once multimodal features replace placeholders.<br>
+   * Per-Layer Embedding (Gemma 4).
+   *
+   * Adds a per-layer residual from a second embedding table to the hidden states:
+   *   output = hiddenStates + pleWeight[tokenIds] * scale
+   *
+   * Each decoder layer receives a small additive signal from a dedicated
+   * embedding table indexed by the original token IDs. This is computed once
+   * before multimodal features merge into the embedding sequence, since PLE
+   * relies on token IDs that are lost once multimodal features replace placeholders.
    *
    * @param hiddenStates Hidden states [batch, seqLen, hiddenDim] (NUMERIC type)
    * @param pleWeight Per-layer embedding table [vocabSize, hiddenDim] (NUMERIC type)
@@ -4898,15 +4933,15 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Per-Layer Embedding (Gemma 4).<br>
-   * <br>
-   * Adds a per-layer residual from a second embedding table to the hidden states:<br>
-   *   output = hiddenStates + pleWeight[tokenIds] * scale<br>
-   * <br>
-   * Each decoder layer receives a small additive signal from a dedicated<br>
-   * embedding table indexed by the original token IDs. This is computed once<br>
-   * before multimodal features merge into the embedding sequence, since PLE<br>
-   * relies on token IDs that are lost once multimodal features replace placeholders.<br>
+   * Per-Layer Embedding (Gemma 4).
+   *
+   * Adds a per-layer residual from a second embedding table to the hidden states:
+   *   output = hiddenStates + pleWeight[tokenIds] * scale
+   *
+   * Each decoder layer receives a small additive signal from a dedicated
+   * embedding table indexed by the original token IDs. This is computed once
+   * before multimodal features merge into the embedding sequence, since PLE
+   * relies on token IDs that are lost once multimodal features replace placeholders.
    *
    * @param name name May be null. Name for the output variable
    * @param hiddenStates Hidden states [batch, seqLen, hiddenDim] (NUMERIC type)
@@ -4925,15 +4960,15 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Per-Layer Embedding (Gemma 4).<br>
-   * <br>
-   * Adds a per-layer residual from a second embedding table to the hidden states:<br>
-   *   output = hiddenStates + pleWeight[tokenIds] * scale<br>
-   * <br>
-   * Each decoder layer receives a small additive signal from a dedicated<br>
-   * embedding table indexed by the original token IDs. This is computed once<br>
-   * before multimodal features merge into the embedding sequence, since PLE<br>
-   * relies on token IDs that are lost once multimodal features replace placeholders.<br>
+   * Per-Layer Embedding (Gemma 4).
+   *
+   * Adds a per-layer residual from a second embedding table to the hidden states:
+   *   output = hiddenStates + pleWeight[tokenIds] * scale
+   *
+   * Each decoder layer receives a small additive signal from a dedicated
+   * embedding table indexed by the original token IDs. This is computed once
+   * before multimodal features merge into the embedding sequence, since PLE
+   * relies on token IDs that are lost once multimodal features replace placeholders.
    *
    * @param hiddenStates Hidden states [batch, seqLen, hiddenDim] (NUMERIC type)
    * @param pleWeight Per-layer embedding table [vocabSize, hiddenDim] (NUMERIC type)
@@ -4949,15 +4984,15 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Per-Layer Embedding (Gemma 4).<br>
-   * <br>
-   * Adds a per-layer residual from a second embedding table to the hidden states:<br>
-   *   output = hiddenStates + pleWeight[tokenIds] * scale<br>
-   * <br>
-   * Each decoder layer receives a small additive signal from a dedicated<br>
-   * embedding table indexed by the original token IDs. This is computed once<br>
-   * before multimodal features merge into the embedding sequence, since PLE<br>
-   * relies on token IDs that are lost once multimodal features replace placeholders.<br>
+   * Per-Layer Embedding (Gemma 4).
+   *
+   * Adds a per-layer residual from a second embedding table to the hidden states:
+   *   output = hiddenStates + pleWeight[tokenIds] * scale
+   *
+   * Each decoder layer receives a small additive signal from a dedicated
+   * embedding table indexed by the original token IDs. This is computed once
+   * before multimodal features merge into the embedding sequence, since PLE
+   * relies on token IDs that are lost once multimodal features replace placeholders.
    *
    * @param name name May be null. Name for the output variable
    * @param hiddenStates Hidden states [batch, seqLen, hiddenDim] (NUMERIC type)
@@ -4975,9 +5010,9 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * GELU activation function - Gaussian Error Linear Units<br>
-   * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a><br>
-   * This method uses the precise method<br>
+   * GELU activation function - Gaussian Error Linear Units
+   * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a>
+   * This method uses the precise method
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -4988,9 +5023,9 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * GELU activation function - Gaussian Error Linear Units<br>
-   * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a><br>
-   * This method uses the precise method<br>
+   * GELU activation function - Gaussian Error Linear Units
+   * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a>
+   * This method uses the precise method
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -5003,14 +5038,14 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * PReLU (Parameterized Rectified Linear Unit) operation.  Like LeakyReLU with a learnable alpha:<br>
-   * out[i] = in[i] if in[i] >= 0<br>
-   * out[i] = in[i] * alpha[i] otherwise<br>
-   * <br>
-   * sharedAxes allows you to share learnable parameters along axes.<br>
-   * For example, if the input has shape [batchSize, channels, height, width]<br>
-   * and you want each channel to have its own cutoff, use sharedAxes = [2, 3] and an<br>
-   * alpha with shape [channels].<br>
+   * PReLU (Parameterized Rectified Linear Unit) operation.  Like LeakyReLU with a learnable alpha:
+   * out[i] = in[i] if in[i] >= 0
+   * out[i] = in[i] * alpha[i] otherwise
+   *
+   * sharedAxes allows you to share learnable parameters along axes.
+   * For example, if the input has shape [batchSize, channels, height, width]
+   * and you want each channel to have its own cutoff, use sharedAxes = [2, 3] and an
+   * alpha with shape [channels].
    *
    * @param input Input data (NUMERIC type)
    * @param alpha The cutoff variable.  Note that the batch dimension (the 0th, whether it is batch or not) should not be part of alpha. (NUMERIC type)
@@ -5025,14 +5060,14 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * PReLU (Parameterized Rectified Linear Unit) operation.  Like LeakyReLU with a learnable alpha:<br>
-   * out[i] = in[i] if in[i] >= 0<br>
-   * out[i] = in[i] * alpha[i] otherwise<br>
-   * <br>
-   * sharedAxes allows you to share learnable parameters along axes.<br>
-   * For example, if the input has shape [batchSize, channels, height, width]<br>
-   * and you want each channel to have its own cutoff, use sharedAxes = [2, 3] and an<br>
-   * alpha with shape [channels].<br>
+   * PReLU (Parameterized Rectified Linear Unit) operation.  Like LeakyReLU with a learnable alpha:
+   * out[i] = in[i] if in[i] >= 0
+   * out[i] = in[i] * alpha[i] otherwise
+   *
+   * sharedAxes allows you to share learnable parameters along axes.
+   * For example, if the input has shape [batchSize, channels, height, width]
+   * and you want each channel to have its own cutoff, use sharedAxes = [2, 3] and an
+   * alpha with shape [channels].
    *
    * @param name name May be null. Name for the output variable
    * @param input Input data (NUMERIC type)
@@ -5049,7 +5084,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Quantized matrix multiplication. Supports mixed precision (float/int) inputs.<br>
+   * Quantized matrix multiplication. Supports mixed precision (float/int) inputs.
    *
    * @param a First matrix (NUMERIC type)
    * @param b Second matrix (NUMERIC type)
@@ -5062,7 +5097,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Quantized matrix multiplication. Supports mixed precision (float/int) inputs.<br>
+   * Quantized matrix multiplication. Supports mixed precision (float/int) inputs.
    *
    * @param name name May be null. Name for the output variable
    * @param a First matrix (NUMERIC type)
@@ -5077,25 +5112,25 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Relative Position Bias - Compute relative position bias for attention.<br>
-   * <br>
-   * Supports two modes:<br>
-   * 1. Learned bias (Swin/SAM style): Looks up bias values from a learned table<br>
-   *    based on relative positions between query and key positions.<br>
-   * <br>
-   * 2. ALiBi (Attention with Linear Biases): Computes linear position-based bias<br>
-   *    without learned parameters. More efficient for very long sequences.<br>
-   * <br>
-   * For learned bias mode:<br>
-   * - biasTable shape: [(2*windowSize-1)^2, numHeads] for 2D<br>
-   * - Output is gathered based on relative position indices<br>
-   * <br>
-   * For ALiBi mode:<br>
-   * - biasTable can be sequence length (scalar) or input tensor<br>
-   * - Computes m_h * |i - j| where m_h = 2^(-8*h/H)<br>
-   * <br>
-   * Reference: "Swin Transformer" (Liu et al., 2021)<br>
-   *            "Train Short, Test Long" (Press et al., 2021) for ALiBi<br>
+   * Relative Position Bias - Compute relative position bias for attention.
+   *
+   * Supports two modes:
+   * 1. Learned bias (Swin/SAM style): Looks up bias values from a learned table
+   *    based on relative positions between query and key positions.
+   *
+   * 2. ALiBi (Attention with Linear Biases): Computes linear position-based bias
+   *    without learned parameters. More efficient for very long sequences.
+   *
+   * For learned bias mode:
+   * - biasTable shape: [(2*windowSize-1)^2, numHeads] for 2D
+   * - Output is gathered based on relative position indices
+   *
+   * For ALiBi mode:
+   * - biasTable can be sequence length (scalar) or input tensor
+   * - Computes m_h * |i - j| where m_h = 2^(-8*h/H)
+   *
+   * Reference: "Swin Transformer" (Liu et al., 2021)
+   *            "Train Short, Test Long" (Press et al., 2021) for ALiBi
    *
    * @param biasTable Learned bias table. Shape: [numRelativePositions, numHeads] for learned mode, or scalar/tensor for ALiBi mode (NUMERIC type)
    * @param numHeads Number of attention heads
@@ -5108,25 +5143,25 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Relative Position Bias - Compute relative position bias for attention.<br>
-   * <br>
-   * Supports two modes:<br>
-   * 1. Learned bias (Swin/SAM style): Looks up bias values from a learned table<br>
-   *    based on relative positions between query and key positions.<br>
-   * <br>
-   * 2. ALiBi (Attention with Linear Biases): Computes linear position-based bias<br>
-   *    without learned parameters. More efficient for very long sequences.<br>
-   * <br>
-   * For learned bias mode:<br>
-   * - biasTable shape: [(2*windowSize-1)^2, numHeads] for 2D<br>
-   * - Output is gathered based on relative position indices<br>
-   * <br>
-   * For ALiBi mode:<br>
-   * - biasTable can be sequence length (scalar) or input tensor<br>
-   * - Computes m_h * |i - j| where m_h = 2^(-8*h/H)<br>
-   * <br>
-   * Reference: "Swin Transformer" (Liu et al., 2021)<br>
-   *            "Train Short, Test Long" (Press et al., 2021) for ALiBi<br>
+   * Relative Position Bias - Compute relative position bias for attention.
+   *
+   * Supports two modes:
+   * 1. Learned bias (Swin/SAM style): Looks up bias values from a learned table
+   *    based on relative positions between query and key positions.
+   *
+   * 2. ALiBi (Attention with Linear Biases): Computes linear position-based bias
+   *    without learned parameters. More efficient for very long sequences.
+   *
+   * For learned bias mode:
+   * - biasTable shape: [(2*windowSize-1)^2, numHeads] for 2D
+   * - Output is gathered based on relative position indices
+   *
+   * For ALiBi mode:
+   * - biasTable can be sequence length (scalar) or input tensor
+   * - Computes m_h * |i - j| where m_h = 2^(-8*h/H)
+   *
+   * Reference: "Swin Transformer" (Liu et al., 2021)
+   *            "Train Short, Test Long" (Press et al., 2021) for ALiBi
    *
    * @param name name May be null. Name for the output variable
    * @param biasTable Learned bias table. Shape: [numRelativePositions, numHeads] for learned mode, or scalar/tensor for ALiBi mode (NUMERIC type)
@@ -5142,25 +5177,25 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Relative Position Bias - Compute relative position bias for attention.<br>
-   * <br>
-   * Supports two modes:<br>
-   * 1. Learned bias (Swin/SAM style): Looks up bias values from a learned table<br>
-   *    based on relative positions between query and key positions.<br>
-   * <br>
-   * 2. ALiBi (Attention with Linear Biases): Computes linear position-based bias<br>
-   *    without learned parameters. More efficient for very long sequences.<br>
-   * <br>
-   * For learned bias mode:<br>
-   * - biasTable shape: [(2*windowSize-1)^2, numHeads] for 2D<br>
-   * - Output is gathered based on relative position indices<br>
-   * <br>
-   * For ALiBi mode:<br>
-   * - biasTable can be sequence length (scalar) or input tensor<br>
-   * - Computes m_h * |i - j| where m_h = 2^(-8*h/H)<br>
-   * <br>
-   * Reference: "Swin Transformer" (Liu et al., 2021)<br>
-   *            "Train Short, Test Long" (Press et al., 2021) for ALiBi<br>
+   * Relative Position Bias - Compute relative position bias for attention.
+   *
+   * Supports two modes:
+   * 1. Learned bias (Swin/SAM style): Looks up bias values from a learned table
+   *    based on relative positions between query and key positions.
+   *
+   * 2. ALiBi (Attention with Linear Biases): Computes linear position-based bias
+   *    without learned parameters. More efficient for very long sequences.
+   *
+   * For learned bias mode:
+   * - biasTable shape: [(2*windowSize-1)^2, numHeads] for 2D
+   * - Output is gathered based on relative position indices
+   *
+   * For ALiBi mode:
+   * - biasTable can be sequence length (scalar) or input tensor
+   * - Computes m_h * |i - j| where m_h = 2^(-8*h/H)
+   *
+   * Reference: "Swin Transformer" (Liu et al., 2021)
+   *            "Train Short, Test Long" (Press et al., 2021) for ALiBi
    *
    * @param biasTable Learned bias table. Shape: [numRelativePositions, numHeads] for learned mode, or scalar/tensor for ALiBi mode (NUMERIC type)
    * @param relativePositionIndex Optional precomputed relative position index. Shape: [windowSize^2, windowSize^2] (NUMERIC type)
@@ -5178,25 +5213,25 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Relative Position Bias - Compute relative position bias for attention.<br>
-   * <br>
-   * Supports two modes:<br>
-   * 1. Learned bias (Swin/SAM style): Looks up bias values from a learned table<br>
-   *    based on relative positions between query and key positions.<br>
-   * <br>
-   * 2. ALiBi (Attention with Linear Biases): Computes linear position-based bias<br>
-   *    without learned parameters. More efficient for very long sequences.<br>
-   * <br>
-   * For learned bias mode:<br>
-   * - biasTable shape: [(2*windowSize-1)^2, numHeads] for 2D<br>
-   * - Output is gathered based on relative position indices<br>
-   * <br>
-   * For ALiBi mode:<br>
-   * - biasTable can be sequence length (scalar) or input tensor<br>
-   * - Computes m_h * |i - j| where m_h = 2^(-8*h/H)<br>
-   * <br>
-   * Reference: "Swin Transformer" (Liu et al., 2021)<br>
-   *            "Train Short, Test Long" (Press et al., 2021) for ALiBi<br>
+   * Relative Position Bias - Compute relative position bias for attention.
+   *
+   * Supports two modes:
+   * 1. Learned bias (Swin/SAM style): Looks up bias values from a learned table
+   *    based on relative positions between query and key positions.
+   *
+   * 2. ALiBi (Attention with Linear Biases): Computes linear position-based bias
+   *    without learned parameters. More efficient for very long sequences.
+   *
+   * For learned bias mode:
+   * - biasTable shape: [(2*windowSize-1)^2, numHeads] for 2D
+   * - Output is gathered based on relative position indices
+   *
+   * For ALiBi mode:
+   * - biasTable can be sequence length (scalar) or input tensor
+   * - Computes m_h * |i - j| where m_h = 2^(-8*h/H)
+   *
+   * Reference: "Swin Transformer" (Liu et al., 2021)
+   *            "Train Short, Test Long" (Press et al., 2021) for ALiBi
    *
    * @param name name May be null. Name for the output variable
    * @param biasTable Learned bias table. Shape: [numRelativePositions, numHeads] for learned mode, or scalar/tensor for ALiBi mode (NUMERIC type)
@@ -5216,9 +5251,9 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Element-wise rectified linear function with specified cutoff:<br>
-   * out[i] = in[i] if in[i] >= cutoff<br>
-   * out[i] = 0 otherwise<br>
+   * Element-wise rectified linear function with specified cutoff:
+   * out[i] = in[i] if in[i] >= cutoff
+   * out[i] = 0 otherwise
    *
    * @param x Input (NUMERIC type)
    * @param cutoff Cutoff value for ReLU operation - x > cutoff ? x : 0. Usually 0
@@ -5230,9 +5265,9 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Element-wise rectified linear function with specified cutoff:<br>
-   * out[i] = in[i] if in[i] >= cutoff<br>
-   * out[i] = 0 otherwise<br>
+   * Element-wise rectified linear function with specified cutoff:
+   * out[i] = in[i] if in[i] >= cutoff
+   * out[i] = 0 otherwise
    *
    * @param name name May be null. Name for the output variable
    * @param x Input (NUMERIC type)
@@ -5246,8 +5281,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Element-wise "rectified linear 6" function with specified cutoff:<br>
-   * out[i] = min(max(in, cutoff), 6)<br>
+   * Element-wise "rectified linear 6" function with specified cutoff:
+   * out[i] = min(max(in, cutoff), 6)
    *
    * @param x Input (NUMERIC type)
    * @param cutoff Cutoff value for ReLU operation. Usually 0
@@ -5259,8 +5294,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Element-wise "rectified linear 6" function with specified cutoff:<br>
-   * out[i] = min(max(in, cutoff), 6)<br>
+   * Element-wise "rectified linear 6" function with specified cutoff:
+   * out[i] = min(max(in, cutoff), 6)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input (NUMERIC type)
@@ -5274,7 +5309,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * ReLU (Rectified Linear Unit) layer operation: out = relu(mmul(in,w) + bias)<br>
+   * ReLU (Rectified Linear Unit) layer operation: out = relu(mmul(in,w) + bias)
+   *
    *
    * @param input Input data (NUMERIC type)
    * @param weights Weights variable (NUMERIC type)
@@ -5289,7 +5325,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * ReLU (Rectified Linear Unit) layer operation: out = relu(mmul(in,w) + bias)<br>
+   * ReLU (Rectified Linear Unit) layer operation: out = relu(mmul(in,w) + bias)
+   *
    *
    * @param name name May be null. Name for the output variable
    * @param input Input data (NUMERIC type)
@@ -5306,8 +5343,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Reshapes a tensor without copying data. Returns a view if possible.<br>
-   * If the reshape cannot be done without copying, this op will fail.<br>
+   * Reshapes a tensor without copying data. Returns a view if possible.
+   * If the reshape cannot be done without copying, this op will fail.
    *
    * @param input Input tensor (NUMERIC type)
    * @param shape Target shape (NUMERIC type)
@@ -5320,8 +5357,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Reshapes a tensor without copying data. Returns a view if possible.<br>
-   * If the reshape cannot be done without copying, this op will fail.<br>
+   * Reshapes a tensor without copying data. Returns a view if possible.
+   * If the reshape cannot be done without copying, this op will fail.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input tensor (NUMERIC type)
@@ -5336,11 +5373,11 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Root Mean Square Layer Normalization (RMSNorm):<br>
-   * <br>
-   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
-   * <br>
-   * If gamma is not provided, only RMS normalization is applied.<br>
+   * Root Mean Square Layer Normalization (RMSNorm):
+   *
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma
+   *
+   * If gamma is not provided, only RMS normalization is applied.
    *
    * @param input Input variable (NUMERIC type)
    * @param gamma Scale/gain vector (NUMERIC type)
@@ -5356,11 +5393,11 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Root Mean Square Layer Normalization (RMSNorm):<br>
-   * <br>
-   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
-   * <br>
-   * If gamma is not provided, only RMS normalization is applied.<br>
+   * Root Mean Square Layer Normalization (RMSNorm):
+   *
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma
+   *
+   * If gamma is not provided, only RMS normalization is applied.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input variable (NUMERIC type)
@@ -5378,11 +5415,11 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Root Mean Square Layer Normalization (RMSNorm):<br>
-   * <br>
-   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
-   * <br>
-   * If gamma is not provided, only RMS normalization is applied.<br>
+   * Root Mean Square Layer Normalization (RMSNorm):
+   *
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma
+   *
+   * If gamma is not provided, only RMS normalization is applied.
    *
    * @param input Input variable (NUMERIC type)
    * @param gamma Scale/gain vector (NUMERIC type)
@@ -5397,11 +5434,11 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Root Mean Square Layer Normalization (RMSNorm):<br>
-   * <br>
-   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
-   * <br>
-   * If gamma is not provided, only RMS normalization is applied.<br>
+   * Root Mean Square Layer Normalization (RMSNorm):
+   *
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma
+   *
+   * If gamma is not provided, only RMS normalization is applied.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input variable (NUMERIC type)
@@ -5418,11 +5455,11 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Root Mean Square Layer Normalization (RMSNorm):<br>
-   * <br>
-   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
-   * <br>
-   * If gamma is not provided, only RMS normalization is applied.<br>
+   * Root Mean Square Layer Normalization (RMSNorm):
+   *
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma
+   *
+   * If gamma is not provided, only RMS normalization is applied.
    *
    * @param input Input variable (NUMERIC type)
    * @param epsilon Epsilon for numerical stability
@@ -5434,11 +5471,11 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Root Mean Square Layer Normalization (RMSNorm):<br>
-   * <br>
-   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
-   * <br>
-   * If gamma is not provided, only RMS normalization is applied.<br>
+   * Root Mean Square Layer Normalization (RMSNorm):
+   *
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma
+   *
+   * If gamma is not provided, only RMS normalization is applied.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input variable (NUMERIC type)
@@ -5452,11 +5489,11 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Root Mean Square Layer Normalization (RMSNorm):<br>
-   * <br>
-   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
-   * <br>
-   * If gamma is not provided, only RMS normalization is applied.<br>
+   * Root Mean Square Layer Normalization (RMSNorm):
+   *
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma
+   *
+   * If gamma is not provided, only RMS normalization is applied.
    *
    * @param input Input variable (NUMERIC type)
    * @return output RMS normalized output (NUMERIC type)
@@ -5467,11 +5504,11 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Root Mean Square Layer Normalization (RMSNorm):<br>
-   * <br>
-   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
-   * <br>
-   * If gamma is not provided, only RMS normalization is applied.<br>
+   * Root Mean Square Layer Normalization (RMSNorm):
+   *
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma
+   *
+   * If gamma is not provided, only RMS normalization is applied.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input variable (NUMERIC type)
@@ -5484,10 +5521,10 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused RMSNorm + Linear (MatMul) operation:<br>
-   * Computes matmul(rms_norm(x, gamma, eps), W) without materializing the intermediate<br>
-   * normalized tensor. Common in transformer models where RMSNorm feeds directly into<br>
-   * Q/K/V projections or FFN layers.<br>
+   * Fused RMSNorm + Linear (MatMul) operation:
+   * Computes matmul(rms_norm(x, gamma, eps), W) without materializing the intermediate
+   * normalized tensor. Common in transformer models where RMSNorm feeds directly into
+   * Q/K/V projections or FFN layers.
    *
    * @param input Input variable [batch, ..., features] (NUMERIC type)
    * @param gamma RMSNorm scale weights [features] (NUMERIC type)
@@ -5504,10 +5541,10 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused RMSNorm + Linear (MatMul) operation:<br>
-   * Computes matmul(rms_norm(x, gamma, eps), W) without materializing the intermediate<br>
-   * normalized tensor. Common in transformer models where RMSNorm feeds directly into<br>
-   * Q/K/V projections or FFN layers.<br>
+   * Fused RMSNorm + Linear (MatMul) operation:
+   * Computes matmul(rms_norm(x, gamma, eps), W) without materializing the intermediate
+   * normalized tensor. Common in transformer models where RMSNorm feeds directly into
+   * Q/K/V projections or FFN layers.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input variable [batch, ..., features] (NUMERIC type)
@@ -5526,10 +5563,10 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused RMSNorm + Linear (MatMul) operation:<br>
-   * Computes matmul(rms_norm(x, gamma, eps), W) without materializing the intermediate<br>
-   * normalized tensor. Common in transformer models where RMSNorm feeds directly into<br>
-   * Q/K/V projections or FFN layers.<br>
+   * Fused RMSNorm + Linear (MatMul) operation:
+   * Computes matmul(rms_norm(x, gamma, eps), W) without materializing the intermediate
+   * normalized tensor. Common in transformer models where RMSNorm feeds directly into
+   * Q/K/V projections or FFN layers.
    *
    * @param input Input variable [batch, ..., features] (NUMERIC type)
    * @param gamma RMSNorm scale weights [features] (NUMERIC type)
@@ -5544,10 +5581,10 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused RMSNorm + Linear (MatMul) operation:<br>
-   * Computes matmul(rms_norm(x, gamma, eps), W) without materializing the intermediate<br>
-   * normalized tensor. Common in transformer models where RMSNorm feeds directly into<br>
-   * Q/K/V projections or FFN layers.<br>
+   * Fused RMSNorm + Linear (MatMul) operation:
+   * Computes matmul(rms_norm(x, gamma, eps), W) without materializing the intermediate
+   * normalized tensor. Common in transformer models where RMSNorm feeds directly into
+   * Q/K/V projections or FFN layers.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input variable [batch, ..., features] (NUMERIC type)
@@ -5565,8 +5602,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Applies Rotary Position Embedding (RoPE) to the input tensor.<br>
-   * Encodes position information by rotating pairs of dimensions in the input.<br>
+   * Applies Rotary Position Embedding (RoPE) to the input tensor.
+   * Encodes position information by rotating pairs of dimensions in the input.
    *
    * @param input Input tensor [batch, seq_len, num_heads, head_dim] (NUMERIC type)
    * @param mode RoPE mode (default 0)
@@ -5583,8 +5620,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Applies Rotary Position Embedding (RoPE) to the input tensor.<br>
-   * Encodes position information by rotating pairs of dimensions in the input.<br>
+   * Applies Rotary Position Embedding (RoPE) to the input tensor.
+   * Encodes position information by rotating pairs of dimensions in the input.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input tensor [batch, seq_len, num_heads, head_dim] (NUMERIC type)
@@ -5603,8 +5640,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Row-parallel linear layer for tensor parallelism.<br>
-   * Splits weight rows across tensor parallel ranks.<br>
+   * Row-parallel linear layer for tensor parallelism.
+   * Splits weight rows across tensor parallel ranks.
    *
    * @param input Input tensor (NUMERIC type)
    * @param weight Weight matrix (NUMERIC type)
@@ -5621,8 +5658,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Row-parallel linear layer for tensor parallelism.<br>
-   * Splits weight rows across tensor parallel ranks.<br>
+   * Row-parallel linear layer for tensor parallelism.
+   * Splits weight rows across tensor parallel ranks.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input tensor (NUMERIC type)
@@ -5641,8 +5678,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Selective scan (S6/Mamba) operation for state space models. Consumes the<br>
-   * discretized SSM inputs x, a, b, c, d (and an optional initial hidden state h0).<br>
+   * Selective scan (S6/Mamba) operation for state space models. Consumes the
+   * discretized SSM inputs x, a, b, c, d (and an optional initial hidden state h0).
    *
    * @param x Input sequence [B, L, D] (NUMERIC type)
    * @param a Discretized state transition [B, L, S] (NUMERIC type)
@@ -5666,8 +5703,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Selective scan (S6/Mamba) operation for state space models. Consumes the<br>
-   * discretized SSM inputs x, a, b, c, d (and an optional initial hidden state h0).<br>
+   * Selective scan (S6/Mamba) operation for state space models. Consumes the
+   * discretized SSM inputs x, a, b, c, d (and an optional initial hidden state h0).
    *
    * @param name name May be null. Name for the output variable
    * @param x Input sequence [B, L, D] (NUMERIC type)
@@ -5693,8 +5730,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Selective scan (S6/Mamba) operation for state space models. Consumes the<br>
-   * discretized SSM inputs x, a, b, c, d (and an optional initial hidden state h0).<br>
+   * Selective scan (S6/Mamba) operation for state space models. Consumes the
+   * discretized SSM inputs x, a, b, c, d (and an optional initial hidden state h0).
    *
    * @param x Input sequence [B, L, D] (NUMERIC type)
    * @param a Discretized state transition [B, L, S] (NUMERIC type)
@@ -5714,8 +5751,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Selective scan (S6/Mamba) operation for state space models. Consumes the<br>
-   * discretized SSM inputs x, a, b, c, d (and an optional initial hidden state h0).<br>
+   * Selective scan (S6/Mamba) operation for state space models. Consumes the
+   * discretized SSM inputs x, a, b, c, d (and an optional initial hidden state h0).
    *
    * @param name name May be null. Name for the output variable
    * @param x Input sequence [B, L, D] (NUMERIC type)
@@ -5737,10 +5774,10 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Element-wise SeLU function - Scaled exponential Lineal Unit: see <a href="https://arxiv.org/abs/1706.02515">Self-Normalizing Neural Networks</a><br>
-   * <br>
-   * out[i] = scale * alpha * (exp(in[i])-1) if in[i]>0, or 0 if in[i] <= 0<br>
-   * Uses default scale and alpha values.<br>
+   * Element-wise SeLU function - Scaled exponential Lineal Unit: see <a href="https://arxiv.org/abs/1706.02515">Self-Normalizing Neural Networks</a>
+   *
+   * out[i] = scale * in[i] if in[i] > 0, or scale * alpha * (exp(in[i])-1) if in[i] &lt;= 0
+   * Uses default scale and alpha values.
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -5751,10 +5788,10 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Element-wise SeLU function - Scaled exponential Lineal Unit: see <a href="https://arxiv.org/abs/1706.02515">Self-Normalizing Neural Networks</a><br>
-   * <br>
-   * out[i] = scale * alpha * (exp(in[i])-1) if in[i]>0, or 0 if in[i] <= 0<br>
-   * Uses default scale and alpha values.<br>
+   * Element-wise SeLU function - Scaled exponential Lineal Unit: see <a href="https://arxiv.org/abs/1706.02515">Self-Normalizing Neural Networks</a>
+   *
+   * out[i] = scale * in[i] if in[i] > 0, or scale * alpha * (exp(in[i])-1) if in[i] &lt;= 0
+   * Uses default scale and alpha values.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -5767,15 +5804,15 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Shared KV Attention (Gemma 4).<br>
-   * <br>
-   * Grouped-query attention where K/V come from a donor layer rather than<br>
-   * being projected from the current hidden state. The last N layers reuse<br>
-   * K/V tensors produced by an earlier layer (the last non-shared layer of<br>
-   * the same attention type: sliding or full). This reduces memory and<br>
-   * compute with minimal quality impact.<br>
-   * <br>
-   * Supports causal masking and optional sliding window for local attention.<br>
+   * Shared KV Attention (Gemma 4).
+   *
+   * Grouped-query attention where K/V come from a donor layer rather than
+   * being projected from the current hidden state. The last N layers reuse
+   * K/V tensors produced by an earlier layer (the last non-shared layer of
+   * the same attention type: sliding or full). This reduces memory and
+   * compute with minimal quality impact.
+   *
+   * Supports causal masking and optional sliding window for local attention.
    *
    * @param query Query [batch, seqLen, numHeads, headDim] (NUMERIC type)
    * @param sharedKey Key from donor layer [batch, kvSeqLen, numKvHeads, headDim] (NUMERIC type)
@@ -5801,15 +5838,15 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Shared KV Attention (Gemma 4).<br>
-   * <br>
-   * Grouped-query attention where K/V come from a donor layer rather than<br>
-   * being projected from the current hidden state. The last N layers reuse<br>
-   * K/V tensors produced by an earlier layer (the last non-shared layer of<br>
-   * the same attention type: sliding or full). This reduces memory and<br>
-   * compute with minimal quality impact.<br>
-   * <br>
-   * Supports causal masking and optional sliding window for local attention.<br>
+   * Shared KV Attention (Gemma 4).
+   *
+   * Grouped-query attention where K/V come from a donor layer rather than
+   * being projected from the current hidden state. The last N layers reuse
+   * K/V tensors produced by an earlier layer (the last non-shared layer of
+   * the same attention type: sliding or full). This reduces memory and
+   * compute with minimal quality impact.
+   *
+   * Supports causal masking and optional sliding window for local attention.
    *
    * @param name name May be null. Name for the output variable
    * @param query Query [batch, seqLen, numHeads, headDim] (NUMERIC type)
@@ -5837,15 +5874,15 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Shared KV Attention (Gemma 4).<br>
-   * <br>
-   * Grouped-query attention where K/V come from a donor layer rather than<br>
-   * being projected from the current hidden state. The last N layers reuse<br>
-   * K/V tensors produced by an earlier layer (the last non-shared layer of<br>
-   * the same attention type: sliding or full). This reduces memory and<br>
-   * compute with minimal quality impact.<br>
-   * <br>
-   * Supports causal masking and optional sliding window for local attention.<br>
+   * Shared KV Attention (Gemma 4).
+   *
+   * Grouped-query attention where K/V come from a donor layer rather than
+   * being projected from the current hidden state. The last N layers reuse
+   * K/V tensors produced by an earlier layer (the last non-shared layer of
+   * the same attention type: sliding or full). This reduces memory and
+   * compute with minimal quality impact.
+   *
+   * Supports causal masking and optional sliding window for local attention.
    *
    * @param query Query [batch, seqLen, numHeads, headDim] (NUMERIC type)
    * @param sharedKey Key from donor layer [batch, kvSeqLen, numKvHeads, headDim] (NUMERIC type)
@@ -5863,15 +5900,15 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Shared KV Attention (Gemma 4).<br>
-   * <br>
-   * Grouped-query attention where K/V come from a donor layer rather than<br>
-   * being projected from the current hidden state. The last N layers reuse<br>
-   * K/V tensors produced by an earlier layer (the last non-shared layer of<br>
-   * the same attention type: sliding or full). This reduces memory and<br>
-   * compute with minimal quality impact.<br>
-   * <br>
-   * Supports causal masking and optional sliding window for local attention.<br>
+   * Shared KV Attention (Gemma 4).
+   *
+   * Grouped-query attention where K/V come from a donor layer rather than
+   * being projected from the current hidden state. The last N layers reuse
+   * K/V tensors produced by an earlier layer (the last non-shared layer of
+   * the same attention type: sliding or full). This reduces memory and
+   * compute with minimal quality impact.
+   *
+   * Supports causal masking and optional sliding window for local attention.
    *
    * @param name name May be null. Name for the output variable
    * @param query Query [batch, seqLen, numHeads, headDim] (NUMERIC type)
@@ -5891,15 +5928,15 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Shared KV Attention (Gemma 4).<br>
-   * <br>
-   * Grouped-query attention where K/V come from a donor layer rather than<br>
-   * being projected from the current hidden state. The last N layers reuse<br>
-   * K/V tensors produced by an earlier layer (the last non-shared layer of<br>
-   * the same attention type: sliding or full). This reduces memory and<br>
-   * compute with minimal quality impact.<br>
-   * <br>
-   * Supports causal masking and optional sliding window for local attention.<br>
+   * Shared KV Attention (Gemma 4).
+   *
+   * Grouped-query attention where K/V come from a donor layer rather than
+   * being projected from the current hidden state. The last N layers reuse
+   * K/V tensors produced by an earlier layer (the last non-shared layer of
+   * the same attention type: sliding or full). This reduces memory and
+   * compute with minimal quality impact.
+   *
+   * Supports causal masking and optional sliding window for local attention.
    *
    * @param query Query [batch, seqLen, numHeads, headDim] (NUMERIC type)
    * @param sharedKey Key from donor layer [batch, kvSeqLen, numKvHeads, headDim] (NUMERIC type)
@@ -5921,15 +5958,15 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Shared KV Attention (Gemma 4).<br>
-   * <br>
-   * Grouped-query attention where K/V come from a donor layer rather than<br>
-   * being projected from the current hidden state. The last N layers reuse<br>
-   * K/V tensors produced by an earlier layer (the last non-shared layer of<br>
-   * the same attention type: sliding or full). This reduces memory and<br>
-   * compute with minimal quality impact.<br>
-   * <br>
-   * Supports causal masking and optional sliding window for local attention.<br>
+   * Shared KV Attention (Gemma 4).
+   *
+   * Grouped-query attention where K/V come from a donor layer rather than
+   * being projected from the current hidden state. The last N layers reuse
+   * K/V tensors produced by an earlier layer (the last non-shared layer of
+   * the same attention type: sliding or full). This reduces memory and
+   * compute with minimal quality impact.
+   *
+   * Supports causal masking and optional sliding window for local attention.
    *
    * @param name name May be null. Name for the output variable
    * @param query Query [batch, seqLen, numHeads, headDim] (NUMERIC type)
@@ -5953,15 +5990,15 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Shared KV Attention (Gemma 4).<br>
-   * <br>
-   * Grouped-query attention where K/V come from a donor layer rather than<br>
-   * being projected from the current hidden state. The last N layers reuse<br>
-   * K/V tensors produced by an earlier layer (the last non-shared layer of<br>
-   * the same attention type: sliding or full). This reduces memory and<br>
-   * compute with minimal quality impact.<br>
-   * <br>
-   * Supports causal masking and optional sliding window for local attention.<br>
+   * Shared KV Attention (Gemma 4).
+   *
+   * Grouped-query attention where K/V come from a donor layer rather than
+   * being projected from the current hidden state. The last N layers reuse
+   * K/V tensors produced by an earlier layer (the last non-shared layer of
+   * the same attention type: sliding or full). This reduces memory and
+   * compute with minimal quality impact.
+   *
+   * Supports causal masking and optional sliding window for local attention.
    *
    * @param query Query [batch, seqLen, numHeads, headDim] (NUMERIC type)
    * @param sharedKey Key from donor layer [batch, kvSeqLen, numKvHeads, headDim] (NUMERIC type)
@@ -5986,15 +6023,15 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Shared KV Attention (Gemma 4).<br>
-   * <br>
-   * Grouped-query attention where K/V come from a donor layer rather than<br>
-   * being projected from the current hidden state. The last N layers reuse<br>
-   * K/V tensors produced by an earlier layer (the last non-shared layer of<br>
-   * the same attention type: sliding or full). This reduces memory and<br>
-   * compute with minimal quality impact.<br>
-   * <br>
-   * Supports causal masking and optional sliding window for local attention.<br>
+   * Shared KV Attention (Gemma 4).
+   *
+   * Grouped-query attention where K/V come from a donor layer rather than
+   * being projected from the current hidden state. The last N layers reuse
+   * K/V tensors produced by an earlier layer (the last non-shared layer of
+   * the same attention type: sliding or full). This reduces memory and
+   * compute with minimal quality impact.
+   *
+   * Supports causal masking and optional sliding window for local attention.
    *
    * @param name name May be null. Name for the output variable
    * @param query Query [batch, seqLen, numHeads, headDim] (NUMERIC type)
@@ -6021,7 +6058,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Element-wise sigmoid function: out[i] = 1.0/(1+exp(-in[i]))<br>
+   * Element-wise sigmoid function: out[i] = 1.0/(1+exp(-in[i]))
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -6032,7 +6069,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Element-wise sigmoid function: out[i] = 1.0/(1+exp(-in[i]))<br>
+   * Element-wise sigmoid function: out[i] = 1.0/(1+exp(-in[i]))
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -6045,7 +6082,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Element-wise sigmoid function derivative: dL/dIn given input and dL/dOut<br>
+   * Element-wise sigmoid function derivative: dL/dIn given input and dL/dOut
    *
    * @param x Input Variable (NUMERIC type)
    * @param wrt Gradient at the output - dL/dOut. Must have same shape as the input (NUMERIC type)
@@ -6058,7 +6095,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Element-wise sigmoid function derivative: dL/dIn given input and dL/dOut<br>
+   * Element-wise sigmoid function derivative: dL/dIn given input and dL/dOut
    *
    * @param name name May be null. Name for the output variable
    * @param x Input Variable (NUMERIC type)
@@ -6073,8 +6110,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * SiLU (Sigmoid Linear Unit) activation function, also known as Swish.<br>
-   * Computes f(x) = x * sigmoid(x).<br>
+   * SiLU (Sigmoid Linear Unit) activation function, also known as Swish.
+   * Computes f(x) = x * sigmoid(x).
    *
    * @param input Input tensor (NUMERIC type)
    * @return output SiLU(x) = x * sigmoid(x) (NUMERIC type)
@@ -6085,8 +6122,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * SiLU (Sigmoid Linear Unit) activation function, also known as Swish.<br>
-   * Computes f(x) = x * sigmoid(x).<br>
+   * SiLU (Sigmoid Linear Unit) activation function, also known as Swish.
+   * Computes f(x) = x * sigmoid(x).
    *
    * @param name name May be null. Name for the output variable
    * @param input Input tensor (NUMERIC type)
@@ -6099,9 +6136,9 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused Skip (Residual Add) + RMS Normalization:<br>
-   *   hidden = input + skip [+ bias]<br>
-   *   output = hidden * rsqrt(mean(hidden^2) + eps) * gamma<br>
+   * Fused Skip (Residual Add) + RMS Normalization:
+   *   hidden = input + skip [+ bias]
+   *   output = hidden * rsqrt(mean(hidden^2) + eps) * gamma
    *
    * @param input Input variable [batch, ..., features] (NUMERIC type)
    * @param skip Residual/skip connection variable [batch, ..., features] (NUMERIC type)
@@ -6122,9 +6159,9 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused Skip (Residual Add) + RMS Normalization:<br>
-   *   hidden = input + skip [+ bias]<br>
-   *   output = hidden * rsqrt(mean(hidden^2) + eps) * gamma<br>
+   * Fused Skip (Residual Add) + RMS Normalization:
+   *   hidden = input + skip [+ bias]
+   *   output = hidden * rsqrt(mean(hidden^2) + eps) * gamma
    *
    * @param name name May be null. Name for the output variable
    * @param input Input variable [batch, ..., features] (NUMERIC type)
@@ -6147,9 +6184,9 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused Skip (Residual Add) + RMS Normalization:<br>
-   *   hidden = input + skip [+ bias]<br>
-   *   output = hidden * rsqrt(mean(hidden^2) + eps) * gamma<br>
+   * Fused Skip (Residual Add) + RMS Normalization:
+   *   hidden = input + skip [+ bias]
+   *   output = hidden * rsqrt(mean(hidden^2) + eps) * gamma
    *
    * @param input Input variable [batch, ..., features] (NUMERIC type)
    * @param skip Residual/skip connection variable [batch, ..., features] (NUMERIC type)
@@ -6166,9 +6203,9 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused Skip (Residual Add) + RMS Normalization:<br>
-   *   hidden = input + skip [+ bias]<br>
-   *   output = hidden * rsqrt(mean(hidden^2) + eps) * gamma<br>
+   * Fused Skip (Residual Add) + RMS Normalization:
+   *   hidden = input + skip [+ bias]
+   *   output = hidden * rsqrt(mean(hidden^2) + eps) * gamma
    *
    * @param name name May be null. Name for the output variable
    * @param input Input variable [batch, ..., features] (NUMERIC type)
@@ -6187,19 +6224,19 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Sliding Window Attention - Efficient attention for long sequences.<br>
-   * <br>
-   * Each token only attends to a fixed window of previous tokens, enabling<br>
-   * efficient processing of very long sequences. Used in Mistral and other<br>
-   * modern LLMs for handling long contexts.<br>
-   * <br>
-   * Benefits:<br>
-   * - O(N * windowSize) complexity instead of O(N^2)<br>
-   * - Memory efficient for long sequences<br>
-   * - Supports very long context lengths (e.g., 32K with 4K window)<br>
-   * <br>
-   * The attention mask is automatically applied to restrict each position<br>
-   * to only attend to positions within [pos - windowSize, pos].<br>
+   * Sliding Window Attention - Efficient attention for long sequences.
+   *
+   * Each token only attends to a fixed window of previous tokens, enabling
+   * efficient processing of very long sequences. Used in Mistral and other
+   * modern LLMs for handling long contexts.
+   *
+   * Benefits:
+   * - O(N * windowSize) complexity instead of O(N^2)
+   * - Memory efficient for long sequences
+   * - Supports very long context lengths (e.g., 32K with 4K window)
+   *
+   * The attention mask is automatically applied to restrict each position
+   * to only attend to positions within [pos - windowSize, pos].
    *
    * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
    * @param key Key tensor. Shape: [batch, seqLen, numKvHeads, headDim] (NUMERIC type)
@@ -6219,19 +6256,19 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Sliding Window Attention - Efficient attention for long sequences.<br>
-   * <br>
-   * Each token only attends to a fixed window of previous tokens, enabling<br>
-   * efficient processing of very long sequences. Used in Mistral and other<br>
-   * modern LLMs for handling long contexts.<br>
-   * <br>
-   * Benefits:<br>
-   * - O(N * windowSize) complexity instead of O(N^2)<br>
-   * - Memory efficient for long sequences<br>
-   * - Supports very long context lengths (e.g., 32K with 4K window)<br>
-   * <br>
-   * The attention mask is automatically applied to restrict each position<br>
-   * to only attend to positions within [pos - windowSize, pos].<br>
+   * Sliding Window Attention - Efficient attention for long sequences.
+   *
+   * Each token only attends to a fixed window of previous tokens, enabling
+   * efficient processing of very long sequences. Used in Mistral and other
+   * modern LLMs for handling long contexts.
+   *
+   * Benefits:
+   * - O(N * windowSize) complexity instead of O(N^2)
+   * - Memory efficient for long sequences
+   * - Supports very long context lengths (e.g., 32K with 4K window)
+   *
+   * The attention mask is automatically applied to restrict each position
+   * to only attend to positions within [pos - windowSize, pos].
    *
    * @param name name May be null. Name for the output variable
    * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
@@ -6253,7 +6290,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * SmoothQuant: migrates quantization difficulty from activations to weights.<br>
+   * SmoothQuant: migrates quantization difficulty from activations to weights.
    *
    * @param input Input tensor (NUMERIC type)
    * @param smoothScale Smooth quantization scale (NUMERIC type)
@@ -6266,7 +6303,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * SmoothQuant: migrates quantization difficulty from activations to weights.<br>
+   * SmoothQuant: migrates quantization difficulty from activations to weights.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input tensor (NUMERIC type)
@@ -6281,7 +6318,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Softmax activation, along the specified dimension<br>
+   * Softmax activation, along the specified dimension
    *
    * @param x Input (NUMERIC type)
    * @param dimension Dimension along which to apply softmax
@@ -6293,7 +6330,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Softmax activation, along the specified dimension<br>
+   * Softmax activation, along the specified dimension
    *
    * @param name name May be null. Name for the output variable
    * @param x Input (NUMERIC type)
@@ -6307,7 +6344,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Softmax activation, along the specified dimension<br>
+   * Softmax activation, along the specified dimension
    *
    * @param x Input (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -6318,7 +6355,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Softmax activation, along the specified dimension<br>
+   * Softmax activation, along the specified dimension
    *
    * @param name name May be null. Name for the output variable
    * @param x Input (NUMERIC type)
@@ -6331,7 +6368,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Element-wise softplus function: out = log(exp(x) + 1)<br>
+   * Element-wise softplus function: out = log(exp(x) + 1)
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -6342,7 +6379,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Element-wise softplus function: out = log(exp(x) + 1)<br>
+   * Element-wise softplus function: out = log(exp(x) + 1)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -6355,7 +6392,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Element-wise softsign function: out = x / (abs(x) + 1)<br>
+   * Element-wise softsign function: out = x / (abs(x) + 1)
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -6366,7 +6403,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Element-wise softsign function: out = x / (abs(x) + 1)<br>
+   * Element-wise softsign function: out = x / (abs(x) + 1)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -6379,7 +6416,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Element-wise derivative (dOut/dIn) of the softsign function softsign(INDArray)<br>
+   * Element-wise derivative (dOut/dIn) of the softsign function softsign(INDArray)
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output (NUMERIC type)
@@ -6390,7 +6427,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Element-wise derivative (dOut/dIn) of the softsign function softsign(INDArray)<br>
+   * Element-wise derivative (dOut/dIn) of the softsign function softsign(INDArray)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -6403,8 +6440,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Squared ReLU activation function: out = max(0, x)^2.<br>
-   * Used in Nemotron and other NVIDIA model architectures.<br>
+   * Squared ReLU activation function: out = max(0, x)^2.
+   * Used in Nemotron and other NVIDIA model architectures.
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -6415,8 +6452,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Squared ReLU activation function: out = max(0, x)^2.<br>
-   * Used in Nemotron and other NVIDIA model architectures.<br>
+   * Squared ReLU activation function: out = max(0, x)^2.
+   * Used in Nemotron and other NVIDIA model architectures.
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -6429,8 +6466,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Element-wise "swish" function: out = x * sigmoid(b*x) with b=1.0<br>
-   * See: <a href="https://arxiv.org/abs/1710.05941">https://arxiv.org/abs/1710.05941</a><br>
+   * Element-wise "swish" function: out = x * sigmoid(b*x) with b=1.0
+   * See: <a href="https://arxiv.org/abs/1710.05941">https://arxiv.org/abs/1710.05941</a>
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -6441,8 +6478,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Element-wise "swish" function: out = x * sigmoid(b*x) with b=1.0<br>
-   * See: <a href="https://arxiv.org/abs/1710.05941">https://arxiv.org/abs/1710.05941</a><br>
+   * Element-wise "swish" function: out = x * sigmoid(b*x) with b=1.0
+   * See: <a href="https://arxiv.org/abs/1710.05941">https://arxiv.org/abs/1710.05941</a>
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -6455,8 +6492,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused Swish-Mul: computes swish(input) * gate in a single kernel.<br>
-   * Used in SwiGLU and similar gated architectures.<br>
+   * Fused Swish-Mul: computes swish(input) * gate in a single kernel.
+   * Used in SwiGLU and similar gated architectures.
    *
    * @param input Input tensor (NUMERIC type)
    * @param gate Gate tensor (NUMERIC type)
@@ -6469,8 +6506,8 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Fused Swish-Mul: computes swish(input) * gate in a single kernel.<br>
-   * Used in SwiGLU and similar gated architectures.<br>
+   * Fused Swish-Mul: computes swish(input) * gate in a single kernel.
+   * Used in SwiGLU and similar gated architectures.
    *
    * @param name name May be null. Name for the output variable
    * @param input Input tensor (NUMERIC type)
@@ -6485,7 +6522,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Elementwise tanh (hyperbolic tangent) operation: out = tanh(x)<br>
+   * Elementwise tanh (hyperbolic tangent) operation: out = tanh(x)
    *
    * @param x Input variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
@@ -6496,7 +6533,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Elementwise tanh (hyperbolic tangent) operation: out = tanh(x)<br>
+   * Elementwise tanh (hyperbolic tangent) operation: out = tanh(x)
    *
    * @param name name May be null. Name for the output variable
    * @param x Input variable (NUMERIC type)
@@ -6509,17 +6546,17 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Token sampling for LLM inference.<br>
-   * <br>
-   * Full sampling pipeline in a single native GPU call:<br>
-   *   temperature scaling -> top-K filtering -> softmax -> top-P filtering -> sample/argmax<br>
-   * <br>
-   * For greedy decoding (temperature=0 or no top-k/top-p), performs GPU-side argmax<br>
-   * with shared-memory reduction — avoids transferring the full logits tensor to host.<br>
-   * <br>
-   * Supports rank 1 [vocabSize], rank 2 [batch, vocabSize], and rank 3<br>
-   * [batch, seqLen, vocabSize] inputs. For rank 3, the last sequence position<br>
-   * is automatically extracted for sampling.<br>
+   * Token sampling for LLM inference.
+   *
+   * Full sampling pipeline in a single native GPU call:
+   *   temperature scaling -> top-K filtering -> softmax -> top-P filtering -> sample/argmax
+   *
+   * For greedy decoding (temperature=0 or no top-k/top-p), performs GPU-side argmax
+   * with shared-memory reduction — avoids transferring the full logits tensor to host.
+   *
+   * Supports rank 1 [vocabSize], rank 2 [batch, vocabSize], and rank 3
+   * [batch, seqLen, vocabSize] inputs. For rank 3, the last sequence position
+   * is automatically extracted for sampling.
    *
    * @param logits Logits tensor. Shape: [vocabSize], [batch, vocabSize], or [batch, seqLen, vocabSize]. For rank-3, samples from the last sequence position. (NUMERIC type)
    * @return output Sampled token indices. Shape: [batch] or scalar (LONG type)
@@ -6530,17 +6567,17 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Token sampling for LLM inference.<br>
-   * <br>
-   * Full sampling pipeline in a single native GPU call:<br>
-   *   temperature scaling -> top-K filtering -> softmax -> top-P filtering -> sample/argmax<br>
-   * <br>
-   * For greedy decoding (temperature=0 or no top-k/top-p), performs GPU-side argmax<br>
-   * with shared-memory reduction — avoids transferring the full logits tensor to host.<br>
-   * <br>
-   * Supports rank 1 [vocabSize], rank 2 [batch, vocabSize], and rank 3<br>
-   * [batch, seqLen, vocabSize] inputs. For rank 3, the last sequence position<br>
-   * is automatically extracted for sampling.<br>
+   * Token sampling for LLM inference.
+   *
+   * Full sampling pipeline in a single native GPU call:
+   *   temperature scaling -> top-K filtering -> softmax -> top-P filtering -> sample/argmax
+   *
+   * For greedy decoding (temperature=0 or no top-k/top-p), performs GPU-side argmax
+   * with shared-memory reduction — avoids transferring the full logits tensor to host.
+   *
+   * Supports rank 1 [vocabSize], rank 2 [batch, vocabSize], and rank 3
+   * [batch, seqLen, vocabSize] inputs. For rank 3, the last sequence position
+   * is automatically extracted for sampling.
    *
    * @param name name May be null. Name for the output variable
    * @param logits Logits tensor. Shape: [vocabSize], [batch, vocabSize], or [batch, seqLen, vocabSize]. For rank-3, samples from the last sequence position. (NUMERIC type)
@@ -6553,17 +6590,17 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Token sampling for LLM inference.<br>
-   * <br>
-   * Full sampling pipeline in a single native GPU call:<br>
-   *   temperature scaling -> top-K filtering -> softmax -> top-P filtering -> sample/argmax<br>
-   * <br>
-   * For greedy decoding (temperature=0 or no top-k/top-p), performs GPU-side argmax<br>
-   * with shared-memory reduction — avoids transferring the full logits tensor to host.<br>
-   * <br>
-   * Supports rank 1 [vocabSize], rank 2 [batch, vocabSize], and rank 3<br>
-   * [batch, seqLen, vocabSize] inputs. For rank 3, the last sequence position<br>
-   * is automatically extracted for sampling.<br>
+   * Token sampling for LLM inference.
+   *
+   * Full sampling pipeline in a single native GPU call:
+   *   temperature scaling -> top-K filtering -> softmax -> top-P filtering -> sample/argmax
+   *
+   * For greedy decoding (temperature=0 or no top-k/top-p), performs GPU-side argmax
+   * with shared-memory reduction — avoids transferring the full logits tensor to host.
+   *
+   * Supports rank 1 [vocabSize], rank 2 [batch, vocabSize], and rank 3
+   * [batch, seqLen, vocabSize] inputs. For rank 3, the last sequence position
+   * is automatically extracted for sampling.
    *
    * @param logits Logits tensor. Shape: [vocabSize], [batch, vocabSize], or [batch, seqLen, vocabSize]. For rank-3, samples from the last sequence position. (NUMERIC type)
    * @param temperature Temperature for sampling. 0 = greedy (argmax)
@@ -6579,17 +6616,17 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Token sampling for LLM inference.<br>
-   * <br>
-   * Full sampling pipeline in a single native GPU call:<br>
-   *   temperature scaling -> top-K filtering -> softmax -> top-P filtering -> sample/argmax<br>
-   * <br>
-   * For greedy decoding (temperature=0 or no top-k/top-p), performs GPU-side argmax<br>
-   * with shared-memory reduction — avoids transferring the full logits tensor to host.<br>
-   * <br>
-   * Supports rank 1 [vocabSize], rank 2 [batch, vocabSize], and rank 3<br>
-   * [batch, seqLen, vocabSize] inputs. For rank 3, the last sequence position<br>
-   * is automatically extracted for sampling.<br>
+   * Token sampling for LLM inference.
+   *
+   * Full sampling pipeline in a single native GPU call:
+   *   temperature scaling -> top-K filtering -> softmax -> top-P filtering -> sample/argmax
+   *
+   * For greedy decoding (temperature=0 or no top-k/top-p), performs GPU-side argmax
+   * with shared-memory reduction — avoids transferring the full logits tensor to host.
+   *
+   * Supports rank 1 [vocabSize], rank 2 [batch, vocabSize], and rank 3
+   * [batch, seqLen, vocabSize] inputs. For rank 3, the last sequence position
+   * is automatically extracted for sampling.
    *
    * @param name name May be null. Name for the output variable
    * @param logits Logits tensor. Shape: [vocabSize], [batch, vocabSize], or [batch, seqLen, vocabSize]. For rank-3, samples from the last sequence position. (NUMERIC type)
@@ -6637,16 +6674,16 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * TurboQuant asymmetric attention with compressed keys.<br>
-   * <br>
-   * Computes scaled dot-product attention using compressed key representations<br>
-   * from TurboQuant's two-stage quantization (ICLR 2026). The asymmetric inner<br>
-   * product estimator combines MSE reconstruction with QJL correction:<br>
-   * <br>
-   *   score(q, k) ≈ <q, k_mse> + ||r|| * sqrt(π/2)/m * <S@q, signs><br>
-   * <br>
-   * Keys use full two-stage compression (MSE + QJL) for asymmetric attention.<br>
-   * Values use MSE-only decompression (error averages out in softmax-weighted sum).<br>
+   * TurboQuant asymmetric attention with compressed keys.
+   *
+   * Computes scaled dot-product attention using compressed key representations
+   * from TurboQuant's two-stage quantization (ICLR 2026). The asymmetric inner
+   * product estimator combines MSE reconstruction with QJL correction:
+   *
+   *   score(q, k) ≈ &lt;q, k_mse&gt; + ||r|| * sqrt(π/2)/m * &lt;S@q, signs&gt;
+   *
+   * Keys use full two-stage compression (MSE + QJL) for asymmetric attention.
+   * Values use MSE-only decompression (error averages out in softmax-weighted sum).
    *
    * @param query Query tensor [B, H, Sq, D] (NUMERIC type)
    * @param kMse MSE-reconstructed keys [B, H, Sk, D] (NUMERIC type)
@@ -6674,16 +6711,16 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * TurboQuant asymmetric attention with compressed keys.<br>
-   * <br>
-   * Computes scaled dot-product attention using compressed key representations<br>
-   * from TurboQuant's two-stage quantization (ICLR 2026). The asymmetric inner<br>
-   * product estimator combines MSE reconstruction with QJL correction:<br>
-   * <br>
-   *   score(q, k) ≈ <q, k_mse> + ||r|| * sqrt(π/2)/m * <S@q, signs><br>
-   * <br>
-   * Keys use full two-stage compression (MSE + QJL) for asymmetric attention.<br>
-   * Values use MSE-only decompression (error averages out in softmax-weighted sum).<br>
+   * TurboQuant asymmetric attention with compressed keys.
+   *
+   * Computes scaled dot-product attention using compressed key representations
+   * from TurboQuant's two-stage quantization (ICLR 2026). The asymmetric inner
+   * product estimator combines MSE reconstruction with QJL correction:
+   *
+   *   score(q, k) ≈ &lt;q, k_mse&gt; + ||r|| * sqrt(π/2)/m * &lt;S@q, signs&gt;
+   *
+   * Keys use full two-stage compression (MSE + QJL) for asymmetric attention.
+   * Values use MSE-only decompression (error averages out in softmax-weighted sum).
    *
    * @param name name May be null. Name for the output variable
    * @param query Query tensor [B, H, Sq, D] (NUMERIC type)
@@ -6713,16 +6750,16 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * TurboQuant asymmetric attention with compressed keys.<br>
-   * <br>
-   * Computes scaled dot-product attention using compressed key representations<br>
-   * from TurboQuant's two-stage quantization (ICLR 2026). The asymmetric inner<br>
-   * product estimator combines MSE reconstruction with QJL correction:<br>
-   * <br>
-   *   score(q, k) ≈ <q, k_mse> + ||r|| * sqrt(π/2)/m * <S@q, signs><br>
-   * <br>
-   * Keys use full two-stage compression (MSE + QJL) for asymmetric attention.<br>
-   * Values use MSE-only decompression (error averages out in softmax-weighted sum).<br>
+   * TurboQuant asymmetric attention with compressed keys.
+   *
+   * Computes scaled dot-product attention using compressed key representations
+   * from TurboQuant's two-stage quantization (ICLR 2026). The asymmetric inner
+   * product estimator combines MSE reconstruction with QJL correction:
+   *
+   *   score(q, k) ≈ &lt;q, k_mse&gt; + ||r|| * sqrt(π/2)/m * &lt;S@q, signs&gt;
+   *
+   * Keys use full two-stage compression (MSE + QJL) for asymmetric attention.
+   * Values use MSE-only decompression (error averages out in softmax-weighted sum).
    *
    * @param query Query tensor [B, H, Sq, D] (NUMERIC type)
    * @param kMse MSE-reconstructed keys [B, H, Sk, D] (NUMERIC type)
@@ -6749,16 +6786,16 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * TurboQuant asymmetric attention with compressed keys.<br>
-   * <br>
-   * Computes scaled dot-product attention using compressed key representations<br>
-   * from TurboQuant's two-stage quantization (ICLR 2026). The asymmetric inner<br>
-   * product estimator combines MSE reconstruction with QJL correction:<br>
-   * <br>
-   *   score(q, k) ≈ <q, k_mse> + ||r|| * sqrt(π/2)/m * <S@q, signs><br>
-   * <br>
-   * Keys use full two-stage compression (MSE + QJL) for asymmetric attention.<br>
-   * Values use MSE-only decompression (error averages out in softmax-weighted sum).<br>
+   * TurboQuant asymmetric attention with compressed keys.
+   *
+   * Computes scaled dot-product attention using compressed key representations
+   * from TurboQuant's two-stage quantization (ICLR 2026). The asymmetric inner
+   * product estimator combines MSE reconstruction with QJL correction:
+   *
+   *   score(q, k) ≈ &lt;q, k_mse&gt; + ||r|| * sqrt(π/2)/m * &lt;S@q, signs&gt;
+   *
+   * Keys use full two-stage compression (MSE + QJL) for asymmetric attention.
+   * Values use MSE-only decompression (error averages out in softmax-weighted sum).
    *
    * @param name name May be null. Name for the output variable
    * @param query Query tensor [B, H, Sq, D] (NUMERIC type)
@@ -6787,11 +6824,11 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * SAM-style Two-Way Cross Attention.<br>
-   * Bidirectional cross-attention where tokens attend to image features and<br>
-   * image features attend to tokens simultaneously:<br>
-   *   tokenOutput = softmax(tokenQ @ imageK^T * scale) @ imageV<br>
-   *   imageOutput = softmax(imageQ @ tokenK^T * scale) @ tokenV<br>
+   * SAM-style Two-Way Cross Attention.
+   * Bidirectional cross-attention where tokens attend to image features and
+   * image features attend to tokens simultaneously:
+   *   tokenOutput = softmax(tokenQ @ imageK^T * scale) @ imageV
+   *   imageOutput = softmax(imageQ @ tokenK^T * scale) @ tokenV
    *
    * @param tokenQuery Token queries [batch, tokenSeqLen, embedDim] (NUMERIC type)
    * @param tokenKey Token keys [batch, tokenSeqLen, embedDim] (NUMERIC type)
@@ -6816,11 +6853,11 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * SAM-style Two-Way Cross Attention.<br>
-   * Bidirectional cross-attention where tokens attend to image features and<br>
-   * image features attend to tokens simultaneously:<br>
-   *   tokenOutput = softmax(tokenQ @ imageK^T * scale) @ imageV<br>
-   *   imageOutput = softmax(imageQ @ tokenK^T * scale) @ tokenV<br>
+   * SAM-style Two-Way Cross Attention.
+   * Bidirectional cross-attention where tokens attend to image features and
+   * image features attend to tokens simultaneously:
+   *   tokenOutput = softmax(tokenQ @ imageK^T * scale) @ imageV
+   *   imageOutput = softmax(imageQ @ tokenK^T * scale) @ tokenV
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param tokenQuery Token queries [batch, tokenSeqLen, embedDim] (NUMERIC type)
@@ -6847,11 +6884,11 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * SAM-style Two-Way Cross Attention.<br>
-   * Bidirectional cross-attention where tokens attend to image features and<br>
-   * image features attend to tokens simultaneously:<br>
-   *   tokenOutput = softmax(tokenQ @ imageK^T * scale) @ imageV<br>
-   *   imageOutput = softmax(imageQ @ tokenK^T * scale) @ tokenV<br>
+   * SAM-style Two-Way Cross Attention.
+   * Bidirectional cross-attention where tokens attend to image features and
+   * image features attend to tokens simultaneously:
+   *   tokenOutput = softmax(tokenQ @ imageK^T * scale) @ imageV
+   *   imageOutput = softmax(imageQ @ tokenK^T * scale) @ tokenV
    *
    * @param tokenQuery Token queries [batch, tokenSeqLen, embedDim] (NUMERIC type)
    * @param tokenKey Token keys [batch, tokenSeqLen, embedDim] (NUMERIC type)
@@ -6874,11 +6911,11 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * SAM-style Two-Way Cross Attention.<br>
-   * Bidirectional cross-attention where tokens attend to image features and<br>
-   * image features attend to tokens simultaneously:<br>
-   *   tokenOutput = softmax(tokenQ @ imageK^T * scale) @ imageV<br>
-   *   imageOutput = softmax(imageQ @ tokenK^T * scale) @ tokenV<br>
+   * SAM-style Two-Way Cross Attention.
+   * Bidirectional cross-attention where tokens attend to image features and
+   * image features attend to tokens simultaneously:
+   *   tokenOutput = softmax(tokenQ @ imageK^T * scale) @ imageV
+   *   imageOutput = softmax(imageQ @ tokenK^T * scale) @ tokenV
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param tokenQuery Token queries [batch, tokenSeqLen, embedDim] (NUMERIC type)
@@ -6904,11 +6941,11 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Typical-p (entropy-deviation) logit filter.<br>
-   * <br>
-   * Masks tokens whose information content -log(p) deviates most from the distribution<br>
-   * entropy H, keeping the most typical tokens (smallest |-log(p) - H|) until their<br>
-   * cumulative probability mass reaches typicalP. Masked positions are set to -inf.<br>
+   * Typical-p (entropy-deviation) logit filter.
+   *
+   * Masks tokens whose information content -log(p) deviates most from the distribution
+   * entropy H, keeping the most typical tokens (smallest |-log(p) - H|) until their
+   * cumulative probability mass reaches typicalP. Masked positions are set to -inf.
    *
    * @param logits Logits tensor. Shape: [vocabSize] or [batch, vocabSize] (NUMERIC type)
    * @param typicalP Cumulative mass of the most-typical tokens to keep. 1.0 = off (no-op)
@@ -6920,11 +6957,11 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Typical-p (entropy-deviation) logit filter.<br>
-   * <br>
-   * Masks tokens whose information content -log(p) deviates most from the distribution<br>
-   * entropy H, keeping the most typical tokens (smallest |-log(p) - H|) until their<br>
-   * cumulative probability mass reaches typicalP. Masked positions are set to -inf.<br>
+   * Typical-p (entropy-deviation) logit filter.
+   *
+   * Masks tokens whose information content -log(p) deviates most from the distribution
+   * entropy H, keeping the most typical tokens (smallest |-log(p) - H|) until their
+   * cumulative probability mass reaches typicalP. Masked positions are set to -inf.
    *
    * @param name name May be null. Name for the output variable
    * @param logits Logits tensor. Shape: [vocabSize] or [batch, vocabSize] (NUMERIC type)
@@ -6938,15 +6975,15 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Scatter vision embeddings into text embeddings at target token positions.<br>
-   * <br>
-   * Replaces positions in the text embedding sequence where the token ID<br>
-   * matches targetTokenId with sequential vision embeddings. Uses a two-pass<br>
-   * approach on CUDA (prefix sum + scatter) that runs entirely on device<br>
-   * with no host round-trips.<br>
-   * <br>
-   * Used by VLMs (SmolVLM2, Qwen3-VL, MiniCPM-V, LLaVA) to merge vision<br>
-   * encoder output into the language model's input embedding sequence.<br>
+   * Scatter vision embeddings into text embeddings at target token positions.
+   *
+   * Replaces positions in the text embedding sequence where the token ID
+   * matches targetTokenId with sequential vision embeddings. Uses a two-pass
+   * approach on CUDA (prefix sum + scatter) that runs entirely on device
+   * with no host round-trips.
+   *
+   * Used by VLMs (SmolVLM2, Qwen3-VL, MiniCPM-V, LLaVA) to merge vision
+   * encoder output into the language model's input embedding sequence.
    *
    * @param textEmbeddings Text token embeddings [batch, seqLen, hiddenDim] (NUMERIC type)
    * @param visionEmbeddings Vision token embeddings [batch, visionTokens, hiddenDim] (NUMERIC type)
@@ -6963,15 +7000,15 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Scatter vision embeddings into text embeddings at target token positions.<br>
-   * <br>
-   * Replaces positions in the text embedding sequence where the token ID<br>
-   * matches targetTokenId with sequential vision embeddings. Uses a two-pass<br>
-   * approach on CUDA (prefix sum + scatter) that runs entirely on device<br>
-   * with no host round-trips.<br>
-   * <br>
-   * Used by VLMs (SmolVLM2, Qwen3-VL, MiniCPM-V, LLaVA) to merge vision<br>
-   * encoder output into the language model's input embedding sequence.<br>
+   * Scatter vision embeddings into text embeddings at target token positions.
+   *
+   * Replaces positions in the text embedding sequence where the token ID
+   * matches targetTokenId with sequential vision embeddings. Uses a two-pass
+   * approach on CUDA (prefix sum + scatter) that runs entirely on device
+   * with no host round-trips.
+   *
+   * Used by VLMs (SmolVLM2, Qwen3-VL, MiniCPM-V, LLaVA) to merge vision
+   * encoder output into the language model's input embedding sequence.
    *
    * @param name name May be null. Name for the output variable
    * @param textEmbeddings Text token embeddings [batch, seqLen, hiddenDim] (NUMERIC type)
@@ -6990,22 +7027,22 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Windowed Attention - Local/Sliding Window Attention.<br>
-   * <br>
-   * Implements windowed attention mechanisms used in efficient transformers like<br>
-   * Longformer, BigBird, Swin Transformer, and SAM (Segment Anything Model).<br>
-   * <br>
-   * Supports both:<br>
-   * - 1D windowed attention: for sequences [batch, seqLen, heads, dim]<br>
-   * - 2D windowed attention: for images [batch, height, width, heads, dim]<br>
-   * <br>
-   * Shifted window attention (shiftSize > 0) enables cross-window connections<br>
-   * as used in Swin Transformer.<br>
-   * <br>
-   * Benefits:<br>
-   * - O(N * windowSize) complexity instead of O(N^2)<br>
-   * - Efficient for long sequences and high-resolution images<br>
-   * - Supports relative position bias for position-aware attention<br>
+   * Windowed Attention - Local/Sliding Window Attention.
+   *
+   * Implements windowed attention mechanisms used in efficient transformers like
+   * Longformer, BigBird, Swin Transformer, and SAM (Segment Anything Model).
+   *
+   * Supports both:
+   * - 1D windowed attention: for sequences [batch, seqLen, heads, dim]
+   * - 2D windowed attention: for images [batch, height, width, heads, dim]
+   *
+   * Shifted window attention (shiftSize > 0) enables cross-window connections
+   * as used in Swin Transformer.
+   *
+   * Benefits:
+   * - O(N * windowSize) complexity instead of O(N^2)
+   * - Efficient for long sequences and high-resolution images
+   * - Supports relative position bias for position-aware attention
    *
    * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] for 1D or [batch, height, width, numHeads, headDim] for 2D (NUMERIC type)
    * @param key Key tensor. Same shape as query (NUMERIC type)
@@ -7023,22 +7060,22 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Windowed Attention - Local/Sliding Window Attention.<br>
-   * <br>
-   * Implements windowed attention mechanisms used in efficient transformers like<br>
-   * Longformer, BigBird, Swin Transformer, and SAM (Segment Anything Model).<br>
-   * <br>
-   * Supports both:<br>
-   * - 1D windowed attention: for sequences [batch, seqLen, heads, dim]<br>
-   * - 2D windowed attention: for images [batch, height, width, heads, dim]<br>
-   * <br>
-   * Shifted window attention (shiftSize > 0) enables cross-window connections<br>
-   * as used in Swin Transformer.<br>
-   * <br>
-   * Benefits:<br>
-   * - O(N * windowSize) complexity instead of O(N^2)<br>
-   * - Efficient for long sequences and high-resolution images<br>
-   * - Supports relative position bias for position-aware attention<br>
+   * Windowed Attention - Local/Sliding Window Attention.
+   *
+   * Implements windowed attention mechanisms used in efficient transformers like
+   * Longformer, BigBird, Swin Transformer, and SAM (Segment Anything Model).
+   *
+   * Supports both:
+   * - 1D windowed attention: for sequences [batch, seqLen, heads, dim]
+   * - 2D windowed attention: for images [batch, height, width, heads, dim]
+   *
+   * Shifted window attention (shiftSize > 0) enables cross-window connections
+   * as used in Swin Transformer.
+   *
+   * Benefits:
+   * - O(N * windowSize) complexity instead of O(N^2)
+   * - Efficient for long sequences and high-resolution images
+   * - Supports relative position bias for position-aware attention
    *
    * @param name name May be null. Name for the output variable
    * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] for 1D or [batch, height, width, numHeads, headDim] for 2D (NUMERIC type)
@@ -7058,22 +7095,22 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Windowed Attention - Local/Sliding Window Attention.<br>
-   * <br>
-   * Implements windowed attention mechanisms used in efficient transformers like<br>
-   * Longformer, BigBird, Swin Transformer, and SAM (Segment Anything Model).<br>
-   * <br>
-   * Supports both:<br>
-   * - 1D windowed attention: for sequences [batch, seqLen, heads, dim]<br>
-   * - 2D windowed attention: for images [batch, height, width, heads, dim]<br>
-   * <br>
-   * Shifted window attention (shiftSize > 0) enables cross-window connections<br>
-   * as used in Swin Transformer.<br>
-   * <br>
-   * Benefits:<br>
-   * - O(N * windowSize) complexity instead of O(N^2)<br>
-   * - Efficient for long sequences and high-resolution images<br>
-   * - Supports relative position bias for position-aware attention<br>
+   * Windowed Attention - Local/Sliding Window Attention.
+   *
+   * Implements windowed attention mechanisms used in efficient transformers like
+   * Longformer, BigBird, Swin Transformer, and SAM (Segment Anything Model).
+   *
+   * Supports both:
+   * - 1D windowed attention: for sequences [batch, seqLen, heads, dim]
+   * - 2D windowed attention: for images [batch, height, width, heads, dim]
+   *
+   * Shifted window attention (shiftSize > 0) enables cross-window connections
+   * as used in Swin Transformer.
+   *
+   * Benefits:
+   * - O(N * windowSize) complexity instead of O(N^2)
+   * - Efficient for long sequences and high-resolution images
+   * - Supports relative position bias for position-aware attention
    *
    * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] for 1D or [batch, height, width, numHeads, headDim] for 2D (NUMERIC type)
    * @param key Key tensor. Same shape as query (NUMERIC type)
@@ -7103,22 +7140,22 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Windowed Attention - Local/Sliding Window Attention.<br>
-   * <br>
-   * Implements windowed attention mechanisms used in efficient transformers like<br>
-   * Longformer, BigBird, Swin Transformer, and SAM (Segment Anything Model).<br>
-   * <br>
-   * Supports both:<br>
-   * - 1D windowed attention: for sequences [batch, seqLen, heads, dim]<br>
-   * - 2D windowed attention: for images [batch, height, width, heads, dim]<br>
-   * <br>
-   * Shifted window attention (shiftSize > 0) enables cross-window connections<br>
-   * as used in Swin Transformer.<br>
-   * <br>
-   * Benefits:<br>
-   * - O(N * windowSize) complexity instead of O(N^2)<br>
-   * - Efficient for long sequences and high-resolution images<br>
-   * - Supports relative position bias for position-aware attention<br>
+   * Windowed Attention - Local/Sliding Window Attention.
+   *
+   * Implements windowed attention mechanisms used in efficient transformers like
+   * Longformer, BigBird, Swin Transformer, and SAM (Segment Anything Model).
+   *
+   * Supports both:
+   * - 1D windowed attention: for sequences [batch, seqLen, heads, dim]
+   * - 2D windowed attention: for images [batch, height, width, heads, dim]
+   *
+   * Shifted window attention (shiftSize > 0) enables cross-window connections
+   * as used in Swin Transformer.
+   *
+   * Benefits:
+   * - O(N * windowSize) complexity instead of O(N^2)
+   * - Efficient for long sequences and high-resolution images
+   * - Supports relative position bias for position-aware attention
    *
    * @param name name May be null. Name for the output variable
    * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] for 1D or [batch, height, width, numHeads, headDim] for 2D (NUMERIC type)
@@ -7150,15 +7187,15 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Exclude Top Choices (XTC) logit filter.<br>
-   * <br>
-   * With probability xtcProbability: among tokens whose softmax probability >= xtcThreshold,<br>
-   * if at least two qualify, mask all EXCEPT the lowest-probability one — encouraging<br>
-   * diversity. Otherwise the logits are unchanged. Stochastic; seeded by seed.<br>
+   * Exclude Top Choices (XTC) logit filter.
+   *
+   * With probability xtcProbability: among tokens whose softmax probability >= xtcThreshold,
+   * if at least two qualify, mask all EXCEPT the lowest-probability one — encouraging
+   * diversity. Otherwise the logits are unchanged. Stochastic; seeded by seed.
    *
    * @param logits Logits tensor. Shape: [vocabSize] or [batch, vocabSize] (NUMERIC type)
    * @param xtcProbability Probability of applying XTC. 0.0 = off
-   * @param xtcThreshold Per-token probability threshold to qualify for exclusion. Must be < 0.5
+   * @param xtcThreshold Per-token probability threshold to qualify for exclusion. Must be &lt; 0.5
    * @param seed Random seed for the stochastic apply/skip draw
    * @return output Filtered logits (masked positions set to -inf). Same shape and type as input. (NUMERIC type)
    */
@@ -7169,16 +7206,16 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Exclude Top Choices (XTC) logit filter.<br>
-   * <br>
-   * With probability xtcProbability: among tokens whose softmax probability >= xtcThreshold,<br>
-   * if at least two qualify, mask all EXCEPT the lowest-probability one — encouraging<br>
-   * diversity. Otherwise the logits are unchanged. Stochastic; seeded by seed.<br>
+   * Exclude Top Choices (XTC) logit filter.
+   *
+   * With probability xtcProbability: among tokens whose softmax probability >= xtcThreshold,
+   * if at least two qualify, mask all EXCEPT the lowest-probability one — encouraging
+   * diversity. Otherwise the logits are unchanged. Stochastic; seeded by seed.
    *
    * @param name name May be null. Name for the output variable
    * @param logits Logits tensor. Shape: [vocabSize] or [batch, vocabSize] (NUMERIC type)
    * @param xtcProbability Probability of applying XTC. 0.0 = off
-   * @param xtcThreshold Per-token probability threshold to qualify for exclusion. Must be < 0.5
+   * @param xtcThreshold Per-token probability threshold to qualify for exclusion. Must be &lt; 0.5
    * @param seed Random seed for the stochastic apply/skip draw
    * @return output Filtered logits (masked positions set to -inf). Same shape and type as input. (NUMERIC type)
    */

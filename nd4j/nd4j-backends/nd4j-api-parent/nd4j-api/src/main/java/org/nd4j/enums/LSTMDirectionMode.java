@@ -31,23 +31,13 @@ package org.nd4j.enums;
  *  BIDIR_EXTRA_DIM: 4 = bidirectional extra output dim (in conjunction with format dataFormat = 3)
  */
 public enum LSTMDirectionMode {
-  FWD(0),
+  FWD,
 
-  BWD(1),
+  BWD,
 
-  BIDIR_SUM(2),
+  BIDIR_SUM,
 
-  BIDIR_CONCAT(3),
+  BIDIR_CONCAT,
 
-  BIDIR_EXTRA_DIM(4);
-
-  private final int methodIndex;
-
-  LSTMDirectionMode(int index) {
-    this.methodIndex = index;
-  }
-
-  public int methodIndex() {
-    return methodIndex;
-  }
+  BIDIR_EXTRA_DIM
 }

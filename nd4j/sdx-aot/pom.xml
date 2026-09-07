@@ -131,13 +131,12 @@
             <version>${project.version}</version>
             <classifier>${javacpp.platform}</classifier>
         </dependency>
-        <!-- Pinned pair: the parent manages logback 1.5.x (test scope) which is
-             incompatible with the managed slf4j-api 1.7.x; the images need the
-             1.2.x line (StaticLoggerBinder) at compile scope. -->
+        <!-- Use the parent-aligned SLF4J 2 provider at compile scope so the
+             native images include the same Logback implementation as the JVM. -->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.2.13</version>
+            <version>${logback.version}</version>
             <scope>compile</scope>
         </dependency>
         <!-- JUnit 5 for canonical Hugging Face tokenizer validation tests.
@@ -172,7 +171,7 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
-            <version>1.2.13</version>
+            <version>${logback.version}</version>
             <scope>compile</scope>
         </dependency>
         <!-- GraalVM native-image API: @CEntryPoint, ObjectHandles, UnmanagedMemory.
