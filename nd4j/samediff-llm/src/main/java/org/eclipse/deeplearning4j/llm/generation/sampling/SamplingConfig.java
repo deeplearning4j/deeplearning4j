@@ -80,7 +80,7 @@ public class SamplingConfig {
 
     /**
      * Cumulative probability threshold for nucleus (top-p) sampling.
-     * Only tokens with cumulative probability <= topP are considered.
+     * Only tokens with cumulative probability &lt;= topP are considered.
      * Set to 1.0 to disable top-p filtering.
      * Common values: 0.9, 0.95
      * Default: 1.0 (disabled)
@@ -99,7 +99,7 @@ public class SamplingConfig {
     /**
      * Penalty applied to tokens that have already been generated.
      * Values > 1.0 discourage repetition.
-     * Values < 1.0 encourage repetition.
+     * Values &lt; 1.0 encourage repetition.
      * Default: 1.0 (no penalty)
      */
     @Builder.Default

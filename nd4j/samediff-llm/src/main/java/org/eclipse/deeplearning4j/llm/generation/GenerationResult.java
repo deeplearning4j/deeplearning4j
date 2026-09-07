@@ -22,6 +22,7 @@ package org.eclipse.deeplearning4j.llm.generation;
 
 import lombok.Builder;
 import lombok.Data;
+import org.eclipse.deeplearning4j.llm.generation.GenerationPipeline.GenerationSession;
 
 import java.util.List;
 
@@ -205,7 +206,7 @@ public class GenerationResult {
          * Generation was stopped early because the model entered a degenerate repetition loop
          * (a "thinking trap") with no natural EOS. Produced either by the explicit opt-in native
          * periodic-tail policy in {@code SamplingConfig}, or by
-         * {@link GenerationPipeline.GenerationSession#continueToCompletion(int)} when its Java
+         * {@link GenerationSession#continueToCompletion(int)} when its Java
          * repetition guard trips. Ordinary generation remains unchanged when the native policy is disabled.
          */
         REPETITION
