@@ -1019,8 +1019,15 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                 long before = beforeDevices[0] + beforeDevices[1];
                 System.err.println("MUTABLE_FAILURE_ACCOUNTING before attempt=" + attempt
                         + " devices=" + Arrays.toString(beforeDevices));
-                RuntimeException failure = assertThrows(RuntimeException.class, () -> executeNative(executor,
-                        plan, failing));
+                String oldAllocationTrace = System.getProperty("nd4j.dsp.traceEightByteAllocations");
+                RuntimeException failure;
+                try {
+                    System.setProperty("nd4j.dsp.traceEightByteAllocations", "true");
+                    failure = assertThrows(RuntimeException.class, () -> executeNative(executor, plan, failing));
+                } finally {
+                    if (oldAllocationTrace == null) System.clearProperty("nd4j.dsp.traceEightByteAllocations");
+                    else System.setProperty("nd4j.dsp.traceEightByteAllocations", oldAllocationTrace);
+                }
                 assertSame(injected, failure, "cleanup replaced the original execution error");
                 assertEquals(0, failure.getSuppressed().length, "cleanup itself failed");
                 assertTrue(failedAllocations.size() >= (existingLease ? 1 : afterBinding ? 4 : 2),
