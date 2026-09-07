@@ -294,7 +294,7 @@ public class MultimodalGGUFLoader {
      * <p>Holds the language model ({@link #llm}), the vision encoder
      * ({@link #visionEncoder}), and the metadata parsed from each GGUF header.
      *
-     * <h3>Qwen3-VL component roles</h3>
+     * <h2>Qwen3-VL component roles</h2>
      * <ul>
      *   <li>{@code llm} — the autoregressive transformer decoder.  Feed token IDs and
      *       (projected) visual embeddings here.</li>

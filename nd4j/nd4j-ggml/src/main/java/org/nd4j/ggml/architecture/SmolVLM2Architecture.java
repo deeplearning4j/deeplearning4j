@@ -57,7 +57,7 @@ import java.util.Set;
  * <p>Supported GGUF architecture strings: {@code smolvlm}, {@code smolvlm2},
  * {@code smolvlm2-video}, {@code idefics3}.</p>
  *
- * <h3>GGUF tensor name conventions</h3>
+ * <h2>GGUF tensor name conventions</h2>
  * <b>Vision encoder:</b>
  * <pre>
  *   v.patch_embd.weight             — patch embedding conv weight [hidden, c, ph, pw]

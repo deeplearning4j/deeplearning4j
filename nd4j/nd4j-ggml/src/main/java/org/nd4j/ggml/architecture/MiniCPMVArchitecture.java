@@ -47,7 +47,7 @@ import java.util.Set;
  *       and interleaved NeoX-style RoPE</li>
  * </ul>
  *
- * <h3>GGUF tensor naming conventions:</h3>
+ * <h2>GGUF tensor naming conventions:</h2>
  * <ul>
  *   <li>Vision encoder: {@code v.blk.{layer}.attn_q.weight}, etc.</li>
  *   <li>3D-Resampler: {@code resampler.query}, {@code resampler.attn_q.weight}, etc.</li>
@@ -58,7 +58,7 @@ import java.util.Set;
  *   <li>Vision projection: {@code mm.0.weight} / {@code mm.0.bias}</li>
  * </ul>
  *
- * <h3>16 official quantized GGUF sizes (Q2_K through Q8_0 plus F16/BF16):</h3>
+ * <h2>16 official quantized GGUF sizes (Q2_K through Q8_0 plus F16/BF16):</h2>
  * <ul>
  *   <li>Q2_K, Q3_K_S, Q3_K_M, Q3_K_L</li>
  *   <li>Q4_0, Q4_K_S, Q4_K_M</li>
