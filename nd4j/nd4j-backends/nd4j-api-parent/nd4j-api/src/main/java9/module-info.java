@@ -1,5 +1,5 @@
 open module nd4j.api {
-    requires java.base;
+    // Moditect adds the mandated java.base dependency when generating module-info.class.
     requires byteunits;
     requires commons.io;
     requires java.logging;
