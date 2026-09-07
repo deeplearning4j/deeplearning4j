@@ -98,7 +98,7 @@
         <netty.version>4.1.74.Final</netty.version>
         <objenesis.version>2.6</objenesis.version>
         <paranamer.version>2.6</paranamer.version>
-        <snakeyaml.version>1.26</snakeyaml.version>
+        <snakeyaml.version>2.3</snakeyaml.version>
         <spring.version>5.2.24.RELEASE</spring.version>
         <oshi.version>3.4.2</oshi.version>
         <jcommander.version>1.27</jcommander.version>
@@ -152,7 +152,7 @@
         <archunit.version>0.17</archunit.version>
         <commons-compress.version>1.21</commons-compress.version>
         <commonsmath.version>3.5</commonsmath.version>
-        <commonslang.version>3.11</commonslang.version>
+        <commonslang.version>3.18.0</commonslang.version>
         <commonsio.version>2.18.0</commonsio.version>
         <commons-codec.version>1.10</commons-codec.version>
         <commons.math.version>${commonsmath.version}</commons.math.version>
@@ -171,13 +171,14 @@
         <junit.platform.launcher.version>1.8.0-M1</junit.platform.launcher.version>
         <archunit.version>0.14.1</archunit.version>
         <logback.version>1.5.16</logback.version>
-        <jackson.version>2.16.0</jackson.version>
-        <jackson.databind.version>2.16.0</jackson.databind.version>
-        <shaded.snakeyaml.version>1.33</shaded.snakeyaml.version>
+        <jackson.version>2.18.10</jackson.version>
+        <jackson.databind.version>${jackson.version}</jackson.databind.version>
+        <shaded.snakeyaml.version>${snakeyaml.version}</shaded.snakeyaml.version>
         <geo.jackson.version>2.8.7</geo.jackson.version>
         <lombok.version>1.18.42</lombok.version>
-        <json.versiounitn>20131018</json.versiounitn>
-        <google.protobuf.version>3.21.7</google.protobuf.version>
+        <json.version>20240303</json.version>
+        <google.protobuf.version>3.25.9</google.protobuf.version>
+        <classgraph.version>4.8.194</classgraph.version>
         <failIfNoTests>false</failIfNoTests>
         <mapdb.version>3.0.5</mapdb.version>
         <sqlite.version>3.15.1</sqlite.version>

@@ -16,8 +16,6 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <commonsio.version>2.7</commonsio.version>
-        <commons.lang.version>3.12.0</commons.lang.version>
         <commons.dbutils.version>1.7</commons.dbutils.version>
         <junit.version>5.8.0-M1</junit.version>
         <junit.platform.launcher.version>1.8.0-M1</junit.platform.launcher.version>
