@@ -583,12 +583,20 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       continue;
     }
 
+    // Match ordinary segment dispatch: switching devices must switch stream and
+    // workspace TLS as well, and every exit must restore the caller's state.
+    if (!platformBindSegmentDevice(seg)) return Status::KERNEL_FAILURE;
+    struct RestoreSegmentDevice {
+      NativeDynamicShapePlan* plan;
+      ~RestoreSegmentDevice() { plan->platformRestoreSegmentDevice(); }
+    } restoreSegmentDevice{this};
+    cudaStream_t segmentStream = dspGetExecutionStream() != nullptr
+        ? reinterpret_cast<cudaStream_t>(dspGetExecutionStream()) : cudaStr;
+    void* stream = &segmentStream;
+
     // Segments with terminal outcomes or non-capturable — no replay handles.
     // Execute slot-by-slot (reshape/view/identity ops with no kernels).
     if (isTerminalOutcome(seg.exec.outcome) || !seg.def.isCapturable) {
-      if (!bindSegmentCudaDevice(seg, slots_, numSlots_, "frozenFastPath_sbs")) {
-        return Status::KERNEL_FAILURE;
-      }
       // SyncOverride: frozen fast path has needsSync()=false (frozen steady
       // state, no contract override). Without this, executeSlot skips
       // registerSpecialUse — output actuality flags stay stale from the
@@ -607,10 +615,6 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       }
       seg.exec.executionCount++;
       continue;
-    }
-
-    if (!bindSegmentCudaDevice(seg, slots_, numSlots_, "frozenFastPath")) {
-      return Status::KERNEL_FAILURE;
     }
 
     bool hasMonolithicReplay = (seg.exec.replayHandle != nullptr && seg.exec.replayHandle->isReady());
@@ -1689,27 +1693,26 @@ NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int s
     checkCuda(cudaSetDevice(callerDevice), "restore caller device");
   };
 
-  // Find the device that produced this output slot.
-  // Linear scan across slots is O(numSlots * maxOutputs/slot) but only invoked
-  // O(numRequestedOutputs) times per execute() — acceptable for 1-4 outputs.
-  int sourceDevice = 0;  // default: primary
-  for (int s = 0; s < numSlots_; s++) {
-    const auto& wiring = slots_[s].wiring;
-    for (int o = 0; o < wiring.numOutputs; o++) {
-      if (wiring.outputSlotIndices[o] == slotIdx) {
-        int d = slots_[s].targetDeviceId;
-        if (d > 0) sourceDevice = d;
-        goto found_producing_slot;
-      }
-    }
+  // Placement is a plan, not allocation provenance: boundary materialization
+  // and views can reside elsewhere. Never migrate a captured source merely to
+  // make it agree with its producing slot's assigned device.
+  auto* sourceBuffer = arr->dataBuffer();
+  if (sourceBuffer == nullptr || !sourceBuffer->isValid()) {
+    THROW_EXCEPTION("DSP output delivery failed: source buffer is invalid");
   }
-  found_producing_slot:;
+  const int sourceDevice = sourceBuffer->deviceId();
 
   // Fast path: output already on primary device.
   if (sourceDevice == 0) {
     restoreCallerDevice();
     return arr;
   }
+
+  // Output delivery deliberately changes devices. Do not carry the caller's
+  // device-specific DSP/gap stream across those switches. The per-thread stream
+  // token resolves on each currently bound device; restore both overrides on exit.
+  DspThreadState deliveryStreams(cudaStreamPerThread, cudaStreamPerThread,
+                                 tl_graphExecutionActive, tl_dspReplayActive);
 
   // ── Async copy from sourceDevice to device-0 ────────────────────────────────
   // 1. Switch to sourceDevice and ensure its stream has committed the write.
