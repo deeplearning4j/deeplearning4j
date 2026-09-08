@@ -3,6 +3,8 @@
 import importlib.util
 import os
 import subprocess
+import shutil
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -1132,6 +1134,47 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn('=== NVCC FAILED', nvcc_filter)
         self.assertIn('-print-prog-name=ld', smart_ccache)
         self.assertIn('compiler_linker', smart_ccache)
+        self.assertIn('option(SD_CCACHE_TRACE "Record per-build ccache statistics and invocation reasons" OFF)', smart_ccache)
+        self.assertIn('CCACHE_TRACE="${CCACHE_TRACE:-OFF}"', build_script)
+        self.assertIn('-DSD_CCACHE_TRACE=$CCACHE_TRACE', build_script)
+        self.assertIn('unset CCACHE_STATSLOG CCACHE_LOGFILE', smart_ccache)
+        self.assertIn('unset CCACHE_STATSLOG CCACHE_LOGFILE', build_script)
+
+
+class CcacheTraceDefaultsTests(unittest.TestCase):
+    def test_generated_wrapper_trace_is_opt_in_and_can_be_disabled_again(self):
+        self.assertIsNotNone(shutil.which("cmake"), "cmake is required for the trace fixture")
+        with tempfile.TemporaryDirectory(prefix="ccache-trace-fixture-") as directory:
+            root = Path(directory)
+            fake = root / "ccache"
+            fake.write_text('#!/bin/bash\nprintf "stats=%s debug=%s\\n" "${CCACHE_STATSLOG:-unset}" "${CCACHE_LOGFILE:-unset}"\n')
+            fake.chmod(0o755)
+            (root / "CMakeLists.txt").write_text(
+                'cmake_minimum_required(VERSION 3.19)\nproject(trace_fixture NONE)\n'
+                f'set(CMAKE_CXX_COMPILER_LAUNCHER "{fake.as_posix()}")\n'
+                f'include("{(ROOT / "libnd4j/cmake/SmartCcache.cmake").as_posix()}")\n')
+            build = root / "build"
+            env = os.environ.copy()
+            env.update(CCACHE_STATSLOG=str(root / "inherited-stats"),
+                       CCACHE_LOGFILE=str(root / "inherited-debug"))
+            for flag in (None, "ON", "OFF"):
+                with self.subTest(trace=flag):
+                    command = ["cmake", "-S", str(root), "-B", str(build)]
+                    if flag:
+                        command.append(f"-DSD_CCACHE_TRACE={flag}")
+                    result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+                    self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+                    result = subprocess.run(["bash", str(build / "smart_ccache.sh")],
+                                            env=env, capture_output=True, text=True, timeout=10)
+                    self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+                    if flag == "ON":
+                        self.assertIn(".ccache_trace/manual/ccache-stats.log", result.stdout)
+                        self.assertIn("debug=unset", result.stdout)
+                        self.assertTrue((build / ".ccache_trace/manual/events.tsv").is_file())
+                    else:
+                        self.assertIn("stats=unset debug=unset", result.stdout)
+                    if flag is None:
+                        self.assertFalse((build / ".ccache_trace").exists())
 
 
 class WorkerConfigTests(unittest.TestCase):

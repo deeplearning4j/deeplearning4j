@@ -633,9 +633,9 @@ PRINT_MATH="${PRINT_MATH:-OFF}"
 KEEP_NVCC="${KEEP_NVCC:-OFF}"
 PREPROCESS="${PREPROCESS:-ON}"
 CMAKE_ARGUMENTS="${CMAKE_ARGUMENTS:-}"
-# Per-build ccache accounting is enabled by default. The trace is isolated
-# under the selected build directory and never mutates shared ccache counters.
-CCACHE_TRACE="${CCACHE_TRACE:-ON}"
+# Per-invocation accounting is opt-in: traces are diagnostics, not reusable
+# compiler artifacts. Ordinary builds must not accumulate unlimited trace runs.
+CCACHE_TRACE="${CCACHE_TRACE:-OFF}"
 CCACHE_TRACE_VERBOSE="${CCACHE_TRACE_VERBOSE:-OFF}"
 CCACHE_TRACE_RUN_ID="${CCACHE_TRACE_RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)-$$}"
 PTXAS_INFO="${PTXAS_INFO:-OFF}"
@@ -3330,6 +3330,8 @@ if [ "$CCACHE_TRACE" == "ON" ]; then
     export CCACHE_STATSLOG="$CCACHE_TRACE_DIR/ccache-stats.log"
     if [ "$CCACHE_TRACE_VERBOSE" == "ON" ]; then
         export CCACHE_LOGFILE="$CCACHE_TRACE_DIR/ccache-debug.log"
+    else
+        unset CCACHE_LOGFILE
     fi
     {
         printf 'run_id=%s\n' "$CCACHE_TRACE_SAFE_RUN_ID"

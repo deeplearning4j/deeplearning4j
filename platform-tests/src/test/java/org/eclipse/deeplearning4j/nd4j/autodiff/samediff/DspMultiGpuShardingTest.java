@@ -386,7 +386,16 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         runNativeDecodeAfterShardedJavaWarmup(true);
     }
 
+    @Test
+    public void testNativeFullPlanReentryFromForeignDevice() {
+        runNativeDecodeAfterShardedJavaWarmup(true, true);
+    }
+
     private void runNativeDecodeAfterShardedJavaWarmup(boolean withKvAttention) {
+        runNativeDecodeAfterShardedJavaWarmup(withKvAttention, false);
+    }
+
+    private void runNativeDecodeAfterShardedJavaWarmup(boolean withKvAttention, boolean fullPlanReentry) {
         assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
         assumeTrue(Nd4j.getAffinityManager().getNumberOfDevices() == 2, "requires two CUDA devices");
         int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
@@ -464,6 +473,16 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             for (int index : kvIndices) assertTrue(index >= 0, "KV input missing from native plan");
             if (withKvAttention) assertTrue(cachePositionIndex >= 0);
             Nd4j.getAffinityManager().setDeviceForCurrentThread(1);
+            if (fullPlanReentry) {
+                // Enter the full native lifecycle directly, as executeSteadyState does
+                // after invalidation. Do not let Java's executor choose the plan device.
+                NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                int status = nativeOps.executeDynamicShapePlan(executor.getNativePlanHandle(),
+                        executor.getCachedOpContext(), nativeOps.dspGetExecutionStream(executor.getNativePlanHandle()));
+                assertEquals(0, status, "foreign-device full-plan reentry: " + nativeOps.lastErrorMessage());
+                assertEquals(1, Nd4j.getAffinityManager().getDeviceForCurrentThread(),
+                        "full-plan reentry must restore the caller device");
+            }
             var decode = new org.nd4j.linalg.api.ops.impl.transforms.custom.AutoregressiveDecode(
                     embeddings, table, ids, mask, positions,
                     withKvAttention ? kvArrays.toArray(new INDArray[0]) : null,

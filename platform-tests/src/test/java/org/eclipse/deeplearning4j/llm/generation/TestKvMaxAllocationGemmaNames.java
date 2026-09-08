@@ -43,6 +43,7 @@ import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -152,13 +153,35 @@ public class TestKvMaxAllocationGemmaNames {
      * artifact may set {@code model.sdz.path} explicitly; that takes precedence regardless
      * of the source GGUF size so the test uses the same staged weight representation.
      */
-    private static SameDiff loadDecoderGraph() throws Exception {
+    private static SameDiff loadDecoderGraph() throws IOException {
+        return GenerationPipeline.loadModel(decoderGraphPath(), TestKvMaxAllocationGemmaNames::loadRawDecoder);
+    }
+
+    // Let the pipeline own each freshly loaded decoder, including the original graph
+    // replaced by GraphOptimizer. Passing decoder(loadDecoderGraph()) borrows the graph
+    // and leaves its weights live alongside the optimized copy with no cleanup owner.
+    private static GenerationPipelineConfig.GenerationPipelineConfigBuilder ownedDecoderConfig() {
+        return GenerationPipelineConfig.builder()
+                .decoderPath(decoderGraphPath())
+                .modelLoader(TestKvMaxAllocationGemmaNames::loadRawDecoder);
+    }
+
+    private static SameDiff loadRawDecoder(String path) throws IOException {
+        try {
+            return GGMLModelImport.importModelWithMetadata(
+                    new File(path), ConversionOptions.forInference()).getModel();
+        } catch (org.nd4j.ggml.GGMLImportException e) {
+            throw new IOException("Could not import decoder: " + path, e);
+        }
+    }
+
+    private static String decoderGraphPath() {
         String explicitSdzPath = System.getProperty("model.sdz.path");
         if (explicitSdzPath != null && !explicitSdzPath.isBlank()) {
             File explicitSdz = new File(explicitSdzPath);
             assertTrue(explicitSdz.isFile(),
                     "Configured staged decoder does not exist: " + explicitSdz);
-            return SameDiff.loadSdz(explicitSdz);
+            return explicitSdz.getAbsolutePath();
         }
 
         String gemmaSdzPath = System.getProperty("gemma.sdz.path",
@@ -167,10 +190,9 @@ public class TestKvMaxAllocationGemmaNames {
         File gemmaSdz = new File(gemmaSdzPath);
         if (new File(modelPath).length() > 2L * 1024 * 1024 * 1024
                 && gemmaSdz.isFile()) {
-            return SameDiff.loadSdz(gemmaSdz);
+            return gemmaSdz.getAbsolutePath();
         }
-        return GGMLModelImport.importModelWithMetadata(
-                new File(modelPath), ConversionOptions.forInference()).getModel();
+        return modelPath;
     }
 
     @BeforeEach
@@ -249,8 +271,7 @@ public class TestKvMaxAllocationGemmaNames {
     }
 
     private static GenerationPipeline fixedBufferPipeline() throws Exception {
-        GenerationPipelineConfig cfg = GenerationPipelineConfig.builder()
-                .decoder(loadDecoderGraph())
+        GenerationPipelineConfig cfg = ownedDecoderConfig()
                 .tokenizer(tokenizer)
                 .samplingConfig(SamplingConfig.greedy())
                 .maxNewTokens(N)
@@ -271,8 +292,7 @@ public class TestKvMaxAllocationGemmaNames {
      * the model-owned envelope via the builder defaults.
      */
     private static GenerationPipeline servingLanePipeline() throws Exception {
-        GenerationPipelineConfig cfg = GenerationPipelineConfig.builder()
-                .decoder(loadDecoderGraph())
+        GenerationPipelineConfig cfg = ownedDecoderConfig()
                 .tokenizer(tokenizer)
                 .samplingConfig(SamplingConfig.greedy())
                 .modelMetadata(modelMetadata)
@@ -298,8 +318,7 @@ public class TestKvMaxAllocationGemmaNames {
                 "KV ceiling must cover the full prefill and generation envelope");
         log.info("[GEMMA_ENVELOPE] maxNewTokens={} maxPrefillLength={} maxKvCacheLength={}",
                 maxNewTokens, maxPrefillLength, maxKvCacheLength);
-        GenerationPipelineConfig cfg = GenerationPipelineConfig.builder()
-                .decoder(loadDecoderGraph())
+        GenerationPipelineConfig cfg = ownedDecoderConfig()
                 .tokenizer(tokenizer)
                 .samplingConfig(SamplingConfig.greedy())
                 .modelMetadata(modelMetadata)

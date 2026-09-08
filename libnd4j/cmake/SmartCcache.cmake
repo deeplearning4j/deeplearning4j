@@ -7,7 +7,9 @@
 
 option(SD_SMART_CCACHE "Enable smart ccache wrapper that detects file changes" ON)
 option(SD_CCACHE_DEBUG "Enable debug output for smart ccache" OFF)
-option(SD_CCACHE_TRACE "Record per-build ccache statistics and invocation reasons" ON)
+# Detailed per-invocation logs are diagnostic output, not a compiler cache.
+# Keep them opt-in so ordinary builds do not accumulate multi-gigabyte traces.
+option(SD_CCACHE_TRACE "Record per-build ccache statistics and invocation reasons" OFF)
 option(SD_CCACHE_TRACE_VERBOSE "Enable ccache's verbose compiler decision log" OFF)
 option(SD_CCACHE_VERIFY_DEPENDENCIES "Rehash project headers in the smart ccache wrapper for stale-manifest verification" OFF)
 set(SD_CCACHE_TRACE_RUN_ID "manual" CACHE STRING "Per-build ccache trace identifier")
@@ -95,7 +97,11 @@ if [[ \"\$TRACE_ENABLED\" == \"ON\" ]]; then
     export CCACHE_STATSLOG=\"\$TRACE_STATS_FILE\"
     if [[ \"\$TRACE_VERBOSE\" == \"ON\" ]]; then
         export CCACHE_LOGFILE=\"\$TRACE_DEBUG_FILE\"
+    else
+        unset CCACHE_LOGFILE
     fi
+else
+    unset CCACHE_STATSLOG CCACHE_LOGFILE
 fi
 
 # Detect Windows/MSYS2

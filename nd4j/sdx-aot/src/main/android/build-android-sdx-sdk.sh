@@ -24,7 +24,7 @@ Common options:
   --keep-work              Preserve a failed AOT generation
   --fresh-classes-only     Compile/audit AOT cache inputs, then stop
   --print-config           Print and persist the resolved configuration, then exit
-  generation retention     $SDX_ANDROID_GENERATION_RETENTION (default: 2)
+  generation retention     $SDX_ANDROID_GENERATION_RETENTION (default: 1)
   -h, --help               Show this help
 
 Discovery overrides:
@@ -358,23 +358,39 @@ case "${SDX_ANDROID_PIPELINE_LOCK_HELD:-0}" in
     mkdir -p -- "$BUILD_ROOT/.locks"
     [[ -d "$BUILD_ROOT/.locks" && ! -L "$BUILD_ROOT/.locks" ]] ||
       fail "pipeline lock root must be a real directory: $BUILD_ROOT/.locks"
+    [[ ! -L "$BUILD_ROOT/.locks/tensor-g3-offline-apk.lock" ]] || fail "pipeline lock must not be a symlink"
     exec {SDK_PIPELINE_LOCK_FD}>"$BUILD_ROOT/.locks/tensor-g3-offline-apk.lock"
     printf 'Waiting for the Android SDK build lock: %s\n' "$BUILD_ROOT/.locks/tensor-g3-offline-apk.lock"
     flock "$SDK_PIPELINE_LOCK_FD"
     export SDX_ANDROID_PIPELINE_LOCK_HELD=1
+    export SDX_ANDROID_PIPELINE_LOCK_FD="$SDK_PIPELINE_LOCK_FD"
     ;;
-  1) ;;
+  1)
+    [[ "${SDX_ANDROID_PIPELINE_LOCK_FD:-}" =~ ^[0-9]+$ &&
+       "/proc/self/fd/$SDX_ANDROID_PIPELINE_LOCK_FD" -ef "$BUILD_ROOT/.locks/tensor-g3-offline-apk.lock" ]] ||
+      fail "inherited pipeline lock descriptor is missing or belongs to another root"
+    flock -n "$SDX_ANDROID_PIPELINE_LOCK_FD" || fail "inherited pipeline lock is unavailable"
+    ;;
   *) fail "SDX_ANDROID_PIPELINE_LOCK_HELD must be 0 or 1" ;;
 esac
 
-"$PRUNE_SCRIPT" --build-root "$BUILD_ROOT"
+prune_sdk_cache() {
+  local -a keep_args=()
+  # An explicitly selected older CPU base must survive pre-AOT cleanup even
+  # before any published AOT receipt references it. Re-resolve current each time.
+  if [[ "$MODE" != cpu && -d "$BASE_SDK" ]]; then
+    keep_args=(--keep-cpu-sdk "$BASE_SDK")
+  fi
+  "$PRUNE_SCRIPT" --build-root "$BUILD_ROOT" "${keep_args[@]}"
+}
+prune_sdk_cache
 
 offline_args=()
 [[ "$OFFLINE" == 0 ]] || offline_args+=(--offline)
 
 if [[ "$MODE" != aot ]]; then
   "$CPU_SCRIPT"     --android-ndk "$ANDROID_NDK"     --java-home "$JAVA17_HOME"     --maven "$MAVEN"     --ccache "$CCACHE"     --android-api "$ANDROID_API"     --jobs "$JOBS"     --output-link "$CPU_LINK"     --work-dir "$CPU_WORK"     "${offline_args[@]}"
-  "$PRUNE_SCRIPT" --build-root "$BUILD_ROOT"
+  prune_sdk_cache
 fi
 
 if [[ "$MODE" != cpu ]]; then
@@ -404,5 +420,5 @@ if [[ "$MODE" != cpu ]]; then
   [[ "$KEEP_WORK" == 0 ]] || aot_args+=(--keep-work)
   [[ "$FRESH_CLASSES_ONLY" == 0 ]] || aot_args+=(--fresh-classes-only)
   "$AOT_SCRIPT" "${aot_args[@]}"
-  "$PRUNE_SCRIPT" --build-root "$BUILD_ROOT"
+  prune_sdk_cache
 fi

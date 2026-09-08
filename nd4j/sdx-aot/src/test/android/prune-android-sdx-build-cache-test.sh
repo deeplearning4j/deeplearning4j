@@ -4,7 +4,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PRUNE_SCRIPT="$(realpath -e -- "$SCRIPT_DIR/../../main/android/prune-android-sdx-build-cache.sh")"
 TEST_ROOT="$(mktemp -d)"
-trap 'rm -rf -- "$TEST_ROOT"' EXIT
+trap 'chmod -R u+w -- "$TEST_ROOT"; rm -rf -- "$TEST_ROOT"' EXIT
+unset SDX_ANDROID_PIPELINE_LOCK_HELD SDX_ANDROID_PIPELINE_LOCK_FD
+unset SDX_ANDROID_GENERATION_RETENTION SDX_ANDROID_MANAGED_STAGE_RETENTION SDX_ANDROID_OBJECT_STAGE_RETENTION
+# Exercise explicit rollback retention first, then the shared minimal defaults.
+ROLLBACK_ARGS=(--retain-generations 2 --retain-managed-stages 1)
 
 fail() {
   printf 'prune-android-sdx-build-cache-test: %s\n' "$*" >&2
@@ -55,6 +59,9 @@ put_receipt "$cpu_generations/$cpu_old/metadata/build-receipt" managed_stage_key
 put_receipt "$aot_generations/$aot_current/metadata/build-receipt" object_stage_inputs_sha256 "$aot_current_stage"
 put_receipt "$aot_generations/$aot_rollback/metadata/build-receipt" object_stage_inputs_sha256 "$aot_rollback_stage"
 put_receipt "$aot_generations/$aot_old/metadata/build-receipt" object_stage_inputs_sha256 "$aot_orphan_stage"
+printf 'base_sdk=%s\n' "$cpu_generations/$cpu_current" >>"$aot_generations/$aot_current/metadata/build-receipt"
+printf 'base_sdk=%s\n' "$cpu_generations/$cpu_rollback" >>"$aot_generations/$aot_rollback/metadata/build-receipt"
+printf 'base_sdk=%s\n' "$cpu_generations/$cpu_old" >>"$aot_generations/$aot_old/metadata/build-receipt"
 ln -s ".android-cpu-importer-generations/$cpu_current" "$TEST_ROOT/cpu-sdk/current"
 ln -s ".android-aot-generations/$aot_current" "$TEST_ROOT/aot-sdk/current"
 
@@ -66,6 +73,9 @@ put_marker "$TEST_ROOT/cpu-sdk/work/generation.interrupted/remove"
 put_marker "$TEST_ROOT/cpu-sdk/work/managed-stage.interrupted/remove"
 put_marker "$TEST_ROOT/cpu-sdk/work/published-native-manifest.interrupted"
 put_marker "$TEST_ROOT/aot-sdk/work/generation.interrupted/remove"
+put_marker "$TEST_ROOT/aot-sdk/work/staging-copy-test.interrupted/remove"
+put_marker "$TEST_ROOT/aot-sdk/work/staging-regression.interrupted/remove"
+put_marker "$TEST_ROOT/aot-sdk/work/native-image-object-stages.invalid/evidence/keep"
 put_marker "$TEST_ROOT/aot-sdk/work/native-image-object-stages/.native-image-object.interrupted/remove"
 put_marker "$TEST_ROOT/accelerator/tensor-g3/quarantined-maven-targets.interrupted/remove"
 put_marker "$TEST_ROOT/accelerator/tensor-g3/dist/fresh-java-builds.tmp.interrupted"
@@ -91,7 +101,26 @@ put_marker "$TEST_ROOT/ccache/keep"
 put_marker "$TEST_ROOT/native-images-cache/keep"
 put_marker "$TEST_ROOT/apk-output/current.apk"
 
-"$PRUNE_SCRIPT" --build-root "$TEST_ROOT" --dry-run >/dev/null
+# A standalone prune refuses an active pipeline before planning/removing work.
+mkdir -p "$TEST_ROOT/.locks"
+exec {pipeline_fd}>"$TEST_ROOT/.locks/tensor-g3-offline-apk.lock"
+flock "$pipeline_fd"
+if "$PRUNE_SCRIPT" --build-root "$TEST_ROOT" >/dev/null 2>&1; then
+  fail "standalone cleanup ran while pipeline lock was held"
+fi
+[[ -f "$TEST_ROOT/cpu-sdk/work/generation.interrupted/remove" ]] || fail "lock rejection deleted work"
+# Nested cleanup can reuse the actual inherited descriptor, but not a bare flag.
+SDX_ANDROID_PIPELINE_LOCK_HELD=1 SDX_ANDROID_PIPELINE_LOCK_FD="$pipeline_fd" \
+  "$PRUNE_SCRIPT" --build-root "$TEST_ROOT" "${ROLLBACK_ARGS[@]}" --dry-run >"$TEST_ROOT/inherited.log"
+if SDX_ANDROID_PIPELINE_LOCK_HELD=1 "$PRUNE_SCRIPT" --build-root "$TEST_ROOT" >/dev/null 2>&1; then
+  fail "cleanup trusted an unverified lock flag"
+fi
+exec {pipeline_fd}>&-
+"$PRUNE_SCRIPT" --build-root "$TEST_ROOT" "${ROLLBACK_ARGS[@]}" --dry-run >"$TEST_ROOT/dry.log"
+grep -Fq "Would remove unreferenced CPU managed stage: $TEST_ROOT/cpu-sdk/work/managed-stages/$cpu_orphan_stage" "$TEST_ROOT/dry.log" ||
+  fail "dry-run retained references from a superseded CPU generation"
+grep -Fq "Would remove unreferenced Native Image object stage: $TEST_ROOT/aot-sdk/work/native-image-object-stages/$aot_orphan_stage" "$TEST_ROOT/dry.log" ||
+  fail "dry-run retained references from a superseded AOT generation"
 
 [[ -d "$TEST_ROOT/cpu-sdk/work/generation.interrupted" ]] ||
   fail "dry-run removed CPU publication work"
@@ -104,7 +133,13 @@ put_marker "$TEST_ROOT/apk-output/current.apk"
 [[ -d "$TEST_ROOT/aot-sdk/work/native-image-object-stages/$aot_orphan_stage" ]] ||
   fail "dry-run removed a Native Image object stage"
 
-"$PRUNE_SCRIPT" --build-root "$TEST_ROOT" >/dev/null
+"$PRUNE_SCRIPT" --build-root "$TEST_ROOT" "${ROLLBACK_ARGS[@]}" >"$TEST_ROOT/applied.log"
+diff -u <(grep '^Would remove ' "$TEST_ROOT/dry.log" | sed 's/^Would remove /Removed /') \
+  <(grep '^Removed ' "$TEST_ROOT/applied.log") || fail "dry-run and application plans differed"
+for leftover in staging-copy-test.interrupted staging-regression.interrupted; do
+  [[ ! -e "$TEST_ROOT/aot-sdk/work/$leftover" ]] || fail "leftover retained: $leftover"
+done
+[[ -f "$TEST_ROOT/aot-sdk/work/native-image-object-stages.invalid/evidence/keep" ]] || fail "corruption evidence deleted"
 
 for removed in   "$TEST_ROOT/cpu-sdk/work/generation.interrupted"   "$TEST_ROOT/cpu-sdk/work/managed-stage.interrupted"   "$TEST_ROOT/cpu-sdk/work/published-native-manifest.interrupted"   "$TEST_ROOT/aot-sdk/work/generation.interrupted"   "$TEST_ROOT/aot-sdk/work/native-image-object-stages/.native-image-object.interrupted"   "$TEST_ROOT/accelerator/tensor-g3/quarantined-maven-targets.interrupted"   "$TEST_ROOT/accelerator/tensor-g3/dist/fresh-java-builds.tmp.interrupted"   "$cpu_generations/$cpu_old"   "$aot_generations/$aot_old"   "$TEST_ROOT/cpu-sdk/work/managed-stages/$cpu_orphan_stage"   "$TEST_ROOT/aot-sdk/work/native-image-object-stages/$aot_orphan_stage"; do
   [[ ! -e "$removed" && ! -L "$removed" ]] ||
@@ -126,8 +161,7 @@ fallback="$TEST_ROOT/aot-sdk/work/native-image-object-stages/$aot_fallback_stage
 put_marker "$fallback/libsdx_llm.o"
 put_receipt "$fallback/build-receipt" object_stage_inputs_sha256 "$aot_fallback_stage"
 for attempt in 1 2; do
-  "$PRUNE_SCRIPT" --build-root "$TEST_ROOT" --retain-generations 1 \
-    --retain-managed-stages 0 --retain-object-stages 1 >/dev/null
+  "$PRUNE_SCRIPT" --build-root "$TEST_ROOT" >/dev/null
   [[ -f "$fallback/libsdx_llm.o" && -f "$fallback/build-receipt" ]] ||
     fail "retry $attempt pruned a completed AOT object after SDK packaging failure"
   [[ -f "$TEST_ROOT/aot-sdk/work/native-image-object-stages/$aot_current_stage/keep" ]] ||
@@ -137,11 +171,59 @@ done
 [[ ! -d "$TEST_ROOT/aot-sdk/work/native-image-object-stages/$aot_rollback_stage" ]] ||
   fail "more than one unreferenced AOT fallback retained"
 
+# Pin an explicitly selected base even before any AOT publication refers to it.
+put_marker "$cpu_generations/$cpu_old/selected"
+put_receipt "$cpu_generations/$cpu_old/metadata/build-receipt" managed_stage_key "$cpu_orphan_stage"
+put_marker "$TEST_ROOT/cpu-sdk/work/managed-stages/$cpu_orphan_stage/selected"
+"$PRUNE_SCRIPT" --build-root "$TEST_ROOT" --keep-cpu-sdk "$cpu_generations/$cpu_old" >/dev/null
+[[ -f "$cpu_generations/$cpu_old/selected" &&
+   -f "$TEST_ROOT/cpu-sdk/work/managed-stages/$cpu_orphan_stage/selected" ]] || fail "explicit CPU base pruned"
+
+# Pin an older CPU generation through the retained AOT receipt, including its stage.
+put_marker "$cpu_generations/$cpu_rollback/rollback"
+put_receipt "$cpu_generations/$cpu_rollback/metadata/build-receipt" managed_stage_key "$cpu_rollback_stage"
+put_marker "$TEST_ROOT/cpu-sdk/work/managed-stages/$cpu_rollback_stage/keep"
+put_receipt "$aot_generations/$aot_current/metadata/build-receipt" object_stage_inputs_sha256 "$aot_current_stage"
+printf 'base_sdk=%s\n' "$cpu_generations/$cpu_rollback" >>"$aot_generations/$aot_current/metadata/build-receipt"
+"$PRUNE_SCRIPT" --build-root "$TEST_ROOT" >/dev/null
+[[ -f "$cpu_generations/$cpu_rollback/rollback" &&
+   -f "$TEST_ROOT/cpu-sdk/work/managed-stages/$cpu_rollback_stage/keep" ]] || fail "retained AOT lost its CPU base"
+
+# Retained receipts must fail closed: neither symlinks nor absent fields may
+# hide reference edges and turn live stages into apparent orphans.
+put_marker "$TEST_ROOT/cpu-sdk/work/generation.interrupted/remove"
+receipt="$aot_generations/$aot_current/metadata/build-receipt"
+cp "$receipt" "$TEST_ROOT/receipt.backup"
+for defect in missing symlink metadata-symlink missing-key duplicate-key; do
+  case "$defect" in
+    missing) rm "$receipt" ;;
+    symlink) rm "$receipt"; ln -s "$TEST_ROOT/receipt.backup" "$receipt" ;;
+    metadata-symlink)
+      mv "${receipt%/build-receipt}" "$TEST_ROOT/metadata.backup"
+      ln -s "$TEST_ROOT/metadata.backup" "${receipt%/build-receipt}" ;;
+    missing-key) put_receipt "$receipt" base_sdk "$cpu_generations/$cpu_rollback" ;;
+    duplicate-key) printf 'base_sdk=%s\n' "$cpu_generations/$cpu_rollback" >>"$receipt" ;;
+  esac
+  if "$PRUNE_SCRIPT" --build-root "$TEST_ROOT" >/dev/null 2>&1; then
+    fail "cleanup accepted retained receipt defect: $defect"
+  fi
+  [[ -f "$TEST_ROOT/cpu-sdk/work/generation.interrupted/remove" ]] || fail "receipt failure partially applied cleanup"
+  if [[ "$defect" == metadata-symlink ]]; then
+    rm "${receipt%/build-receipt}"
+    mv "$TEST_ROOT/metadata.backup" "${receipt%/build-receipt}"
+  fi
+  rm -f "$receipt"
+  cp "$TEST_ROOT/receipt.backup" "$receipt"
+done
+
+# Later validation failures must not partially apply an earlier removal plan.
+put_marker "$TEST_ROOT/cpu-sdk/work/generation.interrupted/remove"
 exec {held_provider_lock_fd}>"$TEST_ROOT/accelerator/tensor-g3/.build.lock"
 flock "$held_provider_lock_fd"
 if "$PRUNE_SCRIPT" --build-root "$TEST_ROOT" >/dev/null 2>&1; then
   fail "cleanup ran while an accelerator provider lock was held"
 fi
+[[ -f "$TEST_ROOT/cpu-sdk/work/generation.interrupted/remove" ]] || fail "provider lock failure partially applied cleanup"
 exec {held_provider_lock_fd}>&-
 
 mkdir -p -- "$TEST_ROOT/outside-provider"
@@ -157,4 +239,12 @@ if "$PRUNE_SCRIPT" --build-root "$TEST_ROOT" >/dev/null 2>&1; then
   fail "cleanup accepted a symlink managed-stage root"
 fi
 
+[[ -f "$TEST_ROOT/cpu-sdk/work/generation.interrupted/remove" ]] || fail "unsafe stage root partially applied cleanup"
+rm "$TEST_ROOT/cpu-sdk/work/managed-stages"
+mv "$TEST_ROOT/cpu-sdk/work/managed-stages.real" "$TEST_ROOT/cpu-sdk/work/managed-stages"
+ln -s "$TEST_ROOT/ccache/keep" "$TEST_ROOT/cpu-sdk/work/generation.interrupted/outside"
+if "$PRUNE_SCRIPT" --build-root "$TEST_ROOT" >/dev/null 2>&1; then
+  fail "cleanup accepted a disposable directory containing a symlink"
+fi
+[[ -f "$TEST_ROOT/ccache/keep" ]] || fail "symlink target deleted"
 printf 'prune-android-sdx-build-cache-test: PASS\n'
