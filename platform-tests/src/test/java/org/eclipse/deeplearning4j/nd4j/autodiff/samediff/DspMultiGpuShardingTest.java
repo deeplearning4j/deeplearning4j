@@ -325,6 +325,56 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         }
     }
 
+    /** A reused sharded plan must not retain the previous caller's stream/device. */
+    @Test
+    public void testShardedReplayWithAlternatingCallerDevice() {
+        assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
+        int deviceCount = Nd4j.getAffinityManager().getNumberOfDevices();
+        assumeTrue(deviceCount > 1, "requires multiple CUDA devices");
+        int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        SameDiff single = null;
+        SameDiff sharded = null;
+        INDArray input = null;
+        INDArray reference = null;
+        boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
+        String originalSingleGpu = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
+        try {
+            InferenceSession.setDynamicShapePlanEnabled(true);
+            System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
+            Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
+            input = Nd4j.rand(DataType.FLOAT, 8, 64);
+            single = buildViewMlp(64, 128, 6, 16, 42L);
+            reference = runOnce(single, input, true);
+            sharded = buildViewMlp(64, 128, 6, 16, 42L);
+            sharded.setGraphExecutionMode(GraphExecutionMode.TRITON);
+            for (int iteration = 0; iteration < REPLAY_ITERATIONS; iteration++) {
+                int callerDevice = iteration % deviceCount;
+                Nd4j.getAffinityManager().setDeviceForCurrentThread(callerDevice);
+                Map<String, INDArray> result = sharded.output(Collections.singletonMap("x", input), "out");
+                assertEquals(callerDevice, Nd4j.getAffinityManager().getDeviceForCurrentThread(),
+                        "execution/readback changed caller device at iteration " + iteration);
+                try (INDArray got = result.get("out").dup()) {
+                    assertUsesEveryCudaDevice(sharded);
+                    assertTrue(got.equalsWithEps(reference, 1e-3),
+                            "alternating-device replay diverged at iteration " + iteration);
+                }
+            }
+            DspPlanAssertions.assertNoCaptureFailures(sharded, "alternating caller device");
+        } finally {
+            try {
+                if (sharded != null) sharded.close();
+                if (single != null) single.close();
+                SameDiffMemoryUtils.safeClose(reference);
+                SameDiffMemoryUtils.safeClose(input);
+            } finally {
+                InferenceSession.setDynamicShapePlanEnabled(originalDsp);
+                if (originalSingleGpu == null) System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
+                else System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, originalSingleGpu);
+                Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
+            }
+        }
+    }
+
     // -----------------------------------------------------------------------
     // Test 3 — cross-device output back-migration
     // -----------------------------------------------------------------------

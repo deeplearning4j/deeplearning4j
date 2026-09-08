@@ -3500,6 +3500,9 @@ public class DynamicShapePlanExecutor implements Closeable {
      * @throws RuntimeException if native execution fails (caller should fall back to Java)
      */
     Map<String, INDArray> executeNative(DynamicShapePlan plan, Map<String, INDArray> placeholderArrays) {
+        DeviceMemoryManager devices = DeviceMemoryManager.getInstance();
+        int callerDevice = devices.getCurrentDeviceId();
+        Throwable executionFailure = null;
         nativeExecLock.lock();
         try {
             if (closed) throw new IllegalStateException("Cannot execute a closed DSP executor");
@@ -3531,8 +3534,20 @@ public class DynamicShapePlanExecutor implements Closeable {
                 }
                 throw failure;
             }
+        } catch (RuntimeException | Error failure) {
+            executionFailure = failure;
+            throw failure;
         } finally {
-            nativeExecLock.unlock();
+            try {
+                if (devices.getCurrentDeviceId() != callerDevice) {
+                    devices.switchDevice(callerDevice, "DSP.executeNative", "restore-caller-device");
+                }
+            } catch (RuntimeException | Error restoreFailure) {
+                if (executionFailure == null) throw restoreFailure;
+                executionFailure.addSuppressed(restoreFailure);
+            } finally {
+                nativeExecLock.unlock();
+            }
         }
     }
 
