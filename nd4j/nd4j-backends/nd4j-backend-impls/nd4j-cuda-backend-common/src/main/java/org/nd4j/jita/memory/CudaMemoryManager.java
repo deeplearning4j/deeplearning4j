@@ -276,9 +276,8 @@ public class CudaMemoryManager extends BasicMemoryManager {
     /**
      * This method releases previously allocated memory chunk
      *
-     * @param pointer
-     * @param kind
-     * @return
+     * @param pointer pointer to the allocated memory
+     * @param kind kind of memory to release
      */
     @Override
     public void release(Pointer pointer, MemoryKind kind) {

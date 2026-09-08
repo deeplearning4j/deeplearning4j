@@ -78,7 +78,7 @@ class SD_LIB_EXPORT MemoryCounter {
 
   /**
    * This method checks if allocation of numBytes won't break through per-group limit
-   * @param deviceId
+   * @param group memory group whose limit is checked
    * @param numBytes
    * @return TRUE if allocated ammount will keep us below limit, FALSE otherwise
    */

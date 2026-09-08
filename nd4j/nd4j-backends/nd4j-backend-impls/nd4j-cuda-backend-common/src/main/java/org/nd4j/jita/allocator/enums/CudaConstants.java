@@ -24,13 +24,14 @@ package org.nd4j.jita.allocator.enums;
  * @author raver119@gmail.com
  */
 public class CudaConstants {
+    /** Host to host copy. */
     public static int cudaMemcpyHostToHost = 0;
-    /**< Host   -> Host */
+    /** Host to device copy. */
     public static int cudaMemcpyHostToDevice = 1;
-    /**< Host   -> Device */
+    /** Device to host copy. */
     public static int cudaMemcpyDeviceToHost = 2;
-    /**< Device -> Host */
+    /** Device to device copy. */
     public static int cudaMemcpyDeviceToDevice = 3;
-    /**< Device -> Device */
+    /** Copy direction inferred from the source and destination pointers. */
     public static int cudaMemcpyDefault = 4;
 }

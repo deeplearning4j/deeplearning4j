@@ -153,7 +153,7 @@ public class CublasPointer implements AutoCloseable {
      * but instead wait for results to accumulate
      * so they can be returned from
      * the gpu first
-     * @return
+     * @param resultPointer whether this pointer holds a result
      */
     public void setResultPointer(boolean resultPointer) {
         this.resultPointer = resultPointer;

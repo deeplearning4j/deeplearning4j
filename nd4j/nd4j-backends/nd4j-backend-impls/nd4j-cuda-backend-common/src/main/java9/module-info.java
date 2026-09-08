@@ -42,7 +42,6 @@ open module nd4j.cuda.backend.common {
     exports org.nd4j.linalg.jcublas.compression;
     exports org.nd4j.linalg.jcublas.context;
     exports org.nd4j.linalg.jcublas.ops.executioner;
-    exports org.nd4j.linalg.jcublas.ops.executioner.aggregates;
     exports org.nd4j.linalg.jcublas.rng;
     exports org.nd4j.linalg.jcublas.util;
     provides org.nd4j.linalg.compression.NDArrayCompressor with org.nd4j.linalg.jcublas.compression.CudaThreshold;

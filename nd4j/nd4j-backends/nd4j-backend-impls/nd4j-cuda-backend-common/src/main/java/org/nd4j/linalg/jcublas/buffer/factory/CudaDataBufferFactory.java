@@ -70,7 +70,7 @@ public class CudaDataBufferFactory implements DataBufferFactory {
 
 
     /**
-     * This method will create new DataBuffer of the same dataType & same length
+     * This method will create new DataBuffer of the same dataType and same length
      *
      * @param buffer
      * @return
@@ -98,7 +98,7 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     }
 
     /**
-     * This method will create new DataBuffer of the same dataType & same length
+     * This method will create new DataBuffer of the same dataType and same length
      *
      * @param buffer
      * @param workspace

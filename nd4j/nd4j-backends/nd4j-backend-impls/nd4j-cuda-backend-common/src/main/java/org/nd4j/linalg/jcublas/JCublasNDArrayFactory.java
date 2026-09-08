@@ -551,7 +551,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
      *
      * @param array     the ndarray to shuffle
      * @param dimension the dimension to do the shuffle
-     * @return
+     * @param rnd random number generator used for the shuffle
      */
     @Override
     public void shuffle(INDArray array, Random rnd, long... dimension) {
@@ -564,7 +564,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
      *
      * @param arrays      the ndarrays to shuffle
      * @param dimensions the dimensions to do the shuffle
-     * @return
+     * @param rnd random number generator used for the shuffle
      */
     @Override
     public void shuffle(List<INDArray> arrays, Random rnd, List<long[]> dimensions) {
@@ -705,7 +705,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
      *
      * @param sourceArrays     the ndarray to shuffle
      * @param dimension the dimension to do the shuffle
-     * @return
+     * @param rnd random number generator used for the shuffle
      */
     @Override
     public void shuffle(Collection<INDArray> sourceArrays, Random rnd, long... dimension) {
