@@ -97,6 +97,21 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>central-javadoc</id>
+                        <configuration>
+                            <!-- Moditect's descriptor lives outside the ordinary Java source root.
+                                 Supply both roots so Javadoc resolves the module and its sources together. -->
+                            <sourcepath>${project.basedir}/src/main/java${path.separator}${project.basedir}/src/main/java9</sourcepath>
+                            <subpackages>org.nd4j.presets.cuda</subpackages>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.moditect</groupId>
                 <artifactId>moditect-maven-plugin</artifactId>
             </plugin>
