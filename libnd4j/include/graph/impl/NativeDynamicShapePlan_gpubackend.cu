@@ -6516,28 +6516,15 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
 Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
 
-  // ── Multi-GPU: run a secondary-device island on ITS device's stream ─────────────
-  // The plan-wide `stream` param is the device-0 PRIMARY stream. Capturing a device-1
-  // island on it launches its Triton/cuBLAS kernels on the wrong device
-  // (cuLaunchKernel "invalid resource handle" 400 / cuBLAS err13 during capture). We are
-  // already bound to the segment's device (platformBindSegmentDevice → cudaSetDevice), so
-  // cudaStreamPerThread resolves to the correct secondary device. Substitute it for the
-  // WHOLE pipeline (compile/warmup/capture/replay/direct) so ctx.cudaStr, beginCapture, and
-  // every capture-status query agree on the island's device. Device-0 segments are untouched.
-  static thread_local cudaStream_t tl_secondarySegStream = cudaStreamPerThread;
-  const int segGraphDevice = (seg.def.startSlot >= 0 && seg.def.startSlot < numSlots_)
-      ? slots_[seg.def.startSlot].targetDeviceId : -1;
-  if (segGraphDevice > 0) {
-    tl_secondarySegStream = cudaStreamPerThread;
-    stream = static_cast<void*>(&tl_secondarySegStream);
-  }
-
-  // Normalize the stream pointer for the entire dispatch, not only ctx.cudaStr.
-  // Capture callbacks and staging both consume cudaStream_t*, including when the
-  // caller omitted a stream. Keep the secondary-device override above intact.
-  // Dispatch is synchronous; ordered callbacks are cleared before this handle expires.
-  cudaStream_t cudaStr = (stream != nullptr)
-      ? *static_cast<cudaStream_t*>(stream) : nullptr;
+  // Segment binding owns device and stream selection. The caller can enter from
+  // ANY GPU (not necessarily device 0), so a targetDeviceId > 0 heuristic leaves
+  // device-0 segments using a foreign caller stream during native decode.
+  // Use the bound execution stream for compilation, staging, capture and replay.
+  // Dispatch is synchronous; callbacks are cleared before this local handle expires.
+  void* boundStream = dspGetExecutionStream();
+  cudaStream_t cudaStr = boundStream != nullptr
+      ? reinterpret_cast<cudaStream_t>(boundStream)
+      : (stream != nullptr ? *static_cast<cudaStream_t*>(stream) : nullptr);
   if (cudaStr == nullptr) {
     auto* defaultStreamPtr = LaunchContext::defaultContext()->getCudaStream();
     if (defaultStreamPtr != nullptr) cudaStr = *defaultStreamPtr;
