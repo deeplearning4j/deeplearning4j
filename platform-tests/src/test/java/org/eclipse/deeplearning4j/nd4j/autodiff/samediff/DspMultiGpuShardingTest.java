@@ -375,6 +375,77 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         }
     }
 
+    /** Exercise the native nested-plan entry, not only Java executor dispatch. */
+    @Test
+    public void testNativeDecodeAfterShardedJavaWarmup() {
+        assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
+        assumeTrue(Nd4j.getAffinityManager().getNumberOfDevices() == 2, "requires two CUDA devices");
+        int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
+        String originalSingleGpu = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
+        SameDiff graph = null;
+        java.util.List<INDArray> owned = new java.util.ArrayList<>();
+        try {
+            InferenceSession.setDynamicShapePlanEnabled(true);
+            System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
+            Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
+            graph = SameDiff.create();
+            graph.setGraphExecutionMode(GraphExecutionMode.TRITON);
+            SDVariable h = graph.placeHolder("embeddings", DataType.FLOAT, 1, 1, 16).reshape(1, 16);
+            for (int layer = 0; layer < 6; layer++) {
+                INDArray weights = Nd4j.eye(16).castTo(DataType.FLOAT);
+                owned.add(weights);
+                h = graph.nn.relu(graph.linalg.mmul(h, graph.constant("w" + layer, weights)), 0);
+            }
+            float[][] logitsWeights = new float[16][8];
+            for (int row = 0; row < 16; row++) {
+                for (int col = 0; col < 8; col++) logitsWeights[row][col] = (col + 1) / 16.0f;
+            }
+            INDArray projection = Nd4j.createFromArray(logitsWeights);
+            owned.add(projection);
+            graph.linalg.mmul(h, graph.constant("projection", projection)).reshape("logits", 1, 1, 8);
+            INDArray embeddings = Nd4j.ones(DataType.FLOAT, 1, 1, 16);
+            INDArray table = Nd4j.ones(DataType.FLOAT, 8, 16);
+            INDArray ids = Nd4j.zeros(DataType.LONG, 1, 1);
+            INDArray mask = Nd4j.ones(DataType.FLOAT, 1, 8);
+            INDArray positions = Nd4j.zeros(DataType.LONG, 1, 1);
+            Collections.addAll(owned, embeddings, table, ids, mask, positions);
+            for (int iteration = 0; iteration < 12; iteration++) {
+                graph.output(Collections.singletonMap("embeddings", embeddings), "logits");
+            }
+            assertUsesEveryCudaDevice(graph);
+            assertTrue(DspPlanAssertions.getTotalGraphReplays(graph) > 0, "warmup must reach graph replay");
+            DynamicShapePlanExecutor executor = graph.getOrCreateSession().getDynamicShapePlanExecutor();
+            String[] externalKeys = executor.getCurrentPlan().getExternalInputKeys();
+            int embeddingIndex = java.util.Arrays.asList(externalKeys).indexOf("embeddings");
+            assertTrue(embeddingIndex >= 0);
+            Nd4j.getAffinityManager().setDeviceForCurrentThread(1);
+            var decode = new org.nd4j.linalg.api.ops.impl.transforms.custom.AutoregressiveDecode(
+                    embeddings, table, ids, mask, positions, null,
+                    executor.getNativePlanHandle(), executor.getCachedOpContext(),
+                    externalKeys.length, 1, embeddingIndex, -1, -1, -1, -1, 0, -1, -1,
+                    new int[0], new int[0], 3, -1, 0, 1, 0.0, 0, 0.0, 1.0,
+                    Collections.emptySet());
+            INDArray[] outputs = Nd4j.getExecutioner().exec(decode);
+            Collections.addAll(owned, outputs);
+            assertEquals(3, outputs[1].getLong(0), "native loop must execute all three steps");
+            for (int token = 0; token < 3; token++) {
+                assertEquals(7, outputs[0].getLong(token), "wrong token at native step " + token);
+            }
+            DspPlanAssertions.assertNoCaptureFailures(graph, "native decode handoff");
+        } finally {
+            try {
+                if (graph != null) graph.close();
+                for (INDArray array : owned) SameDiffMemoryUtils.safeClose(array);
+            } finally {
+                InferenceSession.setDynamicShapePlanEnabled(originalDsp);
+                if (originalSingleGpu == null) System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
+                else System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, originalSingleGpu);
+                Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
+            }
+        }
+    }
+
     // -----------------------------------------------------------------------
     // Test 3 — cross-device output back-migration
     // -----------------------------------------------------------------------
