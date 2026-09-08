@@ -371,6 +371,11 @@ void ggmlQMatMul(sd::LaunchContext* context,
             M, N, K, quantType, *stream);
     }
 
+    // Do not publish successful output actuality after a failed launch. In
+    // composite replay the next gap op would otherwise report this sticky error.
+    if (!DebugHelper::inGraphCapture(stream)) {
+        DebugHelper::checkGlobalErrorCode("ggml_qmatmul CUDA kernel launch failed");
+    }
     NDArray::registerSpecialUse({output}, {activations, packedWeights});
 }
 
