@@ -1249,12 +1249,18 @@ while IFS= read -r library_name; do
     fail "base SDK native member is writable and therefore mutable: $source_library"
   source_sha256="$(sha256_file "$source_library")"
   target_library="$JNI_DIR/$library_name"
-  cp --reflink=auto -- "$source_library" "$target_library"
+  # Read every byte: cp can consult SEEK_HOLE even with --sparse=never and
+  # skip readable data on the build filesystem. A sequential copy avoids that
+  # extent-map dependency; retain independent-inode and byte-integrity checks.
+  dd if="$source_library" of="$target_library" bs=1M status=none
+  chmod "$source_mode" "$target_library"
   [[ "$(stat -c '%d:%i' "$source_library")" != "$(stat -c '%d:%i' "$target_library")" ]] ||
     fail "base SDK native member was hard-linked into the generation: $library_name"
-  [[ "$(sha256_file "$target_library")" == "$source_sha256" &&
-     "$(sha256_file "$source_library")" == "$source_sha256" ]] ||
-    fail "base SDK native member changed during independent staging: $library_name"
+  target_sha256="$(sha256_file "$target_library")"
+  source_after_sha256="$(sha256_file "$source_library")"
+  [[ "$target_sha256" == "$source_sha256" &&
+     "$source_after_sha256" == "$source_sha256" ]] ||
+    fail "base SDK native member failed independent staging: $library_name source-before=$source_sha256 target=$target_sha256 source-after=$source_after_sha256"
   printf '%s %s\n' "$source_sha256" "$library_name"
 done <"$BASE_SDK/metadata/cmake-owned-native-libraries.txt" | LC_ALL=C sort >"$BASE_NATIVE_BYTES"
 cp "$CXX_SHARED" "$JNI_DIR/libc++_shared.so"
