@@ -2135,7 +2135,25 @@ class ReleaseValidationTest(unittest.TestCase):
             for item in profile.findall("m:dependencies/m:dependency", namespace)
         }
         self.assertNotIn("nd4j-cuda-${cuda.version}", profile_artifacts)
-        self.assertIn("libnd4j", profile_artifacts)
+        # Native reactor ordering must not put a POM on Javadoc's module path.
+        self.assertNotIn("libnd4j", profile_artifacts)
+        native_build_dependency = profile.find(
+            "m:build/m:plugins/m:plugin[m:artifactId='javacpp']"
+            "/m:dependencies/m:dependency[m:artifactId='libnd4j']",
+            namespace,
+        )
+        self.assertIsNotNone(native_build_dependency)
+        self.assertEqual(
+            "${project.groupId}",
+            native_build_dependency.findtext("m:groupId", namespaces=namespace),
+        )
+        self.assertEqual(
+            "${project.version}",
+            native_build_dependency.findtext("m:version", namespaces=namespace),
+        )
+        self.assertEqual(
+            "pom", native_build_dependency.findtext("m:type", namespaces=namespace)
+        )
         self.assertIn("nd4j-cuda-${cuda.version}-preset", profile_artifacts)
         self.assertIsNone(profile.find(".//m:artifactId[.='maven-dependency-plugin']", namespace))
         attached_classifier = profile.find(
