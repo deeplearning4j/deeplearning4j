@@ -1984,8 +1984,21 @@ Status NativeDynamicShapePlan::compositeReplay(
   }
 
   // ── Tensor-core acceleration for steady-state gap matmuls (hoisted) ────────
+  // Attribute pending CUDA failures to the replay boundary that produced them,
+  // rather than letting a later unrelated gap kernel report the sticky error.
+  auto checkReplayCudaError = [&](const char* phase, int start, int end) {
+    const auto error = cudaPeekAtLastError();
+    if (error != cudaSuccess) {
+      int device = -1;
+      cudaGetDevice(&device);
+      DSP_THROW(MEMORY,
+                "COMPOSITE_CUDA_ERROR phase=%s slots=[%d-%d] device=%d stream=%p error=%s",
+                phase, start, end, device, (void*)cudaStr, cudaGetErrorString(error));
+    }
+  };
   bool gapSlotsExecutedSinceArgCopy = false;
   for (auto& unit : sched.units) {
+    checkReplayCudaError("unit-entry", unit.startSlot, unit.endSlot);
     // ── Merged group: non-leader units skip entirely ──
     // The leader does dirty-mark + tickWriteDevice for ALL slots in the group
     // using pre-computed mergedGroupSlotRanges, so non-leaders are pure no-ops.
@@ -2081,6 +2094,7 @@ Status NativeDynamicShapePlan::compositeReplay(
       }
       auto tML0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point();
       bool launchOk = sched.mergedReplayHandles[mgId]->replay(stream);
+      checkReplayCudaError("merged-launch", unit.startSlot, unit.endSlot);
       long long mergedUnitUs = 0;  // per-unit ledger (G3): launch + fixup for this leader
       if (executionTimingEnabled_) {
         long long mlUs = std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - tML0).count();
@@ -2178,6 +2192,7 @@ Status NativeDynamicShapePlan::compositeReplay(
         sched.recordUnitPerf(static_cast<size_t>(&unit - sched.units.data()), mergedUnitUs);
       }
       if (mergedFixupStatus != Status::OK) return mergedFixupStatus;
+      checkReplayCudaError("merged-fixup", rangeMin, rangeMax);
       continue;
     }
 
