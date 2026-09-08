@@ -10,6 +10,6 @@ open module nd4j.cuda {
     requires nd4j.cuda.preset;
     requires nd4j.cuda.backend.common;
     requires org.bytedeco.javacpp;
-    exports org.nd4j.linalg.jcublas;
-    provides org.nd4j.linalg.factory.Nd4jBackend with org.nd4j.linalg.jcublas.JCublasBackend;
+    exports org.nd4j.linalg.jcublas.backend;
+    provides org.nd4j.linalg.factory.Nd4jBackend with org.nd4j.linalg.jcublas.backend.JCublasBackend;
 }

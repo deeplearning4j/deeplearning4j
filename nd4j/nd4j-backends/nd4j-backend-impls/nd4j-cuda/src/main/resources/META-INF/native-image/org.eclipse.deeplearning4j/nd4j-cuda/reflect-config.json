@@ -1,6 +1,6 @@
 [
   {
-    "name": "org.nd4j.linalg.jcublas.JCublasBackend",
+    "name": "org.nd4j.linalg.jcublas.backend.JCublasBackend",
     "allDeclaredConstructors": true,
     "allPublicConstructors": true,
     "allDeclaredMethods": true,

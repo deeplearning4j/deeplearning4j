@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.nd4j.linalg.jcublas;
+package org.nd4j.linalg.jcublas.backend;
 
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Loader;
@@ -33,6 +33,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.common.io.Resource;
+import org.nd4j.linalg.jcublas.CudaEnvironment;
+import org.nd4j.linalg.jcublas.JCublasNDArray;
 import org.nd4j.linalg.jcublas.bindings.Nd4jCuda;
 import org.nd4j.nativeblas.NativeOpsHolder;
 

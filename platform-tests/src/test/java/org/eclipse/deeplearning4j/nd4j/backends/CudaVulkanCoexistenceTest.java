@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("CUDA and Vulkan same-JVM coexistence")
 public class CudaVulkanCoexistenceTest {
 
-    private static final String CUDA_BACKEND = "org.nd4j.linalg.jcublas.JCublasBackend";
+    private static final String CUDA_BACKEND = "org.nd4j.linalg.jcublas.backend.JCublasBackend";
     private static final String VULKAN_BACKEND = "org.nd4j.linalg.vulkan.VulkanBackend";
 
     @Test

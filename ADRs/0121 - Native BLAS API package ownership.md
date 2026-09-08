@@ -40,6 +40,14 @@ The singleton instances, device-keyed caches, synchronization, workspace exclusi
 
 Validation for this follow-up is static only locally; consolidated build, JPMS/Javadoc, native-image, and backend execution qualification remains remote.
 
+## CUDA backend entrypoint ownership
+
+The CUDA artifact also declared `JCublasBackend` in `org.nd4j.linalg.jcublas`, which is owned and exported by `nd4j.cuda.backend.common`. Move only this entrypoint to `org.nd4j.linalg.jcublas.backend` in `nd4j-cuda`, and export that distinct package from `nd4j.cuda`. Keep the implementation classes (`CudaEnvironment`, `JCublasNDArray`, and the other CUDA-common classes) in their existing packages and import the formerly same-package dependencies explicitly.
+
+Update the JPMS `Nd4jBackend` provision, classpath service registration, native-image reflection entry, and the CUDA/Vulkan coexistence test's reflective class name together. No forwarding entrypoint remains in the common package. Availability checks, priority, device discovery, configuration resource lookup, and backend ID are unchanged. Simple-name and `jcublas`/`cublas` substring checks continue to match. External consumers referencing the old entrypoint binary name must migrate and use aligned artifacts.
+
+This follow-up receives static source/reference review only locally; no local build, test, or code generation is run. The parent full remote matrix workflow is dry-run-only (`dryRun: true`); execution qualification is not claimed.
+
 ## References
 
 - ADR 0016: Java 9+ Support

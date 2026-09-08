@@ -15,4 +15,4 @@
 #  * SPDX-License-Identifier: Apache-2.0
 #  ******************************************************************************/
 #
-org.nd4j.linalg.jcublas.JCublasBackend
+org.nd4j.linalg.jcublas.backend.JCublasBackend
