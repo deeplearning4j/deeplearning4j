@@ -504,25 +504,6 @@ BUILD_DOUBLE_TEMPLATE(void kvInPlaceWriteBSHDCudaLauncher,
 void kvInPlaceWriteBSHD(NDArray* cache, NDArray* newKv,
                          const void* cachePosPtr, LaunchContext* context) {
     auto stream = context->getCudaStream();
-    // Failure-local diagnostics, without synchronization or per-slot log flooding.
-    auto checkWriteStream = [&](const char* phase) {
-        if (!DSP_DIAG_ENABLED(MEMORY)) return;
-        const auto pending = cudaPeekAtLastError();
-        int device = -1;
-        const auto deviceStatus = cudaGetDevice(&device);
-        unsigned int flags = 0;
-        const auto streamStatus = stream != nullptr
-            ? cudaStreamGetFlags(*stream, &flags) : cudaErrorInvalidResourceHandle;
-        if (pending != cudaSuccess || deviceStatus != cudaSuccess || streamStatus != cudaSuccess) {
-            DSP_THROW(MEMORY,
-                "KV_WRITE_STREAM phase=%s device=%d contextDevice=%d stream=%p "
-                "pending=%s deviceStatus=%s streamStatus=%s",
-                phase, device, context->getDeviceID(), stream ? (void*)*stream : nullptr,
-                cudaGetErrorString(pending), cudaGetErrorString(deviceStatus),
-                cudaGetErrorString(streamStatus));
-        }
-    };
-    checkWriteStream("entry");
 
     // newKv (src) and cache (dst) may differ in dtype (FLOAT->HALF after FusedRoPE
     // promotion). The copy kernel is templated on (src,dst) and casts per-element,
@@ -545,7 +526,6 @@ void kvInPlaceWriteBSHD(NDArray* cache, NDArray* newKv,
     LongType dstStride3 = rank4 ? cache->strideAt(3) : 0;
 
     NDArray::prepareSpecialUse({cache}, {newKv});
-    checkWriteStream("prepared");
 
     // Window-write source discriminator: for multi-row (W>1) float32 writes, read
     // source row 1 (h=0, d=0..1) both via the declared strides and via an
@@ -553,7 +533,8 @@ void kvInPlaceWriteBSHD(NDArray* cache, NDArray* newKv,
     // the underlying memory (stale/regenerated view); agreement means the source
     // tensor content itself is what lands in the cache.
     if (DSP_DIAG_ENABLED(KV_CACHE) && rank4 && seqKV > 1
-            && newKv->dataType() == DataType::FLOAT32) {
+            && newKv->dataType() == DataType::FLOAT32
+            && !DebugHelper::inGraphCapture(stream)) {
         float viaStride[2] = {}, viaContig[2] = {};
         const char* base = static_cast<const char*>(newKv->specialBuffer());
         LongType strideOff = 1 * srcStride1;  // s=1, h=0, d=0
@@ -574,7 +555,6 @@ void kvInPlaceWriteBSHD(NDArray* cache, NDArray* newKv,
 
     const void* sourceBuffer = newKv->specialBuffer();
     void* destinationBuffer = cache->specialBuffer();
-    checkWriteStream("buffers-resolved");
     BUILD_DOUBLE_SELECTOR(newKv->dataType(), cache->dataType(), kvInPlaceWriteBSHDCudaLauncher,
                           (stream, sourceBuffer, destinationBuffer,
                            cachePosPtr, batch, seqKV, outerDim, innerDim, cacheMaxSeqLen,

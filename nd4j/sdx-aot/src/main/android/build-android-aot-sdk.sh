@@ -1119,9 +1119,34 @@ if [[ "$SDX_NATIVE_CACHE" == 1 && "$SDX_NATIVE_FORCE_REBUILD" != 1 ]]; then
     stage_native_image_object "$OBJECT_STAGE_DIR"
     printf 'CACHE HIT: reusing validated local Native Image object stage: %s\n' "$OBJECT_STAGE_INPUTS_SHA256"
     OBJECT_REUSED=1
-  elif [[ -e "$OBJECT_STAGE_DIR" ]]; then
-    fail "Native Image object stage exists but failed validation: $OBJECT_STAGE_DIR"
   else
+    if [[ -e "$OBJECT_STAGE_DIR" || -L "$OBJECT_STAGE_DIR" ]]; then
+      # An invalid local entry must not shadow a verified shared copy forever.
+      # Preserve its bytes/receipt outside the lookup and retention directory;
+      # never rewrite its checksum or relax validation to authorize damaged code.
+      printf 'WARNING: invalid local Native Image object stage: %s\n' "$OBJECT_STAGE_DIR" >&2
+      if [[ -f "$OBJECT_STAGE_DIR/libsdx_llm.o" && ! -L "$OBJECT_STAGE_DIR/libsdx_llm.o" ]]; then
+        printf '  observed object_sha256=%s\n' "$(sha256_file "$OBJECT_STAGE_DIR/libsdx_llm.o")" >&2
+      fi
+      [[ ! -L "$OBJECT_STAGES_DIR.invalid" ]] ||
+        fail "invalid Native Image stage quarantine must not be a symlink"
+      mkdir -p -- "$OBJECT_STAGES_DIR.invalid"
+      invalid_stage="$(mktemp -d "$OBJECT_STAGES_DIR.invalid/$OBJECT_STAGE_INPUTS_SHA256.XXXXXXXX")" ||
+        fail "could not allocate invalid Native Image stage quarantine"
+      # Moving a directory across parents updates '..' and requires write
+      # permission on the directory itself. Keep its contents read-only.
+      invalid_stage_mode=""
+      if [[ -d "$OBJECT_STAGE_DIR" && ! -L "$OBJECT_STAGE_DIR" ]]; then
+        invalid_stage_mode="$(stat -c '%a' "$OBJECT_STAGE_DIR")"
+        chmod u+w -- "$OBJECT_STAGE_DIR"
+      fi
+      if ! mv -T -- "$OBJECT_STAGE_DIR" "$invalid_stage/stage"; then
+        [[ -z "$invalid_stage_mode" ]] || chmod "$invalid_stage_mode" -- "$OBJECT_STAGE_DIR"
+        fail "could not preserve invalid Native Image object stage"
+      fi
+      [[ -z "$invalid_stage_mode" ]] || chmod "$invalid_stage_mode" -- "$invalid_stage/stage"
+      printf '  preserved at %s; trying validated cache fallbacks\n' "$invalid_stage/stage" >&2
+    fi
     for compatible_stage in "$OBJECT_STAGES_DIR"/*; do
       [[ -d "$compatible_stage" ]] || continue
       if validate_compatible_native_image_object_stage "$compatible_stage"; then

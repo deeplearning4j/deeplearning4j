@@ -378,6 +378,15 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
     /** Exercise the native nested-plan entry, not only Java executor dispatch. */
     @Test
     public void testNativeDecodeAfterShardedJavaWarmup() {
+        runNativeDecodeAfterShardedJavaWarmup(false);
+    }
+
+    @Test
+    public void testNativeKvAttentionAfterShardedJavaWarmup() {
+        runNativeDecodeAfterShardedJavaWarmup(true);
+    }
+
+    private void runNativeDecodeAfterShardedJavaWarmup(boolean withKvAttention) {
         assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
         assumeTrue(Nd4j.getAffinityManager().getNumberOfDevices() == 2, "requires two CUDA devices");
         int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
@@ -391,11 +400,37 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
             graph = SameDiff.create();
             graph.setGraphExecutionMode(GraphExecutionMode.TRITON);
+            Map<String, INDArray> feeds = new java.util.LinkedHashMap<>();
+            java.util.List<INDArray> kvArrays = new java.util.ArrayList<>();
+            java.util.List<String> kvNames = new java.util.ArrayList<>();
+            SDVariable cachePosition = null;
+            if (withKvAttention) {
+                cachePosition = graph.placeHolder("cache_position", DataType.LONG);
+                INDArray position = Nd4j.scalar(DataType.LONG, 0);
+                owned.add(position);
+                feeds.put("cache_position", position);
+            }
             SDVariable h = graph.placeHolder("embeddings", DataType.FLOAT, 1, 1, 16).reshape(1, 16);
             for (int layer = 0; layer < 6; layer++) {
                 INDArray weights = Nd4j.eye(16).castTo(DataType.FLOAT);
                 owned.add(weights);
                 h = graph.nn.relu(graph.linalg.mmul(h, graph.constant("w" + layer, weights)), 0);
+                if (withKvAttention) {
+                    String keyName = "past_key_values." + layer + ".key";
+                    String valueName = "past_key_values." + layer + ".value";
+                    INDArray key = Nd4j.ones(DataType.HALF, 1, 8, 1, 16);
+                    INDArray value = Nd4j.ones(DataType.HALF, 1, 8, 1, 16);
+                    Collections.addAll(owned, key, value);
+                    Collections.addAll(kvArrays, key, value);
+                    Collections.addAll(kvNames, keyName, valueName);
+                    feeds.put(keyName, key);
+                    feeds.put(valueName, value);
+                    SDVariable qkv = h.reshape(1, 1, 1, 16);
+                    h = graph.nn.dotProductAttentionV2("attention" + layer, qkv, qkv, qkv, null, null,
+                            graph.placeHolder(keyName, DataType.HALF, 1, 8, 1, 16),
+                            graph.placeHolder(valueName, DataType.HALF, 1, 8, 1, 16),
+                            cachePosition, null, 0.0, 0.0, false, false).reshape(1, 16);
+                }
             }
             float[][] logitsWeights = new float[16][8];
             for (int row = 0; row < 16; row++) {
@@ -403,15 +438,16 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             }
             INDArray projection = Nd4j.createFromArray(logitsWeights);
             owned.add(projection);
-            graph.linalg.mmul(h, graph.constant("projection", projection)).reshape("logits", 1, 1, 8);
+            graph.reshape("logits", graph.linalg.mmul(h, graph.constant("projection", projection)), 1, 1, 8);
             INDArray embeddings = Nd4j.ones(DataType.FLOAT, 1, 1, 16);
             INDArray table = Nd4j.ones(DataType.FLOAT, 8, 16);
             INDArray ids = Nd4j.zeros(DataType.LONG, 1, 1);
             INDArray mask = Nd4j.ones(DataType.FLOAT, 1, 8);
             INDArray positions = Nd4j.zeros(DataType.LONG, 1, 1);
             Collections.addAll(owned, embeddings, table, ids, mask, positions);
+            feeds.put("embeddings", embeddings);
             for (int iteration = 0; iteration < 12; iteration++) {
-                graph.output(Collections.singletonMap("embeddings", embeddings), "logits");
+                graph.output(feeds, "logits");
             }
             assertUsesEveryCudaDevice(graph);
             assertTrue(DspPlanAssertions.getTotalGraphReplays(graph) > 0, "warmup must reach graph replay");
@@ -419,12 +455,17 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             String[] externalKeys = executor.getCurrentPlan().getExternalInputKeys();
             int embeddingIndex = java.util.Arrays.asList(externalKeys).indexOf("embeddings");
             assertTrue(embeddingIndex >= 0);
+            int cachePositionIndex = java.util.Arrays.asList(externalKeys).indexOf("cache_position");
+            int[] kvIndices = kvNames.stream().mapToInt(name -> java.util.Arrays.asList(externalKeys).indexOf(name)).toArray();
+            for (int index : kvIndices) assertTrue(index >= 0, "KV input missing from native plan");
+            if (withKvAttention) assertTrue(cachePositionIndex >= 0);
             Nd4j.getAffinityManager().setDeviceForCurrentThread(1);
             var decode = new org.nd4j.linalg.api.ops.impl.transforms.custom.AutoregressiveDecode(
-                    embeddings, table, ids, mask, positions, null,
+                    embeddings, table, ids, mask, positions,
+                    withKvAttention ? kvArrays.toArray(new INDArray[0]) : null,
                     executor.getNativePlanHandle(), executor.getCachedOpContext(),
-                    externalKeys.length, 1, embeddingIndex, -1, -1, -1, -1, 0, -1, -1,
-                    new int[0], new int[0], 3, -1, 0, 1, 0.0, 0, 0.0, 1.0,
+                    externalKeys.length, 1, embeddingIndex, -1, -1, -1, -1, 0, -1, cachePositionIndex,
+                    kvIndices, new int[0], 3, -1, kvArrays.size() / 2, 1, 0.0, 0, 0.0, 1.0,
                     Collections.emptySet());
             INDArray[] outputs = Nd4j.getExecutioner().exec(decode);
             Collections.addAll(owned, outputs);
