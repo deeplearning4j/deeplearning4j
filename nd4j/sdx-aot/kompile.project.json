@@ -38,8 +38,8 @@
       "knowledgeBaseId" : "sdx-aot-knowledge",
       "graphPath" : "data/crawls/sdx-aot-knowledge/graph.kgraph",
       "codeProjectionVersion" : "3",
-      "codeProjectedAt" : "2026-09-08T05:49:41.388336167Z",
-      "codeIndexGeneration" : "2026-09-08T05:08:56.045818403Z",
+      "codeProjectedAt" : "2026-09-08T08:02:47.615119765Z",
+      "codeIndexGeneration" : "2026-09-08T08:02:46.941241144Z",
       "codeProjectionEntities" : "1076",
       "codeProjectionRelations" : "2656",
       "codeProjectionCodeEntities" : "621",
@@ -49,7 +49,7 @@
       "codeProjectionExcludes" : ""
     },
     "createdAt" : "2026-08-31T12:43:28.005795372Z",
-    "updatedAt" : "2026-09-08T05:49:41.388544109Z"
+    "updatedAt" : "2026-09-08T08:02:47.615299082Z"
   } ],
   "models" : [ ],
   "pipelines" : [ ],
@@ -58,5 +58,5 @@
   "workflows" : [ ],
   "metadata" : { },
   "createdAt" : "2026-08-31T12:43:28.006981374Z",
-  "updatedAt" : "2026-09-08T05:49:41.388962516Z"
+  "updatedAt" : "2026-09-08T08:02:47.615643240Z"
 }

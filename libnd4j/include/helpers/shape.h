@@ -552,14 +552,12 @@ SD_INLINE SD_HOST SD_LIB_EXPORT sd::LongType tensorsAlongDimension(const sd::Lon
 }
 
 
-/**
-* Keep the given indexes in the data
-* @param data
-* @param index
-* @param indexLength
-* @param dataLength
-* @return
-*/
+/*
+ * Native-only helper (excluded from JavaCPP bindings): retain entries of data
+ * whose positions occur in index. indexLength is the number of selected
+ * positions and dataLength is the number of input entries. Returns a newly
+ * allocated buffer containing the retained entries in input order.
+ */
 SD_LIB_EXPORT SD_INLINE SD_HOST sd::LongType *keep(volatile sd::LongType *data, const sd::LongType *index, int indexLength, int dataLength) {
   sd::LongType *ret = new sd::LongType[indexLength + SD_SHAPE_ALLOC_PADDING];
   int count = 0;

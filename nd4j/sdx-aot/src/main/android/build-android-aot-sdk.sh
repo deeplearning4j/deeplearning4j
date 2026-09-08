@@ -1101,11 +1101,15 @@ validate_compatible_native_image_object_stage() {
 
 stage_native_image_object() {
   local source_stage="$1"
-  cp --reflink=auto -- "$source_stage/libsdx_llm.o" "$OBJECT"
+  local source_sha256
+  source_sha256="$(sha256_file "$source_stage/libsdx_llm.o")"
+  # Avoid cp's extent-map optimization for large relocatable objects.
+  dd if="$source_stage/libsdx_llm.o" of="$OBJECT" bs=1M status=none
   [[ "$(stat -c '%d:%i' "$source_stage/libsdx_llm.o")" != "$(stat -c '%d:%i' "$OBJECT")" ]] ||
     fail "cached Native Image object was hard-linked into the build"
   OBJECT_SHA256="$(sha256_file "$OBJECT")"
-  [[ "$OBJECT_SHA256" == "$(sha256_file "$source_stage/libsdx_llm.o")" ]] ||
+  [[ "$OBJECT_SHA256" == "$source_sha256" &&
+     "$(sha256_file "$source_stage/libsdx_llm.o")" == "$source_sha256" ]] ||
     fail "cached Native Image object changed while staging"
 }
 
@@ -1170,7 +1174,7 @@ if [[ "$OBJECT_REUSED" == 0 ]]; then
 
   if [[ "$SDX_NATIVE_CACHE" == 1 ]]; then
     OBJECT_STAGE_TMP="$(mktemp -d "$OBJECT_STAGES_DIR/.native-image-object.XXXXXXXX")"
-    cp --reflink=auto -- "$OBJECT" "$OBJECT_STAGE_TMP/libsdx_llm.o"
+    dd if="$OBJECT" of="$OBJECT_STAGE_TMP/libsdx_llm.o" bs=1M status=none
     [[ "$(stat -c '%d:%i' "$OBJECT")" != "$(stat -c '%d:%i' "$OBJECT_STAGE_TMP/libsdx_llm.o")" ]] ||
       fail "Native Image object stage used a mutable hard link"
     [[ "$(sha256_file "$OBJECT_STAGE_TMP/libsdx_llm.o")" == "$OBJECT_SHA256" &&
