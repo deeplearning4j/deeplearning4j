@@ -216,6 +216,7 @@ open module nd4j.api {
     exports org.nd4j.linalg.util;
     exports org.nd4j.linalg.workspace;
     exports org.nd4j.list;
+    exports org.nd4j.nativeblas;
     exports org.nd4j.serde.base64;
     exports org.nd4j.serde.binary;
     exports org.nd4j.serde.jackson.shaded;
@@ -229,6 +230,7 @@ open module nd4j.api {
     exports org.tensorflow.util;
     exports tensorflow;
     exports tensorflow.eager;
+    provides org.nd4j.systeminfo.GPUInfoProvider with org.nd4j.nativeblas.NativeOpsGPUInfoProvider;
     provides org.nd4j.common.base.PreconditionsFormat with org.nd4j.linalg.util.NDArrayPreconditionsFormat;
     provides org.nd4j.linalg.env.EnvironmentalAction with org.nd4j.linalg.env.impl.DebugAction, org.nd4j.linalg.env.impl.VerboseAction, org.nd4j.linalg.env.impl.FallbackAction, org.nd4j.linalg.env.impl.WorkspacesBypassAction, org.nd4j.linalg.env.impl.WorkspacesDebugAction, org.nd4j.linalg.env.impl.WorkspacesSpillAction, org.nd4j.linalg.env.impl.OmpNumThreadsAction, org.nd4j.linalg.env.impl.NDArrayUnpackAction;
 }
