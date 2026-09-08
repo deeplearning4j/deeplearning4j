@@ -12,7 +12,6 @@ import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.security.MessageDigest;
 import java.util.ArrayList;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Tag;
@@ -77,7 +76,7 @@ class AndroidSourceManifestDiagnosticTest {
         MessageDigest expected = MessageDigest.getInstance("SHA-256");
         for (String name : names) {
             byte[] bytes = Files.readAllBytes(file(name, "same"));
-            String digest = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
+            String digest = hex(MessageDigest.getInstance("SHA-256").digest(bytes));
             // GNU sha256sum prefixes escaped filename output with a backslash.
             // Preserve this existing sha256_file/cut behavior in the reference.
             if (name.contains("\n") || name.contains("\\")) {
@@ -87,7 +86,7 @@ class AndroidSourceManifestDiagnosticTest {
         }
         Path diagnostic = temp.resolve("before.txt");
         String actual = hash(diagnostic, names);
-        assertEquals(HexFormat.of().formatHex(expected.digest()), actual);
+        assertEquals(hex(expected.digest()), actual);
         assertEquals(actual, hash(null, names));
         assertEquals(2, Files.readAllLines(diagnostic).size(), "Newlines in paths must be escaped");
         assertTrue(Files.readString(diagnostic).contains("a\\ space.txt"));
@@ -140,5 +139,30 @@ class AndroidSourceManifestDiagnosticTest {
         assertTrue(stable.output().contains("RECEIPT_ALLOWED"));
     }
 
-    private record Result(int code, String output) {}
+    private static String hex(byte[] bytes) {
+        StringBuilder result = new StringBuilder(bytes.length * 2);
+        for (byte value : bytes) {
+            result.append(Character.forDigit((value & 0xff) >>> 4, 16));
+            result.append(Character.forDigit(value & 0x0f, 16));
+        }
+        return result.toString();
+    }
+
+    private static final class Result {
+        private final int code;
+        private final String output;
+
+        private Result(int code, String output) {
+            this.code = code;
+            this.output = output;
+        }
+
+        int code() {
+            return code;
+        }
+
+        String output() {
+            return output;
+        }
+    }
 }

@@ -6787,6 +6787,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
               slots_, numSlots_, 0, numSlots_ - 1, totalOutputSlots_, srcIdx);
           // Skip frozen constants — their buffers are protected by frozen refs.
           if (producerOp >= 0 && slots_[producerOp].frozenConstantSlot()) continue;
+          // Empty arrays (including optional attention outputs) intentionally have
+          // no payload. A missing DataBuffer does not make their shape-only binding stale.
+          if (outputSlots_[srcIdx]->hasValidShapeInfo() && outputSlots_[srcIdx]->isEmpty()) continue;
           auto* db = outputSlots_[srcIdx]->dataBuffer();
           if (db == nullptr || !db->isValid()) {
             outputSlots_[srcIdx] = nullptr;
@@ -6813,6 +6816,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
                           seg.exec.executionCount);
           }
         }
+        // Preserve intentional empty placeholders: restoring their logical shape as
+        // dense storage would materialize unused attention scores/logits on every prefill.
+        if (outputSlots_[slotIdx] != nullptr && outputSlots_[slotIdx]->hasValidShapeInfo() &&
+            outputSlots_[slotIdx]->isEmpty()) continue;
         // Validate existing entry — skip frozen constants (protected by frozen refs)
         if (outputSlots_[slotIdx] != nullptr && !slot.frozenConstantSlot()) {
           auto* db = outputSlots_[slotIdx]->dataBuffer();
