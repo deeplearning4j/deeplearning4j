@@ -333,6 +333,10 @@ SD_LIB_EXPORT bool isSerializeBlasCalls() ;
  */
 SD_LIB_EXPORT void setSerializeBlasCalls(bool serialize) ;
 
+/**
+ * Enable or disable verbose native diagnostics.
+ * @param reallyEnable true to enable verbose output, false to disable it
+ */
 SD_LIB_EXPORT void enableVerboseMode(bool reallyEnable) ;
 SD_LIB_EXPORT int getDeviceMajor(int device) ;
 SD_LIB_EXPORT int getDeviceMinor(int device) ;

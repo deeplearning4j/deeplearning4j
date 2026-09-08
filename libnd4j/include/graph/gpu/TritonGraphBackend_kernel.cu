@@ -482,7 +482,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
       } else {
         if (am.slotIndex < totalOutputSlots) a = outputSlots[am.slotIndex];
       }
-      if (!a || !a->specialBuffer()) continue;
+      if (!a || a->isEmpty() || !a->specialBuffer()) continue;
       size_t bytes = a->lengthOf() * a->sizeOfT();
       if (bytes == 0) continue;
       InputRange ir;
@@ -499,7 +499,10 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
       uintptr_t outAddr = reinterpret_cast<uintptr_t>(bufferPtrs[i]);
       NDArray* outArr = nullptr;
       if (am.slotIndex >= 0 && am.slotIndex < totalOutputSlots) outArr = outputSlots[am.slotIndex];
-      size_t outBytes = outArr ? (outArr->lengthOf() * outArr->sizeOfT()) : 0;
+      // Empty optional outputs retain logical shapes but use an ABI dummy pointer.
+      // They have no storage range to alias, redirect, or copy back into.
+      if (!outArr || outArr->isEmpty()) continue;
+      size_t outBytes = outArr->lengthOf() * outArr->sizeOfT();
       if (outBytes == 0) continue;
 
       for (auto& ir : inputRanges) {

@@ -741,12 +741,11 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE void fill(T *buffer, T value, sd::LongTyp
 }
 
 
-/**
- * Maps an outer-array index to the corresponding sub-array offset.
- * @param maxIdx the outer-array linear index
- * @param maxShapeInfo the outer-array shape information
- * @param minShapeInfo the sub-array shape information
- * @return the offset in the sub-array
+/*
+ * subArrayIndex maps the outer-array linear index maxIdx to a sub-array offset,
+ * using maxShapeInfo for the outer array and minShapeInfo for the sub-array.
+ * This native-only helper is skipped by JavaCPP; keep its documentation a plain
+ * comment so it cannot become Javadoc for the next emitted declaration.
  */
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType subArrayIndex(sd::LongType maxIdx, const sd::LongType *maxShapeInfo,
                                                                   const sd::LongType *minShapeInfo) {
@@ -3221,10 +3220,11 @@ SD_LIB_EXPORT SD_INLINE SD_HOST void updateStrides(const sd::LongType rank, cons
     }
   }
 }
-/**
-* @param toCopy the shape to copy
-* @return a copy of the original struct
-*/
+/*
+ * shapeCopy returns a copy of the ShapeInformation struct toCopy, with separate
+ * shape and stride arrays. This native-only helper is skipped by JavaCPP; keep
+ * its documentation a plain comment rather than Javadoc for a later declaration.
+ */
 SD_LIB_EXPORT SD_INLINE SD_HOST ShapeInformation *shapeCopy(ShapeInformation *toCopy) {
   auto copy = new ShapeInformation;
 
