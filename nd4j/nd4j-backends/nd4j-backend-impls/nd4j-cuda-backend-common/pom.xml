@@ -96,6 +96,21 @@
         <outputDirectory>${nd4j.cudaBackendCommon.outputDirectory}</outputDirectory>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>central-javadoc</id>
+                        <configuration>
+                            <!-- Include Moditect's descriptor alongside authored and
+                                 JavaCPP-generated sources in the ordinary Java root. -->
+                            <sourcepath>${project.basedir}/src/main/java${path.separator}${project.basedir}/src/main/java9</sourcepath>
+                            <subpackages>org.nd4j</subpackages>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.moditect</groupId>
                 <artifactId>moditect-maven-plugin</artifactId>
             </plugin>

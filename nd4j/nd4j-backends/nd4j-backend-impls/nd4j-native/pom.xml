@@ -61,13 +61,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>${dependency.groupId}</groupId>
-            <artifactId>${dependency.artifactId}</artifactId>
-            <version>${dependency.version}</version>
-            <type>${dependency.packaging}</type>
-            <classifier>${dependency.classifier}</classifier>
-        </dependency>
-        <dependency>
             <groupId>org.bytedeco</groupId>
             <artifactId>javacpp</artifactId>
         </dependency>
@@ -285,6 +278,25 @@
     </build>
 
     <profiles>
+        <!-- Keep the published platform dependency out of the source build, where
+             no-platform-dependency replaces its coordinates with the parent POM. -->
+        <profile>
+            <id>consumer-platform-dependency</id>
+            <activation>
+                <file>
+                    <missing>${basedir}</missing>
+                </file>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>${dependency.groupId}</groupId>
+                    <artifactId>${dependency.artifactId}</artifactId>
+                    <version>${dependency.version}</version>
+                    <type>${dependency.packaging}</type>
+                    <classifier>${dependency.classifier}</classifier>
+                </dependency>
+            </dependencies>
+        </profile>
 
         <profile>
             <id>os-unix-flags</id>
