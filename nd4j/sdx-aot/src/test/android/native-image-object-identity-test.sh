@@ -53,6 +53,10 @@ hash_native_name_changed="$(sdx_native_image_jar_analysis_sha256 "$archive_nativ
   fail "native closure entry-name change did not invalidate analysis identity"
 
 SOURCE_MANIFEST_SHA256=source
+CLASSES_SHA256=classes
+MODEL_CLASSES_SHA256=model-classes
+FRESH_CLASS_BUILDS_SHA256=fresh-class-builds
+CLASSPATH_MANIFEST_SHA256=classpath
 RUNTIME_ANALYSIS_MANIFEST_SHA256=runtime
 MAVEN_DEPENDENCY_ARGUMENTS_SHA256=maven-args
 JAVACPP_REACHABILITY_GENERATOR_SHA256=generator

@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.nd4j.jita.constant;
+package org.nd4j.linalg.api.ndarray;
 
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -28,7 +28,7 @@ import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.ndarray.BaseShapeInfoProvider;
+import org.nd4j.linalg.cache.ConstantProtector;
 import org.nd4j.linalg.factory.Nd4j;
 
 import org.nd4j.linalg.api.memory.MemoryWorkspace;

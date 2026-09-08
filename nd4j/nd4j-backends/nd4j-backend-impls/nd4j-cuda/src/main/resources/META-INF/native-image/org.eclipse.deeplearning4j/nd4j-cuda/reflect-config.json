@@ -658,7 +658,7 @@
     "allPublicFields": true
   },
   {
-    "name": "org.nd4j.linalg.jcublas.CachedShapeInfoProvider",
+    "name": "org.nd4j.linalg.api.ndarray.CachedShapeInfoProvider",
     "allDeclaredConstructors": true,
     "allPublicConstructors": true,
     "allDeclaredMethods": true,
@@ -703,7 +703,7 @@
     "allPublicFields": true
   },
   {
-    "name": "org.nd4j.jita.constant.DefaultDeviceIDProvider",
+    "name": "org.nd4j.linalg.api.concurrency.DefaultDeviceIDProvider",
     "allDeclaredConstructors": true,
     "allPublicConstructors": true,
     "allDeclaredMethods": true,
@@ -712,7 +712,7 @@
     "allPublicFields": true
   },
   {
-    "name": "org.nd4j.jita.constant.ProtectedCachedShapeInfoProvider",
+    "name": "org.nd4j.linalg.api.ndarray.ProtectedCachedShapeInfoProvider",
     "allDeclaredConstructors": true,
     "allPublicConstructors": true,
     "allDeclaredMethods": true,

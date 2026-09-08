@@ -6,10 +6,10 @@
   "finishedAt" : "2026-09-02T14:21:56.368204671Z",
   "sources" : [ ],
   "graphPath" : "/home/agibsonccc/Documents/GitHub/deeplearning4j/nd4j/sdx-aot/data/crawls/sdx-aot-knowledge/graph.kgraph",
-  "graphEntityCount" : 1050,
-  "graphRelationCount" : 2616,
-  "codeEntityCount" : 610,
+  "graphEntityCount" : 1076,
+  "graphRelationCount" : 2656,
+  "codeEntityCount" : 621,
   "codeProjectionVersion" : 3,
   "codeProjectionStatus" : "COMPLETED",
-  "codeProjectionUpdatedAt" : "2026-09-08T02:57:04.414282496Z"
+  "codeProjectionUpdatedAt" : "2026-09-08T03:32:04.536545526Z"
 }

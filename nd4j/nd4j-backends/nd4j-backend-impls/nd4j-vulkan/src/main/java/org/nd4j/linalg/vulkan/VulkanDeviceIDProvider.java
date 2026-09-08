@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.vulkan;
 
-import org.nd4j.jita.constant.DeviceIDProvider;
+import org.nd4j.linalg.api.concurrency.DeviceIDProvider;
 
 /**
  * DeviceIDProvider for the Vulkan compute backend.

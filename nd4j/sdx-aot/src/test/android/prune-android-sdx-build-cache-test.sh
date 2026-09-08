@@ -120,6 +120,23 @@ done
 [[ "$(realpath -e -- "$TEST_ROOT/aot-sdk/current")" == "$aot_generations/$aot_current" ]] ||
   fail "AOT current symlink changed"
 
+# A completed object whose subsequent SDK packaging failed has no generation
+# reference yet. The APK wrapper's bounded policy must retain it on the next run.
+fallback="$TEST_ROOT/aot-sdk/work/native-image-object-stages/$aot_fallback_stage"
+put_marker "$fallback/libsdx_llm.o"
+put_receipt "$fallback/build-receipt" object_stage_inputs_sha256 "$aot_fallback_stage"
+for attempt in 1 2; do
+  "$PRUNE_SCRIPT" --build-root "$TEST_ROOT" --retain-generations 1 \
+    --retain-managed-stages 0 --retain-object-stages 1 >/dev/null
+  [[ -f "$fallback/libsdx_llm.o" && -f "$fallback/build-receipt" ]] ||
+    fail "retry $attempt pruned a completed AOT object after SDK packaging failure"
+  [[ -f "$TEST_ROOT/aot-sdk/work/native-image-object-stages/$aot_current_stage/keep" ]] ||
+    fail "retry $attempt pruned the active generation's object"
+done
+[[ ! -d "$aot_generations/$aot_rollback" ]] || fail "obsolete rollback generation retained"
+[[ ! -d "$TEST_ROOT/aot-sdk/work/native-image-object-stages/$aot_rollback_stage" ]] ||
+  fail "more than one unreferenced AOT fallback retained"
+
 exec {held_provider_lock_fd}>"$TEST_ROOT/accelerator/tensor-g3/.build.lock"
 flock "$held_provider_lock_fd"
 if "$PRUNE_SCRIPT" --build-root "$TEST_ROOT" >/dev/null 2>&1; then

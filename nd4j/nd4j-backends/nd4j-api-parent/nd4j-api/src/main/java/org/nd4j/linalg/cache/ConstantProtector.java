@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.nd4j.jita.constant;
+package org.nd4j.linalg.cache;
 
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.common.primitives.Pair;

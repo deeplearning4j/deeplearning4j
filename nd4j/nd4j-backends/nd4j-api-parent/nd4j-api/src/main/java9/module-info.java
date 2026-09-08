@@ -81,6 +81,7 @@ open module nd4j.api {
     exports org.nd4j.linalg.api.buffer.allocation;
     exports org.nd4j.linalg.api.buffer.factory;
     exports org.nd4j.linalg.api.buffer.util;
+    // Backend-neutral device ID providers live with the affinity API (ADR 0121).
     exports org.nd4j.linalg.api.concurrency;
     exports org.nd4j.linalg.api.environment;
     exports org.nd4j.linalg.api.iter;
@@ -92,6 +93,7 @@ open module nd4j.api {
     exports org.nd4j.linalg.api.memory.pointers;
     exports org.nd4j.linalg.api.memory.provider;
     exports org.nd4j.linalg.api.memory.stash;
+    // Shared cached shape providers belong to the API, not the CUDA package.
     exports org.nd4j.linalg.api.ndarray;
     exports org.nd4j.linalg.api.ops;
     exports org.nd4j.linalg.api.ops.aggregates;
@@ -169,6 +171,7 @@ open module nd4j.api {
     exports org.nd4j.linalg.api.shape;
     exports org.nd4j.linalg.api.shape.loop.coordinatefunction;
     exports org.nd4j.linalg.api.shape.options;
+    // Includes ConstantProtector shared by all backends.
     exports org.nd4j.linalg.cache;
     exports org.nd4j.linalg.checkutil;
     exports org.nd4j.linalg.compression;

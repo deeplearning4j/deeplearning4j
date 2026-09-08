@@ -20,6 +20,26 @@ Release run 34169797114 failed `nd4j-native-api` central-javadoc because `org.nd
 
 The shared native BLAS API has one module owner, removing the split package at its source. Class names and service-provider behavior remain unchanged, but consumers must use aligned versions of the two artifacts rather than mixing old and new package layouts. Build, Javadoc, and service-discovery qualification must run remotely.
 
+## Backend-neutral device and cache package migration
+
+Release run 34181626837 (`f1f2607db7`) exposed two further split packages between `nd4j.api` and `nd4j.cuda.backend.common`: `org.nd4j.jita.constant` and `org.nd4j.linalg.jcublas`. Their shared classes already reside in the API artifact but must not retain CUDA-owned package names.
+
+Relocate the following classes within `nd4j-api`, changing only package declarations and imports:
+
+| Class | Previous package | API-owned package |
+| --- | --- | --- |
+| `DefaultDeviceIDProvider` | `org.nd4j.jita.constant` | `org.nd4j.linalg.api.concurrency` |
+| `DeviceIDProvider` | `org.nd4j.jita.constant` | `org.nd4j.linalg.api.concurrency` |
+| `ConstantProtector` | `org.nd4j.jita.constant` | `org.nd4j.linalg.cache` |
+| `ProtectedCachedShapeInfoProvider` | `org.nd4j.jita.constant` | `org.nd4j.linalg.api.ndarray` |
+| `CachedShapeInfoProvider` | `org.nd4j.linalg.jcublas` | `org.nd4j.linalg.api.ndarray` |
+
+These destination packages are already exported by `nd4j.api`; the descriptor documents their ownership. Do not export the old packages from the API or retain forwarding classes, which would recreate the split. CUDA handlers and other CUDA implementations retain their backend packages. Update Java imports (including the previously implicit same-package `ConstantProtector` reference in `ProtectedCudaConstantHandler`), native-image reflection registrations, and CPU/minimizer/TPU/Vulkan/CUDA/ZLUDA backend properties together.
+
+The singleton instances, device-keyed caches, synchronization, workspace exclusion, constant-buffer lifetime protection, shape handling, and purge behavior are unchanged. Unlike the native BLAS artifact relocation above, this package migration changes public binary names: downstream imports, reflection registrations, and custom provider configuration must migrate, and consumers must rebuild against aligned API/backend versions. No compatibility shim or alternate execution path is introduced.
+
+Validation for this follow-up is static only locally; consolidated build, JPMS/Javadoc, native-image, and backend execution qualification remains remote.
+
 ## References
 
 - ADR 0016: Java 9+ Support

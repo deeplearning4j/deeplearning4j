@@ -1053,6 +1053,32 @@ validate_native_image_object_stage() {
   receipt_has "$receipt" "object_sha256=$object_sha256"
 }
 
+# Report all analysis identity differences before spending time rebuilding Graal.
+# Keep this outside the identity helper: diagnostics must not change its cache key.
+compatible_native_image_identity() {
+  local receipt="$1"
+  local expected key old_key old_value cached mismatch=0
+  while IFS= read -r expected; do
+    case "$expected" in
+      source_manifest_sha256=*) continue ;;
+    esac
+    if ! receipt_has "$receipt" "$expected"; then
+      key="${expected%%=*}"
+      cached='<missing>'
+      while IFS='=' read -r old_key old_value; do
+        if [[ "$old_key" == "$key" ]]; then
+          cached="$old_value"
+          break
+        fi
+      done <"$receipt"
+      printf 'AOT cache identity mismatch [%s]: %s cached=%s current=%s\n' \
+        "$receipt" "$key" "$cached" "${expected#*=}" >&2
+      mismatch=1
+    fi
+  done < <(sdx_native_image_object_identity_lines)
+  return "$mismatch"
+}
+
 # A final-link or JNI transport edit changes the full SDK source receipt but not
 # Graal's managed analysis closure. Accept an older object-stage key only when
 # every analysis-affecting identity line still matches; the broad source manifest
@@ -1062,17 +1088,12 @@ validate_compatible_native_image_object_stage() {
   local receipt="$stage/build-receipt"
   local object="$stage/libsdx_llm.o"
   local header="$BUILD_ROOT/compatible-libsdx_llm.o.elf-header"
-  local expected object_sha256
+  local object_sha256
   [[ -d "$stage" && ! -L "$stage" ]] || return 1
   ! find "$stage" -type l -print -quit | grep -q . || return 1
   ! find "$stage" -perm /0222 -print -quit | grep -q . || return 1
   [[ -f "$receipt" && ! -L "$receipt" && -s "$receipt" ]] || return 1
-  while IFS= read -r expected; do
-    case "$expected" in
-      source_manifest_sha256=*) continue ;;
-    esac
-    receipt_has "$receipt" "$expected" || return 1
-  done < <(sdx_native_image_object_identity_lines)
+  compatible_native_image_identity "$receipt" || return 1
   validate_native_image_object "$object" "$header" || return 1
   object_sha256="$(sha256_file "$object")"
   receipt_has "$receipt" "object_sha256=$object_sha256"
