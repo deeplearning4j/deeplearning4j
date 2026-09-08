@@ -256,7 +256,7 @@ MAVEN_VERSION_SHA256="$(
 JAVA_VERSION_SHA256="$(
     { env -u JAVA_TOOL_OPTIONS "$JAVA_HOME_REAL/bin/java" -version; } 2>&1 | sha256sum | cut -d ' ' -f 1
 )"
-for command_name in cmake cargo rustup unzip zip sha256sum realpath mktemp git stat sort find grep; do
+for command_name in cmake cargo rustup unzip zip sha256sum realpath mktemp git stat sort find grep diff; do
     if ! command -v "$command_name" >/dev/null 2>&1; then
         echo "Required build command not found: $command_name" >&2
         exit 1
@@ -356,8 +356,15 @@ archive_member_sha256() {
 }
 
 source_tree_manifest_sha256() {
+    local diagnostic="$1"
+    shift
     local relative file mode digest
     local -a roots=("$@")
+    # Keep the receipt's NUL-delimited hash unchanged. The optional readable
+    # snapshot records the very same values, including escaped unusual paths.
+    if [[ -n "$diagnostic" ]]; then
+        : > "$diagnostic"
+    fi
     local -a excludes=(
         ':(top,exclude)libnd4j/cmake/tests/**'
     )
@@ -370,6 +377,9 @@ source_tree_manifest_sha256() {
                 mode="$(stat -c '%a' "$file")"
                 digest="$(sha256_file "$file")"
                 printf '%s\0%s\0%s\0' "$relative" "$mode" "$digest"
+                if [[ -n "$diagnostic" ]]; then
+                    printf '%q %s %s\n' "$relative" "$mode" "$digest" >> "$diagnostic"
+                fi
             done
     } | sha256sum | cut -d ' ' -f 1
 }
@@ -378,14 +388,14 @@ native_source_manifest_sha256() {
     # The provider DSO is compiled exclusively from libnd4j. Java, tokenizer,
     # and application changes must invalidate the full AAR, never the native
     # producer or its compiler cache.
-    source_tree_manifest_sha256 libnd4j
+    source_tree_manifest_sha256 "" libnd4j
 }
 
 source_manifest_sha256() {
     # CMake contract tests are not inputs to the Android provider build. Keep
     # unrelated test edits out of the production receipt while retaining every
     # native, Java, profile, and build-script input used by the full AAR.
-    source_tree_manifest_sha256 \
+    source_tree_manifest_sha256 "${1:-}" \
         libnd4j \
         nd4j/sdx-aot \
         nd4j/nd4j-tokenizers \
@@ -501,7 +511,13 @@ NDK_REVISION_FILE="$ANDROID_NDK_ARG/source.properties"
     exit 1
 }
 NDK_REVISION_SHA256="$(sha256_file "$NDK_REVISION_FILE")"
-SOURCE_MANIFEST_SHA256="$(source_manifest_sha256)"
+# Retain both snapshots even on failure; temporary-state cleanup must not erase
+# the evidence needed to diagnose a source-stability rejection.
+SOURCE_MANIFEST_DIAGNOSTICS="$(mktemp -d "$DIST_DIR/source-manifests.XXXXXX")"
+SOURCE_MANIFEST_BEFORE="$SOURCE_MANIFEST_DIAGNOSTICS/before.txt"
+SOURCE_MANIFEST_AFTER="$SOURCE_MANIFEST_DIAGNOSTICS/after.txt"
+SOURCE_MANIFEST_SHA256="$(source_manifest_sha256 "$SOURCE_MANIFEST_BEFORE")"
+echo "Source manifest diagnostics: $SOURCE_MANIFEST_DIAGNOSTICS"
 NATIVE_SOURCE_MANIFEST_SHA256="$(native_source_manifest_sha256)"
 MAVEN_TARGET_QUARANTINE="$(mktemp -d "$OUTPUT_ROOT/quarantined-maven-targets.XXXXXX")"
 FRESH_JAVA_BUILDS_TMP="$(mktemp "$DIST_DIR/fresh-java-builds.tmp.XXXXXX")"
@@ -806,9 +822,11 @@ FINAL_JNI_BRIDGE_MEMBER="jni/arm64-v8a/libjnisdx.so"
 FINAL_JNI_BRIDGE_SHA256="$(
     archive_member_sha256 "$FINAL_AAR_REAL" "$FINAL_JNI_BRIDGE_MEMBER"
 )"
-CURRENT_SOURCE_MANIFEST_SHA256="$(source_manifest_sha256)"
+CURRENT_SOURCE_MANIFEST_SHA256="$(source_manifest_sha256 "$SOURCE_MANIFEST_AFTER")"
 [[ "$CURRENT_SOURCE_MANIFEST_SHA256" == "$SOURCE_MANIFEST_SHA256" ]] || {
     echo "Source tree changed during Android accelerator build" >&2
+    echo "Before: $SOURCE_MANIFEST_BEFORE; after: $SOURCE_MANIFEST_AFTER" >&2
+    diff -u -- "$SOURCE_MANIFEST_BEFORE" "$SOURCE_MANIFEST_AFTER" >&2 || true
     exit 1
 }
 FRESH_JAVA_BUILDS="$FINAL_AAR.fresh-java-builds"

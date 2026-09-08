@@ -1,0 +1,144 @@
+/*
+ * Copyright (c) Eclipse Deeplearning4j
+ * SPDX-License-Identifier: Apache-2.0
+ */
+package org.nd4j.dsp.model;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.HexFormat;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+/** Executes the production hash/guard with a fixture file inventory, never invoking Git. */
+@Tag("source-lint")
+class AndroidSourceManifestDiagnosticTest {
+    @TempDir Path temp;
+
+    private String source() throws Exception {
+        Path root = Path.of("").toAbsolutePath().normalize().getParent();
+        return Files.readString(root.resolve("libnd4j/tools/mobile/build-android-accelerator.sh"));
+    }
+
+    private String functions() throws Exception {
+        String text = source();
+        return text.substring(text.indexOf("source_tree_manifest_sha256() {"),
+                text.indexOf("native_source_manifest_sha256() {"));
+    }
+
+    private Path file(String name, String content) throws Exception {
+        Path path = temp.resolve(name);
+        Files.createDirectories(path.getParent());
+        Files.writeString(path, content);
+        Files.setPosixFilePermissions(path, PosixFilePermissions.fromString("rw-r--r--"));
+        return path;
+    }
+
+    private Result run(String body, String... arguments) throws Exception {
+        String script = "set -euo pipefail\nREPO_ROOT=$1; shift\n"
+                + "sha256_file() { sha256sum -- \"$1\" | cut -d ' ' -f 1; }\n"
+                + "git() { printf '%s\\0' \"${FILES[@]}\"; }\n"
+                + functions() + body;
+        List<String> command = new ArrayList<>(List.of("bash", "-c", script, "fixture", temp.toString()));
+        command.addAll(List.of(arguments));
+        Path output = Files.createTempFile(temp, "output-", ".txt");
+        Process process = new ProcessBuilder(command).redirectErrorStream(true)
+                .redirectOutput(output.toFile()).start();
+        if (!process.waitFor(20, TimeUnit.SECONDS)) {
+            process.destroyForcibly();
+            fail("Manifest fixture exceeded 20 seconds");
+        }
+        return new Result(process.exitValue(), Files.readString(output));
+    }
+
+    private String hash(Path diagnostic, String... names) throws Exception {
+        List<String> arguments = new ArrayList<>();
+        arguments.add(diagnostic == null ? "" : diagnostic.toString());
+        arguments.addAll(List.of(names));
+        Result result = run("diagnostic=$1; shift; FILES=(\"$@\")\n"
+                + "source_tree_manifest_sha256 \"$diagnostic\" libnd4j\n",
+                arguments.toArray(String[]::new));
+        assertEquals(0, result.code(), result.output());
+        return result.output().trim();
+    }
+
+    @Test
+    void diagnosticsPreserveExistingNulDelimitedDigestAndEscapePaths() throws Exception {
+        String[] names = {"libnd4j/a space.txt", "libnd4j/b\nline.txt"};
+        MessageDigest expected = MessageDigest.getInstance("SHA-256");
+        for (String name : names) {
+            byte[] bytes = Files.readAllBytes(file(name, "same"));
+            String digest = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
+            // GNU sha256sum prefixes escaped filename output with a backslash.
+            // Preserve this existing sha256_file/cut behavior in the reference.
+            if (name.contains("\n") || name.contains("\\")) {
+                digest = "\\" + digest;
+            }
+            expected.update((name + "\0" + "644\0" + digest + "\0").getBytes(StandardCharsets.UTF_8));
+        }
+        Path diagnostic = temp.resolve("before.txt");
+        String actual = hash(diagnostic, names);
+        assertEquals(HexFormat.of().formatHex(expected.digest()), actual);
+        assertEquals(actual, hash(null, names));
+        assertEquals(2, Files.readAllLines(diagnostic).size(), "Newlines in paths must be escaped");
+        assertTrue(Files.readString(diagnostic).contains("a\\ space.txt"));
+        assertTrue(Files.readString(diagnostic).contains("b\\nline.txt"));
+        hash(diagnostic, names);
+        assertEquals(2, Files.readAllLines(diagnostic).size(), "Snapshots must replace, not append");
+    }
+
+    @Test
+    void contentModeAdditionAndDeletionRemainReceiptInvalidating() throws Exception {
+        String name = "libnd4j/source.cpp";
+        Path input = file(name, "original");
+        String before = hash(temp.resolve("before.txt"), name);
+        Files.writeString(input, "changed");
+        assertNotEquals(before, hash(temp.resolve("content.txt"), name));
+        Files.writeString(input, "original");
+        Files.setPosixFilePermissions(input, PosixFilePermissions.fromString("rwxr-xr-x"));
+        assertNotEquals(before, hash(temp.resolve("mode.txt"), name));
+        Files.setPosixFilePermissions(input, PosixFilePermissions.fromString("rw-r--r--"));
+        file("libnd4j/added.cpp", "added");
+        assertNotEquals(before, hash(temp.resolve("added.txt"), name, "libnd4j/added.cpp"));
+        Files.delete(input);
+        assertNotEquals(before, hash(temp.resolve("deleted.txt"), name));
+        assertEquals("", Files.readString(temp.resolve("deleted.txt")));
+    }
+
+    @Test
+    void sourceGuardStillFailsClosedAndReportsExactChangedPath() throws Exception {
+        String name = "libnd4j/changed.cpp";
+        Path input = file(name, "original");
+        Path beforeFile = temp.resolve("before.txt");
+        String before = hash(beforeFile, name);
+        Files.writeString(input, "changed");
+        Path afterFile = temp.resolve("after.txt");
+        String after = hash(afterFile, name);
+        String text = source();
+        String guard = text.substring(text.indexOf("[[ \"$CURRENT_SOURCE_MANIFEST_SHA256\""),
+                text.indexOf("FRESH_JAVA_BUILDS=\"$FINAL_AAR.fresh-java-builds\""));
+        String bindings = "SOURCE_MANIFEST_SHA256=$1; CURRENT_SOURCE_MANIFEST_SHA256=$2; "
+                + "SOURCE_MANIFEST_BEFORE=$3; SOURCE_MANIFEST_AFTER=$4\n";
+        Result changed = run(bindings + guard + "printf 'RECEIPT_ALLOWED\\n'\n",
+                before, after, beforeFile.toString(), afterFile.toString());
+        assertEquals(1, changed.code(), changed.output());
+        assertTrue(changed.output().contains("Source tree changed during Android accelerator build"));
+        assertTrue(changed.output().contains(name), changed.output());
+        assertFalse(changed.output().contains("RECEIPT_ALLOWED"));
+        Result stable = run(bindings + guard + "printf 'RECEIPT_ALLOWED\\n'\n",
+                before, before, beforeFile.toString(), beforeFile.toString());
+        assertEquals(0, stable.code(), stable.output());
+        assertTrue(stable.output().contains("RECEIPT_ALLOWED"));
+    }
+
+    private record Result(int code, String output) {}
+}
