@@ -34,6 +34,7 @@
 #include <graph/GraphBackendResolver.h>
 #include <graph/PlanExecutionContext.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspDeviceDispatch.h>
 #include <graph/DspPhaseUtils.h>
 #include <graph/gpu/CapturedModuleRegistry.h>
 #include <graph/DspConstants.h>

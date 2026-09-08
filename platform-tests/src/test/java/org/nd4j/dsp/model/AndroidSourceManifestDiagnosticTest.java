@@ -114,6 +114,44 @@ class AndroidSourceManifestDiagnosticTest {
     }
 
     @Test
+    void cudaOnlyTranslationUnitsDoNotInvalidateAndroidReceipts() throws Exception {
+        String cpu = "libnd4j/include/graph/cpu/NativeDynamicShapePlan_cuda_stubs.cpp";
+        String graph = "libnd4j/include/graph/impl/NativeDynamicShapePlan_gpubackend.cu";
+        String helper = "libnd4j/include/ops/declarable/helpers/cuda/ggml_qmatmul.cu";
+        file(cpu, "android input");
+        Path graphFile = file(graph, "cuda original");
+        file(helper, "cuda original");
+        String before = hash(null, cpu);
+        Path diagnostic = temp.resolve("android.txt");
+        assertEquals(before, hash(diagnostic, cpu, graph, helper));
+        assertEquals(1, Files.readAllLines(diagnostic).size());
+        Files.writeString(graphFile, "cuda changed during Android build");
+        assertEquals(before, hash(diagnostic, cpu, graph, helper));
+        Files.delete(graphFile);
+        assertEquals(before, hash(null, cpu, graph, helper));
+    }
+
+    @Test
+    void sharedHeadersCpuSourcesAndBuildInputsStillInvalidateAndroidReceipts() throws Exception {
+        String[] names = {
+                "libnd4j/include/graph/impl/NativeDynamicShapePlan.h",
+                "libnd4j/include/ops/declarable/helpers/cuda/shared.cuh",
+                "libnd4j/include/ops/declarable/helpers/cuda/generated.cu.in",
+                "libnd4j/include/ops/declarable/helpers/cpu/ggml_qmatmul.cpp",
+                "libnd4j/include/graph/cpu/NativeDynamicShapePlan_cuda_stubs.cpp",
+                "libnd4j/include/helpers/shape.h",
+                "libnd4j/cmake/MainBuildFlow.cmake",
+                "libnd4j/tools/mobile/build-android-accelerator.sh"
+        };
+        for (String name : names) {
+            Path input = file(name, "original");
+            String before = hash(null, name);
+            Files.writeString(input, "changed");
+            assertNotEquals(before, hash(null, name), name);
+        }
+    }
+
+    @Test
     void sourceGuardStillFailsClosedAndReportsExactChangedPath() throws Exception {
         String name = "libnd4j/changed.cpp";
         Path input = file(name, "original");

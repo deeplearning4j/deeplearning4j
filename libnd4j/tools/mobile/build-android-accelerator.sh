@@ -372,6 +372,13 @@ source_tree_manifest_sha256() {
         git -C "$REPO_ROOT" ls-files -z --cached --others --exclude-standard -- "${roots[@]}" "${excludes[@]}" |
             LC_ALL=C sort -z |
             while IFS= read -r -d '' relative; do
+                # MainBuildFlow admits these translation units only under SD_CUDA,
+                # which the Android profiles disable. Keep shared headers and all
+                # build scripts in the manifest, even inside these directories.
+                case "$relative" in
+                    libnd4j/include/graph/impl/*.cu|libnd4j/include/ops/declarable/helpers/cuda/*.cu)
+                        continue ;;
+                esac
                 file="$REPO_ROOT/$relative"
                 [[ -f "$file" ]] || continue
                 mode="$(stat -c '%a' "$file")"
