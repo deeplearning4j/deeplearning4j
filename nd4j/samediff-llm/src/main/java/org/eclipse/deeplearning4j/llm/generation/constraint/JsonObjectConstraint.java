@@ -20,41 +20,21 @@
 
 package org.eclipse.deeplearning4j.llm.generation.constraint;
 
+import org.nd4j.shade.jackson.core.JsonFactory;
+import org.nd4j.shade.jackson.core.JsonParser;
+import org.nd4j.shade.jackson.core.JsonToken;
+import org.nd4j.shade.jackson.core.async.ByteArrayFeeder;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+
 /**
  * A {@link TextConstraint} that accepts exactly one syntactically valid JSON object.
  *
- * <p>The constraint uses an incremental, single-pass state machine over the accumulated
- * character stream to decide whether a candidate extension is a legal JSON-object prefix.
- * It does <em>not</em> use a real JSON parser; instead, it tracks the minimal structural
- * invariants needed to enforce correct nesting for tool-calling use cases:</p>
- *
- * <ul>
- *   <li>String boundaries ({@code "}) — including backslash escape handling inside strings</li>
- *   <li>Brace depth ({@code { }}) — must never go negative; object is complete when it
- *       returns to 0 after the opening <code>&#123;</code></li>
- *   <li>Bracket depth ({@code [ ]}) — must never go negative</li>
- * </ul>
- *
- * <p>The state machine deliberately ignores JSON value-level validity (e.g., numeric
- * format, keyword spelling) to stay O(n) and allocation-free. This is intentional:
- * the LLM's probability distribution already encodes syntactic preferences; we only
- * enforce the structural skeleton.</p>
- *
- * <h2>Acceptance rule</h2>
- * <p>A string is <em>accepting</em> (complete) when:</p>
- * <ul>
- *   <li>It starts with <code>&#123;</code></li>
- *   <li>brace depth == 0</li>
- *   <li>bracket depth == 0</li>
- *   <li>not inside a string literal</li>
- *   <li>total trimmed length &gt; 0</li>
- * </ul>
- *
- * <h2>Extension rule</h2>
- * <p>{@code canExtend(currentText, piece)} returns {@code true} when
- * {@code currentText + piece} is still a valid JSON-object prefix — i.e., the state
- * machine reports brace_depth &gt;= 0 and bracket_depth &gt;= 0 and the combined string
- * starts with (or could start with) <code>&#123;</code>.</p>
+ * <p>Jackson's non-blocking parser validates syntax without treating the end of a
+ * candidate token piece as end-of-input. Unfinished strings, escapes, numbers and
+ * literals remain valid prefixes; invalid keys, values and nesting are rejected.
+ * Exactly one root object is permitted, with only JSON whitespace after it.</p>
  *
  * @author Eclipse Deeplearning4j Contributors
  * @see ToolCallConstraint
@@ -64,95 +44,89 @@ public class JsonObjectConstraint implements TextConstraint {
     /** Type identifier returned by {@link #type()}. */
     public static final String TYPE = "json_object";
 
-    /**
-     * Compact holder for the result of running the state machine over a string.
-     */
-    private static final class ParseState {
-        boolean inString;
-        boolean escapeNext;
-        int braceDepth;
-        int bracketDepth;
-        /** Set to true the moment an invariant is violated (depth goes negative). */
-        boolean invalid;
+    private static final JsonFactory JSON_FACTORY = new JsonFactory()
+            .disable(JsonFactory.Feature.CANONICALIZE_FIELD_NAMES)
+            .disable(JsonFactory.Feature.INTERN_FIELD_NAMES);
 
-        ParseState() {
-            this.inString = false;
-            this.escapeNext = false;
-            this.braceDepth = 0;
-            this.bracketDepth = 0;
-            this.invalid = false;
-        }
+    private static final class ParseState {
+        boolean invalid;
+        boolean complete;
     }
 
-    /**
-     * Run the JSON-structure state machine over {@code text} and return the resulting
-     * parse state.
-     *
-     * <p>The machine is deliberately not a full JSON parser — it only tracks nesting
-     * depth and string boundaries so it can remain O(n) and allocation-free.</p>
-     *
-     * @param text the string to analyse
-     * @return the final state after processing every character
-     */
     static ParseState runStateMachine(String text) {
         ParseState s = new ParseState();
-        for (int i = 0, len = text.length(); i < len; i++) {
-            char c = text.charAt(i);
-
-            if (s.inString) {
-                if (s.escapeNext) {
-                    // Any character following a backslash is consumed as an escape sequence.
-                    s.escapeNext = false;
-                } else if (c == '\\') {
-                    s.escapeNext = true;
-                } else if (c == '"') {
-                    s.inString = false;
-                } else if (c <= 0x1f) {
-                    // RFC 8259 requires control characters in strings to be escaped.
-                    s.invalid = true;
-                    return s;
+        if (!hasValidLiteralPrefixes(text)) {
+            s.invalid = true;
+            return s;
+        }
+        byte[] input = text.getBytes(StandardCharsets.UTF_8);
+        try (JsonParser parser = JSON_FACTORY.createNonBlockingByteArrayParser()) {
+            ((ByteArrayFeeder) parser.getNonBlockingInputFeeder()).feedInput(input, 0, input.length);
+            int depth = 0;
+            boolean rootStarted = false;
+            JsonToken token;
+            while ((token = parser.nextToken()) != JsonToken.NOT_AVAILABLE && token != null) {
+                if (!rootStarted) {
+                    if (token != JsonToken.START_OBJECT) {
+                        s.invalid = true;
+                        return s;
+                    }
+                    rootStarted = true;
                 }
-                // All other characters inside a string are just content — skip depth tracking.
-            } else {
-                switch (c) {
-                    case '{':
-                        s.braceDepth++;
-                        break;
-                    case '}':
-                        s.braceDepth--;
-                        if (s.braceDepth < 0) {
-                            s.invalid = true;
-                            return s;
+                if (token == JsonToken.START_OBJECT || token == JsonToken.START_ARRAY) {
+                    depth++;
+                } else if (token == JsonToken.END_OBJECT || token == JsonToken.END_ARRAY) {
+                    depth--;
+                    if (depth == 0) {
+                        // Do not allow a second root or even an incomplete trailing token.
+                        int consumed = Math.toIntExact(parser.getCurrentLocation().getByteOffset());
+                        for (int i = consumed; i < input.length; i++) {
+                            if (!isJsonWhitespace((char) input[i])) {
+                                s.invalid = true;
+                                return s;
+                            }
                         }
-                        break;
-                    case '[':
-                        s.bracketDepth++;
-                        break;
-                    case ']':
-                        s.bracketDepth--;
-                        if (s.bracketDepth < 0) {
-                            s.invalid = true;
-                            return s;
-                        }
-                        break;
-                    case '"':
-                        s.inString = true;
-                        break;
-                    default:
-                        // JSON admits only SP, HTAB, LF, and CR as structural whitespace.
-                        // Reject other control characters instead of giving generation a
-                        // non-advancing form-feed/vertical-tab loop.
-                        if (c <= 0x1f && !isJsonWhitespace(c)) {
-                            s.invalid = true;
-                            return s;
-                        }
-                        // Numbers, colons, commas, and legal JSON whitespace have no
-                        // structural impact in this deliberately lightweight automaton.
-                        break;
+                        s.complete = true;
+                        return s;
+                    }
                 }
             }
+        } catch (IOException e) {
+            s.invalid = true;
         }
         return s;
+    }
+
+    // The async parser accumulates malformed keywords until a delimiter arrives.
+    // A token candidate must already be a possible prefix, not merely need more bytes.
+    private static boolean hasValidLiteralPrefixes(String text) {
+        boolean inString = false;
+        boolean escaped = false;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (inString) {
+                if (escaped) escaped = false;
+                else if (c == '\\') escaped = true;
+                else if (c == '"') inString = false;
+                continue;
+            }
+            if (c == '"') {
+                inString = true;
+                continue;
+            }
+            String literal = c == 't' ? "true" : c == 'f' ? "false" : c == 'n' ? "null" : null;
+            if (literal == null) continue;
+            for (int j = 0; j < literal.length(); j++) {
+                if (i + j == text.length()) return true;
+                if (text.charAt(i + j) != literal.charAt(j)) return false;
+            }
+            i += literal.length() - 1;
+            if (i + 1 < text.length()) {
+                char next = text.charAt(i + 1);
+                if (!isJsonWhitespace(next) && next != ',' && next != ']' && next != '}') return false;
+            }
+        }
+        return true;
     }
 
     static boolean isJsonWhitespace(char value) {
@@ -192,13 +166,7 @@ public class JsonObjectConstraint implements TextConstraint {
     }
 
     /**
-     * Returns {@code true} if {@code text} is a valid JSON-object prefix, meaning:
-     * <ul>
-     *   <li>It is empty (the opening {@code {} has not been emitted yet, which is a
-     *       valid prefix of any JSON object); OR</li>
-     *   <li>It starts with {@code {}, brace_depth &gt;= 0, bracket_depth &gt;= 0, and
-     *       the state machine did not encounter a structural violation</li>
-     * </ul>
+     * Returns true for a syntactically valid prefix of a single JSON object.
      *
      * @param text the accumulated text to test
      * @return {@code true} if {@code text} is a valid prefix of some JSON object
@@ -221,7 +189,7 @@ public class JsonObjectConstraint implements TextConstraint {
             }
         }
         ParseState s = runStateMachine(text);
-        return !s.invalid && s.braceDepth >= 0 && s.bracketDepth >= 0;
+        return !s.invalid;
     }
 
     // -------------------------------------------------------------------------
@@ -258,10 +226,7 @@ public class JsonObjectConstraint implements TextConstraint {
             return false;
         }
         ParseState s = runStateMachine(currentText);
-        return !s.invalid
-                && s.braceDepth == 0
-                && s.bracketDepth == 0
-                && !s.inString;
+        return !s.invalid && s.complete;
     }
 
     @Override

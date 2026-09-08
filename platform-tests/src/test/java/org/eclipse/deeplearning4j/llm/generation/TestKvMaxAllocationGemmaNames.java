@@ -718,6 +718,13 @@ public class TestKvMaxAllocationGemmaNames {
             assertTrue(extraction.getTokenIds().length >= 3,
                     "native extraction must reach the fused decode step; tokens="
                             + extraction.getTokenIds().length);
+            for (ChatGenerationResult schema : List.of(nodeSchema, relationSchema)) {
+                assertTrue(schema.getParseErrors().isEmpty(),
+                        "constrained schema output is invalid: " + schema.getParseErrors()
+                                + "; raw=" + schema.getRawText());
+                assertTrue(schema.hasToolCalls(),
+                        "required constrained call produced no tool call: " + schema.getRawText());
+            }
         } finally {
             pipe.close();
         }

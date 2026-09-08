@@ -2767,6 +2767,17 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
              stream);
   }
 
+  // A retained stream keeps its creation device even when native decode re-enters
+  // this plan from another GPU. Bind that owner BEFORE capture accounting, event
+  // creation and segment dispatch. The execution guard restores the caller device
+  // at platformEndExecution; segment guards continue to bracket secondary GPUs.
+  auto* ctx = new PlanExecutionContext();
+  if (stream != nullptr) {
+    const auto executionStream = *static_cast<cudaStream_t*>(stream);
+    const int executionDevice = ownedStream_ != nullptr ? ownedStreamDeviceId_ : -1;
+    ctx->streamGuard = static_cast<void*>(new DspStreamGuard(executionStream, executionDevice));
+  }
+
   // Wait if another thread is capturing a CUDA graph on this device.
   // During capture, ANY CUDA operation on this device from another thread
   // (including cudaMemcpyAsync on the legacy stream) triggers error 906.
@@ -2806,7 +2817,6 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
     CublasHelper::exitDeterministicWindow();
   }
 
-  auto* ctx = new PlanExecutionContext();
   ctx->execCount = execCount;
   ctx->fpStep = fpInvocationStep;
   ctx->frozen = frozen;
@@ -2856,9 +2866,8 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
     ctx->lcDefaultStream = static_cast<void*>((lcStreamPtr != nullptr) ? *lcStreamPtr : nullptr);
 
     AttentionWorkspace::setActiveScope(ctx->dspStream);
-    // Pass deviceId to DspStreamGuard so it pins cudaSetDevice for the
-    // duration of execution and restores the previous device on destruction.
-    ctx->streamGuard = static_cast<void*>(new DspStreamGuard(cudaStr, ctx->deviceId));
+    // The stream/device guard was installed before per-device setup above.
+    // Do not replace it here: it owns restoration to the original caller GPU.
 
     // Pin the gap-stream override for the WHOLE plan execution, not just
     // compositeReplay. Without this, slot-by-slot warmup ops launch on the
