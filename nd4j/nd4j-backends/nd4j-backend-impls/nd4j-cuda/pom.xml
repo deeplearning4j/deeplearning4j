@@ -60,12 +60,6 @@
         </dependency>
         <dependency>
             <groupId>org.eclipse.deeplearning4j</groupId>
-            <artifactId>libnd4j</artifactId>
-            <version>${project.version}</version>
-            <type>pom</type>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-cuda-12.9-preset</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -95,6 +89,21 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.bytedeco</groupId>
+                <artifactId>javacpp</artifactId>
+                <version>${javacpp.version}</version>
+                <dependencies>
+                    <!-- Establish reactor order for JavaCPP linking in both tracing profiles
+                         without exposing the native build POM on the Java or Javadoc module path. -->
+                    <dependency>
+                        <groupId>org.eclipse.deeplearning4j</groupId>
+                        <artifactId>libnd4j</artifactId>
+                        <version>${project.version}</version>
+                        <type>pom</type>
+                    </dependency>
+                </dependencies>
+            </plugin>
             <plugin>
                 <groupId>org.moditect</groupId>
                 <artifactId>moditect-maven-plugin</artifactId>
