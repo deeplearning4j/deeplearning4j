@@ -1351,7 +1351,8 @@ public class TransformProcess implements Serializable {
          * Keys in the map are the regular expressions; the Values in the map are their String replacements.
          * For example:
          * <blockquote>
-         * <table cellpadding="2">
+         * <table>
+         * <caption>String replacement examples</caption>
          * <tr>
          *      <th>Original</th>
          *      <th>Regex</th>
@@ -1371,7 +1372,7 @@ public class TransformProcess implements Serializable {
          *      <td>BoneConeTone</td>
          * </tr>
          * <tr>
-         *      <td>'&nbsp&nbsp4.25&nbsp'</td>
+         *      <td>'&nbsp;&nbsp;4.25&nbsp;'</td>
          *      <td>^\\s+|\\s+$</td>
          *      <td></td>
          *      <td>'4.25'</td>

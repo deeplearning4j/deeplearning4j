@@ -240,7 +240,7 @@ public class GraphScope implements AutoCloseable {
 
     /**
      * Infer output shapes for the given op using the executioner's shape calculation.
-     * Converts from List<DataBuffer> (shape info buffers) to List<LongShapeDescriptor>.
+     * Converts from {@code List<DataBuffer>} (shape info buffers) to {@code List<LongShapeDescriptor>}.
      */
     private List<LongShapeDescriptor> inferOutputShapes(CustomOp op, INDArray[] inputs) {
         try {

@@ -385,7 +385,7 @@ public class KerasModelUtils {
      *
      * @param modelJson JSON string representing model (potentially null)
      * @param modelYaml YAML string representing model (potentially null)
-     * @return Model configuration as Map<String, Object>
+     * @return Model configuration as {@code Map<String, Object>}
      * @throws IOException                        IO exception
      * @throws InvalidKerasConfigurationException Invalid Keras config
      */

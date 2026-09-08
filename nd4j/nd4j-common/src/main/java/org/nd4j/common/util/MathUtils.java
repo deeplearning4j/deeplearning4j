@@ -563,7 +563,7 @@ public class MathUtils {
      * @param nums   the arrays to extract values from
      * @return a double array containing all of the numbers in that column
      * for all of the arrays.
-     * @throws IllegalArgumentException if the index is < 0
+     * @throws IllegalArgumentException if the index is {@code < 0}
      */
     private static double[] column(int column, double[]... nums) throws IllegalArgumentException {
 
