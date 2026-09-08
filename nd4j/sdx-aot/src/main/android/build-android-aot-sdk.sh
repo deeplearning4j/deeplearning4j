@@ -621,7 +621,7 @@ declare -A MODULE_CLASS_DIRS=(
 )
 declare -A MODULE_PROBE_CLASSES=(
   [nd4j-api]="org/nd4j/nativeblas/NativeSymbolResolution.class"
-  [nd4j-native-api]="org/nd4j/nativeblas/BaseNativeNDArrayFactory.class"
+  [nd4j-native-api]="org/nd4j/autodiff/execution/Node.class"
   [nd4j-presets-common]="org/nd4j/presets/OpExclusionUtils.class"
   [nd4j-native-preset]="org/nd4j/presets/cpu/Nd4jCpuHelper.class"
   [nd4j-cpu-backend-common]="org/nd4j/linalg/cpu/nativecpu/CpuNDArrayFactory.class"
@@ -654,7 +654,12 @@ FRESH_COMPILE_ORDER=(
 # This reactor runs on the Linux build host but produces the managed closure for
 # an Android/OpenBLAS image. Bind both decisions explicitly so host-only JavaCPP
 # profiles (notably MKL) cannot leak into the cross-target classpath.
+# These outputs start empty, but module target/maven-status directories do not.
+# Incremental cleanup can use old ownership lists to delete another module's
+# freshly compiled classes (e.g. nativeblas classes moved from native-api to api).
+# Compile fresh sources without applying that stale cross-generation cleanup.
 maven_compile_flags=(
+  -Dmaven.compiler.useIncrementalCompilation=false
   -DskipTests
   -Dlibnd4j.blas=openblas
   -Djavacpp.platform=android-arm64
