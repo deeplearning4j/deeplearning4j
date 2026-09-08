@@ -37,16 +37,6 @@
     </properties>
 
     <dependencies>
-        <!-- Reactor ordering only: the JavaCPP parser consumes headers generated
-             by libnd4j. Provided scope keeps this native build module out of the
-             common artifact's transitive runtime graph. -->
-        <dependency>
-            <groupId>org.eclipse.deeplearning4j</groupId>
-            <artifactId>libnd4j</artifactId>
-            <version>${project.version}</version>
-            <type>pom</type>
-            <scope>provided</scope>
-        </dependency>
         <dependency>
             <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-api</artifactId>
@@ -128,6 +118,15 @@
                 <artifactId>javacpp</artifactId>
                 <version>${javacpp.version}</version>
                 <dependencies>
+                    <!-- The parser consumes libnd4j-generated headers. A plugin
+                         dependency preserves reactor ordering without putting the
+                         native POM on the Java compile or Javadoc module path. -->
+                    <dependency>
+                        <groupId>org.eclipse.deeplearning4j</groupId>
+                        <artifactId>libnd4j</artifactId>
+                        <version>${project.version}</version>
+                        <type>pom</type>
+                    </dependency>
                     <dependency>
                         <groupId>org.eclipse.deeplearning4j</groupId>
                         <artifactId>nd4j-cuda-12.9-preset</artifactId>
