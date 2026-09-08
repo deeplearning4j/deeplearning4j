@@ -1,9 +1,9 @@
 open module nd4j.cuda.backend.common {
     requires org.apache.commons.lang3;
-    requires org.apache.commons.math3;
+    requires commons.math3;
     requires org.bytedeco.cuda;
     requires org.bytedeco.javacpp;
-    requires slf4j.api;
+    requires org.slf4j;
     requires flatbuffers.java;
     requires nd4j.api;
     requires nd4j.common;
