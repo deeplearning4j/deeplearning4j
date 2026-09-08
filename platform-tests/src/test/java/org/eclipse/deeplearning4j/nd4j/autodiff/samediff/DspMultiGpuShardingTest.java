@@ -394,7 +394,11 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         String originalSingleGpu = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         SameDiff graph = null;
         java.util.List<INDArray> owned = new java.util.ArrayList<>();
+        boolean originalAllocationLogging = Nd4j.getEnvironment().isLogNativeNDArrayCreation();
         try {
+            if (Boolean.getBoolean("dsp.test.traceNativeLifetime")) {
+                Nd4j.getEnvironment().setLogNativeNDArrayCreation(true);
+            }
             InferenceSession.setDynamicShapePlanEnabled(true);
             System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
             Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
@@ -479,6 +483,7 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
                 if (graph != null) graph.close();
                 for (INDArray array : owned) SameDiffMemoryUtils.safeClose(array);
             } finally {
+                Nd4j.getEnvironment().setLogNativeNDArrayCreation(originalAllocationLogging);
                 InferenceSession.setDynamicShapePlanEnabled(originalDsp);
                 if (originalSingleGpu == null) System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
                 else System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, originalSingleGpu);

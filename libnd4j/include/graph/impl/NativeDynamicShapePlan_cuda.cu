@@ -1635,20 +1635,17 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
       mi.externalInputTable[mi.externalInputIdx] = mi.original;
     }
     if (mi.migrated != nullptr) {
-      int exactReferenceSlot = -1;
-      int sharedBufferSlot = -1;
-      const bool hasLiveAlias = findLiveSlotAlias(
-          mi.migrated, outputSlots_, totalOutputSlots_,
-          &exactReferenceSlot, &sharedBufferSlot);
-      if (hasLiveAlias) {
-        deferredSlotDeletes_.push_back(mi.migrated);
-        DSP_DIAG(MULTI_DEVICE,
-                 "platformCleanupMigratedInputs: deferred aliased migration owner=%p "
-                 "exactSlot=%d sharedBufferSlot=%d",
-                 (void*)mi.migrated, exactReferenceSlot, sharedBufferSlot);
-      } else {
-        delete mi.migrated;
-      }
+      // Slot replacement may already have queued this same wrapper. Deleting
+      // it inline leaves a stale entry in deferredSlotDeletes_, which can then
+      // mistake reused allocator storage for an NDArray. Transfer retirement
+      // to the single deduplicating drain for both aliased and unaliased copies.
+      // The drain checks final slot aliases after all publications are restored
+      // and destroys dependent views before their owning buffers.
+      planOwnedArrays_.erase(mi.migrated);
+      deferredSlotDeletes_.push_back(mi.migrated);
+      DSP_DIAG(MULTI_DEVICE,
+               "platformCleanupMigratedInputs: queued migration retirement owner=%p",
+               (void*)mi.migrated);
       mi.migrated = nullptr;
     }
   }
