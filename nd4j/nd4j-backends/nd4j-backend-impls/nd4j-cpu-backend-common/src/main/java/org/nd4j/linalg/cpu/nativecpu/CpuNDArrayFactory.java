@@ -707,7 +707,6 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
      *
      * @param array     the ndarray to shuffle
      * @param dimension the dimension to do the shuffle
-     * @return
      */
     @Override
     public void shuffle(INDArray array, Random rnd, long... dimension) {
@@ -720,7 +719,6 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
      *
      * @param array     the ndarray to shuffle
      * @param dimension the dimension to do the shuffle
-     * @return
      */
     @Override
     public void shuffle(Collection<INDArray> array, Random rnd, long... dimension) {
@@ -733,7 +731,6 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
      *
      * @param arrays      the ndarrays to shuffle
      * @param dimensions the dimensions to do the shuffle
-     * @return
      */
     @Override
     public void shuffle(List<INDArray> arrays, Random rnd, List<long[]> dimensions) {

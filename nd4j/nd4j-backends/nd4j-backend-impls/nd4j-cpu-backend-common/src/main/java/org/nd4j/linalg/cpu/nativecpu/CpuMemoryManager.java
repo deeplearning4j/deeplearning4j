@@ -62,7 +62,6 @@ public class CpuMemoryManager extends BasicMemoryManager {
      *
      * @param pointer
      * @param kind
-     * @return
      */
     @Override
     public void release(@NonNull Pointer pointer, MemoryKind kind) {
