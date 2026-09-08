@@ -333,8 +333,15 @@ void ggmlQMatMul(sd::LaunchContext* context,
         THROW_EXCEPTION("ggml_qmatmul CUDA: unsupported quantType");
     }
 
-    NDArray::prepareSpecialUse({output}, {activations, packedWeights});
     auto stream = context->getCudaStream();
+    const bool capturing = DebugHelper::inGraphCapture(stream);
+    if (!capturing) {
+        DebugHelper::checkGlobalErrorCode("ggml_qmatmul CUDA inherited error before preparation");
+    }
+    NDArray::prepareSpecialUse({output}, {activations, packedWeights});
+    if (!capturing) {
+        DebugHelper::checkGlobalErrorCode("ggml_qmatmul CUDA buffer preparation failed");
+    }
 
     // Collapse leading dims into M
     sd::LongType M = 1;
@@ -373,8 +380,20 @@ void ggmlQMatMul(sd::LaunchContext* context,
 
     // Do not publish successful output actuality after a failed launch. In
     // composite replay the next gap op would otherwise report this sticky error.
-    if (!DebugHelper::inGraphCapture(stream)) {
-        DebugHelper::checkGlobalErrorCode("ggml_qmatmul CUDA kernel launch failed");
+    if (!capturing) {
+        const auto launchError = cudaGetLastError();
+        if (launchError != cudaSuccess) {
+            int device = -1;
+            cudaGetDevice(&device);
+            unsigned int streamFlags = 0;
+            const auto streamStatus = cudaStreamGetFlags(*stream, &streamFlags);
+            std::string detail = "ggml_qmatmul CUDA launch failed: device=" + std::to_string(device) +
+                " contextDevice=" + std::to_string(context->getDeviceID()) +
+                " stream=" + std::to_string(reinterpret_cast<uintptr_t>(*stream)) +
+                " streamStatus=" + cudaGetErrorString(streamStatus) +
+                " error=" + cudaGetErrorString(launchError);
+            THROW_EXCEPTION(detail.c_str());
+        }
     }
     NDArray::registerSpecialUse({output}, {activations, packedWeights});
 }
