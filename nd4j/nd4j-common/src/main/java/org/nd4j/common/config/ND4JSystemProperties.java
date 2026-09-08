@@ -378,7 +378,7 @@ public class ND4JSystemProperties {
      * <p>
      * Example usage:
      * <pre>
-     * java -Dnd4j.backend.secondary=org.nd4j.linalg.cpu.nativecpu.CpuBackend -jar myapp.jar
+     * java -Dnd4j.backend.secondary=org.nd4j.linalg.cpu.nativecpu.backend.CpuBackend -jar myapp.jar
      * </pre>
      * <p>
      * This allows loading CPU as a secondary backend when CUDA is primary, enabling

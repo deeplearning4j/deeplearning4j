@@ -340,8 +340,8 @@ class SdxLlmCoreTokenizerTest {
             assertTrue(configuration.contains(
                     "--initialize-at-run-time=org.nd4j.linalg.cpu.nativecpu.NDArray," +
                             "org.nd4j.linalg.cpu.nativecpu.CpuNDArrayFactory," +
-                            "org.nd4j.linalg.cpu.nativecpu.CpuBackend," +
-                            "org.nd4j.linalg.cpu.nativecpu.CpuEnvironment," +
+                            "org.nd4j.linalg.cpu.nativecpu.backend.CpuBackend," +
+                            "org.nd4j.linalg.cpu.nativecpu.backend.CpuEnvironment," +
                             "org.nd4j.linalg.cpu.nativecpu.buffer.CpuDeallocator," +
                             "org.nd4j.linalg.cpu.nativecpu.bindings.Nd4jCpu$Environment"),
                     "Stateful CPU backend classes must initialize only after Android loads the process-owned native libraries");

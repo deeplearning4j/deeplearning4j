@@ -1,4 +1,5 @@
 open module nd4j.cuda.backend.common {
+    requires static lombok;
     requires org.apache.commons.lang3;
     requires commons.math3;
     requires org.bytedeco.cuda;

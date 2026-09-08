@@ -8,15 +8,8 @@ open module nd4j.cpu {
     requires nd4j.cpu.api;
     requires nd4j.cpu.preset;
     requires org.bytedeco.javacpp;
-    exports org.nd4j.linalg.cpu.nativecpu;
+    requires nd4j.cpu.backend.common;
+    exports org.nd4j.linalg.cpu.nativecpu.backend;
     exports org.nd4j.linalg.cpu.nativecpu.bindings;
-    exports org.nd4j.linalg.cpu.nativecpu.blas;
-    exports org.nd4j.linalg.cpu.nativecpu.buffer;
-    exports org.nd4j.linalg.cpu.nativecpu.cache;
-    exports org.nd4j.linalg.cpu.nativecpu.compression;
-    exports org.nd4j.linalg.cpu.nativecpu.ops;
-    exports org.nd4j.linalg.cpu.nativecpu.rng;
-    exports org.nd4j.linalg.cpu.nativecpu.workspace;
-    provides org.nd4j.linalg.compression.NDArrayCompressor with org.nd4j.linalg.cpu.nativecpu.compression.CpuThreshold;
-    provides org.nd4j.linalg.factory.Nd4jBackend with org.nd4j.linalg.cpu.nativecpu.CpuBackend;
+    provides org.nd4j.linalg.factory.Nd4jBackend with org.nd4j.linalg.cpu.nativecpu.backend.CpuBackend;
 }

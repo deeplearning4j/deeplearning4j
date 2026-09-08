@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.common.io.Resource;
-import org.nd4j.linalg.cpu.nativecpu.CpuEnvironment;
+import org.nd4j.linalg.cpu.nativecpu.backend.CpuEnvironment;
 import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.factory.Nd4j;

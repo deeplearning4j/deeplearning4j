@@ -76,7 +76,7 @@ public abstract class BaseNd4jTestWithBackends extends BaseND4JTest {
      * given command line arguments
      */
     public static Nd4jBackend getDefaultBackend() {
-        String cpuBackend = "org.nd4j.linalg.cpu.nativecpu.CpuBackend";
+        String cpuBackend = "org.nd4j.linalg.cpu.nativecpu.backend.CpuBackend";
         String defaultBackendClass = System.getProperty(DEFAULT_BACKEND, cpuBackend);
 
         Class<Nd4jBackend> backendClass = ND4JClassLoading.loadClassByName(defaultBackendClass);

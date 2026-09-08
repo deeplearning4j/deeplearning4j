@@ -18,13 +18,14 @@
  *  *****************************************************************************
  */
 
-package org.nd4j.linalg.cpu.nativecpu;
+package org.nd4j.linalg.cpu.nativecpu.backend;
 
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.device.CpuDeviceDescriptor;
 import org.nd4j.linalg.api.device.DeviceDescriptor;
 import org.nd4j.linalg.api.memory.MemoryManager;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;

@@ -48,6 +48,16 @@ Update the JPMS `Nd4jBackend` provision, classpath service registration, native-
 
 This follow-up receives static source/reference review only locally; no local build, test, or code generation is run. The parent full remote matrix workflow is dry-run-only (`dryRun: true`); execution qualification is not claimed.
 
+## CPU backend entrypoint ownership
+
+Release run 34184468982 (`fcf6dd185c`) exposed the equivalent split package between `nd4j.cpu` and `nd4j.cpu.backend.common` during `nd4j-native` Javadoc. Unlike CUDA, the CPU artifact owns three classes in the common package: `CpuBackend`, `CpuEnvironment`, and `CpuStatisticsProvider`. Moving only `CpuBackend` would leave the split intact. Move all three, without implementation changes, to `org.nd4j.linalg.cpu.nativecpu.backend` within `nd4j-native`; explicitly import the common `NDArray` in the entrypoint.
+
+Make `nd4j.cpu` require `nd4j.cpu.backend.common` and export only its backend and generated bindings packages. Remove its stale exports of common-owned packages; their implementation classes and exports remain in `nd4j.cpu.backend.common`. Move the compressor's JPMS provision and classpath service registration to `nd4j.cpu.backend.common`, where `CpuThreshold` is defined: JPMS requires a provider implementation to belong to the declaring module. Compressor implementation and provider name are unchanged.
+
+Update classpath and JPMS backend provision, reflective default backend selection, statistics-provider properties and reflection metadata, native-image runtime initialization names, Android artifact probes and configuration checks, and the UI test launcher together. The backend ID, availability, priority, resource lookup, environment singleton, and statistics implementation are unchanged. No forwarding classes remain in the old package. External references to these three binary names must migrate and use aligned artifacts.
+
+Validation is limited to static diff and reference checks locally, with no local build, tests, or generation. The parent's consolidated remote `full66` submission uses `workflow=all` and `dryRun=true`; this does not establish build or execution qualification.
+
 ## References
 
 - ADR 0016: Java 9+ Support

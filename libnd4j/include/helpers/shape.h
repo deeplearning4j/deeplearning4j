@@ -741,6 +741,13 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE void fill(T *buffer, T value, sd::LongTyp
 }
 
 
+/**
+ * Maps an outer-array index to the corresponding sub-array offset.
+ * @param maxIdx the outer-array linear index
+ * @param maxShapeInfo the outer-array shape information
+ * @param minShapeInfo the sub-array shape information
+ * @return the offset in the sub-array
+ */
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType subArrayIndex(sd::LongType maxIdx, const sd::LongType *maxShapeInfo,
                                                                   const sd::LongType *minShapeInfo) {
   sd::LongType maxIdxs[SD_MAX_RANK];
@@ -1488,8 +1495,8 @@ SD_LIB_EXPORT SD_INLINE  SD_HOST const char *shapeToString(const sd::LongType *s
 * Computes the standard packed array strides for a given shape.
 *
 * @param shape    the shape of a matrix:
-* @param startNum the start number for the strides
-* @return the strides for a matrix of n dimensions
+* @param rank the number of dimensions
+* @return the strides for a matrix of n dimensions, starting at one
 */
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType *calcStridesFortran(sd::LongType const *shape, sd::LongType rank) {
   return calcStridesFortran(shape, rank, 1);
@@ -1505,8 +1512,8 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType *calcStridesFortran(sd::Long
 * Computes the standard packed array strides for a given shape.
 *
 * @param shape    the shape of a matrix:
-* @param startNum the start number for the strides
-* @return the strides for a matrix of n dimensions
+* @param rank the number of dimensions
+* @return the strides for a matrix of n dimensions, starting at one
 */
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType *calcStrides(sd::LongType const *shape, sd::LongType rank) {
   return calcStrides(shape, rank, 1);
@@ -1702,6 +1709,11 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool isRowVector(sd::LongType *shapeInfo)
   return isVector && shapeFirstOne;
 }
 
+/**
+ * Checks whether the shape information describes a column vector.
+ * @param shapeInfo the array shape information
+ * @return true for a vector whose first dimension is not one
+ */
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool isColumnVector( sd::LongType *shapeInfo) {
   bool isVector = shape::isVector(shapeInfo) == 1;
   bool shapeFirstOne = shapeOf(shapeInfo)[0] == 1;
@@ -2413,11 +2425,10 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE void shapeOldScalar(sd::DataType dataType
 
 
 /**
-*
-* @param length
-* @param shape
-* @param rearrange
-* @return
+ * Permutes the shape entries in place.
+ * @param length the number of shape entries
+ * @param shape the shape entries to update
+ * @param rearrange the permutation of dimension indices
 */
 SD_LIB_EXPORT SD_INLINE  SD_HOST void doPermuteSwap(sd::LongType length, sd::LongType *shape, sd::LongType *rearrange) {
   if (length == 1) {

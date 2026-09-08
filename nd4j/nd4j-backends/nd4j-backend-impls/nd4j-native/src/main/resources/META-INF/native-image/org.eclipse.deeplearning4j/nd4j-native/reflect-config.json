@@ -134,7 +134,7 @@
     "allPublicFields": true
   },
   {
-    "name": "org.nd4j.linalg.cpu.nativecpu.CpuStatisticsProvider",
+    "name": "org.nd4j.linalg.cpu.nativecpu.backend.CpuStatisticsProvider",
     "allDeclaredConstructors": true,
     "allPublicConstructors": true,
     "allDeclaredMethods": true,

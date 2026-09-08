@@ -6247,7 +6247,7 @@ public class Nd4j {
      * <ul>
      *   <li>{@code nd4j.multibackend.enabled=true} - Enable multi-backend execution</li>
      *   <li>{@code nd4j.backend.secondary.properties=nd4j-native.properties} - Secondary backend properties file(s)</li>
-     *   <li>{@code nd4j.backend.secondary=org.nd4j.linalg.cpu.nativecpu.CpuBackend} - Secondary backend class(es)</li>
+     *   <li>{@code nd4j.backend.secondary=org.nd4j.linalg.cpu.nativecpu.backend.CpuBackend} - Secondary backend class(es)</li>
      * </ul>
      *
      * <p>This enables true multi-backend execution where:

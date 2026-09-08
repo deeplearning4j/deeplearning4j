@@ -54,14 +54,6 @@
     </properties>
 
     <dependencies>
-        <!-- Reactor ordering: the Vulkan chip native library must be built first
-             (mvn -Pvulkan -Dlibnd4j.vulkan -pl libnd4j,:nd4j-presets-common,:nd4j-vulkan-preset,:nd4j-vulkan). -->
-        <dependency>
-            <groupId>org.eclipse.deeplearning4j</groupId>
-            <artifactId>libnd4j</artifactId>
-            <version>${project.version}</version>
-            <type>pom</type>
-        </dependency>
         <dependency>
             <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-vulkan-preset</artifactId>
@@ -199,6 +191,14 @@
                 <artifactId>javacpp</artifactId>
                 <version>${javacpp.version}</version>
                 <dependencies>
+                    <!-- Establish reactor order for JavaCPP linking without exposing
+                         the native build POM on the Java or Javadoc module path. -->
+                    <dependency>
+                        <groupId>org.eclipse.deeplearning4j</groupId>
+                        <artifactId>libnd4j</artifactId>
+                        <version>${project.version}</version>
+                        <type>pom</type>
+                    </dependency>
                     <dependency>
                         <groupId>org.eclipse.deeplearning4j</groupId>
                         <artifactId>nd4j-vulkan-preset</artifactId>

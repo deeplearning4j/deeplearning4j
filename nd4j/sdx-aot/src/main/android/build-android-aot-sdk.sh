@@ -625,7 +625,7 @@ declare -A MODULE_PROBE_CLASSES=(
   [nd4j-presets-common]="org/nd4j/presets/OpExclusionUtils.class"
   [nd4j-native-preset]="org/nd4j/presets/cpu/Nd4jCpuHelper.class"
   [nd4j-cpu-backend-common]="org/nd4j/linalg/cpu/nativecpu/CpuNDArrayFactory.class"
-  [nd4j-native]="org/nd4j/linalg/cpu/nativecpu/CpuBackend.class"
+  [nd4j-native]="org/nd4j/linalg/cpu/nativecpu/backend/CpuBackend.class"
   [tokenizers-native-preset]="org/eclipse/deeplearning4j/tokenizers/presets/TokenizersPresets.class"
   [tokenizers-native]="org/eclipse/deeplearning4j/tokenizers/NativeTokenizer.class"
   [nd4j-ggml]="org/nd4j/ggml/GGMLModelImport.class"
@@ -755,7 +755,7 @@ ND4J_NATIVE_IMAGE_PROPERTIES="$NATIVE_RUNTIME_CLASSES/META-INF/native-image/org.
 [[ -s "$ND4J_NATIVE_IMAGE_PROPERTIES" ]] ||
   fail "fresh Android classpath omitted nd4j-native Native Image configuration"
 for runtime_initialized_class in \
-  org.nd4j.linalg.cpu.nativecpu.CpuEnvironment \
+  org.nd4j.linalg.cpu.nativecpu.backend.CpuEnvironment \
   'org.nd4j.linalg.cpu.nativecpu.bindings.Nd4jCpu$Environment'; do
   grep -F -q -- "$runtime_initialized_class" "$ND4J_NATIVE_IMAGE_PROPERTIES" ||
     fail "nd4j-native Native Image configuration did not defer $runtime_initialized_class until runtime"

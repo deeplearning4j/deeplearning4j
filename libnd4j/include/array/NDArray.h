@@ -363,13 +363,13 @@ class SD_LIB_EXPORT NDArray {
 
 
   /**
-   * This method returns new array with the same shape & data type
+   * This method returns new array with the same shape and data type
    * @return
    */
   NDArray *like();
 
   /**
-   * This method returns new uninitialized array with the same shape & data type
+   * This method returns new uninitialized array with the same shape and data type
    * @return
    */
   NDArray *ulike();
@@ -1054,7 +1054,7 @@ class SD_LIB_EXPORT NDArray {
   void muliColumnVector(NDArray *column);
 
   /**
-   *  returns number of bytes used by _buffer & _shapeInfo
+   *  returns number of bytes used by _buffer and _shapeInfo
    */
   SD_INLINE LongType memoryFootprint();
 
@@ -1453,7 +1453,7 @@ class SD_LIB_EXPORT NDArray {
   SD_INLINE bool isSameShapeStrict(NDArray &other);
 
   /**
-   *  returns true if buffer && shapeInfo were defined (non nullptr)
+   *  returns true if both buffer and shapeInfo were defined (non nullptr)
    */
   SD_INLINE bool nonNull();
 

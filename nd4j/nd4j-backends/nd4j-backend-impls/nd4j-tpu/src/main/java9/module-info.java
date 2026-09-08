@@ -1,11 +1,13 @@
 open module nd4j.tpu {
     requires nd4j.api;
+    requires nd4j.common;
     requires nd4j.cpu.api;
     requires nd4j.cpu.backend.common;
     requires nd4j.tpu.preset;
     requires org.bytedeco.javacpp;
     requires org.bytedeco.openblas;
-    requires slf4j.api;
+    requires org.slf4j;
+    requires static lombok;
 
     exports org.nd4j.linalg.jtpu;
     exports org.nd4j.linalg.jtpu.bindings;

@@ -9,4 +9,5 @@ open module nd4j.cpu.backend.common {
     exports org.nd4j.linalg.cpu.nativecpu.ops;
     exports org.nd4j.linalg.cpu.nativecpu.rng;
     exports org.nd4j.linalg.cpu.nativecpu.workspace;
+    provides org.nd4j.linalg.compression.NDArrayCompressor with org.nd4j.linalg.cpu.nativecpu.compression.CpuThreshold;
 }

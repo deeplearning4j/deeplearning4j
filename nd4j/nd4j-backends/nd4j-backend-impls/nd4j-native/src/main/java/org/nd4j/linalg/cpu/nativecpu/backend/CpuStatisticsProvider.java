@@ -1,4 +1,4 @@
-package org.nd4j.linalg.cpu.nativecpu;
+package org.nd4j.linalg.cpu.nativecpu.backend;
 
 import org.bytedeco.javacpp.LongPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;

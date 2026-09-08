@@ -96,10 +96,10 @@ class SD_LIB_EXPORT RandomBuffer {
 
  public:
   /**
-   * This method allocates buffer of size * sizeof(sd::LongType)
+   * Initializes a random buffer with the supplied seed and storage.
    *
-   * @param size
-   * @return
+   * @param seed the initial random seed
+   * @param size the number of elements in the buffer
    */
 #ifdef __CUDACC__
   SD_HOST
@@ -391,6 +391,11 @@ class SD_LIB_EXPORT RandomBuffer {
     return from + (nextT<T>() * (to - from));
   }
 
+  /**
+   * Returns the random buffer element at the specified relative index.
+   * @param index the relative element index
+   * @return the random unsigned 64-bit value
+   */
   SD_INLINE SD_DEVICE uint64_t relativeUInt64(sd::LongType index) { return getElement(index); }
 
   /**

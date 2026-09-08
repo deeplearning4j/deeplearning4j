@@ -200,9 +200,10 @@ class SD_LIB_EXPORT Context : public ContextPrototype {
   }
 
   /**
-   * This method fetches variable from VariableSpace DIRECTLY
-   * @param p
-   * @return
+   * Fetches a variable directly from VariableSpace.
+   * @param node the node identifier
+   * @param index the output index within the node
+   * @return the variable at the specified node and output index
    */
   Variable* variable(int node, int index);
   Variable* variable(std::pair<int, int>& p);

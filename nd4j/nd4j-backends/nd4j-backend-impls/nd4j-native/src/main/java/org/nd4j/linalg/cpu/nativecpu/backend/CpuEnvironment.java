@@ -17,7 +17,7 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-package org.nd4j.linalg.cpu.nativecpu;
+package org.nd4j.linalg.cpu.nativecpu.backend;
 
 import org.bytedeco.javacpp.BytePointer;
 import org.nd4j.linalg.cpu.nativecpu.bindings.Nd4jCpu;

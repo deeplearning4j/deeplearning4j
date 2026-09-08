@@ -27,5 +27,5 @@ $MVN -q dependency:build-classpath -DincludeScope=test \
 CP="target/test-classes:target/classes:$(cat /tmp/pw-test-cp.txt)"
 
 exec java -cp "$CP" \
-  -Dorg.nd4j.linalg.factory.Nd4jBackend=org.nd4j.linalg.cpu.nativecpu.CpuBackend \
+  -Dorg.nd4j.linalg.factory.Nd4jBackend=org.nd4j.linalg.cpu.nativecpu.backend.CpuBackend \
   org.deeplearning4j.ui.playwright.DspUiTestServer
