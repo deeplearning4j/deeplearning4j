@@ -170,13 +170,6 @@
             <dependencies>
                 <dependency>
                     <groupId>${project.groupId}</groupId>
-                    <artifactId>libnd4j</artifactId>
-                    <version>${project.version}</version>
-                    <type>pom</type>
-                    <scope>provided</scope>
-                </dependency>
-                <dependency>
-                    <groupId>${project.groupId}</groupId>
                     <artifactId>nd4j-cuda-${cuda.version}-preset</artifactId>
                     <version>${project.version}</version>
                     <scope>provided</scope>
@@ -348,6 +341,14 @@
                         <artifactId>javacpp</artifactId>
                         <version>${javacpp.version}</version>
                         <dependencies>
+                            <!-- Native build ordering belongs to the JNI plugin, not the
+                                 Java module path consumed by compilation and Javadoc. -->
+                            <dependency>
+                                <groupId>${project.groupId}</groupId>
+                                <artifactId>libnd4j</artifactId>
+                                <version>${project.version}</version>
+                                <type>pom</type>
+                            </dependency>
                             <dependency>
                                 <groupId>${project.groupId}</groupId>
                                 <artifactId>nd4j-cuda-${cuda.version}-preset</artifactId>
