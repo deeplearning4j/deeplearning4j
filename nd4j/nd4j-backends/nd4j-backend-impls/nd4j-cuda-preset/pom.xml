@@ -53,13 +53,6 @@
             <artifactId>nd4j-presets-common</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>${dependency.groupId}</groupId>
-            <artifactId>${dependency.artifactId}</artifactId>
-            <version>${dependency.version}</version>
-            <type>${dependency.packaging}</type>
-            <classifier>${dependency.classifier}</classifier>
-        </dependency>
 
         <dependency>
             <groupId>org.bytedeco</groupId>
@@ -205,6 +198,26 @@
     </build>
 
     <profiles>
+        <!-- Published consumers need the platform artifact; the source build must not
+             replace it with a parent POM on the Java module path. This is the inverse
+             of the parent's no-platform-dependency source-tree activation. -->
+        <profile>
+            <id>consumer-platform-dependency</id>
+            <activation>
+                <file>
+                    <missing>${basedir}</missing>
+                </file>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>${dependency.groupId}</groupId>
+                    <artifactId>${dependency.artifactId}</artifactId>
+                    <version>${dependency.version}</version>
+                    <type>${dependency.packaging}</type>
+                    <classifier>${dependency.classifier}</classifier>
+                </dependency>
+            </dependencies>
+        </profile>
 
         <profile>
             <id>msvc</id>
