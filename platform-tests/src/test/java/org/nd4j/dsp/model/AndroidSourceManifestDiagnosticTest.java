@@ -30,8 +30,13 @@ class AndroidSourceManifestDiagnosticTest {
 
     private String functions() throws Exception {
         String text = source();
+        Path consumer = Path.of("").toAbsolutePath().normalize().getParent().getParent()
+                .resolve("kompile/kompile-chat-local/mobile/android/tools/build-offline-accelerators.sh");
+        String packager = Files.readString(consumer);
         return text.substring(text.indexOf("source_tree_manifest_sha256() {"),
-                text.indexOf("native_source_manifest_sha256() {"));
+                text.indexOf("native_source_manifest_sha256() {"))
+                + packager.substring(packager.indexOf("dl4j_source_manifest_sha256() {"),
+                        packager.indexOf("dl4j_aot_source_manifest_sha256() {"));
     }
 
     private Path file(String name, String content) throws Exception {
@@ -64,10 +69,14 @@ class AndroidSourceManifestDiagnosticTest {
         arguments.add(diagnostic == null ? "" : diagnostic.toString());
         arguments.addAll(List.of(names));
         Result result = run("diagnostic=$1; shift; FILES=(\"$@\")\n"
-                + "source_tree_manifest_sha256 \"$diagnostic\" libnd4j\n",
+                + "source_tree_manifest_sha256 \"$diagnostic\" libnd4j\n"
+                + "DL4J_ROOT=$REPO_ROOT; dl4j_source_manifest_sha256\n",
                 arguments.toArray(String[]::new));
         assertEquals(0, result.code(), result.output());
-        return result.output().trim();
+        String[] hashes = result.output().trim().split("\\R");
+        assertEquals(2, hashes.length, result.output());
+        assertEquals(hashes[0], hashes[1], "Producer and APK verifier must use the same source manifest");
+        return hashes[0];
     }
 
     @Test
