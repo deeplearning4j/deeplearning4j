@@ -482,7 +482,7 @@ public class Reducer implements IAssociativeReducer {
          * ignored/excluded.
          *
          * @param column     Name of the column to execute the conditional reduction on
-         * @param outputName Name of the column, after the reduction has been executed
+         * @param outputNames Names of the output columns, one for each reduction
          * @param reductions  Reductions to execute
          * @param condition  Condition to use in the reductions
          */
@@ -502,7 +502,7 @@ public class Reducer implements IAssociativeReducer {
          *
          * @param column     Name of the column to execute the conditional reduction on
          * @param outputName Name of the column, after the reduction has been executed
-         * @param reductions  Reductions to execute
+         * @param reduction  Reduction to execute
          * @param condition  Condition to use in the reductions
          */
         public Builder conditionalReduction(String column, String outputName, ReduceOp reduction, Condition condition) {

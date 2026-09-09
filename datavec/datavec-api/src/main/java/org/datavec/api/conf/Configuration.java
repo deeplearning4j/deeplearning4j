@@ -556,7 +556,7 @@ public class Configuration implements Iterable<Map.Entry<String, String>>, Writa
     }
 
     /**
-     * Get the value of the <code>name</code> property as a <ocde>Pattern</code>.
+     * Get the value of the <code>name</code> property as a <code>Pattern</code>.
      * If no such property is specified, or if the specified value is not a valid
      * <code>Pattern</code>, then <code>DefaultValue</code> is returned.
      *

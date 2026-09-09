@@ -1,6 +1,6 @@
 """Audited Javadoc-only repair overlay for the pinned native release source.
 
-Only the fourteen reviewed Javadoc lines are eligible. No whole fix checkout is
+Only the twenty-seven reviewed Javadoc lines are eligible. No whole fix checkout is
 merged: unrelated changes at that revision cannot enter the Java reactor.
 Extending this table requires reviewing the original comment and source SHA.
 """
@@ -69,6 +69,43 @@ REPAIRS[TTS_PIPELINE] = {
          " *       {@link TtsFineTuneConfig#isFreezeTextEncoder()}.</li>\n"),
 }
 
+# Recovery 34381061422 reported 14 DataVec errors on 13 distinct lines.
+# Configuration's misspelled opening tag caused two diagnostics on one line.
+DATAVEC = "datavec/datavec-api/src/main/java/org/datavec/api/"
+DATAVEC_RECOVERY_RUN = "34381061422"
+DATAVEC_ERROR_COUNT = 14
+for relative, number in (
+        ("records/reader/RecordReader.java", 106),
+        ("records/reader/impl/inmemory/InMemoryRecordReader.java", 108),
+        ("records/reader/impl/inmemory/InMemorySequenceRecordReader.java", 189),
+        ("records/reader/impl/transform/TransformProcessRecordReader.java", 149),
+        ("records/reader/impl/transform/TransformProcessSequenceRecordReader.java", 199)):
+    REPAIRS[DATAVEC + relative] = {
+        number: ("     * @return\n", "     * @see #resetSupported()\n")}
+REPAIRS.update({
+    DATAVEC + "io/BinaryComparable.java": {
+        37: ("     * @see org.apache.hadoop.io.WritableComparator#compareBytes(byte[],int,int,byte[],int,int)\n",
+             "     * @see WritableComparator#compareBytes(byte[],int,int,byte[],int,int)\n"),
+        66: ("     * @see org.apache.hadoop.io.WritableComparator#hashBytes(byte[],int)\n",
+             "     * @see WritableComparator#hashBytes(byte[],int)\n")},
+    DATAVEC + "conf/Configuration.java": {
+        559: ("     * Get the value of the <code>name</code> property as a <ocde>Pattern</code>.\n",
+              "     * Get the value of the <code>name</code> property as a <code>Pattern</code>.\n")},
+    DATAVEC + "records/reader/impl/misc/SVMLightRecordReader.java": {
+        99: ("     * @throws IOException\n",
+             "     * @throws UnsupportedOperationException if the number of features is not configured,\n"),
+        100: ("     * @throws InterruptedException\n",
+              "     *         or if multilabel mode is enabled without a configured number of labels\n")},
+    DATAVEC + "split/NumberedFileInputSplit.java": {
+        46: ("     *                        @see {NumberedFileInputSplitTest}\n",
+             '     * @see "NumberedFileInputSplitTest"\n')},
+    DATAVEC + "transform/reduce/Reducer.java": {
+        485: ("         * @param outputName Name of the column, after the reduction has been executed\n",
+              "         * @param outputNames Names of the output columns, one for each reduction\n"),
+        505: ("         * @param reductions  Reductions to execute\n",
+              "         * @param reduction  Reduction to execute\n")},
+})
+
 
 def digest(data):
     return hashlib.sha256(data).hexdigest()
@@ -108,7 +145,10 @@ def prepare(source, fix_source, fix_commit, commit, output):
                              for number, (before, after) in sorted(repairs.items())],
                          "change": "Audited Javadoc lines only; all other bytes unchanged"})
     provenance = {"schemaVersion": 1, "sourceCommit": commit, "documentationFixCommit": fix_commit,
-                  "policy": "audited-javadoc-only-v2", "files": evidence}
+                  "policy": "audited-javadoc-only-v2", "files": evidence,
+                  "datavecDiagnostics": {"recoveryRunId": DATAVEC_RECOVERY_RUN,
+                                         "errorCount": DATAVEC_ERROR_COUNT,
+                                         "repairedLineCount": 13}}
     # Validate every file before writing any overlay. Preserve line numbers and
     # every non-repaired byte, including all compiled code and source positions.
     for path, fixed in pending:

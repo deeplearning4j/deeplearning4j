@@ -43,7 +43,9 @@ class DocumentationRecoveryTests(unittest.TestCase):
         result = self.prepare()
         self.assertEqual(docs.SOURCE_COMMIT, result['sourceCommit'])
         self.assertEqual('b' * 40, result['documentationFixCommit'])
-        self.assertEqual(14, sum(len(row['lines']) for row in result['files']))
+        self.assertEqual(27, sum(len(row['lines']) for row in result['files']))
+        self.assertEqual({'recoveryRunId': '34381061422', 'errorCount': 14,
+                          'repairedLineCount': 13}, result['datavecDiagnostics'])
         self.assertEqual('audited-javadoc-only-v2', result['policy'])
         for row in result['files']:
             self.assertEqual(docs.digest(self.originals[row['path']]), row['sourceSha256'])
@@ -101,7 +103,7 @@ class DocumentationRecoveryTests(unittest.TestCase):
     def test_each_vlm_repair_is_required_before_any_write(self):
         names = [name for name in docs.REPAIRS if name.startswith(docs.VLM)]
         self.assertEqual(4, len(names))
-        self.assertEqual(10, sum(len(lines) for name, lines in docs.REPAIRS.items()
+        self.assertEqual(23, sum(len(lines) for name, lines in docs.REPAIRS.items()
                                 if not name.startswith(docs.VLM)))
         for name in names:
             with self.subTest(name=name):
@@ -168,6 +170,45 @@ class DocumentationRecoveryTests(unittest.TestCase):
             self.prepare()
         for path in docs.REPAIRS:
             self.assertEqual(self.originals[path], (self.source / path).read_bytes())
+
+    def test_each_datavec_line_is_required_before_any_write(self):
+        names = [name for name in docs.REPAIRS if name.startswith(docs.DATAVEC)]
+        self.assertEqual(10, len(names))
+        self.assertEqual(13, sum(len(docs.REPAIRS[name]) for name in names))
+        for name in names:
+            for number, (before, after) in docs.REPAIRS[name].items():
+                with self.subTest(name=name, number=number):
+                    fixed = self.fixed[name]
+                    lines = fixed.splitlines(keepends=True)
+                    lines[number - 1] = before.encode()
+                    self.fixed[name] = b''.join(lines)
+                    with self.assertRaisesRegex(ValueError, 'unaudited'):
+                        self.prepare()
+                    for path in docs.REPAIRS:
+                        self.assertEqual(self.originals[path], (self.source / path).read_bytes())
+                    self.fixed[name] = fixed
+
+    def test_datavec_links_and_tags_match_source_signatures(self):
+        root = Path(__file__).resolve().parents[2]
+        comparator = (root / (docs.DATAVEC + 'io/WritableComparator.java')).read_text()
+        self.assertIn('package org.datavec.api.io;', comparator)
+        self.assertIn('public static int compareBytes(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2)', comparator)
+        self.assertIn('public static int hashBytes(byte[] bytes, int length)', comparator)
+        for name, repairs in docs.REPAIRS.items():
+            if not name.startswith(docs.DATAVEC):
+                continue
+            text = (root / name).read_text()
+            for number, (before, after) in repairs.items():
+                self.assertEqual(after, text.splitlines(keepends=True)[number - 1])
+                if '@see #resetSupported()' in after:
+                    self.assertIn('void reset()', text)
+                    self.assertIn('boolean resetSupported()', text)
+        svm = (root / (docs.DATAVEC + 'records/reader/impl/misc/SVMLightRecordReader.java')).read_text()
+        self.assertIn('public void setConf(Configuration conf) {', svm)
+        self.assertEqual(2, svm.count('throw new UnsupportedOperationException('))
+        reducer = (root / (docs.DATAVEC + 'transform/reduce/Reducer.java')).read_text()
+        self.assertIn('String column, List<String> outputNames, List<ReduceOp> reductions,', reducer)
+        self.assertIn('String column, String outputName, ReduceOp reduction, Condition condition)', reducer)
 
     def test_real_pinned_source_matches_only_audited_edits(self):
         original_root = os.environ.get('DOCUMENTATION_CONTRACT_SOURCE')

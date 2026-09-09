@@ -43,7 +43,7 @@ public class NumberedFileInputSplit implements InputSplit {
      *                   the index of the file, possibly zero-padded to x digits if the pattern is in the form %0xd.
      * @param minIdxInclusive Minimum index/number (starting number in sequence of files, inclusive)
      * @param maxIdxInclusive Maximum index/number (last number in sequence of files, inclusive)
-     *                        @see {NumberedFileInputSplitTest}
+     * @see "NumberedFileInputSplitTest"
      */
     public NumberedFileInputSplit(String baseString, int minIdxInclusive, int maxIdxInclusive) {
         Matcher m = p.matcher(baseString);

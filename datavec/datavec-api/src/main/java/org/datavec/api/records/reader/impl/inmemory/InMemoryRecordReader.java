@@ -105,7 +105,7 @@ public class InMemoryRecordReader implements RecordReader {
     /**
      * Reset record reader iterator
      *
-     * @return
+     * @see #resetSupported()
      */
     @Override
     public void reset() {

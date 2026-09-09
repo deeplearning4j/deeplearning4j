@@ -196,7 +196,7 @@ public class TransformProcessSequenceRecordReader implements SequenceRecordReade
     /**
      * Reset record reader iterator
      *
-     * @return
+     * @see #resetSupported()
      */
     @Override
     public void reset() {

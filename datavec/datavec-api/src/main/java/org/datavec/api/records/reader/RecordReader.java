@@ -103,7 +103,7 @@ public interface RecordReader extends Closeable, Serializable, Configurable {
     /**
      * Reset record reader iterator
      *
-     * @return
+     * @see #resetSupported()
      */
     void reset();
 

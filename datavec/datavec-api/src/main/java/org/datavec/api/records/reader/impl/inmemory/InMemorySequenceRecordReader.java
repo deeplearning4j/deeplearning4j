@@ -186,7 +186,7 @@ public class InMemorySequenceRecordReader implements SequenceRecordReader {
     /**
      * Reset record reader iterator
      *
-     * @return
+     * @see #resetSupported()
      */
     @Override
     public void reset() {

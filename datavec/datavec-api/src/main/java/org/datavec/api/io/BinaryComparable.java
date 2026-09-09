@@ -34,7 +34,7 @@ public abstract class BinaryComparable implements Comparable<BinaryComparable> {
 
     /**
      * Compare bytes from {#getBytes()}.
-     * @see org.apache.hadoop.io.WritableComparator#compareBytes(byte[],int,int,byte[],int,int)
+     * @see WritableComparator#compareBytes(byte[],int,int,byte[],int,int)
      */
     public int compareTo(BinaryComparable other) {
         if (this == other)
@@ -63,7 +63,7 @@ public abstract class BinaryComparable implements Comparable<BinaryComparable> {
 
     /**
      * Return a hash of the bytes returned from {#getBytes()}.
-     * @see org.apache.hadoop.io.WritableComparator#hashBytes(byte[],int)
+     * @see WritableComparator#hashBytes(byte[],int)
      */
     public int hashCode() {
         return WritableComparator.hashBytes(getBytes(), getLength());

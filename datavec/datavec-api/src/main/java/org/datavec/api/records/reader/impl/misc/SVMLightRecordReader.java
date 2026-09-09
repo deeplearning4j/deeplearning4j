@@ -96,8 +96,8 @@ public class SVMLightRecordReader extends LineRecordReader {
      * Set configuration.
      *
      * @param conf          DataVec configuration
-     * @throws IOException
-     * @throws InterruptedException
+     * @throws UnsupportedOperationException if the number of features is not configured,
+     *         or if multilabel mode is enabled without a configured number of labels
      */
     @Override
     public void setConf(Configuration conf) {

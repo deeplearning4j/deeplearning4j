@@ -146,7 +146,7 @@ public class TransformProcessRecordReader implements RecordReader {
     /**
      * Reset record reader iterator
      *
-     * @return
+     * @see #resetSupported()
      */
     @Override
     public void reset() {
