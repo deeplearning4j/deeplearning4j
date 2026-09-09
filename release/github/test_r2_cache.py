@@ -157,6 +157,14 @@ class R2CacheTests(unittest.TestCase):
         self.assertNotIn("ExtraArgs", args.kwargs)
         self.assertEqual(64 * 1024 * 1024, args.kwargs["Config"].multipart_chunksize)
 
+    def test_migration_dispatch_is_exclusive_with_build_and_publication(self):
+        workflow = (ROOT / ".github/workflows/build-deploy-cross-platform.yml").read_text()
+        for name in ("java-only", "release", "publish-staged"):
+            block = workflow.split(f"  {name}:\n", 1)[1].split("    uses:", 1)[0]
+            self.assertIn("(inputs.cacheMigration == '' || inputs.cacheMigration == 'none')", block)
+        migration = workflow.split("  cache-migration:\n", 1)[1].split("    uses:", 1)[0]
+        self.assertIn("inputs.cacheMigration != '' && inputs.cacheMigration != 'none'", migration)
+
     def test_current_actions_select_r2_without_starting_gha(self):
         action = (ROOT / ".github/actions/run-release-worker/action.yml").read_text()
         self.assertIn("args+=(--r2-cache)", action)
@@ -169,24 +177,38 @@ class R2CacheTests(unittest.TestCase):
 
 @unittest.skipUnless(os.environ.get("DL4J_R2_LIVE_VALIDATION") == "1", "remote authenticated validation only")
 class R2LiveCacheTests(unittest.TestCase):
-    def test_migrated_namespaces_and_archive_roundtrip(self):
+    def live_env(self):
         env = os.environ.copy()
         env.update({"DL4J_CACHE_BACKEND": "r2", "DL4J_S3_ENDPOINT": worker.R2_ENDPOINT,
                     "DL4J_S3_REGION": "auto"})
-        storage = transport.client(env)
+        return env
+
+    def test_migrated_namespaces(self):
+        storage = transport.client(self.live_env())
         for namespace in ("compiler-cache/v1", "toolchain-cache/v1", "dependency-cache/v2"):
-            prefix = "deeplearning4j/releases/" + namespace + "/"
-            result = storage.list_objects_v2(Bucket=worker.R2_BUCKET, Prefix=prefix, MaxKeys=1)
-            self.assertTrue(result.get("Contents"), f"No migrated objects in {prefix}")
-            key = result["Contents"][0]["Key"]
-            storage.head_object(Bucket=worker.R2_BUCKET, Key=key)
-            print(f"R2 namespace readable: {prefix}")
+            with self.subTest(namespace=namespace):
+                prefix = "deeplearning4j/releases/" + namespace + "/"
+                pages = storage.get_paginator("list_objects_v2").paginate(
+                    Bucket=worker.R2_BUCKET, Prefix=prefix, PaginationConfig={"PageSize": 10}
+                )
+                key = next((item["Key"] for page in pages for item in page.get("Contents", [])
+                            if "/r2-transport-contract/" not in item["Key"]), None)
+                self.assertIsNotNone(key, f"No migrated objects in {prefix}")
+                storage.head_object(Bucket=worker.R2_BUCKET, Key=key)
+                print(f"R2 namespace readable: {prefix}")
+
+    def test_migrated_manifest_references(self):
+        env = self.live_env()
+        storage = transport.client(env)
         with patch.dict(os.environ, env):
             manifest = worker.load_r2_dependency_cache()
         self.assertNotIn("publicBaseUrl", manifest)
         for item in [manifest["host"], *manifest["targets"]]:
             for field in ("indexObject", "archiveObject"):
                 storage.head_object(Bucket=worker.R2_BUCKET, Key=item[field])
+
+    def test_archive_roundtrip(self):
+        env = self.live_env()
         # Exercise actual publish/restore (including digest/member verification).
         # Add only content-addressed test objects; never delete any remote key.
         with tempfile.TemporaryDirectory() as temporary:
@@ -204,7 +226,7 @@ class R2LiveCacheTests(unittest.TestCase):
             destination = root / "restored"
             subprocess.run(common + ["restore"] + options + ["--destination", str(destination)], env=env, check=True)
             self.assertEqual((source / "payload.txt").read_bytes(), (destination / "payload.txt").read_bytes())
-        print("R2 authenticated manifest, migrated archive references and verified archive roundtrip passed")
+        print("R2 authenticated verified archive roundtrip passed")
 
 
 if __name__ == "__main__":

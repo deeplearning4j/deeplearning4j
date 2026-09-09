@@ -113,7 +113,7 @@ jobs:
     secrets: inherit
 
   java-only:
-    if: (inputs.cacheMigration == '' || inputs.cacheMigration == 'none') && inputs.javaOnly == '1'
+    if: inputs.javaOnly == '1' && (inputs.cacheMigration == '' || inputs.cacheMigration == 'none')
     uses: ./.github/workflows/java-hotfix-release.yml
     with:
       releaseVersion: ${{ inputs.releaseVersion }}
@@ -129,7 +129,7 @@ jobs:
       CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
 
   release:
-    if: (inputs.cacheMigration == '' || inputs.cacheMigration == 'none') && inputs.publishSourceRunId == '' && inputs.javaOnly != '1'
+    if: inputs.publishSourceRunId == '' && inputs.javaOnly != '1' && (inputs.cacheMigration == '' || inputs.cacheMigration == 'none')
     uses: ./.github/workflows/_release-worker.yml
     with:
       workflow: ${{ inputs.workflow }}
@@ -149,7 +149,7 @@ jobs:
     secrets: inherit
 
   publish-staged:
-    if: (inputs.cacheMigration == '' || inputs.cacheMigration == 'none') && inputs.publishSourceRunId != '' && inputs.javaOnly != '1'
+    if: inputs.publishSourceRunId != '' && inputs.javaOnly != '1' && (inputs.cacheMigration == '' || inputs.cacheMigration == 'none')
     uses: ./.github/workflows/publish-release-worker-artifacts.yml
     with:
       sourceRunId: ${{ inputs.publishSourceRunId }}
