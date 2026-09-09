@@ -325,24 +325,7 @@ Status NativeDynamicShapePlan::segDispatchWarmup(
 Status NativeDynamicShapePlan::runBoundedSegmentRebuildWarmup(
     GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream,
     const char* reason) {
-  auto traceRebuildInputs = [&](const char* boundary) {
-    if (!DSP_DIAG_ENABLED(MULTI_DEVICE)) return;
-    for (int i = 0; i < numExt; ++i) {
-      auto* arr = externalArrays[i];
-      auto* db = arr != nullptr ? arr->dataBuffer() : nullptr;
-      DSP_DIAG(MULTI_DEVICE,
-               "REBUILD_INPUT boundary=%s exec=%d seg=%d-%d ext=%d name=%s arr=%p db=%p special=%p device=%d bytes=%lld offset=%lld",
-               boundary, executeCount_, seg.def.startSlot, seg.def.endSlot, i,
-               i < static_cast<int>(externalInputNames_.size()) ? externalInputNames_[i].c_str() : "?",
-               (void*)arr, (void*)db, db != nullptr ? db->special() : nullptr,
-               db != nullptr ? db->deviceId() : -1,
-               db != nullptr ? (long long)db->getLenInBytes() : 0LL,
-               arr != nullptr ? (long long)arr->offset() : 0LL);
-    }
-  };
-  traceRebuildInputs("before-invalidate");
   SegmentLifecycle::invalidateSegmentCaptures(this, seg, reason);
-  traceRebuildInputs("after-invalidate");
   platformResetGapCaches();
   platformResetBatchD2D();
 

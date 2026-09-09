@@ -264,5 +264,6 @@ public class DspMarkVariableRecaptureTest {
                 "fixed-address plan never reached replay after auto-seal invalidation");
         DspPlanAssertions.assertNoCaptureFailures(g, "fixed-address post-auto-seal recapture");
         DspPlanAssertions.assertNoPhaseContractViolations(g, "fixed-address post-auto-seal recapture");
+        DspPlanAssertions.assertNoMidExecutionRecompiles(g, "fixed-address post-auto-seal recapture");
     }
 }

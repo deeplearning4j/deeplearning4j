@@ -1563,7 +1563,13 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     const bool reuseCopy = previousCopy != nullptr && previousCopy->dataBuffer() != nullptr &&
         previousCopy->dataBuffer()->isValid() && !previousCopy->dataBuffer()->isClosed() &&
         previousCopy->dataBuffer()->deviceId() == targetDevice &&
-        shape::equalsStrict(previousCopy->shapeInfo(), srcArr->shapeInfo());
+        previousCopy->dataType() == srcArr->dataType() &&
+        previousCopy->ordering() == srcArr->ordering() && previousCopy->offset() == 0 &&
+        previousCopy->dataBuffer()->getLenInBytes() >= srcLen &&
+        shape::strideDescendingCAscendingF(previousCopy->shapeInfo()) &&
+        // The copy constructor normalizes dense strides (copyStrides=false).
+        // Singleton-axis source strides need not equal that canonical layout.
+        shape::equalsSoft(previousCopy->shapeInfo(), srcArr->shapeInfo());
 
     // Do not let an allocation attempt turn into a later invalid-argument
     // copy. Account for both driver-visible free memory and reusable pool

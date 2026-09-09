@@ -5976,15 +5976,20 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
           //     stale replay / stuck-token regression from df8cee5d5f).
           const LongType capturedCreateValueKey =
               computeCreateOpValueKey(seg, effectiveExternalsForCapture, numExt);
+          // Capture preparation can rebind boundary/staging inputs. The replay
+          // baseline must describe the addresses recorded by this capture,
+          // not the earlier dispatch-time key.
+          const LongType capturedInputAddrKey =
+              computeSegmentInputAddrKey(seg, effectiveExternalsForCapture, numExt);
           if (seg.exec.segPhase.needsCapture()) {
             const char* captureBackendName = nativeOnlyCapture ? "CUDA" : ctx.backendName;
-            SegmentLifecycle::markCaptured(seg.exec, ctx.segInputAddrKey, capturedCreateValueKey,
+            SegmentLifecycle::markCaptured(seg.exec, capturedInputAddrKey, capturedCreateValueKey,
                 computeSlotAddrHash(slots_, numSlots_, outputSlots_, seg.def.startSlot,
                              seg.def.endSlot, totalOutputSlots_),
                 captureBackendName, nativeOnlyCapture);
           } else if (seg.exec.segPhase.isSealed()) {
             // Already sealed — just update the replay keys without lifecycle transition.
-            seg.exec.sealCapture(ctx.segInputAddrKey, capturedCreateValueKey,
+            seg.exec.sealCapture(capturedInputAddrKey, capturedCreateValueKey,
                 computeSlotAddrHash(slots_, numSlots_, outputSlots_, seg.def.startSlot,
                              seg.def.endSlot, totalOutputSlots_),
                 nativeOnlyCapture ? "CUDA" : ctx.backendName, nativeOnlyCapture);

@@ -397,10 +397,15 @@ public class GGMLToSameDiffConverter {
                         }
                     }
                 } else {
-                    // Non-quantized tensors: use direct ByteBuffer to avoid heap copies
-                    ByteBuffer directData = reader.readTensorDataDirect(info);
-                    array = convertTensorDataDirect(directData, info,
-                            getTargetDataType(info, compactTokenEmbedding));
+                    DataType sourceType = info.getDataType().getNd4jType();
+                    DataType targetType = getTargetDataType(info, compactTokenEmbedding);
+                    if (sourceType == DataType.FLOAT || sourceType == DataType.DOUBLE
+                            || sourceType == DataType.HALF || sourceType == DataType.BFLOAT16) {
+                        array = loadDenseTensorStreaming(reader, info, targetType);
+                    } else {
+                        // Preserve integer payloads and their existing dtype semantics.
+                        array = convertTensorDataDirect(reader.readTensorDataDirect(info), info, targetType);
+                    }
                 }
                 weights.put(info.getName(), array);
 
@@ -823,9 +828,60 @@ public class GGMLToSameDiffConverter {
     }
 
     /**
-     * Convert tensor data from a direct ByteBuffer, avoiding the intermediate byte[] heap copy.
-     * Used for non-quantized tensors where the raw bytes can be used directly.
+     * Dense floating tensors need the same bounded staging as quantized tensors. In
+     * particular, a BF16 embedding must not coexist with whole-tensor byte[], short[],
+     * float[] and native FLOAT copies. Keep the canonical materializer, but feed it
+     * at most 262144 elements (2 MiB encoded for DOUBLE) at a time.
      */
+    private INDArray loadDenseTensorStreaming(GGUFReader reader, GGMLTensorInfo info,
+                                              DataType targetType) throws IOException {
+        long[] shape = reverseShape(info.getShape());
+        long elements = 1;
+        for (long dimension : shape) {
+            if (dimension < 0) throw new IOException("Negative dense tensor dimension: " + info.getName());
+            elements = Math.multiplyExact(elements, dimension);
+        }
+        DataType sourceType = info.getDataType().getNd4jType();
+        int width = sourceType.width();
+        if (Math.multiplyExact(elements, width) != info.getDataSize()) {
+            throw new IOException("Dense tensor payload size mismatch: " + info.getName());
+        }
+        // HALF/BF16 are decoded through FLOAT by handleNonQuantizedTensor.
+        DataType materializedType = sourceType == DataType.DOUBLE ? DataType.DOUBLE : DataType.FLOAT;
+        DataType outputType = targetType == null ? materializedType : targetType;
+        INDArray output = Nd4j.createUninitialized(outputType, shape, 'c');
+        try {
+            if (elements == 0) return output;
+            INDArray flat = output.reshape('c', new long[]{elements}); // Alias, not a separately owned allocation.
+            int chunkElements = (int) Math.min(elements, 262144L);
+            byte[] bytes = new byte[Math.multiplyExact(chunkElements, width)];
+            for (long offset = 0; offset < elements; ) {
+                int count = (int) Math.min(elements - offset, chunkElements);
+                int byteCount = Math.multiplyExact(count, width);
+                reader.readTensorDataRange(info, Math.multiplyExact(offset, width), bytes, 0, byteCount);
+                byte[] payload = byteCount == bytes.length ? bytes : Arrays.copyOf(bytes, byteCount);
+                // A caller's workspace must not retain every temporary until the whole import ends.
+                try (MemoryWorkspace ignored = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces();
+                     INDArray chunk = handleNonQuantizedTensor(
+                             payload, info.getDataType(), new long[]{count}, outputType)) {
+                    flat.get(NDArrayIndex.interval(offset, offset + count)).assign(chunk);
+                    // Finish any H2D/cast/assign before releasing chunk storage or reusing staging.
+                    Nd4j.getExecutioner().commit();
+                }
+                offset += count;
+            }
+            return output;
+        } catch (IOException | RuntimeException | Error failure) {
+            try {
+                output.close();
+            } catch (RuntimeException | Error cleanupFailure) {
+                failure.addSuppressed(cleanupFailure);
+            }
+            throw failure;
+        }
+    }
+
+    /** Materialize the unchanged integer path through the canonical decoder. */
     private INDArray convertTensorDataDirect(ByteBuffer directData, GGMLTensorInfo info,
                                              DataType targetType) {
         // The direct-buffer DataBuffer constructor is not a complete host-authoritative
@@ -939,7 +995,9 @@ public class GGMLToSameDiffConverter {
 
     private static INDArray castFloatingTarget(INDArray array, DataType sourceType, DataType targetType) {
         if (sourceType.isFPType() && targetType != null && targetType != sourceType) {
-            return array.castTo(targetType);
+            try (INDArray source = array) {
+                return source.castTo(targetType);
+            }
         }
         return array;
     }
