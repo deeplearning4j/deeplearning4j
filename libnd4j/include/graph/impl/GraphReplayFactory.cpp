@@ -18,6 +18,7 @@
 
 #include <graph/GraphReplayHandle.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspAnalysisUtils.h>
 #include <graph/cpu/FunctionalReplayHandle.h>
 #include <graph/DspDeviceDispatch.h>
 
@@ -64,7 +65,7 @@ void GraphReplayHandle::snapshotExternalAddresses(NDArray** externalInputs, int 
   int nullCount = 0;
   for (int i = 0; i < numInputs; i++) {
     capturedExternalAddrs_[i] =
-        (externalInputs[i] != nullptr) ? externalInputs[i]->specialBuffer() : nullptr;
+        dsp::existingSpecialBuffer(externalInputs[i]);
     if (capturedExternalAddrs_[i] == nullptr) nullCount++;
   }
   DSP_DIAG(EXECUTE, "GraphReplayHandle::snapshotExternalAddresses: %d inputs, %d non-null, %d null (backend=%s)",
@@ -81,7 +82,7 @@ bool GraphReplayHandle::externalAddressesMatch(NDArray** externalInputs, int num
   int mismatches = 0;
   int detailLimit = sd::graph::DspDiagnostics::getInstance().diagDetailLimit();
   for (int i = 0; i < numInputs; i++) {
-    void* current = (externalInputs[i] != nullptr) ? externalInputs[i]->specialBuffer() : nullptr;
+    void* current = dsp::existingSpecialBuffer(externalInputs[i]);
     if (current != capturedExternalAddrs_[i]) {
       mismatches++;
       if (mismatches <= detailLimit) {
