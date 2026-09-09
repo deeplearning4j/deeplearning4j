@@ -1261,13 +1261,24 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
         int savedDevice = -1;
         cudaGetDevice(&savedDevice);
         try {
-          // Preserve the existing migration boundary's source completion rule:
-          // a preceding segment may write on either its LC or replay stream,
-          // where per-buffer write events are intentionally suppressed by DSP.
-          if (db->deviceId() >= 0 && db->deviceId() != targetDevice) {
-            auto err = cudaSetDevice(db->deviceId());
-            if (err == cudaSuccess) err = cudaDeviceSynchronize();
-            if (err != cudaSuccess) throw std::runtime_error(cudaGetErrorString(err));
+          // Publish the producer stream's writes, including any earlier transfer
+          // into the caller buffer. Per-op events are suppressed inside DSP, so
+          // this cross-device boundary owns the event explicitly. Primary
+          // segments use the plan stream; secondary segments use per-thread streams.
+          const int sourceDevice = db->deviceId();
+          auto* execution = static_cast<PlanExecutionContext*>(activeExecutionContext());
+          if (sourceDevice < 0 || execution == nullptr)
+            throw std::runtime_error("writable external has no producer device/context");
+          auto producerErr = cudaSetDevice(sourceDevice);
+          if (producerErr != cudaSuccess) throw std::runtime_error(cudaGetErrorString(producerErr));
+          cudaStream_t producerStream = sourceDevice == execution->deviceId
+              ? reinterpret_cast<cudaStream_t>(execution->dspStream) : cudaStreamPerThread;
+          if (producerStream == nullptr || DebugHelper::inGraphCapture(&producerStream))
+            throw std::runtime_error("writable external migration requires an uncaptured producer stream");
+          {
+            DspStreamGuard publishScope(nullptr);
+            db->waitForSpecialWriteEvent(producerStream);
+            db->recordSpecialWriteEvent(producerStream);
           }
           auto err = cudaSetDevice(targetDevice);
           if (err != cudaSuccess) throw std::runtime_error(cudaGetErrorString(err));
@@ -1707,26 +1718,20 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
 void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
   if (migratedInputs_.empty()) return;
 
-  // Segment kernels may run on a CUDA context stream that differs from the
-  // migration/default stream.  The migrated NDArray is therefore still a live
-  // kernel input when this function is reached.  Do not release its backing
-  // allocation until all work on the target device has completed; otherwise
-  // cudaFreeAsync/pool reuse can turn the next synchronization into a deferred
-  // illegal-memory-access error.
-  int currentDevice = -1;
-  cudaGetDevice(&currentDevice);
-  const auto syncErr = cudaDeviceSynchronize();
-  if (syncErr != cudaSuccess) {
-    DSP_DIAG(MULTI_DEVICE,
-             "platformCleanupMigratedInputs: target device synchronization failed "
-             "device=%d err=%s; preserving CUDA error for post-segment validation",
-             currentDevice, cudaGetErrorString(syncErr));
-  } else {
-    DSP_DIAG(MULTI_DEVICE,
-             "platformCleanupMigratedInputs: target device synchronized before releasing "
-             "migrated buffers device=%d count=%d",
-             currentDevice, static_cast<int>(migratedInputs_.size()));
+  // Segment binding routes replay and gap kernels onto this stream. Retained
+  // state uses event dependencies below, with no host barrier. Disposable input
+  // copies need completion before the deferred owner drain can reclaim them.
+  cudaStream_t segmentStream = reinterpret_cast<cudaStream_t>(dspGetExecutionStream());
+  if (segmentStream == nullptr || DebugHelper::inGraphCapture(&segmentStream))
+    throw std::runtime_error("migration cleanup requires an uncaptured segment stream");
+  bool hasTemporary = false;
+  for (const auto& mi : migratedInputs_) {
+    const bool stateReplica = mi.externalInputIdx >= 0 &&
+        externalInputIsVariable_[mi.externalInputIdx] &&
+        !externalInputIsPlaceholder_[mi.externalInputIdx];
+    hasTemporary |= !stateReplica;
   }
+  const auto syncErr = hasTemporary ? cudaStreamSynchronize(segmentStream) : cudaSuccess;
 
   std::exception_ptr writebackFailure;
   // Restore original arrays in the publication table. A consumer view can still
@@ -1743,8 +1748,13 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
         // input-only. The retained source survives this asynchronous peer copy,
         // and its destination event orders subsequent readers on any device.
         DspStreamGuard transferScope(nullptr);
+        mi.migrated->dataBuffer()->recordSpecialWriteEvent(segmentStream);
         DataBuffer::memcpy(mi.original->dataBuffer(), mi.migrated->dataBuffer(),
                            0, 0, mi.original->dataBuffer()->getNumElements());
+        // Prevent the next replay from overwriting the retained replica while
+        // the destination copy stream still reads it. Caller reads wait on the
+        // same destination event through DataBuffer's normal coherence path.
+        mi.original->dataBuffer()->waitForSpecialWriteEvent(segmentStream);
       } catch (...) {
         if (!writebackFailure) writebackFailure = std::current_exception();
       }
@@ -1772,6 +1782,8 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
   }
   migratedInputs_.clear();
   if (writebackFailure) std::rethrow_exception(writebackFailure);
+  if (syncErr != cudaSuccess)
+    throw std::runtime_error(std::string("migration segment completion failed: ") + cudaGetErrorString(syncErr));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
