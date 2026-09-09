@@ -1,6 +1,6 @@
 """Audited Javadoc-only repair overlay for the pinned native release source.
 
-Only the thirty reviewed Javadoc lines are eligible. No whole fix checkout is
+Only the thirty-four reviewed Javadoc lines are eligible. No whole fix checkout is
 merged: unrelated changes at that revision cannot enter the Java reactor.
 Extending this table requires reviewing the original comment and source SHA.
 """
@@ -137,6 +137,21 @@ REPAIRS[DATAVEC_LOCAL] = {
 }
 
 
+# Recovery 34400417264: four constructor comments contain bare ampersands.
+LFW_ITERATOR = "deeplearning4j/deeplearning4j-data/deeplearning4j-datasets/src/main/java/org/deeplearning4j/datasets/iterator/impl/LFWDataSetIterator.java"
+LFW_RECOVERY_RUN = "34400417264"
+REPAIRS[LFW_ITERATOR] = {
+    60: ("    /** Loads images with given  batchSize, numExamples, imgDim, train, & splitTrainTest returned by the generator. */\n",
+         "    /** Loads images with given  batchSize, numExamples, imgDim, train, &amp; splitTrainTest returned by the generator. */\n"),
+    66: ("    /** Loads images with given  batchSize, numExamples, numLabels, train, & splitTrainTest returned by the generator. */\n",
+         "    /** Loads images with given  batchSize, numExamples, numLabels, train, &amp; splitTrainTest returned by the generator. */\n"),
+    72: ("    /** Loads images with given  batchSize, numExamples, imgDim, numLabels, useSubset, train, splitTrainTest & Random returned by the generator. */\n",
+         "    /** Loads images with given  batchSize, numExamples, imgDim, numLabels, useSubset, train, splitTrainTest &amp; Random returned by the generator. */\n"),
+    79: ("    /** Loads images with given  batchSize, numExamples, imgDim, numLabels, useSubset, train, splitTrainTest & Random returned by the generator. */\n",
+         "    /** Loads images with given  batchSize, numExamples, imgDim, numLabels, useSubset, train, splitTrainTest &amp; Random returned by the generator. */\n"),
+}
+
+
 def digest(data):
     return hashlib.sha256(data).hexdigest()
 
@@ -184,7 +199,9 @@ def prepare(source, fix_source, fix_commit, commit, output):
                   "pythonDiagnostics": {"recoveryRunId": PYTHON_RECOVERY_RUN,
                                         "errorCount": 1, "repairedLineCount": 1},
                   "datavecLocalDiagnostics": {"recoveryRunId": DATAVEC_LOCAL_RECOVERY_RUN,
-                                              "errorCount": 2, "repairedLineCount": 1}}
+                                              "errorCount": 2, "repairedLineCount": 1},
+                  "lfwDiagnostics": {"recoveryRunId": LFW_RECOVERY_RUN,
+                                     "errorCount": 4, "repairedLineCount": 4}}
     # Validate every file before writing any overlay. Preserve line numbers and
     # every non-repaired byte, including all compiled code and source positions.
     for path, fixed in pending:
