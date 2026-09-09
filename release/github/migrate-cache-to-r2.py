@@ -76,7 +76,8 @@ def main():
     for prefix in args.prefix or PREFIXES:
         source = f"azure:releases/{prefix}"
         destination = f"r2:dl4j-cache/{prefix}"
-        common = ["--config", os.devnull, "--checkers", "8", "--stats", "30s", "--stats-one-line"]
+        common = ["--config", os.devnull, "--checkers", "8", "--stats", "30s", "--stats-one-line",
+                  "--stats-log-level", "NOTICE"]
         inventory = json.loads(subprocess.check_output(
             ["rclone", "size", source, "--json", "--config", os.devnull], env=env, text=True))
         print(f"Source inventory {prefix}: {inventory['count']} objects, {inventory['bytes']} bytes", flush=True)
