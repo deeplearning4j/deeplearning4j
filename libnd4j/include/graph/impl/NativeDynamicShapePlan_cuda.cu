@@ -593,6 +593,15 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     cudaStream_t segmentStream = dspGetExecutionStream() != nullptr
         ? reinterpret_cast<cudaStream_t>(dspGetExecutionStream()) : cudaStr;
     void* stream = &segmentStream;
+    // Frozen replay has the same input/output publication boundary as warmup.
+    // In particular, state replicas must be refreshed and written back on every
+    // invocation, including the whole-plan fast path.
+    auto migrationStatus = platformMigrateSegmentInputs(seg, externalInputs, numExternalInputs);
+    if (migrationStatus != Status::OK) {
+      platformCleanupMigratedInputs();
+      return migrationStatus;
+    }
+    auto executeSegment = [&]() -> Status {
 
     // Segments with terminal outcomes or non-capturable — no replay handles.
     // Execute slot-by-slot (reshape/view/identity ops with no kernels).
@@ -614,7 +623,7 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
         return sbsStatus;
       }
       seg.exec.executionCount++;
-      continue;
+      return Status::OK;
     }
 
     bool hasMonolithicReplay = (seg.exec.replayHandle != nullptr && seg.exec.replayHandle->isReady());
@@ -661,8 +670,7 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
         auto rebuildStatus = rebuildSegmentAfterPreLaunchReplayDrift(
             seg, externalInputs, numExternalInputs, stream,
             "monolithic_slot_addr_drift");
-        if (rebuildStatus != Status::OK) return rebuildStatus;
-        continue;
+        return rebuildStatus;
       }
       if (replayStatus != Status::OK) return replayStatus;
 
@@ -704,10 +712,9 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
         auto rebuildStatus = rebuildSegmentAfterPreLaunchReplayDrift(
             seg, externalInputs, numExternalInputs, stream,
             "merged_graph_addr_drift");
-        if (rebuildStatus != Status::OK) return rebuildStatus;
         // The bounded warmup produced this segment's outputs. Do not count it as
-        // a graph replay; continue so every later segment executes exactly once.
-        continue;
+        // a graph replay; every later segment still executes exactly once.
+        return rebuildStatus;
       }
       if (replayStatus != Status::OK) {
         DSP_DIAG(EXECUTE,
@@ -738,6 +745,17 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
           "DSP frozen replay handles disappeared after replay iteration began");
       return Status::KERNEL_FAILURE;
     }
+    return Status::OK;
+    };
+    Status segmentStatus;
+    try {
+      segmentStatus = executeSegment();
+    } catch (...) {
+      platformCleanupMigratedInputs();
+      throw;
+    }
+    platformCleanupMigratedInputs();
+    if (segmentStatus != Status::OK) return segmentStatus;
   }
 
   // Sync-free trace-slot fingerprint: capture the replay value on the DSP stream
@@ -1225,6 +1243,93 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     auto* db = arr->dataBuffer();
     if (db == nullptr) continue;
 
+    // Writable externals need a stable, bidirectional replica, not a disposable
+    // input copy. Reuse the existing per-device staging owners (including their
+    // release/accounting lifecycle), but keep these state inputs out of ordinary
+    // input-only staging. A same-device replacement must refresh an existing owner.
+    if (externalSource && externalInputIsVariable_[externalInputIdx] &&
+        !externalInputIsPlaceholder_[externalInputIdx]) {
+      NDArray** stateBuffers = nullptr;
+      if (targetDevice == 0) {
+        stateBuffers = placeholderStagingBuffers_;
+      } else {
+        auto it = deviceStagingBuffers_.find(targetDevice);
+        if (it != deviceStagingBuffers_.end()) stateBuffers = it->second.data();
+      }
+      NDArray* state = stateBuffers != nullptr ? stateBuffers[externalInputIdx] : nullptr;
+      if (state != nullptr || db->deviceId() != targetDevice) {
+        int savedDevice = -1;
+        cudaGetDevice(&savedDevice);
+        try {
+          // Preserve the existing migration boundary's source completion rule:
+          // a preceding segment may write on either its LC or replay stream,
+          // where per-buffer write events are intentionally suppressed by DSP.
+          if (db->deviceId() >= 0 && db->deviceId() != targetDevice) {
+            auto err = cudaSetDevice(db->deviceId());
+            if (err == cudaSuccess) err = cudaDeviceSynchronize();
+            if (err != cudaSuccess) throw std::runtime_error(cudaGetErrorString(err));
+          }
+          auto err = cudaSetDevice(targetDevice);
+          if (err != cudaSuccess) throw std::runtime_error(cudaGetErrorString(err));
+          if (stateBuffers == nullptr) {
+            if (targetDevice == 0) {
+              placeholderStagingBuffers_ = new NDArray*[numExternalInputs_]();
+              stateBuffers = placeholderStagingBuffers_;
+            } else {
+              auto& buffers = deviceStagingBuffers_[targetDevice];
+              buffers.resize(numExternalInputs_, nullptr);
+              stateBuffers = buffers.data();
+            }
+          }
+          if (state == nullptr) {
+            // Preserve the backing layout and offset, not just the logical shape:
+            // offset views and quantized caches can have storage outside lengthOf().
+            std::vector<LongType> dimensions(arr->shapeOf(), arr->shapeOf() + arr->rankOf());
+            auto* storage = new DataBuffer(db->getLenInBytes(), arr->dataType(), nullptr, false);
+            try {
+              state = new NDArray(storage, arr->ordering(), dimensions, arr->dataType(),
+                                  LaunchContext::defaultContext(), true, false, arr->offset());
+              state->setShapeInfo(arr->shapeInfo());
+            } catch (...) {
+              if (state != nullptr) delete state;
+              else delete storage;
+              throw;
+            }
+            stateBuffers[externalInputIdx] = state;
+          }
+          if (state->dataBuffer()->getLenInBytes() != db->getLenInBytes() ||
+              state->offset() != arr->offset() || !shape::equalsStrict(state->shapeInfo(), arr->shapeInfo())) {
+            throw std::runtime_error("writable external changed storage contract within a plan lease");
+          }
+          // DataBuffer::memcpy handles peer/non-peer transfers and publishes a
+          // destination write event; no source migration or host round trip here.
+          {
+            // This is a cross-stream transfer boundary, not an op on the DSP
+            // stream. Allow DataBuffer to publish its normal completion event.
+            DspStreamGuard transferScope(nullptr);
+            DataBuffer::memcpy(state->dataBuffer(), db, 0, 0, db->getNumElements());
+          }
+          state->dataBuffer()->waitForSpecialWriteEvent(dspGetExecutionStream());
+          auto* lcStream = LaunchContext::defaultContext()->getCudaStream();
+          if (lcStream != nullptr) state->dataBuffer()->waitForSpecialWriteEvent(*lcStream);
+          MigratedInput mi;
+          mi.outputSlotIdx = -1;
+          mi.original = arr;
+          mi.migrated = state;
+          mi.externalInputTable = externalInputs;
+          mi.externalInputIdx = externalInputIdx;
+          migratedInputs_.push_back(mi);
+          externalInputs[externalInputIdx] = state;
+        } catch (const std::exception& error) {
+          if (savedDevice >= 0) cudaSetDevice(savedDevice);
+          return cudaPlanFailure("CUDA writable external migration failed: ext=%d targetDevice=%d: %s",
+                                 externalInputIdx, targetDevice, error.what());
+        }
+        if (savedDevice >= 0) cudaSetDevice(savedDevice);
+        continue;
+      }
+    }
+
     // The array may be on a different device. We check by trying to determine
     // where the special (GPU) buffer lives. If targetDevice differs from where
     // the data was produced, we need to migrate.
@@ -1623,18 +1728,34 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
              currentDevice, static_cast<int>(migratedInputs_.size()));
   }
 
+  std::exception_ptr writebackFailure;
   // Restore original arrays in the publication table. A consumer view can still
   // share a migrated owner's DataBuffer after this segment completes. Retire that
   // owner through the plan-level deferred queue so it stays alive until the view
   // is replaced; deleting it here leaves a dangling output-slot wrapper.
   for (auto& mi : migratedInputs_) {
+    const bool stateReplica = mi.externalInputIdx >= 0 &&
+        externalInputIsVariable_[mi.externalInputIdx] &&
+        !externalInputIsPlaceholder_[mi.externalInputIdx];
+    if (stateReplica && syncErr == cudaSuccess) {
+      try {
+        // Only writable state is returned; weights and ordinary feeds remain
+        // input-only. The retained source survives this asynchronous peer copy,
+        // and its destination event orders subsequent readers on any device.
+        DspStreamGuard transferScope(nullptr);
+        DataBuffer::memcpy(mi.original->dataBuffer(), mi.migrated->dataBuffer(),
+                           0, 0, mi.original->dataBuffer()->getNumElements());
+      } catch (...) {
+        if (!writebackFailure) writebackFailure = std::current_exception();
+      }
+    }
     if (outputSlots_ != nullptr && mi.outputSlotIdx >= 0 && mi.outputSlotIdx < totalOutputSlots_) {
       outputSlots_[mi.outputSlotIdx] = mi.original;
     }
     if (mi.externalInputTable != nullptr && mi.externalInputIdx >= 0) {
       mi.externalInputTable[mi.externalInputIdx] = mi.original;
     }
-    if (mi.migrated != nullptr) {
+    if (mi.migrated != nullptr && !stateReplica) {
       // Slot replacement may already have queued this same wrapper. Deleting
       // it inline leaves a stale entry in deferredSlotDeletes_, which can then
       // mistake reused allocator storage for an NDArray. Transfer retirement
@@ -1650,6 +1771,7 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
     }
   }
   migratedInputs_.clear();
+  if (writebackFailure) std::rethrow_exception(writebackFailure);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

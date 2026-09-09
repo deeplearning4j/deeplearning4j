@@ -4059,6 +4059,14 @@ public class DynamicShapePlanExecutor implements Closeable {
                                 nativeMutableReplicaCaches.get(nativePlanHandle.address());
                         boolean hasMutableReplica = mutableReplicas != null
                                 && mutableReplicas.containsKey(extKeys[i]);
+                        // Native state externals have input/output semantics. Java's
+                        // ordinary replicas only refresh inputs and would hide native
+                        // writeback. Query classification only when migration is needed.
+                        if ((arrDevice != nativeExecutionDevice || hasMutableReplica)
+                                && nativeOps.getPlanIsExternalInputVariable(nativePlanHandle, i)
+                                && !nativeOps.getPlanIsExternalInputPlaceholder(nativePlanHandle, i)) {
+                            continue;
+                        }
                         boolean secondaryOnly = extConsumerDevice != null
                                 && extConsumerDevice[i] >= 0
                                 && extConsumerDevice[i] != nativeExecutionDevice;

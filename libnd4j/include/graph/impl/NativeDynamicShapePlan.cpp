@@ -2357,10 +2357,6 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
   plan->externalInputIsPlaceholder_.resize(plan->numExternalInputs_, false);
   for (int s = 0; s < plan->numSlots_; s++) {
     auto& slot = plan->slots_[s];
-    const bool inPlaceOnnxMha =
-        slot.ident.op != nullptr && slot.ident.op->getOpName() != nullptr
-            && *slot.ident.op->getOpName() == "onnx_multi_head_attention"
-            && slot.wiring.numInputs >= 7;
     for (int i = 0; i < slot.wiring.numInputs; i++) {
       int srcIdx = slot.wiring.inputSourceIndices[i];
       if (srcIdx < 0) {
@@ -2369,13 +2365,6 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
           if (slot.wiring.inputSourceTypes[i] == SOURCE_PLACEHOLDER) {
             plan->externalInputIsVariable_[extIdx] = true;
             plan->externalInputIsPlaceholder_[extIdx] = true;
-          }
-          // Seven-input ONNX MHA owns in-place KV writes. Keep past K/V on
-          // their canonical external device buffers from the first prefill;
-          // ordinary placeholder staging is input-only and would hide writes.
-          if (inPlaceOnnxMha && (i == 4 || i == 5)) {
-            plan->externalInputIsVariable_[extIdx] = true;
-            plan->externalInputIsPlaceholder_[extIdx] = false;
           }
           // NOTE: SOURCE_VARIABLE inputs (trainable weights) are NOT marked
           // variable here. During inference, weights are constants — they never
@@ -2386,6 +2375,25 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
           // See NativePlanCompiler.cpp lines 630-641 for the canonical rationale.
         }
       }
+    }
+  }
+
+  // In-place attention state is not an input-only placeholder. Classify it
+  // AFTER all readers, so a later read-only consumer cannot undo the writer's
+  // classification. Reuse the device-managed external ABI used by ONNX MHA.
+  for (int s = 0; s < plan->numSlots_; s++) {
+    const auto& slot = plan->slots_[s];
+    const bool onnxKv = slot.ident.opName == "onnx_multi_head_attention" && slot.wiring.numInputs >= 7;
+    const bool dpaKv = slot.ident.opName == "dot_product_attention_v2" && slot.wiring.numInputs >= 8;
+    for (int i = 0; i < slot.wiring.numInputs; i++) {
+      if (!((onnxKv && (i == 4 || i == 5)) ||
+            (dpaKv && (i == 5 || i == 6 || i == 9 || i == 10)))) continue;
+      const int srcIdx = slot.wiring.inputSourceIndices[i];
+      if (srcIdx >= 0) continue;
+      const int extIdx = -(srcIdx + 1);
+      if (extIdx >= plan->numExternalInputs_) continue;
+      plan->externalInputIsVariable_[extIdx] = true;
+      plan->externalInputIsPlaceholder_[extIdx] = false;
     }
   }
 
