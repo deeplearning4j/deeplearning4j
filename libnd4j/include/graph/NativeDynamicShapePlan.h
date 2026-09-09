@@ -2198,6 +2198,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     };
     for (NDArray* arr : planOwnedArrays_) addArray(arr);
     for (NDArray* arr : outputDeliveryBuffers_) addArray(arr);
+    for (const auto& entry : migrationBuffers_) addArray(entry.second);
     if (placeholderStagingBuffers_ != nullptr) {
       for (int i = 0; i < numExternalInputs_; ++i) {
         addArray(placeholderStagingBuffers_[i]);
@@ -3947,8 +3948,12 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     NDArray* migrated;       // Migrated copy (on target device) - delete after segment
     NDArray** externalInputTable = nullptr;  // Non-null when an external input was replaced
     int externalInputIdx = -1;
+    bool retained = false;
   };
   std::vector<MigratedInput> migratedInputs_;
+  // Stable input storage baked into captured consumers. Key is device/source
+  // publication, not caller address; values are refreshed on every invocation.
+  std::unordered_map<uint64_t, NDArray*> migrationBuffers_;
 
   // Max-allocation mode for KV cache outputs
   // Maps output slot index -> max number of elements to pre-allocate

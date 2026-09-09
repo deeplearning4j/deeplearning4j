@@ -266,7 +266,8 @@ DspStagingSyncResult NativeDynamicShapePlan::performPreReplaySync(
       (activeStagingDevice_ == -1 || activeStagingDevice_ != currentDevice)) {
     const int previousDevice = activeStagingDevice_;
     execCtx->resetSyncPhase();
-    effectiveExternals_ = nullptr;
+    // ensureAndSyncStagingBuffers refreshes every entry for this device.
+    // Retain the owning table allocation rather than leaking it on each switch.
     DSP_DIAG(STREAM_SYNC,
              "%s device transition %d->%d: reset per-device staging sync",
              diagTag, previousDevice, currentDevice);

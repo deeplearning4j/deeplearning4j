@@ -384,6 +384,13 @@ void NativeDynamicShapePlan::flushDeferredSlotDeletes() {
     }
   }
 
+  for (const auto& entry : migrationBuffers_) {
+    NDArray* live = entry.second;
+    if (live == nullptr) continue;
+    liveArraySlots.emplace(live, -1);
+    if (live->dataBuffer() != nullptr) liveBufferSlots.emplace(live->dataBuffer(), -1);
+  }
+
   // Exact live wrappers must survive. For distinct wrappers sharing a
   // DataBuffer, retain only an owning non-view wrapper: deleting borrowed or
   // view wrappers is safe and prevents transient aliases accumulating forever.
@@ -1656,6 +1663,8 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   for (NDArray* arr : planOwnedArrays_) gatherOwned(arr);
   for (NDArray* arr : deferredSlotDeletes_) gatherOwned(arr);
   for (NDArray* arr : outputDeliveryBuffers_) gatherOwned(arr);
+  for (const auto& entry : migrationBuffers_) gatherOwned(entry.second);
+  migrationBuffers_.clear();
   outputDeliveryBuffers_.clear();
 
   // Classify every live wrapper exactly once before deleting any of them.
@@ -7763,6 +7772,18 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
                clearedCtxOutputs, numSlots_, clearedCtxInputs, numSlots_);
     }
   }
+
+  // Graphs and pooled context references are gone. Retire each retained
+  // migration wrapper once; ordinary NDArray deletion preserves live aliases.
+  for (const auto& entry : migrationBuffers_) {
+    deferredSlotDeletes_.erase(std::remove(deferredSlotDeletes_.begin(), deferredSlotDeletes_.end(),
+                                          entry.second), deferredSlotDeletes_.end());
+    if (entry.second != nullptr && deleted.insert(entry.second).second) {
+      delete entry.second;
+      freedCount++;
+    }
+  }
+  migrationBuffers_.clear();
 
   // ── Step 4c: Clear ext input pointer caches ─────────────────────────────
   // The NDArray* pointers target Java-owned arrays that become invalid once

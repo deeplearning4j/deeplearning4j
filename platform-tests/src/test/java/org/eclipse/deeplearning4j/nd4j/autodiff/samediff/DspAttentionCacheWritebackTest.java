@@ -111,6 +111,7 @@ public class DspAttentionCacheWritebackTest extends BaseND4JTest {
             }
             assertTrue(DspPlanAssertions.getTotalGraphReplays(sd) > 0, "manager decode must reach replay");
             DspPlanAssertions.assertNoCaptureFailures(sd, "manager prepare/scatter lifecycle");
+            DspPlanAssertions.assertNoMidExecutionRecompiles(sd, "fixed-shape manager decode");
         } finally {
             Nd4j.getAffinityManager().setDeviceForCurrentThread(savedDevice);
         }
@@ -226,6 +227,7 @@ public class DspAttentionCacheWritebackTest extends BaseND4JTest {
                 }
                 assertTrue(DspPlanAssertions.getTotalGraphReplays(sd) > 0, "stable state replicas must permit replay");
                 DspPlanAssertions.assertNoCaptureFailures(sd, "attention state writeback");
+                DspPlanAssertions.assertNoMidExecutionRecompiles(sd, "fixed-shape attention writeback");
             }
         } finally {
             Nd4j.getAffinityManager().setDeviceForCurrentThread(savedDevice);

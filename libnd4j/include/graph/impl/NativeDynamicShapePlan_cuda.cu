@@ -461,7 +461,8 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
         static_cast<int>(syncResult.status), syncResult.cudaError,
         cudaGetErrorString(static_cast<cudaError_t>(syncResult.cudaError)));
   }
-  externalInputs = syncResult.effectiveExternals;
+  // Keep the caller table as the source for every device. effectiveExternals_
+  // is rewritten by each device's staging pass and cannot itself be that source.
 
   // ── NO gap-stream guard at this layer (by design — do not re-add) ─────────
   // The frozen fast path must NOT install a GapStreamGuard. Gap-stream ownership
@@ -506,7 +507,7 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
   // is false and the frozen fast path (this method) handles all execution —
   // so the refresh must happen here as well.
   for (size_t ri = 0; ri < segments_.size(); ri++) {
-    refreshStaleViewWrappersInSegment(segments_[ri], externalInputs, numExternalInputs);
+    refreshStaleViewWrappersInSegment(segments_[ri], syncResult.effectiveExternals, numExternalInputs);
   }
 
   // ── Slot address drift detection ──────────────────────────────────────────
@@ -661,7 +662,15 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
                (int)ModeContract::forMode(graphExecutionMode_).requiresDeterministicCublas,
                (int)tl_cublasLtDisabled);
 
-      auto replayStatus = replayMonolithicGraph(seg, externalInputs, numExternalInputs,
+      // Like compositeReplay, refresh this device's captured placeholder
+      // buffers after binding/migration. The primary staging pass cannot
+      // satisfy secondary-device position/mask inputs.
+      auto segmentSync = performPreReplaySync(
+          externalInputs, numExternalInputs, stream, "frozen_monolithic");
+      if (!segmentSync.ok() || segmentSync.effectiveExternals == nullptr)
+        return cudaPlanFailure("CUDA frozen monolithic staging failed: status=%d error=%d",
+                               static_cast<int>(segmentSync.status), segmentSync.cudaError);
+      auto replayStatus = replayMonolithicGraph(seg, segmentSync.effectiveExternals, numExternalInputs,
                                                 stream, "frozen_fast_path");
       if (replayStatus == Status::MAYBE) {
         DSP_DIAG(EXECUTE,
@@ -669,7 +678,7 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
                  "for seg[%d-%d]",
                  seg.def.startSlot, seg.def.endSlot);
         auto rebuildStatus = rebuildSegmentAfterPreLaunchReplayDrift(
-            seg, externalInputs, numExternalInputs, stream,
+            seg, segmentSync.effectiveExternals, numExternalInputs, stream,
             "monolithic_slot_addr_drift");
         return rebuildStatus;
       }
@@ -1547,6 +1556,14 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
              (long long)arr->lengthOf());
 
     cudaSetDevice(targetDevice);
+    const uint64_t migrationKey = (static_cast<uint64_t>(targetDevice) << 32) |
+                                  static_cast<uint32_t>(sourceIdx);
+    auto cachedCopy = migrationBuffers_.find(migrationKey);
+    NDArray* previousCopy = cachedCopy != migrationBuffers_.end() ? cachedCopy->second : nullptr;
+    const bool reuseCopy = previousCopy != nullptr && previousCopy->dataBuffer() != nullptr &&
+        previousCopy->dataBuffer()->isValid() && !previousCopy->dataBuffer()->isClosed() &&
+        previousCopy->dataBuffer()->deviceId() == targetDevice &&
+        shape::equalsStrict(previousCopy->shapeInfo(), srcArr->shapeInfo());
 
     // Do not let an allocation attempt turn into a later invalid-argument
     // copy. Account for both driver-visible free memory and reusable pool
@@ -1565,7 +1582,7 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     size_t poolReusable = poolReserved > poolUsed ? poolReserved - poolUsed : 0;
     size_t availableBytes = freeBytes;
     if (poolReusable <= SIZE_MAX - availableBytes) availableBytes += poolReusable;
-    if (memInfoErr == cudaSuccess && availableBytes < srcLen) {
+    if (!reuseCopy && memInfoErr == cudaSuccess && availableBytes < srcLen) {
       DSP_DIAG(MEMORY,
                "migrateSlotInputsToTargetDevice: destination capacity rejected slot=%d "
                "sourceDevice=%d targetDevice=%d bytes=%zu free=%zu poolReusable=%zu total=%zu",
@@ -1581,10 +1598,11 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     // The transfer fully overwrites a dense destination. Do not enqueue a
     // constructor memset on the context stream: the non-P2P copy below need
     // not use that stream, so a late zero-fill could overwrite the fresh data.
-    NDArray* copy = nullptr;
+    NDArray* copy = reuseCopy ? previousCopy : nullptr;
     try {
-      copy = new NDArray(srcArr->shapeInfo(), srcArr->dataType(), false,
-                         LaunchContext::defaultContext(), false);
+      if (copy == nullptr)
+        copy = new NDArray(srcArr->shapeInfo(), srcArr->dataType(), false,
+                           LaunchContext::defaultContext(), false);
     } catch (...) {
       DSP_DIAG(MEMORY,
                "migrateSlotInputsToTargetDevice: destination allocation threw slot=%d "
@@ -1621,7 +1639,7 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
                slotIdx, targetDevice, dstDev,
                dstAttrErr == cudaSuccess ? dstAttrs.device : -1,
                cudaGetErrorString(dstAttrErr), srcLen);
-      delete copy;
+      if (!reuseCopy) delete copy;
       if (srcMat != nullptr) delete srcMat;
       cudaGetLastError();
       if (savedDevice >= 0) cudaSetDevice(savedDevice);
@@ -1687,7 +1705,7 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
                  canAccessForward && canAccessReverse ? 1 : 0,
                  cudaGetErrorString(copyErr));
         cudaGetLastError();
-        delete copy;
+        if (!reuseCopy) delete copy;
         if (srcMat != nullptr) delete srcMat;
         if (savedDevice >= 0) cudaSetDevice(savedDevice);
         return cudaPlanFailure(
@@ -1699,6 +1717,13 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
       }
     }
     NDArray::registerSpecialUse(writes, reads);
+    if (!reuseCopy) {
+      migrationBuffers_[migrationKey] = copy;
+      if (previousCopy != nullptr) {
+        planOwnedArrays_.erase(previousCopy);
+        deferredSlotDeletes_.push_back(previousCopy);
+      }
+    }
 
     // Restore the caller's device. Leaving the thread on the secondary device
     // makes the next plan/request allocate on the wrong GPU and amplifies pool
@@ -1712,6 +1737,7 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     mi.outputSlotIdx = slotIdx;
     mi.original = arr;
     mi.migrated = copy;
+    mi.retained = true;
     mi.externalInputTable = externalSource ? externalInputs : nullptr;
     mi.externalInputIdx = externalInputIdx;
     migratedInputs_.push_back(mi);
@@ -1725,6 +1751,10 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
 
     if (externalSource) {
       externalInputs[externalInputIdx] = copy;
+      // Immutable weights also pass through staging without a D2D copy.
+      // Keep cached dispatch publications aligned with the retained replica.
+      if (effectiveExternals_ != nullptr && !externalInputIsPlaceholder_[externalInputIdx])
+        effectiveExternals_[externalInputIdx] = copy;
     } else {
       outputSlots_[slotIdx] = copy;
     }
@@ -1788,12 +1818,12 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
     }
     if (mi.externalInputTable != nullptr && mi.externalInputIdx >= 0) {
       mi.externalInputTable[mi.externalInputIdx] = mi.original;
-      if (stateReplica && effectiveExternals_ != nullptr &&
+      if (effectiveExternals_ != nullptr &&
           effectiveExternals_[mi.externalInputIdx] == mi.migrated) {
         effectiveExternals_[mi.externalInputIdx] = mi.original;
       }
     }
-    if (mi.migrated != nullptr && !stateReplica) {
+    if (mi.migrated != nullptr && !stateReplica && !mi.retained) {
       // Slot replacement may already have queued this same wrapper. Deleting
       // it inline leaves a stale entry in deferredSlotDeletes_, which can then
       // mistake reused allocator storage for an NDArray. Transfer retirement

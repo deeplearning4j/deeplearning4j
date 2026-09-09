@@ -2596,6 +2596,13 @@ Status NativeDynamicShapePlan::replayMonolithicGraph(
              (long long)currentSlotHash);
   }
 
+  // Incoming boundary copies and immutable external inputs are also baked
+  // into native graph nodes. Validate after migration, before any launch.
+  if (seg.exec.capturedInputAddrKey != 0 &&
+      computeSegmentInputAddrKey(seg, externalArrays, numExt) != seg.exec.capturedInputAddrKey) {
+    return Status::MAYBE;
+  }
+
   // ── Step 1.5: Live execution of value-shape create ops ──
   // When create ops (range, create, lin_space — CONSTANT_GENERATION +
   // VALUE_DEPENDENT_SHAPE) were excluded from the CUDA graph during native-only
