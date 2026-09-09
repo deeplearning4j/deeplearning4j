@@ -164,9 +164,24 @@ ensure_rust_toolchain() {
 
   work=$(mktemp -d)
   trap 'rm -rf "${work}"' RETURN
-  curl --proto '=https' --tlsv1.2 --fail --silent --show-error --location \
-    --retry 5 "${CURL_RETRY_ALL[@]}" --connect-timeout 20 --max-time 300 \
-    https://sh.rustup.rs -o "${work}/rustup-init.sh"
+  # curl <7.71 does not retry TLS handshake resets with --retry alone.
+  # Retry exit 35 explicitly on those hosts; never execute a partial installer.
+  local attempt=1 download_status
+  while true; do
+    if curl --proto '=https' --tlsv1.2 --fail --silent --show-error --location \
+        --retry 5 "${CURL_RETRY_ALL[@]}" --connect-timeout 20 --max-time 300 \
+        https://sh.rustup.rs -o "${work}/rustup-init.sh"; then
+      break
+    else
+      download_status=$?
+    fi
+    if [ "${download_status}" -ne 35 ] || [ "${#CURL_RETRY_ALL[@]}" -ne 0 ] || [ "${attempt}" -ge 6 ]; then
+      return "${download_status}"
+    fi
+    printf 'Rust installer TLS handshake failed; retry %s/5\n' "${attempt}" >&2
+    sleep "$((attempt * 2))"
+    attempt=$((attempt + 1))
+  done
   sh "${work}/rustup-init.sh" -y --default-toolchain stable
   export PATH="${HOME}/.cargo/bin:${PATH}"
   printf '%s\n' "${HOME}/.cargo/bin" >>"${GITHUB_PATH}"
