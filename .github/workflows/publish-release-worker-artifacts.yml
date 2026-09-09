@@ -9,6 +9,10 @@ on:
       metadataFixCommit:
         type: string
         default: ""
+      documentationFixCommit:
+        description: Immutable audited Javadoc-only repair SHA
+        type: string
+        default: ""
       snapshotVersion:
         type: string
         default: 1.0.0-SNAPSHOT
@@ -48,6 +52,10 @@ on:
         default: false
       metadataFixCommit:
         description: Explicit immutable packaging-only fix SHA
+        type: string
+        default: ""
+      documentationFixCommit:
+        description: Immutable audited Javadoc-only repair SHA
         type: string
         default: ""
       snapshotVersion:
@@ -95,6 +103,7 @@ jobs:
           DRY_RUN: ${{ inputs.dryRun }}
           FULL_REPOSITORY: ${{ inputs.fullRepository }}
           METADATA_FIX_COMMIT: ${{ inputs.metadataFixCommit }}
+          DOCUMENTATION_FIX_COMMIT: ${{ inputs.documentationFixCommit }}
           CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
           CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
@@ -106,6 +115,11 @@ jobs:
           if [[ -n "${METADATA_FIX_COMMIT:-}" ]]; then
             [[ "${FULL_REPOSITORY:-false}" == true && "$METADATA_FIX_COMMIT" =~ ^[0-9a-f]{40}$ ]] || {
               printf 'Metadata repair requires full repository recovery and an immutable fix SHA\n' >&2; exit 2;
+            }
+          fi
+          if [[ -n "${DOCUMENTATION_FIX_COMMIT:-}" ]]; then
+            [[ "${FULL_REPOSITORY:-false}" == true && "$DOCUMENTATION_FIX_COMMIT" =~ ^[0-9a-f]{40}$ ]] || {
+              printf 'Documentation repair requires full recovery and an immutable fix SHA\n' >&2; exit 2;
             }
           fi
           if [[ "${DRY_RUN}" == false ]]; then
@@ -342,6 +356,13 @@ jobs:
           ref: ${{ inputs.metadataFixCommit }}
           path: .release-metadata-fix
           persist-credentials: false
+      - name: Checkout explicit documentation fix
+        if: inputs.fullRepository && inputs.documentationFixCommit != ''
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.documentationFixCommit }}
+          path: .release-documentation-fix
+          persist-credentials: false
       - name: Configure Java for full repository recovery
         if: inputs.fullRepository
         uses: actions/setup-java@v5
@@ -359,12 +380,17 @@ jobs:
           SOURCE_RUN_ID: ${{ inputs.sourceRunId }}
           SOURCE_ATTEMPT: ${{ needs.matrix.outputs.source-attempt }}
           METADATA_FIX_COMMIT: ${{ inputs.metadataFixCommit }}
+          DOCUMENTATION_FIX_COMMIT: ${{ inputs.documentationFixCommit }}
         run: |
           set -Eeuo pipefail
           metadata_args=()
           if [[ -n "$METADATA_FIX_COMMIT" ]]; then
             metadata_args+=(--metadata-fix-source "${GITHUB_WORKSPACE}/.release-metadata-fix"
               --metadata-fix-commit "$METADATA_FIX_COMMIT")
+          fi
+          if [[ -n "$DOCUMENTATION_FIX_COMMIT" ]]; then
+            metadata_args+=(--documentation-fix-source "${GITHUB_WORKSPACE}/.release-documentation-fix"
+              --documentation-fix-commit "$DOCUMENTATION_FIX_COMMIT")
           fi
           python3 release/github/full-repository.py \
             --workers "${GITHUB_WORKSPACE}/.release-worker-recovery" \
@@ -487,6 +513,7 @@ jobs:
             ${{ github.workspace }}/.release-worker-recovery-merged/repository-manifest.json.sha256
             ${{ github.workspace }}/.release-worker-recovery-merged/central-deployment.log
             ${{ github.workspace }}/.release-worker-recovery-merged/metadata-recovery-provenance.json
+            ${{ github.workspace }}/.release-worker-recovery-merged/documentation-recovery-provenance.json
             ${{ github.workspace }}/.release-worker-recovery-merged/*effective-pom.xml
             ${{ github.workspace }}/.release-worker-recovery-merged/consumers/
             ${{ runner.temp }}/full-repository-recovery.log

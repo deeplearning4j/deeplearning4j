@@ -112,13 +112,13 @@ public class SparseNDArray {
     /**
      * Construct a CSR or CSC SparseNDArray from pre-built component arrays.
      *
-     * <h3>CSR ({@link SparseFormat#CSR})</h3>
+     * <h4>CSR ({@link SparseFormat#CSR})</h4>
      * <ul>
      *   <li>{@code secondArray} = colIdx — 1D [nnz] INT32 column indices</li>
      *   <li>{@code thirdArray}  = rowPtr — 1D [rows+1] INT32 row pointers</li>
      * </ul>
      *
-     * <h3>CSC ({@link SparseFormat#CSC})</h3>
+     * <h4>CSC ({@link SparseFormat#CSC})</h4>
      * <ul>
      *   <li>{@code secondArray} = rowIdx — 1D [nnz] INT32 row indices (access via
      *       {@link #getRowIdx()})</li>
@@ -206,7 +206,7 @@ public class SparseNDArray {
     /**
      * Construct a BSR (Block Sparse Row) SparseNDArray from pre-built BSR component arrays.
      *
-     * <h3>BSR layout</h3>
+     * <h4>BSR layout</h4>
      * <ul>
      *   <li>{@code bsrValues}  – 1D [nnzb * blockDim * blockDim], floating dtype —
      *       the non-zero block values in row-major block order</li>

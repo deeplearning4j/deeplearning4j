@@ -104,6 +104,10 @@ on:
         description: Immutable packaging-only fix SHA for full repository recovery; never changes native receipts.
         required: false
         default: ""
+      documentationFixCommit:
+        description: Immutable audited Javadoc-only repair SHA; no compiled-code changes permitted.
+        required: false
+        default: ""
       publishArtifactPattern:
         description: Glob selecting staged worker artifacts when publishSourceRunId is set.
         required: false
@@ -165,6 +169,7 @@ jobs:
       sourceRunId: ${{ inputs.publishSourceRunId }}
       fullRepository: ${{ inputs.workflow == 'all' }}
       metadataFixCommit: ${{ inputs.packagingFixCommit }}
+      documentationFixCommit: ${{ inputs.documentationFixCommit }}
       snapshotVersion: ${{ inputs.snapshotVersion }}
       artifactPattern: ${{ inputs.publishArtifactPattern }}
       deployToReleaseStaging: ${{ inputs.deployToReleaseStaging }}

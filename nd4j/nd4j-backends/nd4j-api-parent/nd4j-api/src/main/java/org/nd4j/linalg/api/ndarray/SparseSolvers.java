@@ -209,7 +209,7 @@ public final class SparseSolvers {
      * via the Lanczos algorithm with full reorthogonalization (twice-per-step for
      * numerical stability).
      *
-     * <h3>Algorithm</h3>
+     * <h4>Algorithm</h4>
      * <ol>
      *   <li>Start from a random unit vector q₀.</li>
      *   <li>Build the n×m Krylov basis Q and m×m tridiagonal T via:
@@ -382,7 +382,7 @@ public final class SparseSolvers {
      * smallest eigenvectors of L.  These are the standard "Laplacian PE" features
      * used in graph-transformer architectures (e.g., GPS, SAN, Exphormer).
      *
-     * <h3>Steps</h3>
+     * <h4>Steps</h4>
      * <ol>
      *   <li>{@code L = adjacency.laplacian()} — sparse Laplacian in CSR format.</li>
      *   <li>{@link #lanczos}(L, k+1, maxIter, false) — k+1 smallest Ritz pairs.</li>

@@ -39,17 +39,25 @@ jobs:
           set -Eeuo pipefail
           python -m unittest release.github.test_r2_cache \
             2>&1 | tee "${RUNNER_TEMP}/r2-contracts.log"
+      - name: Checkout audited original for documentation recovery contract
+        if: runner.os == 'Linux'
+        uses: actions/checkout@v7
+        with:
+          ref: 5debc0e4ed3588748b8491c94c072df75a149834
+          path: .release-doc-contract-original
+          persist-credentials: false
       - name: Validate complete release contracts
         if: runner.os == 'Linux'
         shell: bash
         working-directory: platform-tests
         env:
           PYTHONPATH: ..
+          DOCUMENTATION_CONTRACT_SOURCE: ${{ github.workspace }}/.release-doc-contract-original
         run: |
           set -Eeuo pipefail
           python -m unittest \
             test_full_release_repository test_release_publication_safety \
-            release.github.test_metadata_recovery \
+            release.github.test_metadata_recovery release.github.test_documentation_recovery \
             release.github.test_worker release.central.test_repository \
             release.aws.test_release release.azure.test_release \
             release.azure.test_dependency_cache release.gcp.test_release \

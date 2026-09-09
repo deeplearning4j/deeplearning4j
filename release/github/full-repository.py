@@ -381,7 +381,7 @@ def verify_consumer(local: Path, output: Path, ownership: dict, source: Path) ->
 
 
 def finalize(local: Path, output: Path, ownership: dict, version: str, commit: str,
-             found: dict, recovery: dict | None = None) -> None:
+             found: dict, recovery: dict | None = None, documentation: dict | None = None) -> None:
     repository = output / "maven-repository"
     repository.mkdir()
     files = []
@@ -399,6 +399,8 @@ def finalize(local: Path, output: Path, ownership: dict, version: str, commit: s
                 "workers": ["/".join(k) for k in sorted(found)], "files": files}
     if recovery is not None:
         manifest["metadataRecovery"] = recovery
+    if documentation is not None:
+        manifest["documentationRecovery"] = documentation
     path = output / "repository-manifest.json"
     path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     Path(str(path) + ".sha256").write_text(f"{central.digest(path)}  {path.name}\n", encoding="ascii")
@@ -416,9 +418,13 @@ def main() -> None:
         parser.add_argument(f"--{name}", required=True)
     parser.add_argument("--metadata-fix-source", type=Path)
     parser.add_argument("--metadata-fix-commit")
+    parser.add_argument("--documentation-fix-source", type=Path)
+    parser.add_argument("--documentation-fix-commit")
     args = parser.parse_args()
     if bool(args.metadata_fix_source) != bool(args.metadata_fix_commit):
         raise ValueError("metadata recovery requires both source checkout and explicit fix commit")
+    if bool(args.documentation_fix_source) != bool(args.documentation_fix_commit):
+        raise ValueError("documentation recovery requires both checkout and explicit fix commit")
     source, local, output = args.source.resolve(), args.local_repository.resolve(), args.output.resolve()
     if not re.fullmatch(r"[0-9a-f]{40}", args.commit):
         raise ValueError("full repository requires an immutable 40-character source SHA")
@@ -439,10 +445,15 @@ def main() -> None:
         metadata = load_module("metadata_recovery", ROOT / "release/github/metadata_recovery.py")
         supplements, recovery = metadata.prepare(source, args.metadata_fix_source.resolve(),
             args.metadata_fix_commit, args.commit, args.release_version, output)
+    documentation = None
+    if args.documentation_fix_commit:
+        docs = load_module("documentation_recovery", ROOT / "release/github/documentation_recovery.py")
+        documentation = docs.prepare(source, args.documentation_fix_source.resolve(),
+            args.documentation_fix_commit, args.commit, output)
     ownership = seed_native(found, plan, local, args.release_version, supplements)
     build_java(source, local, output, args.release_version, args.snapshot_version, ownership, plan)
     verify_consumer(local, output, ownership, source)
-    finalize(local, output, ownership, args.release_version, args.commit, found, recovery)
+    finalize(local, output, ownership, args.release_version, args.commit, found, recovery, documentation)
 
 
 if __name__ == "__main__":
