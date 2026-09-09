@@ -10,6 +10,40 @@ For access to the existing Azure Blob sccache, define the optional repository or
 
 When that secret is unavailable, such as on an untrusted fork, the existing GitHub Actions sccache setup is used as the fallback.
 
+## Existing Azure cache migration to R2
+
+`migrate-cache-to-r2.yml` is a manual, GitHub-hosted transfer, not a native build.
+It requires `AZURE_SCCACHE_CONNECTION_STRING`, `R2_ACCESS_KEY_ID`, and
+`R2_SECRET_ACCESS_KEY`. The private destination is bucket `dl4j-cache` at
+`https://318204901782458555a243ad96f80e3f.r2.cloudflarestorage.com`.
+
+Run `preview` first to check credentials and inventory the compiler, toolchain,
+and dependency cache namespaces. Then run `copy`; it preserves object paths,
+copies missing/changed objects, and verifies source/destination bytes with
+`rclone check --download --one-way`. `verify` repeats just the byte check.
+Empty source namespaces fail rather than being reported as successful migrations.
+No mode deletes Azure objects or extra R2 objects. Failed/interrupted copies can
+be rerun; no cache clearing or recompilation is needed.
+
+Copying and byte verification both read Azure data and can incur Azure egress
+charges. Source writers must be quiesced for the final delta and verification;
+a live copy is not an atomic snapshot. Inspect the Actions inventory and final
+verification result, not just the transfer progress. Use the already-registered dispatcher on the working branch:
+
+```bash
+gh workflow run build-deploy-cross-platform.yml --ref ag_new_release_updates_2 \
+  -f cacheMigration=preview
+```
+
+After reviewing the preview, use `cacheMigration=copy`. The migration option
+skips all build and publication jobs; ordinary dispatches remain unchanged.
+
+This is the **data-copy stage only**: it leaves existing build workers and Azure
+support unchanged. Backend selection, S3-enabled sccache binaries, R2 endpoint
+configuration, archive transports, and any Azure URLs embedded in manifests
+must be qualified separately before switching workers. A verified copy alone
+does not establish compiler-cache hits or complete the cutover.
+
 ## Sonatype publication
 
 The one dispatcher retains the historical snapshot-versus-release switch:

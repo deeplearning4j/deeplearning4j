@@ -3,6 +3,12 @@ name: Build cross-platform Java modules
 on:
   workflow_dispatch:
     inputs:
+      cacheMigration:
+        description: Azure-to-R2 cache data transfer only; skips all builds and publication.
+        type: choice
+        options: [none, preview, copy, verify]
+        default: none
+        required: false
       workflow:
         description: Canonical release workflow matrix to execute. Use all for the full native and Java repository.
         required: false
@@ -99,8 +105,15 @@ permissions:
   contents: read
 
 jobs:
+  cache-migration:
+    if: inputs.cacheMigration != '' && inputs.cacheMigration != 'none'
+    uses: ./.github/workflows/migrate-cache-to-r2.yml
+    with:
+      mode: ${{ inputs.cacheMigration }}
+    secrets: inherit
+
   java-only:
-    if: inputs.javaOnly == '1'
+    if: (inputs.cacheMigration == '' || inputs.cacheMigration == 'none') && inputs.javaOnly == '1'
     uses: ./.github/workflows/java-hotfix-release.yml
     with:
       releaseVersion: ${{ inputs.releaseVersion }}
@@ -116,7 +129,7 @@ jobs:
       CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
 
   release:
-    if: inputs.publishSourceRunId == '' && inputs.javaOnly != '1'
+    if: (inputs.cacheMigration == '' || inputs.cacheMigration == 'none') && inputs.publishSourceRunId == '' && inputs.javaOnly != '1'
     uses: ./.github/workflows/_release-worker.yml
     with:
       workflow: ${{ inputs.workflow }}
@@ -136,7 +149,7 @@ jobs:
     secrets: inherit
 
   publish-staged:
-    if: inputs.publishSourceRunId != '' && inputs.javaOnly != '1'
+    if: (inputs.cacheMigration == '' || inputs.cacheMigration == 'none') && inputs.publishSourceRunId != '' && inputs.javaOnly != '1'
     uses: ./.github/workflows/publish-release-worker-artifacts.yml
     with:
       sourceRunId: ${{ inputs.publishSourceRunId }}

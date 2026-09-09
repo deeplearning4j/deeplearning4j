@@ -1,0 +1,61 @@
+name: Copy existing Azure cache to R2
+
+on:
+  workflow_call:
+    inputs:
+      mode:
+        type: string
+        default: preview
+        required: false
+    secrets:
+      AZURE_SCCACHE_CONNECTION_STRING:
+        required: true
+      R2_ACCESS_KEY_ID:
+        required: true
+      R2_SECRET_ACCESS_KEY:
+        required: true
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Preview, copy then verify bytes, or verify existing copy
+        type: choice
+        options: [preview, copy, verify]
+        default: preview
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: azure-cache-to-r2
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned rclone
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=v1.70.3
+          archive="rclone-${version}-linux-amd64.zip"
+          curl --fail --silent --show-error --location --retry 3 "https://downloads.rclone.org/${version}/${archive}" -o "$archive"
+          curl --fail --silent --show-error --location --retry 3 "https://downloads.rclone.org/${version}/SHA256SUMS" -o SHA256SUMS
+          grep " ${archive}$" SHA256SUMS > selected.sha256
+          sha256sum --check selected.sha256
+          unzip -q "$archive"
+          sudo install "rclone-${version}-linux-amd64/rclone" /usr/local/bin/rclone
+          rclone version
+      - name: Migrate existing objects without deleting Azure data
+        shell: bash
+        env:
+          AZURE_SCCACHE_CONNECTION_STRING: ${{ secrets.AZURE_SCCACHE_CONNECTION_STRING }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          MIGRATION_MODE: ${{ inputs.mode }}
+        run: |
+          set -euo pipefail
+          python3 release/github/migrate-cache-to-r2.py --mode "$MIGRATION_MODE"
