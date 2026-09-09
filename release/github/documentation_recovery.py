@@ -1,6 +1,6 @@
 """Audited Javadoc-only repair overlay for the pinned native release source.
 
-Only the twenty-seven reviewed Javadoc lines are eligible. No whole fix checkout is
+Only the twenty-eight reviewed Javadoc lines are eligible. No whole fix checkout is
 merged: unrelated changes at that revision cannot enter the Java reactor.
 Extending this table requires reviewing the original comment and source SHA.
 """
@@ -107,6 +107,16 @@ REPAIRS.update({
 })
 
 
+# Recovery 34383274542: getURLString only concatenates strings; getURL performs
+# URL construction and declares MalformedURLException. Keep its valid throws tag.
+RESOURCES = "resources/src/main/java/org/deeplearning4j/common/resources/DL4JResources.java"
+RESOURCES_RECOVERY_RUN = "34383274542"
+REPAIRS[RESOURCES] = {
+    96: ("     * @throws MalformedURLException For bad URL\n",
+         "     * @see #getURL(String)\n"),
+}
+
+
 def digest(data):
     return hashlib.sha256(data).hexdigest()
 
@@ -148,7 +158,9 @@ def prepare(source, fix_source, fix_commit, commit, output):
                   "policy": "audited-javadoc-only-v2", "files": evidence,
                   "datavecDiagnostics": {"recoveryRunId": DATAVEC_RECOVERY_RUN,
                                          "errorCount": DATAVEC_ERROR_COUNT,
-                                         "repairedLineCount": 13}}
+                                         "repairedLineCount": 13},
+                  "resourcesDiagnostics": {"recoveryRunId": RESOURCES_RECOVERY_RUN,
+                                           "errorCount": 1, "repairedLineCount": 1}}
     # Validate every file before writing any overlay. Preserve line numbers and
     # every non-repaired byte, including all compiled code and source positions.
     for path, fixed in pending:

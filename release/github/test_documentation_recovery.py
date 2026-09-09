@@ -43,9 +43,11 @@ class DocumentationRecoveryTests(unittest.TestCase):
         result = self.prepare()
         self.assertEqual(docs.SOURCE_COMMIT, result['sourceCommit'])
         self.assertEqual('b' * 40, result['documentationFixCommit'])
-        self.assertEqual(27, sum(len(row['lines']) for row in result['files']))
+        self.assertEqual(28, sum(len(row['lines']) for row in result['files']))
         self.assertEqual({'recoveryRunId': '34381061422', 'errorCount': 14,
                           'repairedLineCount': 13}, result['datavecDiagnostics'])
+        self.assertEqual({'recoveryRunId': '34383274542', 'errorCount': 1,
+                          'repairedLineCount': 1}, result['resourcesDiagnostics'])
         self.assertEqual('audited-javadoc-only-v2', result['policy'])
         for row in result['files']:
             self.assertEqual(docs.digest(self.originals[row['path']]), row['sourceSha256'])
@@ -103,7 +105,7 @@ class DocumentationRecoveryTests(unittest.TestCase):
     def test_each_vlm_repair_is_required_before_any_write(self):
         names = [name for name in docs.REPAIRS if name.startswith(docs.VLM)]
         self.assertEqual(4, len(names))
-        self.assertEqual(23, sum(len(lines) for name, lines in docs.REPAIRS.items()
+        self.assertEqual(24, sum(len(lines) for name, lines in docs.REPAIRS.items()
                                 if not name.startswith(docs.VLM)))
         for name in names:
             with self.subTest(name=name):
@@ -210,6 +212,27 @@ class DocumentationRecoveryTests(unittest.TestCase):
         reducer = (root / (docs.DATAVEC + 'transform/reduce/Reducer.java')).read_text()
         self.assertIn('String column, List<String> outputNames, List<ReduceOp> reductions,', reducer)
         self.assertIn('String column, String outputName, ReduceOp reduction, Condition condition)', reducer)
+
+    def test_resources_repair_preserves_url_validation_and_is_required(self):
+        root = Path(__file__).resolve().parents[2]
+        name = docs.RESOURCES
+        self.assertEqual({96: ('     * @throws MalformedURLException For bad URL\n',
+                              '     * @see #getURL(String)\n')}, docs.REPAIRS[name])
+        text = (root / name).read_text()
+        self.assertEqual(docs.REPAIRS[name][96][1], text.splitlines(keepends=True)[95])
+        self.assertEqual('     * @throws MalformedURLException For bad URL\n',
+                         text.splitlines(keepends=True)[82])
+        self.assertIn('public static URL getURL(String relativeToBase) throws MalformedURLException {', text)
+        self.assertIn('return new URL(getURLString(relativeToBase));', text)
+        method = text.split('public static String getURLString(String relativeToBase) {', 1)[1].split('\n    }', 1)[0]
+        self.assertIn('return baseURL + relativeToBase;', method)
+        self.assertNotIn('throw ', method)
+        self.assertNotIn('new URL(', method)
+        self.fixed[name] = self.originals[name]
+        with self.assertRaisesRegex(ValueError, 'unaudited'):
+            self.prepare()
+        for path in docs.REPAIRS:
+            self.assertEqual(self.originals[path], (self.source / path).read_bytes())
 
     def test_real_pinned_source_matches_only_audited_edits(self):
         original_root = os.environ.get('DOCUMENTATION_CONTRACT_SOURCE')

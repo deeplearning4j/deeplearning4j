@@ -93,7 +93,7 @@ public class DL4JResources {
      *
      * @param relativeToBase Relative URL
      * @return URL
-     * @throws MalformedURLException For bad URL
+     * @see #getURL(String)
      */
     public static String getURLString(String relativeToBase) {
         if(relativeToBase.startsWith("/")){
