@@ -43,7 +43,7 @@ import static org.bytedeco.cpython.global.python.*;
  * or via a python script.
  *
  * PythonExecutioner has a few java system properties to be aware of when executing python:
- * @link {{@link PythonConstants#DEFAULT_PYTHON_PATH_PROPERTY}} : The default python path to be used by the executioner.
+ * {@link PythonConstants#DEFAULT_PYTHON_PATH_PROPERTY} : The default python path to be used by the executioner.
  * This can be passed with -Dorg.eclipse.python4j.path=your/python/path
  *
  * Python4j has a default python path that imports the javacpp python path depending on what is present.

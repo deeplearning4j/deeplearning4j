@@ -1,6 +1,6 @@
 """Audited Javadoc-only repair overlay for the pinned native release source.
 
-Only the twenty-eight reviewed Javadoc lines are eligible. No whole fix checkout is
+Only the twenty-nine reviewed Javadoc lines are eligible. No whole fix checkout is
 merged: unrelated changes at that revision cannot enter the Java reactor.
 Extending this table requires reviewing the original comment and source SHA.
 """
@@ -117,6 +117,16 @@ REPAIRS[RESOURCES] = {
 }
 
 
+# Recovery 34396560573: @link is an inline tag, not a block tag; use one
+# balanced inline link to the existing constant in the same package.
+PYTHON_EXECUTIONER = "python4j/python4j-core/src/main/java/org/nd4j/python4j/PythonExecutioner.java"
+PYTHON_RECOVERY_RUN = "34396560573"
+REPAIRS[PYTHON_EXECUTIONER] = {
+    46: (" * @link {{@link PythonConstants#DEFAULT_PYTHON_PATH_PROPERTY}} : The default python path to be used by the executioner.\n",
+         " * {@link PythonConstants#DEFAULT_PYTHON_PATH_PROPERTY} : The default python path to be used by the executioner.\n"),
+}
+
+
 def digest(data):
     return hashlib.sha256(data).hexdigest()
 
@@ -160,7 +170,9 @@ def prepare(source, fix_source, fix_commit, commit, output):
                                          "errorCount": DATAVEC_ERROR_COUNT,
                                          "repairedLineCount": 13},
                   "resourcesDiagnostics": {"recoveryRunId": RESOURCES_RECOVERY_RUN,
-                                           "errorCount": 1, "repairedLineCount": 1}}
+                                           "errorCount": 1, "repairedLineCount": 1},
+                  "pythonDiagnostics": {"recoveryRunId": PYTHON_RECOVERY_RUN,
+                                        "errorCount": 1, "repairedLineCount": 1}}
     # Validate every file before writing any overlay. Preserve line numbers and
     # every non-repaired byte, including all compiled code and source positions.
     for path, fixed in pending:

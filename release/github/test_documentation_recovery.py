@@ -43,11 +43,13 @@ class DocumentationRecoveryTests(unittest.TestCase):
         result = self.prepare()
         self.assertEqual(docs.SOURCE_COMMIT, result['sourceCommit'])
         self.assertEqual('b' * 40, result['documentationFixCommit'])
-        self.assertEqual(28, sum(len(row['lines']) for row in result['files']))
+        self.assertEqual(29, sum(len(row['lines']) for row in result['files']))
         self.assertEqual({'recoveryRunId': '34381061422', 'errorCount': 14,
                           'repairedLineCount': 13}, result['datavecDiagnostics'])
         self.assertEqual({'recoveryRunId': '34383274542', 'errorCount': 1,
                           'repairedLineCount': 1}, result['resourcesDiagnostics'])
+        self.assertEqual({'recoveryRunId': '34396560573', 'errorCount': 1,
+                          'repairedLineCount': 1}, result['pythonDiagnostics'])
         self.assertEqual('audited-javadoc-only-v2', result['policy'])
         for row in result['files']:
             self.assertEqual(docs.digest(self.originals[row['path']]), row['sourceSha256'])
@@ -105,7 +107,7 @@ class DocumentationRecoveryTests(unittest.TestCase):
     def test_each_vlm_repair_is_required_before_any_write(self):
         names = [name for name in docs.REPAIRS if name.startswith(docs.VLM)]
         self.assertEqual(4, len(names))
-        self.assertEqual(24, sum(len(lines) for name, lines in docs.REPAIRS.items()
+        self.assertEqual(25, sum(len(lines) for name, lines in docs.REPAIRS.items()
                                 if not name.startswith(docs.VLM)))
         for name in names:
             with self.subTest(name=name):
@@ -228,6 +230,25 @@ class DocumentationRecoveryTests(unittest.TestCase):
         self.assertIn('return baseURL + relativeToBase;', method)
         self.assertNotIn('throw ', method)
         self.assertNotIn('new URL(', method)
+        self.fixed[name] = self.originals[name]
+        with self.assertRaisesRegex(ValueError, 'unaudited'):
+            self.prepare()
+        for path in docs.REPAIRS:
+            self.assertEqual(self.originals[path], (self.source / path).read_bytes())
+
+    def test_python_inline_link_is_exact_resolvable_and_required(self):
+        root = Path(__file__).resolve().parents[2]
+        name = docs.PYTHON_EXECUTIONER
+        self.assertEqual({46: (
+            ' * @link {{@link PythonConstants#DEFAULT_PYTHON_PATH_PROPERTY}} : The default python path to be used by the executioner.\n',
+            ' * {@link PythonConstants#DEFAULT_PYTHON_PATH_PROPERTY} : The default python path to be used by the executioner.\n')},
+            docs.REPAIRS[name])
+        self.assertEqual(28, sum(len(lines) for path, lines in docs.REPAIRS.items() if path != name))
+        text = (root / name).read_text()
+        self.assertEqual(docs.REPAIRS[name][46][1], text.splitlines(keepends=True)[45])
+        constant = (root / name).with_name('PythonConstants.java').read_text()
+        self.assertIn('package org.nd4j.python4j;', constant)
+        self.assertIn('public final static String DEFAULT_PYTHON_PATH_PROPERTY = "org.eclipse.python4j.path";', constant)
         self.fixed[name] = self.originals[name]
         with self.assertRaisesRegex(ValueError, 'unaudited'):
             self.prepare()
