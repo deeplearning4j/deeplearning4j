@@ -43,7 +43,7 @@ class DocumentationRecoveryTests(unittest.TestCase):
         result = self.prepare()
         self.assertEqual(docs.SOURCE_COMMIT, result['sourceCommit'])
         self.assertEqual('b' * 40, result['documentationFixCommit'])
-        self.assertEqual(8, sum(len(row['lines']) for row in result['files']))
+        self.assertEqual(12, sum(len(row['lines']) for row in result['files']))
         self.assertEqual('audited-javadoc-only-v2', result['policy'])
         for row in result['files']:
             self.assertEqual(docs.digest(self.originals[row['path']]), row['sourceSha256'])
@@ -97,6 +97,35 @@ class DocumentationRecoveryTests(unittest.TestCase):
             self.prepare()
         for path in docs.REPAIRS:
             self.assertEqual(self.originals[path], (self.source / path).read_bytes())
+
+    def test_each_vlm_repair_is_required_before_any_write(self):
+        names = [name for name in docs.REPAIRS if name.startswith(docs.VLM)]
+        self.assertEqual(4, len(names))
+        self.assertEqual(8, sum(len(lines) for name, lines in docs.REPAIRS.items()
+                                if not name.startswith(docs.VLM)))
+        for name in names:
+            with self.subTest(name=name):
+                fixed = self.fixed[name]
+                self.fixed[name] = self.originals[name]
+                with self.assertRaisesRegex(ValueError, 'unaudited'):
+                    self.prepare()
+                for path in docs.REPAIRS:
+                    self.assertEqual(self.originals[path], (self.source / path).read_bytes())
+                self.fixed[name] = fixed
+
+    def test_vlm_links_resolve_to_actual_source_classes(self):
+        root = Path(__file__).resolve().parents[2]
+        for relative, line, target in (
+                ('model/projector/TemporalPatchEmbed.java', 64,
+                 '../../preprocessing/VideoPreprocessor'),
+                ('model/projector/ThreeDResampler.java', 68, '../VideoVisionLanguageModel')):
+            with self.subTest(relative=relative):
+                name = docs.VLM + relative
+                label = target.rsplit('/', 1)[-1]
+                self.assertEqual(f' * @see <a href="{target}.html">{label}</a>\n',
+                                 docs.REPAIRS[name][line][1])
+                source = (root / name).parent / (target + '.java')
+                self.assertIn(f'public class {label}', source.read_text())
 
     def test_real_pinned_source_matches_only_audited_edits(self):
         original_root = os.environ.get('DOCUMENTATION_CONTRACT_SOURCE')

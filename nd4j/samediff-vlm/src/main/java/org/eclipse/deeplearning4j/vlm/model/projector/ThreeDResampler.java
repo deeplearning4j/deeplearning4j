@@ -65,7 +65,7 @@ import java.util.List;
  * // compressed: [1, numGroups * 64, hidden]
  * }</pre>
  *
- * @see VideoVisionLanguageModel
+ * @see <a href="../VideoVisionLanguageModel.html">VideoVisionLanguageModel</a>
  */
 @Slf4j
 @Builder

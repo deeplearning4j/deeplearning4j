@@ -38,7 +38,7 @@ import java.util.List;
  * <p>Provides a {@link #discover(SameDiff)} factory that auto-discovers names from
  * the SameDiff graph by inspecting input/output variable names.</p>
  *
- * <h3>Usage:</h3>
+ * <h2>Usage:</h2>
  * <pre>{@code
  * // Auto-discover from vision encoder graph
  * VisionEncoderIOConfig ioConfig = VisionEncoderIOConfig.discover(visionEncoder);

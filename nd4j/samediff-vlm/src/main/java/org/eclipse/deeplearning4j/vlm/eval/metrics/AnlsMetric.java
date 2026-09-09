@@ -29,7 +29,7 @@ import java.util.List;
  * Used as the primary metric for DocVQA evaluation.
  *
  * For each prediction-reference pair, computes the Normalized Levenshtein Similarity (NLS).
- * If NLS < threshold (default 0.5), the score is 0; otherwise it is the NLS value.
+ * If NLS &lt; threshold (default 0.5), the score is 0; otherwise it is the NLS value.
  * Returns the maximum score across all reference answers.
  */
 public class AnlsMetric implements EvalMetric {

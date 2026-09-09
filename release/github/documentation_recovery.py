@@ -1,6 +1,6 @@
 """Audited Javadoc-only repair overlay for the pinned native release source.
 
-Only the eight reviewed Javadoc lines are eligible. No whole fix checkout is
+Only the twelve reviewed Javadoc lines are eligible. No whole fix checkout is
 merged: unrelated changes at that revision cannot enter the Java reactor.
 Extending this table requires reviewing the original comment and source SHA.
 """
@@ -32,6 +32,23 @@ REPAIRS["nd4j/nd4j-tensorflow-lite/src/main/java/org/nd4j/tensorflowlite/runner/
     96: ("     * Execute the {@link #session}\n",
          "     * Execute the {@link Interpreter}\n"),
 }
+
+# Class documentation uses H2 after Javadoc's implicit H1. Relative HTML links
+# retain the real cross-package targets without changing imports or source lines.
+VLM = "nd4j/samediff-vlm/src/main/java/org/eclipse/deeplearning4j/vlm/"
+REPAIRS.update({
+    VLM + "eval/metrics/AnlsMetric.java": {
+        32: (" * If NLS < threshold (default 0.5), the score is 0; otherwise it is the NLS value.\n",
+             " * If NLS &lt; threshold (default 0.5), the score is 0; otherwise it is the NLS value.\n")},
+    VLM + "model/encoder/VisionEncoderIOConfig.java": {
+        41: (" * <h3>Usage:</h3>\n", " * <h2>Usage:</h2>\n")},
+    VLM + "model/projector/TemporalPatchEmbed.java": {
+        64: (" * @see VideoPreprocessor\n",
+             ' * @see <a href="../../preprocessing/VideoPreprocessor.html">VideoPreprocessor</a>\n')},
+    VLM + "model/projector/ThreeDResampler.java": {
+        68: (" * @see VideoVisionLanguageModel\n",
+             ' * @see <a href="../VideoVisionLanguageModel.html">VideoVisionLanguageModel</a>\n')},
+})
 
 
 def digest(data):

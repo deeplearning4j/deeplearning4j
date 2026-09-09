@@ -61,7 +61,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
  * // patches: [1, 8, 576, 1536] (8 temporal groups, 24*24 spatial patches, 3*2*16*16 dim)
  * }</pre>
  *
- * @see VideoPreprocessor
+ * @see <a href="../../preprocessing/VideoPreprocessor.html">VideoPreprocessor</a>
  */
 @Slf4j
 @Builder
