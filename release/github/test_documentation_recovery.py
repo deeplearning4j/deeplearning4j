@@ -205,7 +205,8 @@ class DocumentationRecoveryTests(unittest.TestCase):
                     self.assertIn('boolean resetSupported()', text)
         svm = (root / (docs.DATAVEC + 'records/reader/impl/misc/SVMLightRecordReader.java')).read_text()
         self.assertIn('public void setConf(Configuration conf) {', svm)
-        self.assertEqual(2, svm.count('throw new UnsupportedOperationException('))
+        set_conf = svm.split('public void setConf(Configuration conf) {', 1)[1].split('\n    }', 1)[0]
+        self.assertEqual(2, set_conf.count('throw new UnsupportedOperationException('))
         reducer = (root / (docs.DATAVEC + 'transform/reduce/Reducer.java')).read_text()
         self.assertIn('String column, List<String> outputNames, List<ReduceOp> reductions,', reducer)
         self.assertIn('String column, String outputName, ReduceOp reduction, Condition condition)', reducer)
