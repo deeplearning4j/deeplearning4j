@@ -3065,6 +3065,14 @@ Status NativeDynamicShapePlan::execute(
         continue;
       }
 
+      // prepareSpecialUse calls syncToDevice, which relocates the caller's
+      // DataBuffer. Cross-device writable state must instead pass through the
+      // segment's bidirectional replica boundary, preserving caller storage.
+      if (externalInputIsVariable_[i] && !externalInputIsPlaceholder_[i] &&
+          db->deviceId() != execCtx->deviceId) {
+        continue;
+      }
+
       if (broadPrepare || !db->isSpecialActual()) {
         reads.push_back(arr);
       } else {

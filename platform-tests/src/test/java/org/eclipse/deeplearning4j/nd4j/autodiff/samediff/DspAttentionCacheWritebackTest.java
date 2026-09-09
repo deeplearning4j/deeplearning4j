@@ -37,6 +37,10 @@ public class DspAttentionCacheWritebackTest extends BaseND4JTest {
         try (INDArray keyCache = Nd4j.zeros(dtype, 1, 4, 1, 2);
              INDArray valueCache = Nd4j.zeros(dtype, 1, 4, 1, 2);
              SameDiff sd = SameDiff.create()) {
+            assertEquals(callerDevice, NativeOpsHolder.getInstance().getDeviceNativeOps()
+                    .dbDeviceId(keyCache.data().opaqueBuffer()), "initial key cache device");
+            assertEquals(callerDevice, NativeOpsHolder.getInstance().getDeviceNativeOps()
+                    .dbDeviceId(valueCache.data().opaqueBuffer()), "initial value cache device");
             Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
             SDVariable q = sd.placeHolder("q", dtype, 1, 1, 1, 2);
             SDVariable k = sd.placeHolder("k", dtype, 1, 1, 1, 2);
@@ -114,8 +118,11 @@ public class DspAttentionCacheWritebackTest extends BaseND4JTest {
                                 int index = Arrays.asList(executor.getCurrentPlan().getExternalInputKeys()).indexOf(name);
                                 assertTrue(nativeOps.getPlanIsExternalInputVariable(executor.getNativePlanHandle(), index));
                                 assertFalse(nativeOps.getPlanIsExternalInputPlaceholder(executor.getNativePlanHandle(), index));
-                                assertSame(name.equals("keys") ? keyCache : valueCache,
-                                        executor.getExternalInputsSnapshot()[index], "Java must preserve caller state");
+                                INDArray caller = name.equals("keys") ? keyCache : valueCache;
+                                assertSame(caller, executor.getExternalInputsSnapshot()[index],
+                                        "Java must preserve caller state");
+                                assertEquals(callerDevice, nativeOps.dbDeviceId(caller.data().opaqueBuffer()),
+                                        "native execution must preserve caller state device");
                             }
                         } finally {
                             result.values().forEach(INDArray::close);

@@ -378,6 +378,14 @@ DspStagingSyncResult NativeDynamicShapePlan::performPreReplaySync(
                  rawSpecial);
         return;
       }
+      // Match execute()'s ownership boundary: a generic read preparation
+      // relocates the original DataBuffer, bypassing writable-state writeback.
+      auto* db = arr->dataBuffer();
+      if (db != nullptr && externalInputIsVariable_[idx] &&
+          !externalInputIsPlaceholder_[idx] && db->deviceId() != execCtx->deviceId) {
+        skipped++;
+        return;
+      }
       readList.push_back(arr);
       prepared++;
       DSP_LIFECYCLE_EVENT(executeCount_, idx, "H2D_PREPARE_QUEUED", arr);
