@@ -180,16 +180,20 @@ struct DeviceCaptureGuard {
   int dev_;
   std::unique_lock<std::mutex> lock_;   // held for entire capture duration
   bool acquired_;                        // true if capture lock was obtained
+  bool countedOnDevice_;                 // execute() registered on this device
 
   // Try to acquire the capture guard. If another thread is already capturing,
   // this constructor returns immediately with acquired_=false instead of
   // blocking. This prevents deadlock when multiple concurrent threads each
   // try to capture simultaneously — the non-winning threads skip capture
   // for this execution and retry on the next call.
-  explicit DeviceCaptureGuard()
-    : dev_(0), lock_(), acquired_(false) {
+  explicit DeviceCaptureGuard(const PlanExecutionContext* execution)
+    : dev_(0), lock_(), acquired_(false), countedOnDevice_(false) {
     cudaGetDevice(&dev_);
     if (dev_ < 0 || dev_ >= 16) dev_ = 0;
+    // A sharded segment may capture on a different GPU from execute()'s
+    // registration. Never subtract a self-count that does not exist there.
+    countedOnDevice_ = execution != nullptr && execution->deviceId == dev_;
 
     // Try to acquire the mutex. If another thread is capturing, return
     // immediately — the caller checks acquired() and skips capture.
@@ -199,7 +203,7 @@ struct DeviceCaptureGuard {
     }
 
     // Temporarily remove this thread from the exec count
-    g_execCount[dev_].fetch_sub(1, std::memory_order_acq_rel);
+    if (countedOnDevice_) g_execCount[dev_].fetch_sub(1, std::memory_order_acq_rel);
     // Signal that capture is starting — new executions will wait
     g_captureActive[dev_].store(true, std::memory_order_release);
     // Wait for all OTHER in-flight executions to finish.
@@ -211,7 +215,7 @@ struct DeviceCaptureGuard {
     if (!waitResult) {
       // Timeout: other threads didn't finish in time. Abort capture.
       g_captureActive[dev_].store(false, std::memory_order_release);
-      g_execCount[dev_].fetch_add(1, std::memory_order_acq_rel);
+      if (countedOnDevice_) g_execCount[dev_].fetch_add(1, std::memory_order_acq_rel);
       lock_.unlock();
       g_captureCV[dev_].notify_all();
       return;  // acquired_ stays false
@@ -223,7 +227,7 @@ struct DeviceCaptureGuard {
     if (acquired_) {
       g_captureActive[dev_].store(false, std::memory_order_release);
       // Re-add this thread to the exec count (we're still executing)
-      g_execCount[dev_].fetch_add(1, std::memory_order_acq_rel);
+      if (countedOnDevice_) g_execCount[dev_].fetch_add(1, std::memory_order_acq_rel);
       // Release the mutex, then notify waiters
       lock_.unlock();
       g_captureCV[dev_].notify_all();
@@ -4322,7 +4326,8 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
        if (!sched.units.empty() && !didCompositeCapture &&
            !ctx.nativeOnlyGraphCapture) {
          // Serialize composite capture per GPU — hold lock for entire composite capture.
-         DeviceCaptureGuard compositeCaptureGuard;
+         DeviceCaptureGuard compositeCaptureGuard(
+             static_cast<PlanExecutionContext*>(activeExecutionContext()));
          if (!compositeCaptureGuard.acquired()) {
            // Another thread is capturing — skip capture this iteration.
            // didCompositeCapture stays false; falls through to monolithic path (which
@@ -5215,7 +5220,8 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
       // Raw pointer — no refcount increment, no risk of touching freed control block.
       auto* handle = cudaReplay->getNativeHandle();
       // Serialize capture per GPU — only one capture can be active per device at a time.
-      DeviceCaptureGuard monolithicCaptureGuard;
+      DeviceCaptureGuard monolithicCaptureGuard(
+          static_cast<PlanExecutionContext*>(activeExecutionContext()));
       if (!monolithicCaptureGuard.acquired()) {
         // Another thread is capturing — skip monolithic capture this iteration.
         // Falls through to direct slot-by-slot execution below.

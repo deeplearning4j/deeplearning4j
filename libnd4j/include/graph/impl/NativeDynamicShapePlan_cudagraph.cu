@@ -1163,20 +1163,24 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     int dev_;
     std::unique_lock<std::mutex> lock_;
     bool acquired_;
-    CudaGraphCaptureGuard() : dev_(0), lock_(), acquired_(false) {
+    bool countedOnDevice_;
+    explicit CudaGraphCaptureGuard(const PlanExecutionContext* execution)
+        : dev_(0), lock_(), acquired_(false), countedOnDevice_(false) {
       cudaGetDevice(&dev_);
       if (dev_ < 0 || dev_ >= 16) dev_ = 0;
+      // Secondary segments have no self-count on this GPU to remove.
+      countedOnDevice_ = execution != nullptr && execution->deviceId == dev_;
       lock_ = std::unique_lock<std::mutex>(g_captureMtx[dev_], std::try_to_lock);
       if (!lock_.owns_lock()) {
         return;  // Another thread is capturing — skip
       }
-      g_execCount[dev_].fetch_sub(1, std::memory_order_acq_rel);
+      if (countedOnDevice_) g_execCount[dev_].fetch_sub(1, std::memory_order_acq_rel);
       g_captureActive[dev_].store(true, std::memory_order_release);
       bool waitResult = g_captureCV[dev_].wait_for(lock_, std::chrono::seconds(5),
           [this]{ return g_execCount[dev_].load(std::memory_order_acquire) == 0; });
       if (!waitResult) {
         g_captureActive[dev_].store(false, std::memory_order_release);
-        g_execCount[dev_].fetch_add(1, std::memory_order_acq_rel);
+        if (countedOnDevice_) g_execCount[dev_].fetch_add(1, std::memory_order_acq_rel);
         lock_.unlock();
         g_captureCV[dev_].notify_all();
         return;  // acquired_ stays false
@@ -1186,13 +1190,13 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     ~CudaGraphCaptureGuard() {
       if (acquired_) {
         g_captureActive[dev_].store(false, std::memory_order_release);
-        g_execCount[dev_].fetch_add(1, std::memory_order_acq_rel);
+        if (countedOnDevice_) g_execCount[dev_].fetch_add(1, std::memory_order_acq_rel);
         lock_.unlock();
         g_captureCV[dev_].notify_all();
       }
     }
     bool acquired() const { return acquired_; }
-  } cudaGraphCaptureGuard;
+  } cudaGraphCaptureGuard(static_cast<PlanExecutionContext*>(activeExecutionContext()));
 
   // If another thread is already capturing, skip capture for this iteration.
   // Execute slot-by-slot instead — capture will be attempted next execution.

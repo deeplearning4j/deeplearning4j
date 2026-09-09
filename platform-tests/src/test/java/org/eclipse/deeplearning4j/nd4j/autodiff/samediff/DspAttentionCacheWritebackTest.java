@@ -32,7 +32,7 @@ public class DspAttentionCacheWritebackTest extends BaseND4JTest {
     @CsvSource({"0,1,FLOAT", "1,0,FLOAT", "0,1,HALF", "1,0,HALF",
             "1,-1,FLOAT", "1,-1,HALF"})
     void retainedCachesAreWrittenAcrossDevices(int callerDevice, int attentionDevice, DataType dtype) {
-        checkRetainedCaches(callerDevice, attentionDevice, dtype, false);
+        checkRetainedCaches(callerDevice, attentionDevice, dtype);
     }
 
     @ParameterizedTest
@@ -116,10 +116,6 @@ public class DspAttentionCacheWritebackTest extends BaseND4JTest {
         }
     }
 
-    private static UnifiedKvCacheManager initializedManager(DataType dtype) {
-        return initializedManager(dtype, 4);
-    }
-
     private static UnifiedKvCacheManager initializedManager(DataType dtype, int capacity) {
         UnifiedKvCacheManager manager = new UnifiedKvCacheManager();
         try (INDArray key = Nd4j.zeros(dtype, 1, 1, 1, 2);
@@ -134,21 +130,15 @@ public class DspAttentionCacheWritebackTest extends BaseND4JTest {
         }
     }
 
-    private void checkRetainedCaches(int callerDevice, int attentionDevice, DataType dtype,
-                                     boolean managerBacked) {
+    private void checkRetainedCaches(int callerDevice, int attentionDevice, DataType dtype) {
         assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
         assumeTrue(Nd4j.getAffinityManager().getNumberOfDevices() >= 2, "requires two CUDA devices");
         int savedDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         // Assigned cases exercise both segment directions. Automatic cases
         // use a larger device-0 feed to keep execution away from the caller cache.
         Nd4j.getAffinityManager().setDeviceForCurrentThread(callerDevice);
-        // Manager owns BHSD storage. Persistent BSHD views preserve that exact
-        // backing allocation for DPA's in-graph writes; do not scatter twice.
-        try (UnifiedKvCacheManager manager = managerBacked ? initializedManager(dtype) : null;
-             INDArray keyCache = manager == null ? Nd4j.zeros(dtype, 1, 4, 1, 2)
-                     : manager.getStaticKvBuffers().get("past_key_values.0.key").permute(0, 2, 1, 3);
-             INDArray valueCache = manager == null ? Nd4j.zeros(dtype, 1, 4, 1, 2)
-                     : manager.getStaticKvBuffers().get("past_key_values.0.value").permute(0, 2, 1, 3);
+        try (INDArray keyCache = Nd4j.zeros(dtype, 1, 4, 1, 2);
+             INDArray valueCache = Nd4j.zeros(dtype, 1, 4, 1, 2);
              SameDiff sd = SameDiff.create()) {
             assertEquals(callerDevice, NativeOpsHolder.getInstance().getDeviceNativeOps()
                     .dbDeviceId(keyCache.data().opaqueBuffer()), "initial key cache device");
@@ -182,12 +172,6 @@ public class DspAttentionCacheWritebackTest extends BaseND4JTest {
                 double[] expectedV = new double[8];
                 for (int iteration = 0; iteration < 16; iteration++) {
                     int pos = iteration % 4;
-                    if (manager != null) {
-                        manager.setCachePosition(pos);
-                        assertEquals(pos, manager.getCachePosition());
-                        assertSame(manager.getStaticKvBuffers().get("past_key_values.0.key").data(), keyCache.data());
-                        assertSame(manager.getStaticKvBuffers().get("past_key_values.0.value").data(), valueCache.data());
-                    }
                     expectedK[2 * pos] = iteration + 1;
                     expectedK[2 * pos + 1] = iteration + 2;
                     expectedV[2 * pos] = 2 * iteration + 1;
@@ -210,32 +194,7 @@ public class DspAttentionCacheWritebackTest extends BaseND4JTest {
                                 assertEquals(0, Nd4j.getAffinityManager().getDeviceForCurrentThread(),
                                         "automatic placement must exercise remote caller state");
                             }
-                            if (iteration == 0) {
-                                var executor = sd.getOrCreateSession().getDynamicShapePlanExecutor();
-                                var nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-                                for (String name : new String[]{"keys", "values"}) {
-                                    int index = Arrays.asList(executor.getCurrentPlan().getExternalInputKeys()).indexOf(name);
-                                    INDArray caller = name.equals("keys") ? keyCache : valueCache;
-                                    INDArray bound = executor.getExternalInputsSnapshot()[index];
-                                    System.out.println("KV_WRITEBACK_BOUND callerDevice=" + callerDevice
-                                            + " attentionDevice=" + attentionDevice + " name=" + name
-                                            + " callerDb=" + caller.data().opaqueBuffer().address()
-                                            + " boundDb=" + bound.data().opaqueBuffer().address()
-                                            + " callerNativeDevice=" + nativeOps.dbDeviceId(caller.data().opaqueBuffer())
-                                            + " boundNativeDevice=" + nativeOps.dbDeviceId(bound.data().opaqueBuffer())
-                                            + " variable=" + nativeOps.getPlanIsExternalInputVariable(executor.getNativePlanHandle(), index)
-                                            + " placeholder=" + nativeOps.getPlanIsExternalInputPlaceholder(executor.getNativePlanHandle(), index));
-                                }
-                            }
-                            try {
-                                assertArrayEquals(expectedK, keyCache.data().asDouble(), 0.0, "retained keys " + iteration);
-                            } catch (AssertionError failure) {
-                                var ops = NativeOpsHolder.getInstance().getDeviceNativeOps();
-                                System.out.println("KV_FAILED_READ constant=" + ops.dbIsConstant(keyCache.data().opaqueBuffer()));
-                                ops.dbForceSyncToPrimary(keyCache.data().opaqueBuffer());
-                                System.out.println("KV_FAILED_READ deviceCopy=" + Arrays.toString(keyCache.data().asDouble()));
-                                throw failure; // Diagnostic only: never turn a stale read into a pass.
-                            }
+                            assertArrayEquals(expectedK, keyCache.data().asDouble(), 0.0, "retained keys " + iteration);
                             assertArrayEquals(expectedV, valueCache.data().asDouble(), 0.0, "retained values " + iteration);
                             double[] expectedOut = new double[2];
                             for (int i = 0; i <= pos; i++) {
