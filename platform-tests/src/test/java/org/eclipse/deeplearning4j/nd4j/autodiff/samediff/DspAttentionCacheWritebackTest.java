@@ -39,16 +39,94 @@ public class DspAttentionCacheWritebackTest extends BaseND4JTest {
     @CsvSource({"0,1,FLOAT", "1,0,FLOAT", "0,1,HALF", "1,0,HALF",
             "1,-1,FLOAT", "1,-1,HALF"})
     void managerCachesAreWrittenAcrossDevices(int callerDevice, int attentionDevice, DataType dtype) {
-        checkRetainedCaches(callerDevice, attentionDevice, dtype, true);
+        assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
+        assumeTrue(Nd4j.getAffinityManager().getNumberOfDevices() >= 2, "requires two CUDA devices");
+        int savedDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        Nd4j.getAffinityManager().setDeviceForCurrentThread(callerDevice);
+        final int capacity = 17;
+        ModelIOConfig.KVCacheNames names = new ModelIOConfig.KVCacheNames(
+                java.util.List.of("present.0.key"), java.util.List.of("present.0.value"));
+        try (UnifiedKvCacheManager manager = initializedManager(dtype, capacity);
+             SameDiff sd = SameDiff.create()) {
+            INDArray keys = manager.getStaticKvBuffers().get("past_key_values.0.key");
+            INDArray values = manager.getStaticKvBuffers().get("past_key_values.0.value");
+            assertEquals(callerDevice, NativeOpsHolder.getInstance().getDeviceNativeOps()
+                    .dbDeviceId(keys.data().opaqueBuffer()));
+            Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
+            SDVariable q = sd.placeHolder("q", dtype, 1, 1, 2);
+            SDVariable k = sd.placeHolder("k", dtype, 1, 1, 2);
+            SDVariable v = sd.placeHolder("v", dtype, 1, 1, 2);
+            SDVariable pastK = sd.placeHolder("past_key_values.0.key", dtype, 1, 1, capacity, 2);
+            SDVariable pastV = sd.placeHolder("past_key_values.0.value", dtype, 1, 1, capacity, 2);
+            SDVariable mask = sd.placeHolder("mask", dtype, 1, 1, 1, capacity + 1);
+            SDVariable placement = sd.placeHolder("placement", dtype, 256);
+            SDVariable[] outputs = new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(
+                    sd, q.add(placement.sum()), k, v, mask, pastK, pastV, 1, 1.0, false).outputVariables();
+            String[] outputNames = {"out", "present.0.key", "present.0.value"};
+            for (int i = 0; i < outputNames.length; i++) sd.updateVariableNameAndReference(outputs[i], outputNames[i]);
+            var plan = sd.compileDynamicShapePlan(outputNames);
+            for (var slot : plan.getSlots()) slot.setTargetDeviceId(attentionDevice);
+            sd.compileNativeDynamicShapePlan(outputNames);
+            double[] expectedK = new double[capacity * 2];
+            double[] expectedV = new double[capacity * 2];
+            for (int step = 1; step < capacity; step++) {
+                assertEquals(step, manager.getCachePosition());
+                try (INDArray query = Nd4j.zeros(dtype, 1, 1, 2);
+                     INDArray key = Nd4j.createFromArray((float) step, (float) step + 1).castTo(dtype).reshape(1, 1, 2);
+                     INDArray value = Nd4j.createFromArray((float) (2 * step), (float) (2 * step + 1)).castTo(dtype).reshape(1, 1, 2);
+                     INDArray bias = Nd4j.zeros(dtype, 1, 1, 1, capacity + 1);
+                     INDArray weight = Nd4j.zeros(dtype, 256)) {
+                    // Concat mode appends the new entry AFTER the full padded past.
+                    // Mask unused past slots but retain the appended entry.
+                    for (int i = step; i < capacity; i++) bias.putScalar(i, -10000);
+                    Map<String, INDArray> feeds = new HashMap<>(Map.of(
+                            "q", query, "k", key, "v", value, "mask", bias, "placement", weight));
+                    manager.prepareInputs(feeds, sd, 2, true);
+                    assertSame(keys, feeds.get("past_key_values.0.key"));
+                    assertSame(values, feeds.get("past_key_values.0.value"));
+                    Map<String, INDArray> result = sd.output(feeds, outputNames);
+                    try {
+                        expectedK[step * 2] = step;
+                        expectedK[step * 2 + 1] = step + 1;
+                        expectedV[step * 2] = 2 * step;
+                        expectedV[step * 2 + 1] = 2 * step + 1;
+                        double[] expectedOut = new double[2];
+                        for (int i = 0; i <= step; i++) {
+                            expectedOut[0] += expectedV[i * 2] / (step + 1);
+                            expectedOut[1] += expectedV[i * 2 + 1] / (step + 1);
+                        }
+                        assertArrayEquals(expectedOut, result.get("out").data().asDouble(),
+                                dtype == DataType.HALF ? 0.1 : 1e-4, "manager attention step " + step);
+                        // Production manager loop: scatter the present outputs, then
+                        // retire them. The manager remains the static-buffer owner.
+                        manager.scatterNewEntries(result, names);
+                        assertEquals(step + 1, manager.getCachePosition());
+                        assertArrayEquals(expectedK, keys.data().asDouble(), 0.0, "manager keys step " + step);
+                        assertArrayEquals(expectedV, values.data().asDouble(), 0.0, "manager values step " + step);
+                        assertSame(keys, manager.getStaticKvBuffers().get("past_key_values.0.key"));
+                    } finally {
+                        result.values().forEach(INDArray::close);
+                    }
+                }
+            }
+            assertTrue(DspPlanAssertions.getTotalGraphReplays(sd) > 0, "manager decode must reach replay");
+            DspPlanAssertions.assertNoCaptureFailures(sd, "manager prepare/scatter lifecycle");
+        } finally {
+            Nd4j.getAffinityManager().setDeviceForCurrentThread(savedDevice);
+        }
     }
 
     private static UnifiedKvCacheManager initializedManager(DataType dtype) {
+        return initializedManager(dtype, 4);
+    }
+
+    private static UnifiedKvCacheManager initializedManager(DataType dtype, int capacity) {
         UnifiedKvCacheManager manager = new UnifiedKvCacheManager();
         try (INDArray key = Nd4j.zeros(dtype, 1, 1, 1, 2);
              INDArray value = Nd4j.zeros(dtype, 1, 1, 1, 2)) {
             manager.initializeFromPrefill(Map.of("present.0.key", key, "present.0.value", value),
                     new ModelIOConfig.KVCacheNames(java.util.List.of("present.0.key"),
-                            java.util.List.of("present.0.value")), 3, 1);
+                            java.util.List.of("present.0.value")), capacity - 1, 1);
             return manager;
         } catch (RuntimeException | Error failure) {
             manager.close();
