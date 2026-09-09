@@ -13,7 +13,10 @@ NS = {"m": "http://maven.apache.org/POM/4.0.0"}
 
 
 SOURCE_COMMIT = "5debc0e4ed3588748b8491c94c072df75a149834"
-DOCUMENTATION_POM = Path("nd4j/nd4j-torchscript/pom.xml")
+DOCUMENTATION_POMS = (
+    Path("nd4j/nd4j-torchscript/pom.xml"),
+    Path("nd4j/samediff-pipeline-core/pom.xml"),
+)
 # Exact audited insertion; never accept arbitrary plugin/lifecycle changes.
 DOCUMENTATION_PROFILE = b'''    <profiles>
         <profile>
@@ -70,20 +73,27 @@ def prepare_documentation_config(source, fix_source, fix_commit, commit, output,
     for root, sha in ((source, commit), (fix_source, fix_commit)):
         if subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip() != sha:
             raise ValueError("documentation packaging checkout revision mismatch")
-    original = subprocess.check_output(["git", "show", f"{commit}:{DOCUMENTATION_POM}"], cwd=source)
-    fixed = subprocess.check_output(["git", "show", f"{fix_commit}:{DOCUMENTATION_POM}"], cwd=fix_source)
-    path = source / DOCUMENTATION_POM
-    if path.is_symlink() or path.read_bytes() != original or fixed != documentation_pom(original):
-        raise ValueError("unaudited documentation packaging changes or non-pristine source")
     if provenance.get("sourceCommit") != commit or provenance.get("packagingFixCommit") != fix_commit:
         raise ValueError("documentation packaging must preserve cumulative metadata provenance")
+    overlays, evidence = [], []
+    # Validate every allowlisted POM before writing any overlay. No arbitrary
+    # modules or lifecycle edits may ride along with a cumulative packaging SHA.
+    for relative in DOCUMENTATION_POMS:
+        original = subprocess.check_output(["git", "show", f"{commit}:{relative}"], cwd=source)
+        fixed = subprocess.check_output(["git", "show", f"{fix_commit}:{relative}"], cwd=fix_source)
+        path = source / relative
+        if path.is_symlink() or path.read_bytes() != original or fixed != documentation_pom(original):
+            raise ValueError("unaudited documentation packaging changes or non-pristine source")
+        overlays.append((path, fixed))
+        evidence.append({"path": relative.as_posix(), "sourcePomSha256": digest(original),
+                         "packagingPomSha256": digest(fixed)})
     provenance["documentationPackaging"] = {
-        "policy": "audited-torchscript-delombok-v1", "path": DOCUMENTATION_POM.as_posix(),
-        "sourcePomSha256": digest(original), "packagingPomSha256": digest(fixed),
+        "policy": "audited-module-delombok-v2", "poms": evidence,
         "profileSha256": digest(DOCUMENTATION_PROFILE),
         "compileSourceRootsUnchanged": True,
         "description": "Delombok after compilation; Javadoc-only sourcepath; native receipts unchanged"}
-    path.write_bytes(fixed)
+    for path, fixed in overlays:
+        path.write_bytes(fixed)
     (output / "metadata-recovery-provenance.json").write_text(json.dumps(provenance, indent=2) + "\n")
 
 

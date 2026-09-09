@@ -50,42 +50,52 @@ class MetadataRecoveryTests(unittest.TestCase):
 
     def test_documentation_packaging_overlay_is_exact_and_cumulative(self):
         original = b'<project>\n</project>\n'
-        path = self.source / metadata.DOCUMENTATION_POM
-        path.parent.mkdir(parents=True)
-        path.write_bytes(original)
+        paths = [self.source / relative for relative in metadata.DOCUMENTATION_POMS]
+        for path in paths:
+            path.parent.mkdir(parents=True)
+            path.write_bytes(original)
         fixed = metadata.documentation_pom(original)
         provenance = {'sourceCommit': metadata.SOURCE_COMMIT, 'packagingFixCommit': 'b' * 40,
                       'files': [{'path': 'prior-tokenizer-metadata'}]}
         with patch.object(metadata.subprocess, 'check_output', side_effect=[
-                metadata.SOURCE_COMMIT, 'b' * 40, original, fixed]):
+                metadata.SOURCE_COMMIT, 'b' * 40] + [original, fixed] * len(paths)):
             metadata.prepare_documentation_config(self.source, self.fix, 'b' * 40,
                 metadata.SOURCE_COMMIT, self.output, provenance)
-        self.assertEqual(fixed, path.read_bytes())
+        for path in paths:
+            self.assertEqual(fixed, path.read_bytes())
+        self.assertEqual([p.as_posix() for p in metadata.DOCUMENTATION_POMS],
+                         [p['path'] for p in provenance['documentationPackaging']['poms']])
         self.assertEqual([{'path': 'prior-tokenizer-metadata'}], provenance['files'])
         self.assertTrue(provenance['documentationPackaging']['compileSourceRootsUnchanged'])
         self.assertEqual(provenance, json.loads((self.output / 'metadata-recovery-provenance.json').read_text()))
 
     def test_documentation_packaging_rejects_extra_changes(self):
         original = b'<project>\n</project>\n'
-        path = self.source / metadata.DOCUMENTATION_POM
-        path.parent.mkdir(parents=True)
-        path.write_bytes(original)
+        paths = [self.source / relative for relative in metadata.DOCUMENTATION_POMS]
+        for path in paths:
+            path.parent.mkdir(parents=True)
+            path.write_bytes(original)
         for fixed in (metadata.documentation_pom(original).replace(b'false', b'true'),
                       metadata.documentation_pom(original) + b'<!-- extra -->', original):
             with self.subTest(fixed=fixed), patch.object(metadata.subprocess, 'check_output', side_effect=[
-                    metadata.SOURCE_COMMIT, 'b' * 40, original, fixed]):
+                    metadata.SOURCE_COMMIT, 'b' * 40,
+                    original, metadata.documentation_pom(original), original, fixed]):
                 with self.assertRaises(ValueError):
                     metadata.prepare_documentation_config(self.source, self.fix, 'b' * 40,
-                        metadata.SOURCE_COMMIT, self.output, {})
-            self.assertEqual(original, path.read_bytes())
+                        metadata.SOURCE_COMMIT, self.output,
+                        {'sourceCommit': metadata.SOURCE_COMMIT, 'packagingFixCommit': 'b' * 40})
+            for path in paths:
+                self.assertEqual(original, path.read_bytes())
 
     @unittest.skipUnless(os.environ.get('DOCUMENTATION_CONTRACT_SOURCE'), 'remote original checkout required')
     def test_real_documentation_pom_matches_audited_insertion(self):
         source = Path(os.environ['DOCUMENTATION_CONTRACT_SOURCE'])
         root = Path(__file__).resolve().parents[2]
-        original = (source / metadata.DOCUMENTATION_POM).read_bytes()
-        fixed = (root / metadata.DOCUMENTATION_POM).read_bytes()
-        self.assertEqual(metadata.documentation_pom(original), fixed)
+        for relative in metadata.DOCUMENTATION_POMS:
+            with self.subTest(module=relative):
+                original = (source / relative).read_bytes()
+                fixed = (root / relative).read_bytes()
+                self.assertEqual(metadata.documentation_pom(original), fixed)
         profile = metadata.ET.fromstring(metadata.DOCUMENTATION_PROFILE)
         plugins = profile.find('profile/build/plugins')
         lombok, javadoc = list(plugins)
@@ -124,6 +134,12 @@ class MetadataRecoveryTests(unittest.TestCase):
                 'package example;\nimport lombok.Builder;\n/** Builder documentation contract. */\n'
                 '@Builder public class ' + name + ' {\n'
                 'private int value;\nprivate static void configure(' + name + 'Builder builder) {}\n}\n')
+        # Pipeline custom builder() explicitly names a Lombok-generated type in
+        # its public signature, unlike TorchScript's private helper parameters.
+        (sources / 'Pipeline.java').write_text(
+            'package example;\nimport lombok.Builder;\n/** Pipeline contract. */\n'
+            '@Builder public class Pipeline {\nprivate int value;\n'
+            'public static PipelineBuilder builder() { return new PipelineBuilder().value(1); }\n}\n')
         (sources / 'Reader.java').write_text(
             'package example;\n/** External builder signature contract. */\npublic class Reader {\n'
             'private void extract(TorchScriptGraph.TorchScriptGraphBuilder builder) {}\n}\n')
@@ -132,9 +148,13 @@ class MetadataRecoveryTests(unittest.TestCase):
         for name in ('TorchScriptGraph', 'TorchScriptMetadata', 'ArchitectureConfig'):
             generated = self.root / 'target/delombok-javadoc/example' / (name + '.java')
             self.assertIn('class ' + name + 'Builder', generated.read_text())
+        self.assertIn('class PipelineBuilder',
+                      (self.root / 'target/delombok-javadoc/example/Pipeline.java').read_text())
+        self.assertNotIn('class PipelineBuilder', (sources / 'Pipeline.java').read_text())
         archive = self.root / 'target/delombok-contract-1-javadoc.jar'
         with ZipFile(archive) as docs:
             self.assertIn('example/TorchScriptGraph.TorchScriptGraphBuilder.html', docs.namelist())
+            self.assertIn('example/Pipeline.PipelineBuilder.html', docs.namelist())
 
     def test_profile_only_changes_are_required(self):
         metadata.validate_pom(self.original, self.fixed)
