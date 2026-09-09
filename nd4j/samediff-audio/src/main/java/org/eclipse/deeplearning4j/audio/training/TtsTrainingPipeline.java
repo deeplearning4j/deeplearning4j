@@ -52,7 +52,7 @@ import java.util.List;
  * <p>The pipeline:
  * <ol>
  *   <li>Optionally freezes the text/acoustic encoder based on
- *       {@link TtsFineTuneConfig#isFreeze TextEncoder()}.</li>
+ *       {@link TtsFineTuneConfig#isFreezeTextEncoder()}.</li>
  *   <li>Optionally wraps the model with {@link PeftModel} when
  *       {@link TtsTrainingConfig#getPeftConfig()} is non-null.</li>
  *   <li>Builds an AdamW optimizer with a cosine warmup LR schedule.</li>

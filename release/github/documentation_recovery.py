@@ -1,6 +1,6 @@
 """Audited Javadoc-only repair overlay for the pinned native release source.
 
-Only the thirteen reviewed Javadoc lines are eligible. No whole fix checkout is
+Only the fourteen reviewed Javadoc lines are eligible. No whole fix checkout is
 merged: unrelated changes at that revision cannot enter the Java reactor.
 Extending this table requires reviewing the original comment and source SHA.
 """
@@ -58,6 +58,15 @@ PIPELINE_CONFIG = "nd4j/samediff-pipeline-core/src/main/java/org/eclipse/deeplea
 REPAIRS[PIPELINE_CONFIG] = {
     37: (" * @deprecated Use {@link org.eclipse.deeplearning4j.llm.config.PreprocessorConfig} instead.\n",
          " * @deprecated Use {@code PreprocessorConfig} in package {@code org.eclipse.deeplearning4j.llm.config} from the {@code samediff-llm} module instead.\n"),
+}
+
+
+# Lombok @Data on TtsFineTuneConfig generates the boolean getter used by the
+# pipeline constructor; the embedded space made Javadoc resolve #isFreeze.
+TTS_PIPELINE = "nd4j/samediff-audio/src/main/java/org/eclipse/deeplearning4j/audio/training/TtsTrainingPipeline.java"
+REPAIRS[TTS_PIPELINE] = {
+    55: (" *       {@link TtsFineTuneConfig#isFreeze TextEncoder()}.</li>\n",
+         " *       {@link TtsFineTuneConfig#isFreezeTextEncoder()}.</li>\n"),
 }
 
 

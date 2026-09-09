@@ -43,7 +43,7 @@ class DocumentationRecoveryTests(unittest.TestCase):
         result = self.prepare()
         self.assertEqual(docs.SOURCE_COMMIT, result['sourceCommit'])
         self.assertEqual('b' * 40, result['documentationFixCommit'])
-        self.assertEqual(13, sum(len(row['lines']) for row in result['files']))
+        self.assertEqual(14, sum(len(row['lines']) for row in result['files']))
         self.assertEqual('audited-javadoc-only-v2', result['policy'])
         for row in result['files']:
             self.assertEqual(docs.digest(self.originals[row['path']]), row['sourceSha256'])
@@ -101,7 +101,7 @@ class DocumentationRecoveryTests(unittest.TestCase):
     def test_each_vlm_repair_is_required_before_any_write(self):
         names = [name for name in docs.REPAIRS if name.startswith(docs.VLM)]
         self.assertEqual(4, len(names))
-        self.assertEqual(9, sum(len(lines) for name, lines in docs.REPAIRS.items()
+        self.assertEqual(10, sum(len(lines) for name, lines in docs.REPAIRS.items()
                                 if not name.startswith(docs.VLM)))
         for name in names:
             with self.subTest(name=name):
@@ -143,6 +143,26 @@ class DocumentationRecoveryTests(unittest.TestCase):
                       (root / 'nd4j/samediff-llm/pom.xml').read_text())
         self.assertNotIn('<artifactId>samediff-llm</artifactId>',
                          (root / 'nd4j/samediff-pipeline-core/pom.xml').read_text())
+        self.fixed[name] = self.originals[name]
+        with self.assertRaisesRegex(ValueError, 'unaudited'):
+            self.prepare()
+        for path in docs.REPAIRS:
+            self.assertEqual(self.originals[path], (self.source / path).read_bytes())
+
+    def test_tts_link_names_actual_boolean_getter_and_is_required(self):
+        root = Path(__file__).resolve().parents[2]
+        name = docs.TTS_PIPELINE
+        self.assertEqual({55: (
+            ' *       {@link TtsFineTuneConfig#isFreeze TextEncoder()}.</li>\n',
+            ' *       {@link TtsFineTuneConfig#isFreezeTextEncoder()}.</li>\n')},
+            docs.REPAIRS[name])
+        config = (root / (docs.API + 'autodiff/samediff/config/TtsFineTuneConfig.java')).read_text()
+        self.assertIn('import lombok.Data;', config)
+        self.assertIn('@Data', config)
+        self.assertIn('private boolean freezeTextEncoder = true;', config)
+        pipeline = (root / name).read_text()
+        self.assertIn('import org.nd4j.autodiff.samediff.config.TtsFineTuneConfig;', pipeline)
+        self.assertIn('if (ttsConfig.isFreezeTextEncoder())', pipeline)
         self.fixed[name] = self.originals[name]
         with self.assertRaisesRegex(ValueError, 'unaudited'):
             self.prepare()
