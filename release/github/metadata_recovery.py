@@ -12,6 +12,81 @@ MODULE = Path("nd4j/nd4j-tokenizers/libtokenizers")
 NS = {"m": "http://maven.apache.org/POM/4.0.0"}
 
 
+SOURCE_COMMIT = "5debc0e4ed3588748b8491c94c072df75a149834"
+DOCUMENTATION_POM = Path("nd4j/nd4j-torchscript/pom.xml")
+# Exact audited insertion; never accept arbitrary plugin/lifecycle changes.
+DOCUMENTATION_PROFILE = b'''    <profiles>
+        <profile>
+            <id>central-release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.projectlombok</groupId>
+                        <artifactId>lombok-maven-plugin</artifactId>
+                        <version>1.18.20.0</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                                <version>${lombok.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <executions>
+                            <execution>
+                                <id>central-delombok</id>
+                                <phase>process-classes</phase>
+                                <goals><goal>delombok</goal></goals>
+                                <configuration>
+                                    <sourceDirectory>${project.basedir}/src/main/java</sourceDirectory>
+                                    <outputDirectory>${project.build.directory}/delombok-javadoc</outputDirectory>
+                                    <addOutputDirectory>false</addOutputDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <configuration>
+                            <sourcepath>${project.build.directory}/delombok-javadoc</sourcepath>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+'''
+
+
+def documentation_pom(original):
+    if original.count(b"\n</project>") != 1 or b"<profiles>" in original:
+        raise ValueError("unexpected original documentation POM structure")
+    return original.replace(b"\n</project>", b"\n" + DOCUMENTATION_PROFILE + b"</project>")
+
+
+def prepare_documentation_config(source, fix_source, fix_commit, commit, output, provenance):
+    if commit != SOURCE_COMMIT or not re.fullmatch(r"[0-9a-f]{40}", fix_commit):
+        raise ValueError("documentation packaging requires audited source and immutable fix SHA")
+    for root, sha in ((source, commit), (fix_source, fix_commit)):
+        if subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip() != sha:
+            raise ValueError("documentation packaging checkout revision mismatch")
+    original = subprocess.check_output(["git", "show", f"{commit}:{DOCUMENTATION_POM}"], cwd=source)
+    fixed = subprocess.check_output(["git", "show", f"{fix_commit}:{DOCUMENTATION_POM}"], cwd=fix_source)
+    path = source / DOCUMENTATION_POM
+    if path.is_symlink() or path.read_bytes() != original or fixed != documentation_pom(original):
+        raise ValueError("unaudited documentation packaging changes or non-pristine source")
+    if provenance.get("sourceCommit") != commit or provenance.get("packagingFixCommit") != fix_commit:
+        raise ValueError("documentation packaging must preserve cumulative metadata provenance")
+    provenance["documentationPackaging"] = {
+        "policy": "audited-torchscript-delombok-v1", "path": DOCUMENTATION_POM.as_posix(),
+        "sourcePomSha256": digest(original), "packagingPomSha256": digest(fixed),
+        "profileSha256": digest(DOCUMENTATION_PROFILE),
+        "compileSourceRootsUnchanged": True,
+        "description": "Delombok after compilation; Javadoc-only sourcepath; native receipts unchanged"}
+    path.write_bytes(fixed)
+    (output / "metadata-recovery-provenance.json").write_text(json.dumps(provenance, indent=2) + "\n")
+
+
 def digest(data):
     return hashlib.sha256(data).hexdigest()
 

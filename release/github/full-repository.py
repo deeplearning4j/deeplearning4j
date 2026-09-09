@@ -445,6 +445,8 @@ def main() -> None:
         metadata = load_module("metadata_recovery", ROOT / "release/github/metadata_recovery.py")
         supplements, recovery = metadata.prepare(source, args.metadata_fix_source.resolve(),
             args.metadata_fix_commit, args.commit, args.release_version, output)
+        metadata.prepare_documentation_config(source, args.metadata_fix_source.resolve(),
+            args.metadata_fix_commit, args.commit, output, recovery)
     documentation = None
     if args.documentation_fix_commit:
         docs = load_module("documentation_recovery", ROOT / "release/github/documentation_recovery.py")
