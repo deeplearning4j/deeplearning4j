@@ -97,6 +97,14 @@ public class TensorG3PreparerRssProfileTest {
         } else {
             trimOps = null;
         }
+        final NativeOps cacheOps;
+        if (Boolean.getBoolean("tensor.g3.preparer.sampleCaches")) {
+            org.junit.jupiter.api.Assertions.assertTrue(Nd4j.getBackend().getClass().getName().contains(".cpu."),
+                    "Cache sampler is scoped to this CPU reproduction");
+            cacheOps = Nd4j.getNativeOps();
+        } else {
+            cacheOps = null;
+        }
         AtomicBoolean trimmed = new AtomicBoolean(false);
         java.util.concurrent.atomic.AtomicReference<Throwable> samplerFailure = new java.util.concurrent.atomic.AtomicReference<>();
         log.info("PREP_RSS baseline_mb={}", rssMb());
@@ -118,6 +126,20 @@ public class TensorG3PreparerRssProfileTest {
                             (System.nanoTime() - started) / 1_000_000_000L, r, peak.get(),
                             megabytes(heap.getUsed()), megabytes(heap.getCommitted()),
                             megabytes(Pointer.totalBytes()));
+                    if (cacheOps != null) {
+                        try {
+                            log.info("PREP_CACHES elapsed_s={} array_cache_bytes={} dsp_pool_bytes={} "
+                                            + "constant_bytes={} shape_bytes={} tad_bytes={}",
+                                    (System.nanoTime() - started) / 1_000_000_000L,
+                                    org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr
+                                            .getCurrentCacheSize().get(),
+                                    cacheOps.getBufferPoolPooledBytes(0), cacheOps.getCachedMemory(0),
+                                    cacheOps.getShapeCachedBytes(), cacheOps.getTADCachedBytes());
+                        } catch (Throwable failure) {
+                            samplerFailure.set(failure);
+                            return;
+                        }
+                    }
                 }
                 if (trimOps != null && (System.nanoTime() - started) / 1_000_000_000L >= trimAtSeconds
                         && trimmed.compareAndSet(false, true)) {
@@ -168,6 +190,7 @@ public class TensorG3PreparerRssProfileTest {
                                     + "\"requantizeType\":\"Q4_K\"}"));
             log.info("PREP_RSS result_len={}", result == null ? -1 : result.toString().length());
             logMemory("after_prepare");
+            org.junit.jupiter.api.Assertions.assertNull(samplerFailure.get(), "Memory sampler failed");
             if (trimOps != null) {
                 org.junit.jupiter.api.Assertions.assertTrue(trimmed.get(), "Run ended before allocator probe");
                 org.junit.jupiter.api.Assertions.assertNull(samplerFailure.get(), "Allocator probe failed");

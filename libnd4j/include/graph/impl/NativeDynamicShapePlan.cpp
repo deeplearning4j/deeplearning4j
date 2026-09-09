@@ -6037,19 +6037,40 @@ void NativeDynamicShapePlan::prepareFirstExecutionColoring() {
     slotLiveness_ = liveness;
   }
   std::vector<bool> eligible(totalOutputSlots_, false);
+  int eligibleWriters = 0, alreadyAllocated = 0, maxSized = 0;
   for (int step = 0; step < numSlots_; ++step) {
     const auto& slot = slots_[step];
     if (!slot.isFullyWriting() || slot.needsPrezero() || slot.aliasesInput() ||
         slot.isViewCapableOp() || slot.isInPlaceFused() || slot.hasValueDependentShape() ||
         slot.flags.isDynamicShape || slot.fusedChain.isFusedChainHead || slot.fusedChain.isFusedChainTail ||
         slot.flags.ltEpilogueType != 0) continue;
+    ++eligibleWriters;
     for (int o = 0; o < slot.wiring.numOutputs; ++o) {
       int si = slot.wiring.outputSlotIndices[o];
-      if (si >= 0 && si < totalOutputSlots_ && outputSlots_[si] == nullptr &&
-          outputSlotMaxSizes_.count(si) == 0 && slotLiveness_->producerStep[si] == step &&
+      if (si >= 0 && si < totalOutputSlots_) {
+        if (outputSlots_[si] != nullptr) ++alreadyAllocated;
+        if (outputSlotMaxSizes_.count(si) != 0) ++maxSized;
+      }
+      // Automatic shape inference publishes metadata-only NDArrays. They do
+      // not own payload storage and the functional allocator replaces them;
+      // their presence must not disable first-pass coloring.
+      if (si < 0 || si >= totalOutputSlots_) continue;
+      auto* existing = outputSlots_[si];
+      bool noPayload = existing == nullptr;
+      if (existing != nullptr && planOwnedArrays_.count(existing) != 0) {
+        auto* db = existing->dataBuffer();
+        noPayload = db == nullptr ||
+                    (db->isValid() && !db->isClosed() &&
+                     db->primary() == nullptr && db->special() == nullptr);
+      }
+      if (noPayload && outputSlotMaxSizes_.count(si) == 0 &&
+          slotLiveness_->producerStep[si] == step &&
           slotLiveness_->lastConsumerStep[si] >= step) eligible[si] = true;
     }
   }
+  DSP_DIAG(MEMORY, "WARMUP_COLOR_WRITERS: eligible=%d preallocated=%d maxSized=%d",
+           eligibleWriters, alreadyAllocated, maxSized);
+  const auto eligibleBeforeAliases = std::count(eligible.begin(), eligible.end(), true);
   // Exclude both sides of every potential alias, including views that only
   // become zero-copy after freeze. Shape-control values also remain dedicated.
   for (int step = 0; step < numSlots_; ++step) {
@@ -6069,6 +6090,7 @@ void NativeDynamicShapePlan::prepareFirstExecutionColoring() {
     int si = requestedOutputSlotIndices_[i];
     if (si >= 0 && si < totalOutputSlots_) eligible[si] = false;
   }
+  const auto eligibleBeforeReaders = std::count(eligible.begin(), eligible.end(), true);
   // A numerically last consumer is not necessarily ordered after sibling
   // readers. Require all readers to lead to that final consumer in the DAG;
   // reuseWarmup then requires the new writer to depend on the final consumer.
@@ -6093,6 +6115,10 @@ void NativeDynamicShapePlan::prepareFirstExecutionColoring() {
       if (reader != last && !orderedBeforeLast[reader]) { eligible[si] = false; break; }
     }
   }
+  DSP_DIAG(MEMORY, "WARMUP_COLOR_ELIGIBILITY: slots=%d beforeAliases=%lld beforeReaders=%lld final=%lld",
+           totalOutputSlots_, static_cast<long long>(eligibleBeforeAliases),
+           static_cast<long long>(eligibleBeforeReaders),
+           static_cast<long long>(std::count(eligible.begin(), eligible.end(), true)));
   colorMap_.beginWarmup(*slotLiveness_, eligible);
 #endif
 }
@@ -6589,25 +6615,25 @@ Status NativeDynamicShapePlan::phaseShapeInferenceOnly(
       // tensors so shape propagation cannot consume both GPUs before the first
       // functional slot has executed and liveness reuse can begin.
       const int allocationDevice = slot.targetDeviceId;
-      const int previousDevice = sd::graph::dspGetCurrentDevice();
-      const bool switchedDevice = allocationDevice >= 0 && previousDevice >= 0 &&
-                                  allocationDevice != previousDevice;
-      if (switchedDevice) {
-        sd::graph::dspSetCurrentDevice(allocationDevice);
-      }
       NDArray* outArr = nullptr;
-      try {
+      {
+        // Device-only switching leaves the plan-primary stream in DSP TLS.
+        // Shape constants then allocate on that stream's device but copy on the
+        // target device. Use the same device+stream scope as functional execution.
+        GraphSegment allocationSegment;
+        allocationSegment.def.startSlot = stepIdx;
+        allocationSegment.def.endSlot = stepIdx;
+        if (!platformBindSegmentDevice(allocationSegment))
+          THROW_EXCEPTION("shape prepass cannot bind output allocation device");
+        struct RestoreShapeAllocationScope {
+          NativeDynamicShapePlan* plan;
+          ~RestoreShapeAllocationScope() { plan->platformRestoreSegmentDevice(); }
+        } restoreShapeAllocationScope{this};
         outArr = allocatePayload
                      ? new NDArray(const_cast<LongType*>(allocationShape), true)
                      : new NDArray(nullptr,
                                    const_cast<LongType*>(allocationShape),
                                    LaunchContext::defaultContext(), false, 0);
-      } catch (...) {
-        if (switchedDevice) sd::graph::dspSetCurrentDevice(previousDevice);
-        throw;
-      }
-      if (switchedDevice) {
-        sd::graph::dspSetCurrentDevice(previousDevice);
       }
       outputSlots_[slotIdx] = outArr;
       planOwnedArrays_.insert(outArr);

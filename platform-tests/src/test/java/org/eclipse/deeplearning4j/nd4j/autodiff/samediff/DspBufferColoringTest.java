@@ -68,10 +68,21 @@ public class DspBufferColoringTest {
 
     @Test
     void testFirstWarmupSharesDeadIntermediates() {
+        firstWarmupSharesDeadIntermediates(false);
+    }
+
+    @Test
+    void testShapePrepassStillSharesFirstWarmupIntermediates() {
+        firstWarmupSharesDeadIntermediates(true);
+    }
+
+    private void firstWarmupSharesDeadIntermediates(boolean shapePrepass) {
         org.junit.jupiter.api.Assumptions.assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
         sd = SameDiff.create();
         sd.setDspAutoCompileEnabled(true);
         sd.setDspNativeAutoCompileEnabled(true);
+        if (shapePrepass) sd.setGraphExecutionMode(
+                org.nd4j.autodiff.samediff.execution.GraphExecutionMode.TRITON);
         SDVariable input = sd.placeHolder("input", DataType.FLOAT, 256, 128);
         final float factor = 1.015625f;
         SDVariable weight = sd.constant("weight", Nd4j.eye(128).castTo(DataType.FLOAT).muli(factor));
