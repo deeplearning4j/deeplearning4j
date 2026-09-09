@@ -68,6 +68,7 @@
 #include <graph/DspThreadState.h>
 #include <graph/gpu/DspCudaDispatch.h>
 #include <graph/PlanExecutionContext.h>
+#include <helpers/DebugHelper.h>
 #include <helpers/MmulHelper.h>
 #include <helpers/cublasHelper.h>
 #include <cublas_v2.h>
