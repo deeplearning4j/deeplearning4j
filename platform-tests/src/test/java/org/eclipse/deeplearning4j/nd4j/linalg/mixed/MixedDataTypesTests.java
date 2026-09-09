@@ -40,6 +40,8 @@ import org.nd4j.linalg.api.memory.enums.MirroringPolicy;
 import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.IsInf;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.IsNaN;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.CountNonZero;
@@ -584,6 +586,116 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
 
         x.addi(y);
         assertEquals(x, y);
+    }
+
+    // Exercise the custom cast helper, not the separate INDArray.assign path.
+    private static void executeCast(INDArray input, INDArray output) {
+        Nd4j.getExecutioner().exec(DynamicCustomOp.builder("cast")
+                .addInputs(input).addOutputs(output)
+                .addIntegerArguments(output.dataType().toInt()).build());
+    }
+
+    private static INDArray castParent(DataType type, int layout) {
+        long[][] shapes = {{2, 3}, {2, 3}, {4, 3}, {4, 5}, {4, 6}, {3, 2}};
+        return Nd4j.create(type, shapes[layout], layout == 1 ? 'f' : 'c');
+    }
+
+    private static INDArray castView(INDArray parent, int layout) {
+        switch (layout) {
+            case 2: // Packed, with a nonzero base offset.
+                return parent.get(NDArrayIndex.interval(1, 3), NDArrayIndex.all());
+            case 3: // Offset and padded rows: not contiguous.
+                return parent.get(NDArrayIndex.interval(1, 3), NDArrayIndex.interval(1, 4));
+            case 4: // Stepped rows and columns.
+                return parent.get(NDArrayIndex.interval(0, 2, 4), NDArrayIndex.interval(0, 2, 6));
+            case 5:
+                return parent.transpose();
+            default:
+                return parent;
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCastBfloat16Layouts(Nd4jBackend backend) {
+        for (DataType inputType : new DataType[]{DataType.BFLOAT16, DataType.FLOAT}) {
+            DataType outputType = inputType == DataType.BFLOAT16 ? DataType.FLOAT : DataType.BFLOAT16;
+            for (int xLayout = 0; xLayout < 6; xLayout++) {
+                for (int zLayout = 0; zLayout < 6; zLayout++) {
+                    try (INDArray xParent = castParent(inputType, xLayout);
+                         INDArray zParent = castParent(outputType, zLayout);
+                         INDArray expectedParent = castParent(outputType, zLayout)) {
+                        xParent.assign(-19);
+                        zParent.assign(-31);
+                        expectedParent.assign(-31);
+                        INDArray input = castView(xParent, xLayout);
+                        INDArray output = castView(zParent, zLayout);
+                        INDArray expected = castView(expectedParent, zLayout);
+                        for (int r = 0; r < 2; r++) {
+                            for (int c = 0; c < 3; c++) {
+                                double value = (r * 3 + c - 2) * 0.5;
+                                input.putScalar(r, c, value);
+                                expected.putScalar(r, c, value);
+                            }
+                        }
+                        try (INDArray inputBefore = xParent.dup()) {
+                            executeCast(input, output);
+                            assertEquals(outputType, output.dataType());
+                            assertEquals(expectedParent, zParent,
+                                    inputType + " layouts " + xLayout + " -> " + zLayout);
+                            assertEquals(inputBefore, xParent, "cast must not write its input");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCastBfloat16SizesAndExceptionalValues(Nd4jBackend backend) {
+        for (long[] shape : new long[][]{{}, {1, 1, 1}, {1, 3, 1}, {65537}}) {
+            try (INDArray input = Nd4j.create(DataType.BFLOAT16, shape, 'c');
+                 INDArray output = Nd4j.create(DataType.FLOAT, shape, 'c')) {
+                input.assign(1.5);
+                executeCast(input, output);
+                for (long i = 0; i < output.length(); i++) {
+                    assertEquals(1.5f, output.getFloat(i), 0.0f);
+                }
+            }
+        }
+        try (INDArray input = Nd4j.empty(DataType.BFLOAT16);
+             INDArray output = Nd4j.empty(DataType.FLOAT)) {
+            executeCast(input, output);
+            assertTrue(output.isEmpty());
+        }
+        float[] values = {0.0f, -0.0f, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY, Float.NaN};
+        try (INDArray input = Nd4j.create(DataType.BFLOAT16, values.length);
+             INDArray output = Nd4j.create(DataType.FLOAT, values.length)) {
+            for (int i = 0; i < values.length; i++) input.putScalar(i, values[i]);
+            executeCast(input, output);
+            for (int i = 0; i < values.length; i++) {
+                // Compare against stored BF16, including signed zero and canonical NaN.
+                assertEquals(Float.floatToIntBits(input.getFloat(i)),
+                        Float.floatToIntBits(output.getFloat(i)));
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCastPackedPreservesWidePrecision(Nd4jBackend backend) {
+        long[] values = {16777217L, -16777217L, 9007199254740991L};
+        try (INDArray input = Nd4j.createFromArray(values);
+             INDArray output = Nd4j.create(DataType.DOUBLE, values.length);
+             INDArray restored = Nd4j.create(DataType.LONG, values.length)) {
+            executeCast(input, output);
+            executeCast(output, restored);
+            for (int i = 0; i < values.length; i++) {
+                assertEquals((double) values[i], output.getDouble(i), 0.0);
+                assertEquals(values[i], restored.getLong(i));
+            }
+        }
     }
 
     @ParameterizedTest

@@ -23,6 +23,7 @@
 #include <ops/declarable/helpers/assign.h>
 #include <execution/Threads.h>
 #include <helpers/ShapeUtils.h>
+#include <ops/impl/specials_double.hpp>
 #include <system/op_boilerplate.h>
 
 namespace sd {
@@ -44,6 +45,18 @@ static void assignImpl_(NDArray* source, NDArray* target) {
     const sd::LongType* xStride = shape::stride(xShapeInfo);
     const sd::LongType* zStride = shape::stride(zShapeInfo);
     const sd::LongType len = target->lengthOf();
+
+    // The general path enumerates each shape in C logical order. Only packed
+    // C-order buffers can use that same index directly (also for unequal shapes).
+    // EWS alone does not prove contiguity; bufferAsT already includes view offsets.
+    if (shape::order(xShapeInfo) == 'c' && shape::order(zShapeInfo) == 'c' &&
+        shape::strideDescendingCAscendingF(xShapeInfo) &&
+        shape::strideDescendingCAscendingF(zShapeInfo)) {
+        // Include the template definition so same-type/FP8 casts do not depend
+        // on the narrower generated cross-type instantiation matrix.
+        SpecialTypeConverter::convertGeneric<X, Z>(nullptr, xBuffer, len, zBuffer);
+        return;
+    }
 
     auto func = PRAGMA_THREADS_FOR {
         for (auto i = start; i < stop; i++) {
