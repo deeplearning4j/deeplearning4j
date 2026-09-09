@@ -1,6 +1,6 @@
 """Audited Javadoc-only repair overlay for the pinned native release source.
 
-Only the thirty-four reviewed Javadoc lines are eligible. No whole fix checkout is
+Only the eighty-two reviewed Javadoc lines are eligible. No whole fix checkout is
 merged: unrelated changes at that revision cannot enter the Java reactor.
 Extending this table requires reviewing the original comment and source SHA.
 """
@@ -152,6 +152,43 @@ REPAIRS[LFW_ITERATOR] = {
 }
 
 
+# Recovery 34404620379: implSpec is not a standard doclet tag. These six
+# remove overrides are no-ops, unlike the copied Iterator default contract.
+# Describe their actual behavior in ordinary Javadoc, preserving line positions.
+UTILITY_ITERATORS = "deeplearning4j/deeplearning4j-data/deeplearning4j-utility-iterators/src/main/java/org/deeplearning4j/datasets/iterator/"
+UTILITY_ITERATORS_RECOVERY_RUN = "34404620379"
+UTILITY_REMOVE_BEFORE = (
+    "     * @throws UnsupportedOperationException if the {@code remove}\n",
+    "     *                                       operation is not supported by this iterator\n",
+    "     * @throws IllegalStateException         if the {@code next} method has not\n",
+    "     *                                       yet been called, or the {@code remove} method has already\n",
+    "     *                                       been called after the last call to the {@code next}\n",
+    "     *                                       method\n",
+    "     * @implSpec The default implementation throws an instance of\n",
+    "     * {@link UnsupportedOperationException} and performs no other action.\n",
+)
+UTILITY_REMOVE_AFTER = (
+    "     * <p><strong>Implementation:</strong> This method performs no action.\n",
+    "     * It does not remove a data set,\n",
+    "     * change iterator state,\n",
+    "     * or delegate removal to an underlying iterator.\n",
+    "     * Calling this method before {@code next()}\n",
+    "     * or repeatedly after {@code next()} has no effect.\n",
+    "     * No {@link UnsupportedOperationException} or\n",
+    "     * {@link IllegalStateException} is thrown.</p>\n",
+)
+for relative, tag_line in (
+        ("AbstractDataSetIterator.java", 261),
+        ("AsyncShieldDataSetIterator.java", 179),
+        ("AsyncShieldMultiDataSetIterator.java", 129),
+        ("utilty/BenchmarkDataSetIterator.java", 177),
+        ("utilty/BenchmarkMultiDataSetIterator.java", 146),
+        ("JointMultiDataSetIterator.java", 223)):
+    REPAIRS[UTILITY_ITERATORS + relative] = {
+        tag_line - 6 + offset: pair for offset, pair in
+        enumerate(zip(UTILITY_REMOVE_BEFORE, UTILITY_REMOVE_AFTER))}
+
+
 def digest(data):
     return hashlib.sha256(data).hexdigest()
 
@@ -201,7 +238,9 @@ def prepare(source, fix_source, fix_commit, commit, output):
                   "datavecLocalDiagnostics": {"recoveryRunId": DATAVEC_LOCAL_RECOVERY_RUN,
                                               "errorCount": 2, "repairedLineCount": 1},
                   "lfwDiagnostics": {"recoveryRunId": LFW_RECOVERY_RUN,
-                                     "errorCount": 4, "repairedLineCount": 4}}
+                                     "errorCount": 4, "repairedLineCount": 4},
+                  "utilityIteratorsDiagnostics": {"recoveryRunId": UTILITY_ITERATORS_RECOVERY_RUN,
+                                                  "errorCount": 6, "repairedLineCount": 48}}
     # Validate every file before writing any overlay. Preserve line numbers and
     # every non-repaired byte, including all compiled code and source positions.
     for path, fixed in pending:

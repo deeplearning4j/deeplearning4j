@@ -43,7 +43,7 @@ class DocumentationRecoveryTests(unittest.TestCase):
         result = self.prepare()
         self.assertEqual(docs.SOURCE_COMMIT, result['sourceCommit'])
         self.assertEqual('b' * 40, result['documentationFixCommit'])
-        self.assertEqual(34, sum(len(row['lines']) for row in result['files']))
+        self.assertEqual(82, sum(len(row['lines']) for row in result['files']))
         self.assertEqual({'recoveryRunId': '34381061422', 'errorCount': 14,
                           'repairedLineCount': 13}, result['datavecDiagnostics'])
         self.assertEqual({'recoveryRunId': '34383274542', 'errorCount': 1,
@@ -54,6 +54,8 @@ class DocumentationRecoveryTests(unittest.TestCase):
                           'repairedLineCount': 1}, result['datavecLocalDiagnostics'])
         self.assertEqual({'recoveryRunId': '34400417264', 'errorCount': 4,
                           'repairedLineCount': 4}, result['lfwDiagnostics'])
+        self.assertEqual({'recoveryRunId': '34404620379', 'errorCount': 6,
+                          'repairedLineCount': 48}, result['utilityIteratorsDiagnostics'])
         self.assertEqual('audited-javadoc-only-v2', result['policy'])
         for row in result['files']:
             self.assertEqual(docs.digest(self.originals[row['path']]), row['sourceSha256'])
@@ -111,7 +113,7 @@ class DocumentationRecoveryTests(unittest.TestCase):
     def test_each_vlm_repair_is_required_before_any_write(self):
         names = [name for name in docs.REPAIRS if name.startswith(docs.VLM)]
         self.assertEqual(4, len(names))
-        self.assertEqual(30, sum(len(lines) for name, lines in docs.REPAIRS.items()
+        self.assertEqual(78, sum(len(lines) for name, lines in docs.REPAIRS.items()
                                 if not name.startswith(docs.VLM)))
         for name in names:
             with self.subTest(name=name):
@@ -247,7 +249,7 @@ class DocumentationRecoveryTests(unittest.TestCase):
             ' * @link {{@link PythonConstants#DEFAULT_PYTHON_PATH_PROPERTY}} : The default python path to be used by the executioner.\n',
             ' * {@link PythonConstants#DEFAULT_PYTHON_PATH_PROPERTY} : The default python path to be used by the executioner.\n')},
             docs.REPAIRS[name])
-        self.assertEqual(33, sum(len(lines) for path, lines in docs.REPAIRS.items() if path != name))
+        self.assertEqual(81, sum(len(lines) for path, lines in docs.REPAIRS.items() if path != name))
         text = (root / name).read_text()
         self.assertEqual(docs.REPAIRS[name][46][1], text.splitlines(keepends=True)[45])
         constant = (root / name).with_name('PythonConstants.java').read_text()
@@ -264,7 +266,7 @@ class DocumentationRecoveryTests(unittest.TestCase):
         name = docs.DATAVEC_LOCAL
         self.assertEqual({101: ('     * but returns <it>sequence</it>\n',
                                '     * but returns <i>sequence</i>\n')}, docs.REPAIRS[name])
-        self.assertEqual(33, sum(len(lines) for path, lines in docs.REPAIRS.items() if path != name))
+        self.assertEqual(81, sum(len(lines) for path, lines in docs.REPAIRS.items() if path != name))
         text = (root / name).read_text()
         self.assertEqual(docs.REPAIRS[name][101][1], text.splitlines(keepends=True)[100])
         self.fixed[name] = self.originals[name]
@@ -277,7 +279,7 @@ class DocumentationRecoveryTests(unittest.TestCase):
         root = Path(__file__).resolve().parents[2]
         name = docs.LFW_ITERATOR
         self.assertEqual({60, 66, 72, 79}, set(docs.REPAIRS[name]))
-        self.assertEqual(30, sum(len(lines) for path, lines in docs.REPAIRS.items() if path != name))
+        self.assertEqual(78, sum(len(lines) for path, lines in docs.REPAIRS.items() if path != name))
         text = (root / name).read_bytes().splitlines(keepends=True)
         for number, (before, after) in docs.REPAIRS[name].items():
             with self.subTest(number=number):
@@ -295,6 +297,32 @@ class DocumentationRecoveryTests(unittest.TestCase):
                 for path in docs.REPAIRS:
                     self.assertEqual(self.originals[path], (self.source / path).read_bytes())
                 self.fixed[name] = fixed
+
+    def test_utility_iterator_repairs_match_noop_overrides_and_are_required(self):
+        root = Path(__file__).resolve().parents[2]
+        names = [name for name in docs.REPAIRS if name.startswith(docs.UTILITY_ITERATORS)]
+        self.assertEqual(6, len(names))
+        self.assertEqual(34, sum(len(lines) for name, lines in docs.REPAIRS.items()
+                                if name not in names))
+        for name in names:
+            text = (root / name).read_text()
+            self.assertNotIn('@implSpec', text)
+            body = text.split('public void remove() {', 1)[1].split('}', 1)[0]
+            self.assertTrue(all(not line.strip() or line.strip().startswith('//')
+                                for line in body.splitlines()))
+            self.assertEqual(8, len(docs.REPAIRS[name]))
+            for number, (before, after) in docs.REPAIRS[name].items():
+                with self.subTest(name=name, number=number):
+                    self.assertEqual(after, text.splitlines(keepends=True)[number - 1])
+                    fixed = self.fixed[name]
+                    lines = fixed.splitlines(keepends=True)
+                    lines[number - 1] = before.encode()
+                    self.fixed[name] = b''.join(lines)
+                    with self.assertRaisesRegex(ValueError, 'unaudited'):
+                        self.prepare()
+                    for path in docs.REPAIRS:
+                        self.assertEqual(self.originals[path], (self.source / path).read_bytes())
+                    self.fixed[name] = fixed
 
     def test_real_pinned_source_matches_only_audited_edits(self):
         original_root = os.environ.get('DOCUMENTATION_CONTRACT_SOURCE')

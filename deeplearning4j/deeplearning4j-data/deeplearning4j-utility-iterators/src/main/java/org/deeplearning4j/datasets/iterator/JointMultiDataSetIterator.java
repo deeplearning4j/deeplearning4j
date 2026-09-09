@@ -214,14 +214,14 @@ public class JointMultiDataSetIterator implements MultiDataSetIterator {
     /**
      * PLEASE NOTE: This method is NOT implemented
      *
-     * @throws UnsupportedOperationException if the {@code remove}
-     *                                       operation is not supported by this iterator
-     * @throws IllegalStateException         if the {@code next} method has not
-     *                                       yet been called, or the {@code remove} method has already
-     *                                       been called after the last call to the {@code next}
-     *                                       method
-     * @implSpec The default implementation throws an instance of
-     * {@link UnsupportedOperationException} and performs no other action.
+     * <p><strong>Implementation:</strong> This method performs no action.
+     * It does not remove a data set,
+     * change iterator state,
+     * or delegate removal to an underlying iterator.
+     * Calling this method before {@code next()}
+     * or repeatedly after {@code next()} has no effect.
+     * No {@link UnsupportedOperationException} or
+     * {@link IllegalStateException} is thrown.</p>
      */
     @Override
     public void remove() {
