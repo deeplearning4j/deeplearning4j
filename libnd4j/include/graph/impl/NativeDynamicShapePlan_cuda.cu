@@ -1338,6 +1338,10 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
           mi.externalInputIdx = externalInputIdx;
           migratedInputs_.push_back(mi);
           externalInputs[externalInputIdx] = state;
+          // Pre-replay sync can reuse its already-synchronized table on this
+          // device. Managed state bypasses ordinary staging, so publish the
+          // same replica there rather than letting dedup restore caller storage.
+          if (effectiveExternals_ != nullptr) effectiveExternals_[externalInputIdx] = state;
         } catch (const std::exception& error) {
           if (savedDevice >= 0) cudaSetDevice(savedDevice);
           return cudaPlanFailure("CUDA writable external migration failed: ext=%d targetDevice=%d: %s",
@@ -1784,6 +1788,10 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
     }
     if (mi.externalInputTable != nullptr && mi.externalInputIdx >= 0) {
       mi.externalInputTable[mi.externalInputIdx] = mi.original;
+      if (stateReplica && effectiveExternals_ != nullptr &&
+          effectiveExternals_[mi.externalInputIdx] == mi.migrated) {
+        effectiveExternals_[mi.externalInputIdx] = mi.original;
+      }
     }
     if (mi.migrated != nullptr && !stateReplica) {
       // Slot replacement may already have queued this same wrapper. Deleting
