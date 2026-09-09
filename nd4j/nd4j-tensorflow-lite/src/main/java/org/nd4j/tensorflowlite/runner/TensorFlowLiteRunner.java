@@ -93,7 +93,7 @@ public class TensorFlowLiteRunner implements Closeable  {
     }
 
     /**
-     * Execute the {@link #session}
+     * Execute the {@link Interpreter}
      * using the given input {@link Map}
      * input
      * @param input the input map

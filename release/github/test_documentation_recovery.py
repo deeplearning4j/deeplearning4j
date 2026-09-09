@@ -43,7 +43,7 @@ class DocumentationRecoveryTests(unittest.TestCase):
         result = self.prepare()
         self.assertEqual(docs.SOURCE_COMMIT, result['sourceCommit'])
         self.assertEqual('b' * 40, result['documentationFixCommit'])
-        self.assertEqual(7, sum(len(row['lines']) for row in result['files']))
+        self.assertEqual(8, sum(len(row['lines']) for row in result['files']))
         self.assertEqual('audited-javadoc-only-v2', result['policy'])
         for row in result['files']:
             self.assertEqual(docs.digest(self.originals[row['path']]), row['sourceSha256'])
@@ -87,6 +87,16 @@ class DocumentationRecoveryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'audited Javadoc'):
             docs.repaired(b'wrong\n', {1: ('     * <h3>Example Usage:</h3>\n',
                                              '     * <h4>Example Usage:</h4>\n')})
+
+    def test_tensorflow_lite_link_repair_is_exact_and_required(self):
+        name = 'nd4j/nd4j-tensorflow-lite/src/main/java/org/nd4j/tensorflowlite/runner/TensorFlowLiteRunner.java'
+        self.assertEqual({96: ('     * Execute the {@link #session}\n',
+                              '     * Execute the {@link Interpreter}\n')}, docs.REPAIRS[name])
+        self.fixed[name] = self.originals[name]
+        with self.assertRaisesRegex(ValueError, 'unaudited'):
+            self.prepare()
+        for path in docs.REPAIRS:
+            self.assertEqual(self.originals[path], (self.source / path).read_bytes())
 
     def test_real_pinned_source_matches_only_audited_edits(self):
         original_root = os.environ.get('DOCUMENTATION_CONTRACT_SOURCE')

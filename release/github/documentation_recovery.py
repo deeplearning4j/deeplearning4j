@@ -1,6 +1,6 @@
 """Audited Javadoc-only repair overlay for the pinned native release source.
 
-Only the seven reviewed Javadoc lines are eligible. No whole fix checkout is
+Only the eight reviewed Javadoc lines are eligible. No whole fix checkout is
 merged: unrelated changes at that revision cannot enter the Java reactor.
 Extending this table requires reviewing the original comment and source SHA.
 """
@@ -26,6 +26,11 @@ REPAIRS = {name: {number: ("     * <h3>" + heading + "</h3>\n",
 REPAIRS["nd4j/nd4j-tensorflow/src/main/java/org/nd4j/tensorflow/conversion/TensorflowConversion.java"] = {
     356: ("     * @throws IOException\n",
           "     * @throws IllegalStateException if TensorFlow cannot import the graph\n"),
+}
+
+REPAIRS["nd4j/nd4j-tensorflow-lite/src/main/java/org/nd4j/tensorflowlite/runner/TensorFlowLiteRunner.java"] = {
+    96: ("     * Execute the {@link #session}\n",
+         "     * Execute the {@link Interpreter}\n"),
 }
 
 
