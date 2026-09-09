@@ -2173,9 +2173,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
           sharedCaptureWorkspaceBytes_);
       total += sharedCaptureWorkspaceBytes_;
     }
-    if (cublasWorkspaceBuffer_ != nullptr) {
-      total += cublasWorkspaceSize_;
-    }
+    for (const auto& workspace : cublasWorkspaces_) total += workspace.second.second;
 #endif
 
     // Count every unique plan-owned DataBuffer once. Capture-workspace interior
@@ -3922,7 +3920,9 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Pre-allocated cuBLAS workspace for GPU graph capture.
   void* cublasWorkspaceBuffer_ = nullptr;
   size_t cublasWorkspaceSize_ = 0;
-  int cublasWorkspaceDevice_ = -1;  // device on which cublasWorkspaceBuffer_ was allocated
+  int cublasWorkspaceDevice_ = -1;  // active workspace selection; storage is owned below
+  std::unordered_map<int, std::pair<void*, size_t>> cublasWorkspaces_;
+  void releaseCublasWorkspaces();
   void ensureCublasWorkspace(size_t minBytes);
   void setCublasWorkspaceForCapture(void* stream);
   void setCublasWorkspaceForWarmup();

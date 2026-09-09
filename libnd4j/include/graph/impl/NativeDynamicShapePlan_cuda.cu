@@ -2547,12 +2547,7 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
   }
 
   // Free pre-allocated cuBLAS workspace
-  if (cublasWorkspaceBuffer_ != nullptr && cublasWorkspaceDevice_ >= 0) {
-    memory::CudaMemoryPool::getInstance().free(cublasWorkspaceBuffer_, cublasWorkspaceDevice_);
-    cublasWorkspaceBuffer_ = nullptr;
-    cublasWorkspaceSize_ = 0;
-    cublasWorkspaceDevice_ = -1;
-  }
+  releaseCublasWorkspaces();
   // Reset thread-local cuBLAS workspace pointer — it may still reference the
   // just-freed cublasWorkspaceBuffer_. Without this, MmulHelper::reapplyCublasWorkspace()
   // would set the freed pointer on the singleton cuBLAS handle for the next plan's GEMM ops.
@@ -3861,12 +3856,7 @@ void NativeDynamicShapePlan::platformReleaseSegmentGpuResources() {
   logGpuMemState("STEP-1-AFTER-SEGMENTS");
 
   // Free cuBLAS workspace
-  if (cublasWorkspaceBuffer_ != nullptr && cublasWorkspaceDevice_ >= 0) {
-    memory::CudaMemoryPool::getInstance().free(cublasWorkspaceBuffer_, cublasWorkspaceDevice_);
-    cublasWorkspaceBuffer_ = nullptr;
-    cublasWorkspaceSize_ = 0;
-    cublasWorkspaceDevice_ = -1;
-  }
+  releaseCublasWorkspaces();
 
   // Free batch-D2D and batched-GEMM device arrays
   freeBatchD2DResources();

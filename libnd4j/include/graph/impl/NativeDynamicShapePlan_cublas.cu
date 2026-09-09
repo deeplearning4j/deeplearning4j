@@ -34,12 +34,16 @@ namespace sd {
 namespace graph {
 
 void NativeDynamicShapePlan::ensureCublasWorkspace(size_t minBytes) {
-  if (cublasWorkspaceBuffer_ != nullptr && cublasWorkspaceSize_ >= minBytes) {
-    return;  // Already have a large enough workspace
-  }
-
   int deviceId = 0;
-  cudaGetDevice(&deviceId);
+  if (cudaGetDevice(&deviceId) != cudaSuccess)
+    THROW_EXCEPTION("cuBLAS workspace device query failed");
+  // Each captured graph retains a device-local workspace address. Selecting
+  // another GPU must not reuse or free the first GPU's captured allocation.
+  auto& workspace = cublasWorkspaces_[deviceId];
+  cublasWorkspaceBuffer_ = workspace.first;
+  cublasWorkspaceSize_ = workspace.second;
+  cublasWorkspaceDevice_ = deviceId;
+  if (cublasWorkspaceBuffer_ != nullptr && cublasWorkspaceSize_ >= minBytes) return;
   auto& pool = memory::CudaMemoryPool::getInstance();
 
   // Free old workspace if it exists
@@ -48,6 +52,7 @@ void NativeDynamicShapePlan::ensureCublasWorkspace(size_t minBytes) {
     cublasWorkspaceBuffer_ = nullptr;
     cublasWorkspaceSize_ = 0;
     cublasWorkspaceDevice_ = -1;
+    workspace = {nullptr, 0};
   }
 
   // Allocate workspace on the current device.
@@ -62,8 +67,20 @@ void NativeDynamicShapePlan::ensureCublasWorkspace(size_t minBytes) {
   }
   cublasWorkspaceSize_ = minBytes;
   cublasWorkspaceDevice_ = deviceId;  // record alloc device for safe teardown free
+  workspace = {cublasWorkspaceBuffer_, cublasWorkspaceSize_};
   DSP_DIAG(MEMORY, "allocated cuBLAS workspace: %zu MB",
            minBytes / (1024 * 1024));
+}
+
+void NativeDynamicShapePlan::releaseCublasWorkspaces() {
+  for (const auto& entry : cublasWorkspaces_) {
+    if (entry.second.first != nullptr)
+      memory::CudaMemoryPool::getInstance().free(entry.second.first, entry.first);
+  }
+  cublasWorkspaces_.clear();
+  cublasWorkspaceBuffer_ = nullptr;
+  cublasWorkspaceSize_ = 0;
+  cublasWorkspaceDevice_ = -1;
 }
 
 void NativeDynamicShapePlan::setCublasWorkspaceForCapture(void* stream) {

@@ -2635,8 +2635,15 @@ Status NativeDynamicShapePlan::replayMonolithicGraph(
 
   // ── Step 3: cuBLAS workspace zero ──
   // Zero cuBLAS workspace before replay to match live cuBLAS behavior.
-  if (cublasWorkspaceBuffer_ != nullptr && cublasWorkspaceSize_ > 0) {
-    cudaMemsetAsync(cublasWorkspaceBuffer_, 0, cublasWorkspaceSize_, cudaStr);
+  int replayDevice = -1;
+  if (cudaGetDevice(&replayDevice) != cudaSuccess)
+    THROW_EXCEPTION("cuBLAS replay workspace device query failed");
+  auto workspace = cublasWorkspaces_.find(replayDevice);
+  if (workspace != cublasWorkspaces_.end() && workspace->second.first != nullptr &&
+      workspace->second.second > 0) {
+    auto error = cudaMemsetAsync(workspace->second.first, 0, workspace->second.second, cudaStr);
+    if (error != cudaSuccess)
+      THROW_EXCEPTION("cuBLAS replay workspace initialization failed");
   }
 
   // ── Step 4: Replay ──
