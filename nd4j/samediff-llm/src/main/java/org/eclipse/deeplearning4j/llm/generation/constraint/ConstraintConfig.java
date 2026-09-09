@@ -45,7 +45,9 @@ import java.util.Map;
  *   <li>{@code "tool_call"} — enforce the canonical JSON tool-call shape
  *       {@code {"tool": "<name>", "args": {...}}}; use the factory
  *       {@link #toolCall(String...)}.</li>
- *   <li>{@code "native_tool_call"} — enforce the native function-call envelope
+     *   <li>{@code "gemma_tool_call"} — enforce Gemma sentinel-framed calls with
+     *       literal strings and request-owned nested argument schemas.</li>
+     *   <li>{@code "native_tool_call"} — enforce the native function-call envelope
  *       {@code <|tool_call_start|>[name(key=value)]}; use the factory
  *       {@link #nativeToolCall(String...)}.</li>
  * </ul>
@@ -263,6 +265,14 @@ public class ConstraintConfig {
                 .build();
     }
 
+    /** Creates a Gemma sentinel/literal-string constraint from request schemas. */
+    public static ConstraintConfig gemmaToolCall(
+            Map<String, List<String>> argumentNamesByTool,
+            Map<String, Map<String, Object>> parameterSchemasByTool) {
+        return nativeToolCall(argumentNamesByTool, Collections.emptyMap(), parameterSchemasByTool)
+                .toBuilder().type(GemmaToolCallConstraint.TYPE).build();
+    }
+
     private static ConstraintConfig namedToolConstraint(
             String type, String factoryName, String... names) {
         if (names == null || names.length == 0) {
@@ -292,7 +302,8 @@ public class ConstraintConfig {
             constraint = new JsonObjectConstraint();
         } else if (ToolCallConstraint.TYPE.equals(type)
                 || NativeToolCallConstraint.TYPE.equals(type)
-                || XmlToolCallConstraint.TYPE.equals(type)) {
+                || XmlToolCallConstraint.TYPE.equals(type)
+                || GemmaToolCallConstraint.TYPE.equals(type)) {
             if (toolNames == null || toolNames.isEmpty()) {
                 throw new IllegalArgumentException(
                         "ConstraintConfig with type=\"" + type
@@ -304,6 +315,9 @@ public class ConstraintConfig {
                 constraint = new NativeToolCallConstraint(
                         toolNames, toolArgumentNames, toolArgumentValues,
                         toolParameterSchemas);
+            } else if (GemmaToolCallConstraint.TYPE.equals(type)) {
+                constraint = new GemmaToolCallConstraint(
+                        toolNames, toolArgumentNames, toolParameterSchemas);
             } else {
                 constraint = new XmlToolCallConstraint(
                         toolNames, toolArgumentNames, toolParameterSchemas);
@@ -312,7 +326,7 @@ public class ConstraintConfig {
             throw new IllegalArgumentException(
                     "Unknown constraint type: \"" + type
                             + "\". Supported: \"json_object\", \"tool_call\", "
-                            + "\"native_tool_call\", \"xml_tool_call\"");
+                            + "\"native_tool_call\", \"xml_tool_call\", \"gemma_tool_call\"");
         }
         return outputBlocks == null || outputBlocks.isEmpty()
                 ? constraint

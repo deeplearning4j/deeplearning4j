@@ -1142,7 +1142,9 @@ public class GenerationPipeline implements AutoCloseable {
         boolean structuredFormat = format
                 == org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolCallFormat.NATIVE
                 || format
-                == org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolCallFormat.XML;
+                == org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolCallFormat.XML
+                || format
+                == org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolCallFormat.GEMMA;
         ConstraintConfig constraint;
         if (structuredFormat) {
             Map<String, List<String>> argumentNamesByTool = new LinkedHashMap<>();
@@ -1166,6 +1168,8 @@ public class GenerationPipeline implements AutoCloseable {
                     ? ConstraintConfig.xmlToolCall(
                             argumentNamesByTool, argumentValuesByTool,
                             parameterSchemasByTool)
+                    : format == org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolCallFormat.GEMMA
+                    ? ConstraintConfig.gemmaToolCall(argumentNamesByTool, parameterSchemasByTool)
                     : ConstraintConfig.nativeToolCall(
                             argumentNamesByTool, argumentValuesByTool,
                             parameterSchemasByTool);

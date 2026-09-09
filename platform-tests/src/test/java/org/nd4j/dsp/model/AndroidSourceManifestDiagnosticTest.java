@@ -186,6 +186,57 @@ class AndroidSourceManifestDiagnosticTest {
         assertTrue(stable.output().contains("RECEIPT_ALLOWED"));
     }
 
+    @Test
+    void aotGuardRetainsExactInventoriesAndFailsClosedOnDrift() throws Exception {
+        String before = "src/a space.java\0" + "100644\0old\0"
+                + "src/deleted.java\0" + "100644\0deleted\0";
+        String after = "src/a space.java\0" + "100755\0new\0"
+                + "src/added\nline.java\0" + "100644\0added\0";
+        Result result = runAotGuard(before, after);
+        assertEquals(3, result.code(), result.output());
+        assertTrue(result.output().contains("DL4J AOT source tree changed during the build"));
+        assertTrue(result.output().contains("src/a\\ space.java"), result.output());
+        assertTrue(result.output().contains("src/added\\nline.java"), result.output());
+        assertTrue(result.output().contains("src/deleted.java"), result.output());
+        assertFalse(result.output().contains("RECEIPT_ALLOWED"));
+        try (var paths = Files.list(temp)) {
+            Path diagnostics = paths.filter(p -> p.getFileName().toString().startsWith("source-drift."))
+                    .findFirst().orElseThrow();
+            assertArrayEquals(before.getBytes(StandardCharsets.UTF_8), Files.readAllBytes(diagnostics.resolve("before.nul")));
+            assertArrayEquals(after.getBytes(StandardCharsets.UTF_8), Files.readAllBytes(diagnostics.resolve("after.nul")));
+            assertEquals(2, Files.readAllLines(diagnostics.resolve("after.txt")).size());
+        }
+    }
+
+    @Test
+    void aotGuardPreservesDigestAndAcceptsUnchangedInventory() throws Exception {
+        String inventory = "src/input.java\0" + "100644\0abc\0";
+        Result result = runAotGuard(inventory, inventory);
+        assertEquals(0, result.code(), result.output());
+        assertTrue(result.output().contains("RECEIPT_ALLOWED"), result.output());
+        try (var paths = Files.list(temp)) {
+            assertFalse(paths.anyMatch(p -> p.getFileName().toString().startsWith("source-drift.")));
+        }
+    }
+
+    private Result runAotGuard(String before, String after) throws Exception {
+        Path root = Path.of("").toAbsolutePath().normalize().getParent();
+        String builder = Files.readString(root.resolve("nd4j/sdx-aot/src/main/android/build-android-aot-sdk.sh"));
+        String capture = builder.substring(builder.indexOf("SOURCE_MANIFEST_BEFORE=\"$BUILD_ROOT/source-before.nul\""),
+                builder.indexOf("BASE_SDK_RECEIPT_SHA256=not-applicable"));
+        String guard = builder.substring(builder.indexOf("SOURCE_MANIFEST_AFTER=\"$BUILD_ROOT/source-after.nul\""),
+                builder.indexOf("if [[ -f \"$BASE_SDK_INPUT\" ]]; then", builder.indexOf("SOURCE_MANIFEST_AFTER=")));
+        Path beforeFile = file("input-before.nul", before);
+        Path afterFile = file("input-after.nul", after);
+        String expected = hex(MessageDigest.getInstance("SHA-256").digest(before.getBytes(StandardCharsets.UTF_8)));
+        return run("WORK_DIR=$REPO_ROOT; BUILD_ROOT=$WORK_DIR/generation; mkdir \"$BUILD_ROOT\"\n"
+                + "DL4J_ROOT=$REPO_ROOT; DL4J_AOT_SOURCE_ROOTS=(src); inventory=$1\n"
+                + "sdx_git_source_manifest() { cat -- \"$inventory\"; }\n"
+                + "fail() { printf '%s\\n' \"$*\" >&2; exit 3; }\n"
+                + capture + "[[ $SOURCE_MANIFEST_SHA256 == $3 ]]\ninventory=$2\n"
+                + guard + "printf 'RECEIPT_ALLOWED\\n'\n", beforeFile.toString(), afterFile.toString(), expected);
+    }
+
     private static String hex(byte[] bytes) {
         StringBuilder result = new StringBuilder(bytes.length * 2);
         for (byte value : bytes) {

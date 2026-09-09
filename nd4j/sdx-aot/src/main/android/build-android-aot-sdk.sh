@@ -401,7 +401,16 @@ copy_static_archive "$REUSE_SVM_LIBS_SOURCE/liblibchelper.a" "$LOCAL_SVM_LIBS/li
 REUSE_JDK_LIBS="$LOCAL_JDK_LIBS"
 REUSE_SVM_LIBS="$LOCAL_SVM_LIBS"
 JDK_SUPPORT_RECEIPT="$LOCAL_JDK_LIBS/jdk-support-receipt"
-SOURCE_MANIFEST_SHA256="$(sdx_git_source_manifest_sha256 "$DL4J_ROOT" "${DL4J_AOT_SOURCE_ROOTS[@]}")"
+# Retain the exact inventory being hashed; an aggregate alone cannot identify drift.
+SOURCE_MANIFEST_BEFORE="$BUILD_ROOT/source-before.nul"
+sdx_git_source_manifest "$DL4J_ROOT" "${DL4J_AOT_SOURCE_ROOTS[@]}" >"$SOURCE_MANIFEST_BEFORE"
+SOURCE_MANIFEST_SHA256="$(sha256_file "$SOURCE_MANIFEST_BEFORE")"
+source_manifest_diagnostic() {
+  local relative mode digest
+  while IFS= read -r -d '' relative && IFS= read -r -d '' mode && IFS= read -r -d '' digest; do
+    printf '%q\t%s\t%s\n' "$relative" "$mode" "$digest"
+  done <"$1"
+}
 BASE_SDK_RECEIPT_SHA256=not-applicable
 
 if [[ -n "$BASE_AAR" ]]; then
@@ -1357,8 +1366,19 @@ JNIJAVACPP_SOURCE_SHA256="$(sha256_file "$METADATA_DIR/jnijavacpp.cpp")"
 JAVACPP_LIFECYCLE_SOURCE_SHA256="$(sha256_file "$METADATA_DIR/javacpp_jni_lifecycle.cpp")"
 NATIVE_MANIFEST_SHA256="$(sha256_file "$NATIVE_MANIFEST")"
 
-[[ "$(sdx_git_source_manifest_sha256 "$DL4J_ROOT" "${DL4J_AOT_SOURCE_ROOTS[@]}")" == "$SOURCE_MANIFEST_SHA256" ]] ||
+SOURCE_MANIFEST_AFTER="$BUILD_ROOT/source-after.nul"
+sdx_git_source_manifest "$DL4J_ROOT" "${DL4J_AOT_SOURCE_ROOTS[@]}" >"$SOURCE_MANIFEST_AFTER"
+if [[ "$(sha256_file "$SOURCE_MANIFEST_AFTER")" != "$SOURCE_MANIFEST_SHA256" ]]; then
+  # Preserve only small diagnostics outside generation cleanup, not another entire SDK.
+  SOURCE_DRIFT_DIR="$(mktemp -d "$WORK_DIR/source-drift.XXXXXXXX")"
+  cp -- "$SOURCE_MANIFEST_BEFORE" "$SOURCE_DRIFT_DIR/before.nul"
+  cp -- "$SOURCE_MANIFEST_AFTER" "$SOURCE_DRIFT_DIR/after.nul"
+  source_manifest_diagnostic "$SOURCE_MANIFEST_BEFORE" >"$SOURCE_DRIFT_DIR/before.txt"
+  source_manifest_diagnostic "$SOURCE_MANIFEST_AFTER" >"$SOURCE_DRIFT_DIR/after.txt"
+  printf 'DL4J AOT source drift inventories retained at %s\n' "$SOURCE_DRIFT_DIR" >&2
+  diff -u -- "$SOURCE_DRIFT_DIR/before.txt" "$SOURCE_DRIFT_DIR/after.txt" >&2 || true
   fail "DL4J AOT source tree changed during the build"
+fi
 if [[ -f "$BASE_SDK_INPUT" ]]; then
   [[ "$(sha256_file "$BASE_SDK_INPUT")" == "$BASE_SDK_INPUT_SHA256" ]] ||
     fail "base AAR changed during the build"

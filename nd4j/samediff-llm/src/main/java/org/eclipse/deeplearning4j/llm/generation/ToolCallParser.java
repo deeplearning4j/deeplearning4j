@@ -23,6 +23,7 @@ import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.JsonNode;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate;
+import org.eclipse.deeplearning4j.llm.generation.constraint.GemmaToolCallCodec;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -55,7 +56,8 @@ public final class ToolCallParser {
         CONTENT_ONLY,
         JSON,
         LFM_NATIVE,
-        XML
+        XML,
+        GEMMA
     }
 
     public static final class ParseResult {
@@ -104,6 +106,9 @@ public final class ToolCallParser {
         }
         Protocol protocol;
         switch (format) {
+            case GEMMA:
+                protocol = Protocol.GEMMA;
+                break;
             case NATIVE:
                 protocol = Protocol.LFM_NATIVE;
                 break;
@@ -134,7 +139,9 @@ public final class ToolCallParser {
                 byName.put(tool.getName(), tool);
             }
         }
-        if (raw.isBlank()) return new ParseResult(raw, "", List.of(), List.of());
+        if (raw.isBlank()) return new ParseResult(raw, "", List.of(),
+                protocol == Protocol.GEMMA && toolChoice == ChatTemplate.ToolChoice.REQUIRED
+                        ? List.of("required Gemma tool call was missing") : List.of());
         if (protocol == null) {
             throw new IllegalArgumentException("Tool-call protocol must be explicit");
         }
@@ -144,6 +151,8 @@ public final class ToolCallParser {
                 return new ParseResult(raw, raw.trim(), List.of(), List.of());
             case JSON:
                 return parseJsonEnvelope(raw, byName, required);
+            case GEMMA:
+                return parseGemmaEnvelope(raw, byName, required);
             case LFM_NATIVE:
                 if (containsNativeToolMarker(raw)) {
                     return parseNativeEnvelope(raw, byName);
@@ -166,6 +175,32 @@ public final class ToolCallParser {
             default:
                 throw new IllegalArgumentException("Unsupported tool-call protocol: " + protocol);
         }
+    }
+
+    private static ParseResult parseGemmaEnvelope(
+            String raw, Map<String, ChatTemplate.Tool> declared, boolean required) {
+        if (raw.length() > GemmaToolCallCodec.MAX_CHARS) {
+            return new ParseResult(raw, raw.trim(), List.of(), List.of("Gemma output exceeds codec bounds"));
+        }
+        String payload = raw.trim();
+        if (payload.startsWith(ChatTemplate.GEMMA_THOUGHT_START)) {
+            int end = payload.indexOf(ChatTemplate.GEMMA_CHANNEL_END,
+                    ChatTemplate.GEMMA_THOUGHT_START.length());
+            if (end < 0) {
+                return new ParseResult(raw, "", List.of(), List.of("incomplete Gemma thought channel"));
+            }
+            payload = payload.substring(end + ChatTemplate.GEMMA_CHANNEL_END.length()).trim();
+        }
+        if (!payload.contains(ChatTemplate.GEMMA_TOOL_CALL_START)
+                && !payload.contains(ChatTemplate.GEMMA_TOOL_CALL_END)) {
+            return new ParseResult(raw, payload, List.of(), required
+                    ? List.of("required Gemma tool call was missing or invalid") : List.of());
+        }
+        GemmaToolCallCodec.Result result = GemmaToolCallCodec.scan(payload, declared);
+        // Do not execute a partial list when any adjacent call is malformed or invalid.
+        return result.complete
+                ? new ParseResult(raw, "", result.calls, List.of())
+                : new ParseResult(raw, payload, List.of(), List.of(result.error));
     }
 
     private static ParseResult parseJsonEnvelope(

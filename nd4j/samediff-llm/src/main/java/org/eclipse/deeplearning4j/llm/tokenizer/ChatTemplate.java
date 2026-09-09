@@ -23,6 +23,7 @@ package org.eclipse.deeplearning4j.llm.tokenizer;
 import lombok.Builder;
 import lombok.Data;
 import org.eclipse.deeplearning4j.llm.config.TokenizerConfig;
+import org.eclipse.deeplearning4j.llm.generation.constraint.GemmaToolCallCodec;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.SerializationFeature;
 
@@ -66,6 +67,12 @@ public class ChatTemplate {
     public static final String XML_TOOL_CALL_END = "</tool_call>";
     public static final String XML_FUNCTION_START = "<function=";
     public static final String XML_PARAMETER_START = "<parameter=";
+    /** Gemma tool protocol markers, detected from the model-owned template. */
+    public static final String GEMMA_TOOL_CALL_START = "<|tool_call>";
+    public static final String GEMMA_TOOL_CALL_END = "<tool_call|>";
+    public static final String GEMMA_STRING = "<|\"|>";
+    public static final String GEMMA_THOUGHT_START = "<|channel>thought\n";
+    public static final String GEMMA_CHANNEL_END = "<channel|>";
     /** Legacy aliases for the common thinking block; block discovery itself is delimiter-generic. */
     public static final String THINKING_START = "<think>";
     public static final String THINKING_END = "</think>";
@@ -161,8 +168,11 @@ public class ChatTemplate {
             ToolDefinitionFormat format = request.getToolDefinitionFormat() == null
                     ? ToolDefinitionFormat.STANDARD : request.getToolDefinitionFormat();
             boolean lfmNativeProtocol = usesLfmNativeToolProtocol(request);
-            String definitions = renderToolDefinitions(
-                    request.getTools(), format, lfmNativeProtocol);
+            ToolCallFormat callFormat = request.getToolCallFormat() == null
+                    ? toolCallFormat() : request.getToolCallFormat();
+            String definitions = callFormat == ToolCallFormat.GEMMA
+                    ? renderGemmaToolDefinitions(request.getTools())
+                    : renderToolDefinitions(request.getTools(), format, lfmNativeProtocol);
             int system = -1;
             for (int i = 0; i < messages.size(); i++) {
                 if ("system".equals(messages.get(i).getRole())) {
@@ -195,6 +205,10 @@ public class ChatTemplate {
      * model names or protocol sentinels themselves.
      */
     public ToolCallFormat toolCallFormat() {
+        if (template.contains(GEMMA_TOOL_CALL_START)
+                && template.contains(GEMMA_TOOL_CALL_END)) {
+            return ToolCallFormat.GEMMA;
+        }
         if (template.contains(NATIVE_TOOL_CALL_START)
                 && template.contains(NATIVE_TOOL_CALL_END)) {
             return ToolCallFormat.NATIVE;
@@ -213,7 +227,8 @@ public class ChatTemplate {
      *
      * <p>This is derived from the imported template's actual rendered prefix, not a model name
      * or a hard-coded block type. Multiple nested block kinds are retained in outer-to-inner
-     * order. Non-XML control sentinels such as {@code <|im_start|>} are deliberately ignored.</p>
+     * order. Turn-control sentinels such as {@code <|im_start|>} are deliberately ignored;
+     * Gemma's template-owned thought channel is recognized separately.</p>
      */
     public List<OutputBlockDefinition> prefilledOutputBlocks(
             String promptWithoutGeneration, String promptWithGeneration) {
@@ -226,6 +241,14 @@ public class ChatTemplate {
         }
         String generationPrefix = rendered.substring(common);
         List<OutputBlockDefinition> openBlocks = new ArrayList<>();
+        if (toolCallFormat() == ToolCallFormat.GEMMA
+                && template.contains(GEMMA_CHANNEL_END)) {
+            int thought = generationPrefix.lastIndexOf(GEMMA_THOUGHT_START);
+            if (thought >= 0 && generationPrefix.indexOf(GEMMA_CHANNEL_END, thought) < 0) {
+                openBlocks.add(new OutputBlockDefinition(
+                        "think", GEMMA_THOUGHT_START, GEMMA_CHANNEL_END));
+            }
+        }
         Matcher matcher = OUTPUT_BLOCK_TAG_PATTERN.matcher(generationPrefix);
         while (matcher.find()) {
             String openingName = matcher.group(1);
@@ -274,6 +297,18 @@ public class ChatTemplate {
             }
             blocks.add(new OutputBlock(definition.getType(), value.substring(0, end).trim()));
             value = value.substring(end + definition.getClosingDelimiter().length()).trim();
+        }
+
+        if (definitions.isEmpty() && toolCallFormat() == ToolCallFormat.GEMMA
+                && value.startsWith(GEMMA_THOUGHT_START)) {
+            int end = value.indexOf(GEMMA_CHANNEL_END, GEMMA_THOUGHT_START.length());
+            if (end < 0) {
+                errors.add("incomplete model output block: think");
+                return new AssistantOutput(raw, "", blocks, errors);
+            }
+            blocks.add(new OutputBlock("think",
+                    value.substring(GEMMA_THOUGHT_START.length(), end).trim()));
+            value = value.substring(end + GEMMA_CHANNEL_END.length()).trim();
         }
 
         // Backward-compatible parsing for outputs which include their own complete think block.
@@ -432,6 +467,57 @@ public class ChatTemplate {
             return "List of tools: [" + String.join(", ", definitions) + "]";
         }
         return "Available tools:\n" + String.join("\n", definitions) + "\n";
+    }
+
+    private static String renderGemmaToolDefinitions(List<Tool> tools) {
+        StringBuilder result = new StringBuilder();
+        for (Tool tool : tools) {
+            if (!GemmaToolCallCodec.validName(tool.getName())) {
+                throw new IllegalArgumentException("Unsupported Gemma tool name: " + tool.getName());
+            }
+            Map<String, Object> declaration = new LinkedHashMap<>();
+            declaration.put("description", tool.getDescription());
+            declaration.put("parameters", gemmaSchema(tool.getParameters()));
+            result.append("<|tool>declaration:").append(tool.getName())
+                    .append(GemmaToolCallCodec.encode(declaration)).append("<tool|>");
+        }
+        return result.append('\n').toString();
+    }
+
+    /** Convert only schema type keywords to Gemma's uppercase spelling. */
+    private static Map<String, Object> gemmaSchema(Map<?, ?> source) {
+        return gemmaSchema(source, 0);
+    }
+
+    private static Map<String, Object> gemmaSchema(Map<?, ?> source, int depth) {
+        if (depth > GemmaToolCallCodec.MAX_DEPTH) {
+            throw new IllegalArgumentException("Gemma schema is too deeply nested");
+        }
+        Map<String, Object> result = new java.util.TreeMap<>();
+        source.forEach((key, value) -> {
+            String name = String.valueOf(key);
+            if ("type".equals(name) && value instanceof String) {
+                result.put(name, ((String) value).toUpperCase(java.util.Locale.ROOT));
+            } else if ("properties".equals(name) && value instanceof Map<?, ?>) {
+                Map<String, Object> properties = new java.util.TreeMap<>();
+                ((Map<?, ?>) value).forEach((property, schema) -> properties.put(
+                        String.valueOf(property), schema instanceof Map<?, ?>
+                                ? gemmaSchema((Map<?, ?>) schema, depth + 1) : schema));
+                result.put(name, properties);
+            } else if (("items".equals(name) || "additionalProperties".equals(name))
+                    && value instanceof Map<?, ?>) {
+                result.put(name, gemmaSchema((Map<?, ?>) value, depth + 1));
+            } else if ("prefixItems".equals(name) && value instanceof java.util.Collection<?>) {
+                List<Object> schemas = new ArrayList<>();
+                for (Object schema : (java.util.Collection<?>) value) {
+                    schemas.add(schema instanceof Map<?, ?> ? gemmaSchema((Map<?, ?>) schema, depth + 1) : schema);
+                }
+                result.put(name, schemas);
+            } else {
+                result.put(name, value);
+            }
+        });
+        return result;
     }
 
     private static String appendSection(String first, String second) {
@@ -707,7 +793,8 @@ public class ChatTemplate {
     public enum ToolCallFormat {
         NATIVE,
         XML,
-        JSON
+        JSON,
+        GEMMA
     }
 
     /** Whether tools are optional, required, or disabled for this turn. */
@@ -755,7 +842,9 @@ public class ChatTemplate {
             }
             this.id = id;
             this.name = name;
-            this.arguments = arguments == null ? Map.of() : Map.copyOf(arguments);
+            // JSON/Gemma null is a valid argument value; Map.copyOf rejects it.
+            this.arguments = arguments == null ? Map.of()
+                    : java.util.Collections.unmodifiableMap(new LinkedHashMap<>(arguments));
         }
 
         public static ToolCall function(String id, String name,
