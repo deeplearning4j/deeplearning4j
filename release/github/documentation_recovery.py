@@ -1,6 +1,6 @@
 """Audited Javadoc-only repair overlay for the pinned native release source.
 
-Only the twenty-nine reviewed Javadoc lines are eligible. No whole fix checkout is
+Only the thirty reviewed Javadoc lines are eligible. No whole fix checkout is
 merged: unrelated changes at that revision cannot enter the Java reactor.
 Extending this table requires reviewing the original comment and source SHA.
 """
@@ -127,6 +127,16 @@ REPAIRS[PYTHON_EXECUTIONER] = {
 }
 
 
+# Recovery 34398348119: invalid opening/closing it tags produce two diagnostics
+# on one line. Preserve the intended italics using the standard HTML i element.
+DATAVEC_LOCAL = "datavec/datavec-local/src/main/java/org/datavec/local/transforms/LocalTransformExecutor.java"
+DATAVEC_LOCAL_RECOVERY_RUN = "34398348119"
+REPAIRS[DATAVEC_LOCAL] = {
+    101: ("     * but returns <it>sequence</it>\n",
+          "     * but returns <i>sequence</i>\n"),
+}
+
+
 def digest(data):
     return hashlib.sha256(data).hexdigest()
 
@@ -172,7 +182,9 @@ def prepare(source, fix_source, fix_commit, commit, output):
                   "resourcesDiagnostics": {"recoveryRunId": RESOURCES_RECOVERY_RUN,
                                            "errorCount": 1, "repairedLineCount": 1},
                   "pythonDiagnostics": {"recoveryRunId": PYTHON_RECOVERY_RUN,
-                                        "errorCount": 1, "repairedLineCount": 1}}
+                                        "errorCount": 1, "repairedLineCount": 1},
+                  "datavecLocalDiagnostics": {"recoveryRunId": DATAVEC_LOCAL_RECOVERY_RUN,
+                                              "errorCount": 2, "repairedLineCount": 1}}
     # Validate every file before writing any overlay. Preserve line numbers and
     # every non-repaired byte, including all compiled code and source positions.
     for path, fixed in pending:

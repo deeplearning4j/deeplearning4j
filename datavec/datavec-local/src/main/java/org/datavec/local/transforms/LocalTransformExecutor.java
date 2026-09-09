@@ -98,7 +98,7 @@ public class LocalTransformExecutor {
      * Execute the specified TransformProcess with the given input data<br>
      * Note: this method can only be used if the TransformProcess
      * starts with non-sequential data,
-     * but returns <it>sequence</it>
+     * but returns <i>sequence</i>
      * data (after grouping or converting to a sequence as one of the steps)
      *
      * @param inputWritables   Input data to process
