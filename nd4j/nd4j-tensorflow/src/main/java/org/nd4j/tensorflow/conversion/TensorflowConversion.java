@@ -353,7 +353,7 @@ public class TensorflowConversion {
      * or the content
      * @param content the path to the file to read
      * @return the initialized graph
-     * @throws IOException
+     * @throws IllegalStateException if TensorFlow cannot import the graph
      */
 
     public TF_Graph loadGraph(byte[] content, TF_Status status) {

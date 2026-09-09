@@ -1,4 +1,4 @@
-"""Remote-only contracts for fail-closed, heading-only release recovery."""
+"""Remote-only contracts for fail-closed, Javadoc-only release recovery."""
 import json
 import os
 from pathlib import Path
@@ -20,8 +20,8 @@ class DocumentationRecoveryTests(unittest.TestCase):
         self.originals, self.fixed = {}, {}
         for name, repairs in docs.REPAIRS.items():
             lines = [b'\n'] * (max(repairs) + 1)
-            for number, heading in repairs.items():
-                lines[number - 1] = ('     * <h3>' + heading + '</h3>\n').encode()
+            for number, (before, after) in repairs.items():
+                lines[number - 1] = before.encode()
             original = b''.join(lines)
             path = self.source / name
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -43,7 +43,11 @@ class DocumentationRecoveryTests(unittest.TestCase):
         result = self.prepare()
         self.assertEqual(docs.SOURCE_COMMIT, result['sourceCommit'])
         self.assertEqual('b' * 40, result['documentationFixCommit'])
-        self.assertEqual(6, sum(len(row['lines']) for row in result['files']))
+        self.assertEqual(7, sum(len(row['lines']) for row in result['files']))
+        self.assertEqual('audited-javadoc-only-v2', result['policy'])
+        for row in result['files']:
+            self.assertEqual(docs.digest(self.originals[row['path']]), row['sourceSha256'])
+            self.assertEqual(docs.digest(self.fixed[row['path']]), row['repairedSha256'])
         for name in docs.REPAIRS:
             self.assertEqual(self.fixed[name], (self.source / name).read_bytes())
         self.assertEqual(result, json.loads((self.output / 'documentation-recovery-provenance.json').read_text()))
@@ -81,7 +85,8 @@ class DocumentationRecoveryTests(unittest.TestCase):
 
     def test_heading_context_must_match(self):
         with self.assertRaisesRegex(ValueError, 'audited Javadoc'):
-            docs.repaired(b'wrong\n', {1: 'Example Usage:'})
+            docs.repaired(b'wrong\n', {1: ('     * <h3>Example Usage:</h3>\n',
+                                             '     * <h4>Example Usage:</h4>\n')})
 
     def test_real_pinned_source_matches_only_audited_edits(self):
         original_root = os.environ.get('DOCUMENTATION_CONTRACT_SOURCE')
