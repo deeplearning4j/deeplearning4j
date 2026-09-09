@@ -2713,20 +2713,21 @@ void NativeDynamicShapePlan::platformFreeCaptureWorkspace() {
     seg.exec.compositeReplaySchedule.units.clear();
   }
 
-  // Triton handles borrow this one plan-owned arena. Release it only after all
-  // external handle references above have been cleared.
-  if (sharedCaptureWorkspace_ != nullptr) {
+  // Handles borrow per-device plan arenas. Retire each allocation on its
+  // owning GPU only after every borrowing handle above has been cleared.
+  for (const auto& entry : captureWorkspacesByDevice_) {
+    if (entry.second.first == nullptr) continue;
     auto& pool = memory::CudaMemoryPool::getInstance();
-    const int workspaceDevice = sharedCaptureWorkspaceDevice_;
-    if (workspaceDevice >= 0) releasedWorkspaceDevices.insert(workspaceDevice);
-    pool.unregisterCaptureWorkspace(sharedCaptureWorkspace_);
-    pool.free(sharedCaptureWorkspace_, workspaceDevice, nullptr);
+    releasedWorkspaceDevices.insert(entry.first);
+    pool.unregisterCaptureWorkspace(entry.second.first);
+    pool.free(entry.second.first, entry.first, nullptr);
     DSP_DIAG(MEMORY, "platformFreeCaptureWorkspace: released PLAN-OWNED capture workspace %zuMB on device %d",
-             sharedCaptureWorkspaceBytes_ / (1024*1024), workspaceDevice);
-    sharedCaptureWorkspace_ = nullptr;
-    sharedCaptureWorkspaceBytes_ = 0;
-    sharedCaptureWorkspaceDevice_ = -1;
+             entry.second.second / (1024*1024), entry.first);
   }
+  captureWorkspacesByDevice_.clear();
+  sharedCaptureWorkspace_ = nullptr;
+  sharedCaptureWorkspaceBytes_ = 0;
+  sharedCaptureWorkspaceDevice_ = -1;
 
   // Workspace frees are stream ordered. Drain the pool's tracked free streams
   // and release newly unreserved pages at this ownership boundary so sequential

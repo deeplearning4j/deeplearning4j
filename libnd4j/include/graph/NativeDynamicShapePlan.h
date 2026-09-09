@@ -2167,11 +2167,11 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
       }
     }
 #ifdef SD_CUDA
-    if (sharedCaptureWorkspace_ != nullptr) {
+    for (const auto& entry : captureWorkspacesByDevice_) {
+      if (entry.second.first == nullptr) continue;
       captureWorkspaceRanges.emplace_back(
-          reinterpret_cast<uintptr_t>(sharedCaptureWorkspace_),
-          sharedCaptureWorkspaceBytes_);
-      total += sharedCaptureWorkspaceBytes_;
+          reinterpret_cast<uintptr_t>(entry.second.first), entry.second.second);
+      total += entry.second.second;
     }
     for (const auto& workspace : cublasWorkspaces_) total += workspace.second.second;
 #endif
@@ -4032,13 +4032,14 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   std::unordered_map<uint64_t, std::vector<ActiveGapSlot>> cachedActiveGapSlotsMap_;
   std::unordered_set<uint64_t> activeGapSlotsCachedSet_;
 
-  // Plan-owned capture workspace: segments of this plan share one arena
-  // because they execute sequentially. The arena is never shared with another
+  // Plan-owned capture workspace: sequential segments share one arena per
+  // device. The three scalar fields select the active device's arena. The arena is never shared with another
   // live plan: CUDA graph nodes retain addresses and capture-time state within
   // it for the entire cached-plan lifetime.
   void* sharedCaptureWorkspace_ = nullptr;
   size_t sharedCaptureWorkspaceBytes_ = 0;
   int sharedCaptureWorkspaceDevice_ = -1;
+  std::unordered_map<int, std::pair<void*, size_t>> captureWorkspacesByDevice_;
 
   // ── Batch D2D copy optimization ─────────────────────────────────────────
   void* batchD2DDeviceSrcPtrs_ = nullptr;   // Device: void*[count]

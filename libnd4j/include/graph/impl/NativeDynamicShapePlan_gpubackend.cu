@@ -3602,6 +3602,15 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
   }
 
   // Proactive memory cleanup before capture: trim pool, evict LRU graphs if needed.
+  if (shouldCaptureTritonGraphNow) {
+    int captureDevice = -1;
+    if (cudaGetDevice(&captureDevice) != cudaSuccess)
+      THROW_EXCEPTION("capture workspace device query failed");
+    auto arena = captureWorkspacesByDevice_.find(captureDevice);
+    sharedCaptureWorkspace_ = arena != captureWorkspacesByDevice_.end() ? arena->second.first : nullptr;
+    sharedCaptureWorkspaceBytes_ = arena != captureWorkspacesByDevice_.end() ? arena->second.second : 0;
+    sharedCaptureWorkspaceDevice_ = captureDevice;
+  }
   if (shouldCaptureTritonGraphNow && Environment::getInstance().dspProactiveEvictBeforeCapture()) {
     proactivePreCaptureMemoryCleanup(seg, ctx.segIdx, stream);
   }
@@ -3679,6 +3688,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
         if (sharedCaptureWorkspace_ != nullptr) {
           sharedCaptureWorkspaceBytes_ = workspaceSize;
           sharedCaptureWorkspaceDevice_ = deviceId;
+          captureWorkspacesByDevice_[deviceId] = {sharedCaptureWorkspace_, sharedCaptureWorkspaceBytes_};
           memory::CudaMemoryPool::getInstance().registerCaptureWorkspace(
               sharedCaptureWorkspace_, sharedCaptureWorkspaceBytes_);
           DSP_DIAG_SEG(MEMORY, seg.def.startSlot,
