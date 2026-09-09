@@ -103,7 +103,8 @@ class MetadataRecoveryTests(unittest.TestCase):
         pom = '''<project xmlns="http://maven.apache.org/POM/4.0.0">
 <modelVersion>4.0.0</modelVersion><groupId>release.contract</groupId>
 <artifactId>delombok-contract</artifactId><version>1</version>
-<properties><lombok.version>LOMBOK_VERSION</lombok.version></properties>
+<properties><lombok.version>LOMBOK_VERSION</lombok.version>
+<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding></properties>
 <dependencies><dependency><groupId>org.projectlombok</groupId><artifactId>lombok</artifactId>
 <version>${lombok.version}</version><scope>provided</scope></dependency></dependencies>
 <build><plugins><plugin><groupId>org.apache.maven.plugins</groupId>
