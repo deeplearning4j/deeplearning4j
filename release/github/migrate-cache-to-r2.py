@@ -19,6 +19,15 @@ def environment():
     for name in required:
         if not env.get(name, "").strip():
             raise ValueError(f"Required credential environment variable is missing: {name}")
+    # Secret input may contain a trailing newline from a file or clipboard.
+    # Normalize surrounding whitespace before constructing S3 authorization headers.
+    for name in required[1:]:
+        value = env[name].strip()
+        if not value.isascii() or any(char.isspace() or ord(char) < 33 or ord(char) == 127 for char in value):
+            raise ValueError(f"{name} contains invalid embedded whitespace or control characters")
+        env[name] = value
+        if env.get("GITHUB_ACTIONS") == "true":
+            print(f"::add-mask::{value.replace('%', '%25')}", flush=True)
     fields = {}
     for entry in env[required[0]].strip().split(";"):
         if entry.strip():
