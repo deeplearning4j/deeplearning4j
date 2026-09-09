@@ -126,7 +126,9 @@ void* NDArray::specialBuffer() {
 
   if (specialBuf == nullptr || bufferDeviceId != currentDeviceId) {
     syncToDevice();
-    tickReadHost();
+    // Device migration/H2D readiness does not refresh the host mirror. In
+    // particular, frozen storage can remain on its owner device; marking a
+    // host read here would hide device writes from the next syncToHost().
     specialBuf = _buffer->special();
     if (specialBuf == nullptr) {
       return nullptr;

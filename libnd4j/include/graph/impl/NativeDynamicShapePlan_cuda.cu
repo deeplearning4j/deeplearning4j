@@ -1205,7 +1205,13 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
   if (seg.def.startSlot >= 0 && seg.def.startSlot < numSlots_) {
     targetDevice = slots_[seg.def.startSlot].targetDeviceId;
   }
-  if (targetDevice < 0) return Status::OK;  // Auto device — no migration needed
+  // Automatic placement inherits the device already bound for this segment.
+  // It does not imply that caller-owned mutable inputs reside on that device.
+  if (targetDevice < 0) {
+    const auto err = cudaGetDevice(&targetDevice);
+    if (err != cudaSuccess)
+      return cudaPlanFailure("CUDA automatic segment device query failed: %s", cudaGetErrorString(err));
+  }
 
   migratedInputs_.clear();
 
@@ -1340,6 +1346,19 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
         if (savedDevice >= 0) cudaSetDevice(savedDevice);
         continue;
       }
+      // Same-device storage can still carry an asynchronous writeback from a
+      // previous segment. Acquire that publication on this consumer's stream;
+      // special-actual means current contents, not cross-stream readiness.
+      try {
+        auto consumerStream = reinterpret_cast<cudaStream_t>(dspGetExecutionStream());
+        if (consumerStream == nullptr || DebugHelper::inGraphCapture(&consumerStream))
+          throw std::runtime_error("writable external consumption requires an uncaptured segment stream");
+        db->waitForSpecialWriteEvent(consumerStream);
+      } catch (const std::exception& error) {
+        return cudaPlanFailure("CUDA writable external consumer wait failed: ext=%d device=%d: %s",
+                               externalInputIdx, targetDevice, error.what());
+      }
+      continue;
     }
 
     // The array may be on a different device. We check by trying to determine

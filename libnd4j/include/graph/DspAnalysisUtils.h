@@ -119,6 +119,17 @@ SD_INLINE std::unordered_map<int, int> buildProducerSectionMap(
 // Storing to an aliased output creates a data race — different warps may
 // execute the store before other warps read the aliased input.
 
+// Analysis must not call NDArray::specialBuffer(): it can migrate storage to
+// the compiler worker's device and invalidate addresses owned by a live plan.
+// Match specialBuffer's view-relative address without allocation or transfer.
+SD_INLINE void* existingSpecialBuffer(NDArray* array) {
+  auto* buffer = array != nullptr ? array->dataBuffer() : nullptr;
+  void* base = buffer != nullptr ? buffer->special() : nullptr;
+  return base != nullptr
+      ? static_cast<void*>(static_cast<int8_t*>(base) + array->offset() * array->sizeOfT())
+      : nullptr;
+}
+
 template <typename ArgT>
 SD_INLINE std::unordered_set<uintptr_t> buildInputBufferAddressSet(
     const std::vector<ArgT>& inputArgs,
@@ -135,8 +146,8 @@ SD_INLINE std::unordered_set<uintptr_t> buildInputBufferAddressSet(
       if (inArg.slotIndex < totalOutputSlots && outputSlots && outputSlots[inArg.slotIndex])
         inArr = outputSlots[inArg.slotIndex];
     }
-    if (inArr && inArr->specialBuffer()) {
-      result.insert(reinterpret_cast<uintptr_t>(inArr->specialBuffer()));
+    if (void* address = existingSpecialBuffer(inArr)) {
+      result.insert(reinterpret_cast<uintptr_t>(address));
     }
   }
   return result;
@@ -150,8 +161,9 @@ SD_INLINE bool isOutputAliasedWithInput(
 
   if (!outputSlots || outSlotIdx < 0 || outSlotIdx >= totalOutputSlots) return false;
   NDArray* outArr = outputSlots[outSlotIdx];
-  if (!outArr || !outArr->specialBuffer()) return false;
-  uintptr_t outAddr = reinterpret_cast<uintptr_t>(outArr->specialBuffer());
+  void* address = existingSpecialBuffer(outArr);
+  if (address == nullptr) return false;
+  uintptr_t outAddr = reinterpret_cast<uintptr_t>(address);
   return inputBufferAddrs.count(outAddr) > 0;
 }
 

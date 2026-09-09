@@ -36,6 +36,7 @@
 #include <graph/DspDiagnostics.h>
 #include <graph/DspPhaseUtils.h>
 #include <graph/DspHashUtils.h>
+#include <graph/DspAnalysisUtils.h>
 #include <graph/DspThreadState.h>
 #include <graph/DspVerifyUtils.h>
 #include <graph/DspSegmentLifecycle.h>
@@ -449,14 +450,14 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKey(
         // cached plan is handed different buffers.
         if (externalInputIsVariable_[extIdx]) {
           if (isDeviceManagedExternalInput(extIdx, extArr)) {
-            mix(reinterpret_cast<LongType>(extArr->specialBuffer()));
+            mix(reinterpret_cast<LongType>(dsp::existingSpecialBuffer(extArr)));
           }
           continue;
         }
-        mix(reinterpret_cast<LongType>(extArr->specialBuffer()));
+        mix(reinterpret_cast<LongType>(dsp::existingSpecialBuffer(extArr)));
       } else if (srcIdx < totalOutputSlots_ && !isSegOutput[srcIdx]) {
         if (outputSlots_[srcIdx] != nullptr) {
-          mix(reinterpret_cast<LongType>(outputSlots_[srcIdx]->specialBuffer()));
+          mix(reinterpret_cast<LongType>(dsp::existingSpecialBuffer(outputSlots_[srcIdx])));
         }
       }
     }
