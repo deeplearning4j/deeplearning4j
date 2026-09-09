@@ -276,7 +276,7 @@ public class LocalResponseNormalization extends Layer {
          * Set the data format for the CNN activations - NCHW (channels first) or NHWC (channels last).
          * See {@link CNN2DFormat} for more details.<br>
          * Default: NCHW
-         * @param format Format for activations (in and out)
+         * @param dataFormat Format for activations (in and out)
          */
         public Builder dataFormat(CNN2DFormat dataFormat){
             this.dataFormat = dataFormat;

@@ -1,6 +1,6 @@
 """Audited Javadoc-only repair overlay for the pinned native release source.
 
-Only the eighty-two reviewed Javadoc lines are eligible. No whole fix checkout is
+Only the 114 reviewed Javadoc lines are eligible. No whole fix checkout is
 merged: unrelated changes at that revision cannot enter the Java reactor.
 Extending this table requires reviewing the original comment and source SHA.
 """
@@ -189,6 +189,78 @@ for relative, tag_line in (
         enumerate(zip(UTILITY_REMOVE_BEFORE, UTILITY_REMOVE_AFTER))}
 
 
+# Recovery 34407671220: 36 diagnostics on 32 distinct source lines.
+# The source doclet does not run Lombok: @Data generates the config setters,
+# and @Getter generates getNumOutputArrays. Link their source-declared fields
+# and retain the real accessor names. MultiLayerConfiguration.setEpochCount is
+# explicitly declared, so its existing working method links remain unchanged.
+NN = "deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/"
+NN_RECOVERY_RUN = "34407671220"
+NN_RECOVERY_JOB = "102654524521"
+NN_REPAIRS = {
+    "nn/transferlearning/FineTuneConfiguration.java": {
+        68: (" * <h3>Typical usage</h3>\n", " * <h2>Typical usage</h2>\n"),
+        197: ("     *  Default: {@code null} (keep original; layer default is {@link ConvolutionMode#TRUNCATE}). */\n",
+              "     *  Default: {@code null} (keep original; layer default is {@link ConvolutionMode#Truncate}). */\n")},
+    "nn/conf/layers/GcnLayer.java": {
+        48: (" *   <li>Build a {@link MultiLayerConfiguration} including this layer.</li>\n",
+             ' *   <li>Build a <a href="../MultiLayerConfiguration.html">MultiLayerConfiguration</a> including this layer.</li>\n')},
+    "nn/api/Layer.java": {
+        81: ("     * @return Pair<Gradient   ,   INDArray> where Gradient is gradient for this layer, INDArray is epsilon (activation gradient)\n",
+             "     * @return {@code Pair<Gradient, INDArray>} where Gradient is gradient for this layer, INDArray is epsilon (activation gradient)\n")},
+    "nn/conf/layers/ActivationLayer.java": {
+        140: ("         * @deprecated Use {@link #activation(Activation)} or {@link @activation(IActivation)}\n",
+              "         * @deprecated Use {@link #activation(Activation)} or {@link #activation(IActivation)}\n")},
+    "optimize/api/ConvexOptimizer.java": {
+        114: ("     * @paramType paramType to update\n",
+              "     * @param workspaceMgr Workspace manager for the update\n")},
+    "nn/graph/ComputationGraph.java": {
+        3009: ("     * layer may be 0 to {@link #getNumOutputArrays()}-1\n",
+               "     * layer may be 0 to {@code getNumOutputArrays() - 1}; the Lombok-generated getter returns the size of {@link ComputationGraphConfiguration#networkOutputs}.\n")},
+    "nn/api/ParamInitializer.java": {
+        96: ("     * The idea is that operates in exactly the same way as the paramsView does in {@link #init(Map, NeuralNetConfiguration, INDArray)};\n",
+             "     * The idea is that operates in exactly the same way as the paramsView does in {@link #init(NeuralNetConfiguration, INDArray, boolean)};\n")},
+    "util/CrashReportingUtil.java": {
+        131: ('     * Naming convention for crash dump files: "dl4j-memory-crash-dump-<timestamp>_<thread-id>.txt"\n',
+              "     * Naming convention for crash dump files: {@code dl4j-memory-crash-dump-<timestamp>_<thread-id>.txt}\n")},
+    "nn/conf/module/GraphBuilderModule.java": {
+        30: ("     * @note Convention is to define module names that are entirely lowercase for the purpose of generating layer names.\n",
+             "     * <p><strong>Note:</strong> Convention is to define module names that are entirely lowercase for the purpose of generating layer names.\n")},
+    "nn/conf/layers/LocalResponseNormalization.java": {
+        279: ("         * @param format Format for activations (in and out)\n",
+              "         * @param dataFormat Format for activations (in and out)\n")},
+    "nn/conf/layers/PrimaryCapsules.java": {
+        317: ("         * @see ConvolutionLayer.Builder#dilation(int...)\n",
+              "         * @see ConvolutionLayer.Builder#dilation(long...)\n")},
+}
+for relative, number, suffix in (
+        ("nn/conf/layers/Layer.java", 262, "\n"),
+        ("nn/conf/NeuralNetConfiguration.java", 716, " value for a layer.\n"),
+        ("nn/transferlearning/FineTuneConfiguration.java", 491, " value for a layer.\n")):
+    before = "         * Dropout probability. This is the probability of <it>retaining</it> each input activation" + suffix
+    NN_REPAIRS.setdefault(relative, {})[number] = (before, before.replace("<it>retaining</it>", "<i>retaining</i>"))
+for relative, config, numbers in (
+        ("nn/multilayer/MultiLayerNetwork.java", "MultiLayerConfiguration", (3746, 3779)),
+        ("nn/graph/ComputationGraph.java", "ComputationGraphConfiguration", (4489, 4522)),
+        ("util/NetworkUtils.java", "MultiLayerConfiguration", (163, 192)),
+        ("util/NetworkUtils.java", "ComputationGraphConfiguration", (285, 314))):
+    for number, also in zip(numbers, ("", "also ")):
+        before = "     * Note " + also + "that the iteration/epoch counts will <i>not</i> be reset. Use {@link " + config + "#setIterationCount(int)}\n"
+        after = "     * Note " + also + "that the iteration/epoch counts will <i>not</i> be reset. Use the Lombok-generated {@code setIterationCount(int)} setter for {@link " + config + "#iterationCount}\n"
+        NN_REPAIRS.setdefault(relative, {})[number] = (before, after)
+        if config == "ComputationGraphConfiguration":
+            NN_REPAIRS[relative][number + 1] = (
+                "     * and {@link ComputationGraphConfiguration#setEpochCount(int)} if this is required\n",
+                "     * and {@code setEpochCount(int)} for {@link ComputationGraphConfiguration#epochCount} if this is required\n")
+for number in (262, 276, 290):
+    before = "         * ReconstructionDistribution. Note that this is NOT following the standard VAE design (as per Kingma &\n"
+    NN_REPAIRS.setdefault("nn/conf/layers/variational/VariationalAutoencoder.java", {})[number] = (before, before.replace("&\n", "&amp;\n"))
+for number, shape in ((52, "int[]"), (68, "long[]")):
+    before = "     * Note: Defaults to fortran ('f') order arrays for the weights. Use {@link #initWeights(" + shape + ", WeightInit, Distribution, char, INDArray)}\n"
+    NN_REPAIRS.setdefault("nn/weights/WeightInitUtil.java", {})[number] = (before, before.replace("#initWeights(", "#initWeights(double, double, "))
+REPAIRS.update({NN + relative: repairs for relative, repairs in NN_REPAIRS.items()})
+
+
 def digest(data):
     return hashlib.sha256(data).hexdigest()
 
@@ -240,7 +312,10 @@ def prepare(source, fix_source, fix_commit, commit, output):
                   "lfwDiagnostics": {"recoveryRunId": LFW_RECOVERY_RUN,
                                      "errorCount": 4, "repairedLineCount": 4},
                   "utilityIteratorsDiagnostics": {"recoveryRunId": UTILITY_ITERATORS_RECOVERY_RUN,
-                                                  "errorCount": 6, "repairedLineCount": 48}}
+                                                  "errorCount": 6, "repairedLineCount": 48},
+                  "nnDiagnostics": {"recoveryRunId": NN_RECOVERY_RUN,
+                                    "jobId": NN_RECOVERY_JOB,
+                                    "errorCount": 36, "repairedLineCount": 32}}
     # Validate every file before writing any overlay. Preserve line numbers and
     # every non-repaired byte, including all compiled code and source positions.
     for path, fixed in pending:

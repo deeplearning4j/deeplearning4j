@@ -259,7 +259,7 @@ public abstract class Layer implements TrainingConfig, Serializable, Cloneable {
         }
 
         /**
-         * Dropout probability. This is the probability of <it>retaining</it> each input activation
+         * Dropout probability. This is the probability of <i>retaining</i> each input activation
          * value for a layer. dropOut(x) will keep an input activation with probability x, and set
          * to 0 with probability 1-x.<br> dropOut(0.0) is a special value / special case - when set
          * to 0.0., dropout is disabled (not applied). Note that a dropout value of 1.0 is

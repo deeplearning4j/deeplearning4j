@@ -128,7 +128,7 @@ public class CrashReportingUtil {
 
     /**
      * Generate and write the crash dump to the crash dump root directory (by default, the working directory).
-     * Naming convention for crash dump files: "dl4j-memory-crash-dump-<timestamp>_<thread-id>.txt"
+     * Naming convention for crash dump files: {@code dl4j-memory-crash-dump-<timestamp>_<thread-id>.txt}
      *
      *
      * @param net   Net to generate the crash dump for. May not be null

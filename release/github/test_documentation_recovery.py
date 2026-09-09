@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import tempfile
+import subprocess
 import unittest
 from unittest.mock import patch
 
@@ -43,7 +44,9 @@ class DocumentationRecoveryTests(unittest.TestCase):
         result = self.prepare()
         self.assertEqual(docs.SOURCE_COMMIT, result['sourceCommit'])
         self.assertEqual('b' * 40, result['documentationFixCommit'])
-        self.assertEqual(82, sum(len(row['lines']) for row in result['files']))
+        self.assertEqual(114, sum(len(row['lines']) for row in result['files']))
+        self.assertEqual({'recoveryRunId': '34407671220', 'jobId': '102654524521',
+                          'errorCount': 36, 'repairedLineCount': 32}, result['nnDiagnostics'])
         self.assertEqual({'recoveryRunId': '34381061422', 'errorCount': 14,
                           'repairedLineCount': 13}, result['datavecDiagnostics'])
         self.assertEqual({'recoveryRunId': '34383274542', 'errorCount': 1,
@@ -113,7 +116,7 @@ class DocumentationRecoveryTests(unittest.TestCase):
     def test_each_vlm_repair_is_required_before_any_write(self):
         names = [name for name in docs.REPAIRS if name.startswith(docs.VLM)]
         self.assertEqual(4, len(names))
-        self.assertEqual(78, sum(len(lines) for name, lines in docs.REPAIRS.items()
+        self.assertEqual(110, sum(len(lines) for name, lines in docs.REPAIRS.items()
                                 if not name.startswith(docs.VLM)))
         for name in names:
             with self.subTest(name=name):
@@ -249,7 +252,7 @@ class DocumentationRecoveryTests(unittest.TestCase):
             ' * @link {{@link PythonConstants#DEFAULT_PYTHON_PATH_PROPERTY}} : The default python path to be used by the executioner.\n',
             ' * {@link PythonConstants#DEFAULT_PYTHON_PATH_PROPERTY} : The default python path to be used by the executioner.\n')},
             docs.REPAIRS[name])
-        self.assertEqual(81, sum(len(lines) for path, lines in docs.REPAIRS.items() if path != name))
+        self.assertEqual(113, sum(len(lines) for path, lines in docs.REPAIRS.items() if path != name))
         text = (root / name).read_text()
         self.assertEqual(docs.REPAIRS[name][46][1], text.splitlines(keepends=True)[45])
         constant = (root / name).with_name('PythonConstants.java').read_text()
@@ -266,7 +269,7 @@ class DocumentationRecoveryTests(unittest.TestCase):
         name = docs.DATAVEC_LOCAL
         self.assertEqual({101: ('     * but returns <it>sequence</it>\n',
                                '     * but returns <i>sequence</i>\n')}, docs.REPAIRS[name])
-        self.assertEqual(81, sum(len(lines) for path, lines in docs.REPAIRS.items() if path != name))
+        self.assertEqual(113, sum(len(lines) for path, lines in docs.REPAIRS.items() if path != name))
         text = (root / name).read_text()
         self.assertEqual(docs.REPAIRS[name][101][1], text.splitlines(keepends=True)[100])
         self.fixed[name] = self.originals[name]
@@ -279,7 +282,7 @@ class DocumentationRecoveryTests(unittest.TestCase):
         root = Path(__file__).resolve().parents[2]
         name = docs.LFW_ITERATOR
         self.assertEqual({60, 66, 72, 79}, set(docs.REPAIRS[name]))
-        self.assertEqual(78, sum(len(lines) for path, lines in docs.REPAIRS.items() if path != name))
+        self.assertEqual(110, sum(len(lines) for path, lines in docs.REPAIRS.items() if path != name))
         text = (root / name).read_bytes().splitlines(keepends=True)
         for number, (before, after) in docs.REPAIRS[name].items():
             with self.subTest(number=number):
@@ -302,7 +305,7 @@ class DocumentationRecoveryTests(unittest.TestCase):
         root = Path(__file__).resolve().parents[2]
         names = [name for name in docs.REPAIRS if name.startswith(docs.UTILITY_ITERATORS)]
         self.assertEqual(6, len(names))
-        self.assertEqual(34, sum(len(lines) for name, lines in docs.REPAIRS.items()
+        self.assertEqual(66, sum(len(lines) for name, lines in docs.REPAIRS.items()
                                 if name not in names))
         for name in names:
             text = (root / name).read_text()
@@ -323,6 +326,121 @@ class DocumentationRecoveryTests(unittest.TestCase):
                     for path in docs.REPAIRS:
                         self.assertEqual(self.originals[path], (self.source / path).read_bytes())
                     self.fixed[name] = fixed
+
+    def test_nn_repairs_preserve_previous_82_lines_and_each_is_required(self):
+        root = Path(__file__).resolve().parents[2]
+        self.assertEqual(17, len(docs.NN_REPAIRS))
+        self.assertEqual(32, sum(len(lines) for lines in docs.NN_REPAIRS.values()))
+        self.assertEqual(82, sum(len(lines) for name, lines in docs.REPAIRS.items()
+                                if not name.startswith(docs.NN)))
+        for relative, repairs in docs.NN_REPAIRS.items():
+            name = docs.NN + relative
+            text = (root / name).read_bytes().splitlines(keepends=True)
+            for number, (before, after) in repairs.items():
+                with self.subTest(name=name, number=number):
+                    self.assertEqual(after.encode(), text[number - 1])
+                    self.assertTrue(before.lstrip().startswith('*'))
+                    self.assertTrue(after.lstrip().startswith('*'))
+                    fixed = self.fixed[name]
+                    lines = fixed.splitlines(keepends=True)
+                    lines[number - 1] = before.encode()
+                    self.fixed[name] = b''.join(lines)
+                    with self.assertRaisesRegex(ValueError, 'unaudited'):
+                        self.prepare()
+                    for path in docs.REPAIRS:
+                        self.assertEqual(self.originals[path], (self.source / path).read_bytes())
+                    self.fixed[name] = fixed
+
+    def test_nn_lombok_links_preserve_real_accessors_and_source_targets(self):
+        root = Path(__file__).resolve().parents[2]
+        for config in ('MultiLayerConfiguration', 'ComputationGraphConfiguration'):
+            text = (root / (docs.NN + 'nn/conf/' + config + '.java')).read_text()
+            self.assertIn('@Data', text)
+            self.assertIn('protected int iterationCount = 0;', text)
+            self.assertNotIn('void setIterationCount(', text)
+            self.assertIn('protected int epochCount = 0;', text)
+            if config == 'MultiLayerConfiguration':
+                self.assertIn('public void setEpochCount(int epochCount)', text)
+            else:
+                self.assertNotIn('void setEpochCount(', text)
+        graph = (root / (docs.NN + 'nn/graph/ComputationGraph.java')).read_text()
+        self.assertIn('@Getter\n    private int numOutputArrays;', graph)
+        self.assertIn('this.numOutputArrays = configuration.getNetworkOutputs().size();', graph)
+        self.assertNotIn('int getNumOutputArrays(', graph)
+        config = (root / (docs.NN + 'nn/conf/ComputationGraphConfiguration.java')).read_text()
+        self.assertIn('protected List<String> networkOutputs;', config)
+        for relative in ('nn/multilayer/MultiLayerNetwork.java', 'util/NetworkUtils.java'):
+            text = (root / (docs.NN + relative)).read_text()
+            self.assertEqual(2, text.count('{@link MultiLayerConfiguration#setEpochCount(int)}'))
+        for relative, repairs in docs.NN_REPAIRS.items():
+            for before, after in repairs.values():
+                if '#setIterationCount(int)' in before:
+                    self.assertIn('Lombok-generated {@code setIterationCount(int)} setter for {@link ', after)
+                    self.assertIn('#iterationCount}', after)
+                if '#setEpochCount(int)' in before:
+                    self.assertIn('{@code setEpochCount(int)}', after)
+                    self.assertIn('{@link ComputationGraphConfiguration#epochCount}', after)
+        # Neither the root nor this module supplies a delomboked Javadoc path.
+        for pom in ('pom.xml', 'deeplearning4j/pom.xml', 'deeplearning4j/deeplearning4j-nn/pom.xml'):
+            self.assertNotIn('delombok', (root / pom).read_text())
+
+    def test_nn_corrected_links_match_declared_signatures(self):
+        root = Path(__file__).resolve().parents[2]
+        def source(relative):
+            return (root / (docs.NN + relative)).read_text()
+        self.assertIn('init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams)',
+                      source('nn/api/ParamInitializer.java'))
+        self.assertIn('public T dilation(long... dilation)', source('nn/conf/layers/ConvolutionLayer.java'))
+        self.assertIn('public Builder dataFormat(CNN2DFormat dataFormat)', source('nn/conf/layers/LocalResponseNormalization.java'))
+        self.assertIn('int batchSize, LayerWorkspaceMgr workspaceMgr)', source('optimize/api/ConvexOptimizer.java'))
+        for shape in ('int[]', 'long[]'):
+            self.assertIn('initWeights(double fanIn, double fanOut, ' + shape + ' shape, WeightInit initScheme,',
+                          source('nn/weights/WeightInitUtil.java'))
+        for type_name in ('Activation', 'IActivation'):
+            self.assertIn('public Builder activation(' + type_name + ' ', source('nn/conf/layers/ActivationLayer.java'))
+        self.assertIn('Strict, Truncate, Same, Causal;', source('nn/conf/ConvolutionMode.java'))
+        self.assertIn('convolutionMode = ConvolutionMode.Truncate;', source('nn/conf/layers/ConvolutionLayer.java'))
+        gcn = root / (docs.NN + 'nn/conf/layers/GcnLayer.java')
+        self.assertIn('public class MultiLayerConfiguration', (gcn.parent / '../MultiLayerConfiguration.java').read_text())
+
+    @unittest.skipUnless(os.environ.get('RELEASE_DELOMBOK_CONTRACT') == '1', 'remote Java 21 doclet only')
+    def test_nn_generated_accessor_comments_in_source_doclet(self):
+        # A source doclet has fields but not Lombok-generated methods. Exercise
+        # the real before/after comment lines without adding synthetic setters.
+        sources = self.root / 'doclet-source'
+        sources.mkdir()
+        for config in ('MultiLayerConfiguration', 'ComputationGraphConfiguration'):
+            (sources / (config + '.java')).write_text(
+                'import java.util.List;\n/** Configuration source view. */\npublic class ' + config + ' {\n'
+                'protected int iterationCount; protected int epochCount;\n'
+                'protected List<String> networkOutputs;\n'
+                + ('public void setEpochCount(int epochCount) {}\n'
+                   if config == 'MultiLayerConfiguration' else '') + '}\n')
+        comments = [(before, after) for repairs in docs.NN_REPAIRS.values()
+                    for before, after in repairs.values()
+                    if '#setIterationCount(int)' in before or '#setEpochCount(int)' in before
+                    or '#getNumOutputArrays()' in before]
+        self.assertEqual(13, len(comments))
+        reader = sources / 'Reader.java'
+        for index, label in ((0, 'original'), (1, 'repaired')):
+            reader.write_text('/** Reader source view. */\npublic class Reader {\n' + ''.join(
+                '/**\n' + pair[index] + ' */\npublic void method' + str(i) + '() {}\n'
+                for i, pair in enumerate(comments)) + '}\n')
+            result = subprocess.run(['javadoc', '-quiet', '-Xdoclint:all', '-d',
+                                     str(self.root / label), *map(str, sorted(sources.glob('*.java')))],
+                                    capture_output=True, text=True)
+            print(label + ' source-doclet diagnostics:\n' + result.stdout + result.stderr)
+            if index == 0:
+                self.assertNotEqual(0, result.returncode)
+                self.assertEqual(13, result.stderr.count('error: reference not found'))
+            else:
+                self.assertEqual(0, result.returncode, result.stderr)
+                html = (self.root / label / 'Reader.html').read_text()
+                self.assertIn('MultiLayerConfiguration.html#iterationCount', html)
+                self.assertIn('ComputationGraphConfiguration.html#epochCount', html)
+                self.assertIn('ComputationGraphConfiguration.html#networkOutputs', html)
+                self.assertIn('setIterationCount(int)', html)
+                self.assertIn('getNumOutputArrays()', html)
 
     def test_real_pinned_source_matches_only_audited_edits(self):
         original_root = os.environ.get('DOCUMENTATION_CONTRACT_SOURCE')

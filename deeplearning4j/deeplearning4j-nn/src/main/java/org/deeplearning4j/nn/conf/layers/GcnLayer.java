@@ -45,7 +45,7 @@ import java.util.Map;
  *
  * <p><b>Usage:</b>
  * <ol>
- *   <li>Build a {@link MultiLayerConfiguration} including this layer.</li>
+ *   <li>Build a <a href="../MultiLayerConfiguration.html">MultiLayerConfiguration</a> including this layer.</li>
  *   <li>Call {@link #setAdjacency(SparseNDArray)} on the conf-layer object (before or after
  *       initialising the network) to supply the CSR adjacency matrix.  The method
  *       automatically applies {@code addSelfLoops().normalizeSymmetric()} (GCN-style).</li>

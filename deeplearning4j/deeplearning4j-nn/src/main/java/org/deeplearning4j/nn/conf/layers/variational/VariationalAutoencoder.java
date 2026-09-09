@@ -259,7 +259,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
 
         /**
          * Configure the VAE to use the specified loss function for the reconstruction, instead of a
-         * ReconstructionDistribution. Note that this is NOT following the standard VAE design (as per Kingma &
+         * ReconstructionDistribution. Note that this is NOT following the standard VAE design (as per Kingma &amp;
          * Welling), which assumes a probabilistic output - i.e., some p(x|z). It is however a valid network
          * configuration, allowing for optimization of more traditional objectives such as mean squared error.<br> Note:
          * clearly, setting the loss function here will override any previously set recontruction distribution
@@ -273,7 +273,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
 
         /**
          * Configure the VAE to use the specified loss function for the reconstruction, instead of a
-         * ReconstructionDistribution. Note that this is NOT following the standard VAE design (as per Kingma &
+         * ReconstructionDistribution. Note that this is NOT following the standard VAE design (as per Kingma &amp;
          * Welling), which assumes a probabilistic output - i.e., some p(x|z). It is however a valid network
          * configuration, allowing for optimization of more traditional objectives such as mean squared error.<br> Note:
          * clearly, setting the loss function here will override any previously set recontruction distribution
@@ -287,7 +287,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
 
         /**
          * Configure the VAE to use the specified loss function for the reconstruction, instead of a
-         * ReconstructionDistribution. Note that this is NOT following the standard VAE design (as per Kingma &
+         * ReconstructionDistribution. Note that this is NOT following the standard VAE design (as per Kingma &amp;
          * Welling), which assumes a probabilistic output - i.e., some p(x|z). It is however a valid network
          * configuration, allowing for optimization of more traditional objectives such as mean squared error.<br> Note:
          * clearly, setting the loss function here will override any previously set recontruction distribution

@@ -77,6 +77,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           python -m unittest release.github.test_metadata_recovery.MetadataRecoveryTests.test_real_delombok_and_javadoc_private_builder_signatures \
+            release.github.test_documentation_recovery.DocumentationRecoveryTests.test_nn_generated_accessor_comments_in_source_doclet \
             2>&1 | tee "${RUNNER_TEMP}/delombok-javadoc-contract.log"
       - name: Verify native tokenizer release metadata without compilation
         if: runner.os == 'Linux'

@@ -314,7 +314,7 @@ public class PrimaryCapsules extends SameDiffLayer {
         /**
          * Sets the dilation of the 2d convolution
          *
-         * @see ConvolutionLayer.Builder#dilation(int...)
+         * @see ConvolutionLayer.Builder#dilation(long...)
          * @param dilation
          * @return
          */

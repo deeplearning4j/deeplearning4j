@@ -27,7 +27,7 @@ public interface GraphBuilderModule {
     /**
      * A module should return its name. Useful for automatically generating layer names.
      *
-     * @note Convention is to define module names that are entirely lowercase for the purpose of generating layer names.
+     * <p><strong>Note:</strong> Convention is to define module names that are entirely lowercase for the purpose of generating layer names.
      *
      * @return The module name as a string.
      */

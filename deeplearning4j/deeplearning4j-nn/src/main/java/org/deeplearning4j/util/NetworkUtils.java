@@ -160,7 +160,7 @@ public class NetworkUtils {
     /**
      * Set the learning rate schedule for all layers in the network to the specified schedule.
      * This schedule will replace any/all existing schedules, and also any fixed learning rate values.<br>
-     * Note that the iteration/epoch counts will <i>not</i> be reset. Use {@link MultiLayerConfiguration#setIterationCount(int)}
+     * Note that the iteration/epoch counts will <i>not</i> be reset. Use the Lombok-generated {@code setIterationCount(int)} setter for {@link MultiLayerConfiguration#iterationCount}
      * and {@link MultiLayerConfiguration#setEpochCount(int)} if this is required
      *
      * @param newLrSchedule New learning rate schedule for all layers
@@ -189,7 +189,7 @@ public class NetworkUtils {
      * Note also that {@link #setLearningRate(MultiLayerNetwork, ISchedule)} should also be used in preference, when all layers need
      * to be set to a new LR schedule.<br>
      * This schedule will replace any/all existing schedules, and also any fixed learning rate values.<br>
-     * Note also that the iteration/epoch counts will <i>not</i> be reset. Use {@link MultiLayerConfiguration#setIterationCount(int)}
+     * Note also that the iteration/epoch counts will <i>not</i> be reset. Use the Lombok-generated {@code setIterationCount(int)} setter for {@link MultiLayerConfiguration#iterationCount}
      * and {@link MultiLayerConfiguration#setEpochCount(int)} if this is required
      *
      * @param layerNumber Number of the layer to set the LR schedule for
@@ -282,8 +282,8 @@ public class NetworkUtils {
     /**
      * Set the learning rate schedule for all layers in the network to the specified schedule.
      * This schedule will replace any/all existing schedules, and also any fixed learning rate values.<br>
-     * Note that the iteration/epoch counts will <i>not</i> be reset. Use {@link ComputationGraphConfiguration#setIterationCount(int)}
-     * and {@link ComputationGraphConfiguration#setEpochCount(int)} if this is required
+     * Note that the iteration/epoch counts will <i>not</i> be reset. Use the Lombok-generated {@code setIterationCount(int)} setter for {@link ComputationGraphConfiguration#iterationCount}
+     * and {@code setEpochCount(int)} for {@link ComputationGraphConfiguration#epochCount} if this is required
      *
      * @param newLrSchedule New learning rate schedule for all layers
      */
@@ -311,8 +311,8 @@ public class NetworkUtils {
      * Note also that {@link #setLearningRate(ComputationGraph, ISchedule)} should also be used in preference, when all
      * layers need to be set to a new LR schedule.<br>
      * This schedule will replace any/all existing schedules, and also any fixed learning rate values.<br>
-     * Note also that the iteration/epoch counts will <i>not</i> be reset. Use {@link ComputationGraphConfiguration#setIterationCount(int)}
-     * and {@link ComputationGraphConfiguration#setEpochCount(int)} if this is required
+     * Note also that the iteration/epoch counts will <i>not</i> be reset. Use the Lombok-generated {@code setIterationCount(int)} setter for {@link ComputationGraphConfiguration#iterationCount}
+     * and {@code setEpochCount(int)} for {@link ComputationGraphConfiguration#epochCount} if this is required
      *
      * @param layerName  Name of the layer to set the LR schedule for
      * @param lrSchedule New learning rate for a single layer

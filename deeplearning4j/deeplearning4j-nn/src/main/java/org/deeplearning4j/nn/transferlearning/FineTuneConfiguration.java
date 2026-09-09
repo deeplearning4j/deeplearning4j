@@ -65,7 +65,7 @@ import java.util.List;
  * set to null, {@link org.nd4j.common.primitives.Optional} with value = set to that value) is
  * used for fields that have meaningful null values such as {@code dropout} and {@code weightNoise}.
  *
- * <h3>Typical usage</h3>
+ * <h2>Typical usage</h2>
  * <pre>{@code
  * FineTuneConfiguration ftc = FineTuneConfiguration.builder()
  *         .updater(new Adam(1e-4))
@@ -194,7 +194,7 @@ public class FineTuneConfiguration {
     protected Double gradientNormalizationThreshold;
 
     /** Convolution mode (SAME, STRICT, TRUNCATE) applied to convolution and subsampling layers.
-     *  Default: {@code null} (keep original; layer default is {@link ConvolutionMode#TRUNCATE}). */
+     *  Default: {@code null} (keep original; layer default is {@link ConvolutionMode#Truncate}). */
     protected ConvolutionMode convolutionMode;
 
     /** cuDNN algorithm selection mode for convolutional layers.
@@ -488,7 +488,7 @@ public class FineTuneConfiguration {
         }
 
         /**
-         * Dropout probability. This is the probability of <it>retaining</it> each input activation value for a layer.
+         * Dropout probability. This is the probability of <i>retaining</i> each input activation value for a layer.
          * dropOut(x) will keep an input activation with probability x, and set to 0 with probability 1-x.<br>
          * dropOut(0.0) is a special value / special case - when set to 0.0., dropout is disabled (not applied). Note
          * that a dropout value of 1.0 is functionally equivalent to no dropout: i.e., 100% probability of retaining

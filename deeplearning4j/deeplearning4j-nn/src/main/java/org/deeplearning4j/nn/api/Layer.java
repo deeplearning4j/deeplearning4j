@@ -78,7 +78,7 @@ public interface Layer extends Serializable, Cloneable, Model, Trainable {
      * @param epsilon      w^(L+1)*delta^(L+1). Or, equiv: dC/da, i.e., (dC/dz)*(dz/da) = dC/da, where C
      *                     is cost function a=sigma(z) is activation.
      * @param workspaceMgr Workspace manager
-     * @return Pair<Gradient   ,   INDArray> where Gradient is gradient for this layer, INDArray is epsilon (activation gradient)
+     * @return {@code Pair<Gradient, INDArray>} where Gradient is gradient for this layer, INDArray is epsilon (activation gradient)
      * needed by next layer, but before element-wise multiply by sigmaPrime(z). So for standard feed-forward layer, if this layer is
      * L, then return.getSecond() == dL/dIn = (w^(L)*(delta^(L))^T)^T. Note that the returned array should be placed in the
      * {@link org.deeplearning4j.nn.workspace.ArrayType#ACTIVATION_GRAD} workspace via the workspace manager
