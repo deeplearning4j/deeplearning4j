@@ -1,0 +1,77 @@
+name: Release cache contracts
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ag_new_release_updates_2]
+    paths:
+      - 'release/**'
+      - '.github/actions/run-release-worker/**'
+      - '.github/actions/setup-sccache-*/**'
+      - '.github/workflows/_release-worker.yml'
+      - '.github/workflows/release-cache-contracts.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-2022, macos-14]
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Install archive transport SDK
+        run: python -m pip install boto3==1.40.76
+      - name: Validate R2 cache contracts without native builds
+        shell: bash
+        working-directory: platform-tests
+        env:
+          PYTHONPATH: ..
+        run: |
+          set -Eeuo pipefail
+          python -m unittest release.github.test_r2_cache \
+            2>&1 | tee "${RUNNER_TEMP}/r2-contracts.log"
+      - name: Validate complete release contracts
+        if: runner.os == 'Linux'
+        shell: bash
+        working-directory: platform-tests
+        env:
+          PYTHONPATH: ..
+        run: |
+          set -Eeuo pipefail
+          python -m unittest \
+            test_full_release_repository test_release_publication_safety \
+            release.github.test_worker release.central.test_repository \
+            release.aws.test_release release.azure.test_release \
+            release.azure.test_dependency_cache release.gcp.test_release \
+            2>&1 | tee "${RUNNER_TEMP}/release-contracts.log"
+      - name: Verify private R2 migrated objects and archive transport
+        if: ${{ always() && runner.os == 'Linux' }}
+        shell: bash
+        working-directory: platform-tests
+        env:
+          PYTHONPATH: ..
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          DL4J_R2_LIVE_VALIDATION: '1'
+        run: |
+          set -Eeuo pipefail
+          python -m unittest release.github.test_r2_cache.R2LiveCacheTests \
+            2>&1 | tee "${RUNNER_TEMP}/r2-live-contracts.log"
+      - name: Retain validation evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-cache-contracts-${{ matrix.os }}
+          path: |
+            ${{ runner.temp }}/r2-contracts.log
+            ${{ runner.temp }}/release-contracts.log
+            ${{ runner.temp }}/r2-live-contracts.log
+          if-no-files-found: warn

@@ -583,7 +583,7 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertEqual(4, workflow.count("dl4j-dependency-v4-${{ runner.os }}-"))
         self.assertNotIn("if: matrix.dependencyCacheKey != ''", workflow)
         self.assertIn("DL4J_DEPENDENCY_CACHE_HELPER: ${{ github.workspace }}/release/azure/dependency-cache.py", action)
-        self.assertIn("DL4J_CLOUD_IO: ${{ github.workspace }}/release/azure/cloud-io.py", action)
+        self.assertIn("DL4J_CLOUD_IO: ${{ github.workspace }}/release/aws/cloud-io.py", action)
         self.assertIn("toolchainCache", preparer)
         self.assertIn("deeplearning4j/releases/toolchain-cache/v1", preparer)
 
@@ -773,8 +773,8 @@ class WorkflowMatrixTests(unittest.TestCase):
             action = (
                 ROOT / f".github/actions/setup-sccache-{operating_system}/action.yml"
             ).read_text()
-            self.assertIn("--features gha,azure --no-default-features", action)
-            self.assertIn("gha-azure", action)
+            self.assertIn("--features gha,azure,s3 --no-default-features", action)
+            self.assertIn("gha-azure-s3", action)
         linux_action = (
             ROOT / ".github/actions/setup-sccache-linux/action.yml"
         ).read_text()
@@ -1225,6 +1225,30 @@ class WorkerConfigTests(unittest.TestCase):
                 for target in dependency_cache["targets"]
             },
         )
+
+    def test_r2_config_selects_all_remote_caches_and_preserves_snapshot_keys(self):
+        manifest = {"schemaVersion": 1, "backend": "s3", "bucket": "dl4j-cache"}
+        with patch.object(prepare_worker, "load_r2_dependency_cache", return_value=manifest), \
+             patch.object(prepare_worker, "load_public_dependency_cache") as azure:
+            config = prepare_worker.worker_config(self.args(
+                azure_cache=False, r2_cache=True, shard="linux-arm64-cuda-13-1", variant="base"
+            ))
+        azure.assert_not_called()
+        remote = config["compilerCache"]
+        self.assertEqual("s3", remote["backend"])
+        self.assertEqual("r2", remote["provider"])
+        self.assertEqual("dl4j-cache", remote["bucket"])
+        self.assertEqual("auto", remote["region"])
+        self.assertFalse(remote["serverSideEncryption"])
+        self.assertEqual("R2_ACCESS_KEY_ID", remote["accessKeyIdEnv"])
+        self.assertEqual("R2_SECRET_ACCESS_KEY", remote["secretAccessKeyEnv"])
+        self.assertEqual("azure", remote["snapshotIdentityBackend"])
+        self.assertEqual("ccache-l0", remote["localSnapshot"]["name"])
+        self.assertEqual("deeplearning4j/releases/compiler-cache/v1", remote["keyPrefix"])
+        self.assertEqual("deeplearning4j/releases/toolchain-cache/v1", remote["toolchainCache"]["keyPrefix"])
+        self.assertNotIn("account", remote)
+        self.assertNotIn("connectionStringEnv", remote)
+        self.assertEqual(manifest, config["dependencyCache"])
 
     def test_config_preserves_explicit_release_and_source_snapshot_versions(self):
         config = prepare_worker.worker_config(

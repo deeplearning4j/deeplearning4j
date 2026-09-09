@@ -9,6 +9,9 @@ import hashlib
 import json
 import os
 import re
+import subprocess
+import sys
+import tempfile
 import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -71,6 +74,42 @@ PUBLIC_DEPENDENCY_CACHE = {
         },
     ],
 }
+
+
+R2_ENDPOINT = "https://318204901782458555a243ad96f80e3f.r2.cloudflarestorage.com"
+R2_BUCKET = "dl4j-cache"
+
+
+def load_r2_dependency_cache() -> dict:
+    """Read the migrated private manifest; its historical public URL is not a transport."""
+    env = os.environ.copy()
+    env.update({"DL4J_CACHE_BACKEND": "r2", "DL4J_S3_ENDPOINT": R2_ENDPOINT,
+                "DL4J_S3_REGION": "auto"})
+    with tempfile.TemporaryDirectory(prefix="dl4j-r2-manifest-") as temporary:
+        destination = Path(temporary) / "manifest.json"
+        subprocess.run([
+            sys.executable, str(ROOT / "release/aws/cloud-io.py"), "download",
+            "--bucket", R2_BUCKET,
+            "--object", "deeplearning4j/releases/dependency-cache/v2/public-manifest.json",
+            "--file", str(destination),
+        ], env=env, check=True)
+        candidate = json.loads(destination.read_text(encoding="utf-8"))
+    if not isinstance(candidate, dict) or candidate.get("schemaVersion") != 1:
+        raise ValueError("R2 dependency manifest has an invalid schema")
+    if not isinstance(candidate.get("host"), dict) or not isinstance(candidate.get("targets"), list):
+        raise ValueError("R2 dependency manifest is missing host/targets")
+    for item in [candidate["host"], *candidate["targets"]]:
+        if not isinstance(item, dict) or not all(
+            isinstance(item.get(key), str) and item[key]
+            for key in ("identity", "indexObject", "archiveObject")
+        ):
+            raise ValueError("R2 dependency manifest has invalid object metadata")
+    # Keep all content-addressed keys/identities unchanged. Copied Azure manifests
+    # still advertise Azure URLs; never use them for authenticated R2 restores.
+    candidate.pop("publicBaseUrl", None)
+    candidate["backend"] = "s3"
+    candidate["bucket"] = R2_BUCKET
+    return candidate
 
 
 def load_public_dependency_cache() -> dict:
@@ -488,12 +527,16 @@ def worker_config(args: argparse.Namespace) -> dict:
             "architecture": os.environ.get("RUNNER_ARCH"),
             "os": os.environ.get("RUNNER_OS"),
         },
-        # Published dependency snapshots are immutable and anonymously readable.
-        # Keep them separate from the authenticated compiler-object cache so a
-        # GitHub worker can restore LLVM/MLIR without receiving storage keys.
-        "dependencyCache": load_public_dependency_cache(),
+        # Both providers reuse immutable archive identities. R2 resolves the
+        # private manifest through its authenticated transport, never Azure URLs.
+        "dependencyCache": (
+            load_r2_dependency_cache() if getattr(args, "r2_cache", False)
+            else load_public_dependency_cache()
+        ),
     }
-    if args.azure_cache:
+    if getattr(args, "r2_cache", False) and args.azure_cache:
+        raise ValueError("Select only one remote cache provider")
+    if args.azure_cache or getattr(args, "r2_cache", False):
         config["compilerCache"] = {
             "backend": "azure",
             "account": "dl4jrel26302370c1eeb25",
@@ -505,6 +548,19 @@ def worker_config(args: argparse.Namespace) -> dict:
                 "keyPrefix": "deeplearning4j/releases/toolchain-cache/v1",
             },
         }
+        if getattr(args, "r2_cache", False):
+            config["compilerCache"].update({
+                "backend": "s3", "provider": "r2", "bucket": R2_BUCKET,
+                "region": "auto", "endpoint": R2_ENDPOINT,
+                "serverSideEncryption": False,
+                "accessKeyIdEnv": "R2_ACCESS_KEY_ID",
+                "secretAccessKeyEnv": "R2_SECRET_ACCESS_KEY",
+                # This field is identity metadata only, NOT transport selection.
+                # Existing ccache-L0 archive indexes hashed the Azure backend.
+                "snapshotIdentityBackend": "azure",
+            })
+            for field in ("account", "container", "connectionStringEnv"):
+                config["compilerCache"].pop(field)
         if shard["build"].get("crossCompileSbsa"):
             config["compilerCache"]["localSnapshot"] = {
                 "schemaVersion": 1,
@@ -546,7 +602,9 @@ def parse_args() -> argparse.Namespace:
     config_parser.add_argument("--libnd4j-url", default="")
     config_parser.add_argument("--build-aot", action="store_true")
     config_parser.add_argument("--aot-all-spins", action="store_true")
-    config_parser.add_argument("--azure-cache", action="store_true")
+    cache_provider = config_parser.add_mutually_exclusive_group()
+    cache_provider.add_argument("--azure-cache", action="store_true")
+    cache_provider.add_argument("--r2-cache", action="store_true")
     config_parser.add_argument("--release-version", default="")
     config_parser.add_argument("--snapshot-version", default="")
     config_parser.add_argument("--run-id", required=True)

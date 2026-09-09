@@ -32,9 +32,12 @@ inputs:
   aot-all-spins:
     required: false
     default: "0"
-  azure-cache-connection-string:
-    required: false
-    default: ""
+  r2-access-key-id:
+    required: true
+    description: Cloudflare R2 cache access key ID.
+  r2-secret-access-key:
+    required: true
+    description: Cloudflare R2 cache secret access key.
 
 outputs:
   artifact-root:
@@ -119,26 +122,26 @@ runs:
           dl4j-maven-v2-${{ runner.os }}-${{ inputs.shard }}-
           dl4j-maven-v2-${{ runner.os }}-
 
-    - name: Set up GitHub sccache fallback on Linux
+    - name: Install S3-capable sccache on Linux
       if: runner.os == 'Linux'
-      continue-on-error: true
       uses: ./.github/actions/setup-sccache-linux
       with:
         cache-suffix: ${{ inputs.shard }}-${{ inputs.variant }}
+        start-server: 'false'
 
-    - name: Set up GitHub sccache fallback on Windows
+    - name: Install S3-capable sccache on Windows
       if: runner.os == 'Windows'
-      continue-on-error: true
       uses: ./.github/actions/setup-sccache-windows
       with:
         cache-suffix: ${{ inputs.shard }}-${{ inputs.variant }}
+        start-server: 'false'
 
-    - name: Set up GitHub sccache fallback on macOS
+    - name: Install S3-capable sccache on macOS
       if: runner.os == 'macOS'
-      continue-on-error: true
       uses: ./.github/actions/setup-sccache-macos
       with:
         cache-suffix: ${{ inputs.shard }}-${{ inputs.variant }}
+        start-server: 'false'
 
     - name: Hand off pre-started sccache on Unix
       if: runner.os != 'Windows'
@@ -172,12 +175,11 @@ runs:
         INPUT_LIBND4J_URL: ${{ inputs.libnd4j-url }}
         INPUT_BUILD_AOT: ${{ inputs.build-aot }}
         INPUT_AOT_ALL_SPINS: ${{ inputs.aot-all-spins }}
-        SCCACHE_AZURE_CONNECTION_STRING: ${{ inputs.azure-cache-connection-string }}
-        DL4J_AZURE_CONNECTION_STRING: ${{ inputs.azure-cache-connection-string }}
-        # The shared build driver uses these checked-in transports for the same
-        # Azure dependency/toolchain archives that seed on Azure workers.
+        R2_ACCESS_KEY_ID: ${{ inputs.r2-access-key-id }}
+        R2_SECRET_ACCESS_KEY: ${{ inputs.r2-secret-access-key }}
+        # Archive format is provider-neutral; only its transport changes.
         DL4J_DEPENDENCY_CACHE_HELPER: ${{ github.workspace }}/release/azure/dependency-cache.py
-        DL4J_CLOUD_IO: ${{ github.workspace }}/release/azure/cloud-io.py
+        DL4J_CLOUD_IO: ${{ github.workspace }}/release/aws/cloud-io.py
       run: |
         set -Eeuo pipefail
         artifact_root="${GITHUB_WORKSPACE}/.release-worker/${INPUT_SHARD}/${INPUT_VARIANT}"
@@ -199,7 +201,7 @@ runs:
         )
         [ "${INPUT_BUILD_AOT}" != 1 ] || args+=(--build-aot)
         [ "${INPUT_AOT_ALL_SPINS}" != 1 ] || args+=(--aot-all-spins)
-        [ -z "${SCCACHE_AZURE_CONNECTION_STRING}" ] || args+=(--azure-cache)
+        args+=(--r2-cache)
         python_bin=""
         for candidate in python3.11 python3.10 python python3; do
           if command -v "${candidate}" >/dev/null 2>&1 &&
@@ -213,6 +215,7 @@ runs:
           exit 1
         fi
         printf 'python-executable=%s\n' "${python_bin}" >>"${GITHUB_OUTPUT}"
+        "${python_bin}" -m pip install --disable-pip-version-check 'boto3==1.40.76'
         "${python_bin}" release/github/prepare-worker.py config "${args[@]}"
         release_version=$("${python_bin}" -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["releaseVersion"])' "${config}")
         printf 'release-version=%s\n' "${release_version}" >>"${GITHUB_OUTPUT}"

@@ -59,8 +59,10 @@ on:
         required: false
         default: "0"
     secrets:
-      AZURE_SCCACHE_CONNECTION_STRING:
-        required: false
+      R2_ACCESS_KEY_ID:
+        required: true
+      R2_SECRET_ACCESS_KEY:
+        required: true
       CENTRAL_SONATYPE_TOKEN_USERNAME:
         required: false
       CENTRAL_SONATYPE_TOKEN_PASSWORD:
@@ -250,7 +252,8 @@ jobs:
           libnd4j-url: ${{ inputs.libnd4jUrl }}
           build-aot: ${{ inputs.buildAot }}
           aot-all-spins: ${{ inputs.aotAllSpins }}
-          azure-cache-connection-string: ${{ secrets.AZURE_SCCACHE_CONNECTION_STRING }}
+          r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
       - name: Upload staged worker result
         if: always()
         uses: actions/upload-artifact@v7
@@ -299,7 +302,8 @@ jobs:
           libnd4j-url: ${{ inputs.libnd4jUrl }}
           build-aot: ${{ inputs.buildAot }}
           aot-all-spins: ${{ inputs.aotAllSpins }}
-          azure-cache-connection-string: ${{ secrets.AZURE_SCCACHE_CONNECTION_STRING }}
+          r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
       - name: Upload staged worker result
         if: always()
         uses: actions/upload-artifact@v7

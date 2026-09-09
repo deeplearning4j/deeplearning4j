@@ -2,6 +2,10 @@ name: Setup sccache for Windows
 description: 'Install and configure sccache with GitHub Actions cache backend for distributed per-object caching'
 
 inputs:
+  start-server:
+    description: Start a GHA server; false installs only for an explicitly configured worker backend.
+    required: false
+    default: 'true'
   cache-suffix:
     description: 'Suffix for sccache GHA version key (e.g., cuda-12.6). Used to partition cache namespaces.'
     required: false
@@ -38,14 +42,14 @@ runs:
       uses: actions/cache@v6
       with:
         path: C:\sccache-patched-bin
-        key: sccache-patched-v0.17.0-gha-azure-windows-${{ runner.arch }}-${{ steps.patch-hash.outputs.hash }}
+        key: sccache-patched-v0.17.0-gha-azure-s3-windows-${{ runner.arch }}-${{ steps.patch-hash.outputs.hash }}
 
     # ---------------------------------------------------------------
     # 3. On cache miss: clone, patch, and build from source.
     # ---------------------------------------------------------------
     - name: Build patched sccache from source
       if: steps.cache-sccache.outputs.cache-hit != 'true'
-      continue-on-error: true
+      continue-on-error: ${{ inputs.start-server == 'true' }}
       shell: bash
       run: |
         set -euo pipefail
@@ -73,7 +77,7 @@ runs:
 
         # Build with only the GHA cache feature
         cd /tmp/sccache-src
-        cargo build --release --features gha,azure --no-default-features
+        cargo build --release --features gha,azure,s3 --no-default-features
 
         # Stage the binary for GHA cache storage
         mkdir -p /c/sccache-patched-bin
@@ -85,7 +89,7 @@ runs:
     # 4. Install the binary — patched if available, upstream fallback.
     # ---------------------------------------------------------------
     - name: Install sccache
-      continue-on-error: true
+      continue-on-error: ${{ inputs.start-server == 'true' }}
       shell: pwsh
       run: |
         $sccacheVersion = "v0.17.0"
@@ -99,6 +103,9 @@ runs:
           Write-Host "Installed patched sccache (with RetryLayer):"
           & "$installDir\sccache.exe" --version
         } else {
+          if ('${{ inputs.start-server }}' -ne 'true') {
+            throw 'Explicit worker backend requires the patched S3-capable sccache binary.'
+          }
           # Fallback to upstream unpatched release
           Write-Host "Patched build not available — falling back to upstream sccache ${sccacheVersion}."
           $upstreamFile = "sccache-${sccacheVersion}-x86_64-pc-windows-msvc"
@@ -122,6 +129,7 @@ runs:
     # 5. Configure the GHA cache backend (V2 API).
     # ---------------------------------------------------------------
     - name: Configure sccache GHA backend
+      if: inputs.start-server == 'true'
       uses: actions/github-script@v9
       with:
         script: |
@@ -136,7 +144,8 @@ runs:
     # 6. Start the sccache server with GHA backend enabled.
     # ---------------------------------------------------------------
     - name: Set sccache environment
-      continue-on-error: true
+      if: inputs.start-server == 'true'
+      continue-on-error: ${{ inputs.start-server == 'true' }}
       shell: pwsh
       run: |
         # Enable GitHub Actions cache backend.
@@ -199,8 +208,9 @@ runs:
     # 7. Final verification.
     # ---------------------------------------------------------------
     - name: Verify sccache
+      if: inputs.start-server == 'true'
       id: verify-sccache
-      continue-on-error: true
+      continue-on-error: ${{ inputs.start-server == 'true' }}
       shell: pwsh
       run: |
         $sccacheExe = "$env:USERPROFILE\sccache\sccache.exe"

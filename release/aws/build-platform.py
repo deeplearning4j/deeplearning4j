@@ -467,7 +467,11 @@ def restore_remote_dependency_cache(
             )
             return
 
-    public_base_url = str(snapshots.get("publicBaseUrl", "")).strip().rstrip("/")
+    configure_s3_cache_environment(remote, env)
+    public_base_url = (
+        "" if remote.get("provider") == "r2" else
+        str(snapshots.get("publicBaseUrl", "")).strip().rstrip("/")
+    )
     cloud_io = Path(
         env.get("DL4J_CLOUD_IO", "/opt/dl4j-release/bootstrap/cloud-io.py")
     )
@@ -475,9 +479,12 @@ def restore_remote_dependency_cache(
     if not public_base_url:
         if not cloud_io.is_file():
             raise RuntimeError(f"managed dependency cache transport is missing: {cloud_io}")
-        account = _required_cache_value(remote, "account")
-        container = _required_cache_value(remote, "container")
-        bucket = f"{account}/{container}"
+        if remote.get("backend") == "s3":
+            bucket = _required_cache_value(remote, "bucket")
+        else:
+            account = _required_cache_value(remote, "account")
+            container = _required_cache_value(remote, "container")
+            bucket = f"{account}/{container}"
 
     def download_object(object_name: str, destination: Path, description: str) -> None:
         if public_base_url:
@@ -491,7 +498,7 @@ def restore_remote_dependency_cache(
             return
         run(
             [
-                "python3",
+                sys.executable,
                 str(cloud_io),
                 "download",
                 "--bucket",
@@ -790,7 +797,7 @@ def compiler_cache_snapshot_identity(config: dict) -> str | None:
             "cacheVersion": SCCACHE_VERSION if name == "sccache-l0" else "system",
             "platform": operating_system,
             "architecture": architecture,
-            "backend": _required_cache_value(remote, "backend"),
+            "backend": remote.get("snapshotIdentityBackend") or _required_cache_value(remote, "backend"),
             "keyPrefix": _required_cache_value(remote, "keyPrefix"),
             "shard": shard_id,
             "shardContractDigest": contract_digest,
@@ -881,6 +888,43 @@ def publish_compiler_cache_snapshot(config: dict, env: dict[str, str]) -> dict:
     return metrics
 
 
+def configure_s3_cache_environment(remote: dict, env: dict[str, str]) -> None:
+    """Set one explicit S3 endpoint/credential context for every worker cache."""
+    if remote.get("backend") != "s3":
+        return
+    endpoint = str(remote.get("endpoint", "")).strip()
+    r2 = remote.get("provider") == "r2"
+    if r2 and not endpoint.startswith("https://"):
+        raise ValueError("R2 compiler cache requires an explicit HTTPS endpoint")
+    if endpoint:
+        env["SCCACHE_ENDPOINT"] = endpoint
+        env["SCCACHE_S3_USE_SSL"] = "true"
+        env["DL4J_S3_ENDPOINT"] = endpoint
+    env["DL4J_S3_REGION"] = _required_cache_value(remote, "region")
+    if r2:
+        env["DL4J_CACHE_BACKEND"] = "r2"
+        # Never let inherited Azure/GHA/AWS session credentials select another
+        # provider. The local disk tier is intentional; remote storage is R2.
+        for key in list(env):
+            if key.startswith(("SCCACHE_AZURE_", "SCCACHE_GHA_")) or key in {
+                "DL4J_AZURE_CONNECTION_STRING", "AWS_SESSION_TOKEN", "AWS_SECURITY_TOKEN", "AWS_PROFILE"
+            }:
+                env.pop(key, None)
+    for field, destination in (("accessKeyIdEnv", "AWS_ACCESS_KEY_ID"),
+                               ("secretAccessKeyEnv", "AWS_SECRET_ACCESS_KEY")):
+        name = str(remote.get(field, "")).strip()
+        if r2 and not name:
+            raise ValueError(f"R2 compiler cache requires {field}")
+        if name:
+            value = env.get(name, "").strip()
+            if not value or any(char.isspace() for char in value):
+                raise ValueError(f"compilerCache credential {name} is empty or contains embedded whitespace")
+            if env.get("GITHUB_ACTIONS") == "true":
+                print("::add-mask::" + value.replace("%", "%25"), flush=True)
+            env[name] = value
+            env[destination] = value
+
+
 def configure_compiler_cache(
     config: dict, source: Path, env: dict[str, str]
 ) -> tuple[str | None, bool]:
@@ -891,6 +935,7 @@ def configure_compiler_cache(
         backend = _required_cache_value(remote, "backend")
         if backend not in {"s3", "gcs", "azure"}:
             raise ValueError(f"unsupported compilerCache.backend {backend!r}")
+        configure_s3_cache_environment(remote, env)
         configured_cache_dir = env.get("DL4J_SCCACHE_DIR", "").strip()
         cache_dir = (
             Path(configured_cache_dir)
@@ -936,9 +981,11 @@ def configure_compiler_cache(
             "SCCACHE_MULTILEVEL_CHAIN": (
                 f"disk,{backend}" if use_live_remote else "disk"
             ),
-            # A remote cache outage must not block compiler wrappers or make the
-            # hosted runner appear dead; the local cache remains authoritative.
-            "SCCACHE_MULTILEVEL_WRITE_ERROR_POLICY": "l0",
+            # Explicit R2 workers require remote writes to succeed. Preserve
+            # the established local-authoritative policy for other providers.
+            "SCCACHE_MULTILEVEL_WRITE_ERROR_POLICY": (
+                "all" if remote.get("provider") == "r2" else "l0"
+            ),
         })
         prefix = _required_cache_value(remote, "keyPrefix")
         if backend == "s3":
@@ -946,7 +993,9 @@ def configure_compiler_cache(
                 "SCCACHE_BUCKET": _required_cache_value(remote, "bucket"),
                 "SCCACHE_REGION": _required_cache_value(remote, "region"),
                 "SCCACHE_S3_KEY_PREFIX": prefix,
-                "SCCACHE_S3_SERVER_SIDE_ENCRYPTION": "true",
+                "SCCACHE_S3_SERVER_SIDE_ENCRYPTION": str(
+                    remote.get("serverSideEncryption", True)
+                ).lower(),
             })
         elif backend == "gcs":
             env.update({
@@ -1932,19 +1981,24 @@ def toolchain_cache_transport(
         return None
     helper = Path(env.get("DL4J_DEPENDENCY_CACHE_HELPER", ""))
     cloud_io = Path(env.get("DL4J_CLOUD_IO", ""))
+    configure_s3_cache_environment(remote, env)
     account = str(remote.get("account", ""))
     container = str(remote.get("container", ""))
+    bucket = str(remote.get("bucket", "")) if remote.get("backend") == "s3" else (
+        f"{account}/{container}" if account and container else ""
+    )
     prefix = str(cache.get("keyPrefix", "")).strip("/")
     if (
         not helper.is_file()
         or not cloud_io.is_file()
-        or not account
-        or not container
+        or not bucket
         or not prefix
     ):
+        if remote.get("provider") == "r2":
+            raise ValueError("R2 toolchain cache requires helper, transport, bucket and prefix")
         return None
     client_id = str(config.get("managedIdentityClientId", "")) or None
-    return helper, f"{account}/{container}", prefix, client_id
+    return helper, bucket, prefix, client_id
 
 
 def restore_toolchain_dependency(
