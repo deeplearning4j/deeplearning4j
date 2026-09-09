@@ -105,6 +105,9 @@ class Gemma4ArchitectureContractTest {
             INDArray gamma = Nd4j.createFromArray(0.0f, 0.7f, -1.2f, 1.3f);
             Gemma4Architecture.rmsNorm(sd, "norm", x, sd.constant("gamma", gamma), EPS);
             Gemma4Architecture.rmsNorm(sd, "weightless", x, null, EPS);
+            assertEquals(2, sd.getOps().values().stream()
+                    .filter(op -> "rms_norm".equals(op.getOp().opName())).count(),
+                    "each normalization must use the fused primitive, not retain expanded intermediates");
             Gemma4Architecture.gelu(sd, "gelu", x);
             // Squaring these HALF values without promotion overflows.
             INDArray input = Nd4j.createFromArray(300f, -500f, 1000f, 0.1f, -2f, -0.5f, 0.5f, 2f)

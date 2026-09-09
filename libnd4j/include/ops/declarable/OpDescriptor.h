@@ -241,6 +241,10 @@ class SD_LIB_EXPORT OpDescriptor {
   // tensor inputs. -1 means every iArg is structural.
   int _numStructuralIArgs = -1;
 
+  // Unspecified preserves conservative shape-value synchronization for existing ops.
+  bool _shapeValueInputsSpecified = false;
+  std::vector<int> _shapeValueInputs;
+
   bool checkDataTypesMatch(DataType needle, std::vector<DataType>& haystack) const;
 
  public:
@@ -356,6 +360,11 @@ class SD_LIB_EXPORT OpDescriptor {
   OpDescriptor* setNumberOfStructuralIArgs(int count);
   int getNumberOfStructuralIArgs() const;
   int getNumberOfOrdinaryIArgs() const;
+
+  // Values (not just dimensions) read by calculateOutputShape. An explicit empty
+  // set denotes metadata-only inference; absent optional inputs need no sync.
+  OpDescriptor* setShapeValueInputs(const std::initializer_list<int>& indices);
+  bool usesInputValuesForShape(int index) const;
 
 
 };

@@ -109,8 +109,10 @@ bool requiresFullShapeValueSync(sd::ops::DeclarableOp* op) {
   return descriptor != nullptr && (descriptor->getTraits() & kFullShapeValueTraits) != 0;
 }
 
-bool shouldSyncInputForShape(sd::ops::DeclarableOp* op, sd::NDArray* array) {
+bool shouldSyncInputForShape(sd::ops::DeclarableOp* op, sd::NDArray* array, int inputIndex) {
   if (array == nullptr || array->isEmpty()) return false;
+  const auto* descriptor = op == nullptr ? nullptr : op->getOpDescriptor();
+  if (descriptor != nullptr && !descriptor->usesInputValuesForShape(inputIndex)) return false;
   if (requiresFullShapeValueSync(op)) return true;
 
   // Shape functions typically inspect only small scalar/index/shape tensors.
@@ -368,7 +370,7 @@ OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType
 #endif
         THROW_EXCEPTION(errorMessage.c_str());
       }
-      if (shouldSyncInputForShape(op, context->array(e))) {
+      if (shouldSyncInputForShape(op, context->array(e), static_cast<int>(e))) {
         context->array(e)->forceSyncToHost();
       }
       inShapes.push_back(context->array(e)->shapeInfo());
@@ -409,7 +411,7 @@ OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType
       safeSetErrorContext(1, errorMessage.c_str());
       return nullptr;
     }
-    if (shouldSyncInputForShape(op, context->array(e))) {
+    if (shouldSyncInputForShape(op, context->array(e), static_cast<int>(e))) {
       context->array(e)->forceSyncToHost();
     }
     inShapes.push_back(context->array(e)->shapeInfo());

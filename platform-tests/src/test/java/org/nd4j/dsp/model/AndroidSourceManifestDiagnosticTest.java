@@ -244,6 +244,73 @@ class AndroidSourceManifestDiagnosticTest {
         return result;
     }
 
+    @Test
+    void cpuImporterUsesOneInventoryForHashAndDiagnostic() throws Exception {
+        String inventory = "src/a space.java\0" + "100644\0abc\0"
+                + "src/odd\nname.java\0" + "100755\0def\0";
+        Path input = file("cpu-input.nul", inventory);
+        Path output = temp.resolve("managed-source-manifest.before.fixture");
+        Result result = run(cpuCaptureFunction()
+                + "sdx_git_source_manifest() { printf 'scan\\n' >>\"$REPO_ROOT/scans\"; cat -- \"$1\"; }\n"
+                + "capture_source_manifest \"$2\" \"$1\"\n", input.toString(), output.toString());
+        assertEquals(0, result.code(), result.output());
+        assertEquals(hex(MessageDigest.getInstance("SHA-256").digest(inventory.getBytes(StandardCharsets.UTF_8))),
+                result.output().trim());
+        assertEquals(1, Files.readAllLines(temp.resolve("scans")).size());
+        assertArrayEquals(inventory.getBytes(StandardCharsets.UTF_8), Files.readAllBytes(Path.of(output + ".nul")));
+        assertEquals(2, Files.readAllLines(output).size());
+        assertTrue(Files.readString(output).contains("odd\\nname.java"));
+    }
+
+    @Test
+    void cpuImporterManagedGuardRetainsDriftEvidenceAndRejectsPublication() throws Exception {
+        Path before = file("before-input.nul", "src/changed.java\0" + "100644\0old\0");
+        Path after = file("after-input.nul", "src/changed.java\0" + "100644\0new\0");
+        String builder = cpuBuilder();
+        String cleanup = builder.substring(builder.indexOf("CLEANUP_PATHS=()"),
+                builder.indexOf("capture_source_manifest() {"));
+        int guardStart = builder.indexOf("  managed_source_manifest_after=\"$(mktemp");
+        String guard = builder.substring(guardStart, builder.indexOf("  cat >\"$managed_tmp/managed-stage.receipt\"", guardStart));
+        Result result = run("WORK_DIR=$REPO_ROOT; DL4J_ROOT=$REPO_ROOT; MANAGED_SOURCE_ROOTS=(src)\n"
+                + cleanup + cpuCaptureFunction()
+                + "inventory=$1; sdx_git_source_manifest() { cat -- \"$inventory\"; }\n"
+                + "fail() { printf '%s\\n' \"$*\" >&2; exit 3; }\n"
+                + "MANAGED_SOURCE_MANIFEST_BEFORE=$WORK_DIR/managed-source-manifest.before.fixture\n"
+                + "CLEANUP_PATHS+=(\"$MANAGED_SOURCE_MANIFEST_BEFORE\" \"$MANAGED_SOURCE_MANIFEST_BEFORE.nul\")\n"
+                + "MANAGED_SOURCE_MANIFEST_SHA256=$(capture_source_manifest \"$MANAGED_SOURCE_MANIFEST_BEFORE\" dummy)\n"
+                + "inventory=$2\n" + guard + "printf 'RECEIPT_ALLOWED\\n'\n",
+                before.toString(), after.toString());
+        assertEquals(3, result.code(), result.output());
+        assertTrue(result.output().contains("src/changed.java"), result.output());
+        assertFalse(result.output().contains("RECEIPT_ALLOWED"));
+        assertTrue(Files.exists(temp.resolve("managed-source-manifest.before.fixture.nul")));
+        try (var files = Files.list(temp)) {
+            Path retained = files.filter(p -> p.getFileName().toString().startsWith("managed-source-manifest.after.")
+                    && p.toString().endsWith(".nul")).findFirst().orElseThrow();
+            assertArrayEquals(Files.readAllBytes(after), Files.readAllBytes(retained));
+        }
+    }
+
+    @Test
+    void cpuImporterCaptureDoesNotHashFailedInventory() throws Exception {
+        Result result = run(cpuCaptureFunction()
+                + "sdx_git_source_manifest() { printf 'partial'; return 7; }\n"
+                + "if digest=$(capture_source_manifest \"$REPO_ROOT/broken\" dummy); then exit 9; fi\n"
+                + "[[ -z $digest ]]\n");
+        assertEquals(0, result.code(), result.output());
+    }
+
+    private String cpuBuilder() throws Exception {
+        return Files.readString(Path.of("").toAbsolutePath().normalize().getParent()
+                .resolve("nd4j/sdx-aot/src/main/android/build-android-cpu-importer-sdk.sh"));
+    }
+
+    private String cpuCaptureFunction() throws Exception {
+        String builder = cpuBuilder();
+        return builder.substring(builder.indexOf("capture_source_manifest() {"),
+                builder.indexOf("SOURCE_MANIFEST_BEFORE=\"$(mktemp"));
+    }
+
     private static String hex(byte[] bytes) {
         StringBuilder result = new StringBuilder(bytes.length * 2);
         for (byte value : bytes) {

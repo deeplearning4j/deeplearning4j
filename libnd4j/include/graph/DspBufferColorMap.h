@@ -145,6 +145,19 @@ class SD_LIB_EXPORT DspBufferColorMap {
             DspBufferPool& pool,
             std::vector<NDArray*>& deferredDeletes);
 
+  // First functional execution: assign colors before allocating their later
+  // members. Masters remain plan-owned; later wrappers borrow their buffers.
+  void beginWarmup(const SlotLivenessData& liveness, const std::vector<bool>& eligible);
+  bool isIncremental() const { return incremental_; }
+  const std::unordered_set<NDArray*>& warmupArrays() const { return warmupArrays_; }
+  void clearWarmupTracking() { warmupArrays_.clear(); }
+  bool warmupEligible(int slot) const;
+  NDArray* reuseWarmup(int slot, int step, const LongType* shapeInfo,
+                      int device, void* stream, const std::vector<bool>& ancestors,
+                      NDArray** outputSlots);
+  void recordWarmup(int slot, NDArray* array, int device, void* stream);
+  void noteWarmupRead(int slot, int device, void* stream);
+
   // ── Validation ─────────────────────────────────────────────────────────
 
   /**
@@ -227,6 +240,12 @@ class SD_LIB_EXPORT DspBufferColorMap {
   // Tracks which non-master slots were actually replaced. apply() can fail
   // partway through; eject() must roll back only the completed replacements.
   std::vector<bool> appliedSlots_;
+  bool incremental_ = false;
+  // Retirement ledger survives color recomputation and shape-driven slot replacement.
+  // The plan owns these objects; membership alone never authorizes dereferencing one.
+  std::unordered_set<NDArray*> warmupArrays_;
+  std::vector<bool> warmupEligible_;
+  std::vector<int> warmupLastConsumer_;
 
   // Per-color metadata
   struct ColorInfo {
@@ -234,6 +253,12 @@ class SD_LIB_EXPORT DspBufferColorMap {
     int memberCount = 0;       // Number of slots sharing this color
     size_t bufferBytes = 0;    // Size of the shared buffer
     DataBuffer* sharedBuffer = nullptr;  // Weak ref to the shared DataBuffer
+    int lastConsumer = -1;
+    bool warmupReusable = true;
+    int deviceId = -1;
+    void* stream = nullptr;
+    DataType dtype = DataType::UNKNOWN;
+    char order = 'c';
   };
   std::vector<ColorInfo> colorInfos_;
 

@@ -66,6 +66,103 @@ public class DspBufferColoringTest {
         }
     }
 
+    @Test
+    void testFirstWarmupSharesDeadIntermediates() {
+        org.junit.jupiter.api.Assumptions.assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
+        sd = SameDiff.create();
+        sd.setDspAutoCompileEnabled(true);
+        sd.setDspNativeAutoCompileEnabled(true);
+        SDVariable input = sd.placeHolder("input", DataType.FLOAT, 256, 128);
+        final float factor = 1.015625f;
+        SDVariable weight = sd.constant("weight", Nd4j.eye(128).castTo(DataType.FLOAT).muli(factor));
+        SDVariable x = input;
+        for (int layer = 0; layer < 32; layer++) {
+            // A true dependency chain, not independent GEMMs eligible for batching.
+            x = sd.mmul(layer == 7 ? "kept" : layer == 31 ? "output" : "layer_" + layer, x, weight);
+        }
+        sd.compileNativeDynamicShapePlan("kept", "output");
+        try (INDArray values = Nd4j.ones(DataType.FLOAT, 256, 128)) {
+            for (int iteration = 0; iteration < 8; iteration++) {
+                float expected = 0.25f + iteration * 0.125f;
+                values.assign(expected);
+                Map<String, INDArray> results = sd.output(Map.of("input", values), "kept", "output");
+                try {
+                    for (String name : new String[]{"kept", "output"}) {
+                        INDArray result = results.get(name);
+                        assertNotNull(result, name);
+                        float expectedOutput = expected;
+                        int layers = "kept".equals(name) ? 8 : 32;
+                        for (int layer = 0; layer < layers; ++layer) expectedOutput *= factor;
+                        for (float value : result.data().asFloat()) {
+                            assertEquals(expectedOutput, value, 1e-5f,
+                                    "requested output " + name + " at iteration " + iteration);
+                        }
+                    }
+                    if (iteration == 0) {
+                        DspHandle handle = new DspHandle(sd);
+                        assertTrue(handle.isCompiled());
+                        assertTrue(handle.bufferColoringApplied(),
+                                "sharing must be active during the first execution, not only after warmup");
+                        assertTrue(handle.bufferColoringBytesSaved() >= 8L * 256 * 128 * Float.BYTES,
+                                "first-pass sharing must eliminate at least eight full intermediate buffers");
+                    }
+                } finally {
+                    java.util.Set<INDArray> uniqueOutputs = java.util.Collections.newSetFromMap(
+                            new java.util.IdentityHashMap<>());
+                    uniqueOutputs.addAll(results.values());
+                    uniqueOutputs.forEach(INDArray::close);
+                }
+            }
+        }
+    }
+
+    @Test
+    void testWarmupSharingPreservesBranchesViewsAndShapeLeases() {
+        org.junit.jupiter.api.Assumptions.assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
+        sd = SameDiff.create();
+        sd.setDspAutoCompileEnabled(true);
+        sd.setDspNativeAutoCompileEnabled(true);
+        SDVariable input = sd.placeHolder("input", DataType.FLOAT, -1, 64);
+        final float factor = 1.015625f;
+        SDVariable weight = sd.constant("weight", Nd4j.eye(64).castTo(DataType.FLOAT).muli(factor));
+        SDVariable shared = input.mmul(weight);
+        SDVariable left = shared.mmul(weight);
+        // A second reader independent of the left chain: last topological reader
+        // alone cannot prove the buffer safe to overwrite in a compiled schedule.
+        SDVariable right = shared.mul("right", 3.0);
+        SDVariable viewed = left.reshape(-1, 8, 8).permute(0, 2, 1).reshape(-1, 64);
+        SDVariable x = viewed;
+        for (int layer = 0; layer < 20; ++layer) x = x.mmul(weight);
+        x.add("output", right);
+        sd.compileNativeDynamicShapePlan("right", "output");
+        for (int batch : new int[]{32, 16, 32}) {
+            try (INDArray values = Nd4j.ones(DataType.FLOAT, batch, 64)) {
+                for (int iteration = 0; iteration < 8; ++iteration) {
+                    float source = 0.125f + iteration * 0.0625f;
+                    values.assign(source);
+                    Map<String, INDArray> results = sd.output(Map.of("input", values), "right", "output");
+                    try {
+                        float expectedRight = source * factor * 3.0f;
+                        float expectedLeft = source;
+                        for (int layer = 0; layer < 22; ++layer) expectedLeft *= factor;
+                        for (String name : new String[]{"right", "output"}) {
+                            INDArray result = results.get(name);
+                            assertArrayEquals(new long[]{batch, 64}, result.shape());
+                            float expected = "right".equals(name) ? expectedRight : expectedLeft + expectedRight;
+                            for (float value : result.data().asFloat()) assertEquals(expected, value, 1e-5f,
+                                    "branch/view/shape lease output " + name + " batch=" + batch + " iteration=" + iteration);
+                        }
+                    } finally {
+                        java.util.Set<INDArray> uniqueOutputs = java.util.Collections.newSetFromMap(
+                                new java.util.IdentityHashMap<>());
+                        uniqueOutputs.addAll(results.values());
+                        uniqueOutputs.forEach(INDArray::close);
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * Build a multi-layer graph where intermediates have non-overlapping lifetimes.
      * After freeze, coloring should be applied and bytesSaved > 0.

@@ -314,6 +314,20 @@ uint64_t OpDescriptor::getTraits64() const {
   return _traits;
 }
 
+OpDescriptor* OpDescriptor::setShapeValueInputs(const std::initializer_list<int>& indices) {
+  _shapeValueInputs.assign(indices.begin(), indices.end());
+  _shapeValueInputsSpecified = true;
+  return this;
+}
+
+bool OpDescriptor::usesInputValuesForShape(int index) const {
+  if (!_shapeValueInputsSpecified) return true;
+  for (int valueInput : _shapeValueInputs) {
+    if (valueInput == index) return true;
+  }
+  return false;
+}
+
 OpDescriptor* OpDescriptor::setNumberOfStructuralIArgs(int count) {
   _numStructuralIArgs = count;
   return this;

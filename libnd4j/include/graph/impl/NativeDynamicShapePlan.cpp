@@ -1487,22 +1487,30 @@ void NativeDynamicShapePlan::materializeViewSlot(int slotIdx, const char* tag) {
   // targetDeviceId — the DataBuffer's deviceId() metadata can be stale (0) when a device-0
   // pre-pass array had its data migrated to a secondary device. Single-GPU: producer <= 0.
   int viewDev = -1;
-  for (int s = 0; s < numSlots_ && viewDev < 0; s++) {
+  int producerStep = -1;
+  for (int s = 0; s < numSlots_ && producerStep < 0; s++) {
     for (int o = 0; o < slots_[s].wiring.numOutputs; o++) {
-      if (slots_[s].wiring.outputSlotIndices[o] == slotIdx) { viewDev = slots_[s].targetDeviceId; break; }
+      if (slots_[s].wiring.outputSlotIndices[o] == slotIdx) {
+        viewDev = slots_[s].targetDeviceId;
+        producerStep = s;
+        break;
+      }
     }
   }
-  // Create an independent deep copy (on the view's device — see above). A completed
-  // secondary segment restores the primary device's DSP stream overrides before this
-  // output boundary runs. Clear those TLS overrides while duplicating on viewDev;
-  // otherwise LaunchContext::getCudaStream() returns a device-0 stream even though the
-  // active device and source buffer are on device 1, silently producing a zero copy.
-  // DspThreadState restores all prior TLS values on every exit path.
+  // Re-enter the producer's existing device/stream scope for output copying.
+  // Clearing stream TLS here would enqueue dup on an unrelated context stream
+  // and race the producer's asynchronous capture/replay writes.
   NDArray* dup = nullptr;
   if (viewDev > 0) {
-    DspStreamGuard materializeDeviceGuard(nullptr, viewDev);
-    DspThreadState materializeState(
-        static_cast<void*>(nullptr), static_cast<void*>(nullptr), false, false);
+    auto producer = std::find_if(segments_.begin(), segments_.end(), [&](const GraphSegment& seg) {
+      return producerStep >= seg.def.startSlot && producerStep <= seg.def.endSlot;
+    });
+    if (producer == segments_.end() || !platformBindSegmentDevice(*producer))
+      THROW_EXCEPTION("requested view materialization cannot bind its producer segment");
+    struct RestoreProducerScope {
+      NativeDynamicShapePlan* plan;
+      ~RestoreProducerScope() { plan->platformRestoreSegmentDevice(); }
+    } restoreProducerScope{this};
     dup = viewArr->dup(viewArr->ordering());
   } else {
     dup = viewArr->dup(viewArr->ordering());
@@ -5997,12 +6005,124 @@ Status NativeDynamicShapePlan::precompilePlan(NDArray** externalInputs, int numE
   return Status::OK;
 }
 
+void NativeDynamicShapePlan::prepareFirstExecutionColoring() {
+#ifdef SD_CUDA
+  if (executeCount_ != 0 || !planLifecycle_.isSlotBySlot() || hasControlFlow_ ||
+      colorMap_.isComputed()) return;
+  if (slotLiveness_ == nullptr) {
+    // Java's serialized-plan path predates SlotLivenessData. Reconstruct from
+    // the loaded wiring rather than changing the on-disk format or trusting
+    // release schedules that may not encode all requested-output lifetimes.
+    auto* liveness = new SlotLivenessData();
+    liveness->totalOutputSlots = totalOutputSlots_;
+    liveness->producerStep = new int[totalOutputSlots_];
+    liveness->lastConsumerStep = new int[totalOutputSlots_];
+    std::fill(liveness->producerStep, liveness->producerStep + totalOutputSlots_, -1);
+    std::fill(liveness->lastConsumerStep, liveness->lastConsumerStep + totalOutputSlots_, -1);
+    for (int step = 0; step < numSlots_; ++step) {
+      const auto& wiring = slots_[step].wiring;
+      for (int o = 0; o < wiring.numOutputs; ++o) {
+        int si = wiring.outputSlotIndices[o];
+        if (si >= 0 && si < totalOutputSlots_) liveness->producerStep[si] = step;
+      }
+      for (int i = 0; i < wiring.numInputs; ++i) {
+        int si = wiring.inputSourceIndices[i];
+        if (si >= 0 && si < totalOutputSlots_) liveness->lastConsumerStep[si] = step;
+      }
+    }
+    for (int i = 0; i < numRequestedOutputs_; ++i) {
+      int si = requestedOutputSlotIndices_[i];
+      if (si >= 0 && si < totalOutputSlots_) liveness->lastConsumerStep[si] = numSlots_;
+    }
+    slotLiveness_ = liveness;
+  }
+  std::vector<bool> eligible(totalOutputSlots_, false);
+  for (int step = 0; step < numSlots_; ++step) {
+    const auto& slot = slots_[step];
+    if (!slot.isFullyWriting() || slot.needsPrezero() || slot.aliasesInput() ||
+        slot.isViewCapableOp() || slot.isInPlaceFused() || slot.hasValueDependentShape() ||
+        slot.flags.isDynamicShape || slot.fusedChain.isFusedChainHead || slot.fusedChain.isFusedChainTail ||
+        slot.flags.ltEpilogueType != 0) continue;
+    for (int o = 0; o < slot.wiring.numOutputs; ++o) {
+      int si = slot.wiring.outputSlotIndices[o];
+      if (si >= 0 && si < totalOutputSlots_ && outputSlots_[si] == nullptr &&
+          outputSlotMaxSizes_.count(si) == 0 && slotLiveness_->producerStep[si] == step &&
+          slotLiveness_->lastConsumerStep[si] >= step) eligible[si] = true;
+    }
+  }
+  // Exclude both sides of every potential alias, including views that only
+  // become zero-copy after freeze. Shape-control values also remain dedicated.
+  for (int step = 0; step < numSlots_; ++step) {
+    const auto& slot = slots_[step];
+    if (!slot.aliasesInput() && !slot.isViewCapableOp() && !slot.isInPlaceFused() &&
+        !slot.hasValueDependentShape()) continue;
+    for (int i = 0; i < slot.wiring.numInputs; ++i) {
+      int si = slot.wiring.inputSourceIndices[i];
+      if (si >= 0 && si < totalOutputSlots_) eligible[si] = false;
+    }
+    for (int o = 0; o < slot.wiring.numOutputs; ++o) {
+      int si = slot.wiring.outputSlotIndices[o];
+      if (si >= 0 && si < totalOutputSlots_) eligible[si] = false;
+    }
+  }
+  for (int i = 0; i < numRequestedOutputs_; ++i) {
+    int si = requestedOutputSlotIndices_[i];
+    if (si >= 0 && si < totalOutputSlots_) eligible[si] = false;
+  }
+  // A numerically last consumer is not necessarily ordered after sibling
+  // readers. Require all readers to lead to that final consumer in the DAG;
+  // reuseWarmup then requires the new writer to depend on the final consumer.
+  std::vector<std::vector<int>> readers(totalOutputSlots_);
+  for (int step = 0; step < numSlots_; ++step) {
+    for (int i = 0; i < slots_[step].wiring.numInputs; ++i) {
+      int si = slots_[step].wiring.inputSourceIndices[i];
+      if (si >= 0 && si < totalOutputSlots_) readers[si].push_back(step);
+    }
+  }
+  for (int si = 0; si < totalOutputSlots_; ++si) {
+    if (!eligible[si]) continue;
+    const int last = slotLiveness_->lastConsumerStep[si];
+    if (last < 0 || last >= numSlots_ || readers[si].empty()) { eligible[si] = false; continue; }
+    const int producer = slotLiveness_->producerStep[si];
+    for (int reader : readers[si]) {
+      if (slots_[reader].targetDeviceId != slots_[producer].targetDeviceId) { eligible[si] = false; break; }
+    }
+    if (!eligible[si] || (readers[si].size() == 1 && readers[si][0] == last)) continue;
+    const auto orderedBeforeLast = warmupAncestors(last);
+    for (int reader : readers[si]) {
+      if (reader != last && !orderedBeforeLast[reader]) { eligible[si] = false; break; }
+    }
+  }
+  colorMap_.beginWarmup(*slotLiveness_, eligible);
+#endif
+}
+
+std::vector<bool> NativeDynamicShapePlan::warmupAncestors(int stepIdx) const {
+  std::vector<bool> ancestors(numSlots_, false);
+  std::vector<int> pending{stepIdx};
+  while (!pending.empty()) {
+    int step = pending.back();
+    pending.pop_back();
+    const auto& slot = slots_[step];
+    for (int i = 0; i < slot.wiring.numInputs; ++i) {
+      int si = slot.wiring.inputSourceIndices[i];
+      if (si < 0 || si >= totalOutputSlots_) continue;
+      int producer = slotLiveness_->producerStep[si];
+      if (producer < 0 || producer >= stepIdx || ancestors[producer]) continue;
+      ancestors[producer] = true;
+      pending.push_back(producer);
+    }
+  }
+  return ancestors;
+}
+
 // phaseSlotBySlot is now a thin wrapper around phaseReplay — the segment loop
 // is shared. platformShouldUseGraph returns false for slot-by-slot modes, so
 // phaseReplay routes all segments through executeSegmentSlotBySlot identically.
 Status NativeDynamicShapePlan::phaseSlotBySlot(NDArray** externalInputs, int numExternalInputs,
                                                void* stream, PhaseExecutionStats* stats) {
   DSP_DIAG(EXECUTE, "phaseSlotBySlot: delegating to phaseReplay (unified segment loop)");
+  prepareFirstExecutionColoring();
   return phaseReplay(externalInputs, numExternalInputs, stream, stats);
 }
 
@@ -7452,7 +7572,12 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   // ── Buffer coloring: eject before teardown ─────────────────────────────
   // Undo coloring so each slot gets its own buffer before the deletion loop.
   // This prevents the deletion loop from double-freeing shared buffers.
-  if (colorMap_.isApplied()) {
+  if (colorMap_.isIncremental()) {
+    // Segment resources are already retired. View-first cleanup below owns the
+    // borrowing wrappers and masters; expanding dead colors here recreates the
+    // entire first-pass memory peak solely to destroy it.
+    colorMap_.reset();
+  } else if (colorMap_.isApplied()) {
     auto& pool = DspBufferPool::forCurrentDevice();
     int restored = colorMap_.eject(outputSlots_, slotOwnership_, planOwnedArrays_, pool,
                                    deferredSlotDeletes_);
@@ -7606,6 +7731,47 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
     // longer live. Drop frozen refs before any identity-mutating cleanup below
     // (slot deletion, staging deletion, weight migration).
     releaseFrozenRefsForTeardown();
+
+    // Incremental colors can retain an owning master outside outputSlots_ when
+    // a later shape replaces its publication. Retire the whole owned group,
+    // borrowers first, before the legacy slot-based passes lose those identities.
+    std::unordered_set<DataBuffer*> warmupRetiringBuffers;
+    for (auto* arr : colorMap_.warmupArrays()) {
+      if (planOwnedArrays_.count(arr) == 0) continue;
+      auto* db = arr->dataBuffer();
+      if (db != nullptr && protectedWeightBuffers_.count(db) == 0 &&
+          requestedOutputDataBuffers.count(db) == 0) warmupRetiringBuffers.insert(db);
+    }
+    std::vector<NDArray*> warmupBorrowers;
+    std::vector<NDArray*> warmupOwners;
+    std::unordered_set<NDArray*> warmupRetiringArrays;
+    for (auto* arr : planOwnedArrays_) {
+      if (arr == nullptr || warmupRetiringBuffers.count(arr->dataBuffer()) == 0) continue;
+      warmupRetiringArrays.insert(arr);
+      (arr->ownsDataBuffer() ? warmupOwners : warmupBorrowers).push_back(arr);
+    }
+    for (int si = 0; si < totalOutputSlots_; ++si) {
+      if (warmupRetiringArrays.count(outputSlots_[si]) == 0) continue;
+      outputSlots_[si] = nullptr;
+      if (slotOwnership_) slotOwnership_[si].reset();
+    }
+    deferredSlotDeletes_.erase(std::remove_if(deferredSlotDeletes_.begin(), deferredSlotDeletes_.end(),
+        [&](NDArray* arr) { return warmupRetiringArrays.count(arr) != 0; }), deferredSlotDeletes_.end());
+    for (auto* arr : warmupRetiringArrays) planOwnedArrays_.erase(arr);
+    for (auto* arr : warmupBorrowers) {
+      deleted.insert(arr);
+      delete arr;
+      ++freedCount;
+    }
+    for (auto* arr : warmupOwners) {
+      deleted.insert(arr);
+      auto* db = arr->dataBuffer();
+      if (db != nullptr && db->isValid() && !db->isClosed()) db->deleteBuffers();
+      arr->setShapeInfo(static_cast<LongType*>(nullptr));
+      delete arr;
+      ++freedCount;
+    }
+    colorMap_.clearWarmupTracking();
 
     if (slotOwnership_) {
       // First pass: null out all VIEW_OF_SLOT entries (they'll be invalidated

@@ -198,39 +198,47 @@ mkdir -p "$WORK_DIR" "$GENERATIONS_DIR" "$NATIVE_BUILDS_DIR" "$MANAGED_STAGES_DI
 
 CLEANUP_PATHS=()
 cleanup_paths() {
-  local path
+  local status=$? path
   for path in "${CLEANUP_PATHS[@]}"; do
     [[ -e "$path" ]] || continue
+    if (( status != 0 )); then
+      case "${path##*/}" in
+        *-source-manifest.before.*|*-source-manifest.after.*)
+          printf 'Retained source manifest evidence: %s\n' "$path" >&2
+          continue ;;
+      esac
+    fi
     chmod -R u+w -- "$path" 2>/dev/null || true
     rm -rf -- "$path"
   done
 }
 trap cleanup_paths EXIT
 
-write_source_manifest_text() {
+capture_source_manifest() {
   local output="${1:?output path is required}"
   shift
   local relative mode digest
+  # Hash and render the SAME inventory. Two independent scans can disagree when
+  # sources change between the digest and diagnostic capture, yielding an empty diff.
+  sdx_git_source_manifest "$@" >"$output.nul" || return 1
   : >"$output"
   while IFS= read -r -d '' relative &&
     IFS= read -r -d '' mode &&
     IFS= read -r -d '' digest; do
-    printf '%s\t%s\t%s\n' "$relative" "$mode" "$digest" >>"$output"
-  done < <(sdx_git_source_manifest "$@")
+    printf '%q\t%s\t%s\n' "$relative" "$mode" "$digest" >>"$output"
+  done <"$output.nul"
+  sha256_file "$output.nul"
 }
 
-SOURCE_MANIFEST_SHA256="$(sdx_git_source_manifest_sha256 "$DL4J_ROOT" "${RUNTIME_SOURCE_ROOTS[@]}")"
 SOURCE_MANIFEST_BEFORE="$(mktemp "$WORK_DIR/runtime-source-manifest.before.XXXXXXXX")"
-CLEANUP_PATHS+=("$SOURCE_MANIFEST_BEFORE")
-write_source_manifest_text "$SOURCE_MANIFEST_BEFORE" "$DL4J_ROOT" "${RUNTIME_SOURCE_ROOTS[@]}"
-NATIVE_SOURCE_MANIFEST_SHA256="$(sdx_git_source_manifest_sha256 "$DL4J_ROOT" "${NATIVE_SOURCE_ROOTS[@]}")"
+CLEANUP_PATHS+=("$SOURCE_MANIFEST_BEFORE" "$SOURCE_MANIFEST_BEFORE.nul")
+SOURCE_MANIFEST_SHA256="$(capture_source_manifest "$SOURCE_MANIFEST_BEFORE" "$DL4J_ROOT" "${RUNTIME_SOURCE_ROOTS[@]}")" || fail "could not capture runtime source manifest"
 NATIVE_SOURCE_MANIFEST_BEFORE="$(mktemp "$WORK_DIR/native-source-manifest.before.XXXXXXXX")"
-CLEANUP_PATHS+=("$NATIVE_SOURCE_MANIFEST_BEFORE")
-write_source_manifest_text "$NATIVE_SOURCE_MANIFEST_BEFORE" "$DL4J_ROOT" "${NATIVE_SOURCE_ROOTS[@]}"
-MANAGED_SOURCE_MANIFEST_SHA256="$(sdx_git_source_manifest_sha256 "$DL4J_ROOT" "${MANAGED_SOURCE_ROOTS[@]}")"
+CLEANUP_PATHS+=("$NATIVE_SOURCE_MANIFEST_BEFORE" "$NATIVE_SOURCE_MANIFEST_BEFORE.nul")
+NATIVE_SOURCE_MANIFEST_SHA256="$(capture_source_manifest "$NATIVE_SOURCE_MANIFEST_BEFORE" "$DL4J_ROOT" "${NATIVE_SOURCE_ROOTS[@]}")" || fail "could not capture native source manifest"
 MANAGED_SOURCE_MANIFEST_BEFORE="$(mktemp "$WORK_DIR/managed-source-manifest.before.XXXXXXXX")"
-CLEANUP_PATHS+=("$MANAGED_SOURCE_MANIFEST_BEFORE")
-write_source_manifest_text "$MANAGED_SOURCE_MANIFEST_BEFORE" "$DL4J_ROOT" "${MANAGED_SOURCE_ROOTS[@]}"
+CLEANUP_PATHS+=("$MANAGED_SOURCE_MANIFEST_BEFORE" "$MANAGED_SOURCE_MANIFEST_BEFORE.nul")
+MANAGED_SOURCE_MANIFEST_SHA256="$(capture_source_manifest "$MANAGED_SOURCE_MANIFEST_BEFORE" "$DL4J_ROOT" "${MANAGED_SOURCE_ROOTS[@]}")" || fail "could not capture managed source manifest"
 NDK_SOURCE_PROPERTIES_SHA256="$(sha256_file "$ANDROID_NDK/source.properties")"
 JAVA_RELEASE_SHA256="$(sha256_file "$JAVA_HOME_ARG/release")"
 MAVEN_ID_SHA256="$({ sha256_file "$MAVEN"; env JAVA_HOME="$JAVA_HOME_ARG" "$MAVEN" --version; } |
@@ -363,11 +371,10 @@ else
   "$NATIVE_NM" -D --defined-only "$NATIVE_CPU_BACKEND" |
     grep -E "[[:space:]]$PROCESS_BLAS_SYMBOLS_ABI$" >/dev/null ||
     fail "native CPU build lacks process BLAS symbol-resolution ABI"
-  current_native_source_manifest_sha256="$(sdx_git_source_manifest_sha256 "$DL4J_ROOT" "${NATIVE_SOURCE_ROOTS[@]}")"
+  native_source_manifest_after="$(mktemp "$WORK_DIR/native-source-manifest.after.XXXXXXXX")"
+  CLEANUP_PATHS+=("$native_source_manifest_after" "$native_source_manifest_after.nul")
+  current_native_source_manifest_sha256="$(capture_source_manifest "$native_source_manifest_after" "$DL4J_ROOT" "${NATIVE_SOURCE_ROOTS[@]}")" || fail "could not capture final native source manifest"
   if [[ "$current_native_source_manifest_sha256" != "$NATIVE_SOURCE_MANIFEST_SHA256" ]]; then
-    native_source_manifest_after="$(mktemp "$WORK_DIR/native-source-manifest.after.XXXXXXXX")"
-    CLEANUP_PATHS+=("$native_source_manifest_after")
-    write_source_manifest_text "$native_source_manifest_after" "$DL4J_ROOT" "${NATIVE_SOURCE_ROOTS[@]}"
     printf 'Native source manifest changed during compilation:\n' >&2
     diff -u "$NATIVE_SOURCE_MANIFEST_BEFORE" "$native_source_manifest_after" >&2 || true
     fail "native sources changed during the Android CPU compile stage"
@@ -526,11 +533,10 @@ else
     >"$managed_tmp/native-library-bytes.txt"
   validate_native_payload_manifest "$managed_tmp/native-libraries" "$managed_tmp/native-library-bytes.txt" ||
     fail "could not validate immutable managed native payload"
-  current_managed_source_manifest_sha256="$(sdx_git_source_manifest_sha256 "$DL4J_ROOT" "${MANAGED_SOURCE_ROOTS[@]}")"
+  managed_source_manifest_after="$(mktemp "$WORK_DIR/managed-source-manifest.after.XXXXXXXX")"
+  CLEANUP_PATHS+=("$managed_source_manifest_after" "$managed_source_manifest_after.nul")
+  current_managed_source_manifest_sha256="$(capture_source_manifest "$managed_source_manifest_after" "$DL4J_ROOT" "${MANAGED_SOURCE_ROOTS[@]}")" || fail "could not capture final managed source manifest"
   if [[ "$current_managed_source_manifest_sha256" != "$MANAGED_SOURCE_MANIFEST_SHA256" ]]; then
-    managed_source_manifest_after="$(mktemp "$WORK_DIR/managed-source-manifest.after.XXXXXXXX")"
-    CLEANUP_PATHS+=("$managed_source_manifest_after")
-    write_source_manifest_text "$managed_source_manifest_after" "$DL4J_ROOT" "${MANAGED_SOURCE_ROOTS[@]}"
     printf "Managed source manifest changed during the Android CPU runtime stage:\\n" >&2
     diff -u "$MANAGED_SOURCE_MANIFEST_BEFORE" "$managed_source_manifest_after" >&2 || true
     fail "managed sources changed during the Android CPU runtime stage"
@@ -668,11 +674,10 @@ while IFS= read -r library_name; do
   printf '%s %s\n' "$(sha256_file "$JNI_DIR/$library_name")" "$library_name"
 done <"$NATIVE_MANIFEST" >"$NATIVE_BYTES"
 
-current_source_manifest_sha256="$(sdx_git_source_manifest_sha256 "$DL4J_ROOT" "${RUNTIME_SOURCE_ROOTS[@]}")"
+source_manifest_after="$(mktemp "$WORK_DIR/runtime-source-manifest.after.XXXXXXXX")"
+CLEANUP_PATHS+=("$source_manifest_after" "$source_manifest_after.nul")
+current_source_manifest_sha256="$(capture_source_manifest "$source_manifest_after" "$DL4J_ROOT" "${RUNTIME_SOURCE_ROOTS[@]}")" || fail "could not capture final runtime source manifest"
 if [[ "$current_source_manifest_sha256" != "$SOURCE_MANIFEST_SHA256" ]]; then
-  source_manifest_after="$(mktemp "$WORK_DIR/runtime-source-manifest.after.XXXXXXXX")"
-  CLEANUP_PATHS+=("$source_manifest_after")
-  write_source_manifest_text "$source_manifest_after" "$DL4J_ROOT" "${RUNTIME_SOURCE_ROOTS[@]}"
   printf 'Runtime source manifest changed during the importer build:\n' >&2
   diff -u "$SOURCE_MANIFEST_BEFORE" "$source_manifest_after" >&2 || true
   fail "runtime sources changed during the Android CPU importer build"

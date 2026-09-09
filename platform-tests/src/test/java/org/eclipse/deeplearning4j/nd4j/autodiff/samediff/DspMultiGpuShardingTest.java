@@ -460,7 +460,14 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             Collections.addAll(owned, embeddings, table, ids, mask, positions);
             feeds.put("embeddings", embeddings);
             for (int iteration = 0; iteration < 12; iteration++) {
-                graph.output(feeds, "logits");
+                Map<String, INDArray> warmup = graph.output(feeds, "logits");
+                if (withKvAttention) {
+                    float[] actual = warmup.get("logits").data().asFloat();
+                    for (int token = 0; token < 8; token++) {
+                        assertEquals(token + 1, actual[token], 1e-4,
+                                "Java KV warmup iteration=" + iteration + " logit=" + token);
+                    }
+                }
             }
             assertUsesEveryCudaDevice(graph);
             assertTrue(DspPlanAssertions.getTotalGraphReplays(graph) > 0, "warmup must reach graph replay");

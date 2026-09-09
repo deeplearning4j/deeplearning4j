@@ -3175,6 +3175,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Computed after SHAPES_FROZEN, applied to replace per-slot buffers with
   // shared color buffers.  Ejected on shape change or validation failure.
   DspBufferColorMap colorMap_;
+  void prepareFirstExecutionColoring();
+  std::vector<bool> warmupAncestors(int stepIdx) const;
 
   // Dirty bitmap (generation counter): tracks which output slots were written
   // during the current execution. Used to optimize tickWriteDevice() in steady

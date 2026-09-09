@@ -11,6 +11,7 @@ import org.nd4j.ggml.convert.ConversionOptions;
 import org.nd4j.ggml.format.GGMLMetadata;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
@@ -182,8 +183,10 @@ public final class Gemma4Architecture implements ModelArchitecture {
     /** Direct gamma, not Gemma 1-3's gamma+1. Never square low-precision storage. */
     static SDVariable rmsNorm(SameDiff sd, String name, SDVariable x, SDVariable gamma, double epsilon) {
         SDVariable f = cast(x, DataType.FLOAT);
-        SDVariable normalized = f.mul(sd.math().pow(f.mul(f).mean(true, -1).add(epsilon), -0.5));
-        if (gamma != null) normalized = normalized.mul(cast(gamma, DataType.FLOAT));
+        // Keep the FP32 boundary, but avoid retaining square/scale intermediates
+        // for every normalization during the first DSP prefill warmup.
+        SDVariable normalized = new RmsNorm(sd, f,
+                gamma == null ? null : cast(gamma, DataType.FLOAT), epsilon).outputVariable();
         return sd.identity(name, cast(normalized, x.dataType()));
     }
 

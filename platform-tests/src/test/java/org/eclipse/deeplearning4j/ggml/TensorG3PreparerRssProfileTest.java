@@ -75,11 +75,17 @@ public class TensorG3PreparerRssProfileTest {
 
         final AtomicBoolean running = new AtomicBoolean(true);
         final AtomicLong peak = new AtomicLong(rssMb());
+        long started = System.nanoTime();
         Thread sampler = new Thread(() -> {
+            int samples = 0;
             while (running.get()) {
                 long r = rssMb();
                 if (r > peak.get()) {
                     peak.set(r);
+                }
+                if (samples++ % 10 == 0) {
+                    log.info("PREP_RSS elapsed_s={} rss_mb={} peak_mb={}",
+                            (System.nanoTime() - started) / 1_000_000_000L, r, peak.get());
                 }
                 try {
                     Thread.sleep(1000);
@@ -102,8 +108,9 @@ public class TensorG3PreparerRssProfileTest {
                     TOKENIZER_DIR,
                     "android-arm64-nnapi-accelerator",
                     CACHE_DIR,
-                    "{\"graphImportAbi\":\"ggml-fixed-plan-rolling-context-q4-linears-v9\","
-                            + "\"requantizeType\":\"Q4_K\"}");
+                    System.getProperty("tensor.g3.preparer.options",
+                            "{\"graphImportAbi\":\"ggml-fixed-plan-rolling-context-q4-linears-v9\","
+                                    + "\"requantizeType\":\"Q4_K\"}"));
             log.info("PREP_RSS result_len={}", result == null ? -1 : result.toString().length());
             logMemory("after_prepare");
             int pauseSeconds = Integer.getInteger("tensor.g3.preparer.pause.seconds", 0);
@@ -118,8 +125,9 @@ public class TensorG3PreparerRssProfileTest {
             throw new RuntimeException(e);
         } finally {
             running.set(false);
+            sampler.interrupt();
+            sampler.join(2000);
+            log.info("PREP_RSS peak_mb={} final_mb={}", peak.get(), rssMb());
         }
-
-        log.info("PREP_RSS peak_mb={} final_mb={}", peak.get(), rssMb());
     }
 }

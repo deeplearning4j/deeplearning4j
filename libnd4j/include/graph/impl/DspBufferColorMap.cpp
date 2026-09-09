@@ -66,6 +66,98 @@ DspBufferColorMap::~DspBufferColorMap() {
   colorOf_ = nullptr;
 }
 
+void DspBufferColorMap::beginWarmup(const SlotLivenessData& liveness,
+                                   const std::vector<bool>& eligible) {
+  liveness.validate();
+  if (eligible.size() != static_cast<size_t>(liveness.totalOutputSlots))
+    THROW_EXCEPTION("Warmup coloring eligibility size mismatch");
+  reset();
+  totalOutputSlots_ = liveness.totalOutputSlots;
+  colorOf_ = new int[totalOutputSlots_];
+  std::fill(colorOf_, colorOf_ + totalOutputSlots_, -1);
+  appliedSlots_.assign(totalOutputSlots_, false);
+  warmupEligible_ = eligible;
+  warmupLastConsumer_.assign(liveness.lastConsumerStep,
+                            liveness.lastConsumerStep + totalOutputSlots_);
+  incremental_ = true;
+  computed_ = true;
+}
+
+bool DspBufferColorMap::warmupEligible(int slot) const {
+  return incremental_ && slot >= 0 && slot < totalOutputSlots_ && warmupEligible_[slot];
+}
+
+NDArray* DspBufferColorMap::reuseWarmup(
+    int slot, int step, const LongType* shapeInfo, int device, void* stream,
+    const std::vector<bool>& ancestors, NDArray** outputSlots) {
+  if (!warmupEligible(slot) || colorOf_[slot] >= 0 || device < 0 || stream == nullptr ||
+      shape::isEmptyConst(shapeInfo) ||
+      !shape::strideDescendingCAscendingF(const_cast<LongType*>(shapeInfo))) return nullptr;
+  const auto dtype = ArrayOptions::dataType(shapeInfo);
+  const char order = shape::order(shapeInfo);
+  const size_t bytes = static_cast<size_t>(shape::length(shapeInfo)) * DataTypeUtils::sizeOf(dtype);
+  for (int c = 0; c < numColors_; ++c) {
+    auto& color = colorInfos_[c];
+    // Graph dependence, not just topological position, establishes ordering even
+    // if a backend batches/reorders independent producers later.
+    if (!color.warmupReusable || color.lastConsumer < 0 || color.lastConsumer >= step ||
+        static_cast<size_t>(color.lastConsumer) >= ancestors.size() || !ancestors[color.lastConsumer] ||
+        color.deviceId != device || color.stream != stream || color.bufferBytes != bytes ||
+        color.dtype != dtype || color.order != order) continue;
+    auto* master = outputSlots[color.masterSlotIdx];
+    if (master == nullptr || master->dataBuffer() != color.sharedBuffer ||
+        !color.sharedBuffer->isValid() || color.sharedBuffer->isClosed() ||
+        color.sharedBuffer->deviceId() != device) continue;
+    auto* borrowed = new NDArray(color.sharedBuffer, const_cast<LongType*>(shapeInfo),
+                                 master->getContext(), 0);
+    warmupArrays_.insert(borrowed);
+    colorOf_[slot] = c;
+    appliedSlots_[slot] = true;
+    color.memberCount++;
+    color.lastConsumer = warmupLastConsumer_[slot];
+    numColoredSlots_++;
+    bytesBefore_ += bytes;
+    bytesSaved_ += bytes;
+    applied_ = true;
+    DSP_DIAG(MEMORY, "WARMUP_COLOR_REUSE: slot=%d color=%d master=%d device=%d bytes=%zu",
+             slot, c, color.masterSlotIdx, device, bytes);
+    return borrowed;
+  }
+  return nullptr;
+}
+
+void DspBufferColorMap::noteWarmupRead(int slot, int device, void* stream) {
+  if (!incremental_ || slot < 0 || slot >= totalOutputSlots_) return;
+  int c = colorOf_[slot];
+  if (c < 0) return;
+  auto& color = colorInfos_[c];
+  if (color.deviceId != device || color.stream != stream) color.warmupReusable = false;
+}
+
+void DspBufferColorMap::recordWarmup(int slot, NDArray* array, int device, void* stream) {
+  if (!warmupEligible(slot) || colorOf_[slot] >= 0 || device < 0 || stream == nullptr ||
+      array == nullptr || array->isView() || array->offset() != 0 ||
+      !shape::strideDescendingCAscendingF(array->shapeInfo())) return;
+  auto* db = array->dataBuffer();
+  if (db == nullptr || db->special() == nullptr || db->deviceId() != device) return;
+  ColorInfo color;
+  color.masterSlotIdx = slot;
+  color.memberCount = 1;
+  color.bufferBytes = static_cast<size_t>(array->lengthOf()) * DataTypeUtils::sizeOf(array->dataType());
+  color.sharedBuffer = db;
+  color.lastConsumer = warmupLastConsumer_[slot];
+  color.deviceId = device;
+  color.stream = stream;
+  color.dtype = array->dataType();
+  color.order = array->ordering();
+  warmupArrays_.insert(array);
+  colorOf_[slot] = numColors_++;
+  colorInfos_.push_back(color);
+  numColoredSlots_++;
+  bytesBefore_ += color.bufferBytes;
+  bytesAfter_ += color.bufferBytes;
+}
+
 // ─── compute() ───────────────────────────────────────────────────────────────
 
 void DspBufferColorMap::compute(
@@ -89,6 +181,20 @@ void DspBufferColorMap::compute(
 
   liveness.validate();
 
+  // First-pass colors already have physical storage. Preserve them while their
+  // publications still match; ordinary shape replacement can dissolve a group.
+  if (incremental_) {
+    bool intact = true;
+    for (int i = 0; i < totalOutputSlots_ && intact; ++i) {
+      int c = colorOf_[i];
+      if (c >= 0 && (outputSlots[i] == nullptr ||
+                    outputSlots[i]->dataBuffer() != colorInfos_[c].sharedBuffer)) intact = false;
+    }
+    if (intact) return;
+    // Existing wrappers/owners remain under plan lifetime management. The full
+    // ownership scan below excludes any remaining shared storage from recoloring.
+    applied_ = false;
+  }
   // Reset any previous computation
   reset();
 
@@ -411,6 +517,7 @@ int DspBufferColorMap::apply(
     DspBufferPool& pool,
     std::vector<NDArray*>& deferredDeletes) {
 
+  if (incremental_) return 0; // Published as each first-pass output was allocated.
   if (!computed_) {
     THROW_EXCEPTION("DspBufferColorMap::apply(): compute() not called yet");
   }
@@ -603,6 +710,14 @@ void DspBufferColorMap::validate(
   // Check 2: VIEW_OF_SLOT parents must NOT be colored
   for (int i = 0; i < totalOutputSlots; i++) {
     if (ownership[i].viewRefCount > 0 && colorOf_[i] >= 0) {
+      int colorBorrowers = 0;
+      if (incremental_) {
+        for (int child = 0; child < totalOutputSlots; ++child) {
+          if (ownership[child].ownership == BufferOwnership::VIEW_OF_SLOT &&
+              ownership[child].parentSlotIdx == i && colorOf_[child] == colorOf_[i]) ++colorBorrowers;
+        }
+      }
+      if (colorBorrowers == ownership[i].viewRefCount) continue;
       char msg[256];
       snprintf(msg, sizeof(msg),
                "DspBufferColorMap::validate(): slot %d has viewRefCount=%d but is colored (color %d)",
@@ -690,7 +805,7 @@ DspBufferColorMap::ColoringReport DspBufferColorMap::report() const {
 // ─── reset() ─────────────────────────────────────────────────────────────────
 
 void DspBufferColorMap::reset() {
-  if (applied_) {
+  if (applied_ && !incremental_) {
     DSP_DIAG(MEMORY, "COLORING_RESET: WARNING — reset() called while still applied, "
              "call eject() first to avoid buffer leaks");
   }
@@ -708,6 +823,9 @@ void DspBufferColorMap::reset() {
   applied_ = false;
   appliedSlots_.clear();
   colorInfos_.clear();
+  incremental_ = false;
+  warmupEligible_.clear();
+  warmupLastConsumer_.clear();
 
   DSP_DIAG(MEMORY, "COLORING_RESET: cleared %d colors", oldColors);
 }

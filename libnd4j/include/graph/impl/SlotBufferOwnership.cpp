@@ -153,6 +153,7 @@ void classifyAndUpdateOwnership(
   }
 
   DataBuffer* outBuffer = outArray->dataBuffer();
+  info.deviceId = outBuffer->deviceId();
 
   // 2. Check external inputs — if buffer matches, it's a view of a weight/constant
   //    (or a view of a placeholder; pruneTransientViewSlots uses

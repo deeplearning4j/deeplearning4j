@@ -29,6 +29,7 @@
 #include <graph/DspDiagnostics.h>
 #include <graph/DspPhaseUtils.h>
 #include <graph/DspThreadState.h>
+#include <graph/DspDeviceDispatch.h>
 #include <graph/gpu/DspCudaDispatch.h>
 #include <graph/DspHashUtils.h>
 #include <graph/DspVerifyUtils.h>
@@ -2138,6 +2139,13 @@ static void dspPropagateSlotError(int stepIdx, const NativeSlot& slot,
 Status NativeDynamicShapePlan::executeSlot(
     int stepIdx, NDArray** externalArrays, int numExt, void* stream) {
   NativeSlot& slot = slots_[stepIdx];
+  if (executeCount_ == 0 && colorMap_.isIncremental()) {
+    void* readStream = dspGetExecutionStream();
+    if (readStream == nullptr) readStream = dspStreamPtrToValue(stream);
+    for (int i = 0; i < slot.wiring.numInputs; ++i) {
+      colorMap_.noteWarmupRead(slot.wiring.inputSourceIndices[i], dspGetCurrentDevice(), readStream);
+    }
+  }
   auto* execCtx = static_cast<PlanExecutionContext*>(activeExecutionContext());
   const bool frozenSlotBySlot =
       !planLifecycle_.isSlotBySlot() && execCtx != nullptr &&
@@ -5788,12 +5796,23 @@ Status NativeDynamicShapePlan::executeSlot(
     }
 
     NDArray* out = nullptr;
+    const bool firstPassColor = executeCount_ == 0 && planLifecycle_.isSlotBySlot() &&
+        !tl_graphExecutionActive && !dspGetReplayActive() && colorMap_.warmupEligible(slotIdx);
+    const int allocationDevice = firstPassColor ? dspGetCurrentDevice() : -1;
+    void* allocationStream = firstPassColor ? dspGetExecutionStream() : nullptr;
+    if (firstPassColor && allocationStream == nullptr) allocationStream = dspStreamPtrToValue(stream);
+    if (firstPassColor) {
+      out = colorMap_.reuseWarmup(slotIdx, stepIdx, shapeInfo, allocationDevice, allocationStream,
+                                  warmupAncestors(stepIdx), outputSlots_);
+    }
     try {
       // Non-view ops get a fresh C-contiguous buffer. Force C-contiguous shape
       // info so strides match the physical layout (legacy COPY_SHAPE ops can
       // inherit non-contiguous strides from permuted inputs, which would be
       // wrong on a fresh buffer). View ops keep original strides/offsets.
-      if (rank == 0) {
+      if (out != nullptr) {
+        // Existing color storage is ordered after its previous last consumer.
+      } else if (rank == 0) {
         // Scalar output: use shapeInfo-preserving constructor so the exact
         // cached shape info (dtype, ews, order from calculateOutputShape) is kept.
         // The empty-vector NDArray constructor creates a fresh scalar shape via
@@ -5820,6 +5839,7 @@ Status NativeDynamicShapePlan::executeSlot(
       return Status::KERNEL_FAILURE;
     }
 
+    if (firstPassColor) colorMap_.recordWarmup(slotIdx, out, allocationDevice, allocationStream);
     outputs[i] = out;
     writeOutputSlot(slotIdx, out, "normal-alloc-output");
     DSP_DIAG_SLOT_WRITE(slotIdx, slot.ident.opName.c_str(),

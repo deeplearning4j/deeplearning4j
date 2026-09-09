@@ -323,6 +323,8 @@ DECLARE_TYPES(reshape_no_copy) {
       ->setAllowedOutputTypes(sd::DataType::ANY)
       ->setSameMode(true);
   getOpDescriptor()->addTraits(OP_TRAIT_VIEW_PRODUCING | OP_TRAIT_VALUE_DEPENDENT_SHAPE | OP_TRAIT_DATA_DEPENDENT);
+  // Input 0 contributes only shape/strides. Only the optional shape tensor is read.
+  getOpDescriptor()->setShapeValueInputs({1});
 }
 }  // namespace ops
 }  // namespace sd
