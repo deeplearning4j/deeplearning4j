@@ -941,8 +941,35 @@ public class GenerationPipeline implements AutoCloseable {
                         ? config.getToolDefinitionFormat() : request.getToolDefinitionFormat())
                 .toolCallFormat(toolCallFormat)
                 .toolChoice(toolChoice)
-                .templateArguments(request.getTemplateArguments())
+                .templateArguments(chatTemplateArguments(request.getTemplateArguments(), modelMetadata, tokenizer))
                 .build();
+    }
+
+    /** Preserve imported special tokens when an artifact supplies the template but not HF config. */
+    static Map<String, Object> chatTemplateArguments(Map<String, Object> requested,
+                                                    ModelMetadata metadata, Tokenizer tokenizer) {
+        Map<String, Object> arguments = new LinkedHashMap<>();
+        if (metadata != null) {
+            putTemplateToken(arguments, "bos_token", tokenizer.getBosToken(), metadata.getBosTokenId(), tokenizer);
+            putTemplateToken(arguments, "eos_token", tokenizer.getEosToken(), metadata.getEosTokenId(), tokenizer);
+            int padId = tokenizer.getPadTokenId() >= 0 ? tokenizer.getPadTokenId() : metadata.getPadTokenId();
+            putTemplateToken(arguments, "pad_token", "", padId, tokenizer);
+        }
+        if (requested != null) arguments.putAll(requested);
+        return arguments;
+    }
+
+    private static void putTemplateToken(Map<String, Object> arguments, String name,
+                                         String configured, int importedId, Tokenizer tokenizer) {
+        String token = configured;
+        if ((token == null || token.isEmpty()) && importedId >= 0) {
+            token = tokenizer.getToken(importedId);
+            if (token == null || token.isEmpty() || !Objects.equals(tokenizer.getTokenId(token), importedId)) {
+                throw new IllegalArgumentException("Imported " + name + " id " + importedId
+                        + " does not resolve in the tokenizer vocabulary");
+            }
+        }
+        if (token != null && !token.isEmpty()) arguments.put(name, token);
     }
 
     private org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolCallFormat

@@ -229,12 +229,19 @@ class AndroidSourceManifestDiagnosticTest {
         Path beforeFile = file("input-before.nul", before);
         Path afterFile = file("input-after.nul", after);
         String expected = hex(MessageDigest.getInstance("SHA-256").digest(before.getBytes(StandardCharsets.UTF_8)));
-        return run("WORK_DIR=$REPO_ROOT; BUILD_ROOT=$WORK_DIR/generation; mkdir \"$BUILD_ROOT\"\n"
+        String cleanup = builder.substring(builder.indexOf("cleanup_build_root() {"),
+                builder.indexOf("OBJECT=\"$BUILD_ROOT/libsdx_llm.o\""));
+        Path generation = temp.resolve("generation\\odd\npath");
+        Result result = run("WORK_DIR=$REPO_ROOT; BUILD_ROOT=$4; mkdir \"$BUILD_ROOT\"; KEEP_WORK=0\n"
+                + cleanup
                 + "DL4J_ROOT=$REPO_ROOT; DL4J_AOT_SOURCE_ROOTS=(src); inventory=$1\n"
                 + "sdx_git_source_manifest() { cat -- \"$inventory\"; }\n"
                 + "fail() { printf '%s\\n' \"$*\" >&2; exit 3; }\n"
                 + capture + "[[ $SOURCE_MANIFEST_SHA256 == $3 ]]\ninventory=$2\n"
-                + guard + "printf 'RECEIPT_ALLOWED\\n'\n", beforeFile.toString(), afterFile.toString(), expected);
+                + guard + "printf 'RECEIPT_ALLOWED\\n'\n", beforeFile.toString(), afterFile.toString(), expected,
+                generation.toString());
+        assertFalse(Files.exists(generation), "Production cleanup must remove the generation directory");
+        return result;
     }
 
     private static String hex(byte[] bytes) {

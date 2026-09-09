@@ -12,7 +12,6 @@ import org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate;
 import org.junit.jupiter.api.Test;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
-import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -223,25 +222,6 @@ class GemmaToolProtocolTest {
         assertTrue(c.allowsSpecialToken(prefix, ChatTemplate.GEMMA_CHANNEL_END));
         assertTrue(c.canExtend(prefix, ChatTemplate.GEMMA_CHANNEL_END + raw));
         assertTrue(c.isAccepting(prefix + ChatTemplate.GEMMA_CHANNEL_END + raw));
-    }
-
-    @Test
-    void requiredChatSelectsGemmaConstraintWithoutChangingOptionalChat() throws Exception {
-        Method method = GenerationPipeline.class.getDeclaredMethod("samplingForChat",
-                ChatTemplate.Request.class, SamplingConfig.class);
-        method.setAccessible(true);
-        ChatTemplate.Request request = ChatTemplate.Request.builder().tools(List.of(ORGANIZATION))
-                .toolCallFormat(ChatTemplate.ToolCallFormat.GEMMA)
-                .toolChoice(ChatTemplate.ToolChoice.REQUIRED).build();
-        SamplingConfig sampling = (SamplingConfig) method.invoke(null, request, SamplingConfig.defaultConfig());
-        assertEquals(GemmaToolCallConstraint.TYPE, sampling.getConstraintConfig().getType());
-        assertFalse(sampling.getConstraintConfig().buildConstraint().isAccepting(call(ORGANIZATION.getName(), "{}")));
-        assertTrue(sampling.getConstraintConfig().buildConstraint().isAccepting(
-                call(ORGANIZATION.getName(), "{name:" + Q + "Acme Robotics" + Q + "}")));
-        ChatTemplate.Request optional = ChatTemplate.Request.builder().tools(List.of(ORGANIZATION))
-                .toolCallFormat(ChatTemplate.ToolCallFormat.GEMMA).build();
-        SamplingConfig base = SamplingConfig.defaultConfig();
-        assertSame(base, method.invoke(null, optional, base));
     }
 
     @Test

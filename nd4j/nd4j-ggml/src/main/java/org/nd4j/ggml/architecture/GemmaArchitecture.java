@@ -111,6 +111,9 @@ public class GemmaArchitecture implements ModelArchitecture {
 
     @Override
     public SameDiff buildGraph(GGMLMetadata metadata, Map<String, INDArray> weights, ConversionOptions options) {
+        if ("gemma4".equalsIgnoreCase(metadata.getArchitecture())) {
+            return new Gemma4Architecture().buildGraph(metadata, weights, options);
+        }
         SameDiff sd = SameDiff.create();
         ArchitectureConfig config = getConfig(metadata);
 
@@ -697,6 +700,9 @@ public class GemmaArchitecture implements ModelArchitecture {
 
     @Override
     public ArchitectureConfig getConfig(GGMLMetadata metadata) {
+        if ("gemma4".equalsIgnoreCase(metadata.getArchitecture())) {
+            return new Gemma4Architecture().getConfig(metadata);
+        }
         int headDim = metadata.getAttentionKeyLength();
         return ArchitectureConfig.builder()
                 .numLayers(metadata.getNumLayers())
