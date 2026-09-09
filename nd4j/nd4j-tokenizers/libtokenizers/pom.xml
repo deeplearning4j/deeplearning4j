@@ -188,6 +188,84 @@
 
     <profiles>
         <profile>
+            <id>central-release</id>
+            <build>
+                <plugins>
+                    <!-- This component has no Java source roots. Replace the inherited
+                         Java-only metadata producers with archives of the native sources
+                         and their documented public API; do not manufacture empty JARs. -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>central-sources</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>central-javadoc</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>central-native-sources</id>
+                                <phase>package</phase>
+                                <goals><goal>jar</goal></goals>
+                                <configuration>
+                                    <classifier>sources</classifier>
+                                    <classesDirectory>${project.basedir}</classesDirectory>
+                                    <includes>
+                                        <include>include/**/*.h</include>
+                                        <include>include/**/*.hpp</include>
+                                        <include>src/**/*.cpp</include>
+                                        <include>tokenizers-ffi/src/**/*.rs</include>
+                                        <include>tokenizers-ffi/Cargo.toml</include>
+                                        <include>tokenizers-ffi/Cargo.lock</include>
+                                        <include>tokenizers-ffi/cbindgen.toml</include>
+                                        <include>CMakeLists.txt</include>
+                                        <include>tokenizers.pc.in</include>
+                                        <include>buildnativetokenizers.sh</include>
+                                        <include>build-mobile-tokenizers.sh</include>
+                                        <include>pom.xml</include>
+                                    </includes>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>central-native-javadoc</id>
+                                <phase>package</phase>
+                                <goals><goal>jar</goal></goals>
+                                <configuration>
+                                    <!-- Central's documentation classifier is named
+                                         javadoc even for non-Java components. The public
+                                         headers contain the native API documentation,
+                                         including ownership and error contracts. Java
+                                         binding Javadocs belong to tokenizers-native. -->
+                                    <classifier>javadoc</classifier>
+                                    <classesDirectory>${project.basedir}</classesDirectory>
+                                    <includes>
+                                        <include>include/**/*.h</include>
+                                        <include>include/**/*.hpp</include>
+                                    </includes>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
             <id>skip-native</id>
             <properties>
                 <libtokenizers.cpu.compile.skip>true</libtokenizers.cpu.compile.skip>

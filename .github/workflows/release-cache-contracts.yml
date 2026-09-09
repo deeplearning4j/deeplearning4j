@@ -6,6 +6,7 @@ on:
     branches: [ag_new_release_updates_2]
     paths:
       - 'release/**'
+      - 'nd4j/nd4j-tokenizers/libtokenizers/pom.xml'
       - '.github/actions/run-release-worker/**'
       - '.github/actions/setup-sccache-*/**'
       - '.github/workflows/_release-worker.yml'
@@ -52,6 +53,56 @@ jobs:
             release.aws.test_release release.azure.test_release \
             release.azure.test_dependency_cache release.gcp.test_release \
             2>&1 | tee "${RUNNER_TEMP}/release-contracts.log"
+      - uses: actions/setup-java@v5
+        if: runner.os == 'Linux'
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Verify native tokenizer release metadata without compilation
+        if: runner.os == 'Linux'
+        shell: bash
+        working-directory: platform-tests
+        run: |
+          set -Eeuo pipefail
+          # Direct metadata goals do not enter generate-sources, invoke Rust/C++, or
+          # regenerate Java bindings. Exercise the real release POM, not a fixture.
+          mvn --batch-mode --no-transfer-progress \
+            -f ../nd4j/nd4j-tokenizers/libtokenizers/pom.xml -Pcentral-release \
+            jar:jar@central-native-sources jar:jar@central-native-javadoc \
+            2>&1 | tee "${RUNNER_TEMP}/tokenizer-metadata-contract.log"
+          python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          source = Path('../nd4j/nd4j-tokenizers/libtokenizers')
+          required = {
+              'include/tokenizers_c.h', 'include/tokenizers_ffi.h',
+              'include/tokenizer_wrapper.h', 'include/model_manager.h',
+              'src/tokenizers_c.cpp', 'src/tokenizer_wrapper.cpp', 'src/model_manager.cpp',
+              'tokenizers-ffi/src/lib.rs', 'tokenizers-ffi/Cargo.toml',
+              'tokenizers-ffi/Cargo.lock', 'tokenizers-ffi/cbindgen.toml',
+              'CMakeLists.txt', 'tokenizers.pc.in', 'buildnativetokenizers.sh',
+              'build-mobile-tokenizers.sh', 'pom.xml',
+          }
+          for classifier in ('sources', 'javadoc'):
+              archives = list((source / 'target').glob(f'libtokenizers-*-{classifier}.jar'))
+              assert len(archives) == 1, archives
+              with ZipFile(archives[0]) as archive:
+                  entries = {name for name in archive.namelist() if not name.endswith('/')}
+                  expected = required if classifier == 'sources' else {
+                      name for name in required if name.startswith('include/')}
+                  assert expected <= entries, expected - entries
+                  for name in entries:
+                      if name.startswith('META-INF/'):
+                          continue
+                      assert not any(part in ('target', 'build') for part in Path(name).parts), name
+                      assert not name.endswith(('.so', '.dll', '.dylib', '.class')), name
+                      content = archive.read(name)
+                      assert content and content == (source / name).read_bytes(), name
+                  if classifier == 'javadoc':
+                      assert b'@param' in archive.read('include/tokenizers_c.h')
+                      assert b'must be freed' in archive.read('include/tokenizers_c.h')
+              print(f'Verified real native {classifier}: {archives[0]}')
+          PY
       - name: Verify private R2 migrated objects and archive transport
         if: ${{ always() && runner.os == 'Linux' }}
         shell: bash
@@ -73,5 +124,6 @@ jobs:
           path: |
             ${{ runner.temp }}/r2-contracts.log
             ${{ runner.temp }}/release-contracts.log
+            ${{ runner.temp }}/tokenizer-metadata-contract.log
             ${{ runner.temp }}/r2-live-contracts.log
           if-no-files-found: warn
