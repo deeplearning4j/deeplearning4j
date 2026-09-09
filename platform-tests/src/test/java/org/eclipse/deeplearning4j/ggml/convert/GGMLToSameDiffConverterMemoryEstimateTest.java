@@ -37,6 +37,18 @@ class GGMLToSameDiffConverterMemoryEstimateTest {
     }
 
     @Test
+    void normalizationAndRotaryVectorsRetainAuthoredFloatPrecision() {
+        GGMLToSameDiffConverter converter = new GGMLToSameDiffConverter(
+                ConversionOptions.forInference(ND4JInferenceWeightDataType.INT4));
+        for (String name : new String[]{"blk.0.attn_q_norm.weight", "blk.0.post_ffw_norm.weight",
+                "rope_freqs.weight", "blk.0.layer_output_scale.weight"}) {
+            GGMLTensorInfo tensor = GGMLTensorInfo.builder().name(name).shape(new long[]{256})
+                    .numDimensions(1).dataType(GGMLDataType.GGML_TYPE_F32).build();
+            assertEquals(1024L, converter.estimateDestinationBytes(tensor, false), name);
+        }
+    }
+
+    @Test
     void runtimePackedAdmissionPreservesCompressedStorageBytes() {
         GGMLTensorInfo tensor = GGMLTensorInfo.builder()
                 .name("blk.0.attn_q.weight")

@@ -965,6 +965,15 @@ public class GGMLToSameDiffConverter {
     }
 
     private DataType getTargetDataType(GGMLTensorInfo info, boolean compactTokenEmbedding) {
+        // GGUF authors keep normalization/frequency/scaling vectors in FP32 even
+        // when matrix storage is quantized. Downcasting rope_freqs can overflow
+        // proportional-RoPE factors; upcasting in the graph cannot recover them.
+        String name = info.getName();
+        if (info.getDataType() == GGMLDataType.GGML_TYPE_F32 && name != null
+                && (name.endsWith("norm.weight") || name.endsWith("rope_freqs.weight")
+                    || name.endsWith("layer_output_scale.weight"))) {
+            return DataType.FLOAT;
+        }
         if (compactTokenEmbedding && "token_embd.weight".equals(info.getName())) {
             return options.getEmbeddingDataType();
         }

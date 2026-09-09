@@ -186,6 +186,17 @@ class Gemma4ArchitectureContractTest {
             Map<String, INDArray> feed = feed(new int[][]{{2, 3}}, 0, 0, 8, false, false);
             INDArray prefill = sd.outputSingle(feed, "logits");
             assertValues(Arrays.copyOfRange(full.get("logits"), 0, 2 * VOCAB), prefill, 5e-4);
+            for (int l = 0; l < L; l++) {
+                int d = LOCAL[l] ? 2 : 4;
+                for (String kind : new String[]{"key", "value"}) {
+                    String name = "past_key_values." + l + "." + kind;
+                    double[] cached = doubles(feed.get(name));
+                    double[] expectedKv = full.get((kind.equals("key") ? "k_rope_" : "v_heads_") + l);
+                    for (int i = 0; i < 2 * d; i++) {
+                        assertEquals(expectedKv[i], cached[i], 5e-4, "prefill retained cache " + name + " element " + i);
+                    }
+                }
+            }
             for (int pos = 2; pos < all[0].length; pos++) {
                 Map<String, INDArray> next = feed(new int[][]{{all[0][pos]}}, pos, pos, 8, false, false);
                 // Reuse the exact buffers written by the preceding invocation.

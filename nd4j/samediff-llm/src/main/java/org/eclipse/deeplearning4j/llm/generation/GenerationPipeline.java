@@ -8601,15 +8601,30 @@ public class GenerationPipeline implements AutoCloseable {
     /**
      * Extract the embedding weight table from a SameDiff model.
      *
-     * <p>Searches for the largest rank-2 CONSTANT or VARIABLE array in the model,
-     * which is typically the token embedding matrix [vocabSize, hiddenSize].</p>
+     * <p>Prefers the declared token embedding identity. The legacy largest-matrix
+     * heuristic is used only for graphs without an explicit token table; auxiliary
+     * per-layer embeddings must never replace a declared [vocabSize, hiddenSize] table.</p>
      *
      * @param model the SameDiff model (typically embed_tokens or a decoder with shared weights)
      * @return the embedding table, or null if not found
      */
     static INDArray extractEmbeddingTable(SameDiff model) {
         INDArray embeddingTable = null;
+        for (String name : new String[]{"model.embed_tokens.weight", "token_embd.weight"}) {
+            SDVariable declared = model.getVariable(name);
+            if (declared == null) continue;
+            INDArray array = declared.getArr();
+            if ((declared.getVariableType() != VariableType.CONSTANT
+                    && declared.getVariableType() != VariableType.VARIABLE)
+                    || array == null || array.rank() != 2 || !array.dataType().isFPType()) {
+                throw new IllegalArgumentException("Declared token embedding table is not a dense floating matrix: " + name);
+            }
+            embeddingTable = array;
+            break;
+        }
+        boolean declaredTableFound = embeddingTable != null;
         for (SDVariable var : model.variables()) {
+            if (declaredTableFound) break;
             if (var.getVariableType() == VariableType.CONSTANT || var.getVariableType() == VariableType.VARIABLE) {
                 INDArray arr = var.getArr();
                 if (arr != null && arr.rank() == 2) {
