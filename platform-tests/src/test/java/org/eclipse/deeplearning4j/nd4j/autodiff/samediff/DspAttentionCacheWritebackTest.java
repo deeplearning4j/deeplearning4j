@@ -78,6 +78,23 @@ public class DspAttentionCacheWritebackTest extends BaseND4JTest {
                                 "keys", keyCache, "values", valueCache, "position", cachePosition, "bias", mask),
                                 "out", "probe");
                         try {
+                            if (iteration == 0) {
+                                var executor = sd.getOrCreateSession().getDynamicShapePlanExecutor();
+                                var nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                                for (String name : new String[]{"keys", "values"}) {
+                                    int index = Arrays.asList(executor.getCurrentPlan().getExternalInputKeys()).indexOf(name);
+                                    INDArray caller = name.equals("keys") ? keyCache : valueCache;
+                                    INDArray bound = executor.getExternalInputsSnapshot()[index];
+                                    System.out.println("KV_WRITEBACK_BOUND callerDevice=" + callerDevice
+                                            + " attentionDevice=" + attentionDevice + " name=" + name
+                                            + " callerDb=" + caller.data().opaqueBuffer().address()
+                                            + " boundDb=" + bound.data().opaqueBuffer().address()
+                                            + " callerNativeDevice=" + nativeOps.dbDeviceId(caller.data().opaqueBuffer())
+                                            + " boundNativeDevice=" + nativeOps.dbDeviceId(bound.data().opaqueBuffer())
+                                            + " variable=" + nativeOps.getPlanIsExternalInputVariable(executor.getNativePlanHandle(), index)
+                                            + " placeholder=" + nativeOps.getPlanIsExternalInputPlaceholder(executor.getNativePlanHandle(), index));
+                                }
+                            }
                             assertArrayEquals(expectedK, keyCache.data().asDouble(), 0.0, "retained keys " + iteration);
                             assertArrayEquals(expectedV, valueCache.data().asDouble(), 0.0, "retained values " + iteration);
                             double[] expectedOut = new double[2];
