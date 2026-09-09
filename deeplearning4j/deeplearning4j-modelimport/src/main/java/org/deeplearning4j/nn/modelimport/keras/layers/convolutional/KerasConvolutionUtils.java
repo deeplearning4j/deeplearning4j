@@ -189,14 +189,14 @@ public class KerasConvolutionUtils {
     /**
      * Return the {@link Convolution3D.DataFormat}
      * from the configuration .
-     * If the value is {@link KerasLayerConfiguration#getDIM_ORDERING_TENSORFLOW()}
+     * If the value read using {@link KerasLayerConfiguration} is {@code "channels_last"}
      * then the value is {@link Convolution3D.DataFormat#NDHWC }
-     * else it's {@link KerasLayerConfiguration#getDIM_ORDERING_THEANO()}
-     * which is {@link Convolution3D.DataFormat#NDHWC}
+     * otherwise use channels-first ordering,
+     * which is {@link Convolution3D.DataFormat#NCDHW}
      * @param layerConfig the layer configuration to get the values from
      * @param layerConfiguration the keras configuration used for retrieving
      *                           values from the configuration
-     * @return the {@link CNN2DFormat} given the configuration
+     * @return the {@link Convolution3D.DataFormat} given the configuration
      * @throws InvalidKerasConfigurationException
      */
     public static Convolution3D.DataFormat getCNN3DDataFormatFromConfig(Map<String,Object> layerConfig, KerasLayerConfiguration layerConfiguration) throws InvalidKerasConfigurationException {
@@ -210,9 +210,9 @@ public class KerasConvolutionUtils {
     /**
      * Return the {@link CNN2DFormat}
      * from the configuration .
-     * If the value is {@link KerasLayerConfiguration#getDIM_ORDERING_TENSORFLOW()}
+     * If the value read using {@link KerasLayerConfiguration} is {@code "channels_last"}
      * then the value is {@link CNN2DFormat#NHWC}
-     * else it's {@link KerasLayerConfiguration#getDIM_ORDERING_THEANO()}
+     * otherwise use channels-first ordering,
      * which is {@link CNN2DFormat#NCHW}
      * @param layerConfig the layer configuration to get the values from
      * @param layerConfiguration the keras configuration used for retrieving

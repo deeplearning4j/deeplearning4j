@@ -1,6 +1,6 @@
 """Audited Javadoc-only repair overlay for the pinned native release source.
 
-Only the 114 reviewed Javadoc lines are eligible. No whole fix checkout is
+Only the 122 reviewed Javadoc lines are eligible. No whole fix checkout is
 merged: unrelated changes at that revision cannot enter the Java reactor.
 Extending this table requires reviewing the original comment and source SHA.
 """
@@ -261,6 +261,31 @@ for number, shape in ((52, "int[]"), (68, "long[]")):
 REPAIRS.update({NN + relative: repairs for relative, repairs in NN_REPAIRS.items()})
 
 
+# Recovery 34409908516 passed nn and reported five modelimport diagnostics.
+# The format helpers compare channels_last literally, not generated getters;
+# correct the adjacent 3D result/return types too. Backend metadata is optional.
+KERAS = "deeplearning4j/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/"
+KERAS_CONV = KERAS + "layers/convolutional/KerasConvolutionUtils.java"
+KERAS_MODEL = KERAS + "utils/KerasModelUtils.java"
+REPAIRS[KERAS_CONV] = {
+    number: ("     * If the value is {@link KerasLayerConfiguration#getDIM_ORDERING_TENSORFLOW()}\n",
+             '     * If the value read using {@link KerasLayerConfiguration} is {@code "channels_last"}\n')
+    for number in (192, 213)}
+REPAIRS[KERAS_CONV].update({
+    number: ("     * else it's {@link KerasLayerConfiguration#getDIM_ORDERING_THEANO()}\n",
+             "     * otherwise use channels-first ordering,\n") for number in (194, 215)})
+REPAIRS[KERAS_CONV].update({
+    195: ("     * which is {@link Convolution3D.DataFormat#NDHWC}\n",
+          "     * which is {@link Convolution3D.DataFormat#NCDHW}\n"),
+    199: ("     * @return the {@link CNN2DFormat} given the configuration\n",
+          "     * @return the {@link Convolution3D.DataFormat} given the configuration\n")})
+REPAIRS[KERAS_MODEL] = {
+    161: ("     * @return Keras backend string\n",
+          "     * @return Keras backend string, or {@code null} if backend metadata is absent\n"),
+    162: ("     * @throws InvalidKerasConfigurationException Invalid Keras config\n",
+          "     * @see KerasModelConfiguration\n")}
+
+
 def digest(data):
     return hashlib.sha256(data).hexdigest()
 
@@ -315,7 +340,9 @@ def prepare(source, fix_source, fix_commit, commit, output):
                                                   "errorCount": 6, "repairedLineCount": 48},
                   "nnDiagnostics": {"recoveryRunId": NN_RECOVERY_RUN,
                                     "jobId": NN_RECOVERY_JOB,
-                                    "errorCount": 36, "repairedLineCount": 32}}
+                                    "errorCount": 36, "repairedLineCount": 32},
+                  "kerasDiagnostics": {"recoveryRunId": "34409908516", "jobId": "102661762351",
+                                       "errorCount": 5, "repairedLineCount": 8}}
     # Validate every file before writing any overlay. Preserve line numbers and
     # every non-repaired byte, including all compiled code and source positions.
     for path, fixed in pending:

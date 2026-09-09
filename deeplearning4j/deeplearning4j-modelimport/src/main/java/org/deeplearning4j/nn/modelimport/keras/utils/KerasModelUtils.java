@@ -158,8 +158,8 @@ public class KerasModelUtils {
      *
      * @param modelConfig parsed model configuration for keras model
      * @param config      basic model configuration (KerasModelConfiguration)
-     * @return Keras backend string
-     * @throws InvalidKerasConfigurationException Invalid Keras config
+     * @return Keras backend string, or {@code null} if backend metadata is absent
+     * @see KerasModelConfiguration
      */
     public static String determineKerasBackend(Map<String, Object> modelConfig, KerasModelConfiguration config) {
         String kerasBackend = null;
