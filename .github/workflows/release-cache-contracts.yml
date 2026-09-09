@@ -39,8 +39,7 @@ jobs:
           set -Eeuo pipefail
           python -m unittest release.github.test_r2_cache \
             2>&1 | tee "${RUNNER_TEMP}/r2-contracts.log"
-      - name: Checkout audited original for documentation recovery contract
-        if: runner.os == 'Linux'
+      - name: Checkout audited original for documentation and source recovery contracts
         uses: actions/checkout@v7
         with:
           ref: 5debc0e4ed3588748b8491c94c072df75a149834
@@ -63,10 +62,23 @@ jobs:
             release.azure.test_dependency_cache release.gcp.test_release \
             2>&1 | tee "${RUNNER_TEMP}/release-contracts.log"
       - uses: actions/setup-java@v5
-        if: runner.os == 'Linux'
         with:
           distribution: temurin
           java-version: '21'
+      - name: Fetch immutable authorized source-repair pin
+        shell: bash
+        run: git fetch --no-tags origin ffe4a8d9e23f5bda924c1c17c83f5981adce7f89
+      - name: Verify exact-byte compiled source repair and real javac regression
+        shell: bash
+        working-directory: platform-tests
+        env:
+          PYTHONPATH: ..
+          DOCUMENTATION_CONTRACT_SOURCE: ${{ github.workspace }}/.release-doc-contract-original
+          SOURCE_REPAIR_COMPILE_CONTRACT: '1'
+        run: |
+          set -Eeuo pipefail
+          python -m unittest release.github.test_source_recovery \
+            2>&1 | tee "${RUNNER_TEMP}/source-repair-contract.log"
       - name: Verify audited delombok Javadoc sourcepath on Java 21
         if: runner.os == 'Linux'
         shell: bash
@@ -144,6 +156,7 @@ jobs:
           name: release-cache-contracts-${{ matrix.os }}
           path: |
             ${{ runner.temp }}/r2-contracts.log
+            ${{ runner.temp }}/source-repair-contract.log
             ${{ runner.temp }}/release-contracts.log
             ${{ runner.temp }}/tokenizer-metadata-contract.log
             ${{ runner.temp }}/delombok-javadoc-contract.log

@@ -381,7 +381,8 @@ def verify_consumer(local: Path, output: Path, ownership: dict, source: Path) ->
 
 
 def finalize(local: Path, output: Path, ownership: dict, version: str, commit: str,
-             found: dict, recovery: dict | None = None, documentation: dict | None = None) -> None:
+             found: dict, recovery: dict | None = None, documentation: dict | None = None,
+             source_repair: dict | None = None) -> None:
     repository = output / "maven-repository"
     repository.mkdir()
     files = []
@@ -401,6 +402,8 @@ def finalize(local: Path, output: Path, ownership: dict, version: str, commit: s
         manifest["metadataRecovery"] = recovery
     if documentation is not None:
         manifest["documentationRecovery"] = documentation
+    if source_repair is not None:
+        manifest["sourceRecovery"] = source_repair
     path = output / "repository-manifest.json"
     path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     Path(str(path) + ".sha256").write_text(f"{central.digest(path)}  {path.name}\n", encoding="ascii")
@@ -420,7 +423,11 @@ def main() -> None:
     parser.add_argument("--metadata-fix-commit")
     parser.add_argument("--documentation-fix-source", type=Path)
     parser.add_argument("--documentation-fix-commit")
+    parser.add_argument("--source-fix-source", type=Path)
+    parser.add_argument("--source-fix-commit")
     args = parser.parse_args()
+    if bool(args.source_fix_source) != bool(args.source_fix_commit):
+        raise ValueError("compiled-source recovery requires both checkout and explicit fix commit")
     if bool(args.metadata_fix_source) != bool(args.metadata_fix_commit):
         raise ValueError("metadata recovery requires both source checkout and explicit fix commit")
     if bool(args.documentation_fix_source) != bool(args.documentation_fix_commit):
@@ -452,10 +459,15 @@ def main() -> None:
         docs = load_module("documentation_recovery", ROOT / "release/github/documentation_recovery.py")
         documentation = docs.prepare(source, args.documentation_fix_source.resolve(),
             args.documentation_fix_commit, args.commit, output)
+    source_repair = None
+    if args.source_fix_commit:
+        repair = load_module("source_recovery", ROOT / "release/github/source_recovery.py")
+        source_repair = repair.prepare(source, args.source_fix_source.resolve(),
+            args.source_fix_commit, args.commit, args.run_id, output)
     ownership = seed_native(found, plan, local, args.release_version, supplements)
     build_java(source, local, output, args.release_version, args.snapshot_version, ownership, plan)
     verify_consumer(local, output, ownership, source)
-    finalize(local, output, ownership, args.release_version, args.commit, found, recovery, documentation)
+    finalize(local, output, ownership, args.release_version, args.commit, found, recovery, documentation, source_repair)
 
 
 if __name__ == "__main__":

@@ -13,6 +13,10 @@ on:
         description: Immutable audited Javadoc-only repair SHA
         type: string
         default: ""
+      sourceFixCommit:
+        description: Explicit audited compiled Java exception-declaration repair SHA
+        type: string
+        default: ""
       snapshotVersion:
         type: string
         default: 1.0.0-SNAPSHOT
@@ -56,6 +60,10 @@ on:
         default: ""
       documentationFixCommit:
         description: Immutable audited Javadoc-only repair SHA
+        type: string
+        default: ""
+      sourceFixCommit:
+        description: Explicit audited compiled Java exception-declaration repair SHA
         type: string
         default: ""
       snapshotVersion:
@@ -104,6 +112,7 @@ jobs:
           FULL_REPOSITORY: ${{ inputs.fullRepository }}
           METADATA_FIX_COMMIT: ${{ inputs.metadataFixCommit }}
           DOCUMENTATION_FIX_COMMIT: ${{ inputs.documentationFixCommit }}
+          SOURCE_FIX_COMMIT: ${{ inputs.sourceFixCommit }}
           CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
           CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
@@ -120,6 +129,11 @@ jobs:
           if [[ -n "${DOCUMENTATION_FIX_COMMIT:-}" ]]; then
             [[ "${FULL_REPOSITORY:-false}" == true && "$DOCUMENTATION_FIX_COMMIT" =~ ^[0-9a-f]{40}$ ]] || {
               printf 'Documentation repair requires full recovery and an immutable fix SHA\n' >&2; exit 2;
+            }
+          fi
+          if [[ -n "${SOURCE_FIX_COMMIT:-}" ]]; then
+            [[ "${FULL_REPOSITORY:-false}" == true && "${DEPLOY_TO_RELEASE_STAGING}" == 1 && "$SOURCE_FIX_COMMIT" == ffe4a8d9e23f5bda924c1c17c83f5981adce7f89 ]] || {
+              printf 'Compiled-source repair requires audited SHA and full release staging recovery\n' >&2; exit 2;
             }
           fi
           if [[ "${DRY_RUN}" == false ]]; then
@@ -363,6 +377,13 @@ jobs:
           ref: ${{ inputs.documentationFixCommit }}
           path: .release-documentation-fix
           persist-credentials: false
+      - name: Checkout explicit compiled Java source repair
+        if: inputs.fullRepository && inputs.sourceFixCommit != ''
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.sourceFixCommit }}
+          path: .release-source-fix
+          persist-credentials: false
       - name: Configure Java for full repository recovery
         if: inputs.fullRepository
         uses: actions/setup-java@v5
@@ -381,6 +402,7 @@ jobs:
           SOURCE_ATTEMPT: ${{ needs.matrix.outputs.source-attempt }}
           METADATA_FIX_COMMIT: ${{ inputs.metadataFixCommit }}
           DOCUMENTATION_FIX_COMMIT: ${{ inputs.documentationFixCommit }}
+          SOURCE_FIX_COMMIT: ${{ inputs.sourceFixCommit }}
         run: |
           set -Eeuo pipefail
           metadata_args=()
@@ -391,6 +413,10 @@ jobs:
           if [[ -n "$DOCUMENTATION_FIX_COMMIT" ]]; then
             metadata_args+=(--documentation-fix-source "${GITHUB_WORKSPACE}/.release-documentation-fix"
               --documentation-fix-commit "$DOCUMENTATION_FIX_COMMIT")
+          fi
+          if [[ -n "$SOURCE_FIX_COMMIT" ]]; then
+            metadata_args+=(--source-fix-source "${GITHUB_WORKSPACE}/.release-source-fix"
+              --source-fix-commit "$SOURCE_FIX_COMMIT")
           fi
           python3 release/github/full-repository.py \
             --workers "${GITHUB_WORKSPACE}/.release-worker-recovery" \
@@ -514,6 +540,7 @@ jobs:
             ${{ github.workspace }}/.release-worker-recovery-merged/central-deployment.log
             ${{ github.workspace }}/.release-worker-recovery-merged/metadata-recovery-provenance.json
             ${{ github.workspace }}/.release-worker-recovery-merged/documentation-recovery-provenance.json
+            ${{ github.workspace }}/.release-worker-recovery-merged/source-recovery-provenance.json
             ${{ github.workspace }}/.release-worker-recovery-merged/*effective-pom.xml
             ${{ github.workspace }}/.release-worker-recovery-merged/consumers/
             ${{ runner.temp }}/full-repository-recovery.log
