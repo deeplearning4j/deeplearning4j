@@ -43,7 +43,7 @@ class DocumentationRecoveryTests(unittest.TestCase):
         result = self.prepare()
         self.assertEqual(docs.SOURCE_COMMIT, result['sourceCommit'])
         self.assertEqual('b' * 40, result['documentationFixCommit'])
-        self.assertEqual(12, sum(len(row['lines']) for row in result['files']))
+        self.assertEqual(13, sum(len(row['lines']) for row in result['files']))
         self.assertEqual('audited-javadoc-only-v2', result['policy'])
         for row in result['files']:
             self.assertEqual(docs.digest(self.originals[row['path']]), row['sourceSha256'])
@@ -101,7 +101,7 @@ class DocumentationRecoveryTests(unittest.TestCase):
     def test_each_vlm_repair_is_required_before_any_write(self):
         names = [name for name in docs.REPAIRS if name.startswith(docs.VLM)]
         self.assertEqual(4, len(names))
-        self.assertEqual(8, sum(len(lines) for name, lines in docs.REPAIRS.items()
+        self.assertEqual(9, sum(len(lines) for name, lines in docs.REPAIRS.items()
                                 if not name.startswith(docs.VLM)))
         for name in names:
             with self.subTest(name=name):
@@ -126,6 +126,28 @@ class DocumentationRecoveryTests(unittest.TestCase):
                                  docs.REPAIRS[name][line][1])
                 source = (root / name).parent / (target + '.java')
                 self.assertIn(f'public class {label}', source.read_text())
+
+    def test_pipeline_config_names_real_external_module_without_unresolvable_link(self):
+        root = Path(__file__).resolve().parents[2]
+        name = docs.PIPELINE_CONFIG
+        self.assertEqual({37: (
+            ' * @deprecated Use {@link org.eclipse.deeplearning4j.llm.config.PreprocessorConfig} instead.\n',
+            ' * @deprecated Use {@code PreprocessorConfig} in package {@code org.eclipse.deeplearning4j.llm.config} from the {@code samediff-llm} module instead.\n')},
+            docs.REPAIRS[name])
+        target = root / 'nd4j/samediff-llm/src/main/java/org/eclipse/deeplearning4j/llm/config/PreprocessorConfig.java'
+        content = target.read_text()
+        self.assertIn('package org.eclipse.deeplearning4j.llm.config;', content)
+        self.assertIn('public class PreprocessorConfig', content)
+        self.assertIn('public static PreprocessorConfig fromJson(String json)', content)
+        self.assertIn('<artifactId>samediff-llm</artifactId>',
+                      (root / 'nd4j/samediff-llm/pom.xml').read_text())
+        self.assertNotIn('<artifactId>samediff-llm</artifactId>',
+                         (root / 'nd4j/samediff-pipeline-core/pom.xml').read_text())
+        self.fixed[name] = self.originals[name]
+        with self.assertRaisesRegex(ValueError, 'unaudited'):
+            self.prepare()
+        for path in docs.REPAIRS:
+            self.assertEqual(self.originals[path], (self.source / path).read_bytes())
 
     def test_real_pinned_source_matches_only_audited_edits(self):
         original_root = os.environ.get('DOCUMENTATION_CONTRACT_SOURCE')

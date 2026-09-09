@@ -1,6 +1,6 @@
 """Audited Javadoc-only repair overlay for the pinned native release source.
 
-Only the twelve reviewed Javadoc lines are eligible. No whole fix checkout is
+Only the thirteen reviewed Javadoc lines are eligible. No whole fix checkout is
 merged: unrelated changes at that revision cannot enter the Java reactor.
 Extending this table requires reviewing the original comment and source SHA.
 """
@@ -49,6 +49,16 @@ REPAIRS.update({
         68: (" * @see VideoVisionLanguageModel\n",
              ' * @see <a href="../VideoVisionLanguageModel.html">VideoVisionLanguageModel</a>\n')},
 })
+
+
+# The canonical config is in a separate module, not on pipeline-core's
+# dependency/source path. Name its actual package and artifact without claiming
+# that module-local Javadoc can resolve it as a symbol or relative HTML page.
+PIPELINE_CONFIG = "nd4j/samediff-pipeline-core/src/main/java/org/eclipse/deeplearning4j/pipeline/PreprocessorConfig.java"
+REPAIRS[PIPELINE_CONFIG] = {
+    37: (" * @deprecated Use {@link org.eclipse.deeplearning4j.llm.config.PreprocessorConfig} instead.\n",
+         " * @deprecated Use {@code PreprocessorConfig} in package {@code org.eclipse.deeplearning4j.llm.config} from the {@code samediff-llm} module instead.\n"),
+}
 
 
 def digest(data):

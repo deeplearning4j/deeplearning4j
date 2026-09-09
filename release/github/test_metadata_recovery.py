@@ -10,6 +10,7 @@ from unittest.mock import patch
 from zipfile import ZipFile
 
 from release.github import metadata_recovery as metadata
+from release.github import documentation_recovery as documentation
 
 
 class MetadataRecoveryTests(unittest.TestCase):
@@ -143,6 +144,15 @@ class MetadataRecoveryTests(unittest.TestCase):
         (sources / 'Reader.java').write_text(
             'package example;\n/** External builder signature contract. */\npublic class Reader {\n'
             'private void extract(TorchScriptGraph.TorchScriptGraphBuilder builder) {}\n}\n')
+        # Use the actual repaired class comment with no samediff-llm dependency:
+        # its migration target is deliberately outside this module's sourcepath.
+        original_config = (root / documentation.PIPELINE_CONFIG).read_text()
+        comment = original_config.split('/**', 1)[1].split('*/', 1)[0]
+        config_sources = self.root / 'src/main/java/org/eclipse/deeplearning4j/pipeline'
+        config_sources.mkdir(parents=True)
+        (config_sources / 'PreprocessorConfig.java').write_text(
+            'package org.eclipse.deeplearning4j.pipeline;\nimport lombok.Builder;\n/**'
+            + comment + '*/\n@Deprecated @Builder public class PreprocessorConfig { private int size; }\n')
         subprocess.run(['mvn', '--batch-mode', '--no-transfer-progress', '-f', str(self.root / 'pom.xml'),
                         '-Pcentral-release', 'install', '-DskipTests'], check=True)
         for name in ('TorchScriptGraph', 'TorchScriptMetadata', 'ArchitectureConfig'):
@@ -155,6 +165,10 @@ class MetadataRecoveryTests(unittest.TestCase):
         with ZipFile(archive) as docs:
             self.assertIn('example/TorchScriptGraph.TorchScriptGraphBuilder.html', docs.namelist())
             self.assertIn('example/Pipeline.PipelineBuilder.html', docs.namelist())
+            config_html = docs.read('org/eclipse/deeplearning4j/pipeline/PreprocessorConfig.html').decode()
+            self.assertIn('samediff-llm', config_html)
+            self.assertIn('org.eclipse.deeplearning4j.llm.config', config_html)
+            self.assertNotIn('llm/config/PreprocessorConfig.html', config_html)
 
     def test_profile_only_changes_are_required(self):
         metadata.validate_pom(self.original, self.fixed)
