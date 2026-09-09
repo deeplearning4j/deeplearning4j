@@ -3,6 +3,10 @@ name: Copy existing Azure cache to R2
 on:
   workflow_call:
     inputs:
+      namespace:
+        type: string
+        default: all
+        required: false
       mode:
         type: string
         default: preview
@@ -16,6 +20,11 @@ on:
         required: true
   workflow_dispatch:
     inputs:
+      namespace:
+        description: Disjoint cache namespace; do not overlap an active all-namespace migration
+        type: choice
+        options: [all, compiler, auxiliary]
+        default: all
       mode:
         description: Preview, copy then verify bytes, or verify existing copy
         type: choice
@@ -27,7 +36,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: azure-cache-to-r2
+  group: azure-cache-to-r2-${{ inputs.namespace || 'all' }}
   cancel-in-progress: false
 
 jobs:
@@ -56,6 +65,14 @@ jobs:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           MIGRATION_MODE: ${{ inputs.mode }}
+          MIGRATION_NAMESPACE: ${{ inputs.namespace || 'all' }}
         run: |
           set -euo pipefail
-          python3 release/github/migrate-cache-to-r2.py --mode "$MIGRATION_MODE"
+          prefixes=()
+          case "$MIGRATION_NAMESPACE" in
+            all) ;;
+            compiler) prefixes+=(--prefix deeplearning4j/releases/compiler-cache/v1) ;;
+            auxiliary) prefixes+=(--prefix deeplearning4j/releases/dependency-cache/v2 --prefix deeplearning4j/releases/toolchain-cache/v1) ;;
+            *) printf 'Invalid migration namespace\n' >&2; exit 2 ;;
+          esac
+          python3 release/github/migrate-cache-to-r2.py --mode "$MIGRATION_MODE" "${prefixes[@]}"

@@ -9,6 +9,11 @@ on:
         options: [none, preview, copy, verify]
         default: none
         required: false
+      cacheNamespace:
+        description: Migration namespace; compiler and auxiliary are disjoint. Stop any all-namespace run first.
+        type: choice
+        options: [all, compiler, auxiliary]
+        default: all
       workflow:
         description: Canonical release workflow matrix to execute. Use all for the full native and Java repository.
         required: false
@@ -110,6 +115,7 @@ jobs:
     uses: ./.github/workflows/migrate-cache-to-r2.yml
     with:
       mode: ${{ inputs.cacheMigration }}
+      namespace: ${{ inputs.cacheNamespace || 'all' }}
     secrets: inherit
 
   java-only:
