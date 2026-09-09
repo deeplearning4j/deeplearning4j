@@ -49,6 +49,7 @@ jobs:
           set -Eeuo pipefail
           python -m unittest \
             test_full_release_repository test_release_publication_safety \
+            release.github.test_metadata_recovery \
             release.github.test_worker release.central.test_repository \
             release.aws.test_release release.azure.test_release \
             release.azure.test_dependency_cache release.gcp.test_release \

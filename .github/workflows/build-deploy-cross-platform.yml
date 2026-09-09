@@ -100,6 +100,10 @@ on:
         description: Publish staged release-worker artifacts from this run ID without rebuilding.
         required: false
         default: ""
+      packagingFixCommit:
+        description: Immutable packaging-only fix SHA for full repository recovery; never changes native receipts.
+        required: false
+        default: ""
       publishArtifactPattern:
         description: Glob selecting staged worker artifacts when publishSourceRunId is set.
         required: false
@@ -159,6 +163,9 @@ jobs:
     uses: ./.github/workflows/publish-release-worker-artifacts.yml
     with:
       sourceRunId: ${{ inputs.publishSourceRunId }}
+      fullRepository: ${{ inputs.workflow == 'all' }}
+      metadataFixCommit: ${{ inputs.packagingFixCommit }}
+      snapshotVersion: ${{ inputs.snapshotVersion }}
       artifactPattern: ${{ inputs.publishArtifactPattern }}
       deployToReleaseStaging: ${{ inputs.deployToReleaseStaging }}
       dryRun: ${{ inputs.dryRun }}

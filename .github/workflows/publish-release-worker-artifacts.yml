@@ -3,6 +3,15 @@ name: Publish staged release worker artifacts
 on:
   workflow_call:
     inputs:
+      fullRepository:
+        type: boolean
+        default: false
+      metadataFixCommit:
+        type: string
+        default: ""
+      snapshotVersion:
+        type: string
+        default: 1.0.0-SNAPSHOT
       sourceRunId:
         description: GitHub Actions run ID containing release-worker-* artifacts.
         required: true
@@ -33,6 +42,18 @@ on:
         required: false
   workflow_dispatch:
     inputs:
+      fullRepository:
+        description: Assemble the canonical native matrix and original Java reactor
+        type: boolean
+        default: false
+      metadataFixCommit:
+        description: Explicit immutable packaging-only fix SHA
+        type: string
+        default: ""
+      snapshotVersion:
+        description: Original source snapshot version
+        type: string
+        default: 1.0.0-SNAPSHOT
       sourceRunId:
         description: GitHub Actions run ID containing release-worker-* artifacts.
         required: true
@@ -64,6 +85,7 @@ jobs:
     runs-on: ubuntu-22.04
     outputs:
       artifacts: ${{ steps.artifacts.outputs.artifacts }}
+      source-attempt: ${{ steps.artifacts.outputs.source-attempt }}
     steps:
       - uses: actions/checkout@v7
       - name: Validate publication credentials before downloading workers
@@ -71,6 +93,8 @@ jobs:
         env:
           DEPLOY_TO_RELEASE_STAGING: ${{ inputs.deployToReleaseStaging }}
           DRY_RUN: ${{ inputs.dryRun }}
+          FULL_REPOSITORY: ${{ inputs.fullRepository }}
+          METADATA_FIX_COMMIT: ${{ inputs.metadataFixCommit }}
           CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
           CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
@@ -79,6 +103,11 @@ jobs:
           set -Eeuo pipefail
           [[ "${DEPLOY_TO_RELEASE_STAGING}" =~ ^[01]$ ]] || { echo 'deployToReleaseStaging must be 0 or 1' >&2; exit 2; }
           [[ "${DRY_RUN}" =~ ^(true|false)$ ]] || { echo 'dryRun must be true or false' >&2; exit 2; }
+          if [[ -n "${METADATA_FIX_COMMIT:-}" ]]; then
+            [[ "${FULL_REPOSITORY:-false}" == true && "$METADATA_FIX_COMMIT" =~ ^[0-9a-f]{40}$ ]] || {
+              printf 'Metadata repair requires full repository recovery and an immutable fix SHA\n' >&2; exit 2;
+            }
+          fi
           if [[ "${DRY_RUN}" == false ]]; then
             required_secrets=(CENTRAL_SONATYPE_TOKEN_USERNAME CENTRAL_SONATYPE_TOKEN_PASSWORD)
             if [[ "${DEPLOY_TO_RELEASE_STAGING}" == 1 ]]; then
@@ -104,6 +133,14 @@ jobs:
               core.setFailed(`Invalid source run ID: ${process.env.SOURCE_RUN_ID}`);
               return;
             }
+            const sourceRun = await github.rest.actions.getWorkflowRun({
+              owner: context.repo.owner, repo: context.repo.repo, run_id: runId,
+            });
+            if (sourceRun.data.status !== 'completed') {
+              core.setFailed('Recovery requires a completed source workflow run');
+              return;
+            }
+            core.setOutput('source-attempt', String(sourceRun.data.run_attempt));
             const pattern = process.env.ARTIFACT_PATTERN || 'release-worker-*';
             const escaped = pattern
               .replace(/[.+^${}()|[\]\\]/g, '\\$&')
@@ -291,7 +328,54 @@ jobs:
           printf 'source-commit=%s\n' "${source_commit}" >>"${GITHUB_OUTPUT}"
           printf 'publication-mode=%s\n' "${publication_mode}" >>"${GITHUB_OUTPUT}"
           printf 'publish=%s\n' "${publish}" >>"${GITHUB_OUTPUT}"
+      - name: Checkout immutable source for full repository recovery
+        if: inputs.fullRepository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.staged.outputs['source-commit'] }}
+          path: .release-source
+          persist-credentials: false
+      - name: Checkout explicit packaging fix
+        if: inputs.fullRepository && inputs.metadataFixCommit != ''
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.metadataFixCommit }}
+          path: .release-metadata-fix
+          persist-credentials: false
+      - name: Configure Java for full repository recovery
+        if: inputs.fullRepository
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          overwrite-settings: false
+      - name: Assemble and verify full repository from original worker receipts
+        if: inputs.fullRepository
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ steps.staged.outputs['release-version'] }}
+          SOURCE_COMMIT: ${{ steps.staged.outputs['source-commit'] }}
+          SNAPSHOT_VERSION: ${{ inputs.snapshotVersion }}
+          SOURCE_RUN_ID: ${{ inputs.sourceRunId }}
+          SOURCE_ATTEMPT: ${{ needs.matrix.outputs.source-attempt }}
+          METADATA_FIX_COMMIT: ${{ inputs.metadataFixCommit }}
+        run: |
+          set -Eeuo pipefail
+          metadata_args=()
+          if [[ -n "$METADATA_FIX_COMMIT" ]]; then
+            metadata_args+=(--metadata-fix-source "${GITHUB_WORKSPACE}/.release-metadata-fix"
+              --metadata-fix-commit "$METADATA_FIX_COMMIT")
+          fi
+          python3 release/github/full-repository.py \
+            --workers "${GITHUB_WORKSPACE}/.release-worker-recovery" \
+            --source "${GITHUB_WORKSPACE}/.release-source" \
+            --local-repository "${GITHUB_WORKSPACE}/.release-assembly-m2" \
+            --output "${GITHUB_WORKSPACE}/.release-worker-recovery-merged" \
+            --release-version "$RELEASE_VERSION" --snapshot-version "$SNAPSHOT_VERSION" \
+            --commit "$SOURCE_COMMIT" --run-id "github-${SOURCE_RUN_ID}-${SOURCE_ATTEMPT}" \
+            "${metadata_args[@]}" 2>&1 | tee "${RUNNER_TEMP}/full-repository-recovery.log"
       - name: Merge and verify staged Maven repository
+        if: ${{ !inputs.fullRepository }}
         shell: bash
         env:
           RELEASE_VERSION: ${{ steps.staged.outputs['release-version'] }}
@@ -402,5 +486,9 @@ jobs:
             ${{ github.workspace }}/.release-worker-recovery-merged/repository-manifest.json
             ${{ github.workspace }}/.release-worker-recovery-merged/repository-manifest.json.sha256
             ${{ github.workspace }}/.release-worker-recovery-merged/central-deployment.log
+            ${{ github.workspace }}/.release-worker-recovery-merged/metadata-recovery-provenance.json
+            ${{ github.workspace }}/.release-worker-recovery-merged/*effective-pom.xml
+            ${{ github.workspace }}/.release-worker-recovery-merged/consumers/
+            ${{ runner.temp }}/full-repository-recovery.log
           if-no-files-found: warn
           retention-days: 90

@@ -161,8 +161,10 @@ def put(source: Path, local: Path, relative: Path, owner: str, ownership: dict,
     ownership[relative.as_posix()] = owner
 
 
-def seed_native(found: dict, plan: dict, local: Path, version: str) -> dict[str, str]:
+def seed_native(found: dict, plan: dict, local: Path, version: str,
+                supplements: dict | None = None) -> dict[str, str]:
     ownership = {}
+    supplements = dict(supplements or {})
     owners = shared_owners(plan)
     shards = worker.plan_shards(plan)
     for key, repository in sorted(found.items()):
@@ -190,9 +192,19 @@ def seed_native(found: dict, plan: dict, local: Path, version: str) -> dict[str,
             for suffix in suffixes:
                 relative = directory / f"{artifact}-{version}{suffix}"
                 source = repository / relative
-                if not source.is_file():
-                    raise ValueError(f"missing canonical shared artifact: {label}: {relative}")
-                put(source, local, relative, label, ownership, consume=True)
+                metadata_source = supplements.pop(relative.as_posix(), None)
+                if metadata_source is not None:
+                    if artifact != "libtokenizers" or suffix not in ("-sources.jar", "-javadoc.jar"):
+                        raise ValueError(f"recovery cannot replace native artifacts: {relative}")
+                    if source.exists():
+                        raise ValueError(f"recovery cannot replace existing worker metadata: {relative}")
+                    put(metadata_source, local, relative, "metadata-recovery", ownership)
+                else:
+                    if not source.is_file():
+                        raise ValueError(f"missing canonical shared artifact: {label}: {relative}")
+                    put(source, local, relative, label, ownership, consume=True)
+    if supplements:
+        raise ValueError(f"unused metadata recovery artifacts: {sorted(supplements)}")
     # Bootstrap only the actual ancestor chain, not every build-only POM (for
     # example libnd4j) installed by --also-make. Java must replace every ancestor.
     pending = [local / path for path in ownership if path.endswith(".pom")]
@@ -369,7 +381,7 @@ def verify_consumer(local: Path, output: Path, ownership: dict, source: Path) ->
 
 
 def finalize(local: Path, output: Path, ownership: dict, version: str, commit: str,
-             found: dict) -> None:
+             found: dict, recovery: dict | None = None) -> None:
     repository = output / "maven-repository"
     repository.mkdir()
     files = []
@@ -385,6 +397,8 @@ def finalize(local: Path, output: Path, ownership: dict, version: str, commit: s
     manifest = {"schemaVersion": 1, "releaseVersion": version, "commit": commit,
                 "workloads": ["maven"], "assembly": "canonical-full-repository",
                 "workers": ["/".join(k) for k in sorted(found)], "files": files}
+    if recovery is not None:
+        manifest["metadataRecovery"] = recovery
     path = output / "repository-manifest.json"
     path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     Path(str(path) + ".sha256").write_text(f"{central.digest(path)}  {path.name}\n", encoding="ascii")
@@ -400,7 +414,11 @@ def main() -> None:
         parser.add_argument(f"--{name}", type=Path, required=True)
     for name in ("release-version", "snapshot-version", "commit", "run-id"):
         parser.add_argument(f"--{name}", required=True)
+    parser.add_argument("--metadata-fix-source", type=Path)
+    parser.add_argument("--metadata-fix-commit")
     args = parser.parse_args()
+    if bool(args.metadata_fix_source) != bool(args.metadata_fix_commit):
+        raise ValueError("metadata recovery requires both source checkout and explicit fix commit")
     source, local, output = args.source.resolve(), args.local_repository.resolve(), args.output.resolve()
     if not re.fullmatch(r"[0-9a-f]{40}", args.commit):
         raise ValueError("full repository requires an immutable 40-character source SHA")
@@ -416,10 +434,15 @@ def main() -> None:
     output.mkdir(parents=True, exist_ok=True)
     plan = load_json(source / "release/aws/release-plan.json")
     found = inspect_workers(args.workers, plan, args.release_version, args.commit, args.run_id)
-    ownership = seed_native(found, plan, local, args.release_version)
+    supplements, recovery = {}, None
+    if args.metadata_fix_commit:
+        metadata = load_module("metadata_recovery", ROOT / "release/github/metadata_recovery.py")
+        supplements, recovery = metadata.prepare(source, args.metadata_fix_source.resolve(),
+            args.metadata_fix_commit, args.commit, args.release_version, output)
+    ownership = seed_native(found, plan, local, args.release_version, supplements)
     build_java(source, local, output, args.release_version, args.snapshot_version, ownership, plan)
     verify_consumer(local, output, ownership, source)
-    finalize(local, output, ownership, args.release_version, args.commit, found)
+    finalize(local, output, ownership, args.release_version, args.commit, found, recovery)
 
 
 if __name__ == "__main__":
