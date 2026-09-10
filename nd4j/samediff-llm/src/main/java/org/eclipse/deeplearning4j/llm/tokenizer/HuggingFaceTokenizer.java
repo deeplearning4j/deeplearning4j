@@ -118,6 +118,7 @@ public class HuggingFaceTokenizer implements Tokenizer {
     private int padTokenId = -1;
     private int bosTokenId = -1;
     private int eosTokenId = -1;
+    private Set<Integer> generationStopTokenIds = Collections.emptySet();
     private int unkTokenId = -1;
     private volatile boolean closed = false;
 
@@ -224,7 +225,37 @@ public class HuggingFaceTokenizer implements Tokenizer {
         NativeTokenizer impl = NativeTokenizer.fromFile(file.getAbsolutePath());
         log.debug("Created native tokenizer from: {}", file.getAbsolutePath());
 
-        return new HuggingFaceTokenizer(impl, config, tokenizerConfigJson, tokenizerJson);
+        HuggingFaceTokenizer tokenizer = new HuggingFaceTokenizer(impl, config, tokenizerConfigJson, tokenizerJson);
+        try {
+            File generationFile = new File(parentDir, "generation_config.json");
+            if (generationFile.isFile()) {
+                JsonNode root = new ObjectMapper().readTree(Files.readString(generationFile.toPath()));
+                JsonNode eos = root.get("eos_token_id");
+                Set<Integer> ids = new LinkedHashSet<>();
+                if (eos != null && !eos.isNull()) {
+                    Iterable<JsonNode> entries = eos.isArray() ? eos : Collections.singletonList(eos);
+                    for (JsonNode entry : entries) {
+                        if (!entry.isIntegralNumber() || !entry.canConvertToInt() || entry.intValue() < 0
+                                || tokenizer.getToken(entry.intValue()) == null) {
+                            throw new IllegalArgumentException("Invalid generation EOS token ID: " + entry);
+                        }
+                        ids.add(entry.intValue());
+                    }
+                }
+                tokenizer.generationStopTokenIds = Collections.unmodifiableSet(ids);
+            }
+            return tokenizer;
+        } catch (Exception e) {
+            tokenizer.close();
+            throw new TokenizerException("Could not load generation_config.json: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public Set<Integer> getGenerationStopTokenIds() {
+        Set<Integer> ids = new LinkedHashSet<>(Tokenizer.super.getGenerationStopTokenIds());
+        ids.addAll(generationStopTokenIds);
+        return Collections.unmodifiableSet(ids);
     }
 
     private static String loadTokenizerConfigJson(File parentDir) {

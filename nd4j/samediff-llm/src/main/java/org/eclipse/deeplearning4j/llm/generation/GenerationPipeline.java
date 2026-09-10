@@ -5103,7 +5103,10 @@ public class GenerationPipeline implements AutoCloseable {
         if (eosTokenId >= 0) {
             stopTokenIds.add(eosTokenId);
         }
-        if (config.isInheritModelStopTokenIds()) stopTokenIds.addAll(modelMetadata.getStopTokenIds());
+        if (config.isInheritModelStopTokenIds()) {
+            stopTokenIds.addAll(modelMetadata.getStopTokenIds());
+            stopTokenIds.addAll(tokenizer.getGenerationStopTokenIds());
+        }
         if (config.isInheritChatTemplateStopTokenIds()) stopTokenIds.addAll(activeChatStopTokenIds);
         if (config.getAdditionalStopTokenIds() != null) {
             stopTokenIds.addAll(config.getAdditionalStopTokenIds());

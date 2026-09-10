@@ -368,6 +368,12 @@ public interface Tokenizer extends AutoCloseable {
      *
      * @return immutable set of special token IDs
      */
+    /** Model-owned terminal IDs, including a generation_config.json EOS list when available. */
+    default Set<Integer> getGenerationStopTokenIds() {
+        int eos = getEosTokenId();
+        return eos >= 0 ? Collections.singleton(eos) : Collections.emptySet();
+    }
+
     default Set<Integer> getSpecialTokenIds() {
         Set<Integer> ids = new LinkedHashSet<>();
         int pad = getPadTokenId();

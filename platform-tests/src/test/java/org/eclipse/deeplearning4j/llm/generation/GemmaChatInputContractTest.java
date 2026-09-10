@@ -47,7 +47,8 @@ class GemmaChatInputContractTest {
         try (GGUFReader reader = new GGUFReader(gguf)) {
             info = GGMLMetadata.TokenizerInfo.fromGGUFHeader(reader.getHeader());
             reader.getHeader().getMetadata().forEach((key, value) -> {
-                if (key.startsWith("gemma") || key.equals("general.architecture")) {
+                if (key.startsWith("gemma") || key.equals("general.architecture")
+                        || (key.startsWith("tokenizer.") && (value instanceof Number || value instanceof Boolean))) {
                     System.out.println("GEMMA_METADATA " + key + "=" + java.util.Arrays.deepToString(new Object[]{value}));
                 }
             });
@@ -96,6 +97,8 @@ class GemmaChatInputContractTest {
                     GenerationPipeline.selectModelToolCallFormat(new ChatTemplate(info.getChatTemplate(),
                             "<bos>", "<eos>"), tokenizer));
             assertTrue(tokenizer.getChatTemplateStopTokenIds(info.getChatTemplate()).contains(106));
+            assertEquals(Set.of(1, 106, 50), tokenizer.getGenerationStopTokenIds(),
+                    "published generation config must preserve all model-owned terminals");
             System.out.println("GEMMA_TERMINALS tokenizerEos=" + tokenizer.getEosTokenId()
                     + " tokenizerEosText=" + tokenizer.getEosToken()
                     + " importedEos=" + info.getEosTokenId()
