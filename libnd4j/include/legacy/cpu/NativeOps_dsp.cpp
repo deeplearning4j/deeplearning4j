@@ -382,6 +382,11 @@ void clearAllDynamicShapePlanCachesForce(sd::Pointer planHandle) {
   }
 }
 
+int releaseGpuIntermediatesAfterOutputCopy(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return 0;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->releaseGpuIntermediatesAfterOutputCopy();
+}
+
 int releaseGpuIntermediates(sd::Pointer planHandle) {
   if (planHandle == nullptr) return 0;
   auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);

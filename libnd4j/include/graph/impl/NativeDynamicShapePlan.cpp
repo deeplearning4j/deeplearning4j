@@ -7540,6 +7540,21 @@ void NativeDynamicShapePlan::processPendingExternalViewReacquire(NDArray** exter
 // ─── Release GPU intermediates ───────────────────────────────────────────────
 
 
+int NativeDynamicShapePlan::releaseGpuIntermediatesAfterOutputCopy() {
+  // Retire replay resources and detach all contexts before producer storage.
+  // Ordinary release keeps its borrowed-output lifetime guarantee unchanged.
+  int freed = releaseGpuIntermediates();
+  std::unordered_set<NDArray*> owners;
+  owners.insert(retiredRequestedOutputOwners_.begin(), retiredRequestedOutputOwners_.end());
+  retiredRequestedOutputOwners_.clear();
+  for (auto* owner : owners) {
+    if (owner == nullptr) continue;
+    delete owner;
+    ++freed;
+  }
+  return freed;
+}
+
 int NativeDynamicShapePlan::releaseGpuIntermediates() {
   const size_t totalOwnedBytesBeforeRelease = estimatedOwnedBytes();
   size_t captureWorkspaceBytesBeforeRelease = 0;

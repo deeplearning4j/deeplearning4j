@@ -77,6 +77,43 @@ public class DspBufferColoringTest {
     }
 
     @Test
+    void testCopiedOutputsSurviveReleaseWithoutNativeAccumulation() {
+        org.junit.jupiter.api.Assumptions.assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
+        sd = SameDiff.create();
+        SDVariable input = sd.placeHolder("input", DataType.FLOAT, 1024, 1024);
+        input.add("output", 0.25);
+        sd.compileNativeDynamicShapePlan("output");
+        java.util.List<INDArray> retained = new java.util.ArrayList<>();
+        long baseline = -1;
+        final long outputBytes = 1024L * 1024 * Float.BYTES;
+        try (INDArray values = Nd4j.ones(DataType.FLOAT, 1024, 1024)) {
+            for (int iteration = 0; iteration < 5; iteration++) {
+                values.assign(iteration);
+                INDArray result = sd.outputSingle(Map.of("input", values), "output");
+                retained.add(result);
+                // Keep each independently delivered Java result alive across
+                // release and later executions, proving its ownership contract.
+                for (int previous = 0; previous < retained.size(); previous++) {
+                    for (float value : retained.get(previous).data().asFloat())
+                        assertEquals(previous + 0.25f, value, 0.0f);
+                }
+                var executor = sd.getOrCreateSession().getDynamicShapePlanExecutor();
+                executor.releaseGpuIntermediates();
+                long resident = 0;
+                for (int device = 0; device < Nd4j.getAffinityManager().getNumberOfDevices(); device++)
+                    resident += Nd4j.getEnvironment().getDeviceCounter(device);
+                long nativeAndFixed = resident - retained.size() * outputBytes;
+                if (iteration == 1) baseline = nativeAndFixed;
+                if (iteration > 1) assertTrue(nativeAndFixed <= baseline + outputBytes / 2,
+                        "native producer residency grew after copied output release: iteration=" + iteration
+                                + " baseline=" + baseline + " current=" + nativeAndFixed);
+            }
+        } finally {
+            retained.forEach(INDArray::close);
+        }
+    }
+
+    @Test
     void testReleasedFrozenPlanRestoresWarmupSharing() {
         firstWarmupSharesDeadIntermediates(true, true);
     }

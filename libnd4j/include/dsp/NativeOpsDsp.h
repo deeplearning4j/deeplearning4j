@@ -163,6 +163,10 @@ SD_LIB_EXPORT void clearAllDynamicShapePlanCachesForce(sd::Pointer planHandle);
  */
 SD_LIB_EXPORT int releaseGpuIntermediates(sd::Pointer planHandle);
 
+/** Release producer outputs too. Caller must have completed independent output
+ * copies and must retain no borrowed native output pointers. */
+SD_LIB_EXPORT int releaseGpuIntermediatesAfterOutputCopy(sd::Pointer planHandle);
+
 // --- Replay diagnostics (Phase 2) ------------------------------------------
 
 /**

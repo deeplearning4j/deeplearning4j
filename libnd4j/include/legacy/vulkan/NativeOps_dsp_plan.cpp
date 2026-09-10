@@ -412,6 +412,9 @@ void clearDynamicShapePlanCaches(sd::Pointer handle) {
 void clearAllDynamicShapePlanCachesForce(sd::Pointer handle) {
   if (handle != nullptr) planOf(handle)->clearAllShapeCachesForce();
 }
+int releaseGpuIntermediatesAfterOutputCopy(sd::Pointer handle) {
+  return handle == nullptr ? 0 : planOf(handle)->releaseGpuIntermediatesAfterOutputCopy();
+}
 int releaseGpuIntermediates(sd::Pointer handle) {
   return handle == nullptr ? 0 : planOf(handle)->releaseGpuIntermediates();
 }

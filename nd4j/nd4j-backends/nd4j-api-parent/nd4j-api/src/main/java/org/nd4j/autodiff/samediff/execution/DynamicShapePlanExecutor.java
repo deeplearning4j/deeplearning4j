@@ -909,9 +909,17 @@ public class DynamicShapePlanExecutor implements Closeable {
 
     /** Unpin alone leaves replay state alive. Drain/release native borrowers and detach the
      * Java context BEFORE freeing our copies, while the lease still protects the handle. */
+    private int releaseCopiedNativeResources(NativeOps nativeOps, Pointer handle) {
+        // Both executor readback paths return independently allocated Java
+        // destinations. Drain their existing completion boundary before native
+        // producer retirement; caller-held Java results remain untouched.
+        completeOutputReadbacks();
+        return nativeOps.releaseGpuIntermediatesAfterOutputCopy(handle);
+    }
+
     private void prepareMutableReplicaRelease(NativeOps nativeOps, Pointer handle) {
         if (handle != null && nativeMutableReplicaCaches.containsKey(handle.address())) {
-            nativeOps.releaseGpuIntermediates(handle);
+            releaseCopiedNativeResources(nativeOps, handle);
             if (nativePlanHandle != null && nativePlanHandle.address() == handle.address()) {
                 resetReleasedMigrationPlanState();
             }
@@ -1058,7 +1066,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                 devices.switchDevice(nativeExecutionDevice, "DSP.cleanupFailedMigrations", "release-plan-borrowers");
                 NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
                 if (migrationInputsBound) {
-                    nativeOps.releaseGpuIntermediates(nativePlanHandle);
+                    releaseCopiedNativeResources(nativeOps, nativePlanHandle);
                     resetReleasedMigrationPlanState();
                     // As on a frozen multi-plan switch, retain the frozen entry policy:
                     // cold warmup must not clear cast caches borrowed by OTHER pinned graphs.
@@ -2300,7 +2308,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             } else {
                 // Native-only migration copies and intermediates also consume
                 // capacity. Unpin alone deliberately does not evict the native cache.
-                nativeOps.releaseGpuIntermediates(handle);
+                releaseCopiedNativeResources(nativeOps, handle);
                 detachMigrationContext(nativeOps);
             }
             nativeOps.unpinNativePlan(cache, handle);
@@ -3367,7 +3375,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         int freedCount = 0;
         if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
             NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-            freedCount = nativeOps.releaseGpuIntermediates(nativePlanHandle);
+            freedCount = releaseCopiedNativeResources(nativeOps, nativePlanHandle);
             log.info("releaseGpuIntermediates: C++ freed {} intermediate arrays", freedCount);
 
             // Step 3: Trim CUDA memory pool so freed memory is returned to CUDA

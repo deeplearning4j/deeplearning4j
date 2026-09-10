@@ -2131,6 +2131,10 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    */
   int getTotalOutputSlots() const { return totalOutputSlots_; }
 
+  // Caller guarantees all delivered outputs are independent copies and their
+  // readbacks are complete. Unlike ordinary release, no borrowed output survives.
+  int releaseGpuIntermediatesAfterOutputCopy();
+
   /**
    * Estimate memory retained by this plan: owned intermediate arrays,
    * backend-owned compiled artifacts, replay-handle workspaces, and CUDA
