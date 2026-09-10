@@ -11,6 +11,36 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class CpuSlotLastUseTest {
     @Test
+    void longChainRecreatesRetiredIntermediatesOnEveryExecution() {
+        try (SameDiff graph = SameDiff.create()) {
+            graph.setGraphExecutionMode(GraphExecutionMode.SLOT_BY_SLOT);
+            graph.setDspAutoCompileEnabled(true);
+            graph.setDspNativeAutoCompileEnabled(true);
+            var input = graph.placeHolder("input", DataType.FLOAT, 128, 256);
+            var current = input;
+            for (int i = 0; i < 12; i++) {
+                current = current.add("step_" + i, 1.0);
+                current = current.permute(1, 0);
+            }
+            String outputName = current.name();
+            for (int iteration = 0; iteration < 3; iteration++) {
+                try (INDArray value = Nd4j.valueArrayOf(new long[]{128, 256}, iteration, DataType.FLOAT)) {
+                    Map<String, INDArray> outputs = graph.output(Map.of("input", value), outputName);
+                    try {
+                        INDArray output = outputs.get(outputName);
+                        assertArrayEquals(new long[]{128, 256}, output.shape());
+                        assertEquals(iteration + 12.0, output.minNumber().doubleValue(), 0.0);
+                        assertEquals(iteration + 12.0, output.maxNumber().doubleValue(), 0.0);
+                        assertFalse(value.wasClosed());
+                    } finally {
+                        outputs.values().forEach(INDArray::close);
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
     void aliasesAndRequestedIntermediatesSurviveAcrossRepeatedExecutions() {
         try (SameDiff graph = SameDiff.create()) {
             graph.setGraphExecutionMode(GraphExecutionMode.SLOT_BY_SLOT);

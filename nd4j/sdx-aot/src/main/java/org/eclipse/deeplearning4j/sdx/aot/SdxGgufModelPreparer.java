@@ -397,7 +397,7 @@ final class SdxGgufModelPreparer {
         return BenchmarkConfig.cpuSlotBySlot().dspFreezeMergeSegments(false);
     }
 
-    private static void recordCalibrationProgress(Path preparedRoot, long started,
+    static void recordCalibrationProgress(Path preparedRoot, long started,
             String phase, int completedSamples, int maxPrefillLength) throws IOException {
         ObjectNode progress = MAPPER.createObjectNode();
         progress.put("formatVersion", 1);

@@ -96,6 +96,11 @@ class GemmaChatInputContractTest {
                     GenerationPipeline.selectModelToolCallFormat(new ChatTemplate(info.getChatTemplate(),
                             "<bos>", "<eos>"), tokenizer));
             assertTrue(tokenizer.getChatTemplateStopTokenIds(info.getChatTemplate()).contains(106));
+            System.out.println("GEMMA_TERMINALS tokenizerEos=" + tokenizer.getEosTokenId()
+                    + " tokenizerEosText=" + tokenizer.getEosToken()
+                    + " importedEos=" + info.getEosTokenId()
+                    + " templateStops=" + tokenizer.getChatTemplateStopTokenIds(info.getChatTemplate())
+                    + " eosVocabularyId=" + tokenizer.getTokenId("<eos>"));
             var explicit = GenerationPipeline.chatTemplateArguments(Map.of("bos_token", "custom"), metadata, tokenizer);
             assertEquals("custom", explicit.get("bos_token"));
         }
