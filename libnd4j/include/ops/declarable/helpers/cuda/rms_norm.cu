@@ -24,6 +24,7 @@
 // only one reduction pass (sum of squares) instead of two (sum + sum of squares).
 //
 
+#include <algorithm>
 #include <cuda_runtime.h>
 #include <helpers/DebugHelper.h>
 #include <array/NDArray.h>
@@ -557,15 +558,61 @@ void rmsNormLinearGeneralLauncher(
     NDArray* output,
     float epsilon) {
 
-  // Allocate temp for normalized input (same shape as input)
+  // Dense C-order normalization also permits a metadata-only flattening of
+  // leading batch dimensions for the bounded mixed-weight GEMM below.
   auto shapeVec = *input->getShapeAsVector();
-  NDArray normalized(input->ordering(), shapeVec, input->dataType(), context);
-
-  // Step 1: fused rmsNorm kernel (single kernel launch)
+  NDArray normalized('c', shapeVec, input->dataType(), context);
   rmsNorm(context, input, gamma, &normalized, epsilon);
 
-  // Step 2: matmul normalized @ weight -> output (single cuBLAS call)
-  // Type mismatch is handled by the public rmsNormLinear() before calling this launcher.
+  const LongType K = input->sizeAt(-1);
+  const LongType M = input->lengthOf() / K;
+  const LongType N = weight->sizeAt(1);
+  const bool flattenableOutput = output->rankOf() == 2 ||
+      (output->ordering() == 'c' && shape::strideDescendingCAscendingF(output->shapeInfo()));
+  if (input->dataType() == FLOAT32 && weight->dataType() == HALF &&
+      output->dataType() == FLOAT32 && flattenableOutput && N > 0) {
+    // cuBLAS requires matching operand dtypes. Widen HALF exactly, but only
+    // one column panel at a time: a tied vocabulary matrix can otherwise
+    // require gigabytes of persistent cast-cache storage. Both scratch arrays
+    // are reused on the supplied stream, including across captured panel calls.
+    // This is a workspace bound, not a device-memory-limit override.
+    constexpr LongType panelWorkspaceBytes = 16LL * 1024 * 1024;
+    const LongType columnsByBudget = panelWorkspaceBytes / sizeof(float) / (K + M);
+    const LongType panelColumns = std::min(N, std::max<LongType>(1, columnsByBudget));
+    std::vector<LongType> weightShape = {K, panelColumns};
+    std::vector<LongType> resultShape = {M, panelColumns};
+    NDArray widePanel('f', weightShape, FLOAT32, context);
+    NDArray resultPanel('f', resultShape, FLOAT32, context);
+    // F-order panels let MmulHelper write directly without duplicating an
+    // output on each call. ResultSet owns only these temporary view wrappers.
+    ResultSet flattened;
+    std::vector<LongType> normalizedShape = {M, K};
+    auto* normalized2d = normalized.reshape('c', normalizedShape, false);
+    flattened.push_back(normalized2d);
+    auto* output2d = output;
+    if (output->rankOf() != 2) {
+      std::vector<LongType> outputShape = {M, N};
+      output2d = output->reshape('c', outputShape, false);
+      flattened.push_back(output2d);
+    }
+    for (LongType column = 0; column < N; column += panelColumns) {
+      const LongType count = std::min(panelColumns, N - column);
+      ResultSet views;
+      auto* source = (*weight)({0, K, column, column + count}, true);
+      views.push_back(source);
+      auto* widened = widePanel({0, K, 0, count}, true);
+      views.push_back(widened);
+      auto* result = resultPanel({0, M, 0, count}, true);
+      views.push_back(result);
+      auto* destination = (*output2d)({0, M, column, column + count}, true);
+      views.push_back(destination);
+      widened->assign(source);
+      MmulHelper::mmul(normalized2d, widened, result, 1.0, 0.0);
+      destination->assign(result);
+    }
+    return;
+  }
+
   MmulHelper::mmul(&normalized, weight, output, 1.0, 0.0);
 }
 
