@@ -26,7 +26,13 @@ namespace sd {
 
 static constexpr uint32_t MAGIC_DESTROYED = 0xDEADBEEF;
 
-#if defined(__x86_64__) || defined(_M_X64) || defined(__aarch64__) || defined(_M_ARM64)
+#if defined(__linux__) && defined(__aarch64__)
+// Linux AArch64 uses the full 48-bit userspace range, with optional 52-bit
+// VAs. The x86-64 lower canonical half (47 bits) rejects valid ARM allocations.
+// This is only an address-range sanity check, not proof of a live allocation.
+static constexpr uintptr_t PTR_MIN_VALID = 0x10000ULL;
+static constexpr uintptr_t PTR_MAX_VALID = 0x000fffffffffffffULL;
+#elif defined(__x86_64__) || defined(_M_X64) || defined(__aarch64__) || defined(_M_ARM64)
 static constexpr uintptr_t PTR_MIN_VALID = 0x10000ULL;
 static constexpr uintptr_t PTR_MAX_VALID = 0x00007fffffffffffULL;
 #else

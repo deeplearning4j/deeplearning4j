@@ -118,10 +118,14 @@ class SD_LIB_EXPORT DebugHelper {
       THROW_EXCEPTION(op.c_str());
     }
 
-    // Clear any stale sticky errors from unrelated API calls (e.g. failed cudaMallocAsync).
-    // After a successful cudaStreamSynchronize, kernel errors are already caught above.
-    // cudaGetLastError() here would only pick up unrelated errors, causing false failures.
-    cudaGetLastError();
+    // A launch can fail before any work reaches the stream. Successful stream
+    // synchronization does not rule out such failures (e.g. no kernel image).
+    cudaError_t launchError = cudaGetLastError();
+    if (launchError != cudaSuccess) {
+      std::string msg = "Kernel OpNum [" + std::to_string(opType) + "] CUDA launch error [" +
+                        std::to_string(launchError) + "] = " + cudaGetErrorString(launchError);
+      THROW_EXCEPTION(msg.c_str());
+    }
   }
 
 
@@ -164,9 +168,14 @@ class SD_LIB_EXPORT DebugHelper {
       THROW_EXCEPTION(msg.c_str());
     }
 
-    // Clear any stale sticky errors from unrelated API calls (e.g. failed cudaMallocAsync).
-    // After a successful cudaStreamSynchronize, kernel errors are already caught above.
-    cudaGetLastError();
+    // Preserve synchronous launch failures even when the stream had no work.
+    cudaError_t launchError = cudaGetLastError();
+    if (launchError != cudaSuccess) {
+      std::string msg = failMessage ? std::string(failMessage) : std::string("CUDA call");
+      msg += " CUDA launch error [" + std::to_string(launchError) + "] = " +
+             cudaGetErrorString(launchError);
+      THROW_EXCEPTION(msg.c_str());
+    }
   }
 #endif
   static DebugInfo debugStatistics(NDArray * input);
