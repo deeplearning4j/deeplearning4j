@@ -104,7 +104,9 @@ public class DspBufferColoringTest {
                         "ordinary native release must preserve the borrowed producer allocation");
             } finally {
                 ops.deleteDataBuffer(borrowed);
-                opaque.close();
+                // getPlanSlotOutputArray borrows the plan-owned NDArray itself.
+                // Closing it would delete the producer a second time at teardown.
+                opaque.setNull();
             }
         }
     }

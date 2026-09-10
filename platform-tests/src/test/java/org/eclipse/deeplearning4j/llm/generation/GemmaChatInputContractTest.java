@@ -121,11 +121,16 @@ class GemmaChatInputContractTest {
             assertTrue(tokenizer.getChatTemplateStopTokenIds(info.getChatTemplate()).contains(106));
             assertEquals(Set.of(1, 106, 50), tokenizer.getGenerationStopTokenIds(),
                     "published generation config must preserve all model-owned terminals");
-            System.out.println("GEMMA_TERMINALS tokenizerEos=" + tokenizer.getEosTokenId()
-                    + " tokenizerEosText=" + tokenizer.getEosToken()
-                    + " importedEos=" + info.getEosTokenId()
-                    + " templateStops=" + tokenizer.getChatTemplateStopTokenIds(info.getChatTemplate())
-                    + " eosVocabularyId=" + tokenizer.getTokenId("<eos>"));
+            var inherited = GenerationPipelineConfig.builder().build();
+            assertEquals(Set.of(1, 106, 50), GenerationPipeline.buildStopTokenIds(
+                    106, inherited, metadata, tokenizer, Set.of(106)));
+            var optedOut = GenerationPipelineConfig.builder()
+                    .inheritModelStopTokenIds(false).inheritChatTemplateStopTokenIds(false).build();
+            assertEquals(Set.of(106), GenerationPipeline.buildStopTokenIds(
+                    106, optedOut, metadata, tokenizer, Set.of(106)),
+                    "explicit primary EOS survives while model/template inheritance is disabled");
+            assertTrue(GenerationPipeline.buildStopTokenIds(
+                    -1, optedOut, metadata, tokenizer, Set.of(106)).isEmpty());
             var explicit = GenerationPipeline.chatTemplateArguments(Map.of("bos_token", "custom"), metadata, tokenizer);
             assertEquals("custom", explicit.get("bos_token"));
         }

@@ -5099,6 +5099,11 @@ public class GenerationPipeline implements AutoCloseable {
      * additional stop tokens.
      */
     private Set<Integer> buildStopTokenIds(int eosTokenId) {
+        return buildStopTokenIds(eosTokenId, config, modelMetadata, tokenizer, activeChatStopTokenIds);
+    }
+
+    static Set<Integer> buildStopTokenIds(int eosTokenId, GenerationPipelineConfig config,
+            ModelMetadata modelMetadata, Tokenizer tokenizer, Set<Integer> activeChatStopTokenIds) {
         Set<Integer> stopTokenIds = new HashSet<>();
         if (eosTokenId >= 0) {
             stopTokenIds.add(eosTokenId);
