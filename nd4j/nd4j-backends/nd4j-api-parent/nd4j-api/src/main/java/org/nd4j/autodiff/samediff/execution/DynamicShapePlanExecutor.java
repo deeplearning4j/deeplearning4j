@@ -2264,8 +2264,9 @@ public class DynamicShapePlanExecutor implements Closeable {
      */
     void evictPinnedLeasesForCapacity(PlanLeaseKey pendingIdentity) {
         long budget = planLeaseBudgetBytes();
-        long incomingCost = pinnedLeaseEstimatedBytes.getOrDefault(pendingIdentity,
-                DEFAULT_LEASE_COST_ESTIMATE_BYTES);
+        // A post-switch check already includes the incoming lease in total.
+        long incomingCost = pinnedLeaseEstimatedBytes.containsKey(pendingIdentity)
+                ? 0L : DEFAULT_LEASE_COST_ESTIMATE_BYTES;
         long total = 0;
         for (Long bytes : pinnedLeaseEstimatedBytes.values()) total += bytes;
 
@@ -2294,7 +2295,14 @@ public class DynamicShapePlanExecutor implements Closeable {
             long evictedBytes = pinnedLeaseEstimatedBytes.getOrDefault(victim, 0L);
             // Fail closed if release/close/unpin fails. Keep the remaining lease and cost
             // visible rather than admitting an incoming plan against imaginary headroom.
-            prepareMutableReplicaRelease(nativeOps, handle);
+            if (nativeMutableReplicaCaches.containsKey(handle.address())) {
+                prepareMutableReplicaRelease(nativeOps, handle);
+            } else {
+                // Native-only migration copies and intermediates also consume
+                // capacity. Unpin alone deliberately does not evict the native cache.
+                nativeOps.releaseGpuIntermediates(handle);
+                detachMigrationContext(nativeOps);
+            }
             nativeOps.unpinNativePlan(cache, handle);
             pinnedPlanHandles.remove(handleAddress.longValue());
             pinnedPlanHandlesByIdentity.remove(victim);
@@ -2621,6 +2629,12 @@ public class DynamicShapePlanExecutor implements Closeable {
                     observedLifecycleSnapshot = DspLifecycleSnapshot.unavailable();
                     observedLifecycleHandleAddress = 0L;
                 }
+            }
+            // Before dispatch the outgoing plan was active and could not be
+            // evicted. Once the new handle is installed, enforce the same budget
+            // again before warmup allocates another shape's device replicas.
+            if (swapped && nativePlanHandle != null && nativePlanHandle.address() == newHandle.address()) {
+                evictPinnedLeasesForCapacity(leaseIdentity);
             }
             // Apply per-handle settings the first time we see each cached handle.
             applySettingsIfNewHandle(nativeOps, newHandle);

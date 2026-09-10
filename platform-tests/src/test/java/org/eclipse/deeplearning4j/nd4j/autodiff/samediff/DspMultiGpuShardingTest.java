@@ -1069,6 +1069,59 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         }
     }
 
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(ints = {0, 1})
+    public void testShapeSwitchEnforcesLeaseBudgetAfterOutgoingBecomesInactive(int inputDevice) throws Exception {
+        assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
+        assumeTrue(Nd4j.getAffinityManager().getNumberOfDevices() == 2, "requires two CUDA devices");
+        int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
+        String property = "nd4j.dsp.planLeaseBudgetFraction";
+        String originalBudget = System.getProperty(property);
+        String originalSingle = System.getProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
+        SameDiff graph = null;
+        List<INDArray> callers = new ArrayList<>();
+        try {
+            InferenceSession.setDynamicShapePlanEnabled(true);
+            System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
+            System.setProperty(property, "0.000001");
+            Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
+            graph = SameDiff.create();
+            configureMutableReplicaGraph(graph, 4096);
+            Nd4j.getAffinityManager().setDeviceForCurrentThread(inputDevice);
+            INDArray a = Nd4j.create(DataType.FLOAT, 1, 4096);
+            INDArray ak = Nd4j.create(DataType.HALF, 1, 4096);
+            INDArray b = Nd4j.create(DataType.FLOAT, 2, 4096);
+            INDArray bk = Nd4j.create(DataType.HALF, 2, 4096);
+            Collections.addAll(callers, a, ak, b, bk);
+            for (int i = 0; i < 6; i++) runMutableReplicaInputs(graph, a, ak, i * 0.125);
+            DynamicShapePlanExecutor executor = graph.getOrCreateSession().getDynamicShapePlanExecutor();
+            long oldHandle = executor.getNativePlanHandle().address();
+            DspPlanAssertions.assertPhaseReached(graph, PlanPhase.SHAPES_FROZEN, "outgoing plan must be frozen");
+            runMutableReplicaInputs(graph, b, bk, 1.0);
+            long activeHandle = executor.getNativePlanHandle().address();
+            assertNotEquals(oldHandle, activeHandle);
+            assertFalse(pinnedPlanHandlesByIdentity(executor).containsValue(oldHandle),
+                    "outgoing active exemption must end at the shape switch without manual eviction");
+            assertTrue(pinnedPlanHandlesByIdentity(executor).containsValue(activeHandle));
+            assertEquals(pinnedPlanHandlesByIdentity(executor).keySet(), pinnedLeaseEstimatedBytes(executor).keySet());
+            for (int i = 0; i < 6; i++) runMutableReplicaInputs(graph, b, bk, 1.0 + i * 0.125);
+            runMutableReplicaInputs(graph, a, ak, 2.0);
+            for (INDArray caller : callers) assertTrue(DynamicShapePlanExecutor.isArrayLive(caller),
+                    "capacity enforcement must not close caller storage");
+        } finally {
+            try { if (graph != null) graph.close(); }
+            finally {
+                for (INDArray caller : callers) SameDiffMemoryUtils.safeClose(caller);
+                InferenceSession.setDynamicShapePlanEnabled(originalDsp);
+                if (originalBudget == null) System.clearProperty(property); else System.setProperty(property, originalBudget);
+                if (originalSingle == null) System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
+                else System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, originalSingle);
+                Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
+            }
+        }
+    }
+
     /** Eviction must return logical headroom BEFORE incoming allocation or execution. */
     @Test
     public void testMutableReplicaEvictionFreesBeforeAdmission() throws Exception {
