@@ -1797,7 +1797,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
   // segment can contain hundreds of ops, and zeroing every future output at
   // segment entry can clobber buffers still visible through earlier views.
 
-#if defined(SD_CPU) && !defined(SD_CUDA)
+#if defined(SD_BACKEND_TYPE_CPU) && !defined(SD_CUDA)
   bool reclaimCpuIntermediates =
       graphExecutionMode_ == GraphExecutionMode::GEM_SLOT_BY_SLOT &&
       planLifecycle_.isSlotBySlot() && !hasControlFlow_;
@@ -2623,7 +2623,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
     }
 #endif
 
-#if defined(SD_CPU) && !defined(SD_CUDA)
+#if defined(SD_BACKEND_TYPE_CPU) && !defined(SD_CUDA)
     if (reclaimCpuIntermediates) {
       // Buffer identity, not wrapper identity, determines liveness: a view may
       // outlive the producer. Never retire a group while any published alias
