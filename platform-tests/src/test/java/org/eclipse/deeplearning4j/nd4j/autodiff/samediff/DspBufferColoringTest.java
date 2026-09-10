@@ -77,6 +77,39 @@ public class DspBufferColoringTest {
     }
 
     @Test
+    void testOrdinaryReleasePreservesBorrowedOutputStorage() {
+        org.junit.jupiter.api.Assumptions.assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
+        sd = SameDiff.create();
+        sd.placeHolder("input", DataType.FLOAT, 32, 32).add("output", 0.25);
+        sd.compileNativeDynamicShapePlan("output");
+        var ops = org.nd4j.nativeblas.NativeOpsHolder.getInstance().getDeviceNativeOps();
+        try (INDArray input = Nd4j.ones(DataType.FLOAT, 32, 32);
+             INDArray first = sd.outputSingle(Map.of("input", input), "output");
+             INDArray readback = Nd4j.create(DataType.FLOAT, 32, 32)) {
+            var handle = sd.getOrCreateSession().getDynamicShapePlanExecutor().getNativePlanHandle();
+            var opaque = ops.getPlanSlotOutputArray(handle, 0);
+            assertNotNull(opaque);
+            opaque.attachOwner(org.nd4j.nativeblas.OpaqueDataBuffer.primaryOwner());
+            var pointer = ops.getOpaqueNDArraySpecialBuffer(opaque);
+            var borrowed = ops.dbCreateExternalDataBuffer(1024, DataType.FLOAT.toInt(), null, pointer);
+            try {
+                ops.releaseGpuIntermediates(handle);
+                input.assign(2.0);
+                try (INDArray second = sd.outputSingle(Map.of("input", input), "output")) {
+                    for (float value : second.data().asFloat()) assertEquals(2.25f, value, 0.0f);
+                }
+                ops.copyBuffer(readback.data().opaqueBuffer(), 1024, borrowed, 0, 0);
+                Nd4j.getExecutioner().commit();
+                for (float value : readback.data().asFloat()) assertEquals(1.25f, value, 0.0f,
+                        "ordinary native release must preserve the borrowed producer allocation");
+            } finally {
+                ops.deleteDataBuffer(borrowed);
+                opaque.close();
+            }
+        }
+    }
+
+    @Test
     void testCopiedOutputsSurviveReleaseWithoutNativeAccumulation() {
         copiedOutputsSurviveRelease(false);
     }
