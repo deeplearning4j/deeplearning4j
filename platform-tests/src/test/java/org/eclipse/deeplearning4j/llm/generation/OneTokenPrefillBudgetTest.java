@@ -34,6 +34,13 @@ class OneTokenPrefillBudgetTest {
             int[] second = pipeline.generate("Hello. Give one concise helpful response.", 1,
                     SamplingConfig.greedy()).getTokenIds();
             assertArrayEquals(first, second, "Repeated independent requests must retain the same first token");
+            int[] two = pipeline.generate("Hello. Give one concise helpful response.", 2,
+                    SamplingConfig.greedy()).getTokenIds();
+            assertEquals(2, two.length, "A later request must still be able to initialize decode");
+            assertEquals(first[0], two[0]);
+            int[] afterDecode = pipeline.generate("Hello. Give one concise helpful response.", 1,
+                    SamplingConfig.greedy()).getTokenIds();
+            assertArrayEquals(first, afterDecode, "One-token request after retained decode must reset safely");
         }
     }
 }
