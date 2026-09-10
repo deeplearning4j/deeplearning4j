@@ -26,9 +26,8 @@ class GemmaChatInputContractTest {
     void generationConfigPreservesScalarAndListTerminals(@org.junit.jupiter.api.io.TempDir java.nio.file.Path root)
             throws Exception {
         java.nio.file.Path tokenizerFile = root.resolve("tokenizer.json");
-        java.nio.file.Files.writeString(tokenizerFile, """
-                {"version":"1.0","model":{"type":"WordLevel","vocab":{"[UNK]":0,"end":1,"turn":2},"unk_token":"[UNK]"}}
-                """);
+        java.nio.file.Files.writeString(tokenizerFile,
+                "{\"version\":\"1.0\",\"model\":{\"type\":\"WordLevel\",\"vocab\":{\"[UNK]\":0,\"end\":1,\"turn\":2},\"unk_token\":\"[UNK]\"}}");
         try (var tokenizer = HuggingFaceTokenizer.fromFile(tokenizerFile.toFile())) {
             assertTrue(tokenizer.getGenerationStopTokenIds().isEmpty());
         }
