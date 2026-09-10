@@ -779,6 +779,21 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
                         continue;
                     }
 
+                    // The fused FLOAT-activation kernel reads HALF weights in
+                    // their native storage dtype and accumulates into FLOAT. Absorb
+                    // only this exact widening cast, preserving activation casts.
+                    SameDiffOp weightCast = producerOp(sd, helper, weightVar);
+                    String absorbedWeightCastOp = null;
+                    if (xDtype == DataType.FLOAT && wDtype == DataType.FLOAT &&
+                            weightCast != null && weightCast.getOp() instanceof org.nd4j.linalg.api.ops.impl.transforms.dtype.Cast &&
+                            weightCast.getInputsToOp() != null && weightCast.getInputsToOp().size() == 1) {
+                        SDVariable sourceWeight = sd.getVariable(weightCast.getInputsToOp().get(0));
+                        if (sourceWeight != null && sourceWeight.dataType() == DataType.HALF) {
+                            w = sourceWeight;
+                            absorbedWeightCastOp = weightCast.getName();
+                        }
+                    }
+
                     // Create fused RmsNormLinear op
                     SDVariable fused = sd.nn().rmsNormLinear(x, gamma, w, epsilon);
 
@@ -816,6 +831,15 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
 
                     OptimizationUtils.removeVariable(sd, helper, matmulOutputVar);
                     sd.renameVariable(fused.name(), matmulOutputVar);
+                    if (absorbedWeightCastOp != null) {
+                        Variable castVariable = sd.getVariables().get(weightVar);
+                        List<String> castUsers = castVariable == null ? null : castVariable.getInputsForOp();
+                        if ((castUsers == null || castUsers.isEmpty()) &&
+                                (sd.outputs() == null || !sd.outputs().contains(weightVar))) {
+                            OptimizationUtils.removeOp(sd, helper, absorbedWeightCastOp);
+                            OptimizationUtils.removeVariable(sd, helper, weightVar);
+                        }
+                    }
                     if (wasOutput) {
                         graphOutputs.add(matmulOutputVar);
                     }
