@@ -171,7 +171,13 @@ public final class Gemma4Architecture implements ModelArchitecture {
         SDVariable logits = QuantizedLinear.matMulFloatOutput(sd, "logits_uncapped", hidden,
                 weight(sd, weights, head), weights, head, dtype);
         if (c.softcap > 0) {
-            sd.math().tanh(logits.div(c.softcap)).mul("logits", c.softcap);
+            // Keep the full-position FLOAT output, but compute softcap in one
+            // owned buffer rather than retaining several vocab-sized temporaries.
+            SDVariable cap = sd.constant("logits_softcap", (float)c.softcap);
+            sd.nn().fusedElementwiseChain("logits", logits, new SDVariable[]{cap, cap},
+                    new int[]{org.nd4j.linalg.api.ops.impl.transforms.custom.FusedElementwiseChain.OP_DIV,
+                            org.nd4j.linalg.api.ops.impl.transforms.custom.FusedElementwiseChain.OP_TANH,
+                            org.nd4j.linalg.api.ops.impl.transforms.custom.FusedElementwiseChain.OP_MUL});
         } else {
             sd.identity("logits", logits);
         }

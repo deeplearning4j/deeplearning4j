@@ -47,6 +47,32 @@ public class FusedElementwiseChainTest extends BaseNd4jTestWithBackends {
     }
 
     @Test
+    public void testFloatSoftcapPreservesSeparateOperationNumerics() {
+        float[] values = {-1000f, -90f, -30f, -1f, -0.0f, 0.0f, 0.01f, 1f,
+                30f, 90f, 1000f, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY, Float.NaN};
+        try (INDArray input = Nd4j.createFromArray(values);
+             INDArray cap = Nd4j.scalar(DataType.FLOAT, 30f);
+             INDArray divided = input.div(30f);
+             INDArray output = Nd4j.createUninitialized(DataType.FLOAT, input.shape())) {
+            Nd4j.math().tanh(divided); // ordinary Tanh is in-place
+            try (INDArray expected = divided.mul(30f)) {
+                FusedElementwiseChain op = FusedElementwiseChain.builder().input(input)
+                        .divide(cap).tanh().multiply(cap).output(output).build();
+                Nd4j.exec(op);
+                float[] reference = expected.data().asFloat();
+                float[] actual = output.data().asFloat();
+                for (int i = 0; i < values.length; ++i) {
+                    assertEquals(Float.floatToIntBits(reference[i]), Float.floatToIntBits(actual[i]),
+                            "softcap differs at input " + values[i]);
+                }
+                float[] unchanged = input.data().asFloat();
+                for (int i = 0; i < values.length; ++i)
+                    assertEquals(Float.floatToIntBits(values[i]), Float.floatToIntBits(unchanged[i]));
+            }
+        }
+    }
+
+    @Test
     public void testMultiplySigmoid() {
         // SiLU/Swish gate pattern: sigmoid(x * y)
         INDArray x = Nd4j.linspace(-2, 2, 100, DataType.FLOAT).reshape(10, 10);

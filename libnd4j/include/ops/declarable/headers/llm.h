@@ -480,7 +480,7 @@ DECLARE_CUSTOM_OP(mean_square_bp, 2, 1, false, 0, 0);
  * Output shape = input 0 shape.
  */
 #if NOT_EXCLUDED(OP_fused_elementwise_chain)
-DECLARE_CUSTOM_OP(fused_elementwise_chain, 1, 1, true, 0, 1);
+DECLARE_CUSTOM_OP(fused_elementwise_chain, 1, 1, false, 0, 1);
 #endif
 
 /**

@@ -108,7 +108,7 @@ SD_DEVICE T deviceApplyOp(T val, FusedElemOp op, T secondaryVal, T clipMinVal, T
         // Unary ops
         case FUSED_RELU:      return val > T(0) ? val : T(0);
         case FUSED_SIGMOID:   return static_cast<T>(AccT(1) / (AccT(1) + fusedChainExp<AccT>(-x)));
-        case FUSED_TANH:      return static_cast<T>(fusedChainTanh<AccT>(x));
+        case FUSED_TANH:      return sd::math::sd_tanh<T, T>(val);
         case FUSED_GELU: {
             AccT c = AccT(0.7978845608); // sqrt(2/pi)
             AccT inner = c * (x + AccT(0.044715) * x * x * x);
