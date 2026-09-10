@@ -2198,6 +2198,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     };
     for (NDArray* arr : planOwnedArrays_) addArray(arr);
     for (NDArray* arr : outputDeliveryBuffers_) addArray(arr);
+    for (NDArray* arr : retiredRequestedOutputOwners_) addArray(arr);
     for (const auto& entry : migrationBuffers_) addArray(entry.second);
     if (placeholderStagingBuffers_ != nullptr) {
       for (int i = 0; i < numExternalInputs_; ++i) {
@@ -3488,6 +3489,10 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Native owns these detached copies. Java borrows them while copying into its
   // own result arrays; they never replace captured producer pointers in outputSlots_.
   std::vector<NDArray*> outputDeliveryBuffers_;
+
+  // releaseGpuIntermediates preserves requested outputs for external readers.
+  // Keep their owning wrappers until plan destruction instead of orphaning them.
+  std::vector<NDArray*> retiredRequestedOutputOwners_;
 
   // Internal methods
   // flushPendingClose REMOVED: arrays persist, view wrappers deleted inline

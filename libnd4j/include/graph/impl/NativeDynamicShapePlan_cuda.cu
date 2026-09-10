@@ -1609,6 +1609,18 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
       if (copy == nullptr)
         copy = new NDArray(srcArr->shapeInfo(), srcArr->dataType(), false,
                            LaunchContext::defaultContext(), false);
+    } catch (const std::exception& e) {
+      const std::string cause = e.what();
+      DSP_DIAG(MEMORY,
+               "migrateSlotInputsToTargetDevice: destination allocation threw slot=%d "
+               "targetDevice=%d bytes=%zu cause=%s",
+               slotIdx, targetDevice, srcLen, cause.c_str());
+      if (srcMat != nullptr) delete srcMat;
+      if (savedDevice >= 0) cudaSetDevice(savedDevice);
+      return cudaPlanFailure(
+          "CUDA cross-device migration destination allocation threw: "
+          "slot=%d device=%d bytes=%zu cause=%s",
+          slotIdx, targetDevice, srcLen, cause.c_str());
     } catch (...) {
       DSP_DIAG(MEMORY,
                "migrateSlotInputsToTargetDevice: destination allocation threw slot=%d "

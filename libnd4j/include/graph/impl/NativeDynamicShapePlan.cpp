@@ -1671,6 +1671,8 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   for (NDArray* arr : planOwnedArrays_) gatherOwned(arr);
   for (NDArray* arr : deferredSlotDeletes_) gatherOwned(arr);
   for (NDArray* arr : outputDeliveryBuffers_) gatherOwned(arr);
+  for (NDArray* arr : retiredRequestedOutputOwners_) gatherOwned(arr);
+  retiredRequestedOutputOwners_.clear();
   for (const auto& entry : migrationBuffers_) gatherOwned(entry.second);
   migrationBuffers_.clear();
   outputDeliveryBuffers_.clear();
@@ -7927,9 +7929,18 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
       }
     }
 
-    // Clear planOwnedArrays_ — all plan-created arrays are either freed or
-    // orphaned (VIEW_OF_WEIGHT wrappers). Either way, the next session's
-    // warmup will populate fresh entries.
+    // Requested outputs are intentionally still live for external readers.
+    // Java readback may own a COPY, not the native producer allocation. Preserve
+    // native owners until plan destruction, even though their slots were reset.
+    // Never adopt external inputs or views of protected model weights.
+    for (NDArray* arr : planOwnedArrays_) {
+      if (arr == nullptr || !arr->ownsDataBuffer() || arr->isView()) continue;
+      auto* db = arr->dataBuffer();
+      if (db != nullptr && requestedOutputDataBuffers.count(db) != 0 &&
+          protectedWeightBuffers_.count(db) == 0) {
+        retiredRequestedOutputOwners_.push_back(arr);
+      }
+    }
     planOwnedArrays_.clear();
   }
   // If there were no output slots, protected external refs still need to be

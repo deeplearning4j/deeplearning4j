@@ -15,6 +15,21 @@ import org.junit.jupiter.api.Test;
 class NnapiOutputStagingContractTest {
 
     @Test
+    void protectedRequestedOutputOwnersSurviveReleaseUntilDestruction() throws Exception {
+        Path root = Path.of("").toAbsolutePath().normalize().resolve("..").normalize();
+        String source = Files.readString(root.resolve(
+                "libnd4j/include/graph/impl/NativeDynamicShapePlan.cpp"));
+        String header = Files.readString(root.resolve("libnd4j/include/graph/NativeDynamicShapePlan.h"));
+        String release = source.substring(source.indexOf("int NativeDynamicShapePlan::releaseGpuIntermediates()"));
+        assertTrue(release.indexOf("retiredRequestedOutputOwners_.push_back(arr)") >= 0);
+        assertTrue(release.indexOf("retiredRequestedOutputOwners_.push_back(arr)")
+                < release.indexOf("planOwnedArrays_.clear()"), "Release must not orphan native output owners");
+        assertTrue(source.contains("for (NDArray* arr : retiredRequestedOutputOwners_) gatherOwned(arr);"));
+        assertTrue(header.contains("for (NDArray* arr : retiredRequestedOutputOwners_) addArray(arr);"),
+                "Retired but live output buffers remain part of the plan's memory budget");
+    }
+
+    @Test
     void ownedGenerationInputsRetainTheirBufferCoherenceAndLayout() throws Exception {
         Path root = Path.of("").toAbsolutePath().normalize().resolve("..").normalize();
         String runtime = Files.readString(root.resolve(
