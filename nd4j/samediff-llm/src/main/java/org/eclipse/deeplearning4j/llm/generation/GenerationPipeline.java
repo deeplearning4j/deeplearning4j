@@ -1524,6 +1524,16 @@ public class GenerationPipeline implements AutoCloseable {
     private InGraphKvState prefillWarmupAndFreeze(int[] promptTokenIds, int maxNewTokens,
                                                   ModelIOConfig.KVCacheNames kvInputNames,
                                                   long startTime, InGraphKvState reuseState) {
+        return prefillWarmupAndFreeze(promptTokenIds, maxNewTokens, kvInputNames,
+                startTime, reuseState, false);
+    }
+
+    private InGraphKvState prefillWarmupAndFreeze(int[] promptTokenIds, int maxNewTokens,
+                                                  ModelIOConfig.KVCacheNames kvInputNames,
+                                                  long startTime, InGraphKvState reuseState,
+                                                  boolean finishOneShotAfterPrefill) {
+        // Continuation sessions retain their warmup and future-decode state.
+        final boolean prefillExhaustsBudget = finishOneShotAfterPrefill && maxNewTokens == 1;
 
         // ADR 0107 V2 INLINE-SCALE: when INT8 KV quantization is requested, declare the KV cache
         // placeholders as INT8 before any plan is built. A runtime INT8 buffer bound to a FLOAT
@@ -2003,7 +2013,15 @@ public class GenerationPipeline implements AutoCloseable {
 
         log.info("[GGUF-KV] First token: {} (eos={})", firstTokenId, stopTokenIds.contains(firstTokenId));
 
-        if (stopTokenIds.contains(firstTokenId) || matchesConfiguredStopSequence(generatedSoFar)) {
+        boolean prefillReachedStop = stopTokenIds.contains(firstTokenId)
+                || matchesConfiguredStopSequence(generatedSoFar);
+        if (prefillReachedStop || prefillExhaustsBudget) {
+            if (prefillExhaustsBudget) {
+                // Retire the borrower before releasing its inputs. No decode request
+                // remains, so do not construct a second plan or sample token two.
+                decoder.resetSession();
+                log.info("[GGUF-KV] One-shot token budget exhausted by prefill; skipping decode warmup");
+            }
             closePrefillOutputs(prefillOutputs, effectiveLogitsName);
             // Non-reuse owns prefillInputMap and frees it here; on reuse it is the retained state's own
             // field and is freed by the caller via reuseState.close() (the caller drops the cache).
@@ -2015,7 +2033,7 @@ public class GenerationPipeline implements AutoCloseable {
             InGraphKvState terminal = new InGraphKvState();
             terminal.terminalResult = buildResult(tokens, promptTokenIds, stopTokenIds, startTime, firstTokenMs);
             terminal.generatedSoFar = tokens;
-            terminal.eosReached = true;
+            terminal.eosReached = prefillReachedStop;
             terminal.closed = true;
             terminal.actualPrefillLen = actualPrefillLen;
             terminal.promptTokenCount = prefillSeqLen;
@@ -3604,7 +3622,8 @@ public class GenerationPipeline implements AutoCloseable {
                         candidate.maxKvLen, expectedMaxKvLen);
             }
         }
-        InGraphKvState state = prefillWarmupAndFreeze(promptTokenIds, maxNewTokens, kvInputNames, startTime, reuse);
+        InGraphKvState state = prefillWarmupAndFreeze(
+                promptTokenIds, maxNewTokens, kvInputNames, startTime, reuse, true);
         if (state.terminalResult != null) {
             // Terminal (early-EOS / no plan handle): the reused state is spent — close it and drop the
             // cache so the next generate rebuilds from scratch. (state is a fresh terminal, != reuse.)
