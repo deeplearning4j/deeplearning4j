@@ -253,10 +253,14 @@ final class SdxGgufModelPreparer {
             PreparationProfile profile) throws IOException {
         Boolean markerRequirement = requiresCalibrationFromMarker(
                 canonicalIdentity, preparedRoot);
+        long calibrationStarted = System.currentTimeMillis();
         if (Boolean.FALSE.equals(markerRequirement)) {
+            recordCalibrationProgress(preparedRoot, calibrationStarted, "NOT_REQUIRED", 0, 0);
             return null;
         }
+        recordCalibrationProgress(preparedRoot, calibrationStarted, "LOADING_GRAPH", 0, 0);
         try (SameDiff graph = SDZSerializer.load(canonical.toFile(), false)) {
+            recordCalibrationProgress(preparedRoot, calibrationStarted, "GRAPH_LOADED", 0, 0);
             if (markerRequirement == null) {
                 // First pass for this canonical: derive and persist the calibration
                 // requirement inside this single graph load instead of a separate
@@ -266,6 +270,7 @@ final class SdxGgufModelPreparer {
                         TENSOR_G3_Q4_PROFILE_ABI + "\n" + canonicalIdentity.sha256()
                                 + "\n" + required + "\n");
                 if (!required) {
+                    recordCalibrationProgress(preparedRoot, calibrationStarted, "NOT_REQUIRED", 0, 0);
                     return null;
                 }
             }
@@ -301,6 +306,8 @@ final class SdxGgufModelPreparer {
                         throw new IOException(
                                 "Cached Tensor G3 calibration does not match the active dataset ABI");
                     }
+                    recordCalibrationProgress(preparedRoot, calibrationStarted,
+                            "CACHE_HIT", 0, maxPrefillLength);
                     return calibrationPath;
                 }
 
@@ -320,9 +327,13 @@ final class SdxGgufModelPreparer {
                             .kvQuantFormat(profile.kvQuantFormat);
                 }
                 SdxTensorG3Q4Calibration.Result calibration;
-                // Retained generation state and the frozen DSP plan stay live across samples.
-                // After each completed generate() call, collect only unreachable native
-                // wrappers so per-op temporary layers cannot accumulate over all 32 prompts.
+                final int calibratedPrefillLength = maxPrefillLength;
+                final int[] completedSamples = {0};
+                recordCalibrationProgress(preparedRoot, calibrationStarted,
+                        "CREATING_PIPELINE", 0, calibratedPrefillLength);
+                // Collect only unreachable native wrappers after each sample. Persist a
+                // bounded checkpoint outside the importer so Android LMK cannot erase
+                // which sample was active. No prompt text or tensor data is recorded.
                 try (GenerationPipeline pipeline =
                                  GenerationPipeline.create(pipelineBuilder.build())) {
                     calibration = SdxTensorG3Q4Calibration.calibrate(
@@ -330,8 +341,12 @@ final class SdxGgufModelPreparer {
                             tokenizerAssetIdentity,
                             calibrationPrompts,
                             prompt -> {
+                                recordCalibrationProgress(preparedRoot, calibrationStarted,
+                                        "SAMPLE_STARTED", completedSamples[0], calibratedPrefillLength);
                                 pipeline.generate(prompt, 1, SamplingConfig.greedy());
                                 SameDiffMemoryUtils.reclaimCollectedNativeResources();
+                                recordCalibrationProgress(preparedRoot, calibrationStarted,
+                                        "SAMPLE_COMPLETED", ++completedSamples[0], calibratedPrefillLength);
                             });
                 }
                 SdxSourceIdentity afterCalibration = SdxSourceIdentity.identify(canonical);
@@ -343,6 +358,8 @@ final class SdxGgufModelPreparer {
                 }
                 SdxQuantizationContract.writeTensorG3Q4Profile(
                         calibrationPath, canonicalIdentity, calibration);
+                recordCalibrationProgress(preparedRoot, calibrationStarted,
+                        "COMPLETE", completedSamples[0], calibratedPrefillLength);
                 return calibrationPath;
             }
         } catch (RuntimeException failure) {
@@ -372,6 +389,23 @@ final class SdxGgufModelPreparer {
                     + marker);
         }
         return Boolean.parseBoolean(lines.get(2));
+    }
+
+    private static void recordCalibrationProgress(Path preparedRoot, long started,
+            String phase, int completedSamples, int maxPrefillLength) throws IOException {
+        ObjectNode progress = MAPPER.createObjectNode();
+        progress.put("formatVersion", 1);
+        progress.put("startedMillis", started);
+        progress.put("updatedMillis", System.currentTimeMillis());
+        progress.put("phase", phase);
+        progress.put("completedSamples", completedSamples);
+        progress.put("maxPrefillLength", maxPrefillLength);
+        Runtime runtime = Runtime.getRuntime();
+        progress.put("javaHeapUsedBytes", runtime.totalMemory() - runtime.freeMemory());
+        progress.put("javaHeapCommittedBytes", runtime.totalMemory());
+        // These are Java heap counters, not native allocations, RSS or Android PSS.
+        writeAtomicText(preparedRoot.resolve("calibration-progress.json"),
+                MAPPER.writeValueAsString(progress));
     }
 
     private static void writeAtomicText(Path output, String value) throws IOException {

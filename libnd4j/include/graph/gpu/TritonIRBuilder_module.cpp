@@ -1562,8 +1562,20 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       }
     }
   }
+  // Independent cast islands have no common broadcast domain. Each input
+  // must be traversed in its own logical shape even when the launch spans
+  // the largest output in the island.
+  bool castOnlyRange = true;
+  for (int si = startSlot; si <= endSlot; ++si) {
+    if (getOpCategory(slots[si].ident.opName) != TritonOpCategory::CAST) {
+      castOnlyRange = false;
+      break;
+    }
+  }
+  const auto groupOutputShape = refOutputShape;
   for (int a = 0; a < static_cast<int>(inputArgs.size()); a++) {
     auto& arg = inputArgs[a];
+    const auto& refOutputShape = castOnlyRange ? arg.shape : groupOutputShape;
     
     // Normalization-only inputs are loaded by the normalization handler with
     // row-aware shapes. Inputs also consumed by another op must enter SSA here.
@@ -1586,6 +1598,13 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
 
     mlir::Value logicalLoadOffsets = offsets;
     mlir::Value loadMask = mask;
+    if (castOnlyRange) {
+      auto inputBound = splatConstantI32(builder, loc, i32TensorType,
+                                       static_cast<int>(inputElements));
+      auto inputMask = builder.create<mlir::arith::CmpIOp>(
+          loc, mlir::arith::CmpIPredicate::slt, offsets, inputBound);
+      loadMask = builder.create<mlir::arith::AndIOp>(loc, mask, inputMask);
+    }
     if (normMultiRow && normLogicalRowLen > 0) {
       // Generic epilogue operands (for example the bias following RMSNorm)
       // live in the same packed logical row space as normalization outputs.

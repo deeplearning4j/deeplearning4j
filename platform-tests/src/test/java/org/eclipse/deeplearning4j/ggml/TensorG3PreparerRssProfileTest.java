@@ -24,6 +24,29 @@ import java.util.concurrent.atomic.AtomicLong;
 @Slf4j
 public class TensorG3PreparerRssProfileTest {
 
+    @Test
+    void calibrationCheckpointIsBoundedAndReplaced(@org.junit.jupiter.api.io.TempDir java.nio.file.Path root)
+            throws Exception {
+        Class<?> preparer = Class.forName("org.eclipse.deeplearning4j.sdx.aot.SdxGgufModelPreparer");
+        Method checkpoint = preparer.getDeclaredMethod("recordCalibrationProgress",
+                java.nio.file.Path.class, long.class, String.class, int.class, int.class);
+        checkpoint.setAccessible(true);
+        checkpoint.invoke(null, root, 123L, "SAMPLE_STARTED", 3, 36);
+        checkpoint.invoke(null, root, 123L, "SAMPLE_COMPLETED", 4, 36);
+        java.nio.file.Path output = root.resolve("calibration-progress.json");
+        var json = new org.nd4j.shade.jackson.databind.ObjectMapper().readTree(Files.readString(output));
+        org.junit.jupiter.api.Assertions.assertEquals("SAMPLE_COMPLETED", json.path("phase").asText());
+        org.junit.jupiter.api.Assertions.assertEquals(4, json.path("completedSamples").asInt());
+        org.junit.jupiter.api.Assertions.assertEquals(36, json.path("maxPrefillLength").asInt());
+        org.junit.jupiter.api.Assertions.assertEquals(123L, json.path("startedMillis").asLong());
+        org.junit.jupiter.api.Assertions.assertTrue(json.path("updatedMillis").asLong() >= 123L);
+        org.junit.jupiter.api.Assertions.assertTrue(json.path("javaHeapUsedBytes").asLong() >= 0);
+        org.junit.jupiter.api.Assertions.assertTrue(Files.size(output) < 8192);
+        try (var files = Files.list(root)) {
+            org.junit.jupiter.api.Assertions.assertEquals(1L, files.count(), "No pending files after replacement");
+        }
+    }
+
     private static final String MODEL_PATH =
             System.getProperty("tensor.g3.preparer.model",
                     System.getProperty("user.home")
