@@ -76,7 +76,16 @@ public class DspBufferColoringTest {
         firstWarmupSharesDeadIntermediates(true);
     }
 
+    @Test
+    void testReleasedFrozenPlanRestoresWarmupSharing() {
+        firstWarmupSharesDeadIntermediates(true, true);
+    }
+
     private void firstWarmupSharesDeadIntermediates(boolean shapePrepass) {
+        firstWarmupSharesDeadIntermediates(shapePrepass, false);
+    }
+
+    private void firstWarmupSharesDeadIntermediates(boolean shapePrepass, boolean releaseAndRewarm) {
         org.junit.jupiter.api.Assumptions.assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
         sd = SameDiff.create();
         sd.setDspAutoCompileEnabled(true);
@@ -94,6 +103,13 @@ public class DspBufferColoringTest {
         sd.compileNativeDynamicShapePlan("kept", "output");
         try (INDArray values = Nd4j.ones(DataType.FLOAT, 256, 128)) {
             for (int iteration = 0; iteration < 8; iteration++) {
+                if (releaseAndRewarm && iteration == 4) {
+                    var executor = sd.getOrCreateSession().getDynamicShapePlanExecutor();
+                    var nativeOps = org.nd4j.nativeblas.NativeOpsHolder.getInstance().getDeviceNativeOps();
+                    nativeOps.releaseGpuIntermediates(executor.getNativePlanHandle());
+                    nativeOps.setPlanShapesFrozen(executor.getNativePlanHandle(), true);
+                    assertFalse(new DspHandle(sd).bufferColoringApplied(), "release must retire the old colors");
+                }
                 float expected = 0.25f + iteration * 0.125f;
                 values.assign(expected);
                 Map<String, INDArray> results = sd.output(Map.of("input", values), "kept", "output");
@@ -109,7 +125,7 @@ public class DspBufferColoringTest {
                                     "requested output " + name + " at iteration " + iteration);
                         }
                     }
-                    if (iteration == 0) {
+                    if (iteration == 0 || (releaseAndRewarm && iteration == 4)) {
                         DspHandle handle = new DspHandle(sd);
                         assertTrue(handle.isCompiled());
                         assertTrue(handle.bufferColoringApplied(),
