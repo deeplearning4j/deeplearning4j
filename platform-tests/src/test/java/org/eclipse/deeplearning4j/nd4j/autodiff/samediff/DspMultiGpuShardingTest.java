@@ -1122,6 +1122,106 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         }
     }
 
+    @Test
+    public void testRuntimeGroupedCastReplay() {
+        testTransposedHalfCastAcrossDeviceReplay(3);
+    }
+
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(ints = {0, 1, 2, 3})
+    public void testTransposedHalfCastAcrossDeviceReplay(int scenario) {
+        boolean groupedCasts = scenario != 0;
+        boolean shapeSwitch = scenario >= 2;
+        boolean runtimeWeight = scenario == 3;
+        List<INDArray> runtimeWeights = new ArrayList<>();
+        Map<String, INDArray> runtimeFeeds = new LinkedHashMap<>();
+        String budgetProperty = "nd4j.dsp.planLeaseBudgetFraction";
+        String savedBudget = System.getProperty(budgetProperty);
+        assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
+        assumeTrue(Nd4j.getAffinityManager().getNumberOfDevices() == 2, "requires two CUDA devices");
+        int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
+        SameDiff graph = null;
+        try {
+            InferenceSession.setDynamicShapePlanEnabled(true);
+            Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
+            graph = SameDiff.create();
+            if (shapeSwitch) System.setProperty(budgetProperty, "0.000001");
+            graph.setGraphExecutionMode(GraphExecutionMode.TRITON);
+            float[] values = new float[256 * 1536];
+            for (int i = 0; i < values.length; i++) values[i] = ((i % 127) - 63) / 256.0f;
+            INDArray source = Nd4j.createFromArray(values).reshape(256, 1536).castTo(DataType.HALF);
+            SDVariable weight;
+            if (runtimeWeight) {
+                runtimeWeights.add(source);
+                runtimeFeeds.put("weight", source);
+                weight = graph.placeHolder("weight", DataType.HALF, 256, 1536);
+            } else weight = graph.var("weight", source);
+            SDVariable cast = weight.permute(1, 0).castTo("wide", DataType.FLOAT);
+            SDVariable shift = graph.placeHolder("shift", DataType.FLOAT, -1, 1);
+            cast.add("out", shift);
+            String[] outputs = groupedCasts ? new String[]{"out", "outLarge", "outSmall"} : new String[]{"out"};
+            if (groupedCasts) {
+                for (int index = 0; index < 2; index++) {
+                    String name = index == 0 ? "largeWeight" : "smallWeight";
+                    int rows = index == 0 ? 8960 : 257;
+                    INDArray array = Nd4j.valueArrayOf(new long[]{rows, 1536}, index == 0 ? 0.125 : -0.25, DataType.HALF);
+                    SDVariable variable;
+                    if (runtimeWeight) {
+                        runtimeWeights.add(array);
+                        runtimeFeeds.put(name, array);
+                        variable = graph.placeHolder(name, DataType.HALF, rows, 1536);
+                    } else variable = graph.var(name, array);
+                    variable.permute(1, 0).castTo(index == 0 ? "wideLarge" : "wideSmall", DataType.FLOAT)
+                            .add(index == 0 ? "outLarge" : "outSmall", shift);
+                }
+                // All cast producers must precede every secondary-device consumer;
+                // otherwise topological traversal interleaves GPU0/GPU1 and each
+                // cast compiles alone instead of exercising a grouped cast range.
+                for (String name : outputs) {
+                    for (String prerequisite : new String[]{"wide", "wideLarge", "wideSmall"})
+                        graph.getVariable(name).addControlDependency(graph.getVariable(prerequisite));
+                }
+            }
+            DynamicShapePlan plan = graph.compileDynamicShapePlan(outputs);
+            for (var slot : plan.getSlots()) slot.setTargetDeviceId(
+                    Arrays.stream(slot.getOutputVarNames()).anyMatch(n -> n.startsWith("out")) ? 1 : 0);
+            graph.compileNativeDynamicShapePlan(outputs);
+            try (INDArray feed = Nd4j.zeros(DataType.FLOAT, 1, 1);
+                 INDArray expandedFeed = Nd4j.zeros(DataType.FLOAT, 1536, 1)) {
+                for (int iteration = 0; iteration < (shapeSwitch ? 36 : 12); iteration++) {
+                    INDArray currentFeed = shapeSwitch && iteration >= 12 && iteration < 24 ? expandedFeed : feed;
+                    currentFeed.assign(iteration / 16.0f);
+                    runtimeFeeds.put("shift", currentFeed);
+                    Map<String, INDArray> results = graph.output(runtimeFeeds, outputs);
+                    INDArray actual = results.get("out");
+                    try (INDArray dense = actual.dup('c')) {
+                        float[] result = dense.data().asFloat();
+                        for (int k = 0; k < 1536; k++) for (int n = 0; n < 256; n++)
+                            assertEquals(values[n * 1536 + k] + iteration / 16.0f,
+                                    result[k * 256 + n], 0.0f, "iteration=" + iteration + " k=" + k + " n=" + n);
+                        if (groupedCasts) {
+                            for (float value : results.get("outLarge").data().asFloat())
+                                assertEquals(0.125f + iteration / 16.0f, value, 0.0f);
+                            for (float value : results.get("outSmall").data().asFloat())
+                                assertEquals(-0.25f + iteration / 16.0f, value, 0.0f);
+                        }
+                    } finally { for (INDArray result : results.values()) SameDiffMemoryUtils.safeClose(result); }
+                }
+            }
+            assertTrue(DspPlanAssertions.getTotalGraphReplays(graph) > 0, "must exercise replay");
+        } finally {
+            try { if (graph != null) graph.close(); }
+            finally {
+                for (INDArray runtimeArray : runtimeWeights) SameDiffMemoryUtils.safeClose(runtimeArray);
+                if (savedBudget == null) System.clearProperty(budgetProperty);
+                else System.setProperty(budgetProperty, savedBudget);
+                InferenceSession.setDynamicShapePlanEnabled(originalDsp);
+                Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
+            }
+        }
+    }
+
     /** Eviction must return logical headroom BEFORE incoming allocation or execution. */
     @Test
     public void testMutableReplicaEvictionFreesBeforeAdmission() throws Exception {

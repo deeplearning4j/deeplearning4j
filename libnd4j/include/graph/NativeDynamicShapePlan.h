@@ -2131,6 +2131,10 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    */
   int getTotalOutputSlots() const { return totalOutputSlots_; }
 
+  // Caller guarantees all delivered outputs are independent copies and their
+  // readbacks are complete. Unlike ordinary release, no borrowed output survives.
+  int releaseGpuIntermediatesAfterOutputCopy();
+
   /**
    * Estimate memory retained by this plan: owned intermediate arrays,
    * backend-owned compiled artifacts, replay-handle workspaces, and CUDA
@@ -3491,7 +3495,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   std::vector<NDArray*> outputDeliveryBuffers_;
 
   // releaseGpuIntermediates preserves requested outputs for external readers.
-  // Keep their owning wrappers until plan destruction instead of orphaning them.
+  // Keep the plan-owned alias group until destruction or acknowledged copied
+  // delivery. Copied-output retirement deletes view wrappers before owners.
   std::vector<NDArray*> retiredRequestedOutputOwners_;
 
   // Internal methods

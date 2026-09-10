@@ -1797,6 +1797,37 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
   // segment can contain hundreds of ops, and zeroing every future output at
   // segment entry can clobber buffers still visible through earlier views.
 
+#if defined(SD_BACKEND_TYPE_CPU) && !defined(SD_CUDA)
+  bool reclaimCpuIntermediates =
+      graphExecutionMode_ == GraphExecutionMode::GEM_SLOT_BY_SLOT &&
+      planLifecycle_.isSlotBySlot() && !hasControlFlow_;
+  std::vector<int> cpuLastUse;
+  if (reclaimCpuIntermediates) {
+    cpuLastUse.assign(totalOutputSlots_, -1);
+    for (int s = 0; s < numSlots_; ++s) {
+      const auto& candidate = slots_[s];
+      // Fused commands may execute multiple logical slots at once.
+      if (candidate.fusedChain.isFusedChainHead || candidate.fusedChain.isFusedChainTail)
+        reclaimCpuIntermediates = false;
+      for (int o = 0; o < candidate.wiring.numOutputs; ++o) {
+        int si = candidate.wiring.outputSlotIndices[o];
+        if (si >= 0 && si < totalOutputSlots_) cpuLastUse[si] = std::max(cpuLastUse[si], s);
+      }
+      for (int i = 0; i < candidate.wiring.numInputs; ++i) {
+        int si = candidate.wiring.inputSourceIndices[i];
+        if (si >= 0 && si < totalOutputSlots_) cpuLastUse[si] = std::max(cpuLastUse[si], s);
+      }
+    }
+    for (int i = 0; i < numRequestedOutputs_; ++i) {
+      int si = requestedOutputSlotIndices_[i];
+      if (si >= 0 && si < totalOutputSlots_) cpuLastUse[si] = numSlots_;
+    }
+    // Deferred deletions may hold a live view outside outputSlots_. Until their
+    // normal completion-boundary flush, conservatively preserve their buffers.
+    if (!deferredSlotDeletes_.empty()) reclaimCpuIntermediates = false;
+  }
+#endif
+
   // Reset per-segment allocation counters
   tl_dspAllocBytes = 0; tl_dspFreeBytes = 0;
   tl_dspAllocCount = 0; tl_dspFreeCount = 0; tl_dspFreeSkipCount = 0;
@@ -2592,8 +2623,54 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
     }
 #endif
 
-    // Release schedule removed: arrays persist (one array per slot, never nullified).
-    // Same plan = same shapes. Arrays allocated on first execution, reused forever.
+#if defined(SD_BACKEND_TYPE_CPU) && !defined(SD_CUDA)
+    if (reclaimCpuIntermediates) {
+      // Buffer identity, not wrapper identity, determines liveness: a view may
+      // outlive the producer. Never retire a group while any published alias
+      // remains a future input or a requested result.
+      std::unordered_set<DataBuffer*> liveBuffers = protectedWeightBuffers_;
+      for (NDArray* arr : deferredSlotDeletes_)
+        if (arr != nullptr && arr->dataBuffer() != nullptr) liveBuffers.insert(arr->dataBuffer());
+      for (int i = 0; i < untrackedOutputCacheSize_; ++i) {
+        NDArray* arr = untrackedOutputCache_ == nullptr ? nullptr : untrackedOutputCache_[i];
+        if (arr != nullptr && arr->dataBuffer() != nullptr) liveBuffers.insert(arr->dataBuffer());
+      }
+      for (int si = 0; si < totalOutputSlots_; ++si) {
+        NDArray* arr = outputSlots_[si];
+        if (arr != nullptr && cpuLastUse[si] > stepIdx && arr->dataBuffer() != nullptr)
+          liveBuffers.insert(arr->dataBuffer());
+      }
+      std::unordered_set<NDArray*> retiring;
+      std::vector<NDArray*> borrowers, owners;
+      for (NDArray* arr : planOwnedArrays_) {
+        if (arr == nullptr || arr->dataBuffer() == nullptr ||
+            liveBuffers.count(arr->dataBuffer()) != 0 ||
+            !arr->dataBuffer()->isValid()) continue;
+        retiring.insert(arr);
+        (arr->ownsDataBuffer() && !arr->isView() ? owners : borrowers).push_back(arr);
+      }
+      if (!retiring.empty()) {
+        // Contexts borrow wrappers; remove those pointers before freeing them.
+        for (int s = 0; s < numSlots_; ++s) {
+          if (contextPool_ == nullptr || contextPool_[s] == nullptr) continue;
+          for (auto*& arr : contextPool_[s]->fastpath_in())
+            if (retiring.count(arr) != 0) arr = nullptr;
+          for (auto*& arr : contextPool_[s]->fastpath_out())
+            if (retiring.count(arr) != 0) arr = nullptr;
+        }
+        for (int si = 0; si < totalOutputSlots_; ++si) {
+          if (retiring.count(outputSlots_[si]) == 0) continue;
+          outputSlots_[si] = nullptr;
+          if (slotOwnership_ != nullptr) slotOwnership_[si].reset();
+        }
+        for (NDArray* arr : retiring) planOwnedArrays_.erase(arr);
+        // CPU execution has completed synchronously; views must die before owners.
+        for (NDArray* arr : borrowers) delete arr;
+        for (NDArray* arr : owners) delete arr;
+        DSP_DIAG(MEMORY, "CPU_LAST_USE_RELEASE: step=%d wrappers=%zu", stepIdx, retiring.size());
+      }
+    }
+#endif
 
     stepIdx++;
   }

@@ -46,15 +46,19 @@ class RmsNormLinearWeightCastTest {
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {false, true})
-    void preservesFloatLogitsWithHalfTransposedWeights(boolean exportCast) {
+    @ValueSource(ints = {0, 1, 2})
+    void preservesFloatLogitsWithHalfTransposedWeights(int retention) {
+        boolean exportCast = retention == 1;
+        boolean sharedCast = retention == 2;
         try (SameDiff raw = SameDiff.create()) {
             SDVariable x = raw.placeHolder("x", DataType.FLOAT, -1, 32);
             SDVariable gamma = raw.constant("gamma", Nd4j.ones(DataType.FLOAT, 32));
             SDVariable weight = raw.var("weight", Nd4j.valueArrayOf(new long[]{8, 32}, 4096, DataType.HALF));
             SDVariable wide = weight.permute(1, 0).castTo("wide", DataType.FLOAT);
             raw.mmul("logits", raw.nn().rmsNorm(x, gamma, 1e-6), wide);
-            String[] outputs = exportCast ? new String[]{"logits", "wide"} : new String[]{"logits"};
+            if (sharedCast) wide.add("otherConsumer", 1.0);
+            String[] outputs = exportCast ? new String[]{"logits", "wide"}
+                    : sharedCast ? new String[]{"logits", "otherConsumer"} : new String[]{"logits"};
             raw.setOutputs(outputs);
             try (SameDiff optimized = GraphOptimizer.optimize(raw, outputs)) {
                 var fused = optimized.getOps().values().stream()
@@ -62,7 +66,7 @@ class RmsNormLinearWeightCastTest {
                 assertTrue(fused.isPresent(), "normalization/linear fusion must remain enabled");
                 assertEquals(DataType.HALF, optimized.getVariable(fused.get().getInputsToOp().get(2)).dataType());
                 assertEquals(DataType.FLOAT, optimized.getVariable("logits").dataType());
-                if (exportCast) assertNotNull(optimized.getVariable("wide"), "exported cast must survive");
+                if (exportCast || sharedCast) assertNotNull(optimized.getVariable("wide"), "live cast must survive");
                 else assertFalse(optimized.hasVariable("wide"), "dead expanded weight must be removed");
                 for (int rows : new int[]{4, 1, 4}) {
                     try (INDArray input = Nd4j.ones(DataType.FLOAT, rows, 32)) {
@@ -75,6 +79,11 @@ class RmsNormLinearWeightCastTest {
                             float expected = (float)(32.0 * 4096 / Math.sqrt(1.0 + 1e-6));
                             for (float value : actual.data().asFloat()) assertEquals(expected, value, 0.05f);
                         } finally { actual.close(); }
+                        if (sharedCast) {
+                            try (INDArray other = optimized.outputSingle(Map.of("x", input), "otherConsumer")) {
+                                for (float value : other.data().asFloat()) assertEquals(4097.0f, value, 0.0f);
+                            }
+                        }
                     }
                 }
             }

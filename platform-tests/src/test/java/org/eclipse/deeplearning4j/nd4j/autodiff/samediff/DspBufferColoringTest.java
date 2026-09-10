@@ -76,7 +76,98 @@ public class DspBufferColoringTest {
         firstWarmupSharesDeadIntermediates(true);
     }
 
+    @Test
+    void testOrdinaryReleasePreservesBorrowedOutputStorage() {
+        org.junit.jupiter.api.Assumptions.assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
+        sd = SameDiff.create();
+        sd.placeHolder("input", DataType.FLOAT, 32, 32).add("output", 0.25);
+        sd.compileNativeDynamicShapePlan("output");
+        var ops = org.nd4j.nativeblas.NativeOpsHolder.getInstance().getDeviceNativeOps();
+        try (INDArray input = Nd4j.ones(DataType.FLOAT, 32, 32);
+             INDArray first = sd.outputSingle(Map.of("input", input), "output");
+             INDArray readback = Nd4j.create(DataType.FLOAT, 32, 32)) {
+            var handle = sd.getOrCreateSession().getDynamicShapePlanExecutor().getNativePlanHandle();
+            var opaque = ops.getPlanSlotOutputArray(handle, 0);
+            assertNotNull(opaque);
+            opaque.attachOwner(org.nd4j.nativeblas.OpaqueDataBuffer.primaryOwner());
+            var pointer = ops.getOpaqueNDArraySpecialBuffer(opaque);
+            var borrowed = ops.dbCreateExternalDataBuffer(1024, DataType.FLOAT.toInt(), null, pointer);
+            try {
+                ops.releaseGpuIntermediates(handle);
+                input.assign(2.0);
+                try (INDArray second = sd.outputSingle(Map.of("input", input), "output")) {
+                    for (float value : second.data().asFloat()) assertEquals(2.25f, value, 0.0f);
+                }
+                ops.copyBuffer(readback.data().opaqueBuffer(), 1024, borrowed, 0, 0);
+                Nd4j.getExecutioner().commit();
+                for (float value : readback.data().asFloat()) assertEquals(1.25f, value, 0.0f,
+                        "ordinary native release must preserve the borrowed producer allocation");
+            } finally {
+                ops.deleteDataBuffer(borrowed);
+                // getPlanSlotOutputArray borrows the plan-owned NDArray itself.
+                // Closing it would delete the producer a second time at teardown.
+                opaque.setNull();
+            }
+        }
+    }
+
+    @Test
+    void testCopiedOutputsSurviveReleaseWithoutNativeAccumulation() {
+        copiedOutputsSurviveRelease(false);
+    }
+
+    @Test
+    void testCopiedViewOutputsSurviveReleaseWithoutNativeAccumulation() {
+        copiedOutputsSurviveRelease(true);
+    }
+
+    private void copiedOutputsSurviveRelease(boolean viewOutput) {
+        org.junit.jupiter.api.Assumptions.assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
+        sd = SameDiff.create();
+        SDVariable input = sd.placeHolder("input", DataType.FLOAT, 1024, 1024);
+        if (viewOutput) input.add("producer", 0.25).permute(1, 0).rename("output");
+        else input.add("output", 0.25);
+        sd.compileNativeDynamicShapePlan("output");
+        java.util.List<INDArray> retained = new java.util.ArrayList<>();
+        long baseline = -1;
+        final long outputBytes = 1024L * 1024 * Float.BYTES;
+        try (INDArray values = Nd4j.ones(DataType.FLOAT, 1024, 1024)) {
+            for (int iteration = 0; iteration < 5; iteration++) {
+                values.assign(iteration);
+                INDArray result = sd.outputSingle(Map.of("input", values), "output");
+                retained.add(result);
+                // Keep each independently delivered Java result alive across
+                // release and later executions, proving its ownership contract.
+                for (int previous = 0; previous < retained.size(); previous++) {
+                    for (float value : retained.get(previous).data().asFloat())
+                        assertEquals(previous + 0.25f, value, 0.0f);
+                }
+                var executor = sd.getOrCreateSession().getDynamicShapePlanExecutor();
+                executor.releaseGpuIntermediates();
+                long resident = 0;
+                for (int device = 0; device < Nd4j.getAffinityManager().getNumberOfDevices(); device++)
+                    resident += Nd4j.getEnvironment().getDeviceCounter(device);
+                long nativeAndFixed = resident - retained.size() * outputBytes;
+                if (iteration == 1) baseline = nativeAndFixed;
+                if (iteration > 1) assertTrue(nativeAndFixed <= baseline + outputBytes / 2,
+                        "native producer residency grew after copied output release: iteration=" + iteration
+                                + " baseline=" + baseline + " current=" + nativeAndFixed);
+            }
+        } finally {
+            retained.forEach(INDArray::close);
+        }
+    }
+
+    @Test
+    void testReleasedFrozenPlanRestoresWarmupSharing() {
+        firstWarmupSharesDeadIntermediates(true, true);
+    }
+
     private void firstWarmupSharesDeadIntermediates(boolean shapePrepass) {
+        firstWarmupSharesDeadIntermediates(shapePrepass, false);
+    }
+
+    private void firstWarmupSharesDeadIntermediates(boolean shapePrepass, boolean releaseAndRewarm) {
         org.junit.jupiter.api.Assumptions.assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
         sd = SameDiff.create();
         sd.setDspAutoCompileEnabled(true);
@@ -94,6 +185,13 @@ public class DspBufferColoringTest {
         sd.compileNativeDynamicShapePlan("kept", "output");
         try (INDArray values = Nd4j.ones(DataType.FLOAT, 256, 128)) {
             for (int iteration = 0; iteration < 8; iteration++) {
+                if (releaseAndRewarm && iteration == 4) {
+                    var executor = sd.getOrCreateSession().getDynamicShapePlanExecutor();
+                    var nativeOps = org.nd4j.nativeblas.NativeOpsHolder.getInstance().getDeviceNativeOps();
+                    nativeOps.releaseGpuIntermediates(executor.getNativePlanHandle());
+                    nativeOps.setPlanShapesFrozen(executor.getNativePlanHandle(), true);
+                    assertFalse(new DspHandle(sd).bufferColoringApplied(), "release must retire the old colors");
+                }
                 float expected = 0.25f + iteration * 0.125f;
                 values.assign(expected);
                 Map<String, INDArray> results = sd.output(Map.of("input", values), "kept", "output");
@@ -109,7 +207,7 @@ public class DspBufferColoringTest {
                                     "requested output " + name + " at iteration " + iteration);
                         }
                     }
-                    if (iteration == 0) {
+                    if (iteration == 0 || (releaseAndRewarm && iteration == 4)) {
                         DspHandle handle = new DspHandle(sd);
                         assertTrue(handle.isCompiled());
                         assertTrue(handle.bufferColoringApplied(),

@@ -1637,6 +1637,11 @@ public interface NativeOps {
   * @param planHandle handle from compileDynamicShapePlan()
   * @return the number of intermediate NDArrays freed
   */
+ /** Caller guarantees completed independent output copies and no borrowed native output pointers. */
+ default int releaseGpuIntermediatesAfterOutputCopy(Pointer planHandle) {
+     throw new UnsupportedOperationException("releaseGpuIntermediatesAfterOutputCopy not implemented in this backend");
+ }
+
  default int releaseGpuIntermediates(Pointer planHandle) {
      throw new UnsupportedOperationException("releaseGpuIntermediates not implemented in this backend");
  }

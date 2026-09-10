@@ -23,6 +23,28 @@ class GemmaChatInputContractTest {
                     "properties", Map.of("name", Map.of("type", "string")), "required", List.of("name")));
 
     @Test
+    void generationConfigPreservesScalarAndListTerminals(@org.junit.jupiter.api.io.TempDir java.nio.file.Path root)
+            throws Exception {
+        java.nio.file.Path tokenizerFile = root.resolve("tokenizer.json");
+        java.nio.file.Files.writeString(tokenizerFile,
+                "{\"version\":\"1.0\",\"model\":{\"type\":\"WordLevel\",\"vocab\":{\"[UNK]\":0,\"end\":1,\"turn\":2},\"unk_token\":\"[UNK]\"}}");
+        try (var tokenizer = HuggingFaceTokenizer.fromFile(tokenizerFile.toFile())) {
+            assertTrue(tokenizer.getGenerationStopTokenIds().isEmpty());
+        }
+        for (String eos : List.of("1", "[1,2,1]")) {
+            java.nio.file.Files.writeString(root.resolve("generation_config.json"), "{\"eos_token_id\":" + eos + "}");
+            try (var tokenizer = HuggingFaceTokenizer.fromFile(tokenizerFile.toFile())) {
+                assertEquals(eos.equals("1") ? Set.of(1) : Set.of(1, 2), tokenizer.getGenerationStopTokenIds());
+            }
+        }
+        for (String eos : List.of("-1", "1.5", "\"1\"", "2147483648")) {
+            java.nio.file.Files.writeString(root.resolve("generation_config.json"), "{\"eos_token_id\":" + eos + "}");
+            assertThrows(org.eclipse.deeplearning4j.llm.tokenizer.TokenizerException.class,
+                    () -> HuggingFaceTokenizer.fromFile(tokenizerFile.toFile()), eos);
+        }
+    }
+
+    @Test
     void requiredChatUsesDeclaredGemmaSchemaWithoutReflection() {
         var required = ChatTemplate.Request.builder().tools(List.of(TOOL))
                 .toolCallFormat(ChatTemplate.ToolCallFormat.GEMMA).toolChoice(ChatTemplate.ToolChoice.REQUIRED).build();
@@ -47,7 +69,8 @@ class GemmaChatInputContractTest {
         try (GGUFReader reader = new GGUFReader(gguf)) {
             info = GGMLMetadata.TokenizerInfo.fromGGUFHeader(reader.getHeader());
             reader.getHeader().getMetadata().forEach((key, value) -> {
-                if (key.startsWith("gemma") || key.equals("general.architecture")) {
+                if (key.startsWith("gemma") || key.equals("general.architecture")
+                        || (key.startsWith("tokenizer.") && (value instanceof Number || value instanceof Boolean))) {
                     System.out.println("GEMMA_METADATA " + key + "=" + java.util.Arrays.deepToString(new Object[]{value}));
                 }
             });
@@ -96,6 +119,18 @@ class GemmaChatInputContractTest {
                     GenerationPipeline.selectModelToolCallFormat(new ChatTemplate(info.getChatTemplate(),
                             "<bos>", "<eos>"), tokenizer));
             assertTrue(tokenizer.getChatTemplateStopTokenIds(info.getChatTemplate()).contains(106));
+            assertEquals(Set.of(1, 106, 50), tokenizer.getGenerationStopTokenIds(),
+                    "published generation config must preserve all model-owned terminals");
+            var inherited = GenerationPipelineConfig.builder().build();
+            assertEquals(Set.of(1, 106, 50), GenerationPipeline.buildStopTokenIds(
+                    106, inherited, metadata, tokenizer, Set.of(106)));
+            var optedOut = GenerationPipelineConfig.builder()
+                    .inheritModelStopTokenIds(false).inheritChatTemplateStopTokenIds(false).build();
+            assertEquals(Set.of(106), GenerationPipeline.buildStopTokenIds(
+                    106, optedOut, metadata, tokenizer, Set.of(106)),
+                    "explicit primary EOS survives while model/template inheritance is disabled");
+            assertTrue(GenerationPipeline.buildStopTokenIds(
+                    -1, optedOut, metadata, tokenizer, Set.of(106)).isEmpty());
             var explicit = GenerationPipeline.chatTemplateArguments(Map.of("bos_token", "custom"), metadata, tokenizer);
             assertEquals("custom", explicit.get("bos_token"));
         }

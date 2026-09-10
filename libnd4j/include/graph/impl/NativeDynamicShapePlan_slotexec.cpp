@@ -5796,7 +5796,8 @@ Status NativeDynamicShapePlan::executeSlot(
     }
 
     NDArray* out = nullptr;
-    const bool firstPassColor = executeCount_ == 0 && planLifecycle_.isSlotBySlot() &&
+    const bool firstPassColor = executeCount_ == 0 &&
+        (planLifecycle_.isSlotBySlot() || planLifecycle_.isShapesFrozen()) &&
         !tl_graphExecutionActive && !dspGetReplayActive() && colorMap_.warmupEligible(slotIdx);
     const int allocationDevice = firstPassColor ? dspGetCurrentDevice() : -1;
     void* allocationStream = firstPassColor ? dspGetExecutionStream() : nullptr;

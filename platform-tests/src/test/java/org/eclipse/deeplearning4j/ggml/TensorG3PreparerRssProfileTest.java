@@ -1,4 +1,4 @@
-package org.eclipse.deeplearning4j.ggml;
+package org.eclipse.deeplearning4j.sdx.aot;
 
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
@@ -6,8 +6,6 @@ import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOps;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryUsage;
 import java.nio.file.Files;
@@ -23,6 +21,25 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Slf4j
 public class TensorG3PreparerRssProfileTest {
+
+    @Test
+    void calibrationCheckpointIsBoundedAndReplaced(@org.junit.jupiter.api.io.TempDir java.nio.file.Path root)
+            throws Exception {
+        SdxGgufModelPreparer.recordCalibrationProgress(root, 123L, "SAMPLE_STARTED", 3, 36);
+        SdxGgufModelPreparer.recordCalibrationProgress(root, 123L, "SAMPLE_COMPLETED", 4, 36);
+        java.nio.file.Path output = root.resolve("calibration-progress.json");
+        var json = new org.nd4j.shade.jackson.databind.ObjectMapper().readTree(Files.readString(output));
+        org.junit.jupiter.api.Assertions.assertEquals("SAMPLE_COMPLETED", json.path("phase").asText());
+        org.junit.jupiter.api.Assertions.assertEquals(4, json.path("completedSamples").asInt());
+        org.junit.jupiter.api.Assertions.assertEquals(36, json.path("maxPrefillLength").asInt());
+        org.junit.jupiter.api.Assertions.assertEquals(123L, json.path("startedMillis").asLong());
+        org.junit.jupiter.api.Assertions.assertTrue(json.path("updatedMillis").asLong() >= 123L);
+        org.junit.jupiter.api.Assertions.assertTrue(json.path("javaHeapUsedBytes").asLong() >= 0);
+        org.junit.jupiter.api.Assertions.assertTrue(Files.size(output) < 8192);
+        try (var files = Files.list(root)) {
+            org.junit.jupiter.api.Assertions.assertEquals(1L, files.count(), "No pending files after replacement");
+        }
+    }
 
     private static final String MODEL_PATH =
             System.getProperty("tensor.g3.preparer.model",
@@ -167,9 +184,7 @@ public class TensorG3PreparerRssProfileTest {
         sampler.start();
 
         try {
-            // Reflect into the package-private preparer: same entry the C API uses.
-            Class<?> cls = Class.forName("org.eclipse.deeplearning4j.sdx.aot.SdxGgufModelPreparer");
-            for (Class<?> type : new Class<?>[]{cls,
+            for (Class<?> type : new Class<?>[]{SdxGgufModelPreparer.class,
                     org.nd4j.dsp.model.SdxTensorG3Q4Calibration.class,
                     org.eclipse.deeplearning4j.llm.generation.GenerationPipeline.class,
                     org.nd4j.ggml.convert.GGMLToSameDiffConverter.class}) {
@@ -177,10 +192,7 @@ public class TensorG3PreparerRssProfileTest {
                 log.info("PREP_ARTIFACT class={} location={}", type.getName(), location);
                 PathFingerprint.log(location);
             }
-            Method prepare = cls.getDeclaredMethod("prepare",
-                    String.class, String.class, String.class, String.class, String.class);
-            prepare.setAccessible(true);
-            Object result = prepare.invoke(null,
+            String result = SdxGgufModelPreparer.prepare(
                     MODEL_PATH,
                     TOKENIZER_DIR,
                     "android-arm64-nnapi-accelerator",
@@ -201,10 +213,6 @@ public class TensorG3PreparerRssProfileTest {
                 Thread.sleep(pauseSeconds * 1000L);
                 logMemory("after_pause");
             }
-        } catch (InvocationTargetException e) {
-            throw new RuntimeException("prepare failed", e.getCause());
-        } catch (ReflectiveOperationException e) {
-            throw new RuntimeException(e);
         } finally {
             running.set(false);
             sampler.interrupt();

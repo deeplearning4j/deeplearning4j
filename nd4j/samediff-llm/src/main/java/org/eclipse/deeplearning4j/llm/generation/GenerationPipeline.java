@@ -4163,8 +4163,10 @@ public class GenerationPipeline implements AutoCloseable {
                         freshMask = cast;
                     }
                 } else {
+                    // In-graph attention writes this token's KV before attending.
+                    // Unlike external-scatter decode, self must already be visible.
                     freshMask = DecoderInputBuilder.buildInGraphDecodeMask(
-                            state.cachePosition - 1, state.maxKvLen, state.maskDtype);
+                            state.cachePosition, state.maxKvLen, state.maskDtype);
                 }
                 state.decodeCausalMask.assign(freshMask);
                 freshMask.close();
@@ -5099,11 +5101,19 @@ public class GenerationPipeline implements AutoCloseable {
      * additional stop tokens.
      */
     private Set<Integer> buildStopTokenIds(int eosTokenId) {
+        return buildStopTokenIds(eosTokenId, config, modelMetadata, tokenizer, activeChatStopTokenIds);
+    }
+
+    static Set<Integer> buildStopTokenIds(int eosTokenId, GenerationPipelineConfig config,
+            ModelMetadata modelMetadata, Tokenizer tokenizer, Set<Integer> activeChatStopTokenIds) {
         Set<Integer> stopTokenIds = new HashSet<>();
         if (eosTokenId >= 0) {
             stopTokenIds.add(eosTokenId);
         }
-        if (config.isInheritModelStopTokenIds()) stopTokenIds.addAll(modelMetadata.getStopTokenIds());
+        if (config.isInheritModelStopTokenIds()) {
+            stopTokenIds.addAll(modelMetadata.getStopTokenIds());
+            stopTokenIds.addAll(tokenizer.getGenerationStopTokenIds());
+        }
         if (config.isInheritChatTemplateStopTokenIds()) stopTokenIds.addAll(activeChatStopTokenIds);
         if (config.getAdditionalStopTokenIds() != null) {
             stopTokenIds.addAll(config.getAdditionalStopTokenIds());

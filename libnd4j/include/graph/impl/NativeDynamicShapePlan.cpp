@@ -5345,6 +5345,9 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
                shapeOnlySegIdx++, segment.def.startSlot, segment.def.endSlot);
     }
   } else {
+  // A released plan may be externally frozen again before its first call.
+  // Share dead intermediates during functional warmup, not after its peak.
+  prepareFirstExecutionColoring();
   // Execute all segments slot-by-slot to populate shapes
   int segIdx = 0;
   for (auto& segment : segments_) {
@@ -5680,7 +5683,8 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
   // output array and final shape. Rebuild ownership from the final publications
   // before coloring: several fast paths write outputSlots_ directly, so their
   // earlier ownership record can no longer be treated as deletion authority.
-  if (slotLiveness_ != nullptr && slotOwnership_ != nullptr && outputSlots_ != nullptr) {
+  if (!colorMap_.isIncremental() && slotLiveness_ != nullptr &&
+      slotOwnership_ != nullptr && outputSlots_ != nullptr) {
     for (int i = 0; i < totalOutputSlots_; i++) {
       slotOwnership_[i].reset();
     }
@@ -6009,7 +6013,9 @@ Status NativeDynamicShapePlan::precompilePlan(NDArray** externalInputs, int numE
 
 void NativeDynamicShapePlan::prepareFirstExecutionColoring() {
 #ifdef SD_CUDA
-  if (executeCount_ != 0 || !planLifecycle_.isSlotBySlot() || hasControlFlow_ ||
+  if (executeCount_ != 0 ||
+      (!planLifecycle_.isSlotBySlot() && !planLifecycle_.isShapesFrozen()) ||
+      tl_graphExecutionActive || dspGetReplayActive() || hasControlFlow_ ||
       colorMap_.isComputed()) return;
   if (slotLiveness_ == nullptr) {
     // Java's serialized-plan path predates SlotLivenessData. Reconstruct from
@@ -7534,6 +7540,30 @@ void NativeDynamicShapePlan::processPendingExternalViewReacquire(NDArray** exter
 // ─── Release GPU intermediates ───────────────────────────────────────────────
 
 
+int NativeDynamicShapePlan::releaseGpuIntermediatesAfterOutputCopy() {
+  // Retire replay resources and native pooled contexts before producer storage.
+  // Ordinary release keeps its borrowed-output lifetime guarantee unchanged.
+  int freed = releaseGpuIntermediates();
+  std::unordered_set<NDArray*> owners;
+  owners.insert(retiredRequestedOutputOwners_.begin(), retiredRequestedOutputOwners_.end());
+  retiredRequestedOutputOwners_.clear();
+  std::vector<NDArray*> bufferOwners;
+  for (auto* array : owners) {
+    if (array == nullptr) continue;
+    if (array->ownsDataBuffer() && !array->isView()) {
+      bufferOwners.push_back(array);
+    } else {
+      delete array;
+      ++freed;
+    }
+  }
+  for (auto* owner : bufferOwners) {
+    delete owner;
+    ++freed;
+  }
+  return freed;
+}
+
 int NativeDynamicShapePlan::releaseGpuIntermediates() {
   const size_t totalOwnedBytesBeforeRelease = estimatedOwnedBytes();
   size_t captureWorkspaceBytesBeforeRelease = 0;
@@ -7934,7 +7964,7 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
     // native owners until plan destruction, even though their slots were reset.
     // Never adopt external inputs or views of protected model weights.
     for (NDArray* arr : planOwnedArrays_) {
-      if (arr == nullptr || !arr->ownsDataBuffer() || arr->isView()) continue;
+      if (arr == nullptr) continue;
       auto* db = arr->dataBuffer();
       if (db != nullptr && requestedOutputDataBuffers.count(db) != 0 &&
           protectedWeightBuffers_.count(db) == 0) {
