@@ -23,6 +23,29 @@ class GemmaChatInputContractTest {
                     "properties", Map.of("name", Map.of("type", "string")), "required", List.of("name")));
 
     @Test
+    void generationConfigPreservesScalarAndListTerminals(@org.junit.jupiter.api.io.TempDir java.nio.file.Path root)
+            throws Exception {
+        java.nio.file.Path tokenizerFile = root.resolve("tokenizer.json");
+        java.nio.file.Files.writeString(tokenizerFile, """
+                {"version":"1.0","model":{"type":"WordLevel","vocab":{"[UNK]":0,"end":1,"turn":2},"unk_token":"[UNK]"}}
+                """);
+        try (var tokenizer = HuggingFaceTokenizer.fromFile(tokenizerFile.toFile())) {
+            assertTrue(tokenizer.getGenerationStopTokenIds().isEmpty());
+        }
+        for (String eos : List.of("1", "[1,2,1]")) {
+            java.nio.file.Files.writeString(root.resolve("generation_config.json"), "{\"eos_token_id\":" + eos + "}");
+            try (var tokenizer = HuggingFaceTokenizer.fromFile(tokenizerFile.toFile())) {
+                assertEquals(eos.equals("1") ? Set.of(1) : Set.of(1, 2), tokenizer.getGenerationStopTokenIds());
+            }
+        }
+        for (String eos : List.of("-1", "1.5", "\"1\"", "2147483648")) {
+            java.nio.file.Files.writeString(root.resolve("generation_config.json"), "{\"eos_token_id\":" + eos + "}");
+            assertThrows(org.eclipse.deeplearning4j.llm.tokenizer.TokenizerException.class,
+                    () -> HuggingFaceTokenizer.fromFile(tokenizerFile.toFile()), eos);
+        }
+    }
+
+    @Test
     void requiredChatUsesDeclaredGemmaSchemaWithoutReflection() {
         var required = ChatTemplate.Request.builder().tools(List.of(TOOL))
                 .toolCallFormat(ChatTemplate.ToolCallFormat.GEMMA).toolChoice(ChatTemplate.ToolChoice.REQUIRED).build();
