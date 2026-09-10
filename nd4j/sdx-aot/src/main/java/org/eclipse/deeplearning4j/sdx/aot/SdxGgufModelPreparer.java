@@ -321,7 +321,7 @@ final class SdxGgufModelPreparer {
                                 .maxKvCacheLength(maxPrefillLength + 1)
                                 .graphOptimizerEnabled(false)
                                 .dspEnabled(true)
-                                .benchmarkConfig(BenchmarkConfig.cpuCascade());
+                                .benchmarkConfig(calibrationExecutionConfig());
                 if (profile.kvQuantFormat > 0) {
                     pipelineBuilder.kvCacheStrategy(KvCacheStrategy.QUANTIZED)
                             .kvQuantFormat(profile.kvQuantFormat);
@@ -389,6 +389,12 @@ final class SdxGgufModelPreparer {
                     + marker);
         }
         return Boolean.parseBoolean(lines.get(2));
+    }
+
+    static BenchmarkConfig calibrationExecutionConfig() {
+        // Calibration observes individual operations; it must not compile graph
+        // islands or transition to replay merely because a CPU backend is present.
+        return BenchmarkConfig.cpuSlotBySlot().dspFreezeMergeSegments(false);
     }
 
     private static void recordCalibrationProgress(Path preparedRoot, long started,
