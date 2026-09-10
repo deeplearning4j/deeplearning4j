@@ -2330,7 +2330,9 @@ public class DynamicShapePlanExecutor implements Closeable {
                 if (arr != null) total += (long) arr.length() * arr.dataType().width();
             }
         }
-        return total;
+        // Disk-restored plans may be leased before externalInputs is populated.
+        // Unknown cost is not a zero-byte lease; honor the documented fallback.
+        return total > 0 ? total : DEFAULT_LEASE_COST_ESTIMATE_BYTES;
     }
 
     /** Fallback per-lease cost when nothing better is known (0.5 GiB). */
