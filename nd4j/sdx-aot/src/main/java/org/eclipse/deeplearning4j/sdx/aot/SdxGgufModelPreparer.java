@@ -402,8 +402,10 @@ final class SdxGgufModelPreparer {
         progress.put("maxPrefillLength", maxPrefillLength);
         Runtime runtime = Runtime.getRuntime();
         progress.put("javaHeapUsedBytes", runtime.totalMemory() - runtime.freeMemory());
-        progress.put("javaHeapCommittedBytes", runtime.totalMemory());
-        // These are Java heap counters, not native allocations, RSS or Android PSS.
+        progress.put("javaRuntimeTotalMemoryBytes", runtime.totalMemory());
+        progress.put("javaHeapMaxBytes", runtime.maxMemory());
+        // Graal serial GC reports totalMemory() == maxMemory(), not committed
+        // memory. These counters must not be interpreted as native RSS or PSS.
         writeAtomicText(preparedRoot.resolve("calibration-progress.json"),
                 MAPPER.writeValueAsString(progress));
     }
