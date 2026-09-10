@@ -78,10 +78,20 @@ public class DspBufferColoringTest {
 
     @Test
     void testCopiedOutputsSurviveReleaseWithoutNativeAccumulation() {
+        copiedOutputsSurviveRelease(false);
+    }
+
+    @Test
+    void testCopiedViewOutputsSurviveReleaseWithoutNativeAccumulation() {
+        copiedOutputsSurviveRelease(true);
+    }
+
+    private void copiedOutputsSurviveRelease(boolean viewOutput) {
         org.junit.jupiter.api.Assumptions.assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
         sd = SameDiff.create();
         SDVariable input = sd.placeHolder("input", DataType.FLOAT, 1024, 1024);
-        input.add("output", 0.25);
+        if (viewOutput) input.add("producer", 0.25).permute(1, 0).rename("output");
+        else input.add("output", 0.25);
         sd.compileNativeDynamicShapePlan("output");
         java.util.List<INDArray> retained = new java.util.ArrayList<>();
         long baseline = -1;

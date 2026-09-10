@@ -7541,14 +7541,23 @@ void NativeDynamicShapePlan::processPendingExternalViewReacquire(NDArray** exter
 
 
 int NativeDynamicShapePlan::releaseGpuIntermediatesAfterOutputCopy() {
-  // Retire replay resources and detach all contexts before producer storage.
+  // Retire replay resources and native pooled contexts before producer storage.
   // Ordinary release keeps its borrowed-output lifetime guarantee unchanged.
   int freed = releaseGpuIntermediates();
   std::unordered_set<NDArray*> owners;
   owners.insert(retiredRequestedOutputOwners_.begin(), retiredRequestedOutputOwners_.end());
   retiredRequestedOutputOwners_.clear();
-  for (auto* owner : owners) {
-    if (owner == nullptr) continue;
+  std::vector<NDArray*> bufferOwners;
+  for (auto* array : owners) {
+    if (array == nullptr) continue;
+    if (array->ownsDataBuffer() && !array->isView()) {
+      bufferOwners.push_back(array);
+    } else {
+      delete array;
+      ++freed;
+    }
+  }
+  for (auto* owner : bufferOwners) {
     delete owner;
     ++freed;
   }
@@ -7955,7 +7964,7 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
     // native owners until plan destruction, even though their slots were reset.
     // Never adopt external inputs or views of protected model weights.
     for (NDArray* arr : planOwnedArrays_) {
-      if (arr == nullptr || !arr->ownsDataBuffer() || arr->isView()) continue;
+      if (arr == nullptr) continue;
       auto* db = arr->dataBuffer();
       if (db != nullptr && requestedOutputDataBuffers.count(db) != 0 &&
           protectedWeightBuffers_.count(db) == 0) {

@@ -3495,7 +3495,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   std::vector<NDArray*> outputDeliveryBuffers_;
 
   // releaseGpuIntermediates preserves requested outputs for external readers.
-  // Keep their owning wrappers until plan destruction instead of orphaning them.
+  // Keep the plan-owned alias group until destruction or acknowledged copied
+  // delivery. Copied-output retirement deletes view wrappers before owners.
   std::vector<NDArray*> retiredRequestedOutputOwners_;
 
   // Internal methods

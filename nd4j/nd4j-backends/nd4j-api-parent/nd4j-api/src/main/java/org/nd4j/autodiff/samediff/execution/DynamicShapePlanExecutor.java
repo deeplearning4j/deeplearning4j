@@ -914,6 +914,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         // destinations. Drain their existing completion boundary before native
         // producer retirement; caller-held Java results remain untouched.
         completeOutputReadbacks();
+        detachMigrationContext(nativeOps);
         return nativeOps.releaseGpuIntermediatesAfterOutputCopy(handle);
     }
 
