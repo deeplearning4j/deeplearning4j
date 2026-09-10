@@ -12,6 +12,39 @@ import org.nd4j.linalg.factory.Nd4j;
 import static org.junit.jupiter.api.Assertions.*;
 
 class RmsNormLinearWeightCastTest {
+    @org.junit.jupiter.api.Test
+    void multiRowHalfWeightsDoNotRequireFullFloatExpansion() {
+        org.junit.jupiter.api.Assumptions.assumeTrue(
+                Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend", "").contains("CUDA"));
+        int device = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        long originalLimit = Nd4j.getEnvironment().getDeviceLimit(device);
+        // The HALF matrix is 32 MiB; a full FLOAT copy needs 64 MiB.
+        // Leave only 32 MiB for scratch after making all operands resident.
+        try (INDArray x = Nd4j.ones(DataType.FLOAT, 32, 1024);
+             INDArray gamma = Nd4j.ones(DataType.FLOAT, 1024);
+             INDArray stored = Nd4j.valueArrayOf(new long[]{16385, 1024}, 128, DataType.HALF);
+             INDArray output = Nd4j.create(DataType.FLOAT, 32, 16385)) {
+            INDArray weight = stored.transpose();
+            for (INDArray a : new INDArray[]{x, gamma, stored, output})
+                Nd4j.getAffinityManager().ensureLocation(a, org.nd4j.linalg.api.concurrency.AffinityManager.Location.DEVICE);
+            Nd4j.getExecutioner().commit();
+            long limit = Nd4j.getEnvironment().getDeviceCounter(device) + 32L * 1024 * 1024;
+            if (originalLimit > 0) limit = Math.min(limit, originalLimit);
+            Nd4j.getEnvironment().setDeviceLimit(device, limit);
+            try {
+                for (int iteration = 0; iteration < 3; iteration++) {
+                    Nd4j.exec(org.nd4j.linalg.api.ops.DynamicCustomOp.builder("rms_norm_linear")
+                            .addInputs(x, gamma, weight).addOutputs(output)
+                            .addFloatingPointArguments(1e-6).build());
+                    float expected = (float)(1024.0 * 128 / Math.sqrt(1.0 + 1e-6));
+                    for (float value : output.data().asFloat()) assertEquals(expected, value, 0.1f);
+                }
+            } finally {
+                Nd4j.getEnvironment().setDeviceLimit(device, originalLimit);
+            }
+        }
+    }
+
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
     void preservesFloatLogitsWithHalfTransposedWeights(boolean exportCast) {
