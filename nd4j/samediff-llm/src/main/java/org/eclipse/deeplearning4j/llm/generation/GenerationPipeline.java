@@ -4163,8 +4163,10 @@ public class GenerationPipeline implements AutoCloseable {
                         freshMask = cast;
                     }
                 } else {
+                    // In-graph attention writes this token's KV before attending.
+                    // Unlike external-scatter decode, self must already be visible.
                     freshMask = DecoderInputBuilder.buildInGraphDecodeMask(
-                            state.cachePosition - 1, state.maxKvLen, state.maskDtype);
+                            state.cachePosition, state.maxKvLen, state.maskDtype);
                 }
                 state.decodeCausalMask.assign(freshMask);
                 freshMask.close();
