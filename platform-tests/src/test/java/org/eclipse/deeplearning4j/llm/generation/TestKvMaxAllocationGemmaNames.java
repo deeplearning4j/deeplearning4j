@@ -725,6 +725,12 @@ public class TestKvMaxAllocationGemmaNames {
                 assertTrue(schema.hasToolCalls(),
                         "required constrained call produced no tool call: " + schema.getRawText());
             }
+            List<Object> organizationNames = relationSchema.getToolCalls().stream()
+                    .map(call -> call.getArguments().get("name"))
+                    .collect(java.util.stream.Collectors.toList());
+            assertEquals(List.of("Acme Robotics", "Nova Labs"), organizationNames,
+                    "constrained in-graph decode must include the current token in attention; raw="
+                            + relationSchema.getRawText());
         } finally {
             pipe.close();
         }
