@@ -1122,6 +1122,51 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         }
     }
 
+    @Test
+    public void testTransposedHalfCastAcrossDeviceReplay() {
+        assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
+        assumeTrue(Nd4j.getAffinityManager().getNumberOfDevices() == 2, "requires two CUDA devices");
+        int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        boolean originalDsp = InferenceSession.isDynamicShapePlanEnabled();
+        SameDiff graph = null;
+        try {
+            InferenceSession.setDynamicShapePlanEnabled(true);
+            Nd4j.getAffinityManager().setDeviceForCurrentThread(0);
+            graph = SameDiff.create();
+            graph.setGraphExecutionMode(GraphExecutionMode.TRITON);
+            float[] values = new float[256 * 1536];
+            for (int i = 0; i < values.length; i++) values[i] = ((i % 127) - 63) / 256.0f;
+            INDArray source = Nd4j.createFromArray(values).reshape(256, 1536).castTo(DataType.HALF);
+            SDVariable weight = graph.var("weight", source);
+            SDVariable cast = weight.permute(1, 0).castTo("wide", DataType.FLOAT);
+            SDVariable shift = graph.placeHolder("shift", DataType.FLOAT, 1);
+            cast.add("out", shift);
+            DynamicShapePlan plan = graph.compileDynamicShapePlan("out");
+            for (var slot : plan.getSlots()) slot.setTargetDeviceId(
+                    Arrays.asList(slot.getOutputVarNames()).contains("out") ? 1 : 0);
+            graph.compileNativeDynamicShapePlan("out");
+            try (INDArray feed = Nd4j.zeros(DataType.FLOAT, 1)) {
+                for (int iteration = 0; iteration < 12; iteration++) {
+                    feed.assign(iteration / 16.0f);
+                    INDArray actual = graph.outputSingle(Map.of("shift", feed), "out");
+                    try (INDArray dense = actual.dup('c')) {
+                        float[] result = dense.data().asFloat();
+                        for (int k = 0; k < 1536; k++) for (int n = 0; n < 256; n++)
+                            assertEquals(values[n * 1536 + k] + iteration / 16.0f,
+                                    result[k * 256 + n], 0.0f, "iteration=" + iteration + " k=" + k + " n=" + n);
+                    } finally { SameDiffMemoryUtils.safeClose(actual); }
+                }
+            }
+            assertTrue(DspPlanAssertions.getTotalGraphReplays(graph) > 0, "must exercise replay");
+        } finally {
+            try { if (graph != null) graph.close(); }
+            finally {
+                InferenceSession.setDynamicShapePlanEnabled(originalDsp);
+                Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
+            }
+        }
+    }
+
     /** Eviction must return logical headroom BEFORE incoming allocation or execution. */
     @Test
     public void testMutableReplicaEvictionFreesBeforeAdmission() throws Exception {
