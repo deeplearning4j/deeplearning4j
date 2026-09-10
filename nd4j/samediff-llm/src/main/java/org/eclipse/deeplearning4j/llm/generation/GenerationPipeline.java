@@ -2017,9 +2017,13 @@ public class GenerationPipeline implements AutoCloseable {
                 || matchesConfiguredStopSequence(generatedSoFar);
         if (prefillReachedStop || prefillExhaustsBudget) {
             if (prefillExhaustsBudget) {
-                // Retire the borrower before releasing its inputs. No decode request
-                // remains, so do not construct a second plan or sample token two.
+                // No state survives this terminal return, so its captured input addresses
+                // cannot be reused. Resetting only the session leaves native cached plans
+                // alive. Clear borrowers and then plans before releasing their inputs;
+                // model weights and the persistent compiled-plan disk cache are untouched.
                 decoder.resetSession();
+                decoder.clearDynamicShapePlanCache();
+                SameDiffMemoryUtils.trimAllDevicePools();
                 log.info("[GGUF-KV] One-shot token budget exhausted by prefill; skipping decode warmup");
             }
             closePrefillOutputs(prefillOutputs, effectiveLogitsName);
