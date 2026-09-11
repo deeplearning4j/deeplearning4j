@@ -3622,12 +3622,21 @@ public class GenerationPipeline implements AutoCloseable {
             InGraphKvState stale = cachedFixedBufferState;
             cachedFixedBufferState = null;
             stale.close();
+            // Best-effort teardown: resetSession and the plan-cache clear reclaim the
+            // previous generation's plan. A failure here (session buffers already
+            // released, degraded stream) must not abort this generate — the fresh
+            // prefill below builds a replacement plan either way.
             try {
                 decoder.resetSession();
             } catch (Exception resetFailure) {
                 log.warn("[Lifecycle] one-shot teardown resetSession failed: {}", resetFailure.getMessage());
             }
-            decoder.clearDynamicShapePlanCache();
+            try {
+                decoder.clearDynamicShapePlanCache();
+            } catch (Exception clearFailure) {
+                log.warn("[Lifecycle] one-shot teardown clearDynamicShapePlanCache failed: {}",
+                        clearFailure.getMessage());
+            }
             SameDiffMemoryUtils.trimAllDevicePools();
         }
         InGraphKvState state = prefillWarmupAndFreeze(
