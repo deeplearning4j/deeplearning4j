@@ -57,6 +57,9 @@ platform-tests/*.proto
 platform-tests/*.txt
 platform-tests/*.pbtxt
 
+# Generated local SDX AOT knowledge/runtime data
+/nd4j/sdx-aot/data/
+
 # Specific for Nd4j
 *.md5
 *.pom

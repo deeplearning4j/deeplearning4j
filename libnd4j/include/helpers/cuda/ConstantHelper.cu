@@ -166,7 +166,9 @@ void *ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Works
     // During CUDA graph capture, allocations MUST use the captured stream.
     // Using nullptr (legacy default stream) causes implicit sync with the captured
     // stream, invalidating the capture (error 901).
-    cudaStream_t allocStream = nullptr;
+    // Order cudaMallocAsync with the non-capture H2D copy below. Allocation on
+    // the legacy stream is not ordered before a copy on cudaStreamPerThread.
+    cudaStream_t allocStream = cudaStreamPerThread;
     if (tl_graphExecutionActive) {
       allocStream = captureSafeStreamOrDefault();
     }
@@ -297,7 +299,12 @@ void *ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Works
             + std::to_string(res) + " — secondary-device constant is not on device VRAM (allocation bug)";
         THROW_EXCEPTION(errorMessage.c_str());
       }
-      cudaStreamSynchronize(cudaStreamPerThread);
+      auto syncRes = cudaStreamSynchronize(cudaStreamPerThread);
+      if (syncRes != cudaSuccess) {
+        std::string errorMessage = "Constant helper copy synchronization failed: "
+            + std::string(cudaGetErrorString(syncRes));
+        THROW_EXCEPTION(errorMessage.c_str());
+      }
     }
   }
 

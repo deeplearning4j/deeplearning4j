@@ -964,7 +964,9 @@ function(configure_cuda_architecture_flags COMPUTE)
 
     string(TOLOWER "${COMPUTE}" COMPUTE_CMP)
     if(COMPUTE_CMP STREQUAL "all" OR COMPUTE_CMP STREQUAL "auto")
-        set(CUDA_ARCH_FLAGS "-gencode arch=compute_86,code=sm_86" PARENT_SCOPE)
+        # Keep the baseline SASS and embed PTX for newer devices (e.g. GB10).
+        # SASS alone is not forward-compatible across GPU architecture majors.
+        set(CUDA_ARCH_FLAGS "-gencode arch=compute_86,code=sm_86 -gencode arch=compute_86,code=compute_86" PARENT_SCOPE)
     else()
         string(REGEX REPLACE "[ \\t,]+" ";" ARCH_LIST "${COMPUTE}")
         set(ARCH_FLAGS "")
