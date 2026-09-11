@@ -339,7 +339,8 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
         }
         sliceIdx.push_back(0);
         sliceIdx.push_back(kSeqDim);
-        auto* slicedBias = (*prefillBias)(sliceIdx);
+        // Preserve batch/head/query axes, including the single-token [1,1,1,1] case.
+        auto* slicedBias = (*prefillBias)(sliceIdx, true);
         if (slicedBias->dataType() != queries->dataType()) {
           // Keep only the view here: the stride-aware assign below converts directly
           // into the persistent, C-contiguous dpa_v2_biasCast workspace buffer.
