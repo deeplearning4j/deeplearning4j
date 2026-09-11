@@ -72,6 +72,7 @@ public final class Gemma4Architecture implements ModelArchitecture {
         SDVariable ids = sd.placeHolder("input_ids", DataType.INT64, -1, -1);
         SDVariable position = sd.placeHolder("position_offset", DataType.INT64);
         SDVariable cachePosition = sd.placeHolder("cache_position", DataType.INT64);
+        SDVariable actualSequenceLength = sd.placeHolder("actual_sequence_length", DataType.INT64);
         SDVariable mask = sd.placeHolder("_causal_mask", DataType.FLOAT, -1, -1, -1, -1);
         SDVariable[] keys = new SDVariable[c.layers];
         SDVariable[] values = new SDVariable[c.layers];
@@ -170,20 +171,35 @@ public final class Gemma4Architecture implements ModelArchitecture {
         String head = weights.containsKey("output.weight") ? "output.weight" : "token_embd.weight";
         SDVariable logits = QuantizedLinear.matMulFloatOutput(sd, "logits_uncapped", hidden,
                 weight(sd, weights, head), weights, head, dtype);
-        if (c.softcap > 0) {
-            // Keep the full-position FLOAT output, but compute softcap in one
-            // owned buffer rather than retaining several vocab-sized temporaries.
-            SDVariable cap = sd.constant("logits_softcap", (float)c.softcap);
-            sd.nn().fusedElementwiseChain("logits", logits, new SDVariable[]{cap, cap},
+        softcap(sd, "logits", logits, c.softcap);
+        outputs.add("logits");
+
+        // Slice normalized hidden BEFORE the vocabulary projection. The runtime's
+        // actual length excludes fixed-buffer right padding; sizeAt(hidden, 1) does not.
+        SDVariable one = sd.constant(Nd4j.scalar(DataType.INT64, 1L));
+        SDVariable zero = sd.constant(Nd4j.scalar(DataType.INT64, 0L));
+        SDVariable begin = sd.stack("lm_last_begin", 0, zero, actualSequenceLength.sub(one), zero);
+        SDVariable size = sd.stack("lm_last_size", 0, sd.sizeAt(hidden, 0), one, sd.sizeAt(hidden, 2));
+        SDVariable hiddenLast = sd.slice("hidden_last", hidden, begin, size);
+        SDVariable logitsLast = QuantizedLinear.matMulFloatOutput(sd, "logits_last_uncapped", hiddenLast,
+                weight(sd, weights, head), weights, head, dtype);
+        softcap(sd, "lm_logits_last", logitsLast, c.softcap);
+        outputs.add("lm_logits_last");
+        sd.setOutputs(outputs);
+        return sd;
+    }
+
+    /** Both terminal projections keep FLOAT through the same owned-buffer softcap. */
+    private static void softcap(SameDiff sd, String name, SDVariable logits, double softcap) {
+        if (softcap > 0) {
+            SDVariable cap = sd.constant(name + "_softcap", (float)softcap);
+            sd.nn().fusedElementwiseChain(name, logits, new SDVariable[]{cap, cap},
                     new int[]{org.nd4j.linalg.api.ops.impl.transforms.custom.FusedElementwiseChain.OP_DIV,
                             org.nd4j.linalg.api.ops.impl.transforms.custom.FusedElementwiseChain.OP_TANH,
                             org.nd4j.linalg.api.ops.impl.transforms.custom.FusedElementwiseChain.OP_MUL});
         } else {
-            sd.identity("logits", logits);
+            sd.identity(name, logits);
         }
-        outputs.add("logits");
-        sd.setOutputs(outputs);
-        return sd;
     }
 
     /** Direct gamma, not Gemma 1-3's gamma+1. Never square low-precision storage. */

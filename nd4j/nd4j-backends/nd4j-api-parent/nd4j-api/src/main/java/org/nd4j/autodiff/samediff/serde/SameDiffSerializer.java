@@ -1667,7 +1667,8 @@ public class SameDiffSerializer {
                 DataType dtype = FlatBuffersMapper.getDataTypeFromByte(fv.dtype());
                 VariableType vt = FlatBuffersMapper.fromVarType(fv.variabletype());
                 long[] shape = null;
-                if (fv.shapeLength() > 0) {
+                // A present empty vector is a scalar; only an absent vector means unknown shape.
+                if (fv.shapeVector() != null) {
                     shape = new long[fv.shapeLength()];
                     for (int j = 0; j < shape.length; j++)
                         shape[j] = fv.shape(j);
