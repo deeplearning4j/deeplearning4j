@@ -8267,14 +8267,23 @@ bool NativeDynamicShapePlan::isDeviceManagedExternalInput(int extIdx, NDArray* i
     return true;
   }
   if (input == nullptr || input->isEmpty() || input->dataBuffer() == nullptr) return false;
-  void* devAddr = input->specialBuffer();
+  // Classification must inspect resident addresses without synchronizing or
+  // migrating inputs belonging to another segment's device.
+  auto residentAddress = [](NDArray* array) -> void* {
+    auto* db = array != nullptr ? array->dataBuffer() : nullptr;
+    void* base = db != nullptr ? db->special() : nullptr;
+    return base != nullptr
+        ? static_cast<void*>(static_cast<int8_t*>(base) + array->offset() * array->sizeOfT())
+        : nullptr;
+  };
+  void* devAddr = residentAddress(input);
   if (devAddr == nullptr) return false;
   for (void* existing : deviceManagedExternalInputAddrs_) {
     if (existing == devAddr) return true;
   }
   if (kvScatterConfigured_) {
     for (const auto& entry : kvScatterEntries_) {
-      if (entry.staticBuf != nullptr && entry.staticBuf->specialBuffer() == devAddr) {
+      if (residentAddress(entry.staticBuf) == devAddr) {
         return true;
       }
     }

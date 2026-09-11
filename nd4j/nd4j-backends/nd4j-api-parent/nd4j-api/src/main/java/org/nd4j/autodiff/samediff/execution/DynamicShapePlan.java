@@ -108,16 +108,6 @@ public class DynamicShapePlan implements Closeable {
      */
     public static final long DEVICE_AFFINITY_THRESHOLD_BYTES = 32L * 1024 * 1024;
 
-    /**
-     * Fraction of a non-final device's proportional slot share reserved as split
-     * headroom. Activation peaks cluster near the split boundary (large FFN
-     * intermediates), so the boundary device needs slack below its MemoryCounter
-     * limit. 1/8 matches the observed overshoot (dev0 exceeded its 15000 MiB limit
-     * by ~3% at slot 2358 of a 3908-slot graph when the split was exactly
-     * proportional).
-     */
-    public static final double DEVICE_SPLIT_HEADROOM_FRACTION = 0.125;
-
     /** The set of output variable names this plan was compiled for. */
     private final Set<String> requestedOutputs;
 
@@ -426,24 +416,9 @@ public class DynamicShapePlan implements Closeable {
             long deviceMem = sorted.get(i).getValue();
             cumulativeMem += deviceMem;
 
-            // Reserve headroom for the NEXT device's share when this is not the last
-            // device. Naive round(cum/total * N) lets the first device consume its
-            // entire budget-proportional count of slots, but activation peak does not
-            // scale linearly with slot count: large FFN intermediates cluster near the
-            // split boundary, so a split computed purely by slot count pushes the
-            // boundary device past its MemoryCounter limit (observed: dev0 needed 48MB
-            // more at slot 2358 with limit 15000MiB while dev1 still had 1162 slots of
-            // mostly-FP32 tail). Shaving 12.5% off the first device's share moves the
-            // boundary earlier and hands those slots to the next device, whose tail
-            // intermediates are smaller. The last device absorbs the rounding slack.
-            int cumulativeTarget;
-            if (i == sorted.size() - 1) {
-                cumulativeTarget = slots.length;
-            } else {
-                double proportion = cumulativeMem / totalMem;
-                double headroom = proportion * (1.0 - DEVICE_SPLIT_HEADROOM_FRACTION);
-                cumulativeTarget = (int) Math.round(headroom * remainingSlots);
-            }
+            int cumulativeTarget = i == sorted.size() - 1
+                    ? slots.length
+                    : (int) Math.round(cumulativeMem / totalMem * remainingSlots);
             int slotsForDevice = Math.max(0, cumulativeTarget - assigned);
 
             for (int s = 0; s < slotsForDevice && assigned < slots.length; s++, assigned++) {
