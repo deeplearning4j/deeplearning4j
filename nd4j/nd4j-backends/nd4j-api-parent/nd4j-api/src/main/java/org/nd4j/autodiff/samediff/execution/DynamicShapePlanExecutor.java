@@ -282,13 +282,16 @@ public class DynamicShapePlanExecutor implements Closeable {
      * Fraction of total device memory that pinned plan leases may collectively occupy.
      * When a new lease would push the projected total past this budget, the least-recently-used
      * non-active identities are unpinned (native cache may then LRU-evict their plans) until
-     * the projection fits. Default 0.25 mirrors the native cache budget.
+     * the projection fits. Each lease costs at least DEFAULT_LEASE_COST_ESTIMATE_BYTES, so the
+     * default admits roughly (budget / 512 MiB) concurrent shape plans — e.g. a 0.10 fraction
+     * on a 24 GB device admits ~4 plans plus the incoming one. Unit tests set an explicit
+     * tiny fraction; do not shrink this default without re-validating the e2e LLM matrix.
      */
     private static final String PLAN_LEASE_BUDGET_FRACTION_PROPERTY = "nd4j.dsp.planLeaseBudgetFraction";
     private final double planLeaseBudgetFraction;
 
     {
-        double fraction = 0.25;
+        double fraction = 0.10;
         try {
             String raw = System.getProperty(PLAN_LEASE_BUDGET_FRACTION_PROPERTY);
             if (raw != null && !raw.isBlank()) {
@@ -2335,19 +2338,24 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     /**
-     * Estimate the device bytes held by a pinned plan lease: external input buffers from the
-     * last dispatch plus the KV slot max sizes recorded while this executor was last configured.
+     * Estimate the device bytes held by a pinned plan lease.
+     *
+     * <p>External input arrays are borrowed caller storage, not plan-owned
+     * footprint — charging them alone once recorded lease costs of only a few KB
+     * while real plans hold hundreds of MB, so capacity ejection never fired in
+     * real e2e runs. Every pinned plan carries structure (2527 slots on Gemma),
+     * workspaces, and captured replay state; the DEFAULT floor is the
+     * conservative minimum, refreshed upward from measured slot bytes at
+     * eviction time.</p>
      */
     private long estimateLeaseCostBytes() {
-        long total = 0;
+        long inputs = 0;
         if (externalInputs != null) {
             for (INDArray arr : externalInputs) {
-                if (arr != null) total += (long) arr.length() * arr.dataType().width();
+                if (arr != null) inputs += (long) arr.length() * arr.dataType().width();
             }
         }
-        // Disk-restored plans may be leased before externalInputs is populated.
-        // Unknown cost is not a zero-byte lease; honor the documented fallback.
-        return total > 0 ? total : DEFAULT_LEASE_COST_ESTIMATE_BYTES;
+        return DEFAULT_LEASE_COST_ESTIMATE_BYTES + inputs;
     }
 
     /**
