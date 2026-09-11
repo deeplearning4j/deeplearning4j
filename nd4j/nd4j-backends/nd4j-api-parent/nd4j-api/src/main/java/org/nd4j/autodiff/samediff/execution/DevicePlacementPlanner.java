@@ -426,6 +426,11 @@ public class DevicePlacementPlanner {
      * Query available device memory. Returns empty map on CPU-only backends.
      */
     private static Map<Integer, Long> queryDeviceMemory() {
+        // Placement may be requested before any tensor has been created. Bootstrap
+        // the selected backend before NativeOpsHolder reads its native.ops property.
+        // Keep initialization outside the optional device-query fallback below:
+        // a broken backend must not be reported as an empty CPU-only device map.
+        org.nd4j.linalg.factory.Nd4j.getExecutioner();
         Map<Integer, Long> result = new LinkedHashMap<>();
         try {
             NativeOps nativeOps =
