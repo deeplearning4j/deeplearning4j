@@ -502,8 +502,23 @@ public class TestAttentionOpValidation extends BaseOpValidation {
                             int allowed = 1 + (q + repeat) % seq;
                             for (int k = 0; k < width; k++) {
                                 // Attractive padding must be cropped rather than attended to.
-                                bias.putScalar(new long[]{0, 0, q, k},
-                                        k >= seq ? 100.0 : (k < allowed ? 0.0 : -1.0e9));
+                                double biasValue = k >= seq ? 100.0 : (k < allowed ? 0.0 : -1.0e9);
+                                if (bias == parent) {
+                                    bias.putScalar(new long[]{0, 0, q, k}, biasValue);
+                                } else {
+                                    // Populate the owning array by coordinates; the op still receives
+                                    // the original offset/stepped view, without a materializing dup.
+                                    int step = layout.equals("stepped") ? 2 : 1;
+                                    parent.putScalar(new long[]{0, 0, q + 1, 1 + k * step}, biasValue);
+                                }
+                            }
+                        }
+                        for (int q = 0; q < seq; q++) {
+                            int allowed = 1 + (q + repeat) % seq;
+                            for (int k = 0; k < width; k++) {
+                                assertEquals(k >= seq ? 100.0 : (k < allowed ? 0.0 : -1.0e9),
+                                        bias.getDouble(0, 0, q, k), 0.0,
+                                        "bias fixture layout=" + layout + " q=" + q + " k=" + k);
                             }
                         }
                         INDArray output = Nd4j.exec(DynamicCustomOp.builder("dot_product_attention_v2")
