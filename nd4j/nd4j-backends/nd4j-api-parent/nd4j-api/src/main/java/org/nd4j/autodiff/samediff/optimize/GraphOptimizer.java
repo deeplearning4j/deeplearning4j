@@ -154,6 +154,24 @@ public class GraphOptimizer {
             }
         }
 
+        // Runtime-quantized (packed ggml_qmatmul) graphs are OUTSIDE the optimizer
+        // passes' supported domain: passes treat packed-BYTE weight constants as
+        // opaque dense values and rewrite matmul wiring around them (constant
+        // reassociation, horizontal fusion, matmul-chain absorb), producing a graph
+        // that computes garbage (all-NaN gather outputs at runtime). Until passes
+        // understand ggml_qmatmul, be honest about the contract: return the graph
+        // unoptimized.
+        for (org.nd4j.autodiff.samediff.internal.SameDiffOp op : graph.getOps().values()) {
+            if (op.getOp() != null
+                    && "ggml_qmatmul".equals(op.getOp().opName())) {
+                log.warn("Graph contains runtime-quantized ops (op '{}' is ggml_qmatmul): "
+                                + "optimizer passes do not understand packed quantized weights and "
+                                + "would corrupt matmul wiring — returning the graph UNOPTIMIZED.",
+                        op.getName());
+                return graph;
+            }
+        }
+
         // Use full dup() - shallowClone shares DifferentialFunction objects which corrupts the original
         SameDiff sd = graph.dup();
 
