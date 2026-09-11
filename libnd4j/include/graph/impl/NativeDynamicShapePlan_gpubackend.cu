@@ -2087,7 +2087,13 @@ Status NativeDynamicShapePlan::compositeReplay(
           if (vi2 >= numExt) continue;
           NDArray* staging = effectiveExternals_[vi2];
           if (staging == nullptr || staging->isEmpty()) continue;
-          void* buf = staging->specialBuffer();
+          // Metadata inspection must not migrate another segment's input.
+          // specialBuffer() synchronizes to the current device on CUDA.
+          auto* db = staging->dataBuffer();
+          void* base = db != nullptr ? db->special() : nullptr;
+          void* buf = base != nullptr
+              ? static_cast<void*>(static_cast<int8_t*>(base) + staging->offset() * staging->sizeOfT())
+              : nullptr;
           const char* nm = (vi2 < static_cast<int>(externalInputNames_.size()))
                            ? externalInputNames_[vi2].c_str() : "?";
           DSP_DIAG(VERIFY, "PRE_MERGED_LAUNCH_STAGING: ext[%d] name='%s' buf=%p "
