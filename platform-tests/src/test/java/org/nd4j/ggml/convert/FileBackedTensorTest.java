@@ -53,6 +53,30 @@ class FileBackedTensorTest {
     }
 
     @Test
+    @org.junit.jupiter.api.condition.EnabledOnOs(org.junit.jupiter.api.condition.OS.LINUX)
+    void mappingUsesConfiguredTemporaryDirectory(@org.junit.jupiter.api.io.TempDir java.nio.file.Path directory)
+            throws Exception {
+        String previous = System.getProperty("java.io.tmpdir");
+        try {
+            System.setProperty("java.io.tmpdir", directory.toString());
+            try (var array = FileBackedTensor.allocate(DataType.FLOAT, new long[]{1024})) {
+                long address = array.data().addressPointer().address();
+                boolean found = false;
+                for (String line : java.nio.file.Files.readAllLines(java.nio.file.Path.of("/proc/self/maps"))) {
+                    if (!line.contains(directory.toRealPath().toString() + "/sdx-converted-tensor-")) continue;
+                    String[] bounds = line.substring(0, line.indexOf(' ')).split("-");
+                    if (Long.compareUnsigned(address, Long.parseUnsignedLong(bounds[0], 16)) >= 0
+                            && Long.compareUnsigned(address, Long.parseUnsignedLong(bounds[1], 16)) < 0) found = true;
+                }
+                assertTrue(found, "Mapped storage must use the configured directory");
+            }
+        } finally {
+            if (previous == null) System.clearProperty("java.io.tmpdir");
+            else System.setProperty("java.io.tmpdir", previous);
+        }
+    }
+
+    @Test
     void invalidAndOversizedMappingsFailBeforeAllocation() {
         assertThrows(IllegalArgumentException.class,
                 () -> FileBackedTensor.allocate(DataType.FLOAT, new long[]{0}));

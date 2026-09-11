@@ -26,7 +26,10 @@ final class FileBackedTensor {
         if (bytes <= 0 || bytes > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("Mapped conversion tensor must contain 1..2147483647 bytes");
         }
-        Path temporary = Files.createTempFile("sdx-converted-tensor-", ".bin");
+        // Explicit directory avoids the JDK's cached startup temp directory.
+        // The caller must select disk-backed storage, not tmpfs, for reclaimable pages.
+        Path temporary = Files.createTempFile(Path.of(System.getProperty("java.io.tmpdir")),
+                "sdx-converted-tensor-", ".bin");
         try (FileChannel channel = FileChannel.open(temporary, StandardOpenOption.READ,
                 StandardOpenOption.WRITE, StandardOpenOption.DELETE_ON_CLOSE)) {
             var mapping = channel.map(FileChannel.MapMode.READ_WRITE, 0, bytes);
