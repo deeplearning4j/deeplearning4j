@@ -184,6 +184,81 @@ class GemmaToolProtocolTest {
     }
 
     @Test
+    void enumStringsCannotStartClosingUntilTheirValueIsComplete() {
+        List<String> families = List.of("IDENTITY", "HIERARCHY", "PART_WHOLE", "AFFILIATION",
+                "SOCIAL", "PARTICIPATION", "ATTRIBUTION", "OWNERSHIP", "SPATIAL", "COMMUNICATION",
+                "TRANSFER", "REFERENCE", "DERIVATION", "DEPENDENCY", "CAUSATION", "TEMPORAL");
+        ChatTemplate.Tool tool = new ChatTemplate.Tool("submit_relationship_types", "", Map.of(
+                "type", "object", "properties", Map.of("connectionFamily",
+                Map.of("type", "string", "enum", families)),
+                "required", List.of("connectionFamily"), "additionalProperties", false));
+        TextConstraint c = constraint(tool);
+        String start = OPEN + "call:submit_relationship_types{connectionFamily:" + Q;
+        for (String family : families) {
+            String raw = start + family + Q + "}" + CLOSE;
+            for (int i = 0; i < raw.length(); i++) {
+                assertTrue(c.canExtend(raw.substring(0, i), raw.substring(i, i + 1)), "char at " + i);
+                assertTrue(c.canExtend(raw.substring(0, i), raw.substring(i)), "suffix at " + i);
+            }
+            assertTrue(c.isAccepting(raw));
+            assertTrue(parse(raw, tool).isClean());
+            for (int length = 0; length < family.length(); length++) {
+                String prefix = start + family.substring(0, length);
+                assertTrue(c.canExtend(prefix, family.substring(length) + Q + "}" + CLOSE));
+                for (int split = 1; split <= Q.length(); split++) {
+                    assertFalse(c.canExtend(prefix, Q.substring(0, split)),
+                            "Premature closer at enum length " + length + ", split " + split);
+                    assertFalse(GemmaToolCallCodec.scan(prefix + Q.substring(0, split),
+                            Map.of(tool.getName(), tool)).valid);
+                }
+            }
+        }
+    }
+
+    @Test
+    void exactMaskerRejectsPrematureEnumCloserAndKeepsContentContinuation() {
+        Map<String, Object> item = Map.of("type", "object", "properties", Map.of(
+                "type", Map.of("type", "string"),
+                "connectionFamily", Map.of("type", "string", "enum", List.of("COMMUNICATION", "CAUSATION"))),
+                "required", List.of("type", "connectionFamily"), "additionalProperties", false);
+        ChatTemplate.Tool tool = new ChatTemplate.Tool("submit_relationship_types", "", Map.of(
+                "type", "object", "properties", Map.of("relationshipTypes",
+                Map.of("type", "array", "items", item)),
+                "required", List.of("relationshipTypes"), "additionalProperties", false));
+        String prefix = OPEN + "call:submit_relationship_types\n{\nrelationshipTypes\n:\n[\n{\ntype\n:\n"
+                + Q + "ACTIVITY" + Q + "\n,\nconnectionFamily\n:\n" + Q + "C";
+        ConstraintMasker masker = new ConstraintMasker(constraint(tool), 1);
+        masker.decodedTextEmitted(prefix);
+        String[] pieces = {Q.substring(0, Q.length() - 1), Q, "AUSATION"};
+        float[] masked = masker.maskLogitsByDecodedCandidate(new float[]{10f, 9f, 1f},
+                java.util.Set.of(), java.util.Set.of(), id -> pieces[id],
+                id -> prefix + pieces[id], List.of(OPEN, CLOSE, Q));
+        assertEquals(Float.NEGATIVE_INFINITY, masked[0]);
+        assertEquals(Float.NEGATIVE_INFINITY, masked[1]);
+        assertEquals(1f, masked[2]);
+        assertTrue(constraint(tool).isAccepting(prefix + pieces[2] + Q + "}]}" + CLOSE));
+    }
+
+    @Test
+    void enumLiteralLessThanAndWhitespaceRemainExtendable() {
+        // A lone '<' may be literal content, not a commitment to a closing sentinel.
+        List<String> values = List.of("X< D", "C< D", "C", "CAUSATION", "A  B", "A\"\\\nB");
+        ChatTemplate.Tool tool = new ChatTemplate.Tool("literal_enum", "", Map.of("type", "object",
+                "properties", Map.of("value", Map.of("type", "string", "enum", values)),
+                "required", List.of("value"), "additionalProperties", false));
+        TextConstraint c = constraint(tool);
+        for (String value : values) {
+            String raw = call(tool.getName(), "{value:" + Q + value + Q + "}");
+            for (int i = 0; i < raw.length(); i++) {
+                assertTrue(c.canExtend(raw.substring(0, i), raw.substring(i, i + 1)), "char at " + i);
+                assertTrue(c.canExtend(raw.substring(0, i), raw.substring(i)), "suffix at " + i);
+            }
+            assertTrue(c.isAccepting(raw));
+            assertEquals(value, parse(raw, tool).getCalls().get(0).getArgs().get("value"));
+        }
+    }
+
+    @Test
     void exactMaskerRejectsWhitespaceLoopAndWidensToPropertyName() {
         ConstraintMasker masker = new ConstraintMasker(constraint(nodeTypesTool()), 1);
         String start = OPEN + "call:submit_node_types{";

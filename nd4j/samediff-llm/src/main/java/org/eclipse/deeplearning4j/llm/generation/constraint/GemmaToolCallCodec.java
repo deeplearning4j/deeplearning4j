@@ -328,6 +328,14 @@ public final class GemmaToolCallCodec {
                 position++;
             }
             String value = text.substring(start, position);
+            if (position < text.length() && !ToolSchemaValidator.isValidValue(value, schema)) {
+                // A split closer can only finish an already valid value, not an enum prefix.
+                // Otherwise retain the suffix as data: a lone '<' can still start literal content.
+                value = text.substring(start);
+                if (hasControlMarker(value)) {
+                    throw new Invalid("unexpected control marker inside Gemma string");
+                }
+            }
             try {
                 String json = JSON.writeValueAsString(value);
                 if (!NativeToolCallConstraint.validValuePrefix(json.substring(0, json.length() - 1), schema)) {

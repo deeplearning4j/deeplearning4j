@@ -3440,7 +3440,9 @@ Status NativeDynamicShapePlan::execute(
              "(slots=%d extInputs=%d)", numSlots_, numExternalInputs);
     Status prePassStatus = phaseShapeInferenceOnly(
         externalInputs, numExternalInputs, stream,
-#if defined(SD_CUDA)
+#if defined(SD_CUDA) || defined(SD_BACKEND_TYPE_CPU)
+        // CPU functional execution allocates payloads lazily. Preallocating all
+        // inferred outputs defeats last-use reclamation, including large views.
         true
 #else
         false
