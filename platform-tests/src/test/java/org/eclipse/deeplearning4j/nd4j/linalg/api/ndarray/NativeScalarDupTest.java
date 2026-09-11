@@ -2,6 +2,7 @@ package org.eclipse.deeplearning4j.nd4j.linalg.api.ndarray;
 
 import java.lang.reflect.Method;
 import java.util.stream.Stream;
+import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
 import org.junit.jupiter.api.Test;
@@ -64,6 +65,27 @@ public class NativeScalarDupTest extends BaseNd4jTestWithBackends {
         checkDup(Nd4j.create(DataType.DOUBLE, 2, 0, 3), 'f');
     }
 
+    // Compare exact element bytes in logical C order, independently of native equalsTo/reduce3.
+    private static byte[] logicalBytes(Class<?> type, Object array, INDArray shape) throws Exception {
+        type.getMethod("syncToHost").invoke(array);
+        BytePointer buffer = new BytePointer((Pointer) type.getMethod("buffer").invoke(array));
+        int width = shape.dataType().width();
+        byte[] result = new byte[Math.toIntExact(shape.length() * width)];
+        for (long i = 0; i < shape.length(); i++) {
+            long remaining = i;
+            long offset = 0;
+            for (int dimension = shape.rank() - 1; dimension >= 0; dimension--) {
+                long coordinate = remaining % shape.size(dimension);
+                remaining /= shape.size(dimension);
+                offset += coordinate * (long) type.getMethod("strideAt", int.class).invoke(array, dimension);
+            }
+            for (int b = 0; b < width; b++) {
+                result[Math.toIntExact(i * width + b)] = buffer.get(offset * width + b);
+            }
+        }
+        return result;
+    }
+
     private static void checkDup(INDArray source, char order) throws Exception {
         // Reflection keeps this platform test compilable with either CPU or CUDA bindings.
         String backend = source.shapeInfoDataBuffer().opaqueBuffer().backendOwner().nativeOps().getClass().getName();
@@ -97,7 +119,8 @@ public class NativeScalarDupTest extends BaseNd4jTestWithBackends {
                 }
                 char expectedOrder = source.rank() == 0 ? 'c' : order == 'a' ? source.ordering() : order;
                 assertEquals(expectedOrder, type.getMethod("ordering").invoke(copy));
-                assertEquals(true, type.getMethod("equalsTo", type, double.class).invoke(copy, nativeInput, 0.0));
+                byte[] original = logicalBytes(type, nativeInput, source);
+                assertArrayEquals(original, logicalBytes(type, copy, source));
                 Pointer inputBuffer = (Pointer) type.getMethod("buffer").invoke(nativeInput);
                 Pointer copyBuffer = (Pointer) type.getMethod("buffer").invoke(copy);
                 assertNotEquals(inputBuffer.address(), copyBuffer.address());
@@ -106,10 +129,9 @@ public class NativeScalarDupTest extends BaseNd4jTestWithBackends {
                      OpaqueNDArray replacement = OpaqueNDArray.fromINDArrayUncached(changed)) {
                     Object nativeReplacement = type.getConstructor(Pointer.class).newInstance(new PointerPointer<Pointer>(replacement).get(0));
                     type.getMethod("assign", type).invoke(copy, nativeReplacement);
-                    assertEquals(true, type.getMethod("equalsTo", type, double.class)
-                            .invoke(copy, nativeReplacement, 0.0));
-                    assertEquals(false, type.getMethod("equalsTo", type, double.class)
-                            .invoke(nativeInput, nativeReplacement, 0.0));
+                    assertArrayEquals(logicalBytes(type, nativeReplacement, changed),
+                            logicalBytes(type, copy, source));
+                    assertArrayEquals(original, logicalBytes(type, nativeInput, source));
                 }
             } finally {
                 // dup returns an owning raw pointer, not a JavaCPP-allocated object.
