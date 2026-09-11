@@ -99,6 +99,15 @@ static bool dsp_disable_workspace_skip() {
 namespace sd {
 namespace graph {
 
+// Pointer-only diagnostics must never synchronize or relocate array storage.
+static void* diagnosticSpecialPointer(NDArray* array) {
+  auto* db = array != nullptr ? array->dataBuffer() : nullptr;
+  void* base = db != nullptr ? db->special() : nullptr;
+  return base != nullptr
+      ? static_cast<void*>(static_cast<int8_t*>(base) + array->offset() * array->sizeOfT())
+      : nullptr;
+}
+
 // ── Legacy process-global capture-workspace registry ──────────────────────
 // Kept for the backend dispatch ABI while plan-owned workspace migration is
 // in flight. New plans deliberately never publish into these maps: CUDA graph
@@ -1681,7 +1690,7 @@ Status NativeDynamicShapePlan::compositeReplay(
               int extIdx = -(srcIdx + 1);
               if (extIdx >= 0 && extIdx < numExt && seen.find(extIdx) == seen.end()) {
                 seen.insert(extIdx);
-                void* buf = effectiveExternals[extIdx] ? effectiveExternals[extIdx]->specialBuffer() : nullptr;
+                void* buf = diagnosticSpecialPointer(effectiveExternals[extIdx]);
                 DSP_DIAG(EXECUTE,
                          "  DRIFT_TRACE: extIdx=%d name='%s' currentBuf=%p",
                          extIdx,
@@ -1731,7 +1740,7 @@ Status NativeDynamicShapePlan::compositeReplay(
             slots_, numSlots_, seg.def.startSlot, seg.def.endSlot,
             totalOutputSlots_, [&](int, int outputSlot, int) {
               if (traceCount >= 20 || outputSlots_[outputSlot] == nullptr) return;
-              void* buf = outputSlots_[outputSlot]->specialBuffer();
+              void* buf = diagnosticSpecialPointer(outputSlots_[outputSlot]);
               DSP_DIAG(EXECUTE, "  SLOT_DRIFT_TRACE: outputSlot=%d buf=%p len=%lld",
                        outputSlot, buf,
                        (long long)outputSlots_[outputSlot]->lengthOf());
@@ -2087,13 +2096,7 @@ Status NativeDynamicShapePlan::compositeReplay(
           if (vi2 >= numExt) continue;
           NDArray* staging = effectiveExternals_[vi2];
           if (staging == nullptr || staging->isEmpty()) continue;
-          // Metadata inspection must not migrate another segment's input.
-          // specialBuffer() synchronizes to the current device on CUDA.
-          auto* db = staging->dataBuffer();
-          void* base = db != nullptr ? db->special() : nullptr;
-          void* buf = base != nullptr
-              ? static_cast<void*>(static_cast<int8_t*>(base) + staging->offset() * staging->sizeOfT())
-              : nullptr;
+          void* buf = diagnosticSpecialPointer(staging);
           const char* nm = (vi2 < static_cast<int>(externalInputNames_.size()))
                            ? externalInputNames_[vi2].c_str() : "?";
           DSP_DIAG(VERIFY, "PRE_MERGED_LAUNCH_STAGING: ext[%d] name='%s' buf=%p "
@@ -2139,7 +2142,7 @@ Status NativeDynamicShapePlan::compositeReplay(
             if (outSi < 0 || outSi >= totalOutputSlots_) continue;
             NDArray* outArr = outputSlots_[outSi];
             if (outArr == nullptr || outArr->lengthOf() == 0) continue;
-            void* outBuf = outArr->specialBuffer();
+            void* outBuf = diagnosticSpecialPointer(outArr);
             if (outBuf == nullptr) continue;
             DSP_DIAG(EXECUTE,
                      "POST_MERGED_ISLAND_OUTPUT: mergedGroup=%d slot=%d outSlot=%d "
@@ -2155,7 +2158,7 @@ Status NativeDynamicShapePlan::compositeReplay(
           for (int ei = 0; ei < numExt; ei++) {
             NDArray* extArr = effectiveExternals_[ei];
             if (extArr == nullptr || extArr->lengthOf() == 0) continue;
-            void* extBuf = extArr->specialBuffer();
+            void* extBuf = diagnosticSpecialPointer(extArr);
             if (extBuf == nullptr) continue;
             const char* eName = (ei < static_cast<int>(externalInputNames_.size()))
                                 ? externalInputNames_[ei].c_str() : "?";
@@ -2227,7 +2230,7 @@ Status NativeDynamicShapePlan::compositeReplay(
               srcArr = outputSlots_[srcIdx];
             }
             if (srcArr == nullptr || srcArr->lengthOf() == 0) continue;
-            void* srcBuf = srcArr->specialBuffer();
+            void* srcBuf = diagnosticSpecialPointer(srcArr);
             if (srcBuf == nullptr) continue;
             DSP_DIAG(EXECUTE,
                      "PRE_GAP_INPUT: gapSlot=%d input[%d] srcIdx=%d op='%s' "
