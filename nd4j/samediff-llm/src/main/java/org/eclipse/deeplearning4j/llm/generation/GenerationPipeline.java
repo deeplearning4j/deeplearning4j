@@ -3608,23 +3608,27 @@ public class GenerationPipeline implements AutoCloseable {
         // FORWARD-FIX: on the fixed-buffer path, reuse the cached frozen state across generates so the
         // captured decode plan replays (no per-generate re-warm). The reuse path keeps the plan, refills
         // the retained (stable-address) buffers in place, and skips the re-freeze. Fresh path otherwise.
+        //
+        // ONE-SHOT TEARDOWN: reuse is only sound when the same prompt content recurs. The native
+        // plan cache keys on placeholder CONTENT hashes, so each distinct prompt builds a NEW
+        // GB-scale plan while the retained state keeps the previous one pinned — on multi-prompt
+        // workloads the plans accumulate until a device ceiling rejects 1-3 MB allocations
+        // (observed: device counters pinned at cap, downstream tools failing wholesale). One-shot
+        // generates therefore drop the retained state and clear the native plan cache exactly like
+        // the variable-shape path; resumable sessions keep their reuse semantics via startSession.
         boolean fixedBuffers = config.getMaxPrefillLength() > 0;
         InGraphKvState reuse = null;
         if (fixedBuffers && cachedFixedBufferState != null) {
-            InGraphKvState candidate = cachedFixedBufferState;
-            long expectedMaxKvLen = resolveFixedBufferMaxKvLen(config, maxNewTokens);
-            if (!candidate.closed && candidate.maxKvLen == expectedMaxKvLen) {
-                reuse = candidate;
-            } else {
-                // Without an explicit configured ceiling, maxNewTokens participates in the
-                // frozen causal-mask/KV shapes. With a ceiling, that ceiling is the physical
-                // envelope for every call and only the active decode length varies.
-                cachedFixedBufferState = null;
-                candidate.close();
-                log.info("[Lifecycle] Discarded incompatible cached fixed-buffer state "
-                                + "(cachedMaxKvLen={}, expectedMaxKvLen={})",
-                        candidate.maxKvLen, expectedMaxKvLen);
+            InGraphKvState stale = cachedFixedBufferState;
+            cachedFixedBufferState = null;
+            stale.close();
+            try {
+                decoder.resetSession();
+            } catch (Exception resetFailure) {
+                log.warn("[Lifecycle] one-shot teardown resetSession failed: {}", resetFailure.getMessage());
             }
+            decoder.clearDynamicShapePlanCache();
+            SameDiffMemoryUtils.trimAllDevicePools();
         }
         InGraphKvState state = prefillWarmupAndFreeze(
                 promptTokenIds, maxNewTokens, kvInputNames, startTime, reuse, true);
@@ -3645,7 +3649,14 @@ public class GenerationPipeline implements AutoCloseable {
             }
             // Retain for the next generate; do NOT close here — the buffers/plan are reused in place.
             cachedFixedBufferState = state;
-            return runInGraphNativeDecode(state, maxNewTokens, false, startTime);
+            GenerationResult result = runInGraphNativeDecode(state, maxNewTokens, false, startTime);
+            // Return reserved-but-unused pool blocks so the device counters do not ratchet to
+            // the peak transient high-water mark across calls. Live state (frozen plans, KV
+            // and retained buffers) is still strongly referenced and is untouched; only free
+            // blocks go back to the driver. Without this, repeated one-shot generates pin the
+            // counter at the ceiling and later small allocations fail at the device limit.
+            SameDiffMemoryUtils.trimAllDevicePools();
+            return result;
         }
         // Store the completed prefill in the prefix cache
         if (prefixBlockPool != null && state.staticKvBuffers != null) {
