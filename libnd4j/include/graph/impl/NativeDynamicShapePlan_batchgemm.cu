@@ -579,18 +579,29 @@ void NativeDynamicShapePlan::reconcileSlotDispatchAfterMerge(const ReplaySchedul
 
 // ── Device resource allocation ───────────────────────────────────────────────
 
-void NativeDynamicShapePlan::prepareBatchedGemmDevice(void* streamPtr) {
-  cudaStream_t stream = reinterpret_cast<cudaStream_t>(streamPtr);
+void NativeDynamicShapePlan::prepareBatchedGemmDevice(void* /*streamPtr*/) {
   for (auto& group : batchedGemmGroups_) {
     if (group.d_A_ptrs != nullptr) continue;  // already allocated
 
     int bs = group.maxBatchSize;
     size_t ptrArrayBytes = bs * sizeof(void*);
 
-    int deviceId = sd::AffinityManager::currentDeviceId();
-    group.d_A_ptrs = reinterpret_cast<void**>(memory::CudaMemoryPool::getInstance().allocate(ptrArrayBytes, deviceId, stream));
-    group.d_B_ptrs = reinterpret_cast<void**>(memory::CudaMemoryPool::getInstance().allocate(ptrArrayBytes, deviceId, stream));
-    group.d_C_ptrs = reinterpret_cast<void**>(memory::CudaMemoryPool::getInstance().allocate(ptrArrayBytes, deviceId, stream));
+    // Preparation runs on the plan's primary device, not necessarily the
+    // device assigned to this group. Pointer tables and cast scratch must
+    // share the group's execution device, including on non-peer GPUs.
+    int deviceId = slots_[group.triggerSlot].targetDeviceId;
+    if (deviceId < 0) deviceId = sd::AffinityManager::currentDeviceId();
+    // Record the common allocation owner even for groups without casts.
+    group.castScratchDevice = deviceId;
+    auto& pool = memory::CudaMemoryPool::getInstance();
+    // These persistent tables are retained by captured graphs. Direct
+    // allocation also avoids using the primary device's stream on this GPU.
+    group.d_A_ptrs = reinterpret_cast<void**>(pool.allocateDirect(ptrArrayBytes, deviceId));
+    group.d_B_ptrs = reinterpret_cast<void**>(pool.allocateDirect(ptrArrayBytes, deviceId));
+    group.d_C_ptrs = reinterpret_cast<void**>(pool.allocateDirect(ptrArrayBytes, deviceId));
+    if (group.d_A_ptrs == nullptr || group.d_B_ptrs == nullptr || group.d_C_ptrs == nullptr) {
+      THROW_EXCEPTION("batched GEMM device pointer table allocation failed");
+    }
     cudaMallocHost(&group.h_A_ptrs, ptrArrayBytes);
     cudaMallocHost(&group.h_B_ptrs, ptrArrayBytes);
     cudaMallocHost(&group.h_C_ptrs, ptrArrayBytes);
@@ -1076,8 +1087,9 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
 // ── Cleanup ──────────────────────────────────────────────────────────────────
 
 void NativeDynamicShapePlan::freeBatchedGemmResources() {
-  int deviceId = sd::AffinityManager::currentDeviceId();
+  const int currentDevice = sd::AffinityManager::currentDeviceId();
   for (auto& group : batchedGemmGroups_) {
+    const int deviceId = group.castScratchDevice >= 0 ? group.castScratchDevice : currentDevice;
     if (group.d_A_ptrs) { memory::CudaMemoryPool::getInstance().free(reinterpret_cast<void*>(group.d_A_ptrs), deviceId); group.d_A_ptrs = nullptr; }
     if (group.d_B_ptrs) { memory::CudaMemoryPool::getInstance().free(reinterpret_cast<void*>(group.d_B_ptrs), deviceId); group.d_B_ptrs = nullptr; }
     if (group.d_C_ptrs) { memory::CudaMemoryPool::getInstance().free(reinterpret_cast<void*>(group.d_C_ptrs), deviceId); group.d_C_ptrs = nullptr; }
