@@ -50,6 +50,15 @@ public final class GemmaToolCallConstraint implements TextConstraint {
         if (piece == null || piece.isEmpty()) return false;
         String current = currentText == null ? "" : currentText;
         if (current.length() > GemmaToolCallCodec.MAX_CHARS - piece.length()) return false;
+        // One structural whitespace token is enough; repeated whitespace must make
+        // progress unless it is literal string data. Use the codec's framing state,
+        // not JSON quote/escape rules (Gemma backslashes are literal characters).
+        if (!current.isEmpty()
+                && JsonObjectConstraint.isJsonWhitespace(current.charAt(current.length() - 1))
+                && JsonObjectConstraint.isOnlyJsonWhitespace(piece)
+                && !GemmaToolCallCodec.scan(current, tools).insideString) {
+            return false;
+        }
         return GemmaToolCallCodec.scan(current + piece, tools).valid;
     }
 

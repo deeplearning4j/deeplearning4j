@@ -49,9 +49,12 @@ public final class GemmaToolCallCodec {
         public final boolean complete;
         public final List<ChatTemplate.ToolCall> calls;
         public final String error;
+        /** Parser state for incomplete native strings, including split closing sentinels. */
+        final boolean insideString;
 
         private Result(boolean valid, boolean complete, List<ChatTemplate.ToolCall> calls,
-                       String error) {
+                       String error, boolean insideString) {
+            this.insideString = insideString;
             this.valid = valid;
             this.complete = complete;
             this.calls = complete ? List.copyOf(calls) : List.of();
@@ -62,7 +65,7 @@ public final class GemmaToolCallCodec {
     /** Scan the entire candidate, including token pieces straddling any delimiter. */
     public static Result scan(String text, Map<String, ChatTemplate.Tool> tools) {
         if (text == null || text.length() > MAX_CHARS) {
-            return new Result(false, false, List.of(), "Gemma tool text exceeds codec bounds");
+            return new Result(false, false, List.of(), "Gemma tool text exceeds codec bounds", false);
         }
         Reader reader = new Reader(text);
         List<ChatTemplate.ToolCall> calls = new ArrayList<>();
@@ -88,12 +91,12 @@ public final class GemmaToolCallCodec {
                 calls.add(new ChatTemplate.ToolCall(null, name, arguments));
                 reader.space();
             } while (reader.position < text.length());
-            return new Result(true, true, calls, "");
+            return new Result(true, true, calls, "", false);
         } catch (Incomplete ignored) {
             return new Result(text.length() < MAX_CHARS, false, List.of(),
-                    "incomplete Gemma tool-call envelope");
+                    "incomplete Gemma tool-call envelope", reader.insideString);
         } catch (Invalid invalid) {
-            return new Result(false, false, List.of(), invalid.getMessage());
+            return new Result(false, false, List.of(), invalid.getMessage(), false);
         }
     }
 
@@ -152,6 +155,7 @@ public final class GemmaToolCallCodec {
     private static final class Reader {
         private final String text;
         private int position;
+        private boolean insideString;
 
         private Reader(String text) { this.text = text; }
 
@@ -305,11 +309,13 @@ public final class GemmaToolCallCodec {
 
         private String string(Map<String, Object> schema) {
             literal(ChatTemplate.GEMMA_STRING);
+            insideString = true;
             int start = position;
             while (position < text.length()) {
                 if (text.startsWith(ChatTemplate.GEMMA_STRING, position)) {
                     String value = text.substring(start, position);
                     position += ChatTemplate.GEMMA_STRING.length();
+                    insideString = false;
                     return value;
                 }
                 // A partial closing sentinel is framing, not part of the string prefix.

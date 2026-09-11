@@ -126,6 +126,88 @@ class GemmaToolProtocolTest {
     }
 
     @Test
+    void structuralWhitespaceMustProgressButLiteralWhitespaceRemainsData() {
+        TextConstraint c = constraint(ORGANIZATION);
+        String start = OPEN + "call:record_organization{";
+        for (String whitespace : List.of(" ", "\t", "\r\n", "   ")) {
+            assertTrue(c.canExtend(start, whitespace));
+            assertFalse(c.canExtend(start + whitespace, whitespace));
+            assertTrue(c.canExtend(start + whitespace, "name"));
+            assertTrue(c.canExtend(start + "name" + whitespace, ":"));
+            assertFalse(c.canExtend(start + "name:" + whitespace, whitespace));
+            assertTrue(c.canExtend(start + "name:" + whitespace, Q));
+            String literal = start + "name:" + Q + "Acme \" \\ " + whitespace;
+            assertTrue(c.canExtend(literal, whitespace));
+            assertTrue(c.canExtend(literal + whitespace, whitespace));
+            assertTrue(c.canExtend(literal, Q + "}" + CLOSE));
+        }
+        assertTrue(c.canExtend("", " "));
+        assertFalse(c.canExtend(" ", "\n"));
+        // A backslash does not escape a native delimiter; literal JSON quotes do not close it.
+        String backslash = start + "name:" + Q + "Acme\\";
+        for (int split = 1; split < Q.length(); split++) {
+            assertTrue(c.canExtend(start + "name:" + Q.substring(0, split),
+                    Q.substring(split) + " "));
+            assertTrue(c.canExtend(backslash + Q.substring(0, split), Q.substring(split) + " "));
+        }
+        assertFalse(c.canExtend(backslash + Q + " ", " "));
+        assertTrue(c.canExtend(backslash + Q + " ", "}" + CLOSE));
+        String raw = call(ORGANIZATION.getName(), "{  name:  " + Q + "A  B" + Q + "  }");
+        assertTrue(c.isAccepting(raw + "  "), "Acceptance still permits valid formatting");
+        assertTrue(c.canExtend(raw + " ", raw), "Adjacent calls remain legal");
+    }
+
+    private static ChatTemplate.Tool nodeTypesTool() {
+        Map<String, Object> item = Map.of("type", "object", "properties", Map.of(
+                "label", Map.of("type", "string"),
+                "parentType", Map.of("type", "string", "enum", List.of("Entity", "Event"))),
+                "required", List.of("label", "parentType"), "additionalProperties", false);
+        return new ChatTemplate.Tool("submit_node_types", "", Map.of("type", "object",
+                "properties", Map.of("nodeTypes", Map.of("type", "array", "items", item)),
+                "required", List.of("nodeTypes"), "additionalProperties", false));
+    }
+
+    @Test
+    void nodeTypesNestedSchemaRemainsLegalAtEveryPrefix() {
+        ChatTemplate.Tool tool = nodeTypesTool();
+        TextConstraint c = constraint(tool);
+        String raw = call(tool.getName(), "{ nodeTypes: [ { label: " + Q + "Acme  Robotics" + Q
+                + ", parentType: " + Q + "Entity" + Q + " } ] }");
+        for (int i = 0; i < raw.length(); i++) {
+            assertTrue(c.canExtend(raw.substring(0, i), raw.substring(i, i + 1)), "char at " + i);
+            assertTrue(c.canExtend(raw.substring(0, i), raw.substring(i)), "suffix at " + i);
+        }
+        assertTrue(c.isAccepting(raw));
+        assertTrue(parse(raw, tool).isClean());
+        assertFalse(c.canExtend(OPEN + "call:submit_node_types{nodeTypes:[{label:" + Q + "A" + Q
+                + ",parentType:" + Q, "Unknown"));
+    }
+
+    @Test
+    void exactMaskerRejectsWhitespaceLoopAndWidensToPropertyName() {
+        ConstraintMasker masker = new ConstraintMasker(constraint(nodeTypesTool()), 1);
+        String start = OPEN + "call:submit_node_types{";
+        List<String> specials = List.of(OPEN, CLOSE, Q);
+        String[] pieces = {" ", "nodeTypes", "}"};
+        float[] logits = {10f, 1f, 0f};
+        masker.decodedTextEmitted(start);
+        float[] first = masker.maskLogitsByDecodedCandidate(logits, java.util.Set.of(),
+                java.util.Set.of(), id -> pieces[id], id -> start + pieces[id], specials);
+        assertEquals(10f, first[0]);
+        masker.decodedTextEmitted(start + " ");
+        float[] next = masker.maskLogitsByDecodedCandidate(logits, java.util.Set.of(),
+                java.util.Set.of(), id -> pieces[id], id -> start + " " + pieces[id], specials);
+        assertEquals(Float.NEGATIVE_INFINITY, next[0]);
+        assertEquals(1f, next[1], "Widen past top-ranked whitespace to the legal property name");
+        assertEquals(Float.NEGATIVE_INFINITY, next[2], "Required argument cannot be omitted");
+        String literal = start + "nodeTypes:[{label:" + Q + "Acme ";
+        masker.decodedTextEmitted(literal);
+        float[] inside = masker.maskLogitsByDecodedCandidate(logits, java.util.Set.of(),
+                java.util.Set.of(), id -> pieces[id], id -> literal + pieces[id], specials);
+        assertEquals(10f, inside[0], "Whitespace remains string data on the exact mask path");
+    }
+
+    @Test
     void preservesAdjacentCallsAndRejectsPartialOrInvalidListsAtomically() {
         String raw = call(ORGANIZATION.getName(), "{name:" + Q + "Acme Robotics" + Q + "}");
         ToolCallParser.ParseResult two = parse(raw + raw, ORGANIZATION);
