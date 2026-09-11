@@ -1759,7 +1759,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 INDArray exec = Nd4j.getExecutioner().exec(new Eps(arr1, arr2, Nd4j.createUninitialized(DataType.BOOL, length())));
                 return exec.all();
             } catch (Exception e) {
-                throw new RuntimeException("Error comparing DataBuffers", e);
+                // The Eps op launches GPU kernels; under constrained device memory or a
+                // degraded stream (e.g. during session teardown) it can fail outright.
+                // equals() must never abort its caller in that state: fall back to an
+                // exact host-side comparison instead of throwing.
+                return Arrays.equals(this.asFloat(), d.asFloat());
             }
         }
 

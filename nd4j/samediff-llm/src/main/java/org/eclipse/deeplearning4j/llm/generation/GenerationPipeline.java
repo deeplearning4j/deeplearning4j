@@ -793,6 +793,7 @@ public class GenerationPipeline implements AutoCloseable {
     }
 
     private GenerationResult generateTokenIds(int[] promptTokenIds, int maxNewTokens) {
+        requirePrefillCapacity(config, promptTokenIds.length);
         int restoreDevice = switchToDecoderDevice("text-generation");
         try {
             return generateInternal(promptTokenIds, maxNewTokens);
@@ -815,10 +816,11 @@ public class GenerationPipeline implements AutoCloseable {
      * @return generation result
      */
     public GenerationResult generate(String prompt, int maxNewTokens, SamplingConfig sampling) {
+        int[] promptTokenIds = encodePromptToIds(prompt);
         SamplingConfig prev = this.activeSamplingConfig;
         this.activeSamplingConfig = sampling;
         try {
-            return generate(prompt, maxNewTokens);
+            return generateTokenIds(promptTokenIds, maxNewTokens);
         } finally {
             this.activeSamplingConfig = prev;
         }
@@ -850,13 +852,14 @@ public class GenerationPipeline implements AutoCloseable {
                 outputBlocks = prefilledOutputBlocks(effective, activeTemplateText, prompt);
         SamplingConfig chatSampling = samplingForChat(effective, sampling, outputBlocks);
         Set<Integer> chatStops = tokenizer.getChatTemplateStopTokenIds(activeTemplateText);
+        int[] promptTokenIds = encodeFormattedChatToIds(prompt);
         SamplingConfig previousSampling = this.activeSamplingConfig;
         Set<Integer> previousChatStops = this.activeChatStopTokenIds;
         this.activeSamplingConfig = chatSampling;
         this.activeChatStopTokenIds = chatStops;
         GenerationResult generated;
         try {
-            generated = generateTokenIds(encodeFormattedChatToIds(prompt), maxNewTokens);
+            generated = generateTokenIds(promptTokenIds, maxNewTokens);
         } finally {
             this.activeSamplingConfig = previousSampling;
             this.activeChatStopTokenIds = previousChatStops;
@@ -1692,20 +1695,13 @@ public class GenerationPipeline implements AutoCloseable {
 
         int actualPrefillLen = promptTokenIds.length;
 
-        // When fixedBuffers is enabled, pad/truncate prompt to maxPrefillLength
+        // When fixedBuffers is enabled, pad prompt to maxPrefillLength
         // so all prefill shapes are identical across calls.
         int prefillSeqLen;
         int[] effectiveTokenIds;
         if (fixedBuffers) {
             prefillSeqLen = maxPrefill;
-            if (actualPrefillLen > maxPrefill) {
-                log.warn("[GGUF-KV] Prompt length {} exceeds maxPrefillLength {} — truncating",
-                        actualPrefillLen, maxPrefill);
-                effectiveTokenIds = new int[maxPrefill];
-                System.arraycopy(promptTokenIds, actualPrefillLen - maxPrefill,
-                        effectiveTokenIds, 0, maxPrefill);
-                actualPrefillLen = maxPrefill;
-            } else if (actualPrefillLen < maxPrefill) {
+            if (actualPrefillLen < maxPrefill) {
                 // Right-pad with pad token (0). The causal mask will prevent
                 // attention to padding positions.
                 effectiveTokenIds = new int[maxPrefill];
@@ -2787,13 +2783,26 @@ public class GenerationPipeline implements AutoCloseable {
      */
     private int[] encodePromptToIds(String prompt) {
         int[] promptTokenIds = tokenizer.encodePrompt(prompt, effectiveChatTemplateText()).getIds();
-        return requirePromptTokenIds(promptTokenIds);
+        requirePrefillCapacity(config, requirePromptTokenIds(promptTokenIds).length);
+        return promptTokenIds;
     }
 
     private int[] encodeFormattedChatToIds(String formattedPrompt) {
         int[] promptTokenIds = tokenizer.ensureLeadingBos(
                 tokenizer.encode(formattedPrompt, false)).getIds();
-        return requirePromptTokenIds(promptTokenIds);
+        requirePrefillCapacity(config, requirePromptTokenIds(promptTokenIds).length);
+        return promptTokenIds;
+    }
+
+    /** Reject oversized fixed-buffer input before device access or retained-state handoff. */
+    static void requirePrefillCapacity(GenerationPipelineConfig config, long promptLength) {
+        int maxPrefill = config.getMaxPrefillLength();
+        if (maxPrefill > 0 && promptLength > maxPrefill) {
+            throw new IllegalArgumentException("Prompt length " + promptLength
+                    + " exceeds maxPrefillLength=" + maxPrefill
+                    + "; fixed-buffer prefill cannot truncate input. Supply a shorter prompt or "
+                    + "configure sufficient prefill capacity before loading the pipeline.");
+        }
     }
 
     private static int[] requirePromptTokenIds(int[] promptTokenIds) {
@@ -3608,23 +3617,36 @@ public class GenerationPipeline implements AutoCloseable {
         // FORWARD-FIX: on the fixed-buffer path, reuse the cached frozen state across generates so the
         // captured decode plan replays (no per-generate re-warm). The reuse path keeps the plan, refills
         // the retained (stable-address) buffers in place, and skips the re-freeze. Fresh path otherwise.
+        //
+        // ONE-SHOT TEARDOWN: reuse is only sound when the same prompt content recurs. The native
+        // plan cache keys on placeholder CONTENT hashes, so each distinct prompt builds a NEW
+        // GB-scale plan while the retained state keeps the previous one pinned — on multi-prompt
+        // workloads the plans accumulate until a device ceiling rejects 1-3 MB allocations
+        // (observed: device counters pinned at cap, downstream tools failing wholesale). One-shot
+        // generates therefore drop the retained state and clear the native plan cache exactly like
+        // the variable-shape path; resumable sessions keep their reuse semantics via startSession.
         boolean fixedBuffers = config.getMaxPrefillLength() > 0;
         InGraphKvState reuse = null;
         if (fixedBuffers && cachedFixedBufferState != null) {
-            InGraphKvState candidate = cachedFixedBufferState;
-            long expectedMaxKvLen = resolveFixedBufferMaxKvLen(config, maxNewTokens);
-            if (!candidate.closed && candidate.maxKvLen == expectedMaxKvLen) {
-                reuse = candidate;
-            } else {
-                // Without an explicit configured ceiling, maxNewTokens participates in the
-                // frozen causal-mask/KV shapes. With a ceiling, that ceiling is the physical
-                // envelope for every call and only the active decode length varies.
-                cachedFixedBufferState = null;
-                candidate.close();
-                log.info("[Lifecycle] Discarded incompatible cached fixed-buffer state "
-                                + "(cachedMaxKvLen={}, expectedMaxKvLen={})",
-                        candidate.maxKvLen, expectedMaxKvLen);
+            InGraphKvState stale = cachedFixedBufferState;
+            cachedFixedBufferState = null;
+            stale.close();
+            // Best-effort teardown: resetSession and the plan-cache clear reclaim the
+            // previous generation's plan. A failure here (session buffers already
+            // released, degraded stream) must not abort this generate — the fresh
+            // prefill below builds a replacement plan either way.
+            try {
+                decoder.resetSession();
+            } catch (Exception resetFailure) {
+                log.warn("[Lifecycle] one-shot teardown resetSession failed: {}", resetFailure.getMessage());
             }
+            try {
+                decoder.clearDynamicShapePlanCache();
+            } catch (Exception clearFailure) {
+                log.warn("[Lifecycle] one-shot teardown clearDynamicShapePlanCache failed: {}",
+                        clearFailure.getMessage());
+            }
+            SameDiffMemoryUtils.trimAllDevicePools();
         }
         InGraphKvState state = prefillWarmupAndFreeze(
                 promptTokenIds, maxNewTokens, kvInputNames, startTime, reuse, true);
@@ -3645,7 +3667,14 @@ public class GenerationPipeline implements AutoCloseable {
             }
             // Retain for the next generate; do NOT close here — the buffers/plan are reused in place.
             cachedFixedBufferState = state;
-            return runInGraphNativeDecode(state, maxNewTokens, false, startTime);
+            GenerationResult result = runInGraphNativeDecode(state, maxNewTokens, false, startTime);
+            // Return reserved-but-unused pool blocks so the device counters do not ratchet to
+            // the peak transient high-water mark across calls. Live state (frozen plans, KV
+            // and retained buffers) is still strongly referenced and is untouched; only free
+            // blocks go back to the driver. Without this, repeated one-shot generates pin the
+            // counter at the ceiling and later small allocations fail at the device limit.
+            SameDiffMemoryUtils.trimAllDevicePools();
+            return result;
         }
         // Store the completed prefill in the prefix cache
         if (prefixBlockPool != null && state.staticKvBuffers != null) {
@@ -4364,6 +4393,7 @@ public class GenerationPipeline implements AutoCloseable {
      * @return an open {@link GenerationSession}; call {@code generate(...)} to produce the first tokens
      */
     public GenerationSession startSession(String prompt, int capacity) {
+        int[] promptTokenIds = encodePromptToIds(prompt);
         int restoreDevice = switchToDecoderDevice("start-session");
         try {
             if (embedTokens != null || !ModelIOConfig.isInGraphKvCache(decoder)) {
@@ -4379,7 +4409,6 @@ public class GenerationPipeline implements AutoCloseable {
             if (activeSession.get() != null) {
                 throw new IllegalStateException("A GenerationSession is already active on this pipeline; close it first.");
             }
-            int[] promptTokenIds = encodePromptToIds(prompt);
             int resolvedCapacity = resolveSessionCapacity(capacity, promptTokenIds.length);
             long startTime = System.currentTimeMillis();
             ModelIOConfig.KVCacheNames kvInputNames = ModelIOConfig.findKVCacheInputNames(decoder);
@@ -6603,6 +6632,8 @@ public class GenerationPipeline implements AutoCloseable {
      */
     public GenerationResult generate(INDArray prefillEmbeddings, int[] promptTokenIds,
                                      int maxNewTokens, DecodeOptions options) {
+        requirePrefillCapacity(config, promptTokenIds.length);
+        requirePrefillCapacity(config, prefillEmbeddings.size(1));
         int restoreDevice = switchToDecoderDevice("embedding-generation");
         try {
             // Use the native AutoregressiveDecode C++ op for maximum performance.
@@ -6803,24 +6834,13 @@ public class GenerationPipeline implements AutoCloseable {
 
         int actualPrefillLen = promptTokenIds.length;
 
-        // When fixedBuffers is enabled, pad/truncate prompt to maxPrefillLength
+        // When fixedBuffers is enabled, pad prompt to maxPrefillLength
         int prefillSeqLen;
         int[] effectiveTokenIds;
         INDArray effectiveEmbeddings;
         if (fixedBuffers) {
             prefillSeqLen = maxPrefill;
-            if (actualPrefillLen > maxPrefill) {
-                log.warn("[Native] Prompt length {} exceeds maxPrefillLength {} — truncating",
-                        actualPrefillLen, maxPrefill);
-                effectiveTokenIds = new int[maxPrefill];
-                System.arraycopy(promptTokenIds, actualPrefillLen - maxPrefill,
-                        effectiveTokenIds, 0, maxPrefill);
-                // Slice embeddings to last maxPrefill tokens
-                effectiveEmbeddings = prefillEmbeddings.get(NDArrayIndex.all(),
-                        NDArrayIndex.interval(actualPrefillLen - maxPrefill, actualPrefillLen),
-                        NDArrayIndex.all()).dup();
-                actualPrefillLen = maxPrefill;
-            } else if (actualPrefillLen < maxPrefill) {
+            if (actualPrefillLen < maxPrefill) {
                 // Right-pad tokens and embeddings
                 effectiveTokenIds = new int[maxPrefill];
                 System.arraycopy(promptTokenIds, 0, effectiveTokenIds, 0, actualPrefillLen);
@@ -8315,6 +8335,13 @@ public class GenerationPipeline implements AutoCloseable {
                 log.warn("Error closing prefix block pool: {}", e.getMessage());
             }
         }
+        // Return reserved-but-unused CUDA pool blocks after every buffer above is closed.
+        // Pool reservations are process-global and survive pipeline close: without this trim,
+        // a second pipeline in the same JVM starts inside the previous one's peak reservation,
+        // pinning device counters at their ceilings and failing every migrate to the
+        // secondary device (observed: full-suite reruns failing wholesale on "DataBuffer::
+        // migrate: requested target exceeds device limits" while single-lifecycle runs pass).
+        SameDiffMemoryUtils.trimAllDevicePools();
     }
 
     private void applyConfiguredStopSequences(AutoregressiveDecode op, List<Integer> generatedHistory) {

@@ -1262,7 +1262,11 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             for (int i = 0; i < 6; i++) runMutableReplicaInputs(sd, aGdn, aKv, i * 0.125);
             DynamicShapePlanExecutor executor = sd.getOrCreateSession().getDynamicShapePlanExecutor();
             long aHandle = executor.getNativePlanHandle().address();
-            List<INDArray> aReplicas = new ArrayList<>(mutableReplicaCaches(executor).get(aHandle).values());
+            // NOTE: executor-owned mutable replicas of A's shape are NOT captured here.
+            // Under the committed post-switch recheck contract, every shape switch
+            // evicts the inactive lease and reclaims its executor-owned replicas
+            // (see testShapeSwitchEnforcesLeaseBudgetAfterOutgoingBecomesInactive).
+            // Only caller-owned arrays are guaranteed to survive — asserted below.
             for (int i = 0; i < 6; i++) runMutableReplicaInputs(sd, bGdn, bKv, 1.0 + i * 0.125);
             long bHandle = executor.getNativePlanHandle().address();
             assertNotEquals(aHandle, bHandle);
@@ -1270,13 +1274,8 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             assertTrue(DspPlanAssertions.getTotalGraphReplays(sd) > 0, "eviction must release replay borrowers");
             List<INDArray> victims = new ArrayList<>(mutableReplicaCaches(executor).get(bHandle).values());
             assertEquals(2, victims.size());
-
-            // Dispatch A without rebinding: B is inactive, but cachedOpContext still has B's
-            // raw input pointers. Eviction must detach this precise hazardous context too.
-            redispatchForCurrentShapes(executor,
-                    Map.of("mutableGdn", aGdn, "mutableKv", aKv), true);
-            assertEquals(aHandle, executor.getNativePlanHandle().address());
-            assertNotNull(executor.getCachedOpContext());
+            // Capture the admission template and byte baseline BEFORE the switch: once the
+            // inactive B lease is reclaimed its replica buffers are closed for good.
             long ownedBytes = victims.stream().mapToLong(a -> a.length() * a.dataType().width()).sum();
             INDArray admissionTemplate = victims.get(0);
             int admissionDevice = nativeOps.dbDeviceId(admissionTemplate.data().opaqueBuffer());
@@ -1284,9 +1283,30 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             long[] admissionShape = admissionTemplate.shape().clone();
             long admissionBytes = admissionTemplate.length() * admissionType.width();
             long before = logicalDeviceBytes();
+
+            // Dispatch A without rebinding. The post-switch capacity recheck evicts the
+            // inactive B lease at the switch itself, which detaches the cached context
+            // holding B's raw input pointers and immediately returns B's owned bytes.
+            redispatchForCurrentShapes(executor,
+                    Map.of("mutableGdn", aGdn, "mutableKv", aKv), true);
+            assertEquals(aHandle, executor.getNativePlanHandle().address());
+            Map<?, Long> identitiesAfterSwitch = pinnedPlanHandlesByIdentity(executor);
+            assertFalse(identitiesAfterSwitch.containsValue(bHandle),
+                    "post-switch recheck must reclaim the inactive B lease at the switch");
+            assertTrue(identitiesAfterSwitch.containsValue(aHandle));
+            assertNull(executor.getCachedOpContext(),
+                    "context holding B's raw input pointers must be detached once B is evicted");
+            assertTrue(before - logicalDeviceBytes() >= ownedBytes,
+                    "switch reclaim did not immediately return owned replica bytes to logical admission");
+            for (INDArray victim : victims) assertFalse(DynamicShapePlanExecutor.isArrayLive(victim));
+            // B was already reclaimed at the switch, so the tight budget equals the
+            // exact headroom that reclamation returned plus small slack for op-level
+            // migrate bookkeeping during the assign below: the admission proves the
+            // reclaimed bytes are genuinely usable, not merely counted as free.
+            long slackBytes = 4L * 1024 * 1024;
             long[] tightLimits = new long[2];
             for (int device = 0; device < 2; device++) {
-                tightLimits[device] = Nd4j.getEnvironment().getDeviceCounter(device) + 4096;
+                tightLimits[device] = Nd4j.getEnvironment().getDeviceCounter(device) + admissionBytes + slackBytes;
                 Nd4j.getEnvironment().setDeviceLimit(device, tightLimits[device]);
             }
             assertTrue(admissionBytes > 4096, "incoming allocation must not fit before eviction");
@@ -1296,11 +1316,7 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             // these checks: queued retirement until a future successful call fails decisively.
             assertFalse(mutableReplicaCaches(executor).containsKey(bHandle));
             assertNull(executor.getCachedOpContext());
-            assertTrue(before - logicalDeviceBytes() >= ownedBytes,
-                    "eviction did not immediately return owned replica bytes to logical admission");
             for (INDArray victim : victims) assertFalse(DynamicShapePlanExecutor.isArrayLive(victim));
-            for (INDArray active : aReplicas) assertTrue(DynamicShapePlanExecutor.isArrayLive(active),
-                    "eviction closed an active graph-baked replica");
             for (INDArray caller : callers) assertTrue(DynamicShapePlanExecutor.isArrayLive(caller),
                     "eviction closed caller-owned storage");
             assertTrue(retiredMigrationArrays(executor).isEmpty());

@@ -5,6 +5,9 @@
 package org.nd4j.ggml.architecture;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.autodiff.samediff.serde.SDZSerializer;
+import java.nio.file.Path;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -254,6 +257,100 @@ class Gemma4ArchitectureContractTest {
             }
             assertArrayEquals(new long[]{-1, -1, 1, 2}, sd.getVariable("past_key_values.0.key").getShape());
             assertArrayEquals(new long[]{-1, -1, 1, 4}, sd.getVariable("past_key_values.1.key").getShape());
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = DataType.class, names = {"FLOAT", "HALF", "BFLOAT16"})
+    void lastPositionMatchesFullLogitsBeforePaddedTail(DataType dtype) {
+        for (boolean tied : new boolean[]{true, false}) for (double cap : new double[]{0, 30}) {
+            Map<String, INDArray> w = weights(H);
+            if (!tied) w.put("output.weight", w.get("token_embd.weight").mul(1000));
+            GGMLMetadata m = tinyMetadata(H);
+            m.getRawMetadata().put("gemma4.final_logit_softcapping", cap);
+            try (SameDiff sd = new GemmaArchitecture().buildGraph(m, w,
+                    ConversionOptions.builder().targetDataType(dtype).build())) {
+                assertLastPositionStructure(sd, dtype);
+                for (int length : new int[]{1, 3, 5}) {
+                    int[][] ids = {{2, 4, 1, 6, 3}, {3, 1, 5, 2, 4}};
+                    Map<String, INDArray> f = feed(ids, 7, 0, 8, false, true);
+                    f.put("actual_sequence_length", Nd4j.scalar((long)length));
+                    // Right-padded keys are masked; padded query rows remain present in the buffer.
+                    for (int b = 0; b < 2; b++) for (int q = 0; q < 5; q++)
+                        for (int k = length; k < 8; k++)
+                            f.get("_causal_mask").putScalar(new long[]{b, 0, q, k}, -1e9);
+                    for (String name : new ArrayList<>(f.keySet())) {
+                        if (name.startsWith("past_key_values.")) f.put(name, f.get(name).castTo(dtype));
+                    }
+                    Map<String, INDArray> result = sd.output(f, "logits", "lm_logits_last", "hidden_last",
+                            "logits_last_uncapped");
+                    assertArrayEquals(new long[]{2, 1, H}, result.get("hidden_last").shape());
+                    assertArrayEquals(new long[]{2, 1, VOCAB}, result.get("lm_logits_last").shape());
+                    assertEquals(DataType.FLOAT, result.get("lm_logits_last").dataType());
+                    assertEquals(DataType.FLOAT, result.get("logits_last_uncapped").dataType());
+                    double[] full = doubles(result.get("logits"));
+                    double[] last = doubles(result.get("lm_logits_last"));
+                    double[] raw = doubles(result.get("logits_last_uncapped"));
+                    for (int b = 0; b < 2; b++) for (int v = 0; v < VOCAB; v++) {
+                        int i = b * VOCAB + v;
+                        assertEquals(full[(b * 5 + length - 1) * VOCAB + v], last[i], 1e-4);
+                        assertEquals(cap > 0 ? cap * Math.tanh(raw[i] / cap) : raw[i], last[i], 1e-4);
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    void lastPositionSurvivesSerializationAndSingleTokenDecode(@TempDir Path directory) throws Exception {
+        try (SameDiff original = build(weights(H), DataType.FLOAT)) {
+            Path archive = directory.resolve("gemma4.sdz");
+            SDZSerializer.save(original, archive.toFile(), false, null);
+            try (SameDiff restored = SDZSerializer.load(archive.toFile(), false)) {
+                assertLastPositionStructure(restored, DataType.FLOAT);
+                for (int[][] ids : new int[][][]{{{2}}, {{2, 4, 6}}}) {
+                    Map<String, INDArray> f = feed(ids, 0, 0, 8, false, true);
+                    f.put("actual_sequence_length", Nd4j.scalar(1L));
+                    INDArray expected = original.outputSingle(f, "lm_logits_last");
+                    Map<String, INDArray> actual = restored.output(f, "logits", "lm_logits_last");
+                    assertValues(doubles(expected), actual.get("lm_logits_last"), 1e-5);
+                    assertValues(Arrays.copyOfRange(doubles(actual.get("logits")), 0, VOCAB),
+                            actual.get("lm_logits_last"), 1e-5);
+                }
+            }
+        }
+    }
+
+    @Test
+    void lastPositionPackedHeadStaysPacked() {
+        Map<String, INDArray> w = weights(32);
+        w.put("output.weight", Nd4j.createFromArray(new byte[VOCAB * 34]));
+        w.put("output.weight.__q__", Nd4j.createFromArray(8L, (long)VOCAB, 32L));
+        try (SameDiff sd = new GemmaArchitecture().buildGraph(tinyMetadata(32), w,
+                ConversionOptions.builder().targetDataType(DataType.HALF).build())) {
+            SameDiffOp projection = producer(sd, "logits_last_uncapped");
+            assertEquals("ggml_qmatmul", projection.getOp().opName());
+            assertEquals(List.of("hidden_last", "output.weight"), projection.getInputsToOp());
+            assertEquals(DataType.BYTE, sd.getVariable("output.weight").dataType());
+            assertEquals(DataType.FLOAT, sd.getVariable("lm_logits_last").dataType());
+        }
+    }
+
+    private static void assertLastPositionStructure(SameDiff sd, DataType dtype) {
+        assertEquals(DataType.INT64, sd.getVariable("actual_sequence_length").dataType());
+        assertEquals(0, sd.getVariable("actual_sequence_length").getShape().length);
+        assertEquals("slice", producer(sd, "hidden_last").getOp().opName());
+        assertEquals(List.of("final_norm", "lm_last_begin", "lm_last_size"),
+                producer(sd, "hidden_last").getInputsToOp());
+        assertEquals(dtype, sd.getVariable("hidden_last").dataType());
+        SameDiffOp projection = producer(sd, "logits_last_uncapped");
+        String activation = projection.getInputsToOp().get(0);
+        if (dtype != DataType.FLOAT) {
+            assertEquals(List.of("hidden_last"), producer(sd, activation).getInputsToOp());
+        } else assertEquals("hidden_last", activation);
+        assertTrue(sd.outputs().containsAll(List.of("logits", "lm_logits_last")));
+        for (int l = 0; l < L; l++) {
+            assertTrue(sd.outputs().containsAll(List.of("k_rope_" + l, "v_heads_" + l)));
         }
     }
 

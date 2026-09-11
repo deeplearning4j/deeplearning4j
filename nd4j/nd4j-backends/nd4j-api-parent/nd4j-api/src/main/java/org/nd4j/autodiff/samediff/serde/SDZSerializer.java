@@ -39,6 +39,7 @@ import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.file.Files;
+import org.nd4j.linalg.factory.Nd4j;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
@@ -475,6 +476,21 @@ public class SDZSerializer {
      */
     @SneakyThrows
     public static SameDiff load(@NonNull File modelZipFile, boolean loadUpdaterState) throws IOException {
+        return loadArchive(modelZipFile, loadUpdaterState, false);
+    }
+
+    /** CPU-only, private file-backed weights for inference/preparation on Linux/Android. */
+    public static SameDiff loadFileBackedCpu(@NonNull File modelZipFile) throws IOException {
+        Preconditions.checkState(Nd4j.getBackend().getClass().getName().contains(".cpu."),
+                "File-backed SDZ loading requires the CPU backend");
+        Preconditions.checkState(System.getProperty("os.name", "").equalsIgnoreCase("Linux"),
+                "File-backed SDZ loading requires unlink-safe Linux/Android mappings");
+        return loadArchive(modelZipFile, false, true);
+    }
+
+    @SneakyThrows
+    private static SameDiff loadArchive(File modelZipFile, boolean loadUpdaterState,
+                                        boolean fileBackedCpu) throws IOException {
         Preconditions.checkNotNull(modelZipFile, "Model ZIP file path cannot be null.");
         Preconditions.checkArgument(modelZipFile.exists() && modelZipFile.isFile(),
                 "Model ZIP file does not exist or is not a file: %s", modelZipFile.getAbsolutePath());
@@ -540,7 +556,8 @@ public class SDZSerializer {
                 throw new IOException("No valid SDNB files found in ZIP: " + modelZipFile.getAbsolutePath());
             }
 
-            loadedSameDiff = SameDiffSerializer.load(loadPath, loadUpdaterState);
+            loadedSameDiff = fileBackedCpu ? SameDiffSerializer.loadFileBackedCpu(loadPath)
+                    : SameDiffSerializer.load(loadPath, loadUpdaterState);
 
         } finally {
             if (tempDir != null) {

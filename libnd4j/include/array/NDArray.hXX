@@ -5233,7 +5233,7 @@ void NDArray::varianceAlongDimension(sd::variance::Ops op, NDArray &target, cons
 ////////////////////////////////////////////////////////////////////////
 // This method returns new copy of this NDArray, optionally in different order
 NDArray * NDArray::dup(const char newOrder, bool forceOriginalBuffer)  {
-  if (isEmpty()) return new NDArray(NDArrayFactory::empty(dataType(), getContext()));
+  if (isEmpty()) return NDArrayFactory::empty(dataType(), getContext());
   auto nonConst = const_cast<NDArray *>(this);
   std::vector<sd::LongType> *shape = nonConst->getShapeAsVector();
   if(forceOriginalBuffer) {
@@ -5295,19 +5295,9 @@ NDArray * NDArray::dup(const char newOrder, bool forceOriginalBuffer)  {
     return ret;
   }
 
-  std::vector<sd::LongType> *shape3;
-  if (isScalar()) {
-    shape3 = new std::vector<sd::LongType>({0});
-  } else {
-    shape3 = shape;
-  }
-
-  std::vector<sd::LongType> &otherShape = *shape3;
-  NDArray *result = new NDArray(order, otherShape, dataType(), getContext());
+  // The rank-derived shape is empty for a scalar; {0} denotes an empty vector.
+  NDArray *result = new NDArray(order, *shape, dataType(), getContext());
   result->assign(this);
-  if (isScalar()) {
-    delete shape3;
-  }
   delete shape;
   return result;
 }

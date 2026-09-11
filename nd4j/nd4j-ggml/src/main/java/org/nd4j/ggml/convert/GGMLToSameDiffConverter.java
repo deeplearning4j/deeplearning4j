@@ -849,7 +849,14 @@ public class GGMLToSameDiffConverter {
         // HALF/BF16 are decoded through FLOAT by handleNonQuantizedTensor.
         DataType materializedType = sourceType == DataType.DOUBLE ? DataType.DOUBLE : DataType.FLOAT;
         DataType outputType = targetType == null ? materializedType : targetType;
-        INDArray output = Nd4j.createUninitialized(outputType, shape, 'c');
+        long outputBytes = Math.multiplyExact(elements, outputType.width());
+        // Keep large converted CPU weights file-backed rather than allocating a
+        // second model-sized anonymous buffer. GPU materialization is unchanged.
+        boolean mappedOutput = options.isUseMemoryMapping()
+                && Nd4j.getBackend().getClass().getName().contains(".cpu.")
+                && outputBytes >= 4L * 1024 * 1024 && outputBytes <= Integer.MAX_VALUE;
+        INDArray output = mappedOutput ? FileBackedTensor.allocate(outputType, shape)
+                : Nd4j.createUninitialized(outputType, shape, 'c');
         try {
             if (elements == 0) return output;
             INDArray flat = output.reshape('c', new long[]{elements}); // Alias, not a separately owned allocation.

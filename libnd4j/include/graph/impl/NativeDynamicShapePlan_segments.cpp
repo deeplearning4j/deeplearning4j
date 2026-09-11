@@ -1806,26 +1806,31 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
     cpuLastUse.assign(totalOutputSlots_, -1);
     for (int s = 0; s < numSlots_; ++s) {
       const auto& candidate = slots_[s];
-      // Fused commands may execute multiple logical slots at once.
-      if (candidate.fusedChain.isFusedChainHead || candidate.fusedChain.isFusedChainTail)
-        reclaimCpuIntermediates = false;
+      // Fused execution may use several logical slots together. Keep its
+      // operands/results live rather than disabling reclamation of the graph.
+      const int lastUse = (candidate.fusedChain.isFusedChainHead ||
+                           candidate.fusedChain.isFusedChainTail) ? numSlots_ : s;
       for (int o = 0; o < candidate.wiring.numOutputs; ++o) {
         int si = candidate.wiring.outputSlotIndices[o];
-        if (si >= 0 && si < totalOutputSlots_) cpuLastUse[si] = std::max(cpuLastUse[si], s);
+        if (si >= 0 && si < totalOutputSlots_) cpuLastUse[si] = std::max(cpuLastUse[si], lastUse);
       }
       for (int i = 0; i < candidate.wiring.numInputs; ++i) {
         int si = candidate.wiring.inputSourceIndices[i];
-        if (si >= 0 && si < totalOutputSlots_) cpuLastUse[si] = std::max(cpuLastUse[si], s);
+        if (si >= 0 && si < totalOutputSlots_) cpuLastUse[si] = std::max(cpuLastUse[si], lastUse);
       }
     }
     for (int i = 0; i < numRequestedOutputs_; ++i) {
       int si = requestedOutputSlotIndices_[i];
       if (si >= 0 && si < totalOutputSlots_) cpuLastUse[si] = numSlots_;
     }
-    // Deferred deletions may hold a live view outside outputSlots_. Until their
-    // normal completion-boundary flush, conservatively preserve their buffers.
-    if (!deferredSlotDeletes_.empty()) reclaimCpuIntermediates = false;
+    // Deferred wrappers are protected by DataBuffer identity in the per-step
+    // live set below. Their presence must not disable retirement of unrelated
+    // dead buffers for this entire segment.
   }
+  DSP_DIAG(MEMORY, "CPU_LAST_USE_POLICY: segment=%d-%d enabled=%d mode=%d phase=%s controlFlow=%d deferred=%zu",
+           seg.def.startSlot, seg.def.endSlot, reclaimCpuIntermediates ? 1 : 0,
+           static_cast<int>(graphExecutionMode_), planLifecycle_.displayName(),
+           hasControlFlow_ ? 1 : 0, deferredSlotDeletes_.size());
 #endif
 
   // Reset per-segment allocation counters

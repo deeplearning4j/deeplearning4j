@@ -80,6 +80,19 @@ public class TensorG3PreparerRssProfileTest {
         return -1;
     }
 
+    private static void logResidentBreakdown() {
+        try {
+            for (String line : Files.readAllLines(Paths.get("/proc/self/status"))) {
+                if (line.startsWith("RssAnon:") || line.startsWith("RssFile:")
+                        || line.startsWith("RssShmem:") || line.startsWith("VmSwap:")) {
+                    log.info("PREP_RESIDENCY {}", line.trim());
+                }
+            }
+        } catch (java.io.IOException failure) {
+            log.warn("PREP_RESIDENCY unavailable: {}", failure.getMessage());
+        }
+    }
+
     private static long megabytes(long bytes) {
         return bytes / (1024 * 1024);
     }
@@ -137,6 +150,7 @@ public class TensorG3PreparerRssProfileTest {
                     peak.set(r);
                 }
                 if (samples++ % 10 == 0) {
+                    logResidentBreakdown();
                     MemoryUsage heap = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage();
                     log.info("PREP_RSS elapsed_s={} rss_mb={} peak_mb={} heap_used_mb={} "
                                     + "heap_committed_mb={} javacpp_total_mb={}",
