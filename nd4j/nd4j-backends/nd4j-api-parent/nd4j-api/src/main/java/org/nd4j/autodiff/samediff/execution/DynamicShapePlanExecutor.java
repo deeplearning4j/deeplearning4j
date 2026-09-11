@@ -2301,7 +2301,11 @@ public class DynamicShapePlanExecutor implements Closeable {
             }
             Pointer handle = pinnedPlanHandles.get(handleAddress.longValue());
             if (handle == null) continue;
-            long evictedBytes = pinnedLeaseEstimatedBytes.getOrDefault(victim, 0L);
+            // Slot intermediates are the dominant footprint of an executed plan
+            // (KV caches: hundreds of MB). Measure now — the victim has run, so
+            // its slots are allocated — and fold it into the recorded cost.
+            long measuredBytes = measurePlanSlotBytes(victim);
+            long evictedBytes = pinnedLeaseEstimatedBytes.merge(victim, measuredBytes, Long::sum);
             // Fail closed if release/close/unpin fails. Keep the remaining lease and cost
             // visible rather than admitting an incoming plan against imaginary headroom.
             if (nativeMutableReplicaCaches.containsKey(handle.address())) {
@@ -2342,6 +2346,35 @@ public class DynamicShapePlanExecutor implements Closeable {
         // Disk-restored plans may be leased before externalInputs is populated.
         // Unknown cost is not a zero-byte lease; honor the documented fallback.
         return total > 0 ? total : DEFAULT_LEASE_COST_ESTIMATE_BYTES;
+    }
+
+    /**
+     * Measure a pinned plan's actual device footprint by summing its output
+     * slot lengths. Slots are allocated lazily on first execution, so this is
+     * only meaningful for plans that have run at least once — exactly the case
+     * that matters for eviction of LRU victims. Returns 0 when the handle is
+     * not a pinned lease or no slots have allocated.
+     */
+    private long measurePlanSlotBytes(PlanLeaseKey victim) {
+        Long handleAddress = pinnedPlanHandlesByIdentity.get(victim);
+        if (handleAddress == null) return 0;
+        Pointer handle = pinnedPlanHandles.get(handleAddress.longValue());
+        if (handle == null) return 0;
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        int slots = nativeOps.getTotalPlanOutputSlots(handle);
+        if (slots <= 0) return 0;
+        long slotBytes = 0;
+        for (int i = 0; i < slots; i++) {
+            OpaqueNDArray opaque = nativeOps.getPlanSlotOutputArray(handle, i);
+            if (opaque == null) continue;
+            try {
+                long length = nativeOps.getOpaqueNDArrayLength(opaque);
+                if (length > 0) slotBytes += length * dataTypeWidthOrDefault();
+            } finally {
+                opaque.setNull();
+            }
+        }
+        return slotBytes;
     }
 
     /** Fallback per-lease cost when nothing better is known (0.5 GiB). */

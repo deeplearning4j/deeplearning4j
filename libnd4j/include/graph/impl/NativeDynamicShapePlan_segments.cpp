@@ -1822,9 +1822,9 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
       int si = requestedOutputSlotIndices_[i];
       if (si >= 0 && si < totalOutputSlots_) cpuLastUse[si] = numSlots_;
     }
-    // Deferred deletions may hold a live view outside outputSlots_. Until their
-    // normal completion-boundary flush, conservatively preserve their buffers.
-    if (!deferredSlotDeletes_.empty()) reclaimCpuIntermediates = false;
+    // Deferred wrappers are protected by DataBuffer identity in the per-step
+    // live set below. Their presence must not disable retirement of unrelated
+    // dead buffers for this entire segment.
   }
 #endif
 
