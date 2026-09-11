@@ -2276,6 +2276,10 @@ public class DynamicShapePlanExecutor implements Closeable {
         // A post-switch check already includes the incoming lease in total.
         long incomingCost = pinnedLeaseEstimatedBytes.containsKey(pendingIdentity)
                 ? 0L : DEFAULT_LEASE_COST_ESTIMATE_BYTES;
+        // Costs recorded at lease time cover only external inputs; executed plans hold far
+        // larger slot intermediates. Refresh from measured slot bytes BEFORE the budget
+        // decision, or the projection stays near zero and eviction never fires.
+        refreshPinnedLeaseCosts();
         long total = 0;
         for (Long bytes : pinnedLeaseEstimatedBytes.values()) total += bytes;
 
@@ -2301,11 +2305,9 @@ public class DynamicShapePlanExecutor implements Closeable {
             }
             Pointer handle = pinnedPlanHandles.get(handleAddress.longValue());
             if (handle == null) continue;
-            // Slot intermediates are the dominant footprint of an executed plan
-            // (KV caches: hundreds of MB). Measure now — the victim has run, so
-            // its slots are allocated — and fold it into the recorded cost.
-            long measuredBytes = measurePlanSlotBytes(victim);
-            long evictedBytes = pinnedLeaseEstimatedBytes.merge(victim, measuredBytes, Long::sum);
+            // Costs were refreshed from measured slot bytes above; the recorded
+            // value is the real device footprint this eviction frees.
+            long evictedBytes = pinnedLeaseEstimatedBytes.getOrDefault(victim, 0L);
             // Fail closed if release/close/unpin fails. Keep the remaining lease and cost
             // visible rather than admitting an incoming plan against imaginary headroom.
             if (nativeMutableReplicaCaches.containsKey(handle.address())) {
@@ -2379,6 +2381,22 @@ public class DynamicShapePlanExecutor implements Closeable {
 
     /** Fallback per-lease cost when nothing better is known (0.5 GiB). */
     private static final long DEFAULT_LEASE_COST_ESTIMATE_BYTES = 512L * 1024 * 1024;
+
+    /**
+     * Refresh every pinned lease's recorded cost from its measured slot bytes.
+     * Costs recorded at lease time cover only the external input buffers; the
+     * slot intermediates an executed plan holds (KV caches, fused activations)
+     * are the dominant device footprint and only exist after that plan has run.
+     * Monotone — a lease's recorded cost never shrinks, so an unknown footprint
+     * cannot hide behind a refresh.
+     */
+    private void refreshPinnedLeaseCosts() {
+        for (PlanLeaseKey identity : pinnedPlanHandlesByIdentity.keySet().toArray(new PlanLeaseKey[0])) {
+            long measured = measurePlanSlotBytes(identity);
+            if (measured <= 0) continue;
+            pinnedLeaseEstimatedBytes.merge(identity, measured, Math::max);
+        }
+    }
 
     /**
      * Resolve the lease identity whose pinned handle matches the given handle address.
