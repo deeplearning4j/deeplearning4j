@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.serde.SDZSerializer;
+import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
 import org.nd4j.ggml.convert.GGMLToSameDiffConverter;
 import org.nd4j.ggml.convert.ConversionOptions;
 import java.nio.file.Files;
@@ -45,13 +46,20 @@ class Gemma4LastPositionConversionIT {
         assertTrue(Files.isRegularFile(output) && Files.size(output) > 0,
                 "Conversion produced no output: " + output);
 
-        try (SameDiff restored = SDZSerializer.load(output.toFile(), false)) {
-            assertTrue(restored.hasVariable("lm_logits_last"),
-                    "Restored graph lacks lm_logits_last — builder change missing?");
-            assertTrue(restored.hasVariable("actual_sequence_length"),
-                    "Restored graph lacks actual_sequence_length");
-            assertTrue(restored.outputs().contains("lm_logits_last"),
-                    "lm_logits_last not in declared outputs");
-        }
+        // Optimize the graph and save the optimized version so the runtime
+        // doesn't need SameDiff.dup() during GraphOptimizer (which doubles
+        // model memory and OOMs under device caps).
+        SameDiff sd = SDZSerializer.load(output.toFile(), false);
+        assertTrue(sd.hasVariable("lm_logits_last"),
+                "Restored graph lacks lm_logits_last — builder change missing?");
+        assertTrue(sd.hasVariable("actual_sequence_length"),
+                "Restored graph lacks actual_sequence_length");
+        assertTrue(sd.outputs().contains("lm_logits_last"),
+                "lm_logits_last not in declared outputs");
+
+        SameDiff optimized = GraphOptimizer.optimize(sd, sd.outputs());
+        SDZSerializer.save(optimized, output.toFile(), false, null);
+        System.out.println("Saved optimized SDZ (" + optimized.getOps().size()
+                + " ops) to " + output);
     }
 }
