@@ -61,19 +61,7 @@ public final class SamplerUtils {
      * Convert logits to probabilities using softmax.
      */
     public static INDArray softmax(INDArray logits) {
-        if (logits.rank() == 1) {
-            double maxVal = logits.maxNumber().doubleValue();
-            INDArray shifted = logits.sub(maxVal);
-            INDArray expShifted = Transforms.exp(shifted);
-            double sumExp = expShifted.sumNumber().doubleValue();
-            return expShifted.div(sumExp);
-        } else {
-            INDArray maxVal = logits.max(true, 1);
-            INDArray shifted = logits.sub(maxVal);
-            INDArray expShifted = Transforms.exp(shifted);
-            INDArray sumExp = expShifted.sum(true, 1);
-            return expShifted.div(sumExp);
-        }
+        return Nd4j.nn().softmax(logits, logits.rank() == 1 ? 0 : 1);
     }
 
     /**
