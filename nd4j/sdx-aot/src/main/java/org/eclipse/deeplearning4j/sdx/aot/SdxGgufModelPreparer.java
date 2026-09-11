@@ -347,6 +347,10 @@ final class SdxGgufModelPreparer {
                                         "SAMPLE_STARTED", completedSamples[0], calibratedPrefillLength);
                                 pipeline.generate(prompt, 1, SamplingConfig.greedy());
                                 SameDiffMemoryUtils.reclaimCollectedNativeResources();
+                                // generate() has now released caller-owned prefill arrays and
+                                // collected wrappers have run their native frees. Trim AFTER
+                                // these frees, not only during the earlier plan teardown.
+                                SameDiffMemoryUtils.trimAllDevicePools();
                                 recordCalibrationProgress(preparedRoot, calibrationStarted,
                                         "SAMPLE_COMPLETED", ++completedSamples[0], calibratedPrefillLength);
                             });
