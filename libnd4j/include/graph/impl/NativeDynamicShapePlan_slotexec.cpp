@@ -3367,6 +3367,16 @@ Status NativeDynamicShapePlan::executeSlot(
           memberOut = new NDArray(const_cast<LongType*>(outputShapeInfo), true, LaunchContext::defaultContext());
           writeOutputSlot(chainOutputSlotIdx, memberOut, "fused-chain-member-alloc");
         }
+        // Shape inference can install a non-null wrapper with metadata only.
+        // Materialize its backend storage in the current execution scope without
+        // replacing the wrapper or aliasing it to the chain's final output.
+        if (!memberOut->isEmpty() && memberOut->dataBuffer() != nullptr) {
+#if defined(SD_CUDA) || defined(SD_VULKAN)
+          memberOut->dataBuffer()->allocateSpecial();
+#else
+          memberOut->dataBuffer()->allocatePrimary();
+#endif
+        }
         DSP_DIAG_SLOT_WRITE(chainOutputSlotIdx, slot.ident.opName.c_str(),
                             memberOut != nullptr && memberOut->dataBuffer() != nullptr
                                 ? memberOut->dataBuffer()->getLenInBytes()

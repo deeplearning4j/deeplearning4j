@@ -139,12 +139,26 @@ public class DspExtInputStalenessTest extends DspExtInputTestSupport {
         configureMode(sd, GraphExecutionMode.CUDA_GRAPHS);
         INDArray input = Nd4j.ones(DataType.FLOAT, 1, 8);
 
-        assertThrows(Throwable.class, () -> {
-            for (int step = 0; step < 8; step++) {
-                input.assign(step + 1.0);
-                sd.output(singlePh("x", input), "out");
+        int attempts = "cross_stream".equals(fault) ? 2 : 1;
+        for (int attempt = 0; attempt < attempts; attempt++) {
+            Throwable failure = assertThrows(Throwable.class, () -> {
+                for (int step = 0; step < 8; step++) {
+                    input.assign(step + 1.0);
+                    sd.output(singlePh("x", input), "out");
+                }
+            }, fault + " must fail closed before graph execution can use raw external arrays");
+            if ("cross_stream".equals(fault)) {
+                boolean injected = false;
+                for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+                    if (cause.getMessage() != null && cause.getMessage().contains("cross_stream_injected")) {
+                        injected = true;
+                        break;
+                    }
+                }
+                assertTrue(injected, "must report the actual cross-stream injection on attempt " + attempt
+                        + ": " + failure);
             }
-        }, fault + " must fail closed before graph execution can use raw external arrays");
+        }
     }
 
     @ParameterizedTest(name = "unmarkedPlaceholderBehavior mode={0}")

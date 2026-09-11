@@ -61,6 +61,7 @@ import java.util.stream.Stream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -1090,8 +1091,43 @@ public class DspLifecycleValidationTest {
         }
     }
 
+    // Resolve only after CUDA availability is established so CPU-only builds
+    // do not require the generated CUDA binding on their compile classpath.
+    private static final class NativeCaptureHeadroom {
+        private final Object environment;
+        private final java.lang.reflect.Method getter;
+        private final java.lang.reflect.Method setter;
+
+        NativeCaptureHeadroom() {
+            try {
+                Class<?> type = Class.forName("org.nd4j.linalg.jcublas.bindings.Nd4jCuda$Environment");
+                environment = type.getMethod("getInstance").invoke(null);
+                getter = type.getMethod("dspGraphMetadataSafetyMb");
+                setter = type.getMethod("setDspGraphMetadataSafetyMb", int.class);
+            } catch (ReflectiveOperationException e) {
+                throw new AssertionError("CUDA capture headroom API is required", e);
+            }
+        }
+
+        int dspGraphMetadataSafetyMb() {
+            try {
+                return ((Number) getter.invoke(environment)).intValue();
+            } catch (ReflectiveOperationException e) {
+                throw new AssertionError("Cannot read native capture headroom", e);
+            }
+        }
+
+        void setDspGraphMetadataSafetyMb(int value) {
+            try {
+                setter.invoke(environment, value);
+            } catch (ReflectiveOperationException e) {
+                throw new AssertionError("Cannot set native capture headroom", e);
+            }
+        }
+    }
+
     @Test
-    @DisplayName("Static KV prefill/decode recovers from transient pool pressure")
+    @DisplayName("Static KV prefill/decode recovers from bounded capture headroom pressure")
     public void testStaticKvLargePrefillDecodeRecoversAfterPoolPressure() {
         assumeTrue(Nd4j.backends().isCudaAvailable(), "CUDA required");
         assumeTrue(isTritonAvailable(), "Triton required");
@@ -1117,7 +1153,8 @@ public class DspLifecycleValidationTest {
 
         NativeOps nativeOps = Nd4j.getNativeOps();
         int device = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-        List<OpaqueDataBuffer> ballast = new ArrayList<>();
+        var nativeEnvironment = new NativeCaptureHeadroom();
+        int savedSafetyMb = nativeEnvironment.dspGraphMetadataSafetyMb();
         AtomicBoolean pressureReleased = new AtomicBoolean(false);
         List<Map<String, INDArray>> refLifecycle = new ArrayList<>();
         List<Map<String, INDArray>> testLifecycle = new ArrayList<>();
@@ -1129,34 +1166,28 @@ public class DspLifecycleValidationTest {
             refLifecycle = runActualPrefillDecodeLifecycle(
                     reference, refCfg, prefillEmbeddings.dup(), decodeEmbeddings, maxKvLen);
 
-            long targetFree = 192L * mib;
-            long free = nativeOps.getDeviceFreeMemory(device);
-            while (free > targetFree + 8L * mib) {
-                long chunkBytes = Math.max(8L * mib,
-                        Math.min(256L * mib, free - targetFree - 4L * mib));
-                OpaqueDataBuffer chunk = OpaqueDataBuffer.allocateDataBuffer(
-                        chunkBytes / DataType.FLOAT.width(), DataType.FLOAT, false);
-                assertNotNull(chunk, "pool ballast allocation returned null");
-                ballast.add(chunk);
-                long nextFree = nativeOps.getDeviceFreeMemory(device);
-                if (nextFree >= free - chunkBytes / 2) {
-                    log.info("pool ballast stopped reducing device free: {}MB -> {}MB",
-                            free / mib, nextFree / mib);
-                    break;
-                }
-                free = nextFree;
-            }
-            log.info("pool-backed pressure established: free={}MB chunks={} target={}MB",
-                    free / mib, ballast.size(), targetFree / mib);
-            assertTrue(free < 320L * mib,
-                    "pool ballast did not establish capture pressure: free=" + (free / mib) + "MB");
+            // Exercise the real capture admission gate without exhausting shared
+            // host RAM on unified-memory GPUs. A safety margin is not an allocation.
+            long totalBytes = nativeOps.getDeviceTotalMemory(device);
+            assertTrue(totalBytes > 0, "device memory capacity must be available");
+            int pressureSafetyMb = Math.toIntExact(totalBytes / mib + 1L);
+            nativeEnvironment.setDspGraphMetadataSafetyMb(pressureSafetyMb);
+            assertEquals(pressureSafetyMb, nativeEnvironment.dspGraphMetadataSafetyMb());
 
             testLifecycle = runActualPrefillDecodeLifecycle(
                     tested, testCfg, prefillEmbeddings.dup(), decodeEmbeddings, maxKvLen,
                     step -> {
                         if (step == 2 && pressureReleased.compareAndSet(false, true)) {
-                            closePoolBallast(ballast, nativeOps, device);
-                            log.info("pool-backed pressure released after decode step {}", step);
+                            var plan = tested.getOrCreateSession().getDynamicShapePlanExecutor()
+                                    .getNativePlanHandle();
+                            assertNotNull(plan, "pressure must exercise a native plan");
+                            String stats = nativeOps.getPlanCaptureStats(plan);
+                            assertTrue(java.util.regex.Pattern.compile("oomRetrying=[1-9][0-9]*\\(")
+                                            .matcher(stats).find(),
+                                    "capture must actually defer before pressure release: " + stats);
+                            nativeEnvironment.setDspGraphMetadataSafetyMb(savedSafetyMb);
+                            assertEquals(savedSafetyMb, nativeEnvironment.dspGraphMetadataSafetyMb());
+                            log.info("capture headroom pressure released after decode step {}: {}", step, stats);
                         }
                     });
 
@@ -1174,7 +1205,7 @@ public class DspLifecycleValidationTest {
                     tested, "transient pool pressure");
             DspPlanAssertions.assertFullyReplaying(tested, "transient pool pressure");
         } finally {
-            closePoolBallast(ballast, nativeOps, device);
+            nativeEnvironment.setDspGraphMetadataSafetyMb(savedSafetyMb);
             for (Map<String, INDArray> outputs : refLifecycle) closeAll(outputs);
             for (Map<String, INDArray> outputs : testLifecycle) closeAll(outputs);
             prefillEmbeddings.close();

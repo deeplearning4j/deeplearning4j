@@ -4093,22 +4093,15 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
       // Pre-capture batch-zero: zero all registered buffers BEFORE beginCapture.
       // These cudaMemsetAsync calls execute normally on the stream (not captured).
       //
-      // IMPORTANT: Only for MONOLITHIC capture. For COMPOSITE capture, skip batch-zero
-      // here because composite capture re-executes gap ops between islands, and those
-      // gap ops need valid intermediate results from the warmup as inputs. Batch-zero
-      // would destroy those intermediate values (zeroing gap op input buffers), causing
-      // gap ops to read zeros and produce wrong results that propagate through the
-      // entire model. Composite replay handles zeroing correctly: pre-replay batch-zero
-      // zeros outputs before each replay, and gap ops call nullify() on their own outputs.
+      // Only MONOLITHIC preparation may batch-zero here. Composite recording
+      // returns this invocation's completed warmup result, including live-gap-only
+      // schedules. Zeroing now would destroy that result. Future composite replay
+      // performs its own zeroing before executing producers and consumers in order.
       //
       bool willUseCompositeCapture = false;
 #if HAVE_TRITON
-      {
-       auto& schedCheck = seg.exec.compositeReplaySchedule;
-       for (auto& u : schedCheck.units) {
-         if (u.kind == REPLAY_UNIT_TRITON_ISLAND) { willUseCompositeCapture = true; break; }
-       }
-     }
+      willUseCompositeCapture = ctx.tritonBackend != nullptr &&
+          !ctx.nativeOnlyGraphCapture && !seg.exec.compositeReplaySchedule.units.empty();
 #endif
       if (Environment::getInstance().dspBatchZero() && !batchZeroEntries_.empty() &&
           !willUseCompositeCapture) {
@@ -4120,7 +4113,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
         DSP_DIAG(MEMORY, "pre-capture batch-zero: %d buffers zeroed via cudaMemsetAsync (fill engines, before beginCapture)",
                  static_cast<int>(batchZeroEntries_.size()));
       } else if (willUseCompositeCapture) {
-        DSP_DIAG(MEMORY, "pre-capture batch-zero SKIPPED for composite capture — gap ops need valid warmup data as inputs");
+        DSP_DIAG(MEMORY, "pre-capture batch-zero SKIPPED for composite recording — preserve completed warmup output");
       }
 
       // ── Save warmup output slot pointers BEFORE capture ─────────────────
@@ -4339,11 +4332,25 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
          DeviceCaptureGuard compositeCaptureGuard(
              static_cast<PlanExecutionContext*>(activeExecutionContext()));
          if (!compositeCaptureGuard.acquired()) {
-           // Another thread is capturing — skip capture this iteration.
-           // didCompositeCapture stays false; falls through to monolithic path (which
-           // will also fail try_lock) then to direct slot-by-slot execution.
+           // Warmup already completed this invocation. Contention postpones
+           // recording only; falling through would execute stateful gaps twice.
            DSP_DIAG(COMPILE, "COMPOSITE_CAPTURE_DEFER: seg[%d-%d] another thread capturing, will retry next exec",
                     seg.def.startSlot, seg.def.endSlot);
+           cudaError_t warmupSyncErr = cudaStreamSynchronize(ctx.cudaStr);
+           cleanupCaptureTlsState(true, static_cast<void*>(prevCaptureStream));
+           popPrimaryCtxIfPushed(didPushCtx, tritonCaptureDevice);
+           restoreCublasWorkspaceAfterCapture(stream);
+           restoreSlotStates(slots_, seg.def.startSlot, seg.def.endSlot, savedSlotPhasesTriton);
+           seg.exec.replayHandle.reset();
+           tritonOrderedRangeGuard.active = false;
+           TritonGraphBackend::clearOrderedRangeExecutor();
+           if (warmupSyncErr != cudaSuccess) {
+             return setGpuBackendFailureDetail(seg,
+                 "capture contention warmup synchronization failed: " +
+                 std::string(cudaGetErrorString(warmupSyncErr)));
+           }
+           seg.exec.executionCount++;
+           return Status::OK;
          } else {
          DSP_DIAG(COMPILE,
                   "COMPOSITE_CAPTURE_ENTER: seg[%d-%d] units=%d hasIsland=%d liveGapOnly=%d execCount=%d",
@@ -4591,7 +4598,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                continue;  // Stay in capture — check next unit
              }
 
-               // Gap is NOT capture-safe or no capture active — run natively.
+               // Unmerged live gaps have already executed in warmup.
                // If capture was active, finalize the merged capture first.
                  if (captureActive) {
                   // End the merged capture
@@ -4628,44 +4635,15 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                if (!allIslandsOk) break;
              }
 
-              // Execute gap slots natively (not captured — non-capture-safe gap).
-              // Use effectiveExternalsForCapture for consistency with the captured path:
-              // all gap ops (captured or native) read from the same stable staging buffers.
-              DSP_DIAG(EXECUTE, "COMPOSITE_CAPTURE: gap unit [%d-%d] — executing slots natively",
-                       unit.startSlot, unit.endSlot);
-             {
-               SyncOverride gapSync(*this, "composite_gap_native");
-               for (int s = unit.startSlot; s <= unit.endSlot; s++) {
-                 auto gapStatus = executeSlot(s, effectiveExternalsForCapture, numExt, stream);
-                 if (gapStatus != Status::OK) {
-                   DSP_DIAG(EXECUTE,
-                            "COMPOSITE_CAPTURE: gap slot %d FAILED status=%s (%d)",
-                            s, statusName_gpu(gapStatus),
-                            static_cast<int>(gapStatus));
-                   allIslandsOk = false;
-                   setCompositeCaptureFailureDetail(
-                       "native gap slot=" + std::to_string(s) + " op=" +
-                       slots_[s].ident.opName + " returned " +
-                       statusName_gpu(gapStatus) + " (" +
-                       std::to_string(static_cast<int>(gapStatus)) + ")");
-                   break;
-                 }
-               }
-             }
-
-             // Cross-stream sync after native gap ops
-             {
-               auto* lcStream = LaunchContext::defaultContext()->getCudaStream();
-               cudaStream_t gapStream = lcStream ? *lcStream : nullptr;
-               if (gapStream != nullptr && gapStream != ctx.cudaStr) {
-                 auto* execCtxMergeCap = static_cast<PlanExecutionContext*>(activeExecutionContext());
-                 cudaEvent_t evt = execCtxMergeCap ? reinterpret_cast<cudaEvent_t>(execCtxMergeCap->crossStreamEvent) : nullptr;
-                 if (evt != nullptr) {
-                   cudaEventRecord(evt, gapStream);
-                   cudaStreamWaitEvent(ctx.cudaStr, evt, 0);
-                 }
-               }
-             }
+             // The complete pre-capture warmup already executed this invocation.
+             // Captured producers are only recorded, not launched. Running a live
+             // consumer here would read reused warmup storage and execute stateful
+             // gaps twice. Preserve this unmerged unit for ordered future replay;
+             // downstream recording uses the metadata established by warmup.
+             DSP_DIAG(EXECUTE,
+                      "COMPOSITE_CAPTURE: gap [%d-%d] recording-only; warmup already executed",
+                      unit.startSlot, unit.endSlot);
+             continue;
            } else {  // REPLAY_UNIT_TRITON_ISLAND
              int islandIdx = unit.islandIndex;
 
@@ -5181,7 +5159,11 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
              // Prevent fallthrough to monolithic capture — the segment state
              // was already cleaned up by abortCapture. Monolithic would try to
              // capture again with a stale replayHandle and fail.
-             didCompositeCapture = true;
+             // abortCapture above has restored capture resources and slot state.
+             // Recording preserved the completed warmup result: do not execute
+             // stateful gaps a second time through the direct-dispatch path.
+             seg.exec.executionCount++;
+             return Status::OK;
            } else {
              SegmentLifecycle::markFailed(
                  seg.exec, "composite_capture_failed_non_oom",

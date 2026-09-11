@@ -276,7 +276,8 @@ static void fuseNormalizationEpilogues(NativeSlot* slots, int numSlots,
 
 std::vector<FusionCandidate> FusionPass::detectFusions(
         NativeSlot* slots, int numSlots,
-        const std::vector<int>& externalInputRanks) {
+        const std::vector<int>& externalInputRanks,
+        const int* requestedOutputSlots, int numRequestedOutputs) {
 
     std::vector<FusionCandidate> candidates;
     if (slots == nullptr || numSlots <= 1) {
@@ -291,6 +292,13 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
 
     // Pre-compute consumer counts for O(1) "only consumed once" checks
     auto consumerCounts = buildConsumerCounts(slots, numSlots);
+    // Publication is an external consumer: a single-output fusion must not
+    // eliminate a value that the caller requested alongside downstream results.
+    if (requestedOutputSlots != nullptr) {
+        for (int i = 0; i < numRequestedOutputs; ++i) {
+            if (requestedOutputSlots[i] >= 0) ++consumerCounts[requestedOutputSlots[i]];
+        }
+    }
 
     // Track which slots are already part of a fusion (no overlapping fusions)
     std::vector<bool> fused(numSlots, false);

@@ -98,6 +98,25 @@ namespace graph {
 // release paths can tell live pins from dead pointers WITHOUT dereferencing.
 // The map counts pins per buffer (a buffer may be pinned by multiple plans).
 namespace {
+// Staging tables own these exact wrappers; publishing them as slot aliases
+// must not introduce a second owner. Distinct views over their buffers are
+// still independently owned by the slot machinery.
+bool isStagingOwnedWrapper(
+    NDArray* array, NDArray* const* primary, int count,
+    const std::unordered_map<int, std::vector<NDArray*>>& devices) {
+  if (array == nullptr) return false;
+  if (primary != nullptr) {
+    for (int i = 0; i < count; ++i) {
+      if (primary[i] == array) return true;
+    }
+  }
+  for (const auto& entry : devices) {
+    if (std::find(entry.second.begin(), entry.second.end(), array) != entry.second.end())
+      return true;
+  }
+  return false;
+}
+
 std::mutex g_frozenPinMtx;
 std::unordered_map<DataBuffer*, int> g_frozenPinCounts;
 
@@ -1159,8 +1178,10 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
   // only arrays allocated/materialized by this plan may enter planOwnedArrays_.
   const bool isBorrowedExternal =
       value != nullptr &&
-      std::find(lastExternalInputsCopy_.begin(), lastExternalInputsCopy_.end(), value) !=
-          lastExternalInputsCopy_.end();
+      (std::find(lastExternalInputsCopy_.begin(), lastExternalInputsCopy_.end(), value) !=
+           lastExternalInputsCopy_.end() ||
+       isStagingOwnedWrapper(value, placeholderStagingBuffers_, numExternalInputs_,
+                             deviceStagingBuffers_));
   // View wrappers minted by the plan are owned even when their backing buffer
   // is a protected weight. The wrapper itself must be retired; only the exact
   // caller-provided external wrapper is borrowed.
@@ -1539,7 +1560,9 @@ void NativeDynamicShapePlan::materializeViewSlot(int slotIdx, const char* tag) {
   // or delete the caller's array during teardown.
   const bool borrowedExternal =
       std::find(lastExternalInputsCopy_.begin(), lastExternalInputsCopy_.end(), viewArr) !=
-          lastExternalInputsCopy_.end();
+          lastExternalInputsCopy_.end() ||
+      isStagingOwnedWrapper(viewArr, placeholderStagingBuffers_, numExternalInputs_,
+                            deviceStagingBuffers_);
   if (!borrowedExternal) {
     deferredSlotDeletes_.push_back(viewArr);
   }
@@ -2521,7 +2544,8 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
 
   // Detect and apply fusion candidates
   if (plan->numSlots_ > 1) {
-    auto fusions = FusionPass::detectFusions(plan->slots_, plan->numSlots_);
+    auto fusions = FusionPass::detectFusions(plan->slots_, plan->numSlots_, {},
+                                              plan->requestedOutputSlotIndices_, plan->numRequestedOutputs_);
     if (!fusions.empty()) {
       DSP_DIAG(FUSION, "detected %d fusion candidates",
                static_cast<int>(fusions.size()));
@@ -3186,6 +3210,14 @@ Status NativeDynamicShapePlan::execute(
   // the allocation path creates fresh arrays. The lifecycle validation (designed for
   // the non-merged case where each segment's slots have stable buffers) incorrectly
   // rejects these buffer replacements as "stale ownership".
+  // Non-frozen execution also retains view publications across calls. Refresh
+  // those aliases before segment-input migration can inspect the old backing
+  // storage after a caller rebind. The helper only refreshes established views.
+  if (!planLifecycle_.isInFrozenOrReplayState()) {
+    for (auto& seg : segments_) {
+      refreshStaleViewWrappersInSegment(seg, externalInputs, numExternalInputs);
+    }
+  }
   if ((planLifecycle_.isShapesFrozen() || planLifecycle_.isReplaying()) && executeCount_ > 0) {
     // Refresh stale view wrappers BEFORE lifecycle validation.
     // View-producer slots (squeeze, reshape, expand_dims, permute) share their
@@ -4734,9 +4766,22 @@ void NativeDynamicShapePlan::markExternalInputVariable(int extIdx) {
       effectiveExternals_ = new NDArray*[numExternalInputs_]();
     }
     if (placeholderStagingBuffers_[extIdx] == nullptr) {
-      placeholderStagingBuffers_[extIdx] = new NDArray(
-          lastExt->ordering(), *lastExt->getShapeAsVector(),
-          lastExt->dataType(), LaunchContext::defaultContext());
+      // Writable state is checked against the complete source storage contract,
+      // including singleton strides, padding and offset, on the next execution.
+      auto* storage = new DataBuffer(lastExt->dataBuffer()->getLenInBytes(),
+                                     lastExt->dataType(), nullptr, false);
+      NDArray* staging = nullptr;
+      try {
+        staging = new NDArray(storage, lastExt->ordering(), *lastExt->getShapeAsVector(),
+                              lastExt->dataType(), LaunchContext::defaultContext(),
+                              true, false, lastExt->offset());
+        staging->setShapeInfo(lastExt->shapeInfo());
+      } catch (...) {
+        if (staging != nullptr) delete staging;
+        else delete storage;
+        throw;
+      }
+      placeholderStagingBuffers_[extIdx] = staging;
     }
   }
 
@@ -5025,7 +5070,8 @@ Status NativeDynamicShapePlan::phaseFreeze() {
 
   // ── Fusion pass (slot-by-slot → freeze transition) ──────────────────
   if (numSlots_ > 1) {
-    auto fusions = FusionPass::detectFusions(slots_, numSlots_, externalInputRanks_);
+    auto fusions = FusionPass::detectFusions(slots_, numSlots_, externalInputRanks_,
+                                              requestedOutputSlotIndices_, numRequestedOutputs_);
     if (!fusions.empty()) {
       DSP_DIAG(FUSION, "detected %d fusion candidates (post-warmup)",
                (int)fusions.size());

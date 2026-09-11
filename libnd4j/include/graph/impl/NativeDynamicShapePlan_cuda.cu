@@ -3115,14 +3115,42 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
       cudaEvent_t evt = reinterpret_cast<cudaEvent_t>(ctx->crossStreamEvent);
       cudaStream_t dspStr = reinterpret_cast<cudaStream_t>(ctx->dspStream);
       cudaStream_t lcStr  = reinterpret_cast<cudaStream_t>(ctx->lcDefaultStream);
+      // Entry precedes execute()'s PlatformEndGuard. A failed ordering operation
+      // must unwind the state acquired here, including the capture reservation.
+      auto requireEntryOrdering = [&](cudaError_t error, const char* stage) {
+        if (error == cudaSuccess) return;
+        std::string detail = std::string("DSP entry cross-stream ordering failed: ") +
+            stage + " cudaError=" + std::to_string(static_cast<int>(error)) +
+            " (" + cudaGetErrorString(error) + ")";
+        AttentionWorkspace::setActiveScope(ctx->previousAttentionWorkspaceScope);
+        if (tl_gapStreamPinnedByPlanExec) {
+          tl_dspGapStream = tl_prevGapStreamForPlanExec;
+          tl_prevGapStreamForPlanExec = nullptr;
+          tl_gapStreamPinnedByPlanExec = false;
+        }
+        if (tl_activeMmulFpPlan == this) {
+          tl_activeMmulFpPlan = nullptr;
+          tl_activeMmulFpOrdinal = 0;
+        }
+        int dev = ctx->deviceId;
+        delete static_cast<DspStreamGuard*>(ctx->streamGuard);
+        delete ctx;
+        if (dev < 0 || dev >= 16) dev = 0;
+        if (g_execCount[dev].fetch_sub(1, std::memory_order_acq_rel) <= 1)
+          g_captureCV[dev].notify_all();
+        throw std::runtime_error(detail);
+      };
       // 1) LC default stream → DSP stream
       if (lcStr != nullptr && lcStr != dspStr) {
-        cudaEventRecord(evt, lcStr);
-        cudaStreamWaitEvent(dspStr, evt, 0);
+        const char* fault = std::getenv("ND4J_DSP_STAGING_FAULT");
+        const bool inject = fault != nullptr && std::strcmp(fault, "cross_stream") == 0;
+        requireEntryOrdering(inject ? cudaErrorUnknown : cudaEventRecord(evt, lcStr),
+                             inject ? "cross_stream_injected" : "lc_event_record");
+        requireEntryOrdering(cudaStreamWaitEvent(dspStr, evt, 0), "lc_event_wait");
       }
       // 2) CUDA stream 0 → DSP stream (cuBLAS default handle, misc)
-      cudaEventRecord(evt, nullptr);
-      cudaStreamWaitEvent(dspStr, evt, 0);
+      requireEntryOrdering(cudaEventRecord(evt, nullptr), "default_event_record");
+      requireEntryOrdering(cudaStreamWaitEvent(dspStr, evt, 0), "default_event_wait");
       ctx->recordEventSync();  // Track: cross-stream event ordering at entry
       ctx->markCrossStreamSynced();  // Advance sync phase — single source of truth
       DSP_DIAG(EXECUTE, "platformBeginExecution: cross-stream sync done (syncPhase=%s)",
