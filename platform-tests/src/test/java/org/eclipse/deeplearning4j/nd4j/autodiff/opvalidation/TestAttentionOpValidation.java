@@ -462,6 +462,126 @@ public class TestAttentionOpValidation extends BaseOpValidation {
         }
     }
 
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("Padded prefill bias converts views directly into query dtype")
+    public void testPaddedPrefillBiasConversion(Nd4jBackend backend) {
+        // Zero Q/K makes the reference exactly the mean of the unmasked V rows.
+        // Changing masks and shapes exercise cast-workspace reuse and lifetime.
+        for (DataType dtype : new DataType[]{DataType.FLOAT16, DataType.FLOAT}) {
+            for (String layout : new String[]{"c", "f", "offset", "stepped"}) {
+                for (int seq : new int[]{4, 5, 4}) {
+                    int width = seq + 3;
+                    INDArray query = Nd4j.zeros(dtype, 1, seq, 8, 8);
+                    INDArray key = Nd4j.zeros(dtype, 1, seq, 1, 8);
+                    INDArray value = Nd4j.create(dtype, 1, seq, 1, 8);
+                    for (int k = 0; k < seq; k++) {
+                        for (int d = 0; d < 8; d++) {
+                            value.putScalar(new long[]{0, k, 0, d}, k * 2 + d * 0.125);
+                        }
+                    }
+                    INDArray parent;
+                    INDArray bias;
+                    if (layout.equals("offset") || layout.equals("stepped")) {
+                        int step = layout.equals("stepped") ? 2 : 1;
+                        parent = Nd4j.create(DataType.FLOAT, 1, 1, seq + 2, width * step + 2);
+                        parent.assign(123.0);
+                        bias = parent.get(org.nd4j.linalg.indexing.NDArrayIndex.all(),
+                                org.nd4j.linalg.indexing.NDArrayIndex.all(),
+                                org.nd4j.linalg.indexing.NDArrayIndex.interval(1, seq + 1),
+                                org.nd4j.linalg.indexing.NDArrayIndex.interval(1, step, 1 + width * step));
+                        assertTrue(bias.isView());
+                    } else {
+                        parent = Nd4j.create(DataType.FLOAT, new long[]{1, 1, seq, width}, layout.charAt(0));
+                        bias = parent;
+                    }
+                    INDArray empty = Nd4j.empty(dtype);
+                    INDArray position = Nd4j.scalar(DataType.LONG, 0);
+                    for (int repeat = 0; repeat < 3; repeat++) {
+                        for (int q = 0; q < seq; q++) {
+                            int allowed = 1 + (q + repeat) % seq;
+                            for (int k = 0; k < width; k++) {
+                                // Attractive padding must be cropped rather than attended to.
+                                bias.putScalar(new long[]{0, 0, q, k},
+                                        k >= seq ? 100.0 : (k < allowed ? 0.0 : -1.0e9));
+                            }
+                        }
+                        INDArray output = Nd4j.exec(DynamicCustomOp.builder("dot_product_attention_v2")
+                                .addInputs(query, value, key, empty, empty, empty, empty, position, bias)
+                                .addFloatingPointArguments(1.0, 0.0)
+                                .addBooleanArguments(false, false, true).build())[0];
+                        assertEquals(dtype, output.dataType());
+                        assertArrayEquals(query.shape(), output.shape());
+                        for (int q = 0; q < seq; q++) {
+                            int allowed = 1 + (q + repeat) % seq;
+                            for (int h = 0; h < 8; h++) {
+                                for (int d = 0; d < 8; d++) {
+                                    assertEquals(allowed - 1 + d * 0.125,
+                                            output.getDouble(0, q, h, d), dtype == DataType.FLOAT16 ? 0.01 : 1e-5,
+                                            "dtype=" + dtype + " layout=" + layout + " seq=" + seq
+                                                    + " repeat=" + repeat + " q=" + q);
+                                }
+                            }
+                        }
+                        if (bias != parent) {
+                            assertEquals(123.0, parent.getDouble(0, 0, 0, 0));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testPaddedPrefillBiasConversionReplay() {
+        org.junit.jupiter.api.Assumptions.assumeTrue(Nd4j.backends().isCudaAvailable());
+        try (SameDiff sd = SameDiff.create();
+             INDArray query = Nd4j.zeros(DataType.FLOAT16, 1, 4, 8, 8);
+             INDArray key = Nd4j.zeros(DataType.FLOAT16, 1, 4, 1, 8);
+             INDArray value = Nd4j.create(DataType.FLOAT16, 1, 4, 1, 8);
+             INDArray bias = Nd4j.zeros(DataType.FLOAT, 1, 1, 4, 7)) {
+            SDVariable q = sd.placeHolder("q", DataType.FLOAT16, 1, 4, 8, 8);
+            SDVariable k = sd.placeHolder("k", DataType.FLOAT16, 1, 4, 1, 8);
+            SDVariable v = sd.placeHolder("v", DataType.FLOAT16, 1, 4, 1, 8);
+            SDVariable mask = sd.placeHolder("bias", DataType.FLOAT, 1, 1, 4, 7);
+            SDVariable emptyK = sd.constant("emptyK", Nd4j.empty(DataType.FLOAT16));
+            SDVariable emptyV = sd.constant("emptyV", Nd4j.empty(DataType.FLOAT16));
+            SDVariable position = sd.constant("position", Nd4j.scalar(DataType.LONG, 0));
+            sd.nn.dotProductAttentionV2("out", q, v, k, null, null,
+                    emptyK, emptyV, position, mask, 1.0, 0.0, false, false);
+            sd.compileDynamicShapePlan("out");
+            sd.compileNativeDynamicShapePlan("out");
+            for (int iteration = 0; iteration < 16; iteration++) {
+                int selected = iteration % 4;
+                bias.assign(-10000.0);
+                for (int row = 0; row < 4; row++) {
+                    bias.putScalar(new long[]{0, 0, row, selected}, 0.0);
+                    for (int d = 0; d < 8; d++) {
+                        value.putScalar(new long[]{0, row, 0, d}, iteration + row + d * 0.125);
+                    }
+                }
+                Map<String, INDArray> result = sd.output(
+                        Map.of("q", query, "k", key, "v", value, "bias", bias), "out");
+                try {
+                    INDArray output = result.get("out");
+                    assertEquals(DataType.FLOAT16, output.dataType());
+                    for (int row = 0; row < 4; row++) {
+                        for (int h = 0; h < 8; h++) {
+                            for (int d = 0; d < 8; d++) {
+                                assertEquals(iteration + selected + d * 0.125,
+                                        output.getDouble(0, row, h, d), 0.02, "iteration=" + iteration);
+                            }
+                        }
+                    }
+                } finally {
+                    result.values().forEach(INDArray::close);
+                }
+            }
+            assertTrue(org.nd4j.autodiff.samediff.execution.DspPlanAssertions.getTotalGraphReplays(sd) > 0);
+            org.nd4j.autodiff.samediff.execution.DspPlanAssertions.assertNoCaptureFailures(sd, "padded bias cast");
+        }
+    }
+
     // ========================= Fused Attention with Bias Tests =========================
     // These tests specifically verify that the fused CUDA kernel path is used when
     // attention bias is provided (performance optimization for VLM models like SmolDocling)

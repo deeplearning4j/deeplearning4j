@@ -340,10 +340,18 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
         sliceIdx.push_back(0);
         sliceIdx.push_back(kSeqDim);
         auto* slicedBias = (*prefillBias)(sliceIdx);
-        // Must dup so the contiguous copy survives beyond this scope
-        slicedBiasOwner = new NDArray(slicedBias->dup());
+        if (slicedBias->dataType() != queries->dataType()) {
+          // Keep only the view here: the stride-aware assign below converts directly
+          // into the persistent, C-contiguous dpa_v2_biasCast workspace buffer.
+          // Duplicating first would allocate a redundant full-size source-dtype bias.
+          // Retain the view until op cleanup; its storage belongs to prefillBias.
+          slicedBiasOwner = slicedBias;
+        } else {
+          // Preserve the existing contiguous preparation for same-dtype bias.
+          slicedBiasOwner = new NDArray(slicedBias->dup());
+          delete slicedBias;
+        }
         attentionBias = slicedBiasOwner;
-        delete slicedBias;
       }
       // else biasLastDim < kSeqDim: unexpected, skip bias
     }
