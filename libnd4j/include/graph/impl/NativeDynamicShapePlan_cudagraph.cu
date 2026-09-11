@@ -1101,10 +1101,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     auto* execCtx = static_cast<PlanExecutionContext*>(activeExecCtx_);
     if (execCtx != nullptr) {
       execCtx->execTarget = ExecTarget::GRAPH_CAPTURE;
-      // Reset sync phase for the capture context — earlier sync in the same
-      // execute() call was for the dispatchSegment GRAPH_REPLAY target, but
-      // capture needs its own staging pass with stream synchronization.
-      execCtx->resetSyncPhase();
+      // performPreReplaySync resets capture ordering/staging after preserving
+      // the execute-level external preparation state. Resetting here would
+      // re-prepare primary-only inputs on this segment's device.
     }
     DspStagingSyncResult syncResult = performPreReplaySync(
         externalArrays, numExt, stream, "cudagraph_capture");
