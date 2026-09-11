@@ -259,7 +259,9 @@ final class SdxGgufModelPreparer {
             return null;
         }
         recordCalibrationProgress(preparedRoot, calibrationStarted, "LOADING_GRAPH", 0, 0);
-        try (SameDiff graph = SDZSerializer.load(canonical.toFile(), false)) {
+        try (SameDiff graph = profile.useMemoryMapping
+                ? SDZSerializer.loadFileBackedCpu(canonical.toFile())
+                : SDZSerializer.load(canonical.toFile(), false)) {
             recordCalibrationProgress(preparedRoot, calibrationStarted, "GRAPH_LOADED", 0, 0);
             if (markerRequirement == null) {
                 // First pass for this canonical: derive and persist the calibration

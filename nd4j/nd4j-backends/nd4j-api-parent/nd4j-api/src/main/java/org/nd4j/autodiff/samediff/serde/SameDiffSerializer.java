@@ -78,6 +78,21 @@ import static org.nd4j.linalg.api.buffer.DataType.FLOAT16;
  */
 @Slf4j
 public class SameDiffSerializer {
+    private static final ThreadLocal<Boolean> FILE_BACKED_CPU_LOAD = new ThreadLocal<>();
+
+    // Only called for disposable, writable SDZ extraction files. Scope is restored
+    // even on failure; other threads and ordinary loads retain existing semantics.
+    static SameDiff loadFileBackedCpu(File extractedModel) throws IOException {
+        Boolean previous = FILE_BACKED_CPU_LOAD.get();
+        FILE_BACKED_CPU_LOAD.set(true);
+        try {
+            return load(extractedModel, false);
+        } finally {
+            if (previous == null) FILE_BACKED_CPU_LOAD.remove();
+            else FILE_BACKED_CPU_LOAD.set(previous);
+        }
+    }
+
 
     // --- Constants ---
     private static final byte[] FILE_MAGIC = "SDNB".getBytes();
@@ -1188,7 +1203,9 @@ public class SameDiffSerializer {
         ByteBuffer metadataBuffer = null;
         long manifestOffset = -1, manifestLength = -1, metadataOffset = -1, metadataLength = -1;
 
-        try (FileInputStream fis = new FileInputStream(file); FileChannel channel = fis.getChannel()) {
+        try (RandomAccessFile input = new RandomAccessFile(file,
+                Boolean.TRUE.equals(FILE_BACKED_CPU_LOAD.get()) ? "rw" : "r");
+             FileChannel channel = input.getChannel()) {
             long fileSize = channel.size();
             if (fileSize < HEADER_SIZE)
                 throw new IOException("File too small to be a valid SDNB file: " + file.getAbsolutePath() + " (size: " + fileSize + " bytes)");
@@ -2205,6 +2222,12 @@ public class SameDiffSerializer {
             log.debug("Preparing to load {} bytes for variable '{}' (dtype={}, shape={}, order={}) from file offset {}",
                     lengthBytes, name, dtype, Arrays.toString(shape), order, offset);
 
+            boolean mapped = Boolean.TRUE.equals(FILE_BACKED_CPU_LOAD.get())
+                    && lengthBytes >= 4L * 1024 * 1024 && lengthBytes <= Integer.MAX_VALUE;
+            if (offset < 0 || lengthBytes < 0 || offset > channel.size()
+                    || lengthBytes > channel.size() - offset) {
+                throw new IOException("Appended tensor range outside shard: " + name);
+            }
             // --- Create Target Array ---
             INDArray resultArr = null;
             DataBuffer targetBuffer = null;
@@ -2212,6 +2235,19 @@ public class SameDiffSerializer {
                 // Handle case of empty array creation
                 if (lengthBytes == 0 && expectedElements == 0) {
                     resultArr = Nd4j.create(dtype, shape, Nd4j.getStrides(shape, order), order);
+                } else if (mapped) {
+                    // Private writable mapping: native ops may write without changing
+                    // the extracted shard or canonical archive. Pointer proxies retain
+                    // the mapping after the channel closes and extraction files unlink.
+                    ByteBuffer mapping = channel.map(FileChannel.MapMode.PRIVATE, offset, lengthBytes)
+                            .order(ByteOrder.nativeOrder());
+                    DataBuffer mappedBuffer = Nd4j.createBuffer(new BytePointer(mapping), expectedElements, dtype);
+                    try {
+                        resultArr = Nd4j.create(mappedBuffer, shape, Nd4j.getStrides(shape, order), 0L, order);
+                    } catch (RuntimeException | Error failure) {
+                        mappedBuffer.close();
+                        throw failure;
+                    }
                 } else if (lengthBytes > 0) {
                     resultArr = Nd4j.createUninitialized(dtype, shape, order);
                 }
@@ -2231,7 +2267,7 @@ public class SameDiffSerializer {
 
             // --- Read Data From Channel into Array Buffer ---
             // Skip reading if array is empty
-            if (lengthBytes > 0) {
+            if (lengthBytes > 0 && !mapped) {
                 long arrayOffsetBytes = resultArr.offset() * targetBuffer.getElementSize(); // Offset within the DataBuffer
 
                 try {

@@ -8335,6 +8335,13 @@ public class GenerationPipeline implements AutoCloseable {
                 log.warn("Error closing prefix block pool: {}", e.getMessage());
             }
         }
+        // Return reserved-but-unused CUDA pool blocks after every buffer above is closed.
+        // Pool reservations are process-global and survive pipeline close: without this trim,
+        // a second pipeline in the same JVM starts inside the previous one's peak reservation,
+        // pinning device counters at their ceilings and failing every migrate to the
+        // secondary device (observed: full-suite reruns failing wholesale on "DataBuffer::
+        // migrate: requested target exceeds device limits" while single-lifecycle runs pass).
+        SameDiffMemoryUtils.trimAllDevicePools();
     }
 
     private void applyConfiguredStopSequences(AutoregressiveDecode op, List<Integer> generatedHistory) {
