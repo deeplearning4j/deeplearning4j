@@ -1,4 +1,9 @@
 open module omnihub {
+    requires static lombok;
+    requires java.compiler;
+    requires resources;
+    requires com.squareup.javapoet;
+    requires samediff.pipeline.core;
     requires nd4j.api;
     requires deeplearning4j.nn;
     requires deeplearning4j.modelimport;
@@ -6,9 +11,9 @@ open module omnihub {
     requires samediff.modelimport.tensorflow;
     requires kotlin.stdlib;
     requires jackson;
-    requires commons.io;
+    requires org.apache.commons.io;
     requires org.apache.commons.lang3;
-    requires slf4j.api;
+    requires org.slf4j;
     requires progressbar;
     requires com.google.gson;
     exports org.eclipse.deeplearning4j.omnihub;
