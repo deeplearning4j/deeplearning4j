@@ -277,17 +277,53 @@ class PublicationWorkflowSafetyTests(unittest.TestCase):
         tokenizers = ET.parse(ROOT / "nd4j/nd4j-tokenizers/pom.xml").getroot()
         self.assertIsNone(tokenizers.find("m:modules", NS))
 
+    SENTINEL_MODULES = (
+        "nd4j/nd4j-shade/jackson", "nd4j/nd4j-common",
+        "nd4j/nd4j-backends/nd4j-api-parent/nd4j-api",
+        "nd4j/nd4j-backends/nd4j-api-parent/nd4j-native-api",
+        "nd4j/nd4j-serde/nd4j-arrow", "nd4j/nd4j-ggml",
+        "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-preset",
+        "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-model",
+        "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-litertlm",
+        "nd4j/samediff-llm", "nd4j/samediff-vlm", "nd4j/samediff-audio",
+        "nd4j/samediff-pipeline-ggml", "datavec/datavec-api",
+        "deeplearning4j/deeplearning4j-nn", "deeplearning4j/deeplearning4j-core",
+        "deeplearning4j/deeplearning4j-modelimport",
+        "deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-ui", "omnihub",
+        "codegen/op-codegen", "resources",
+    )
+
     def test_java_verification_covers_every_java_subtree(self):
-        script = step_script("java-hotfix-release.yml", "Verify built artifacts")
-        result, _ = self.run_script(script, DRY_RUN="true", DEPLOY_TO_RELEASE_STAGING="0")
-        self.assertEqual(0, result.returncode, result.stderr)
-        for sentinel in ("nd4j/nd4j-shade/jackson", "datavec/datavec-api",
-                         "deeplearning4j/deeplearning4j-nn", "deeplearning4j/deeplearning4j-core",
-                         "deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-ui", "omnihub",
-                         "nd4j/nd4j-serde/nd4j-arrow",
-                         "nd4j/nd4j-backends/nd4j-api-parent/nd4j-native-api"):
-            self.assertIn(sentinel, result.stdout, sentinel)
-        self.assertNotIn("deeplearning4j/deeplearning4j-ui/deeplearning4j-ui", result.stdout)
+        """The workflow verification must accept a complete snapshot artifact
+        set. Provision minimal jars for every sentinel, run the script, then
+        remove exactly what this test created."""
+        version = "1.0.0-SNAPSHOT"
+        created = []
+        try:
+            for path in self.SENTINEL_MODULES:
+                module = Path(path).name
+                target = ROOT / path / "target"
+                target.mkdir(parents=True, exist_ok=True)
+                jar = target / f"{module}-{version}.jar"
+                jar.write_bytes(b"placeholder")
+                created.append(jar)
+            script = step_script("java-hotfix-release.yml", "Verify built artifacts")
+            result, _ = self.run_script(script, DRY_RUN="true", DEPLOY_TO_RELEASE_STAGING="0")
+            self.assertEqual(0, result.returncode, result.stderr)
+            for sentinel in ("nd4j/nd4j-shade/jackson", "datavec/datavec-api",
+                             "deeplearning4j/deeplearning4j-nn", "deeplearning4j/deeplearning4j-core",
+                             "deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-ui", "omnihub",
+                             "nd4j/nd4j-serde/nd4j-arrow",
+                             "nd4j/nd4j-backends/nd4j-api-parent/nd4j-native-api",
+                             "codegen/op-codegen", "resources"):
+                self.assertIn(sentinel, result.stdout, sentinel)
+            self.assertNotIn("deeplearning4j/deeplearning4j-ui/deeplearning4j-ui", result.stdout)
+        finally:
+            for jar in created:
+                jar.unlink(missing_ok=True)
+                parent = jar.parent
+                if parent.name == "target" and not any(parent.iterdir()):
+                    parent.rmdir()
 
     def test_release_dry_runs_check_metadata_and_retain_inspectable_repository(self):
         for filename in ("_release-worker.yml", "publish-release-worker-artifacts.yml"):
