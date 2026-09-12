@@ -5,9 +5,9 @@ name: ZLUDA Java Module Validation (no GPU / no CUDA build)
 # Three-part static gate that proves the ZLUDA path is viable on a standard
 # GitHub-hosted runner with zero GPU hardware:
 #
-#   a) Java module build — nd4j-zluda-12.9, nd4j-tpu-preset, nd4j-tpu compile against
+#   a) Java module build — nd4j-zluda-13.1, nd4j-tpu-preset, nd4j-tpu compile against
 #      snapshot deps; no native libnd4j compilation needed.
-#   b) PTX validation — the nd4j-cuda-12.9 linux-x86_64 classifier jar (published
+#   b) PTX validation — the nd4j-cuda-13.1 linux-x86_64 classifier jar (published
 #      by the per-platform native build) must contain embedded PTX in libnd4jcuda.so.
 #      ZLUDA translates that PTX at runtime; if it is absent ZLUDA execution silently
 #      falls back to stubs.  Gate: readelf + strings scan (no CUDA toolkit required).
@@ -28,11 +28,11 @@ on:
       backendArtifactId:
         description: 'CUDA backend artifact to validate PTX for (from snapshots)'
         required: false
-        default: 'nd4j-cuda-12.9'
+        default: 'nd4j-cuda-13.1'
         type: choice
         options:
-          - nd4j-cuda-12.9
-          - nd4j-cuda-12.9
+          - nd4j-cuda-13.1
+          - nd4j-cuda-13.1
 
       zludaVersion:
         description: 'ZLUDA release tag to validate from vosen/ZLUDA (v7-preview.8 or v6)'
@@ -41,7 +41,7 @@ on:
 
 env:
   MAVEN_OPTS: -Xmx2g
-  ZLUDA_ARTIFACT_ID: nd4j-zluda-12.9
+  ZLUDA_ARTIFACT_ID: nd4j-zluda-13.1
 
 jobs:
   zluda-java-validation:
@@ -88,7 +88,7 @@ jobs:
       # ── Step a: Build the versioned ZLUDA module, nd4j-tpu-preset, nd4j-tpu ──
       # Native CUDA jars are resolved from the snapshot repo — no C++ compilation,
       # no nvcc, no GPU driver required.  -pl !:libnd4j keeps the C++ native module
-      # out of the reactor; the nd4j-cuda-12.9 java-only jar is built from sources
+      # out of the reactor; the nd4j-cuda-13.1 java-only jar is built from sources
       # and the platform classifier jar comes from snapshots.
       - name: Build ZLUDA + TPU Java modules (deps from snapshots)
         shell: bash

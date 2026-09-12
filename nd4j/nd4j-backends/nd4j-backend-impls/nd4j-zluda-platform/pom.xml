@@ -31,14 +31,14 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>nd4j-zluda-12.9-platform</artifactId>
-    <name>nd4j-zluda-12.9-platform</name>
+    <artifactId>nd4j-zluda-13.1-platform</artifactId>
+    <name>nd4j-zluda-13.1-platform</name>
 
     <properties>
         <skipPublishing>false</skipPublishing>
         <!-- CUDA identifies the build-time ABI/toolchain. The runtime payload
              and dependency graph are owned entirely by the ZLUDA artifact. -->
-        <cuda.version>12.9</cuda.version>
+        <cuda.version>13.1</cuda.version>
         <!-- ZLUDA native coordinates are versioned by both CUDA ABI and the
              ROCm user-space runtime bundled in the classifier. -->
         <rocm.version>7.2.4</rocm.version>
@@ -50,7 +50,7 @@
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>nd4j-zluda-12.9</artifactId>
+            <artifactId>nd4j-zluda-13.1</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>

@@ -59,7 +59,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
         <!-- Kept in sync with the nd4j-cuda artifact family by change-cuda-versions.sh. -->
-        <cuda.version>12.9</cuda.version>
+        <cuda.version>13.1</cuda.version>
         <platform.classifier>${javacpp.platform}</platform.classifier>
         <backend.artifactId>nd4j-cuda-${cuda.version}</backend.artifactId>
         <!-- Forwarded into Surefire so backend-specific profiles select the intended runtime. -->
