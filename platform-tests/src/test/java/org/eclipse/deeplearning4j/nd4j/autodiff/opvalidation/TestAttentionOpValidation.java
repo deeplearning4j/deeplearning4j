@@ -606,12 +606,11 @@ public class TestAttentionOpValidation extends BaseOpValidation {
         for (DataType dtype : new DataType[]{DataType.FLOAT16, DataType.FLOAT, DataType.DOUBLE}) {
             int seq = 800;
             int[] firstKeys = {255, 256, 512, seq};
-            try (INDArray query = Nd4j.zeros(dtype, 1, 4, 8, 8);
+            try (SameDiff sd = SameDiff.create();
+                 INDArray query = Nd4j.zeros(dtype, 1, 4, 8, 8);
                  INDArray key = Nd4j.zeros(dtype, 1, seq, 1, 8);
                  INDArray value = Nd4j.create(dtype, 1, seq, 1, 8);
-                 INDArray bias = Nd4j.create(dtype, 1, 1, 4, seq);
-                 INDArray output = Nd4j.create(dtype, 1, 4, 8, 8);
-                 INDArray empty = Nd4j.empty(dtype)) {
+                 INDArray bias = Nd4j.create(dtype, 1, 1, 4, seq)) {
                 bias.assign(Double.NEGATIVE_INFINITY);
                 for (int k = 0; k < seq; k++) {
                     for (int d = 0; d < 8; d++) {
@@ -621,13 +620,21 @@ public class TestAttentionOpValidation extends BaseOpValidation {
                         if (k >= firstKeys[q]) bias.putScalar(new long[]{0, 0, q, k}, 0.0);
                     }
                 }
+                SDVariable qVar = sd.placeHolder("q", dtype, query.shape());
+                SDVariable kVar = sd.placeHolder("k", dtype, key.shape());
+                SDVariable vVar = sd.placeHolder("v", dtype, value.shape());
+                SDVariable biasVar = sd.placeHolder("bias", dtype, bias.shape());
+                SDVariable emptyK = sd.constant("emptyK", Nd4j.empty(dtype));
+                SDVariable emptyV = sd.constant("emptyV", Nd4j.empty(dtype));
+                SDVariable position = sd.constant("position", Nd4j.scalar(DataType.LONG, 0));
+                sd.nn.dotProductAttentionV2("out", qVar, vVar, kVar, null, null,
+                        emptyK, emptyV, position, biasVar, 1.0, 0.0, false, false);
+                // Only request the context output, exactly as production DSP inference does.
+                sd.compileDynamicShapePlan("out");
+                sd.compileNativeDynamicShapePlan("out");
                 for (int repeat = 0; repeat < 2; repeat++) {
-                    // Empty auxiliaries select the same output-only fused path as DSP inference.
-                    Nd4j.exec(DynamicCustomOp.builder("dot_product_attention_v2")
-                            .addInputs(query, value, key, empty, empty, bias)
-                            .addOutputs(output, empty, empty)
-                            .addFloatingPointArguments(1.0, 0.0)
-                            .addBooleanArguments(false, false, true).build());
+                    INDArray output = sd.output(Map.of("q", query, "k", key, "v", value,
+                            "bias", bias), "out").get("out");
                     double[] actual = output.data().asDouble();
                     assertEquals(dtype, output.dataType());
                     for (int q = 0; q < 4; q++) {

@@ -483,7 +483,12 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedAttention3DKernel(
    // Step 4: Compute exp(score - max) and accumulate sum.
    AccT tileSum = static_cast<AccT>(0);
    for (int k = threadIdx.x; k < tileSize; k += blockDim.x) {
-     AccT expScore = flashExp<AccT>(sharedScores[k] - globalMax);
+     // A masked score has zero weight even before any finite tile is seen.
+     // Otherwise an all-masked leading tile evaluates -inf - -inf and poisons
+     // the online sum/output before later, valid sliding-window tiles arrive.
+     AccT expScore = sharedScores[k] == -DataTypeUtils::infOrMax<AccT>()
+         ? static_cast<AccT>(0)
+         : flashExp<AccT>(sharedScores[k] - globalMax);
      sharedScores[k] = expScore;
      tileSum += expScore;
    }
@@ -1378,7 +1383,12 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
    // Step 4: Compute exp(score - max) and accumulate sum
    AccT tileSum = static_cast<AccT>(0);
    for (int k = threadIdx.x; k < tileSize; k += blockDim.x) {
-     AccT expScore = flashExp<AccT>(sharedScores[k] - globalMax);
+     // A masked score has zero weight even before any finite tile is seen.
+     // Otherwise an all-masked leading tile evaluates -inf - -inf and poisons
+     // the online sum/output before later, valid sliding-window tiles arrive.
+     AccT expScore = sharedScores[k] == -DataTypeUtils::infOrMax<AccT>()
+         ? static_cast<AccT>(0)
+         : flashExp<AccT>(sharedScores[k] - globalMax);
      sharedScores[k] = expScore;
      tileSum += expScore;
    }
@@ -1772,7 +1782,9 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeQuantisedKernel(
         // Step 4: softmax weights
         float tileSum = 0.0f;
         for (int k = threadIdx.x; k < tileSize; k += blockDim.x) {
-            float expScore = flashExp<float>(sharedScores[k] - globalMax);
+            // Preserve zero weight for masked leading tiles (-inf - -inf is NaN).
+            float expScore = sharedScores[k] == -DataTypeUtils::infOrMax<float>()
+                ? 0.0f : flashExp<float>(sharedScores[k] - globalMax);
             sharedScores[k] = expScore;
             tileSum += expScore;
         }

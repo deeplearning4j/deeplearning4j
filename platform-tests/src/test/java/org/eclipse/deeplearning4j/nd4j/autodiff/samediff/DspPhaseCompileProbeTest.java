@@ -32,6 +32,23 @@ class DspPhaseCompileProbeTest {
     }
 
     @Test
+    void temporalProbeRequiresAnExplicitSlotAndBracketsItsExecution() throws Exception {
+        String source = source("NativeDynamicShapePlan_segments.cpp");
+        int before = source.indexOf("\"before-warmup-op-\"");
+        int execute = source.indexOf("status = executeSlot(stepIdx, externalArrays, numExt, stream);", before);
+        int after = source.indexOf("\"after-warmup-op-\"", execute);
+        assertTrue(before >= 0 && execute > before && after > execute);
+        String inputProbe = source.substring(source.lastIndexOf("#ifdef SD_CUDA", before), execute);
+        String outputProbe = source.substring(source.lastIndexOf("#ifdef SD_CUDA", after), after);
+        for (String probe : new String[]{inputProbe, outputProbe}) {
+            assertTrue(probe.contains("numericDiagnostics.traceSlot() == stepIdx"));
+            assertTrue(probe.contains("executeCount_ == 0 && !streamIsCapturing"));
+            assertTrue(probe.contains("numericDiagnostics.getEnabledMask() & DSP_DIAG_VERIFY"));
+            assertTrue(probe.contains("numericDiagnostics.getLevel() == DSP_LEVEL_FULL"));
+        }
+    }
+
+    @Test
     void probeUsesOwnedDeviceSnapshotAndCaptureSafeExplicitOptIn() throws Exception {
         String source = source("NativeDynamicShapePlan_cuda.cu");
         int start = source.indexOf("void summarizePhaseCompileOutput(");
