@@ -69,6 +69,7 @@ runs:
         github-token: ${{ github.token }}
 
     - name: Set up Python
+      id: setup-python
       if: inputs.shard != 'linux-x86_64-compat'
       uses: actions/setup-python@v6
       with:
@@ -165,6 +166,7 @@ runs:
       id: worker
       shell: bash
       env:
+        SETUP_PYTHON: ${{ steps.setup-python.outputs.python-path }}
         INPUT_SHARD: ${{ inputs.shard }}
         INPUT_VARIANT: ${{ inputs.variant }}
         INPUT_SOURCE_COMMIT: ${{ inputs.source-commit }}
@@ -202,15 +204,20 @@ runs:
         [ "${INPUT_BUILD_AOT}" != 1 ] || args+=(--build-aot)
         [ "${INPUT_AOT_ALL_SPINS}" != 1 ] || args+=(--aot-all-spins)
         args+=(--r2-cache)
-        python_bin=""
-        for candidate in python3.11 python3.10 python python3; do
-          if command -v "${candidate}" >/dev/null 2>&1 &&
-             "${candidate}" -c 'import sys; raise SystemExit(sys.version_info < (3, 10))'; then
-            python_bin=$(command -v "${candidate}")
-            break
-          fi
-        done
-        if [ -z "${python_bin}" ]; then
+        python_bin="${SETUP_PYTHON}"
+        # The compat container provisions Python itself; other lanes must use
+        # setup-python, not a Python shadowing it on the MSYS/toolchain PATH.
+        if [ "${INPUT_SHARD}" = linux-x86_64-compat ]; then
+          for candidate in python3.11 python3.10 python python3; do
+            if command -v "${candidate}" >/dev/null 2>&1 &&
+               "${candidate}" -c 'import sys; raise SystemExit(sys.version_info < (3, 10))'; then
+              python_bin=$(command -v "${candidate}")
+              break
+            fi
+          done
+        fi
+        if [ -z "${python_bin}" ] ||
+           ! "${python_bin}" -c 'import sys; raise SystemExit(sys.version_info < (3, 10))'; then
           printf 'The release worker requires Python 3.10 or newer.\n' >&2
           exit 1
         fi

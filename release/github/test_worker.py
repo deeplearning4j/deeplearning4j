@@ -4,6 +4,8 @@ import importlib.util
 import os
 import subprocess
 import shutil
+import shlex
+import textwrap
 import tempfile
 import unittest
 from pathlib import Path
@@ -450,6 +452,89 @@ class WorkflowMatrixTests(unittest.TestCase):
                 selection_mode="targeted",
             )
 
+    def test_native_release_commands_activate_root_native_profile(self):
+        families = (
+            "linux-x86_64", "linux-arm64", "macos-arm64", "windows-cpu",
+            "android-x86_64", "android-arm64", "linux-cuda", "windows-cuda",
+            "android-arm64-vulkan", "android-x86_64-vulkan", "windows-vulkan",
+            "vulkan", "vulkan-mlir", "hexagon", "tpu", "compat", "zluda",
+            "windows-zluda",
+        )
+        for family in families:
+            for prebuilt in (False, True):
+                with self.subTest(family=family, prebuilt=prebuilt):
+                    env = {k: v for k, v in os.environ.items() if not k.startswith("DL4J_")}
+                    env.update({
+                        "DL4J_FAMILY": family,
+                        "DL4J_BUILD_THREADS": "2",
+                        "DL4J_CUDA_VERSION": "12.9",
+                        "DL4J_PLATFORM_EXTENSION": "-zluda",
+                        "DL4J_CLASSIFIER": "test-zluda",
+                        "ANDROID_NDK": "/offline/ndk",
+                        "DL4J_LIBND4J_URL": "https://example.invalid/native.zip" if prebuilt else "",
+                        "DL4J_LIBND4J_FILE_DOWNLOAD": "native.zip" if prebuilt else "",
+                    })
+                    script = "linux-x86_64.sh" if family == "linux-x86_64" else "native-platform.sh"
+                    result = subprocess.run(
+                        ["bash", str(ROOT / "build-scripts/release" / script), "--print"],
+                        env=env, check=True, capture_output=True, text=True,
+                    )
+                    command = shlex.split(result.stdout)
+                    modules = command[command.index("-pl") + 1].split(",")
+                    selects_native = not prebuilt or family in ("compat", "zluda", "windows-zluda")
+                    self.assertEqual(selects_native, ":libnd4j" in modules)
+                    self.assertEqual(selects_native, "-Pnative" in command)
+                    self.assertIn("--also-make", command)
+
+    def test_worker_python_selection_ignores_shadowing_toolchain_python(self):
+        action = (ROOT / ".github/actions/run-release-worker/action.yml").read_text()
+        self.assertIn("id: setup-python", action)
+        self.assertIn("SETUP_PYTHON: ${{ steps.setup-python.outputs.python-path }}", action)
+        self.assertIn('"${python_bin}" -m pip install', action)
+        self.assertIn('"${python_bin}" release/github/prepare-worker.py', action)
+        self.assertIn('"${python_bin}" release/aws/build-platform.py', action)
+        selection = textwrap.dedent(
+            "        python_bin=" + action.split("        python_bin=", 1)[1].split(
+                "        printf 'python-executable=", 1
+            )[0]
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            selected = root / "setup python"
+            # Model setup-python's successful version probe independently of the
+            # Python version running this offline contract suite.
+            selected.write_text("#!/bin/sh\nexit 0\n")
+            selected.chmod(0o755)
+            # Every PATH candidate is executable but fails, like a wrong toolchain runtime.
+            for name in ("python3.11", "python3.10", "python", "python3"):
+                candidate = root / name
+                candidate.write_text("#!/bin/sh\nexit 42\n")
+                candidate.chmod(0o755)
+            env = dict(os.environ, PATH=directory, SETUP_PYTHON=str(selected), INPUT_SHARD="windows-x86_64-cpu")
+            shell = shutil.which("bash")
+            result = subprocess.run(
+                [shell, "-c", 'set -Eeuo pipefail\n' + selection + '\nprintf "%s" "$python_bin"'],
+                env=env, capture_output=True, text=True,
+            )
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertEqual(str(selected), result.stdout)
+            for invalid in ("", str(root / "python"), str(root / "missing")):
+                with self.subTest(invalid=invalid):
+                    result = subprocess.run(
+                        [shell, "-c", 'set -Eeuo pipefail\n' + selection],
+                        env=dict(env, SETUP_PYTHON=invalid), capture_output=True, text=True,
+                    )
+                    self.assertNotEqual(0, result.returncode)
+            (root / "python3.11").unlink()
+            (root / "python3.11").symlink_to(selected)
+            result = subprocess.run(
+                [shell, "-c", 'set -Eeuo pipefail\n' + selection + '\nprintf "%s" "$python_bin"'],
+                env=dict(env, INPUT_SHARD="linux-x86_64-compat", SETUP_PYTHON=""),
+                capture_output=True, text=True,
+            )
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertEqual(str(root / "python3.11"), result.stdout)
+
     def test_linux_compile_isa_rows_emit_distinct_classifiers(self):
         script = ROOT / "build-scripts/release/linux-x86_64.sh"
         for extension in ("avx2", "avx512"):
@@ -613,8 +698,12 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertEqual(1, workflow.count("name: Publish merged staged Maven snapshot"))
         self.assertEqual(1, workflow.count("repository.py merge"))
         self.assertEqual(1, workflow.count("repository.py deploy-snapshot"))
-        self.assertEqual(1, workflow.count("repository.py sign-bundle"))
-        self.assertEqual(1, workflow.count("repository.py upload"))
+        self.assertEqual(1, workflow.count("ossrh.py upload"))
+        self.assertNotIn("repository.py sign-bundle", workflow)
+        self.assertNotIn("repository.py upload", workflow)
+        self.assertIn('sign_repository(repository)', (ROOT / "release/central/ossrh.py").read_text())
+        self.assertIn('gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}', workflow)
+        self.assertIn('--receipt "${merged_root}/open-staging.json"', workflow)
         self.assertEqual(1, workflow.count("server-id: central-portal-snapshots"))
         self.assertEqual(1, workflow.count('-name worker-config.json'))
         self.assertEqual(
@@ -660,8 +749,12 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("repository.py merge", workflow)
         self.assertIn("repository.py deploy-snapshot", workflow)
         self.assertEqual(1, workflow.count("repository.py deploy-snapshot"))
-        self.assertEqual(1, workflow.count("repository.py sign-bundle"))
-        self.assertEqual(1, workflow.count("repository.py upload"))
+        self.assertEqual(1, workflow.count("ossrh.py upload"))
+        self.assertNotIn("repository.py sign-bundle", workflow)
+        self.assertNotIn("repository.py upload", workflow)
+        self.assertIn('sign_repository(repository)', (ROOT / "release/central/ossrh.py").read_text())
+        self.assertIn('gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}', workflow)
+        self.assertIn('--receipt "${merged_root}/open-staging.json"', workflow)
         self.assertIn("Release recovery requires a non-SNAPSHOT artifact version", workflow)
         self.assertNotIn("Skipping recovery publication because version", workflow)
         self.assertNotIn("run-release-worker", workflow)

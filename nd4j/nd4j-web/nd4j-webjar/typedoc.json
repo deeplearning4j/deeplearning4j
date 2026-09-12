@@ -1,0 +1,9 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "name": "ND4J TypeScript FlatBuffer Bindings",
+  "entryPoints": ["src/main/typescript"],
+  "entryPointStrategy": "expand",
+  "tsconfig": "tsconfig.json",
+  "out": "target/typedoc",
+  "readme": "none"
+}
