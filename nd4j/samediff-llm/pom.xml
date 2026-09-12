@@ -65,7 +65,10 @@
             <artifactId>slf4j-api</artifactId>
         </dependency>
 
-        <!-- Native HuggingFace tokenizers library (Rust-based) - required for HuggingFaceTokenizer -->
+        <!-- HuggingFace tokenizers API: compiled against the tokenizers-native
+             API jar. The Rust/JNI producer artifacts (base + classifier jars)
+             come from native lanes; Java-only publication resolves them from
+             Central instead of building them. -->
         <dependency>
             <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>tokenizers-native</artifactId>

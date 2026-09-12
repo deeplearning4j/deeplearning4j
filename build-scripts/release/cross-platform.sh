@@ -6,10 +6,15 @@ set -Eeuo pipefail
 : "${DL4J_MAVEN_GOAL:=deploy}"
 : "${DL4J_MAVEN_REPOSITORY:=}"
 : "${DL4J_BUILD_SDX:=0}"
+: "${DL4J_TOKENIZERS_JAVA:=0}"
 
 case "${DL4J_BUILD_SDX}" in
   0|1) ;;
   *) printf 'DL4J_BUILD_SDX must be 0 or 1: %s\n' "${DL4J_BUILD_SDX}" >&2; exit 2 ;;
+esac
+case "${DL4J_TOKENIZERS_JAVA}" in
+  0|1) ;;
+  *) printf 'DL4J_TOKENIZERS_JAVA must be 0 or 1: %s\n' "${DL4J_TOKENIZERS_JAVA}" >&2; exit 2 ;;
 esac
 
 repository=()
@@ -32,6 +37,13 @@ if [ "${DL4J_BUILD_SDX}" = 1 ]; then
   # prebuilt libnd4j output this native lane owns.
   sdx_profile=(-Psdx -Psdx-native)
 fi
+tokenizers_java_flags=()
+if [ "${DL4J_TOKENIZERS_JAVA}" = 1 ]; then
+  # Java-only assembly lane: the tokenizers-native producers are built by the
+  # native tokenizers lane (TOKENIZER_ARTIFACT_IDS owner). Building the API
+  # jar without the Rust library would publish an unusable native component.
+  tokenizers_java_flags=(-Djavacpp.compiler.skip=true -Dlibtokenizers.cpu.compile.skip=true)
+fi
 metadata_flags=()
 if [ "${DL4J_RELEASE_METADATA:-0}" = 1 ]; then
   metadata_flags=(-Pcentral-release -Dmaven.javadoc.failOnError=true)
@@ -39,7 +51,7 @@ fi
 # Architecture selects only cross-platform toolchain behavior. Accelerator profiles
 # belong exclusively to their explicit CUDA, Metal, TPU, Hexagon, Vulkan, and ZLUDA
 # matrix lanes; inferring them here would contaminate CPU builds.
-tokenizers=(mvn -pl :libtokenizers,:tokenizers-native-preset,:tokenizers-native --also-make "-Djavacpp.platform=${DL4J_PLATFORM}" ${mingw[@]+"${mingw[@]}"} ${repository[@]+"${repository[@]}"} -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false --no-transfer-progress --batch-mode "${DL4J_MAVEN_GOAL}" -DskipTests)
+tokenizers=(mvn -pl :libtokenizers,:tokenizers-native-preset,:tokenizers-native --also-make "-Djavacpp.platform=${DL4J_PLATFORM}" ${mingw[@]+"${mingw[@]}"} ${repository[@]+"${repository[@]}"} -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false --no-transfer-progress --batch-mode "${DL4J_MAVEN_GOAL}" -DskipTests ${tokenizers_java_flags[@]+"${tokenizers_java_flags[@]}"})
 java=(mvn -pl '!:blas-lapack-generator,!:libnd4j-gen,!:libnd4j,!:libtokenizers,!:tokenizers-native-preset,!:tokenizers-native,!:platform-tests' ${protoc_profile[@]+"${protoc_profile[@]}"} "${sdx_profile[@]}" ${repository[@]+"${repository[@]}"} -DskipTestResourceEnforcement=true "-Djavacpp.platform=${DL4J_PLATFORM}" ${mingw[@]+"${mingw[@]}"} -Dmaven.javadoc.failOnError=false -Dmaven.test.skip=true --no-transfer-progress --batch-mode "${DL4J_MAVEN_GOAL}")
 
 # Append last so release validation cannot be weakened by snapshot defaults.
