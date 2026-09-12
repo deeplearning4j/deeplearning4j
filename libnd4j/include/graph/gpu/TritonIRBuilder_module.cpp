@@ -96,14 +96,19 @@ static mlir::Value emitDtypeCast(mlir::OpBuilder& builder, mlir::Location loc,
       return builder.create<mlir::arith::ExtUIOp>(loc, targetType, value);
     }
   }
-  if (mlir::isa<mlir::FloatType>(sourceElemType) && DataTypeUtils::isU(targetDtype)) {
+  if (mlir::isa<mlir::FloatType>(sourceElemType) && targetElemType.isIntOrIndex() &&
+      !targetElemType.isInteger(1)) {
     if (targetElemType.getIntOrFloatBitWidth() < 32) {
-      // Native C++ conversion to byte/short first truncates toward zero to int,
-      // then retains the low bits. Direct fptoui i8/i16 saturates on CUDA instead.
+      // Match native CUDA byte/short conversion, signed and unsigned: truncate
+      // toward zero to int, then retain the low bits. Direct fptosi/fptoui i8/i16
+      // can saturate before narrowing (e.g. DOUBLE 65537 -> BYTE becomes -1, not 1).
+      // This preserves native behavior for finite values representable as int;
+      // out-of-range floating conversion is not a portable C++ guarantee.
       auto integer = builder.create<mlir::arith::FPToSIOp>(loc, shapedType(builder.getI32Type()), value);
       return builder.create<mlir::arith::TruncIOp>(loc, targetType, integer);
     }
-    return builder.create<mlir::arith::FPToUIOp>(loc, targetType, value);
+    if (DataTypeUtils::isU(targetDtype))
+      return builder.create<mlir::arith::FPToUIOp>(loc, targetType, value);
   }
   return castTo(builder, loc, value, targetElemType);
 }
