@@ -240,6 +240,61 @@ class GemmaToolProtocolTest {
     }
 
     @Test
+    void uniqueClosedObjectsRejectLastValueCommitBeforeDuplicateDeadEnd() {
+        Map<String, Object> item = Map.of("type", "object", "properties", Map.of(
+                "label", Map.of("type", "string"),
+                "parentType", Map.of("type", "string", "enum", List.of("Entity", "Event"))),
+                "required", List.of("label", "parentType"), "additionalProperties", false);
+        ChatTemplate.Tool tool = new ChatTemplate.Tool("submit_node_types", "", Map.of(
+                "type", "object", "properties", Map.of("nodeTypes",
+                Map.of("type", "array", "items", item, "uniqueItems", true)),
+                "required", List.of("nodeTypes"), "additionalProperties", false));
+        TextConstraint c = constraint(tool);
+        String prefix = OPEN + "call:submit_node_types{nodeTypes:[{label:" + Q + "A" + Q
+                + ",parentType:" + Q + "Entity" + Q + "},{label:" + Q + "A" + Q + ",parentType:" + Q;
+        assertFalse(c.canExtend(prefix, "Entity"), "Excluded enum must fail before committing its word");
+        assertTrue(c.canExtend(prefix, "Event"));
+        for (int split = 1; split <= Q.length(); split++) {
+            assertFalse(c.canExtend(prefix + "Entity", Q.substring(0, split)), "closer split " + split);
+        }
+        String distinct = prefix + "Event" + Q + "}]}" + CLOSE;
+        assertTrue(c.isAccepting(distinct));
+        assertTrue(parse(distinct, tool).isClean());
+        for (int boundary = 0; boundary < distinct.length(); boundary++) {
+            assertTrue(c.canExtend(distinct.substring(0, boundary), distinct.substring(boundary)),
+                    "valid distinct suffix at " + boundary);
+        }
+        assertFalse(c.canExtend(prefix, "Entity" + Q + "}]}" + CLOSE));
+        ConstraintMasker masker = new ConstraintMasker(c, 1);
+        masker.decodedTextEmitted(prefix + "Entity");
+        String[] pieces = {Q, Q.substring(0, Q.length() - 1)};
+        float[] masked = masker.maskLogitsByDecodedCandidate(new float[]{10f, 9f},
+                java.util.Set.of(), java.util.Set.of(), id -> pieces[id],
+                id -> prefix + "Entity" + pieces[id], List.of(OPEN, CLOSE, Q));
+        assertEquals(Float.NEGATIVE_INFINITY, masked[0]);
+        assertEquals(Float.NEGATIVE_INFINITY, masked[1]);
+    }
+
+    @Test
+    void uniqueObjectsCanStillDifferThroughOptionalOrAdditionalMembers() {
+        for (boolean additional : List.of(false, true)) {
+            Map<String, Object> item = Map.of("type", "object", "properties", Map.of(
+                    "label", Map.of("type", "string"), "optional", Map.of("type", "string")),
+                    "required", List.of("label"), "additionalProperties", additional);
+            ChatTemplate.Tool tool = new ChatTemplate.Tool("record", "", Map.of("type", "object",
+                    "properties", Map.of("items", Map.of("type", "array", "items", item, "uniqueItems", true))));
+            TextConstraint c = constraint(tool);
+            String prefix = OPEN + "call:record{items:[{label:" + Q + "A" + Q + "},{label:" + Q + "A";
+            assertTrue(c.canExtend(prefix, Q), "Unused optional member can distinguish the object");
+            assertTrue(c.isAccepting(prefix + Q + ",optional:" + Q + "B" + Q + "}]}" + CLOSE));
+            prefix = OPEN + "call:record{items:[{label:" + Q + "A" + Q + ",optional:" + Q + "B" + Q
+                    + "},{label:" + Q + "A" + Q + ",optional:" + Q + "B";
+            assertEquals(additional, c.canExtend(prefix, Q));
+            assertEquals(additional, c.isAccepting(prefix + Q + ",extra:" + Q + "C" + Q + "}]}" + CLOSE));
+        }
+    }
+
+    @Test
     void enumStringsCannotStartClosingUntilTheirValueIsComplete() {
         List<String> families = List.of("IDENTITY", "HIERARCHY", "PART_WHOLE", "AFFILIATION",
                 "SOCIAL", "PARTICIPATION", "ATTRIBUTION", "OWNERSHIP", "SPATIAL", "COMMUNICATION",

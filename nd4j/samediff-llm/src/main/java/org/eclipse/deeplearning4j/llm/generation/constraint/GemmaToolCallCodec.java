@@ -202,6 +202,20 @@ public final class GemmaToolCallCodec {
         }
 
         private Object value(Map<String, Object> schema, int depth) {
+            return value(schema, depth, List.of());
+        }
+
+        private Object value(Map<String, Object> schema, int depth, List<?> forbidden) {
+            // uniqueItems may exclude a value before its final delimiter. For enums,
+            // remove excluded alternatives before prefix validation as well: accepting
+            // the whole excluded word would already leave no possible continuation.
+            if (!forbidden.isEmpty() && schema.get("enum") instanceof Collection<?>) {
+                List<Object> choices = new ArrayList<>((Collection<?>) schema.get("enum"));
+                choices.removeAll(forbidden);
+                if (choices.isEmpty()) throw new Invalid("no unique Gemma enum value remains");
+                schema = new LinkedHashMap<>(schema);
+                schema.put("enum", choices);
+            }
             if (depth > MAX_DEPTH) throw new Invalid("Gemma value is too deeply nested");
             space();
             char c = peek();
@@ -209,13 +223,13 @@ public final class GemmaToolCallCodec {
             Object value;
             if (c == '{') {
                 requireType(type, "object");
-                value = object(schema, depth + 1);
+                value = object(schema, depth + 1, forbidden);
             } else if (c == '[') {
                 requireType(type, "array");
                 value = array(schema, depth + 1);
             } else if (c == '<') {
                 requireType(type, "string");
-                value = string(schema);
+                value = string(schema, forbidden);
             } else {
                 int start = position;
                 while (position < text.length() && ",]} \t\r\n".indexOf(text.charAt(position)) < 0) position++;
@@ -245,13 +259,14 @@ public final class GemmaToolCallCodec {
                     value = null;
                 } else throw new Invalid("incomplete Gemma scalar");
             }
-            if (!ToolSchemaValidator.isValidValue(value, schema)) {
-                throw new Invalid("Gemma value violates its schema");
+            if (!ToolSchemaValidator.isValidValue(value, schema)
+                    || !forbidden.isEmpty() && forbidden.contains(value)) {
+                throw new Invalid("Gemma value violates its schema or uniqueItems");
             }
             return value;
         }
 
-        private Map<String, Object> object(Map<String, Object> schema, int depth) {
+        private Map<String, Object> object(Map<String, Object> schema, int depth, List<?> forbidden) {
             literal("{");
             space();
             Map<String, Object> result = new LinkedHashMap<>();
@@ -270,7 +285,23 @@ public final class GemmaToolCallCodec {
                 literal(":");
                 Map<String, Object> child = schema(properties.containsKey(key)
                         ? properties.get(key) : schema.get("additionalProperties"));
-                result.put(key, value(child, depth));
+                List<Object> excludedValues = new ArrayList<>();
+                // Only the last available member of a closed object commits its
+                // identity. Optional/extra members must remain able to distinguish
+                // objects which currently share the same required fields.
+                if (Boolean.FALSE.equals(schema.get("additionalProperties"))
+                        && result.size() + 1 == properties.size()) {
+                    for (Object excluded : forbidden) {
+                        if (!(excluded instanceof Map<?, ?>)) continue;
+                        Map<?, ?> previous = (Map<?, ?>) excluded;
+                        if (previous.keySet().equals(properties.keySet())
+                                && result.entrySet().stream().allMatch(entry ->
+                                java.util.Objects.equals(entry.getValue(), previous.get(entry.getKey())))) {
+                            excludedValues.add(previous.get(key));
+                        }
+                    }
+                }
+                result.put(key, value(child, depth, excludedValues));
                 space();
                 char delimiter = peek();
                 if (delimiter == '}') { position++; return result; }
@@ -301,7 +332,8 @@ public final class GemmaToolCallCodec {
                 Object itemSchema = result.size() < prefix.size()
                         ? prefix.get(result.size()) : schema.get("items");
                 if (Boolean.FALSE.equals(itemSchema)) throw new Invalid("Gemma array item is not allowed");
-                Object item = value(schema(itemSchema), depth);
+                Object item = value(schema(itemSchema), depth,
+                        Boolean.TRUE.equals(schema.get("uniqueItems")) ? result : List.of());
                 if (Boolean.TRUE.equals(schema.get("uniqueItems")) && result.contains(item)) {
                     throw new Invalid("duplicate Gemma array item");
                 }
@@ -314,7 +346,7 @@ public final class GemmaToolCallCodec {
             }
         }
 
-        private String string(Map<String, Object> schema) {
+        private String string(Map<String, Object> schema, List<?> forbidden) {
             literal(ChatTemplate.GEMMA_STRING);
             insideString = true;
             int start = position;
@@ -335,7 +367,8 @@ public final class GemmaToolCallCodec {
                 position++;
             }
             String value = text.substring(start, position);
-            if (position < text.length() && !ToolSchemaValidator.isValidValue(value, schema)) {
+            if (position < text.length()
+                    && (!ToolSchemaValidator.isValidValue(value, schema) || forbidden.contains(value))) {
                 // A split closer can only finish an already valid value, not an enum prefix.
                 // Otherwise retain the suffix as data: a lone '<' can still start literal content.
                 value = text.substring(start);
