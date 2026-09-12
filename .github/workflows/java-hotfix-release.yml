@@ -15,6 +15,14 @@ name: Java Hotfix Release
 on:
   workflow_dispatch:
     inputs:
+      stagingProfileId:
+        description: Exact compatibility staging profile ID.
+        type: string
+        default: ""
+      stagingRepositoryId:
+        description: Shared OPEN compatibility staging repository ID; required for release uploads.
+        type: string
+        default: ""
       releaseVersion:
         description: 'Release version (e.g., 1.0.0-M3.1)'
         required: true
@@ -47,6 +55,14 @@ on:
 
   workflow_call:
     inputs:
+      stagingProfileId:
+        description: Exact compatibility staging profile ID.
+        type: string
+        default: ""
+      stagingRepositoryId:
+        description: Shared OPEN compatibility staging repository ID; required for release uploads.
+        type: string
+        default: ""
       releaseVersion:
         description: Release version or current snapshot version.
         required: true
@@ -88,6 +104,9 @@ on:
 jobs:
   java-hotfix-release:
     runs-on: ubuntu-latest
+    concurrency:
+      group: ossrh-upload-${{ inputs.stagingRepositoryId || github.run_id }}
+      cancel-in-progress: false
     permissions:
       contents: read
     env:
@@ -97,6 +116,8 @@ jobs:
       DRY_RUN: ${{ inputs.dryRun }}
       REGENERATE_OPS: ${{ inputs.regenerateOps || 'false' }}
       SERVER_ID: ${{ inputs.serverId }}
+      STAGING_PROFILE_ID: ${{ inputs.stagingProfileId }}
+      STAGING_REPOSITORY_ID: ${{ inputs.stagingRepositoryId }}
     steps:
       - uses: actions/checkout@v7
 
@@ -134,12 +155,19 @@ jobs:
             done
           fi
 
+      - name: Verify explicit OPEN release staging target
+        if: inputs.deployToReleaseStaging == '1' && inputs.dryRun == 'false'
+        env:
+          CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+        run: python3 release/central/ossrh.py check
+
       - name: Check publication safety contracts
         shell: bash
         working-directory: platform-tests
         run: |
           set -Eeuo pipefail
-          PYTHONPATH=.. python3 -m unittest test_release_publication_safety test_java_snapshot_publication 2>&1 | tee ../release-safety-contracts.log
+          PYTHONPATH=.. python3 -m unittest test_release_publication_safety test_java_snapshot_publication test_open_staging 2>&1 | tee ../release-safety-contracts.log
 
       - name: Set up Java for publishing
         uses: actions/setup-java@v5
@@ -233,6 +261,13 @@ jobs:
           if [[ "${DRY_RUN}" == true ]]; then
             echo "=== DRY RUN: building but not deploying ==="
             DEPLOY_CMD+=(install)
+          elif [[ "${DEPLOY_TO_RELEASE_STAGING}" == 1 ]]; then
+            # Invoke deploy's goal, NOT its lifecycle: Central's injected publish
+            # execution must never run. Every reactor module (parents included)
+            # is installed and then deployed to this private filesystem image.
+            DEPLOY_CMD+=(install org.apache.maven.plugins:maven-deploy-plugin:3.1.4:deploy
+              -Dmaven.deploy.skip=false
+              "-DaltDeploymentRepository=local::file://${GITHUB_WORKSPACE:-$PWD}/.java-release-repository")
           else
             DEPLOY_CMD+=(deploy)
           fi
@@ -288,6 +323,20 @@ jobs:
             printf 'OK: %s\n' "${archive}"
           done
 
+      - name: Upload Java image to the shared OPEN repository
+        if: inputs.deployToReleaseStaging == '1' && inputs.dryRun == 'false'
+        env:
+          CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 release/central/ossrh.py upload \
+            --repository "${GITHUB_WORKSPACE}/.java-release-repository" \
+            --java-log java-release-build.log --version "${RELEASE_VERSION}" \
+            --receipt java-open-staging.json 2>&1 | tee java-open-staging.log
+
       - name: Verify published snapshot POM closure
         if: ${{ inputs.dryRun == 'false' && inputs.deployToReleaseStaging == '0' }}
         shell: bash
@@ -306,4 +355,6 @@ jobs:
             release-safety-contracts.log
             java-release-build.log
             java-snapshot-publication.log
+            java-open-staging.json
+            java-open-staging.log
           if-no-files-found: warn

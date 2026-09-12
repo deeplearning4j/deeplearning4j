@@ -233,7 +233,8 @@ class PublicationWorkflowSafetyTests(unittest.TestCase):
         self.assertLess(source.index("name: Validate publication inputs and credentials"),
                         source.index("name: Set up Java for publishing"))
         recorder = 'mvn() { printf "ARG=<%s>\\n" "$@"; }\n'
-        for dry_run, goal in (("true", "install"), ("false", "deploy")):
+        for dry_run, goal in (("true", "install"),
+                              ("false", "org.apache.maven.plugins:maven-deploy-plugin:3.1.4:deploy")):
             with self.subTest(dry_run=dry_run):
                 result, _ = self.run_script(recorder + script, DRY_RUN=dry_run, SERVER_ID="custom-central")
                 self.assertEqual(0, result.returncode, result.stderr)
@@ -247,6 +248,9 @@ class PublicationWorkflowSafetyTests(unittest.TestCase):
                     self.assertNotIn("ARG=<-Pcentral-signing>", result.stdout)
                 else:
                     self.assertIn("ARG=<-Pcentral-signing>", result.stdout)
+                    self.assertNotIn("ARG=<deploy>", result.stdout)
+                    self.assertIn("ARG=<-Dmaven.deploy.skip=false>", result.stdout)
+                    self.assertIn("-DaltDeploymentRepository=local::file://", result.stdout)
         result, _ = self.run_script(recorder + script, DEPLOY_TO_RELEASE_STAGING="0")
         self.assertEqual(0, result.returncode, result.stderr)
         self.assertNotIn("ARG=<-Pcentral-release>", result.stdout)

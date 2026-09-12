@@ -657,7 +657,8 @@ def materialize_test_repository(
     return manifest
 
 
-def sign_bundle(repository: Path, output: Path, gpg_executable: str = "gpg") -> None:
+def sign_repository(repository: Path, gpg_executable: str = "gpg") -> None:
+    """Sign a Maven image without imposing Portal bundle size/lifecycle semantics."""
     verify_release_metadata(repository)
     for path in primary_files(repository):
         signature = Path(str(path) + ".asc")
@@ -668,8 +669,11 @@ def sign_bundle(repository: Path, output: Path, gpg_executable: str = "gpg") -> 
             command.extend(["--pinentry-mode", "loopback", "--passphrase-fd", "0"])
             input_bytes = (passphrase + "\n").encode()
         subprocess.run([*command, str(path)], input=input_bytes, check=True)
-        for algorithm in CHECKSUMS:
-            Path(str(path) + f".{algorithm}").write_text(digest(path, algorithm) + "\n", encoding="ascii")
+        write_checksums([path, signature])
+
+
+def sign_bundle(repository: Path, output: Path, gpg_executable: str = "gpg") -> None:
+    sign_repository(repository, gpg_executable)
     output.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED, allowZip64=True) as archive:
         for path in sorted(repository.rglob("*")):

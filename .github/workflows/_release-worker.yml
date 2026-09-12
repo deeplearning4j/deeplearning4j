@@ -3,6 +3,12 @@ name: Shared DL4J release worker
 on:
   workflow_call:
     inputs:
+      stagingProfileId:
+        type: string
+        default: ""
+      stagingRepositoryId:
+        type: string
+        default: ""
       workflow:
         type: string
         required: true
@@ -169,6 +175,21 @@ jobs:
           printf 'snapshot-version=%s\n' "${SNAPSHOT_VERSION}" >>"${GITHUB_OUTPUT}"
           printf 'publication-mode=%s\n' "${publication_mode}" >>"${GITHUB_OUTPUT}"
           printf 'publish=%s\n' "${publish}" >>"${GITHUB_OUTPUT}"
+      - name: Checkout staging tooling from workflow revision
+        if: inputs.deployToReleaseStaging == '1' && inputs.dryRun == 'false'
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: .release-publication-tooling
+          persist-credentials: false
+      - name: Verify explicit OPEN release staging target
+        if: inputs.deployToReleaseStaging == '1' && inputs.dryRun == 'false'
+        env:
+          STAGING_PROFILE_ID: ${{ inputs.stagingProfileId }}
+          STAGING_REPOSITORY_ID: ${{ inputs.stagingRepositoryId }}
+          CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+        run: python3 .release-publication-tooling/release/central/ossrh.py check
       - name: Validate full repository contracts before native fanout
         if: inputs.workflow == 'all'
         working-directory: platform-tests
@@ -318,6 +339,9 @@ jobs:
           retention-days: 7
 
   publish:
+    concurrency:
+      group: ossrh-upload-${{ inputs.stagingRepositoryId || github.run_id }}
+      cancel-in-progress: false
     needs: [matrix, linux, host]
     if: ${{ always() && needs.matrix.result == 'success' &&
       (needs.linux.result == 'success' || needs.linux.result == 'skipped') &&
@@ -498,22 +522,22 @@ jobs:
           server-id: central
           server-username: CENTRAL_SONATYPE_TOKEN_USERNAME
           server-password: CENTRAL_SONATYPE_TOKEN_PASSWORD
-      - name: Stage merged Maven release in Central Portal
+      - name: Upload merged Maven release to shared OPEN staging
         if: ${{ steps.staged.outputs.publish == 'true' && steps.staged.outputs['publication-mode'] == 'release' }}
         shell: bash
         env:
           CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
           CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          STAGING_PROFILE_ID: ${{ inputs.stagingProfileId }}
+          STAGING_REPOSITORY_ID: ${{ inputs.stagingRepositoryId }}
         run: |
           set -Eeuo pipefail
           merged_root="${GITHUB_WORKSPACE}/.release-worker-merged"
-          python3 release/central/repository.py sign-bundle \
+          python3 release/central/ossrh.py upload \
             --repository "${merged_root}/maven-repository" \
-            --output "${merged_root}/central-bundle.zip"
-          python3 release/central/repository.py upload \
-            --bundle "${merged_root}/central-bundle.zip" \
-            --wait-seconds 5400 | tee "${merged_root}/central-deployment.log"
+            --receipt "${merged_root}/open-staging.json" \
+            2>&1 | tee "${merged_root}/central-deployment.log"
       - name: Retain merged Maven repository for build-only inspection
         if: ${{ always() && steps.staged.outputs.publish == 'false' }}
         uses: actions/upload-artifact@v7
@@ -533,6 +557,7 @@ jobs:
             ${{ github.workspace }}/.release-worker-merged/repository-manifest.json
             ${{ github.workspace }}/.release-worker-merged/repository-manifest.json.sha256
             ${{ github.workspace }}/.release-worker-merged/central-deployment.log
+            ${{ github.workspace }}/.release-worker-merged/open-staging.json
             ${{ github.workspace }}/.release-worker-merged/*effective-pom.xml
             ${{ github.workspace }}/.release-worker-merged/consumers/
           if-no-files-found: warn
