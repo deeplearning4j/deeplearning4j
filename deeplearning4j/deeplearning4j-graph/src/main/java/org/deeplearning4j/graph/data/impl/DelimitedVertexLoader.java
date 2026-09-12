@@ -31,7 +31,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**Load vertex information, one per line of form "0<delim>Some text attribute/label"
+/**Load vertex information, one per line of form {@code 0<delim>Some text attribute/label}
  */
 public class DelimitedVertexLoader implements VertexLoader<String> {
 
