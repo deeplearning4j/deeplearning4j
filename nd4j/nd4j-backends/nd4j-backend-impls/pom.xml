@@ -142,8 +142,21 @@
             <modules>
                 <module>nd4j-sdx-preset</module>
                 <module>nd4j-sdx-model</module>
-                <module>nd4j-sdx</module>
                 <module>nd4j-sdx-litertlm</module>
+            </modules>
+        </profile>
+
+        <!-- Java-only publication lanes must never activate this profile: it
+             compiles jnisdx.cpp and links the prebuilt libnd4j native library
+             (libnd4j/blasbuild/<backend>). Native release lanes that own
+             libnd4j outputs activate it together with -Psdx. -->
+        <profile>
+            <id>sdx-native</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <modules>
+                <module>nd4j-sdx</module>
             </modules>
         </profile>
 

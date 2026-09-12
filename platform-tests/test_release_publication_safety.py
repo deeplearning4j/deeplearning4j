@@ -259,6 +259,7 @@ class PublicationWorkflowSafetyTests(unittest.TestCase):
         for native_module in ("libnd4j", "libtokenizers", "tokenizers-native",
                               "blas-lapack-generator", "libnd4j-gen", "nd4j-sdx"):
             self.assertNotIn(f"!:{native_module}", result.stdout)
+        self.assertNotIn("ARG=<-Psdx-native>", result.stdout)
         root_pom = ET.parse(ROOT / "pom.xml").getroot()
         active = {m.text for m in root_pom.find("m:modules", NS).findall("m:module", NS)}
         self.assertNotIn("libnd4j", active)

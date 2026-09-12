@@ -28,7 +28,9 @@ if [ "${DL4J_PLATFORM}" = linux-arm64 ] || [ "${DL4J_PLATFORM}" = macosx-arm64 ]
 fi
 sdx_profile=()
 if [ "${DL4J_BUILD_SDX}" = 1 ]; then
-  sdx_profile=(-Psdx)
+  # sdx: Java-only jars; sdx-native: jnisdx.cpp binding linked against the
+  # prebuilt libnd4j output this native lane owns.
+  sdx_profile=(-Psdx -Psdx-native)
 fi
 metadata_flags=()
 if [ "${DL4J_RELEASE_METADATA:-0}" = 1 ]; then
