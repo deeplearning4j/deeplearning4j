@@ -139,7 +139,7 @@ jobs:
         working-directory: platform-tests
         run: |
           set -Eeuo pipefail
-          PYTHONPATH=.. python3 -m unittest test_release_publication_safety 2>&1 | tee ../release-safety-contracts.log
+          PYTHONPATH=.. python3 -m unittest test_release_publication_safety test_java_snapshot_publication 2>&1 | tee ../release-safety-contracts.log
 
       - name: Set up Java for publishing
         uses: actions/setup-java@v5
@@ -225,6 +225,9 @@ jobs:
             -DskipTests -Dmaven.test.skip=true -Dsamediff.native.tests=false -DskipTestResourceEnforcement=true
             -Dlibtokenizers.cpu.compile.skip=true -Djavacpp.compiler.skip=true
             -Denforcer.skip -Dcentral.publishing.autoPublish=false
+            # This single Java publisher owns the complete parent POM closure.
+            # Override the inherited native-matrix duplicate-publication skip.
+            -DskipPublishing=false
             "-Dcentral.publishing.publishingRepositoryId=${SERVER_ID}")
 
           if [[ "${DRY_RUN}" == true ]]; then
@@ -285,6 +288,15 @@ jobs:
             printf 'OK: %s\n' "${archive}"
           done
 
+      - name: Verify published snapshot POM closure
+        if: ${{ inputs.dryRun == 'false' && inputs.deployToReleaseStaging == '0' }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 release/central/verify_java_snapshots.py \
+            --log java-release-build.log --version "${SNAPSHOT_VERSION}" \
+            2>&1 | tee java-snapshot-publication.log
+
       - name: Retain Java qualification logs
         if: always()
         uses: actions/upload-artifact@v7
@@ -293,4 +305,5 @@ jobs:
           path: |
             release-safety-contracts.log
             java-release-build.log
+            java-snapshot-publication.log
           if-no-files-found: warn

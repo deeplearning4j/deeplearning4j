@@ -49,7 +49,7 @@ def step_script(filename, name):
 
 
 class PublicationWorkflowSafetyTests(unittest.TestCase):
-    def run_script(self, script, **overrides):
+    def run_script(self, script, cwd=ROOT, **overrides):
         env = dict(os.environ)
         env.update({name: "" for name in SECRET_NAMES})
         env.update(RELEASE_VERSION="1.0.0-M3", SNAPSHOT_VERSION="1.0.0-SNAPSHOT",
@@ -59,7 +59,7 @@ class PublicationWorkflowSafetyTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "github-output"
             env["GITHUB_OUTPUT"] = str(output)
-            result = subprocess.run(["bash", "-c", script], env=env, cwd=ROOT,
+            result = subprocess.run(["bash", "-c", script], env=env, cwd=cwd,
                                     capture_output=True, text=True, check=False)
             outputs = output.read_text() if output.exists() else ""
         return result, outputs
@@ -253,6 +253,11 @@ class PublicationWorkflowSafetyTests(unittest.TestCase):
         self.assertNotIn("ARG=<-Pcentral-signing>", result.stdout)
         self.assertNotIn("ARG=<--also-make>", result.stdout)
         self.assertIn("ARG=<-Psdx>", result.stdout)
+        self.assertIn("ARG=<-DskipPublishing=false>", result.stdout)
+        verification = source.split("      - name: Verify published snapshot POM closure\n", 1)[1]
+        self.assertIn("inputs.dryRun == 'false' && inputs.deployToReleaseStaging == '0'", verification)
+        self.assertIn("--log java-release-build.log", verification)
+        self.assertIn("java-snapshot-publication.log", verification)
         # samediff-llm depends on tokenizers-native (JavaCPP API jar) at compile
         # scope, so the tokenizers producers must be in the reactor; their Rust
         # and JNI compilation is skipped for this lane.
@@ -308,17 +313,20 @@ class PublicationWorkflowSafetyTests(unittest.TestCase):
         set. Provision minimal jars for every sentinel, run the script, then
         remove exactly what this test created."""
         version = "1.0.0-SNAPSHOT"
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        fixture_root = Path(temporary.name)
         created = []
         try:
             for path in self.SENTINEL_MODULES:
                 module = Path(path).name
-                target = ROOT / path / "target"
+                target = fixture_root / path / "target"
                 target.mkdir(parents=True, exist_ok=True)
                 jar = target / f"{module}-{version}.jar"
                 jar.write_bytes(b"placeholder")
                 created.append(jar)
             script = step_script("java-hotfix-release.yml", "Verify built artifacts")
-            result, _ = self.run_script(script, DRY_RUN="true", DEPLOY_TO_RELEASE_STAGING="0")
+            result, _ = self.run_script(script, cwd=fixture_root, DRY_RUN="true", DEPLOY_TO_RELEASE_STAGING="0")
             self.assertEqual(0, result.returncode, result.stderr)
             for sentinel in ("nd4j/nd4j-shade/jackson", "datavec/datavec-api",
                              "deeplearning4j/deeplearning4j-nn", "deeplearning4j/deeplearning4j-core",
