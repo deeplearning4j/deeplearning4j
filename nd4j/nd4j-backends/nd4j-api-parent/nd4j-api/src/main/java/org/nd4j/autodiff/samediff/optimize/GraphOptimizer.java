@@ -161,14 +161,20 @@ public class GraphOptimizer {
         // that computes garbage (all-NaN gather outputs at runtime). Until passes
         // understand ggml_qmatmul, be honest about the contract: return the graph
         // unoptimized.
-        for (org.nd4j.autodiff.samediff.internal.SameDiffOp op : graph.getOps().values()) {
-            if (op.getOp() != null
-                    && "ggml_qmatmul".equals(op.getOp().opName())) {
-                log.warn("Graph contains runtime-quantized ops (op '{}' is ggml_qmatmul): "
-                                + "optimizer passes do not understand packed quantized weights and "
-                                + "would corrupt matmul wiring — returning the graph UNOPTIMIZED.",
-                        op.getName());
-                return graph;
+        // Parity testing can bypass this guard with
+        // -Dnd4j.optimizer.allowPackedGraphs=true to gather numerical evidence
+        // about whether the guard is actually necessary.
+        boolean allowPacked = Boolean.getBoolean("nd4j.optimizer.allowPackedGraphs");
+        if (!allowPacked) {
+            for (org.nd4j.autodiff.samediff.internal.SameDiffOp op : graph.getOps().values()) {
+                if (op.getOp() != null
+                        && "ggml_qmatmul".equals(op.getOp().opName())) {
+                    log.warn("Graph contains runtime-quantized ops (op '{}' is ggml_qmatmul): "
+                                    + "optimizer passes do not understand packed quantized weights and "
+                                    + "would corrupt matmul wiring — returning the graph UNOPTIMIZED.",
+                            op.getName());
+                    return graph;
+                }
             }
         }
 
