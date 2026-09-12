@@ -82,7 +82,8 @@ public class DspMultiPlanShapeSwitchTest {
     @BeforeEach
     void setUp() {
         System.setProperty(ND4JSystemProperties.DSP_DIAGNOSTICS, "ALL");
-        System.setProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_LEVEL, "summary");
+        System.setProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_LEVEL,
+                System.getProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_LEVEL, "summary"));
     }
 
     @AfterEach
@@ -290,7 +291,8 @@ public class DspMultiPlanShapeSwitchTest {
         x.mul(2.0).add("y", 1.0);
         sd.setOutputs("y");
         configureDsp(sd);
-        long firstPlan = 0;
+        org.bytedeco.javacpp.Pointer firstPlan = null;
+        var nativeOps = org.nd4j.nativeblas.NativeOpsHolder.getInstance().getDeviceNativeOps();
         try (INDArray inputA = Nd4j.zeros(DataType.FLOAT, 8, 64);
              INDArray inputB = Nd4j.zeros(DataType.FLOAT, 1, 64)) {
             try {
@@ -314,9 +316,15 @@ public class DspMultiPlanShapeSwitchTest {
                     }
                     DspPlanAssertions.assertTotalGraphReplaysAtLeast(sd, 1);
                     DspPlanAssertions.assertNoCaptureFailures(sd);
-                    long plan = DspPlanAssertions.getPlanHandleForQuery(sd).address();
+                    var plan = DspPlanAssertions.getPlanHandleForQuery(sd);
                     if (visit == 0) firstPlan = plan;
-                    if (visit == 2) assertEquals(firstPlan, plan,
+                    if (visit == 1) {
+                        assertEquals(0, nativeOps.getPlanNumCapturedGraphSegments(firstPlan),
+                                "Passivated plan must not retain launchable old captures");
+                        assertEquals(0, nativeOps.getPlanPhase(firstPlan),
+                                "Retired staging belongs to a cold plan generation");
+                    }
+                    if (visit == 2) assertEquals(firstPlan.address(), plan.address(),
                             "Round-trip must reactivate the original cached plan");
                 }
             } finally {

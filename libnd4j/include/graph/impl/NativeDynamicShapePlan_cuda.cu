@@ -250,21 +250,21 @@ using namespace SegmentLifecycle;
 
 namespace {
 
+// Observation only: specialBuffer() may migrate storage to the calling device.
+// Hashing and metadata diagnostics must not relocate a captured producer.
+void* residentSpecialPointer(NDArray* array) {
+  auto* db = array != nullptr ? array->dataBuffer() : nullptr;
+  void* base = db != nullptr ? db->special() : nullptr;
+  return base != nullptr
+      ? static_cast<void*>(static_cast<int8_t*>(base) + array->offset() * array->sizeOfT())
+      : nullptr;
+}
+
 LongType computeSlotAddrHash(const NativeSlot* slots, int numSlots,
                              NDArray** outputSlots, int startSlot, int endSlot,
                              int totalSlots) {
-  // Read-only resident pointer: NDArray::specialBuffer() syncs/migrates the
-  // buffer to the current device, so hashing for replay invariance would
-  // itself relocate cross-device slots and manufacture pointer drift.
   return dsp::computeSegmentSlotAddrHash(slots, numSlots, outputSlots,
-      startSlot, endSlot, totalSlots,
-      [](NDArray* a) -> void* {
-        auto* db = a != nullptr ? a->dataBuffer() : nullptr;
-        void* base = db != nullptr ? db->special() : nullptr;
-        return base != nullptr
-            ? static_cast<void*>(static_cast<int8_t*>(base) + a->offset() * a->sizeOfT())
-            : nullptr;
-      });
+      startSlot, endSlot, totalSlots, residentSpecialPointer);
 }
 
 bool bindSegmentCudaDevice(const GraphSegment& segment,
@@ -871,12 +871,13 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       int slotIdx = requestedOutputSlotIndices_[i];
       NDArray* arr = (slotIdx >= 0 && slotIdx < totalOutputSlots_)
                      ? outputSlots_[slotIdx] : nullptr;
-      if (arr != nullptr && arr->specialBuffer() != nullptr && arr->lengthOf() > 0) {
+      void* sbuf = residentSpecialPointer(arr);
+      if (arr != nullptr && sbuf != nullptr && arr->lengthOf() > 0) {
         DSP_DIAG_SLOT(VERIFY, slotIdx,
             "FROZEN_FAST_PATH reqOut[%d] exec=%d len=%lld dtype=%d sbuf=%p "
             "(async path: value dump skipped)",
             i, executeCount_, (long long)arr->lengthOf(),
-            static_cast<int>(arr->dataType()), arr->specialBuffer());
+            static_cast<int>(arr->dataType()), sbuf);
       } else if (arr == nullptr) {
         DSP_DIAG_SLOT(VERIFY, slotIdx, "FROZEN_FAST_PATH reqOut[%d] exec=%d nullptr",
                       i, executeCount_);
@@ -899,11 +900,12 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       }
       if (lastOutSlot >= 0 && lastOutSlot < totalOutputSlots_ && outputSlots_[lastOutSlot] != nullptr) {
         NDArray* logitsArr = outputSlots_[lastOutSlot];
-        if (logitsArr->lengthOf() > 0 && logitsArr->specialBuffer() != nullptr) {
+        void* sbuf = residentSpecialPointer(logitsArr);
+        if (logitsArr->lengthOf() > 0 && sbuf != nullptr) {
           DSP_DIAG(VERIFY, "REPLAY DEBUG: exec=%d slot=%d len=%lld dtype=%d sbuf=%p "
                            "(async path: argmax dump skipped)",
                    executeCount_, lastOutSlot, (long long)logitsArr->lengthOf(),
-                   static_cast<int>(logitsArr->dataType()), logitsArr->specialBuffer());
+                   static_cast<int>(logitsArr->dataType()), sbuf);
         }
       }
     }
@@ -3948,7 +3950,7 @@ void NativeDynamicShapePlan::platformDumpLogitsArgmax(int execCount, void* strea
     int slotIdx = requestedOutputSlotIndices_[i];
     NDArray* arr = (slotIdx >= 0 && slotIdx < totalOutputSlots_) ? outputSlots_[slotIdx] : nullptr;
     if (arr == nullptr) continue;
-    void* sbuf = arr->specialBuffer();
+    void* sbuf = residentSpecialPointer(arr);
     // Logits: FLOAT32, length >= 10000 (any reasonable vocab), rank <= 3
     if (sbuf && arr->dataType() == FLOAT32 && arr->lengthOf() >= 10000 && arr->rankOf() <= 3) {
       DSP_DIAG_SLOT(VERIFY, slotIdx,
