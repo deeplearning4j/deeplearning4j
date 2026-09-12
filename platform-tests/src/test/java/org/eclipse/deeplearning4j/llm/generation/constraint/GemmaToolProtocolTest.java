@@ -184,6 +184,62 @@ class GemmaToolProtocolTest {
     }
 
     @Test
+    void exhaustedObjectPropertiesRejectCommaBeforeItCreatesDeadPrefix() {
+        Map<String, Object> item = Map.of("type", "object", "properties", Map.of(
+                "label", Map.of("type", "string", "pattern", "^[A-Z][A-Z0-9_]*$", "maxLength", 48),
+                "parentType", Map.of("type", "string", "enum", List.of("ORGANIZATION"))),
+                "required", List.of("label", "parentType"), "additionalProperties", false);
+        ChatTemplate.Tool tool = new ChatTemplate.Tool("submit_node_types", "", Map.of(
+                "type", "object", "properties", Map.of("nodeTypes",
+                Map.of("type", "array", "items", item, "uniqueItems", true, "maxItems", 32)),
+                "required", List.of("nodeTypes"), "additionalProperties", false));
+        TextConstraint c = constraint(tool);
+        String prefix = OPEN + "call:submit_node_types{nodeTypes:[{label:" + Q + "ORGANIZATION" + Q
+                + ",parentType:" + Q + "ORGANIZATION" + Q;
+        // proc-058 admitted comma + newline here, after both legal keys were consumed.
+        // Reject at the comma itself, regardless of token-piece boundaries/whitespace.
+        for (String suffix : List.of(",", ",\n", " ,", "\n,\n")) {
+            assertFalse(c.canExtend(prefix, suffix), suffix);
+            assertFalse(GemmaToolCallCodec.scan(prefix + suffix, Map.of(tool.getName(), tool)).valid);
+        }
+        assertTrue(c.canExtend(prefix, "}] }" + CLOSE));
+        assertTrue(c.isAccepting(prefix + "}]}" + CLOSE));
+        assertTrue(parse(prefix + "}]}" + CLOSE, tool).isClean());
+        assertFalse(c.canExtend(prefix + "}]", ","), "Root key is exhausted too");
+        assertTrue(c.canExtend(prefix + "}", ",{"), "Another array item remains legal");
+
+        ConstraintMasker masker = new ConstraintMasker(c, 1);
+        masker.decodedTextEmitted(prefix);
+        String[] pieces = {",", ",\n", "}", "}]}" + CLOSE};
+        float[] masked = masker.maskLogitsByDecodedCandidate(new float[]{10f, 9f, 2f, 1f},
+                java.util.Set.of(), java.util.Set.of(), id -> pieces[id],
+                id -> prefix + pieces[id], List.of(OPEN, CLOSE, Q));
+        assertEquals(Float.NEGATIVE_INFINITY, masked[0]);
+        assertEquals(Float.NEGATIVE_INFINITY, masked[1]);
+        assertEquals(2f, masked[2]);
+        assertEquals(1f, masked[3]);
+    }
+
+    @Test
+    void objectCommaStillAllowsUnusedOptionalAndAdditionalProperties() {
+        Map<String, Object> properties = Map.of("name", Map.of("type", "string"),
+                "optional", Map.of("type", "string"));
+        for (boolean additional : List.of(false, true)) {
+            ChatTemplate.Tool tool = new ChatTemplate.Tool("record", "", Map.of("type", "object",
+                    "properties", properties, "required", List.of("name"),
+                    "additionalProperties", additional));
+            TextConstraint c = constraint(tool);
+            String prefix = OPEN + "call:record{name:" + Q + "A" + Q;
+            assertTrue(c.canExtend(prefix, ","), "Unused optional key is still available");
+            assertTrue(c.isAccepting(prefix + "}" + CLOSE));
+            prefix += ",optional:" + Q + "B" + Q;
+            assertEquals(additional, c.canExtend(prefix, ",\n"));
+            assertEquals(additional, c.isAccepting(prefix + ",extra:" + Q + "C" + Q + "}" + CLOSE));
+            assertFalse(c.canExtend(prefix, ",name:"), "Duplicate keys stay forbidden");
+        }
+    }
+
+    @Test
     void enumStringsCannotStartClosingUntilTheirValueIsComplete() {
         List<String> families = List.of("IDENTITY", "HIERARCHY", "PART_WHOLE", "AFFILIATION",
                 "SOCIAL", "PARTICIPATION", "ATTRIBUTION", "OWNERSHIP", "SPATIAL", "COMMUNICATION",

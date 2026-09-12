@@ -274,6 +274,13 @@ public final class GemmaToolCallCodec {
                 space();
                 char delimiter = peek();
                 if (delimiter == '}') { position++; return result; }
+                // A comma commits to another member. Reject it immediately when a
+                // closed schema has no unused key, rather than accepting an
+                // incomplete prefix that no future token can ever complete.
+                if (Boolean.FALSE.equals(schema.get("additionalProperties"))
+                        && result.keySet().containsAll(properties.keySet())) {
+                    throw new Invalid("no unused Gemma object properties remain");
+                }
                 literal(",");
                 space();
             }
