@@ -57,7 +57,6 @@
     </scm>
 
     <modules>
-        <module>libnd4j</module>
         <module>nd4j</module>
         <module>datavec</module>
         <module>deeplearning4j</module>
@@ -65,7 +64,6 @@
         <module>omnihub</module>
         <module>resources</module>
         <module>codegen</module>
-        <module>platform-tests</module>
     </modules>
 
     <distributionManagement>
@@ -859,6 +857,31 @@
             <id>platform-tests</id>
             <modules>
                 <module>platform-tests</module>
+            </modules>
+        </profile>
+        <!-- Native build contracts: these profiles are selected explicitly by
+             full-repository native workers (buildnativeoperations.sh contract,
+             cross-platform release lanes). They stay inactive for Java-only
+             builds so no native module enters the reactor and no libnd4j
+             directory is required. -->
+        <profile>
+            <id>native</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <modules>
+                <module>libnd4j</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>tokenizers-native</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <modules>
+                <module>nd4j/nd4j-tokenizers/libtokenizers</module>
+                <module>nd4j/nd4j-tokenizers/tokenizers-native-preset</module>
+                <module>nd4j/nd4j-tokenizers/tokenizers-native</module>
             </modules>
         </profile>
         <profile>
