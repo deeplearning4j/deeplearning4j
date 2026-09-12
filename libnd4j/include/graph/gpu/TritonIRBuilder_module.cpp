@@ -72,6 +72,42 @@ using namespace ir_builder_internal;
 // argument passing via a pointer array.
 static constexpr int TRITON_DIRECT_ARG_LIMIT = 200;
 
+// MLIR integer types are signless: the NDArray dtype, not i8/i16/i32/i64,
+// determines extension and integer/float conversion semantics for an explicit cast.
+static mlir::Value emitDtypeCast(mlir::OpBuilder& builder, mlir::Location loc,
+                                mlir::Value value, mlir::Type targetElemType,
+                                DataType sourceDtype, DataType targetDtype) {
+  auto sourceElemType = getElementType(value);
+  auto tensorType = mlir::dyn_cast<mlir::RankedTensorType>(value.getType());
+  auto shapedType = [&](mlir::Type elementType) -> mlir::Type {
+    if (tensorType)
+      return mlir::RankedTensorType::get(tensorType.getShape(), elementType,
+                                         tensorType.getEncoding());
+    return elementType;
+  };
+  auto targetType = shapedType(targetElemType);
+  if (sourceElemType.isIntOrIndex() && DataTypeUtils::isU(sourceDtype)) {
+    if (mlir::isa<mlir::FloatType>(targetElemType)) {
+      // Convert directly, avoiding a double-rounded uint64 -> double -> float.
+      return builder.create<mlir::arith::UIToFPOp>(loc, targetType, value);
+    }
+    if (targetElemType.isIntOrIndex() &&
+        targetElemType.getIntOrFloatBitWidth() > sourceElemType.getIntOrFloatBitWidth()) {
+      return builder.create<mlir::arith::ExtUIOp>(loc, targetType, value);
+    }
+  }
+  if (mlir::isa<mlir::FloatType>(sourceElemType) && DataTypeUtils::isU(targetDtype)) {
+    if (targetElemType.getIntOrFloatBitWidth() < 32) {
+      // Native C++ conversion to byte/short first truncates toward zero to int,
+      // then retains the low bits. Direct fptoui i8/i16 saturates on CUDA instead.
+      auto integer = builder.create<mlir::arith::FPToSIOp>(loc, shapedType(builder.getI32Type()), value);
+      return builder.create<mlir::arith::TruncIOp>(loc, targetType, integer);
+    }
+    return builder.create<mlir::arith::FPToUIOp>(loc, targetType, value);
+  }
+  return castTo(builder, loc, value, targetElemType);
+}
+
 // The register RoPE emitter gathers each element's partner from the current SSA
 // tile. A tile is safe when it contains whole heads, or when head-aligned sub-tiles
 // still contain every possible pair. Split-half RoPE needs the entire rotary prefix
@@ -2213,7 +2249,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
                   si, slot.args.numDArgs, slot.args.numIArgs, (int)targetDtype,
                   DataTypeUtils::asString(targetDtype).c_str());
         auto targetElemType = getMLIRType(builder, targetDtype);
-        auto opResult = castTo(builder, loc, inputIt->second, targetElemType);
+        auto opResult = emitDtypeCast(builder, loc, inputIt->second, targetElemType,
+                                      resolveDtypeLocal(inputSrc), targetDtype);
         for (int o = 0; o < slot.wiring.numOutputs; o++) {
           ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
         }
@@ -6245,7 +6282,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                 targetDtype = resolveDtype(outIdx);
               }
               auto targetElemType = getMLIRType(builder, targetDtype);
-              auto opResult = castTo(builder, loc, inputIt->second, targetElemType);
+              auto opResult = emitDtypeCast(builder, loc, inputIt->second, targetElemType,
+                                            resolveDtype(slot.wiring.inputSourceIndices[0]), targetDtype);
               for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
             }
           } else if (cat == TritonOpCategory::REDUCTION) {

@@ -92,6 +92,30 @@ class Gemma4OptimizerParityIT {
             }
         }
 
+        // Establish repeatability independently of graph transformations. Fresh inputs
+        // are essential: execution updates the supplied KV cache arrays in place.
+        try (SameDiff repeatSd = SDZSerializer.load(rawPath.toFile(), false)) {
+            Map<String, INDArray> repeatInputs = buildInputs(repeatSd);
+            try {
+                Map<String, Snapshot> repeatHost = snapshots(
+                        repeatSd.output(repeatInputs, repeatSd.outputs()));
+                assertEquals(rawHost.keySet(), repeatHost.keySet());
+                double worstRepeatDelta = 0.0;
+                for (Map.Entry<String, Snapshot> e : rawHost.entrySet()) {
+                    Snapshot repeat = repeatHost.get(e.getKey());
+                    assertArrayEquals(e.getValue().shape, repeat.shape, e.getKey());
+                    assertEquals(e.getValue().dtype, repeat.dtype, e.getKey());
+                    double delta = maxAbsDelta(e.getValue().values, repeat.values);
+                    System.out.println("RAW REPEAT OUTPUT " + e.getKey() + " maxAbsDelta=" + delta);
+                    worstRepeatDelta = Math.max(worstRepeatDelta, delta);
+                }
+                assertEquals(0.0, worstRepeatDelta,
+                        "raw/raw is not exact; establish numerical repeatability before attributing optimizer drift");
+            } finally {
+                closeInputs(repeatInputs);
+            }
+        }
+
         // ── PHASE 2: fresh load and optimize. Retain the source until inference
         // finishes because optimizer output may share its constants.
         try (SameDiff optSd = SDZSerializer.load(rawPath.toFile(), false)) {
@@ -99,7 +123,19 @@ class Gemma4OptimizerParityIT {
         System.setProperty("nd4j.optimizer.allowPackedGraphs", "true");
         SameDiff optimized;
         try {
-            optimized = GraphOptimizer.optimize(optSd, optSd.outputs());
+            Map<String, Integer> appliedPasses = new java.util.TreeMap<>();
+            optimized = GraphOptimizer.optimize(optSd, optSd.outputs(), GraphOptimizer.defaultOptimizations(),
+                    new org.nd4j.autodiff.samediff.optimize.debug.OptimizationDebugger() {
+                        public void beforeOptimizationCheck(SameDiff sd,
+                                org.nd4j.autodiff.samediff.internal.SameDiffOp op,
+                                org.nd4j.autodiff.samediff.optimize.Optimizer optimizer) { }
+                        public void afterOptimizationsCheck(SameDiff sd,
+                                org.nd4j.autodiff.samediff.internal.SameDiffOp op,
+                                org.nd4j.autodiff.samediff.optimize.Optimizer optimizer, boolean applied) {
+                            if (applied) appliedPasses.merge(optimizer.getClass().getSimpleName(), 1, Integer::sum);
+                        }
+                    });
+            System.out.println("PARITY APPLIED PASSES " + appliedPasses);
         } finally {
             if (previous == null) System.clearProperty("nd4j.optimizer.allowPackedGraphs");
             else System.setProperty("nd4j.optimizer.allowPackedGraphs", previous);
@@ -240,6 +276,129 @@ class Gemma4OptimizerParityIT {
             this.shape = shape;
             this.dtype = dtype;
             this.values = values;
+        }
+    }
+
+    @Test
+    void rawDspNarrowingCastRoundTripRetainsRounding() {
+        try (SameDiff sd = SameDiff.create();
+             INDArray input = Nd4j.createFromArray(1.0003f, -1.0003f, 0.3333f);
+             INDArray half = input.castTo(DataType.HALF);
+             INDArray widened = half.castTo(DataType.FLOAT)) {
+            SDVariable x = sd.placeHolder("input", DataType.FLOAT, 3);
+            SDVariable output = x.castTo(DataType.HALF).castTo(DataType.FLOAT).rename("output");
+            sd.setOutputs(output.name());
+            Snapshot expected = snapshots(Map.of("output", widened)).get("output");
+            Snapshot actual = snapshots(sd.output(Map.of("input", input), sd.outputs())).get("output");
+            assertEquals(DataType.FLOAT, actual.dtype);
+            assertEquals(0.0, maxAbsDelta(expected.values, actual.values),
+                    "raw DSP must retain the explicit HALF rounding boundary");
+        }
+    }
+
+    @Test
+    void narrowingCastRoundTripRetainsRounding() {
+        try (SameDiff sd = SameDiff.create();
+             INDArray input = Nd4j.createFromArray(1.0003f, -1.0003f, 0.3333f)) {
+            SDVariable x = sd.placeHolder("input", DataType.FLOAT, 3);
+            SDVariable rounded = x.castTo(DataType.HALF);
+            SDVariable output = rounded.castTo(DataType.FLOAT).rename("output");
+            sd.setOutputs(output.name());
+            Snapshot reference;
+            try (INDArray half = input.castTo(DataType.HALF);
+                 INDArray widened = half.castTo(DataType.FLOAT)) {
+                reference = snapshots(Map.of("output", widened)).get("output");
+            }
+            assertEquals(1.0f, reference.values[0], "HALF round trip must round this input");
+            try (SameDiff optimized = GraphOptimizer.optimize(sd, sd.outputs(), java.util.List.of(
+                    () -> java.util.List.of(new org.nd4j.autodiff.samediff.optimize.optimizations
+                            .QuantizationOptimizations.RemoveRedundantCasts())))) {
+                assertEquals(2L, optimized.getOps().values().stream()
+                                .filter(op -> "cast".equals(op.getOp().opName())).count(),
+                        "Java optimizer must retain both casts independently of native execution");
+                Snapshot actual = snapshots(optimized.output(Map.of("input", input), optimized.outputs())).get("output");
+                assertEquals(0.0, maxAbsDelta(reference.values, actual.values),
+                        "cast elimination must retain the explicit HALF rounding boundary");
+            }
+        }
+    }
+
+    @Test
+    void castCompositionRetainsLossyBoundariesAndOptimizesWidening() {
+        DataType[][] cases = {
+                {DataType.FLOAT, DataType.HALF, DataType.FLOAT},
+                {DataType.FLOAT, DataType.BFLOAT16, DataType.FLOAT},
+                {DataType.HALF, DataType.BFLOAT16, DataType.HALF},
+                {DataType.BFLOAT16, DataType.HALF, DataType.BFLOAT16},
+                {DataType.DOUBLE, DataType.FLOAT, DataType.DOUBLE},
+                {DataType.LONG, DataType.FLOAT, DataType.LONG},
+                {DataType.INT, DataType.BYTE, DataType.INT},
+                {DataType.BYTE, DataType.UBYTE, DataType.BYTE},
+                {DataType.FLOAT, DataType.HALF, DataType.DOUBLE}
+        };
+        for (DataType[] types : cases) {
+            try (SameDiff sd = SameDiff.create()) {
+                SDVariable x = sd.placeHolder("input", types[0], 3);
+                sd.setOutputs(x.castTo(types[1]).castTo(types[2]).rename("output").name());
+                try (SameDiff optimized = GraphOptimizer.optimize(sd, sd.outputs(), java.util.List.of(
+                        () -> java.util.List.of(new org.nd4j.autodiff.samediff.optimize.optimizations
+                                .QuantizationOptimizations.RemoveRedundantCasts())))) {
+                    assertEquals(2L, optimized.getOps().values().stream()
+                            .filter(op -> "cast".equals(op.getOp().opName())).count(),
+                            java.util.Arrays.toString(types));
+                }
+            }
+        }
+        for (DataType[] types : new DataType[][]{
+                {DataType.HALF, DataType.FLOAT, DataType.HALF},
+                {DataType.BFLOAT16, DataType.FLOAT, DataType.BFLOAT16},
+                {DataType.FLOAT, DataType.DOUBLE, DataType.FLOAT},
+                {DataType.HALF, DataType.FLOAT, DataType.DOUBLE},
+                {DataType.INT, DataType.LONG, DataType.INT}}) {
+            try (SameDiff sd = SameDiff.create()) {
+                SDVariable x = sd.placeHolder("input", types[0], 3);
+                sd.setOutputs(x.castTo(types[1]).castTo(types[2]).rename("output").name());
+                try (SameDiff optimized = GraphOptimizer.optimize(sd, sd.outputs(), java.util.List.of(
+                        () -> java.util.List.of(new org.nd4j.autodiff.samediff.optimize.optimizations
+                                .QuantizationOptimizations.RemoveRedundantCasts())))) {
+                    assertEquals(1L, optimized.getOps().values().stream()
+                            .filter(op -> "cast".equals(op.getOp().opName())).count(),
+                            java.util.Arrays.toString(types));
+                }
+            }
+        }
+    }
+
+    @Test
+    void rawDspCastCompositionMatchesEagerIncludingKnownSourceWidening() {
+        // The leading cast gives native fusion an authoritative source dtype.
+        // Include non-round-trip targets: these must never become identities.
+        for (DataType[] types : new DataType[][]{
+                {DataType.FLOAT, DataType.HALF, DataType.FLOAT},
+                {DataType.FLOAT, DataType.BFLOAT16, DataType.FLOAT},
+                {DataType.HALF, DataType.BFLOAT16, DataType.HALF},
+                {DataType.BFLOAT16, DataType.HALF, DataType.BFLOAT16},
+                {DataType.LONG, DataType.FLOAT, DataType.LONG},
+                {DataType.INT, DataType.BYTE, DataType.INT},
+                {DataType.INT, DataType.UBYTE, DataType.INT},
+                {DataType.FLOAT, DataType.HALF, DataType.DOUBLE},
+                {DataType.HALF, DataType.FLOAT, DataType.HALF},
+                {DataType.BFLOAT16, DataType.FLOAT, DataType.BFLOAT16},
+                {DataType.FLOAT, DataType.DOUBLE, DataType.FLOAT}}) {
+            try (SameDiff sd = SameDiff.create();
+                 INDArray input = Nd4j.createFromArray(1.0003, -1.003, 257.0, 16777217.0);
+                 INDArray source = input.castTo(types[0]);
+                 INDArray intermediate = source.castTo(types[1]);
+                 INDArray expected = intermediate.castTo(types[2])) {
+                SDVariable x = sd.placeHolder("input", DataType.DOUBLE, 4);
+                sd.setOutputs(x.castTo(types[0]).castTo(types[1]).castTo(types[2]).rename("output").name());
+                for (int execution = 0; execution < 4; execution++) {
+                    INDArray actual = sd.outputSingle(Map.of("input", input), "output");
+                    assertEquals(expected.dataType(), actual.dataType());
+                    assertArrayEquals(expected.data().asDouble(), actual.data().asDouble(),
+                            java.util.Arrays.toString(types) + " execution=" + execution);
+                }
+            }
         }
     }
 
