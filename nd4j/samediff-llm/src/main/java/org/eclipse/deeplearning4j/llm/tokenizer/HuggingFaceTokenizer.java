@@ -230,6 +230,14 @@ public class HuggingFaceTokenizer implements Tokenizer {
             File generationFile = new File(parentDir, "generation_config.json");
             if (generationFile.isFile()) {
                 JsonNode root = new ObjectMapper().readTree(Files.readString(generationFile.toPath()));
+                // Model-owned generation metadata fills missing roles only. It does not
+                // infer roles from token spellings or change the post-processor's BOS policy.
+                if (tokenizer.bosTokenId < 0) {
+                    tokenizer.bosTokenId = tokenizer.generationTokenId(root, "bos_token_id");
+                }
+                if (tokenizer.padTokenId < 0) {
+                    tokenizer.padTokenId = tokenizer.generationTokenId(root, "pad_token_id");
+                }
                 JsonNode eos = root.get("eos_token_id");
                 Set<Integer> ids = new LinkedHashSet<>();
                 if (eos != null && !eos.isNull()) {
@@ -249,6 +257,20 @@ public class HuggingFaceTokenizer implements Tokenizer {
             tokenizer.close();
             throw new TokenizerException("Could not load generation_config.json: " + e.getMessage(), e);
         }
+    }
+
+    private int generationTokenId(JsonNode root, String role) {
+        JsonNode value = root.get(role);
+        if (value == null || value.isNull()) return -1;
+        if (!value.isIntegralNumber() || !value.canConvertToInt() || value.intValue() < 0) {
+            throw new IllegalArgumentException("Invalid generation " + role + ": " + value);
+        }
+        int id = value.intValue();
+        String token = getToken(id);
+        if (token == null || !Objects.equals(getTokenId(token), id)) {
+            throw new IllegalArgumentException("Generation " + role + " does not resolve in vocabulary: " + id);
+        }
+        return id;
     }
 
     @Override
