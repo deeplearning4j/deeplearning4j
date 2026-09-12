@@ -142,6 +142,26 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <!-- Java APIs reference Kotlin declarations in this module.
+                         Javadoc cannot parse .kt sources; resolve their compiled
+                         classes from this build's main JAR, already produced
+                         earlier in the package phase, instead. This dependency
+                         is documentation-only, not a consumer dependency. -->
+                    <additionalDependencies>
+                        <additionalDependency>
+                            <groupId>${project.groupId}</groupId>
+                            <artifactId>${project.artifactId}</artifactId>
+                            <version>${project.version}</version>
+                            <scope>system</scope>
+                            <systemPath>${project.build.directory}/${project.build.finalName}.jar</systemPath>
+                        </additionalDependency>
+                    </additionalDependencies>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
                 <version>3.0.0</version>
