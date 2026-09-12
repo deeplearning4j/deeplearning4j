@@ -214,12 +214,16 @@ jobs:
           set -Eeuo pipefail
           # Build the complete Java reactor, including DataVec, DL4J, shaded
           # dependencies and parent POMs, rather than a small hotfix allowlist.
-          # Native modules are profile-gated in the root pom and stay inactive
-          # here; backend profiles are never activated. No exclusion lists, so
+          # Backend profiles stay inactive (no native libnd4j compile), but the
+          # tokenizers-native profile must be active: samediff-llm has a normal
+          # compile dependency on tokenizers-native (JavaCPP API jar), and the
+          # tokenizers modules build that jar with Rust/JNI compilation skipped
+          # so this lane never produces native binaries. No exclusion lists, so
           # newly added Java subtrees are published automatically.
           DEPLOY_CMD=(mvn --no-transfer-progress --batch-mode
-            -Psdx
+            -Psdx -Ptokenizers-native
             -DskipTests -Dmaven.test.skip=true -Dsamediff.native.tests=false -DskipTestResourceEnforcement=true
+            -Dlibtokenizers.cpu.compile.skip=true -Djavacpp.compiler.skip=true
             -Denforcer.skip -Dcentral.publishing.autoPublish=false
             "-Dcentral.publishing.publishingRepositoryId=${SERVER_ID}")
 

@@ -914,7 +914,7 @@ static LongType computeSlotAddrHash(const NativeSlot* slots, int numSlots,
                                     int endSlot, int totalSlots) {
   return dsp::computeSegmentSlotAddrHash(slots, numSlots, outputSlots,
       startSlot, endSlot, totalSlots,
-                                  [](NDArray* a) -> void* { return DSP_BUF(a); });
+                                  [](NDArray* a) -> void* { return diagnosticSpecialPointer(a); });
 }
 
 static void snapshotSlotOutputBuffers(const NativeSlot& slot, NDArray** outputSlots, int totalOutputSlots,

@@ -253,8 +253,14 @@ class PublicationWorkflowSafetyTests(unittest.TestCase):
         self.assertNotIn("ARG=<-Pcentral-signing>", result.stdout)
         self.assertNotIn("ARG=<--also-make>", result.stdout)
         self.assertIn("ARG=<-Psdx>", result.stdout)
+        # samediff-llm depends on tokenizers-native (JavaCPP API jar) at compile
+        # scope, so the tokenizers producers must be in the reactor; their Rust
+        # and JNI compilation is skipped for this lane.
+        self.assertIn("ARG=<-Ptokenizers-native>", result.stdout)
+        self.assertIn("ARG=<-Dlibtokenizers.cpu.compile.skip=true>", result.stdout)
+        self.assertIn("ARG=<-Djavacpp.compiler.skip=true>", result.stdout)
         for backend in ("cpu", "cuda", "vulkan", "tpu", "hexagon", "zluda", "metal",
-                        "native", "tokenizers-native"):
+                        "native"):
             self.assertNotIn(f"ARG=<-P{backend}>", result.stdout)
         for native_module in ("libnd4j", "libtokenizers", "tokenizers-native",
                               "blas-lapack-generator", "libnd4j-gen", "nd4j-sdx"):

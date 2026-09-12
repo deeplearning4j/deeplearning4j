@@ -3333,6 +3333,26 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Violations are hard errors, not diagnostic logs.
   BufferPointerSnapshot frozenSnapshot_;
 
+  /** Slots whose cached wrapper the plan itself replaced after the snapshot was
+   *  captured (platform device-local reallocation, cache-miss discard). The old
+   *  snapshot address is deliberately stale for these; validation skips them
+   *  until the next snapshot recapture re-anchors the current buffers. */
+  std::vector<int> snapshotInvalidatedSlots_;
+
+  /** Record a plan-managed slot buffer replacement so lifecycle validation does
+   *  not misreport the intentional reallocation as cross-segment pointer drift. */
+  void invalidateSnapshotForSlot(int slotIdx) {
+    if (slotIdx < 0 || slotIdx >= totalOutputSlots_) return;
+    if (!frozenSnapshot_.valid) return;
+    if (frozenSnapshot_.slotGpuAddresses != nullptr) {
+      frozenSnapshot_.slotGpuAddresses[slotIdx] = nullptr;
+    }
+    if (frozenSnapshot_.slotDataBuffers != nullptr) {
+      frozenSnapshot_.slotDataBuffers[slotIdx] = nullptr;
+    }
+    snapshotInvalidatedSlots_.push_back(slotIdx);
+  }
+
   // Cached steady-state execution context — reused by executeSteadyState() to
   // avoid heap allocation per step on both CPU and CUDA.
   // void* to avoid including PlanExecutionContext.h from this header.

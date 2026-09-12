@@ -253,9 +253,18 @@ namespace {
 LongType computeSlotAddrHash(const NativeSlot* slots, int numSlots,
                              NDArray** outputSlots, int startSlot, int endSlot,
                              int totalSlots) {
+  // Read-only resident pointer: NDArray::specialBuffer() syncs/migrates the
+  // buffer to the current device, so hashing for replay invariance would
+  // itself relocate cross-device slots and manufacture pointer drift.
   return dsp::computeSegmentSlotAddrHash(slots, numSlots, outputSlots,
       startSlot, endSlot, totalSlots,
-      [](NDArray* a) -> void* { return a->specialBuffer(); });
+      [](NDArray* a) -> void* {
+        auto* db = a != nullptr ? a->dataBuffer() : nullptr;
+        void* base = db != nullptr ? db->special() : nullptr;
+        return base != nullptr
+            ? static_cast<void*>(static_cast<int8_t*>(base) + a->offset() * a->sizeOfT())
+            : nullptr;
+      });
 }
 
 bool bindSegmentCudaDevice(const GraphSegment& segment,
@@ -1427,19 +1436,96 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     auto originalAttrErr = originalDev != nullptr
         ? cudaPointerGetAttributes(&originalAttrs, originalDev)
         : cudaErrorInvalidValue;
-    if (originalDev == nullptr || originalAttrErr != cudaSuccess ||
-        originalAttrs.type != cudaMemoryTypeDevice) {
-      DSP_DIAG(MULTI_DEVICE,
-               "migrateSlotInputsToTargetDevice: source pointer validation failed slot=%d "
-               "ptr=%p metadataDevice=%d attrErr=%s",
-               slotIdx, originalDev, sourceDevice, cudaGetErrorString(originalAttrErr));
-      cudaGetLastError();
+    // A buffer whose special() is not a device pointer has its bytes on the host:
+    // DeviceMemoryManager CPU-failover moves device allocations back to host and
+    // the buffer then serves special() from primary(). Treat ANY non-device
+    // source (including unregistered malloc that cudaPointerGetAttributes
+    // reports as cudaErrorInvalidValue/Host/Unregistered) as host-resident and
+    // stage it H2D to the target instead of rejecting the whole plan.
+    const bool sourceOnDevice =
+        originalDev != nullptr && originalAttrErr == cudaSuccess &&
+        originalAttrs.type == cudaMemoryTypeDevice;
+    if (!sourceOnDevice) {
+      if (originalAttrErr == cudaSuccess) {
+        cudaGetLastError();  // clear benign attribute-query state
+      }
+      DSP_DIAG(MEMORY,
+               "migrateSlotInputsToTargetDevice: host-resident source slot=%d "
+               "metadataDevice=%d targetDevice=%d ptr=%p attrType=%d attrErr=%d "
+               "bytes=%lld — H2D staging",
+               slotIdx, sourceDevice, targetDevice, originalDev,
+               originalAttrErr == cudaSuccess ? static_cast<int>(originalAttrs.type) : -1,
+               static_cast<int>(originalAttrErr),
+               static_cast<long long>(arr->lengthOf() * arr->sizeOfT()));
       if (savedDevice >= 0) cudaSetDevice(savedDevice);
-      return cudaPlanFailure(
-          "CUDA cross-device migration rejected source pointer: slot=%d ptr=%p "
-          "metadataDevice=%d cudaError=%d (%s)",
-          slotIdx, originalDev, sourceDevice, static_cast<int>(originalAttrErr),
-          cudaGetErrorString(originalAttrErr));
+      // The host copy is authoritative here (there is no newer device copy or
+      // the device copy was evicted with the failover) — never syncToHost() on
+      // a buffer whose special() is not a live device allocation.
+      auto* srcHost = (arr->dataBuffer() != nullptr &&
+                       arr->dataBuffer()->primary() != nullptr &&
+                       arr->dataBuffer()->isPrimaryActual())
+                          ? arr->dataBuffer()->primary()
+                          : originalDev;
+      cudaSetDevice(targetDevice);
+      NDArray* migrated = nullptr;
+      try {
+        // Same constructor pattern as the peer-copy path above: fresh dense
+        // buffer, shapeInfo-preserving, on the (now-current) target device.
+        migrated = new NDArray(arr->shapeInfo(), arr->dataType(), false,
+                               LaunchContext::defaultContext(), false);
+      } catch (const std::exception& e) {
+        DSP_DIAG(MEMORY,
+                 "migrateSlotInputsToTargetDevice: host-source target alloc failed "
+                 "slot=%d targetDevice=%d cause=%s",
+                 slotIdx, targetDevice, e.what());
+        if (savedDevice >= 0) cudaSetDevice(savedDevice);
+        return cudaPlanFailure(
+            "CUDA host-source migration target allocation failed: slot=%d "
+            "targetDevice=%d cause=%s",
+            slotIdx, targetDevice, e.what());
+      }
+      const size_t hBytes = static_cast<size_t>(arr->lengthOf()) * arr->sizeOfT();
+      auto* dstDev = migrated->dataBuffer() != nullptr ? migrated->dataBuffer()->special() : nullptr;
+      if (dstDev == nullptr || srcHost == nullptr || hBytes == 0) {
+        delete migrated;
+        if (savedDevice >= 0) cudaSetDevice(savedDevice);
+        return cudaPlanFailure(
+            "CUDA host-source migration invalid buffers: slot=%d targetDevice=%d",
+            slotIdx, targetDevice);
+      }
+      auto* h2dStreamPtr = LaunchContext::defaultContext()->getCudaStream();
+      cudaStream_t h2dStream = (h2dStreamPtr != nullptr) ? *h2dStreamPtr : nullptr;
+      auto h2dErr = h2dStream != nullptr
+          ? cudaMemcpyAsync(dstDev, srcHost, hBytes, cudaMemcpyHostToDevice, h2dStream)
+          : cudaMemcpyAsync(dstDev, srcHost, hBytes, cudaMemcpyHostToDevice, cudaStreamPerThread);
+      auto h2dSyncErr = cudaStreamSynchronize(
+          h2dStream != nullptr ? h2dStream : cudaStreamPerThread);
+      if (h2dErr != cudaSuccess || h2dSyncErr != cudaSuccess) {
+        auto syncErr = cudaGetLastError();
+        delete migrated;
+        if (savedDevice >= 0) cudaSetDevice(savedDevice);
+        return cudaPlanFailure(
+            "CUDA host-source migration H2D failed: slot=%d targetDevice=%d "
+            "copyErr=%d (%s) syncErr=%d (%s)",
+            slotIdx, targetDevice,
+            static_cast<int>(h2dErr), cudaGetErrorString(h2dErr),
+            static_cast<int>(h2dSyncErr), cudaGetErrorString(h2dSyncErr));
+      }
+      // Publish like the peer-copy path: replace the slot publication for the
+      // segment and register restoration of the original after the segment.
+      MigratedInput mi;
+      mi.outputSlotIdx = slotIdx;
+      mi.original = arr;
+      mi.migrated = migrated;
+      mi.retained = true;
+      migratedInputs_.push_back(mi);
+      outputSlots_[slotIdx] = migrated;
+      DSP_DIAG(MULTI_DEVICE,
+               "migrateSlotInputsToTargetDevice: host-source migrated slot=%d "
+               "targetDevice=%d ptr=%p bytes=%zu",
+               slotIdx, targetDevice, (void*)dstDev, hBytes);
+      if (savedDevice >= 0) cudaSetDevice(savedDevice);
+      continue;
     }
     if (originalAttrs.device != sourceDevice) {
       DSP_DIAG(MULTI_DEVICE,
@@ -1514,23 +1600,89 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     auto srcAttrErr = srcDev != nullptr
         ? cudaPointerGetAttributes(&srcAttrs, srcDev)
         : cudaErrorInvalidValue;
-    if (srcDev == nullptr || srcAttrErr != cudaSuccess || srcAttrs.type != cudaMemoryTypeDevice ||
-        srcAttrs.device != sourceDevice) {
+    if (srcDev == nullptr || srcAttrErr != cudaSuccess || srcAttrs.type != cudaMemoryTypeDevice) {
+      // Materialized source is not on any device — host-resident (failover or
+      // fresh host allocation). Allocate the target-side copy here and stage it
+      // H2D instead of rejecting the plan.
+      DSP_DIAG(MEMORY,
+               "migrateSlotInputsToTargetDevice: materialized source is host-resident "
+               "slot=%d ptr=%p targetDevice=%d attrErr=%d — H2D staging",
+               slotIdx, srcDev, targetDevice, static_cast<int>(srcAttrErr));
+      if (srcAttrErr == cudaSuccess) cudaGetLastError();
+      auto* hostBytes = srcArr->dataBuffer() != nullptr
+          ? srcArr->dataBuffer()->primary() : nullptr;
+      const size_t mBytes = static_cast<size_t>(srcArr->lengthOf()) *
+                            static_cast<size_t>(DataTypeUtils::sizeOf(srcArr->dataType()));
+      if (hostBytes == nullptr || mBytes == 0) {
+        if (srcMat != nullptr) delete srcMat;
+        if (savedDevice >= 0) cudaSetDevice(savedDevice);
+        return cudaPlanFailure(
+            "CUDA cross-device migration host materialized source invalid: slot=%d",
+            slotIdx);
+      }
+      cudaSetDevice(targetDevice);
+      NDArray* staged = nullptr;
+      try {
+        staged = new NDArray(srcArr->shapeInfo(), srcArr->dataType(), false,
+                             LaunchContext::defaultContext(), false);
+      } catch (const std::exception& e) {
+        DSP_DIAG(MEMORY,
+                 "migrateSlotInputsToTargetDevice: host materialized target alloc failed "
+                 "slot=%d targetDevice=%d cause=%s",
+                 slotIdx, targetDevice, e.what());
+        if (srcMat != nullptr) delete srcMat;
+        if (savedDevice >= 0) cudaSetDevice(savedDevice);
+        return cudaPlanFailure(
+            "CUDA host materialized migration target allocation failed: slot=%d cause=%s",
+            slotIdx, e.what());
+      }
+      auto* dstDev2 = staged->dataBuffer() != nullptr ? staged->dataBuffer()->special() : nullptr;
+      if (dstDev2 == nullptr) {
+        delete staged;
+        if (srcMat != nullptr) delete srcMat;
+        if (savedDevice >= 0) cudaSetDevice(savedDevice);
+        return cudaPlanFailure(
+            "CUDA host materialized migration invalid destination: slot=%d", slotIdx);
+      }
+      auto* h2dStreamPtr = LaunchContext::defaultContext()->getCudaStream();
+      cudaStream_t h2dStream = (h2dStreamPtr != nullptr) ? *h2dStreamPtr : cudaStreamPerThread;
+      auto h2dErr = cudaMemcpyAsync(dstDev2, hostBytes, mBytes,
+                                    cudaMemcpyHostToDevice, h2dStream);
+      auto h2dSyncErr = cudaStreamSynchronize(h2dStream);
+      if (h2dErr != cudaSuccess || h2dSyncErr != cudaSuccess) {
+        auto syncErr = cudaGetLastError();
+        delete staged;
+        if (srcMat != nullptr) delete srcMat;
+        if (savedDevice >= 0) cudaSetDevice(savedDevice);
+        return cudaPlanFailure(
+            "CUDA host materialized H2D failed: slot=%d copyErr=%d (%s) syncErr=%d (%s)",
+            slotIdx, static_cast<int>(h2dErr), cudaGetErrorString(h2dErr),
+            static_cast<int>(h2dSyncErr), cudaGetErrorString(h2dSyncErr));
+      }
+      // Register the target-side copy for segment cleanup and publish it into
+      // the slot (original restored afterwards), mirroring the peer-copy path.
+      MigratedInput mi;
+      mi.outputSlotIdx = slotIdx;
+      mi.original = arr;
+      mi.migrated = staged;
+      mi.retained = true;
+      migratedInputs_.push_back(mi);
+      outputSlots_[slotIdx] = staged;
       DSP_DIAG(MULTI_DEVICE,
-               "migrateSlotInputsToTargetDevice: source pointer validation failed slot=%d "
-               "ptr=%p expectedDevice=%d actualDevice=%d attrErr=%s",
-               slotIdx, srcDev, sourceDevice,
-               srcAttrErr == cudaSuccess ? srcAttrs.device : -1,
-               cudaGetErrorString(srcAttrErr));
-      cudaGetLastError();
+               "migrateSlotInputsToTargetDevice: host materialized migrated slot=%d "
+               "targetDevice=%d ptr=%p bytes=%zu",
+               slotIdx, targetDevice, (void*)dstDev2, mBytes);
       if (srcMat != nullptr) delete srcMat;
       if (savedDevice >= 0) cudaSetDevice(savedDevice);
-      return cudaPlanFailure(
-          "CUDA cross-device migration rejected materialized source pointer: "
-          "slot=%d ptr=%p expectedDevice=%d actualDevice=%d cudaError=%d (%s)",
-          slotIdx, srcDev, sourceDevice,
-          srcAttrErr == cudaSuccess ? srcAttrs.device : -1,
-          static_cast<int>(srcAttrErr), cudaGetErrorString(srcAttrErr));
+      continue;
+    }
+    if (srcAttrs.device != sourceDevice) {
+      DSP_DIAG(MULTI_DEVICE,
+               "migrateSlotInputsToTargetDevice: correcting stale materialized device "
+               "slot=%d metadata=%d actual=%d",
+               slotIdx, sourceDevice, srcAttrs.device);
+      sourceDevice = srcAttrs.device;
+      cudaSetDevice(sourceDevice);
     }
     auto srcLength = srcArr->lengthOf();
     auto elementBytes = DataTypeUtils::sizeOf(srcArr->dataType());

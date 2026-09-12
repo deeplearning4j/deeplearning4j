@@ -2998,6 +2998,10 @@ Status NativeDynamicShapePlan::executeSlot(
           db != nullptr && db->isValid() ? 1 : 0,
           db != nullptr && db->isClosed() ? 1 : 0,
           executeCount_);
+      // The snapshot captured this slot's old address; the plan itself is
+      // replacing the wrapper here, so the old entry must not later be
+      // reported as cross-segment pointer drift.
+      invalidateSnapshotForSlot(slotIdx);
       discardCachedSlotArray(slotIdx, cached, tag);
       return nullptr;
     }
@@ -3288,6 +3292,8 @@ Status NativeDynamicShapePlan::executeSlot(
               // Must use discardCachedSlotArray to erase from planOwnedArrays_
               // before deleting — raw delete leaves a ghost pointer that causes
               // heap corruption when malloc reuses the freed chunk.
+              // Plan-managed replacement: retire the stale snapshot address.
+              invalidateSnapshotForSlot(lastOutputSlotIdx);
               discardCachedSlotArray(lastOutputSlotIdx, outputSlots_[lastOutputSlotIdx], "fused-chain-reassign");
               output = nullptr;
               if (sd::Environment::getInstance().isDebug()) {
@@ -5620,6 +5626,8 @@ Status NativeDynamicShapePlan::executeSlot(
                      "CACHED_REUSE_SKIP: slot %d (%s) buffer too small for current shape "
                      "(required=%zu available=%zu) — allocating fresh array",
                      slotIdx, slot.ident.opName.c_str(), requiredBytes, availableBytes);
+            // Plan-managed replacement: retire the stale snapshot address.
+            invalidateSnapshotForSlot(slotIdx);
             discardCachedSlotArray(slotIdx, cached, "cached-reuse-too-small");
             cached = nullptr;
           } else {
@@ -5681,6 +5689,8 @@ Status NativeDynamicShapePlan::executeSlot(
           // leaves a ghost pointer in planOwnedArrays_ which causes
           // "corrupted double-linked list" when malloc reuses the freed
           // chunk and planOwnedArrays_ hash table operates on stale entries.
+          // Plan-managed replacement: retire the stale snapshot address.
+          invalidateSnapshotForSlot(slotIdx);
           discardCachedSlotArray(slotIdx, cached, "step3-shape-reassign");
           cached = nullptr;
           // Invalidate slot state so frozen context/shape cache aren't reused
