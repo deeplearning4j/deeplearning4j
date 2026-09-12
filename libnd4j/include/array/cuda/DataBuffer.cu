@@ -978,14 +978,27 @@ void DataBuffer::allocateSpecial() {
           // Jump to the end of the allocation block (after _isOwnerSpecial is set).
           goto alloc_done;
         }
-        // Workspace exhausted — fall through to pool allocation.
-        // This is NOT ideal during capture (creates MemAlloc nodes), but
-        // prevents hard failure. The capture workspace size should be tuned
-        // to avoid this (Environment::dspCaptureWorkspaceMb).
+        // Workspace exhausted mid-capture: FAIL the capture instead of baking
+        // unsafe addresses. A cudaMallocAsync allocation here creates a MemAlloc
+        // graph node whose address is baked into the graph; on replay the pool
+        // may hand the same address to a different op (async-pool reuse), so the
+        // captured graph silently reads garbage — the documented root cause of
+        // the 49.6% accuracy mega-graph bug (commit 321884f564). Capture is a
+        // contract for stable graphs only: when the capture cannot be made safe
+        // (insufficient bump space), abort it and let the segment fall back to
+        // slot-by-slot execution, which is always correct.
         DSP_DIAG(MEMORY, "CAPTURE_WORKSPACE_EXHAUSTED: need %zu, remaining %zu/%zu — "
-                 "falling through to cudaMallocAsync (will create MemAlloc graph node)",
+                 "failing capture (unsafe addresses would be baked into the graph); "
+                 "caller must fall back to slot-by-slot",
                  aligned, tl_captureWorkspaceSize - tl_captureWorkspaceOffset,
                  tl_captureWorkspaceSize);
+        THROW_EXCEPTION("CAPTURE_WORKSPACE_EXHAUSTED: capture workspace exhausted "
+                        "during CUDA graph capture (need " +
+                        std::to_string(aligned) + " bytes, " +
+                        std::to_string(tl_captureWorkspaceSize - tl_captureWorkspaceOffset) +
+                        " remaining). Capture aborted to avoid baking unsafe addresses; "
+                        "re-run this segment slot-by-slot. Tune via "
+                        "Environment::dspCaptureWorkspaceMb if capture is required.");
       }
 
       // During CUDA graph capture, allocations MUST use the captured stream.
