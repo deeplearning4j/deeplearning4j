@@ -32,6 +32,7 @@
     </parent>
 
     <artifactId>deeplearning4j-ui-components</artifactId>
+    <name>Deeplearning4j UI Components</name>
 
     <properties>
         <module.name>deeplearning4j.ui.components</module.name>

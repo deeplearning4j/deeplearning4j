@@ -32,6 +32,7 @@
     </parent>
 
     <artifactId>deeplearning4j-zoo</artifactId>
+    <name>Deeplearning4j Model Zoo</name>
     <properties>
         <module.name>deeplearning4j.zoo</module.name>
     </properties>

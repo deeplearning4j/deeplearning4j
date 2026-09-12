@@ -32,6 +32,7 @@
     </parent>
 
     <artifactId>jackson</artifactId>
+    <name>ND4J Shaded Jackson</name>
 
     <properties>
         <skipTestResourceEnforcement>true</skipTestResourceEnforcement>

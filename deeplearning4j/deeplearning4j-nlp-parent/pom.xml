@@ -32,6 +32,7 @@
     </parent>
 
     <artifactId>deeplearning4j-nlp-parent</artifactId>
+    <name>Deeplearning4j NLP Parent</name>
     <packaging>pom</packaging>
 
     <modules>

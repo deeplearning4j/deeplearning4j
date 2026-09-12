@@ -30,6 +30,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>nd4j-webjar</artifactId>
+    <name>ND4J WebJar</name>
     <packaging>jar</packaging>
 
     <properties>

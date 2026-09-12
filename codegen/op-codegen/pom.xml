@@ -6,6 +6,7 @@
 
     <groupId>org.eclipse.deeplearning4j</groupId>
     <artifactId>op-codegen</artifactId>
+    <name>ND4J Operation Code Generation</name>
 
 
     <parent>

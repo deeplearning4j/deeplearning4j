@@ -32,6 +32,7 @@
     </parent>
 
     <artifactId>datavec-data-image</artifactId>
+    <name>DataVec Image Data</name>
 
     <properties>
         <module.name>datavec.data.image</module.name>

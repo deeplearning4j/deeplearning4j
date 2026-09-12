@@ -32,6 +32,7 @@
     </parent>
 
     <artifactId>datavec-jdbc</artifactId>
+    <name>DataVec JDBC</name>
 
     <properties>
         <dbutils.version>1.7</dbutils.version>

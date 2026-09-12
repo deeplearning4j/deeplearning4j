@@ -32,6 +32,7 @@
     </parent>
 
     <artifactId>python4j-numpy</artifactId>
+    <name>Python4J NumPy</name>
 
     <properties>
         <module.name>python4j.numpy</module.name>

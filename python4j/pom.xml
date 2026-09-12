@@ -33,6 +33,7 @@
 
     <groupId>org.eclipse.deeplearning4j</groupId>
     <artifactId>python4j-parent</artifactId>
+    <name>Python4J Parent</name>
     <packaging>pom</packaging>
 
     <modules>

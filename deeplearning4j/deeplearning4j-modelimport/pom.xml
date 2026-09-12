@@ -32,6 +32,7 @@
     </parent>
 
     <artifactId>deeplearning4j-modelimport</artifactId>
+    <name>Deeplearning4j Model Import</name>
     <packaging>jar</packaging>
     <properties>
         <test.offheap.size>4g</test.offheap.size>

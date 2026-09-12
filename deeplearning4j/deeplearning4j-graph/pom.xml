@@ -32,6 +32,7 @@
     </parent>
 
     <artifactId>deeplearning4j-graph</artifactId>
+    <name>Deeplearning4j Graph</name>
 
     <properties>
         <module.name>deeplearning4j.graph</module.name>
