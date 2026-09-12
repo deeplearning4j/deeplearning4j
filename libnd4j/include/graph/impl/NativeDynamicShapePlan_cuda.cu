@@ -3824,6 +3824,114 @@ void NativeDynamicShapePlan::platformPostSegmentPoolManagement(bool frozen, int 
   }
 }
 
+namespace {
+// The snapshot owns its bytes: phaseCompile may overwrite the colored device
+// allocation immediately after this function returns. Never use the primary
+// mirror (possibly stale), syncToHost (may allocate frozen storage), or e<T>().
+template <typename T>
+void summarizePhaseCompileOutput(NDArray* arr, int slot, int outputIndex,
+                                 cudaStream_t copyStream, int execCount, const char* boundary) {
+  const auto length = arr->lengthOf();
+  LongType lo = 0, hi = -1;
+  if (length > 0) {
+    lo = hi = arr->getOffset(0);  // absolute DataBuffer offsets, including views
+    for (LongType i = 1; i < length; ++i) {
+      const auto offset = arr->getOffset(i);
+      lo = std::min(lo, offset);
+      hi = std::max(hi, offset);
+    }
+  }
+  auto* db = arr->dataBuffer();
+  if (length > 0 && (db == nullptr || db->special() == nullptr || lo < 0 ||
+      static_cast<uint64_t>(hi) >= db->getLenInBytes() / sizeof(T))) {
+    DSP_DIAG_SLOT(VERIFY, slot, "PHASE_COMPILE_OUTPUT boundary=%s reqOut=%d unavailable=storage-span",
+                  boundary, outputIndex);
+    return;
+  }
+  std::vector<T> snapshot(static_cast<size_t>(hi - lo + 1));
+  if (length > 0) {
+    // All producer streams have completed before this D2H. Use the unshifted
+    // DataBuffer base with absolute offsets; do not double-add a view offset.
+    auto error = cudaMemcpyAsync(snapshot.data(), static_cast<const T*>(db->special()) + lo,
+                                 snapshot.size() * sizeof(T), cudaMemcpyDeviceToHost, copyStream);
+    if (error == cudaSuccess) error = cudaStreamSynchronize(copyStream);
+    if (error != cudaSuccess) {
+      DSP_DIAG_SLOT(VERIFY, slot, "PHASE_COMPILE_OUTPUT boundary=%s reqOut=%d unavailable=D2H error=%s",
+                    boundary, outputIndex, cudaGetErrorString(error));
+      return;
+    }
+  }
+  LongType finite = 0, nan = 0, posInf = 0, negInf = 0, argmax = -1;
+  double minimum = std::numeric_limits<double>::infinity();
+  double maximum = -std::numeric_limits<double>::infinity();
+  for (LongType i = 0; i < length; ++i) {
+    const double value = static_cast<double>(snapshot[arr->getOffset(i) - lo]);
+    if (std::isnan(value)) ++nan;
+    else if (std::isinf(value)) { if (value > 0) ++posInf; else ++negInf; }
+    else {
+      ++finite;
+      minimum = std::min(minimum, value);
+      if (argmax < 0 || value > maximum) { maximum = value; argmax = i; }
+    }
+  }
+  DSP_DIAG_SLOT(VERIFY, slot,
+      "PHASE_COMPILE_OUTPUT boundary=%s exec=%d reqOut=%d dtype=%d order=%c len=%lld "
+      "finite=%lld nan=%lld +inf=%lld -inf=%lld min=%.17g max=%.17g finiteArgmax=%lld",
+      boundary, execCount, outputIndex, static_cast<int>(arr->dataType()), arr->ordering(),
+      (long long)length, (long long)finite, (long long)nan, (long long)posInf, (long long)negInf,
+      minimum, maximum, (long long)argmax);
+}
+}  // namespace
+
+void probePhaseCompileOutputs(NDArray** outputs, const int* slots, int count,
+                              void* stream, int execCount, const char* boundary) {
+  // Explicit VERIFY + full is the opt-in. Debug/verbose alone does not enable
+  // this blocking probe. No new environment knob or production synchronization.
+  const auto& diagnostics = DspDiagnostics::getInstance();
+  if (!(diagnostics.getEnabledMask() & DSP_DIAG_VERIFY) || diagnostics.getLevel() != DSP_LEVEL_FULL) return;
+  if (outputs == nullptr || slots == nullptr) return;
+  std::vector<cudaStream_t> streams = {
+      reinterpret_cast<cudaStream_t>(dspStreamPtrToValue(stream)),
+      reinterpret_cast<cudaStream_t>(dspGetLcDefaultStream()),
+      reinterpret_cast<cudaStream_t>(dspGetExecutionStream()),
+      reinterpret_cast<cudaStream_t>(dspGetGapStream()),
+      reinterpret_cast<cudaStream_t>(dspGetGraphCaptureStream())};
+  for (int i = 0; i < count; ++i) {
+    if (outputs[i] != nullptr && outputs[i]->getContext() != nullptr &&
+        outputs[i]->getContext()->getCudaStream() != nullptr)
+      streams.push_back(*outputs[i]->getContext()->getCudaStream());
+  }
+  // Check every stream BEFORE synchronizing any. Fail closed on capture-query
+  // errors too; never end/repair capture or clear a CUDA error in a probe.
+  for (auto candidate : streams) {
+    cudaStreamCaptureStatus status = cudaStreamCaptureStatusNone;
+    if (DebugHelper::inGraphCapture(nullptr) ||
+        cudaStreamIsCapturing(candidate, &status) != cudaSuccess || status != cudaStreamCaptureStatusNone) {
+      DSP_DIAG(VERIFY, "PHASE_COMPILE_OUTPUT boundary=%s unavailable=capture-or-query-error", boundary);
+      return;
+    }
+  }
+  for (auto candidate : streams) {
+    const auto error = cudaStreamSynchronize(candidate);
+    if (error != cudaSuccess) {
+      DSP_DIAG(VERIFY, "PHASE_COMPILE_OUTPUT boundary=%s unavailable=producer-sync error=%s",
+               boundary, cudaGetErrorString(error));
+      return;
+    }
+  }
+  for (int i = 0; i < count; ++i) {
+    auto* arr = outputs[i];
+    if (arr == nullptr || !arr->hasValidShapeInfo()) continue;
+    // Requested outputs, not intermediate slots: coloring invalidates later
+    // intermediate reads. All floating dtypes, all strides, including empties.
+    if (arr->dataType() == FLOAT32 || arr->dataType() == DOUBLE ||
+        arr->dataType() == HALF || arr->dataType() == BFLOAT16) {
+      BUILD_SINGLE_SELECTOR(arr->dataType(), summarizePhaseCompileOutput,
+          (arr, slots[i], i, streams.front(), execCount, boundary), SD_FLOAT_TYPES);
+    }
+  }
+}
+
 void NativeDynamicShapePlan::platformDumpLogitsArgmax(int execCount, void* stream) {
   if (!DSP_DIAG_ENABLED(VERIFY) || execCount > 10) return;
 

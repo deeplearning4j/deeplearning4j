@@ -87,6 +87,12 @@
 namespace sd {
 namespace graph {
 
+#ifdef SD_CUDA
+// CUDA-only, synchronous diagnostic; no shared header/ABI change.
+void probePhaseCompileOutputs(NDArray** outputs, const int* slots, int count,
+                              void* stream, int execCount, const char* boundary);
+#endif
+
 // ── Frozen-pin liveness registry ─────────────────────────────────────────────
 // frozenProtectedRefBuffers_/frozenOutputRefBuffers_ hold RAW DataBuffer*, and
 // addFrozenRef()/removeFrozenRef() WRITE an atomic counter inside the object.
@@ -4156,7 +4162,15 @@ Status NativeDynamicShapePlan::execute(
   if (!planLifecycle_.compilationDone && !planLifecycle_.isSlotBySlot() && executeCount_ == 1 && !neverAutoSeal) {
     execCtx->recordFlow(PlanExecutionContext::FlowEventType::PHASE_COMPILE,
                          static_cast<int>(segments_.size()));
+#ifdef SD_CUDA
+    probePhaseCompileOutputs(requestedOutputs, requestedOutputSlotIndices_, numRequestedOutputs_,
+                             stream, executeCount_, "before-phaseCompile");
+#endif
     phaseCompile(externalInputs, numExternalInputs);
+#ifdef SD_CUDA
+    probePhaseCompileOutputs(requestedOutputs, requestedOutputSlotIndices_, numRequestedOutputs_,
+                             stream, executeCount_, "after-phaseCompile");
+#endif
 
     // Triton compilation internally captures CUDA graphs on DSP-managed
     // streams (tl_dspExecutionStream, tl_dspGapStream). If the capture was
