@@ -94,6 +94,11 @@ int GraphSegment::retryInterval() { return sd::Environment::getInstance().dspCap
 namespace sd {
 namespace graph {
 
+#ifdef SD_CUDA
+void probePhaseCompileOutputs(NDArray** outputs, const int* slots, int count,
+                              void* stream, int execCount, const char* boundary);
+#endif
+
 static void scanAllSlotsForCorruption(
     NDArray** outputSlots, int totalOutputSlots,
     const char* checkpoint, int execCount) {
@@ -2454,6 +2459,27 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
                   stepIdx, slots_[stepIdx].ident.opName.c_str());
       }
     } while (shouldRetry);
+
+#ifdef SD_CUDA
+    // Sample the producer NOW, before the next op can reuse colored storage.
+    // VERIFY/full is an explicit blocking diagnostic; the shared probe checks
+    // every producer stream for capture before performing any synchronization.
+    const auto& numericDiagnostics = DspDiagnostics::getInstance();
+    if (status == Status::OK && executeCount_ == 0 && !streamIsCapturing &&
+        (numericDiagnostics.getEnabledMask() & DSP_DIAG_VERIFY) &&
+        numericDiagnostics.getLevel() == DSP_LEVEL_FULL) {
+      const auto& produced = slots_[stepIdx];
+      const std::string boundary = "after-warmup-op-" + std::to_string(stepIdx) +
+                                   "-" + produced.ident.opName;
+      for (int o = 0; o < produced.wiring.numOutputs; ++o) {
+        const int outputSlot = produced.wiring.outputSlotIndices[o];
+        if (outputSlot < 0 || outputSlot >= totalOutputSlots_) continue;
+        NDArray* output = outputSlots_[outputSlot];
+        probePhaseCompileOutputs(&output, &outputSlot, 1, stream,
+                                 executeCount_, boundary.c_str());
+      }
+    }
+#endif
 
     // ── DIAG: bisect per-slot output freshness across decode steps ──────
     // In SLOT_BY_SLOT phase every slot re-executes each step. If a slot's
