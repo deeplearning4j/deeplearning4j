@@ -278,9 +278,12 @@ class PublicationWorkflowSafetyTests(unittest.TestCase):
         self.assertEqual({"nd4j/nd4j-tokenizers/libtokenizers", "nd4j/nd4j-tokenizers/tokenizers-native-preset",
                           "nd4j/nd4j-tokenizers/tokenizers-native"}, profiles["tokenizers-native"])
         self.assertNotIn("codegen-native", profiles)
-        codegen_modules = {m.text for m in
-                           ET.parse(ROOT / "codegen/pom.xml").getroot().find("m:modules", NS).findall("m:module", NS)}
-        self.assertEqual({"op-codegen", "libnd4j-gen", "blas-lapack-generator"}, codegen_modules)
+        codegen_pom = ET.parse(ROOT / "codegen/pom.xml").getroot()
+        codegen_modules = {m.text for m in codegen_pom.find("m:modules", NS).findall("m:module", NS)}
+        self.assertEqual({"op-codegen"}, codegen_modules)
+        codegen_profiles = {p.findtext("m:id", namespaces=NS): {m.text for m in p.findall("m:modules/m:module", NS)}
+                            for p in codegen_pom.findall("m:profiles/m:profile", NS)}
+        self.assertEqual({"libnd4j-gen", "blas-lapack-generator"}, codegen_profiles["codegen-native"])
         tokenizers = ET.parse(ROOT / "nd4j/nd4j-tokenizers/pom.xml").getroot()
         self.assertIsNone(tokenizers.find("m:modules", NS))
 
