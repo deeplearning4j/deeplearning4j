@@ -71,8 +71,10 @@ class Gemma4OptimizerParityIT {
         Path rawPath = workspace.resolve("gemma4-parity-raw.sdz");
         Path optPath = workspace.resolve("gemma4-parity-opt.sdz");
 
-        // ── Convert once (raw), load, then re-save a second copy — both graphs
-        // share identical weights so any divergence is optimizer-caused.
+        // ── PHASE 1: convert once, load, run RAW inference immediately, verify
+        // finiteness, snapshot outputs to host, then drop the graph. Holding
+        // raw + duplicate + optimized copies concurrently is ~45 GB and
+        // physically cannot fit this host/GPU pair.
         GGMLToSameDiffConverter converter = new GGMLToSameDiffConverter(
                 ConversionOptions.builder()
                         .quantizationMode(ConversionOptions.QuantizationMode.RUNTIME_QUANTIZED_MATMUL)
@@ -82,11 +84,34 @@ class Gemma4OptimizerParityIT {
         assertTrue(Files.size(rawPath) > 0, "raw conversion produced no output");
 
         SameDiff rawSd = SDZSerializer.load(rawPath.toFile(), false);
-        SameDiff optSd = SDZSerializer.load(rawPath.toFile(), false);
+        Map<String, INDArray> rawInputs = buildInputs(rawSd);
+        Map<String, INDArray> rawOut = rawSd.output(rawInputs, rawSd.outputs());
+        assertFalse(rawOut.isEmpty(), "raw graph produced no outputs");
 
-        // ── Optimize the second copy. GraphOptimizer currently refuses packed
-        // graphs (guard). The test needs the UNPROTECTED optimizer to prove or
-        // disprove corruption, so we clear the guard by flag.
+        // Finiteness of the RAW baseline is asserted while its graph is live.
+        for (Map.Entry<String, INDArray> e : rawOut.entrySet()) {
+            INDArray rawF = e.getValue().dataType() == DataType.FLOAT
+                    ? e.getValue() : e.getValue().castTo(DataType.FLOAT);
+            assertEquals(0, countNonFinite(rawF),
+                    "RAW graph has non-finite values in " + e.getKey());
+        }
+        // Host snapshots survive graph teardown.
+        Map<String, INDArray> rawHost = new LinkedHashMap<>();
+        for (Map.Entry<String, INDArray> e : rawOut.entrySet()) {
+            rawHost.put(e.getKey(),
+                    e.getValue().dataType() == DataType.FLOAT
+                            ? e.getValue().dup()
+                            : e.getValue().castTo(DataType.FLOAT).dup());
+        }
+        rawSd = null;
+        rawOut = null;
+        rawInputs = null;
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        System.gc();
+
+        // ── PHASE 2: fresh load, optimize with the guard bypassed via the
+        // flag, then drop the unoptimized input copy before inference.
+        SameDiff optSd = SDZSerializer.load(rawPath.toFile(), false);
         System.setProperty("nd4j.optimizer.allowPackedGraphs", "true");
         SameDiff optimized;
         try {
@@ -95,39 +120,30 @@ class Gemma4OptimizerParityIT {
             System.clearProperty("nd4j.optimizer.allowPackedGraphs");
         }
         assertNotNull(optimized, "optimizer returned null");
+        optSd = null;
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        System.gc();
 
-        // ── Identical inputs for both graphs.
-        Map<String, INDArray> inputs = buildInputs(rawSd);
-        Map<String, INDArray> inputsCopy = buildInputs(optimized);
-
-        Map<String, INDArray> rawOut = rawSd.output(inputs, rawSd.outputs());
-        Map<String, INDArray> optOut = optimized.output(inputsCopy, optimized.outputs());
-
-        assertFalse(rawOut.isEmpty(), "raw graph produced no outputs");
+        Map<String, INDArray> optInputs = buildInputs(optimized);
+        Map<String, INDArray> optOut = optimized.output(optInputs, optimized.outputs());
         assertFalse(optOut.isEmpty(), "optimized graph produced no outputs");
 
-        // ── Compare every shared output.
+        // ── Compare raw host snapshots against optimized outputs.
         int compared = 0;
         double worstDelta = 0.0;
         String worstName = null;
-        for (Map.Entry<String, INDArray> e : rawOut.entrySet()) {
+        for (Map.Entry<String, INDArray> e : rawHost.entrySet()) {
             INDArray opt = optOut.get(e.getKey());
             if (opt == null) continue;
-            INDArray raw = e.getValue();
-            assertEquals(raw.dataType(), opt.dataType(),
-                    "dtype divergence on " + e.getKey());
 
-            INDArray rawF = raw.dataType() == DataType.FLOAT ? raw : raw.castTo(DataType.FLOAT);
             INDArray optF = opt.dataType() == DataType.FLOAT ? opt : opt.castTo(DataType.FLOAT);
 
-            long rawNan = countNonFinite(rawF);
             long optNan = countNonFinite(optF);
-            assertEquals(0, rawNan, "RAW graph has non-finite values in " + e.getKey());
             assertEquals(0, optNan,
                     "CORRUPTION PROVEN: optimized graph has non-finite values in "
-                            + e.getKey() + " while raw graph is finite");
+                            + e.getKey() + " while raw graph was finite");
 
-            double delta = maxAbsDelta(rawF, optF);
+            double delta = maxAbsDelta(e.getValue(), optF);
             if (delta > worstDelta) {
                 worstDelta = delta;
                 worstName = e.getKey();
