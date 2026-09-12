@@ -8165,6 +8165,12 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   // release the plan-owned arena. This is the same ordering used by the destructor.
   platformFreeCaptureWorkspace();
 
+  // The staging allocation generation ended above. All graph executables and
+  // their deferred replay handles are now retired, so their address baseline
+  // must not be compared with the next generation's lazily allocated staging.
+  // Keep verifyStagingNotStale strict while any captured graph remains live.
+  prevStagingAddresses_.clear();
+
   // ── Step 5: Reset execution state so plan re-warms on next execute() ────
   viewProducerDetectionDone_ = false;
   frozenConstantDetectionDone_ = false;

@@ -282,6 +282,49 @@ public class DspMultiPlanShapeSwitchTest {
         assertOutputsMatch("Phase3-ShapeA-Again", expectedA, resultA2);
     }
 
+    @Test
+    @DisplayName("Passivated staging generation is recaptured with current inputs on A → B → A")
+    void testStagingGenerationRoundTrip() {
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, -1, 64);
+        x.mul(2.0).add("y", 1.0);
+        sd.setOutputs("y");
+        configureDsp(sd);
+        long firstPlan = 0;
+        try (INDArray inputA = Nd4j.zeros(DataType.FLOAT, 8, 64);
+             INDArray inputB = Nd4j.zeros(DataType.FLOAT, 1, 64)) {
+            try {
+                INDArray[] visits = {inputA, inputB, inputA};
+                for (int visit = 0; visit < visits.length; visit++) {
+                    INDArray input = visits[visit];
+                    Map<String, INDArray> inputs = Map.of("x", input);
+                    for (int step = 0; step < 24; step++) {
+                        // Distinct values on every execution detect a replay reading the
+                        // retired staging allocation even if its address is recycled.
+                        float value = visit * 100 + step + 1;
+                        input.assign(value);
+                        INDArray actual = sd.output(inputs, "y").get("y");
+                        assertNotNull(actual);
+                        assertTrue(java.util.Arrays.equals(input.shape(), actual.shape()));
+                        try (INDArray expected = Nd4j.valueArrayOf(input.shape(), value * 2 + 1)) {
+                            assertTrue(expected.equalsWithEps(actual, 1e-5),
+                                    "visit=" + visit + " step=" + step + ": stale capture output");
+                        }
+                        DspPlanAssertions.assertNoStagingAddressDrift(sd);
+                    }
+                    DspPlanAssertions.assertTotalGraphReplaysAtLeast(sd, 1);
+                    DspPlanAssertions.assertNoCaptureFailures(sd);
+                    long plan = DspPlanAssertions.getPlanHandleForQuery(sd).address();
+                    if (visit == 0) firstPlan = plan;
+                    if (visit == 2) assertEquals(firstPlan, plan,
+                            "Round-trip must reactivate the original cached plan");
+                }
+            } finally {
+                sd.close();
+            }
+        }
+    }
+
     // ═════════════════════════════════════════════════════════════════════════
     // TEST 2: Frozen executor must handle shape switch
     // ═════════════════════════════════════════════════════════════════════════
@@ -810,12 +853,17 @@ public class DspMultiPlanShapeSwitchTest {
         Map<String, INDArray> ph = new LinkedHashMap<>();
         ph.put("input", inputArr);
 
+        float[] w1 = sd.getVariable("w1").getArr().data().asFloat();
+        float[] w2 = sd.getVariable("w2").getArr().data().asFloat();
+
         // === Page 1: warmup until pointer stability ===
         log.info("=== Page 1: Warmup {} steps ===", warmupSteps);
         for (int step = 0; step < warmupSteps; step++) {
             inputArr.assign(Nd4j.randn(DataType.FLOAT, 1, dim));
-            sd.output(ph, "output");
+            INDArray result = sd.output(ph, "output").get("output");
+            assertFixedDecodeReference(inputArr, w1, w2, result, "warmup " + step);
         }
+        DspPlanAssertions.assertTotalGraphReplaysAtLeast(sd, 1);
 
         // Check that DSP reached at least SHAPES_FROZEN with stable pointers
         DspPlanAssertions.assertPhaseReached(sd, PlanPhase.SHAPES_FROZEN,
@@ -836,7 +884,9 @@ public class DspMultiPlanShapeSwitchTest {
 
             for (int step = 0; step < stepsPerPage; step++) {
                 inputArr.assign(Nd4j.randn(DataType.FLOAT, 1, dim));
-                sd.output(ph, "output");
+                INDArray result = sd.output(ph, "output").get("output");
+                assertFixedDecodeReference(inputArr, w1, w2, result,
+                        "page " + page + " step " + step);
             }
 
             // Pointer stability must hold across page transitions when reusing same array
@@ -845,6 +895,33 @@ public class DspMultiPlanShapeSwitchTest {
                     page, ptrsStable, DspPlanAssertions.getFrozenExecCount(sd));
             assertEquals(1, ptrsStable,
                     String.format("Page %d: pointer stability must hold when reusing same INDArray", page));
+        }
+    }
+
+    /** Independent scalar reference, including frozen multi-device output delivery. */
+    private static void assertFixedDecodeReference(INDArray input, float[] w1, float[] w2,
+                                                   INDArray actual, String label) {
+        float[] x = input.data().asFloat();
+        int dim = x.length;
+        double[] hidden = new double[dim];
+        double normSquared = 0;
+        for (int col = 0; col < dim; col++) {
+            for (int row = 0; row < dim; row++) {
+                hidden[col] += x[row] * (double) w1[row * dim + col];
+            }
+            normSquared += hidden[col] * hidden[col];
+        }
+        double norm = Math.max(Math.sqrt(normSquared), 1e-5);
+        assertNotNull(actual, label);
+        assertTrue(java.util.Arrays.equals(input.shape(), actual.shape()), label);
+        float[] values = actual.data().asFloat();
+        for (int col = 0; col < dim; col++) {
+            double expected = 0;
+            for (int row = 0; row < dim; row++) {
+                expected += hidden[row] / norm * w2[row * dim + col];
+            }
+            assertEquals(expected, values[col], ABS_TOL + REL_TOL * Math.abs(expected),
+                    label + " output[" + col + "]");
         }
     }
 

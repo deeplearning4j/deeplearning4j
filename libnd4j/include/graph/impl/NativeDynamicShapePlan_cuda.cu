@@ -808,7 +808,15 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
                i, slotIdx);
       return Status::BAD_OUTPUT;
     }
-    requestedOutputs[i] = outputSlots_[slotIdx];
+    // Match normal/steady-fallback publication: Java reads on device 0.
+    // Returning a secondary-device producer directly lets specialBuffer() at
+    // the JNI boundary migrate storage whose address is baked into live graphs.
+    requestedOutputs[i] = platformGetOutputForDevice0(outputSlots_[slotIdx], slotIdx, i);
+    if (requestedOutputs[i] == nullptr) {
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(
+          "DSP frozen output migration returned null");
+      return Status::BAD_OUTPUT;
+    }
   }
   incrementExecuteCount("native_replay");
 
