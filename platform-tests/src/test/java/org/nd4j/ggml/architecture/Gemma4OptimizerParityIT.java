@@ -409,6 +409,57 @@ class Gemma4OptimizerParityIT {
     }
 
     @Test
+    void doubleReadbackPreservesCastOraclePrecision() {
+        double[] values = {16777217.0, -16777217.0, 1.0000000000000002, Double.MIN_VALUE,
+                Double.MAX_VALUE, -0.0};
+        try (INDArray input = Nd4j.createFromArray(values)) {
+            assertEquals(DataType.DOUBLE, input.dataType());
+            assertArrayEquals(values, input.data().asDouble(), "DOUBLE readback must not narrow through FLOAT");
+        }
+    }
+
+    @Test
+    void rawDspSmallIntegerCastsMatchNativeIntTruncation() {
+        // CUDA's native small-integer conversion truncates to int, then keeps low bits.
+        // Check that behavior independently, rather than trusting an eager cast oracle.
+        // All values are finite and in int range; out-of-range floating-to-small-int
+        // conversion is not a portable C++ guarantee, so this is a CUDA parity contract.
+        for (DataType sourceType : new DataType[]{DataType.DOUBLE, DataType.FLOAT}) {
+            for (DataType targetType : new DataType[]{DataType.BYTE, DataType.SHORT,
+                    DataType.UBYTE, DataType.UINT16}) {
+                try (SameDiff sd = SameDiff.create();
+                     INDArray values = Nd4j.createFromArray(1.0003, -1.003, 127.75, -128.75,
+                             257.0, -257.0, 65537.0, -65537.0, 16777217.0);
+                     INDArray input = sourceType == DataType.DOUBLE ? values.dup() : values.castTo(sourceType);
+                     INDArray eager = input.castTo(targetType)) {
+                    double[] original = input.data().asDouble();
+                    double[] expected = new double[original.length];
+                    for (int i = 0; i < original.length; i++) {
+                        int truncated = (int) original[i];
+                        switch (targetType) {
+                            case BYTE: expected[i] = (byte) truncated; break;
+                            case SHORT: expected[i] = (short) truncated; break;
+                            case UBYTE: expected[i] = truncated & 0xff; break;
+                            case UINT16: expected[i] = truncated & 0xffff; break;
+                            default: throw new AssertionError(targetType);
+                        }
+                    }
+                    String label = sourceType + " -> " + targetType;
+                    assertArrayEquals(expected, eager.data().asDouble(), label + " eager contract");
+                    SDVariable x = sd.placeHolder("input", sourceType, input.length());
+                    sd.setOutputs(x.castTo(targetType).rename("output").name());
+                    for (int execution = 0; execution < 6; execution++) {
+                        INDArray actual = sd.outputSingle(Map.of("input", input), "output");
+                        assertEquals(targetType, actual.dataType());
+                        assertArrayEquals(expected, actual.data().asDouble(), label + " execution=" + execution);
+                        assertArrayEquals(original, input.data().asDouble(), label + " input must not be overwritten");
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
     void rawDspUnsignedCastsPreserveHighBitsAndTruncation() {
         // Typed external inputs exercise signedness even without a producing cast.
         // Same-width reinterpretation, narrowing, widening, and float conversions
