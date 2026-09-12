@@ -223,7 +223,7 @@ jobs:
           DEPLOY_CMD=(mvn --no-transfer-progress --batch-mode
             -Psdx -Ptokenizers-native
             -DskipTests -Dmaven.test.skip=true -Dsamediff.native.tests=false -DskipTestResourceEnforcement=true
-            -Dlibtokenizers.cpu.compile.skip=true -Djavacpp.compiler.skip=true -Dmaven.antrun.skip=true
+            -Dlibtokenizers.cpu.compile.skip=true -Djavacpp.compiler.skip=true
             -Denforcer.skip -Dcentral.publishing.autoPublish=false
             "-Dcentral.publishing.publishingRepositoryId=${SERVER_ID}")
 
