@@ -6873,6 +6873,20 @@ Status NativeDynamicShapePlan::phaseShapeInferenceOnly(
 Status NativeDynamicShapePlan::dispatchSegment(
     GraphSegment& seg, NDArray** externalArrays, int numExt,
     void* stream, bool& usedGraph) {
+#ifdef SD_CUDA
+  // Segment binding has already selected the device and its execution stream.
+  // TLS stores a stream HANDLE; downstream plan APIs take ADDRESS OF handle.
+  // Keep that storage alive across staging, warmup, capture and replay rather
+  // than forwarding the original (possibly primary-device) plan stream.
+  cudaStream_t segmentStream = reinterpret_cast<cudaStream_t>(dspGetExecutionStream());
+  if (segmentStream == nullptr && stream != nullptr)
+    segmentStream = *static_cast<cudaStream_t*>(stream);
+  stream = &segmentStream;
+  // Kernels resolving LaunchContext/TLS must use the same stream as capture.
+  // Restore the incoming thread state before the caller restores its device.
+  DspThreadState segmentState(segmentStream, segmentStream,
+                              tl_graphExecutionActive, tl_dspReplayActive);
+#endif
   usedGraph = false;
   const GraphCompilationPolicy compilationPolicy =
       makeGraphBackendRequest().compilationPolicy();

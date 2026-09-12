@@ -78,11 +78,20 @@ public class DspBufferColoringTest {
 
     @Test
     void testFirstWarmupReusesLargerDeadBuffers() {
+        firstWarmupReusesLargerDeadBuffers(DataType.FLOAT, 1.015625f);
+    }
+
+    @Test
+    void testFirstWarmupReusesLargerDeadHalfBuffers() {
+        // Input values and identity weights are exactly representable in HALF.
+        firstWarmupReusesLargerDeadBuffers(DataType.HALF, 1.0f);
+    }
+
+    private void firstWarmupReusesLargerDeadBuffers(DataType dtype, float factor) {
         org.junit.jupiter.api.Assumptions.assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
         sd = SameDiff.create();
         sd.setGraphExecutionMode(org.nd4j.autodiff.samediff.execution.GraphExecutionMode.TRITON);
-        SDVariable x = sd.placeHolder("input", DataType.FLOAT, 64, 256);
-        final float factor = 1.015625f;
+        SDVariable x = sd.placeHolder("input", dtype, 64, 256);
         int width = 256;
         for (int layer = 0; layer < 16; layer++) {
             int nextWidth = width - 8;
@@ -91,7 +100,7 @@ public class DspBufferColoringTest {
             float[] weights = new float[width * nextWidth];
             for (int col = 0; col < nextWidth; col++) weights[col * nextWidth + col] = factor;
             SDVariable weight = sd.constant("weight_" + layer,
-                    Nd4j.createFromArray(weights).reshape(width, nextWidth));
+                    Nd4j.create(weights, new long[]{width, nextWidth}, dtype));
             x = sd.mmul(layer == 15 ? "output" : "layer_" + layer, x, weight);
             width = nextWidth;
         }
@@ -99,7 +108,7 @@ public class DspBufferColoringTest {
         for (int iteration = 0; iteration < 8; iteration++) {
             float[] input = new float[64 * 256];
             for (int i = 0; i < input.length; i++) input[i] = (i % 251 - 125) / 256.0f + iteration / 16.0f;
-            try (INDArray values = Nd4j.createFromArray(input).reshape(64, 256);
+            try (INDArray values = Nd4j.create(input, new long[]{64, 256}, dtype);
                  INDArray output = sd.outputSingle(Map.of("input", values), "output")) {
                 assertArrayEquals(new long[]{64, 128}, output.shape());
                 float[] actual = output.data().asFloat();
@@ -114,11 +123,13 @@ public class DspBufferColoringTest {
                 if (iteration == 0) {
                     DspHandle handle = new DspHandle(sd);
                     assertTrue(handle.bufferColoringApplied(), "distinct sizes must share during first warmup");
-                    assertTrue(handle.bufferColoringBytesSaved() >= 8L * 64 * 128 * Float.BYTES,
+                    assertTrue(handle.bufferColoringBytesSaved() >= 8L * 64 * 128 * dtype.width(),
                             "larger dead storage must replace at least eight smaller allocations");
                 }
             }
         }
+        assertTrue(new DspHandle(sd).numCapturedGraphSegments() > 0,
+                "capacity sharing must also survive captured execution, not only warmup");
     }
 
     @Test

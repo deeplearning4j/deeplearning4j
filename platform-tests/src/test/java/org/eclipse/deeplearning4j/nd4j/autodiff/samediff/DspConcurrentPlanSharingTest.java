@@ -103,12 +103,35 @@ public class DspConcurrentPlanSharingTest {
 
             sd.setGraphExecutionMode(mode);
 
-            // Pre-warm on main thread to get past initial compilation
+            // Check every warmup/capture/replay result, not merely successful
+            // execution: secondary-device capture must use the bound stream.
+            float[][] referenceW1 = w1.toFloatMatrix();
+            float[][] referenceW2 = w2.toFloatMatrix();
             INDArray warmupInput = Nd4j.randn(DataType.FLOAT, 1, 32);
             for (int i = 0; i < 10; i++) {
                 warmupInput.assign(Nd4j.randn(DataType.FLOAT, 1, 32));
-                sd.output(Collections.singletonMap("input", warmupInput), "output");
+                float[][] inputValues = warmupInput.toFloatMatrix();
+                double[] hiddenValues = new double[64];
+                for (int j = 0; j < 64; j++) {
+                    for (int k = 0; k < 32; k++)
+                        hiddenValues[j] += (double) inputValues[0][k] * referenceW1[k][j];
+                    hiddenValues[j] = Math.max(0.0, hiddenValues[j]);
+                }
+                INDArray actual = sd.output(Collections.singletonMap("input", warmupInput), "output").get("output");
+                assertNotNull(actual, mode + " warmup=" + i);
+                assertArrayEquals(new long[]{1, 16}, actual.shape());
+                float[][] actualValues = actual.toFloatMatrix();
+                for (int j = 0; j < 16; j++) {
+                    double expected = 0.0;
+                    for (int k = 0; k < 64; k++)
+                        expected += hiddenValues[k] * referenceW2[k][j];
+                    assertEquals(expected, actualValues[0][j], 1e-3 + Math.abs(expected) * 1e-4,
+                            mode + " warmup=" + i + " column=" + j);
+                }
             }
+
+            assertTrue(DspPlanAssertions.getTotalGraphReplays(sd) > 0,
+                    mode + ": warmup must reach graph replay, not remain in slot execution");
 
             // Now launch concurrent threads
             int numThreads = 4;

@@ -102,8 +102,12 @@ NDArray* DspBufferColorMap::reuseWarmup(
     // if a backend batches/reorders independent producers later.
     if (!color.warmupReusable || color.lastConsumer < 0 || color.lastConsumer >= step ||
         static_cast<size_t>(color.lastConsumer) >= ancestors.size() || !ancestors[color.lastConsumer] ||
-        color.deviceId != device || color.stream != stream || color.bufferBytes != bytes ||
+        color.deviceId != device || color.stream != stream || color.bufferBytes < bytes ||
         color.dtype != dtype || color.order != order) continue;
+    // A contiguous offset-zero borrower only needs sufficient capacity, not
+    // the master's exact logical shape. Keep the original allocation capacity:
+    // the borrower has its own shapeInfo, while all existing liveness, alias,
+    // device and stream guards still apply. Never grow or replace shared storage.
     auto* master = outputSlots[color.masterSlotIdx];
     if (master == nullptr || master->dataBuffer() != color.sharedBuffer ||
         !color.sharedBuffer->isValid() || color.sharedBuffer->isClosed() ||
