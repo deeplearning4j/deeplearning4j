@@ -1371,8 +1371,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
         plan.assignDevices();
         sameDiff.cacheDynamicShapePlan(outputSet, plan);
-        log.debug("DynamicShapePlan compiled: {}", plan.getSummary());
-
         dynamicShapePlan = plan;
         return plan;
     }

@@ -253,9 +253,18 @@ namespace {
 LongType computeSlotAddrHash(const NativeSlot* slots, int numSlots,
                              NDArray** outputSlots, int startSlot, int endSlot,
                              int totalSlots) {
+  // Read-only resident pointer: NDArray::specialBuffer() syncs/migrates the
+  // buffer to the current device, so hashing for replay invariance would
+  // itself relocate cross-device slots and manufacture pointer drift.
   return dsp::computeSegmentSlotAddrHash(slots, numSlots, outputSlots,
       startSlot, endSlot, totalSlots,
-      [](NDArray* a) -> void* { return a->specialBuffer(); });
+      [](NDArray* a) -> void* {
+        auto* db = a != nullptr ? a->dataBuffer() : nullptr;
+        void* base = db != nullptr ? db->special() : nullptr;
+        return base != nullptr
+            ? static_cast<void*>(static_cast<int8_t*>(base) + a->offset() * a->sizeOfT())
+            : nullptr;
+      });
 }
 
 bool bindSegmentCudaDevice(const GraphSegment& segment,
@@ -1213,8 +1222,7 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
   int targetDevice = -1;
   if (seg.def.startSlot >= 0 && seg.def.startSlot < numSlots_) {
     targetDevice = slots_[seg.def.startSlot].targetDeviceId;
-  }
-  // Automatic placement inherits the device already bound for this segment.
+  }  // Automatic placement inherits the device already bound for this segment.
   // It does not imply that caller-owned mutable inputs reside on that device.
   if (targetDevice < 0) {
     const auto err = cudaGetDevice(&targetDevice);
@@ -1427,19 +1435,96 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     auto originalAttrErr = originalDev != nullptr
         ? cudaPointerGetAttributes(&originalAttrs, originalDev)
         : cudaErrorInvalidValue;
-    if (originalDev == nullptr || originalAttrErr != cudaSuccess ||
-        originalAttrs.type != cudaMemoryTypeDevice) {
-      DSP_DIAG(MULTI_DEVICE,
-               "migrateSlotInputsToTargetDevice: source pointer validation failed slot=%d "
-               "ptr=%p metadataDevice=%d attrErr=%s",
-               slotIdx, originalDev, sourceDevice, cudaGetErrorString(originalAttrErr));
-      cudaGetLastError();
+    // A buffer whose special() is not a device pointer has its bytes on the host:
+    // DeviceMemoryManager CPU-failover moves device allocations back to host and
+    // the buffer then serves special() from primary(). Treat ANY non-device
+    // source (including unregistered malloc that cudaPointerGetAttributes
+    // reports as cudaErrorInvalidValue/Host/Unregistered) as host-resident and
+    // stage it H2D to the target instead of rejecting the whole plan.
+    const bool sourceOnDevice =
+        originalDev != nullptr && originalAttrErr == cudaSuccess &&
+        originalAttrs.type == cudaMemoryTypeDevice;
+    if (!sourceOnDevice) {
+      if (originalAttrErr == cudaSuccess) {
+        cudaGetLastError();  // clear benign attribute-query state
+      }
+      DSP_DIAG(MEMORY,
+               "migrateSlotInputsToTargetDevice: host-resident source slot=%d "
+               "metadataDevice=%d targetDevice=%d ptr=%p attrType=%d attrErr=%d "
+               "bytes=%lld — H2D staging",
+               slotIdx, sourceDevice, targetDevice, originalDev,
+               originalAttrErr == cudaSuccess ? static_cast<int>(originalAttrs.type) : -1,
+               static_cast<int>(originalAttrErr),
+               static_cast<long long>(arr->lengthOf() * arr->sizeOfT()));
       if (savedDevice >= 0) cudaSetDevice(savedDevice);
-      return cudaPlanFailure(
-          "CUDA cross-device migration rejected source pointer: slot=%d ptr=%p "
-          "metadataDevice=%d cudaError=%d (%s)",
-          slotIdx, originalDev, sourceDevice, static_cast<int>(originalAttrErr),
-          cudaGetErrorString(originalAttrErr));
+      // The host copy is authoritative here (there is no newer device copy or
+      // the device copy was evicted with the failover) — never syncToHost() on
+      // a buffer whose special() is not a live device allocation.
+      auto* srcHost = (arr->dataBuffer() != nullptr &&
+                       arr->dataBuffer()->primary() != nullptr &&
+                       arr->dataBuffer()->isPrimaryActual())
+                          ? arr->dataBuffer()->primary()
+                          : originalDev;
+      cudaSetDevice(targetDevice);
+      NDArray* migrated = nullptr;
+      try {
+        // Same constructor pattern as the peer-copy path above: fresh dense
+        // buffer, shapeInfo-preserving, on the (now-current) target device.
+        migrated = new NDArray(arr->shapeInfo(), arr->dataType(), false,
+                               LaunchContext::defaultContext(), false);
+      } catch (const std::exception& e) {
+        DSP_DIAG(MEMORY,
+                 "migrateSlotInputsToTargetDevice: host-source target alloc failed "
+                 "slot=%d targetDevice=%d cause=%s",
+                 slotIdx, targetDevice, e.what());
+        if (savedDevice >= 0) cudaSetDevice(savedDevice);
+        return cudaPlanFailure(
+            "CUDA host-source migration target allocation failed: slot=%d "
+            "targetDevice=%d cause=%s",
+            slotIdx, targetDevice, e.what());
+      }
+      const size_t hBytes = static_cast<size_t>(arr->lengthOf()) * arr->sizeOfT();
+      auto* dstDev = migrated->dataBuffer() != nullptr ? migrated->dataBuffer()->special() : nullptr;
+      if (dstDev == nullptr || srcHost == nullptr || hBytes == 0) {
+        delete migrated;
+        if (savedDevice >= 0) cudaSetDevice(savedDevice);
+        return cudaPlanFailure(
+            "CUDA host-source migration invalid buffers: slot=%d targetDevice=%d",
+            slotIdx, targetDevice);
+      }
+      auto* h2dStreamPtr = LaunchContext::defaultContext()->getCudaStream();
+      cudaStream_t h2dStream = (h2dStreamPtr != nullptr) ? *h2dStreamPtr : nullptr;
+      auto h2dErr = h2dStream != nullptr
+          ? cudaMemcpyAsync(dstDev, srcHost, hBytes, cudaMemcpyHostToDevice, h2dStream)
+          : cudaMemcpyAsync(dstDev, srcHost, hBytes, cudaMemcpyHostToDevice, cudaStreamPerThread);
+      auto h2dSyncErr = cudaStreamSynchronize(
+          h2dStream != nullptr ? h2dStream : cudaStreamPerThread);
+      if (h2dErr != cudaSuccess || h2dSyncErr != cudaSuccess) {
+        auto syncErr = cudaGetLastError();
+        delete migrated;
+        if (savedDevice >= 0) cudaSetDevice(savedDevice);
+        return cudaPlanFailure(
+            "CUDA host-source migration H2D failed: slot=%d targetDevice=%d "
+            "copyErr=%d (%s) syncErr=%d (%s)",
+            slotIdx, targetDevice,
+            static_cast<int>(h2dErr), cudaGetErrorString(h2dErr),
+            static_cast<int>(h2dSyncErr), cudaGetErrorString(h2dSyncErr));
+      }
+      // Publish like the peer-copy path: replace the slot publication for the
+      // segment and register restoration of the original after the segment.
+      MigratedInput mi;
+      mi.outputSlotIdx = slotIdx;
+      mi.original = arr;
+      mi.migrated = migrated;
+      mi.retained = true;
+      migratedInputs_.push_back(mi);
+      outputSlots_[slotIdx] = migrated;
+      DSP_DIAG(MULTI_DEVICE,
+               "migrateSlotInputsToTargetDevice: host-source migrated slot=%d "
+               "targetDevice=%d ptr=%p bytes=%zu",
+               slotIdx, targetDevice, (void*)dstDev, hBytes);
+      if (savedDevice >= 0) cudaSetDevice(savedDevice);
+      continue;
     }
     if (originalAttrs.device != sourceDevice) {
       DSP_DIAG(MULTI_DEVICE,
@@ -1514,23 +1599,93 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     auto srcAttrErr = srcDev != nullptr
         ? cudaPointerGetAttributes(&srcAttrs, srcDev)
         : cudaErrorInvalidValue;
-    if (srcDev == nullptr || srcAttrErr != cudaSuccess || srcAttrs.type != cudaMemoryTypeDevice ||
-        srcAttrs.device != sourceDevice) {
+    if (srcDev == nullptr || srcAttrErr != cudaSuccess || srcAttrs.type != cudaMemoryTypeDevice) {
+      // Materialized source is not on any device — host-resident (failover or
+      // fresh host allocation). Allocate the target-side copy here and stage it
+      // H2D instead of rejecting the plan.
+      DSP_DIAG(MEMORY,
+               "migrateSlotInputsToTargetDevice: materialized source is host-resident "
+               "slot=%d ptr=%p targetDevice=%d attrErr=%d — H2D staging",
+               slotIdx, srcDev, targetDevice, static_cast<int>(srcAttrErr));
+      if (srcAttrErr == cudaSuccess) cudaGetLastError();
+      // A CPU-failover dup can carry its bytes in the pinned-host "special"
+      // allocation with no primary at all. Prefer primary when actual, else
+      // the special pointer itself — both are valid H2D sources.
+      auto* dbBytes = srcArr->dataBuffer();
+      auto* hostBytes = (dbBytes != nullptr && dbBytes->primary() != nullptr)
+          ? dbBytes->primary() : srcDev;
+      const size_t mBytes = static_cast<size_t>(srcArr->lengthOf()) *
+                            static_cast<size_t>(DataTypeUtils::sizeOf(srcArr->dataType()));
+      if (hostBytes == nullptr || mBytes == 0) {
+        if (srcMat != nullptr) delete srcMat;
+        if (savedDevice >= 0) cudaSetDevice(savedDevice);
+        return cudaPlanFailure(
+            "CUDA cross-device migration host materialized source invalid: slot=%d",
+            slotIdx);
+      }
+      cudaSetDevice(targetDevice);
+      NDArray* staged = nullptr;
+      try {
+        staged = new NDArray(srcArr->shapeInfo(), srcArr->dataType(), false,
+                             LaunchContext::defaultContext(), false);
+      } catch (const std::exception& e) {
+        DSP_DIAG(MEMORY,
+                 "migrateSlotInputsToTargetDevice: host materialized target alloc failed "
+                 "slot=%d targetDevice=%d cause=%s",
+                 slotIdx, targetDevice, e.what());
+        if (srcMat != nullptr) delete srcMat;
+        if (savedDevice >= 0) cudaSetDevice(savedDevice);
+        return cudaPlanFailure(
+            "CUDA host materialized migration target allocation failed: slot=%d cause=%s",
+            slotIdx, e.what());
+      }
+      auto* dstDev2 = staged->dataBuffer() != nullptr ? staged->dataBuffer()->special() : nullptr;
+      if (dstDev2 == nullptr) {
+        delete staged;
+        if (srcMat != nullptr) delete srcMat;
+        if (savedDevice >= 0) cudaSetDevice(savedDevice);
+        return cudaPlanFailure(
+            "CUDA host materialized migration invalid destination: slot=%d", slotIdx);
+      }
+      auto* h2dStreamPtr = LaunchContext::defaultContext()->getCudaStream();
+      cudaStream_t h2dStream = (h2dStreamPtr != nullptr) ? *h2dStreamPtr : cudaStreamPerThread;
+      auto h2dErr = cudaMemcpyAsync(dstDev2, hostBytes, mBytes,
+                                    cudaMemcpyHostToDevice, h2dStream);
+      auto h2dSyncErr = cudaStreamSynchronize(h2dStream);
+      if (h2dErr != cudaSuccess || h2dSyncErr != cudaSuccess) {
+        auto syncErr = cudaGetLastError();
+        delete staged;
+        if (srcMat != nullptr) delete srcMat;
+        if (savedDevice >= 0) cudaSetDevice(savedDevice);
+        return cudaPlanFailure(
+            "CUDA host materialized H2D failed: slot=%d copyErr=%d (%s) syncErr=%d (%s)",
+            slotIdx, static_cast<int>(h2dErr), cudaGetErrorString(h2dErr),
+            static_cast<int>(h2dSyncErr), cudaGetErrorString(h2dSyncErr));
+      }
+      // Register the target-side copy for segment cleanup and publish it into
+      // the slot (original restored afterwards), mirroring the peer-copy path.
+      MigratedInput mi;
+      mi.outputSlotIdx = slotIdx;
+      mi.original = arr;
+      mi.migrated = staged;
+      mi.retained = true;
+      migratedInputs_.push_back(mi);
+      outputSlots_[slotIdx] = staged;
       DSP_DIAG(MULTI_DEVICE,
-               "migrateSlotInputsToTargetDevice: source pointer validation failed slot=%d "
-               "ptr=%p expectedDevice=%d actualDevice=%d attrErr=%s",
-               slotIdx, srcDev, sourceDevice,
-               srcAttrErr == cudaSuccess ? srcAttrs.device : -1,
-               cudaGetErrorString(srcAttrErr));
-      cudaGetLastError();
+               "migrateSlotInputsToTargetDevice: host materialized migrated slot=%d "
+               "targetDevice=%d ptr=%p bytes=%zu",
+               slotIdx, targetDevice, (void*)dstDev2, mBytes);
       if (srcMat != nullptr) delete srcMat;
       if (savedDevice >= 0) cudaSetDevice(savedDevice);
-      return cudaPlanFailure(
-          "CUDA cross-device migration rejected materialized source pointer: "
-          "slot=%d ptr=%p expectedDevice=%d actualDevice=%d cudaError=%d (%s)",
-          slotIdx, srcDev, sourceDevice,
-          srcAttrErr == cudaSuccess ? srcAttrs.device : -1,
-          static_cast<int>(srcAttrErr), cudaGetErrorString(srcAttrErr));
+      continue;
+    }
+    if (srcAttrs.device != sourceDevice) {
+      DSP_DIAG(MULTI_DEVICE,
+               "migrateSlotInputsToTargetDevice: correcting stale materialized device "
+               "slot=%d metadata=%d actual=%d",
+               slotIdx, sourceDevice, srcAttrs.device);
+      sourceDevice = srcAttrs.device;
+      cudaSetDevice(sourceDevice);
     }
     auto srcLength = srcArr->lengthOf();
     auto elementBytes = DataTypeUtils::sizeOf(srcArr->dataType());
@@ -1595,10 +1750,26 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
                slotIdx, sourceDevice, targetDevice, srcLen, freeBytes, poolReusable, totalBytes);
       if (srcMat != nullptr) delete srcMat;
       if (savedDevice >= 0) cudaSetDevice(savedDevice);
-      return cudaPlanFailure(
-          "CUDA cross-device migration has insufficient target capacity: "
-          "slot=%d device=%d bytes=%zu free=%zu poolReusable=%zu total=%zu",
-          slotIdx, targetDevice, srcLen, freeBytes, poolReusable, totalBytes);
+      // POLICY (device-shift react): the segment's device cannot hold this
+      // input copy. The compute must move to where the data already lives.
+      // Rebind the whole segment to the source device for this invocation and
+      // every later one — the caller gets a transparent capacity-shift note.
+      GraphSegment& mutableSeg = const_cast<GraphSegment&>(seg);
+      for (int s = mutableSeg.def.startSlot;
+           s <= mutableSeg.def.endSlot && s < numSlots_; s++) {
+        slots_[s].targetDeviceId = sourceDevice;
+      }
+      // Rebind THIS segment's stream/workspace TLS to the new device too, so
+      // the immediate re-run below and all later invocations land correctly.
+      platformRestoreSegmentDevice();
+      platformBindSegmentDevice(mutableSeg);
+      DSP_DIAG(EXECUTE,
+               "CAPACITY_SHIFT_SEGMENT: seg[%d-%d] rebound from device %d to device %d "
+               "(destination full for %zu-byte input; input residency wins over plan hint)",
+               mutableSeg.def.startSlot, mutableSeg.def.endSlot,
+               targetDevice, sourceDevice, srcLen);
+      targetDevice = sourceDevice;
+      continue;
     }
 
     // The transfer fully overwrites a dense destination. Do not enqueue a
@@ -3677,6 +3848,114 @@ void NativeDynamicShapePlan::platformPostSegmentPoolManagement(bool frozen, int 
       sd::memory::CudaMemoryPool::getInstance().trimPool(trimDeviceId);
       DSP_DIAG(MEMORY, "post-segments: trimmed pool on device %d (frozen exec=%d, interval=%d)",
                trimDeviceId, execCount, trimInterval);
+    }
+  }
+}
+
+namespace {
+// The snapshot owns its bytes: phaseCompile may overwrite the colored device
+// allocation immediately after this function returns. Never use the primary
+// mirror (possibly stale), syncToHost (may allocate frozen storage), or e<T>().
+template <typename T>
+void summarizePhaseCompileOutput(NDArray* arr, int slot, int outputIndex,
+                                 cudaStream_t copyStream, int execCount, const char* boundary) {
+  const auto length = arr->lengthOf();
+  LongType lo = 0, hi = -1;
+  if (length > 0) {
+    lo = hi = arr->getOffset(0);  // absolute DataBuffer offsets, including views
+    for (LongType i = 1; i < length; ++i) {
+      const auto offset = arr->getOffset(i);
+      lo = std::min(lo, offset);
+      hi = std::max(hi, offset);
+    }
+  }
+  auto* db = arr->dataBuffer();
+  if (length > 0 && (db == nullptr || db->special() == nullptr || lo < 0 ||
+      static_cast<uint64_t>(hi) >= db->getLenInBytes() / sizeof(T))) {
+    DSP_DIAG_SLOT(VERIFY, slot, "PHASE_COMPILE_OUTPUT boundary=%s reqOut=%d unavailable=storage-span",
+                  boundary, outputIndex);
+    return;
+  }
+  std::vector<T> snapshot(static_cast<size_t>(hi - lo + 1));
+  if (length > 0) {
+    // All producer streams have completed before this D2H. Use the unshifted
+    // DataBuffer base with absolute offsets; do not double-add a view offset.
+    auto error = cudaMemcpyAsync(snapshot.data(), static_cast<const T*>(db->special()) + lo,
+                                 snapshot.size() * sizeof(T), cudaMemcpyDeviceToHost, copyStream);
+    if (error == cudaSuccess) error = cudaStreamSynchronize(copyStream);
+    if (error != cudaSuccess) {
+      DSP_DIAG_SLOT(VERIFY, slot, "PHASE_COMPILE_OUTPUT boundary=%s reqOut=%d unavailable=D2H error=%s",
+                    boundary, outputIndex, cudaGetErrorString(error));
+      return;
+    }
+  }
+  LongType finite = 0, nan = 0, posInf = 0, negInf = 0, argmax = -1;
+  double minimum = std::numeric_limits<double>::infinity();
+  double maximum = -std::numeric_limits<double>::infinity();
+  for (LongType i = 0; i < length; ++i) {
+    const double value = static_cast<double>(snapshot[arr->getOffset(i) - lo]);
+    if (std::isnan(value)) ++nan;
+    else if (std::isinf(value)) { if (value > 0) ++posInf; else ++negInf; }
+    else {
+      ++finite;
+      minimum = std::min(minimum, value);
+      if (argmax < 0 || value > maximum) { maximum = value; argmax = i; }
+    }
+  }
+  DSP_DIAG_SLOT(VERIFY, slot,
+      "PHASE_COMPILE_OUTPUT boundary=%s exec=%d reqOut=%d dtype=%d order=%c len=%lld "
+      "finite=%lld nan=%lld +inf=%lld -inf=%lld min=%.17g max=%.17g finiteArgmax=%lld",
+      boundary, execCount, outputIndex, static_cast<int>(arr->dataType()), arr->ordering(),
+      (long long)length, (long long)finite, (long long)nan, (long long)posInf, (long long)negInf,
+      minimum, maximum, (long long)argmax);
+}
+}  // namespace
+
+void probePhaseCompileOutputs(NDArray** outputs, const int* slots, int count,
+                              void* stream, int execCount, const char* boundary) {
+  // Explicit VERIFY + full is the opt-in. Debug/verbose alone does not enable
+  // this blocking probe. No new environment knob or production synchronization.
+  const auto& diagnostics = DspDiagnostics::getInstance();
+  if (!(diagnostics.getEnabledMask() & DSP_DIAG_VERIFY) || diagnostics.getLevel() != DSP_LEVEL_FULL) return;
+  if (outputs == nullptr || slots == nullptr) return;
+  std::vector<cudaStream_t> streams = {
+      reinterpret_cast<cudaStream_t>(dspStreamPtrToValue(stream)),
+      reinterpret_cast<cudaStream_t>(dspGetLcDefaultStream()),
+      reinterpret_cast<cudaStream_t>(dspGetExecutionStream()),
+      reinterpret_cast<cudaStream_t>(dspGetGapStream()),
+      reinterpret_cast<cudaStream_t>(dspGetGraphCaptureStream())};
+  for (int i = 0; i < count; ++i) {
+    if (outputs[i] != nullptr && outputs[i]->getContext() != nullptr &&
+        outputs[i]->getContext()->getCudaStream() != nullptr)
+      streams.push_back(*outputs[i]->getContext()->getCudaStream());
+  }
+  // Check every stream BEFORE synchronizing any. Fail closed on capture-query
+  // errors too; never end/repair capture or clear a CUDA error in a probe.
+  for (auto candidate : streams) {
+    cudaStreamCaptureStatus status = cudaStreamCaptureStatusNone;
+    if (DebugHelper::inGraphCapture(nullptr) ||
+        cudaStreamIsCapturing(candidate, &status) != cudaSuccess || status != cudaStreamCaptureStatusNone) {
+      DSP_DIAG(VERIFY, "PHASE_COMPILE_OUTPUT boundary=%s unavailable=capture-or-query-error", boundary);
+      return;
+    }
+  }
+  for (auto candidate : streams) {
+    const auto error = cudaStreamSynchronize(candidate);
+    if (error != cudaSuccess) {
+      DSP_DIAG(VERIFY, "PHASE_COMPILE_OUTPUT boundary=%s unavailable=producer-sync error=%s",
+               boundary, cudaGetErrorString(error));
+      return;
+    }
+  }
+  for (int i = 0; i < count; ++i) {
+    auto* arr = outputs[i];
+    if (arr == nullptr || !arr->hasValidShapeInfo()) continue;
+    // Requested outputs, not intermediate slots: coloring invalidates later
+    // intermediate reads. All floating dtypes, all strides, including empties.
+    if (arr->dataType() == FLOAT32 || arr->dataType() == DOUBLE ||
+        arr->dataType() == HALF || arr->dataType() == BFLOAT16) {
+      BUILD_SINGLE_SELECTOR(arr->dataType(), summarizePhaseCompileOutput,
+          (arr, slots[i], i, streams.front(), execCount, boundary), SD_FLOAT_TYPES);
     }
   }
 }

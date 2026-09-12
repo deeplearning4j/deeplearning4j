@@ -87,6 +87,12 @@
 namespace sd {
 namespace graph {
 
+#ifdef SD_CUDA
+// CUDA-only, synchronous diagnostic; no shared header/ABI change.
+void probePhaseCompileOutputs(NDArray** outputs, const int* slots, int count,
+                              void* stream, int execCount, const char* boundary);
+#endif
+
 // ── Frozen-pin liveness registry ─────────────────────────────────────────────
 // frozenProtectedRefBuffers_/frozenOutputRefBuffers_ hold RAW DataBuffer*, and
 // addFrozenRef()/removeFrozenRef() WRITE an atomic counter inside the object.
@@ -3901,6 +3907,7 @@ Status NativeDynamicShapePlan::execute(
   auto captureFrozenSnapshotIfReady = [&]() {
     if (!planLifecycle_.isReplaying()) return;
     if (frozenSnapshot_.valid) return;
+    snapshotInvalidatedSlots_.clear();
 
     frozenSnapshot_.capture(outputSlots_, totalOutputSlots_,
                              lifecycleExternalInputPtrs, numExternalInputs);
@@ -4030,9 +4037,17 @@ Status NativeDynamicShapePlan::execute(
     {
       int ts = sd::graph::DspDiagnostics::getInstance().traceSlot();
       if (ts >= 0 && ts < totalOutputSlots_ && outputSlots_[ts] != nullptr) {
+        // Read-only inspection: specialBuffer() may sync/migrate on CUDA; the
+        // snapshot capture itself must not perturb buffer residency.
+        auto* snapDb = outputSlots_[ts]->dataBuffer();
+        void* snapBase = snapDb != nullptr ? snapDb->special() : nullptr;
+        void* snapBuf = snapBase != nullptr
+            ? static_cast<void*>(static_cast<int8_t*>(snapBase)
+                                 + outputSlots_[ts]->offset() * outputSlots_[ts]->sizeOfT())
+            : nullptr;
         DSP_DIAG(MEMORY, "SNAPSHOT_SLOT_%d: arr=%p db=%p special=%p len=%lld",
-                 ts, (void*)outputSlots_[ts], (void*)outputSlots_[ts]->dataBuffer(),
-                 (void*)outputSlots_[ts]->specialBuffer(),
+                 ts, (void*)outputSlots_[ts], (void*)snapDb,
+                 snapBuf,
                  (long long)outputSlots_[ts]->lengthOf());
       }
     }
@@ -4179,7 +4194,15 @@ Status NativeDynamicShapePlan::execute(
   if (!planLifecycle_.compilationDone && !planLifecycle_.isSlotBySlot() && executeCount_ == 1 && !neverAutoSeal) {
     execCtx->recordFlow(PlanExecutionContext::FlowEventType::PHASE_COMPILE,
                          static_cast<int>(segments_.size()));
+#ifdef SD_CUDA
+    probePhaseCompileOutputs(requestedOutputs, requestedOutputSlotIndices_, numRequestedOutputs_,
+                             stream, executeCount_, "before-phaseCompile");
+#endif
     phaseCompile(externalInputs, numExternalInputs);
+#ifdef SD_CUDA
+    probePhaseCompileOutputs(requestedOutputs, requestedOutputSlotIndices_, numRequestedOutputs_,
+                             stream, executeCount_, "after-phaseCompile");
+#endif
 
     // Triton compilation internally captures CUDA graphs on DSP-managed
     // streams (tl_dspExecutionStream, tl_dspGapStream). If the capture was
@@ -8313,14 +8336,23 @@ bool NativeDynamicShapePlan::isDeviceManagedExternalInput(int extIdx, NDArray* i
     return true;
   }
   if (input == nullptr || input->isEmpty() || input->dataBuffer() == nullptr) return false;
-  void* devAddr = input->specialBuffer();
+  // Classification must inspect resident addresses without synchronizing or
+  // migrating inputs belonging to another segment's device.
+  auto residentAddress = [](NDArray* array) -> void* {
+    auto* db = array != nullptr ? array->dataBuffer() : nullptr;
+    void* base = db != nullptr ? db->special() : nullptr;
+    return base != nullptr
+        ? static_cast<void*>(static_cast<int8_t*>(base) + array->offset() * array->sizeOfT())
+        : nullptr;
+  };
+  void* devAddr = residentAddress(input);
   if (devAddr == nullptr) return false;
   for (void* existing : deviceManagedExternalInputAddrs_) {
     if (existing == devAddr) return true;
   }
   if (kvScatterConfigured_) {
     for (const auto& entry : kvScatterEntries_) {
-      if (entry.staticBuf != nullptr && entry.staticBuf->specialBuffer() == devAddr) {
+      if (residentAddress(entry.staticBuf) == devAddr) {
         return true;
       }
     }

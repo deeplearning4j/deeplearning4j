@@ -316,15 +316,23 @@ const char* NativeDynamicShapePlan::getFingerprintJson() {
 }
 
 // ─── Slot output address fingerprinting ─────────────────────────────────────
-// FNV-1a hash of slot output specialBuffer() addresses for a segment.
+// FNV-1a hash of slot output resident device addresses for a segment.
 // Verified before replay — mismatch means output buffers were reallocated
 // and the CUDA graph has stale baked-in addresses (would SIGSEGV or corrupt).
+// Read-only: NDArray::specialBuffer() migrates cross-device buffers via
+// syncToDevice, so hashing with it manufactures the drift it detects.
 static LongType computeSlotAddrHash(const NativeSlot* slots, int numSlots,
                                     NDArray** outputSlots, int startSlot,
                                     int endSlot, int totalSlots) {
   return dsp::computeSegmentSlotAddrHash(slots, numSlots, outputSlots,
       startSlot, endSlot, totalSlots,
-      [](NDArray* a) -> void* { return a->specialBuffer(); });
+      [](NDArray* a) -> void* {
+        auto* db = a != nullptr ? a->dataBuffer() : nullptr;
+        void* base = db != nullptr ? db->special() : nullptr;
+        return base != nullptr
+            ? static_cast<void*>(static_cast<int8_t*>(base) + a->offset() * a->sizeOfT())
+            : nullptr;
+      });
 }
 
 static bool slotIsTransparentHostOnlyForGraphCoverage(
@@ -1101,10 +1109,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     auto* execCtx = static_cast<PlanExecutionContext*>(activeExecCtx_);
     if (execCtx != nullptr) {
       execCtx->execTarget = ExecTarget::GRAPH_CAPTURE;
-      // Reset sync phase for the capture context — earlier sync in the same
-      // execute() call was for the dispatchSegment GRAPH_REPLAY target, but
-      // capture needs its own staging pass with stream synchronization.
-      execCtx->resetSyncPhase();
+      // performPreReplaySync resets capture ordering/staging after preserving
+      // the execute-level external preparation state. Resetting here would
+      // re-prepare primary-only inputs on this segment's device.
     }
     DspStagingSyncResult syncResult = performPreReplaySync(
         externalArrays, numExt, stream, "cudagraph_capture");

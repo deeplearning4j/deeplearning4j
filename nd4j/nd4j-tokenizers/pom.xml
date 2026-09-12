@@ -37,11 +37,8 @@
     <name>nd4j-tokenizers</name>
     <description>HuggingFace Tokenizers library with Rust backend and JavaCPP bindings</description>
 
-    <modules>
-        <module>libtokenizers</module>
-        <module>tokenizers-native-preset</module>
-        <module>tokenizers-native</module>
-    </modules>
+    <!-- Native tokenizer producers are profile-gated in the root pom
+         (tokenizers-native); the aggregator stays publishable Java-only. -->
 
     <properties>
         <javacpp.version>1.5.13</javacpp.version>

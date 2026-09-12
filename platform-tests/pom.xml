@@ -88,6 +88,9 @@
         <java.version>11</java.version>
         <maven-shade-plugin.version>3.5.1</maven-shade-plugin.version>
         <test.heap.size>8g</test.heap.size>
+        <!-- Pinned-host failover budget (MB) for CudaMemoryPool; full-LLM ITs need >8 GB.
+             Overridable via -Dsd.cuda.pinnedHostLimit=... -->
+        <sd.cuda.pinnedHostLimit>32768</sd.cuda.pinnedHostLimit>
         <!-- maxPhysicalBytes must be larger than heap to accommodate off-heap NDArrays + CUDA driver overhead -->
         <test.offheap.size>24g</test.offheap.size>
         <!-- Separate physical bytes limit — defaults to offheap size but can be overridden for memory-intensive tests -->
@@ -1861,6 +1864,9 @@
                         <ND4J_DSP_STAGING_FAULT>${nd4j.dsp.stagingFault}</ND4J_DSP_STAGING_FAULT>
                         <ND4J_DSP_NATIVE_DUMP_OUTPUTS>${nd4j.dsp.native.dumpOutputs}</ND4J_DSP_NATIVE_DUMP_OUTPUTS>
                         <ND4J_DSP_DIAG_EXEC_LIMIT>${nd4j.dsp.diagExecLimit}</ND4J_DSP_DIAG_EXEC_LIMIT>
+                        <!-- Pinned-host failover budget for CudaMemoryPool (MB). Default 8 GB is too
+                             small for full-LLM parity runs; override via -Dsd.cuda.pinnedHostLimit. -->
+                        <SD_CUDA_PINNED_HOST_LIMIT>${sd.cuda.pinnedHostLimit}</SD_CUDA_PINNED_HOST_LIMIT>
                         <ONEDNN_VERBOSE>${onednn.verbose}</ONEDNN_VERBOSE>
                         <DNNL_VERBOSE>${onednn.verbose}</DNNL_VERBOSE>
                         <BUF_FP_RING>${buf.fp.ring}</BUF_FP_RING>

@@ -91,6 +91,23 @@ public class DynamicShapePlan implements Closeable {
      */
     @Getter private final byte[] externalInputSourceTypes;
 
+    /**
+     * Size in bytes of each external input's underlying array (0 when unknown),
+     * parallel to {@code externalInputKeys}. Populated for constants and variables
+     * at compile time so device placement can pin consumers of huge weights to the
+     * device that actually holds the weight instead of planning a cross-device copy
+     * that may exceed the target device's capacity limit.
+     */
+    @Getter private final long[] externalInputBytes;
+
+    /**
+     * Threshold above which an external input is treated as a device-placement
+     * anchor: the first consumer of such an input is pinned to the device holding
+     * the input (largest-budget device). 32 MiB keeps attention norms etc. mobile
+     * while anchoring LLM-scale weights.
+     */
+    public static final long DEVICE_AFFINITY_THRESHOLD_BYTES = 32L * 1024 * 1024;
+
     /** The set of output variable names this plan was compiled for. */
     private final Set<String> requestedOutputs;
 
@@ -153,7 +170,7 @@ public class DynamicShapePlan implements Closeable {
      */
     public DynamicShapePlan(DynamicShapeSlot[] slots, int totalOutputSlots, int[][] releaseAtStep,
                             OpContext[] opContextPool, String[] externalInputKeys,
-                            byte[] externalInputSourceTypes,
+                            byte[] externalInputSourceTypes, long[] externalInputBytes,
                             Set<String> requestedOutputs, Map<String, Integer> outputNameToSlotIndex,
                             boolean hasControlFlowOps, LoopRegion[] loopRegions,
                             int[] predecessorCounts, int[][] predecessors, int[][] successors,
@@ -164,6 +181,8 @@ public class DynamicShapePlan implements Closeable {
         this.opContextPool = opContextPool;
         this.externalInputKeys = externalInputKeys;
         this.externalInputSourceTypes = externalInputSourceTypes;
+        this.externalInputBytes = externalInputBytes != null
+                ? externalInputBytes : new long[externalInputKeys.length];
         this.requestedOutputs = requestedOutputs;
         this.outputNameToSlotIndex = outputNameToSlotIndex;
         this.hasControlFlowOps = hasControlFlowOps;
@@ -176,6 +195,22 @@ public class DynamicShapePlan implements Closeable {
     }
 
     /**
+     * Backward-compatible constructor without external input sizes or dependency graph.
+     */
+    public DynamicShapePlan(DynamicShapeSlot[] slots, int totalOutputSlots, int[][] releaseAtStep,
+                            OpContext[] opContextPool, String[] externalInputKeys,
+                            byte[] externalInputSourceTypes,
+                            Set<String> requestedOutputs, Map<String, Integer> outputNameToSlotIndex,
+                            boolean hasControlFlowOps, LoopRegion[] loopRegions,
+                            int[] predecessorCounts, int[][] predecessors, int[][] successors,
+                            int[] consumerCounts, int[] rootSlots) {
+        this(slots, totalOutputSlots, releaseAtStep, opContextPool, externalInputKeys,
+                externalInputSourceTypes, null,
+                requestedOutputs, outputNameToSlotIndex, hasControlFlowOps, loopRegions,
+                predecessorCounts, predecessors, successors, consumerCounts, rootSlots);
+    }
+
+    /**
      * Backward-compatible constructor without dependency graph.
      */
     public DynamicShapePlan(DynamicShapeSlot[] slots, int totalOutputSlots, int[][] releaseAtStep,
@@ -183,7 +218,7 @@ public class DynamicShapePlan implements Closeable {
                             Set<String> requestedOutputs, Map<String, Integer> outputNameToSlotIndex,
                             boolean hasControlFlowOps) {
         this(slots, totalOutputSlots, releaseAtStep, opContextPool, externalInputKeys,
-                new byte[externalInputKeys.length],
+                new byte[externalInputKeys.length], null,
                 requestedOutputs, outputNameToSlotIndex, hasControlFlowOps, null,
                 null, null, null, null, null);
     }
@@ -320,7 +355,61 @@ public class DynamicShapePlan implements Closeable {
         // the bulk of ops, minimizing cross-device data transfers.
         sorted.sort((a, b) -> Long.compare(b.getValue(), a.getValue()));
 
+        // Device-affinity pinning: constants/variables larger than
+        // DEVICE_AFFINITY_THRESHOLD_BYTES are copied to the target device when a
+        // consumer lands on a different device (see native migrateSlotInputsToTargetDevice).
+        // A consumer of such a weight therefore needs the whole weight resident on its
+        // device, so pin the FIRST consumer of each anchored external input to the
+        // device that physically holds the input. This prevents plan-killing migrations
+        // of multi-GB weights to small-capacity devices (e.g. the tied lm-head embedding
+        // copy to a 4 GiB secondary device).
+        int anchorDevice = sorted.get(0).getKey();
+        boolean[] pinned = new boolean[slots.length];
+        int pinnedCount = 0;
+        long[] externalInputBytes = getExternalInputBytes();
+        if (externalInputBytes != null) {
+            int[] firstConsumer = new int[externalInputBytes.length];
+            java.util.Arrays.fill(firstConsumer, -1);
+            for (int s = 0; s < slots.length; s++) {
+                DynamicShapeSlot slot = slots[s];
+                int[] srcIdx = slot.getInputSourceIndices();
+                byte[] srcTypes = slot.getInputSourceTypes();
+                if (srcIdx == null || srcTypes == null) continue;
+                for (int i = 0; i < srcIdx.length && i < srcTypes.length; i++) {
+                    if (srcIdx[i] >= 0 || srcTypes[i] == DynamicShapeSlot.SOURCE_OP_OUTPUT) continue;
+                    int extIdx = -(srcIdx[i] + 1);
+                    if (extIdx < 0 || extIdx >= externalInputBytes.length) continue;
+                    if (externalInputBytes[extIdx] < DEVICE_AFFINITY_THRESHOLD_BYTES) continue;
+                    // Placeholder-backed anchors (e.g. caller-managed KV cache) have no
+                    // stable resident device — pin only constants/variables. The source
+                    // type check at native time uses the same distinction.
+                    if (externalInputSourceTypes != null
+                            && extIdx < externalInputSourceTypes.length
+                            && externalInputSourceTypes[extIdx] != DynamicShapeSlot.SOURCE_CONSTANT
+                            && externalInputSourceTypes[extIdx] != DynamicShapeSlot.SOURCE_VARIABLE) {
+                        continue;
+                    }
+                    if (firstConsumer[extIdx] < 0) firstConsumer[extIdx] = s;
+                }
+            }
+            for (int extIdx = 0; extIdx < firstConsumer.length; extIdx++) {
+                int consumer = firstConsumer[extIdx];
+                if (consumer >= 0 && !pinned[consumer]) {
+                    slots[consumer].setTargetDeviceId(anchorDevice);
+                    pinned[consumer] = true;
+                    pinnedCount++;
+                }
+            }
+            if (pinnedCount > 0) {
+                log.debug("Device affinity: pinned {} anchor-weight consumer(s) to device {}",
+                        pinnedCount, anchorDevice);
+            }
+        }
+
+        // Proportional fill over the remaining unpinned slots, preserving execution
+        // order: devices with more memory get proportionally more of the unpinned ops.
         int assigned = 0;
+        int remainingSlots = slots.length - pinnedCount;
         double cumulativeMem = 0.0;
         for (int i = 0; i < sorted.size(); i++) {
             int deviceId = sorted.get(i).getKey();
@@ -329,10 +418,16 @@ public class DynamicShapePlan implements Closeable {
 
             int cumulativeTarget = i == sorted.size() - 1
                     ? slots.length
-                    : (int) Math.round(cumulativeMem / totalMem * slots.length);
+                    : (int) Math.round(cumulativeMem / totalMem * remainingSlots);
             int slotsForDevice = Math.max(0, cumulativeTarget - assigned);
 
             for (int s = 0; s < slotsForDevice && assigned < slots.length; s++, assigned++) {
+                if (pinned[assigned]) {
+                    // Skip pinned slots without consuming budget: their device is
+                    // dictated by weight residency, not by the proportional split.
+                    s--;
+                    continue;
+                }
                 slots[assigned].setTargetDeviceId(deviceId);
             }
             MultiGpuTracer.traceDeviceAssignment(deviceId, slotsForDevice, slots.length,

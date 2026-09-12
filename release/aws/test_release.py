@@ -4430,6 +4430,7 @@ class ReleaseValidationTest(unittest.TestCase):
             [str(script), "--print"], cwd=root, env=env, text=True
         )
         self.assertIn("-Psdx", command)
+        self.assertIn("-Psdx-native", command)
         for module in ("nd4j-sdx-model", "nd4j-sdx"):
             self.assertIn(module, command)
 
@@ -4451,6 +4452,7 @@ class ReleaseValidationTest(unittest.TestCase):
             [str(script), "--print"], cwd=root, env=env, text=True
         )
         self.assertIn("-Psdx", command)
+        self.assertIn("-Psdx-native", command)
         self.assertIn("nd4j-sdx", command)
         self.assertIn("-Dsdx.native.library=nd4jvulkan", command)
         self.assertIn("-Dsdx.platform.classifier=windows-x86_64-vulkan", command)

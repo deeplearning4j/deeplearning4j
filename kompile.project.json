@@ -39,18 +39,18 @@
       "knowledgeBaseId" : "deeplearning4j-knowledge",
       "graphPath" : "data/crawls/deeplearning4j-knowledge/graph.kgraph",
       "codeProjectionVersion" : "4",
-      "codeProjectedAt" : "2026-09-11T12:14:02.248848741Z",
-      "codeIndexGeneration" : "2026-09-11T12:00:12.148115767Z",
-      "codeProjectionEntities" : "622964",
-      "codeProjectionRelations" : "1796633",
-      "codeProjectionCodeEntities" : "809137",
+      "codeProjectedAt" : "2026-09-12T10:52:13.612488996Z",
+      "codeIndexGeneration" : "2026-09-12T10:28:21.105153234Z",
+      "codeProjectionEntities" : "622684",
+      "codeProjectionRelations" : "1802111",
+      "codeProjectionCodeEntities" : "809286",
       "codeProjectionFolderProjectId" : "deeplearning4j",
       "codeProjectionFactSheetId" : "",
       "codeProjectionIncludes" : "",
       "codeProjectionExcludes" : ""
     },
     "createdAt" : "2026-08-21T20:06:29.082576947Z",
-    "updatedAt" : "2026-09-11T12:14:02.272052031Z"
+    "updatedAt" : "2026-09-12T10:52:13.622199830Z"
   }, {
     "id" : "dl4j-mobile-tooling-final",
     "codeProjectId" : "dl4j-mobile-tooling-final",
@@ -142,11 +142,11 @@
       "detection.buildFile" : "pom.xml",
       "knowledgeBaseId" : "deeplearning4j-knowledge",
       "graphPath" : "data/crawls/deeplearning4j-knowledge/graph.kgraph",
-      "codeProjectionVersion" : "3",
-      "codeProjectedAt" : "2026-09-09T00:52:13.215954533Z",
-      "codeIndexGeneration" : "2026-09-09T00:24:35.667119602Z",
-      "codeProjectionEntities" : "623211",
-      "codeProjectionRelations" : "1799041",
+      "codeProjectionVersion" : "4",
+      "codeProjectedAt" : "2026-09-12T01:52:09.785027860Z",
+      "codeIndexGeneration" : "2026-09-12T01:04:52.653404180Z",
+      "codeProjectionEntities" : "622618",
+      "codeProjectionRelations" : "1801810",
       "codeProjectionCodeEntities" : "13035",
       "codeProjectionFolderProjectId" : "deeplearning4j",
       "codeProjectionFactSheetId" : "",
@@ -154,7 +154,7 @@
       "codeProjectionExcludes" : ""
     },
     "createdAt" : "2026-08-28T00:54:35.194487370Z",
-    "updatedAt" : "2026-09-09T00:52:13.216272151Z"
+    "updatedAt" : "2026-09-12T01:52:09.789383499Z"
   }, {
     "id" : "sdx-aot",
     "codeProjectId" : "sdx-aot",
@@ -310,5 +310,5 @@
   "workflows" : [ ],
   "metadata" : { },
   "createdAt" : "2026-08-21T20:06:29.083137933Z",
-  "updatedAt" : "2026-09-11T12:14:02.311904604Z"
+  "updatedAt" : "2026-09-12T10:52:13.623606257Z"
 }

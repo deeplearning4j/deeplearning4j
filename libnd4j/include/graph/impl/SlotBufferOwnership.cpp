@@ -26,6 +26,15 @@
 namespace sd {
 namespace graph {
 
+// Snapshot/validation must observe storage, never migrate it to the caller's device.
+static void* snapshotSpecialPointer(NDArray* array) {
+  auto* db = array != nullptr ? array->dataBuffer() : nullptr;
+  void* base = db != nullptr ? db->special() : nullptr;
+  return base != nullptr
+      ? static_cast<void*>(static_cast<int8_t*>(base) + array->offset() * array->sizeOfT())
+      : nullptr;
+}
+
 BufferOwnership classifyBufferOwnership(
     DataBuffer* outBuffer,
     int slotIdx,
@@ -270,7 +279,7 @@ void BufferPointerSnapshot::capture(NDArray** outputSlots, int numSlots,
     for (int i = 0; i < numSlots; i++) {
       if (outputSlots[i] != nullptr) {
         DataBuffer* db = outputSlots[i]->dataBuffer();
-        slotGpuAddresses[i] = outputSlots[i]->specialBuffer();
+        slotGpuAddresses[i] = snapshotSpecialPointer(outputSlots[i]);
         slotDataBuffers[i] = db;
         slotDeviceIds[i] = db != nullptr ? db->deviceId() : -1;
         slotPrimaryAddresses[i] = db != nullptr ? db->primary() : nullptr;
@@ -314,7 +323,7 @@ void BufferPointerSnapshot::capture(NDArray** outputSlots, int numSlots,
     for (int i = 0; i < numExt; i++) {
       if (externalInputs[i] != nullptr) {
         DataBuffer* db = externalInputs[i]->dataBuffer();
-        extGpuAddresses[i] = externalInputs[i]->specialBuffer();
+        extGpuAddresses[i] = snapshotSpecialPointer(externalInputs[i]);
         extDataBuffers[i] = db;
         extDeviceIds[i] = db != nullptr ? db->deviceId() : -1;
         extPrimaryAddresses[i] = db != nullptr ? db->primary() : nullptr;
@@ -464,7 +473,7 @@ bool BufferPointerSnapshot::validate(NDArray** outputSlots, int numSlots,
     // "is-closed" check lives in validateLifecycleForPhase() which has the
     // protectedWeightBuffers context needed to avoid false positives.
 
-    void* currentGpu = outputSlots[i]->specialBuffer();
+    void* currentGpu = snapshotSpecialPointer(outputSlots[i]);
     if (slotGpuAddresses[i] != nullptr && currentGpu != slotGpuAddresses[i]) {
       snprintf(errMsg, errMsgLen,
                "LIFECYCLE_ERROR: slot %d GPU address changed during frozen execution "
@@ -607,7 +616,7 @@ bool BufferPointerSnapshot::validate(NDArray** outputSlots, int numSlots,
       return false;
     }
 
-    void* currentGpu = externalInputs[i]->specialBuffer();
+    void* currentGpu = snapshotSpecialPointer(externalInputs[i]);
     if (extGpuAddresses[i] != nullptr && currentGpu != extGpuAddresses[i]) {
       snprintf(errMsg, errMsgLen,
                "LIFECYCLE_ERROR: external input %d GPU address changed during frozen "

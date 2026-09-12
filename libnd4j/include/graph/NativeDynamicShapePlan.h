@@ -1062,6 +1062,14 @@ struct GraphSegmentExec {
   SegmentLifecycleState lifecycleState = SegmentLifecycleState::NEEDS_WARMUP;
 
   int executionCount = 0;
+  /** Set when an address drift proved this segment's graph contract broken
+   *  (device shift / memory failover moved a graph-consumed buffer). Replay is
+   *  for stable graphs only: a shifted segment must NOT recapture and retry —
+   *  it executes slot-by-slot for the rest of the plan's life and the shift
+   *  is reported once, loudly. Scheduling across GPUs is the caller's job;
+   *  the framework reacts transparently to circumstances it did not plan. */
+  bool replayForbidden = false;
+  const char* replayForbiddenReason = nullptr;
   // Count of intentional value-producing warmups performed before a backend
   // commitment. Non-zero is allowed only when the resolved planning policy
   // explicitly requiresPrecommitFunctionalWarmup; it is never an implicit
@@ -3332,6 +3340,26 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // pointer drift (buffer migrated/freed/replaced) during frozen execution.
   // Violations are hard errors, not diagnostic logs.
   BufferPointerSnapshot frozenSnapshot_;
+
+  /** Slots whose cached wrapper the plan itself replaced after the snapshot was
+   *  captured (platform device-local reallocation, cache-miss discard). The old
+   *  snapshot address is deliberately stale for these; validation skips them
+   *  until the next snapshot recapture re-anchors the current buffers. */
+  std::vector<int> snapshotInvalidatedSlots_;
+
+  /** Record a plan-managed slot buffer replacement so lifecycle validation does
+   *  not misreport the intentional reallocation as cross-segment pointer drift. */
+  void invalidateSnapshotForSlot(int slotIdx) {
+    if (slotIdx < 0 || slotIdx >= totalOutputSlots_) return;
+    if (!frozenSnapshot_.valid) return;
+    if (frozenSnapshot_.slotGpuAddresses != nullptr) {
+      frozenSnapshot_.slotGpuAddresses[slotIdx] = nullptr;
+    }
+    if (frozenSnapshot_.slotDataBuffers != nullptr) {
+      frozenSnapshot_.slotDataBuffers[slotIdx] = nullptr;
+    }
+    snapshotInvalidatedSlots_.push_back(slotIdx);
+  }
 
   // Cached steady-state execution context — reused by executeSteadyState() to
   // avoid heap allocation per step on both CPU and CUDA.

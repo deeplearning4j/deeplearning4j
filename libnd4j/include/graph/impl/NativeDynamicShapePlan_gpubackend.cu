@@ -99,6 +99,15 @@ static bool dsp_disable_workspace_skip() {
 namespace sd {
 namespace graph {
 
+// Pointer-only diagnostics must never synchronize or relocate array storage.
+static void* diagnosticSpecialPointer(NDArray* array) {
+  auto* db = array != nullptr ? array->dataBuffer() : nullptr;
+  void* base = db != nullptr ? db->special() : nullptr;
+  return base != nullptr
+      ? static_cast<void*>(static_cast<int8_t*>(base) + array->offset() * array->sizeOfT())
+      : nullptr;
+}
+
 // ── Legacy process-global capture-workspace registry ──────────────────────
 // Kept for the backend dispatch ABI while plan-owned workspace migration is
 // in flight. New plans deliberately never publish into these maps: CUDA graph
@@ -905,7 +914,7 @@ static LongType computeSlotAddrHash(const NativeSlot* slots, int numSlots,
                                     int endSlot, int totalSlots) {
   return dsp::computeSegmentSlotAddrHash(slots, numSlots, outputSlots,
       startSlot, endSlot, totalSlots,
-                                  [](NDArray* a) -> void* { return DSP_BUF(a); });
+                                  [](NDArray* a) -> void* { return diagnosticSpecialPointer(a); });
 }
 
 static void snapshotSlotOutputBuffers(const NativeSlot& slot, NDArray** outputSlots, int totalOutputSlots,
@@ -1681,7 +1690,7 @@ Status NativeDynamicShapePlan::compositeReplay(
               int extIdx = -(srcIdx + 1);
               if (extIdx >= 0 && extIdx < numExt && seen.find(extIdx) == seen.end()) {
                 seen.insert(extIdx);
-                void* buf = effectiveExternals[extIdx] ? effectiveExternals[extIdx]->specialBuffer() : nullptr;
+                void* buf = diagnosticSpecialPointer(effectiveExternals[extIdx]);
                 DSP_DIAG(EXECUTE,
                          "  DRIFT_TRACE: extIdx=%d name='%s' currentBuf=%p",
                          extIdx,
@@ -1731,7 +1740,7 @@ Status NativeDynamicShapePlan::compositeReplay(
             slots_, numSlots_, seg.def.startSlot, seg.def.endSlot,
             totalOutputSlots_, [&](int, int outputSlot, int) {
               if (traceCount >= 20 || outputSlots_[outputSlot] == nullptr) return;
-              void* buf = outputSlots_[outputSlot]->specialBuffer();
+              void* buf = diagnosticSpecialPointer(outputSlots_[outputSlot]);
               DSP_DIAG(EXECUTE, "  SLOT_DRIFT_TRACE: outputSlot=%d buf=%p len=%lld",
                        outputSlot, buf,
                        (long long)outputSlots_[outputSlot]->lengthOf());
@@ -1781,23 +1790,35 @@ Status NativeDynamicShapePlan::compositeReplay(
     }
   }
 
-  // LIFECYCLE ERROR: address drift with merged CUDA graph handles.
+  // LIFECYCLE: address drift with merged CUDA graph handles.
   // Merged graphs have device pointers baked into captured kernel nodes — they
   // cannot be updated via arg table refresh. Launching a merged graph with stale
   // addresses causes SIGSEGV in cudaGraphLaunch.
   //
-  // Address drift is detected before any replay unit launches, so the caller can
-  // safely rebuild this segment without repeating executed work. Do not invalidate
-  // here: segDispatchReplay owns the atomic invalidate -> warmup -> recompile cycle.
+  // POLICY (user directive): replay is for stable graphs only. A device shift
+  // (memory failover relocated a graph-consumed buffer) BREAKS the replay
+  // contract for this segment permanently. Do NOT invalidate/recapture/retry —
+  // that loop re-warms, re-captures, and crashes in stream state. Instead:
+  // forbid replay for this segment once, report the shift transparently, and
+  // let every subsequent execution take the slot-by-slot path. Scheduling
+  // across devices is the caller's responsibility; the framework reacts.
   if (driftDetected && !sched.mergedReplayHandles.empty()) {
-    DSP_DIAG(EXECUTE,
-             "MERGED_GRAPH_LIFECYCLE_ERROR: seg[%d-%d] address drift detected with %d "
-             "merged CUDA graph handles. Merged graphs have baked-in device pointers "
-             "that are now stale — launching would SIGSEGV. Rebuild requested. execCount=%d",
-             seg.def.startSlot, seg.def.endSlot,
-             static_cast<int>(sched.mergedReplayHandles.size()),
-             seg.exec.executionCount);
-    return Status::MAYBE;
+    if (!seg.exec.replayForbidden) {
+      seg.exec.replayForbidden = true;
+      seg.exec.replayForbiddenReason = "address_drift_device_shift";
+      DSP_DIAG(EXECUTE,
+               "DEVICE_SHIFT_REPLAY_FORBIDDEN: seg[%d-%d] address drift with %d merged "
+               "graph handles — a buffer moved across devices (memory shift). Replay is "
+               "for stable graphs only; this segment will execute slot-by-slot for the "
+               "rest of the plan. execCount=%d",
+               seg.def.startSlot, seg.def.endSlot,
+               static_cast<int>(sched.mergedReplayHandles.size()),
+               seg.exec.executionCount);
+    }
+    // Invalidate the now-unusable captures without recapturing; fall through to
+    // the slot-by-slot path for this invocation.
+    SegmentLifecycle::invalidateSegmentCaptures(
+        this, seg, seg.exec.replayForbiddenReason);
   }
 
   // Refresh arg tables + D2D copy (skip when generation matches — fast replay path)
@@ -2087,7 +2108,7 @@ Status NativeDynamicShapePlan::compositeReplay(
           if (vi2 >= numExt) continue;
           NDArray* staging = effectiveExternals_[vi2];
           if (staging == nullptr || staging->isEmpty()) continue;
-          void* buf = staging->specialBuffer();
+          void* buf = diagnosticSpecialPointer(staging);
           const char* nm = (vi2 < static_cast<int>(externalInputNames_.size()))
                            ? externalInputNames_[vi2].c_str() : "?";
           DSP_DIAG(VERIFY, "PRE_MERGED_LAUNCH_STAGING: ext[%d] name='%s' buf=%p "
@@ -2133,7 +2154,7 @@ Status NativeDynamicShapePlan::compositeReplay(
             if (outSi < 0 || outSi >= totalOutputSlots_) continue;
             NDArray* outArr = outputSlots_[outSi];
             if (outArr == nullptr || outArr->lengthOf() == 0) continue;
-            void* outBuf = outArr->specialBuffer();
+            void* outBuf = diagnosticSpecialPointer(outArr);
             if (outBuf == nullptr) continue;
             DSP_DIAG(EXECUTE,
                      "POST_MERGED_ISLAND_OUTPUT: mergedGroup=%d slot=%d outSlot=%d "
@@ -2149,7 +2170,7 @@ Status NativeDynamicShapePlan::compositeReplay(
           for (int ei = 0; ei < numExt; ei++) {
             NDArray* extArr = effectiveExternals_[ei];
             if (extArr == nullptr || extArr->lengthOf() == 0) continue;
-            void* extBuf = extArr->specialBuffer();
+            void* extBuf = diagnosticSpecialPointer(extArr);
             if (extBuf == nullptr) continue;
             const char* eName = (ei < static_cast<int>(externalInputNames_.size()))
                                 ? externalInputNames_[ei].c_str() : "?";
@@ -2221,7 +2242,7 @@ Status NativeDynamicShapePlan::compositeReplay(
               srcArr = outputSlots_[srcIdx];
             }
             if (srcArr == nullptr || srcArr->lengthOf() == 0) continue;
-            void* srcBuf = srcArr->specialBuffer();
+            void* srcBuf = diagnosticSpecialPointer(srcArr);
             if (srcBuf == nullptr) continue;
             DSP_DIAG(EXECUTE,
                      "PRE_GAP_INPUT: gapSlot=%d input[%d] srcIdx=%d op='%s' "
@@ -3141,6 +3162,16 @@ Status NativeDynamicShapePlan::segDispatchReplay(
     bool& handled) {
 
   handled = false;
+
+  // Replay is for stable graphs only. A device shift forbids replay for this
+  // segment permanently — always fall through to slot-by-slot execution.
+  if (seg.exec.replayForbidden) {
+    DSP_DIAG(EXECUTE,
+             "REPLAY_FORBIDDEN_SKIP: seg[%d-%d] reason=%s — slot-by-slot execution",
+             seg.def.startSlot, seg.def.endSlot,
+             seg.exec.replayForbiddenReason ? seg.exec.replayForbiddenReason : "unknown");
+    return Status::OK;
+  }
 
   bool hasComposite = hasCompositeHandles(seg);
   // gapOpsCapturedInGraph=true when monolithic (native-only) capture was used — gaps are

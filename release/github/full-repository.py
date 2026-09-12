@@ -297,7 +297,8 @@ def build_java(source: Path, local: Path, output: Path, version: str, snapshot: 
                             if s["build"].get("cudaVersion")})
     env = dict(os.environ, DL4J_PLATFORM="linux-x86_64", DL4J_OS="linux",
                DL4J_MAVEN_GOAL="install", DL4J_MAVEN_REPOSITORY=str(local),
-               DL4J_BUILD_SDX="0", DL4J_RELEASE_METADATA="0" if version.endswith("-SNAPSHOT") else "1")
+               DL4J_BUILD_SDX="0", DL4J_RELEASE_METADATA="0" if version.endswith("-SNAPSHOT") else "1",
+               DL4J_TOKENIZERS_JAVA="1")
     # Version tooling must use the same isolated repository too.
     env["MAVEN_OPTS"] = env.get("MAVEN_OPTS", "") + f" -Dmaven.repo.local={local}"
     run(["bash", "./update-versions.sh", snapshot, version], source, env)

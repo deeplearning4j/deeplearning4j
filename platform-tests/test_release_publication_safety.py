@@ -49,7 +49,7 @@ def step_script(filename, name):
 
 
 class PublicationWorkflowSafetyTests(unittest.TestCase):
-    def run_script(self, script, **overrides):
+    def run_script(self, script, cwd=ROOT, **overrides):
         env = dict(os.environ)
         env.update({name: "" for name in SECRET_NAMES})
         env.update(RELEASE_VERSION="1.0.0-M3", SNAPSHOT_VERSION="1.0.0-SNAPSHOT",
@@ -59,7 +59,7 @@ class PublicationWorkflowSafetyTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "github-output"
             env["GITHUB_OUTPUT"] = str(output)
-            result = subprocess.run(["bash", "-c", script], env=env, cwd=ROOT,
+            result = subprocess.run(["bash", "-c", script], env=env, cwd=cwd,
                                     capture_output=True, text=True, check=False)
             outputs = output.read_text() if output.exists() else ""
         return result, outputs
@@ -193,7 +193,7 @@ class PublicationWorkflowSafetyTests(unittest.TestCase):
         script = step_script("java-hotfix-release.yml", "Verify built artifacts")
         result, _ = self.run_script('find() { return 0; }\n' + script, DRY_RUN="true")
         self.assertEqual(1, result.returncode, result.stderr)
-        self.assertIn("Missing or ambiguous built artifact: nd4j-common-1.0.0-M3.jar", result.stderr)
+        self.assertIn("Missing or ambiguous built artifact: nd4j/nd4j-shade/jackson (jackson-1.0.0-M3.jar)", result.stderr)
 
     def test_release_preflight_checks_each_secret_without_disclosing_values(self):
         credentials = {name: f"sensitive-{name}" for name in SECRET_NAMES}
@@ -251,6 +251,97 @@ class PublicationWorkflowSafetyTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, result.stderr)
         self.assertNotIn("ARG=<-Pcentral-release>", result.stdout)
         self.assertNotIn("ARG=<-Pcentral-signing>", result.stdout)
+        self.assertNotIn("ARG=<--also-make>", result.stdout)
+        self.assertIn("ARG=<-Psdx>", result.stdout)
+        self.assertIn("ARG=<-DskipPublishing=false>", result.stdout)
+        verification = source.split("      - name: Verify published snapshot POM closure\n", 1)[1]
+        self.assertIn("inputs.dryRun == 'false' && inputs.deployToReleaseStaging == '0'", verification)
+        self.assertIn("--log java-release-build.log", verification)
+        self.assertIn("java-snapshot-publication.log", verification)
+        # samediff-llm depends on tokenizers-native (JavaCPP API jar) at compile
+        # scope, so the tokenizers producers must be in the reactor; their Rust
+        # and JNI compilation is skipped for this lane.
+        self.assertIn("ARG=<-Ptokenizers-native>", result.stdout)
+        self.assertIn("ARG=<-Dlibtokenizers.cpu.compile.skip=true>", result.stdout)
+        self.assertIn("ARG=<-Djavacpp.compiler.skip=true>", result.stdout)
+        for backend in ("cpu", "cuda", "vulkan", "tpu", "hexagon", "zluda", "metal",
+                        "native"):
+            self.assertNotIn(f"ARG=<-P{backend}>", result.stdout)
+        for native_module in ("libnd4j", "libtokenizers", "tokenizers-native",
+                              "blas-lapack-generator", "libnd4j-gen", "nd4j-sdx"):
+            self.assertNotIn(f"!:{native_module}", result.stdout)
+        self.assertNotIn("ARG=<-Psdx-native>", result.stdout)
+        root_pom = ET.parse(ROOT / "pom.xml").getroot()
+        active = {m.text for m in root_pom.find("m:modules", NS).findall("m:module", NS)}
+        self.assertNotIn("libnd4j", active)
+        self.assertNotIn("platform-tests", active)
+        for module in ("nd4j", "datavec", "deeplearning4j", "python4j", "omnihub", "codegen"):
+            self.assertIn(module, active, module)
+        profiles = {p.findtext("m:id", namespaces=NS): {m.text for m in p.findall("m:modules/m:module", NS)}
+                    for p in root_pom.findall("m:profiles/m:profile", NS)}
+        self.assertEqual({"libnd4j"}, profiles["native"])
+        self.assertEqual({"nd4j/nd4j-tokenizers/libtokenizers", "nd4j/nd4j-tokenizers/tokenizers-native-preset",
+                          "nd4j/nd4j-tokenizers/tokenizers-native"}, profiles["tokenizers-native"])
+        self.assertNotIn("codegen-native", profiles)
+        codegen_pom = ET.parse(ROOT / "codegen/pom.xml").getroot()
+        codegen_modules = {m.text for m in codegen_pom.find("m:modules", NS).findall("m:module", NS)}
+        self.assertEqual({"op-codegen"}, codegen_modules)
+        codegen_profiles = {p.findtext("m:id", namespaces=NS): {m.text for m in p.findall("m:modules/m:module", NS)}
+                            for p in codegen_pom.findall("m:profiles/m:profile", NS)}
+        self.assertEqual({"libnd4j-gen", "blas-lapack-generator"}, codegen_profiles["codegen-native"])
+        tokenizers = ET.parse(ROOT / "nd4j/nd4j-tokenizers/pom.xml").getroot()
+        self.assertIsNone(tokenizers.find("m:modules", NS))
+
+    SENTINEL_MODULES = (
+        "nd4j/nd4j-shade/jackson", "nd4j/nd4j-common",
+        "nd4j/nd4j-backends/nd4j-api-parent/nd4j-api",
+        "nd4j/nd4j-backends/nd4j-api-parent/nd4j-native-api",
+        "nd4j/nd4j-serde/nd4j-arrow", "nd4j/nd4j-ggml",
+        "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-preset",
+        "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-model",
+        "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-litertlm",
+        "nd4j/samediff-llm", "nd4j/samediff-vlm", "nd4j/samediff-audio",
+        "nd4j/samediff-pipeline-ggml", "datavec/datavec-api",
+        "deeplearning4j/deeplearning4j-nn", "deeplearning4j/deeplearning4j-core",
+        "deeplearning4j/deeplearning4j-modelimport",
+        "deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-ui", "omnihub",
+        "codegen/op-codegen", "resources",
+    )
+
+    def test_java_verification_covers_every_java_subtree(self):
+        """The workflow verification must accept a complete snapshot artifact
+        set. Provision minimal jars for every sentinel, run the script, then
+        remove exactly what this test created."""
+        version = "1.0.0-SNAPSHOT"
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        fixture_root = Path(temporary.name)
+        created = []
+        try:
+            for path in self.SENTINEL_MODULES:
+                module = Path(path).name
+                target = fixture_root / path / "target"
+                target.mkdir(parents=True, exist_ok=True)
+                jar = target / f"{module}-{version}.jar"
+                jar.write_bytes(b"placeholder")
+                created.append(jar)
+            script = step_script("java-hotfix-release.yml", "Verify built artifacts")
+            result, _ = self.run_script(script, cwd=fixture_root, DRY_RUN="true", DEPLOY_TO_RELEASE_STAGING="0")
+            self.assertEqual(0, result.returncode, result.stderr)
+            for sentinel in ("nd4j/nd4j-shade/jackson", "datavec/datavec-api",
+                             "deeplearning4j/deeplearning4j-nn", "deeplearning4j/deeplearning4j-core",
+                             "deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-ui", "omnihub",
+                             "nd4j/nd4j-serde/nd4j-arrow",
+                             "nd4j/nd4j-backends/nd4j-api-parent/nd4j-native-api",
+                             "codegen/op-codegen", "resources"):
+                self.assertIn(sentinel, result.stdout, sentinel)
+            self.assertNotIn("deeplearning4j/deeplearning4j-ui/deeplearning4j-ui", result.stdout)
+        finally:
+            for jar in created:
+                jar.unlink(missing_ok=True)
+                parent = jar.parent
+                if parent.name == "target" and not any(parent.iterdir()):
+                    parent.rmdir()
 
     def test_release_dry_runs_check_metadata_and_retain_inspectable_repository(self):
         for filename in ("_release-worker.yml", "publish-release-worker-artifacts.yml"):

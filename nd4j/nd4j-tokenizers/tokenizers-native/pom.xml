@@ -262,6 +262,7 @@
                             <goal>build</goal>
                         </goals>
                         <configuration>
+                            <skip>${javacpp.compiler.skip}</skip>
                             <classOrPackageName>org.eclipse.deeplearning4j.tokenizers.bindings.TokenizersNative</classOrPackageName>
                             <copyLibs>true</copyLibs>
                             <copyResources>true</copyResources>
@@ -287,6 +288,7 @@
                             <goal>run</goal>
                         </goals>
                         <configuration>
+                            <skip>${libtokenizers.cpu.compile.skip}</skip>
                             <target>
                                 <echo message="Copying native libraries to ${javacpp.build.output.path}"/>
                                 <copy todir="${javacpp.build.output.path}" failonerror="true" overwrite="true">

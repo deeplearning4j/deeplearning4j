@@ -139,7 +139,7 @@ jobs:
         working-directory: platform-tests
         run: |
           set -Eeuo pipefail
-          PYTHONPATH=.. python3 -m unittest test_release_publication_safety 2>&1 | tee ../release-safety-contracts.log
+          PYTHONPATH=.. python3 -m unittest test_release_publication_safety test_java_snapshot_publication 2>&1 | tee ../release-safety-contracts.log
 
       - name: Set up Java for publishing
         uses: actions/setup-java@v5
@@ -212,16 +212,22 @@ jobs:
           MAVEN_OPTS: -Xmx2g
         run: |
           set -Eeuo pipefail
-          # These are the Java-only modules that can be released without native rebuilds.
-          # Order matters: nd4j-common and nd4j-api are dependencies of the others.
-          # SDX is explicitly opted into because its model/preset/LiteRT-LM jars are
-          # independent of the native nd4j-sdx binding build.
-          MODULES=":nd4j-common,:nd4j-api,:nd4j-ggml,:nd4j-sdx-preset,:nd4j-sdx-model,:nd4j-sdx-litertlm,:samediff-llm,:samediff-vlm,:samediff-pipeline-ggml,:samediff-audio"
-
+          # Build the complete Java reactor, including DataVec, DL4J, shaded
+          # dependencies and parent POMs, rather than a small hotfix allowlist.
+          # Backend profiles stay inactive (no native libnd4j compile), but the
+          # tokenizers-native profile must be active: samediff-llm has a normal
+          # compile dependency on tokenizers-native (JavaCPP API jar), and the
+          # tokenizers modules build that jar with Rust/JNI compilation skipped
+          # so this lane never produces native binaries. No exclusion lists, so
+          # newly added Java subtrees are published automatically.
           DEPLOY_CMD=(mvn --no-transfer-progress --batch-mode
-            -Psdx -pl "${MODULES}" --also-make
+            -Psdx -Ptokenizers-native
             -DskipTests -Dmaven.test.skip=true -Dsamediff.native.tests=false -DskipTestResourceEnforcement=true
+            -Dlibtokenizers.cpu.compile.skip=true -Djavacpp.compiler.skip=true
             -Denforcer.skip -Dcentral.publishing.autoPublish=false
+            # This single Java publisher owns the complete parent POM closure.
+            # Override the inherited native-matrix duplicate-publication skip.
+            -DskipPublishing=false
             "-Dcentral.publishing.publishingRepositoryId=${SERVER_ID}")
 
           if [[ "${DRY_RUN}" == true ]]; then
@@ -254,16 +260,42 @@ jobs:
             effective_version="${RELEASE_VERSION}"
             suffixes+=(-sources.jar -javadoc.jar)
           fi
-          for module in nd4j-common nd4j-api nd4j-ggml nd4j-sdx-preset nd4j-sdx-model nd4j-sdx-litertlm samediff-llm samediff-vlm samediff-pipeline-ggml samediff-audio; do
-            for suffix in "${suffixes[@]}"; do
-              archive=$(find . -type f -path "*/${module}/target/${module}-${effective_version}${suffix}" -print)
-              if [[ -z "${archive}" || ! -s "${archive}" ]]; then
-                printf 'Missing or ambiguous built artifact: %s-%s%s\n' "${module}" "${effective_version}" "${suffix}" >&2
-                exit 1
-              fi
-              printf 'OK: %s\n' "${archive}"
-            done
+          # Sentinel modules from every Java subtree; the reactor build itself
+          # fails when any selected module is missing, so this guards against a
+          # silently narrowed module list or wrong publication version.
+          modules=(
+            nd4j/nd4j-shade/jackson nd4j/nd4j-common
+            nd4j/nd4j-backends/nd4j-api-parent/nd4j-api
+            nd4j/nd4j-backends/nd4j-api-parent/nd4j-native-api
+            nd4j/nd4j-serde/nd4j-arrow nd4j/nd4j-ggml
+            nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-preset
+            nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-model
+            nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-litertlm
+            nd4j/samediff-llm nd4j/samediff-vlm nd4j/samediff-audio
+            nd4j/samediff-pipeline-ggml datavec/datavec-api
+            deeplearning4j/deeplearning4j-nn deeplearning4j/deeplearning4j-core
+            deeplearning4j/deeplearning4j-modelimport
+            deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-ui omnihub
+            codegen/op-codegen resources
+          )
+          for path in "${modules[@]}"; do
+            module="${path##*/}"
+            archive=$(find "${path}" -type f -path "*/target/${module}-${effective_version}.jar" -print)
+            if [[ -z "${archive}" || ! -s "${archive}" ]]; then
+              printf 'Missing or ambiguous built artifact: %s (%s-%s%s)\n' "${path}" "${module}" "${effective_version}" "${suffixes[0]}" >&2
+              exit 1
+            fi
+            printf 'OK: %s\n' "${archive}"
           done
+
+      - name: Verify published snapshot POM closure
+        if: ${{ inputs.dryRun == 'false' && inputs.deployToReleaseStaging == '0' }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 release/central/verify_java_snapshots.py \
+            --log java-release-build.log --version "${SNAPSHOT_VERSION}" \
+            2>&1 | tee java-snapshot-publication.log
 
       - name: Retain Java qualification logs
         if: always()
@@ -273,4 +305,5 @@ jobs:
           path: |
             release-safety-contracts.log
             java-release-build.log
+            java-snapshot-publication.log
           if-no-files-found: warn

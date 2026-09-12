@@ -246,6 +246,12 @@ DspStagingSyncResult NativeDynamicShapePlan::performPreReplaySync(
   // device's stable buffers and the graph address check starts a new device
   // epoch.  This does not reload the plan or rebuild already-captured graphs.
   const bool externalInputsPrepared = execCtx->isExtInputsSynced();
+  // Capture needs fresh ordering and staging even after replay preparation on
+  // the same device. Preserve the execute-level H2D preparation before reset;
+  // Step 1 below still orders streams before restoring that preparation flag.
+  if (target == ExecTarget::GRAPH_CAPTURE) {
+    execCtx->resetSyncPhase();
+  }
   int currentDevice = -1;
   if (needsStaging) {
     const char* injectedFault = std::getenv("ND4J_DSP_STAGING_FAULT");

@@ -166,6 +166,15 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <!-- The packaged multi-release JAR is modular. Javadoc needs
+                         its descriptor source as well as the Java API sources. -->
+                    <sourcepath>${project.basedir}/src/main/java${path.separator}${project.basedir}/src/main/java9</sourcepath>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.moditect</groupId>
                 <artifactId>moditect-maven-plugin</artifactId>
             </plugin>

@@ -1318,6 +1318,28 @@ public class DynamicShapePlanCompiler {
             extSourceTypes[i] = externalInputSourceTypes.get(i);
         }
 
+        // Measure external input sizes for device-affinity placement. Constants and
+        // variables with large arrays anchor their first consumer to the device that
+        // stores them; placeholders stay dynamic.
+        long[] externalInputBytesArr = new long[externalInputKeys.size()];
+        for (int i = 0; i < externalInputKeys.size(); i++) {
+            byte srcType = externalInputSourceTypes.get(i);
+            if (srcType != DynamicShapeSlot.SOURCE_CONSTANT
+                    && srcType != DynamicShapeSlot.SOURCE_VARIABLE) {
+                continue;
+            }
+            String extName = externalInputKeys.get(i);
+            INDArray arr = sd.getArrForVarName(extName);
+            if (arr == null) {
+                String base = extName.contains(":")
+                        ? extName.substring(0, extName.lastIndexOf(':')) : extName;
+                arr = sd.getArrForVarName(base);
+            }
+            if (arr != null && !arr.isEmpty()) {
+                externalInputBytesArr[i] = (long) arr.dataType().width() * arr.length();
+            }
+        }
+
         DynamicShapePlan plan = new DynamicShapePlan(
                 slots,
                 totalOutputSlots,
@@ -1325,6 +1347,7 @@ public class DynamicShapePlanCompiler {
                 opContextPool,
                 externalInputKeys.toArray(new String[0]),
                 extSourceTypes,
+                externalInputBytesArr,
                 requestedOutputs,
                 outputNameToSlotIndex,
                 hasControlFlow,

@@ -70,7 +70,9 @@ also_make=()
 sdx_profile=()
 sdx_maven_flags=()
 if [ "$DL4J_BUILD_SDX" = 1 ]; then
-  sdx_profile=(-Psdx)
+  # sdx: Java-only jars; sdx-native: jnisdx.cpp binding linked against the
+  # prebuilt libnd4j output this native lane owns.
+  sdx_profile=(-Psdx -Psdx-native)
   sdx_maven_flags=(
     "-Dsdx.native.library=${DL4J_SDX_NATIVE_LIBRARY}"
     "-Dsdx.platform.links=${DL4J_SDX_PLATFORM_LINKS}"

@@ -44,7 +44,7 @@ public class GraphLoader {
     /** Simple method for loading an undirected graph, where the graph is represented by a edge list with one edge
      * per line with a delimiter in between<br>
      * This method assumes that all lines in the file are of the form {@code i<delim>j} where i and j are integers
-     * in range 0 to numVertices inclusive, and "<delim>" is the user-provided delimiter
+     * in range 0 to numVertices inclusive, and {@code <delim>} is the user-provided delimiter
      * <b>Note</b>: this method calls {@link #loadUndirectedGraphEdgeListFile(String, int, String, boolean)} with allowMultipleEdges = true.
      * @param path Path to the edge list file
      * @param numVertices number of vertices in the graph
@@ -59,7 +59,7 @@ public class GraphLoader {
     /** Simple method for loading an undirected graph, where the graph is represented by a edge list with one edge
      * per line with a delimiter in between<br>
      * This method assumes that all lines in the file are of the form {@code i<delim>j} where i and j are integers
-     * in range 0 to numVertices inclusive, and "<delim>" is the user-provided delimiter
+     * in range 0 to numVertices inclusive, and {@code <delim>} is the user-provided delimiter
      * @param path Path to the edge list file
      * @param numVertices number of vertices in the graph
      * @param allowMultipleEdges If set to false, the graph will not allow multiple edges between any two vertices to exist. However,
