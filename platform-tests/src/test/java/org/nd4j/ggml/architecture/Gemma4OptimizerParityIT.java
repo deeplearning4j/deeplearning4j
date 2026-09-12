@@ -381,6 +381,12 @@ class Gemma4OptimizerParityIT {
                 {DataType.LONG, DataType.FLOAT, DataType.LONG},
                 {DataType.INT, DataType.BYTE, DataType.INT},
                 {DataType.INT, DataType.UBYTE, DataType.INT},
+                {DataType.INT, DataType.UINT16, DataType.INT},
+                {DataType.LONG, DataType.UINT32, DataType.LONG},
+                {DataType.INT, DataType.UBYTE, DataType.FLOAT},
+                {DataType.LONG, DataType.UINT32, DataType.DOUBLE},
+                {DataType.BYTE, DataType.UBYTE, DataType.INT},
+                {DataType.UBYTE, DataType.BYTE, DataType.INT},
                 {DataType.FLOAT, DataType.HALF, DataType.DOUBLE},
                 {DataType.HALF, DataType.FLOAT, DataType.HALF},
                 {DataType.BFLOAT16, DataType.FLOAT, DataType.BFLOAT16},
@@ -397,6 +403,52 @@ class Gemma4OptimizerParityIT {
                     assertEquals(expected.dataType(), actual.dataType());
                     assertArrayEquals(expected.data().asDouble(), actual.data().asDouble(),
                             java.util.Arrays.toString(types) + " execution=" + execution);
+                }
+            }
+        }
+    }
+
+    @Test
+    void rawDspUnsignedCastsPreserveHighBitsAndTruncation() {
+        // Typed external inputs exercise signedness even without a producing cast.
+        // Same-width reinterpretation, narrowing, widening, and float conversions
+        // must agree before and after the plan freezes and enters replay.
+        for (DataType sourceType : new DataType[]{DataType.BYTE, DataType.UBYTE,
+                DataType.SHORT, DataType.UINT16, DataType.INT, DataType.UINT32,
+                DataType.LONG, DataType.UINT64}) {
+            for (DataType targetType : new DataType[]{DataType.INT, DataType.LONG,
+                    DataType.FLOAT, DataType.DOUBLE}) {
+                if (sourceType == targetType) continue;
+                try (SameDiff sd = SameDiff.create();
+                     INDArray bits = Nd4j.createFromArray(0L, 1L, 127L, 128L, 255L,
+                             32768L, 65535L, 2147483648L, 4294967295L, -1L, Long.MIN_VALUE);
+                     INDArray input = bits.castTo(sourceType);
+                     INDArray expected = input.castTo(targetType)) {
+                    SDVariable x = sd.placeHolder("input", sourceType, input.length());
+                    sd.setOutputs(x.castTo(targetType).rename("output").name());
+                    for (int execution = 0; execution < 6; execution++) {
+                        INDArray actual = sd.outputSingle(Map.of("input", input), "output");
+                        assertEquals(targetType, actual.dataType());
+                        assertArrayEquals(expected.data().asDouble(), actual.data().asDouble(),
+                                sourceType + " -> " + targetType + " execution=" + execution);
+                    }
+                }
+            }
+        }
+        for (DataType targetType : new DataType[]{DataType.UBYTE, DataType.UINT16,
+                DataType.UINT32, DataType.UINT64}) {
+            double upper = targetType == DataType.UBYTE ? 255.75
+                    : targetType == DataType.UINT16 ? 65535.75 : 4294967295.75;
+            try (SameDiff sd = SameDiff.create();
+                 INDArray input = Nd4j.createFromArray(0.75, 1.75, 127.75, 128.75, upper);
+                 INDArray expected = input.castTo(targetType)) {
+                SDVariable x = sd.placeHolder("input", DataType.DOUBLE, input.length());
+                sd.setOutputs(x.castTo(targetType).rename("output").name());
+                for (int execution = 0; execution < 6; execution++) {
+                    INDArray actual = sd.outputSingle(Map.of("input", input), "output");
+                    assertEquals(targetType, actual.dataType());
+                    assertArrayEquals(expected.data().asDouble(), actual.data().asDouble(),
+                            "DOUBLE -> " + targetType + " execution=" + execution);
                 }
             }
         }
