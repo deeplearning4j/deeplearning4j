@@ -2366,6 +2366,26 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
     do {
       shouldRetry = false;
       try {
+#ifdef SD_CUDA
+        const auto& numericDiagnostics = DspDiagnostics::getInstance();
+        if (executeCount_ == 0 && !streamIsCapturing &&
+            numericDiagnostics.traceSlot() == stepIdx &&
+            (numericDiagnostics.getEnabledMask() & DSP_DIAG_VERIFY) &&
+            numericDiagnostics.getLevel() == DSP_LEVEL_FULL) {
+          const auto& traced = slots_[stepIdx];
+          for (int i = 0; i < traced.wiring.numInputs; ++i) {
+            const int source = traced.wiring.inputSourceIndices[i];
+            NDArray* input = source >= 0 && source < totalOutputSlots_
+                ? outputSlots_[source]
+                : (source < 0 && -(source + 1) < numExt
+                    ? externalArrays[-(source + 1)] : nullptr);
+            const std::string boundary = "before-warmup-op-" + std::to_string(stepIdx) +
+                "-" + traced.ident.opName + "-input-" + std::to_string(i);
+            probePhaseCompileOutputs(&input, &source, 1, stream,
+                                     executeCount_, boundary.c_str());
+          }
+        }
+#endif
         status = executeSlot(stepIdx, externalArrays, numExt, stream);
       } catch (const std::exception& e) {
         std::string msg = e.what();
@@ -2462,10 +2482,12 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
 
 #ifdef SD_CUDA
     // Sample the producer NOW, before the next op can reuse colored storage.
-    // VERIFY/full is an explicit blocking diagnostic; the shared probe checks
-    // every producer stream for capture before performing any synchronization.
+    // VERIFY/full plus traceSlot explicitly selects one op and its inputs above.
+    // Never scan every warmup op: blocking probes can exceed model-call deadlines.
+    // The shared probe checks producer streams for capture before synchronizing.
     const auto& numericDiagnostics = DspDiagnostics::getInstance();
     if (status == Status::OK && executeCount_ == 0 && !streamIsCapturing &&
+        numericDiagnostics.traceSlot() == stepIdx &&
         (numericDiagnostics.getEnabledMask() & DSP_DIAG_VERIFY) &&
         numericDiagnostics.getLevel() == DSP_LEVEL_FULL) {
       const auto& produced = slots_[stepIdx];

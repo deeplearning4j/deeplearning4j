@@ -597,6 +597,55 @@ public class TestAttentionOpValidation extends BaseOpValidation {
         }
     }
 
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("GQA online softmax ignores fully masked leading tiles")
+    public void testGqaMaskedLeadingTiles(Nd4jBackend backend) {
+        // Three rows straddle the 256-key tile boundary; the fourth is entirely masked.
+        // Zero Q/K gives an independent uniform-mean reference over the allowed keys.
+        for (DataType dtype : new DataType[]{DataType.FLOAT16, DataType.FLOAT, DataType.DOUBLE}) {
+            int seq = 800;
+            int[] firstKeys = {255, 256, 512, seq};
+            try (INDArray query = Nd4j.zeros(dtype, 1, 4, 8, 8);
+                 INDArray key = Nd4j.zeros(dtype, 1, seq, 1, 8);
+                 INDArray value = Nd4j.create(dtype, 1, seq, 1, 8);
+                 INDArray bias = Nd4j.create(dtype, 1, 1, 4, seq);
+                 INDArray output = Nd4j.create(dtype, 1, 4, 8, 8);
+                 INDArray empty = Nd4j.empty(dtype)) {
+                bias.assign(Double.NEGATIVE_INFINITY);
+                for (int k = 0; k < seq; k++) {
+                    for (int d = 0; d < 8; d++) {
+                        value.putScalar(new long[]{0, k, 0, d}, k * 0.125 + d);
+                    }
+                    for (int q = 0; q < 4; q++) {
+                        if (k >= firstKeys[q]) bias.putScalar(new long[]{0, 0, q, k}, 0.0);
+                    }
+                }
+                for (int repeat = 0; repeat < 2; repeat++) {
+                    // Empty auxiliaries select the same output-only fused path as DSP inference.
+                    Nd4j.exec(DynamicCustomOp.builder("dot_product_attention_v2")
+                            .addInputs(query, value, key, empty, empty, bias)
+                            .addOutputs(output, empty, empty)
+                            .addFloatingPointArguments(1.0, 0.0)
+                            .addBooleanArguments(false, false, true).build());
+                    double[] actual = output.data().asDouble();
+                    assertEquals(dtype, output.dataType());
+                    for (int q = 0; q < 4; q++) {
+                        for (int h = 0; h < 8; h++) {
+                            for (int d = 0; d < 8; d++) {
+                                double expected = firstKeys[q] == seq ? 0.0
+                                        : (firstKeys[q] + seq - 1) * 0.0625 + d;
+                                assertEquals(expected, actual[(q * 8 + h) * 8 + d],
+                                        dtype == DataType.FLOAT16 ? 0.063 : 1e-5,
+                                        "dtype=" + dtype + " q=" + q + " repeat=" + repeat);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // ========================= Fused Attention with Bias Tests =========================
     // These tests specifically verify that the fused CUDA kernel path is used when
     // attention bias is provided (performance optimization for VLM models like SmolDocling)
