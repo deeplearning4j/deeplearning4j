@@ -262,6 +262,7 @@
                             <goal>build</goal>
                         </goals>
                         <configuration>
+                            <skip>${javacpp.compiler.skip}</skip>
                             <classOrPackageName>org.eclipse.deeplearning4j.tokenizers.bindings.TokenizersNative</classOrPackageName>
                             <copyLibs>true</copyLibs>
                             <copyResources>true</copyResources>
