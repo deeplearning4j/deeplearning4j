@@ -5951,23 +5951,23 @@ public class GenerationPipeline implements AutoCloseable {
         try {
             DspHandle handle = decoder.dsp();
             if (handle.isCompiled()) {
-                int firstNonFiniteSlot = firstNonFiniteDspSlot(handle);
-                dsp.append(", firstNonFiniteSlot=").append(firstNonFiniteSlot);
-                if (firstNonFiniteSlot >= 0) {
+                int observedNonFiniteSlot = firstObservedNonFiniteDspStorageSlot(handle);
+                dsp.append(dspStorageObservation(observedNonFiniteSlot));
+                if (observedNonFiniteSlot >= 0) {
                     DynamicShapePlanExecutor executor =
                             decoder.getOrCreateSession().getDynamicShapePlanExecutor();
                     DynamicShapePlan plan = executor == null ? null : executor.getCurrentPlan();
                     INDArray[] boundExternalInputs = executor == null
                             ? null : executor.getExternalInputsSnapshot();
-                    DynamicShapeSlot producer = producerForOutputSlot(plan, firstNonFiniteSlot);
+                    DynamicShapeSlot producer = producerForOutputSlot(plan, observedNonFiniteSlot);
                     if (producer != null) {
-                        dsp.append(", firstNonFiniteOp=").append(producer.getOpName())
-                                .append(", firstNonFiniteInputs=")
+                        dsp.append(", originalSlotProducerOp=").append(producer.getOpName())
+                                .append(", originalSlotProducerInputs=")
                                 .append(Arrays.toString(producer.getInputVarNames()))
-                                .append(", firstNonFiniteOutputs=")
+                                .append(", originalSlotProducerOutputs=")
                                 .append(Arrays.toString(producer.getOutputVarNames()));
                         appendDspSlotStats(
-                                dsp, handle, firstNonFiniteSlot, "firstNonFinite",
+                                dsp, handle, observedNonFiniteSlot, "postExecutionStorage",
                                 producer.getOpName());
                         appendDspInputLineage(
                                 dsp, handle, decoder, plan, boundExternalInputs,
@@ -5975,7 +5975,7 @@ public class GenerationPipeline implements AutoCloseable {
                         saveDspNonFiniteFixtureIfRequested(
                                 dsp, handle, decoder, boundExternalInputs, producer);
                     } else {
-                        dsp.append(", firstNonFiniteOp=unknown-output-slot");
+                        dsp.append(", originalSlotProducerOp=unknown-output-slot");
                     }
                 }
             }
@@ -5998,15 +5998,27 @@ public class GenerationPipeline implements AutoCloseable {
                 + dsp + "]";
     }
 
+    static String dspStorageObservation(int observedSlot) {
+        return ", dspObservation=post-execution-storage"
+                + ", firstObservedNonFiniteStorageSlot=" + observedSlot
+                + ", scanOrder=output-slot-index"
+                + ", causalOp=unknown"
+                + ", storageCaveat=buffer coloring may reuse storage; original producers and input lineage"
+                + " describe plan wiring, not values at execution time";
+    }
+
     /**
-     * Locate the first output slot containing an actual NaN or infinity.
+     * Locate the lowest-index output slot whose current storage contains a NaN or infinity.
+     * This is a post-execution observation, not the first numerical failure in execution order.
+     * Buffer coloring can reuse the storage for later outputs, so the original producer is
+     * not necessarily responsible for the observed values (nor are its inputs preserved).
      *
      * <p>{@link DspHandle#firstNaNSlot()}
      * uses a reduction sum, which can overflow for large finite FP16 tensors and
      * therefore misidentify an early slot. This slower element-wise scan runs
      * only after generation has already failed with wholly non-finite logits.</p>
      */
-    private static int firstNonFiniteDspSlot(DspHandle handle) {
+    private static int firstObservedNonFiniteDspStorageSlot(DspHandle handle) {
         for (int slotIndex = 0; slotIndex < handle.totalSlots(); slotIndex++) {
             INDArray slot = handle.getSlotOutput(slotIndex);
             if (slot == null || !slot.dataType().isNumerical()) {
@@ -6115,8 +6127,9 @@ public class GenerationPipeline implements AutoCloseable {
     }
 
     /**
-     * Persist the exact plan-bound inputs and outputs of the first non-finite op when an explicit
-     * diagnostic directory is configured. This runs only after generation has already failed and
+     * Persist current storage for the original producer's plan-bound inputs and outputs when an
+     * explicit diagnostic directory is configured. Reused buffers are not execution-time snapshots
+     * and cannot establish which op first failed. This runs only after generation has already failed and
      * never changes normal execution or synchronization.
      */
     private static void saveDspNonFiniteFixtureIfRequested(
@@ -6141,7 +6154,12 @@ public class GenerationPipeline implements AutoCloseable {
         }
 
         StringBuilder metadata = new StringBuilder();
-        metadata.append("op=").append(producer.getOpName()).append('\n');
+        // Retain op for fixture readers, but qualify its meaning explicitly.
+        metadata.append("observation=post-execution-storage\n")
+                .append("causalOp=unknown\n")
+                .append("storageMayBeReused=true\n")
+                .append("opMeaning=original-slot-producer-not-causal-attribution\n")
+                .append("op=").append(producer.getOpName()).append('\n');
         int[] sources = producer.getInputSourceIndices();
         byte[] sourceTypes = producer.getInputSourceTypes();
         String[] inputNames = producer.getInputVarNames();
@@ -6230,10 +6248,10 @@ public class GenerationPipeline implements AutoCloseable {
             INDArray value = handle.getSlotOutput(outputSlot);
             appendDspArrayStats(
                     diagnostic, value, label,
-                    "slot=" + outputSlot + ", producer=" + producerName);
+                    "slot=" + outputSlot + ", originalSlotProducer=" + producerName);
         } catch (RuntimeException diagnosticFailure) {
-            diagnostic.append("\n  dspLineage[").append(label).append("]={slot=")
-                    .append(outputSlot).append(", producer=").append(producerName)
+            diagnostic.append("\n  dspPostExecutionLineage[").append(label).append("]={slot=")
+                    .append(outputSlot).append(", originalSlotProducer=").append(producerName)
                     .append(", unavailable=")
                     .append(diagnosticFailure.getClass().getSimpleName()).append('}');
         }
@@ -6244,7 +6262,7 @@ public class GenerationPipeline implements AutoCloseable {
             INDArray value,
             String label,
             String provenance) {
-        diagnostic.append("\n  dspLineage[").append(label).append("]={")
+        diagnostic.append("\n  dspPostExecutionLineage[").append(label).append("]={")
                 .append(provenance);
         if (value == null) {
             diagnostic.append(", value=unavailable}");
