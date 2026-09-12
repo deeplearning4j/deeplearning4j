@@ -419,6 +419,75 @@ class Gemma4OptimizerParityIT {
     }
 
     @Test
+    void rawDspRepresentableSmallIntegerCastsMatchIndependentReference() {
+        // C++ [conv.fpint] guarantees truncation only when the truncated value
+        // fits the destination. In particular -0.75 -> unsigned is defined (0),
+        // whereas -1.003 -> unsigned is not. Test that boundary independently
+        // of both eager execution and the disputed overflow policy below.
+        for (DataType sourceType : new DataType[]{DataType.DOUBLE, DataType.FLOAT}) {
+            for (DataType targetType : new DataType[]{DataType.BYTE, DataType.SHORT,
+                    DataType.UBYTE, DataType.UINT16}) {
+                int minimum = targetType == DataType.BYTE ? -128
+                        : targetType == DataType.SHORT ? -32768 : 0;
+                int maximum = targetType == DataType.BYTE ? 127
+                        : targetType == DataType.SHORT ? 32767
+                        : targetType == DataType.UBYTE ? 255 : 65535;
+                double[] samples = {minimum - 0.75, minimum, -0.75, -0.0,
+                        0.75, 1.75, maximum - 0.75, maximum, maximum + 0.75};
+                double[] expected = {minimum, minimum, 0, 0, 0, 1,
+                        maximum - 1, maximum, maximum};
+                try (SameDiff sd = SameDiff.create();
+                     INDArray values = Nd4j.createFromArray(samples);
+                     INDArray input = sourceType == DataType.DOUBLE ? values.dup() : values.castTo(sourceType);
+                     INDArray eager = input.castTo(targetType)) {
+                    String label = sourceType + " -> " + targetType;
+                    assertArrayEquals(expected, eager.data().asDouble(), label + " eager representable domain");
+                    SDVariable x = sd.placeHolder("input", sourceType, samples.length);
+                    sd.setOutputs(x.castTo(targetType).rename("output").name());
+                    for (int execution = 0; execution < 6; execution++) {
+                        INDArray actual = sd.outputSingle(Map.of("input", input), "output");
+                        assertEquals(targetType, actual.dataType());
+                        assertArrayEquals(expected, actual.data().asDouble(), label + " execution=" + execution);
+                        assertArrayEquals(samples, input.data().asDouble(), label + " input unchanged");
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    void rawDspSignedUnsignedIntegerChainsMatchIndependentBitReference() {
+        // Start with integers, not a floating cast outside its destination range.
+        // The low-byte representation is explicit; BYTE interprets its high bit
+        // as sign, UBYTE does not. Widening must preserve the intermediate value.
+        long[] samples = {0, 1, 127, 128, 255, 256, 257, -1, -128, -129, -256, -257};
+        for (DataType[] types : new DataType[][]{
+                {DataType.BYTE, DataType.UBYTE}, {DataType.UBYTE, DataType.BYTE}}) {
+            double[] expected = new double[samples.length];
+            for (int i = 0; i < samples.length; i++) {
+                int lowByte = (int) (samples[i] & 0xffL);
+                expected[i] = types[1] == DataType.BYTE && lowByte >= 128 ? lowByte - 256 : lowByte;
+            }
+            try (SameDiff sd = SameDiff.create();
+                 INDArray input = Nd4j.createFromArray(samples);
+                 INDArray first = input.castTo(types[0]);
+                 INDArray second = first.castTo(types[1]);
+                 INDArray eager = second.castTo(DataType.INT)) {
+                String label = java.util.Arrays.toString(types);
+                assertArrayEquals(expected, eager.data().asDouble(), label + " eager integer chain");
+                SDVariable x = sd.placeHolder("input", DataType.LONG, samples.length);
+                sd.setOutputs(x.castTo(types[0]).castTo(types[1]).castTo(DataType.INT).rename("output").name());
+                for (int execution = 0; execution < 6; execution++) {
+                    INDArray actual = sd.outputSingle(Map.of("input", input), "output");
+                    assertEquals(DataType.INT, actual.dataType());
+                    assertArrayEquals(expected, actual.data().asDouble(), label + " execution=" + execution);
+                    assertArrayEquals(samples, input.data().asLong(), label + " input unchanged");
+                }
+            }
+        }
+    }
+
+    @Test
     void rawDspSmallIntegerCastsMatchNativeIntTruncation() {
         // CUDA's native small-integer conversion truncates to int, then keeps low bits.
         // Check that behavior independently, rather than trusting an eager cast oracle.
