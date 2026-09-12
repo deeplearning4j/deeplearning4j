@@ -1790,23 +1790,35 @@ Status NativeDynamicShapePlan::compositeReplay(
     }
   }
 
-  // LIFECYCLE ERROR: address drift with merged CUDA graph handles.
+  // LIFECYCLE: address drift with merged CUDA graph handles.
   // Merged graphs have device pointers baked into captured kernel nodes — they
   // cannot be updated via arg table refresh. Launching a merged graph with stale
   // addresses causes SIGSEGV in cudaGraphLaunch.
   //
-  // Address drift is detected before any replay unit launches, so the caller can
-  // safely rebuild this segment without repeating executed work. Do not invalidate
-  // here: segDispatchReplay owns the atomic invalidate -> warmup -> recompile cycle.
+  // POLICY (user directive): replay is for stable graphs only. A device shift
+  // (memory failover relocated a graph-consumed buffer) BREAKS the replay
+  // contract for this segment permanently. Do NOT invalidate/recapture/retry —
+  // that loop re-warms, re-captures, and crashes in stream state. Instead:
+  // forbid replay for this segment once, report the shift transparently, and
+  // let every subsequent execution take the slot-by-slot path. Scheduling
+  // across devices is the caller's responsibility; the framework reacts.
   if (driftDetected && !sched.mergedReplayHandles.empty()) {
-    DSP_DIAG(EXECUTE,
-             "MERGED_GRAPH_LIFECYCLE_ERROR: seg[%d-%d] address drift detected with %d "
-             "merged CUDA graph handles. Merged graphs have baked-in device pointers "
-             "that are now stale — launching would SIGSEGV. Rebuild requested. execCount=%d",
-             seg.def.startSlot, seg.def.endSlot,
-             static_cast<int>(sched.mergedReplayHandles.size()),
-             seg.exec.executionCount);
-    return Status::MAYBE;
+    if (!seg.exec.replayForbidden) {
+      seg.exec.replayForbidden = true;
+      seg.exec.replayForbiddenReason = "address_drift_device_shift";
+      DSP_DIAG(EXECUTE,
+               "DEVICE_SHIFT_REPLAY_FORBIDDEN: seg[%d-%d] address drift with %d merged "
+               "graph handles — a buffer moved across devices (memory shift). Replay is "
+               "for stable graphs only; this segment will execute slot-by-slot for the "
+               "rest of the plan. execCount=%d",
+               seg.def.startSlot, seg.def.endSlot,
+               static_cast<int>(sched.mergedReplayHandles.size()),
+               seg.exec.executionCount);
+    }
+    // Invalidate the now-unusable captures without recapturing; fall through to
+    // the slot-by-slot path for this invocation.
+    SegmentLifecycle::invalidateSegmentCaptures(
+        this, seg, seg.exec.replayForbiddenReason);
   }
 
   // Refresh arg tables + D2D copy (skip when generation matches — fast replay path)
@@ -3150,6 +3162,16 @@ Status NativeDynamicShapePlan::segDispatchReplay(
     bool& handled) {
 
   handled = false;
+
+  // Replay is for stable graphs only. A device shift forbids replay for this
+  // segment permanently — always fall through to slot-by-slot execution.
+  if (seg.exec.replayForbidden) {
+    DSP_DIAG(EXECUTE,
+             "REPLAY_FORBIDDEN_SKIP: seg[%d-%d] reason=%s — slot-by-slot execution",
+             seg.def.startSlot, seg.def.endSlot,
+             seg.exec.replayForbiddenReason ? seg.exec.replayForbiddenReason : "unknown");
+    return Status::OK;
+  }
 
   bool hasComposite = hasCompositeHandles(seg);
   // gapOpsCapturedInGraph=true when monolithic (native-only) capture was used — gaps are

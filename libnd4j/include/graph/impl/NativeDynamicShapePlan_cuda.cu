@@ -1222,8 +1222,7 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
   int targetDevice = -1;
   if (seg.def.startSlot >= 0 && seg.def.startSlot < numSlots_) {
     targetDevice = slots_[seg.def.startSlot].targetDeviceId;
-  }
-  // Automatic placement inherits the device already bound for this segment.
+  }  // Automatic placement inherits the device already bound for this segment.
   // It does not imply that caller-owned mutable inputs reside on that device.
   if (targetDevice < 0) {
     const auto err = cudaGetDevice(&targetDevice);
@@ -1609,8 +1608,12 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
                "slot=%d ptr=%p targetDevice=%d attrErr=%d — H2D staging",
                slotIdx, srcDev, targetDevice, static_cast<int>(srcAttrErr));
       if (srcAttrErr == cudaSuccess) cudaGetLastError();
-      auto* hostBytes = srcArr->dataBuffer() != nullptr
-          ? srcArr->dataBuffer()->primary() : nullptr;
+      // A CPU-failover dup can carry its bytes in the pinned-host "special"
+      // allocation with no primary at all. Prefer primary when actual, else
+      // the special pointer itself — both are valid H2D sources.
+      auto* dbBytes = srcArr->dataBuffer();
+      auto* hostBytes = (dbBytes != nullptr && dbBytes->primary() != nullptr)
+          ? dbBytes->primary() : srcDev;
       const size_t mBytes = static_cast<size_t>(srcArr->lengthOf()) *
                             static_cast<size_t>(DataTypeUtils::sizeOf(srcArr->dataType()));
       if (hostBytes == nullptr || mBytes == 0) {
@@ -1747,10 +1750,26 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
                slotIdx, sourceDevice, targetDevice, srcLen, freeBytes, poolReusable, totalBytes);
       if (srcMat != nullptr) delete srcMat;
       if (savedDevice >= 0) cudaSetDevice(savedDevice);
-      return cudaPlanFailure(
-          "CUDA cross-device migration has insufficient target capacity: "
-          "slot=%d device=%d bytes=%zu free=%zu poolReusable=%zu total=%zu",
-          slotIdx, targetDevice, srcLen, freeBytes, poolReusable, totalBytes);
+      // POLICY (device-shift react): the segment's device cannot hold this
+      // input copy. The compute must move to where the data already lives.
+      // Rebind the whole segment to the source device for this invocation and
+      // every later one — the caller gets a transparent capacity-shift note.
+      GraphSegment& mutableSeg = const_cast<GraphSegment&>(seg);
+      for (int s = mutableSeg.def.startSlot;
+           s <= mutableSeg.def.endSlot && s < numSlots_; s++) {
+        slots_[s].targetDeviceId = sourceDevice;
+      }
+      // Rebind THIS segment's stream/workspace TLS to the new device too, so
+      // the immediate re-run below and all later invocations land correctly.
+      platformRestoreSegmentDevice();
+      platformBindSegmentDevice(mutableSeg);
+      DSP_DIAG(EXECUTE,
+               "CAPACITY_SHIFT_SEGMENT: seg[%d-%d] rebound from device %d to device %d "
+               "(destination full for %zu-byte input; input residency wins over plan hint)",
+               mutableSeg.def.startSlot, mutableSeg.def.endSlot,
+               targetDevice, sourceDevice, srcLen);
+      targetDevice = sourceDevice;
+      continue;
     }
 
     // The transfer fully overwrites a dense destination. Do not enqueue a

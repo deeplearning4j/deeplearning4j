@@ -1062,6 +1062,14 @@ struct GraphSegmentExec {
   SegmentLifecycleState lifecycleState = SegmentLifecycleState::NEEDS_WARMUP;
 
   int executionCount = 0;
+  /** Set when an address drift proved this segment's graph contract broken
+   *  (device shift / memory failover moved a graph-consumed buffer). Replay is
+   *  for stable graphs only: a shifted segment must NOT recapture and retry —
+   *  it executes slot-by-slot for the rest of the plan's life and the shift
+   *  is reported once, loudly. Scheduling across GPUs is the caller's job;
+   *  the framework reacts transparently to circumstances it did not plan. */
+  bool replayForbidden = false;
+  const char* replayForbiddenReason = nullptr;
   // Count of intentional value-producing warmups performed before a backend
   // commitment. Non-zero is allowed only when the resolved planning policy
   // explicitly requiresPrecommitFunctionalWarmup; it is never an implicit

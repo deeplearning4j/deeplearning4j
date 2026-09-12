@@ -3907,6 +3907,50 @@ Status NativeDynamicShapePlan::executeSlot(
       try {
         status = platformExecuteSlot(slot, ctx);
       } catch (const std::exception& e) {
+        // POLICY (device-shift react, frozen-context path): input sync failed
+        // because the consumer's device is full and the input lives elsewhere.
+        // Re-run this slot once on the device holding the biggest input.
+        const std::string whatFrozen = e.what();
+        const bool capacityFrozen = whatFrozen.find("exceeds device or DEVICE-group memory limits") != std::string::npos ||
+                                    whatFrozen.find("requested target exceeds device") != std::string::npos;
+        if (capacityFrozen) {
+          int altDeviceFrozen = -1;
+          size_t biggestBytesFrozen = 0;
+          for (int i = 0; i < slot.wiring.numInputs; ++i) {
+            NDArray* cand = i < static_cast<int>(ctx.fastpath_in().size())
+                ? ctx.fastpath_in()[i] : nullptr;
+            if (cand == nullptr || cand->dataBuffer() == nullptr) continue;
+            const int candDev = cand->dataBuffer()->deviceId();
+            if (candDev < 0 || candDev == dspGetCurrentDevice()) continue;
+            const size_t candBytes = static_cast<size_t>(cand->lengthOf()) *
+                                     static_cast<size_t>(cand->sizeOfT());
+            if (candBytes > biggestBytesFrozen) {
+              biggestBytesFrozen = candBytes;
+              altDeviceFrozen = candDev;
+            }
+          }
+          if (altDeviceFrozen >= 0) {
+            DSP_DIAG(EXECUTE,
+                     "CAPACITY_SHIFT_EXEC [frozen-ctx]: slot %d (%s) retrying on device %d "
+                     "where its input resides (consumer device full — transparent shift, exec=%d)",
+                     stepIdx, slot.ident.opName.c_str(), altDeviceFrozen, executeCount_);
+            const int savedDevFrozen = dspGetCurrentDevice();
+            try {
+              dspSetCurrentDevice(altDeviceFrozen);
+              status = platformExecuteSlot(slot, ctx);
+            } catch (const std::exception& e2) {
+              DSP_DIAG(EXECUTE,
+                       "CAPACITY_SHIFT_EXEC RETRY FAILED [frozen-ctx]: slot %d on device %d: %s",
+                       stepIdx, altDeviceFrozen, e2.what());
+              status = Status::KERNEL_FAILURE;
+            }
+            dspSetCurrentDevice(savedDevFrozen);
+            if (status == Status::OK) {
+              if (slot.flags.ltEpilogueType > 0) platformClearLtEpilogue();
+              return Status::OK;
+            }
+          }
+        }
         std::string inputShapes, outputShapesStr, iArgsStr;
         dspFormatSlotExecContext(slot, ctx.fastpath_in().data(), slot.wiring.numInputs,
                                  ctx.fastpath_out().data(), slot.wiring.numOutputs,
@@ -5840,6 +5884,62 @@ Status NativeDynamicShapePlan::executeSlot(
         out = new NDArray(const_cast<LongType*>(shapeInfo), dt, true);
       }
     } catch (const std::exception& e) {
+      // The owning device's MemoryCounter rejected the allocation (device full —
+      // typically failover pressure). This is a capacity circumstance, not a plan
+      // defect: REACT by retrying once on an alternate device with free budget.
+      // The framework reports the shift transparently; scheduling remains the
+      // caller's responsibility.
+      const bool capacityLike = std::string(e.what()).find("exceeds device limits") != std::string::npos ||
+                                std::string(e.what()).find("out of memory") != std::string::npos ||
+                                std::string(e.what()).find("OOM") != std::string::npos;
+      if (capacityLike) {
+        const int numDevs = dspGetDeviceCount();
+        const int ownerDevice = dspGetCurrentDevice();
+        int altDevice = -1;
+        // Pick the alternate device with the most free MemoryCounter budget;
+        // require enough headroom for this output plus working room.
+        size_t bestFree = 0;
+        for (int d = 0; d < numDevs; d++) {
+          if (d == ownerDevice) continue;
+          auto& counter = memory::MemoryCounter::getInstance();
+          const LongType dLimit = counter.deviceLimit(d);
+          const LongType dUsed = counter.allocatedDevice(d);
+          const size_t dFree = dLimit > 0 && dUsed < dLimit
+              ? static_cast<size_t>(dLimit - dUsed) : 0;
+          if (dFree > bestFree) { bestFree = dFree; altDevice = d; }
+        }
+        const size_t needBytes = static_cast<size_t>(rank > 0 ? shapeInfo[0] : 1) *
+                                 static_cast<size_t>(DataTypeUtils::sizeOf(dt)) * 2;
+        if (altDevice >= 0 && bestFree > needBytes + (64u << 20)) {
+          DSP_DIAG_SLOT(MEMORY, stepIdx,
+                    "CAPACITY_SHIFT: slot %d (%s) output[%d] relocating to device %d "
+                    "(owner device %d full — execution continues on alternate device; "
+                    "scheduling note for caller)",
+                    stepIdx, slot.ident.opName.c_str(), i, altDevice, ownerDevice);
+          const int savedDev = dspGetCurrentDevice();
+          try {
+            dspSetCurrentDevice(altDevice);
+            if (out != nullptr) { delete out; out = nullptr; }
+            out = new NDArray(const_cast<LongType*>(shapeInfo), dt, true);
+          } catch (const std::exception& e2) {
+            DSP_DIAG_SLOT(MEMORY, stepIdx,
+                      "CAPACITY_SHIFT FAILED: slot %d output[%d] alt device %d: %s",
+                      stepIdx, i, altDevice, e2.what());
+            if (out != nullptr) { delete out; out = nullptr; }
+          }
+          dspSetCurrentDevice(savedDev);
+          if (out != nullptr) {
+            outputs[i] = out;
+            writeOutputSlot(slotIdx, out, "capacity-shift-output");
+            DSP_DIAG_SLOT_WRITE(slotIdx, slot.ident.opName.c_str(),
+                                out->dataBuffer() != nullptr
+                                    ? out->dataBuffer()->getLenInBytes() : 0,
+                                stream, "capacity-shift-output");
+            outputSlots_[slotIdx] = out;
+            continue;
+          }
+        }
+      }
       DSP_DIAG_SLOT(MEMORY, stepIdx, "output ALLOC EXCEPTION at slot %d (%s) output[%d]: %s",
                 stepIdx, slot.ident.opName.c_str(), i, e.what());
       dspPropagateSlotError(
@@ -6143,6 +6243,51 @@ Status NativeDynamicShapePlan::executeSlot(
       }
     }
   } catch (const std::exception& e) {
+    // POLICY (device-shift react): a capacity rejection during input sync means
+    // this op's data lives on another device and the consumer's device is full.
+    // The op itself is sound — its chosen device is simply out of budget.
+    // Re-run this slot from scratch on the device that holds the biggest input;
+    // the framework reports the shift transparently. One retry only.
+    const std::string what = e.what();
+    const bool capacityShift = what.find("exceeds device or DEVICE-group memory limits") != std::string::npos ||
+                               what.find("requested target exceeds device") != std::string::npos;
+    if (capacityShift) {
+      int altDevice = -1;
+      NDArray* biggestInput = nullptr;
+      for (int i = 0; i < slot.wiring.numInputs; ++i) {
+        NDArray* candidate = i < slot.wiring.numInputs ? inputs[i] : nullptr;
+        if (candidate == nullptr || candidate->dataBuffer() == nullptr) continue;
+        auto* candDb = candidate->dataBuffer();
+        const int candDevice = candDb->deviceId();
+        if (candDevice < 0 || candDevice == dspGetCurrentDevice()) continue;
+        if (biggestInput == nullptr ||
+            candidate->lengthOf() > biggestInput->lengthOf()) {
+          biggestInput = candidate;
+          altDevice = candDevice;
+        }
+      }
+      if (altDevice >= 0 && biggestInput != nullptr) {
+        DSP_DIAG(EXECUTE,
+                 "CAPACITY_SHIFT_EXEC: slot %d (%s) retrying on device %d where its "
+                 "input resides (consumer device full — transparent shift, exec=%d)",
+                 stepIdx, slot.ident.opName.c_str(), altDevice, executeCount_);
+        const int savedDev = dspGetCurrentDevice();
+        Status retryStatus = Status::KERNEL_FAILURE;
+        try {
+          dspSetCurrentDevice(altDevice);
+          retryStatus = platformExecuteSlot(slot, ctx);
+        } catch (const std::exception& e2) {
+          DSP_DIAG(EXECUTE,
+                   "CAPACITY_SHIFT_EXEC RETRY FAILED: slot %d on device %d: %s",
+                   stepIdx, altDevice, e2.what());
+        }
+        dspSetCurrentDevice(savedDev);
+        if (retryStatus == Status::OK) {
+          if (slot.flags.ltEpilogueType > 0) platformClearLtEpilogue();
+          return Status::OK;
+        }
+      }
+    }
     // Reshape failures and other exceptions land here — log with DSP_DIAG
     std::string inputShapes, outputShapesStr, iArgsStr;
     dspFormatSlotExecContext(slot, inputs.data(), slot.wiring.numInputs,

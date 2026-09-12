@@ -35,6 +35,7 @@
 #include <graph/DspThreadState.h>
 #include <graph/DspSegmentLifecycle.h>
 #include <graph/DspDeviceDispatch.h>
+#include <graph/DspStreamGuard.h>
 #include <execution/LaunchContext.h>
 #if !defined(SD_VULKAN)
 #include <graph/cpu/FunctionalReplayHandle.h>
@@ -42,6 +43,7 @@
 #include <helpers/MmulHelper.h>
 #include <helpers/ShapeUtils.h>
 #include <system/Environment.h>
+#include <memory>
 
 #include <algorithm>
 #include <cmath>
@@ -2347,6 +2349,11 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
     Status status;
     bool retriedAfterTrim = false;
     bool shouldRetry = false;
+    // Capacity-shift: when a retry lands on an alternate device, this guard
+    // redirects the DSP execution stream to that device's own stream for the
+    // retry (the pinned plan stream belongs to the full device). Null while
+    // inactive; destroyed before the next slot executes.
+    std::unique_ptr<DspStreamGuard> shiftedExecStream_;
     recordGdrInputSanity(
         "SLOT_BY_SLOT", seg.def.startSlot, stepIdx,
         slots_, outputSlots_, totalOutputSlots_, externalArrays, numExt,
@@ -2375,6 +2382,65 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
             }
           }
           continue;  // retry the slot execution after trimming
+        }
+        // POLICY (device-shift react): a MemoryCounter capacity rejection during
+        // input sync means the consumer's device is full and the data could not
+        // be brought to it. The op is sound — its chosen device is out of
+        // budget. The failing input is typically HOST-RESIDENT after failover
+        // (metadata deviceId is unreliable there), so pick the alternate device
+        // by FREE BUDGET — large enough for the biggest input plus working room
+        // — and re-run this slot once on it. Transparent: one CAPACITY_SHIFT_EXEC.
+        if (!streamIsCapturing && !retriedAfterTrim &&
+            (msg.find("exceeds device or DEVICE-group memory limits") != std::string::npos ||
+             msg.find("requested target exceeds device") != std::string::npos)) {
+          NativeSlot& retrySlot = slots_[stepIdx];
+          size_t needBytes = 0;
+          for (int i = 0; i < retrySlot.wiring.numInputs; ++i) {
+            int srcIdx = retrySlot.wiring.inputSourceIndices[i];
+            NDArray* cand = nullptr;
+            if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
+              cand = outputSlots_[srcIdx];
+            } else if (srcIdx < 0) {
+              int extIdx = -(srcIdx + 1);
+              if (extIdx < numExt) cand = externalArrays[extIdx];
+            }
+            if (cand == nullptr) continue;
+            const size_t candBytes = static_cast<size_t>(cand->lengthOf()) *
+                                     static_cast<size_t>(cand->sizeOfT());
+            if (candBytes > needBytes) needBytes = candBytes;
+          }
+          int altDevice = -1;
+          size_t bestFree = 0;
+          const int curDev = dspGetCurrentDevice();
+          const int numDevs = dspGetDeviceCount();
+          for (int d = 0; d < numDevs; d++) {
+            if (d == curDev) continue;
+            auto& counter = memory::MemoryCounter::getInstance();
+            const LongType dLimit = counter.deviceLimit(d);
+            const LongType dUsed = counter.allocatedDevice(d);
+            const size_t dFree = dLimit > 0 && dUsed < dLimit
+                ? static_cast<size_t>(dLimit - dUsed) : 0;
+            if (dFree > needBytes + (64u << 20) && dFree > bestFree) {
+              bestFree = dFree;
+              altDevice = d;
+            }
+          }
+          if (altDevice >= 0) {
+            retriedAfterTrim = true;
+            shouldRetry = true;
+            DSP_DIAG(EXECUTE,
+                     "CAPACITY_SHIFT_EXEC: slot %d (%s) consumer device %d full — "
+                     "retrying on device %d (free=%zuMB, transparent shift)",
+                     stepIdx, retrySlot.ident.opName.c_str(),
+                     curDev, altDevice, bestFree >> 20);
+            // Switch CUDA device AND the DSP execution-stream TLS so the retry's
+            // allocs/copies/kernels resolve against the alternate device's own
+            // stream (the pinned plan stream belongs to the full device).
+            dspSetCurrentDevice(altDevice);
+            shiftedExecStream_.reset(
+                new DspStreamGuard(nullptr, altDevice));
+            continue;  // retry this slot on the alternate device
+          }
         }
         std::string detail = e.what();
         appendSlotInputExceptionContext(detail, slots_[stepIdx],
