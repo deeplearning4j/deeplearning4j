@@ -150,7 +150,8 @@ static void releasePlanFrozenRefsForTeardown(
     const char* owner,
     bool shouldRelease,
     std::vector<DataBuffer*>& frozenProtectedRefBuffers,
-    std::vector<DataBuffer*>& frozenOutputRefBuffers) {
+    std::vector<DataBuffer*>& frozenOutputRefBuffers,
+    std::unordered_set<DataBuffer*>* protectedWeightBuffers = nullptr) {
   if (!shouldRelease) return;
 
   int protectedRemoved = 0;
@@ -162,6 +163,11 @@ static void releasePlanFrozenRefsForTeardown(
         protectedRemoved++;
       } else {
         protectedDead++;  // destroyed externally while pinned — must not touch
+        // The same raw pointer also participates in teardown weight migration.
+        // Removing its frozen ref is not enough: that later pass reads its byte
+        // length and device pointer. Retire the dead identity from both indexes
+        // before releasing the liveness evidence (Gemma repeated-call teardown).
+        if (protectedWeightBuffers != nullptr) protectedWeightBuffers->erase(db);
       }
     }
   }
@@ -7721,7 +7727,8 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
     if (frozenRefsReleasedForTeardown) return;
     frozenRefsReleasedForTeardown = true;
     releasePlanFrozenRefsForTeardown("releaseGpuIntermediates", hadFrozenRefsOnEntry,
-                                     frozenProtectedRefBuffers_, frozenOutputRefBuffers_);
+                                     frozenProtectedRefBuffers_, frozenOutputRefBuffers_,
+                                     &protectedWeightBuffers_);
   };
 
   if (outputSlots_) {
