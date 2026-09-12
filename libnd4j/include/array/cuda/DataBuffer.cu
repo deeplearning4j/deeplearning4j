@@ -992,13 +992,14 @@ void DataBuffer::allocateSpecial() {
                  "caller must fall back to slot-by-slot",
                  aligned, tl_captureWorkspaceSize - tl_captureWorkspaceOffset,
                  tl_captureWorkspaceSize);
-        THROW_EXCEPTION("CAPTURE_WORKSPACE_EXHAUSTED: capture workspace exhausted "
+        const std::string exhaustionMessage = "CAPTURE_WORKSPACE_EXHAUSTED: capture workspace exhausted "
                         "during CUDA graph capture (need " +
                         std::to_string(aligned) + " bytes, " +
                         std::to_string(tl_captureWorkspaceSize - tl_captureWorkspaceOffset) +
                         " remaining). Capture aborted to avoid baking unsafe addresses; "
                         "re-run this segment slot-by-slot. Tune via "
-                        "Environment::dspCaptureWorkspaceMb if capture is required.");
+                        "Environment::dspCaptureWorkspaceMb if capture is required.";
+        THROW_EXCEPTION(exhaustionMessage.c_str());
       }
 
       // During CUDA graph capture, allocations MUST use the captured stream.
