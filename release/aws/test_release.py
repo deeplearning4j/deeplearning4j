@@ -4633,8 +4633,9 @@ class ReleaseValidationTest(unittest.TestCase):
         ))
         # The same forwarded outputPath controls the native producer, not just JNI.
         native_pom = ET.parse(root / "libnd4j/pom.xml")
-        vulkan = native_pom.find("m:profiles/m:profile[m:id='vulkan']", ns)
-        arguments = [element.text for element in vulkan.findall(".//m:argument", ns)]
+        producer = native_pom.find("m:profiles/m:profile[m:id='build-native']", ns)
+        self.assertEqual("!libnd4j.cuda", producer.findtext("m:activation/m:property/m:name", namespaces=ns))
+        arguments = [element.text for element in producer.findall(".//m:argument", ns)]
         self.assertEqual("${libnd4j.outputPath}", arguments[arguments.index("--output-path") + 1])
 
     def test_sdx_gnu_linker_flag_is_not_active_on_macos(self):
