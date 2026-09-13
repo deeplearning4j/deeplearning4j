@@ -3894,6 +3894,38 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
       CUcontext prevCtx = nullptr;
       bool didPushCtx = pushPrimaryCtxIfConfigured(tritonCaptureDevice, &primaryCtx, &prevCtx);
 
+      // A segment's warmup may reuse a buffer that held an input produced by
+      // an earlier segment. Capture records addresses only; its first ordered
+      // replay must see the original live-in VALUES, not the warmup's later
+      // writes to those addresses. Keep invocation-local copies without changing
+      // any plan buffer assignment or captured pointer.
+      struct CaptureLiveInputs {
+        std::vector<std::pair<int, NDArray*>> values;
+        ~CaptureLiveInputs() {
+          for (auto& value : values) delete value.second;
+        }
+      } captureLiveInputs;
+      if (!ctx.nativeOnlyGraphCapture) {
+        std::unordered_set<int> producedOutputs;
+        std::unordered_set<int> savedInputs;
+        for (int s = seg.def.startSlot; s <= seg.def.endSlot; ++s) {
+          for (int o = 0; o < slots_[s].wiring.numOutputs; ++o) {
+            producedOutputs.insert(slots_[s].wiring.outputSlotIndices[o]);
+          }
+        }
+        ScopedGapStreamOverride liveInputStream(ctx.cudaStr);
+        for (int s = seg.def.startSlot; s <= seg.def.endSlot; ++s) {
+          for (int i = 0; i < slots_[s].wiring.numInputs; ++i) {
+            int source = slots_[s].wiring.inputSourceIndices[i];
+            if (source >= 0 && source < totalOutputSlots_ &&
+                producedOutputs.count(source) == 0 && savedInputs.insert(source).second &&
+                outputSlots_[source] != nullptr) {
+              captureLiveInputs.values.emplace_back(source, outputSlots_[source]->dup());
+            }
+          }
+        }
+      }
+
       // ── PRE-CAPTURE WARMUP EXECUTION ────────────────────────────────────────
       // During CUDA graph capture, GPU operations are NOT executed — they are only
       // recorded into the graph.  The capture step's output buffers retain whatever
@@ -5140,6 +5172,12 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
            // handles have not launched: replay the whole schedule exactly once so
            // native gaps consume their captured producers before buffer reuse.
            if (hasIslandUnits) {
+             {
+               ScopedGapStreamOverride liveInputStream(ctx.cudaStr);
+               for (auto& value : captureLiveInputs.values) {
+                 outputSlots_[value.first]->assign(value.second);
+               }
+             }
              status = compositeReplay(seg, sched, externalArrays, numExt, stream);
              if (status != Status::OK) return status;
            }
