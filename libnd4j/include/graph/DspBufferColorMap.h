@@ -157,6 +157,14 @@ class SD_LIB_EXPORT DspBufferColorMap {
                       NDArray** outputSlots);
   void recordWarmup(int slot, NDArray* array, int device, void* stream);
   void noteWarmupRead(int slot, int device, void* stream);
+  /**
+   * After recordWarmup(), drop this slot from the color system when the slot's
+   * final warmup publication no longer owns a buffer tracked as this color's
+   * master storage (e.g. a view-capable op re-published a zero-copy view of its
+   * input later in the same warmup pass). Without this, the color's masterSlotIdx
+   * keeps an abandoned wrapper whose buffer is about to be freed.
+   */
+  void forgetReplacedMaster(int slot, NDArray* finalArray);
 
   // ── Validation ─────────────────────────────────────────────────────────
 

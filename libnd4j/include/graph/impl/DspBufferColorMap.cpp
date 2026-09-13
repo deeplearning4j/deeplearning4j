@@ -127,18 +127,18 @@ NDArray* DspBufferColorMap::reuseWarmup(
     if (master == nullptr || master->dataBuffer() != color.sharedBuffer ||
         !color.sharedBuffer->isValid() || color.sharedBuffer->isClosed() ||
         color.sharedBuffer->deviceId() != device) continue;
-    auto* borrowed = new NDArray(color.sharedBuffer, const_cast<LongType*>(shapeInfo),
-                                 master->getContext(), 0);
-    warmupArrays_.insert(borrowed);
-    colorOf_[slot] = c;
-    appliedSlots_[slot] = true;
-    color.memberCount++;
-    color.lastConsumer = warmupLastConsumer_[slot];
-    numColoredSlots_++;
-    bytesBefore_ += bytes;
-    bytesSaved_ += bytes;
-    applied_ = true;
-    DSP_DIAG(MEMORY, "WARMUP_COLOR_REUSE: slot=%d color=%d master=%d device=%d bytes=%zu",
+      auto* borrowed = new NDArray(color.sharedBuffer, const_cast<LongType*>(shapeInfo),
+                                   master->getContext(), 0);
+      warmupArrays_.insert(borrowed);
+      colorOf_[slot] = c;
+      appliedSlots_[slot] = true;
+      color.memberCount++;
+      color.lastConsumer = warmupLastConsumer_[slot];
+      numColoredSlots_++;
+      bytesBefore_ += bytes;
+      bytesSaved_ += bytes;
+      applied_ = true;
+      DSP_DIAG(MEMORY, "WARMUP_COLOR_REUSE: slot=%d color=%d master=%d device=%d bytes=%zu",
              slot, c, color.masterSlotIdx, device, bytes);
     return borrowed;
   }
@@ -155,8 +155,31 @@ void DspBufferColorMap::noteWarmupRead(int slot, int device, void* stream) {
 
 void DspBufferColorMap::recordWarmup(int slot, NDArray* array, int device, void* stream) {
   if (!warmupEligible(slot) || colorOf_[slot] >= 0 || device < 0 || stream == nullptr ||
-      array == nullptr || array->isView() || array->offset() != 0 ||
-      !shape::strideDescendingCAscendingF(array->shapeInfo())) return;
+      array == nullptr || array->offset() != 0 ||
+      !shape::strideDescendingCAscendingF(array->shapeInfo())) {
+    if (DSP_DIAG_ENABLED(MEMORY)) {
+      DSP_DIAG(MEMORY, "WARMUP_RECORD_DECLINE: slot=%d eligible=%d hasColor=%d device=%d "
+               "stream=%p array=%p offset=%lld contig=%d",
+               slot, warmupEligible(slot) ? 1 : 0, colorOf_[slot] >= 0 ? 1 : 0,
+               device, stream, (void*)array,
+               array != nullptr ? (long long)array->offset() : -1LL,
+               array != nullptr
+                   ? shape::strideDescendingCAscendingF(array->shapeInfo()) ? 1 : 0
+                   : 0);
+    }
+    return;
+  }
+  // Ownership decides, not the ARRAY_IS_VIEW shape bit. A zero-copy view
+  // wrapper borrows its input's DataBuffer (ownsDataBuffer()==false) and must
+  // never become a color master. The warmup-dedicated output of a view-capable
+  // op mints a fresh buffer even though its cached shape still carries the
+  // ARRAY_IS_VIEW bit — that array owns its storage and is exactly the
+  // narrowed-eligibility candidate this coloring path exists to admit.
+  if (!array->ownsDataBuffer()) {
+    DSP_DIAG(MEMORY, "WARMUP_RECORD_DECLINE_VIEW: slot=%d borrows input buffer (isView=%d)",
+             slot, array->isView() ? 1 : 0);
+    return;
+  }
   auto* db = array->dataBuffer();
   if (db == nullptr || db->special() == nullptr || db->deviceId() != device) return;
   ColorInfo color;
@@ -175,6 +198,45 @@ void DspBufferColorMap::recordWarmup(int slot, NDArray* array, int device, void*
   numColoredSlots_++;
   bytesBefore_ += color.bufferBytes;
   bytesAfter_ += color.bufferBytes;
+  DSP_DIAG(MEMORY, "WARMUP_RECORD: slot=%d color=%d bytes=%zu device=%d",
+           slot, colorOf_[slot], color.bufferBytes, device);
+}
+
+// ─── forgetReplacedMaster() ──────────────────────────────────────────────────
+
+void DspBufferColorMap::forgetReplacedMaster(int slot, NDArray* finalArray) {
+  if (!incremental_ || slot < 0 || slot >= totalOutputSlots_) return;
+  const int c = colorOf_[slot];
+  if (c < 0) return;
+  auto& color = colorInfos_[c];
+  if (finalArray == nullptr) return;
+  auto* db = finalArray->dataBuffer();
+  if (db != nullptr && db == color.sharedBuffer) return;  // Master storage intact.
+
+  // The slot's final warmup publication no longer owns the recorded master
+  // storage (borrowed wrapper or foreign buffer). Retire the color: the
+  // abandoned master wrapper must leave the tracking set so post-capture
+  // retirement cannot treat it as live plan storage, and later writers must
+  // not borrow storage the plan no longer references.
+  NDArray* abandoned = nullptr;
+  for (auto* arr : warmupArrays_) {
+    if (arr != nullptr && arr != finalArray && arr->dataBuffer() == color.sharedBuffer &&
+        arr->ownsDataBuffer()) {
+      abandoned = arr;
+      break;
+    }
+  }
+  if (abandoned != nullptr) {
+    warmupArrays_.erase(abandoned);
+  }
+  colorOf_[slot] = -1;
+  if (color.memberCount > 0) color.memberCount--;
+  if (numColoredSlots_ > 0) numColoredSlots_--;
+  if (bytesSaved_ >= color.bufferBytes && color.memberCount <= 1) {
+    bytesSaved_ -= color.bufferBytes;
+  }
+  DSP_DIAG(MEMORY, "WARMUP_FORGET_REPLACED_MASTER: slot=%d color=%d abandoned=%p "
+           "memberCount=%d", slot, c, (void*)abandoned, color.memberCount);
 }
 
 // ─── compute() ───────────────────────────────────────────────────────────────

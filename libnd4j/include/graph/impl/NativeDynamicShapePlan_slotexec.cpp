@@ -5980,7 +5980,17 @@ Status NativeDynamicShapePlan::executeSlot(
       return Status::KERNEL_FAILURE;
     }
 
-    if (firstPassColor) colorMap_.recordWarmup(slotIdx, out, allocationDevice, allocationStream);
+    if (firstPassColor) {
+      colorMap_.recordWarmup(slotIdx, out, allocationDevice, allocationStream);
+      // A narrowed-eligibility master may have been re-published as a zero-copy
+      // view within the same warmup pass (borrowing its input's buffer).
+      // Retire the shared-buffer reference immediately — otherwise the color's
+      // masterSlotIdx keeps an abandoned wrapper whose buffer no longer belongs
+      // to the plan, and reuseWarmup would hand that stale storage to later
+      // writers. Later executions re-classify such slots and the debug-only
+      // validate()/eject path recovers if a stale view survives.
+      colorMap_.forgetReplacedMaster(slotIdx, out);
+    }
     outputs[i] = out;
     writeOutputSlot(slotIdx, out, "normal-alloc-output");
     DSP_DIAG_SLOT_WRITE(slotIdx, slot.ident.opName.c_str(),
