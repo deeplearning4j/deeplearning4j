@@ -35,6 +35,22 @@ class CanonicalWorkerMergeTests(unittest.TestCase):
             self.assertEqual(3, len(result['files']))
             self.assertEqual(b'canonical', next(output.rglob('*-javadoc.jar')).read_bytes())
 
+    def test_build_only_aggregator_is_not_published(self):
+        repo = self.worker('linux-x86_64-cpu', b'canonical')
+        folder = repo / 'org/eclipse/deeplearning4j/libnd4j/1.0.0-rewrite'
+        folder.mkdir(parents=True)
+        (folder / 'libnd4j-1.0.0-rewrite.pom').write_text('<project/>')
+        output = self.root / 'out'
+        merge([repo], output, self.root / 'manifest.json',
+              '1.0.0-rewrite', 'a' * 40, canonical_worker_owners=True)
+        self.assertFalse((output / 'org/eclipse/deeplearning4j/libnd4j').exists())
+        consumer = repo / 'consumer.pom'
+        consumer.write_text('<project><parent><groupId>org.eclipse.deeplearning4j</groupId>'
+                            '<artifactId>libnd4j</artifactId></parent></project>')
+        with self.assertRaisesRegex(ValueError, 'requires build-only'):
+            merge([repo], self.root / 'out2', self.root / 'manifest2.json',
+                  '1.0.0-rewrite', 'a' * 40, canonical_worker_owners=True)
+
     def test_missing_owner_fails(self):
         arm = self.worker('linux-arm64-cpu', b'arm')
         with self.assertRaisesRegex(ValueError, 'Missing canonical owner'):

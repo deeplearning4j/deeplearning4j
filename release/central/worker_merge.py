@@ -6,6 +6,7 @@ remain byte-checked by the ordinary strict merge. Input images are not mutated.
 import importlib.util
 import json
 from pathlib import Path
+import xml.etree.ElementTree as ET
 
 
 def select(inputs, version, commit):
@@ -36,9 +37,23 @@ def select(inputs, version, commit):
             raise ValueError(f"Duplicate worker identity: {identity}")
         by_identity[identity] = repository
         selected[repository] = identity
+        # Match full-repository assembly: libnd4j is a build aggregator, not
+        # a published component. Fail if any consumer actually needs its POM.
+        if (repository / 'org/eclipse/deeplearning4j/libnd4j').exists():
+            for pom in repository.rglob('*.pom'):
+                if pom.parent.parent.name == 'libnd4j':
+                    continue
+                project = ET.parse(pom).getroot()
+                refs = project.findall('{*}parent') + project.findall('.//{*}dependency')
+                if any(ref.findtext('{*}artifactId') == 'libnd4j' and
+                       ref.findtext('{*}groupId') == 'org.eclipse.deeplearning4j'
+                       for ref in refs):
+                    raise ValueError(f'Published POM requires build-only libnd4j: {pom}')
 
     def include(repository, relative):
         artifact, artifact_version = relative.parent.parent.name, relative.parent.name
+        if relative.parts[:3] == ('org', 'eclipse', 'deeplearning4j') and artifact == 'libnd4j':
+            return False
         owner = owners.get(artifact)
         if owner is None:
             return True
