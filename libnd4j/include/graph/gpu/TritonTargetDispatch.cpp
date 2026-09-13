@@ -62,13 +62,9 @@
 #include <graph/gpu/DspCudaDispatch.h>
 #include <graph/gpu/TritonCudaDriverDispatch.h>
 
-// HIP headers: available in native ROCm builds AND ZLUDA+AMD builds.
-// ZLUDA+AMD sets HAVE_MIOPEN=1 and includes ROCm in the build.
-#if defined(ZLUDA_TARGET_AMD) || defined(HAVE_MIOPEN) || defined(SD_HIP)
-#define TRITON_HAS_HIP 1
-#include <hip/hip_runtime.h>
-#include <hip/hiprtc.h>
-#endif
+// HIP host calls live in a separate TU: HIP runtime_api also declares vector
+// types and cannot share this CUDA-facing TU. The bridge retains AMD admission.
+#include <graph/gpu/TritonHipDispatch.h>
 
 // Level Zero headers: available in native Intel builds and ZLUDA+Intel builds.
 #if defined(ZLUDA_TARGET_INTEL) || defined(SD_LEVEL_ZERO)
@@ -585,19 +581,16 @@ TritonGpuTarget TritonTargetDispatch::detectTarget() {
 #if TRITON_HAS_HIP
   // Try HIP detection first — preferred for AMD because gcnArchName is exact
   {
-    int deviceCount = 0;
-    auto err = hipGetDeviceCount(&deviceCount);
-    if (err == hipSuccess && deviceCount > 0) {
-      hipDeviceProp_t props;
-      hipGetDeviceProperties(&props, 0);
-
+    std::string hipArchName;
+    std::string deviceName;
+    if (triton_hip::detectDevice(hipArchName, deviceName)) {
       // gcnArchName is the canonical arch string (e.g., "gfx1100", "gfx90a")
-      std::string archName = canonicalizeAmdArch(props.gcnArchName);
+      std::string archName = canonicalizeAmdArch(hipArchName);
       if (!archName.empty() && archName.find("gfx") != std::string::npos) {
         cachedArch_ = archName;
         cachedTarget_ = TritonGpuTarget::AMD;
         DSP_DIAG(BACKEND, "TritonTargetDispatch: detected AMD GPU '%s' via HIP, arch=%s",
-                  props.name, cachedArch_.c_str());
+                  deviceName.c_str(), cachedArch_.c_str());
         return cachedTarget_;
       }
     }
@@ -1636,14 +1629,14 @@ void* TritonTargetDispatch::loadModule(const TritonCompiledBinary& binary) {
       //   - Native ROCm/HIP builds (SD_HIP defined, SD_CUDA not defined)
       //   - ZLUDA+AMD builds (SD_CUDA defined, ZLUDA_TARGET_AMD defined, HAVE_MIOPEN defined)
       // In ZLUDA+AMD builds, we bypass ZLUDA's CUDA interception and use HIP directly.
-      hipModule_t module = nullptr;
-      hipError_t res = hipModuleLoadData(&module, binary.data);
-      if (res != hipSuccess) {
+      const char* error = nullptr;
+      void* module = triton_hip::loadModule(binary.data, error);
+      if (!module) {
         sd_printf("TritonTargetDispatch::loadModule: hipModuleLoadData failed: %s\n",
-                  hipGetErrorString(res));
+                  error);
         return nullptr;
       }
-      return static_cast<void*>(module);
+      return module;
 #else
       DSP_DIAG(COMPILE, "TritonTargetDispatch::loadModule: AMD target requires HIP (HAVE_MIOPEN/SD_HIP/ZLUDA_TARGET_AMD)");
       return nullptr;
@@ -1730,14 +1723,14 @@ void* TritonTargetDispatch::getKernelFunction(void* gpuModule, const std::string
 
     case TritonGpuTarget::AMD: {
 #if TRITON_HAS_HIP
-      hipFunction_t func = nullptr;
-      hipError_t res = hipModuleGetFunction(&func, static_cast<hipModule_t>(gpuModule), kernelName.c_str());
-      if (res != hipSuccess) {
+      const char* error = nullptr;
+      void* func = triton_hip::getKernelFunction(gpuModule, kernelName.c_str(), error);
+      if (!func) {
         DSP_DIAG(EXECUTE, "TritonTargetDispatch::getKernelFunction: hipModuleGetFunction failed: %s",
-                  hipGetErrorString(res));
+                  error);
         return nullptr;
       }
-      return static_cast<void*>(func);
+      return func;
 #else
       return nullptr;
 #endif
@@ -1813,16 +1806,13 @@ bool TritonTargetDispatch::launchKernel(void* kernelFunc,
 #if TRITON_HAS_HIP
       // Launch via HIP directly. Under ZLUDA+AMD this bypasses ZLUDA's
       // CUDA interception and uses the real HIP runtime.
-      hipError_t res = hipModuleLaunchKernel(
-          static_cast<hipFunction_t>(kernelFunc),
-          gridX, gridY, gridZ,
-          blockX, blockY, blockZ,
-          sharedMemBytes,
-          static_cast<hipStream_t>(stream),
-          args, nullptr);
-      if (res != hipSuccess) {
+      const char* error = nullptr;
+      if (!triton_hip::launchKernel(kernelFunc,
+                                    gridX, gridY, gridZ,
+                                    blockX, blockY, blockZ,
+                                    sharedMemBytes, stream, args, error)) {
         sd_printf("TritonTargetDispatch::launchKernel: hipModuleLaunchKernel failed: %s\n",
-                  hipGetErrorString(res));
+                  error);
         return false;
       }
       return true;
@@ -1940,7 +1930,7 @@ void TritonTargetDispatch::unloadModule(void* gpuModule) {
 
     case TritonGpuTarget::AMD: {
 #if TRITON_HAS_HIP
-      hipModuleUnload(static_cast<hipModule_t>(gpuModule));
+      triton_hip::unloadModule(gpuModule);
 #endif
       break;
     }
