@@ -1500,8 +1500,21 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
     if (!normMultiRow) {
       result.gridX = 1;
     }
+    // A standalone reduction has no in-kernel producer or consumer: each lane
+    // owns one compact output coordinate and reads only a prior phase's input.
+    // Cover every output tile without changing the ordered reduction arithmetic.
+    // Do not apply this to fused ranges: their intermediate-buffer barrier is
+    // block-local, so their producer/reduction dependencies need phase boundaries.
+    if (hasReduction && startSlot == endSlot && slots[startSlot].wiring.numInputs > 0) {
+      const auto layout = buildOrderedReductionLayout(
+          resolveShapeLocal(slots[startSlot].wiring.inputSourceIndices[0]), slots[startSlot]);
+      if (layout.valid) {
+        result.gridX = static_cast<int>(std::max<int64_t>(1,
+            (static_cast<int64_t>(layout.outputLength) + blockSize - 1) / blockSize));
+      }
+    }
     DSP_DIAG(COMPILE, "TritonIRBuilder::buildModule: %s grid for %s (BLOCK_SIZE=%d, gridX=%d)",
-              normMultiRow ? "multi-block" : "single-block",
+              result.gridX > 1 ? "multi-block" : "single-block",
               hasNormalization ? "normalization" : "segmented reduction",
               blockSize, result.gridX);
   }
@@ -4758,8 +4771,9 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   // Element-wise kernels MUST use dynamic grid: the grid size depends on n_elements
   // passed at launch time. A fixed grid of 1 block only processes BLOCK_SIZE elements,
   // leaving larger outputs partially computed (stale data from previous step).
-  // Reductions/normalizations stay fixed at 1 block (set earlier at line ~3589)
-  // because they use block-local bar.sync barriers.
+  // Reductions/normalizations retain their explicitly configured grid. Standalone
+  // reductions tile compact outputs; fused reductions keep the block-local barrier
+  // contract. Their grid must not be recomputed from the input element count.
   bool hasReductionOrNorm = false;
   for (auto cat : categories) {
     if (cat == TritonOpCategory::REDUCTION || cat == TritonOpCategory::NORMALIZATION) {

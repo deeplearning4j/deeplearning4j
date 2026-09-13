@@ -783,6 +783,52 @@ public class DspMixedPrecisionReplayTest {
         }
     }
 
+    @Test
+    @DisplayName("Standalone Triton reduction rewrites compact outputs across the 4096 tile boundary")
+    public void testTritonReductionOutputTileBoundaryFreshness() {
+        Environment environment = Nd4j.getEnvironment();
+        boolean compileAllBefore = environment.tritonCompileAll();
+        boolean alwaysCompileBefore = environment.tritonAlwaysCompile();
+        String includeTypesBefore = environment.tritonIncludeTypes();
+        try {
+            environment.setTritonCompileAll(true);
+            environment.setTritonAlwaysCompile(true);
+            environment.setTritonIncludeTypes("REDUCTION,ELEMENTWISE");
+            for (int rows : new int[]{4095, 4096, 4097, 8193}) {
+                try (INDArray input = Nd4j.zeros(DataType.FLOAT, rows, 128);
+                     SameDiff triton = SameDiff.create()) {
+                    triton.placeHolder("input", DataType.FLOAT, rows, 128).sum("sum", true, -1);
+                    triton.setGraphExecutionMode(GraphExecutionMode.TRITON);
+                    Map<String, INDArray> placeholders = new LinkedHashMap<>();
+                    placeholders.put("input", input);
+                    for (int step = 0; step < 5; step++) {
+                        // Capture with zeros, then change the actual producer input.
+                        // Reading a copied output or retaining warmup data cannot pass.
+                        float value = step < 3 ? 0.0f : step - 2.0f;
+                        input.assign(value);
+                        INDArray actual = triton.output(placeholders, "sum").get("sum");
+                        assertEquals(DataType.FLOAT, actual.dataType());
+                        assertArrayEquals(new long[]{rows, 1}, actual.shape());
+                        float[] actualValues = actual.data().asFloat();
+                        for (int row = 0; row < rows; row++) {
+                            assertEquals(Float.floatToRawIntBits(value * 128),
+                                    Float.floatToRawIntBits(actualValues[row]),
+                                    "rows=" + rows + " step=" + step + " row=" + row);
+                        }
+                    }
+                    DspPlanAssertions.assertPhaseReached(triton, PlanPhase.SHAPES_FROZEN,
+                            "Standalone reduction tile boundary rows=" + rows);
+                    DspPlanAssertions.assertNoPhaseContractViolations(triton,
+                            "Standalone reduction tile boundary rows=" + rows);
+                }
+            }
+        } finally {
+            environment.setTritonCompileAll(compileAllBefore);
+            environment.setTritonAlwaysCompile(alwaysCompileBefore);
+            environment.setTritonIncludeTypes(includeTypesBefore);
+        }
+    }
+
     /** Diagnostic prefixes retain their requested output, not a dead aliased slot. */
     @Test
     @DisplayName("Attribute production HALF K-normalization by live requested prefixes")
@@ -796,7 +842,7 @@ public class DspMixedPrecisionReplayTest {
         runProductionKNormalizationPrefixes(true);
     }
 
-    private void runProductionKNormalizationPrefixes(boolean poisonReductionOutput) {
+    private void runProductionKNormalizationPrefixes(boolean zeroWarmup) {
         final int sequence = 662, heads = 16, headDim = 128;
         float[] values = new float[sequence * heads * headDim];
         for (int row = 0; row < sequence * heads; row++) {
@@ -818,10 +864,11 @@ public class DspMixedPrecisionReplayTest {
             environment.setTritonCompileAll(true);
             environment.setTritonAlwaysCompile(true);
             environment.setTritonIncludeTypes("REDUCTION,ELEMENTWISE");
-            String[] stages = poisonReductionOutput ? new String[]{"norm_sq"}
+            String[] stages = zeroWarmup ? new String[]{"input_f32", "square", "norm_sq"}
                     : new String[]{"input_f32", "square", "norm_sq", "with_epsilon",
                             "norm", "norm_cast", "normalized", "output"};
             for (String stage : stages) {
+                inputData.assign(floatInput);
                 float[] expected;
                 DataType expectedType;
                 try (SameDiff ref = productionKNormalizationDiagnosticGraph(GraphExecutionMode.SLOT_BY_SLOT)) {
@@ -829,15 +876,30 @@ public class DspMixedPrecisionReplayTest {
                     expectedType = result.dataType();
                     expected = result.data().asFloat();
                 }
+                float[] warmupExpected = expected;
+                if (zeroWarmup) {
+                    inputData.assign(0);
+                    try (SameDiff ref = productionKNormalizationDiagnosticGraph(GraphExecutionMode.SLOT_BY_SLOT)) {
+                        warmupExpected = ref.output(placeholders, stage).get(stage).data().asFloat();
+                    }
+                }
                 try (SameDiff triton = productionKNormalizationDiagnosticGraph(GraphExecutionMode.TRITON)) {
                     for (int step = 0; step < 4; step++) {
+                        // Warm up AND capture with zeros; measured replay uses the exact
+                        // original HALF production input and its native raw-bit oracle.
+                        if (zeroWarmup && step == 3) {
+                            inputData.assign(floatInput);
+                            assertArrayEquals(values, inputData.data().asFloat(), "Exact production replay input");
+                            System.out.println("KPROD_FRESHNESS restored exact production input before step 3 stage=" + stage);
+                        }
+                        float[] expectedThisStep = zeroWarmup && step < 3 ? warmupExpected : expected;
                         INDArray actual = triton.output(placeholders, stage).get(stage);
                         assertEquals(expectedType, actual.dataType(), stage + " dtype");
                         float[] actualValues = actual.data().asFloat();
                         assertEquals(expected.length, actualValues.length, stage + " length");
                         int first = -1, count = 0;
                         for (int i = 0; i < expected.length; i++) {
-                            if (Float.floatToRawIntBits(expected[i]) != Float.floatToRawIntBits(actualValues[i])) {
+                            if (Float.floatToRawIntBits(expectedThisStep[i]) != Float.floatToRawIntBits(actualValues[i])) {
                                 if (first < 0) first = i;
                                 count++;
                             }
@@ -846,38 +908,10 @@ public class DspMixedPrecisionReplayTest {
                                 stage, step, actual.dataType(), count, first);
                         if (first >= 0) {
                             report += String.format(" native=0x%08x triton=0x%08x",
-                                    Float.floatToRawIntBits(expected[first]), Float.floatToRawIntBits(actualValues[first]));
+                                    Float.floatToRawIntBits(expectedThisStep[first]), Float.floatToRawIntBits(actualValues[first]));
                             mismatches.add(report);
                         }
                         System.out.println(report);
-                        if (poisonReductionOutput && step == 2) {
-                            // SameDiff returns a copy; borrow the LIVE requested native output
-                            // only after compilation, using the DspBufferColoringTest helper pattern.
-                            var ops = org.nd4j.nativeblas.NativeOpsHolder.getInstance().getDeviceNativeOps();
-                            var executor = triton.getOrCreateSession().getDynamicShapePlanExecutor();
-                            int outputSlot = triton.dsp().slotIndexForOutput(stage);
-                            assertTrue(outputSlot >= 0);
-                            var opaque = ops.getPlanSlotOutputArray(executor.getNativePlanHandle(), outputSlot);
-                            assertNotNull(opaque);
-                            opaque.attachOwner(org.nd4j.nativeblas.OpaqueDataBuffer.primaryOwner());
-                            var pointer = ops.getOpaqueNDArraySpecialBuffer(opaque);
-                            assertNotNull(pointer);
-                            var borrowed = ops.dbCreateExternalDataBuffer(expected.length,
-                                    DataType.FLOAT.toInt(), null, pointer);
-                            try (INDArray sentinel = Nd4j.create(DataType.FLOAT, actual.shape()).assign(Float.NaN);
-                                 INDArray readback = Nd4j.create(DataType.FLOAT, actual.shape())) {
-                                ops.copyBuffer(borrowed, expected.length, sentinel.data().opaqueBuffer(), 0, 0);
-                                ops.copyBuffer(readback.data().opaqueBuffer(), expected.length, borrowed, 0, 0);
-                                Nd4j.getExecutioner().commit();
-                                for (float value : readback.data().asFloat()) assertTrue(Float.isNaN(value));
-                                assertArrayEquals(values, inputData.data().asFloat(), "Sentinel must not modify input");
-                                System.out.println("KPROD_SENTINEL verified all " + expected.length
-                                        + " live native norm_sq rows are NaN after compiled step 2");
-                            } finally {
-                                ops.deleteDataBuffer(borrowed);
-                                opaque.setNull(); // plan owns this NDArray; never delete it
-                            }
-                        }
                     }
                 }
             }
