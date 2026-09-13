@@ -4310,6 +4310,19 @@ class ReleaseValidationTest(unittest.TestCase):
                         command = shlex.split(subprocess.check_output(
                             ["bash", str(script), "--print"], env=env, text=True,
                         ))
+                        if build.get("backend") == "vulkan":
+                            # The driver and launcher must address the same native output
+                            # consumed by JavaCPP, including compile and Windows lanes.
+                            native_classifier = build_platform.variant_libnd4j_classifier(build, variant)
+                            output = f"/source/libnd4j/blasbuild/vulkan/{native_classifier}"
+                            self.assertEqual("1", env["DL4J_BUILD_SDX"])
+                            self.assertEqual(output, env["DL4J_SDX_OUTPUT_PATH"])
+                            self.assertEqual("nd4jvulkan", env["DL4J_SDX_PLATFORM_LINKS"])
+                            self.assertIn(f"-Dlibnd4j.outputPath={output}", command)
+                            self.assertIn("-Dsdx.platform.links=nd4jvulkan", command)
+                            self.assertIn("-Dsdx.native.library=nd4jvulkan", command)
+                            self.assertIn("-Pnative", command)
+                            self.assertIn("-Psdx-native", command)
                         classifier = build_platform.variant_artifact_classifier(build, variant)
                         self.assertNotIn(classifier, classifiers)
                         classifiers.add(classifier)
@@ -4590,6 +4603,39 @@ class ReleaseValidationTest(unittest.TestCase):
             "-Dsdx.platform.links=D:/build/libnd4j/blasbuild/cuda/nd4jcuda",
             windows_zluda_command,
         )
+
+    def test_sdx_native_reactor_produces_javacpp_link_directory_first(self):
+        root = Path(__file__).parents[2]
+        ns = {"m": "http://maven.apache.org/POM/4.0.0"}
+        pom = ET.parse(root / "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx/pom.xml")
+        plugin_path = "m:build/m:plugins/m:plugin[m:artifactId='javacpp']"
+        native = pom.find("m:profiles/m:profile[m:id='native']", ns)
+        self.assertIsNotNone(native)
+        dependency = native.find(
+            plugin_path + "/m:dependencies/m:dependency[m:artifactId='libnd4j']", ns
+        )
+        self.assertIsNotNone(dependency, "-pl order alone cannot order the Maven reactor")
+        self.assertEqual("org.eclipse.deeplearning4j", dependency.findtext("m:groupId", namespaces=ns))
+        self.assertEqual("${project.version}", dependency.findtext("m:version", namespaces=ns))
+        self.assertEqual("pom", dependency.findtext("m:type", namespaces=ns))
+        self.assertIsNone(native.find("m:activation", ns))
+        # Java-only and prebuilt-runtime builds must not acquire a native dependency.
+        self.assertIsNone(pom.find("m:dependencies/m:dependency[m:artifactId='libnd4j']", ns))
+        self.assertIsNone(pom.find(
+            plugin_path + "/m:dependencies/m:dependency[m:artifactId='libnd4j']", ns
+        ))
+        configuration = pom.find(plugin_path + "/m:configuration", ns)
+        self.assertEqual("${libnd4j.outputPath}", configuration.findtext(
+            "m:linkPaths/m:linkPath", namespaces=ns
+        ))
+        self.assertEqual("${sdx.platform.links}", configuration.findtext(
+            "m:propertyKeysAndValues/m:property[m:name='platform.link']/m:value", namespaces=ns
+        ))
+        # The same forwarded outputPath controls the native producer, not just JNI.
+        native_pom = ET.parse(root / "libnd4j/pom.xml")
+        vulkan = native_pom.find("m:profiles/m:profile[m:id='vulkan']", ns)
+        arguments = [element.text for element in vulkan.findall(".//m:argument", ns)]
+        self.assertEqual("${libnd4j.outputPath}", arguments[arguments.index("--output-path") + 1])
 
     def test_sdx_gnu_linker_flag_is_not_active_on_macos(self):
         root = Path(__file__).parents[2]

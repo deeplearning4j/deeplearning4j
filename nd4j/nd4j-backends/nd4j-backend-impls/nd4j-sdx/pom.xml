@@ -199,6 +199,29 @@
 
     <profiles>
         <profile>
+            <id>native</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <dependencies>
+                            <!-- The native reactor must produce the selected library and
+                                 link directory before JavaCPP links jnisdx. Keep this a
+                                 plugin dependency, off the Java/Javadoc module path, and
+                                 inactive for Java-only or prebuilt-runtime builds. -->
+                            <dependency>
+                                <groupId>org.eclipse.deeplearning4j</groupId>
+                                <artifactId>libnd4j</artifactId>
+                                <version>${project.version}</version>
+                                <type>pom</type>
+                            </dependency>
+                        </dependencies>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
             <id>os-unix-linker-flags</id>
             <activation>
                 <os>
