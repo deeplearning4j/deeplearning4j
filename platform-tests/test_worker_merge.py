@@ -93,6 +93,28 @@ class CanonicalWorkerMergeTests(unittest.TestCase):
             merge([x64], self.root / 'out', self.root / 'manifest.json',
                   '1.0.0-rewrite', 'b' * 40, canonical_worker_owners=True)
 
+    def test_unowned_component_conflicts_fail_byte_checked(self):
+        arm = self.worker('linux-arm64-cpu', b'arm')
+        x64 = self.worker('linux-x86_64-cpu', b'x64')
+        for repository, data in ((arm, b'one'), (x64, b'two')):
+            path = repository / 'org/eclipse/deeplearning4j/nd4j-presets-common/1.0.0-rewrite/nd4j-presets-common-1.0.0-rewrite-javadoc.jar'
+            path.parent.mkdir(parents=True)
+            path.write_bytes(data)
+        with self.assertRaisesRegex(ValueError, 'Conflicting component metadata'):
+            merge([arm, x64], self.root / 'out', self.root / 'manifest.json',
+                  '1.0.0-rewrite', 'a' * 40, canonical_worker_owners=True)
+
+    def test_unowned_component_identical_duplicates_pass(self):
+        arm = self.worker('linux-arm64-cpu', b'same')
+        x64 = self.worker('linux-x86_64-cpu', b'same')
+        for repository in (arm, x64):
+            path = repository / 'org/eclipse/deeplearning4j/nd4j-presets-common/1.0.0-rewrite/nd4j-presets-common-1.0.0-rewrite-javadoc.jar'
+            path.parent.mkdir(parents=True)
+            path.write_bytes(b'same')
+        result = merge([arm, x64], self.root / 'out', self.root / 'manifest.json',
+                       '1.0.0-rewrite', 'a' * 40, canonical_worker_owners=True)
+        self.assertEqual(4, len(result['files']))
+
     def test_unknown_component_conflicts_still_fail(self):
         arm = self.worker('linux-arm64-cpu', b'arm')
         x64 = self.worker('linux-x86_64-cpu', b'x64')
@@ -100,6 +122,6 @@ class CanonicalWorkerMergeTests(unittest.TestCase):
             path = repository / 'org/eclipse/deeplearning4j/unknown/1.0.0-rewrite/unknown-1.0.0-rewrite.pom'
             path.parent.mkdir(parents=True)
             path.write_bytes(data)
-        with self.assertRaisesRegex(ValueError, 'conflicting duplicate'):
+        with self.assertRaisesRegex(ValueError, 'Conflicting component metadata'):
             merge([arm, x64], self.root / 'out', self.root / 'manifest.json',
                   '1.0.0-rewrite', 'a' * 40, canonical_worker_owners=True)

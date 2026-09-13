@@ -82,6 +82,17 @@ def select(inputs, version, commit):
             return False
         owner = owners.get(artifact)
         if owner is None:
+            # Some artifacts not in the plan's owner map (for example
+            # nd4j-presets-common, produced by several native lanes) are still
+            # component metadata. Require byte-identical duplicates instead of
+            # silently preferring an arbitrary input.
+            probe = repository / relative
+            for other in inputs:
+                candidate = other / relative
+                if candidate != probe and candidate.is_file() and candidate.read_bytes() != probe.read_bytes():
+                    raise ValueError(
+                        f"Conflicting component metadata {relative}: "
+                        f"{selected[repository]} vs {selected[other]}")
             return True
         shared_names = {f"{artifact}-{artifact_version}{suffix}" for suffix in
                         (".jar", "-sources.jar", "-javadoc.jar")}
