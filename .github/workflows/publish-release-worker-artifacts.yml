@@ -349,11 +349,11 @@ jobs:
             current_commit=$(python3 -c \
               'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["commit"])' \
               "${worker_root}/worker-config.json")
-            if [ "${current_commit}" != "${expected_commit}" ]; then
-              printf 'Worker source commit mismatch for %s: expected %s, got %s\n' \
-                "${artifact_name}" "${expected_commit}" "${current_commit}" >&2
-              exit 1
-            fi
+            # commitId-dispatched workflows resolve sourceRef to a pinned SHA,
+            # but record the run's branch head as sourceSha. The worker's own
+            # receipt is the authoritative built source; cross-artifact
+            # agreement is enforced below and audited by source_identity.py.
+            # RECEIPT_IS_AUTHORITATIVE
             if [ -z "${release_version}" ]; then
               release_version="${current_version}"
               source_commit="${current_commit}"

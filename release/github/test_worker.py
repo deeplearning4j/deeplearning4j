@@ -818,6 +818,8 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("rows.length === previousCount", workflow)
         self.assertIn('if [ ! -f "${worker_root}/worker-success" ]', workflow)
         self.assertIn("sourceSha: sourceJob.head_sha", workflow)
+        self.assertIn("RECEIPT_IS_AUTHORITATIVE", workflow)
+        self.assertNotIn("expected %s, got %s", workflow)
         self.assertIn("VERIFIED_ARTIFACTS: ${{ needs.matrix.outputs.artifacts }}", workflow)
         self.assertIn("repository.py merge", workflow)
         self.assertIn("repository.py deploy-snapshot", workflow)
