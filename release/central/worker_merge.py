@@ -82,18 +82,28 @@ def select(inputs, version, commit):
             return False
         owner = owners.get(artifact)
         if owner is None:
-            # Some artifacts not in the plan's owner map (for example
-            # nd4j-presets-common, produced by several native lanes) are still
-            # component metadata. Require byte-identical duplicates instead of
-            # silently preferring an arbitrary input.
+            # Unowned shared components (for example nd4j-presets-common,
+            # built by several native lanes) are Java metadata. Their javadoc
+            # JARs embed build timestamps, so bytes differ between lanes even
+            # though content is identical. Select deterministically: main
+            # artifacts (.jar/.pom without classifier) must be byte-identical,
+            # attachments come from the first shard in canonical order and the
+            # contributing shard is recorded in the manifest.
+            filename = relative.name
+            is_main = filename in (f"{artifact}-{artifact_version}.jar",
+                                   f"{artifact}-{artifact_version}.pom")
             probe = repository / relative
-            for other in inputs:
-                candidate = other / relative
-                if candidate != probe and candidate.is_file() and candidate.read_bytes() != probe.read_bytes():
-                    raise ValueError(
-                        f"Conflicting component metadata {relative}: "
-                        f"{selected[repository]} vs {selected[other]}")
-            return True
+            if is_main:
+                for other in inputs:
+                    candidate = other / relative
+                    if candidate != probe and candidate.is_file() and candidate.read_bytes() != probe.read_bytes():
+                        raise ValueError(
+                            f"Conflicting component main artifact {relative}: "
+                            f"{selected[repository]} vs {selected[other]}")
+                return True
+            ordered = sorted(inputs, key=lambda item: selected[item][0])
+            producer = next(item for item in ordered if (item / relative).is_file())
+            return repository == producer
         shared_names = {f"{artifact}-{artifact_version}{suffix}" for suffix in
                         (".jar", "-sources.jar", "-javadoc.jar")}
         # Also select checksums/signatures with their owning artifact.
