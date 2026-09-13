@@ -563,6 +563,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: recovered-maven-publication-${{ steps.staged.outputs['release-version'] }}
+          include-hidden-files: true
           path: |
             ${{ github.workspace }}/.release-worker-recovery-merged/repository-manifest.json
             ${{ github.workspace }}/.release-worker-recovery-merged/repository-manifest.json.sha256

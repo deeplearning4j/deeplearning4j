@@ -555,6 +555,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: maven-publication-${{ needs.matrix.outputs['release-version'] }}
+          include-hidden-files: true
           path: |
             ${{ github.workspace }}/.release-worker-merged/repository-manifest.json
             ${{ github.workspace }}/.release-worker-merged/repository-manifest.json.sha256
