@@ -117,6 +117,7 @@ class CanonicalWorkerMergeTests(unittest.TestCase):
         self.assertEqual(['linux-arm64-cpu', 'linux-x86_64-cpu'], pom_rows[0]['shards'])
 
     def test_unowned_component_main_conflicts_fail(self):
+        import zipfile
         arm = self.worker('linux-arm64-cpu', b'arm')
         x64 = self.worker('linux-x86_64-cpu', b'x64')
         for repository, data in ((arm, b'pom-one'), (x64, b'pom-two')):
@@ -125,6 +126,43 @@ class CanonicalWorkerMergeTests(unittest.TestCase):
             path.write_bytes(data)
         with self.assertRaisesRegex(ValueError, 'Conflicting component main artifact'):
             merge([arm, x64], self.root / 'out2', self.root / 'manifest2.json',
+                  '1.0.0-rewrite', 'a' * 40, canonical_worker_owners=True)
+
+    def test_reproducible_jar_timestamp_noise_is_ignored(self):
+        import io
+        import zipfile
+        arm = self.worker('linux-arm64-cpu', b'arm')
+        x64 = self.worker('linux-x86_64-cpu', b'x64')
+        entries = {'org/nd4j/presets/OpExclusion.class': b'payload'}
+        for repository, timestamp in ((arm, (2026, 9, 13, 1, 0, 0)), (x64, (2026, 9, 13, 3, 0, 0))):
+            folder = repository / 'org/eclipse/deeplearning4j/nd4j-presets-common/1.0.0-rewrite'
+            folder.mkdir(parents=True, exist_ok=True)
+            buffer = io.BytesIO()
+            with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as archive:
+                for name, payload in entries.items():
+                    info = zipfile.ZipInfo(name, date_time=timestamp)
+                    archive.writestr(info, payload)
+            (folder / 'nd4j-presets-common-1.0.0-rewrite.jar').write_bytes(buffer.getvalue())
+        result = merge([arm, x64], self.root / 'out3', self.root / 'manifest3.json',
+                       '1.0.0-rewrite', 'a' * 40, canonical_worker_owners=True)
+        self.assertTrue(any(row['path'].endswith('nd4j-presets-common-1.0.0-rewrite.jar')
+                            for row in result['files']))
+
+    def test_real_jar_content_conflicts_still_fail(self):
+        import io
+        import zipfile
+        arm = self.worker('linux-arm64-cpu', b'arm')
+        x64 = self.worker('linux-x86_64-cpu', b'x64')
+        for repository, payload in ((arm, b'version-one'), (x64, b'version-two')):
+            folder = repository / 'org/eclipse/deeplearning4j/nd4j-presets-common/1.0.0-rewrite'
+            folder.mkdir(parents=True, exist_ok=True)
+            buffer = io.BytesIO()
+            with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as archive:
+                info = zipfile.ZipInfo('org/nd4j/presets/OpExclusion.class')
+                archive.writestr(info, payload)
+            (folder / 'nd4j-presets-common-1.0.0-rewrite.jar').write_bytes(buffer.getvalue())
+        with self.assertRaisesRegex(ValueError, 'Conflicting component main artifact'):
+            merge([arm, x64], self.root / 'out4', self.root / 'manifest4.json',
                   '1.0.0-rewrite', 'a' * 40, canonical_worker_owners=True)
 
     def test_unknown_component_conflicts_still_fail(self):

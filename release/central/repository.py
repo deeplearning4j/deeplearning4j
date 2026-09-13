@@ -164,6 +164,17 @@ def is_unclassified_coordinate(path: Path) -> bool:
     return path.name == f"{artifact_id}-{version}{path.suffix}"
 
 
+def _equivalent_duplicate(existing: Path, incoming: Path) -> bool:
+    """Whether two JARs differ only by ZIP entry timestamps."""
+    if existing.suffix != '.jar' or incoming.suffix != '.jar':
+        return False
+    try:
+        from .worker_merge import _jar_content_digest
+    except ImportError:
+        from worker_merge import _jar_content_digest
+    return _jar_content_digest(existing) == _jar_content_digest(incoming)
+
+
 def merge(
     inputs: list[Path],
     output: Path,
@@ -208,10 +219,12 @@ def merge(
                 ownership.setdefault(key, []).append(source_label)
                 if destination.exists():
                     if digest(destination) != digest(path):
-                        if not (
+                        reproducible = (include is not None
+                                        and _equivalent_duplicate(destination, path))
+                        if not (reproducible or (
                             allow_unclassified_duplicates
                             and is_unclassified_coordinate(relative)
-                        ):
+                        )):
                             raise ValueError(
                                 f"conflicting duplicate Maven path {key} from {source}"
                             )

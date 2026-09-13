@@ -3,10 +3,22 @@
 Never select a non-owner just because it arrived first. Platform classifiers
 remain byte-checked by the ordinary strict merge. Input images are not mutated.
 """
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
 import xml.etree.ElementTree as ET
+
+
+def _jar_content_digest(path):
+    """Digest of ZIP entry contents, ignoring metadata timestamps."""
+    import zipfile
+    digest = hashlib.sha256()
+    with zipfile.ZipFile(path) as archive:
+        for info in sorted(archive.infolist(), key=lambda item: item.filename):
+            digest.update(info.filename.encode())
+            digest.update(archive.read(info.filename))
+    return digest.hexdigest()
 
 
 def select(inputs, version, commit):
@@ -96,10 +108,18 @@ def select(inputs, version, commit):
             if is_main:
                 for other in inputs:
                     candidate = other / relative
-                    if candidate != probe and candidate.is_file() and candidate.read_bytes() != probe.read_bytes():
-                        raise ValueError(
-                            f"Conflicting component main artifact {relative}: "
-                            f"{selected[repository]} vs {selected[other]}")
+                    if candidate == probe or not candidate.is_file():
+                        continue
+                    if candidate.read_bytes() == probe.read_bytes():
+                        continue
+                    # Reproducible-build noise: ZIP entry timestamps differ
+                    # between lanes while contents are byte-identical.
+                    if (candidate.suffix == '.jar' and probe.suffix == '.jar'
+                            and _jar_content_digest(candidate) == _jar_content_digest(probe)):
+                        continue
+                    raise ValueError(
+                        f"Conflicting component main artifact {relative}: "
+                        f"{selected[repository]} vs {selected[other]}")
                 return True
             ordered = sorted(inputs, key=lambda item: selected[item], reverse=True)
             producer = next(item for item in ordered if (item / relative).is_file())
