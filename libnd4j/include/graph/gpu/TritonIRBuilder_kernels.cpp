@@ -1887,7 +1887,8 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
   // correction = exp(m_i - m_new)
   // p = exp(qk - splat(m_new))
   // l_new = l_i * correction + row_sum(p)
-  // acc = acc * splat(l_i * correction / l_new) + dot(p / l_new, V)
+  // Output-only GQA: acc = acc * correction + dot(p, V); normalize after all tiles.
+  // Other contracts: acc = acc * (l_i * correction / l_new) + dot(p / l_new, V).
 
   // row_max(qk) -> reduce along axis 1
   mlir::Value qkFinalVal = qkWithBias;
@@ -2071,38 +2072,57 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
     vLoaded = castTo(builder, loc, vLoadedRaw, f32Type);
   }
 
-  // Carry a normalized accumulator. Native CUDA computes one reciprocal and
-  // normalizes each probability before the P×V accumulation; accumulating
-  // unnormalized P×V and scaling the completed row changes FP32 rounding. For
-  // online softmax, reweight the previous normalized accumulator by its old
-  // mass and normalize this tile's probabilities with the updated row sum.
-  auto oneBm = splatConstantF32(builder, loc, f32BmType, 1.0f);
+  // Output-only floating GQA uses fusedGQADecodeCuda, not the with-scores
+  // kernel: accumulate unnormalized P×V, then apply one final reciprocal.
+  // Keep the other attention contracts on their existing normalized path.
+  const bool normalizeAfterPv = kvGroupSize > 1 && !kvIsInt8
+      && qPtrType.getPointeeType() == kPtrTypeAttn.getPointeeType()
+      && qPtrType.getPointeeType() == vPtrTypeAttn.getPointeeType()
+      && qPtrType.getPointeeType() == outPtrTypeAttn.getPointeeType();
+  mlir::Value pv;
   auto zeroBm = splatConstantF32(builder, loc, f32BmType, 0.0f);
-  auto invLRaw = emitNativeCudaDiv(builder, loc, oneBm, lNew);
-  auto hasMass = builder.create<mlir::arith::CmpFOp>(
-      loc, mlir::arith::CmpFPredicate::OGT, lNew, zeroBm);
-  auto invLNew = builder.create<mlir::arith::SelectOp>(loc, hasMass, invLRaw, zeroBm);
+  if (normalizeAfterPv) {
+    auto correctionExp = builder.create<mlir::triton::ExpandDimsOp>(loc, correction, 1);
+    auto correctionBroadcast = builder.create<mlir::triton::BroadcastOp>(
+        loc, f32BmHdType, correctionExp);
+    auto accScaled = builder.create<mlir::arith::MulFOp>(loc, accIter, correctionBroadcast);
+    // Native starts each tile at zero, visits keys in order, then adds the
+    // tile subtotal to the rescaled running numerator (not into each FMA).
+    auto tileZero = splatConstantF32(builder, loc, f32BmHdType, 0.0f);
+    auto tilePv = builder.create<mlir::triton::DotOp>(
+        loc, f32BmHdType, p, vLoaded, tileZero,
+        mlir::triton::InputPrecision::IEEE, /*maxNumImpreciseAcc=*/0);
+    pv = builder.create<mlir::arith::AddFOp>(loc, accScaled, tilePv);
+  } else {
+    // Reweight the previous normalized accumulator by its old mass and
+    // normalize this tile's probabilities with the updated row sum.
+    auto oneBm = splatConstantF32(builder, loc, f32BmType, 1.0f);
+    auto invLRaw = emitNativeCudaDiv(builder, loc, oneBm, lNew);
+    auto hasMass = builder.create<mlir::arith::CmpFOp>(
+        loc, mlir::arith::CmpFPredicate::OGT, lNew, zeroBm);
+    auto invLNew = builder.create<mlir::arith::SelectOp>(loc, hasMass, invLRaw, zeroBm);
 
-  auto oldWeight = builder.create<mlir::arith::MulFOp>(loc, lScaled, invLNew);
-  auto oldWeightExp = builder.create<mlir::triton::ExpandDimsOp>(loc, oldWeight, 1);  // [BM, 1]
-  auto oldWeightBroadcast = builder.create<mlir::triton::BroadcastOp>(
-      loc, f32BmHdType, oldWeightExp);
-  auto accScaled = builder.create<mlir::arith::MulFOp>(loc, accIter, oldWeightBroadcast);
+    auto oldWeight = builder.create<mlir::arith::MulFOp>(loc, lScaled, invLNew);
+    auto oldWeightExp = builder.create<mlir::triton::ExpandDimsOp>(loc, oldWeight, 1);  // [BM, 1]
+    auto oldWeightBroadcast = builder.create<mlir::triton::BroadcastOp>(
+        loc, f32BmHdType, oldWeightExp);
+    auto accScaled = builder.create<mlir::arith::MulFOp>(loc, accIter, oldWeightBroadcast);
 
-  auto invLExp = builder.create<mlir::triton::ExpandDimsOp>(loc, invLNew, 1);  // [BM, 1]
-  auto invLBroadcast = builder.create<mlir::triton::BroadcastOp>(
-      loc, f32BmBnType, invLExp);
-  auto pNormalized = builder.create<mlir::arith::MulFOp>(loc, p, invLBroadcast);
+    auto invLExp = builder.create<mlir::triton::ExpandDimsOp>(loc, invLNew, 1);  // [BM, 1]
+    auto invLBroadcast = builder.create<mlir::triton::BroadcastOp>(
+        loc, f32BmBnType, invLExp);
+    auto pNormalized = builder.create<mlir::arith::MulFOp>(loc, p, invLBroadcast);
 
-  // dot(pNormalized[BM,BN], V[BN,HD]) -> [BM, HD]. The probabilities are
-  // softmax outputs, so rounding them to TF32 before the value product violates
-  // the native FP32 attention contract even when ordinary matmuls use TF32.
-  constexpr auto pvPrecision = mlir::triton::InputPrecision::IEEE;
-  auto pv = builder.create<mlir::triton::DotOp>(
-      loc, f32BmHdType, pNormalized, vLoaded, accScaled,
-      pvPrecision, /*maxNumImpreciseAcc=*/0);
+    // dot(pNormalized[BM,BN], V[BN,HD]) -> [BM, HD]. The probabilities are
+    // softmax outputs, so rounding them to TF32 before the value product violates
+    // the native FP32 attention contract even when ordinary matmuls use TF32.
+    constexpr auto pvPrecision = mlir::triton::InputPrecision::IEEE;
+    pv = builder.create<mlir::triton::DotOp>(
+        loc, f32BmHdType, pNormalized, vLoaded, accScaled,
+        pvPrecision, /*maxNumImpreciseAcc=*/0);
+  }
 
-  // A tile with no probability mass must leave the normalized accumulator
+  // A tile with no probability mass must leave the accumulator
   // bit-identical; multiplying the old mass by its reciprocal can otherwise
   // perturb an all-masked tail tile by one ULP.
   auto hasNewMass = builder.create<mlir::arith::CmpFOp>(
@@ -2121,9 +2141,21 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
 
   // After the KV loop
   builder.setInsertionPointAfter(forOp);
-  // The loop-carried accumulator is normalized at each online-softmax update,
-  // before P×V, so no post-accumulation scaling is required here.
   mlir::Value normalized = forOp.getResult(0);  // [BM, HD]
+  if (normalizeAfterPv) {
+    auto oneFinal = splatConstantF32(builder, loc, f32BmType, 1.0f);
+    auto zeroFinal = splatConstantF32(builder, loc, f32BmType, 0.0f);
+    auto finalSum = forOp.getResult(2);
+    auto invSumRaw = emitNativeCudaDiv(builder, loc, oneFinal, finalSum);
+    auto hasFinalMass = builder.create<mlir::arith::CmpFOp>(
+        loc, mlir::arith::CmpFPredicate::OGT, finalSum, zeroFinal);
+    auto invSum = builder.create<mlir::arith::SelectOp>(
+        loc, hasFinalMass, invSumRaw, zeroFinal);
+    auto invSumExp = builder.create<mlir::triton::ExpandDimsOp>(loc, invSum, 1);
+    auto invSumBroadcast = builder.create<mlir::triton::BroadcastOp>(
+        loc, f32BmHdType, invSumExp);
+    normalized = builder.create<mlir::arith::MulFOp>(loc, normalized, invSumBroadcast);
+  }
 
   // Store output [BM, headDim]
   // Out base is same as Q base (same layout)
