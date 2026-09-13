@@ -475,6 +475,8 @@ jobs:
           # A release must not silently choose between conflicting POMs or binaries.
           if [[ "${RELEASE_VERSION}" == *-SNAPSHOT ]]; then
             merge_command+=(--allow-unclassified-duplicates)
+          else
+            merge_command+=(--canonical-worker-owners)
           fi
           repository_count=0
           while IFS= read -r repository; do

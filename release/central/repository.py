@@ -172,7 +172,17 @@ def merge(
     commit: str,
     *,
     allow_unclassified_duplicates: bool = False,
+    canonical_worker_owners: bool = False,
 ) -> dict:
+    include = None
+    if canonical_worker_owners:
+        if allow_unclassified_duplicates:
+            raise ValueError("Canonical ownership cannot use first-writer duplicate handling")
+        try:
+            from .worker_merge import select
+        except ImportError:
+            from worker_merge import select
+        include = select(inputs, release_version, commit)
     output.mkdir(parents=True, exist_ok=True)
     ownership: dict[str, list[str]] = {}
     with tempfile.TemporaryDirectory(prefix="dl4j-central-merge-") as temporary:
@@ -191,6 +201,8 @@ def merge(
             source_label = source.name if source.is_file() else source.parent.name
             for path in candidates:
                 relative = path.relative_to(root)
+                if include is not None and not include(source, relative):
+                    continue
                 destination = output / relative
                 key = relative.as_posix()
                 ownership.setdefault(key, []).append(source_label)
@@ -808,6 +820,7 @@ def parse_args() -> argparse.Namespace:
     merge_cmd.add_argument("--manifest", type=Path, required=True)
     merge_cmd.add_argument("--release-version", required=True)
     merge_cmd.add_argument("--commit", required=True)
+    merge_cmd.add_argument("--canonical-worker-owners", action="store_true")
     merge_cmd.add_argument(
         "--allow-unclassified-duplicates",
         action="store_true",
@@ -858,6 +871,7 @@ def main() -> None:
             args.release_version,
             args.commit,
             allow_unclassified_duplicates=args.allow_unclassified_duplicates,
+            canonical_worker_owners=args.canonical_worker_owners,
         )
     elif args.command == "materialize-test-repository":
         materialize_test_repository(args.input, args.output, args.manifest, args.release_version, args.commit)
