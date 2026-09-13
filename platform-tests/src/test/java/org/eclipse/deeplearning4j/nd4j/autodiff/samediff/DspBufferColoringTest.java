@@ -289,27 +289,34 @@ public class DspBufferColoringTest {
      * for its output. That dedicated storage was previously excluded from coloring
      * on both sides of every potential alias; the narrowing keeps the aliased
      * INPUT side protected and makes the dedicated OUTPUT storage colorable.
+     * Republished-as-view executions themselves stay covered by
+     * DspBufferAliasAccuracyTest's view fixtures (accuracy/stability/varying-input
+     * across all execution modes); this test pins the coloring-side invariants.
      *
-     * Graph:
-     *   tA = permute(input)            // [16,4] non-contiguous view of the input
-     *   rA = reshape(tA, [64])         // view-capable; warmup publishes DEDICATED (input not contiguous)
-     *   cA = rA + 1                    // last consumer of rA
-     *   r1 = relu(input)               // contiguous input for the view-aliased counterpart
-     *   rB = reshape(r1, [64])         // view of r1 at warmup AND when frozen republishes
+     * Graph (mmul barriers keep the optimizer from folding the view chains):
+     *   h1 = mmul(input, w1)    // [4,16]
+     *   tA = permute(h1)        // [16,4] non-C-contiguous view of h1
+     *   rA = reshape(tA, [64])  // view-capable; warmup publishes DEDICATED (input not contiguous)
+     *   cA = rA + 1; cA2 = tanh(cA)   // [64] eligible chain sharing rA's shape group
+     *   h2 = mmul(input, w2)    // [4,16]
+     *   r1 = relu(h2)           // [4,16] C-contiguous
+     *   rB = reshape(r1, [64])  // view of r1 at warmup; the frozen path may republish it as a view
      *   cB = rB + 1
-     *   out  = cA + cB                 // requested, [64]
-     *   s2 = sigmoid(input)            // eligible [4,16] partner to prove r1 stays protected
-     *   out2 = s2 + 1                  // requested, [4,16]
+     *   out  = cA2 + cB         // requested, [64]
+     *   s2 = sigmoid(input)     // [4,16]
+     *   s3 = tanh(s2); s4 = s3*2 // [4,16] eligible partners sharing s2's shape group
+     *   out2 = s4 + 1           // requested, [4,16]
      *
      * Assertions:
      *  (a) outputs stay correct while the SAME input INDArray is re-assigned with
      *      different values between warmup and frozen replays (a republished view
-     *      or a shared color buffer must read current values, never stale data);
+     *      or a wrongly shared color buffer must read current values, never stale
+     *      data from any sharing partner);
      *  (b) the republish-capable side remains protected where it must be: r1 (the
      *      aliased source of rB) is never colored while its same-shape partner s2 is;
-     *  (c) the never-republishing dedicated counterpart rA (and rB's warmup
-     *      storage) DO participate in coloring (slotColor >= 0) and actual sharing
-     *      is applied (bytesSaved > 0).
+     *  (c) the never-republishing dedicated counterpart rA DOES participate in
+     *      coloring (slotColor(rA) >= 0 — uncolorable before the narrowing) and
+     *      actual sharing is applied (bytesSaved > 0).
      */
     @Test
     void testViewCapableDedicatedOutputsAreColorableWhileAliasedInputsStayProtected() {
@@ -317,36 +324,50 @@ public class DspBufferColoringTest {
         sd = SameDiff.create();
         sd.setDspAutoCompileEnabled(true);
         sd.setDspNativeAutoCompileEnabled(true);
+        INDArray w1Ref = Nd4j.rand(DataType.FLOAT, 16, 16).subi(0.05);
+        INDArray w2Ref = Nd4j.rand(DataType.FLOAT, 16, 16).subi(0.05);
         SDVariable input = sd.placeHolder("input", DataType.FLOAT, 4, 16);
-        SDVariable tA = sd.permute("tA", input, 1, 0);
+        SDVariable h1 = sd.mmul("h1", input, sd.var("w1", w1Ref.dup()));
+        SDVariable tA = sd.permute("tA", h1, 1, 0);
         SDVariable rA = sd.reshape("rA", tA, 64);
         SDVariable cA = rA.add(sd.constant("one64", Nd4j.ones(DataType.FLOAT, 64)));
-        SDVariable r1 = sd.nn.relu("r1", input, 0);
+        SDVariable cA2 = sd.nn.tanh("cA2", cA);
+        SDVariable h2 = sd.mmul("h2", input, sd.var("w2", w2Ref.dup()));
+        SDVariable r1 = sd.nn.relu("r1", h2, 0);
         SDVariable rB = sd.reshape("rB", r1, 64);
         SDVariable cB = rB.add(sd.constant("one64b", Nd4j.ones(DataType.FLOAT, 64)));
-        SDVariable out = cA.add("out", cB);
+        cA2.add("out", cB);
         SDVariable s2 = sd.nn.sigmoid("s2", input);
-        SDVariable out2 = s2.add(sd.constant("one416", Nd4j.ones(DataType.FLOAT, 4, 16)));
+        SDVariable s3 = sd.nn.tanh("s3", s2);
+        SDVariable s4 = s3.mul(2.0);
+        SDVariable out2 = s4.add(sd.constant("one416", Nd4j.ones(DataType.FLOAT, 4, 16)));
         out2.rename("out2");
         sd.compileNativeDynamicShapePlan("out", "out2");
 
-        int reshapeSlots = -1;
         try (INDArray values = Nd4j.rand(DataType.FLOAT, 4, 16)) {
             for (int iteration = 0; iteration < 8; iteration++) {
                 // Write DIFFERENT values into the same input INDArray between warmup
                 // and frozen replays: any stale view or wrongly shared buffer shows up.
                 float offset = 0.125f * iteration;
-                values.assign(Nd4j.rand(DataType.FLOAT, 4, 16).addi(offset));
-                INDArray expected = values.permute(1, 0).reshape(64).addi(1.0)
-                        .addi(org.nd4j.linalg.activations.impl.ActivationReLU.getInstance()
-                                .getActivation(values.dup(), -1).reshape(64).addi(1.0));
-                INDArray expectedOut2 = org.nd4j.linalg.activations.impl.ActivationSigmoid.getInstance()
-                        .getActivation(values.dup(), -1).addi(1.0);
+                values.assign(Nd4j.rand(DataType.FLOAT, 4, 16).subi(0.5).addi(offset));
+                INDArray h1Ref = values.mmul(w1Ref);
+                INDArray h2Ref = values.mmul(w2Ref);
+                INDArray cARef = h1Ref.permute(1, 0).reshape(64).addi(1.0);
+                INDArray expected = org.nd4j.linalg.ops.transforms.Transforms.tanh(cARef, true)
+                        .addi(org.nd4j.linalg.ops.transforms.Transforms.max(
+                                h2Ref.dup(), Nd4j.zeros(DataType.FLOAT, 4, 16)).reshape(64).addi(1.0));
+                INDArray expectedOut2 = org.nd4j.linalg.ops.transforms.Transforms.sigmoid(
+                        values.dup(), false)
+                        .muli(org.nd4j.linalg.ops.transforms.Transforms.tanh(
+                                org.nd4j.linalg.ops.transforms.Transforms.sigmoid(values.dup(), false), true))
+                        .muli(2.0).addi(1.0);
                 Map<String, INDArray> results = sd.output(Map.of("input", values), "out", "out2");
                 try {
                     INDArray got = results.get("out");
                     assertNotNull(got, "out");
-                    assertArrayEquals(expected.data().asFloat(), got.data().asFloat(), 1e-4f,
+                    // Stale-view / wrong-sharing corruption produces O(0.05+) errors; 1e-3
+                    // absorbs only legitimate GPU-vs-host accumulation drift.
+                    assertArrayEquals(expected.data().asFloat(), got.data().asFloat(), 1e-3f,
                             "out at iteration " + iteration);
                     INDArray got2 = results.get("out2");
                     assertNotNull(got2, "out2");
@@ -359,14 +380,7 @@ public class DspBufferColoringTest {
                         assertTrue(handle.bufferColoringApplied(),
                                 "narrowed view-capable dedicated outputs must enable actual sharing");
 
-                        var ops = org.nd4j.nativeblas.NativeOpsHolder.getInstance().getDeviceNativeOps();
-                        var executor = sd.getOrCreateSession().getDynamicShapePlanExecutor();
-                        int totalOps = ops.getPlanNumSlots(executor.getNativePlanHandle());
-                        java.util.List<Integer> reshapes = new java.util.ArrayList<>();
-                        for (int s = 0; s < totalOps; s++) {
-                            String name = ops.getPlanSlotOpName(executor.getNativePlanHandle(), s);
-                            if (name != null && name.contains("reshape")) reshapes.add(s);
-                        }
+                        java.util.List<Integer> reshapes = handle.allSlotsForOp("reshape");
                         assertEquals(2, reshapes.size(), "expected exactly rA and rB reshape slots");
                         int rAIdx = reshapes.get(0);
                         int rBIdx = reshapes.get(1);
@@ -374,25 +388,31 @@ public class DspBufferColoringTest {
                         int s2Idx = handle.slotIndexForOp("sigmoid");
                         assertTrue(r1Idx >= 0 && s2Idx >= 0, "relu/sigmoid slots must be found");
 
-                        // (c) narrowing: dedicated view-capable outputs participate in coloring.
+                        // (c) narrowing: the warmup-dedicated view-capable output participates
+                        // in coloring (it was structurally excluded before the narrowing).
+                        // rB's warmup array is a zero-copy view of r1 and stays uncolored by
+                        // the pre-existing views-never-color invariant.
                         assertTrue(handle.slotColor(rAIdx) >= 0,
                                 "warmup-dedicated reshape output rA must be colorable under the narrowing");
-                        assertTrue(handle.slotColor(rBIdx) >= 0,
-                                "view-aliased reshape output rB storage must be colorable under the narrowing");
                         // (b) input-side protection is unchanged: r1 aliases rB's view and stays
                         // dedicated even though same-shape s2 is an eligible coloring candidate.
                         assertEquals(-1, handle.slotColor(r1Idx),
                                 "aliased reshape INPUT r1 must never be colored");
                         assertTrue(handle.slotColor(s2Idx) >= 0,
                                 "unaliased partner s2 proves the protected-input assertion is not vacuous");
+                        // Greedy interval coloring packs each 3-slot chain into 2 colors:
+                        // the [64] group alone must retire one 256-byte float buffer.
                         assertTrue(handle.bufferColoringBytesSaved() >= 64L * Float.BYTES,
-                                "rA/rB must share at least one [64] float buffer");
+                                "the [64] shape group must actually share buffers");
                     }
                 } finally {
                     java.util.Set<INDArray> uniqueOutputs = java.util.Collections.newSetFromMap(
                             new java.util.IdentityHashMap<>());
                     uniqueOutputs.addAll(results.values());
                     uniqueOutputs.forEach(INDArray::close);
+                    h1Ref.close();
+                    h2Ref.close();
+                    cARef.close();
                     expected.close();
                     expectedOut2.close();
                 }
