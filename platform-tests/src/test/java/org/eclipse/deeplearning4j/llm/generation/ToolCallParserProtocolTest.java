@@ -20,6 +20,7 @@
 package org.eclipse.deeplearning4j.llm.generation;
 
 import org.eclipse.deeplearning4j.llm.generation.constraint.ConstraintConfig;
+import org.eclipse.deeplearning4j.llm.generation.constraint.ConstraintMasker;
 import org.eclipse.deeplearning4j.llm.generation.constraint.NativeToolCallConstraint;
 import org.eclipse.deeplearning4j.llm.generation.constraint.TextConstraint;
 import org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate;
@@ -44,6 +45,123 @@ class ToolCallParserProtocolTest {
                                     "type", "array",
                                     "items", Map.of("type", "string"))),
                             "required", List.of("names"))));
+
+    private static String xmlCall(String name) {
+        return "<tool_call>\n<function=submit_entities>\n"
+                + "<parameter=names>\n[\"" + name + "\"]\n</parameter>\n"
+                + "</function>\n</tool_call>";
+    }
+
+    private static TextConstraint xmlConstraint() {
+        return ConstraintConfig.xmlToolCall(
+                Map.of("submit_entities", List.of("names")), Map.of(),
+                Map.of("submit_entities", ENTITY_TOOLS.get(0).getParameters()))
+                .buildConstraint();
+    }
+
+    @Test
+    void xmlMultipleEnvelopesParseInOrderIncludingRepeatedCalls() {
+        String first = xmlCall("Alice");
+        String second = xmlCall("Bob");
+        for (String separator : List.of("", "\n", " \t\r\n")) {
+            ToolCallParser.ParseResult result = ToolCallParser.parse(
+                    "Found entities.\n" + first + separator + second + separator + first,
+                    ENTITY_TOOLS, ChatTemplate.ToolCallFormat.XML);
+            assertTrue(result.isClean(), result.getErrors().toString());
+            assertEquals("Found entities.", result.getContent());
+            assertEquals(List.of(List.of("Alice"), List.of("Bob"), List.of("Alice")),
+                    result.getToolCalls().stream().map(c -> c.getArguments().get("names"))
+                            .collect(Collectors.toList()));
+        }
+    }
+
+    @Test
+    void xmlAcceptingCallAllowsContinuationAndSingleCallEos() {
+        TextConstraint constraint = xmlConstraint();
+        String first = xmlCall("Alice");
+        assertTrue(constraint.isAccepting(first));
+        ConstraintMasker masker = new ConstraintMasker(constraint, 2);
+        masker.decodedTextEmitted(first);
+        assertEquals(2f, masker.maskLogits(new float[]{2f, 1f}, 0,
+                id -> id == 0 ? "</s>" : "<tool_call>")[0]);
+        assertTrue(constraint.allowsSpecialToken(first, "<tool_call>"));
+        for (String separator : List.of("", "\n", " \t\r\n")) {
+            String extension = separator + xmlCall("Bob") + separator + xmlCall("Carol");
+            for (int i = 0; i < extension.length(); i++) {
+                assertTrue(constraint.canExtend(first + extension.substring(0, i),
+                        extension.substring(i, i + 1)), "continuation offset " + i);
+            }
+            assertTrue(constraint.canExtend(first, extension));
+            assertTrue(constraint.isAccepting(first + extension));
+        }
+        ToolCallParser.ParseResult single = ToolCallParser.parse(
+                first, ENTITY_TOOLS, ChatTemplate.ToolCallFormat.XML);
+        assertTrue(single.isClean());
+        assertEquals(1, single.getToolCalls().size());
+        assertEquals(List.of("Alice"), single.getToolCalls().get(0).getArguments().get("names"));
+    }
+
+    @Test
+    void xmlIncompleteSecondCallDeniesEosAndExecutesNothing() {
+        TextConstraint constraint = xmlConstraint();
+        String first = xmlCall("Alice");
+        String second = xmlCall("Bob");
+        for (int i = 1; i < second.length(); i++) {
+            String prefix = first + "\n" + second.substring(0, i);
+            assertFalse(constraint.isAccepting(prefix), "second call offset " + i);
+        }
+        String prefix = first + "\n<tool_call>\n";
+        ConstraintMasker masker = new ConstraintMasker(constraint, 2);
+        masker.decodedTextEmitted(prefix);
+        assertEquals(Float.NEGATIVE_INFINITY, masker.maskLogits(new float[]{2f, 1f}, 0,
+                id -> id == 0 ? "</s>" : "<function=submit_entities>\n")[0]);
+        ToolCallParser.ParseResult result = ToolCallParser.parse(
+                prefix, ENTITY_TOOLS, ChatTemplate.ToolCallFormat.XML);
+        assertFalse(result.isClean());
+        assertTrue(result.getToolCalls().isEmpty());
+    }
+
+    @Test
+    void xmlLaterCallUsesItsOwnToolSchema() {
+        Map<String, Object> textSchema = Map.of("type", "object",
+                "properties", Map.of("names", Map.of("type", "string")),
+                "required", List.of("names"));
+        TextConstraint constraint = ConstraintConfig.xmlToolCall(
+                Map.of("submit_text", List.of("names"), "submit_entities", List.of("names")),
+                Map.of(), Map.of("submit_text", textSchema,
+                        "submit_entities", ENTITY_TOOLS.get(0).getParameters())).buildConstraint();
+        String first = xmlCall("Alice").replace("submit_entities", "submit_text")
+                .replace("[\"Alice\"]", "Alice");
+        String second = xmlCall("Bob");
+        assertTrue(constraint.isAccepting(first + "\n" + second));
+        String openArray = first + "\n<tool_call>\n<function=submit_entities>\n"
+                + "<parameter=names>\n[ ";
+        assertTrue(constraint.canExtend(openArray, "\"Bob\"]\n</parameter>\n</function>\n</tool_call>"));
+        assertFalse(constraint.canExtend(openArray, "\t"),
+                "later structured parameters retain the existing whitespace-loop protection");
+        ToolCallParser.ParseResult result = ToolCallParser.parse(first + "\n" + second,
+                List.of(ChatTemplate.Tool.function("submit_text", "", textSchema), ENTITY_TOOLS.get(0)),
+                ChatTemplate.ToolCallFormat.XML);
+        assertTrue(result.isClean(), result.getErrors().toString());
+        assertEquals(List.of("submit_text", "submit_entities"), result.getToolCalls().stream()
+                .map(ChatTemplate.ToolCall::getName).collect(Collectors.toList()));
+    }
+
+    @Test
+    void xmlMalformedTrailingDataRejectsWholeCallSequence() {
+        String first = xmlCall("Alice");
+        for (String suffix : List.of("garbage", "\n<wrong>", "\n</tool_call>",
+                "\n" + xmlCall("Bob") + "garbage",
+                "\n" + xmlCall("Bob").replace("submit_entities", "undeclared"),
+                "\n" + xmlCall("Bob").replace("[\"Bob\"]", "42"))) {
+            assertFalse(xmlConstraint().canExtend(first, suffix), suffix);
+            assertFalse(xmlConstraint().isAccepting(first + suffix), suffix);
+            ToolCallParser.ParseResult result = ToolCallParser.parse(
+                    first + suffix, ENTITY_TOOLS, ChatTemplate.ToolCallFormat.XML);
+            assertFalse(result.isClean(), suffix);
+            assertTrue(result.getToolCalls().isEmpty(), suffix);
+        }
+    }
 
     @Test
     void nativeConstraintRejectsMalformedGraphObjectBeforeParsing() {
