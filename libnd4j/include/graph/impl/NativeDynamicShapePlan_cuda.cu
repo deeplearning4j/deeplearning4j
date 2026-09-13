@@ -1549,6 +1549,19 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
       continue;  // Same device, no migration needed
     }
 
+    // Complete only this plan's producer, not unrelated captures on its GPU.
+    cudaStream_t sourceProducerStream = ownedStream_ != nullptr && ownedStreamDeviceId_ == sourceDevice
+        ? *ownedStream_ : cudaStreamPerThread;
+    const auto producerReady = cudaStreamSynchronize(sourceProducerStream);
+    if (producerReady != cudaSuccess) {
+      if (savedDevice >= 0) cudaSetDevice(savedDevice);
+      return cudaPlanFailure("CUDA migration producer completion failed: slot=%d device=%d: %s",
+                            slotIdx, sourceDevice, cudaGetErrorString(producerReady));
+    }
+    // This boundary switches devices: a named target stream must not follow it
+    // onto the source GPU. Per-thread tokens resolve on each bound device.
+    DspThreadState migrationStreams(cudaStreamPerThread, cudaStreamPerThread,
+                                    tl_graphExecutionActive, tl_dspReplayActive);
     NDArray* srcArr = arr;
     NDArray* srcMat = nullptr;
     static thread_local cudaEvent_t tl_inputDupEvent = nullptr;
@@ -1582,11 +1595,9 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     }
     std::vector<NDArray*> reads{srcArr};
     NDArray::prepareSpecialUse({}, reads);
-    // The producer segment may have queued its final writes on a stream that is
-    // different from the target device's peer-copy stream.  Complete the source
-    // device before exposing the allocation to cudaMemcpyPeerAsync; otherwise the
-    // consumer can observe a partially written boundary buffer.
-    const auto sourceSyncErr = cudaDeviceSynchronize();
+    // Complete source-local coherence/materialization before exposing its bytes
+    // to the target. A device-wide wait would invalidate another worker's capture.
+    const auto sourceSyncErr = cudaStreamSynchronize(cudaStreamPerThread);
     if (sourceSyncErr != cudaSuccess) {
       DSP_DIAG(MULTI_DEVICE,
                "migrateSlotInputsToTargetDevice: source synchronization failed slot=%d "
@@ -1885,12 +1896,18 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
           for (size_t offset = 0; offset < srcLen; offset += chunkBytes) {
             const size_t bytes = std::min(chunkBytes, srcLen - offset);
             cudaSetDevice(sourceDevice);
-            copyErr = cudaMemcpy(staging, static_cast<char*>(srcDev) + offset, bytes,
-                                 cudaMemcpyDeviceToHost);
+            // Blocking cudaMemcpy uses the legacy stream and can invalidate a
+            // peer thread's capture. Explicit per-device streams retain ordering
+            // without that implicit device-wide dependency. Complete each leg
+            // before reusing/freeing the bounded pinned-host staging allocation.
+            copyErr = cudaMemcpyAsync(staging, static_cast<char*>(srcDev) + offset, bytes,
+                                      cudaMemcpyDeviceToHost, cudaStreamPerThread);
+            if (copyErr == cudaSuccess) copyErr = cudaStreamSynchronize(cudaStreamPerThread);
             if (copyErr != cudaSuccess) break;
             cudaSetDevice(targetDevice);
-            copyErr = cudaMemcpy(static_cast<char*>(dstDev) + offset, staging, bytes,
-                                 cudaMemcpyHostToDevice);
+            copyErr = cudaMemcpyAsync(static_cast<char*>(dstDev) + offset, staging, bytes,
+                                      cudaMemcpyHostToDevice, cudaStreamPerThread);
+            if (copyErr == cudaSuccess) copyErr = cudaStreamSynchronize(cudaStreamPerThread);
             if (copyErr != cudaSuccess) break;
           }
         }
@@ -2105,17 +2122,20 @@ NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int s
   // ── Async copy from sourceDevice to device-0 ────────────────────────────────
   // 1. Switch to sourceDevice and ensure its stream has committed the write.
   checkCuda(cudaSetDevice(sourceDevice), "bind producer device");
+  // Primary segments use the plan-owned stream; secondary-device segments use
+  // this execution thread's per-thread stream (platformBindSegmentDevice).
+  // Never drain the whole device here: another plan may be capturing on it,
+  // and cudaDeviceSynchronize both fails and invalidates that peer capture.
+  cudaStream_t producerStream = ownedStream_ != nullptr && ownedStreamDeviceId_ == sourceDevice
+      ? *ownedStream_ : cudaStreamPerThread;
+  checkCuda(cudaStreamSynchronize(producerStream), "complete producer stream");
   {
     std::vector<NDArray*> reads{arr};
     NDArray::prepareSpecialUse({}, reads);
   }
-  // Output extraction is the device boundary: producer kernels may have been
-  // queued on the producer's DSP stream while the caller is already on the
-  // primary device.  Complete that producer stream before issuing the peer
-  // copy; otherwise a logically correct view/materialized array can still copy
-  // its pre-write bytes.
-  const auto sourceSyncErr = cudaDeviceSynchronize();
-  checkCuda(sourceSyncErr, "complete producer");
+  // Delivery-local coherence work uses the device-current per-thread stream
+  // installed above. Complete it as well before a peer copy consumes the bytes.
+  checkCuda(cudaStreamSynchronize(cudaStreamPerThread), "complete producer preparation");
 
   // A view's logical elements are strided and are not represented by a
   // contiguous byte range. Materialize views on their producer device before
@@ -2134,7 +2154,7 @@ NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int s
     // dup() may enqueue a gather on the producer stream. Complete it before
     // submitting the cross-device transfer, then retain the temporary until
     // the destination stream has consumed it.
-    checkCuda(cudaDeviceSynchronize(), "complete source materialization");
+    checkCuda(cudaStreamSynchronize(cudaStreamPerThread), "complete source materialization");
     sourceForCopy = materializedView;
   }
 
@@ -2203,9 +2223,7 @@ NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int s
       // execute() returns. Complete the destination transfer before returning the
       // device-0 copy; otherwise the next replay can overwrite/free the producer
       // allocation while cudaMemcpyPeerAsync is still reading it.
-      const auto copySyncErr = copyStream != nullptr
-          ? cudaStreamSynchronize(copyStream)
-          : cudaDeviceSynchronize();
+      const auto copySyncErr = cudaStreamSynchronize(copyStream);
       checkCuda(copySyncErr, "complete delivery transfer");
       std::vector<NDArray*> writes{copy};
       std::vector<NDArray*> reads{sourceForCopy};

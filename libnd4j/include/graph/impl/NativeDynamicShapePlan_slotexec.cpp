@@ -1148,6 +1148,25 @@ int NativeDynamicShapePlan::refreshStaleViewWrappersInSegment(
       // Views must alias the staging buffer (stable address) so that cuBLAS
       // kernels baked into the CUDA graph see consistent addresses on replay.
       NDArray* resolved = resolveViewInput(srcIdx, externalArrays, numExt);
+      // Between segments outputSlots_ is restored to the producer's original
+      // layout/device. The consumer view, however, aliases its retained dense
+      // migration buffer. Resolve the same device/source binding used during
+      // execution; refreshing against the original permute would falsely
+      // demote a valid reshape before the frozen-slot validation boundary.
+      if (srcIdx >= 0 && slot.targetDeviceId >= 0) {
+        const uint64_t migrationKey = (static_cast<uint64_t>(slot.targetDeviceId) << 32) |
+                                      static_cast<uint32_t>(srcIdx);
+        auto migrated = migrationBuffers_.find(migrationKey);
+        if (migrated != migrationBuffers_.end() &&
+            safeHasValidShapeInfo(resolved) && safeHasValidShapeInfo(migrated->second) &&
+            migrated->second->dataBuffer() != nullptr &&
+            migrated->second->dataBuffer()->isValid() &&
+            migrated->second->dataBuffer()->deviceId() == slot.targetDeviceId &&
+            migrated->second->dataType() == resolved->dataType() &&
+            shape::shapeEquals(migrated->second->shapeInfo(), resolved->shapeInfo())) {
+          resolved = migrated->second;
+        }
+      }
       // Probe BEFORE any deref: on a plan-cache reuse the previous borrower's
       // teardown can leave a destructed NDArray in outputSlots_ (internal
       // srcIdx) — reading ->dataBuffer() from it is the bench-250 SIGSEGV at
@@ -1240,6 +1259,11 @@ int NativeDynamicShapePlan::refreshStaleViewWrappersInSegment(
 
       NDArray* newView = nullptr;
       LongType viewOffset = 0;
+      if (cachedValid && isExactExistingViewForSlot(
+              slot, input0, cachedOutShape, viewInputs.data(),
+              slot.wiring.numInputs, cached, &viewOffset)) {
+        continue;
+      }
       ViewCreateResult vcr = tryCreateViewForSlot(
           stepIdx, slot, input0, cachedOutShape,
           viewInputs.data(), slot.wiring.numInputs,
@@ -3373,6 +3397,12 @@ Status NativeDynamicShapePlan::executeSlot(
           memberOut = new NDArray(const_cast<LongType*>(outputShapeInfo), true, LaunchContext::defaultContext());
           writeOutputSlot(chainOutputSlotIdx, memberOut, "fused-chain-member-alloc");
         }
+        // Shape-only prepass can install an existing wrapper without device
+        // storage. It must satisfy the same storage contract as a newly allocated
+        // chain member before later backend bindings/slot validation use it.
+        // These private intermediates are not the fused kernel's result: do not
+        // mark their contents current or alias them to the final output.
+        NDArray::prepareSpecialUse({memberOut}, {});
         DSP_DIAG_SLOT_WRITE(chainOutputSlotIdx, slot.ident.opName.c_str(),
                             memberOut != nullptr && memberOut->dataBuffer() != nullptr
                                 ? memberOut->dataBuffer()->getLenInBytes()

@@ -53,6 +53,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -257,6 +258,10 @@ public class DspSlotLifecycleAuditTest {
                 Map<String, INDArray> result = graph.output(inputs, "out");
                 INDArray output = result.get("out");
                 assertNotNull(output, "identity output must be published");
+                for (int i = 0; i < 8; i++) {
+                    assertEquals((double) i, output.getDouble(i), 0.0,
+                            "identity value at replay " + replay + " index " + i);
+                }
                 if (output != input) output.close();
             }
         } finally {
@@ -264,6 +269,10 @@ public class DspSlotLifecycleAuditTest {
         }
         assertTrue(!input.wasClosed(),
                 "closing the DSP plan must not close the caller-owned placeholder array");
+        for (int i = 0; i < 8; i++) {
+            assertEquals((double) i, input.getDouble(i), 0.0,
+                    "caller input must remain readable after plan close at index " + i);
+        }
         input.close();
     }
 

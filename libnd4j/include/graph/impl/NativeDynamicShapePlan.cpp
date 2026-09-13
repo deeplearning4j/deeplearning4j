@@ -8080,6 +8080,18 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   // re-allocated lazily on the next executeSteadyState() / execute() call.
   DSP_DIAG(MEMORY, "releaseGpuIntermediates: Step 4d staging buffers=%p numExtInputs=%d secondaryDevices=%zu",
            (void*)placeholderStagingBuffers_, numExternalInputs_, deviceStagingBuffers_.size());
+  // A requested identity output can be the staging array itself; a requested
+  // view can also borrow its allocation. Transfer that owner to the requested
+  // output retirement queue rather than deleting it from a second owner table.
+  // Ordinary release preserves borrowed outputs; AfterOutputCopy drains this
+  // queue only after all native consumers have retired.
+  std::unordered_set<DataBuffer*> retainedOutputBuffers;
+  std::unordered_set<NDArray*> retainedOutputArrays;
+  for (auto* arr : retiredRequestedOutputOwners_) {
+    if (arr == nullptr) continue;
+    retainedOutputArrays.insert(arr);
+    if (arr->dataBuffer() != nullptr) retainedOutputBuffers.insert(arr->dataBuffer());
+  }
   int freedStaging = 0;
   auto freeStagingArray = [&](NDArray** buffers, const char* label) {
     if (buffers == nullptr) return;
@@ -8090,6 +8102,13 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
       bool dbSafe = (db != nullptr && db->isValid() && !db->isClosed());
       DSP_DIAG(MEMORY, "releaseGpuIntermediates: %s staging[%d] ptr=%p dbSafe=%d",
                label, i, (void*)staging, (int)dbSafe);
+      if (retainedOutputBuffers.count(db) != 0) {
+        if (retainedOutputArrays.insert(staging).second) {
+          retiredRequestedOutputOwners_.push_back(staging);
+        }
+        buffers[i] = nullptr;
+        continue;
+      }
       if (dbSafe) db->deleteBuffers();
       staging->setShapeInfo((sd::LongType*)nullptr);
       delete staging;
