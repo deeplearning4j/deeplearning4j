@@ -920,6 +920,8 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn('${mingw[@]+"${mingw[@]}"}', launcher)
         self.assertIn('${repository[@]+"${repository[@]}"}', launcher)
         self.assertIn('${protoc_profile[@]+"${protoc_profile[@]}"}', launcher)
+        self.assertIn('${sdx_profile[@]+"${sdx_profile[@]}"}', launcher)
+        self.assertEqual(2, launcher.count('${metadata_flags[@]+"${metadata_flags[@]}"}'))
 
     def test_windows_tokenizers_builds_rust_for_mingw(self):
         builder = (
