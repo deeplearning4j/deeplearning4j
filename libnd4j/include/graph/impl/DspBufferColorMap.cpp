@@ -81,6 +81,14 @@ void DspBufferColorMap::beginWarmup(const SlotLivenessData& liveness,
                             liveness.lastConsumerStep + totalOutputSlots_);
   incremental_ = true;
   computed_ = true;
+  if (DSP_DIAG_ENABLED(MEMORY)) {
+    std::string eligibleSlots;
+    for (size_t i = 0; i < eligible.size(); i++) {
+      if (eligible[i]) eligibleSlots += std::to_string(i) + " ";
+    }
+    DSP_DIAG(MEMORY, "BEGIN_WARMUP: totalSlots=%zu eligible=[%s]",
+             eligible.size(), eligibleSlots.c_str());
+  }
 }
 
 bool DspBufferColorMap::warmupEligible(int slot) const {
