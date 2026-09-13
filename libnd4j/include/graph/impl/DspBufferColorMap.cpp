@@ -92,7 +92,14 @@ NDArray* DspBufferColorMap::reuseWarmup(
     const std::vector<bool>& ancestors, NDArray** outputSlots) {
   if (!warmupEligible(slot) || colorOf_[slot] >= 0 || device < 0 || stream == nullptr ||
       shape::isEmptyConst(shapeInfo) ||
-      !shape::strideDescendingCAscendingF(const_cast<LongType*>(shapeInfo))) return nullptr;
+      !shape::strideDescendingCAscendingF(const_cast<LongType*>(shapeInfo))) {
+    DSP_DIAG(MEMORY, "WARMUP_REUSE_DECLINE: slot=%d eligible=%d hasColor=%d device=%d stream=%p "
+             "empty=%d contig=%d",
+             slot, warmupEligible(slot) ? 1 : 0, colorOf_[slot] >= 0 ? 1 : 0, device, stream,
+             shape::isEmptyConst(shapeInfo) ? 1 : 0,
+             shape::strideDescendingCAscendingF(const_cast<LongType*>(shapeInfo)) ? 1 : 0);
+    return nullptr;
+  }
   const auto dtype = ArrayOptions::dataType(shapeInfo);
   const char order = shape::order(shapeInfo);
   const size_t bytes = static_cast<size_t>(shape::length(shapeInfo)) * DataTypeUtils::sizeOf(dtype);

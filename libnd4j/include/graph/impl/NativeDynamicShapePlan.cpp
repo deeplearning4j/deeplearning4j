@@ -6130,7 +6130,16 @@ void NativeDynamicShapePlan::prepareFirstExecutionColoring() {
       }
       if (noPayload && outputSlotMaxSizes_.count(si) == 0 &&
           slotLiveness_->producerStep[si] == step &&
-          slotLiveness_->lastConsumerStep[si] >= step) eligible[si] = true;
+          slotLiveness_->lastConsumerStep[si] >= step) {
+        eligible[si] = true;
+      } else if (outputSlots_[si] != nullptr && slot.isViewCapableOp()) {
+        DSP_DIAG(MEMORY, "WARMUP_COLOR_SEED_REJECT: slot=%d op=%s noPayload=%d maxSized=%d "
+                 "producerStep=%d expectProducer=%d lastConsumer=%d step=%d",
+                 si, slot.ident.opName.c_str(), noPayload ? 1 : 0,
+                 outputSlotMaxSizes_.count(si) != 0 ? 1 : 0,
+                 slotLiveness_->producerStep[si], step,
+                 slotLiveness_->lastConsumerStep[si], step);
+      }
     }
   }
   DSP_DIAG(MEMORY, "WARMUP_COLOR_WRITERS: eligible=%d preallocated=%d maxSized=%d",
@@ -6178,7 +6187,11 @@ void NativeDynamicShapePlan::prepareFirstExecutionColoring() {
   for (int si = 0; si < totalOutputSlots_; ++si) {
     if (!eligible[si]) continue;
     const int last = slotLiveness_->lastConsumerStep[si];
-    if (last < 0 || last >= numSlots_ || readers[si].empty()) { eligible[si] = false; continue; }
+    if (last < 0 || last >= numSlots_ || readers[si].empty()) {
+      DSP_DIAG(MEMORY, "WARMUP_COLOR_READER_REJECT: slot=%d last=%d readers=%zu",
+               si, last, readers[si].size());
+      eligible[si] = false; continue;
+    }
     const int producer = slotLiveness_->producerStep[si];
     for (int reader : readers[si]) {
       if (slots_[reader].targetDeviceId != slots_[producer].targetDeviceId) { eligible[si] = false; break; }
