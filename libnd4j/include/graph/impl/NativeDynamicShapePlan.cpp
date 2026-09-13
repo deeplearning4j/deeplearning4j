@@ -5735,6 +5735,12 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
     // This supplements (rather than replaces) the actual DataBuffer/ref-count
     // checks in DspBufferColorMap and preserves its invariant that views and view
     // parents are never colored.
+    //
+    // Narrowing: the protection is INPUT-side permanent, OUTPUT-side conditional.
+    // A republished zero-copy view points at the still-protected source buffer,
+    // so the view-capable op's warmup DEDICATED output storage is abandoned at
+    // that instant and may be shared. A plain identity or in-place-fused reuse
+    // keeps publishing the source wrapper itself, so its output stays protected.
     std::unordered_set<int> coloringProtectedSlots;
     if (requestedOutputSlotIndices_ != nullptr) {
       for (int i = 0; i < numRequestedOutputs_; i++) {
@@ -5745,6 +5751,7 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
       }
     }
     const size_t requestedProtectedCount = coloringProtectedSlots.size();
+    size_t viewCapableOutputsNarrowed = 0;
     for (int stepIdx = 0; stepIdx < numSlots_; stepIdx++) {
       const NativeSlot& slot = slots_[stepIdx];
       if (!slot.aliasesInput() && !slot.isInPlaceFused()) continue;
@@ -5757,17 +5764,26 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
       if (sourceSlot >= 0 && sourceSlot < totalOutputSlots_) {
         coloringProtectedSlots.insert(sourceSlot);
       }
-      for (int output = 0; output < slot.wiring.numOutputs; output++) {
-        const int outputSlot = slot.wiring.outputSlotIndices[output];
-        if (outputSlot >= 0 && outputSlot < totalOutputSlots_) {
-          coloringProtectedSlots.insert(outputSlot);
+      if (!slot.isViewCapableOp()) {
+        for (int output = 0; output < slot.wiring.numOutputs; output++) {
+          const int outputSlot = slot.wiring.outputSlotIndices[output];
+          if (outputSlot >= 0 && outputSlot < totalOutputSlots_) {
+            coloringProtectedSlots.insert(outputSlot);
+          }
+        }
+      } else {
+        for (int output = 0; output < slot.wiring.numOutputs; output++) {
+          const int outputSlot = slot.wiring.outputSlotIndices[output];
+          if (outputSlot >= 0 && outputSlot < totalOutputSlots_) ++viewCapableOutputsNarrowed;
         }
       }
     }
     DSP_DIAG(MEMORY,
-             "phaseWarmup: coloring protected slots requested=%zu structuralAliases=%zu total=%zu",
+             "phaseWarmup: coloring protected slots requested=%zu structuralAliases=%zu "
+             "viewCapableOutputsNarrowed=%zu total=%zu",
              requestedProtectedCount,
              coloringProtectedSlots.size() - requestedProtectedCount,
+             viewCapableOutputsNarrowed,
              coloringProtectedSlots.size());
 
     try {
@@ -6079,8 +6095,18 @@ void NativeDynamicShapePlan::prepareFirstExecutionColoring() {
   int eligibleWriters = 0, alreadyAllocated = 0, maxSized = 0;
   for (int step = 0; step < numSlots_; ++step) {
     const auto& slot = slots_[step];
-    if (!slot.isFullyWriting() || slot.needsPrezero() || slot.aliasesInput() ||
-        slot.isViewCapableOp() || slot.isInPlaceFused() || slot.hasValueDependentShape() ||
+    // Narrowing: view-capable producers (reshape/transpose/squeeze/expand_dims)
+    // seed their outputs for first-pass coloring. A zero-copy view of the input
+    // never enters the color system (recordWarmup rejects views), and a frozen
+    // republish abandons the dedicated storage it would have colored, pointing
+    // instead at the still-protected input buffer. Identity keeps its output
+    // exclusion (it republishes the input wrapper itself); slice-class views
+    // stay dedicated (runtime offset selection).
+    const bool viewCapableProducer =
+        slot.isViewCapableOp() && !slot.hasOpTrait(sd::ops::OP_TRAIT_SLICE);
+    if (!slot.isFullyWriting() || slot.needsPrezero() || slot.isIdentityOp() ||
+        slot.isInPlaceFused() ||
+        (!viewCapableProducer && slot.hasValueDependentShape()) ||
         slot.flags.isDynamicShape || slot.fusedChain.isFusedChainHead || slot.fusedChain.isFusedChainTail ||
         slot.flags.ltEpilogueType != 0) continue;
     ++eligibleWriters;
@@ -6112,6 +6138,13 @@ void NativeDynamicShapePlan::prepareFirstExecutionColoring() {
   const auto eligibleBeforeAliases = std::count(eligible.begin(), eligible.end(), true);
   // Exclude both sides of every potential alias, including views that only
   // become zero-copy after freeze. Shape-control values also remain dedicated.
+  // Narrowing: a view-capable op's dedicated OUTPUT storage stays colorable —
+  // warmup has already taken its alias/copy branch or its frozen shape matches
+  // the warmup producer. On a frozen republish the dedicated array is abandoned
+  // (the view points at the still-protected input storage) and the later
+  // compute() refcount checks re-exclude the slot as soon as a view wrapper is
+  // actually observed. Identity and in-place-fused reuse keep the output-side
+  // exclusion because they keep publishing the source wrapper itself.
   for (int step = 0; step < numSlots_; ++step) {
     const auto& slot = slots_[step];
     if (!slot.aliasesInput() && !slot.isViewCapableOp() && !slot.isInPlaceFused() &&
@@ -6120,9 +6153,11 @@ void NativeDynamicShapePlan::prepareFirstExecutionColoring() {
       int si = slot.wiring.inputSourceIndices[i];
       if (si >= 0 && si < totalOutputSlots_) eligible[si] = false;
     }
-    for (int o = 0; o < slot.wiring.numOutputs; ++o) {
-      int si = slot.wiring.outputSlotIndices[o];
-      if (si >= 0 && si < totalOutputSlots_) eligible[si] = false;
+    if (!slot.isViewCapableOp()) {
+      for (int o = 0; o < slot.wiring.numOutputs; ++o) {
+        int si = slot.wiring.outputSlotIndices[o];
+        if (si >= 0 && si < totalOutputSlots_) eligible[si] = false;
+      }
     }
   }
   for (int i = 0; i < numRequestedOutputs_; ++i) {

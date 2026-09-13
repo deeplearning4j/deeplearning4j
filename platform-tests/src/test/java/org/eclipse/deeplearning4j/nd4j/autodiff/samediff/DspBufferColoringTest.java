@@ -281,6 +281,125 @@ public class DspBufferColoringTest {
         }
     }
 
+    /**
+     * Regression for the freeze-time coloring narrowing of view-capable op outputs.
+     *
+     * A view-capable op (reshape) whose warmup input is NOT C-contiguous cannot
+     * mint a zero-copy view, so the functional warmup publishes a DEDICATED array
+     * for its output. That dedicated storage was previously excluded from coloring
+     * on both sides of every potential alias; the narrowing keeps the aliased
+     * INPUT side protected and makes the dedicated OUTPUT storage colorable.
+     *
+     * Graph:
+     *   tA = permute(input)            // [16,4] non-contiguous view of the input
+     *   rA = reshape(tA, [64])         // view-capable; warmup publishes DEDICATED (input not contiguous)
+     *   cA = rA + 1                    // last consumer of rA
+     *   r1 = relu(input)               // contiguous input for the view-aliased counterpart
+     *   rB = reshape(r1, [64])         // view of r1 at warmup AND when frozen republishes
+     *   cB = rB + 1
+     *   out  = cA + cB                 // requested, [64]
+     *   s2 = sigmoid(input)            // eligible [4,16] partner to prove r1 stays protected
+     *   out2 = s2 + 1                  // requested, [4,16]
+     *
+     * Assertions:
+     *  (a) outputs stay correct while the SAME input INDArray is re-assigned with
+     *      different values between warmup and frozen replays (a republished view
+     *      or a shared color buffer must read current values, never stale data);
+     *  (b) the republish-capable side remains protected where it must be: r1 (the
+     *      aliased source of rB) is never colored while its same-shape partner s2 is;
+     *  (c) the never-republishing dedicated counterpart rA (and rB's warmup
+     *      storage) DO participate in coloring (slotColor >= 0) and actual sharing
+     *      is applied (bytesSaved > 0).
+     */
+    @Test
+    void testViewCapableDedicatedOutputsAreColorableWhileAliasedInputsStayProtected() {
+        org.junit.jupiter.api.Assumptions.assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
+        sd = SameDiff.create();
+        sd.setDspAutoCompileEnabled(true);
+        sd.setDspNativeAutoCompileEnabled(true);
+        SDVariable input = sd.placeHolder("input", DataType.FLOAT, 4, 16);
+        SDVariable tA = sd.permute("tA", input, 1, 0);
+        SDVariable rA = sd.reshape("rA", tA, 64);
+        SDVariable cA = rA.add(sd.constant("one64", Nd4j.ones(DataType.FLOAT, 64)));
+        SDVariable r1 = sd.nn.relu("r1", input, 0);
+        SDVariable rB = sd.reshape("rB", r1, 64);
+        SDVariable cB = rB.add(sd.constant("one64b", Nd4j.ones(DataType.FLOAT, 64)));
+        SDVariable out = cA.add("out", cB);
+        SDVariable s2 = sd.nn.sigmoid("s2", input);
+        SDVariable out2 = s2.add(sd.constant("one416", Nd4j.ones(DataType.FLOAT, 4, 16)));
+        out2.rename("out2");
+        sd.compileNativeDynamicShapePlan("out", "out2");
+
+        int reshapeSlots = -1;
+        try (INDArray values = Nd4j.rand(DataType.FLOAT, 4, 16)) {
+            for (int iteration = 0; iteration < 8; iteration++) {
+                // Write DIFFERENT values into the same input INDArray between warmup
+                // and frozen replays: any stale view or wrongly shared buffer shows up.
+                float offset = 0.125f * iteration;
+                values.assign(Nd4j.rand(DataType.FLOAT, 4, 16).addi(offset));
+                INDArray expected = values.permute(1, 0).reshape(64).addi(1.0)
+                        .addi(org.nd4j.linalg.activations.impl.ActivationReLU.getInstance()
+                                .getActivation(values.dup(), -1).reshape(64).addi(1.0));
+                INDArray expectedOut2 = org.nd4j.linalg.activations.impl.ActivationSigmoid.getInstance()
+                        .getActivation(values.dup(), -1).addi(1.0);
+                Map<String, INDArray> results = sd.output(Map.of("input", values), "out", "out2");
+                try {
+                    INDArray got = results.get("out");
+                    assertNotNull(got, "out");
+                    assertArrayEquals(expected.data().asFloat(), got.data().asFloat(), 1e-4f,
+                            "out at iteration " + iteration);
+                    INDArray got2 = results.get("out2");
+                    assertNotNull(got2, "out2");
+                    assertArrayEquals(expectedOut2.data().asFloat(), got2.data().asFloat(), 1e-5f,
+                            "out2 at iteration " + iteration);
+
+                    if (iteration == 0) {
+                        DspHandle handle = new DspHandle(sd);
+                        assertTrue(handle.isCompiled());
+                        assertTrue(handle.bufferColoringApplied(),
+                                "narrowed view-capable dedicated outputs must enable actual sharing");
+
+                        var ops = org.nd4j.nativeblas.NativeOpsHolder.getInstance().getDeviceNativeOps();
+                        var executor = sd.getOrCreateSession().getDynamicShapePlanExecutor();
+                        int totalOps = ops.getPlanNumSlots(executor.getNativePlanHandle());
+                        java.util.List<Integer> reshapes = new java.util.ArrayList<>();
+                        for (int s = 0; s < totalOps; s++) {
+                            String name = ops.getPlanSlotOpName(executor.getNativePlanHandle(), s);
+                            if (name != null && name.contains("reshape")) reshapes.add(s);
+                        }
+                        assertEquals(2, reshapes.size(), "expected exactly rA and rB reshape slots");
+                        int rAIdx = reshapes.get(0);
+                        int rBIdx = reshapes.get(1);
+                        int r1Idx = handle.slotIndexForOp("relu");
+                        int s2Idx = handle.slotIndexForOp("sigmoid");
+                        assertTrue(r1Idx >= 0 && s2Idx >= 0, "relu/sigmoid slots must be found");
+
+                        // (c) narrowing: dedicated view-capable outputs participate in coloring.
+                        assertTrue(handle.slotColor(rAIdx) >= 0,
+                                "warmup-dedicated reshape output rA must be colorable under the narrowing");
+                        assertTrue(handle.slotColor(rBIdx) >= 0,
+                                "view-aliased reshape output rB storage must be colorable under the narrowing");
+                        // (b) input-side protection is unchanged: r1 aliases rB's view and stays
+                        // dedicated even though same-shape s2 is an eligible coloring candidate.
+                        assertEquals(-1, handle.slotColor(r1Idx),
+                                "aliased reshape INPUT r1 must never be colored");
+                        assertTrue(handle.slotColor(s2Idx) >= 0,
+                                "unaliased partner s2 proves the protected-input assertion is not vacuous");
+                        assertTrue(handle.bufferColoringBytesSaved() >= 64L * Float.BYTES,
+                                "rA/rB must share at least one [64] float buffer");
+                    }
+                } finally {
+                    java.util.Set<INDArray> uniqueOutputs = java.util.Collections.newSetFromMap(
+                            new java.util.IdentityHashMap<>());
+                    uniqueOutputs.addAll(results.values());
+                    uniqueOutputs.forEach(INDArray::close);
+                    expected.close();
+                    expectedOut2.close();
+                }
+            }
+        }
+    }
+
     @Test
     void testWarmupSharingPreservesBranchesViewsAndShapeLeases() {
         org.junit.jupiter.api.Assumptions.assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
