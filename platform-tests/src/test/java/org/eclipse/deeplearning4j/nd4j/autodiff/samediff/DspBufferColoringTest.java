@@ -356,10 +356,9 @@ public class DspBufferColoringTest {
                 INDArray expected = org.nd4j.linalg.ops.transforms.Transforms.tanh(cARef, true)
                         .addi(org.nd4j.linalg.ops.transforms.Transforms.max(
                                 h2Ref.dup(), Nd4j.zeros(DataType.FLOAT, 4, 16)).reshape(64).addi(1.0));
-                INDArray expectedOut2 = org.nd4j.linalg.ops.transforms.Transforms.sigmoid(
-                        values.dup(), false)
-                        .muli(org.nd4j.linalg.ops.transforms.Transforms.tanh(
-                                org.nd4j.linalg.ops.transforms.Transforms.sigmoid(values.dup(), false), true))
+                // out2 = tanh(sigmoid(input)) * 2 + 1  (s2 -> s3 -> s4 -> out2)
+                INDArray expectedOut2 = org.nd4j.linalg.ops.transforms.Transforms.tanh(
+                        org.nd4j.linalg.ops.transforms.Transforms.sigmoid(values.dup(), false), true)
                         .muli(2.0).addi(1.0);
                 Map<String, INDArray> results = sd.output(Map.of("input", values), "out", "out2");
                 try {
@@ -387,6 +386,14 @@ public class DspBufferColoringTest {
                         int r1Idx = handle.slotIndexForOp("relu");
                         int s2Idx = handle.slotIndexForOp("sigmoid");
                         assertTrue(r1Idx >= 0 && s2Idx >= 0, "relu/sigmoid slots must be found");
+
+                        StringBuilder colorMap = new StringBuilder("slotColors:");
+                        for (int s = 0; s < handle.totalSlots(); s++) {
+                            colorMap.append(' ').append(s).append('=').append(handle.slotColor(s));
+                        }
+                        log.info("{} applied={} colors={} saved={}", colorMap,
+                                handle.bufferColoringApplied(), handle.bufferColoringNumColors(),
+                                handle.bufferColoringBytesSaved());
 
                         // (c) narrowing: the warmup-dedicated view-capable output participates
                         // in coloring (it was structurally excluded before the narrowing).
