@@ -220,6 +220,11 @@ def merge(
                 shutil.copy2(path, destination)
     files = [{"path": path.relative_to(output).as_posix(), "sha256": digest(path), "size": path.stat().st_size, "shards": ownership[path.relative_to(output).as_posix()]} for path in repository_files(output)]
     manifest = {"schemaVersion": 1, "releaseVersion": release_version, "commit": commit, "workloads": ["maven", "sdk"], "files": files}
+    if canonical_worker_owners:
+        manifest['workerSources'] = [
+            {'worker': source.parent.name,
+             'commit': json.loads((source.parent / 'worker-config.json').read_text())['commit']}
+            for source in inputs]
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     Path(str(manifest_path) + ".sha256").write_text(f"{digest(manifest_path)}  {manifest_path.name}\n", encoding="ascii")

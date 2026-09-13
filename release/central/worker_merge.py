@@ -27,7 +27,15 @@ def select(inputs, version, commit):
         result = json.loads((worker / "build-result.json").read_text())
         if not (worker / "worker-success").is_file():
             raise ValueError(f"Worker did not complete: {worker}")
-        if config.get("commit") != commit or config.get("releaseVersion") != version:
+        try:
+            from .source_identity import check
+        except ImportError:
+            from source_identity import check
+        try:
+            check(commit, config.get('commit'))
+        except ValueError as error:
+            raise ValueError(f"Worker source/version mismatch: {worker}") from error
+        if config.get("releaseVersion") != version:
             raise ValueError(f"Worker source/version mismatch: {worker}")
         variants = config["shard"]["build"]["variants"]
         if len(variants) != 1 or variants[0]["name"] not in result["completedVariants"]:
@@ -46,6 +54,19 @@ def select(inputs, version, commit):
                 project = ET.parse(pom).getroot()
                 refs = project.findall('{*}parent')
                 for model in [project, *project.findall('{*}profiles/{*}profile')]:
+                    # This explicitly opted-in source assembly profile downloads
+                    # a native ZIP only when rebuilding from source. It is not
+                    # activated by a consumer resolving the published JAR.
+                    if (model is not project and
+                            model.findtext('{*}id') == 'libnd4j-assembly' and
+                            model.findtext('{*}activation/{*}property/{*}name') == 'libnd4j-assembly' and
+                            model.findtext('{*}activation/{*}activeByDefault', 'false') == 'false'):
+                        dependencies = model.findall('{*}dependencies/{*}dependency')
+                        if (len(dependencies) == 1 and
+                                dependencies[0].findtext('{*}artifactId') == 'libnd4j' and
+                                dependencies[0].findtext('{*}type') == 'zip' and
+                                dependencies[0].findtext('{*}classifier')):
+                            continue
                     refs += model.findall('{*}dependencies/{*}dependency')
                     refs += model.findall('{*}dependencyManagement/{*}dependencies/{*}dependency')
                 # Build plugin dependencies order header generation, but are not

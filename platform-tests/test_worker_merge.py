@@ -55,6 +55,32 @@ class CanonicalWorkerMergeTests(unittest.TestCase):
             merge([repo], self.root / 'out2', self.root / 'manifest2.json',
                   '1.0.0-rewrite', 'a' * 40, canonical_worker_owners=True)
 
+    def test_audited_launcher_pair_only(self):
+        from release.central.source_identity import check, CUDA_SOURCE, CPU_SOURCE
+        check(CUDA_SOURCE, CPU_SOURCE)
+        check(CPU_SOURCE, CUDA_SOURCE)
+        with self.assertRaises(ValueError):
+            check(CUDA_SOURCE, 'b' * 40)
+
+    def test_opt_in_source_zip_profile(self):
+        repo = self.worker('linux-x86_64-cpu', b'canonical')
+        folder = repo / 'org/eclipse/deeplearning4j/libnd4j/1.0.0-rewrite'
+        folder.mkdir(parents=True)
+        (folder / 'libnd4j-1.0.0-rewrite.pom').write_text('<project/>')
+        profile = ('<project><profiles><profile><id>libnd4j-assembly</id>'
+                   '<activation><property><name>libnd4j-assembly</name></property></activation>'
+                   '<dependencies><dependency><groupId>org.eclipse.deeplearning4j</groupId>'
+                   '<artifactId>libnd4j</artifactId><type>zip</type><classifier>native</classifier>'
+                   '</dependency></dependencies></profile></profiles></project>')
+        pom = repo / 'assembly.pom'
+        pom.write_text(profile)
+        merge([repo], self.root / 'out', self.root / 'manifest.json',
+              '1.0.0-rewrite', 'a' * 40, canonical_worker_owners=True)
+        pom.write_text(profile.replace('<activation>', '<activation><activeByDefault>true</activeByDefault>'))
+        with self.assertRaisesRegex(ValueError, 'requires build-only'):
+            merge([repo], self.root / 'out2', self.root / 'manifest2.json',
+                  '1.0.0-rewrite', 'a' * 40, canonical_worker_owners=True)
+
     def test_missing_owner_fails(self):
         arm = self.worker('linux-arm64-cpu', b'arm')
         with self.assertRaisesRegex(ValueError, 'Missing canonical owner'):

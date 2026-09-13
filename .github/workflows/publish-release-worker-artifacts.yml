@@ -362,9 +362,7 @@ jobs:
                 "${release_version}" "${current_version}" >&2
               exit 1
             elif [ "${source_commit}" != "${current_commit}" ]; then
-              printf 'Staged workers disagree on source commit: %s vs %s\n' \
-                "${source_commit}" "${current_commit}" >&2
-              exit 1
+              python3 release/central/source_identity.py "${source_commit}" "${current_commit}"
             fi
           done
           if ! [[ "${source_commit}" =~ ^[0-9a-f]{40}$ ]]; then
