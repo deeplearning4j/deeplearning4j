@@ -26,6 +26,20 @@ class WorkflowMatrixTests(unittest.TestCase):
         cls.plan = prepare_worker.load_json(ROOT / "release/aws/release-plan.json")
         cls.matrix = prepare_worker.load_json(ROOT / "release/github/workflow-matrix.json")
 
+    def test_cross_platform_tokenizers_activate_their_reactor_profile(self):
+        env = dict(os.environ, DL4J_PLATFORM="linux-x86_64", DL4J_OS="linux",
+                   DL4J_BUILD_SDX="0", DL4J_TOKENIZERS_JAVA="0")
+        script = str(ROOT / "build-scripts/release/cross-platform.sh")
+        tokenizers = shlex.split(subprocess.check_output(
+            ["bash", script, "--print-tokenizers"], env=env, text=True))
+        self.assertIn("-Ptokenizers-native", tokenizers)
+        self.assertNotIn("-Dlibtokenizers.cpu.compile.skip=true", tokenizers)
+        java = shlex.split(subprocess.check_output(
+            ["bash", script, "--print-java"], env=env, text=True))
+        self.assertNotIn("-pl", java)
+        self.assertNotIn("-Pnative", java)
+        self.assertNotIn("-Ptokenizers-native", java)
+
     def test_existing_dispatch_workflow_can_select_branch_only_matrices(self):
         workflow = (ROOT / ".github/workflows/build-deploy-cross-platform.yml").read_text()
         self.assertIn("workflow:\n        description: Canonical release workflow matrix to execute.", workflow)
