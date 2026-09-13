@@ -1318,7 +1318,18 @@ mlir::Value TritonIRBuilder::emitNormalizationOp(mlir::OpBuilder& builder, mlir:
     auto epsVal = builder.create<mlir::arith::ConstantOp>(
         loc, elemType, builder.getFloatAttr(elemType, static_cast<double>(epsilon)));
     auto meanPlusEps = builder.create<mlir::arith::AddFOp>(loc, meanSquared, epsVal);
-    auto rsqrtVal = builder.create<mlir::math::RsqrtOp>(loc, meanPlusEps);
+    // Native RMS rounds sqrt before taking the reciprocal. Keep both rounding
+    // boundaries: math.rsqrt (or approximate sqrt/div lowering) changes raw bits.
+    // Triton's precise ops preserve this without target-specific extern symbols.
+    mlir::Value rms;
+    if (elemType.isF32()) {
+      rms = builder.create<mlir::triton::PreciseSqrtOp>(loc, meanPlusEps);
+    } else {
+      rms = builder.create<mlir::math::SqrtOp>(loc, meanPlusEps);
+    }
+    auto one = builder.create<mlir::arith::ConstantOp>(
+        loc, elemType, builder.getFloatAttr(elemType, 1.0));
+    auto rsqrtVal = emitNativeCudaDiv(builder, loc, one, rms);
     auto rsqrtSplat = builder.create<mlir::triton::SplatOp>(loc, tensorTy, rsqrtVal);
     result = builder.create<mlir::arith::MulFOp>(loc, input, rsqrtSplat);
     result = maybeApplyAffine(result);
