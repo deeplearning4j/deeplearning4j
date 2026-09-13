@@ -707,7 +707,7 @@ static bool instantiateAndStoreMergedCapture(
   // produced its visible output. Launching each captured island here would run
   // it outside the composite gap/group schedule and mutate live intermediates
   // before later islands are captured. Store the executable without launching;
-  // the next plan execution replays it after argument refresh in schedule order.
+  // the completed composite replays it after argument refresh in schedule order.
   DSP_DIAG(EXECUTE, "%s: group=%d [%d-%d] INSTANTIATE_COMPLETE nodes=%zu graphExec=%p "
            "(first launch deferred to schedule-ordered composite replay)",
            diagPrefix, mergedGroupId, startSlot, endSlot, nodeCount,
@@ -4659,14 +4659,22 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                if (!allIslandsOk) break;
              }
 
-              // Execute gap slots natively (not captured — non-capture-safe gap).
-              // Use effectiveExternalsForCapture for consistency with the captured path:
-              // all gap ops (captured or native) read from the same stable staging buffers.
+              // Prepare host-only/alias gap outputs for subsequent capture argument
+              // binding, but do not execute live compute against unlaunched producers.
+              // Warmup populated shapes and storage, not every intermediate VALUE:
+              // later warmup slots may already have reused an earlier producer's buffer.
+              // The completed composite executes compute gaps in dependency order below.
+              // A live-gap-only schedule has no deferred producers and executes here.
               DSP_DIAG(EXECUTE, "COMPOSITE_CAPTURE: gap unit [%d-%d] — executing slots natively",
                        unit.startSlot, unit.endSlot);
              {
                SyncOverride gapSync(*this, "composite_gap_native");
                for (int s = unit.startSlot; s <= unit.endSlot; s++) {
+                 if (hasIslandUnits && !slotHasOnlyTransparentAliasOutputs(
+                         slots_[s], slotOwnership_, outputSlots_, effectiveExternalsForCapture,
+                         numExt, totalOutputSlots_)) {
+                   continue;
+                 }
                  auto gapStatus = executeSlot(s, effectiveExternalsForCapture, numExt, stream);
                  if (gapStatus != Status::OK) {
                    DSP_DIAG(EXECUTE,
@@ -5127,11 +5135,18 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
            restoreCublasWorkspaceAfterCapture(stream);
            restoreSlotStates(slots_, seg.def.startSlot, seg.def.endSlot, savedSlotPhasesTriton);
 
-           // FORCE_RECAPTURE: invalidate graph immediately after composite capture+launch
-           // so the NEXT step also re-captures instead of replaying the just-captured graph.
-           // Without this, composite captures persist and the next step enters compositeReplay()
-           // instead of re-capturing — defeating the purpose of FORCE_RECAPTURE.
-           if (Environment::getInstance().tritonForceRecapture()) {
+           // Deliver this invocation only after capture metadata, cast-cache HWM,
+           // dispatch reconciliation and TLS cleanup are complete. Individual merged
+           // handles have not launched: replay the whole schedule exactly once so
+           // native gaps consume their captured producers before buffer reuse.
+           if (hasIslandUnits) {
+             status = compositeReplay(seg, sched, externalArrays, numExt, stream);
+             if (status != Status::OK) return status;
+           }
+
+           // Island schedules already apply FORCE_RECAPTURE in compositeReplay.
+           // Live-gap-only schedules executed above and need the same invalidation.
+           if (!hasIslandUnits && Environment::getInstance().tritonForceRecapture()) {
              SegmentLifecycle::invalidateForRebuild(this, seg, "force_recapture_post_composite_capture");
              markBatchD2DInvalidated(seg, "force_recapture_post_composite_capture");
              DSP_DIAG(EXECUTE, "FORCE_RECAPTURE: invalidated after COMPOSITE capture+launch execCount=%d",
