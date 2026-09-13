@@ -44,7 +44,12 @@ def select(inputs, version, commit):
                 if pom.parent.parent.name == 'libnd4j':
                     continue
                 project = ET.parse(pom).getroot()
-                refs = project.findall('{*}parent') + project.findall('.//{*}dependency')
+                refs = project.findall('{*}parent')
+                for model in [project, *project.findall('{*}profiles/{*}profile')]:
+                    refs += model.findall('{*}dependencies/{*}dependency')
+                    refs += model.findall('{*}dependencyManagement/{*}dependencies/{*}dependency')
+                # Build plugin dependencies order header generation, but are not
+                # part of a consumer's dependency graph.
                 if any(ref.findtext('{*}artifactId') == 'libnd4j' and
                        ref.findtext('{*}groupId') == 'org.eclipse.deeplearning4j'
                        for ref in refs):

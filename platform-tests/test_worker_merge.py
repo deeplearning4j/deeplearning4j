@@ -40,6 +40,10 @@ class CanonicalWorkerMergeTests(unittest.TestCase):
         folder = repo / 'org/eclipse/deeplearning4j/libnd4j/1.0.0-rewrite'
         folder.mkdir(parents=True)
         (folder / 'libnd4j-1.0.0-rewrite.pom').write_text('<project/>')
+        (repo / 'build-plugin.pom').write_text(
+            '<project><build><plugins><plugin><dependencies><dependency>'
+            '<groupId>org.eclipse.deeplearning4j</groupId><artifactId>libnd4j</artifactId>'
+            '</dependency></dependencies></plugin></plugins></build></project>')
         output = self.root / 'out'
         merge([repo], output, self.root / 'manifest.json',
               '1.0.0-rewrite', 'a' * 40, canonical_worker_owners=True)
