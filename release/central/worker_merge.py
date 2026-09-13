@@ -101,7 +101,7 @@ def select(inputs, version, commit):
                             f"Conflicting component main artifact {relative}: "
                             f"{selected[repository]} vs {selected[other]}")
                 return True
-            ordered = sorted(inputs, key=lambda item: selected[item][0])
+            ordered = sorted(inputs, key=lambda item: selected[item], reverse=True)
             producer = next(item for item in ordered if (item / relative).is_file())
             return repository == producer
         shared_names = {f"{artifact}-{artifact_version}{suffix}" for suffix in

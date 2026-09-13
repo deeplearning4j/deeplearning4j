@@ -96,6 +96,7 @@ class CanonicalWorkerMergeTests(unittest.TestCase):
     def test_unowned_component_attachments_deterministic_main_bytes_checked(self):
         arm = self.worker('linux-arm64-cpu', b'arm')
         x64 = self.worker('linux-x86_64-cpu', b'x64')
+        output = self.root / 'out'
         for repository, javadoc in ((arm, b'doc-arm'), (x64, b'doc-x64')):
             path = repository / 'org/eclipse/deeplearning4j/nd4j-presets-common/1.0.0-rewrite/nd4j-presets-common-1.0.0-rewrite-javadoc.jar'
             path.parent.mkdir(parents=True)
@@ -107,14 +108,13 @@ class CanonicalWorkerMergeTests(unittest.TestCase):
                        '1.0.0-rewrite', 'a' * 40, canonical_worker_owners=True)
         self.assertEqual(5, len(result['files']))
         javadoc = next(output.rglob('*-javadoc.jar'))
-        self.assertEqual(b'doc-arm', javadoc.read_bytes())
+        self.assertEqual(b'doc-x64', javadoc.read_bytes())
         pom = next(output.rglob('*.pom'))
         self.assertEqual(b'<project/>', pom.read_bytes())
         doc_rows = [row for row in result['files'] if row['path'].endswith('-javadoc.jar')]
-        self.assertEqual([('linux-arm64-cpu', 'base')], doc_rows[0]['shards'])
+        self.assertEqual(['linux-x86_64-cpu'], doc_rows[0]['shards'])
         pom_rows = [row for row in result['files'] if row['path'].endswith('.pom')]
-        self.assertEqual([('linux-arm64-cpu', 'base'), ('linux-x86_64-cpu', 'base')],
-                         pom_rows[0]['shards'])
+        self.assertEqual(['linux-arm64-cpu', 'linux-x86_64-cpu'], pom_rows[0]['shards'])
 
     def test_unowned_component_main_conflicts_fail(self):
         arm = self.worker('linux-arm64-cpu', b'arm')
