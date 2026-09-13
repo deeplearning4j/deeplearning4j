@@ -171,7 +171,7 @@ class WorkflowMatrixTests(unittest.TestCase):
                 self.assertNotRegex(row["artifactId"], r"-cpu(?:-|$)", workflow)
                 if "-zluda" in row["shard"]:
                     self.assertRegex(
-                        row["artifactId"], r"-rocm-[0-9]+\.[0-9]+\.[0-9]+$", workflow
+                        row["artifactId"], r"-rocm-[0-9]+\.[0-9]+\.[0-9]+(?:-compile)?$", workflow
                     )
                 self.assertEqual(row["name"], row["artifactId"], workflow)
                 self.assertTrue(
@@ -360,6 +360,62 @@ class WorkflowMatrixTests(unittest.TestCase):
         )
         self.assertEqual("android-arm64-vulkan", rows[0]["artifactId"])
         self.assertEqual("android-arm64-vulkan", rows[0]["selector"])
+
+    def test_vulkan_and_zluda_resolved_compile_matrix(self):
+        rows = []
+        for workflow in ("build-deploy-linux-vulkan.yml",
+                         "build-deploy-linux-vulkan-mlir.yml",
+                         "build-deploy-linux-zluda.yml", "build-deploy-android-arm64.yml"):
+            for group in ("linux", "host"):
+                rows.extend(row for row in prepare_worker.workflow_rows(
+                    self.plan, self.matrix, workflow, group)
+                    if "vulkan" in row["shard"] or "zluda" in row["shard"])
+        expected = {"linux-x86_64-vulkan", "windows-x86_64-vulkan",
+                    "linux-x86_64-vulkan-mlir-compile", "android-arm64-vulkan"}
+        expected.update(
+            f"{os_name}-x86_64-cuda-12.9-zluda-rocm-{rocm}{extension}"
+            for os_name in ("linux", "windows")
+            for rocm in ("6.2.4", "7.2.4", "10.0.0")
+            for extension in (("", "-compile") if os_name == "linux" else ("",))
+        )
+        self.assertEqual(expected, {row["artifactId"] for row in rows})
+        self.assertEqual(len(expected), len(rows))
+        for row in rows:
+            group = "host" if row["os"] == "windows" else "linux"
+            resolved = prepare_worker.workflow_rows(
+                self.plan, self.matrix, "build-deploy-cross-platform.yml", group,
+                classifiers=row["artifactId"], selection_mode="targeted",
+            )
+            self.assertEqual([row], resolved)
+            print(f"resolved-plan {row['artifactId']} shard={row['shard']} "
+                  f"variant={row['variant']} cache={row['dependencyCacheKey']}")
+        shards = prepare_worker.plan_shards(self.plan)
+        for shard_id, original_base in {
+            "linux-x86_64-vulkan": {"name": "base", "suffix": "", "mlir": True, "triton": True},
+            "windows-x86_64-vulkan": {"name": "base", "suffix": ""},
+        }.items():
+            self.assertEqual(original_base, shards[shard_id]["build"]["variants"][0])
+            self.assertEqual(prepare_worker.dependency_cache_key(shard_id, original_base),
+                             next(row["dependencyCacheKey"] for row in rows if row["shard"] == shard_id))
+        for shard in shards.values():
+            build = shard["build"]
+            if not build.get("zludaVersion"):
+                continue
+            rocm = build["rocmVersion"]
+            original_base = {"name": "cuda-12.9",
+                             "classifierSuffix": f"-cuda-12.9-zluda-rocm-{rocm}",
+                             "platformExtension": f"-zluda-rocm-{rocm}"}
+            self.assertEqual(original_base, build["variants"][0])
+            self.assertEqual(
+                prepare_worker.dependency_cache_key(shard["id"], original_base),
+                next(row["dependencyCacheKey"] for row in rows
+                     if row["shard"] == shard["id"] and row["variant"] == "cuda-12.9"),
+            )
+            if shard["os"] == "linux":
+                self.assertNotEqual(
+                    prepare_worker.dependency_cache_key(shard["id"], original_base),
+                    prepare_worker.dependency_cache_key(shard["id"], build["variants"][1]),
+                )
 
     def test_targeted_classifier_auto_resolves_unique_canonical_workflow(self):
         rows = prepare_worker.workflow_rows(

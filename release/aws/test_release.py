@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Unit tests for the release provisioner's fail-closed AWS validation."""
 
+import copy
 import hashlib
 import importlib.util
 import json
@@ -1678,7 +1679,11 @@ class ReleaseValidationTest(unittest.TestCase):
                         "name": "cuda-12.9",
                         "classifierSuffix": "-cuda-12.9-zluda-rocm-7.2.4",
                         "platformExtension": "-zluda-rocm-7.2.4",
-                    }], build["variants"])
+                    }], build["variants"][:1])
+                    self.assertEqual(
+                        ["cuda-12.9", "compile"] if shard["os"] == "linux" else ["cuda-12.9"],
+                        [variant["name"] for variant in build["variants"]],
+                    )
                     self.assertIn("-Dlibnd4j.zluda=AMD", build["mavenArgs"])
                     self.assertIn("-Drocm.version=7.2.4", build["mavenArgs"])
                     self.assertNotIn("-Dlibnd4j.zluda=rocm6", build["mavenArgs"])
@@ -4273,6 +4278,100 @@ class ReleaseValidationTest(unittest.TestCase):
             ),
         )
 
+    def test_compile_release_commands_and_classifier_ownership(self):
+        root = Path(__file__).resolve().parents[2]
+        script = root / "build-scripts/release/native-platform.sh"
+        for provider in ("aws", "azure", "gcp"):
+            plan = json.loads((root / f"release/{provider}/release-plan.json").read_text())
+            for shard in plan["shards"]:
+                build = shard["build"]
+                if not build.get("zludaVersion") and shard["id"] not in {
+                    "linux-x86_64-vulkan", "linux-x86_64-vulkan-mlir", "windows-x86_64-vulkan"
+                }:
+                    continue
+                with self.subTest(provider=provider, shard=shard["id"]):
+                    if build.get("zludaVersion"):
+                        build_platform.attest_zluda_configuration(build)
+                    variants = build["variants"]
+                    expected_count = 2 if shard["os"] == "linux" and build.get("zludaVersion") else 1
+                    self.assertEqual(expected_count, len(variants))
+                    classifiers = set()
+                    for variant in variants:
+                        calls = []
+                        with patch.object(build_platform, "prepare_openblas"), patch.object(
+                            build_platform, "run",
+                            side_effect=lambda command, cwd, env: calls.append(env.copy()),
+                        ):
+                            build_platform.build_native_platform(
+                                Path("/source"), dict(shard, artifactRules={}, build=dict(build, variants=[variant])),
+                                Path("/m2"), {}, None,
+                            )
+                        env = dict(os.environ, **calls[0])
+                        command = shlex.split(subprocess.check_output(
+                            ["bash", str(script), "--print"], env=env, text=True,
+                        ))
+                        classifier = build_platform.variant_artifact_classifier(build, variant)
+                        self.assertNotIn(classifier, classifiers)
+                        classifiers.add(classifier)
+                        if build.get("zludaVersion"):
+                            self.assertEqual(
+                                build["javacppPlatform"] + variant["platformExtension"], classifier,
+                            )
+                            contract = shard["artifactRules"].get("classifierArchiveContracts", {}).get(
+                                "nd4j-zluda-12.9", {})
+                            for entry in contract.get("requiredEntries", []):
+                                self.assertIn("/" + classifier + "/", entry.format(classifier=classifier))
+                            if variant["name"] == "compile":
+                                base_classifier = build_platform.variant_artifact_classifier(build, variants[0])
+                                self.assertNotEqual(base_classifier, classifier)
+                                rules = copy.deepcopy(shard["artifactRules"])
+                                build_platform.enable_sdx_release_component(build, rules)
+                                for artifact in build_platform.required_classifier_artifact_ids(build, rules):
+                                    self.assertNotEqual(
+                                        f"{artifact}-1.0.0-{base_classifier}.jar",
+                                        f"{artifact}-1.0.0-{classifier}.jar",
+                                    )
+                        if build.get("zludaVersion") or variant["name"] == "compile":
+                            self.assertIn(f"-Dlibnd4j.classifier={env['DL4J_CLASSIFIER']}", command)
+                        if variant["name"] == "compile":
+                            self.assertIn("-Dlibnd4j.triton=ON", command)
+                            self.assertIn("-Dlibnd4j.mlir=ON", command)
+                            self.assertIn(f"-Djavacpp.platform.extension={env['DL4J_PLATFORM_EXTENSION']}", command)
+                            self.assertEqual(build_platform.sdx_variant_artifact_classifier(build, variant),
+                                             env["DL4J_SDX_CLASSIFIER"])
+                            if build.get("zludaVersion"):
+                                self.assertIn("-Dlibnd4j.helpers=mlir", command)
+                                self.assertIn("-Dlibnd4j.zluda=AMD", command)
+                                self.assertIn("-Drocm.version=" + build["rocmVersion"], command)
+                                self.assertEqual("nd4j-zluda-12.9", shard["artifactRules"]["classifierPrimaryArtifact"])
+                            else:
+                                self.assertIn("-Dplatform.classifier=linux-x86_64-compile", command)
+                                self.assertTrue(env["DL4J_SDX_OUTPUT_PATH"].endswith("/vulkan/linux-x86_64-compile"))
+                        elif build.get("zludaVersion"):
+                            self.assertNotIn("-Dlibnd4j.triton=ON", command)
+                            self.assertNotIn("-Dlibnd4j.mlir=ON", command)
+
+    def test_zluda_compile_rejects_renamed_native_and_msvc_variants(self):
+        root = Path(__file__).resolve().parents[2]
+        plan = json.loads((root / "release/aws/release-plan.json").read_text())
+        build = next(shard["build"] for shard in plan["shards"] if shard["id"] == "linux-x86_64-zluda")
+        compiled = build["variants"][1]
+        for invalid in (dict(compiled, mlir=False), dict(compiled, triton=False),
+                        dict(compiled, windowsNativeCompile=True)):
+            with self.assertRaisesRegex(RuntimeError, "requires Linux managed"):
+                build_platform.attest_zluda_configuration(dict(build, variants=[invalid]))
+        with self.assertRaisesRegex(RuntimeError, "MSVC is unsupported"):
+            build_platform.attest_zluda_configuration(dict(build, javacppPlatform="windows-x86_64"))
+        for family, helper in (("windows-zluda", "compile"), ("windows-zluda", ""), ("zluda", "")):
+            env = dict(os.environ, DL4J_FAMILY=family, DL4J_BUILD_THREADS="1",
+                       DL4J_CUDA_VERSION="12.9", DL4J_HELPER=helper,
+                       DL4J_PLATFORM_EXTENSION=compiled["platformExtension"],
+                       DL4J_CLASSIFIER="test-compile")
+            result = subprocess.run(["bash", str(root / "build-scripts/release/native-platform.sh"), "--print"],
+                                    env=env, capture_output=True, text=True)
+            self.assertEqual(2, result.returncode)
+            self.assertEqual("", result.stdout)
+
     def test_zluda_native_family_tracks_worker_os(self):
         build = {"zludaVersion": "v6"}
         variant = {"name": "zluda"}
@@ -4747,8 +4846,7 @@ option(MLIR_ENABLE_EXECUTION_ENGINE
         self.assertEqual("mvn", command[0])
         self.assertIn("-X", command)
         self.assertEqual(":nd4j-native,:nd4j-native-preset,:libnd4j", command[command.index("-pl") + 1])
-        self.assertEqual("deploy", command[-2])
-        self.assertEqual("-DskipTests", command[-1])
+        self.assertEqual(["deploy", "-DskipTests", "-Pnative"], command[-3:])
 
     def test_github_and_clouds_reference_the_same_release_worker(self):
         root = Path(__file__).parents[2]
