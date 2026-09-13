@@ -313,7 +313,8 @@ public class DspBufferColoringTest {
      *      or a wrongly shared color buffer must read current values, never stale
      *      data from any sharing partner);
      *  (b) the republish-capable side remains protected where it must be: r1 (the
-     *      aliased source of rB) is never colored while its same-shape partner s2 is;
+     *      aliased source of rB) is never colored while the unaliased same-shape
+     *      h2 is — the exclusion is alias-specific, not a blanket producer ban;
      *  (c) the never-republishing dedicated counterpart rA DOES participate in
      *      coloring (slotColor(rA) >= 0 — uncolorable before the narrowing) and
      *      actual sharing is applied (bytesSaved > 0).
@@ -383,9 +384,11 @@ public class DspBufferColoringTest {
                         assertEquals(2, reshapes.size(), "expected exactly rA and rB reshape slots");
                         int rAIdx = reshapes.get(0);
                         int rBIdx = reshapes.get(1);
+                        java.util.List<Integer> matmuls = handle.allSlotsForOp("matmul");
+                        assertEquals(2, matmuls.size(), "expected exactly h1 and h2 matmul slots");
+                        int h2Idx = matmuls.get(1);
                         int r1Idx = handle.slotIndexForOp("relu");
-                        int s2Idx = handle.slotIndexForOp("sigmoid");
-                        assertTrue(r1Idx >= 0 && s2Idx >= 0, "relu/sigmoid slots must be found");
+                        assertTrue(r1Idx >= 0, "relu slot must be found");
 
                         StringBuilder colorMap = new StringBuilder("slotColors:");
                         for (int s = 0; s < handle.totalSlots(); s++) {
@@ -402,11 +405,12 @@ public class DspBufferColoringTest {
                         assertTrue(handle.slotColor(rAIdx) >= 0,
                                 "warmup-dedicated reshape output rA must be colorable under the narrowing");
                         // (b) input-side protection is unchanged: r1 aliases rB's view and stays
-                        // dedicated even though same-shape s2 is an eligible coloring candidate.
+                        // dedicated even though the unaliased h2 (same shape) does get colored —
+                        // the exclusion is alias-specific, not a blanket producer ban.
                         assertEquals(-1, handle.slotColor(r1Idx),
                                 "aliased reshape INPUT r1 must never be colored");
-                        assertTrue(handle.slotColor(s2Idx) >= 0,
-                                "unaliased partner s2 proves the protected-input assertion is not vacuous");
+                        assertTrue(handle.slotColor(h2Idx) >= 0,
+                                "unaliased h2 proves the protected-input assertion is not vacuous");
                         // Greedy interval coloring packs each 3-slot chain into 2 colors:
                         // the [64] group alone must retire one 256-byte float buffer.
                         assertTrue(handle.bufferColoringBytesSaved() >= 64L * Float.BYTES,
