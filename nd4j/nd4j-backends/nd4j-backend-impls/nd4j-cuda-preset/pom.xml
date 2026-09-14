@@ -149,6 +149,9 @@
                         </goals>
                         <configuration>
                             <archive>
+                                <!-- pom.properties embeds the building Maven's version;
+                                     omit the optional descriptor so the JAR is OS-neutral. -->
+                                <addMavenDescriptor>false</addMavenDescriptor>
                                 <manifestEntries>
                                     <Automatic-Module-Name>${module.name}</Automatic-Module-Name>
                                     <!-- Pin environment-dependent defaults so the JAR is

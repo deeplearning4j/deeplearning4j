@@ -41,6 +41,9 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
                     <archive>
+                        <!-- pom.properties embeds the building Maven's version;
+                             omit the optional descriptor so the JAR is OS-neutral. -->
+                        <addMavenDescriptor>false</addMavenDescriptor>
                         <manifestEntries>
                             <Automatic-Module-Name>nd4j.zluda.platform</Automatic-Module-Name>
                             <!-- Pin environment-dependent defaults so the
