@@ -21,6 +21,15 @@ def _jar_content_digest(path):
     return digest.hexdigest()
 
 
+def _jars_match(left, right):
+    """Content match for real ZIP archives; strict bytes otherwise."""
+    import zipfile
+    try:
+        return _jar_content_digest(left) == _jar_content_digest(right)
+    except zipfile.BadZipFile:
+        return left.read_bytes() == right.read_bytes()
+
+
 def select(inputs, version, commit):
     root = Path(__file__).resolve().parents[2]
     spec = importlib.util.spec_from_file_location(
@@ -92,38 +101,35 @@ def select(inputs, version, commit):
         artifact, artifact_version = relative.parent.parent.name, relative.parent.name
         if relative.parts[:3] == ('org', 'eclipse', 'deeplearning4j') and artifact == 'libnd4j':
             return False
-        owner = owners.get(artifact)
-        if owner is None:
-            # Unowned shared components (for example nd4j-presets-common,
-            # built by several native lanes) are Java metadata. Their javadoc
-            # JARs embed build timestamps, so bytes differ between lanes even
-            # though content is identical. Select deterministically: main
-            # artifacts (.jar/.pom without classifier) must be byte-identical,
-            # attachments come from the first shard in canonical order and the
-            # contributing shard is recorded in the manifest.
+        # Unowned shared components (for example nd4j-presets-common) are built
+        # by several native lanes. Main artifacts are accepted when their ZIP
+        # entry contents match (reproducible-build timestamps differ); real
+        # content divergence fails. Attachments come from the first shard in
+        # canonical order, recorded in the manifest.
+        if owners.get(artifact) is None:
             filename = relative.name
             is_main = filename in (f"{artifact}-{artifact_version}.jar",
                                    f"{artifact}-{artifact_version}.pom")
             probe = repository / relative
-            if is_main:
-                for other in inputs:
-                    candidate = other / relative
-                    if candidate == probe or not candidate.is_file():
-                        continue
-                    if candidate.read_bytes() == probe.read_bytes():
-                        continue
-                    # Reproducible-build noise: ZIP entry timestamps differ
-                    # between lanes while contents are byte-identical.
-                    if (candidate.suffix == '.jar' and probe.suffix == '.jar'
-                            and _jar_content_digest(candidate) == _jar_content_digest(probe)):
-                        continue
+            for other in inputs:
+                candidate = other / relative
+                if candidate == probe or not candidate.is_file():
+                    continue
+                if candidate.read_bytes() == probe.read_bytes():
+                    continue
+                if (candidate.suffix == '.jar' and probe.suffix == '.jar'
+                        and _jars_match(candidate, probe)):
+                    continue
+                if is_main:
                     raise ValueError(
                         f"Conflicting component main artifact {relative}: "
                         f"{selected[repository]} vs {selected[other]}")
+            if is_main:
                 return True
             ordered = sorted(inputs, key=lambda item: selected[item], reverse=True)
             producer = next(item for item in ordered if (item / relative).is_file())
             return repository == producer
+        owner = owners[artifact]
         shared_names = {f"{artifact}-{artifact_version}{suffix}" for suffix in
                         (".jar", "-sources.jar", "-javadoc.jar")}
         # Also select checksums/signatures with their owning artifact.
