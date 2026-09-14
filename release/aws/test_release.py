@@ -1591,7 +1591,6 @@ class ReleaseValidationTest(unittest.TestCase):
                     ":nd4j-cuda-12.9-preset",
                     ":nd4j-zluda-12.9",
                     ":nd4j-zluda-12.9-platform",
-                    ":nd4j-presets-common",
                     ":libnd4j",
                 },
                 "artifactIds": {
@@ -1599,14 +1598,12 @@ class ReleaseValidationTest(unittest.TestCase):
                     "nd4j-cuda-12.9-preset",
                     "nd4j-zluda-12.9",
                     "nd4j-zluda-12.9-platform",
-                    "nd4j-presets-common",
                 },
                 "unclassifiedArtifactIds": [
                     "nd4j-cuda-12.9-backend-common",
                     "nd4j-cuda-12.9-preset",
                     "nd4j-zluda-12.9",
                     "nd4j-zluda-12.9-platform",
-                    "nd4j-presets-common",
                 ],
             },
             "windows-x86_64-zluda": {
@@ -1618,7 +1615,6 @@ class ReleaseValidationTest(unittest.TestCase):
                     ":nd4j-cuda-12.9-preset",
                     ":nd4j-zluda-12.9",
                     ":nd4j-zluda-12.9-platform",
-                    ":nd4j-presets-common",
                     ":libnd4j",
                 },
                 "artifactIds": {
@@ -1626,14 +1622,12 @@ class ReleaseValidationTest(unittest.TestCase):
                     "nd4j-cuda-12.9-preset",
                     "nd4j-zluda-12.9",
                     "nd4j-zluda-12.9-platform",
-                    "nd4j-presets-common",
                 },
                 "unclassifiedArtifactIds": [
                     "nd4j-cuda-12.9-backend-common",
                     "nd4j-cuda-12.9-preset",
                     "nd4j-zluda-12.9",
                     "nd4j-zluda-12.9-platform",
-                    "nd4j-presets-common",
                 ],
             },
         }
