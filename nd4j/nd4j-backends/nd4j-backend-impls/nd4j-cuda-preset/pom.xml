@@ -151,6 +151,10 @@
                             <archive>
                                 <manifestEntries>
                                     <Automatic-Module-Name>${module.name}</Automatic-Module-Name>
+                                    <!-- Pin environment-dependent defaults so the JAR is
+                                         byte-identical across OS lanes. -->
+                                    <Created-By>Apache Maven</Created-By>
+                                    <Built-By>deeplearning4j-release</Built-By>
                                 </manifestEntries>
                             </archive>
                             <excludes>
