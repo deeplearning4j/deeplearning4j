@@ -40,12 +40,15 @@
              and dependency graph are owned entirely by the ZLUDA artifact. -->
         <cuda.version>12.9</cuda.version>
         <!-- ZLUDA native coordinates are versioned by both CUDA ABI and the
-             ROCm user-space runtime bundled in the classifier. The classifier
-             follows the JavaCPP platform and extension of the requesting build
-             (e.g. -compile), matching the classifier the backend attaches. -->
+             ROCm user-space runtime bundled in the classifier. The worker
+             supplies javacpp.platform (linux-x86_64/windows-x86_64) and
+             javacpp.platform.extension (-zluda-rocm-<ver>[-compile]); their
+             composition is exactly the classifier the backend attaches and
+             the runtime package CMake produces. User properties cannot be
+             blanked by the parent's self-build profiles. -->
         <rocm.version>7.2.4</rocm.version>
-        <zluda.linux.classifier>${javacpp.platform.linux-x86_64}-zluda-rocm-${rocm.version}</zluda.linux.classifier>
-        <zluda.windows.classifier>${javacpp.platform.windows-x86_64}-zluda-rocm-${rocm.version}</zluda.windows.classifier>
+        <zluda.linux.classifier>${javacpp.platform}${javacpp.platform.extension}</zluda.linux.classifier>
+        <zluda.windows.classifier>${javacpp.platform}${javacpp.platform.extension}</zluda.windows.classifier>
         <nd4j.backend>nd4j-zluda-${cuda.version}</nd4j.backend>
     </properties>
 
