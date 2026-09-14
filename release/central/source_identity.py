@@ -17,9 +17,17 @@ CPU_SOURCE = '131fa37e366eff6f7c8888cb2adc21b84a9360bf'
 ZLUDA_BASE_SOURCE = 'a412cd7974408b284d596f00013f877b1ce474eb'
 ZLUDA_COMPILE_SOURCE = 'dbce583d00e0439e8f41e4cd8206f36dea8e20bd'
 
+# ZLUDA family, 2026-09-14: efb8fc32c6 over dbce583d00 changes only release
+# packaging determinism: .gitattributes LF normalization, pinned JAR manifest
+# entries, disabled git.properties generation and dropped Maven descriptors in
+# shared ZLUDA/CUDA modules. No compiled source changes; owners on dbce583d00
+# produce byte-identical artifacts for everything they own.
+ZLUDA_OSNEUTRAL_SOURCE = 'efb8fc32c6822026d8454f7501bd39c7bafadad0'
+
 AUDITED_PAIRS = [
     {CUDA_SOURCE, CPU_SOURCE},
     {ZLUDA_BASE_SOURCE, ZLUDA_COMPILE_SOURCE},
+    {ZLUDA_BASE_SOURCE, ZLUDA_OSNEUTRAL_SOURCE},
 ]
 
 
