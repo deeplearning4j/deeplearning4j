@@ -34,6 +34,27 @@
     <artifactId>nd4j-zluda-12.9-platform</artifactId>
     <name>nd4j-zluda-12.9-platform</name>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Automatic-Module-Name>nd4j.zluda.platform</Automatic-Module-Name>
+                            <!-- Pin environment-dependent defaults so the
+                                 published JAR is byte-identical regardless of
+                                 the lane OS, Maven patch version or runner user. -->
+                            <Created-By>Apache Maven</Created-By>
+                            <Built-By>deeplearning4j-release</Built-By>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
     <properties>
         <skipPublishing>false</skipPublishing>
         <!-- CUDA identifies the build-time ABI/toolchain. The runtime payload

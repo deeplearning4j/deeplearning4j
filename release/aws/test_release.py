@@ -1463,6 +1463,27 @@ class ReleaseValidationTest(unittest.TestCase):
             / "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-zluda-platform/pom.xml"
         ).getroot()
 
+        # The published platform JAR is built by several OS lanes and must be
+        # byte-identical between them: environment-dependent manifest defaults
+        # (Maven patch version, runner username) are pinned explicitly.
+        jar_plugin = pom.find(
+            "m:build/m:plugins/m:plugin[m:artifactId='maven-jar-plugin']",
+            namespace,
+        )
+        self.assertIsNotNone(jar_plugin)
+        manifest_entries = jar_plugin.find(
+            "m:configuration/m:archive/m:manifestEntries", namespace
+        )
+        self.assertIsNotNone(manifest_entries)
+        self.assertEqual(
+            "Apache Maven",
+            manifest_entries.findtext("m:Created-By", namespaces=namespace),
+        )
+        self.assertEqual(
+            "deeplearning4j-release",
+            manifest_entries.findtext("m:Built-By", namespaces=namespace),
+        )
+
         self.assertEqual(
             "nd4j-zluda-12.9-platform",
             pom.findtext("m:artifactId", namespaces=namespace),
