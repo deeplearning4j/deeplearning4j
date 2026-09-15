@@ -2683,6 +2683,43 @@ Status NativeDynamicShapePlan::replayMonolithicGraph(
              diagTag, liveCreateCount, seg.def.startSlot, seg.def.endSlot);
   }
 
+  // ── Step 1.6: Live execution of excluded view/identity slots ──────────────
+  // View/identity slots skipped by native-only capture (see
+  // slotHasOnlyTransparentAliasOutputs at the capture site) have their output
+  // buffers READ by baked-in graph nodes but never WRITTEN by the graph. The
+  // warmup allocator legitimately recycles those buffers across slots, so an
+  // in-graph producer can rewrite the same device range on every replay. Re-
+  // executing the view slot live here — before cudaGraphLaunch — refreshes its
+  // output from its current input so downstream in-graph nodes read correct
+  // data. Zero-copy views re-publish the alias; materializing views (reshape of
+  // a non-contiguous permute) re-record their copy kernel on the replay stream.
+  // Without this, replay returns capture-time/clobbered values deterministically
+  // (tripleViewChain / static-KV divergence class).
+  if (!seg.exec.excludedViewSlotIndices.empty()) {
+    int liveViewCount = 0;
+    SyncOverride liveViewSync(*this, "live_excluded_view_ops");
+    ScopedDspGapStream liveViewGapGuard(
+        stream != nullptr ? *static_cast<cudaStream_t*>(stream) : nullptr);
+    for (int s : seg.exec.excludedViewSlotIndices) {
+      if (s < seg.def.startSlot || s > seg.def.endSlot || s < 0 || s >= numSlots_) continue;
+      auto liveStatus = executeSlot(s, externalArrays, numExt, stream);
+      if (liveStatus != Status::OK) {
+        DSP_DIAG(EXECUTE,
+                 "%s: live excluded-view slot %d (%s) FAILED status=%s (%d)",
+                 diagTag, s, slots_[s].ident.opName.c_str(),
+                 dsp::dspStatusName(liveStatus), static_cast<int>(liveStatus));
+        // This buffer feeds the captured graph. Launching after a failed refresh
+        // would knowingly consume stale state, so fail before graph launch.
+        return liveStatus;
+      }
+      liveViewCount++;
+    }
+    DSP_DIAG(EXECUTE, "%s: executed %d/%zu excluded view/identity slots live before graph "
+             "launch seg[%d-%d]",
+             diagTag, liveViewCount, seg.exec.excludedViewSlotIndices.size(),
+             seg.def.startSlot, seg.def.endSlot);
+  }
+
   // ── Step 2: Prezero segment outputs ──
   // Slots that accumulate (e.g. scatter-add, reduce) need their output buffers
   // zeroed before each replay to prevent stale value accumulation and FP drift.

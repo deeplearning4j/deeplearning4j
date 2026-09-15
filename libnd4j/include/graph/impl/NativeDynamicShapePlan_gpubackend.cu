@@ -153,6 +153,45 @@ static bool slotHasOnlyTransparentAliasOutputs(
     if (outIdx < 0 || outIdx >= totalOutputSlots) return false;
 
     BufferOwnership owner = ownership[outIdx].ownership;
+    if (owner == BufferOwnership::VIEW_OF_SLOT) {
+      // A VIEW_OF_SLOT record is only a *transparent alias* when the recorded
+      // parent is reachable through this slot's own wired inputs (the output
+      // aliases data this slot actually reads). Warmup buffer-coloring reuses
+      // dead producers' storage for later slots' outputs — a raw DataBuffer
+      // match with an UNRELATED earlier slot. That recycle is storage reuse,
+      // not a data alias: the slot still needs its (copy) kernel recorded in
+      // the graph, and excluding it bakes consumers against a buffer no graph
+      // node ever writes (tripleViewChain materializing-reshape divergence).
+      // Walk the slot's input alias chain and require the recorded parent on
+      // it; bounded to slot count with a visited set.
+      int claimedParent = ownership[outIdx].parentSlotIdx;
+      bool parentIsWired = false;
+      if (claimedParent >= 0 && claimedParent < totalOutputSlots) {
+        std::vector<bool> visited(static_cast<size_t>(totalOutputSlots), false);
+        std::vector<int> frontier;
+        for (int i = 0; i < slot.wiring.numInputs; i++) {
+          int srcIdx = slot.wiring.inputSourceIndices[i];
+          if (srcIdx >= 0 && srcIdx < totalOutputSlots) frontier.push_back(srcIdx);
+        }
+        while (!frontier.empty() && !parentIsWired) {
+          int cur = frontier.back();
+          frontier.pop_back();
+          if (cur < 0 || cur >= totalOutputSlots || visited[static_cast<size_t>(cur)]) continue;
+          visited[static_cast<size_t>(cur)] = true;
+          if (cur == claimedParent) {
+            parentIsWired = true;
+            break;
+          }
+          // Follow the input slot's own recorded alias parent (view chains).
+          if (ownership[cur].ownership == BufferOwnership::VIEW_OF_SLOT &&
+              ownership[cur].parentSlotIdx >= 0) {
+            frontier.push_back(ownership[cur].parentSlotIdx);
+          }
+        }
+      }
+      if (!parentIsWired) return false;
+      continue;
+    }
     if (owner != BufferOwnership::VIEW_OF_SLOT &&
         owner != BufferOwnership::VIEW_OF_WEIGHT) {
       NDArray* out = (outputSlots != nullptr) ? outputSlots[outIdx] : nullptr;
@@ -1142,6 +1181,148 @@ static bool findUnsupportedTritonReplayGap(TritonGraphBackend* tritonBackend,
 // Query whether every slot in [startSlot, endSlot] can be inside a CUDA graph
 // capture.  Delegates to NativeSlot::isCapturable() — the single source of
 // truth for control-flow, data-dependent, and view/identity/frozen checks.
+// ── Merged-capture alias safety ─────────────────────────────────────────────
+// Capture extends through "capture-safe" gaps so a single CUDA graph covers
+// island + gap + island. When a gap is admitted into a merged capture, every
+// device address its ops touch at capture time is BAKED into the graph —
+// including op-internal workspace materializations (e.g. a reduce op's
+// device-side scalar), which the warmup allocator legitimately reuses from the
+// dead-buffer pool. During replay, every unit NOT merged into this group
+// executes LIVE and rewrites its own output buffers. If a live unit's output
+// range overlaps any address the merged graph bakes (observed: gap slot 23's
+// reduce_norm2 op-internal scalar aliased gap slot 13's matmul output at the
+// exact same device address 0x8274e7600), the live write clobbers the baked
+// value and the merged graph replays deterministically wrong values from
+// invocation 2 onward. The first post-capture replay only looks correct
+// because CaptureLiveInputs restores inputs around that single replay.
+static bool s_mergedCaptureGapAliasCheckDisabled() {
+  static bool disabled = []() {
+    const char* env = std::getenv("ND4J_DSP_MERGED_CAPTURE_GAP_ALIAS_CHECK_DISABLED");
+    return (env != nullptr && (env[0] == '1' || env[0] == 't' || env[0] == 'T' ||
+                               env[0] == 'y' || env[0] == 'Y'));
+  }();
+  return disabled;
+}
+
+struct MergedCaptureDeviceRange {
+  const void* ptr;
+  size_t bytes;
+};
+
+static bool mergedCaptureRangesOverlap(const void* aPtr, size_t aBytes,
+                                       const void* bPtr, size_t bBytes) {
+  if (aPtr == nullptr || bPtr == nullptr || aBytes == 0 || bBytes == 0) return false;
+  uintptr_t aLo = reinterpret_cast<uintptr_t>(aPtr);
+  uintptr_t bLo = reinterpret_cast<uintptr_t>(bPtr);
+  uintptr_t aHi = aLo + aBytes;
+  uintptr_t bHi = bLo + bBytes;
+  if (aHi < aLo || bHi < bLo) return false;  // overflow guard
+  return (aLo < bHi) && (bLo < aHi);
+}
+
+// Range collector used by mergedCaptureGapIsAliasSafe: appends [ptr, ptr+bytes)
+// for a slot array, skipping null/empty/closed buffers.
+static void mergedCaptureCollectRange(NDArray* arr, std::vector<MergedCaptureDeviceRange>& out) {
+  if (arr == nullptr || arr->isEmpty()) return;
+  auto* db = arr->dataBuffer();
+  void* ptr = arr->specialBuffer();
+  if (db == nullptr || ptr == nullptr) return;
+  out.push_back({ptr, db->getLenInBytes()});
+}
+
+// Alias-safety gate for admitting a capture-safe gap into an ACTIVE merged
+// capture. Collects every device range the gap slots' ops touch via their wired
+// INPUT and OUTPUT arrays, and rejects the merge if any of those ranges
+// overlaps the output range of a unit that will execute LIVE during replay (a
+// REPLAY_UNIT_GAP unit that is not part of any merged group). Returns true when
+// the gap may be merged; false when it must stay live (with a diagnostic
+// emitted so the guard is observable).
+//
+// Soundness: op-internal workspace scalars cannot be enumerated exhaustively,
+// so ANY overlap touching a gap slot's wired input/output range is treated as
+// disqualifying. Leaving the gap live is always correct: the existing
+// non-merged path executes its slots natively during replay.
+static bool mergedCaptureGapIsAliasSafe(const ReplaySchedule& sched,
+                                        NativeSlot* slots,
+                                        NDArray** outputSlots,
+                                        int totalOutputSlots,
+                                        const ReplayScheduleUnit* candidateUnit,
+                                        int gapStartSlot,
+                                        int gapEndSlot) {
+  if (s_mergedCaptureGapAliasCheckDisabled()) return true;
+
+  // 1) Collect the output ranges of all LIVE (unmerged gap) units — the units
+  //    that execute natively during replay and can rewrite those addresses.
+  //    The candidate unit itself is excluded: it is untagged (mergedGroupId
+  //    still -1) at both decision points and would trivially overlap itself.
+  std::vector<MergedCaptureDeviceRange> liveRanges;
+  for (const auto& lu : sched.units) {
+    if (&lu == candidateUnit) continue;               // candidate itself
+    if (lu.mergedGroupId >= 0) continue;              // merged → replayed by graph
+    if (lu.kind != REPLAY_UNIT_GAP) continue;         // unmerged island → own handle
+    for (int s = lu.startSlot; s <= lu.endSlot; s++) {
+      if (s < 0) continue;
+      const NativeSlot& ls = slots[s];
+      for (int o = 0; o < ls.wiring.numOutputs; o++) {
+        int si = ls.wiring.outputSlotIndices[o];
+        if (si < 0 || si >= totalOutputSlots) continue;
+        mergedCaptureCollectRange(outputSlots[si], liveRanges);
+      }
+    }
+  }
+  if (liveRanges.empty()) return true;                 // nothing executes live
+
+  // 2) Compare every device range the candidate gap slots touch (inputs AND
+  //    outputs) against those live ranges.
+  for (int s = gapStartSlot; s <= gapEndSlot; s++) {
+    if (s < 0) continue;
+    const NativeSlot& gs = slots[s];
+    for (int wi = 0; wi < gs.wiring.numInputs; wi++) {
+      int srcIdx = gs.wiring.inputSourceIndices[wi];
+      NDArray* arr = nullptr;
+      if (srcIdx >= 0 && srcIdx < totalOutputSlots) {
+        arr = outputSlots[srcIdx];
+      }
+      if (arr == nullptr) continue;
+      auto* db = arr->dataBuffer();
+      void* ptr = arr->specialBuffer();
+      if (db == nullptr || ptr == nullptr) continue;
+      size_t bytes = db->getLenInBytes();
+      if (bytes == 0) continue;
+      for (const auto& lr : liveRanges) {
+        if (mergedCaptureRangesOverlap(ptr, bytes, lr.ptr, lr.bytes)) {
+          DSP_DIAG(EXECUTE,
+                   "MERGED_CAPTURE_GAP_ALIAS: gap [%d-%d] slot=%d ptr=%p len=%zu overlaps "
+                   "live unit output — leaving gap live",
+                   gapStartSlot, gapEndSlot, s, ptr, bytes);
+          return false;
+        }
+      }
+    }
+    for (int o = 0; o < gs.wiring.numOutputs; o++) {
+      int si = gs.wiring.outputSlotIndices[o];
+      if (si < 0 || si >= totalOutputSlots) continue;
+      NDArray* out = outputSlots[si];
+      if (out == nullptr) continue;
+      auto* db = out->dataBuffer();
+      void* ptr = out->specialBuffer();
+      if (db == nullptr || ptr == nullptr) continue;
+      size_t bytes = db->getLenInBytes();
+      if (bytes == 0) continue;
+      for (const auto& lr : liveRanges) {
+        if (mergedCaptureRangesOverlap(ptr, bytes, lr.ptr, lr.bytes)) {
+          DSP_DIAG(EXECUTE,
+                   "MERGED_CAPTURE_GAP_ALIAS: gap [%d-%d] slot=%d ptr=%p len=%zu overlaps "
+                   "live unit output — leaving gap live",
+                   gapStartSlot, gapEndSlot, s, ptr, bytes);
+          return false;
+        }
+      }
+    }
+  }
+  return true;
+}
+
 static bool isGapRangeCaptureSafe(NativeSlot* slots, int startSlot, int endSlot, bool mergeViews) {
   // A gap is safe to merge into a CUDA graph capture if ALL its slots either:
   //   (a) are zero-compute ops (views, identity, frozen constants), OR
@@ -4551,7 +4732,9 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
            auto& unit = sched.units[unitIdx];
 
             if (unit.kind == REPLAY_UNIT_GAP) {
-              if (captureActive && isGapRangeCaptureSafe(slots_, unit.startSlot, unit.endSlot, mergeViewsNow)) {
+              if (captureActive && isGapRangeCaptureSafe(slots_, unit.startSlot, unit.endSlot, mergeViewsNow) &&
+                  mergedCaptureGapIsAliasSafe(sched, slots_, outputSlots_, totalOutputSlots_,
+                                              &unit, unit.startSlot, unit.endSlot)) {
                 // ── MERGED CAPTURE: gap ops recorded on capture stream ──────
                 // tl_graphExecutionActive is already true from the preceding island.
                 // tl_dspGapStream = ctx.cudaStr makes cuBLAS et al. use capture stream.
@@ -4926,7 +5109,9 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
              if (captureStatus == Status::OK && unitIdx + 1 < sched.units.size()) {
                auto& nextUnit = sched.units[unitIdx + 1];
                if (nextUnit.kind == REPLAY_UNIT_GAP &&
-                   isGapRangeCaptureSafe(slots_, nextUnit.startSlot, nextUnit.endSlot, mergeViewsNow)) {
+                   isGapRangeCaptureSafe(slots_, nextUnit.startSlot, nextUnit.endSlot, mergeViewsNow) &&
+                   mergedCaptureGapIsAliasSafe(sched, slots_, outputSlots_, totalOutputSlots_,
+                                               &nextUnit, nextUnit.startSlot, nextUnit.endSlot)) {
                  // Next gap can be captured — don't end capture yet
                  keepCaptureOpen = true;
                }
@@ -5100,6 +5285,16 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
               // before markCaptured seals the graph.
               recordManagedExtBakedAddrsForCapture(seg, effectiveExternalsForCapture,
                                                    numExt);
+              // Pin every device address this capture baked in (weights /
+              // intermediates / outputs) so no later close()/rebind/pool-reuse
+              // can hand a baked block to another plan between replays. The
+              // raw-CUDA capture path pins at seal (cudagraph.cu); the Triton
+              // path previously only RECORDED baked addresses without pinning,
+              // letting the pool recycle those blocks to concurrent plans —
+              // observed as 32 REBOUND drifts + stale reads on the nested MTP
+              // predictor (Qwen3.6 K=1).
+              pinSegmentGraphBakedSlots(seg, effectiveExternalsForCapture, numExt,
+                                        /*pinOwnedOutputs=*/true);
               SegmentLifecycle::markCaptured(seg.exec, ctx.segInputAddrKey, capturedCreateValueKey,
                   computeSlotAddrHash(slots_, numSlots_, outputSlots_, seg.def.startSlot,
                              seg.def.endSlot, totalOutputSlots_),
@@ -5611,6 +5806,13 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                          "NATIVE_ONLY_CAPTURE: pre-capture view slot %d (%s) FAILED status=%s (%d)",
                          s, slots_[s].ident.opName.c_str(),
                          statusName_gpu(viewStatus), static_cast<int>(viewStatus));
+                // Fail closed: this slot's output feeds captured compute nodes.
+                // Capturing without it bakes stale/garbage state into every
+                // replay (deterministic wrong values from the first post-capture
+                // step). Surface the failure instead of capturing a known-bad
+                // graph — the caller invalidates and retries next execution.
+                captureStatus = viewStatus;
+                break;
               }
               viewPreExec++;
             } else {
@@ -5664,6 +5866,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
           int frozenSkipped = 0;
           int viewSkipped = 0;
           int createOpSkipped = 0;
+          std::vector<int> excludedViewSlots;
           bool nativeRecaptureOk = handle->beginCapture(ctx.cudaStr, cudaStreamCaptureModeThreadLocal);
           if (!nativeRecaptureOk) {
             DSP_DIAG(EXECUTE, "NATIVE_ONLY_CAPTURE: beginCapture for native re-capture FAILED");
@@ -5708,6 +5911,14 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                       numExt, totalOutputSlots_) &&
                   slots_[s].wiring.numInputs >= 1) {
                 viewSkipped++;
+                // Record the slot so monolithic replay executes it LIVE before
+                // cudaGraphLaunch (same contract as createOpsExcludedFromGraph).
+                // The captured graph reads this slot's output buffer through
+                // baked-in node arguments but never writes it. A materializing
+                // view slot (reshape of a non-contiguous permute) whose output
+                // buffer was recycled from an in-graph producer's output would
+                // otherwise replay stale/clobbered values indefinitely.
+                excludedViewSlots.push_back(s);
                 continue;
               }
               // Skip value-shape create ops — already executed pre-capture above.
@@ -5759,6 +5970,17 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                                                     createOpSkipped);
             DSP_DIAG(EXECUTE, "NATIVE_ONLY_CAPTURE: %d create ops excluded — will execute live at each replay",
                      createOpSkipped);
+          }
+          // Record excluded view/identity slots so replay executes them live
+          // before cudaGraphLaunch. Without this the captured graph replays
+          // with whatever capture-time content those buffers hold — stale when
+          // an in-graph producer rewrites the same recycled buffer each replay.
+          if (!excludedViewSlots.empty()) {
+            seg.exec.markViewSlotsExcludedFromGraph(std::move(excludedViewSlots),
+                                                    "native_only_capture_live_views");
+            DSP_DIAG(EXECUTE, "NATIVE_ONLY_CAPTURE: %zu view/identity slots excluded — "
+                     "will execute live at each replay",
+                     seg.exec.excludedViewSlotIndices.size());
           }
           } // end nativeRecaptureOk
 
@@ -6136,6 +6358,11 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
             // markCaptured seals the graph.
             recordManagedExtBakedAddrsForCapture(seg, effectiveExternalsForCapture,
                                                  numExt);
+            // Pin at seal — same contract as the raw-CUDA capture path:
+            // recording the baked baseline without a pool pin left every
+            // monolithically-captured block freeable by concurrent plans.
+            pinSegmentGraphBakedSlots(seg, effectiveExternalsForCapture, numExt,
+                                      /*pinOwnedOutputs=*/true);
             SegmentLifecycle::markCaptured(seg.exec, capturedInputAddrKey, capturedCreateValueKey,
                 computeSlotAddrHash(slots_, numSlots_, outputSlots_, seg.def.startSlot,
                              seg.def.endSlot, totalOutputSlots_),

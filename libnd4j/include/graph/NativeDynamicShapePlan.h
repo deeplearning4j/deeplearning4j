@@ -1271,12 +1271,14 @@ struct GraphSegmentExec {
   void clearGraphContentFlags(const char* reason) {
     DSP_DIAG(LIFECYCLE,
              "CLEAR_GRAPH_CONTENT_FLAGS: reason=%s phase=%s exec=%d "
-             "gapsCaptured %d -> 0 createOpsExcluded %d -> 0",
+             "gapsCaptured %d -> 0 createOpsExcluded %d -> 0 excludedViewSlots %zu -> 0",
              reason ? reason : "?", displayPhaseName(), executionCount,
              gapOpsCapturedInGraph ? 1 : 0,
-             createOpsExcludedFromGraph ? 1 : 0);
+             createOpsExcludedFromGraph ? 1 : 0,
+             excludedViewSlotIndices.size());
     gapOpsCapturedInGraph = false;
     createOpsExcludedFromGraph = false;
+    excludedViewSlotIndices.clear();
   }
 
   void markCreateOpsExcludedFromGraph(bool excluded, const char* reason, int skippedCount = 0) {
@@ -1372,6 +1374,26 @@ struct GraphSegmentExec {
   // stable slot pointers.  The createValuesStable invalidation path is bypassed
   // when this flag is true — value changes are handled naturally by live execution.
   bool createOpsExcludedFromGraph = false;
+
+  // Slot indices of view/identity ops EXCLUDED from a native-only monolithic
+  // CUDA graph capture (see slotHasOnlyTransparentAliasOutputs). Those slots'
+  // outputs are read by in-graph nodes via stable slot pointers, but the graph
+  // never writes them. On replay they must execute LIVE BEFORE cudaGraphLaunch,
+  // exactly like createOpsExcludedFromGraph — otherwise a materializing view
+  // slot (e.g. reshape of a non-contiguous permute) keeps a capture-time buffer
+  // that an in-graph producer rewrites each replay, corrupting the output
+  // deterministically (same mechanism as the merged-capture gap alias bug).
+  // Empty = no excluded view slots (nothing to re-execute).
+  std::vector<int> excludedViewSlotIndices;
+
+  // Record the excluded-view-slot set for live pre-launch execution at replay.
+  void markViewSlotsExcludedFromGraph(std::vector<int> slotIndices, const char* reason) {
+    excludedViewSlotIndices = std::move(slotIndices);
+    DSP_DIAG(LIFECYCLE,
+             "VIEW_SLOTS_EXCLUDED_FROM_GRAPH: reason=%s phase=%s exec=%d skipped=%zu",
+             reason ? reason : "?", displayPhaseName(), executionCount,
+             excludedViewSlotIndices.size());
+  }
 
   // ── Capture seal: consolidated state update at capture completion ──────
   // Sets all capture-related fields atomically. Called from SegmentLifecycle::markCaptured.
