@@ -1535,6 +1535,62 @@ void autoregressiveDecode(
                          vals[4], vals[5], vals[6], vals[7]);
             }
         }
+        // Dump a per-row magnitude scan across ALL window rows: if the W-wide
+        // verification forward wrote every row, every row's RMS must be ~O(1e-2..1)
+        // and CONSISTENT between rows. Rows near zero while logits stay correct
+        // means the logits path and the carry source disagree about the buffer.
+        {
+            const int W = static_cast<int>(targetHiddenRows->sizeAt(1));
+            const int H = static_cast<int>(targetHiddenRows->sizeAt(2));
+            std::vector<float> rowRms(W);
+            std::vector<uint8_t> scratch(static_cast<size_t>(H) * targetHiddenRows->sizeOfT());
+            std::vector<double> sq(H);
+            for (int r = 0; r < W; r++) {
+                const void* rowSrc = static_cast<const char*>(targetHiddenRows->specialBuffer())
+                                     + static_cast<size_t>(r) * targetHiddenRows->strideAt(1)
+                                       * targetHiddenRows->sizeOfT();
+                cudaMemcpyAsync(scratch.data(), rowSrc, scratch.size(),
+                                cudaMemcpyDeviceToHost, *stream);
+                cudaStreamSynchronize(*stream);
+                if (targetHiddenRows->dataType() == DataType::BFLOAT16) {
+                    auto* h = reinterpret_cast<uint16_t*>(scratch.data());
+                    for (int i = 0; i < H; i++) {
+                        unsigned sign = (h[i] >> 15) & 1u;
+                        unsigned exp  = (h[i] >> 7) & 0xFFu;
+                        unsigned man  = h[i] & 0x7Fu;
+                        float v;
+                        if (exp == 0) v = (man == 0) ? 0.0f
+                                : std::ldexp(static_cast<float>(man), -7-126);
+                        else if (exp == 0xFF) v = std::numeric_limits<float>::quiet_NaN();
+                        else v = std::ldexp(1.0f + static_cast<float>(man) / 128.0f,
+                                            static_cast<int>(exp) - 127);
+                        sq[i] = static_cast<double>(sign ? -v : v) * (sign ? -v : v);
+                    }
+                } else {
+                    auto* f = reinterpret_cast<float*>(scratch.data());
+                    for (int i = 0; i < H; i++) {
+                        sq[i] = static_cast<double>(f[i]) * f[i];
+                    }
+                }
+                double acc = 0.0;
+                for (int i = 0; i < H; i++) acc += sq[i];
+                rowRms[r] = static_cast<float>(std::sqrt(acc / std::max(1, H)));
+            }
+            DSP_DIAG(KV_CACHE,
+                     "MTP_TARGET_CARRY_RMS rows=%d rms=[%s] installRow=%d",
+                     W,
+                     [] (const std::vector<float>& v) {
+                         std::string s;
+                         char buf[32];
+                         for (size_t i = 0; i < v.size(); i++) {
+                             snprintf(buf, sizeof(buf), "%.4g%s", v[i],
+                                      i + 1 < v.size() ? "," : "");
+                             s += buf;
+                         }
+                         return s;
+                     }(rowRms),
+                     row);
+        }
         size_t rowBytes = static_cast<size_t>(targetHiddenRows->sizeAt(2))
                           * targetHiddenRows->sizeOfT();
         const void* source = static_cast<const char*>(targetHiddenRows->specialBuffer())
