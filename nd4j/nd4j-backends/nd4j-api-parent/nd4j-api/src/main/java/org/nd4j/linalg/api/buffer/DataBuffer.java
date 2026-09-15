@@ -694,6 +694,13 @@ public interface DataBuffer extends Serializable, AutoCloseable, Deallocatable {
     void close();
 
     /**
+     * Mark this buffer as released without invoking any deallocator. For owners whose
+     * native storage was freed through a non-deallocator path (e.g. DSP plan teardown),
+     * so later Java cleanup passes observe {@code wasClosed()} and skip re-freeing.
+     */
+    void markReleased();
+
+    /**
      * This method checks if array or its buffer was closed before
      * @return true if was closed, false otherwise
      */

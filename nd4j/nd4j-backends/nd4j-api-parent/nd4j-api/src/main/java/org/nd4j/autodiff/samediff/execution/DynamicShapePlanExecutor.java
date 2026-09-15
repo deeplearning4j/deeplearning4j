@@ -33,6 +33,7 @@ import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.device.MultiGpuTracer;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
+import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -3287,6 +3288,14 @@ public class DynamicShapePlanExecutor implements Closeable {
                 OpaqueDataBufferDeallocator deallocator = odb.getDeallocator();
                 if (deallocator != null) {
                     deallocator.markDeallocated();
+                }
+                // Mark the Java buffer released so later cleanup passes (SameDiff.close(),
+                // session reset walking constantArrays/variablesArrays/eagerArrays) observe
+                // wasClosed()==true and skip it. Without this, the shutdown path re-enters
+                // the deallocator for already-freed native memory → glibc "double free or
+                // corruption" → SIGABRT during serving shutdown.
+                if (buf instanceof BaseDataBuffer) {
+                    ((BaseDataBuffer) buf).markReleased();
                 }
             } catch (Exception e) {
                 log.warn("  dbFreeBuffersOnStream failed ({}B): {}",

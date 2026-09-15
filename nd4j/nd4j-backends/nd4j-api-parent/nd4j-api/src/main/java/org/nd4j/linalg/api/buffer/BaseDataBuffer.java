@@ -2250,6 +2250,23 @@ public abstract class BaseDataBuffer implements DataBuffer {
         release();
     }
 
+    /**
+     * Mark this buffer as released WITHOUT running any deallocator.
+     * Used by native-side owners (e.g. DynamicShapePlanExecutor) that freed the
+     * underlying storage through a different path (dbFreeBuffersOnStream) and need
+     * later Java-side cleanup passes (SameDiff.close(), session reset) to observe
+     * {@code wasClosed() == true} so they skip it. Without this, a second close()
+     * re-enters the deallocator for already-freed native memory — glibc reports
+     * "double free or corruption" and aborts the process.
+     */
+    @Override
+    public void markReleased() {
+        this.released.set(true);
+        this.indexer = null;
+        this.pointer = null;
+        Nd4j.getDeallocatorService().getReferenceMap().remove(deallocationId);
+    }
+
     protected void release() {
         boolean shutdown = DeallocatorService.getShutdownInProgress().get();
         Deallocator dealloc = deallocator();
