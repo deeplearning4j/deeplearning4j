@@ -24,7 +24,9 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.common.config.ND4JSystemProperties;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.device.MultiGpuTracer;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.factory.Nd4j;
@@ -440,31 +442,82 @@ public class DynamicShapePlan implements Closeable {
 
         // Proportional fill over the remaining unpinned slots, preserving execution
         // order: devices with more memory get proportionally more of the unpinned ops.
+        //
+        // BYTE-AWARE band fill: each device's target is a share of the total
+        // slot BYTES, not a share of slot count. A count split on a heterogeneous
+        // byte distribution strands consecutive large intermediates on a small
+        // device whose cap then rejects mid-plan migrations (observed: 62MB
+        // slot-3969 output planned onto a 4 GiB secondary whose ~40MB headroom
+        // could not admit the copy — Gemma serving, slot 3900 matmul). Shapes are
+        // known at placement time from static shape-infos (zero-input ops) or the
+        // previous invocation's shape cache; unknown-shape slots consume the
+        // mean bytes of the known slots (0 when nothing is known — then the
+        // fill degrades exactly to the old count split).
         int assigned = 0;
+        long totalUnpinnedBytes = 0L;
+        long[] slotBytes = new long[slots.length];
+        int knownShapeSlots = 0;
+        long knownShapeBytes = 0L;
+        for (int s = 0; s < slots.length; s++) {
+            if (pinned[s]) {
+                slotBytes[s] = -1L; // pinned: no quota consumption
+                continue;
+            }
+            long bytes = estimateSlotOutputBytes(slots[s]);
+            slotBytes[s] = bytes;
+            if (bytes > 0) {
+                knownShapeSlots++;
+                knownShapeBytes += bytes;
+            }
+            totalUnpinnedBytes += bytes;
+        }
+        long avgUnpinnedBytes = knownShapeSlots > 0 ? knownShapeBytes / knownShapeSlots : 0L;
+        // Treat every unpinned slot as at least average-sized so a band of
+        // unknown-shape slots still reserves proportional capacity per device.
+        long effectiveTotalBytes = 0L;
+        for (int s = 0; s < slots.length; s++) {
+            if (slotBytes[s] < 0) continue;
+            effectiveTotalBytes += Math.max(slotBytes[s], avgUnpinnedBytes);
+        }
+
+        long cumulativeMem = 0L;
+        long assignedBytes = 0L;
         int remainingSlots = slots.length - pinnedCount;
-        double cumulativeMem = 0.0;
         for (int i = 0; i < sorted.size(); i++) {
             int deviceId = sorted.get(i).getKey();
             long deviceMem = sorted.get(i).getValue();
             cumulativeMem += deviceMem;
 
-            int cumulativeTarget = i == sorted.size() - 1
-                    ? slots.length
-                    : (int) Math.round(cumulativeMem / totalMem * remainingSlots);
-            int slotsForDevice = Math.max(0, cumulativeTarget - assigned);
+            boolean lastDevice = i == sorted.size() - 1;
+            long bytesTarget = lastDevice
+                    ? effectiveTotalBytes
+                    : (long) Math.round((double) cumulativeMem / totalMem * effectiveTotalBytes);
 
-            for (int s = 0; s < slotsForDevice && assigned < slots.length; s++, assigned++) {
+            int deviceSlotStart = assigned;
+            while (assigned < slots.length) {
                 if (pinned[assigned]) {
                     // Skip pinned slots without consuming budget: their device is
                     // dictated by weight residency, not by the proportional split.
-                    s--;
+                    assigned++;
                     continue;
                 }
+                long slotCost = Math.max(slotBytes[assigned], avgUnpinnedBytes);
+                if (!lastDevice && assignedBytes + slotCost > bytesTarget) {
+                    break; // this device's byte band is full; next device takes over
+                }
                 slots[assigned].setTargetDeviceId(deviceId);
+                assignedBytes += slotCost;
+                assigned++;
             }
-            MultiGpuTracer.traceDeviceAssignment(deviceId, slotsForDevice, slots.length,
+            MultiGpuTracer.traceDeviceAssignment(deviceId, assigned - deviceSlotStart, slots.length,
                     deviceMem / (1024 * 1024), (long) (totalMem / (1024 * 1024)),
                     true /* P2P status not tracked here, logged in assignDevices() */);
+        }
+        if (avgUnpinnedBytes > 0) {
+            log.debug("Device placement: byte-aware band split over {} unpinned slots, "
+                            + "{}MB total (avg {}MB/slot, {} shape-known slots)",
+                    remainingSlots, effectiveTotalBytes / (1024 * 1024),
+                    avgUnpinnedBytes / (1024 * 1024), knownShapeSlots);
         }
 
         // Compute numDistinctDevices from actual assignments
@@ -472,6 +525,48 @@ public class DynamicShapePlan implements Closeable {
 
         log.debug("Device placement: {} slots across {} devices — {}",
                 slots.length, numDistinctDevices, getDeviceAssignmentSummary());
+    }
+
+    /**
+     * Estimate this slot's output footprint in bytes for byte-aware device
+     * placement. Prefers static shape-infos (zero-input ops with compile-time
+     * shapes), then the per-slot shape cache from a previous invocation. Returns
+     * 0 when the shape is unknown (dynamic shapes not yet observed).
+     */
+    private static long estimateSlotOutputBytes(DynamicShapeSlot slot) {
+        long total = 0L;
+        long[][] staticInfos = slot.getStaticOutputShapeInfos();
+        if (staticInfos != null && staticInfos.length > 0) {
+            for (long[] info : staticInfos) {
+                total += shapeInfoBytes(info);
+            }
+            return total;
+        }
+        List<DataBuffer> cached = slot.getCachedOutputShapes();
+        if (cached != null && !cached.isEmpty()) {
+            for (DataBuffer shapeBuf : cached) {
+                if (shapeBuf == null) continue;
+                total += shapeInfoBytes(shapeBuf.asLong());
+            }
+        }
+        return total;
+    }
+
+    /**
+     * Byte length of the array described by a ND4J shape-info buffer
+     * (rank at [0], shape at [1..rank], dtype code at [rank + 2]).
+     */
+    private static long shapeInfoBytes(long[] info) {
+        if (info == null || info.length < 2) return 0L;
+        int rank = (int) info[0];
+        if (rank < 0 || info.length < rank + 3) return 0L;
+        long elements = 1L;
+        for (int d = 1; d <= rank; d++) {
+            long dim = info[d];
+            if (dim <= 0) return 0L; // dynamic placeholder — unknown
+            elements *= dim;
+        }
+        return elements * DataTypeUtil.lengthForDtype(DataType.fromInt((int) info[rank + 2]));
     }
 
     /**
