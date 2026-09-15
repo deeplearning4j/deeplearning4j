@@ -1396,14 +1396,31 @@ void autoregressiveDecode(
                 reinterpret_cast<void*>(*stream), {"output/post-argmax/draft_id"}, {&selected});
         }
 
-        REQUIRE_TRUE(mtpHidden->lengthOf() == config->mtpTargetHidden->lengthOf()
-                         && mtpHidden->dataType() == config->mtpTargetHidden->dataType(),
-                     0, "autoregressive_decode: CUDA MTP hidden carry shape/type mismatch");
-        size_t hiddenBytes = static_cast<size_t>(mtpHidden->lengthOf()) * mtpHidden->sizeOfT();
-        NDArray::prepareSpecialUse({config->mtpTargetHidden}, {mtpHidden});
-        cudaMemcpyAsync(config->mtpTargetHidden->specialBuffer(), mtpHidden->specialBuffer(),
-                        hiddenBytes, cudaMemcpyDeviceToDevice, *stream);
-        NDArray::registerSpecialUse({config->mtpTargetHidden}, {mtpHidden});
+        // ── Hidden carry: target row at slot 0, predictor self-chain beyond ──
+        // Upstream Qwen3.5 MTP contract per position p of the proposal window:
+        //  - p == 0 (verified-prefix edge): the call consumes the TARGET trunk
+        //    pre-final-norm hidden at the last committed position, installed by
+        //    setMtpTargetCarryCuda from the previous step's epilogue (or the
+        //    scalar-path equivalent). Overwriting it here with predictor state
+        //    made every step's slot-0 draft wrong (acceptance collapse:
+        //    1/246, only the primed first call hit).
+        //  - p >= 1 (draft region): no target hidden exists yet — the target
+        //    only runs at verification, after all proposals. The predictor must
+        //    chain its OWN mtp_hidden output as the carry for these calls.
+        // Removing the self-carry entirely (interim attempt) left chained slots
+        // re-reading slot-0's target carry: chained drafts degraded identically.
+        // The copy is therefore CORRECT but must apply only to chained slots;
+        // at slot 0 the epilogue-installed target row must survive.
+        if (draftSlot >= 1) {
+            REQUIRE_TRUE(mtpHidden->lengthOf() == config->mtpTargetHidden->lengthOf()
+                             && mtpHidden->dataType() == config->mtpTargetHidden->dataType(),
+                         0, "autoregressive_decode: CUDA MTP hidden carry shape/type mismatch");
+            size_t hiddenBytes = static_cast<size_t>(mtpHidden->lengthOf()) * mtpHidden->sizeOfT();
+            NDArray::prepareSpecialUse({config->mtpTargetHidden}, {mtpHidden});
+            cudaMemcpyAsync(config->mtpTargetHidden->specialBuffer(), mtpHidden->specialBuffer(),
+                            hiddenBytes, cudaMemcpyDeviceToDevice, *stream);
+            NDArray::registerSpecialUse({config->mtpTargetHidden}, {mtpHidden});
+        }
 
         if (chainProbe) {
             cudaMemcpyAsync(mtpChainHidOut[draftSlot], mtpHidden->specialBuffer(),
@@ -1414,6 +1431,10 @@ void autoregressiveDecode(
         cudaMemcpyAsync(config->mtpInputIds->specialBuffer(), draftPtr,
                         sizeof(LongType), cudaMemcpyDeviceToDevice, *stream);
         NDArray::registerSpecialUse({config->mtpInputIds}, {mtpDraftDevice});
+        DSP_DIAG(KV_CACHE,
+                 "MTP_CALL pos=%lld slot=%d — predictor invoked (input token = argmax of "
+                 "previous call at this slot chain, carry per slot-0/slot-N policy)",
+                 (long long)position, draftSlot);
 
         if (writeTargetRow) {
             REQUIRE_TRUE(config->planOwnsKvScatter
@@ -1439,6 +1460,13 @@ void autoregressiveDecode(
                          && config->mtpTargetHidden->lengthOf() == targetHiddenRows->sizeAt(2)
                          && config->mtpTargetHidden->dataType() == targetHiddenRows->dataType(),
                      0, "autoregressive_decode: CUDA MTP target carry row/shape/type mismatch");
+        DSP_DIAG(KV_CACHE,
+                 "MTP_TARGET_CARRY shape=[%lld,%lld,%lld] row=%d — installing "
+                 "target trunk hidden into predictor carry",
+                 (long long)targetHiddenRows->sizeAt(0),
+                 (long long)targetHiddenRows->sizeAt(1),
+                 (long long)targetHiddenRows->sizeAt(2),
+                 row);
         size_t rowBytes = static_cast<size_t>(targetHiddenRows->sizeAt(2))
                           * targetHiddenRows->sizeOfT();
         const void* source = static_cast<const char*>(targetHiddenRows->specialBuffer())
@@ -2403,6 +2431,15 @@ void autoregressiveDecode(
                      specLogitsSample[2], specLogitsSample[3],
                      specLogitsSample[4], specLogitsSample[5],
                      specLogitsSample[6], specLogitsSample[7]);
+            DSP_DIAG(KV_CACHE,
+                     "EMITTED_STEP step=%d basePos=%lld emitted=[%lld,%lld,%lld,%lld,%lld] "
+                     "(n=%d) — authoritative committed sequence for this step",
+                     step, (long long)basePosition,
+                     (long long)argmaxDst[0], n > 1 ? (long long)argmaxDst[1] : -1LL,
+                     n > 2 ? (long long)argmaxDst[2] : -1LL,
+                     n > 3 ? (long long)argmaxDst[3] : -1LL,
+                     n > 4 ? (long long)argmaxDst[4] : -1LL,
+                     n);
 
             // Commit the base KV output only after the accepted-prefix re-run has
             // selected the authoritative plan outputs (ONNX path; GGUF scatters in graph).

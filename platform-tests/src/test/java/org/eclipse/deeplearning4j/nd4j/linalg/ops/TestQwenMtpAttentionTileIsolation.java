@@ -37,7 +37,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
  * Gated by qwen.mtp.tile=true; CUDA-only (the failure only reproduces there).
  */
 @Slf4j
-@EnabledIfSystemProperty(named = "qwen.mtp.tile", matches = "true")
 public class TestQwenMtpAttentionTileIsolation {
 
     private static final int KV_HEADS = 4;      // mtp_past_key_values.0.key dim 2

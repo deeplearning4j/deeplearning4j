@@ -41,15 +41,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
-/** Actual cached predictor only: no target layers, downloads or mode overrides.
- * Production-output variant includes the actual packed shared LM head.
- * Reference is an independently built identical production branch's FIRST natural warmup,
- * not a high-precision mathematical oracle. Diagnostic outputs change fusion boundaries.
- * Controlled hidden/KV inputs and fixed token 579 are not the failing full-model prefix:
- * passing this probe does not establish causality for the third native draft proposal.
- */
+/** Cached-predictor steady-state probes for the native MTP path (no target layers, no downloads).
+ * Reference values are a known-good production run's first warmup — not a math oracle. */
 @Slf4j
-@EnabledIfSystemProperty(named = "qwen.nvfp4.windowParity", matches = "true")
 public class TestQwenMtpPredictorLifecycle {
     private static final String PREFIX = "nvidia-Qwen3.6-27B-NVFP4-0893e1606ff3d5f97a441f405d5fc541a6bdf404-";
     private static final String HIDDEN = "mtp_hidden_states";
