@@ -351,6 +351,38 @@ public class DynamicShapePlan implements Closeable {
         }
         if (sorted.isEmpty() || totalMem <= 0.0) return;
 
+        // Capacity sanity: a device whose usable budget is a tiny fraction of the
+        // total cannot hold a proportional share of activations + resident weights.
+        // Assigning it slots forces mid-plan cross-device migrations that fight its
+        // cap (observed: MIGRATION_ADMISSION_REJECT on a 4 GiB secondary with an
+        // asymmetric 24 GiB primary — Gemma serving prefill). Drop such devices from
+        // the split; the remaining (largest) device absorbs their slots instead.
+        // 10% keeps genuinely balanced pairs sharded while pruning token devices.
+        final double MIN_DEVICE_BUDGET_FRACTION = 0.10;
+        long largestBudget = 0;
+        for (Map.Entry<Integer, Long> entry : sorted) {
+            largestBudget = Math.max(largestBudget, entry.getValue());
+        }
+        List<Map.Entry<Integer, Long>> viable = new ArrayList<>(sorted.size());
+        for (Map.Entry<Integer, Long> entry : sorted) {
+            long budget = entry.getValue();
+            if (budget >= totalMem * MIN_DEVICE_BUDGET_FRACTION || budget == largestBudget) {
+                viable.add(entry);
+            } else {
+                log.info("Device placement: excluding device {} from DSP split — budget {}MB " +
+                                "is below {}% of the {}MB total; its slots stay on larger devices",
+                        entry.getKey(), budget / (1024 * 1024),
+                        (int) (MIN_DEVICE_BUDGET_FRACTION * 100), totalMem / (1024 * 1024));
+            }
+        }
+        if (viable.isEmpty()) return;
+        if (viable.size() < sorted.size()) {
+            long viableTotal = 0;
+            for (Map.Entry<Integer, Long> entry : viable) viableTotal += entry.getValue();
+            totalMem = viableTotal;
+            sorted = viable;
+        }
+
         // Sort devices largest-first so the device with the largest usable budget gets
         // the bulk of ops, minimizing cross-device data transfers.
         sorted.sort((a, b) -> Long.compare(b.getValue(), a.getValue()));
