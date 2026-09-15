@@ -230,7 +230,7 @@ case "${DL4J_FAMILY}" in
     flags=("-Dlibnd4j.${backend}")
     if [ "${DL4J_FAMILY}" = vulkan ] || [ "${DL4J_FAMILY}" = vulkan-mlir ]; then flags+=(-Dlibnd4j.triton=ON -Dlibnd4j.mlir=ON); fi
     [ "${DL4J_FAMILY}" != vulkan-mlir ] || flags+=(-Djavacpp.platform.extension=-compile "-Dlibnd4j.classifier=${classifier}")
-    command=(mvn ${split_flags[@]+"${split_flags[@]}"} ${repo[@]+"${repo[@]}"} --no-transfer-progress "-P${backend}" "${sdx_profile[@]}" -pl "${modules}" "${flags[@]}" "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 "-Dplatform.classifier=${classifier}" ${also_make[@]+"${also_make[@]}"} --batch-mode "${sdx_maven_flags[@]}" "${DL4J_MAVEN_GOAL}" -DskipTests)
+    command=(mvn ${split_flags[@]+"${split_flags[@]}"} ${repo[@]+"${repo[@]}"} --no-transfer-progress "-P${backend}" "${sdx_profile[@]}" -pl "${modules}" "${flags[@]}" -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 "-Dplatform.classifier=${classifier}" ${also_make[@]+"${also_make[@]}"} --batch-mode "${sdx_maven_flags[@]}" "${DL4J_MAVEN_GOAL}" -DskipTests)
     ;;
   compat)
     modules=:nd4j-native-preset,:libnd4j,:nd4j-native
