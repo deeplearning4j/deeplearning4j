@@ -1424,17 +1424,21 @@ void autoregressiveDecode(
                 reinterpret_cast<void*>(*stream), {"output/post-argmax/draft_id"}, {&selected});
         }
 
-        // ── Hidden carry: unconditional self-carry ──────────────────────────
+        // ── Hidden carry: unconditional self-carry + stream ordering ────────
         // Upstream Qwen3.5 MTP: EVERY predictor call's output hidden feeds the
         // NEXT chained call as the hnorm input. The epilogue's
         // setMtpTargetCarryCuda overrides this for the NEXT step's slot 0,
         // installing the target trunk hidden at the newly committed position.
-        // Without the self-carry after slot 0, slot 1 re-reads the STALE target
-        // carry from the previous step — producing a completely different draft
-        // than the target would predict (observed as acceptance collapse:
-        // draft0 correct only at the primed first call, 1/246 afterwards).
         // The write is unconditional: slot 0 → slot 1 chains predictor hidden;
         // the epilogue replaces it before the next step's slot 0 reads it.
+        //
+        // STREAM ORDERING: the carry write is issued on the caller's stream,
+        // but the predictor plan's graph launch may execute on a different
+        // thread-local DSP stream (tl_dspExecutionStream). Without a barrier
+        // between the two, the graph replay can read the PREVIOUS carry content.
+        // cudaStreamSynchronize guarantees the D2D copy is complete before any
+        // downstream graph launch on any stream. Four small copies per step —
+        // sub-microsecond overhead each.
         {
             REQUIRE_TRUE(mtpHidden->lengthOf() == config->mtpTargetHidden->lengthOf()
                              && mtpHidden->dataType() == config->mtpTargetHidden->dataType(),
@@ -1442,6 +1446,10 @@ void autoregressiveDecode(
             writeMtpCarry(config->mtpTargetHidden, config->mtpTargetHiddenExtIdx,
                           mtpHidden->specialBuffer(),
                           static_cast<size_t>(mtpHidden->lengthOf()) * mtpHidden->sizeOfT());
+            cudaError_t syncErr = cudaStreamSynchronize(*stream);
+            REQUIRE_TRUE(syncErr == cudaSuccess, 0,
+                         "autoregressive_decode: CUDA MTP carry stream sync failed: %s",
+                         cudaGetErrorString(syncErr));
         }
 
         if (chainProbe) {
@@ -1451,6 +1459,10 @@ void autoregressiveDecode(
 
         writeMtpCarry(config->mtpInputIds, config->mtpInputIdsExtIdx,
                       draftPtr, sizeof(LongType));
+        cudaError_t idsSyncErr = cudaStreamSynchronize(*stream);
+        REQUIRE_TRUE(idsSyncErr == cudaSuccess, 0,
+                     "autoregressive_decode: CUDA MTP input-ids stream sync failed: %s",
+                     cudaGetErrorString(idsSyncErr));
         DSP_DIAG(KV_CACHE,
                  "MTP_CALL pos=%lld slot=%d — predictor invoked (input token = argmax of "
                  "previous call at this slot chain, carry per slot-0/slot-N policy)",
