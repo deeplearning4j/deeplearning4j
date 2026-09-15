@@ -8550,6 +8550,13 @@ public class GenerationPipeline implements AutoCloseable {
             throw new IOException("Model file not found: " + modelPath);
         }
 
+        // Device admission BEFORE materializing any arrays: auto-pick the GPU with the
+        // most free memory that can hold the file (pool-aware DeviceMemoryManager) and
+        // bind the loading thread to it. Without this, SameDiff.load() materializes on
+        // whatever device the caller context happens to point at — observed as an
+        // entire multi-GB decoder landing on a small GPU while the large one sat idle.
+        int admissionDevice = admitModelToDevice(modelFile);
+        try {
         String name = modelFile.getName().toLowerCase();
 
         // Native SameDiff formats (SDZ, SDNB, flatbuffers)
@@ -8572,6 +8579,46 @@ public class GenerationPipeline implements AutoCloseable {
 
         throw new IOException("No loader available for model format: " + modelPath
                 + ". Provide a modelLoader in GenerationPipelineConfig for non-SDZ formats.");
+        } finally {
+            if (admissionDevice >= 0) {
+                Nd4j.getAffinityManager().setDeviceForCurrentThread(admissionDevice);
+            }
+        }
+    }
+
+    /**
+     * Admission decision for a model file: auto-pick the GPU with the most free memory
+     * that can hold the file bytes (pool-aware, capacity-checked) and bind the current
+     * thread to it for the duration of the load. Returns the previous device id for
+     * restoration, or -1 when no GPU admission applies (CPU backend). Fails closed when
+     * no GPU can hold the file — never silently spill a model onto an undersized device.
+     */
+    private static int admitModelToDevice(File modelFile) throws IOException {
+        if (!Nd4j.getBackendDeviceType().isGpu()) {
+            return -1;
+        }
+        DeviceMemoryManager memoryManager = DeviceMemoryManager.getInstance();
+        long requiredBytes = modelFile.length();
+        List<Integer> candidates = Nd4j.getAffinityManager().getAvailableDeviceIds();
+        int selected = memoryManager.selectBestGpuForAllocation(requiredBytes, candidates);
+        if (selected == DeviceMemoryManager.NO_DEVICE_AVAILABLE) {
+            StringBuilder available = new StringBuilder();
+            for (int candidate : candidates) {
+                if (available.length() > 0) available.append(", ");
+                available.append("cuda:").append(candidate).append('=')
+                        .append(memoryManager.getPoolAwareFreeMemory(candidate) / (1024 * 1024))
+                        .append(" MB free");
+            }
+            throw new IOException("No eligible GPU can admit model '" + modelFile.getName()
+                    + "' (file bytes " + requiredBytes + "); available: " + available);
+        }
+        int previous = memoryManager.getCurrentDeviceId();
+        if (selected != previous) {
+            memoryManager.switchDevice(selected, "GenerationPipeline", "model-load-admission");
+            log.info("Model-load admission selected cuda:{} for '{}' ({} MB file)",
+                    selected, modelFile.getName(), requiredBytes / (1024 * 1024));
+        }
+        return previous;
     }
 
     /**
