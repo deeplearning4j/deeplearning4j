@@ -1218,6 +1218,21 @@ void autoregressiveDecode(
             mtpPlan->markExternalInputVariable(kvIdx);
             mtpPlan->registerDeviceManagedExternalInput(config->mtpKvBuffers[kv]);
         }
+        // MTP carry arrays are mutated in-place between chained predictor calls
+        // (writeMtpCarry / setMtpTargetCarryCuda / setMtpNextInputCuda). Register
+        // them as device-managed so the plan passes them through WITHOUT staging:
+        // the CUDA graph's baked pointers read the live arrays directly, which
+        // are updated on the same decode stream before each chained call. The
+        // staging D2D refresh doesn't reliably land between chained calls within
+        // one decode step (the per-exec sync context is deduped), so the graph
+        // would read the PREVIOUS call's carry — the root cause of the MTP
+        // acceptance collapse (fresh-graph-on-captured-inputs diverges 248320/248320
+        // from native at chained slots while matching slot 0 exactly).
+        mtpPlan->registerDeviceManagedExternalInput(config->mtpTargetHidden);
+        mtpPlan->registerDeviceManagedExternalInput(config->mtpInputIds);
+        mtpPlan->registerDeviceManagedExternalInput(config->mtpCausalMask);
+        mtpPlan->registerDeviceManagedExternalInput(config->mtpPositionOffset);
+        mtpPlan->registerDeviceManagedExternalInput(config->mtpCachePosition);
     }
 
     // KV_CACHE-gated chain probe: per chain exec, sample the carry-in hidden,
@@ -1251,6 +1266,19 @@ void autoregressiveDecode(
         && tensorDiagnostics.beginTensorSnapshot("executeMtpCuda/pre-executeSteadyState",
                                                   reinterpret_cast<void*>(*stream));
     int mtpSnapshotCall = 0;
+
+    // ── Write carry to the live array ─────────────────────────────────────
+    // The MTP carry arrays are registered as device-managed, so the predictor
+    // plan's CUDA graph reads them directly (no staging indirection). Writing
+    // to the live array on the decode stream is sufficient: the graph replay
+    // is stream-ordered after the write.
+    auto writeMtpCarry = [&](NDArray* liveArray, int extIdx,
+                              const void* src, size_t bytes) {
+        NDArray::prepareSpecialUse({liveArray}, {});
+        cudaMemcpyAsync(liveArray->specialBuffer(), src, bytes,
+                        cudaMemcpyDeviceToDevice, *stream);
+        NDArray::registerSpecialUse({liveArray}, {});
+    };
 
     auto executeMtpCuda = [&](LongType position, int draftSlot, bool writeTargetRow) {
         REQUIRE_TRUE(useMtp && mtpDraftDevice != nullptr, 0,
@@ -1396,30 +1424,24 @@ void autoregressiveDecode(
                 reinterpret_cast<void*>(*stream), {"output/post-argmax/draft_id"}, {&selected});
         }
 
-        // ── Hidden carry: target row at slot 0, predictor self-chain beyond ──
-        // Upstream Qwen3.5 MTP contract per position p of the proposal window:
-        //  - p == 0 (verified-prefix edge): the call consumes the TARGET trunk
-        //    pre-final-norm hidden at the last committed position, installed by
-        //    setMtpTargetCarryCuda from the previous step's epilogue (or the
-        //    scalar-path equivalent). Overwriting it here with predictor state
-        //    made every step's slot-0 draft wrong (acceptance collapse:
-        //    1/246, only the primed first call hit).
-        //  - p >= 1 (draft region): no target hidden exists yet — the target
-        //    only runs at verification, after all proposals. The predictor must
-        //    chain its OWN mtp_hidden output as the carry for these calls.
-        // Removing the self-carry entirely (interim attempt) left chained slots
-        // re-reading slot-0's target carry: chained drafts degraded identically.
-        // The copy is therefore CORRECT but must apply only to chained slots;
-        // at slot 0 the epilogue-installed target row must survive.
-        if (draftSlot >= 1) {
+        // ── Hidden carry: unconditional self-carry ──────────────────────────
+        // Upstream Qwen3.5 MTP: EVERY predictor call's output hidden feeds the
+        // NEXT chained call as the hnorm input. The epilogue's
+        // setMtpTargetCarryCuda overrides this for the NEXT step's slot 0,
+        // installing the target trunk hidden at the newly committed position.
+        // Without the self-carry after slot 0, slot 1 re-reads the STALE target
+        // carry from the previous step — producing a completely different draft
+        // than the target would predict (observed as acceptance collapse:
+        // draft0 correct only at the primed first call, 1/246 afterwards).
+        // The write is unconditional: slot 0 → slot 1 chains predictor hidden;
+        // the epilogue replaces it before the next step's slot 0 reads it.
+        {
             REQUIRE_TRUE(mtpHidden->lengthOf() == config->mtpTargetHidden->lengthOf()
                              && mtpHidden->dataType() == config->mtpTargetHidden->dataType(),
                          0, "autoregressive_decode: CUDA MTP hidden carry shape/type mismatch");
-            size_t hiddenBytes = static_cast<size_t>(mtpHidden->lengthOf()) * mtpHidden->sizeOfT();
-            NDArray::prepareSpecialUse({config->mtpTargetHidden}, {mtpHidden});
-            cudaMemcpyAsync(config->mtpTargetHidden->specialBuffer(), mtpHidden->specialBuffer(),
-                            hiddenBytes, cudaMemcpyDeviceToDevice, *stream);
-            NDArray::registerSpecialUse({config->mtpTargetHidden}, {mtpHidden});
+            writeMtpCarry(config->mtpTargetHidden, config->mtpTargetHiddenExtIdx,
+                          mtpHidden->specialBuffer(),
+                          static_cast<size_t>(mtpHidden->lengthOf()) * mtpHidden->sizeOfT());
         }
 
         if (chainProbe) {
@@ -1427,10 +1449,8 @@ void autoregressiveDecode(
                             mtpChainSampleBytes[draftSlot], cudaMemcpyDeviceToHost, *stream);
         }
 
-        NDArray::prepareSpecialUse({config->mtpInputIds}, {mtpDraftDevice});
-        cudaMemcpyAsync(config->mtpInputIds->specialBuffer(), draftPtr,
-                        sizeof(LongType), cudaMemcpyDeviceToDevice, *stream);
-        NDArray::registerSpecialUse({config->mtpInputIds}, {mtpDraftDevice});
+        writeMtpCarry(config->mtpInputIds, config->mtpInputIdsExtIdx,
+                      draftPtr, sizeof(LongType));
         DSP_DIAG(KV_CACHE,
                  "MTP_CALL pos=%lld slot=%d — predictor invoked (input token = argmax of "
                  "previous call at this slot chain, carry per slot-0/slot-N policy)",
@@ -1473,10 +1493,8 @@ void autoregressiveDecode(
                              + static_cast<size_t>(row)
                                    * targetHiddenRows->strideAt(1)
                                    * targetHiddenRows->sizeOfT();
-        NDArray::prepareSpecialUse({config->mtpTargetHidden}, {targetHiddenRows});
-        cudaMemcpyAsync(config->mtpTargetHidden->specialBuffer(), source,
-                        rowBytes, cudaMemcpyDeviceToDevice, *stream);
-        NDArray::registerSpecialUse({config->mtpTargetHidden}, {targetHiddenRows});
+        writeMtpCarry(config->mtpTargetHidden, config->mtpTargetHiddenExtIdx,
+                      source, rowBytes);
     };
 
     auto setMtpNextInputCuda = [&](NDArray* tokenSource,
@@ -1488,17 +1506,17 @@ void autoregressiveDecode(
                      0, "autoregressive_decode: invalid CUDA MTP next-token source");
         const void* tokenPtr = static_cast<const LongType*>(tokenSource->specialBuffer())
                                + tokenIndex;
+        writeMtpCarry(config->mtpInputIds, config->mtpInputIdsExtIdx,
+                      tokenPtr, sizeof(LongType));
         NDArray::prepareSpecialUse(
-            {config->mtpInputIds, config->mtpPositionOffset, config->mtpCachePosition},
+            {config->mtpPositionOffset, config->mtpCachePosition},
             {tokenSource});
-        cudaMemcpyAsync(config->mtpInputIds->specialBuffer(), tokenPtr,
-                        sizeof(LongType), cudaMemcpyDeviceToDevice, *stream);
         updatePositionIdsKernel<<<1, 1, 0, *stream>>>(
             config->mtpPositionOffset->specialBuffer(), nextPosition);
         updatePositionIdsKernel<<<1, 1, 0, *stream>>>(
             config->mtpCachePosition->specialBuffer(), nextPosition);
         NDArray::registerSpecialUse(
-            {config->mtpInputIds, config->mtpPositionOffset, config->mtpCachePosition},
+            {config->mtpPositionOffset, config->mtpCachePosition},
             {tokenSource});
     };
 
