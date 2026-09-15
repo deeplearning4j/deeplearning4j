@@ -1504,19 +1504,36 @@ void autoregressiveDecode(
         // position produces different carry bytes across steps, the target's
         // verification output hidden is corrupted or misindexed.
         {
-            float carryDump[8] = {};
+            // Read as uint16 to handle both BF16 (2 bytes) and FP32 (4 bytes)
+            // correctly: dump raw bytes and interpret by the array's actual dtype.
+            const size_t elemSize = targetHiddenRows->sizeOfT();
+            const size_t dumpElems = std::min<size_t>(8, targetHiddenRows->sizeAt(2));
+            std::vector<uint8_t> carryDump(dumpElems * elemSize);
             const void* dumpSrc = static_cast<const char*>(targetHiddenRows->specialBuffer())
                                   + static_cast<size_t>(row)
                                         * targetHiddenRows->strideAt(1)
                                         * targetHiddenRows->sizeOfT();
-            cudaMemcpyAsync(carryDump, dumpSrc, sizeof(carryDump),
+            cudaMemcpyAsync(carryDump.data(), dumpSrc, carryDump.size(),
                             cudaMemcpyDeviceToHost, *stream);
             cudaStreamSynchronize(*stream);
-            DSP_DIAG(KV_CACHE,
-                     "MTP_TARGET_CARRY_CONTENT row=%d first8=[%.6f, %.6f, %.6f, %.6f, "
-                     "%.6f, %.6f, %.6f, %.6f]",
-                     row, carryDump[0], carryDump[1], carryDump[2], carryDump[3],
-                     carryDump[4], carryDump[5], carryDump[6], carryDump[7]);
+            if (targetHiddenRows->dataType() == DataType::BFLOAT16) {
+                auto* vals = reinterpret_cast<uint16_t*>(carryDump.data());
+                DSP_DIAG(KV_CACHE,
+                         "MTP_TARGET_CARRY_CONTENT row=%d dtype=BF16 first8_hex=[%04x %04x %04x %04x %04x %04x %04x %04x] "
+                         "first8_as_u16=[%u %u %u %u %u %u %u %u]",
+                         row,
+                         vals[0], vals[1], vals[2], vals[3],
+                         vals[4], vals[5], vals[6], vals[7],
+                         vals[0], vals[1], vals[2], vals[3],
+                         vals[4], vals[5], vals[6], vals[7]);
+            } else {
+                auto* vals = reinterpret_cast<float*>(carryDump.data());
+                DSP_DIAG(KV_CACHE,
+                         "MTP_TARGET_CARRY_CONTENT row=%d dtype=FP32 first8=[%.6f, %.6f, %.6f, %.6f, "
+                         "%.6f, %.6f, %.6f, %.6f]",
+                         row, vals[0], vals[1], vals[2], vals[3],
+                         vals[4], vals[5], vals[6], vals[7]);
+            }
         }
         size_t rowBytes = static_cast<size_t>(targetHiddenRows->sizeAt(2))
                           * targetHiddenRows->sizeOfT();
