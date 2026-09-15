@@ -92,10 +92,29 @@ public class LLaMAArchitecture implements ModelArchitecture {
         return "llama.gguf.path";
     }
 
+    /** Override for grouped recurrent attention; equal Q/K/V heads remain the GGUF default. */
+    protected int getGdnKeyHeads(int valueHeads) {
+        return valueHeads;
+    }
+
+    /** Some architectures multiply RMS gamma before the final storage cast. */
+    protected boolean multiplyNormInFloat() {
+        return false;
+    }
+
     @Override
     public SameDiff buildGraph(GGMLMetadata metadata, Map<String, INDArray> weights, ConversionOptions options) {
-        SameDiff sd = SameDiff.create();
-        ArchitectureConfig config = getConfig(metadata);
+        return buildGraph(getConfig(metadata), weights, options);
+    }
+
+    /** Build from format-independent configuration and canonical logical weight names. */
+    public SameDiff buildGraph(ArchitectureConfig config, Map<String, INDArray> weights, ConversionOptions options) {
+        return buildGraph(SameDiff.create(), config, weights, options);
+    }
+
+    /** Caller-owned graph overload permits deterministic cleanup if construction fails. */
+    public SameDiff buildGraph(SameDiff sd, ArchitectureConfig config,
+            Map<String, INDArray> weights, ConversionOptions options) {
 
         DataType dtype = options.getTargetDataType();
         log.info("Building LLaMA graph: {} target layers, {} MTP layers, hidden={}, heads={}, kv_heads={}, headDim={}, " +
@@ -210,7 +229,8 @@ public class LLaMAArchitecture implements ModelArchitecture {
         // Full logits are useful to general graph consumers, but generation-only mobile bundles
         // consume only the final position. Omitting this branch prevents allocation of
         // [batch, sequence, vocabulary] during prefill.
-        if (!options.isLastPositionLogitsOnly()) {
+        // MTP verification consumes every row of the target window, not just its last row.
+        if (!options.isLastPositionLogitsOnly() || config.getNumMtpLayers() > 0) {
             // Upcast to FP32: hidden=1024 dot products easily overflow FP16 (±65504) at vocab scale.
             QuantizedLinear.matMulFloatOutput(
                     sd, "lm_logits", hidden, lmHead, weights, "output.weight", dtype);
@@ -260,7 +280,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
      * h_(t-1). The caller is responsible for the one-position shift during
      * prefill and for carrying the accepted target row between decode windows.</p>
      */
-    private void buildMtpBranch(SameDiff sd, ArchitectureConfig config,
+    protected void buildMtpBranch(SameDiff sd, ArchitectureConfig config,
             Map<String, INDArray> weights, DataType dtype,
             SDVariable tokenEmbed, SDVariable lmHead, List<String> outputNames) {
 
@@ -308,7 +328,8 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable valueCache = sd.placeHolder("mtp_past_key_values.0.value", dtype,
                 -1, -1, config.getNumKVHeads(), config.getHeadDimension());
 
-        SDVariable tokenHidden = sd.gather("mtp_embedded", tokenEmbed, inputIds, 0);
+        SDVariable tokenHidden = sd.gather("mtp_embedded_storage", tokenEmbed, inputIds, 0);
+        tokenHidden = GGMLDTypePolicy.castTo(tokenHidden, "mtp_embedded", dtype);
         SDVariable normalizedToken = buildRMSNorm(sd, tokenHidden, "mtp.enorm",
                 nextnPrefix + ".enorm", weights, config, dtype);
         SDVariable normalizedTarget = buildRMSNorm(sd, targetHidden, "mtp.hnorm",
@@ -347,7 +368,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
         outputNames.add("mtp_logits");
     }
 
-    private SDVariable buildTransformerBlock(SameDiff sd, SDVariable input, int layerIdx,
+    protected SDVariable buildTransformerBlock(SameDiff sd, SDVariable input, int layerIdx,
             ArchitectureConfig config, Map<String, INDArray> weights, DataType dtype,
             SDVariable positionOffset, SDVariable cachePosition, SDVariable actualSequenceLength,
             SDVariable causalMask, SDVariable keyCache, SDVariable valueCache,
@@ -454,12 +475,12 @@ public class LLaMAArchitecture implements ModelArchitecture {
     // RMS Normalization
     // ========================================================================
 
-    private SDVariable buildRMSNorm(SameDiff sd, SDVariable input, String outputName,
+    protected SDVariable buildRMSNorm(SameDiff sd, SDVariable input, String outputName,
             Map<String, INDArray> weights, ArchitectureConfig config, DataType dtype) {
         return buildRMSNorm(sd, input, outputName, "output_norm", weights, config, dtype);
     }
 
-    private SDVariable buildRMSNorm(SameDiff sd, SDVariable input, String outputName,
+    protected SDVariable buildRMSNorm(SameDiff sd, SDVariable input, String outputName,
             String weightKey, Map<String, INDArray> weights, ArchitectureConfig config, DataType dtype) {
 
         INDArray normWeight = weights.get(weightKey + ".weight");
@@ -481,6 +502,12 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable meanSquared = squared.mean(true, -1);
         SDVariable rms = sd.math.sqrt(meanSquared.add(config.getLayerNormEpsilon()));
         SDVariable normalized = computeInput.div(rms);
+        if (multiplyNormInFloat()) {
+            SDVariable gammaAccum = GGMLDTypePolicy.castForAccumulation(gamma, outputName + "_gamma_accum");
+            SDVariable scaled = normalized.mul(outputName + "_scaled", gammaAccum);
+            SDVariable result = GGMLDTypePolicy.castTo(scaled, outputName, storageType);
+            return sd.updateVariableNameAndReference(result, outputName);
+        }
         SDVariable storageResult = GGMLDTypePolicy.castTo(
                 normalized, outputName + "_storage", storageType);
 
@@ -505,6 +532,12 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable meanSquared = squared.mean(true, -1);
         SDVariable rms = sd.math.sqrt(meanSquared.add(eps));
         SDVariable normalized = computeInput.div(rms);
+        if (multiplyNormInFloat()) {
+            SDVariable gammaAccum = GGMLDTypePolicy.castForAccumulation(gamma, outputName + "_gamma_accum");
+            SDVariable scaled = normalized.mul(outputName + "_scaled", gammaAccum);
+            SDVariable result = GGMLDTypePolicy.castTo(scaled, outputName, storageType);
+            return sd.updateVariableNameAndReference(result, outputName);
+        }
         SDVariable storageResult = GGMLDTypePolicy.castTo(
                 normalized, outputName + "_storage", storageType);
         return storageResult.mul(outputName, gamma);
@@ -628,7 +661,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
      *   <li>Output projection</li>
      * </ol>
      */
-    private SDVariable buildGatedAttention(SameDiff sd, SDVariable input, int layerIdx,
+    protected SDVariable buildGatedAttention(SameDiff sd, SDVariable input, int layerIdx,
             ArchitectureConfig config, Map<String, INDArray> weights, DataType dtype,
             SDVariable positionOffset, SDVariable cachePosition, SDVariable causalMask,
             SDVariable keyCache, SDVariable valueCache) {
@@ -778,7 +811,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
      *   <li>Output projection via ssm_out</li>
      * </ol>
      */
-    private SDVariable buildGDNAttention(SameDiff sd, SDVariable input, int layerIdx,
+    protected SDVariable buildGDNAttention(SameDiff sd, SDVariable input, int layerIdx,
             ArchitectureConfig config, Map<String, INDArray> weights, DataType dtype,
             SDVariable gdnStateIn, SDVariable convStateIn, SDVariable actualSequenceLength) {
 
@@ -836,12 +869,16 @@ public class LLaMAArchitecture implements ModelArchitecture {
                     + ", vDim=" + vDim + ", expected qkvDim-vDim to be positive and even");
         }
         int qkDim = combinedQkDim / 2;
-        if (qkDim % numGdnHeads != 0 || vDim % numGdnHeads != 0) {
+        if (vDim % numGdnHeads != 0) {
             throw new IllegalStateException("Layer " + layerIdx
                     + " GDN projection dimensions are not divisible by head count " + numGdnHeads
                     + ": qkDim=" + qkDim + ", vDim=" + vDim);
         }
-        int headDimQK = qkDim / numGdnHeads;
+        int numKeyHeads = getGdnKeyHeads(numGdnHeads);
+        if (numKeyHeads <= 0 || numGdnHeads % numKeyHeads != 0 || qkDim % numKeyHeads != 0) {
+            throw new IllegalArgumentException("Invalid GDN key/value head grouping");
+        }
+        int headDimQK = qkDim / numKeyHeads;
         int headDimV = vDim / numGdnHeads;
 
         if (layerIdx == 0) {
@@ -889,7 +926,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable seqDim = sd.sizeAt(input, 1);
         SDVariable qkHeadShape = sd.stack("gdn_qk_head_shape_" + layerIdx, 0,
                 batchDim, seqDim,
-                sd.constant(Nd4j.scalar((long) numGdnHeads)),
+                sd.constant(Nd4j.scalar((long) numKeyHeads)),
                 sd.constant(Nd4j.scalar((long) headDimQK)));
         SDVariable vHeadShape = sd.stack("gdn_v_head_shape_" + layerIdx, 0,
                 batchDim, seqDim,
@@ -899,6 +936,19 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable q = sd.reshape("gdn_q_reshaped_" + layerIdx, qProj, qkHeadShape);
         SDVariable k = sd.reshape("gdn_k_reshaped_" + layerIdx, kProj, qkHeadShape);
         SDVariable v = sd.reshape("gdn_v_reshaped_" + layerIdx, vProj, vHeadShape);
+
+        if (numKeyHeads != numGdnHeads) {
+            // Repeat each key head consecutively across its value-head group, then fold
+            // [keyHeads, group] into valueHeads. Do not tile the entire head sequence.
+            int groups = numGdnHeads / numKeyHeads;
+            SDVariable groupedShape = sd.stack("gdn_grouped_head_shape_" + layerIdx, 0,
+                    batchDim, seqDim, sd.constant(Nd4j.scalar((long) numGdnHeads)),
+                    sd.constant(Nd4j.scalar((long) headDimQK)));
+            q = sd.reshape("gdn_q_grouped_" + layerIdx,
+                    sd.tile(sd.expandDims(q, 3), 1, 1, 1, groups, 1), groupedShape);
+            k = sd.reshape("gdn_k_grouped_" + layerIdx,
+                    sd.tile(sd.expandDims(k, 3), 1, 1, 1, groups, 1), groupedShape);
+        }
 
         // 5. L2-normalize Q and K (per head vector, matching use_qk_l2norm_in_kernel=True)
         // Upcast to FLOAT32 for squaring to prevent HALF overflow
@@ -1103,7 +1153,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
     // FFN variants
     // ========================================================================
 
-    private SDVariable buildSwiGLUFFN(SameDiff sd, SDVariable input, int layerIdx,
+    protected SDVariable buildSwiGLUFFN(SameDiff sd, SDVariable input, int layerIdx,
             ArchitectureConfig config, Map<String, INDArray> weights, DataType dtype) {
 
         String prefix = "blk." + layerIdx;

@@ -783,22 +783,8 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     platformTraceSlotValues(segments_.back(), stream, executeCount_);
   }
 
-  // All segments replayed successfully.
-  // Plan-output boundary: materialize any VIEW in a requested-output slot before
-  // returning to Java. Same reasoning as the normal-path version in NativeDynamicShapePlan.cpp:
-  // a view's DataBuffer is shared with its parent slot; the next replay will overwrite
-  // that parent → Java's previously-returned pointer would read stale/zero data.
-  for (int i = 0; i < numRequestedOutputs_; i++) {
-    int slotIdx = requestedOutputSlotIndices_[i];
-    if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
-      NDArray* slotArr = outputSlots_[slotIdx];
-      if (slotArr != nullptr && slotArr->isView()) {
-        materializeViewSlot(slotIdx, "plan-output-view-boundary-frozen");
-      }
-    }
-  }
-
-  // Populate requested outputs from (potentially-materialized) slots
+  // All segments replayed successfully. Deliver detached views without changing
+  // any internal producer address captured by those segments.
   for (int i = 0; i < numRequestedOutputs_; i++) {
     int slotIdx = requestedOutputSlotIndices_[i];
     if (slotIdx < 0 || slotIdx >= totalOutputSlots_ ||
@@ -808,7 +794,8 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
                i, slotIdx);
       return Status::BAD_OUTPUT;
     }
-    requestedOutputs[i] = outputSlots_[slotIdx];
+    requestedOutputs[i] = platformGetOutputForDevice0(outputSlots_[slotIdx], slotIdx, i);
+    if (requestedOutputs[i] == nullptr) return Status::BAD_OUTPUT;
   }
   incrementExecuteCount("native_replay");
 
@@ -2080,15 +2067,18 @@ NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int s
   }
   const int sourceDevice = sourceBuffer->deviceId();
 
-  // Fast path: output already on primary device.
-  if (sourceDevice == 0) {
+  // Only independent primary-device outputs can be delivered directly. Views
+  // must be detached even on one GPU: replacing their internal slot after
+  // capture invalidates the producer address baked into replay kernels.
+  if (sourceDevice == 0 && !arr->isView()) {
     restoreCallerDevice();
     return arr;
   }
 
-  // Output delivery deliberately changes devices. Do not carry the caller's
-  // device-specific DSP/gap stream across those switches. The per-thread stream
-  // token resolves on each currently bound device; restore both overrides on exit.
+  // Delivery can change devices. Do not carry the caller's device-specific
+  // DSP/gap stream across those switches. The producer completion boundary
+  // below orders its writes before the delivery stream gathers a requested view.
+  // The per-thread stream token resolves on each bound device; restore on exit.
   DspThreadState deliveryStreams(cudaStreamPerThread, cudaStreamPerThread,
                                  tl_graphExecutionActive, tl_dspReplayActive);
 
@@ -2186,8 +2176,9 @@ NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int s
     auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
     cudaStream_t copyStream = (streamPtr != nullptr) ? *streamPtr : nullptr;
 
-    auto err = cudaMemcpyPeerAsync(dstDev, 0, srcDev, sourceDevice,
-                                   srcLen, copyStream);
+    auto err = sourceDevice == 0
+        ? cudaMemcpyAsync(dstDev, srcDev, srcLen, cudaMemcpyDeviceToDevice, copyStream)
+        : cudaMemcpyPeerAsync(dstDev, 0, srcDev, sourceDevice, srcLen, copyStream);
     if (err == cudaSuccess) {
       // The source output remains plan-owned and may be recycled as soon as this
       // execute() returns. Complete the destination transfer before returning the
@@ -2205,8 +2196,8 @@ NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int s
                "platformGetOutputForDevice0: output[%d] slotIdx=%d migrated dev%d→dev0 "
                "bytes=%zu completed on dev0-stream", outputIdx, slotIdx, sourceDevice, srcLen);
       // Borrowed until the next execution, intermediate release or plan destruction.
-      // outputSlots_[slotIdx] is intentionally NOT changed: the plan keeps the device-N
-      // buffer in place so subsequent executions can overwrite it without pointer churn.
+      // outputSlots_[slotIdx] is intentionally NOT changed: the plan keeps its
+      // internal producer/view on either device 0 or N stable for later replay.
       return copy;
     }
     checkCuda(err, "copy output to device 0");
@@ -2496,6 +2487,11 @@ void NativeDynamicShapePlan::platformFlushGraphBakedPins(void* streamVoid) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg) {
+#if HAVE_TRITON
+  // Completion, not the preallocation-ready event, owns the final pinned-source
+  // read and alias copyback. Retire it before graph/cache resource destruction.
+  TritonGraphBackend::getInstance().awaitArgumentSubmissionsForRetirement(seg);
+#endif
   // Merged capture transfers all pinned/module ownership to handle 0 even when
   // later group graphs reference those resources. Destroy every graph first.
   destroySegmentReplayGraphs(seg);
@@ -3800,9 +3796,9 @@ void NativeDynamicShapePlan::platformDumpExternalInputDiagnostics(NDArray** ext,
 
 void NativeDynamicShapePlan::platformDumpExtInputGpuValues(NDArray* arr, int extIdx, int execCount, void* stream) {
   if (arr == nullptr) return;
-  // Fingerprint raw device bytes for every dtype. The XOR kernel operates on
-  // 64-bit words, so restricting this path to FLOAT32 hid scalar INT64 control
-  // inputs such as actual_sequence_length. This remains fully asynchronous and
+  // Fingerprint raw device bytes for every dtype, including partial words for
+  // scalar FLOAT/HALF/BOOL and INT64 control inputs such as actual_sequence_length.
+  // This remains fully asynchronous and
   // does not materialize values on the host.
   if (arr->specialBuffer() != nullptr && arr->lengthOf() > 0) {
     DSP_DIAG(VERIFY, "EXT_INPUT_START: exec=%d extIdx=%d len=%lld dtype=%d sbuf=%p "
@@ -3821,7 +3817,6 @@ void NativeDynamicShapePlan::platformDumpExtInputGpuValues(NDArray* arr, int ext
       cudaStream_t cudaStr = stream != nullptr
           ? *static_cast<cudaStream_t*>(stream) : nullptr;
       size_t fpBytes = static_cast<size_t>(arr->lengthOf()) * arr->sizeOfT();
-      fpBytes &= ~static_cast<size_t>(7);
       recordBufFingerprintPublic(cudaStr, execCount, BUF_FP_TRACE_TRACK,
                                  arr->specialBuffer(), fpBytes);
     }
@@ -4060,7 +4055,6 @@ void NativeDynamicShapePlan::platformTraceSlotValues(const GraphSegment& seg, vo
         cudaStream_t cudaStr = stream != nullptr
             ? *static_cast<cudaStream_t*>(stream) : nullptr;
         size_t fpBytes = static_cast<size_t>(arr->lengthOf()) * arr->sizeOfT();
-        fpBytes &= ~static_cast<size_t>(7);
         recordBufFingerprintPublic(cudaStr, execCount, BUF_FP_TRACE_TRACK,
                                    gpuPtr, fpBytes);
       }

@@ -916,8 +916,17 @@ GraphBackendRequest NativeDynamicShapePlan::makeGraphBackendRequest() const {
 }
 
 const std::vector<GraphBackend*>& NativeDynamicShapePlan::getGraphBackendCandidates() {
-  if (graphBackendCandidatesBuilt_) return graphBackendCandidates_;
-  graphBackendCandidatesBuilt_ = true;
+  // A transiently empty resolution (backends not yet registered/available when
+  // the first caller arrives, e.g. during early lifecycle callbacks) must NOT
+  // be memoized as the answer for the plan's lifetime: every later compile
+  // dispatch would silently skip compilation while the seal-time resolver
+  // still admits those backends by category, producing the fail-closed
+  // "cannot seal with N unresolved GRAPH_BACKEND segment(s)" error at seal.
+  // Retry resolution whenever the memoized list is empty; only a non-empty
+  // resolution is cached permanently.
+  if (graphBackendCandidatesBuilt_ && !graphBackendCandidates_.empty()) {
+    return graphBackendCandidates_;
+  }
 
   std::vector<GraphBackend*> catalog;
 #if !defined(SD_VULKAN) && !defined(SD_CUDA) && !defined(SD_HIP)
@@ -970,6 +979,20 @@ const std::vector<GraphBackend*>& NativeDynamicShapePlan::getGraphBackendCandida
 
   const GraphBackendRequest request = makeGraphBackendRequest();
   graphBackendCandidates_ = GraphBackendResolver::resolve(request, catalog);
+
+  if (graphBackendCandidates_.empty()) {
+    // Transient: backends exist in the catalog but none resolved as available
+    // right now (initialization ordering, device not ready yet). Leave the
+    // memoization flag unset so the next caller retries instead of inheriting
+    // a permanently empty list.
+    DSP_DIAG(
+        BACKEND,
+        "graph backend resolver: mode=%d catalog=%d candidates=0 (transient "
+        "empty resolution - will retry on next caller; no memoization)",
+        static_cast<int>(graphExecutionMode_), static_cast<int>(catalog.size()));
+    return graphBackendCandidates_;
+  }
+  graphBackendCandidatesBuilt_ = true;
 
   // Apply the plan-local priority override after capability/mode resolution.
   // Backends named in the override come first in the requested order; all

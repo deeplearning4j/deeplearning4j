@@ -252,6 +252,10 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                 .put(new Info("intermediateResultDataAt").javaText(
                         "@org.bytedeco.javacpp.annotation.NoDeallocator public native org.nd4j.nativeblas.OpaqueDataBuffer intermediateResultDataAt(int index, org.nd4j.nativeblas.OpaqueContext contextPointer);"))
                 .put(new Info("OpaqueContext").pointerTypes("org.nd4j.nativeblas.OpaqueContext"))
+                // Bare-name annotations are parsed as C++ attributes and can consume the function.
+                // Supply the native instance declaration, including the canonical context type.
+                .put(new Info("executeSteadyStatePlan").javaText(
+                        "@Override public native int executeSteadyStatePlan(@Cast(\"sd::Pointer\") Pointer planHandle, org.nd4j.nativeblas.OpaqueContext opContext, @Cast(\"sd::Pointer\") Pointer stream);"))
                 .put(new Info("OpaqueWorkspace").cast().pointerTypes("Pointer"))
                 // Workspace management functions - explicit javaText to ensure correct pointer semantics
                 .put(new Info("createNativeWorkspace").javaText(

@@ -620,7 +620,8 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
                 return false;
             }
             DifferentialFunction func = op.getOp();
-            if (!(func instanceof Mmul) && !(func instanceof TensorMmul)) {
+            if (MatmulArithmeticPolicy.isExplicit(func)
+                    || (!(func instanceof Mmul) && !(func instanceof TensorMmul))) {
                 return false;
             }
 

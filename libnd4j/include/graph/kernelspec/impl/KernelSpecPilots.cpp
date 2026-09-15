@@ -130,7 +130,7 @@ void registerAll() {
               .body([](ExprGraph& g) {
                 auto x = g.input(0);
                 auto y = g.input(1);
-                return silu(x) * y;
+                return storageRound(silu(x)) * y;
               })
               .registerSpec(&err));
 

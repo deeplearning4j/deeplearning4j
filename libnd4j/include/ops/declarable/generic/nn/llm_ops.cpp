@@ -40,6 +40,7 @@
 #include <helpers/FlashAttentionHelper.h>
 #include <ops/declarable/helpers/rms_norm.h>
 #include <ops/declarable/helpers/fused_llm_ops.h>
+#include <ops/declarable/helpers/activation_mul.h>
 #include <helpers/ShapeUtils.h>
 #include <math/templatemath.h>
 #include <execution/Threads.h>
@@ -52,6 +53,25 @@
 namespace sd {
 namespace ops {
 
+#if NOT_EXCLUDED(OP_rms_norm) || NOT_EXCLUDED(OP_skip_rms_norm) || NOT_EXCLUDED(OP_rms_norm_linear)
+static bool rmsFloatingType(DataType type) {
+    return type == HALF || type == BFLOAT16 || type == FLOAT32 || type == DOUBLE;
+}
+
+static void validateRmsShapes(const LongType* x, const LongType* gamma, double epsilon) {
+    REQUIRE_TRUE(shape::rank(x) >= 1 && rmsFloatingType(ArrayOptions::dataType(x)), 0,
+                 "RMS normalization: input must have rank >= 1 and HALF/BFLOAT16/FLOAT/DOUBLE dtype");
+    REQUIRE_TRUE(std::isfinite(epsilon) && epsilon >= 0, 0,
+                 "RMS normalization: epsilon must be finite and nonnegative");
+    if (gamma != nullptr) {
+        REQUIRE_TRUE(shape::rank(gamma) == 1 && rmsFloatingType(ArrayOptions::dataType(gamma)), 0,
+                     "RMS normalization: gamma must be a floating rank-1 vector");
+        REQUIRE_TRUE(shape::sizeAt(gamma, 0) == shape::sizeAt(x, shape::rank(x) - 1), 0,
+                     "RMS normalization: gamma length must equal the last input dimension");
+    }
+}
+#endif
+
 //////////////////////////////////////////////////////////////////////////
 // rms_norm - Root Mean Square Layer Normalization
 #if NOT_EXCLUDED(OP_rms_norm)
@@ -60,77 +80,25 @@ CUSTOM_OP_IMPL(rms_norm, 1, 1, false, 0, 0) {
     auto output = OUTPUT_VARIABLE(0);
 
     NDArray* gamma = block.width() > 1 ? INPUT_VARIABLE(1) : nullptr;
-    float eps = block.getTArguments()->size() > 0 ? T_ARG(0) : 1e-5f;
+    double eps = block.getTArguments()->size() > 0 ? T_ARG(0) : 1e-5f;
 
-    // Fast path conditions: last-dim normalization with contiguous row-major data
-    const int rank = input->rankOf();
-    const bool inputContiguous = input->ordering() == 'c' &&
-                                 shape::strideDescendingCAscendingF(input->shapeInfo());
-    const bool outputContiguous = output->ordering() == 'c' &&
-                                  shape::strideDescendingCAscendingF(output->shapeInfo());
-    const bool isContiguous = inputContiguous && outputContiguous;
-    const bool isFloat = input->dataType() == DataType::FLOAT32;
-    const bool isDouble = input->dataType() == DataType::DOUBLE;
-    const bool isHalf = input->dataType() == DataType::HALF;
-    const bool gammaContiguous = gamma == nullptr ||
-                                 shape::strideDescendingCAscendingF(gamma->shapeInfo());
-
-    // Fast path: fused helper (linker resolves CPU vs CUDA impl)
-    if ((isFloat || isDouble || isHalf) && gammaContiguous) {
-        const NDArray* inputToUse = input;
-        NDArray* contiguousInput = nullptr;
-        if (!inputContiguous) {
-            contiguousInput = new NDArray(input->dup('c'));
-            inputToUse = contiguousInput;
-        }
-        NDArray* outputToUse = output;
-        NDArray* contiguousOutput = nullptr;
-        if (!outputContiguous) {
-            contiguousOutput = new NDArray(output->dup('c'));
-            outputToUse = contiguousOutput;
-        }
-
-        // The CUDA kernel now accepts gamma in its native dtype via dual-type
-        // template instantiations (e.g., <float16, float> for F16 input + F32 gamma).
-        // No gamma cast needed — eliminates one transformAnySimpleCached kernel per call.
-        helpers::rmsNorm(block.launchContext(), const_cast<NDArray*>(inputToUse), gamma, outputToUse, eps);
-
-        if (contiguousOutput != nullptr) {
-            output->assign(contiguousOutput);
-            delete contiguousOutput;
-        }
-        if (contiguousInput != nullptr) {
-            delete contiguousInput;
-        }
-        return Status::OK;
-    }
-
-    // General fallback path for unsupported dtypes
-    std::vector<LongType> axis = {input->rankOf() - 1};
-    NDArray* squared = (*input) * (*input);
-    NDArray* meanSquared = squared->reduceAlongDimension(reduce::Mean, &axis, true);
-    delete squared;
-
-    NDArray* meanPlusEps = (*meanSquared) + eps;
-    delete meanSquared;
-    NDArray* rsqrt = meanPlusEps->transform(transform::RSqrt);
-    delete meanPlusEps;
-
-    NDArray* result = (*input) * (*rsqrt);
-    output->assign(result);
-    delete result;
-    delete rsqrt;
-
-    if (gamma != nullptr) {
-        output->applyBroadcast(broadcast::Multiply, &axis, gamma, output);
-    }
+    REQUIRE_TRUE(block.width() <= 2, 0, "rms_norm: expected input and optional gamma");
+    validateRmsShapes(input->shapeInfo(), gamma != nullptr ? gamma->shapeInfo() : nullptr, eps);
+    REQUIRE_TRUE(output->dataType() == input->dataType() && output->isSameShape(input), 0,
+                 "rms_norm: output must match input shape and dtype");
+    helpers::rmsNorm(block.launchContext(), input, gamma, output, eps);
 
     return Status::OK;
 }
 
 DECLARE_SHAPE_FN(rms_norm) {
     auto inShape = inputShape->at(0);
-    return SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary());
+    REQUIRE_TRUE(inputShape->size() <= 2, 0, "rms_norm: expected input and optional gamma");
+    validateRmsShapes(inShape, inputShape->size() > 1 ? inputShape->at(1) : nullptr,
+                      block.numT() > 0 ? T_ARG(0) : 1e-5f);
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
+        ArrayOptions::dataType(inShape), shape::order(inShape), shape::rank(inShape), shape::shapeOf(inShape),
+        shape::isEmptyConst(inShape) ? ARRAY_EMPTY : 0));
 }
 
 DECLARE_TYPES(rms_norm) {
@@ -296,11 +264,20 @@ CUSTOM_OP_IMPL(skip_rms_norm, 3, 1, false, 0, 0) {
     auto output = OUTPUT_VARIABLE(0);
     NDArray* hiddenOut = block.outputWidth() > 1 ? OUTPUT_VARIABLE(1) : nullptr;
 
-    float eps = block.getTArguments()->size() > 0 ? T_ARG(0) : 1e-5f;
+    double eps = block.getTArguments()->size() > 0 ? T_ARG(0) : 1e-5f;
 
-    // The CUDA kernel now accepts gamma in its native dtype via dual-type
-    // template instantiations (e.g., <float16, float> for F16 input + F32 gamma).
-    // No gamma cast needed — eliminates one transformAnySimpleCached kernel per call.
+    REQUIRE_TRUE(block.width() <= 4, 0, "skip_rms_norm: expected input, skip, gamma and optional bias");
+    validateRmsShapes(input->shapeInfo(), gamma->shapeInfo(), eps);
+    REQUIRE_TRUE(skip->dataType() == input->dataType() && skip->isSameShape(input), 0,
+                 "skip_rms_norm: skip must match input shape and dtype");
+    if (bias != nullptr) {
+        validateRmsShapes(input->shapeInfo(), bias->shapeInfo(), eps);
+        REQUIRE_TRUE(bias->dataType() == input->dataType(), 0, "skip_rms_norm: bias must match input dtype");
+    }
+    REQUIRE_TRUE(output->dataType() == input->dataType() && output->isSameShape(input), 0,
+                 "skip_rms_norm: output must match input shape and dtype");
+    REQUIRE_TRUE(hiddenOut == nullptr || (hiddenOut->dataType() == input->dataType() &&
+                 hiddenOut->isSameShape(input)), 0, "skip_rms_norm: hidden output must match input shape and dtype");
     helpers::skipRmsNorm(block.launchContext(), input, skip, gamma, bias, output, hiddenOut, eps);
 
     return Status::OK;
@@ -308,11 +285,26 @@ CUSTOM_OP_IMPL(skip_rms_norm, 3, 1, false, 0, 0) {
 
 DECLARE_SHAPE_FN(skip_rms_norm) {
     auto inShape = inputShape->at(0);
-    auto outShapes = SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary());
+    REQUIRE_TRUE(inputShape->size() == 3 || inputShape->size() == 4, 0,
+                 "skip_rms_norm: expected input, skip, gamma and optional bias");
+    const double eps = block.numT() > 0 ? T_ARG(0) : 1e-5f;
+    validateRmsShapes(inShape, inputShape->at(2), eps);
+    REQUIRE_TRUE(shape::equalsSoft(inShape, inputShape->at(1)) &&
+                 ArrayOptions::dataType(inShape) == ArrayOptions::dataType(inputShape->at(1)), 0,
+                 "skip_rms_norm: skip must match input shape and dtype");
+    if (inputShape->size() == 4) {
+        validateRmsShapes(inShape, inputShape->at(3), eps);
+        REQUIRE_TRUE(ArrayOptions::dataType(inShape) == ArrayOptions::dataType(inputShape->at(3)), 0,
+                     "skip_rms_norm: bias must match input dtype");
+    }
+    auto outShape = ConstantShapeHelper::getInstance().createShapeInfo(
+        ArrayOptions::dataType(inShape), shape::order(inShape), shape::rank(inShape), shape::shapeOf(inShape),
+        shape::isEmptyConst(inShape) ? ARRAY_EMPTY : 0);
+    auto outShapes = SHAPELIST(outShape);
 
     // Second output (pre-norm hidden states) has same shape as input, only if graph requests it
     if (block.outputWidth() > 1) {
-        outShapes->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary());
+        outShapes->push_back(outShape);
     }
 
     return outShapes;
@@ -891,29 +883,16 @@ CONFIGURABLE_OP_IMPL(swish_mul, 2, 1, true, 0, 0) {
         ShapeUtils::shapeAsString(y).c_str(),
         ShapeUtils::shapeAsString(output).c_str());
 
-    // swish_mul(x, y) = silu(x) * y = x * sigmoid(x) * y
-    if (output->buffer() == x->buffer()) {
-        // In-place on x: sigmoid(x) would destroy original x.
-        // Compute sigmoid into temp, multiply x by sigmoid in-place, then multiply by y.
-        NDArray* sigmoid = x->transform(transform::Sigmoid);
-        output->applyPairwiseTransform(pairwise::Multiply, sigmoid, output); // output = x * sigmoid(x)
-        output->applyPairwiseTransform(pairwise::Multiply, y, output);      // output *= y
-        delete sigmoid;
-    } else if (output->buffer() == y->buffer()) {
-        // In-place on y: write sigmoid(x) into a temp, compute silu(x) into temp,
-        // then multiply by y (which is output, still has original value).
-        NDArray* sigmoid = x->transform(transform::Sigmoid);
-        NDArray* silu = (*x) * (*sigmoid);
-        delete sigmoid;
-        output->applyPairwiseTransform(pairwise::Multiply, silu, output); // output = y * silu(x)
-        delete silu;
-    } else {
-        // Out-of-place: write sigmoid(x) into output, multiply x, multiply y.
-        // Eliminates 3 temporary allocations + 1 Assign copy kernel.
-        x->applyTransform(transform::Sigmoid, output);
-        output->applyPairwiseTransform(pairwise::Multiply, x, output);
-        output->applyPairwiseTransform(pairwise::Multiply, y, output);
+    // The configurable op's output has x's shape; y can broadcast into it.
+    REQUIRE_TRUE(y->rankOf() <= x->rankOf(), 0, "swish_mul: y must broadcast into x");
+    for (int dim = 0; dim < y->rankOf(); ++dim) {
+        REQUIRE_TRUE(y->sizeAt(dim) == 1 ||
+                     y->sizeAt(dim) == x->sizeAt(dim + x->rankOf() - y->rankOf()),
+                     0, "swish_mul: y must broadcast into x");
     }
+    // Shared Swish owns the activation precision. The fused helper preserves
+    // its storage round in registers before the separately promoted multiply.
+    helpers::siluAndMul(block.launchContext(), x, y, output);
 
     return Status::OK;
 }
@@ -1199,19 +1178,31 @@ CUSTOM_OP_IMPL(rms_norm_linear, 3, 1, false, 0, 0) {
     auto w = INPUT_VARIABLE(2);       // [K, N] weight matrix
     auto output = OUTPUT_VARIABLE(0); // [..., N]
 
-    float epsilon = block.getTArguments()->size() > 0 ? T_ARG(0) : 1e-6f;
+    double epsilon = block.getTArguments()->size() > 0 ? T_ARG(0) : 1e-6f;
 
+    REQUIRE_TRUE(block.width() == 3, 0, "rms_norm_linear: expected input, gamma and weight");
+    validateRmsShapes(x->shapeInfo(), gamma->shapeInfo(), epsilon);
+    REQUIRE_TRUE(rmsFloatingType(w->dataType()) && output->dataType() == x->dataType(), 0,
+                 "rms_norm_linear: weight must be floating and output dtype must match input");
     REQUIRE_TRUE(x->rankOf() >= 2, 0, "rms_norm_linear: input must be rank >= 2, got %d", x->rankOf());
     REQUIRE_TRUE(gamma->rankOf() == 1, 0, "rms_norm_linear: gamma must be rank 1, got %d", gamma->rankOf());
     REQUIRE_TRUE(w->rankOf() == 2, 0, "rms_norm_linear: weight must be rank 2, got %d", w->rankOf());
 
     const auto K = x->sizeAt(-1);
+    REQUIRE_TRUE(K > 0, 0, "rms_norm_linear: normalized feature dimension must be positive");
+    REQUIRE_TRUE(output->rankOf() == x->rankOf() && output->sizeAt(-1) == w->sizeAt(1), 0,
+                 "rms_norm_linear: incorrect output shape");
+    for (int d = 0; d < x->rankOf() - 1; ++d) {
+        REQUIRE_TRUE(output->sizeAt(d) == x->sizeAt(d), 0, "rms_norm_linear: output batch dimensions differ");
+    }
     REQUIRE_TRUE(gamma->lengthOf() == K, 0,
                  "rms_norm_linear: gamma length must match input's last dimension, got %lld vs %lld",
                  (long long)gamma->lengthOf(), (long long)K);
     REQUIRE_TRUE(w->sizeAt(0) == K, 0,
                  "rms_norm_linear: weight rows must match input's last dimension, got %lld vs %lld",
                  (long long)w->sizeAt(0), (long long)K);
+
+    if (output->isEmpty()) return Status::OK;
 
     // Helpers preserve the input/output dtype while reading floating gamma and
     // weight arrays in their native dtypes, so no op-level casts are needed.
@@ -1229,7 +1220,7 @@ CUSTOM_OP_IMPL(rms_norm_linear, 3, 1, false, 0, 0) {
         helpers::rmsNormLinear(block.launchContext(), x2d, gamma, w, out2d, epsilon);
         if (!directWrite) {
             auto outShape = output->getShapeAsVector();
-            auto reshaped = out2d->reshape(output->ordering(), *outShape, false);
+            auto reshaped = out2d->reshape('c', *outShape, false);
             output->assign(reshaped);
             delete reshaped;
             delete outShape;
@@ -1244,8 +1235,17 @@ CUSTOM_OP_IMPL(rms_norm_linear, 3, 1, false, 0, 0) {
 }
 
 DECLARE_SHAPE_FN(rms_norm_linear) {
+    REQUIRE_TRUE(inputShape->size() == 3, 0, "rms_norm_linear: expected input, gamma and weight");
     auto xShape = inputShape->at(0);
     auto wShape = inputShape->at(2);
+    validateRmsShapes(xShape, inputShape->at(1), block.numT() > 0 ? T_ARG(0) : 1e-6f);
+    REQUIRE_TRUE(shape::rank(xShape) >= 2 && shape::rank(wShape) == 2, 0,
+                 "rms_norm_linear: input must have rank >= 2 and weight rank 2");
+    REQUIRE_TRUE(shape::sizeAt(xShape, shape::rank(xShape) - 1) > 0, 0,
+                 "rms_norm_linear: normalized feature dimension must be positive");
+    REQUIRE_TRUE(rmsFloatingType(ArrayOptions::dataType(wShape)) &&
+                 shape::sizeAt(wShape, 0) == shape::sizeAt(xShape, shape::rank(xShape) - 1), 0,
+                 "rms_norm_linear: weight dtype or contracted dimension is invalid");
 
     auto xRank = shape::rank(xShape);
     auto N = shape::shapeOf(wShape)[1];
@@ -1260,7 +1260,8 @@ DECLARE_SHAPE_FN(rms_norm_linear) {
     }
     outShape.push_back(N);
 
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', outShape));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', xRank, outShape.data(),
+        shape::isEmptyConst(xShape) || shape::isEmptyConst(wShape) ? ARRAY_EMPTY : 0));
 }
 
 DECLARE_TYPES(rms_norm_linear) {

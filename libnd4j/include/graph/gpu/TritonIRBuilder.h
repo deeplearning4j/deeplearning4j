@@ -256,7 +256,8 @@ class TritonIRBuilder {
   static mlir::Value emitBinaryElementwise(mlir::OpBuilder& builder, mlir::Location loc,
                                            const TritonOpMapping& mapping,
                                            const NativeSlot& slot,
-                                           mlir::Value lhs, mlir::Value rhs);
+                                           mlir::Value lhs, mlir::Value rhs,
+                                           DataType lhsStorageType);
 
   // Emit a unary element-wise op (relu, sigmoid, tanh, gelu, exp, log, etc.)
   // Some are compound patterns (e.g., relu = max(x, 0), sigmoid = 1/(1+exp(-x)))
@@ -551,11 +552,16 @@ class TritonIRBuilder {
                                        float freqBase, float freqScale,
                                        int nElements);
 
-  // Per-element fallback: matmul/attention via scalar K-loop (no tt.dot, no grid sync)
+  // Per-element matmul K-loop (no tt.dot). An explicit serialSlot selects the
+  // SERIAL_FMA recurrence and stride/batch/transpose projection, independently
+  // of the legacy TF32 recipe. Concrete admission lives in TritonMatmulContract.
   static void emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Location loc,
                                    mlir::Value pid, int blockSize,
                                    mlir::Value aPtr, mlir::Value bPtr, mlir::Value cPtr,
-                                   int M, int N, int K);
+                                   int M, int N, int K,
+                                   const NativeSlot* serialSlot = nullptr,
+                                   NDArray* aArray = nullptr, NDArray* bArray = nullptr,
+                                   NDArray* cArray = nullptr);
 
   // Convolution: nested spatial loops (scf.for over kH, kW) with accumulation
   static void emitConvolutionSection(mlir::OpBuilder& builder, mlir::Location loc,

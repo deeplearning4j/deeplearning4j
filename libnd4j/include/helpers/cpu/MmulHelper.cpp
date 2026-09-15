@@ -23,10 +23,14 @@
 #include "../MmulHelper.h"
 
 #include <array/NDArrayFactory.h>
+#include <algorithm>
 
 #include <execution/Threads.h>
+#include <ops/declarable/helpers/matmul.h>
+#include <cfenv>
 #include <helpers/BlasHelper.h>
 #include <helpers/ShapeUtils.h>
+#include <ops/op_types.h>
 #if defined(HAVE_MKL)
 #include <helpers/MklBlasHelper.h>
 #endif
@@ -34,6 +38,34 @@
 #include <system/env_functions.h>
 #include <system/openmp_pragmas.h>
 namespace sd {
+
+// Explicit, shape-invariant arithmetic. Parallelize outputs, never the K recurrence.
+// Private template is completely defined before its selective single-type dispatch.
+template <typename T>
+static void serialGemm(NDArray* x, NDArray* y, NDArray* z, bool tx, bool ty, double alpha, double beta) {
+  const T* xb = x->bufferAsT<T>();
+  const T* yb = y->bufferAsT<T>();
+  T* zb = z->bufferAsT<T>();
+  const auto* xs = x->shapeInfo();
+  const auto* ys = y->shapeInfo();
+  const auto* zs = z->shapeInfo();
+  auto work = PRAGMA_THREADS_FOR {
+    if (std::fegetround() != FE_TONEAREST)
+      THROW_EXCEPTION("MATMUL SERIAL_FMA requires round-to-nearest arithmetic");
+    for (LongType i = start; i < stop; i += increment)
+      ops::helpers::matmulSerialElement(i, xb, yb, zb, xs, ys, zs, tx, ty, alpha, beta);
+  };
+  samediff::Threads::parallel_for(work, 0, z->lengthOf());
+}
+
+void MmulHelper::matmulSerial(LaunchContext* context, NDArray* x, NDArray* y, NDArray* z,
+                            bool tx, bool ty, double alpha, double beta) {
+  if (z->isEmpty()) return;
+  if (beta != 0.0) NDArray::preparePrimaryUse({z}, {x, y, z});
+  else NDArray::preparePrimaryUse({z}, {x, y});
+  BUILD_SINGLE_SELECTOR(x->dataType(), serialGemm, (x, y, z, tx, ty, alpha, beta), SD_FLOAT_TYPES);
+  NDArray::registerPrimaryUse({z}, {x, y});
+}
 
 // CPU stubs for cast cache methods (only used on CUDA)
 void MmulHelper::clearCastCache() {}
@@ -70,8 +102,10 @@ static void usualGemm(NDArray* vA, NDArray* vB, NDArray* vC, const int aMaxis, c
     THROW_EXCEPTION("usualGemm: C is nullptr");
   }
 
-  const T3 alphaZ = static_cast<T3>(alpha);
-  const T3 betaZ = static_cast<T3>(beta);
+  // Widen low-precision storage only; integer and double contracts stay unchanged.
+  using AccT = typename simdOps::AggregateType<T3>::type;
+  const AccT alphaZ = static_cast<AccT>(alpha);
+  const AccT betaZ = static_cast<AccT>(beta);
 
   const bool betaPresent = beta;
 
@@ -101,32 +135,24 @@ static void usualGemm(NDArray* vA, NDArray* vB, NDArray* vC, const int aMaxis, c
   if (aRowMajor && bRowMajor && cRowMajor) {
     // Fast path: all row-major - cache-friendly loop order
     auto func = PRAGMA_THREADS_FOR {
+      std::vector<AccT> accum(N);
       for (auto m = start; m < stop; ++m) {
         T1* aRow = A + m * K;
         T3* cRow = C + m * N;
-
-        // Initialize output row
-        if (betaPresent) {
-          PRAGMA_OMP_SIMD
-          for (int n = 0; n < N; ++n) {
-            cRow[n] *= betaZ;
-          }
-        } else {
-          PRAGMA_OMP_SIMD
-          for (int n = 0; n < N; ++n) {
-            cRow[n] = static_cast<T3>(0);
-          }
-        }
+        std::fill(accum.begin(), accum.end(), static_cast<AccT>(0));
 
         // Cache-friendly loop order: k outer, n inner
         for (int k = 0; k < K; ++k) {
-          const T3 aVal = alphaZ * static_cast<T3>(aRow[k]);
+          const AccT aVal = static_cast<AccT>(aRow[k]);
           const T2* bRow = B + k * N;
           PRAGMA_OMP_SIMD
           for (int n = 0; n < N; ++n) {
-            cRow[n] += aVal * static_cast<T3>(bRow[n]);
+            accum[n] += aVal * static_cast<AccT>(bRow[n]);
           }
         }
+        for (sd::LongType n = 0; n < N; ++n)
+          cRow[n] = static_cast<T3>(alphaZ * accum[n] +
+              (betaPresent ? betaZ * static_cast<AccT>(cRow[n]) : static_cast<AccT>(0)));
       }
     };
     samediff::Threads::parallel_tad(func, 0, M);
@@ -134,31 +160,23 @@ static void usualGemm(NDArray* vA, NDArray* vB, NDArray* vC, const int aMaxis, c
     // Fast path: A,B row-major, C column-major (common from tensorDot)
     // C column-major means C[m,n] is at offset m + n*M
     auto func = PRAGMA_THREADS_FOR {
+      std::vector<AccT> accum(N);
       for (auto m = start; m < stop; ++m) {
         T1* aRow = A + m * K;
-
-        // Initialize output column elements for this row
-        if (betaPresent) {
-          PRAGMA_OMP_SIMD
-          for (int n = 0; n < N; ++n) {
-            C[m + n * M] *= betaZ;
-          }
-        } else {
-          PRAGMA_OMP_SIMD
-          for (int n = 0; n < N; ++n) {
-            C[m + n * M] = static_cast<T3>(0);
-          }
-        }
+        std::fill(accum.begin(), accum.end(), static_cast<AccT>(0));
 
         // k outer for A cache locality, n inner for B cache locality
         for (int k = 0; k < K; ++k) {
-          const T3 aVal = alphaZ * static_cast<T3>(aRow[k]);
+          const AccT aVal = static_cast<AccT>(aRow[k]);
           const T2* bRow = B + k * N;
           PRAGMA_OMP_SIMD
           for (int n = 0; n < N; ++n) {
-            C[m + n * M] += aVal * static_cast<T3>(bRow[n]);
+            accum[n] += aVal * static_cast<AccT>(bRow[n]);
           }
         }
+        for (int n = 0; n < N; ++n)
+          C[m + n * M] = static_cast<T3>(alphaZ * accum[n] +
+              (betaPresent ? betaZ * static_cast<AccT>(C[m + n * M]) : static_cast<AccT>(0)));
       }
     };
     samediff::Threads::parallel_tad(func, 0, M);
@@ -185,17 +203,17 @@ static void usualGemm(NDArray* vA, NDArray* vB, NDArray* vC, const int aMaxis, c
         COORDS2INDEX(aRank, aStride, aCoords.data(), aOffset);
         COORDS2INDEX(bRank, bStride, bCoords.data(), bOffset);
 
-        T3 val = A[aOffset] * B[bOffset];  // first iteration
+        AccT val = static_cast<AccT>(A[aOffset]) * static_cast<AccT>(B[bOffset]);  // first iteration
 
         for (int j = 1; j < K; j++) {  // rest iterations
           aOffset += aStride[aKaxis];
           bOffset += bStride[bKaxis];
-          val += A[aOffset] * B[bOffset];
+          val += static_cast<AccT>(A[aOffset]) * static_cast<AccT>(B[bOffset]);
         }
 
         COORDS2INDEX(cRank, cStride, cCoords.data(), cOffset);
         if (betaPresent) {
-          C[cOffset] = alphaZ * val + betaZ * C[cOffset];
+          C[cOffset] = alphaZ * val + betaZ * static_cast<AccT>(C[cOffset]);
         } else {
           C[cOffset] = alphaZ * val;
         }
@@ -214,8 +232,10 @@ static void usualGemv( NDArray* vA, NDArray* vX, NDArray* vY, const int incx, co
   T2* X = vX->bufferAsT<T2>();
   T3* Y = vY->bufferAsT<T3>();
 
-  const T3 alphaZ = static_cast<T3>(alpha);
-  const T3 betaZ = static_cast<T3>(beta);
+  // Widen low-precision storage only; integer and double contracts stay unchanged.
+  using AccT = typename simdOps::AggregateType<T3>::type;
+  const AccT alphaZ = static_cast<AccT>(alpha);
+  const AccT betaZ = static_cast<AccT>(beta);
 
   const bool betaPersent = beta;
 
@@ -235,18 +255,18 @@ static void usualGemv( NDArray* vA, NDArray* vX, NDArray* vY, const int incx, co
       auto aOffset = i * aMstride;
       auto xOffset = 0;
 
-      T3 val = A[aOffset] * X[xOffset];  // first iteration
+      AccT val = static_cast<AccT>(A[aOffset]) * static_cast<AccT>(X[xOffset]);  // first iteration
 
       for (int j = 1; j < N; ++j) {  // rest iterations
         aOffset += aNstride;
         xOffset += incx;
-        val = val + A[aOffset] * X[xOffset];
+        val = val + static_cast<AccT>(A[aOffset]) * static_cast<AccT>(X[xOffset]);
       }
 
       auto yOffset = i * incy;
 
       if (betaPersent)
-        Y[yOffset] = alphaZ * val + betaZ * Y[yOffset];
+        Y[yOffset] = alphaZ * val + betaZ * static_cast<AccT>(Y[yOffset]);
       else
         Y[yOffset] = alphaZ * val;
     }
@@ -345,20 +365,6 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
                          A->bufferAsT<double>(), K, B->bufferAsT<double>(), N, beta,
                          C->bufferAsT<double>(), N);
       return C;
-    } else if ((aType == DataType::HALF || aType == DataType::BFLOAT16) && blasHelper.hasGEMM(DataType::FLOAT32)) {
-      // FP16/BF16 pre-cast path: cast to FP32, run sgemm, cast result back.
-      // Avoids per-element half→float→half conversion in usualGemm inner loop.
-      auto *aF32 = A->cast(DataType::FLOAT32);
-      auto *bF32 = B->cast(DataType::FLOAT32);
-      std::vector<LongType> cShape = {M, N};
-      NDArray cF32('c', cShape, DataType::FLOAT32, A->getContext());
-      blasHelper.sgemm()(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, (float)alpha,
-                         aF32->bufferAsT<float>(), K, bF32->bufferAsT<float>(), N, (float)beta,
-                         cF32.bufferAsT<float>(), N);
-      C->assign(&cF32);
-      delete aF32;
-      delete bF32;
-      return C;
     }
   }
 
@@ -367,22 +373,8 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
   const bool typeDouble = hasGemm && ABC && aType == DataType::DOUBLE;
   const bool typeFloat = hasGemm && ABC && aType == DataType::FLOAT32;
 
-  // FP16/BF16 pre-cast for non-contiguous layouts — cast to FP32 and use sgemm
-  if ((!typeFloat && !typeDouble) && (aType == DataType::HALF || aType == DataType::BFLOAT16)
-      && ABC && BlasHelper::getInstance().hasGEMM(DataType::FLOAT32) && sd::env_isEnableBlas()) {
-    auto *aF32 = A->cast(DataType::FLOAT32);
-    auto *bF32 = B->cast(DataType::FLOAT32);
-    std::vector<LongType> cShape = {M, N};
-    NDArray cF32('c', cShape, DataType::FLOAT32, A->getContext());
-    auto blasLock2 = BlasHelper::getInstance().lockBlas();
-    BlasHelper::getInstance().sgemm()(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, (float)alpha,
-                       aF32->bufferAsT<float>(), K, bF32->bufferAsT<float>(), N, (float)beta,
-                       cF32.bufferAsT<float>(), N);
-    C->assign(&cF32);
-    delete aF32;
-    delete bF32;
-    return C;
-  }
+  // Low-precision storage is handled by usualGemm's FP32 accumulator. Do not
+  // materialize entire FP32 weights or reinterpret F-order casts as row-major.
 
   // Mixed-type safe path: when A is FP32/FP64 but types don't all match (ABC=false),
   // usualGemm would reinterpret B and C buffers using float pointer arithmetic — this
@@ -694,8 +686,10 @@ static void batchedGemm(NDArray* vA, NDArray* vB, NDArray* vC, const sd::LongTyp
   T2* B = vB->bufferAsT<T2>();
   T3* C = vC->bufferAsT<T3>();
 
-  const T3 alphaZ = static_cast<T3>(alpha);
-  const T3 betaZ = static_cast<T3>(beta);
+  // Widen low-precision storage only; integer and double contracts stay unchanged.
+  using AccT = typename simdOps::AggregateType<T3>::type;
+  const AccT alphaZ = static_cast<AccT>(alpha);
+  const AccT betaZ = static_cast<AccT>(beta);
 
   const bool betaPresent = beta;
 
@@ -738,35 +732,27 @@ static void batchedGemm(NDArray* vA, NDArray* vB, NDArray* vC, const sd::LongTyp
     const sd::LongType strideC = M * N;
 
     auto func = PRAGMA_THREADS_FOR {
+      std::vector<AccT> accum(N);
       for (auto rowIdx = start; rowIdx < stop; ++rowIdx) {
         const sd::LongType b = rowIdx / M;
         const sd::LongType m = rowIdx % M;
         T1* aRow = A + b * strideA + m * K;
         T2* bBase = B + b * strideB;
         T3* cRow = C + b * strideC + m * N;
-
-        // Initialize output row
-        if (betaPresent) {
-          PRAGMA_OMP_SIMD
-          for (sd::LongType n = 0; n < N; ++n) {
-            cRow[n] *= betaZ;
-          }
-        } else {
-          PRAGMA_OMP_SIMD
-          for (sd::LongType n = 0; n < N; ++n) {
-            cRow[n] = static_cast<T3>(0);
-          }
-        }
+        std::fill(accum.begin(), accum.end(), static_cast<AccT>(0));
 
         // Cache-friendly loop order: k outer, n inner
         for (sd::LongType k = 0; k < K; ++k) {
-          const T3 aVal = alphaZ * static_cast<T3>(aRow[k]);
+          const AccT aVal = static_cast<AccT>(aRow[k]);
           const T2* bRow = bBase + k * N;
           PRAGMA_OMP_SIMD
           for (sd::LongType n = 0; n < N; ++n) {
-            cRow[n] += aVal * static_cast<T3>(bRow[n]);
+            accum[n] += aVal * static_cast<AccT>(bRow[n]);
           }
         }
+        for (sd::LongType n = 0; n < N; ++n)
+          cRow[n] = static_cast<T3>(alphaZ * accum[n] +
+              (betaPresent ? betaZ * static_cast<AccT>(cRow[n]) : static_cast<AccT>(0)));
       }
     };
     samediff::Threads::parallel_tad(func, 0, totalRows);
@@ -806,18 +792,18 @@ static void batchedGemm(NDArray* vA, NDArray* vB, NDArray* vC, const sd::LongTyp
         COORDS2INDEX(aRank, aStride, aCoords.data(), aOffset);
         COORDS2INDEX(bRank, bStride, bCoords.data(), bOffset);
 
-        T3 val = A[aOffset] * B[bOffset];  // first iteration
+        AccT val = static_cast<AccT>(A[aOffset]) * static_cast<AccT>(B[bOffset]);  // first iteration
 
         for (sd::LongType j = 1; j < K; ++j) {  // rest iterations
           aOffset += aStride[aKaxis];
           bOffset += bStride[bKaxis];
-          val = val + A[aOffset] * B[bOffset];
+          val = val + static_cast<AccT>(A[aOffset]) * static_cast<AccT>(B[bOffset]);
         }
 
         COORDS2INDEX(cRank, cStride, cCoords.data(), cOffset);
 
         if (betaPresent)
-          C[cOffset] = alphaZ * val + betaZ * C[cOffset];
+          C[cOffset] = alphaZ * val + betaZ * static_cast<AccT>(C[cOffset]);
         else
           C[cOffset] = alphaZ * val;
       }

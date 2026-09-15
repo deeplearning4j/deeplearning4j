@@ -1517,7 +1517,8 @@ static sdx_status_t runInternal(
     int32_t num_outputs,
     const sdx_run_options_t* options,
     bool copy_to_caller_outputs,
-    const std::vector<sd::NDArray*>* ownedInputs = nullptr) {
+    const std::vector<sd::NDArray*>* ownedInputs = nullptr,
+    bool steadyState = false) {
   if (context == nullptr || num_inputs < 0 ||
       (num_inputs > 0 && inputs == nullptr) ||
       (copy_to_caller_outputs &&
@@ -1922,7 +1923,12 @@ static sdx_status_t runInternal(
       context->exec_stream_cached = true;
     }
   }
-  int execCode = executeDynamicShapePlan(context->plan_handle, context->graph_context, execStream);
+  // Keep SDX input mapping, serialization, reporting and output-copy ownership
+  // identical; only the native plan entry changes. Admission remains plan-owned.
+  const char* nativeEntry = steadyState ? "executeSteadyStatePlan" : "executeDynamicShapePlan";
+  int execCode = steadyState
+      ? executeSteadyStatePlan(context->plan_handle, context->graph_context, execStream)
+      : executeDynamicShapePlan(context->plan_handle, context->graph_context, execStream);
   auto end = std::chrono::steady_clock::now();
   uint64_t durationNs = static_cast<uint64_t>(
       std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count());
@@ -2009,13 +2015,13 @@ static sdx_status_t runInternal(
         if (execCode == static_cast<int>(sd::Status::KERNEL_FAILURE)) {
           setContextError(
               context,
-              "executeDynamicShapePlan returned KERNEL_FAILURE (50) without "
+              std::string(nativeEntry) + " returned KERNEL_FAILURE (50) without "
               "native failure detail; the originating plan path did not set "
               "LaunchContext::errorReference");
         } else {
           setContextError(
               context,
-              "executeDynamicShapePlan failed with status " +
+              std::string(nativeEntry) + " failed with status " +
                   std::to_string(execCode));
         }
       }
@@ -2099,6 +2105,26 @@ SDX_API sdx_status_t sdxRunAllocating(
     int32_t num_inputs,
     const sdx_run_options_t* options) {
   return runInternal(context, inputs, num_inputs, nullptr, 0, options, false);
+}
+
+SDX_API sdx_status_t sdxRunSteadyState(
+    sdx_context_t* context,
+    const sdx_tensor_view_t* inputs,
+    int32_t num_inputs,
+    const sdx_tensor_view_t* outputs,
+    int32_t num_outputs,
+    const sdx_run_options_t* options) {
+  return runInternal(context, inputs, num_inputs, outputs, num_outputs,
+                     options, true, nullptr, true);
+}
+
+SDX_API sdx_status_t sdxRunSteadyStateAllocating(
+    sdx_context_t* context,
+    const sdx_tensor_view_t* inputs,
+    int32_t num_inputs,
+    const sdx_run_options_t* options) {
+  return runInternal(context, inputs, num_inputs, nullptr, 0,
+                     options, false, nullptr, true);
 }
 
 SDX_API const char* sdxGetLastError(const sdx_runtime_t* runtime) {

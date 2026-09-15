@@ -94,7 +94,8 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                                      ArrayHolder constantArrays, ArrayHolder variablesArrays) {
             // Look for the final matmul in attention: softmax_weights @ V
             // Note: type check is now done by GraphOptimizer via getApplicableOpTypes()
-            if (!(op.getOp() instanceof Mmul) && !(op.getOp() instanceof TensorMmul)) {
+            if (MatmulArithmeticPolicy.isExplicit(op.getOp())
+                    || (!(op.getOp() instanceof Mmul) && !(op.getOp() instanceof TensorMmul))) {
                 return false;
             }
 
@@ -1069,6 +1070,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                                                          double scaleFactor) {
             log.debug("[ATTN-EXTRACT] Extracting Q,K from matmul: " + matmulOp.getName());
 
+            if (MatmulArithmeticPolicy.isExplicit(matmulOp.getOp())) return null;
             List<String> mmInputs = matmulOp.getInputsToOp();
             if (mmInputs == null || mmInputs.size() < 2) {
                 log.debug("[ATTN-EXTRACT] Matmul has insufficient inputs: " + (mmInputs != null ? mmInputs.size() : 0));
@@ -1599,7 +1601,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
             }
 
             SameDiffOp finalMatmulOp = sd.getOps().get(softmaxUsers.get(0));
-            if (finalMatmulOp == null ||
+            if (finalMatmulOp == null || MatmulArithmeticPolicy.isExplicit(finalMatmulOp.getOp()) ||
                 !(finalMatmulOp.getOp() instanceof Mmul || finalMatmulOp.getOp() instanceof TensorMmul)) {
                 return false;
             }
@@ -1866,6 +1868,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                                                          String matmulOutputVar,
                                                          String scaleOpName, String scaleOutputVar,
                                                          double scaleFactor) {
+            if (MatmulArithmeticPolicy.isExplicit(matmulOp.getOp())) return null;
             List<String> mmInputs = matmulOp.getInputsToOp();
             if (mmInputs == null || mmInputs.size() < 2) {
                 return null;
@@ -2059,7 +2062,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
             }
 
             SameDiffOp finalMatmulOp = sd.getOps().get(softmaxUsers.get(0));
-            if (finalMatmulOp == null ||
+            if (finalMatmulOp == null || MatmulArithmeticPolicy.isExplicit(finalMatmulOp.getOp()) ||
                 !(finalMatmulOp.getOp() instanceof Mmul || finalMatmulOp.getOp() instanceof TensorMmul)) {
                 return false;
             }
@@ -2302,6 +2305,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                                                                   String matmulOutputVar,
                                                                   String scaleOpName, String scaleOutputVar,
                                                                   double scaleFactor) {
+            if (MatmulArithmeticPolicy.isExplicit(matmulOp.getOp())) return null;
             List<String> mmInputs = matmulOp.getInputsToOp();
             if (mmInputs == null || mmInputs.size() < 2) {
                 return null;
@@ -2535,6 +2539,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
             
             SameDiffOp softmaxOp = attentionCompute[0];
             SameDiffOp attnMatmulOp = attentionCompute[1];
+            if (MatmulArithmeticPolicy.isExplicit(attnMatmulOp.getOp())) return false;
 
             log.debug("[LLaMA-ATTN] Found attention compute: softmax={}, matmul={}", 
                      softmaxOp.getName(), attnMatmulOp.getName());
@@ -2922,6 +2927,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                                                        SameDiffOp matmulOp, String matmulOutputVar,
                                                        String scaleOpName, String scaleOutputVar,
                                                        double scaleFactor) {
+            if (MatmulArithmeticPolicy.isExplicit(matmulOp.getOp())) return null;
             List<String> mmInputs = matmulOp.getInputsToOp();
             if (mmInputs == null || mmInputs.size() < 2) return null;
 

@@ -203,6 +203,10 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define BLOCK_SIZE_BROADCAST_BOOL getEnvVariable("BLOCK_SIZE_BROADCAST_BOOL", 256)
 #define SHARED_MEM_SIZE_BROADCAST_BOOL getEnvVariable("SHARED_MEM_SIZE_BROADCAST_BOOL", 1024)
 
+#define GRID_SIZE_MATMUL_SERIAL_FMA getEnvVariable("GRID_SIZE_MATMUL_SERIAL_FMA", 256)
+#define BLOCK_SIZE_MATMUL_SERIAL_FMA getEnvVariable("BLOCK_SIZE_MATMUL_SERIAL_FMA", 256)
+#define SHARED_MEM_SIZE_MATMUL_SERIAL_FMA getEnvVariable("SHARED_MEM_SIZE_MATMUL_SERIAL_FMA", 0)
+
 #define GRID_SIZE_MATRIX_MULTIPLY getEnvVariable("GRID_SIZE_MATRIX_MULTIPLY", 256)
 #define BLOCK_SIZE_MATRIX_MULTIPLY getEnvVariable("BLOCK_SIZE_MATRIX_MULTIPLY", 256)
 #define SHARED_MEM_SIZE_MATRIX_MULTIPLY getEnvVariable("SHARED_MEM_SIZE_MATRIX_MULTIPLY", 256)
@@ -917,6 +921,11 @@ dim3 getFusedGQADecodeDims(int numQHeads, int batch, int seqKV, int headDim, int
 #define GRID_SIZE_FUSED_GQA_DECODE getEnvVariable("GRID_SIZE_FUSED_GQA_DECODE", 256)
 #define BLOCK_SIZE_FUSED_GQA_DECODE getEnvVariable("BLOCK_SIZE_FUSED_GQA_DECODE", 256)
 #define SHARED_MEM_SIZE_FUSED_GQA_DECODE getEnvVariable("SHARED_MEM_SIZE_FUSED_GQA_DECODE", 8192)
+
+// ModelOpt packed linear: one thread per output, no scratch or weight materialization.
+#define GRID_SIZE_MODELOPT_LINEAR getEnvVariable("GRID_SIZE_MODELOPT_LINEAR", 256)
+#define BLOCK_SIZE_MODELOPT_LINEAR getEnvVariable("BLOCK_SIZE_MODELOPT_LINEAR", 128)
+#define SHARED_MEM_SIZE_MODELOPT_LINEAR getEnvVariable("SHARED_MEM_SIZE_MODELOPT_LINEAR", 0)
 
 // ggml_qmatmul — runtime quantized matmul (fused dequant-dot kernels).
 // Q8_0: grid=(ceil(N/4), M), block=128 (4 warps, one warp per n element).

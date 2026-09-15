@@ -165,6 +165,17 @@ public class Nd4jHexagonPresets implements LoadEnabled, BuildEnabled, InfoMapper
 
     @Override
     public void map(InfoMap infoMap) {
+        // Select the non-CUDA declarations instead of parsing both conditional class bodies.
+        infoMap.put(new Info("__CUDACC__", "__CUDABLAS__").define(false))
+                .put(new Info("__JAVACPP_HACK__", "SD_ALL_OPS").define(true));
+        // Native backend namespaces and implementation methods are transparent to the parser.
+        for (String macro : new String[]{"SD_PADDED_NEW_DELETE",
+                "SD_BACKEND_ROOT_INLINE_NAMESPACE_BEGIN", "SD_BACKEND_ROOT_INLINE_NAMESPACE_END",
+                "SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN", "SD_BACKEND_OPS_INLINE_NAMESPACE_END",
+                "SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN", "SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END",
+                "SD_DECLARABLE_OP_EXECUTION_METHODS"}) {
+            infoMap.put(new Info(macro).cppText("#define " + macro));
+        }
         infoMap.put(new Info("thread_local", "SD_LIB_EXPORT", "SD_LIB_HIDDEN", "SD_INLINE",
                         "SD_HOST", "SD_DEVICE", "SD_HOST_DEVICE", "SD_KERNEL",
                         "SD_ALL_OPS", "SD_HEXAGON", "HAVE_HEXAGON_MLIR")
@@ -180,6 +191,15 @@ public class Nd4jHexagonPresets implements LoadEnabled, BuildEnabled, InfoMapper
                .put(new Info("std::vector<const sd::NDArray*>").pointerTypes("ConstNDArrayVector").define())
                .put(new Info("std::vector<sd::NDArray*>").pointerTypes("NDArrayVector").define())
                .put(new Info("bool").cast().valueTypes("boolean").pointerTypes("BooleanPointer", "boolean[]"));
+
+        // MainBuildFlow shares the CPU-derived DSP ABI, not CPU tensor execution
+        // in place of the selected Hexagon graph backend.
+        infoMap.put(new Info("NativeOps.h", "NativeOpsDsp.h", "build_info.h").objectify())
+                .put(new Info("OpaqueContext").pointerTypes("org.nd4j.nativeblas.OpaqueContext"))
+                .put(new Info("sd::Pointer").cast().valueTypes("Pointer").pointerTypes("PointerPointer"))
+                // Do not map the bare function name as an annotation/C++ attribute.
+                .put(new Info("executeSteadyStatePlan").javaText(
+                        "@Override public native int executeSteadyStatePlan(@Cast(\"sd::Pointer\") Pointer planHandle, org.nd4j.nativeblas.OpaqueContext opContext, @Cast(\"sd::Pointer\") Pointer stream);"));
 
         // Handle operations exclusion
         OpExclusionUtils.processOps(logger, properties, infoMap);

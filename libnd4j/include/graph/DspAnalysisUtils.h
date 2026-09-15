@@ -38,6 +38,22 @@ namespace sd {
 namespace graph {
 namespace dsp {
 
+// Dense matmul's fourth integer argument is arithmetic, not a backend hint.
+// Until a lowering implements SERIAL_FMA it must reject this ABI before admission.
+SD_INLINE bool hasNonLegacyMatmulArithmetic(const NativeSlot& slot) {
+  const auto& name = slot.ident.opName;
+  return slot.args.numIArgs > 3 && slot.args.iArgs[3] != 0 &&
+      (name == "matmul" || name == "mmul" || name == "mMul" ||
+       name == "gemm" || name == "gemv" || name == "dot");
+}
+
+SD_INLINE bool hasNonLegacyMatmulArithmetic(NativeSlot* slots, int start, int end) {
+  if (slots == nullptr || start < 0 || end < start) return false;
+  for (int i = start; i <= end; ++i)
+    if (hasNonLegacyMatmulArithmetic(slots[i])) return true;
+  return false;
+}
+
 // ─── Cross-section intermediate detection ────────────────────────────────────
 //
 // A cross-section intermediate is a slot output that is:

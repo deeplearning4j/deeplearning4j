@@ -32,6 +32,51 @@ namespace sd {
 namespace ops {
 
 /**
+ * ModelOpt checkpoint linear projections: X[...,K] @ W[N,K]^T -> Y[...,N].
+ * X and (unless floatOutput=1) Y are FLOAT32/HALF/BFLOAT16; floatOutput=1 writes FLOAT32.
+ * NVFP4: W=UINT8[N,K/2], scales=FLOAT8 E4M3[N,K/16], global=FLOAT32 scalar.
+ * Even k occupies the low E2M1 nibble. FP32 (blockScale * globalScale) is multiplied
+ * by E2M1 and rounded to X dtype before FP32 accumulation. X is NOT FP4-quantized.
+ * FP8: W=FLOAT8 E4M3[N,K], weightScale and inputScale=FLOAT32 scalars.
+ * X/inputScale is saturated to +/-448 and rounded to nearest-even E4M3;
+ * scaled quantized operands are accumulated in FLOAT32. No dense weight temporary.
+ * Both take exactly one IArg, floatOutput (0 or 1), and prohibit output/input aliasing.
+ * Scales must be positive and finite. CUDA validates host-current scales before launch
+ * and device-current scales on-stream (including replay); device failures are asynchronous.
+ * Arbitrary strides and zero dimensions are supported, including K=0 -> zero-filled Y.
+ */
+#if NOT_EXCLUDED(OP_modelopt_nvfp4_linear)
+// Expanded DECLARE_CUSTOM_OP to execute the K=0 reduction and validate empty cases.
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+class SD_LIB_EXPORT modelopt_nvfp4_linear : public sd::ops::DeclarableCustomOp {
+ protected:
+  void registerTypes();
+  SD_DECLARABLE_OP_EXECUTION_METHODS
+ public:
+  modelopt_nvfp4_linear();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+};
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
+REGISTER_H(modelopt_nvfp4_linear)
+#endif
+
+#if NOT_EXCLUDED(OP_modelopt_fp8_linear)
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+class SD_LIB_EXPORT modelopt_fp8_linear : public sd::ops::DeclarableCustomOp {
+ protected:
+  void registerTypes();
+  SD_DECLARABLE_OP_EXECUTION_METHODS
+ public:
+  modelopt_fp8_linear();
+  sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
+  samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+};
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
+REGISTER_H(modelopt_fp8_linear)
+#endif
+
+/**
  * rms_norm - Root Mean Square Layer Normalization
  *
  * Implements RMS normalization as used in LLaMA and other modern LLMs.

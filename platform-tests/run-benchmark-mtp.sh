@@ -127,7 +127,10 @@ set +e
   -Dbackend.artifactId="$BACKEND_ARTIFACT" \
   $TRITON_FLAG \
   -Dnd4j.optimizer.enabled=true \
-  -Dtest.maxphysicalbytes=48g \
+  # 64g required for Qwen3.6-27B: 48g starves GPU-graph capture pools, forcing
+  # slot-by-slot execution (~10s/step, mid-decode stall). Proven by A/B:
+  # 48g -> segs(replay=0 sbs=1) stall; 64g -> segs(replay=1 sbs=0) green.
+  -Dtest.maxphysicalbytes=64g \
   2>&1 | tee "$LOG_FILE"
 BUILD_RESULT=${PIPESTATUS[0]}
 set -e

@@ -634,9 +634,13 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     throw new RuntimeException(e);
                 }
                 break;
+            case FLOAT8:
+            case FLOAT8_E5M2:
             case UTF8:
-                byte[] temp4 = new byte[(int)length];
-                asNio().get(temp4);
+                // One-byte formats have no endian conversion. Preserve raw FP8
+                // encodings (including signed zero and NaNs), not numeric casts.
+                byte[] temp4 = new byte[Math.toIntExact(length)];
+                asNio().duplicate().get(temp4);
                 try {
                     dos.write(temp4);
                 } catch (IOException e){

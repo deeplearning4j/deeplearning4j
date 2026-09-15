@@ -453,10 +453,18 @@ function(_internal_srcore_is_valid_triple type1 type2 type3 output_var)
         return()
     endif()
 
-    # Rule 8: Filter ALL other three-way type mixing
+    # Floating operands may have independent storage precisions (for example,
+    # BF16 activations, FLOAT gamma and HALF weights in fused normalization).
+    # Selector arity describes C++ template types, not necessarily two inputs
+    # and one output. All enabled floating triples must therefore be admitted.
+    if(t1_is_float AND t2_is_float AND t3_is_float)
+        set(${output_var} TRUE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Rule 8: Filter remaining three-way type mixing
     # If we reach here, all three types are different AND none of the above rules matched
     # Examples of what we filter:
-    # - (bfloat16, double, float) - three different float precisions
     # - (int8, float, int32) - completely unrelated types
     # - (float16, int32, double) - random type mixing
     #

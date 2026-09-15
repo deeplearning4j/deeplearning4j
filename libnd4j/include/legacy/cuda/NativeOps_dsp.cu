@@ -92,10 +92,12 @@ sd::Pointer compileDynamicShapePlan(sd::Pointer serializedPlan, sd::LongType pla
   }
 }
 
-int executeDynamicShapePlan(
+// Both JNI entries share validation, output mapping and non-owning publication.
+static int executePlanContext(
     sd::Pointer planHandle,
     OpaqueContext* opContext,
-    sd::Pointer stream) {
+    sd::Pointer stream, bool steadyState) {
+  const char* entryPoint = steadyState ? "executeSteadyStatePlan" : "executeDynamicShapePlan";
   // Helper to set error on LaunchContext so Java can read via lastErrorMessage()
   auto setError = [](int code, const char* msg) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(code);
@@ -104,13 +106,15 @@ int executeDynamicShapePlan(
 
   try {
     if (planHandle == nullptr) {
-      const char* msg = "executeDynamicShapePlan: null plan handle";
+      const char* msg = steadyState ? "executeSteadyStatePlan: null plan handle"
+                                    : "executeDynamicShapePlan: null plan handle";
       DSP_DIAG(EXECUTE, "%s", msg);
       setError(1, msg);
       return 1;
     }
     if (opContext == nullptr) {
-      const char* msg = "executeDynamicShapePlan: null opContext";
+      const char* msg = steadyState ? "executeSteadyStatePlan: null opContext"
+                                    : "executeDynamicShapePlan: null opContext";
       DSP_DIAG(EXECUTE, "%s", msg);
       setError(1, msg);
       return 1;
@@ -126,16 +130,16 @@ int executeDynamicShapePlan(
     // Validate input/output counts
     if (numInputs != plan->getNumExternalInputs()) {
       char buf[256];
-      snprintf(buf, sizeof(buf), "executeDynamicShapePlan: input count mismatch: got %d, expected %d",
-               numInputs, plan->getNumExternalInputs());
+      snprintf(buf, sizeof(buf), "%s: input count mismatch: got %d, expected %d",
+               entryPoint, numInputs, plan->getNumExternalInputs());
       DSP_DIAG(EXECUTE, "%s", buf);
       setError(2, buf);
       return 2;
     }
     if (numOutputs < 0) {
       char buf[256];
-      snprintf(buf, sizeof(buf), "executeDynamicShapePlan: output count mismatch: got %d, expected %d",
-               boundOutputCount, plan->getNumRequestedOutputs());
+      snprintf(buf, sizeof(buf), "%s: output count mismatch: got %d, expected %d",
+               entryPoint, boundOutputCount, plan->getNumRequestedOutputs());
       DSP_DIAG(EXECUTE, "%s", buf);
       setError(3, buf);
       return 3;
@@ -147,7 +151,7 @@ int executeDynamicShapePlan(
       inputPtrs[i] = opContext->array(i);
       if (inputPtrs[i] == nullptr) {
         char buf[256];
-        snprintf(buf, sizeof(buf), "executeDynamicShapePlan: null input at index %d", i);
+        snprintf(buf, sizeof(buf), "%s: null input at index %d", entryPoint, i);
         DSP_DIAG(EXECUTE, "%s", buf);
         setError(4, buf);
         return 4;
@@ -158,8 +162,8 @@ int executeDynamicShapePlan(
       if (db != nullptr && (db->isClosed() || db->isDestroyed() || !db->isValid())) {
         char buf[256];
         snprintf(buf, sizeof(buf),
-                 "executeDynamicShapePlan: stale buffer at input %d (closed=%d destroyed=%d valid=%d)",
-                 i, db->isClosed() ? 1 : 0, db->isDestroyed() ? 1 : 0, db->isValid() ? 1 : 0);
+                 "%s: stale buffer at input %d (closed=%d destroyed=%d valid=%d)",
+                 entryPoint, i, db->isClosed() ? 1 : 0, db->isDestroyed() ? 1 : 0, db->isValid() ? 1 : 0);
         DSP_DIAG(EXECUTE, "%s", buf);
         setError(5, buf);
         return 5;
@@ -240,7 +244,9 @@ int executeDynamicShapePlan(
       cudaGetLastError();  // clear any trim error
     }
 
-    auto status = plan->execute(inputPtrs.data(), numInputs, outputPtrs.data(), numOutputs, cudaStream);
+    auto status = steadyState
+        ? plan->executeSteadyState(inputPtrs.data(), numInputs, outputPtrs.data(), numOutputs, cudaStream)
+        : plan->execute(inputPtrs.data(), numInputs, outputPtrs.data(), numOutputs, cudaStream);
 
     // ── CRITICAL: clear tl_dspReplayActive at JNI boundary ─────────────────
     // plan->execute() sets tl_dspReplayActive=true during composite replay of
@@ -270,13 +276,13 @@ int executeDynamicShapePlan(
       if (existingMsg != nullptr && existingMsg[0] != '\0') {
         // Keep the originating detail first: ErrorReference stores only 256 bytes,
         // so a wrapper prefix here used to truncate the actual slot/backend cause.
-        snprintf(buf, sizeof(buf), "%s [executeDynamicShapePlan returned %s (%d)]",
-                 existingMsg, dsp::dspStatusName(status), static_cast<int>(status));
+        snprintf(buf, sizeof(buf), "%s [%s returned %s (%d)]",
+                 existingMsg, entryPoint, dsp::dspStatusName(status), static_cast<int>(status));
       } else {
         snprintf(buf, sizeof(buf),
-                 "executeDynamicShapePlan returned %s (%d) without native failure detail; "
+                 "%s returned %s (%d) without native failure detail; "
                  "the originating plan path did not set LaunchContext::errorReference",
-                 dsp::dspStatusName(status), static_cast<int>(status));
+                 entryPoint, dsp::dspStatusName(status), static_cast<int>(status));
       }
       DSP_DIAG(EXECUTE, "%s", buf);
       setError(static_cast<int>(status), buf);
@@ -347,8 +353,8 @@ int executeDynamicShapePlan(
       if (syncErr != cudaSuccess) {
         char buf[512];
         snprintf(buf, sizeof(buf),
-                 "executeDynamicShapePlan: cudaStreamSynchronize(dsp) failed: %d (%s)",
-                 static_cast<int>(syncErr), cudaGetErrorString(syncErr));
+                 "%s: cudaStreamSynchronize(dsp) failed: %d (%s)",
+                 entryPoint, static_cast<int>(syncErr), cudaGetErrorString(syncErr));
         DSP_DIAG(EXECUTE, "%s", buf);
         cudaGetLastError();
         setError(static_cast<int>(syncErr), buf);
@@ -382,7 +388,7 @@ int executeDynamicShapePlan(
 
     return 0;
   } catch (const std::exception& e) {
-    DSP_DIAG(EXECUTE, "executeDynamicShapePlan: exception: %s", e.what());
+    DSP_DIAG(EXECUTE, "%s: exception: %s", entryPoint, e.what());
     // Clear DSP TLS — exception may have bypassed DspReplayGuard/DspStreamGuard destructors
     tl_dspReplayActive = false;
     tl_dspExecutionStream = nullptr;
@@ -392,6 +398,14 @@ int executeDynamicShapePlan(
     setError(-1, e.what());
     return -1;
   }
+}
+
+int executeDynamicShapePlan(sd::Pointer planHandle, OpaqueContext* opContext, sd::Pointer stream) {
+  return executePlanContext(planHandle, opContext, stream, false);
+}
+
+int executeSteadyStatePlan(sd::Pointer planHandle, OpaqueContext* opContext, sd::Pointer stream) {
+  return executePlanContext(planHandle, opContext, stream, true);
 }
 
 void freeDynamicShapePlan(sd::Pointer planHandle) {

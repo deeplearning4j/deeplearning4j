@@ -2360,11 +2360,13 @@ public interface NativeOps {
   }
 
   /**
-   * Execute plan in steady-state mode (fast path).
-   * Returns 0 on success, 8 if plan not in steady state, other = error.
+   * Enter the native steady-state execution API with ordinary context input/output mapping.
+   * The native plan controls lifecycle admission, including build phases on early calls.
+   * Returns 0 on success, non-zero on native failure. Unsupported backends must throw,
+   * not silently substitute executeDynamicShapePlan. Output arrays remain plan-owned.
    */
   default int executeSteadyStatePlan(Pointer planHandle, OpaqueContext opContext, Pointer stream) {
-    return executeDynamicShapePlan(planHandle, opContext, stream);
+    throw new UnsupportedOperationException("executeSteadyStatePlan not implemented in this backend");
   }
 
   /**

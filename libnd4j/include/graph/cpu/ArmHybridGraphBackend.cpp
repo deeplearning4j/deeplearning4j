@@ -22,6 +22,7 @@
 
 #include <graph/cpu/ArmHybridGraphBackend.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspAnalysisUtils.h>
 #include <helpers/logger.h>
 #include <system/Environment.h>
 
@@ -67,6 +68,7 @@ int ArmHybridGraphBackend::resolutionPriority(
 }
 
 bool ArmHybridGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
+  if (dsp::hasNonLegacyMatmulArithmetic(slots, start, end)) return false;
   if (end < start) return false;
   int segSize = end - start + 1;
   if (segSize < 2) return false;
@@ -87,6 +89,7 @@ bool ArmHybridGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end
 
 bool ArmHybridGraphBackend::canResolveSegment(const GraphBackendRequest& request,
                                               NativeSlot* slots, int start, int end) {
+  if (dsp::hasNonLegacyMatmulArithmetic(slots, start, end)) return false;
   // In ARM hybrid mode, capability partitioning may isolate one MLIR-mappable
   // operation when the NNAPI device rejects that operation at model
   // classification/compilation time. Treat that operation as a real ARM

@@ -34,12 +34,15 @@
 #if HAVE_TRITON
 
 #include <graph/gpu/TritonGraphBackend.h>
+#include <graph/DspAnalysisUtils.h>
+#include <graph/gpu/TritonMatmulContract.h>
 #include <graph/gpu/TritonIRBuilder.h>
 #include <graph/DspDiagnostics.h>
 #include <graph/DspHashUtils.h>
 #include <helpers/logger.h>
 #include <system/Environment.h>
 
+#include <cstring>
 #include <mutex>
 
 namespace sd {
@@ -150,6 +153,7 @@ GraphBackendExecutionPolicy TritonGraphBackend::executionPolicy(
 // ─── Check if all ops in a range are Triton-mappable ────────────────────────
 
 bool TritonGraphBackend::areAllOpsMappable(NativeSlot* slots, int start, int end) {
+  if (!triton_matmul::supportsArguments(slots, start, end)) return false;
   for (int i = start; i <= end; i++) {
     if (!TritonIRBuilder::isTritonMappable(slots[i].ident.opName)) {
       return false;
@@ -168,6 +172,9 @@ bool TritonGraphBackend::areAllOpsMappable(NativeSlot* slots, int start, int end
 // (1 segment, 3407 ops) to always fail canFuseSegment → launches=0.
 
 bool TritonGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
+  // SERIAL_FMA has an explicit per-element recipe, never the tt.dot recipe.
+  // Concrete shape/dtype/layout/alias checks run before the compile cache lookup.
+  if (!triton_matmul::supportsArguments(slots, start, end)) return false;
   if (!isAvailable()) return false;
 
   int totalOps = end - start + 1;
@@ -220,6 +227,41 @@ size_t TritonGraphBackend::computeSegInternalDtypeHash(NativeSlot* slots,
                                                         int totalOutputSlots) {
   if (slots == nullptr) return 0;
   uint64_t hash = dsp::FNV1A64_OFFSET_BASIS;
+
+  // SERIAL_FMA bakes exact dimensions/strides into its loop. Include the whole
+  // recipe here as well as in the DSP shape key: symbolic shape keys may group
+  // multiple sizes, and frozen keys may be reused. This function is shared by
+  // compilation and execution lookups, including segment-internal operands.
+  for (int s = startSlot; s <= endSlot; ++s) {
+    const auto& slot = slots[s];
+    if (!dsp::hasNonLegacyMatmulArithmetic(slot)) continue;
+    dsp::fnv1aMixValue(hash, 0x53455249414c0001ULL);
+    dsp::fnv1aMixValue(hash, static_cast<uint64_t>(s));
+    dsp::fnv1aMixValue(hash, static_cast<uint64_t>(slot.args.numIArgs));
+    for (int i = 0; i < slot.args.numIArgs; ++i)
+      dsp::fnv1aMixValue(hash, static_cast<uint64_t>(slot.args.iArgs[i]));
+    dsp::fnv1aMixValue(hash, static_cast<uint64_t>(slot.args.numTArgs));
+    for (int i = 0; i < slot.args.numTArgs; ++i) {
+      uint64_t bits;
+      static_assert(sizeof(bits) == sizeof(double), "matmul scalar hash width");
+      std::memcpy(&bits, &slot.args.tArgs[i], sizeof(bits));
+      dsp::fnv1aMixValue(hash, bits);
+    }
+    auto mixLayout = [&](int source) {
+      auto* array = triton_matmul::resolve(source, outputSlots, totalOutputSlots,
+                                           externalInputs, numExternalInputs);
+      dsp::fnv1aMixValue(hash, array != nullptr ? 1 : 0);
+      if (!array) return;
+      dsp::fnv1aMixValue(hash, static_cast<uint64_t>(array->dataType()));
+      dsp::fnv1aMixValue(hash, static_cast<uint64_t>(array->rankOf()));
+      for (int d = 0; d < array->rankOf(); ++d) {
+        dsp::fnv1aMixValue(hash, static_cast<uint64_t>(array->sizeAt(d)));
+        dsp::fnv1aMixValue(hash, static_cast<uint64_t>(array->stridesOf()[d]));
+      }
+    };
+    for (int i = 0; i < slot.wiring.numInputs; ++i) mixLayout(slot.wiring.inputSourceIndices[i]);
+    for (int i = 0; i < slot.wiring.numOutputs; ++i) mixLayout(slot.wiring.outputSlotIndices[i]);
+  }
 
   // Output slot indices produced INSIDE the segment — consumers of these are
   // segment-internal, not cross-segment inputs.

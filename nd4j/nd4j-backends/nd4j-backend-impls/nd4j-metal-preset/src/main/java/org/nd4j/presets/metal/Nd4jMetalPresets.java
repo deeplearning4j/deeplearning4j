@@ -93,11 +93,11 @@ import org.nd4j.presets.OpExclusionUtils;
                         // "graph/cpu/MlxGraphBackend.h"
                 },
                 compiler = {"default", "-fobjc-arc"},   // ARC required for .mm files
-                link = {"nd4j_metal"},
+                link = {"nd4jcpu"},
                 // macOS-only: link Metal + MPS + Accelerate frameworks
                 // These are added by buildnativeoperations.sh when -Dlibnd4j.helper=mps
                 // frameworkPath applies on macOS; link value is the .dylib name
-                preload = {"nd4j_metal"}
+                preload = {"nd4jcpu"}
         )})
 public class Nd4jMetalPresets implements LoadEnabled, InfoMapper {
 
@@ -114,8 +114,14 @@ public class Nd4jMetalPresets implements LoadEnabled, InfoMapper {
 
     @Override
     public void map(InfoMap infoMap) {
-        // Exclusions mirror Nd4jTpuPresets / Nd4jCpuPresets: skip ops with
-        // CUDA-only signatures and all generated ops that require a full CPU build.
-        // Filled in when native bindings are generated.
+        // The MPS/MLX profile uses MainBuildFlow's CPU-derived NativeOps DSP owner.
+        infoMap.put(new Info("SD_LIB_EXPORT", "SD_LIB_HIDDEN", "SD_INLINE", "SD_TLS_EXPORT",
+                        "SD_HOST", "SD_DEVICE", "SD_HOST_DEVICE", "SD_KERNEL").cppTypes().annotations())
+                .put(new Info("NativeOps.h", "NativeOpsDsp.h", "build_info.h").objectify())
+                .put(new Info("OpaqueContext").pointerTypes("org.nd4j.nativeblas.OpaqueContext"))
+                .put(new Info("sd::Pointer").cast().valueTypes("Pointer").pointerTypes("PointerPointer"))
+                // Do not map the bare function name as an annotation/C++ attribute.
+                .put(new Info("executeSteadyStatePlan").javaText(
+                        "@Override public native int executeSteadyStatePlan(@Cast(\"sd::Pointer\") Pointer planHandle, org.nd4j.nativeblas.OpaqueContext opContext, @Cast(\"sd::Pointer\") Pointer stream);"));
     }
 }

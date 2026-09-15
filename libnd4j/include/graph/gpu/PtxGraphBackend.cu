@@ -27,6 +27,7 @@
 #include <cuda_runtime.h>
 
 #include <algorithm>
+#include <cstring>
 #include <mutex>
 #include <sstream>
 #include <unordered_set>
@@ -147,8 +148,16 @@ static std::string emitPtxBinaryOp(std::ostringstream& out, PtxRegAlloc& ra,
     out << "    mul.f32 " << swish << ", " << inReg << ", " << sig << ";\n";
     out << "    mul.f32 " << result << ", " << swish << ", " << secReg << ";\n";
   } else {
-    // Fallback: add
-    out << "    add.f32 " << result << ", " << inReg << ", " << secReg << "; // fallback binary: " << opName << "\n";
+    // Unmappable op: FAIL the PTX generation loudly. Never emit an unrelated
+    // instruction (e.g. add.f32 for an unknown op) — that silently compiles
+    // wrong math. Returning an empty register name signals generation failure
+    // to the caller, which declines the segment so the resolver retries the
+    // next backend.
+    DSP_DIAG(COMPILE,
+             "PtxGraphBackend: no PTX lowering for op '%s' — failing segment "
+             "generation (backend must not silently substitute)",
+             opName.c_str());
+    return "";
   }
 
   return result;
@@ -362,13 +371,99 @@ static std::string emitPtxUnaryOp(std::ostringstream& out, PtxRegAlloc& ra,
     out << "    mul.f32 " << scaled << ", " << inReg << ", " << alphaHex << ";\n";
     out << "    selp.f32 " << result << ", " << inReg << ", " << scaled << ", " << pGe << ";\n";
   } else if (opName == "erf" || opName == "Erf") {
-    // Approximate erf using tanh approximation:
-    // erf(x) ~ tanh(x * 1.2024 * (1 + 0.04028 * x^2))
-    // For PTX simplicity, use identity pass-through (exact erf not available in PTX)
-    out << "    mov.f32 " << result << ", " << inReg << "; // erf: identity fallback in PTX\n";
+    // Abramowitz & Stegun 7.1.26 rational approximation (|err| <= 1.5e-7),
+    // emitted with PTX primitives; exp(-x^2) via ex2.approx with a log2(e)
+    // prescale. Odd symmetry: erf(-x) = -erf(x). PTX float immediates use
+    // 0f-hex encoding, so constants are bit-encoded at codegen time.
+    auto fhex = [](float v) -> std::string {
+      unsigned int b = 0;
+      static_assert(sizeof(b) == sizeof(v), "float/uint32 size mismatch");
+      std::memcpy(&b, &v, sizeof(b));
+      const char* hx = "0123456789ABCDEF";
+      std::string s = "0f00000000";
+      for (int i = 0; i < 8; i++) s[2 + i] = hx[(b >> (28 - 4 * i)) & 0xF];
+      return s;
+    };
+    std::string pNeg = ra.allocPred();
+    std::string xAbs = ra.allocFloat();
+    std::string t = ra.allocFloat();
+    std::string denom = ra.allocFloat();
+    std::string xsq = ra.allocFloat();
+    std::string escale = ra.allocFloat();
+    std::string emx2 = ra.allocFloat();
+    std::string poly = ra.allocFloat();
+    std::string tmp = ra.allocFloat();
+    out << "    abs.f32 " << xAbs << ", " << inReg << ";\n";
+    out << "    mul.f32 " << denom << ", " << xAbs << ", " << fhex(0.3275911f) << ";\n";
+    out << "    add.f32 " << denom << ", " << denom << ", 0f3F800000;\n";
+    out << "    div.rn.f32 " << t << ", 0f3F800000, " << denom << ";\n";
+    // Horner: a1*t + a2*t^2 + a3*t^3 + a4*t^4 + a5*t^5
+    out << "    mul.f32 " << poly << ", " << t << ", " << fhex(1.061405429f) << ";\n";
+    out << "    add.f32 " << poly << ", " << poly << ", " << fhex(-1.453152027f) << ";\n";
+    out << "    mul.f32 " << poly << ", " << poly << ", " << t << ";\n";
+    out << "    add.f32 " << poly << ", " << poly << ", " << fhex(1.421413741f) << ";\n";
+    out << "    mul.f32 " << poly << ", " << poly << ", " << t << ";\n";
+    out << "    add.f32 " << poly << ", " << poly << ", " << fhex(-0.284496736f) << ";\n";
+    out << "    mul.f32 " << poly << ", " << poly << ", " << t << ";\n";
+    out << "    add.f32 " << poly << ", " << poly << ", " << fhex(0.254829592f) << ";\n";
+    out << "    mul.f32 " << poly << ", " << poly << ", " << t << ";\n";
+    out << "    mul.f32 " << xsq << ", " << xAbs << ", " << xAbs << ";\n";
+    out << "    mul.f32 " << escale << ", " << xsq << ", 0f3FB8AA3B;\n";  // x^2 * log2(e)
+    out << "    neg.f32 " << escale << ", " << escale << ";\n";
+    out << "    ex2.approx.f32 " << emx2 << ", " << escale << ";\n";
+    out << "    mul.f32 " << tmp << ", " << poly << ", " << emx2 << ";\n";
+    out << "    sub.f32 " << result << ", 0f3F800000, " << tmp << ";\n";
+    out << "    setp.lt.f32 " << pNeg << ", " << inReg << ", 0f00000000;\n";
+    out << "    neg.f32 " << tmp << ", " << result << ";\n";
+    out << "    selp.f32 " << result << ", " << tmp << ", " << result << ", " << pNeg << ";\n";
+  } else if (opName == "add_scalar" || opName == "subtract_scalar" ||
+             opName == "sub_scalar" || opName == "multiply_scalar" ||
+             opName == "mul_scalar" || opName == "divide_scalar" ||
+             opName == "div_scalar" || opName == "rsub_scalar" ||
+             opName == "rdiv_scalar") {
+    // Scalar ops: second operand is a compile-time constant from tArgs[0],
+    // bit-encoded as a PTX 0f-hex immediate (parity with the NVRTC backend's
+    // generateUnaryExpr scalar family).
+    if (slot.args.numTArgs < 1) {
+      DSP_DIAG(COMPILE,
+               "PtxGraphBackend: scalar op '%s' has no tArgs[0] — cannot "
+               "emit scalar immediate; declining",
+               opName.c_str());
+      return "";
+    }
+    auto fhexS = [](float v) -> std::string {
+      unsigned int b = 0;
+      static_assert(sizeof(b) == sizeof(v), "float/uint32 size mismatch");
+      std::memcpy(&b, &v, sizeof(b));
+      const char* hx = "0123456789ABCDEF";
+      std::string s = "0f00000000";
+      for (int i = 0; i < 8; i++) s[2 + i] = hx[(b >> (28 - 4 * i)) & 0xF];
+      return s;
+    };
+    std::string imm = fhexS(static_cast<float>(slot.args.tArgs[0]));
+    if (opName == "add_scalar") {
+      out << "    add.f32 " << result << ", " << inReg << ", " << imm << ";\n";
+    } else if (opName == "subtract_scalar" || opName == "sub_scalar") {
+      out << "    sub.f32 " << result << ", " << inReg << ", " << imm << ";\n";
+    } else if (opName == "multiply_scalar" || opName == "mul_scalar") {
+      out << "    mul.f32 " << result << ", " << inReg << ", " << imm << ";\n";
+    } else if (opName == "divide_scalar" || opName == "div_scalar") {
+      out << "    div.rn.f32 " << result << ", " << inReg << ", " << imm << ";\n";
+    } else if (opName == "rsub_scalar") {
+      out << "    sub.f32 " << result << ", " << imm << ", " << inReg << ";\n";
+    } else {  // rdiv_scalar
+      out << "    div.rn.f32 " << result << ", " << imm << ", " << inReg << ";\n";
+    }
   } else {
-    // Identity fallback for ops not yet mapped to PTX
-    out << "    mov.f32 " << result << ", " << inReg << "; // unsupported op: " << opName << "\n";
+    // Unmappable op: empty string = loud source-generation failure.
+    // generatePtx returns "" and compileSegment declines the segment, so the
+    // resolver retries the next backend instead of compiling silently wrong
+    // math (the former identity fallback violated that contract).
+    DSP_DIAG(COMPILE,
+             "PtxGraphBackend: no unary lowering for op '%s' — declining "
+             "source generation (must not silently substitute identity)",
+             opName.c_str());
+    return "";
   }
 
   return result;
@@ -397,7 +492,12 @@ static std::string emitPtxComparisonOp(std::ostringstream& out, PtxRegAlloc& ra,
   } else if (opName == "not_equals" || opName == "NotEquals") {
     out << "    setp.ne.f32 " << pred << ", " << inReg << ", " << secReg << ";\n";
   } else {
-    out << "    setp.gt.f32 " << pred << ", " << inReg << ", " << secReg << ";\n";
+    // Unmapped comparison op: decline loudly rather than substituting 'greater'.
+    DSP_DIAG(COMPILE,
+             "PtxGraphBackend: no comparison lowering for op '%s' — declining "
+             "(must not silently substitute 'greater')",
+             opName.c_str());
+    return "";
   }
   out << "    selp.f32 " << result << ", 0f3F800000, 0f00000000, " << pred << ";\n";
 
@@ -435,7 +535,12 @@ static std::string emitPtxLogicalOp(std::ostringstream& out, PtxRegAlloc& ra,
     } else if (opName == "boolean_xor" || opName == "BooleanXor") {
       out << "    xor.pred " << pR << ", " << pA << ", " << pB << ";\n";
     } else {
-      out << "    and.pred " << pR << ", " << pA << ", " << pB << ";\n";
+      // Unmapped logical op: decline loudly rather than substituting 'and'.
+      DSP_DIAG(COMPILE,
+               "PtxGraphBackend: no logical lowering for op '%s' — declining "
+               "(must not silently substitute 'and')",
+               opName.c_str());
+      return "";
     }
     out << "    selp.f32 " << result << ", 0f3F800000, 0f00000000, " << pR << ";\n";
   }
@@ -485,10 +590,13 @@ static std::string emitPtxOpByCategory(std::ostringstream& out, PtxRegAlloc& ra,
       return result;
     }
     default: {
-      // Identity fallback
-      std::string result = ra.allocFloat();
-      out << "    mov.f32 " << result << ", " << inReg << "; // unsupported category: " << opName << "\n";
-      return result;
+      // Unmapped category: decline loudly. The former identity fallback made
+      // the caller's empty-string decline check unreachable dead code.
+      DSP_DIAG(COMPILE,
+               "PtxGraphBackend: no lowering for op '%s' (category %d) — "
+               "declining source generation",
+               opName.c_str(), static_cast<int>(cat));
+      return "";
     }
   }
 }
@@ -596,6 +704,20 @@ std::string PtxGraphBackend::generatePtx(
     body << "    // slot " << si << ": " << slot.ident.opName << "\n";
 
     std::string resultReg = emitPtxOpByCategory(body, ra, cat, slot.ident.opName, inReg, secReg, terReg, slot);
+    if (resultReg.empty()) {
+      // Unmappable op: fail this backend's PTX generation loudly. generatePtx
+      // returns "" and compileSegment declines the segment, so the resolver
+      // retries the next backend instead of executing silently wrong math.
+      DSP_DIAG(
+          COMPILE,
+          "PtxGraphBackend: PTX generation failed at slot %d — no lowering "
+          "for op '%s' (category %d). Backend declines; resolver retries with "
+          "the next backend.",
+          si, slot.ident.opName.c_str(), static_cast<int>(cat));
+      // Signal generation failure: generatePtx returns "" and the compileSegment
+      // caller declines the segment (resolver retries the next backend).
+      return "";
+    }
 
     for (int o = 0; o < slot.wiring.numOutputs; o++) {
       slotOutputRegs[slot.wiring.outputSlotIndices[o]] = resultReg;
@@ -714,6 +836,20 @@ bool PtxGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                                       int totalSlots,
                                       int* requestedOutputSlotIndices,
                                       int numRequestedOutputs) {
+  // Admission precedes cache hits, code generation, and module loading.
+  std::string dtypeReason;
+  if (!jitValidateFloatTensorBindings(slots, seg.def.startSlot, seg.def.endSlot,
+                                     externalInputs, numExternalInputs,
+                                     outputSlots, totalOutputSlots, dtypeReason)) {
+    CompilationAuditEntry entry;
+    entry.slotIndex = seg.def.startSlot;
+    entry.wasCompiled = false;
+    entry.reason = dtypeReason;
+    lastCompilationAudit_ = {entry};
+    DSP_DIAG(COMPILE, "PtxGraphBackend: %s", dtypeReason.c_str());
+    return false;
+  }
+
   // ── Device management (mirrors TritonGraphBackend::compileSegment) ─────────
   // Determine the target compile device.  On async precompile threads the
   // CUDA runtime may not have been initialized at all — cudaSetDevice ensures

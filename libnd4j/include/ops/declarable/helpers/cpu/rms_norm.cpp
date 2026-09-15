@@ -16,241 +16,169 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
+#include <system/op_boilerplate.h>
+#if NOT_EXCLUDED(OP_rms_norm) || NOT_EXCLUDED(OP_skip_rms_norm) || NOT_EXCLUDED(OP_rms_norm_linear)
+#include <algorithm>
 #include <execution/Threads.h>
 #include <math/templatemath.h>
+#include <ops/op_types.h>
 #include <array/NDArrayFactory.h>
+#include <array/DataTypeUtils.h>
 #include <helpers/MmulHelper.h>
 #include <ops/declarable/helpers/rms_norm.h>
-#if NOT_EXCLUDED(OP_rms_norm)
+
 namespace sd {
 namespace ops {
 namespace helpers {
 
-template <typename T>
-static void rmsNorm_(NDArray* input, NDArray* gamma, NDArray* output, float epsilon) {
-    const LongType numRows = input->lengthOf() / input->sizeAt(-1);
+// Rows are logical C-order leading coordinates, not row * strideAt(-2).
+// Buffer pointers already include the view base offset.
+static LongType rmsRowOffset(LongType row, const LongType* info) {
+    const int leadingRank = shape::rank(info) - 1;
+    LongType coords[SD_MAX_RANK];
+    LongType offset;
+    INDEX2COORDS(row, leadingRank, shape::shapeOf(info), coords);
+    COORDS2INDEX(leadingRank, shape::stride(info), coords, offset);
+    return offset;
+}
+
+template <typename T, typename G, typename Z = T>
+static void rmsNorm_(NDArray* input, NDArray* gamma, NDArray* output, double epsilon) {
+    if (input->isEmpty()) return;
     const LongType rowLen = input->sizeAt(-1);
-
-    // Use actual strides so non-contiguous views (e.g. from permute) are handled correctly.
-    // For a permuted [1, 576, 768] view of a [1, 768, 576] base array the row stride is
-    // input->strideAt(-2) (may be 1, not rowLen) and element stride input->strideAt(-1)
-    // (may be 576, not 1).  Assuming row * rowLen offset is WRONG for such views.
-    const LongType rowStride = input->rankOf() >= 2 ? input->strideAt(-2) : rowLen;
-    const LongType elemStride = input->strideAt(-1);
-    const LongType outRowStride = output->rankOf() >= 2 ? output->strideAt(-2) : rowLen;
-    const LongType outElemStride = output->strideAt(-1);
-    // gamma is always 1D contiguous
-    const LongType gammaElemStride = (gamma != nullptr) ? gamma->strideAt(0) : 1;
-
+    const LongType numRows = input->lengthOf() / rowLen;
+    const LongType xs = input->strideAt(-1), zs = output->strideAt(-1);
+    const LongType gs = gamma != nullptr ? gamma->strideAt(0) : 1;
     const T* x = input->bufferAsT<T>();
-    T* z = output->bufferAsT<T>();
-    const T* g = gamma != nullptr ? gamma->bufferAsT<T>() : nullptr;
-
-    // Use double for accumulation when T is double to preserve precision.
-    // For float16/bfloat16, accumulate in float to avoid FP16 overflow (65504 limit).
-    using AccT = typename std::conditional<std::is_same<T, double>::value, double, float>::type;
-
-    // Fast path: both input and output are contiguous (stride-1 in last dim, row stride = rowLen).
-    // This is the common case and allows SIMD.
-    const bool inputContig  = (elemStride == 1) && (rowStride == rowLen);
-    const bool outputContig = (outElemStride == 1) && (outRowStride == rowLen);
-
+    const G* g = gamma != nullptr ? gamma->bufferAsT<G>() : nullptr;
+    Z* z = output->bufferAsT<Z>();
+    using AccT = typename simdOps::AggregateType<typename math::promote_type3<T, G, Z>::type>::type;
     auto func = PRAGMA_THREADS_FOR {
-        for (auto row = start; row < stop; ++row) {
-            const LongType xOff = row * rowStride;
-            const LongType zOff = row * outRowStride;
-
-            // Accumulate sum-of-squares in AccT (float for FP16/BF16, double for FP64)
-            AccT sumSq = static_cast<AccT>(0);
-            if (inputContig) {
-                const T* xRow = x + xOff;
-                for (LongType i = 0; i < rowLen; ++i) {
-                    AccT val = static_cast<AccT>(xRow[i]);
-                    sumSq += val * val;
-                }
-            } else {
-                for (LongType i = 0; i < rowLen; ++i) {
-                    AccT val = static_cast<AccT>(x[xOff + i * elemStride]);
-                    sumSq += val * val;
-                }
+        for (LongType row = start; row < stop; row += increment) {
+            const LongType xo = rmsRowOffset(row, input->shapeInfo());
+            const LongType zo = rmsRowOffset(row, output->shapeInfo());
+            AccT sumSq = 0;
+            for (LongType i = 0; i < rowLen; ++i) {
+                const AccT v = static_cast<AccT>(x[xo + i * xs]);
+                sumSq += v * v;
             }
-            const AccT invRms = static_cast<AccT>(1) /
-                sd::math::sd_sqrt<AccT, AccT>(sumSq / static_cast<AccT>(rowLen) +
-                                              static_cast<AccT>(epsilon));
-
-            if (inputContig && outputContig) {
-                // Both contiguous: use SIMD
-                const T* xRow = x + xOff;
-                T* zRow = z + zOff;
-                if (g != nullptr) {
-                    PRAGMA_OMP_SIMD
-                    for (LongType i = 0; i < rowLen; ++i) {
-                        zRow[i] = static_cast<T>(static_cast<AccT>(xRow[i]) * invRms *
-                                                 static_cast<AccT>(g[i * gammaElemStride]));
-                    }
-                } else {
-                    PRAGMA_OMP_SIMD
-                    for (LongType i = 0; i < rowLen; ++i) {
-                        zRow[i] = static_cast<T>(static_cast<AccT>(xRow[i]) * invRms);
-                    }
-                }
-            } else {
-                // Non-contiguous: use strided access
-                if (g != nullptr) {
-                    for (LongType i = 0; i < rowLen; ++i) {
-                        z[zOff + i * outElemStride] = static_cast<T>(
-                            static_cast<AccT>(x[xOff + i * elemStride]) * invRms *
-                            static_cast<AccT>(g[i * gammaElemStride]));
-                    }
-                } else {
-                    for (LongType i = 0; i < rowLen; ++i) {
-                        z[zOff + i * outElemStride] = static_cast<T>(
-                            static_cast<AccT>(x[xOff + i * elemStride]) * invRms);
-                    }
-                }
+            const AccT inv = AccT(1) / math::sd_sqrt<AccT, AccT>(sumSq / AccT(rowLen) + AccT(epsilon));
+            for (LongType i = 0; i < rowLen; ++i) {
+                const AccT scale = g != nullptr ? static_cast<AccT>(g[i * gs]) : AccT(1);
+                z[zo + i * zs] = static_cast<Z>(static_cast<AccT>(x[xo + i * xs]) * inv * scale);
             }
         }
     };
     samediff::Threads::parallel_tad(func, 0, numRows);
 }
 
-void rmsNorm(LaunchContext* context, NDArray* input, NDArray* gamma, NDArray* output, float epsilon) {
+#if NOT_EXCLUDED(OP_rms_norm)
+void rmsNorm(LaunchContext* context, NDArray* input, NDArray* gamma, NDArray* output, double epsilon) {
+    if (input->isEmpty()) return;
     NDArray::preparePrimaryUse({output}, {input, gamma});
-
-    // Handle mixed-type gamma: cast gamma to match input dtype on CPU
-    // (CUDA uses dual-type kernel templates instead)
-    NDArray* gammaToUse = gamma;
-    NDArray* gammaCast = nullptr;
-    if (gamma != nullptr && gamma->dataType() != input->dataType()) {
-        gammaCast = gamma->cast(input->dataType());
-        gammaToUse = gammaCast;
-    }
-
-    BUILD_SINGLE_SELECTOR(input->dataType(), rmsNorm_, (input, gammaToUse, output, epsilon), SD_FLOAT_TYPES);
-
-    if (gammaCast != nullptr) delete gammaCast;
-
+    const auto gammaType = gamma != nullptr ? gamma->dataType() : input->dataType();
+    BUILD_DOUBLE_SELECTOR(input->dataType(), gammaType, rmsNorm_, (input, gamma, output, epsilon),
+                          SD_FLOAT_TYPES, SD_FLOAT_TYPES);
     NDArray::registerPrimaryUse({output}, {input, gamma});
 }
+#endif
 
-///////////////////////////////////////////////////////////////////////////////
-// Fused RMSNorm + Linear: output = matmul(rmsNorm(input, gamma, eps), weight)
-//
-// Delegates normalization to the existing rmsNorm kernel and matmul to
-// MmulHelper::mmul.  Everything runs in FLOAT32 to avoid HALF matmul
-// producing zeros on CPUs without AMX-FP16 (e.g. AMD Ryzen).
-///////////////////////////////////////////////////////////////////////////////
-template <typename T>
-static void rmsNormLinear_(NDArray* input, NDArray* gamma, NDArray* weight,
-                            NDArray* output, float epsilon) {
-    // 1. Normalize into a FLOAT32 buffer via the existing rmsNorm kernel
-    auto shapeVec = *input->getShapeAsVector();
-    NDArray normalized(input->ordering(), shapeVec, DataType::FLOAT32);
-
-    // Cast input and gamma to FLOAT32 so rmsNorm_ runs the float path
-    NDArray* inputF32 = input;
-    NDArray* inputCasted = nullptr;
-    if (input->dataType() != DataType::FLOAT32) {
-        inputCasted = input->cast(DataType::FLOAT32);
-        inputF32 = inputCasted;
+#if NOT_EXCLUDED(OP_rms_norm_linear)
+template <typename T, typename G, typename W>
+static void rmsNormLinear_(LaunchContext* context, NDArray* input, NDArray* gamma, NDArray* weight,
+                           NDArray* output, double epsilon) {
+    using AccT = typename simdOps::AggregateType<typename math::promote_type3<T, G, W>::type>::type;
+    const auto calcType = DataTypeUtils::fromT<AccT>();
+    const LongType M = input->sizeAt(0), K = input->sizeAt(1), N = weight->sizeAt(1);
+    std::vector<LongType> normalizedShape = {M, K};
+    NDArray normalized('c', normalizedShape, calcType, context);
+    NDArray::preparePrimaryUse({&normalized}, {input, gamma});
+    rmsNorm_<T, G, AccT>(input, gamma, &normalized, epsilon);
+    NDArray::registerPrimaryUse({&normalized}, {input, gamma});
+    if (weight->dataType() == calcType && output->dataType() == calcType) {
+        MmulHelper::mmul(&normalized, weight, output, 1.0, 0.0);
+        return;
     }
 
-    NDArray* gammaF32 = gamma;
-    NDArray* gammaCasted = nullptr;
-    if (gamma != nullptr && gamma->dataType() != DataType::FLOAT32) {
-        gammaCasted = gamma->cast(DataType::FLOAT32);
-        gammaF32 = gammaCasted;
+    // BLAS consumes matching dtypes. Bound conversion workspace to a panel;
+    // never materialize a full widened model weight matrix.
+    constexpr LongType panelBytes = 16LL * 1024 * 1024;
+    const LongType columns = std::min(N, std::max<LongType>(1, panelBytes / sizeof(AccT) / (K + M)));
+    std::vector<LongType> weightShape = {K, columns}, resultShape = {M, columns};
+    NDArray weightPanel('f', weightShape, calcType, context);
+    NDArray resultPanel('f', resultShape, calcType, context);
+    for (LongType col = 0; col < N; col += columns) {
+        const LongType count = std::min(columns, N - col);
+        // ResultSet deliberately does not delete views. These wrappers belong
+        // to this panel iteration, while their buffers belong to the parents.
+        NDArray *source = nullptr, *panel = nullptr, *result = nullptr, *destination = nullptr;
+        auto releaseViews = [&]() {
+            delete destination;
+            delete result;
+            delete panel;
+            delete source;
+        };
+        try {
+            source = (*weight)({0, K, col, col + count}, true);
+            panel = weightPanel({0, K, 0, count}, true);
+            result = resultPanel({0, M, 0, count}, true);
+            destination = (*output)({0, M, col, col + count}, true);
+            panel->assign(source);
+            MmulHelper::mmul(&normalized, panel, result, 1.0, 0.0);
+            destination->assign(result);
+        } catch (...) {
+            releaseViews();
+            throw;
+        }
+        releaseViews();
     }
-
-    rmsNorm_<float>(inputF32, gammaF32, &normalized, epsilon);
-
-    delete inputCasted;
-    delete gammaCasted;
-
-    // 2. Cast weight to FLOAT32 if needed
-    NDArray* wF32 = weight;
-    NDArray* wCasted = nullptr;
-    if (weight->dataType() != DataType::FLOAT32) {
-        wCasted = weight->cast(DataType::FLOAT32);
-        wF32 = wCasted;
-    }
-
-    // 3. Matmul in FP32: normalized [M, K] @ weight [K, N] -> output [M, N]
-    if (output->dataType() == DataType::FLOAT32) {
-        MmulHelper::mmul(&normalized, wF32, output, 1.0, 0.0);
-    } else {
-        auto outShape = *output->getShapeAsVector();
-        NDArray outF32(output->ordering(), outShape, DataType::FLOAT32);
-        MmulHelper::mmul(&normalized, wF32, &outF32, 1.0, 0.0);
-        output->assign(&outF32);
-    }
-
-    delete wCasted;
 }
 
 void rmsNormLinear(LaunchContext* context, NDArray* input, NDArray* gamma,
-                    NDArray* weight, NDArray* output, float epsilon) {
-    NDArray::preparePrimaryUse({output}, {input, gamma, weight});
-
-    BUILD_SINGLE_SELECTOR(input->dataType(), rmsNormLinear_,
-                           (input, gamma, weight, output, epsilon), SD_FLOAT_TYPES);
-
-    NDArray::registerPrimaryUse({output}, {input, gamma, weight});
+                   NDArray* weight, NDArray* output, double epsilon) {
+    if (output->isEmpty()) return;
+    if (input->isEmpty()) THROW_EXCEPTION("rmsNormLinear: nonempty output requires nonempty input");
+    const auto gammaType = gamma != nullptr ? gamma->dataType() : input->dataType();
+    BUILD_TRIPLE_SELECTOR(input->dataType(), gammaType, weight->dataType(), rmsNormLinear_,
+                          (context, input, gamma, weight, output, epsilon),
+                          SD_FLOAT_TYPES, SD_FLOAT_TYPES, SD_FLOAT_TYPES);
 }
+#endif
 
-///////////////////////////////////////////////////////////////////////////////
-// Fused Skip (Residual Add) + RMS Normalization
-///////////////////////////////////////////////////////////////////////////////
-template <typename T>
+#if NOT_EXCLUDED(OP_skip_rms_norm)
+template <typename T, typename G>
 static void skipRmsNorm_(NDArray* input, NDArray* skip, NDArray* gamma, NDArray* bias,
-                          NDArray* output, NDArray* hiddenOut, float epsilon) {
-    const LongType numRows = input->lengthOf() / input->sizeAt(-1);
+                         NDArray* output, NDArray* hiddenOut, double epsilon) {
     const LongType rowLen = input->sizeAt(-1);
-
-    // Use actual strides to handle non-contiguous views correctly.
-    const LongType xRowStride  = input->rankOf() >= 2 ? input->strideAt(-2) : rowLen;
-    const LongType xElemStride = input->strideAt(-1);
-    const LongType sRowStride  = skip->rankOf() >= 2 ? skip->strideAt(-2) : rowLen;
-    const LongType sElemStride = skip->strideAt(-1);
-    const LongType zRowStride  = output->rankOf() >= 2 ? output->strideAt(-2) : rowLen;
-    const LongType zElemStride = output->strideAt(-1);
-    const LongType hRowStride  = (hiddenOut != nullptr && hiddenOut->rankOf() >= 2) ? hiddenOut->strideAt(-2) : rowLen;
-    const LongType hElemStride = hiddenOut != nullptr ? hiddenOut->strideAt(-1) : 1;
-    // gamma and bias are always 1D contiguous
-    const LongType gElemStride = gamma->strideAt(0);
-    const LongType bElemStride = bias != nullptr ? bias->strideAt(0) : 1;
-
+    const LongType numRows = input->lengthOf() / rowLen;
+    const LongType xs = input->strideAt(-1), ss = skip->strideAt(-1), zs = output->strideAt(-1);
+    const LongType hs = hiddenOut != nullptr ? hiddenOut->strideAt(-1) : 1;
+    const LongType gs = gamma->strideAt(0), bs = bias != nullptr ? bias->strideAt(0) : 1;
     const T* x = input->bufferAsT<T>();
     const T* s = skip->bufferAsT<T>();
-    const T* g = gamma->bufferAsT<T>();
     const T* b = bias != nullptr ? bias->bufferAsT<T>() : nullptr;
+    const G* g = gamma->bufferAsT<G>();
     T* z = output->bufferAsT<T>();
     T* h = hiddenOut != nullptr ? hiddenOut->bufferAsT<T>() : nullptr;
-
+    using AccT = typename simdOps::AggregateType<typename math::promote_type<T, G>::type>::type;
     auto func = PRAGMA_THREADS_FOR {
-        for (auto row = start; row < stop; ++row) {
-            const LongType xOff = row * xRowStride;
-            const LongType sOff = row * sRowStride;
-            const LongType zOff = row * zRowStride;
-            const LongType hOff = row * hRowStride;
-
-            // Pass 1: compute hidden = input + skip [+ bias], accumulate sum of squares in float
-            float sumSq = 0.0f;
+        for (LongType row = start; row < stop; row += increment) {
+            const LongType xo = rmsRowOffset(row, input->shapeInfo());
+            const LongType so = rmsRowOffset(row, skip->shapeInfo());
+            const LongType zo = rmsRowOffset(row, output->shapeInfo());
+            const LongType ho = h != nullptr ? rmsRowOffset(row, hiddenOut->shapeInfo()) : 0;
+            AccT sumSq = 0;
             for (LongType i = 0; i < rowLen; ++i) {
-                float val = static_cast<float>(x[xOff + i * xElemStride])
-                          + static_cast<float>(s[sOff + i * sElemStride]);
-                if (b != nullptr) val += static_cast<float>(b[i * bElemStride]);
-                if (h != nullptr) h[hOff + i * hElemStride] = static_cast<T>(val);
-                sumSq += val * val;
+                AccT v = static_cast<AccT>(x[xo + i * xs]) + static_cast<AccT>(s[so + i * ss]);
+                if (b != nullptr) v += static_cast<AccT>(b[i * bs]);
+                sumSq += v * v;
             }
-            const float invRms = 1.0f / sd::math::sd_sqrt<float, float>(sumSq / static_cast<float>(rowLen) + epsilon);
-
-            // Pass 2: normalize and scale
+            const AccT inv = AccT(1) / math::sd_sqrt<AccT, AccT>(sumSq / AccT(rowLen) + AccT(epsilon));
             for (LongType i = 0; i < rowLen; ++i) {
-                float val = static_cast<float>(x[xOff + i * xElemStride])
-                          + static_cast<float>(s[sOff + i * sElemStride]);
-                if (b != nullptr) val += static_cast<float>(b[i * bElemStride]);
-                z[zOff + i * zElemStride] = static_cast<T>(val * invRms * static_cast<float>(g[i * gElemStride]));
+                AccT v = static_cast<AccT>(x[xo + i * xs]) + static_cast<AccT>(s[so + i * ss]);
+                if (b != nullptr) v += static_cast<AccT>(b[i * bs]);
+                z[zo + i * zs] = static_cast<T>(v * inv * static_cast<AccT>(g[i * gs]));
+                if (h != nullptr) h[ho + i * hs] = static_cast<T>(v);
             }
         }
     };
@@ -258,25 +186,15 @@ static void skipRmsNorm_(NDArray* input, NDArray* skip, NDArray* gamma, NDArray*
 }
 
 void skipRmsNorm(LaunchContext* context, NDArray* input, NDArray* skip, NDArray* gamma,
-                  NDArray* bias, NDArray* output, NDArray* hiddenOut, float epsilon) {
+                 NDArray* bias, NDArray* output, NDArray* hiddenOut, double epsilon) {
+    if (input->isEmpty()) return;
     NDArray::preparePrimaryUse({output, hiddenOut}, {input, skip, gamma, bias});
-
-    // Handle mixed-type gamma: cast gamma to match input dtype on CPU
-    // (CUDA uses dual-type kernel templates instead)
-    NDArray* gammaToUse = gamma;
-    NDArray* gammaCast = nullptr;
-    if (gamma != nullptr && gamma->dataType() != input->dataType()) {
-        gammaCast = gamma->cast(input->dataType());
-        gammaToUse = gammaCast;
-    }
-
-    BUILD_SINGLE_SELECTOR(input->dataType(), skipRmsNorm_,
-                           (input, skip, gammaToUse, bias, output, hiddenOut, epsilon), SD_FLOAT_TYPES);
-
-    if (gammaCast != nullptr) delete gammaCast;
-
+    BUILD_DOUBLE_SELECTOR(input->dataType(), gamma->dataType(), skipRmsNorm_,
+                          (input, skip, gamma, bias, output, hiddenOut, epsilon),
+                          SD_FLOAT_TYPES, SD_FLOAT_TYPES);
     NDArray::registerPrimaryUse({output, hiddenOut}, {input, skip, gamma, bias});
 }
+#endif
 
 }  // namespace helpers
 }  // namespace ops

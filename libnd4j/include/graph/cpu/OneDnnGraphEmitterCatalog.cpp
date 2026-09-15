@@ -17,6 +17,7 @@
 #include <mutex>
 #include <stdexcept>
 #include <unordered_map>
+#include <graph/DspAnalysisUtils.h>
 
 namespace sd {
 namespace graph {
@@ -306,6 +307,7 @@ CatalogData& catalogData() {
 }  // namespace
 
 const OneDnnGraphEmitterInfo* findOneDnnGraphEmitter(const NativeSlot& slot) {
+  if (dsp::hasNonLegacyMatmulArithmetic(slot)) return nullptr;
   auto& catalog = catalogData();
   auto found = catalog.indices.find(slot.ident.opHash);
   return found == catalog.indices.end() ? nullptr : &catalog.entries[found->second];

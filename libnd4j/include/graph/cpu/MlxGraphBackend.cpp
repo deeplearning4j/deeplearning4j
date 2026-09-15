@@ -22,6 +22,7 @@
 
 #include <graph/cpu/MlxGraphBackend.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspAnalysisUtils.h>
 #include <helpers/logger.h>
 #include <system/Environment.h>
 
@@ -91,6 +92,7 @@ int MlxGraphBackend::resolutionPriority(
 }
 
 bool MlxGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
+  if (dsp::hasNonLegacyMatmulArithmetic(slots, start, end)) return false;
   if (end < start) return false;
   int segSize = end - start + 1;
   if (segSize < 2) return false;

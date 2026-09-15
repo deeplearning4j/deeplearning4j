@@ -29,6 +29,7 @@
 #include <graph/gpu/TritonIRBuilder_internal.h>
 #include <graph/gpu/SectionTypeConfig.h>
 #include <graph/DspAnalysisUtils.h>
+#include <graph/gpu/TritonMatmulContract.h>
 #include <graph/DspDiagnostics.h>
 #include <array/ArrayOptions.h>
 #include <helpers/logger.h>
@@ -677,6 +678,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
                                             int* requestedOutputSlotIndices,
                                             int numRequestedOutputs) {
   TritonIRModule result;
+  if (!triton_matmul::supports(slots, startSlot, endSlot, outputSlots, totalOutputSlots,
+                              externalInputs, numExternalInputs)) return result;
   int segSize = endSlot - startSlot + 1;
 
   // Pre-compilation feasibility check — bail before MLIR allocation if infeasible
@@ -1426,17 +1429,18 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
             normPaddedRowLen = 1;
             while (normPaddedRowLen < rowLen) normPaddedRowLen <<= 1;
             blockSize = static_cast<int>(std::min(normPaddedRowLen, (int64_t)4096));
-            // R2: rows wider than the 4096 block cap get only their first 4096 elements
-            // reduced — the softmax/normalization is truncated (wrong results). Latent today
-            // (attention is flash-tiled; vocab softmax is host-side, so norm rows stay <=4096),
-            // but record it via the COMPILE diagnostic category (consistent with the norm diags
-            // below) if a wide-row model ever hits this path, so the truncation is queryable
-            // rather than silent.
+            // R2 update: rows wider than the 4096 launch block cap are NOT truncated.
+            // Loads/stores build normPaddedRowLen-wide tensors masked to logicalRowLen
+            // (zero-filled tail), and the emitter reduces the full tensor axis, so a
+            // blockSize clamp only lowers threads-per-block (grid covers the row).
+            // Verified bit-exact on Qwen3.6-27B (hidden=5120, padded 8192) by
+            // TestQwenNvfp4WindowParity#firstLayerRmsAndDenseGatesWindowVersusScalar
+            // plus end-to-end MTP token parity. This diagnostic is informational only.
             if (normPaddedRowLen > 4096) {
               DSP_DIAG(COMPILE, "TritonIRBuilder::buildModule: normalization padded row width %lld "
-                       "exceeds block cap 4096 — blockSize clamped to 4096, reducing only a 4096-wide "
-                       "prefix of each row (logical width %lld) and TRUNCATING the result; needs a "
-                       "chunk-loop lowering for correct wide-row normalization",
+                       "exceeds 4096 — blockSize clamped to 4096; loads/stores remain "
+                       "paddedRowLen-wide masked to logical width %lld (correct wide-row math, "
+                       "reduced thread count per block)",
                        (long long)normPaddedRowLen, (long long)normLogicalRowLen);
             }
             if (nRows > 1) {
@@ -1989,7 +1993,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         continue;
       }
 
-      auto opResult = emitBinaryElementwise(builder, loc, mapping, slot, lhsIt->second, rhsIt->second);
+      auto opResult = emitBinaryElementwise(builder, loc, mapping, slot, lhsIt->second, rhsIt->second,
+                                            resolveDtypeLocal(slot.wiring.inputSourceIndices[0]));
       opResult = emulateNativePrecision(opResult, si);
 
       // Store result SSA value for each output slot
@@ -3135,7 +3140,12 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           auto cPtr = getSlotArgPtr(cSlot);
 
           if (aPtr && bPtr && cPtr) {
-            emitPerElementMatmul(builder, loc, pid, blockSize, aPtr, bPtr, cPtr, M, N, K);
+            const bool serial = dsp::hasNonLegacyMatmulArithmetic(slot);
+            emitPerElementMatmul(builder, loc, pid, blockSize, aPtr, bPtr, cPtr, M, N, K,
+                serial ? &slot : nullptr,
+                serial ? triton_matmul::resolve(aSrc, outputSlots, totalOutputSlots, externalInputs, numExternalInputs) : nullptr,
+                serial ? triton_matmul::resolve(bSrc, outputSlots, totalOutputSlots, externalInputs, numExternalInputs) : nullptr,
+                serial ? triton_matmul::resolve(cSlot, outputSlots, totalOutputSlots, externalInputs, numExternalInputs) : nullptr);
 
             // Load result back for downstream SSA consumers
             DataType outDtype = FLOAT32;
@@ -4806,6 +4816,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
     int numRequestedOutputs) {
 
   TritonIRModule result;
+  if (!triton_matmul::supports(slots, startSlot, endSlot, outputSlots, totalOutputSlots,
+                              externalInputs, numExternalInputs)) return result;
   int segSize = endSlot - startSlot + 1;
   result.kernelName = generateKernelName(slots, startSlot, endSlot);
 
@@ -5670,6 +5682,21 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
         mlir::triton::EvictionPolicy::NORMAL, false);
   };
 
+  // A fused consumer must observe the same low-precision value as an
+  // unfused consumer loading the producer's output. Use cached shape dtype
+  // as well as live arrays: internal buffers may have been released already.
+  auto roundSectionOutput = [&](mlir::Value value, int outIdx) -> mlir::Value {
+    if (!value) return value;
+    auto computeType = getElementType(value);
+    auto dtype = resolveDtype(outIdx);
+    if (!mlir::isa<mlir::FloatType>(computeType) ||
+        (dtype != DataType::HALF && dtype != DataType::BFLOAT16)) return value;
+    auto storageType = getMLIRType(builder, dtype);
+    if (computeType == storageType) return value;
+    auto stored = castTo(builder, loc, value, storageType);
+    return castTo(builder, loc, stored, computeType);
+  };
+
   // ── Step 6: Emit sections ──
   const auto& opTable = getOpTable();
   int sectionBarrierCount = 0;
@@ -6126,7 +6153,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                 auto inputIt = ssaValues.find(slot.wiring.inputSourceIndices[0]);
                 if (inputIt != ssaValues.end()) {
                   auto opResult = emitUnaryElementwise(builder, loc, mapping, slot, inputIt->second, blockSize);
-                  for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
+                  for (int o = 0; o < slot.wiring.numOutputs; o++)
+                    ssaValues[slot.wiring.outputSlotIndices[o]] =
+                        roundSectionOutput(opResult, slot.wiring.outputSlotIndices[o]);
                 }
               }
               continue;
@@ -6134,8 +6163,11 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             auto lhsIt = ssaValues.find(slot.wiring.inputSourceIndices[0]);
             auto rhsIt = ssaValues.find(slot.wiring.inputSourceIndices[1]);
             if (lhsIt == ssaValues.end() || rhsIt == ssaValues.end()) continue;
-            auto opResult = emitBinaryElementwise(builder, loc, mapping, slot, lhsIt->second, rhsIt->second);
-            for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
+            auto opResult = emitBinaryElementwise(builder, loc, mapping, slot, lhsIt->second, rhsIt->second,
+                                                  resolveDtype(slot.wiring.inputSourceIndices[0]));
+            for (int o = 0; o < slot.wiring.numOutputs; o++)
+                    ssaValues[slot.wiring.outputSlotIndices[o]] =
+                        roundSectionOutput(opResult, slot.wiring.outputSlotIndices[o]);
           } else if (cat == TritonOpCategory::UNARY_ELEMENTWISE) {
             if (slot.wiring.numInputs < 1) continue;
             auto inputIt = ssaValues.find(slot.wiring.inputSourceIndices[0]);
@@ -6164,7 +6196,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             }
             if (!opResult)
               opResult = emitUnaryElementwise(builder, loc, mapping, slot, inputIt->second, blockSize);
-            for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
+            for (int o = 0; o < slot.wiring.numOutputs; o++)
+                    ssaValues[slot.wiring.outputSlotIndices[o]] =
+                        roundSectionOutput(opResult, slot.wiring.outputSlotIndices[o]);
           } else if (cat == TritonOpCategory::COMPARISON) {
             if (slot.wiring.numInputs < 1) continue;
             auto lhsIt = ssaValues.find(slot.wiring.inputSourceIndices[0]);
@@ -6188,7 +6222,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             } else {
               continue;
             }
-            for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
+            for (int o = 0; o < slot.wiring.numOutputs; o++)
+                    ssaValues[slot.wiring.outputSlotIndices[o]] =
+                        roundSectionOutput(opResult, slot.wiring.outputSlotIndices[o]);
           } else if (cat == TritonOpCategory::LOGICAL) {
             if (slot.wiring.numInputs < 1) continue;
             auto lhsIt = ssaValues.find(slot.wiring.inputSourceIndices[0]);
@@ -6199,7 +6235,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               if (rhsIt != ssaValues.end()) rhsVal = rhsIt->second;
             }
             auto opResult = emitLogicalOp(builder, loc, slot.ident.opName, lhsIt->second, rhsVal, blockSize);
-            for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
+            for (int o = 0; o < slot.wiring.numOutputs; o++)
+                    ssaValues[slot.wiring.outputSlotIndices[o]] =
+                        roundSectionOutput(opResult, slot.wiring.outputSlotIndices[o]);
           } else if (cat == TritonOpCategory::TERNARY) {
             if (slot.wiring.numInputs < 3) continue;
             auto condIt = ssaValues.find(slot.wiring.inputSourceIndices[0]);
@@ -6207,7 +6245,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             auto falseIt = ssaValues.find(slot.wiring.inputSourceIndices[2]);
             if (condIt == ssaValues.end() || trueIt == ssaValues.end() || falseIt == ssaValues.end()) continue;
             auto opResult = emitTernaryOp(builder, loc, condIt->second, trueIt->second, falseIt->second, blockSize);
-            for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
+            for (int o = 0; o < slot.wiring.numOutputs; o++)
+                    ssaValues[slot.wiring.outputSlotIndices[o]] =
+                        roundSectionOutput(opResult, slot.wiring.outputSlotIndices[o]);
           } else if (cat == TritonOpCategory::IDENTITY) {
             if (slot.wiring.numInputs < 1) continue;
             // assign(target, source): forward input[1]; identity(x): forward input[0]
@@ -6246,7 +6286,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               }
               auto targetElemType = getMLIRType(builder, targetDtype);
               auto opResult = castTo(builder, loc, inputIt->second, targetElemType);
-              for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
+              for (int o = 0; o < slot.wiring.numOutputs; o++)
+                    ssaValues[slot.wiring.outputSlotIndices[o]] =
+                        roundSectionOutput(opResult, slot.wiring.outputSlotIndices[o]);
             }
           } else if (cat == TritonOpCategory::REDUCTION) {
             // Segmented reduction: same approach as buildModule (lines 4159-4449).
@@ -6395,7 +6437,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               auto splatTy = mlir::RankedTensorType::get({blockSize}, opResult.getType());
               opResult = builder.create<mlir::triton::SplatOp>(loc, splatTy, opResult);
             }
-            for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
+            for (int o = 0; o < slot.wiring.numOutputs; o++)
+                    ssaValues[slot.wiring.outputSlotIndices[o]] =
+                        roundSectionOutput(opResult, slot.wiring.outputSlotIndices[o]);
           } else if (cat == TritonOpCategory::NORMALIZATION) {
             // Normalization uses one program per logical row so RMS/softmax/layer-norm
             // operate over the last dimension instead of flattening the whole tensor.
@@ -6697,7 +6741,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                   auto lhsIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[0]);
                   auto rhsIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[1]);
                   if (lhsIt != ssaValues.end() && rhsIt != ssaValues.end()) {
-                    epiResult = emitBinaryElementwise(builder, loc, epiMapping, epiSlot, lhsIt->second, rhsIt->second);
+                    epiResult = emitBinaryElementwise(builder, loc, epiMapping, epiSlot, lhsIt->second, rhsIt->second,
+                                                     resolveDtype(epiSlot.wiring.inputSourceIndices[0]));
                   }
                 } else if (epiCat == TritonOpCategory::UNARY_ELEMENTWISE && epiSlot.wiring.numInputs >= 1) {
                   auto inputIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[0]);
@@ -6712,7 +6757,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
 
                 if (epiResult) {
                   for (int o = 0; o < epiSlot.wiring.numOutputs; o++) {
-                    ssaValues[epiSlot.wiring.outputSlotIndices[o]] = epiResult;
+                    ssaValues[epiSlot.wiring.outputSlotIndices[o]] =
+                        roundSectionOutput(epiResult, epiSlot.wiring.outputSlotIndices[o]);
                   }
                   // Store epilogue result per-row using the same row addressing
                   auto epiOutSlotIdx = epiSlot.wiring.outputSlotIndices[0];
@@ -7434,7 +7480,12 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           auto cPtr = getSlotArgPtr(cSlot);
 
           if (M > 0 && N > 0 && K > 0 && aPtr && bPtr && cPtr) {
-            emitPerElementMatmul(builder, loc, pid, blockSize, aPtr, bPtr, cPtr, M, N, K);
+            const bool serial = dsp::hasNonLegacyMatmulArithmetic(slot);
+            emitPerElementMatmul(builder, loc, pid, blockSize, aPtr, bPtr, cPtr, M, N, K,
+                serial ? &slot : nullptr,
+                serial ? triton_matmul::resolve(aSrc, outputSlots, totalOutputSlots, externalInputs, numExternalInputs) : nullptr,
+                serial ? triton_matmul::resolve(bSrc, outputSlots, totalOutputSlots, externalInputs, numExternalInputs) : nullptr,
+                serial ? triton_matmul::resolve(cSlot, outputSlots, totalOutputSlots, externalInputs, numExternalInputs) : nullptr);
             DataType outDtype = resolveDtype(cSlot);
             auto loaded = loadBlock(cSlot, outDtype);
             if (loaded) {
@@ -7527,7 +7578,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               auto lhsIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[0]);
               auto rhsIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[1]);
               if (lhsIt != ssaValues.end() && rhsIt != ssaValues.end()) {
-                epiResult = emitBinaryElementwise(builder, loc, epiMapping, epiSlot, lhsIt->second, rhsIt->second);
+                epiResult = emitBinaryElementwise(builder, loc, epiMapping, epiSlot, lhsIt->second, rhsIt->second,
+                                                     resolveDtype(epiSlot.wiring.inputSourceIndices[0]));
               }
             } else if (epiCat == TritonOpCategory::UNARY_ELEMENTWISE && epiSlot.wiring.numInputs >= 1) {
               auto inputIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[0]);
@@ -7563,7 +7615,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
 
             if (epiResult) {
               for (int o = 0; o < epiSlot.wiring.numOutputs; o++) {
-                ssaValues[epiSlot.wiring.outputSlotIndices[o]] = epiResult;
+                ssaValues[epiSlot.wiring.outputSlotIndices[o]] =
+                        roundSectionOutput(epiResult, epiSlot.wiring.outputSlotIndices[o]);
               }
               // Store epilogue result to output buffer
               auto outSlotIdx = epiSlot.wiring.outputSlotIndices[0];
@@ -8786,6 +8839,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
       int secSmem = 0;
       switch (sec.type) {
         case KernelSectionType::MATMUL: {
+          // Serial per-element recurrence uses registers, not shared dot tiles.
+          if (dsp::hasNonLegacyMatmulArithmetic(slots, sec.startSlot, sec.endSlot)) break;
           // Tiled matmul with K-loop: tiles A[BM,BK] and B[BK,BN] in shared mem,
           // double/triple-buffered by numStages. fp16/bf16 → 2 bytes per element.
           int bm = std::max(1, sec.blockM);
@@ -8911,6 +8966,14 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
                                                    int* requestedOutputSlotIndices,
                                                    int numRequestedOutputs) {
   TritonIRModule result;
+  if (!triton_matmul::supports(slots, startSlot, endSlot, outputSlots, totalOutputSlots,
+                              externalInputs, numExternalInputs)) return result;
+  // The serial recipe uses a 1D output grid and a loop-carried accumulator,
+  // including for standalone matmul. Never enter the tiled DotOp/epilogue path.
+  if (dsp::hasNonLegacyMatmulArithmetic(slots, startSlot, endSlot))
+    return buildSectionedModule(slots, startSlot, endSlot, totalSlots,
+                                externalInputs, numExternalInputs, outputSlots, totalOutputSlots,
+                                requestedOutputSlotIndices, numRequestedOutputs);
   result.kernelName = generateKernelName(slots, startSlot, endSlot);
 
   // Find the matmul op and extract M, N, K from input shapes.

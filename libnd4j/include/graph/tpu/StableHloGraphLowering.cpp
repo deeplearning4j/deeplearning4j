@@ -176,6 +176,8 @@ bool validateStructuralForm(const NativeSlot& slot, StructuralRecipe recipe,
   };
   if (slot.wiring.numOutputs != 1) return reject("structural recipe requires one output");
   if (recipe == StructuralRecipe::MATMUL) {
+    if (slot.args.numIArgs > 3 && slot.args.iArgs[3] != 0)
+      return reject("SERIAL_FMA has no StableHLO ordered recurrence recipe");
     if (!hasAllTraits(slot, sd::ops::OP_TRAIT_MATMUL) || slot.wiring.numInputs != 2)
       return reject("matmul recipe/traits/arity mismatch");
     const bool transX = slot.args.numIArgs > 0 && slot.args.iArgs[0] != 0;

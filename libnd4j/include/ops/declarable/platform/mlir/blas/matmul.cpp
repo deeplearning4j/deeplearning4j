@@ -68,6 +68,7 @@ PLATFORM_IMPL(matmul, ENGINE_CPU) {
 }
 
 PLATFORM_CHECK(matmul, ENGINE_CPU) {
+    if (block.getIArguments()->size() > 3 && INT_ARG(3) != 0) return false;
     auto* a = INPUT_VARIABLE(0);
     auto* b = INPUT_VARIABLE(1);
 

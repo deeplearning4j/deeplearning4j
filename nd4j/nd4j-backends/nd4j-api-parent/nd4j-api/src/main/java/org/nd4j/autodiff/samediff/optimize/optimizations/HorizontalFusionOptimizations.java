@@ -94,7 +94,7 @@ public class HorizontalFusionOptimizations extends BaseOptimizerSet {
 
             // Check for transpose — skip if either input is transposed
             Mmul mmul = (Mmul) op.getOp();
-            if (isTransposed(mmul)) return false;
+            if (isTransposed(mmul) || MatmulArithmeticPolicy.isExplicit(mmul)) return false;
 
             // Find all sibling Mmul ops sharing the same activation input
             Variable av = helper.getVariable(activationVar);
@@ -110,7 +110,7 @@ public class HorizontalFusionOptimizations extends BaseOptimizerSet {
                 if (consumerOp == null) continue;
                 if (!(consumerOp.getOp() instanceof Mmul)) continue;
                 Mmul sibMmul = (Mmul) consumerOp.getOp();
-                if (isTransposed(sibMmul)) continue;
+                if (isTransposed(sibMmul) || MatmulArithmeticPolicy.isExplicit(sibMmul)) continue;
 
                 List<String> sibInputs = consumerOp.getInputsToOp();
                 if (sibInputs == null || sibInputs.size() != 2) continue;

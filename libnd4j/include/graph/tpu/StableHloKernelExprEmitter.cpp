@@ -78,7 +78,7 @@ StableHloExprResult StableHloKernelExprEmitter::emit(
     const kernelspec::ExprGraph& expression,
     const std::vector<std::string>& inputs,
     const std::vector<double>& scalarValues,
-    const std::string& tensorType,
+    const std::string& storageTensorType,
     const std::string& booleanTensorType,
     int& nextValueId,
     std::ostringstream& body) {
@@ -94,6 +94,25 @@ StableHloExprResult StableHloKernelExprEmitter::emit(
     return result;
   }
 
+  // KernelExpr arithmetic uses FLOAT for HALF/BFLOAT16 storage. Keep the
+  // original tensor type for explicit intermediate and final storage rounds.
+  std::string tensorType = storageTensorType;
+  const auto elementStart = tensorType.find_last_of('<') + 1;
+  const auto f16 = tensorType.rfind("bf16>");
+  const auto half = tensorType.rfind("f16>");
+  if (f16 != std::string::npos && f16 >= elementStart)
+    tensorType.replace(f16, 4, "f32");
+  else if (half != std::string::npos && half >= elementStart)
+    tensorType.replace(half, 3, "f32");
+  auto convert = [&](const std::string& value, const std::string& from,
+                     const std::string& to) {
+    if (from == to) return value;
+    const auto converted = valueName(nextValueId);
+    body << "    " << converted << " = stablehlo.convert " << value
+         << " : (" << from << ") -> " << to << "\n";
+    return converted;
+  };
+
   struct EmittedValue {
     std::string name;
     bool booleanValue = false;
@@ -107,7 +126,8 @@ StableHloExprResult StableHloKernelExprEmitter::emit(
     };
 
     if (node.op == kernelspec::ExprOp::INPUT) {
-      values[index] = {inputs[static_cast<size_t>(node.index)], false};
+      values[index] = {convert(inputs[static_cast<size_t>(node.index)],
+                               storageTensorType, tensorType), false};
       continue;
     }
     if (node.op == kernelspec::ExprOp::SCALAR_PARAM ||
@@ -119,6 +139,17 @@ StableHloExprResult StableHloKernelExprEmitter::emit(
       body << "    " << output << " = stablehlo.constant dense<"
            << floatLiteral(literal) << "> : " << tensorType << "\n";
       values[index] = {output, false};
+      continue;
+    }
+
+    if (node.op == kernelspec::ExprOp::STORAGE_ROUND) {
+      const auto& operand = child(node.a);
+      if (operand.booleanValue) {
+        result.error = "storage_round requires a numeric operand";
+        return result;
+      }
+      const auto narrowed = convert(operand.name, tensorType, storageTensorType);
+      values[index] = {convert(narrowed, storageTensorType, tensorType), false};
       continue;
     }
 
@@ -200,7 +231,8 @@ StableHloExprResult StableHloKernelExprEmitter::emit(
 
   const auto& root = values[static_cast<size_t>(expression.rootIndex())];
   result.success = true;
-  result.value = root.name;
+  result.value = root.booleanValue ? root.name
+                                  : convert(root.name, tensorType, storageTensorType);
   result.booleanValue = root.booleanValue;
   return result;
 }

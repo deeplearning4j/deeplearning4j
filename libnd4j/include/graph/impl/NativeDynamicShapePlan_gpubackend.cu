@@ -441,6 +441,11 @@ void NativeDynamicShapePlan::abortCapture(GraphSegment& seg,
     }
     terminateActiveStreamCapture(abortStream, "abortCapture");
   }
+#if HAVE_TRITON
+  // A failed validation launch may already have queued H2D reads from TLS-owned
+  // pinned sources. Retire those submissions before rollback frees the sources.
+  TritonGraphBackend::getInstance().awaitArgumentSubmissionsForRetirement(seg);
+#endif
   cleanupCaptureTlsState(freeHostPtrs, static_cast<void*>(prevCaptureStream));
   popPrimaryCtxIfPushed(didPushCtx, captureDevice);
   restoreCublasWorkspaceAfterCapture(stream);
@@ -1400,6 +1405,12 @@ Status NativeDynamicShapePlan::compositeReplay(
   using Clock = std::chrono::high_resolution_clock;
   auto t0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
 
+  // Admission must supply an executable schedule, never a cleared capture.
+  // An empty schedule is not a successful replay of a non-empty segment.
+  if (sched.units.empty()) {
+    return setGpuBackendFailureDetail(seg, "composite replay admitted an empty schedule");
+  }
+
   // Entry: log unit count and type breakdown so the replay trace is self-contained.
   {
     int nIslands = 0, nGaps = 0, nMergedLeaders = 0;
@@ -1790,35 +1801,38 @@ Status NativeDynamicShapePlan::compositeReplay(
     }
   }
 
+#if HAVE_TRITON
+  // Alias copyback destinations are baked even in unmerged island graphs.
+  // Validate the entire schedule before any island, gap or output prezero runs.
+  if (auto* backend = dynamic_cast<TritonGraphBackend*>(seg.resolvedGraphBackend)) {
+    auto aliasStatus = backend->preflightAliasBindings(
+        seg, effectiveExternals, numExt, outputSlots_, totalOutputSlots_);
+    if (aliasStatus != Status::OK) return aliasStatus;
+  }
+#endif
+
   // LIFECYCLE: address drift with merged CUDA graph handles.
   // Merged graphs have device pointers baked into captured kernel nodes — they
   // cannot be updated via arg table refresh. Launching a merged graph with stale
   // addresses causes SIGSEGV in cudaGraphLaunch.
   //
-  // POLICY (user directive): replay is for stable graphs only. A device shift
-  // (memory failover relocated a graph-consumed buffer) BREAKS the replay
-  // contract for this segment permanently. Do NOT invalidate/recapture/retry —
-  // that loop re-warms, re-captures, and crashes in stream state. Instead:
-  // forbid replay for this segment once, report the shift transparently, and
-  // let every subsequent execution take the slot-by-slot path. Scheduling
-  // across devices is the caller's responsibility; the framework reacts.
+  // This is still pre-launch: no schedule unit or output prezero has run.
+  // Return the rebuild disposition BEFORE destroying captures. `sched` aliases
+  // seg.exec.compositeReplaySchedule, which invalidation clears; continuing here
+  // would execute zero units and incorrectly report the previous outputs as OK.
+  // Both dispatch callers consume MAYBE through the segment-local rebuild lifecycle
+  // after this function's stream/workspace guards unwind. That lifecycle executes
+  // this invocation once and rebuilds the owning backend, without banning recapture
+  // or changing the requested execution mode. Address drift alone is not evidence
+  // of a device shift (same-shape external replacements also change addresses).
   if (driftDetected && !sched.mergedReplayHandles.empty()) {
-    if (!seg.exec.replayForbidden) {
-      seg.exec.replayForbidden = true;
-      seg.exec.replayForbiddenReason = "address_drift_device_shift";
-      DSP_DIAG(EXECUTE,
-               "DEVICE_SHIFT_REPLAY_FORBIDDEN: seg[%d-%d] address drift with %d merged "
-               "graph handles — a buffer moved across devices (memory shift). Replay is "
-               "for stable graphs only; this segment will execute slot-by-slot for the "
-               "rest of the plan. execCount=%d",
-               seg.def.startSlot, seg.def.endSlot,
-               static_cast<int>(sched.mergedReplayHandles.size()),
-               seg.exec.executionCount);
-    }
-    // Invalidate the now-unusable captures without recapturing; fall through to
-    // the slot-by-slot path for this invocation.
-    SegmentLifecycle::invalidateSegmentCaptures(
-        this, seg, seg.exec.replayForbiddenReason);
+    DSP_DIAG(EXECUTE,
+             "COMPOSITE_REPLAY_PREFLIGHT_REBUILD: seg[%d-%d] address drift with %d merged "
+             "graph handles — returning before any replay unit launches execCount=%d",
+             seg.def.startSlot, seg.def.endSlot,
+             static_cast<int>(sched.mergedReplayHandles.size()),
+             seg.exec.executionCount);
+    return Status::MAYBE;
   }
 
   // Refresh arg tables + D2D copy (skip when generation matches — fast replay path)
@@ -2120,6 +2134,10 @@ Status NativeDynamicShapePlan::compositeReplay(
       }
       auto tML0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point();
       bool launchOk = sched.mergedReplayHandles[mgId]->replay(stream);
+#if HAVE_TRITON
+      if (auto* backend = dynamic_cast<TritonGraphBackend*>(seg.resolvedGraphBackend))
+        backend->recordArgumentSubmission(seg, stream);
+#endif
       checkReplayCudaError("merged-launch", unit.startSlot, unit.endSlot);
       long long mergedUnitUs = 0;  // per-unit ledger (G3): launch + fixup for this leader
       if (executionTimingEnabled_) {
@@ -2768,6 +2786,10 @@ Status NativeDynamicShapePlan::compositeReplay(
 
       auto tIL0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point();
       bool launchOk = sched.compositeReplayHandles[idx]->replay(stream);
+#if HAVE_TRITON
+      if (auto* backend = dynamic_cast<TritonGraphBackend*>(seg.resolvedGraphBackend))
+        backend->recordArgumentSubmission(seg, stream);
+#endif
       if (executionTimingEnabled_) {
         long long ilUs = std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - tIL0).count();
         tIslandLaunchUs += ilUs;
@@ -4313,6 +4335,18 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
       }
 #endif
 
+#if HAVE_TRITON
+      // Native warmup establishes alias/view metadata but does not run Triton's
+      // launcher. Resolve views against the staged inputs, not their old raw
+      // externals, before preparing scratch and immutable H2D source rows.
+      if (auto* backend = dynamic_cast<TritonGraphBackend*>(seg.resolvedGraphBackend)) {
+        if (refreshStaleViewWrappersInSegment(seg, effectiveExternalsForCapture, numExt) < 0)
+          return setGpuBackendFailureDetail(seg, "Triton capture alias/view publication failed");
+        backend->prepareAliasBindingsForCapture(seg, effectiveExternalsForCapture,
+            numExt, outputSlots_, totalOutputSlots_, stream);
+      }
+#endif
+
       // ── MERGED COMPOSITE CAPTURE: island merging through capture-safe gaps ──
       // When a segment has interleaved gap ops between Triton islands, we merge
       // adjacent islands through capture-safe gaps (gaps where all ops launch CUDA
@@ -4992,6 +5026,11 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
             const LongType capturedCreateValueKey =
                 computeCreateOpValueKey(seg, effectiveExternalsForCapture, numExt);
             if (seg.exec.segPhase.needsCapture()) {
+              // Record baked device-managed addresses against the exact
+              // externals table this capture used (staged or raw per input),
+              // before markCaptured seals the graph.
+              recordManagedExtBakedAddrsForCapture(seg, effectiveExternalsForCapture,
+                                                   numExt);
               SegmentLifecycle::markCaptured(seg.exec, ctx.segInputAddrKey, capturedCreateValueKey,
                   computeSlotAddrHash(slots_, numSlots_, outputSlots_, seg.def.startSlot,
                              seg.def.endSlot, totalOutputSlots_),
@@ -5947,6 +5986,10 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
           cudaGetDevice(&deviceId);
           cudaGetLastError();
           bool replayResult = seg.exec.replayHandle->replay(stream);
+#if HAVE_TRITON
+          if (auto* backend = dynamic_cast<TritonGraphBackend*>(seg.resolvedGraphBackend))
+            backend->recordArgumentSubmission(seg, stream);
+#endif
           if (!replayResult) {
             abortCapture(seg, true, didPushCtx, tritonCaptureDevice,
                         prevCaptureStream, savedSlotPhasesTriton, stream);
@@ -6006,6 +6049,11 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
               computeSegmentInputAddrKey(seg, effectiveExternalsForCapture, numExt);
           if (seg.exec.segPhase.needsCapture()) {
             const char* captureBackendName = nativeOnlyCapture ? "CUDA" : ctx.backendName;
+            // Record baked device-managed addresses against the exact externals
+            // table this capture used (staged or raw per input), before
+            // markCaptured seals the graph.
+            recordManagedExtBakedAddrsForCapture(seg, effectiveExternalsForCapture,
+                                                 numExt);
             SegmentLifecycle::markCaptured(seg.exec, capturedInputAddrKey, capturedCreateValueKey,
                 computeSlotAddrHash(slots_, numSlots_, outputSlots_, seg.def.startSlot,
                              seg.def.endSlot, totalOutputSlots_),

@@ -201,7 +201,8 @@ mlir::Value TritonIRBuilder::emitNativeCudaDiv(mlir::OpBuilder& builder,
 mlir::Value TritonIRBuilder::emitBinaryElementwise(mlir::OpBuilder& builder, mlir::Location loc,
                                                     const TritonOpMapping& mapping,
                                                     const NativeSlot& slot,
-                                                    mlir::Value lhs, mlir::Value rhs) {
+                                                    mlir::Value lhs, mlir::Value rhs,
+                                                    DataType lhsStorageType) {
   auto opIr = mapping.tritonIrOp;
   bool lhsIsFloat = isFloatType(lhs.getType());
   bool rhsIsFloat = isFloatType(rhs.getType());
@@ -282,15 +283,26 @@ mlir::Value TritonIRBuilder::emitBinaryElementwise(mlir::OpBuilder& builder, mli
     return builder.create<mlir::arith::MulFOp>(loc, diff, diff);
   }
   if (opIr == "custom.swish_mul") {
-    // swish_mul(x, y) = x * sigmoid(x) * y  (SwiGLU activation)
+    // The SiLU output is stored in x's dtype before multiplication by y,
+    // even when the whole expression remains in registers in a fused section.
+    const auto storageType = getMLIRType(builder, lhsStorageType);
+    const auto computeType = (storageType.isF16() || storageType.isBF16())
+                                 ? builder.getF32Type() : storageType;
+    lhs = castTo(builder, loc, lhs, computeType);
     auto negX = builder.create<mlir::arith::NegFOp>(loc, lhs);
     auto expNegX = emitNativeCudaExp(builder, loc, negX);
     auto tensorTy = mlir::cast<mlir::RankedTensorType>(lhs.getType());
     auto one = splatConstantF32(builder, loc, tensorTy, 1.0f);
     auto onePlusExp = builder.create<mlir::arith::AddFOp>(loc, one, expNegX);
     auto sigmoid = emitNativeCudaDiv(builder, loc, one, onePlusExp);
-    auto xTimesSigmoid = builder.create<mlir::arith::MulFOp>(loc, lhs, sigmoid);
-    return builder.create<mlir::arith::MulFOp>(loc, xTimesSigmoid, rhs);
+    mlir::Value silu = builder.create<mlir::arith::MulFOp>(loc, lhs, sigmoid);
+    silu = castTo(builder, loc, silu, storageType);
+    silu = castTo(builder, loc, silu, floatTy);
+    mlir::Value product = builder.create<mlir::arith::MulFOp>(loc, silu, rhs);
+    // swish_mul's native output dtype is x's dtype. Retain this boundary for
+    // section/epilogue consumers as well as the eventual global-memory store.
+    product = castTo(builder, loc, product, storageType);
+    return castTo(builder, loc, product, floatTy);
   }
   if (opIr == "custom.mul_no_nan") {
     // multiply_no_nan(a, b) = b == 0 ? 0 : a * b

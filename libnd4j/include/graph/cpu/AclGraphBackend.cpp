@@ -22,6 +22,7 @@
 
 #include <graph/cpu/AclGraphBackend.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspAnalysisUtils.h>
 #include <helpers/shape.h>
 #include <ops/declarable/platform/armcompute/ArmComputeVersionProvider.h>
 #include <ops/declarable/platform/armcompute/armcomputeUtils.h>
@@ -315,6 +316,7 @@ bool AclGraphBackend::canResolveSegment(const GraphBackendRequest& request,
 }
 
 bool AclGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
+  if (dsp::hasNonLegacyMatmulArithmetic(slots, start, end)) return false;
   if (!isAvailable() || !slots || end < start) return false;
 
   // ACL buildFunctions is currently all-or-nothing at segment scope. Do

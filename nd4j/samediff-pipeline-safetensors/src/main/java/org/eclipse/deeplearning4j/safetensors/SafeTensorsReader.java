@@ -21,8 +21,10 @@ package org.eclipse.deeplearning4j.safetensors;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.bytedeco.javacpp.BytePointer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -39,6 +41,9 @@ import java.util.*;
 @Slf4j
 public class SafeTensorsReader implements Closeable {
 
+    // Divisible by every supported element width; staging never scales with tensor size.
+    private static final int READ_CHUNK_BYTES = 1024 * 1024;
+
     @Getter
     private final File file;
     @Getter
@@ -50,7 +55,16 @@ public class SafeTensorsReader implements Closeable {
         this.file = file;
         this.raf = new RandomAccessFile(file, "r");
         this.channel = raf.getChannel();
-        this.header = SafeTensorsHeader.fromRandomAccessFile(raf);
+        try {
+            this.header = SafeTensorsHeader.fromRandomAccessFile(raf);
+        } catch (IOException | RuntimeException | Error failure) {
+            try {
+                raf.close();
+            } catch (IOException cleanupFailure) {
+                failure.addSuppressed(cleanupFailure);
+            }
+            throw failure;
+        }
         log.debug("Opened SafeTensors file: {} with {} tensors", file.getName(), header.getTensorCount());
     }
 
@@ -103,87 +117,93 @@ public class SafeTensorsReader implements Closeable {
     }
 
     private INDArray readTensorData(SafeTensorsHeader.TensorInfo info) throws IOException {
-        long dataOffset = header.getDataOffset() + info.getDataStart();
-        long dataLength = info.getDataLength();
         DataType dtype = info.getSafeTensorsDtype().toNd4jType();
         long[] shape = info.getShape();
-
-        if (shape == null || shape.length == 0) {
-            shape = new long[]{1};
+        long[] offsets = info.getDataOffsets();
+        if (shape == null || offsets == null || offsets.length != 2
+                || offsets[0] < 0 || offsets[1] < offsets[0]) {
+            throw new IOException("Invalid shape or data offsets for tensor: " + info.getName());
         }
-
-        raf.seek(dataOffset);
-        byte[] data = new byte[(int) dataLength];
-        raf.readFully(data);
-
-        ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
-        DataBuffer dataBuffer = createDataBuffer(buffer, dtype, shape);
-
-        return Nd4j.create(dataBuffer, shape, Nd4j.getStrides(shape, 'c'), 0, 'c', dtype);
-    }
-
-    private DataBuffer createDataBuffer(ByteBuffer buffer, DataType dtype, long[] shape) {
-        long numElements = 1;
+        boolean empty = false;
         for (long dim : shape) {
-            numElements *= dim;
+            if (dim < 0) {
+                throw new IOException("Negative dimension for tensor: " + info.getName());
+            }
+            empty |= dim == 0;
+        }
+        long dataOffset;
+        long dataEnd;
+        long expectedBytes;
+        int width = dtype.width();
+        try {
+            long elements = empty ? 0 : 1; // [] is a scalar, not [1].
+            if (!empty) {
+                for (long dim : shape) {
+                    elements = Math.multiplyExact(elements, dim);
+                }
+            }
+            expectedBytes = Math.multiplyExact(elements, width);
+            dataOffset = Math.addExact(header.getDataOffset(), offsets[0]);
+            dataEnd = Math.addExact(header.getDataOffset(), offsets[1]);
+        } catch (ArithmeticException failure) {
+            throw new IOException("Tensor size or offset overflow: " + info.getName(), failure);
+        }
+        long dataLength = offsets[1] - offsets[0];
+        if (dataLength != expectedBytes) {
+            throw new IOException("Tensor payload size mismatch: " + info.getName()
+                    + " (expected " + expectedBytes + ", got " + dataLength + ")");
+        }
+        if (dataEnd > channel.size()) {
+            throw new EOFException("Truncated tensor payload: " + info.getName());
         }
 
-        switch (dtype) {
-            case FLOAT:
-                float[] floats = new float[(int) numElements];
-                buffer.asFloatBuffer().get(floats);
-                return Nd4j.createBuffer(floats);
-
-            case DOUBLE:
-                double[] doubles = new double[(int) numElements];
-                buffer.asDoubleBuffer().get(doubles);
-                return Nd4j.createBuffer(doubles);
-
-            case HALF:
-            case BFLOAT16:
-                short[] halfs = new short[(int) numElements];
-                buffer.asShortBuffer().get(halfs);
-                return Nd4j.createTypedBuffer(halfs, dtype);
-
-            case LONG:
-                long[] longs = new long[(int) numElements];
-                buffer.asLongBuffer().get(longs);
-                return Nd4j.createBuffer(longs);
-
-            case INT:
-                int[] ints = new int[(int) numElements];
-                buffer.asIntBuffer().get(ints);
-                return Nd4j.createBuffer(ints);
-
-            case SHORT:
-                short[] shorts = new short[(int) numElements];
-                buffer.asShortBuffer().get(shorts);
-                return Nd4j.createTypedBuffer(shorts, dtype);
-
-            case BYTE:
-            case UBYTE:
-            case BOOL:
-                byte[] bytes = new byte[(int) numElements];
-                buffer.get(bytes);
-                return Nd4j.createTypedBuffer(bytes, dtype);
-
-            case UINT16:
-                short[] ushorts = new short[(int) numElements];
-                buffer.asShortBuffer().get(ushorts);
-                return Nd4j.createTypedBuffer(ushorts, dtype);
-
-            case UINT32:
-                int[] uints = new int[(int) numElements];
-                buffer.asIntBuffer().get(uints);
-                return Nd4j.createTypedBuffer(uints, dtype);
-
-            case UINT64:
-                long[] ulongs = new long[(int) numElements];
-                buffer.asLongBuffer().get(ulongs);
-                return Nd4j.createTypedBuffer(ulongs, dtype);
-
-            default:
-                throw new UnsupportedOperationException("Unsupported data type: " + dtype);
+        // The returned array owns its storage, independent of the reader and caller workspace.
+        try (MemoryWorkspace ignored = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+            INDArray result = Nd4j.createUninitialized(dtype, shape, 'c');
+            try {
+                if (dataLength == 0) {
+                    return result;
+                }
+                byte[] bytes = new byte[(int) Math.min(dataLength, READ_CHUNK_BYTES)];
+                // Borrow the array's host pointer; do not close/deallocate this alias.
+                BytePointer destination = new BytePointer(result.data().pointer()).capacity(dataLength);
+                for (long offset = 0; offset < dataLength; ) {
+                    int count = (int) Math.min(dataLength - offset, bytes.length);
+                    ByteBuffer chunk = ByteBuffer.wrap(bytes, 0, count);
+                    long position = dataOffset + offset;
+                    while (chunk.hasRemaining()) {
+                        int read = channel.read(chunk, position);
+                        if (read < 0) {
+                            throw new EOFException("Truncated tensor payload: " + info.getName());
+                        }
+                        if (read == 0) {
+                            throw new IOException("No progress reading tensor: " + info.getName());
+                        }
+                        position += read;
+                    }
+                    // SafeTensors is little-endian; preserve storage bits, not numeric casts.
+                    if (ByteOrder.nativeOrder() != ByteOrder.LITTLE_ENDIAN && width > 1) {
+                        for (int base = 0; base < count; base += width) {
+                            for (int i = 0; i < width / 2; i++) {
+                                byte value = bytes[base + i];
+                                bytes[base + i] = bytes[base + width - 1 - i];
+                                bytes[base + width - 1 - i] = value;
+                            }
+                        }
+                    }
+                    destination.position(offset).put(bytes, 0, count);
+                    offset += count;
+                }
+                Nd4j.getAffinityManager().tagLocation(result, AffinityManager.Location.HOST);
+                return result;
+            } catch (IOException | RuntimeException | Error failure) {
+                try {
+                    result.close();
+                } catch (RuntimeException | Error cleanupFailure) {
+                    failure.addSuppressed(cleanupFailure);
+                }
+                throw failure;
+            }
         }
     }
 

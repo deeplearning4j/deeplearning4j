@@ -23,6 +23,7 @@
 #include <graph/hexagon/HexagonRuntimeManager.h>
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspAnalysisUtils.h>
 
 #include <cstdint>
 #include <cstring>
@@ -133,6 +134,7 @@ bool HexagonGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) 
 bool HexagonGraphBackend::canResolveSegment(
     const GraphBackendRequest& request, NativeSlot* slots, int start, int end) {
   if (slots == nullptr || start > end) return false;
+  if (dsp::hasNonLegacyMatmulArithmetic(slots, start, end)) return false;
 
   int totalOps = end - start + 1;
   int mappableOps = 0;

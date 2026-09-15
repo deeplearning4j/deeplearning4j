@@ -19,6 +19,7 @@
 
 #include <graph/gpu/NvrtcKernelBuilder.h>
 #include <graph/gpu/OpCategoryTable.h>
+#include <graph/DspDiagnostics.h>
 #include <system/common.h>
 
 #include <sstream>
@@ -97,8 +98,14 @@ static std::string generateBinaryExpr(const std::string& opName,
   // SwiGLU: swish_mul(x, y) = x * sigmoid(x) * y
   if (opName == "swish_mul" || opName == "SwishMul")
     return "(" + a + " / (1.0f + __expf(-" + a + ")) * " + b + ")";
-  // Fallback
-  return a + " + " + b;
+  // Unmappable op: empty string = loud source-gen failure upstream (the
+  // backend declines the segment; resolver retries the next backend).
+  // NEVER silently substitute addition for an unknown binary op.
+  DSP_DIAG(COMPILE,
+           "NvrtcKernelBuilder: no binary lowering for op '%s' — failing "
+           "source generation",
+           opName.c_str());
+  return "";
 }
 
 static std::string generateUnaryExpr(const std::string& opName, const std::string& val,
@@ -200,8 +207,12 @@ static std::string generateUnaryExpr(const std::string& opName, const std::strin
     std::string scalar = std::to_string(static_cast<float>(slot.args.tArgs[0])) + "f";
     return "(" + scalar + " / " + val + ")";
   }
-  // Fallback
-  return val;
+  // Unmappable op: empty string = loud source-gen failure upstream.
+  DSP_DIAG(COMPILE,
+           "NvrtcKernelBuilder: no unary lowering for op '%s' — failing "
+           "source generation",
+           opName.c_str());
+  return "";
 }
 
 static std::string generateComparisonExpr(const std::string& opName,
@@ -218,8 +229,12 @@ static std::string generateComparisonExpr(const std::string& opName,
     return "(" + a + " == " + b + " ? 1.0f : 0.0f)";
   if (opName == "not_equals" || opName == "NotEquals")
     return "(" + a + " != " + b + " ? 1.0f : 0.0f)";
-  // Fallback
-  return "(" + a + " > " + b + " ? 1.0f : 0.0f)";
+  // Unmappable comparison op: empty string = loud source-gen failure.
+  DSP_DIAG(COMPILE,
+           "NvrtcKernelBuilder: no comparison lowering for op '%s' — failing "
+           "source generation",
+           opName.c_str());
+  return "";
 }
 
 static std::string generateLogicalExpr(const std::string& opName,
@@ -235,8 +250,12 @@ static std::string generateLogicalExpr(const std::string& opName,
     return "(" + a + " == 0.0f ? 1.0f : 0.0f)";
   if (opName == "boolean_xor" || opName == "BooleanXor")
     return "(((" + a + " != 0.0f) != (" + b + " != 0.0f)) ? 1.0f : 0.0f)";
-  // Fallback
-  return "((" + a + " != 0.0f && " + b + " != 0.0f) ? 1.0f : 0.0f)";
+  // Unmappable logical op: empty string = loud source-gen failure.
+  DSP_DIAG(COMPILE,
+           "NvrtcKernelBuilder: no logical lowering for op '%s' — failing "
+           "source generation",
+           opName.c_str());
+  return "";
 }
 
 static std::string generateTernaryExpr(const std::string& opName,
@@ -272,7 +291,10 @@ static std::string generateOpExpression(TritonOpCategory cat, const std::string&
       if (opName == "assign" || opName == "Assign") return secondary.empty() ? primary : secondary;
       return primary;  // SSA forwarding
     default:
-      return primary;
+      DSP_DIAG(COMPILE,
+               "NvrtcKernelBuilder: no expression lowering for category %d (op '%s')",
+               static_cast<int>(cat), opName.c_str());
+      return "";  // loud decline — resolver retries the next backend
   }
 }
 
@@ -496,10 +518,20 @@ JitKernelSource buildKernelSource(const NativeSlot* slots, int startSlot, int en
     std::string tertiaryExpr = (as.inputCount >= 3 && as.tertiaryInputSource != -1)
                                    ? resolveSource(as.tertiaryInputSource) : "0.0f";
 
-    // Generate the computation expression
+    // Generate the computation expression. Empty = unmappable op -> the
+    // kernel source is invalid and this backend declines the segment (the
+    // resolver retries the next backend) instead of emitting wrong math.
     std::string opExpr = generateOpExpression(as.category, as.opName,
                                               primaryExpr, secondaryExpr, tertiaryExpr,
                                               slots[as.slotArrayIdx]);
+    if (opExpr.empty()) {
+      result.valid = false;
+      DSP_DIAG(COMPILE,
+               "NvrtcKernelBuilder: buildKernelSource failed at slot %d — no "
+               "lowering for op '%s' (category %d)",
+               as.slotIdx, as.opName.c_str(), static_cast<int>(as.category));
+      return result;
+    }
 
     src << "  float " << varName << " = " << opExpr << ";\n";
 

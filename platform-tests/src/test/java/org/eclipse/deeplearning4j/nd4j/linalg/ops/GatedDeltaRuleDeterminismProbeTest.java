@@ -52,6 +52,48 @@ public class GatedDeltaRuleDeterminismProbeTest {
     private static final int PREFILL_L = 1241;
 
     @Test
+    public void qwen27BVerifyWindowMatchesScalarRecurrenceExactly() {
+        Nd4j.getRandom().setSeed(20260913L);
+        int heads = 48;
+        int window = 5;
+        try (INDArray q = Nd4j.randn(DataType.FLOAT, 1, window, heads, DK).muli(0.05);
+             INDArray k = Nd4j.randn(DataType.FLOAT, 1, window, heads, DK).muli(0.05);
+             INDArray v = Nd4j.randn(DataType.FLOAT, 1, window, heads, DV).muli(0.1);
+             INDArray beta = Nd4j.rand(DataType.FLOAT, 1, window, heads);
+             INDArray gate = Nd4j.rand(DataType.FLOAT, 1, window, heads).negi();
+             INDArray initial = Nd4j.randn(DataType.FLOAT, 1, heads, DK, DV).muli(0.001);
+             INDArray fullLength = Nd4j.scalar(DataType.INT64, window);
+             INDArray one = Nd4j.scalar(DataType.INT64, 1)) {
+            INDArray[] full = Nd4j.exec(new GatedDeltaRule(q, k, v, beta, gate, initial, fullLength));
+            INDArray state = initial.dup();
+            try {
+                for (int t = 0; t < window; t++) {
+                    try (INDArray qt = q.get(all(), interval(t, t + 1), all(), all()).dup();
+                         INDArray kt = k.get(all(), interval(t, t + 1), all(), all()).dup();
+                         INDArray vt = v.get(all(), interval(t, t + 1), all(), all()).dup();
+                         INDArray bt = beta.get(all(), interval(t, t + 1), all()).dup();
+                         INDArray gt = gate.get(all(), interval(t, t + 1), all()).dup();
+                         INDArray expected = full[0].get(all(), interval(t, t + 1), all(), all()).dup()) {
+                        INDArray[] scalar = Nd4j.exec(new GatedDeltaRule(qt, kt, vt, bt, gt, state, one));
+                        state.close();
+                        state = scalar[1];
+                        try (INDArray actual = scalar[0]) {
+                            assertArrayEquals(expected.data().asFloat(), actual.data().asFloat(),
+                                    "Window/scalar GDN output differs at timestep " + t);
+                        }
+                    }
+                }
+                assertArrayEquals(full[1].data().asFloat(), state.data().asFloat(),
+                        "Identical FLOAT inputs must produce identical window/scalar recurrent state");
+            } finally {
+                state.close();
+                full[0].close();
+                full[1].close();
+            }
+        }
+    }
+
+    @Test
     public void productionShapesPrefillAndDecodeStayFiniteAndDeterministic() {
         String backend = Nd4j.getBackend().getClass().getSimpleName().toLowerCase();
         assumeTrue(backend.contains("cuda") || backend.contains("jcublas"),

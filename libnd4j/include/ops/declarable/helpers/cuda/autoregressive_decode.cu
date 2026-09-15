@@ -1224,8 +1224,10 @@ void autoregressiveDecode(
     // input token, and hidden-out (async D2H on the exec stream, drained by the
     // acceptance path's existing sync — no new sync points). Diagnoses whether
     // the draft chain's hidden/token carry is visible to the predictor plan.
-    float mtpChainCarryIn[33][4] = {};
-    float mtpChainHidOut[33][4] = {};
+    // Raw samples preserve HALF/BFLOAT16/FLOAT/DOUBLE storage bits equally.
+    uint64_t mtpChainCarryIn[33][2] = {};
+    uint64_t mtpChainHidOut[33][2] = {};
+    size_t mtpChainSampleBytes[33] = {};
     LongType mtpChainTok[33] = {};
     int mtpChainSampled = 0;
 
@@ -1242,6 +1244,14 @@ void autoregressiveDecode(
     int mtpPosAccepted[33] = {};
     constexpr int MTP_CHAIN_CAP_MIN_EVALS = 12;
 
+    // Explicit artifact request only: no ALL/KV_CACHE/debug activation. One
+    // process-wide bounded owner, independent of plan epochs and chain slots.
+    auto& tensorDiagnostics = graph::DspDiagnostics::getInstance();
+    const bool captureMtpInputs = useMtp && tensorDiagnostics.tensorSnapshotRequested()
+        && tensorDiagnostics.beginTensorSnapshot("executeMtpCuda/pre-executeSteadyState",
+                                                  reinterpret_cast<void*>(*stream));
+    int mtpSnapshotCall = 0;
+
     auto executeMtpCuda = [&](LongType position, int draftSlot, bool writeTargetRow) {
         REQUIRE_TRUE(useMtp && mtpDraftDevice != nullptr, 0,
                      "autoregressive_decode: attempted CUDA MTP execution while disabled");
@@ -1250,12 +1260,13 @@ void autoregressiveDecode(
                      draftSlot, specK);
 
         const bool chainProbe = DSP_DIAG_ENABLED(KV_CACHE) && draftSlot < 33
-            && config->mtpTargetHidden->dataType() == DataType::FLOAT32
-            && config->mtpTargetHidden->lengthOf() >= 4;
+            && config->mtpTargetHidden->lengthOf() > 0;
         if (chainProbe) {
+            mtpChainSampleBytes[draftSlot] = std::min(sizeof(mtpChainCarryIn[draftSlot]),
+                static_cast<size_t>(config->mtpTargetHidden->lengthOf()) * config->mtpTargetHidden->sizeOfT());
             cudaMemcpyAsync(mtpChainCarryIn[draftSlot],
                             config->mtpTargetHidden->specialBuffer(),
-                            4 * sizeof(float), cudaMemcpyDeviceToHost, *stream);
+                            mtpChainSampleBytes[draftSlot], cudaMemcpyDeviceToHost, *stream);
             cudaMemcpyAsync(&mtpChainTok[draftSlot],
                             config->mtpInputIds->specialBuffer(),
                             sizeof(LongType), cudaMemcpyDeviceToHost, *stream);
@@ -1275,10 +1286,56 @@ void autoregressiveDecode(
         NDArray::registerSpecialUse(
             {config->mtpPositionOffset, config->mtpCachePosition, config->mtpCausalMask}, {});
 
+        // Save admission for this invocation: the counter remains 3 on later calls.
+        const bool captureThisCall = captureMtpInputs && mtpSnapshotCall < 3;
+        if (captureThisCall) {
+            tensorDiagnostics.enqueueTensorSnapshot(++mtpSnapshotCall, position,
+                reinterpret_cast<void*>(*stream),
+                {"mtp_input_ids", "mtp_target_hidden_states", "mtp_position_offset",
+                 "mtp_cache_position", "mtp_causal_mask", "mtp_past_key_values.0.key",
+                 "mtp_past_key_values.0.value"},
+                {config->mtpInputIds, config->mtpTargetHidden, config->mtpPositionOffset,
+                 config->mtpCachePosition, config->mtpCausalMask, config->mtpKvBuffers[0],
+                 config->mtpKvBuffers[1]});
+        }
+
         Status mtpStatus = mtpPlan->executeSteadyState(
             mtpExtInputs, mtpNumExtInputs,
             mtpPlanOutputs, mtpNumOutputs,
             reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)));
+        // Post-execution staging audit: the VARIABLE slots must have been D2D
+        // refreshed from the live arrays above (performPreReplaySync step 3).
+        // Snapshotting the plan's own staging buffers on the same callIndex as
+        // phase 1 (live inputs) makes staging-vs-live divergence directly
+        // visible in the .dspt artifact: staging != live at this point proves
+        // the captured graph consumed stale bytes; staging == live while drafts
+        // stay frozen localizes the defect to the captured graph itself.
+        if (captureThisCall) {
+            std::vector<std::string> stagingNames;
+            std::vector<NDArray*> stagingArrays;
+            const int stagingSlots[] = {
+                config->mtpInputIdsExtIdx, config->mtpTargetHiddenExtIdx,
+                config->mtpCausalMaskExtIdx, config->mtpPositionOffsetExtIdx,
+                config->mtpCachePositionExtIdx,
+                config->mtpKvInputExtIndices != nullptr ? config->mtpKvInputExtIndices[0] : -1,
+                config->mtpKvInputExtIndices != nullptr ? config->mtpKvInputExtIndices[1] : -1};
+            const char* const stagingLabels[] = {
+                "staging/mtp_input_ids", "staging/mtp_target_hidden_states",
+                "staging/mtp_causal_mask", "staging/mtp_position_offset",
+                "staging/mtp_cache_position",
+                "staging/mtp_past_key_values.0.key", "staging/mtp_past_key_values.0.value"};
+            for (int s = 0; s < 7; s++) {
+                NDArray* staging = (stagingSlots[s] >= 0 && stagingSlots[s] < mtpNumExtInputs)
+                    ? mtpPlan->getStagingBufferArray(stagingSlots[s]) : nullptr;
+                if (staging == nullptr) continue;
+                stagingNames.emplace_back(stagingLabels[s]);
+                stagingArrays.push_back(staging);
+            }
+            if (!stagingArrays.empty()) {
+                tensorDiagnostics.enqueueTensorSnapshot(mtpSnapshotCall, position,
+                    reinterpret_cast<void*>(*stream), stagingNames, stagingArrays);
+            }
+        }
         std::string mtpFailureDetail;
         if (mtpStatus != Status::OK) mtpFailureDetail = nestedPlanFailureDetail();
         REQUIRE_TRUE(mtpStatus == Status::OK, 0,
@@ -1296,6 +1353,24 @@ void autoregressiveDecode(
 
         NDArray* mtpLogits = mtpPlanOutputs[config->mtpLogitsOutputIdx];
         NDArray* mtpHidden = mtpPlanOutputs[config->mtpHiddenOutputIdx];
+        if (captureThisCall) {
+            tensorDiagnostics.enqueueTensorSnapshot(mtpSnapshotCall, position,
+                reinterpret_cast<void*>(*stream),
+                {"output/pre-argmax/mtp_logits", "output/pre-argmax/mtp_hidden"},
+                {mtpLogits, mtpHidden});
+            // Post-exec live-KV audit: after executeSteadyState returns, the current
+            // row must be present in the live buffer (the in-plan in-place write) and
+            // every prior row must be unchanged vs the pre-exec snapshot. A missing
+            // current row or a moved prior row directly exposes the in-call
+            // write-vs-refresh ordering defect.
+            tensorDiagnostics.enqueueTensorSnapshot(mtpSnapshotCall, position,
+                reinterpret_cast<void*>(*stream),
+                {"postexec/mtp_past_key_values.0.key", "postexec/mtp_past_key_values.0.value",
+                 "postexec/mtp_causal_mask", "postexec/mtp_cache_position",
+                 "postexec/mtp_input_ids"},
+                {config->mtpKvBuffers[0], config->mtpKvBuffers[1],
+                 config->mtpCausalMask, config->mtpCachePosition, config->mtpInputIds});
+        }
         REQUIRE_TRUE(mtpLogits->rankOf() >= 2 && mtpLogits->rankOf() <= 3, 0,
                      "autoregressive_decode: CUDA MTP logits rank %lld is invalid",
                      (long long)mtpLogits->rankOf());
@@ -1307,6 +1382,19 @@ void autoregressiveDecode(
                               (stream, mtpLogits->specialBuffer(), draftPtr, mtpVocab),
                               SD_FLOAT_TYPES);
         NDArray::registerSpecialUse({mtpDraftDevice}, {mtpLogits});
+        if (captureThisCall) {
+            // Borrow just the selected INT64 element, not the unwritten draft slots.
+            // Metadata dies here; the arena owns the asynchronous host destination.
+            REQUIRE_TRUE(config->mtpCachePosition->rankOf() == 0
+                             && config->mtpCachePosition->dataType() == mtpDraftDevice->dataType(),
+                         0, "DSP tensor snapshot requires the existing INT64 scalar shape");
+            // Reuse already-resident scalar shape metadata: no shape upload/allocation
+            // between argmax and its snapshot. This constructor borrows the buffer.
+            NDArray selected(mtpDraftDevice->dataBuffer(), config->mtpCachePosition->shapeInfo(),
+                             mtpDraftDevice->getContext(), mtpDraftDevice->offset() + draftSlot);
+            tensorDiagnostics.enqueueTensorSnapshot(mtpSnapshotCall, position,
+                reinterpret_cast<void*>(*stream), {"output/post-argmax/draft_id"}, {&selected});
+        }
 
         REQUIRE_TRUE(mtpHidden->lengthOf() == config->mtpTargetHidden->lengthOf()
                          && mtpHidden->dataType() == config->mtpTargetHidden->dataType(),
@@ -1317,9 +1405,9 @@ void autoregressiveDecode(
                         hiddenBytes, cudaMemcpyDeviceToDevice, *stream);
         NDArray::registerSpecialUse({config->mtpTargetHidden}, {mtpHidden});
 
-        if (chainProbe && mtpHidden->dataType() == DataType::FLOAT32) {
+        if (chainProbe) {
             cudaMemcpyAsync(mtpChainHidOut[draftSlot], mtpHidden->specialBuffer(),
-                            4 * sizeof(float), cudaMemcpyDeviceToHost, *stream);
+                            mtpChainSampleBytes[draftSlot], cudaMemcpyDeviceToHost, *stream);
         }
 
         NDArray::prepareSpecialUse({config->mtpInputIds}, {mtpDraftDevice});
@@ -2046,7 +2134,12 @@ void autoregressiveDecode(
             LongType basePosition = currentPosition;
 
             // ── D2H sync: wait for the existing async argmax/draft copies ──
-            cudaStreamSynchronize(*stream);
+            const auto acceptanceSync = cudaStreamSynchronize(*stream);
+            if (captureMtpInputs) {
+                REQUIRE_TRUE(acceptanceSync == cudaSuccess, 0,
+                             "DSP tensor snapshot acceptance sync failed: %s", cudaGetErrorString(acceptanceSync));
+                tensorDiagnostics.drainTensorSnapshots(reinterpret_cast<void*>(*stream));
+            }
             emitCommittedStateSamples(step - 1);
             emitPreExecStateSamples(step);
             dumpStepInputSlices("spec", step, basePosition);
@@ -2059,13 +2152,12 @@ void autoregressiveDecode(
                 // each executeMtpCuda; the synchronize above completed them.
                 for (int cp = 0; cp < mtpChainSampled; cp++) {
                     DSP_DIAG(KV_CACHE,
-                             "MTP_CHAIN_PROBE step=%d slot=%d tok=%lld "
-                             "carryIn=[%.6g,%.6g,%.6g,%.6g] hidOut=[%.6g,%.6g,%.6g,%.6g]",
+                             "MTP_CHAIN_PROBE step=%d slot=%d tok=%lld dtype=%d bytes=%zu "
+                             "carryInBits=[%016llx,%016llx] hidOutBits=[%016llx,%016llx]",
                              step, cp, (long long)mtpChainTok[cp],
-                             mtpChainCarryIn[cp][0], mtpChainCarryIn[cp][1],
-                             mtpChainCarryIn[cp][2], mtpChainCarryIn[cp][3],
-                             mtpChainHidOut[cp][0], mtpChainHidOut[cp][1],
-                             mtpChainHidOut[cp][2], mtpChainHidOut[cp][3]);
+                             static_cast<int>(config->mtpTargetHidden->dataType()), mtpChainSampleBytes[cp],
+                             (unsigned long long)mtpChainCarryIn[cp][0], (unsigned long long)mtpChainCarryIn[cp][1],
+                             (unsigned long long)mtpChainHidOut[cp][0], (unsigned long long)mtpChainHidOut[cp][1]);
                 }
                 mtpChainSampled = 0;
             }
@@ -2114,28 +2206,44 @@ void autoregressiveDecode(
                 }
             }
 
-            // ── ADR 0106 Phase 2: accepted-prefix recurrent-state commit ─────────
+            // Resolve the emission boundary before committing ANY model state.
+            // Each emitted token consumes one input row: the base token followed
+            // by prior accepted drafts. Even an accepted EOS is an output, not an
+            // input consumed by this step. Keep verification acceptance separate.
+            int consumedCount = 0;
+            bool shouldStop = false;
+            while (consumedCount < acceptedDrafts + 1
+                    && tokensGenerated + consumedCount < maxNewTokens) {
+                LongType token = argmaxDst[consumedCount];
+                consumedCount++;
+                bool matchedStop = stopMatcher.accept(token);
+                shouldStop = matchedStop && stopTerminationAllowed(config, tokensGenerated + consumedCount);
+                if (shouldStop) break;
+            }
+            const int carryRow = consumedCount - 1;
+
+            // ── ADR 0106 Phase 2: emitted-prefix recurrent-state commit ─────────
             // The forward above ran with actual_sequence_length = 1 + proposedCount,
             // advancing GDN/conv state through ALL proposed rows. On partial/zero
-            // acceptance, re-execute with actual_sequence_length = 1 + acceptedDrafts
-            // so the state outputs advance through the accepted prefix only; the
-            // emission below uses THIS pass's argmaxes (already on the host). The
+            // acceptance or terminal truncation, re-execute with
+            // actual_sequence_length = consumedCount. State advances through the
+            // consumed inputs only; emission uses the FIRST pass's host argmaxes. The
             // re-run sees the same step inputs (input_ids/mask/positions unchanged;
             // in-graph KV writes are idempotent for the same step). Next step's
             // pre-exec update rewrites actual_sequence_length, so no restore needed.
-            if (acceptedDrafts < proposedCount
+            if (consumedCount < 1 + proposedCount
                     && config->actualSequenceLengthExtIdx >= 0
                     && config->actualSequenceLengthExtIdx < numExtInputs
                     && extInputs[config->actualSequenceLengthExtIdx] != nullptr) {
                 NDArray* aslArr = extInputs[config->actualSequenceLengthExtIdx];
                 NDArray::prepareSpecialUse({aslArr}, {});
                 updatePositionIdsKernel<<<1, 1, 0, *stream>>>(
-                    aslArr->specialBuffer(), static_cast<LongType>(1 + acceptedDrafts));
+                    aslArr->specialBuffer(), static_cast<LongType>(consumedCount));
                 NDArray::registerSpecialUse({aslArr}, {});
                 DSP_DIAG(KV_CACHE,
                          "SPEC_STATE_RERUN step=%d proposed=%d accepted=%d — re-executing "
                          "with actual_sequence_length=%d for accepted-prefix state commit",
-                         step, proposedCount, acceptedDrafts, 1 + acceptedDrafts);
+                         step, proposedCount, acceptedDrafts, consumedCount);
                 if (config->kvQuantFormat > 0 && config->kvScaleBuffers != nullptr
                     && config->kvInputExtIndices != nullptr && config->numGdnStatePairs >= 0) {
                     static thread_local std::vector<NDArray*> tl_kvQuantPtrsRerun;
@@ -2166,7 +2274,7 @@ void autoregressiveDecode(
             // Commit recurrent state from the (possibly re-run) accepted-prefix pass.
             commitRecurrentState();
             queueCommittedStateSamples(
-                step, basePosition + static_cast<LongType>(acceptedDrafts) + 1, true);
+                step, basePosition + consumedCount, true);
 
             if (useMtp) {
                 REQUIRE_TRUE(config->targetHiddenOutputIdx >= 0
@@ -2174,16 +2282,54 @@ void autoregressiveDecode(
                                  && planOutputs[config->targetHiddenOutputIdx] != nullptr,
                              0, "autoregressive_decode: target hidden output is unavailable for CUDA MTP");
 
+                // The proposal loop above wrote predictor KV rows
+                // [base, base + proposedCount - 1] exactly: one row per
+                // executeMtpCuda call, positions base..base+K-1. Chained slots
+                // (p >= 1) write rows with self-propagated predictor hidden;
+                // a fully accepted step additionally commits rows beyond that
+                // range (the correction/bonus row), which nothing else writes.
+                // There is NO case where a committed row beyond
+                // base + proposedCount - 1 was already correctly written, so
+                // the previous `carryRow == proposedCount` bump (which claimed
+                // base + proposedCount was already processed) was wrong: it
+                // suppressed the only repair iteration covering the first
+                // fully-accepted committed row and left a permanent hole in the
+                // predictor KV cache (observed as acceptance collapse after the
+                // first full accept in K=1).
                 LongType mtpProcessedThrough = basePosition + proposedCount - 1;
-                if (acceptedDrafts == proposedCount) {
-                    // K predictor calls produce K drafts but consume only the base
-                    // plus drafts [0,K-2]. Consume the final accepted draft so the
-                    // predictor cache aligns with the target's bonus token.
-                    executeMtpCuda(basePosition + proposedCount, proposedCount, false);
-                    mtpProcessedThrough = basePosition + proposedCount;
+                // Predictor-side accepted-prefix repair. Chained proposal calls
+                // (slot>=1) wrote predictor KV rows [base+1, base+K-1] with each
+                // draft's own recursively propagated hidden as the carry input,
+                // but the reference contract pairs every retained position q with
+                // the target's output hidden at q-1. A fully accepted K=1 step
+                // leaves the bonus row unwritten by the prefix altogether. The
+                // rerun above repairs only the target plan's KV/GDN state; the
+                // predictor keeps its own position-keyed cache, so rewrite each
+                // committed row here as fused(committed token, target hidden at
+                // q-1), mirroring the target's accepted-prefix re-execution.
+                // specArgmaxDevice rows are still the raw verification argmaxes at
+                // this point (the emission rewrite below only touches host
+                // memory), so row j is exactly the token committed at position
+                // base+1+j: an accepted draft for j < acceptedDrafts, the
+                // correction/bonus for the final row. planOutputs holds the
+                // post-rerun hidden rows keyed by position - base, so row j pairs
+                // position q-1 with token q.
+                for (int j = 0; j < consumedCount - 1; j++) {
+                    LongType repairPosition = basePosition + 1 + j;
+                    if (repairPosition > mtpProcessedThrough) {
+                        setMtpTargetCarryCuda(
+                            planOutputs[config->targetHiddenOutputIdx], j);
+                        setMtpNextInputCuda(specArgmaxDevice, j, repairPosition);
+                        executeMtpCuda(repairPosition, 0, false);
+                        mtpProcessedThrough = repairPosition;
+                        DSP_DIAG(KV_CACHE,
+                                 "MTP_PREFIX_REPAIR step=%d position=%lld committedRow=%d "
+                                 "carryRow=%d — rewriting predictor KV row with target hidden",
+                                 step, (long long)repairPosition, j, carryRow);
+                    }
                 }
 
-                LongType nextMtpPosition = basePosition + acceptedDrafts + 1;
+                LongType nextMtpPosition = basePosition + consumedCount;
                 if (nextMtpPosition <= mtpProcessedThrough) {
                     NDArray::prepareSpecialUse({config->mtpCausalMask}, {});
                     BUILD_SINGLE_SELECTOR(config->mtpCausalMask->dataType(),
@@ -2196,9 +2342,9 @@ void autoregressiveDecode(
                 }
 
                 setMtpTargetCarryCuda(
-                    planOutputs[config->targetHiddenOutputIdx], acceptedDrafts);
+                    planOutputs[config->targetHiddenOutputIdx], carryRow);
                 setMtpNextInputCuda(
-                    specArgmaxDevice, acceptedDrafts, nextMtpPosition);
+                    specArgmaxDevice, carryRow, nextMtpPosition);
             }
 
             LongType correctionOrBonus = argmaxDst[acceptedDrafts];
@@ -2206,10 +2352,11 @@ void autoregressiveDecode(
                 argmaxDst[i] = draftIds[i];
             }
             argmaxDst[acceptedDrafts] = correctionOrBonus;
-            int n = acceptedDrafts + 1;
+            int n = consumedCount;
 
             totalSpeculativeProposed += proposedCount;
-            totalSpeculativeAccepted += acceptedDrafts;
+            // Count accepted outputs actually emitted, including an accepted EOS.
+            totalSpeculativeAccepted += std::min(acceptedDrafts, consumedCount);
             speculativeStepCount++;
 
             // Upload the reconstructed lossless emission sequence so the existing D2D
@@ -2220,7 +2367,6 @@ void autoregressiveDecode(
             NDArray::registerSpecialUse({specArgmaxDevice}, {});
 
             // ── Store accepted tokens to generatedTokenIds ────────────────────────
-            bool shouldStop = false;
             int storedCount = 0;
             NDArray::prepareSpecialUse({generatedTokenIds}, {specArgmaxDevice});
             for (int i = 0; i < n && tokensGenerated < maxNewTokens; i++) {
@@ -2235,9 +2381,6 @@ void autoregressiveDecode(
                 if (config->tokenCallback != nullptr) {
                     config->tokenCallback(tok, config->callbackUserData);
                 }
-                bool matchedStop = stopMatcher.accept(tok);
-                shouldStop = matchedStop && stopTerminationAllowed(config, tokensGenerated);
-                if (shouldStop) break;
             }
             NDArray::registerSpecialUse({generatedTokenIds}, {specArgmaxDevice});
 
@@ -2324,6 +2467,25 @@ void autoregressiveDecode(
                     NDArray::registerSpecialUse({attnMaskReformat}, {});
                 }
             }
+            // At a terminal boundary the window is no longer a verification
+            // scratch mask: hide every unconsumed KV row, including accepted EOS.
+            // Row zero now exposes exactly the committed prefix; publish it to
+            // every window row without changing the nonterminal verifier mask.
+            if ((shouldStop || tokensGenerated == maxNewTokens) && useWindowSubstrate) {
+                NDArray* mask = config->windowGridMask;
+                LongType rowLen = mask->sizeAt(-1);
+                NDArray::prepareSpecialUse({mask}, {});
+                BUILD_SINGLE_SELECTOR(mask->dataType(), maskCausalRangeLauncher,
+                                      (stream, mask->specialBuffer(), currentPosition, rowLen, rowLen),
+                                      SD_FLOAT_TYPES);
+                size_t rowBytes = static_cast<size_t>(rowLen) * mask->sizeOfT();
+                for (LongType row = 1; row < mask->lengthOf() / rowLen; row++) {
+                    cudaMemcpyAsync(static_cast<char*>(mask->specialBuffer()) + row * rowBytes,
+                                    mask->specialBuffer(), rowBytes, cudaMemcpyDeviceToDevice, *stream);
+                }
+                NDArray::registerSpecialUse({mask}, {});
+            }
+
             // Update position IDs to the next committed position.
             if (storedCount > 0) {
                 NDArray::prepareSpecialUse({positionIds}, {});
@@ -2366,8 +2528,8 @@ void autoregressiveDecode(
             double stepMs = std::chrono::duration<double, std::milli>(tStopCheck - stepStart).count();
             stepTimesMs.push_back(stepMs);
 
-            if (shouldStop) break;
-
+            // Publish the terminal input/position too; the last output is pending,
+            // not consumed. This is part of the same prefix commit as a live step.
             // ── Embedding lookup and input updates for next step ─────────────────
             if (config->embeddingsExtIdx >= 0) {
                 REQUIRE_TRUE(nextTokenId >= 0 && nextTokenId < vocabSize, 0,
@@ -2418,6 +2580,8 @@ void autoregressiveDecode(
             // In the speculative path we don't use sampledToken — registerSpecialUse to
             // keep the CUDA-graph-capture bookkeeping symmetric.
             NDArray::registerSpecialUse({sampledToken}, {logitsOutput});
+
+            if (shouldStop) break;
 
             // NOTE: skip the rest of the loop body — we handled everything above.
             continue;
@@ -2779,7 +2943,12 @@ void autoregressiveDecode(
     }
 
     // ── Final sync ──
-    cudaStreamSynchronize(*stream);
+    const auto finalSnapshotSync = cudaStreamSynchronize(*stream);
+    if (captureMtpInputs) {
+        REQUIRE_TRUE(finalSnapshotSync == cudaSuccess, 0,
+                     "DSP tensor snapshot final sync failed: %s", cudaGetErrorString(finalSnapshotSync));
+        tensorDiagnostics.drainTensorSnapshots(reinterpret_cast<void*>(*stream), true);
+    }
     emitCommittedStateSamples(maxNewTokens - 1);
     emitPreExecStateSamples(maxNewTokens - 1);
 

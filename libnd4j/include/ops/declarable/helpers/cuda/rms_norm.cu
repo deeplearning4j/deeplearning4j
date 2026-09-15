@@ -1,5 +1,6 @@
 /* ******************************************************************************
  *
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
@@ -15,23 +16,17 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-//
-// Fused RMS Normalization CUDA kernel
-// Computes: output = input / sqrt(mean(input^2) + epsilon) * gamma
-// in a single fused kernel for optimal performance.
-//
-// RMS norm is simpler than layer norm: no mean subtraction needed,
-// only one reduction pass (sum of squares) instead of two (sum + sum of squares).
-//
-
+#include <system/op_boilerplate.h>
+#if NOT_EXCLUDED(OP_rms_norm) || NOT_EXCLUDED(OP_skip_rms_norm) || NOT_EXCLUDED(OP_rms_norm_linear)
 #include <algorithm>
+#include <stdexcept>
 #include <cuda_runtime.h>
 #include <helpers/DebugHelper.h>
-#include <array/NDArray.h>
 #include <array/NDArrayFactory.h>
+#include <array/DataTypeUtils.h>
 #include <execution/cuda/LaunchDims.h>
 #include <helpers/MmulHelper.h>
-#include <types/float16.h>
+#include <ops/op_types.h>
 #include <ops/declarable/helpers/rms_norm.h>
 #include <ops/declarable/helpers/cuda/device_primitives.cuh>
 
@@ -41,637 +36,243 @@ namespace helpers {
 
 constexpr int RMS_WARP_SIZE = 32;
 
-// Accumulator type: use double when T=double for full precision, float otherwise.
-template <typename T>
-struct AccType { using type = float; };
-template <>
-struct AccType<double> { using type = double; };
-
-// Warp/block sum reductions come from device_primitives.cuh
-// (sd::device::warpReduceSum / sd::device::blockReduceSum).
-
-//////////////////////////////////////////////////////////////////////////////
-// Fused RMS Norm Kernel - handles one row per block
-// Each row is normalized independently
-//
-// RMS norm formula:
-//   rms = sqrt(mean(x^2) + eps)
-//   output = (x / rms) * gamma
-//
-// Only ONE reduction pass needed (sum of squares), vs TWO for layer norm.
-//////////////////////////////////////////////////////////////////////////////
-template <typename T, typename G>
-SD_KERNEL void rmsNormKernel(
-    const T* __restrict__ input,    // [numRows, rowLen]
-    const G* __restrict__ gamma,    // [rowLen] or nullptr (may differ from T)
-    T* __restrict__ output,         // [numRows, rowLen]
-    const LongType numRows,
-    const LongType rowLen,
-    const float epsilon) {
-
-  using AccT = typename AccType<T>::type;
-
-  // Each block handles one row
-  const LongType row = blockIdx.x;
-  if (row >= numRows) return;
-
-  extern __shared__ char sharedMem[];
-  AccT* sdata = reinterpret_cast<AccT*>(sharedMem);
-
-  const T* inputRow = input + row * rowLen;
-  T* outputRow = output + row * rowLen;
-
-  // Pass 1: Compute sum of squares in parallel
-  AccT threadSumSq = static_cast<AccT>(0);
-
-  for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
-    AccT val = static_cast<AccT>(inputRow[i]);
-    threadSumSq += val * val;
-  }
-
-  // Block-level reduction for sum of squares
-  AccT totalSumSq = sd::device::blockReduceSum(threadSumSq, sdata);
-
-  // Compute inverse RMS
-  __shared__ AccT invRms;
-
-  if (threadIdx.x == 0) {
-    AccT meanSq = totalSumSq / static_cast<AccT>(rowLen);
-    invRms = static_cast<AccT>(1) / sd::math::sd_sqrt<AccT, AccT>(meanSq + static_cast<AccT>(epsilon));
-  }
-  __syncthreads();
-
-  // Pass 2: Normalize and scale
-  if (gamma != nullptr) {
-    for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
-      AccT val = static_cast<AccT>(inputRow[i]);
-      AccT g = static_cast<AccT>(gamma[i]);
-      outputRow[i] = static_cast<T>(val * invRms * g);
-    }
-  } else {
-    for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
-      AccT val = static_cast<AccT>(inputRow[i]);
-      outputRow[i] = static_cast<T>(val * invRms);
-    }
-  }
+// All normalization kernels share the registered normalization/linear launch
+// family. Validate overrides before any launch; full warps are required by
+// device::blockReduceSum's shuffle mask.
+static dim3 rmsLaunchDims(LaunchContext* context) {
+    dim3 dims = getLaunchDims("rms_norm_linear");
+    cudaDeviceProp prop;
+    if (cudaGetDeviceProperties(&prop, context->getDeviceID()) != cudaSuccess)
+        throw std::runtime_error("RMS normalization: cannot query device launch limits");
+    if (dims.x == 0 || dims.x > static_cast<unsigned int>(prop.maxGridSize[0]) ||
+        dims.y == 0 || dims.y > static_cast<unsigned int>(prop.maxThreadsPerBlock) ||
+        dims.y > static_cast<unsigned int>(prop.maxThreadsDim[0]) || dims.y % RMS_WARP_SIZE != 0)
+        throw std::invalid_argument("RMS normalization: invalid launch dimensions (full warps required)");
+    const size_t requiredShared = size_t(dims.y / RMS_WARP_SIZE) * sizeof(double);
+    if (requiredShared > prop.sharedMemPerBlock || dims.z > prop.sharedMemPerBlock)
+        throw std::invalid_argument("RMS normalization: insufficient shared memory");
+    return dims;
 }
 
-//////////////////////////////////////////////////////////////////////////////
-// Launcher function
-//////////////////////////////////////////////////////////////////////////////
-template <typename T, typename G>
-void launchRmsNormKernel(
-    const T* input,
-    const G* gamma,
-    T* output,
-    LongType numRows,
-    LongType rowLen,
-    float epsilon,
-    cudaStream_t stream) {
-
-  // One block per row, scale threads to row length
-  int threadsPerBlock = 256;
-  if (rowLen > 256) threadsPerBlock = 512;
-  if (rowLen > 512) threadsPerBlock = 1024;
-
-  // Limit to actual row length if smaller
-  if (rowLen < threadsPerBlock) {
-    threadsPerBlock = ((rowLen + RMS_WARP_SIZE - 1) / RMS_WARP_SIZE) * RMS_WARP_SIZE;
-    if (threadsPerBlock < RMS_WARP_SIZE) threadsPerBlock = RMS_WARP_SIZE;
-  }
-
-  int numBlocks = numRows;
-
-  // Shared memory for reductions (need space for warp results)
-  // Use sizeof AccType<T>::type: double when T=double, float otherwise.
-  int numWarps = (threadsPerBlock + RMS_WARP_SIZE - 1) / RMS_WARP_SIZE;
-  size_t sharedMemSize = numWarps * sizeof(typename AccType<T>::type);
-
-  rmsNormKernel<T, G><<<numBlocks, threadsPerBlock, sharedMemSize, stream>>>(
-      input, gamma, output, numRows, rowLen, epsilon);
-
-  DebugHelper::checkGlobalErrorCode("rmsNormKernel failed");
+SD_DEVICE SD_INLINE LongType rmsRowOffset(LongType row, const LongType* info) {
+    const int leadingRank = shape::rank(info) - 1;
+    LongType coords[SD_MAX_RANK];
+    LongType offset;
+    INDEX2COORDS(row, leadingRank, shape::shapeOf(info), coords);
+    COORDS2INDEX(leadingRank, shape::stride(info), coords, offset);
+    return offset;
 }
 
-// Explicit instantiations — same-type gamma
-template void launchRmsNormKernel<float, float>(
-    const float*, const float*, float*,
-    LongType, LongType, float, cudaStream_t);
-
-template void launchRmsNormKernel<double, double>(
-    const double*, const double*, double*,
-    LongType, LongType, float, cudaStream_t);
-
-template void launchRmsNormKernel<float16, float16>(
-    const float16*, const float16*, float16*,
-    LongType, LongType, float, cudaStream_t);
-
-// Mixed-type gamma — F16 input with F32 gamma (common in transformer decode)
-template void launchRmsNormKernel<float16, float>(
-    const float16*, const float*, float16*,
-    LongType, LongType, float, cudaStream_t);
-
-// Mixed-type gamma — F32 recurrent activations with F16 model weights.
-template void launchRmsNormKernel<float, float16>(
-    const float*, const float16*, float*,
-    LongType, LongType, float, cudaStream_t);
-
-//////////////////////////////////////////////////////////////////////////////
-// Public interface called from rms_norm op
-//////////////////////////////////////////////////////////////////////////////
-void rmsNorm(
-    LaunchContext* context,
-    NDArray* input,
-    NDArray* gamma,
-    NDArray* output,
-    float epsilon) {
-
-  const LongType numRows = input->lengthOf() / input->sizeAt(-1);
-  const LongType rowLen = input->sizeAt(-1);
-
-  NDArray::prepareSpecialUse({output}, {input, gamma});
-
-  auto stream = context->getCudaStream();
-  auto dtype = input->dataType();
-  auto gammaDtype = gamma != nullptr ? gamma->dataType() : dtype;
-
-  if (dtype == DataType::FLOAT32) {
-    if (gamma != nullptr && gammaDtype == DataType::HALF) {
-      launchRmsNormKernel<float, float16>(
-          reinterpret_cast<const float*>(input->specialBuffer()),
-          reinterpret_cast<const float16*>(gamma->specialBuffer()),
-          reinterpret_cast<float*>(output->specialBuffer()),
-          numRows, rowLen, epsilon, *stream);
-    } else if (gamma == nullptr || gammaDtype == DataType::FLOAT32) {
-      launchRmsNormKernel<float, float>(
-          reinterpret_cast<const float*>(input->specialBuffer()),
-          gamma != nullptr ? reinterpret_cast<const float*>(gamma->specialBuffer()) : nullptr,
-          reinterpret_cast<float*>(output->specialBuffer()),
-          numRows, rowLen, epsilon, *stream);
-    } else {
-      THROW_EXCEPTION("rmsNormCuda: Unsupported gamma type for FLOAT32 input");
+// Optional skip/bias/hidden operands fuse the residual addition without an
+// intermediate low-precision store. Each operand keeps its own view strides.
+template <typename T, typename G, typename Z>
+SD_KERNEL void rmsNormKernel(const T* x, const G* g, Z* z,
+                            const T* skip, const T* bias, T* hidden,
+                            const LongType* xInfo, const LongType* zInfo,
+                            const LongType* sInfo, const LongType* hInfo,
+                            LongType gs, LongType bs, LongType rows, LongType cols, double epsilon) {
+    using AccT = typename simdOps::AggregateType<typename math::promote_type3<T, G, Z>::type>::type;
+    extern __shared__ double rmsShared[];
+    AccT* scratch = reinterpret_cast<AccT*>(rmsShared);
+    __shared__ AccT inv;
+    const LongType xs = shape::stride(xInfo)[shape::rank(xInfo) - 1];
+    const LongType zs = shape::stride(zInfo)[shape::rank(zInfo) - 1];
+    const LongType ss = skip != nullptr ? shape::stride(sInfo)[shape::rank(sInfo) - 1] : 0;
+    const LongType hs = hidden != nullptr ? shape::stride(hInfo)[shape::rank(hInfo) - 1] : 0;
+    for (LongType row = blockIdx.x; row < rows; row += gridDim.x) {
+        const LongType xo = rmsRowOffset(row, xInfo), zo = rmsRowOffset(row, zInfo);
+        const LongType so = skip != nullptr ? rmsRowOffset(row, sInfo) : 0;
+        const LongType ho = hidden != nullptr ? rmsRowOffset(row, hInfo) : 0;
+        AccT sumSq = 0;
+        for (LongType i = threadIdx.x; i < cols; i += blockDim.x) {
+            AccT v = static_cast<AccT>(x[xo + i * xs]);
+            if (skip != nullptr) v += static_cast<AccT>(skip[so + i * ss]);
+            if (bias != nullptr) v += static_cast<AccT>(bias[i * bs]);
+            sumSq += v * v;
+        }
+        const AccT total = sd::device::blockReduceSum(sumSq, scratch);
+        if (threadIdx.x == 0)
+            inv = AccT(1) / math::sd_sqrt<AccT, AccT>(total / AccT(cols) + AccT(epsilon));
+        __syncthreads();
+        for (LongType i = threadIdx.x; i < cols; i += blockDim.x) {
+            AccT v = static_cast<AccT>(x[xo + i * xs]);
+            if (skip != nullptr) v += static_cast<AccT>(skip[so + i * ss]);
+            if (bias != nullptr) v += static_cast<AccT>(bias[i * bs]);
+            const AccT scale = g != nullptr ? static_cast<AccT>(g[i * gs]) : AccT(1);
+            z[zo + i * zs] = static_cast<Z>(v * inv * scale);
+            if (hidden != nullptr) hidden[ho + i * hs] = static_cast<T>(v);
+        }
+        // Shared inv/scratch must not be reused until every lane finishes.
+        __syncthreads();
     }
-  } else if (dtype == DataType::DOUBLE) {
-    if (gamma == nullptr || gammaDtype == DataType::DOUBLE) {
-      launchRmsNormKernel<double, double>(
-          reinterpret_cast<const double*>(input->specialBuffer()),
-          gamma != nullptr ? reinterpret_cast<const double*>(gamma->specialBuffer()) : nullptr,
-          reinterpret_cast<double*>(output->specialBuffer()),
-          numRows, rowLen, epsilon, *stream);
-    } else {
-      THROW_EXCEPTION("rmsNormCuda: Unsupported gamma type for DOUBLE input");
-    }
-  } else if (dtype == DataType::HALF) {
-    if (gamma != nullptr && gammaDtype == DataType::FLOAT32) {
-      // Mixed-type: F16 input, F32 gamma — pass gamma directly without casting
-      launchRmsNormKernel<float16, float>(
-          reinterpret_cast<const float16*>(input->specialBuffer()),
-          reinterpret_cast<const float*>(gamma->specialBuffer()),
-          reinterpret_cast<float16*>(output->specialBuffer()),
-          numRows, rowLen, epsilon, *stream);
-    } else if (gamma == nullptr || gammaDtype == DataType::HALF) {
-      launchRmsNormKernel<float16, float16>(
-          reinterpret_cast<const float16*>(input->specialBuffer()),
-          gamma != nullptr ? reinterpret_cast<const float16*>(gamma->specialBuffer()) : nullptr,
-          reinterpret_cast<float16*>(output->specialBuffer()),
-          numRows, rowLen, epsilon, *stream);
-    } else {
-      THROW_EXCEPTION("rmsNormCuda: Unsupported gamma type for HALF input");
-    }
-  } else {
-    THROW_EXCEPTION("rmsNormCuda: Unsupported data type");
-  }
-
-  NDArray::registerSpecialUse({output}, {input, gamma});
 }
 
-//////////////////////////////////////////////////////////////////////////////
-// Fused Skip (Residual Add) + RMS Norm Kernel
-// Combines: hidden = input + skip [+ bias], then RMS normalize hidden
-// Saves one kernel launch per transformer layer by eliminating separate add.
-//////////////////////////////////////////////////////////////////////////////
-template <typename T, typename G>
-SD_KERNEL void skipRmsNormKernel(
-    const T* __restrict__ input,     // [numRows, rowLen]
-    const T* __restrict__ skip,      // [numRows, rowLen]
-    const G* __restrict__ gamma,     // [rowLen] (may differ from T)
-    const T* __restrict__ bias,      // [rowLen] or nullptr
-    T* __restrict__ output,          // [numRows, rowLen]
-    T* __restrict__ hiddenOut,       // [numRows, rowLen] or nullptr
-    const LongType numRows,
-    const LongType rowLen,
-    const float epsilon) {
-
-  using AccT = typename AccType<T>::type;
-
-  const LongType row = blockIdx.x;
-  if (row >= numRows) return;
-
-  extern __shared__ char sharedMem[];
-  AccT* sdata = reinterpret_cast<AccT*>(sharedMem);
-
-  const T* inputRow = input + row * rowLen;
-  const T* skipRow = skip + row * rowLen;
-  T* outputRow = output + row * rowLen;
-  T* hiddenRow = hiddenOut != nullptr ? hiddenOut + row * rowLen : nullptr;
-
-  // Pass 1: compute hidden = input + skip [+ bias], accumulate sum of squares
-  AccT threadSumSq = static_cast<AccT>(0);
-
-  for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
-    AccT val = static_cast<AccT>(inputRow[i]) + static_cast<AccT>(skipRow[i]);
-    if (bias != nullptr) val += static_cast<AccT>(bias[i]);
-    if (hiddenRow != nullptr) hiddenRow[i] = static_cast<T>(val);
-    threadSumSq += val * val;
-  }
-
-  // Block-level reduction for sum of squares
-  AccT totalSumSq = sd::device::blockReduceSum(threadSumSq, sdata);
-
-  // Compute inverse RMS
-  __shared__ AccT invRms;
-  if (threadIdx.x == 0) {
-    AccT meanSq = totalSumSq / static_cast<AccT>(rowLen);
-    invRms = static_cast<AccT>(1) / sd::math::sd_sqrt<AccT, AccT>(meanSq + static_cast<AccT>(epsilon));
-  }
-  __syncthreads();
-
-  // Pass 2: recompute hidden, normalize and scale
-  for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
-    AccT val = static_cast<AccT>(inputRow[i]) + static_cast<AccT>(skipRow[i]);
-    if (bias != nullptr) val += static_cast<AccT>(bias[i]);
-    AccT g = static_cast<AccT>(gamma[i]);
-    outputRow[i] = static_cast<T>(val * invRms * g);
-  }
+template <typename T, typename G, typename Z = T>
+static void launchRmsNorm(LaunchContext* context, NDArray* input, NDArray* gamma, NDArray* output,
+                          NDArray* skip, NDArray* bias, NDArray* hidden, double epsilon) {
+    const LongType cols = input->sizeAt(-1), rows = input->lengthOf() / cols;
+    const dim3 dims = rmsLaunchDims(context);
+    using AccT = typename simdOps::AggregateType<typename math::promote_type3<T, G, Z>::type>::type;
+    const size_t shared = (dims.y / RMS_WARP_SIZE) * sizeof(AccT);
+    const auto* xInfo = input->specialShapeInfo();
+    const auto* zInfo = output->specialShapeInfo();
+    const auto* sInfo = skip != nullptr ? skip->specialShapeInfo() : nullptr;
+    const auto* hInfo = hidden != nullptr ? hidden->specialShapeInfo() : nullptr;
+    auto* stream = context->getCudaStream();
+    const unsigned int blocks = static_cast<unsigned int>(std::min<LongType>(rows, dims.x));
+    rmsNormKernel<T, G, Z><<<blocks, dims.y, shared, *stream>>>(
+        static_cast<const T*>(input->specialBuffer()), gamma != nullptr ? static_cast<const G*>(gamma->specialBuffer()) : nullptr,
+        static_cast<Z*>(output->specialBuffer()), skip != nullptr ? static_cast<const T*>(skip->specialBuffer()) : nullptr,
+        bias != nullptr ? static_cast<const T*>(bias->specialBuffer()) : nullptr,
+        hidden != nullptr ? static_cast<T*>(hidden->specialBuffer()) : nullptr,
+        xInfo, zInfo, sInfo, hInfo, gamma != nullptr ? gamma->strideAt(0) : 1,
+        bias != nullptr ? bias->strideAt(0) : 1, rows, cols, epsilon);
+    if (!DebugHelper::inGraphCapture(stream)) DebugHelper::checkGlobalErrorCode("rmsNormKernel failed");
 }
 
-//////////////////////////////////////////////////////////////////////////////
-// Launcher for skip_rms_norm
-//////////////////////////////////////////////////////////////////////////////
-template <typename T, typename G>
-void launchSkipRmsNormKernel(
-    const T* input,
-    const T* skip,
-    const G* gamma,
-    const T* bias,
-    T* output,
-    T* hiddenOut,
-    LongType numRows,
-    LongType rowLen,
-    float epsilon,
-    cudaStream_t stream) {
-
-  int threadsPerBlock = 256;
-  if (rowLen > 256) threadsPerBlock = 512;
-  if (rowLen > 512) threadsPerBlock = 1024;
-
-  if (rowLen < threadsPerBlock) {
-    threadsPerBlock = ((rowLen + RMS_WARP_SIZE - 1) / RMS_WARP_SIZE) * RMS_WARP_SIZE;
-    if (threadsPerBlock < RMS_WARP_SIZE) threadsPerBlock = RMS_WARP_SIZE;
-  }
-
-  int numBlocks = numRows;
-  int numWarps = (threadsPerBlock + RMS_WARP_SIZE - 1) / RMS_WARP_SIZE;
-  size_t sharedMemSize = numWarps * sizeof(typename AccType<T>::type);
-
-  skipRmsNormKernel<T, G><<<numBlocks, threadsPerBlock, sharedMemSize, stream>>>(
-      input, skip, gamma, bias, output, hiddenOut, numRows, rowLen, epsilon);
-
-  DebugHelper::checkGlobalErrorCode("skipRmsNormKernel failed");
+#if NOT_EXCLUDED(OP_rms_norm)
+void rmsNorm(LaunchContext* context, NDArray* input, NDArray* gamma, NDArray* output, double epsilon) {
+    if (input->isEmpty()) return;
+    NDArray::prepareSpecialUse({output}, {input, gamma});
+    const auto gammaType = gamma != nullptr ? gamma->dataType() : input->dataType();
+    BUILD_DOUBLE_SELECTOR(input->dataType(), gammaType, launchRmsNorm,
+                          (context, input, gamma, output, nullptr, nullptr, nullptr, epsilon),
+                          SD_FLOAT_TYPES, SD_FLOAT_TYPES);
+    NDArray::registerSpecialUse({output}, {input, gamma});
 }
+#endif
 
-// Same-type gamma instantiations
-template void launchSkipRmsNormKernel<float, float>(
-    const float*, const float*, const float*, const float*,
-    float*, float*, LongType, LongType, float, cudaStream_t);
-
-template void launchSkipRmsNormKernel<double, double>(
-    const double*, const double*, const double*, const double*,
-    double*, double*, LongType, LongType, float, cudaStream_t);
-
-template void launchSkipRmsNormKernel<float16, float16>(
-    const float16*, const float16*, const float16*, const float16*,
-    float16*, float16*, LongType, LongType, float, cudaStream_t);
-
-// Mixed-type gamma — F16 input with F32 gamma (common in transformer decode)
-template void launchSkipRmsNormKernel<float16, float>(
-    const float16*, const float16*, const float*, const float16*,
-    float16*, float16*, LongType, LongType, float, cudaStream_t);
-
-//////////////////////////////////////////////////////////////////////////////
-// Public interface for skip_rms_norm
-//////////////////////////////////////////////////////////////////////////////
-void skipRmsNorm(
-    LaunchContext* context,
-    NDArray* input,
-    NDArray* skip,
-    NDArray* gamma,
-    NDArray* bias,
-    NDArray* output,
-    NDArray* hiddenOut,
-    float epsilon) {
-
-  const LongType numRows = input->lengthOf() / input->sizeAt(-1);
-  const LongType rowLen = input->sizeAt(-1);
-
-  NDArray::prepareSpecialUse({output, hiddenOut}, {input, skip, gamma, bias});
-
-  auto stream = context->getCudaStream();
-  auto dtype = input->dataType();
-  auto gammaDtype = gamma->dataType();
-
-  if (dtype == DataType::FLOAT32) {
-    launchSkipRmsNormKernel<float, float>(
-        reinterpret_cast<const float*>(input->specialBuffer()),
-        reinterpret_cast<const float*>(skip->specialBuffer()),
-        reinterpret_cast<const float*>(gamma->specialBuffer()),
-        bias != nullptr ? reinterpret_cast<const float*>(bias->specialBuffer()) : nullptr,
-        reinterpret_cast<float*>(output->specialBuffer()),
-        hiddenOut != nullptr ? reinterpret_cast<float*>(hiddenOut->specialBuffer()) : nullptr,
-        numRows, rowLen, epsilon, *stream);
-  } else if (dtype == DataType::DOUBLE) {
-    launchSkipRmsNormKernel<double, double>(
-        reinterpret_cast<const double*>(input->specialBuffer()),
-        reinterpret_cast<const double*>(skip->specialBuffer()),
-        reinterpret_cast<const double*>(gamma->specialBuffer()),
-        bias != nullptr ? reinterpret_cast<const double*>(bias->specialBuffer()) : nullptr,
-        reinterpret_cast<double*>(output->specialBuffer()),
-        hiddenOut != nullptr ? reinterpret_cast<double*>(hiddenOut->specialBuffer()) : nullptr,
-        numRows, rowLen, epsilon, *stream);
-  } else if (dtype == DataType::HALF) {
-    if (gammaDtype == DataType::FLOAT32) {
-      // Mixed-type: F16 input, F32 gamma — pass gamma directly without casting
-      launchSkipRmsNormKernel<float16, float>(
-          reinterpret_cast<const float16*>(input->specialBuffer()),
-          reinterpret_cast<const float16*>(skip->specialBuffer()),
-          reinterpret_cast<const float*>(gamma->specialBuffer()),
-          bias != nullptr ? reinterpret_cast<const float16*>(bias->specialBuffer()) : nullptr,
-          reinterpret_cast<float16*>(output->specialBuffer()),
-          hiddenOut != nullptr ? reinterpret_cast<float16*>(hiddenOut->specialBuffer()) : nullptr,
-          numRows, rowLen, epsilon, *stream);
-    } else {
-      launchSkipRmsNormKernel<float16, float16>(
-          reinterpret_cast<const float16*>(input->specialBuffer()),
-          reinterpret_cast<const float16*>(skip->specialBuffer()),
-          reinterpret_cast<const float16*>(gamma->specialBuffer()),
-          bias != nullptr ? reinterpret_cast<const float16*>(bias->specialBuffer()) : nullptr,
-          reinterpret_cast<float16*>(output->specialBuffer()),
-          hiddenOut != nullptr ? reinterpret_cast<float16*>(hiddenOut->specialBuffer()) : nullptr,
-          numRows, rowLen, epsilon, *stream);
-    }
-  } else {
-    THROW_EXCEPTION("skipRmsNormCuda: Unsupported data type");
-  }
-
-  NDArray::registerSpecialUse({output, hiddenOut}, {input, skip, gamma, bias});
+#if NOT_EXCLUDED(OP_skip_rms_norm)
+void skipRmsNorm(LaunchContext* context, NDArray* input, NDArray* skip, NDArray* gamma,
+                 NDArray* bias, NDArray* output, NDArray* hiddenOut, double epsilon) {
+    if (input->isEmpty()) return;
+    NDArray::prepareSpecialUse({output, hiddenOut}, {input, skip, gamma, bias});
+    BUILD_DOUBLE_SELECTOR(input->dataType(), gamma->dataType(), launchRmsNorm,
+                          (context, input, gamma, output, skip, bias, hiddenOut, epsilon),
+                          SD_FLOAT_TYPES, SD_FLOAT_TYPES);
+    NDArray::registerSpecialUse({output, hiddenOut}, {input, skip, gamma, bias});
 }
+#endif
 
-///////////////////////////////////////////////////////////////////////////////
-// Fused RMSNorm + Linear kernel for M=1 (decode hot path)
-//
-// Single kernel computes output[j] = dot(x * invRMS * gamma, W[:, j])
-// for all j in [0, N). Eliminates the intermediate normalized tensor.
-//
-// Phase 1: cooperative warp-reduce sum-of-squares to get invRMS
-// Phase 2: write normalized x * gamma into shared memory
-// Phase 3: each block computes dot products for its assigned output columns
-///////////////////////////////////////////////////////////////////////////////
-// G = gamma type and WT = weight type. Both may differ from T after
-// inference-weight conversion: rank-1 gamma commonly remains FLOAT32 while
-// activations and rank-2 weights become HALF. Read each buffer in its native
-// dtype and cast in-register so graph capture never depends on temporary arrays.
-template <typename T, typename G, typename WT>
-SD_KERNEL void rmsNormLinearFusedKernel(
-    const T* __restrict__ x,       // [K]
-    const G* __restrict__ gamma,   // [K] or nullptr
-    const WT* __restrict__ W,      // [K, N] with arbitrary strides
-    T* __restrict__ output,        // [N]
-    const LongType K,
-    const LongType N,
-    const LongType wStride0,       // stride along K dimension (row stride)
-    const LongType wStride1,       // stride along N dimension (col stride)
-    const float epsilon) {
-
-  using AccT = typename AccType<T>::type;
-
-  extern __shared__ char smem[];
-  // Layout: [K AccT values for normalized x] [numWarps AccT values for reduction]
-  AccT* normX = reinterpret_cast<AccT*>(smem);
-  AccT* reduceSpace = normX + K;
-
-  // Phase 1: compute invRMS via block reduction
-  AccT threadSumSq = static_cast<AccT>(0);
-  for (LongType i = threadIdx.x; i < K; i += blockDim.x) {
-    AccT val = static_cast<AccT>(x[i]);
-    threadSumSq += val * val;
-  }
-
-  AccT totalSumSq = sd::device::blockReduceSum(threadSumSq, reduceSpace);
-
-  __shared__ AccT invRms;
-  if (threadIdx.x == 0) {
-    invRms = static_cast<AccT>(1) / sd::math::sd_sqrt<AccT, AccT>(
-        totalSumSq / static_cast<AccT>(K) + static_cast<AccT>(epsilon));
-  }
-  __syncthreads();
-
-  // Phase 2: write normalized x * gamma to shared memory
-  if (gamma != nullptr) {
+#if NOT_EXCLUDED(OP_rms_norm_linear)
+// Decode: normalized activations remain in AccT shared memory. Weights and
+// gamma are read in their native dtypes, with no cast cache or weight copy.
+template <typename T, typename G, typename W>
+SD_KERNEL void rmsNormLinearFusedKernel(const T* x, const G* gamma, const W* weight, T* output,
+                                       LongType K, LongType N, LongType xs, LongType gs, LongType zs,
+                                       LongType ws0, LongType ws1, double epsilon) {
+    using AccT = typename simdOps::AggregateType<typename math::promote_type3<T, G, W>::type>::type;
+    extern __shared__ double linearShared[];
+    AccT* normX = reinterpret_cast<AccT*>(linearShared);
+    AccT* scratch = normX + K;
+    AccT sumSq = 0;
     for (LongType i = threadIdx.x; i < K; i += blockDim.x) {
-      normX[i] = static_cast<AccT>(x[i]) * invRms * static_cast<AccT>(gamma[i]);
+        const AccT v = static_cast<AccT>(x[i * xs]);
+        sumSq += v * v;
     }
-  } else {
+    const AccT total = sd::device::blockReduceSum(sumSq, scratch);
+    __shared__ AccT inv;
+    if (threadIdx.x == 0)
+        inv = AccT(1) / math::sd_sqrt<AccT, AccT>(total / AccT(K) + AccT(epsilon));
+    __syncthreads();
     for (LongType i = threadIdx.x; i < K; i += blockDim.x) {
-      normX[i] = static_cast<AccT>(x[i]) * invRms;
+        const AccT scale = gamma != nullptr ? static_cast<AccT>(gamma[i * gs]) : AccT(1);
+        normX[i] = static_cast<AccT>(x[i * xs]) * inv * scale;
     }
-  }
-  __syncthreads();
-
-  // Phase 3: each thread computes dot products for its assigned output columns
-  // Grid-stride across output dimension N
-  // Uses stride-based indexing so both C-contiguous [K,N] (strides [N,1]) and
-  // transposed views (strides [1,K]) work without a per-step dup('c') copy.
-  LongType jStart = blockIdx.x * blockDim.x + threadIdx.x;
-  LongType jStride = static_cast<LongType>(gridDim.x) * blockDim.x;
-  for (LongType j = jStart; j < N; j += jStride) {
-    AccT acc = static_cast<AccT>(0);
-    for (LongType k = 0; k < K; ++k) {
-      acc += normX[k] * static_cast<AccT>(W[k * wStride0 + j * wStride1]);
+    __syncthreads();
+    for (LongType j = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
+         j < N; j += static_cast<LongType>(gridDim.x) * blockDim.x) {
+        AccT acc = 0;
+        for (LongType k = 0; k < K; ++k)
+            acc += normX[k] * static_cast<AccT>(weight[k * ws0 + j * ws1]);
+        output[j * zs] = static_cast<T>(acc);
     }
-    output[j] = static_cast<T>(acc);
-  }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// Typed launcher for fused M=1 path. The runtime selector below instantiates
-// native input, gamma, and weight types directly; no manual instantiation or
-// temporary cast allocation is required.
-///////////////////////////////////////////////////////////////////////////////
-template <typename T, typename G, typename WT>
-static void rmsNormLinearFusedLauncher(
-    const cudaStream_t* stream,
-    const void* vX,
-    const void* vGamma,
-    const void* vW,
-    void* vOutput,
-    LongType K,
-    LongType N,
-    LongType wStride0,
-    LongType wStride1,
-    float epsilon) {
+template <typename T, typename G, typename W>
+static void rmsNormLinearLauncher(LaunchContext* context, NDArray* input, NDArray* gamma,
+                                  NDArray* weight, NDArray* output, double epsilon) {
+    using AccT = typename simdOps::AggregateType<typename math::promote_type3<T, G, W>::type>::type;
+    const LongType M = input->sizeAt(0), K = input->sizeAt(1), N = weight->sizeAt(1);
+    dim3 dims = rmsLaunchDims(context);
+    const size_t requiredShared = std::max<size_t>(dims.z, (K + dims.y / RMS_WARP_SIZE) * sizeof(AccT));
+    cudaDeviceProp prop;
+    if (cudaGetDeviceProperties(&prop, context->getDeviceID()) != cudaSuccess)
+        throw std::runtime_error("RMS normalization: cannot query shared memory limit");
+    // Admission, not post-launch recovery: larger rows use the existing
+    // normalization + BLAS algorithm without exceeding device shared memory.
+    if (M == 1 && K <= 8192 && requiredShared <= prop.sharedMemPerBlock) {
+        NDArray::prepareSpecialUse({output}, {input, gamma, weight});
+        auto* stream = context->getCudaStream();
+        const unsigned int blocks = static_cast<unsigned int>(std::min<LongType>(dims.x, (N - 1) / dims.y + 1));
+        rmsNormLinearFusedKernel<T, G, W><<<blocks, dims.y, requiredShared, *stream>>>(
+            static_cast<const T*>(input->specialBuffer()), gamma != nullptr ? static_cast<const G*>(gamma->specialBuffer()) : nullptr,
+            static_cast<const W*>(weight->specialBuffer()), static_cast<T*>(output->specialBuffer()),
+            K, N, input->strideAt(-1), gamma != nullptr ? gamma->strideAt(0) : 1,
+            output->strideAt(-1), weight->strideAt(0), weight->strideAt(1), epsilon);
+        if (!DebugHelper::inGraphCapture(stream)) DebugHelper::checkGlobalErrorCode("rmsNormLinearFusedKernel failed");
+        NDArray::registerSpecialUse({output}, {input, gamma, weight});
+        return;
+    }
 
-  auto x = reinterpret_cast<const T*>(vX);
-  auto gamma = (vGamma != nullptr) ? reinterpret_cast<const G*>(vGamma) : nullptr;
-  auto weight = reinterpret_cast<const WT*>(vW);
-  auto output = reinterpret_cast<T*>(vOutput);
-
-  dim3 launchDims = getLaunchDims("rms_norm_linear");
-  // Shared memory: K AccT values for normX + warp reduction scratch
-  // AccT is double for T=double, float otherwise.
-  using AccT = typename AccType<T>::type;
-  int numWarps = (launchDims.y + RMS_WARP_SIZE - 1) / RMS_WARP_SIZE;
-  size_t requiredSmem = (K + numWarps) * sizeof(AccT);
-  // Use configured default or actual requirement, whichever is larger
-  size_t sharedMemSize = requiredSmem > launchDims.z ? requiredSmem : launchDims.z;
-
-  // Grid covers the N output columns
-  auto gridSize = static_cast<int>((N + launchDims.y - 1) / launchDims.y);
-  if (gridSize > static_cast<int>(launchDims.x))
-    gridSize = launchDims.x;
-  if (gridSize < 1) gridSize = 1;
-
-  rmsNormLinearFusedKernel<T, G, WT><<<gridSize, launchDims.y, sharedMemSize, *stream>>>(
-      x, gamma, weight, output, K, N, wStride0, wStride1, epsilon);
-
-  DebugHelper::checkGlobalErrorCode("rmsNormLinearFusedKernel failed");
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Typed launcher for general M>1 path: fused rmsNorm + MmulHelper
-///////////////////////////////////////////////////////////////////////////////
-template <typename T>
-void rmsNormLinearGeneralLauncher(
-    LaunchContext* context,
-    NDArray* input,
-    NDArray* gamma,
-    NDArray* weight,
-    NDArray* output,
-    float epsilon) {
-
-  // Dense C-order normalization also permits a metadata-only flattening of
-  // leading batch dimensions for the bounded mixed-weight GEMM below.
-  auto shapeVec = *input->getShapeAsVector();
-  NDArray normalized('c', shapeVec, input->dataType(), context);
-  rmsNorm(context, input, gamma, &normalized, epsilon);
-
-  const LongType K = input->sizeAt(-1);
-  const LongType M = input->lengthOf() / K;
-  const LongType N = weight->sizeAt(1);
-  const bool flattenableOutput = output->rankOf() == 2 ||
-      (output->ordering() == 'c' && shape::strideDescendingCAscendingF(output->shapeInfo()));
-  if (input->dataType() == FLOAT32 && weight->dataType() == HALF &&
-      output->dataType() == FLOAT32 && flattenableOutput && N > 0) {
-    // cuBLAS requires matching operand dtypes. Widen HALF exactly, but only
-    // one column panel at a time: a tied vocabulary matrix can otherwise
-    // require gigabytes of persistent cast-cache storage. Both scratch arrays
-    // are reused on the supplied stream, including across captured panel calls.
-    // This is a workspace bound, not a device-memory-limit override.
-    constexpr LongType panelWorkspaceBytes = 16LL * 1024 * 1024;
-    const LongType columnsByBudget = panelWorkspaceBytes / sizeof(float) / (K + M);
-    const LongType panelColumns = std::min(N, std::max<LongType>(1, columnsByBudget));
-    std::vector<LongType> weightShape = {K, panelColumns};
-    std::vector<LongType> resultShape = {M, panelColumns};
-    NDArray widePanel('f', weightShape, FLOAT32, context);
-    NDArray resultPanel('f', resultShape, FLOAT32, context);
-    // F-order panels let MmulHelper write directly without duplicating an
-    // output on each call. ResultSet owns only these temporary view wrappers.
-    ResultSet flattened;
+    // Prefill keeps normalization and GEMM intermediates in AccT, narrowing
+    // only at the final output store, just like the fused decode kernel.
+    // BLAS requires matching operand dtypes; bound weight conversion to
+    // reusable panels rather than materializing a full widened model matrix.
+    const auto calcType = DataTypeUtils::fromT<AccT>();
     std::vector<LongType> normalizedShape = {M, K};
-    auto* normalized2d = normalized.reshape('c', normalizedShape, false);
-    flattened.push_back(normalized2d);
-    auto* output2d = output;
-    if (output->rankOf() != 2) {
-      std::vector<LongType> outputShape = {M, N};
-      output2d = output->reshape('c', outputShape, false);
-      flattened.push_back(output2d);
+    NDArray normalized('c', normalizedShape, calcType, context);
+    NDArray::prepareSpecialUse({&normalized}, {input, gamma});
+    launchRmsNorm<T, G, AccT>(context, input, gamma, &normalized, nullptr, nullptr, nullptr, epsilon);
+    NDArray::registerSpecialUse({&normalized}, {input, gamma});
+    if (weight->dataType() == calcType && output->dataType() == calcType) {
+        MmulHelper::mmul(&normalized, weight, output, 1.0, 0.0);
+        return;
     }
-    for (LongType column = 0; column < N; column += panelColumns) {
-      const LongType count = std::min(panelColumns, N - column);
-      ResultSet views;
-      auto* source = (*weight)({0, K, column, column + count}, true);
-      views.push_back(source);
-      auto* widened = widePanel({0, K, 0, count}, true);
-      views.push_back(widened);
-      auto* result = resultPanel({0, M, 0, count}, true);
-      views.push_back(result);
-      auto* destination = (*output2d)({0, M, column, column + count}, true);
-      views.push_back(destination);
-      widened->assign(source);
-      MmulHelper::mmul(normalized2d, widened, result, 1.0, 0.0);
-      destination->assign(result);
+    constexpr LongType panelBytes = 16LL * 1024 * 1024;
+    const LongType columns = std::min(N, std::max<LongType>(1, panelBytes / sizeof(AccT) / (K + M)));
+    std::vector<LongType> weightShape = {K, columns}, resultShape = {M, columns};
+    NDArray weightPanel('f', weightShape, calcType, context);
+    NDArray resultPanel('f', resultShape, calcType, context);
+    for (LongType col = 0; col < N; col += columns) {
+        const LongType count = std::min(columns, N - col);
+        // ResultSet deliberately does not delete views. These wrappers belong
+        // to this panel iteration, while their buffers belong to the parents.
+        NDArray *source = nullptr, *panel = nullptr, *result = nullptr, *destination = nullptr;
+        auto releaseViews = [&]() {
+            delete destination;
+            delete result;
+            delete panel;
+            delete source;
+        };
+        try {
+            source = (*weight)({0, K, col, col + count}, true);
+            panel = weightPanel({0, K, 0, count}, true);
+            result = resultPanel({0, M, 0, count}, true);
+            destination = (*output)({0, M, col, col + count}, true);
+            panel->assign(source);
+            MmulHelper::mmul(&normalized, panel, result, 1.0, 0.0);
+            destination->assign(result);
+        } catch (...) {
+            releaseViews();
+            throw;
+        }
+        releaseViews();
     }
-    return;
-  }
-
-  MmulHelper::mmul(&normalized, weight, output, 1.0, 0.0);
 }
 
-BUILD_SINGLE_TEMPLATE(void rmsNormLinearGeneralLauncher,
-                       (LaunchContext* context,
-                        NDArray* input, NDArray* gamma,
-                        NDArray* weight, NDArray* output,
-                        float epsilon),
-                       SD_FLOAT_TYPES);
-
-///////////////////////////////////////////////////////////////////////////////
-// Public interface — uses typed runtime selectors for native array dtypes
-///////////////////////////////////////////////////////////////////////////////
-void rmsNormLinear(
-    LaunchContext* context,
-    NDArray* input,
-    NDArray* gamma,
-    NDArray* weight,
-    NDArray* output,
-    float epsilon) {
-
-  const LongType K = input->sizeAt(-1);
-  const LongType M = input->lengthOf() / K;
-  const LongType N = weight->sizeAt(1);
-
-  // For M=1 (decode hot path): use fused single-kernel path with in-kernel type casting.
-  // The kernel accepts weight in its native dtype (WT template parameter) and casts to
-  // float in-register, eliminating the temporary ->cast() allocation that is unsafe during
-  // CUDA graph capture (allocates device memory + transform kernel, then deletes the
-  // temporary — on replay the baked-in addresses from the cast become stale → error 700).
-  if (M == 1 && K <= 8192) {
-    NDArray::prepareSpecialUse({output}, {input, gamma, weight});
-
-    auto stream = context->getCudaStream();
-    LongType wStride0 = weight->strideAt(0);
-    LongType wStride1 = weight->strideAt(1);
-
-    const auto gammaDtype = gamma != nullptr ? gamma->dataType() : input->dataType();
-    BUILD_TRIPLE_SELECTOR(
-        input->dataType(), gammaDtype, weight->dataType(), rmsNormLinearFusedLauncher,
-        (stream,
-         input->specialBuffer(),
-         gamma != nullptr ? gamma->specialBuffer() : nullptr,
-         weight->specialBuffer(),
-         output->specialBuffer(),
-         K, N, wStride0, wStride1, epsilon),
-        SD_FLOAT_TYPES, SD_FLOAT_TYPES, SD_FLOAT_TYPES);
-
-    NDArray::registerSpecialUse({output}, {input, gamma, weight});
-    return;
-  }
-
-  // General M>1 path: fused rmsNorm + cuBLAS GEMM (2 kernel launches)
-  // MmulHelper::mmul handles mixed types internally (cast cache during capture).
-  BUILD_SINGLE_SELECTOR(input->dataType(), rmsNormLinearGeneralLauncher,
-                         (context, input, gamma, weight, output, epsilon),
-                         SD_FLOAT_TYPES);
+void rmsNormLinear(LaunchContext* context, NDArray* input, NDArray* gamma, NDArray* weight,
+                   NDArray* output, double epsilon) {
+    if (output->isEmpty()) return;
+    if (input->isEmpty()) THROW_EXCEPTION("rmsNormLinear: nonempty output requires nonempty input");
+    const auto gammaType = gamma != nullptr ? gamma->dataType() : input->dataType();
+    BUILD_TRIPLE_SELECTOR(input->dataType(), gammaType, weight->dataType(), rmsNormLinearLauncher,
+                          (context, input, gamma, weight, output, epsilon),
+                          SD_FLOAT_TYPES, SD_FLOAT_TYPES, SD_FLOAT_TYPES);
 }
+#endif
 
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

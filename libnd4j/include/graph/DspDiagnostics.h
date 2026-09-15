@@ -92,6 +92,8 @@ enum DspDiagCategory : uint32_t {
   DSP_DIAG_LIFECYCLE       = (1u << 18),  // FrozenPlan/SegmentExecutor state transitions (build/seal/replace)
   DSP_DIAG_COLORING        = (1u << 19),  // Buffer coloring compute/apply/eject/validate + buffer pool events
 
+  // Explicit artifact request bit, not a ring category and intentionally NOT in ALL.
+  DSP_DIAG_TENSOR_SNAPSHOT = (1u << 20),
   DSP_DIAG_NONE     = 0u,
   DSP_DIAG_ALL      = 0xFFFFFu     // All 20 categories
 };
@@ -156,6 +158,25 @@ class SD_LIB_EXPORT DspDiagnostics {
   void setLevel(DspDiagLevel level);
   DspDiagLevel getLevel() const;
   void setJsonPath(const std::string& path);
+
+  // Explicit artifact request through existing diagnosticsCategories: TENSOR_SNAPSHOT.
+  // Neither ALL, KV_CACHE nor debug/verbose implies this request. diagnosticsFile
+  // is the output prefix (<prefix>.tensor-1.dspt, ...). One owner per process,
+  // first three calls, at most 32 MiB total raw payload; no weights inferred.
+  // Caller supplies explicitly named dynamic inputs/outputs, current on the stream.
+  // Repeating the latest undrained callIndex appends a phase to that same frame;
+  // names must be unique across phases. Never append after advancing/draining it.
+  bool tensorSnapshotRequested() const {
+    return (enabledMask_.load(std::memory_order_relaxed) & DSP_DIAG_TENSOR_SNAPSHOT) != 0;
+  }
+  bool beginTensorSnapshot(const char* source, void* stream);
+  void enqueueTensorSnapshot(int callIndex, int64_t sourcePosition, void* stream,
+                             const std::vector<std::string>& names,
+                             const std::vector<NDArray*>& arrays);
+  // Caller must have successfully completed its EXISTING stream synchronization.
+  // No synchronization is performed here. Failed/abandoned transfers remain owned
+  // by this singleton until process exit (bounded); they are never published.
+  void drainTensorSnapshots(void* stream, bool finished = false);
 
   // ── Fast-path check (inlined) ──
   // When Environment debug+verbose is ON, ALL DSP diagnostics are enabled
@@ -344,6 +365,10 @@ class SD_LIB_EXPORT DspDiagnostics {
   ~DspDiagnostics() = default;
   DspDiagnostics(const DspDiagnostics&) = delete;
   DspDiagnostics& operator=(const DspDiagnostics&) = delete;
+
+  struct TensorSnapshotState;
+  TensorSnapshotState* tensorSnapshots_ = nullptr;
+  std::mutex tensorSnapshotMutex_;
 
   std::atomic<uint32_t> enabledMask_;
   std::atomic<int>      level_;

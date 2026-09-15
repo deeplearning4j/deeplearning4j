@@ -61,6 +61,13 @@ void SD_HOST TransformAny<X, Z>::exec(const void *vx, const sd::LongType *xShape
                                                               numThreads);
 }
 
+// Match the targeted same-dtype FP8 dispatch in NativeOpExecutioner. These
+// storage-copy pairs are not part of the generated arithmetic type matrix.
+#if defined(HAS_FLOAT8)
+template class TransformAny<sd::float8, sd::float8>;
+template class TransformAny<sd::float8_e5m2, sd::float8_e5m2>;
+#endif
+
 BUILD_DOUBLE_TEMPLATE(class TransformAny, , SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
 // Also instantiate numeric types -> bool for comparison operations
 BUILD_DOUBLE_TEMPLATE(class TransformAny, , SD_NUMERIC_TYPES, SD_BOOL_TYPES);

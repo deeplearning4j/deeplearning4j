@@ -3584,6 +3584,23 @@ public class DynamicShapePlanExecutor implements Closeable {
      * @throws RuntimeException if native execution fails (caller should fall back to Java)
      */
     Map<String, INDArray> executeNative(DynamicShapePlan plan, Map<String, INDArray> placeholderArrays) {
+        return executeNative(plan, placeholderArrays, false);
+    }
+
+    /**
+     * Invoke the native decode entry on an already compiled plan. This uses the
+     * same locked external-input resolution, context binding and output delivery
+     * as ordinary execution; only the native entry point differs. Native lifecycle
+     * admission remains authoritative. Unsupported bindings fail without retry.
+     */
+    public Map<String, INDArray> executeSteadyState(DynamicShapePlan plan,
+                                                  Map<String, INDArray> placeholderArrays) {
+        return executeNative(plan, placeholderArrays, true);
+    }
+
+    private Map<String, INDArray> executeNative(DynamicShapePlan plan,
+                                               Map<String, INDArray> placeholderArrays,
+                                               boolean steadyState) {
         DeviceMemoryManager devices = DeviceMemoryManager.getInstance();
         int callerDevice = devices.getCurrentDeviceId();
         Throwable executionFailure = null;
@@ -3594,7 +3611,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             // leases or rebind contexts. Never free a still-pending async source on success.
             if (migrationCleanupPending) cleanupFailedMigrations();
             try {
-                Map<String, INDArray> result = executeNativeLocked(plan, placeholderArrays);
+                Map<String, INDArray> result = executeNativeLocked(plan, placeholderArrays, steadyState);
                 // Commit the actual installed inputs only after migration, execution and
                 // readback succeed. Inactive handle snapshots retain their own borrowers.
                 if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
@@ -3636,7 +3653,8 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     /** Execute while holding the executor lifecycle lock from dispatch through readback. */
-    private Map<String, INDArray> executeNativeLocked(DynamicShapePlan plan, Map<String, INDArray> placeholderArrays) {
+    private Map<String, INDArray> executeNativeLocked(DynamicShapePlan plan, Map<String, INDArray> placeholderArrays,
+                                                     boolean steadyState) {
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         NativeBufferOwner backendOwner =
                 MultiBackendNativeOpsHolder.getInstance().getOwnerForNativeOps(nativeOps);
@@ -4789,10 +4807,9 @@ public class DynamicShapePlanExecutor implements Closeable {
                         lifecycleExecutionCount(), numInputs, numOutputs, isShapesFrozen());
             }
             long execStart = System.nanoTime();
-            int status = nativeOps.executeDynamicShapePlan(
-                    nativePlanHandle,
-                    opContext,
-                    execStream);
+            int status = steadyState
+                    ? nativeOps.executeSteadyStatePlan(nativePlanHandle, opContext, execStream)
+                    : nativeOps.executeDynamicShapePlan(nativePlanHandle, opContext, execStream);
             long execMs = (System.nanoTime() - execStart) / 1_000_000;
             if (log.isTraceEnabled()) {
                 log.trace("DSP_EXEC_POST: status={} execMs={} executionCount={}", status, execMs,

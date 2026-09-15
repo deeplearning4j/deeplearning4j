@@ -20,6 +20,7 @@
 //
 
 #include <graph/FusionPass.h>
+#include <array/ArrayOptions.h>
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/DspDiagnostics.h>
 #include <ops/declarable/OpRegistrator.h>
@@ -76,6 +77,45 @@ static bool slotHasTrait(const NativeSlot& slot, uint32_t trait) {
         return slot.ident.op->getOpDescriptor()->hasAnyTrait(trait);
     }
     return false;
+}
+
+// MATMUL describes semantics, not an MmulHelper/cuBLASLt operand ABI.
+// Packed/checkpoint linear ops also have the trait but cannot consume a sunk
+// activation cast (it changes weight rounding) or the dense Lt epilogue state.
+static bool isDenseMmulSlot(const NativeSlot& slot) {
+    const auto name = getOpName(slot);
+    return slotHasTrait(slot, sd::ops::OP_TRAIT_MATMUL) &&
+           (name == "matmul" || name == "mmul") &&
+           slot.wiring.numInputs == 2 && slot.wiring.numOutputs == 1 &&
+           (slot.args.numIArgs < 4 || slot.args.iArgs[3] == 0);
+}
+
+// Explicit representability relation, not dtype enum ordering or a float category
+// test: HALF and BFLOAT16 cannot represent every value of each other.
+static bool isLosslessFloatWidening(DataType source, DataType target) {
+    return ((source == HALF || source == BFLOAT16) &&
+            (target == FLOAT32 || target == DOUBLE)) ||
+           (source == FLOAT32 && target == DOUBLE);
+}
+
+// Read only retained shape metadata or the cast's declared target. Never inspect
+// saved NDArray pointers: warmup arrays may already have been retired. External
+// input dtypes are not part of detectFusions' ABI and must remain UNKNOWN.
+static DataType retainedOutputType(const NativeSlot& slot, int output) {
+    if (slotHasTrait(slot, sd::ops::OP_TRAIT_CAST) &&
+        slot.wiring.numOutputs == 1 && slot.args.numIArgs > 0) {
+        return static_cast<DataType>(slot.args.iArgs[0]);
+    }
+    if (slot.shapeCacheValid() &&
+        output < static_cast<int>(slot.shapeCache.cachedOutputShapes.size()) &&
+        slot.shapeCache.cachedOutputShapes[output] != nullptr) {
+        return ArrayOptions::dataType(slot.shapeCache.cachedOutputShapes[output]);
+    }
+    if (output < static_cast<int>(slot.shapeCache.staticOutputShapeInfos.size()) &&
+        !slot.shapeCache.staticOutputShapeInfos[output].empty()) {
+        return ArrayOptions::dataType(slot.shapeCache.staticOutputShapeInfos[output].data());
+    }
+    return DataType::UNKNOWN;
 }
 
 static bool isElementwiseSlot(const NativeSlot& slot) {
@@ -303,57 +343,56 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
     // Track which slots are already part of a fusion (no overlapping fusions)
     std::vector<bool> fused(numSlots, false);
 
-    // Pass 0: Cast elimination — remove redundant cast pairs (A→B followed by B→A)
-    // Eliminates redundant type conversions to reduce kernel launches and memory bandwidth waste.
+    // Flat output indices are not producer slot indices. Build dtype evidence
+    // once, including multi-output producers, and update it when casts become
+    // identities so later decisions cannot use their obsolete target dtype.
+    std::unordered_map<int, DataType> outputTypes;
+    auto sourceType = [&outputTypes](int source) {
+        auto it = outputTypes.find(source);
+        return source >= 0 && it != outputTypes.end() ? it->second : DataType::UNKNOWN;
+    };
+    for (int s = 0; s < numSlots; ++s) {
+        for (int o = 0; o < slots[s].wiring.numOutputs; ++o) {
+            outputTypes[slots[s].wiring.outputSlotIndices[o]] =
+                slots[s].isIdentityOp() && slots[s].wiring.numInputs == 1
+                ? sourceType(slots[s].wiring.inputSourceIndices[0])
+                : retainedOutputType(slots[s], o);
+        }
+    }
+
+    // Pass 0: Only A→B→A with a proven lossless widening A→B is redundant.
+    // Narrowing round trips carry observable rounding/overflow semantics.
     if (Environment::getInstance().dspCastElimination()) {
         int castsEliminated = 0;
         for (int i = 0; i < numSlots; i++) {
             if (fused[i]) continue;
-            if (!slotHasTrait(slots[i], sd::ops::OP_TRAIT_CAST)) continue;
+            if (!slotHasTrait(slots[i], sd::ops::OP_TRAIT_CAST) || slots[i].isIdentityOp()) continue;
             if (slots[i].wiring.numOutputs != 1 || slots[i].wiring.numInputs != 1) continue;
             if (slots[i].args.numIArgs < 1) continue;
 
-            int castTypeA = static_cast<int>(slots[i].args.iArgs[0]);  // target dtype of first cast
+            const auto inputType = sourceType(slots[i].wiring.inputSourceIndices[0]);
+            const auto intermediateType = static_cast<DataType>(slots[i].args.iArgs[0]);
+            if (!isLosslessFloatWidening(inputType, intermediateType)) continue;
+            if (!isOnlyConsumedOnce(consumerCounts, slots, numSlots, i)) continue;
             int outputIdx = slots[i].wiring.outputSlotIndices[0];
 
             // Find the consumer of this cast's output
             for (int j = i + 1; j < numSlots; j++) {
                 if (fused[j]) continue;
-                if (!slotHasTrait(slots[j], sd::ops::OP_TRAIT_CAST)) continue;
+                if (!slotHasTrait(slots[j], sd::ops::OP_TRAIT_CAST) || slots[j].isIdentityOp()) continue;
                 if (slots[j].wiring.numInputs != 1 || slots[j].wiring.numOutputs != 1) continue;
                 if (slots[j].args.numIArgs < 1) continue;
                 if (slots[j].wiring.inputSourceIndices[0] != outputIdx) continue;
 
-                // Verify this is actually a reverse cast: first cast converts A→B (castTypeA = B),
-                // second cast must convert back B→A. The second cast's target type (iArgs[0])
-                // must differ from the first cast's target type AND must match the first cast's
-                // input dtype. Also the first cast must be only consumed by this second cast.
-                int castTypeB = static_cast<int>(slots[j].args.iArgs[0]);
-                if (castTypeA == castTypeB) continue;  // same target type = not a reverse cast
-
-                // Only eliminate cast pairs between same-category types.
-                // Float→Int→Float performs truncation (floor) — NOT a no-op.
-                // Int→Float→Int may lose precision for large values — NOT a no-op.
-                // Only Float→Float (e.g., FP16↔FP32) cast pairs are safe to eliminate.
-                auto dtA = static_cast<DataType>(castTypeA);
-                auto dtB = static_cast<DataType>(castTypeB);
-                auto isFloatType = [](DataType dt) {
-                    return dt == FLOAT32 || dt == HALF || dt == DOUBLE ||
-                           dt == BFLOAT16 || dt == FLOAT8;
-                };
-                if (isFloatType(dtA) != isFloatType(dtB)) {
-                    DSP_DIAG(FUSION, "cast elimination: SKIPPING slots %d→%d "
-                             "(mixed float/int pair: %d→%d)", i, j, castTypeA, castTypeB);
-                    continue;  // mixed float/int pair — NOT safe to eliminate
-                }
-
-                if (!isOnlyConsumedOnce(consumerCounts, slots, numSlots, i)) break;
+                if (static_cast<DataType>(slots[j].args.iArgs[0]) != inputType) continue;
 
                 // Mark both as identity ops (skip execution, wire through)
                 slots[i].addOpTrait(sd::ops::OP_TRAIT_IDENTITY);
                 slots[j].addOpTrait(sd::ops::OP_TRAIT_IDENTITY);
                 fused[i] = true;
                 fused[j] = true;
+                outputTypes[outputIdx] = inputType;
+                outputTypes[slots[j].wiring.outputSlotIndices[0]] = inputType;
                 castsEliminated += 2;
                 break;
             }
@@ -363,10 +402,9 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
         }
     }
 
-    // Pass 0.5: Cast sink through matmul — mark FP16→FP32 casts as identity when
-    // ALL consumers are matmul ops. MmulHelper handles mixed (HALF, FP32) inputs
-    // internally via cublasSgemmEx, so the explicit cast is redundant. All
-    // consumers must be matmul ops (not just one) to safely eliminate the cast.
+    // Pass 0.5: Sink proven HALF→FLOAT32 casts only into dense mixed-input
+    // matmuls. Every consumer must preserve the FLOAT32 output contract and
+    // the cast result must not itself be a requested output.
     if (Environment::getInstance().dspCastSinkMatmul()) {
         int castsSunk = 0;
         int castsSkippedNonMatmulConsumer = 0;
@@ -377,17 +415,22 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
         int castsNoConsumer = 0;
         for (int i = 0; i < numSlots; i++) {
             if (fused[i]) continue;
-            if (!slotHasTrait(slots[i], sd::ops::OP_TRAIT_CAST)) continue;
+            if (!slotHasTrait(slots[i], sd::ops::OP_TRAIT_CAST) || slots[i].isIdentityOp()) continue;
             totalCasts++;
             if (slots[i].wiring.numOutputs != 1 || slots[i].wiring.numInputs != 1) { castsMultiIO++; continue; }
             if (slots[i].args.numIArgs < 1) { castsNoIArgs++; continue; }
 
             int targetType = static_cast<int>(slots[i].args.iArgs[0]);
-            // Only sink FP16→FP32 casts (target must be FLOAT32=5)
             if (targetType != static_cast<int>(FLOAT32)) continue;
             castsFp32Target++;
+            // Dense mixed HALF/FLOAT32 is supported. DOUBLE→FLOAT32 is
+            // narrowing; BF16/integer/unknown inputs have no proven dense ABI.
+            if (sourceType(slots[i].wiring.inputSourceIndices[0]) != HALF) continue;
 
             int outputIdx = slots[i].wiring.outputSlotIndices[0];
+            if (requestedOutputSlots != nullptr &&
+                std::find(requestedOutputSlots, requestedOutputSlots + numRequestedOutputs,
+                          outputIdx) != requestedOutputSlots + numRequestedOutputs) continue;
 
             // Check ALL consumers of this cast's output — every one must be a matmul
             bool allConsumersAreMatmul = true;
@@ -404,17 +447,28 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
                 if (!consumesOutput) continue;
 
                 consumerCount++;
-                if (!slotHasTrait(slots[j], sd::ops::OP_TRAIT_MATMUL)) {
+                if (!isDenseMmulSlot(slots[j])) {
                     allConsumersAreMatmul = false;
                     break;
                 }
+                // Keep the other operand FLOAT32: sinking both operands would
+                // change matmul's inferred output dtype and rounding to HALF.
+                for (int k = 0; k < slots[j].wiring.numInputs; ++k) {
+                    if (slots[j].wiring.inputSourceIndices[k] == outputIdx) {
+                        if (sourceType(slots[j].wiring.inputSourceIndices[1 - k]) != FLOAT32 ||
+                            slots[j].wiring.inputSourceIndices[1 - k] == outputIdx) {
+                            allConsumersAreMatmul = false;
+                        }
+                    }
+                }
+                if (!allConsumersAreMatmul) break;
             }
 
             if (consumerCount > 0 && allConsumersAreMatmul) {
-                // Mark cast as identity — matmuls will receive FP16 input directly
-                // and MmulHelper handles mixed precision via cublasSgemmEx
+                // MmulHelper owns the supported HALF/FLOAT32 conversion.
                 slots[i].addOpTrait(sd::ops::OP_TRAIT_IDENTITY);
                 fused[i] = true;
+                outputTypes[outputIdx] = HALF;
                 castsSunk++;
             } else if (consumerCount > 0) {
                 castsSkippedNonMatmulConsumer++;
@@ -534,7 +588,7 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
     for (int i = 0; i < numSlots; i++) {
         if (fused[i]) continue;
 
-        if (!slotHasTrait(slots[i], sd::ops::OP_TRAIT_MATMUL)) continue;
+        if (!isDenseMmulSlot(slots[i])) continue;
         if (slots[i].wiring.numOutputs != 1) continue;
 
         int matmulOutputIdx = slots[i].wiring.outputSlotIndices[0];
@@ -934,6 +988,7 @@ int FusionPass::applyFusions(
                 int addSlotIdx = fusion.slotIndices[1];
                 NativeSlot& matmulSlot = slots[matmulSlotIdx];
                 NativeSlot& addSlot = slots[addSlotIdx];
+                if (!isDenseMmulSlot(matmulSlot)) break;
 
                 // Find the bias input source index on the add slot
                 // (the input that is NOT from the matmul output)

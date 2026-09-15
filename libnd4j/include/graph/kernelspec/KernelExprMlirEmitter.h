@@ -67,6 +67,9 @@ struct MlirEmitPolicy {
   UnaryFn expFn, logFn, sqrtFn, tanhFn, sinFn, cosFn, erfFn, absFn, floorFn, ceilFn, roundFn;
   BinaryFn divFn, powFn;
   SplatFn splatFn;
+  // Must be supplied explicitly by the caller, after resolving storage dtype.
+  // A missing hook is an error, never an identity conversion.
+  UnaryFn storageRoundFn;
 };
 
 // Splat/scalar float constant of the exemplar's type. Shaped exemplars must be
@@ -102,8 +105,30 @@ inline mlir::Value kspecBoolConstantLike(mlir::OpBuilder& builder, mlir::Locatio
 // Default policy: stock math-dialect lowering, arith division, dense splats.
 // Backends override individual hooks (e.g. Triton's emitNativeCudaExp for
 // bit-exact libdevice math) without touching the interpreter.
-inline MlirEmitPolicy makeDefaultMlirEmitPolicy() {
+inline MlirEmitPolicy makeDefaultMlirEmitPolicy(mlir::Type storageElementType = {}) {
   MlirEmitPolicy p;
+  if (storageElementType) {
+    p.storageRoundFn = [storageElementType](mlir::OpBuilder& b, mlir::Location loc,
+                                           mlir::Value v) -> mlir::Value {
+      auto computeType = v.getType();
+      auto shaped = mlir::dyn_cast<mlir::ShapedType>(computeType);
+      auto computeElement = mlir::dyn_cast<mlir::FloatType>(
+          shaped ? shaped.getElementType() : computeType);
+      auto storageElement = mlir::dyn_cast<mlir::FloatType>(storageElementType);
+      if (!computeElement || !storageElement)
+        throw std::invalid_argument("storage_round requires floating storage and compute types");
+      if (computeElement == storageElement) return v;
+      if (computeElement.getWidth() <= storageElement.getWidth())
+        throw std::invalid_argument("storage_round requires promotion before emission");
+      mlir::Type storageType = storageElementType;
+      if (auto tensor = mlir::dyn_cast<mlir::RankedTensorType>(computeType))
+        storageType = mlir::RankedTensorType::get(tensor.getShape(), storageElementType, tensor.getEncoding());
+      else if (shaped)
+        throw std::invalid_argument("storage_round requires scalar or ranked tensor values");
+      auto narrowed = b.create<mlir::arith::TruncFOp>(loc, storageType, v);
+      return b.create<mlir::arith::ExtFOp>(loc, computeType, narrowed, nullptr);
+    };
+  }
   p.splatFn = &kspecSplatConstant;
   p.divFn = [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value l, mlir::Value r) -> mlir::Value {
     return b.create<mlir::arith::DivFOp>(loc, l, r);
@@ -236,6 +261,10 @@ inline mlir::Value emitKernelExpr(mlir::OpBuilder& builder, mlir::Location loc,
       case ExprOp::ROUND:
         requireHook(policy.roundFn, "round");
         memo[i] = policy.roundFn(builder, loc, A());
+        break;
+      case ExprOp::STORAGE_ROUND:
+        requireHook(policy.storageRoundFn, "storage_round");
+        memo[i] = policy.storageRoundFn(builder, loc, A());
         break;
       case ExprOp::NOT:
         memo[i] = builder.create<mlir::arith::XOrIOp>(loc, A(), kspecBoolConstantLike(builder, loc, A(), true));

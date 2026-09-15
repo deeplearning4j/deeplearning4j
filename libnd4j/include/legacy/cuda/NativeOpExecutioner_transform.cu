@@ -179,6 +179,22 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, con
         "op for the string data type.")
   }
   dim3 launchDims = getLaunchDims("transformScan");
+#if defined(HAS_FLOAT8)
+  // FP8 is deliberately excluded from the arithmetic SD_COMMON_TYPES matrix.
+  // Dispatch copies to the FP8 storage types without a floating-point round trip.
+  if (xType == sd::DataType::FLOAT8 && zType == xType) {
+    functions::transform::TransformAny<float8, float8>::executeTransformShaped(
+        launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ,
+        dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr);
+    return;
+  }
+  if (xType == sd::DataType::FLOAT8_E5M2 && zType == xType) {
+    functions::transform::TransformAny<float8_e5m2, float8_e5m2>::executeTransformShaped(
+        launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ,
+        dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr);
+    return;
+  }
+#endif
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny,
                         ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ,
                                                  dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr),

@@ -167,7 +167,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public double[] asDouble() {
-        return ArrayUtil.toDoubles(asFloat());
+        return super.asDouble();
     }
 
     @Override

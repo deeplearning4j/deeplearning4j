@@ -75,6 +75,16 @@ public class DspDiagnostics {
     public static final int SEGMENT_BUCKETS  = (1 << 17);
     public static final int LIFECYCLE        = (1 << 18);
     public static final int COLORING         = (1 << 19);
+    /** Explicit raw artifact request, NOT included in ALL or debug/verbose.
+     * Use -Dnd4j.dsp.diagnostics=TENSOR_SNAPSHOT and
+     * -Dnd4j.dsp.diagnostics.file=/existing/private/directory/unique-prefix.
+     * The first native MTP session captures its first three predictor inputs,
+     * at most 32 MiB total payload, into prefix.tensor-{1,2,3}.dspt.
+     * No weights, numeric casts, ring payloads, or additional stream syncs.
+     * Existing files are never overwritten; clear() does not rearm the budget.
+     * Programmatic use: setJsonPath(prefix), then enableCategories(TENSOR_SNAPSHOT).
+     */
+    public static final int TENSOR_SNAPSHOT = (1 << 20);
     public static final int NONE     = 0;
     public static final int ALL      = 0xFFFFF;
 
@@ -165,8 +175,11 @@ public class DspDiagnostics {
             // Validate the complete Java-to-native event path. Previously the interface's
             // default no-op methods allowed this class to report diagnostics as enabled while
             // the native ring buffer remained empty.
-            if (cachedMask != NONE) {
-                int probeCategory = (cachedMask & MEMORY) != 0 ? MEMORY : Integer.lowestOneBit(cachedMask);
+            // TENSOR_SNAPSHOT is an artifact request, not a ring-event category.
+            // Its native admission is checked by the mask round trip above.
+            int eventMask = cachedMask & ALL;
+            if (eventMask != NONE) {
+                int probeCategory = (eventMask & MEMORY) != 0 ? MEMORY : Integer.lowestOneBit(eventMask);
                 long beforeProbe = nativeOps.dspDiagGetTotalEventCount();
                 nativeOps.dspDiagRecordJavaEvent(probeCategory, -1, -1, null, 0,
                         "JAVA_DIAGNOSTICS_BRIDGE_READY");
@@ -319,6 +332,8 @@ public class DspDiagnostics {
         int mask = NONE;
         for (String token : str.split(",")) {
             token = token.trim();
+            if ("TENSOR_SNAPSHOT".equals(token)) mask |= TENSOR_SNAPSHOT;
+            if ("ALL".equals(token) || "*".equals(token)) mask |= ALL;
             for (int i = 0; i < CATEGORY_NAMES.length; i++) {
                 if (CATEGORY_NAMES[i].equals(token)) {
                     mask |= (1 << i);

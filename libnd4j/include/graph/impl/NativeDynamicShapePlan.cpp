@@ -3714,26 +3714,22 @@ Status NativeDynamicShapePlan::execute(
              phaseStats.graphReplaySegs, phaseStats.slotBySlotSegs);
   }
 
-  // Plan-output boundary: materialize any VIEW that lives in a requested-output slot.
-  // A view shares its DataBuffer with its parent slot inside the plan. On the NEXT
-  // execute() call, refreshStaleViewWrappersInSegment can demote or replace the parent,
-  // invalidating the view's DataBuffer from Java's perspective (reads as zeros).
-  // Materializing produces an independent copy with its own DataBuffer that survives
-  // plan re-execution. Record exactly which slots were materialized on this execution:
-  // those boundary copies are caller-lifetime storage, not replay-stable internal
-  // storage, and therefore must not become frozen pointer-snapshot authorities.
+  // CPU/CUDA delivery must not replace internal views: capture may already own
+  // their producer addresses. platformGetOutputForDevice0 detaches requested
+  // views into plan-owned delivery storage, leaving outputSlots_ replay-stable.
+#if defined(SD_VULKAN)
+  // Vulkan's separate delivery implementation still requires materialized slots.
+  // Preserve its existing boundary contract; it is not part of CPU/CUDA delivery.
   std::vector<int> materializedRequestedViewSlots;
-  materializedRequestedViewSlots.reserve(numRequestedOutputs_);
   for (int i = 0; i < numRequestedOutputs_; i++) {
     int slotIdx = requestedOutputSlotIndices_[i];
-    if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
-      NDArray* slotArr = outputSlots_[slotIdx];
-      if (slotArr != nullptr && slotArr->isView()) {
-        materializedRequestedViewSlots.push_back(slotIdx);
-        materializeViewSlot(slotIdx, "plan-output-view-boundary");
-      }
+    if (slotIdx >= 0 && slotIdx < totalOutputSlots_ &&
+        outputSlots_[slotIdx] != nullptr && outputSlots_[slotIdx]->isView()) {
+      materializedRequestedViewSlots.push_back(slotIdx);
+      materializeViewSlot(slotIdx, "plan-output-view-boundary");
     }
   }
+#endif
 
   for (int i = 0; i < numRequestedOutputs_; i++) {
     int slotIdx = requestedOutputSlotIndices_[i];
@@ -3781,9 +3777,8 @@ Status NativeDynamicShapePlan::execute(
       THROW_EXCEPTION(msg);
     }
 
-    // Multi-GPU shard: if this output was produced on a secondary device, migrate
-    // it asynchronously to device-0 before returning to Java. The plan keeps the
-    // original device-N buffer in outputSlots_[slotIdx] for the next execution step;
+    // Detach requested views and migrate secondary-device outputs for delivery.
+    // Keep the original internal buffer in outputSlots_ for the next execution;
     // Java borrows the plan-owned delivery copy while filling its own result array.
     requestedOutputs[i] = platformGetOutputForDevice0(outArr, slotIdx, i);
     if (requestedOutputs[i] == nullptr) {
@@ -4010,26 +4005,14 @@ Status NativeDynamicShapePlan::execute(
             prunedFusedAliasSlots);
       }
 
-      // Requested views are intentionally converted from an internal parent-backed
-      // view to an independent caller-lifetime copy at the output boundary. The next
-      // execution refreshes the internal view before validation, so snapshotting the
-      // temporary boundary copy would reject that required transition as pointer drift.
-      // Exclude only slots that were actually materialized on this capture execution.
-      int prunedMaterializedRequestedViewSlots = 0;
+      // CPU/CUDA delivery copies are separate from outputSlots_. Keep their
+      // actual internal producer/view bindings under snapshot validation.
+#if defined(SD_VULKAN)
+      // Retain the existing exclusion only for Vulkan's slot materialization.
       for (int slotIdx : materializedRequestedViewSlots) {
-        if (slotIdx < 0 || slotIdx >= totalOutputSlots_ ||
-            frozenSnapshot_.slotDataBuffers[slotIdx] == nullptr) {
-          continue;
-        }
         clearSnapshotSlot(slotIdx);
-        prunedMaterializedRequestedViewSlots++;
       }
-
-      if (prunedMaterializedRequestedViewSlots > 0) {
-        DSP_DIAG(MEMORY,
-            "LIFECYCLE: pruned %d materialized requested-view output slot(s) from frozen snapshot",
-            prunedMaterializedRequestedViewSlots);
-      }
+#endif
     }
 
     DSP_DIAG(EXECUTE, "LIFECYCLE: captured buffer pointer snapshot (%d slots, %d extInputs)",
@@ -4505,15 +4488,6 @@ Status NativeDynamicShapePlan::executeSteadyState(
     if (result == Status::OK && requestedOutputs != nullptr) {
       for (int i = 0; i < numRequestedOutputs; i++) {
         int slotIdx = requestedOutputSlotIndices_[i];
-        if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
-          NDArray* slotArr = outputSlots_[slotIdx];
-          if (slotArr != nullptr && slotArr->isView()) {
-            materializeViewSlot(slotIdx, "plan-output-view-boundary-steady-fallback");
-          }
-        }
-      }
-      for (int i = 0; i < numRequestedOutputs; i++) {
-        int slotIdx = requestedOutputSlotIndices_[i];
         if (slotIdx < 0 || slotIdx >= totalOutputSlots_ ||
             outputSlots_[slotIdx] == nullptr) {
           sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(
@@ -4523,6 +4497,11 @@ Status NativeDynamicShapePlan::executeSteadyState(
                    i, slotIdx);
           return Status::BAD_OUTPUT;
         }
+#if defined(SD_VULKAN)
+        if (outputSlots_[slotIdx]->isView()) {
+          materializeViewSlot(slotIdx, "plan-output-view-boundary-steady-fallback");
+        }
+#endif
         requestedOutputs[i] = platformGetOutputForDevice0(
             outputSlots_[slotIdx], slotIdx, i);
         if (requestedOutputs[i] == nullptr) {
@@ -5897,6 +5876,60 @@ void NativeDynamicShapePlan::phaseCompile(NDArray** externalInputs, int numExter
           seg.setResolvedGraphBackend(nullptr, unresolvedRequest);
           continue;
         }
+
+        // Fresh compiler-required plans reach the seal with executionCount==0:
+        // platformPrecompileSegments defers to the first execution (its shape
+        // caches and stream wiring are only stable after a warmup pass) and
+        // warmup does not increment executeCount_. The seal is therefore the
+        // first — and only — site that can lower the segment before replay
+        // demands a concrete backend. Warmup has already completed by this
+        // point (phaseWarmup runs before phaseCompile and classifies slot
+        // shapes), so lowering here is a legitimate compile-phase activity,
+        // not a mid-replay compile. Attempt the full resolver cascade; only a
+        // genuine lowering failure stays fail-closed below.
+        const LongType sealShapeKey =
+            computeSegmentShapeKey(seg, externalInputs, numExternalInputs);
+        const auto lowering = GraphBackendResolver::lowerSegment(
+            unresolvedRequest, unresolvedCandidates, /*preferred=*/nullptr,
+            seg, slots_, seg.def.startSlot, seg.def.endSlot, externalInputs,
+            numExternalInputs, outputSlots_, totalOutputSlots_, sealShapeKey,
+            numSlots_, requestedOutputSlotIndices_, numRequestedOutputs_);
+        if (lowering.succeeded()) {
+          seg.setResolvedGraphBackend(lowering.backend, unresolvedRequest);
+          seg.compilationAudit = lowering.attempts.back().audit;
+          lastCompilationAudit_ = seg.compilationAudit;
+          DSP_DIAG(COMPILE,
+                   "phaseCompile: seg[%d-%d] lowered at seal by %s "
+                   "(precompile was deferred past the first execution)",
+                   seg.def.startSlot, seg.def.endSlot,
+                   lowering.backend->name());
+          continue;
+        }
+        // Preserve the concrete audit trail for the fail-closed error
+        // contract so a genuine lowering defect is actionable.
+        if (!lowering.attempts.empty()) {
+          seg.compilationAudit = lowering.attempts.back().audit;
+          lastCompilationAudit_ = seg.compilationAudit;
+        }
+        if (lowering.prerequisiteBlocked() && modeContract.usesGraphCapture) {
+          // A backend admitted the range but its compile prerequisites are
+          // not ready yet (e.g. a JIT backend that needs one executed pass
+          // to seed its shape caches). In a capture mode the integrated
+          // recorder can execute this range natively, so — exactly like the
+          // admitted-empty branch above — this is a DEVICE_REPLAY range, not
+          // a lowering defect. Non-capture compiler-required modes keep the
+          // fail-closed contract.
+          DSP_DIAG(COMPILE,
+                   "phaseCompile: seg[%d-%d] prerequisite-blocked by %s (%s); "
+                   "publishing DEVICE_REPLAY before compilation seal",
+                   seg.def.startSlot, seg.def.endSlot,
+                   lowering.prerequisiteBlockedBackend->name(),
+                   lowering.prerequisiteFailureReason.c_str());
+          seg.def.selectedBackend = SelectedBackend::DEVICE_REPLAY;
+          seg.setResolvedGraphBackend(nullptr, unresolvedRequest);
+          continue;
+        }
+
 
         unresolvedSegments++;
         DSP_DIAG(COMPILE,
@@ -8212,6 +8245,15 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   // Reset CUDA-only gap caches (no-op on CPU)
   platformResetGapCaches();
 
+  // Staging buffers were freed above, so any recorded device addresses from
+  // the previous plan lifetime are stale. CHECK 3 (verifyStagingNotStale)
+  // compares against this baseline on the first execution of the next
+  // lifetime and would fail closed on freshly allocated staging that never
+  // participated in a capture with the old addresses. This is the same
+  // epoch-boundary reset used at device switch (cudagraph.cu) and on the
+  // frozen fast path: the baseline must belong to the current capture epoch.
+  prevStagingAddresses_.clear();
+
   // Clear protected weight buffers so they're rebuilt from the next session's
   // external inputs. Stale DataBuffer pointers from the old session would cause
   // incorrect ownership classification and lifecycle filtering on reuse.
@@ -8316,8 +8358,26 @@ void NativeDynamicShapePlan::registerDeviceManagedExternalInput(NDArray* input) 
   if (input == nullptr || input->isEmpty() || input->dataBuffer() == nullptr) return;
   void* devAddr = input->specialBuffer();
   if (devAddr == nullptr) return;
-  for (void* existing : deviceManagedExternalInputAddrs_) {
-    if (existing == devAddr) return;
+  for (size_t slot = 0; slot < deviceManagedExternalInputAddrs_.size(); ++slot) {
+    if (deviceManagedExternalInputAddrs_[slot] == devAddr) return;
+  }
+  // Re-registration with a DIFFERENT address means a logical state input moved
+  // to a new allocation (predictor slot drift: classification stays true, but
+  // any CUDA graph captured against the old address now reads stale bytes).
+  // The list stays append-only (entries are plain resident addresses, keyed by
+  // nothing; erasing one could silently strip a DIFFERENT live input's fallback
+  // classification and flip an already-captured raw-baked slot to staging).
+  // Observability is the contract here: the staging passthrough no longer trusts
+  // classification alone — it verifies the live address against the baked capture
+  // baseline (managedExtBakedAddrs_) on EVERY call, so a relocation can no longer
+  // silently skip the refresh. Graph recapture is NOT triggered from here; the
+  // D2D refresh of the captured (pinned) address is the in-flight repair.
+  if (!deviceManagedExternalInputAddrs_.empty()) {
+    DSP_DIAG(EXECUTE,
+             "registerDeviceManagedExternalInput: NEW addr=%p (total=%d) — "
+             "relocated managed state suspected; staging passthrough will "
+             "verify capture-address identity per call",
+             devAddr, static_cast<int>(deviceManagedExternalInputAddrs_.size() + 1));
   }
   deviceManagedExternalInputAddrs_.push_back(devAddr);
   DSP_DIAG(EXECUTE,
@@ -8371,6 +8431,95 @@ bool NativeDynamicShapePlan::hasDeviceManagedExternalInputs(
   }
   return false;
 }
+
+#ifdef SD_CUDA
+void NativeDynamicShapePlan::recordManagedExtBakedAddrsForCapture(
+    GraphSegment& seg, NDArray** externalArrays, int numExt) {
+  if (externalArrays == nullptr || numExt <= 0) return;
+  const int safeNumExt = numExt;
+  int recorded = 0, updated = 0, cleared = 0;
+  for (int s = seg.def.startSlot; s <= seg.def.endSlot && s < numSlots_; s++) {
+    const SlotWiring& w = slots_[s].wiring;
+    if (w.inputSourceTypes == nullptr || w.inputSourceIndices == nullptr) continue;
+    for (int i = 0; i < w.numInputs; i++) {
+      const int sourceIndex = w.inputSourceIndices[i];
+      if (sourceIndex >= 0) continue;  // prior-slot refs are not external inputs
+      const int extIdx = -(sourceIndex + 1);
+      if (extIdx < 0 || extIdx >= safeNumExt) continue;
+      auto it = managedExtBakedAddrs_.find(extIdx);
+      if (!isDeviceManagedExternalInput(extIdx, externalArrays[extIdx])) {
+        // This capture did NOT bake extIdx raw (it staged it). Any stale
+        // baseline from an earlier capture is dead: keeping it would produce
+        // false drift signals and route the slot away from its staging
+        // refresh. Classification flags only change through all-segment
+        // invalidations, so no live capture can still bake this index raw.
+        if (it != managedExtBakedAddrs_.end()) {
+          managedExtBakedAddrs_.erase(it);
+          cleared++;
+        }
+        continue;
+      }
+      void* devAddr = externalArrays[extIdx]->specialBuffer();
+      if (devAddr == nullptr) continue;
+      if (it == managedExtBakedAddrs_.end()) {
+        managedExtBakedAddrs_[extIdx] = devAddr;
+        recorded++;
+      } else if (it->second != devAddr) {
+        // Re-capture against a NEW address — the new address becomes the baked
+        // baseline for identity checks (recapture is the repair, not drift).
+        it->second = devAddr;
+        updated++;
+      }
+    }
+  }
+  if (recorded > 0 || updated > 0 || cleared > 0) {
+    DSP_DIAG(MEMORY,
+             "MANAGED_EXT_BAKED: seg[%d-%d] recorded=%d updated=%d cleared=%d "
+             "bakedBaselineEntries=%d",
+             seg.def.startSlot, seg.def.endSlot, recorded, updated, cleared,
+             static_cast<int>(managedExtBakedAddrs_.size()));
+  }
+}
+
+bool NativeDynamicShapePlan::isDeviceManagedExternalInputIdentityChecked(
+    int extIdx, NDArray* input, bool& drifted, void*& bakedAddr,
+    bool& reboundEvent) const {
+  drifted = false;
+  bakedAddr = nullptr;
+  reboundEvent = false;
+  const bool classified = isDeviceManagedExternalInput(extIdx, input);
+  // Table-driven identity: a baseline entry means the most recent capture of a
+  // segment reading extIdx baked its raw device address. The captured graph
+  // reads that address DIRECTLY, so identity must hold regardless of how the
+  // live input classifies now (classification can lag a relocation that
+  // re-registration has not yet mirrored).
+  const bool hasBaseline = extIdx >= 0 && managedExtBakedAddrs_.count(extIdx) > 0;
+  if (input == nullptr || input->specialBuffer() == nullptr) return classified;
+  if (hasBaseline) {
+    void* baked = managedExtBakedAddrs_.find(extIdx)->second;
+    if (baked != input->specialBuffer()) {
+      drifted = true;
+      bakedAddr = baked;
+    }
+    // REBOUND observability is event-gated: the diagnostic fires only when the
+    // live address changed relative to the previous call (the drift EVENT),
+    // never per call while a drift persists. The refresh copy is the
+    // correctness mechanism and still runs on every drifted call.
+    auto live = managedExtLastLiveAddrs_.find(extIdx);
+    const bool liveChanged = live == managedExtLastLiveAddrs_.end() ||
+                             live->second != input->specialBuffer();
+    if (liveChanged) {
+      if (drifted) reboundEvent = true;
+      managedExtLastLiveAddrs_[extIdx] = input->specialBuffer();
+    }
+    // A baked raw address always routes through the passthrough branch — the
+    // captured graph reads it directly, so the ordinary staging path cannot
+    // refresh it.
+    return true;
+  }
+  return classified;
+}
+#endif
 
 void NativeDynamicShapePlan::configureKvScatter(const int* presentSlotIndices,
                                                  NDArray** staticKvBuffers,

@@ -36,13 +36,19 @@ namespace helpers {
  * This is the core computation in the MLP block of LLaMA, Qwen, Gemma,
  * Mistral, and other SwiGLU-based architectures. Fusing the activation
  * with the multiply saves a global memory round-trip.
+ * SiLU computes in AggregateType<gate dtype> and rounds to gate storage
+ * before the promoted multiply. Input/output floating dtypes are independent.
+ * The caller validates broadcast compatibility. Arbitrary strides and exact
+ * elementwise input/output aliases are supported; no pointers are restrict.
  *
- * @param gate    [batch, ..., dim] gate projection output
- * @param up      [batch, ..., dim] up projection output (same shape as gate)
- * @param output  [batch, ..., dim] result
+ * @param gate    gate projection output, broadcast-compatible with output
+ * @param up      up projection output, broadcast-compatible with output
+ * @param output  result (shape and dtype chosen by the calling op)
  */
+#if NOT_EXCLUDED(OP_swish_mul) || NOT_EXCLUDED(OP_silu_and_mul)
 SD_LIB_HIDDEN void siluAndMul(LaunchContext* context,
                                NDArray* gate, NDArray* up, NDArray* output);
+#endif
 
 /**
  * Fused GELU and element-wise multiply.

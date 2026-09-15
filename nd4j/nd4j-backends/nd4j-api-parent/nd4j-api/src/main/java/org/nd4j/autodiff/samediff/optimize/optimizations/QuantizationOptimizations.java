@@ -151,14 +151,15 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
         }
 
         private static long countEligibleFp32Weights(SameDiff sd) {
+            Set<String> protectedInputs = MatmulArithmeticPolicy.protectedInputs(sd);
             long count = 0;
             for (String name : sd.getConstantArrays().arrayNames()) {
-                if (isEligibleDenseFp32Weight(sd.getConstantArrays().getArray(name))) {
+                if (!protectedInputs.contains(name) && isEligibleDenseFp32Weight(sd.getConstantArrays().getArray(name))) {
                     count++;
                 }
             }
             for (String name : sd.getVariablesArrays().arrayNames()) {
-                if (isEligibleDenseFp32Weight(sd.getVariablesArrays().getArray(name))) {
+                if (!protectedInputs.contains(name) && isEligibleDenseFp32Weight(sd.getVariablesArrays().getArray(name))) {
                     count++;
                 }
             }
@@ -202,6 +203,7 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
                     && targetType != DataType.FLOAT8_E5M2) {
                 throw new IllegalArgumentException("Unsupported low-precision floating target type: " + targetType);
             }
+            Set<String> protectedInputs = MatmulArithmeticPolicy.protectedInputs(sd);
             ArrayHolder constantArrays = sd.getConstantArrays();
             ArrayHolder variableArrays = sd.getVariablesArrays();
             int quantizedCount = 0;
@@ -212,7 +214,7 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
 
             for (String name : new ArrayList<>(constantArrays.arrayNames())) {
                 INDArray arr = constantArrays.getArray(name);
-                if (arr != null && arr.dataType() == DataType.FLOAT) {
+                if (!protectedInputs.contains(name) && arr != null && arr.dataType() == DataType.FLOAT) {
                     if (arr.rank() >= 2 && arr.length() >= MIN_ELEMENTS_FOR_LOW_PRECISION) {
                         fp32Bytes += arr.length() * 4;
                         INDArray quantizedArr = arr.castTo(targetType);
@@ -228,7 +230,7 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
 
             for (String name : new ArrayList<>(variableArrays.arrayNames())) {
                 INDArray arr = variableArrays.getArray(name);
-                if (arr != null && arr.dataType() == DataType.FLOAT) {
+                if (!protectedInputs.contains(name) && arr != null && arr.dataType() == DataType.FLOAT) {
                     if (arr.rank() >= 2 && arr.length() >= MIN_ELEMENTS_FOR_LOW_PRECISION) {
                         fp32Bytes += arr.length() * 4;
                         INDArray quantizedArr = arr.castTo(targetType);
@@ -282,6 +284,7 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
          * @return map of constant names to quantization info
          */
         public static Map<String, QuantizationInfo> quantizeAllConstants(SameDiff sd) {
+            Set<String> protectedInputs = MatmulArithmeticPolicy.protectedInputs(sd);
             ArrayHolder constantArrays = sd.getConstantArrays();
             List<String> constantNames = new ArrayList<>(constantArrays.arrayNames());
 
@@ -292,7 +295,7 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
 
             for (String name : constantNames) {
                 INDArray arr = constantArrays.getArray(name);
-                if (arr != null && arr.dataType() == DataType.FLOAT) {
+                if (!protectedInputs.contains(name) && arr != null && arr.dataType() == DataType.FLOAT) {
                     fp32Bytes += arr.length() * 4;
 
                     QuantizationInfo info = computeQuantizationInfo(arr);
@@ -354,6 +357,7 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
          * @return map of constant names to their quantization info
          */
         public static Map<String, QuantizationInfo> quantizeAllConstantsWithScales(SameDiff sd) {
+            Set<String> protectedInputs = MatmulArithmeticPolicy.protectedInputs(sd);
             ArrayHolder constantArrays = sd.getConstantArrays();
             List<String> constantNames = new ArrayList<>(constantArrays.arrayNames());
 
@@ -364,7 +368,7 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
 
             for (String name : constantNames) {
                 INDArray arr = constantArrays.getArray(name);
-                if (arr != null && arr.dataType() == DataType.FLOAT) {
+                if (!protectedInputs.contains(name) && arr != null && arr.dataType() == DataType.FLOAT) {
                     fp32Bytes += arr.length() * 4;
 
                     QuantizationInfo info = computeQuantizationInfo(arr);
@@ -528,8 +532,21 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
                         // Check if the intermediate cast output is only used by this cast
                         List<String> intermediateUsers = inputVariable.getInputsForOp();
                         if (intermediateUsers != null && intermediateUsers.size() == 1) {
-                            // Rewire: this cast now takes the input of the inner cast
-                            String innerInput = producerOp.getInputsToOp().get(0);
+                            // A narrowing cast is a rounding/overflow boundary, not
+                            // redundant merely because another cast follows it.
+                            if (sd.outputs() != null && sd.outputs().contains(inputVar)) return false;
+                            List<String> innerInputs = producerOp.getInputsToOp();
+                            if (innerInputs == null || innerInputs.size() != 1) return false;
+                            String innerInput = innerInputs.get(0);
+                            SDVariable original = sd.getVariable(innerInput);
+                            DataType originalType = original == null ? null : original.dataType();
+                            boolean lossless = originalType != null && inputDtype != null
+                                    && (originalType == inputDtype
+                                    || ((originalType == DataType.HALF || originalType == DataType.BFLOAT16)
+                                        && (inputDtype == DataType.FLOAT || inputDtype == DataType.DOUBLE))
+                                    || (originalType == DataType.FLOAT && inputDtype == DataType.DOUBLE));
+                            if (!lossless) return false;
+                            // Rewire only after proving the inner conversion lossless.
                             List<String> newInputs = new ArrayList<>(inputs);
                             newInputs.set(0, innerInput);
                             op.setInputsToOp(newInputs);
@@ -615,7 +632,11 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
             if (!Boolean.getBoolean(PROP_ENABLE)) return false;
             if (calibrationRanges.isEmpty()) return false;
             // Only fire for Mmul ops (matmul)
-            if (!(op.getOp() instanceof Mmul)) return false;
+            if (!(op.getOp() instanceof Mmul) || MatmulArithmeticPolicy.isExplicit(op.getOp())) return false;
+            Set<String> protectedInputs = MatmulArithmeticPolicy.protectedInputs(sd);
+            if (op.getOutputsOfOp() != null && op.getOutputsOfOp().stream().anyMatch(protectedInputs::contains)) {
+                return false;
+            }
 
             List<String> inputs = op.getInputsToOp();
             if (inputs == null || inputs.size() < 1) return false;

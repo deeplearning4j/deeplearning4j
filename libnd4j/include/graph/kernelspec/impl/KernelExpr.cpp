@@ -43,6 +43,7 @@ int exprOpArity(ExprOp op) {
     case ExprOp::FLOOR:
     case ExprOp::CEIL:
     case ExprOp::ROUND:
+    case ExprOp::STORAGE_ROUND:
     case ExprOp::NOT:
       return 1;
     case ExprOp::ADD:
@@ -84,6 +85,7 @@ const char* exprOpName(ExprOp op) {
     case ExprOp::FLOOR: return "floor";
     case ExprOp::CEIL: return "ceil";
     case ExprOp::ROUND: return "round";
+    case ExprOp::STORAGE_ROUND: return "storage_round";
     case ExprOp::NOT: return "not";
     case ExprOp::ADD: return "add";
     case ExprOp::SUB: return "sub";
@@ -222,6 +224,9 @@ std::string ExprGraph::validate() const {
     if (n.op == ExprOp::CONST_F && std::isnan(n.f))
       return "node " + std::to_string(i) + ": NaN constant";
 
+    if (n.op == ExprOp::STORAGE_ROUND && exprOpIsBooleanProducing(nodes_[n.a].op))
+      return "storage_round requires a numeric operand";
+
     // Boolean-typed positions must be fed by boolean-producing nodes.
     if (n.op == ExprOp::AND || n.op == ExprOp::OR) {
       if (!exprOpIsBooleanProducing(nodes_[n.a].op) || !exprOpIsBooleanProducing(nodes_[n.b].op))
@@ -320,6 +325,7 @@ Expr abs(Expr x) { return graphOf(x)->unary(ExprOp::ABS, x); }
 Expr floor(Expr x) { return graphOf(x)->unary(ExprOp::FLOOR, x); }
 Expr ceil(Expr x) { return graphOf(x)->unary(ExprOp::CEIL, x); }
 Expr round(Expr x) { return graphOf(x)->unary(ExprOp::ROUND, x); }
+Expr storageRound(Expr x) { return graphOf(x)->unary(ExprOp::STORAGE_ROUND, x); }
 Expr pow(Expr base, Expr e) { return graphOf(base)->binary(ExprOp::POW, base, e); }
 Expr pow(Expr base, double e) { return pow(base, lift(graphOf(base), e)); }
 Expr min(Expr a, Expr b) { return graphOf(a)->binary(ExprOp::MIN, a, b); }
@@ -338,7 +344,10 @@ Expr sigmoid(Expr x) {
   auto* g = graphOf(x);
   return g->c(1.0) / (g->c(1.0) + exp(-x));
 }
-Expr silu(Expr x) { return x * sigmoid(x); }
+Expr silu(Expr x) {
+  // Native Swish uses sd_exp, whose input contract clamps to [-88, 88].
+  return x * (1.0 / (1.0 + exp(clamp(-x, -88.0, 88.0))));
+}
 Expr relu(Expr x) { return max(x, 0.0); }
 Expr softplus(Expr x) { return log(exp(x) + 1.0); }
 Expr mish(Expr x) { return x * tanh(softplus(x)); }

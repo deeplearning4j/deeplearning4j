@@ -347,6 +347,10 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
                 .put(new Info("OpaqueConstantShapeBuffer").pointerTypes("org.nd4j.nativeblas.OpaqueConstantShapeBuffer"))
                 .put(new Info("OpaqueConstantOffsetsBuffer").pointerTypes("org.nd4j.nativeblas.OpaqueConstantOffsetsBuffer"))
                 .put(new Info("OpaqueContext").pointerTypes("org.nd4j.nativeblas.OpaqueContext"))
+                // Bare-name annotations are parsed as C++ attributes and can consume the function.
+                // Supply the native instance declaration, including the canonical context type.
+                .put(new Info("executeSteadyStatePlan").javaText(
+                        "@Override public native int executeSteadyStatePlan(@Cast(\"sd::Pointer\") Pointer planHandle, org.nd4j.nativeblas.OpaqueContext opContext, @Cast(\"sd::Pointer\") Pointer stream);"))
                 .put(new Info("OpaqueWorkspace").cast().pointerTypes("Pointer"))
                 // Workspace management functions - explicit javaText to ensure correct pointer semantics
                 .put(new Info("createNativeWorkspace").javaText(

@@ -239,9 +239,9 @@ public static final int HAVE_NNAPI = 0;
 public static final int HAVE_CUTLASS = 0;
 public static final int HAVE_OPENVINO = 0;
 
-public static final String SD_LIBRARY_NAME = "nd4jtpu";
-public static final String OPENBLAS_PATH = "@OPENBLAS_PATH@";
-// #define DEFAULT_ENGINE samediff::ENGINE_TPU
+public static final String SD_LIBRARY_NAME = "nd4jcpu";
+public static final String OPENBLAS_PATH = "/home/agibsonccc/.javacpp/cache/openblas-0.3.31-1.5.13-linux-arm64.jar/org/bytedeco/openblas/linux-arm64";
+// #define DEFAULT_ENGINE samediff::ENGINE_CPU
 
 // Type system configuration - populated by CMake TypeValidation system
 public static final int SD_SELECTIVE_TYPES = 0;
@@ -1311,11 +1311,11 @@ public static final int
  * Vulkan backend disk-cache configuration (ADR 0115).
  *
  * Tier 1 — SPIR-V module disk cache: persists MLIR→SPIR-V lowering results
- * (spv_<16hex>.spv + .meta) so warm process starts skip the MLIR pass
+ * (spv_&lt;16hex&gt;.spv + .meta) so warm process starts skip the MLIR pass
  * pipeline entirely. Mirrors the Triton kernel disk cache.
  *
  * Tier 2 — VkPipelineCache driver-blob persistence: persists the driver's
- * pipeline cache (vkpc_<16hex>.bin, keyed by pipelineCacheUUID) so warm
+ * pipeline cache (vkpc_&lt;16hex&gt;.bin, keyed by pipelineCacheUUID) so warm
  * starts also skip the driver's SPIR-V→ISA compile.
  *
  * This class stays free of Vulkan API dependencies, but its implementation and
@@ -1323,8 +1323,8 @@ public static final int
  *
  * Directory resolution for each dir option: explicit value here (set from a
  * Java system property via the Environment setter, or from the matching
- * ND4J_VULKAN_* env var at initFromEnvironment) → ~/.kompile/cache/vulkan/<leaf>
- * → .kompile/cache/vulkan/<leaf> when $HOME is empty.
+ * ND4J_VULKAN_* env var at initFromEnvironment) → ~/.kompile/cache/vulkan/&lt;leaf&gt;
+ * → .kompile/cache/vulkan/&lt;leaf&gt; when $HOME is empty.
  */
 
   // namespace config
@@ -1982,7 +1982,7 @@ public static final int
   /**
    * Increment the frozen plan reference count. Call when this buffer is
    * registered in a frozen NativeDynamicShapePlan as an external input
-   * or retained weight. While the count is > 0, migrate() is blocked to
+   * or retained weight. While the count is &gt; 0, migrate() is blocked to
    * prevent invalidating baked-in GPU addresses used by frozen replay.
    */
   public native void addFrozenRef();
@@ -1995,7 +1995,7 @@ public static final int
 
   /**
    * Check whether this buffer is registered in any frozen plan.
-   * @return true if frozen ref count > 0
+   * @return true if frozen ref count &gt; 0
    */
   public native @Cast("bool") boolean isFrozenPlanRegistered();
 
@@ -3214,6 +3214,10 @@ public native @Cast("bool") boolean isSerializeBlasCalls();
  */
 public native void setSerializeBlasCalls(@Cast("bool") boolean serialize);
 
+/**
+ * Enable or disable verbose native diagnostics.
+ * @param reallyEnable true to enable verbose output, false to disable it
+ */
 public native void enableVerboseMode(@Cast("bool") boolean reallyEnable);
 public native int getDeviceMajor(int device);
 public native int getDeviceMinor(int device);
@@ -3738,7 +3742,7 @@ public native @Cast("char*") String getLifecycleOpContext();
  * are logged to a file with full unified C++/Java stack traces.
  * The log file survives crashes and can be used for post-mortem debugging.
  *
- * Log files are located at: /tmp/nd4j_op_execution_<PID>.log
+ * Log files are located at: /tmp/nd4j_op_execution_&lt;PID&gt;.log
  * (or $SD_OP_LOG_DIR if set)
  *
  * NOTE: Only available when built with -Dlibnd4j.calltrace=ON
@@ -3802,7 +3806,7 @@ public native void dumpOpExecutionState(@Cast("char*") BytePointer message);
  * Allocation logging is always active in functrace builds (SD_GCC_FUNCTRACE).
  * Returns empty string if functrace is not enabled.
  *
- * Log file location: /tmp/nd4j_allocations_<PID>.log (configurable via SD_ALLOCATION_LOG_DIR)
+ * Log file location: /tmp/nd4j_allocations_&lt;PID&gt;.log (configurable via SD_ALLOCATION_LOG_DIR)
  *
  * @return C-string containing the log file path (caller must NOT free this)
  */
@@ -4060,13 +4064,13 @@ public native void initializeLifecycleCrashHandlers();
  *
  * JSON format:
  * {
- *   "total_allocations": <count>,
- *   "total_deallocations": <count>,
- *   "current_live": <count>,
- *   "peak_live": <count>,
- *   "current_bytes": <bytes>,
- *   "peak_bytes": <bytes>,
- *   "double_frees": <count>
+ *   "total_allocations": &lt;count&gt;,
+ *   "total_deallocations": &lt;count&gt;,
+ *   "current_live": &lt;count&gt;,
+ *   "peak_live": &lt;count&gt;,
+ *   "current_bytes": &lt;bytes&gt;,
+ *   "peak_bytes": &lt;bytes&gt;,
+ *   "double_frees": &lt;count&gt;
  * }
  *
  * NOTE: Returns empty JSON "{}" when SD_GCC_FUNCTRACE is not defined.
@@ -4080,20 +4084,20 @@ public native @Cast("char*") String getNDArrayLifecycleStats();
  * JSON format:
  * {
  *   "primary": {
- *     "total_allocations": <count>,
- *     "total_deallocations": <count>,
- *     "current_live": <count>,
- *     "current_bytes": <bytes>,
- *     "peak_bytes": <bytes>
+ *     "total_allocations": &lt;count&gt;,
+ *     "total_deallocations": &lt;count&gt;,
+ *     "current_live": &lt;count&gt;,
+ *     "current_bytes": &lt;bytes&gt;,
+ *     "peak_bytes": &lt;bytes&gt;
  *   },
  *   "special": {
- *     "total_allocations": <count>,
- *     "total_deallocations": <count>,
- *     "current_live": <count>,
- *     "current_bytes": <bytes>,
- *     "peak_bytes": <bytes>
+ *     "total_allocations": &lt;count&gt;,
+ *     "total_deallocations": &lt;count&gt;,
+ *     "current_live": &lt;count&gt;,
+ *     "current_bytes": &lt;bytes&gt;,
+ *     "peak_bytes": &lt;bytes&gt;
  *   },
- *   "double_frees": <count>
+ *   "double_frees": &lt;count&gt;
  * }
  *
  * NOTE: Returns empty JSON "{}" when SD_GCC_FUNCTRACE is not defined.
@@ -4576,6 +4580,19 @@ public native int executeDynamicShapePlan(
     @Cast("sd::Pointer") Pointer stream);
 
 /**
+ * Execute through NativeDynamicShapePlan::executeSteadyState, using the same
+ * context input order, requested-output mapping and borrowed output ownership
+ * as executeDynamicShapePlan. No dtype conversion is performed. The plan owns
+ * lifecycle admission (early calls still execute its build phases).
+ *
+ * @param stream Backend-owned stream: CUDA storage pointer (cudaStream_t*),
+ *               VulkanExecutionStream* for Vulkan (nullptr selects the plan's
+ *               stream), or the CPU-derived backend's execution stream.
+ * @return 0 on success, non-zero on native failure
+ */
+@Override public native int executeSteadyStatePlan(@Cast("sd::Pointer") Pointer planHandle, org.nd4j.nativeblas.OpaqueContext opContext, @Cast("sd::Pointer") Pointer stream);
+
+/**
  * Free a compiled native plan.
  *
  * @param planHandle  Handle from compileDynamicShapePlan()
@@ -4609,13 +4626,13 @@ public native void clearNativePlanCacheHandle(@Cast("sd::Pointer") Pointer cache
  * @param phShapeInfoPtrs       array of shape-info pointers (from ConstantShapeHelper); identity = key equality
  * @param numPlaceholders       length of phShapeInfoPtrs
  * @param graphExecutionMode    GraphExecutionMode ordinal — each mode gets its own plan
- * @param newBorrower           nonzero when this dispatch is the FIRST from its Java
- *                              executor instance (nativePlanHandle was null). A cache
- *                              HIT then means the plan is switching borrowers: view
- *                              wrappers minted over the previous borrower's external
- *                              arrays dangle once it closed its inputs, and must be
- *                              invalidated. Same-borrower re-dispatches (shape change)
- *                              pass 0 so live captured-graph state is never disturbed.
+ * @param newBorrower           nonzero when this dispatch acquires a new borrower
+ *                              lease for the returned shape-keyed plan. Java passes
+ *                              this for the first executor dispatch and first use of
+ *                              a shape; same-executor same-shape redispatches pass 0
+ *                              so lease counts do not grow per token. A nonzero cache
+ *                              hit also invalidates external-fed views minted by a
+ *                              previous borrower.
  * @return                      NativeDynamicShapePlan* as opaque sd::Pointer; owned by cache
  */
 public native @Cast("sd::Pointer") Pointer dispatchNativePlan(@Cast("sd::Pointer") Pointer cacheHandle,
@@ -4630,8 +4647,9 @@ public native @Cast("sd::Pointer") Pointer dispatchNativePlan(@Cast("sd::Pointer
 
 /**
  * Unpin a plan handle, making it eligible for LRU eviction.
- * Must be called when Java swaps to a different plan handle or closes
- * the executor. Paired with the automatic pinning done by dispatchNativePlan().
+ * Must be called once for every borrower lease acquired from dispatchNativePlan,
+ * when Java swaps away from a plan or closes the executor. The cache keeps the
+ * plan eviction-protected until the final lease is released.
  *
  * @param cacheHandle  cache from createNativePlanCache (non-null)
  * @param planHandle   plan handle from dispatchNativePlan (safe to pass null — no-op)
@@ -4666,6 +4684,10 @@ public native void clearAllDynamicShapePlanCachesForce(@Cast("sd::Pointer") Poin
  */
 public native int releaseGpuIntermediates(@Cast("sd::Pointer") Pointer planHandle);
 
+/** Release producer outputs too. Caller must have completed independent output
+ * copies and must retain no borrowed native output pointers. */
+public native int releaseGpuIntermediatesAfterOutputCopy(@Cast("sd::Pointer") Pointer planHandle);
+
 // --- Replay diagnostics (Phase 2) ------------------------------------------
 
 /**
@@ -4699,6 +4721,13 @@ public native int getPlanReplayUnitCount(@Cast("sd::Pointer") Pointer planHandle
 public native int getPlanPhase(@Cast("sd::Pointer") Pointer planHandle);
 
 /**
+ * Get one immutable point-in-time snapshot of the native plan lifecycle.
+ * The result is a thread-local key/value payload consumed by the Java
+ * DspLifecycleSnapshot value type. Returns "valid=false" for an invalid handle.
+ */
+public native @Cast("char*") String getPlanLifecycleSnapshot(@Cast("sd::Pointer") Pointer planHandle);
+
+/**
  * Get the execution count for a segment (number of times executed).
  *
  * @param planHandle  Handle from compileDynamicShapePlan()
@@ -4725,7 +4754,7 @@ public native int isPlanCompilationSealed(@Cast("sd::Pointer") Pointer planHandl
 
 /**
  * Returns the count of compileSegment() calls that happened AFTER compilation
- * was sealed. Any value > 0 is a correctness red flag — it means the plan
+ * was sealed. Any value &gt; 0 is a correctness red flag — it means the plan
  * re-compiled a segment mid-execution which breaks the freeze/capture contract.
  *
  * @param planHandle  Handle from compileDynamicShapePlan()
@@ -4820,6 +4849,33 @@ public native @ByVal org.nd4j.nativeblas.OpaqueNDArray getLoadedModelVariable(
     @Cast("sd::Pointer") Pointer modelHandle, @Cast("char*") BytePointer variableName);
 
 /**
+ * Read the declared FlatGraph shape for any loaded model variable, including
+ * placeholders that do not own an NDArray. Pass dimensions=nullptr to query
+ * the rank before allocating the output buffer.
+ *
+ * @return Declared rank, or -1 when the variable/shape is unavailable or the
+ *         supplied dimensions buffer is too small.
+ */
+public native int getLoadedModelVariableShape(
+    @Cast("sd::Pointer") Pointer modelHandle, @Cast("char*") String variableName,
+    @Cast("sd::LongType*") LongPointer dimensions, int maxRank);
+public native int getLoadedModelVariableShape(
+    @Cast("sd::Pointer") Pointer modelHandle, @Cast("char*") BytePointer variableName,
+    @Cast("sd::LongType*") LongBuffer dimensions, int maxRank);
+public native int getLoadedModelVariableShape(
+    @Cast("sd::Pointer") Pointer modelHandle, @Cast("char*") String variableName,
+    @Cast("sd::LongType*") long[] dimensions, int maxRank);
+public native int getLoadedModelVariableShape(
+    @Cast("sd::Pointer") Pointer modelHandle, @Cast("char*") BytePointer variableName,
+    @Cast("sd::LongType*") LongPointer dimensions, int maxRank);
+public native int getLoadedModelVariableShape(
+    @Cast("sd::Pointer") Pointer modelHandle, @Cast("char*") String variableName,
+    @Cast("sd::LongType*") LongBuffer dimensions, int maxRank);
+public native int getLoadedModelVariableShape(
+    @Cast("sd::Pointer") Pointer modelHandle, @Cast("char*") BytePointer variableName,
+    @Cast("sd::LongType*") long[] dimensions, int maxRank);
+
+/**
  * Compile a loaded model into a native execution plan.
  *
  * @param modelHandle  Handle from loadModelFromFile()
@@ -4881,7 +4937,7 @@ public native @Cast("char*") String getPlanExternalInputName(@Cast("sd::Pointer"
  * clamping/resolution — mirror of setPlanGraphExecutionMode).
  *
  * @param planHandle  Handle from compileDynamicShapePlan()
- * @return GraphExecutionMode as int (GEM_AUTO=0 .. GEM_PORTABLE_REPLAY=19), -1 if invalid
+ * @return GraphExecutionMode as int (GEM_AUTO=0 .. GEM_ONEDNN=20), -1 if invalid
  */
 public native int getPlanGraphExecutionMode(@Cast("sd::Pointer") Pointer planHandle);
 
@@ -4917,7 +4973,7 @@ public native void setPlanCudaGraphsEnabled(@Cast("sd::Pointer") Pointer planHan
  * Default: 10. Set to 1 for testing.
  *
  * @param planHandle  Handle from compileDynamicShapePlan()
- * @param minSize  Minimum number of slots for capture (clamped to >=1)
+ * @param minSize  Minimum number of slots for capture (clamped to &gt;=1)
  */
 public native void setPlanMinCaptureSegmentSize(@Cast("sd::Pointer") Pointer planHandle, int minSize);
 
@@ -4944,7 +5000,7 @@ public native void setPlanShapesFrozen(@Cast("sd::Pointer") Pointer planHandle, 
 /**
  * Enable/disable shape-only dry-run mode for a compiled plan.
  * When enabled, executeSlot() runs all dispatch infrastructure (shape caching,
- * frozen detection, output allocation, segment dispatch) but SKIPS op->execute().
+ * frozen detection, output allocation, segment dispatch) but SKIPS op-&gt;execute().
  * Use to measure pure dispatch/infrastructure overhead separately from compute.
  *
  * @param planHandle  Handle from compileDynamicShapePlan()
@@ -4990,7 +5046,7 @@ public native void setPlanRuntimeArtifactDirectory(@Cast("sd::Pointer") Pointer 
  * @param mode  0=AUTO, 1=SLOT_BY_SLOT, 2=CUDA_GRAPHS, 3=NVRTC_JIT, 4=PTX_JIT, 5=TRITON,
  *              6=MLX, 7=ARM_HYBRID, 8=NNAPI, 9=HIP_GRAPHS, 10=LEVEL_ZERO, 11=VULKAN,
  *              12=METAL, 13=TPU, 14=HEXAGON, 15=OPENVINO, 16=TVM (deprecated),
- *              17=EMULATED_REPLAY, 18=SHAPE_INFERENCE_ONLY, 19=PORTABLE_REPLAY
+ *              17=EMULATED_REPLAY, 18=SHAPE_INFERENCE_ONLY, 19=PORTABLE_REPLAY, 20=ONEDNN
  */
 public native void setPlanGraphExecutionMode(@Cast("sd::Pointer") Pointer planHandle, int mode);
 
@@ -5237,7 +5293,7 @@ public native @Cast("char*") String getPlanSlotOpName(@Cast("sd::Pointer") Point
  *   bit 7: needsZeroedOutput
  *   bit 8: needsIntLongSync
  *   bit 9: shapeStatic
- *   bit 10: frozenConstantSlot (state >= FROZEN_CONSTANT)
+ *   bit 10: frozenConstantSlot (state &gt;= FROZEN_CONSTANT)
  * Returns -1 if invalid.
  */
 public native int getPlanSlotFlags(@Cast("sd::Pointer") Pointer planHandle, int slotIdx);
@@ -6770,13 +6826,13 @@ public static final int
 
 
   /**
-   * This method returns new array with the same shape & data type
+   * This method returns new array with the same shape and data type
    * @return
    */
   public native NDArray like();
 
   /**
-   * This method returns new uninitialized array with the same shape & data type
+   * This method returns new uninitialized array with the same shape and data type
    * @return
    */
   public native NDArray ulike();
@@ -7184,7 +7240,7 @@ public static final int
   public native void muliColumnVector(NDArray column);
 
   /**
-   *  returns number of bytes used by _buffer & _shapeInfo
+   *  returns number of bytes used by _buffer and _shapeInfo
    */
   public native @Cast("sd::LongType") long memoryFootprint();
 
@@ -7321,7 +7377,7 @@ public static final int
    * are equal to this array elements target and this array should have same shapes, except when this_rank = 1 (in that
    * case should be target_rank = 2)
    *
-   * includeEdges handles the cases where we need to include edges (basically >= or <= 0 and edges of the triangle)
+   * includeEdges handles the cases where we need to include edges (basically &gt;= or &lt;= 0 and edges of the triangle)
    */
 
   /**
@@ -7472,7 +7528,7 @@ public static final int
   public native @Cast("bool") boolean isSameShapeStrict(@ByRef NDArray other);
 
   /**
-   *  returns true if buffer && shapeInfo were defined (non nullptr)
+   *  returns true if both buffer and shapeInfo were defined (non nullptr)
    */
   public native @Cast("bool") boolean nonNull();
 
@@ -7547,7 +7603,7 @@ public static final int
 
   /**
    *  returns true if all dimensions of array except one are unities, for example: [1,1,n,1], [n,1,1], [n], ...
-   *  posOfNonUnityDim - one dimension with value > 1
+   *  posOfNonUnityDim - one dimension with value &gt; 1
    */
   public native @Cast("bool") boolean isCommonVector(@Cast("sd::LongType*") @ByRef LongPointer posOfNonUnityDim);
   public native @Cast("bool") boolean isCommonVector(@Cast("sd::LongType*") @ByRef LongBuffer posOfNonUnityDim);
@@ -8816,10 +8872,10 @@ public static final int
     public RandomBuffer(Pointer p) { super(p); }
 
   /**
-   * This method allocates buffer of size * sizeof(sd::LongType)
+   * Initializes a random buffer with the supplied seed and storage.
    *
-   * @param size
-   * @return
+   * @param seed the initial random seed
+   * @param size the number of elements in the buffer
    */
 // #ifdef __CUDACC__
 // #endif
@@ -8918,6 +8974,11 @@ public static final int
    * @return
    */
 
+  /**
+   * Returns the random buffer element at the specified relative index.
+   * @param index the relative element index
+   * @return the random unsigned 64-bit value
+   */
   public native @Cast("uint64_t") long relativeUInt64(@Cast("sd::LongType") long index);
 
   /**
@@ -9365,9 +9426,10 @@ public static final int
   public native @Cast("bool") boolean hasIntermediateResults();
 
   /**
-   * This method fetches variable from VariableSpace DIRECTLY
-   * @param p
-   * @return
+   * Fetches a variable directly from VariableSpace.
+   * @param node the node identifier
+   * @param index the output index within the node
+   * @return the variable at the specified node and output index
    */
   public native Variable variable(int node, int index);
   public native Variable variable(@ByRef IntIntPair p);
@@ -10248,14 +10310,12 @@ public static final int
 @Namespace("shape") public native @Cast("sd::LongType") long tensorsAlongDimension(@Cast("const sd::LongType*") long[] shapeInfo, @Cast("sd::LongType*") long[] dimensions, @Cast("sd::LongType") long dimensionLength);
 
 
-/**
-* Keep the given indexes in the data
-* @param data
-* @param index
-* @param indexLength
-* @param dataLength
-* @return
-*/
+/*
+ * Native-only helper (excluded from JavaCPP bindings): retain entries of data
+ * whose positions occur in index. indexLength is the number of selected
+ * positions and dataLength is the number of input entries. Returns a newly
+ * allocated buffer containing the retained entries in input order.
+ */
 
 // Optimized version with special cases for common ranks
 // #define INDEX2COORDS(linear_index, rank, shape, coords)
@@ -10417,6 +10477,12 @@ public static final int
 /////
 
 
+/*
+ * subArrayIndex maps the outer-array linear index maxIdx to a sub-array offset,
+ * using maxShapeInfo for the outer array and minShapeInfo for the sub-array.
+ * This native-only helper is skipped by JavaCPP; keep its documentation a plain
+ * comment so it cannot become Javadoc for the next emitted declaration.
+ */
 @Namespace("shape") public native @Cast("sd::LongType") long subArrayIndex(@Cast("sd::LongType") long maxIdx, @Cast("const sd::LongType*") LongPointer maxShapeInfo,
                                                                   @Cast("const sd::LongType*") LongPointer minShapeInfo);
 @Namespace("shape") public native @Cast("sd::LongType") long subArrayIndex(@Cast("sd::LongType") long maxIdx, @Cast("const sd::LongType*") LongBuffer maxShapeInfo,
@@ -10515,7 +10581,7 @@ public static final int
 * along, i.e. when shape is [2,3,4,5] and dimsToExclude={0,2}, then there will be 8 sub-arrays with shape [3,5]
 * subArrShapeInfo    - output argument, contains shapeInfo (same for all sub-arrays)
 * subArrOffsets      - output argument, contains successive sub-arrays offsets from original this-buffer
-* keepUnitiesInShape - if false then eliminate unities from sub-array shapeInfo, for example {1,a,1,b} -> {a,b}
+* keepUnitiesInShape - if false then eliminate unities from sub-array shapeInfo, for example {1,a,1,b} -&gt; {a,b}
 */
 @Namespace("shape") public native void calcSubArrsShapeInfoAndOffsets(
     @Cast("const sd::LongType*") LongPointer wholeShapeInfo, @Cast("const sd::LongType") long numOfSubArrs, @Cast("const sd::LongType") long dimsSize,
@@ -10549,7 +10615,7 @@ public static final int
 * input argument, shapeInfo of original array minShapeInfo - output argument, shapeInfo of sub-array to be deduced
 * minOffset - output argument, offset of sub-array buffer offsets from original buffer
 * keepUnitiesInShape - input argument, if false then eliminate unities from sub-array shapeInfo, for example {1,a,1,b}
-* -> {a,b} isStrided - input argument, if true then idx has length (3 * this->rankOf()) and contains additional stride
+* -&gt; {a,b} isStrided - input argument, if true then idx has length (3 * this-&gt;rankOf()) and contains additional stride
 * numbers which correspond to stride between dimStart and dimEnd, numOfUntiesInMinShape - input argument, number of
 * occurrences in idx when (dimEnd - dimStart) = 1
 */
@@ -10730,8 +10796,8 @@ public static final int
 * Computes the standard packed array strides for a given shape.
 *
 * @param shape    the shape of a matrix:
-* @param startNum the start number for the strides
-* @return the strides for a matrix of n dimensions
+* @param rank the number of dimensions
+* @return the strides for a matrix of n dimensions, starting at one
 */
 @Namespace("shape") public native @Cast("sd::LongType*") LongPointer calcStridesFortran(@Cast("const sd::LongType*") LongPointer shape, @Cast("sd::LongType") long rank);
 @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer calcStridesFortran(@Cast("const sd::LongType*") LongBuffer shape, @Cast("sd::LongType") long rank);
@@ -10747,8 +10813,8 @@ public static final int
 * Computes the standard packed array strides for a given shape.
 *
 * @param shape    the shape of a matrix:
-* @param startNum the start number for the strides
-* @return the strides for a matrix of n dimensions
+* @param rank the number of dimensions
+* @return the strides for a matrix of n dimensions, starting at one
 */
 @Namespace("shape") public native @Cast("sd::LongType*") LongPointer calcStrides(@Cast("const sd::LongType*") LongPointer shape, @Cast("sd::LongType") long rank);
 @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer calcStrides(@Cast("const sd::LongType*") LongBuffer shape, @Cast("sd::LongType") long rank);
@@ -10799,6 +10865,11 @@ public static final int
 * @param rank the rank of the shape
 */
 
+/**
+ * Checks whether the shape information describes a column vector.
+ * @param shapeInfo the array shape information
+ * @return true for a vector whose first dimension is not one
+ */
 @Namespace("shape") public native @Cast("bool") boolean isColumnVector( @Cast("sd::LongType*") LongPointer shapeInfo);
 @Namespace("shape") public native @Cast("bool") boolean isColumnVector( @Cast("sd::LongType*") LongBuffer shapeInfo);
 @Namespace("shape") public native @Cast("bool") boolean isColumnVector( @Cast("sd::LongType*") long[] shapeInfo);
@@ -11058,11 +11129,10 @@ public static final int
 
 
 /**
-*
-* @param length
-* @param shape
-* @param rearrange
-* @return
+ * Permutes the shape entries in place.
+ * @param length the number of shape entries
+ * @param shape the shape entries to update
+ * @param rearrange the permutation of dimension indices
 */
 @Namespace("shape") public native void doPermuteSwap(@Cast("sd::LongType") long length, @Cast("sd::LongType*") LongPointer shape, @Cast("sd::LongType*") LongPointer rearrange);
 @Namespace("shape") public native void doPermuteSwap(@Cast("sd::LongType") long length, @Cast("sd::LongType*") LongBuffer shape, @Cast("sd::LongType*") LongBuffer rearrange);
@@ -11114,10 +11184,11 @@ public static final int
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-/**
-* @param toCopy the shape to copy
-* @return a copy of the original struct
-*/
+/*
+ * shapeCopy returns a copy of the ShapeInformation struct toCopy, with separate
+ * shape and stride arrays. This native-only helper is skipped by JavaCPP; keep
+ * its documentation a plain comment rather than Javadoc for a later declaration.
+ */
 @Namespace("shape") public native ShapeInformation shapeCopy(ShapeInformation toCopy);
 
 @Namespace("shape") public native void fillStrides(@Cast("sd::LongType*") LongPointer shapeInfo);
@@ -12537,12 +12608,17 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 
 // #define _SELECTOR_TRIPLE_3(NAME, SIGNATURE, TYPE_X, TYPE_Y, ENUM_Z, TYPE_Z)
 //     case sd::DataType::ENUM_Z: {
+//         bool sdTripleDispatched = false;
 //         SD_IF_TRIPLE_COMPILED(
 //             SD_CAT(SD_TYPE_TO_NUM_, TYPE_X),
 //             SD_CAT(SD_TYPE_TO_NUM_, TYPE_Y),
 //             SD_CAT(SD_ENUM_TO_NUM_, ENUM_Z),
+//             sdTripleDispatched = true;
 //             NAME<TYPE_X, TYPE_Y, TYPE_Z> SIGNATURE;
 //         )
+//         if (!sdTripleDispatched) {
+//             THROW_EXCEPTION(#NAME ": unavailable type triple (" #TYPE_X ", " #TYPE_Y ", " #TYPE_Z ")");
+//         }
 //         break;
 //     };
 
@@ -16407,6 +16483,10 @@ public static final int
   public native int getNumberOfStructuralIArgs();
   public native int getNumberOfOrdinaryIArgs();
 
+  // Values (not just dimensions) read by calculateOutputShape. An explicit empty
+  // set denotes metadata-only inference; absent optional inputs need no sync.
+  public native @Cast("bool") boolean usesInputValuesForShape(int index);
+
 
 }
   // namespace ops
@@ -16491,7 +16571,7 @@ public static final int
   /**
    * Check if this version meets the minimum required version
    * @param min Minimum required version
-   * @return true if this version >= min
+   * @return true if this version &gt;= min
    */
   public native @Cast("bool") boolean meetsMinimum(@Const @ByRef HelperVersion min);
 
@@ -16499,7 +16579,7 @@ public static final int
    * Check if this version is within a range [min, max]
    * @param min Minimum version (inclusive)
    * @param max Maximum version (inclusive)
-   * @return true if min <= this <= max
+   * @return true if min &lt;= this &lt;= max
    */
   public native @Cast("bool") boolean inRange(@Const @ByRef HelperVersion min, @Const @ByRef HelperVersion max);
 
@@ -16737,7 +16817,7 @@ public static final long
    * Check if a helper meets minimum version requirements
    * @param name Library name
    * @param minVersion Minimum required version
-   * @return true if available and version >= minVersion
+   * @return true if available and version &gt;= minVersion
    */
   public native @Cast("bool") boolean checkVersion(@StdString BytePointer name, @Const @ByRef HelperVersion minVersion);
   public native @Cast("bool") boolean checkVersion(@StdString String name, @Const @ByRef HelperVersion minVersion);

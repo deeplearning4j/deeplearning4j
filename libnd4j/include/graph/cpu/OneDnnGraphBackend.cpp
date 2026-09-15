@@ -23,6 +23,7 @@
 #include <graph/cpu/OneDnnGraphBackend.h>
 #include <graph/cpu/OneDnnGraphEmitterCatalog.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspAnalysisUtils.h>
 #include <ops/declarable/platform/mkldnn/OnednnVersionProvider.h>
 #include <system/Environment.h>
 
@@ -142,6 +143,7 @@ bool OneDnnGraphBackend::canResolveSlot(const GraphBackendRequest& request,
 }
 
 bool OneDnnGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
+  if (dsp::hasNonLegacyMatmulArithmetic(slots, start, end)) return false;
   if (!isAvailable()) {
     DSP_DIAG(BACKEND, "OneDnnGraphBackend::canFuseSegment: oneDNN not available");
     return false;

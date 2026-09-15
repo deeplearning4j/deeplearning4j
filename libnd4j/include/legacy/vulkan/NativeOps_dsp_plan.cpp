@@ -198,15 +198,19 @@ sd::Pointer compileDynamicShapePlan(sd::Pointer serializedPlan, sd::LongType pla
   }
 }
 
-int executeDynamicShapePlan(sd::Pointer planHandle, OpaqueContext* opContext,
-                            sd::Pointer stream) {
+// Share Vulkan context mapping, stream ownership and completion for both entries.
+static int executePlanContext(sd::Pointer planHandle, OpaqueContext* opContext,
+                              sd::Pointer stream, bool steadyState) {
+  const char* entryPoint = steadyState ? "executeSteadyStatePlan" : "executeDynamicShapePlan";
   try {
     if (planHandle == nullptr) {
-      setPlanError(1, "executeDynamicShapePlan: null plan handle");
+      setPlanError(1, steadyState ? "executeSteadyStatePlan: null plan handle"
+                                 : "executeDynamicShapePlan: null plan handle");
       return 1;
     }
     if (opContext == nullptr) {
-      setPlanError(1, "executeDynamicShapePlan: null opContext");
+      setPlanError(1, steadyState ? "executeSteadyStatePlan: null opContext"
+                                 : "executeDynamicShapePlan: null opContext");
       return 1;
     }
 
@@ -217,16 +221,16 @@ int executeDynamicShapePlan(sd::Pointer planHandle, OpaqueContext* opContext,
     if (numInputs != plan->getNumExternalInputs()) {
       char message[256];
       std::snprintf(message, sizeof(message),
-                    "executeDynamicShapePlan: input count mismatch: got %d, expected %d",
-                    numInputs, plan->getNumExternalInputs());
+                    "%s: input count mismatch: got %d, expected %d",
+                    entryPoint, numInputs, plan->getNumExternalInputs());
       setPlanError(2, message);
       return 2;
     }
     if (numOutputs < 0) {
       char message[256];
       std::snprintf(message, sizeof(message),
-                    "executeDynamicShapePlan: output count mismatch: got %d, expected %d",
-                    boundOutputCount, plan->getNumRequestedOutputs());
+                    "%s: output count mismatch: got %d, expected %d",
+                    entryPoint, boundOutputCount, plan->getNumRequestedOutputs());
       setPlanError(3, message);
       return 3;
     }
@@ -237,7 +241,7 @@ int executeDynamicShapePlan(sd::Pointer planHandle, OpaqueContext* opContext,
       if (inputs[i] == nullptr) {
         char message[128];
         std::snprintf(message, sizeof(message),
-                      "executeDynamicShapePlan: null input at index %d", i);
+                      "%s: null input at index %d", entryPoint, i);
         setPlanError(4, message);
         return 4;
       }
@@ -246,9 +250,9 @@ int executeDynamicShapePlan(sd::Pointer planHandle, OpaqueContext* opContext,
           (buffer->isClosed() || buffer->isDestroyed() || !buffer->isValid())) {
         char message[256];
         std::snprintf(message, sizeof(message),
-                      "executeDynamicShapePlan: stale buffer at input %d "
+                      "%s: stale buffer at input %d "
                       "(closed=%d destroyed=%d valid=%d)",
-                      i, buffer->isClosed() ? 1 : 0,
+                      entryPoint, i, buffer->isClosed() ? 1 : 0,
                       buffer->isDestroyed() ? 1 : 0,
                       buffer->isValid() ? 1 : 0);
         setPlanError(5, message);
@@ -263,14 +267,17 @@ int executeDynamicShapePlan(sd::Pointer planHandle, OpaqueContext* opContext,
     auto* executionStream =
         VulkanExecutionStream::fromOpaque(requestedStream, false);
     if (executionStream == nullptr || !executionStream->isActive()) {
-      setPlanError(6, "executeDynamicShapePlan: invalid Vulkan execution stream");
+      setPlanError(6, steadyState ? "executeSteadyStatePlan: invalid Vulkan execution stream"
+                                 : "executeDynamicShapePlan: invalid Vulkan execution stream");
       return 6;
     }
 
     VulkanExecutionStreamGuard streamGuard(executionStream);
-    auto status = plan->execute(inputs.data(), numInputs, outputs.data(),
-                                numOutputs,
-                                reinterpret_cast<void*>(executionStream));
+    auto status = steadyState
+        ? plan->executeSteadyState(inputs.data(), numInputs, outputs.data(), numOutputs,
+                                  reinterpret_cast<void*>(executionStream))
+        : plan->execute(inputs.data(), numInputs, outputs.data(), numOutputs,
+                        reinterpret_cast<void*>(executionStream));
     if (status != Status::OK) {
       const char* detail =
           sd::LaunchContext::defaultContext()->errorReference()->errorMessage();
@@ -279,22 +286,23 @@ int executeDynamicShapePlan(sd::Pointer planHandle, OpaqueContext* opContext,
         // Root detail precedes wrapper metadata so ErrorReference truncation cannot
         // hide the Vulkan operation that actually failed.
         std::snprintf(message, sizeof(message),
-                      "%s [executeDynamicShapePlan returned %s (%d)]",
-                      detail, dsp::dspStatusName(status),
+                      "%s [%s returned %s (%d)]",
+                      detail, entryPoint, dsp::dspStatusName(status),
                       static_cast<int>(status));
       } else {
         std::snprintf(message, sizeof(message),
-                      "executeDynamicShapePlan returned %s (%d) without native "
+                      "%s returned %s (%d) without native "
                       "failure detail; the Vulkan plan path did not set "
                       "LaunchContext::errorReference",
-                      dsp::dspStatusName(status), static_cast<int>(status));
+                      entryPoint, dsp::dspStatusName(status), static_cast<int>(status));
       }
       setPlanError(static_cast<int>(status), message);
       return static_cast<int>(status);
     }
 
     if (!executionStream->synchronize()) {
-      setPlanError(7, "executeDynamicShapePlan: Vulkan stream synchronization failed");
+      setPlanError(7, steadyState ? "executeSteadyStatePlan: Vulkan stream synchronization failed"
+                                 : "executeDynamicShapePlan: Vulkan stream synchronization failed");
       return 7;
     }
 
@@ -307,6 +315,16 @@ int executeDynamicShapePlan(sd::Pointer planHandle, OpaqueContext* opContext,
     setPlanError(-1, e.what());
     return -1;
   }
+}
+
+int executeDynamicShapePlan(sd::Pointer planHandle, OpaqueContext* opContext,
+                            sd::Pointer stream) {
+  return executePlanContext(planHandle, opContext, stream, false);
+}
+
+int executeSteadyStatePlan(sd::Pointer planHandle, OpaqueContext* opContext,
+                          sd::Pointer stream) {
+  return executePlanContext(planHandle, opContext, stream, true);
 }
 
 void freeDynamicShapePlan(sd::Pointer handle) { delete planOf(handle); }

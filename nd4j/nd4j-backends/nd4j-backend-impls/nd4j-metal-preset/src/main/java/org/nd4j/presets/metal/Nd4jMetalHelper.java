@@ -20,6 +20,7 @@
 
 package org.nd4j.presets.metal;
 
+import org.nd4j.nativeblas.NativeOps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,11 +31,10 @@ import org.slf4j.LoggerFactory;
  * library and exposes device-level metadata without requiring the full preset
  * to be generated.</p>
  *
- * <p>At build time (when preset generation runs on macOS arm64) this class is
- * passed as the {@code helper} attribute of {@code @Properties}. It is invoked
- * after the preset class loads to perform any additional JNI/framework setup.</p>
+ * <p>The generated binding extends this abstract {@code NativeOps} base. The
+ * availability probes below are legacy placeholders, not native support checks.</p>
  */
-public class Nd4jMetalHelper {
+public abstract class Nd4jMetalHelper extends Nd4jMetalPresets implements NativeOps {
 
     private static final Logger log = LoggerFactory.getLogger(Nd4jMetalHelper.class);
 
@@ -46,7 +46,7 @@ public class Nd4jMetalHelper {
     public static final String METAL_LIBRARY_PATH_PROP = "nd4j.metal.library.path";
     public static final String METAL_LIBRARY_PATH_ENV  = "ND4J_METAL_LIBRARY_PATH";
 
-    private Nd4jMetalHelper() {}
+    protected Nd4jMetalHelper() {}
 
     /**
      * Returns true when:

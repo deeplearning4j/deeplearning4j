@@ -545,8 +545,8 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     for (size_t ki = 0; ki < compiledSeg->subKernels.size(); ki++) {
       auto& sk = compiledSeg->subKernels[ki];
       if (!sk.useIndirectArgs || !sk.cachedArgTableHostPinned) continue;
-      auto* hostPinned = static_cast<int64_t*>(sk.cachedArgTableHostPinned);
       int numArgs = static_cast<int>(sk.argSlotMapping.size());
+      std::vector<void*> preparedPointers(numArgs);
 
       for (int ai = 0; ai < numArgs; ai++) {
         auto& argMap = sk.argSlotMapping[ai];
@@ -557,11 +557,17 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         } else {
           if (argMap.slotIndex < totalOutputSlots) arr = outputSlots[argMap.slotIndex];
         }
-        if (arr) {
-          void* sbuf = arr->specialBuffer();
-          if (sbuf) hostPinned[ai] = reinterpret_cast<int64_t>(sbuf);
-        }
+        if (!arr) return failSegment("argument array is null before consolidated publication");
+        void* sbuf = arr->specialBuffer();
+        if (!sbuf && (arr->isEmpty() || arr->lengthOf() == 0))
+          sbuf = getDummyDevicePtrForDevice(execDevice, streamCaptureActive);
+        if (!sbuf) return failSegment("argument pointer is null before consolidated publication");
+        preparedPointers[ai] = sbuf;
       }
+      auto aliasStatus = prepareAliasBindings(sk, preparedPointers, externalInputs,
+          numExternalInputs, outputSlots, totalOutputSlots, actualStream, streamCaptureActive);
+      if (aliasStatus != Status::OK) return aliasStatus;
+      publishArgumentPointers(sk, preparedPointers, streamCaptureActive);
 
       // Log all arg addresses for ALL sub-kernels when VERIFY is enabled.
       // SKIP during stream capture: a->specialBuffer() can call syncToDevice()
@@ -622,8 +628,15 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       if (memcpyErr != cudaSuccess) {
         DSP_DIAG(MEMORY, "TritonGraphBackend: consolidated arg table H2D failed (%zu bytes): %s",
                   compiledSeg->consolidatedArgTableBytes, cudaGetErrorString(memcpyErr));
-        cudaGetLastError();
+        return failSegment("consolidated argument submission failed");
       } else {
+        size_t aliasCount = 0;
+        for (auto& kernel : compiledSeg->subKernels) {
+          recordKernelArgumentSubmission(kernel, actualStream);
+          aliasCount += kernel.aliasBindings.size();
+        }
+        DSP_DIAG(VERIFY, "TRITON_CONSOLIDATED_SUBMISSION: seg[%d-%d] bytes=%zu aliases=%zu",
+                 seg.def.startSlot, seg.def.endSlot, compiledSeg->consolidatedArgTableBytes, aliasCount);
         consolidatedArgsCopied = true;
         DSP_DIAG_SEG(EXECUTE, seg.def.startSlot, "TritonGraphBackend: consolidated arg table H2D: 1 copy of %zu bytes "
                      "(replaces %d per-kernel copies) for seg[%d-%d]",
@@ -756,8 +769,8 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         for (size_t rki = i; rki < compiledSeg->subKernels.size(); rki++) {
           auto& rsk = compiledSeg->subKernels[rki];
           if (!rsk.useIndirectArgs || !rsk.cachedArgTableHostPinned) continue;
-          auto* hostPinned = static_cast<int64_t*>(rsk.cachedArgTableHostPinned);
           int numArgs = static_cast<int>(rsk.argSlotMapping.size());
+          std::vector<void*> preparedPointers(numArgs);
           for (int ai = 0; ai < numArgs; ai++) {
             auto& argMap = rsk.argSlotMapping[ai];
             NDArray* arr = nullptr;
@@ -767,11 +780,17 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
             } else {
               if (argMap.slotIndex < totalOutputSlots) arr = outputSlots[argMap.slotIndex];
             }
-            if (arr) {
-              void* sbuf = arr->specialBuffer();
-              if (sbuf) hostPinned[ai] = reinterpret_cast<int64_t>(sbuf);
-            }
+            if (!arr) return failSegment("post-gap argument array is null");
+            void* sbuf = arr->specialBuffer();
+            if (!sbuf && (arr->isEmpty() || arr->lengthOf() == 0))
+              sbuf = getDummyDevicePtrForDevice(execDevice, false);
+            if (!sbuf) return failSegment("post-gap argument pointer is null");
+            preparedPointers[ai] = sbuf;
           }
+          auto aliasStatus = prepareAliasBindings(rsk, preparedPointers, externalInputs,
+              numExternalInputs, outputSlots, totalOutputSlots, actualStream, false);
+          if (aliasStatus != Status::OK) return aliasStatus;
+          publishArgumentPointers(rsk, preparedPointers, false);
         }
         // Re-copy entire consolidated arg table to device
         auto reErr = cudaMemcpyAsync(
@@ -783,8 +802,10 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
         if (reErr != cudaSuccess) {
           DSP_DIAG(MEMORY, "TritonGraphBackend: post-gap arg table re-copy FAILED: %s",
                     cudaGetErrorString(reErr));
-          cudaGetLastError();
+          return failSegment("post-gap consolidated argument submission failed");
         } else {
+          for (auto& kernel : compiledSeg->subKernels)
+            recordKernelArgumentSubmission(kernel, actualStream);
           DSP_DIAG(EXECUTE, "POST_GAP_ARG_TABLE_RECOPY: re-copied %zu bytes after gap [%d-%d] for seg[%d-%d]",
                    compiledSeg->consolidatedArgTableBytes,
                    nextSlotToRun, subKernel.startSlot_ - 1,
@@ -1822,6 +1843,7 @@ void TritonGraphBackend::invalidateCache() {
     if (!seg.subKernels.empty() && seg.subKernels[0].cachedArgTableDeviceId >= 0)
       segDeviceId = seg.subKernels[0].cachedArgTableDeviceId;
 
+    for (auto& kernel : seg.subKernels) releaseAliasBindings(kernel);
     // Free consolidated arg table buffers FIRST (before per-kernel cleanup,
     // because per-kernel pointers are offsets into these buffers).
     if (seg.useConsolidatedArgTable) {
@@ -1950,6 +1972,8 @@ bool TritonGraphBackend::rollbackCaptureOwnershipForSegments(
     }
 #endif
     for (auto& kernel : compiledSegment.subKernels) {
+      kernel.aliasBindingsCaptured = false;
+      kernel.argumentVersion = 0;
       if (!compiledSegment.useConsolidatedArgTable && kernel.cachedArgTableCaptureOwned) {
         void* replacement = memPool.allocatePinnedHost(kernel.cachedArgTableHostPinnedBytes);
         kernel.cachedArgTableHostPinned = replacement;
@@ -2009,6 +2033,7 @@ void TritonGraphBackend::invalidateCacheForSegments(
       unregisterLoadedKernel(&kernel);
     }
 
+    for (auto& kernel : seg.subKernels) releaseAliasBindings(kernel);
     // Free resources (same logic as invalidateCache)
     if (seg.useConsolidatedArgTable) {
       if (seg.consolidatedArgTableDevice != nullptr) {

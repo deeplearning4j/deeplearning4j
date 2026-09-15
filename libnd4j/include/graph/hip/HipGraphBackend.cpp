@@ -22,6 +22,7 @@
 #include <graph/hip/HipRuntimeManager.h>
 #include <graph/NativeDynamicShapePlan.h>   // NativeSlot, GraphSegment
 #include <graph/DspDiagnostics.h>
+#include <graph/DspAnalysisUtils.h>
 
 #include <string>
 #include <vector>
@@ -68,6 +69,7 @@ int HipGraphBackend::resolutionPriority(
 // ── GraphBackend::canFuseSegment ─────────────────────────────────────────────
 
 bool HipGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
+  if (dsp::hasNonLegacyMatmulArithmetic(slots, start, end)) return false;
   if (!isAvailable()) return false;
   if (slots == nullptr || start >= end) return false;
 

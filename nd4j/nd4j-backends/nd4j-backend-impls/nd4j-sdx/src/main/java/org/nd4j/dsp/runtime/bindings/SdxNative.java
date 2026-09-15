@@ -691,6 +691,31 @@ public static native @Cast("sdx_status_t") int sdxRunAllocating(
     @Cast("int32_t") int num_inputs,
     @Const sdx_run_options_t options);
 
+/**
+ * Steady-state counterpart of sdxRun. Uses NativeDynamicShapePlan's steady-state
+ * entry; the plan still owns lifecycle admission (including early warmup calls).
+ * Tensor validation, public-to-plan input mapping, serialization, strict backend
+ * policy, reports and caller-buffer copies are identical to sdxRun.
+ * Additive ABI v1 entry: no existing options/layout or run behavior changes.
+ */
+public static native @Cast("sdx_status_t") int sdxRunSteadyState(
+    sdx_context_t context,
+    @Const sdx_tensor_view_t inputs,
+    @Cast("int32_t") int num_inputs,
+    @Const sdx_tensor_view_t outputs,
+    @Cast("int32_t") int num_outputs,
+    @Const sdx_run_options_t options);
+
+/**
+ * Allocating-output counterpart of sdxRunSteadyState. Borrow results with
+ * sdxGetOutputTensor; the same next-run/context-destruction expiry applies.
+ */
+public static native @Cast("sdx_status_t") int sdxRunSteadyStateAllocating(
+    sdx_context_t context,
+    @Const sdx_tensor_view_t inputs,
+    @Cast("int32_t") int num_inputs,
+    @Const sdx_run_options_t options);
+
 public static native @Cast("const char*") BytePointer sdxGetLastError(@Const sdx_runtime_t runtime);
 public static native @Cast("sdx_status_t") int sdxGetExecutionReport(
     @Const sdx_context_t context,
