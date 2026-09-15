@@ -3,6 +3,14 @@ name: Publish staged release worker artifacts
 on:
   workflow_call:
     inputs:
+      stagingProfileId:
+        description: Exact compatibility staging profile ID.
+        type: string
+        default: ""
+      stagingRepositoryId:
+        description: Shared OPEN compatibility staging repository ID; required for release uploads.
+        type: string
+        default: ""
       fullRepository:
         type: boolean
         default: false
@@ -21,7 +29,7 @@ on:
         type: string
         default: 1.0.0-SNAPSHOT
       sourceRunId:
-        description: GitHub Actions run ID containing release-worker-* artifacts.
+        description: Comma-separated completed run IDs with disjoint workers and identical source/version.
         required: true
         type: string
       artifactPattern:
@@ -50,6 +58,14 @@ on:
         required: false
   workflow_dispatch:
     inputs:
+      stagingProfileId:
+        description: Exact compatibility staging profile ID.
+        type: string
+        default: ""
+      stagingRepositoryId:
+        description: Shared OPEN compatibility staging repository ID; required for release uploads.
+        type: string
+        default: ""
       fullRepository:
         description: Assemble the canonical native matrix and original Java reactor
         type: boolean
@@ -71,7 +87,7 @@ on:
         type: string
         default: 1.0.0-SNAPSHOT
       sourceRunId:
-        description: GitHub Actions run ID containing release-worker-* artifacts.
+        description: Comma-separated completed run IDs with disjoint workers and identical source/version.
         required: true
         type: string
       artifactPattern:
@@ -110,6 +126,7 @@ jobs:
           DEPLOY_TO_RELEASE_STAGING: ${{ inputs.deployToReleaseStaging }}
           DRY_RUN: ${{ inputs.dryRun }}
           FULL_REPOSITORY: ${{ inputs.fullRepository }}
+          SOURCE_RUN_ID: ${{ inputs.sourceRunId }}
           METADATA_FIX_COMMIT: ${{ inputs.metadataFixCommit }}
           DOCUMENTATION_FIX_COMMIT: ${{ inputs.documentationFixCommit }}
           SOURCE_FIX_COMMIT: ${{ inputs.sourceFixCommit }}
@@ -121,6 +138,10 @@ jobs:
           set -Eeuo pipefail
           [[ "${DEPLOY_TO_RELEASE_STAGING}" =~ ^[01]$ ]] || { echo 'deployToReleaseStaging must be 0 or 1' >&2; exit 2; }
           [[ "${DRY_RUN}" =~ ^(true|false)$ ]] || { echo 'dryRun must be true or false' >&2; exit 2; }
+          if [[ "${FULL_REPOSITORY:-false}" == true && "${SOURCE_RUN_ID:-}" == *,* ]]; then
+            echo 'Full repository recovery requires one source run; multi-run recovery uses canonical worker merging' >&2
+            exit 2
+          fi
           if [[ -n "${METADATA_FIX_COMMIT:-}" ]]; then
             [[ "${FULL_REPOSITORY:-false}" == true && "$METADATA_FIX_COMMIT" =~ ^[0-9a-f]{40}$ ]] || {
               printf 'Metadata repair requires full repository recovery and an immutable fix SHA\n' >&2; exit 2;
@@ -148,6 +169,14 @@ jobs:
               fi
             done
           fi
+      - name: Verify explicit OPEN release staging target
+        if: inputs.deployToReleaseStaging == '1' && inputs.dryRun == 'false'
+        env:
+          STAGING_PROFILE_ID: ${{ inputs.stagingProfileId }}
+          STAGING_REPOSITORY_ID: ${{ inputs.stagingRepositoryId }}
+          CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+        run: python3 release/central/ossrh.py check
       - name: Resolve staged worker artifacts
         id: artifacts
         uses: actions/github-script@v9
@@ -156,11 +185,14 @@ jobs:
           ARTIFACT_PATTERN: ${{ inputs.artifactPattern }}
         with:
           script: |
-            const runId = Number.parseInt(process.env.SOURCE_RUN_ID, 10);
-            if (!Number.isSafeInteger(runId) || runId <= 0) {
+            const rawIds = process.env.SOURCE_RUN_ID.split(',');
+            const runIds = rawIds.map(value => Number(value));
+            if (rawIds.some(value => !/^[1-9][0-9]*$/.test(value)) || runIds.some(id => !Number.isSafeInteger(id)) || new Set(runIds).size !== runIds.length) {
               core.setFailed(`Invalid source run ID: ${process.env.SOURCE_RUN_ID}`);
               return;
             }
+            const rows = [];
+            for (const runId of runIds) {
             const sourceRun = await github.rest.actions.getWorkflowRun({
               owner: context.repo.owner, repo: context.repo.repo, run_id: runId,
             });
@@ -198,7 +230,7 @@ jobs:
             const candidates = artifacts
               .filter((artifact) => !artifact.expired && matcher.test(artifact.name))
               .sort((left, right) => left.name.localeCompare(right.name));
-            const rows = [];
+            const previousCount = rows.length;
             for (const artifact of candidates) {
               const artifactId = artifact.name.replace(/^release-worker-/, '');
               const sourceJob = jobs.find((job) => job.name.endsWith(` / ${artifactId}`));
@@ -217,13 +249,17 @@ jobs:
                 );
                 continue;
               }
+              if (rows.some(row => row.name === artifact.name)) {
+                throw new Error(`Duplicate worker artifact across source runs: ${artifact.name}`);
+              }
               rows.push({
+                sourceRunId: String(runId),
                 name: artifact.name,
                 sourceJobId: String(sourceJob.id),
                 sourceSha: sourceJob.head_sha,
               });
             }
-            if (rows.length === 0) {
+            if (rows.length === previousCount) {
               core.setFailed(
                 `No verified successful artifacts matching ${pattern} were found in run ${runId}`,
               );
@@ -232,9 +268,13 @@ jobs:
             core.info(
               `Publishing ${rows.length} verified staged worker artifact(s) from run ${runId}`,
             );
+            }
             core.setOutput('artifacts', JSON.stringify(rows));
 
   publish:
+    concurrency:
+      group: ossrh-upload-${{ inputs.stagingRepositoryId || github.run_id }}
+      cancel-in-progress: false
     needs: matrix
     name: publish / merged staged Maven repository
     runs-on: ubuntu-22.04
@@ -242,13 +282,23 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Download staged worker artifact
-        uses: actions/download-artifact@v8
-        with:
-          pattern: ${{ inputs.artifactPattern }}
-          path: ${{ github.workspace }}/.release-worker-recovery
-          merge-multiple: false
-          run-id: ${{ inputs.sourceRunId }}
-          github-token: ${{ github.token }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERIFIED_ARTIFACTS: ${{ needs.matrix.outputs.artifacts }}
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          root = pathlib.Path(os.environ['GITHUB_WORKSPACE']) / '.release-worker-recovery'
+          for item in json.loads(os.environ['VERIFIED_ARTIFACTS']):
+              name = item['name']
+              if pathlib.Path(name).name != name or not name.startswith('release-worker-'):
+                  raise ValueError('Invalid artifact name')
+              subprocess.run(['gh', 'run', 'download', item['sourceRunId'],
+                              '--repo', os.environ['GITHUB_REPOSITORY'], '--name', name,
+                              '--dir', str(root / name)], check=True)
+          PY
       - name: Inspect staged worker artifact
         id: staged
         shell: bash
@@ -299,11 +349,11 @@ jobs:
             current_commit=$(python3 -c \
               'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["commit"])' \
               "${worker_root}/worker-config.json")
-            if [ "${current_commit}" != "${expected_commit}" ]; then
-              printf 'Worker source commit mismatch for %s: expected %s, got %s\n' \
-                "${artifact_name}" "${expected_commit}" "${current_commit}" >&2
-              exit 1
-            fi
+            # commitId-dispatched workflows resolve sourceRef to a pinned SHA,
+            # but record the run's branch head as sourceSha. The worker's own
+            # receipt is the authoritative built source; cross-artifact
+            # agreement is enforced below and audited by source_identity.py.
+            # RECEIPT_IS_AUTHORITATIVE
             if [ -z "${release_version}" ]; then
               release_version="${current_version}"
               source_commit="${current_commit}"
@@ -312,9 +362,7 @@ jobs:
                 "${release_version}" "${current_version}" >&2
               exit 1
             elif [ "${source_commit}" != "${current_commit}" ]; then
-              printf 'Staged workers disagree on source commit: %s vs %s\n' \
-                "${source_commit}" "${current_commit}" >&2
-              exit 1
+              python3 release/central/source_identity.py "${source_commit}" "${current_commit}"
             fi
           done
           if ! [[ "${source_commit}" =~ ^[0-9a-f]{40}$ ]]; then
@@ -448,6 +496,8 @@ jobs:
           # A release must not silently choose between conflicting POMs or binaries.
           if [[ "${RELEASE_VERSION}" == *-SNAPSHOT ]]; then
             merge_command+=(--allow-unclassified-duplicates)
+          else
+            merge_command+=(--canonical-worker-owners)
           fi
           repository_count=0
           while IFS= read -r repository; do
@@ -503,22 +553,22 @@ jobs:
           server-id: central
           server-username: CENTRAL_SONATYPE_TOKEN_USERNAME
           server-password: CENTRAL_SONATYPE_TOKEN_PASSWORD
-      - name: Stage merged Maven release in Central Portal
+      - name: Upload merged Maven release to shared OPEN staging
         if: ${{ steps.staged.outputs.publish == 'true' && steps.staged.outputs['publication-mode'] == 'release' }}
         shell: bash
         env:
           CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
           CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          STAGING_PROFILE_ID: ${{ inputs.stagingProfileId }}
+          STAGING_REPOSITORY_ID: ${{ inputs.stagingRepositoryId }}
         run: |
           set -Eeuo pipefail
           merged_root="${GITHUB_WORKSPACE}/.release-worker-recovery-merged"
-          python3 release/central/repository.py sign-bundle \
+          python3 release/central/ossrh.py upload \
             --repository "${merged_root}/maven-repository" \
-            --output "${merged_root}/central-bundle.zip"
-          python3 release/central/repository.py upload \
-            --bundle "${merged_root}/central-bundle.zip" \
-            --wait-seconds 5400 | tee "${merged_root}/central-deployment.log"
+            --receipt "${merged_root}/open-staging.json" \
+            2>&1 | tee "${merged_root}/central-deployment.log"
       - name: Retain merged Maven repository for build-only inspection
         if: ${{ always() && steps.staged.outputs.publish == 'false' }}
         uses: actions/upload-artifact@v7
@@ -534,10 +584,12 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: recovered-maven-publication-${{ steps.staged.outputs['release-version'] }}
+          include-hidden-files: true
           path: |
             ${{ github.workspace }}/.release-worker-recovery-merged/repository-manifest.json
             ${{ github.workspace }}/.release-worker-recovery-merged/repository-manifest.json.sha256
             ${{ github.workspace }}/.release-worker-recovery-merged/central-deployment.log
+            ${{ github.workspace }}/.release-worker-recovery-merged/open-staging.json
             ${{ github.workspace }}/.release-worker-recovery-merged/metadata-recovery-provenance.json
             ${{ github.workspace }}/.release-worker-recovery-merged/documentation-recovery-provenance.json
             ${{ github.workspace }}/.release-worker-recovery-merged/source-recovery-provenance.json

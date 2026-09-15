@@ -197,6 +197,30 @@
   </build>
 
   <profiles>
+    <profile>
+      <id>central-release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.jetbrains.dokka</groupId>
+            <artifactId>dokka-maven-plugin</artifactId>
+            <version>1.9.20</version>
+            <configuration>
+              <sourceDirectories>
+                <dir>${project.basedir}/src/main/kotlin</dir>
+              </sourceDirectories>
+            </configuration>
+            <executions>
+              <execution>
+                <id>central-kotlin-javadoc</id>
+                <phase>package</phase>
+                <goals><goal>javadocJar</goal></goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
 
     <profile>
       <id>release</id>

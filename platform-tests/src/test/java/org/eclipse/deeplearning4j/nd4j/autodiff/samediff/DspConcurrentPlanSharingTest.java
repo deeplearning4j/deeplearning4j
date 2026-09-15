@@ -103,12 +103,35 @@ public class DspConcurrentPlanSharingTest {
 
             sd.setGraphExecutionMode(mode);
 
-            // Pre-warm on main thread to get past initial compilation
+            // Check every warmup/capture/replay result, not merely successful
+            // execution: secondary-device capture must use the bound stream.
+            float[][] referenceW1 = w1.toFloatMatrix();
+            float[][] referenceW2 = w2.toFloatMatrix();
             INDArray warmupInput = Nd4j.randn(DataType.FLOAT, 1, 32);
             for (int i = 0; i < 10; i++) {
                 warmupInput.assign(Nd4j.randn(DataType.FLOAT, 1, 32));
-                sd.output(Collections.singletonMap("input", warmupInput), "output");
+                float[][] inputValues = warmupInput.toFloatMatrix();
+                double[] hiddenValues = new double[64];
+                for (int j = 0; j < 64; j++) {
+                    for (int k = 0; k < 32; k++)
+                        hiddenValues[j] += (double) inputValues[0][k] * referenceW1[k][j];
+                    hiddenValues[j] = Math.max(0.0, hiddenValues[j]);
+                }
+                INDArray actual = sd.output(Collections.singletonMap("input", warmupInput), "output").get("output");
+                assertNotNull(actual, mode + " warmup=" + i);
+                assertArrayEquals(new long[]{1, 16}, actual.shape());
+                float[][] actualValues = actual.toFloatMatrix();
+                for (int j = 0; j < 16; j++) {
+                    double expected = 0.0;
+                    for (int k = 0; k < 64; k++)
+                        expected += hiddenValues[k] * referenceW2[k][j];
+                    assertEquals(expected, actualValues[0][j], 1e-3 + Math.abs(expected) * 1e-4,
+                            mode + " warmup=" + i + " column=" + j);
+                }
             }
+
+            assertTrue(DspPlanAssertions.getTotalGraphReplays(sd) > 0,
+                    mode + ": warmup must reach graph replay, not remain in slot execution");
 
             // Now launch concurrent threads
             int numThreads = 4;
@@ -641,128 +664,7 @@ public class DspConcurrentPlanSharingTest {
     @EnumSource(value = GraphExecutionMode.class,
                 names = {"AUTO", "TRITON", "CUDA_GRAPHS"})
     void testConcurrentMarkVariableDuringExecution(GraphExecutionMode mode) throws Exception {
-        // This tests the critical race: one thread calls markVariable (triggering
-        // invalidateSegmentCaptures which resets segment executionCount to 0 and
-        // clears replay handles), while other threads are actively executing the
-        // plan. The fix for this is anySegmentNeedsWarmup() which forces full
-        // stream sync after invalidation instead of event-based sync.
-        SameDiff sd = SameDiff.create();
-        try {
-            // Build graph: input -> matmul(weight) -> relu -> output
-            INDArray w = Nd4j.randn(DataType.FLOAT, 32, 16);
-            SDVariable weight = sd.var("weight", w);
-            SDVariable input = sd.placeHolder("input", DataType.FLOAT, 1, 32);
-            SDVariable h = sd.mmul("hidden", input, weight);
-            SDVariable out = sd.nn().relu("output", h, 0);
-
-            sd.setGraphExecutionMode(mode);
-
-            // Pre-warm to get to REPLAYING
-            INDArray warmupInput = Nd4j.randn(DataType.FLOAT, 1, 32);
-            for (int i = 0; i < 10; i++) {
-                warmupInput.assign(Nd4j.randn(DataType.FLOAT, 1, 32));
-                sd.output(Collections.singletonMap("input", warmupInput), "output");
-            }
-
-            // Launch executor threads that continuously call sd.output()
-            int numExecutors = 3;
-            int stepsPerExecutor = 30;
-            ExecutorService executor = Executors.newFixedThreadPool(numExecutors + 1); // +1 for invalidator
-            AtomicInteger execErrors = new AtomicInteger(0);
-            AtomicInteger nanErrors = new AtomicInteger(0);
-            AtomicInteger staleErrors = new AtomicInteger(0);
-            CountDownLatch startLatch = new CountDownLatch(1);
-            CountDownLatch doneLatch = new CountDownLatch(numExecutors + 1);
-
-            // Executor threads: continuously run sd.output() with changing inputs
-            for (int t = 0; t < numExecutors; t++) {
-                final int threadId = t;
-                executor.submit(() -> {
-                    try {
-                        startLatch.await();
-                        INDArray threadInput = Nd4j.randn(DataType.FLOAT, 1, 32);
-                        Map<String, INDArray> ph = new LinkedHashMap<>();
-                        ph.put("input", threadInput);
-                        INDArray prevOutput = null;
-
-                        for (int step = 0; step < stepsPerExecutor; step++) {
-                            threadInput.assign(Nd4j.randn(DataType.FLOAT, 1, 32));
-                            try {
-                                Map<String, INDArray> result = sd.output(ph, "output");
-                                INDArray output = result.get("output");
-                                if (output == null) {
-                                    execErrors.incrementAndGet();
-                                    log.error("[EXEC_T{}] step {}: null output", threadId, step);
-                                    continue;
-                                }
-                                if (output.isNaN().any()) {
-                                    nanErrors.incrementAndGet();
-                                    log.error("[EXEC_T{}] step {}: NaN in output", threadId, step);
-                                }
-                                // Check for stale output (step 0 = step 1 bug)
-                                INDArray dup = output.dup();
-                                if (prevOutput != null && dup.equalsWithEps(prevOutput, 1e-6)) {
-                                    staleErrors.incrementAndGet();
-                                    log.error("[EXEC_T{}] step {}: stale output (identical to previous)",
-                                            threadId, step);
-                                }
-                                prevOutput = dup;
-                            } catch (Exception e) {
-                                execErrors.incrementAndGet();
-                                log.error("[EXEC_T{}] step {}: {}", threadId, step, e.getMessage());
-                            }
-                        }
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    } finally {
-                        doneLatch.countDown();
-                    }
-                });
-            }
-
-            // Invalidator thread: periodically calls markVariable on the weight
-            // via DspHandle — this triggers invalidateSegmentCaptures on the native plan
-            final DspHandle dspHandle = sd.dsp();
-            final int weightExtIdx = dspHandle.extInputIndex("weight");
-            executor.submit(() -> {
-                try {
-                    startLatch.await();
-                    // Give executor threads a head start
-                    Thread.sleep(10);
-                    for (int cycle = 0; cycle < 5; cycle++) {
-                        try {
-                            // Mark weight as variable — triggers invalidateSegmentCaptures
-                            dspHandle.markVariable(weightExtIdx);
-                            Thread.sleep(20); // Let executor threads run during invalidation
-                        } catch (Exception e) {
-                            log.error("[INVALIDATOR] cycle {}: {}", cycle, e.getMessage());
-                        }
-                    }
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                } finally {
-                    doneLatch.countDown();
-                }
-            });
-
-            startLatch.countDown();
-            assertTrue(doneLatch.await(120, TimeUnit.SECONDS),
-                    "Threads did not complete within 120s — possible deadlock");
-            executor.shutdown();
-
-            assertEquals(0, execErrors.get(),
-                    mode + ": " + execErrors.get() + " execution errors during concurrent markVariable");
-            assertEquals(0, nanErrors.get(),
-                    mode + ": " + nanErrors.get() + " NaN errors during concurrent markVariable");
-            // Stale errors are acceptable during the invalidation transition step
-            // but should not persist. We allow up to numExecutors * numCycles stale
-            // outputs (one per invalidation per thread).
-            int maxAllowedStale = numExecutors * 5;
-            assertTrue(staleErrors.get() <= maxAllowedStale,
-                    mode + ": " + staleErrors.get() + " stale outputs (max allowed: " + maxAllowedStale + ")");
-        } finally {
-            sd.close();
-        }
+        runConcurrentInvalidation(mode, true);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -952,110 +854,133 @@ public class DspConcurrentPlanSharingTest {
     @EnumSource(value = GraphExecutionMode.class,
                 names = {"AUTO", "TRITON", "CUDA_GRAPHS"})
     void testMarkVariableWithFixedInputs(GraphExecutionMode mode) throws Exception {
+        runConcurrentInvalidation(mode, false);
+    }
+
+    private void runConcurrentInvalidation(GraphExecutionMode mode, boolean changingInputs) throws Exception {
+        final int workers = 3;
+        final int rounds = 5;
         SameDiff sd = SameDiff.create();
+        ExecutorService pool = Executors.newFixedThreadPool(workers + 1);
+        List<Future<?>> futures = new ArrayList<>();
+        // Each worker publishes its own retained executor only after native replay.
+        // SameDiff/session/DspHandle lookup remains confined to that worker.
+        DynamicShapePlanExecutor[] targets = new DynamicShapePlanExecutor[workers];
+        CyclicBarrier roundStart = new CyclicBarrier(workers + 1);
+        CyclicBarrier roundEnd = new CyclicBarrier(workers + 1);
+        AtomicInteger successfulInvalidations = new AtomicInteger();
+        AtomicInteger successfulOutputs = new AtomicInteger();
+        AtomicReference<Throwable> firstFailure = new AtomicReference<>();
         try {
-            INDArray w = Nd4j.randn(DataType.FLOAT, 32, 16);
-            SDVariable weight = sd.var("weight", w);
             SDVariable input = sd.placeHolder("input", DataType.FLOAT, 1, 32);
-            SDVariable h = sd.mmul("hidden", input, weight);
-            SDVariable out = sd.nn().relu("output", h, 0);
-
-            sd.setGraphExecutionMode(mode);
-
-            // Pre-warm
-            INDArray warmupInput = Nd4j.randn(DataType.FLOAT, 1, 32);
-            for (int i = 0; i < 10; i++) {
-                warmupInput.assign(Nd4j.randn(DataType.FLOAT, 1, 32));
-                sd.output(Collections.singletonMap("input", warmupInput), "output");
-            }
-
-            int numExecutors = 3;
-            int stepsPerExecutor = 30;
-            ExecutorService executor = Executors.newFixedThreadPool(numExecutors + 1);
-            AtomicInteger valueErrors = new AtomicInteger(0);
-            AtomicInteger execErrors = new AtomicInteger(0);
-            CountDownLatch startLatch = new CountDownLatch(1);
-            CountDownLatch doneLatch = new CountDownLatch(numExecutors + 1);
-
-            // Each executor thread uses a FIXED input — never changes
-            for (int t = 0; t < numExecutors; t++) {
-                final int threadId = t;
-                executor.submit(() -> {
-                    try {
-                        startLatch.await();
-                        // Fixed input per thread — compute expected output
-                        float val = (threadId + 1) * 3.0f;
-                        INDArray threadInput = Nd4j.ones(DataType.FLOAT, 1, 32).mul(val);
-                        Map<String, INDArray> ph = new LinkedHashMap<>();
-                        ph.put("input", threadInput);
-
-                        // Compute expected via direct matmul + relu
-                        INDArray expected = org.nd4j.linalg.ops.transforms.Transforms.relu(
-                                threadInput.mmul(w), false);
-
-                        for (int step = 0; step < stepsPerExecutor; step++) {
-                            try {
-                                Map<String, INDArray> result = sd.output(ph, "output");
-                                INDArray output = result.get("output");
-                                if (output == null) {
-                                    execErrors.incrementAndGet();
-                                    continue;
-                                }
-                                INDArray dup = output.dup();
-                                if (!dup.equalsWithEps(expected, 0.1)) {
-                                    valueErrors.incrementAndGet();
-                                    log.error("[MV_T{}] step {}: wrong value. expected first={} got first={}",
-                                            threadId, step,
-                                            expected.getFloat(0), dup.getFloat(0));
-                                }
-                            } catch (Exception e) {
-                                execErrors.incrementAndGet();
-                                log.error("[MV_T{}] step {}: {}", threadId, step, e.getMessage());
-                            }
-                        }
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    } finally {
-                        doneLatch.countDown();
+            SDVariable sum = null;
+            float[][][] weights = new float[rounds][32][16];
+            for (int r = 0; r < rounds; r++) {
+                for (int k = 0; k < 32; k++) {
+                    for (int j = 0; j < 16; j++) {
+                        weights[r][k][j] = ((k + j + r) % 7 - 3) * 0.0625f;
                     }
-                });
-            }
-
-            // Invalidator thread: calls markVariable periodically
-            final DspHandle dspHandle = sd.dsp();
-            final int weightExtIdx = dspHandle.extInputIndex("weight");
-            executor.submit(() -> {
-                try {
-                    startLatch.await();
-                    Thread.sleep(10);
-                    for (int cycle = 0; cycle < 5; cycle++) {
-                        try {
-                            dspHandle.markVariable(weightExtIdx);
-                            Thread.sleep(20);
-                        } catch (Exception e) {
-                            log.error("[INVALIDATOR] cycle {}: {}", cycle, e.getMessage());
-                        }
-                    }
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                } finally {
-                    doneLatch.countDown();
                 }
-            });
-
-            startLatch.countDown();
-            assertTrue(doneLatch.await(120, TimeUnit.SECONDS),
-                    "Threads did not complete within 120s");
-            executor.shutdown();
-
-            assertEquals(0, execErrors.get(),
-                    mode + ": " + execErrors.get() + " execution errors");
-            // After markVariable, the weight hasn't actually changed value —
-            // so outputs should STILL be correct
-            assertEquals(0, valueErrors.get(),
-                    mode + ": " + valueErrors.get() + " value errors (markVariable + fixed inputs)");
+                SDVariable weight = sd.var("weight" + r, Nd4j.create(weights[r]));
+                SDVariable product = sd.mmul("product" + r, input, weight);
+                sum = sum == null ? product : sum.add(product);
+            }
+            sd.nn().relu("output", sum, 0);
+            sd.setGraphExecutionMode(mode);
+            for (int w = 0; w < workers; w++) {
+                final int worker = w;
+                futures.add(pool.submit(() -> {
+                    try (INDArray data = Nd4j.ones(DataType.FLOAT, 1, 32).muli(worker + 1)) {
+                        int step = 0;
+                        for (int round = 0; round < rounds; round++) {
+                            // Warm/rebuild the worker plan after each prior invalidation.
+                            for (int i = 0; i < 10; i++) {
+                                checkInvalidationOutput(sd, data, weights, worker,
+                                        changingInputs ? step++ : 0, mode);
+                                successfulOutputs.incrementAndGet();
+                            }
+                            assertTrue(sd.dsp().totalGraphReplays() > 0, "Worker must reach replay");
+                            assertEquals(PlanPhase.REPLAYING, sd.dsp().lifecycleSnapshot().getPlanPhase(),
+                                    "Each distinct variable mark must invalidate an active replay plan");
+                            targets[worker] = sd.getOrCreateSession().getDynamicShapePlanExecutor();
+                            assertNotNull(targets[worker]);
+                            roundStart.await(60, TimeUnit.SECONDS);
+                            // Race execution/readback with the invalidator targeting this executor.
+                            for (int i = 0; i < 6; i++) {
+                                checkInvalidationOutput(sd, data, weights, worker,
+                                        changingInputs ? step++ : 0, mode);
+                                successfulOutputs.incrementAndGet();
+                            }
+                            roundEnd.await(60, TimeUnit.SECONDS);
+                        }
+                    } catch (Throwable failure) {
+                        if (firstFailure.compareAndSet(null, failure))
+                            log.error("[INVALIDATION_WORKER] mode=" + mode + " worker=" + worker, failure);
+                        throw new RuntimeException(failure);
+                    }
+                }));
+            }
+            futures.add(pool.submit(() -> {
+                try {
+                    for (int round = 0; round < rounds; round++) {
+                        roundStart.await(60, TimeUnit.SECONDS);
+                        for (DynamicShapePlanExecutor target : targets) {
+                            assertTrue(target.markExternalInputVariable("weight" + round),
+                                    "Every round must mark a previously constant input");
+                            int completed = successfulInvalidations.incrementAndGet();
+                            log.info("[INVALIDATION_APPLIED] mode={} changing={} round={} completed={}",
+                                    mode, changingInputs, round, completed);
+                        }
+                        roundEnd.await(60, TimeUnit.SECONDS);
+                    }
+                } catch (Throwable failure) {
+                    if (firstFailure.compareAndSet(null, failure))
+                        log.error("[INVALIDATOR] mode=" + mode, failure);
+                    throw new RuntimeException(failure);
+                }
+            }));
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(180);
+            for (Future<?> future : futures) {
+                try {
+                    future.get(Math.max(1, deadline - System.nanoTime()), TimeUnit.NANOSECONDS);
+                } catch (ExecutionException failure) {
+                    // A peer may surface a broken barrier first. Preserve the original
+                    // worker/native exception, not its coordination consequence.
+                    throw new AssertionError("Concurrent invalidation failed after "
+                            + successfulInvalidations.get() + " successful invalidations and "
+                            + successfulOutputs.get() + " numerical outputs", firstFailure.get());
+                }
+            }
+            assertNull(firstFailure.get(), "No worker or invalidator failures are allowed");
+            assertEquals(workers * rounds, successfulInvalidations.get());
+            assertEquals(workers * rounds * 16, successfulOutputs.get());
+            log.info("[INVALIDATION_VERIFIED] mode={} changing={} successfulInvalidations={} numericalOutputs={}",
+                    mode, changingInputs, successfulInvalidations.get(), successfulOutputs.get());
         } finally {
-            sd.close();
+            pool.shutdownNow();
+            // Never release plan owners while the invalidator still has access.
+            if (pool.awaitTermination(65, TimeUnit.SECONDS)) sd.close();
+            else fail("Concurrent invalidation threads did not terminate; retained graph not closed");
+        }
+    }
+
+    private void checkInvalidationOutput(SameDiff sd, INDArray data, float[][][] weights,
+                                         int worker, int step, GraphExecutionMode mode) {
+        float value = 1.0f + worker + step * 0.125f;
+        // Fixed-input runs always pass step=0: no writes after initial allocation.
+        if (step > 0) data.assign(value);
+        INDArray actual = sd.output(Collections.singletonMap("input", data), "output").get("output");
+        assertNotNull(actual);
+        assertArrayEquals(new long[]{1, 16}, actual.shape());
+        float[] values = actual.data().asFloat();
+        for (int j = 0; j < 16; j++) {
+            double expected = 0;
+            for (float[][] weight : weights) {
+                for (int k = 0; k < 32; k++) expected += value * weight[k][j];
+            }
+            expected = Math.max(0, expected);
+            assertEquals(expected, values[j], 1e-4 + Math.abs(expected) * 1e-4,
+                    mode + " worker=" + worker + " step=" + step + " column=" + j);
         }
     }
 

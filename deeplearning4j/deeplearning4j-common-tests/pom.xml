@@ -31,6 +31,7 @@
     </parent>
 
     <artifactId>deeplearning4j-common-tests</artifactId>
+    <name>Deeplearning4j Common Tests</name>
 
     <properties>
         <module.name>deeplearning4j.common.tests</module.name>

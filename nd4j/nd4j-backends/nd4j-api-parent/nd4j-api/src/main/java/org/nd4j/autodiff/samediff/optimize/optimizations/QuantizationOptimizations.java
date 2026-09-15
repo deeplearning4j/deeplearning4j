@@ -437,6 +437,19 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
      */
     public static class RemoveRedundantCasts implements Optimizer {
 
+        private static boolean isLosslessWidening(DataType from, DataType to) {
+            if (from == null || to == null) return false;
+            if (from == to) return true;
+            // Equal widths do not imply equal precision/range (HALF versus BFLOAT16).
+            if (from == DataType.HALF || from == DataType.BFLOAT16)
+                return to == DataType.FLOAT || to == DataType.DOUBLE;
+            if (from == DataType.FLOAT) return to == DataType.DOUBLE;
+            // Keep signedness changes and integer/float compositions conservative.
+            return from.isIntType() && to.isIntType() && from.isSigned() == to.isSigned()
+                    && from.width() < to.width();
+        }
+
+
         private static final Set<Class<? extends DifferentialFunction>> APPLICABLE_OPS = new HashSet<>();
         static {
             APPLICABLE_OPS.add(Cast.class);
@@ -522,7 +535,7 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
                 return true;
             }
 
-            // Case 2: Chained casts — cast(cast(x, A), B) → cast(x, B)
+            // Case 2: Compose casts only when the intermediate preserves every source value.
             Variable inputVariable = helper != null ? helper.getVariable(inputVar) : sd.getVariables().get(inputVar);
             if (inputVariable != null) {
                 String producerOpName = inputVariable.getOutputOfOp();
@@ -532,21 +545,18 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
                         // Check if the intermediate cast output is only used by this cast
                         List<String> intermediateUsers = inputVariable.getInputsForOp();
                         if (intermediateUsers != null && intermediateUsers.size() == 1) {
-                            // A narrowing cast is a rounding/overflow boundary, not
-                            // redundant merely because another cast follows it.
-                            if (sd.outputs() != null && sd.outputs().contains(inputVar)) return false;
-                            List<String> innerInputs = producerOp.getInputsToOp();
-                            if (innerInputs == null || innerInputs.size() != 1) return false;
-                            String innerInput = innerInputs.get(0);
-                            SDVariable original = sd.getVariable(innerInput);
-                            DataType originalType = original == null ? null : original.dataType();
-                            boolean lossless = originalType != null && inputDtype != null
-                                    && (originalType == inputDtype
-                                    || ((originalType == DataType.HALF || originalType == DataType.BFLOAT16)
-                                        && (inputDtype == DataType.FLOAT || inputDtype == DataType.DOUBLE))
-                                    || (originalType == DataType.FLOAT && inputDtype == DataType.DOUBLE));
-                            if (!lossless) return false;
-                            // Rewire only after proving the inner conversion lossless.
+                            if (producerOp.getInputsToOp() == null || producerOp.getInputsToOp().size() != 1
+                                    || (sd.outputs() != null && sd.outputs().contains(inputVar))) {
+                                return false;
+                            }
+                            String innerInput = producerOp.getInputsToOp().get(0);
+                            SDVariable source = sd.getVariable(innerInput);
+                            DataType sourceType = source == null ? null : source.dataType();
+                            if (!isLosslessWidening(sourceType, inputDtype)
+                                    || (sourceType != outputDtype && !isLosslessWidening(inputDtype, outputDtype))) {
+                                return false;
+                            }
+                            // Rewire: this cast now takes the input of the inner cast
                             List<String> newInputs = new ArrayList<>(inputs);
                             newInputs.set(0, innerInput);
                             op.setInputsToOp(newInputs);

@@ -288,7 +288,31 @@ public final class ToolCallParser {
                     List.of("required XML tool call was missing or invalid"));
         }
         String content = trimmed.substring(0, envelopeStart).trim();
-        String envelope = trimmed.substring(envelopeStart);
+        List<ChatTemplate.ToolCall> calls = new ArrayList<>();
+        int cursor = envelopeStart;
+        while (cursor < trimmed.length()) {
+            int end = trimmed.indexOf(ChatTemplate.XML_TOOL_CALL_END, cursor);
+            if (end < 0) {
+                return new ParseResult(raw, content, List.of(),
+                        List.of("incomplete XML tool-call envelope"));
+            }
+            end += ChatTemplate.XML_TOOL_CALL_END.length();
+            ParseResult parsed = parseXmlCall(raw, content, trimmed.substring(cursor, end), declared);
+            if (!parsed.isClean()) {
+                // Never execute a partial sequence when an adjacent call is invalid.
+                return parsed;
+            }
+            calls.addAll(parsed.getToolCalls());
+            cursor = end;
+            while (cursor < trimmed.length() && " \t\r\n".indexOf(trimmed.charAt(cursor)) >= 0) {
+                cursor++;
+            }
+        }
+        return new ParseResult(raw, content, calls, List.of());
+    }
+
+    private static ParseResult parseXmlCall(String raw, String content, String envelope,
+                                           Map<String, ChatTemplate.Tool> declared) {
         Matcher function = XML_FUNCTION.matcher(envelope);
         if (!function.matches()) {
             return new ParseResult(raw, content, List.of(),

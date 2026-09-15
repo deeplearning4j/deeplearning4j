@@ -384,7 +384,44 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
                 if (slots[j].args.numIArgs < 1) continue;
                 if (slots[j].wiring.inputSourceIndices[0] != outputIdx) continue;
 
-                if (static_cast<DataType>(slots[j].args.iArgs[0]) != inputType) continue;
+                // Verify this is actually a reverse cast: first cast converts A→B (castTypeA = B),
+                // second cast must convert back B→A. The second cast's target type (iArgs[0])
+                // must differ from the first cast's target type AND must match the first cast's
+                // input dtype. Also the first cast must be only consumed by this second cast.
+                int castTypeB = static_cast<int>(slots[j].args.iArgs[0]);
+                if (castTypeA == castTypeB) continue;  // same target type = not a reverse cast
+
+                // Prove the ORIGINAL dtype, not merely the category of the two targets.
+                // At this stage external inputs have no dtype metadata. A prior cast is
+                // an authoritative source; otherwise retain the pair conservatively.
+                DataType sourceType = DataType::UNKNOWN;
+                int sourceIdx = slots[i].wiring.inputSourceIndices[0];
+                for (int p = 0; sourceIdx >= 0 && p < i; ++p) {
+                    if (slots[p].wiring.numOutputs == 1 &&
+                        slots[p].wiring.outputSlotIndices[0] == sourceIdx &&
+                        slotHasTrait(slots[p], sd::ops::OP_TRAIT_CAST) &&
+                        !slots[p].isIdentityOp() && slots[p].args.numIArgs > 0) {
+                        sourceType = static_cast<DataType>(slots[p].args.iArgs[0]);
+                        break;
+                    }
+                }
+                auto intermediateType = static_cast<DataType>(castTypeA);
+                auto resultType = static_cast<DataType>(castTypeB);
+                // Only exact floating widening followed by its inverse is admitted.
+                // HALF and BFLOAT16 have different exponent/mantissa ranges despite
+                // equal storage widths. Integer, mixed, and unknown pairs stay intact.
+                bool exactWidening =
+                    ((sourceType == HALF || sourceType == BFLOAT16) &&
+                     (intermediateType == FLOAT32 || intermediateType == DOUBLE)) ||
+                    (sourceType == FLOAT32 && intermediateType == DOUBLE);
+                if (sourceType != resultType || !exactWidening) {
+                    DSP_DIAG(FUSION, "cast elimination: retaining slots %d→%d "
+                             "(unproven lossless round trip: %d→%d→%d)",
+                             i, j, static_cast<int>(sourceType), castTypeA, castTypeB);
+                    continue;
+                }
+
+                if (!isOnlyConsumedOnce(consumerCounts, slots, numSlots, i)) break;
 
                 // Mark both as identity ops (skip execution, wire through)
                 slots[i].addOpTrait(sd::ops::OP_TRAIT_IDENTITY);

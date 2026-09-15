@@ -2808,6 +2808,34 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     /**
+     * Mark an input on this retained executor, rather than the calling thread's session.
+     * Safe against concurrent execution, reset and close. The owning session must remain
+     * alive; no native pointer escapes the lifecycle lock. Returns false for a redundant mark.
+     */
+    public boolean markExternalInputVariable(String name) {
+        nativeExecLock.lock();
+        int callerDevice = currentDeviceForTeardown();
+        try {
+            if (closed || nativePlanHandle == null || nativePlanHandle.isNull()) {
+                throw new IllegalStateException("Cannot mark input on a closed or uncompiled DSP executor");
+            }
+            ensureExecutionDevice();
+            int index = findExternalInputIndex(name);
+            if (index < 0) throw new IllegalArgumentException("Unknown DSP external input: " + name);
+            NativeOps ops = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            boolean changed = !ops.getPlanIsExternalInputVariable(nativePlanHandle, index);
+            ops.markPlanExternalInputVariable(nativePlanHandle, index);
+            return changed;
+        } finally {
+            try {
+                restoreCallerDeviceAfterTeardown(callerDevice);
+            } finally {
+                nativeExecLock.unlock();
+            }
+        }
+    }
+
+    /**
      * Monotonically add external inputs that native replay must treat as mutable.
      * Native plans can safely add variable externals, but cannot unmark an input
      * after freeze/capture analysis has seen it.

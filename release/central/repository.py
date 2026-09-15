@@ -164,6 +164,17 @@ def is_unclassified_coordinate(path: Path) -> bool:
     return path.name == f"{artifact_id}-{version}{path.suffix}"
 
 
+def _equivalent_duplicate(existing: Path, incoming: Path) -> bool:
+    """Whether two JARs differ only by ZIP entry timestamps."""
+    if existing.suffix != '.jar' or incoming.suffix != '.jar':
+        return False
+    try:
+        from .worker_merge import _jar_content_digest
+    except ImportError:
+        from worker_merge import _jar_content_digest
+    return _jar_content_digest(existing) == _jar_content_digest(incoming)
+
+
 def merge(
     inputs: list[Path],
     output: Path,
@@ -172,7 +183,17 @@ def merge(
     commit: str,
     *,
     allow_unclassified_duplicates: bool = False,
+    canonical_worker_owners: bool = False,
 ) -> dict:
+    include = None
+    if canonical_worker_owners:
+        if allow_unclassified_duplicates:
+            raise ValueError("Canonical ownership cannot use first-writer duplicate handling")
+        try:
+            from .worker_merge import select
+        except ImportError:
+            from worker_merge import select
+        include = select(inputs, release_version, commit)
     output.mkdir(parents=True, exist_ok=True)
     ownership: dict[str, list[str]] = {}
     with tempfile.TemporaryDirectory(prefix="dl4j-central-merge-") as temporary:
@@ -191,15 +212,19 @@ def merge(
             source_label = source.name if source.is_file() else source.parent.name
             for path in candidates:
                 relative = path.relative_to(root)
+                if include is not None and not include(source, relative):
+                    continue
                 destination = output / relative
                 key = relative.as_posix()
                 ownership.setdefault(key, []).append(source_label)
                 if destination.exists():
                     if digest(destination) != digest(path):
-                        if not (
+                        reproducible = (include is not None
+                                        and _equivalent_duplicate(destination, path))
+                        if not (reproducible or (
                             allow_unclassified_duplicates
                             and is_unclassified_coordinate(relative)
-                        ):
+                        )):
                             raise ValueError(
                                 f"conflicting duplicate Maven path {key} from {source}"
                             )
@@ -208,6 +233,11 @@ def merge(
                 shutil.copy2(path, destination)
     files = [{"path": path.relative_to(output).as_posix(), "sha256": digest(path), "size": path.stat().st_size, "shards": ownership[path.relative_to(output).as_posix()]} for path in repository_files(output)]
     manifest = {"schemaVersion": 1, "releaseVersion": release_version, "commit": commit, "workloads": ["maven", "sdk"], "files": files}
+    if canonical_worker_owners:
+        manifest['workerSources'] = [
+            {'worker': source.parent.name,
+             'commit': json.loads((source.parent / 'worker-config.json').read_text())['commit']}
+            for source in inputs]
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     Path(str(manifest_path) + ".sha256").write_text(f"{digest(manifest_path)}  {manifest_path.name}\n", encoding="ascii")
@@ -657,7 +687,8 @@ def materialize_test_repository(
     return manifest
 
 
-def sign_bundle(repository: Path, output: Path, gpg_executable: str = "gpg") -> None:
+def sign_repository(repository: Path, gpg_executable: str = "gpg") -> None:
+    """Sign a Maven image without imposing Portal bundle size/lifecycle semantics."""
     verify_release_metadata(repository)
     for path in primary_files(repository):
         signature = Path(str(path) + ".asc")
@@ -668,8 +699,11 @@ def sign_bundle(repository: Path, output: Path, gpg_executable: str = "gpg") -> 
             command.extend(["--pinentry-mode", "loopback", "--passphrase-fd", "0"])
             input_bytes = (passphrase + "\n").encode()
         subprocess.run([*command, str(path)], input=input_bytes, check=True)
-        for algorithm in CHECKSUMS:
-            Path(str(path) + f".{algorithm}").write_text(digest(path, algorithm) + "\n", encoding="ascii")
+        write_checksums([path, signature])
+
+
+def sign_bundle(repository: Path, output: Path, gpg_executable: str = "gpg") -> None:
+    sign_repository(repository, gpg_executable)
     output.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED, allowZip64=True) as archive:
         for path in sorted(repository.rglob("*")):
@@ -804,6 +838,7 @@ def parse_args() -> argparse.Namespace:
     merge_cmd.add_argument("--manifest", type=Path, required=True)
     merge_cmd.add_argument("--release-version", required=True)
     merge_cmd.add_argument("--commit", required=True)
+    merge_cmd.add_argument("--canonical-worker-owners", action="store_true")
     merge_cmd.add_argument(
         "--allow-unclassified-duplicates",
         action="store_true",
@@ -854,6 +889,7 @@ def main() -> None:
             args.release_version,
             args.commit,
             allow_unclassified_duplicates=args.allow_unclassified_duplicates,
+            canonical_worker_owners=args.canonical_worker_owners,
         )
     elif args.command == "materialize-test-repository":
         materialize_test_repository(args.input, args.output, args.manifest, args.release_version, args.commit)

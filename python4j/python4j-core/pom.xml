@@ -32,6 +32,7 @@
     </parent>
 
     <artifactId>python4j-core</artifactId>
+    <name>Python4J Core</name>
 
     <properties>
         <module.name>python4j.core</module.name>

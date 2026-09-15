@@ -229,13 +229,13 @@ case "${DL4J_FAMILY}" in
     [ "${backend}" != vulkan ] || append_sdx_modules
     flags=("-Dlibnd4j.${backend}")
     if [ "${DL4J_FAMILY}" = vulkan ] || [ "${DL4J_FAMILY}" = vulkan-mlir ]; then flags+=(-Dlibnd4j.triton=ON -Dlibnd4j.mlir=ON); fi
-    [ "${DL4J_FAMILY}" != vulkan-mlir ] || flags+=(-Dlibnd4j.mlir=ON)
+    [ "${DL4J_FAMILY}" != vulkan-mlir ] || flags+=(-Djavacpp.platform.extension=-compile "-Dlibnd4j.classifier=${classifier}")
     command=(mvn ${split_flags[@]+"${split_flags[@]}"} ${repo[@]+"${repo[@]}"} --no-transfer-progress "-P${backend}" "${sdx_profile[@]}" -pl "${modules}" "${flags[@]}" "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 "-Dplatform.classifier=${classifier}" ${also_make[@]+"${also_make[@]}"} --batch-mode "${sdx_maven_flags[@]}" "${DL4J_MAVEN_GOAL}" -DskipTests)
     ;;
   compat)
-    compat_modules=:nd4j-native-preset,:libnd4j,:nd4j-native
-    [ "$DL4J_BUILD_SDX" != 1 ] || compat_modules+=",:nd4j-sdx-preset,:nd4j-sdx-model,:nd4j-sdx,:nd4j-sdx-litertlm"
-    command=(mvn -pl "${compat_modules}" ${split_flags[@]+"${split_flags[@]}"} ${repo[@]+"${repo[@]}"} -Pcpu "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Pcpu ${sdx_profile[@]+"${sdx_profile[@]}"} ${also_make[@]+"${also_make[@]}"} --batch-mode -DskipTests -Dlibnd4j.extension=compat -Djavacpp.platform.extension=-compat -Dlibnd4j.classifier=linux-x86_64-compat ${sdx_maven_flags[@]+"${sdx_maven_flags[@]}"} "${DL4J_MAVEN_GOAL}")
+    modules=:nd4j-native-preset,:libnd4j,:nd4j-native
+    [ "$DL4J_BUILD_SDX" != 1 ] || modules+=",:nd4j-sdx-preset,:nd4j-sdx-model,:nd4j-sdx,:nd4j-sdx-litertlm"
+    command=(mvn -pl "${modules}" ${split_flags[@]+"${split_flags[@]}"} ${repo[@]+"${repo[@]}"} -Pcpu "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Pcpu ${sdx_profile[@]+"${sdx_profile[@]}"} ${also_make[@]+"${also_make[@]}"} --batch-mode -DskipTests -Dlibnd4j.extension=compat -Djavacpp.platform.extension=-compat -Dlibnd4j.classifier=linux-x86_64-compat ${sdx_maven_flags[@]+"${sdx_maven_flags[@]}"} "${DL4J_MAVEN_GOAL}")
     ;;
   zluda|windows-zluda)
     : "${DL4J_CUDA_VERSION:?DL4J_CUDA_VERSION is required}"
@@ -252,6 +252,17 @@ case "${DL4J_FAMILY}" in
       platform=windows-x86_64
       zluda_win=(-Dlibnd4j.platform=windows-x86_64 -Dlibnd4j.oom.killer=OFF)
     fi
+    zluda_compile=()
+    if [ "${DL4J_HELPER}" = compile ]; then
+      if [ "${DL4J_FAMILY}" = windows-zluda ]; then
+        printf 'ZLUDA compile requires managed LLVM/MLIR, which is unsupported with MSVC\n' >&2
+        exit 2
+      fi
+      zluda_compile=(-Dlibnd4j.triton=ON -Dlibnd4j.helpers=mlir -Dlibnd4j.mlir=ON)
+    elif [[ "${DL4J_PLATFORM_EXTENSION}" == *-compile ]]; then
+      printf 'ZLUDA compile classifiers require DL4J_HELPER=compile; a native-only rename is not supported\n' >&2
+      exit 2
+    fi
     zluda_modules+=,:libnd4j
     modules=${zluda_modules}
     append_sdx_modules
@@ -259,9 +270,14 @@ case "${DL4J_FAMILY}" in
     # Let CMake resolve the ZLUDA virtual architecture from the selected ROCm
     # SDK. Passing a CUDA-only list here used to inject compute_90 into ROCm 7
     # builds, which is outside ZLUDA's supported virtual-architecture contract.
-    command=(mvn ${split_flags[@]+"${split_flags[@]}"} ${repo[@]+"${repo[@]}"} "${zluda_profiles[@]}" "${sdx_profile[@]}" -Dlibnd4j.generate.flatc=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda -Dlibnd4j.cpu.compile.skip=true "-Dlibnd4j.zluda=${DL4J_ZLUDA_TARGET}" "-Dlibnd4j.zluda.version=${DL4J_ZLUDA_VERSION}" "-Djavacpp.platform.extension=${DL4J_PLATFORM_EXTENSION}" "-Dlibnd4j.classifier=${DL4J_CLASSIFIER}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" "-Djavacpp.platform=${platform}" ${rocm_version[@]+"${rocm_version[@]}"} ${zluda_win[@]+"${zluda_win[@]}"} --batch-mode -DskipTests "${sdx_maven_flags[@]}" -pl "${zluda_modules}" ${also_make[@]+"${also_make[@]}"} "${DL4J_MAVEN_GOAL}")
+    command=(mvn ${split_flags[@]+"${split_flags[@]}"} ${repo[@]+"${repo[@]}"} "${zluda_profiles[@]}" "${sdx_profile[@]}" -Dlibnd4j.generate.flatc=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda -Dlibnd4j.cpu.compile.skip=true "-Dlibnd4j.zluda=${DL4J_ZLUDA_TARGET}" "-Dlibnd4j.zluda.version=${DL4J_ZLUDA_VERSION}" "-Djavacpp.platform.extension=${DL4J_PLATFORM_EXTENSION}" "-Dlibnd4j.classifier=${DL4J_CLASSIFIER}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" "-Djavacpp.platform=${platform}" ${rocm_version[@]+"${rocm_version[@]}"} ${zluda_win[@]+"${zluda_win[@]}"} ${zluda_compile[@]+"${zluda_compile[@]}"} --batch-mode -DskipTests "${sdx_maven_flags[@]}" -pl "${zluda_modules}" ${also_make[@]+"${also_make[@]}"} "${DL4J_MAVEN_GOAL}")
     ;;
   *) printf 'Unsupported DL4J_FAMILY=%s\n' "${DL4J_FAMILY}" >&2; exit 2;;
+esac
+
+# The root reactor includes libnd4j only when the native profile is active.
+case ",${modules}," in
+  *,:libnd4j,*) command+=(-Pnative);;
 esac
 
 case "${1:---run}" in

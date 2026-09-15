@@ -73,6 +73,47 @@ using namespace ir_builder_internal;
 // argument passing via a pointer array.
 static constexpr int TRITON_DIRECT_ARG_LIMIT = 200;
 
+// MLIR integer types are signless: the NDArray dtype, not i8/i16/i32/i64,
+// determines extension and integer/float conversion semantics for an explicit cast.
+static mlir::Value emitDtypeCast(mlir::OpBuilder& builder, mlir::Location loc,
+                                mlir::Value value, mlir::Type targetElemType,
+                                DataType sourceDtype, DataType targetDtype) {
+  auto sourceElemType = getElementType(value);
+  auto tensorType = mlir::dyn_cast<mlir::RankedTensorType>(value.getType());
+  auto shapedType = [&](mlir::Type elementType) -> mlir::Type {
+    if (tensorType)
+      return mlir::RankedTensorType::get(tensorType.getShape(), elementType,
+                                         tensorType.getEncoding());
+    return elementType;
+  };
+  auto targetType = shapedType(targetElemType);
+  if (sourceElemType.isIntOrIndex() && DataTypeUtils::isU(sourceDtype)) {
+    if (mlir::isa<mlir::FloatType>(targetElemType)) {
+      // Convert directly, avoiding a double-rounded uint64 -> double -> float.
+      return builder.create<mlir::arith::UIToFPOp>(loc, targetType, value);
+    }
+    if (targetElemType.isIntOrIndex() &&
+        targetElemType.getIntOrFloatBitWidth() > sourceElemType.getIntOrFloatBitWidth()) {
+      return builder.create<mlir::arith::ExtUIOp>(loc, targetType, value);
+    }
+  }
+  if (mlir::isa<mlir::FloatType>(sourceElemType) && targetElemType.isIntOrIndex() &&
+      !targetElemType.isInteger(1)) {
+    if (targetElemType.getIntOrFloatBitWidth() < 32) {
+      // Match native CUDA byte/short conversion, signed and unsigned: truncate
+      // toward zero to int, then retain the low bits. Direct fptosi/fptoui i8/i16
+      // can saturate before narrowing (e.g. DOUBLE 65537 -> BYTE becomes -1, not 1).
+      // This preserves native behavior for finite values representable as int;
+      // out-of-range floating conversion is not a portable C++ guarantee.
+      auto integer = builder.create<mlir::arith::FPToSIOp>(loc, shapedType(builder.getI32Type()), value);
+      return builder.create<mlir::arith::TruncIOp>(loc, targetType, integer);
+    }
+    if (DataTypeUtils::isU(targetDtype))
+      return builder.create<mlir::arith::FPToUIOp>(loc, targetType, value);
+  }
+  return castTo(builder, loc, value, targetElemType);
+}
+
 // The register RoPE emitter gathers each element's partner from the current SSA
 // tile. A tile is safe when it contains whole heads, or when head-aligned sub-tiles
 // still contain every possible pair. Split-half RoPE needs the entire rotary prefix
@@ -1463,8 +1504,21 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
     if (!normMultiRow) {
       result.gridX = 1;
     }
+    // A standalone reduction has no in-kernel producer or consumer: each lane
+    // owns one compact output coordinate and reads only a prior phase's input.
+    // Cover every output tile without changing the ordered reduction arithmetic.
+    // Do not apply this to fused ranges: their intermediate-buffer barrier is
+    // block-local, so their producer/reduction dependencies need phase boundaries.
+    if (hasReduction && startSlot == endSlot && slots[startSlot].wiring.numInputs > 0) {
+      const auto layout = buildOrderedReductionLayout(
+          resolveShapeLocal(slots[startSlot].wiring.inputSourceIndices[0]), slots[startSlot]);
+      if (layout.valid) {
+        result.gridX = static_cast<int>(std::max<int64_t>(1,
+            (static_cast<int64_t>(layout.outputLength) + blockSize - 1) / blockSize));
+      }
+    }
     DSP_DIAG(COMPILE, "TritonIRBuilder::buildModule: %s grid for %s (BLOCK_SIZE=%d, gridX=%d)",
-              normMultiRow ? "multi-block" : "single-block",
+              result.gridX > 1 ? "multi-block" : "single-block",
               hasNormalization ? "normalization" : "segmented reduction",
               blockSize, result.gridX);
   }
@@ -2218,7 +2272,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
                   si, slot.args.numDArgs, slot.args.numIArgs, (int)targetDtype,
                   DataTypeUtils::asString(targetDtype).c_str());
         auto targetElemType = getMLIRType(builder, targetDtype);
-        auto opResult = castTo(builder, loc, inputIt->second, targetElemType);
+        auto opResult = emitDtypeCast(builder, loc, inputIt->second, targetElemType,
+                                      resolveDtypeLocal(inputSrc), targetDtype);
         for (int o = 0; o < slot.wiring.numOutputs; o++) {
           ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
         }
@@ -4726,8 +4781,9 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   // Element-wise kernels MUST use dynamic grid: the grid size depends on n_elements
   // passed at launch time. A fixed grid of 1 block only processes BLOCK_SIZE elements,
   // leaving larger outputs partially computed (stale data from previous step).
-  // Reductions/normalizations stay fixed at 1 block (set earlier at line ~3589)
-  // because they use block-local bar.sync barriers.
+  // Reductions/normalizations retain their explicitly configured grid. Standalone
+  // reductions tile compact outputs; fused reductions keep the block-local barrier
+  // contract. Their grid must not be recomputed from the input element count.
   bool hasReductionOrNorm = false;
   for (auto cat : categories) {
     if (cat == TritonOpCategory::REDUCTION || cat == TritonOpCategory::NORMALIZATION) {
@@ -6285,10 +6341,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                 targetDtype = resolveDtype(outIdx);
               }
               auto targetElemType = getMLIRType(builder, targetDtype);
-              auto opResult = castTo(builder, loc, inputIt->second, targetElemType);
-              for (int o = 0; o < slot.wiring.numOutputs; o++)
-                    ssaValues[slot.wiring.outputSlotIndices[o]] =
-                        roundSectionOutput(opResult, slot.wiring.outputSlotIndices[o]);
+              auto opResult = emitDtypeCast(builder, loc, inputIt->second, targetElemType,
+                                            resolveDtype(slot.wiring.inputSourceIndices[0]), targetDtype);
+              for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
             }
           } else if (cat == TritonOpCategory::REDUCTION) {
             // Segmented reduction: same approach as buildModule (lines 4159-4449).

@@ -32,6 +32,7 @@
     </parent>
 
     <artifactId>deeplearning4j-core</artifactId>
+    <name>Deeplearning4j Core</name>
 
     <properties>
         <test.offheap.size>14g</test.offheap.size>

@@ -1,0 +1,9 @@
+# Normalize all text to LF in the working tree on every platform so that
+# resources packaged into published JARs (properties, service descriptors,
+# XML) are byte-identical regardless of the building OS.
+* text=auto eol=lf
+
+# Windows batch files must keep CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf

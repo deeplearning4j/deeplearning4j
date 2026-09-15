@@ -169,7 +169,8 @@ static void releasePlanFrozenRefsForTeardown(
     const char* owner,
     bool shouldRelease,
     std::vector<DataBuffer*>& frozenProtectedRefBuffers,
-    std::vector<DataBuffer*>& frozenOutputRefBuffers) {
+    std::vector<DataBuffer*>& frozenOutputRefBuffers,
+    std::unordered_set<DataBuffer*>* protectedWeightBuffers = nullptr) {
   if (!shouldRelease) return;
 
   int protectedRemoved = 0;
@@ -181,6 +182,11 @@ static void releasePlanFrozenRefsForTeardown(
         protectedRemoved++;
       } else {
         protectedDead++;  // destroyed externally while pinned — must not touch
+        // The same raw pointer also participates in teardown weight migration.
+        // Removing its frozen ref is not enough: that later pass reads its byte
+        // length and device pointer. Retire the dead identity from both indexes
+        // before releasing the liveness evidence (Gemma repeated-call teardown).
+        if (protectedWeightBuffers != nullptr) protectedWeightBuffers->erase(db);
       }
     }
   }
@@ -5754,6 +5760,12 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
     // This supplements (rather than replaces) the actual DataBuffer/ref-count
     // checks in DspBufferColorMap and preserves its invariant that views and view
     // parents are never colored.
+    //
+    // Narrowing: the protection is INPUT-side permanent, OUTPUT-side conditional.
+    // A republished zero-copy view points at the still-protected source buffer,
+    // so the view-capable op's warmup DEDICATED output storage is abandoned at
+    // that instant and may be shared. A plain identity or in-place-fused reuse
+    // keeps publishing the source wrapper itself, so its output stays protected.
     std::unordered_set<int> coloringProtectedSlots;
     if (requestedOutputSlotIndices_ != nullptr) {
       for (int i = 0; i < numRequestedOutputs_; i++) {
@@ -5764,6 +5776,7 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
       }
     }
     const size_t requestedProtectedCount = coloringProtectedSlots.size();
+    size_t viewCapableOutputsNarrowed = 0;
     for (int stepIdx = 0; stepIdx < numSlots_; stepIdx++) {
       const NativeSlot& slot = slots_[stepIdx];
       if (!slot.aliasesInput() && !slot.isInPlaceFused()) continue;
@@ -5776,17 +5789,26 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
       if (sourceSlot >= 0 && sourceSlot < totalOutputSlots_) {
         coloringProtectedSlots.insert(sourceSlot);
       }
-      for (int output = 0; output < slot.wiring.numOutputs; output++) {
-        const int outputSlot = slot.wiring.outputSlotIndices[output];
-        if (outputSlot >= 0 && outputSlot < totalOutputSlots_) {
-          coloringProtectedSlots.insert(outputSlot);
+      if (!slot.isViewCapableOp()) {
+        for (int output = 0; output < slot.wiring.numOutputs; output++) {
+          const int outputSlot = slot.wiring.outputSlotIndices[output];
+          if (outputSlot >= 0 && outputSlot < totalOutputSlots_) {
+            coloringProtectedSlots.insert(outputSlot);
+          }
+        }
+      } else {
+        for (int output = 0; output < slot.wiring.numOutputs; output++) {
+          const int outputSlot = slot.wiring.outputSlotIndices[output];
+          if (outputSlot >= 0 && outputSlot < totalOutputSlots_) ++viewCapableOutputsNarrowed;
         }
       }
     }
     DSP_DIAG(MEMORY,
-             "phaseWarmup: coloring protected slots requested=%zu structuralAliases=%zu total=%zu",
+             "phaseWarmup: coloring protected slots requested=%zu structuralAliases=%zu "
+             "viewCapableOutputsNarrowed=%zu total=%zu",
              requestedProtectedCount,
              coloringProtectedSlots.size() - requestedProtectedCount,
+             viewCapableOutputsNarrowed,
              coloringProtectedSlots.size());
 
     try {
@@ -6152,8 +6174,18 @@ void NativeDynamicShapePlan::prepareFirstExecutionColoring() {
   int eligibleWriters = 0, alreadyAllocated = 0, maxSized = 0;
   for (int step = 0; step < numSlots_; ++step) {
     const auto& slot = slots_[step];
-    if (!slot.isFullyWriting() || slot.needsPrezero() || slot.aliasesInput() ||
-        slot.isViewCapableOp() || slot.isInPlaceFused() || slot.hasValueDependentShape() ||
+    // Narrowing: view-capable producers (reshape/transpose/squeeze/expand_dims)
+    // seed their outputs for first-pass coloring. A zero-copy view of the input
+    // never enters the color system (recordWarmup rejects views), and a frozen
+    // republish abandons the dedicated storage it would have colored, pointing
+    // instead at the still-protected input buffer. Identity keeps its output
+    // exclusion (it republishes the input wrapper itself); slice-class views
+    // stay dedicated (runtime offset selection).
+    const bool viewCapableProducer =
+        slot.isViewCapableOp() && !slot.hasOpTrait(sd::ops::OP_TRAIT_SLICE);
+    if (!slot.isFullyWriting() || slot.needsPrezero() || slot.isIdentityOp() ||
+        slot.isInPlaceFused() ||
+        (!viewCapableProducer && slot.hasValueDependentShape()) ||
         slot.flags.isDynamicShape || slot.fusedChain.isFusedChainHead || slot.fusedChain.isFusedChainTail ||
         slot.flags.ltEpilogueType != 0) continue;
     ++eligibleWriters;
@@ -6177,7 +6209,16 @@ void NativeDynamicShapePlan::prepareFirstExecutionColoring() {
       }
       if (noPayload && outputSlotMaxSizes_.count(si) == 0 &&
           slotLiveness_->producerStep[si] == step &&
-          slotLiveness_->lastConsumerStep[si] >= step) eligible[si] = true;
+          slotLiveness_->lastConsumerStep[si] >= step) {
+        eligible[si] = true;
+      } else if (outputSlots_[si] != nullptr && slot.isViewCapableOp()) {
+        DSP_DIAG(MEMORY, "WARMUP_COLOR_SEED_REJECT: slot=%d op=%s noPayload=%d maxSized=%d "
+                 "producerStep=%d expectProducer=%d lastConsumer=%d step=%d",
+                 si, slot.ident.opName.c_str(), noPayload ? 1 : 0,
+                 outputSlotMaxSizes_.count(si) != 0 ? 1 : 0,
+                 slotLiveness_->producerStep[si], step,
+                 slotLiveness_->lastConsumerStep[si], step);
+      }
     }
   }
   DSP_DIAG(MEMORY, "WARMUP_COLOR_WRITERS: eligible=%d preallocated=%d maxSized=%d",
@@ -6185,6 +6226,13 @@ void NativeDynamicShapePlan::prepareFirstExecutionColoring() {
   const auto eligibleBeforeAliases = std::count(eligible.begin(), eligible.end(), true);
   // Exclude both sides of every potential alias, including views that only
   // become zero-copy after freeze. Shape-control values also remain dedicated.
+  // Narrowing: a view-capable op's dedicated OUTPUT storage stays colorable —
+  // warmup has already taken its alias/copy branch or its frozen shape matches
+  // the warmup producer. On a frozen republish the dedicated array is abandoned
+  // (the view points at the still-protected input storage) and the later
+  // compute() refcount checks re-exclude the slot as soon as a view wrapper is
+  // actually observed. Identity and in-place-fused reuse keep the output-side
+  // exclusion because they keep publishing the source wrapper itself.
   for (int step = 0; step < numSlots_; ++step) {
     const auto& slot = slots_[step];
     if (!slot.aliasesInput() && !slot.isViewCapableOp() && !slot.isInPlaceFused() &&
@@ -6193,9 +6241,11 @@ void NativeDynamicShapePlan::prepareFirstExecutionColoring() {
       int si = slot.wiring.inputSourceIndices[i];
       if (si >= 0 && si < totalOutputSlots_) eligible[si] = false;
     }
-    for (int o = 0; o < slot.wiring.numOutputs; ++o) {
-      int si = slot.wiring.outputSlotIndices[o];
-      if (si >= 0 && si < totalOutputSlots_) eligible[si] = false;
+    if (!slot.isViewCapableOp()) {
+      for (int o = 0; o < slot.wiring.numOutputs; ++o) {
+        int si = slot.wiring.outputSlotIndices[o];
+        if (si >= 0 && si < totalOutputSlots_) eligible[si] = false;
+      }
     }
   }
   for (int i = 0; i < numRequestedOutputs_; ++i) {
@@ -6216,7 +6266,11 @@ void NativeDynamicShapePlan::prepareFirstExecutionColoring() {
   for (int si = 0; si < totalOutputSlots_; ++si) {
     if (!eligible[si]) continue;
     const int last = slotLiveness_->lastConsumerStep[si];
-    if (last < 0 || last >= numSlots_ || readers[si].empty()) { eligible[si] = false; continue; }
+    if (last < 0 || last >= numSlots_ || readers[si].empty()) {
+      DSP_DIAG(MEMORY, "WARMUP_COLOR_READER_REJECT: slot=%d last=%d readers=%zu",
+               si, last, readers[si].size());
+      eligible[si] = false; continue;
+    }
     const int producer = slotLiveness_->producerStep[si];
     for (int reader : readers[si]) {
       if (slots_[reader].targetDeviceId != slots_[producer].targetDeviceId) { eligible[si] = false; break; }
@@ -6946,6 +7000,20 @@ Status NativeDynamicShapePlan::phaseShapeInferenceOnly(
 Status NativeDynamicShapePlan::dispatchSegment(
     GraphSegment& seg, NDArray** externalArrays, int numExt,
     void* stream, bool& usedGraph) {
+#ifdef SD_CUDA
+  // Segment binding has already selected the device and its execution stream.
+  // TLS stores a stream HANDLE; downstream plan APIs take ADDRESS OF handle.
+  // Keep that storage alive across staging, warmup, capture and replay rather
+  // than forwarding the original (possibly primary-device) plan stream.
+  cudaStream_t segmentStream = reinterpret_cast<cudaStream_t>(dspGetExecutionStream());
+  if (segmentStream == nullptr && stream != nullptr)
+    segmentStream = *static_cast<cudaStream_t*>(stream);
+  stream = &segmentStream;
+  // Kernels resolving LaunchContext/TLS must use the same stream as capture.
+  // Restore the incoming thread state before the caller restores its device.
+  DspThreadState segmentState(segmentStream, segmentStream,
+                              tl_graphExecutionActive, tl_dspReplayActive);
+#endif
   usedGraph = false;
   const GraphCompilationPolicy compilationPolicy =
       makeGraphBackendRequest().compilationPolicy();
@@ -7800,7 +7868,8 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
     if (frozenRefsReleasedForTeardown) return;
     frozenRefsReleasedForTeardown = true;
     releasePlanFrozenRefsForTeardown("releaseGpuIntermediates", hadFrozenRefsOnEntry,
-                                     frozenProtectedRefBuffers_, frozenOutputRefBuffers_);
+                                     frozenProtectedRefBuffers_, frozenOutputRefBuffers_,
+                                     &protectedWeightBuffers_);
   };
 
   if (outputSlots_) {
@@ -8138,6 +8207,18 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   // re-allocated lazily on the next executeSteadyState() / execute() call.
   DSP_DIAG(MEMORY, "releaseGpuIntermediates: Step 4d staging buffers=%p numExtInputs=%d secondaryDevices=%zu",
            (void*)placeholderStagingBuffers_, numExternalInputs_, deviceStagingBuffers_.size());
+  // A requested identity output can be the staging array itself; a requested
+  // view can also borrow its allocation. Transfer that owner to the requested
+  // output retirement queue rather than deleting it from a second owner table.
+  // Ordinary release preserves borrowed outputs; AfterOutputCopy drains this
+  // queue only after all native consumers have retired.
+  std::unordered_set<DataBuffer*> retainedOutputBuffers;
+  std::unordered_set<NDArray*> retainedOutputArrays;
+  for (auto* arr : retiredRequestedOutputOwners_) {
+    if (arr == nullptr) continue;
+    retainedOutputArrays.insert(arr);
+    if (arr->dataBuffer() != nullptr) retainedOutputBuffers.insert(arr->dataBuffer());
+  }
   int freedStaging = 0;
   auto freeStagingArray = [&](NDArray** buffers, const char* label) {
     if (buffers == nullptr) return;
@@ -8148,6 +8229,13 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
       bool dbSafe = (db != nullptr && db->isValid() && !db->isClosed());
       DSP_DIAG(MEMORY, "releaseGpuIntermediates: %s staging[%d] ptr=%p dbSafe=%d",
                label, i, (void*)staging, (int)dbSafe);
+      if (retainedOutputBuffers.count(db) != 0) {
+        if (retainedOutputArrays.insert(staging).second) {
+          retiredRequestedOutputOwners_.push_back(staging);
+        }
+        buffers[i] = nullptr;
+        continue;
+      }
       if (dbSafe) db->deleteBuffers();
       staging->setShapeInfo((sd::LongType*)nullptr);
       delete staging;
@@ -8222,6 +8310,12 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   // to suppress invalid per-buffer frees. Only now is it safe to unregister and
   // release the plan-owned arena. This is the same ordering used by the destructor.
   platformFreeCaptureWorkspace();
+
+  // The staging allocation generation ended above. All graph executables and
+  // their deferred replay handles are now retired, so their address baseline
+  // must not be compared with the next generation's lazily allocated staging.
+  // Keep verifyStagingNotStale strict while any captured graph remains live.
+  prevStagingAddresses_.clear();
 
   // ── Step 5: Reset execution state so plan re-warms on next execute() ────
   viewProducerDetectionDone_ = false;

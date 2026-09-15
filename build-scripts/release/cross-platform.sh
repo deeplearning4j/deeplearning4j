@@ -51,12 +51,14 @@ fi
 # Architecture selects only cross-platform toolchain behavior. Accelerator profiles
 # belong exclusively to their explicit CUDA, Metal, TPU, Hexagon, Vulkan, and ZLUDA
 # matrix lanes; inferring them here would contaminate CPU builds.
-tokenizers=(mvn -pl :libtokenizers,:tokenizers-native-preset,:tokenizers-native --also-make "-Djavacpp.platform=${DL4J_PLATFORM}" ${mingw[@]+"${mingw[@]}"} ${repository[@]+"${repository[@]}"} -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false --no-transfer-progress --batch-mode "${DL4J_MAVEN_GOAL}" -DskipTests ${tokenizers_java_flags[@]+"${tokenizers_java_flags[@]}"})
-java=(mvn -pl '!:blas-lapack-generator,!:libnd4j-gen,!:libnd4j,!:libtokenizers,!:tokenizers-native-preset,!:tokenizers-native,!:platform-tests' ${protoc_profile[@]+"${protoc_profile[@]}"} "${sdx_profile[@]}" ${repository[@]+"${repository[@]}"} -DskipTestResourceEnforcement=true "-Djavacpp.platform=${DL4J_PLATFORM}" ${mingw[@]+"${mingw[@]}"} -Dmaven.javadoc.failOnError=false -Dmaven.test.skip=true --no-transfer-progress --batch-mode "${DL4J_MAVEN_GOAL}")
+tokenizers=(mvn -Ptokenizers-native -pl :libtokenizers,:tokenizers-native-preset,:tokenizers-native --also-make "-Djavacpp.platform=${DL4J_PLATFORM}" ${mingw[@]+"${mingw[@]}"} ${repository[@]+"${repository[@]}"} -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false --no-transfer-progress --batch-mode "${DL4J_MAVEN_GOAL}" -DskipTests ${tokenizers_java_flags[@]+"${tokenizers_java_flags[@]}"})
+# Native, tokenizer and codegen-native children are profile-gated out of the
+# default Java reactor. Do not exclude absent projects: Maven rejects them.
+java=(mvn ${protoc_profile[@]+"${protoc_profile[@]}"} ${sdx_profile[@]+"${sdx_profile[@]}"} ${repository[@]+"${repository[@]}"} -DskipTestResourceEnforcement=true "-Djavacpp.platform=${DL4J_PLATFORM}" ${mingw[@]+"${mingw[@]}"} -Dmaven.javadoc.failOnError=false -Dmaven.test.skip=true --no-transfer-progress --batch-mode "${DL4J_MAVEN_GOAL}")
 
 # Append last so release validation cannot be weakened by snapshot defaults.
-tokenizers+=("${metadata_flags[@]}")
-java+=("${metadata_flags[@]}")
+tokenizers+=(${metadata_flags[@]+"${metadata_flags[@]}"})
+java+=(${metadata_flags[@]+"${metadata_flags[@]}"})
 
 print_command() {
   printf '%q ' "$@"

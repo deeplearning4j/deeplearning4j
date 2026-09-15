@@ -3726,11 +3726,19 @@ def attest_zluda_configuration(build: dict) -> None:
         failures.append(str(error))
         rocm_suffix = "-zluda"
     expected_classifier_suffix = f"-cuda-{build.get('cudaVersion', '')}{rocm_suffix}"
-    if not variants or any(
-            variant.get("classifierSuffix") != expected_classifier_suffix
-            or variant.get("platformExtension") != rocm_suffix
-            for variant in variants):
-        failures.append("ZLUDA classifier/platform extension is not ROCm-qualified")
+    if not variants:
+        failures.append("ZLUDA variants are missing")
+    for variant in variants:
+        compile_variant = variant.get("name") == "compile"
+        extension = "-compile" if compile_variant else ""
+        if (variant.get("classifierSuffix") != expected_classifier_suffix + extension
+                or variant.get("platformExtension") != rocm_suffix + extension):
+            failures.append("ZLUDA classifier/platform extension is not ROCm-qualified")
+        if compile_variant and (
+                build.get("javacppPlatform", "").startswith("windows-")
+                or variant.get("windowsNativeCompile")
+                or not variant.get("mlir") or not variant.get("triton")):
+            failures.append("ZLUDA compile requires Linux managed Triton/MLIR; MSVC is unsupported")
     if failures:
         raise RuntimeError("ZLUDA configuration attestation failed: " + "; ".join(failures))
     print(
@@ -3817,20 +3825,6 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
             "DL4J_SDX_OUTPUT_PATH": str(sdx_output),
             "DL4J_SDX_CLASSIFIER": sdx_variant_artifact_classifier(build, variant),
         })
-        if family == "vulkan-mlir" and variant.get("mlir"):
-            # native-platform.sh uses platform.classifier for the JavaCPP
-            # platform, but the compile-only Vulkan/MLIR lane also needs the
-            # matching platform extension and libnd4j classifier.  Inject
-            # these through the shared Maven flags so the Azure worker can
-            # apply the fix without requiring a pushed source commit.
-            existing_mvn_flags = variant_env.get("DL4J_MVN_FLAGS", "").strip()
-            compile_flags = (
-                "-Djavacpp.platform.extension=-compile "
-                "-Dlibnd4j.classifier=linux-x86_64-compile"
-            )
-            variant_env["DL4J_MVN_FLAGS"] = (
-                f"{existing_mvn_flags} {compile_flags}".strip()
-            )
         if build["javacppPlatform"].startswith("android-"):
             # Forward build so DL4J_ANDROID_API agrees with android_cmake_args
             # (android-x86_64 defaults to API 23; the previous API-21 triple

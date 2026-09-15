@@ -32,6 +32,7 @@
     </parent>
 
     <artifactId>netty-common</artifactId>
+    <name>ND4J Shaded Netty Common</name>
 
     <properties>
         <skipTestResourceEnforcement>true</skipTestResourceEnforcement>

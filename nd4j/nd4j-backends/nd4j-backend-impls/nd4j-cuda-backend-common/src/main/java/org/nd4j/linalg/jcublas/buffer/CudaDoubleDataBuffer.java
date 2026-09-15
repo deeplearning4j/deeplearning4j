@@ -167,6 +167,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public double[] asDouble() {
+        // BaseCudaDataBuffer synchronizes once, then reads doubles without narrowing.
         return super.asDouble();
     }
 

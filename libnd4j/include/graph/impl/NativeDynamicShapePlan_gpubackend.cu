@@ -712,7 +712,7 @@ static bool instantiateAndStoreMergedCapture(
   // produced its visible output. Launching each captured island here would run
   // it outside the composite gap/group schedule and mutate live intermediates
   // before later islands are captured. Store the executable without launching;
-  // the next plan execution replays it after argument refresh in schedule order.
+  // the completed composite replays it after argument refresh in schedule order.
   DSP_DIAG(EXECUTE, "%s: group=%d [%d-%d] INSTANTIATE_COMPLETE nodes=%zu graphExec=%p "
            "(first launch deferred to schedule-ordered composite replay)",
            diagPrefix, mergedGroupId, startSlot, endSlot, nodeCount,
@@ -3916,6 +3916,38 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
       CUcontext prevCtx = nullptr;
       bool didPushCtx = pushPrimaryCtxIfConfigured(tritonCaptureDevice, &primaryCtx, &prevCtx);
 
+      // A segment's warmup may reuse a buffer that held an input produced by
+      // an earlier segment. Capture records addresses only; its first ordered
+      // replay must see the original live-in VALUES, not the warmup's later
+      // writes to those addresses. Keep invocation-local copies without changing
+      // any plan buffer assignment or captured pointer.
+      struct CaptureLiveInputs {
+        std::vector<std::pair<int, NDArray*>> values;
+        ~CaptureLiveInputs() {
+          for (auto& value : values) delete value.second;
+        }
+      } captureLiveInputs;
+      if (!ctx.nativeOnlyGraphCapture) {
+        std::unordered_set<int> producedOutputs;
+        std::unordered_set<int> savedInputs;
+        for (int s = seg.def.startSlot; s <= seg.def.endSlot; ++s) {
+          for (int o = 0; o < slots_[s].wiring.numOutputs; ++o) {
+            producedOutputs.insert(slots_[s].wiring.outputSlotIndices[o]);
+          }
+        }
+        ScopedGapStreamOverride liveInputStream(ctx.cudaStr);
+        for (int s = seg.def.startSlot; s <= seg.def.endSlot; ++s) {
+          for (int i = 0; i < slots_[s].wiring.numInputs; ++i) {
+            int source = slots_[s].wiring.inputSourceIndices[i];
+            if (source >= 0 && source < totalOutputSlots_ &&
+                producedOutputs.count(source) == 0 && savedInputs.insert(source).second &&
+                outputSlots_[source] != nullptr) {
+              captureLiveInputs.values.emplace_back(source, outputSlots_[source]->dup());
+            }
+          }
+        }
+      }
+
       // ── PRE-CAPTURE WARMUP EXECUTION ────────────────────────────────────────
       // During CUDA graph capture, GPU operations are NOT executed — they are only
       // recorded into the graph.  The capture step's output buffers retain whatever
@@ -4700,15 +4732,52 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                if (!allIslandsOk) break;
              }
 
-             // The complete pre-capture warmup already executed this invocation.
-             // Captured producers are only recorded, not launched. Running a live
-             // consumer here would read reused warmup storage and execute stateful
-             // gaps twice. Preserve this unmerged unit for ordered future replay;
-             // downstream recording uses the metadata established by warmup.
-             DSP_DIAG(EXECUTE,
-                      "COMPOSITE_CAPTURE: gap [%d-%d] recording-only; warmup already executed",
-                      unit.startSlot, unit.endSlot);
-             continue;
+              // Prepare host-only/alias gap outputs for subsequent capture argument
+              // binding, but do not execute live compute against unlaunched producers.
+              // Warmup populated shapes and storage, not every intermediate VALUE:
+              // later warmup slots may already have reused an earlier producer's buffer.
+              // The completed composite executes compute gaps in dependency order below.
+              // A live-gap-only schedule has no deferred producers and executes here.
+              DSP_DIAG(EXECUTE, "COMPOSITE_CAPTURE: gap unit [%d-%d] — executing slots natively",
+                       unit.startSlot, unit.endSlot);
+             {
+               SyncOverride gapSync(*this, "composite_gap_native");
+               for (int s = unit.startSlot; s <= unit.endSlot; s++) {
+                 if (hasIslandUnits && !slotHasOnlyTransparentAliasOutputs(
+                         slots_[s], slotOwnership_, outputSlots_, effectiveExternalsForCapture,
+                         numExt, totalOutputSlots_)) {
+                   continue;
+                 }
+                 auto gapStatus = executeSlot(s, effectiveExternalsForCapture, numExt, stream);
+                 if (gapStatus != Status::OK) {
+                   DSP_DIAG(EXECUTE,
+                            "COMPOSITE_CAPTURE: gap slot %d FAILED status=%s (%d)",
+                            s, statusName_gpu(gapStatus),
+                            static_cast<int>(gapStatus));
+                   allIslandsOk = false;
+                   setCompositeCaptureFailureDetail(
+                       "native gap slot=" + std::to_string(s) + " op=" +
+                       slots_[s].ident.opName + " returned " +
+                       statusName_gpu(gapStatus) + " (" +
+                       std::to_string(static_cast<int>(gapStatus)) + ")");
+                   break;
+                 }
+               }
+             }
+
+             // Cross-stream sync after native gap ops
+             {
+               auto* lcStream = LaunchContext::defaultContext()->getCudaStream();
+               cudaStream_t gapStream = lcStream ? *lcStream : nullptr;
+               if (gapStream != nullptr && gapStream != ctx.cudaStr) {
+                 auto* execCtxMergeCap = static_cast<PlanExecutionContext*>(activeExecutionContext());
+                 cudaEvent_t evt = execCtxMergeCap ? reinterpret_cast<cudaEvent_t>(execCtxMergeCap->crossStreamEvent) : nullptr;
+                 if (evt != nullptr) {
+                   cudaEventRecord(evt, gapStream);
+                   cudaStreamWaitEvent(ctx.cudaStr, evt, 0);
+                 }
+               }
+             }
            } else {  // REPLAY_UNIT_TRITON_ISLAND
              int islandIdx = unit.islandIndex;
 
@@ -5144,11 +5213,24 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
            restoreCublasWorkspaceAfterCapture(stream);
            restoreSlotStates(slots_, seg.def.startSlot, seg.def.endSlot, savedSlotPhasesTriton);
 
-           // FORCE_RECAPTURE: invalidate graph immediately after composite capture+launch
-           // so the NEXT step also re-captures instead of replaying the just-captured graph.
-           // Without this, composite captures persist and the next step enters compositeReplay()
-           // instead of re-capturing — defeating the purpose of FORCE_RECAPTURE.
-           if (Environment::getInstance().tritonForceRecapture()) {
+           // Deliver this invocation only after capture metadata, cast-cache HWM,
+           // dispatch reconciliation and TLS cleanup are complete. Individual merged
+           // handles have not launched: replay the whole schedule exactly once so
+           // native gaps consume their captured producers before buffer reuse.
+           if (hasIslandUnits) {
+             {
+               ScopedGapStreamOverride liveInputStream(ctx.cudaStr);
+               for (auto& value : captureLiveInputs.values) {
+                 outputSlots_[value.first]->assign(value.second);
+               }
+             }
+             status = compositeReplay(seg, sched, externalArrays, numExt, stream);
+             if (status != Status::OK) return status;
+           }
+
+           // Island schedules already apply FORCE_RECAPTURE in compositeReplay.
+           // Live-gap-only schedules executed above and need the same invalidation.
+           if (!hasIslandUnits && Environment::getInstance().tritonForceRecapture()) {
              SegmentLifecycle::invalidateForRebuild(this, seg, "force_recapture_post_composite_capture");
              markBatchD2DInvalidated(seg, "force_recapture_post_composite_capture");
              DSP_DIAG(EXECUTE, "FORCE_RECAPTURE: invalidated after COMPOSITE capture+launch execCount=%d",

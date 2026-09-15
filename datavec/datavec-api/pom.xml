@@ -32,6 +32,7 @@
     </parent>
 
     <artifactId>datavec-api</artifactId>
+    <name>DataVec API</name>
 
     <properties>
         <module.name>datavec.api</module.name>

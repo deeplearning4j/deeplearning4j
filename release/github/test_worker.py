@@ -4,6 +4,8 @@ import importlib.util
 import os
 import subprocess
 import shutil
+import shlex
+import textwrap
 import tempfile
 import unittest
 from pathlib import Path
@@ -23,6 +25,20 @@ class WorkflowMatrixTests(unittest.TestCase):
     def setUpClass(cls):
         cls.plan = prepare_worker.load_json(ROOT / "release/aws/release-plan.json")
         cls.matrix = prepare_worker.load_json(ROOT / "release/github/workflow-matrix.json")
+
+    def test_cross_platform_tokenizers_activate_their_reactor_profile(self):
+        env = dict(os.environ, DL4J_PLATFORM="linux-x86_64", DL4J_OS="linux",
+                   DL4J_BUILD_SDX="0", DL4J_TOKENIZERS_JAVA="0")
+        script = str(ROOT / "build-scripts/release/cross-platform.sh")
+        tokenizers = shlex.split(subprocess.check_output(
+            ["bash", script, "--print-tokenizers"], env=env, text=True))
+        self.assertIn("-Ptokenizers-native", tokenizers)
+        self.assertNotIn("-Dlibtokenizers.cpu.compile.skip=true", tokenizers)
+        java = shlex.split(subprocess.check_output(
+            ["bash", script, "--print-java"], env=env, text=True))
+        self.assertNotIn("-pl", java)
+        self.assertNotIn("-Pnative", java)
+        self.assertNotIn("-Ptokenizers-native", java)
 
     def test_existing_dispatch_workflow_can_select_branch_only_matrices(self):
         workflow = (ROOT / ".github/workflows/build-deploy-cross-platform.yml").read_text()
@@ -155,7 +171,7 @@ class WorkflowMatrixTests(unittest.TestCase):
                 self.assertNotRegex(row["artifactId"], r"-cpu(?:-|$)", workflow)
                 if "-zluda" in row["shard"]:
                     self.assertRegex(
-                        row["artifactId"], r"-rocm-[0-9]+\.[0-9]+\.[0-9]+$", workflow
+                        row["artifactId"], r"-rocm-[0-9]+\.[0-9]+\.[0-9]+(?:-compile)?$", workflow
                     )
                 self.assertEqual(row["name"], row["artifactId"], workflow)
                 self.assertTrue(
@@ -345,6 +361,62 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertEqual("android-arm64-vulkan", rows[0]["artifactId"])
         self.assertEqual("android-arm64-vulkan", rows[0]["selector"])
 
+    def test_vulkan_and_zluda_resolved_compile_matrix(self):
+        rows = []
+        for workflow in ("build-deploy-linux-vulkan.yml",
+                         "build-deploy-linux-vulkan-mlir.yml",
+                         "build-deploy-linux-zluda.yml", "build-deploy-android-arm64.yml"):
+            for group in ("linux", "host"):
+                rows.extend(row for row in prepare_worker.workflow_rows(
+                    self.plan, self.matrix, workflow, group)
+                    if "vulkan" in row["shard"] or "zluda" in row["shard"])
+        expected = {"linux-x86_64-vulkan", "windows-x86_64-vulkan",
+                    "linux-x86_64-vulkan-mlir-compile", "android-arm64-vulkan"}
+        expected.update(
+            f"{os_name}-x86_64-cuda-12.9-zluda-rocm-{rocm}{extension}"
+            for os_name in ("linux", "windows")
+            for rocm in ("6.2.4", "7.2.4", "10.0.0")
+            for extension in (("", "-compile") if os_name == "linux" else ("",))
+        )
+        self.assertEqual(expected, {row["artifactId"] for row in rows})
+        self.assertEqual(len(expected), len(rows))
+        for row in rows:
+            group = "host" if row["os"] == "windows" else "linux"
+            resolved = prepare_worker.workflow_rows(
+                self.plan, self.matrix, "build-deploy-cross-platform.yml", group,
+                classifiers=row["artifactId"], selection_mode="targeted",
+            )
+            self.assertEqual([row], resolved)
+            print(f"resolved-plan {row['artifactId']} shard={row['shard']} "
+                  f"variant={row['variant']} cache={row['dependencyCacheKey']}")
+        shards = prepare_worker.plan_shards(self.plan)
+        for shard_id, original_base in {
+            "linux-x86_64-vulkan": {"name": "base", "suffix": "", "mlir": True, "triton": True},
+            "windows-x86_64-vulkan": {"name": "base", "suffix": ""},
+        }.items():
+            self.assertEqual(original_base, shards[shard_id]["build"]["variants"][0])
+            self.assertEqual(prepare_worker.dependency_cache_key(shard_id, original_base),
+                             next(row["dependencyCacheKey"] for row in rows if row["shard"] == shard_id))
+        for shard in shards.values():
+            build = shard["build"]
+            if not build.get("zludaVersion"):
+                continue
+            rocm = build["rocmVersion"]
+            original_base = {"name": "cuda-12.9",
+                             "classifierSuffix": f"-cuda-12.9-zluda-rocm-{rocm}",
+                             "platformExtension": f"-zluda-rocm-{rocm}"}
+            self.assertEqual(original_base, build["variants"][0])
+            self.assertEqual(
+                prepare_worker.dependency_cache_key(shard["id"], original_base),
+                next(row["dependencyCacheKey"] for row in rows
+                     if row["shard"] == shard["id"] and row["variant"] == "cuda-12.9"),
+            )
+            if shard["os"] == "linux":
+                self.assertNotEqual(
+                    prepare_worker.dependency_cache_key(shard["id"], original_base),
+                    prepare_worker.dependency_cache_key(shard["id"], build["variants"][1]),
+                )
+
     def test_targeted_classifier_auto_resolves_unique_canonical_workflow(self):
         rows = prepare_worker.workflow_rows(
             self.plan,
@@ -449,6 +521,89 @@ class WorkflowMatrixTests(unittest.TestCase):
                 "host",
                 selection_mode="targeted",
             )
+
+    def test_native_release_commands_activate_root_native_profile(self):
+        families = (
+            "linux-x86_64", "linux-arm64", "macos-arm64", "windows-cpu",
+            "android-x86_64", "android-arm64", "linux-cuda", "windows-cuda",
+            "android-arm64-vulkan", "android-x86_64-vulkan", "windows-vulkan",
+            "vulkan", "vulkan-mlir", "hexagon", "tpu", "compat", "zluda",
+            "windows-zluda",
+        )
+        for family in families:
+            for prebuilt in (False, True):
+                with self.subTest(family=family, prebuilt=prebuilt):
+                    env = {k: v for k, v in os.environ.items() if not k.startswith("DL4J_")}
+                    env.update({
+                        "DL4J_FAMILY": family,
+                        "DL4J_BUILD_THREADS": "2",
+                        "DL4J_CUDA_VERSION": "12.9",
+                        "DL4J_PLATFORM_EXTENSION": "-zluda",
+                        "DL4J_CLASSIFIER": "test-zluda",
+                        "ANDROID_NDK": "/offline/ndk",
+                        "DL4J_LIBND4J_URL": "https://example.invalid/native.zip" if prebuilt else "",
+                        "DL4J_LIBND4J_FILE_DOWNLOAD": "native.zip" if prebuilt else "",
+                    })
+                    script = "linux-x86_64.sh" if family == "linux-x86_64" else "native-platform.sh"
+                    result = subprocess.run(
+                        ["bash", str(ROOT / "build-scripts/release" / script), "--print"],
+                        env=env, check=True, capture_output=True, text=True,
+                    )
+                    command = shlex.split(result.stdout)
+                    modules = command[command.index("-pl") + 1].split(",")
+                    selects_native = not prebuilt or family in ("compat", "zluda", "windows-zluda")
+                    self.assertEqual(selects_native, ":libnd4j" in modules)
+                    self.assertEqual(selects_native, "-Pnative" in command)
+                    self.assertIn("--also-make", command)
+
+    def test_worker_python_selection_ignores_shadowing_toolchain_python(self):
+        action = (ROOT / ".github/actions/run-release-worker/action.yml").read_text()
+        self.assertIn("id: setup-python", action)
+        self.assertIn("SETUP_PYTHON: ${{ steps.setup-python.outputs.python-path }}", action)
+        self.assertIn('"${python_bin}" -m pip install', action)
+        self.assertIn('"${python_bin}" release/github/prepare-worker.py', action)
+        self.assertIn('"${python_bin}" release/aws/build-platform.py', action)
+        selection = textwrap.dedent(
+            "        python_bin=" + action.split("        python_bin=", 1)[1].split(
+                "        printf 'python-executable=", 1
+            )[0]
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            selected = root / "setup python"
+            # Model setup-python's successful version probe independently of the
+            # Python version running this offline contract suite.
+            selected.write_text("#!/bin/sh\nexit 0\n")
+            selected.chmod(0o755)
+            # Every PATH candidate is executable but fails, like a wrong toolchain runtime.
+            for name in ("python3.11", "python3.10", "python", "python3"):
+                candidate = root / name
+                candidate.write_text("#!/bin/sh\nexit 42\n")
+                candidate.chmod(0o755)
+            env = dict(os.environ, PATH=directory, SETUP_PYTHON=str(selected), INPUT_SHARD="windows-x86_64-cpu")
+            shell = shutil.which("bash")
+            result = subprocess.run(
+                [shell, "-c", 'set -Eeuo pipefail\n' + selection + '\nprintf "%s" "$python_bin"'],
+                env=env, capture_output=True, text=True,
+            )
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertEqual(str(selected), result.stdout)
+            for invalid in ("", str(root / "python"), str(root / "missing")):
+                with self.subTest(invalid=invalid):
+                    result = subprocess.run(
+                        [shell, "-c", 'set -Eeuo pipefail\n' + selection],
+                        env=dict(env, SETUP_PYTHON=invalid), capture_output=True, text=True,
+                    )
+                    self.assertNotEqual(0, result.returncode)
+            (root / "python3.11").unlink()
+            (root / "python3.11").symlink_to(selected)
+            result = subprocess.run(
+                [shell, "-c", 'set -Eeuo pipefail\n' + selection + '\nprintf "%s" "$python_bin"'],
+                env=dict(env, INPUT_SHARD="linux-x86_64-compat", SETUP_PYTHON=""),
+                capture_output=True, text=True,
+            )
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertEqual(str(root / "python3.11"), result.stdout)
 
     def test_linux_compile_isa_rows_emit_distinct_classifiers(self):
         script = ROOT / "build-scripts/release/linux-x86_64.sh"
@@ -613,8 +768,12 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertEqual(1, workflow.count("name: Publish merged staged Maven snapshot"))
         self.assertEqual(1, workflow.count("repository.py merge"))
         self.assertEqual(1, workflow.count("repository.py deploy-snapshot"))
-        self.assertEqual(1, workflow.count("repository.py sign-bundle"))
-        self.assertEqual(1, workflow.count("repository.py upload"))
+        self.assertEqual(1, workflow.count("ossrh.py upload"))
+        self.assertNotIn("repository.py sign-bundle", workflow)
+        self.assertNotIn("repository.py upload", workflow)
+        self.assertIn('sign_repository(repository)', (ROOT / "release/central/ossrh.py").read_text())
+        self.assertIn('gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}', workflow)
+        self.assertIn('--receipt "${merged_root}/open-staging.json"', workflow)
         self.assertEqual(1, workflow.count("server-id: central-portal-snapshots"))
         self.assertEqual(1, workflow.count('-name worker-config.json'))
         self.assertEqual(
@@ -651,17 +810,26 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("listJobsForWorkflowRun", workflow)
         self.assertIn("workerStep?.conclusion !== 'success'", workflow)
         self.assertIn("uploadStep?.conclusion !== 'success'", workflow)
-        self.assertIn("actions/download-artifact@v8", workflow)
-        self.assertIn("run-id: ${{ inputs.sourceRunId }}", workflow)
-        self.assertIn("merge-multiple: false", workflow)
+        self.assertIn("for (const runId of runIds)", workflow)
+        self.assertIn("sourceRunId: String(runId)", workflow)
+        self.assertIn("['gh', 'run', 'download', item['sourceRunId']", workflow)
+        self.assertIn("Duplicate worker artifact across source runs", workflow)
+        self.assertIn("new Set(runIds).size !== runIds.length", workflow)
+        self.assertIn("rows.length === previousCount", workflow)
         self.assertIn('if [ ! -f "${worker_root}/worker-success" ]', workflow)
         self.assertIn("sourceSha: sourceJob.head_sha", workflow)
+        self.assertIn("RECEIPT_IS_AUTHORITATIVE", workflow)
+        self.assertNotIn("expected %s, got %s", workflow)
         self.assertIn("VERIFIED_ARTIFACTS: ${{ needs.matrix.outputs.artifacts }}", workflow)
         self.assertIn("repository.py merge", workflow)
         self.assertIn("repository.py deploy-snapshot", workflow)
         self.assertEqual(1, workflow.count("repository.py deploy-snapshot"))
-        self.assertEqual(1, workflow.count("repository.py sign-bundle"))
-        self.assertEqual(1, workflow.count("repository.py upload"))
+        self.assertEqual(1, workflow.count("ossrh.py upload"))
+        self.assertNotIn("repository.py sign-bundle", workflow)
+        self.assertNotIn("repository.py upload", workflow)
+        self.assertIn('sign_repository(repository)', (ROOT / "release/central/ossrh.py").read_text())
+        self.assertIn('gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}', workflow)
+        self.assertIn('--receipt "${merged_root}/open-staging.json"', workflow)
         self.assertIn("Release recovery requires a non-SNAPSHOT artifact version", workflow)
         self.assertNotIn("Skipping recovery publication because version", workflow)
         self.assertNotIn("run-release-worker", workflow)
@@ -810,6 +978,8 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn('${mingw[@]+"${mingw[@]}"}', launcher)
         self.assertIn('${repository[@]+"${repository[@]}"}', launcher)
         self.assertIn('${protoc_profile[@]+"${protoc_profile[@]}"}', launcher)
+        self.assertIn('${sdx_profile[@]+"${sdx_profile[@]}"}', launcher)
+        self.assertEqual(2, launcher.count('${metadata_flags[@]+"${metadata_flags[@]}"}'))
 
     def test_windows_tokenizers_builds_rust_for_mingw(self):
         builder = (

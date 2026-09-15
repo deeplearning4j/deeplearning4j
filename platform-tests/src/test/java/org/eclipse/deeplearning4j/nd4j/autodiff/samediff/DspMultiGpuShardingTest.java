@@ -210,7 +210,12 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
         else System.clearProperty(ND4JSystemProperties.DSP_SINGLE_GPU);
         try {
             Map<String, INDArray> res = sd.output(Collections.singletonMap("x", x), "out");
-            return res.get("out").dup();
+            // output(), unlike outputDirect(), returns an independently owned copy.
+            // Close that copy after duplicating it so pool-retention checks measure
+            // DSP migration storage rather than one leaked readback per invocation.
+            try (INDArray output = res.get("out")) {
+                return output.dup();
+            }
         } finally {
             InferenceSession.setDynamicShapePlanEnabled(prevDsp);
             if (prevSingleGpu != null) System.setProperty(ND4JSystemProperties.DSP_SINGLE_GPU, prevSingleGpu);

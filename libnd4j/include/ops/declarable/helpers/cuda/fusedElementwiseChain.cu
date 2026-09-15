@@ -61,10 +61,6 @@ template <typename AccT>
 SD_DEVICE SD_INLINE AccT fusedChainExp(AccT x) {
     return sd::math::sd_exp<AccT, AccT>(x);
 }
-template <>
-SD_DEVICE SD_INLINE float fusedChainExp<float>(float x) {
-    return __expf(x);
-}
 
 template <typename AccT>
 SD_DEVICE SD_INLINE AccT fusedChainTanh(AccT x) {

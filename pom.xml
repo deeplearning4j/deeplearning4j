@@ -470,7 +470,7 @@
                         </execution>
                     </executions>
                     <configuration>
-                        <generateGitPropertiesFile>true</generateGitPropertiesFile>
+                        <generateGitPropertiesFile>false</generateGitPropertiesFile>
                         <failOnNoGitDirectory>false</failOnNoGitDirectory>
                         <generateGitPropertiesFilename>${project.build.outputDirectory}/META-INF/git.properties</generateGitPropertiesFilename>
                         <includeOnlyProperties>

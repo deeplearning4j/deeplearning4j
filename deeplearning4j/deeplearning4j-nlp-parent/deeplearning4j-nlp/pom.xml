@@ -32,6 +32,7 @@
     </parent>
 
     <artifactId>deeplearning4j-nlp</artifactId>
+    <name>Deeplearning4j NLP</name>
 
     <properties>
         <jfasttext.version>0.4</jfasttext.version>

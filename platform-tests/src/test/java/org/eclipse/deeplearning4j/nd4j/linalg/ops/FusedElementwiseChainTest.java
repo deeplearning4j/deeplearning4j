@@ -73,6 +73,29 @@ public class FusedElementwiseChainTest extends BaseNd4jTestWithBackends {
     }
 
     @Test
+    public void testFloatNegExpPreservesSharedMathContract() {
+        float[] values = {-1000f, -90f, -88f, -10f, -1f, -0.0f, 0.0f,
+                1f, 10f, 88f, 90f, 1000f, Float.NEGATIVE_INFINITY,
+                Float.POSITIVE_INFINITY, Float.NaN};
+        try (INDArray input = Nd4j.createFromArray(values);
+             INDArray negated = input.neg();
+             INDArray output = Nd4j.createUninitialized(DataType.FLOAT, input.shape())) {
+            Nd4j.math().exp(negated); // ordinary Exp is in-place
+            Nd4j.exec(FusedElementwiseChain.builder().input(input).neg().exp().output(output).build());
+            assertEquals(DataType.FLOAT, output.dataType());
+            float[] reference = negated.data().asFloat();
+            float[] actual = output.data().asFloat();
+            for (int i = 0; i < values.length; ++i) {
+                assertEquals(Float.floatToIntBits(reference[i]), Float.floatToIntBits(actual[i]),
+                        "NEG->EXP differs at input " + values[i]);
+            }
+            float[] unchanged = input.data().asFloat();
+            for (int i = 0; i < values.length; ++i)
+                assertEquals(Float.floatToIntBits(values[i]), Float.floatToIntBits(unchanged[i]));
+        }
+    }
+
+    @Test
     public void testMultiplySigmoid() {
         // SiLU/Swish gate pattern: sigmoid(x * y)
         INDArray x = Nd4j.linspace(-2, 2, 100, DataType.FLOAT).reshape(10, 10);

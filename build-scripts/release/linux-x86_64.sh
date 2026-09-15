@@ -61,6 +61,11 @@ fi
 
 command=(mvn -X "${matrix_ext[@]}" "${repository[@]}" -Dlibnd4j.generate.flatc=ON -Dlibnd4j.sdx.standalone=ON --no-transfer-progress -pl "${modules}" -Pcpu "${sdx_profile[@]}" "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Pcpu --also-make --batch-mode "${DL4J_MAVEN_GOAL}" -DskipTests "${mvn_ext[@]}" "${sdx_maven_flags[@]}")
 
+# The root reactor includes libnd4j only when the native profile is active.
+case ",${modules}," in
+  *,:libnd4j,*) command+=(-Pnative);;
+esac
+
 case "${1:---run}" in
   --print)
     printf '%q ' "${command[@]}"

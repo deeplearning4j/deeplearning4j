@@ -98,7 +98,7 @@ public final class XmlToolCallConstraint implements TextConstraint {
     public boolean canExtend(String currentText, String piece) {
         String current = currentText == null ? "" : currentText;
         String extension = piece == null ? "" : piece;
-        return !extension.isEmpty() && !isAccepting(current)
+        return !extension.isEmpty()
                 && !repeatsOpenStructuredValueWhitespace(current, extension)
                 && validPrefix(current + extension, false);
     }
@@ -119,7 +119,7 @@ public final class XmlToolCallConstraint implements TextConstraint {
 
     private boolean repeatsOpenStructuredValueWhitespace(
             String current, String extension) {
-        int functionStart = current.indexOf(ChatTemplate.XML_FUNCTION_START);
+        int functionStart = current.lastIndexOf(ChatTemplate.XML_FUNCTION_START);
         if (functionStart < 0) {
             return false;
         }
@@ -153,6 +153,28 @@ public final class XmlToolCallConstraint implements TextConstraint {
     }
 
     private boolean validPrefix(String text, boolean requireComplete) {
+        int cursor = 0;
+        while (true) {
+            int end = text.indexOf(CALL_END, cursor);
+            if (end < 0) {
+                return !requireComplete && validSingleCallPrefix(text.substring(cursor), false);
+            }
+            end += CALL_END.length();
+            if (!validSingleCallPrefix(text.substring(cursor, end), true)) {
+                return false;
+            }
+            cursor = end;
+            // Adjacent envelopes may be separated by XML whitespace.
+            while (cursor < text.length() && " \t\r\n".indexOf(text.charAt(cursor)) >= 0) {
+                cursor++;
+            }
+            if (cursor == text.length()) {
+                return true;
+            }
+        }
+    }
+
+    private boolean validSingleCallPrefix(String text, boolean requireComplete) {
         for (String toolName : toolNames) {
             if (validToolPrefix(text, toolName, requireComplete)) {
                 return true;

@@ -384,17 +384,19 @@ function(setup_zluda_amd)
                 NO_DEFAULT_PATH
             )
 
-            # Triton AMD lowering bypasses ZLUDA and includes HIP/COMGR directly.
-            # Keep those declarations source-scoped so the remaining CUDA
-            # translation units never see conflicting HIP vector/runtime types.
+            # Only the isolated host API TU sees HIP. The CUDA-facing Triton
+            # dispatcher still uses COMGR for AMDGCN-to-HSACO linking.
             set(_ZLUDA_TRITON_TARGET_SOURCE
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/graph/gpu/TritonTargetDispatch.cpp")
+            set(_ZLUDA_TRITON_HIP_SOURCE
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/graph/gpu/TritonHipDispatch.cpp")
             if(ROCM_HIP_RUNTIME_LIBRARY)
-                set_property(SOURCE "${_ZLUDA_TRITON_TARGET_SOURCE}" APPEND
+                set_property(SOURCE "${_ZLUDA_TRITON_HIP_SOURCE}" APPEND
                     PROPERTY COMPILE_DEFINITIONS "__HIP_PLATFORM_AMD__=1")
+                set_property(SOURCE "${_ZLUDA_TRITON_HIP_SOURCE}" APPEND
+                    PROPERTY INCLUDE_DIRECTORIES "${ROCM_INCLUDE_DIR}")
                 set_property(SOURCE "${_ZLUDA_TRITON_TARGET_SOURCE}" APPEND
-                    PROPERTY INCLUDE_DIRECTORIES
-                        "${ROCM_INCLUDE_DIR}" "${ROCM_COMGR_INCLUDE_DIR}")
+                    PROPERTY INCLUDE_DIRECTORIES "${ROCM_COMGR_INCLUDE_DIR}")
                 set_source_files_properties("${_ZLUDA_TRITON_TARGET_SOURCE}" PROPERTIES
                     SKIP_UNITY_BUILD_INCLUSION ON)
             endif()

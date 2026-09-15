@@ -186,6 +186,11 @@ function(collect_all_sources out_source_list)
     file(GLOB_RECURSE EXCEPTIONS_SOURCES ./include/exceptions/*.cpp)
     file(GLOB_RECURSE TYPES_SOURCES ./include/types/*.cpp)
     file(GLOB_RECURSE GRAPH_SOURCES ./include/graph/*.cpp)
+    # Collected with the other Triton sources below, but HIP's host declarations
+    # must never share a unity TU or a CUDA/ND4J precompiled header.
+    set_source_files_properties(
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/graph/gpu/TritonHipDispatch.cpp"
+        PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON SKIP_PRECOMPILE_HEADERS ON)
     if(SD_VULKAN)
         # Vulkan is an independent device backend. Keep only common graph control
         # plane sources plus the Vulkan implementation; never compile another

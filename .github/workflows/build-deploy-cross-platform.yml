@@ -3,6 +3,10 @@ name: Build cross-platform Java modules
 on:
   workflow_dispatch:
     inputs:
+      staging:
+        description: 'JSON: action (none/profiles/open), stagingProfileId, stagingRepositoryId. Release uploads require both exact IDs. Bootstrap never builds or closes.'
+        type: string
+        default: '{"action":"none"}'
       cacheMigration:
         description: Azure-to-R2 cache data transfer only; skips all builds and publication.
         type: choice
@@ -122,8 +126,42 @@ permissions:
   contents: read
 
 jobs:
+  staging-bootstrap:
+    if: fromJSON(inputs.staging || '{}').action == 'profiles' || fromJSON(inputs.staging || '{}').action == 'open'
+    runs-on: ubuntu-latest
+    env:
+      STAGING_PROFILE_ID: ${{ fromJSON(inputs.staging || '{}').stagingProfileId }}
+      STAGING_REPOSITORY_ID: ${{ fromJSON(inputs.staging || '{}').stagingRepositoryId }}
+      CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+      CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+      STAGING_ACTION: ${{ fromJSON(inputs.staging || '{}').action }}
+      DRY_RUN: ${{ inputs.dryRun }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Discover profiles or explicitly open a shared repository
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          if [[ "$STAGING_ACTION" == open && "$DRY_RUN" != false ]]; then
+            echo 'Opening requires explicit dryRun=false' >&2
+            exit 2
+          fi
+          python3 release/central/ossrh.py "$STAGING_ACTION" --receipt open-staging.json
+          if [[ -f open-staging.json ]]; then
+            printf 'Reuse these exact IDs for ALL Java and native release uploads. Repository remains OPEN.\n' >> "$GITHUB_STEP_SUMMARY"
+            cat open-staging.json >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Persist shared repository identity
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: open-staging-${{ github.run_id }}
+          path: open-staging.json
+          if-no-files-found: warn
+          retention-days: 90
+
   cache-migration:
-    if: inputs.cacheMigration != '' && inputs.cacheMigration != 'none'
+    if: (fromJSON(inputs.staging || '{}').action == '' || fromJSON(inputs.staging || '{}').action == 'none') && inputs.cacheMigration != '' && inputs.cacheMigration != 'none'
     uses: ./.github/workflows/migrate-cache-to-r2.yml
     with:
       mode: ${{ inputs.cacheMigration }}
@@ -131,12 +169,14 @@ jobs:
     secrets: inherit
 
   java-only:
-    if: inputs.javaOnly == '1' && (inputs.cacheMigration == '' || inputs.cacheMigration == 'none')
+    if: inputs.javaOnly == '1' && (inputs.cacheMigration == '' || inputs.cacheMigration == 'none') && (fromJSON(inputs.staging || '{}').action == '' || fromJSON(inputs.staging || '{}').action == 'none')
     uses: ./.github/workflows/java-hotfix-release.yml
     with:
       releaseVersion: ${{ inputs.releaseVersion }}
       snapshotVersion: ${{ inputs.snapshotVersion }}
       serverId: ${{ inputs.serverId }}
+      stagingProfileId: ${{ fromJSON(inputs.staging || '{}').stagingProfileId }}
+      stagingRepositoryId: ${{ fromJSON(inputs.staging || '{}').stagingRepositoryId }}
       deployToReleaseStaging: ${{ inputs.deployToReleaseStaging }}
       dryRun: ${{ inputs.dryRun }}
       regenerateOps: ${{ inputs.regenerateOps || 'false' }}
@@ -147,7 +187,7 @@ jobs:
       CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
 
   release:
-    if: inputs.publishSourceRunId == '' && inputs.javaOnly != '1' && (inputs.cacheMigration == '' || inputs.cacheMigration == 'none')
+    if: inputs.publishSourceRunId == '' && inputs.javaOnly != '1' && (inputs.cacheMigration == '' || inputs.cacheMigration == 'none') && (fromJSON(inputs.staging || '{}').action == '' || fromJSON(inputs.staging || '{}').action == 'none')
     uses: ./.github/workflows/_release-worker.yml
     with:
       workflow: ${{ inputs.workflow }}
@@ -162,12 +202,14 @@ jobs:
       aotAllSpins: ${{ inputs.aotAllSpins }}
       releaseVersion: ${{ inputs.releaseVersion }}
       snapshotVersion: ${{ inputs.snapshotVersion }}
+      stagingProfileId: ${{ fromJSON(inputs.staging || '{}').stagingProfileId }}
+      stagingRepositoryId: ${{ fromJSON(inputs.staging || '{}').stagingRepositoryId }}
       deployToReleaseStaging: ${{ inputs.deployToReleaseStaging }}
       dryRun: ${{ inputs.dryRun }}
     secrets: inherit
 
   publish-staged:
-    if: inputs.publishSourceRunId != '' && inputs.javaOnly != '1' && (inputs.cacheMigration == '' || inputs.cacheMigration == 'none')
+    if: inputs.publishSourceRunId != '' && inputs.javaOnly != '1' && (inputs.cacheMigration == '' || inputs.cacheMigration == 'none') && (fromJSON(inputs.staging || '{}').action == '' || fromJSON(inputs.staging || '{}').action == 'none')
     uses: ./.github/workflows/publish-release-worker-artifacts.yml
     with:
       sourceRunId: ${{ inputs.publishSourceRunId }}
@@ -177,6 +219,8 @@ jobs:
       sourceFixCommit: ${{ inputs.sourceFixCommit }}
       snapshotVersion: ${{ inputs.snapshotVersion }}
       artifactPattern: ${{ inputs.publishArtifactPattern }}
+      stagingProfileId: ${{ fromJSON(inputs.staging || '{}').stagingProfileId }}
+      stagingRepositoryId: ${{ fromJSON(inputs.staging || '{}').stagingRepositoryId }}
       deployToReleaseStaging: ${{ inputs.deployToReleaseStaging }}
       dryRun: ${{ inputs.dryRun }}
     secrets: inherit

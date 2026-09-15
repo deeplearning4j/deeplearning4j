@@ -386,21 +386,29 @@ static bool slotIsTransparentHostOnlyForGraphCoverage(
         owner != BufferOwnership::VIEW_OF_WEIGHT) {
       NDArray* out = (outputSlots != nullptr) ? outputSlots[outIdx] : nullptr;
       DataBuffer* outDb = (out != nullptr) ? out->dataBuffer() : nullptr;
-      bool aliasesExternalInput = false;
-      if (outDb != nullptr && externalArrays != nullptr) {
+      bool aliasesBoundInput = false;
+      if (outDb != nullptr && outDb->isValid()) {
+        // Ownership may have been classified between segments, after the
+        // producer slots were restored. A consumer-device migration view then
+        // looks SLOT_OWNED even though it aliases the input bound for capture.
+        // Prove the alias against those actual bindings, for internal as well
+        // as external sources; an independently materialized output still fails.
         for (int i = 0; i < slot.wiring.numInputs; i++) {
           int srcIdx = slot.wiring.inputSourceIndices[i];
-          if (srcIdx >= 0) continue;
-          int extIdx = -(srcIdx + 1);
-          if (extIdx >= 0 && extIdx < numExt &&
-              externalArrays[extIdx] != nullptr &&
-              externalArrays[extIdx]->dataBuffer() == outDb) {
-            aliasesExternalInput = true;
+          NDArray* input = nullptr;
+          if (srcIdx >= 0 && srcIdx < totalOutputSlots && outputSlots != nullptr) {
+            input = outputSlots[srcIdx];
+          } else if (srcIdx < 0 && externalArrays != nullptr) {
+            int extIdx = -(srcIdx + 1);
+            if (extIdx < numExt) input = externalArrays[extIdx];
+          }
+          if (input != nullptr && input->dataBuffer() == outDb) {
+            aliasesBoundInput = true;
             break;
           }
         }
       }
-      if (!aliasesExternalInput) return false;
+      if (!aliasesBoundInput) return false;
     }
   }
   return true;
