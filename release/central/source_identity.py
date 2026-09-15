@@ -25,10 +25,17 @@ ZLUDA_COMPILE_SOURCE = 'dbce583d00e0439e8f41e4cd8206f36dea8e20bd'
 ZLUDA_OWNER_SOURCE = 'dbce583d00e0439e8f41e4cd8206f36dea8e20bd'
 ZLUDA_OSNEUTRAL_SOURCE = 'efb8fc32c6822026d8454f7501bd39c7bafadad0'
 
+# ZLUDA family, 2026-09-14: ed436cfbd9 over efb8fc32c6 adds sources/javadoc
+# attachments to the platform aggregator modules (new descriptor sources plus
+# javadoc sourcepath configuration). Only the platform modules changed; the
+# CPU owners never build them, so their artifacts are byte-identical.
+ZLUDA_ATTACHMENTS_SOURCE = 'ed436cfbd9d7e0f2504a3e2f6e8b84063ca7fd80'
+
 AUDITED_PAIRS = [
     {CUDA_SOURCE, CPU_SOURCE},
     {ZLUDA_BASE_SOURCE, ZLUDA_COMPILE_SOURCE},
     {ZLUDA_OWNER_SOURCE, ZLUDA_OSNEUTRAL_SOURCE},
+    {ZLUDA_OSNEUTRAL_SOURCE, ZLUDA_ATTACHMENTS_SOURCE},
 ]
 
 
