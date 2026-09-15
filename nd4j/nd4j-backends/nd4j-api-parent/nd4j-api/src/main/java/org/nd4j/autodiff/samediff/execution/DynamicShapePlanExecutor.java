@@ -3166,8 +3166,20 @@ public class DynamicShapePlanExecutor implements Closeable {
                         ? configuredGraphExecutionMode : null;
                 compileNativePlan(plan, recompileMode, sd.isDspFallbackToAutoIfTritonUnavailable());
             }
-            // No try/catch — native executor failures must crash, not be masked
-            return executeNative(plan, placeholderArrays);
+            // Suppress DeviceAwareOpExecutioner input-location re-routing for the whole
+            // native plan execution (warmup, frozen, replay). Inside a plan, all slots
+            // live in plan-managed pools and the plan itself performs cross-segment
+            // movement; a DeviceAware-triggered migrate of a plan-internal buffer
+            // fights the plan's allocator and target-device caps (observed as
+            // MIGRATION_ADMISSION_REJECT → "copy failed: invalid argument" on slot
+            // 3901/3970 during Gemma serving prefill). Restored in finally.
+            org.nd4j.linalg.api.ops.executioner.DeviceAwareOpExecutioner.setDspRoutingSuppressed(true);
+            try {
+                // No try/catch — native executor failures must crash, not be masked
+                return executeNative(plan, placeholderArrays);
+            } finally {
+                org.nd4j.linalg.api.ops.executioner.DeviceAwareOpExecutioner.setDspRoutingSuppressed(false);
+            }
         }
 
         // Java slot-by-slot execution path has been removed. Native execution is always used.
