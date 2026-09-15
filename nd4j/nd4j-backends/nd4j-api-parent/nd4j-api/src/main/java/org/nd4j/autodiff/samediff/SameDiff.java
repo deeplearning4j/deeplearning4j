@@ -5352,7 +5352,6 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         // Closes the session-owned DynamicShapePlanExecutor and releases every
         // native plan-cache lease before clearDynamicShapePlanCache() runs.
         session.closePooledResources();
-
         SessionMemMgr memMgr = session.getMmgr();
         if (memMgr != null) {
             if (memMgr instanceof ArrayCacheMemoryMgr) {
