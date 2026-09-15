@@ -85,7 +85,7 @@ fi
 TRITON_FLAG=""
 case "$BACKEND" in
     cuda)
-        BACKEND_ARTIFACT="nd4j-cuda-12.9"
+        BACKEND_ARTIFACT="nd4j-cuda-13.1"
         TRITON_FLAG="-Dlibnd4j.triton=ON"
         ;;
     cpu)
@@ -121,15 +121,15 @@ printf '%s\n' \
     "═══════════════════════════════════════════════════════════"
 
 set +e
+# 64g required for Qwen3.6-27B: 48g starves GPU-graph capture pools, forcing
+# slot-by-slot execution (~10s/step, mid-decode stall). Proven by A/B:
+# 48g -> segs(replay=0 sbs=1) stall; 64g -> segs(replay=1 sbs=0) green.
 "$MVN" test \
   -Dtest="$TEST_SELECTOR" \
   -Dbench.max.tokens="$TOKENS" \
   -Dbackend.artifactId="$BACKEND_ARTIFACT" \
   $TRITON_FLAG \
   -Dnd4j.optimizer.enabled=true \
-  # 64g required for Qwen3.6-27B: 48g starves GPU-graph capture pools, forcing
-  # slot-by-slot execution (~10s/step, mid-decode stall). Proven by A/B:
-  # 48g -> segs(replay=0 sbs=1) stall; 64g -> segs(replay=1 sbs=0) green.
   -Dtest.maxphysicalbytes=64g \
   2>&1 | tee "$LOG_FILE"
 BUILD_RESULT=${PIPESTATUS[0]}
