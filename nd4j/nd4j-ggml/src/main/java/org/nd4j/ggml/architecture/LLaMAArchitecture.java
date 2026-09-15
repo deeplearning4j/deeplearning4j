@@ -210,24 +210,14 @@ public class LLaMAArchitecture implements ModelArchitecture {
 
         // MTP consumes the target trunk hidden state before the final output norm.
         // Keep it as an explicit output only for GGUFs that bundle a predictor.
-        // IMPORTANT: The output must be computed through a REAL kernel that the
-        // DSP plan's captured CUDA graph will include. Using sd.identity(alias)
-        // shares the upstream buffer, which the warmup allocator recycles for
-        // later slots' temporaries — the graph replays those later writes,
-        // clobbering the aliased buffer, and the MTP epilogue reads near-zero
-        // garbage (root cause of acceptance collapse 77% → ~1%).
-        // add(hidden, 0) is constant-folded by the graph optimizer, so it ALSO
-        // aliases. mul(hidden, 1.0) is NOT constant-folded: it launches a real
-        // multiply kernel in the captured graph, producing a dedicated output
-        // buffer that survives the replay.
+        // Uses sd.identity: aliases the upstream layer_out_23 buffer (slot 1946).
+        // This buffer is protected from recycling because it feeds the final RMS
+        // norm and the logits path. Creating a separate mul/add node instead
+        // allocates a NEW slot (e.g. slot 1948) which the buffer allocator then
+        // reuses as the lm_logits matmul accumulator — clobbering the mul result.
+        // The Sept-05 code (77% acceptance) used sd.identity successfully.
         if (config.getNumMtpLayers() > 0) {
-            // mul by a weight-derived constant prevents constant folding: the
-            // compiler can't fold mul(x, w) where w is a variable (not a scalar).
-            // Use the same dtype as hidden to avoid dtype-mismatch at the consumer.
-            SDVariable one = sd.var("mtp_target_hidden_scale",
-                    Nd4j.ones(dtype, 1).mul(1.0));
-            // Name the computation node itself as the output — NO identity wrapper.
-            SDVariable targetHiddenCopy = sd.math.mul("target_hidden_states", hidden, one);
+            hidden = sd.identity("target_hidden_states", hidden);
             outputNames.add("target_hidden_states");
         }
 

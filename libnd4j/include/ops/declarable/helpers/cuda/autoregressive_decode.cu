@@ -1424,13 +1424,17 @@ void autoregressiveDecode(
                 reinterpret_cast<void*>(*stream), {"output/post-argmax/draft_id"}, {&selected});
         }
 
-        // ── Hidden carry: unconditional self-carry + stream ordering ────────
-        // Upstream Qwen3.5 MTP: EVERY predictor call's output hidden feeds the
-        // NEXT chained call as the hnorm input. The epilogue's
-        // setMtpTargetCarryCuda overrides this for the NEXT step's slot 0,
-        // installing the target trunk hidden at the newly committed position.
-        // The write is unconditional: slot 0 → slot 1 chains predictor hidden;
-        // the epilogue replaces it before the next step's slot 0 reads it.
+        // ── Hidden carry: slot-chained self-carry + stream ordering ─────────
+        // Upstream Qwen3.5 MTP: chained predictor calls (slot p -> slot p+1)
+        // feed the predictor's OWN output hidden as the next call's hnorm input.
+        // Slot 0 of each step must NOT self-carry: the epilogue's
+        // setMtpTargetCarryCuda installed the TARGET trunk hidden at the newly
+        // committed position, and slot 0 must consume exactly that. An
+        // unconditional self-carry clobbers the epilogue's target carry with the
+        // PREVIOUS step's last predictor self-hidden before slot 0 reads it —
+        // proven by capture diff: call2's pre-exec carry was byte-identical to
+        // call1's (0/10240 bytes differ) although both target a different
+        // position, producing frozen drafts and the ~1.6% acceptance collapse.
         //
         // STREAM ORDERING: the carry write is issued on the caller's stream,
         // but the predictor plan's graph launch may execute on a different
@@ -1439,7 +1443,7 @@ void autoregressiveDecode(
         // cudaStreamSynchronize guarantees the D2D copy is complete before any
         // downstream graph launch on any stream. Four small copies per step —
         // sub-microsecond overhead each.
-        {
+        if (draftSlot > 0) {
             REQUIRE_TRUE(mtpHidden->lengthOf() == config->mtpTargetHidden->lengthOf()
                              && mtpHidden->dataType() == config->mtpTargetHidden->dataType(),
                          0, "autoregressive_decode: CUDA MTP hidden carry shape/type mismatch");
@@ -1566,6 +1570,23 @@ void autoregressiveDecode(
                                             static_cast<int>(exp) - 127);
                         sq[i] = static_cast<double>(sign ? -v : v) * (sign ? -v : v);
                     }
+                } else if (targetHiddenRows->dataType() == DataType::HALF) {
+                    auto* h = reinterpret_cast<uint16_t*>(scratch.data());
+                    for (int i = 0; i < H; i++) {
+                        // IEEE 754 binary16 → float: 1 sign, 5 exp (bias 15), 10 mantissa.
+                        unsigned sign = (h[i] >> 15) & 1u;
+                        unsigned exp  = (h[i] >> 10) & 0x1Fu;
+                        unsigned man  = h[i] & 0x3FFu;
+                        float v;
+                        if (exp == 0) v = (man == 0) ? 0.0f
+                                : std::ldexp(static_cast<float>(man), -10-14);
+                        else if (exp == 0x1F) v = (man == 0)
+                                ? std::numeric_limits<float>::infinity()
+                                : std::numeric_limits<float>::quiet_NaN();
+                        else v = std::ldexp(1.0f + static_cast<float>(man) / 1024.0f,
+                                            static_cast<int>(exp) - 15);
+                        sq[i] = static_cast<double>(sign ? -v : v) * (sign ? -v : v);
+                    }
                 } else {
                     auto* f = reinterpret_cast<float*>(scratch.data());
                     for (int i = 0; i < H; i++) {
@@ -1576,20 +1597,17 @@ void autoregressiveDecode(
                 for (int i = 0; i < H; i++) acc += sq[i];
                 rowRms[r] = static_cast<float>(std::sqrt(acc / std::max(1, H)));
             }
+            char rmsBuf[128];
+            {
+                int off = 0;
+                for (int r = 0; r < W; r++) {
+                    off += snprintf(rmsBuf + off, sizeof(rmsBuf) - off, "%s%.4g",
+                                    r ? "," : "", static_cast<double>(rowRms[r]));
+                }
+            }
             DSP_DIAG(KV_CACHE,
                      "MTP_TARGET_CARRY_RMS rows=%d rms=[%s] installRow=%d",
-                     W,
-                     [] (const std::vector<float>& v) {
-                         std::string s;
-                         char buf[32];
-                         for (size_t i = 0; i < v.size(); i++) {
-                             snprintf(buf, sizeof(buf), "%.4g%s", v[i],
-                                      i + 1 < v.size() ? "," : "");
-                             s += buf;
-                         }
-                         return s;
-                     }(rowRms),
-                     row);
+                     W, rmsBuf, row);
         }
         size_t rowBytes = static_cast<size_t>(targetHiddenRows->sizeAt(2))
                           * targetHiddenRows->sizeOfT();
