@@ -34,6 +34,26 @@
     <artifactId>nd4j-vulkan-platform</artifactId>
     <name>nd4j-vulkan-platform</name>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>central-javadoc</id>
+                        <configuration>
+                            <!-- The aggregator's only source is its package
+                                 documentation; point Javadoc at it explicitly. -->
+                            <sourcepath>${project.basedir}/src/main/java</sourcepath>
+                            <subpackages>org.nd4j.linalg.platform.vulkan</subpackages>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
     <properties>
         <skipPublishing>false</skipPublishing>
         <nd4j.backend>nd4j-vulkan</nd4j.backend>

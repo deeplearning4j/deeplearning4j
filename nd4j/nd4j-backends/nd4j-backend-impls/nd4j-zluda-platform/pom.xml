@@ -38,6 +38,21 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>central-javadoc</id>
+                        <configuration>
+                            <!-- The aggregator's only source is its package
+                                 documentation; point Javadoc at it explicitly. -->
+                            <sourcepath>${project.basedir}/src/main/java</sourcepath>
+                            <subpackages>org.nd4j.linalg.platform.zluda</subpackages>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
                     <archive>
