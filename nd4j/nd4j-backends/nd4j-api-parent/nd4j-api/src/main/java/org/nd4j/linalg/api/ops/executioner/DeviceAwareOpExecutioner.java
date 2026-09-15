@@ -88,6 +88,49 @@ public class DeviceAwareOpExecutioner implements OpExecutioner {
     private volatile boolean enabled = true;
 
     private static volatile DeviceAwareOpExecutioner INSTANCE;
+
+    /**
+     * Thread-local routing suppression for native DSP plan execution.
+     *
+     * <p>While a native DynamicShapePlan executes, ALL of the plan's slots live in
+     * plan-managed pools on the plan's device(s), and the plan itself performs any
+     * cross-segment data movement. Re-routing a plan-owned op by input location
+     * (DeviceRoutingConfiguration.routeOpsByInputLocation) triggers a cross-device
+     * migrate of a plan-internal buffer — the migrate is charged against the target
+     * device's cap, is invisible to the plan's own allocator, and for fused-chain
+     * inputs fails outright ("invalid argument") because the source slot was freed
+     * or re-pooled mid-plan. Inside a plan, placement authority belongs to the plan.</p>
+     *
+     * <p>Suppression engages via two independent signals, either of which suffices:
+     * (1) the explicit caller marker {@link #setDspRoutingSuppressed}, and
+     * (2) the native DSP ownership probe {@code NativeOpsHolder.getInstance().getNativeOps()
+     *     .dspIsOwned()} — true while the executing thread is inside a DSP capture or
+     *     replay/slot execution window. Signal (2) requires no cooperation from the
+     *     op call sites.</p>
+     */
+    private static final ThreadLocal<Boolean> DSP_ROUTING_SUPPRESSED = ThreadLocal.withInitial(() -> Boolean.FALSE);
+
+    /** Suppress input-location re-routing for ops executed on the current thread. */
+    public static void setDspRoutingSuppressed(boolean suppressed) {
+        DSP_ROUTING_SUPPRESSED.set(suppressed);
+    }
+
+    /**
+     * True when ops executed on the current thread must NOT be re-routed:
+     * either an explicit suppression marker is set, or the native DSP layer
+     * reports that this thread is inside a plan execution (capture or replay).
+     */
+    public static boolean isDspRoutingSuppressed() {
+        if (DSP_ROUTING_SUPPRESSED.get()) {
+            return true;
+        }
+        try {
+            return Nd4j.getNativeOps().dspIsOwned();
+        } catch (Throwable ignore) {
+            // Backends without the DSP lifecycle export simply never suppress.
+            return false;
+        }
+    }
     private static volatile OpExecutioner originalExecutioner;
     private static final Object LOCK = new Object();
 
@@ -572,6 +615,13 @@ public class DeviceAwareOpExecutioner implements OpExecutioner {
             return null;
         }
 
+        // Inside a native DSP plan execution the plan owns placement and any
+        // cross-segment movement; re-routing here would migrate plan-internal
+        // buffers against the plan's allocator and cap accounting.
+        if (isDspRoutingSuppressed()) {
+            return null;
+        }
+
         DeviceRoutingConfiguration config = DeviceRoutingConfiguration.current();
         if (!config.isAutoTransferEnabled()) {
             return getDefaultTargetDevice(op);
@@ -594,6 +644,9 @@ public class DeviceAwareOpExecutioner implements OpExecutioner {
     private DeviceDescriptor prepareOpForExecution(CustomOp op, OpContext context) {
         if (!enabled || context == null) {
             return prepareOpForExecution(op);
+        }
+        if (isDspRoutingSuppressed()) {
+            return null;
         }
 
         DeviceRoutingConfiguration config = DeviceRoutingConfiguration.current();
