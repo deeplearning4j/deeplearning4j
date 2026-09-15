@@ -1499,6 +1499,25 @@ void autoregressiveDecode(
                  (long long)targetHiddenRows->sizeAt(1),
                  (long long)targetHiddenRows->sizeAt(2),
                  row);
+        // Dump the first 8 floats of the carry source row for diagnostics:
+        // compares step-to-step carry content stability. If the same context
+        // position produces different carry bytes across steps, the target's
+        // verification output hidden is corrupted or misindexed.
+        {
+            float carryDump[8] = {};
+            const void* dumpSrc = static_cast<const char*>(targetHiddenRows->specialBuffer())
+                                  + static_cast<size_t>(row)
+                                        * targetHiddenRows->strideAt(1)
+                                        * targetHiddenRows->sizeOfT();
+            cudaMemcpyAsync(carryDump, dumpSrc, sizeof(carryDump),
+                            cudaMemcpyDeviceToHost, *stream);
+            cudaStreamSynchronize(*stream);
+            DSP_DIAG(KV_CACHE,
+                     "MTP_TARGET_CARRY_CONTENT row=%d first8=[%.6f, %.6f, %.6f, %.6f, "
+                     "%.6f, %.6f, %.6f, %.6f]",
+                     row, carryDump[0], carryDump[1], carryDump[2], carryDump[3],
+                     carryDump[4], carryDump[5], carryDump[6], carryDump[7]);
+        }
         size_t rowBytes = static_cast<size_t>(targetHiddenRows->sizeAt(2))
                           * targetHiddenRows->sizeOfT();
         const void* source = static_cast<const char*>(targetHiddenRows->specialBuffer())
