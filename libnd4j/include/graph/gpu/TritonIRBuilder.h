@@ -379,6 +379,42 @@ class TritonIRBuilder {
                                         int pastSeq,
                                         int seqKVCur);
 
+  // Emit a GGUF in-graph KV-cache decode attention kernel.
+  //
+  // This is the rank-4 BSHD contract of dot_product_attention_v2 with a LIVE
+  // cache (keyCache at kCachePtr, valueCache at vCachePtr) plus a device-side
+  // cache position scalar (cachePosPtr, LongType* dereferenced at kernel
+  // runtime). It reproduces the native decode semantics exactly:
+  //
+  //   P   = load(cachePosPtr)                       // runtime boundary
+  //   W   = seqQ                                     // current window width
+  //   1. scatter: cache[b, P+s, kvH, :] = curK[b, s, kvH, :] for s in [0,W)
+  //      (and same for V) — guarded by pid1 == 0 so it runs exactly once
+  //   2. attention over [0, P+W):
+  //        past  [0,P)   read from cache   (BSHD [B, cacheMaxSeq, kvH, D])
+  //        current [P,P+W) read from curK/curV producers (BSHD [B, W, kvH, D])
+  //   3. optional additive bias at biasPtr added to QK before softmax, with
+  //      columns indexed by absolute key position (bias sized to cacheMaxSeq)
+  //
+  // No read-after-write hazard: the past read masks kIdx < P (never touches
+  // position P), and the current read comes from the producer tensors, not the
+  // cache — mirroring the native currentKeyWindow/currentValueWindow contract.
+  // The scatter serves future steps only.
+  //
+  // Grid: (batch * numQHeads, ceil(seqQ / BLOCK_M)) — 2D, same as fused attention.
+  static void emitGgufDecodeAttentionKernel(mlir::OpBuilder& builder, mlir::Location loc,
+                                            mlir::Value qPtr,
+                                            mlir::Value curKPtr, mlir::Value curVPtr,
+                                            mlir::Value kCachePtr, mlir::Value vCachePtr,
+                                            mlir::Value cachePosPtr,
+                                            mlir::Value outPtr,
+                                            int batchSize, int numQHeads, int numKvHeads,
+                                            int seqQ, int cacheMaxSeq,
+                                            int headDim, float scale,
+                                            int blockM, int blockN,
+                                            mlir::Value biasPtr,
+                                            const std::vector<LongType>& biasShape);
+
   // Emit present_key/value writes for compound attention ops.
   // Writes current_key (BSHD/3D) to present_key (BHSD) output buffer at position pastSeq.
   // Writes only the NEW seqKV positions [pastSeq, pastSeq+seqKV) into the destination;

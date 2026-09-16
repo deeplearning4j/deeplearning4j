@@ -3454,24 +3454,45 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         }
 
         // GGUF in-graph KV-cache contract (dot_product_attention_v2 with a LIVE
-        // keyCache at input[5], cache_position at input[7], additive bias at
-        // input[8]): the op writes current K/V into the cache in-op and attends
-        // past+current under the bias. The fused emission binds K/V to the
-        // CURRENT tensors unless 3D-Q dual-buffer mode engages — for rank-4
-        // (BSHD) Q it cannot express the cache read (the BSHD cache also fails
-        // the BHSD past_key heuristic above), and emitting silently produces
-        // cacheless window self-attention: the attention layers go blind to the
-        // committed past (decode corruption, token-visible at W>1). Reject so
-        // the slot executes natively until rank-4 dual-buffer emission exists.
-        // Prefill is unaffected: its cache inputs are EMPTY placeholders.
-        if (!useDualBuffer && slot.wiring.numInputs > 5 &&
-            slot.ident.opName.find("dot_product_attention_v2") != std::string::npos) {
-          NDArray* liveKvCache = resolveArr(slot.wiring.inputSourceIndices[5]);
-          if (liveKvCache != nullptr && !liveKvCache->isEmpty() && liveKvCache->lengthOf() > 0) {
-            DSP_DIAG(JIT, "ATTN slot=%d: live KV cache at input[5] with rank-4 Q "
-                      "(qIs3D=%d hasPastKv=%d) — cache read not expressible by the "
-                      "fused emission, returning as non-compilable (native fallback)",
-                      si, qIs3D ? 1 : 0, hasPastKv ? 1 : 0);
+        // keyCache at input[5], valueCache at input[6], cache_position device
+        // scalar at input[7], additive bias at input[8]): the op writes current
+        // K/V into the cache at the device-read position and attends
+        // past+current. Rank-4 BSHD decode is now handled by the dedicated
+        // GGUF decode emitter (runtime boundary from the position scalar +
+        // in-kernel scatter + dual read from cache/producers). The legacy
+        // constant-boundary dual-buffer mode remains for 3D-Q ONNX MHA.
+        bool ggufDecodeKv = false;
+        int keyCacheSrc = -1, valueCacheSrc = -1, cachePosSrc = -1;
+        if (!useDualBuffer && isDpaV2 && slot.wiring.numInputs > 7) {
+          NDArray* kcArr = resolveArr(slot.wiring.inputSourceIndices[5]);
+          NDArray* vcArr = resolveArr(slot.wiring.inputSourceIndices[6]);
+          NDArray* cpArr = resolveArr(slot.wiring.inputSourceIndices[7]);
+          bool liveKv = (kcArr != nullptr && !kcArr->isEmpty() && kcArr->lengthOf() > 0)
+                      && (vcArr != nullptr && !vcArr->isEmpty() && vcArr->lengthOf() > 0)
+                      && (cpArr != nullptr && !cpArr->isEmpty() && cpArr->lengthOf() > 0);
+          // The dedicated emitter needs the BSHD cache rank-4 layout and an
+          // INT64 position scalar (the native kvInPlaceWriteBSHD contract).
+          bool cacheShapeOk = liveKv && kcArr->rankOf() == 4
+              && static_cast<int>(kcArr->sizeAt(3)) == headDim
+              && cpArr->dataType() == INT64;
+          if (liveKv && cacheShapeOk) {
+            ggufDecodeKv = true;
+            keyCacheSrc = slot.wiring.inputSourceIndices[5];
+            valueCacheSrc = slot.wiring.inputSourceIndices[6];
+            cachePosSrc = slot.wiring.inputSourceIndices[7];
+            DSP_DIAG(JIT, "ATTN slot=%d: GGUF decode KV contract detected "
+                      "(keyCache src=%d [%lld,%lld,%lld,%lld], pos src=%d) — using "
+                      "emitGgufDecodeAttentionKernel (runtime boundary + scatter)",
+                      si, keyCacheSrc,
+                      (long long)kcArr->sizeAt(0), (long long)kcArr->sizeAt(1),
+                      (long long)kcArr->sizeAt(2), (long long)kcArr->sizeAt(3), cachePosSrc);
+          } else if (liveKv) {
+            // Live cache but a layout the dedicated emitter cannot express —
+            // keep the historical native fallback (correctness first).
+            DSP_DIAG(JIT, "ATTN slot=%d: live KV cache at input[5] (rank=%d dt=%d) not "
+                      "expressible by the GGUF decode emitter — native fallback",
+                      si, kcArr ? kcArr->rankOf() : -1,
+                      cpArr ? (int)cpArr->dataType() : -1);
             result.valid = false;
             return result;
           }
@@ -3727,7 +3748,42 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           return result;  // result.valid = false → C++ fallback
         }
 
-        if (qPtr && kPtr && vPtr && outPtr) {
+        if (ggufDecodeKv && qPtr && outPtr) {
+          // GGUF decode contract: bind the cache/valueCache/position buffers and
+          // emit the runtime-boundary kernel. The current K/V (producer tensors)
+          // bind through kSrc/vSrc — these are the pre-scatter inputs (Q,V,K order).
+          auto kCachePtrV = getSlotArgPtr(keyCacheSrc);
+          auto vCachePtrV = getSlotArgPtr(valueCacheSrc);
+          auto cachePosPtrV = getSlotArgPtr(cachePosSrc);
+          auto curKPtrV = getSlotArgPtr(kSrc);
+          auto curVPtrV = getSlotArgPtr(vSrc);
+          if (kCachePtrV && vCachePtrV && cachePosPtrV && curKPtrV && curVPtrV) {
+            NDArray* kcArrForMax = resolveArr(keyCacheSrc);
+            int cacheMaxSeq = (kcArrForMax && kcArrForMax->rankOf() == 4)
+                ? static_cast<int>(kcArrForMax->sizeAt(1)) : 0;
+            emitGgufDecodeAttentionKernel(builder, loc, qPtr,
+                                          curKPtrV, curVPtrV,
+                                          kCachePtrV, vCachePtrV, cachePosPtrV,
+                                          outPtr,
+                                          batchSize, numQHeads, numKvHeads,
+                                          seqQ, cacheMaxSeq, headDim, scale,
+                                          blockM, blockN,
+                                          biasPtr, biasShape);
+            // output[0] = attention result
+            DataType outDtype = FLOAT32;
+            NDArray* outArr = resolveArr(outSlot);
+            if (outArr) outDtype = outArr->dataType();
+            auto loaded = loadBackFromBuffer(outSlot, outDtype);
+            if (loaded) ssaValues[outSlot] = loaded;
+          } else {
+            DSP_DIAG(JIT, "ATTN slot=%d: GGUF decode binding failed "
+                      "(kCache=%d vCache=%d pos=%d curK=%d curV=%d) — native fallback",
+                      si, kCachePtrV ? 1 : 0, vCachePtrV ? 1 : 0, cachePosPtrV ? 1 : 0,
+                      curKPtrV ? 1 : 0, curVPtrV ? 1 : 0);
+            result.valid = false;
+            return result;
+          }
+        } else if (qPtr && kPtr && vPtr && outPtr) {
           emitFusedAttentionKernel(builder, loc, qPtr, kPtr, vPtr, outPtr,
                                    batchSize, numQHeads, numKvHeads, seqQ, seqK, headDim,
                                    scale, blockM, blockN, qIsBSHD, kIsBSHD,
@@ -8008,20 +8064,33 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             return result;
           }
 
-          // GGUF in-graph KV-cache contract with rank-4 Q: not expressible by the
-          // fused emission (see the JIT-path gate above for the full rationale) —
-          // emitting produces cacheless window self-attention. Defer to native.
-          // Prefill unaffected (its cache inputs are EMPTY placeholders).
-          if (!useDualBuffer && slot.wiring.numInputs > 5 &&
-              slot.ident.opName.find("dot_product_attention_v2") != std::string::npos) {
-            auto kvCacheShapeSec = resolveShape(slot.wiring.inputSourceIndices[5]);
-            bool liveKvSec = !kvCacheShapeSec.empty();
-            for (auto d : kvCacheShapeSec) {
-              if (d <= 0) { liveKvSec = false; break; }
-            }
-            if (liveKvSec) {
-              DSP_DIAG(COMPILE, "ATTN slot=%d (sectioned): live KV cache at input[5] with "
-                        "rank-4 Q — cache read not expressible, deferring to C++ native", si);
+          // GGUF in-graph KV-cache contract with rank-4 Q: now expressible by the
+          // dedicated GGUF decode emitter (runtime boundary from the device
+          // position scalar + in-kernel scatter + dual cache/producer read).
+          // Keep the native fallback for any live-cache layout that emitter
+          // cannot express (non-rank-4 cache, mismatched headDim, non-INT64 pos).
+          bool ggufDecodeKvSec = false;
+          int keyCacheSrcSec = -1, valueCacheSrcSec = -1, cachePosSrcSec = -1;
+          if (!useDualBuffer && isDpaV2Sec && slot.wiring.numInputs > 7) {
+            NDArray* kcSec = resolveArr(slot.wiring.inputSourceIndices[5]);
+            NDArray* vcSec = resolveArr(slot.wiring.inputSourceIndices[6]);
+            NDArray* cpSec = resolveArr(slot.wiring.inputSourceIndices[7]);
+            bool liveKvSec = (kcSec != nullptr && !kcSec->isEmpty() && kcSec->lengthOf() > 0)
+                           && (vcSec != nullptr && !vcSec->isEmpty() && vcSec->lengthOf() > 0)
+                           && (cpSec != nullptr && !cpSec->isEmpty() && cpSec->lengthOf() > 0);
+            bool cacheShapeOkSec = liveKvSec && kcSec->rankOf() == 4
+                && static_cast<int>(kcSec->sizeAt(3)) == headDim
+                && cpSec->dataType() == INT64;
+            if (cacheShapeOkSec) {
+              ggufDecodeKvSec = true;
+              keyCacheSrcSec = slot.wiring.inputSourceIndices[5];
+              valueCacheSrcSec = slot.wiring.inputSourceIndices[6];
+              cachePosSrcSec = slot.wiring.inputSourceIndices[7];
+              DSP_DIAG(COMPILE, "ATTN slot=%d (sectioned): GGUF decode KV contract — "
+                        "using emitGgufDecodeAttentionKernel (runtime boundary + scatter)", si);
+            } else if (liveKvSec) {
+              DSP_DIAG(COMPILE, "ATTN slot=%d (sectioned): live KV cache not expressible "
+                        "by the GGUF decode emitter — deferring to C++ native", si);
               result.valid = false;
               return result;
             }
@@ -8321,7 +8390,35 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             return result;
           }
 
-          if (qPtr && kPtr && vPtr && outPtr) {
+          if (ggufDecodeKvSec && qPtr && outPtr) {
+            auto kCachePtrSec = getSlotArgPtr(keyCacheSrcSec);
+            auto vCachePtrSec = getSlotArgPtr(valueCacheSrcSec);
+            auto cachePosPtrSec = getSlotArgPtr(cachePosSrcSec);
+            auto curKPtrSec = getSlotArgPtr(kSrc);
+            auto curVPtrSec = getSlotArgPtr(vSrc);
+            if (kCachePtrSec && vCachePtrSec && cachePosPtrSec && curKPtrSec && curVPtrSec) {
+              NDArray* kcSecMax = resolveArr(keyCacheSrcSec);
+              int cacheMaxSeqSec = (kcSecMax && kcSecMax->rankOf() == 4)
+                  ? static_cast<int>(kcSecMax->sizeAt(1)) : 0;
+              emitGgufDecodeAttentionKernel(builder, loc, qPtr,
+                                            curKPtrSec, curVPtrSec,
+                                            kCachePtrSec, vCachePtrSec, cachePosPtrSec,
+                                            outPtr,
+                                            batchSize, numQHeads, numKvHeads,
+                                            seqQ, cacheMaxSeqSec, headDim, scale,
+                                            blockM, blockN,
+                                            attnBiasPtr, attnBiasShape);
+              // output[0] = attention result (loaded from output buffer)
+              DataType outDtype = resolveDtype(outSlot);
+              auto loaded = loadBlock(outSlot, outDtype);
+              if (loaded) ssaValues[outSlot] = loaded;
+            } else {
+              DSP_DIAG(COMPILE, "ATTN slot=%d (sectioned): GGUF decode binding failed — "
+                        "native fallback", si);
+              result.valid = false;
+              return result;
+            }
+          } else if (qPtr && kPtr && vPtr && outPtr) {
             emitFusedAttentionKernel(builder, loc, qPtr, kPtr, vPtr, outPtr,
                                      batchSize, numQHeads, numKvHeads, seqQ, seqK, headDim,
                                      scale, blockM, blockN, isBSHD, kIsBSHD,
