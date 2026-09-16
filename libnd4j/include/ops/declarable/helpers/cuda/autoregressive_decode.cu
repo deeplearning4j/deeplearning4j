@@ -2434,6 +2434,32 @@ void autoregressiveDecode(
                 for (int i = 0; i < 8 && i <= proposedCount; i++) argmaxRaw[i] = argmaxDst[i];
             }
 
+            // Cross-check payloads: dump the verification input row tokens plus the
+            // per-row native logits argmaxes so the window4 Java-parity harness can
+            // be fed IDENTICAL ids rows and its row argmaxes compared apples-to-apples.
+            LongType inputRows[8] = {};
+            if (DSP_DIAG_ENABLED(KV_CACHE) && config->planOwnsKvScatter
+                    && inputIds != nullptr && inputIds->dataType() == DataType::INT64
+                    && inputIds->lengthOf() >= 1) {
+                NDArray::prepareSpecialUse({inputIds}, {});
+                std::vector<uint8_t> rowBytes(
+                    std::min<LongType>(8, inputIds->lengthOf()) * sizeof(LongType));
+                cudaMemcpyAsync(rowBytes.data(), inputIds->specialBuffer(), rowBytes.size(),
+                                cudaMemcpyDeviceToHost, *stream);
+                cudaStreamSynchronize(*stream);
+                for (int i = 0; i < (int)(rowBytes.size() / sizeof(LongType)); i++) {
+                    std::memcpy(&inputRows[i], rowBytes.data() + i * sizeof(LongType),
+                                sizeof(LongType));
+                }
+                NDArray::registerSpecialUse({inputIds}, {});
+                DSP_DIAG(KV_CACHE,
+                         "MTP_VERIFY_INPUTS step=%d basePos=%lld rows=[%lld,%lld,%lld,%lld,%lld] "
+                         "nativeRowArgmax=[%lld,%lld,%lld,%lld,%lld]",
+                         step, (long long)basePosition,
+                         inputRows[0], inputRows[1], inputRows[2], inputRows[3], inputRows[4],
+                         argmaxRaw[0], argmaxRaw[1], argmaxRaw[2], argmaxRaw[3], argmaxRaw[4]);
+            }
+
             int acceptedDrafts = 0;
             while (acceptedDrafts < proposedCount &&
                    argmaxDst[acceptedDrafts] == draftIds[acceptedDrafts]) {
