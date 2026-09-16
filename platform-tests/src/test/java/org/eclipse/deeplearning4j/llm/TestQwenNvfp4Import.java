@@ -161,7 +161,15 @@ public class TestQwenNvfp4Import {
      * {@link GenerationPipeline#startSession(String, int)} (MTP session, then greedy
      * session) and times only the token loop, so plan-build/Triton-warmup cost is
      * excluded. Reports decode tok/s and MTP acceptance per pass.
-     * Enabled with -Dqwen.nvfp4.mtpBench=true.
+     *
+     * <p>Self-validating: the reported MTP text covers the FULL session sequence
+     * (including the two Java-sampled warmup tokens, not just the timed continuation
+     * fragment), and both passes must produce the identical token sequence — the
+     * lossless-verification contract, the same invariant the one-shot parity test
+     * asserts. Acceptance is reported, not gated: it reflects the predictor's draft
+     * quality (a known separate engine issue), never the emission's correctness.</p>
+     *
+     * <p>Enabled with -Dqwen.nvfp4.mtpBench=true.</p>
      */
     @Test
     @EnabledIfSystemProperty(named = "qwen.nvfp4.mtpBench", matches = "true")
@@ -209,10 +217,15 @@ public class TestQwenNvfp4Import {
                 long mtpDecodeNs = 0;
                 int mtpTokens = 0;
                 int proposed = 0, accepted = 0, steps = 0;
+                int[] mtpAllTokens = new int[0];
                 try (GenerationSession session = pipeline.startSession(prompt, maxTokens)) {
                     long t0 = System.nanoTime();
                     // First session call includes warmup decode; measure it separately
-                    // so the reported rate is the steady-state replay loop.
+                    // so the reported rate is the steady-state replay loop. The two
+                    // Java-sampled warmup tokens ARE part of the session sequence, so
+                    // carry them forward: the reported text and the parity check after
+                    // pass 2 must cover every token the session produced, not just the
+                    // timed continuation fragment.
                     GenerationResult first = session.generate(1);
                     long t1 = System.nanoTime();
                     GenerationResult rest = session.generate(maxTokens - 1);
@@ -222,34 +235,48 @@ public class TestQwenNvfp4Import {
                     proposed = rest.getTotalSpeculativeTokens();
                     accepted = rest.getTotalAcceptedTokens();
                     steps = rest.getSpeculativeSteps();
+                    mtpAllTokens = session.getAllTokens();
+                    assertEquals(mtpAllTokens.length, first.getTokenIds().length + mtpTokens,
+                            "Session accounting: allTokens must equal warmup prefix + continuation");
                     log.info("NVFP4-BENCH MTP warmupMs={} steadyTokens={} steadyMs={} tok/s={}",
                             (t1 - t0) / 1_000_000, mtpTokens, mtpDecodeNs / 1_000_000,
                             mtpTokens * 1e9 / Math.max(1, mtpDecodeNs));
-                    log.info("NVFP4-BENCH MTP proposed={} accepted={} steps={} acceptance={} text={}",
+                    log.info("NVFP4-BENCH MTP proposed={} accepted={} steps={} acceptance={} fullTokens={} text={}",
                             proposed, accepted, steps,
                             proposed > 0 ? (double) accepted / proposed : 0.0,
-                            rest.getText());
+                            mtpAllTokens.length, session.getFullText());
                 }
 
                 // -- Pass 2: greedy steady-state decode (fresh session; rebuild is setup, not measured) --
                 pipeline.setSamplingConfig(SamplingConfig.greedy());
                 long greedyDecodeNs = 0;
                 int greedyTokens = 0;
+                int[] greedyAllTokens = new int[0];
                 try (GenerationSession session = pipeline.startSession(prompt, maxTokens)) {
                     session.generate(1);
                     long t1 = System.nanoTime();
                     GenerationResult rest = session.generate(maxTokens - 1);
                     greedyDecodeNs = System.nanoTime() - t1;
                     greedyTokens = rest.getTokenIds().length;
-                    log.info("NVFP4-BENCH greedy steadyTokens={} steadyMs={} tok/s={}",
+                    greedyAllTokens = session.getAllTokens();
+                    log.info("NVFP4-BENCH greedy steadyTokens={} steadyMs={} tok/s={} fullTokens={} text={}",
                             greedyTokens, greedyDecodeNs / 1_000_000,
-                            greedyTokens * 1e9 / Math.max(1, greedyDecodeNs));
+                            greedyTokens * 1e9 / Math.max(1, greedyDecodeNs),
+                            greedyAllTokens.length, session.getFullText());
                 }
                 log.info("NVFP4-BENCH SUMMARY mtpTok/s={} greedyTok/s={} speedup={} acceptance={}/{}",
                         mtpTokens * 1e9 / Math.max(1, mtpDecodeNs),
                         greedyTokens * 1e9 / Math.max(1, greedyDecodeNs),
                         (mtpTokens * (double) greedyDecodeNs) / Math.max(1, mtpDecodeNs * (double) greedyTokens),
                         accepted, proposed);
+                // Lossless contract across the session seam — the same invariant the
+                // one-shot parity test asserts. Speculative verification must emit
+                // exactly the greedy sequence on the same prompt regardless of the
+                // predictor's acceptance rate; any divergence here is a real
+                // session/engine bug, not benchmark bookkeeping.
+                assertArrayEquals(greedyAllTokens, mtpAllTokens,
+                        "Session-mode MTP must match session-mode greedy token-for-token: greedy="
+                                + Arrays.toString(greedyAllTokens) + " mtp=" + Arrays.toString(mtpAllTokens));
             }
         }
     }
