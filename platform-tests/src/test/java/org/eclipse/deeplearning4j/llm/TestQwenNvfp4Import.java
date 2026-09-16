@@ -14,6 +14,7 @@ import org.bytedeco.javacpp.BytePointer;
 import org.eclipse.deeplearning4j.llm.data.LLMModelDownloader;
 import org.eclipse.deeplearning4j.llm.generation.ChatGenerationResult;
 import org.eclipse.deeplearning4j.llm.generation.GenerationPipeline;
+import org.eclipse.deeplearning4j.llm.generation.GenerationPipeline.GenerationSession;
 import org.eclipse.deeplearning4j.llm.generation.GenerationPipeline.ModelMetadata;
 import org.eclipse.deeplearning4j.llm.generation.kvcache.KvCacheStrategy;
 import org.eclipse.deeplearning4j.safetensors.ModelOptQwenConfig;
@@ -153,6 +154,104 @@ public class TestQwenNvfp4Import {
     @EnabledIfSystemProperty(named = "qwen.nvfp4.mtp", matches = "true")
     void bundledMtpMatchesGreedyWithActualPackedCheckpoint() throws Exception {
         generateWithActualPackedCheckpoint(true);
+    }
+
+    /**
+     * Steady-state decode benchmark: builds the plan once per pass via
+     * {@link GenerationPipeline#startSession(String, int)} (MTP session, then greedy
+     * session) and times only the token loop, so plan-build/Triton-warmup cost is
+     * excluded. Reports decode tok/s and MTP acceptance per pass.
+     * Enabled with -Dqwen.nvfp4.mtpBench=true.
+     */
+    @Test
+    @EnabledIfSystemProperty(named = "qwen.nvfp4.mtpBench", matches = "true")
+    void steadyStateMtpDecodeThroughput() throws Exception {
+        int maxTokens = Integer.getInteger("qwen.nvfp4.benchTokens", 250);
+        int maxPrefill = Integer.getInteger("qwen.nvfp4.maxPrefillLength", 128);
+        int contextCap = Integer.getInteger("qwen.nvfp4.maxKvCacheLength", 448);
+        String prompt = "Write a short story about a robot who learns to paint.";
+
+        File configFile = download("config.json");
+        File quantFile = download("hf_quant_config.json");
+        File generationFile = download("generation_config.json");
+        JsonObject index = json(download("model.safetensors.index.json"));
+        Set<String> shardNames = new TreeSet<>();
+        for (Map.Entry<String, JsonElement> entry : index.getAsJsonObject("weight_map").entrySet()) {
+            shardNames.add(entry.getValue().getAsString());
+        }
+        List<File> shards = new ArrayList<>();
+        for (String shard : shardNames) shards.add(download(shard));
+        String tokenizerJson = Files.readString(download("tokenizer.json").toPath(), StandardCharsets.UTF_8);
+        JsonObject tokenizerConfig = json(download("tokenizer_config.json"));
+        String template = Files.readString(download("chat_template.jinja").toPath(), StandardCharsets.UTF_8);
+        tokenizerConfig.addProperty("chat_template", template);
+
+        try (HuggingFaceTokenizer tokenizer = HuggingFaceTokenizer.fromJson(tokenizerJson, GSON.toJson(tokenizerConfig));
+             ImportedModel model = ModelOptQwenImporter.importTextOnly(
+                     configFile, quantFile, generationFile, shards, DataType.BFLOAT16, true)) {
+            ModelOptQwenConfig importedConfig = model.getConfig();
+            GenerationPipelineConfig pipelineConfig = GenerationPipelineConfig.builder()
+                    .decoder(model.getGraph()).tokenizer(tokenizer)
+                    .modelMetadata(ModelMetadata.of(importedConfig.getBosTokenId(), importedConfig.getEosTokenId(),
+                            importedConfig.getPadTokenId(), template, importedConfig.getStopTokenIds(),
+                            importedConfig.getStopTokenIds()))
+                    .kvCacheStrategy(KvCacheStrategy.STATIC)
+                    .dspEnabled(true)
+                    .maxSpeculativeTokens(Integer.getInteger("qwen.nvfp4.mtpK", 4))
+                    .samplingConfig(SamplingConfig.speculative())
+                    .maxNewTokens(maxTokens).maxPrefillLength(maxPrefill).maxKvCacheLength(contextCap)
+                    .build();
+            try (GenerationPipeline pipeline = GenerationPipeline.create(pipelineConfig)) {
+                if (pipeline.getDecoder() != model.getGraph()) model.close();
+
+                // ── Pass 1: MTP steady-state decode ──
+                pipeline.setSamplingConfig(SamplingConfig.speculative());
+                long mtpDecodeNs = 0;
+                int mtpTokens = 0;
+                int proposed = 0, accepted = 0, steps = 0;
+                try (GenerationSession session = pipeline.startSession(prompt, maxTokens)) {
+                    long t0 = System.nanoTime();
+                    // First session call includes warmup decode; measure it separately
+                    // so the reported rate is the steady-state replay loop.
+                    GenerationResult first = session.generate(1);
+                    long t1 = System.nanoTime();
+                    GenerationResult rest = session.generate(maxTokens - 1);
+                    long t2 = System.nanoTime();
+                    mtpDecodeNs = t2 - t1;
+                    mtpTokens = rest.getTokenIds().length;
+                    proposed = rest.getTotalSpeculativeTokens();
+                    accepted = rest.getTotalAcceptedTokens();
+                    steps = rest.getSpeculativeSteps();
+                    log.info("NVFP4-BENCH MTP warmupMs={} steadyTokens={} steadyMs={} tok/s={}",
+                            (t1 - t0) / 1_000_000, mtpTokens, mtpDecodeNs / 1_000_000,
+                            mtpTokens * 1e9 / Math.max(1, mtpDecodeNs));
+                    log.info("NVFP4-BENCH MTP proposed={} accepted={} steps={} acceptance={} text={}",
+                            proposed, accepted, steps,
+                            proposed > 0 ? (double) accepted / proposed : 0.0,
+                            rest.getText());
+                }
+
+                // ── Pass 2: greedy steady-state decode (fresh session; rebuild is setup, not measured) ──
+                pipeline.setSamplingConfig(SamplingConfig.greedy());
+                long greedyDecodeNs = 0;
+                int greedyTokens = 0;
+                try (GenerationSession session = pipeline.startSession(prompt, maxTokens)) {
+                    session.generate(1);
+                    long t1 = System.nanoTime();
+                    GenerationResult rest = session.generate(maxTokens - 1);
+                    greedyDecodeNs = System.nanoTime() - t1;
+                    greedyTokens = rest.getTokenIds().length;
+                    log.info("NVFP4-BENCH greedy steadyTokens={} steadyMs={} tok/s={}",
+                            greedyTokens, greedyDecodeNs / 1_000_000,
+                            greedyTokens * 1e9 / Math.max(1, greedyDecodeNs));
+                }
+                log.info("NVFP4-BENCH SUMMARY mtpTok/s={} greedyTok/s={} speedup={} acceptance={}/{}",
+                        mtpTokens * 1e9 / Math.max(1, mtpDecodeNs),
+                        greedyTokens * 1e9 / Math.max(1, greedyDecodeNs),
+                        (mtpTokens * (double) greedyDecodeNs) / Math.max(1, mtpDecodeNs * (double) greedyTokens),
+                        accepted, proposed);
+            }
+        }
     }
 
     @Test
