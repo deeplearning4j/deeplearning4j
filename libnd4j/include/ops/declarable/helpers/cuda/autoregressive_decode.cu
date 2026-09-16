@@ -1471,6 +1471,30 @@ void autoregressiveDecode(
                               (stream, mtpLogits->specialBuffer(), draftPtr, mtpVocab),
                               SD_FLOAT_TYPES);
         NDArray::registerSpecialUse({mtpDraftDevice}, {mtpLogits});
+        if (DSP_DIAG_ENABLED(KV_CACHE)) {
+            // MTP_ARGMAX_IMMEDIATE: D2H the argmax + first logits value RIGHT AFTER the
+            // argmax kernel, before the target verification pass (or any other plan) has
+            // a chance to touch mtpDraftDevice or the logits output staging. Compare with
+            // the draft later consumed by MTP_POS_STATS: equal => logits were fresh and
+            // the draft is genuinely the predictor's answer (input/weight issue);
+            // different => the draft was CLOBBERED between argmax and consumption
+            // (aliasing/clobbering defect on the output path).
+            {
+                LongType immDraft[1] = {};
+                uint32_t immLogit[1] = {};
+                cudaMemcpyAsync(immDraft, draftPtr, sizeof(LongType),
+                                cudaMemcpyDeviceToHost, *stream);
+                cudaMemcpyAsync(immLogit, mtpLogits->specialBuffer(),
+                                std::min<size_t>(sizeof(uint32_t),
+                                                 static_cast<size_t>(mtpLogits->sizeOfT())),
+                                cudaMemcpyDeviceToHost, *stream);
+                cudaError_t immErr = cudaStreamSynchronize(*stream);
+                DSP_DIAG(KV_CACHE,
+                         "MTP_ARGMAX_IMMEDIATE pos=%lld slot=%d draft=%lld logit0_raw=0x%08x err=%d",
+                         (long long)position, draftSlot, (long long)immDraft[0],
+                         static_cast<unsigned>(immLogit[0]), static_cast<int>(immErr));
+            }
+        }
         if (captureThisCall) {
             // Borrow just the selected INT64 element, not the unwritten draft slots.
             // Metadata dies here; the arena owns the asynchronous host destination.
@@ -2594,7 +2618,12 @@ void autoregressiveDecode(
                 // fully-accepted committed row and left a permanent hole in the
                 // predictor KV cache (observed as acceptance collapse after the
                 // first full accept in K=1).
-                LongType mtpProcessedThrough = basePosition + proposedCount - 1;
+                // Proposal write horizon: rows [base, base+proposedCount-1] were
+                // all written by the proposal loop (slot 0 with the epilogue's
+                // target carry, slots >= 1 with self-propagated predictor
+                // hidden). Retained committed rows are repaired below; rejected
+                // rows are hidden after the repair pass.
+                LongType mtpProposedThrough = basePosition + proposedCount - 1;
                 // Predictor-side accepted-prefix repair. Chained proposal calls
                 // (slot>=1) wrote predictor KV rows [base+1, base+K-1] with each
                 // draft's own recursively propagated hidden as the carry input,
@@ -2612,43 +2641,46 @@ void autoregressiveDecode(
                 // correction/bonus for the final row. planOutputs holds the
                 // post-rerun hidden rows keyed by position - base, so row j pairs
                 // position q-1 with token q.
-                // NOTE (unconditional self-carry contract): this repair loop runs
-                // exactly on FULL accepts - it fires only when
-                // repairPosition > base + proposedCount - 1, which requires
-                // consumedCount - 1 > proposedCount - 1, i.e. every draft plus
-                // the bonus row was committed (that bonus row is what this loop
-                // exists to write). Its executeMtpCuda call both READS the carry
-                // installed above and then self-carries its own output hidden,
-                // but that clobber is transient: the epilogue's
-                // setMtpTargetCarryCuda below runs AFTER this loop and is the
-                // last carry write of the step. The next carry reader is the
-                // NEXT step's slot 0, whose plan executes (consuming the
+                // NOTE (vLLM contract, unconditional repair): EVERY retained row
+                // must pair (x_q, target h_{q-1}) - trusting a chained slot's
+                // self-carried row poisons the predictor context from the first
+                // accepted step on (observed: step 0 accepts via the
+                // warmup-primed carry, every later slot-0 draft then diverges ->
+                // 1-accept-per-run collapse). The rewrite runs for all committed
+                // rows [base+1, base+consumedCount-1]; its executeMtpCuda call
+                // both READS the carry installed above and then self-carries its
+                // own output hidden, but that clobber is transient: the
+                // epilogue's setMtpTargetCarryCuda below runs AFTER this loop and
+                // is the last carry write of the step. The next carry reader is
+                // the NEXT step's slot 0, whose plan executes (consuming the
                 // epilogue value) before that step's first unconditional
                 // self-carry fires - executeMtpCuda reads its carry input
                 // during plan execution and only writes the self-carry
                 // afterwards - so the epilogue carry is never consumed stale.
                 for (int j = 0; j < consumedCount - 1; j++) {
                     LongType repairPosition = basePosition + 1 + j;
-                    if (repairPosition > mtpProcessedThrough) {
-                        setMtpTargetCarryCuda(
-                            planOutputs[config->targetHiddenOutputIdx], j);
-                        setMtpNextInputCuda(specArgmaxDevice, j, repairPosition);
-                        executeMtpCuda(repairPosition, 0, false);
-                        mtpProcessedThrough = repairPosition;
-                        DSP_DIAG(KV_CACHE,
-                                 "MTP_PREFIX_REPAIR step=%d position=%lld committedRow=%d "
-                                 "carryRow=%d - rewriting predictor KV row with target hidden",
-                                 step, (long long)repairPosition, j, carryRow);
-                    }
+                    setMtpTargetCarryCuda(
+                        planOutputs[config->targetHiddenOutputIdx], j);
+                    setMtpNextInputCuda(specArgmaxDevice, j, repairPosition);
+                    executeMtpCuda(repairPosition, 0, false);
+                    DSP_DIAG(KV_CACHE,
+                             "MTP_PREFIX_REPAIR step=%d position=%lld committedRow=%d "
+                             "carryRow=%d - rewriting predictor KV row with target hidden",
+                             step, (long long)repairPosition, j, carryRow);
                 }
 
+                // Rejected proposal rows [base+consumedCount,
+                // base+proposedCount-1] were written with speculative carries
+                // and are NOT retained: hide them for the next step. The extent
+                // is the PROPOSAL write horizon, not the (now advanced) repair
+                // horizon.
                 LongType nextMtpPosition = basePosition + consumedCount;
-                if (nextMtpPosition <= mtpProcessedThrough) {
+                if (nextMtpPosition <= mtpProposedThrough) {
                     NDArray::prepareSpecialUse({config->mtpCausalMask}, {});
                     BUILD_SINGLE_SELECTOR(config->mtpCausalMask->dataType(),
                                           maskCausalRangeLauncher,
                                           (stream, config->mtpCausalMask->specialBuffer(),
-                                           nextMtpPosition, mtpProcessedThrough + 1,
+                                           nextMtpPosition, mtpProposedThrough + 1,
                                            mtpMaskLen),
                                           SD_FLOAT_TYPES);
                     NDArray::registerSpecialUse({config->mtpCausalMask}, {});
