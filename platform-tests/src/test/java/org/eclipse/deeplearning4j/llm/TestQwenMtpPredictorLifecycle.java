@@ -42,7 +42,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 /** Cached-predictor steady-state probes for the native MTP path (no target layers, no downloads).
- * Reference values are a known-good production run's first warmup — not a math oracle. */
+ * Reference values are a known-good production run's first warmup - not a math oracle. */
 @Slf4j
 public class TestQwenMtpPredictorLifecycle {
     private static final String PREFIX = "nvidia-Qwen3.6-27B-NVFP4-0893e1606ff3d5f97a441f405d5fc541a6bdf404-";
@@ -141,7 +141,7 @@ public class TestQwenMtpPredictorLifecycle {
                     if (Boolean.parseBoolean(System.getProperty("qwen.mtp.skipProbe", "false"))) {
                         // Skip-probe: production warms ONCE (prepareBundledMtp) then advances
                         // positions 37->38->39 through DIFFERENT prefixes. Every earlier probe
-                        // warmed by replaying capture-1 repeatedly — numerically identical to a
+                        // warmed by replaying capture-1 repeatedly - numerically identical to a
                         // warmup-pinned constant. Here, warmed on pos 37 only, feed pos 39
                         // DIRECTLY (never pos 38): wrong output = a warmup-pinned quantity
                         // breaks when the prefix advances past the warmup length.
@@ -161,7 +161,7 @@ public class TestQwenMtpPredictorLifecycle {
                                     capture.sourcePosition, eTok, oTok);
                             if (eTok != oTok)
                                 failures.add("skip-probe fresh=" + eTok + " warmed=" + oTok
-                                        + " — warmup-pinned plan constant breaks on prefix advance");
+                                        + " - warmup-pinned plan constant breaks on prefix advance");
                         } finally { release(fresh, graphs); }
                     }
                     for (int captureIndex = 0; captureIndex < captures.size(); captureIndex++) {
@@ -283,9 +283,9 @@ public class TestQwenMtpPredictorLifecycle {
                                 actual.restore(capture);
                                 // In-window clobber probe: AFTER the restore (staging of correct bytes),
                                 // BEFORE the plan reads. Production has no restore at all between the
-                                // last correct staging and the read — the target plan's writes land in
+                                // last correct staging and the read - the target plan's writes land in
                                 // exactly this window. Design notes: a UNIFORM shift to all K rows is
-                                // attention-invariant (Q·δ constant across rows, softmax unchanged) —
+                                // attention-invariant (Q.? constant across rows, softmax unchanged) -
                                 // corrupt a SUBSET instead, and also corrupt V (V has no such
                                 // invariance at all). Zeroing V rows [5,15) must change the output if
                                 // the plan reads the live buffer on replay; unchanged output proves a

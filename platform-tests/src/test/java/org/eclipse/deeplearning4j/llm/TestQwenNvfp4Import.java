@@ -204,7 +204,7 @@ public class TestQwenNvfp4Import {
             try (GenerationPipeline pipeline = GenerationPipeline.create(pipelineConfig)) {
                 if (pipeline.getDecoder() != model.getGraph()) model.close();
 
-                // ── Pass 1: MTP steady-state decode ──
+                // -- Pass 1: MTP steady-state decode --
                 pipeline.setSamplingConfig(SamplingConfig.speculative());
                 long mtpDecodeNs = 0;
                 int mtpTokens = 0;
@@ -231,7 +231,7 @@ public class TestQwenNvfp4Import {
                             rest.getText());
                 }
 
-                // ── Pass 2: greedy steady-state decode (fresh session; rebuild is setup, not measured) ──
+                // -- Pass 2: greedy steady-state decode (fresh session; rebuild is setup, not measured) --
                 pipeline.setSamplingConfig(SamplingConfig.greedy());
                 long greedyDecodeNs = 0;
                 int greedyTokens = 0;

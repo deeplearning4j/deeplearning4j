@@ -485,7 +485,7 @@ public class TestQwen35MtpDecode {
             // wild draft tokens at rows 2-3, asl=4) instead of activeWindow=2 with
             // zero tail rows. Rows 0-1 are causally invariant to rows>=2 under
             // correct op semantics, so all downstream row-0/row-1 comparisons remain
-            // valid — a divergence here reproduces the native decode-loop corruption.
+            // valid - a divergence here reproduces the native decode-loop corruption.
             if (Boolean.getBoolean("mtp.parity.window4")) {
                 setDecodeStep(stableInputs, io, secondToken, draftToken, prefillLength + 1,
                         4, window, maxKvLength, maskType, owned);
