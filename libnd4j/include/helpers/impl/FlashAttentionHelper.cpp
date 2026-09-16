@@ -437,9 +437,21 @@ void FlashAttentionHelper::forward4D(
 
   if (sd::graph::dspIsCudaBuild()) {
     // Use fused CUDA kernel - supports attention bias in the kernel itself
+    // BFLOAT16 (sd::DataType code 17) is admitted alongside HALF: the fused GQA
+    // kernels and fusedCausalMaskSoftmax are instantiated for every SD_FLOAT_TYPES
+    // member (BUILD_SINGLE_TEMPLATE in FlashAttentionHelper.cu), FlashAccType
+    // promotes BF16 to FP32 in-register, and the GQA window readers use the
+    // declared strides only. Excluding BF16 routed every Qwen NVFP4 (BF16
+    // activations, keyCacheDt=17) multi-row MTP verification window to the
+    // generic cache-read fallback, whose per-row result diverged (argmax rows 1+
+    // collapsed to row-0 noise) while the HALF 0.8B model on the fused
+    // current-window path stayed lossless. fa4d_gqa_path showed supported=0 with
+    // every OTHER gate (scores/logits/aux/bias/currentWindow layout) already 1 -
+    // supportedType was the sole blocker.
     bool supportedType = (query->dataType() == DataType::FLOAT32 ||
                           query->dataType() == DataType::DOUBLE ||
-                          query->dataType() == DataType::HALF);
+                          query->dataType() == DataType::HALF ||
+                          query->dataType() == DataType::BFLOAT16);
     bool noGQA = (headsPerKvHead == 1);
     bool needScores = (attentionScores != nullptr && !attentionScores->isEmpty());
     bool needLogits = (attentionLogits != nullptr && !attentionLogits->isEmpty());
