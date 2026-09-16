@@ -177,7 +177,15 @@ public class TestQwenNvfp4Import {
         int maxTokens = Integer.getInteger("qwen.nvfp4.benchTokens", 250);
         int maxPrefill = Integer.getInteger("qwen.nvfp4.maxPrefillLength", 128);
         int contextCap = Integer.getInteger("qwen.nvfp4.maxKvCacheLength", 448);
-        String prompt = "Write a short story about a robot who learns to paint.";
+        // Multi-sentence diverse prompt: keeps the trunk's distribution sharp
+        // (confident argmaxes) far past prefill. Short prompts collapse into
+        // near-tie token repetition within ~30 tokens, where speculative
+        // acceptance measurements measure tie-break noise instead of the
+        // predictor's real drafting quality.
+        String prompt = "Explain how solar panels convert sunlight into electricity, "
+                + "then describe how a hydroelectric dam works, and finally compare "
+                + "the two energy sources in terms of cost, reliability, and "
+                + "environmental impact.";
 
         File configFile = download("config.json");
         File quantFile = download("hf_quant_config.json");
