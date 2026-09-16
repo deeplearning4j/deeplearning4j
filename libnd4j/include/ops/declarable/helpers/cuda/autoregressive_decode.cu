@@ -2612,13 +2612,21 @@ void autoregressiveDecode(
                 // correction/bonus for the final row. planOutputs holds the
                 // post-rerun hidden rows keyed by position - base, so row j pairs
                 // position q-1 with token q.
-                // NOTE (unconditional self-carry contract): this repair loop can
-                // only run on PARTIAL acceptance (consumedCount-1 < proposedCount
-                // in that case), so it can never re-enter executeMtpCuda after a
-                // full accept and clobber the epilogue's target carry. On full
-                // accepts mtpProcessedThrough = base + proposedCount - 1 is also
-                // truthful again: the now-unconditional chained self-carries
-                // really did write every predictor KV row [base, base+K-1].
+                // NOTE (unconditional self-carry contract): this repair loop runs
+                // exactly on FULL accepts - it fires only when
+                // repairPosition > base + proposedCount - 1, which requires
+                // consumedCount - 1 > proposedCount - 1, i.e. every draft plus
+                // the bonus row was committed (that bonus row is what this loop
+                // exists to write). Its executeMtpCuda call both READS the carry
+                // installed above and then self-carries its own output hidden,
+                // but that clobber is transient: the epilogue's
+                // setMtpTargetCarryCuda below runs AFTER this loop and is the
+                // last carry write of the step. The next carry reader is the
+                // NEXT step's slot 0, whose plan executes (consuming the
+                // epilogue value) before that step's first unconditional
+                // self-carry fires - executeMtpCuda reads its carry input
+                // during plan execution and only writes the self-carry
+                // afterwards - so the epilogue carry is never consumed stale.
                 for (int j = 0; j < consumedCount - 1; j++) {
                     LongType repairPosition = basePosition + 1 + j;
                     if (repairPosition > mtpProcessedThrough) {
