@@ -1219,20 +1219,18 @@ void autoregressiveDecode(
             mtpPlan->registerDeviceManagedExternalInput(config->mtpKvBuffers[kv]);
         }
         // MTP carry arrays are mutated in-place between chained predictor calls
-        // (writeMtpCarry / setMtpTargetCarryCuda / setMtpNextInputCuda). Register
-        // them as device-managed so the plan passes them through WITHOUT staging:
-        // the CUDA graph's baked pointers read the live arrays directly, which
-        // are updated on the same decode stream before each chained call. The
-        // staging D2D refresh doesn't reliably land between chained calls within
-        // one decode step (the per-exec sync context is deduped), so the graph
-        // would read the PREVIOUS call's carry — the root cause of the MTP
-        // acceptance collapse (fresh-graph-on-captured-inputs diverges 248320/248320
-        // from native at chained slots while matching slot 0 exactly).
-        mtpPlan->registerDeviceManagedExternalInput(config->mtpTargetHidden);
-        mtpPlan->registerDeviceManagedExternalInput(config->mtpInputIds);
-        mtpPlan->registerDeviceManagedExternalInput(config->mtpCausalMask);
-        mtpPlan->registerDeviceManagedExternalInput(config->mtpPositionOffset);
-        mtpPlan->registerDeviceManagedExternalInput(config->mtpCachePosition);
+        // (writeMtpCarry / setMtpTargetCarryCuda / setMtpNextInputCuda). They
+        // deliberately stay on the GENERIC VARIABLE path (staging + per-call D2D
+        // refresh): the captured predictor graph reads the plan's STAGING buffers,
+        // and ensureAndSyncStagingBuffers copies live -> staging before every
+        // replay. Registering them as device-managed made the passthrough skip
+        // that refresh (baked-addr identity recorded the live address at capture,
+        // so no drift was ever detected) while the graph kept reading staging —
+        // staging held warmup-era garbage forever (proven by dspt staging-vs-live
+        // diff: staging carry byte-identical across all calls while live carry
+        // advanced every step), which was the true acceptance-collapse mechanism.
+        // KV buffers DO use device-managed passthrough: the graph bakes their
+        // addresses and attention writes rows in place (no per-call copy needed).
     }
 
     // KV_CACHE-gated chain probe: per chain exec, sample the carry-in hidden,
@@ -1245,6 +1243,12 @@ void autoregressiveDecode(
     size_t mtpChainSampleBytes[33] = {};
     LongType mtpChainTok[33] = {};
     int mtpChainSampled = 0;
+
+    // KV self-row write-visibility probe (loop scope so the speculative accept
+    // block drains it): slot-0 arm records the position; the accept block re-reads
+    // the same K row after executeSteadyState and compares.
+    LongType kvSelfRowAfterPos = -1;
+    NDArray* kvSelfRowAfterBuf = nullptr;
 
     // Adaptive MTP chain-depth cap. Recursive drafting feeds the predictor its
     // OWN output hidden — out-of-distribution for heads trained only on trunk
@@ -1313,6 +1317,63 @@ void autoregressiveDecode(
                               SD_FLOAT_TYPES);
         NDArray::registerSpecialUse(
             {config->mtpPositionOffset, config->mtpCachePosition, config->mtpCausalMask}, {});
+
+        // KV self-row visibility probe: sample the predictor K row at THIS call's
+        // position BEFORE execution (must be zero/masked or stale prior draft) and
+        // gate whether the plan's in-graph write actually lands where attention
+        // will read it. Byte-identical between calls would mean the predictor plan
+        // never writes its own KV row (degenerate self-attention -> uniform logits
+        // -> 1-accept-per-run collapse signature).
+        if (DSP_DIAG_ENABLED(KV_CACHE) && draftSlot == 0
+                && config->mtpKvInputExtIndices != nullptr) {
+            NDArray* kBuf = config->mtpKvBuffers[0];
+            const LongType heads = kBuf->sizeAt(2);
+            const LongType dim = kBuf->sizeAt(3);
+            const LongType rowElems = heads * dim;
+            if (position >= 0 && position < kBuf->sizeAt(1)) {
+                std::vector<float> kSample(std::min<LongType>(8, rowElems));
+                const void* rowPtr = static_cast<const char*>(kBuf->specialBuffer())
+                                     + position * rowElems * kBuf->sizeOfT();
+                // HALF/BF16 need conversion; sample raw bytes then expand via Nd4j-free path.
+                std::vector<uint8_t> raw(kSample.size() * kBuf->sizeOfT());
+                cudaMemcpyAsync(raw.data(), rowPtr, raw.size(),
+                                cudaMemcpyDeviceToHost, *stream);
+                cudaStreamSynchronize(*stream);
+                float vals[8] = {};
+                const int n = static_cast<int>(kSample.size());
+                if (kBuf->dataType() == DataType::FLOAT32) {
+                    std::memcpy(vals, raw.data(), n * 4);
+                } else {
+                    for (int i = 0; i < n; i++) {
+                        unsigned h = raw[i * 2] | (raw[i * 2 + 1] << 8);
+                        unsigned sign = (h >> 15) & 1u, exp = (h >> 10) & 0x1Fu, man = h & 0x3FFu;
+                        float v = exp == 0 ? (man == 0 ? 0.0f : std::ldexp((float)man, -24))
+                                  : exp == 0x1F ? std::numeric_limits<float>::quiet_NaN()
+                                  : std::ldexp(1.0f + man / 1024.0f, (int)exp - 15);
+                        vals[i] = sign ? -v : v;
+                    }
+                }
+                DSP_DIAG(KV_CACHE,
+                         "MTP_KV_SELFROW pos=%lld dtype=%d before=[%.4f,%.4f,%.4f,%.4f]",
+                         (long long)position, (int)kBuf->dataType(),
+                         vals[0], vals[1], vals[2], vals[3]);
+            }
+        }
+        // Post-write visibility sample handle: re-reads the same row AFTER the plan
+        // executes (drained right before the accept rule), closing the
+        // write-visibility question: if before != after, the in-graph KV write
+        // landed; if identical, the write never reaches the row attention reads.
+        // NOTE: declared at decode-loop scope (see kvSelfRowAfterBuf below) so the
+        // speculative accept block can drain it — executeMtpCuda may run several
+        // times per step and only slot 0 arms the probe.
+        if (DSP_DIAG_ENABLED(KV_CACHE) && draftSlot == 0
+                && config->mtpKvInputExtIndices != nullptr) {
+            NDArray* kBuf = config->mtpKvBuffers[0];
+            if (position >= 0 && position < kBuf->sizeAt(1)) {
+                kvSelfRowAfterPos = position;
+                kvSelfRowAfterBuf = kBuf;
+            }
+        }
 
         // Save admission for this invocation: the counter remains 3 on later calls.
         const bool captureThisCall = captureMtpInputs && mtpSnapshotCall < 3;
@@ -1497,12 +1558,12 @@ void autoregressiveDecode(
                          && config->mtpTargetHidden->dataType() == targetHiddenRows->dataType(),
                      0, "autoregressive_decode: CUDA MTP target carry row/shape/type mismatch");
         DSP_DIAG(KV_CACHE,
-                 "MTP_TARGET_CARRY shape=[%lld,%lld,%lld] row=%d — installing "
+                 "MTP_TARGET_CARRY shape=[%lld,%lld,%lld] row=%d pos=%p — installing "
                  "target trunk hidden into predictor carry",
                  (long long)targetHiddenRows->sizeAt(0),
                  (long long)targetHiddenRows->sizeAt(1),
                  (long long)targetHiddenRows->sizeAt(2),
-                 row);
+                 row, targetHiddenRows->specialBuffer());
         // Dump the first 8 floats of the carry source row for diagnostics:
         // compares step-to-step carry content stability. If the same context
         // position produces different carry bytes across steps, the target's
@@ -2312,6 +2373,35 @@ void autoregressiveDecode(
             emitPreExecStateSamples(step);
             dumpStepInputSlices("spec", step, basePosition);
             emitPlanOutputFingerprints();
+            if (kvSelfRowAfterBuf != nullptr && kvSelfRowAfterPos >= 0) {
+                const LongType heads = kvSelfRowAfterBuf->sizeAt(2);
+                const LongType dim = kvSelfRowAfterBuf->sizeAt(3);
+                const LongType rowElems = heads * dim;
+                const void* rowPtr = static_cast<const char*>(kvSelfRowAfterBuf->specialBuffer())
+                                     + kvSelfRowAfterPos * rowElems * kvSelfRowAfterBuf->sizeOfT();
+                std::vector<uint8_t> raw(4 * kvSelfRowAfterBuf->sizeOfT());
+                cudaMemcpyAsync(raw.data(), rowPtr, raw.size(),
+                                cudaMemcpyDeviceToHost, *stream);
+                cudaStreamSynchronize(*stream);
+                float kAfter[4] = {};
+                if (kvSelfRowAfterBuf->dataType() == DataType::FLOAT32) {
+                    std::memcpy(kAfter, raw.data(), 16);
+                } else {
+                    for (int i = 0; i < 4; i++) {
+                        unsigned h = raw[i * 2] | (raw[i * 2 + 1] << 8);
+                        unsigned sign = (h >> 15) & 1u, exp = (h >> 10) & 0x1Fu, man = h & 0x3FFu;
+                        float v = exp == 0 ? (man == 0 ? 0.0f : std::ldexp((float)man, -24))
+                                  : exp == 0x1F ? std::numeric_limits<float>::quiet_NaN()
+                                  : std::ldexp(1.0f + man / 1024.0f, (int)exp - 15);
+                        kAfter[i] = sign ? -v : v;
+                    }
+                }
+                DSP_DIAG(KV_CACHE,
+                         "MTP_KV_SELFROW_AFTER pos=%lld after=[%.4f,%.4f,%.4f,%.4f]",
+                         (long long)kvSelfRowAfterPos, kAfter[0], kAfter[1], kAfter[2], kAfter[3]);
+                kvSelfRowAfterBuf = nullptr;
+                kvSelfRowAfterPos = -1;
+            }
             if (useMtp) {
                 std::copy(mtpDraftDst, mtpDraftDst + proposedCount, draftIds);
             }
@@ -2362,6 +2452,16 @@ void autoregressiveDecode(
                     mtpPosEvaluated[p]++;
                     if (argmaxDst[p] == draftIds[p]) mtpPosAccepted[p]++;
                 }
+                DSP_DIAG(KV_CACHE,
+                         "MTP_POS_STATS step=%d proposed=%d draft0=%lld argmax0=%lld "
+                         "accept=[%d/%d,%d/%d,%d/%d,%d/%d] argmaxRaw0=%lld argmaxRaw1=%lld",
+                         step, proposedCount,
+                         (long long)draftIds[0], (long long)argmaxDst[0],
+                         mtpPosAccepted[0], mtpPosEvaluated[0],
+                         mtpPosAccepted[1], mtpPosEvaluated[1],
+                         mtpPosAccepted[2], mtpPosEvaluated[2],
+                         mtpPosAccepted[3], mtpPosEvaluated[3],
+                         (long long)argmaxRaw[0], (long long)argmaxRaw[1]);
                 for (int p = 1; p < mtpChainCap && p < 33; p++) {
                     if (mtpPosEvaluated[p] >= MTP_CHAIN_CAP_MIN_EVALS && mtpPosAccepted[p] == 0) {
                         DSP_DIAG(KV_CACHE,
