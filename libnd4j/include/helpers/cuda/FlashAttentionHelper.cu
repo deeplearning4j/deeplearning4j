@@ -1231,9 +1231,15 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
 
  using AccT = typename FlashAccType<T>::type;
 
- const LongType qHead = blockIdx.x;
- const LongType batchIdx = blockIdx.y;
- const LongType queryIdx = blockIdx.z;
+ // Legacy decode launches (seqQ == 1) use the 2D grid from getFusedGQADecodeDims
+ // where blockIdx.x spans numQHeads*batch and blockIdx.y is unused. Multi-row
+ // verification launches (seqQ > 1) use the 3D decomposition
+ // (blockIdx.x = qHead, blockIdx.y = batch, blockIdx.z = queryIdx) set up by
+ // fusedGQADecodeLauncher, so every query row is an independent block instead of
+ // all rows aliasing batch row 0.
+ const LongType qHead = seqQ <= 1 ? blockIdx.x % numQHeads : blockIdx.x;
+ const LongType batchIdx = seqQ <= 1 ? blockIdx.x / numQHeads : blockIdx.y;
+ const LongType queryIdx = seqQ <= 1 ? 0 : blockIdx.z;
  if (batchIdx >= batch || qHead >= numQHeads || queryIdx >= seqQ) return;
 
  const LongType kvHead = qHead / headsPerKvHead;
@@ -1484,9 +1490,22 @@ static void fusedGQADecodeLauncher(
  auto output = reinterpret_cast<T*>(vOutput);
 
  // Grid: one block per (qHead, batch, queryIdx) tuple.
- dim3 grid(static_cast<unsigned int>(numQHeads),
-           static_cast<unsigned int>(batch),
-           static_cast<unsigned int>(seqQ));
+ // getFusedGQADecodeDims() was built for the seqQ==1 decode contract and returns
+ // grid.x = numQHeads*batch. For seqQ == 1 that product equals the legacy 2D
+ // grid and blockIdx.z (always 0) is unused by callers that read blockIdx.y as
+ // the batch index. For seqQ > 1 (W-wide MTP verification), the product form is
+ // AMBIGUOUS: the kernel reads blockIdx.y as batchIdx, so batch >= 2 collapses
+ // every query row onto batch row 0. Decompose the product explicitly into
+ // (qHead, batch, queryIdx) triples so every verification row gets its own
+ // blockIdx.z while the seqQ == 1 decode path stays bit-identical.
+ dim3 grid;
+ if (seqQ <= 1) {
+   grid = dim3(static_cast<unsigned int>(numQHeads * batch), 1u, 1u);
+ } else {
+   grid = dim3(static_cast<unsigned int>(numQHeads),
+               static_cast<unsigned int>(batch),
+               static_cast<unsigned int>(seqQ));
+ }
  dim3 block(threadsPerBlock);
 
  using AccT = typename FlashAccType<T>::type;
