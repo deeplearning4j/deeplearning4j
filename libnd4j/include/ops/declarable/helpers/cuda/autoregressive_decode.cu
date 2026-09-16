@@ -1485,17 +1485,21 @@ void autoregressiveDecode(
                 reinterpret_cast<void*>(*stream), {"output/post-argmax/draft_id"}, {&selected});
         }
 
-        // -- Hidden carry: slot-chained self-carry + stream ordering ---------
-        // Upstream Qwen3.5 MTP: chained predictor calls (slot p -> slot p+1)
-        // feed the predictor's OWN output hidden as the next call's hnorm input.
-        // Slot 0 of each step must NOT self-carry: the epilogue's
-        // setMtpTargetCarryCuda installed the TARGET trunk hidden at the newly
-        // committed position, and slot 0 must consume exactly that. An
-        // unconditional self-carry clobbers the epilogue's target carry with the
-        // PREVIOUS step's last predictor self-hidden before slot 0 reads it -
-        // proven by capture diff: call2's pre-exec carry was byte-identical to
-        // call1's (0/10240 bytes differ) although both target a different
-        // position, producing frozen drafts and the ~1.6% acceptance collapse.
+        // -- Hidden carry: unconditional self-carry + stream ordering --------
+        // Upstream Qwen3.5 MTP: EVERY predictor call's output hidden feeds the
+        // NEXT chained call as the hnorm input. The epilogue's
+        // setMtpTargetCarryCuda overrides this for the NEXT step's slot 0,
+        // installing the target trunk hidden at the newly committed position.
+        // The write must be UNCONDITIONAL: both pre- and post-368a274c60 27B
+        // captures prove slot 1 must chain slot 0's self-hidden. With this
+        // gated to draftSlot > 0, call2's carry input was byte-identical to
+        // call1's INPUT (0/5120 elements differ, norm 148.4919) instead of
+        // call1's OUTPUT — the slot0->slot1 chain was broken and every
+        // slot>=1 draft consumed a mismatched (token, hidden) pair. Capture
+        // replay (TestQwenMtpPredictorLifecycle, 27B artifacts, proc-070/072)
+        // agrees: fresh and compiled graphs are bit-exact with each other at
+        // every call but diverge from production's captured native outputs at
+        // exactly the chained calls 2..K.
         //
         // STREAM ORDERING: the carry write is issued on the caller's stream,
         // but the predictor plan's graph launch may execute on a different
@@ -1504,7 +1508,7 @@ void autoregressiveDecode(
         // cudaStreamSynchronize guarantees the D2D copy is complete before any
         // downstream graph launch on any stream. Four small copies per step -
         // sub-microsecond overhead each.
-        if (draftSlot > 0) {
+        {
             REQUIRE_TRUE(mtpHidden->lengthOf() == config->mtpTargetHidden->lengthOf()
                              && mtpHidden->dataType() == config->mtpTargetHidden->dataType(),
                          0, "autoregressive_decode: CUDA MTP hidden carry shape/type mismatch");
@@ -1529,8 +1533,8 @@ void autoregressiveDecode(
                      "autoregressive_decode: CUDA MTP input-ids stream sync failed: %s",
                      cudaGetErrorString(idsSyncErr));
         DSP_DIAG(KV_CACHE,
-                 "MTP_CALL pos=%lld slot=%d - predictor invoked (input token = argmax of "
-                 "previous call at this slot chain, carry per slot-0/slot-N policy)",
+                 "MTP_CALL pos=%lld slot=%d - predictor invoked (chained input token; "
+                 "carry = previous call self-hidden, epilogue overrides for next step's slot 0)",
                  (long long)position, draftSlot);
 
         if (writeTargetRow) {
@@ -2608,6 +2612,13 @@ void autoregressiveDecode(
                 // correction/bonus for the final row. planOutputs holds the
                 // post-rerun hidden rows keyed by position - base, so row j pairs
                 // position q-1 with token q.
+                // NOTE (unconditional self-carry contract): this repair loop can
+                // only run on PARTIAL acceptance (consumedCount-1 < proposedCount
+                // in that case), so it can never re-enter executeMtpCuda after a
+                // full accept and clobber the epilogue's target carry. On full
+                // accepts mtpProcessedThrough = base + proposedCount - 1 is also
+                // truthful again: the now-unconditional chained self-carries
+                // really did write every predictor KV row [base, base+K-1].
                 for (int j = 0; j < consumedCount - 1; j++) {
                     LongType repairPosition = basePosition + 1 + j;
                     if (repairPosition > mtpProcessedThrough) {
