@@ -20,7 +20,7 @@
     "id" : "deeplearning4j",
     "codeProjectId" : "deeplearning4j",
     "name" : "Java project (deeplearning4j)",
-    "rootPath" : "/home/agibsonccc/Documents/GitHub/deeplearning4j",
+    "rootPath" : "/home/agibsonccc/GitHub/deeplearning4j",
     "contextPath" : "data/code-projects/deeplearning4j",
     "agentsMdPath" : "data/code-projects/deeplearning4j/AGENTS.md",
     "chatsPath" : "data/code-projects/deeplearning4j/chats",
@@ -49,8 +49,8 @@
       "codeProjectionIncludes" : "",
       "codeProjectionExcludes" : ""
     },
-    "createdAt" : "2026-08-21T20:06:29.082576947Z",
-    "updatedAt" : "2026-09-14T22:26:45.516345156Z"
+    "createdAt" : "2026-09-16T07:54:03.353801190Z",
+    "updatedAt" : "2026-09-16T07:54:03.357953430Z"
   }, {
     "id" : "dl4j-mobile-tooling-final",
     "codeProjectId" : "dl4j-mobile-tooling-final",
@@ -310,5 +310,5 @@
   "workflows" : [ ],
   "metadata" : { },
   "createdAt" : "2026-08-21T20:06:29.083137933Z",
-  "updatedAt" : "2026-09-14T22:26:45.516813208Z"
+  "updatedAt" : "2026-09-16T07:54:03.384009179Z"
 }
