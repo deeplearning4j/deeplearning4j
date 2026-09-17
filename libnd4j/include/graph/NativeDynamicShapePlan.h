@@ -3573,29 +3573,21 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // delivery. Copied-output retirement deletes view wrappers before owners.
   std::vector<NDArray*> retiredRequestedOutputOwners_;
 
-  // ── Retirement registry (double-free guard) ────────────────────────────────
-  // EVERY wrapper moved into retiredRequestedOutputOwners_ is also recorded
-  // here, and EVERY drain/delete site must retire through retireRequestedOutput()
-  // so the wrapper's pointer is erased from planOwnedArrays_ in the same step
-  // it is deleted. The destructor gathers from planOwnedArrays_ AND
-  // retiredRequestedOutputOwners_; a pointer deleted by an earlier drain but
-  // left in either table is deleted a second time by the destructor
-  // ("double free or corruption (out)" at EXECUTOR_CLOSE, observed after
-  // constrained in-graph KV decode on Qwen3.5-2B: Step-2 drain freed wrappers,
-  // destructor re-gathered them).
+  // Membership index for the retirement queue. Transfer each wrapper once;
+  // memory accounting, staging-alias protection and destruction use the queue.
   std::unordered_set<NDArray*> retiredRequestedOutputOwnersSet_;
 
-  /** Record a wrapper as retired. Erases it from planOwnedArrays_ so the
-   *  destructor cannot re-gather a wrapper that an earlier drain deleted. */
+  /** Transfer a wrapper from active plan ownership to deferred retirement. */
   SD_INLINE void retireRequestedOutput(NDArray* arr) {
     if (arr == nullptr) return;
+    if (retiredRequestedOutputOwnersSet_.insert(arr).second) {
+      retiredRequestedOutputOwners_.push_back(arr);
+    }
     planOwnedArrays_.erase(arr);
-    retiredRequestedOutputOwnersSet_.insert(arr);
   }
 
-  /** Drain the retired queue: delete each wrapper exactly once and drop its
-   *  retirement record. Called from releaseGpuIntermediatesAfterOutputCopy()
-   *  and the destructor. */
+  /** Drain the retired queue after acknowledged output copying. The destructor
+   *  separately gathers remaining retired wrappers with its other owners. */
   int drainRetiredRequestedOutputOwners();
 
   // Internal methods

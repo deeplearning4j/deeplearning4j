@@ -21,10 +21,24 @@ class NnapiOutputStagingContractTest {
                 "libnd4j/include/graph/impl/NativeDynamicShapePlan.cpp"));
         String header = Files.readString(root.resolve("libnd4j/include/graph/NativeDynamicShapePlan.h"));
         String release = source.substring(source.indexOf("int NativeDynamicShapePlan::releaseGpuIntermediates()"));
-        assertTrue(release.indexOf("retiredRequestedOutputOwners_.push_back(arr)") >= 0);
-        assertTrue(release.indexOf("retiredRequestedOutputOwners_.push_back(arr)")
-                < release.indexOf("planOwnedArrays_.clear()"), "Release must not orphan native output owners");
-        assertTrue(source.contains("for (NDArray* arr : retiredRequestedOutputOwners_) gatherOwned(arr);"));
+        int adoption = release.indexOf("for (NDArray* arr : toAdopt) retireRequestedOutput(arr);");
+        assertTrue(adoption >= 0 && adoption < release.indexOf("planOwnedArrays_.clear()"),
+                "Release must transfer requested owners before clearing active ownership");
+        String retirement = header.substring(header.indexOf("SD_INLINE void retireRequestedOutput("),
+                header.indexOf("int drainRetiredRequestedOutputOwners();"));
+        assertTrue(retirement.contains("if (retiredRequestedOutputOwnersSet_.insert(arr).second)"),
+                "Repeated adoption must enqueue a wrapper only once");
+        assertTrue(retirement.contains("retiredRequestedOutputOwners_.push_back(arr);"),
+                "Membership without queue insertion leaks outputs and loses staging protection");
+        assertTrue(retirement.indexOf("retiredRequestedOutputOwners_.push_back(arr);")
+                < retirement.indexOf("planOwnedArrays_.erase(arr);"));
+        assertTrue(source.contains("for (NDArray* arr : retiredRequestedOutputOwners_) {"));
+        assertTrue(source.contains("retiredRequestedOutputOwnersSet_.count(arr) != 0"));
+        String drain = source.substring(source.indexOf("int NativeDynamicShapePlan::drainRetiredRequestedOutputOwners()"),
+                source.indexOf("int NativeDynamicShapePlan::releaseGpuIntermediatesAfterOutputCopy()"));
+        assertTrue(drain.contains("retiredRequestedOutputOwners_.clear();"));
+        assertTrue(drain.contains("retiredRequestedOutputOwnersSet_.erase(array)"));
+        assertTrue(drain.indexOf("planOwnedArrays_.erase(array);") < drain.indexOf("delete array;"));
         assertTrue(header.contains("for (NDArray* arr : retiredRequestedOutputOwners_) addArray(arr);"),
                 "Retired but live output buffers remain part of the plan's memory budget");
     }

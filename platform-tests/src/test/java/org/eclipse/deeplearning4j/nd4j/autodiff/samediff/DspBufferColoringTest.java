@@ -168,6 +168,77 @@ public class DspBufferColoringTest {
     }
 
     @Test
+    void testOrdinaryReleasePreservesRequestedStagingIdentity() {
+        ordinaryReleasePreservesRequestedStaging(false);
+    }
+
+    @Test
+    void testOrdinaryReleasePreservesRequestedStagingView() {
+        ordinaryReleasePreservesRequestedStaging(true);
+    }
+
+    private void ordinaryReleasePreservesRequestedStaging(boolean view) {
+        org.junit.jupiter.api.Assumptions.assumeTrue(Nd4j.backends().isCudaAvailable(), "requires CUDA");
+        sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("input", DataType.FLOAT, 4, 16);
+        SDVariable alias = view ? x.permute(1, 0).rename("borrowed") : sd.identity("borrowed", x);
+        sd.nn.relu(alias.add(1.0).mul(2.0), 0).add("output", 1.0);
+        sd.compileNativeDynamicShapePlan("borrowed", "output");
+        var ops = org.nd4j.nativeblas.NativeOpsHolder.getInstance().getDeviceNativeOps();
+        try (INDArray input = Nd4j.ones(DataType.FLOAT, 4, 16);
+             INDArray readback = Nd4j.create(DataType.FLOAT, 4, 16)) {
+            Map<String, INDArray> warmup = sd.output(Map.of("input", input), "borrowed", "output");
+            warmup.values().forEach(INDArray::close);
+            DspHandle dsp = new DspHandle(sd);
+            int ext = dsp.extInputIndex("input");
+            assertTrue(ext >= 0);
+            dsp.markVariable(ext);
+            for (int step = 0; step < 16; step++) {
+                Map<String, INDArray> outputs = sd.output(Map.of("input", input), "borrowed", "output");
+                try {
+                    for (float value : outputs.get("borrowed").data().asFloat()) assertEquals(1.0f, value);
+                    for (float value : outputs.get("output").data().asFloat()) assertEquals(5.0f, value);
+                } finally {
+                    outputs.values().forEach(INDArray::close);
+                }
+            }
+            var executor = sd.getOrCreateSession().getDynamicShapePlanExecutor();
+            var handle = executor.getNativePlanHandle();
+            int slot = dsp.slotIndexForOutput("borrowed");
+            assertTrue(slot >= 0);
+            var opaque = ops.getPlanSlotOutputArray(handle, slot);
+            assertNotNull(opaque);
+            opaque.attachOwner(org.nd4j.nativeblas.OpaqueDataBuffer.primaryOwner());
+            var pointer = ops.getOpaqueNDArraySpecialBuffer(opaque);
+            assertNotEquals(0L, dsp.stagingBufferAddress(ext), "fixture must allocate real staging");
+            assertEquals(dsp.stagingBufferAddress(ext), pointer.address(),
+                    "requested output must borrow staging, not an independent output allocation");
+            var borrowed = ops.dbCreateExternalDataBuffer(64, DataType.FLOAT.toInt(), null, pointer);
+            try {
+                ops.releaseGpuIntermediates(handle);
+                ops.releaseGpuIntermediates(handle);
+                input.assign(3.0);
+                Map<String, INDArray> next = sd.output(Map.of("input", input), "borrowed", "output");
+                try {
+                    for (float value : next.get("borrowed").data().asFloat()) assertEquals(3.0f, value);
+                    for (float value : next.get("output").data().asFloat()) assertEquals(9.0f, value);
+                    ops.copyBuffer(readback.data().opaqueBuffer(), 64, borrowed, 0, 0);
+                    Nd4j.getExecutioner().commit();
+                    for (float value : readback.data().asFloat()) assertEquals(1.0f, value,
+                            "ordinary release/reuse must preserve previously borrowed staging");
+                } finally {
+                    next.values().forEach(INDArray::close);
+                }
+            } finally {
+                ops.deleteDataBuffer(borrowed);
+                opaque.setNull(); // Borrowed native wrapper; the plan owns deletion.
+            }
+            executor.releaseGpuIntermediates();
+            executor.releaseGpuIntermediates();
+        }
+    }
+
+    @Test
     void testCopiedOutputsSurviveReleaseWithoutNativeAccumulation() {
         copiedOutputsSurviveRelease(false);
     }
@@ -199,6 +270,9 @@ public class DspBufferColoringTest {
                         assertEquals(previous + 0.25f, value, 0.0f);
                 }
                 var executor = sd.getOrCreateSession().getDynamicShapePlanExecutor();
+                executor.releaseGpuIntermediates();
+                // A copied-output retirement is idempotent; the later executor
+                // close/cache destruction must not rediscover deleted wrappers.
                 executor.releaseGpuIntermediates();
                 long resident = 0;
                 for (int device = 0; device < Nd4j.getAffinityManager().getNumberOfDevices(); device++)

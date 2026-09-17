@@ -7913,6 +7913,7 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
                                      &protectedWeightBuffers_);
   };
 
+  std::unordered_set<DataBuffer*> requestedOutputDataBuffers;
   if (outputSlots_) {
     // ── Build requested output protection set ────────────────────────────
     // Requested output slots (logits, etc.) must NEVER be freed during
@@ -7920,7 +7921,6 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
     // DataBuffers via zeroCopyOutputCache or direct pointers. Also protect
     // any slot whose DataBuffer is shared with a requested output (views).
     std::unordered_set<int> requestedOutputSlotSet;
-    std::unordered_set<DataBuffer*> requestedOutputDataBuffers;
     if (requestedOutputSlotIndices_ != nullptr) {
       for (int i = 0; i < numRequestedOutputs_; i++) {
         int si = requestedOutputSlotIndices_[i];
@@ -7931,9 +7931,12 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
           // siInputs[0] directly); Java teardown may already have deleted those
           // objects, so ->dataBuffer() on them reads freed memory (SEGV_MAPERR
           // when the freed pages were returned to the OS — hs_err_pid1286526).
-          // Non-plan-owned slots are protected by index alone.
+          // Staging-owned wrappers also have a known lifetime. An identity
+          // output can publish the staging wrapper itself without a slot owner.
           if (outputSlots_[si] != nullptr &&
-              planOwnedArrays_.count(outputSlots_[si]) > 0 &&
+              (planOwnedArrays_.count(outputSlots_[si]) > 0 ||
+               isStagingOwnedWrapper(outputSlots_[si], placeholderStagingBuffers_,
+                                     numExternalInputs_, deviceStagingBuffers_)) &&
               outputSlots_[si]->dataBuffer() != nullptr) {
             requestedOutputDataBuffers.insert(outputSlots_[si]->dataBuffer());
           }
@@ -8259,7 +8262,9 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   // output retirement queue rather than deleting it from a second owner table.
   // Ordinary release preserves borrowed outputs; AfterOutputCopy drains this
   // queue only after all native consumers have retired.
-  std::unordered_set<DataBuffer*> retainedOutputBuffers;
+  // Include exact staging outputs even when no separate slot-owned view was
+  // adopted above; ordinary release must preserve their borrowed storage too.
+  std::unordered_set<DataBuffer*> retainedOutputBuffers(requestedOutputDataBuffers);
   std::unordered_set<NDArray*> retainedOutputArrays;
   for (auto* arr : retiredRequestedOutputOwners_) {
     if (arr == nullptr) continue;
