@@ -950,7 +950,14 @@ void autoregressiveDecode(
 
             // One emitted output consumes one input row: base + prior accepted
             // drafts. An accepted terminal token has NOT itself been consumed.
-            // Determine this boundary before recurrent feedback or predictor carry.
+            // Determine this boundary before recurrent feedback or predictor
+            // carry. T1 (audit F3, CPU mirror): the rerun below may REPLACE the
+            // final emission (rerunRefreshedToken), so the matcher suffix is
+            // fed the consumed rows PROVISIONALLY here (to preserve mid-batch
+            // stop semantics and suffix state) and ROLLED BACK before the
+            // authoritative accept below when the rerun rewrote row 0. The
+            // earlier approach (skipping the in-loop accept entirely) broke
+            // terminal truncation and mid-batch stops (red b8e04d8e).
             while (specConsumed_cpu < specAccepted_cpu + 1
                     && tokensGenerated + specConsumed_cpu < maxNewTokens) {
                 LongType token = specRowArgmax_cpu[specConsumed_cpu];
@@ -1162,6 +1169,48 @@ void autoregressiveDecode(
             for (int i = 0; i < 33; i++) rowArgmax[i] = specRowArgmax_cpu[i];
             int acceptedDrafts = specAccepted_cpu >= 0 ? specAccepted_cpu : 0;
             int n = specConsumed_cpu;
+            // Rerun-refreshed emission (CUDA mirror): when the accepted-prefix
+            // rerun produced the authoritative state, its row-0 logits are the
+            // greedy readout; emission must match that state or the next step's
+            // inputs diverge from what was emitted. The consumed row fed to the
+            // matcher above was the PROVISIONAL verify row-0 argmax; roll the
+            // suffix back to its pre-step state and re-accept the authoritative
+            // token so the suffix/shouldStop describe what was actually emitted.
+            LongType rerunRefreshedToken_cpu = -1;
+            // Rerun fired whenever the consumed prefix is shorter than the
+            // window (specConsumed < 1 + proposedCount): the asl=1 pass owns
+            // the committed state. Its row 0 is the authoritative readout even
+            // when the graph still exports W logits rows, so the width guard
+            // that disabled this path on wide graphs (red be2d7798) is wrong.
+            if (n == 1 && logitsOutput != nullptr
+                    && planOutputs[config->logitsOutputIdx] != nullptr
+                    && specConsumed_cpu < 1 + proposedCount_cpu
+                    && useMtp_cpu) {
+                NDArray* rerunLogits = planOutputs[config->logitsOutputIdx];
+                LongType rerunVocab = rerunLogits->sizeAt(2);
+                if (rerunVocab > 0) {
+                    LongType refreshed = cpuArgmax(rerunLogits->buffer(), rerunVocab,
+                                                   rerunLogits->dataType());
+                    if (refreshed != rowArgmax[0]) {
+                        DSP_DIAG(KV_CACHE,
+                                 "RERUN_EMISSION_REFRESH step=%d verify=%lld rerun=%lld "
+                                 "- emitting the asl=1 authoritative argmax",
+                                 step, (long long)rowArgmax[0], (long long)refreshed);
+                    }
+                    rowArgmax[0] = refreshed;
+                    rerunRefreshedToken_cpu = refreshed;
+                }
+            }
+            // T1 (audit F3): authoritative stop state. Roll back the provisional
+            // accept for the rewritten row, then feed the matcher the FINAL
+            // emitted token exactly once. Mid-batch accepts from rows below the
+            // rewritten one are real emissions and stay in the suffix.
+            if (rerunRefreshedToken_cpu >= 0) {
+                stopMatcher.rollback(1);
+                bool matchedStop = stopMatcher.accept(rowArgmax[0]);
+                specShouldStop_cpu = matchedStop
+                    && stopTerminationAllowed(config, tokensGenerated + n);
+            }
             totalSpeculativeProposed += proposedCount_cpu;
             // Accepted outputs emitted (including EOS), not consumed draft inputs.
             totalSpeculativeAccepted += std::min(acceptedDrafts, specConsumed_cpu);
