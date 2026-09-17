@@ -20,7 +20,7 @@
     "id" : "deeplearning4j",
     "codeProjectId" : "deeplearning4j",
     "name" : "Java project (deeplearning4j)",
-    "rootPath" : "/home/agibsonccc/GitHub/deeplearning4j",
+    "rootPath" : "/home/agibsonccc/Documents/GitHub/deeplearning4j",
     "contextPath" : "data/code-projects/deeplearning4j",
     "agentsMdPath" : "data/code-projects/deeplearning4j/AGENTS.md",
     "chatsPath" : "data/code-projects/deeplearning4j/chats",
@@ -39,18 +39,18 @@
       "knowledgeBaseId" : "deeplearning4j-knowledge",
       "graphPath" : "data/crawls/deeplearning4j-knowledge/graph.kgraph",
       "codeProjectionVersion" : "4",
-      "codeProjectedAt" : "2026-09-14T22:26:45.516056101Z",
-      "codeIndexGeneration" : "2026-09-14T22:14:09.041221374Z",
-      "codeProjectionEntities" : "622867",
-      "codeProjectionRelations" : "1803320",
-      "codeProjectionCodeEntities" : "809525",
+      "codeProjectedAt" : "2026-09-17T06:03:27.270814535Z",
+      "codeIndexGeneration" : "2026-09-17T05:50:17.582016570Z",
+      "codeProjectionEntities" : "622914",
+      "codeProjectionRelations" : "1803430",
+      "codeProjectionCodeEntities" : "809558",
       "codeProjectionFolderProjectId" : "deeplearning4j",
       "codeProjectionFactSheetId" : "",
       "codeProjectionIncludes" : "",
       "codeProjectionExcludes" : ""
     },
-    "createdAt" : "2026-09-16T07:54:03.353801190Z",
-    "updatedAt" : "2026-09-16T07:54:03.357953430Z"
+    "createdAt" : "2026-08-21T20:06:29.082576947Z",
+    "updatedAt" : "2026-09-17T06:03:27.271193888Z"
   }, {
     "id" : "dl4j-mobile-tooling-final",
     "codeProjectId" : "dl4j-mobile-tooling-final",
@@ -310,5 +310,5 @@
   "workflows" : [ ],
   "metadata" : { },
   "createdAt" : "2026-08-21T20:06:29.083137933Z",
-  "updatedAt" : "2026-09-16T07:54:03.384009179Z"
+  "updatedAt" : "2026-09-17T06:03:27.307304501Z"
 }
