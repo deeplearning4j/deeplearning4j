@@ -8,6 +8,7 @@
  */
 package org.eclipse.deeplearning4j.llm.generation;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -29,6 +30,11 @@ import static org.junit.jupiter.api.Assertions.*;
  * Uses the placeholder/warmup pattern from DspExtInputTestSupport. Synthetic
  * recurrent outputs count consumed rows, so committing an overlong verification
  * pass is observable without relying on numerically sensitive model logits.
+ *
+ * <p>Multi-token terminal truncation (budget/stop inside one accepted batch) is
+ * a CPU-contract assertion: ADR 0106 Phase 2b keeps CUDA on the single-token
+ * commit until the CUDA full-state parity gate passes, so the budget/stop
+ * multi-row cases here assert CPU semantics only (see 017d7ff7).</p>
  */
 public class TestNativeSpeculativeTerminalState {
     private static final int WIDTH = 5;
@@ -41,13 +47,29 @@ public class TestNativeSpeculativeTerminalState {
 
     @Test
     public void testTokenBudgetCommitsOnlyConsumedInputs() {
+        assumeMultiTokenContract();
         // Proposal capacity already reserves the bonus token: two drafts + bonus.
         checkTerminalPrefix(3, -1, List.of(), 3, 2, 2);
     }
 
     @Test
     public void testStopSequenceInsideAcceptedBatchCommitsOnlyConsumedInputs() {
+        assumeMultiTokenContract();
         checkTerminalPrefix(8, -1, List.of(new int[]{1, 1}), 2, 4, 2);
+    }
+
+    /** ADR 0106 Phase 2b: CUDA runs the single-token commit until its full-state
+     *  parity gate passes, so multi-token budget/stop truncation is a CPU-contract
+     *  assertion. This guard comes off when CUDA restores multi-token emission. */
+    static void assumeMultiTokenContract() {
+        Assumptions.assumeTrue(!isCudaBackend(),
+                "ADR 0106 Phase 2b: CUDA single-token commit — multi-token truncation asserted on CPU only");
+    }
+
+    static boolean isCudaBackend() {
+        String exec = Nd4j.getExecutioner().getClass().getName().toLowerCase();
+        String backend = Nd4j.getBackend().getClass().getName().toLowerCase();
+        return exec.contains("cuda") || backend.contains("jcublas") || backend.contains("cuda");
     }
 
     private void checkTerminalPrefix(int budget, int eos, List<int[]> stops,
