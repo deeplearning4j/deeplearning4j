@@ -237,6 +237,12 @@ class StopSequenceMatcher {
     return false;
   }
 
+  /** Drop the last count provisional accepts so the authoritative token can be
+   *  re-accepted after a rerun rewrites the emission (audit F3, CPU mirror). */
+  void rollback(size_t count) {
+    while (count-- > 0 && !_suffix.empty()) _suffix.pop_back();
+  }
+
   bool prime(const std::vector<int>& history) {
     bool matched = false;
     for (int token : history) matched = accept(token);

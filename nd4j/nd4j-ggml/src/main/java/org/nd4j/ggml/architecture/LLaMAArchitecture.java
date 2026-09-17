@@ -208,21 +208,24 @@ public class LLaMAArchitecture implements ModelArchitecture {
             }
         }
 
-        // MTP consumes the target trunk hidden state before the final output norm.
+        // MTP consumes the target trunk hidden state AFTER the final output norm
+        // (vLLM/llama.cpp contract: the predictor target input is the same post-norm
+        // state the lm_head consumes, not the raw last transformer block output).
         // Keep it as an explicit output only for GGUFs that bundle a predictor.
-        // Uses sd.identity: aliases the upstream layer_out_23 buffer (slot 1946).
-        // This buffer is protected from recycling because it feeds the final RMS
-        // norm and the logits path. Creating a separate mul/add node instead
-        // allocates a NEW slot (e.g. slot 1948) which the buffer allocator then
-        // reuses as the lm_logits matmul accumulator - clobbering the mul result.
-        // The Sept-05 code (77% acceptance) used sd.identity successfully.
+        // Uses sd.identity: aliases the upstream model.norm result buffer so the
+        // graph does not allocate a separate slot for the handoff. The identity must
+        // be built AFTER buildRMSNorm so it exports the POST-norm hidden; the
+        // buffer-protection rationale from the pre-norm placement still applies to
+        // the post-norm result feeding both this handoff and the lm_head matmul
+        // (a separate mul/add node would allocate a NEW slot the buffer allocator
+        // then reuses as the lm_logits matmul accumulator, clobbering the value).
+        // Final RMS normalization
+        hidden = buildRMSNorm(sd, hidden, "model.norm", weights, config, dtype);
+
         if (config.getNumMtpLayers() > 0) {
             hidden = sd.identity("target_hidden_states", hidden);
             outputNames.add("target_hidden_states");
         }
-
-        // Final RMS normalization
-        hidden = buildRMSNorm(sd, hidden, "model.norm", weights, config, dtype);
 
         // Output projection (LM head). Preserve tied-weight identity instead of registering the
         // embedding INDArray a second time: SDZ serializes graph variables independently, so a
@@ -351,17 +354,20 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable predictorHidden = buildTransformerBlock(sd, predictorInput, layerIdx,
                 config, weights, dtype, positionOffset, cachePosition, null, causalMask,
                 keyCache, valueCache, null, null);
-        // Sept-05 wiring (77% acceptance era): the chained hidden output is the
-        // PRE-norm transformer block output. buildMtpBranch consumed exactly this
-        // at 8cb739c8a6 when 27B acceptance measured 77%. Reverted from the
-        // post-norm experiment (368a274c60) which matched vLLM's return contract
-        // but did NOT match the Sept-05 behavior and did not improve acceptance.
-        predictorHidden = sd.identity("mtp_hidden_states", predictorHidden);
-        SDVariable normalizedPredictor = buildRMSNorm(sd, predictorHidden,
+        // The recursive carry MUST be the POST-norm predictor state: the shared
+        // head norm ("mtp.shared_head.norm") normalizes the predictor block output
+        // before the lm_head, and chained drafting consumes the same normalized
+        // state (vLLM/llama.cpp return the post-norm hidden from the predictor).
+        // The Sept-05 77% acceptance was measured with the OTHER defects present
+        // (pre-norm TARGET handoff, zero-row bootstrap, no id shift), so it does
+        // not validate a pre-norm carry; 368a274c60's post-norm experiment ran
+        // under the same corrupt bootstrap and is not counter-evidence either.
+        predictorHidden = buildRMSNorm(sd, predictorHidden,
                 "mtp.shared_head.norm", nextnPrefix + ".shared_head_norm", weights, config, dtype);
+        predictorHidden = sd.identity("mtp_hidden_states", predictorHidden);
         String lmHeadWeightName = weights.containsKey("output.weight")
                 ? "output.weight" : "token_embd.weight";
-        QuantizedLinear.matMulFloatOutput(sd, "mtp_logits", normalizedPredictor,
+        QuantizedLinear.matMulFloatOutput(sd, "mtp_logits", predictorHidden,
                 lmHead, weights, lmHeadWeightName, dtype);
 
         SDVariable keyStates = sd.getVariable("k_rope_" + layerIdx);

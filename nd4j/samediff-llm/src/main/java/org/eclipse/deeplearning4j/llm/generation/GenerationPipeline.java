@@ -5294,11 +5294,20 @@ public class GenerationPipeline implements AutoCloseable {
     /**
      * Build or replay the isolated Qwen3.5 MTP prefill and scalar-decode plans.
      *
-     * <p>Alignment is intentionally explicit: prefill row {@code t} receives token {@code x_t}
-     * and target hidden {@code h_(t-1)} (row zero is all-zero); scalar warmup then consumes the
-     * first target-sampled token with the final prompt hidden. Before returning, the retained
-     * target-hidden input is advanced to the target warmup hidden so native drafting starts from
-     * the second sampled token.</p>
+     * <p>Alignment follows the reference bundled-MTP bootstrap contract (vLLM
+     * set_inputs_first_pass): predictor prefill row {@code t} carries id
+     * {@code x_(t+1)} — the prompt ids shifted LEFT by one, with the first target
+     * sampled token in the final slot — paired with target hidden {@code h_t}.
+     * There is NO all-zero bootstrap row: row {@code t} is exactly the
+     * {@code (x_(t+1), h_t)} pair, and the scalar warmup pair
+     * {@code (firstGen, h_(N-1))} overwrites the last row, so the prefill cache
+     * holds exactly {@code N} meaningful rows. Prefill positions are rebased by
+     * one accordingly (row 0 holds {@code x_1} at position 1). The scalar warmup
+     * then consumes the first target-sampled token with the final prompt hidden at
+     * cache slot {@code firstDecodePos == actualPrefillLen} — the slot right after
+     * the N prefill rows. Before returning, the retained target-hidden input is
+     * advanced to the target warmup hidden and the retained id to the second
+     * sampled token so native drafting starts from the second sampled token.</p>
      */
     private MtpPreparedState prepareBundledMtp(
             InGraphKvState reuseState,
@@ -5337,40 +5346,57 @@ public class GenerationPipeline implements AutoCloseable {
         DataType mtpDtype = decoder.getVariable(MTP_TARGET_HIDDEN_NAME).dataType();
 
         INDArray prefillIds = prepared.prefillInputMap.get(MTP_INPUT_IDS_NAME);
-        try (INDArray freshIds = Nd4j.createFromArray(effectiveTokenIds)
-                .reshape(1, prefillSeqLen).castTo(DataType.INT64)) {
-            if (prefillIds == null) {
-                prefillIds = freshIds.dup();
-                prepared.prefillInputMap.put(MTP_INPUT_IDS_NAME, prefillIds);
-            } else {
-                prefillIds.assign(freshIds);
+        // vLLM-style shift: predictor prefill ids are the prompt ids shifted left by
+        // one (x1..xN-1) with the first generated token in the final slot, so row t
+        // pairs id x_(t+1) with hidden h_t. The previous bootstrap fed the UNSHIFTED
+        // ids and compensated with an all-zero hidden row, corrupting row 0.
+        if (prefillSeqLen > 1) {
+            try (INDArray sourceIds = Nd4j.createFromArray(effectiveTokenIds)
+                    .reshape(1, prefillSeqLen).castTo(DataType.INT64);
+                 INDArray shifted = Nd4j.zeros(DataType.INT64, 1, prefillSeqLen)) {
+                shifted.get(NDArrayIndex.all(), NDArrayIndex.interval(0, prefillSeqLen - 1)).assign(
+                        sourceIds.get(NDArrayIndex.all(), NDArrayIndex.interval(1, prefillSeqLen)));
+                shifted.putScalar(new long[]{0, prefillSeqLen - 1}, firstTokenId);
+                if (prefillIds == null) {
+                    prefillIds = shifted.dup();
+                    prepared.prefillInputMap.put(MTP_INPUT_IDS_NAME, prefillIds);
+                } else {
+                    prefillIds.assign(shifted);
+                }
             }
+        } else {
+            // Single-token prompt: the only predictor id IS the first generated token.
+            if (prefillIds == null) {
+                prefillIds = Nd4j.zeros(DataType.INT64, 1, 1);
+                prepared.prefillInputMap.put(MTP_INPUT_IDS_NAME, prefillIds);
+            }
+            prefillIds.putScalar(new long[]{0, 0}, firstTokenId);
         }
 
         INDArray shiftedHidden = prepared.prefillInputMap.get(MTP_TARGET_HIDDEN_NAME);
+        // vLLM-style alignment: hidden row t is h_t with NO all-zero bootstrap row.
+        // The warmup pair (firstGen, h_(N-1)) overwrites the last row afterwards, so
+        // the prefill cache holds exactly N meaningful rows (previous bootstrap:
+        // N-1 shifted rows + one junk all-zero row + one appended warmup row).
         if (shiftedHidden == null) {
             shiftedHidden = Nd4j.zeros(mtpDtype, 1, prefillSeqLen, hidden);
             prepared.prefillInputMap.put(MTP_TARGET_HIDDEN_NAME, shiftedHidden);
-        } else {
-            shiftedHidden.assign(0);
         }
-        if (prefillSeqLen > 1) {
-            shiftedHidden.get(
-                    NDArrayIndex.all(),
-                    NDArrayIndex.interval(1, prefillSeqLen),
-                    NDArrayIndex.all()).assign(
-                    targetPrefillHidden.get(
-                            NDArrayIndex.all(),
-                            NDArrayIndex.interval(0, prefillSeqLen - 1),
-                            NDArrayIndex.all()));
-        }
+        shiftedHidden.assign(targetPrefillHidden.get(
+                NDArrayIndex.all(),
+                NDArrayIndex.interval(0, prefillSeqLen),
+                NDArrayIndex.all()));
 
         INDArray prefillPosition = prepared.prefillInputMap.get(MTP_POSITION_OFFSET_NAME);
+        // Row t carries token x_(t+1) at position t+1 (the prompt's token x0 sits at
+        // position 0 and is never fed to the predictor), so the prefill RoPE window
+        // is rebased by one. The native decode loop rewrites this scalar per call
+        // from the target position grid; only the prefill execution reads it here.
         if (prefillPosition == null) {
-            prefillPosition = Nd4j.scalar(DataType.INT64, 0L);
+            prefillPosition = Nd4j.scalar(DataType.INT64, 1L);
             prepared.prefillInputMap.put(MTP_POSITION_OFFSET_NAME, prefillPosition);
         } else {
-            prefillPosition.assign(0);
+            prefillPosition.assign(1);
         }
         INDArray prefillCachePosition = prepared.prefillInputMap.get(MTP_CACHE_POSITION_NAME);
         if (prefillCachePosition == null) {
@@ -5457,6 +5483,15 @@ public class GenerationPipeline implements AutoCloseable {
         if (prepared.targetHiddenStates == null) {
             prepared.targetHiddenStates = Nd4j.zeros(mtpDtype, 1, 1, hidden);
         }
+        // Post-shift warmup alignment: the prefill already consumed rows 0..N-1 of the
+        // predictor KV (id x_(t+1) with h_t), so the scalar warmup pair
+        // (firstGen, h_(N-1)) must write the row AFTER them: cache slot
+        // firstDecodePos == actualPrefillLen == N. Under the old zero-row bootstrap
+        // the appended warmup row landed at slot N with one junk slot behind it.
+        // Feeding h_(N-1) as the target carry makes the warmup draft predict from the
+        // SAME final prompt hidden the predictor prefill already committed — the
+        // warmup's own KV write is then exactly what the next draft step would
+        // recompute, instead of a duplicate entry the repair pass must overwrite.
         prepared.targetHiddenStates.assign(
                 targetPrefillHidden.get(
                         NDArrayIndex.all(),
@@ -5510,8 +5545,10 @@ public class GenerationPipeline implements AutoCloseable {
         // Reading one predictor logit is the natural host-visible completion boundary for all
         // prefill-cache copies consumed by this warmup; no manual stream/device synchronization.
         double warmupProbe = mtpLogits.getDouble(0);
-        log.info("[MTP] Scalar warmup complete: prefill={} actual={} hidden={} kvHeads={} headDim={} probe={}",
-                prefillSeqLen, actualPrefillLen, hidden, kvHeads, headDim, warmupProbe);
+        log.info("[MTP] Scalar warmup complete: prefill={} actual={} rows0..{}=shifted(x(t+1),h(t)) "
+                        + "warmupSlot={} hidden={} kvHeads={} headDim={} probe={}",
+                prefillSeqLen, actualPrefillLen, prefillSeqLen - 1, firstDecodePos,
+                hidden, kvHeads, headDim, warmupProbe);
 
         prepared.executor = prepared.session.getDynamicShapePlanExecutor();
         prepared.planHandle = prepared.executor != null

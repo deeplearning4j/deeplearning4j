@@ -22,9 +22,8 @@ class CudaHostMigrationSmokeTest {
     void scalarMultiplyValues() {
         try (INDArray input = Nd4j.createFromArray(new float[]{1, 1, 1, 1});
              INDArray output = input.mul(10.0f)) {
-            int launchStatus = org.bytedeco.cuda.global.cudart.cudaPeekAtLastError();
-            assertEquals(0, launchStatus, "CUDA launch: "
-                    + org.bytedeco.cuda.global.cudart.cudaGetErrorString(launchStatus).getString());
+            // This value smoke test also runs with the CPU backend. Materializing
+            // the results below verifies execution without a CUDA-only runtime dependency.
             for (int i = 0; i < 4; i++) {
                 assertEquals(10.0f, output.getFloat(i), 0.0f, "multiply element " + i);
             }

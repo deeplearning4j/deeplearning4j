@@ -214,6 +214,22 @@ static bool copyRecurrentFeedback(NDArray* source, NDArray* destination) {
     return true;
 }
 
+// Shared typed implementation for predictor and verification rows. Keep ties at
+// the first vocabulary index, matching the existing greedy comparison contract.
+template <typename T>
+static LongType speculativeArgmaxCpu(const void* buffer, LongType vocabSize) {
+    const auto* logits = reinterpret_cast<const T*>(buffer);
+    LongType bestIdx = 0;
+    T best = logits[0];
+    for (LongType v = 1; v < vocabSize; v++) {
+        if (logits[v] > best) {
+            best = logits[v];
+            bestIdx = v;
+        }
+    }
+    return bestIdx;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Main CPU Implementation — equivalent logic to autoregressiveDecode (CUDA impl)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -504,42 +520,15 @@ void autoregressiveDecode(
     // Used in the speculative path to evaluate multiple rows of logits.
     auto cpuArgmax = [&](const void* logitsRowPtr, LongType vocabSize,
                           DataType dtype) -> LongType {
-        LongType bestIdx = 0;
-        if (dtype == DataType::FLOAT32) {
-            auto* lp = reinterpret_cast<const float*>(logitsRowPtr);
-            float bestVal = lp[0];
-            for (LongType v = 1; v < vocabSize; v++) {
-                if (lp[v] > bestVal) { bestVal = lp[v]; bestIdx = v; }
-            }
-        } else if (dtype == DataType::HALF) {
-            // FP16: use float for comparison
-            auto* lp = reinterpret_cast<const float16*>(logitsRowPtr);
-            float bestVal = (float)lp[0];
-            for (LongType v = 1; v < vocabSize; v++) {
-                float val = (float)lp[v];
-                if (val > bestVal) { bestVal = val; bestIdx = v; }
-            }
-        } else if (dtype == DataType::DOUBLE) {
-            auto* lp = reinterpret_cast<const double*>(logitsRowPtr);
-            double bestVal = lp[0];
-            for (LongType v = 1; v < vocabSize; v++) {
-                if (lp[v] > bestVal) { bestVal = lp[v]; bestIdx = v; }
-            }
-        } else {
-            // Fallback: single row — let sampledToken handle it via tokenSamplePolicy
-            bestIdx = 0;
-        }
-        return bestIdx;
+        REQUIRE_TRUE(logitsRowPtr != nullptr && vocabSize > 0, 0,
+                     "autoregressive_decode: speculative logits row must be non-empty");
+        BUILD_SINGLE_SELECTOR(dtype, return speculativeArgmaxCpu,
+                              (logitsRowPtr, vocabSize), SD_FLOAT_TYPES);
     };
 
     // Helper: byte stride for one logits row given the dtype.
     auto logitsByteStride = [&](DataType dtype, LongType vocabSize) -> LongType {
-        switch (dtype) {
-            case DataType::FLOAT32: return vocabSize * sizeof(float);
-            case DataType::HALF: return vocabSize * 2;
-            case DataType::DOUBLE:  return vocabSize * sizeof(double);
-            default: return vocabSize * sizeof(float);
-        }
+        return vocabSize * DataTypeUtils::sizeOfElement(dtype);
     };
 
     auto executeMtpCpu = [&](LongType tokenId, LongType position) -> LongType {
@@ -961,7 +950,14 @@ void autoregressiveDecode(
 
             // One emitted output consumes one input row: base + prior accepted
             // drafts. An accepted terminal token has NOT itself been consumed.
-            // Determine this boundary before recurrent feedback or predictor carry.
+            // Determine this boundary before recurrent feedback or predictor
+            // carry. T1 (audit F3, CPU mirror): the rerun below may REPLACE the
+            // final emission (rerunRefreshedToken), so the matcher suffix is
+            // fed the consumed rows PROVISIONALLY here (to preserve mid-batch
+            // stop semantics and suffix state) and ROLLED BACK before the
+            // authoritative accept below when the rerun rewrote row 0. The
+            // earlier approach (skipping the in-loop accept entirely) broke
+            // terminal truncation and mid-batch stops (red b8e04d8e).
             while (specConsumed_cpu < specAccepted_cpu + 1
                     && tokensGenerated + specConsumed_cpu < maxNewTokens) {
                 LongType token = specRowArgmax_cpu[specConsumed_cpu];
@@ -1024,17 +1020,11 @@ void autoregressiveDecode(
             int carryRow_cpu = proposedCount_cpu > 0
                 ? specConsumed_cpu - 1 : 0;
             LongType nextMtpPosition_cpu = currentPosition + carryRow_cpu + 1;
-            LongType mtpProcessedThrough_cpu = currentPosition;
-
-            if (proposedCount_cpu > 0) {
-                // Mirror of the CUDA fix: the proposal loop wrote predictor KV
-                // rows [current, current + proposedCount - 1] only. The old
-                // `carryRow == proposedCount` bump suppressed repair of the
-                // first fully-accepted committed row and left a permanent
-                // predictor KV hole (acceptance collapse after first full
-                // accept).
-                mtpProcessedThrough_cpu = currentPosition + proposedCount_cpu - 1;
-            }
+            // Written does not mean target-conditioned: recursive proposal rows
+            // use predictor hidden states. Keep this horizon fixed for masking
+            // the rejected suffix, independently of the retained-row repair.
+            const LongType mtpWrittenThrough_cpu = proposedCount_cpu > 0
+                ? currentPosition + proposedCount_cpu - 1 : currentPosition;
             // Predictor-side accepted-prefix repair (CUDA mirror): rewrite every
             // committed position's predictor KV row as fused(committed token,
             // target hidden at q-1). Chained proposal rows carry self-propagated
@@ -1044,22 +1034,19 @@ void autoregressiveDecode(
             // and the correction/bonus for the final committed row.
             for (int j = 0; j + 1 < specConsumed_cpu; j++) {
                 LongType repairPosition = currentPosition + 1 + j;
-                if (repairPosition > mtpProcessedThrough_cpu) {
-                    setMtpTargetCarryCpu(
-                        planOutputs[config->targetHiddenOutputIdx], j);
-                    (void)executeMtpCpu(specRowArgmax_cpu[j], repairPosition);
-                    mtpProcessedThrough_cpu = repairPosition;
-                    DSP_DIAG(KV_CACHE,
-                             "MTP_PREFIX_REPAIR step=%d position=%lld committedRow=%d "
-                             "carryRow=%d — rewriting predictor KV row with target hidden",
-                             step, (long long)repairPosition, j, carryRow_cpu);
-                }
+                setMtpTargetCarryCpu(
+                    planOutputs[config->targetHiddenOutputIdx], j);
+                (void)executeMtpCpu(specRowArgmax_cpu[j], repairPosition);
+                DSP_DIAG(KV_CACHE,
+                         "MTP_PREFIX_REPAIR step=%d position=%lld committedRow=%d "
+                         "carryRow=%d — rewriting predictor KV row with target hidden",
+                         step, (long long)repairPosition, j, carryRow_cpu);
             }
 
-            if (nextMtpPosition_cpu <= mtpProcessedThrough_cpu) {
+            if (nextMtpPosition_cpu <= mtpWrittenThrough_cpu) {
                 BUILD_SINGLE_SELECTOR(config->mtpCausalMask->dataType(), maskCausalRangeCpu,
                                       (config->mtpCausalMask->buffer(), nextMtpPosition_cpu,
-                                       mtpProcessedThrough_cpu + 1, mtpMaskLen_cpu),
+                                       mtpWrittenThrough_cpu + 1, mtpMaskLen_cpu),
                                       SD_FLOAT_TYPES);
             }
 
@@ -1114,12 +1101,12 @@ void autoregressiveDecode(
                     DSP_DIAG(KV_CACHE,
                         "CONV_FB_PROBE step=%d pair=0 outIdx=%d extIdx=%d valid=%d src[0..2]=%.6f,%.6f,%.6f dstPre[0..2]=%.6f,%.6f,%.6f",
                         step, outIdx, extIdx, (int)valid,
-                        valid ? planOutputs[outIdx]->e<float>(0) : -999.0f,
-                        valid ? planOutputs[outIdx]->e<float>(1) : -999.0f,
-                        valid ? planOutputs[outIdx]->e<float>(2) : -999.0f,
-                        valid ? extInputs[extIdx]->e<float>(0) : -999.0f,
-                        valid ? extInputs[extIdx]->e<float>(1) : -999.0f,
-                        valid ? extInputs[extIdx]->e<float>(2) : -999.0f);
+                        valid && planOutputs[outIdx]->lengthOf() > 0 ? planOutputs[outIdx]->e<float>(0) : -999.0f,
+                        valid && planOutputs[outIdx]->lengthOf() > 1 ? planOutputs[outIdx]->e<float>(1) : -999.0f,
+                        valid && planOutputs[outIdx]->lengthOf() > 2 ? planOutputs[outIdx]->e<float>(2) : -999.0f,
+                        valid && extInputs[extIdx]->lengthOf() > 0 ? extInputs[extIdx]->e<float>(0) : -999.0f,
+                        valid && extInputs[extIdx]->lengthOf() > 1 ? extInputs[extIdx]->e<float>(1) : -999.0f,
+                        valid && extInputs[extIdx]->lengthOf() > 2 ? extInputs[extIdx]->e<float>(2) : -999.0f);
                 }
                 REQUIRE_TRUE(outIdx >= 0 && outIdx < numPlanOutputs &&
                              extIdx >= 0 && extIdx < numExtInputs,
@@ -1182,6 +1169,48 @@ void autoregressiveDecode(
             for (int i = 0; i < 33; i++) rowArgmax[i] = specRowArgmax_cpu[i];
             int acceptedDrafts = specAccepted_cpu >= 0 ? specAccepted_cpu : 0;
             int n = specConsumed_cpu;
+            // Rerun-refreshed emission (CUDA mirror): when the accepted-prefix
+            // rerun produced the authoritative state, its row-0 logits are the
+            // greedy readout; emission must match that state or the next step's
+            // inputs diverge from what was emitted. The consumed row fed to the
+            // matcher above was the PROVISIONAL verify row-0 argmax; roll the
+            // suffix back to its pre-step state and re-accept the authoritative
+            // token so the suffix/shouldStop describe what was actually emitted.
+            LongType rerunRefreshedToken_cpu = -1;
+            // Rerun fired whenever the consumed prefix is shorter than the
+            // window (specConsumed < 1 + proposedCount): the asl=1 pass owns
+            // the committed state. Its row 0 is the authoritative readout even
+            // when the graph still exports W logits rows, so the width guard
+            // that disabled this path on wide graphs (red be2d7798) is wrong.
+            if (n == 1 && logitsOutput != nullptr
+                    && planOutputs[config->logitsOutputIdx] != nullptr
+                    && specConsumed_cpu < 1 + proposedCount_cpu
+                    && useMtp_cpu) {
+                NDArray* rerunLogits = planOutputs[config->logitsOutputIdx];
+                LongType rerunVocab = rerunLogits->sizeAt(2);
+                if (rerunVocab > 0) {
+                    LongType refreshed = cpuArgmax(rerunLogits->buffer(), rerunVocab,
+                                                   rerunLogits->dataType());
+                    if (refreshed != rowArgmax[0]) {
+                        DSP_DIAG(KV_CACHE,
+                                 "RERUN_EMISSION_REFRESH step=%d verify=%lld rerun=%lld "
+                                 "- emitting the asl=1 authoritative argmax",
+                                 step, (long long)rowArgmax[0], (long long)refreshed);
+                    }
+                    rowArgmax[0] = refreshed;
+                    rerunRefreshedToken_cpu = refreshed;
+                }
+            }
+            // T1 (audit F3): authoritative stop state. Roll back the provisional
+            // accept for the rewritten row, then feed the matcher the FINAL
+            // emitted token exactly once. Mid-batch accepts from rows below the
+            // rewritten one are real emissions and stay in the suffix.
+            if (rerunRefreshedToken_cpu >= 0) {
+                stopMatcher.rollback(1);
+                bool matchedStop = stopMatcher.accept(rowArgmax[0]);
+                specShouldStop_cpu = matchedStop
+                    && stopTerminationAllowed(config, tokensGenerated + n);
+            }
             totalSpeculativeProposed += proposedCount_cpu;
             // Accepted outputs emitted (including EOS), not consumed draft inputs.
             totalSpeculativeAccepted += std::min(acceptedDrafts, specConsumed_cpu);
@@ -1575,7 +1604,10 @@ void autoregressiveDecode(
             // Sync the window tensors — on CUDA they must be device-authoritative
             // before the next plan execution. On CPU this is a no-op.
             config->windowGridMask->syncToDevice();
-            config->windowPositionGrid->syncToDevice();
+            // In-graph KV plans use scalar position inputs, not a position grid.
+            if (config->windowPositionGrid != nullptr) {
+                config->windowPositionGrid->syncToDevice();
+            }
         } else {
             attentionMask->syncToDevice();
             positionIds->syncToDevice();
