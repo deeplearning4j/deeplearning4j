@@ -1220,6 +1220,9 @@ static bool mergedCaptureRangesOverlap(const void* aPtr, size_t aBytes,
   return (aLo < bHi) && (bLo < aHi);
 }
 
+#endif  // HAVE_TRITON
+
+// Used by CUDA gap replay with or without Triton.
 // Steady-state eligibility of a value-dependent gap slot for the fast paths.
 //
 // Value-dependent shape ops (reshape with a shape tensor, tile with a
@@ -1289,6 +1292,7 @@ static bool valueDepGapSlotFastEligible(const NativeSlot& slot,
   return true;
 }
 
+#if HAVE_TRITON
 // Range collector used by mergedCaptureGapIsAliasSafe: appends [ptr, ptr+bytes)
 // for a slot array, skipping null/empty/closed buffers.
 static void mergedCaptureCollectRange(NDArray* arr, std::vector<MergedCaptureDeviceRange>& out) {
