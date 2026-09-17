@@ -2238,6 +2238,26 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
             ? slot.ident.op->getOpDescriptor()->getNumberOfStructuralIArgs()
             : -1;
 
+    // Mirror the compiler's argument-shaped-tile resolution (NativePlanCompiler
+    // Step: value-dependent-shape refinement). Tile carries
+    // OP_TRAIT_VALUE_DEPENDENT_SHAPE for its tensor-reps form; a width==1
+    // invocation with frozen iArgs derives its output shape from input shapes
+    // and arguments only, so it must not pay the value-dependent shape path
+    // (host D2H key mixing, shape re-inference, shapeAware gap execution)
+    // every replay step. Guarded identically: TILE trait, one tensor input,
+    // frozen iArgs, and no runtime-sized output.
+    if (slot.flags.outputShapeDependsOnInputValues &&
+        slot.hasOpTrait(sd::ops::OP_TRAIT_TILE) &&
+        !slot.hasDynamicOutputSize() &&
+        slot.wiring.numInputs == 1 &&
+        slot.args.numIArgs > 0) {
+      slot.flags.outputShapeDependsOnInputValues = false;
+      DSP_DIAG(COMPILE,
+               "ARGUMENT_SHAPED_TILE: slot %d (%s) width=1 with %d frozen iArgs — "
+               "outputShapeDependsOnInputValues=false (argument-driven form)",
+               s, slot.ident.opName.c_str(), slot.args.numIArgs);
+    }
+
     // Initialize fusion fields (will be set by FusionPass::applyFusions later)
     slot.disableInPlaceFusion();
     slot.fusedChain.isFusedChainHead = false;

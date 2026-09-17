@@ -4482,6 +4482,20 @@ Status NativeDynamicShapePlan::executeSlot(
   } else {
     shapeKey = computeShapeKey(slot, shapeValueInputs, slot.wiring.numInputs);
     cacheHit = slot.shapeCacheValid() && (slot.shapeCache.cachedShapeKey == shapeKey);
+    // Diagnostic-only: attribute value-shape gap cost. These slots take the
+    // full Step 3/4/5 path when the shape cache misses; name the exact reason
+    // (cache never valid vs. key mismatch) and show the key delta. Zero cost
+    // when SHAPE diagnostics are disabled (production default).
+    if (!cacheHit && slot.flags.outputShapeDependsOnInputValues &&
+        DSP_DIAG_ENABLED(SHAPE) && executeCount_ >= 4 && executeCount_ <= 8) {
+      DSP_DIAG_SLOT(SHAPE, stepIdx,
+          "VALUE_SHAPE_MISS: slot=%d op=%s cacheValid=%d cachedKey=0x%llx "
+          "newKey=0x%llx executeCount=%d",
+          stepIdx, slot.ident.opName.c_str(),
+          slot.shapeCacheValid() ? 1 : 0,
+          static_cast<unsigned long long>(slot.shapeCache.cachedShapeKey),
+          static_cast<unsigned long long>(shapeKey), executeCount_);
+    }
 
     // View-capable ops: even with matching shape key, check for stale empty
     // cached shapes. computeShapeKey does NOT include the ARRAY_EMPTY flag,
@@ -4549,6 +4563,56 @@ Status NativeDynamicShapePlan::executeSlot(
   // rerunning the full allocation/lifecycle tail after that proof. Validate all
   // installed output wrappers (and view aliasing) before entering the lean GAP
   // executor; any mismatch stays on the full path below.
+  // Diagnostic-only attribution (zero cost when SHAPE diag off): name which
+  // sub-condition declines the fast path for value-shape gap slots.
+  if (slot.flags.outputShapeDependsOnInputValues && DSP_DIAG_ENABLED(SHAPE) &&
+      executeCount_ >= 5 && executeCount_ <= 8) {
+    bool gateCache = cacheHit;
+    bool gateReplay = dspGetReplayActive();
+    bool gateCtx = contextPool_[stepIdx] != nullptr;
+    bool gateFp = gateCtx &&
+        static_cast<int>(contextPool_[stepIdx]->fastpath_in().size()) >=
+            slot.wiring.numInputs;
+    bool wrappersOk = gateCache && gateReplay && gateCtx && gateFp;
+    bool gateViewsOk = false;
+    if (wrappersOk) {
+      wrappersOk = static_cast<int>(outputShapes.size()) >= slot.wiring.numOutputs;
+      for (int i = 0; wrappersOk && i < slot.wiring.numOutputs; i++) {
+        const int outSi = slot.wiring.outputSlotIndices[i];
+        wrappersOk = outSi >= 0 && outSi < totalOutputSlots_ &&
+                     outputWrapperMatchesExpectedShape(outputSlots_[outSi],
+                                                       outputShapes[i]);
+      }
+      gateViewsOk = wrappersOk;
+    }
+    if (!(gateCache && gateReplay && gateCtx && gateFp && gateViewsOk)) {
+      NDArray* dbgIn0 = nullptr;
+      if (gateCtx && slot.wiring.numInputs > 0) {
+        dbgIn0 = resolveInputSourceArray(slot.wiring.inputSourceIndices[0],
+                                         outputSlots_, totalOutputSlots_,
+                                         externalArrays, numExt);
+      }
+      const int dbgOutSi = slot.wiring.numOutputs > 0
+                               ? slot.wiring.outputSlotIndices[0] : -1;
+      NDArray* dbgOut = (dbgOutSi >= 0 && dbgOutSi < totalOutputSlots_)
+                            ? outputSlots_[dbgOutSi] : nullptr;
+      const LongType* dbgExpect = outputShapes.empty() ? nullptr : outputShapes[0];
+      DSP_DIAG_SLOT(SHAPE, stepIdx,
+          "VALUE_SHAPE_GATE: slot=%d op=%s cache=%d replay=%d ctx=%d fp=%d "
+          "wrappers=%d outSi=%d installed=%s expected=%s inDb=%p outDb=%p "
+          "executeCount=%d",
+          stepIdx, slot.ident.opName.c_str(), gateCache ? 1 : 0,
+          gateReplay ? 1 : 0, gateCtx ? 1 : 0, gateFp ? 1 : 0,
+          gateViewsOk ? 1 : 0, dbgOutSi,
+          (dbgOut != nullptr && dbgOut->hasValidShapeInfo())
+              ? ShapeUtils::shapeAsString(dbgOut->shapeInfo()).c_str() : "null",
+          dbgExpect != nullptr ? ShapeUtils::shapeAsString(dbgExpect).c_str()
+                               : "null",
+          dbgIn0 != nullptr ? (void*)dbgIn0->dataBuffer() : nullptr,
+          dbgOut != nullptr ? (void*)dbgOut->dataBuffer() : nullptr,
+          executeCount_);
+    }
+  }
   if (cacheHit && slot.hasValueDependentShape() && executeCount_ >= 5 &&
       dspGetReplayActive() && contextPool_[stepIdx] != nullptr &&
       static_cast<int>(contextPool_[stepIdx]->fastpath_in().size()) >=
@@ -4585,6 +4649,33 @@ Status NativeDynamicShapePlan::executeSlot(
           stepIdx, slot.ident.opName.c_str(),
           static_cast<unsigned long long>(shapeKey), executeCount_);
       return executeSlotGapFast(stepIdx, externalArrays, numExt);
+    }
+    // Diagnostic-only attribution: when the fast path is declined, name the
+    // exact sub-condition that failed so steady-state gap costs stay visible.
+    // Zero cost when SHAPE diagnostics are disabled (the production default).
+    if (DSP_DIAG_ENABLED(SHAPE) && executeCount_ <= 8) {
+      NDArray* input0Db = nullptr;
+      if (slot.wiring.numInputs > 0) {
+        input0Db = resolveInputSourceArray(slot.wiring.inputSourceIndices[0],
+                                           outputSlots_, totalOutputSlots_,
+                                           externalArrays, numExt);
+      }
+      const int outSi0 = slot.wiring.numOutputs > 0
+                             ? slot.wiring.outputSlotIndices[0] : -1;
+      NDArray* outArr = (outSi0 >= 0 && outSi0 < totalOutputSlots_)
+                            ? outputSlots_[outSi0] : nullptr;
+      const LongType* expect0 = outputShapes.empty() ? nullptr : outputShapes[0];
+      DSP_DIAG_SLOT(SHAPE, stepIdx,
+          "VALUE_SHAPE_FAST_DECLINED: slot=%d op=%s cacheHit=%d wrapperOk=%d "
+          "outSi=%d installed=%s expected=%s inDb=%p outDb=%p executeCount=%d",
+          stepIdx, slot.ident.opName.c_str(), cacheHit ? 1 : 0,
+          stableOutputWrappers ? 1 : 0, outSi0,
+          (outArr != nullptr && outArr->hasValidShapeInfo())
+              ? ShapeUtils::shapeAsString(outArr->shapeInfo()).c_str() : "null",
+          expect0 != nullptr ? ShapeUtils::shapeAsString(expect0).c_str() : "null",
+          input0Db != nullptr ? (void*)input0Db->dataBuffer() : nullptr,
+          outArr != nullptr ? (void*)outArr->dataBuffer() : nullptr,
+          executeCount_);
     }
   }
 

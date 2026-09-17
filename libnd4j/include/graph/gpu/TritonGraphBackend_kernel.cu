@@ -1122,6 +1122,12 @@ void TritonGraphBackend::recordKernelArgumentSubmission(CompiledKernel& kernel, 
   if (cudaStreamIsCapturing(cudaStream, &capturing) != cudaSuccess)
     THROW_EXCEPTION("Triton argument submission capture query failed");
   if (capturing != cudaStreamCaptureStatusNone) return;
+  recordKernelArgumentSubmissionAfterCaptureCheck(kernel, stream);
+}
+
+void TritonGraphBackend::recordKernelArgumentSubmissionAfterCaptureCheck(
+    CompiledKernel& kernel, void* stream) {
+  auto cudaStream = reinterpret_cast<cudaStream_t>(stream);
   if (!kernel.argumentConsumedEvent) {
     cudaEvent_t event;
     if (cudaEventCreateWithFlags(&event, cudaEventDisableTiming) != cudaSuccess)
@@ -1216,7 +1222,21 @@ void TritonGraphBackend::recordArgumentSubmission(GraphSegment& seg, void* strea
   for (auto& entry : cache_) {
     if (entry.first.segmentInstance != &seg ||
         entry.first.shapeKey != seg.def.shapeKeyState.compiledShapeKey) continue;
-    for (auto& kernel : entry.second.subKernels) recordKernelArgumentSubmission(kernel, rawStream);
+    // Hoisted capture-status query: capture state cannot change between the
+    // sub-kernels of one submission (nothing in this loop begins or ends
+    // capture), so one cudaStreamIsCapturing per segment launch replaces
+    // O(subKernels) driver round-trips. On plans that replay hundreds of
+    // merged groups per step (each submitting its whole sub-kernel set) the
+    // per-kernel query was a dominating host cost of the decode loop.
+    cudaStreamCaptureStatus capturing;
+    if (cudaStreamIsCapturing(reinterpret_cast<cudaStream_t>(rawStream), &capturing) != cudaSuccess)
+      THROW_EXCEPTION("Triton argument submission capture query failed");
+    if (capturing == cudaStreamCaptureStatusNone) {
+      for (auto& kernel : entry.second.subKernels) {
+        if (!kernel.useIndirectArgs && kernel.aliasBindings.empty()) continue;
+        recordKernelArgumentSubmissionAfterCaptureCheck(kernel, rawStream);
+      }
+    }
     DSP_DIAG(VERIFY, "TRITON_CAPTURED_ARG_SUBMISSION: seg[%d-%d] kernels=%zu stream=%p",
              seg.def.startSlot, seg.def.endSlot, entry.second.subKernels.size(), rawStream);
   }

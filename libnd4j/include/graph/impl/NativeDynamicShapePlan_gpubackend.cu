@@ -1220,6 +1220,75 @@ static bool mergedCaptureRangesOverlap(const void* aPtr, size_t aBytes,
   return (aLo < bHi) && (bLo < aHi);
 }
 
+// Steady-state eligibility of a value-dependent gap slot for the fast paths.
+//
+// Value-dependent shape ops (reshape with a shape tensor, tile with a
+// multiples tensor) claim outputShapeDependsOnInputValues at the descriptor
+// level, and the gap executor therefore routed them through the full
+// shape-aware executeSlot every step. That path re-proves the output extent
+// by re-reading the control tensor values on the host — a blocking D2H that
+// drains the replay stream (iteration-2 quantization: 474 reshape/tile
+// slots × ~2.8ms/step = 1.34s per decode step).
+//
+// During SHAPES_FROZEN/REPLAYING the output extent is contractual (replay-time
+// shape drift is a hard lifecycle error) and compiled consumers bake concrete
+// extents, so the per-step re-proof is redundant. A slot is fast-eligible
+// when its frozen publication is intact, verified with host metadata only:
+//   - not a dynamic-output-size op (that trait means a genuinely dynamic
+//     extent — keep the full shape-aware path so it stays loud),
+//   - a sealed shape cache exists, and the installed wrapper still matches it
+//     exactly (dtype + shape + strides),
+//   - input0 and the installed wrapper both resolve to valid DataBuffers.
+// When the slot is additionally a view/identity alias whose single output
+// shares input0's DataBuffer, it has NO device work at all (*tickOnly=true):
+// it reduces to a dependency-generation tick. Otherwise (tile, broadcast_to)
+// it takes the gap-fast kernel dispatch with the frozen shape override.
+// A declined slot falls back to the full path, which re-derives the shape and
+// surfaces any drift as an explicit error instead of a silent stale view.
+static bool valueDepGapSlotFastEligible(const NativeSlot& slot,
+                                        NDArray** outputSlots,
+                                        int totalOutputSlots,
+                                        NDArray** effectiveExternals,
+                                        int numExt, bool* tickOnly) {
+  *tickOnly = false;
+  if (slot.flags.isDynamicShape || slot.hasDynamicOutputSize()) return false;
+  if (!slot.shapeCacheValid() || slot.shapeCache.cachedOutputShapes.empty() ||
+      slot.shapeCache.cachedOutputShapes[0] == nullptr) {
+    return false;
+  }
+  if (slot.wiring.numInputs < 1 || slot.wiring.numOutputs < 1) return false;
+
+  const int outSi = slot.wiring.outputSlotIndices[0];
+  const int inSrc = slot.wiring.inputSourceIndices[0];
+  NDArray* currentOut = (outSi >= 0 && outSi < totalOutputSlots)
+                            ? outputSlots[outSi] : nullptr;
+  NDArray* input0 = nullptr;
+  if (inSrc >= 0 && inSrc < totalOutputSlots) {
+    input0 = outputSlots[inSrc];
+  } else if (inSrc < 0) {
+    const int extIdx = -(inSrc + 1);
+    if (extIdx >= 0 && extIdx < numExt) input0 = effectiveExternals[extIdx];
+  }
+  if (currentOut == nullptr || input0 == nullptr ||
+      !currentOut->hasValidShapeInfo() || !input0->hasValidShapeInfo() ||
+      currentOut->dataBuffer() == nullptr || input0->dataBuffer() == nullptr ||
+      !currentOut->dataBuffer()->isValid() || !input0->dataBuffer()->isValid()) {
+    return false;
+  }
+  const LongType* expectedShape = slot.shapeCache.cachedOutputShapes[0];
+  if (currentOut->dataType() != ArrayOptions::dataType(expectedShape) ||
+      !shape::shapeEquals(currentOut->shapeInfo(), expectedShape) ||
+      !shape::strideEquals(currentOut->shapeInfo(), expectedShape)) {
+    return false;
+  }
+  // A view/identity whose output aliases input0 has no device work: tick only.
+  if (slot.aliasesInput() && slot.wiring.numOutputs == 1 &&
+      currentOut->dataBuffer() == input0->dataBuffer()) {
+    *tickOnly = true;
+  }
+  return true;
+}
+
 // Range collector used by mergedCaptureGapIsAliasSafe: appends [ptr, ptr+bytes)
 // for a slot array, skipping null/empty/closed buffers.
 static void mergedCaptureCollectRange(NDArray* arr, std::vector<MergedCaptureDeviceRange>& out) {
@@ -1251,6 +1320,41 @@ static bool mergedCaptureGapIsAliasSafe(const ReplaySchedule& sched,
                                         int gapEndSlot) {
   if (s_mergedCaptureGapAliasCheckDisabled()) return true;
 
+  // An established view/identity alias slot installs ZERO device work: its
+  // capture-time execution hits the exact-frozen-view reuse (no launch) and
+  // contributes 0 audit nodes, so the merged replay tick never marks its
+  // output device-actual and slotSkipsPostReplayFixup() never re-executes it.
+  // Its overlap with a live unit's output range is read-only aliasing of the
+  // producer graph the live unit itself rewrites; ordering is preserved by
+  // the single merged-capture stream. This includes value-dependent views
+  // (reshape with a shape tensor): their shape descriptor is sealed during
+  // warmup and isGapRangeCaptureSafe already classifies them as zero-compute
+  // capture-safe. Treating that alias as a conflict split 770 gaps live in
+  // the qwen decode plan and stranded 474 view/tile slots in per-unit ~2.8ms
+  // gap execution. A genuinely publishing slot (wrapper not yet aliasing its
+  // wired input, invalid buffers, multi-output) still fails this predicate
+  // and keeps the conservative overlap rejection; if such a slot cannot
+  // resolve at capture time the merged capture aborts loudly (the capture is
+  // the enforcement, this gate is only an admission hint).
+  auto establishedAliasSlot = [&](const NativeSlot& as) {
+    if (dsp_disable_view_fastpath()) return false;
+    if (!(as.isViewCapableOp() || as.isIdentityOp())) return false;
+    if (as.flags.isDynamicShape || as.hasDynamicOutputSize() ||
+        as.wiring.numOutputs != 1 || as.wiring.numInputs < 1) {
+      return false;
+    }
+    const int aOut = as.wiring.outputSlotIndices[0];
+    const int aIn = as.wiring.inputSourceIndices[0];
+    if (aOut < 0 || aOut >= totalOutputSlots || aIn < 0 || aIn >= totalOutputSlots) {
+      return false;
+    }
+    NDArray* outArr = outputSlots[aOut];
+    NDArray* inArr = outputSlots[aIn];
+    return outArr != nullptr && inArr != nullptr &&
+           outArr->dataBuffer() != nullptr &&
+           outArr->dataBuffer() == inArr->dataBuffer();
+  };
+
   // 1) Collect the output ranges of all LIVE (unmerged gap) units — the units
   //    that execute natively during replay and can rewrite those addresses.
   //    The candidate unit itself is excluded: it is untagged (mergedGroupId
@@ -1277,6 +1381,7 @@ static bool mergedCaptureGapIsAliasSafe(const ReplaySchedule& sched,
   for (int s = gapStartSlot; s <= gapEndSlot; s++) {
     if (s < 0) continue;
     const NativeSlot& gs = slots[s];
+    if (establishedAliasSlot(gs)) continue;
     for (int wi = 0; wi < gs.wiring.numInputs; wi++) {
       int srcIdx = gs.wiring.inputSourceIndices[wi];
       NDArray* arr = nullptr;
@@ -2498,7 +2603,13 @@ Status NativeDynamicShapePlan::compositeReplay(
               break;
             }
             const auto& viewSlot = slots_[slotIdx];
-            if (viewSlot.flags.isDynamicShape || viewSlot.hasValueDependentShape() ||
+            // NOTE: hasValueDependentShape() alone is NOT a rejection reason —
+            // value-dependent views (reshape with a shape tensor) with an
+            // intact frozen publication are legitimate VIEW_TICKs; the checks
+            // below (buffer identity, shape/stride/dtype cache equality)
+            // validate them per step. Only a genuinely dynamic output extent
+            // disqualifies the tick outright.
+            if (viewSlot.flags.isDynamicShape || viewSlot.hasDynamicOutputSize() ||
                 viewSlot.wiring.numInputs < 1 || viewSlot.wiring.numOutputs < 1) {
               cachedViewActionsValid = false;
               break;
@@ -2594,9 +2705,20 @@ Status NativeDynamicShapePlan::compositeReplay(
               // is established in later steps, demote to VIEW_TICK to skip full op dispatch.
               if (!viewFastpathDisabled && executeCount_ >= 4 && skipPtrTracking) {
                 auto& slot = slots_[active.slotIdx];
-                if (!slot.flags.isDynamicShape && !slot.hasValueDependentShape() &&
+                // Value-dependent views (reshape with shape tensor) qualify
+                // too, but only via the full frozen-publication proof: buffer
+                // identity alone does not prove the installed wrapper matches
+                // the sealed output extent. Non-value-dependent views keep the
+                // historical buffer-identity-only demotion.
+                bool vdDemoTick = false;
+                const bool vdDemoEligible = slot.hasValueDependentShape()
+                    ? valueDepGapSlotFastEligible(slot, outputSlots_, totalOutputSlots_,
+                                                  effectiveExternals, numExt, &vdDemoTick)
+                    : false;
+                if (!slot.flags.isDynamicShape && !slot.hasDynamicOutputSize() &&
                     slot.isViewCapableOp() && slot.wiring.numInputs >= 1 &&
-                    slot.wiring.numOutputs >= 1) {
+                    slot.wiring.numOutputs >= 1 &&
+                    (!slot.hasValueDependentShape() || (vdDemoEligible && vdDemoTick))) {
                   int outSi = slot.wiring.outputSlotIndices[0];
                   if (outSi >= 0 && outSi < totalOutputSlots_) {
                     NDArray* currentOut = outputSlots_[outSi];
@@ -2629,8 +2751,28 @@ Status NativeDynamicShapePlan::compositeReplay(
               // shapes need the full path; shape-stable descendants can use the
               // frozen gap executor.
               auto& activeSlot = slots_[active.slotIdx];
+              // Value-dependent VIEW/COPY slots (reshape with shape tensor,
+              // tile with multiples) used to be routed through the full
+              // shape-aware executeSlot unconditionally. In REPLAYING the
+              // extent is contractual and its per-step re-proof is a blocking
+              // D2H against the replay stream (~2.8ms/slot measured). When the
+              // frozen publication is intact (host-metadata check only), the
+              // slot re-uses the frozen shape: aliases tick, copies dispatch
+              // via executeSlotGapFast. Genuinely dynamic-extent slots keep
+              // the full shape-aware path so drift stays a loud error.
+              bool vdTickOnly = false;
+              // Gate matches the N12 demotion threshold: once shapes are frozen
+              // and pointers have settled, the frozen-publication proof replaces
+              // the per-step shape re-derivation.
+              const bool vdFastEligible =
+                  activeSlot.hasValueDependentShape() && !viewFastpathDisabled &&
+                  executeCount_ >= 4
+                      ? valueDepGapSlotFastEligible(
+                            activeSlot, outputSlots_, totalOutputSlots_,
+                            effectiveExternals, numExt, &vdTickOnly)
+                      : false;
               const bool needsShapeAwareGapExec =
-                  activeSlot.hasValueDependentShape();
+                  activeSlot.hasValueDependentShape() && !vdFastEligible;
               void* shapeAwareOutputBufsBefore[NativeDynamicShapePlan::MAX_OUTPUTS_PER_SLOT];
               if (needsShapeAwareGapExec) {
                 snapshotSlotOutputBuffers(activeSlot, outputSlots_, totalOutputSlots_,
@@ -2645,7 +2787,23 @@ Status NativeDynamicShapePlan::compositeReplay(
                   executeCount_ >= 5 && skipPtrTracking && !needsShapeAwareGapExec;
               auto tGapSlot0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
               Status slotStatus;
-              if (useGapFastPath) {
+              if (vdFastEligible && vdTickOnly) {
+                // Established view/identity alias: metadata-only publication.
+                // The value was not recomputed and no kernel runs — advance the
+                // dependency generation and device-actuality tick exactly as
+                // the VIEW_TICK action does. Every step the shape/stride/dtype
+                // equality above held was re-verified this step.
+                int outSi = activeSlot.wiring.outputSlotIndices[0];
+                if (outSi >= 0 && outSi < totalOutputSlots_ && outputSlots_[outSi] != nullptr) {
+                  outputSlots_[outSi]->tickWriteDevice();
+                  dirtySlotGenerations_[outSi] = currentDirtyGeneration_;
+                }
+                activeSlot.bumpGeneration();
+                slotStatus = Status::OK;
+                DSP_DIAG_SLOT(EXECUTE, active.slotIdx,
+                    "GAP_VD_VIEW_TICK: slot=%d op=%s executeCount=%d",
+                    active.slotIdx, activeSlot.ident.opName.c_str(), executeCount_);
+              } else if (useGapFastPath) {
                 slotStatus = executeSlotGapFast(active.slotIdx, effectiveExternals, numExt);
               } else {
                 if (needsShapeAwareGapExec && executeCount_ >= 5) {
@@ -2661,10 +2819,10 @@ Status NativeDynamicShapePlan::compositeReplay(
               if (executionTimingEnabled_) {
                 auto slotUs = std::chrono::duration_cast<std::chrono::microseconds>(
                                   Clock::now() - tGapSlot0).count();
-                if (useGapFastPath) {
+                if (useGapFastPath || (vdFastEligible && !vdTickOnly)) {
                   tGapFastSlotUs += slotUs;
                   nGapFastSlots++;
-                } else {
+                } else if (!vdTickOnly) {
                   tGapShapeAwareSlotUs += slotUs;
                   nGapShapeAwareSlots++;
                 }
@@ -2817,6 +2975,64 @@ Status NativeDynamicShapePlan::compositeReplay(
         }
 
         // ── Full executeSlot path ──
+        // Value-dependent view/copy slots with an intact frozen publication
+        // bypass the full shape-aware executor here exactly like in the cached
+        // fast path above: aliases tick (no device work), copies dispatch via
+        // executeSlotGapFast with the frozen shape override. The cached-path
+        // validity checks run every step on both paths, so classification and
+        // steady state observe the same conditions.
+        {
+          NativeSlot& clsSlot = slots_[s];
+          bool clsTickOnly = false;
+          const bool clsFast =
+              clsSlot.hasValueDependentShape() && !viewFastpathDisabled &&
+              executeCount_ >= 4 &&
+              valueDepGapSlotFastEligible(clsSlot, outputSlots_, totalOutputSlots_,
+                                          effectiveExternals, numExt, &clsTickOnly);
+          if (clsFast && clsTickOnly) {
+            int clsOutSi = clsSlot.wiring.outputSlotIndices[0];
+            if (clsOutSi >= 0 && clsOutSi < totalOutputSlots_ &&
+                outputSlots_[clsOutSi] != nullptr) {
+              outputSlots_[clsOutSi]->tickWriteDevice();
+              dirtySlotGenerations_[clsOutSi] = currentDirtyGeneration_;
+            }
+            clsSlot.bumpGeneration();
+            if (buildingCache) {
+              cachedActiveGapSlotsMap_[gapCacheKey].push_back({s, ActiveSlotAction::VIEW_TICK, -1, clsOutSi});
+            }
+            if (executionTimingEnabled_) nExecSlots++;
+            if (collectExecOpNames) {
+              execOpCounts[clsSlot.ident.opName]++;
+            }
+            continue;
+          }
+          if (clsFast) {
+            auto clsStatus = executeSlotGapFast(s, effectiveExternals, numExt);
+            if (clsStatus != Status::OK) {
+              DSP_DIAG(EXECUTE,
+                       "COMPOSITE_REPLAY: gap slot %d FAILED status=%s (%d)",
+                       s, statusName_gpu(clsStatus), static_cast<int>(clsStatus));
+              setGpuBackendFailureDetail(
+                  seg, "composite replay gap slot " +
+                           std::to_string(s) + " (" +
+                           clsSlot.ident.opName + ") returned " +
+                           statusName_gpu(clsStatus) + " (" +
+                           std::to_string(static_cast<int>(clsStatus)) + ")");
+              return clsStatus;
+            }
+            if (buildingCache) {
+              cachedActiveGapSlotsMap_[gapCacheKey].push_back({s, ActiveSlotAction::EXECUTE, -1, -1});
+            }
+            if (executionTimingEnabled_) {
+              nGapFastSlots++;
+              nExecSlots++;
+            }
+            if (collectExecOpNames) {
+              execOpCounts[clsSlot.ident.opName]++;
+            }
+            continue;
+          }
+        }
         void* outputBufsBefore[NativeDynamicShapePlan::MAX_OUTPUTS_PER_SLOT];
         if (!skipPtrTracking && !gapOutputPointersChanged) {
           snapshotSlotOutputBuffers(slots_[s], outputSlots_, totalOutputSlots_,
@@ -3032,7 +3248,7 @@ Status NativeDynamicShapePlan::compositeReplay(
     auto unitsUs = actTickUs - prezeroUs;
     DSP_DIAG(TIMING,
              "COMPOSITE_REPLAY_TIMING: total=%lldus prezero=%lldus units=%lldus "
-             "execCount=%d mergedGroups=%d islands=%d "
+             "execCount=%d mergedGroups=%d islandsSched=%d islandsLaunched=%d "
              "BREAKDOWN: mergedLaunch=%lldus(%d) mergedDirty=%lldus gapExec=%lldus(%d) "
              "islandLaunch=%lldus(%d) islandDirty=%lldus argRefresh=%lldus(%d) "
              "GAP_SLOTS: exec=%d tick=%d bgemm=%d "
@@ -3040,6 +3256,7 @@ Status NativeDynamicShapePlan::compositeReplay(
              totalUs, prezeroUs, unitsUs, seg.exec.executionCount,
              static_cast<int>(sched.mergedReplayHandles.size()),
              static_cast<int>(sched.compositeReplayHandles.size()),
+             nIslandLaunches,
              tMergedLaunchUs, nMergedLaunches, tMergedDirtyUs,
              tGapExecUs, nGapUnits,
              tIslandLaunchUs, nIslandLaunches, tIslandDirtyUs,

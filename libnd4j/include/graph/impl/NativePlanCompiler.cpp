@@ -767,7 +767,20 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
       const bool argumentShapedView =
           slot.isViewCapableOp() && slot.wiring.numInputs <= 1 &&
           slot.args.numIArgs > 0;
-      if (hasNoRuntimeInputs || argumentShapedView) {
+      // Argument-shaped non-view form (tile, broadcast_to): the op carries
+      // OP_TRAIT_VALUE_DEPENDENT_SHAPE for its tensor-reps variant, but when the
+      // controlling parameters are baked as frozen iArgs the shape function
+      // depends on input SHAPES + iArgs only — same argument the trait table
+      // already accepts for gather/repeat. Classify exactly: requires TILE (or
+      // BROADCAST via the shared DATA_MOVE+VALDEP family guard below), a single
+      // tensor input (width==1), and at least one frozen iArg. A tensor-reps
+      // invocation has width==2 and keeps full value-dependent treatment.
+      const bool argumentShapedTile =
+          slot.hasOpTrait(sd::ops::OP_TRAIT_TILE) &&
+          !slot.hasDynamicOutputSize() &&
+          slot.wiring.numInputs == 1 &&
+          slot.args.numIArgs > 0;
+      if (hasNoRuntimeInputs || argumentShapedView || argumentShapedTile) {
         slot.flags.outputShapeDependsOnInputValues = false;
       }
     }

@@ -749,6 +749,10 @@ class TritonGraphBackend : public GraphBackend {
   void publishArgumentPointers(CompiledKernel& kernel, const std::vector<void*>& pointers,
       bool capturing);
   void recordKernelArgumentSubmission(CompiledKernel& kernel, void* stream);
+  // Post-capture-check body shared by the single-kernel and segment-wide
+  // submission paths. Caller must have established the stream is not capturing.
+  void recordKernelArgumentSubmissionAfterCaptureCheck(CompiledKernel& kernel,
+                                                       void* stream);
   void releaseAliasBindings(CompiledKernel& kernel);
 #endif
 

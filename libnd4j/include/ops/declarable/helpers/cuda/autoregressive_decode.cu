@@ -2528,31 +2528,77 @@ void autoregressiveDecode(
                 }
             }
 
-            // Resolve the emission boundary before committing ANY model state.
-            // Each emitted token consumes one input row: the base token followed
-            // by prior accepted drafts. Even an accepted EOS is an output, not an
-            // input consumed by this step. Keep verification acceptance separate.
-            int consumedCount = 0;
+            // -- ADR 0106 Phase 2b: authoritative single-token commit ---------------
+            // A speculative step commits EXACTLY ONE token: the target's argmax at
+            // verification row 0. Row 0's causal prefix is the committed base alone
+            // (draft rows 1..K cannot influence it), so this token is what greedy
+            // decoding would emit from the same state - by construction, not by
+            // measurement. The state commit below (rerun at
+            // actual_sequence_length=1) and the epilogue carry (row 0 of the rerun)
+            // then reproduce greedy's single-token advance exactly.
+            //
+            // History: this boundary used to emit acceptedDrafts + 1 tokens, taking
+            // the correction/bonus from verify row acceptedDrafts and the carry from
+            // row consumedCount-1. That contract trusted rows >= 1 of the multi-row
+            // verify pass, but the graph-level W-row divergence is documented and
+            // measured (JAVA_ROW_ARGMAX native-vs-java: 271 13 13 13 13; window4
+            // conv_state_out_0 max=23.75), so a "verified" draft row can differ
+            // from the scalar greedy continuation it is compared against. Every
+            // step's trunk values (emission, carry, GDN/conv state, KV row) must
+            // therefore come from row 0 / the asl=1 rerun. At 250 tokens the old
+            // contract fired twice (milestone bed78d5f, emission indices 101 and
+            // 195 on the run's two accepted steps): greedy=[5218,16456] vs
+            // mtp=[1536,7059] at index 101. With exactly-one-token commits, parity
+            // is structural for any length and any acceptance rate. Multi-token
+            // emission returns when the W-row graph divergence is fixed at the
+            // graph level.
+            //
+            // RERUN-REFRESHED EMISSION (proc-175 trigger evidence): the emitted
+            // token must be refreshed from the asl=1 RERUN pass when one fires.
+            // The W-wide verification pass and a W=1 pass at the same context
+            // differ numerically (GDN/conv chunked kernels, fused multi-row
+            // attention geometry); the delta is tiny per layer but its argmax
+            // effect is data-dependent. proc-175 measured it: step 98 emitted
+            // verify-row-0 1536 where greedy emitted 5218 on a flat logit profile
+            // (top-4 within ~1.5), then RESYNCED to greedy at step 100 - the
+            // committed state stayed greedy-aligned, only the row-0 readout
+            // flipped. Emission from the verify pass therefore violates the
+            // trunk contract whenever a rerun produces the authoritative state.
+            // After the rerun below, its logits output is [1,1,V]: re-argmax it
+            // and use THAT value for emission. Parity is then structural: every
+            // trunk value the next step sees comes from a W=1 pass that is
+            // bit-equivalent to the greedy decode loop. The verify-pass argmax
+            // is still what ACCEPTANCE compares drafts against (lossless rule
+            // needs no numeric identity, only commit-what-you-emitted), and the
+            // emission refresh is skipped when no rerun fires (single-token
+            // window, terminal truncation).
+            int consumedCount = 1;
             bool shouldStop = false;
-            while (consumedCount < acceptedDrafts + 1
-                    && tokensGenerated + consumedCount < maxNewTokens) {
-                LongType token = argmaxDst[consumedCount];
-                consumedCount++;
+            {
+                LongType token = argmaxDst[0];
                 bool matchedStop = stopMatcher.accept(token);
                 shouldStop = matchedStop && stopTerminationAllowed(config, tokensGenerated + consumedCount);
-                if (shouldStop) break;
             }
             const int carryRow = consumedCount - 1;
 
-            // -- ADR 0106 Phase 2: emitted-prefix recurrent-state commit ---------
-            // The forward above ran with actual_sequence_length = 1 + proposedCount,
-            // advancing GDN/conv state through ALL proposed rows. On partial/zero
-            // acceptance or terminal truncation, re-execute with
-            // actual_sequence_length = consumedCount. State advances through the
-            // consumed inputs only; emission uses the FIRST pass's host argmaxes. The
-            // re-run sees the same step inputs (input_ids/mask/positions unchanged;
-            // in-graph KV writes are idempotent for the same step). Next step's
-            // pre-exec update rewrites actual_sequence_length, so no restore needed.
+            // -- ADR 0106 Phase 2 / Phase 2b: authoritative state commit ------------
+            // The W-wide verification forward advanced GDN/conv state through ALL
+            // proposed rows. The commit must advance state through exactly the
+            // committed token(s): re-execute with actual_sequence_length =
+            // consumedCount (always 1 under the single-token commit) so the trunk
+            // recurrent state, KV rows, and positions equal what greedy decoding
+            // would hold after the same token. The re-run sees the same step
+            // inputs (input_ids/mask/positions unchanged; in-graph KV writes are
+            // idempotent for the same step). Next step's pre-exec update rewrites
+            // actual_sequence_length, so no restore needed.
+            // NOTE (proc-149): with the old multi-row emission this rerun fired
+            // every step; under the single-token commit it fires whenever the
+            // window is wider than the commit (proposedCount > 0), which is every
+            // speculative step. Semantics unchanged, label updated for honesty.
+            // RERUN-REFRESHED EMISSION: rerunRefreshedToken carries the rerun's
+            // scalar-logits argmax back to the emission rewrite below; -1 means
+            // no rerun fired and the verification argmax stays authoritative.
+            LongType rerunRefreshedToken = -1;
             if (consumedCount < 1 + proposedCount
                     && config->actualSequenceLengthExtIdx >= 0
                     && config->actualSequenceLengthExtIdx < numExtInputs
@@ -2564,7 +2610,8 @@ void autoregressiveDecode(
                 NDArray::registerSpecialUse({aslArr}, {});
                 DSP_DIAG(KV_CACHE,
                          "SPEC_STATE_RERUN step=%d proposed=%d accepted=%d - re-executing "
-                         "with actual_sequence_length=%d for accepted-prefix state commit",
+                         "with actual_sequence_length=%d (single-token commit) for "
+                         "greedy-identical state advance",
                          step, proposedCount, acceptedDrafts, consumedCount);
                 if (config->kvQuantFormat > 0 && config->kvScaleBuffers != nullptr
                     && config->kvInputExtIndices != nullptr && config->numGdnStatePairs >= 0) {
@@ -2592,6 +2639,47 @@ void autoregressiveDecode(
                              rerunFailureDetail.c_str(), step,
                              graph::dsp::dspStatusName(rerunStatus),
                              static_cast<int>(rerunStatus), acceptedDrafts, proposedCount);
+
+                // The rerun ran at actual_sequence_length=1: its logits are the
+                // W=1 (greedy-geometry) continuation of the committed base token.
+                // Argmax it and use it as the emitted token so emission, state,
+                // carry, and KV all come from the same scalar pass.
+                if (rerunStatus == Status::OK) {
+                    NDArray* rerunLogits = planOutputs[config->logitsOutputIdx];
+                    REQUIRE_TRUE(rerunLogits != nullptr && rerunLogits->rankOf() >= 2,
+                                 0, "autoregressive_decode: rerun logits output is invalid "
+                                    "at step %d (rank=%lld)",
+                                 step,
+                                 rerunLogits != nullptr
+                                     ? static_cast<long long>(rerunLogits->rankOf()) : -1LL);
+                    LongType rerunVocab = rerunLogits->sizeAt(rerunLogits->rankOf() - 1);
+                    NDArray::prepareSpecialUse({specArgmaxDevice}, {rerunLogits});
+                    // specArgmaxDevice[0] is scratch here; it is rewritten with the
+                    // host-side emission sequence further below, and row 0 of the
+                    // raw verification argmaxes was already snapshotted into
+                    // argmaxRaw and consumed by ACCEPTANCE above (argmaxDst).
+                    BUILD_SINGLE_SELECTOR(rerunLogits->dataType(), argmaxLauncher,
+                                          (stream, rerunLogits->specialBuffer(),
+                                           specArgmaxDevice->specialBuffer(),
+                                           rerunVocab),
+                                          SD_FLOAT_TYPES);
+                    cudaMemcpyAsync(&rerunRefreshedToken, specArgmaxDevice->specialBuffer(),
+                                    sizeof(LongType), cudaMemcpyDeviceToHost, *stream);
+                    NDArray::registerSpecialUse({specArgmaxDevice}, {rerunLogits});
+                    // The emission/storage path below re-reads argmaxDst from host
+                    // memory only, so a stream-ordered completion of this D2H before
+                    // the rewrite is required.
+                    cudaError_t refreshSync = cudaStreamSynchronize(*stream);
+                    REQUIRE_TRUE(refreshSync == cudaSuccess, 0,
+                                 "autoregressive_decode: rerun emission refresh sync "
+                                 "failed at step %d: %s", step,
+                                 cudaGetErrorString(refreshSync));
+                    DSP_DIAG(KV_CACHE,
+                             "RERUN_EMISSION_REFRESH step=%d verifyRow0=%lld "
+                             "rerunArgmax=%lld%s - emission taken from the asl=1 pass",
+                             step, (long long)argmaxDst[0], (long long)rerunRefreshedToken,
+                             rerunRefreshedToken != argmaxDst[0] ? " FLIPPED" : "");
+                }
             }
             // Commit recurrent state from the (possibly re-run) accepted-prefix pass.
             commitRecurrentState();
@@ -2634,13 +2722,14 @@ void autoregressiveDecode(
                 // predictor keeps its own position-keyed cache, so rewrite each
                 // committed row here as fused(committed token, target hidden at
                 // q-1), mirroring the target's accepted-prefix re-execution.
-                // specArgmaxDevice rows are still the raw verification argmaxes at
-                // this point (the emission rewrite below only touches host
-                // memory), so row j is exactly the token committed at position
-                // base+1+j: an accepted draft for j < acceptedDrafts, the
-                // correction/bonus for the final row. planOutputs holds the
-                // post-rerun hidden rows keyed by position - base, so row j pairs
-                // position q-1 with token q.
+                // planOutputs holds the post-rerun hidden rows keyed by position
+                // - base, so row j pairs position q-1 with token q.
+                // NOTE (rerun-refresh): device specArgmaxDevice[0] holds the
+                // RERUN argmax after the refresh block above (kernel write +
+                // stream sync); rows >= 1 remain the raw verification argmaxes.
+                // Under the single-token commit this loop is a no-op anyway; the
+                // host emission rewrite below re-uploads the refreshed token so
+                // host and device row 0 stay identical.
                 // NOTE (vLLM contract, unconditional repair): EVERY retained row
                 // must pair (x_q, target h_{q-1}) - trusting a chained slot's
                 // self-carried row poisons the predictor context from the first
@@ -2657,6 +2746,10 @@ void autoregressiveDecode(
                 // self-carry fires - executeMtpCuda reads its carry input
                 // during plan execution and only writes the self-carry
                 // afterwards - so the epilogue carry is never consumed stale.
+                // ADR 0106 Phase 2b: with the single-token commit, consumedCount is
+                // 1 and no row is retained beyond the base: this loop is a no-op and
+                // EVERY proposal row is hidden below. The repair machinery stays
+                // for the multi-token contract's return.
                 for (int j = 0; j < consumedCount - 1; j++) {
                     LongType repairPosition = basePosition + 1 + j;
                     setMtpTargetCarryCuda(
@@ -2692,12 +2785,31 @@ void autoregressiveDecode(
                     specArgmaxDevice, carryRow, nextMtpPosition);
             }
 
+            // Lossless reconstruction of the verify-pass emission sequence (kept
+            // for the multi-token contract's return): accepted drafts restore
+            // their proposal values and the correction/bonus takes the verify
+            // argmax at the first unaccepted row.
             LongType correctionOrBonus = argmaxDst[acceptedDrafts];
             for (int i = 0; i < acceptedDrafts; i++) {
                 argmaxDst[i] = draftIds[i];
             }
             argmaxDst[acceptedDrafts] = correctionOrBonus;
             int n = consumedCount;
+
+            // Emission rewrite (MUST BE LAST). The single-token commit emits
+            // exactly one token: the rerun's scalar argmax when the asl=1 pass
+            // produced the authoritative state (rerunRefreshedToken >= 0),
+            // otherwise the verification row-0 argmax (no-rerun steps are
+            // width-1 anyway, so the two are numerically equivalent there).
+            // Ordering matters: on an accepted step draftIds[0] == the verify
+            // row-0 argmax, so the draft restore above would clobber a rewrite
+            // made earlier back to the W-wide verification readout while the
+            // committed GDN/conv/KV state and the predictor next-input (epilogue
+            // D2D above) already carry the rerun token. Applying the rewrite
+            // last keeps host emission == device state == greedy continuation.
+            if (rerunRefreshedToken >= 0) {
+                argmaxDst[0] = rerunRefreshedToken;
+            }
 
             totalSpeculativeProposed += proposedCount;
             // Count accepted outputs actually emitted, including an accepted EOS.
