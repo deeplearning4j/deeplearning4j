@@ -60,11 +60,14 @@ import org.nd4j.autodiff.samediff.execution.DspDebugger;
 import org.nd4j.autodiff.samediff.execution.DspHandle;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor.NativeExecutionBinding;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor.BindingCaptureException;
 import org.nd4j.autodiff.samediff.execution.DynamicShapeSlot;
 import org.nd4j.autodiff.samediff.execution.PlanPhase;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.io.File;
 import java.io.IOException;
@@ -286,6 +289,8 @@ public class GenerationPipeline implements AutoCloseable {
      * Thread-confined to the pipeline's decode thread.
      */
     private InGraphKvState cachedFixedBufferState;
+    /** Retain retryable failed binding cleanup; never abandon its borrowed input owners. */
+    private InGraphKvState pendingScalarTargetCleanup;
 
     /**
      * Stable-address prefill inputs for the pre-built-embeddings entry point used by VLMs.
@@ -1535,6 +1540,13 @@ public class GenerationPipeline implements AutoCloseable {
                                                   ModelIOConfig.KVCacheNames kvInputNames,
                                                   long startTime, InGraphKvState reuseState,
                                                   boolean finishOneShotAfterPrefill) {
+        // A new prompt replaces the old scalar execution lease before any lifecycle reset.
+        // Continuation bypasses prefill and retains this binding unchanged.
+        if (pendingScalarTargetCleanup != null) {
+            pendingScalarTargetCleanup.closeScalarTarget();
+            pendingScalarTargetCleanup = null;
+        }
+        if (reuseState != null) reuseState.closeScalarTarget();
         // Continuation sessions retain their warmup and future-decode state.
         final boolean prefillExhaustsBudget = finishOneShotAfterPrefill && maxNewTokens == 1;
 
@@ -2414,12 +2426,80 @@ public class GenerationPipeline implements AutoCloseable {
         log.info("[GGUF-KV] STEP 3: warmup decode with {} KV buffers (V2={}), {} recurrent state buffers, {} inputs",
                 kvBufCount, isQuantizedV2, recurrentStateBuffers.size(), decodeInputMap.size());
 
-        Map<String, INDArray> decodeOutputs;
+        InGraphKvState scalarOwner = reuseState != null ? reuseState : new InGraphKvState();
         try {
+        Map<String, INDArray> decodeOutputs;
+        Map<String, INDArray> windowPreparationOutputs = null;
+        if (useNativeMtp) {
+            // Execute real width-one geometry from prefix P, not activeLength=1 on W.
+            // Recurrent inputs are private snapshots; immutable weights and KV stay shared.
+            Map<String, INDArray> owned = new LinkedHashMap<>();
+            scalarOwner.scalarTargetOwnedInputs = owned;
+            INDArray scalarIds = Nd4j.zeros(DataType.INT64, 1, 1);
+            scalarIds.putScalar(0, firstTokenId);
+            owned.put(inputIdsName, scalarIds);
+            owned.put(causalMaskName, DecoderInputBuilder.buildInGraphDecodeMask(firstDecodePos, maxKvLen, maskDtype));
+            owned.put(posOffsetName, Nd4j.scalar(DataType.INT64, firstDecodePos));
+            owned.put(cachePosName, Nd4j.scalar(DataType.INT64, firstDecodePos));
+            owned.put(ACTUAL_SEQUENCE_LENGTH_NAME, Nd4j.scalar(DataType.INT64, 1L));
+            for (Map.Entry<String, INDArray> entry : recurrentStateBuffers.entrySet()) {
+                owned.put(entry.getKey(), entry.getValue().dup('c'));
+            }
+            Map<String, INDArray> scalarMap = new HashMap<>(decodeInputMap);
+            scalarMap.putAll(owned);
+            Nd4j.getExecutioner().commit();
+            Map<String, INDArray> scalarResults = decoder.output(scalarMap, decodeOutputNames.toArray(new String[0]));
+            // Keep authoritative outputs independent of per-shape zero-copy readback caches.
+            decodeOutputs = new LinkedHashMap<>();
+            for (String name : decodeOutputNames) {
+                INDArray output = scalarResults.get(name);
+                if (output == null) throw new IllegalStateException("Missing scalar target output: " + name);
+                decodeOutputs.put(name, output.dup('c'));
+            }
+            DynamicShapePlanExecutor scalarExecutor = decoder.getOrCreateSession().getDynamicShapePlanExecutor();
+            if (scalarExecutor == null) throw new IllegalStateException("Scalar target native executor is unavailable");
+            scalarExecutor.setMaxKvCacheLength((int) maxKvLen);
+            scalarExecutor.configureMaxAllocationForKvCache(scalarResults, kvOutputNamesForMaxAlloc(kvInputNames));
+            // Freeze through the normal lifecycle; do not change the selected execution mode.
+            if (decoder.getGraphExecutionMode() != GraphExecutionMode.SLOT_BY_SLOT
+                    && !Nd4j.getEnvironment().tritonSkipKernels()) scalarExecutor.setShapesFrozen(true);
+            try {
+                scalarOwner.scalarTargetBinding = scalarExecutor.captureNativeExecutionBinding();
+            } catch (BindingCaptureException failure) {
+                scalarOwner.scalarTargetBinding = failure.getBinding();
+                throw failure;
+            }
+            // The window preparation must not replace the scalar warmup's committed KV row.
+            // GGUF KV is [batch, sequence, heads, headDim], including inline-scale INT8 storage.
+            Map<String, INDArray> committedRows = new LinkedHashMap<>();
+            try {
+                for (Map.Entry<String, INDArray> entry : kvSourceMap.entrySet()) {
+                    INDArray kv = entry.getValue();
+                    if (kv.rank() != 4 || kv.size(1) <= firstDecodePos) {
+                        throw new IllegalStateException("Invalid scalar target KV geometry: " + entry.getKey());
+                    }
+                    try (INDArray row = kv.get(NDArrayIndex.all(),
+                            NDArrayIndex.interval(firstDecodePos, firstDecodePos + 1),
+                            NDArrayIndex.all(), NDArrayIndex.all())) {
+                        committedRows.put(entry.getKey(), row.dup('c'));
+                    }
+                }
+                Nd4j.getExecutioner().commit();
+                // Shared recurrent inputs still hold prefix P: scalar used private copies.
+                windowPreparationOutputs = decoder.output(decodeInputMap, decodeOutputNames.toArray(new String[0]));
+            } finally {
+                for (Map.Entry<String, INDArray> entry : committedRows.entrySet()) {
+                    try (INDArray row = kvSourceMap.get(entry.getKey()).get(NDArrayIndex.all(),
+                            NDArrayIndex.interval(firstDecodePos, firstDecodePos + 1),
+                            NDArrayIndex.all(), NDArrayIndex.all())) {
+                        row.assign(entry.getValue());
+                    }
+                }
+                Nd4j.getExecutioner().commit();
+                for (INDArray row : committedRows.values()) row.close();
+            }
+        } else {
             decodeOutputs = decoder.output(decodeInputMap, decodeOutputNames.toArray(new String[0]));
-        } catch (Exception e) {
-            log.error("[GGUF-KV] STEP 3 warmup decode failed", e);
-            throw e;
         }
 
         INDArray targetWarmupHidden = useNativeMtp ? decodeOutputs.get(TARGET_HIDDEN_STATES_NAME) : null;
@@ -2532,7 +2612,9 @@ public class GenerationPipeline implements AutoCloseable {
             // max-length pinned — every decode step then allocates fresh full-length KV buffers
             // (~120MB/step on gemma4, filling a 24GB card by step ~224). The overload accepting
             // explicit names is the model-agnostic path.
-            executor.configureMaxAllocationForKvCache(decodeOutputs, kvOutputNamesForMaxAlloc(kvInputNames));
+            executor.configureMaxAllocationForKvCache(
+                    windowPreparationOutputs != null ? windowPreparationOutputs : decodeOutputs,
+                    kvOutputNamesForMaxAlloc(kvInputNames));
             log.info("[Perf] GGUF configured KV cache max-allocation: maxKvLen={}", maxKvLen);
             boolean forcedSlotBySlot = decoder.getGraphExecutionMode() == GraphExecutionMode.SLOT_BY_SLOT
                     || Nd4j.getEnvironment().tritonSkipKernels();
@@ -2556,6 +2638,11 @@ public class GenerationPipeline implements AutoCloseable {
         // Decode requested K/V outputs only to keep the DSP output contract identical to prefill.
         // The native loop updates the retained KV inputs in-place, so these one-step arrays are not owners.
         closeGeneratedKvOutputs(decodeOutputs, kvInputNames);
+        if (windowPreparationOutputs != null) {
+            for (INDArray output : windowPreparationOutputs.values()) {
+                if (output != null && !output.wasClosed()) output.close();
+            }
+        }
 
         int inputIdsExtIdx = resolveExtInputIdx(executor, inputIdsName);
         int causalMaskExtIdx = causalMaskName != null ? resolveExtInputIdx(executor, causalMaskName) : -1;
@@ -2635,7 +2722,7 @@ public class GenerationPipeline implements AutoCloseable {
         // On reuse, write back into the SAME retained state object (its buffers ARE the ones just
         // refilled in place) so no buffer is aliased by two states → no double-free. The index / handle
         // / running-state fields are refreshed below; the buffer fields are identity assignments.
-        InGraphKvState state = (reuseState != null) ? reuseState : new InGraphKvState();
+        InGraphKvState state = scalarOwner;
         // V2 QUANTIZED: float staticKvBuffers are freed; quantizedKvBuffers holds INT8 live storage.
         // V1 / STATIC: staticKvBuffers holds float live storage; quantizedKvBuffers is archive or null.
         state.staticKvBuffers = isQuantizedV2 ? null : staticKvBuffers;
@@ -2740,6 +2827,16 @@ public class GenerationPipeline implements AutoCloseable {
             state.closed = false;
         }
         return state;
+        } catch (RuntimeException | Error failure) {
+            try {
+                Nd4j.getExecutioner().commit();
+                scalarOwner.closeScalarTarget();
+            } catch (RuntimeException | Error cleanup) {
+                pendingScalarTargetCleanup = scalarOwner;
+                failure.addSuppressed(cleanup);
+            }
+            throw failure;
+        }
     }
 
     /** Map public configuration values (1..4) to the native op enum (0..3). */
@@ -4035,10 +4132,27 @@ public class GenerationPipeline implements AutoCloseable {
                                 state.mtpLogitsOutputIdx,
                                 state.mtpHiddenOutputIdx,
                                 state.targetHiddenOutputIdx);
+                        op.withScalarTargetPlan(state.scalarTargetBinding,
+                                state.executor.getCurrentPlan().getExternalInputKeys(), state.decodeOutputNames,
+                                state.inputIdsName, state.causalMaskName, state.posOffsetName,
+                                state.cachePosName, state.actualSeqLenName,
+                                state.logitsName, TARGET_HIDDEN_STATES_NAME);
                     }
                 }
                 applyConfiguredStopSequences(op, state.generatedSoFar);
 
+                NativeExecutionBinding scalarBinding = state.scalarTargetBinding;
+                if (scalarBinding != null) {
+                    // Validate the backend owner; device placement is enforced by the
+                    // executor lifecycle itself (ensureExecutionDevice switches the thread
+                    // to the plan's execution device before executeNative, and the native
+                    // decode runs on the plan-owned DSP stream of that same device).
+                    if (scalarBinding.getBackendOwner().nativeOps() != NativeOpsHolder.getInstance().getDeviceNativeOps()) {
+                        throw new IllegalStateException("Scalar binding backend differs from native decode execution");
+                    }
+                    scalarBinding.beginNativeUse();
+                }
+                try {
                 INDArray[] results = Nd4j.getExecutioner().exec(op);
                 INDArray nativeTokenIds = results[0];
                 INDArray nativeTokenCount = results[1];
@@ -4062,6 +4176,14 @@ public class GenerationPipeline implements AutoCloseable {
                 closeOutputs(results);
                 dummyEmbeddings.close();
                 dummyEmbTable.close();
+                } finally {
+                    if (scalarBinding != null) {
+                        // The helper submits both plans on this op's supplied execution stream.
+                        // Drain even on failure; do not release ownership if completion fails.
+                        Nd4j.getExecutioner().commit();
+                        scalarBinding.completeNativeUse();
+                    }
+                }
             }
             // Token count/timing reads above are the native op's existing host-visible boundary.
             state.releaseRecurrentCopyDonors();
@@ -5289,6 +5411,8 @@ public class GenerationPipeline implements AutoCloseable {
         int hiddenOutputIdx;
         int numPlanExternalInputs;
         int numPlanOutputs;
+        // T3b-dual: width-1 target plan handle (greedy geometry) for the native
+        // rerun; null when unavailable (rerun falls back to the W-substrate plan).
     }
 
     /**
@@ -8222,6 +8346,16 @@ public class GenerationPipeline implements AutoCloseable {
      * <p>This method is a no-op if the decoder is null or has already been closed.</p>
      */
     public void suspend() {
+        if (pendingScalarTargetCleanup != null) {
+            pendingScalarTargetCleanup.closeScalarTarget();
+            pendingScalarTargetCleanup = null;
+        }
+        if (cachedFixedBufferState != null) {
+            cachedFixedBufferState.close();
+            cachedFixedBufferState = null;
+        }
+        GenerationSession scalarSession = activeSession.get();
+        if (scalarSession != null) scalarSession.state.releaseScalarTargetBinding();
         // Close any open continuation session — it holds KV buffers and a plan handle
         // into native memory that may be invalidated by a device-lost event.
         GenerationSession openSession = activeSession.getAndSet(null);
@@ -8253,6 +8387,12 @@ public class GenerationPipeline implements AutoCloseable {
      */
     @Override
     public void close() {
+        // Executor teardown rejects live bindings. Release leases first, retaining all arrays
+        // until the existing borrower-retirement boundary below has completed.
+        if (pendingScalarTargetCleanup != null) pendingScalarTargetCleanup.releaseScalarTargetBinding();
+        if (cachedFixedBufferState != null) cachedFixedBufferState.releaseScalarTargetBinding();
+        GenerationSession scalarSession = activeSession.get();
+        if (scalarSession != null) scalarSession.state.releaseScalarTargetBinding();
         // Every retained generation state below owns arrays whose addresses are
         // borrowed by the decoder's InferenceSession/native DSP plan. Retire
         // that borrower before closing any state, including when the decoder
@@ -8272,6 +8412,10 @@ public class GenerationPipeline implements AutoCloseable {
         }
         if (!decoderBorrowersRetired) {
             return;
+        }
+        if (pendingScalarTargetCleanup != null) {
+            pendingScalarTargetCleanup.closeScalarTarget();
+            pendingScalarTargetCleanup = null;
         }
 
         // Close any open continuation session first — it holds retained KV buffers and a plan handle

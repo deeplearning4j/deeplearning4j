@@ -24,6 +24,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor.NativeExecutionBinding;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -947,6 +948,7 @@ public class AutoregressiveDecode extends DynamicCustomOp {
             int mtpHiddenOutputIdx,
             int targetHiddenOutputIdx) {
 
+
         if (mtpInputIds == null || mtpTargetHiddenStates == null || mtpCausalMask == null
                 || mtpPositionOffset == null || mtpCachePosition == null) {
             throw new IllegalArgumentException("withMtpPlan requires all five mutable MTP inputs");
@@ -1009,6 +1011,71 @@ public class AutoregressiveDecode extends DynamicCustomOp {
             if (tArguments.size() == index) tArguments.add(metadata[i]);
             else tArguments.set(index, metadata[i]);
         }
+        return this;
+    }
+
+    /**
+     * Attach a leased width-one target execution. The caller owns the binding and its inputs,
+     * and brackets execution AND readback with beginNativeUse/completeNativeUse.
+     * No output or external-input ordering is inferred from the window plan.
+     *
+     * <p>tArgs 43/44 remain repetition limits. Scalar ABI: 45..48 plan/context unsigned
+     * pointer halves; 49 logits; 50 target hidden; 51/52 captured input/output counts;
+     * 53..57 ids/mask/position/cache/active-length indices; 58/59 mapping lengths;
+     * 60+ scalar-input-to-window-input map, then window-output-to-scalar-output map.</p>
+     */
+    public AutoregressiveDecode withScalarTargetPlan(
+            NativeExecutionBinding binding, String[] targetInputKeys, List<String> targetOutputs,
+            String inputIdsName, String causalMaskName, String positionOffsetName,
+            String cachePositionName, String actualSequenceLengthName,
+            String logitsName, String targetHiddenName) {
+        if (binding == null || speculatorType != SPECULATOR_TYPE_MTP
+                || targetInputKeys == null || targetOutputs == null) {
+            throw new IllegalArgumentException("Scalar target requires an MTP plan and complete named mappings");
+        }
+        String[] scalarKeys = binding.getExternalInputKeysSnapshot();
+        INDArray[] scalarInputs = binding.getExternalInputsSnapshot();
+        int ids = binding.findExternalInputIndex(inputIdsName);
+        int mask = binding.findExternalInputIndex(causalMaskName);
+        int pos = binding.findExternalInputIndex(positionOffsetName);
+        int cache = binding.findExternalInputIndex(cachePositionName);
+        int active = binding.findExternalInputIndex(actualSequenceLengthName);
+        int logits = binding.findOutputIndex(logitsName);
+        int hidden = binding.findOutputIndex(targetHiddenName);
+        if (ids < 0 || mask < 0 || pos < 0 || cache < 0 || active < 0 || logits < 0 || hidden < 0) {
+            throw new IllegalArgumentException("Scalar target is missing a required input/output name");
+        }
+        if (!Arrays.equals(scalarInputs[ids].shape(), new long[]{1, 1})
+                || scalarInputs[ids].dataType() != DataType.INT64
+                || scalarInputs[mask].rank() != 4 || scalarInputs[mask].size(0) != 1
+                || scalarInputs[mask].size(1) != 1 || scalarInputs[mask].size(2) != 1) {
+            throw new IllegalArgumentException("Scalar target requires ids [1,1] INT64 and mask [1,1,1,L]");
+        }
+        for (int index : new int[]{pos, cache, active}) {
+            if (scalarInputs[index].length() != 1 || scalarInputs[index].dataType() != DataType.INT64) {
+                throw new IllegalArgumentException("Scalar position/cache/active length must be INT64 scalars");
+            }
+        }
+        List<Double> metadata = new ArrayList<>();
+        long plan = binding.getPlanHandle().address(), context = binding.getContextHandle().address();
+        for (double value : new double[]{plan & 0xFFFFFFFFL, (plan >>> 32) & 0xFFFFFFFFL,
+                context & 0xFFFFFFFFL, (context >>> 32) & 0xFFFFFFFFL, logits, hidden,
+                binding.getInputCount(), binding.getOutputCount(), ids, mask, pos, cache, active,
+                scalarKeys.length, targetOutputs.size()}) metadata.add(value);
+        List<String> targetKeys = Arrays.asList(targetInputKeys);
+        for (String key : scalarKeys) {
+            int index = targetKeys.indexOf(key);
+            if (index < 0) throw new IllegalArgumentException("Unmapped scalar external input: " + key);
+            metadata.add((double) index);
+        }
+        for (String output : targetOutputs) {
+            int index = binding.findOutputIndex(output);
+            if (index < 0) throw new IllegalArgumentException("Unmapped scalar output: " + output);
+            metadata.add((double) index);
+        }
+        while (tArguments.size() < 45) tArguments.add(0.0);
+        while (tArguments.size() > 45) tArguments.remove(tArguments.size() - 1);
+        tArguments.addAll(metadata);
         return this;
     }
 

@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor.NativeExecutionBinding;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.AutoregressiveDecode;
@@ -51,6 +52,81 @@ public class TestNativeSpeculativeStateParity {
                     "active-length-one window must implement the scalar target");
             assertArrayEquals(scalarLogits, decodeAndInspect(rejected, predictor, gdn, conv), 0.0f,
                     "rejected verification must not contaminate the subsequent target step");
+        }
+    }
+
+    @Test
+    public void testScalarTargetRerunMatchesGreedyGeometry() {
+        // Same teacher-forced prefix as the reject oracle. The scalar binding must be a REAL
+        // width-one plan (own context, width-1 ids) and the speculative op must execute the
+        // rerun through it: remapped logits and committed state equal the independent scalar
+        // target's outputs, and the predictor carry comes from the remapped hidden output.
+        float gdn = 3, conv = 7;
+        for (int token : new int[]{1, 1}) {
+            gdn += token + 1;
+            conv += 10 * (token + 1);
+        }
+        try (TinyPlan scalar = new TinyPlan(1, false);
+             TinyPlan window = new TinyPlan(3, false);
+             TinyPlan predictor = new TinyPlan(1, true)) {
+            // The scalar binding must come from the REAL width-one plan: capture it from the
+            // width-1 target after a completed execution, exactly like the pipeline does at warmup.
+            // The window plan (width 3) then plays the verification substrate.
+            DynamicShapePlanExecutor s = scalar.executor;
+            decodeAndInspect(scalar, null, gdn, conv);
+            s.setShapesFrozen(true);
+            try (NativeExecutionBinding binding = s.captureNativeExecutionBinding()) {
+                assertEquals(1, binding.getExternalInputsSnapshot()[binding.findExternalInputIndex("ids")].size(1),
+                        "captured scalar binding must be width-one geometry");
+                DynamicShapePlanExecutor t = window.executor;
+                DynamicShapePlanExecutor p = predictor.executor;
+                AutoregressiveDecode op = new AutoregressiveDecode(
+                        Nd4j.zeros(DataType.FLOAT, 1, 1, 1), Nd4j.ones(DataType.FLOAT, 2, 1),
+                        window.input("ids"), window.input("mask"),
+                        Nd4j.valueArrayOf(new long[]{1, 1}, START, DataType.INT64),
+                        null, t.getNativePlanHandle(), t.getCachedOpContext(),
+                        t.getCurrentPlan().getExternalInputKeys().length, window.outputs.size(),
+                        -1, -1, window.ext("mask"), -1, window.ext("ids"), window.out("logits"),
+                        -1, window.ext("position"), window.ext("cache_position"),
+                        new int[0], new int[0],
+                        new int[]{window.ext("gdn")}, new int[]{window.out("gdn_next")},
+                        new int[]{window.ext("conv")}, new int[]{window.out("conv_next")},
+                        2, -1, 0, START, 0.0, 0, 0.0, 1.0, Set.of());
+                op.withDecodePolicy(AutoregressiveDecode.DECODE_STRATEGY_SPECULATIVE,
+                        1, window.width, 1, 1, -1, 1, 1.0, 0.0, 0)
+                        .withActualSequenceLengthExtIdx(window.ext("actual_length"))
+                        .withSpeculativeDecoding(window.width - 1, AutoregressiveDecode.SPECULATOR_TYPE_MTP)
+                        .withMtpPlan(predictor.input("ids"), predictor.input("carry"),
+                                predictor.input("mask"), predictor.input("position"),
+                                predictor.input("cache_position"),
+                                new INDArray[]{predictor.input("key"), predictor.input("value")},
+                                p.getNativePlanHandle(), p.getCachedOpContext(),
+                                p.getCurrentPlan().getExternalInputKeys().length, predictor.outputs.size(),
+                                predictor.ext("ids"), predictor.ext("carry"), predictor.ext("mask"),
+                                predictor.ext("position"), predictor.ext("cache_position"),
+                                new int[]{predictor.ext("key"), predictor.ext("value")},
+                                predictor.out("logits"), predictor.out("hidden"), window.out("hidden"))
+                        .withScalarTargetPlan(binding, window.executor.getCurrentPlan().getExternalInputKeys(),
+                                window.outputs, "ids", "mask", "position", "cache_position",
+                                "actual_length", "logits", "hidden");
+                binding.beginNativeUse();
+                try {
+                    INDArray[] result = Nd4j.getExecutioner().exec(op);
+                    assertEquals(2, result[1].getLong(0));
+                    assertEquals(1, result[0].getLong(0), "emitted token must come from the scalar rerun");
+                    assertEquals(0, result[2].getFloat(8), 0.0f, "forced zero acceptance");
+                    assertEquals(gdn, window.input("gdn").getFloat(0), 0.0f,
+                            "committed GDN must match the independent scalar advance");
+                    assertEquals(conv, window.input("conv").getFloat(0), 0.0f,
+                            "committed conv must match the independent scalar advance");
+                    assertEquals(gdn + conv, predictor.input("carry").getFloat(0), 0.0f,
+                            "predictor carry must come from the remapped scalar hidden");
+                    assertPendingState(window);
+                } finally {
+                    Nd4j.getExecutioner().commit();
+                    binding.completeNativeUse();
+                }
+            }
         }
     }
 

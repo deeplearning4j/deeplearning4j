@@ -141,8 +141,19 @@ SD_LIB_EXPORT sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
                                              int newBorrower);
 
 /**
+ * Acquire one independent cache lease without redispatch or plan-resource mutation.
+ * Returns 1 on acquisition, 0 for null handles, nonmember plans, shutdown,
+ * clear-pending caches, or lease-count overflow. Does not dereference planHandle.
+ * A successful retain must be paired with one unpinNativePlan call.
+ * The caller must keep cacheHandle alive; this protects cache residency only,
+ * not executor resource retirement, execution, or external-buffer lifetimes.
+ */
+SD_LIB_EXPORT int retainNativePlan(sd::Pointer cacheHandle, sd::Pointer planHandle);
+
+/**
  * Unpin a plan handle, making it eligible for LRU eviction.
- * Must be called once for every borrower lease acquired from dispatchNativePlan,
+ * Must be called once for every borrower lease acquired from dispatchNativePlan
+ * or retainNativePlan,
  * when Java swaps away from a plan or closes the executor. The cache keeps the
  * plan eviction-protected until the final lease is released.
  *

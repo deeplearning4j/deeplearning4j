@@ -23,6 +23,7 @@ package org.eclipse.deeplearning4j.llm.generation;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor.NativeExecutionBinding;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -194,6 +195,28 @@ class InGraphKvState implements AutoCloseable {
     int mtpNumPlanExternalInputs;
     int mtpNumPlanOutputs;
 
+    /** T3b-dual: width-1 target plan (greedy geometry) for the native rerun; null when unavailable. */
+    NativeExecutionBinding scalarTargetBinding;
+    /** Only private scalar geometry and recurrent snapshots; never weights or shared KV. */
+    Map<String, INDArray> scalarTargetOwnedInputs;
+
+    void releaseScalarTargetBinding() {
+        if (scalarTargetBinding != null) {
+            scalarTargetBinding.close();
+            scalarTargetBinding = null;
+        }
+    }
+
+    void closeScalarTarget() {
+        releaseScalarTargetBinding();
+        if (scalarTargetOwnedInputs != null) {
+            for (INDArray input : scalarTargetOwnedInputs.values()) {
+                if (input != null && !input.wasClosed()) input.close();
+            }
+            scalarTargetOwnedInputs = null;
+        }
+    }
+
     // ── Running decode state ─────────────────────────────────────────────────────────────────────
     /** Absolute position at which the next-fed token ({@link #lastGeneratedToken}) is written: {@code P + G - 1}. */
     volatile int cachePosition;
@@ -291,6 +314,9 @@ class InGraphKvState implements AutoCloseable {
     @Override
     public void close() {
         if (closed) return;
+        // Lease/context wrappers must be released before any borrowed buffers or sessions.
+        // Leave ownership retryable if binding teardown fails.
+        closeScalarTarget();
         closed = true;
         // Destroy the isolated predictor plan before releasing any external inputs it references.
         if (mtpSession != null) {

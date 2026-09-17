@@ -699,6 +699,109 @@ void autoregressiveDecode(
     int numPlanOutputs = plan->getNumRequestedOutputs();
     std::vector<NDArray*> planOutputsVec(numPlanOutputs, nullptr);
     NDArray** planOutputs = planOutputsVec.data();
+    const bool useScalarTarget = config->scalarPlanHandle != nullptr;
+    std::vector<NDArray*> scalarInputs(config->scalarNumPlanExternalInputs, nullptr);
+    std::vector<NDArray*> scalarOutputs(config->scalarNumPlanOutputs, nullptr);
+    if (useScalarTarget) {
+        auto* scalarContext = reinterpret_cast<graph::Context*>(config->scalarExtInputContext);
+        // Build the reverse map (window ext idx -> scalar ext idx) once. The W plan marks
+        // shared KV as variable+device-managed (lines ~1885) precisely so the plan stages
+        // them WITHOUT a writable-copy migration; the scalar plan must treat shared KV,
+        // weights and derived inputs the same way or FLOAT8 quantized KV triggers a
+        // memcpyWithT migration that has no FLOAT8 case.
+        std::vector<char> scalarIsDeviceManaged(config->scalarNumPlanExternalInputs, 0);
+        for (int i = 0; i < config->scalarNumPlanExternalInputs; ++i) {
+            int ti = config->scalarInputToTarget[i];
+            NDArray* scalarArr = scalarContext->array(i);
+            // Buffer-identical inputs (shared KV) are the same storage the W plan
+            // registers as device-managed; mirror that registration on the scalar plan.
+            bool shared = ti >= 0 && ti < numExtInputs && extInputs[ti] != nullptr
+                          && scalarArr != nullptr
+                          && scalarArr->dataBuffer() == extInputs[ti]->dataBuffer();
+            for (int s = 0; s < config->numGdnStatePairs && !shared; ++s) {
+                shared = config->gdnStateExtIndices != nullptr
+                         && config->scalarInputToTarget[config->gdnStateExtIndices[s]] == ti;
+            }
+            for (int s = 0; s < config->numConvStatePairs && !shared; ++s) {
+                shared = config->convStateExtIndices != nullptr
+                         && config->scalarInputToTarget[config->convStateExtIndices[s]] == ti;
+            }
+            bool geometry = i == config->scalarInputIdsExtIdx || i == config->scalarCausalMaskExtIdx
+                || i == config->scalarPositionOffsetExtIdx || i == config->scalarCachePositionExtIdx
+                || i == config->scalarActualSequenceLengthExtIdx;
+            if (shared || geometry) {
+                scalarIsDeviceManaged[i] = 1;
+                config->scalarPlanHandle->markExternalInputVariable(i);
+                if (shared && ti >= 0 && ti < numExtInputs && extInputs[ti] != nullptr) {
+                    config->scalarPlanHandle->registerDeviceManagedExternalInput(scalarArr);
+                } else if (scalarArr != nullptr) {
+                    // geometry inputs are device-written in place each step (op kernels)
+                    config->scalarPlanHandle->registerDeviceManagedExternalInput(scalarArr);
+                }
+            }
+            scalarInputs[i] = scalarArr;
+        }
+    }
+    // Snapshot BEFORE the window forward. Private recurrent inputs protect the prefix even
+    // when a verifier op mutates its input. KV rows are shared and overwritten at the same slot.
+    auto prepareScalarTarget = [&]() {
+        for (int i = 0; i < config->scalarNumPlanExternalInputs; ++i) {
+            NDArray* dst = scalarInputs[i];
+            NDArray* src = extInputs[config->scalarInputToTarget[i]];
+            if (dst->dataBuffer() == src->dataBuffer()) continue;
+            bool geometry = i == config->scalarInputIdsExtIdx || i == config->scalarCausalMaskExtIdx
+                || i == config->scalarPositionOffsetExtIdx || i == config->scalarCachePositionExtIdx
+                || i == config->scalarActualSequenceLengthExtIdx;
+            bool recurrent = false;
+            for (int s = 0; s < config->numGdnStatePairs && !recurrent; ++s) {
+                recurrent = config->gdnStateExtIndices != nullptr
+                    && config->scalarInputToTarget[config->gdnStateExtIndices[s]] == config->scalarInputToTarget[i];
+            }
+            for (int s = 0; s < config->numConvStatePairs && !recurrent; ++s) {
+                recurrent = config->convStateExtIndices != nullptr
+                    && config->scalarInputToTarget[config->convStateExtIndices[s]] == config->scalarInputToTarget[i];
+            }
+            // Geometry and recurrent snapshots are refreshed from the window plan each
+            // call. Shared KV is buffer-identical (skipped above). Everything else -
+            // graph weights and derived plan-internal inputs - keeps the CAPTURED value:
+            // weights are immutable and derived inputs are width-specific.
+            if (!geometry && !recurrent) continue;
+            REQUIRE_TRUE(dst->lengthOf() <= src->lengthOf(), 0,
+                         "autoregressive_decode: scalar source is smaller than captured input");
+            NDArray::prepareSpecialUse({dst}, {src});
+            auto error = cudaMemcpyAsync(dst->specialBuffer(), src->specialBuffer(),
+                dst->lengthOf() * dst->sizeOfT(), cudaMemcpyDeviceToDevice, *stream);
+            REQUIRE_TRUE(error == cudaSuccess, 0, "autoregressive_decode: scalar input copy failed: %s",
+                         cudaGetErrorString(error));
+            NDArray::registerSpecialUse({dst}, {src});
+        }
+        NDArray* active = scalarInputs[config->scalarActualSequenceLengthExtIdx];
+        NDArray::prepareSpecialUse({active}, {});
+        updatePositionIdsKernel<<<1, 1, 0, *stream>>>(active->specialBuffer(), 1);
+        NDArray::registerSpecialUse({active}, {});
+    };
+    auto executeScalarTarget = [&]() {
+        DSP_DIAG(KV_CACHE, "SCALAR_TARGET_SELECTED plan=%p idsWidth=1 maskRows=1 position=%lld inputs=%d outputs=%d",
+                 config->scalarPlanHandle, static_cast<long long>(currentPosition),
+                 config->scalarNumPlanExternalInputs, config->scalarNumPlanOutputs);
+        Status status = config->scalarPlanHandle->executeSteadyState(
+            scalarInputs.data(), config->scalarNumPlanExternalInputs,
+            scalarOutputs.data(), config->scalarNumPlanOutputs,
+            reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)));
+        if (status == Status::OK) {
+            for (int i = 0; i < numPlanOutputs; ++i) {
+                planOutputs[i] = scalarOutputs[config->targetOutputToScalar[i]];
+                REQUIRE_TRUE(planOutputs[i] != nullptr, 0,
+                             "autoregressive_decode: scalar target returned a null requested output");
+            }
+            auto* logits = scalarOutputs[config->scalarLogitsOutputIdx];
+            REQUIRE_TRUE(logits->rankOf() >= 2 && logits->rankOf() <= 3
+                             && logits->sizeAt(0) == 1
+                             && (logits->rankOf() == 2 || logits->sizeAt(1) == 1), 0,
+                         "autoregressive_decode: scalar target returned non-scalar logits geometry");
+        }
+        return status;
+    };
 
     REQUIRE_TRUE(extCtx != nullptr || config->planExternalInputs != nullptr, 0,
                  "autoregressive_decode: no external input source. "
@@ -2107,7 +2210,8 @@ void autoregressiveDecode(
         }
 
         queuePreExecStateSamples(step, currentPosition);
-        Status planStatus = plan->executeSteadyState(
+        if (useScalarTarget) prepareScalarTarget();
+        Status planStatus = useScalarTarget && proposedCount == 0 ? executeScalarTarget() : plan->executeSteadyState(
             extInputs, numExtInputs,
             planOutputs, numPlanOutputs,
             reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)));
@@ -2627,7 +2731,7 @@ void autoregressiveDecode(
                 // greedy scalar path presents - before re-executing, then restore
                 // the verification window below. Costs nothing: a second pass
                 // already runs every step.
-                if (useWindowSubstrate && config->windowMax > 1) {
+                if (!useScalarTarget && useWindowSubstrate && config->windowMax > 1) {
                     NDArray* wMask = config->windowGridMask;
                     NDArray* wPos  = config->windowPositionGrid;
                     const LongType wMaxForRerun = static_cast<LongType>(config->windowMax);
@@ -2673,9 +2777,10 @@ void autoregressiveDecode(
                     }
                     setKvScaleRegistry(tl_kvQuantPtrsRerun.data(), config->kvScaleBuffers, numKvPairs);
                 }
-                Status rerunStatus = plan->executeSteadyState(
-                    extInputs, numExtInputs,
-                    planOutputs, numPlanOutputs,
+                // The binding's context supplies captured width-one arrays, not the window
+                // arrays. All authoritative outputs are remapped by name for state/carry commit.
+                Status rerunStatus = useScalarTarget ? executeScalarTarget() : plan->executeSteadyState(
+                    extInputs, numExtInputs, planOutputs, numPlanOutputs,
                     reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)));
                 if (config->kvQuantFormat > 0 && config->kvScaleBuffers != nullptr) {
                     clearKvScaleRegistry();

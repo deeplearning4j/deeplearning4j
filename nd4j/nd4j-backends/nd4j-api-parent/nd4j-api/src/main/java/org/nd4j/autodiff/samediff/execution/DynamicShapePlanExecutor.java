@@ -246,6 +246,239 @@ public class DynamicShapePlanExecutor implements Closeable {
     /** Cache leases owned by this executor, including both sides of a frozen prefill/decode switch. */
     private final Map<Long, Pointer> pinnedPlanHandles = new HashMap<>();
 
+    /** Independent bindings retain both native resources and their exact Java input owners. */
+    private final Set<NativeExecutionBinding> nativeExecutionBindings = new HashSet<>();
+    private NativeBufferOwner completedExecutionOwner;
+    private Pointer completedExecutionHandle;
+    private DynamicShapePlan completedExecutionPlan;
+    private INDArray[] completedExecutionInputs;
+    private String[] completedExecutionKeys;
+    private List<String> completedExecutionOutputs;
+    private NativeExecutionBinding activeNativeBinding;
+
+    private void invalidateCompletedExecution() {
+        completedExecutionOwner = null;
+        completedExecutionHandle = null;
+        completedExecutionPlan = null;
+        completedExecutionInputs = null;
+        completedExecutionKeys = null;
+        completedExecutionOutputs = null;
+    }
+
+    private boolean hasNativeBinding(long address) {
+        for (NativeExecutionBinding binding : nativeExecutionBindings) {
+            if (binding.planHandle.address() == address) return true;
+        }
+        return false;
+    }
+
+    private void requireNoNativeBindings(String operation) {
+        if (!nativeExecutionBindings.isEmpty()) {
+            throw new IllegalStateException(operation + " would invalidate live native execution bindings");
+        }
+    }
+
+    /**
+     * Capture the last successfully completed current native execution. The caller must serialize
+     * capture with its logical execution sequence. No device synchronization is added here.
+     * Native use MUST be bracketed by beginNativeUse()/completeNativeUse(); completion is the
+     * caller's assertion that all submitted work AND output readback have finished.
+     */
+    public NativeExecutionBinding captureNativeExecutionBinding() {
+        nativeExecLock.lock();
+        int callerDevice = currentDeviceForTeardown();
+        NativeExecutionBinding binding = null;
+        try {
+            if (closed || activeNativeBinding != null || migrationCleanupPending || outputReadbackThread != null
+                    || completedExecutionOwner == null || completedExecutionHandle != nativePlanHandle
+                    || completedExecutionPlan != currentPlan || nativePlanCacheHandle == null
+                    || nativePlanCacheHandle.isNull() || nativePlanHandle == null || nativePlanHandle.isNull()) {
+                throw new IllegalStateException("Binding requires a completed current native execution");
+            }
+            INDArray[] inputs = completedExecutionInputs;
+            String[] keys = completedExecutionKeys;
+            if (inputs == null || keys == null || inputs.length != keys.length) {
+                throw new IllegalStateException("Completed execution input mapping is unavailable");
+            }
+            binding = new NativeExecutionBinding(completedExecutionOwner,
+                    nativePlanCacheHandle, nativePlanHandle, keys, inputs,
+                    new ArrayList<>(completedExecutionOutputs));
+            nativeExecutionBindings.add(binding);
+            try (MemoryWorkspace ignored = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                ensureExecutionDevice();
+                binding.populate();
+                return binding;
+            } catch (RuntimeException | Error failure) {
+                try { binding.close(); } catch (RuntimeException | Error cleanup) {
+                    failure.addSuppressed(cleanup);
+                    throw new BindingCaptureException(binding, failure);
+                }
+                throw failure;
+            }
+        } finally {
+            try {
+                restoreCallerDeviceAfterTeardown(callerDevice);
+            } catch (RuntimeException | Error restoreFailure) {
+                if (binding != null) {
+                    try { binding.close(); } catch (RuntimeException | Error cleanup) {
+                        restoreFailure.addSuppressed(cleanup);
+                        throw new BindingCaptureException(binding, restoreFailure);
+                    }
+                }
+                throw restoreFailure;
+            } finally {
+                nativeExecLock.unlock();
+            }
+        }
+    }
+
+    /** Failed partial cleanup retains ownership; retry close through the returned binding. */
+    public static final class BindingCaptureException extends IllegalStateException {
+        private final NativeExecutionBinding binding;
+
+        private BindingCaptureException(NativeExecutionBinding binding, Throwable cause) {
+            super("Binding capture failed and cleanup must be retried", cause);
+            this.binding = binding;
+        }
+
+        public NativeExecutionBinding getBinding() { return binding; }
+    }
+
+    /**
+     * An independent native plan lease and context; inputs are borrowed, never closed here.
+     * Do not close/rebind the exposed context or wrappers yourself. Do not close input arrays,
+     * their buffers, the model or its native cache until this binding is closed. In-place input
+     * updates must also be serialized with native use. Native handles are valid only while open.
+     */
+    public final class NativeExecutionBinding implements AutoCloseable {
+        private final NativeBufferOwner owner;
+        private final Pointer cacheHandle;
+        private final Pointer planHandle;
+        private final int executionDevice;
+        private final String[] keys;
+        private final INDArray[] inputs;
+        private final List<String> outputs;
+        private final OpaqueNDArray[] inputWrappers;
+        private final OpaqueNDArray[] outputWrappers;
+        private final INDArray[] placeholders;
+        private OpaqueContext context;
+        private boolean leaseHeld;
+        private volatile boolean bindingClosed;
+        private Thread useThread;
+
+        private NativeExecutionBinding(NativeBufferOwner owner, Pointer cache, Pointer plan,
+                                       String[] keys, INDArray[] inputs, List<String> outputs) {
+            this.owner = owner;
+            this.cacheHandle = cache;
+            this.planHandle = plan;
+            this.executionDevice = nativeExecutionDevice;
+            this.keys = keys.clone();
+            this.inputs = inputs.clone();
+            this.outputs = Collections.unmodifiableList(outputs);
+            inputWrappers = new OpaqueNDArray[inputs.length];
+            outputWrappers = new OpaqueNDArray[outputs.size()];
+            placeholders = new INDArray[outputs.size()];
+        }
+
+        private void populate() {
+            // Validate before acquiring a lease or allocating context resources.
+            for (int i = 0; i < inputs.length; i++) {
+                INDArray input = inputs[i];
+                if (keys[i] == null || input == null || input.wasClosed()
+                        || input.shapeInfoDataBuffer() == null || input.shapeInfoDataBuffer().wasClosed()
+                        || (!input.isEmpty() && (input.data() == null || input.data().wasClosed()))) {
+                    throw new IllegalStateException("Invalid captured external input at index " + i);
+                }
+            }
+            if (owner.nativeOps().retainNativePlan(cacheHandle, planHandle) != 1) {
+                throw new IllegalStateException("Native cache rejected execution binding lease");
+            }
+            leaseHeld = true;
+            context = OpaqueContext.create(owner, 1);
+            for (int i = 0; i < inputs.length; i++) {
+                inputWrappers[i] = OpaqueNDArray.fromINDArrayUncached(owner, inputs[i]);
+                owner.nativeOps().setGraphContextInputArray(context, i, inputWrappers[i]);
+            }
+            for (int i = 0; i < outputs.size(); i++) {
+                placeholders[i] = Nd4j.scalar(DataType.FLOAT, 0.0f);
+                outputWrappers[i] = OpaqueNDArray.fromINDArrayUncached(owner, placeholders[i]);
+                owner.nativeOps().setGraphContextOutputArray(context, i, outputWrappers[i]);
+            }
+        }
+
+        private void requireOpen() {
+            if (bindingClosed || context == null) throw new IllegalStateException("Native execution binding is not open");
+        }
+
+        public NativeBufferOwner getBackendOwner() { requireOpen(); return owner; }
+        public int getExecutionDevice() { return executionDevice; }
+        public Pointer getPlanHandle() { requireOpen(); return planHandle; }
+        public Pointer getCacheHandle() { requireOpen(); return cacheHandle; }
+        public OpaqueContext getContextHandle() { requireOpen(); return context; }
+        public int getInputCount() { return keys.length; }
+        public int getOutputCount() { return outputs.size(); }
+        public String[] getExternalInputKeysSnapshot() { return keys.clone(); }
+        public INDArray[] getExternalInputsSnapshot() { requireOpen(); return inputs.clone(); }
+        public List<String> getRequestedOutputs() { return outputs; }
+        public int findExternalInputIndex(String name) {
+            return DynamicShapePlanExecutor.findExternalInputIndex(keys, name);
+        }
+        public int findOutputIndex(String name) { return outputs.indexOf(name); }
+
+        /**
+         * Hold executor serialization until the caller has proved native completion.
+         * The caller must execute through getBackendOwner() on getExecutionDevice();
+         * do not call executor mutation APIs from inside this reentrant critical section.
+         */
+        public void beginNativeUse() {
+            nativeExecLock.lock();
+            boolean acquired = false;
+            try {
+                requireOpen();
+                if (activeNativeBinding != null) throw new IllegalStateException("Native binding already in use");
+                activeNativeBinding = this;
+                useThread = Thread.currentThread();
+                acquired = true;
+            } finally {
+                if (!acquired) nativeExecLock.unlock();
+            }
+        }
+
+        /** Call on the begin thread ONLY AFTER device work and output readback complete. */
+        public void completeNativeUse() {
+            if (useThread != Thread.currentThread() || activeNativeBinding != this) {
+                throw new IllegalStateException("Native use must complete on its issuing thread");
+            }
+            useThread = null;
+            activeNativeBinding = null;
+            nativeExecLock.unlock();
+        }
+
+        @Override
+        public void close() {
+            nativeExecLock.lock();
+            try {
+                if (bindingClosed) return;
+                if (useThread != null) throw new IllegalStateException("Complete native use before closing binding");
+                // Retryable ordered cleanup: never drop ownership after a failed release.
+                if (context != null) { context.close(); context = null; }
+                for (int i = 0; i < inputWrappers.length; i++) {
+                    if (inputWrappers[i] != null) { inputWrappers[i].close(); inputWrappers[i] = null; }
+                }
+                for (int i = 0; i < outputWrappers.length; i++) {
+                    if (outputWrappers[i] != null) { outputWrappers[i].close(); outputWrappers[i] = null; }
+                    if (placeholders[i] != null) { placeholders[i].close(); placeholders[i] = null; }
+                }
+                if (leaseHeld) { owner.nativeOps().unpinNativePlan(cacheHandle, planHandle); leaseHeld = false; }
+                Arrays.fill(inputs, null);
+                nativeExecutionBindings.remove(this);
+                bindingClosed = true;
+            } finally {
+                nativeExecLock.unlock();
+            }
+        }
+    }
+
     /** Complete native cache identity owned by one executor lease. */
     static final class PlanLeaseKey {
         private final long shapeHash;
@@ -618,6 +851,8 @@ public class DynamicShapePlanExecutor implements Closeable {
         int callerDevice = currentDeviceForTeardown();
         try {
         if (closed) throw new IllegalStateException("Cannot initialize a closed DSP executor");
+        requireNoNativeBindings("initialize");
+        invalidateCompletedExecution();
         if (migrationCleanupPending) cleanupFailedMigrations();
         ensureExecutionDevice();
         // ALWAYS clear shape caches to avoid stale DataBuffer references from previous sessions.
@@ -811,6 +1046,7 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     private boolean isProtectedExternalBuffer(DataBuffer buf) {
+        if (isBindingInputBuffer(buf)) return true;
         if (isCurrentExternalInputBuffer(buf)) return true;
         if (protectedConstantBuffers != null && protectedConstantBuffers.containsKey(buf)) return true;
         for (Map<String, INDArray> replicas : nativeMutableReplicaCaches.values()) {
@@ -914,6 +1150,9 @@ public class DynamicShapePlanExecutor implements Closeable {
     /** Unpin alone leaves replay state alive. Drain/release native borrowers and detach the
      * Java context BEFORE freeing our copies, while the lease still protects the handle. */
     private int releaseCopiedNativeResources(NativeOps nativeOps, Pointer handle) {
+        if (hasNativeBinding(handle.address())) {
+            throw new IllegalStateException("Cannot release resources of a bound native plan");
+        }
         // Both executor readback paths return independently allocated Java
         // destinations. Drain their existing completion boundary before native
         // producer retirement; caller-held Java results remain untouched.
@@ -958,8 +1197,16 @@ public class DynamicShapePlanExecutor implements Closeable {
     /** Close only explicit owned destinations. Keep ownership/cost on any failed close so
      * admission cannot count unfreed bytes as headroom, and teardown can retry. */
     private void closeMutableReplicas(Pointer handle, Set<String> names) {
+        if (hasNativeBinding(handle.address())) {
+            throw new IllegalStateException("Cannot retire replicas of a bound native plan");
+        }
         Map<String, INDArray> replicas = nativeMutableReplicaCaches.get(handle.address());
         if (replicas == null) return;
+        for (Map.Entry<String, INDArray> entry : replicas.entrySet()) {
+            if ((names == null || names.contains(entry.getKey())) && isBindingInputBuffer(entry.getValue().data())) {
+                throw new IllegalStateException("Cannot retire captured replica storage");
+            }
+        }
         PlanLeaseKey lease = leaseIdentityForHandle(handle);
         for (Iterator<Map.Entry<String, INDArray>> it = replicas.entrySet().iterator(); it.hasNext();) {
             Map.Entry<String, INDArray> entry = it.next();
@@ -985,7 +1232,20 @@ public class DynamicShapePlanExecutor implements Closeable {
         if (replicas.isEmpty()) nativeMutableReplicaCaches.remove(handle.address());
     }
 
+    private boolean isBindingInputBuffer(DataBuffer buffer) {
+        if (buffer == null) return false;
+        for (NativeExecutionBinding binding : nativeExecutionBindings) {
+            for (INDArray input : binding.inputs) {
+                if (input != null && input.data() == buffer) return true;
+            }
+        }
+        return false;
+    }
+
     private void closeMigrationArray(INDArray owned) {
+        if (isBindingInputBuffer(owned.data())) {
+            throw new IllegalStateException("Cannot retire a captured native input owner");
+        }
         DataBuffer buffer = owned.data();
         owned.clearOpaqueNDArray();
         if (buffer != null && !buffer.wasClosed()) {
@@ -997,7 +1257,9 @@ public class DynamicShapePlanExecutor implements Closeable {
     /** Only after successful readback, or explicit completion of failed-call copies. */
     private void closeRetiredMigrationArrays() {
         for (Iterator<INDArray> it = retiredMigrationArrays.iterator(); it.hasNext();) {
-            closeMigrationArray(it.next());
+            INDArray retired = it.next();
+            if (isBindingInputBuffer(retired.data())) continue;
+            closeMigrationArray(retired);
             it.remove();
         }
     }
@@ -1101,6 +1363,7 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     private int closeNativeConstantReplicaCache() {
+        requireNoNativeBindings("constant replica retirement");
         // Unregister replicas from leak detector before closing
         ReplicaLeakDetector replicaDetector = null;
         try {
@@ -1133,6 +1396,8 @@ public class DynamicShapePlanExecutor implements Closeable {
         nativeExecLock.lock();
         int callerDevice = currentDeviceForTeardown();
         try {
+            requireNoNativeBindings("clearReplicaCaches");
+            invalidateCompletedExecution();
             ensureExecutionDevice();
             // Mutable replicas remain owned by their live plan leases: clearing them here
             // would invalidate native baked aliases. Lease retirement/close releases them.
@@ -1178,6 +1443,9 @@ public class DynamicShapePlanExecutor implements Closeable {
      */
     private IdentityHashMap<DataBuffer, Boolean> collectProtectedModelBuffers() {
         IdentityHashMap<DataBuffer, Boolean> protectedBuffers = new IdentityHashMap<>();
+        for (NativeExecutionBinding binding : nativeExecutionBindings) {
+            collectLiveInputBuffers(binding.inputs, protectedBuffers);
+        }
         if (sd == null) return protectedBuffers;
         for (SDVariable variable : sd.variables()) {
             if (variable == null) continue;
@@ -1399,7 +1667,11 @@ public class DynamicShapePlanExecutor implements Closeable {
     public void collectRetainedExternalInputBuffers(
             IdentityHashMap<DataBuffer, Boolean> protectedBuffers) {
         if (protectedBuffers == null) return;
-
+        nativeExecLock.lock();
+        try {
+        for (NativeExecutionBinding binding : nativeExecutionBindings) {
+            collectLiveInputBuffers(binding.inputs, protectedBuffers);
+        }
         for (INDArray[] inputs : retainedExternalInputsByPlanHandle.values()) {
             collectLiveInputBuffers(inputs, protectedBuffers);
         }
@@ -1410,11 +1682,19 @@ public class DynamicShapePlanExecutor implements Closeable {
         }
         // Include the current inputs before the first native handle snapshot is published.
         collectLiveInputBuffers(externalInputs, protectedBuffers);
+        } finally {
+            nativeExecLock.unlock();
+        }
     }
 
     /** Whether the exact INDArray is retained by any currently pinned native plan. */
     public boolean isRetainedExternalInput(INDArray candidate) {
         if (candidate == null) return false;
+        nativeExecLock.lock();
+        try {
+        for (NativeExecutionBinding binding : nativeExecutionBindings) {
+            for (INDArray input : binding.inputs) if (input == candidate) return true;
+        }
         for (Map<String, INDArray> replicas : nativeMutableReplicaCaches.values()) {
             for (INDArray replica : replicas.values()) {
                 if (replica == candidate) return true;
@@ -1432,6 +1712,9 @@ public class DynamicShapePlanExecutor implements Closeable {
             }
         }
         return false;
+        } finally {
+            nativeExecLock.unlock();
+        }
     }
 
     private static void collectLiveInputBuffers(
@@ -1455,6 +1738,11 @@ public class DynamicShapePlanExecutor implements Closeable {
      * @param arr    the array to inject (must not be null)
      */
     void overrideExternalInput(int extIdx, INDArray arr) {
+        nativeExecLock.lock();
+        try {
+        if (activeNativeBinding != null) throw new IllegalStateException("Complete binding use before rebinding inputs");
+        // A rebind is not a completed native execution from which to capture a context.
+        invalidateCompletedExecution();
         if (externalInputs == null || extIdx < 0 || extIdx >= externalInputs.length) {
             throw new IndexOutOfBoundsException("overrideExternalInput: extIdx=" + extIdx +
                     " len=" + (externalInputs == null ? 0 : externalInputs.length));
@@ -1462,6 +1750,9 @@ public class DynamicShapePlanExecutor implements Closeable {
         externalInputs[extIdx] = arr;
         if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
             retainExternalInputsForPlan(nativePlanHandle.address(), externalInputs);
+        }
+        } finally {
+            nativeExecLock.unlock();
         }
     }
 
@@ -1656,6 +1947,8 @@ public class DynamicShapePlanExecutor implements Closeable {
         int callerDevice = currentDeviceForTeardown();
         try {
         if (closed) throw new IllegalStateException("Cannot reset a closed DSP executor");
+        requireNoNativeBindings("resetForNextPage");
+        invalidateCompletedExecution();
         ensureExecutionDevice();
         log.info("DSP resetForNextPage: releasing GPU intermediates and destroying native plan handle");
         cachedInputArrays = null;
@@ -1768,6 +2061,8 @@ public class DynamicShapePlanExecutor implements Closeable {
         nativeExecLock.lock();
         int callerDevice = currentDeviceForTeardown();
         try {
+            requireNoNativeBindings("clearOutputCaches");
+            invalidateCompletedExecution();
             ensureExecutionDevice();
             log.info("DSP clearOutputCaches: clearing Java-side caches (plan preserved)");
             closeSlotArrayCache();
@@ -1932,6 +2227,8 @@ public class DynamicShapePlanExecutor implements Closeable {
         int callerDevice = currentDeviceForTeardown();
         try {
         if (closed) throw new IllegalStateException("Cannot compile a closed DSP executor");
+        requireNoNativeBindings("compileNativePlan");
+        invalidateCompletedExecution();
         ensureExecutionDevice();
         if (currentPlan != plan) {
             initialize(plan);
@@ -2303,7 +2600,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         for (PlanLeaseKey victim : lruOrder) {
             if (total + incomingCost <= budget) break;
             Long handleAddress = pinnedPlanHandlesByIdentity.get(victim);
-            if (handleAddress == null) continue;
+            if (handleAddress == null || hasNativeBinding(handleAddress)) continue;
             if (nativePlanHandle != null && nativePlanHandle.address() == handleAddress.longValue()) {
                 continue; // never evict the currently active plan
             }
@@ -2669,16 +2966,19 @@ public class DynamicShapePlanExecutor implements Closeable {
                         // This MUST happen before the new plan is pinned (which
                         // getOrInsert already did) to avoid dangling pointers — the
                         // old plan's GPU resources are freed on eviction.
-                        prepareMutableReplicaRelease(nativeOps, nativePlanHandle);
-                        nativeOps.unpinNativePlan(cache, nativePlanHandle);
-                        retainedExternalInputsByPlanHandle.remove(nativePlanHandle.address());
-                        pinnedPlanHandles.remove(nativePlanHandle.address());
-                        pinnedPlanHandlesByIdentity.entrySet().removeIf(
-                                e -> e.getValue() == nativePlanHandle.address());
-                        pinnedLeaseLastUseNanos.keySet().retainAll(pinnedPlanHandlesByIdentity.keySet());
-                        pinnedLeaseEstimatedBytes.keySet().retainAll(pinnedPlanHandlesByIdentity.keySet());
-                        configuredHandleAddresses.remove(nativePlanHandle.address());
-                        mutableExternalInputsConfiguredHandleAddresses.remove(nativePlanHandle.address());
+                        // Preserve leased resources and their measured byte accounting.
+                        if (!hasNativeBinding(nativePlanHandle.address())) {
+                            prepareMutableReplicaRelease(nativeOps, nativePlanHandle);
+                            nativeOps.unpinNativePlan(cache, nativePlanHandle);
+                            retainedExternalInputsByPlanHandle.remove(nativePlanHandle.address());
+                            pinnedPlanHandles.remove(nativePlanHandle.address());
+                            pinnedPlanHandlesByIdentity.entrySet().removeIf(
+                                    e -> e.getValue() == nativePlanHandle.address());
+                            pinnedLeaseLastUseNanos.keySet().retainAll(pinnedPlanHandlesByIdentity.keySet());
+                            pinnedLeaseEstimatedBytes.keySet().retainAll(pinnedPlanHandlesByIdentity.keySet());
+                            configuredHandleAddresses.remove(nativePlanHandle.address());
+                            mutableExternalInputsConfiguredHandleAddresses.remove(nativePlanHandle.address());
+                        }
                         log.info("redispatchForCurrentShapes: plan swapped from {} to {} — resetting frozen state",
                                 nativePlanHandle.address(), newHandle.address());
                         frozenOutputsInitialized = false;
@@ -3463,6 +3763,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         nativeExecLock.lock();
         int callerDevice = currentDeviceForTeardown();
         try {
+            requireNoNativeBindings("releaseGpuIntermediates");
             ensureExecutionDevice();
             return releaseGpuIntermediatesLocked();
         } finally {
@@ -3473,6 +3774,8 @@ public class DynamicShapePlanExecutor implements Closeable {
 
     /** Must be called with {@link #nativeExecLock} held on the plan's execution device. */
     private int releaseGpuIntermediatesLocked() {
+        requireNoNativeBindings("releaseGpuIntermediates");
+        invalidateCompletedExecution();
         if (migrationCleanupPending) cleanupFailedMigrations();
         log.info("releaseGpuIntermediates: START");
 
@@ -3656,6 +3959,8 @@ public class DynamicShapePlanExecutor implements Closeable {
         nativeExecLock.lock();
         try {
             if (closed) throw new IllegalStateException("Cannot execute a closed DSP executor");
+            if (activeNativeBinding != null) throw new IllegalStateException("Complete binding use before executor execution");
+            invalidateCompletedExecution();
             // A failed completion/close must be retried BEFORE another dispatch can evict
             // leases or rebind contexts. Never free a still-pending async source on success.
             if (migrationCleanupPending) cleanupFailedMigrations();
@@ -3674,6 +3979,13 @@ public class DynamicShapePlanExecutor implements Closeable {
                 returnedArrays.addAll(result.values());
                 retiredMigrationArrays.removeIf(returnedArrays::contains);
                 closeRetiredMigrationArrays();
+                completedExecutionOwner = MultiBackendNativeOpsHolder.getInstance().getOwnerForNativeOps(
+                        NativeOpsHolder.getInstance().getDeviceNativeOps());
+                completedExecutionHandle = nativePlanHandle;
+                completedExecutionPlan = plan;
+                completedExecutionInputs = externalInputs.clone();
+                completedExecutionKeys = plan.getExternalInputKeys().clone();
+                completedExecutionOutputs = new ArrayList<>(plan.getRequestedOutputs());
                 return result;
             } catch (RuntimeException | Error failure) {
                 migrationCleanupPending = true;
@@ -5419,6 +5731,8 @@ public class DynamicShapePlanExecutor implements Closeable {
      * @param reason descriptive reason for plan destruction (e.g., "SESSION_RESET", "PLAN_RECOMPILATION")
      */
     private void freeNativePlanHandle(String reason) {
+        requireNoNativeBindings(reason);
+        invalidateCompletedExecution();
         if (migrationCleanupPending) cleanupFailedMigrations();
         if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
             log.info("PLAN_DESTRUCTION: reason='{}' handle={} execCount={} frozen={}",
@@ -5533,6 +5847,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         int callerDevice = currentDeviceForTeardown();
         try {
             if (closed) return;
+            requireNoNativeBindings("close");
             ensureExecutionDevice();
 
             int gpuIntermediatesClosed = releaseGpuIntermediatesLocked();

@@ -27,6 +27,8 @@
 
 #include <graph/DspDeviceDispatch.h>
 
+#include <limits>
+
 namespace sd {
 namespace graph {
 
@@ -275,6 +277,35 @@ NativeDynamicShapePlan* NativePlanCache::getOrInsert(
   }
 
   return result;
+}
+
+// ---------------------------------------------------------------------------
+// retainPlan
+// ---------------------------------------------------------------------------
+
+bool NativePlanCache::retainPlan(NativeDynamicShapePlan* plan) {
+  if (!plan) return false;
+
+  // Preserve the shutdown -> cache lock order used by getOrInsert and clear.
+  std::lock_guard<std::mutex> shutdownLock(shutdownMutex_);
+  if (isShutdownInProgress()) return false;
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (clearPending_) return false;
+
+  // Never inspect the supplied plan: it may already have been evicted.
+  // Membership and lease acquisition are atomic with respect to eviction.
+  for (const auto& entry : lru_) {
+    if (entry.second != plan) continue;
+    auto it = pinCounts_.find(plan);
+    if (it != pinCounts_.end()) {
+      if (it->second == (std::numeric_limits<size_t>::max)()) return false;
+      ++it->second;
+    } else {
+      pinCounts_.emplace(plan, 1);
+    }
+    return true;
+  }
+  return false;
 }
 
 // ---------------------------------------------------------------------------

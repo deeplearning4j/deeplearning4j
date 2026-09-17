@@ -383,6 +383,62 @@ void autoregressiveDecode(
     int numPlanOutputs = plan->getNumRequestedOutputs();
     std::vector<NDArray*> planOutputsVec(numPlanOutputs, nullptr);
     NDArray** planOutputs = planOutputsVec.data();
+    const bool useScalarTarget = config->scalarPlanHandle != nullptr;
+    std::vector<NDArray*> scalarInputs(config->scalarNumPlanExternalInputs, nullptr);
+    std::vector<NDArray*> scalarOutputs(config->scalarNumPlanOutputs, nullptr);
+    if (useScalarTarget) {
+        auto* scalarContext = reinterpret_cast<graph::Context*>(config->scalarExtInputContext);
+        for (int i = 0; i < config->scalarNumPlanExternalInputs; ++i) scalarInputs[i] = scalarContext->array(i);
+    }
+    auto prepareScalarTarget = [&]() {
+        for (int i = 0; i < config->scalarNumPlanExternalInputs; ++i) {
+            NDArray* dst = scalarInputs[i];
+            NDArray* src = extInputs[config->scalarInputToTarget[i]];
+            if (dst->dataBuffer() == src->dataBuffer()) continue;
+            bool geometry = i == config->scalarInputIdsExtIdx || i == config->scalarCausalMaskExtIdx
+                || i == config->scalarPositionOffsetExtIdx || i == config->scalarCachePositionExtIdx
+                || i == config->scalarActualSequenceLengthExtIdx;
+            bool recurrent = false;
+            for (int s = 0; s < config->numGdnStatePairs && !recurrent; ++s) {
+                recurrent = config->gdnStateExtIndices != nullptr
+                    && config->scalarInputToTarget[config->gdnStateExtIndices[s]] == config->scalarInputToTarget[i];
+            }
+            for (int s = 0; s < config->numConvStatePairs && !recurrent; ++s) {
+                recurrent = config->convStateExtIndices != nullptr
+                    && config->scalarInputToTarget[config->convStateExtIndices[s]] == config->scalarInputToTarget[i];
+            }
+            // Mirror the CUDA contract: refresh geometry + recurrent snapshots only;
+            // weights and derived inputs keep their captured values.
+            if (!geometry && !recurrent) continue;
+            REQUIRE_TRUE(dst->lengthOf() <= src->lengthOf(), 0,
+                         "autoregressive_decode: scalar source is smaller than captured input");
+            NDArray::preparePrimaryUse({dst}, {src});
+            std::memcpy(dst->buffer(), src->buffer(), dst->lengthOf() * dst->sizeOfT());
+            NDArray::registerPrimaryUse({dst}, {src});
+        }
+        scalarInputs[config->scalarActualSequenceLengthExtIdx]->p(0, static_cast<LongType>(1));
+    };
+    auto executeScalarTarget = [&]() {
+        DSP_DIAG(KV_CACHE, "SCALAR_TARGET_SELECTED plan=%p idsWidth=1 maskRows=1 position=%lld inputs=%d outputs=%d",
+                 config->scalarPlanHandle, static_cast<long long>(currentPosition),
+                 config->scalarNumPlanExternalInputs, config->scalarNumPlanOutputs);
+        Status status = config->scalarPlanHandle->execute(
+            scalarInputs.data(), config->scalarNumPlanExternalInputs,
+            scalarOutputs.data(), config->scalarNumPlanOutputs, nullptr);
+        if (status == Status::OK) {
+            for (int i = 0; i < numPlanOutputs; ++i) {
+                planOutputs[i] = scalarOutputs[config->targetOutputToScalar[i]];
+                REQUIRE_TRUE(planOutputs[i] != nullptr, 0,
+                             "autoregressive_decode: scalar target returned a null requested output");
+            }
+            auto* logits = scalarOutputs[config->scalarLogitsOutputIdx];
+            REQUIRE_TRUE(logits->rankOf() >= 2 && logits->rankOf() <= 3
+                             && logits->sizeAt(0) == 1
+                             && (logits->rankOf() == 2 || logits->sizeAt(1) == 1), 0,
+                         "autoregressive_decode: scalar target returned non-scalar logits geometry");
+        }
+        return status;
+    };
 
     REQUIRE_TRUE(extCtx != nullptr || config->planExternalInputs != nullptr, 0,
                  "autoregressive_decode: no external input source. "
@@ -835,7 +891,8 @@ void autoregressiveDecode(
             setKvScaleRegistry(tl_kvQuantPtrs.data(), config->kvScaleBuffers, N);
         }
 
-        Status planStatus = plan->execute(
+        if (useScalarTarget) prepareScalarTarget();
+        Status planStatus = useScalarTarget && proposedCount_cpu == 0 ? executeScalarTarget() : plan->execute(
             extInputs, numExtInputs,
             planOutputs, numPlanOutputs,
             nullptr);
@@ -959,6 +1016,7 @@ void autoregressiveDecode(
             // earlier approach (skipping the in-loop accept entirely) broke
             // terminal truncation and mid-batch stops (red b8e04d8e).
             while (specConsumed_cpu < specAccepted_cpu + 1
+                    && (!useScalarTarget || specConsumed_cpu == 0)
                     && tokensGenerated + specConsumed_cpu < maxNewTokens) {
                 LongType token = specRowArgmax_cpu[specConsumed_cpu];
                 specConsumed_cpu++;
@@ -989,7 +1047,7 @@ void autoregressiveDecode(
                     }
                     setKvScaleRegistry(tl_kvQuantPtrsRerun.data(), config->kvScaleBuffers, numKvPairs);
                 }
-                Status rerunStatus = plan->execute(
+                Status rerunStatus = useScalarTarget ? executeScalarTarget() : plan->execute(
                     extInputs, numExtInputs,
                     planOutputs, numPlanOutputs,
                     nullptr);
@@ -1005,6 +1063,13 @@ void autoregressiveDecode(
                              graph::dsp::dspStatusName(rerunStatus),
                              static_cast<int>(rerunStatus), specAccepted_cpu,
                              proposedCount_cpu);
+                if (useScalarTarget) {
+                    NDArray* scalarLogits = planOutputs[config->logitsOutputIdx];
+                    NDArray::preparePrimaryUse({}, {scalarLogits});
+                    specRowArgmax_cpu[0] = cpuArgmax(scalarLogits->buffer(),
+                        scalarLogits->sizeAt(scalarLogits->rankOf() - 1), scalarLogits->dataType());
+                    NDArray::registerPrimaryUse({}, {scalarLogits});
+                }
             }
         }
 
@@ -1152,7 +1217,7 @@ void autoregressiveDecode(
                      step);
 
         // ── ADR 0106 Phase 2 speculative path OR Phase 1 scalar path (CPU) ──
-        if (useSpeculative_cpu && proposedCount_cpu > 0 && logitsRank == 3) {
+        if (useSpeculative_cpu && proposedCount_cpu > 0 && (logitsRank == 3 || useScalarTarget)) {
             // ── Speculative: consume the FIRST-pass argmaxes + acceptance ────────
             // Both were computed in the accepted-prefix state-commit block right
             // after plan execution. The logits buffer may now hold the accepted-
@@ -1187,7 +1252,8 @@ void autoregressiveDecode(
                     && specConsumed_cpu < 1 + proposedCount_cpu
                     && useMtp_cpu) {
                 NDArray* rerunLogits = planOutputs[config->logitsOutputIdx];
-                LongType rerunVocab = rerunLogits->sizeAt(2);
+                LongType rerunVocab = useScalarTarget
+                    ? rerunLogits->sizeAt(rerunLogits->rankOf() - 1) : rerunLogits->sizeAt(2);
                 if (rerunVocab > 0) {
                     LongType refreshed = cpuArgmax(rerunLogits->buffer(), rerunVocab,
                                                    rerunLogits->dataType());

@@ -185,6 +185,30 @@ struct AutoregressiveDecodeConfig {
     int mtpHiddenOutputIdx = -1;
     int targetHiddenOutputIdx = -1;  // pre-final-norm target hidden rows
 
+    // T3b-dual: width-1 target plan captured from the same session's scalar
+    // warmup. The rerun (asl=1 re-execution) routes through this plan so its
+    // row-0 logits are greedy-identical: two separately-frozen plans (W-substrate
+    // vs width-1) produce different attention/GEMM reduction orders — 0.02-0.08
+    // logit deltas that flip argmax at flat profiles (probe verdict 2609f6f8).
+    // Absent metadata preserves the original API. Advertised metadata is validated strictly.
+    // KV and weights are shared; private recurrent inputs snapshot the committed prefix
+    // BEFORE verification, so even in-place window state writes cannot pollute the rerun.
+    graph::NativeDynamicShapePlan* scalarPlanHandle = nullptr;
+    void* scalarExtInputContext = nullptr;
+    int scalarLogitsOutputIdx = -1;
+    int scalarTargetHiddenOutputIdx = -1;
+    int scalarNumPlanExternalInputs = 0;
+    int scalarNumPlanOutputs = 0;
+    int scalarInputIdsExtIdx = -1;
+    int scalarCausalMaskExtIdx = -1;
+    int scalarPositionOffsetExtIdx = -1;
+    int scalarCachePositionExtIdx = -1;
+    int scalarActualSequenceLengthExtIdx = -1;
+    // Captured scalar input order -> window input order; window output order -> scalar order.
+    // Context owns borrowed wrappers. The Java binding owns their lifetime and native lease.
+    std::vector<int> scalarInputToTarget;
+    std::vector<int> targetOutputToScalar;
+
     // Stable-address arrays also passed as op inputs to retain lifetime and make native updates
     // explicit. The same NDArray objects are registered in mtpExtInputContext.
     NDArray* mtpInputIds = nullptr;

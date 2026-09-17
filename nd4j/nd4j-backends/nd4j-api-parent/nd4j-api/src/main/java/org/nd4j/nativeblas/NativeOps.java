@@ -1548,10 +1548,24 @@ public interface NativeOps {
  }
 
  /**
+  * Acquire one independent cache lease without redispatch or plan-resource mutation.
+  * The native cache validates membership without dereferencing the plan handle.
+  * Pair every successful retain with one {@link #unpinNativePlan} call.
+  * The caller must keep the cache alive; this protects cache residency only,
+  * not executor resource retirement, execution, or external-buffer lifetimes.
+  *
+  * @return 1 if acquired; 0 for null handles, nonmembers, shutdown,
+  *         clear-pending caches, or lease-count overflow
+  */
+ default int retainNativePlan(Pointer cacheHandle, Pointer planHandle) {
+     throw new UnsupportedOperationException("retainNativePlan not implemented in this backend");
+ }
+
+ /**
   * Unpin a plan handle, making it eligible for LRU eviction.
-  * Must be called when a Java executor swaps to a different plan handle
-  * or when the executor is closed. Paired with the automatic pinning
-  * done by {@link #dispatchNativePlan}.
+  * Must be called once for each lease acquired by {@link #dispatchNativePlan}
+  * or {@link #retainNativePlan}. The plan remains protected until the last
+  * lease is released.
   *
   * @param cacheHandle cache from createNativePlanCache (non-null)
   * @param planHandle  plan handle from dispatchNativePlan (null is safe — no-op)
