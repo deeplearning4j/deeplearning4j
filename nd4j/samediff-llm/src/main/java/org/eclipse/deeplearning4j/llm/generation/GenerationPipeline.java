@@ -2406,9 +2406,24 @@ public class GenerationPipeline implements AutoCloseable {
         }
         // The last-position projection is a prefill-only optimization. Decode is S=1 and must use
         // the canonical logits output; DSP already selects a distinct plan for the decode shape.
-        // Retain the remaining ordered state outputs so the native recurrent-state contract is stable.
-        List<String> decodeOutputNames = new ArrayList<>(prefillOutputNames);
-        decodeOutputNames.set(0, logitsName);
+        // TWO output lists are built here:
+        // - warmupDecodeOutputNames (STEP 3 single warmup decode): includes k_rope_N/v_heads_N so
+        //   configureMaxAllocationForKvCache (below, which iterates the RESULT MAP to resolve KV
+        //   slots + shapes) can max-length-pin the KV slots. One step only.
+        // - decodeOutputNames (persisted to state for the per-step constrained loop): logits (+
+        //   MTP hidden) + recurrent states ONLY. The KV outputs are written in-graph for the
+        //   next step's attention (in-graph KV) and were previously requested+refreshed+closed
+        //   unconsumed on EVERY decode step; the PrefixCache path already used this reduced list.
+        // Recurrent state outputs stay in both lists: Java assigns them into retained buffers
+        // each step (state.recurrentStateBuffers) — that is the live native recurrent contract.
+        List<String> warmupDecodeOutputNames = new ArrayList<>(prefillOutputNames);
+        warmupDecodeOutputNames.set(0, logitsName);
+        List<String> decodeOutputNames = new ArrayList<>();
+        decodeOutputNames.add(logitsName);
+        if (useNativeMtp) decodeOutputNames.add(TARGET_HIDDEN_STATES_NAME);
+        for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
+            decodeOutputNames.add(pair.outputName);
+        }
         int kvBufCount = (isQuantizedV2 && quantizedKvBuffers != null) ? quantizedKvBuffers.size()
                 : (staticKvBuffers != null ? staticKvBuffers.size() : 0);
         log.info("[GGUF-KV] STEP 3: warmup decode with {} KV buffers (V2={}), {} recurrent state buffers, {} inputs",
@@ -2416,7 +2431,7 @@ public class GenerationPipeline implements AutoCloseable {
 
         Map<String, INDArray> decodeOutputs;
         try {
-            decodeOutputs = decoder.output(decodeInputMap, decodeOutputNames.toArray(new String[0]));
+            decodeOutputs = decoder.output(decodeInputMap, warmupDecodeOutputNames.toArray(new String[0]));
         } catch (Exception e) {
             log.error("[GGUF-KV] STEP 3 warmup decode failed", e);
             throw e;
