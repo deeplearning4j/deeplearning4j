@@ -1565,7 +1565,9 @@ static bool opIsRecordableTyped(const NativeSlot& slot,
   // ── matmul / mmul: exact untransposed A*B subset ──────────────────────────
   if constexpr (Policy::matmul) {
     if (numIn != 2 || numOut != 1 || !hasNoBoolDtypeOrStringArgs(slot)) return false;
-    if (slot.args.numIArgs > 3 || slot.args.numTArgs > 2) return false;
+    // Fourth iArg may explicitly select legacy arithmetic. SERIAL_FMA (1)
+    // is rejected by the zero-argument-value gate below: no ordered recipe.
+    if (slot.args.numIArgs > 4 || slot.args.numTArgs > 2) return false;
     for (int i = 0; i < slot.args.numIArgs; ++i) {
       if (slot.args.iArgs[i] != 0) return false;
     }

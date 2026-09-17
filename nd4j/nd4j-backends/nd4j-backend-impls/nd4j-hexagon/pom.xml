@@ -133,6 +133,50 @@
     </build>
 
     <profiles>
+        <!-- Generate source declarations without requiring a Hexagon native toolchain. -->
+        <profile>
+            <id>javacpp</id>
+            <activation><property><name>javacpp.generate</name></property></activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <version>${javacpp.version}</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.eclipse.deeplearning4j</groupId>
+                                <artifactId>nd4j-hexagon-preset</artifactId>
+                                <version>${project.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <properties>${javacpp.platform.properties}</properties>
+                            <classPaths>
+                                <classPath>${project.basedir}/../nd4j-hexagon-preset/target/classes</classPath>
+                                <classPath>${project.build.outputDirectory}</classPath>
+                            </classPaths>
+                            <includePaths>
+                                <includePath>${libnd4j.outputPath}/include</includePath>
+                                <includePath>${project.basedir}/../../../../libnd4j/include</includePath>
+                            </includePaths>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>javacpp-parser</id>
+                                <phase>generate-sources</phase>
+                                <goals><goal>build</goal></goals>
+                                <configuration>
+                                    <skip>${javacpp.parser.skip}</skip>
+                                    <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
+                                    <classOrPackageName>org.nd4j.presets.hexagon.Nd4jHexagonPresets</classOrPackageName>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
         <!-- Profile for building with Hexagon NPU support -->
         <profile>
             <id>hexagon</id>

@@ -124,6 +124,61 @@ See ADR 0XXX (Apple Metal Backend) for design rationale.</description>
     </build>
 
     <profiles>
+        <!-- Parsing is host-independent; native Metal execution still requires macOS. -->
+        <profile>
+            <id>javacpp</id>
+            <activation><property><name>javacpp.generate</name></property></activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <version>${javacpp.version}</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.eclipse.deeplearning4j</groupId>
+                                <artifactId>nd4j-metal-preset</artifactId>
+                                <version>${project.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <properties>${javacpp.platform.properties}</properties>
+                            <classPaths>
+                                <classPath>${project.basedir}/../nd4j-metal-preset/target/classes</classPath>
+                                <classPath>${project.build.outputDirectory}</classPath>
+                            </classPaths>
+                            <includePaths>
+                                <includePath>${libnd4j.outputPath}/include</includePath>
+                                <includePath>${project.basedir}/../../../../libnd4j/include</includePath>
+                            </includePaths>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>javacpp-parser</id>
+                                <phase>generate-sources</phase>
+                                <goals><goal>build</goal></goals>
+                                <configuration>
+                                    <skip>${javacpp.parser.skip}</skip>
+                                    <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
+                                    <classOrPackageName>org.nd4j.presets.metal.Nd4jMetalPresets</classOrPackageName>
+                                </configuration>
+                            </execution>
+                            <!-- Native compilation remains a separate, macOS-only lifecycle step. -->
+                            <execution>
+                                <id>javacpp-compiler</id>
+                                <phase>process-classes</phase>
+                                <goals><goal>build</goal></goals>
+                                <configuration>
+                                    <skip>${javacpp.compiler.skip}</skip>
+                                    <classOrPackageName>org.nd4j.linalg.metal.bindings.Nd4jMetal</classOrPackageName>
+                                    <copyLibs>true</copyLibs>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
         <!-- Profile for building with Metal/MLX support. Enables tests on macOS arm64 hardware. -->
         <profile>
             <id>metal</id>

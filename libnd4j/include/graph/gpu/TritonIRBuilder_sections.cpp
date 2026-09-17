@@ -34,6 +34,7 @@
 
 #include <graph/gpu/TritonIRBuilder.h>
 #include <graph/gpu/TritonIRBuilder_internal.h>
+#include <graph/gpu/TritonMatmulContract.h>
 #include <array/ArrayOptions.h>
 #include <graph/DspDiagnostics.h>
 #include <helpers/logger.h>
@@ -49,7 +50,9 @@
 #include <unordered_set>
 
 // MLIR core
+#include <llvm/ADT/SmallVector.h>
 #include <mlir/IR/Builders.h>
+#include <mlir/IR/BuiltinAttributes.h>
 #include <mlir/IR/BuiltinTypes.h>
 
 // Triton MLIR dialect
@@ -1062,7 +1065,11 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
       bool isMatmul = (sec.type == KernelSectionType::MATMUL);
       bool isNorm = (sec.type == KernelSectionType::NORMALIZATION);
 
-      if ((isMatmul || isNorm) && si + 1 < sections.size()) {
+      // SERIAL_FMA's storage rounding is an op boundary, not an accumulator
+      // epilogue. Keep subsequent operations in their own sections.
+      const bool serialMatmul = isMatmul &&
+          dsp::hasNonLegacyMatmulArithmetic(slots, sec.startSlot, sec.endSlot);
+      if ((isMatmul || isNorm) && !serialMatmul && si + 1 < sections.size()) {
         auto& nextSec = sections[si + 1];
         if (nextSec.type == KernelSectionType::ELEMENTWISE &&
             nextSec.numOps <= MAX_EPILOGUE_OPS) {
@@ -1994,9 +2001,51 @@ void TritonIRBuilder::emitShapeManipulationSection(mlir::OpBuilder& builder, mli
 void TritonIRBuilder::emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Location loc,
                                             mlir::Value pid, int blockSize,
                                             mlir::Value aPtr, mlir::Value bPtr, mlir::Value cPtr,
-                                            int M, int N, int K) {
+                                            int M, int N, int K,
+                                            const NativeSlot* serialSlot,
+                                            NDArray* aArray, NDArray* bArray, NDArray* cArray) {
+  const bool serial = serialSlot != nullptr;
+  bool tx = false, ty = false;
+  if (serial) {
+    if (!triton_matmul::supports(*serialSlot, aArray, bArray, cArray))
+      THROW_EXCEPTION("Triton SERIAL_FMA: unsupported concrete matmul contract");
+    // Triton's FuncOp conversion preserves passthrough attributes on kernel
+    // entries. Pin IEEE denormal handling for LLVM/NVPTX instead of relying on
+    // ambient defaults; math.fma itself carries no reassociation/fastmath flags.
+    mlir::Operation* function = builder.getInsertionBlock()->getParentOp();
+    while (function && !mlir::isa<mlir::triton::FuncOp>(function)) function = function->getParentOp();
+    if (!function) THROW_EXCEPTION("Triton SERIAL_FMA requires a kernel function");
+    llvm::SmallVector<mlir::Attribute> attributes;
+    if (auto existing = function->getAttrOfType<mlir::ArrayAttr>("passthrough")) {
+      for (auto attribute : existing) {
+        auto pair = mlir::dyn_cast<mlir::ArrayAttr>(attribute);
+        if (pair && !pair.empty()) {
+          auto key = mlir::dyn_cast<mlir::StringAttr>(pair[0]);
+          if (key && (key.getValue() == "denormal-fp-math" || key.getValue() == "denormal-fp-math-f32")) continue;
+        }
+        attributes.push_back(attribute);
+      }
+    }
+    for (const char* key : {"denormal-fp-math", "denormal-fp-math-f32"})
+      attributes.push_back(builder.getArrayAttr({builder.getStringAttr(key), builder.getStringAttr("ieee,ieee")}));
+    function->setAttr("passthrough", builder.getArrayAttr(attributes));
+    tx = serialSlot->args.iArgs[0] != 0;
+    ty = serialSlot->args.iArgs[1] != 0;
+    if (serialSlot->args.iArgs[2]) {
+      std::swap(aArray, bArray);
+      std::swap(aPtr, bPtr);
+      const bool oldTx = tx;
+      tx = !ty;
+      ty = !oldTx;
+    }
+    M = static_cast<int>(cArray->sizeAt(-2));
+    N = static_cast<int>(cArray->sizeAt(-1));
+    K = static_cast<int>(aArray->sizeAt(aArray->rankOf() - (tx ? 2 : 1)));
+  }
   auto i32Type = builder.getI32Type();
-  auto f32Type = builder.getF32Type();
+  // The legacy branch retains its original FLOAT accumulation policy.
+  mlir::Type f32Type = serial && aArray->dataType() == DataType::DOUBLE
+      ? mlir::Type(builder.getF64Type()) : mlir::Type(builder.getF32Type());
   auto i32TensorType = mlir::RankedTensorType::get({blockSize}, i32Type);
   auto f32TensorType = mlir::RankedTensorType::get({blockSize}, f32Type);
 
@@ -2006,7 +2055,7 @@ void TritonIRBuilder::emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Locat
   auto splatBase = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, offsetBase);
   auto offsets = builder.create<mlir::arith::AddIOp>(loc, splatBase, range);
 
-  int totalElements = M * N;
+  int totalElements = serial ? static_cast<int>(cArray->lengthOf()) : M * N;
   auto nElemConst = builder.create<mlir::arith::ConstantIntOp>(loc, totalElements, 32);
   auto splatN = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, nElemConst);
   auto mask = builder.create<mlir::arith::CmpIOp>(
@@ -2023,8 +2072,12 @@ void TritonIRBuilder::emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Locat
   // Match cuBLAS precision: when TF32 is enabled, truncate FP32 inputs to TF32
   // (10-bit mantissa) before multiplication, matching CUBLAS_TF32_TENSOR_OP_MATH.
   // Use simple acc += a*b so NVCC can fuse to FMA, matching cuBLAS reduction.
-  bool useTf32 = sd::Environment::getInstance().tritonTf32Enabled();
-  auto accInit = splatConstantF32(builder, loc, f32TensorType, 0.0f);
+  bool useTf32 = !serial && sd::Environment::getInstance().tritonTf32Enabled();
+  auto floatConstant = [&](double value) -> mlir::Value {
+    auto scalar = builder.create<mlir::arith::ConstantOp>(loc, f32Type, builder.getFloatAttr(f32Type, value));
+    return builder.create<mlir::triton::SplatOp>(loc, f32TensorType, scalar);
+  };
+  auto accInit = floatConstant(0.0);
   auto kStart = builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32);
   auto kEnd = builder.create<mlir::arith::ConstantIntOp>(loc, K, 32);
   auto kStep = builder.create<mlir::arith::ConstantIntOp>(loc, 1, 32);
@@ -2040,12 +2093,43 @@ void TritonIRBuilder::emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Locat
   auto kConst = builder.create<mlir::arith::ConstantIntOp>(loc, K, 32);
   auto splatKConst = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, kConst);
   auto splatK = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, kIdx);
-  auto aOffset = builder.create<mlir::arith::AddIOp>(loc,
+  mlir::Value aOffset = builder.create<mlir::arith::AddIOp>(loc,
       builder.create<mlir::arith::MulIOp>(loc, rowIndices, splatKConst), splatK);
 
   // B offset: k * N + col
-  auto bOffset = builder.create<mlir::arith::AddIOp>(loc,
+  mlir::Value bOffset = builder.create<mlir::arith::AddIOp>(loc,
       builder.create<mlir::arith::MulIOp>(loc, splatK, splatNConst), colIndices);
+
+  if (serial) {
+    // Project output coordinates through each input's own strides. Batch axes
+    // are not flattened into M; 2D operands are reused across every batch.
+    auto intConstant = [&](LongType value) -> mlir::Value {
+      return splatConstantI32(builder, loc, i32TensorType, static_cast<int>(value));
+    };
+    std::vector<mlir::Value> coords(cArray->rankOf());
+    mlir::Value remaining = offsets;
+    for (int d = cArray->rankOf() - 1; d >= 0; --d) {
+      auto size = intConstant(cArray->sizeAt(d));
+      coords[d] = builder.create<mlir::arith::RemSIOp>(loc, remaining, size);
+      remaining = builder.create<mlir::arith::DivSIOp>(loc, remaining, size);
+    }
+    auto inputOffset = [&](NDArray* array, bool transpose, bool left) -> mlir::Value {
+      const int rank = array->rankOf();
+      const int kAxis = rank - (left ? (transpose ? 2 : 1) : (transpose ? 1 : 2));
+      const int outAxis = rank - (left ? (transpose ? 1 : 2) : (transpose ? 2 : 1));
+      mlir::Value offset = builder.create<mlir::arith::MulIOp>(loc, splatK,
+          intConstant(array->stridesOf()[kAxis]));
+      auto addAxis = [&](mlir::Value coord, int axis) {
+        auto term = builder.create<mlir::arith::MulIOp>(loc, coord, intConstant(array->stridesOf()[axis]));
+        offset = builder.create<mlir::arith::AddIOp>(loc, offset, term);
+      };
+      addAxis(coords[cArray->rankOf() - (left ? 2 : 1)], outAxis);
+      for (int d = 0; d < rank - 2; ++d) addAxis(coords[d], d);
+      return offset;
+    };
+    aOffset = inputOffset(aArray, tx, true);
+    bOffset = inputOffset(bArray, ty, false);
+  }
 
   // Derive pointer types from actual arguments (NOT hardcoded f32)
   auto aPtrType = mlir::cast<mlir::triton::PointerType>(aPtr.getType());
@@ -2067,7 +2151,7 @@ void TritonIRBuilder::emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Locat
       bPtrs.getResult(), mask.getResult(), mlir::Value(),
       mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
 
-  // Cast loaded values to f32 for accumulation
+  // Promote storage to the selected accumulator (FLOAT, or serial DOUBLE).
   auto aVal = castTo(builder, loc, aLoaded, f32Type);
   auto bVal = castTo(builder, loc, bLoaded, f32Type);
 
@@ -2084,19 +2168,38 @@ void TritonIRBuilder::emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Locat
     bVal = builder.create<mlir::arith::BitcastOp>(loc, f32TensorType, bTrunc);
   }
 
-  // acc += a * b — simple FMA-friendly accumulation matching cuBLAS
-  auto prod = builder.create<mlir::arith::MulFOp>(loc, aVal, bVal);
-  auto newAcc = builder.create<mlir::arith::AddFOp>(loc, accIter, prod);
+  mlir::Value newAcc;
+  if (serial) {
+    // No fastmath/reassociation flags: one LLVM FMA per ascending K, including
+    // k=0 with +0. NVIDIA lowering uses RN without FTZ (pinned IEEE denormals).
+    newAcc = builder.create<mlir::math::FmaOp>(loc, aVal, bVal, accIter);
+  } else {
+    auto prod = builder.create<mlir::arith::MulFOp>(loc, aVal, bVal);
+    newAcc = builder.create<mlir::arith::AddFOp>(loc, accIter, prod);
+  }
 
   builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{newAcc});
 
   // After K-loop: store result (cast f32 accumulator to output type)
   builder.setInsertionPointAfter(forOp);
-  auto finalAcc = forOp.getResult(0);
-  mlir::Value storeVal = castTo(builder, loc, finalAcc, cPtrType.getPointeeType());
-
+  mlir::Value finalAcc = forOp.getResult(0);
   auto splatCPtr = builder.create<mlir::triton::SplatOp>(loc, cPtrTensorType, cPtr);
   auto cPtrs = builder.create<mlir::triton::AddPtrOp>(loc, cPtrTensorType, splatCPtr, offsets);
+  if (serial) {
+    const double alpha = serialSlot->args.numTArgs > 0 ? serialSlot->args.tArgs[0] : 1.0;
+    const double beta = serialSlot->args.numTArgs > 1 ? serialSlot->args.tArgs[1] : 0.0;
+    // FMA with -0 expresses the separately rounded product, including signed
+    // zero and gradual underflow, just like native matmulMultiply. An explicit
+    // following FMA cannot contract this rounding point into its multiplication.
+    finalAcc = builder.create<mlir::math::FmaOp>(loc, floatConstant(alpha), finalAcc, floatConstant(-0.0));
+    if (beta != 0.0) {
+      auto oldC = builder.create<mlir::triton::LoadOp>(loc, cPtrs.getResult(), mask.getResult(),
+          mlir::Value(), mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+      finalAcc = builder.create<mlir::math::FmaOp>(loc, floatConstant(beta),
+          castTo(builder, loc, oldC, f32Type), finalAcc);
+    }
+  }
+  mlir::Value storeVal = castTo(builder, loc, finalAcc, cPtrType.getPointeeType());
   builder.create<mlir::triton::StoreOp>(loc, cPtrs, storeVal, mask,
                                          mlir::triton::CacheModifier::NONE,
                                          mlir::triton::EvictionPolicy::NORMAL);

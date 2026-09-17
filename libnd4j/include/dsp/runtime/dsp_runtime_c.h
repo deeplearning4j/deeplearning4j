@@ -392,6 +392,31 @@ SDX_API sdx_status_t sdxRunAllocating(
     int32_t num_inputs,
     const sdx_run_options_t* options);
 
+/**
+ * Steady-state counterpart of sdxRun. Uses NativeDynamicShapePlan's steady-state
+ * entry; the plan still owns lifecycle admission (including early warmup calls).
+ * Tensor validation, public-to-plan input mapping, serialization, strict backend
+ * policy, reports and caller-buffer copies are identical to sdxRun.
+ * Additive ABI v1 entry: no existing options/layout or run behavior changes.
+ */
+SDX_API sdx_status_t sdxRunSteadyState(
+    sdx_context_t* context,
+    const sdx_tensor_view_t* inputs,
+    int32_t num_inputs,
+    const sdx_tensor_view_t* outputs,
+    int32_t num_outputs,
+    const sdx_run_options_t* options);
+
+/**
+ * Allocating-output counterpart of sdxRunSteadyState. Borrow results with
+ * sdxGetOutputTensor; the same next-run/context-destruction expiry applies.
+ */
+SDX_API sdx_status_t sdxRunSteadyStateAllocating(
+    sdx_context_t* context,
+    const sdx_tensor_view_t* inputs,
+    int32_t num_inputs,
+    const sdx_run_options_t* options);
+
 SDX_API const char* sdxGetLastError(const sdx_runtime_t* runtime);
 SDX_API sdx_status_t sdxGetExecutionReport(
     const sdx_context_t* context,

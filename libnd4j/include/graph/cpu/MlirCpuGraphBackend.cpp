@@ -20,6 +20,7 @@
 
 #include <graph/cpu/MlirCpuGraphBackend.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspAnalysisUtils.h>
 #include <helpers/logger.h>
 #include <system/Environment.h>
 
@@ -62,6 +63,7 @@ int MlirCpuGraphBackend::resolutionPriority(
 }
 
 bool MlirCpuGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
+  if (dsp::hasNonLegacyMatmulArithmetic(slots, start, end)) return false;
   if (end < start) return false;
   int segSize = end - start + 1;
   if (segSize < 2) return false;  // Need at least 2 ops to be worth fusing

@@ -1271,12 +1271,14 @@ struct GraphSegmentExec {
   void clearGraphContentFlags(const char* reason) {
     DSP_DIAG(LIFECYCLE,
              "CLEAR_GRAPH_CONTENT_FLAGS: reason=%s phase=%s exec=%d "
-             "gapsCaptured %d -> 0 createOpsExcluded %d -> 0",
+             "gapsCaptured %d -> 0 createOpsExcluded %d -> 0 excludedViewSlots %zu -> 0",
              reason ? reason : "?", displayPhaseName(), executionCount,
              gapOpsCapturedInGraph ? 1 : 0,
-             createOpsExcludedFromGraph ? 1 : 0);
+             createOpsExcludedFromGraph ? 1 : 0,
+             excludedViewSlotIndices.size());
     gapOpsCapturedInGraph = false;
     createOpsExcludedFromGraph = false;
+    excludedViewSlotIndices.clear();
   }
 
   void markCreateOpsExcludedFromGraph(bool excluded, const char* reason, int skippedCount = 0) {
@@ -1372,6 +1374,26 @@ struct GraphSegmentExec {
   // stable slot pointers.  The createValuesStable invalidation path is bypassed
   // when this flag is true — value changes are handled naturally by live execution.
   bool createOpsExcludedFromGraph = false;
+
+  // Slot indices of view/identity ops EXCLUDED from a native-only monolithic
+  // CUDA graph capture (see slotHasOnlyTransparentAliasOutputs). Those slots'
+  // outputs are read by in-graph nodes via stable slot pointers, but the graph
+  // never writes them. On replay they must execute LIVE BEFORE cudaGraphLaunch,
+  // exactly like createOpsExcludedFromGraph — otherwise a materializing view
+  // slot (e.g. reshape of a non-contiguous permute) keeps a capture-time buffer
+  // that an in-graph producer rewrites each replay, corrupting the output
+  // deterministically (same mechanism as the merged-capture gap alias bug).
+  // Empty = no excluded view slots (nothing to re-execute).
+  std::vector<int> excludedViewSlotIndices;
+
+  // Record the excluded-view-slot set for live pre-launch execution at replay.
+  void markViewSlotsExcludedFromGraph(std::vector<int> slotIndices, const char* reason) {
+    excludedViewSlotIndices = std::move(slotIndices);
+    DSP_DIAG(LIFECYCLE,
+             "VIEW_SLOTS_EXCLUDED_FROM_GRAPH: reason=%s phase=%s exec=%d skipped=%zu",
+             reason ? reason : "?", displayPhaseName(), executionCount,
+             excludedViewSlotIndices.size());
+  }
 
   // ── Capture seal: consolidated state update at capture completion ──────
   // Sets all capture-related fields atomically. Called from SegmentLifecycle::markCaptured.
@@ -2467,6 +2489,30 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   bool isDeviceManagedExternalInput(NDArray* input) const;
   bool isDeviceManagedExternalInput(int extIdx, NDArray* input) const;
   bool hasDeviceManagedExternalInputs(NDArray** externalInputs, int numExternalInputs) const;
+
+#ifdef SD_CUDA
+  /**
+   * Record, for every external index the segment reads that classifies as
+   * device-managed, the device address the just-completed capture baked in.
+   * Called once per segment capture completion so the staging passthrough in
+   * ensureAndSyncStagingBuffers can later verify ADDRESS IDENTITY per replay.
+   */
+  void recordManagedExtBakedAddrsForCapture(GraphSegment& seg, NDArray** externalArrays, int numExt);
+
+  /**
+   * Address-identity verdict for the staging passthrough skip.
+   * Returns the classification result (extIdx >= 0 classification first, then
+   * resident-address lookup). When classified as managed AND the recorded baked
+   * capture address for extIdx exists and differs from the live address, sets
+   * drifted=true and bakedAddr to the captured address: the caller must NOT skip
+   * staging — it must refresh the captured address instead. reboundEvent=true
+   * exactly when the live address changed since the previous call AND drifted
+   * (the REBOUND diagnostic fires once per relocation, not per call).
+   */
+  bool isDeviceManagedExternalInputIdentityChecked(int extIdx, NDArray* input,
+                                                   bool& drifted, void*& bakedAddr,
+                                                   bool& reboundEvent) const;
+#endif
 
   /**
    * Enable/disable shape-only dry-run mode.
@@ -4021,6 +4067,20 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   };
   std::vector<NativeKvScatterEntry> kvScatterEntries_;
   std::vector<void*> deviceManagedExternalInputAddrs_;
+#ifdef SD_CUDA
+  // ── Device-managed external input address identity (staging passthrough) ──
+  // Device-managed external inputs (KV/GDN/conv state, predictor logits buffers)
+  // bypass staging: their raw device address is baked into captured CUDA graphs
+  // and remains the source of truth. Classification alone is NOT proof that the
+  // baked address still matches the live buffer: registerDeviceManagedExternalInput
+  // can run AFTER capture with a relocated allocation, and the same captured graph
+  // then reads stale bytes. Record, per external index, the address baked at the
+  // most recent capture so ensureAndSyncStagingBuffers can verify identity per call
+  // and refresh the captured address when the live buffer moved.
+  std::unordered_map<int, void*> managedExtBakedAddrs_;   // ext idx → captured (baked) dev addr
+  // mutable: REBOUND event-gating bookkeeping updated by the const identity check.
+  mutable std::unordered_map<int, void*> managedExtLastLiveAddrs_;  // ext idx → last-seen live dev addr
+#endif
   DataType kvScatterDtype_ = DataType::FLOAT32;
   LongType* kvPositionDevice_ = nullptr;  // Device-accessible int64 position scalar (owned)
   bool kvScatterConfigured_ = false;

@@ -109,6 +109,54 @@ public class DspCompositeReplayTest {
         return sd;
     }
 
+    /**
+     * A same-shape variable rebind changes a graph-consumed address after capture.
+     * The first invocation with that replacement must execute, not return the last
+     * warmup result after preflight clears a composite replay schedule.
+     */
+    @ParameterizedTest(name = "capturedInputReplacement_{0}")
+    @EnumSource(value = GraphExecutionMode.class, names = {"AUTO", "TRITON", "CUDA_GRAPHS"})
+    void testCapturedInputReplacementExecutesCurrentInvocation(GraphExecutionMode mode) {
+        SameDiff sd = track(SameDiff.create());
+        SDVariable input = sd.placeHolder("input", DataType.FLOAT, 1, 4);
+        SDVariable state = sd.var("state", Nd4j.ones(DataType.FLOAT, 1, 4));
+        SDVariable weight = sd.constant("weight", Nd4j.ones(DataType.FLOAT, 4, 4));
+        SDVariable sum = input.add("sum", state);
+        sd.mmul("projected", sum, weight).mul("out", 2.0);
+        sd.setGraphExecutionMode(mode);
+
+        try (INDArray inputArray = Nd4j.ones(DataType.FLOAT, 1, 4)) {
+            Map<String, INDArray> inputs = Map.of("input", inputArray);
+            for (int step = 0; step < 12; step++) {
+                try (INDArray result = sd.output(inputs, "out").get("out").dup()) {
+                    for (int i = 0; i < 4; i++) {
+                        assertEquals(16.0f, result.getFloat(i), 0.0f,
+                                mode + " warmup/replay step " + step);
+                    }
+                }
+            }
+            DspPlanAssertions.assertTotalGraphReplaysAtLeast(sd, 1,
+                    mode + " must replay before replacing a captured input");
+            long capturedPlan = DspPlanAssertions.getPlanHandleForQuery(sd).address();
+
+            // Rebind, not assign: keep the same shape but replace storage and values.
+            sd.associateArrayWithVariable(
+                    Nd4j.valueArrayOf(new long[]{1, 4}, 3.0, DataType.FLOAT), state);
+            for (int step = 0; step < 12; step++) {
+                try (INDArray result = sd.output(inputs, "out").get("out").dup()) {
+                    for (int i = 0; i < 4; i++) {
+                        assertEquals(32.0f, result.getFloat(i), 0.0f,
+                                mode + " replacement step " + step + " must use current input");
+                    }
+                }
+                assertEquals(capturedPlan, DspPlanAssertions.getPlanHandleForQuery(sd).address(),
+                        "same-shape replacement must exercise the existing native plan");
+                assertEquals(mode, sd.getGraphExecutionMode(), "rebuild must preserve requested mode");
+            }
+            DspPlanAssertions.assertFullyReplaying(sd, mode + " must return to replay after rebind");
+        }
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     //  Test graph builders — each creates a pattern that forces composite replay.
     //  Weights are pre-generated and shared so sd and sdRef use IDENTICAL weights.

@@ -130,6 +130,11 @@ class SD_LIB_EXPORT MmulHelper {
  public:
   // ============== Public Interface ==============
 
+  // Explicit matmul iArg[3] == 1 contract. Same storage dtype on all operands;
+  // FLOAT accumulation for HALF/BFLOAT16/FLOAT, DOUBLE for DOUBLE. Never BLAS.
+  static void matmulSerial(LaunchContext* context, NDArray* x, NDArray* y, NDArray* z,
+                          bool transX, bool transY, double alpha, double beta);
+
   /**
    * General matrix multiplication with automatic dispatch
    *

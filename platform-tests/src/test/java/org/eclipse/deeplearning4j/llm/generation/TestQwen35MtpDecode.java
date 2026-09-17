@@ -485,7 +485,7 @@ public class TestQwen35MtpDecode {
             // wild draft tokens at rows 2-3, asl=4) instead of activeWindow=2 with
             // zero tail rows. Rows 0-1 are causally invariant to rows>=2 under
             // correct op semantics, so all downstream row-0/row-1 comparisons remain
-            // valid — a divergence here reproduces the native decode-loop corruption.
+            // valid - a divergence here reproduces the native decode-loop corruption.
             if (Boolean.getBoolean("mtp.parity.window4")) {
                 setDecodeStep(stableInputs, io, secondToken, draftToken, prefillLength + 1,
                         4, window, maxKvLength, maskType, owned);
@@ -494,6 +494,28 @@ public class TestQwen35MtpDecode {
                 specIds.putScalar(0, 3, 55786);
                 log.info("[MTP-TARGET-PARITY] window4 production envelope: ids row2=332 row3=55786 asl=4");
             }
+            // NATIVE-CROSSCHECK mode: -Dmtp.parity.nativeRows=true replays the exact
+            // verification inputs captured from a live decode loop step
+            // (MTP_VERIFY_INPUTS) through the Java graph and prints Java row
+            // argmaxes for rows 0..4, apples-to-apples with nativeRowArgmax.
+            // Rows: ids[0..4]; position = mtp.parity.nativePos (default 20).
+            if (Boolean.getBoolean("mtp.parity.nativeRows")) {
+                int nPos = Integer.getInteger("mtp.parity.nativePos", 20);
+                int[] rows = {
+                        (int) (long) Long.getLong("mtp.parity.nativeRow0", 248069L),
+                        (int) (long) Long.getLong("mtp.parity.nativeRow1", 46236L),
+                        (int) (long) Long.getLong("mtp.parity.nativeRow2", 153542L),
+                        (int) (long) Long.getLong("mtp.parity.nativeRow3", 163905L),
+                        (int) (long) Long.getLong("mtp.parity.nativeRow4", 41952L)};
+                setDecodeStep(stableInputs, io, rows[0], rows[1], nPos, 4, window,
+                        maxKvLength, maskType, owned);
+                INDArray specIds = stableInputs.get(io.getInputIdsName());
+                specIds.putScalar(0, 2, rows[2]);
+                specIds.putScalar(0, 3, rows[3]);
+                specIds.putScalar(0, 4, rows[4]);
+                log.info("[MTP-TARGET-PARITY] nativeRows envelope: ids={} pos={} asl=4",
+                        Arrays.toString(rows), nPos);
+            }
             INDArray windowMaskSnapshot = own(owned,
                     stableInputs.get(io.getCausalMaskName()).dup());
             Map<String, INDArray> windowOutputs = model.output(stableInputs, requested);
@@ -501,6 +523,16 @@ public class TestQwen35MtpDecode {
             // Generic SameDiff staging does not expose input side effects to caller arrays.
             // Export and commit K/V rows explicitly so this direct oracle matches native decode state.
             argMaxToken(windowOutputs.get(io.getLogitsOutputName()), 1);
+            // Native-crosscheck: Java-truth argmax for every verification row.
+            if (Boolean.getBoolean("mtp.parity.nativeRows")) {
+                StringBuilder rowArgmaxes = new StringBuilder();
+                for (int r = 0; r < 5 && r < windowOutputs.get(io.getLogitsOutputName()).size(1); r++) {
+                    rowArgmaxes.append(' ').append(argMaxToken(
+                            windowOutputs.get(io.getLogitsOutputName()), r));
+                }
+                log.info("[MTP-TARGET-PARITY] JAVA_ROW_ARGMAX native-vs-java:{}",
+                        rowArgmaxes.toString());
+            }
             commitKvRows(stableKv, kvNames, windowOutputs, prefillLength + 1, 2);
             Map<String, INDArray> windowSnapshot = snapshotOutputs(
                     windowOutputs, comparableNames, owned);

@@ -60,6 +60,7 @@ std::unordered_map<std::string, dim3> algoDimMap = {
     {"broadcast", dim3(GRID_SIZE_BROADCAST, BLOCK_SIZE_BROADCAST, SHARED_MEM_SIZE_BROADCAST)},
     {"broadcastInt", dim3(GRID_SIZE_BROADCAST_INT, BLOCK_SIZE_BROADCAST_INT, SHARED_MEM_SIZE_BROADCAST_INT)},
     {"broadcastBool", dim3(GRID_SIZE_BROADCAST_BOOL, BLOCK_SIZE_BROADCAST_BOOL, SHARED_MEM_SIZE_BROADCAST_BOOL)},
+    {"matmul_serial_fma", dim3(GRID_SIZE_MATMUL_SERIAL_FMA, BLOCK_SIZE_MATMUL_SERIAL_FMA, SHARED_MEM_SIZE_MATMUL_SERIAL_FMA)},
     {"matrixMultiply", dim3(GRID_SIZE_MATRIX_MULTIPLY, BLOCK_SIZE_MATRIX_MULTIPLY, SHARED_MEM_SIZE_MATRIX_MULTIPLY)},
     {"im2col", {dim3(GRID_SIZE_IM2COL, BLOCK_SIZE_IM2COL, SHARED_MEM_SIZE_IM2COL)}},
     {"col2im", {dim3(GRID_SIZE_COL2IM, BLOCK_SIZE_COL2IM, SHARED_MEM_SIZE_COL2IM)}},
@@ -187,6 +188,8 @@ std::unordered_map<std::string, dim3> algoDimMap = {
     {"fused_mrope", {dim3(GRID_SIZE_FUSED_MROPE, BLOCK_SIZE_FUSED_MROPE, SHARED_MEM_SIZE_FUSED_MROPE)}},
     {"vision_embedding_merge", {dim3(GRID_SIZE_VISION_EMBEDDING_MERGE, BLOCK_SIZE_VISION_EMBEDDING_MERGE, SHARED_MEM_SIZE_VISION_EMBEDDING_MERGE)}},
     {"audio", {dim3(GRID_SIZE_AUDIO, BLOCK_SIZE_AUDIO, SHARED_MEM_SIZE_AUDIO)}},
+    {"modelopt_linear", {dim3(GRID_SIZE_MODELOPT_LINEAR, BLOCK_SIZE_MODELOPT_LINEAR, SHARED_MEM_SIZE_MODELOPT_LINEAR)}},
+    {"modelopt_linear_tiled", {dim3(GRID_SIZE_MODELOPT_LINEAR_TILED, BLOCK_SIZE_MODELOPT_LINEAR_TILED, SHARED_MEM_SIZE_MODELOPT_LINEAR_TILED)}},
     {"ggml_qmatmul", {dim3(GRID_SIZE_GGML_QMATMUL, BLOCK_SIZE_GGML_QMATMUL, SHARED_MEM_SIZE_GGML_QMATMUL)}},
     {"moe_weighted_sum", {dim3(GRID_SIZE_MOE_WEIGHTED_SUM, BLOCK_SIZE_MOE_WEIGHTED_SUM, SHARED_MEM_SIZE_MOE_WEIGHTED_SUM)}},
 
@@ -245,6 +248,7 @@ std::unordered_map<std::string, std::vector<std::string>> algoDimMapString = {
     {"broadcast", {"GRID_SIZE_BROADCAST", "BLOCK_SIZE_BROADCAST", "SHARED_MEM_SIZE_BROADCAST"}},
     {"broadcastInt", {"GRID_SIZE_BROADCAST_INT", "BLOCK_SIZE_BROADCAST_INT", "SHARED_MEM_SIZE_BROADCAST_INT"}},
     {"broadcastBool", {"GRID_SIZE_BROADCAST_BOOL", "BLOCK_SIZE_BROADCAST_BOOL", "SHARED_MEM_SIZE_BROADCAST_BOOL"}},
+    {"matmul_serial_fma", {"GRID_SIZE_MATMUL_SERIAL_FMA", "BLOCK_SIZE_MATMUL_SERIAL_FMA", "SHARED_MEM_SIZE_MATMUL_SERIAL_FMA"}},
     {"matrixMultiply", {"GRID_SIZE_MATRIX_MULTIPLY", "BLOCK_SIZE_MATRIX_MULTIPLY", "SHARED_MEM_SIZE_MATRIX_MULTIPLY"}},
     {"im2col", {"GRID_SIZE_IM2COL", "BLOCK_SIZE_IM2COL", "SHARED_MEM_SIZE_IM2COL"}},
     {"col2im", {"GRID_SIZE_COL2IM", "BLOCK_SIZE_COL2IM", "SHARED_MEM_SIZE_COL2IM"}},
@@ -377,6 +381,8 @@ std::unordered_map<std::string, std::vector<std::string>> algoDimMapString = {
     {"audio", {"GRID_SIZE_AUDIO", "BLOCK_SIZE_AUDIO", "SHARED_MEM_SIZE_AUDIO"}},
     {"barnesGains", {"GRID_SIZE_BARNES_GAINS", "BLOCK_SIZE_BARNES_GAINS", "SHARED_MEM_SIZE_BARNES_GAINS"}},
     {"word2vec", {"GRID_SIZE_WORD2VEC", "BLOCK_SIZE_WORD2VEC", "SHARED_MEM_SIZE_WORD2VEC"}},
+    {"modelopt_linear", {"GRID_SIZE_MODELOPT_LINEAR", "BLOCK_SIZE_MODELOPT_LINEAR", "SHARED_MEM_SIZE_MODELOPT_LINEAR"}},
+    {"modelopt_linear_tiled", {"GRID_SIZE_MODELOPT_LINEAR_TILED", "BLOCK_SIZE_MODELOPT_LINEAR_TILED", "SHARED_MEM_SIZE_MODELOPT_LINEAR_TILED"}},
     {"ggml_qmatmul", {"GRID_SIZE_GGML_QMATMUL", "BLOCK_SIZE_GGML_QMATMUL", "SHARED_MEM_SIZE_GGML_QMATMUL"}},
     {"moe_weighted_sum", {"GRID_SIZE_MOE_WEIGHTED_SUM", "BLOCK_SIZE_MOE_WEIGHTED_SUM", "SHARED_MEM_SIZE_MOE_WEIGHTED_SUM"}},
 
@@ -627,7 +633,14 @@ dim3 getim2ColLaunchParams(sd::NDArray col) {
 
 
 dim3 getGemVDims(int m) {
-  int threadsPerBlock = SD_MAX_NUM_THREADS;
+  // usualCudaGemv instantiations compile at up to 108 registers/thread (the
+  // AccT float-accumulator variants), so the historical SD_MAX_NUM_THREADS
+  // default of 1024 threads/block needs 110592 registers against a 64K
+  // register file and every launch fails with error 701 (too many resources
+  // requested for launch). 512 threads x 108 = 55296 fits every
+  // instantiation; GEMV row counts are tiny in practice (grid-strided loop),
+  // so the smaller block costs nothing.
+  int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   int blocksPerGrid = (m + threadsPerBlock - 1) / threadsPerBlock;
 
   threadsPerBlock = getEnvVariable("GRID_SIZE_GEMV", threadsPerBlock);

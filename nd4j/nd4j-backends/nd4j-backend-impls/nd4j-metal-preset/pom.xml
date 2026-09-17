@@ -106,7 +106,7 @@ The preset class is compilable on all platforms; generated bindings require macO
     </build>
 
     <profiles>
-        <!-- Profile for generating JavaCPP bindings on macOS arm64 + Xcode. -->
+        <!-- Compile preset metadata before backend-module JavaCPP parsing. -->
         <profile>
             <id>javacpp</id>
             <activation>
@@ -117,34 +117,15 @@ The preset class is compilable on all platforms; generated bindings require macO
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>org.bytedeco</groupId>
-                        <artifactId>javacpp</artifactId>
-                        <version>${javacpp.version}</version>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>javacpp.parser</id>
+                                <id>javacpp-parser</id>
                                 <phase>generate-sources</phase>
-                                <goals>
-                                    <goal>parse</goal>
-                                </goals>
+                                <goals><goal>compile</goal></goals>
                                 <configuration>
-                                    <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
-                                    <classOrPackageNames>
-                                        <classOrPackageName>org.nd4j.presets.metal.Nd4jMetalPresets</classOrPackageName>
-                                    </classOrPackageNames>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>javacpp.compiler</id>
-                                <phase>process-classes</phase>
-                                <goals>
-                                    <goal>build</goal>
-                                </goals>
-                                <configuration>
-                                    <classOrPackageNames>
-                                        <classOrPackageName>org.nd4j.linalg.metal.bindings.Nd4jMetal</classOrPackageName>
-                                    </classOrPackageNames>
-                                    <copyLibs>true</copyLibs>
+                                    <skipMain>${javacpp.parser.skip}</skipMain>
                                 </configuration>
                             </execution>
                         </executions>

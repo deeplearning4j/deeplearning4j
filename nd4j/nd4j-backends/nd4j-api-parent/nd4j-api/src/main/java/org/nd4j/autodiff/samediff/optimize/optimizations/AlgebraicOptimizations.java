@@ -495,7 +495,8 @@ public class AlgebraicOptimizations extends BaseOptimizerSet {
             if (producerOpName == null) return false;
 
             SameDiffOp producerOp = sd.getOps().get(producerOpName);
-            if (producerOp == null || !(producerOp.getOp() instanceof Mmul)) return false;
+            if (producerOp == null || !(producerOp.getOp() instanceof Mmul)
+                    || MatmulArithmeticPolicy.isExplicit(producerOp.getOp())) return false;
 
             // The matmul result must be single-consumer (only this mul uses it)
             List<String> matmulResultConsumers = matmulResultVar.getInputsForOp();
@@ -642,7 +643,8 @@ public class AlgebraicOptimizations extends BaseOptimizerSet {
             String producerOpName = matmulResultVar.getOutputOfOp();
             if (producerOpName == null) return false;
             SameDiffOp producerOp = sd.getOps().get(producerOpName);
-            if (producerOp == null || !(producerOp.getOp() instanceof Mmul)) return false;
+            if (producerOp == null || !(producerOp.getOp() instanceof Mmul)
+                    || MatmulArithmeticPolicy.isExplicit(producerOp.getOp())) return false;
 
             // No transpose flags on the matmul
             Mmul mmul = (Mmul) producerOp.getOp();

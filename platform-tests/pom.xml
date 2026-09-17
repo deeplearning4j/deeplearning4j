@@ -59,7 +59,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
         <!-- Kept in sync with the nd4j-cuda artifact family by change-cuda-versions.sh. -->
-        <cuda.version>12.9</cuda.version>
+        <cuda.version>13.1</cuda.version>
         <platform.classifier>${javacpp.platform}</platform.classifier>
         <backend.artifactId>nd4j-cuda-${cuda.version}</backend.artifactId>
         <!-- Forwarded into Surefire so backend-specific profiles select the intended runtime. -->
@@ -95,6 +95,8 @@
         <test.offheap.size>24g</test.offheap.size>
         <!-- Separate physical bytes limit — defaults to offheap size but can be overridden for memory-intensive tests -->
         <test.maxphysicalbytes>${test.offheap.size}</test.maxphysicalbytes>
+        <!-- Large opt-in checkpoint transfers may need a longer wall-clock budget. -->
+        <test.fork.timeout.seconds>3600</test.fork.timeout.seconds>
         <!-- Note this will not use the embedded java shell script if forks is set to 0. Uset fork count 0 with address sanitizer only.-->
         <surefire.forks>1</surefire.forks>
         <surefire.threads>1</surefire.threads>
@@ -109,6 +111,7 @@
         <nd4j.triton.alwaysCompile></nd4j.triton.alwaysCompile>
         <nd4j.environment.tritonCacheDir></nd4j.environment.tritonCacheDir>
         <nd4j.triton.compileAll></nd4j.triton.compileAll>
+        <nd4j.triton.skipKernels></nd4j.triton.skipKernels>
         <!-- Vulkan disk caches (ADR 0115): empty = native defaults (~/.kompile/cache/vulkan/...) -->
         <nd4j.environment.vulkanSpirvCacheEnabled></nd4j.environment.vulkanSpirvCacheEnabled>
         <nd4j.environment.vulkanSpirvCacheDir></nd4j.environment.vulkanSpirvCacheDir>
@@ -1917,6 +1920,7 @@
                         <ND4J_TRITON_ALWAYS_COMPILE>${nd4j.triton.alwaysCompile}</ND4J_TRITON_ALWAYS_COMPILE>
                         <ND4J_TRITON_CACHE_DIR>${nd4j.environment.tritonCacheDir}</ND4J_TRITON_CACHE_DIR>
                         <ND4J_TRITON_COMPILE_ALL>${nd4j.triton.compileAll}</ND4J_TRITON_COMPILE_ALL>
+                        <ND4J_TRITON_SKIP_KERNELS>${nd4j.triton.skipKernels}</ND4J_TRITON_SKIP_KERNELS>
                         <ND4J_TRITON_INCLUDE_TYPES>${nd4j.triton.includeTypes}</ND4J_TRITON_INCLUDE_TYPES>
                     </environmentVariables>
                     <systemPropertyVariables>
@@ -1986,7 +1990,7 @@
                     <useManifestOnlyJar>false</useManifestOnlyJar>
                     <shutdown>kill</shutdown>
                     <argLine>-Dorg.bytedeco.javacpp.logger.debug=false   ${jdk9.exports}  -Djava.library.path=${java.library.path} -Dorg.nd4j.arraynogc=${test.nogc}  -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.maxphysicalbytes} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
-                    <forkedProcessTimeoutInSeconds>3600</forkedProcessTimeoutInSeconds>
+                    <forkedProcessTimeoutInSeconds>${test.fork.timeout.seconds}</forkedProcessTimeoutInSeconds>
                     <forkCount>${surefire.forks}</forkCount>
                     <threadCount>${surefire.threads}</threadCount>
                     <perCoreThreadCount>false</perCoreThreadCount>

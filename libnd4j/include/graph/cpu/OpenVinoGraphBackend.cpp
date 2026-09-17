@@ -22,6 +22,7 @@
 
 #include <graph/cpu/OpenVinoGraphBackend.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspAnalysisUtils.h>
 #include <helpers/shape.h>
 #include <array/ArrayOptions.h>
 #include <ops/declarable/helpers/causal_conv1d.h>
@@ -456,6 +457,7 @@ static bool isOvSingleOpWorthCompiling(const std::string& opName) {
 }
 
 bool OpenVinoGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
+  if (dsp::hasNonLegacyMatmulArithmetic(slots, start, end)) return false;
   int mappableOps = 0;
   int totalOps = 0;
 

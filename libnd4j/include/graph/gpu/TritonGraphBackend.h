@@ -34,6 +34,7 @@
 #include <atomic>
 #include <functional>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -138,6 +139,16 @@ class TritonGraphBackend : public GraphBackend {
    */
   void copyConsolidatedArgTableToDevice(GraphSegment& seg, void* stream);
 
+  void prepareAliasBindingsForCapture(GraphSegment& seg, NDArray** externalInputs,
+      int numExternalInputs, NDArray** outputSlots, int totalOutputSlots, void* stream);
+  // Pre-launch only: MAYBE requests the owning segment's rebuild lifecycle.
+  Status preflightAliasBindings(GraphSegment& seg, NDArray** externalInputs,
+      int numExternalInputs, NDArray** outputSlots, int totalOutputSlots);
+  // Replay bypasses executeSingleKernel. The execution owner must record the
+  // stream's consumption of captured pinned argument sources after submission.
+  void recordArgumentSubmission(GraphSegment& seg, void* stream);
+  void awaitArgumentSubmissionsForRetirement(GraphSegment& seg);
+
   // Get the set of slot indices NOT covered by any sub-kernel (ordered native ranges).
   // Value-dependent producers remain live. A compiled consumer may stay covered only
   // when its current tensor metadata exactly matches the concrete compiled argument.
@@ -206,6 +217,24 @@ class TritonGraphBackend : public GraphBackend {
     std::vector<CompilationAuditEntry> audit;
 
 #ifdef SD_CUDA
+    struct AliasBinding {
+      int argIdx;
+      void* origPtr;
+      void* tempPtr;
+      size_t bytes;
+      int slotIdx;
+    };
+    std::vector<AliasBinding> aliasBindings;
+    std::vector<void*> bindingPointers;
+    std::vector<size_t> bindingBytes;
+    bool aliasBindingsCaptured = false;
+    int aliasDeviceId = -1;
+    // Separate from preallocReadyEvent: this fences H2D source consumption,
+    // including graph submissions that do not enter the kernel launcher.
+    void* argumentConsumedEvent = nullptr;
+    bool argumentSubmissionPending = false;
+    uint64_t argumentVersion = 0;
+
     // Persistent launch workspace to avoid per-launch cudaMalloc/cudaFree churn.
     // These buffers are reused across executions for the same compiled kernel.
     void* cachedArgTableDevice;
@@ -710,6 +739,22 @@ class TritonGraphBackend : public GraphBackend {
                               const std::string& cacheHash,
                               const TritonIRModule& irModule,
                               const TritonCompiledBinary& binary) const;
+
+#ifdef SD_CUDA
+  Status prepareAliasBindings(CompiledKernel& kernel, std::vector<void*>& pointers,
+      NDArray** externalInputs, int numExternalInputs, NDArray** outputSlots,
+      int totalOutputSlots, void* stream, bool capturing);
+  bool aliasBindingsMatch(const CompiledKernel& kernel, NDArray** externalInputs,
+      int numExternalInputs, NDArray** outputSlots, int totalOutputSlots) const;
+  void publishArgumentPointers(CompiledKernel& kernel, const std::vector<void*>& pointers,
+      bool capturing);
+  void recordKernelArgumentSubmission(CompiledKernel& kernel, void* stream);
+  // Post-capture-check body shared by the single-kernel and segment-wide
+  // submission paths. Caller must have established the stream is not capturing.
+  void recordKernelArgumentSubmissionAfterCaptureCheck(CompiledKernel& kernel,
+                                                       void* stream);
+  void releaseAliasBindings(CompiledKernel& kernel);
+#endif
 
   // Execute a single compiled sub-kernel.
   // When argTablePreCopied=true, skip per-kernel H2D memcpy (consolidated copy already done).

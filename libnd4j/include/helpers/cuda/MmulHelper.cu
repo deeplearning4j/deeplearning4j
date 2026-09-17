@@ -29,6 +29,8 @@
 #include <string>
 #include <helpers/ShapeUtils.h>
 #include <ops/specials_cuda.h>
+#include <ops/op_types.h>
+#include <ops/declarable/helpers/matmul.h>
 
 #include <algorithm>
 #include <atomic>
@@ -68,6 +70,47 @@ void recordActiveMmulOutputFingerprint(int ordinal, const void* cPtr, size_t cBy
 } }
 
 namespace sd {
+
+template <typename T>
+static SD_KERNEL void serialGemmKernel(const T* x, const T* y, T* z,
+    const LongType* xs, const LongType* ys, const LongType* zs,
+    LongType length, bool tx, bool ty, double alpha, double beta) {
+  for (LongType i = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
+       i < length; i += static_cast<LongType>(gridDim.x) * blockDim.x)
+    ops::helpers::matmulSerialElement(i, x, y, z, xs, ys, zs, tx, ty, alpha, beta);
+}
+
+template <typename T>
+static void launchSerialGemm(dim3 dims, cudaStream_t* stream, NDArray* x, NDArray* y, NDArray* z,
+                            bool tx, bool ty, double alpha, double beta) {
+  const auto* xs = x->specialShapeInfo();
+  const auto* ys = y->specialShapeInfo();
+  const auto* zs = z->specialShapeInfo();
+  serialGemmKernel<T><<<dims.x, dims.y, 0, *stream>>>(
+      static_cast<const T*>(x->specialBuffer()), static_cast<const T*>(y->specialBuffer()),
+      static_cast<T*>(z->specialBuffer()), xs, ys, zs, z->lengthOf(), tx, ty, alpha, beta);
+}
+
+void MmulHelper::matmulSerial(LaunchContext* context, NDArray* x, NDArray* y, NDArray* z,
+                            bool tx, bool ty, double alpha, double beta) {
+  if (z->isEmpty()) return;
+  const auto dims = getLaunchDims("matmul_serial_fma");
+  // No shared memory, barriers, workspace, host tensors or BLAS handles.
+  cudaDeviceProp properties;
+  if (cudaGetDeviceProperties(&properties, context->getDeviceID()) != cudaSuccess)
+    THROW_EXCEPTION("MATMUL SERIAL_FMA: unable to query launch limits");
+  if (dims.x == 0 || dims.x > static_cast<unsigned int>(properties.maxGridSize[0]) ||
+      dims.y == 0 || dims.y > static_cast<unsigned int>(properties.maxThreadsPerBlock) ||
+      dims.y > static_cast<unsigned int>(properties.maxThreadsDim[0]) || dims.z != 0)
+    THROW_EXCEPTION("MATMUL SERIAL_FMA: invalid named launch dimensions");
+  if (beta != 0.0) NDArray::prepareSpecialUse({z}, {x, y, z});
+  else NDArray::prepareSpecialUse({z}, {x, y});
+  auto* stream = context->getCudaStream();
+  BUILD_SINGLE_SELECTOR(x->dataType(), launchSerialGemm, (dims, stream, x, y, z, tx, ty, alpha, beta), SD_FLOAT_TYPES);
+  NDArray::registerSpecialUse({z}, {x, y});
+  if (!DebugHelper::inGraphCapture(stream))
+    DebugHelper::checkGlobalErrorCode("MATMUL SERIAL_FMA launch failed");
+}
 
 // Thread-local cublasLt epilogue state — set by DSP executor before matmul dispatch
 struct LtEpilogueState {
@@ -675,13 +718,14 @@ static SD_KERNEL void usualCudaGemm(const void* vA, const LongType* aShapeInfo, 
                                    const LongType* bShapeInfo, void* vC, const LongType* cShapeInfo,
                                    const int aMaxis, const int aKaxis, const int bKaxis, const int bNaxis,
                                    const int cMaxis, const int cNaxis, const double alpha, const double beta) {
+ using AccT = typename simdOps::AggregateType<T3>::type;
  // Cache shape information in shared memory
  __shared__ LongType K;
  __shared__ LongType cLen;
  __shared__ LongType totalThreads;
  __shared__ bool betaPresent;
- __shared__ T3 alphaZ;
- __shared__ T3 betaZ;
+ __shared__ AccT alphaZ;
+ __shared__ AccT betaZ;
  __shared__ const LongType* aShape;
  __shared__ const LongType* bShape;
  __shared__ const LongType* cShape;
@@ -745,18 +789,18 @@ static SD_KERNEL void usualCudaGemm(const void* vA, const LongType* aShapeInfo, 
    COORDS2INDEX(aRank, aStride, aCoords, aOffset);
    COORDS2INDEX(bRank, bStride, bCoords, bOffset);
 
-   T3 val = A[aOffset] * B[bOffset];  // first iteration
+   AccT val = static_cast<AccT>(A[aOffset]) * static_cast<AccT>(B[bOffset]);  // first iteration
 
    for (LongType j = 1; j < K; ++j) {  // rest iterations
      aOffset += aStride[aKaxis];
      bOffset += bStride[bKaxis];
-     val = val + A[aOffset] * B[bOffset];
+     val = val + static_cast<AccT>(A[aOffset]) * static_cast<AccT>(B[bOffset]);
    }
 
    COORDS2INDEX(cRank, cStride, cCoords, cOffset);
 
    if (betaPresent)
-     C[cOffset] = alphaZ * val + betaZ * C[cOffset];
+     C[cOffset] = alphaZ * val + betaZ * static_cast<AccT>(C[cOffset]);
    else
      C[cOffset] = alphaZ * val;
  }
@@ -782,6 +826,7 @@ static SD_KERNEL void usualCudaGemv(const void* vA, const LongType* aShapeInfo, 
                                    const int incx, const int incy, const int aMaxis, const double alpha,
                                    const double beta) {
 
+ using AccT = typename simdOps::AggregateType<T3>::type;
  // Cache shape information in shared memory
  __shared__ LongType M;
  __shared__ LongType N;
@@ -789,8 +834,8 @@ static SD_KERNEL void usualCudaGemv(const void* vA, const LongType* aShapeInfo, 
  __shared__ LongType totalThreads;
  __shared__ LongType aNstride;
  __shared__ LongType aMstride;
- __shared__ T3 alphaZ;
- __shared__ T3 betaZ;
+ __shared__ AccT alphaZ;
+ __shared__ AccT betaZ;
  __shared__ const LongType* aShape;
  __shared__ const LongType* aStride;
  __shared__ LongType aRank;
@@ -824,18 +869,18 @@ static SD_KERNEL void usualCudaGemv(const void* vA, const LongType* aShapeInfo, 
    auto aOffset = i * aMstride;
    auto xOffset = 0;
 
-   T3 val = A[aOffset] * X[xOffset];  // first iteration
+   AccT val = static_cast<AccT>(A[aOffset]) * static_cast<AccT>(X[xOffset]);  // first iteration
 
    for (LongType j = 1; j < N; ++j) {  // rest iterations
      aOffset += aNstride;
      xOffset += incx;
-     val = val + A[aOffset] * X[xOffset];
+     val = val + static_cast<AccT>(A[aOffset]) * static_cast<AccT>(X[xOffset]);
    }
 
    auto yOffset = i * incy;
 
    if (betaPresent)
-     Y[yOffset] = alphaZ * val + betaZ * Y[yOffset];
+     Y[yOffset] = alphaZ * val + betaZ * static_cast<AccT>(Y[yOffset]);
    else
      Y[yOffset] = alphaZ * val;
  }
@@ -919,12 +964,13 @@ static SD_KERNEL void batchedCudaGemm(const void* vA, const LongType* aShapeInfo
                                      const LongType bKaxis, const LongType bNaxis, const LongType cMaxis,
                                      const LongType cNaxis, const double alpha, const double beta) {
 
+ using AccT = typename simdOps::AggregateType<T3>::type;
  // Cache shape information in shared memory
  __shared__ struct {
    bool betaPresent;
    LongType aRank, bRank, cRank, K;
    LongType cLen, totalThreads;
-   T3 alphaZ, betaZ;
+   AccT alphaZ, betaZ;
    const LongType* aShape;
    const LongType* bShape;
    const LongType* cShape;
@@ -998,18 +1044,18 @@ static SD_KERNEL void batchedCudaGemm(const void* vA, const LongType* aShapeInfo
    COORDS2INDEX(shared.aRank, shared.aStride, aCoords, aOffset);
    COORDS2INDEX(shared.bRank, shared.bStride, bCoords, bOffset);
 
-   T3 val = A[aOffset] * B[bOffset];  // first iteration
+   AccT val = static_cast<AccT>(A[aOffset]) * static_cast<AccT>(B[bOffset]);  // first iteration
 
    for (LongType j = 1; j < shared.K; ++j) {  // rest iterations
      aOffset += shared.aStride[aKaxis];
      bOffset += shared.bStride[bKaxis];
-     val = val + A[aOffset] * B[bOffset];
+     val = val + static_cast<AccT>(A[aOffset]) * static_cast<AccT>(B[bOffset]);
    }
 
    COORDS2INDEX(shared.cRank, shared.cStride, cCoords, cOffset);
 
    if (shared.betaPresent)
-     C[cOffset] = shared.alphaZ * val + shared.betaZ * C[cOffset];
+     C[cOffset] = shared.alphaZ * val + shared.betaZ * static_cast<AccT>(C[cOffset]);
    else
      C[cOffset] = shared.alphaZ * val;
  }
@@ -1167,6 +1213,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
  const bool typeDouble = ABC && effAType == DOUBLE;
  const bool typeFloat = ABC && effAType == FLOAT32;
  const bool typeHalf = ABC && effAType == HALF && major >= 6;
+ const bool typeBfloat = ABC && effAType == BFLOAT16 && major >= 8;
  const bool typeIntFloat = AB && effAType == INT8 && cType == FLOAT32 && major >= 6;
  const bool typeHalfFloat = AB && effAType == HALF && cType == FLOAT32 && major >= 6;
 
@@ -1193,7 +1240,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
     reapplyCublasWorkspace(*handle);
   }
 
- if (!typeDouble && !typeFloat && !typeHalf && !typeIntFloat && !typeHalfFloat) {
+ if (!typeDouble && !typeFloat && !typeHalf && !typeBfloat && !typeIntFloat && !typeHalfFloat) {
    dim3 dims = getMMulDims(C->lengthOf(),DataTypeUtils::sizeOf(cType));
    if (!tl_cublasGapStreamReady) NDArray::prepareSpecialUse({C}, {effA, effB});
    BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm,
@@ -1359,6 +1406,14 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
                            &getCublasScalars()->betaF,
                            pC->specialBuffer(), CUDA_R_16F, ldc,
                            CUBLAS_COMPUTE_32F, gemmAlgo);
+   } else if (typeBfloat) {
+     getCublasScalars()->alphaF = static_cast<float>(alpha);
+     getCublasScalars()->betaF = static_cast<float>(beta);
+     status = cublasGemmEx(*handle, transAblas, transBblas, M, N, K, &getCublasScalars()->alphaF,
+                          pA->specialBuffer(), CUDA_R_16BF, lda,
+                          pB->specialBuffer(), CUDA_R_16BF, ldb,
+                          &getCublasScalars()->betaF, pC->specialBuffer(), CUDA_R_16BF, ldc,
+                          CUBLAS_COMPUTE_32F, gemmAlgo);
    } else if (typeIntFloat) {
      getCublasScalars()->alphaF = static_cast<float>(alpha);
      getCublasScalars()->betaF  = static_cast<float>(beta);
@@ -1763,7 +1818,7 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
  std::vector<LongType> *bDims =  ShapeUtils::evalDimsToExclude(bRank,2, bDimsVec.data());
 
 
- std::vector<LongType> cDimsVec = {cMaxis,2, cNaxis};
+ std::vector<LongType> cDimsVec = {cMaxis, cNaxis};
  std::vector<LongType> *cDims = ShapeUtils::evalDimsToExclude(cRank, cDimsVec.size(),cDimsVec.data());
  if (aRank > 2)
    aBatchDims = reinterpret_cast<LongType*>(manager.replicatePointer(

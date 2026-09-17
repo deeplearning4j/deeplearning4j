@@ -24,12 +24,19 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
+/**
+ * Last-axis RMS normalization. Input/output share a storage dtype; gamma may
+ * independently be HALF, BFLOAT16, FLOAT32 or DOUBLE. Arithmetic is at least
+ * FLOAT32 (DOUBLE when a DOUBLE operand participates), with one output cast.
+ * Arbitrary strides and empty tensors are supported. Keep epsilon as double
+ * across the helper ABI so DOUBLE computation does not inherit a FLOAT32 epsilon.
+ */
 SD_LIB_HIDDEN void rmsNorm(
     LaunchContext* context,
     NDArray* input,
     NDArray* gamma,
     NDArray* output,
-    float epsilon);
+    double epsilon);
 
 /**
  * Fused RMSNorm + Linear: output = matmul(rmsNorm(input, gamma, eps), weight)
@@ -37,7 +44,8 @@ SD_LIB_HIDDEN void rmsNorm(
  * Eliminates the intermediate normalized tensor from global memory.
  * On CUDA with M=1 (decode), uses a single fused kernel that computes
  * the normalization and matrix-vector product in one pass.
- * For M>1, uses fused rmsNorm kernel + cuBLAS GEMM.
+ * For M>1, uses normalization plus BLAS in computation precision. Mixed
+ * storage weights are converted in bounded panels, not as a full matrix.
  *
  * @param input  [M, K] input tensor
  * @param gamma  [K] RMS norm scale weights
@@ -51,7 +59,7 @@ SD_LIB_HIDDEN void rmsNormLinear(
     NDArray* gamma,
     NDArray* weight,
     NDArray* output,
-    float epsilon);
+    double epsilon);
 
 /**
  * Fused Skip (Residual Add) + RMS Normalization:
@@ -63,7 +71,7 @@ SD_LIB_HIDDEN void rmsNormLinear(
  * @param input      [batch, ..., features]
  * @param skip       [batch, ..., features] (residual)
  * @param gamma      [features] RMS norm scale weights
- * @param bias       [features] optional bias (may be nullptr)
+ * @param bias       [features] optional bias in input dtype (may be nullptr)
  * @param output     [batch, ..., features] normalized output
  * @param hiddenOut  [batch, ..., features] optional pre-norm hidden states (may be nullptr)
  * @param epsilon    RMS norm epsilon
@@ -76,7 +84,7 @@ SD_LIB_HIDDEN void skipRmsNorm(
     NDArray* bias,
     NDArray* output,
     NDArray* hiddenOut,
-    float epsilon);
+    double epsilon);
 
 }  // namespace helpers
 }  // namespace ops

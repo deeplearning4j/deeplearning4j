@@ -60,9 +60,84 @@ bool jitCanFuseSegment(NativeSlot* slots, int start, int end) {
                start, end, slots[i].ident.opName.c_str(), static_cast<int>(cat), i);
       return false;
     }
+    // Ternary (where/select) with an externally-bound condition can never be
+    // lowered by a flat FLOAT32 elementwise kernel: external inputs are bound
+    // as `const float*` kernel parameters, while a where-condition is a BOOL
+    // mask and is frequently broadcast (e.g. mask [1,4,1] vs x [1,4,8]) —
+    // neither dtype nor shape mapping is expressible in the per-element
+    // [idx] addressing every JIT generator emits. Admitting such a slot
+    // guarantees the segment compiles wrong math or fails the concrete
+    // lowering contract at seal time. Same structural-honesty pattern as the
+    // NNAPI gather rule: reject at admission so buildSegments splits the range
+    // and the ternary op runs native (gap-op path, sanctioned for JIT modes).
+    // Slot-produced conditions are already float-encoded 0/1 SSA values and
+    // remain fusible.
+    if (cat == TritonOpCategory::TERNARY &&
+        slots[i].wiring.numInputs > 0 &&
+        slots[i].wiring.inputSourceIndices != nullptr) {
+      const int condSrc = slots[i].wiring.inputSourceIndices[0];
+      if (condSrc < 0) {
+        DSP_DIAG(JIT,
+                 "jitCanFuseSegment: ternary op '%s' at slot %d has an "
+                 "externally-bound condition (ext[%d]) — a BOOL/broadcast "
+                 "condition binding is not expressible in a flat FLOAT32 "
+                 "[idx] kernel; segment must not fuse (ternary runs native)",
+                 slots[i].ident.opName.c_str(), i, -(condSrc + 1));
+        return false;
+      }
+    }
     fusible++;
   }
   return fusible >= JIT_MIN_FUSIBLE_OPS;
+}
+
+bool jitValidateFloatTensorBindings(
+    NativeSlot* slots, int start, int end,
+    NDArray** externalInputs, int numExternalInputs,
+    NDArray** outputSlots, int totalOutputSlots,
+    std::string& reason) {
+  reason.clear();
+  if (!slots || start < 0 || end < start) {
+    reason = "FLOAT32-only JIT requires concrete segment wiring";
+    return false;
+  }
+
+  auto check = [&](int slot, const char* role, int binding, bool external) {
+    NDArray* array = nullptr;
+    const int index = external ? -(binding + 1) : binding;
+    if (external) {
+      if (externalInputs && index >= 0 && index < numExternalInputs)
+        array = externalInputs[index];
+    } else if (outputSlots && index >= 0 && index < totalOutputSlots) {
+      array = outputSlots[index];
+    }
+    if (array && array->dataType() == DataType::FLOAT32) return true;
+    reason = "FLOAT32-only JIT tensor contract rejected: slot=" + std::to_string(slot) +
+        ", " + role + " binding=" + std::to_string(binding) +
+        (external ? " (external)" : " (output slot)") +
+        ", dtype=" + (array ? std::to_string(static_cast<int>(array->dataType()))
+                             : std::string("missing")) + "; required FLOAT32";
+    return false;
+  };
+
+  for (int si = start; si <= end; ++si) {
+    const auto& wiring = slots[si].wiring;
+    if (wiring.numInputs < 0 || (wiring.numInputs > 0 && !wiring.inputSourceIndices) ||
+        wiring.numOutputs <= 0 || !wiring.outputSlotIndices) {
+      reason = "FLOAT32-only JIT requires concrete tensor bindings at slot=" + std::to_string(si);
+      return false;
+    }
+    for (int i = 0; i < wiring.numInputs; ++i) {
+      const int binding = wiring.inputSourceIndices[i];
+      if (!check(si, "input", binding, binding < 0)) return false;
+    }
+    // Intermediate outputs matter too: a cast/comparison cannot silently become
+    // FLOAT32 SSA simply because only the final output is a kernel parameter.
+    for (int o = 0; o < wiring.numOutputs; ++o) {
+      if (!check(si, "output", wiring.outputSlotIndices[o], false)) return false;
+    }
+  }
+  return true;
 }
 
 Status jitExecuteSegment(
@@ -85,6 +160,14 @@ Status jitExecuteSegment(
     errorReference->setErrorMessage(message);
     return Status::KERNEL_FAILURE;
   };
+
+  std::string dtypeReason;
+  if (!jitValidateFloatTensorBindings(slots, key.startSlot, key.endSlot,
+                                     externalInputs, numExternalInputs,
+                                     outputSlots, totalOutputSlots, dtypeReason)) {
+    DSP_DIAG(EXECUTE, "%s: %s", backendName, dtypeReason.c_str());
+    return failSegment(dtypeReason);
+  }
 
   JitCompiledKernel* compiled = nullptr;
   {
@@ -111,11 +194,11 @@ Status jitExecuteSegment(
     NDArray* arr = nullptr;
     if (am.slotIndex < 0) {
       int extIdx = -(am.slotIndex + 1);
-      if (extIdx < numExternalInputs) {
+      if (externalInputs && extIdx < numExternalInputs) {
         arr = externalInputs[extIdx];
       }
     } else {
-      if (am.slotIndex < totalOutputSlots) {
+      if (outputSlots && am.slotIndex < totalOutputSlots) {
         arr = outputSlots[am.slotIndex];
       }
     }
@@ -130,6 +213,15 @@ Status jitExecuteSegment(
                : std::string()));
     }
 
+    // Validate the cached artifact's actual pointer arguments as well as the
+    // current wiring; a stale mapping must never reinterpret non-FLOAT storage.
+    if (arr->dataType() != DataType::FLOAT32) {
+      const std::string reason = "FLOAT32-only JIT cached argument rejected: binding=" +
+          std::to_string(am.slotIndex) + ", dtype=" +
+          std::to_string(static_cast<int>(arr->dataType()));
+      DSP_DIAG(EXECUTE, "%s: %s", backendName, reason.c_str());
+      return failSegment(reason);
+    }
     argValues.push_back(arr->specialBuffer());
 
     if (am.isOutput && nElements == 0) {

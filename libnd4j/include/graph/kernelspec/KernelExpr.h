@@ -28,13 +28,15 @@
 // init/combine/finalize triple) exactly once. Backend emitters interpret the
 // AST into their own IR (Triton TTIR, CPU MLIR, Vulkan linalg bodies, MLX).
 //
-// NOT wired into any execution path yet: nothing in the emitters consults this
-// module. It is additive foundation code.
+// StableHLO consumes this AST in production; the shared MLIR interpreter is
+// available to other emitters. CUDA Triton currently uses its category emitters.
 //
 // Semantics contract for interpreters:
 // - All INPUT values are assumed pre-promoted to one common float compute type
 //   by the caller (mirrors the existing category emitters' promoteToFloat /
 //   commonFloatType behavior).
+// - STORAGE_ROUND narrows to the declared op storage dtype and re-promotes;
+//   emitters must receive that dtype separately from the compute values.
 // - Comparison / logical nodes produce boolean values; they may only feed
 //   AND / OR / NOT / SELECT-condition positions.
 // - SCALAR_PARAM(i) is the op's i-th declared scalar (tArgs-backed); v1
@@ -80,7 +82,10 @@ enum class ExprOp : uint8_t {
   AND,
   OR,
   // ternary
-  SELECT
+  SELECT,
+  // Round to the op's declared storage dtype, then return to compute dtype.
+  // This is a semantic conversion barrier, not round-to-integer arithmetic.
+  STORAGE_ROUND
 };
 
 int exprOpArity(ExprOp op);
@@ -190,6 +195,7 @@ Expr abs(Expr x);
 Expr floor(Expr x);
 Expr ceil(Expr x);
 Expr round(Expr x);
+Expr storageRound(Expr x);
 Expr pow(Expr base, Expr e);
 Expr pow(Expr base, double e);
 Expr min(Expr a, Expr b);

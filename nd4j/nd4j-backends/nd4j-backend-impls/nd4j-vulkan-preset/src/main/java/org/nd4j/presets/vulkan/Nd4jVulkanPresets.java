@@ -198,6 +198,10 @@ public class Nd4jVulkanPresets implements LoadEnabled, BuildEnabled, InfoMapper 
 
     @Override
     public void map(InfoMap infoMap) {
+        // Implemented by Vulkan's NativeOps_dsp_plan.cpp with Vulkan stream completion.
+        // Do not map the bare function name as an annotation/C++ attribute.
+        infoMap.put(new Info("executeSteadyStatePlan").javaText(
+                "@Override public native int executeSteadyStatePlan(@Cast(\"sd::Pointer\") Pointer planHandle, org.nd4j.nativeblas.OpaqueContext opContext, @Cast(\"sd::Pointer\") Pointer stream);"));
         //whether to include the SD_GCC_FUNCTRACE definition in the build. Not needed if we're not enabling the profiler.
         String calltraceProperty = System.getProperty(ND4JSystemProperties.LIBND4J_CALLTRACE, "OFF");
         boolean funcTrace = calltraceProperty.equalsIgnoreCase("ON");

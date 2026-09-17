@@ -365,9 +365,32 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
   // No-op on CPU
 }
 
-// CPU stub — all memory is host-accessible; no migration required.
-NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int /*slotIdx*/, int /*outputIdx*/) {
-  return arr;
+// No device migration on CPU, but requested views still need detached delivery.
+NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int /*slotIdx*/, int outputIdx) {
+  if (arr == nullptr || arr->isEmpty() || !arr->isView()) return arr;
+  if (outputIdx < 0 || outputIdx >= numRequestedOutputs_) {
+    THROW_EXCEPTION("DSP output delivery failed: requested output index out of range");
+  }
+  if (outputDeliveryBuffers_.empty()) {
+    outputDeliveryBuffers_.resize(numRequestedOutputs_, nullptr);
+  }
+  NDArray*& copy = outputDeliveryBuffers_[outputIdx];
+  const bool reusable = copy != nullptr && copy->hasValidShapeInfo() &&
+      copy->dataType() == arr->dataType() && copy->ordering() == arr->ordering() &&
+      copy->isSameShape(arr) && copy->dataBuffer() != nullptr &&
+      copy->dataBuffer()->isValid();
+  if (!reusable) {
+    // Java completes readback under its execution lock before another execute
+    // or release. These copies are borrowed, never transferred to the caller.
+    delete copy;
+    copy = nullptr;
+    copy = new NDArray(arr->shapeInfo(), arr->dataType(), /*copyStrides=*/false,
+                       LaunchContext::defaultContext(), /*nullify=*/false);
+  }
+  // assign maps logical coordinates through the source strides and offset;
+  // delivery is packed in the same order, not a flat copy of the view's base.
+  copy->assign(arr);
+  return copy;
 }
 
 // ── performPreReplaySync: passthrough on CPU ──────────────────────────────────

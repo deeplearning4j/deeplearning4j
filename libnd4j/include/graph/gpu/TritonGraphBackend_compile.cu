@@ -30,6 +30,7 @@
 #include <graph/gpu/SectionTypeConfig.h>
 #include <graph/gpu/FusionScoring.h>
 #include <graph/DspAnalysisUtils.h>
+#include <graph/gpu/TritonMatmulContract.h>
 #include <graph/DspDiagnostics.h>
 #include <system/Environment.h>
 #include <helpers/shape.h>
@@ -72,6 +73,10 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                                         int totalSlots,
                                         int* requestedOutputSlotIndices,
                                         int numRequestedOutputs) {
+  // Reject unsupported explicit arithmetic before cache lookup or section/native
+  // range classification. An admitted SERIAL_FMA is always emitted as Triton.
+  if (!triton_matmul::supports(slots, seg.def.startSlot, seg.def.endSlot,
+                              outputSlots, totalOutputSlots, externalInputs, numExternalInputs)) return false;
   // Compile-time contract: outputSlots entries are either dereferenceable or
   // null. Requested-output slots can hold uninitialized placeholder NDArrays
   // (poison shape descriptors) before their producer runs; every consumer below
@@ -222,6 +227,8 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                                                       externalInputs, numExternalInputs);
 
   if (sections.empty()) {
+    if (dsp::hasNonLegacyMatmulArithmetic(slots, seg.def.startSlot, seg.def.endSlot))
+      THROW_EXCEPTION("Triton SERIAL_FMA section missing; native substitution is not permitted");
     // All ops in this segment are natively-handled gap ops (cuBLAS/native CUDA).
     // Triton has nothing to compile, but this is NOT an error — the CUDA graph
     // capture will execute these ops natively via executeSlot() on the capture
@@ -744,6 +751,9 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   }
 
   auto isNativeOrderedSection = [&](const KernelSection& section) -> bool {
+    // An explicitly admitted serial matmul has a compiled arithmetic recipe.
+    // Do not send it through the legacy matmul/cuBLAS policy or native gaps.
+    if (dsp::hasNonLegacyMatmulArithmetic(slots, section.startSlot, section.endSlot)) return false;
     const auto& cfg = getSectionTypeConfig(section.type);
     if (shouldStayNativeOrdered(cfg, compileAll, includedTypes,
                                     sd::Environment::getInstance().tritonGraphCapture())) return true;
@@ -1077,6 +1087,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   std::vector<CompileRangeResult> allResults;
   std::vector<SlotRange> leafOrderedRanges;  // Leaf ranges that stay native-ordered
   std::atomic<int> activeWorkers{0};
+  std::atomic<bool> serialCompileFailed{false};
 
   auto workerLoop = [&]() {
     while (true) {
@@ -1114,6 +1125,8 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
             splitRetryCount++;
             splitRange(range);
             // New sub-ranges are in pendingRanges; wake other workers
+          } else if (dsp::hasNonLegacyMatmulArithmetic(slots, range.startSlot, range.endSlot)) {
+            serialCompileFailed.store(true);
           } else {
             // Leaf range failed — keep it as a native ordered range instead of aborting
             std::string opNames;
@@ -1244,6 +1257,8 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                      range.startSlot, range.endSlot);
             splitRetryCount++;
             splitRange(range);
+          } else if (dsp::hasNonLegacyMatmulArithmetic(slots, range.startSlot, range.endSlot)) {
+            serialCompileFailed.store(true);
           } else {
             // Leaf range failed — keep it as a native ordered range instead of aborting
             std::string opNames;
@@ -1310,6 +1325,23 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
       singleThreadWork();
     }
 #endif
+  }
+
+  if (serialCompileFailed.load()) {
+    // Workers have joined. Release successfully compiled siblings before
+    // reporting failure; never install a native replacement for SERIAL_FMA.
+    for (auto& r : allResults) {
+      auto& kernel = r.compiled;
+      if (kernel.gpuModule) {
+        recordModuleFree(kernel.loadedDeviceId >= 0 ? kernel.loadedDeviceId : compileDevice,
+                         kernel.estimatedModuleBytes);
+        if (sd::graph::modreg::releaseFromOwner(kernel.gpuModule))
+          TritonTargetDispatch::unloadModule(kernel.gpuModule);
+        kernel.gpuModule = nullptr;
+        kernel.kernelFunction = nullptr;
+      }
+    }
+    THROW_EXCEPTION("Triton SERIAL_FMA compilation failed; native substitution is not permitted");
   }
 
   // Merge leaf native ordered ranges into compiledSeg

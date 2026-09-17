@@ -80,7 +80,8 @@ public:
      */
     static std::vector<FusionCandidate> detectFusions(
         NativeSlot* slots, int numSlots,
-        const std::vector<int>& externalInputRanks = {});
+        const std::vector<int>& externalInputRanks = {},
+        const int* requestedOutputSlots = nullptr, int numRequestedOutputs = 0);
 
     /**
      * Apply detected fusions by marking slots for in-place execution.

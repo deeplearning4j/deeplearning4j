@@ -185,6 +185,13 @@ SD_HOST void TransformAny<X, Z>::intermediateShaped(
   sd::DebugHelper::checkErrorCode(stream, "transformAny(...) cached kernel failed");
 }
 
+// Match the targeted same-dtype FP8 dispatch in NativeOpExecutioner. Keep
+// these pairs out of the arithmetic matrix and emit them once in split builds.
+#if defined(HAS_FLOAT8) && (!defined(SD_SPLIT_TYPE_INDEX) || SD_SPLIT_TYPE_INDEX == 0)
+template class TransformAny<sd::float8, sd::float8>;
+template class TransformAny<sd::float8_e5m2, sd::float8_e5m2>;
+#endif
+
 #ifdef SD_SPLIT_TYPE_INDEX
 #if COUNT_NARG(SD_COMMON_TYPES) > SD_SPLIT_TYPE_INDEX
 BUILD_DOUBLE_TEMPLATE( class TransformAny, , SD_SPLIT_TYPE_LIST, SD_COMMON_TYPES);

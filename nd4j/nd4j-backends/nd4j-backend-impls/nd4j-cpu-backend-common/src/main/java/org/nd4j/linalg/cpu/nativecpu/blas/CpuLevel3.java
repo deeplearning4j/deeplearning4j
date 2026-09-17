@@ -21,12 +21,10 @@
 package org.nd4j.linalg.cpu.nativecpu.blas;
 
 
-import lombok.val;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.nd4j.linalg.api.blas.impl.BaseLevel3;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
-import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.factory.Nd4j;
@@ -46,13 +44,14 @@ public class CpuLevel3 extends BaseLevel3 {
     protected void hgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda,
                     INDArray B, int ldb, float beta, INDArray C, int ldc) {
 
-            val fA = A.castTo(DataType.FLOAT);
-            val fB = B.castTo(DataType.FLOAT);
-            val fC = C.castTo(DataType.FLOAT);
-
-            sgemm(Order, TransA, TransB, M, N, K, alpha, fA, lda, fB, ldb, beta, fC, ldc);
-
-            C.assign(fC);
+        // Native GEMM preserves HALF storage and accumulates in FP32. BLAS flags
+        // compensate for physical C-order interpretation; undo that compensation
+        // before passing logical transpose flags to the native op.
+        MMulTranspose mt = MMulTranspose.builder()
+                .transposeA((TransA == 'T' || TransA == 't') != (A.ordering() == 'c'))
+                .transposeB((TransB == 'T' || TransB == 't') != (B.ordering() == 'c'))
+                .build();
+        Nd4j.getExecutioner().exec(new Mmul(A, B, C, alpha, beta, mt));
 
     }
 

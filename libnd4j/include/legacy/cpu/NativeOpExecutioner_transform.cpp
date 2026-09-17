@@ -74,6 +74,20 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, con
   // String type handling removed temporarily - will be added in separate file to manage compilation size
   {
     auto func = PRAGMA_THREADS_DO {
+#if defined(HAS_FLOAT8)
+      // FP8 is deliberately excluded from the arithmetic SD_COMMON_TYPES matrix.
+      // Same-dtype assignment is a storage copy, including for different layouts.
+      if (xType == sd::DataType::FLOAT8 && zType == xType) {
+        functions::transform::TransformAny<float8, float8>::exec(
+            opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads);
+        return;
+      }
+      if (xType == sd::DataType::FLOAT8_E5M2 && zType == xType) {
+        functions::transform::TransformAny<float8_e5m2, float8_e5m2>::exec(
+            opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads);
+        return;
+      }
+#endif
       BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny,
                             ::exec(opNum,
                                    hX,

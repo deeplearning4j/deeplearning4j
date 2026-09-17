@@ -23,6 +23,7 @@
 #include <helpers/DebugHelper.h>
 #include <cuda_runtime.h>
 #include <math_constants.h>
+#include <ops/ops.h>
 
 #include "execution/cuda/LaunchDims.h"
 
@@ -32,45 +33,60 @@ namespace helpers {
 
 // ─── SiLU and Mul (SwiGLU) CUDA kernel ──────────────────────────────────────
 
-template <typename T>
-static SD_KERNEL __launch_bounds__(256, 2) void siluAndMulKernel(const void* vGate, const void* vUp,
-                                        void* vOutput, const LongType len) {
-    auto gate = reinterpret_cast<const T*>(vGate);
-    auto up = reinterpret_cast<const T*>(vUp);
-    auto output = reinterpret_cast<T*>(vOutput);
 
-    LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
-    LongType stride = gridDim.x * blockDim.x;
-
-    for (LongType i = idx; i < len; i += stride) {
-        float g = static_cast<float>(gate[i]);
-        float u = static_cast<float>(up[i]);
-        // silu(g) * u = g * sigmoid(g) * u
-        float sigmoid_g = 1.0f / (1.0f + __expf(-g));
-        output[i] = static_cast<T>(g * sigmoid_g * u);
+#if NOT_EXCLUDED(OP_swish_mul) || NOT_EXCLUDED(OP_silu_and_mul)
+template <typename X, typename Y, typename Z>
+static SD_KERNEL void siluAndMulKernel(const X* gate, const Y* up, Z* output,
+                                       const LongType* gateShape, const LongType* upShape,
+                                       const LongType* outShape, const LongType len,
+                                       const bool contiguous) {
+    using ComputeT = typename sd::math::promote_type3<X, Y, Z>::type;
+    using AccT = typename simdOps::AggregateType<ComputeT>::type;
+    const LongType first = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
+    const LongType stride = static_cast<LongType>(gridDim.x) * blockDim.x;
+    for (LongType i = first; i < len; i += stride) {
+        const auto gOffset = contiguous ? i : shape::subArrayIndex(i, outShape, gateShape);
+        const auto uOffset = contiguous ? i : shape::subArrayIndex(i, outShape, upShape);
+        const auto zOffset = contiguous ? i : shape::subArrayIndex(i, outShape, outShape);
+        const X silu = simdOps::Swish<X>::op(gate[gOffset], nullptr);
+        const AccT u = static_cast<AccT>(up[uOffset]);
+        output[zOffset] = static_cast<Z>(static_cast<AccT>(silu) * u);
     }
 }
 
-template <typename T>
+template <typename X, typename Y, typename Z>
 static void siluAndMulLauncher(NDArray* gate, NDArray* up, NDArray* output, LaunchContext* context) {
     auto stream = context->getCudaStream();
-    auto len = gate->lengthOf();
-
-    int blockSize = 256;
-    int gridSize = (len + blockSize - 1) / blockSize;
-    if (gridSize > 65535) gridSize = 65535;
-
-    siluAndMulKernel<T><<<gridSize, blockSize, 0, *stream>>>(
-        gate->specialBuffer(), up->specialBuffer(), output->specialBuffer(), len);
-    DebugHelper::checkGlobalErrorCode("siluAndMulKernel failed");
+    // Reuse the framework's elementwise-pair launch policy; no shared scratch.
+    const auto dims = getLaunchDims("pairwiseTransforms");
+    if (dims.x == 0 || dims.y == 0 || dims.y > 1024)
+        THROW_EXCEPTION("siluAndMul: invalid pairwiseTransforms launch dimensions");
+    const auto* gateShape = gate->specialShapeInfo();
+    const auto* upShape = up->specialShapeInfo();
+    const auto* outShape = output->specialShapeInfo();
+    const bool contiguous = gate->isSameShape(output) && up->isSameShape(output) &&
+        gate->ordering() == 'c' && up->ordering() == 'c' && output->ordering() == 'c' &&
+        shape::strideDescendingCAscendingF(gate->shapeInfo()) &&
+        shape::strideDescendingCAscendingF(up->shapeInfo()) &&
+        shape::strideDescendingCAscendingF(output->shapeInfo());
+    siluAndMulKernel<X, Y, Z><<<dims.x, dims.y, 0, *stream>>>(
+        reinterpret_cast<const X*>(gate->specialBuffer()),
+        reinterpret_cast<const Y*>(up->specialBuffer()),
+        reinterpret_cast<Z*>(output->specialBuffer()),
+        gateShape, upShape, outShape, output->lengthOf(), contiguous);
+    if (!DebugHelper::inGraphCapture(stream))
+        DebugHelper::checkGlobalErrorCode("siluAndMulKernel failed");
 }
 
 void siluAndMul(LaunchContext* context, NDArray* gate, NDArray* up, NDArray* output) {
+    if (output->isEmpty()) return;
     NDArray::prepareSpecialUse({output}, {gate, up});
-    BUILD_SINGLE_SELECTOR(gate->dataType(), siluAndMulLauncher,
-                          (gate, up, output, context), SD_FLOAT_TYPES);
+    BUILD_TRIPLE_SELECTOR(gate->dataType(), up->dataType(), output->dataType(),
+                          siluAndMulLauncher, (gate, up, output, context),
+                          SD_FLOAT_TYPES, SD_FLOAT_TYPES, SD_FLOAT_TYPES);
     NDArray::registerSpecialUse({output}, {gate, up});
 }
+#endif
 
 // ─── GELU and Mul (GEGLU) CUDA kernel ───────────────────────────────────────
 

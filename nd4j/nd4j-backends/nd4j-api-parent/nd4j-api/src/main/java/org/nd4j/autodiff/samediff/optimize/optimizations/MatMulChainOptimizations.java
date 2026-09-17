@@ -31,6 +31,7 @@ import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.autodiff.samediff.optimize.OptimizationHelper;
 import org.nd4j.autodiff.samediff.optimize.Optimizer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 
 import java.util.List;
@@ -238,6 +239,17 @@ public class MatMulChainOptimizations extends BaseOptimizerSet {
             List<String> transposeInputs = producerOp.getInputsToOp();
             if (transposeInputs == null || transposeInputs.isEmpty()) return false;
             String originalInput = transposeInputs.get(0);
+
+            if (MatmulArithmeticPolicy.isExplicit(mmul)) {
+                // Reversing all axes is the matmul last-two-axis transpose only for rank 2.
+                // Preserve explicit permutations and unknown ranks unless equivalence is proven.
+                SDVariable original = sd.getVariable(originalInput);
+                long[] shape = original == null ? null : original.getShape();
+                if (shape == null || shape.length != 2) return false;
+                if (!(producerFn instanceof DynamicCustomOp)
+                        || ((DynamicCustomOp) producerFn).numIArguments() != 0
+                        || producerFn.propertiesForFunction().get("permuteDims") != null) return false;
+            }
 
             log.debug("TransposeMatMulFusion: absorbing transpose on input {} of matmul", inputIdx);
 

@@ -20,6 +20,7 @@
 
 #include <graph/cpu/NnapiGraphBackend.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspAnalysisUtils.h>
 #include <graph/ReplayCacheManager.h>
 #include <graph/gpu/OpCategoryTable.h>
 #include <execution/LaunchContext.h>
@@ -1869,6 +1870,7 @@ GraphBackendCompilationReadiness NnapiGraphBackend::compilationReadiness(
 bool NnapiGraphBackend::isSlotResolvable(NativeSlot* slots,
                                          int slotIndex) const {
   if (slots == nullptr || slotIndex < 0) return false;
+  if (dsp::hasNonLegacyMatmulArithmetic(slots[slotIndex])) return false;
 #if defined(SD_NNAPI_ACCELERATOR_ONLY)
   const bool exactEdgeTpu = selectedDeviceName_ == requiredDeviceName_ &&
                             selectedDeviceType_ ==

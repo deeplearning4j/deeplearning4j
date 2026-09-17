@@ -95,6 +95,15 @@ constexpr int JIT_MIN_FUSIBLE_OPS = 2;
 // Check if a segment has enough fusible ops for JIT compilation.
 bool jitCanFuseSegment(NativeSlot* slots, int start, int end);
 
+// Concrete admission for the FLOAT32-only generators. Checks only tensors
+// referenced by this segment, including intermediate outputs; missing arrays
+// are not evidence of a supported dtype. Must run before cache reuse and launch.
+bool jitValidateFloatTensorBindings(
+    NativeSlot* slots, int start, int end,
+    NDArray** externalInputs, int numExternalInputs,
+    NDArray** outputSlots, int totalOutputSlots,
+    std::string& reason);
+
 // Execute a compiled JIT kernel for a segment.
 Status jitExecuteSegment(
     const JitSegmentCacheKey& key,

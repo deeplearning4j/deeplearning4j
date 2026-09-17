@@ -272,35 +272,35 @@
       "artifactRules": {
         "mode": "classifier",
         "artifactIds": [
-          "nd4j-cuda-12.6",
-          "nd4j-cuda-12.6-preset",
-          "nd4j-cuda-12.6-platform",
-          "nd4j-cuda-12.6-backend-common"
+          "nd4j-cuda-13.1",
+          "nd4j-cuda-13.1-preset",
+          "nd4j-cuda-13.1-platform",
+          "nd4j-cuda-13.1-backend-common"
         ],
         "classifierTokens": [
           "linux-x86_64"
         ],
         "unclassifiedArtifactIds": [
-          "nd4j-cuda-12.6",
-          "nd4j-cuda-12.6-preset",
-          "nd4j-cuda-12.6-backend-common"
+          "nd4j-cuda-13.1",
+          "nd4j-cuda-13.1-preset",
+          "nd4j-cuda-13.1-backend-common"
         ],
         "includeMetadata": true
       },
       "build": {
         "backend": "cuda",
-        "cudaVersion": "12.6",
+        "cudaVersion": "13.1",
         "javacppPlatform": "linux-x86_64",
         "profiles": [
           "cuda",
           "sdx"
         ],
         "modules": [
-          ":nd4j-cuda-12.6",
-          ":nd4j-cuda-12.6-preset",
+          ":nd4j-cuda-13.1",
+          ":nd4j-cuda-13.1-preset",
           ":libnd4j",
-          ":nd4j-cuda-12.6-platform",
-          ":nd4j-cuda-12.6-backend-common"
+          ":nd4j-cuda-13.1-platform",
+          ":nd4j-cuda-13.1-backend-common"
         ],
         "mavenArgs": [
           "-Dlibnd4j.compute=8.6 9.0"
@@ -308,18 +308,18 @@
         "variants": [
           {
             "name": "base",
-            "classifierSuffix": "-cuda-12.6",
+            "classifierSuffix": "-cuda-13.1",
             "platformExtension": ""
           },
           {
             "name": "cudnn",
             "helper": "cudnn",
-            "classifierSuffix": "-cuda-12.6-cudnn",
+            "classifierSuffix": "-cuda-13.1-cudnn",
             "platformExtension": "-cudnn"
           },
           {
             "name": "compile",
-            "classifierSuffix": "-cuda-12.6-compile",
+            "classifierSuffix": "-cuda-13.1-compile",
             "platformExtension": "-compile",
             "triton": true
           }
@@ -349,35 +349,35 @@
       "artifactRules": {
         "mode": "classifier",
         "artifactIds": [
-          "nd4j-cuda-12.9",
-          "nd4j-cuda-12.9-preset",
-          "nd4j-cuda-12.9-platform",
-          "nd4j-cuda-12.9-backend-common"
+          "nd4j-cuda-13.1",
+          "nd4j-cuda-13.1-preset",
+          "nd4j-cuda-13.1-platform",
+          "nd4j-cuda-13.1-backend-common"
         ],
         "classifierTokens": [
           "linux-x86_64"
         ],
         "unclassifiedArtifactIds": [
-          "nd4j-cuda-12.9",
-          "nd4j-cuda-12.9-preset",
-          "nd4j-cuda-12.9-backend-common"
+          "nd4j-cuda-13.1",
+          "nd4j-cuda-13.1-preset",
+          "nd4j-cuda-13.1-backend-common"
         ],
         "includeMetadata": true
       },
       "build": {
         "backend": "cuda",
-        "cudaVersion": "12.9",
+        "cudaVersion": "13.1",
         "javacppPlatform": "linux-x86_64",
         "profiles": [
           "cuda",
           "sdx"
         ],
         "modules": [
-          ":nd4j-cuda-12.9",
-          ":nd4j-cuda-12.9-preset",
+          ":nd4j-cuda-13.1",
+          ":nd4j-cuda-13.1-preset",
           ":libnd4j",
-          ":nd4j-cuda-12.9-platform",
-          ":nd4j-cuda-12.9-backend-common"
+          ":nd4j-cuda-13.1-platform",
+          ":nd4j-cuda-13.1-backend-common"
         ],
         "mavenArgs": [
           "-Dlibnd4j.compute=8.6 9.0"
@@ -385,18 +385,18 @@
         "variants": [
           {
             "name": "base",
-            "classifierSuffix": "-cuda-12.9",
+            "classifierSuffix": "-cuda-13.1",
             "platformExtension": ""
           },
           {
             "name": "cudnn",
             "helper": "cudnn",
-            "classifierSuffix": "-cuda-12.9-cudnn",
+            "classifierSuffix": "-cuda-13.1-cudnn",
             "platformExtension": "-cudnn"
           },
           {
             "name": "compile",
-            "classifierSuffix": "-cuda-12.9-compile",
+            "classifierSuffix": "-cuda-13.1-compile",
             "platformExtension": "-compile",
             "triton": true
           }
@@ -640,35 +640,35 @@
       "artifactRules": {
         "mode": "classifier",
         "artifactIds": [
-          "nd4j-cuda-12.6",
-          "nd4j-cuda-12.6-preset",
-          "nd4j-cuda-12.6-platform",
-          "nd4j-cuda-12.6-backend-common"
+          "nd4j-cuda-13.1",
+          "nd4j-cuda-13.1-preset",
+          "nd4j-cuda-13.1-platform",
+          "nd4j-cuda-13.1-backend-common"
         ],
         "classifierTokens": [
           "windows-x86_64"
         ],
         "unclassifiedArtifactIds": [
-          "nd4j-cuda-12.6",
-          "nd4j-cuda-12.6-preset",
-          "nd4j-cuda-12.6-backend-common"
+          "nd4j-cuda-13.1",
+          "nd4j-cuda-13.1-preset",
+          "nd4j-cuda-13.1-backend-common"
         ],
         "includeMetadata": true
       },
       "build": {
         "backend": "cuda",
-        "cudaVersion": "12.6",
+        "cudaVersion": "13.1",
         "javacppPlatform": "windows-x86_64",
         "profiles": [
           "cuda",
           "sdx"
         ],
         "modules": [
-          ":nd4j-cuda-12.6",
-          ":nd4j-cuda-12.6-preset",
+          ":nd4j-cuda-13.1",
+          ":nd4j-cuda-13.1-preset",
           ":libnd4j",
-          ":nd4j-cuda-12.6-platform",
-          ":nd4j-cuda-12.6-backend-common"
+          ":nd4j-cuda-13.1-platform",
+          ":nd4j-cuda-13.1-backend-common"
         ],
         "mavenArgs": [
           "-Dlibnd4j.compute=8.6 9.0",
@@ -677,20 +677,20 @@
         "variants": [
           {
             "name": "base",
-            "classifierSuffix": "-cuda-12.6",
+            "classifierSuffix": "-cuda-13.1",
             "platformExtension": ""
           },
           {
             "name": "cudnn",
             "helper": "cudnn",
-            "classifierSuffix": "-cuda-12.6-cudnn",
+            "classifierSuffix": "-cuda-13.1-cudnn",
             "platformExtension": "-cudnn"
           },
           {
             "name": "compile",
             "extension": "compile",
             "suffix": "-compile",
-            "classifierSuffix": "-cuda-12.6-compile",
+            "classifierSuffix": "-cuda-13.1-compile",
             "platformExtension": "-compile",
             "windowsNativeCompile": true
           }
@@ -719,35 +719,35 @@
       "artifactRules": {
         "mode": "classifier",
         "artifactIds": [
-          "nd4j-cuda-12.9",
-          "nd4j-cuda-12.9-preset",
-          "nd4j-cuda-12.9-platform",
-          "nd4j-cuda-12.9-backend-common"
+          "nd4j-cuda-13.1",
+          "nd4j-cuda-13.1-preset",
+          "nd4j-cuda-13.1-platform",
+          "nd4j-cuda-13.1-backend-common"
         ],
         "classifierTokens": [
           "windows-x86_64"
         ],
         "unclassifiedArtifactIds": [
-          "nd4j-cuda-12.9",
-          "nd4j-cuda-12.9-preset",
-          "nd4j-cuda-12.9-backend-common"
+          "nd4j-cuda-13.1",
+          "nd4j-cuda-13.1-preset",
+          "nd4j-cuda-13.1-backend-common"
         ],
         "includeMetadata": true
       },
       "build": {
         "backend": "cuda",
-        "cudaVersion": "12.9",
+        "cudaVersion": "13.1",
         "javacppPlatform": "windows-x86_64",
         "profiles": [
           "cuda",
           "sdx"
         ],
         "modules": [
-          ":nd4j-cuda-12.9",
-          ":nd4j-cuda-12.9-preset",
+          ":nd4j-cuda-13.1",
+          ":nd4j-cuda-13.1-preset",
           ":libnd4j",
-          ":nd4j-cuda-12.9-platform",
-          ":nd4j-cuda-12.9-backend-common"
+          ":nd4j-cuda-13.1-platform",
+          ":nd4j-cuda-13.1-backend-common"
         ],
         "mavenArgs": [
           "-Dlibnd4j.compute=8.6 9.0",
@@ -756,20 +756,20 @@
         "variants": [
           {
             "name": "base",
-            "classifierSuffix": "-cuda-12.9",
+            "classifierSuffix": "-cuda-13.1",
             "platformExtension": ""
           },
           {
             "name": "cudnn",
             "helper": "cudnn",
-            "classifierSuffix": "-cuda-12.9-cudnn",
+            "classifierSuffix": "-cuda-13.1-cudnn",
             "platformExtension": "-cudnn"
           },
           {
             "name": "compile",
             "extension": "compile",
             "suffix": "-compile",
-            "classifierSuffix": "-cuda-12.9-compile",
+            "classifierSuffix": "-cuda-13.1-compile",
             "platformExtension": "-compile",
             "windowsNativeCompile": true
           }
@@ -1341,7 +1341,7 @@
       ],
       "artifactRules": {
         "mode": "classifier",
-        "classifierPrimaryArtifact": "nd4j-zluda-12.9",
+        "classifierPrimaryArtifact": "nd4j-zluda-13.1",
         "artifactIds": [
           "nd4j-cuda-12.9-preset",
           "nd4j-zluda-12.9",
@@ -1358,7 +1358,7 @@
           "nd4j-zluda-12.9-platform"
         ],
         "classifierArchiveContracts": {
-          "nd4j-zluda-12.9": {
+          "nd4j-zluda-13.1": {
             "requiredEntries": [
               "org/nd4j/linalg/jcublas/bindings/{classifier}/libjnind4jcuda.so",
               "org/nd4j/linalg/jcublas/bindings/{classifier}/libnd4jcuda.so",
@@ -1379,7 +1379,7 @@
       },
       "build": {
         "backend": "cuda",
-        "cudaVersion": "12.9",
+        "cudaVersion": "13.1",
         "zludaVersion": "v7-preview.8",
         "rocmVersion": "7.2.4",
         "rocmBuildOnly": true,
@@ -1399,9 +1399,9 @@
           "zluda-platform"
         ],
         "modules": [
-          ":nd4j-cuda-12.9-preset",
-          ":nd4j-zluda-12.9",
-          ":nd4j-zluda-12.9-platform",
+          ":nd4j-cuda-13.1-preset",
+          ":nd4j-zluda-13.1",
+          ":nd4j-zluda-13.1-platform",
           ":libnd4j",
           ":nd4j-cuda-12.9-backend-common"
         ],
@@ -1412,7 +1412,7 @@
         "variants": [
           {
             "name": "cuda-12.9",
-            "classifierSuffix": "-cuda-12.9-zluda-rocm-7.2.4",
+            "classifierSuffix": "-cuda-13.1-zluda-rocm-7.2.4",
             "platformExtension": "-zluda-rocm-7.2.4"
           },
           {
@@ -1445,7 +1445,7 @@
       ],
       "artifactRules": {
         "mode": "classifier",
-        "classifierPrimaryArtifact": "nd4j-zluda-12.9",
+        "classifierPrimaryArtifact": "nd4j-zluda-13.1",
         "artifactIds": [
           "nd4j-cuda-12.9-preset",
           "nd4j-cuda-12.9-backend-common",
@@ -1465,7 +1465,7 @@
       },
       "build": {
         "backend": "cuda",
-        "cudaVersion": "12.9",
+        "cudaVersion": "13.1",
         "zludaVersion": "v7-preview.8",
         "rocmVersion": "7.2.4",
         "javacppPlatform": "windows-x86_64",
@@ -1476,8 +1476,8 @@
           "zluda-platform"
         ],
         "modules": [
-          ":nd4j-cuda-12.9-preset",
-          ":nd4j-zluda-12.9",
+          ":nd4j-cuda-13.1-preset",
+          ":nd4j-zluda-13.1",
           ":libnd4j",
           ":nd4j-cuda-12.9-backend-common",
           ":nd4j-zluda-12.9-platform"
@@ -1490,7 +1490,7 @@
         "variants": [
           {
             "name": "cuda-12.9",
-            "classifierSuffix": "-cuda-12.9-zluda-rocm-7.2.4",
+            "classifierSuffix": "-cuda-13.1-zluda-rocm-7.2.4",
             "platformExtension": "-zluda-rocm-7.2.4"
           }
         ],

@@ -38,6 +38,8 @@ import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.impl.shape.CreateView;
 import org.nd4j.linalg.api.ops.impl.shape.SetShape;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.ModelOptNvfp4Linear;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.ModelOptFp8Linear;
 import org.nd4j.linalg.api.ops.random.impl.CustomDropOut;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.InitializationController;
@@ -871,6 +873,8 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.transforms.custom.GgmlQMatMulLora.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.GgmlQMatMulLoraBp.class,
                 // Quantization ops
+                ModelOptNvfp4Linear.class,
+                ModelOptFp8Linear.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.AwqMatmul.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.Fp8Matmul.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.SmoothQuant.class,

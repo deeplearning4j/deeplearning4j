@@ -20,6 +20,11 @@
     <dependencies>
         <dependency>
             <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-ggml</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>samediff-pipeline-core</artifactId>
             <version>${project.version}</version>
         </dependency>

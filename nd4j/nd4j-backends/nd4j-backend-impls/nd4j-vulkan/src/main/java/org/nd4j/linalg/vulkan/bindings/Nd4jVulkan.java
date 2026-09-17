@@ -232,7 +232,7 @@ public static final int HAVE_CUDNN = 0;
 public static final int HAVE_OPENBLAS = 1;
 public static final int HAVE_FLATBUFFERS = 0;
 public static final int HAVE_TRITON = 0;
-public static final int HAVE_TRITON_CPU = 1;
+public static final int HAVE_TRITON_CPU = 0;
 public static final int HAVE_MLIR = 0;
 public static final int HAVE_MLX = 0;
 public static final int HAVE_NNAPI = 0;
@@ -240,7 +240,7 @@ public static final int HAVE_CUTLASS = 0;
 public static final int HAVE_OPENVINO = 0;
 
 public static final String SD_LIBRARY_NAME = "nd4jcpu";
-public static final String OPENBLAS_PATH = "/home/agibsonccc/.javacpp/cache/openblas-0.3.31-1.5.13-linux-x86_64.jar/org/bytedeco/openblas/linux-x86_64";
+public static final String OPENBLAS_PATH = "/home/agibsonccc/.javacpp/cache/openblas-0.3.31-1.5.13-linux-arm64.jar/org/bytedeco/openblas/linux-arm64";
 // #define DEFAULT_ENGINE samediff::ENGINE_CPU
 
 // Type system configuration - populated by CMake TypeValidation system
@@ -1172,11 +1172,11 @@ public static final int
  * Vulkan backend disk-cache configuration (ADR 0115).
  *
  * Tier 1 — SPIR-V module disk cache: persists MLIR→SPIR-V lowering results
- * (spv_<16hex>.spv + .meta) so warm process starts skip the MLIR pass
+ * (spv_&lt;16hex&gt;.spv + .meta) so warm process starts skip the MLIR pass
  * pipeline entirely. Mirrors the Triton kernel disk cache.
  *
  * Tier 2 — VkPipelineCache driver-blob persistence: persists the driver's
- * pipeline cache (vkpc_<16hex>.bin, keyed by pipelineCacheUUID) so warm
+ * pipeline cache (vkpc_&lt;16hex&gt;.bin, keyed by pipelineCacheUUID) so warm
  * starts also skip the driver's SPIR-V→ISA compile.
  *
  * This class stays free of Vulkan API dependencies, but its implementation and
@@ -1184,8 +1184,8 @@ public static final int
  *
  * Directory resolution for each dir option: explicit value here (set from a
  * Java system property via the Environment setter, or from the matching
- * ND4J_VULKAN_* env var at initFromEnvironment) → ~/.kompile/cache/vulkan/<leaf>
- * → .kompile/cache/vulkan/<leaf> when $HOME is empty.
+ * ND4J_VULKAN_* env var at initFromEnvironment) → ~/.kompile/cache/vulkan/&lt;leaf&gt;
+ * → .kompile/cache/vulkan/&lt;leaf&gt; when $HOME is empty.
  */
 @Namespace("sd::config") @NoOffset public static class VulkanConfig extends Pointer {
     static { Loader.load(); }
@@ -1925,7 +1925,7 @@ public static final int
   /**
    * Increment the frozen plan reference count. Call when this buffer is
    * registered in a frozen NativeDynamicShapePlan as an external input
-   * or retained weight. While the count is > 0, migrate() is blocked to
+   * or retained weight. While the count is &gt; 0, migrate() is blocked to
    * prevent invalidating baked-in GPU addresses used by frozen replay.
    */
   public native void addFrozenRef();
@@ -1938,7 +1938,7 @@ public static final int
 
   /**
    * Check whether this buffer is registered in any frozen plan.
-   * @return true if frozen ref count > 0
+   * @return true if frozen ref count &gt; 0
    */
   public native @Cast("bool") boolean isFrozenPlanRegistered();
   public native void syncToSpecial(@Cast("const bool") boolean forceSync/*=false*/);
@@ -3085,6 +3085,10 @@ public native void setOmpNumThreads(int threads);
  */
 
 
+/**
+ * Enable or disable verbose native diagnostics.
+ * @param reallyEnable true to enable verbose output, false to disable it
+ */
 public native void enableVerboseMode(@Cast("bool") boolean reallyEnable);
 public native int getDeviceMajor(int device);
 public native int getDeviceMinor(int device);
@@ -3609,7 +3613,7 @@ public native @Cast("char*") String getLifecycleOpContext();
  * are logged to a file with full unified C++/Java stack traces.
  * The log file survives crashes and can be used for post-mortem debugging.
  *
- * Log files are located at: /tmp/nd4j_op_execution_<PID>.log
+ * Log files are located at: /tmp/nd4j_op_execution_&lt;PID&gt;.log
  * (or $SD_OP_LOG_DIR if set)
  *
  * NOTE: Only available when built with -Dlibnd4j.calltrace=ON
@@ -3673,7 +3677,7 @@ public native void dumpOpExecutionState(@Cast("char*") BytePointer message);
  * Allocation logging is always active in functrace builds (SD_GCC_FUNCTRACE).
  * Returns empty string if functrace is not enabled.
  *
- * Log file location: /tmp/nd4j_allocations_<PID>.log (configurable via SD_ALLOCATION_LOG_DIR)
+ * Log file location: /tmp/nd4j_allocations_&lt;PID&gt;.log (configurable via SD_ALLOCATION_LOG_DIR)
  *
  * @return C-string containing the log file path (caller must NOT free this)
  */
@@ -3931,13 +3935,13 @@ public native void initializeLifecycleCrashHandlers();
  *
  * JSON format:
  * {
- *   "total_allocations": <count>,
- *   "total_deallocations": <count>,
- *   "current_live": <count>,
- *   "peak_live": <count>,
- *   "current_bytes": <bytes>,
- *   "peak_bytes": <bytes>,
- *   "double_frees": <count>
+ *   "total_allocations": &lt;count&gt;,
+ *   "total_deallocations": &lt;count&gt;,
+ *   "current_live": &lt;count&gt;,
+ *   "peak_live": &lt;count&gt;,
+ *   "current_bytes": &lt;bytes&gt;,
+ *   "peak_bytes": &lt;bytes&gt;,
+ *   "double_frees": &lt;count&gt;
  * }
  *
  * NOTE: Returns empty JSON "{}" when SD_GCC_FUNCTRACE is not defined.
@@ -3951,20 +3955,20 @@ public native @Cast("char*") String getNDArrayLifecycleStats();
  * JSON format:
  * {
  *   "primary": {
- *     "total_allocations": <count>,
- *     "total_deallocations": <count>,
- *     "current_live": <count>,
- *     "current_bytes": <bytes>,
- *     "peak_bytes": <bytes>
+ *     "total_allocations": &lt;count&gt;,
+ *     "total_deallocations": &lt;count&gt;,
+ *     "current_live": &lt;count&gt;,
+ *     "current_bytes": &lt;bytes&gt;,
+ *     "peak_bytes": &lt;bytes&gt;
  *   },
  *   "special": {
- *     "total_allocations": <count>,
- *     "total_deallocations": <count>,
- *     "current_live": <count>,
- *     "current_bytes": <bytes>,
- *     "peak_bytes": <bytes>
+ *     "total_allocations": &lt;count&gt;,
+ *     "total_deallocations": &lt;count&gt;,
+ *     "current_live": &lt;count&gt;,
+ *     "current_bytes": &lt;bytes&gt;,
+ *     "peak_bytes": &lt;bytes&gt;
  *   },
- *   "double_frees": <count>
+ *   "double_frees": &lt;count&gt;
  * }
  *
  * NOTE: Returns empty JSON "{}" when SD_GCC_FUNCTRACE is not defined.
@@ -4509,6 +4513,19 @@ public native int executeDynamicShapePlan(
     @Cast("sd::Pointer") Pointer stream);
 
 /**
+ * Execute through NativeDynamicShapePlan::executeSteadyState, using the same
+ * context input order, requested-output mapping and borrowed output ownership
+ * as executeDynamicShapePlan. No dtype conversion is performed. The plan owns
+ * lifecycle admission (early calls still execute its build phases).
+ *
+ * @param stream Backend-owned stream: CUDA storage pointer (cudaStream_t*),
+ *               VulkanExecutionStream* for Vulkan (nullptr selects the plan's
+ *               stream), or the CPU-derived backend's execution stream.
+ * @return 0 on success, non-zero on native failure
+ */
+@Override public native int executeSteadyStatePlan(@Cast("sd::Pointer") Pointer planHandle, org.nd4j.nativeblas.OpaqueContext opContext, @Cast("sd::Pointer") Pointer stream);
+
+/**
  * Free a compiled native plan.
  *
  * @param planHandle  Handle from compileDynamicShapePlan()
@@ -4542,13 +4559,13 @@ public native void clearNativePlanCacheHandle(@Cast("sd::Pointer") Pointer cache
  * @param phShapeInfoPtrs       array of shape-info pointers (from ConstantShapeHelper); identity = key equality
  * @param numPlaceholders       length of phShapeInfoPtrs
  * @param graphExecutionMode    GraphExecutionMode ordinal — each mode gets its own plan
- * @param newBorrower           nonzero when this dispatch is the FIRST from its Java
- *                              executor instance (nativePlanHandle was null). A cache
- *                              HIT then means the plan is switching borrowers: view
- *                              wrappers minted over the previous borrower's external
- *                              arrays dangle once it closed its inputs, and must be
- *                              invalidated. Same-borrower re-dispatches (shape change)
- *                              pass 0 so live captured-graph state is never disturbed.
+ * @param newBorrower           nonzero when this dispatch acquires a new borrower
+ *                              lease for the returned shape-keyed plan. Java passes
+ *                              this for the first executor dispatch and first use of
+ *                              a shape; same-executor same-shape redispatches pass 0
+ *                              so lease counts do not grow per token. A nonzero cache
+ *                              hit also invalidates external-fed views minted by a
+ *                              previous borrower.
  * @return                      NativeDynamicShapePlan* as opaque sd::Pointer; owned by cache
  */
 public native @Cast("sd::Pointer") Pointer dispatchNativePlan(@Cast("sd::Pointer") Pointer cacheHandle,
@@ -4563,8 +4580,9 @@ public native @Cast("sd::Pointer") Pointer dispatchNativePlan(@Cast("sd::Pointer
 
 /**
  * Unpin a plan handle, making it eligible for LRU eviction.
- * Must be called when Java swaps to a different plan handle or closes
- * the executor. Paired with the automatic pinning done by dispatchNativePlan().
+ * Must be called once for every borrower lease acquired from dispatchNativePlan,
+ * when Java swaps away from a plan or closes the executor. The cache keeps the
+ * plan eviction-protected until the final lease is released.
  *
  * @param cacheHandle  cache from createNativePlanCache (non-null)
  * @param planHandle   plan handle from dispatchNativePlan (safe to pass null — no-op)
@@ -4599,6 +4617,10 @@ public native void clearAllDynamicShapePlanCachesForce(@Cast("sd::Pointer") Poin
  */
 public native int releaseGpuIntermediates(@Cast("sd::Pointer") Pointer planHandle);
 
+/** Release producer outputs too. Caller must have completed independent output
+ * copies and must retain no borrowed native output pointers. */
+public native int releaseGpuIntermediatesAfterOutputCopy(@Cast("sd::Pointer") Pointer planHandle);
+
 // --- Replay diagnostics (Phase 2) ------------------------------------------
 
 /**
@@ -4632,6 +4654,13 @@ public native int getPlanReplayUnitCount(@Cast("sd::Pointer") Pointer planHandle
 public native int getPlanPhase(@Cast("sd::Pointer") Pointer planHandle);
 
 /**
+ * Get one immutable point-in-time snapshot of the native plan lifecycle.
+ * The result is a thread-local key/value payload consumed by the Java
+ * DspLifecycleSnapshot value type. Returns "valid=false" for an invalid handle.
+ */
+public native @Cast("char*") String getPlanLifecycleSnapshot(@Cast("sd::Pointer") Pointer planHandle);
+
+/**
  * Get the execution count for a segment (number of times executed).
  *
  * @param planHandle  Handle from compileDynamicShapePlan()
@@ -4658,7 +4687,7 @@ public native int isPlanCompilationSealed(@Cast("sd::Pointer") Pointer planHandl
 
 /**
  * Returns the count of compileSegment() calls that happened AFTER compilation
- * was sealed. Any value > 0 is a correctness red flag — it means the plan
+ * was sealed. Any value &gt; 0 is a correctness red flag — it means the plan
  * re-compiled a segment mid-execution which breaks the freeze/capture contract.
  *
  * @param planHandle  Handle from compileDynamicShapePlan()
@@ -4753,6 +4782,33 @@ public native @ByVal org.nd4j.nativeblas.OpaqueNDArray getLoadedModelVariable(
     @Cast("sd::Pointer") Pointer modelHandle, @Cast("char*") BytePointer variableName);
 
 /**
+ * Read the declared FlatGraph shape for any loaded model variable, including
+ * placeholders that do not own an NDArray. Pass dimensions=nullptr to query
+ * the rank before allocating the output buffer.
+ *
+ * @return Declared rank, or -1 when the variable/shape is unavailable or the
+ *         supplied dimensions buffer is too small.
+ */
+public native int getLoadedModelVariableShape(
+    @Cast("sd::Pointer") Pointer modelHandle, @Cast("char*") String variableName,
+    @Cast("sd::LongType*") LongPointer dimensions, int maxRank);
+public native int getLoadedModelVariableShape(
+    @Cast("sd::Pointer") Pointer modelHandle, @Cast("char*") BytePointer variableName,
+    @Cast("sd::LongType*") LongBuffer dimensions, int maxRank);
+public native int getLoadedModelVariableShape(
+    @Cast("sd::Pointer") Pointer modelHandle, @Cast("char*") String variableName,
+    @Cast("sd::LongType*") long[] dimensions, int maxRank);
+public native int getLoadedModelVariableShape(
+    @Cast("sd::Pointer") Pointer modelHandle, @Cast("char*") BytePointer variableName,
+    @Cast("sd::LongType*") LongPointer dimensions, int maxRank);
+public native int getLoadedModelVariableShape(
+    @Cast("sd::Pointer") Pointer modelHandle, @Cast("char*") String variableName,
+    @Cast("sd::LongType*") LongBuffer dimensions, int maxRank);
+public native int getLoadedModelVariableShape(
+    @Cast("sd::Pointer") Pointer modelHandle, @Cast("char*") BytePointer variableName,
+    @Cast("sd::LongType*") long[] dimensions, int maxRank);
+
+/**
  * Compile a loaded model into a native execution plan.
  *
  * @param modelHandle  Handle from loadModelFromFile()
@@ -4814,7 +4870,7 @@ public native @Cast("char*") String getPlanExternalInputName(@Cast("sd::Pointer"
  * clamping/resolution — mirror of setPlanGraphExecutionMode).
  *
  * @param planHandle  Handle from compileDynamicShapePlan()
- * @return GraphExecutionMode as int (GEM_AUTO=0 .. GEM_PORTABLE_REPLAY=19), -1 if invalid
+ * @return GraphExecutionMode as int (GEM_AUTO=0 .. GEM_ONEDNN=20), -1 if invalid
  */
 public native int getPlanGraphExecutionMode(@Cast("sd::Pointer") Pointer planHandle);
 
@@ -4850,7 +4906,7 @@ public native void setPlanCudaGraphsEnabled(@Cast("sd::Pointer") Pointer planHan
  * Default: 10. Set to 1 for testing.
  *
  * @param planHandle  Handle from compileDynamicShapePlan()
- * @param minSize  Minimum number of slots for capture (clamped to >=1)
+ * @param minSize  Minimum number of slots for capture (clamped to &gt;=1)
  */
 public native void setPlanMinCaptureSegmentSize(@Cast("sd::Pointer") Pointer planHandle, int minSize);
 
@@ -4877,7 +4933,7 @@ public native void setPlanShapesFrozen(@Cast("sd::Pointer") Pointer planHandle, 
 /**
  * Enable/disable shape-only dry-run mode for a compiled plan.
  * When enabled, executeSlot() runs all dispatch infrastructure (shape caching,
- * frozen detection, output allocation, segment dispatch) but SKIPS op->execute().
+ * frozen detection, output allocation, segment dispatch) but SKIPS op-&gt;execute().
  * Use to measure pure dispatch/infrastructure overhead separately from compute.
  *
  * @param planHandle  Handle from compileDynamicShapePlan()
@@ -4923,7 +4979,7 @@ public native void setPlanRuntimeArtifactDirectory(@Cast("sd::Pointer") Pointer 
  * @param mode  0=AUTO, 1=SLOT_BY_SLOT, 2=CUDA_GRAPHS, 3=NVRTC_JIT, 4=PTX_JIT, 5=TRITON,
  *              6=MLX, 7=ARM_HYBRID, 8=NNAPI, 9=HIP_GRAPHS, 10=LEVEL_ZERO, 11=VULKAN,
  *              12=METAL, 13=TPU, 14=HEXAGON, 15=OPENVINO, 16=TVM (deprecated),
- *              17=EMULATED_REPLAY, 18=SHAPE_INFERENCE_ONLY, 19=PORTABLE_REPLAY
+ *              17=EMULATED_REPLAY, 18=SHAPE_INFERENCE_ONLY, 19=PORTABLE_REPLAY, 20=ONEDNN
  */
 public native void setPlanGraphExecutionMode(@Cast("sd::Pointer") Pointer planHandle, int mode);
 
@@ -5170,7 +5226,7 @@ public native @Cast("char*") String getPlanSlotOpName(@Cast("sd::Pointer") Point
  *   bit 7: needsZeroedOutput
  *   bit 8: needsIntLongSync
  *   bit 9: shapeStatic
- *   bit 10: frozenConstantSlot (state >= FROZEN_CONSTANT)
+ *   bit 10: frozenConstantSlot (state &gt;= FROZEN_CONSTANT)
  * Returns -1 if invalid.
  */
 public native int getPlanSlotFlags(@Cast("sd::Pointer") Pointer planHandle, int slotIdx);
@@ -6623,13 +6679,13 @@ public static final int
 
 
   /**
-   * This method returns new array with the same shape & data type
+   * This method returns new array with the same shape and data type
    * @return
    */
   public native NDArray like();
 
   /**
-   * This method returns new uninitialized array with the same shape & data type
+   * This method returns new uninitialized array with the same shape and data type
    * @return
    */
   public native NDArray ulike();
@@ -7028,7 +7084,7 @@ public static final int
   public native void muliColumnVector(NDArray column);
 
   /**
-   *  returns number of bytes used by _buffer & _shapeInfo
+   *  returns number of bytes used by _buffer and _shapeInfo
    */
   public native @Cast("sd::LongType") long memoryFootprint();
 
@@ -7165,7 +7221,7 @@ public static final int
    * are equal to this array elements target and this array should have same shapes, except when this_rank = 1 (in that
    * case should be target_rank = 2)
    *
-   * includeEdges handles the cases where we need to include edges (basically >= or <= 0 and edges of the triangle)
+   * includeEdges handles the cases where we need to include edges (basically &gt;= or &lt;= 0 and edges of the triangle)
    */
 
   /**
@@ -7315,7 +7371,7 @@ public static final int
   public native @Cast("bool") boolean isSameShapeStrict(@ByRef NDArray other);
 
   /**
-   *  returns true if buffer && shapeInfo were defined (non nullptr)
+   *  returns true if both buffer and shapeInfo were defined (non nullptr)
    */
   public native @Cast("bool") boolean nonNull();
 
@@ -7390,7 +7446,7 @@ public static final int
 
   /**
    *  returns true if all dimensions of array except one are unities, for example: [1,1,n,1], [n,1,1], [n], ...
-   *  posOfNonUnityDim - one dimension with value > 1
+   *  posOfNonUnityDim - one dimension with value &gt; 1
    */
   public native @Cast("bool") boolean isCommonVector(@Cast("sd::LongType*") @ByRef LongPointer posOfNonUnityDim);
   public native @Cast("bool") boolean isCommonVector(@Cast("sd::LongType*") @ByRef LongBuffer posOfNonUnityDim);
@@ -8481,10 +8537,10 @@ public static final int
     public RandomBuffer(Pointer p) { super(p); }
 
   /**
-   * This method allocates buffer of size * sizeof(sd::LongType)
+   * Initializes a random buffer with the supplied seed and storage.
    *
-   * @param size
-   * @return
+   * @param seed the initial random seed
+   * @param size the number of elements in the buffer
    */
 // #ifdef __CUDACC__
 // #endif
@@ -8583,6 +8639,11 @@ public static final int
    * @return
    */
 
+  /**
+   * Returns the random buffer element at the specified relative index.
+   * @param index the relative element index
+   * @return the random unsigned 64-bit value
+   */
   public native @Cast("uint64_t") long relativeUInt64(@Cast("sd::LongType") long index);
 
   /**
@@ -8946,9 +9007,10 @@ public static final int
   public native @Cast("bool") boolean hasIntermediateResults();
 
   /**
-   * This method fetches variable from VariableSpace DIRECTLY
-   * @param p
-   * @return
+   * Fetches a variable directly from VariableSpace.
+   * @param node the node identifier
+   * @param index the output index within the node
+   * @return the variable at the specified node and output index
    */
   public native Variable variable(int node, int index);
   public native Variable variable(@ByRef IntIntPair p);
@@ -9632,14 +9694,12 @@ public static final int
 
 
 
-/**
-* Keep the given indexes in the data
-* @param data
-* @param index
-* @param indexLength
-* @param dataLength
-* @return
-*/
+/*
+ * Native-only helper (excluded from JavaCPP bindings): retain entries of data
+ * whose positions occur in index. indexLength is the number of selected
+ * positions and dataLength is the number of input entries. Returns a newly
+ * allocated buffer containing the retained entries in input order.
+ */
 
 
 // Optimized version with special cases for common ranks
@@ -9802,6 +9862,12 @@ public static final int
 /////
 
 
+/*
+ * subArrayIndex maps the outer-array linear index maxIdx to a sub-array offset,
+ * using maxShapeInfo for the outer array and minShapeInfo for the sub-array.
+ * This native-only helper is skipped by JavaCPP; keep its documentation a plain
+ * comment so it cannot become Javadoc for the next emitted declaration.
+ */
 
 
 
@@ -9849,7 +9915,7 @@ public static final int
 * along, i.e. when shape is [2,3,4,5] and dimsToExclude={0,2}, then there will be 8 sub-arrays with shape [3,5]
 * subArrShapeInfo    - output argument, contains shapeInfo (same for all sub-arrays)
 * subArrOffsets      - output argument, contains successive sub-arrays offsets from original this-buffer
-* keepUnitiesInShape - if false then eliminate unities from sub-array shapeInfo, for example {1,a,1,b} -> {a,b}
+* keepUnitiesInShape - if false then eliminate unities from sub-array shapeInfo, for example {1,a,1,b} -&gt; {a,b}
 */
 
 
@@ -9863,7 +9929,7 @@ public static final int
 * input argument, shapeInfo of original array minShapeInfo - output argument, shapeInfo of sub-array to be deduced
 * minOffset - output argument, offset of sub-array buffer offsets from original buffer
 * keepUnitiesInShape - input argument, if false then eliminate unities from sub-array shapeInfo, for example {1,a,1,b}
-* -> {a,b} isStrided - input argument, if true then idx has length (3 * this->rankOf()) and contains additional stride
+* -&gt; {a,b} isStrided - input argument, if true then idx has length (3 * this-&gt;rankOf()) and contains additional stride
 * numbers which correspond to stride between dimStart and dimEnd, numOfUntiesInMinShape - input argument, number of
 * occurrences in idx when (dimEnd - dimStart) = 1
 */
@@ -9983,8 +10049,8 @@ public static final int
 * Computes the standard packed array strides for a given shape.
 *
 * @param shape    the shape of a matrix:
-* @param startNum the start number for the strides
-* @return the strides for a matrix of n dimensions
+* @param rank the number of dimensions
+* @return the strides for a matrix of n dimensions, starting at one
 */
 
 
@@ -9996,8 +10062,8 @@ public static final int
 * Computes the standard packed array strides for a given shape.
 *
 * @param shape    the shape of a matrix:
-* @param startNum the start number for the strides
-* @return the strides for a matrix of n dimensions
+* @param rank the number of dimensions
+* @return the strides for a matrix of n dimensions, starting at one
 */
 
 
@@ -10069,6 +10135,11 @@ public static final int
 
 
 
+/**
+ * Checks whether the shape information describes a column vector.
+ * @param shapeInfo the array shape information
+ * @return true for a vector whose first dimension is not one
+ */
 
 
 //////////////////////////////////////////////////////////////////////
@@ -10361,11 +10432,10 @@ public static final int
 
 
 /**
-*
-* @param length
-* @param shape
-* @param rearrange
-* @return
+ * Permutes the shape entries in place.
+ * @param length the number of shape entries
+ * @param shape the shape entries to update
+ * @param rearrange the permutation of dimension indices
 */
 
 
@@ -10460,10 +10530,11 @@ public static final int
 
 
 
-/**
-* @param toCopy the shape to copy
-* @return a copy of the original struct
-*/
+/*
+ * shapeCopy returns a copy of the ShapeInformation struct toCopy, with separate
+ * shape and stride arrays. This native-only helper is skipped by JavaCPP; keep
+ * its documentation a plain comment rather than Javadoc for a later declaration.
+ */
 
 
 
@@ -11966,12 +12037,17 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 
 // #define _SELECTOR_TRIPLE_3(NAME, SIGNATURE, TYPE_X, TYPE_Y, ENUM_Z, TYPE_Z)
 //     case sd::DataType::ENUM_Z: {
+//         bool sdTripleDispatched = false;
 //         SD_IF_TRIPLE_COMPILED(
 //             SD_CAT(SD_TYPE_TO_NUM_, TYPE_X),
 //             SD_CAT(SD_TYPE_TO_NUM_, TYPE_Y),
 //             SD_CAT(SD_ENUM_TO_NUM_, ENUM_Z),
+//             sdTripleDispatched = true;
 //             NAME<TYPE_X, TYPE_Y, TYPE_Z> SIGNATURE;
 //         )
+//         if (!sdTripleDispatched) {
+//             THROW_EXCEPTION(#NAME ": unavailable type triple (" #TYPE_X ", " #TYPE_Y ", " #TYPE_Z ")");
+//         }
 //         break;
 //     };
 
@@ -15836,6 +15912,10 @@ public static final int
   public native int getNumberOfStructuralIArgs();
   public native int getNumberOfOrdinaryIArgs();
 
+  // Values (not just dimensions) read by calculateOutputShape. An explicit empty
+  // set denotes metadata-only inference; absent optional inputs need no sync.
+  public native @Cast("bool") boolean usesInputValuesForShape(int index);
+
 
 }
   // namespace ops
@@ -15920,7 +16000,7 @@ public static final int
   /**
    * Check if this version meets the minimum required version
    * @param min Minimum required version
-   * @return true if this version >= min
+   * @return true if this version &gt;= min
    */
   public native @Cast("bool") boolean meetsMinimum(@Const @ByRef HelperVersion min);
 
@@ -15928,7 +16008,7 @@ public static final int
    * Check if this version is within a range [min, max]
    * @param min Minimum version (inclusive)
    * @param max Maximum version (inclusive)
-   * @return true if min <= this <= max
+   * @return true if min &lt;= this &lt;= max
    */
   public native @Cast("bool") boolean inRange(@Const @ByRef HelperVersion min, @Const @ByRef HelperVersion max);
 
@@ -16166,7 +16246,7 @@ public static final long
    * Check if a helper meets minimum version requirements
    * @param name Library name
    * @param minVersion Minimum required version
-   * @return true if available and version >= minVersion
+   * @return true if available and version &gt;= minVersion
    */
   public native @Cast("bool") boolean checkVersion(@StdString BytePointer name, @Const @ByRef HelperVersion minVersion);
   public native @Cast("bool") boolean checkVersion(@StdString String name, @Const @ByRef HelperVersion minVersion);
@@ -17259,14 +17339,14 @@ public static final long
 
 /**
  * This is Leaky RELU activation function.
- * Math is: x < 0 ?  alpha * x : x;
+ * Math is: x &lt; 0 ?  alpha * x : x;
  */
 // #if NOT_EXCLUDED(OP_lrelu)
 // #endif
 
 /**
  * This op is ELU activation function.
- * Math is: x >= 0 ? x : exp(x) - 1;
+ * Math is: x &gt;= 0 ? x : exp(x) - 1;
  */
 // #if NOT_EXCLUDED(OP_elu)
 // #endif
@@ -17293,7 +17373,7 @@ public static final long
 
 /**
  * This is HardTanh activation function.
- * Math is: x < -1.0 ? -1.0 : x > 1.0 ? 1.0 : x;
+ * Math is: x &lt; -1.0 ? -1.0 : x &gt; 1.0 ? 1.0 : x;
  */
 // #if NOT_EXCLUDED(OP_hardtanh)
 // #endif
@@ -17334,15 +17414,15 @@ public static final long
 
 /**
  * Parametric Rectified Linear Unit
- * f(x) = alpha * x for x < 0, f(x) = x for x >= 0
+ * f(x) = alpha * x for x &lt; 0, f(x) = x for x &gt;= 0
  */
 // #if NOT_EXCLUDED(OP_prelu)
 // #endif
 
 /**
  * Thresholded Rectified Linear Unit
- * f(x) = x for x > theta, f(x) = 0 otherwise
- * theta must be >= 0
+ * f(x) = x for x &gt; theta, f(x) = 0 otherwise
+ * theta must be &gt;= 0
  */
 // #if NOT_EXCLUDED(OP_thresholdedrelu)
 // #endif
@@ -17385,7 +17465,7 @@ public static final long
  * This is scalar boolean op.
  * Both operands should be scalars.
  *
- * Returns true if x < y
+ * Returns true if x &lt; y
  */
 // #if NOT_EXCLUDED(OP_lt_scalar)
 @Namespace("sd::ops") public static class lt_scalar extends BooleanOp {
@@ -17411,7 +17491,7 @@ public static final long
  * This is scalar boolean op.
  * Both operands should be scalars.
  *
- * Returns true if x > y
+ * Returns true if x &gt; y
  */
 // #if NOT_EXCLUDED(OP_gt_scalar)
 @Namespace("sd::ops") public static class gt_scalar extends BooleanOp {
@@ -17437,7 +17517,7 @@ public static final long
  * This is scalar boolean op.
  * Both operands should be scalars.
  *
- * Returns true if x <= y
+ * Returns true if x &lt;= y
  */
 // #if NOT_EXCLUDED(OP_lte_scalar)
 @Namespace("sd::ops") public static class lte_scalar extends BooleanOp {
@@ -17463,7 +17543,7 @@ public static final long
  * This is scalar boolean op.
  * Both operands should be scalars.
  *
- * Returns true if x >= y
+ * Returns true if x &gt;= y
  */
 // #if NOT_EXCLUDED(OP_gte_scalar)
 @Namespace("sd::ops") public static class gte_scalar extends BooleanOp {
@@ -17562,16 +17642,16 @@ public static final long
  *  The output of the op is dynamic in size and returns a flat vector of elements
  *  that return true on the given condition.
  *  In numpy parlance, most people might understand:
- *  a[a > 2]
+ *  a[a &gt; 2]
  *  where a is a numpy array and the condition is true when an element is
- *  > 2. Libnd4j already implements a number of pre defined conditions.
+ *  &gt; 2. Libnd4j already implements a number of pre defined conditions.
  * \tparam T
  */
 // #if NOT_EXCLUDED(OP_choose)
 // #endif
 
 /**
- * This op takes 1 n-dimensional array as input, and returns true if for every adjacent pair we have x[i] <= x[i+1].
+ * This op takes 1 n-dimensional array as input, and returns true if for every adjacent pair we have x[i] &lt;= x[i+1].
  */
 // #if NOT_EXCLUDED(OP_is_non_decreasing)
 @Namespace("sd::ops") public static class is_non_decreasing extends BooleanOp {
@@ -17594,7 +17674,7 @@ public static final long
 // #endif
 
 /**
- * This op takes 1 n-dimensional array as input, and returns true if for every adjacent pair we have x[i] < x[i+1].
+ * This op takes 1 n-dimensional array as input, and returns true if for every adjacent pair we have x[i] &lt; x[i+1].
  */
 // #if NOT_EXCLUDED(OP_is_strictly_increasing)
 @Namespace("sd::ops") public static class is_strictly_increasing extends BooleanOp {
@@ -17891,28 +17971,28 @@ public static final long
 
 /**
  * This op takes 2 equally shaped arrays as input, and provides binary matrix as output.
- * Math is: _x <= _y ? (T) 1.0f : (T) 0.0f;
+ * Math is: _x &lt;= _y ? (T) 1.0f : (T) 0.0f;
  */
 // #if NOT_EXCLUDED(OP_less_equal)
 // #endif
 
 /**
  * This op takes 2 equally shaped arrays as input, and provides binary matrix as output.
- * Math is: _x >= _y ? (T) 1.0f : (T) 0.0f;
+ * Math is: _x &gt;= _y ? (T) 1.0f : (T) 0.0f;
  */
 // #if NOT_EXCLUDED(OP_greater_equal)
 // #endif
 
 /**
  * This op takes 2 equally shaped arrays as input, and provides binary matrix as output.
- * Math is: _x < _y ? (T) 1.0f : (T) 0.0f;
+ * Math is: _x &lt; _y ? (T) 1.0f : (T) 0.0f;
  */
 // #if NOT_EXCLUDED(OP_less)
 // #endif
 
 /**
  * This op takes 2 equally shaped arrays as input, and provides binary matrix as output.
- * Math is: _x > _y ? (T) 1.0f : (T) 0.0f;
+ * Math is: _x &gt; _y ? (T) 1.0f : (T) 0.0f;
  */
 // #if NOT_EXCLUDED(OP_greater)
 // #endif
@@ -17938,7 +18018,7 @@ public static final long
 /**
  * This operation performs calculation of percentile of input array along given axises
  *
- * Input - tensor with rank N > 0
+ * Input - tensor with rank N &gt; 0
  * Output - tensor with rank (N - length(axis)) or scalar if number of Integer arguments is zero
  * Float arguments:
  *   0: percentile (scalar) in range [0,100] (inclusively)
@@ -18559,7 +18639,7 @@ public static final long
  *
  * Input arrays:
  *    0: input with shape [batchSize x inSize], batchSize - batch size, inSize - number of features
- *    1: previous cell output [batchSize x numProj],  that is at previous time step t-1, in case of projection=false ->
+ *    1: previous cell output [batchSize x numProj],  that is at previous time step t-1, in case of projection=false -&gt;
  * numProj=numUnits!!! 2: previous cell state  [batchSize x numUnits], that is at previous time step t-1 3:
  * input-to-hidden  weights, [inSize  x 4*numUnits] 4: hidden-to-hidden weights, [numProj x 4*numUnits] 5: diagonal
  * weights for peephole connections [3*numUnits] 6: projection weights [numUnits x numProj] 7: biases, [4*numUnits]
@@ -18626,9 +18706,9 @@ public static final long
  * Implementation of operation for LSTM layer with optional peep hole connections.
  * See lstmBlockCell for details. lstmBlockCell is used internally for computation.
  * This method expects as input (and returns as output) sequences in one of 3 formats, depending on the data format arg:
- * dataFormat = 0 -> TNS: shape [timeLength, numExamples, inOutSize] - sometimes referred to as "time major"
- * dataFormat = 1 -> NST: shape [numExamples, inOutSize, timeLength]
- * dataFormat = 2 -> NTS: shape [numExamples, timeLength, inOutSize] - TF "time_major=false" layout
+ * dataFormat = 0 -&gt; TNS: shape [timeLength, numExamples, inOutSize] - sometimes referred to as "time major"
+ * dataFormat = 1 -&gt; NST: shape [numExamples, inOutSize, timeLength]
+ * dataFormat = 2 -&gt; NTS: shape [numExamples, timeLength, inOutSize] - TF "time_major=false" layout
  *
  *
  * Input arrays:
@@ -18714,7 +18794,7 @@ public static final long
  * Input arrays:
  *    0: input with shape [time x batchSize x inSize], time - number of time steps, batchSize - batch size, inSize -
  * number of features 1: initial cell output [batchSize x numProj],  that is at time step = 0, in case of
- * projection=false -> numProj=numUnits!!! 2: initial cell state  [batchSize x numUnits], that is at time step = 0 3:
+ * projection=false -&gt; numProj=numUnits!!! 2: initial cell state  [batchSize x numUnits], that is at time step = 0 3:
  * input-to-hidden  weights, [inSize  x 4*numUnits] 4: hidden-to-hidden weights, [numProj x 4*numUnits] 5: diagonal
  * weights for peephole connections [3*numUnits] 6: projection weights [numUnits x numProj] 7: biases, [4*numUnits]
  *
@@ -18758,7 +18838,7 @@ public static final long
  * number of features 1: input-to-hidden  weights, [inSize   x numUnits] 2: hidden-to-hidden weights, [numUnits x
  * numUnits] 3: biases, [2*numUnits] 4: (optional) initial cell output [batchSize x numUnits], that is at time step = 0
  *    5: (optional) vector with shape [batchSize] containing integer values within [0,time), each element of this vector
- * set max time step per each input in batch, this provides no calculations for time >= maxTimeStep
+ * set max time step per each input in batch, this provides no calculations for time &gt;= maxTimeStep
  *
  * Output arrays:
  *    0: cell outputs [time x batchSize x numUnits]
@@ -18776,7 +18856,7 @@ public static final long
  * hidden-to-hidden weights, [numUnits x numUnits] 3: biases, [2*numUnits] 4: (optional) initial cell output [batchSize
  * x numUnits], that is at time step = 0 5: (optional) vector with shape [batchSize] containing integer values within
  * [0,time), each element of this vector set max time step per each input in batch, this provides no calculations for
- * time >= maxTimeStep
+ * time &gt;= maxTimeStep
  *
  *  Input integer arguments:
  *    0: (optional) timeMajor - if non zero then input shape is [time, batchSize, ...], else [batchSize, time, ...]
@@ -18799,7 +18879,7 @@ public static final long
  * biases for backward RNN, [2*numUnitsBW] 7: (optional) initial cell output for forward RNN [batchSize x numUnitsFW],
  * that is at time step = 0 8: (optional) initial cell output for backward RNN [batchSize x numUnitsBW], that is at time
  * step = 0 9: (optional) vector with shape [batchSize] containing integer values within [0,time), each element of this
- * vector set max time step per each input in batch, this provides no calculations for time >= maxTimeStep
+ * vector set max time step per each input in batch, this provides no calculations for time &gt;= maxTimeStep
  *
  * Output arrays:
  *    0: cell outputs [time x batchSize x (numUnitsFW + numUnitsBW)]
@@ -18821,7 +18901,7 @@ public static final long
  * for forward RNN [batchSize x numUnitsFW], that is at time step = 0 8: (optional) initial cell output for backward RNN
  * [batchSize x numUnitsBW], that is at time step = 0 9: (optional) vector with shape [batchSize] containing integer
  * values within [0,time), each element of this vector set max time step per each input in batch, this provides no
- * calculations for time >= maxTimeStep
+ * calculations for time &gt;= maxTimeStep
  *
  *  Input integer arguments:
  *    0: (optional) timeMajor - if non zero then input shape is [time, batchSize, ...], else [batchSize, time, ...]
@@ -18944,7 +19024,7 @@ public static final long
  * TArgs[0] - type of elements of output array, default value is 5 (float)
  *
  * Input integer arguments:
- * IArgs[0]       - order of output identity matrix, 99 -> 'c'-order, 102 -> 'f'-order
+ * IArgs[0]       - order of output identity matrix, 99 -&gt; 'c'-order, 102 -&gt; 'f'-order
  * IArgs[1]       - the number of rows in output inner-most 2D identity matrix
  * IArgs[2]       - optional, the number of columns in output inner-most 2D identity matrix, if this argument is not
  * provided then it is taken to be equal to number of rows IArgs[3,4,...] - optional, shape of batch, output matrix will
@@ -19175,13 +19255,13 @@ public static final long
 /**
  * This op calculates regularized incomplete beta integral Ix(a, b).
  * Implementation is based on two algorithms depending on input values of a and b:
- * - when a and b are both >  maxValue (3000.), then Gauss-Legendre quadrature method is applied
- * - when a and b are both <= maxValue (3000.), then modified Lentz's algorithm for continued fractions is applied
+ * - when a and b are both &gt;  maxValue (3000.), then Gauss-Legendre quadrature method is applied
+ * - when a and b are both &lt;= maxValue (3000.), then modified Lentz's algorithm for continued fractions is applied
  *
  * Input arrays:
- *    a: defines power t^{a-1}, must be > 0, type float.
- *    b: defines power (1-t)^{b-1}, must be > 0, type float.
- *    x: defines upper limit of integration, must be within (0 <= x <= 1) range, type float.
+ *    a: defines power t^{a-1}, must be &gt; 0, type float.
+ *    b: defines power (1-t)^{b-1}, must be &gt; 0, type float.
+ *    x: defines upper limit of integration, must be within (0 &lt;= x &lt;= 1) range, type float.
  *
  * Output array:
  *    0: values of  regularized incomplete beta integral that corresponds to variable upper limit x, type float
@@ -19220,7 +19300,7 @@ public static final long
  * It is an op inverse to matrix_set_giag.
  * Using input tensor as batched 2D diagonals flat them to vector (1D) with diagonal values.
  *
- * Input : batched tensor with rank >=2
+ * Input : batched tensor with rank &gt;=2
  * Output: tensor with rank lesser by 1 from input
  */
 // #if NOT_EXCLUDED(OP_matrix_diag_part)
@@ -19500,7 +19580,7 @@ public static final long
  * Expected arguments:
  * input: N-dimensional array
  *
- * TODO: make this operation reduction, to allow TAD -> size
+ * TODO: make this operation reduction, to allow TAD -&gt; size
  */
 // #if NOT_EXCLUDED(OP_size)  // add DeclarableScalarOp?
 // #endif
@@ -19545,8 +19625,8 @@ public static final long
  * Implementation is based on Euler-Maclaurin summation formula
  *
  *   Input arrays:
- *   x: define power {-x}, must be > 1, type float.
- *   q: define summand in denominator, must be > 0, type float.
+ *   x: define power {-x}, must be &gt; 1, type float.
+ *   q: define summand in denominator, must be &gt; 0, type float.
  *
  * Output array:
  *    0: corresponding values of Hurwitz zeta function
@@ -19640,7 +19720,7 @@ public static final long
 /**
  * This operation adjusts image hue by delta
  * Input arrays:
- * 0 - input array with rank >= 3, must have at least one dimension equal 3, that is dimension containing channels.
+ * 0 - input array with rank &gt;= 3, must have at least one dimension equal 3, that is dimension containing channels.
  * 1 - optional argument, input scalar-array containing delta
  *
  * T arguments:
@@ -19655,7 +19735,7 @@ public static final long
 /**
  * This operation adjusts image saturation by delta
  * Input arrays:
- * 0 - input array with rank >= 3, must have at least one dimension equal 3, that is dimension containing channels.
+ * 0 - input array with rank &gt;= 3, must have at least one dimension equal 3, that is dimension containing channels.
  * 1 - optional argument, input scalar-array containing saturation factor
  *
  * T arguments:
@@ -19670,7 +19750,7 @@ public static final long
 /**
  * This operation adjusts image contrast by given factor ( z = (x - mean) * factor + mean )
  * Input arrays:
- * 0 - input array with rank >= 3, must have last one dimension equal 3, that is dimension containing channels.
+ * 0 - input array with rank &gt;= 3, must have last one dimension equal 3, that is dimension containing channels.
  * 1 - optional argument, input scalar-array containing saturation contrast factor
  *
  * T arguments:
@@ -20220,12 +20300,12 @@ public static final long
 // #endif
 
 /**
- * sequence_mask op. - make mask for given tensor filled by (j > x[i_1, i_2,...,i_n]) -> z[i_1, i_2,...,i_n,j]
+ * sequence_mask op. - make mask for given tensor filled by (j &gt; x[i_1, i_2,...,i_n]) -&gt; z[i_1, i_2,...,i_n,j]
  *
  * input params:
  *    0 - the ND-tensor filled by integer-like values
  *
- * optional int param - maxlength (maxlength >= max(x)). By default maxlength = max(x).
+ * optional int param - maxlength (maxlength &gt;= max(x)). By default maxlength = max(x).
  * return value:
  *    (N+1)D tensor filled by 0 and 1 accordingly the mask
  */
@@ -20444,7 +20524,7 @@ public static final long
  *    ...
  *    N - axe N
  *
- *    All axes are optional and should be between 0 and input->rankOf(). Of course, all axes can be repeated.
+ *    All axes are optional and should be between 0 and input-&gt;rankOf(). Of course, all axes can be repeated.
  *
  * output:
  *    0 - NDArray with the same shape as input.
@@ -20485,7 +20565,7 @@ public static final long
  *    ...
  *    N-1 axe N
  *
- *    All axes are optional and should be between 0 and input->rankOf() - 1
+ *    All axes are optional and should be between 0 and input-&gt;rankOf() - 1
  *
  * output:
  *    0 - NDArray with reduces shape accordingly to axes (the scalar in default case).
@@ -20508,7 +20588,7 @@ public static final long
  *    ...
  *    N-1 axe N
  *
- *    All axes are optional and should be between 0 and input->rankOf() - 1
+ *    All axes are optional and should be between 0 and input-&gt;rankOf() - 1
  *
  * output:
  *    0 - NDArray with reduces shape accordingly to axes (the scalar in default case).
@@ -20722,7 +20802,7 @@ public static final long
  *    ...
  *    N-1 axe N
  *
- *  CAUTION: All axes are optional and should be between 0 and input->rankOf() - 1
+ *  CAUTION: All axes are optional and should be between 0 and input-&gt;rankOf() - 1
  *  and put either with second param or as integers but not both
  *
  * output:
@@ -21272,8 +21352,8 @@ public static final int RESHAPE_NO_COPY_C_ORDER_MARKER = -99;
  * 0: epsilon, it is optional argument, default value is 0.001, this is small number to be added to the variance of x
  *
  * integer input arguments:
- * 0: dataFormat, may have two values: zero -> NHWC, unity -> NCHW
- * 1: isTraining, may have two values: zero -> inference, unity -> training
+ * 0: dataFormat, may have two values: zero -&gt; NHWC, unity -&gt; NCHW
+ * 1: isTraining, may have two values: zero -&gt; inference, unity -&gt; training
  */
 // #if NOT_EXCLUDED(OP_fused_batch_norm)
 // #endif
@@ -21321,8 +21401,8 @@ public static final int RESHAPE_NO_COPY_C_ORDER_MARKER = -99;
  * which values should be skipped of shape [batchSize, timesteps]
  *
  * integer input arguments:
- * 0: normalization, may have two values: zero -> do not apply normalization, one -> apply normalization
- * 1: withWeights, may have two values: zero -> do not return weights, one -> return weights
+ * 0: normalization, may have two values: zero -&gt; do not apply normalization, one -&gt; apply normalization
+ * 1: withWeights, may have two values: zero -&gt; do not return weights, one -&gt; return weights
  *
  * Output Arrays:
  * 0: Attention result arrays of shape [batchSize, featureValues, queryCount] or [batchSize, numHeads, featureValues,
@@ -21358,8 +21438,8 @@ public static final int RESHAPE_NO_COPY_C_ORDER_MARKER = -99;
  * which values should be skipped of shape [batchSize, timesteps]
  *
  * integer input arguments:
- * 0: normalization, may have two values: zero -> do not apply normalization, one -> apply normalization
- * 1: withWeights, may have two values: zero -> do not return weights, one -> return weights
+ * 0: normalization, may have two values: zero -&gt; do not apply normalization, one -&gt; apply normalization
+ * 1: withWeights, may have two values: zero -&gt; do not return weights, one -&gt; return weights
  *
  * Output Arrays:
  * 0: Attention result arrays of shape [batchSize, featureValues, queryCount] or [batchSize, numHeads, featureValues,
@@ -21401,8 +21481,8 @@ public static final int RESHAPE_NO_COPY_C_ORDER_MARKER = -99;
  * mask: OPTIONAL; array that defines which values should be skipped of shape [batchSize, timesteps]
  *
  * integer input arguments:
- * 0: normalization, may have two values: zero -> do not apply normalization, one -> apply normalization
- * 1: withWeights, may have two values: zero -> do not return weights, one -> return weights
+ * 0: normalization, may have two values: zero -&gt; do not apply normalization, one -&gt; apply normalization
+ * 1: withWeights, may have two values: zero -&gt; do not return weights, one -&gt; return weights
  *
  * Output Arrays:
  * 0: Attention result arrays of shape [batchSize, outSize, queryCount]
@@ -21701,7 +21781,7 @@ public static final int RESHAPE_NO_COPY_C_ORDER_MARKER = -99;
  * token_sample - Token sampling for LLM inference
  *
  * Full sampling pipeline in a single native call:
- *   temperature scaling -> top-K -> softmax -> top-P -> sample/argmax
+ *   temperature scaling -&gt; top-K -&gt; softmax -&gt; top-P -&gt; sample/argmax
  *
  * Input:
  *   0: logits [batch, vocabSize], [vocabSize], or [batch, seqLen, vocabSize]
@@ -21734,7 +21814,7 @@ public static final int RESHAPE_NO_COPY_C_ORDER_MARKER = -99;
  *   0: penalized logits (same shape/type as input 0)
  *
  * Float args:
- *   0: repetitionPenalty (1.0 = off, >1.0 penalizes repetition)
+ *   0: repetitionPenalty (1.0 = off, &gt;1.0 penalizes repetition)
  *   1: frequencyPenalty  (0.0 = off, positive penalizes by count)
  *   2: presencePenalty   (0.0 = off, positive penalizes any presence)
  *   3: minP              (0.0 = off, 0.05-0.1 typical)
@@ -21751,7 +21831,7 @@ public static final int RESHAPE_NO_COPY_C_ORDER_MARKER = -99;
 
 /**
  * xtc_filter - Exclude Top Choices (XTC) logit filter (stochastic; masks to -inf).
- * Float args: 0: xtcProbability (0.0 = off), 1: xtcThreshold (< 0.5)
+ * Float args: 0: xtcProbability (0.0 = off), 1: xtcThreshold (&lt; 0.5)
  * Int args:   0: seed
  */
 // #if NOT_EXCLUDED(OP_xtc_filter)
@@ -21893,7 +21973,7 @@ public static final int RESHAPE_NO_COPY_C_ORDER_MARKER = -99;
  * from TurboQuant's two-stage quantization (ICLR 2026). The asymmetric inner
  * product estimator combines MSE reconstruction with QJL correction:
  *
- *   score(q, k) ≈ <q, k_mse> + ||r|| * sqrt(π/2)/m * <S\q, signs>
+ *   score(q, k) ≈ &lt;q, k_mse&gt; + ||r|| * sqrt(π/2)/m * &lt;S\q, signs&gt;
  *
  * Input 0: Q              [B, H, Sq, D] query
  * Input 1: K_mse          [B, H, Sk, D] MSE-reconstructed keys (FLOAT16)
@@ -21939,7 +22019,7 @@ public static final int RESHAPE_NO_COPY_C_ORDER_MARKER = -99;
  * top_p_renorm - Top-P (nucleus) filtering with renormalization.
  *
  * Sorts tokens by descending probability, accumulates until cumulative
- * probability >= p, zeros the rest, then renormalizes.
+ * probability &gt;= p, zeros the rest, then renormalizes.
  *
  * Input:
  *   0: logits [batch, vocabSize] or [vocabSize] — pre-softmax logits
@@ -22066,7 +22146,7 @@ public static final int RESHAPE_NO_COPY_C_ORDER_MARKER = -99;
  * in input array: x[..., :, :] = u[..., :, :] * s[...,:] * transpose(v[..., :, :])
  *
  * Input array:
- * x[..., Rows, Cols], the necessary condition is: rank of x >= 2
+ * x[..., Rows, Cols], the necessary condition is: rank of x &gt;= 2
  *
  * Outputs arrays:
  * s[..., diagSize] - array with singular values which are stored in decreasing order, diagSize is smaller among Rows
@@ -22077,7 +22157,7 @@ public static final int RESHAPE_NO_COPY_C_ORDER_MARKER = -99;
  * IArgs[0] - bool, whether to calculate u and v, s is calculated in any case
  * IArgs[1] - bool, whether to calculate full-sized u and v
  * IArgs[2] - the number of cols or rows which determines what algorithm to use. More precisely:
- *            if diagSize < IArgs[2] then Jacobi algorithm is used, in opposite case the Divide-And-Conquer is applied
+ *            if diagSize &lt; IArgs[2] then Jacobi algorithm is used, in opposite case the Divide-And-Conquer is applied
  *            Recommended value is 16.
  */
 // #if NOT_EXCLUDED(OP_svd)
@@ -22088,7 +22168,7 @@ public static final int RESHAPE_NO_COPY_C_ORDER_MARKER = -99;
  * x[..., M, M] = z[..., M, M] x z[..., M, M]
  *
  * Input array:
- * x[..., M, M],  the necessary condition is: rank of x >= 2 and equality of last two dimensions
+ * x[..., M, M],  the necessary condition is: rank of x &gt;= 2 and equality of last two dimensions
  *
  * Outputs arrays:
  * z - same shape as x
@@ -22184,7 +22264,7 @@ public static final int RESHAPE_NO_COPY_C_ORDER_MARKER = -99;
 // #endif
 
 /**
- * This operation shift individual bits of each element in array to the left: <<
+ * This operation shift individual bits of each element in array to the left: &lt;&lt;
  *
  * PLEASE NOTE: This operation is applicable only to integer data types
  *
@@ -22194,7 +22274,7 @@ public static final int RESHAPE_NO_COPY_C_ORDER_MARKER = -99;
 // #endif
 
 /**
- * This operation shift individual bits of each element in array to the right: >>
+ * This operation shift individual bits of each element in array to the right: &gt;&gt;
  *
  * PLEASE NOTE: This operation is applicable only to integer data types
  *
@@ -22326,8 +22406,8 @@ public static final int RESHAPE_NO_COPY_C_ORDER_MARKER = -99;
 //////////////////////////////////////////////////////////////////////////
 /**
  * Implementation of Huber loss function:
- *    0.5 * (labels-predictions)^2                                if |labels-predictions| <= delta
- *    0.5 * delta^2 + delta * (|labels-predictions| - delta)      if |labels-predictions| >  delta
+ *    0.5 * (labels-predictions)^2                                if |labels-predictions| &lt;= delta
+ *    0.5 * delta^2 + delta * (|labels-predictions| - delta)      if |labels-predictions| &gt;  delta
  *
  * Input arrays:
  *    0: predictions - the predicted values, type float

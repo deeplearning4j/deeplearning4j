@@ -92,10 +92,29 @@ public class LLaMAArchitecture implements ModelArchitecture {
         return "llama.gguf.path";
     }
 
+    /** Override for grouped recurrent attention; equal Q/K/V heads remain the GGUF default. */
+    protected int getGdnKeyHeads(int valueHeads) {
+        return valueHeads;
+    }
+
+    /** Some architectures multiply RMS gamma before the final storage cast. */
+    protected boolean multiplyNormInFloat() {
+        return false;
+    }
+
     @Override
     public SameDiff buildGraph(GGMLMetadata metadata, Map<String, INDArray> weights, ConversionOptions options) {
-        SameDiff sd = SameDiff.create();
-        ArchitectureConfig config = getConfig(metadata);
+        return buildGraph(getConfig(metadata), weights, options);
+    }
+
+    /** Build from format-independent configuration and canonical logical weight names. */
+    public SameDiff buildGraph(ArchitectureConfig config, Map<String, INDArray> weights, ConversionOptions options) {
+        return buildGraph(SameDiff.create(), config, weights, options);
+    }
+
+    /** Caller-owned graph overload permits deterministic cleanup if construction fails. */
+    public SameDiff buildGraph(SameDiff sd, ArchitectureConfig config,
+            Map<String, INDArray> weights, ConversionOptions options) {
 
         DataType dtype = options.getTargetDataType();
         log.info("Building LLaMA graph: {} target layers, {} MTP layers, hidden={}, heads={}, kv_heads={}, headDim={}, " +
@@ -109,13 +128,13 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable inputIds = sd.placeHolder("input_ids", DataType.INT64, -1, -1);
 
         // KV cache placeholders for autoregressive decoding
-        // position_offset: scalar INT64 — current position for RoPE (enables DSP replay)
+        // position_offset: scalar INT64 - current position for RoPE (enables DSP replay)
         SDVariable positionOffset = sd.placeHolder("position_offset", DataType.INT64);
-        // cache_position: scalar INT64 — write position in KV cache buffers
+        // cache_position: scalar INT64 - write position in KV cache buffers
         SDVariable cachePosition = sd.placeHolder("cache_position", DataType.INT64);
-        // actual_sequence_length: scalar INT64 — real (unpadded) timesteps for recurrent GDN state updates
+        // actual_sequence_length: scalar INT64 - real (unpadded) timesteps for recurrent GDN state updates
         SDVariable actualSequenceLength = sd.placeHolder("actual_sequence_length", DataType.INT64);
-        // _causal_mask: [1, 1, Tq, maxKvLen] — attention bias masking padded cache positions
+        // _causal_mask: [1, 1, Tq, maxKvLen] - attention bias masking padded cache positions
         SDVariable causalMask = sd.placeHolder("_causal_mask", DataType.FLOAT, -1, -1, -1, -1);
 
         // Per-layer KV cache placeholders (only for cacheable attention layers, not GDN)
@@ -132,7 +151,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
                 // Cacheable layer: [batch, maxKvLen, numKVHeads, headDim]
                 // Note: when kvQuantFormat > 0, GenerationPipeline manages INT8-compressed storage
                 // (quantizedKvBuffers) alongside these float placeholders (staticKvBuffers). The graph
-                // always receives float KV — the dequantize step happens in Java before each decode batch.
+                // always receives float KV - the dequantize step happens in Java before each decode batch.
                 SDVariable keyCache = sd.placeHolder("past_key_values." + layer + ".key",
                         dtype, -1, -1, numKVHeads, headDim);
                 SDVariable valueCache = sd.placeHolder("past_key_values." + layer + ".value",
@@ -191,6 +210,12 @@ public class LLaMAArchitecture implements ModelArchitecture {
 
         // MTP consumes the target trunk hidden state before the final output norm.
         // Keep it as an explicit output only for GGUFs that bundle a predictor.
+        // Uses sd.identity: aliases the upstream layer_out_23 buffer (slot 1946).
+        // This buffer is protected from recycling because it feeds the final RMS
+        // norm and the logits path. Creating a separate mul/add node instead
+        // allocates a NEW slot (e.g. slot 1948) which the buffer allocator then
+        // reuses as the lm_logits matmul accumulator - clobbering the mul result.
+        // The Sept-05 code (77% acceptance) used sd.identity successfully.
         if (config.getNumMtpLayers() > 0) {
             hidden = sd.identity("target_hidden_states", hidden);
             outputNames.add("target_hidden_states");
@@ -210,31 +235,32 @@ public class LLaMAArchitecture implements ModelArchitecture {
         // Full logits are useful to general graph consumers, but generation-only mobile bundles
         // consume only the final position. Omitting this branch prevents allocation of
         // [batch, sequence, vocabulary] during prefill.
-        if (!options.isLastPositionLogitsOnly()) {
-            // Upcast to FP32: hidden=1024 dot products easily overflow FP16 (±65504) at vocab scale.
+        // MTP verification consumes every row of the target window, not just its last row.
+        if (!options.isLastPositionLogitsOnly() || config.getNumMtpLayers() > 0) {
+            // Upcast to FP32: hidden=1024 dot products easily overflow FP16 (?65504) at vocab scale.
             QuantizedLinear.matMulFloatOutput(
                     sd, "lm_logits", hidden, lmHead, weights, "output.weight", dtype);
             outputNames.add("lm_logits");
         }
 
-        // Last-position logits: [batch, 1, vocab_size] — TTFT optimisation.
+        // Last-position logits: [batch, 1, vocab_size] - TTFT optimisation.
         // Slice the hidden states at actual_sequence_length-1 (runtime-derived, NOT a baked
         // constant) BEFORE the lm_head matmul so fixed-buffer right padding is ignored and DSP
         // can skip computing logits for all padded sequence positions.
         // For decode (S=1) this is identical to lm_logits[:, 0, :]; both outputs resolve
         // to the same value and DSP will naturally merge them via shared computation.
         //
-        // Implementation: slice hidden [B, S, H] → [B, 1, H] at seq-dim index S-1.
-        // begin = [0, S-1, 0], size = [B, 1, H] — all shape-derived via sizeAt.
+        // Implementation: slice hidden [B, S, H] -> [B, 1, H] at seq-dim index S-1.
+        // begin = [0, S-1, 0], size = [B, 1, H] - all shape-derived via sizeAt.
         {
             SDVariable batchSize = sd.sizeAt(hidden, 0);
             SDVariable hiddenDim = sd.sizeAt(hidden, 2);
             SDVariable one       = sd.constant(Nd4j.scalar(DataType.INT64, 1L));
             SDVariable actualLast = actualSequenceLength.sub(one);
             SDVariable zero      = sd.constant(Nd4j.scalar(DataType.INT64, 0L));
-            // begin: [0, actual_sequence_length-1, 0] — ignore fixed-buffer right padding.
+            // begin: [0, actual_sequence_length-1, 0] - ignore fixed-buffer right padding.
             SDVariable beginVec = sd.stack("lm_last_begin", 0, zero, actualLast, zero);
-            // size:  [B, 1, H]    — shape [3], dtype INT64
+            // size:  [B, 1, H]    - shape [3], dtype INT64
             SDVariable sizeVec  = sd.stack("lm_last_size",  0, batchSize, one, hiddenDim);
             SDVariable hiddenLast = sd.slice("hidden_last", hidden, beginVec, sizeVec);
             QuantizedLinear.matMulFloatOutput(sd, "lm_logits_last", hiddenLast, lmHead, weights, "output.weight", dtype);
@@ -260,7 +286,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
      * h_(t-1). The caller is responsible for the one-position shift during
      * prefill and for carrying the accepted target row between decode windows.</p>
      */
-    private void buildMtpBranch(SameDiff sd, ArchitectureConfig config,
+    protected void buildMtpBranch(SameDiff sd, ArchitectureConfig config,
             Map<String, INDArray> weights, DataType dtype,
             SDVariable tokenEmbed, SDVariable lmHead, List<String> outputNames) {
 
@@ -308,7 +334,8 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable valueCache = sd.placeHolder("mtp_past_key_values.0.value", dtype,
                 -1, -1, config.getNumKVHeads(), config.getHeadDimension());
 
-        SDVariable tokenHidden = sd.gather("mtp_embedded", tokenEmbed, inputIds, 0);
+        SDVariable tokenHidden = sd.gather("mtp_embedded_storage", tokenEmbed, inputIds, 0);
+        tokenHidden = GGMLDTypePolicy.castTo(tokenHidden, "mtp_embedded", dtype);
         SDVariable normalizedToken = buildRMSNorm(sd, tokenHidden, "mtp.enorm",
                 nextnPrefix + ".enorm", weights, config, dtype);
         SDVariable normalizedTarget = buildRMSNorm(sd, targetHidden, "mtp.hnorm",
@@ -324,8 +351,12 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable predictorHidden = buildTransformerBlock(sd, predictorInput, layerIdx,
                 config, weights, dtype, positionOffset, cachePosition, null, causalMask,
                 keyCache, valueCache, null, null);
+        // Sept-05 wiring (77% acceptance era): the chained hidden output is the
+        // PRE-norm transformer block output. buildMtpBranch consumed exactly this
+        // at 8cb739c8a6 when 27B acceptance measured 77%. Reverted from the
+        // post-norm experiment (368a274c60) which matched vLLM's return contract
+        // but did NOT match the Sept-05 behavior and did not improve acceptance.
         predictorHidden = sd.identity("mtp_hidden_states", predictorHidden);
-
         SDVariable normalizedPredictor = buildRMSNorm(sd, predictorHidden,
                 "mtp.shared_head.norm", nextnPrefix + ".shared_head_norm", weights, config, dtype);
         String lmHeadWeightName = weights.containsKey("output.weight")
@@ -347,7 +378,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
         outputNames.add("mtp_logits");
     }
 
-    private SDVariable buildTransformerBlock(SameDiff sd, SDVariable input, int layerIdx,
+    protected SDVariable buildTransformerBlock(SameDiff sd, SDVariable input, int layerIdx,
             ArchitectureConfig config, Map<String, INDArray> weights, DataType dtype,
             SDVariable positionOffset, SDVariable cachePosition, SDVariable actualSequenceLength,
             SDVariable causalMask, SDVariable keyCache, SDVariable valueCache,
@@ -366,11 +397,11 @@ public class LLaMAArchitecture implements ModelArchitecture {
                 "model.layers." + layerIdx + ".input_layernorm",
                 prefix + ".attn_norm", weights, config, dtype);
 
-        // Self-attention — dispatch based on layer type from metadata
+        // Self-attention - dispatch based on layer type from metadata
         SDVariable attnOut;
         switch (layerType) {
             case "linear_attention":
-                // GDN layers have no cacheable K/V — GDN recurrent state passed instead
+                // GDN layers have no cacheable K/V - GDN recurrent state passed instead
                 attnOut = buildGDNAttention(sd, normed, layerIdx, config, weights, dtype,
                         gdnStateIn, convStateIn, actualSequenceLength);
                 break;
@@ -389,7 +420,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
         // Residual connection
         SDVariable postAttn = input.add("post_attn_" + layerIdx, attnOut);
 
-        // Pre-FFN RMS normalization — try post_attention_norm first, fallback to ffn_norm
+        // Pre-FFN RMS normalization - try post_attention_norm first, fallback to ffn_norm
         String postAttnNormKey = weights.containsKey(prefix + ".post_attention_norm.weight")
                 ? prefix + ".post_attention_norm"
                 : prefix + ".ffn_norm";
@@ -421,7 +452,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
      * <p>Resolution order:</p>
      * <ol>
      *   <li>Explicit {@code layer_types} array (if present in metadata)</li>
-     *   <li>{@code full_attention_interval} — every Nth layer (0-indexed: N-1, 2N-1, ...) is
+     *   <li>{@code full_attention_interval} - every Nth layer (0-indexed: N-1, 2N-1, ...) is
      *       "full_attention", all others are "linear_attention"</li>
      *   <li>Default: "default" (standard attention for LLaMA/Mistral etc.)</li>
      * </ol>
@@ -440,7 +471,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
             return layerTypes.get(layerIdx);
         }
 
-        // 2. full_attention_interval from metadata (e.g., Qwen3.5: interval=4 → layers 3,7,11,... are full)
+        // 2. full_attention_interval from metadata (e.g., Qwen3.5: interval=4 -> layers 3,7,11,... are full)
         int interval = config.getFullAttentionInterval();
         if (interval > 0) {
             boolean isFullAttention = ((layerIdx + 1) % interval == 0);
@@ -454,12 +485,12 @@ public class LLaMAArchitecture implements ModelArchitecture {
     // RMS Normalization
     // ========================================================================
 
-    private SDVariable buildRMSNorm(SameDiff sd, SDVariable input, String outputName,
+    protected SDVariable buildRMSNorm(SameDiff sd, SDVariable input, String outputName,
             Map<String, INDArray> weights, ArchitectureConfig config, DataType dtype) {
         return buildRMSNorm(sd, input, outputName, "output_norm", weights, config, dtype);
     }
 
-    private SDVariable buildRMSNorm(SameDiff sd, SDVariable input, String outputName,
+    protected SDVariable buildRMSNorm(SameDiff sd, SDVariable input, String outputName,
             String weightKey, Map<String, INDArray> weights, ArchitectureConfig config, DataType dtype) {
 
         INDArray normWeight = weights.get(weightKey + ".weight");
@@ -472,7 +503,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
 
         // RMS normalization: x * rsqrt(mean(x^2) + eps) * gamma
         // Upcast to FLOAT32 for squaring to prevent HALF overflow (values > 256 overflow when squared).
-        // Skip the upcast/downcast when the input is already FP32 — this avoids creating
+        // Skip the upcast/downcast when the input is already FP32 - this avoids creating
         // redundant cast ops that add per-step overhead on CPU.
         DataType storageType = input.dataType();
         SDVariable computeInput = GGMLDTypePolicy.castForAccumulation(
@@ -481,6 +512,12 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable meanSquared = squared.mean(true, -1);
         SDVariable rms = sd.math.sqrt(meanSquared.add(config.getLayerNormEpsilon()));
         SDVariable normalized = computeInput.div(rms);
+        if (multiplyNormInFloat()) {
+            SDVariable gammaAccum = GGMLDTypePolicy.castForAccumulation(gamma, outputName + "_gamma_accum");
+            SDVariable scaled = normalized.mul(outputName + "_scaled", gammaAccum);
+            SDVariable result = GGMLDTypePolicy.castTo(scaled, outputName, storageType);
+            return sd.updateVariableNameAndReference(result, outputName);
+        }
         SDVariable storageResult = GGMLDTypePolicy.castTo(
                 normalized, outputName + "_storage", storageType);
 
@@ -505,6 +542,12 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable meanSquared = squared.mean(true, -1);
         SDVariable rms = sd.math.sqrt(meanSquared.add(eps));
         SDVariable normalized = computeInput.div(rms);
+        if (multiplyNormInFloat()) {
+            SDVariable gammaAccum = GGMLDTypePolicy.castForAccumulation(gamma, outputName + "_gamma_accum");
+            SDVariable scaled = normalized.mul(outputName + "_scaled", gammaAccum);
+            SDVariable result = GGMLDTypePolicy.castTo(scaled, outputName, storageType);
+            return sd.updateVariableNameAndReference(result, outputName);
+        }
         SDVariable storageResult = GGMLDTypePolicy.castTo(
                 normalized, outputName + "_storage", storageType);
         return storageResult.mul(outputName, gamma);
@@ -557,7 +600,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
 
         // Project to Q, K, V: [batch, seq, hidden] -> [batch, seq, proj_dim]
         // Upcast to FP32 inside fp32Mmul to prevent FP16 overflow (hidden=1024 dot products
-        // easily exceed ±65504 in FP16). Result is cast back to dtype after the multiply.
+        // easily exceed ?65504 in FP16). Result is cast back to dtype after the multiply.
         SDVariable q = QuantizedLinear.matMul(sd, "q_" + layerIdx, input, wq, weights, prefix + ".attn_q.weight", dtype);
         SDVariable k = QuantizedLinear.matMul(sd, "k_" + layerIdx, input, wk, weights, prefix + ".attn_k.weight", dtype);
         SDVariable v = QuantizedLinear.matMul(sd, "v_" + layerIdx, input, wv, weights, prefix + ".attn_v.weight", dtype);
@@ -597,11 +640,11 @@ public class LLaMAArchitecture implements ModelArchitecture {
                     config.getRopeDimensionCount());
         }
 
-        // FusedRoPE promotes HALF→FLOAT internally; V must match Q/K dtype
+        // FusedRoPE promotes HALF->FLOAT internally; V must match Q/K dtype
         v = GGMLDTypePolicy.castTo(v, "v_attention_type_" + layerIdx, q.dataType());
 
         // Attention with built-in KV cache + attention bias for masking
-        // useCausalMask=false — the causalMask (attention bias) handles all masking
+        // useCausalMask=false - the causalMask (attention bias) handles all masking
         SDVariable attnOut = sd.nn().dotProductAttentionV2(
                 "attn_out_" + layerIdx, q, v, k, null, null,
                 keyCache, valueCache, cachePosition, causalMask,
@@ -628,7 +671,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
      *   <li>Output projection</li>
      * </ol>
      */
-    private SDVariable buildGatedAttention(SameDiff sd, SDVariable input, int layerIdx,
+    protected SDVariable buildGatedAttention(SameDiff sd, SDVariable input, int layerIdx,
             ArchitectureConfig config, Map<String, INDArray> weights, DataType dtype,
             SDVariable positionOffset, SDVariable cachePosition, SDVariable causalMask,
             SDVariable keyCache, SDVariable valueCache) {
@@ -668,7 +711,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
 
         // Project Q (includes gate), K, V
         // Upcast to FP32 inside fp32Mmul to prevent FP16 overflow (hidden=1024 dot products
-        // easily exceed ±65504 in FP16). Result is cast back to dtype after the multiply.
+        // easily exceed ?65504 in FP16). Result is cast back to dtype after the multiply.
         SDVariable qFull = QuantizedLinear.matMul(sd, "q_full_" + layerIdx, input, wq, weights, "blk." + layerIdx + ".attn_q.weight", dtype);
         SDVariable k = QuantizedLinear.matMul(sd, "k_" + layerIdx, input, wk, weights, "blk." + layerIdx + ".attn_k.weight", dtype);
         SDVariable v = QuantizedLinear.matMul(sd, "v_" + layerIdx, input, wv, weights, "blk." + layerIdx + ".attn_v.weight", dtype);
@@ -697,7 +740,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable gate = sd.reshape("attn_gate_" + layerIdx, gatePerHead, gateShapeVar);
 
         // Reshape K, V to [batch, seq, kv_heads, headDim]
-        // Derive actual KV head count from weight shapes — in gated attention layers,
+        // Derive actual KV head count from weight shapes - in gated attention layers,
         // the V/K weight first dimension may differ from config.numKVHeads * headDim
         int kOutDim = QuantizedLinear.logicalOutputDim(weights, prefix + ".attn_k.weight", kWeight);
         int vOutDim = QuantizedLinear.logicalOutputDim(weights, prefix + ".attn_v.weight", vWeight);
@@ -739,7 +782,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
                     config.getRopeDimensionCount());
         }
 
-        // FusedRoPE promotes HALF→FLOAT internally; V must match Q/K dtype
+        // FusedRoPE promotes HALF->FLOAT internally; V must match Q/K dtype
         v = GGMLDTypePolicy.castTo(v, "v_attention_type_" + layerIdx, q.dataType());
 
         // Attention with built-in KV cache + attention bias for masking
@@ -778,7 +821,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
      *   <li>Output projection via ssm_out</li>
      * </ol>
      */
-    private SDVariable buildGDNAttention(SameDiff sd, SDVariable input, int layerIdx,
+    protected SDVariable buildGDNAttention(SameDiff sd, SDVariable input, int layerIdx,
             ArchitectureConfig config, Map<String, INDArray> weights, DataType dtype,
             SDVariable gdnStateIn, SDVariable convStateIn, SDVariable actualSequenceLength) {
 
@@ -801,7 +844,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
             return input;
         }
 
-        // GDN parameters — derive Q/K/V dimensions from logical matrix shapes.
+        // GDN parameters - derive Q/K/V dimensions from logical matrix shapes.
         // Runtime-quantized weights are stored as one-dimensional packed byte arrays; their
         // INDArray storage shape is not the original [N,K] matrix shape.
         // GatedDeltaRule requires Q and K to share D_k, while V has D_v (may differ).
@@ -836,12 +879,16 @@ public class LLaMAArchitecture implements ModelArchitecture {
                     + ", vDim=" + vDim + ", expected qkvDim-vDim to be positive and even");
         }
         int qkDim = combinedQkDim / 2;
-        if (qkDim % numGdnHeads != 0 || vDim % numGdnHeads != 0) {
+        if (vDim % numGdnHeads != 0) {
             throw new IllegalStateException("Layer " + layerIdx
                     + " GDN projection dimensions are not divisible by head count " + numGdnHeads
                     + ": qkDim=" + qkDim + ", vDim=" + vDim);
         }
-        int headDimQK = qkDim / numGdnHeads;
+        int numKeyHeads = getGdnKeyHeads(numGdnHeads);
+        if (numKeyHeads <= 0 || numGdnHeads % numKeyHeads != 0 || qkDim % numKeyHeads != 0) {
+            throw new IllegalArgumentException("Invalid GDN key/value head grouping");
+        }
+        int headDimQK = qkDim / numKeyHeads;
         int headDimV = vDim / numGdnHeads;
 
         if (layerIdx == 0) {
@@ -884,12 +931,12 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable vProj = qkv.get(SDIndex.all(), SDIndex.all(), SDIndex.interval(2 * qkDim, 2 * qkDim + vDim));
         sd.updateVariableNameAndReference(vProj, "gdn_v_" + layerIdx);
 
-        // 4. Reshape to [B, L, H, D] — Q/K share D_k, V has D_v
+        // 4. Reshape to [B, L, H, D] - Q/K share D_k, V has D_v
         SDVariable batchDim = sd.sizeAt(input, 0);
         SDVariable seqDim = sd.sizeAt(input, 1);
         SDVariable qkHeadShape = sd.stack("gdn_qk_head_shape_" + layerIdx, 0,
                 batchDim, seqDim,
-                sd.constant(Nd4j.scalar((long) numGdnHeads)),
+                sd.constant(Nd4j.scalar((long) numKeyHeads)),
                 sd.constant(Nd4j.scalar((long) headDimQK)));
         SDVariable vHeadShape = sd.stack("gdn_v_head_shape_" + layerIdx, 0,
                 batchDim, seqDim,
@@ -899,6 +946,19 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable q = sd.reshape("gdn_q_reshaped_" + layerIdx, qProj, qkHeadShape);
         SDVariable k = sd.reshape("gdn_k_reshaped_" + layerIdx, kProj, qkHeadShape);
         SDVariable v = sd.reshape("gdn_v_reshaped_" + layerIdx, vProj, vHeadShape);
+
+        if (numKeyHeads != numGdnHeads) {
+            // Repeat each key head consecutively across its value-head group, then fold
+            // [keyHeads, group] into valueHeads. Do not tile the entire head sequence.
+            int groups = numGdnHeads / numKeyHeads;
+            SDVariable groupedShape = sd.stack("gdn_grouped_head_shape_" + layerIdx, 0,
+                    batchDim, seqDim, sd.constant(Nd4j.scalar((long) numGdnHeads)),
+                    sd.constant(Nd4j.scalar((long) headDimQK)));
+            q = sd.reshape("gdn_q_grouped_" + layerIdx,
+                    sd.tile(sd.expandDims(q, 3), 1, 1, 1, groups, 1), groupedShape);
+            k = sd.reshape("gdn_k_grouped_" + layerIdx,
+                    sd.tile(sd.expandDims(k, 3), 1, 1, 1, groups, 1), groupedShape);
+        }
 
         // 5. L2-normalize Q and K (per head vector, matching use_qk_l2norm_in_kernel=True)
         // Upcast to FLOAT32 for squaring to prevent HALF overflow
@@ -921,8 +981,8 @@ public class LLaMAArchitecture implements ModelArchitecture {
         k = GGMLDTypePolicy.castForAccumulation(k, "gdn_k_compute_" + layerIdx);
         v = GGMLDTypePolicy.castForAccumulation(v, "gdn_v_compute_" + layerIdx);
 
-        // 6. Compute beta (update gate): sigmoid(input @ Wbeta^T) → [B, L, H]
-        // Reference: beta = sigmoid(in_proj_b(x))  — NO dt_bias added here
+        // 6. Compute beta (update gate): sigmoid(input @ Wbeta^T) -> [B, L, H]
+        // Reference: beta = sigmoid(in_proj_b(x))  - NO dt_bias added here
         SDVariable beta;
         if (betaWeight != null) {
             SDVariable wBeta = sd.var(attnPrefix + "beta.weight", betaWeight);
@@ -976,7 +1036,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable gdnOut = gdrResult[0];
 
         // 9. Gated RMSNorm per-head: output = RMSNorm(gdnOut) * weight * SiLU(z)
-        // Reference: Qwen3_5RMSNormGated — RMSNorm FIRST, then gate with SiLU(z)
+        // Reference: Qwen3_5RMSNormGated - RMSNorm FIRST, then gate with SiLU(z)
         // gdnOut is still [B, L, H, D] here
         if (ssmNormWeight != null) {
             // Per-head RMSNorm: normalize along last dim (headDim=128), weight is [128]
@@ -1081,7 +1141,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
                     config.getRopeDimensionCount());
         }
 
-        // FusedRoPE promotes HALF→FLOAT internally; V must match Q/K dtype
+        // FusedRoPE promotes HALF->FLOAT internally; V must match Q/K dtype
         v = GGMLDTypePolicy.castTo(v, "v_attention_type_" + layerIdx, q.dataType());
 
         SDVariable attnOut = sd.nn.dotProductAttentionV2(
@@ -1103,7 +1163,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
     // FFN variants
     // ========================================================================
 
-    private SDVariable buildSwiGLUFFN(SameDiff sd, SDVariable input, int layerIdx,
+    protected SDVariable buildSwiGLUFFN(SameDiff sd, SDVariable input, int layerIdx,
             ArchitectureConfig config, Map<String, INDArray> weights, DataType dtype) {
 
         String prefix = "blk." + layerIdx;

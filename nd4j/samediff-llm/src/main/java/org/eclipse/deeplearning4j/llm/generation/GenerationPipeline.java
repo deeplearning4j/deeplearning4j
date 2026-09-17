@@ -1688,7 +1688,8 @@ public class GenerationPipeline implements AutoCloseable {
         String posOffsetName = ioConfig.getPositionOffsetName();
         String cachePosName = ioConfig.getCachePositionName();
         String causalMaskName = ioConfig.getCausalMaskName();
-        boolean useNativeMtp = config.getMaxSpeculativeTokens() > 0 && hasBundledMtpGraph();
+        boolean useNativeMtp = decodePolicy.kind == DecodePolicyKind.SPECULATIVE
+                && config.getMaxSpeculativeTokens() > 0 && hasBundledMtpGraph();
         if (useNativeMtp) {
             log.info("[MTP] Bundled Qwen3.5 predictor enabled (K={})", config.getMaxSpeculativeTokens());
         }

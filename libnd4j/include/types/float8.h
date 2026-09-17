@@ -132,8 +132,9 @@ quarter_e4m3 cpu_float2e4m3_rn(float f) {
 
   // E4M3 biased exponent range: 1..15 (0 = subnormal, 15 with mant<7 = normal, 15 with mant=7 = NaN)
   // E4M3 unbiased range: -6..8
-  if (unbiased_exp < -9) {
-    // Too small, rounds to zero
+  if (unbiased_exp < -10) {
+    // Below half the smallest subnormal (2^-10), rounds to zero.
+    // Exponent -10 must reach ties-to-even rounding below.
     ret.x = (sign << 7);
     return ret;
   }

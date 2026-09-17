@@ -72,6 +72,22 @@ SD_LIB_EXPORT int executeDynamicShapePlan(
     sd::Pointer stream);
 
 /**
+ * Execute through NativeDynamicShapePlan::executeSteadyState, using the same
+ * context input order, requested-output mapping and borrowed output ownership
+ * as executeDynamicShapePlan. No dtype conversion is performed. The plan owns
+ * lifecycle admission (early calls still execute its build phases).
+ *
+ * @param stream Backend-owned stream: CUDA storage pointer (cudaStream_t*),
+ *               VulkanExecutionStream* for Vulkan (nullptr selects the plan's
+ *               stream), or the CPU-derived backend's execution stream.
+ * @return 0 on success, non-zero on native failure
+ */
+SD_LIB_EXPORT int executeSteadyStatePlan(
+    sd::Pointer planHandle,
+    OpaqueContext* opContext,
+    sd::Pointer stream);
+
+/**
  * Free a compiled native plan.
  *
  * @param planHandle  Handle from compileDynamicShapePlan()

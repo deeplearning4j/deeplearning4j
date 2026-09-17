@@ -260,7 +260,13 @@ SD_HOST_DEVICE SD_INLINE float copysignfk(float x, float y) {
 
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_sigmoid(T val) {
- Z result = (Z)1.0f / ((Z)1.0f + sd_exp<T, Z>(-val));
+ // HALF/BFLOAT16 are storage types, not intermediate arithmetic types.
+ // Keep exp, addition and division in FLOAT and narrow only once, matching
+ // compiled elementwise sigmoid and avoiding lifecycle-dependent rounding.
+ using ComputeT = typename std::conditional<
+     std::is_same<Z, float16>::value || std::is_same<Z, bfloat16>::value, float, Z>::type;
+ const ComputeT x = static_cast<ComputeT>(val);
+ Z result = static_cast<Z>(ComputeT(1) / (ComputeT(1) + sd_exp<ComputeT, ComputeT>(-x)));
  SD_PRINT_MATH_FUNC("sd_sigmoid", val, result,Z);
  return result;
 }

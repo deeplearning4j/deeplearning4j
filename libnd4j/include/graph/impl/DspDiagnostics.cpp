@@ -28,8 +28,11 @@
 #include <fstream>
 #include <functional>
 #include <iomanip>
+#include <limits>
 #include <mutex>
 #include <sstream>
+#include <stdexcept>
+#include <utility>
 #include <vector>
 
 
@@ -74,6 +77,275 @@ DspDiagnostics::DspDiagnostics()
       traceSlot_(-1) {
   std::memset(events_, 0, sizeof(events_));
   applyDspConfig();
+}
+
+// Raw tensor artifacts are separate from the diagnostic ring. The wire format is
+// DSPTS001, little-endian integers and length-prefixed UTF-8 strings, followed by
+// C-logical raw storage bytes (never numeric casts). See TestDspTensorSnapshot.
+// saveNpy/cnpy's typed OpaqueDataBuffer path is unsuitable here: it may sync the
+// primary buffer and does not carry this capture's strides/source/call metadata.
+struct DspDiagnostics::TensorSnapshotState {
+  struct Tensor {
+    std::string name;
+    int dtype, width;
+    char order;
+    int64_t originalOffset;
+    std::vector<LongType> shape, strides;
+    size_t offset = 0, bytes = 0;
+  };
+  struct Call {
+    int index;
+    int64_t position;
+    int phases = 1;
+    std::vector<Tensor> tensors;
+    void* pinned = nullptr;
+    size_t bytes = 0;
+    bool ready = false;
+  };
+  std::string source, prefix;
+  std::thread::id owner;
+  void* stream = nullptr;
+  void* arena = nullptr;
+  bool finished = false;
+  size_t totalBytes = 0;
+  std::vector<Call> calls;
+};
+
+namespace {
+// Reserve bounded metadata/footer space for all three files, so the complete
+// artifact set (not just the DMA payload) fits within 32 MiB.
+constexpr size_t tensorSnapshotMetadataBudget = 128u * 1024u;
+constexpr size_t tensorSnapshotBudget = 32u * 1024u * 1024u - 3u * tensorSnapshotMetadataBudget;
+void snapshotInteger(std::ostream& out, uint64_t value, int bytes) {
+  for (int i = 0; i < bytes; ++i) out.put(static_cast<char>((value >> (8 * i)) & 255));
+}
+void snapshotString(std::ostream& out, const std::string& value) {
+  snapshotInteger(out, value.size(), 4);
+  out.write(value.data(), value.size());
+}
+uint64_t snapshotChecksum(const unsigned char* data, size_t bytes) {
+  uint64_t hash = UINT64_C(14695981039346656037);
+  for (size_t i = 0; i < bytes; ++i) { hash ^= data[i]; hash *= UINT64_C(1099511628211); }
+  return hash;
+}
+#if defined(SD_CUDA)
+void snapshotCudaCheck(cudaError_t error) {
+  if (error != cudaSuccess) throw std::runtime_error(std::string("DSP tensor snapshot: ") + cudaGetErrorString(error));
+}
+#endif
+}
+
+bool DspDiagnostics::beginTensorSnapshot(const char* source, void* stream) {
+  if (!tensorSnapshotRequested()) return false;
+  std::lock_guard<std::mutex> lock(tensorSnapshotMutex_);
+  if (tensorSnapshots_ != nullptr) return false;  // never reset by clear()/plan epochs
+#if defined(SD_CUDA)
+  std::string prefix;
+  {
+    std::lock_guard<std::mutex> configLock(eventMutex_);
+    prefix = jsonPath_; // existing Environment + Java setJsonPath bridge
+  }
+  if (prefix.empty() || source == nullptr || std::strlen(source) > 1024)
+    throw std::runtime_error("TENSOR_SNAPSHOT requires diagnosticsFile and a bounded source label");
+  tensorSnapshots_ = new TensorSnapshotState();
+  tensorSnapshots_->prefix = prefix;
+  tensorSnapshots_->source = source;
+  tensorSnapshots_->owner = std::this_thread::get_id();
+  tensorSnapshots_->stream = stream;
+  tensorSnapshots_->calls.reserve(3);
+  // Allocate once at session setup, BEFORE entering the decode loop. Never
+  // allocate pinned memory between position/mask writes and predictor execution.
+  snapshotCudaCheck(cudaMallocHost(&tensorSnapshots_->arena, tensorSnapshotBudget));
+  return true;
+#else
+  throw std::runtime_error("Asynchronous DSP tensor snapshot capture requires CUDA");
+#endif
+}
+
+void DspDiagnostics::enqueueTensorSnapshot(int callIndex, int64_t sourcePosition, void* stream,
+                                           const std::vector<std::string>& names,
+                                           const std::vector<NDArray*>& arrays) {
+#if defined(SD_CUDA)
+  std::lock_guard<std::mutex> lock(tensorSnapshotMutex_);
+  auto* state = tensorSnapshots_;
+  if (state == nullptr || callIndex > 3) return;
+  const bool append = !state->calls.empty() && callIndex == state->calls.back().index;
+  if (state->finished || state->owner != std::this_thread::get_id() || state->stream != stream ||
+      callIndex < 1 || (!append && callIndex != static_cast<int>(state->calls.size()) + 1) ||
+      (append && (!state->calls.back().ready || state->calls.back().position != sourcePosition)))
+    throw std::runtime_error("DSP tensor snapshot owner/stream/call mismatch");
+  const size_t priorCount = append ? state->calls.back().tensors.size() : 0;
+  if (names.size() != arrays.size() || names.empty() || names.size() + priorCount > 64)
+    throw std::runtime_error("DSP tensor snapshot requires 1..64 explicitly named tensors per call");
+  auto cudaStream = reinterpret_cast<cudaStream_t>(stream);
+  cudaStreamCaptureStatus capture;
+  snapshotCudaCheck(cudaStreamIsCapturing(cudaStream, &capture));
+  if (capture != cudaStreamCaptureStatusNone)
+    throw std::runtime_error("DSP tensor snapshots must be enqueued outside graph capture");
+
+  TensorSnapshotState::Call batch;
+  batch.index = callIndex;
+  batch.position = sourcePosition;
+  // Validate the entire batch before allocating or issuing any transfer. View
+  // bounds use the unshifted DataBuffer; copies use specialBuffer (already shifted).
+  for (size_t n = 0; n < arrays.size(); ++n) {
+    auto* a = arrays[n];
+    if (!a || !a->dataBuffer() || names[n].empty() || names[n].size() > 1024 ||
+        a->rankOf() < 0 || a->rankOf() > 32 || a->sizeOfT() < 1 || a->sizeOfT() > 8)
+      throw std::runtime_error("Invalid DSP tensor snapshot input metadata");
+    for (size_t prior = 0; prior < n; ++prior)
+      if (names[prior] == names[n]) throw std::runtime_error("Duplicate DSP snapshot input name");
+    if (append) for (const auto& prior : state->calls.back().tensors)
+      if (prior.name == names[n]) throw std::runtime_error("Duplicate DSP snapshot phase tensor name");
+    TensorSnapshotState::Tensor t;
+    t.name = names[n]; t.dtype = static_cast<int>(a->dataType());
+    t.width = a->sizeOfT(); t.order = a->ordering(); t.originalOffset = a->offset();
+    if (!(a->isR() || a->isZ() || a->isB()) ||
+        (a->isEmpty() && a->rankOf() == 0))
+      throw std::runtime_error("DSP tensor snapshots require fixed-width numeric/bool tensors with explicit empty shapes");
+    const int64_t capacity = a->dataBuffer()->getLenInBytes() / t.width;
+    int64_t low = t.originalOffset, high = low;
+    size_t count = a->isEmpty() ? 0 : 1;
+    for (int d = 0; d < a->rankOf(); ++d) {
+      const LongType dim = a->sizeAt(d), stride = a->stridesOf()[d];
+      if (dim < 0 || (count && static_cast<uint64_t>(dim) > tensorSnapshotBudget / t.width / count))
+        throw std::runtime_error("DSP tensor snapshot size exceeds 32 MiB");
+      count *= dim;
+      t.shape.push_back(dim); t.strides.push_back(stride);
+      if (!a->isEmpty() && dim > 1) {
+        // Each contribution must fit the backing allocation before multiplication.
+        if (stride == std::numeric_limits<LongType>::min() ||
+            (stride < 0 ? -stride : stride) > capacity / (dim - 1))
+          throw std::runtime_error("DSP tensor snapshot stride exceeds backing allocation");
+        const auto delta = (dim - 1) * stride;
+        if (delta < 0) {
+          if (low < -delta) throw std::runtime_error("DSP tensor snapshot view precedes backing allocation");
+          low += delta;
+        } else {
+          if (high > capacity - delta) throw std::runtime_error("DSP tensor snapshot view exceeds backing allocation");
+          high += delta;
+        }
+      }
+    }
+    if (count && (low < 0 || high >= capacity || !a->specialBuffer() || !a->isActualOnDeviceSide()))
+      throw std::runtime_error("DSP tensor snapshot requires valid device-current storage");
+    t.bytes = count * t.width; t.offset = batch.bytes;
+    if (t.bytes > tensorSnapshotBudget - state->totalBytes - batch.bytes)
+      throw std::runtime_error("DSP tensor snapshot total payload exceeds 32 MiB; no truncated capture emitted");
+    batch.bytes += t.bytes;
+    batch.tensors.push_back(std::move(t));
+  }
+  // State owns storage BEFORE the first async transfer. On any CUDA failure it
+  // stays owned, unpublished and bounded until process exit; no destructor frees
+  // storage still targeted by queued DMA, and no error path introduces a sync.
+  batch.pinned = static_cast<char*>(state->arena) + state->totalBytes;
+  state->totalBytes += batch.bytes;
+  if (append) {
+    auto& previous = state->calls.back();
+    previous.ready = false;  // A failed append must never publish a partial frame.
+    for (auto& tensor : batch.tensors) {
+      tensor.offset += previous.bytes;
+      previous.tensors.push_back(std::move(tensor));
+    }
+    previous.bytes += batch.bytes;
+    ++previous.phases;
+  } else {
+    state->calls.push_back(std::move(batch));
+  }
+  auto& pending = state->calls.back();
+  // The producer owns prepare/register (validated device-current above). Borrow
+  // its exact special pointers without re-preparing: syncToDevice can migrate a
+  // spill allocation, which would change the state this diagnostic must observe.
+  for (size_t n = 0; n < arrays.size(); ++n) {
+    const auto& t = pending.tensors[priorCount + n];
+    if (t.bytes == 0) continue;
+    auto* dst = static_cast<char*>(pending.pinned) + t.offset;
+    const auto* src = static_cast<const char*>(arrays[n]->specialBuffer());
+    const size_t count = t.bytes / t.width;
+    // Coalesce contiguous C-logical runs. Noncontiguous/F/offset/negative-stride
+    // views copy only selected elements, not an enclosing span or view-base tail.
+    auto offset = [&](size_t logical) {
+      LongType result = 0;
+      for (int d = static_cast<int>(t.shape.size()) - 1; d >= 0; --d) {
+        result += static_cast<LongType>(logical % t.shape[d]) * t.strides[d]; logical /= t.shape[d];
+      }
+      return result;
+    };
+    bool contiguous = true;
+    LongType expected = 1;
+    for (int d = static_cast<int>(t.shape.size()) - 1; d >= 0; --d) {
+      if (t.shape[d] > 1 && t.strides[d] != expected) contiguous = false;
+      expected *= t.shape[d];
+    }
+    for (size_t begin = 0; begin < count;) {
+      const LongType start = contiguous ? static_cast<LongType>(begin) : offset(begin);
+      size_t end = contiguous ? count : begin + 1;
+      while (end < count && offset(end) == start + static_cast<LongType>(end - begin)) ++end;
+      snapshotCudaCheck(cudaMemcpyAsync(dst + begin * t.width, src + start * t.width,
+                                        (end - begin) * t.width, cudaMemcpyDeviceToHost, cudaStream));
+      begin = end;
+    }
+  }
+  pending.ready = true;
+#endif
+}
+
+void DspDiagnostics::drainTensorSnapshots(void* stream, bool finished) {
+#if defined(SD_CUDA)
+  std::lock_guard<std::mutex> lock(tensorSnapshotMutex_);
+  auto* state = tensorSnapshots_;
+  if (!state) return;
+  if (state->owner != std::this_thread::get_id() || state->stream != stream)
+    throw std::runtime_error("DSP tensor snapshot drain owner/stream mismatch");
+  for (auto& batch : state->calls) {
+    if (!batch.ready) continue;
+    const std::string path = state->prefix + ".tensor-" + std::to_string(batch.index) + ".dspt";
+    std::ostringstream header(std::ios::out | std::ios::binary);
+    header.write("DSPTS001", 8);
+    snapshotInteger(header, batch.index, 4);
+    snapshotInteger(header, batch.position, 8);
+    // Existing source field carries bounded host-only provenance; DSPTS001 stays
+    // readable by old readers. Phase semantics also live in the unique tensor names.
+    const std::string source = state->source + ";stream=" +
+        std::to_string(reinterpret_cast<uintptr_t>(state->stream)) +
+        ";enqueuePhases=" + std::to_string(batch.phases) +
+        ";tensors=" + std::to_string(batch.tensors.size());
+    if (source.size() > 1024) throw std::runtime_error("DSP tensor snapshot source metadata exceeds bound");
+    snapshotString(header, source);
+    snapshotInteger(header, batch.tensors.size(), 4);
+    const uint16_t endian = 1;
+    snapshotInteger(header, *reinterpret_cast<const unsigned char*>(&endian), 1);
+    for (const auto& t : batch.tensors) {
+      snapshotString(header, t.name);
+      snapshotInteger(header, t.dtype, 4); snapshotInteger(header, t.width, 4);
+      snapshotInteger(header, t.shape.size(), 4); snapshotInteger(header, t.order, 1);
+      snapshotInteger(header, t.originalOffset, 8);
+      for (size_t d = 0; d < t.shape.size(); ++d) {
+        snapshotInteger(header, t.shape[d], 8); snapshotInteger(header, t.strides[d], 8);
+      }
+      snapshotInteger(header, t.bytes, 8);
+      snapshotInteger(header, snapshotChecksum(t.bytes ? static_cast<const unsigned char*>(batch.pinned) + t.offset : nullptr, t.bytes), 8);
+    }
+    const auto metadata = header.str();
+    if (!header.good() || metadata.size() + 8 > tensorSnapshotMetadataBudget)
+      throw std::runtime_error("DSP tensor snapshot metadata exceeds reserved budget");
+    // Never overwrite evidence from an earlier process using the same prefix.
+    FILE* file = std::fopen(path.c_str(), "wbx");
+    if (!file) throw std::runtime_error("Cannot exclusively create DSP tensor artifact: " + path);
+    bool ok = std::fwrite(metadata.data(), 1, metadata.size(), file) == metadata.size();
+    if (batch.bytes) ok = (std::fwrite(batch.pinned, 1, batch.bytes, file) == batch.bytes) && ok;
+    // Footer makes an interrupted/failed write unambiguously incomplete.
+    ok = (std::fwrite("DSPTDONE", 1, 8, file) == 8) && ok;
+    ok = (std::fclose(file) == 0) && ok;
+    if (!ok) throw std::runtime_error("Incomplete DSP tensor artifact: " + path);
+    batch.pinned = nullptr; batch.ready = false;
+  }
+  if ((finished || state->calls.size() == 3) && state->arena) {
+    snapshotCudaCheck(cudaFreeHost(state->arena));
+    state->arena = nullptr;
+    state->finished = true;
+  }
+#endif
 }
 
 // ─── Timestamp helper ────────────────────────────────────────────────────────
@@ -256,6 +528,8 @@ uint32_t DspDiagnostics::parseCategories(const char* str) {
     size_t end   = token.find_last_not_of(" \t");
     if (start == std::string::npos) continue;
     token = token.substr(start, end - start + 1);
+    if (token == "TENSOR_SNAPSHOT") mask |= DSP_DIAG_TENSOR_SNAPSHOT;
+    if (token == "ALL" || token == "*") mask |= DSP_DIAG_ALL;
 
     for (int i = 0; i < DSP_DIAG_NUM_CATEGORIES; i++) {
       if (token == sCategoryNames[i]) {

@@ -90,6 +90,8 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
             DefaultOpExecutioner.validateDataType(DataType.FLOAT, params.getA(), params.getB(), params.getC());
             sgemm(Order, params.getTransA(), params.getTransB(), params.getM(), params.getN(), params.getK(), (float) alpha,
                             params.getA(), params.getLda(), params.getB(), params.getLdb(), (float) beta, cActual, params.getLdc());
+        } else if (A.dataType() == DataType.BFLOAT16) {
+            bgemm(params, alpha, beta);
         } else {
             DefaultOpExecutioner.validateDataType(DataType.HALF, params.getA(), params.getB(), params.getC());
             hgemm(Order, params.getTransA(), params.getTransB(), params.getM(), params.getN(), params.getK(), (float) alpha,
@@ -139,6 +141,8 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
             sgemm(A.ordering(), params.getTransA(), params.getTransB(), params.getM(), params.getN(), params.getK(),
                             (float) alpha, params.getA(), params.getLda(), params.getB(), params.getLdb(), (float) beta,
                             cActual, params.getLdc());
+        } else if (A.dataType() == DataType.BFLOAT16) {
+            bgemm(params, alpha, beta);
         } else {
             DefaultOpExecutioner.validateDataType(DataType.HALF, params.getA(), params.getB(), cActual);
             hgemm(A.ordering(), params.getTransA(), params.getTransB(), params.getM(), params.getN(), params.getK(),
@@ -350,6 +354,16 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     /* 
      * Routines with standard 4 prefixes (S, D, C, Z)
      */
+    /** BF16 BLAS uses the native dtype-aware GEMM (FP32 compute, BF16 storage).
+     * GemmParams operands already express the logical transposes; its BLAS transpose
+     * flags describe physical column-major reinterpretation, not another logical transpose.
+     */
+    protected void bgemm(GemmParams params, double alpha, double beta) {
+        DefaultOpExecutioner.validateDataType(DataType.BFLOAT16, params.getA(), params.getB(), params.getC());
+        Nd4j.getExecutioner().exec(new Mmul(params.getA(), params.getB(), params.getC(),
+                alpha, beta, MMulTranspose.allFalse()));
+    }
+
     protected abstract void hgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A,
                     int lda, INDArray B, int ldb, float beta, INDArray C, int ldc);
 

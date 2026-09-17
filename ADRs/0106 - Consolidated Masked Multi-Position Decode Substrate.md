@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Proposed (Phase 2b amendment applied 17 Sep 2026: single-token speculative commit)
 
 Proposed by: Adam Gibson (6 Jul 2026)
 
@@ -175,6 +175,30 @@ beam/contrastive loops.
   ADR 0105 (Generation Session Continuation — the frozen-plan pointer-stability contract this builds
   on). Depends on the runtime-mutable `SamplingConfig` change on this branch
   (`GenerationPipeline.setSamplingConfig`).
+
+### Amendment (17 Sep 2026): authoritative single-token speculative commit (Phase 2b)
+
+While the speculative policy's emission boundary emitted `acceptedDrafts + 1` tokens per step — the
+correction/bonus taken from verification row `acceptedDrafts` and the carry from row `consumedCount-1`
+— the committed sequence was greedy-identical **only if** rows `>= 1` of the multi-row verify pass
+match the chained scalar continuation. They do not yet: the graph-level W-row divergence is measured
+(`JAVA_ROW_ARGMAX native-vs-java: 271 13 13 13 13`, window4 `conv_state_out_0 max=23.75`), and at
+250 tokens the two accepted steps of the run emitted a non-greedy token each (parity milestone
+`bed78d5f`: first divergence at emission index 101, greedy `[5218,16456]` vs mtp `[1536,7059]`).
+
+Until that divergence is fixed at the graph level, a speculative step commits **exactly one
+authoritative token**: the target's argmax at row 0, whose causal prefix is the committed base alone
+and therefore cannot be affected by draft rows. The state commit (rerun at
+`actual_sequence_length=1`), the carry (rerun row 0), and the emission (row 0 argmax, refreshed
+from the asl=1 rerun's scalar logits whenever that rerun produces the authoritative state —
+`RERUN_EMISSION_REFRESH`) are all row-0 values, making session-parity structural for any length and
+any acceptance rate. The predictor
+repair loop and the multi-token emission boundary are retained in `autoregressive_decode.cu` but
+are no-ops under this contract; both return together once the W-row fix lands. Acceptance metrics
+are computed as before (an accepted draft is still counted, only one token is still emitted).
+
+- Trade-off: multi-token throughput per step is disabled by construction while acceptance quality
+  work proceeds; the `W=1`-parity invariant of this ADR is restored as a hard guarantee.
 
 ## Open questions / follow-ups
 

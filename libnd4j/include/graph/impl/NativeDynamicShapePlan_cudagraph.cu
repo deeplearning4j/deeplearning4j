@@ -129,26 +129,39 @@ static size_t CAPTURE_HOST_WORKSPACE_SIZE = []() -> size_t {
 // deterministic parallel reduction. Two-pass: all threads XOR into a per-warp
 // partial (shared mem), then atomicXOR into the ring slot.
 //
-__device__ __forceinline__ uint64_t mixFingerprintWord(uint64_t value, uint64_t index) {
+SD_DEVICE SD_INLINE uint64_t mixFingerprintWord(uint64_t value, uint64_t index) {
   uint64_t z = value ^ (0x9e3779b97f4a7c15ULL * (index + 1ULL));
   z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
   z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
   return z ^ (z >> 31);
 }
 
-__global__ void bufXorFingerprintKernel(const uint64_t* __restrict__ src,
-                                        int numWords,
-                                        uint64_t* __restrict__ dst) {
+SD_KERNEL void bufXorFingerprintKernel(const uint8_t* __restrict__ src,
+                                      size_t numBytes,
+                                      uint64_t* __restrict__ dst) {
   __shared__ uint64_t smem[32];  // one per warp (max 1024 threads / 32)
   int tid  = threadIdx.x;
   int nWarp = (blockDim.x + 31) >> 5;
   if (tid < nWarp) smem[tid] = 0;
   __syncthreads();
 
+  const size_t numWords = numBytes / 8 + (numBytes % 8 != 0);
   uint64_t acc = 0;
-  for (int i = blockIdx.x * blockDim.x + tid; i < numWords;
-       i += gridDim.x * blockDim.x) {
-    acc ^= mixFingerprintWord(src[i], static_cast<uint64_t>(i));
+  for (size_t i = static_cast<size_t>(blockIdx.x) * blockDim.x + tid; i < numWords;
+       i += static_cast<size_t>(gridDim.x) * blockDim.x) {
+    const size_t offset = i * 8;
+    uint64_t word = 0;
+    if (numBytes - offset >= 8 &&
+        (reinterpret_cast<uintptr_t>(src + offset) & 7) == 0) {
+      word = *reinterpret_cast<const uint64_t*>(src + offset);
+    } else {
+      // Scalar FLOAT/HALF/BOOL and offset views need bounded byte loads.
+      // Zero-pad the final word, never read allocation padding or another tensor.
+      for (size_t b = 0; b < 8 && b < numBytes - offset; ++b) {
+        word |= static_cast<uint64_t>(src[offset + b]) << (8 * b);
+      }
+    }
+    acc ^= mixFingerprintWord(word, static_cast<uint64_t>(i));
   }
   // warp reduce
   for (int mask = 16; mask > 0; mask >>= 1)
@@ -201,11 +214,12 @@ void NativeDynamicShapePlan::recordBufFingerprintPublic(cudaStream_t stream, int
   // Zero the ring slot first (atomicXOR accumulates; we need a fresh start per step)
   uint64_t* ringSlot = d_fpRing_ + clampedStep * BUF_FP_MAX_TRACKED + trackIdx;
   cudaMemsetAsync(ringSlot, 0, sizeof(uint64_t), stream);
-  int numWords = static_cast<int>((numBytes + 7) / 8);
+  const size_t numWords = numBytes / 8 + (numBytes % 8 != 0);
   int threads  = 256;
-  int blocks   = std::min(256, (numWords + threads - 1) / threads);
+  int blocks   = static_cast<int>(std::min(static_cast<size_t>(256),
+                                         (numWords + threads - 1) / threads));
   bufXorFingerprintKernel<<<blocks, threads, 0, stream>>>(
-      reinterpret_cast<const uint64_t*>(devPtr), numWords, ringSlot);
+      static_cast<const uint8_t*>(devPtr), numBytes, ringSlot);
 }
 
 // ── Platform dispatch: CUDA implementations ──────────────────────────────────
@@ -1844,7 +1858,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     }
   }
 
-  if (!handle->launchAsync(cudaStr)) {
+  const bool launchSucceeded = handle->launchAsync(cudaStr);
+#if HAVE_TRITON
+  if (auto* backend = dynamic_cast<TritonGraphBackend*>(seg.resolvedGraphBackend))
+    backend->recordArgumentSubmission(seg, stream);
+#endif
+  if (!launchSucceeded) {
     cudaGetLastError();
     // Guard destructor frees host ptrs (commit() not called).
     clearGraphStreamError(cudaStr);
@@ -1893,6 +1912,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       "CUDA",
       /*gapsCaptured=*/false);
   snapshotExternalAddrs(seg, captureExternals, numExt);
+
+  // Record the device address this capture baked in for every device-managed
+  // external input the segment reads. The staging passthrough later verifies
+  // ADDRESS IDENTITY against this baseline on every replay: a skip is only
+  // valid while the live address still equals the baked address.
+  recordManagedExtBakedAddrsForCapture(seg, captureExternals, numExt);
 
   // Pin every device address this captured graph baked in (weights/intermediates/outputs),
   // at seal — so no later close()/rebind/pool-reuse can dangle a buffer a live replay reads.
@@ -2546,6 +2571,14 @@ Status NativeDynamicShapePlan::replayMonolithicGraph(
   cudaStream_t cudaStr = (stream != nullptr)
       ? *static_cast<cudaStream_t*>(stream) : nullptr;
 
+#if HAVE_TRITON
+  if (auto* backend = dynamic_cast<TritonGraphBackend*>(seg.resolvedGraphBackend)) {
+    auto aliasStatus = backend->preflightAliasBindings(
+        seg, externalArrays, numExt, outputSlots_, totalOutputSlots_);
+    if (aliasStatus != Status::OK) return aliasStatus;
+  }
+#endif
+
   // ── Step 1: Triton arg table refresh (generation-counter gated) ──
   // needsArgRefresh() is true when:
   //   (a) Triton arg tables need refreshing for a new input shape/address, OR
@@ -2650,6 +2683,43 @@ Status NativeDynamicShapePlan::replayMonolithicGraph(
              diagTag, liveCreateCount, seg.def.startSlot, seg.def.endSlot);
   }
 
+  // ── Step 1.6: Live execution of excluded view/identity slots ──────────────
+  // View/identity slots skipped by native-only capture (see
+  // slotHasOnlyTransparentAliasOutputs at the capture site) have their output
+  // buffers READ by baked-in graph nodes but never WRITTEN by the graph. The
+  // warmup allocator legitimately recycles those buffers across slots, so an
+  // in-graph producer can rewrite the same device range on every replay. Re-
+  // executing the view slot live here — before cudaGraphLaunch — refreshes its
+  // output from its current input so downstream in-graph nodes read correct
+  // data. Zero-copy views re-publish the alias; materializing views (reshape of
+  // a non-contiguous permute) re-record their copy kernel on the replay stream.
+  // Without this, replay returns capture-time/clobbered values deterministically
+  // (tripleViewChain / static-KV divergence class).
+  if (!seg.exec.excludedViewSlotIndices.empty()) {
+    int liveViewCount = 0;
+    SyncOverride liveViewSync(*this, "live_excluded_view_ops");
+    ScopedDspGapStream liveViewGapGuard(
+        stream != nullptr ? *static_cast<cudaStream_t*>(stream) : nullptr);
+    for (int s : seg.exec.excludedViewSlotIndices) {
+      if (s < seg.def.startSlot || s > seg.def.endSlot || s < 0 || s >= numSlots_) continue;
+      auto liveStatus = executeSlot(s, externalArrays, numExt, stream);
+      if (liveStatus != Status::OK) {
+        DSP_DIAG(EXECUTE,
+                 "%s: live excluded-view slot %d (%s) FAILED status=%s (%d)",
+                 diagTag, s, slots_[s].ident.opName.c_str(),
+                 dsp::dspStatusName(liveStatus), static_cast<int>(liveStatus));
+        // This buffer feeds the captured graph. Launching after a failed refresh
+        // would knowingly consume stale state, so fail before graph launch.
+        return liveStatus;
+      }
+      liveViewCount++;
+    }
+    DSP_DIAG(EXECUTE, "%s: executed %d/%zu excluded view/identity slots live before graph "
+             "launch seg[%d-%d]",
+             diagTag, liveViewCount, seg.exec.excludedViewSlotIndices.size(),
+             seg.def.startSlot, seg.def.endSlot);
+  }
+
   // ── Step 2: Prezero segment outputs ──
   // Slots that accumulate (e.g. scatter-add, reduce) need their output buffers
   // zeroed before each replay to prevent stale value accumulation and FP drift.
@@ -2676,7 +2746,12 @@ Status NativeDynamicShapePlan::replayMonolithicGraph(
 
   seg.exec.handleTracker.record(ReplayHandleEvent::Kind::REPLAY,
                                 seg.exec.executionCount, 0, 0, "monolithic");
-  if (!seg.exec.replayHandle->replay(stream)) {
+  const bool replaySucceeded = seg.exec.replayHandle->replay(stream);
+#if HAVE_TRITON
+  if (auto* backend = dynamic_cast<TritonGraphBackend*>(seg.resolvedGraphBackend))
+    backend->recordArgumentSubmission(seg, stream);
+#endif
+  if (!replaySucceeded) {
     seg.exec.handleTracker.record(ReplayHandleEvent::Kind::EXEC_ERROR,
                                   seg.exec.executionCount, 0, 0, "monolithic_replay_failed");
     DSP_DIAG(EXECUTE, "%s: monolithic replay FAILED seg[%d-%d]",
@@ -2949,6 +3024,140 @@ DspStagingSyncResult NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
              (long long)ext->lengthOf(), bytes, static_cast<int>(dataType));
   };
 
+  // ── Captured-address refresh for a drifted device-managed external ──────
+  // The captured CUDA graph reads the address baked at capture time (bakedAddr,
+  // pool-pinned since seal). The live allocation moved. Refresh the captured
+  // bytes from the live buffer so the next replay reads current data:
+  // destination is a NON-OWNING wrapper carrying ext's descriptor over the
+  // captured base allocation (specialBuffer() == bakedAddr); source is the live
+  // ext itself.
+  //   contiguous ext  → raw async byte copy (view start is packed; same proof
+  //     the ordinary staging fast copy uses);
+  //   strided-view ext → stride-aware assign routed onto cudaStr (a raw linear
+  //     copy cannot express stride gaps — the same rule the ordinary staging
+  //     D2D enforces).
+  // Mirrors the cross-device guard and the bounded pinned-host fallback used by
+  // the ordinary staging copies. The wrapper temporaries own nothing.
+  // ok=false on failure; the returned result carries the precise staging error
+  // (callers propagate it directly to abort the execution).
+  auto refreshCapturedManagedAddress = [&](int i, NDArray* ext, void* bakedAddr,
+                                           bool& ok) -> DspStagingSyncResult {
+    ok = false;
+    NDArray* bakedTarget = nullptr;
+    DataBuffer* bakedTargetDb = nullptr;
+    const bool contiguous = shape::strideDescendingCAscendingF(ext->shapeInfo());
+    // Non-owning wrapper: DataBuffer holds raw pointers (nothing freed), the
+    // NDArray adopts ext's exact descriptor via setShapeInfo (same proven
+    // pattern as markExternalInputVariable's staging pre-allocation). The
+    // device side of the wrapper is the captured address itself.
+    bakedTargetDb = new DataBuffer(ext->buffer(), bakedAddr,
+                                   ext->dataBuffer()->getLenInBytes(),
+                                   ext->dataType(),
+                                   /*isOwnerPrimary=*/false, /*isOwnerSpecial=*/false);
+    try {
+      bakedTarget = new NDArray(bakedTargetDb, ext->ordering(),
+                                *ext->getShapeAsVector(), ext->dataType(),
+                                LaunchContext::defaultContext(),
+                                /*isBuffAlloc=*/false, /*isView=*/false, /*offset=*/0);
+      bakedTarget->setShapeInfo(ext->shapeInfo());
+    } catch (...) {
+      delete bakedTarget;
+      delete bakedTargetDb;
+      throw;
+    }
+
+    void* bakedDst = bakedTarget->specialBuffer();
+    void* refreshSrc = ext->specialBuffer();
+    const size_t refreshBytes = static_cast<size_t>(ext->lengthOf()) * ext->sizeOfT();
+
+    if (bakedDst == nullptr || refreshSrc == nullptr || refreshBytes == 0) {
+      delete bakedTarget;
+      delete bakedTargetDb;
+      return failTransfer(DspStagingSyncStatus::TRANSFER_FAILED,
+                          cudaErrorInvalidDevicePointer, "rebound_null_buffer",
+                          i, refreshSrc, bakedDst, refreshBytes, -1, currentDevice);
+    }
+
+    if (contiguous) {
+      cudaPointerAttributes rebindAttrs;
+      auto rebindAttrErr = cudaPointerGetAttributes(&rebindAttrs, refreshSrc);
+      int rebindSourceDevice = (rebindAttrErr == cudaSuccess &&
+                                rebindAttrs.type == cudaMemoryTypeDevice)
+          ? rebindAttrs.device : currentDevice;
+      cudaError_t rebindErr = cudaErrorUnknown;
+      if (rebindSourceDevice == currentDevice) {
+        auto rebindKind = (rebindAttrErr == cudaSuccess &&
+                           rebindAttrs.type == cudaMemoryTypeHost)
+            ? cudaMemcpyHostToDevice : cudaMemcpyDeviceToDevice;
+        rebindErr = cudaMemcpyAsync(bakedDst, refreshSrc, refreshBytes, rebindKind,
+                                    cudaStr);
+      } else {
+        int canForward = 0, canReverse = 0;
+        cudaDeviceCanAccessPeer(&canForward, currentDevice, rebindSourceDevice);
+        cudaDeviceCanAccessPeer(&canReverse, rebindSourceDevice, currentDevice);
+        if (canForward && canReverse) {
+          rebindErr = cudaMemcpyPeerAsync(bakedDst, currentDevice, refreshSrc,
+                                          rebindSourceDevice, refreshBytes, cudaStr);
+        } else {
+          // No peer access: bounded pinned-host chunk relay (same policy as the
+          // ordinary staging cross-device copy).
+          void* hostStage = nullptr;
+          const size_t chunkBytes =
+              std::min(refreshBytes, static_cast<size_t>(64) * 1024 * 1024);
+          if (cudaMallocHost(&hostStage, chunkBytes) != cudaSuccess) {
+            rebindErr = cudaErrorMemoryAllocation;
+          } else {
+            rebindErr = cudaSuccess;
+            for (size_t offset = 0; offset < refreshBytes; offset += chunkBytes) {
+              const size_t chunk = std::min(chunkBytes, refreshBytes - offset);
+              cudaSetDevice(rebindSourceDevice);
+              rebindErr = cudaMemcpy(static_cast<char*>(hostStage),
+                                     static_cast<const char*>(refreshSrc) + offset,
+                                     chunk, cudaMemcpyDeviceToHost);
+              if (rebindErr != cudaSuccess) break;
+              cudaSetDevice(currentDevice);
+              rebindErr = cudaMemcpy(static_cast<char*>(bakedDst) + offset,
+                                     hostStage, chunk, cudaMemcpyHostToDevice);
+              if (rebindErr != cudaSuccess) break;
+            }
+            cudaSetDevice(currentDevice);
+            cudaFreeHost(hostStage);
+          }
+        }
+      }
+      if (rebindErr != cudaSuccess) {
+        cudaGetLastError();
+        DSP_DIAG(MULTI_DEVICE,
+                 "STAGING_REBOUND[%d]: transfer failed source=%d target=%d "
+                 "bytes=%zu err=%s",
+                 i, rebindSourceDevice, currentDevice, refreshBytes,
+                 cudaGetErrorString(rebindErr));
+        delete bakedTarget;
+        delete bakedTargetDb;
+        return failTransfer(DspStagingSyncStatus::TRANSFER_FAILED, rebindErr,
+                            "rebound_transfer", i, refreshSrc, bakedDst,
+                            refreshBytes, rebindSourceDevice, currentDevice);
+      }
+    } else {
+      ScopedDspGapStream reboundGap(cudaStr);
+      cudaGetLastError();
+      bakedTarget->assign(ext);
+      cudaError_t assignErr = cudaGetLastError();
+      if (assignErr != cudaSuccess) {
+        delete bakedTarget;
+        delete bakedTargetDb;
+        return failTransfer(DspStagingSyncStatus::TRANSFER_FAILED, assignErr,
+                            "rebound_assign", i, refreshSrc, bakedDst,
+                            refreshBytes, -1, currentDevice);
+      }
+    }
+
+    delete bakedTarget;
+    delete bakedTargetDb;
+    ok = true;
+    return {effectiveExternals_, DspStagingSyncStatus::SUCCESS, 0, true};
+  };
+
   // Fast path: after first call, only iterate variable input indices
   // instead of all 1000+ entries. Non-variable (weight) pointers are stable.
   // Guard: fast path requires all variable staging buffers to be allocated.
@@ -2983,7 +3192,7 @@ DspStagingSyncResult NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
     // INDArray via setGraphContextInputArray before calling into C++. No need
     // to scan all ~1333 non-variable inputs for isPrimaryActual() here.
 
-    int copiedCount = 0, skippedNull = 0, skippedEmpty = 0, skippedNullBuf = 0, skippedJniWrite = 0, skippedManaged = 0;
+    int copiedCount = 0, skippedNull = 0, skippedEmpty = 0, skippedNullBuf = 0, skippedJniWrite = 0, skippedManaged = 0, reboundCount = 0;
     for (int i : cachedVariableExtIndices_) {
       NDArray* ext = externalArrays[i];
       effectiveExternals_[i] = externalArrays[i];  // default passthrough
@@ -2993,13 +3202,44 @@ DspStagingSyncResult NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
         continue;
       }
 
-      if (isPlanManagedDeviceBuffer(i, ext)) {
-        skippedManaged++;
+      // ── Device-managed passthrough, gated on ADDRESS IDENTITY ─────────────
+      // Classification alone is not proof the captured graph still reads this
+      // buffer's live bytes: post-capture re-registration (or relocation) can
+      // move the live device address away from the address baked into the
+      // captured graph. If identity holds, keep the O(1) fast skip. If it
+      // drifted, DO NOT skip — refresh the CAPTURED address (plan-pinned since
+      // seal) from the relocated live buffer.
+      bool managedDrifted = false;
+      void* managedBakedAddr = nullptr;
+      bool managedReboundEvent = false;
+      if (isDeviceManagedExternalInputIdentityChecked(i, ext, managedDrifted,
+                                                      managedBakedAddr,
+                                                      managedReboundEvent)) {
+        if (!managedDrifted) {
+          skippedManaged++;
+          effectiveExternals_[i] = externalArrays[i];
+          DSP_DIAG(MEMORY,
+                   "STAGING_D2D[%d]: SKIPPED — plan-managed device buffer "
+                   "(devAddr=%p), passing through directly",
+                   i, ext->specialBuffer());
+          continue;
+        }
+        // Fires once per relocation (live address changed vs. previous call),
+        // never per call while the drift persists.
+        if (managedReboundEvent) {
+          DSP_DIAG(MEMORY,
+                   "STAGING_D2D[%d]: REBOUND — devAddr drift %p -> %p, "
+                   "refreshing captured address",
+                   i, managedBakedAddr, ext->specialBuffer());
+        }
+        bool reboundOk = false;
+        DspStagingSyncResult reboundResult =
+            refreshCapturedManagedAddress(i, ext, managedBakedAddr, reboundOk);
+        if (!reboundResult.ok() || !reboundOk) {
+          return reboundResult;
+        }
+        reboundCount++;
         effectiveExternals_[i] = externalArrays[i];
-        DSP_DIAG(MEMORY,
-                 "STAGING_D2D[%d]: SKIPPED — plan-managed device buffer "
-                 "(devAddr=%p), passing through directly",
-                 i, ext->specialBuffer());
         continue;
       }
 
@@ -3190,19 +3430,19 @@ DspStagingSyncResult NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
     }
 
     // Detect silent D2D skip conditions — O(1) counter checks, zero perf impact.
-    if (copiedCount == 0 && skippedManaged == 0 &&
+    if (copiedCount == 0 && skippedManaged == 0 && reboundCount == 0 &&
         static_cast<int>(cachedVariableExtIndices_.size()) > 0) {
       DSP_DIAG(EXECUTE,
                "STAGING_D2D_WARNING: ALL %d variable inputs skipped D2D copy! "
-               "Breakdown: empty=%d nullBuf=%d managed=%d. "
+               "Breakdown: empty=%d nullBuf=%d managed=%d rebound=%d. "
                "CUDA graph replay will use STALE staging data.",
                static_cast<int>(cachedVariableExtIndices_.size()),
-               skippedEmpty, skippedNullBuf, skippedManaged);
+               skippedEmpty, skippedNullBuf, skippedManaged, reboundCount);
     }
     DSP_DIAG(EXECUTE, "STAGING_D2D: copied=%d skippedEmpty=%d "
-             "skippedNullBuf=%d skippedManaged=%d total=%d",
+             "skippedNullBuf=%d skippedManaged=%d rebound=%d total=%d",
              copiedCount, skippedEmpty, skippedNullBuf, skippedManaged,
-             static_cast<int>(cachedVariableExtIndices_.size()));
+             reboundCount, static_cast<int>(cachedVariableExtIndices_.size()));
 
     stagingMaintainedThisExec_ = true;
     return {effectiveExternals_, DspStagingSyncStatus::SUCCESS, 0, true};
@@ -3238,15 +3478,38 @@ DspStagingSyncResult NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
       continue;
     }
 
-    // Skip staging for device-managed buffers. KV caches and recurrent decode
-    // state are written by GPU kernels during execution; their device buffers
-    // are the source of truth, and D2D-copying them into staging would capture
-    // stale pre-update data.
-    if (isPlanManagedDeviceBuffer(i, ext)) {
-      DSP_DIAG(MEMORY,
-               "STAGING_D2D_SLOW[%d]: SKIPPED — plan-managed device buffer "
-               "(devAddr=%p), passing through directly",
-               i, ext->specialBuffer());
+    // ── Device-managed passthrough, gated on ADDRESS IDENTITY (slow path) ──
+    // Same contract as the fast-path branch above: skip only when the live
+    // device address still equals the address the capture baked in. On drift,
+    // refresh the captured address instead of passing the graph stale bytes.
+    bool managedDrifted = false;
+    void* managedBakedAddr = nullptr;
+    bool managedReboundEvent = false;
+    if (isDeviceManagedExternalInputIdentityChecked(i, ext, managedDrifted,
+                                                    managedBakedAddr,
+                                                    managedReboundEvent)) {
+      if (!managedDrifted) {
+        DSP_DIAG(MEMORY,
+                 "STAGING_D2D_SLOW[%d]: SKIPPED — plan-managed device buffer "
+                 "(devAddr=%p), passing through directly",
+                 i, ext->specialBuffer());
+        effectiveExternals_[i] = externalArrays[i];
+        continue;
+      }
+      // Fires once per relocation (live address changed vs. previous call),
+      // never per call while the drift persists.
+      if (managedReboundEvent) {
+        DSP_DIAG(MEMORY,
+                 "STAGING_D2D_SLOW[%d]: REBOUND — devAddr drift %p -> %p, "
+                 "refreshing captured address",
+                 i, managedBakedAddr, ext->specialBuffer());
+      }
+      bool reboundOk = false;
+      DspStagingSyncResult reboundResult =
+          refreshCapturedManagedAddress(i, ext, managedBakedAddr, reboundOk);
+      if (!reboundResult.ok() || !reboundOk) {
+        return reboundResult;
+      }
       effectiveExternals_[i] = externalArrays[i];
       continue;
     }

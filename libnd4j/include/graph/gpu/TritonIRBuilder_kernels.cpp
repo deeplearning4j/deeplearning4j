@@ -2178,6 +2178,540 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
             biasPtr ? 1 : 0, dualBuffer ? 1 : 0, kvIsInt8 ? 1 : 0);
 }
 
+// ─── GGUF in-graph KV-cache decode attention ─────────────────────────────────
+//
+// Implements the rank-4 BSHD live-cache contract described in the header.
+// This emitter is separate from emitFusedAttentionKernel on purpose: the
+// boundary P is a RUNTIME value loaded from a device scalar, while the
+// existing dual-buffer mode bakes pastSeq/seqK as compile-time constants.
+// Mixing both into one function would make every existing contract depend
+// on the runtime-boundary restructuring.
+
+void TritonIRBuilder::emitGgufDecodeAttentionKernel(mlir::OpBuilder& builder, mlir::Location loc,
+                                                    mlir::Value qPtr,
+                                                    mlir::Value curKPtr, mlir::Value curVPtr,
+                                                    mlir::Value kCachePtr, mlir::Value vCachePtr,
+                                                    mlir::Value cachePosPtr,
+                                                    mlir::Value outPtr,
+                                                    int batchSize, int numQHeads, int numKvHeads,
+                                                    int seqQ, int cacheMaxSeq,
+                                                    int headDim, float scale,
+                                                    int blockM, int blockN,
+                                                    mlir::Value biasPtr,
+                                                    const std::vector<LongType>& biasShape) {
+  DSP_DIAG(JIT, "emitGgufDecodeAttentionKernel: batch=%d qHeads=%d kvHeads=%d seqQ=%d "
+           "cacheMaxSeq=%d headDim=%d scale=%f block=(%d,%d) bias=%d",
+           batchSize, numQHeads, numKvHeads, seqQ, cacheMaxSeq, headDim, scale,
+           blockM, blockN, biasPtr ? 1 : 0);
+  if (numKvHeads <= 0) numKvHeads = numQHeads;
+  int kvGroupSize = (numKvHeads > 0) ? (numQHeads / numKvHeads) : 1;
+  if (kvGroupSize < 1) kvGroupSize = 1;
+  auto f32Type = builder.getF32Type();
+  auto i32Type = builder.getI32Type();
+  auto i64Type = builder.getI64Type();
+  auto i1Type = builder.getI1Type();
+
+  int headDimPadded = headDim;
+  if (headDimPadded > 0 && (headDimPadded & (headDimPadded - 1)) != 0) {
+    int p = 1;
+    while (p < headDimPadded) p <<= 1;
+    headDimPadded = p;
+  }
+  bool needsHdMask = (headDimPadded != headDim);
+
+  // ── Load the runtime cache position P = (i32) load(cachePosPtr : i64*) ──
+  auto cachePosI64PtrType = mlir::cast<mlir::triton::PointerType>(cachePosPtr.getType());
+  // The scalar lives in a LongType (i64) buffer; retype the pointer for the load.
+  auto i64PtrType = mlir::triton::PointerType::get(i64Type, cachePosI64PtrType.getAddressSpace());
+  mlir::Value cachePosAsI64Ptr = cachePosPtr;
+  if (cachePosI64PtrType != i64PtrType) {
+    // PtrToInt + IntToPtr element-pointer cast (same pattern as INT8 scale loads)
+    auto scalarPtrAsI64 = builder.create<mlir::triton::PtrToIntOp>(loc, i64Type, cachePosPtr);
+    cachePosAsI64Ptr = builder.create<mlir::triton::IntToPtrOp>(loc, i64PtrType, scalarPtrAsI64);
+  }
+  auto posLoaded = builder.create<mlir::triton::LoadOp>(
+      loc, cachePosAsI64Ptr, mlir::Value(),
+      mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+  auto cachePos = builder.create<mlir::arith::TruncIOp>(loc, i32Type, posLoaded);
+
+  // Total attention length for this step: seqKTotal = P + W (runtime)
+  auto seqQConst = builder.create<mlir::arith::ConstantIntOp>(loc, seqQ, 32);
+  auto seqKTotal = builder.create<mlir::arith::AddIOp>(loc, cachePos, seqQConst);
+
+  // ── Program decomposition (same as fused attention) ──
+  auto pid0 = builder.create<mlir::triton::GetProgramIdOp>(
+      loc, i32Type, mlir::triton::ProgramIDDim::X);
+  auto pid1 = builder.create<mlir::triton::GetProgramIdOp>(
+      loc, i32Type, mlir::triton::ProgramIDDim::Y);
+  auto numQHeadsConst = builder.create<mlir::arith::ConstantIntOp>(loc, numQHeads, 32);
+  auto numKvHeadsConst = builder.create<mlir::arith::ConstantIntOp>(loc, numKvHeads, 32);
+  auto kvGroupSizeConst = builder.create<mlir::arith::ConstantIntOp>(loc, kvGroupSize, 32);
+  auto headIdx = builder.create<mlir::arith::RemSIOp>(loc, pid0, numQHeadsConst);
+  auto batchIdx = builder.create<mlir::arith::DivSIOp>(loc, pid0, numQHeadsConst);
+  auto kvHeadIdx = builder.create<mlir::arith::DivSIOp>(loc, headIdx, kvGroupSizeConst);
+
+  auto blockMConst = builder.create<mlir::arith::ConstantIntOp>(loc, blockM, 32);
+  auto qOffset = builder.create<mlir::arith::MulIOp>(loc, pid1, blockMConst);
+
+  auto i32BmType = mlir::RankedTensorType::get({blockM}, i32Type);
+  auto i32BnType = mlir::RankedTensorType::get({blockN}, i32Type);
+  auto i32HdType = mlir::RankedTensorType::get({headDimPadded}, i32Type);
+  auto rangeM = builder.create<mlir::triton::MakeRangeOp>(loc, i32BmType, 0, blockM);
+  auto rangeN = builder.create<mlir::triton::MakeRangeOp>(loc, i32BnType, 0, blockN);
+  auto rangeHd = builder.create<mlir::triton::MakeRangeOp>(loc, i32HdType, 0, headDimPadded);
+  mlir::Value rangeHdForPtr = rangeHd;
+  if (needsHdMask) {
+    auto headDimMinus1 = builder.create<mlir::arith::ConstantIntOp>(loc, std::max(0, headDim - 1), 32);
+    auto headDimMinus1Splat = builder.create<mlir::triton::SplatOp>(loc, i32HdType, headDimMinus1);
+    rangeHdForPtr = builder.create<mlir::arith::MinSIOp>(loc, rangeHd, headDimMinus1Splat);
+  }
+  auto splatQOffset = builder.create<mlir::triton::SplatOp>(loc, i32BmType, qOffset);
+  auto qIndices = builder.create<mlir::arith::AddIOp>(loc, splatQOffset, rangeM);
+
+  // ── BSHD base offsets ──
+  // Q:      [batch, seqQ, numQHeads, headDim]
+  // curK/V: [batch, W, numKvHeads, headDim]  (W == seqQ)
+  // cache:  [batch, cacheMaxSeq, numKvHeads, headDim]
+  auto headDimConst = builder.create<mlir::arith::ConstantIntOp>(loc, headDim, 32);
+  auto qNhTimesHd = builder.create<mlir::arith::MulIOp>(loc, numQHeadsConst, headDimConst);
+  auto qStride0 = builder.create<mlir::arith::MulIOp>(loc, seqQConst, qNhTimesHd);
+  auto qBase = builder.create<mlir::arith::AddIOp>(loc,
+      builder.create<mlir::arith::MulIOp>(loc, batchIdx, qStride0),
+      builder.create<mlir::arith::MulIOp>(loc, headIdx, headDimConst));
+  auto qRowStride = qNhTimesHd;
+
+  auto kvNhTimesHd = builder.create<mlir::arith::MulIOp>(loc, numKvHeadsConst, headDimConst);
+  auto kvRowStride = kvNhTimesHd;
+  // cache base uses cacheMaxSeq as the seq stride
+  auto cacheMaxSeqConst = builder.create<mlir::arith::ConstantIntOp>(loc, cacheMaxSeq, 32);
+  auto cacheStride0 = builder.create<mlir::arith::MulIOp>(loc, cacheMaxSeqConst, kvNhTimesHd);
+  auto cacheBase = builder.create<mlir::arith::AddIOp>(loc,
+      builder.create<mlir::arith::MulIOp>(loc, batchIdx, cacheStride0),
+      builder.create<mlir::arith::MulIOp>(loc, kvHeadIdx, headDimConst));
+  // current-window base uses W (= seqQ) as the seq stride
+  auto curStride0 = builder.create<mlir::arith::MulIOp>(loc, seqQConst, kvNhTimesHd);
+  auto curBase = builder.create<mlir::arith::AddIOp>(loc,
+      builder.create<mlir::arith::MulIOp>(loc, batchIdx, curStride0),
+      builder.create<mlir::arith::MulIOp>(loc, kvHeadIdx, headDimConst));
+
+  // ── Load Q tile [BM, HD], scaled ──
+  auto seqQMinus1 = builder.create<mlir::arith::ConstantIntOp>(loc, std::max(0, seqQ - 1), 32);
+  auto seqQMinus1Splat = builder.create<mlir::triton::SplatOp>(loc, i32BmType, seqQMinus1);
+  auto qIndicesClamped = builder.create<mlir::arith::MinSIOp>(loc, qIndices, seqQMinus1Splat);
+  auto qMExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, qIndicesClamped, 1);
+  auto hdExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, rangeHdForPtr, 0);
+  auto i32BmHdType = mlir::RankedTensorType::get({blockM, headDimPadded}, i32Type);
+  auto f32BmHdType = mlir::RankedTensorType::get({blockM, headDimPadded}, f32Type);
+  auto qRowStrideSplat = builder.create<mlir::triton::SplatOp>(loc,
+      mlir::RankedTensorType::get({blockM, 1}, i32Type), qRowStride);
+  auto qRowOffsets = builder.create<mlir::arith::MulIOp>(loc, qMExpanded, qRowStrideSplat);
+  auto qRowBroadcast = builder.create<mlir::triton::BroadcastOp>(loc, i32BmHdType, qRowOffsets);
+  auto hdBroadcast = builder.create<mlir::triton::BroadcastOp>(loc, i32BmHdType, hdExpanded);
+  auto qOffsets2D = builder.create<mlir::arith::AddIOp>(loc, qRowBroadcast, hdBroadcast);
+  auto qBaseSplat = builder.create<mlir::triton::SplatOp>(loc, i32BmHdType, qBase);
+  auto qFinalOffsets = builder.create<mlir::arith::AddIOp>(loc, qBaseSplat, qOffsets2D);
+
+  auto qPtrType = mlir::cast<mlir::triton::PointerType>(qPtr.getType());
+  auto kCachePtrType = mlir::cast<mlir::triton::PointerType>(kCachePtr.getType());
+  auto vCachePtrType = mlir::cast<mlir::triton::PointerType>(vCachePtr.getType());
+  auto curKPtrType = mlir::cast<mlir::triton::PointerType>(curKPtr.getType());
+  auto curVPtrType = mlir::cast<mlir::triton::PointerType>(curVPtr.getType());
+  auto outPtrType = mlir::cast<mlir::triton::PointerType>(outPtr.getType());
+
+  auto qPtrTensorType = mlir::RankedTensorType::get({blockM, headDimPadded}, qPtrType);
+  auto qSplat = builder.create<mlir::triton::SplatOp>(loc, qPtrTensorType, qPtr);
+  auto qPtrs = builder.create<mlir::triton::AddPtrOp>(loc, qPtrTensorType, qSplat, qFinalOffsets);
+
+  auto seqQSplat = builder.create<mlir::triton::SplatOp>(loc, i32BmType, seqQConst);
+  auto qMask1D = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt,
+      qIndices, seqQSplat);
+  auto qMaskExp = builder.create<mlir::triton::ExpandDimsOp>(loc, qMask1D, 1);
+  auto i1BmHdType = mlir::RankedTensorType::get({blockM, headDimPadded}, i1Type);
+  auto qMask2D_row = builder.create<mlir::triton::BroadcastOp>(loc, i1BmHdType, qMaskExp);
+  mlir::Value qMask2D = qMask2D_row;
+  if (needsHdMask) {
+    auto headDimSplatHd = builder.create<mlir::triton::SplatOp>(loc, i32HdType, headDimConst);
+    auto hdMask1D = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt,
+        rangeHd, headDimSplatHd);
+    auto hdMaskExp = builder.create<mlir::triton::ExpandDimsOp>(loc, hdMask1D, 0);
+    auto hdMask2DBm = builder.create<mlir::triton::BroadcastOp>(loc, i1BmHdType, hdMaskExp);
+    qMask2D = builder.create<mlir::arith::AndIOp>(loc, qMask2D_row, hdMask2DBm);
+  }
+
+  auto qLoadedRaw = builder.create<mlir::triton::LoadOp>(loc,
+      qPtrs, qMask2D, mlir::Value(),
+      mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+  auto qLoaded = castTo(builder, loc, qLoadedRaw, f32Type);
+  auto f32BmType = mlir::RankedTensorType::get({blockM}, f32Type);
+  auto scaleSplat = splatConstantF32(builder, loc, f32BmHdType, scale);
+  auto qScaled = builder.create<mlir::arith::MulFOp>(loc, qLoaded, scaleSplat);
+
+  // ── Online softmax accumulators ──
+  auto accInit = splatConstantF32(builder, loc, f32BmHdType, 0.0f);
+  auto mInit = splatConstantF32(builder, loc, f32BmType, -3.4028235e+38f);
+  auto lInit = splatConstantF32(builder, loc, f32BmType, 0.0f);
+
+  // ── Shared tile infrastructure (hoisted BEFORE the KV loop so it dominates
+  //    both the loop body and the post-loop scatter region) ──
+  auto i32BnHdType = mlir::RankedTensorType::get({blockN, headDimPadded}, i32Type);
+  auto f32BnHdType = mlir::RankedTensorType::get({blockN, headDimPadded}, f32Type);
+  auto i1BnHdType = mlir::RankedTensorType::get({blockN, headDimPadded}, i1Type);
+  auto hdBroadcastK = builder.create<mlir::triton::BroadcastOp>(loc, i32BnHdType, hdExpanded);
+  mlir::Value hdMaskBnHd;
+  {
+    auto headDimSplatHdK = builder.create<mlir::triton::SplatOp>(loc, i32HdType, headDimConst);
+    auto hdMask1DK = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt,
+        rangeHd, headDimSplatHdK);
+    auto hdMaskExpK = builder.create<mlir::triton::ExpandDimsOp>(loc, hdMask1DK, 0);
+    hdMaskBnHd = builder.create<mlir::triton::BroadcastOp>(loc, i1BnHdType, hdMaskExpK);
+  }
+  auto cacheMaxSeqMinus1 = builder.create<mlir::arith::ConstantIntOp>(loc, std::max(0, cacheMaxSeq - 1), 32);
+  auto cacheMaxSeqMinus1Splat = builder.create<mlir::triton::SplatOp>(loc, i32BnType, cacheMaxSeqMinus1);
+  auto zeroConst = builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32);
+  auto zeroSplatBn = builder.create<mlir::triton::SplatOp>(loc, i32BnType, zeroConst);
+  auto seqQMinus1Bn = builder.create<mlir::arith::ConstantIntOp>(loc, std::max(0, seqQ - 1), 32);
+  auto seqQMinus1BnSplat = builder.create<mlir::triton::SplatOp>(loc, i32BnType, seqQMinus1Bn);
+  auto kvRowStrideSplat = builder.create<mlir::triton::SplatOp>(
+      loc, mlir::RankedTensorType::get({blockN, 1}, i32Type), kvRowStride);
+  // Position splat: the runtime cachePos as tensor<BN x i32> — used by both the
+  // loop masks and the post-loop scatter.
+  auto cachePosSplat = builder.create<mlir::triton::SplatOp>(loc, i32BnType, cachePos);
+  auto seqKTotalSplat = builder.create<mlir::triton::SplatOp>(loc, i32BnType, seqKTotal);
+  // Pointer/base splats for all four buffers — hoisted pre-loop so the
+  // post-loop scatter region can reuse them (dominance).
+  auto kCachePtrTensorType = mlir::RankedTensorType::get({blockN, headDimPadded}, kCachePtrType);
+  auto kCacheSplat = builder.create<mlir::triton::SplatOp>(loc, kCachePtrTensorType, kCachePtr);
+  auto vCachePtrTensorType = mlir::RankedTensorType::get({blockN, headDimPadded}, vCachePtrType);
+  auto vCacheSplat = builder.create<mlir::triton::SplatOp>(loc, vCachePtrTensorType, vCachePtr);
+  auto curKPtrTensorType = mlir::RankedTensorType::get({blockN, headDimPadded}, curKPtrType);
+  auto curKSplat = builder.create<mlir::triton::SplatOp>(loc, curKPtrTensorType, curKPtr);
+  auto curVPtrTensorType = mlir::RankedTensorType::get({blockN, headDimPadded}, curVPtrType);
+  auto curVSplat = builder.create<mlir::triton::SplatOp>(loc, curVPtrTensorType, curVPtr);
+  auto cacheBaseSplat = builder.create<mlir::triton::SplatOp>(loc, i32BnHdType, cacheBase);
+  auto curBaseSplat = builder.create<mlir::triton::SplatOp>(loc, i32BnHdType, curBase);
+
+  // ── KV loop: j in range(0, P + W, BLOCK_N) with RUNTIME bound ──
+  auto jStart = builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32);
+  auto jStep = builder.create<mlir::arith::ConstantIntOp>(loc, blockN, 32);
+  auto forOp = builder.create<mlir::scf::ForOp>(
+      loc, jStart, seqKTotal, jStep,
+      mlir::ValueRange{accInit, mInit, lInit});
+  builder.setInsertionPointToStart(forOp.getBody());
+  auto jIdxI32 = forOp.getInductionVar();
+  auto accIter = forOp.getBody()->getArgument(1);
+  auto mIter = forOp.getBody()->getArgument(2);
+  auto lIter = forOp.getBody()->getArgument(3);
+
+  auto splatJOffset = builder.create<mlir::triton::SplatOp>(loc, i32BnType, jIdxI32);
+  auto kIndices = builder.create<mlir::arith::AddIOp>(loc, splatJOffset, rangeN);
+
+  // isPast: kIdx < P (runtime)   isCur: kIdx in [P, P+W)   (splats hoisted above)
+  auto isPast1D = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt,
+      kIndices, cachePosSplat);
+  auto isCur1D = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::sge,
+      kIndices, cachePosSplat);
+  auto inRange1D = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt,
+      kIndices, seqKTotalSplat);
+  // valid key = (past OR current) AND < P+W
+  auto validKCombined1D = builder.create<mlir::arith::AndIOp>(loc,
+      builder.create<mlir::arith::OrIOp>(loc, isPast1D, isCur1D), inRange1D);
+
+
+  auto isPastExp = builder.create<mlir::triton::ExpandDimsOp>(loc, isPast1D, 1);
+  auto isPast2D = builder.create<mlir::triton::BroadcastOp>(loc, i1BnHdType, isPastExp);
+  auto validKExp = builder.create<mlir::triton::ExpandDimsOp>(loc, validKCombined1D, 1);
+  auto validK2Drow = builder.create<mlir::triton::BroadcastOp>(loc, i1BnHdType, validKExp);
+  auto validK2D = builder.create<mlir::arith::AndIOp>(loc, validK2Drow, hdMaskBnHd);
+  auto pastMask2D = builder.create<mlir::arith::AndIOp>(loc, isPast2D, validK2D);
+  auto isCurExp = builder.create<mlir::triton::ExpandDimsOp>(loc, isCur1D, 1);
+  auto isCur2D = builder.create<mlir::triton::BroadcastOp>(loc, i1BnHdType, isCurExp);
+  auto curMask2D = builder.create<mlir::arith::AndIOp>(loc, isCur2D, validK2D);
+
+  // ── Past K from cache ── (index clamps; splats hoisted above)
+  auto pastIdxClamped = builder.create<mlir::arith::MinSIOp>(loc, kIndices, cacheMaxSeqMinus1Splat);
+  auto pastIdxLow = builder.create<mlir::arith::MaxSIOp>(loc, pastIdxClamped, zeroSplatBn);
+  auto pastIdxFinal = pastIdxLow;
+
+  auto pastKRowExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, pastIdxFinal, 1);
+  auto pastKRowOffsets = builder.create<mlir::arith::MulIOp>(loc, pastKRowExpanded, kvRowStrideSplat);
+  auto pastKRowBroadcast = builder.create<mlir::triton::BroadcastOp>(loc, i32BnHdType, pastKRowOffsets);
+  auto pastKOffsets2D = builder.create<mlir::arith::AddIOp>(loc, pastKRowBroadcast, hdBroadcastK);
+  auto pastKFinalOffsets = builder.create<mlir::arith::AddIOp>(loc, cacheBaseSplat, pastKOffsets2D);
+  auto pastKPtrs = builder.create<mlir::triton::AddPtrOp>(loc, kCachePtrTensorType, kCacheSplat, pastKFinalOffsets);
+  auto pastKLoadedRaw = builder.create<mlir::triton::LoadOp>(loc,
+      pastKPtrs, pastMask2D, mlir::Value(),
+      mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+  auto pastKLoaded = castTo(builder, loc, pastKLoadedRaw, f32Type);
+
+  // ── Current K from producer tensor (adjusted index kIdx - P, clamped to [0,W-1]) ──
+  auto curIdxRaw = builder.create<mlir::arith::SubIOp>(loc, kIndices, cachePosSplat);
+  auto curIdxLow = builder.create<mlir::arith::MaxSIOp>(loc, curIdxRaw, zeroSplatBn);
+  auto curIdxClamped = builder.create<mlir::arith::MinSIOp>(loc, curIdxLow, seqQMinus1BnSplat);
+  auto curKRowExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, curIdxClamped, 1);
+  auto curKRowOffsets = builder.create<mlir::arith::MulIOp>(loc, curKRowExpanded, kvRowStrideSplat);
+  auto curKRowBroadcast = builder.create<mlir::triton::BroadcastOp>(loc, i32BnHdType, curKRowOffsets);
+  auto curKOffsets2D = builder.create<mlir::arith::AddIOp>(loc, curKRowBroadcast, hdBroadcastK);
+  auto curKFinalOffsets = builder.create<mlir::arith::AddIOp>(loc, curBaseSplat, curKOffsets2D);
+  auto curKPtrs = builder.create<mlir::triton::AddPtrOp>(loc, curKPtrTensorType, curKSplat, curKFinalOffsets);
+  auto curKLoadedRaw = builder.create<mlir::triton::LoadOp>(loc,
+      curKPtrs, curMask2D, mlir::Value(),
+      mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+  auto curKLoaded = castTo(builder, loc, curKLoadedRaw, f32Type);
+
+  // Merge: exactly one side is nonzero per element (masked loads return 0)
+  auto kLoaded = builder.create<mlir::arith::AddFOp>(loc, pastKLoaded, curKLoaded);
+
+  // ── QK^T ──
+  auto transposeOrder = builder.getDenseI32ArrayAttr({1, 0});
+  auto kTransposed = builder.create<mlir::triton::TransOp>(loc, kLoaded, transposeOrder);
+  auto f32BmBnType = mlir::RankedTensorType::get({blockM, blockN}, f32Type);
+  auto i32BmBnType = mlir::RankedTensorType::get({blockM, blockN}, i32Type);
+  auto i1BmBnType = mlir::RankedTensorType::get({blockM, blockN}, i1Type);
+  auto qkZeroInit = splatConstantF32(builder, loc, f32BmBnType, 0.0f);
+  constexpr auto qkPrecision = mlir::triton::InputPrecision::IEEE;
+  auto qk = builder.create<mlir::triton::DotOp>(
+      loc, f32BmBnType, qScaled, kTransposed, qkZeroInit,
+      qkPrecision, /*maxNumImpreciseAcc=*/0);
+
+  // Key-valid mask across [BM, BN]: -inf outside [0, P+W)
+  auto negInfSplat = splatConstantF32(builder, loc, f32BmBnType, -3.4028235e+38f);
+  auto validKExpBmBn = builder.create<mlir::triton::ExpandDimsOp>(loc, validKCombined1D, 0);
+  auto validKBmBn = builder.create<mlir::triton::BroadcastOp>(loc, i1BmBnType, validKExpBmBn);
+  auto qkMasked = builder.create<mlir::arith::SelectOp>(loc, validKBmBn, qk, negInfSplat);
+
+  // ── Optional additive bias, columns indexed by absolute key position ──
+  mlir::Value qkWithBias = qkMasked;
+  if (biasPtr) {
+    int biasRank = static_cast<int>(biasShape.size());
+    // Bias last dim is the key axis (sized to cacheMaxSeq in the GGUF contract)
+    int biasSeqK = (biasRank > 0) ? static_cast<int>(biasShape[biasRank - 1]) : cacheMaxSeq;
+    auto biasSeqKConst = builder.create<mlir::arith::ConstantIntOp>(loc, biasSeqK, 32);
+    // Row axis: second-to-last dim (query axis). For decode [.., 1, cacheMaxSeq].
+    int biasSeqQ = (biasRank > 1) ? static_cast<int>(biasShape[biasRank - 2]) : 1;
+    auto biasSeqQConst = builder.create<mlir::arith::ConstantIntOp>(loc, biasSeqQ, 32);
+    auto headSliceSize = builder.create<mlir::arith::MulIOp>(loc, biasSeqQConst, biasSeqKConst);
+
+    // Per-(batch,head) base offset — GGUF bias is [1,1,1,cacheMaxSeq]-style so
+    // this collapses to zero for batch=0/head=0; emit the general form so
+    // larger batches still index correctly when heads share one bias plane.
+    int biasNumHeads = (biasRank >= 4) ? static_cast<int>(biasShape[1]) : 0;
+    mlir::Value biasBaseScalar;
+    if (biasNumHeads > 1) {
+      auto biasNumHeadsConst = builder.create<mlir::arith::ConstantIntOp>(loc, biasNumHeads, 32);
+      auto batchSliceSize = builder.create<mlir::arith::MulIOp>(loc, biasNumHeadsConst, headSliceSize);
+      auto batchOffset = builder.create<mlir::arith::MulIOp>(loc, batchIdx, batchSliceSize);
+      auto headOffset = builder.create<mlir::arith::MulIOp>(loc, headIdx, headSliceSize);
+      biasBaseScalar = builder.create<mlir::arith::AddIOp>(loc, batchOffset, headOffset);
+    } else {
+      biasBaseScalar = builder.create<mlir::arith::MulIOp>(loc, batchIdx, headSliceSize);
+    }
+
+    auto qBiasRowExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, qIndicesClamped, 1);
+    auto biasSeqKSplat2 = builder.create<mlir::triton::SplatOp>(
+        loc, mlir::RankedTensorType::get({blockM, 1}, i32Type), biasSeqKConst);
+    auto biasRowOffsets = builder.create<mlir::arith::MulIOp>(loc, qBiasRowExpanded, biasSeqKSplat2);
+    auto biasRowBroadcast = builder.create<mlir::triton::BroadcastOp>(loc, i32BmBnType, biasRowOffsets);
+    // Column: absolute key index clamped to the bias width for pointer safety.
+    // Splatted scalar -> tensor: arith.minsi requires identical operand/result types.
+    auto biasSeqKSplatBn = builder.create<mlir::triton::SplatOp>(loc, i32BnType, biasSeqKConst);
+    auto biasKIdxClamped = builder.create<mlir::arith::MinSIOp>(loc, pastIdxFinal, biasSeqKSplatBn);
+    auto kBiasColExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, biasKIdxClamped, 0);
+    auto kBiasColBroadcast = builder.create<mlir::triton::BroadcastOp>(loc, i32BmBnType, kBiasColExpanded);
+    auto biasBaseOffsets = builder.create<mlir::arith::AddIOp>(loc, biasRowBroadcast, kBiasColBroadcast);
+    auto biasBaseSplat2 = builder.create<mlir::triton::SplatOp>(loc, i32BmBnType, biasBaseScalar);
+    auto biasFinalOffsets = builder.create<mlir::arith::AddIOp>(loc, biasBaseSplat2, biasBaseOffsets);
+
+    auto biasPtrTypeCast = mlir::cast<mlir::triton::PointerType>(biasPtr.getType());
+    auto biasPtrTensorType = mlir::RankedTensorType::get({blockM, blockN}, biasPtrTypeCast);
+    auto biasSplat = builder.create<mlir::triton::SplatOp>(loc, biasPtrTensorType, biasPtr);
+    auto biasPtrs = builder.create<mlir::triton::AddPtrOp>(loc, biasPtrTensorType, biasSplat, biasFinalOffsets);
+    auto biasLoadedRaw = builder.create<mlir::triton::LoadOp>(loc,
+        biasPtrs, validKBmBn, mlir::Value(),
+        mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+    auto biasLoaded = castTo(builder, loc, biasLoadedRaw, f32Type);
+    qkWithBias = builder.create<mlir::arith::AddFOp>(loc, qkMasked, biasLoaded);
+  }
+
+  // ── Online softmax update (mirrors emitFusedAttentionKernel) ──
+  mlir::Value qkFinalVal = qkWithBias;
+  auto rowMaxOp = builder.create<mlir::triton::ReduceOp>(loc,
+      mlir::ValueRange{qkFinalVal}, /*axis=*/1);
+  {
+    auto& region = rowMaxOp.getCombineOp();
+    auto* block = builder.createBlock(&region, {}, {f32Type, f32Type}, {loc, loc});
+    builder.setInsertionPointToEnd(block);
+    auto maxed = builder.create<mlir::arith::MaximumFOp>(loc, block->getArgument(0), block->getArgument(1));
+    builder.create<mlir::triton::ReduceReturnOp>(loc, mlir::ValueRange{maxed.getResult()});
+  }
+  builder.setInsertionPointAfter(rowMaxOp);
+  auto rowMax = rowMaxOp->getResult(0);
+
+  auto mNew = builder.create<mlir::arith::MaximumFOp>(loc, mIter, rowMax);
+  auto mDiff = builder.create<mlir::arith::SubFOp>(loc, mIter, mNew);
+  auto correction = builder.create<mlir::math::ExpOp>(loc, mDiff);
+  auto mNewSplat = builder.create<mlir::triton::ExpandDimsOp>(loc, mNew, 1);
+  auto mNewBroadcast = builder.create<mlir::triton::BroadcastOp>(loc, f32BmBnType, mNewSplat);
+  auto qkShifted = builder.create<mlir::arith::SubFOp>(loc, qkWithBias, mNewBroadcast);
+  auto p = builder.create<mlir::math::ExpOp>(loc, qkShifted);
+
+  auto rowSumOp = builder.create<mlir::triton::ReduceOp>(loc,
+      mlir::ValueRange{p.getResult()}, /*axis=*/1);
+  {
+    auto& region = rowSumOp.getCombineOp();
+    auto* block = builder.createBlock(&region, {}, {f32Type, f32Type}, {loc, loc});
+    builder.setInsertionPointToEnd(block);
+    auto summed = builder.create<mlir::arith::AddFOp>(loc, block->getArgument(0), block->getArgument(1));
+    builder.create<mlir::triton::ReduceReturnOp>(loc, mlir::ValueRange{summed.getResult()});
+  }
+  builder.setInsertionPointAfter(rowSumOp);
+  auto rowSum = rowSumOp->getResult(0);
+
+  auto lScaled = builder.create<mlir::arith::MulFOp>(loc, lIter, correction);
+  auto lNew = builder.create<mlir::arith::AddFOp>(loc, lScaled, rowSum);
+
+  // ── Past V from cache (same offsets as past K, V's own pointer) ──
+  auto pastVPtrs = builder.create<mlir::triton::AddPtrOp>(loc, vCachePtrTensorType, vCacheSplat, pastKFinalOffsets);
+  auto pastVLoadedRaw = builder.create<mlir::triton::LoadOp>(loc,
+      pastVPtrs, pastMask2D, mlir::Value(),
+      mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+  auto pastVLoaded = castTo(builder, loc, pastVLoadedRaw, f32Type);
+
+  // ── Current V from producer tensor (same offsets as current K) ──
+  auto curVPtrs = builder.create<mlir::triton::AddPtrOp>(loc, curVPtrTensorType, curVSplat, curKFinalOffsets);
+  auto curVLoadedRaw = builder.create<mlir::triton::LoadOp>(loc,
+      curVPtrs, curMask2D, mlir::Value(),
+      mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+  auto curVLoaded = castTo(builder, loc, curVLoadedRaw, f32Type);
+  auto vLoaded = builder.create<mlir::arith::AddFOp>(loc, pastVLoaded, curVLoaded);
+
+  // ── P·V accumulation (unnormalized + final reciprocal — the native decode
+  // contract for GQA/output-only kernels; identical to the existing
+  // normalizeAfterPv path since all GGUF decode pointers share Q's dtype) ──
+  mlir::Value pv;
+  auto zeroBm = splatConstantF32(builder, loc, f32BmType, 0.0f);
+  {
+    auto correctionExp = builder.create<mlir::triton::ExpandDimsOp>(loc, correction, 1);
+    auto correctionBroadcast = builder.create<mlir::triton::BroadcastOp>(
+        loc, f32BmHdType, correctionExp);
+    auto accScaled = builder.create<mlir::arith::MulFOp>(loc, accIter, correctionBroadcast);
+    auto tileZero = splatConstantF32(builder, loc, f32BmHdType, 0.0f);
+    auto tilePv = builder.create<mlir::triton::DotOp>(
+        loc, f32BmHdType, p, vLoaded, tileZero,
+        mlir::triton::InputPrecision::IEEE, /*maxNumImpreciseAcc=*/0);
+    pv = builder.create<mlir::arith::AddFOp>(loc, accScaled, tilePv);
+  }
+
+  auto hasNewMass = builder.create<mlir::arith::CmpFOp>(
+      loc, mlir::arith::CmpFPredicate::OGT, rowSum, zeroBm);
+  auto hasNewMassExp = builder.create<mlir::triton::ExpandDimsOp>(loc, hasNewMass, 1);
+  auto hasNewMassBroadcast = builder.create<mlir::triton::BroadcastOp>(
+      loc, i1BmHdType, hasNewMassExp);
+  auto accNew = builder.create<mlir::arith::SelectOp>(loc, hasNewMassBroadcast, pv, accIter);
+
+  mlir::Value yieldVals[] = {accNew, mNew, lNew};
+  builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange(yieldVals));
+
+  // ── After the KV loop: normalize and store output ──
+  builder.setInsertionPointAfter(forOp);
+  mlir::Value normalized = forOp.getResult(0);
+  {
+    auto oneFinal = splatConstantF32(builder, loc, f32BmType, 1.0f);
+    auto zeroFinal = splatConstantF32(builder, loc, f32BmType, 0.0f);
+    auto finalSum = forOp.getResult(2);
+    auto invSumRaw = emitNativeCudaDiv(builder, loc, oneFinal, finalSum);
+    auto hasFinalMass = builder.create<mlir::arith::CmpFOp>(
+        loc, mlir::arith::CmpFPredicate::OGT, finalSum, zeroFinal);
+    auto invSum = builder.create<mlir::arith::SelectOp>(
+        loc, hasFinalMass, invSumRaw, zeroFinal);
+    auto invSumExp = builder.create<mlir::triton::ExpandDimsOp>(loc, invSum, 1);
+    auto invSumBroadcast = builder.create<mlir::triton::BroadcastOp>(
+        loc, f32BmHdType, invSumExp);
+    normalized = builder.create<mlir::arith::MulFOp>(loc, normalized, invSumBroadcast);
+  }
+
+  // Output store (same base/offsets as Q)
+  auto outBaseSplat = builder.create<mlir::triton::SplatOp>(loc, i32BmHdType, qBase);
+  auto outFinalOffsets = builder.create<mlir::arith::AddIOp>(loc, outBaseSplat, qOffsets2D);
+  auto outPtrTensorType = mlir::RankedTensorType::get({blockM, headDimPadded}, outPtrType);
+  auto outSplatPtr = builder.create<mlir::triton::SplatOp>(loc, outPtrTensorType, outPtr);
+  auto outPtrs = builder.create<mlir::triton::AddPtrOp>(loc, outPtrTensorType, outSplatPtr, outFinalOffsets);
+  mlir::Value outStoreVal = castTo(builder, loc, normalized, outPtrType.getPointeeType());
+  builder.create<mlir::triton::StoreOp>(loc, outPtrs, outStoreVal, qMask2D,
+                                         mlir::triton::CacheModifier::NONE,
+                                         mlir::triton::EvictionPolicy::NORMAL);
+
+  // ── KV scatter: cache[b, P+s, kvH, :] = cur[b, s, kvH, :] for s in [0,W) ──
+  // Guarded by pid1 == 0 so each (batch, kvHead-slice) row writes exactly once.
+  // No intra-launch hazard: past reads masked kIdx < P and the current read
+  // used the producer tensors — position P is never read from the cache in
+  // this launch, so writing it here only benefits future steps.
+  {
+    auto zeroI32 = builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32);
+    auto pid1Zero = builder.create<mlir::arith::CmpIOp>(
+        loc, mlir::arith::CmpIPredicate::eq, pid1, zeroI32);
+    auto ifOp = builder.create<mlir::scf::IfOp>(loc, pid1Zero, /*withElseRegion=*/false);
+    builder.setInsertionPointToStart(&ifOp.getThenRegion().front());
+
+    auto wConst = builder.create<mlir::arith::ConstantIntOp>(loc, seqQ, 32);
+    auto wSplat = builder.create<mlir::triton::SplatOp>(loc, i32BnType, wConst);
+    auto sStart = builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32);
+    auto sStep = builder.create<mlir::arith::ConstantIntOp>(loc, blockN, 32);
+    auto sFor = builder.create<mlir::scf::ForOp>(loc, sStart, wConst, sStep);
+    builder.setInsertionPointToStart(sFor.getBody());
+    auto sBase = sFor.getInductionVar();
+    auto sSplat = builder.create<mlir::triton::SplatOp>(loc, i32BnType, sBase);
+    auto sIdx = builder.create<mlir::arith::AddIOp>(loc, sSplat, rangeN);
+    auto sValid1D = builder.create<mlir::arith::CmpIOp>(
+        loc, mlir::arith::CmpIPredicate::slt, sIdx, wSplat);
+    auto sValidExp = builder.create<mlir::triton::ExpandDimsOp>(loc, sValid1D, 1);
+    auto sValid2D = builder.create<mlir::triton::BroadcastOp>(loc, i1BnHdType, sValidExp);
+    auto sMask2D = builder.create<mlir::arith::AndIOp>(loc, sValid2D, hdMaskBnHd);
+
+    // Pointer clamps for both sides
+    auto sClamped1D = builder.create<mlir::arith::MinSIOp>(loc, sIdx, seqQMinus1BnSplat);
+    auto sRowExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, sClamped1D, 1);
+    auto sRowOffsets = builder.create<mlir::arith::MulIOp>(loc, sRowExpanded, kvRowStrideSplat);
+    auto sRowBroadcast = builder.create<mlir::triton::BroadcastOp>(loc, i32BnHdType, sRowOffsets);
+    auto sSrcOffsets2D = builder.create<mlir::arith::AddIOp>(loc, sRowBroadcast, hdBroadcastK);
+  auto sSrcFinalOffsets = builder.create<mlir::arith::AddIOp>(loc, curBaseSplat, sSrcOffsets2D);
+
+    // Destination row: P + s, clamped into [0, cacheMaxSeq)
+    auto dstRowRaw = builder.create<mlir::arith::AddIOp>(loc, sIdx, cachePosSplat);
+    auto dstRowClamped = builder.create<mlir::arith::MinSIOp>(loc, dstRowRaw, cacheMaxSeqMinus1Splat);
+    auto dstRowLow = builder.create<mlir::arith::MaxSIOp>(loc, dstRowClamped, zeroSplatBn);
+    auto dstRowExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, dstRowLow, 1);
+    auto dstRowOffsets = builder.create<mlir::arith::MulIOp>(loc, dstRowExpanded, kvRowStrideSplat);
+    auto dstRowBroadcast = builder.create<mlir::triton::BroadcastOp>(loc, i32BnHdType, dstRowOffsets);
+    auto sDstOffsets2D = builder.create<mlir::arith::AddIOp>(loc, dstRowBroadcast, hdBroadcastK);
+  auto sDstFinalOffsets = builder.create<mlir::arith::AddIOp>(loc, cacheBaseSplat, sDstOffsets2D);
+
+    // Load source tiles from producers
+    auto sSrcKPtrs = builder.create<mlir::triton::AddPtrOp>(loc, curKPtrTensorType, curKSplat, sSrcFinalOffsets);
+    auto sKRaw = builder.create<mlir::triton::LoadOp>(loc,
+        sSrcKPtrs, sMask2D, mlir::Value(),
+        mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+    auto sKVal = castTo(builder, loc, sKRaw, kCachePtrType.getPointeeType());
+    auto sDstKPtrs = builder.create<mlir::triton::AddPtrOp>(loc, kCachePtrTensorType, kCacheSplat, sDstFinalOffsets);
+    builder.create<mlir::triton::StoreOp>(loc, sDstKPtrs, sKVal, sMask2D,
+        mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL);
+
+    auto sSrcVPtrs = builder.create<mlir::triton::AddPtrOp>(loc, curVPtrTensorType, curVSplat, sSrcFinalOffsets);
+    auto sVRaw = builder.create<mlir::triton::LoadOp>(loc,
+        sSrcVPtrs, sMask2D, mlir::Value(),
+        mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+    auto sVVal = castTo(builder, loc, sVRaw, vCachePtrType.getPointeeType());
+    auto sDstVPtrs = builder.create<mlir::triton::AddPtrOp>(loc, vCachePtrTensorType, vCacheSplat, sDstFinalOffsets);
+    builder.create<mlir::triton::StoreOp>(loc, sDstVPtrs, sVVal, sMask2D,
+        mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL);
+  }
+
+  DSP_DIAG(JIT, "TritonIRBuilder: emitted GGUF decode attention kernel batch=%d qHeads=%d kvHeads=%d "
+            "seqQ=%d cacheMaxSeq=%d headDim=%d scale=%f BM=%d BN=%d kvGroupSize=%d hasBias=%d "
+            "(runtime boundary + in-kernel scatter)",
+            batchSize, numQHeads, numKvHeads, seqQ, cacheMaxSeq, headDim, scale, blockM, blockN,
+            kvGroupSize, biasPtr ? 1 : 0);
+}
+
 // ─── Present KV write (for compound attention ops) ──────────────────────────
 //
 // Writes current key/value (BSHD, 3D [B,seqKV,H*D]) to present_key/value

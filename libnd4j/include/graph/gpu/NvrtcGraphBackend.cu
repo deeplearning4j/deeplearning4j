@@ -119,8 +119,15 @@ static std::string generateBinaryExpr(const std::string& opName,
     return "powf(" + a + ", " + b + ")";
   if (opName == "swish_mul" || opName == "SwishMul")
     return "(" + a + " / (1.0f + expf(-" + a + ")) * " + b + ")";
-  // Fallback
-  return "(" + a + " + " + b + ")";
+  // Unmappable op: return empty string so the caller fails the source
+  // generation loudly (retry resolution with the next backend). NEVER emit a
+  // silently wrong expression (e.g. addition for an unknown binary op) —
+  // that converts an admission bug into a silent numerical-corruption bug.
+  DSP_DIAG(COMPILE,
+           "NvrtcGraphBackend: no binary lowering for op '%s' — failing "
+           "source generation (backend must not silently substitute)",
+           opName.c_str());
+  return "";
 }
 
 static std::string generateUnaryExpr(const std::string& opName, const std::string& val,
@@ -218,8 +225,12 @@ static std::string generateUnaryExpr(const std::string& opName, const std::strin
     std::string scalar = std::to_string(static_cast<float>(slot.args.tArgs[0])) + "f";
     return "(" + scalar + " / " + val + ")";
   }
-  // Fallback: identity
-  return val;
+  // Unmappable op: empty string = loud source-gen failure upstream.
+  DSP_DIAG(COMPILE,
+           "NvrtcGraphBackend: no unary lowering for op '%s' — failing "
+           "source generation (backend must not silently substitute)",
+           opName.c_str());
+  return "";
 }
 
 static std::string generateComparisonExpr(const std::string& opName,
@@ -236,8 +247,12 @@ static std::string generateComparisonExpr(const std::string& opName,
     return "(" + a + " == " + b + " ? 1.0f : 0.0f)";
   if (opName == "not_equals" || opName == "NotEquals")
     return "(" + a + " != " + b + " ? 1.0f : 0.0f)";
-  // Fallback
-  return "(" + a + " > " + b + " ? 1.0f : 0.0f)";
+  // Unmappable comparison op: empty string = loud source-gen failure.
+  DSP_DIAG(COMPILE,
+           "NvrtcGraphBackend: no comparison lowering for op '%s' — failing "
+           "source generation (backend must not silently substitute)",
+           opName.c_str());
+  return "";
 }
 
 static std::string generateLogicalExpr(const std::string& opName,
@@ -253,8 +268,12 @@ static std::string generateLogicalExpr(const std::string& opName,
     return "(" + a + " == 0.0f ? 1.0f : 0.0f)";
   if (opName == "boolean_xor" || opName == "BooleanXor")
     return "(((" + a + " != 0.0f) != (" + b + " != 0.0f)) ? 1.0f : 0.0f)";
-  // Fallback
-  return "((" + a + " != 0.0f && " + b + " != 0.0f) ? 1.0f : 0.0f)";
+  // Unmappable logical op: empty string = loud source-gen failure.
+  DSP_DIAG(COMPILE,
+           "NvrtcGraphBackend: no logical lowering for op '%s' — failing "
+           "source generation (backend must not silently substitute)",
+           opName.c_str());
+  return "";
 }
 
 static std::string generateTernaryExpr(const std::string& opName,
@@ -287,7 +306,10 @@ static std::string opToCudaExpr(TritonOpCategory cat, const std::string& opName,
     case TritonOpCategory::IDENTITY:
       return primary;  // pass-through
     default:
-      return primary;  // identity fallback
+      DSP_DIAG(COMPILE,
+               "NvrtcGraphBackend: no expression lowering for category %d (op '%s')",
+               static_cast<int>(cat), opName.c_str());
+      return "";  // loud decline — resolver retries the next backend
   }
 }
 
@@ -406,14 +428,24 @@ std::string NvrtcGraphBackend::generateCudaSource(
     std::string secVar = (inputCount >= 2 && slot.wiring.numInputs > 1) ? resolveInput(1) : "0.0f";
     std::string terVar = (inputCount >= 3 && slot.wiring.numInputs > 2) ? resolveInput(2) : "0.0f";
 
-    // Emit the op
+    // Emit the op. Empty expression = unmappable op -> loud failure of this
+    // backend's source generation; resolution continues with the next backend
+    // instead of compiling silently wrong math (identity/addition fallbacks).
     std::string resultVar = "t" + std::to_string(si);
+    std::string expr;
     if (isNvrtcJittable(cat)) {
-      src << "    float " << resultVar << " = " << opToCudaExpr(cat, slot.ident.opName, inputVar, secVar, terVar, slot) << ";\n";
-    } else {
-      // Unsupported op: pass through input (identity)
-      src << "    float " << resultVar << " = " << inputVar << ";  // unsupported: " << slot.ident.opName << "\n";
+      expr = opToCudaExpr(cat, slot.ident.opName, inputVar, secVar, terVar, slot);
     }
+    if (expr.empty()) {
+      DSP_DIAG(
+          COMPILE,
+          "NvrtcGraphBackend: source generation failed at slot %d — no "
+          "lowering for op '%s' (category %d). Backend declines; resolver "
+          "retries with the next backend rather than compiling wrong math.",
+          si, slot.ident.opName.c_str(), static_cast<int>(cat));
+      return "";
+    }
+    src << "    float " << resultVar << " = " << expr << ";\n";
 
     // Map this slot's output indices to the variable
     for (int o = 0; o < slot.wiring.numOutputs; o++) {
@@ -446,6 +478,20 @@ bool NvrtcGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                                         int totalSlots,
                                         int* requestedOutputSlotIndices,
                                         int numRequestedOutputs) {
+  // Admission precedes cache hits, code generation, and module loading.
+  std::string dtypeReason;
+  if (!jitValidateFloatTensorBindings(slots, seg.def.startSlot, seg.def.endSlot,
+                                     externalInputs, numExternalInputs,
+                                     outputSlots, totalOutputSlots, dtypeReason)) {
+    CompilationAuditEntry entry;
+    entry.slotIndex = seg.def.startSlot;
+    entry.wasCompiled = false;
+    entry.reason = dtypeReason;
+    lastCompilationAudit_ = {entry};
+    DSP_DIAG(COMPILE, "NvrtcGraphBackend: %s", dtypeReason.c_str());
+    return false;
+  }
+
   // ── Device management (mirrors TritonGraphBackend::compileSegment) ─────────
   // Determine the target compile device.  On async precompile threads the
   // CUDA runtime may not have been initialized at all — cudaSetDevice ensures

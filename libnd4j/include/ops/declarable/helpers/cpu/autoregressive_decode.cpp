@@ -908,13 +908,15 @@ void autoregressiveDecode(
         // draft is rejected, that state includes rejected tokens — the next step would
         // decode from polluted state (first token divergence lands at the step after
         // the first partial/zero acceptance). Compute acceptance HERE, from the FIRST
-        // pass's logits, and on partial acceptance re-execute the plan with
-        // actual_sequence_length = 1 + acceptedDrafts so the state outputs consumed by
-        // the feedback copies below advance through the accepted prefix only. Emission
+        // pass's logits, and on partial acceptance or terminal truncation re-execute
+        // with actual_sequence_length = emitted count. The feedback copies below
+        // advance through the consumed input prefix only. Emission
         // uses the FIRST pass's argmaxes (captured into specRowArgmax_cpu); the
         // downstream speculative block consumes these instead of recomputing from the
         // re-run's logits (whose rows beyond the accepted prefix are not meaningful).
         int specAccepted_cpu = -1;   // -1 = not a proposing step
+        int specConsumed_cpu = 0;
+        bool specShouldStop_cpu = false;
         LongType specRowArgmax_cpu[33] = {};
         if (useSpeculative_cpu && proposedCount_cpu > 0
                 && planOutputs[config->logitsOutputIdx] != nullptr
@@ -957,16 +959,29 @@ void autoregressiveDecode(
                 }
             }
 
-            if (specAccepted_cpu < proposedCount_cpu
+            // One emitted output consumes one input row: base + prior accepted
+            // drafts. An accepted terminal token has NOT itself been consumed.
+            // Determine this boundary before recurrent feedback or predictor carry.
+            while (specConsumed_cpu < specAccepted_cpu + 1
+                    && tokensGenerated + specConsumed_cpu < maxNewTokens) {
+                LongType token = specRowArgmax_cpu[specConsumed_cpu];
+                specConsumed_cpu++;
+                bool matchedStop = stopMatcher.accept(token);
+                specShouldStop_cpu = matchedStop
+                    && stopTerminationAllowed(config, tokensGenerated + specConsumed_cpu);
+                if (specShouldStop_cpu) break;
+            }
+
+            if (specConsumed_cpu < 1 + proposedCount_cpu
                     && config->actualSequenceLengthExtIdx >= 0
                     && config->actualSequenceLengthExtIdx < numExtInputs
                     && extInputs[config->actualSequenceLengthExtIdx] != nullptr) {
                 NDArray* aslArr = extInputs[config->actualSequenceLengthExtIdx];
-                aslArr->p(0, static_cast<LongType>(1 + specAccepted_cpu));
+                aslArr->p(0, static_cast<LongType>(specConsumed_cpu));
                 DSP_DIAG(KV_CACHE,
                          "SPEC_STATE_RERUN step=%d proposed=%d accepted=%d — re-executing "
                          "with actual_sequence_length=%d for accepted-prefix state commit",
-                         step, proposedCount_cpu, specAccepted_cpu, 1 + specAccepted_cpu);
+                         step, proposedCount_cpu, specAccepted_cpu, specConsumed_cpu);
                 if (config->kvQuantFormat > 0 && config->kvScaleBuffers != nullptr
                     && config->kvInputExtIndices != nullptr) {
                     static thread_local std::vector<NDArray*> tl_kvQuantPtrsRerun;
@@ -1007,19 +1022,37 @@ void autoregressiveDecode(
                          0, "autoregressive_decode: target hidden output is unavailable for MTP");
 
             int carryRow_cpu = proposedCount_cpu > 0
-                ? std::max(0, specAccepted_cpu) : 0;
+                ? specConsumed_cpu - 1 : 0;
             LongType nextMtpPosition_cpu = currentPosition + carryRow_cpu + 1;
             LongType mtpProcessedThrough_cpu = currentPosition;
 
             if (proposedCount_cpu > 0) {
+                // Mirror of the CUDA fix: the proposal loop wrote predictor KV
+                // rows [current, current + proposedCount - 1] only. The old
+                // `carryRow == proposedCount` bump suppressed repair of the
+                // first fully-accepted committed row and left a permanent
+                // predictor KV hole (acceptance collapse after first full
+                // accept).
                 mtpProcessedThrough_cpu = currentPosition + proposedCount_cpu - 1;
-                if (carryRow_cpu == proposedCount_cpu) {
-                    // K predictor calls produce K drafts but consume only the base
-                    // token plus drafts [0,K-2]. Consume the final accepted draft
-                    // so predictor KV is aligned with the target's bonus token.
-                    (void)executeMtpCpu(draftIds_cpu[proposedCount_cpu - 1],
-                                        currentPosition + proposedCount_cpu);
-                    mtpProcessedThrough_cpu = currentPosition + proposedCount_cpu;
+            }
+            // Predictor-side accepted-prefix repair (CUDA mirror): rewrite every
+            // committed position's predictor KV row as fused(committed token,
+            // target hidden at q-1). Chained proposal rows carry self-propagated
+            // hidden; a fully accepted K=1 step leaves the bonus row unwritten by
+            // the prefix. The target's rerun above repairs only the target plan.
+            // specRowArgmax_cpu row j is the accepted draft for j < specAccepted
+            // and the correction/bonus for the final committed row.
+            for (int j = 0; j + 1 < specConsumed_cpu; j++) {
+                LongType repairPosition = currentPosition + 1 + j;
+                if (repairPosition > mtpProcessedThrough_cpu) {
+                    setMtpTargetCarryCpu(
+                        planOutputs[config->targetHiddenOutputIdx], j);
+                    (void)executeMtpCpu(specRowArgmax_cpu[j], repairPosition);
+                    mtpProcessedThrough_cpu = repairPosition;
+                    DSP_DIAG(KV_CACHE,
+                             "MTP_PREFIX_REPAIR step=%d position=%lld committedRow=%d "
+                             "carryRow=%d — rewriting predictor KV row with target hidden",
+                             step, (long long)repairPosition, j, carryRow_cpu);
                 }
             }
 
@@ -1148,9 +1181,10 @@ void autoregressiveDecode(
             LongType rowArgmax[33];
             for (int i = 0; i < 33; i++) rowArgmax[i] = specRowArgmax_cpu[i];
             int acceptedDrafts = specAccepted_cpu >= 0 ? specAccepted_cpu : 0;
-            int n = acceptedDrafts + 1;
+            int n = specConsumed_cpu;
             totalSpeculativeProposed += proposedCount_cpu;
-            totalSpeculativeAccepted += acceptedDrafts;
+            // Accepted outputs emitted (including EOS), not consumed draft inputs.
+            totalSpeculativeAccepted += std::min(acceptedDrafts, specConsumed_cpu);
             speculativeStepCount++;
 
             // Gated diagnostic event: mirrors the CUDA helper's SPEC_STEP event.
@@ -1165,7 +1199,7 @@ void autoregressiveDecode(
                      (long long)rowArgmax[4]);
 
             // ── Store accepted tokens ──────────────────────────────────────────
-            bool shouldStop = false;
+            bool shouldStop = specShouldStop_cpu;
             int storedCount = 0;
             for (int i = 0; i < n && tokensGenerated < maxNewTokens; i++) {
                 LongType tok = rowArgmax[i];
@@ -1175,9 +1209,6 @@ void autoregressiveDecode(
                 if (config->tokenCallback != nullptr) {
                     config->tokenCallback(tok, config->callbackUserData);
                 }
-                bool matchedStop = stopMatcher.accept(tok);
-                shouldStop = matchedStop && stopTerminationAllowed(config, tokensGenerated);
-                if (shouldStop) break;
             }
 
             // ── Advance currentPosition by storedCount ──────────────────────────
@@ -1204,6 +1235,19 @@ void autoregressiveDecode(
                 }
             }
             (void)basePosition;
+            // Publish the committed KV prefix on terminal window rows, rather
+            // than leaving the speculative verification suffix visible.
+            if ((shouldStop || tokensGenerated == maxNewTokens) && useWindowSubstrate) {
+                NDArray* mask = config->windowGridMask;
+                LongType rowLen = mask->sizeAt(-1);
+                BUILD_SINGLE_SELECTOR(mask->dataType(), maskCausalRangeCpu,
+                                      (mask->buffer(), currentPosition, rowLen, rowLen), SD_FLOAT_TYPES);
+                size_t rowBytes = static_cast<size_t>(rowLen) * mask->sizeOfT();
+                for (LongType row = 1; row < mask->lengthOf() / rowLen; row++) {
+                    std::memcpy(static_cast<char*>(mask->buffer()) + row * rowBytes,
+                                mask->buffer(), rowBytes);
+                }
+            }
 
             // ── Update n-gram tables from the verified emission sequence ─────────
             if (useNgram_cpu) {
@@ -1233,8 +1277,7 @@ void autoregressiveDecode(
             double stepMs = std::chrono::duration<double, std::milli>(stepEnd - stepStart).count();
             stepTimesMs.push_back(stepMs);
 
-            if (shouldStop) break;
-
+            // Publish the pending final token and positions even on termination.
             // ── Step 6: Embedding lookup for next step ─────────────────────────
             if (config->embeddingsExtIdx >= 0) {
                 REQUIRE_TRUE(nextTokenId >= 0 && nextTokenId < vocabSize, 0,
@@ -1256,6 +1299,8 @@ void autoregressiveDecode(
                 NDArray* cachePos = extInputs[config->cachePositionExtIdx];
                 if (cachePos != nullptr) cachePos->p(0, currentPosition);
             }
+
+            if (shouldStop) break;
 
             continue;  // skip Phase 1 scalar path for this step
         }

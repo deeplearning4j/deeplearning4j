@@ -251,6 +251,32 @@ public class DspBufferAliasAccuracyTest {
                 DspBufferAliasAccuracyTest::inputsMultiLayer,
                 "final"));
 
+        // Pattern 10 (MTP-carry reproduction): dead-end identity requested output.
+        // Mirrors LLaMAArchitecture target_hidden_states = sd.identity(hidden):
+        // a requested output that aliases its producer's buffer and is consumed by
+        // NOTHING else in the graph. The hidden must survive to Java *after* the
+        // whole plan finishes — exactly how the native MTP epilogue reads the
+        // target carry. If warmup buffer coloring recycles the aliased source
+        // buffer for later temporaries, the identity output delivers clobbered
+        // bytes while the primary output (norm(hidden) @ w) stays correct —
+        // the exact 77% → 1% acceptance signature.
+        fs.add(new Fixture(
+                "deadEndIdentityOutput",
+                DspBufferAliasAccuracyTest::buildDeadEndIdentityOutput,
+                DspBufferAliasAccuracyTest::inputsSmall4x16,
+                "carry", "final"));
+
+        // Pattern 11 (MTP-carry reproduction, non-alias variant):
+        // same dead-end output but as a real mul kernel on a dedicated buffer.
+        // Isolates the alias variable: if 10 fails but 11 passes, the bug is
+        // identity/alias-specific; if both fail, the colorer recycles requested
+        // output buffers regardless of aliasing.
+        fs.add(new Fixture(
+                "deadEndMulOutput",
+                DspBufferAliasAccuracyTest::buildDeadEndMulOutput,
+                DspBufferAliasAccuracyTest::inputsSmall4x16,
+                "carry", "final"));
+
         return fs;
     }
 
@@ -813,6 +839,66 @@ public class DspBufferAliasAccuracyTest {
         Map<String, INDArray> m = new LinkedHashMap<>();
         m.put("x", Nd4j.linspace(DataType.FLOAT, -0.3, 0.01, 4 * 8).reshape(4, 8));
         return m;
+    }
+
+    /**
+     * Pattern 10 (MTP-carry reproduction): deep stack + dead-end identity output.
+     * 6 matmul→relu layers; the LAST layer output is published twice: as
+     * identity("carry") (aliasing the layer output buffer) and after a norm+matmul
+     * as "final". 8 same-shape temporaries follow the identity so a buffer colorer
+     * that recycles the aliased source has plenty of reuse candidates.
+     *
+     * Assertion contract: final == w5 @ (norm-ish relu path) AND carry == layer5
+     * element-for-element, across AUTO/SLOT_BY_SLOT/CUDA_GRAPHS/TRITON replays.
+     */
+    private static SameDiff buildDeadEndIdentityOutput() {
+        SameDiff g = SameDiff.create();
+        int dim = 16;
+        SDVariable x = g.placeHolder("x", DataType.FLOAT, 4, dim);
+        SDVariable h = x;
+        for (int layer = 0; layer < 5; layer++) {
+            h = g.mmul("mm" + layer, h, g.var("w" + layer, initWeight(0.05, dim, dim)));
+            h = g.nn.relu("relu" + layer, h, 0);
+        }
+        // layer4 output = the MTP "hidden". Requested dead-end alias:
+        SDVariable carry = g.identity("carry", h);
+        // Main path continues (norm-equivalent + head matmul), many same-shape
+        // temporaries after the alias to tempt recycling:
+        SDVariable t = h;
+        for (int k = 0; k < 8; k++) {
+            t = g.mmul("tail" + k, t, g.var("tw" + k, initWeight(0.02, dim, dim)));
+            t = g.nn.relu("trelu" + k, t, 0);
+        }
+        SDVariable out = g.mmul("final", t, g.var("wf", initWeight(0.03, dim, dim)));
+        g.setOutputs("carry", "final");
+        return g;
+    }
+
+    /**
+     * Pattern 11 (control): same topology but carry = mul(h, 1.0) — a real
+     * kernel with its own dedicated buffer, NOT an alias of the layer output.
+     * Differentiates "identity aliasing is unsafe" from "requested outputs are
+     * recycled regardless".
+     */
+    private static SameDiff buildDeadEndMulOutput() {
+        SameDiff g = SameDiff.create();
+        int dim = 16;
+        SDVariable x = g.placeHolder("x", DataType.FLOAT, 4, dim);
+        SDVariable h = x;
+        for (int layer = 0; layer < 5; layer++) {
+            h = g.mmul("mm" + layer, h, g.var("w" + layer, initWeight(0.05, dim, dim)));
+            h = g.nn.relu("relu" + layer, h, 0);
+        }
+        SDVariable one = g.var("one", Nd4j.ones(DataType.FLOAT, 1));
+        SDVariable carry = g.math.mul("carry", h, one);   // dedicated-buffer copy
+        SDVariable t = h;
+        for (int k = 0; k < 8; k++) {
+            t = g.mmul("tail" + k, t, g.var("tw" + k, initWeight(0.02, dim, dim)));
+            t = g.nn.relu("trelu" + k, t, 0);
+        }
+        SDVariable out = g.mmul("final", t, g.var("wf", initWeight(0.03, dim, dim)));
+        g.setOutputs("carry", "final");
+        return g;
     }
 
     private static Map<String, INDArray> inputsAttention() {

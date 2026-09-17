@@ -37,12 +37,14 @@ CUSTOM_OP_IMPL(matmul, 2, 1, false, 0, -2) {
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
   NDArray* originalZ = z;  // Save original output pointer for copy-back after reshape
-  if(x->isEmpty() || y->isEmpty())
-    return Status::OK;
   int iSize = (int)block.getIArguments()->size();
   int transX = iSize > 0 ? INT_ARG(0) : 0;
   int transY = iSize > 1 ? INT_ARG(1) : 0;
   const int transZ = iSize > 2 ? INT_ARG(2) : 0;
+  const LongType arithmetic = iSize > 3 ? INT_ARG(3) : 0;
+  REQUIRE_TRUE(arithmetic == 0 || arithmetic == 1, 0,
+               "MATMUL OP: arithmetic must be 0 (legacy) or 1 (SERIAL_FMA)");
+  if(x->isEmpty() || y->isEmpty()) return Status::OK;
   // optional use alpha nad beta
   iSize = (int)block.getTArguments()->size();
   double alpha = iSize > 0 ? T_ARG(0) : 1.0;
@@ -54,6 +56,27 @@ CUSTOM_OP_IMPL(matmul, 2, 1, false, 0, -2) {
     bool temp = transX;
     transX = !transY;
     transY = !temp;
+  }
+
+  if (arithmetic == 1) {
+    REQUIRE_TRUE(x->rankOf() > 0 && y->rankOf() > 0, 0,
+                 "MATMUL SERIAL_FMA: scalar operands are unsupported");
+    const auto dtype = x->dataType();
+    REQUIRE_TRUE(dtype == y->dataType() && dtype == z->dataType() &&
+                     (dtype == DataType::FLOAT32 || dtype == DataType::DOUBLE ||
+                      dtype == DataType::HALF || dtype == DataType::BFLOAT16), 0,
+                 "MATMUL SERIAL_FMA: expected same HALF/BFLOAT16/FLOAT/DOUBLE storage dtype");
+    const auto expected = ShapeUtils::evalShapeForMatmul(x->shapeInfo(), y->shapeInfo(), transX, transY);
+    REQUIRE_TRUE(z->isSameShape(expected), 0, "MATMUL SERIAL_FMA: output shape mismatch");
+    REQUIRE_TRUE(x->getDataBuffer() != z->getDataBuffer() && y->getDataBuffer() != z->getDataBuffer(), 0,
+                 "MATMUL SERIAL_FMA: output must not alias an input");
+    // Preserve the logical strides instead of flattening batch/transposed axes.
+#if defined(SD_VULKAN) || defined(SD_TPU)
+    REQUIRE_TRUE(false, 0, "MATMUL SERIAL_FMA: no native recipe for this artifact");
+#else
+    MmulHelper::matmulSerial(block.launchContext(), x, y, z, transX, transY, alpha, beta);
+#endif
+    return Status::OK;
   }
 
   // Compute ranks AFTER potential transZ swap
@@ -184,6 +207,17 @@ DECLARE_SHAPE_FN(matmul) {
 
 
   const int iSize = (int)block.getIArguments()->size();
+  REQUIRE_TRUE(iSize < 4 || INT_ARG(3) == 0 || INT_ARG(3) == 1, 0,
+               "MATMUL OP: invalid arithmetic contract");
+  if (iSize > 3 && INT_ARG(3) == 1) {
+    REQUIRE_TRUE(shape::rank(xShapeInfo) > 0 && shape::rank(yShapeInfo) > 0, 0,
+                 "MATMUL SERIAL_FMA: scalar operands are unsupported");
+    const auto dtype = ArrayOptions::dataType(xShapeInfo);
+    REQUIRE_TRUE(dtype == ArrayOptions::dataType(yShapeInfo) &&
+                     (dtype == DataType::HALF || dtype == DataType::BFLOAT16 ||
+                      dtype == DataType::FLOAT32 || dtype == DataType::DOUBLE), 0,
+                 "MATMUL SERIAL_FMA: expected matching HALF/BFLOAT16/FLOAT/DOUBLE operands");
+  }
   int transX = iSize > 0 ? INT_ARG(0) : 0;
   int transY = iSize > 1 ? INT_ARG(1) : 0;
   const int transZ = iSize > 2 ? INT_ARG(2) : 0;
@@ -226,6 +260,8 @@ DECLARE_TYPES(matmul) {
 
 //////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(matmul_bp, 3, 2, false, 0, -2) {
+  REQUIRE_TRUE(block.getIArguments()->size() < 4 || INT_ARG(3) == 0, 0,
+               "MATMUL_BP: SERIAL_FMA is an inference-only arithmetic contract");
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto eps = INPUT_VARIABLE(2);

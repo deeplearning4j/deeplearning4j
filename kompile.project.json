@@ -20,7 +20,7 @@
     "id" : "deeplearning4j",
     "codeProjectId" : "deeplearning4j",
     "name" : "Java project (deeplearning4j)",
-    "rootPath" : "/home/agibsonccc/Documents/GitHub/deeplearning4j",
+    "rootPath" : "/home/agibsonccc/GitHub/deeplearning4j",
     "contextPath" : "data/code-projects/deeplearning4j",
     "agentsMdPath" : "data/code-projects/deeplearning4j/AGENTS.md",
     "chatsPath" : "data/code-projects/deeplearning4j/chats",
@@ -39,18 +39,18 @@
       "knowledgeBaseId" : "deeplearning4j-knowledge",
       "graphPath" : "data/crawls/deeplearning4j-knowledge/graph.kgraph",
       "codeProjectionVersion" : "4",
-      "codeProjectedAt" : "2026-09-15T21:35:30.691849100Z",
-      "codeIndexGeneration" : "2026-09-15T21:10:09.209019163Z",
-      "codeProjectionEntities" : "622913",
-      "codeProjectionRelations" : "1803429",
-      "codeProjectionCodeEntities" : "809557",
+      "codeProjectedAt" : "2026-09-14T22:26:45.516056101Z",
+      "codeIndexGeneration" : "2026-09-14T22:14:09.041221374Z",
+      "codeProjectionEntities" : "622867",
+      "codeProjectionRelations" : "1803320",
+      "codeProjectionCodeEntities" : "809525",
       "codeProjectionFolderProjectId" : "deeplearning4j",
       "codeProjectionFactSheetId" : "",
       "codeProjectionIncludes" : "",
       "codeProjectionExcludes" : ""
     },
-    "createdAt" : "2026-08-21T20:06:29.082576947Z",
-    "updatedAt" : "2026-09-15T21:35:30.692142712Z"
+    "createdAt" : "2026-09-16T07:54:03.353801190Z",
+    "updatedAt" : "2026-09-16T07:54:03.357953430Z"
   }, {
     "id" : "dl4j-mobile-tooling-final",
     "codeProjectId" : "dl4j-mobile-tooling-final",
@@ -143,18 +143,18 @@
       "knowledgeBaseId" : "deeplearning4j-knowledge",
       "graphPath" : "data/crawls/deeplearning4j-knowledge/graph.kgraph",
       "codeProjectionVersion" : "4",
-      "codeProjectedAt" : "2026-09-15T08:20:27.729707661Z",
-      "codeIndexGeneration" : "2026-09-15T08:14:04.522692344Z",
-      "codeProjectionEntities" : "622887",
-      "codeProjectionRelations" : "1803364",
-      "codeProjectionCodeEntities" : "13056",
+      "codeProjectedAt" : "2026-09-14T15:28:17.861139564Z",
+      "codeIndexGeneration" : "2026-09-14T15:08:58.870814927Z",
+      "codeProjectionEntities" : "622867",
+      "codeProjectionRelations" : "1803320",
+      "codeProjectionCodeEntities" : "13035",
       "codeProjectionFolderProjectId" : "deeplearning4j",
       "codeProjectionFactSheetId" : "",
       "codeProjectionIncludes" : "",
       "codeProjectionExcludes" : ""
     },
     "createdAt" : "2026-08-28T00:54:35.194487370Z",
-    "updatedAt" : "2026-09-15T08:20:27.730007205Z"
+    "updatedAt" : "2026-09-14T15:28:17.861468545Z"
   }, {
     "id" : "sdx-aot",
     "codeProjectId" : "sdx-aot",
@@ -310,5 +310,5 @@
   "workflows" : [ ],
   "metadata" : { },
   "createdAt" : "2026-08-21T20:06:29.083137933Z",
-  "updatedAt" : "2026-09-15T21:35:30.692611104Z"
+  "updatedAt" : "2026-09-16T07:54:03.384009179Z"
 }

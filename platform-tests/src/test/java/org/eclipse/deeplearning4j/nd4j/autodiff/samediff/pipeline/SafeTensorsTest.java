@@ -298,6 +298,153 @@ public class SafeTensorsTest extends BaseNd4jTestWithBackends {
 
     // ==================== Helper Methods ====================
 
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testLowPrecisionStorageBits(Nd4jBackend backend) throws IOException {
+        // Include every encoding: subnormals, signed zero, Inf and NaN payloads.
+        for (SafeTensorsDtype type : new SafeTensorsDtype[]{SafeTensorsDtype.F16,
+                SafeTensorsDtype.BF16, SafeTensorsDtype.F8_E4M3, SafeTensorsDtype.F8_E5M2}) {
+            int width = type.getElementSize();
+            int elements = width == 2 ? 65536 : 256;
+            ByteBuffer payload = ByteBuffer.allocate(elements * width).order(ByteOrder.LITTLE_ENDIAN);
+            for (int i = 0; i < elements; i++) {
+                if (width == 2) {
+                    payload.putShort((short) i);
+                } else {
+                    payload.put((byte) i);
+                }
+            }
+            File file = writeRawTensor(type.getName(), "[" + elements + "]", 0,
+                    payload.capacity(), payload.array());
+            INDArray tensor;
+            try (SafeTensorsReader reader = SafeTensorsReader.open(file)) {
+                tensor = reader.readTensor("tensor");
+            }
+            // Reader closure must not invalidate the returned allocation.
+            try (INDArray owned = tensor) {
+                assertEquals(type.toNd4jType(), owned.dataType());
+                assertArrayEquals(new long[]{elements}, owned.shape());
+                assertRawPayload(payload.array(), owned, width);
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testLowPrecisionValuesAndDeviceUse(Nd4jBackend backend) throws IOException {
+        SafeTensorsDtype[] types = {SafeTensorsDtype.F16, SafeTensorsDtype.BF16,
+                SafeTensorsDtype.F8_E4M3, SafeTensorsDtype.F8_E5M2};
+        int[][] encodings = {{0x3c00, 0xc000, 0x3800}, {0x3f80, 0xc000, 0x3f00},
+                {0x38, 0xc0, 0x30}, {0x3c, 0xc0, 0x38}};
+        for (int t = 0; t < types.length; t++) {
+            SafeTensorsDtype type = types[t];
+            assertEquals(type, SafeTensorsDtype.fromString(type.getName()));
+            assertEquals(type, SafeTensorsDtype.fromNd4jType(type.toNd4jType()));
+            int width = type.getElementSize();
+            ByteBuffer bytes = ByteBuffer.allocate(3 * width).order(ByteOrder.LITTLE_ENDIAN);
+            for (int bits : encodings[t]) {
+                if (width == 2) bytes.putShort((short) bits);
+                else bytes.put((byte) bits);
+            }
+            File file = writeRawTensor(type.getName(), "[3]", 0, bytes.capacity(), bytes.array());
+            try (SafeTensorsReader reader = SafeTensorsReader.open(file);
+                 INDArray tensor = reader.readTensor("tensor");
+                 INDArray converted = tensor.castTo(DataType.FLOAT)) {
+                // Exercises normal H2D coherency on CUDA, not only host-pointer inspection.
+                assertArrayEquals(new float[]{1.0f, -2.0f, 0.5f}, converted.toFloatVector(), 0.0f);
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testBoundedReadChunkBoundary(Nd4jBackend backend) throws IOException {
+        int elements = 1024 * 1024 / Long.BYTES + 3;
+        ByteBuffer bytes = ByteBuffer.allocate(elements * Long.BYTES).order(ByteOrder.LITTLE_ENDIAN);
+        for (int i = 0; i < elements; i++) {
+            bytes.putLong(0x1234567800000000L + i);
+        }
+        File file = writeRawTensor("I64", "[" + elements + "]", 0, bytes.capacity(), bytes.array());
+        try (SafeTensorsReader reader = SafeTensorsReader.open(file);
+             INDArray tensor = reader.readTensor("tensor")) {
+            assertEquals(DataType.LONG, tensor.dataType());
+            assertRawPayload(bytes.array(), tensor, Long.BYTES);
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testScalarAndEmptyShapes(Nd4jBackend backend) throws IOException {
+        byte[] scalar = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putFloat(1.25f).array();
+        File scalarFile = writeRawTensor("F32", "[]", 0, scalar.length, scalar);
+        try (SafeTensorsReader reader = SafeTensorsReader.open(scalarFile);
+             INDArray tensor = reader.readTensor("tensor")) {
+            assertArrayEquals(new long[0], tensor.shape());
+            assertEquals(0, tensor.rank());
+            assertEquals(1.25, tensor.getDouble(0), 0.0);
+        }
+        File emptyFile = writeRawTensor("BF16", "[2,0,3]", 0, 0, new byte[0]);
+        try (SafeTensorsReader reader = SafeTensorsReader.open(emptyFile);
+             INDArray tensor = reader.readTensor("tensor")) {
+            assertArrayEquals(new long[]{2, 0, 3}, tensor.shape());
+            assertEquals(DataType.BFLOAT16, tensor.dataType());
+            assertEquals(0, tensor.length());
+        }
+    }
+
+    @Test
+    public void testInvalidPayloadLengthsBeforeAllocation() throws IOException {
+        assertInvalidRawTensor("F32", "[2]", 0, 4, new byte[4], "size mismatch");
+        assertInvalidRawTensor("F32", "[1]", 0, 8, new byte[8], "size mismatch");
+        assertInvalidRawTensor("F16", "[1]", 0, 1, new byte[1], "size mismatch");
+        assertInvalidRawTensor("F32", "[1]", 0, 4, new byte[3], "Truncated");
+        assertInvalidRawTensor("F32", "[-1]", 0, 0, new byte[0], "Negative");
+        assertInvalidRawTensor("F32", "[1]", 4, 0, new byte[0], "Invalid");
+        assertInvalidRawTensor("U8", "[1]", -1, 0, new byte[0], "Invalid");
+        assertInvalidRawTensor("F64", "[9223372036854775807,2]", 0, 0, new byte[0], "overflow");
+        assertInvalidRawTensor("F64", "[9223372036854775807]", 0, 0, new byte[0], "overflow");
+        assertInvalidRawTensor("U8", "[1]", Long.MAX_VALUE - 1, Long.MAX_VALUE, new byte[0], "overflow");
+        // A >2 GiB declaration must fail file-range validation, not narrow to int or allocate.
+        assertInvalidRawTensor("U8", "[2147483648]", 0, 2147483648L, new byte[0], "Truncated");
+    }
+
+    private void assertInvalidRawTensor(String dtype, String shape, long start, long end,
+                                        byte[] payload, String message) throws IOException {
+        File file = writeRawTensor(dtype, shape, start, end, payload);
+        try (SafeTensorsReader reader = SafeTensorsReader.open(file)) {
+            IOException failure = assertThrows(IOException.class, () -> reader.readTensor("tensor"));
+            assertTrue(failure.getMessage().contains(message), failure.getMessage());
+        }
+    }
+
+    private File writeRawTensor(String dtype, String shape, long start, long end, byte[] payload)
+            throws IOException {
+        File file = tempDir.resolve(UUID.randomUUID() + ".safetensors").toFile();
+        String json = "{\"tensor\":{\"dtype\":\"" + dtype + "\",\"shape\":" + shape
+                + ",\"data_offsets\":[" + start + "," + end + "]}}";
+        byte[] header = json.getBytes(StandardCharsets.UTF_8);
+        try (DataOutputStream out = new DataOutputStream(new FileOutputStream(file))) {
+            out.write(ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putLong(header.length).array());
+            out.write(header);
+            out.write(payload);
+        }
+        return file;
+    }
+
+    private void assertRawPayload(byte[] littleEndian, INDArray tensor, int width) {
+        ByteBuffer actual = tensor.data().asNio().duplicate().order(ByteOrder.nativeOrder());
+        ByteBuffer expected = ByteBuffer.wrap(littleEndian).order(ByteOrder.LITTLE_ENDIAN);
+        for (int offset = 0; offset < littleEndian.length; offset += width) {
+            switch (width) {
+                case 1: assertEquals(expected.get(offset), actual.get(offset), "byte " + offset); break;
+                case 2: assertEquals(expected.getShort(offset), actual.getShort(offset), "byte " + offset); break;
+                case 4: assertEquals(expected.getInt(offset), actual.getInt(offset), "byte " + offset); break;
+                case 8: assertEquals(expected.getLong(offset), actual.getLong(offset), "byte " + offset); break;
+                default: fail("Unexpected element width: " + width);
+            }
+        }
+    }
+
     /**
      * Write a SafeTensors file with the given tensors.
      * This is a minimal implementation for testing purposes.

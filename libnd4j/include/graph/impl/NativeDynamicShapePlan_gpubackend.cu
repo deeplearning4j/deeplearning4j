@@ -153,6 +153,45 @@ static bool slotHasOnlyTransparentAliasOutputs(
     if (outIdx < 0 || outIdx >= totalOutputSlots) return false;
 
     BufferOwnership owner = ownership[outIdx].ownership;
+    if (owner == BufferOwnership::VIEW_OF_SLOT) {
+      // A VIEW_OF_SLOT record is only a *transparent alias* when the recorded
+      // parent is reachable through this slot's own wired inputs (the output
+      // aliases data this slot actually reads). Warmup buffer-coloring reuses
+      // dead producers' storage for later slots' outputs — a raw DataBuffer
+      // match with an UNRELATED earlier slot. That recycle is storage reuse,
+      // not a data alias: the slot still needs its (copy) kernel recorded in
+      // the graph, and excluding it bakes consumers against a buffer no graph
+      // node ever writes (tripleViewChain materializing-reshape divergence).
+      // Walk the slot's input alias chain and require the recorded parent on
+      // it; bounded to slot count with a visited set.
+      int claimedParent = ownership[outIdx].parentSlotIdx;
+      bool parentIsWired = false;
+      if (claimedParent >= 0 && claimedParent < totalOutputSlots) {
+        std::vector<bool> visited(static_cast<size_t>(totalOutputSlots), false);
+        std::vector<int> frontier;
+        for (int i = 0; i < slot.wiring.numInputs; i++) {
+          int srcIdx = slot.wiring.inputSourceIndices[i];
+          if (srcIdx >= 0 && srcIdx < totalOutputSlots) frontier.push_back(srcIdx);
+        }
+        while (!frontier.empty() && !parentIsWired) {
+          int cur = frontier.back();
+          frontier.pop_back();
+          if (cur < 0 || cur >= totalOutputSlots || visited[static_cast<size_t>(cur)]) continue;
+          visited[static_cast<size_t>(cur)] = true;
+          if (cur == claimedParent) {
+            parentIsWired = true;
+            break;
+          }
+          // Follow the input slot's own recorded alias parent (view chains).
+          if (ownership[cur].ownership == BufferOwnership::VIEW_OF_SLOT &&
+              ownership[cur].parentSlotIdx >= 0) {
+            frontier.push_back(ownership[cur].parentSlotIdx);
+          }
+        }
+      }
+      if (!parentIsWired) return false;
+      continue;
+    }
     if (owner != BufferOwnership::VIEW_OF_SLOT &&
         owner != BufferOwnership::VIEW_OF_WEIGHT) {
       NDArray* out = (outputSlots != nullptr) ? outputSlots[outIdx] : nullptr;
@@ -441,6 +480,11 @@ void NativeDynamicShapePlan::abortCapture(GraphSegment& seg,
     }
     terminateActiveStreamCapture(abortStream, "abortCapture");
   }
+#if HAVE_TRITON
+  // A failed validation launch may already have queued H2D reads from TLS-owned
+  // pinned sources. Retire those submissions before rollback frees the sources.
+  TritonGraphBackend::getInstance().awaitArgumentSubmissionsForRetirement(seg);
+#endif
   cleanupCaptureTlsState(freeHostPtrs, static_cast<void*>(prevCaptureStream));
   popPrimaryCtxIfPushed(didPushCtx, captureDevice);
   restoreCublasWorkspaceAfterCapture(stream);
@@ -1137,6 +1181,253 @@ static bool findUnsupportedTritonReplayGap(TritonGraphBackend* tritonBackend,
 // Query whether every slot in [startSlot, endSlot] can be inside a CUDA graph
 // capture.  Delegates to NativeSlot::isCapturable() — the single source of
 // truth for control-flow, data-dependent, and view/identity/frozen checks.
+// ── Merged-capture alias safety ─────────────────────────────────────────────
+// Capture extends through "capture-safe" gaps so a single CUDA graph covers
+// island + gap + island. When a gap is admitted into a merged capture, every
+// device address its ops touch at capture time is BAKED into the graph —
+// including op-internal workspace materializations (e.g. a reduce op's
+// device-side scalar), which the warmup allocator legitimately reuses from the
+// dead-buffer pool. During replay, every unit NOT merged into this group
+// executes LIVE and rewrites its own output buffers. If a live unit's output
+// range overlaps any address the merged graph bakes (observed: gap slot 23's
+// reduce_norm2 op-internal scalar aliased gap slot 13's matmul output at the
+// exact same device address 0x8274e7600), the live write clobbers the baked
+// value and the merged graph replays deterministically wrong values from
+// invocation 2 onward. The first post-capture replay only looks correct
+// because CaptureLiveInputs restores inputs around that single replay.
+static bool s_mergedCaptureGapAliasCheckDisabled() {
+  static bool disabled = []() {
+    const char* env = std::getenv("ND4J_DSP_MERGED_CAPTURE_GAP_ALIAS_CHECK_DISABLED");
+    return (env != nullptr && (env[0] == '1' || env[0] == 't' || env[0] == 'T' ||
+                               env[0] == 'y' || env[0] == 'Y'));
+  }();
+  return disabled;
+}
+
+struct MergedCaptureDeviceRange {
+  const void* ptr;
+  size_t bytes;
+};
+
+static bool mergedCaptureRangesOverlap(const void* aPtr, size_t aBytes,
+                                       const void* bPtr, size_t bBytes) {
+  if (aPtr == nullptr || bPtr == nullptr || aBytes == 0 || bBytes == 0) return false;
+  uintptr_t aLo = reinterpret_cast<uintptr_t>(aPtr);
+  uintptr_t bLo = reinterpret_cast<uintptr_t>(bPtr);
+  uintptr_t aHi = aLo + aBytes;
+  uintptr_t bHi = bLo + bBytes;
+  if (aHi < aLo || bHi < bLo) return false;  // overflow guard
+  return (aLo < bHi) && (bLo < aHi);
+}
+
+// Steady-state eligibility of a value-dependent gap slot for the fast paths.
+//
+// Value-dependent shape ops (reshape with a shape tensor, tile with a
+// multiples tensor) claim outputShapeDependsOnInputValues at the descriptor
+// level, and the gap executor therefore routed them through the full
+// shape-aware executeSlot every step. That path re-proves the output extent
+// by re-reading the control tensor values on the host — a blocking D2H that
+// drains the replay stream (iteration-2 quantization: 474 reshape/tile
+// slots × ~2.8ms/step = 1.34s per decode step).
+//
+// During SHAPES_FROZEN/REPLAYING the output extent is contractual (replay-time
+// shape drift is a hard lifecycle error) and compiled consumers bake concrete
+// extents, so the per-step re-proof is redundant. A slot is fast-eligible
+// when its frozen publication is intact, verified with host metadata only:
+//   - not a dynamic-output-size op (that trait means a genuinely dynamic
+//     extent — keep the full shape-aware path so it stays loud),
+//   - a sealed shape cache exists, and the installed wrapper still matches it
+//     exactly (dtype + shape + strides),
+//   - input0 and the installed wrapper both resolve to valid DataBuffers.
+// When the slot is additionally a view/identity alias whose single output
+// shares input0's DataBuffer, it has NO device work at all (*tickOnly=true):
+// it reduces to a dependency-generation tick. Otherwise (tile, broadcast_to)
+// it takes the gap-fast kernel dispatch with the frozen shape override.
+// A declined slot falls back to the full path, which re-derives the shape and
+// surfaces any drift as an explicit error instead of a silent stale view.
+static bool valueDepGapSlotFastEligible(const NativeSlot& slot,
+                                        NDArray** outputSlots,
+                                        int totalOutputSlots,
+                                        NDArray** effectiveExternals,
+                                        int numExt, bool* tickOnly) {
+  *tickOnly = false;
+  if (slot.flags.isDynamicShape || slot.hasDynamicOutputSize()) return false;
+  if (!slot.shapeCacheValid() || slot.shapeCache.cachedOutputShapes.empty() ||
+      slot.shapeCache.cachedOutputShapes[0] == nullptr) {
+    return false;
+  }
+  if (slot.wiring.numInputs < 1 || slot.wiring.numOutputs < 1) return false;
+
+  const int outSi = slot.wiring.outputSlotIndices[0];
+  const int inSrc = slot.wiring.inputSourceIndices[0];
+  NDArray* currentOut = (outSi >= 0 && outSi < totalOutputSlots)
+                            ? outputSlots[outSi] : nullptr;
+  NDArray* input0 = nullptr;
+  if (inSrc >= 0 && inSrc < totalOutputSlots) {
+    input0 = outputSlots[inSrc];
+  } else if (inSrc < 0) {
+    const int extIdx = -(inSrc + 1);
+    if (extIdx >= 0 && extIdx < numExt) input0 = effectiveExternals[extIdx];
+  }
+  if (currentOut == nullptr || input0 == nullptr ||
+      !currentOut->hasValidShapeInfo() || !input0->hasValidShapeInfo() ||
+      currentOut->dataBuffer() == nullptr || input0->dataBuffer() == nullptr ||
+      !currentOut->dataBuffer()->isValid() || !input0->dataBuffer()->isValid()) {
+    return false;
+  }
+  const LongType* expectedShape = slot.shapeCache.cachedOutputShapes[0];
+  if (currentOut->dataType() != ArrayOptions::dataType(expectedShape) ||
+      !shape::shapeEquals(currentOut->shapeInfo(), expectedShape) ||
+      !shape::strideEquals(currentOut->shapeInfo(), expectedShape)) {
+    return false;
+  }
+  // A view/identity whose output aliases input0 has no device work: tick only.
+  if (slot.aliasesInput() && slot.wiring.numOutputs == 1 &&
+      currentOut->dataBuffer() == input0->dataBuffer()) {
+    *tickOnly = true;
+  }
+  return true;
+}
+
+// Range collector used by mergedCaptureGapIsAliasSafe: appends [ptr, ptr+bytes)
+// for a slot array, skipping null/empty/closed buffers.
+static void mergedCaptureCollectRange(NDArray* arr, std::vector<MergedCaptureDeviceRange>& out) {
+  if (arr == nullptr || arr->isEmpty()) return;
+  auto* db = arr->dataBuffer();
+  void* ptr = arr->specialBuffer();
+  if (db == nullptr || ptr == nullptr) return;
+  out.push_back({ptr, db->getLenInBytes()});
+}
+
+// Alias-safety gate for admitting a capture-safe gap into an ACTIVE merged
+// capture. Collects every device range the gap slots' ops touch via their wired
+// INPUT and OUTPUT arrays, and rejects the merge if any of those ranges
+// overlaps the output range of a unit that will execute LIVE during replay (a
+// REPLAY_UNIT_GAP unit that is not part of any merged group). Returns true when
+// the gap may be merged; false when it must stay live (with a diagnostic
+// emitted so the guard is observable).
+//
+// Soundness: op-internal workspace scalars cannot be enumerated exhaustively,
+// so ANY overlap touching a gap slot's wired input/output range is treated as
+// disqualifying. Leaving the gap live is always correct: the existing
+// non-merged path executes its slots natively during replay.
+static bool mergedCaptureGapIsAliasSafe(const ReplaySchedule& sched,
+                                        NativeSlot* slots,
+                                        NDArray** outputSlots,
+                                        int totalOutputSlots,
+                                        const ReplayScheduleUnit* candidateUnit,
+                                        int gapStartSlot,
+                                        int gapEndSlot) {
+  if (s_mergedCaptureGapAliasCheckDisabled()) return true;
+
+  // An established view/identity alias slot installs ZERO device work: its
+  // capture-time execution hits the exact-frozen-view reuse (no launch) and
+  // contributes 0 audit nodes, so the merged replay tick never marks its
+  // output device-actual and slotSkipsPostReplayFixup() never re-executes it.
+  // Its overlap with a live unit's output range is read-only aliasing of the
+  // producer graph the live unit itself rewrites; ordering is preserved by
+  // the single merged-capture stream. This includes value-dependent views
+  // (reshape with a shape tensor): their shape descriptor is sealed during
+  // warmup and isGapRangeCaptureSafe already classifies them as zero-compute
+  // capture-safe. Treating that alias as a conflict split 770 gaps live in
+  // the qwen decode plan and stranded 474 view/tile slots in per-unit ~2.8ms
+  // gap execution. A genuinely publishing slot (wrapper not yet aliasing its
+  // wired input, invalid buffers, multi-output) still fails this predicate
+  // and keeps the conservative overlap rejection; if such a slot cannot
+  // resolve at capture time the merged capture aborts loudly (the capture is
+  // the enforcement, this gate is only an admission hint).
+  auto establishedAliasSlot = [&](const NativeSlot& as) {
+    if (dsp_disable_view_fastpath()) return false;
+    if (!(as.isViewCapableOp() || as.isIdentityOp())) return false;
+    if (as.flags.isDynamicShape || as.hasDynamicOutputSize() ||
+        as.wiring.numOutputs != 1 || as.wiring.numInputs < 1) {
+      return false;
+    }
+    const int aOut = as.wiring.outputSlotIndices[0];
+    const int aIn = as.wiring.inputSourceIndices[0];
+    if (aOut < 0 || aOut >= totalOutputSlots || aIn < 0 || aIn >= totalOutputSlots) {
+      return false;
+    }
+    NDArray* outArr = outputSlots[aOut];
+    NDArray* inArr = outputSlots[aIn];
+    return outArr != nullptr && inArr != nullptr &&
+           outArr->dataBuffer() != nullptr &&
+           outArr->dataBuffer() == inArr->dataBuffer();
+  };
+
+  // 1) Collect the output ranges of all LIVE (unmerged gap) units — the units
+  //    that execute natively during replay and can rewrite those addresses.
+  //    The candidate unit itself is excluded: it is untagged (mergedGroupId
+  //    still -1) at both decision points and would trivially overlap itself.
+  std::vector<MergedCaptureDeviceRange> liveRanges;
+  for (const auto& lu : sched.units) {
+    if (&lu == candidateUnit) continue;               // candidate itself
+    if (lu.mergedGroupId >= 0) continue;              // merged → replayed by graph
+    if (lu.kind != REPLAY_UNIT_GAP) continue;         // unmerged island → own handle
+    for (int s = lu.startSlot; s <= lu.endSlot; s++) {
+      if (s < 0) continue;
+      const NativeSlot& ls = slots[s];
+      for (int o = 0; o < ls.wiring.numOutputs; o++) {
+        int si = ls.wiring.outputSlotIndices[o];
+        if (si < 0 || si >= totalOutputSlots) continue;
+        mergedCaptureCollectRange(outputSlots[si], liveRanges);
+      }
+    }
+  }
+  if (liveRanges.empty()) return true;                 // nothing executes live
+
+  // 2) Compare every device range the candidate gap slots touch (inputs AND
+  //    outputs) against those live ranges.
+  for (int s = gapStartSlot; s <= gapEndSlot; s++) {
+    if (s < 0) continue;
+    const NativeSlot& gs = slots[s];
+    if (establishedAliasSlot(gs)) continue;
+    for (int wi = 0; wi < gs.wiring.numInputs; wi++) {
+      int srcIdx = gs.wiring.inputSourceIndices[wi];
+      NDArray* arr = nullptr;
+      if (srcIdx >= 0 && srcIdx < totalOutputSlots) {
+        arr = outputSlots[srcIdx];
+      }
+      if (arr == nullptr) continue;
+      auto* db = arr->dataBuffer();
+      void* ptr = arr->specialBuffer();
+      if (db == nullptr || ptr == nullptr) continue;
+      size_t bytes = db->getLenInBytes();
+      if (bytes == 0) continue;
+      for (const auto& lr : liveRanges) {
+        if (mergedCaptureRangesOverlap(ptr, bytes, lr.ptr, lr.bytes)) {
+          DSP_DIAG(EXECUTE,
+                   "MERGED_CAPTURE_GAP_ALIAS: gap [%d-%d] slot=%d ptr=%p len=%zu overlaps "
+                   "live unit output — leaving gap live",
+                   gapStartSlot, gapEndSlot, s, ptr, bytes);
+          return false;
+        }
+      }
+    }
+    for (int o = 0; o < gs.wiring.numOutputs; o++) {
+      int si = gs.wiring.outputSlotIndices[o];
+      if (si < 0 || si >= totalOutputSlots) continue;
+      NDArray* out = outputSlots[si];
+      if (out == nullptr) continue;
+      auto* db = out->dataBuffer();
+      void* ptr = out->specialBuffer();
+      if (db == nullptr || ptr == nullptr) continue;
+      size_t bytes = db->getLenInBytes();
+      if (bytes == 0) continue;
+      for (const auto& lr : liveRanges) {
+        if (mergedCaptureRangesOverlap(ptr, bytes, lr.ptr, lr.bytes)) {
+          DSP_DIAG(EXECUTE,
+                   "MERGED_CAPTURE_GAP_ALIAS: gap [%d-%d] slot=%d ptr=%p len=%zu overlaps "
+                   "live unit output — leaving gap live",
+                   gapStartSlot, gapEndSlot, s, ptr, bytes);
+          return false;
+        }
+      }
+    }
+  }
+  return true;
+}
+
 static bool isGapRangeCaptureSafe(NativeSlot* slots, int startSlot, int endSlot, bool mergeViews) {
   // A gap is safe to merge into a CUDA graph capture if ALL its slots either:
   //   (a) are zero-compute ops (views, identity, frozen constants), OR
@@ -1399,6 +1690,12 @@ Status NativeDynamicShapePlan::compositeReplay(
 
   using Clock = std::chrono::high_resolution_clock;
   auto t0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
+
+  // Admission must supply an executable schedule, never a cleared capture.
+  // An empty schedule is not a successful replay of a non-empty segment.
+  if (sched.units.empty()) {
+    return setGpuBackendFailureDetail(seg, "composite replay admitted an empty schedule");
+  }
 
   // Entry: log unit count and type breakdown so the replay trace is self-contained.
   {
@@ -1790,35 +2087,38 @@ Status NativeDynamicShapePlan::compositeReplay(
     }
   }
 
+#if HAVE_TRITON
+  // Alias copyback destinations are baked even in unmerged island graphs.
+  // Validate the entire schedule before any island, gap or output prezero runs.
+  if (auto* backend = dynamic_cast<TritonGraphBackend*>(seg.resolvedGraphBackend)) {
+    auto aliasStatus = backend->preflightAliasBindings(
+        seg, effectiveExternals, numExt, outputSlots_, totalOutputSlots_);
+    if (aliasStatus != Status::OK) return aliasStatus;
+  }
+#endif
+
   // LIFECYCLE: address drift with merged CUDA graph handles.
   // Merged graphs have device pointers baked into captured kernel nodes — they
   // cannot be updated via arg table refresh. Launching a merged graph with stale
   // addresses causes SIGSEGV in cudaGraphLaunch.
   //
-  // POLICY (user directive): replay is for stable graphs only. A device shift
-  // (memory failover relocated a graph-consumed buffer) BREAKS the replay
-  // contract for this segment permanently. Do NOT invalidate/recapture/retry —
-  // that loop re-warms, re-captures, and crashes in stream state. Instead:
-  // forbid replay for this segment once, report the shift transparently, and
-  // let every subsequent execution take the slot-by-slot path. Scheduling
-  // across devices is the caller's responsibility; the framework reacts.
+  // This is still pre-launch: no schedule unit or output prezero has run.
+  // Return the rebuild disposition BEFORE destroying captures. `sched` aliases
+  // seg.exec.compositeReplaySchedule, which invalidation clears; continuing here
+  // would execute zero units and incorrectly report the previous outputs as OK.
+  // Both dispatch callers consume MAYBE through the segment-local rebuild lifecycle
+  // after this function's stream/workspace guards unwind. That lifecycle executes
+  // this invocation once and rebuilds the owning backend, without banning recapture
+  // or changing the requested execution mode. Address drift alone is not evidence
+  // of a device shift (same-shape external replacements also change addresses).
   if (driftDetected && !sched.mergedReplayHandles.empty()) {
-    if (!seg.exec.replayForbidden) {
-      seg.exec.replayForbidden = true;
-      seg.exec.replayForbiddenReason = "address_drift_device_shift";
-      DSP_DIAG(EXECUTE,
-               "DEVICE_SHIFT_REPLAY_FORBIDDEN: seg[%d-%d] address drift with %d merged "
-               "graph handles — a buffer moved across devices (memory shift). Replay is "
-               "for stable graphs only; this segment will execute slot-by-slot for the "
-               "rest of the plan. execCount=%d",
-               seg.def.startSlot, seg.def.endSlot,
-               static_cast<int>(sched.mergedReplayHandles.size()),
-               seg.exec.executionCount);
-    }
-    // Invalidate the now-unusable captures without recapturing; fall through to
-    // the slot-by-slot path for this invocation.
-    SegmentLifecycle::invalidateSegmentCaptures(
-        this, seg, seg.exec.replayForbiddenReason);
+    DSP_DIAG(EXECUTE,
+             "COMPOSITE_REPLAY_PREFLIGHT_REBUILD: seg[%d-%d] address drift with %d merged "
+             "graph handles — returning before any replay unit launches execCount=%d",
+             seg.def.startSlot, seg.def.endSlot,
+             static_cast<int>(sched.mergedReplayHandles.size()),
+             seg.exec.executionCount);
+    return Status::MAYBE;
   }
 
   // Refresh arg tables + D2D copy (skip when generation matches — fast replay path)
@@ -2120,6 +2420,10 @@ Status NativeDynamicShapePlan::compositeReplay(
       }
       auto tML0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point();
       bool launchOk = sched.mergedReplayHandles[mgId]->replay(stream);
+#if HAVE_TRITON
+      if (auto* backend = dynamic_cast<TritonGraphBackend*>(seg.resolvedGraphBackend))
+        backend->recordArgumentSubmission(seg, stream);
+#endif
       checkReplayCudaError("merged-launch", unit.startSlot, unit.endSlot);
       long long mergedUnitUs = 0;  // per-unit ledger (G3): launch + fixup for this leader
       if (executionTimingEnabled_) {
@@ -2299,7 +2603,13 @@ Status NativeDynamicShapePlan::compositeReplay(
               break;
             }
             const auto& viewSlot = slots_[slotIdx];
-            if (viewSlot.flags.isDynamicShape || viewSlot.hasValueDependentShape() ||
+            // NOTE: hasValueDependentShape() alone is NOT a rejection reason —
+            // value-dependent views (reshape with a shape tensor) with an
+            // intact frozen publication are legitimate VIEW_TICKs; the checks
+            // below (buffer identity, shape/stride/dtype cache equality)
+            // validate them per step. Only a genuinely dynamic output extent
+            // disqualifies the tick outright.
+            if (viewSlot.flags.isDynamicShape || viewSlot.hasDynamicOutputSize() ||
                 viewSlot.wiring.numInputs < 1 || viewSlot.wiring.numOutputs < 1) {
               cachedViewActionsValid = false;
               break;
@@ -2395,9 +2705,20 @@ Status NativeDynamicShapePlan::compositeReplay(
               // is established in later steps, demote to VIEW_TICK to skip full op dispatch.
               if (!viewFastpathDisabled && executeCount_ >= 4 && skipPtrTracking) {
                 auto& slot = slots_[active.slotIdx];
-                if (!slot.flags.isDynamicShape && !slot.hasValueDependentShape() &&
+                // Value-dependent views (reshape with shape tensor) qualify
+                // too, but only via the full frozen-publication proof: buffer
+                // identity alone does not prove the installed wrapper matches
+                // the sealed output extent. Non-value-dependent views keep the
+                // historical buffer-identity-only demotion.
+                bool vdDemoTick = false;
+                const bool vdDemoEligible = slot.hasValueDependentShape()
+                    ? valueDepGapSlotFastEligible(slot, outputSlots_, totalOutputSlots_,
+                                                  effectiveExternals, numExt, &vdDemoTick)
+                    : false;
+                if (!slot.flags.isDynamicShape && !slot.hasDynamicOutputSize() &&
                     slot.isViewCapableOp() && slot.wiring.numInputs >= 1 &&
-                    slot.wiring.numOutputs >= 1) {
+                    slot.wiring.numOutputs >= 1 &&
+                    (!slot.hasValueDependentShape() || (vdDemoEligible && vdDemoTick))) {
                   int outSi = slot.wiring.outputSlotIndices[0];
                   if (outSi >= 0 && outSi < totalOutputSlots_) {
                     NDArray* currentOut = outputSlots_[outSi];
@@ -2430,8 +2751,28 @@ Status NativeDynamicShapePlan::compositeReplay(
               // shapes need the full path; shape-stable descendants can use the
               // frozen gap executor.
               auto& activeSlot = slots_[active.slotIdx];
+              // Value-dependent VIEW/COPY slots (reshape with shape tensor,
+              // tile with multiples) used to be routed through the full
+              // shape-aware executeSlot unconditionally. In REPLAYING the
+              // extent is contractual and its per-step re-proof is a blocking
+              // D2H against the replay stream (~2.8ms/slot measured). When the
+              // frozen publication is intact (host-metadata check only), the
+              // slot re-uses the frozen shape: aliases tick, copies dispatch
+              // via executeSlotGapFast. Genuinely dynamic-extent slots keep
+              // the full shape-aware path so drift stays a loud error.
+              bool vdTickOnly = false;
+              // Gate matches the N12 demotion threshold: once shapes are frozen
+              // and pointers have settled, the frozen-publication proof replaces
+              // the per-step shape re-derivation.
+              const bool vdFastEligible =
+                  activeSlot.hasValueDependentShape() && !viewFastpathDisabled &&
+                  executeCount_ >= 4
+                      ? valueDepGapSlotFastEligible(
+                            activeSlot, outputSlots_, totalOutputSlots_,
+                            effectiveExternals, numExt, &vdTickOnly)
+                      : false;
               const bool needsShapeAwareGapExec =
-                  activeSlot.hasValueDependentShape();
+                  activeSlot.hasValueDependentShape() && !vdFastEligible;
               void* shapeAwareOutputBufsBefore[NativeDynamicShapePlan::MAX_OUTPUTS_PER_SLOT];
               if (needsShapeAwareGapExec) {
                 snapshotSlotOutputBuffers(activeSlot, outputSlots_, totalOutputSlots_,
@@ -2446,7 +2787,23 @@ Status NativeDynamicShapePlan::compositeReplay(
                   executeCount_ >= 5 && skipPtrTracking && !needsShapeAwareGapExec;
               auto tGapSlot0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
               Status slotStatus;
-              if (useGapFastPath) {
+              if (vdFastEligible && vdTickOnly) {
+                // Established view/identity alias: metadata-only publication.
+                // The value was not recomputed and no kernel runs — advance the
+                // dependency generation and device-actuality tick exactly as
+                // the VIEW_TICK action does. Every step the shape/stride/dtype
+                // equality above held was re-verified this step.
+                int outSi = activeSlot.wiring.outputSlotIndices[0];
+                if (outSi >= 0 && outSi < totalOutputSlots_ && outputSlots_[outSi] != nullptr) {
+                  outputSlots_[outSi]->tickWriteDevice();
+                  dirtySlotGenerations_[outSi] = currentDirtyGeneration_;
+                }
+                activeSlot.bumpGeneration();
+                slotStatus = Status::OK;
+                DSP_DIAG_SLOT(EXECUTE, active.slotIdx,
+                    "GAP_VD_VIEW_TICK: slot=%d op=%s executeCount=%d",
+                    active.slotIdx, activeSlot.ident.opName.c_str(), executeCount_);
+              } else if (useGapFastPath) {
                 slotStatus = executeSlotGapFast(active.slotIdx, effectiveExternals, numExt);
               } else {
                 if (needsShapeAwareGapExec && executeCount_ >= 5) {
@@ -2462,10 +2819,10 @@ Status NativeDynamicShapePlan::compositeReplay(
               if (executionTimingEnabled_) {
                 auto slotUs = std::chrono::duration_cast<std::chrono::microseconds>(
                                   Clock::now() - tGapSlot0).count();
-                if (useGapFastPath) {
+                if (useGapFastPath || (vdFastEligible && !vdTickOnly)) {
                   tGapFastSlotUs += slotUs;
                   nGapFastSlots++;
-                } else {
+                } else if (!vdTickOnly) {
                   tGapShapeAwareSlotUs += slotUs;
                   nGapShapeAwareSlots++;
                 }
@@ -2618,6 +2975,64 @@ Status NativeDynamicShapePlan::compositeReplay(
         }
 
         // ── Full executeSlot path ──
+        // Value-dependent view/copy slots with an intact frozen publication
+        // bypass the full shape-aware executor here exactly like in the cached
+        // fast path above: aliases tick (no device work), copies dispatch via
+        // executeSlotGapFast with the frozen shape override. The cached-path
+        // validity checks run every step on both paths, so classification and
+        // steady state observe the same conditions.
+        {
+          NativeSlot& clsSlot = slots_[s];
+          bool clsTickOnly = false;
+          const bool clsFast =
+              clsSlot.hasValueDependentShape() && !viewFastpathDisabled &&
+              executeCount_ >= 4 &&
+              valueDepGapSlotFastEligible(clsSlot, outputSlots_, totalOutputSlots_,
+                                          effectiveExternals, numExt, &clsTickOnly);
+          if (clsFast && clsTickOnly) {
+            int clsOutSi = clsSlot.wiring.outputSlotIndices[0];
+            if (clsOutSi >= 0 && clsOutSi < totalOutputSlots_ &&
+                outputSlots_[clsOutSi] != nullptr) {
+              outputSlots_[clsOutSi]->tickWriteDevice();
+              dirtySlotGenerations_[clsOutSi] = currentDirtyGeneration_;
+            }
+            clsSlot.bumpGeneration();
+            if (buildingCache) {
+              cachedActiveGapSlotsMap_[gapCacheKey].push_back({s, ActiveSlotAction::VIEW_TICK, -1, clsOutSi});
+            }
+            if (executionTimingEnabled_) nExecSlots++;
+            if (collectExecOpNames) {
+              execOpCounts[clsSlot.ident.opName]++;
+            }
+            continue;
+          }
+          if (clsFast) {
+            auto clsStatus = executeSlotGapFast(s, effectiveExternals, numExt);
+            if (clsStatus != Status::OK) {
+              DSP_DIAG(EXECUTE,
+                       "COMPOSITE_REPLAY: gap slot %d FAILED status=%s (%d)",
+                       s, statusName_gpu(clsStatus), static_cast<int>(clsStatus));
+              setGpuBackendFailureDetail(
+                  seg, "composite replay gap slot " +
+                           std::to_string(s) + " (" +
+                           clsSlot.ident.opName + ") returned " +
+                           statusName_gpu(clsStatus) + " (" +
+                           std::to_string(static_cast<int>(clsStatus)) + ")");
+              return clsStatus;
+            }
+            if (buildingCache) {
+              cachedActiveGapSlotsMap_[gapCacheKey].push_back({s, ActiveSlotAction::EXECUTE, -1, -1});
+            }
+            if (executionTimingEnabled_) {
+              nGapFastSlots++;
+              nExecSlots++;
+            }
+            if (collectExecOpNames) {
+              execOpCounts[clsSlot.ident.opName]++;
+            }
+            continue;
+          }
+        }
         void* outputBufsBefore[NativeDynamicShapePlan::MAX_OUTPUTS_PER_SLOT];
         if (!skipPtrTracking && !gapOutputPointersChanged) {
           snapshotSlotOutputBuffers(slots_[s], outputSlots_, totalOutputSlots_,
@@ -2768,6 +3183,10 @@ Status NativeDynamicShapePlan::compositeReplay(
 
       auto tIL0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point();
       bool launchOk = sched.compositeReplayHandles[idx]->replay(stream);
+#if HAVE_TRITON
+      if (auto* backend = dynamic_cast<TritonGraphBackend*>(seg.resolvedGraphBackend))
+        backend->recordArgumentSubmission(seg, stream);
+#endif
       if (executionTimingEnabled_) {
         long long ilUs = std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - tIL0).count();
         tIslandLaunchUs += ilUs;
@@ -2829,7 +3248,7 @@ Status NativeDynamicShapePlan::compositeReplay(
     auto unitsUs = actTickUs - prezeroUs;
     DSP_DIAG(TIMING,
              "COMPOSITE_REPLAY_TIMING: total=%lldus prezero=%lldus units=%lldus "
-             "execCount=%d mergedGroups=%d islands=%d "
+             "execCount=%d mergedGroups=%d islandsSched=%d islandsLaunched=%d "
              "BREAKDOWN: mergedLaunch=%lldus(%d) mergedDirty=%lldus gapExec=%lldus(%d) "
              "islandLaunch=%lldus(%d) islandDirty=%lldus argRefresh=%lldus(%d) "
              "GAP_SLOTS: exec=%d tick=%d bgemm=%d "
@@ -2837,6 +3256,7 @@ Status NativeDynamicShapePlan::compositeReplay(
              totalUs, prezeroUs, unitsUs, seg.exec.executionCount,
              static_cast<int>(sched.mergedReplayHandles.size()),
              static_cast<int>(sched.compositeReplayHandles.size()),
+             nIslandLaunches,
              tMergedLaunchUs, nMergedLaunches, tMergedDirtyUs,
              tGapExecUs, nGapUnits,
              tIslandLaunchUs, nIslandLaunches, tIslandDirtyUs,
@@ -4156,22 +4576,15 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
       // Pre-capture batch-zero: zero all registered buffers BEFORE beginCapture.
       // These cudaMemsetAsync calls execute normally on the stream (not captured).
       //
-      // IMPORTANT: Only for MONOLITHIC capture. For COMPOSITE capture, skip batch-zero
-      // here because composite capture re-executes gap ops between islands, and those
-      // gap ops need valid intermediate results from the warmup as inputs. Batch-zero
-      // would destroy those intermediate values (zeroing gap op input buffers), causing
-      // gap ops to read zeros and produce wrong results that propagate through the
-      // entire model. Composite replay handles zeroing correctly: pre-replay batch-zero
-      // zeros outputs before each replay, and gap ops call nullify() on their own outputs.
+      // Only MONOLITHIC preparation may batch-zero here. Composite recording
+      // returns this invocation's completed warmup result, including live-gap-only
+      // schedules. Zeroing now would destroy that result. Future composite replay
+      // performs its own zeroing before executing producers and consumers in order.
       //
       bool willUseCompositeCapture = false;
 #if HAVE_TRITON
-      {
-       auto& schedCheck = seg.exec.compositeReplaySchedule;
-       for (auto& u : schedCheck.units) {
-         if (u.kind == REPLAY_UNIT_TRITON_ISLAND) { willUseCompositeCapture = true; break; }
-       }
-     }
+      willUseCompositeCapture = ctx.tritonBackend != nullptr &&
+          !ctx.nativeOnlyGraphCapture && !seg.exec.compositeReplaySchedule.units.empty();
 #endif
       if (Environment::getInstance().dspBatchZero() && !batchZeroEntries_.empty() &&
           !willUseCompositeCapture) {
@@ -4183,7 +4596,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
         DSP_DIAG(MEMORY, "pre-capture batch-zero: %d buffers zeroed via cudaMemsetAsync (fill engines, before beginCapture)",
                  static_cast<int>(batchZeroEntries_.size()));
       } else if (willUseCompositeCapture) {
-        DSP_DIAG(MEMORY, "pre-capture batch-zero SKIPPED for composite capture — gap ops need valid warmup data as inputs");
+        DSP_DIAG(MEMORY, "pre-capture batch-zero SKIPPED for composite recording — preserve completed warmup output");
       }
 
       // ── Save warmup output slot pointers BEFORE capture ─────────────────
@@ -4352,6 +4765,18 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
       }
 #endif
 
+#if HAVE_TRITON
+      // Native warmup establishes alias/view metadata but does not run Triton's
+      // launcher. Resolve views against the staged inputs, not their old raw
+      // externals, before preparing scratch and immutable H2D source rows.
+      if (auto* backend = dynamic_cast<TritonGraphBackend*>(seg.resolvedGraphBackend)) {
+        if (refreshStaleViewWrappersInSegment(seg, effectiveExternalsForCapture, numExt) < 0)
+          return setGpuBackendFailureDetail(seg, "Triton capture alias/view publication failed");
+        backend->prepareAliasBindingsForCapture(seg, effectiveExternalsForCapture,
+            numExt, outputSlots_, totalOutputSlots_, stream);
+      }
+#endif
+
       // ── MERGED COMPOSITE CAPTURE: island merging through capture-safe gaps ──
       // When a segment has interleaved gap ops between Triton islands, we merge
       // adjacent islands through capture-safe gaps (gaps where all ops launch CUDA
@@ -4402,11 +4827,25 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
          DeviceCaptureGuard compositeCaptureGuard(
              static_cast<PlanExecutionContext*>(activeExecutionContext()));
          if (!compositeCaptureGuard.acquired()) {
-           // Another thread is capturing — skip capture this iteration.
-           // didCompositeCapture stays false; falls through to monolithic path (which
-           // will also fail try_lock) then to direct slot-by-slot execution.
+           // Warmup already completed this invocation. Contention postpones
+           // recording only; falling through would execute stateful gaps twice.
            DSP_DIAG(COMPILE, "COMPOSITE_CAPTURE_DEFER: seg[%d-%d] another thread capturing, will retry next exec",
                     seg.def.startSlot, seg.def.endSlot);
+           cudaError_t warmupSyncErr = cudaStreamSynchronize(ctx.cudaStr);
+           cleanupCaptureTlsState(true, static_cast<void*>(prevCaptureStream));
+           popPrimaryCtxIfPushed(didPushCtx, tritonCaptureDevice);
+           restoreCublasWorkspaceAfterCapture(stream);
+           restoreSlotStates(slots_, seg.def.startSlot, seg.def.endSlot, savedSlotPhasesTriton);
+           seg.exec.replayHandle.reset();
+           tritonOrderedRangeGuard.active = false;
+           TritonGraphBackend::clearOrderedRangeExecutor();
+           if (warmupSyncErr != cudaSuccess) {
+             return setGpuBackendFailureDetail(seg,
+                 "capture contention warmup synchronization failed: " +
+                 std::string(cudaGetErrorString(warmupSyncErr)));
+           }
+           seg.exec.executionCount++;
+           return Status::OK;
          } else {
          DSP_DIAG(COMPILE,
                   "COMPOSITE_CAPTURE_ENTER: seg[%d-%d] units=%d hasIsland=%d liveGapOnly=%d execCount=%d",
@@ -4510,7 +4949,9 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
            auto& unit = sched.units[unitIdx];
 
             if (unit.kind == REPLAY_UNIT_GAP) {
-              if (captureActive && isGapRangeCaptureSafe(slots_, unit.startSlot, unit.endSlot, mergeViewsNow)) {
+              if (captureActive && isGapRangeCaptureSafe(slots_, unit.startSlot, unit.endSlot, mergeViewsNow) &&
+                  mergedCaptureGapIsAliasSafe(sched, slots_, outputSlots_, totalOutputSlots_,
+                                              &unit, unit.startSlot, unit.endSlot)) {
                 // ── MERGED CAPTURE: gap ops recorded on capture stream ──────
                 // tl_graphExecutionActive is already true from the preceding island.
                 // tl_dspGapStream = ctx.cudaStr makes cuBLAS et al. use capture stream.
@@ -4654,7 +5095,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                continue;  // Stay in capture — check next unit
              }
 
-               // Gap is NOT capture-safe or no capture active — run natively.
+               // Unmerged live gaps have already executed in warmup.
                // If capture was active, finalize the merged capture first.
                  if (captureActive) {
                   // End the merged capture
@@ -4885,7 +5326,9 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
              if (captureStatus == Status::OK && unitIdx + 1 < sched.units.size()) {
                auto& nextUnit = sched.units[unitIdx + 1];
                if (nextUnit.kind == REPLAY_UNIT_GAP &&
-                   isGapRangeCaptureSafe(slots_, nextUnit.startSlot, nextUnit.endSlot, mergeViewsNow)) {
+                   isGapRangeCaptureSafe(slots_, nextUnit.startSlot, nextUnit.endSlot, mergeViewsNow) &&
+                   mergedCaptureGapIsAliasSafe(sched, slots_, outputSlots_, totalOutputSlots_,
+                                               &nextUnit, nextUnit.startSlot, nextUnit.endSlot)) {
                  // Next gap can be captured — don't end capture yet
                  keepCaptureOpen = true;
                }
@@ -5054,6 +5497,21 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
             const LongType capturedCreateValueKey =
                 computeCreateOpValueKey(seg, effectiveExternalsForCapture, numExt);
             if (seg.exec.segPhase.needsCapture()) {
+              // Record baked device-managed addresses against the exact
+              // externals table this capture used (staged or raw per input),
+              // before markCaptured seals the graph.
+              recordManagedExtBakedAddrsForCapture(seg, effectiveExternalsForCapture,
+                                                   numExt);
+              // Pin every device address this capture baked in (weights /
+              // intermediates / outputs) so no later close()/rebind/pool-reuse
+              // can hand a baked block to another plan between replays. The
+              // raw-CUDA capture path pins at seal (cudagraph.cu); the Triton
+              // path previously only RECORDED baked addresses without pinning,
+              // letting the pool recycle those blocks to concurrent plans —
+              // observed as 32 REBOUND drifts + stale reads on the nested MTP
+              // predictor (Qwen3.6 K=1).
+              pinSegmentGraphBakedSlots(seg, effectiveExternalsForCapture, numExt,
+                                        /*pinOwnedOutputs=*/true);
               SegmentLifecycle::markCaptured(seg.exec, ctx.segInputAddrKey, capturedCreateValueKey,
                   computeSlotAddrHash(slots_, numSlots_, outputSlots_, seg.def.startSlot,
                              seg.def.endSlot, totalOutputSlots_),
@@ -5265,7 +5723,11 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
              // Prevent fallthrough to monolithic capture — the segment state
              // was already cleaned up by abortCapture. Monolithic would try to
              // capture again with a stale replayHandle and fail.
-             didCompositeCapture = true;
+             // abortCapture above has restored capture resources and slot state.
+             // Recording preserved the completed warmup result: do not execute
+             // stateful gaps a second time through the direct-dispatch path.
+             seg.exec.executionCount++;
+             return Status::OK;
            } else {
              SegmentLifecycle::markFailed(
                  seg.exec, "composite_capture_failed_non_oom",
@@ -5561,6 +6023,13 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                          "NATIVE_ONLY_CAPTURE: pre-capture view slot %d (%s) FAILED status=%s (%d)",
                          s, slots_[s].ident.opName.c_str(),
                          statusName_gpu(viewStatus), static_cast<int>(viewStatus));
+                // Fail closed: this slot's output feeds captured compute nodes.
+                // Capturing without it bakes stale/garbage state into every
+                // replay (deterministic wrong values from the first post-capture
+                // step). Surface the failure instead of capturing a known-bad
+                // graph — the caller invalidates and retries next execution.
+                captureStatus = viewStatus;
+                break;
               }
               viewPreExec++;
             } else {
@@ -5614,6 +6083,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
           int frozenSkipped = 0;
           int viewSkipped = 0;
           int createOpSkipped = 0;
+          std::vector<int> excludedViewSlots;
           bool nativeRecaptureOk = handle->beginCapture(ctx.cudaStr, cudaStreamCaptureModeThreadLocal);
           if (!nativeRecaptureOk) {
             DSP_DIAG(EXECUTE, "NATIVE_ONLY_CAPTURE: beginCapture for native re-capture FAILED");
@@ -5658,6 +6128,14 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                       numExt, totalOutputSlots_) &&
                   slots_[s].wiring.numInputs >= 1) {
                 viewSkipped++;
+                // Record the slot so monolithic replay executes it LIVE before
+                // cudaGraphLaunch (same contract as createOpsExcludedFromGraph).
+                // The captured graph reads this slot's output buffer through
+                // baked-in node arguments but never writes it. A materializing
+                // view slot (reshape of a non-contiguous permute) whose output
+                // buffer was recycled from an in-graph producer's output would
+                // otherwise replay stale/clobbered values indefinitely.
+                excludedViewSlots.push_back(s);
                 continue;
               }
               // Skip value-shape create ops — already executed pre-capture above.
@@ -5709,6 +6187,17 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                                                     createOpSkipped);
             DSP_DIAG(EXECUTE, "NATIVE_ONLY_CAPTURE: %d create ops excluded — will execute live at each replay",
                      createOpSkipped);
+          }
+          // Record excluded view/identity slots so replay executes them live
+          // before cudaGraphLaunch. Without this the captured graph replays
+          // with whatever capture-time content those buffers hold — stale when
+          // an in-graph producer rewrites the same recycled buffer each replay.
+          if (!excludedViewSlots.empty()) {
+            seg.exec.markViewSlotsExcludedFromGraph(std::move(excludedViewSlots),
+                                                    "native_only_capture_live_views");
+            DSP_DIAG(EXECUTE, "NATIVE_ONLY_CAPTURE: %zu view/identity slots excluded — "
+                     "will execute live at each replay",
+                     seg.exec.excludedViewSlotIndices.size());
           }
           } // end nativeRecaptureOk
 
@@ -6018,6 +6507,10 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
           cudaGetDevice(&deviceId);
           cudaGetLastError();
           bool replayResult = seg.exec.replayHandle->replay(stream);
+#if HAVE_TRITON
+          if (auto* backend = dynamic_cast<TritonGraphBackend*>(seg.resolvedGraphBackend))
+            backend->recordArgumentSubmission(seg, stream);
+#endif
           if (!replayResult) {
             abortCapture(seg, true, didPushCtx, tritonCaptureDevice,
                         prevCaptureStream, savedSlotPhasesTriton, stream);
@@ -6077,6 +6570,16 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
               computeSegmentInputAddrKey(seg, effectiveExternalsForCapture, numExt);
           if (seg.exec.segPhase.needsCapture()) {
             const char* captureBackendName = nativeOnlyCapture ? "CUDA" : ctx.backendName;
+            // Record baked device-managed addresses against the exact externals
+            // table this capture used (staged or raw per input), before
+            // markCaptured seals the graph.
+            recordManagedExtBakedAddrsForCapture(seg, effectiveExternalsForCapture,
+                                                 numExt);
+            // Pin at seal — same contract as the raw-CUDA capture path:
+            // recording the baked baseline without a pool pin left every
+            // monolithically-captured block freeable by concurrent plans.
+            pinSegmentGraphBakedSlots(seg, effectiveExternalsForCapture, numExt,
+                                      /*pinOwnedOutputs=*/true);
             SegmentLifecycle::markCaptured(seg.exec, capturedInputAddrKey, capturedCreateValueKey,
                 computeSlotAddrHash(slots_, numSlots_, outputSlots_, seg.def.startSlot,
                              seg.def.endSlot, totalOutputSlots_),

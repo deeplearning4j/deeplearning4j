@@ -47,6 +47,32 @@ import java.util.*;
 @EqualsAndHashCode
 public class Mmul extends DynamicCustomOp {
 
+    /** Serialized iArg[3]: ordered K recurrence, +0 then explicit FMA, not a BLAS tuning hint. */
+    public enum Arithmetic {
+        LEGACY(0), SERIAL_FMA(1);
+        private final long argument;
+        Arithmetic(long argument) { this.argument = argument; }
+    }
+
+    /** Arguments are the sole authority; there is no mutable global or shadow policy field. */
+    @EqualsAndHashCode.Include
+    public Arithmetic arithmetic() {
+        long value = numIArguments() > 3 ? getIArgument(3) : 0;
+        Preconditions.checkState(value == 0 || value == 1, "Invalid matmul arithmetic: %s", value);
+        return value == 1 ? Arithmetic.SERIAL_FMA : Arithmetic.LEGACY;
+    }
+
+    public Mmul(SameDiff sd, SDVariable a, SDVariable b, MMulTranspose transpose, Arithmetic arithmetic) {
+        this(sd, a, b, transpose);
+        addIArgument(Objects.requireNonNull(arithmetic, "arithmetic").argument);
+    }
+
+    public Mmul(INDArray a, INDArray b, INDArray c, double alpha, double beta,
+                MMulTranspose transpose, Arithmetic arithmetic) {
+        this(a, b, c, alpha, beta, transpose == null ? MMulTranspose.allFalse() : transpose);
+        addIArgument(Objects.requireNonNull(arithmetic, "arithmetic").argument);
+    }
+
     protected MMulTranspose mt;
     protected double alpha = 1.0;
     protected double beta = 0.0;
@@ -197,6 +223,7 @@ public class Mmul extends DynamicCustomOp {
 
     @Override
     public void configureFromArguments() {
+        arithmetic(); // Validate restored contract without rewriting the serialized arguments.
         this.mt = MMulTranspose.builder()
                 .transposeA(numIArguments() > 0 && getIArgument(0) > 0)
                 .transposeB(numIArguments() > 1 && getIArgument(1) > 0)
@@ -306,6 +333,8 @@ public class Mmul extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradients) {
+        Preconditions.checkState(arithmetic() == Arithmetic.LEGACY,
+                "SERIAL_FMA is an inference arithmetic contract; its rounded recurrence has no matmul_bp contract");
         return Arrays.asList(new MmulBp(sameDiff, arg(0), arg(1), gradients.get(0), mt).outputVariables());
     }
 
@@ -340,6 +369,17 @@ public class Mmul extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
+        if (arithmetic() == Arithmetic.SERIAL_FMA) {
+            Preconditions.checkState(dataTypes != null && dataTypes.size() == 2 &&
+                            dataTypes.get(0) == dataTypes.get(1),
+                    "SERIAL_FMA requires matching operand storage dtypes: %s", dataTypes);
+            DataType type = dataTypes.get(0);
+            Preconditions.checkState(type == DataType.HALF || type == DataType.BFLOAT16 ||
+                            type == DataType.FLOAT || type == DataType.DOUBLE,
+                    "Unsupported SERIAL_FMA storage dtype: %s", type);
+            Preconditions.checkState(dArguments.isEmpty() || dArguments.get(0) == type,
+                    "SERIAL_FMA requires matching output storage dtype");
+        }
         if(!dArguments.isEmpty())
             return Collections.singletonList(dArguments.get(0));
         Preconditions.checkState(dataTypes != null && dataTypes.size() >= 2, "Expected at least 2 inputs to mmul op, got %s", dataTypes);

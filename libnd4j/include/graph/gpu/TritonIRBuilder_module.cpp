@@ -29,6 +29,7 @@
 #include <graph/gpu/TritonIRBuilder_internal.h>
 #include <graph/gpu/SectionTypeConfig.h>
 #include <graph/DspAnalysisUtils.h>
+#include <graph/gpu/TritonMatmulContract.h>
 #include <graph/DspDiagnostics.h>
 #include <array/ArrayOptions.h>
 #include <helpers/logger.h>
@@ -718,6 +719,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
                                             int* requestedOutputSlotIndices,
                                             int numRequestedOutputs) {
   TritonIRModule result;
+  if (!triton_matmul::supports(slots, startSlot, endSlot, outputSlots, totalOutputSlots,
+                              externalInputs, numExternalInputs)) return result;
   int segSize = endSlot - startSlot + 1;
 
   // Pre-compilation feasibility check — bail before MLIR allocation if infeasible
@@ -1467,17 +1470,18 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
             normPaddedRowLen = 1;
             while (normPaddedRowLen < rowLen) normPaddedRowLen <<= 1;
             blockSize = static_cast<int>(std::min(normPaddedRowLen, (int64_t)4096));
-            // R2: rows wider than the 4096 block cap get only their first 4096 elements
-            // reduced — the softmax/normalization is truncated (wrong results). Latent today
-            // (attention is flash-tiled; vocab softmax is host-side, so norm rows stay <=4096),
-            // but record it via the COMPILE diagnostic category (consistent with the norm diags
-            // below) if a wide-row model ever hits this path, so the truncation is queryable
-            // rather than silent.
+            // R2 update: rows wider than the 4096 launch block cap are NOT truncated.
+            // Loads/stores build normPaddedRowLen-wide tensors masked to logicalRowLen
+            // (zero-filled tail), and the emitter reduces the full tensor axis, so a
+            // blockSize clamp only lowers threads-per-block (grid covers the row).
+            // Verified bit-exact on Qwen3.6-27B (hidden=5120, padded 8192) by
+            // TestQwenNvfp4WindowParity#firstLayerRmsAndDenseGatesWindowVersusScalar
+            // plus end-to-end MTP token parity. This diagnostic is informational only.
             if (normPaddedRowLen > 4096) {
               DSP_DIAG(COMPILE, "TritonIRBuilder::buildModule: normalization padded row width %lld "
-                       "exceeds block cap 4096 — blockSize clamped to 4096, reducing only a 4096-wide "
-                       "prefix of each row (logical width %lld) and TRUNCATING the result; needs a "
-                       "chunk-loop lowering for correct wide-row normalization",
+                       "exceeds 4096 — blockSize clamped to 4096; loads/stores remain "
+                       "paddedRowLen-wide masked to logical width %lld (correct wide-row math, "
+                       "reduced thread count per block)",
                        (long long)normPaddedRowLen, (long long)normLogicalRowLen);
             }
             if (nRows > 1) {
@@ -2043,7 +2047,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         continue;
       }
 
-      auto opResult = emitBinaryElementwise(builder, loc, mapping, slot, lhsIt->second, rhsIt->second);
+      auto opResult = emitBinaryElementwise(builder, loc, mapping, slot, lhsIt->second, rhsIt->second,
+                                            resolveDtypeLocal(slot.wiring.inputSourceIndices[0]));
       opResult = emulateNativePrecision(opResult, si);
 
       // Store result SSA value for each output slot
@@ -3190,7 +3195,12 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           auto cPtr = getSlotArgPtr(cSlot);
 
           if (aPtr && bPtr && cPtr) {
-            emitPerElementMatmul(builder, loc, pid, blockSize, aPtr, bPtr, cPtr, M, N, K);
+            const bool serial = dsp::hasNonLegacyMatmulArithmetic(slot);
+            emitPerElementMatmul(builder, loc, pid, blockSize, aPtr, bPtr, cPtr, M, N, K,
+                serial ? &slot : nullptr,
+                serial ? triton_matmul::resolve(aSrc, outputSlots, totalOutputSlots, externalInputs, numExternalInputs) : nullptr,
+                serial ? triton_matmul::resolve(bSrc, outputSlots, totalOutputSlots, externalInputs, numExternalInputs) : nullptr,
+                serial ? triton_matmul::resolve(cSlot, outputSlots, totalOutputSlots, externalInputs, numExternalInputs) : nullptr);
 
             // Load result back for downstream SSA consumers
             DataType outDtype = FLOAT32;
@@ -3444,24 +3454,45 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         }
 
         // GGUF in-graph KV-cache contract (dot_product_attention_v2 with a LIVE
-        // keyCache at input[5], cache_position at input[7], additive bias at
-        // input[8]): the op writes current K/V into the cache in-op and attends
-        // past+current under the bias. The fused emission binds K/V to the
-        // CURRENT tensors unless 3D-Q dual-buffer mode engages — for rank-4
-        // (BSHD) Q it cannot express the cache read (the BSHD cache also fails
-        // the BHSD past_key heuristic above), and emitting silently produces
-        // cacheless window self-attention: the attention layers go blind to the
-        // committed past (decode corruption, token-visible at W>1). Reject so
-        // the slot executes natively until rank-4 dual-buffer emission exists.
-        // Prefill is unaffected: its cache inputs are EMPTY placeholders.
-        if (!useDualBuffer && slot.wiring.numInputs > 5 &&
-            slot.ident.opName.find("dot_product_attention_v2") != std::string::npos) {
-          NDArray* liveKvCache = resolveArr(slot.wiring.inputSourceIndices[5]);
-          if (liveKvCache != nullptr && !liveKvCache->isEmpty() && liveKvCache->lengthOf() > 0) {
-            DSP_DIAG(JIT, "ATTN slot=%d: live KV cache at input[5] with rank-4 Q "
-                      "(qIs3D=%d hasPastKv=%d) — cache read not expressible by the "
-                      "fused emission, returning as non-compilable (native fallback)",
-                      si, qIs3D ? 1 : 0, hasPastKv ? 1 : 0);
+        // keyCache at input[5], valueCache at input[6], cache_position device
+        // scalar at input[7], additive bias at input[8]): the op writes current
+        // K/V into the cache at the device-read position and attends
+        // past+current. Rank-4 BSHD decode is now handled by the dedicated
+        // GGUF decode emitter (runtime boundary from the position scalar +
+        // in-kernel scatter + dual read from cache/producers). The legacy
+        // constant-boundary dual-buffer mode remains for 3D-Q ONNX MHA.
+        bool ggufDecodeKv = false;
+        int keyCacheSrc = -1, valueCacheSrc = -1, cachePosSrc = -1;
+        if (!useDualBuffer && isDpaV2 && slot.wiring.numInputs > 7) {
+          NDArray* kcArr = resolveArr(slot.wiring.inputSourceIndices[5]);
+          NDArray* vcArr = resolveArr(slot.wiring.inputSourceIndices[6]);
+          NDArray* cpArr = resolveArr(slot.wiring.inputSourceIndices[7]);
+          bool liveKv = (kcArr != nullptr && !kcArr->isEmpty() && kcArr->lengthOf() > 0)
+                      && (vcArr != nullptr && !vcArr->isEmpty() && vcArr->lengthOf() > 0)
+                      && (cpArr != nullptr && !cpArr->isEmpty() && cpArr->lengthOf() > 0);
+          // The dedicated emitter needs the BSHD cache rank-4 layout and an
+          // INT64 position scalar (the native kvInPlaceWriteBSHD contract).
+          bool cacheShapeOk = liveKv && kcArr->rankOf() == 4
+              && static_cast<int>(kcArr->sizeAt(3)) == headDim
+              && cpArr->dataType() == INT64;
+          if (liveKv && cacheShapeOk) {
+            ggufDecodeKv = true;
+            keyCacheSrc = slot.wiring.inputSourceIndices[5];
+            valueCacheSrc = slot.wiring.inputSourceIndices[6];
+            cachePosSrc = slot.wiring.inputSourceIndices[7];
+            DSP_DIAG(JIT, "ATTN slot=%d: GGUF decode KV contract detected "
+                      "(keyCache src=%d [%lld,%lld,%lld,%lld], pos src=%d) — using "
+                      "emitGgufDecodeAttentionKernel (runtime boundary + scatter)",
+                      si, keyCacheSrc,
+                      (long long)kcArr->sizeAt(0), (long long)kcArr->sizeAt(1),
+                      (long long)kcArr->sizeAt(2), (long long)kcArr->sizeAt(3), cachePosSrc);
+          } else if (liveKv) {
+            // Live cache but a layout the dedicated emitter cannot express —
+            // keep the historical native fallback (correctness first).
+            DSP_DIAG(JIT, "ATTN slot=%d: live KV cache at input[5] (rank=%d dt=%d) not "
+                      "expressible by the GGUF decode emitter — native fallback",
+                      si, kcArr ? kcArr->rankOf() : -1,
+                      cpArr ? (int)cpArr->dataType() : -1);
             result.valid = false;
             return result;
           }
@@ -3717,7 +3748,42 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           return result;  // result.valid = false → C++ fallback
         }
 
-        if (qPtr && kPtr && vPtr && outPtr) {
+        if (ggufDecodeKv && qPtr && outPtr) {
+          // GGUF decode contract: bind the cache/valueCache/position buffers and
+          // emit the runtime-boundary kernel. The current K/V (producer tensors)
+          // bind through kSrc/vSrc — these are the pre-scatter inputs (Q,V,K order).
+          auto kCachePtrV = getSlotArgPtr(keyCacheSrc);
+          auto vCachePtrV = getSlotArgPtr(valueCacheSrc);
+          auto cachePosPtrV = getSlotArgPtr(cachePosSrc);
+          auto curKPtrV = getSlotArgPtr(kSrc);
+          auto curVPtrV = getSlotArgPtr(vSrc);
+          if (kCachePtrV && vCachePtrV && cachePosPtrV && curKPtrV && curVPtrV) {
+            NDArray* kcArrForMax = resolveArr(keyCacheSrc);
+            int cacheMaxSeq = (kcArrForMax && kcArrForMax->rankOf() == 4)
+                ? static_cast<int>(kcArrForMax->sizeAt(1)) : 0;
+            emitGgufDecodeAttentionKernel(builder, loc, qPtr,
+                                          curKPtrV, curVPtrV,
+                                          kCachePtrV, vCachePtrV, cachePosPtrV,
+                                          outPtr,
+                                          batchSize, numQHeads, numKvHeads,
+                                          seqQ, cacheMaxSeq, headDim, scale,
+                                          blockM, blockN,
+                                          biasPtr, biasShape);
+            // output[0] = attention result
+            DataType outDtype = FLOAT32;
+            NDArray* outArr = resolveArr(outSlot);
+            if (outArr) outDtype = outArr->dataType();
+            auto loaded = loadBackFromBuffer(outSlot, outDtype);
+            if (loaded) ssaValues[outSlot] = loaded;
+          } else {
+            DSP_DIAG(JIT, "ATTN slot=%d: GGUF decode binding failed "
+                      "(kCache=%d vCache=%d pos=%d curK=%d curV=%d) — native fallback",
+                      si, kCachePtrV ? 1 : 0, vCachePtrV ? 1 : 0, cachePosPtrV ? 1 : 0,
+                      curKPtrV ? 1 : 0, curVPtrV ? 1 : 0);
+            result.valid = false;
+            return result;
+          }
+        } else if (qPtr && kPtr && vPtr && outPtr) {
           emitFusedAttentionKernel(builder, loc, qPtr, kPtr, vPtr, outPtr,
                                    batchSize, numQHeads, numKvHeads, seqQ, seqK, headDim,
                                    scale, blockM, blockN, qIsBSHD, kIsBSHD,
@@ -4862,6 +4928,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
     int numRequestedOutputs) {
 
   TritonIRModule result;
+  if (!triton_matmul::supports(slots, startSlot, endSlot, outputSlots, totalOutputSlots,
+                              externalInputs, numExternalInputs)) return result;
   int segSize = endSlot - startSlot + 1;
   result.kernelName = generateKernelName(slots, startSlot, endSlot);
 
@@ -5726,6 +5794,21 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
         mlir::triton::EvictionPolicy::NORMAL, false);
   };
 
+  // A fused consumer must observe the same low-precision value as an
+  // unfused consumer loading the producer's output. Use cached shape dtype
+  // as well as live arrays: internal buffers may have been released already.
+  auto roundSectionOutput = [&](mlir::Value value, int outIdx) -> mlir::Value {
+    if (!value) return value;
+    auto computeType = getElementType(value);
+    auto dtype = resolveDtype(outIdx);
+    if (!mlir::isa<mlir::FloatType>(computeType) ||
+        (dtype != DataType::HALF && dtype != DataType::BFLOAT16)) return value;
+    auto storageType = getMLIRType(builder, dtype);
+    if (computeType == storageType) return value;
+    auto stored = castTo(builder, loc, value, storageType);
+    return castTo(builder, loc, stored, computeType);
+  };
+
   // ── Step 6: Emit sections ──
   const auto& opTable = getOpTable();
   int sectionBarrierCount = 0;
@@ -6182,7 +6265,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                 auto inputIt = ssaValues.find(slot.wiring.inputSourceIndices[0]);
                 if (inputIt != ssaValues.end()) {
                   auto opResult = emitUnaryElementwise(builder, loc, mapping, slot, inputIt->second, blockSize);
-                  for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
+                  for (int o = 0; o < slot.wiring.numOutputs; o++)
+                    ssaValues[slot.wiring.outputSlotIndices[o]] =
+                        roundSectionOutput(opResult, slot.wiring.outputSlotIndices[o]);
                 }
               }
               continue;
@@ -6190,8 +6275,11 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             auto lhsIt = ssaValues.find(slot.wiring.inputSourceIndices[0]);
             auto rhsIt = ssaValues.find(slot.wiring.inputSourceIndices[1]);
             if (lhsIt == ssaValues.end() || rhsIt == ssaValues.end()) continue;
-            auto opResult = emitBinaryElementwise(builder, loc, mapping, slot, lhsIt->second, rhsIt->second);
-            for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
+            auto opResult = emitBinaryElementwise(builder, loc, mapping, slot, lhsIt->second, rhsIt->second,
+                                                  resolveDtype(slot.wiring.inputSourceIndices[0]));
+            for (int o = 0; o < slot.wiring.numOutputs; o++)
+                    ssaValues[slot.wiring.outputSlotIndices[o]] =
+                        roundSectionOutput(opResult, slot.wiring.outputSlotIndices[o]);
           } else if (cat == TritonOpCategory::UNARY_ELEMENTWISE) {
             if (slot.wiring.numInputs < 1) continue;
             auto inputIt = ssaValues.find(slot.wiring.inputSourceIndices[0]);
@@ -6220,7 +6308,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             }
             if (!opResult)
               opResult = emitUnaryElementwise(builder, loc, mapping, slot, inputIt->second, blockSize);
-            for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
+            for (int o = 0; o < slot.wiring.numOutputs; o++)
+                    ssaValues[slot.wiring.outputSlotIndices[o]] =
+                        roundSectionOutput(opResult, slot.wiring.outputSlotIndices[o]);
           } else if (cat == TritonOpCategory::COMPARISON) {
             if (slot.wiring.numInputs < 1) continue;
             auto lhsIt = ssaValues.find(slot.wiring.inputSourceIndices[0]);
@@ -6244,7 +6334,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             } else {
               continue;
             }
-            for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
+            for (int o = 0; o < slot.wiring.numOutputs; o++)
+                    ssaValues[slot.wiring.outputSlotIndices[o]] =
+                        roundSectionOutput(opResult, slot.wiring.outputSlotIndices[o]);
           } else if (cat == TritonOpCategory::LOGICAL) {
             if (slot.wiring.numInputs < 1) continue;
             auto lhsIt = ssaValues.find(slot.wiring.inputSourceIndices[0]);
@@ -6255,7 +6347,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               if (rhsIt != ssaValues.end()) rhsVal = rhsIt->second;
             }
             auto opResult = emitLogicalOp(builder, loc, slot.ident.opName, lhsIt->second, rhsVal, blockSize);
-            for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
+            for (int o = 0; o < slot.wiring.numOutputs; o++)
+                    ssaValues[slot.wiring.outputSlotIndices[o]] =
+                        roundSectionOutput(opResult, slot.wiring.outputSlotIndices[o]);
           } else if (cat == TritonOpCategory::TERNARY) {
             if (slot.wiring.numInputs < 3) continue;
             auto condIt = ssaValues.find(slot.wiring.inputSourceIndices[0]);
@@ -6263,7 +6357,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             auto falseIt = ssaValues.find(slot.wiring.inputSourceIndices[2]);
             if (condIt == ssaValues.end() || trueIt == ssaValues.end() || falseIt == ssaValues.end()) continue;
             auto opResult = emitTernaryOp(builder, loc, condIt->second, trueIt->second, falseIt->second, blockSize);
-            for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
+            for (int o = 0; o < slot.wiring.numOutputs; o++)
+                    ssaValues[slot.wiring.outputSlotIndices[o]] =
+                        roundSectionOutput(opResult, slot.wiring.outputSlotIndices[o]);
           } else if (cat == TritonOpCategory::IDENTITY) {
             if (slot.wiring.numInputs < 1) continue;
             // assign(target, source): forward input[1]; identity(x): forward input[0]
@@ -6452,7 +6548,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               auto splatTy = mlir::RankedTensorType::get({blockSize}, opResult.getType());
               opResult = builder.create<mlir::triton::SplatOp>(loc, splatTy, opResult);
             }
-            for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
+            for (int o = 0; o < slot.wiring.numOutputs; o++)
+                    ssaValues[slot.wiring.outputSlotIndices[o]] =
+                        roundSectionOutput(opResult, slot.wiring.outputSlotIndices[o]);
           } else if (cat == TritonOpCategory::NORMALIZATION) {
             // Normalization uses one program per logical row so RMS/softmax/layer-norm
             // operate over the last dimension instead of flattening the whole tensor.
@@ -6754,7 +6852,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                   auto lhsIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[0]);
                   auto rhsIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[1]);
                   if (lhsIt != ssaValues.end() && rhsIt != ssaValues.end()) {
-                    epiResult = emitBinaryElementwise(builder, loc, epiMapping, epiSlot, lhsIt->second, rhsIt->second);
+                    epiResult = emitBinaryElementwise(builder, loc, epiMapping, epiSlot, lhsIt->second, rhsIt->second,
+                                                     resolveDtype(epiSlot.wiring.inputSourceIndices[0]));
                   }
                 } else if (epiCat == TritonOpCategory::UNARY_ELEMENTWISE && epiSlot.wiring.numInputs >= 1) {
                   auto inputIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[0]);
@@ -6769,7 +6868,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
 
                 if (epiResult) {
                   for (int o = 0; o < epiSlot.wiring.numOutputs; o++) {
-                    ssaValues[epiSlot.wiring.outputSlotIndices[o]] = epiResult;
+                    ssaValues[epiSlot.wiring.outputSlotIndices[o]] =
+                        roundSectionOutput(epiResult, epiSlot.wiring.outputSlotIndices[o]);
                   }
                   // Store epilogue result per-row using the same row addressing
                   auto epiOutSlotIdx = epiSlot.wiring.outputSlotIndices[0];
@@ -7491,7 +7591,12 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           auto cPtr = getSlotArgPtr(cSlot);
 
           if (M > 0 && N > 0 && K > 0 && aPtr && bPtr && cPtr) {
-            emitPerElementMatmul(builder, loc, pid, blockSize, aPtr, bPtr, cPtr, M, N, K);
+            const bool serial = dsp::hasNonLegacyMatmulArithmetic(slot);
+            emitPerElementMatmul(builder, loc, pid, blockSize, aPtr, bPtr, cPtr, M, N, K,
+                serial ? &slot : nullptr,
+                serial ? triton_matmul::resolve(aSrc, outputSlots, totalOutputSlots, externalInputs, numExternalInputs) : nullptr,
+                serial ? triton_matmul::resolve(bSrc, outputSlots, totalOutputSlots, externalInputs, numExternalInputs) : nullptr,
+                serial ? triton_matmul::resolve(cSlot, outputSlots, totalOutputSlots, externalInputs, numExternalInputs) : nullptr);
             DataType outDtype = resolveDtype(cSlot);
             auto loaded = loadBlock(cSlot, outDtype);
             if (loaded) {
@@ -7584,7 +7689,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               auto lhsIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[0]);
               auto rhsIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[1]);
               if (lhsIt != ssaValues.end() && rhsIt != ssaValues.end()) {
-                epiResult = emitBinaryElementwise(builder, loc, epiMapping, epiSlot, lhsIt->second, rhsIt->second);
+                epiResult = emitBinaryElementwise(builder, loc, epiMapping, epiSlot, lhsIt->second, rhsIt->second,
+                                                     resolveDtype(epiSlot.wiring.inputSourceIndices[0]));
               }
             } else if (epiCat == TritonOpCategory::UNARY_ELEMENTWISE && epiSlot.wiring.numInputs >= 1) {
               auto inputIt = ssaValues.find(epiSlot.wiring.inputSourceIndices[0]);
@@ -7620,7 +7726,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
 
             if (epiResult) {
               for (int o = 0; o < epiSlot.wiring.numOutputs; o++) {
-                ssaValues[epiSlot.wiring.outputSlotIndices[o]] = epiResult;
+                ssaValues[epiSlot.wiring.outputSlotIndices[o]] =
+                        roundSectionOutput(epiResult, epiSlot.wiring.outputSlotIndices[o]);
               }
               // Store epilogue result to output buffer
               auto outSlotIdx = epiSlot.wiring.outputSlotIndices[0];
@@ -7957,20 +8064,33 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             return result;
           }
 
-          // GGUF in-graph KV-cache contract with rank-4 Q: not expressible by the
-          // fused emission (see the JIT-path gate above for the full rationale) —
-          // emitting produces cacheless window self-attention. Defer to native.
-          // Prefill unaffected (its cache inputs are EMPTY placeholders).
-          if (!useDualBuffer && slot.wiring.numInputs > 5 &&
-              slot.ident.opName.find("dot_product_attention_v2") != std::string::npos) {
-            auto kvCacheShapeSec = resolveShape(slot.wiring.inputSourceIndices[5]);
-            bool liveKvSec = !kvCacheShapeSec.empty();
-            for (auto d : kvCacheShapeSec) {
-              if (d <= 0) { liveKvSec = false; break; }
-            }
-            if (liveKvSec) {
-              DSP_DIAG(COMPILE, "ATTN slot=%d (sectioned): live KV cache at input[5] with "
-                        "rank-4 Q — cache read not expressible, deferring to C++ native", si);
+          // GGUF in-graph KV-cache contract with rank-4 Q: now expressible by the
+          // dedicated GGUF decode emitter (runtime boundary from the device
+          // position scalar + in-kernel scatter + dual cache/producer read).
+          // Keep the native fallback for any live-cache layout that emitter
+          // cannot express (non-rank-4 cache, mismatched headDim, non-INT64 pos).
+          bool ggufDecodeKvSec = false;
+          int keyCacheSrcSec = -1, valueCacheSrcSec = -1, cachePosSrcSec = -1;
+          if (!useDualBuffer && isDpaV2Sec && slot.wiring.numInputs > 7) {
+            NDArray* kcSec = resolveArr(slot.wiring.inputSourceIndices[5]);
+            NDArray* vcSec = resolveArr(slot.wiring.inputSourceIndices[6]);
+            NDArray* cpSec = resolveArr(slot.wiring.inputSourceIndices[7]);
+            bool liveKvSec = (kcSec != nullptr && !kcSec->isEmpty() && kcSec->lengthOf() > 0)
+                           && (vcSec != nullptr && !vcSec->isEmpty() && vcSec->lengthOf() > 0)
+                           && (cpSec != nullptr && !cpSec->isEmpty() && cpSec->lengthOf() > 0);
+            bool cacheShapeOkSec = liveKvSec && kcSec->rankOf() == 4
+                && static_cast<int>(kcSec->sizeAt(3)) == headDim
+                && cpSec->dataType() == INT64;
+            if (cacheShapeOkSec) {
+              ggufDecodeKvSec = true;
+              keyCacheSrcSec = slot.wiring.inputSourceIndices[5];
+              valueCacheSrcSec = slot.wiring.inputSourceIndices[6];
+              cachePosSrcSec = slot.wiring.inputSourceIndices[7];
+              DSP_DIAG(COMPILE, "ATTN slot=%d (sectioned): GGUF decode KV contract — "
+                        "using emitGgufDecodeAttentionKernel (runtime boundary + scatter)", si);
+            } else if (liveKvSec) {
+              DSP_DIAG(COMPILE, "ATTN slot=%d (sectioned): live KV cache not expressible "
+                        "by the GGUF decode emitter — deferring to C++ native", si);
               result.valid = false;
               return result;
             }
@@ -8270,7 +8390,35 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             return result;
           }
 
-          if (qPtr && kPtr && vPtr && outPtr) {
+          if (ggufDecodeKvSec && qPtr && outPtr) {
+            auto kCachePtrSec = getSlotArgPtr(keyCacheSrcSec);
+            auto vCachePtrSec = getSlotArgPtr(valueCacheSrcSec);
+            auto cachePosPtrSec = getSlotArgPtr(cachePosSrcSec);
+            auto curKPtrSec = getSlotArgPtr(kSrc);
+            auto curVPtrSec = getSlotArgPtr(vSrc);
+            if (kCachePtrSec && vCachePtrSec && cachePosPtrSec && curKPtrSec && curVPtrSec) {
+              NDArray* kcSecMax = resolveArr(keyCacheSrcSec);
+              int cacheMaxSeqSec = (kcSecMax && kcSecMax->rankOf() == 4)
+                  ? static_cast<int>(kcSecMax->sizeAt(1)) : 0;
+              emitGgufDecodeAttentionKernel(builder, loc, qPtr,
+                                            curKPtrSec, curVPtrSec,
+                                            kCachePtrSec, vCachePtrSec, cachePosPtrSec,
+                                            outPtr,
+                                            batchSize, numQHeads, numKvHeads,
+                                            seqQ, cacheMaxSeqSec, headDim, scale,
+                                            blockM, blockN,
+                                            attnBiasPtr, attnBiasShape);
+              // output[0] = attention result (loaded from output buffer)
+              DataType outDtype = resolveDtype(outSlot);
+              auto loaded = loadBlock(outSlot, outDtype);
+              if (loaded) ssaValues[outSlot] = loaded;
+            } else {
+              DSP_DIAG(COMPILE, "ATTN slot=%d (sectioned): GGUF decode binding failed — "
+                        "native fallback", si);
+              result.valid = false;
+              return result;
+            }
+          } else if (qPtr && kPtr && vPtr && outPtr) {
             emitFusedAttentionKernel(builder, loc, qPtr, kPtr, vPtr, outPtr,
                                      batchSize, numQHeads, numKvHeads, seqQ, seqK, headDim,
                                      scale, blockM, blockN, isBSHD, kIsBSHD,
@@ -8843,6 +8991,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
       int secSmem = 0;
       switch (sec.type) {
         case KernelSectionType::MATMUL: {
+          // Serial per-element recurrence uses registers, not shared dot tiles.
+          if (dsp::hasNonLegacyMatmulArithmetic(slots, sec.startSlot, sec.endSlot)) break;
           // Tiled matmul with K-loop: tiles A[BM,BK] and B[BK,BN] in shared mem,
           // double/triple-buffered by numStages. fp16/bf16 → 2 bytes per element.
           int bm = std::max(1, sec.blockM);
@@ -8968,6 +9118,14 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
                                                    int* requestedOutputSlotIndices,
                                                    int numRequestedOutputs) {
   TritonIRModule result;
+  if (!triton_matmul::supports(slots, startSlot, endSlot, outputSlots, totalOutputSlots,
+                              externalInputs, numExternalInputs)) return result;
+  // The serial recipe uses a 1D output grid and a loop-carried accumulator,
+  // including for standalone matmul. Never enter the tiled DotOp/epilogue path.
+  if (dsp::hasNonLegacyMatmulArithmetic(slots, startSlot, endSlot))
+    return buildSectionedModule(slots, startSlot, endSlot, totalSlots,
+                                externalInputs, numExternalInputs, outputSlots, totalOutputSlots,
+                                requestedOutputSlotIndices, numRequestedOutputs);
   result.kernelName = generateKernelName(slots, startSlot, endSlot);
 
   // Find the matmul op and extract M, N, K from input shapes.

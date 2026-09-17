@@ -1042,7 +1042,10 @@ DECLARE_UNARY_SIMD_SAFE_OP(SELU,
 
 
 DECLARE_UNARY_SIMD_SAFE_OP(Swish,
-                           return d1 * sd::math::sd_sigmoid<X COMMA X>(d1);
+                           using AccT = typename AggregateType<X>::type;
+                           const AccT x = static_cast<AccT>(d1);
+                           // SiLU has one storage boundary, not a stored sigmoid intermediate.
+                           return static_cast<X>(x * sd::math::sd_sigmoid<AccT COMMA AccT>(x));
 )
 
 

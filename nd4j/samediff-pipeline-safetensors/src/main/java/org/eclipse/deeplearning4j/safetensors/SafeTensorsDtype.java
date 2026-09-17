@@ -29,6 +29,8 @@ public enum SafeTensorsDtype {
     F32("F32", DataType.FLOAT, 4),
     F16("F16", DataType.HALF, 2),
     BF16("BF16", DataType.BFLOAT16, 2),
+    F8_E4M3("F8_E4M3", DataType.FLOAT8, 1),
+    F8_E5M2("F8_E5M2", DataType.FLOAT8_E5M2, 1),
     I64("I64", DataType.INT64, 8),
     I32("I32", DataType.INT32, 4),
     I16("I16", DataType.INT16, 2),

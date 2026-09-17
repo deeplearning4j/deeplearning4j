@@ -25,12 +25,9 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
-import org.bytedeco.javacpp.ShortPointer;
-import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
-import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.blas.impl.BaseLevel3;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
@@ -80,29 +77,13 @@ public class JcublasLevel3 extends BaseLevel3 {
         synchronized (handle) {
             cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getCublasStream()));
 
-            int arch = CudaEnvironment.getInstance().getCurrentDeviceArchitecture();
-
-            if ((CUDA_VERSION >= 8000 && (arch == 53 || arch == 60 || arch >= 70)) || (CUDA_VERSION >= 8000 &&  CUDA_VERSION < 9020)) {
-                // on these selected archs we run with cublasHgemm
-                __half alphaHalf = new __half();
-                __half betaHalf = new __half();
-                new ShortPointer(alphaHalf).put((short) HalfIndexer.fromFloat(alpha));
-                new ShortPointer(betaHalf).put((short) HalfIndexer.fromFloat(beta));
-
-                cublasHgemm(new cublasContext(handle), convertTranspose(TransA), convertTranspose(TransB), M, N, K,
-                                alphaHalf, new __half(cAPointer.getDevicePointer()), lda,
-                                new __half(cBPointer.getDevicePointer()), ldb, betaHalf,
-                                new __half(cCPointer.getDevicePointer()), ldc);
-            } else {
-                // CUDA_R_16F == 2 for CUDA 8
-                // CUBLAS_DATA_HALF == 2 for CUDA 7.5
-                cublasSgemmEx(new cublasContext(handle), convertTranspose(TransA), convertTranspose(TransB), M, N, K,
-                                new FloatPointer(alpha), (ShortPointer) cAPointer.getDevicePointer(), 2, lda,
-                                (ShortPointer) cBPointer.getDevicePointer(), 2, ldb, new FloatPointer(beta),
-                                (ShortPointer) cCPointer.getDevicePointer(), 2, ldc);
-
-
-            }
+            // HALF storage must not imply HALF dot-product or scalar precision.
+            int status = cublasGemmEx(new cublasContext(handle), convertTranspose(TransA), convertTranspose(TransB),
+                    M, N, K, new FloatPointer(alpha), cAPointer.getDevicePointer(), CUDA_R_16F, lda,
+                    cBPointer.getDevicePointer(), CUDA_R_16F, ldb, new FloatPointer(beta),
+                    cCPointer.getDevicePointer(), CUDA_R_16F, ldc, CUBLAS_COMPUTE_32F, CUBLAS_GEMM_DEFAULT);
+            if (status != CUBLAS_STATUS_SUCCESS)
+                throw new IllegalStateException("HALF GEMM failed with cuBLAS status " + status);
 
             ctx.getOldStream().synchronize();
         }

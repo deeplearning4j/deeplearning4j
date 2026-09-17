@@ -6056,6 +6056,9 @@ public class Nd4j {
      */
     public static int sizeOfDataType(DataType dtype) {
         switch (dtype) {
+            case FLOAT8:
+            case FLOAT8_E5M2:
+                return 1;
             case BYTE:
             case BOOL:
             case UBYTE:

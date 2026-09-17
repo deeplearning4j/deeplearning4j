@@ -23,8 +23,12 @@ package org.nd4j.ggml.architecture;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
+import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GgmlQMatMul;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.ModelOptNvfp4Linear;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.ModelOptFp8Linear;
 
 import java.util.Map;
 
@@ -48,6 +52,12 @@ import java.util.Map;
  * variable and the GGUF name used for the map lookup.</p>
  */
 public final class QuantizedLinear {
+
+    /** Distinct from GGUF .__q__: ModelOpt scales are independent tensors, never GGML blocks. */
+    public static final String MODELOPT_BLOCK_SCALE = ".__modelopt_block_scale__";
+    public static final String MODELOPT_GLOBAL_SCALE = ".__modelopt_global_scale__";
+    public static final String MODELOPT_FP8_SCALE = ".__modelopt_fp8_scale__";
+    public static final String MODELOPT_INPUT_SCALE = ".__modelopt_input_scale__";
 
     private QuantizedLinear() {}
 
@@ -89,6 +99,10 @@ public final class QuantizedLinear {
                         + " must have dense [N,K] shape, got " + java.util.Arrays.toString(shape));
             }
             value = shape[denseShapeIndex];
+            if (denseShapeIndex == 1 && weights != null
+                    && weights.containsKey(ggufWeightName + MODELOPT_BLOCK_SCALE)) {
+                value = Math.multiplyExact(value, 2L);
+            }
         }
         if (value <= 0 || value > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("Linear weight " + ggufWeightName + " has invalid logical "
@@ -128,6 +142,25 @@ public final class QuantizedLinear {
     private static SDVariable matMul(SameDiff sd, String name, SDVariable activation, SDVariable weightVar,
                                      Map<String, INDArray> weights, String ggufWeightName,
                                      DataType computeDtype, DataType outputDtype) {
+        if (weights != null && ggufWeightName != null) {
+            boolean nvfp4 = weights.containsKey(ggufWeightName + MODELOPT_BLOCK_SCALE);
+            boolean fp8 = weights.containsKey(ggufWeightName + MODELOPT_FP8_SCALE);
+            if (nvfp4 || fp8) {
+                if (nvfp4 && fp8 || weights.containsKey(ggufWeightName + ".__q__")) {
+                    throw new IllegalArgumentException("Conflicting quantization metadata: " + ggufWeightName);
+                }
+                SDVariable scale = modelOptConstant(sd, weightVar.name(), weights, ggufWeightName,
+                        nvfp4 ? MODELOPT_BLOCK_SCALE : MODELOPT_FP8_SCALE);
+                SDVariable secondScale = modelOptConstant(sd, weightVar.name(), weights, ggufWeightName,
+                        nvfp4 ? MODELOPT_GLOBAL_SCALE : MODELOPT_INPUT_SCALE);
+                SDVariable result = nvfp4
+                        ? new ModelOptNvfp4Linear(sd, activation, weightVar, scale, secondScale,
+                                outputDtype == DataType.FLOAT).outputVariable()
+                        : new ModelOptFp8Linear(sd, activation, weightVar, scale, secondScale,
+                                outputDtype == DataType.FLOAT).outputVariable();
+                return sd.updateVariableNameAndReference(result, name);
+            }
+        }
         INDArray meta = (ggufWeightName != null && weights != null) ? weights.get(ggufWeightName + ".__q__") : null;
         if (meta != null && weightVar != null && weightVar.dataType() == DataType.BYTE) {
             int quantType = (int) meta.getLong(0);
@@ -143,6 +176,17 @@ public final class QuantizedLinear {
                     name, activation, weightVar, quantType, n, k, ggmlOutputDtype);
         }
         return fp32Mmul(sd, name, activation, weightVar.permute(1, 0), computeDtype, outputDtype);
+    }
+
+    private static SDVariable modelOptConstant(SameDiff sd, String variableName,
+            Map<String, INDArray> weights, String weightName, String suffix) {
+        INDArray array = weights.get(weightName + suffix);
+        if (array == null) {
+            throw new IllegalArgumentException("Missing ModelOpt tensor " + weightName + suffix);
+        }
+        String name = variableName + suffix;
+        SDVariable existing = sd.getVariable(name);
+        return existing != null ? existing : sd.constant(name, array);
     }
 
     /**
@@ -162,7 +206,14 @@ public final class QuantizedLinear {
         boolean restoreOutputType = accumulationType != outputDtype;
         SDVariable computeA = GGMLDTypePolicy.castTo(a, name + "_a_accum", accumulationType);
         SDVariable computeB = GGMLDTypePolicy.castTo(b, name + "_b_accum", accumulationType);
-        SDVariable result = sd.mmul(restoreOutputType ? name + "_accum" : name, computeA, computeB);
+        // Dense low-precision inference must use the same K recurrence for W=1
+        // and W>1. Deterministic cuBLAS replay alone does not provide this contract.
+        boolean serialFma = computeDtype == DataType.HALF || computeDtype == DataType.BFLOAT16;
+        String resultName = restoreOutputType ? name + "_accum" : name;
+        SDVariable result = serialFma
+                ? new Mmul(sd, computeA, computeB, MMulTranspose.allFalse(), Mmul.Arithmetic.SERIAL_FMA)
+                        .outputVariable().rename(resultName)
+                : sd.mmul(resultName, computeA, computeB);
         return restoreOutputType
                 ? GGMLDTypePolicy.castTo(result, name, outputDtype)
                 : result;

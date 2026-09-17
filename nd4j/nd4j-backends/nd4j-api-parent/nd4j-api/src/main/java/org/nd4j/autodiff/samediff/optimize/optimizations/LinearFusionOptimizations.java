@@ -92,7 +92,7 @@ public class LinearFusionOptimizations extends BaseOptimizerSet {
                 }
             }
 
-            if (matmulOp == null || biasVar == null) {
+            if (matmulOp == null || biasVar == null || MatmulArithmeticPolicy.isExplicit(matmulOp.getOp())) {
                 return false;
             }
 

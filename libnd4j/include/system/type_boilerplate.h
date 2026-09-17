@@ -1317,12 +1317,17 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 
 #define _SELECTOR_TRIPLE_3(NAME, SIGNATURE, TYPE_X, TYPE_Y, ENUM_Z, TYPE_Z) \
     case sd::DataType::ENUM_Z: { \
+        bool sdTripleDispatched = false; \
         SD_IF_TRIPLE_COMPILED( \
             SD_CAT(SD_TYPE_TO_NUM_, TYPE_X), \
             SD_CAT(SD_TYPE_TO_NUM_, TYPE_Y), \
             SD_CAT(SD_ENUM_TO_NUM_, ENUM_Z), \
+            sdTripleDispatched = true; \
             NAME<TYPE_X, TYPE_Y, TYPE_Z> SIGNATURE; \
         ) \
+        if (!sdTripleDispatched) { \
+            THROW_EXCEPTION(#NAME ": unavailable type triple (" #TYPE_X ", " #TYPE_Y ", " #TYPE_Z ")"); \
+        } \
         break; \
     };
 

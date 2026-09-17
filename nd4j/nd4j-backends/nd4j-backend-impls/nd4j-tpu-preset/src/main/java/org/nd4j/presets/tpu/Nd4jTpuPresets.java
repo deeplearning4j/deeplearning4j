@@ -200,6 +200,10 @@ public class Nd4jTpuPresets implements LoadEnabled, BuildEnabled, InfoMapper {
                 .put(new Info("intermediateResultDataAt").javaText(
                         "@org.bytedeco.javacpp.annotation.NoDeallocator public native org.nd4j.nativeblas.OpaqueDataBuffer intermediateResultDataAt(int index, org.nd4j.nativeblas.OpaqueContext contextPointer);"))
                 .put(new Info("OpaqueContext").pointerTypes("org.nd4j.nativeblas.OpaqueContext"))
+                // MainBuildFlow shares legacy/cpu/NativeOps_dsp.cpp with this artifact.
+                // Do not map the bare function name as an annotation/C++ attribute.
+                .put(new Info("executeSteadyStatePlan").javaText(
+                        "@Override public native int executeSteadyStatePlan(@Cast(\"sd::Pointer\") Pointer planHandle, org.nd4j.nativeblas.OpaqueContext opContext, @Cast(\"sd::Pointer\") Pointer stream);"))
                 .put(new Info("OpaqueWorkspace").cast().pointerTypes("Pointer"))
                 .put(new Info("createNativeWorkspace").javaText(
                         "public native @Cast(\"OpaqueWorkspace\") Pointer createNativeWorkspace(@Cast(\"sd::LongType\") long initialSize);"))
