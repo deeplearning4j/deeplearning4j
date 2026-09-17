@@ -1024,17 +1024,11 @@ void autoregressiveDecode(
             int carryRow_cpu = proposedCount_cpu > 0
                 ? specConsumed_cpu - 1 : 0;
             LongType nextMtpPosition_cpu = currentPosition + carryRow_cpu + 1;
-            LongType mtpProcessedThrough_cpu = currentPosition;
-
-            if (proposedCount_cpu > 0) {
-                // Mirror of the CUDA fix: the proposal loop wrote predictor KV
-                // rows [current, current + proposedCount - 1] only. The old
-                // `carryRow == proposedCount` bump suppressed repair of the
-                // first fully-accepted committed row and left a permanent
-                // predictor KV hole (acceptance collapse after first full
-                // accept).
-                mtpProcessedThrough_cpu = currentPosition + proposedCount_cpu - 1;
-            }
+            // Written does not mean target-conditioned: recursive proposal rows
+            // use predictor hidden states. Keep this horizon fixed for masking
+            // the rejected suffix, independently of the retained-row repair.
+            const LongType mtpWrittenThrough_cpu = proposedCount_cpu > 0
+                ? currentPosition + proposedCount_cpu - 1 : currentPosition;
             // Predictor-side accepted-prefix repair (CUDA mirror): rewrite every
             // committed position's predictor KV row as fused(committed token,
             // target hidden at q-1). Chained proposal rows carry self-propagated
@@ -1044,22 +1038,19 @@ void autoregressiveDecode(
             // and the correction/bonus for the final committed row.
             for (int j = 0; j + 1 < specConsumed_cpu; j++) {
                 LongType repairPosition = currentPosition + 1 + j;
-                if (repairPosition > mtpProcessedThrough_cpu) {
-                    setMtpTargetCarryCpu(
-                        planOutputs[config->targetHiddenOutputIdx], j);
-                    (void)executeMtpCpu(specRowArgmax_cpu[j], repairPosition);
-                    mtpProcessedThrough_cpu = repairPosition;
-                    DSP_DIAG(KV_CACHE,
-                             "MTP_PREFIX_REPAIR step=%d position=%lld committedRow=%d "
-                             "carryRow=%d — rewriting predictor KV row with target hidden",
-                             step, (long long)repairPosition, j, carryRow_cpu);
-                }
+                setMtpTargetCarryCpu(
+                    planOutputs[config->targetHiddenOutputIdx], j);
+                (void)executeMtpCpu(specRowArgmax_cpu[j], repairPosition);
+                DSP_DIAG(KV_CACHE,
+                         "MTP_PREFIX_REPAIR step=%d position=%lld committedRow=%d "
+                         "carryRow=%d — rewriting predictor KV row with target hidden",
+                         step, (long long)repairPosition, j, carryRow_cpu);
             }
 
-            if (nextMtpPosition_cpu <= mtpProcessedThrough_cpu) {
+            if (nextMtpPosition_cpu <= mtpWrittenThrough_cpu) {
                 BUILD_SINGLE_SELECTOR(config->mtpCausalMask->dataType(), maskCausalRangeCpu,
                                       (config->mtpCausalMask->buffer(), nextMtpPosition_cpu,
-                                       mtpProcessedThrough_cpu + 1, mtpMaskLen_cpu),
+                                       mtpWrittenThrough_cpu + 1, mtpMaskLen_cpu),
                                       SD_FLOAT_TYPES);
             }
 
