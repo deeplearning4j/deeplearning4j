@@ -222,6 +222,12 @@ runs:
           exit 1
         fi
         printf 'python-executable=%s\n' "${python_bin}" >>"${GITHUB_OUTPUT}"
+        if ! "${python_bin}" -m pip --version >/dev/null 2>&1; then
+          # AlmaLinux 8 ships pip as a wheel file without bootstrapping the
+          # module into the selected interpreter. ensurepip restores it.
+          "${python_bin}" -m ensurepip --upgrade >/dev/null ||
+            as_root dnf install -y python3.11-pip >/dev/null
+        fi
         "${python_bin}" -m pip install --disable-pip-version-check 'boto3==1.40.76'
         "${python_bin}" release/github/prepare-worker.py config "${args[@]}"
         release_version=$("${python_bin}" -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["releaseVersion"])' "${config}")
