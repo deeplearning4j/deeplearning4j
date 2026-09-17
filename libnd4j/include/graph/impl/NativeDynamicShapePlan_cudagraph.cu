@@ -2269,10 +2269,32 @@ void NativeDynamicShapePlan::performReplayVerify(
   ReplayVerifyStateGuard verifyGuard(seg.exec);
 
   // Disable releaseAtStep (prevents nullifying outputs before comparison)
+  // EXCEPTION-SAFETY HARDENING (glibc "double free or corruption (out)" at
+  // ~NativeDynamicShapePlan via NativePlanCache::clear): the previous manual
+  // swap/restore left releaseAtStep_/releaseAtStepCounts_ pointing at the
+  // temporaries if executeSegmentSlotBySlot threw (the only restore was the
+  // straight-line code below). The plan destructor then delete[]'d the SAME
+  // temporaries this function already deleted -> double free. ScopeRAII now
+  // guarantees restore, and the temporaries are deleted only after restore.
   int** savedReleaseAtStep = releaseAtStep_;
   int* savedReleaseAtStepCounts = releaseAtStepCounts_;
   int* zeroedCounts = new int[numSlots_]();
   int** dummyRelease = new int*[numSlots_]();
+  struct ReleaseAtStepSwapGuard {
+    NativeDynamicShapePlan* plan;
+    int** savedStep;
+    int* savedCounts;
+    int** dummyStep;
+    int* dummyCounts;
+    ~ReleaseAtStepSwapGuard() {
+      // Restore originals FIRST, then free temporaries; mark temporaries null.
+      plan->releaseAtStep_ = savedStep;
+      plan->releaseAtStepCounts_ = savedCounts;
+      delete[] dummyStep;
+      delete[] dummyCounts;
+    }
+  } releaseAtStepGuard{this, savedReleaseAtStep, savedReleaseAtStepCounts,
+                       dummyRelease, zeroedCounts};
   releaseAtStep_ = dummyRelease;
   releaseAtStepCounts_ = zeroedCounts;
 
@@ -2299,11 +2321,10 @@ void NativeDynamicShapePlan::performReplayVerify(
 
   auto freshStatus = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
 
-  // Restore all state
+  // Restore all state (temporaries are freed once by releaseAtStepGuard's
+  // destructor; the guard also re-restores these same pointers harmlessly).
   releaseAtStep_ = savedReleaseAtStep;
   releaseAtStepCounts_ = savedReleaseAtStepCounts;
-  delete[] zeroedCounts;
-  delete[] dummyRelease;
   for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
     slots_[s].slotPhase = savedVerifySlotPhases[s - seg.def.startSlot];  // PRIMARY restore
   }

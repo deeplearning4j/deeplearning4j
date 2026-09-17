@@ -1654,19 +1654,24 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   }
 
   // ── Phase 2: Free slot data ───────────────────────────────────────────
-  // Free slots metadata
+  // Free slots metadata (nulled after free: insurance against any second
+  // destruction path re-entering these delete[]s)
   if (slots_) {
     delete[] slots_;
+    slots_ = nullptr;
   }
 
   // Free release schedule
   if (releaseAtStep_) {
     for (int i = 0; i < numSlots_; i++) {
       delete[] releaseAtStep_[i];
+      releaseAtStep_[i] = nullptr;
     }
     delete[] releaseAtStep_;
+    releaseAtStep_ = nullptr;
   }
   delete[] releaseAtStepCounts_;
+  releaseAtStepCounts_ = nullptr;
 
   // Free slot liveness data
   delete slotLiveness_;
@@ -1674,6 +1679,7 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
 
   // Free requested output mapping
   delete[] requestedOutputSlotIndices_;
+  requestedOutputSlotIndices_ = nullptr;
 
   // Gather every plan-owned wrapper before touching any DataBuffer.  Distinct
   // NDArray wrappers can share one DataBuffer, so deletion must be ordered:
@@ -1842,10 +1848,13 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
 
   // Free control flow structures
   delete[] loopRegions_;
+  loopRegions_ = nullptr;
   delete[] slotIsDead_;
+  slotIsDead_ = nullptr;
 
   // Free slot buffer ownership metadata
   delete[] slotOwnership_;
+  slotOwnership_ = nullptr;
 
   // Clear protected weight buffer set so stale DataBuffer pointers don't
   // linger. These are external (caller-owned) — we never freed them, but
