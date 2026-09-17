@@ -1617,6 +1617,11 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   destructed_ = true;
   DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: START plan=%p numSlots=%d totalOutputSlots=%d planOwned=%zu",
            this, numSlots_, totalOutputSlots_, planOwnedArrays_.size());
+  // Task-24 phase bracketing: unconditional fprintf between teardown phases so
+  // the last marker before a glibc abort names the failing release table.
+#define DSP_DTOR_PHASE(label) \
+  do { fprintf(stderr, "[DSP-DTOR] %s plan=%p\n", label, (void*)this); fflush(stderr); } while (0)
+  DSP_DTOR_PHASE("START");
   // BUF_FP_RING: final fingerprint dump for this plan (covers execs since the
   // last releaseGpuIntermediates dump). Same completion-boundary reasoning as
   // there: the caller's output readback host-synced the recording stream.
@@ -1633,11 +1638,14 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   // batch-zero) may hold direct references into outputSlots_. Clean them
   // BEFORE freeing slot arrays to avoid dangling pointer access during teardown.
   DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: freeing platform GPU resources");
+  DSP_DTOR_PHASE("PHASE-GPU-RESOURCES-BEGIN");
   platformFreePlanResources();
+  DSP_DTOR_PHASE("PHASE-GPU-RESOURCES-DONE");
 
   // Release KV scatter config (clears entry list, nulls position pointer).
   // kvPositionDevice_ is NOT freed here — it's owned by the Java caller.
   releaseKvScatterResources();
+  DSP_DTOR_PHASE("PHASE-KV-SCATTER-DONE");
 
   // Remove frozen reference counts before deleting or nulling slot arrays.
   // Frozen sealing adds one output-slot ref per non-null slot, so release exactly
@@ -1656,12 +1664,15 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   // ── Phase 2: Free slot data ───────────────────────────────────────────
   // Free slots metadata (nulled after free: insurance against any second
   // destruction path re-entering these delete[]s)
+  DSP_DTOR_PHASE("PHASE-SLOTS-BEGIN");
   if (slots_) {
     delete[] slots_;
     slots_ = nullptr;
   }
+  DSP_DTOR_PHASE("PHASE-SLOTS-DONE");
 
   // Free release schedule
+  DSP_DTOR_PHASE("PHASE-RELEASE-AT-STEP-BEGIN");
   if (releaseAtStep_) {
     for (int i = 0; i < numSlots_; i++) {
       delete[] releaseAtStep_[i];
@@ -1672,6 +1683,7 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   }
   delete[] releaseAtStepCounts_;
   releaseAtStepCounts_ = nullptr;
+  DSP_DTOR_PHASE("PHASE-RELEASE-AT-STEP-DONE");
 
   // Free slot liveness data
   delete slotLiveness_;
@@ -1697,6 +1709,7 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   // plan-owned and must survive.
   DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: freeing outputSlots_ (%d slots, %zu plan-owned)",
            totalOutputSlots_, planOwnedArrays_.size());
+  DSP_DTOR_PHASE("PHASE-OUTSLOTS-BEGIN");
   int skippedExternal = 0;
   if (outputSlots_) {
     for (int i = 0; i < totalOutputSlots_; i++) {
@@ -1709,10 +1722,12 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
       outputSlots_[i] = nullptr;
     }
     DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: about to delete[] outputSlots_ array (%p)", (void*)outputSlots_);
+    DSP_DTOR_PHASE("PHASE-OUTSLOTS-ARRAY-DELETE");
     delete[] outputSlots_;
     outputSlots_ = nullptr;
     DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: delete[] outputSlots_ done");
   }
+  DSP_DTOR_PHASE("PHASE-OUTSLOTS-DONE");
 
   // Retired owners are deliberately absent from planOwnedArrays_; the deferred
   // queue is their ownership record.  Include it so a buffer retained for a
@@ -1749,8 +1764,10 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
     }
   }
 
+  DSP_DTOR_PHASE("PHASE-OWNED-CLASSIFY");
   for (NDArray* arr : viewArrays) delete arr;
   for (NDArray* arr : owningArrays) delete arr;
+  DSP_DTOR_PHASE("PHASE-OWNED-DELETE-DONE");
   const int freedOwned =
       static_cast<int>(viewArrays.size() + owningArrays.size());
   planOwnedArrays_.clear();
@@ -1766,6 +1783,7 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   // alternates between graph islands.
   DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: stagingBuffers=%p numExtInputs=%d secondaryDevices=%zu",
            (void*)placeholderStagingBuffers_, numExternalInputs_, deviceStagingBuffers_.size());
+  DSP_DTOR_PHASE("PHASE-STAGING-BEGIN");
   int freedStaging = 0;
   auto freeStagingArray = [&](NDArray** buffers, const char* label) {
     if (buffers == nullptr) return;
@@ -1791,15 +1809,19 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   activeStagingBuffers_ = nullptr;
   activeStagingDevice_ = -1;
   DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: freed %d staging buffers", freedStaging);
+  DSP_DTOR_PHASE("PHASE-STAGING-DONE");
   DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: staging done, freeing effectiveExternals");
+  DSP_DTOR_PHASE("PHASE-EFFECT-EXT-BEGIN");
   delete[] effectiveExternals_;
   effectiveExternals_ = nullptr;
+  DSP_DTOR_PHASE("PHASE-EFFECT-EXT-DONE");
   cachedVariableExtIndices_.clear();
 
   // View producer flags are now stored in slots_[].slotPhase.isViewProducer — no separate array to free.
 
   // Free context pool
   DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: freeing contextPool (%p, numSlots=%d)", (void*)contextPool_, numSlots_);
+  DSP_DTOR_PHASE("PHASE-CTX-POOL-BEGIN");
   if (contextPool_) {
     for (int i = 0; i < numSlots_; i++) {
       delete contextPool_[i];
@@ -1807,6 +1829,7 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
     delete[] contextPool_;
   }
   DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: contextPool done");
+  DSP_DTOR_PHASE("PHASE-CTX-POOL-DONE");
 
   // Free owned legacy ops (created during deserialization for ops
   // not registered in OpRegistrator, like exp, log, abs, etc.)
@@ -1819,6 +1842,7 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   // Free untracked output cache
   DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: untrackedCache=%p size=%d",
            (void*)untrackedOutputCache_, untrackedOutputCacheSize_);
+  DSP_DTOR_PHASE("PHASE-UNTRACKED-BEGIN");
   if (untrackedOutputCache_) {
     for (int i = 0; i < untrackedOutputCacheSize_; i++) {
       if (untrackedOutputCache_[i] != nullptr) {
@@ -1838,6 +1862,7 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
     delete[] untrackedOutputCache_;
   }
   DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: untracked cache done");
+  DSP_DTOR_PHASE("PHASE-UNTRACKED-DONE");
 
   // ── Deferred workspace free (CUDA only) ───────────────────────────────────
   // The capture workspace is freed HERE — after all plan-owned DataBuffers have
@@ -1845,12 +1870,14 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   // CudaMemoryPool::isInCaptureWorkspace() to skip invalid cudaFreeAsync calls
   // on workspace-interior pointers. Handled in platform-specific destructor code.
   platformFreeCaptureWorkspace();
+  DSP_DTOR_PHASE("PHASE-CAPTURE-WS-DONE");
 
-  // Free control flow structures
+  DSP_DTOR_PHASE("PHASE-CTRLFLOW-BEGIN");
   delete[] loopRegions_;
   loopRegions_ = nullptr;
   delete[] slotIsDead_;
   slotIsDead_ = nullptr;
+  DSP_DTOR_PHASE("PHASE-CTRLFLOW-DONE");
 
   // Free slot buffer ownership metadata
   delete[] slotOwnership_;
@@ -1876,7 +1903,9 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   delete trace_;
   trace_ = nullptr;
 
+  DSP_DTOR_PHASE("PHASE-DONE");
   DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: DONE plan=%p", this);
+#undef DSP_DTOR_PHASE
 
   // Finalize diagnostics AFTER all cleanup so destructor logging is captured
   DspDiagnostics::getInstance().endPlanExecution();
