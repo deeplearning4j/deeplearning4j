@@ -2116,6 +2116,20 @@ void NativeDynamicShapePlan::performReplayVerify(
   // execute lifecycle would deadlock on that guard. Dispatch the isolated plan's
   // segments directly instead: it keeps separate slots/ownership while avoiding
   // the live plan's lock, counters, and lifecycle state.
+  // The reference plan must NOT share the live caller's external input table.
+  // platformMigrateSegmentInputs may replace table entries with reference-plan
+  // owned replicas (writable-state staging :1353, cross-device weight copies
+  // :1955). Those replacements historically leaked into the LIVE plan's table:
+  // per-segment cleanup restored originals, but any skip path (bind failure at
+  // :2121, capacity shift `continue`, or a thrown cleanup) left a reference
+  // plan-owned NDArray* published in the caller's table. The reference plan is
+  // destroyed at scope end, so the live plan then tears down dangling pointers
+  // -> glibc "double free or corruption (out)" inside ~NativeDynamicShapePlan
+  // called from NativePlanCache::clear(). Verify against a PRIVATE copy of the
+  // table; the live plan's table is never touched.
+  std::vector<NDArray*> verifyExternalTable(externalArrays, externalArrays + numExt);
+  NDArray** verifyExternals = verifyExternalTable.data();
+
   Status referenceStatus = Status::OK;
   for (auto& referenceSegment : referencePlan->segments_) {
     if (!referencePlan->platformBindSegmentDevice(referenceSegment)) {
@@ -2123,7 +2137,7 @@ void NativeDynamicShapePlan::performReplayVerify(
       break;
     }
     const Status migrationStatus = referencePlan->platformMigrateSegmentInputs(
-        referenceSegment, externalArrays, numExt);
+        referenceSegment, verifyExternals, numExt);
     if (migrationStatus != Status::OK) {
       referencePlan->platformCleanupMigratedInputs();
       referencePlan->platformRestoreSegmentDevice();
@@ -2131,7 +2145,7 @@ void NativeDynamicShapePlan::performReplayVerify(
       break;
     }
     referenceStatus = referencePlan->executeSegmentSlotBySlot(
-        referenceSegment, externalArrays, numExt, stream);
+        referenceSegment, verifyExternals, numExt, stream);
     referencePlan->platformCleanupMigratedInputs();
     referencePlan->platformRestoreSegmentDevice();
     if (referenceStatus != Status::OK) break;
