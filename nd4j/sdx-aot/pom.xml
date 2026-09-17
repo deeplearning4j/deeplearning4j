@@ -523,7 +523,7 @@
             <id>cuda</id>
             <properties>
                 <sdx.aot.variant>cuda</sdx.aot.variant>
-                <sdx.aot.backend.artifactId>nd4j-cuda-13.1</sdx.aot.backend.artifactId>
+                <sdx.aot.backend.artifactId>nd4j-cuda-12.9</sdx.aot.backend.artifactId>
             </properties>
         </profile>
 

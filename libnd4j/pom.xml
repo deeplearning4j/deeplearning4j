@@ -77,8 +77,8 @@
 
         <libnd4j.generate.flatc>false</libnd4j.generate.flatc>
         <libnd4j.outputPath>${project.basedir}/blasbuild/${libnd4j.chip}</libnd4j.outputPath>
-        <cuda.version>13.1</cuda.version>
-        <cudnn.version>9.19</cudnn.version>
+        <cuda.version>12.9</cuda.version>
+        <cudnn.version>9.10</cudnn.version>
         <libnd4j.build>release</libnd4j.build>
         <libnd4j.chip>cpu</libnd4j.chip>
         <libnd4j.platform>${javacpp.platform}</libnd4j.platform>
