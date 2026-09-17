@@ -307,22 +307,30 @@ static SD_KERNEL void fillWindowMaskKernel(void* vMask,
                                             LongType currentPos,
                                             LongType activeWindow,
                                             float maskFill) {
-    LongType totalElems = wMax * rowLen;
-    for (LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
-         idx < totalElems;
-         idx += gridDim.x * blockDim.x) {
-        LongType w = idx / rowLen;
-        LongType k = idx % rowLen;
-        float val;
-        if (k <= currentPos + w) {
-            // Keep inactive fixed-width rows causal too: all-masked softmax rows can
-            // contaminate fused W-wide kernels. activeWindow gates recurrent commits.
-            val = 0.0f;
-        } else {
-            val = maskFill;   // mask future positions
+        LongType totalElems = wMax * rowLen;
+        for (LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
+             idx < totalElems;
+             idx += gridDim.x * blockDim.x) {
+            LongType w = idx / rowLen;
+            LongType k = idx % rowLen;
+            float val;
+            if (w >= activeWindow) {
+                // The asl=1 rerun consumes row 0 only. Rows past the active
+                // window must present the width-1 scalar geometry to the frozen
+                // plan (fully-masked readout is what the greedy scalar pass
+                // sees), not the verification causal band: fused attention /
+                // GEMM reduction order over the verification band is what
+                // produced the W-vs-greedy row-0 flip at step 99 (1536 vs 5218).
+                val = maskFill;
+            } else if (k <= currentPos + w) {
+                // Keep inactive fixed-width rows causal too: all-masked softmax rows can
+                // contaminate fused W-wide kernels. activeWindow gates recurrent commits.
+                val = 0.0f;
+            } else {
+                val = maskFill;   // mask future positions
+            }
+            reinterpret_cast<float*>(vMask)[idx] = val;
         }
-        reinterpret_cast<float*>(vMask)[idx] = val;
-    }
 }
 
 /**
@@ -2610,6 +2618,40 @@ void autoregressiveDecode(
                     && config->actualSequenceLengthExtIdx >= 0
                     && config->actualSequenceLengthExtIdx < numExtInputs
                     && extInputs[config->actualSequenceLengthExtIdx] != nullptr) {
+                // T3b parity fix (step-99 flip, 1536 vs 5218): the rerun must be
+                // width-1 in GEOMETRY, not just in recurrent row count. asl only
+                // gates GDN/conv; attention/GEMM/softmax otherwise run the frozen
+                // W-substrate geometry, whose row-0 numerics equal the verify
+                // pass's row 0 (both produced 1536 where greedy produced 5218).
+                // Refill the window tensors to activeWindow=1 - exactly what the
+                // greedy scalar path presents - before re-executing, then restore
+                // the verification window below. Costs nothing: a second pass
+                // already runs every step.
+                if (useWindowSubstrate && config->windowMax > 1) {
+                    NDArray* wMask = config->windowGridMask;
+                    NDArray* wPos  = config->windowPositionGrid;
+                    const LongType wMaxForRerun = static_cast<LongType>(config->windowMax);
+                    LongType rowLen = wMask->sizeAt(3);
+                    if (wPos != nullptr) NDArray::prepareSpecialUse({wMask, wPos, inputIds}, {});
+                    else NDArray::prepareSpecialUse({wMask, inputIds}, {});
+                    LongType totalElems = wMaxForRerun * rowLen;
+                    int threads = 256;
+                    int blocks = static_cast<int>((totalElems + threads - 1) / threads);
+                    fillWindowMaskKernel<<<blocks, threads, 0, *stream>>>(
+                        wMask->specialBuffer(), wMaxForRerun, rowLen, currentPosition, 1, WINDOW_MASK_FILL);
+                    if (wPos != nullptr) {
+                        fillWindowPositionGridKernel<<<1, static_cast<int>(wMaxForRerun), 0, *stream>>>(
+                            wPos->specialBuffer(), wMaxForRerun, currentPosition, 1);
+                    }
+                    // Width-1 input_ids row: the committed base token, as greedy presents it.
+                    // Row 0 of inputIds still holds the committed base token at this point
+                    // (drafts were written to rows 1..K for the verify pass).
+                    inputIds->syncToDevice();
+                    if (wPos != nullptr) NDArray::registerSpecialUse({wMask, wPos, inputIds}, {});
+                    else NDArray::registerSpecialUse({wMask, inputIds}, {});
+                    // Rerun consumes only row 0; the frozen plan still runs W-wide.
+                    config->activeWindow = 1;
+                }
                 NDArray* aslArr = extInputs[config->actualSequenceLengthExtIdx];
                 NDArray::prepareSpecialUse({aslArr}, {});
                 updatePositionIdsKernel<<<1, 1, 0, *stream>>>(
@@ -2681,11 +2723,31 @@ void autoregressiveDecode(
                                  "autoregressive_decode: rerun emission refresh sync "
                                  "failed at step %d: %s", step,
                                  cudaGetErrorString(refreshSync));
+                    // T3b probe (step-99 flip): sample the rerun's top-8 logits so
+                    // a flat-logit argmax flip (rerun vs greedy leg) is directly
+                    // comparable. Rides the sync above; gated diagnostics only.
+                    float rerunTop8[8] = {};
+                    if (DSP_DIAG_ENABLED(KV_CACHE) && rerunVocab >= 8
+                            && rerunLogits->dataType() == DataType::FLOAT32) {
+                        // Logits at asl=1 are rank 2 [1, V] or rank 3 [1,1,V];
+                        // the last dim is always the vocab.
+                        cudaMemcpyAsync(rerunTop8, rerunLogits->specialBuffer(),
+                                        8 * sizeof(float), cudaMemcpyDeviceToHost, *stream);
+                        cudaStreamSynchronize(*stream);
+                    }
                     DSP_DIAG(KV_CACHE,
                              "RERUN_EMISSION_REFRESH step=%d verifyRow0=%lld "
                              "rerunArgmax=%lld%s - emission taken from the asl=1 pass",
                              step, (long long)argmaxDst[0], (long long)rerunRefreshedToken,
                              rerunRefreshedToken != argmaxDst[0] ? " FLIPPED" : "");
+                    if (DSP_DIAG_ENABLED(KV_CACHE) && rerunVocab >= 8
+                            && rerunLogits->dataType() == DataType::FLOAT32) {
+                        DSP_DIAG(KV_CACHE,
+                                 "RERUN_TOP8 step=%d pos=%lld logits8=[%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f]",
+                                 step, (long long)currentPosition,
+                                 rerunTop8[0], rerunTop8[1], rerunTop8[2], rerunTop8[3],
+                                 rerunTop8[4], rerunTop8[5], rerunTop8[6], rerunTop8[7]);
+                    }
                 }
             }
             // Commit recurrent state from the (possibly re-run) accepted-prefix pass.
@@ -3290,13 +3352,13 @@ void autoregressiveDecode(
         cudaMemcpyAsync(tokenDst, sampledToken->specialBuffer(),
                         sizeof(LongType), cudaMemcpyDeviceToHost, *stream);
         // Gated diagnostic D2H (rides the sync below - no new sync points):
-        // sample the first 4 logits of the live row for cross-pipeline value
-        // comparison against the W-wide verification rows.
-        float scalarLogitsSample[4] = {};
-        if (DSP_DIAG_ENABLED(KV_CACHE) && logitsOutput->lengthOf() >= 4
+        // sample the first 8 logits of the live row for cross-pipeline value
+        // comparison against the MTP rerun's top-8 probe (T3b step-99 flip).
+        float scalarLogitsSample[8] = {};
+        if (DSP_DIAG_ENABLED(KV_CACHE) && logitsOutput->lengthOf() >= 8
                 && logitsOutput->dataType() == DataType::FLOAT32) {
             cudaMemcpyAsync(scalarLogitsSample, logitsOutput->specialBuffer(),
-                            4 * sizeof(float), cudaMemcpyDeviceToHost, *stream);
+                            8 * sizeof(float), cudaMemcpyDeviceToHost, *stream);
         }
         cudaStreamSynchronize(*stream);
         emitCommittedStateSamples(step);
@@ -3316,11 +3378,14 @@ void autoregressiveDecode(
         // Mirrors the CPU helper's SCALAR_STEP event for step-level divergence
         // localization.
         DSP_DIAG(KV_CACHE, "SCALAR_STEP step=%d pos=%lld tok=%lld proposed=%d "
-                 "r0=[%.6f,%.6f,%.6f,%.6f]",
+                 "r0=[%.6f,%.6f,%.6f,%.6f] logits8=[%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f]",
                  step, (long long)(currentPosition - 1), (long long)nextTokenId,
                  proposedCount,
                  scalarLogitsSample[0], scalarLogitsSample[1],
-                 scalarLogitsSample[2], scalarLogitsSample[3]);
+                 scalarLogitsSample[2], scalarLogitsSample[3],
+                 scalarLogitsSample[0], scalarLogitsSample[1], scalarLogitsSample[2],
+                 scalarLogitsSample[3], scalarLogitsSample[4], scalarLogitsSample[5],
+                 scalarLogitsSample[6], scalarLogitsSample[7]);
 
         // ADR 0106 Phase 2: learn the verified scalar transition.
         if (useNgram) {
