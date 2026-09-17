@@ -2574,11 +2574,18 @@ void autoregressiveDecode(
             // window, terminal truncation).
             int consumedCount = 1;
             bool shouldStop = false;
-            {
-                LongType token = argmaxDst[0];
-                bool matchedStop = stopMatcher.accept(token);
-                shouldStop = matchedStop && stopTerminationAllowed(config, tokensGenerated + consumedCount);
-            }
+            // T1 (audit F3): stop matching is DEFERRED to after the asl=1 rerun
+            // below. The verify row-0 argmax is a PROVISIONAL emission candidate;
+            // the rerun-refresh block replaces argmaxDst[0] with the rerun's
+            // scalar argmax whenever it fires (proposedCount > 0, i.e. every
+            // speculative step under the single-token commit). Matching the
+            // provisional token advanced the matcher suffix with a token that is
+            // never emitted and froze shouldStop on stale data: verify-EOS with a
+            // rerun-normal step stopped after emitting a non-EOS token,
+            // verify-normal with a rerun-EOS step emitted EOS without stopping,
+            // and multi-token stop sequences assembled suffixes from phantom
+            // verify tokens. The matcher therefore consumes the AUTHORITATIVE
+            // emitted token exactly once, after emission is final.
             const int carryRow = consumedCount - 1;
 
             // -- ADR 0106 Phase 2 / Phase 2b: authoritative state commit ------------
@@ -2809,6 +2816,17 @@ void autoregressiveDecode(
             // last keeps host emission == device state == greedy continuation.
             if (rerunRefreshedToken >= 0) {
                 argmaxDst[0] = rerunRefreshedToken;
+            }
+
+            // T1 (audit F3): authoritative stop matching. argmaxDst[0] is now the
+            // final emitted token of this step (rerun argmax when the asl=1 pass
+            // fired, verification row-0 argmax otherwise - the no-rerun case is
+            // width-1, so the two coincide numerically there). Feed the matcher
+            // that token EXACTLY ONCE so the suffix and shouldStop always describe
+            // what was actually emitted.
+            {
+                bool matchedStop = stopMatcher.accept(argmaxDst[0]);
+                shouldStop = matchedStop && stopTerminationAllowed(config, tokensGenerated + consumedCount);
             }
 
             totalSpeculativeProposed += proposedCount;
