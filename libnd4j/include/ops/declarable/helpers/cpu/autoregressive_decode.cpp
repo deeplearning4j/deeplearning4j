@@ -214,6 +214,22 @@ static bool copyRecurrentFeedback(NDArray* source, NDArray* destination) {
     return true;
 }
 
+// Shared typed implementation for predictor and verification rows. Keep ties at
+// the first vocabulary index, matching the existing greedy comparison contract.
+template <typename T>
+static LongType speculativeArgmaxCpu(const void* buffer, LongType vocabSize) {
+    const auto* logits = reinterpret_cast<const T*>(buffer);
+    LongType bestIdx = 0;
+    T best = logits[0];
+    for (LongType v = 1; v < vocabSize; v++) {
+        if (logits[v] > best) {
+            best = logits[v];
+            bestIdx = v;
+        }
+    }
+    return bestIdx;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Main CPU Implementation — equivalent logic to autoregressiveDecode (CUDA impl)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -504,42 +520,15 @@ void autoregressiveDecode(
     // Used in the speculative path to evaluate multiple rows of logits.
     auto cpuArgmax = [&](const void* logitsRowPtr, LongType vocabSize,
                           DataType dtype) -> LongType {
-        LongType bestIdx = 0;
-        if (dtype == DataType::FLOAT32) {
-            auto* lp = reinterpret_cast<const float*>(logitsRowPtr);
-            float bestVal = lp[0];
-            for (LongType v = 1; v < vocabSize; v++) {
-                if (lp[v] > bestVal) { bestVal = lp[v]; bestIdx = v; }
-            }
-        } else if (dtype == DataType::HALF) {
-            // FP16: use float for comparison
-            auto* lp = reinterpret_cast<const float16*>(logitsRowPtr);
-            float bestVal = (float)lp[0];
-            for (LongType v = 1; v < vocabSize; v++) {
-                float val = (float)lp[v];
-                if (val > bestVal) { bestVal = val; bestIdx = v; }
-            }
-        } else if (dtype == DataType::DOUBLE) {
-            auto* lp = reinterpret_cast<const double*>(logitsRowPtr);
-            double bestVal = lp[0];
-            for (LongType v = 1; v < vocabSize; v++) {
-                if (lp[v] > bestVal) { bestVal = lp[v]; bestIdx = v; }
-            }
-        } else {
-            // Fallback: single row — let sampledToken handle it via tokenSamplePolicy
-            bestIdx = 0;
-        }
-        return bestIdx;
+        REQUIRE_TRUE(logitsRowPtr != nullptr && vocabSize > 0, 0,
+                     "autoregressive_decode: speculative logits row must be non-empty");
+        BUILD_SINGLE_SELECTOR(dtype, return speculativeArgmaxCpu,
+                              (logitsRowPtr, vocabSize), SD_FLOAT_TYPES);
     };
 
     // Helper: byte stride for one logits row given the dtype.
     auto logitsByteStride = [&](DataType dtype, LongType vocabSize) -> LongType {
-        switch (dtype) {
-            case DataType::FLOAT32: return vocabSize * sizeof(float);
-            case DataType::HALF: return vocabSize * 2;
-            case DataType::DOUBLE:  return vocabSize * sizeof(double);
-            default: return vocabSize * sizeof(float);
-        }
+        return vocabSize * DataTypeUtils::sizeOfElement(dtype);
     };
 
     auto executeMtpCpu = [&](LongType tokenId, LongType position) -> LongType {
@@ -1105,12 +1094,12 @@ void autoregressiveDecode(
                     DSP_DIAG(KV_CACHE,
                         "CONV_FB_PROBE step=%d pair=0 outIdx=%d extIdx=%d valid=%d src[0..2]=%.6f,%.6f,%.6f dstPre[0..2]=%.6f,%.6f,%.6f",
                         step, outIdx, extIdx, (int)valid,
-                        valid ? planOutputs[outIdx]->e<float>(0) : -999.0f,
-                        valid ? planOutputs[outIdx]->e<float>(1) : -999.0f,
-                        valid ? planOutputs[outIdx]->e<float>(2) : -999.0f,
-                        valid ? extInputs[extIdx]->e<float>(0) : -999.0f,
-                        valid ? extInputs[extIdx]->e<float>(1) : -999.0f,
-                        valid ? extInputs[extIdx]->e<float>(2) : -999.0f);
+                        valid && planOutputs[outIdx]->lengthOf() > 0 ? planOutputs[outIdx]->e<float>(0) : -999.0f,
+                        valid && planOutputs[outIdx]->lengthOf() > 1 ? planOutputs[outIdx]->e<float>(1) : -999.0f,
+                        valid && planOutputs[outIdx]->lengthOf() > 2 ? planOutputs[outIdx]->e<float>(2) : -999.0f,
+                        valid && extInputs[extIdx]->lengthOf() > 0 ? extInputs[extIdx]->e<float>(0) : -999.0f,
+                        valid && extInputs[extIdx]->lengthOf() > 1 ? extInputs[extIdx]->e<float>(1) : -999.0f,
+                        valid && extInputs[extIdx]->lengthOf() > 2 ? extInputs[extIdx]->e<float>(2) : -999.0f);
                 }
                 REQUIRE_TRUE(outIdx >= 0 && outIdx < numPlanOutputs &&
                              extIdx >= 0 && extIdx < numExtInputs,
@@ -1566,7 +1555,10 @@ void autoregressiveDecode(
             // Sync the window tensors — on CUDA they must be device-authoritative
             // before the next plan execution. On CPU this is a no-op.
             config->windowGridMask->syncToDevice();
-            config->windowPositionGrid->syncToDevice();
+            // In-graph KV plans use scalar position inputs, not a position grid.
+            if (config->windowPositionGrid != nullptr) {
+                config->windowPositionGrid->syncToDevice();
+            }
         } else {
             attentionMask->syncToDevice();
             positionIds->syncToDevice();

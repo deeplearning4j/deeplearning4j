@@ -3,6 +3,7 @@
  */
 package org.eclipse.deeplearning4j.llm.generation;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -32,7 +33,23 @@ public class TestMtpCpuRetainedRowRepair {
     @ParameterizedTest(name = "accepted prefix length {0}")
     @ValueSource(ints = {0, 1, 2, 3})
     void testRetainedRowsUseTargetCarry(int accepted) {
-        try (Plan target = target(accepted); Plan predictor = predictor()) {
+        checkRetainedRows(accepted, DataType.FLOAT, DataType.FLOAT);
+    }
+
+    @Test
+    void testBfloatPredictorLogits() {
+        checkRetainedRows(1, DataType.FLOAT, DataType.BFLOAT16);
+    }
+
+    @Test
+    void testBfloatVerificationLogits() {
+        // Two accepted rows give the verification rows distinct winners, so the
+        // BF16 byte-stride addressing is exercised beyond the shared base row.
+        checkRetainedRows(2, DataType.BFLOAT16, DataType.FLOAT);
+    }
+
+    private void checkRetainedRows(int accepted, DataType targetType, DataType predictorType) {
+        try (Plan target = target(accepted, targetType); Plan predictor = predictor(predictorType)) {
             target.compile();
             predictor.compile();
             // Warmup executes the in-place scatter. Restore the initial decode state.
@@ -95,7 +112,7 @@ public class TestMtpCpuRetainedRowRepair {
         }
     }
 
-    private static Plan target(int accepted) {
+    private static Plan target(int accepted, DataType logitsType) {
         Plan p = new Plan();
         SDVariable ids = p.placeholder("ids", Nd4j.ones(DataType.INT64, 1, WIDTH));
         p.echo("mask", Nd4j.valueArrayOf(new long[]{1, 1, WIDTH, CACHE}, -Float.MAX_VALUE, DataType.FLOAT));
@@ -110,12 +127,13 @@ public class TestMtpCpuRetainedRowRepair {
         }
         // Depend on ids so the native plan retains the input; logits do not depend on window length.
         SDVariable zeros = ids.castTo(DataType.FLOAT).mul(0).reshape(1, WIDTH, 1);
-        p.output(zeros.add("logits", p.graph.constant(Nd4j.createFromArray(logits).reshape(1, WIDTH, 2))));
+        SDVariable rawLogits = zeros.add(p.graph.constant(Nd4j.createFromArray(logits).reshape(1, WIDTH, 2)));
+        p.output(p.graph.castTo("logits", rawLogits, logitsType));
         p.output(zeros.add("hidden", p.graph.constant(Nd4j.createFromArray(hidden).reshape(1, WIDTH, 1))));
         return p;
     }
 
-    private static Plan predictor() {
+    private static Plan predictor(DataType logitsType) {
         Plan p = new Plan();
         SDVariable ids = p.placeholder("ids", Nd4j.ones(DataType.INT64, 1, 1));
         SDVariable carry = p.placeholder("carry", Nd4j.valueArrayOf(new long[]{1, 1, 1}, 7, DataType.FLOAT));
@@ -132,7 +150,8 @@ public class TestMtpCpuRetainedRowRepair {
                 key, value, position, mask, 0.0, 0.0, false, false));
         p.output(carry.add("hidden", 1));
         SDVariable zero = ids.castTo(DataType.FLOAT).mul(0).reshape(1, 1, 1);
-        p.output(zero.add("logits", p.graph.constant(Nd4j.createFromArray(0.0f, 10.0f).reshape(1, 1, 2))));
+        SDVariable rawLogits = zero.add(p.graph.constant(Nd4j.createFromArray(0.0f, 10.0f).reshape(1, 1, 2)));
+        p.output(p.graph.castTo("logits", rawLogits, logitsType));
         return p;
     }
 
