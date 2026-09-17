@@ -3173,6 +3173,14 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // different thread). Lifecycle state lives in planLifecycle_ above.
   ExecutionState* execState_ = nullptr;
 
+  // Double-destruction canary (PLAN_CACHE_CLEAR double-free diagnosis):
+  // set in ~NativeDynamicShapePlan on entry; any second entry on the same
+  // object means an owner (cache) destroyed a plan that was already torn
+  // down. Check this in NativePlanCache before delete.
+  bool destructed_ = false;
+  bool isDestructed() const { return destructed_; }
+  friend class NativePlanCache;
+
   // Slot data
   NativeSlot* slots_;
   int numSlots_;

@@ -167,7 +167,12 @@ void NativePlanCache::clear() {
     }
   }
   for (auto* plan : toDelete) {
-    delete plan;
+    // Double-destruction guard: skip plans whose destructor already ran.
+    if (plan != nullptr && !plan->isDestructed()) {
+      delete plan;
+    } else if (plan != nullptr) {
+      DSP_DIAG(MEMORY, "PLAN_CACHE_CLEAR: SKIPPED already-destructed plan=%p", (void*)plan);
+    }
   }
 }
 

@@ -1607,6 +1607,14 @@ void NativeDynamicShapePlan::setGraphExecutionMode(GraphExecutionMode mode) {
 }
 
 NativeDynamicShapePlan::~NativeDynamicShapePlan() {
+  // Double-destruction canary: a second entry means an owner deleted an
+  // already-torn-down plan (glibc "double free or corruption (out)" source).
+  if (destructed_) {
+    DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: CANARY double-destruction on plan=%p", (void*)this);
+    fprintf(stderr, "[DSP-CANARY] ~NativeDynamicShapePlan double-destruction plan=%p\n", (void*)this);
+    fflush(stderr);
+  }
+  destructed_ = true;
   DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: START plan=%p numSlots=%d totalOutputSlots=%d planOwned=%zu",
            this, numSlots_, totalOutputSlots_, planOwnedArrays_.size());
   // BUF_FP_RING: final fingerprint dump for this plan (covers execs since the
