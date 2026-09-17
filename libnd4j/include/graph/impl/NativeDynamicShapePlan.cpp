@@ -1702,12 +1702,20 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
 
   // Retired owners are deliberately absent from planOwnedArrays_; the deferred
   // queue is their ownership record.  Include it so a buffer retained for a
-  // live alias is reclaimed when the plan itself is destroyed.
+  // live alias is reclaimed when the plan itself is destroyed. Wrappers that
+  // a drain already deleted were removed from BOTH tables at delete time
+  // (retireRequestedOutput/drainRetiredRequestedOutputOwners), so gathering
+  // here cannot resurrect a freed pointer (double-free guard).
   for (NDArray* arr : planOwnedArrays_) gatherOwned(arr);
   for (NDArray* arr : deferredSlotDeletes_) gatherOwned(arr);
   for (NDArray* arr : outputDeliveryBuffers_) gatherOwned(arr);
-  for (NDArray* arr : retiredRequestedOutputOwners_) gatherOwned(arr);
+  for (NDArray* arr : retiredRequestedOutputOwners_) {
+    if (arr != nullptr && retiredRequestedOutputOwnersSet_.count(arr) != 0) {
+      gatherOwned(arr);
+    }
+  }
   retiredRequestedOutputOwners_.clear();
+  retiredRequestedOutputOwnersSet_.clear();
   for (const auto& entry : migrationBuffers_) gatherOwned(entry.second);
   migrationBuffers_.clear();
   outputDeliveryBuffers_.clear();
@@ -7732,16 +7740,21 @@ void NativeDynamicShapePlan::processPendingExternalViewReacquire(NDArray** exter
 // ─── Release GPU intermediates ───────────────────────────────────────────────
 
 
-int NativeDynamicShapePlan::releaseGpuIntermediatesAfterOutputCopy() {
-  // Retire replay resources and native pooled contexts before producer storage.
-  // Ordinary release keeps its borrowed-output lifetime guarantee unchanged.
-  int freed = releaseGpuIntermediates();
+int NativeDynamicShapePlan::drainRetiredRequestedOutputOwners() {
   std::unordered_set<NDArray*> owners;
   owners.insert(retiredRequestedOutputOwners_.begin(), retiredRequestedOutputOwners_.end());
   retiredRequestedOutputOwners_.clear();
+  int freed = 0;
   std::vector<NDArray*> bufferOwners;
   for (auto* array : owners) {
     if (array == nullptr) continue;
+    // A wrapper already drained (and deleted) by a previous teardown path is
+    // no longer in retiredRequestedOutputOwnersSet_; skipping here prevents a
+    // second delete of a pointer another path already retired.
+    if (retiredRequestedOutputOwnersSet_.erase(array) == 0) continue;
+    // Also drop the plan-ownership record in the same step as the delete so
+    // ~NativeDynamicShapePlan cannot re-gather (and re-delete) this pointer.
+    planOwnedArrays_.erase(array);
     if (array->ownsDataBuffer() && !array->isView()) {
       bufferOwners.push_back(array);
     } else {
@@ -7753,6 +7766,14 @@ int NativeDynamicShapePlan::releaseGpuIntermediatesAfterOutputCopy() {
     delete owner;
     ++freed;
   }
+  return freed;
+}
+
+int NativeDynamicShapePlan::releaseGpuIntermediatesAfterOutputCopy() {
+  // Retire replay resources and native pooled contexts before producer storage.
+  // Ordinary release keeps its borrowed-output lifetime guarantee unchanged.
+  int freed = releaseGpuIntermediates();
+  freed += drainRetiredRequestedOutputOwners();
   return freed;
 }
 
@@ -8156,13 +8177,19 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
     // Java readback may own a COPY, not the native producer allocation. Preserve
     // native owners until plan destruction, even though their slots were reset.
     // Never adopt external inputs or views of protected model weights.
-    for (NDArray* arr : planOwnedArrays_) {
-      if (arr == nullptr) continue;
-      auto* db = arr->dataBuffer();
-      if (db != nullptr && requestedOutputDataBuffers.count(db) != 0 &&
-          protectedWeightBuffers_.count(db) == 0) {
-        retiredRequestedOutputOwners_.push_back(arr);
+    {
+      std::vector<NDArray*> toAdopt;
+      for (NDArray* arr : planOwnedArrays_) {
+        if (arr == nullptr) continue;
+        auto* db = arr->dataBuffer();
+        if (db != nullptr && requestedOutputDataBuffers.count(db) != 0 &&
+            protectedWeightBuffers_.count(db) == 0) {
+          toAdopt.push_back(arr);
+        }
       }
+      // Retire AFTER iteration: retireRequestedOutput erases from
+      // planOwnedArrays_, which must not be mutated while iterating it.
+      for (NDArray* arr : toAdopt) retireRequestedOutput(arr);
     }
     planOwnedArrays_.clear();
   }
@@ -8251,7 +8278,12 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
                label, i, (void*)staging, (int)dbSafe);
       if (retainedOutputBuffers.count(db) != 0) {
         if (retainedOutputArrays.insert(staging).second) {
-          retiredRequestedOutputOwners_.push_back(staging);
+          // Transfer ownership to the requested-output retirement queue WITH
+          // registry bookkeeping: if this staging wrapper was also plan-owned,
+          // the registry record lets the drain erase it from planOwnedArrays_
+          // at delete time instead of leaving a dangling entry the destructor
+          // would gather again (double-free).
+          retireRequestedOutput(staging);
         }
         buffers[i] = nullptr;
         continue;
