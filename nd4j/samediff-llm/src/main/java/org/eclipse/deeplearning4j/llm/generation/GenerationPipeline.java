@@ -5092,6 +5092,37 @@ public class GenerationPipeline implements AutoCloseable {
         }
 
         /**
+         * Override the speculative draft depth (K) for the NEXT session decode calls, at this invocation
+         * boundary. The session retains the sampling configuration captured at start (see
+         * {@link GenerationPipeline#setSamplingConfig}); this control exists for the same-session K-transition
+         * contract: the reviewer's P02 evidence requires forcing K=1 → K=0 → K=1 within one continuing
+         * session with the retained predictor state, which the pipeline-level setter cannot reach (an open
+         * session deliberately keeps its captured sampler). The override affects only {@code state.sampling}'s
+         * decode strategy resolution for subsequent {@code continueGeneration}/{@code generate} calls and does
+         * not touch pipeline-level configuration, plan capture, or the native plan.
+         *
+         * @param specK the forced speculative depth for this session (0 = scalar fast path, no drafting);
+         *              must be within [0, configured maxSpeculativeTokens]
+         */
+        public void setSpeculativeDepth(int specK) {
+            checkThread();
+            requireOpen();
+            int maxK = pipeline.config != null ? pipeline.config.getMaxSpeculativeTokens() : 0;
+            if (specK < 0 || specK > maxK) {
+                throw new IllegalArgumentException("Speculative depth " + specK
+                        + " outside [0," + maxK + "]");
+            }
+            // Decode strategy resolution reads state.sampling each call
+            // (resolveDecodePolicy(state.sampling, config)); swapping just the strategy steers the next
+            // continuations to the requested K without rebuilding the captured sampler object.
+            state.sampling = state.sampling.toBuilder()
+                    .decodeStrategy(specK == 0
+                            ? SamplingConfig.DecodeStrategy.GREEDY
+                            : SamplingConfig.DecodeStrategy.SPECULATIVE)
+                    .build();
+        }
+
+        /**
          * Total byte count of the static (float) KV buffers retained for this session.
          * Returns 0 if no buffers have been allocated yet.
          */

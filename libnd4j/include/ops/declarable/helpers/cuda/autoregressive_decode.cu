@@ -4169,7 +4169,39 @@ void autoregressiveDecode(
         currentPosition++;
         LongType kvJustWritten = currentPosition - 1;
 
-        // P02 K-RE-ENABLE STATE MAINTENANCE: publish the carry/pending input
+        // P02 K-RE-ENABLE STATE MAINTENANCE (review round 3, finding 2 -
+        // corrected semantics): when drafting is OFF but MTP resources exist,
+        // run the maintenance forward BEFORE the epilogue publishes the new
+        // (carry, pending-input) pair. The maintenance forward must consume
+        // the pair for the token the target JUST consumed at kvJustWritten:
+        // (target hidden for kvJustWritten-1, token at kvJustWritten). The
+        // previous implementation ran AFTER installing (h(currentPosition),
+        // token@currentPosition), which (a) skipped the predictor KV row for
+        // the just-consumed token and (b) left the recursive-draft side
+        // effects of executeMtpCuda in place (retained carry = predictor's
+        // own output, retained input = its draft) - so re-enabling K resumed
+        // from (draft, predictor_hidden) instead of the authoritative
+        // (token, target_hidden) pair. By running the forward on the
+        // just-consumed pair FIRST, its chain mutations are then overwritten
+        // by the epilogue's authoritative publication below; the predictor KV
+        // gains exactly the row the next draft step would have needed, and
+        // the retained pending pair is the target-conditioned one.
+        if (!useMtp
+                && config->mtpPlanHandle != nullptr && config->mtpExtInputContext != nullptr
+                && config->targetHiddenOutputIdx >= 0
+                && config->targetHiddenOutputIdx < numPlanOutputs
+                && planOutputs[config->targetHiddenOutputIdx] != nullptr) {
+            // Publish the just-consumed pair (token@kvJustWritten, target
+            // hidden for position kvJustWritten - the hidden the target
+            // produced BEFORE consuming it, i.e. its output at the previous
+            // position), run the predictor on it, then let the epilogue
+            // below install the authoritative (h(currentPosition-1 output),
+            // token@currentPosition) pair afterwards.
+            setMtpNextInputCuda(sampledToken, 0, kvJustWritten);
+            executeMtpCuda(kvJustWritten, 0, false);
+        }
+
+        // P02 K-RE-ENABLE STATE PUBLICATION: publish the carry/pending input
         // whenever MTP metadata exists - NOT only while useMtp. When the
         // adaptive policy drops K to 0 (useMtp=false), this epilogue is the
         // only thing keeping the predictor's state aligned with the live
@@ -4185,20 +4217,6 @@ void autoregressiveDecode(
                     && planOutputs[config->targetHiddenOutputIdx] != nullptr)) {
             setMtpTargetCarryCuda(planOutputs[config->targetHiddenOutputIdx], 0);
             setMtpNextInputCuda(sampledToken, 0, currentPosition);
-            // P02 (review finding 1, policy: EAGER MAINTENANCE): when drafting
-            // is OFF but the MTP resources exist, run one width-1 predictor
-            // forward consuming (carry, token, position) so the predictor KV
-            // gains the row for the token the target just emitted. This keeps
-            // the cache hole-free during scalar-only stretches; re-raising K
-            // later resumes with a complete attention context and needs no
-            // retained-history rehydration. The maintenance call passes
-            // draftSlot=0/writeTargetRow=false and does NOT publish a draft
-            // into the target input rows - the scalar target feeds itself via
-            // sampledToken. Chain-probe D2H inside executeMtpCuda is gated on
-            // KV_CACHE diagnostics and stays off in production.
-            if (!useMtp) {
-                executeMtpCuda(currentPosition, 0, false);
-            }
         }
 
         // -- KV scatter - copy present KV into static buffers --

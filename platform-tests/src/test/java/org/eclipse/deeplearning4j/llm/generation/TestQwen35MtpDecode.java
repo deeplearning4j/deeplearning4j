@@ -313,24 +313,24 @@ public class TestQwen35MtpDecode {
     }
 
     /**
-     * Same-session K transition oracle (review finding 1 required evidence):
-     * K=1 -> K=0 -> K=1 within ONE continuing GenerationSession (startSession
-     * + continueGeneration share the retained InGraphKvState and the MTP
-     * predictor session). The K=0 continuation consumes scalar-only tokens
-     * into that shared predictor context; the re-enabled K=1 continuation
-     * then speculates again from it. Both continuation legs must extend the
-     * K=1 reference prefix exactly (greedy, minNewTokens floor). A stale
-     * predictor carry/KV across the scalar-only interval surfaces here as an
-     * immediate divergence in the third leg - the exact defect class the
-     * K-re-enable epilogue fix (eager predictor maintenance forward under
-     * K=0) guards.
+     * Same-session K transition oracle (review round 3, finding 1): forces the
+     * K=1 -> K=0 -> K=1 depth transitions WITHIN one continuing
+     * GenerationSession via the session-scoped setSpeculativeDepth control
+     * (the pipeline-level setSamplingConfig deliberately does not reach an
+     * open session). The oracle proves three separate properties: (1) the
+     * requested K actually changed what the native decode ran - the K=0 leg
+     * must propose zero tokens and the re-enabled leg must propose again;
+     * (2) the whole combined sequence (initial leg + both continuations)
+     * equals a full-length same-total-budget reference generated in one
+     * K=1 session on the same prompt - so both continuation legs, not just
+     * the pre-transition prefix, are under token equality; (3) the retained
+     * predictor state stayed valid across the scalar-only interval. A stale
+     * predictor carry/KV on re-enable surfaces as divergence in the third
+     * leg - the exact defect class the K-re-enable epilogue fix guards.
      */
     @Test
     public void testSameSessionKTransitionPreservesTokensAcrossK0Interval() throws Exception {
         SamplingConfig mtpSampling = SamplingConfig.speculative().toBuilder()
-                .minNewTokens(TOKENS)
-                .build();
-        SamplingConfig greedySampling = SamplingConfig.greedy().toBuilder()
                 .minNewTokens(TOKENS)
                 .build();
 
@@ -348,13 +348,15 @@ public class TestQwen35MtpDecode {
                 .build();
 
         final int stepTokens = Math.max(8, TOKENS / 3);
+        final int totalBudget = TOKENS + 2 * stepTokens;
         int[] referenceSeq;
         int[] sessionSeq;
+        int k0Proposed;
+        int reProposed;
         try (GenerationPipeline referencePipeline = GenerationPipeline.create(config)) {
-            // Reference: one fresh K=1 generation on the same prompt.
-            referencePipeline.generate(PROMPT, TOKENS);
+            // Reference: ONE K=1 generation covering the session's whole budget.
             referencePipeline.setSamplingConfig(mtpSampling);
-            GenerationResult reference = referencePipeline.generate(PROMPT, TOKENS);
+            GenerationResult reference = referencePipeline.generate(PROMPT, totalBudget);
             assertTrue(reference.getTotalSpeculativeTokens() > 0,
                     "Reference leg must run the speculative path");
             referenceSeq = reference.getTokenIds();
@@ -363,39 +365,51 @@ public class TestQwen35MtpDecode {
         try (GenerationPipeline pipeline = GenerationPipeline.create(config);
              GenerationSession session = pipeline.startSession(PROMPT)) {
             // Leg 1: K=1 head of the session.
-            pipeline.setSamplingConfig(mtpSampling);
             session.generate(TOKENS);
 
-            // Leg 2: K=0 continuation through the SAME session - scalar-only
-            // tokens stream into the shared predictor context.
-            pipeline.setSamplingConfig(greedySampling);
+            // Leg 2: force K=0 for THIS session - scalar-only tokens stream
+            // into the shared predictor context. Must propose ZERO tokens.
+            session.setSpeculativeDepth(0);
             GenerationResult k0Leg = session.continueGeneration(stepTokens);
-            assertTrue(k0Leg.getTokenIds().length > 0, "K=0 continuation must emit tokens");
+            assertEquals(stepTokens, k0Leg.getTokenIds().length,
+                    "K=0 continuation must emit exactly its step budget");
+            assertEquals(0, k0Leg.getTotalSpeculativeTokens(),
+                    "K=0 continuation must propose ZERO tokens - the depth override did not reach the native decode");
+            k0Proposed = k0Leg.getTotalSpeculativeTokens();
 
-            // Leg 3: re-enable K=1 continuation from the same retained state.
-            pipeline.setSamplingConfig(mtpSampling);
+            // Leg 3: re-enable K=1 from the same retained state. Must propose
+            // again - proving the native execution actually resumed drafting.
+            session.setSpeculativeDepth(1);
             GenerationResult reLeg = session.continueGeneration(stepTokens);
-            assertTrue(reLeg.getTokenIds().length > 0, "Re-enabled continuation must emit tokens");
+            assertEquals(stepTokens, reLeg.getTokenIds().length,
+                    "Re-enabled continuation must emit exactly its step budget");
+            assertTrue(reLeg.getTotalSpeculativeTokens() > 0,
+                    "Re-enabled continuation must PROPOSE tokens - the depth override did not reach the native decode");
+            reProposed = reLeg.getTotalSpeculativeTokens();
 
             sessionSeq = session.getAllTokens();
         }
 
-        log.info("[MTP-K-TRANSITION-ORACLE] reference={} session={}",
+        log.info("[MTP-K-TRANSITION-ORACLE] k0Proposed={} reProposed={} sessionLen={} refLen={} "
+                        + "reference={} session={}",
+                k0Proposed, reProposed, sessionSeq.length, referenceSeq.length,
                 Arrays.toString(Arrays.copyOf(referenceSeq, Math.min(20, referenceSeq.length))),
                 Arrays.toString(Arrays.copyOf(sessionSeq, Math.min(20, sessionSeq.length))));
 
-        // Greedy decode is deterministic and prefix-stable: the session's
-        // K=1 -> K=0 -> K=1 sequence must equal the single-shot K=1 reference
-        // token-for-token across the transition boundary. The session ran
-        // TOKENS + 2*stepTokens legs (60+20+20=100 by default); compare the
-        // full reference prefix. Arrays.copyOf pads with zeros when the source
-        // is shorter than the requested length, so guard the prefix length
-        // explicitly instead of relying on min() semantics.
-        assertTrue(sessionSeq.length >= referenceSeq.length,
-                "Session must cover at least the reference length across the K transition: "
-                        + "session=" + sessionSeq.length + " reference=" + referenceSeq.length);
-        assertArrayEquals(referenceSeq, Arrays.copyOf(sessionSeq, referenceSeq.length),
-                "K=1 -> K=0 -> K=1 same-session sequence must match the K=1 reference");
+        // Property 1: the depth override reached the native decode.
+        assertEquals(0, k0Proposed, "K=0 leg must propose zero tokens");
+        assertTrue(reProposed > 0, "Re-enabled leg must propose tokens");
+
+        // Property 2: FULL-sequence equality including both transition legs.
+        // The reference covers the identical total budget in one K=1 session,
+        // so the entire session sequence - not just the pre-transition prefix -
+        // is under token equality.
+        assertEquals(totalBudget, referenceSeq.length,
+                "Reference must cover the full combined budget");
+        assertEquals(totalBudget, sessionSeq.length,
+                "Session must produce the full combined budget across the K transitions");
+        assertArrayEquals(referenceSeq, sessionSeq,
+                "K=1 -> K=0 -> K=1 same-session sequence must match the K=1 full-budget reference");
     }
 
     /**
