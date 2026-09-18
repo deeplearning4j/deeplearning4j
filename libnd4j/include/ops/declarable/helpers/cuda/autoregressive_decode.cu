@@ -27,6 +27,7 @@
 #include <graph/Context.h>
 #include <graph/DspDiagnostics.h>
 #include <graph/DspPhaseUtils.h>
+#include <graph/DspDeviceDispatch.h>
 #include <graph/NativeDynamicShapePlan.h>
 #include <array/NDArray.h>
 #include <array/NDArrayFactory.h>
@@ -1645,13 +1646,15 @@ void autoregressiveDecode(
         // every call but diverge from production's captured native outputs at
         // exactly the chained calls 2..K.
         //
-        // STREAM ORDERING: the carry write is issued on the caller's stream,
-        // but the predictor plan's graph launch may execute on a different
-        // thread-local DSP stream (tl_dspExecutionStream). Without a barrier
-        // between the two, the graph replay can read the PREVIOUS carry content.
-        // cudaStreamSynchronize guarantees the D2D copy is complete before any
-        // downstream graph launch on any stream. Four small copies per step -
-        // sub-microsecond overhead each.
+        // STREAM ORDERING (P01): the carry write is issued on the caller's
+        // stream, but the predictor plan's graph launch may execute on a
+        // different thread-local DSP stream (tl_dspExecutionStream). Instead
+        // of a host-blocking cudaStreamSynchronize, record an event on the
+        // caller's stream AFTER both carry writes and make the DSP execution
+        // stream wait on it - device-side cross-stream ordering with no host
+        // wait. The event is created per call (small, pool-backed) and
+        // destroyed after the wait is enqueued; enqueue order still
+        // guarantees the copy precedes any later graph launch.
         {
             REQUIRE_TRUE(mtpHidden->lengthOf() == config->mtpTargetHidden->lengthOf()
                              && mtpHidden->dataType() == config->mtpTargetHidden->dataType(),
@@ -1659,10 +1662,6 @@ void autoregressiveDecode(
             writeMtpCarry(config->mtpTargetHidden, config->mtpTargetHiddenExtIdx,
                           mtpHidden->specialBuffer(),
                           static_cast<size_t>(mtpHidden->lengthOf()) * mtpHidden->sizeOfT());
-            cudaError_t syncErr = cudaStreamSynchronize(*stream);
-            REQUIRE_TRUE(syncErr == cudaSuccess, 0,
-                         "autoregressive_decode: CUDA MTP carry stream sync failed: %s",
-                         cudaGetErrorString(syncErr));
         }
 
         if (chainProbe) {
@@ -1672,10 +1671,21 @@ void autoregressiveDecode(
 
         writeMtpCarry(config->mtpInputIds, config->mtpInputIdsExtIdx,
                       draftPtr, sizeof(LongType));
-        cudaError_t idsSyncErr = cudaStreamSynchronize(*stream);
-        REQUIRE_TRUE(idsSyncErr == cudaSuccess, 0,
-                     "autoregressive_decode: CUDA MTP input-ids stream sync failed: %s",
-                     cudaGetErrorString(idsSyncErr));
+        // P01: single device-side barrier for BOTH carry writes (see the
+        // STREAM ORDERING comment above). The predictor graph launch waits
+        // on this event via the DSP execution stream; the host does not wait.
+        {
+            void* carryEvt = sd::graph::dspCreateEvent();
+            REQUIRE_TRUE(carryEvt != nullptr, 0,
+                         "autoregressive_decode: failed to create CUDA MTP carry event");
+            sd::graph::dspEventRecord(carryEvt, *stream);
+            void* dspExecStream = sd::graph::dspGetExecutionStream();
+            if (dspExecStream != nullptr
+                    && dspExecStream != static_cast<void*>(*stream)) {
+                sd::graph::dspStreamWaitEvent(dspExecStream, carryEvt);
+            }
+            sd::graph::dspDestroyEvent(carryEvt);
+        }
         DSP_DIAG(KV_CACHE,
                  "MTP_CALL pos=%lld slot=%d - predictor invoked (chained input token; "
                  "carry = previous call self-hidden, epilogue overrides for next step's slot 0)",
@@ -1716,7 +1726,10 @@ void autoregressiveDecode(
         // compares step-to-step carry content stability. If the same context
         // position produces different carry bytes across steps, the target's
         // verification output hidden is corrupted or misindexed.
-        {
+        // GATED (P01): the copies + sync + formatting below must not execute
+        // when KV_CACHE diagnostics are off - disabled diagnostics must not
+        // enqueue work.
+        if (DSP_DIAG_ENABLED(KV_CACHE)) {
             // Read as uint16 to handle both BF16 (2 bytes) and FP32 (4 bytes)
             // correctly: dump raw bytes and interpret by the array's actual dtype.
             const size_t elemSize = targetHiddenRows->sizeOfT();
@@ -1752,7 +1765,9 @@ void autoregressiveDecode(
         // verification forward wrote every row, every row's RMS must be ~O(1e-2..1)
         // and CONSISTENT between rows. Rows near zero while logits stay correct
         // means the logits path and the carry source disagree about the buffer.
-        {
+        // GATED (P01): W per-row D2H copies + W syncs + host RMS loops must not
+        // execute when diagnostics are off.
+        if (DSP_DIAG_ENABLED(KV_CACHE)) {
             const int W = static_cast<int>(targetHiddenRows->sizeAt(1));
             const int H = static_cast<int>(targetHiddenRows->sizeAt(2));
             std::vector<float> rowRms(W);
