@@ -8,7 +8,6 @@
  */
 package org.eclipse.deeplearning4j.llm.generation;
 
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -47,23 +46,14 @@ public class TestNativeSpeculativeTerminalState {
 
     @Test
     public void testTokenBudgetCommitsOnlyConsumedInputs() {
-        assumeMultiTokenContract();
+        // ADR 0106 Phase 2b exit: parity proven (bc3f5c2a), CUDA multi-token restored.
         // Proposal capacity already reserves the bonus token: two drafts + bonus.
         checkTerminalPrefix(3, -1, List.of(), 3, 2, 2);
     }
 
     @Test
     public void testStopSequenceInsideAcceptedBatchCommitsOnlyConsumedInputs() {
-        assumeMultiTokenContract();
         checkTerminalPrefix(8, -1, List.of(new int[]{1, 1}), 2, 4, 2);
-    }
-
-    /** ADR 0106 Phase 2b: CUDA runs the single-token commit until its full-state
-     *  parity gate passes, so multi-token budget/stop truncation is a CPU-contract
-     *  assertion. This guard comes off when CUDA restores multi-token emission. */
-    static void assumeMultiTokenContract() {
-        Assumptions.assumeTrue(!isCudaBackend(),
-                "ADR 0106 Phase 2b: CUDA single-token commit — multi-token truncation asserted on CPU only");
     }
 
     static boolean isCudaBackend() {

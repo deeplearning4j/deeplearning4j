@@ -3,7 +3,6 @@
  */
 package org.eclipse.deeplearning4j.llm.generation;
 
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -50,11 +49,9 @@ public class TestMtpCpuRetainedRowRepair {
     }
 
     private void checkRetainedRows(int accepted, DataType targetType, DataType predictorType) {
-        // Multi-token emission + retained-row repair is the CPU contract; CUDA
-        // stays on the single-token commit until its full-state parity gate
-        // passes (ADR 0106 Phase 2b — see TestNativeSpeculativeTerminalState).
-        Assumptions.assumeTrue(!TestNativeSpeculativeTerminalState.isCudaBackend(),
-                "ADR 0106 Phase 2b: CUDA single-token commit — multi-token repair asserted on CPU only");
+        // ADR 0106 Phase 2b exit: token-exact parity proven (milestone bc3f5c2a,
+        // emissionDeltas 0/251); CUDA multi-token emission restored, so the
+        // retained-row repair contract is asserted on BOTH backends.
         try (Plan target = target(accepted, targetType); Plan predictor = predictor(predictorType)) {
             target.compile();
             predictor.compile();

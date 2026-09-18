@@ -2640,64 +2640,39 @@ void autoregressiveDecode(
                 }
             }
 
-            // -- ADR 0106 Phase 2b: authoritative single-token commit ---------------
-            // A speculative step commits EXACTLY ONE token: the target's argmax at
-            // verification row 0. Row 0's causal prefix is the committed base alone
-            // (draft rows 1..K cannot influence it), so this token is what greedy
-            // decoding would emit from the same state - by construction, not by
-            // measurement. The state commit below (rerun at
-            // actual_sequence_length=1) and the epilogue carry (row 0 of the rerun)
-            // then reproduce greedy's single-token advance exactly.
-            //
-            // History: this boundary used to emit acceptedDrafts + 1 tokens, taking
-            // the correction/bonus from verify row acceptedDrafts and the carry from
-            // row consumedCount-1. That contract trusted rows >= 1 of the multi-row
-            // verify pass, but the graph-level W-row divergence is documented and
-            // measured (JAVA_ROW_ARGMAX native-vs-java: 271 13 13 13 13; window4
-            // conv_state_out_0 max=23.75), so a "verified" draft row can differ
-            // from the scalar greedy continuation it is compared against. Every
-            // step's trunk values (emission, carry, GDN/conv state, KV row) must
-            // therefore come from row 0 / the asl=1 rerun. At 250 tokens the old
-            // contract fired twice (milestone bed78d5f, emission indices 101 and
-            // 195 on the run's two accepted steps): greedy=[5218,16456] vs
-            // mtp=[1536,7059] at index 101. With exactly-one-token commits, parity
-            // is structural for any length and any acceptance rate. Multi-token
-            // emission returns when the W-row graph divergence is fixed at the
-            // graph level.
-            //
-            // RERUN-REFRESHED EMISSION (proc-175 trigger evidence): the emitted
-            // token must be refreshed from the asl=1 RERUN pass when one fires.
-            // The W-wide verification pass and a W=1 pass at the same context
-            // differ numerically (GDN/conv chunked kernels, fused multi-row
-            // attention geometry); the delta is tiny per layer but its argmax
-            // effect is data-dependent. proc-175 measured it: step 98 emitted
-            // verify-row-0 1536 where greedy emitted 5218 on a flat logit profile
-            // (top-4 within ~1.5), then RESYNCED to greedy at step 100 - the
-            // committed state stayed greedy-aligned, only the row-0 readout
-            // flipped. Emission from the verify pass therefore violates the
-            // trunk contract whenever a rerun produces the authoritative state.
-            // After the rerun below, its logits output is [1,1,V]: re-argmax it
-            // and use THAT value for emission. Parity is then structural: every
-            // trunk value the next step sees comes from a W=1 pass that is
-            // bit-equivalent to the greedy decode loop. The verify-pass argmax
-            // is still what ACCEPTANCE compares drafts against (lossless rule
-            // needs no numeric identity, only commit-what-you-emitted), and the
-            // emission refresh is skipped when no rerun fires (single-token
-            // window, terminal truncation).
-            int consumedCount = 1;
+            // -- ADR 0106 Phase 2b exit: multi-token commit restored ----------------
+            // Token-exact parity was proven for the single-token commit
+            // (milestone bc3f5c2a, emissionDeltas 0/251 with the dual-plan scalar
+            // rerun). The multi-token contract now returns: a step commits
+            // acceptedDrafts + 1 tokens (the accepted drafts plus the
+            // correction/bonus), all from the accepted prefix. The state rerun
+            // advances the trunk through exactly those tokens. Emission for the
+            // committed prefix reconstructs the lossless verify sequence; rows
+            // beyond the committed prefix are never trusted (the W-row graph
+            // divergence is documented and measured). The carry comes from the
+            // last committed row. The scalar width-1 plan can only serve a
+            // single-row commit, so multi-row reruns route through the WINDOW
+            // plan with activeWindow=consumedCount.
+            // Multi-token commit (Phase 2b exit): consume the accepted prefix
+            // [0, acceptedDrafts] row by row, feeding the stop matcher
+            // provisionally so an accepted EOS/stop sequence or the token budget
+            // truncates the commit exactly where termination occurs (CPU-mirror
+            // semantics, red b8e04d8e). With the scalar target the width-1 plan
+            // commits one row per step, so only row 0 is consumed there
+            // (production keeps the proven parity path).
+            int consumedCount = 0;
             bool shouldStop = false;
-            // T1 (audit F3): stop matching is DEFERRED to after the asl=1 rerun
-            // below. The verify row-0 argmax is a PROVISIONAL emission candidate;
-            // the rerun-refresh block replaces argmaxDst[0] with the rerun's
-            // scalar argmax whenever it fires (proposedCount > 0, i.e. every
-            // speculative step under the single-token commit). Matching the
-            // provisional token advanced the matcher suffix with a token that is
-            // never emitted and froze shouldStop on stale data: verify-EOS with a
-            // rerun-normal step stopped after emitting a non-EOS token,
-            // verify-normal with a rerun-EOS step emitted EOS without stopping,
-            // and multi-token stop sequences assembled suffixes from phantom
-            // verify tokens. The matcher therefore consumes the AUTHORITATIVE
-            // emitted token exactly once, after emission is final.
+            while (consumedCount < 1 + acceptedDrafts
+                    && (!useScalarTarget || consumedCount == 0)
+                    && tokensGenerated + consumedCount < maxNewTokens) {
+                LongType token = argmaxDst[consumedCount];
+                consumedCount++;
+                bool matchedStop = stopMatcher.accept(token);
+                shouldStop = matchedStop
+                    && stopTerminationAllowed(config, tokensGenerated + consumedCount);
+                if (shouldStop) break;
+            }
+            if (consumedCount == 0) consumedCount = 1;
             const int carryRow = consumedCount - 1;
 
             // -- ADR 0106 Phase 2 / Phase 2b: authoritative state commit ------------
@@ -2756,6 +2731,35 @@ void autoregressiveDecode(
                     // Rerun consumes only row 0; the frozen plan still runs W-wide.
                     config->activeWindow = 1;
                 }
+                // Multi-token commit: the scalar width-1 plan cannot serve a multi-row
+                // rerun. Route through the WINDOW plan with activeWindow=consumedCount
+                // so the trunk advances through the full committed prefix. The scalar
+                // plan remains the single-row path (consumedCount == 1, i.e. zero
+                // accepted drafts).
+                if (useScalarTarget && consumedCount > 1) {
+                    config->activeWindow = consumedCount;
+                }
+                if (useWindowSubstrate && config->windowMax > 1) {
+                    NDArray* wMask = config->windowGridMask;
+                    NDArray* wPos  = config->windowPositionGrid;
+                    LongType wMax  = static_cast<LongType>(config->windowMax);
+                    LongType aW    = static_cast<LongType>(config->activeWindow);
+                    LongType rowLen = wMask->sizeAt(3);
+                    if (wPos != nullptr) NDArray::prepareSpecialUse({wMask, wPos, inputIds}, {});
+                    else NDArray::prepareSpecialUse({wMask, inputIds}, {});
+                    LongType totalElems = wMax * rowLen;
+                    int threads = 256;
+                    int blocks = static_cast<int>((totalElems + threads - 1) / threads);
+                    fillWindowMaskKernel<<<blocks, threads, 0, *stream>>>(
+                        wMask->specialBuffer(), wMax, rowLen, currentPosition, aW, WINDOW_MASK_FILL);
+                    if (wPos != nullptr) {
+                        fillWindowPositionGridKernel<<<1, static_cast<int>(wMax), 0, *stream>>>(
+                            wPos->specialBuffer(), wMax, currentPosition, aW);
+                    }
+                    inputIds->syncToDevice();
+                    if (wPos != nullptr) NDArray::registerSpecialUse({wMask, wPos, inputIds}, {});
+                    else NDArray::registerSpecialUse({wMask, inputIds}, {});
+                }
                 NDArray* aslArr = extInputs[config->actualSequenceLengthExtIdx];
                 NDArray::prepareSpecialUse({aslArr}, {});
                 updatePositionIdsKernel<<<1, 1, 0, *stream>>>(
@@ -2777,9 +2781,12 @@ void autoregressiveDecode(
                     }
                     setKvScaleRegistry(tl_kvQuantPtrsRerun.data(), config->kvScaleBuffers, numKvPairs);
                 }
-                // The binding's context supplies captured width-one arrays, not the window
-                // arrays. All authoritative outputs are remapped by name for state/carry commit.
-                Status rerunStatus = useScalarTarget ? executeScalarTarget() : plan->executeSteadyState(
+                // The scalar binding supplies width-one arrays for single-row commits.
+                // Multi-row commits route through the WINDOW plan (activeWindow was set
+                // to consumedCount above); its W-wide arrays are already wired.
+                Status rerunStatus = (useScalarTarget && consumedCount == 1)
+                                         ? executeScalarTarget()
+                                         : plan->executeSteadyState(
                     extInputs, numExtInputs, planOutputs, numPlanOutputs,
                     reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)));
                 if (config->kvQuantFormat > 0 && config->kvScaleBuffers != nullptr) {
@@ -2983,17 +2990,14 @@ void autoregressiveDecode(
             // last keeps host emission == device state == greedy continuation.
             if (rerunRefreshedToken >= 0) {
                 argmaxDst[0] = rerunRefreshedToken;
-            }
-
-            // T1 (audit F3): authoritative stop matching. argmaxDst[0] is now the
-            // final emitted token of this step (rerun argmax when the asl=1 pass
-            // fired, verification row-0 argmax otherwise - the no-rerun case is
-            // width-1, so the two coincide numerically there). Feed the matcher
-            // that token EXACTLY ONCE so the suffix and shouldStop always describe
-            // what was actually emitted.
-            {
+                // T1 (audit F3): authoritative stop state. The provisional accept
+                // above used the first-pass argmax; when the rerun rewrote row 0,
+                // roll back that provisional accept and feed the FINAL emitted
+                // token exactly once (CPU mirror).
+                stopMatcher.rollback(1);
                 bool matchedStop = stopMatcher.accept(argmaxDst[0]);
-                shouldStop = matchedStop && stopTerminationAllowed(config, tokensGenerated + consumedCount);
+                shouldStop = matchedStop
+                    && stopTerminationAllowed(config, tokensGenerated + consumedCount);
             }
 
             totalSpeculativeProposed += proposedCount;
