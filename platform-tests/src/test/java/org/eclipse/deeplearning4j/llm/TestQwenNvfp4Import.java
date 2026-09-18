@@ -295,25 +295,42 @@ public class TestQwenNvfp4Import {
                 for (int i = 0; i < Math.min(greedyAllTokens.length, mtpAllTokens.length); i++) {
                     if (greedyAllTokens[i] != mtpAllTokens[i]) emissionDeltas++;
                 }
+                int tailMtp = mtpAllTokens.length - Math.min(greedyAllTokens.length, mtpAllTokens.length);
+                int tailGreedy = greedyAllTokens.length - Math.min(greedyAllTokens.length, mtpAllTokens.length);
+                long totalDeltas = emissionDeltas + tailMtp + tailGreedy;
                 log.info("NVFP4-BENCH PARITY emissionDeltas={} of {} tokens "
-                        + "(plan-geometry artifact, dual-plan fix pending: c0e81350)",
-                        emissionDeltas, greedyAllTokens.length);
-                // State-level losslessness: both legs produce coherent output (no
-                // degeneracy), and the MTP text must start identically (the flip
-                // happens at a flat-logit profile, not from state poisoning).
-                int coherentPrefix = 0;
-                for (int i = 0; i < Math.min(greedyAllTokens.length, mtpAllTokens.length); i++) {
-                    if (greedyAllTokens[i] != mtpAllTokens[i]) break;
-                    coherentPrefix++;
-                }
-                assertTrue(coherentPrefix >= 90,
-                        "MTP and greedy must agree on the first 90+ tokens (state-level "
-                                + "losslessness); coherentPrefix=" + coherentPrefix);
-                assertTrue(mtpAllTokens.length >= greedyAllTokens.length - 2,
-                        "MTP must produce a full-length sequence: mtp=" + mtpAllTokens.length
-                                + " greedy=" + greedyAllTokens.length);
+                                + "(lengthDelta mtp-greedy={})",
+                        emissionDeltas, greedyAllTokens.length,
+                        mtpAllTokens.length - greedyAllTokens.length);
+                // P00 RESTORED GATE: full-sequence token equality. The earlier
+                // coherentPrefix>=90 check was a smoke check, not losslessness -
+                // a run with 124 differing tokens passed it. With the shipped
+                // default (allowMultiRowCommit=false) the validated scalar width-1
+                // path owns every commit, so the two legs MUST produce identical
+                // token sequences end to end, including lengths (the mismatch
+                // counter previously omitted unmatched tails).
+                // The EXPERIMENTAL multi-token mode (allowMultiRowCommit=true)
+                // is expected to diverge - it must run its own explicit
+                // state-equivalence gate (teacher-forced window-vs-scalar,
+                // TestQwen35MtpDecode#testTargetWindowRowsMatchChainedScalarCheckpoints)
+                // and is not covered by this free-running equality assertion.
+                assertEquals(greedyAllTokens.length, mtpAllTokens.length,
+                        "MTP and greedy must produce the same token count");
+                assertEquals(0, totalDeltas,
+                        "MTP and greedy must be token-identical over the FULL sequence "
+                                + "(body=" + emissionDeltas + " tailMtp=" + tailMtp
+                                + " tailGreedy=" + tailGreedy + "); first divergence at token "
+                                + firstDivergenceIndex(greedyAllTokens, mtpAllTokens));
             }
         }
+    }
+
+    private static int firstDivergenceIndex(int[] a, int[] b) {
+        int n = Math.min(a.length, b.length);
+        for (int i = 0; i < n; i++) {
+            if (a[i] != b[i]) return i;
+        }
+        return a.length == b.length ? -1 : n;
     }
 
     @Test
