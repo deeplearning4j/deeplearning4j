@@ -1020,7 +1020,12 @@ void autoregressiveDecode(
             // authoritative accept below when the rerun rewrote row 0. The
             // earlier approach (skipping the in-loop accept entirely) broke
             // terminal truncation and mid-batch stops (red b8e04d8e).
-            while (specConsumed_cpu < specAccepted_cpu + 1
+            // COMMIT POLICY (allowMultiRowCommit): false (shipped default) caps
+            // the consume at one row - bit-exact greedy parity through the
+            // validated scalar width-1 path. true (experimental) consumes the
+            // full accepted prefix. CUDA mirror: identical cap expression.
+            const int commitCap_cpu = config->allowMultiRowCommit ? specAccepted_cpu + 1 : 1;
+            while (specConsumed_cpu < commitCap_cpu
                     && tokensGenerated + specConsumed_cpu < maxNewTokens) {
                 LongType token = specRowArgmax_cpu[specConsumed_cpu];
                 specConsumed_cpu++;

@@ -312,6 +312,11 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
   decodeConfig.actualSequenceLengthExtIdx = actualSequenceLengthExtIdx_arg;
   decodeConfig.nativeRepetitionLoopMaxPeriod = nativeRepetitionLoopMaxPeriod;
   decodeConfig.nativeRepetitionLoopMaxRepeats = nativeRepetitionLoopMaxRepeats;
+  // Multi-row commit is EXPERIMENTAL (breaks token-exact parity, see
+  // allowMultiRowCommit docs). Opt in per test run via -D in the pom's
+  // surefire env mapping; production default is OFF.
+  const char* mrc = std::getenv("SD_MTP_MULTI_ROW_COMMIT");
+  decodeConfig.allowMultiRowCommit = mrc != nullptr && mrc[0] == '1';
 
   if (hasMtpPlan) {
     REQUIRE_TRUE(speculatorType_arg == 2, 0,

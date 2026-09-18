@@ -167,6 +167,19 @@ struct AutoregressiveDecodeConfig {
     int speculativeK = 0;            // max draft tokens per step (0 = off)
     int speculatorType = 0;          // 0=none, 1=NGRAM, 2=MTP
 
+    // Multi-row commit policy (ADR 0106 Phase 2b review decision).
+    // When true (EXPERIMENTAL), an accepted prefix longer than one token is
+    // committed by re-executing the WINDOW plan at activeWindow=consumedCount.
+    // The W-substrate geometry's row-0 numerics are not yet proven equivalent
+    // to the width-1 greedy geometry (teacher-forced comparison pending), so
+    // this trades token-exact parity for mechanism: measured on the Qwen 27B
+    // NVFP4 real-model gate as emissionDeltas 124/251 (see milestone dbf8340c).
+    // When false (SHIPPED DEFAULT), every speculative step commits exactly one
+    // token through the validated scalar width-1 plan: bit-exact greedy parity
+    // (emissionDeltas 0/251, milestone bc3f5c2a) and acceptance-stats parity
+    // with the pre-review contract.
+    bool allowMultiRowCommit = false;
+
     // ─── Qwen3.5 bundled MTP predictor ─────────────────────────────────────────
     // The predictor is a second plan over the same immutable SameDiff weights. It owns an
     // independent context and KV cache, and always executes scalar [1,1] steps. The target plan

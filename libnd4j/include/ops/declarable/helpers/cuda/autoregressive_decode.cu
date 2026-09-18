@@ -2678,7 +2678,13 @@ void autoregressiveDecode(
             int consumedCount = 0;
             bool shouldStop = false;
             auto matcherSnapshot = stopMatcher.snapshot();
-            while (consumedCount < 1 + acceptedDrafts
+            // COMMIT POLICY (allowMultiRowCommit): false (shipped default) caps
+            // the consume at one row - the scalar width-1 plan then owns the
+            // state rerun and emission stays bit-exact with greedy. true
+            // (experimental) consumes the full accepted prefix and routes the
+            // rerun through the window plan.
+            const int commitCap = config->allowMultiRowCommit ? 1 + acceptedDrafts : 1;
+            while (consumedCount < commitCap
                     && tokensGenerated + consumedCount < maxNewTokens) {
                 LongType token = argmaxDst[consumedCount];
                 consumedCount++;
@@ -2752,13 +2758,11 @@ void autoregressiveDecode(
                 // already runs every step.
                 // PLAN SELECTION FIRST (Stage 3): choose the executing geometry,
                 // then refill the window tensors ONCE for that geometry.
-                //  - useScalarTarget && consumedCount == 1: the validated width-1
-                //    scalar plan executes (greedy-identical geometry, proven parity).
-                //  - otherwise: the WINDOW plan executes. Its logical active prefix
-                //    is consumedCount rows REGARDLESS of scalar-binding availability;
-                //    a multi-row rerun without the scalar binding must present the
-                //    full committed prefix too (the old activeWindow=1 default was a
-                //    scalar-binding-only assumption).
+                //  - scalarRerun: the validated width-1 scalar plan executes
+                //    (greedy-identical geometry, proven parity).
+                //  - otherwise (multiRowRerun, experimental): the WINDOW plan
+                //    executes with its logical active prefix set to consumedCount
+                //    REGARDLESS of scalar-binding availability.
                 const bool multiRowRerun = consumedCount > 1;
                 const bool scalarRerun = useScalarTarget && !multiRowRerun;
                 const int rerunActiveWindow = multiRowRerun ? consumedCount : 1;
