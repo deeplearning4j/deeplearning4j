@@ -21,6 +21,7 @@ package org.eclipse.deeplearning4j.llm.generation;
 
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.data.LLMModelDownloader;
+import org.eclipse.deeplearning4j.llm.generation.GenerationPipeline.GenerationSession;
 import org.eclipse.deeplearning4j.llm.generation.kvcache.KvCacheStrategy;
 import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
 import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
@@ -302,6 +303,93 @@ public class TestQwen35MtpDecode {
         assertArrayEquals(greedy.getTokenIds(), first.getTokenIds(),
                 "Adaptive-K (K=1) MTP must remain token-identical to greedy");
     }
+
+    /**
+     * Same-session K transition oracle (review finding 1 required evidence):
+     * K=1 -> K=0 -> K=1 within ONE continuing GenerationSession (startSession
+     * + continueGeneration share the retained InGraphKvState and the MTP
+     * predictor session). The K=0 continuation consumes scalar-only tokens
+     * into that shared predictor context; the re-enabled K=1 continuation
+     * then speculates again from it. Both continuation legs must extend the
+     * K=1 reference prefix exactly (greedy, minNewTokens floor). A stale
+     * predictor carry/KV across the scalar-only interval surfaces here as an
+     * immediate divergence in the third leg - the exact defect class the
+     * K-re-enable epilogue fix (eager predictor maintenance forward under
+     * K=0) guards.
+     */
+    @Test
+    public void testSameSessionKTransitionPreservesTokensAcrossK0Interval() throws Exception {
+        SamplingConfig mtpSampling = SamplingConfig.speculative().toBuilder()
+                .minNewTokens(TOKENS)
+                .build();
+        SamplingConfig greedySampling = SamplingConfig.greedy().toBuilder()
+                .minNewTokens(TOKENS)
+                .build();
+
+        GenerationPipelineConfig config = GenerationPipelineConfig.builder()
+                .decoder(model)
+                .tokenizer(tokenizer)
+                .samplingConfig(mtpSampling)
+                .maxNewTokens(TOKENS)
+                .maxSpeculativeTokens(1)
+                .maxPrefillLength(64)
+                .maxKvCacheLength(Math.max(256, 2 * TOKENS + 64))
+                .kvCacheStrategy(KvCacheStrategy.STATIC)
+                .graphOptimizerEnabled(false)
+                .dspEnabled(true)
+                .build();
+
+        final int stepTokens = Math.max(8, TOKENS / 3);
+        int[] referenceSeq;
+        int[] sessionSeq;
+        try (GenerationPipeline referencePipeline = GenerationPipeline.create(config)) {
+            // Reference: one fresh K=1 generation on the same prompt.
+            referencePipeline.generate(PROMPT, TOKENS);
+            referencePipeline.setSamplingConfig(mtpSampling);
+            GenerationResult reference = referencePipeline.generate(PROMPT, TOKENS);
+            assertTrue(reference.getTotalSpeculativeTokens() > 0,
+                    "Reference leg must run the speculative path");
+            referenceSeq = reference.getTokenIds();
+        }
+
+        try (GenerationPipeline pipeline = GenerationPipeline.create(config);
+             GenerationSession session = pipeline.startSession(PROMPT)) {
+            // Leg 1: K=1 head of the session.
+            pipeline.setSamplingConfig(mtpSampling);
+            session.generate(TOKENS);
+
+            // Leg 2: K=0 continuation through the SAME session - scalar-only
+            // tokens stream into the shared predictor context.
+            pipeline.setSamplingConfig(greedySampling);
+            GenerationResult k0Leg = session.continueGeneration(stepTokens);
+            assertTrue(k0Leg.getTokenIds().length > 0, "K=0 continuation must emit tokens");
+
+            // Leg 3: re-enable K=1 continuation from the same retained state.
+            pipeline.setSamplingConfig(mtpSampling);
+            GenerationResult reLeg = session.continueGeneration(stepTokens);
+            assertTrue(reLeg.getTokenIds().length > 0, "Re-enabled continuation must emit tokens");
+
+            sessionSeq = session.getAllTokens();
+        }
+
+        log.info("[MTP-K-TRANSITION-ORACLE] reference={} session={}",
+                Arrays.toString(Arrays.copyOf(referenceSeq, Math.min(20, referenceSeq.length))),
+                Arrays.toString(Arrays.copyOf(sessionSeq, Math.min(20, sessionSeq.length))));
+
+        // Greedy decode is deterministic and prefix-stable: the session's
+        // K=1 -> K=0 -> K=1 sequence must equal the single-shot K=1 reference
+        // token-for-token across the transition boundary.
+        assertEquals(sessionSeq.length, Math.min(referenceSeq.length, sessionSeq.length),
+                "Session must not terminate early across the K transition");
+        assertArrayEquals(Arrays.copyOf(referenceSeq, sessionSeq.length),
+                sessionSeq,
+                "K=1 -> K=0 -> K=1 same-session sequence must match the K=1 reference");
+    }
+
+    /**
+     * Pins the target-model invariant required by lossless speculative decoding: evaluating two
+     * causally chained tokens inside the production W=5 envelope must produce the same per-layer
+     * rows as evaluating the same tokens as two activeWindow=1 calls on that frozen W=5 plan.
 
     /**
      * Pins the target-model invariant required by lossless speculative decoding: evaluating two
