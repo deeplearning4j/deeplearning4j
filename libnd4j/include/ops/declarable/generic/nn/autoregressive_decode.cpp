@@ -735,12 +735,16 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
         // must match shape. Everything else non-geometry (graph weights, derived plan
         // inputs) is NOT copied and may legitimately differ in shape between the width-1
         // capture and the W-wide window plan.
+        // Recurrent decision: scalar input i maps to target index (already in
+        // `ti`); the input is recurrent iff ti IS one of the target-domain
+        // GDN/conv state indices. The gdn/conv arrays are indexed by their own
+        // pair counts only.
         bool recurrent = false;
         for (int s = 0; s < c.numGdnStatePairs && !recurrent; ++s) {
-          recurrent = c.gdnStateExtIndices != nullptr && i == c.scalarInputToTarget[c.gdnStateExtIndices[s]];
+          recurrent = c.gdnStateExtIndices != nullptr && ti == c.gdnStateExtIndices[s];
         }
         for (int s = 0; s < c.numConvStatePairs && !recurrent; ++s) {
-          recurrent = c.convStateExtIndices != nullptr && i == c.scalarInputToTarget[c.convStateExtIndices[s]];
+          recurrent = c.convStateExtIndices != nullptr && ti == c.convStateExtIndices[s];
         }
         REQUIRE_TRUE(!recurrent || a->isSameShape(b), 0,
                      "autoregressive_decode: scalar recurrent snapshot shape mismatch "
@@ -800,6 +804,11 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
     }
     for (const auto* states : {&gdnStateExtIndicesVec, &convStateExtIndicesVec}) {
       for (int ti : *states) {
+        // gdn/conv ext indices are TARGET-domain indices: compare ti directly
+        // against the mapping VALUES, never re-map a target index through the
+        // scalar-indexed vector.
+        REQUIRE_TRUE(ti >= 0 && ti < c.numPlanExternalInputs, 0,
+                     "autoregressive_decode: recurrent ext index out of target range");
         bool found = false;
         for (int i = 0; i < c.scalarNumPlanExternalInputs; ++i) {
           if (c.scalarInputToTarget[i] != ti) continue;

@@ -720,11 +720,11 @@ void autoregressiveDecode(
                           && scalarArr->dataBuffer() == extInputs[ti]->dataBuffer();
             for (int s = 0; s < config->numGdnStatePairs && !shared; ++s) {
                 shared = config->gdnStateExtIndices != nullptr
-                         && config->scalarInputToTarget[config->gdnStateExtIndices[s]] == ti;
+                         && ti == config->gdnStateExtIndices[s];
             }
             for (int s = 0; s < config->numConvStatePairs && !shared; ++s) {
                 shared = config->convStateExtIndices != nullptr
-                         && config->scalarInputToTarget[config->convStateExtIndices[s]] == ti;
+                         && ti == config->convStateExtIndices[s];
             }
             bool geometry = i == config->scalarInputIdsExtIdx || i == config->scalarCausalMaskExtIdx
                 || i == config->scalarPositionOffsetExtIdx || i == config->scalarCachePositionExtIdx
@@ -752,14 +752,19 @@ void autoregressiveDecode(
             bool geometry = i == config->scalarInputIdsExtIdx || i == config->scalarCausalMaskExtIdx
                 || i == config->scalarPositionOffsetExtIdx || i == config->scalarCachePositionExtIdx
                 || i == config->scalarActualSequenceLengthExtIdx;
+            // Recurrent decision in the TARGET index domain (CPU-mirror): scalar
+            // input i maps to target index ti; recurrent iff ti equals a target-
+            // domain GDN/conv state index. Never re-map gdn/conv indices through
+            // the scalar-indexed vector.
+            const int ti = config->scalarInputToTarget[i];
             bool recurrent = false;
             for (int s = 0; s < config->numGdnStatePairs && !recurrent; ++s) {
                 recurrent = config->gdnStateExtIndices != nullptr
-                    && config->scalarInputToTarget[config->gdnStateExtIndices[s]] == config->scalarInputToTarget[i];
+                    && ti == config->gdnStateExtIndices[s];
             }
             for (int s = 0; s < config->numConvStatePairs && !recurrent; ++s) {
                 recurrent = config->convStateExtIndices != nullptr
-                    && config->scalarInputToTarget[config->convStateExtIndices[s]] == config->scalarInputToTarget[i];
+                    && ti == config->convStateExtIndices[s];
             }
             // Geometry and recurrent snapshots are refreshed from the window plan each
             // call. Shared KV is buffer-identical (skipped above). Everything else -
@@ -1245,6 +1250,10 @@ void autoregressiveDecode(
     // Stable device buffers for target argmax rows and scalar MTP drafts.
     NDArray* specArgmaxDevice = nullptr;
     NDArray* mtpDraftDevice = nullptr;
+    // Stage 2: dedicated rerun-refresh scratch (one INT64 slot). NEVER aliases
+    // specArgmaxDevice, whose committed token sequence the predictor repair
+    // loop and pending-input publication consume.
+    NDArray* mtpRerunScratch = nullptr;
     if (useSpeculative) {
         std::vector<LongType> argmaxShape = {static_cast<LongType>(specK + 1)};
         specArgmaxDevice = NDArrayFactory::create('c', argmaxShape, DataType::INT64, context);
@@ -2680,17 +2689,15 @@ void autoregressiveDecode(
             }
             if (consumedCount == 0) {
                 // Budget exhausted BEFORE the first row: consume nothing, emit
-                // nothing, leave matcher untouched. This step has no committed
-                // emission; the next loop iteration re-proposes (the step bookkeeping
-                // below is scoped to the committed path and must NOT run). Do not
-                // force consumedCount to 1 to hide a control-flow error.
-                totalSpeculativeProposed += proposedCount;
-                totalSpeculativeAccepted += acceptedDrafts;
-                speculativeStepCount++;
+                // nothing, leave matcher untouched, and TERMINATE - no token was
+                // committed, so acceptance statistics must not count this step's
+                // proposal as emitted output, and no further speculative work
+                // follows (the outer loop condition can only re-reach this same
+                // state). Do not force consumedCount to 1 to hide a control-flow
+                // error.
                 config->activeWindow = 1;
                 NDArray::registerSpecialUse({sampledToken}, {logitsOutput});
-                if (shouldStop) break;
-                continue;
+                break;
             }
             const int carryRow = consumedCount - 1;
 
@@ -2711,7 +2718,25 @@ void autoregressiveDecode(
             // RERUN-REFRESHED EMISSION: rerunRefreshedToken carries the rerun's
             // scalar-logits argmax back to the emission rewrite below; -1 means
             // no rerun fired and the verification argmax stays authoritative.
+            // SCRATCH DOMAIN (Stage 2): the refresh argmax is written to the
+            // dedicated rerunScratch buffer, NEVER to specArgmaxDevice - the
+            // predictor repair loop and pending-input publication read the
+            // COMMITTED token sequence from specArgmaxDevice, which must not be
+            // clobbered by a diagnostic rerun.
             LongType rerunRefreshedToken = -1;
+            NDArray* rerunScratch = nullptr;
+            if (useMtp) {
+                // One INT64 slot, allocated once per decode call, stable address.
+                // SCRATCH DOMAIN (Stage 2): dedicated rerun-refresh scratch - the
+                // committed specArgmaxDevice sequence must never be overwritten by
+                // a diagnostic rerun (predictor repair + pending-input publication
+                // consume it below).
+                if (mtpRerunScratch == nullptr) {
+                    std::vector<LongType> scratchShape{1};
+                    mtpRerunScratch = NDArrayFactory::create_('c', scratchShape, DataType::INT64);
+                }
+                rerunScratch = mtpRerunScratch;
+            }
             if (consumedCount < 1 + proposedCount
                     && config->actualSequenceLengthExtIdx >= 0
                     && config->actualSequenceLengthExtIdx < numExtInputs
@@ -2725,50 +2750,29 @@ void autoregressiveDecode(
                 // greedy scalar path presents - before re-executing, then restore
                 // the verification window below. Costs nothing: a second pass
                 // already runs every step.
-                if (!useScalarTarget && useWindowSubstrate && config->windowMax > 1) {
-                    NDArray* wMask = config->windowGridMask;
-                    NDArray* wPos  = config->windowPositionGrid;
-                    const LongType wMaxForRerun = static_cast<LongType>(config->windowMax);
-                    LongType rowLen = wMask->sizeAt(3);
-                    if (wPos != nullptr) NDArray::prepareSpecialUse({wMask, wPos, inputIds}, {});
-                    else NDArray::prepareSpecialUse({wMask, inputIds}, {});
-                    LongType totalElems = wMaxForRerun * rowLen;
-                    int threads = 256;
-                    int blocks = static_cast<int>((totalElems + threads - 1) / threads);
-                    fillWindowMaskKernel<<<blocks, threads, 0, *stream>>>(
-                        wMask->specialBuffer(), wMaxForRerun, rowLen, currentPosition, 1, WINDOW_MASK_FILL);
-                    if (wPos != nullptr) {
-                        fillWindowPositionGridKernel<<<1, static_cast<int>(wMaxForRerun), 0, *stream>>>(
-                            wPos->specialBuffer(), wMaxForRerun, currentPosition, 1);
-                    }
-                    // Width-1 input_ids row: the committed base token, as greedy presents it.
-                    // Row 0 of inputIds still holds the committed base token at this point
-                    // (drafts were written to rows 1..K for the verify pass).
-                    // inputIds is NOT written here - the kernels only touch wMask/wPos.
-                    // No manual synchronization: inputIds' device buffer is already
-                    // current (host-written once at handoff, device-authoritative since).
-                    if (wPos != nullptr) NDArray::registerSpecialUse({wMask, wPos, inputIds}, {});
-                    else NDArray::registerSpecialUse({wMask, inputIds}, {});
-                    // Rerun consumes only row 0; the frozen plan still runs W-wide.
-                    config->activeWindow = 1;
-                }
-                // Multi-token commit: the scalar width-1 plan cannot serve a multi-row
-                // rerun. Route through the WINDOW plan with activeWindow=consumedCount
-                // so the trunk advances through the full committed prefix. The scalar
-                // plan remains the single-row path (consumedCount == 1, i.e. zero
-                // accepted drafts).
-                const bool multiRowRerun = useScalarTarget && consumedCount > 1;
-                if (multiRowRerun) {
-                    config->activeWindow = consumedCount;
-                }
+                // PLAN SELECTION FIRST (Stage 3): choose the executing geometry,
+                // then refill the window tensors ONCE for that geometry.
+                //  - useScalarTarget && consumedCount == 1: the validated width-1
+                //    scalar plan executes (greedy-identical geometry, proven parity).
+                //  - otherwise: the WINDOW plan executes. Its logical active prefix
+                //    is consumedCount rows REGARDLESS of scalar-binding availability;
+                //    a multi-row rerun without the scalar binding must present the
+                //    full committed prefix too (the old activeWindow=1 default was a
+                //    scalar-binding-only assumption).
+                const bool multiRowRerun = consumedCount > 1;
+                const bool scalarRerun = useScalarTarget && !multiRowRerun;
+                const int rerunActiveWindow = multiRowRerun ? consumedCount : 1;
+                config->activeWindow = rerunActiveWindow;
                 if (useWindowSubstrate && config->windowMax > 1) {
                     NDArray* wMask = config->windowGridMask;
                     NDArray* wPos  = config->windowPositionGrid;
                     LongType wMax  = static_cast<LongType>(config->windowMax);
-                    LongType aW    = static_cast<LongType>(config->activeWindow);
+                    LongType aW    = static_cast<LongType>(rerunActiveWindow);
                     LongType rowLen = wMask->sizeAt(3);
-                    if (wPos != nullptr) NDArray::prepareSpecialUse({wMask, wPos, inputIds}, {});
-                    else NDArray::prepareSpecialUse({wMask, inputIds}, {});
+                    // ACCESS BOOKKEEPING (Stage 3): refill kernels write ONLY
+                    // wMask/wPos; inputIds is not a fabricated output.
+                    if (wPos != nullptr) NDArray::prepareSpecialUse({wMask, wPos}, {});
+                    else NDArray::prepareSpecialUse({wMask}, {});
                     LongType totalElems = wMax * rowLen;
                     int threads = 256;
                     int blocks = static_cast<int>((totalElems + threads - 1) / threads);
@@ -2782,8 +2786,11 @@ void autoregressiveDecode(
                     // wMask/wPos. No manual synchronization: inputIds' device buffer
                     // is already current (host-written once at handoff,
                     // device-authoritative since); the plan reads it as device-resident.
-                    if (wPos != nullptr) NDArray::registerSpecialUse({wMask, wPos, inputIds}, {});
-                    else NDArray::registerSpecialUse({wMask, inputIds}, {});
+                    // For a width-one rerun the frozen plan still runs W-wide but
+                    // consumes only row 0; for a multi-row rerun the plan consumes
+                    // rows [0, consumedCount-1] - both keyed off activeWindow.
+                    if (wPos != nullptr) NDArray::registerSpecialUse({wMask, wPos}, {});
+                    else NDArray::registerSpecialUse({wMask}, {});
                 }
                 NDArray* aslArr = extInputs[config->actualSequenceLengthExtIdx];
                 NDArray::prepareSpecialUse({aslArr}, {});
@@ -2791,10 +2798,10 @@ void autoregressiveDecode(
                     aslArr->specialBuffer(), static_cast<LongType>(consumedCount));
                 NDArray::registerSpecialUse({aslArr}, {});
                 DSP_DIAG(KV_CACHE,
-                         "SPEC_STATE_RERUN step=%d proposed=%d accepted=%d - re-executing "
-                         "with actual_sequence_length=%d (single-token commit) for "
-                         "greedy-identical state advance",
-                         step, proposedCount, acceptedDrafts, consumedCount);
+                         "SPEC_STATE_RERUN step=%d proposed=%d accepted=%d "
+                         "consumed=%d geometry=%s - re-executing for authoritative state advance",
+                         step, proposedCount, acceptedDrafts, consumedCount,
+                         scalarRerun ? "scalar-width-1" : "window");
                 if (config->kvQuantFormat > 0 && config->kvScaleBuffers != nullptr
                     && config->kvInputExtIndices != nullptr && config->numGdnStatePairs >= 0) {
                     static thread_local std::vector<NDArray*> tl_kvQuantPtrsRerun;
@@ -2807,9 +2814,10 @@ void autoregressiveDecode(
                     setKvScaleRegistry(tl_kvQuantPtrsRerun.data(), config->kvScaleBuffers, numKvPairs);
                 }
                 // The scalar binding supplies width-one arrays for single-row commits.
-                // Multi-row commits route through the WINDOW plan (activeWindow was set
-                // to consumedCount above); its W-wide arrays are already wired.
-                Status rerunStatus = (useScalarTarget && consumedCount == 1)
+                // Multi-row commits route through the WINDOW plan (activeWindow was
+                // set to consumedCount above, independent of the binding); its
+                // W-wide arrays are already wired.
+                Status rerunStatus = scalarRerun
                                          ? executeScalarTarget()
                                          : plan->executeSteadyState(
                     extInputs, numExtInputs, planOutputs, numPlanOutputs,
@@ -2839,19 +2847,20 @@ void autoregressiveDecode(
                                  rerunLogits != nullptr
                                      ? static_cast<long long>(rerunLogits->rankOf()) : -1LL);
                     LongType rerunVocab = rerunLogits->sizeAt(rerunLogits->rankOf() - 1);
-                    NDArray::prepareSpecialUse({specArgmaxDevice}, {rerunLogits});
-                    // specArgmaxDevice[0] is scratch here; it is rewritten with the
-                    // host-side emission sequence further below, and row 0 of the
-                    // raw verification argmaxes was already snapshotted into
-                    // argmaxRaw and consumed by ACCEPTANCE above (argmaxDst).
+                    // SCRATCH DOMAIN (Stage 2): the rerun argmax writes to the
+                    // dedicated rerunScratch buffer. specArgmaxDevice holds the
+                    // committed token sequence; overwriting its row 0 here made
+                    // predictor repair read a token absent from the authoritative
+                    // emitted prefix on multi-row reruns.
+                    NDArray::prepareSpecialUse({rerunScratch}, {rerunLogits});
                     BUILD_SINGLE_SELECTOR(rerunLogits->dataType(), argmaxLauncher,
                                           (stream, rerunLogits->specialBuffer(),
-                                           specArgmaxDevice->specialBuffer(),
+                                           rerunScratch->specialBuffer(),
                                            rerunVocab),
                                           SD_FLOAT_TYPES);
-                    cudaMemcpyAsync(&rerunRefreshedToken, specArgmaxDevice->specialBuffer(),
+                    cudaMemcpyAsync(&rerunRefreshedToken, rerunScratch->specialBuffer(),
                                     sizeof(LongType), cudaMemcpyDeviceToHost, *stream);
-                    NDArray::registerSpecialUse({specArgmaxDevice}, {rerunLogits});
+                    NDArray::registerSpecialUse({rerunScratch}, {rerunLogits});
                     // The emission/storage path below re-reads argmaxDst from host
                     // memory only, so a stream-ordered completion of this D2H before
                     // the rewrite is required.
@@ -2930,12 +2939,11 @@ void autoregressiveDecode(
                 // q-1), mirroring the target's accepted-prefix re-execution.
                 // planOutputs holds the post-rerun hidden rows keyed by position
                 // - base, so row j pairs position q-1 with token q.
-                // NOTE (rerun-refresh): device specArgmaxDevice[0] holds the
-                // RERUN argmax after the refresh block above (kernel write +
-                // stream sync); rows >= 1 remain the raw verification argmaxes.
-                // Under the single-token commit this loop is a no-op anyway; the
-                // host emission rewrite below re-uploads the refreshed token so
-                // host and device row 0 stay identical.
+                // TOKEN SOURCE (Stage 2): this loop reads the COMMITTED token
+                // sequence from specArgmaxDevice[j+1]. The rerun-refresh argmax
+                // goes to a dedicated mtpRerunScratch buffer and never aliases
+                // this sequence, so repair can only ever consume tokens from the
+                // authoritative emitted prefix.
                 // NOTE (vLLM contract, unconditional repair): EVERY retained row
                 // must pair (x_q, target h_{q-1}) - trusting a chained slot's
                 // self-carried row poisons the predictor context from the first
@@ -2960,7 +2968,12 @@ void autoregressiveDecode(
                     LongType repairPosition = basePosition + 1 + j;
                     setMtpTargetCarryCuda(
                         planOutputs[config->targetHiddenOutputIdx], j);
-                    setMtpNextInputCuda(specArgmaxDevice, j, repairPosition);
+                    // Pairing (vLLM contract): row (base+1+j) holds committed
+                    // token argmaxDst[j+1]. specArgmaxDevice still holds the RAW
+                    // verification argmaxes at this point (the finalized sequence
+                    // is uploaded AFTER this loop), and raw[j+1] == argmaxDst[j+1]
+                    // for every repaired index, so read j+1 - not j.
+                    setMtpNextInputCuda(specArgmaxDevice, j + 1, repairPosition);
                     executeMtpCuda(repairPosition, 0, false);
                     DSP_DIAG(KV_CACHE,
                              "MTP_PREFIX_REPAIR step=%d position=%lld committedRow=%d "
@@ -3668,6 +3681,10 @@ void autoregressiveDecode(
     if (mtpDraftDevice != nullptr) {
         delete mtpDraftDevice;
         mtpDraftDevice = nullptr;
+    }
+    if (mtpRerunScratch != nullptr) {
+        delete mtpRerunScratch;
+        mtpRerunScratch = nullptr;
     }
 
     // -- Write token count --

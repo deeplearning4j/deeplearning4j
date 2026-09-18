@@ -398,14 +398,19 @@ void autoregressiveDecode(
             bool geometry = i == config->scalarInputIdsExtIdx || i == config->scalarCausalMaskExtIdx
                 || i == config->scalarPositionOffsetExtIdx || i == config->scalarCachePositionExtIdx
                 || i == config->scalarActualSequenceLengthExtIdx;
+            // Recurrent decision in the TARGET index domain: scalar input i maps to
+            // target index ti; recurrent iff ti equals a target-domain GDN/conv
+            // state index. The gdn/conv arrays are NEVER re-mapped through the
+            // scalar-indexed vector (they are already target indices).
+            const int ti = config->scalarInputToTarget[i];
             bool recurrent = false;
             for (int s = 0; s < config->numGdnStatePairs && !recurrent; ++s) {
                 recurrent = config->gdnStateExtIndices != nullptr
-                    && config->scalarInputToTarget[config->gdnStateExtIndices[s]] == config->scalarInputToTarget[i];
+                    && ti == config->gdnStateExtIndices[s];
             }
             for (int s = 0; s < config->numConvStatePairs && !recurrent; ++s) {
                 recurrent = config->convStateExtIndices != nullptr
-                    && config->scalarInputToTarget[config->convStateExtIndices[s]] == config->scalarInputToTarget[i];
+                    && ti == config->convStateExtIndices[s];
             }
             // Mirror the CUDA contract: refresh geometry + recurrent snapshots only;
             // weights and derived inputs keep their captured values.
@@ -1016,7 +1021,6 @@ void autoregressiveDecode(
             // earlier approach (skipping the in-loop accept entirely) broke
             // terminal truncation and mid-batch stops (red b8e04d8e).
             while (specConsumed_cpu < specAccepted_cpu + 1
-                    && (!useScalarTarget || specConsumed_cpu == 0)
                     && tokensGenerated + specConsumed_cpu < maxNewTokens) {
                 LongType token = specRowArgmax_cpu[specConsumed_cpu];
                 specConsumed_cpu++;
@@ -1281,6 +1285,9 @@ void autoregressiveDecode(
             // Accepted outputs emitted (including EOS), not consumed draft inputs.
             totalSpeculativeAccepted += std::min(acceptedDrafts, specConsumed_cpu);
             speculativeStepCount++;
+            REQUIRE_TRUE(specConsumed_cpu > 0, 0,
+                         "autoregressive_decode: speculative consume committed zero rows "
+                         "with proposedCount=%d at step %d", proposedCount_cpu, step);
 
             // Gated diagnostic event: mirrors the CUDA helper's SPEC_STEP event.
             DSP_DIAG(KV_CACHE,
