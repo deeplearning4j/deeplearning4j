@@ -2655,15 +2655,21 @@ void autoregressiveDecode(
             // plan with activeWindow=consumedCount.
             // Multi-token commit (Phase 2b exit): consume the accepted prefix
             // [0, acceptedDrafts] row by row, feeding the stop matcher
-            // provisionally so an accepted EOS/stop sequence or the token budget
-            // truncates the commit exactly where termination occurs (CPU-mirror
-            // semantics, red b8e04d8e). With the scalar target the width-1 plan
-            // commits one row per step, so only row 0 is consumed there
-            // (production keeps the proven parity path).
+            // PROVISIONALLY against a pre-step snapshot. No persistent matcher
+            // mutation survives past the finalize step below - if the rerun
+            // invalidates any part of the provisional sequence, restore(snapshot)
+            // re-establishes the exact pre-step state (including evicted
+            // history), which rollback(n) cannot do for a bounded suffix.
+            // Scalar-bound production participates in multi-token: when drafts
+            // are accepted the state rerun routes through the WINDOW plan
+            // (activeWindow=consumedCount) below; the scalar width-1 plan serves
+            // only single-row commits (acceptedDrafts == 0). The window path's
+            // equivalence is asserted by the teacher-forced contract suites and
+            // the real-model gate's n>1 EMITTED_STEP evidence.
             int consumedCount = 0;
             bool shouldStop = false;
+            auto matcherSnapshot = stopMatcher.snapshot();
             while (consumedCount < 1 + acceptedDrafts
-                    && (!useScalarTarget || consumedCount == 0)
                     && tokensGenerated + consumedCount < maxNewTokens) {
                 LongType token = argmaxDst[consumedCount];
                 consumedCount++;
@@ -2672,7 +2678,20 @@ void autoregressiveDecode(
                     && stopTerminationAllowed(config, tokensGenerated + consumedCount);
                 if (shouldStop) break;
             }
-            if (consumedCount == 0) consumedCount = 1;
+            if (consumedCount == 0) {
+                // Budget exhausted BEFORE the first row: consume nothing, emit
+                // nothing, leave matcher untouched. This step has no committed
+                // emission; the next loop iteration re-proposes (the step bookkeeping
+                // below is scoped to the committed path and must NOT run). Do not
+                // force consumedCount to 1 to hide a control-flow error.
+                totalSpeculativeProposed += proposedCount;
+                totalSpeculativeAccepted += acceptedDrafts;
+                speculativeStepCount++;
+                config->activeWindow = 1;
+                NDArray::registerSpecialUse({sampledToken}, {logitsOutput});
+                if (shouldStop) break;
+                continue;
+            }
             const int carryRow = consumedCount - 1;
 
             // -- ADR 0106 Phase 2 / Phase 2b: authoritative state commit ------------
@@ -2725,7 +2744,9 @@ void autoregressiveDecode(
                     // Width-1 input_ids row: the committed base token, as greedy presents it.
                     // Row 0 of inputIds still holds the committed base token at this point
                     // (drafts were written to rows 1..K for the verify pass).
-                    inputIds->syncToDevice();
+                    // inputIds is NOT written here - the kernels only touch wMask/wPos.
+                    // No manual synchronization: inputIds' device buffer is already
+                    // current (host-written once at handoff, device-authoritative since).
                     if (wPos != nullptr) NDArray::registerSpecialUse({wMask, wPos, inputIds}, {});
                     else NDArray::registerSpecialUse({wMask, inputIds}, {});
                     // Rerun consumes only row 0; the frozen plan still runs W-wide.
@@ -2736,7 +2757,8 @@ void autoregressiveDecode(
                 // so the trunk advances through the full committed prefix. The scalar
                 // plan remains the single-row path (consumedCount == 1, i.e. zero
                 // accepted drafts).
-                if (useScalarTarget && consumedCount > 1) {
+                const bool multiRowRerun = useScalarTarget && consumedCount > 1;
+                if (multiRowRerun) {
                     config->activeWindow = consumedCount;
                 }
                 if (useWindowSubstrate && config->windowMax > 1) {
@@ -2756,7 +2778,10 @@ void autoregressiveDecode(
                         fillWindowPositionGridKernel<<<1, static_cast<int>(wMax), 0, *stream>>>(
                             wPos->specialBuffer(), wMax, currentPosition, aW);
                     }
-                    inputIds->syncToDevice();
+                    // inputIds is NOT written here - the refill kernels only touch
+                    // wMask/wPos. No manual synchronization: inputIds' device buffer
+                    // is already current (host-written once at handoff,
+                    // device-authoritative since); the plan reads it as device-resident.
                     if (wPos != nullptr) NDArray::registerSpecialUse({wMask, wPos, inputIds}, {});
                     else NDArray::registerSpecialUse({wMask, inputIds}, {});
                 }
@@ -2977,24 +3002,23 @@ void autoregressiveDecode(
             argmaxDst[acceptedDrafts] = correctionOrBonus;
             int n = consumedCount;
 
-            // Emission rewrite (MUST BE LAST). The single-token commit emits
-            // exactly one token: the rerun's scalar argmax when the asl=1 pass
-            // produced the authoritative state (rerunRefreshedToken >= 0),
-            // otherwise the verification row-0 argmax (no-rerun steps are
-            // width-1 anyway, so the two are numerically equivalent there).
-            // Ordering matters: on an accepted step draftIds[0] == the verify
-            // row-0 argmax, so the draft restore above would clobber a rewrite
-            // made earlier back to the W-wide verification readout while the
-            // committed GDN/conv/KV state and the predictor next-input (epilogue
-            // D2D above) already carry the rerun token. Applying the rewrite
-            // last keeps host emission == device state == greedy continuation.
-            if (rerunRefreshedToken >= 0) {
+            // Emission rewrite. The rerun's scalar argmax is the authoritative
+            // readout for the single-token consume (CPU mirror: gated on n == 1).
+            // For a multi-token consume the provisional accepts already carry the
+            // first-pass argmaxes for rows [0, consumedCount-1]; there is no
+            // single rewritten row, so the matcher suffix stays as fed. If a
+            // future window-equivalence path makes a multi-row rerun authoritative
+            // over any EARLIER row, restore(matcherSnapshot) must re-establish the
+            // pre-step matcher state and the whole emission/commit decision must
+            // be re-derived from the authoritative sequence BEFORE any state
+            // commit - never mutate the token after commitRecurrentState.
+            if (rerunRefreshedToken >= 0 && consumedCount == 1) {
                 argmaxDst[0] = rerunRefreshedToken;
-                // T1 (audit F3): authoritative stop state. The provisional accept
-                // above used the first-pass argmax; when the rerun rewrote row 0,
-                // roll back that provisional accept and feed the FINAL emitted
-                // token exactly once (CPU mirror).
-                stopMatcher.rollback(1);
+                // T1 (audit F3): authoritative stop state for the single-token
+                // consume. Restore the pre-step snapshot (equivalent to
+                // rollback(1) here, but explicit and safe if the provisional
+                // sequence ever grows) and feed the FINAL emitted token once.
+                stopMatcher.restore(matcherSnapshot);
                 bool matchedStop = stopMatcher.accept(argmaxDst[0]);
                 shouldStop = matchedStop
                     && stopTerminationAllowed(config, tokensGenerated + consumedCount);

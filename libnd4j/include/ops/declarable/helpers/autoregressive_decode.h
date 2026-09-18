@@ -267,6 +267,19 @@ class StopSequenceMatcher {
     while (count-- > 0 && !_suffix.empty()) _suffix.pop_back();
   }
 
+  /** Exact pre-step checkpoint of the matcher suffix. Unlike rollback(n), this
+   *  restores the complete observable state, including any history that was
+   *  evicted from the bounded suffix during provisional accepts. Use for
+   *  multi-token transactions where a rerun may invalidate any part of the
+   *  provisional sequence, not just the final token. */
+  struct Snapshot {
+    std::vector<int> suffix;
+  };
+
+  Snapshot snapshot() const { return Snapshot{_suffix}; }
+
+  void restore(const Snapshot& snap) { _suffix = snap.suffix; }
+
   bool prime(const std::vector<int>& history) {
     bool matched = false;
     for (int token : history) matched = accept(token);
