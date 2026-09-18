@@ -386,11 +386,15 @@ public class TestQwen35MtpDecode {
 
         // Greedy decode is deterministic and prefix-stable: the session's
         // K=1 -> K=0 -> K=1 sequence must equal the single-shot K=1 reference
-        // token-for-token across the transition boundary.
-        assertEquals(sessionSeq.length, Math.min(referenceSeq.length, sessionSeq.length),
-                "Session must not terminate early across the K transition");
-        assertArrayEquals(Arrays.copyOf(referenceSeq, sessionSeq.length),
-                sessionSeq,
+        // token-for-token across the transition boundary. The session ran
+        // TOKENS + 2*stepTokens legs (60+20+20=100 by default); compare the
+        // full reference prefix. Arrays.copyOf pads with zeros when the source
+        // is shorter than the requested length, so guard the prefix length
+        // explicitly instead of relying on min() semantics.
+        assertTrue(sessionSeq.length >= referenceSeq.length,
+                "Session must cover at least the reference length across the K transition: "
+                        + "session=" + sessionSeq.length + " reference=" + referenceSeq.length);
+        assertArrayEquals(referenceSeq, Arrays.copyOf(sessionSeq, referenceSeq.length),
                 "K=1 -> K=0 -> K=1 same-session sequence must match the K=1 reference");
     }
 
