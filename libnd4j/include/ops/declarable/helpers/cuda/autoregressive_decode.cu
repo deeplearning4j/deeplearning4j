@@ -2836,6 +2836,46 @@ void autoregressiveDecode(
                 // Multi-row commits route through the WINDOW plan (activeWindow was
                 // set to consumedCount above, independent of the binding); its
                 // W-wide arrays are already wired.
+                // STATE RESTORE (window4 evidence): the verify pass MUTATES its
+                // recurrent ext inputs in place (conv/gdn state advanced through
+                // the full W rows, including the rejected suffix). The window4
+                // teacher-forced gate proves the chained-scalar equivalence holds
+                // ONLY from the pre-step state (acceptedZero/partialRerunState
+                // discriminators exact). So before a window-geometry rerun,
+                // restore every private recurrent snapshot (maintained by
+                // prepareScalarTarget at pre-verify) back into the live window
+                // ext inputs, so the rerun advances consumedCount rows from the
+                // same pre-step state the verify pass started from. The scalar
+                // rerun does not need this: executeScalarTarget reads the
+                // private width-1 arrays directly.
+                if (!scalarRerun && useScalarTarget) {
+                    for (int i = 0; i < config->scalarNumPlanExternalInputs; ++i) {
+                        int ti = config->scalarInputToTarget[i];
+                        if (ti < 0 || ti >= numExtInputs) continue;
+                        bool recurrent = false;
+                        for (int s = 0; s < config->numGdnStatePairs && !recurrent; ++s) {
+                            recurrent = config->gdnStateExtIndices != nullptr
+                                && ti == config->gdnStateExtIndices[s];
+                        }
+                        for (int s = 0; s < config->numConvStatePairs && !recurrent; ++s) {
+                            recurrent = config->convStateExtIndices != nullptr
+                                && ti == config->convStateExtIndices[s];
+                        }
+                        NDArray* scalarArr = scalarInputs[i];
+                        NDArray* windowArr = extInputs[ti];
+                        if (!recurrent || scalarArr == nullptr || windowArr == nullptr
+                                || scalarArr->dataBuffer() == windowArr->dataBuffer()) continue;
+                        NDArray::prepareSpecialUse({windowArr}, {scalarArr});
+                        auto restoreErr = cudaMemcpyAsync(windowArr->specialBuffer(),
+                            scalarArr->specialBuffer(),
+                            scalarArr->lengthOf() * scalarArr->sizeOfT(),
+                            cudaMemcpyDeviceToDevice, *stream);
+                        REQUIRE_TRUE(restoreErr == cudaSuccess, 0,
+                            "autoregressive_decode: recurrent state restore failed: %s",
+                            cudaGetErrorString(restoreErr));
+                        NDArray::registerSpecialUse({windowArr}, {scalarArr});
+                    }
+                }
                 Status rerunStatus = scalarRerun
                                          ? executeScalarTarget()
                                          : plan->executeSteadyState(

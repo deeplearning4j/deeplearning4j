@@ -589,11 +589,23 @@ public class TestQwen35MtpDecode {
             String firstFinalStateDivergence = null;
             double firstFinalStateMax = 0.0;
             double firstFinalStateL1 = 0.0;
+            // WINDOW4 ORACLE SCOPING: the window4 mode runs the W-wide pass at
+            // asl=4 with WILD draft tokens at rows 2-3 (deliberately not consumed
+            // by the 2-row scalar chain). The full-window finalState therefore
+            // legitimately folds two extra rows the scalar chain never saw - the
+            // acceptedZeroRerunState/partialRerunState discriminators below prove
+            // the shortened-recurrence rerun from pre-step state is EXACT, and the
+            // row-0/row-1 output comparisons prove the consumed rows are exact.
+            // So the finalState check is meaningful only in the asl=2 envelope
+            // (no wild rows), where the window pass folds exactly the same rows
+            // as the chained scalar. In window4 mode it is reported, not asserted.
+            boolean assertFinalState = !Boolean.getBoolean("mtp.parity.window4");
             for (String name : stateOutputNames) {
                 double[] stateDiff = difference(
                         windowStateSnapshot.get(name), scalarSecondStateSnapshot.get(name));
                 if (stateDiff[0] != 0.0) {
-                    log.info("[MTP-TARGET-PARITY] discriminator=finalState name={} max={} l1={}",
+                    log.info("[MTP-TARGET-PARITY] discriminator=finalState name={} max={} l1={} "
+                                    + "(window4: expected - wild rows 2-3 fold extra state)",
                             name, stateDiff[0], stateDiff[1]);
                     if (firstFinalStateDivergence == null) {
                         firstFinalStateDivergence = name;
@@ -837,9 +849,13 @@ public class TestQwen35MtpDecode {
                     (requestAttentionAux ? "Aux-output" : "Output-only")
                             + " W=5 target rows diverged first at " + firstDivergence
                             + " (max=" + firstMax + ", l1=" + firstL1 + ")");
-            assertTrue(firstFinalStateDivergence == null,
-                    "W=5 final recurrent state diverged first at " + firstFinalStateDivergence
-                            + " (max=" + firstFinalStateMax + ", l1=" + firstFinalStateL1 + ")");
+            // window4: full-window finalState folds the wild rows; asserted only
+            // in the asl=2 envelope where both legs fold the same consumed rows.
+            if (assertFinalState) {
+                assertTrue(firstFinalStateDivergence == null,
+                        "W=5 final recurrent state diverged first at " + firstFinalStateDivergence
+                                + " (max=" + firstFinalStateMax + ", l1=" + firstFinalStateL1 + ")");
+            }
             assertTrue(firstAcceptedZeroStateDivergence == null,
                     "Accepted-zero rerun state diverged first at "
                             + firstAcceptedZeroStateDivergence
