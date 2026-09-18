@@ -3680,21 +3680,143 @@ void autoregressiveDecode(
             // refresh IS the authoritative emission. The matcher snapshot is
             // re-established and each finalized token is fed exactly once.
             int carryRow = consumedCount - 1;
-            if (rerunRefreshedToken >= 0 && rerunRefreshedToken != argmaxDst[0]) {
-                LongType supersededRow0 = argmaxDst[0];
-                argmaxDst[0] = rerunRefreshedToken;
-                if (consumedCount > 1) {
-                    DSP_DIAG(KV_CACHE,
-                             "RERUN_TRUNCATE_COMMIT step=%d basePos=%lld "
-                             "supersededRow0=%lld rerunRow0=%lld committed=%d -> n=1 - "
-                             "stale suffix re-derived by the next step",
-                             step, (long long)basePosition, (long long)supersededRow0,
-                             (long long)rerunRefreshedToken, consumedCount);
-                    consumedCount = 1;
-                    n = 1;
-                    shouldStop = false;
-                }
-                stopMatcher.restore(matcherSnapshot);
+                if (rerunRefreshedToken >= 0 && rerunRefreshedToken != argmaxDst[0]) {
+                    LongType supersededRow0 = argmaxDst[0];
+                    argmaxDst[0] = rerunRefreshedToken;
+                    if (consumedCount > 1) {
+                        const int rerunWidthM = consumedCount;
+                        DSP_DIAG(KV_CACHE,
+                                 "RERUN_TRUNCATE_COMMIT step=%d basePos=%lld "
+                                 "supersededRow0=%lld rerunRow0=%lld committed=%d -> n=1 - "
+                                 "stale suffix re-derived by the next step",
+                                 step, (long long)basePosition, (long long)supersededRow0,
+                                 (long long)rerunRefreshedToken, consumedCount);
+                        consumedCount = 1;
+                        n = 1;
+                        shouldStop = false;
+
+                        // SHORTENED-PREFIX STATE RECOVERY (review round 3,
+                        // finding 3): the multi-row rerun's planOutputs hold
+                        // recurrent state AFTER m consumed inputs, but the
+                        // finalized emission is now ONE token - committing that
+                        // state would pair a 1-token history with m-token
+                        // recurrence (returned tokens and committed state
+                        // describing different histories). Re-derive BOTH from
+                        // one width-1 execution: restore the pre-verify
+                        // snapshots (owned arrays, never aliased by the plan,
+                        // so they still hold the pre-step state), refill the
+                        // window geometry to activeWindow=1 + asl=1, re-execute
+                        // the window plan, and take the emission readout AND
+                        // the committed state from THIS pass.
+                        restorePreVerificationState();
+                        restorePreVerificationKvRows();
+                        config->activeWindow = 1;
+                        if (useWindowSubstrate && config->windowMax > 1) {
+                            NDArray* wMask = config->windowGridMask;
+                            NDArray* wPos  = config->windowPositionGrid;
+                            LongType wMax  = static_cast<LongType>(config->windowMax);
+                            LongType rowLen = wMask->sizeAt(3);
+                            if (wPos != nullptr) NDArray::prepareSpecialUse({wMask, wPos}, {});
+                            else NDArray::prepareSpecialUse({wMask}, {});
+                            LongType totalElems = wMax * rowLen;
+                            int threads = 256;
+                            int blocks = static_cast<int>((totalElems + threads - 1) / threads);
+                            fillWindowMaskKernel<<<blocks, threads, 0, *stream>>>(
+                                wMask->specialBuffer(), wMax, rowLen, currentPosition, 1,
+                                WINDOW_MASK_FILL);
+                            if (wPos != nullptr) {
+                                fillWindowPositionGridKernel<<<1, static_cast<int>(wMax), 0, *stream>>>(
+                                    wPos->specialBuffer(), wMax, currentPosition, 1);
+                            }
+                            if (wPos != nullptr) NDArray::registerSpecialUse({wMask, wPos}, {});
+                            else NDArray::registerSpecialUse({wMask}, {});
+                        }
+                        {
+                            NDArray* aslArr = extInputs[config->actualSequenceLengthExtIdx];
+                            NDArray::prepareSpecialUse({aslArr}, {});
+                            updatePositionIdsKernel<<<1, 1, 0, *stream>>>(
+                                aslArr->specialBuffer(), static_cast<LongType>(1));
+                            NDArray::registerSpecialUse({aslArr}, {});
+                        }
+                        if (config->kvQuantFormat > 0 && config->kvScaleBuffers != nullptr
+                            && config->kvInputExtIndices != nullptr) {
+                            std::vector<NDArray*> kvQuantPtrsShort(numKvPairs);
+                            for (int ki = 0; ki < numKvPairs; ki++) {
+                                int extIdx = config->kvInputExtIndices[ki];
+                                kvQuantPtrsShort[ki] = (extIdx >= 0 && extIdx < numExtInputs)
+                                    ? extInputs[extIdx] : nullptr;
+                            }
+                            setKvScaleRegistry(kvQuantPtrsShort.data(), config->kvScaleBuffers,
+                                               numKvPairs);
+                        }
+                        DSP_DIAG(KV_CACHE,
+                                 "RERUN_SHORTEN_REEXEC step=%d oldM=%d - width-1 "
+                                 "re-execution so committed state matches the 1-token "
+                                 "history",
+                                 step, rerunWidthM);
+                        Status shortenStatus = plan->executeSteadyState(
+                            extInputs, numExtInputs, planOutputs, numPlanOutputs,
+                            reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)));
+                        if (config->kvQuantFormat > 0 && config->kvScaleBuffers != nullptr) {
+                            clearKvScaleRegistry();
+                        }
+                        std::string shortenFailureDetail;
+                        if (shortenStatus != Status::OK)
+                            shortenFailureDetail = nestedPlanFailureDetail();
+                        REQUIRE_TRUE(shortenStatus == Status::OK, 0,
+                                     "%s [autoregressive_decode shortened-prefix re-execution "
+                                     "step=%d, status=%s (%d)]",
+                                     shortenFailureDetail.c_str(), step,
+                                     graph::dsp::dspStatusName(shortenStatus),
+                                     static_cast<int>(shortenStatus));
+                        // Authoritative row-0 readout from the width-1 pass -
+                        // the SAME computation the committed state derives
+                        // from, so emission and state are self-consistent.
+                        NDArray* shortenLogits = planOutputs[config->logitsOutputIdx];
+                        REQUIRE_TRUE(shortenLogits != nullptr && shortenLogits->rankOf() >= 2, 0,
+                                     "autoregressive_decode: shortened rerun logits output is "
+                                     "invalid at step %d", step);
+                        LongType shortenVocab = shortenLogits->sizeAt(shortenLogits->rankOf() - 1);
+                        NDArray::prepareSpecialUse({rerunScratch}, {shortenLogits});
+                        BUILD_SINGLE_SELECTOR(shortenLogits->dataType(), argmaxLauncher,
+                                              (stream, shortenLogits->specialBuffer(),
+                                               rerunScratch->specialBuffer(),
+                                               shortenVocab),
+                                              SD_FLOAT_TYPES);
+                        LongType shortenedToken = -1;
+                        cudaMemcpyAsync(&shortenedToken, rerunScratch->specialBuffer(),
+                                        sizeof(LongType), cudaMemcpyDeviceToHost, *stream);
+                        // Bounded NaN probe rides the required readback sync
+                        // (same inputs as the guarded pass-1 rerun; a NaN here
+                        // is the same poisoning class and must stay loud).
+                        float shortenTop8[8] = {};
+                        bool shortenProbe = shortenVocab >= 8
+                                && shortenLogits->dataType() == DataType::FLOAT32;
+                        if (shortenProbe) {
+                            cudaMemcpyAsync(shortenTop8, shortenLogits->specialBuffer(),
+                                            8 * sizeof(float), cudaMemcpyDeviceToHost, *stream);
+                        }
+                        NDArray::registerSpecialUse({rerunScratch}, {shortenLogits});
+                        cudaError_t shortenSync = cudaStreamSynchronize(*stream);
+                        REQUIRE_TRUE(shortenSync == cudaSuccess, 0,
+                                     "autoregressive_decode: shortened rerun readback sync "
+                                     "failed at step %d: %s", step,
+                                     cudaGetErrorString(shortenSync));
+                        bool shortenNan = false;
+                        if (shortenProbe) {
+                            for (int i = 0; i < 8; i++) {
+                                if (std::isnan(shortenTop8[i])) { shortenNan = true; break; }
+                            }
+                        }
+                        REQUIRE_TRUE(!shortenNan, 0,
+                                     "autoregressive_decode: SHORTEN REEXEC NaN step=%d - "
+                                     "width-1 re-execution produced NaN logits; refusing to "
+                                     "commit", step);
+                        // Emission AND state now come from this pass.
+                        rerunRefreshedToken = shortenedToken;
+                        argmaxDst[0] = shortenedToken;
+                    }
+                    stopMatcher.restore(matcherSnapshot);
                 bool matchedStop = false;
                 carryRow = consumedCount - 1;
                 for (int i = 0; i < n; i++) {

@@ -1105,6 +1105,11 @@ void autoregressiveDecode(
         int specConsumed_cpu = 0;
         bool specShouldStop_cpu = false;
         LongType specRowArgmax_cpu[33] = {};
+        // Exact pre-provisional-accept matcher checkpoint: the truncated multi-row
+        // commit path (RERUN_SHORTEN_REEXEC, review round 3 finding 3) restores it
+        // before re-accepting the single authoritative token, so the suffix never
+        // retains rows from the invalidated verification sequence.
+        StopSequenceMatcher::Snapshot matcherPreLoopSnapshot_cpu;
         if (useSpeculative_cpu && proposedCount_cpu > 0
                 && planOutputs[config->logitsOutputIdx] != nullptr
                 && planOutputs[config->logitsOutputIdx]->rankOf() == 3) {
@@ -1164,6 +1169,7 @@ void autoregressiveDecode(
             // validated scalar width-1 path. true (experimental) consumes the
             // full accepted prefix. CUDA mirror: identical cap expression.
             const int commitCap_cpu = config->allowMultiRowCommit ? specAccepted_cpu + 1 : 1;
+            matcherPreLoopSnapshot_cpu = stopMatcher.snapshot();
             while (specConsumed_cpu < commitCap_cpu
                     && tokensGenerated + specConsumed_cpu < maxNewTokens) {
                 LongType token = specRowArgmax_cpu[specConsumed_cpu];
@@ -1320,52 +1326,17 @@ void autoregressiveDecode(
         // Commit the target model's accepted hidden state into the reusable MTP
         // carry. Predictor KV writes beyond a rejected prefix remain allocated,
         // but their mask entries are restored before the next draft chain.
-        if (useMtp_cpu) {
-            REQUIRE_TRUE(config->targetHiddenOutputIdx >= 0
-                             && config->targetHiddenOutputIdx < numPlanOutputs
-                             && planOutputs[config->targetHiddenOutputIdx] != nullptr,
-                         0, "autoregressive_decode: target hidden output is unavailable for MTP");
-
-            int carryRow_cpu = proposedCount_cpu > 0
-                ? specConsumed_cpu - 1 : 0;
-            LongType nextMtpPosition_cpu = currentPosition + carryRow_cpu + 1;
-            // Written does not mean target-conditioned: recursive proposal rows
-            // use predictor hidden states. Keep this horizon fixed for masking
-            // the rejected suffix, independently of the retained-row repair.
-            const LongType mtpWrittenThrough_cpu = proposedCount_cpu > 0
-                ? currentPosition + proposedCount_cpu - 1 : currentPosition;
-            // Predictor-side accepted-prefix repair (CUDA mirror): rewrite every
-            // committed position's predictor KV row as fused(committed token,
-            // target hidden at q-1). Chained proposal rows carry self-propagated
-            // hidden; a fully accepted K=1 step leaves the bonus row unwritten by
-            // the prefix. The target's rerun above repairs only the target plan.
-            // specRowArgmax_cpu row j is the accepted draft for j < specAccepted
-            // and the correction/bonus for the final committed row.
-            for (int j = 0; j + 1 < specConsumed_cpu; j++) {
-                LongType repairPosition = currentPosition + 1 + j;
-                setMtpTargetCarryCpu(
-                    planOutputs[config->targetHiddenOutputIdx], j);
-                (void)executeMtpCpu(specRowArgmax_cpu[j], repairPosition);
-                DSP_DIAG(KV_CACHE,
-                         "MTP_PREFIX_REPAIR step=%d position=%lld committedRow=%d "
-                         "carryRow=%d — rewriting predictor KV row with target hidden",
-                         step, (long long)repairPosition, j, carryRow_cpu);
-            }
-
-            if (nextMtpPosition_cpu <= mtpWrittenThrough_cpu) {
-                BUILD_SINGLE_SELECTOR(config->mtpCausalMask->dataType(), maskCausalRangeCpu,
-                                      (config->mtpCausalMask->buffer(), nextMtpPosition_cpu,
-                                       mtpWrittenThrough_cpu + 1, mtpMaskLen_cpu),
-                                      SD_FLOAT_TYPES);
-            }
-
-            setMtpTargetCarryCpu(planOutputs[config->targetHiddenOutputIdx], carryRow_cpu);
-            config->mtpPositionOffset->p(0, nextMtpPosition_cpu);
-            config->mtpCachePosition->p(0, nextMtpPosition_cpu);
-            if (proposedCount_cpu > 0) {
-                config->mtpInputIds->p(0, specRowArgmax_cpu[carryRow_cpu]);
-            }
-        }
+        // REVIEW ROUND 3 ORDERING FIX (finding 3, CPU): the predictor prefix
+        // repair and retained-pair publication below used to run BEFORE the
+        // emission finalize, publishing carryRow/pending token from the
+        // PROVISIONAL verification sequence even when the finalize truncated
+        // the commit to one row and re-executed. The block now runs AFTER the
+        // finalize (see MTP PUBLICATION below); only the hoisted geometry
+        // variables are declared here.
+        int carryRow_cpu = proposedCount_cpu > 0 ? specConsumed_cpu - 1 : 0;
+        LongType nextMtpPosition_cpu = currentPosition + carryRow_cpu + 1;
+        LongType mtpWrittenThrough_cpu = proposedCount_cpu > 0
+            ? currentPosition + proposedCount_cpu - 1 : currentPosition;
 
         // ── Step 2b: GDN/conv recurrent state feedback ──
         // Copy state outputs back to ext inputs for the next decode step.
@@ -1487,11 +1458,11 @@ void autoregressiveDecode(
             // token so the suffix/shouldStop describe what was actually emitted.
             LongType rerunRefreshedToken_cpu = -1;
             // Rerun fired whenever the consumed prefix is shorter than the
-            // window (specConsumed < 1 + proposedCount): the asl=1 pass owns
+            // window (specConsumed < 1 + proposedCount): the rerun pass owns
             // the committed state. Its row 0 is the authoritative readout even
-            // when the graph still exports W logits rows, so the width guard
-            // that disabled this path on wide graphs (red be2d7798) is wrong.
-            if (n == 1 && logitsOutput != nullptr
+            // when the graph still exports W logits rows. The old n==1 width
+            // guard left multi-row flips unrefreshed (review round 3, finding 3).
+            if (logitsOutput != nullptr
                     && planOutputs[config->logitsOutputIdx] != nullptr
                     && specConsumed_cpu < 1 + proposedCount_cpu
                     && useMtp_cpu) {
@@ -1509,17 +1480,164 @@ void autoregressiveDecode(
                     }
                     rowArgmax[0] = refreshed;
                     rerunRefreshedToken_cpu = refreshed;
+                    if (specConsumed_cpu > 1) {
+                        // SHORTENED-PREFIX STATE RECOVERY (review round 3, finding
+                        // 3, CPU mirror of CUDA RERUN_SHORTEN_REEXEC): the multi-row
+                        // rerun's planOutputs hold recurrent state AFTER
+                        // specConsumed_cpu consumed inputs, but the finalized
+                        // emission is now ONE token. Committing that state would
+                        // pair a 1-token history with m-token recurrence. Re-derive
+                        // BOTH from one width-1 execution: restore the pre-verify
+                        // snapshots (owned arrays, safe to restore again), set
+                        // asl=1, re-stage the scalar geometry, re-execute, and take
+                        // the emission readout AND the committed state from THIS
+                        // pass. The state feedback + predictor publication below
+                        // then read width-1-consistent outputs.
+                        DSP_DIAG(KV_CACHE,
+                                 "RERUN_TRUNCATE_COMMIT step=%d supersededRow0=%lld "
+                                 "rerunRow0=%lld committed=%d -> n=1 (RERUN_SHORTEN_REEXEC "
+                                 "follows)",
+                                 step, (long long)refreshed, (long long)specConsumed_cpu);
+                        specConsumed_cpu = 1;
+                        n = 1;
+                        // Width-1 geometry + pre-verify state restore (mirrors the
+                        // rerun site's ordering: restore FIRST, then asl, then the
+                        // scalar re-stage).
+                        restorePreVerificationState_cpu();
+                        if (config->actualSequenceLengthExtIdx >= 0
+                                && config->actualSequenceLengthExtIdx < numExtInputs
+                                && extInputs[config->actualSequenceLengthExtIdx] != nullptr) {
+                            extInputs[config->actualSequenceLengthExtIdx]->p(
+                                0, static_cast<LongType>(1));
+                        }
+                        if (useScalarTarget) {
+                            prepareScalarTarget();
+                        }
+                        config->activeWindow = 1;
+                        Status shortenStatus = useScalarTarget
+                            ? executeScalarTarget()
+                            : plan->execute(extInputs, numExtInputs,
+                                            planOutputs, numPlanOutputs, nullptr);
+                        if (config->kvQuantFormat > 0 && config->kvScaleBuffers != nullptr) {
+                            clearKvScaleRegistry();
+                        }
+                        std::string shortenFailureDetail;
+                        if (shortenStatus != Status::OK)
+                            shortenFailureDetail = nestedPlanFailureDetail();
+                        REQUIRE_TRUE(shortenStatus == Status::OK, 0,
+                                     "%s [autoregressive_decode shortened-prefix re-execution "
+                                     "step=%d, status=%s (%d)]",
+                                     shortenFailureDetail.c_str(), step,
+                                     graph::dsp::dspStatusName(shortenStatus),
+                                     static_cast<int>(shortenStatus));
+                        // Authoritative row-0 readout from the width-1 pass.
+                        NDArray* shortenLogits = planOutputs[config->logitsOutputIdx];
+                        REQUIRE_TRUE(shortenLogits != nullptr, 0,
+                                     "autoregressive_decode: shortened rerun logits output is "
+                                     "null at step %d", step);
+                        LongType shortenVocab = shortenLogits->sizeAt(shortenLogits->rankOf() - 1);
+                        LongType shortenedToken = cpuArgmax(shortenLogits->buffer(), shortenVocab,
+                                                            shortenLogits->dataType());
+                        // NaN probe on the width-1 pass (same poisoning class as the
+                        // guarded pass-1 rerun; stays loud).
+                        {
+                            NDArray::preparePrimaryUse({}, {shortenLogits});
+                            const LongType probeVocabS = std::min<LongType>(8, shortenVocab);
+                            const char* baseS = reinterpret_cast<const char*>(shortenLogits->buffer());
+                            for (LongType v = 0; v < probeVocabS; v++) {
+                                float sampled = 0.0f;
+                                BUILD_SINGLE_SELECTOR(shortenLogits->dataType(),
+                                                      sampleFirstRowValueCpu,
+                                                      (baseS + v * shortenLogits->sizeOfT(), &sampled),
+                                                      SD_FLOAT_TYPES);
+                                REQUIRE_TRUE(!std::isnan(sampled), 0,
+                                             "autoregressive_decode: SHORTEN REEXEC NaN step=%d - "
+                                             "width-1 re-execution produced NaN logits; refusing to "
+                                             "commit", step);
+                            }
+                            NDArray::registerPrimaryUse({}, {shortenLogits});
+                        }
+                        // Emission AND state now come from this pass.
+                        rerunRefreshedToken_cpu = shortenedToken;
+                        rowArgmax[0] = shortenedToken;
+                        // SHORTENED EMISSION REPAIR: the truncation invalidates the
+                        // stale verification suffix rows [1..); zero them so the
+                        // store loop below emits exactly the width-1 readout.
+                        for (int i = 1; i < 33; i++) rowArgmax[i] = 0;
+                        // Restore the exact pre-provisional-accept matcher state,
+                        // then re-accept ONLY the authoritative token - the suffix
+                        // never retains rows from the invalidated sequence.
+                        stopMatcher.restore(matcherPreLoopSnapshot_cpu);
+                        bool matchedStopShort = stopMatcher.accept(rowArgmax[0]);
+                        specShouldStop_cpu = matchedStopShort
+                            && stopTerminationAllowed(config, tokensGenerated + specConsumed_cpu);
+                        // carryRow for the target-hidden publication below: the
+                        // width-1 pass's hidden output row 0 is the hidden AFTER
+                        // consuming the single committed row.
+                        carryRow_cpu = 0;
+                        nextMtpPosition_cpu = currentPosition + 1;
+                        mtpWrittenThrough_cpu = currentPosition;
+                        specRowArgmax_cpu[0] = shortenedToken;
+                    }
                 }
             }
             // T1 (audit F3): authoritative stop state. Roll back the provisional
             // accept for the rewritten row, then feed the matcher the FINAL
             // emitted token exactly once. Mid-batch accepts from rows below the
             // rewritten one are real emissions and stay in the suffix.
+            // (The truncated multi-row path above already restored the exact
+            // pre-loop matcher state and re-accepted row 0.)
             if (rerunRefreshedToken_cpu >= 0) {
                 stopMatcher.rollback(1);
                 bool matchedStop = stopMatcher.accept(rowArgmax[0]);
                 specShouldStop_cpu = matchedStop
                     && stopTerminationAllowed(config, tokensGenerated + n);
+            }
+
+            // MTP PUBLICATION (moved after the finalize, review round 3): the
+            // predictor prefix repair and retained-pair publication now read the
+            // FINALIZED emission sequence and the POST-truncation geometry, so a
+            // truncated multi-row commit publishes the width-1-conditioned pair
+            // instead of the provisional verification sequence.
+            if (useMtp_cpu) {
+                REQUIRE_TRUE(config->targetHiddenOutputIdx >= 0
+                                 && config->targetHiddenOutputIdx < numPlanOutputs
+                                 && planOutputs[config->targetHiddenOutputIdx] != nullptr,
+                             0, "autoregressive_decode: target hidden output is unavailable for MTP");
+
+                // Predictor-side accepted-prefix repair (CUDA mirror): rewrite every
+                // committed position's predictor KV row as fused(committed token,
+                // target hidden at q-1). Chained proposal rows carry self-propagated
+                // hidden; a fully accepted K=1 step leaves the bonus row unwritten by
+                // the prefix. The target's rerun above repairs only the target plan.
+                // specRowArgmax_cpu row j is the accepted draft for j < specAccepted
+                // and the correction/bonus for the final committed row. On a
+                // truncated commit (specConsumed_cpu forced to 1) this loop runs
+                // zero times - the stale draft-conditioned rows are masked below.
+                for (int j = 0; j + 1 < specConsumed_cpu; j++) {
+                    LongType repairPosition = currentPosition + 1 + j;
+                    setMtpTargetCarryCpu(
+                        planOutputs[config->targetHiddenOutputIdx], j);
+                    (void)executeMtpCpu(specRowArgmax_cpu[j], repairPosition);
+                    DSP_DIAG(KV_CACHE,
+                             "MTP_PREFIX_REPAIR step=%d position=%lld committedRow=%d "
+                             "carryRow=%d — rewriting predictor KV row with target hidden",
+                             step, (long long)repairPosition, j, carryRow_cpu);
+                }
+
+                if (nextMtpPosition_cpu <= mtpWrittenThrough_cpu) {
+                    BUILD_SINGLE_SELECTOR(config->mtpCausalMask->dataType(), maskCausalRangeCpu,
+                                          (config->mtpCausalMask->buffer(), nextMtpPosition_cpu,
+                                           mtpWrittenThrough_cpu + 1, mtpMaskLen_cpu),
+                                          SD_FLOAT_TYPES);
+                }
+
+                setMtpTargetCarryCpu(planOutputs[config->targetHiddenOutputIdx], carryRow_cpu);
+                config->mtpPositionOffset->p(0, nextMtpPosition_cpu);
+                config->mtpCachePosition->p(0, nextMtpPosition_cpu);
+                if (proposedCount_cpu > 0) {
+                    config->mtpInputIds->p(0, specRowArgmax_cpu[carryRow_cpu]);
+                }
             }
             totalSpeculativeProposed += proposedCount_cpu;
             // Accepted drafts ACTUALLY EMITTED (review round 2): count each
