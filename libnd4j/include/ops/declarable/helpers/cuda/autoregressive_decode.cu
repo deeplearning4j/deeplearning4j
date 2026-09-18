@@ -1609,11 +1609,75 @@ void autoregressiveDecode(
                                 std::min<size_t>(sizeof(uint32_t),
                                                  static_cast<size_t>(mtpLogits->sizeOfT())),
                                 cudaMemcpyDeviceToHost, *stream);
+                // DRAFT-QUALITY DISCRIMINATOR (endgame goal: >=50% acceptance):
+                // top-5 draft tokens + their raw logits, and the argmax rank.
+                // Interpretation: target top-1 absent from draft top-100 =>
+                // conditioning broken (carry row / KV position / input token
+                // wiring on the native 27B path); present-but-lower-ranked =>
+                // calibration/quantization interaction. Host pass reads only
+                // vocabTop = min(vocab, 128) raw values (bounded D2H); the argmax
+                // over the FULL vocab is still the kernel's job.
+                LongType immVocab = mtpVocab;
+                LongType immTop5[5] = {};
+                std::vector<uint32_t> immRaw(std::min<LongType>(immVocab, 128));
+                cudaMemcpyAsync(immRaw.data(), mtpLogits->specialBuffer(),
+                                immRaw.size() * sizeof(uint32_t),
+                                cudaMemcpyDeviceToHost, *stream);
                 cudaError_t immErr = cudaStreamSynchronize(*stream);
-                DSP_DIAG(KV_CACHE,
-                         "MTP_ARGMAX_IMMEDIATE pos=%lld slot=%d draft=%lld logit0_raw=0x%08x err=%d",
-                         (long long)position, draftSlot, (long long)immDraft[0],
-                         static_cast<unsigned>(immLogit[0]), static_cast<int>(immErr));
+                // Decode raw logits by dtype (BF16=2B/FP16=2B/F32=4B) into float.
+                auto decodeRaw = [&](uint32_t bits) -> float {
+                    if (mtpLogits->dataType() == DataType::BFLOAT16) {
+                        uint16_t v = static_cast<uint16_t>(bits & 0xFFFFu);
+                        uint32_t f = static_cast<uint32_t>(v) << 16;
+                        float out;
+                        memcpy(&out, &f, sizeof(out));
+                        return out;
+                    }
+                    if (mtpLogits->dataType() == DataType::HALF) {
+                        uint16_t v = static_cast<uint16_t>(bits & 0xFFFFu);
+                        uint32_t sign = (v & 0x8000u) << 16;
+                        uint32_t exp = ((v & 0x7C00u) >> 10);
+                        uint32_t man = (v & 0x03FFu) << 13;
+                        uint32_t f;
+                        if (exp == 0) f = sign | 0u;
+                        else if (exp == 0x1F) f = sign | 0x7F800000u | man;
+                        else f = sign | ((exp + 112u) << 23) | man;
+                        float out;
+                        memcpy(&out, &f, sizeof(out));
+                        return out;
+                    }
+                    float out;
+                    memcpy(&out, &bits, sizeof(out));
+                    return out;
+                };
+                if (!immRaw.empty()) {
+                    std::vector<std::pair<float, int>> scored;
+                    scored.reserve(immRaw.size());
+                    for (size_t t = 0; t < immRaw.size(); t++) {
+                        scored.emplace_back(decodeRaw(immRaw[t]), static_cast<int>(t));
+                    }
+                    std::partial_sort(scored.begin(), scored.begin() + std::min<size_t>(5, scored.size()),
+                                      scored.end(), [](const auto& a, const auto& b) { return a.first > b.first; });
+                    for (size_t r = 0; r < std::min<size_t>(5, scored.size()); r++) {
+                        immTop5[r] = scored[r].second;
+                    }
+                    DSP_DIAG(KV_CACHE,
+                             "MTP_DRAFT_TOP5 pos=%lld slot=%d draft=%lld "
+                             "top5=[%lld:%.4f %lld:%.4f %lld:%.4f %lld:%.4f %lld:%.4f] "
+                             "err=%d",
+                             (long long)position, draftSlot, (long long)immDraft[0],
+                             (long long)immTop5[0], scored[0].first,
+                             (long long)immTop5[1], scored[1].first,
+                             (long long)immTop5[2], scored[2].first,
+                             (long long)immTop5[3], scored[3].first,
+                             (long long)immTop5[4], scored[4].first,
+                             static_cast<int>(immErr));
+                } else {
+                    DSP_DIAG(KV_CACHE,
+                             "MTP_ARGMAX_IMMEDIATE pos=%lld slot=%d draft=%lld logit0_raw=0x%08x err=%d",
+                             (long long)position, draftSlot, (long long)immDraft[0],
+                             static_cast<unsigned>(immLogit[0]), static_cast<int>(immErr));
+                }
             }
         }
         if (captureThisCall) {
@@ -3459,11 +3523,20 @@ void autoregressiveDecode(
         currentPosition++;
         LongType kvJustWritten = currentPosition - 1;
 
-        if (useMtp) {
-            REQUIRE_TRUE(config->targetHiddenOutputIdx >= 0
-                             && config->targetHiddenOutputIdx < numPlanOutputs
-                             && planOutputs[config->targetHiddenOutputIdx] != nullptr,
-                         0, "autoregressive_decode: scalar target hidden output is unavailable for CUDA MTP");
+        // P02 K-RE-ENABLE STATE MAINTENANCE: publish the carry/pending input
+        // whenever MTP metadata exists - NOT only while useMtp. When the
+        // adaptive policy drops K to 0 (useMtp=false), this epilogue is the
+        // only thing keeping the predictor's state aligned with the live
+        // sequence; without it, re-raising K mid-session resumes speculation
+        // from a stale (carry, pending-input, cache_position) triple - the
+        // exact defect class the reviewer's P02 pass-evidence forbids
+        // ("Never resume with stale predictor KV/carry"). Cost: two small D2D
+        // copies per step, gated on metadata presence, not on speculating.
+        if (useMtp
+                || (config->mtpPlanHandle != nullptr && config->mtpExtInputContext != nullptr
+                    && config->targetHiddenOutputIdx >= 0
+                    && config->targetHiddenOutputIdx < numPlanOutputs
+                    && planOutputs[config->targetHiddenOutputIdx] != nullptr)) {
             setMtpTargetCarryCuda(planOutputs[config->targetHiddenOutputIdx], 0);
             setMtpNextInputCuda(sampledToken, 0, currentPosition);
         }

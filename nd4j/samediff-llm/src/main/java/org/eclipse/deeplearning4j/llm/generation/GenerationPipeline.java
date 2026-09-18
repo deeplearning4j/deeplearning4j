@@ -209,6 +209,29 @@ public class GenerationPipeline implements AutoCloseable {
     /** Template-owned assistant turn terminators active only during generateChat(). */
     private volatile Set<Integer> activeChatStopTokenIds = Collections.emptySet();
 
+    /**
+     * P02 adaptive speculative depth (K bucket), adjusted ONLY at generation
+     * boundaries - never per token, never via environment polling.
+     *
+     * <p>Hysteresis contract (reviewer P02): the bucket moves at most one step
+     * per generation, based on the PREVIOUS generation's sequential-prefix
+     * acceptance. A generation that ends below {@link #SPEC_K_ACCEPTANCE_FLOOR}
+     * drops the bucket (eventually to 0 = the validated no-spec scalar path);
+     * one above {@link #SPEC_K_ACCEPTANCE_CEILING} raises it (capped by the
+     * configured maximum and by the window substrate's W-1 capacity). K=0
+     * collapses natively to the width-1 scalar fast path (proposedCount==0),
+     * so a dropped bucket never re-captures a plan and never reloads the
+     * model. Reported through {@link #getAdaptiveSpecK()} for metrics.</p>
+     */
+    private volatile int adaptiveSpecK = -1;   // -1 = not yet initialized
+    private volatile int lastGenProposed = 0;
+    private volatile int lastGenAccepted = 0;
+
+    /** Previous-generation acceptance (accepted/proposed) below which K drops. */
+    static final double SPEC_K_ACCEPTANCE_FLOOR = 0.02;
+    /** Previous-generation acceptance above which K rises. */
+    static final double SPEC_K_ACCEPTANCE_CEILING = 0.30;
+
     private enum DecodePolicyKind {
         GREEDY,
         SAMPLE,
@@ -1449,7 +1472,42 @@ public class GenerationPipeline implements AutoCloseable {
         return configured;
     }
 
+    /**
+     * P02: adjust the adaptive K bucket at a GENERATION BOUNDARY (called at
+     * the top of every generate/generateInternal, never per token). Moves at
+     * most one bucket per generation from the previous generation's
+     * acceptance; K=0 takes the native no-spec scalar fast path.
+     */
+    private void adjustAdaptiveSpecK() {
+        int maxK = config != null ? config.getMaxSpeculativeTokens() : 0;
+        if (maxK <= 0) {
+            adaptiveSpecK = 0;
+            return;
+        }
+        int current = adaptiveSpecK < 0 ? maxK : adaptiveSpecK;
+        if (lastGenProposed > 0) {
+            double acceptance = (double) lastGenAccepted / (double) lastGenProposed;
+            if (acceptance < SPEC_K_ACCEPTANCE_FLOOR && current > 0) {
+                current--;
+            } else if (acceptance > SPEC_K_ACCEPTANCE_CEILING && current < maxK) {
+                current++;
+            }
+        }
+        if (current != adaptiveSpecK) {
+            log.info("[MTP-ADAPTIVE-K] bucket {} -> {} (lastGen accepted={}/{} floor={} ceiling={})",
+                    adaptiveSpecK, current, lastGenAccepted, lastGenProposed,
+                    SPEC_K_ACCEPTANCE_FLOOR, SPEC_K_ACCEPTANCE_CEILING);
+        }
+        adaptiveSpecK = current;
+    }
+
+    /** Current adaptive speculative depth for metrics/reporting. */
+    public int getAdaptiveSpecK() {
+        return adaptiveSpecK;
+    }
+
     private GenerationResult generateInternal(int[] promptTokenIds, int maxNewTokens) {
+        adjustAdaptiveSpecK();
         // Single-model mode: no separate embedTokens model was provided.
         // The decoder handles its own embedding lookup internally
         // (input_ids → gather → transformer → logits).
@@ -4005,7 +4063,10 @@ public class GenerationPipeline implements AutoCloseable {
                     // specK > 0 only when decodePolicy.kind == SPECULATIVE and windowMax = specK+1.
                     if (decodePolicy.kind == DecodePolicyKind.SPECULATIVE && config != null
                             && config.getMaxSpeculativeTokens() > 0) {
-                        op.withSpeculativeDecoding(config.getMaxSpeculativeTokens(), 1 /* NGRAM */);
+                        // P02: adaptive bucket may be < configured max (0 = scalar fast path).
+                        int effK = Math.min(config.getMaxSpeculativeTokens(),
+                                adaptiveSpecK < 0 ? config.getMaxSpeculativeTokens() : adaptiveSpecK);
+                        op.withSpeculativeDecoding(effK, 1 /* NGRAM */);
                         op.withActualSequenceLengthExtIdx(state.actualSeqLenExtIdx);
                     }
                     applyConfiguredStopSequences(op,
@@ -4105,9 +4166,12 @@ public class GenerationPipeline implements AutoCloseable {
                         (int) state.decodeInputIds.size(1));
                 if (decodePolicy.kind == DecodePolicyKind.SPECULATIVE && config != null
                         && config.getMaxSpeculativeTokens() > 0) {
+                    // P02: adaptive bucket may be < configured max (0 = scalar fast path).
+                    int effK = Math.min(config.getMaxSpeculativeTokens(),
+                            adaptiveSpecK < 0 ? config.getMaxSpeculativeTokens() : adaptiveSpecK);
                     boolean hasMtpPlan = state.mtpPlanHandle != null && !state.mtpPlanHandle.isNull();
                     op.withSpeculativeDecoding(
-                            config.getMaxSpeculativeTokens(),
+                            effK,
                             hasMtpPlan ? AutoregressiveDecode.SPECULATOR_TYPE_MTP
                                     : AutoregressiveDecode.SPECULATOR_TYPE_NGRAM);
                     op.withActualSequenceLengthExtIdx(state.actualSeqLenExtIdx);
@@ -4223,6 +4287,12 @@ public class GenerationPipeline implements AutoCloseable {
         long timeMs = System.currentTimeMillis() - startTime;
         log.info("[GGUF-KV] decode complete (continuation={}): nativeCount={} callTokens={} cachePosition={} eos={}",
                 isContinuation, nativeCount, callTokens.size(), state.cachePosition, hitEos);
+
+        // P02: feed the adaptive-K hysteresis. The counters accumulate across
+        // continuation calls of one generation; the next generation BOUNDARY
+        // reads them via adjustAdaptiveSpecK().
+        lastGenProposed += totalSpeculative;
+        lastGenAccepted += totalAccepted;
 
         return GenerationResult.builder()
                 .text(text).tokenIds(tokenIds)

@@ -216,6 +216,94 @@ public class TestQwen35MtpDecode {
     }
 
     /**
+     * P02 adaptive-K hysteresis oracle (reviewer pass-evidence: switching K
+     * preserves output and state across calls; forced low-acceptance workloads
+     * stop wasting draft/verification work).
+     *
+     * <p>Run with K=1: the first generation exercises the MTP path; when its
+     * acceptance lands below the floor, the SECOND generation must drop to
+     * K=0 (the native no-spec scalar fast path: proposedCount==0) yet remain
+     * token-identical to greedy, and the third generation must keep that
+     * bucket. No model reload and no plan recapture occur - the bucket only
+     * selects what the native loop proposes.</p>
+     */
+    @Test
+    public void testAdaptiveSpecKCollapsesOnLowAcceptanceAndPreservesOutput() throws Exception {
+        SamplingConfig mtpSampling = SamplingConfig.speculative().toBuilder()
+                .minNewTokens(TOKENS)
+                .build();
+        SamplingConfig greedySampling = SamplingConfig.greedy().toBuilder()
+                .minNewTokens(TOKENS)
+                .build();
+
+        GenerationPipelineConfig config = GenerationPipelineConfig.builder()
+                .decoder(model)
+                .tokenizer(tokenizer)
+                .samplingConfig(mtpSampling)
+                .maxNewTokens(TOKENS)
+                .maxSpeculativeTokens(1)
+                .maxPrefillLength(64)
+                .maxKvCacheLength(Math.max(192, TOKENS + 64))
+                .kvCacheStrategy(KvCacheStrategy.STATIC)
+                .graphOptimizerEnabled(false)
+                .dspEnabled(true)
+                .build();
+
+        GenerationResult first;
+        GenerationResult second;
+        GenerationResult third;
+        GenerationResult greedy;
+        try (GenerationPipeline pipeline = GenerationPipeline.create(config)) {
+            // Determinism warmup: fresh-plan builds jitter (Triton autotune, allocator
+            // ordering) on the very first plan; run one throwaway generation so every
+            // measured generation executes on a warmed, replay-stable plan. The lossless
+            // test uses the same pattern.
+            pipeline.generate(PROMPT, TOKENS);
+
+            first = pipeline.generate(PROMPT, TOKENS);
+            assertTrue(first.getTotalSpeculativeTokens() > 0,
+                    "First generation must run the speculative path (bucket starts at configured K)");
+            int afterFirst = pipeline.getAdaptiveSpecK();
+            assertTrue(afterFirst >= 0 && afterFirst <= 1,
+                    "Bucket must stay within [0,1] after generation one: " + afterFirst);
+
+            second = pipeline.generate(PROMPT, TOKENS);
+            int afterSecond = pipeline.getAdaptiveSpecK();
+            if (first.getAverageAcceptanceRate() < GenerationPipeline.SPEC_K_ACCEPTANCE_FLOOR) {
+                assertEquals(0, afterSecond,
+                        "Below-floor acceptance must drop the bucket to the no-spec path");
+                assertEquals(0, second.getTotalSpeculativeTokens(),
+                        "K=0 generation must propose zero tokens (scalar fast path)");
+            } else {
+                assertTrue(afterSecond >= 0 && afterSecond <= 1,
+                        "Acceptance at/above floor must hold or raise the bucket");
+            }
+
+            third = pipeline.generate(PROMPT, TOKENS);
+            assertEquals(afterSecond, pipeline.getAdaptiveSpecK(),
+                    "Hysteresis: bucket must not flip-flop between consecutive generations");
+
+            pipeline.setSamplingConfig(greedySampling);
+            greedy = pipeline.generate(PROMPT, TOKENS);
+        }
+
+        log.info("[MTP-ADAPTIVE-ORACLE] first={} second={} third={} greedy={}",
+                Arrays.toString(Arrays.copyOf(first.getTokenIds(), Math.min(16, first.getTokenIds().length))),
+                Arrays.toString(Arrays.copyOf(second.getTokenIds(), Math.min(16, second.getTokenIds().length))),
+                Arrays.toString(Arrays.copyOf(third.getTokenIds(), Math.min(16, third.getTokenIds().length))),
+                Arrays.toString(Arrays.copyOf(greedy.getTokenIds(), Math.min(16, greedy.getTokenIds().length))));
+
+        // Same-bucket generations must be deterministic and identical to each other.
+        assertArrayEquals(first.getTokenIds(), second.getTokenIds(),
+                "Consecutive same-K generations must be deterministic");
+        assertArrayEquals(first.getTokenIds(), third.getTokenIds(),
+                "Hysteresis generation must match the K it held");
+        // The adaptive-K MTP path must remain token-identical to greedy decode.
+        assertArrayEquals(greedy.getTokenIds(), first.getTokenIds(),
+                "Adaptive-K (K=1) MTP must remain token-identical to greedy");
+    }
+
+    /**
      * Pins the target-model invariant required by lossless speculative decoding: evaluating two
      * causally chained tokens inside the production W=5 envelope must produce the same per-layer
      * rows as evaluating the same tokens as two activeWindow=1 calls on that frozen W=5 plan.
