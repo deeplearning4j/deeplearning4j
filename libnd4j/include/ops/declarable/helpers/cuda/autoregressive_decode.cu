@@ -2731,12 +2731,12 @@ void autoregressiveDecode(
             // clobbered by a diagnostic rerun.
             LongType rerunRefreshedToken = -1;
             NDArray* rerunScratch = nullptr;
-            if (useMtp) {
+            // SCRATCH DOMAIN: dedicated rerun-refresh scratch, shared by BOTH
+            // speculators (useSpeculative = useNgram || useMtp both enter the
+            // rerun block below). The committed specArgmaxDevice sequence must
+            // never be overwritten by a diagnostic rerun.
+            if (useSpeculative) {
                 // One INT64 slot, allocated once per decode call, stable address.
-                // SCRATCH DOMAIN (Stage 2): dedicated rerun-refresh scratch - the
-                // committed specArgmaxDevice sequence must never be overwritten by
-                // a diagnostic rerun (predictor repair + pending-input publication
-                // consume it below).
                 if (mtpRerunScratch == nullptr) {
                     std::vector<LongType> scratchShape{1};
                     mtpRerunScratch = NDArrayFactory::create_('c', scratchShape, DataType::INT64);
@@ -2905,6 +2905,77 @@ void autoregressiveDecode(
             queueCommittedStateSamples(
                 step, basePosition + consumedCount, true);
 
+            // -- FINALIZED EMISSION SEQUENCE (review round 2) ---------------------
+            // Reconstruct the lossless verify emission, apply the authoritative
+            // scalar-refresh winner, count acceptance from the FINALIZED tokens,
+            // and upload the sequence BEFORE predictor repair and pending-input
+            // publication read it. setMtpNextInputCuda takes a DEVICE COPY into
+            // the predictor's input array; publishing it before the refresh
+            // rewrite left the OLD verification token there whenever the scalar
+            // rerun disagreed - the predictor would continue a token the target
+            // never emitted.
+            // Reconstruction: accepted drafts restore their proposal values and
+            // the correction/bonus takes the verify argmax at the first
+            // unaccepted row.
+            LongType correctionOrBonus = argmaxDst[acceptedDrafts];
+            for (int i = 0; i < acceptedDrafts; i++) {
+                argmaxDst[i] = draftIds[i];
+            }
+            argmaxDst[acceptedDrafts] = correctionOrBonus;
+            int n = consumedCount;
+
+            // Emission rewrite. The rerun's row-0 argmax is authoritative
+            // whenever the rerun executed: it recomputed the row-0 readout from
+            // the committed pre-step state at the shortened recurrence length.
+            // When the flip lands on a multi-row commit, the previously
+            // accepted draft-0 is no longer an emission fact: restore the
+            // pre-step matcher snapshot, re-derive the consume from the
+            // authoritative row 0, and count acceptance from the FINALIZED
+            // tokens. The matcher is fed each finalized token exactly once.
+            if (rerunRefreshedToken >= 0 && rerunRefreshedToken != argmaxDst[0]) {
+                bool flipValid = consumedCount == 1 || acceptedDrafts == 0
+                    || argmaxDst[0] == draftIds[0];
+                // A flip is only meaningful if row 0 was actually an accepted
+                // draft or the verify row-0 argmax itself; otherwise row 0 was
+                // the pending base token and the refresh still supersedes it.
+                (void)flipValid;
+                argmaxDst[0] = rerunRefreshedToken;
+                stopMatcher.restore(matcherSnapshot);
+                bool matchedStop = false;
+                for (int i = 0; i < n; i++) {
+                    matchedStop = stopMatcher.accept(argmaxDst[i])
+                        && stopTerminationAllowed(config, tokensGenerated + i + 1);
+                    if (matchedStop) {
+                        // Truncate the committed prefix at the stop boundary.
+                        n = i + 1;
+                        consumedCount = n;
+                        break;
+                    }
+                }
+                shouldStop = matchedStop;
+            }
+
+            totalSpeculativeProposed += proposedCount;
+            // Accepted drafts ACTUALLY EMITTED: count each emitted token that
+            // still equals its draft. A scalar refresh that flipped the emitted
+            // token away from its draft means that draft was not emitted; the
+            // verification agreement alone is not an emission fact.
+            int acceptedEmitted = 0;
+            for (int i = 0; i < acceptedDrafts && i < n; i++) {
+                if (argmaxDst[i] == draftIds[i]) acceptedEmitted++;
+            }
+            totalSpeculativeAccepted += acceptedEmitted;
+            speculativeStepCount++;
+
+            // Upload the FINALIZED sequence so the D2D storage path remains
+            // stream-ordered and every device consumer below - predictor repair,
+            // pending-input publication, token storage - reads the authoritative
+            // tokens.
+            NDArray::prepareSpecialUse({specArgmaxDevice}, {});
+            cudaMemcpyAsync(specArgmaxDevice->specialBuffer(), argmaxDst,
+                            n * sizeof(LongType), cudaMemcpyHostToDevice, *stream);
+            NDArray::registerSpecialUse({specArgmaxDevice}, {});
+
             if (useMtp) {
                 REQUIRE_TRUE(config->targetHiddenOutputIdx >= 0
                                  && config->targetHiddenOutputIdx < numPlanOutputs
@@ -2972,12 +3043,14 @@ void autoregressiveDecode(
                     LongType repairPosition = basePosition + 1 + j;
                     setMtpTargetCarryCuda(
                         planOutputs[config->targetHiddenOutputIdx], j);
-                    // Pairing (vLLM contract): row (base+1+j) holds committed
-                    // token argmaxDst[j+1]. specArgmaxDevice still holds the RAW
-                    // verification argmaxes at this point (the finalized sequence
-                    // is uploaded AFTER this loop), and raw[j+1] == argmaxDst[j+1]
-                    // for every repaired index, so read j+1 - not j.
-                    setMtpNextInputCuda(specArgmaxDevice, j + 1, repairPosition);
+                    // Pairing (review round 2): draft p is written into target
+                    // input row p+1 and verification row r processes input r,
+                    // so for repaired rows j in [0, consumedCount-2]:
+                    // raw[j] == emitted[j] (all repaired rows are accepted
+                    // drafts; the pending correction is NEVER a consumed input
+                    // and must not enter predictor KV). Predictor position
+                    // base+1+j consumed emitted[j].
+                    setMtpNextInputCuda(specArgmaxDevice, j, repairPosition);
                     executeMtpCuda(repairPosition, 0, false);
                     DSP_DIAG(KV_CACHE,
                              "MTP_PREFIX_REPAIR step=%d position=%lld committedRow=%d "
@@ -3004,54 +3077,18 @@ void autoregressiveDecode(
 
                 setMtpTargetCarryCuda(
                     planOutputs[config->targetHiddenOutputIdx], carryRow);
+                // Pending-input publication reads the FINALIZED upload: when the
+                // scalar rerun flipped the winner (verify A -> rerun B), the
+                // predictor must continue with B - the token the target actually
+                // emitted - not the superseded verification token.
                 setMtpNextInputCuda(
                     specArgmaxDevice, carryRow, nextMtpPosition);
             }
 
-            // Lossless reconstruction of the verify-pass emission sequence (kept
-            // for the multi-token contract's return): accepted drafts restore
-            // their proposal values and the correction/bonus takes the verify
-            // argmax at the first unaccepted row.
-            LongType correctionOrBonus = argmaxDst[acceptedDrafts];
-            for (int i = 0; i < acceptedDrafts; i++) {
-                argmaxDst[i] = draftIds[i];
-            }
-            argmaxDst[acceptedDrafts] = correctionOrBonus;
-            int n = consumedCount;
-
-            // Emission rewrite. The rerun's scalar argmax is the authoritative
-            // readout for the single-token consume (CPU mirror: gated on n == 1).
-            // For a multi-token consume the provisional accepts already carry the
-            // first-pass argmaxes for rows [0, consumedCount-1]; there is no
-            // single rewritten row, so the matcher suffix stays as fed. If a
-            // future window-equivalence path makes a multi-row rerun authoritative
-            // over any EARLIER row, restore(matcherSnapshot) must re-establish the
-            // pre-step matcher state and the whole emission/commit decision must
-            // be re-derived from the authoritative sequence BEFORE any state
-            // commit - never mutate the token after commitRecurrentState.
-            if (rerunRefreshedToken >= 0 && consumedCount == 1) {
-                argmaxDst[0] = rerunRefreshedToken;
-                // T1 (audit F3): authoritative stop state for the single-token
-                // consume. Restore the pre-step snapshot (equivalent to
-                // rollback(1) here, but explicit and safe if the provisional
-                // sequence ever grows) and feed the FINAL emitted token once.
-                stopMatcher.restore(matcherSnapshot);
-                bool matchedStop = stopMatcher.accept(argmaxDst[0]);
-                shouldStop = matchedStop
-                    && stopTerminationAllowed(config, tokensGenerated + consumedCount);
-            }
-
-            totalSpeculativeProposed += proposedCount;
-            // Count accepted outputs actually emitted, including an accepted EOS.
-            totalSpeculativeAccepted += std::min(acceptedDrafts, consumedCount);
-            speculativeStepCount++;
-
-            // Upload the reconstructed lossless emission sequence so the existing D2D
-            // storage path remains stream-ordered and avoids host scalar writes.
-            NDArray::prepareSpecialUse({specArgmaxDevice}, {});
-            cudaMemcpyAsync(specArgmaxDevice->specialBuffer(), argmaxDst,
-                            n * sizeof(LongType), cudaMemcpyHostToDevice, *stream);
-            NDArray::registerSpecialUse({specArgmaxDevice}, {});
+            // (Finalized-emission reconstruction, acceptance counting, and the
+            // finalized sequence upload were moved ABOVE the predictor repair
+            // and publication block - see the FINALIZED EMISSION SEQUENCE
+            // comment there.)
 
             // -- Store accepted tokens to generatedTokenIds ------------------------
             int storedCount = 0;

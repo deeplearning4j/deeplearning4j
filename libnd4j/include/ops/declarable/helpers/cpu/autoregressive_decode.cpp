@@ -1056,7 +1056,17 @@ void autoregressiveDecode(
                     }
                     setKvScaleRegistry(tl_kvQuantPtrsRerun.data(), config->kvScaleBuffers, numKvPairs);
                 }
-                Status rerunStatus = useScalarTarget ? executeScalarTarget() : plan->execute(
+                // PLAN SELECTION (review round 2, CUDA mirror): the width-one
+                // scalar plan can only serve a single-row commit. A multi-row
+                // accepted-prefix commit MUST route through the window plan,
+                // whose outputs describe the full consumed prefix - otherwise
+                // hidden-row indexing below reads a width-one plan as if it
+                // were multi-row.
+                const bool multiRowRerun_cpu = specConsumed_cpu > 1;
+                const bool scalarRerun_cpu = useScalarTarget && !multiRowRerun_cpu;
+                if (scalarRerun_cpu) config->activeWindow = 1;
+                else if (multiRowRerun_cpu) config->activeWindow = specConsumed_cpu;
+                Status rerunStatus = scalarRerun_cpu ? executeScalarTarget() : plan->execute(
                     extInputs, numExtInputs,
                     planOutputs, numPlanOutputs,
                     nullptr);
@@ -1287,8 +1297,14 @@ void autoregressiveDecode(
                     && stopTerminationAllowed(config, tokensGenerated + n);
             }
             totalSpeculativeProposed += proposedCount_cpu;
-            // Accepted outputs emitted (including EOS), not consumed draft inputs.
-            totalSpeculativeAccepted += std::min(acceptedDrafts, specConsumed_cpu);
+            // Accepted drafts ACTUALLY EMITTED (review round 2): count each
+            // emitted token that still equals its draft. A scalar refresh that
+            // flipped row 0 away from its draft means that draft was not emitted.
+            int acceptedEmitted_cpu = 0;
+            for (int i = 0; i < acceptedDrafts && i < n; i++) {
+                if (rowArgmax[i] == draftIds_cpu[i]) acceptedEmitted_cpu++;
+            }
+            totalSpeculativeAccepted += acceptedEmitted_cpu;
             speculativeStepCount++;
             REQUIRE_TRUE(specConsumed_cpu > 0, 0,
                          "autoregressive_decode: speculative consume committed zero rows "
