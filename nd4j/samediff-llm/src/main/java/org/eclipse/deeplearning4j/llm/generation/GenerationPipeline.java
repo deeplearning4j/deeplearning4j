@@ -226,11 +226,23 @@ public class GenerationPipeline implements AutoCloseable {
     private volatile int adaptiveSpecK = -1;   // -1 = not yet initialized
     private volatile int lastGenProposed = 0;
     private volatile int lastGenAccepted = 0;
+    /** Consecutive scalar-only generations at K=0 before a bounded K=1 probe. */
+    private volatile int scalarOnlyStreak = 0;
 
     /** Previous-generation acceptance (accepted/proposed) below which K drops. */
     static final double SPEC_K_ACCEPTANCE_FLOOR = 0.02;
     /** Previous-generation acceptance above which K rises. */
     static final double SPEC_K_ACCEPTANCE_CEILING = 0.30;
+    /**
+     * Ceiling as a fraction of the per-K emitted maximum. With the shipped
+     * single-token commit a K-step emits at most one accepted draft, so the
+     * emitted-acceptance ceiling is 1/K; the raise signal compares against
+     * this fraction of that maximum so a good draft chain can still climb
+     * from deeper buckets (review finding 6).
+     */
+    static final double SPEC_K_CEILING_CAP_FRACTION = 0.8;
+    /** Scalar-only generations tolerated at K=0 before a bounded K=1 probe. */
+    static final int SPEC_K_PROBE_INTERVAL = 8;
 
     private enum DecodePolicyKind {
         GREEDY,
@@ -1485,17 +1497,49 @@ public class GenerationPipeline implements AutoCloseable {
             return;
         }
         int current = adaptiveSpecK < 0 ? maxK : adaptiveSpecK;
-        if (lastGenProposed > 0) {
-            double acceptance = (double) lastGenAccepted / (double) lastGenProposed;
+        // CONSUME-ON-READ (review finding 6): the adjustment window is exactly
+        // the previous generation. Reset here so older requests never bleed
+        // into later decisions.
+        int proposed = lastGenProposed;
+        int accepted = lastGenAccepted;
+        lastGenProposed = 0;
+        lastGenAccepted = 0;
+        if (proposed > 0) {
+            double acceptance = (double) accepted / (double) proposed;
             if (acceptance < SPEC_K_ACCEPTANCE_FLOOR && current > 0) {
                 current--;
-            } else if (acceptance > SPEC_K_ACCEPTANCE_CEILING && current < maxK) {
-                current++;
+                scalarOnlyStreak = 0;
+            } else if (current < maxK) {
+                // COMMIT-CAP-AWARE CEILING (review finding 6): emitted
+                // acceptance tops out at 1/K per step under the single-token
+                // commit; compare against a reachable ceiling instead of the
+                // absolute one so deeper buckets remain climbable.
+                double reachable = Math.min(SPEC_K_ACCEPTANCE_CEILING,
+                        SPEC_K_CEILING_CAP_FRACTION / Math.max(1, current));
+                if (acceptance > reachable) {
+                    current++;
+                    scalarOnlyStreak = 0;
+                }
+            }
+        } else if (current == 0) {
+            // BOUNDED RE-ENABLE PROBE (review finding 6): at K=0 no
+            // speculative counters are produced, so a purely passive
+            // controller can never leave the scalar fast path. Every
+            // PROBE_INTERVAL scalar-only generations, force the bucket to 1
+            // for one probe generation; if the workload is still below the
+            // floor, the next boundary drops the bucket again (existing
+            // logic) and the streak restarts.
+            scalarOnlyStreak++;
+            if (scalarOnlyStreak >= SPEC_K_PROBE_INTERVAL) {
+                current = 1;
+                scalarOnlyStreak = 0;
+                log.info("[MTP-ADAPTIVE-K] probe: re-enabling K=1 after {} scalar-only generations",
+                        SPEC_K_PROBE_INTERVAL);
             }
         }
         if (current != adaptiveSpecK) {
             log.info("[MTP-ADAPTIVE-K] bucket {} -> {} (lastGen accepted={}/{} floor={} ceiling={})",
-                    adaptiveSpecK, current, lastGenAccepted, lastGenProposed,
+                    adaptiveSpecK, current, accepted, proposed,
                     SPEC_K_ACCEPTANCE_FLOOR, SPEC_K_ACCEPTANCE_CEILING);
         }
         adaptiveSpecK = current;
@@ -5490,12 +5534,15 @@ public class GenerationPipeline implements AutoCloseable {
      *
      * <p>Alignment follows the reference bundled-MTP bootstrap contract (vLLM
      * set_inputs_first_pass): predictor prefill row {@code t} carries id
-     * {@code x_(t+1)} — the prompt ids shifted LEFT by one, with the first target
-     * sampled token in the final slot — paired with target hidden {@code h_t}.
+     * {@code x_(t+1)} — the live prompt ids shifted LEFT by one, with the first target
+     * sampled token in the final LIVE slot {@code actualPrefillLen-1} — paired with
+     * target hidden {@code h_t}; padded rows beyond the live prefix stay inert.
      * There is NO all-zero bootstrap row: row {@code t} is exactly the
      * {@code (x_(t+1), h_t)} pair, and the scalar warmup pair
-     * {@code (firstGen, h_(N-1))} overwrites the last row, so the prefill cache
-     * holds exactly {@code N} meaningful rows. Prefill positions are rebased by
+     * {@code (firstGen, h_(N-1))} then writes the row AFTER the live prefix at
+     * cache slot {@code firstDecodePos == actualPrefillLen}, so the retained
+     * cache holds {@code N} live prefill rows plus the warmup row. Prefill
+     * positions are rebased by
      * one accordingly (row 0 holds {@code x_1} at position 1). The scalar warmup
      * then consumes the first target-sampled token with the final prompt hidden at
      * cache slot {@code firstDecodePos == actualPrefillLen} — the slot right after
@@ -5544,13 +5591,28 @@ public class GenerationPipeline implements AutoCloseable {
         // one (x1..xN-1) with the first generated token in the final slot, so row t
         // pairs id x_(t+1) with hidden h_t. The previous bootstrap fed the UNSHIFTED
         // ids and compensated with an all-zero hidden row, corrupting row 0.
+        // LIVE-PREFIX LAYOUT (review finding 3): the predictor KV cache retains
+        // rows [0, actualPrefillLen) — the LOGICAL length — so the shifted sequence
+        // and the sampled tail token are laid out over that live prefix and padding
+        // rows [actualPrefillLen, prefillSeqLen) stay inert (masked, outside the
+        // retained window). The previous physical-length shift placed firstTokenId
+        // at padded column prefillSeqLen-1, outside the retained cache, leaving the
+        // last live row paired with a prompt/pad id instead of the first generated
+        // token — a concrete padded-bootstrap misalignment that degrades draft
+        // quality independently of the decode-loop state machinery.
         if (prefillSeqLen > 1) {
             try (INDArray sourceIds = Nd4j.createFromArray(effectiveTokenIds)
                     .reshape(1, prefillSeqLen).castTo(DataType.INT64);
                  INDArray shifted = Nd4j.zeros(DataType.INT64, 1, prefillSeqLen)) {
-                shifted.get(NDArrayIndex.all(), NDArrayIndex.interval(0, prefillSeqLen - 1)).assign(
-                        sourceIds.get(NDArrayIndex.all(), NDArrayIndex.interval(1, prefillSeqLen)));
-                shifted.putScalar(new long[]{0, prefillSeqLen - 1}, firstTokenId);
+                if (actualPrefillLen > 1) {
+                    shifted.get(NDArrayIndex.all(), NDArrayIndex.interval(0, actualPrefillLen - 1)).assign(
+                            sourceIds.get(NDArrayIndex.all(), NDArrayIndex.interval(1, actualPrefillLen)));
+                }
+                // Sampled tail token at the last LIVE row; when the prompt is
+                // unpadded (actualPrefillLen == prefillSeqLen) this is exactly the
+                // historical physical behavior. For actualPrefillLen == 1 the live
+                // region is this single row.
+                shifted.putScalar(new long[]{0, actualPrefillLen - 1}, firstTokenId);
                 if (prefillIds == null) {
                     prefillIds = shifted.dup();
                     prepared.prefillInputMap.put(MTP_INPUT_IDS_NAME, prefillIds);
@@ -5741,7 +5803,7 @@ public class GenerationPipeline implements AutoCloseable {
         double warmupProbe = mtpLogits.getDouble(0);
         log.info("[MTP] Scalar warmup complete: prefill={} actual={} rows0..{}=shifted(x(t+1),h(t)) "
                         + "warmupSlot={} hidden={} kvHeads={} headDim={} probe={}",
-                prefillSeqLen, actualPrefillLen, prefillSeqLen - 1, firstDecodePos,
+                prefillSeqLen, actualPrefillLen, actualPrefillLen - 1, firstDecodePos,
                 hidden, kvHeads, headDim, warmupProbe);
 
         prepared.executor = prepared.session.getDynamicShapePlanExecutor();

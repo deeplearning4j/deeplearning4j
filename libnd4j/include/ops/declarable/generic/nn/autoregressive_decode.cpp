@@ -707,8 +707,13 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
                "autoregressive_decode: scalar target metadata requires MTP");
   if (decodeConfig.scalarPlanHandle != nullptr) {
     auto& c = decodeConfig;
+    // P02 adaptive-K (review finding 1): speculativeK==0 is a VALID adaptive
+    // invocation, not a misconfigured one. The scalar binding describes the
+    // CAPTURED width-1 plan + its live window substrate; it does not require
+    // drafting to be enabled for this call. K=0 routes every step through
+    // the scalar target (proposedCount==0), so the binding must stay usable.
     REQUIRE_TRUE(hasPlanConfig && c.planHandle != nullptr && c.extInputContext != nullptr && c.planOwnsKvScatter
-                     && c.speculativeK > 0 && c.windowMax > 1, 0,
+                     && c.windowMax > 1, 0,
                  "autoregressive_decode: scalar MTP target requires an in-graph window plan");
     REQUIRE_TRUE(c.scalarNumPlanExternalInputs == c.scalarPlanHandle->getNumExternalInputs()
                      && c.scalarNumPlanOutputs == c.scalarPlanHandle->getNumRequestedOutputs()

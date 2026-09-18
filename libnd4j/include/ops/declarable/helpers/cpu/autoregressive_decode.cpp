@@ -230,6 +230,14 @@ static LongType speculativeArgmaxCpu(const void* buffer, LongType vocabSize) {
     return bestIdx;
 }
 
+// Sample one value from the head of a logits row into `out` for the rerun NaN
+// guard. Template-typed by BUILD_SINGLE_SELECTOR so the probe covers every
+// FLOAT dtype rather than assuming FLOAT32.
+template <typename T>
+static void sampleFirstRowValueCpu(const void* valuePtr, void* out) {
+    *static_cast<float*>(out) = static_cast<float>(*reinterpret_cast<const T*>(valuePtr));
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Main CPU Implementation — equivalent logic to autoregressiveDecode (CUDA impl)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -390,6 +398,114 @@ void autoregressiveDecode(
         auto* scalarContext = reinterpret_cast<graph::Context*>(config->scalarExtInputContext);
         for (int i = 0; i < config->scalarNumPlanExternalInputs; ++i) scalarInputs[i] = scalarContext->array(i);
     }
+    // DEEP PRE-VERIFICATION RECURRENT SNAPSHOTS (CPU mirror of the CUDA
+    // scalar-binding aliasing fix): prepareScalarTarget's recurrent copy is
+    // skipped for every scalar input whose DataBuffer is identical to the target
+    // window ext input, so with a shared-buffer binding there was NO private
+    // snapshot at all - the verify pass mutated the live window state in place
+    // and the rerun double-advanced through the rejected draft rows. These
+    // dedicated owned scratch arrays are captured immediately BEFORE each
+    // verification execution (never read from at capture time, so buffer
+    // identity cannot disable them) and are the single restore source for BOTH
+    // rerun geometries. Slot layout: [0, numGdnStatePairs) are GDN pairs,
+    // [numGdnStatePairs, +numConvStatePairs) are conv pairs, each paired with
+    // its TARGET-domain ext input index. Allocated lazily once per decode call;
+    // freed with the other internal allocations in the cleanup section.
+    std::vector<NDArray*> stateSnapshotArrays_cpu;
+    std::vector<int> stateSnapshotExtIdx_cpu;
+    // Capture every recurrent state ext input (GDN + conv pairs) into the
+    // dedicated owned snapshot arrays. Called immediately before the plan
+    // execution that may mutate the live ext inputs (the verification pass), so
+    // the snapshot is genuinely PRE-verification regardless of whether the
+    // scalar plan's "private" arrays share buffers with the window ext inputs.
+    auto capturePreVerificationState_cpu = [&]() {
+        for (int s = 0; s < config->numGdnStatePairs; s++) {
+            int extIdx = config->gdnStateExtIndices != nullptr
+                ? config->gdnStateExtIndices[s] : -1;
+            NDArray* src = (extIdx >= 0 && extIdx < numExtInputs) ? extInputs[extIdx] : nullptr;
+            if (src == nullptr) continue;
+            if (static_cast<int>(stateSnapshotArrays_cpu.size()) <= s) {
+                stateSnapshotArrays_cpu.resize(s + 1, nullptr);
+                stateSnapshotExtIdx_cpu.resize(s + 1, -1);
+            }
+            if (stateSnapshotArrays_cpu[s] == nullptr
+                    || stateSnapshotArrays_cpu[s]->dataType() != src->dataType()
+                    || stateSnapshotArrays_cpu[s]->lengthOf() != src->lengthOf()) {
+                // Own allocation - never aliases the live ext input, so the
+                // snapshot survives any in-place mutation the plan applies to
+                // ext inputs.
+                delete stateSnapshotArrays_cpu[s];
+                std::vector<LongType> snapShape;
+                snapShape.reserve(src->rankOf());
+                for (int d = 0; d < src->rankOf(); d++) snapShape.push_back(src->sizeAt(d));
+                stateSnapshotArrays_cpu[s] = NDArrayFactory::create(
+                    'c', snapShape, src->dataType(), context);
+                stateSnapshotExtIdx_cpu[s] = extIdx;
+            }
+            NDArray* snap = stateSnapshotArrays_cpu[s];
+            NDArray::preparePrimaryUse({snap}, {src});
+            std::memcpy(snap->buffer(), src->buffer(),
+                        src->lengthOf() * src->sizeOfT());
+            snap->tickWriteHost();
+            NDArray::registerPrimaryUse({snap}, {src});
+        }
+        for (int s = 0; s < config->numConvStatePairs; s++) {
+            int extIdx = config->convStateExtIndices != nullptr
+                ? config->convStateExtIndices[s] : -1;
+            int slot = config->numGdnStatePairs + s;
+            NDArray* src = (extIdx >= 0 && extIdx < numExtInputs) ? extInputs[extIdx] : nullptr;
+            if (src == nullptr) continue;
+            if (static_cast<int>(stateSnapshotArrays_cpu.size()) <= slot) {
+                stateSnapshotArrays_cpu.resize(slot + 1, nullptr);
+                stateSnapshotExtIdx_cpu.resize(slot + 1, -1);
+            }
+            if (stateSnapshotArrays_cpu[slot] == nullptr
+                    || stateSnapshotArrays_cpu[slot]->dataType() != src->dataType()
+                    || stateSnapshotArrays_cpu[slot]->lengthOf() != src->lengthOf()) {
+                delete stateSnapshotArrays_cpu[slot];
+                std::vector<LongType> snapShape;
+                snapShape.reserve(src->rankOf());
+                for (int d = 0; d < src->rankOf(); d++) snapShape.push_back(src->sizeAt(d));
+                stateSnapshotArrays_cpu[slot] = NDArrayFactory::create(
+                    'c', snapShape, src->dataType(), context);
+                stateSnapshotExtIdx_cpu[slot] = extIdx;
+            }
+            NDArray* snap = stateSnapshotArrays_cpu[slot];
+            NDArray::preparePrimaryUse({snap}, {src});
+            std::memcpy(snap->buffer(), src->buffer(),
+                        src->lengthOf() * src->sizeOfT());
+            snap->tickWriteHost();
+            NDArray::registerPrimaryUse({snap}, {src});
+        }
+    };
+    // Restore the deep pre-verification snapshots into the LIVE window ext
+    // inputs the window plan reads (both rerun geometries read this storage:
+    // the window plan directly, and the scalar plan indirectly -
+    // prepareScalarTarget, re-run by the caller after this restore, re-stages
+    // its width-1 arrays FROM the live ext inputs).
+    auto restorePreVerificationState_cpu = [&]() {
+        for (size_t s = 0; s < stateSnapshotArrays_cpu.size(); ++s) {
+            NDArray* snap = stateSnapshotArrays_cpu[s];
+            int ti = stateSnapshotExtIdx_cpu[s];
+            NDArray* windowArr = (ti >= 0 && ti < numExtInputs) ? extInputs[ti] : nullptr;
+            if (snap == nullptr || windowArr == nullptr
+                    || snap->dataType() != windowArr->dataType()
+                    || snap->lengthOf() != windowArr->lengthOf()) continue;
+            NDArray::preparePrimaryUse({windowArr}, {snap});
+            std::memcpy(windowArr->buffer(), snap->buffer(),
+                        snap->lengthOf() * snap->sizeOfT());
+            windowArr->tickWriteHost();
+            NDArray::registerPrimaryUse({windowArr}, {snap});
+        }
+    };
+    // K=1 MTP scalar-rerun parity (CUDA mirror): prepareScalarTarget also serves as
+    // the PRE-VERIFICATION SNAPSHOT RESTORE for accepted-prefix state reruns. Calling
+    // it before a rerun re-establishes the private pre-verification recurrent
+    // snapshots (recurrent entries copied FROM the live window ext inputs, which hold
+    // them until the verify pass mutates them in place) and geometry to the rerun's
+    // asl=1 - for BOTH rerun geometries: the scalar plan's private width-1 arrays,
+    // and the live window ext inputs the W plan reads (a bindingless window rerun has
+    // only those).
     auto prepareScalarTarget = [&]() {
         for (int i = 0; i < config->scalarNumPlanExternalInputs; ++i) {
             NDArray* dst = scalarInputs[i];
@@ -423,6 +539,11 @@ void autoregressiveDecode(
         }
         scalarInputs[config->scalarActualSequenceLengthExtIdx]->p(0, static_cast<LongType>(1));
     };
+    // NOTE (rerun geometry ordering): at the accepted-prefix rerun site the
+    // deep restore runs first (restorePreVerificationState_cpu), THEN the
+    // rerun's asl write, THEN prepareScalarTarget() re-stages the scalar
+    // arrays. prepareScalarTarget copies geometry from the live ext inputs,
+    // so the asl write must precede it for a scalar rerun to observe asl=1.
     auto executeScalarTarget = [&]() {
         DSP_DIAG(KV_CACHE, "SCALAR_TARGET_SELECTED plan=%p idsWidth=1 maskRows=1 position=%lld inputs=%d outputs=%d",
                  config->scalarPlanHandle, static_cast<long long>(currentPosition),
@@ -896,6 +1017,21 @@ void autoregressiveDecode(
             setKvScaleRegistry(tl_kvQuantPtrs.data(), config->kvScaleBuffers, N);
         }
 
+        if (useSpeculative_cpu && proposedCount_cpu > 0) {
+            // DEEP pre-verification snapshot (CPU mirror of the CUDA scalar-binding
+            // aliasing fix): copy the recurrent state ext inputs into DEDICATED owned
+            // arrays so a rerun can advance consumed rows from the pre-step state
+            // instead of the post-verification state this step's verify pass leaves
+            // in place. Gated on proposedCount_cpu > 0: with no proposals the state
+            // commit happens inline (no rerun fires), so no snapshot is consumed and
+            // the ext inputs already hold the authoritative committed state.
+            // Runs for BOTH bindings: with a shared-buffer scalar binding,
+            // prepareScalarTarget copied nothing and the rerun would execute from
+            // post-verify state (mtp-fix-gate2 CUDA NaN guard, step=1).
+            // Called BEFORE prepareScalarTarget and BEFORE the verification plan
+            // execution - the snapshot is genuinely pre-verify.
+            capturePreVerificationState_cpu();
+        }
         if (useScalarTarget) prepareScalarTarget();
         Status planStatus = useScalarTarget && proposedCount_cpu == 0 ? executeScalarTarget() : plan->execute(
             extInputs, numExtInputs,
@@ -986,6 +1122,9 @@ void autoregressiveDecode(
                    specRowArgmax_cpu[specAccepted_cpu] == draftIds_cpu[specAccepted_cpu]) {
                 specAccepted_cpu++;
             }
+            // Pre-rerun row-0 verification argmax, for the NaN-guard diagnostic
+            // (the rerun refresh below overwrites specRowArgmax_cpu[0]).
+            const LongType specRowArgmaxOriginal_cpu = specRowArgmax_cpu[0];
 
             // Adaptive chain-cap accounting (see declaration above the step loop).
             // Count UNCONDITIONALLY: row p's argmax is the target's continuation
@@ -1066,6 +1205,29 @@ void autoregressiveDecode(
                 const bool scalarRerun_cpu = useScalarTarget && !multiRowRerun_cpu;
                 if (scalarRerun_cpu) config->activeWindow = 1;
                 else if (multiRowRerun_cpu) config->activeWindow = specConsumed_cpu;
+                // PRE-VERIFICATION SNAPSHOT RESTORE (CUDA mirror, K=1 scalar-rerun
+                // state-poisoning fix + shared-buffer aliasing fix): before
+                // executing the rerun, restore the DEEP pre-verification recurrent
+                // snapshots (owned arrays captured before this step's verify pass)
+                // into the live window ext inputs the verify pass mutated in place
+                // through ALL proposed rows, including the rejected suffix. The
+                // restore covers BOTH rerun geometries: the window plan reads the
+                // live ext inputs directly, and the scalar plan reads them through
+                // the prepareScalarTarget() re-stage below (its recurrent copy runs
+                // whenever the scalar arrays are NOT buffer-identical; when they ARE
+                // identical, the scalar arrays ARE the just-restored live storage).
+                // The old scalar-sourced restore with its buffer-identity skip was a
+                // no-op exactly for shared-buffer bindings - the mtp-fix-gate2 NaN
+                // guard failure mode.
+                // Scalar-geometry re-stage (CUDA mirror): after the deep restore,
+                // refresh the private width-1 arrays FROM the restored live ext
+                // inputs - recurrent to the pre-verification state, geometry to
+                // the rerun's asl=1 - so executeScalarTarget below cannot replay
+                // stale post-verify state left by an earlier different-width run.
+                restorePreVerificationState_cpu();
+                if (useScalarTarget) {
+                    prepareScalarTarget();
+                }
                 Status rerunStatus = scalarRerun_cpu ? executeScalarTarget() : plan->execute(
                     extInputs, numExtInputs,
                     planOutputs, numPlanOutputs,
@@ -1089,6 +1251,69 @@ void autoregressiveDecode(
                         scalarLogits->sizeAt(scalarLogits->rankOf() - 1), scalarLogits->dataType());
                     NDArray::registerPrimaryUse({}, {scalarLogits});
                 }
+
+                // FAIL-LOUD NaN GUARD (K=1 state-poisoning regression, CUDA
+                // mirror): bounded probe over the rerun's logits head plus a
+                // bounded probe of the FIRST GDN state pair's output row from the
+                // rerun pass itself (probing the ext input here would read the
+                // still-uncommitted pre-verify state instead of what the rerun
+                // just produced). NaN here means the rerun executed from mutated
+                // (post-verification) recurrent state; committing it would poison
+                // every later step. Fail loudly naming geometry and step - never
+                // continue with poisoned state.
+                bool rerunLogitsNan_cpu = false;
+                {
+                    NDArray* rerunLogitsArr = planOutputs[config->logitsOutputIdx];
+                    const LongType rerunVocabLocal =
+                        rerunLogitsArr->sizeAt(rerunLogitsArr->rankOf() - 1);
+                    const LongType probeVocab = std::min<LongType>(8, rerunVocabLocal);
+                    if (probeVocab > 0) {
+                        NDArray::preparePrimaryUse({}, {rerunLogitsArr});
+                        const char* base = reinterpret_cast<const char*>(rerunLogitsArr->buffer());
+                        for (LongType v = 0; v < probeVocab; v++) {
+                            float sampled = 0.0f;
+                            BUILD_SINGLE_SELECTOR(rerunLogitsArr->dataType(),
+                                                  sampleFirstRowValueCpu,
+                                                  (base + v * rerunLogitsArr->sizeOfT(), &sampled),
+                                                  SD_FLOAT_TYPES);
+                            if (std::isnan(sampled)) {
+                                rerunLogitsNan_cpu = true;
+                                break;
+                            }
+                        }
+                        NDArray::registerPrimaryUse({}, {rerunLogitsArr});
+                    }
+                }
+                bool rerunStateNan_cpu = false;
+                if (config->numGdnStatePairs > 0
+                        && config->gdnStateOutputIndices != nullptr) {
+                    int gdnOut0 = config->gdnStateOutputIndices[0];
+                    NDArray* gdnOut = (gdnOut0 >= 0 && gdnOut0 < numPlanOutputs)
+                        ? planOutputs[gdnOut0] : nullptr;
+                    if (gdnOut != nullptr && gdnOut->lengthOf() >= 4
+                            && gdnOut->dataType() == DataType::FLOAT32) {
+                        NDArray::preparePrimaryUse({}, {gdnOut});
+                        const float* stateSample =
+                            reinterpret_cast<const float*>(gdnOut->buffer());
+                        for (LongType i = 0; i < 4; i++) {
+                            if (std::isnan(stateSample[i])) {
+                                rerunStateNan_cpu = true;
+                                break;
+                            }
+                        }
+                        NDArray::registerPrimaryUse({}, {gdnOut});
+                    }
+                }
+                REQUIRE_TRUE(!(rerunLogitsNan_cpu || rerunStateNan_cpu), 0,
+                             "autoregressive_decode: SPEC RERUN NaN GUARD step=%d "
+                             "geometry=%s rerunArgmax=%lld verifyRow0=%lld "
+                             "rerunLogitsNaN=%d rerunGdnStateNaN=%d - the "
+                             "accepted-prefix rerun executed from mutated recurrent "
+                             "state; refusing to commit poisoned state",
+                             step, scalarRerun_cpu ? "scalar-width-1" : "window",
+                             (long long)specRowArgmax_cpu[0],
+                             (long long)specRowArgmaxOriginal_cpu,
+                             rerunLogitsNan_cpu ? 1 : 0, rerunStateNan_cpu ? 1 : 0);
             }
         }
 
@@ -1769,6 +1994,17 @@ void autoregressiveDecode(
     }
 
     // ── Cleanup internal allocations ──
+    // Free the deep pre-verification recurrent snapshots (owned scratch NDArrays
+    // captured before each verification execution; never alias the live ext
+    // inputs, see the stateSnapshotArrays_cpu declaration above).
+    for (size_t s = 0; s < stateSnapshotArrays_cpu.size(); ++s) {
+        if (stateSnapshotArrays_cpu[s] != nullptr) {
+            delete stateSnapshotArrays_cpu[s];
+            stateSnapshotArrays_cpu[s] = nullptr;
+        }
+    }
+    stateSnapshotArrays_cpu.clear();
+    stateSnapshotExtIdx_cpu.clear();
     delete sampledToken;
     if (internalMask != nullptr) {
         delete internalMask;

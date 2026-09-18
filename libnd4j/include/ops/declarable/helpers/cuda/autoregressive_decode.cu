@@ -38,6 +38,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <vector>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -787,9 +788,60 @@ void autoregressiveDecode(
         NDArray::registerSpecialUse({active}, {});
     };
     auto executeScalarTarget = [&]() {
+        // Call-scoped invocation counter for the bounded full-scan audit below.
+        static LongType scalarTargetAuditCall = 0;
+        const LongType auditCall = scalarTargetAuditCall++;
         DSP_DIAG(KV_CACHE, "SCALAR_TARGET_SELECTED plan=%p idsWidth=1 maskRows=1 position=%lld inputs=%d outputs=%d",
                  config->scalarPlanHandle, static_cast<long long>(currentPosition),
                  config->scalarNumPlanExternalInputs, config->scalarNumPlanOutputs);
+        // SCALAR-INPUT FINITENESS AUDIT (gates 4-6 discriminator): probe the
+        // PRIVATE scalar arrays executeScalarTarget consumes. Earlier probes
+        // covered only the first 8 of 550 inputs; gate-6 proved the poison is
+        // NOT in shared KV rows (restore had no effect). The remaining
+        // unprobed layer is the DERIVED (non-geometry, non-recurrent) inputs
+        // that prepareScalarTarget deliberately does NOT refresh - if any of
+        // them shares storage with a W-plan buffer the verify pass mutates,
+        // the scalar rerun reads post-verify garbage. Scan ALL float inputs
+        // (bounded: first 16 bytes each, names+indices reported for the first
+        // NaN). Cost is bounded at ~550 small D2H probes on a FAILING run
+        // only - but that is still too many per-step syncs, so: scan on the
+        // step AFTER the first speculative step only (the failing boundary),
+        // and stop at the first hit. Invocation counter: this lambda is built
+        // before the step loop; use a call-scoped monotonic counter so the
+        // scan runs only from the second scalar-target invocation onward.
+        if (DSP_DIAG_ENABLED(KV_CACHE) && auditCall >= 1) {
+            bool scalarInNan = false;
+            int poisonIdx = -1;
+            int probedCount = 0;
+            for (int i = 0;
+                 i < config->scalarNumPlanExternalInputs && !scalarInNan; ++i) {
+                NDArray* arr = scalarInputs[i];
+                if (arr == nullptr || arr->dataType() != DataType::FLOAT32
+                        || arr->lengthOf() < 4) continue;
+                ++probedCount;
+                NDArray::prepareSpecialUse({}, {arr});
+                float probe[4] = {};
+                cudaMemcpyAsync(probe, arr->specialBuffer(),
+                                sizeof(probe), cudaMemcpyDeviceToHost, *stream);
+                cudaError_t probeSync = cudaStreamSynchronize(*stream);
+                REQUIRE_TRUE(probeSync == cudaSuccess, 0,
+                             "autoregressive_decode: scalar-input probe sync failed: %s",
+                             cudaGetErrorString(probeSync));
+                NDArray::registerSpecialUse({}, {arr});
+                for (int j = 0; j < 4; ++j) {
+                    if (std::isnan(probe[j])) {
+                        scalarInNan = true;
+                        poisonIdx = i;
+                        break;
+                    }
+                }
+            }
+            DSP_DIAG(KV_CACHE,
+                     "SCALAR_INPUT_AUDIT pos=%lld inNaN=%d idx=%d probed=%d total=%d",
+                     static_cast<long long>(currentPosition),
+                     scalarInNan ? 1 : 0, poisonIdx, probedCount,
+                     config->scalarNumPlanExternalInputs);
+        }
         Status status = config->scalarPlanHandle->executeSteadyState(
             scalarInputs.data(), config->scalarNumPlanExternalInputs,
             scalarOutputs.data(), config->scalarNumPlanOutputs,
@@ -805,6 +857,53 @@ void autoregressiveDecode(
                              && logits->sizeAt(0) == 1
                              && (logits->rankOf() == 2 || logits->sizeAt(1) == 1), 0,
                          "autoregressive_decode: scalar target returned non-scalar logits geometry");
+            // RETRY DISCRIMINATOR: on all-NaN logits from the scalar plan, run
+            // the SAME plan a second time on the SAME inputs. finite retry =>
+            // stale/uninitialized internal staging (first replay consumed it,
+            // second is clean); NaN retry => deterministically poisoned capture
+            // (captured weights/KV pointers read garbage independent of staging
+            // age). One extra execution only inside a failing diagnostic run.
+            if (DSP_DIAG_ENABLED(KV_CACHE) && logits->dataType() == DataType::FLOAT32
+                    && logits->lengthOf() >= 8) {
+                NDArray::prepareSpecialUse({}, {logits});
+                float pre[8] = {};
+                cudaMemcpyAsync(pre, logits->specialBuffer(),
+                                sizeof(pre), cudaMemcpyDeviceToHost, *stream);
+                cudaStreamSynchronize(*stream);
+                NDArray::registerSpecialUse({}, {logits});
+                bool firstNan = false;
+                for (int j = 0; j < 8; j++) firstNan = firstNan || std::isnan(pre[j]);
+                if (firstNan) {
+                    DSP_DIAG(KV_CACHE,
+                             "SCALAR_RETRY pos=%lld firstPass=NaN - re-executing "
+                             "the same scalar plan on identical inputs",
+                             static_cast<long long>(currentPosition));
+                    Status retryStatus = config->scalarPlanHandle->executeSteadyState(
+                        scalarInputs.data(), config->scalarNumPlanExternalInputs,
+                        scalarOutputs.data(), config->scalarNumPlanOutputs,
+                        reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)));
+                    if (retryStatus == Status::OK) {
+                        for (int i = 0; i < numPlanOutputs; ++i) {
+                            planOutputs[i] = scalarOutputs[config->targetOutputToScalar[i]];
+                        }
+                        logits = scalarOutputs[config->scalarLogitsOutputIdx];
+                        NDArray::prepareSpecialUse({}, {logits});
+                        float post[8] = {};
+                        cudaMemcpyAsync(post, logits->specialBuffer(),
+                                        sizeof(post), cudaMemcpyDeviceToHost, *stream);
+                        cudaStreamSynchronize(*stream);
+                        NDArray::registerSpecialUse({}, {logits});
+                        bool retryNan = false;
+                        for (int j = 0; j < 8; j++) retryNan = retryNan || std::isnan(post[j]);
+                        DSP_DIAG(KV_CACHE,
+                                 "SCALAR_RETRY pos=%lld retry=%s first8=[%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f]",
+                                 static_cast<long long>(currentPosition),
+                                 retryNan ? "NaN" : "finite",
+                                 post[0], post[1], post[2], post[3],
+                                 post[4], post[5], post[6], post[7]);
+                    }
+                }
+            }
         }
         return status;
     };
@@ -1255,10 +1354,212 @@ void autoregressiveDecode(
     // specArgmaxDevice, whose committed token sequence the predictor repair
     // loop and pending-input publication consume.
     NDArray* mtpRerunScratch = nullptr;
-    if (useSpeculative) {
+    // Pre-verification recurrent-snapshot storage for accepted-prefix state reruns
+    // when NO scalar binding exists (bindingless window models): without this,
+    // a window-geometry rerun executes from whatever post-verification state the
+    // live ext inputs hold - the exact double-advance NaN mechanism fixed for the
+    // scalar rerun. Snapshots are refreshed pre-verify and restored pre-rerun.
+    std::vector<NDArray*> unboundStateSnapshots;
+    std::vector<int> unboundStateSnapshotExtIdx;
+    // DEEP PRE-VERIFICATION RECURRENT SNAPSHOTS (scalar-binding aliasing fix,
+    // mtp-fix-gate2 NaN GUARD step=1 geometry=scalar-width-1): prepareScalarTarget's
+    // recurrent copy is skipped for every scalar input whose DataBuffer is identical to
+    // the target window ext input (shared-buffer "private" arrays), so with such a
+    // binding there was NO private snapshot at all - the verify pass mutated the live
+    // window state in place, the rerun restore skipped the same buffer, and the scalar
+    // rerun double-advanced through the rejected draft rows into NaN. These dedicated
+    // owned scratch arrays are captured D2D on the decode stream immediately BEFORE
+    // each verification execution (never read from at capture time, so buffer
+    // identity cannot disable them) and are the single restore source for BOTH rerun
+    // geometries. Slot layout matches the bindingless arrays above: [0, numGdnStatePairs)
+    // are GDN pairs, [numGdnStatePairs, +numConvStatePairs) are conv pairs, each paired
+    // with its TARGET-domain ext input index. Allocated lazily once per decode call and
+    // freed in the cleanup section with the other speculative resources.
+    std::vector<NDArray*> stateSnapshotArrays;
+    std::vector<int> stateSnapshotExtIdx;
+    // SHARED-KV ROW SNAPSHOTS (verdict-c fix, gate-5 SCALAR_RETRY evidence):
+    // the static KV buffers are SHARED between the window and scalar plans
+    // (in-graph KV writes), so the W-wide verification pass writes rows
+    // [base, base+K) with draft-conditioned K/V before any scalar rerun. The
+    // captured scalar graph reads those SAME rows deterministically - a retry
+    // on identical inputs stays NaN (gate-5: SCALAR_RETRY retry=NaN), because
+    // the poison lives in the shared buffer rows, not in any ext input
+    // (RERUN_INPUT_AUDIT extNaN=0) nor the scalar staging arrays
+    // (SCALAR_INPUT_AUDIT inNaN=0). Snapshot rows [base, base+K) of every
+    // static KV buffer immediately before the verification pass and restore
+    // them before the rerun; the rerun then reads exactly the rows the W=1
+    // scalar pass wrote - the greedy-identical state it must consume. One
+    // snapshot buffer per KV pair per step, allocated lazily, freed in the
+    // cleanup section with the other speculative resources.
+    std::vector<NDArray*> kvRowSnapshots;
+    std::vector<LongType> kvRowSnapshotRows;  // snapshot rows per KV buffer
+    std::vector<NDArray*> kvRowSnapshotSources;  // source static KV buffer
+    LongType kvRowSnapshotBase = -1;              // base row captured
+    // Capture rows [base, base+proposedCount) of every static KV buffer.
+    // Called immediately before the verification execution.
+    auto capturePreVerificationKvRows = [&](LongType base, int rows) {
+        if (!config->planOwnsKvScatter || rows <= 0
+                || config->kvInputExtIndices == nullptr || numKvPairs <= 0) return;
+        kvRowSnapshotBase = base;
+        kvRowSnapshotRows.assign(numKvPairs, rows);
+        for (int kv = 0; kv < numKvPairs; kv++) {
+            int extIdx = config->kvInputExtIndices[kv];
+            NDArray* src = (extIdx >= 0 && extIdx < numExtInputs)
+                ? extInputs[extIdx] : nullptr;
+            if (src == nullptr || src->rankOf() != 4) continue;
+            const LongType kvSeq = src->sizeAt(1);
+            const LongType heads = src->sizeAt(2);
+            const LongType dim = src->sizeAt(3);
+            if (base < 0 || base + rows > kvSeq) continue;
+            if (static_cast<int>(kvRowSnapshots.size()) <= kv) {
+                kvRowSnapshots.resize(kv + 1, nullptr);
+                kvRowSnapshotSources.resize(kv + 1, nullptr);
+            }
+            if (kvRowSnapshots[kv] == nullptr
+                    || kvRowSnapshots[kv]->dataType() != src->dataType()
+                    || kvRowSnapshots[kv]->lengthOf() != rows * heads * dim) {
+                delete kvRowSnapshots[kv];
+                std::vector<LongType> snapShape{1, rows, heads, dim};
+                kvRowSnapshots[kv] = NDArrayFactory::create(
+                    'c', snapShape, src->dataType(), context);
+            }
+            kvRowSnapshotSources[kv] = src;
+            NDArray* snap = kvRowSnapshots[kv];
+            const size_t rowBytes = static_cast<size_t>(heads) * dim * src->sizeOfT();
+            const char* srcBase = static_cast<const char*>(src->specialBuffer())
+                                  + static_cast<size_t>(base) * rowBytes;
+            NDArray::prepareSpecialUse({snap}, {src});
+            cudaMemcpyAsync(snap->specialBuffer(), srcBase,
+                            rowBytes * rows, cudaMemcpyDeviceToDevice, *stream);
+            NDArray::registerSpecialUse({snap}, {src});
+        }
+    };
+    // Restore the captured KV rows back into the shared static buffers.
+    auto restorePreVerificationKvRows = [&]() {
+        if (kvRowSnapshotBase < 0) return;
+        for (size_t kv = 0; kv < kvRowSnapshots.size(); ++kv) {
+            NDArray* snap = kvRowSnapshots[kv];
+            NDArray* dst = (kv < kvRowSnapshotSources.size())
+                ? kvRowSnapshotSources[kv] : nullptr;
+            if (snap == nullptr || dst == nullptr) continue;
+            const int rows = static_cast<int>(kvRowSnapshotRows[kv]);
+            const LongType heads = snap->sizeAt(2);
+            const LongType dim = snap->sizeAt(3);
+            const size_t rowBytes = static_cast<size_t>(heads) * dim * dst->sizeOfT();
+            char* dstBase = static_cast<char*>(dst->specialBuffer())
+                            + static_cast<size_t>(kvRowSnapshotBase) * rowBytes;
+            NDArray::prepareSpecialUse({dst}, {snap});
+            auto restoreErr = cudaMemcpyAsync(dstBase, snap->specialBuffer(),
+                rowBytes * rows, cudaMemcpyDeviceToDevice, *stream);
+            REQUIRE_TRUE(restoreErr == cudaSuccess, 0,
+                "autoregressive_decode: shared-KV row restore failed: %s",
+                cudaGetErrorString(restoreErr));
+            NDArray::registerSpecialUse({dst}, {snap});
+        }
+        kvRowSnapshotBase = -1;
+    };
+    // Capture every recurrent state ext input (GDN + conv pairs) into the dedicated
+    // owned snapshot arrays. Called immediately before the plan execution that may
+    // mutate the live ext inputs (the verification pass), so the snapshot is genuinely
+    // PRE-verification regardless of whether the scalar plan's "private" arrays share
+    // buffers with the window ext inputs.
+    auto capturePreVerificationState = [&]() {
+        for (int s = 0; s < config->numGdnStatePairs; s++) {
+            int extIdx = config->gdnStateExtIndices != nullptr
+                ? config->gdnStateExtIndices[s] : -1;
+            NDArray* src = (extIdx >= 0 && extIdx < numExtInputs) ? extInputs[extIdx] : nullptr;
+            if (src == nullptr) continue;
+            if (static_cast<int>(stateSnapshotArrays.size()) <= s) {
+                stateSnapshotArrays.resize(s + 1, nullptr);
+                stateSnapshotExtIdx.resize(s + 1, -1);
+            }
+            if (stateSnapshotArrays[s] == nullptr
+                    || stateSnapshotArrays[s]->dataType() != src->dataType()
+                    || stateSnapshotArrays[s]->lengthOf() != src->lengthOf()) {
+                // Own allocation - never aliases the live ext input, so the snapshot
+                // survives any in-place mutation the plan applies to ext inputs.
+                delete stateSnapshotArrays[s];
+                std::vector<LongType> snapShape;
+                snapShape.reserve(src->rankOf());
+                for (int d = 0; d < src->rankOf(); d++) snapShape.push_back(src->sizeAt(d));
+                stateSnapshotArrays[s] = NDArrayFactory::create(
+                    'c', snapShape, src->dataType(), context);
+                stateSnapshotExtIdx[s] = extIdx;
+            }
+            NDArray* snap = stateSnapshotArrays[s];
+            NDArray::prepareSpecialUse({snap}, {src});
+            cudaMemcpyAsync(snap->specialBuffer(), src->specialBuffer(),
+                            src->lengthOf() * src->sizeOfT(),
+                            cudaMemcpyDeviceToDevice, *stream);
+            NDArray::registerSpecialUse({snap}, {src});
+        }
+        for (int s = 0; s < config->numConvStatePairs; s++) {
+            int extIdx = config->convStateExtIndices != nullptr
+                ? config->convStateExtIndices[s] : -1;
+            int slot = config->numGdnStatePairs + s;
+            NDArray* src = (extIdx >= 0 && extIdx < numExtInputs) ? extInputs[extIdx] : nullptr;
+            if (src == nullptr) continue;
+            if (static_cast<int>(stateSnapshotArrays.size()) <= slot) {
+                stateSnapshotArrays.resize(slot + 1, nullptr);
+                stateSnapshotExtIdx.resize(slot + 1, -1);
+            }
+            if (stateSnapshotArrays[slot] == nullptr
+                    || stateSnapshotArrays[slot]->dataType() != src->dataType()
+                    || stateSnapshotArrays[slot]->lengthOf() != src->lengthOf()) {
+                delete stateSnapshotArrays[slot];
+                std::vector<LongType> snapShape;
+                snapShape.reserve(src->rankOf());
+                for (int d = 0; d < src->rankOf(); d++) snapShape.push_back(src->sizeAt(d));
+                stateSnapshotArrays[slot] = NDArrayFactory::create(
+                    'c', snapShape, src->dataType(), context);
+                stateSnapshotExtIdx[slot] = extIdx;
+            }
+            NDArray* snap = stateSnapshotArrays[slot];
+            NDArray::prepareSpecialUse({snap}, {src});
+            cudaMemcpyAsync(snap->specialBuffer(), src->specialBuffer(),
+                            src->lengthOf() * src->sizeOfT(),
+                            cudaMemcpyDeviceToDevice, *stream);
+            NDArray::registerSpecialUse({snap}, {src});
+        }
+    };
+    // Restore the deep pre-verification snapshots into the LIVE window ext inputs the
+    // window plan reads (both rerun geometries read this storage: the window plan
+    // directly, and the scalar plan indirectly - prepareScalarTarget, re-run by the
+    // caller after this restore, re-stages its width-1 arrays FROM the live ext
+    // inputs). Cost: 23 GDN pairs * state size + conv pairs, a per-step D2D copy that
+    // mirrors the existing window-restore machinery.
+    auto restorePreVerificationState = [&]() {
+        for (size_t s = 0; s < stateSnapshotArrays.size(); ++s) {
+            NDArray* snap = stateSnapshotArrays[s];
+            int ti = stateSnapshotExtIdx[s];
+            NDArray* windowArr = (ti >= 0 && ti < numExtInputs) ? extInputs[ti] : nullptr;
+            if (snap == nullptr || windowArr == nullptr
+                    || snap->dataType() != windowArr->dataType()
+                    || snap->lengthOf() != windowArr->lengthOf()) continue;
+            NDArray::prepareSpecialUse({windowArr}, {snap});
+            auto restoreErr = cudaMemcpyAsync(windowArr->specialBuffer(),
+                snap->specialBuffer(), snap->lengthOf() * snap->sizeOfT(),
+                cudaMemcpyDeviceToDevice, *stream);
+            REQUIRE_TRUE(restoreErr == cudaSuccess, 0,
+                "autoregressive_decode: recurrent state restore failed: %s",
+                cudaGetErrorString(restoreErr));
+            NDArray::registerSpecialUse({windowArr}, {snap});
+        }
+    };
+    // Allocate speculative scratch whenever speculation OR the K=0
+    // maintenance path can run. Gate-8 evidence: with effK=0 (adaptive drop)
+    // the epilogue's predictor maintenance forward (draftSlot=0,
+    // writeTargetRow=false) still needs mtpDraftDevice/specArgmaxDevice, but
+    // the old useSpeculative-only gate skipped allocation -> REQUIRE_TRUE
+    // crash on the first scalar-only step. MTP metadata presence (plan +
+    // context) is the correct allocation condition; specK=0 yields a 1-slot
+    // shape, exactly what the maintenance forward writes.
+    const bool mtpMetadataReady0 = config->mtpPlanHandle != nullptr
+                                   && config->mtpExtInputContext != nullptr;
+    if (useSpeculative || mtpMetadataReady0) {
         std::vector<LongType> argmaxShape = {static_cast<LongType>(specK + 1)};
         specArgmaxDevice = NDArrayFactory::create('c', argmaxShape, DataType::INT64, context);
-        if (useMtp) {
+        if (useMtp || (mtpMetadataReady0 && config->speculatorType == 2)) {
             mtpDraftDevice = NDArrayFactory::create('c', argmaxShape, DataType::INT64, context);
         }
     }
@@ -1272,8 +1573,20 @@ void autoregressiveDecode(
     }
 
     // -- Qwen3.5 bundled MTP predictor plan --------------------------------
-    graph::NativeDynamicShapePlan* mtpPlan = useMtp ? config->mtpPlanHandle : nullptr;
-    auto* mtpContext = useMtp
+    // MTP METADATA vs MTP DRAFTING (gate-9 SIGSEGV root fix): the maintenance
+    // forward in the epilogue (executeMtpCuda with draftSlot=0/writeTargetRow=
+    // false) must run under effK=0 too - it keeps the predictor KV hole-free
+    // across scalar-only stretches so K re-raise resumes with a complete
+    // attention context. Therefore the predictor RESOURCES (plan, context,
+    // ext-input wiring) are gated on metadata presence, NOT on useMtp (which
+    // additionally requires specK>0). Gate-9 evidence: with the wiring gated
+    // on useMtp, effK=0 left mtpPlan==null and the maintenance forward
+    // dereferenced null -> dumpPlanPhaseState SIGSEGV (si_addr=0x2b0).
+    const bool mtpMetadataReady = config->mtpPlanHandle != nullptr
+                                  && config->mtpExtInputContext != nullptr;
+    graph::NativeDynamicShapePlan* mtpPlan = (useMtp || mtpMetadataReady)
+                                                 ? config->mtpPlanHandle : nullptr;
+    auto* mtpContext = (useMtp || mtpMetadataReady)
         ? reinterpret_cast<graph::Context*>(config->mtpExtInputContext) : nullptr;
     std::vector<NDArray*> mtpExtInputsVec;
     std::vector<NDArray*> mtpPlanOutputsVec;
@@ -1283,7 +1596,7 @@ void autoregressiveDecode(
     int mtpNumOutputs = 0;
     LongType mtpMaskLen = 0;
 
-    if (useMtp) {
+    if (mtpPlan != nullptr && mtpContext != nullptr) {
         mtpNumExtInputs = config->mtpNumPlanExternalInputs;
         mtpNumOutputs = mtpPlan->getNumRequestedOutputs();
         auto validMtpExtIdx = [&](int idx) {
@@ -1406,9 +1719,16 @@ void autoregressiveDecode(
     };
 
     auto executeMtpCuda = [&](LongType position, int draftSlot, bool writeTargetRow) {
-        REQUIRE_TRUE(useMtp && mtpDraftDevice != nullptr, 0,
-                     "autoregressive_decode: attempted CUDA MTP execution while disabled");
-        REQUIRE_TRUE(draftSlot >= 0 && draftSlot <= specK, 0,
+        // P02 adaptive-K (review finding 1): MTP RESOURCES vs MTP DRAFTING.
+        // Maintenance forwards (K=0 scalar-only steps, draftSlot==0,
+        // writeTargetRow==false) consume the freshly published carry/token to
+        // keep the predictor KV hole-free; only DRAFT production is gated on
+        // active speculation (targetWindowReady).
+        REQUIRE_TRUE(config->mtpPlanHandle != nullptr && config->mtpExtInputContext != nullptr
+                         && mtpDraftDevice != nullptr,
+                     0, "autoregressive_decode: attempted CUDA MTP execution while disabled");
+        REQUIRE_TRUE((useMtp || (draftSlot == 0 && !writeTargetRow))
+                         && draftSlot >= 0 && draftSlot <= specK, 0,
                      "autoregressive_decode: CUDA MTP draft slot %d outside [0,%d]",
                      draftSlot, specK);
 
@@ -1610,73 +1930,177 @@ void autoregressiveDecode(
                                                  static_cast<size_t>(mtpLogits->sizeOfT())),
                                 cudaMemcpyDeviceToHost, *stream);
                 // DRAFT-QUALITY DISCRIMINATOR (endgame goal: >=50% acceptance):
-                // top-5 draft tokens + their raw logits, and the argmax rank.
-                // Interpretation: target top-1 absent from draft top-100 =>
-                // conditioning broken (carry row / KV position / input token
-                // wiring on the native 27B path); present-but-lower-ranked =>
-                // calibration/quantization interaction. Host pass reads only
-                // vocabTop = min(vocab, 128) raw values (bounded D2H); the argmax
-                // over the FULL vocab is still the kernel's job.
+                // true global top-5 draft tokens + their raw logits, and the
+                // argmax rank. Interpretation: target top-1 absent from draft
+                // top-100 => conditioning broken (carry row / KV position /
+                // input token wiring on the native 27B path);
+                // present-but-lower-ranked => calibration/quantization
+                // interaction. The ranking must span the ENTIRE vocabulary:
+                // a winner above ID 128 never shows up in a bounded first-128
+                // probe, so the whole logits row is copied D2H once and the
+                // host pass ranks every element with dtype-correct indexing.
+                // The argmax over the FULL vocab is still the kernel's job.
+                // D2H BUDGET: the row is copied element-granularly in D2H
+                // transactions of at most 4MB. Real vocab rows (~150k => 300KB
+                // BF16/FP16, 600KB FP32) fit a single transaction; a row above
+                // the 4MB single-copy budget is chunked instead of skipped, so
+                // the top-5 stays diagnostic-only with bounded transfers.
                 LongType immVocab = mtpVocab;
                 LongType immTop5[5] = {};
-                std::vector<uint32_t> immRaw(std::min<LongType>(immVocab, 128));
-                cudaMemcpyAsync(immRaw.data(), mtpLogits->specialBuffer(),
-                                immRaw.size() * sizeof(uint32_t),
-                                cudaMemcpyDeviceToHost, *stream);
+                const DataType immDtype = mtpLogits->dataType();
+                const size_t immElemSize = mtpLogits->sizeOfT();
+                const char* immDtypeName =
+                    immDtype == DataType::BFLOAT16 ? "BF16"
+                    : immDtype == DataType::HALF   ? "FP16"
+                    : immDtype == DataType::FLOAT32 ? "FP32"
+                    : immDtype == DataType::DOUBLE  ? "FP64"
+                                                    : "OTHER";
+                const size_t immRowBytes =
+                    static_cast<size_t>(immVocab) * immElemSize;
+                constexpr size_t immMaxRowBytes = 4u * 1024u * 1024u; // 4MB cap
+                // Full-row copy budget: issue the element-granular D2H in
+                // transactions bounded by 4MB, then keep the probe's single
+                // stream sync - every host read below (top-5 path and
+                // fallback) observes completed data.
+                std::vector<uint8_t> immRaw;
+                const bool fullRowReady =
+                    immVocab > 0 && immElemSize > 0;
+                const size_t immChunkElems =
+                    fullRowReady ? std::max<size_t>(1, immMaxRowBytes / immElemSize)
+                                 : 1;
+                if (fullRowReady) {
+                    // One element-granular D2H of the full logits row.
+                    // Byte layout: element i lives at offset i*elemSize, exactly
+                    // the linear layout argmaxKernel scores (logits[i]).
+                    immRaw.resize(immRowBytes);
+                    for (LongType chunkStart = 0; chunkStart < immVocab;
+                         chunkStart += static_cast<LongType>(immChunkElems)) {
+                        const LongType chunkLen =
+                            std::min<LongType>(static_cast<LongType>(immChunkElems),
+                                               immVocab - chunkStart);
+                        cudaMemcpyAsync(
+                            immRaw.data()
+                                + static_cast<size_t>(chunkStart) * immElemSize,
+                            static_cast<const char*>(mtpLogits->specialBuffer())
+                                + static_cast<size_t>(chunkStart) * immElemSize,
+                            static_cast<size_t>(chunkLen) * immElemSize,
+                            cudaMemcpyDeviceToHost, *stream);
+                    }
+                }
                 cudaError_t immErr = cudaStreamSynchronize(*stream);
-                // Decode raw logits by dtype (BF16=2B/FP16=2B/F32=4B) into float.
-                auto decodeRaw = [&](uint32_t bits) -> float {
-                    if (mtpLogits->dataType() == DataType::BFLOAT16) {
-                        uint16_t v = static_cast<uint16_t>(bits & 0xFFFFu);
-                        uint32_t f = static_cast<uint32_t>(v) << 16;
-                        float out;
-                        memcpy(&out, &f, sizeof(out));
-                        return out;
+                if (fullRowReady) {
+                    // Decode one raw element by dtype into float. Bit-level
+                    // decode keeps the reported scores the raw device bits
+                    // (BF16/FP16/FP32 exact); DOUBLE is narrowed to the
+                    // shared float score field, tagged dtype=FP64.
+                    auto decodeRaw = [&](const uint8_t* elem) -> float {
+                        if (immDtype == DataType::BFLOAT16) {
+                            // 2B element: widen to FP32 by shifting into the
+                            // high 16 bits (exact, subnormals included).
+                            uint16_t v = 0;
+                            std::memcpy(&v, elem, sizeof(v));
+                            uint32_t f = static_cast<uint32_t>(v) << 16;
+                            float out;
+                            std::memcpy(&out, &f, sizeof(out));
+                            return out;
+                        }
+                        if (immDtype == DataType::HALF) {
+                            // 2B element: FP16 -> FP32 by bit fields, matching
+                            // the decode used by the other probes in this file
+                            // (MTP_TARGET_CARRY_CONTENT). Subnormals (exp==0,
+                            // man!=0) decode to their true value man*2^-24 via
+                            // ldexp instead of collapsing to zero; Inf/NaN are
+                            // preserved explicitly.
+                            uint16_t v = 0;
+                            std::memcpy(&v, elem, sizeof(v));
+                            uint32_t sign = (v & 0x8000u) >> 15;
+                            uint32_t exp = (v & 0x7C00u) >> 10;
+                            uint32_t man = v & 0x03FFu;
+                            float mag;
+                            if (exp == 0) {
+                                mag = man == 0
+                                          ? 0.0f
+                                          : std::ldexp(static_cast<float>(man), -24);
+                            } else if (exp == 0x1F) {
+                                mag = man == 0
+                                          ? std::numeric_limits<float>::infinity()
+                                          : std::numeric_limits<float>::quiet_NaN();
+                            } else {
+                                mag = std::ldexp(
+                                    1.0f + static_cast<float>(man) / 1024.0f,
+                                    static_cast<int>(exp) - 15);
+                            }
+                            return sign != 0u ? -mag : mag;
+                        }
+                        if (immDtype == DataType::FLOAT32) {
+                            float out;
+                            std::memcpy(&out, elem, sizeof(out));
+                            return out;
+                        }
+                        if (immDtype == DataType::DOUBLE) {
+                            // DOUBLE scores are reported narrowed to the
+                            // shared float score field; the dtype=FP64 tag on
+                            // the event identifies the source precision.
+                            double wide;
+                            std::memcpy(&wide, elem, sizeof(wide));
+                            return static_cast<float>(wide);
+                        }
+                        // Non-float row: report the integer value directly.
+                        // Selector list is SD_FLOAT_TYPES, so this is only a
+                        // defensive branch for unexpected metadata.
+                        LongType iv = 0;
+                        std::memcpy(&iv, elem,
+                                    std::min<size_t>(sizeof(iv), immElemSize));
+                        return static_cast<float>(iv);
+                    };
+                    // scoredCount = min(5, vocab): never index more scored
+                    // entries than the vocabulary contains.
+                    const size_t scoredCount =
+                        static_cast<size_t>(std::min<LongType>(5, immVocab));
+                    std::vector<std::pair<float, LongType>> scored;
+                    scored.reserve(static_cast<size_t>(immVocab));
+                    for (LongType t = 0; t < immVocab; t++) {
+                        scored.emplace_back(
+                            decodeRaw(immRaw.data() +
+                                      static_cast<size_t>(t) * immElemSize),
+                            t);
                     }
-                    if (mtpLogits->dataType() == DataType::HALF) {
-                        uint16_t v = static_cast<uint16_t>(bits & 0xFFFFu);
-                        uint32_t sign = (v & 0x8000u) << 16;
-                        uint32_t exp = ((v & 0x7C00u) >> 10);
-                        uint32_t man = (v & 0x03FFu) << 13;
-                        uint32_t f;
-                        if (exp == 0) f = sign | 0u;
-                        else if (exp == 0x1F) f = sign | 0x7F800000u | man;
-                        else f = sign | ((exp + 112u) << 23) | man;
-                        float out;
-                        memcpy(&out, &f, sizeof(out));
-                        return out;
-                    }
-                    float out;
-                    memcpy(&out, &bits, sizeof(out));
-                    return out;
-                };
-                if (!immRaw.empty()) {
-                    std::vector<std::pair<float, int>> scored;
-                    scored.reserve(immRaw.size());
-                    for (size_t t = 0; t < immRaw.size(); t++) {
-                        scored.emplace_back(decodeRaw(immRaw[t]), static_cast<int>(t));
-                    }
-                    std::partial_sort(scored.begin(), scored.begin() + std::min<size_t>(5, scored.size()),
-                                      scored.end(), [](const auto& a, const auto& b) { return a.first > b.first; });
-                    for (size_t r = 0; r < std::min<size_t>(5, scored.size()); r++) {
+                    std::partial_sort(scored.begin(), scored.begin() + scoredCount,
+                                      scored.end(),
+                                      [](const auto& a, const auto& b) {
+                                          return a.first > b.first;
+                                      });
+                    for (size_t r = 0; r < scoredCount; r++) {
                         immTop5[r] = scored[r].second;
                     }
+                    // Report all five format slots; when vocab < 5 the slots
+                    // beyond scoredCount stay at their zero-initialized
+                    // sentinel "0:0.0000" and are not backed by scored data.
                     DSP_DIAG(KV_CACHE,
                              "MTP_DRAFT_TOP5 pos=%lld slot=%d draft=%lld "
+                             "dtype=%s vocab=%lld "
                              "top5=[%lld:%.4f %lld:%.4f %lld:%.4f %lld:%.4f %lld:%.4f] "
                              "err=%d",
                              (long long)position, draftSlot, (long long)immDraft[0],
-                             (long long)immTop5[0], scored[0].first,
-                             (long long)immTop5[1], scored[1].first,
-                             (long long)immTop5[2], scored[2].first,
-                             (long long)immTop5[3], scored[3].first,
-                             (long long)immTop5[4], scored[4].first,
+                             immDtypeName, (long long)immVocab,
+                             (long long)immTop5[0],
+                             scoredCount > 0 ? scored[0].first : 0.0f,
+                             (long long)immTop5[1],
+                             scoredCount > 1 ? scored[1].first : 0.0f,
+                             (long long)immTop5[2],
+                             scoredCount > 2 ? scored[2].first : 0.0f,
+                             (long long)immTop5[3],
+                             scoredCount > 3 ? scored[3].first : 0.0f,
+                             (long long)immTop5[4],
+                             scoredCount > 4 ? scored[4].first : 0.0f,
                              static_cast<int>(immErr));
                 } else {
                     DSP_DIAG(KV_CACHE,
-                             "MTP_ARGMAX_IMMEDIATE pos=%lld slot=%d draft=%lld logit0_raw=0x%08x err=%d",
+                             "MTP_ARGMAX_IMMEDIATE pos=%lld slot=%d draft=%lld "
+                             "logit0_raw=0x%08x err=%d",
                              (long long)position, draftSlot, (long long)immDraft[0],
-                             static_cast<unsigned>(immLogit[0]), static_cast<int>(immErr));
+                             static_cast<unsigned>(immLogit[0]),
+                             static_cast<int>(immErr));
                 }
             }
         }
@@ -1771,7 +2195,13 @@ void autoregressiveDecode(
     };
 
     auto setMtpTargetCarryCuda = [&](NDArray* targetHiddenRows, int row) {
-        REQUIRE_TRUE(useMtp && targetHiddenRows != nullptr
+        // P02 adaptive-K (review finding 1): MTP RESOURCES vs MTP DRAFTING.
+        // useMtp (targetWindowReady && mtp configured) describes drafting only;
+        // carry maintenance must stay valid for scalar-only steps while the
+        // MTP metadata exists, so re-enabling speculation cannot resume from
+        // a stale carry.
+        REQUIRE_TRUE(config->mtpPlanHandle != nullptr && config->mtpExtInputContext != nullptr
+                         && targetHiddenRows != nullptr
                          && targetHiddenRows->rankOf() == 3,
                      0, "autoregressive_decode: target hidden output must be rank 3 for CUDA MTP");
         REQUIRE_TRUE(row >= 0 && row < targetHiddenRows->sizeAt(1)
@@ -1910,7 +2340,11 @@ void autoregressiveDecode(
     auto setMtpNextInputCuda = [&](NDArray* tokenSource,
                                    LongType tokenIndex,
                                    LongType nextPosition) {
-        REQUIRE_TRUE(useMtp && tokenSource != nullptr
+        // P02 adaptive-K (review finding 1): same resources-vs-drafting split
+        // as setMtpTargetCarryCuda - pending-input maintenance stays valid for
+        // scalar-only steps while MTP metadata exists.
+        REQUIRE_TRUE(config->mtpPlanHandle != nullptr && config->mtpExtInputContext != nullptr
+                         && tokenSource != nullptr
                          && tokenSource->dataType() == DataType::INT64
                          && tokenIndex >= 0 && tokenIndex < tokenSource->lengthOf(),
                      0, "autoregressive_decode: invalid CUDA MTP next-token source");
@@ -2298,8 +2732,39 @@ void autoregressiveDecode(
         }
 
         queuePreExecStateSamples(step, currentPosition);
+        if (useSpeculative && proposedCount > 0) {
+            // DEEP pre-verification snapshot (scalar-binding aliasing fix): copy the
+            // recurrent state ext inputs into DEDICATED owned arrays so a rerun can
+            // advance consumedCount rows from the pre-step state instead of the
+            // post-verification state this step's verify pass leaves in place.
+            // Gated on proposedCount > 0: with no proposals the state commit happens
+            // inline (no rerun fires), so no snapshot is consumed and the ext inputs
+            // already hold the authoritative committed state.
+            // Runs for BOTH bindings: without a scalar binding the window-geometry
+            // rerun needs it (previous behavior); WITH a binding the shared-buffer
+            // aliasing means prepareScalarTarget copied nothing and the scalar rerun
+            // executed from post-verify state (mtp-fix-gate2 NaN guard, step=1).
+            // Called BEFORE prepareScalarTarget and BEFORE the verification plan
+            // execution - the snapshot is genuinely pre-verify.
+            capturePreVerificationState();
+            // Verdict-c fix: also snapshot the shared KV rows [base, base+K) the
+            // W-wide verify is about to overwrite with draft-conditioned K/V.
+            capturePreVerificationKvRows(currentPosition, proposedCount);
+        }
         if (useScalarTarget) prepareScalarTarget();
-        Status planStatus = useScalarTarget && proposedCount == 0 ? executeScalarTarget() : plan->executeSteadyState(
+        // SCALAR-PLAN RETIREMENT (gates 8-10 evidence chain): the captured
+        // scalar plan is poisoned by ANY interleaved plan execution on the
+        // shared session. Gate 10 proved the predictor maintenance forward
+        // ALONE suffices (K=0 gen: step-0 scalar call clean after capture,
+        // one maintenance forward, step-1 scalar call all-NaN with all ext
+        // inputs finite and retry deterministically NaN). The window plan
+        // tolerates interleaving (gate-10 gen 1: 57 clean steps interleaved
+        // with predictor calls; gate-8: 57 bypass reruns clean). Routing the
+        // non-spec step through the window plan at activeWindow=1 - the same
+        // teacher-forced-proven geometry as the rerun bypass - preserves
+        // token parity while eliminating the poisoned capture. activeWindow
+        // is already 1 here (no proposals), so no refill changes are needed.
+        Status planStatus = plan->executeSteadyState(
             extInputs, numExtInputs,
             planOutputs, numPlanOutputs,
             reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)));
@@ -2784,7 +3249,11 @@ void autoregressiveDecode(
                 NDArray::registerSpecialUse({sampledToken}, {logitsOutput});
                 break;
             }
-            const int carryRow = consumedCount - 1;
+            // Finalized emission truncation note: carryRow is re-derived below
+            // (inside the rerun-transaction block) from the FINALIZED
+            // consumedCount - a truncated commit must not leave the predictor
+            // carry or the state commit position sample describing tokens that
+            // were never emitted.
 
             // -- ADR 0106 Phase 2 / Phase 2b: authoritative state commit ------------
             // The W-wide verification forward advanced GDN/conv state through ALL
@@ -2900,51 +3369,149 @@ void autoregressiveDecode(
                 // Multi-row commits route through the WINDOW plan (activeWindow was
                 // set to consumedCount above, independent of the binding); its
                 // W-wide arrays are already wired.
-                // STATE RESTORE (window4 evidence): the verify pass MUTATES its
-                // recurrent ext inputs in place (conv/gdn state advanced through
-                // the full W rows, including the rejected suffix). The window4
-                // teacher-forced gate proves the chained-scalar equivalence holds
-                // ONLY from the pre-step state (acceptedZero/partialRerunState
-                // discriminators exact). So before a window-geometry rerun,
-                // restore every private recurrent snapshot (maintained by
-                // prepareScalarTarget at pre-verify) back into the live window
-                // ext inputs, so the rerun advances consumedCount rows from the
-                // same pre-step state the verify pass started from. The scalar
-                // rerun does not need this: executeScalarTarget reads the
-                // private width-1 arrays directly.
-                if (!scalarRerun && useScalarTarget) {
-                    for (int i = 0; i < config->scalarNumPlanExternalInputs; ++i) {
-                        int ti = config->scalarInputToTarget[i];
-                        if (ti < 0 || ti >= numExtInputs) continue;
-                        bool recurrent = false;
-                        for (int s = 0; s < config->numGdnStatePairs && !recurrent; ++s) {
-                            recurrent = config->gdnStateExtIndices != nullptr
-                                && ti == config->gdnStateExtIndices[s];
-                        }
-                        for (int s = 0; s < config->numConvStatePairs && !recurrent; ++s) {
-                            recurrent = config->convStateExtIndices != nullptr
-                                && ti == config->convStateExtIndices[s];
-                        }
-                        NDArray* scalarArr = scalarInputs[i];
-                        NDArray* windowArr = extInputs[ti];
-                        if (!recurrent || scalarArr == nullptr || windowArr == nullptr
-                                || scalarArr->dataBuffer() == windowArr->dataBuffer()) continue;
-                        NDArray::prepareSpecialUse({windowArr}, {scalarArr});
-                        auto restoreErr = cudaMemcpyAsync(windowArr->specialBuffer(),
-                            scalarArr->specialBuffer(),
-                            scalarArr->lengthOf() * scalarArr->sizeOfT(),
-                            cudaMemcpyDeviceToDevice, *stream);
-                        REQUIRE_TRUE(restoreErr == cudaSuccess, 0,
-                            "autoregressive_decode: recurrent state restore failed: %s",
-                            cudaGetErrorString(restoreErr));
-                        NDArray::registerSpecialUse({windowArr}, {scalarArr});
-                    }
+                // STATE RESTORE (window4 + K=1 evidence): the verify pass MUTATES
+                // its recurrent ext inputs in place (conv/gdn state advanced
+                // through the full W rows, including the rejected suffix). The
+                // window4 teacher-forced gate proves the chained-scalar
+                // equivalence holds ONLY from the pre-step state
+                // (acceptedZero/partialRerunState discriminators exact), so the
+                // DEEP pre-verification recurrent snapshots (capturePreVerificationState,
+                // taken before this step's verify pass) must be restored into
+                // whatever storage the rerun executes from - for BOTH rerun
+                // geometries:
+                //  - window rerun: restore into the LIVE window ext inputs the
+                //    W plan reads (also the only inputs a bindingless window
+                //    rerun has - there, they ARE the window plan's inputs);
+                //  - scalar rerun (K=1 state-poisoning regression,
+                //    /tmp/mtp-k1-diag.log: step-1 rerun FLIPPED to argmax 0 with
+                //    all-NaN logits, then commitRecurrentState poisoned every
+                //    later step): prepareScalarTarget copied the pre-verify
+                //    state into the private width-1 arrays, but the plan stages
+                //    its OWN private replay storage at executeSteadyState -
+                //    whatever it last executed with. If a previous geometry ran
+                //    at a different width (the K=0 maintenance forward, or the
+                //    pre-verify pass itself when the scalar plan fell back to
+                //    the window substrate), stale post-verify state survives
+                //    into the replay and the rerun double-advances. Re-running
+                //    prepareScalarTarget AFTER the window restore re-establishes
+                //    the private width-1 arrays (geometry to the rerun's asl=1,
+                //    recurrent to the pre-verification state) from the restored
+                //    live ext inputs, and the executeScalarTarget staging right
+                //    below then carries exactly the pre-step state into the
+                //    private replay.
+                //  - SHARED-BUFFER ALIASING FIX (mtp-fix-gate2 NaN GUARD,
+                //    step=1 geometry=scalar-width-1): the old window-geometry
+                //    restore sourced its memcpy from the SCALAR arrays with a
+                //    buffer-identity skip, so whenever the scalar plan's
+                //    recurrent NDArrays share DataBuffers with the target's
+                //    window ext inputs (Qwen's 23 GDN pairs + conv pairs) the
+                //    restore was skipped or copied identical bytes and the
+                //    rerun executed from post-verify state. The restore source
+                //    is now the DEEP pre-verification snapshots taken before
+                //    this step's verification pass - owned allocations that
+                //    cannot alias the live ext inputs - and the buffer-identity
+                //    skip is gone from the recurrent restore path entirely.
+                // The window restore covers BOTH geometries: the window plan
+                // reads the live ext inputs directly, and the scalar plan reads
+                // them through the prepareScalarTarget() re-stage below (its
+                // recurrent copy runs whenever the scalar arrays are NOT
+                // buffer-identical; when they ARE identical, the scalar arrays
+                // ARE the just-restored live storage). Buffer identity therefore
+                // no longer decides what the rerun sees.
+                restorePreVerificationState();
+                // Verdict-c fix: restore the shared KV rows the W-wide verify
+                // overwrote (draft-conditioned K/V in [base, base+K)) so the
+                // captured scalar graph reads the W=1 rows it expects - the
+                // deterministic-NaN source identified by SCALAR_RETRY (gate 5).
+                restorePreVerificationKvRows();
+                if (useScalarTarget) {
+                    // Scalar-geometry re-stage from the restored live ext
+                    // inputs: recurrent to the pre-verification state, geometry
+                    // to the rerun's asl=1 - so the executeScalarTarget staging
+                    // below cannot replay stale post-verify state left by an
+                    // earlier different-width run.
+                    prepareScalarTarget();
                 }
-                Status rerunStatus = scalarRerun
-                                         ? executeScalarTarget()
-                                         : plan->executeSteadyState(
-                    extInputs, numExtInputs, planOutputs, numPlanOutputs,
-                    reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)));
+                // RERUN-INPUT FINITENESS AUDIT (gate-3 discriminator): after the
+                // deep-snapshot restore + scalar re-stage, immediately BEFORE
+                // executing the rerun, sample the first bytes of every
+                // recurrent EXT input the rerun will consume (GDN + conv pairs
+                // + one KV head row at the base position) and fail/loudly log
+                // NaN presence. This splits the remaining hypotheses:
+                //  - NaN here => the restore/stage path itself delivered
+                //    poisoned bytes (snapshot capture or restore order bug).
+                //  - all finite here but the rerun output is NaN => the
+                //    captured scalar plan's internal staging (executeSteadyState
+                //    replay buffers) is the poison vector - an in-plan defect,
+                //    not an ext-input one.
+                // Gated on KV_CACHE diagnostics: diagnostics-off hot path pays
+                // nothing (the guard below already runs unconditionally).
+                if (DSP_DIAG_ENABLED(KV_CACHE)) {
+                    bool extInputNan = false;
+                    const char* poisonName = "none";
+                    auto probeInput = [&](NDArray* arr, const char* what) {
+                        if (extInputNan || arr == nullptr
+                                || arr->dataType() != DataType::FLOAT32
+                                || arr->lengthOf() < 4) return;
+                        NDArray::prepareSpecialUse({}, {arr});
+                        float probe[4] = {};
+                        cudaMemcpyAsync(probe, arr->specialBuffer(),
+                                        sizeof(probe), cudaMemcpyDeviceToHost, *stream);
+                        cudaError_t probeSync = cudaStreamSynchronize(*stream);
+                        REQUIRE_TRUE(probeSync == cudaSuccess, 0,
+                                     "autoregressive_decode: rerun-input probe sync failed: %s",
+                                     cudaGetErrorString(probeSync));
+                        NDArray::registerSpecialUse({}, {arr});
+                        for (int i = 0; i < 4; i++) {
+                            if (std::isnan(probe[i])) {
+                                extInputNan = true;
+                                poisonName = what;
+                            }
+                        }
+                    };
+                    for (int s = 0; s < config->numGdnStatePairs && !extInputNan; s++) {
+                        int idx = config->gdnStateExtIndices != nullptr
+                            ? config->gdnStateExtIndices[s] : -1;
+                        probeInput((idx >= 0 && idx < numExtInputs) ? extInputs[idx] : nullptr,
+                                   "gdn");
+                    }
+                    for (int s = 0; s < config->numConvStatePairs && !extInputNan; s++) {
+                        int idx = config->convStateExtIndices != nullptr
+                            ? config->convStateExtIndices[s] : -1;
+                        probeInput((idx >= 0 && idx < numExtInputs) ? extInputs[idx] : nullptr,
+                                   "conv");
+                    }
+                    DSP_DIAG(KV_CACHE,
+                             "RERUN_INPUT_AUDIT step=%d geometry=%s extNaN=%d poison=%s",
+                             step, scalarRerun ? "scalar-width-1" : "window",
+                             extInputNan ? 1 : 0, poisonName);
+                }
+                Status rerunStatus = Status::OK;
+                {
+                    // IN-PLAN POISON FALLBACK (gates 5-10 evidence chain):
+                    // SCALAR_RETRY retry=NaN on identical inputs + full scalar
+                    // ext-input scan (probed=105 float, inNaN=0) + inert KV-row
+                    // restore + gate-10 (maintenance forward ALONE poisons the
+                    // captured scalar plan on the next call) => the captured
+                    // scalar plan's INTERNAL memory (shared output slots /
+                    // workspace with interleaved plan executions) is the
+                    // poison vector. Route the rerun through the WINDOW plan at
+                    // activeWindow=1 - the exact geometry the teacher-forced
+                    // window4 gate proved equivalent to chained scalar and the
+                    // geometry proven interleave-tolerant - preserving parity
+                    // without the poisoned capture. The refill above already
+                    // set activeWindow=1 and the restore re-established the
+                    // pre-verify state in the live ext inputs the window plan
+                    // reads. The captured scalar plan is RETIRED from the hot
+                    // loop entirely (see the main-path retirement note).
+                    DSP_DIAG(KV_CACHE,
+                             "SCALAR_RERUN_BYPASS step=%d - rerun via window plan "
+                             "activeWindow=1 (captured scalar plan retired, gates 5-10)",
+                             step);
+                    rerunStatus = plan->executeSteadyState(
+                        extInputs, numExtInputs, planOutputs, numPlanOutputs,
+                        reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)));
+                }
                 if (config->kvQuantFormat > 0 && config->kvScaleBuffers != nullptr) {
                     clearKvScaleRegistry();
                 }
@@ -2992,12 +3559,11 @@ void autoregressiveDecode(
                                  "autoregressive_decode: rerun emission refresh sync "
                                  "failed at step %d: %s", step,
                                  cudaGetErrorString(refreshSync));
-                    // T3b probe (step-99 flip): sample the rerun's top-8 logits so
-                    // a flat-logit argmax flip (rerun vs greedy leg) is directly
-                    // comparable. Rides the sync above; gated diagnostics only.
+                    // Bounded NaN probe on the first 8 logits values. UNCONDITIONAL
+                    // (not gated on diagnostics): the NaN guard below must be
+                    // audible with diagnostics disabled. Rides the refresh sync.
                     float rerunTop8[8] = {};
-                    if (DSP_DIAG_ENABLED(KV_CACHE) && rerunVocab >= 8
-                            && rerunLogits->dataType() == DataType::FLOAT32) {
+                    if (rerunVocab >= 8 && rerunLogits->dataType() == DataType::FLOAT32) {
                         // Logits at asl=1 are rank 2 [1, V] or rank 3 [1,1,V];
                         // the last dim is always the vocab.
                         cudaMemcpyAsync(rerunTop8, rerunLogits->specialBuffer(),
@@ -3011,19 +3577,76 @@ void autoregressiveDecode(
                              rerunRefreshedToken != argmaxDst[0] ? " FLIPPED" : "");
                     if (DSP_DIAG_ENABLED(KV_CACHE) && rerunVocab >= 8
                             && rerunLogits->dataType() == DataType::FLOAT32) {
-                        DSP_DIAG(KV_CACHE,
-                                 "RERUN_TOP8 step=%d pos=%lld logits8=[%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f]",
-                                 step, (long long)currentPosition,
-                                 rerunTop8[0], rerunTop8[1], rerunTop8[2], rerunTop8[3],
-                                 rerunTop8[4], rerunTop8[5], rerunTop8[6], rerunTop8[7]);
+                    DSP_DIAG(KV_CACHE,
+                             "RERUN_TOP8 step=%d pos=%lld logits8=[%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f]",
+                             step, (long long)currentPosition,
+                             rerunTop8[0], rerunTop8[1], rerunTop8[2], rerunTop8[3],
+                             rerunTop8[4], rerunTop8[5], rerunTop8[6], rerunTop8[7]);
                     }
+
+                    // FAIL-LOUD NaN GUARD (K=1 state-poisoning regression): the
+                    // refresh D2H above already completed a stream sync, so the
+                    // probed bytes are the rerun's committed results. NaN logits
+                    // or a NaN recurrent-state sample mean the rerun executed
+                    // from mutated (post-verification) recurrent state -
+                    // committing it would poison every later step (silent
+                    // token-0 collapse, /tmp/mtp-k1-diag.log). Fail here, naming
+                    // the geometry and step; never continue with poisoned state.
+                    bool rerunLogitsNan = false;
+                    for (int i = 0; i < 8; i++) {
+                        if (std::isnan(rerunTop8[i])) {
+                            rerunLogitsNan = true;
+                            break;
+                        }
+                    }
+                    bool rerunStateNan = false;
+                    if (config->numGdnStatePairs > 0 && config->gdnStateOutputIndices != nullptr) {
+                        // Probe the head of GDN state pair 0's OUTPUT from the
+                        // rerun pass itself (planOutputs is target-domain output
+                        // indexed; for a scalar rerun executeScalarTarget remapped
+                        // these slots onto the scalar plan's outputs). Probing the
+                        // ext input here would read the still-uncommitted pre-verify
+                        // state instead of what the rerun just produced.
+                        int gdnOut0 = config->gdnStateOutputIndices[0];
+                        NDArray* gdnOut = (gdnOut0 >= 0 && gdnOut0 < numPlanOutputs)
+                            ? planOutputs[gdnOut0] : nullptr;
+                        if (gdnOut != nullptr && gdnOut->lengthOf() >= 4
+                                && gdnOut->dataType() == DataType::FLOAT32) {
+                            // dtype-gated: non-FLOAT32 state dtypes are covered by
+                            // the logits NaN check above.
+                            LongType probeElems = std::min<LongType>(4, gdnOut->lengthOf());
+                            NDArray::prepareSpecialUse({}, {gdnOut});
+                            std::vector<uint8_t> stateRaw(
+                                static_cast<size_t>(probeElems) * sizeof(float));
+                            cudaMemcpyAsync(stateRaw.data(), gdnOut->specialBuffer(),
+                                            stateRaw.size(), cudaMemcpyDeviceToHost, *stream);
+                            cudaError_t nanSync = cudaStreamSynchronize(*stream);
+                            REQUIRE_TRUE(nanSync == cudaSuccess, 0,
+                                         "autoregressive_decode: rerun NaN-guard state "
+                                         "readback failed at step %d: %s",
+                                         step, cudaGetErrorString(nanSync));
+                            NDArray::registerSpecialUse({}, {gdnOut});
+                            const float* stateSample =
+                                reinterpret_cast<const float*>(stateRaw.data());
+                            for (LongType i = 0; i < probeElems; i++) {
+                                if (std::isnan(stateSample[i])) {
+                                    rerunStateNan = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    REQUIRE_TRUE(!(rerunLogitsNan || rerunStateNan), 0,
+                                 "autoregressive_decode: SPEC RERUN NaN GUARD step=%d "
+                                 "geometry=%s rerunArgmax=%lld verifyRow0=%lld "
+                                 "rerunLogitsNaN=%d rerunGdnStateNaN=%d - the "
+                                 "accepted-prefix rerun executed from mutated recurrent "
+                                 "state; refusing to commit poisoned state",
+                                 step, scalarRerun ? "scalar-width-1" : "window",
+                                 (long long)rerunRefreshedToken, (long long)argmaxDst[0],
+                                 rerunLogitsNan ? 1 : 0, rerunStateNan ? 1 : 0);
                 }
             }
-            // Commit recurrent state from the (possibly re-run) accepted-prefix pass.
-            commitRecurrentState();
-            queueCommittedStateSamples(
-                step, basePosition + consumedCount, true);
-
             // -- FINALIZED EMISSION SEQUENCE (review round 2) ---------------------
             // Reconstruct the lossless verify emission, apply the authoritative
             // scalar-refresh winner, count acceptance from the FINALIZED tokens,
@@ -3042,25 +3665,38 @@ void autoregressiveDecode(
             }
             argmaxDst[acceptedDrafts] = correctionOrBonus;
             int n = consumedCount;
-
             // Emission rewrite. The rerun's row-0 argmax is authoritative
             // whenever the rerun executed: it recomputed the row-0 readout from
             // the committed pre-step state at the shortened recurrence length.
-            // When the flip lands on a multi-row commit, the previously
-            // accepted draft-0 is no longer an emission fact: restore the
-            // pre-step matcher snapshot, re-derive the consume from the
-            // authoritative row 0, and count acceptance from the FINALIZED
-            // tokens. The matcher is fed each finalized token exactly once.
+            // FINALIZE-BEFORE-COMMIT TRANSACTION (K=1 state-poisoning review):
+            // the emission must be FINALIZED - truncated where the authoritative
+            // rerun readout invalidates the stale verification suffix - BEFORE
+            // any state commit, KV scatter, or callback runs. On a rerun
+            // DISAGREEMENT the old suffix (rows >= 1) was conditioned on the
+            // superseded token and is INVALID: the commit is truncated to the
+            // rerun-consistent row-0 prefix and the suffix is re-derived by a
+            // fresh step - the new row 0 is never spliced onto the old suffix.
+            // With the shipped single-row commit (commitCap == 1) the rerun
+            // refresh IS the authoritative emission. The matcher snapshot is
+            // re-established and each finalized token is fed exactly once.
+            int carryRow = consumedCount - 1;
             if (rerunRefreshedToken >= 0 && rerunRefreshedToken != argmaxDst[0]) {
-                bool flipValid = consumedCount == 1 || acceptedDrafts == 0
-                    || argmaxDst[0] == draftIds[0];
-                // A flip is only meaningful if row 0 was actually an accepted
-                // draft or the verify row-0 argmax itself; otherwise row 0 was
-                // the pending base token and the refresh still supersedes it.
-                (void)flipValid;
+                LongType supersededRow0 = argmaxDst[0];
                 argmaxDst[0] = rerunRefreshedToken;
+                if (consumedCount > 1) {
+                    DSP_DIAG(KV_CACHE,
+                             "RERUN_TRUNCATE_COMMIT step=%d basePos=%lld "
+                             "supersededRow0=%lld rerunRow0=%lld committed=%d -> n=1 - "
+                             "stale suffix re-derived by the next step",
+                             step, (long long)basePosition, (long long)supersededRow0,
+                             (long long)rerunRefreshedToken, consumedCount);
+                    consumedCount = 1;
+                    n = 1;
+                    shouldStop = false;
+                }
                 stopMatcher.restore(matcherSnapshot);
                 bool matchedStop = false;
+                carryRow = consumedCount - 1;
                 for (int i = 0; i < n; i++) {
                     matchedStop = stopMatcher.accept(argmaxDst[i])
                         && stopTerminationAllowed(config, tokensGenerated + i + 1);
@@ -3073,6 +3709,14 @@ void autoregressiveDecode(
                 }
                 shouldStop = matchedStop;
             }
+
+            // Commit recurrent state from the (possibly re-run) accepted-prefix
+            // pass - only AFTER the emission sequence is finalized (the commit
+            // transaction: no state commit before finalize, no token mutation
+            // after state commit).
+            commitRecurrentState();
+            queueCommittedStateSamples(
+                step, basePosition + consumedCount, true);
 
             totalSpeculativeProposed += proposedCount;
             // Accepted drafts ACTUALLY EMITTED: count each emitted token that
@@ -3089,7 +3733,9 @@ void autoregressiveDecode(
             // Upload the FINALIZED sequence so the D2D storage path remains
             // stream-ordered and every device consumer below - predictor repair,
             // pending-input publication, token storage - reads the authoritative
-            // tokens.
+            // tokens. Nothing mutates a token after this point: the state commit
+            // above was finalized against exactly this sequence, so the KV
+            // scatter and callbacks below run on the same authoritative prefix.
             NDArray::prepareSpecialUse({specArgmaxDevice}, {});
             cudaMemcpyAsync(specArgmaxDevice->specialBuffer(), argmaxDst,
                             n * sizeof(LongType), cudaMemcpyHostToDevice, *stream);
@@ -3539,6 +4185,20 @@ void autoregressiveDecode(
                     && planOutputs[config->targetHiddenOutputIdx] != nullptr)) {
             setMtpTargetCarryCuda(planOutputs[config->targetHiddenOutputIdx], 0);
             setMtpNextInputCuda(sampledToken, 0, currentPosition);
+            // P02 (review finding 1, policy: EAGER MAINTENANCE): when drafting
+            // is OFF but the MTP resources exist, run one width-1 predictor
+            // forward consuming (carry, token, position) so the predictor KV
+            // gains the row for the token the target just emitted. This keeps
+            // the cache hole-free during scalar-only stretches; re-raising K
+            // later resumes with a complete attention context and needs no
+            // retained-history rehydration. The maintenance call passes
+            // draftSlot=0/writeTargetRow=false and does NOT publish a draft
+            // into the target input rows - the scalar target feeds itself via
+            // sampledToken. Chain-probe D2H inside executeMtpCuda is gated on
+            // KV_CACHE diagnostics and stays off in production.
+            if (!useMtp) {
+                executeMtpCuda(currentPosition, 0, false);
+            }
         }
 
         // -- KV scatter - copy present KV into static buffers --
@@ -3855,6 +4515,39 @@ void autoregressiveDecode(
         delete mtpRerunScratch;
         mtpRerunScratch = nullptr;
     }
+    // Free the bindingless pre-verification recurrent snapshots (created lazily
+    // per step when no scalar binding supplies private snapshot arrays).
+    for (size_t s = 0; s < unboundStateSnapshots.size(); ++s) {
+        if (unboundStateSnapshots[s] != nullptr) {
+            delete unboundStateSnapshots[s];
+            unboundStateSnapshots[s] = nullptr;
+        }
+    }
+    unboundStateSnapshots.clear();
+    unboundStateSnapshotExtIdx.clear();
+    // Free the deep pre-verification recurrent snapshots (owned scratch NDArrays
+    // captured D2D before each verification execution; never alias the live ext
+    // inputs, see the stateSnapshotArrays declaration above).
+    for (size_t s = 0; s < stateSnapshotArrays.size(); ++s) {
+        if (stateSnapshotArrays[s] != nullptr) {
+            delete stateSnapshotArrays[s];
+            stateSnapshotArrays[s] = nullptr;
+        }
+    }
+    stateSnapshotArrays.clear();
+    stateSnapshotExtIdx.clear();
+    // Free the shared-KV row snapshots (verdict-c fix): one owned buffer per
+    // KV pair, rows [base, base+K) per step.
+    for (size_t kv = 0; kv < kvRowSnapshots.size(); ++kv) {
+        if (kvRowSnapshots[kv] != nullptr) {
+            delete kvRowSnapshots[kv];
+            kvRowSnapshots[kv] = nullptr;
+        }
+    }
+    kvRowSnapshots.clear();
+    kvRowSnapshotRows.clear();
+    kvRowSnapshotSources.clear();
+    kvRowSnapshotBase = -1;
 
     // -- Write token count --
     tokenCount->p(0, static_cast<LongType>(tokensGenerated));
