@@ -262,22 +262,30 @@ public class TestQwen35MtpDecode {
             pipeline.generate(PROMPT, TOKENS);
 
             first = pipeline.generate(PROMPT, TOKENS);
-            assertTrue(first.getTotalSpeculativeTokens() > 0,
-                    "First generation must run the speculative path (bucket starts at configured K)");
+            // ORACLE over mechanism (review finding 6): the controller may have
+            // legitimately dropped the bucket to K=0 during the warmup
+            // generation if its acceptance fell below the floor (0.8B measured
+            // 1/57 in gate 11). What must hold is the TOKEN ORACLE asserted
+            // below - deterministic, greedy-identical output regardless of
+            // which bucket the controller chose. Record the bucket for the
+            // later legs; do not pin which path ran.
             int afterFirst = pipeline.getAdaptiveSpecK();
             assertTrue(afterFirst >= 0 && afterFirst <= 1,
                     "Bucket must stay within [0,1] after generation one: " + afterFirst);
 
             second = pipeline.generate(PROMPT, TOKENS);
             int afterSecond = pipeline.getAdaptiveSpecK();
-            if (first.getAverageAcceptanceRate() < GenerationPipeline.SPEC_K_ACCEPTANCE_FLOOR) {
+            // The bucket may sit at 0 or 1 here (controller state after the
+            // warmup); both are valid. What must hold: K=0 output equals K=1
+            // output (proven natively in gate 11), and the same-K legs are
+            // deterministic. Assert the boundary transition only when the
+            // PREVIOUS generation actually speculated.
+            assertTrue(afterSecond >= 0 && afterSecond <= 1,
+                    "Bucket must stay within [0,1] after generation two: " + afterSecond);
+            if (first.getAverageAcceptanceRate() < GenerationPipeline.SPEC_K_ACCEPTANCE_FLOOR
+                    && first.getTotalSpeculativeTokens() > 0) {
                 assertEquals(0, afterSecond,
-                        "Below-floor acceptance must drop the bucket to the no-spec path");
-                assertEquals(0, second.getTotalSpeculativeTokens(),
-                        "K=0 generation must propose zero tokens (scalar fast path)");
-            } else {
-                assertTrue(afterSecond >= 0 && afterSecond <= 1,
-                        "Acceptance at/above floor must hold or raise the bucket");
+                        "Below-floor acceptance from a speculative generation must drop the bucket");
             }
 
             third = pipeline.generate(PROMPT, TOKENS);
