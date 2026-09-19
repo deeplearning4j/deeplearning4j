@@ -627,12 +627,21 @@ static SD_KERNEL void argmaxMultiRowKernel(const void* vLogits, void* vOutput,
         }
         __syncthreads();
     }
+    // ROUND 7 (review finding 1): __syncthreads_or is a BLOCK-WIDE collective
+    // - every thread in the block must execute it for the reduction to be
+    // valid (NVIDIA: conditional execution must be uniform across the block).
+    // The previous placement inside `if (threadIdx.x == 0)` meant only thread
+    // zero participated: the result reflected one thread's predicate (the
+    // all-NaN test row could not distinguish this because thread zero's own
+    // elements were NaN) and the call is undefined behavior in divergent code.
+    // validity is UNIFORM across the block (same pointer on every thread), so
+    // the collective is evaluated unconditionally and only the STORE is
+    // restricted to thread zero.
+    unsigned rowNan = validity != nullptr
+        ? static_cast<unsigned>(__syncthreads_or(localNan ? 1 : 0)) : 0;
     if (threadIdx.x == 0) {
         output[row] = sMaxIdx[0];
         if (validity != nullptr) {
-            // Row-level NaN via a cooperative OR across the block (same
-            // dtype-portable self-inequality as the single-row kernel).
-            unsigned rowNan = static_cast<unsigned>(__syncthreads_or(localNan ? 1 : 0));
             validity[0] = rowNan ? 1L : 0L;
         }
     }
@@ -3272,9 +3281,16 @@ void autoregressiveDecode(
 
             // -- D2H sync: wait for the existing async argmax/draft copies --
             const auto acceptanceSync = cudaStreamSynchronize(*stream);
+            // ROUND 7 (review finding 3): the acceptance decision consumes the
+            // argmax, validity, and draft readbacks - they are only trustworthy
+            // after a SUCCESSFUL synchronization, regardless of whether tensor
+            // capture is enabled. The check moved out of the capture-only
+            // branch; no new synchronization is added (this inspects the return
+            // value of the boundary that already exists).
+            REQUIRE_TRUE(acceptanceSync == cudaSuccess, 0,
+                         "autoregressive_decode: acceptance readback failed: %s",
+                         cudaGetErrorString(acceptanceSync));
             if (captureMtpInputs) {
-                REQUIRE_TRUE(acceptanceSync == cudaSuccess, 0,
-                             "DSP tensor snapshot acceptance sync failed: %s", cudaGetErrorString(acceptanceSync));
                 tensorDiagnostics.drainTensorSnapshots(reinterpret_cast<void*>(*stream));
             }
             emitCommittedStateSamples(step - 1);

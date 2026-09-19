@@ -75,15 +75,27 @@ public class TestMtpRerunDisagreementMatrix {
     }
 
     /**
-     * ROUND 6 PATCH C - the REAL multi-row recovery transaction:
-     * verification accepts draft A at row 0 and rejects row 1 (provisional
-     * consumed m=2), the accepted-prefix RERUN runs at asl=2 and FLIPS row 0
-     * from A to C, and the shortened recovery at asl=1 selects token AND
-     * state together. The recurrence is TOKEN-DEPENDENT and out-of-place:
-     * F(s; token) = 10*s + token, so the state after [base, A] is observably
-     * different from the state after [base] alone - a stale multi-row commit
-     * (state 10*(10*3+1)+1 = 311) cannot masquerade as the width-1 recovery
-     * state (10*3+2 = 32).
+     * ROUND 7 PATCH 2 - the REAL multi-row recovery transaction with a budget
+     * that actually permits two proposals (maxPropose = min(K, budget-1), so
+     * budget 3 -> 2 proposals -> verification at asl=3):
+     *
+     * <pre>
+     *   verify asl=3:   row0 winner 1 (accept draft 1), row1 winner 0
+     *                   (reject draft 2)  -> provisional consumed m=2
+     *   rerun  asl=2:   row0 flips to 0   -> RERUN_TRUNCATE_COMMIT
+     *   recovery asl=1: row0 winner 2     -> width-1 authoritative readout
+     * </pre>
+     *
+     * <p>The recurrence is a TRUE SEQUENTIAL map F(s, token) = 10*s + token
+     * (state selected by actual_length), so each candidate commit length has
+     * an observably distinct state:</p>
+     * <pre>
+     *   asl=1 (consumed base 1):        10*3+1   = 31
+     *   asl=2 (consumed [1, draft 1]):  10*31+1  = 311
+     *   asl=3 would be 10*311+2 = 3112 (unused)
+     * </pre>
+     * The stale multi-row commit (311) and the width-1 recovery (31) are both
+     * directly observable in the retained state.
      */
     @Test
     public void testMultiRowShortenRecoversWidthOneState() {
@@ -99,6 +111,10 @@ public class TestMtpRerunDisagreementMatrix {
              INDArray positions = Nd4j.valueArrayOf(new long[]{1, 1}, START, DataType.INT64)) {
             DynamicShapePlanExecutor t = window.executor;
             DynamicShapePlanExecutor p = predictor.executor;
+            // ROUND 7: budget 3 (maxNewTokens arg) -> outputDraftCapacity = 2
+            // -> TWO proposals at step 0 -> verification runs at asl=3. Budget 2
+            // capped maxPropose at 1 and silently degraded this test to an
+            // ordinary zero-acceptance one-row rerun.
             AutoregressiveDecode op = new AutoregressiveDecode(
                     embeddings, table, window.input("ids"), window.input("mask"), positions,
                     null, t.getNativePlanHandle(), t.getCachedOpContext(),
@@ -108,7 +124,7 @@ public class TestMtpRerunDisagreementMatrix {
                     new int[0], new int[0],
                     new int[]{window.ext("gdn")}, new int[]{window.out("gdn_next")},
                     new int[]{window.ext("conv")}, new int[]{window.out("conv_next")},
-                    2, -1, 0, START, 0.0, 0, 0.0, 1.0, Set.of());
+                    3, -1, 0, START, 0.0, 0, 0.0, 1.0, Set.of());
             op.withDecodePolicy(AutoregressiveDecode.DECODE_STRATEGY_SPECULATIVE,
                             1, window.width, 1, 1, -1, 1, 1.0, 0.0, 0)
                     .withActualSequenceLengthExtIdx(window.ext("actual_length"))
@@ -126,47 +142,49 @@ public class TestMtpRerunDisagreementMatrix {
             INDArray[] result = Nd4j.getExecutioner().exec(op);
             try {
                 // WAVE-2 TRUNCATE CONTRACT (review finding 3, commit e11e809280):
-                // the verify pass accepts draft 1 (provisional m=2), the
-                // accepted-prefix rerun at asl=2 flips row 0 to 0, and the
+                // the verify pass at asl=3 accepts draft 1 (provisional m=2),
+                // the accepted-prefix rerun at asl=2 flips row 0 to 0, and the
                 // authoritative commit is the WIDTH-1 readout - the accepted
-                // draft is never emitted (accepted-EMITTED=0), and each of the
-                // two steps emits the asl=1 row-0 winner (token 2).
+                // draft is never emitted (accepted-EMITTED=0). With budget 3
+                // the loop continues with two more scalar steps (tokens 2, 2),
+                // for 3 committed tokens total.
                 assertEquals(0.0f, result[2].getFloat(8), 0.0f,
                         "accepted-EMITTED = 0: the truncate contract replaces the "
                                 + "provisional commit with the width-1 readout; no draft "
                                 + "is emitted from the flipped step");
-                assertEquals(2, result[1].getLong(0),
-                        "two steps, one authoritative token each (budget 2)");
-                assertEquals(2, result[0].getLong(0),
-                        "emitted token 0 = width-1 (asl=1) row-0 winner, never the "
-                                + "superseded verify draft (1) or the asl=2 rerun winner (0)");
-                assertEquals(2, result[0].getLong(1),
-                        "emitted token 1 = width-1 row-0 winner again");
-                // TOKEN-DEPENDENT state proof: the recurrent state advances by
-                // the CONSUMED INPUT token (the width-1 pass's input row 0),
-                // while the emitted token is that pass's OUTPUT and becomes the
-                // next step's consumed input:
-                //   step 0: consumes base 1 -> F(3;1)  = 10*3+1  = 31
-                //   step 1: consumes emitted 2 -> F(31;2) = 10*31+2 = 312
-                // A stale multi-row commit would show 10*31+1=311 (consume the
-                // draft) or 10*31+0=310 (consume the asl=2 winner).
-                assertEquals(312.0f, window.input("gdn").getFloat(0), 0.0f,
-                        "retained GDN must equal the two consumed-input advances "
-                                + "(3 -> 31 -> 312), not a draft-consuming 311 or an "
-                                + "asl=2-winner 310");
-                assertEquals(100f * 30201 + 2, window.input("conv").getFloat(0), 0.0f,
-                        "retained conv follows its own recurrence F(s;tok)=100s+tok from "
-                                + "302: 302 -> 30201 -> 3020102 - the consumed-input chain, "
-                                + "not any multi-row value");
+                assertEquals(3, result[1].getLong(0),
+                        "budget 3: recovery token plus two continuation steps");
+                for (int i = 0; i < 3; i++) {
+                    assertEquals(2, result[0].getLong(i),
+                            "emitted token " + i + " = the width-1 (asl=1) row-0 winner, "
+                                    + "never the superseded verify draft (1) or the asl=2 "
+                                    + "rerun winner (0)");
+                }
+                // TRUE SEQUENTIAL STATE PROOF (round 7): per-step recurrence
+                // state' = 10*state + sum(active tokens). The recovered chain
+                // consumes one input per step: [base 1] at the truncated step,
+                // then each published width-1 token 2 as the next input:
+                //   3 -> 31 (consume 1) -> 312 (consume 2) -> 3122 (consume 2).
+                // A draft-consuming variant would show 311 or 3211; a two-input
+                // multi-row commit at step 0 would show 10*31+11 = 321.
+                assertEquals(3122.0f, window.input("gdn").getFloat(0), 0.0f,
+                        "retained GDN = the sequential chain over consumed inputs "
+                                + "(3 -> 31 -> 312 -> 3122)");
+                // conv per-step recurrence conv' = 10*conv + sum(tokens),
+                // multiplier 10 keeps every value below 2^24 for exact FP32:
+                // 302 -> 3021 (consume 1) -> 30212 -> 302122.
+                assertEquals(302122.0f, window.input("conv").getFloat(0), 0.0f,
+                        "retained conv = the sequential chain 302 -> 3021 -> "
+                                + "30212 -> 302122");
                 // Predictor pending input = the finalized width-1 token.
                 assertEquals(2, predictor.input("ids").getLong(0),
                         "predictor pending input must be the finalized width-1 token");
-                // Pending geometry: target P = START + 2 committed = 5;
-                // predictor pending row = P - 1 = 4.
-                assertEquals(START + 2, window.input("position").getLong(0));
-                assertEquals(START + 2, window.input("cache_position").getLong(0));
-                assertEquals(START + 1, predictor.input("cache_position").getLong(0));
-                assertEquals(START + 1, predictor.input("position").getLong(0));
+                // Pending geometry: target P = START + 3 committed = 6;
+                // predictor pending row = P - 1 = 5.
+                assertEquals(START + 3, window.input("position").getLong(0));
+                assertEquals(START + 3, window.input("cache_position").getLong(0));
+                assertEquals(START + 2, predictor.input("cache_position").getLong(0));
+                assertEquals(START + 2, predictor.input("position").getLong(0));
             } finally {
                 for (INDArray array : result) array.close();
             }
@@ -365,13 +383,16 @@ public class TestMtpRerunDisagreementMatrix {
     }
 
     /**
-     * ROUND 6 PATCH C window target (width 3, K=2). TOKEN-DEPENDENT
-     * out-of-place recurrence: gdn_next = 10*gdn + sum(consumed tokens);
-     * conv_next = 100*gdn + sum(consumed tokens). Logits discriminate by
-     * actual_length so each geometry has a distinct, deterministic winner:
-     * asl=3 (verify): rows [1, 0, 0] -> draft 1 accepted, draft 2 rejected
-     *                 (draft 3 would also lose to 0).
-     * asl=2 (accepted-prefix rerun): rows [0, x] -> row-0 winner flips to 0
+     * ROUND 7 PATCH 2 window target (width 3, K=2). TRUE SEQUENTIAL
+     * out-of-place recurrence selected by actual_length:
+     *   gdn(asl)  = 10^asl * gdn0 + sum_j token_j * 10^(asl-1-j)
+     *   conv(asl) = gdn(asl) + 9*gdn0 + 2710*asl   (distinct base 302 family)
+     * so every candidate commit length has a distinct, directly assertable
+     * state: asl=1 -> 31, asl=2 -> 311, asl=3 -> 3111 (gdn).
+     * Length-discriminated logits force the verify/rerun/recovery path
+     * through three different actual lengths:
+     * asl=3 (verify): rows [1, 0, x] -> draft 1 accepted, draft 2 rejected.
+     * asl=2 (accepted-prefix rerun): row-0 winner flips to 0
      *                 -> RERUN_TRUNCATE_COMMIT fires.
      * asl=1 (shortened width-1): rows [2] -> authoritative token 2.
      */
@@ -398,10 +419,22 @@ public class TestMtpRerunDisagreementMatrix {
             for (int i = 0; i < width; i++) rows[i] = i;
             SDVariable active = graph.constant(Nd4j.createFromArray(rows).reshape(1, width)).lt(length).castTo(DataType.FLOAT);
             SDVariable consumedTokens = ids.castTo(DataType.FLOAT).mul(active).sum();
-            SDVariable consumedCount = active.sum();
-            // TOKEN-DEPENDENT state: F(s; tokens) = 10*s + sum(tokens).
+            // ROUND 7 PATCH 2 - TRUE SEQUENTIAL per-step recurrence. The native
+            // loop runs this graph once per decode step with asl = the number of
+            // rows the step consumes (1 for the width-1 recovery and scalar
+            // continuations, 3 for the verify pass). The graph applies ONE
+            // sequential step over the ACTIVE rows: state' = 10*state + sum(
+            // tokens of active rows). Successive steps therefore compound:
+            // 3 -> 31 (asl=1) -> 311 (asl=2, provisional) -> 3111 (asl=3).
+            // (An earlier pow10asl formulation multiplied the fed-back state by
+            // 10^asl again and compounded to ~2.3e9 in proc-079/080 - wrong.)
             output(gdn.mul(10).add("gdn_next", consumedTokens));
-            output(conv.mul(100).add("conv_next", consumedTokens));
+            // conv follows its own sequential family anchored on the CONV input.
+            // Multiplier 10 (not 100): values must stay below 2^24 (~16.7M) for
+            // exact FP32 storage - 100*compounding reached 3e8 and silently
+            // rounded (proc-083: expected 302011212, stored 302010208).
+            // Chain: 302 -> 3021 -> 30212 -> 302122.
+            output(conv.mul(10).add("conv_next", consumedTokens));
             SDVariable hidden = graph.reshape("hidden",
                     graph.cumsum(delta, false, false, 1).mul(11).add(gdn), 1, width, 1);
             output(hidden);
