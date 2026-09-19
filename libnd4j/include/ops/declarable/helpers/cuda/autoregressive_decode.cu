@@ -1750,11 +1750,21 @@ void autoregressiveDecode(
             {config->mtpPositionOffset, config->mtpCachePosition, config->mtpCausalMask}, {});
         updatePositionIdsKernel<<<1, 1, 0, *stream>>>(
             config->mtpPositionOffset->specialBuffer(), position);
+        // SLOT = POSITION - 1 INVARIANT (review round 3, finding 4 phase 2):
+        // the predictor's KV row for RoPE position P lives at CACHE SLOT P-1,
+        // exactly like the prefill rows (prefill row t = (x_(t+1), h_t) sits at
+        // slot t with RoPE position t+1 because the prefill position offset is
+        // one). The helper previously wrote cachePosition = position, which put
+        // every native/warmup row one slot past its RoPE position and made the
+        // warmup row a CONTENT DUPLICATE of the prefill tail. The in-graph
+        // attention reads the write slot from cache_position and applies RoPE
+        // from position_offset - decoupling them here makes the whole cache
+        // slot = position - 1 with no duplicate row.
         updatePositionIdsKernel<<<1, 1, 0, *stream>>>(
-            config->mtpCachePosition->specialBuffer(), position);
+            config->mtpCachePosition->specialBuffer(), position - 1);
         BUILD_SINGLE_SELECTOR(config->mtpCausalMask->dataType(), updateCausalMaskLauncher,
                               (stream, config->mtpCausalMask->specialBuffer(),
-                               position, mtpMaskLen),
+                               position - 1, mtpMaskLen),
                               SD_FLOAT_TYPES);
         NDArray::registerSpecialUse(
             {config->mtpPositionOffset, config->mtpCachePosition, config->mtpCausalMask}, {});
@@ -2355,10 +2365,14 @@ void autoregressiveDecode(
         NDArray::prepareSpecialUse(
             {config->mtpPositionOffset, config->mtpCachePosition},
             {tokenSource});
+        // SLOT = POSITION - 1 (review round 3, finding 4 phase 2): nextPosition
+        // is the RoPE position the NEXT predictor call will consume its input
+        // token at; its KV row belongs at cache slot nextPosition - 1. See the
+        // matching note in executeMtpCuda.
         updatePositionIdsKernel<<<1, 1, 0, *stream>>>(
             config->mtpPositionOffset->specialBuffer(), nextPosition);
         updatePositionIdsKernel<<<1, 1, 0, *stream>>>(
-            config->mtpCachePosition->specialBuffer(), nextPosition);
+            config->mtpCachePosition->specialBuffer(), nextPosition - 1);
         NDArray::registerSpecialUse(
             {config->mtpPositionOffset, config->mtpCachePosition},
             {tokenSource});

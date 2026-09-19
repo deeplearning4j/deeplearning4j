@@ -5805,6 +5805,10 @@ public class GenerationPipeline implements AutoCloseable {
                         NDArrayIndex.interval(actualPrefillLen - 1, actualPrefillLen),
                         NDArrayIndex.all()));
 
+        // SLOT = POSITION - 1: the retained decode mask must unmask exactly the
+        // N+1 live predictor rows (slots 0..N: prefill rows 0..N-1 plus the
+        // warmup row at slot N). The first native draft at position N+2 attends
+        // those rows and writes slot N+1 itself; slot N+1 is masked until then.
         INDArray freshDecodeMask = DecoderInputBuilder.buildInGraphDecodeMask(
                 firstDecodePos, maxKvLen, DataType.FLOAT);
         prepared.causalMask = reuseState != null ? reuseState.mtpCausalMask : null;
@@ -5816,11 +5820,20 @@ public class GenerationPipeline implements AutoCloseable {
             freshDecodeMask.close();
         }
 
+        // SLOT = POSITION - 1: the WARMUP consumes (firstGen, h_(N-1)) at RoPE
+        // position N+1 — i.e. it predicts the token AFTER firstGen using the
+        // hidden the target produced while consuming firstGen's slot. Wait: the
+        // warmup's INPUT pair is the token whose row it writes. Under the
+        // invariant its row lands at cache slot firstDecodePos (== N) and its
+        // RoPE position is firstDecodePos + 1 (== N+1). This OVERWRITES the
+        // prefill tail row's slot with the identical (firstGen, h_(N-1)) pair -
+        // content-idempotent, and the retained cache keeps exactly N+1 live rows
+        // (slots 0..N), each at slot = position - 1, NO duplicate pair.
         prepared.positionOffset = reuseState != null ? reuseState.mtpPositionOffset : null;
         if (prepared.positionOffset == null) {
-            prepared.positionOffset = Nd4j.scalar(DataType.INT64, firstDecodePos);
+            prepared.positionOffset = Nd4j.scalar(DataType.INT64, firstDecodePos + 1);
         } else {
-            prepared.positionOffset.putScalar(new long[]{}, (long) firstDecodePos);
+            prepared.positionOffset.putScalar(new long[]{}, (long) firstDecodePos + 1);
         }
         prepared.cachePosition = reuseState != null ? reuseState.mtpCachePosition : null;
         if (prepared.cachePosition == null) {
@@ -5888,6 +5901,19 @@ public class GenerationPipeline implements AutoCloseable {
         prepared.numPlanExternalInputs = prepared.executor.getCurrentPlan() != null
                 ? prepared.executor.getCurrentPlan().getExternalInputKeys().length : 0;
         prepared.numPlanOutputs = decodeOutputsRequested.size();
+
+        // SLOT = POSITION - 1: after the warmup executed (position N+1, row at
+        // slot N), the retained scalars hand the native loop the NEXT predictor
+        // call's geometry: position N+2, cache slot N+1. The native loop's first
+        // draft forward is invoked at position = currentPosition+1 through
+        // executeMtpCuda/setMtpNextInputCuda, which maintain the invariant
+        // themselves (cache = position - 1); these retained values only need to
+        // describe the same convention so any pre-loop replay stays consistent.
+        // The retained decode MASK must unmask slots 0..N (the N+1 live rows:
+        // prefill 0..N-1 plus the warmup row at N) - the first draft at position
+        // N+2 attends exactly those rows and writes slot N+1.
+        prepared.positionOffset.putScalar(new long[]{}, (long) firstDecodePos + 2);
+        prepared.cachePosition.putScalar(new long[]{}, (long) firstDecodePos + 1);
 
         // Native drafting starts with the second target token and therefore needs h_P, produced by
         // the target warmup that consumed the first token at position P.
