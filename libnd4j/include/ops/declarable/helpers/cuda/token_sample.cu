@@ -40,6 +40,22 @@ struct AccType { using type = float; };
 template <>
 struct AccType<double> { using type = double; };
 
+/**
+ * SHARED TIE CONTRACT (review round 6, finding 1 extension): the scalar
+ * GREEDY selector must agree with the CPU argmax and the autoregressive
+ * decode kernels — larger value wins, EXACT ties resolve to the SMALLER
+ * vocabulary index. The old reduction kept the left entry on ties, which
+ * retains whichever STRIDED CHUNK the value came from (thread 0's chunk),
+ * not the smaller index: logits[1]=logits[256]=10 selected 256 while CPU
+ * and the corrected decode kernels select 1.
+ */
+template <typename AccT>
+static SD_DEVICE inline bool greedyTakeOther(AccT currentVal, LongType currentIdx,
+                                             AccT otherVal, LongType otherIdx) {
+    if (otherVal > currentVal) return true;
+    return otherVal == currentVal && otherIdx < currentIdx;
+}
+
 // Kernel: greedy argmax — one block per batch element, threads cooperate via shared mem reduction
 template <typename T>
 static SD_KERNEL __launch_bounds__(256, 2) void greedyArgmaxKernel(const void* vlogits,
@@ -77,7 +93,8 @@ static SD_KERNEL __launch_bounds__(256, 2) void greedyArgmaxKernel(const void* v
 
     for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
         if (threadIdx.x < stride) {
-            if (sMaxVal[threadIdx.x + stride] > sMaxVal[threadIdx.x]) {
+            if (greedyTakeOther(sMaxVal[threadIdx.x], sMaxIdx[threadIdx.x],
+                                sMaxVal[threadIdx.x + stride], sMaxIdx[threadIdx.x + stride])) {
                 sMaxVal[threadIdx.x] = sMaxVal[threadIdx.x + stride];
                 sMaxIdx[threadIdx.x] = sMaxIdx[threadIdx.x + stride];
             }

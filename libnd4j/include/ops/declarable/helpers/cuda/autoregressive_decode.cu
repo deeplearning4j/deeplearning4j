@@ -367,6 +367,41 @@ static SD_KERNEL void fillWindowPositionGridKernel(void* vPos,
 // --- Argmax helper (greedy decode) -------------------------------------------
 
 /**
+ * SHARED REDUCTION CONTRACT (review round 6, finding 1/2 — one comparison
+ * helper for BOTH the single-row and multi-row argmax kernels so the two
+ * selectors can never diverge again):
+ *
+ *   1. A candidate whose index is inside [0, vocabSize) is VALID; a thread
+ *      that saw no element carries the INVALID candidate (idx = vocabSize)
+ *      and can never win — its synthetic value must not beat real logits
+ *      (the old -1e30 init let an absent thread return vocabSize for
+ *      very-negative finite rows).
+ *   2. Among valid candidates: larger value wins.
+ *   3. On EXACT ties: the SMALLER vocabulary index wins (CPU lowest-index
+ *      contract; NaN compares false under both > and <, so an all-NaN chunk
+ *      keeps its entry without propagating NaN — the per-row validity flag
+ *      reports NaN content separately).
+ *
+ * CUDA max-reduction identity: the absent candidate uses -inf as its value
+ * (NVIDIA reduction convention) plus the explicit invalid-index exclusion,
+ * making the empty-thread and all--inf cases well-defined.
+ */
+template <typename T>
+static SD_DEVICE inline bool argmaxTakeOther(T currentVal, LongType currentIdx,
+                                             T otherVal, LongType otherIdx,
+                                             LongType vocabSize) {
+    const bool currentValid = currentIdx < vocabSize;
+    const bool otherValid = otherIdx < vocabSize;
+    if (!otherValid) return false;             // absent candidate never wins
+    if (!currentValid) return true;            // a real candidate beats absent
+    if (otherVal > currentVal) return true;    // larger value wins
+    // Exact tie: smaller vocabulary index wins (CPU lowest-index contract).
+    // NaN compares false under both > and ==, so an all-NaN chunk keeps its
+    // entry without propagating NaN; the validity flag reports NaN content.
+    return otherVal == currentVal && otherIdx < currentIdx;
+}
+
+/**
  * CUDA kernel: find argmax over a float/half row [vocabSize].
  * Writes the index to output[0] as INT64.
  *
@@ -379,16 +414,9 @@ static SD_KERNEL void fillWindowPositionGridKernel(void* vPos,
  * tracking work is likewise opt-in (kTrackValidity), so the plain draft
  * argmax does not pay the NaN scan or the cooperative OR.
  *
- * REDUCTION CONTRACT (review round 5, finding 4): the CPU argmax scans
- * upward and updates only on strictly larger values, so it returns the
- * LOWEST vocabulary index among equal maxima. This kernel must match that
- * contract for backend parity: the reduction carries (value, index)
- * candidates and prefers the SMALLER index on exact ties (a plain
- * left-entry-preferring reduction retains whichever strided chunk the
- * winning value came from, not the smaller index). Initialization uses
- * the FIRST element each thread observes (or the synthetic lowest-possible
- * candidate when the thread saw no element), so very-negative finite rows
- * select the true maximum instead of losing to -1e30 at index 0.
+ * REDUCTION CONTRACT: see the shared ArgmaxCandidate block above (round 6:
+ * valid-candidate rule fixes the vocabSize escape for very-negative finite
+ * rows; ties resolve to the LOWEST index for CPU parity).
  */
 template <typename T, bool kWriteValidity = false>
 static SD_KERNEL void argmaxKernel(const void* vLogits, void* vOutput, LongType vocabSize) {
@@ -401,11 +429,14 @@ static SD_KERNEL void argmaxKernel(const void* vLogits, void* vOutput, LongType 
 
     T localMax;
     LongType localIdx;
+    bool localNan = false;
     if (threadIdx.x < vocabSize) {
         localMax = logits[threadIdx.x];
         localIdx = threadIdx.x;
+        if (kWriteValidity && localMax != localMax) localNan = true;
         for (LongType i = threadIdx.x + blockDim.x; i < vocabSize; i += blockDim.x) {
             T val = logits[i];
+            if (kWriteValidity && !localNan && val != val) localNan = true;
             // Strict > keeps the LOWEST index on ties (CPU parity).
             if (val > localMax) {
                 localMax = val;
@@ -413,45 +444,29 @@ static SD_KERNEL void argmaxKernel(const void* vLogits, void* vOutput, LongType 
             }
         }
     } else {
-        // Thread saw no element: a candidate that can never win the
-        // tie-broken reduction (any real finite/NaN element beats it via
-        // the index rule; NaN handling below).
-        localMax = static_cast<T>(-1e30);
-        localIdx = vocabSize;  // out of range = lower priority than any real index
+        // Thread saw no element: the ABSENT candidate. -inf is the max-reduction
+        // identity (NVIDIA convention) and idx = vocabSize marks it invalid so
+        // it can never win the reduction (round 6, finding 2: the finite -1e30
+        // init beat very-negative finite rows and returned vocabSize as a token).
+        localMax = -DataTypeUtils::infOrMax<T>();
+        localIdx = vocabSize;
     }
-    bool localNan = false;
-    if (kWriteValidity) {
-        for (LongType i = threadIdx.x; i < vocabSize; i += blockDim.x) {
-            T val = logits[i];
-            // IEEE self-inequality: true only for NaN, in every float dtype.
-            if (val != val) { localNan = true; break; }
-        }
-    }
+    // (Validity NaN detection is FUSED into the max scan above — round 6 perf
+    // note: no second traversal of the logits row.)
 
     sMaxVal[threadIdx.x] = localMax;
     sMaxIdx[threadIdx.x] = localIdx;
     __syncthreads();
 
-    // Reduction: prefer larger value; on EXACT ties prefer the smaller
-    // vocabulary index (CPU lowest-index contract). NaN compares false
-    // under both > and <, so an all-NaN strided chunk keeps its entry
-    // without propagating NaN; the validity flag reports the row's NaN
-    // content separately.
+    // Reduction: shared contract via argmaxTakeOther (round 6 — one helper for
+    // both argmax kernels so the selectors cannot diverge).
     for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
         if (threadIdx.x < stride) {
-            T other = sMaxVal[threadIdx.x + stride];
-            LongType otherIdx = sMaxIdx[threadIdx.x + stride];
-            bool takeOther;
-            if (other > sMaxVal[threadIdx.x]) {
-                takeOther = true;
-            } else if (other == sMaxVal[threadIdx.x]) {
-                takeOther = otherIdx < sMaxIdx[threadIdx.x];
-            } else {
-                takeOther = false;
-            }
-            if (takeOther) {
-                sMaxVal[threadIdx.x] = other;
-                sMaxIdx[threadIdx.x] = otherIdx;
+            if (argmaxTakeOther(sMaxVal[threadIdx.x], sMaxIdx[threadIdx.x],
+                                sMaxVal[threadIdx.x + stride], sMaxIdx[threadIdx.x + stride],
+                                vocabSize)) {
+                sMaxVal[threadIdx.x] = sMaxVal[threadIdx.x + stride];
+                sMaxIdx[threadIdx.x] = sMaxIdx[threadIdx.x + stride];
             }
         }
         __syncthreads();
@@ -546,10 +561,23 @@ static void embedLookupMultiTokenLauncher(const cudaStream_t* stream,
  *
  * Writes output[row] = argmax of logits[row, :].
  * One block per row; shared memory holds per-thread (maxVal, maxIdx) pairs.
+ *
+ * ROUND 6 (finding 1/2): this is the SPECULATIVE VERIFIER's selector — the
+ * accept rule and bonus token come from these rows. It previously kept the
+ * OLD reduction (no tie rule, finite -1e30 init), so verification could
+ * select a different token than the corrected single-row/CPU selectors from
+ * identical logits (tied bonus row: CPU 1, multi-row 256). The kernel now
+ * shares the EXACT argmaxTakeOther contract with argmaxKernel: absent
+ * threads carry the invalid (-inf, vocabSize) candidate, larger value wins,
+ * exact ties resolve to the smaller index. The per-row validity flags are
+ * written to a parallel [numRows] INT64 buffer when validityPtr != null
+ * (round 6 finding 3: active-row NaN coverage at the verifier boundary,
+ * incl. the fully-accepted batch where the rerun guard never runs).
  */
 template <typename T>
 static SD_KERNEL void argmaxMultiRowKernel(const void* vLogits, void* vOutput,
-                                            LongType numRows, LongType vocabSize) {
+                                            LongType numRows, LongType vocabSize,
+                                            void* validityPtr) {
     extern __shared__ char smem[];
     auto sMaxVal = reinterpret_cast<T*>(smem);
     auto sMaxIdx = reinterpret_cast<LongType*>(smem + blockDim.x * sizeof(T));
@@ -559,41 +587,72 @@ static SD_KERNEL void argmaxMultiRowKernel(const void* vLogits, void* vOutput,
 
     auto logits = reinterpret_cast<const T*>(vLogits) + row * vocabSize;
     auto output = reinterpret_cast<LongType*>(vOutput);
+    auto validity = validityPtr != nullptr
+        ? reinterpret_cast<LongType*>(validityPtr) + row : nullptr;
 
-    T       localMax = static_cast<T>(-1e30);
-    LongType localIdx = 0;
-    for (LongType i = threadIdx.x; i < vocabSize; i += blockDim.x) {
-        T val = logits[i];
-        if (val > localMax) { localMax = val; localIdx = i; }
+    T localMax;
+    LongType localIdx;
+    bool localNan = false;
+    if (threadIdx.x < vocabSize) {
+        localMax = logits[threadIdx.x];
+        localIdx = threadIdx.x;
+        if (validity != nullptr && localMax != localMax) localNan = true;
+        for (LongType i = threadIdx.x + blockDim.x; i < vocabSize; i += blockDim.x) {
+            T val = logits[i];
+            if (validity != nullptr && !localNan && val != val) localNan = true;
+            // Strict > keeps the LOWEST index on ties (CPU parity).
+            if (val > localMax) {
+                localMax = val;
+                localIdx = i;
+            }
+        }
+    } else {
+        // ABSENT candidate: -inf identity + invalid index; never wins.
+        localMax = -DataTypeUtils::infOrMax<T>();
+        localIdx = vocabSize;
     }
+
     sMaxVal[threadIdx.x] = localMax;
     sMaxIdx[threadIdx.x] = localIdx;
     __syncthreads();
 
     for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
         if ((int)threadIdx.x < stride) {
-            if (sMaxVal[threadIdx.x + stride] > sMaxVal[threadIdx.x]) {
+            if (argmaxTakeOther(sMaxVal[threadIdx.x], sMaxIdx[threadIdx.x],
+                                sMaxVal[threadIdx.x + stride], sMaxIdx[threadIdx.x + stride],
+                                vocabSize)) {
                 sMaxVal[threadIdx.x] = sMaxVal[threadIdx.x + stride];
                 sMaxIdx[threadIdx.x] = sMaxIdx[threadIdx.x + stride];
             }
         }
         __syncthreads();
     }
-    if (threadIdx.x == 0) output[row] = sMaxIdx[0];
+    if (threadIdx.x == 0) {
+        output[row] = sMaxIdx[0];
+        if (validity != nullptr) {
+            // Row-level NaN via a cooperative OR across the block (same
+            // dtype-portable self-inequality as the single-row kernel).
+            unsigned rowNan = static_cast<unsigned>(__syncthreads_or(localNan ? 1 : 0));
+            validity[0] = rowNan ? 1L : 0L;
+        }
+    }
 }
 
 /**
  * Launcher for argmaxMultiRowKernel.
  * numRows blocks, 256 threads per block with smem for (maxVal, maxIdx) pairs.
+ * validityPtr: optional [numRows] INT64 buffer receiving per-row NaN flags
+ * (nullptr = skip validity work entirely).
  */
 template <typename T>
 static void argmaxMultiRowLauncher(const cudaStream_t* stream, const void* logitsPtr,
-                                   void* outputPtr, LongType numRows, LongType vocabSize) {
+                                   void* outputPtr, LongType numRows, LongType vocabSize,
+                                   void* validityPtr) {
     if (numRows <= 0) return;
     int threads  = 256;
     int smemSize = threads * (sizeof(T) + sizeof(LongType));
     argmaxMultiRowKernel<T><<<static_cast<int>(numRows), threads, smemSize, *stream>>>(
-        logitsPtr, outputPtr, numRows, vocabSize);
+        logitsPtr, outputPtr, numRows, vocabSize, validityPtr);
 }
 
 // --- Main Implementation -----------------------------------------------------
@@ -1427,6 +1486,19 @@ void autoregressiveDecode(
         }
         cudaError_t argmaxPinErr = cudaMallocHost(&pinnedArgmax, (specK + 1) * sizeof(LongType));
         if (argmaxPinErr != cudaSuccess) pinnedArgmax = nullptr;
+    }
+    // ROUND 6 (finding 3): per-row NaN validity flags from the verifier
+    // reduction. Device buffer sized [specK+1]; host readback rides the
+    // acceptance path's existing sync (no new synchronization boundary).
+    // validity[r] = 1 means logits row r contains NaN somewhere.
+    NDArray* specValidityDevice = nullptr;
+    LongType* pinnedValidity = nullptr;
+    LongType stackValidity[33] = {};
+    if (useSpeculative) {
+        std::vector<LongType> validityShape = {static_cast<LongType>(specK + 1)};
+        specValidityDevice = NDArrayFactory::create('c', validityShape, DataType::INT64, context);
+        cudaError_t validityPinErr = cudaMallocHost(&pinnedValidity, (specK + 1) * sizeof(LongType));
+        if (validityPinErr != cudaSuccess) pinnedValidity = nullptr;
     }
 
     // Stable device buffers for target argmax rows and scalar MTP drafts.
@@ -3146,19 +3218,27 @@ void autoregressiveDecode(
             int numRows = 1 + proposedCount;
             // The contiguous device ptr for rows 0..numRows-1 is logitsOutput->specialBuffer()
             // (batch=1, so offset 0 IS row 0). Rows are stride-vocabVocab apart (contiguous).
-            NDArray::prepareSpecialUse({specArgmaxDevice}, {logitsOutput});
+            // ROUND 6 (finding 3): the same kernel writes per-row NaN flags so
+            // EVERY active verification row is validity-checked at the
+            // acceptance boundary — including a fully accepted batch, where
+            // the rerun/recovery guard never executes.
+            NDArray::prepareSpecialUse({specArgmaxDevice, specValidityDevice}, {logitsOutput});
             BUILD_SINGLE_SELECTOR(logitsOutput->dataType(), argmaxMultiRowLauncher,
                                   (stream, logitsOutput->specialBuffer(),
                                    specArgmaxDevice->specialBuffer(),
                                    static_cast<LongType>(numRows),
-                                   logitsVocab),
+                                   logitsVocab,
+                                   specValidityDevice->specialBuffer()),
                                   SD_FLOAT_TYPES);
-            NDArray::registerSpecialUse({specArgmaxDevice}, {logitsOutput});
+            NDArray::registerSpecialUse({specArgmaxDevice, specValidityDevice}, {logitsOutput});
 
             // D2H: target rows and MTP drafts share the acceptance path's
             // existing synchronization. No predictor-side host boundary is added.
             LongType* argmaxDst = pinnedArgmax ? pinnedArgmax : stackArgmax;
             cudaMemcpyAsync(argmaxDst, specArgmaxDevice->specialBuffer(),
+                            numRows * sizeof(LongType), cudaMemcpyDeviceToHost, *stream);
+            LongType* validityDst = pinnedValidity ? pinnedValidity : stackValidity;
+            cudaMemcpyAsync(validityDst, specValidityDevice->specialBuffer(),
                             numRows * sizeof(LongType), cudaMemcpyDeviceToHost, *stream);
             LongType* mtpDraftDst = pinnedDraftIds ? pinnedDraftIds : stackDraftIds;
             if (useMtp) {
@@ -3260,6 +3340,29 @@ void autoregressiveDecode(
             LongType argmaxRaw[8] = {};
             if (DSP_DIAG_ENABLED(KV_CACHE)) {
                 for (int i = 0; i < 8 && i <= proposedCount; i++) argmaxRaw[i] = argmaxDst[i];
+            }
+
+            // ROUND 6 (finding 3) — VERIFIER VALIDITY GATE: every ACTIVE row
+            // whose result feeds an acceptance decision or an emitted token
+            // must be NaN-free. The old multi-row kernel returned token 0 for
+            // an all-NaN row (never-replaced init), so an invalid bonus row
+            // could reach emission through a fully accepted batch, where the
+            // rerun/recovery guard never runs. This gate closes that path;
+            // it runs BEFORE any acceptance decision, state commit, callback,
+            // or metric. Rows beyond the active prefix (physical padding) are
+            // NOT validated — padding never feeds acceptance.
+            {
+                bool anyInvalid = false;
+                int firstInvalidRow = -1;
+                for (int r = 0; r < numRows; r++) {
+                    if (validityDst[r] != 0) { anyInvalid = true; firstInvalidRow = r; break; }
+                }
+                REQUIRE_TRUE(!anyInvalid, 0,
+                             "autoregressive_decode: SPEC VERIFY VALIDITY GUARD step=%d "
+                             "rows=%d proposed=%d - verification logits row %d contains "
+                             "NaN; refusing to accept or emit from invalid results "
+                             "(cause requires a dedicated trace)",
+                             step, numRows, proposedCount, firstInvalidRow);
             }
 
             // Cross-check payloads: dump the verification input row tokens plus the
@@ -4807,6 +4910,14 @@ void autoregressiveDecode(
     if (pinnedArgmax != nullptr) {
         cudaFreeHost(pinnedArgmax);
         pinnedArgmax = nullptr;
+    }
+    if (pinnedValidity != nullptr) {
+        cudaFreeHost(pinnedValidity);
+        pinnedValidity = nullptr;
+    }
+    if (specValidityDevice != nullptr) {
+        delete specValidityDevice;
+        specValidityDevice = nullptr;
     }
     if (pinnedDraftIds != nullptr) {
         cudaFreeHost(pinnedDraftIds);
