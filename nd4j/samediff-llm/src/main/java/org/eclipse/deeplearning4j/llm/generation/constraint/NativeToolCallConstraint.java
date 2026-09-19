@@ -1102,8 +1102,9 @@ public final class NativeToolCallConstraint implements TextConstraint {
             return null;
         }
         List<String> allowed = allowedStringValues(valueSchema);
-        if (allowed.isEmpty()) {
-            return null;
+        boolean openEnded = allowed.isEmpty();
+        if (openEnded) {
+            allowed = List.of(partial.value);
         }
 
         seen.add(name.value);
@@ -1141,6 +1142,25 @@ public final class NativeToolCallConstraint implements TextConstraint {
                 if (parsed != INVALID_VALUE && !completeValues.contains(parsed)) {
                     return true;
                 }
+                if (openEnded) {
+                    // Closing this final string would force a duplicate object. It is
+                    // viable only if the string can still grow (pattern/maxLength).
+                    int length = partial.value.codePointCount(0, partial.value.length());
+                    Object maximum = valueSchema.get("maxLength");
+                    if (maximum instanceof Number && length >= ((Number) maximum).intValue()) {
+                        return false;
+                    }
+                    Object expression = valueSchema.get("pattern");
+                    if (!(expression instanceof String)) return null;
+                    var matcher = Pattern.compile((String) expression).matcher("");
+                    for (int codeUnit = 0; codeUnit <= Character.MAX_VALUE; codeUnit++) {
+                        matcher.reset(partial.value + (char) codeUnit);
+                        if (matcher.find() || matcher.hitEnd()) return null;
+                    }
+                    return false;
+                }
+            } else if (openEnded) {
+                return null;
             }
         }
         return false;
