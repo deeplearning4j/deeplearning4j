@@ -1029,6 +1029,8 @@ public final class NativeToolCallConstraint implements TextConstraint {
             return false;
         }
         if (Boolean.TRUE.equals(schema.get("uniqueItems"))) {
+            Boolean finiteViable = finiteRemainingEnumCompletion(current, itemSchema, completeValues);
+            if (Boolean.FALSE.equals(finiteViable)) return false;
             Boolean viable = uniqueObjectCompletionViability(
                     current, itemSchema, completeValues);
             if (Boolean.FALSE.equals(viable)) {
@@ -1050,6 +1052,44 @@ public final class NativeToolCallConstraint implements TextConstraint {
             }
         }
         return true;
+    }
+
+    /** Reject an irreversible duplicate prefix before entering its final enum field.
+     * Unknown/unbounded domains remain undecided; bounded enumeration never guesses. */
+    @SuppressWarnings("unchecked")
+    private static Boolean finiteRemainingEnumCompletion(
+            String value, Map<String, Object> schema, List<Object> previous) {
+        if (previous.isEmpty() || !"object".equals(schema.get("type"))
+                || !Boolean.FALSE.equals(schema.get("additionalProperties"))) return null;
+        ObjectPrefixState state = parseObjectPrefix(value);
+        if (!state.valid || state.closed || state.members.isEmpty()) return null;
+        Object parsed = parseJsonValue(value + "}");
+        if (!(parsed instanceof Map<?, ?>)) return null;
+        Map<String, Object> partial = new LinkedHashMap<>((Map<String, Object>) parsed);
+        var properties = objectPropertySchemas(schema);
+        List<Map<String, Object>> candidates = new ArrayList<>();
+        candidates.add(partial);
+        Object requiredObject = schema.get("required");
+        java.util.Collection<?> required = requiredObject instanceof java.util.Collection<?>
+                ? (java.util.Collection<?>) requiredObject : List.of();
+        for (var property : properties.entrySet()) {
+            if (partial.containsKey(property.getKey())) continue;
+            // Optional/unbounded fields could still distinguish the object.
+            if (!required.contains(property.getKey())) return null;
+            List<String> values = allowedStringValues(property.getValue());
+            if (values.isEmpty() || (long) candidates.size() * values.size() > 4096) return null;
+            List<Map<String, Object>> expanded = new ArrayList<>();
+            for (var candidate : candidates) for (String option : values) {
+                var next = new LinkedHashMap<>(candidate);
+                next.put(property.getKey(), option);
+                expanded.add(next);
+            }
+            candidates = expanded;
+        }
+        for (var candidate : candidates) {
+            if (ToolSchemaValidator.isValidValue(candidate, schema) && !previous.contains(candidate)) return true;
+        }
+        return false;
     }
 
     /**
