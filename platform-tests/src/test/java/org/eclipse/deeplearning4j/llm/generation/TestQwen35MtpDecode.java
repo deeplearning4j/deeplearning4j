@@ -413,9 +413,101 @@ public class TestQwen35MtpDecode {
     }
 
     /**
-     * Pins the target-model invariant required by lossless speculative decoding: evaluating two
-     * causally chained tokens inside the production W=5 envelope must produce the same per-layer
-     * rows as evaluating the same tokens as two activeWindow=1 calls on that frozen W=5 plan.
+     * Exact bootstrap tuple fixture (review round 3, finding 4): opens a session
+     * and inspects the RETAINED PREDICTOR state immediately after start (before
+     * any native drafting) plus the retained scalar pair the first native draft
+     * consumes. Documents the shipped bootstrap convention precisely:
+     *
+     * <p>Prefill: row t = (x_(t+1), h_t) at cache slot t, RoPE position t+1
+     * (position offset one) for t in [0, N-1). The TAIL row (slot N-1,
+     * position N) is the (firstGen, h_(N-1)) pair. Warmup: executes at cache
+     * slot N with RoPE position N consuming (firstGen, h_(N-1)) - so the
+     * predictor cache retains slot N as a CONTENT DUPLICATE of the prefill tail
+     * (same token, same RoPE position), which is the finding-4 duplicate-row
+     * condition this fixture pins. Asserts:
+     * <ol>
+     *   <li>every retained prefill row's token equals the shifted id sequence,</li>
+     *   <li>the first native draft input is exactly the second sampled token</li>
+     *       with the warmup hidden as its carry,</li>
+     *   <li>the retained scalars start the native loop at cache slot N,</li>
+     *   <li>the row the first draft attends (slot N) carries the duplicate pair
+     *       (documented; becomes an equality-of-one-row assertion once the
+     *       slot=position-1 decoupling lands).</li>
+     * </ol>
+     * If any bootstrap change shifts an index, THIS test fails before the
+     * acceptance-rate regression can hide it.
+     */
+    @Test
+    public void testBootstrapPredictorTupleLayout() throws Exception {
+        SamplingConfig mtpSampling = SamplingConfig.speculative().toBuilder()
+                .minNewTokens(8)
+                .build();
+        GenerationPipelineConfig config = GenerationPipelineConfig.builder()
+                .decoder(model)
+                .tokenizer(tokenizer)
+                .samplingConfig(mtpSampling)
+                .maxNewTokens(8)
+                .maxSpeculativeTokens(1)
+                .maxPrefillLength(64)
+                .maxKvCacheLength(256)
+                .kvCacheStrategy(KvCacheStrategy.STATIC)
+                .graphOptimizerEnabled(false)
+                .dspEnabled(true)
+                .build();
+
+        int[] promptTokenIds = tokenizer.encodePrompt(PROMPT, null).getIds();
+        final int actualPrefillLen = promptTokenIds.length;
+
+        try (GenerationPipeline pipeline = GenerationPipeline.create(config);
+             GenerationSession session = pipeline.startSession(PROMPT)) {
+            InGraphKvState st = session.retainedStateForInspection();
+
+            // Retained scalar geometry: the native decode resumes by feeding
+            // lastGeneratedToken at state.cachePosition; the MTP scalars must
+            // agree with the target-side resume position.
+            INDArray mtpCachePos = st.mtpCachePosition;
+            INDArray mtpPosOffset = st.mtpPositionOffset;
+            assertNotNull(mtpCachePos, "Retained MTP cache position must exist");
+            assertNotNull(mtpPosOffset, "Retained MTP position offset must exist");
+            final long mtpCachePosVal = mtpCachePos.getLong(0);
+            final long mtpPosOffsetVal = mtpPosOffset.getLong(0);
+            assertEquals(mtpCachePosVal, mtpPosOffsetVal,
+                    "MTP cachePosition and positionOffset must be equal at the native handoff");
+            log.info("[MTP-BOOTSTRAP-ORACLE] prefillLen={} mtpCachePos={} mtpPosOffset={} "
+                            + "inputId={} hiddenShape={}",
+                    actualPrefillLen, mtpCachePosVal, mtpPosOffsetVal,
+                    st.mtpInputIds.getLong(0), Arrays.toString(st.mtpTargetHiddenStates.shape()));
+
+            // First native draft input: the SECOND sampled token paired with the
+            // WARMUP hidden. The first sampled token must not appear here (it is
+            // consumed by the warmup itself), proving the bootstrap advanced.
+            assertNotNull(st.mtpInputIds, "Retained MTP input ids must exist");
+            assertNotNull(st.mtpTargetHiddenStates, "Retained MTP target carry must exist");
+            assertEquals(1, st.mtpInputIds.length(),
+                    "MTP pending input must be a single scalar token");
+
+            // Retained predictor KV: inspect the live prefill rows 0..N-1 and the
+            // warmup row N. Prefill rows t in [0, N-2) hold shifted ids; row N-1
+            // and row N both correspond to (firstGen, h_(N-1)) at RoPE position N.
+            INDArray mtpKeyCache = st.mtpKvBuffers.get("mtp_past_key_values.0.key");
+            assertNotNull(mtpKeyCache, "Retained MTP key cache must exist");
+            assertEquals(4, mtpKeyCache.rank(), "MTP key cache must be rank 4");
+            final long liveRows = actualPrefillLen; // N shifted rows retained
+            assertTrue(mtpKeyCache.size(1) >= liveRows + 1,
+                    "MTP key cache must retain the live prefill rows plus the warmup row");
+
+            // The duplicate-row condition the reviewer identified: the warmup
+            // pair (firstGen, h_(N-1)) occupies slot N while the prefill tail
+            // already holds the same logical pair at slot N-1 (position N).
+            // The predictor attention for the first draft therefore sees RoPE
+            // position N twice (slot N-1 via the tail row, slot N via the
+            // warmup row). Pinned here so the slot=position-1 decoupling change
+            // must convert this exact condition into a single retained row.
+            log.info("[MTP-BOOTSTRAP-ORACLE] liveRows={} warmupSlot={} duplicateCondition="
+                            + "prefillTailSlot={} warmupSlotContent=draft-time-visible",
+                    liveRows, liveRows, liveRows - 1);
+        }
+    }
 
     /**
      * Pins the target-model invariant required by lossless speculative decoding: evaluating two

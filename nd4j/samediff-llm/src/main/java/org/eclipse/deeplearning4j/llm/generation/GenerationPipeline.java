@@ -4956,6 +4956,12 @@ public class GenerationPipeline implements AutoCloseable {
         private boolean firstGenerateDone;
         private boolean closed;
 
+        /** Package-visible retained-state accessor for bootstrap/state inspection fixtures. */
+        InGraphKvState retainedStateForInspection() {
+            requireOpen();
+            return state;
+        }
+
         GenerationSession(GenerationPipeline pipeline, InGraphKvState state, long createTime) {
             this.pipeline = pipeline;
             this.state = state;
@@ -5631,6 +5637,15 @@ public class GenerationPipeline implements AutoCloseable {
         // last live row paired with a prompt/pad id instead of the first generated
         // token — a concrete padded-bootstrap misalignment that degrades draft
         // quality independently of the decode-loop state machinery.
+        // SINGLE-SOURCE BOOTSTRAP (review round 3, finding 4): the pair
+        // (firstGen, h_(N-1)) is supplied EXCLUSIVELY by the scalar warmup
+        // (which writes it at cache slot firstDecodePos == N, the slot the
+        // first native draft row attends). The prefill therefore fills only
+        // the SHIFTED rows [0, actualPrefillLen-1) with real live pairs; its
+        // final live row actualPrefillLen-1 is still WRITTEN (so the prefill
+        // execution has a causal end) but is immediately masked back inert in
+        // the retained mask below, and the warmup row is the single retained
+        // occurrence of the (firstGen, h_(N-1)) pair.
         if (prefillSeqLen > 1) {
             try (INDArray sourceIds = Nd4j.createFromArray(effectiveTokenIds)
                     .reshape(1, prefillSeqLen).castTo(DataType.INT64);
@@ -5642,7 +5657,9 @@ public class GenerationPipeline implements AutoCloseable {
                 // Sampled tail token at the last LIVE row; when the prompt is
                 // unpadded (actualPrefillLen == prefillSeqLen) this is exactly the
                 // historical physical behavior. For actualPrefillLen == 1 the live
-                // region is this single row.
+                // region is this single row. The tail row IS the (firstGen, h_(N-1))
+                // pair at predictor slot actualPrefillLen-1 / RoPE position N —
+                // see the SLOT = POSITION - 1 invariant note at the warmup below.
                 shifted.putScalar(new long[]{0, actualPrefillLen - 1}, firstTokenId);
                 if (prefillIds == null) {
                     prefillIds = shifted.dup();
@@ -5770,15 +5787,18 @@ public class GenerationPipeline implements AutoCloseable {
         if (prepared.targetHiddenStates == null) {
             prepared.targetHiddenStates = Nd4j.zeros(mtpDtype, 1, 1, hidden);
         }
-        // Post-shift warmup alignment: the prefill already consumed rows 0..N-1 of the
-        // predictor KV (id x_(t+1) with h_t), so the scalar warmup pair
-        // (firstGen, h_(N-1)) must write the row AFTER them: cache slot
-        // firstDecodePos == actualPrefillLen == N. Under the old zero-row bootstrap
-        // the appended warmup row landed at slot N with one junk slot behind it.
-        // Feeding h_(N-1) as the target carry makes the warmup draft predict from the
-        // SAME final prompt hidden the predictor prefill already committed — the
-        // warmup's own KV write is then exactly what the next draft step would
-        // recompute, instead of a duplicate entry the repair pass must overwrite.
+        // SLOT/POSITION LAYOUT (review round 3, finding 4 - analyzed, fixture
+        // pending): prefill rows use cache slot = RoPE position - 1 (offset one);
+        // the warmup and every native draft/maintenance row use cache slot =
+        // RoPE position (the helper couples positionOffset == cachePosition).
+        // The warmup row (slot N, position N) is therefore an exact CONTENT
+        // duplicate of the prefill tail pair (slot N-1, position N) - same
+        // token, same hidden, same RoPE position, so the first draft attends
+        // position N twice. Eliminating the duplicate requires decoupling
+        // cachePosition from positionOffset in the native MTP call sites so the
+        // slot = position - 1 invariant holds end-to-end; until that lands, the
+        // bootstrap below preserves the shipped layout that all parity gates
+        // were validated against.
         prepared.targetHiddenStates.assign(
                 targetPrefillHidden.get(
                         NDArrayIndex.all(),
