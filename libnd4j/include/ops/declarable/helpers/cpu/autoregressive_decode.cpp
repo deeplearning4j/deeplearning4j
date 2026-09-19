@@ -1503,15 +1503,25 @@ void autoregressiveDecode(
                 if (rerunVocab > 0) {
                     LongType refreshed = cpuArgmax(rerunLogits->buffer(), rerunVocab,
                                                    rerunLogits->dataType());
-                    if (refreshed != rowArgmax[0]) {
+                    // DISAGREEMENT GATE (CUDA mirror of rerunRefreshedToken !=
+                    // argmaxDst[0]): the authoritative refresh rewrites the
+                    // emission only when the rerun's row-0 readout DISAGREES
+                    // with the verify row 0. On agreement the provisional
+                    // multi-row commit stands - truncating it anyway pays a
+                    // width-1 re-execution per step and re-derives the same
+                    // tokens one at a time (observed: every partial multi-row
+                    // commit was shortened, collapsing committed counts).
+                    const LongType supersededRow0_cpu = rowArgmax[0];
+                    const bool rerunDisagrees = refreshed != supersededRow0_cpu;
+                    if (rerunDisagrees) {
                         DSP_DIAG(KV_CACHE,
                                  "RERUN_EMISSION_REFRESH step=%d verify=%lld rerun=%lld "
                                  "- emitting the asl=1 authoritative argmax",
-                                 step, (long long)rowArgmax[0], (long long)refreshed);
+                                 step, (long long)supersededRow0_cpu, (long long)refreshed);
+                        rowArgmax[0] = refreshed;
+                        rerunRefreshedToken_cpu = refreshed;
                     }
-                    rowArgmax[0] = refreshed;
-                    rerunRefreshedToken_cpu = refreshed;
-                    if (specConsumed_cpu > 1) {
+                    if (rerunDisagrees && specConsumed_cpu > 1) {
                         // SHORTENED-PREFIX STATE RECOVERY (review round 3, finding
                         // 3, CPU mirror of CUDA RERUN_SHORTEN_REEXEC): the multi-row
                         // rerun's planOutputs hold recurrent state AFTER
@@ -1528,7 +1538,8 @@ void autoregressiveDecode(
                                  "RERUN_TRUNCATE_COMMIT step=%d supersededRow0=%lld "
                                  "rerunRow0=%lld committed=%d -> n=1 (RERUN_SHORTEN_REEXEC "
                                  "follows)",
-                                 step, (long long)refreshed, (long long)specConsumed_cpu);
+                                 step, (long long)supersededRow0_cpu, (long long)refreshed,
+                                 (long long)specConsumed_cpu);
                         specConsumed_cpu = 1;
                         n = 1;
                         // Width-1 geometry + pre-verify state restore (mirrors the
