@@ -1178,6 +1178,37 @@ void autoregressiveDecode(
                 specRowArgmax_cpu[row] = cpuArgmax(fpBase + row * fpStride, fpVocab,
                                                    firstPassLogits->dataType());
             }
+            // VERIFIER VALIDITY GATE, CPU mirror (review round 6, finding 3):
+            // every ACTIVE verification row whose result feeds an acceptance
+            // decision or an emitted token must be NaN-free. The CUDA gate runs
+            // in the multi-row argmax kernel; here the full-row scan happens on
+            // the host through the dtype-selective sampler. Without this gate a
+            // fully accepted batch (rerun/recovery guard never runs) could emit
+            // a correction/bonus token decided from an all-NaN row (cpuArgmax
+            // keeps index 0). Rows beyond the active prefix are not validated.
+            {
+                bool anyInvalid = false;
+                int firstInvalidRow = -1;
+                for (int row = 0; row < fpRows && !anyInvalid; row++) {
+                    for (LongType v = 0; v < fpVocab && !anyInvalid; v++) {
+                        float sampled = 0.0f;
+                        BUILD_SINGLE_SELECTOR(firstPassLogits->dataType(), sampleFirstRowValueCpu,
+                                              (fpBase + row * fpStride + v * firstPassLogits->sizeOfT(),
+                                               &sampled),
+                                              SD_FLOAT_TYPES);
+                        if (std::isnan(sampled)) {
+                            anyInvalid = true;
+                            firstInvalidRow = row;
+                        }
+                    }
+                }
+                REQUIRE_TRUE(!anyInvalid, 0,
+                             "autoregressive_decode: SPEC VERIFY VALIDITY GUARD step=%d "
+                             "rows=%d proposed=%d - verification logits row %d contains "
+                             "NaN; refusing to accept or emit from invalid results "
+                             "(cause requires a dedicated trace)",
+                             step, fpRows, proposedCount_cpu, firstInvalidRow);
+            }
             specAccepted_cpu = 0;
             while (specAccepted_cpu < proposedCount_cpu &&
                    specRowArgmax_cpu[specAccepted_cpu] == draftIds_cpu[specAccepted_cpu]) {

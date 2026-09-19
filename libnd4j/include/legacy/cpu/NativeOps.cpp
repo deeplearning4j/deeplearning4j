@@ -576,7 +576,15 @@ int getAvailableDevices() {
   auto& manager = sd::graph::PjrtClientManager::getInstance();
   return manager.isTpuPlatform() ? manager.getDeviceCount() : 0;
 #else
-  return 0;
+  // ROUND 6 PATCH D: the CPU backend HAS exactly one addressable device -
+  // the host itself (AffinityManager::currentDeviceId() ==
+  // INTERNAL_CPU_DEVICE_ID == 0, numberOfDevices() == 1). Returning 0 made
+  // NativeOpsBufferOwner.deviceCount() report zero devices, so every
+  // OpaqueNDArray creation targeting device 0 failed with "Invalid target
+  // device 0 for owning backend with 0 devices" - which broke host-side
+  // native execution bindings (captureNativeExecutionBinding) on CPU-only
+  // machines. Report the host device so device 0 is valid.
+  return 1;
 #endif
 }
 
