@@ -225,8 +225,9 @@ public class TestScalarTargetRecurrentMapping {
             SDVariable hidden;
             if (predictor) {
                 hidden = placeholder("carry", Nd4j.valueArrayOf(new long[]{1, 1, 1}, 5, DataType.FLOAT)).add("hidden", 1);
-                output(placeholder("key", Nd4j.zeros(DataType.FLOAT, 1, 1, CACHE, 1)).add("key_echo", 1));
-                output(placeholder("value", Nd4j.zeros(DataType.FLOAT, 1, 1, CACHE, 1)).add("value_echo", 1));
+                // BSHD cache layout contract (round-4 finding E): [batch, maxSeqLen, heads, dim].
+                output(placeholder("key", Nd4j.zeros(DataType.FLOAT, 1, CACHE, 1, 1)).add("key_echo", 1));
+                output(placeholder("value", Nd4j.zeros(DataType.FLOAT, 1, CACHE, 1, 1)).add("value_echo", 1));
             } else {
                 SDVariable gdn = placeholder("gdn", Nd4j.createFromArray(3.0f));
                 SDVariable conv = placeholder("conv", Nd4j.createFromArray(7.0f));

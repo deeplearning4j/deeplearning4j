@@ -62,6 +62,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class TestMtpStopOrdering {
     private static final int WIDTH = 5;
     private static final int CACHE = 64;
+    /**
+     * Synthetic native target start position: the predictor row mapping is
+     * r = target position - 1, so target base 1 maps to predictor base row 0.
+     * The zero origin previously used here now trips the packet-5 loud
+     * negative-row guard in the CUDA helper.
+     */
+    private static final int BASE_TARGET_POSITION = 1;
 
     private enum Disagreement { NONE, VERIFY_EOS, RERUN_EOS, RERUN_STOP2, MULTI_STOP }
 
@@ -143,7 +150,7 @@ public class TestMtpStopOrdering {
                 new int[0], new int[0],
                 new int[]{plan.target.ext("gdn")}, new int[]{plan.target.out("gdn_next")},
                 new int[]{plan.target.ext("conv")}, new int[]{plan.target.out("conv_next")},
-                budget, eos, 0, 0, 0.0, 0, 0.0, 1.0, Set.of());
+                budget, eos, 0, BASE_TARGET_POSITION, 0.0, 0, 0.0, 1.0, Set.of());
         op.withDecodePolicy(AutoregressiveDecode.DECODE_STRATEGY_SPECULATIVE,
                 1, WIDTH, 1, 1, -1, 1, 1.0, 0.0, 0)
                 .withSpeculativeDecoding(WIDTH - 1, AutoregressiveDecode.SPECULATOR_TYPE_MTP)
@@ -372,10 +379,10 @@ public class TestMtpStopOrdering {
             addOutput(predictorGraph, predictorOutputs, carry.add("hidden", 1));
             addOutput(predictorGraph, predictorOutputs,
                     placeholder(predictorGraph, predictorInputs, "key",
-                            Nd4j.zeros(DataType.FLOAT, 1, 1, CACHE, 1)).add("key_echo", 1));
+                            Nd4j.zeros(DataType.FLOAT, 1, CACHE, 1, 1)).add("key_echo", 1));
             addOutput(predictorGraph, predictorOutputs,
                     placeholder(predictorGraph, predictorInputs, "value",
-                            Nd4j.zeros(DataType.FLOAT, 1, 1, CACHE, 1)).add("value_echo", 1));
+                            Nd4j.zeros(DataType.FLOAT, 1, CACHE, 1, 1)).add("value_echo", 1));
         }
 
         private SDVariable placeholder(SameDiff graph, Map<String, INDArray> inputs,

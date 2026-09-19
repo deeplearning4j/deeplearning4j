@@ -1563,6 +1563,14 @@ void autoregressiveDecode(
                                  "- emitting the asl=1 authoritative argmax",
                                  step, (long long)supersededRow0_cpu, (long long)refreshed);
                         rowArgmax[0] = refreshed;
+                        // ONE COMMITTED SEQUENCE (review round 5, finding 1B):
+                        // specRowArgmax_cpu[0] is the predictor-publication token
+                        // source; leaving it at the superseded verify winner while
+                        // rowArgmax[0] carries the rerun winner made a one-row
+                        // flip emit B and publish A to the predictor. The
+                        // multi-row SHORTEN_REEXEC branch below also writes this
+                        // slot (with its own width-1 readout).
+                        specRowArgmax_cpu[0] = refreshed;
                         rerunRefreshedToken_cpu = refreshed;
                     }
                     if (rerunDisagrees && specConsumed_cpu > 1) {

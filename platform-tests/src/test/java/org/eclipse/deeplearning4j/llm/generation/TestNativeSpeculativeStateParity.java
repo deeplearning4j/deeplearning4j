@@ -121,7 +121,7 @@ public class TestNativeSpeculativeStateParity {
                             "committed conv must match the independent scalar advance");
                     assertEquals(gdn + conv, predictor.input("carry").getFloat(0), 0.0f,
                             "predictor carry must come from the remapped scalar hidden");
-                    assertPendingState(window);
+                    assertPendingState(window, START + 2);
                 } finally {
                     Nd4j.getExecutioner().commit();
                     binding.completeNativeUse();
@@ -175,9 +175,12 @@ public class TestNativeSpeculativeStateParity {
             assertEquals(conv, target.input("conv").getFloat(0), 0.0f);
             assertEquals(1, target.input("actual_length").getLong(0));
             assertEquals(START + 2, positions.getLong(0));
-            assertPendingState(target);
+            assertPendingState(target, START + 2);
             if (predictor != null) {
-                assertPendingState(predictor);
+                // PREDICTOR ROW CONVENTION (round-4 mapping): the predictor's
+                // pending rope/slot is r = target position - 1, so it trails
+                // the target's pending position by exactly one here.
+                assertPendingState(predictor, START + 1);
                 assertEquals(gdn + conv, predictor.input("carry").getFloat(0), 0.0f);
             }
             // Probe the next logits with the still-pending token, without committing feedback.
@@ -188,14 +191,15 @@ public class TestNativeSpeculativeStateParity {
         }
     }
 
-    private static void assertPendingState(TinyPlan plan) {
-        assertEquals(START + 2, plan.input("position").getLong(0));
-        assertEquals(START + 2, plan.input("cache_position").getLong(0));
+    private static void assertPendingState(TinyPlan plan, int pendingPosition) {
+        assertEquals(pendingPosition, plan.input("position").getLong(0));
+        assertEquals(pendingPosition, plan.input("cache_position").getLong(0));
         assertEquals(1, plan.input("ids").getLong(0), "final emitted token remains pending");
-        // Only row zero is the next active query; padded window rows are not committed state.
+        // Only rows below the pending position are the next active query;
+        // padded window rows are not committed state.
         for (int k = 0; k < CACHE; k++) {
             float bias = plan.input("mask").getFloat(0, 0, 0, k);
-            if (k < START + 2) assertEquals(0.0f, bias, 0.0f);
+            if (k < pendingPosition) assertEquals(0.0f, bias, 0.0f);
             else assertTrue(bias <= -1e9f, "uncommitted position visible: " + k);
         }
     }
@@ -219,8 +223,9 @@ public class TestNativeSpeculativeStateParity {
             SDVariable hidden;
             if (predictor) {
                 hidden = placeholder("carry", Nd4j.valueArrayOf(new long[]{1, 1, 1}, 5, DataType.FLOAT)).add("hidden", 1);
-                output(placeholder("key", Nd4j.zeros(DataType.FLOAT, 1, 1, CACHE, 1)).add("key_echo", 1));
-                output(placeholder("value", Nd4j.zeros(DataType.FLOAT, 1, 1, CACHE, 1)).add("value_echo", 1));
+                // BSHD cache layout contract (round-4 finding E): [batch, maxSeqLen, heads, dim].
+                output(placeholder("key", Nd4j.zeros(DataType.FLOAT, 1, CACHE, 1, 1)).add("key_echo", 1));
+                output(placeholder("value", Nd4j.zeros(DataType.FLOAT, 1, CACHE, 1, 1)).add("value_echo", 1));
             } else {
                 SDVariable gdn = placeholder("gdn", Nd4j.createFromArray(3.0f));
                 SDVariable conv = placeholder("conv", Nd4j.createFromArray(7.0f));
