@@ -801,11 +801,36 @@ public final class NativeToolCallConstraint implements TextConstraint {
                     && candidate.length() > decodedValue.length());
         }
         if (digits == null) {
-            return true;
+            if (!trailingEscape || !allowed.isEmpty() || !schema.containsKey("pattern")) {
+                return true;
+            }
+            // A trailing backslash commits to adding a character. For a prefix
+            // such as a terminal newline accepted by '$', closing the string is
+            // valid but no escaped character may follow it.
+            for (int codeUnit = 0; codeUnit <= Character.MAX_VALUE; codeUnit++) {
+                if (validStringValuePrefix(decodedValue + (char) codeUnit, schema)) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         if (allowed.isEmpty()) {
-            return true;
+            // An unfinished Unicode escape has a finite set of completions. Do not let
+            // decoding commit to digits whose every completion violates the string
+            // pattern/length: no subsequent token could recover from that prefix.
+            if (!schema.containsKey("pattern")) {
+                return true;
+            }
+            int missingDigits = 4 - digits.length();
+            int first = digits.isEmpty() ? 0 : Integer.parseInt(digits, 16) << (4 * missingDigits);
+            int count = 1 << (4 * missingDigits);
+            for (int codeUnit = first; codeUnit < first + count; codeUnit++) {
+                if (validStringValuePrefix(decodedValue + (char) codeUnit, schema)) {
+                    return true;
+                }
+            }
+            return false;
         }
         String normalizedDigits = digits.toLowerCase(java.util.Locale.ROOT);
         for (String candidate : allowed) {
