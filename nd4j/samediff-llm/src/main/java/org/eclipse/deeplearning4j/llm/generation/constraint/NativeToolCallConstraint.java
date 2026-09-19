@@ -1064,6 +1064,12 @@ public final class NativeToolCallConstraint implements TextConstraint {
         ObjectPrefixState state = parseObjectPrefix(value);
         if (!state.valid || state.closed || state.members.isEmpty()) return null;
         Object parsed = parseJsonValue(value + "}");
+        if (!(parsed instanceof Map<?, ?>)) {
+            // Tokens may cross the comma into a partial next key/value. The
+            // preceding complete members are still immutable commitments.
+            parsed = parseJsonValue("{" + String.join(",",
+                    state.members.subList(0, state.members.size() - 1)) + "}");
+        }
         if (!(parsed instanceof Map<?, ?>)) return null;
         Map<String, Object> partial = new LinkedHashMap<>((Map<String, Object>) parsed);
         var properties = objectPropertySchemas(schema);
