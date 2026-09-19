@@ -64,6 +64,19 @@ public class TestNativeArgmaxParity {
                 "very-negative finite row must select token 1, not an absent-thread token");
     }
 
+    /**
+     * ROUND 7 PATCH 3 DISCRIMINATOR: [-inf, -FLT_MAX] — negative infinity
+     * (an excluded token) against the most negative FINITE value. Correct
+     * answer: token 1. The old greedy selector's finite -max init at index 0
+     * returned token 0; the absent-candidate rule returns the true maximum.
+     */
+    @Test
+    public void testNegativeInfinityExcludedTokenSelectsFiniteMaximum() {
+        runScalarRow(new float[]{Float.NEGATIVE_INFINITY, -Float.MAX_VALUE, -Float.MAX_VALUE}, 1,
+                "[-inf, -FLT_MAX] must select token 1 (the most negative finite value), "
+                        + "not the -inf excluded token at 0");
+    }
+
     /** Tied maxima across strided chunks, vocab 512: expected argmax = 1 (lowest index). */
     @Test
     public void testTiedMaximaSelectLowestIndex() {
@@ -100,6 +113,42 @@ public class TestNativeArgmaxParity {
         java.util.Arrays.fill(bonusRow, Float.NaN);
         runWindowStep(1, bonusRow, true,
                 "NaN verification row must trip the validity guard before emission");
+    }
+
+    /**
+     * ROUND 7 PATCH 1 DISCRIMINATOR: NaN owned by a NON-thread-zero strided
+     * chunk. The all-NaN row could not distinguish a correct block-wide
+     * reduction from one that only reflects thread zero's local predicate
+     * (thread 0's own elements were NaN too). Here thread 0's strided
+     * elements (indices 0, 256, 512... - only 0 and 256 exist) stay FINITE
+     * and the single NaN sits at index 257, owned by thread 1's chunk. Only
+     * a real block-wide collective reports it.
+     */
+    @Test
+    public void testNonThreadZeroNanStillTripsValidityGuard() {
+        float[] bonusRow = new float[512];
+        bonusRow[1] = 10.0f;   // a plausible winner on a finite row
+        bonusRow[257] = Float.NaN;  // thread 1's strided chunk
+        runWindowStep(1, bonusRow, true,
+                "a NaN in a non-thread-zero strided chunk must trip the validity "
+                        + "guard (proves the collective is block-wide, not thread-0-local)");
+    }
+
+    /**
+     * ROUND 7 PATCH 1 DISCRIMINATOR - NaN exactly at a warp boundary and at
+     * the reduction tree's early leaves: indices 31 (last of warp 0), 32
+     * (first of warp 1), and 255 (last thread-1-stride before 256). Thread 0's
+     * chunk stays finite.
+     */
+    @Test
+    public void testNanAtWarpBoundariesTripsValidityGuard() {
+        for (int nanIndex : new int[]{31, 32, 255}) {
+            float[] bonusRow = new float[512];
+            bonusRow[1] = 10.0f;
+            bonusRow[nanIndex] = Float.NaN;
+            runWindowStep(1, bonusRow, true,
+                    "isolated NaN at index " + nanIndex + " must trip the validity guard");
+        }
     }
 
     /**
