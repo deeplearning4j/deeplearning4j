@@ -1285,20 +1285,21 @@ void autoregressiveDecode(
                 }
 
                 // FAIL-LOUD NaN GUARD (K=1 state-poisoning regression, CUDA
-                // mirror): bounded probe over the rerun's logits head plus a
-                // bounded probe of the FIRST GDN state pair's output row from the
-                // rerun pass itself (probing the ext input here would read the
-                // still-uncommitted pre-verify state instead of what the rerun
-                // just produced). NaN here means the rerun executed from mutated
-                // (post-verification) recurrent state; committing it would poison
-                // every later step. Fail loudly naming geometry and step - never
-                // continue with poisoned state.
+                // mirror): FULL-ROW probe over the rerun's logits (finding 5:
+                // was the first 8 entries only) plus a probe of the FIRST GDN
+                // state pair's output row from the rerun pass itself (probing
+                // the ext input here would read the still-uncommitted pre-verify
+                // state instead of what the rerun just produced). NaN here means
+                // the rerun executed from mutated (post-verification) recurrent
+                // state; committing it would poison every later step. Fail
+                // loudly naming geometry and step - never continue with
+                // poisoned state.
                 bool rerunLogitsNan_cpu = false;
                 {
                     NDArray* rerunLogitsArr = planOutputs[config->logitsOutputIdx];
                     const LongType rerunVocabLocal =
                         rerunLogitsArr->sizeAt(rerunLogitsArr->rankOf() - 1);
-                    const LongType probeVocab = std::min<LongType>(8, rerunVocabLocal);
+                    const LongType probeVocab = rerunVocabLocal;
                     if (probeVocab > 0) {
                         NDArray::preparePrimaryUse({}, {rerunLogitsArr});
                         const char* base = reinterpret_cast<const char*>(rerunLogitsArr->buffer());
@@ -1581,10 +1582,12 @@ void autoregressiveDecode(
                         LongType shortenedToken = cpuArgmax(shortenLogits->buffer(), shortenVocab,
                                                             shortenLogits->dataType());
                         // NaN probe on the width-1 pass (same poisoning class as the
-                        // guarded pass-1 rerun; stays loud).
+                        // guarded pass-1 rerun; stays loud). FINDING 5: the probe
+                        // covers the FULL row, not the first 8 entries, and every
+                        // float dtype via sampleFirstRowValueCpu's selector.
                         {
                             NDArray::preparePrimaryUse({}, {shortenLogits});
-                            const LongType probeVocabS = std::min<LongType>(8, shortenVocab);
+                            const LongType probeVocabS = shortenVocab;
                             const char* baseS = reinterpret_cast<const char*>(shortenLogits->buffer());
                             for (LongType v = 0; v < probeVocabS; v++) {
                                 float sampled = 0.0f;

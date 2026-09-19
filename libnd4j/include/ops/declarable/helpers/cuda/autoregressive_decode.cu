@@ -357,9 +357,14 @@ static SD_KERNEL void fillWindowPositionGridKernel(void* vPos,
  * CUDA kernel: find argmax over a float/half row [vocabSize].
  * Writes the index to output[0] as INT64.
  *
- * Block-level reduction using shared memory.
+ * Block-level reduction using shared memory. With kWriteValidity the kernel
+ * additionally writes output[1] = 1 when ANY value in the FULL row is NaN
+ * (device-side reduction via __syncthreads_or; dtype-portable self-inequality
+ * check, so the guard covers every float dtype the kernel is instantiated
+ * for - finding 5). The two-slot output is opt-in because the MTP draft
+ * argmax writes into a single slot at draftSlot offset.
  */
-template <typename T>
+template <typename T, bool kWriteValidity = false>
 static SD_KERNEL void argmaxKernel(const void* vLogits, void* vOutput, LongType vocabSize) {
     extern __shared__ char smem[];
     auto sMaxVal = reinterpret_cast<T*>(smem);
@@ -370,9 +375,12 @@ static SD_KERNEL void argmaxKernel(const void* vLogits, void* vOutput, LongType 
 
     T localMax = static_cast<T>(-1e30);
     LongType localIdx = 0;
+    bool localNan = false;
 
     for (LongType i = threadIdx.x; i < vocabSize; i += blockDim.x) {
         T val = logits[i];
+        // IEEE self-inequality: true only for NaN, in every float dtype.
+        if (val != val) localNan = true;
         if (val > localMax) {
             localMax = val;
             localIdx = i;
@@ -394,8 +402,12 @@ static SD_KERNEL void argmaxKernel(const void* vLogits, void* vOutput, LongType 
         __syncthreads();
     }
 
+    // Full-row validity reduction: uniform cooperative call, no shared memory.
+    unsigned blockNan = static_cast<unsigned>(__syncthreads_or(localNan ? 1 : 0));
+
     if (threadIdx.x == 0) {
         output[0] = sMaxIdx[0];
+        if (kWriteValidity) output[1] = blockNan ? 1L : 0L;
     }
 }
 
@@ -408,6 +420,20 @@ static void argmaxLauncher(const cudaStream_t* stream, const void* logitsPtr,
     int threads = 256;
     int smemSize = threads * (sizeof(T) + sizeof(LongType));
     argmaxKernel<T><<<1, threads, smemSize, *stream>>>(logitsPtr, outputPtr, vocabSize);
+}
+
+/**
+ * Launcher for the two-slot validity variant (finding 5): output[0] = argmax,
+ * output[1] = full-row NaN flag. Same single kernel launch and sync as the
+ * plain argmax - the NaN detection adds NO extra host wait; the caller drains
+ * both slots (and any diagnostics/state samples) in one readback.
+ */
+template <typename T>
+static void argmaxValidityLauncher(const cudaStream_t* stream, const void* logitsPtr,
+                                   void* outputPtr, LongType vocabSize) {
+    int threads = 256;
+    int smemSize = threads * (sizeof(T) + sizeof(LongType));
+    argmaxKernel<T, true><<<1, threads, smemSize, *stream>>>(logitsPtr, outputPtr, vocabSize);
 }
 
 // --- ADR 0106 Phase 2: n-gram speculative decoding kernels -------------------
@@ -3335,9 +3361,11 @@ void autoregressiveDecode(
             // rerun block below). The committed specArgmaxDevice sequence must
             // never be overwritten by a diagnostic rerun.
             if (useSpeculative) {
-                // One INT64 slot, allocated once per decode call, stable address.
+                // Two INT64 slots, allocated once per decode call, stable address:
+                // slot 0 = rerun argmax, slot 1 = full-row NaN validity flag
+                // written by the argmax kernel's validity variant (finding 5).
                 if (mtpRerunScratch == nullptr) {
-                    std::vector<LongType> scratchShape{1};
+                    std::vector<LongType> scratchShape{2};
                     mtpRerunScratch = NDArrayFactory::create_('c', scratchShape, DataType::INT64);
                 }
                 rerunScratch = mtpRerunScratch;
@@ -3593,41 +3621,79 @@ void autoregressiveDecode(
                     // committed token sequence; overwriting its row 0 here made
                     // predictor repair read a token absent from the authoritative
                     // emitted prefix on multi-row reruns.
+                    // FINDING 5 (single-wait batch): the validity argmax writes
+                    // BOTH the argmax and the FULL-ROW NaN flag on device; the
+                    // argmax D2H, the diagnostics top-8 sample, and the GDN head
+                    // sample below all ride ONE stream sync - the previous code
+                    // waited separately for the argmax, the (FP32-only, 8-entry)
+                    // logits sample, and the state sample.
                     NDArray::prepareSpecialUse({rerunScratch}, {rerunLogits});
-                    BUILD_SINGLE_SELECTOR(rerunLogits->dataType(), argmaxLauncher,
+                    BUILD_SINGLE_SELECTOR(rerunLogits->dataType(), argmaxValidityLauncher,
                                           (stream, rerunLogits->specialBuffer(),
                                            rerunScratch->specialBuffer(),
                                            rerunVocab),
                                           SD_FLOAT_TYPES);
-                    cudaMemcpyAsync(&rerunRefreshedToken, rerunScratch->specialBuffer(),
-                                    sizeof(LongType), cudaMemcpyDeviceToHost, *stream);
+                    struct { LongType argmax; LongType nanFlag; } rerunReadback = {};
+                    cudaMemcpyAsync(&rerunReadback, rerunScratch->specialBuffer(),
+                                    sizeof(rerunReadback), cudaMemcpyDeviceToHost, *stream);
+                    // Diagnostics-only top-8 sample (finding 5: the unconditional
+                    // FP32-only probe became gated - the NaN GUARD no longer
+                    // depends on host-side samples at all).
+                    const bool rerunSample = DSP_DIAG_ENABLED(KV_CACHE)
+                        && rerunVocab >= 8 && rerunLogits->dataType() == DataType::FLOAT32;
+                    float rerunTop8[8] = {};
+                    if (rerunSample) {
+                        cudaMemcpyAsync(rerunTop8, rerunLogits->specialBuffer(),
+                                        8 * sizeof(float), cudaMemcpyDeviceToHost, *stream);
+                    }
+                    // GDN head-of-pair-0 sample rides the same wait (same class:
+                    // a NaN here means the rerun executed from mutated state).
+                    float gdnSample[4] = {};
+                    NDArray* gdnOut = nullptr;
+                    if (config->numGdnStatePairs > 0 && config->gdnStateOutputIndices != nullptr) {
+                        // Probe the head of GDN state pair 0's OUTPUT from the
+                        // rerun pass itself (planOutputs is target-domain output
+                        // indexed; for a scalar rerun executeScalarTarget remapped
+                        // these slots onto the scalar plan's outputs). Probing the
+                        // ext input here would read the still-uncommitted pre-verify
+                        // state instead of what the rerun just produced.
+                        int gdnOut0 = config->gdnStateOutputIndices[0];
+                        gdnOut = (gdnOut0 >= 0 && gdnOut0 < numPlanOutputs)
+                            ? planOutputs[gdnOut0] : nullptr;
+                    }
+                    const bool gdnProbe = gdnOut != nullptr && gdnOut->lengthOf() >= 4;
+                    if (gdnProbe) {
+                        NDArray::prepareSpecialUse({}, {gdnOut});
+                        cudaMemcpyAsync(gdnSample, gdnOut->specialBuffer(),
+                                        sizeof(gdnSample), cudaMemcpyDeviceToHost, *stream);
+                    }
                     NDArray::registerSpecialUse({rerunScratch}, {rerunLogits});
                     // The emission/storage path below re-reads argmaxDst from host
                     // memory only, so a stream-ordered completion of this D2H before
-                    // the rewrite is required.
+                    // the rewrite is required. ONE sync drains argmax + validity +
+                    // diagnostics + state samples.
                     cudaError_t refreshSync = cudaStreamSynchronize(*stream);
                     REQUIRE_TRUE(refreshSync == cudaSuccess, 0,
                                  "autoregressive_decode: rerun emission refresh sync "
                                  "failed at step %d: %s", step,
                                  cudaGetErrorString(refreshSync));
-                    // Bounded NaN probe on the first 8 logits values. UNCONDITIONAL
-                    // (not gated on diagnostics): the NaN guard below must be
-                    // audible with diagnostics disabled. Rides the refresh sync.
-                    float rerunTop8[8] = {};
-                    if (rerunVocab >= 8 && rerunLogits->dataType() == DataType::FLOAT32) {
-                        // Logits at asl=1 are rank 2 [1, V] or rank 3 [1,1,V];
-                        // the last dim is always the vocab.
-                        cudaMemcpyAsync(rerunTop8, rerunLogits->specialBuffer(),
-                                        8 * sizeof(float), cudaMemcpyDeviceToHost, *stream);
-                        cudaStreamSynchronize(*stream);
+                    const LongType rerunRefreshedTokenReadback = rerunReadback.argmax;
+                    const bool rerunNanFlag = rerunReadback.nanFlag != 0;
+                    if (gdnProbe) NDArray::registerSpecialUse({}, {gdnOut});
+                    bool rerunStateNan = false;
+                    if (gdnProbe) {
+                        for (int i = 0; i < 4; i++) {
+                            if (std::isnan(gdnSample[i])) { rerunStateNan = true; break; }
+                        }
                     }
+                    rerunRefreshedToken = rerunRefreshedTokenReadback;
                     DSP_DIAG(KV_CACHE,
                              "RERUN_EMISSION_REFRESH step=%d verifyRow0=%lld "
-                             "rerunArgmax=%lld%s - emission taken from the asl=1 pass",
+                             "rerunArgmax=%lld%s nanFlag=%d - emission taken from the asl=1 pass",
                              step, (long long)argmaxDst[0], (long long)rerunRefreshedToken,
-                             rerunRefreshedToken != argmaxDst[0] ? " FLIPPED" : "");
-                    if (DSP_DIAG_ENABLED(KV_CACHE) && rerunVocab >= 8
-                            && rerunLogits->dataType() == DataType::FLOAT32) {
+                             rerunRefreshedToken != argmaxDst[0] ? " FLIPPED" : "",
+                             rerunNanFlag ? 1 : 0);
+                    if (rerunSample) {
                     DSP_DIAG(KV_CACHE,
                              "RERUN_TOP8 step=%d pos=%lld logits8=[%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f]",
                              step, (long long)currentPosition,
@@ -3637,56 +3703,17 @@ void autoregressiveDecode(
 
                     // FAIL-LOUD NaN GUARD (K=1 state-poisoning regression): the
                     // refresh D2H above already completed a stream sync, so the
-                    // probed bytes are the rerun's committed results. NaN logits
-                    // or a NaN recurrent-state sample mean the rerun executed
-                    // from mutated (post-verification) recurrent state -
-                    // committing it would poison every later step (silent
-                    // token-0 collapse, /tmp/mtp-k1-diag.log). Fail here, naming
-                    // the geometry and step; never continue with poisoned state.
-                    bool rerunLogitsNan = false;
-                    for (int i = 0; i < 8; i++) {
-                        if (std::isnan(rerunTop8[i])) {
-                            rerunLogitsNan = true;
-                            break;
-                        }
-                    }
-                    bool rerunStateNan = false;
-                    if (config->numGdnStatePairs > 0 && config->gdnStateOutputIndices != nullptr) {
-                        // Probe the head of GDN state pair 0's OUTPUT from the
-                        // rerun pass itself (planOutputs is target-domain output
-                        // indexed; for a scalar rerun executeScalarTarget remapped
-                        // these slots onto the scalar plan's outputs). Probing the
-                        // ext input here would read the still-uncommitted pre-verify
-                        // state instead of what the rerun just produced.
-                        int gdnOut0 = config->gdnStateOutputIndices[0];
-                        NDArray* gdnOut = (gdnOut0 >= 0 && gdnOut0 < numPlanOutputs)
-                            ? planOutputs[gdnOut0] : nullptr;
-                        if (gdnOut != nullptr && gdnOut->lengthOf() >= 4
-                                && gdnOut->dataType() == DataType::FLOAT32) {
-                            // dtype-gated: non-FLOAT32 state dtypes are covered by
-                            // the logits NaN check above.
-                            LongType probeElems = std::min<LongType>(4, gdnOut->lengthOf());
-                            NDArray::prepareSpecialUse({}, {gdnOut});
-                            std::vector<uint8_t> stateRaw(
-                                static_cast<size_t>(probeElems) * sizeof(float));
-                            cudaMemcpyAsync(stateRaw.data(), gdnOut->specialBuffer(),
-                                            stateRaw.size(), cudaMemcpyDeviceToHost, *stream);
-                            cudaError_t nanSync = cudaStreamSynchronize(*stream);
-                            REQUIRE_TRUE(nanSync == cudaSuccess, 0,
-                                         "autoregressive_decode: rerun NaN-guard state "
-                                         "readback failed at step %d: %s",
-                                         step, cudaGetErrorString(nanSync));
-                            NDArray::registerSpecialUse({}, {gdnOut});
-                            const float* stateSample =
-                                reinterpret_cast<const float*>(stateRaw.data());
-                            for (LongType i = 0; i < probeElems; i++) {
-                                if (std::isnan(stateSample[i])) {
-                                    rerunStateNan = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
+                    // flag reflects the rerun's committed results. The DEVICE
+                    // full-row flag covers EVERY float dtype and EVERY vocab
+                    // entry (finding 5) - NaN logits or a NaN GDN-state sample
+                    // mean the rerun executed from mutated (post-verification)
+                    // recurrent state - committing it would poison every later
+                    // step (silent token-0 collapse, /tmp/mtp-k1-diag.log). Fail
+                    // here, naming the geometry and step; never continue with
+                    // poisoned state.
+                    const bool rerunLogitsNan = rerunNanFlag;
+                    bool rerunStateNanDone = rerunStateNan;  // state probe drained above
+                    (void)rerunStateNanDone;
                     REQUIRE_TRUE(!(rerunLogitsNan || rerunStateNan), 0,
                                  "autoregressive_decode: SPEC RERUN NaN GUARD step=%d "
                                  "geometry=%s rerunArgmax=%lld verifyRow0=%lld "
@@ -3823,42 +3850,32 @@ void autoregressiveDecode(
                         // Authoritative row-0 readout from the width-1 pass -
                         // the SAME computation the committed state derives
                         // from, so emission and state are self-consistent.
+                        // FINDING 5: the validity argmax carries the FULL-ROW
+                        // NaN flag on device (every dtype, every entry); the
+                        // old FP32-only 8-entry host probe and its extra sync
+                        // are gone - one sync drains argmax + flag.
                         NDArray* shortenLogits = planOutputs[config->logitsOutputIdx];
                         REQUIRE_TRUE(shortenLogits != nullptr && shortenLogits->rankOf() >= 2, 0,
                                      "autoregressive_decode: shortened rerun logits output is "
                                      "invalid at step %d", step);
                         LongType shortenVocab = shortenLogits->sizeAt(shortenLogits->rankOf() - 1);
                         NDArray::prepareSpecialUse({rerunScratch}, {shortenLogits});
-                        BUILD_SINGLE_SELECTOR(shortenLogits->dataType(), argmaxLauncher,
+                        BUILD_SINGLE_SELECTOR(shortenLogits->dataType(), argmaxValidityLauncher,
                                               (stream, shortenLogits->specialBuffer(),
                                                rerunScratch->specialBuffer(),
                                                shortenVocab),
                                               SD_FLOAT_TYPES);
-                        LongType shortenedToken = -1;
-                        cudaMemcpyAsync(&shortenedToken, rerunScratch->specialBuffer(),
-                                        sizeof(LongType), cudaMemcpyDeviceToHost, *stream);
-                        // Bounded NaN probe rides the required readback sync
-                        // (same inputs as the guarded pass-1 rerun; a NaN here
-                        // is the same poisoning class and must stay loud).
-                        float shortenTop8[8] = {};
-                        bool shortenProbe = shortenVocab >= 8
-                                && shortenLogits->dataType() == DataType::FLOAT32;
-                        if (shortenProbe) {
-                            cudaMemcpyAsync(shortenTop8, shortenLogits->specialBuffer(),
-                                            8 * sizeof(float), cudaMemcpyDeviceToHost, *stream);
-                        }
+                        struct { LongType argmax; LongType nanFlag; } shortenReadback = {};
+                        cudaMemcpyAsync(&shortenReadback, rerunScratch->specialBuffer(),
+                                        sizeof(shortenReadback), cudaMemcpyDeviceToHost, *stream);
                         NDArray::registerSpecialUse({rerunScratch}, {shortenLogits});
                         cudaError_t shortenSync = cudaStreamSynchronize(*stream);
                         REQUIRE_TRUE(shortenSync == cudaSuccess, 0,
                                      "autoregressive_decode: shortened rerun readback sync "
                                      "failed at step %d: %s", step,
                                      cudaGetErrorString(shortenSync));
-                        bool shortenNan = false;
-                        if (shortenProbe) {
-                            for (int i = 0; i < 8; i++) {
-                                if (std::isnan(shortenTop8[i])) { shortenNan = true; break; }
-                            }
-                        }
+                        LongType shortenedToken = shortenReadback.argmax;
+                        const bool shortenNan = shortenReadback.nanFlag != 0;
                         REQUIRE_TRUE(!shortenNan, 0,
                                      "autoregressive_decode: SHORTEN REEXEC NaN step=%d - "
                                      "width-1 re-execution produced NaN logits; refusing to "
