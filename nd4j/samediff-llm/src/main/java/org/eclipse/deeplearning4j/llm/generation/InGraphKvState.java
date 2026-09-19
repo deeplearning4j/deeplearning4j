@@ -229,6 +229,17 @@ class InGraphKvState implements AutoCloseable {
     ConstraintMasker constraintMasker;
     Set<Integer> stopTokenIds;
     int eosTokenId;
+    /**
+     * Session-owned speculative-depth override (review round 4, finding 1):
+     * set by {@code GenerationSession.setSpeculativeDepth}. Null = follow the
+     * pipeline's adaptive K bucket. Unlike the old strategy-rewrite approach,
+     * the override is a REAL depth control: it does not flip the decode
+     * strategy away from SPECULATIVE, so the MTP predictor resources stay
+     * attached at K=0 and the native loop keeps maintaining the predictor
+     * cache ("MTP resources present, drafting disabled, predictor
+     * maintained") instead of bypassing the maintenance implementation.
+     */
+    volatile Integer forcedSpecDepth;
 
     // ── Capacity / shape metadata ────────────────────────────────────────────────────────────────
     long maxKvLen;          // total KV buffer length (the hard capacity ceiling)

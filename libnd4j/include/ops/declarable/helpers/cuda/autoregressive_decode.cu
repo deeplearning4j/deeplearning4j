@@ -1784,27 +1784,29 @@ void autoregressiveDecode(
             if (draftSlot + 1 > mtpChainSampled) mtpChainSampled = draftSlot + 1;
         }
 
-        // Capacity gate (packet C1): the converted row must fit the predictor
-        // mask and both KV buffers BEFORE any predictor-cache indexing. A caller
-        // bug surfaces here as a loud bounds failure, not a silent clamp.
-        // KV row dimension: production predictor caches are [1, seq, heads, dim]
-        // (rows on dim 1); some tiny fixtures use [1, heads, seq, dim] (rows on
-        // dim 2). Accept either layout - a genuinely undersized cache fails
-        // both ways, and the self-row probe keeps its per-layout bound.
+        // Capacity gate (packet C1 / review round 4, finding E): the converted
+        // row must fit the predictor mask and both KV buffers BEFORE any
+        // predictor-cache indexing. CACHE LAYOUT CONTRACT: the MTP predictor
+        // KV cache is BSHD [batch, maxSeqLen, heads, dim] (kv_scatter.h:148,
+        // kvInPlaceWriteBSHD reads cacheMaxSeqLen = sizeAt(1)) - the SEQUENCE
+        // dimension is dim 1, unambiguously. A rank-4 cache with the wrong
+        // dimension order is a fixture/contract bug and fails loudly here.
         REQUIRE_TRUE(config->mtpKvBuffers[0] != nullptr && config->mtpKvBuffers[1] != nullptr,
                      0, "autoregressive_decode: CUDA MTP predictor KV buffers are unavailable");
-        const LongType kvRows0 = std::max(config->mtpKvBuffers[0]->sizeAt(1),
-                                          config->mtpKvBuffers[0]->sizeAt(2));
-        const LongType kvRows1 = std::max(config->mtpKvBuffers[1]->sizeAt(1),
-                                          config->mtpKvBuffers[1]->sizeAt(2));
+        REQUIRE_TRUE(config->mtpKvBuffers[0]->rankOf() == 4 && config->mtpKvBuffers[1]->rankOf() == 4,
+                     0, "autoregressive_decode: CUDA MTP predictor KV buffers must be rank 4 "
+                        "[batch, maxSeqLen, heads, dim]");
+        const LongType kvRows0 = config->mtpKvBuffers[0]->sizeAt(1);
+        const LongType kvRows1 = config->mtpKvBuffers[1]->sizeAt(1);
         REQUIRE_TRUE(
             predictorRow < mtpMaskLen
                 && predictorRow < kvRows0
                 && predictorRow < kvRows1,
             0,
             "autoregressive_decode: CUDA MTP predictor row %lld (target position %lld) "
-            "is outside cache/mask capacity",
-            (long long)predictorRow, (long long)targetTokenPosition);
+            "is outside cache/mask capacity (seq capacity %lld/%lld, mask %lld)",
+            (long long)predictorRow, (long long)targetTokenPosition,
+            (long long)kvRows0, (long long)kvRows1, (long long)mtpMaskLen);
 
         NDArray::prepareSpecialUse(
             {config->mtpPositionOffset, config->mtpCachePosition, config->mtpCausalMask}, {});
@@ -4400,13 +4402,20 @@ void autoregressiveDecode(
                 && config->targetHiddenOutputIdx >= 0
                 && config->targetHiddenOutputIdx < numPlanOutputs
                 && planOutputs[config->targetHiddenOutputIdx] != nullptr) {
-            // Publish the just-consumed pair (token@kvJustWritten, target
-            // hidden for position kvJustWritten - the hidden the target
-            // produced BEFORE consuming it, i.e. its output at the previous
-            // position), run the predictor on it, then let the epilogue
-            // below install the authoritative (h(currentPosition-1 output),
-            // token@currentPosition) pair afterwards.
-            setMtpNextInputCuda(sampledToken, 0, kvJustWritten);
+            // CONSUME THE SAVED PRE-STEP PAIR (review round 4, finding B/2):
+            // the previous step's epilogue published the pending pair
+            // (inputToken@currentPosition, h(currentPosition-1)) - the exact
+            // pair the target JUST consumed at currentPosition. The input
+            // token is ALREADY in config->mtpInputIds; sampledToken is the
+            // NEWLY EMITTED token, NOT the consumed input, so re-publishing
+            // it here wrote the next token into the previous token's KV row
+            // (encoded-oracle signature: key 702 where 701 is required).
+            // Only the SCALARS need re-publishing (target row = kvJustWritten
+            // - 1); the pair content is untouched, then the maintenance
+            // forward consumes it. The epilogue below afterwards overwrites
+            // the recursive-carry side effects with the authoritative
+            // (h(currentPosition-1 output), token@currentPosition) pair.
+            setMtpNextInputCuda(config->mtpInputIds, 0, kvJustWritten);
             executeMtpCuda(kvJustWritten, 0, false);
         }
 

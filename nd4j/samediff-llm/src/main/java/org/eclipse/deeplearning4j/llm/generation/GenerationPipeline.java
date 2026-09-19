@@ -1550,6 +1550,31 @@ public class GenerationPipeline implements AutoCloseable {
         return adaptiveSpecK;
     }
 
+    /**
+     * Resolve the EFFECTIVE speculative depth for this native decode call
+     * (review round 4, finding 1): the session's forced override wins when
+     * set; otherwise the adaptive bucket (max when uninitialized). The result
+     * is clamped to the configured maximum and to the frozen plan's actual
+     * window capacity (W - 1 proposal slots; {@code frozenWindow} is the
+     * frozen input width). A forced value exceeding the frozen capacity is
+     * rejected loudly rather than silently clamped - the caller asked for a
+     * depth the captured plan cannot serve.
+     */
+    private int effectiveSpecK(InGraphKvState state) {
+        int configuredMax = config != null ? config.getMaxSpeculativeTokens() : 0;
+        int adaptive = adaptiveSpecK < 0 ? configuredMax : adaptiveSpecK;
+        int resolved = state.forcedSpecDepth != null ? state.forcedSpecDepth : adaptive;
+        int effective = Math.min(configuredMax, resolved);
+        int frozenWindow = state.decodeInputIds != null ? (int) state.decodeInputIds.size(1) : 1;
+        int frozenCapacity = Math.max(0, frozenWindow - 1);
+        if (state.forcedSpecDepth != null && effective > frozenCapacity) {
+            throw new IllegalStateException("Session forced speculative depth " + state.forcedSpecDepth
+                    + " exceeds the frozen plan capacity " + frozenCapacity
+                    + " (window " + frozenWindow + "); recapture with a wider window");
+        }
+        return Math.min(effective, frozenCapacity);
+    }
+
     private GenerationResult generateInternal(int[] promptTokenIds, int maxNewTokens) {
         adjustAdaptiveSpecK();
         // Single-model mode: no separate embedTokens model was provided.
@@ -4107,9 +4132,9 @@ public class GenerationPipeline implements AutoCloseable {
                     // specK > 0 only when decodePolicy.kind == SPECULATIVE and windowMax = specK+1.
                     if (decodePolicy.kind == DecodePolicyKind.SPECULATIVE && config != null
                             && config.getMaxSpeculativeTokens() > 0) {
-                        // P02: adaptive bucket may be < configured max (0 = scalar fast path).
-                        int effK = Math.min(config.getMaxSpeculativeTokens(),
-                                adaptiveSpecK < 0 ? config.getMaxSpeculativeTokens() : adaptiveSpecK);
+                        // Review round 4, finding 1: the session's forced depth
+                        // override wins over the adaptive bucket.
+                        int effK = effectiveSpecK(state);
                         op.withSpeculativeDecoding(effK, 1 /* NGRAM */);
                         op.withActualSequenceLengthExtIdx(state.actualSeqLenExtIdx);
                     }
@@ -4210,9 +4235,14 @@ public class GenerationPipeline implements AutoCloseable {
                         (int) state.decodeInputIds.size(1));
                 if (decodePolicy.kind == DecodePolicyKind.SPECULATIVE && config != null
                         && config.getMaxSpeculativeTokens() > 0) {
-                    // P02: adaptive bucket may be < configured max (0 = scalar fast path).
-                    int effK = Math.min(config.getMaxSpeculativeTokens(),
-                            adaptiveSpecK < 0 ? config.getMaxSpeculativeTokens() : adaptiveSpecK);
+                    // Review round 4, finding 1: the session's forced depth
+                    // override wins over the adaptive bucket. The MTP RESOURCES
+                    // are attached whenever the session owns a plan REGARDLESS of
+                    // effK (including effK=0): the native K=0 maintenance path is
+                    // defined by "MTP resources present, drafting disabled",
+                    // which the native loop detects from metadata presence while
+                    // specK=0.
+                    int effK = effectiveSpecK(state);
                     boolean hasMtpPlan = state.mtpPlanHandle != null && !state.mtpPlanHandle.isNull();
                     op.withSpeculativeDecoding(
                             effK,
@@ -5103,12 +5133,20 @@ public class GenerationPipeline implements AutoCloseable {
          * {@link GenerationPipeline#setSamplingConfig}); this control exists for the same-session K-transition
          * contract: the reviewer's P02 evidence requires forcing K=1 → K=0 → K=1 within one continuing
          * session with the retained predictor state, which the pipeline-level setter cannot reach (an open
-         * session deliberately keeps its captured sampler). The override affects only {@code state.sampling}'s
-         * decode strategy resolution for subsequent {@code continueGeneration}/{@code generate} calls and does
-         * not touch pipeline-level configuration, plan capture, or the native plan.
+         * session deliberately keeps its captured sampler).
          *
-         * @param specK the forced speculative depth for this session (0 = scalar fast path, no drafting);
-         *              must be within [0, configured maxSpeculativeTokens]
+         * <p>REAL DEPTH CONTROL (review round 4, finding 1): the requested integer is retained on the
+         * session state and resolved at each decode call against the adaptive bucket and the frozen plan
+         * capacity. The decode strategy is NOT rewritten here: a session that owns MTP predictor resources
+         * keeps them attached at K=0, so the native loop takes the resource-present K=0 path (scalar-only
+         * target steps WITH predictor maintenance) instead of bypassing the maintenance implementation.
+         * The override affects only the depth/strategy resolution for subsequent
+         * {@code continueGeneration}/{@code generate} calls and does not touch pipeline-level configuration,
+         * plan capture, or the native plan.</p>
+         *
+         * @param specK the forced speculative depth for this session (0 = scalar-only target steps with
+         *              predictor maintenance when MTP resources exist); must be within
+         *              [0, configured maxSpeculativeTokens]
          */
         public void setSpeculativeDepth(int specK) {
             checkThread();
@@ -5118,14 +5156,16 @@ public class GenerationPipeline implements AutoCloseable {
                 throw new IllegalArgumentException("Speculative depth " + specK
                         + " outside [0," + maxK + "]");
             }
-            // Decode strategy resolution reads state.sampling each call
-            // (resolveDecodePolicy(state.sampling, config)); swapping just the strategy steers the next
-            // continuations to the requested K without rebuilding the captured sampler object.
-            state.sampling = state.sampling.toBuilder()
-                    .decodeStrategy(specK == 0
-                            ? SamplingConfig.DecodeStrategy.GREEDY
-                            : SamplingConfig.DecodeStrategy.SPECULATIVE)
-                    .build();
+            // Depth validation happens again at each decode call against the ACTUAL
+            // frozen plan capacity (the state's frozen window envelope minus the
+            // carry row); the configured maximum is only a first gate here.
+            state.forcedSpecDepth = specK;
+        }
+
+        /** The session's forced speculative depth override; null = follow the adaptive bucket. */
+        Integer forcedSpecDepthForInspection() {
+            requireOpen();
+            return state.forcedSpecDepth;
         }
 
         /**

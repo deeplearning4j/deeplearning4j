@@ -641,8 +641,19 @@ void autoregressiveDecode(
 
     // Qwen3.5's bundled predictor is an independent scalar DSP plan. Its
     // external-input addresses are stable for the whole decode call.
-    graph::NativeDynamicShapePlan* mtpPlan_cpu = useMtp_cpu ? config->mtpPlanHandle : nullptr;
-    graph::Context* mtpContext_cpu = useMtp_cpu
+    // MTP METADATA vs MTP DRAFTING (review round 4, finding D/5 - CUDA
+    // mirror): the predictor RESOURCES (plan, context, ext-input wiring) are
+    // gated on metadata presence, NOT on useMtp_cpu (which additionally
+    // requires specK>0). With the Java-side K=0 wiring fixed, the session
+    // now attaches MTP resources at effective K=0, and the CPU epilogue's
+    // maintenance/publication paths must keep the predictor state advancing
+    // across scalar-only stretches ("MTP resources present, drafting
+    // disabled, predictor maintained").
+    const bool mtpMetadataReady_cpu = config->mtpPlanHandle != nullptr
+                                      && config->mtpExtInputContext != nullptr;
+    graph::NativeDynamicShapePlan* mtpPlan_cpu = (useMtp_cpu || mtpMetadataReady_cpu)
+        ? config->mtpPlanHandle : nullptr;
+    graph::Context* mtpContext_cpu = (useMtp_cpu || mtpMetadataReady_cpu)
         ? reinterpret_cast<graph::Context*>(config->mtpExtInputContext) : nullptr;
     std::vector<NDArray*> mtpExtInputsVec_cpu;
     std::vector<NDArray*> mtpPlanOutputsVec_cpu;
@@ -652,7 +663,7 @@ void autoregressiveDecode(
     int mtpNumOutputs_cpu = 0;
     LongType mtpMaskLen_cpu = 0;
 
-    if (useMtp_cpu) {
+    if (mtpPlan_cpu != nullptr && mtpContext_cpu != nullptr) {
         REQUIRE_TRUE(mtpContext_cpu != nullptr, 0,
                      "autoregressive_decode: MTP CPU context is null");
         mtpNumExtInputs_cpu = config->mtpNumPlanExternalInputs;
@@ -726,21 +737,30 @@ void autoregressiveDecode(
                      "must be >= 1, got %lld",
                      (long long)position);
         const LongType predictorRow = position - 1;
-        // KV row dimension: production caches are [1, seq, heads, dim] (rows on
-        // dim 1); some tiny fixtures use [1, heads, seq, dim] (rows on dim 2).
-        const LongType kvRows0_cpu = std::max(config->mtpKvBuffers[0]->sizeAt(1),
-                                              config->mtpKvBuffers[0]->sizeAt(2));
-        const LongType kvRows1_cpu = std::max(config->mtpKvBuffers[1]->sizeAt(1),
-                                              config->mtpKvBuffers[1]->sizeAt(2));
-        REQUIRE_TRUE(
-            predictorRow < mtpMaskLen_cpu
+        // CACHE LAYOUT CONTRACT (review round 4, finding E): the MTP predictor
+        // KV cache is BSHD [batch, maxSeqLen, heads, dim] (kv_scatter.h:148,
+        // kvInPlaceWriteBSHD reads cacheMaxSeqLen = sizeAt(1)) - the SEQUENCE
+        // dimension is dim 1, unambiguously. No max() heuristic: a transposed
+        // cache where heads > seq would otherwise pass the old check.
+        REQUIRE_TRUE(config->mtpKvBuffers[0] != nullptr && config->mtpKvBuffers[1] != nullptr,
+                     0, "autoregressive_decode: MTP CPU predictor KV buffers are unavailable");
+        REQUIRE_TRUE(config->mtpKvBuffers[0]->rankOf() == 4 && config->mtpKvBuffers[1]->rankOf() == 4,
+                     0, "autoregressive_decode: MTP CPU predictor KV buffers must be rank 4 "
+                        "[batch, maxSeqLen, heads, dim]");
+        const LongType kvRows0_cpu = config->mtpKvBuffers[0]->sizeAt(1);
+        const LongType kvRows1_cpu = config->mtpKvBuffers[1]->sizeAt(1);
+        REQUIRE_TRUE(predictorRow < mtpMaskLen_cpu
                 && predictorRow < kvRows0_cpu
                 && predictorRow < kvRows1_cpu,
             0,
             "autoregressive_decode: MTP CPU predictor row %lld (target position %lld) "
-            "is outside cache/mask capacity",
-            (long long)predictorRow, (long long)position);
-        REQUIRE_TRUE(useMtp_cpu, 0,
+            "is outside cache/mask capacity (seq capacity %lld/%lld, mask %lld)",
+            (long long)predictorRow, (long long)position,
+            (long long)kvRows0_cpu, (long long)kvRows1_cpu, (long long)mtpMaskLen_cpu);
+        // DRAFTING gate: the maintenance callers below may run executeMtpCpu
+        // with useMtp_cpu false (resource-present K=0); a null plan is still
+        // a hard error.
+        REQUIRE_TRUE(mtpPlan_cpu != nullptr && mtpContext_cpu != nullptr, 0,
                      "autoregressive_decode: attempted MTP CPU execution while MTP is disabled");
         config->mtpInputIds->p(0, tokenId);
         config->mtpPositionOffset->p(0, predictorRow);
@@ -1623,6 +1643,60 @@ void autoregressiveDecode(
                         nextMtpPosition_cpu = currentPosition + 1;
                         mtpWrittenThrough_cpu = currentPosition;
                         specRowArgmax_cpu[0] = shortenedToken;
+
+                        // RECURRENT FEEDBACK AFTER RECOVERY (review round 4,
+                        // finding C/4): the ordinary GDN/conv feedback above ran
+                        // from the MULTI-ROW rerun outputs, but the shortened
+                        // width-1 re-execution just produced REPLACEMENT outputs
+                        // in the same planOutputs slots. Re-commit the feedback
+                        // from those finalized outputs so the retained state
+                        // advances through the FINALIZED consumed-input prefix
+                        // (width 1), not the superseded multi-row prefix. This
+                        // matters whenever a graph's recurrent outputs do not
+                        // alias their input storage; an in-place graph conceals
+                        // it. The publication is deliberately the LAST write: no
+                        // token storage or predictor work below re-runs the
+                        // target.
+                        if (config->numGdnStatePairs > 0
+                                && config->gdnStateExtIndices != nullptr
+                                && config->gdnStateOutputIndices != nullptr) {
+                            for (int s = 0; s < config->numGdnStatePairs; s++) {
+                                int outIdx = config->gdnStateOutputIndices[s];
+                                int extIdx = config->gdnStateExtIndices[s];
+                                REQUIRE_TRUE(outIdx >= 0 && outIdx < numPlanOutputs
+                                                 && extIdx >= 0 && extIdx < numExtInputs,
+                                             0, "autoregressive_decode: invalid GDN state mapping "
+                                                "after shortened rerun at step %d pair %d", step, s);
+                                NDArray* src = planOutputs[outIdx];
+                                NDArray* dst = extInputs[extIdx];
+                                REQUIRE_TRUE(src != nullptr && dst != nullptr, 0,
+                                             "autoregressive_decode: null GDN state mapping "
+                                             "after shortened rerun at step %d pair %d", step, s);
+                                REQUIRE_TRUE(copyRecurrentFeedback(src, dst), 0,
+                                             "autoregressive_decode: GDN state feedback copy failed "
+                                             "after shortened rerun at step %d pair %d", step, s);
+                            }
+                        }
+                        if (config->numConvStatePairs > 0
+                                && config->convStateExtIndices != nullptr
+                                && config->convStateOutputIndices != nullptr) {
+                            for (int s = 0; s < config->numConvStatePairs; s++) {
+                                int outIdx = config->convStateOutputIndices[s];
+                                int extIdx = config->convStateExtIndices[s];
+                                REQUIRE_TRUE(outIdx >= 0 && outIdx < numPlanOutputs
+                                                 && extIdx >= 0 && extIdx < numExtInputs,
+                                             0, "autoregressive_decode: invalid conv state mapping "
+                                                "after shortened rerun at step %d pair %d", step, s);
+                                NDArray* src = planOutputs[outIdx];
+                                NDArray* dst = extInputs[extIdx];
+                                REQUIRE_TRUE(src != nullptr && dst != nullptr, 0,
+                                             "autoregressive_decode: null conv state mapping "
+                                             "after shortened rerun at step %d pair %d", step, s);
+                                REQUIRE_TRUE(copyRecurrentFeedback(src, dst), 0,
+                                             "autoregressive_decode: conv state feedback copy failed "
+                                             "after shortened rerun at step %d pair %d", step, s);
+                            }
+                        }
                     }
                 }
             }
@@ -1931,6 +2005,51 @@ void autoregressiveDecode(
             }
             specPreviousToken_cpu = specCurrentToken_cpu;
             specCurrentToken_cpu = nextTokenId;
+        }
+        // ── MTP K=0 MAINTENANCE + AUTHORITATIVE PUBLICATION (review round 4,
+        // findings B/2 + D/5, CPU mirror of the CUDA epilogue) ────────────
+        // When drafting is OFF but MTP metadata is present (resource-present
+        // K=0: forced session depth 0 or adaptive bucket 0), the predictor
+        // must keep advancing exactly as the CUDA epilogue does:
+        //   1. MAINTENANCE: consume the SAVED pre-step pair - the pending
+        //      token already in mtpInputIds (the target's just-consumed
+        //      input, published by the previous step's epilogue) at predictor
+        //      row currentPosition - 1. Do NOT overwrite the token with
+        //      nextTokenId: that is the NEWLY EMITTED token and would write
+        //      the next token into the previous token's KV row (encoded-oracle
+        //      signature: key 702 where 701 is required).
+        //   2. PUBLICATION: refresh the carry from the target's hidden row 0
+        //      and publish the newly emitted token as the next pending input
+        //      at row currentPosition. This also fixes the split-call
+        //      boundary defect: the old code updated only the token/scalars
+        //      on this path, leaving the predictor's recursive self-hidden
+        //      installed as the carry (finding D/5).
+        // When drafting is ON, the proposing path's publication block already
+        // handled carry + pending input for the committed prefix; nothing to
+        // do here.
+        if (!useMtp_cpu && mtpMetadataReady_cpu) {
+            REQUIRE_TRUE(config->targetHiddenOutputIdx >= 0
+                             && config->targetHiddenOutputIdx < numPlanOutputs
+                             && planOutputs[config->targetHiddenOutputIdx] != nullptr,
+                         0, "autoregressive_decode: target hidden output is unavailable for MTP");
+            // 1. Maintenance consumes the saved pair (token untouched).
+            //    Scalars: the pair for the token the target just consumed sits
+            //    at predictor row currentPosition - 1 (r = target position - 1).
+            if (currentPosition >= 1) {
+                config->mtpPositionOffset->p(0, currentPosition - 1);
+                config->mtpCachePosition->p(0, currentPosition - 1);
+                BUILD_SINGLE_SELECTOR(config->mtpCausalMask->dataType(), updateCausalMaskCpu,
+                                      (config->mtpCausalMask->buffer(), currentPosition - 1,
+                                       mtpMaskLen_cpu),
+                                      SD_FLOAT_TYPES);
+                (void)executeMtpCpu(config->mtpInputIds->e<LongType>(0), currentPosition);
+            }
+            // 2. Authoritative publication: target-conditioned carry + newly
+            //    emitted pending token at row currentPosition.
+            setMtpTargetCarryCpu(planOutputs[config->targetHiddenOutputIdx], 0);
+            config->mtpInputIds->p(0, nextTokenId);
+            config->mtpPositionOffset->p(0, currentPosition);
+            config->mtpCachePosition->p(0, currentPosition);
         }
         if (useMtp_cpu) {
             // The target hidden row was committed immediately after target

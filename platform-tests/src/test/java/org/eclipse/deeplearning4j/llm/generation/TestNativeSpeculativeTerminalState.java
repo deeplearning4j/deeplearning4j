@@ -169,8 +169,11 @@ public class TestNativeSpeculativeTerminalState {
             if (predictor) {
                 SDVariable carry = placeholder("carry", Nd4j.zeros(DataType.FLOAT, 1, 1, 1));
                 output(carry.add("hidden", 1));
-                output(placeholder("key", Nd4j.zeros(DataType.FLOAT, 1, 1, CACHE, 1)).add("key_echo", 1));
-                output(placeholder("value", Nd4j.zeros(DataType.FLOAT, 1, 1, CACHE, 1)).add("value_echo", 1));
+                // KV cache layout contract (review round 4, finding E): BSHD
+                // [batch, maxSeqLen, heads, dim] - the SEQUENCE capacity is
+                // dim 1. The native capacity gate enforces this layout.
+                output(placeholder("key", Nd4j.zeros(DataType.FLOAT, 1, CACHE, 1, 1)).add("key_echo", 1));
+                output(placeholder("value", Nd4j.zeros(DataType.FLOAT, 1, CACHE, 1, 1)).add("value_echo", 1));
             } else {
                 float[] rows = new float[width];
                 for (int i = 0; i < width; i++) rows[i] = i;
