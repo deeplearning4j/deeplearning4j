@@ -1151,6 +1151,16 @@ void autoregressiveDecode(
         int specConsumed_cpu = 0;
         bool specShouldStop_cpu = false;
         LongType specRowArgmax_cpu[33] = {};
+        // IMMUTABLE VERIFICATION WINNERS (review round 5, finding 1): captured
+        // once per proposing step from the FIRST verification pass, never
+        // overwritten by any rerun readout. The rerun disagreement comparison
+        // and any recovery path must compare against THIS array, not against
+        // specRowArgmax_cpu[0] (which the scalar-binding rerun block replaces
+        // with the rerun winner - comparing against it made the disagreement
+        // gate self-compare and skip shortening/matcher repair on real A->B
+        // flips). Declared at step scope: the finalize block below reads it
+        // outside the capture scope.
+        LongType verifyRowArgmax_cpu[33] = {};
         // Exact pre-provisional-accept matcher checkpoint: the truncated multi-row
         // commit path (RERUN_SHORTEN_REEXEC, review round 3 finding 3) restores it
         // before re-accepting the single authoritative token, so the suffix never
@@ -1176,6 +1186,9 @@ void autoregressiveDecode(
             // Pre-rerun row-0 verification argmax, for the NaN-guard diagnostic
             // (the rerun refresh below overwrites specRowArgmax_cpu[0]).
             const LongType specRowArgmaxOriginal_cpu = specRowArgmax_cpu[0];
+            // Snapshot the immutable verification winners for this step (see
+            // the declaration above for the round-5 rationale).
+            for (int i = 0; i < 33; i++) verifyRowArgmax_cpu[i] = specRowArgmax_cpu[i];
 
             // Adaptive chain-cap accounting (see declaration above the step loop).
             // Count UNCONDITIONALLY: row p's argmax is the target's continuation
@@ -1297,6 +1310,12 @@ void autoregressiveDecode(
                              static_cast<int>(rerunStatus), specAccepted_cpu,
                              proposedCount_cpu);
                 if (useScalarTarget) {
+                    // RERUN WINNER INTO SEPARATE STORAGE (review round 5,
+                    // finding 1): the rerun's row-0 readout replaces the
+                    // specRowArgmax_cpu[0] slot (downstream publication reads
+                    // that array), but the IMMUTABLE verification winners
+                    // (verifyRowArgmax_cpu) captured above are what every
+                    // disagreement comparison uses.
                     NDArray* scalarLogits = planOutputs[config->logitsOutputIdx];
                     NDArray::preparePrimaryUse({}, {scalarLogits});
                     specRowArgmax_cpu[0] = cpuArgmax(scalarLogits->buffer(),
@@ -1343,13 +1362,18 @@ void autoregressiveDecode(
                     int gdnOut0 = config->gdnStateOutputIndices[0];
                     NDArray* gdnOut = (gdnOut0 >= 0 && gdnOut0 < numPlanOutputs)
                         ? planOutputs[gdnOut0] : nullptr;
-                    if (gdnOut != nullptr && gdnOut->lengthOf() >= 4
-                            && gdnOut->dataType() == DataType::FLOAT32) {
+                    // DTYPE-SAFE STATE SAMPLE (review round 5, finding 3, CPU
+                    // mirror): convert through the state's OWN dtype selector -
+                    // no FP32-only gating, no raw reinterpretation.
+                    if (gdnOut != nullptr && gdnOut->lengthOf() >= 4) {
                         NDArray::preparePrimaryUse({}, {gdnOut});
-                        const float* stateSample =
-                            reinterpret_cast<const float*>(gdnOut->buffer());
+                        const char* stateBase = reinterpret_cast<const char*>(gdnOut->buffer());
                         for (LongType i = 0; i < 4; i++) {
-                            if (std::isnan(stateSample[i])) {
+                            float sampled = 0.0f;
+                            BUILD_SINGLE_SELECTOR(gdnOut->dataType(), sampleFirstRowValueCpu,
+                                                  (stateBase + i * gdnOut->sizeOfT(), &sampled),
+                                                  SD_FLOAT_TYPES);
+                            if (std::isnan(sampled)) {
                                 rerunStateNan_cpu = true;
                                 break;
                             }
@@ -1498,7 +1522,7 @@ void autoregressiveDecode(
             // accepted prefix rowArgmax[i] == draftIds_cpu[i], so the store loop
             // below emits rowArgmax[0..n-1] directly.
             LongType rowArgmax[33];
-            for (int i = 0; i < 33; i++) rowArgmax[i] = specRowArgmax_cpu[i];
+            for (int i = 0; i < 33; i++) rowArgmax[i] = verifyRowArgmax_cpu[i];
             int acceptedDrafts = specAccepted_cpu >= 0 ? specAccepted_cpu : 0;
             int n = specConsumed_cpu;
             // Rerun-refreshed emission (CUDA mirror): when the accepted-prefix
@@ -1527,12 +1551,11 @@ void autoregressiveDecode(
                     // DISAGREEMENT GATE (CUDA mirror of rerunRefreshedToken !=
                     // argmaxDst[0]): the authoritative refresh rewrites the
                     // emission only when the rerun's row-0 readout DISAGREES
-                    // with the verify row 0. On agreement the provisional
-                    // multi-row commit stands - truncating it anyway pays a
-                    // width-1 re-execution per step and re-derives the same
-                    // tokens one at a time (observed: every partial multi-row
-                    // commit was shortened, collapsing committed counts).
-                    const LongType supersededRow0_cpu = rowArgmax[0];
+                    // with the VERIFY row 0 - compared against the IMMUTABLE
+                    // verification winner (review round 5, finding 1), never
+                    // against specRowArgmax_cpu[0] which the scalar-binding
+                    // rerun block already replaced with the rerun winner.
+                    const LongType supersededRow0_cpu = verifyRowArgmax_cpu[0];
                     const bool rerunDisagrees = refreshed != supersededRow0_cpu;
                     if (rerunDisagrees) {
                         DSP_DIAG(KV_CACHE,
@@ -1622,9 +1645,17 @@ void autoregressiveDecode(
                             }
                             NDArray::registerPrimaryUse({}, {shortenLogits});
                         }
-                        // Emission AND state now come from this pass.
+                        // Emission AND state now come from this pass. The
+                        // FINALIZED EMISSION SEQUENCE (review round 5, finding
+                        // 1): both arrays that downstream consumers read are
+                        // rewritten here so emission, matcher, predictor
+                        // publication, and metrics all share ONE committed
+                        // sequence (the no-scalar-binding one-row flip
+                        // previously published the OLD pending token from
+                        // specRowArgmax_cpu while emitting the new one).
                         rerunRefreshedToken_cpu = shortenedToken;
                         rowArgmax[0] = shortenedToken;
+                        specRowArgmax_cpu[0] = shortenedToken;
                         // SHORTENED EMISSION REPAIR: the truncation invalidates the
                         // stale verification suffix rows [1..); zero them so the
                         // store loop below emits exactly the width-1 readout.
@@ -2006,36 +2037,41 @@ void autoregressiveDecode(
             specPreviousToken_cpu = specCurrentToken_cpu;
             specCurrentToken_cpu = nextTokenId;
         }
-        // ── MTP K=0 MAINTENANCE + AUTHORITATIVE PUBLICATION (review round 4,
-        // findings B/2 + D/5, CPU mirror of the CUDA epilogue) ────────────
-        // When drafting is OFF but MTP metadata is present (resource-present
-        // K=0: forced session depth 0 or adaptive bucket 0), the predictor
-        // must keep advancing exactly as the CUDA epilogue does:
-        //   1. MAINTENANCE: consume the SAVED pre-step pair - the pending
-        //      token already in mtpInputIds (the target's just-consumed
-        //      input, published by the previous step's epilogue) at predictor
+        // ── MTP SCALAR-PATH MAINTENANCE + AUTHORITATIVE PUBLICATION (review
+        // rounds 4+5, findings B/2 + D/5, CPU mirror of the CUDA epilogue) ─
+        // This block runs whenever the SCALAR path executes and MTP metadata
+        // exists - i.e. whenever the proposing-path publication block did NOT
+        // run. Two distinct cases:
+        //   K=0 (useMtp_cpu false): no predictor forward ran for the just-
+        //      consumed token, so MAINTENANCE must consume the SAVED pre-step
+        //      pair - the pending token already in mtpInputIds at predictor
         //      row currentPosition - 1. Do NOT overwrite the token with
         //      nextTokenId: that is the NEWLY EMITTED token and would write
         //      the next token into the previous token's KV row (encoded-oracle
         //      signature: key 702 where 701 is required).
-        //   2. PUBLICATION: refresh the carry from the target's hidden row 0
-        //      and publish the newly emitted token as the next pending input
-        //      at row currentPosition. This also fixes the split-call
-        //      boundary defect: the old code updated only the token/scalars
-        //      on this path, leaving the predictor's recursive self-hidden
-        //      installed as the carry (finding D/5).
-        // When drafting is ON, the proposing path's publication block already
-        // handled carry + pending input for the committed prefix; nothing to
-        // do here.
-        if (!useMtp_cpu && mtpMetadataReady_cpu) {
+        //   K>0 with ZERO proposals (useMtp_cpu true, proposedCount_cpu == 0):
+        //      the proposal stage already ran a predictor forward for the
+        //      current row (executeMtpCpu with maxPropose_cpu == 0), which
+        //      installed its RECURSIVE self-hidden as the carry - no second
+        //      maintenance forward is needed, only the authoritative replace.
+        //   In BOTH cases the PUBLICATION step is mandatory: refresh the
+        //   carry from the target's hidden row 0 and publish the newly
+        //   emitted token as the next pending input at row currentPosition
+        //   (the split-call boundary defect: the old code updated only the
+        //   token/scalars on this path, leaving the recursive self-hidden
+        //   installed as the carry).
+        // When drafting is ON and proposals WERE produced, the proposing
+        // path's publication block already handled carry + pending input for
+        // the committed prefix; nothing to do here.
+        if (mtpMetadataReady_cpu && (!useMtp_cpu || proposedCount_cpu == 0)) {
             REQUIRE_TRUE(config->targetHiddenOutputIdx >= 0
                              && config->targetHiddenOutputIdx < numPlanOutputs
                              && planOutputs[config->targetHiddenOutputIdx] != nullptr,
                          0, "autoregressive_decode: target hidden output is unavailable for MTP");
-            // 1. Maintenance consumes the saved pair (token untouched).
-            //    Scalars: the pair for the token the target just consumed sits
-            //    at predictor row currentPosition - 1 (r = target position - 1).
-            if (currentPosition >= 1) {
+            // 1. Maintenance consumes the saved pair (token untouched) - K=0
+            //    only. With K>0 zero-proposal the predictor already executed
+            //    the current row; only its carry needs replacing.
+            if (!useMtp_cpu && currentPosition >= 1) {
                 config->mtpPositionOffset->p(0, currentPosition - 1);
                 config->mtpCachePosition->p(0, currentPosition - 1);
                 BUILD_SINGLE_SELECTOR(config->mtpCausalMask->dataType(), updateCausalMaskCpu,
@@ -2047,16 +2083,6 @@ void autoregressiveDecode(
             // 2. Authoritative publication: target-conditioned carry + newly
             //    emitted pending token at row currentPosition.
             setMtpTargetCarryCpu(planOutputs[config->targetHiddenOutputIdx], 0);
-            config->mtpInputIds->p(0, nextTokenId);
-            config->mtpPositionOffset->p(0, currentPosition);
-            config->mtpCachePosition->p(0, currentPosition);
-        }
-        if (useMtp_cpu) {
-            // The target hidden row was committed immediately after target
-            // execution. Pair it with the just-sampled, still-unwritten token.
-            // PREDICTOR ROW MAPPING (packet 2): the pending token x_(P+1) pairs
-            // with h_P at predictor row r = P (r = target position - 1), where
-            // P = currentPosition is the position the target just consumed.
             config->mtpInputIds->p(0, nextTokenId);
             config->mtpPositionOffset->p(0, currentPosition);
             config->mtpCachePosition->p(0, currentPosition);

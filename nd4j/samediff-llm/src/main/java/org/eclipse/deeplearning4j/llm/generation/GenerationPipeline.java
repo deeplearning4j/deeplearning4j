@@ -2952,6 +2952,14 @@ public class GenerationPipeline implements AutoCloseable {
             state.cancelRequested = false;
             state.terminalResult = null;
             state.closed = false;
+            // OVERRIDE LIFETIME (review round 5, finding 4): a reused fixed-buffer
+            // state entering a NEW logical generation/session must not inherit the
+            // previous session's forcedSpecDepth - session A's setSpeculativeDepth(0)
+            // would silently keep session B scalar-only. The override lives only for
+            // CONTINUATION of the session that set it (that path never passes a
+            // reuseState through here); this boundary initializes a new logical
+            // generation on retained buffers.
+            state.forcedSpecDepth = null;
         }
         return state;
         } catch (RuntimeException | Error failure) {

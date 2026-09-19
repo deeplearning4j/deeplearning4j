@@ -123,6 +123,19 @@ static void updateAttentionMaskLauncher(const cudaStream_t* stream,
 }
 
 /**
+ * HOST-SIDE sample of one element from an already-downloaded raw buffer into
+ * a float, converted through the buffer's own dtype (review round 5, finding
+ * 3): the GDN-state NaN probe reads host bytes after the single batched D2H
+ * and must interpret them in the state's dtype - a raw memcpy into float[]
+ * misreads BF16/FP16 (packing) and FP64 (halves), and for narrow dtypes read
+ * PAST the tensor's storage. Mirrors the CPU helper's sampleFirstRowValueCpu.
+ */
+template <typename T>
+static void sampleRawHostValue(const void* valuePtr, void* out) {
+    *static_cast<float*>(out) = static_cast<float>(*reinterpret_cast<const T*>(valuePtr));
+}
+
+/**
  * CUDA kernel: update position_ids for the next decode step.
  *
  * Sets positionIds[0] = newPosition.
@@ -362,7 +375,20 @@ static SD_KERNEL void fillWindowPositionGridKernel(void* vPos,
  * (device-side reduction via __syncthreads_or; dtype-portable self-inequality
  * check, so the guard covers every float dtype the kernel is instantiated
  * for - finding 5). The two-slot output is opt-in because the MTP draft
- * argmax writes into a single slot at draftSlot offset.
+ * argmax writes into a single slot at draftSlot offset. The validity
+ * tracking work is likewise opt-in (kTrackValidity), so the plain draft
+ * argmax does not pay the NaN scan or the cooperative OR.
+ *
+ * REDUCTION CONTRACT (review round 5, finding 4): the CPU argmax scans
+ * upward and updates only on strictly larger values, so it returns the
+ * LOWEST vocabulary index among equal maxima. This kernel must match that
+ * contract for backend parity: the reduction carries (value, index)
+ * candidates and prefers the SMALLER index on exact ties (a plain
+ * left-entry-preferring reduction retains whichever strided chunk the
+ * winning value came from, not the smaller index). Initialization uses
+ * the FIRST element each thread observes (or the synthetic lowest-possible
+ * candidate when the thread saw no element), so very-negative finite rows
+ * select the true maximum instead of losing to -1e30 at index 0.
  */
 template <typename T, bool kWriteValidity = false>
 static SD_KERNEL void argmaxKernel(const void* vLogits, void* vOutput, LongType vocabSize) {
@@ -373,17 +399,32 @@ static SD_KERNEL void argmaxKernel(const void* vLogits, void* vOutput, LongType 
     auto logits = reinterpret_cast<const T*>(vLogits);
     auto output = reinterpret_cast<LongType*>(vOutput);
 
-    T localMax = static_cast<T>(-1e30);
-    LongType localIdx = 0;
+    T localMax;
+    LongType localIdx;
+    if (threadIdx.x < vocabSize) {
+        localMax = logits[threadIdx.x];
+        localIdx = threadIdx.x;
+        for (LongType i = threadIdx.x + blockDim.x; i < vocabSize; i += blockDim.x) {
+            T val = logits[i];
+            // Strict > keeps the LOWEST index on ties (CPU parity).
+            if (val > localMax) {
+                localMax = val;
+                localIdx = i;
+            }
+        }
+    } else {
+        // Thread saw no element: a candidate that can never win the
+        // tie-broken reduction (any real finite/NaN element beats it via
+        // the index rule; NaN handling below).
+        localMax = static_cast<T>(-1e30);
+        localIdx = vocabSize;  // out of range = lower priority than any real index
+    }
     bool localNan = false;
-
-    for (LongType i = threadIdx.x; i < vocabSize; i += blockDim.x) {
-        T val = logits[i];
-        // IEEE self-inequality: true only for NaN, in every float dtype.
-        if (val != val) localNan = true;
-        if (val > localMax) {
-            localMax = val;
-            localIdx = i;
+    if (kWriteValidity) {
+        for (LongType i = threadIdx.x; i < vocabSize; i += blockDim.x) {
+            T val = logits[i];
+            // IEEE self-inequality: true only for NaN, in every float dtype.
+            if (val != val) { localNan = true; break; }
         }
     }
 
@@ -391,19 +432,34 @@ static SD_KERNEL void argmaxKernel(const void* vLogits, void* vOutput, LongType 
     sMaxIdx[threadIdx.x] = localIdx;
     __syncthreads();
 
-    // Reduction
+    // Reduction: prefer larger value; on EXACT ties prefer the smaller
+    // vocabulary index (CPU lowest-index contract). NaN compares false
+    // under both > and <, so an all-NaN strided chunk keeps its entry
+    // without propagating NaN; the validity flag reports the row's NaN
+    // content separately.
     for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
         if (threadIdx.x < stride) {
-            if (sMaxVal[threadIdx.x + stride] > sMaxVal[threadIdx.x]) {
-                sMaxVal[threadIdx.x] = sMaxVal[threadIdx.x + stride];
-                sMaxIdx[threadIdx.x] = sMaxIdx[threadIdx.x + stride];
+            T other = sMaxVal[threadIdx.x + stride];
+            LongType otherIdx = sMaxIdx[threadIdx.x + stride];
+            bool takeOther;
+            if (other > sMaxVal[threadIdx.x]) {
+                takeOther = true;
+            } else if (other == sMaxVal[threadIdx.x]) {
+                takeOther = otherIdx < sMaxIdx[threadIdx.x];
+            } else {
+                takeOther = false;
+            }
+            if (takeOther) {
+                sMaxVal[threadIdx.x] = other;
+                sMaxIdx[threadIdx.x] = otherIdx;
             }
         }
         __syncthreads();
     }
 
     // Full-row validity reduction: uniform cooperative call, no shared memory.
-    unsigned blockNan = static_cast<unsigned>(__syncthreads_or(localNan ? 1 : 0));
+    unsigned blockNan = kWriteValidity
+        ? static_cast<unsigned>(__syncthreads_or(localNan ? 1 : 0)) : 0;
 
     if (threadIdx.x == 0) {
         output[0] = sMaxIdx[0];
@@ -3650,7 +3706,9 @@ void autoregressiveDecode(
                     }
                     // GDN head-of-pair-0 sample rides the same wait (same class:
                     // a NaN here means the rerun executed from mutated state).
-                    float gdnSample[4] = {};
+                    // Bytes are converted per the state's own dtype after the
+                    // single sync (dtype-safe: no raw float[] reinterpretation).
+                    bool rerunStateNan = false;
                     NDArray* gdnOut = nullptr;
                     if (config->numGdnStatePairs > 0 && config->gdnStateOutputIndices != nullptr) {
                         // Probe the head of GDN state pair 0's OUTPUT from the
@@ -3664,10 +3722,22 @@ void autoregressiveDecode(
                             ? planOutputs[gdnOut0] : nullptr;
                     }
                     const bool gdnProbe = gdnOut != nullptr && gdnOut->lengthOf() >= 4;
+                    // DTYPE-SAFE STATE SAMPLE (review round 5, finding 3): the
+                    // probe copies exactly ONE element's bytes per slot and
+                    // converts on the host through the state's OWN dtype. The
+                    // previous code memcpy'd 16 raw bytes into float[] - for
+                    // BF16/FP16 state that read PAST the tensor's storage and
+                    // for FP64 it reinterpreted halves; neither was a
+                    // conversion. sampleFirstRowValueCpu converts for every
+                    // SD_FLOAT_TYPES dtype from a device-visible pointer? No -
+                    // it reads HOST memory, so the bytes must arrive on the
+                    // host first: copy 4 * sizeOfT raw bytes, then convert.
+                    std::vector<uint8_t> gdnRaw;
                     if (gdnProbe) {
                         NDArray::prepareSpecialUse({}, {gdnOut});
-                        cudaMemcpyAsync(gdnSample, gdnOut->specialBuffer(),
-                                        sizeof(gdnSample), cudaMemcpyDeviceToHost, *stream);
+                        gdnRaw.resize(static_cast<size_t>(4) * gdnOut->sizeOfT());
+                        cudaMemcpyAsync(gdnRaw.data(), gdnOut->specialBuffer(),
+                                        gdnRaw.size(), cudaMemcpyDeviceToHost, *stream);
                     }
                     NDArray::registerSpecialUse({rerunScratch}, {rerunLogits});
                     // The emission/storage path below re-reads argmaxDst from host
@@ -3681,11 +3751,15 @@ void autoregressiveDecode(
                                  cudaGetErrorString(refreshSync));
                     const LongType rerunRefreshedTokenReadback = rerunReadback.argmax;
                     const bool rerunNanFlag = rerunReadback.nanFlag != 0;
-                    if (gdnProbe) NDArray::registerSpecialUse({}, {gdnOut});
-                    bool rerunStateNan = false;
                     if (gdnProbe) {
+                        NDArray::registerSpecialUse({}, {gdnOut});
+                        const char* gdnBase = reinterpret_cast<const char*>(gdnRaw.data());
                         for (int i = 0; i < 4; i++) {
-                            if (std::isnan(gdnSample[i])) { rerunStateNan = true; break; }
+                            float sampled = 0.0f;
+                            BUILD_SINGLE_SELECTOR(gdnOut->dataType(), sampleRawHostValue,
+                                                  (gdnBase + i * gdnOut->sizeOfT(), &sampled),
+                                                  SD_FLOAT_TYPES);
+                            if (std::isnan(sampled)) { rerunStateNan = true; break; }
                         }
                     }
                     rerunRefreshedToken = rerunRefreshedTokenReadback;
@@ -3703,25 +3777,24 @@ void autoregressiveDecode(
                              rerunTop8[4], rerunTop8[5], rerunTop8[6], rerunTop8[7]);
                     }
 
-                    // FAIL-LOUD NaN GUARD (K=1 state-poisoning regression): the
-                    // refresh D2H above already completed a stream sync, so the
-                    // flag reflects the rerun's committed results. The DEVICE
+                    // FAIL-LOUD NON-FINITE GUARD (K=1 state-poisoning regression):
+                    // the refresh D2H above already completed a stream sync, so
+                    // the flag reflects the rerun's committed results. The DEVICE
                     // full-row flag covers EVERY float dtype and EVERY vocab
-                    // entry (finding 5) - NaN logits or a NaN GDN-state sample
-                    // mean the rerun executed from mutated (post-verification)
-                    // recurrent state - committing it would poison every later
-                    // step (silent token-0 collapse, /tmp/mtp-k1-diag.log). Fail
-                    // here, naming the geometry and step; never continue with
-                    // poisoned state.
+                    // entry (finding 5) - non-finite logits or a non-finite GDN
+                    // state sample mean the rerun's committed results are not
+                    // trustworthy; committing them would poison every later step
+                    // (silent token-0 collapse, /tmp/mtp-k1-diag.log). Fail here
+                    // with the observed values and execution context; the guard
+                    // does NOT assert a specific cause (review round 5, finding
+                    // 3) - causal attribution needs a dedicated trace.
                     const bool rerunLogitsNan = rerunNanFlag;
-                    bool rerunStateNanDone = rerunStateNan;  // state probe drained above
-                    (void)rerunStateNanDone;
                     REQUIRE_TRUE(!(rerunLogitsNan || rerunStateNan), 0,
-                                 "autoregressive_decode: SPEC RERUN NaN GUARD step=%d "
+                                 "autoregressive_decode: SPEC RERUN NON-FINITE GUARD step=%d "
                                  "geometry=%s rerunArgmax=%lld verifyRow0=%lld "
-                                 "rerunLogitsNaN=%d rerunGdnStateNaN=%d - the "
-                                 "accepted-prefix rerun executed from mutated recurrent "
-                                 "state; refusing to commit poisoned state",
+                                 "rerunLogitsNaN=%d rerunGdnStateNaN=%d - the rerun "
+                                 "produced non-finite committed results; refusing to "
+                                 "commit them (cause requires a dedicated trace)",
                                  step, scalarRerun ? "scalar-width-1" : "window",
                                  (long long)rerunRefreshedToken, (long long)argmaxDst[0],
                                  rerunLogitsNan ? 1 : 0, rerunStateNan ? 1 : 0);
