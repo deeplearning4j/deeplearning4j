@@ -1718,7 +1718,19 @@ void autoregressiveDecode(
         NDArray::registerSpecialUse({liveArray}, {});
     };
 
-    auto executeMtpCuda = [&](LongType position, int draftSlot, bool writeTargetRow) {
+    auto executeMtpCuda = [&](LongType targetTokenPosition, int draftSlot, bool writeTargetRow) {
+        // PREDICTOR ROW MAPPING (review-ruled convention, packet 2): the argument
+        // is a TARGET input-token position P; the predictor consumes the pair
+        // (x_(P+1), h_P) at predictor row r = P - 1, with predictor RoPE = r and
+        // predictor KV slot = r. Callers keep target coordinates; this boundary
+        // converts exactly once. Bounds: P >= 1 so r >= 0 (a negative row is a
+        // caller bug, not a clamp candidate).
+        REQUIRE_TRUE(targetTokenPosition >= 1, 0,
+                     "autoregressive_decode: CUDA MTP target position %lld maps to "
+                     "negative predictor row",
+                     (long long)targetTokenPosition);
+        const LongType predictorRow = targetTokenPosition - 1;
+
         // P02 adaptive-K (review finding 1): MTP RESOURCES vs MTP DRAFTING.
         // Maintenance forwards (K=0 scalar-only steps, draftSlot==0,
         // writeTargetRow==false) consume the freshly published carry/token to
@@ -1746,31 +1758,49 @@ void autoregressiveDecode(
             if (draftSlot + 1 > mtpChainSampled) mtpChainSampled = draftSlot + 1;
         }
 
+        // Capacity gate (packet C1): the converted row must fit the predictor
+        // mask and both KV buffers BEFORE any predictor-cache indexing. A caller
+        // bug surfaces here as a loud bounds failure, not a silent clamp.
+        // KV row dimension: production predictor caches are [1, seq, heads, dim]
+        // (rows on dim 1); some tiny fixtures use [1, heads, seq, dim] (rows on
+        // dim 2). Accept either layout - a genuinely undersized cache fails
+        // both ways, and the self-row probe keeps its per-layout bound.
+        REQUIRE_TRUE(config->mtpKvBuffers[0] != nullptr && config->mtpKvBuffers[1] != nullptr,
+                     0, "autoregressive_decode: CUDA MTP predictor KV buffers are unavailable");
+        const LongType kvRows0 = std::max(config->mtpKvBuffers[0]->sizeAt(1),
+                                          config->mtpKvBuffers[0]->sizeAt(2));
+        const LongType kvRows1 = std::max(config->mtpKvBuffers[1]->sizeAt(1),
+                                          config->mtpKvBuffers[1]->sizeAt(2));
+        REQUIRE_TRUE(
+            predictorRow < mtpMaskLen
+                && predictorRow < kvRows0
+                && predictorRow < kvRows1,
+            0,
+            "autoregressive_decode: CUDA MTP predictor row %lld (target position %lld) "
+            "is outside cache/mask capacity",
+            (long long)predictorRow, (long long)targetTokenPosition);
+
         NDArray::prepareSpecialUse(
             {config->mtpPositionOffset, config->mtpCachePosition, config->mtpCausalMask}, {});
+        // Predictor RoPE position AND KV write slot are BOTH predictorRow:
+        // row r consumes x_(r+1) at rope=r, slot=r (packet 2). The previous
+        // code wrote rope=targetP and cache=targetP (or, in the WIP,
+        // cache=targetP-1) - either split put the KV row at a slot that did
+        // not match the row the prefill convention established, duplicating
+        // the tail pair and shifting every draft row one past its input.
         updatePositionIdsKernel<<<1, 1, 0, *stream>>>(
-            config->mtpPositionOffset->specialBuffer(), position);
-        // SLOT = POSITION - 1 INVARIANT (review round 3, finding 4 phase 2):
-        // the predictor's KV row for RoPE position P lives at CACHE SLOT P-1,
-        // exactly like the prefill rows (prefill row t = (x_(t+1), h_t) sits at
-        // slot t with RoPE position t+1 because the prefill position offset is
-        // one). The helper previously wrote cachePosition = position, which put
-        // every native/warmup row one slot past its RoPE position and made the
-        // warmup row a CONTENT DUPLICATE of the prefill tail. The in-graph
-        // attention reads the write slot from cache_position and applies RoPE
-        // from position_offset - decoupling them here makes the whole cache
-        // slot = position - 1 with no duplicate row.
+            config->mtpPositionOffset->specialBuffer(), predictorRow);
         updatePositionIdsKernel<<<1, 1, 0, *stream>>>(
-            config->mtpCachePosition->specialBuffer(), position - 1);
+            config->mtpCachePosition->specialBuffer(), predictorRow);
         BUILD_SINGLE_SELECTOR(config->mtpCausalMask->dataType(), updateCausalMaskLauncher,
                               (stream, config->mtpCausalMask->specialBuffer(),
-                               position - 1, mtpMaskLen),
+                               predictorRow, mtpMaskLen),
                               SD_FLOAT_TYPES);
         NDArray::registerSpecialUse(
             {config->mtpPositionOffset, config->mtpCachePosition, config->mtpCausalMask}, {});
 
         // KV self-row visibility probe: sample the predictor K row at THIS call's
-        // position BEFORE execution (must be zero/masked or stale prior draft) and
+        // predictor row BEFORE execution (must be zero/masked or stale prior draft) and
         // gate whether the plan's in-graph write actually lands where attention
         // will read it. Byte-identical between calls would mean the predictor plan
         // never writes its own KV row (degenerate self-attention -> uniform logits
@@ -1781,10 +1811,10 @@ void autoregressiveDecode(
             const LongType heads = kBuf->sizeAt(2);
             const LongType dim = kBuf->sizeAt(3);
             const LongType rowElems = heads * dim;
-            if (position >= 0 && position < kBuf->sizeAt(1)) {
+            if (predictorRow >= 0 && predictorRow < kBuf->sizeAt(1)) {
                 std::vector<float> kSample(std::min<LongType>(8, rowElems));
                 const void* rowPtr = static_cast<const char*>(kBuf->specialBuffer())
-                                     + position * rowElems * kBuf->sizeOfT();
+                                     + predictorRow * rowElems * kBuf->sizeOfT();
                 // HALF/BF16 need conversion; sample raw bytes then expand via Nd4j-free path.
                 std::vector<uint8_t> raw(kSample.size() * kBuf->sizeOfT());
                 cudaMemcpyAsync(raw.data(), rowPtr, raw.size(),
@@ -1805,8 +1835,8 @@ void autoregressiveDecode(
                     }
                 }
                 DSP_DIAG(KV_CACHE,
-                         "MTP_KV_SELFROW pos=%lld dtype=%d before=[%.4f,%.4f,%.4f,%.4f]",
-                         (long long)position, (int)kBuf->dataType(),
+                         "MTP_KV_SELFROW row=%lld targetPos=%lld dtype=%d before=[%.4f,%.4f,%.4f,%.4f]",
+                         (long long)predictorRow, (long long)targetTokenPosition, (int)kBuf->dataType(),
                          vals[0], vals[1], vals[2], vals[3]);
             }
         }
@@ -1820,8 +1850,8 @@ void autoregressiveDecode(
         if (DSP_DIAG_ENABLED(KV_CACHE) && draftSlot == 0
                 && config->mtpKvInputExtIndices != nullptr) {
             NDArray* kBuf = config->mtpKvBuffers[0];
-            if (position >= 0 && position < kBuf->sizeAt(1)) {
-                kvSelfRowAfterPos = position;
+            if (predictorRow >= 0 && predictorRow < kBuf->sizeAt(1)) {
+                kvSelfRowAfterPos = predictorRow;
                 kvSelfRowAfterBuf = kBuf;
             }
         }
@@ -1829,7 +1859,7 @@ void autoregressiveDecode(
         // Save admission for this invocation: the counter remains 3 on later calls.
         const bool captureThisCall = captureMtpInputs && mtpSnapshotCall < 3;
         if (captureThisCall) {
-            tensorDiagnostics.enqueueTensorSnapshot(++mtpSnapshotCall, position,
+            tensorDiagnostics.enqueueTensorSnapshot(++mtpSnapshotCall, predictorRow,
                 reinterpret_cast<void*>(*stream),
                 {"mtp_input_ids", "mtp_target_hidden_states", "mtp_position_offset",
                  "mtp_cache_position", "mtp_causal_mask", "mtp_past_key_values.0.key",
@@ -1872,15 +1902,15 @@ void autoregressiveDecode(
                 stagingArrays.push_back(staging);
             }
             if (!stagingArrays.empty()) {
-                tensorDiagnostics.enqueueTensorSnapshot(mtpSnapshotCall, position,
+                tensorDiagnostics.enqueueTensorSnapshot(mtpSnapshotCall, predictorRow,
                     reinterpret_cast<void*>(*stream), stagingNames, stagingArrays);
             }
         }
         std::string mtpFailureDetail;
         if (mtpStatus != Status::OK) mtpFailureDetail = nestedPlanFailureDetail();
         REQUIRE_TRUE(mtpStatus == Status::OK, 0,
-                     "%s [autoregressive_decode nested CUDA MTP plan position=%lld, status=%s (%d)]",
-                     mtpFailureDetail.c_str(), (long long)position,
+                     "%s [autoregressive_decode nested CUDA MTP plan targetPos=%lld predictorRow=%lld, status=%s (%d)]",
+                     mtpFailureDetail.c_str(), (long long)targetTokenPosition, (long long)predictorRow,
                      graph::dsp::dspStatusName(mtpStatus), static_cast<int>(mtpStatus));
         REQUIRE_TRUE(config->mtpLogitsOutputIdx >= 0
                          && config->mtpLogitsOutputIdx < mtpNumOutputs
@@ -1894,7 +1924,7 @@ void autoregressiveDecode(
         NDArray* mtpLogits = mtpPlanOutputs[config->mtpLogitsOutputIdx];
         NDArray* mtpHidden = mtpPlanOutputs[config->mtpHiddenOutputIdx];
         if (captureThisCall) {
-            tensorDiagnostics.enqueueTensorSnapshot(mtpSnapshotCall, position,
+            tensorDiagnostics.enqueueTensorSnapshot(mtpSnapshotCall, predictorRow,
                 reinterpret_cast<void*>(*stream),
                 {"output/pre-argmax/mtp_logits", "output/pre-argmax/mtp_hidden"},
                 {mtpLogits, mtpHidden});
@@ -1903,7 +1933,7 @@ void autoregressiveDecode(
             // every prior row must be unchanged vs the pre-exec snapshot. A missing
             // current row or a moved prior row directly exposes the in-call
             // write-vs-refresh ordering defect.
-            tensorDiagnostics.enqueueTensorSnapshot(mtpSnapshotCall, position,
+            tensorDiagnostics.enqueueTensorSnapshot(mtpSnapshotCall, predictorRow,
                 reinterpret_cast<void*>(*stream),
                 {"postexec/mtp_past_key_values.0.key", "postexec/mtp_past_key_values.0.value",
                  "postexec/mtp_causal_mask", "postexec/mtp_cache_position",
@@ -2091,7 +2121,7 @@ void autoregressiveDecode(
                              "dtype=%s vocab=%lld "
                              "top5=[%lld:%.4f %lld:%.4f %lld:%.4f %lld:%.4f %lld:%.4f] "
                              "err=%d",
-                             (long long)position, draftSlot, (long long)immDraft[0],
+                             (long long)targetTokenPosition, draftSlot, (long long)immDraft[0],
                              immDtypeName, (long long)immVocab,
                              (long long)immTop5[0],
                              scoredCount > 0 ? scored[0].first : 0.0f,
@@ -2106,9 +2136,9 @@ void autoregressiveDecode(
                              static_cast<int>(immErr));
                 } else {
                     DSP_DIAG(KV_CACHE,
-                             "MTP_ARGMAX_IMMEDIATE pos=%lld slot=%d draft=%lld "
+                             "MTP_ARGMAX_IMMEDIATE targetPos=%lld slot=%d draft=%lld "
                              "logit0_raw=0x%08x err=%d",
-                             (long long)position, draftSlot, (long long)immDraft[0],
+                             (long long)targetTokenPosition, draftSlot, (long long)immDraft[0],
                              static_cast<unsigned>(immLogit[0]),
                              static_cast<int>(immErr));
                 }
@@ -2124,7 +2154,7 @@ void autoregressiveDecode(
             // between argmax and its snapshot. This constructor borrows the buffer.
             NDArray selected(mtpDraftDevice->dataBuffer(), config->mtpCachePosition->shapeInfo(),
                              mtpDraftDevice->getContext(), mtpDraftDevice->offset() + draftSlot);
-            tensorDiagnostics.enqueueTensorSnapshot(mtpSnapshotCall, position,
+            tensorDiagnostics.enqueueTensorSnapshot(mtpSnapshotCall, predictorRow,
                 reinterpret_cast<void*>(*stream), {"output/post-argmax/draft_id"}, {&selected});
         }
 
@@ -2185,9 +2215,9 @@ void autoregressiveDecode(
             sd::graph::dspDestroyEvent(carryEvt);
         }
         DSP_DIAG(KV_CACHE,
-                 "MTP_CALL pos=%lld slot=%d - predictor invoked (chained input token; "
+                 "MTP_CALL row=%lld targetPos=%lld slot=%d - predictor invoked (chained input token; "
                  "carry = previous call self-hidden, epilogue overrides for next step's slot 0)",
-                 (long long)position, draftSlot);
+                 (long long)predictorRow, (long long)targetTokenPosition, draftSlot);
 
         if (writeTargetRow) {
             REQUIRE_TRUE(config->planOwnsKvScatter
@@ -2349,7 +2379,18 @@ void autoregressiveDecode(
 
     auto setMtpNextInputCuda = [&](NDArray* tokenSource,
                                    LongType tokenIndex,
-                                   LongType nextPosition) {
+                                   LongType nextTargetPosition) {
+        // PREDICTOR ROW MAPPING (packet 2, same convention as executeMtpCuda):
+        // nextTargetPosition P denotes the TARGET position of the NEXT predictor
+        // call's input token; that call consumes it at predictor row r = P - 1
+        // (rope = r, slot = r). The token stored here is x_(P+1) - the input the
+        // row r = P - 1 consumes - so the retained pending pair describes rope
+        // P-1, next write slot P-1. Bounds: P >= 1 (negative row = caller bug).
+        REQUIRE_TRUE(nextTargetPosition >= 1, 0,
+                     "autoregressive_decode: CUDA MTP pending target position %lld maps "
+                     "to negative predictor row",
+                     (long long)nextTargetPosition);
+        const LongType nextPredictorRow = nextTargetPosition - 1;
         // P02 adaptive-K (review finding 1): same resources-vs-drafting split
         // as setMtpTargetCarryCuda - pending-input maintenance stays valid for
         // scalar-only steps while MTP metadata exists.
@@ -2365,14 +2406,10 @@ void autoregressiveDecode(
         NDArray::prepareSpecialUse(
             {config->mtpPositionOffset, config->mtpCachePosition},
             {tokenSource});
-        // SLOT = POSITION - 1 (review round 3, finding 4 phase 2): nextPosition
-        // is the RoPE position the NEXT predictor call will consume its input
-        // token at; its KV row belongs at cache slot nextPosition - 1. See the
-        // matching note in executeMtpCuda.
         updatePositionIdsKernel<<<1, 1, 0, *stream>>>(
-            config->mtpPositionOffset->specialBuffer(), nextPosition);
+            config->mtpPositionOffset->specialBuffer(), nextPredictorRow);
         updatePositionIdsKernel<<<1, 1, 0, *stream>>>(
-            config->mtpCachePosition->specialBuffer(), nextPosition - 1);
+            config->mtpCachePosition->specialBuffer(), nextPredictorRow);
         NDArray::registerSpecialUse(
             {config->mtpPositionOffset, config->mtpCachePosition},
             {tokenSource});
@@ -3897,12 +3934,15 @@ void autoregressiveDecode(
                 // fully-accepted committed row and left a permanent hole in the
                 // predictor KV cache (observed as acceptance collapse after the
                 // first full accept in K=1).
-                // Proposal write horizon: rows [base, base+proposedCount-1] were
-                // all written by the proposal loop (slot 0 with the epilogue's
-                // target carry, slots >= 1 with self-propagated predictor
-                // hidden). Retained committed rows are repaired below; rejected
-                // rows are hidden after the repair pass.
-                LongType mtpProposedThrough = basePosition + proposedCount - 1;
+                // PREDICTOR ROW GEOMETRY (packet 2): the proposal loop passed
+                // TARGET positions base..base+K-1 to executeMtpCuda, so the
+                // PREDICTOR rows written are [base-1, base+K-2] (r = P - 1).
+                // In predictor-row coordinates (m = consumedCount):
+                //   proposal write horizon (half-open): [base-1, base+K-1)
+                //   retained consumed rows:             [base-1, base+m-1)
+                //   rejected rows to mask:              [base+m-1, base+K-1)
+                //   pending row after publication:      base+m-1
+                //
                 // Predictor-side accepted-prefix repair. Chained proposal calls
                 // (slot>=1) wrote predictor KV rows [base+1, base+K-1] with each
                 // draft's own recursively propagated hidden as the carry input,
@@ -3941,6 +3981,10 @@ void autoregressiveDecode(
                 // EVERY proposal row is hidden below. The repair machinery stays
                 // for the multi-token contract's return.
                 for (int j = 0; j < consumedCount - 1; j++) {
+                    // Repair j (packet 2): token = finalizedEmitted[j], hidden =
+                    // targetHiddenRows[j], target token position = base+1+j,
+                    // PREDICTOR rope/slot = base+j (r = P - 1). executeMtpCuda
+                    // converts inside; the caller passes the TARGET position.
                     LongType repairPosition = basePosition + 1 + j;
                     setMtpTargetCarryCuda(
                         planOutputs[config->targetHiddenOutputIdx], j);
@@ -3949,28 +3993,40 @@ void autoregressiveDecode(
                     // so for repaired rows j in [0, consumedCount-2]:
                     // raw[j] == emitted[j] (all repaired rows are accepted
                     // drafts; the pending correction is NEVER a consumed input
-                    // and must not enter predictor KV). Predictor position
-                    // base+1+j consumed emitted[j].
+                    // and must not enter predictor KV). Predictor row
+                    // base+j consumes emitted[j] (target position base+1+j).
                     setMtpNextInputCuda(specArgmaxDevice, j, repairPosition);
                     executeMtpCuda(repairPosition, 0, false);
                     DSP_DIAG(KV_CACHE,
-                             "MTP_PREFIX_REPAIR step=%d position=%lld committedRow=%d "
+                             "MTP_PREFIX_REPAIR step=%d targetPos=%lld predictorRow=%lld committedRow=%d "
                              "carryRow=%d - rewriting predictor KV row with target hidden",
-                             step, (long long)repairPosition, j, carryRow);
+                             step, (long long)repairPosition, (long long)(repairPosition - 1), j, carryRow);
                 }
 
-                // Rejected proposal rows [base+consumedCount,
-                // base+proposedCount-1] were written with speculative carries
-                // and are NOT retained: hide them for the next step. The extent
-                // is the PROPOSAL write horizon, not the (now advanced) repair
-                // horizon.
+                // Rejected proposal rows (PREDICTOR rows [retainedEnd, proposedEnd),
+                // where proposedEnd = base+K-1 and retainedEnd = base+m-1 in
+                // predictor coordinates) were written with speculative carries
+                // and are NOT retained: hide them for the next step.
+                // Half-open predictor-space endpoints computed directly (packet
+                // C4): final consumedCount but ORIGINAL proposedCount - shortening
+                // a commit does not erase the cache rows written during drafting.
+                // nextMtpPosition = base+m is the next pending TARGET token
+                // position; its predictor row is nextMtpPosition - 1 = retainedEnd.
+                const LongType proposedPredictorEnd =
+                    basePosition + static_cast<LongType>(proposedCount) - 1;  // exclusive
+                const LongType retainedPredictorEnd =
+                    basePosition + static_cast<LongType>(consumedCount) - 1;  // exclusive
                 LongType nextMtpPosition = basePosition + consumedCount;
-                if (nextMtpPosition <= mtpProposedThrough) {
+                if (retainedPredictorEnd < proposedPredictorEnd) {
+                    REQUIRE_TRUE(retainedPredictorEnd >= 0, 0,
+                                 "autoregressive_decode: CUDA MTP rejected-row mask start "
+                                 "%lld invalid at step %d",
+                                 (long long)retainedPredictorEnd, step);
                     NDArray::prepareSpecialUse({config->mtpCausalMask}, {});
                     BUILD_SINGLE_SELECTOR(config->mtpCausalMask->dataType(),
                                           maskCausalRangeLauncher,
                                           (stream, config->mtpCausalMask->specialBuffer(),
-                                           nextMtpPosition, mtpProposedThrough + 1,
+                                           retainedPredictorEnd, proposedPredictorEnd,
                                            mtpMaskLen),
                                           SD_FLOAT_TYPES);
                     NDArray::registerSpecialUse({config->mtpCausalMask}, {});

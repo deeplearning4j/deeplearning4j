@@ -20,13 +20,20 @@
  *   carries = [7, 100, 101] -> keys [701, 10004, 10104]. key[2]=10104 (NOT
  *   10100 - that would mean the pending correction leaked into KV).
  *
+ * TEST 3 - COORDINATE SENSITIVITY (packet 5): a predictor whose key encodes
+ *   rope (10000x), carry (100x) and token pins the r = target position - 1
+ *   mapping end-to-end; see testPredictorRowEncodesRopeSlotAndToken.
+ *
  * TEST 2 - RERUN-PUBLICATION CORRECTNESS (verify-vs-rerun disagreement):
  *   Target logits DEPEND on actual_length: the verification pass runs at
  *   asl=WIDTH(4) and row 0's winner is draft 4; the authoritative rerun
  *   advances asl to consumedCount (2 < WIDTH) and row 0's winner becomes 2.
- *   The scalar refresh must flip emission to 2, and the predictor's pending
- *   input - a device copy taken inside setMtpNextInputCuda - must be 2 as
- *   well. The old stale-verification handoff published 4.
+ *   Wave-2 contract (review finding 3, commit e11e809280): on rerun
+ *   disagreement the stale verification suffix (the EOS correction
+ *   conditioned on the superseded token) is INVALID - the commit truncates
+ *   to the width-1 readout [2], the suffix re-derives on later steps, and
+ *   the predictor's pending input is the finalized 2 (from the width-1
+ *   pass), never the superseded verify token 4.
  */
 package org.eclipse.deeplearning4j.llm.generation;
 
@@ -59,6 +66,14 @@ public class TestMtpRerunScratchIsolation {
     private static final long DRAFT_TOKEN = 4;
     private static final long CORRECTION_TOKEN = 0;
     private static final long RERUN_TOKEN = 2;
+    /**
+     * Synthetic native target start position (packet 5). Predictor row mapping
+     * is r = target position - 1, so target base 1 maps to predictor base row 0:
+     * retained rows [0, m), pending predictor row m - 1 at commit m. All
+     * consumed-token/carry KV oracles and the pending position assertions below
+     * are unchanged under this origin.
+     */
+    private static final int BASE_TARGET_POSITION = 1;
 
     @Test
     public void testRepairConsumesOnlyConsumedInputTokens() {
@@ -99,31 +114,103 @@ public class TestMtpRerunScratchIsolation {
     @Test
     public void testRerunWinnerPublicationReachesPredictor() {
         // accepted=1: verify (asl=2) row 0 winner = draft 4; scalar rerun
-        // (asl=1) row 0 winner = 2. Emission, target pending input, and
-        // predictor pending input must ALL be the finalized 2 - never the
-        // superseded verification 4.
+        // (asl=1) row 0 winner = 2. Wave-2 truncate contract: the rerun
+        // disagreement invalidates the stale verification suffix, so the
+        // commit is the width-1 readout [2] alone; the sequence re-derives on
+        // later steps (budget allows WIDTH here, so the run continues to 4
+        // committed tokens total). The pending predictor input after step 0
+        // is the finalized rerun winner 2 - never the superseded verify 4 -
+        // which is the stale-handoff defect this fixture pins.
         try (Plan target = target(1, 40.0f, 10.0f, true);
              Plan predictor = predictor()) {
             runCommit(target, predictor, result -> {
-                assertEquals(2, result[1].getLong(0), "refreshed emission plus correction");
+                // Width-1 committed emission from the disagreeing step, then
+                // re-derived steps up to the WIDTH budget: emitted tokens are
+                // all the RERUN winner (the length-dependent row-0 winner is
+                // 2 at asl=1 for every re-derived step; no EOS correction
+                // row survives the truncation).
+                assertEquals(WIDTH, result[1].getLong(0),
+                        "width-1 refresh commit plus re-derived steps");
+                for (int i = 0; i < WIDTH; i++) {
+                    assertEquals(RERUN_TOKEN, result[0].getLong(i),
+                            "emitted token " + i + " must be the RERUN winner, "
+                                    + "not the verify winner");
+                }
                 // Finalized-emission acceptance: the flipped draft was NOT
                 // emitted, so the emitted-acceptance count is 0 even though
                 // the verification pass agreed on it (the verification
                 // agreement alone is not an emission fact).
                 assertEquals(0.0f, result[2].getFloat(8), 0.0f,
                         "accepted-EMITTED must count only drafts actually emitted");
-                assertEquals(RERUN_TOKEN, result[0].getLong(0),
-                        "emitted token 0 must be the RERUN winner, not the verify winner");
-                // Pending next input after consuming 2 rows = emitted[1] = the
-                // correction token (per the reviewer's consumed/pending table:
-                // the final emitted token stays pending, never consumed). The
-                // stale-handoff defect was emitted[0] - that is now the
-                // finalized rerun winner, not the superseded verify token.
-                assertEquals(CORRECTION_TOKEN, predictor.input("ids").getLong(0),
-                        "predictor pending input must be the pending correction, "
-                                + "with emitted[0] taken from the finalized rerun winner");
-                assertEquals(2, predictor.input("position").getLong(0));
-                assertEquals(2, predictor.input("cache_position").getLong(0));
+                // Pending predictor input = the last published pending token =
+                // the final committed emission's successor source. After the
+                // truncation and re-derivation the committed sequence is all
+                // RERUN_TOKEN; the last committed row's successor is the
+                // length-dependent row-0 winner again = RERUN_TOKEN. The
+                // superseded verify token (4) must NEVER appear here.
+                assertEquals(RERUN_TOKEN, predictor.input("ids").getLong(0),
+                        "predictor pending input must be the finalized winner, "
+                                + "not the superseded verification token");
+                assertEquals(BASE_TARGET_POSITION + WIDTH - 1L,
+                        predictor.input("position").getLong(0),
+                        "pending predictor rope = P + emitted - 1");
+                assertEquals(BASE_TARGET_POSITION + WIDTH - 1L,
+                        predictor.input("cache_position").getLong(0),
+                        "pending predictor slot = P + emitted - 1");
+            });
+        }
+    }
+
+    /**
+     * COORDINATE-SENSITIVE variant (packet 5): the carry-only fixtures cannot
+     * detect "right cache slot, wrong RoPE argument" because their predictor
+     * key does not depend on the separate position input. This predictor
+     * encodes ALL THREE inputs into the key:
+     * <pre>key = 10000*rope + 100*carry + token</pre>
+     * with rope from the predictor's position scalar and the write slot from
+     * its separate cache_position scalar (both via the production
+     * dotProductAttentionV2 cache path).
+     *
+     * <p>Oracle for target base P=1, K=3, accepted=2 (finalized consumed count
+     * m=3, correction 0 pending), using predictor row r = target position - 1:
+     * the proposal loop writes rows 0,1,2 at ropes 0,1,2; the repair pass
+     * rewrites rows 1,2 (j in [0, m-2]) with target hidden rows 100,101 and
+     * emitted tokens 4,4; row 0 keeps its draft-time (base token, initial
+     * carry) content. Expected retained keys:</p>
+     * <pre>
+     *   row 0: 10000*0 + 100*7   + 1 =   701
+     *   row 1: 10000*1 + 100*100 + 4 = 20004
+     *   row 2: 10000*2 + 100*101 + 4 = 30104
+     * </pre>
+     * A rope/slot split (r vs r+1) moves the 10000-granularity digit or the
+     * physical row, so any wrong offset lands somewhere other than these
+     * exact values. Rejected row 3 (draft-written, then masked) must stay
+     * invisible; the pending scalars must be rope == slot == 3.
+     */
+    @Test
+    public void testPredictorRowEncodesRopeSlotAndToken() {
+        try (Plan target = target(2, 40.0f, 10.0f, false);
+             Plan predictor = predictorPositionEncoded()) {
+            runCommit(target, predictor, result -> {
+                assertEquals(3, result[1].getLong(0), "two accepted drafts plus correction");
+                assertEquals(2, result[2].getFloat(8), 0.0f, "forced acceptance length");
+                float[] expectedKeys = {701f, 20004f, 30104f};
+                for (int q = 0; q < expectedKeys.length; q++) {
+                    assertEquals(expectedKeys[q],
+                            predictor.input("key").getFloat(0, q, 0, 0), 0.0f,
+                            "coordinate-encoded predictor key row " + q
+                                    + " (10000*rope + 100*carry + token)");
+                    assertEquals(expectedKeys[q] + 0.5f,
+                            predictor.input("value").getFloat(0, q, 0, 0), 0.0f,
+                            "coordinate-encoded predictor value row " + q);
+                }
+                assertEquals(3, predictor.input("position").getLong(0),
+                        "pending predictor rope = P+m-1");
+                assertEquals(3, predictor.input("cache_position").getLong(0),
+                        "pending predictor slot = P+m-1");
+                float rejectedBias = predictor.input("mask").getFloat(3);
+                assertTrue(rejectedBias <= -1e9f,
+                        "rejected proposal row must stay masked, got " + rejectedBias);
             });
         }
     }
@@ -138,9 +225,12 @@ public class TestMtpRerunScratchIsolation {
         predictor.input("key").assign(-1);
         predictor.input("value").assign(-1);
         predictor.input("carry").assign(7);
+        // Stage the target controls at the synthetic base position (packet 5).
+        target.input("position").assign(BASE_TARGET_POSITION);
+        target.input("cache_position").assign(BASE_TARGET_POSITION);
         try (INDArray embeddings = Nd4j.zeros(DataType.FLOAT, 1, 1, 1);
              INDArray table = Nd4j.ones(DataType.FLOAT, 2, 1);
-             INDArray positions = Nd4j.zeros(DataType.INT64, 1, 1)) {
+             INDArray positions = Nd4j.valueArrayOf(new long[]{1, 1}, BASE_TARGET_POSITION)) {
             AutoregressiveDecode op = new AutoregressiveDecode(
                     embeddings, table, target.input("ids"), target.input("mask"), positions, null,
                     target.executor.getNativePlanHandle(), target.executor.getCachedOpContext(),
@@ -148,7 +238,7 @@ public class TestMtpRerunScratchIsolation {
                     -1, -1, target.ext("mask"), -1, target.ext("ids"), target.out("logits"),
                     -1, target.ext("position"), target.ext("cache_position"),
                     new int[0], new int[0], new int[0], new int[0], new int[0], new int[0],
-                    WIDTH, 0, 0, 0, 0.0, 0, 0.0, 1.0, Set.of());
+                    WIDTH, 0, 0, BASE_TARGET_POSITION, 0.0, 0, 0.0, 1.0, Set.of());
             op.withDecodePolicy(AutoregressiveDecode.DECODE_STRATEGY_SPECULATIVE,
                             1, WIDTH, 1, 1, -1, 1, 1.0, 0.0, 0)
                     .withSpeculativeDecoding(K, AutoregressiveDecode.SPECULATOR_TYPE_MTP)
@@ -227,6 +317,38 @@ public class TestMtpRerunScratchIsolation {
      * value = key + 0.5, written through the production
      * dotProductAttentionV2 cache path.
      */
+    /**
+     * Coordinate-sensitive predictor (packet 5): key = 10000*rope + 100*carry
+     * + token, where rope comes from the predictor's position scalar. Every
+     * tensor input (token, carry, position) and the physical write slot
+     * (cache_position) is observable in the retained KV bytes.
+     */
+    private static Plan predictorPositionEncoded() {
+        Plan p = new Plan();
+        SDVariable ids = p.placeholder("ids", Nd4j.ones(DataType.INT64, 1, 1));
+        SDVariable carry = p.placeholder("carry", Nd4j.valueArrayOf(new long[]{1, 1, 1}, 7, DataType.FLOAT));
+        SDVariable mask = p.placeholder("mask",
+                Nd4j.valueArrayOf(new long[]{1, 1, 1, CACHE}, -Float.MAX_VALUE, DataType.FLOAT));
+        SDVariable rope = p.placeholder("position", Nd4j.zeros(DataType.INT64, 1));
+        SDVariable position = p.placeholder("cache_position", Nd4j.zeros(DataType.INT64, 1));
+        SDVariable key = p.placeholder("key", Nd4j.zeros(DataType.FLOAT, 1, CACHE, 1, 1));
+        SDVariable value = p.placeholder("value", Nd4j.zeros(DataType.FLOAT, 1, CACHE, 1, 1));
+        SDVariable tokenF = ids.reshape(1, 1, 1, 1).castTo(DataType.FLOAT);
+        SDVariable ropeF = rope.reshape(1, 1, 1, 1).castTo(DataType.FLOAT);
+        SDVariable k = carry.reshape(1, 1, 1, 1).mul(100).add(tokenF).add(ropeF.mul(10000));
+        SDVariable v = k.add(0.5);
+        p.output(p.graph.nn().dotProductAttentionV2("attention", k, v, k, null, null,
+                key, value, position, mask, 0.0, 0.0, false, false));
+        p.output(carry.add("hidden", 1));
+        float[] bias = new float[VOCAB];
+        bias[(int) DRAFT_TOKEN] = 40.0f;
+        SDVariable zero = ids.castTo(DataType.FLOAT).mul(0).reshape(1, 1, 1);
+        SDVariable rawLogits = zero.add(p.graph.constant(
+                Nd4j.createFromArray(bias).reshape(1, 1, VOCAB)));
+        p.output(p.graph.castTo("logits", rawLogits, DataType.FLOAT));
+        return p;
+    }
+
     private static Plan predictor() {
         Plan p = new Plan();
         SDVariable ids = p.placeholder("ids", Nd4j.ones(DataType.INT64, 1, 1));

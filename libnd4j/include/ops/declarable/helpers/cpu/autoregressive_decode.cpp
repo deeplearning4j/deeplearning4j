@@ -714,13 +714,39 @@ void autoregressiveDecode(
     };
 
     auto executeMtpCpu = [&](LongType tokenId, LongType position) -> LongType {
+        // PREDICTOR ROW MAPPING (packet 2, CPU mirror of executeMtpCuda): the
+        // argument is a TARGET input-token position P; the predictor consumes
+        // the pair (x_(P+1), h_P) at predictor row r = P - 1 (rope = r,
+        // slot = r). Callers keep target coordinates; this boundary converts
+        // exactly once. Bounds: P >= 1 and the converted row must fit the
+        // predictor mask and both KV buffers BEFORE any predictor-cache
+        // indexing - a caller bug surfaces here as a loud failure, not a clamp.
+        REQUIRE_TRUE(position >= 1, 0,
+                     "autoregressive_decode: MTP CPU target token position "
+                     "must be >= 1, got %lld",
+                     (long long)position);
+        const LongType predictorRow = position - 1;
+        // KV row dimension: production caches are [1, seq, heads, dim] (rows on
+        // dim 1); some tiny fixtures use [1, heads, seq, dim] (rows on dim 2).
+        const LongType kvRows0_cpu = std::max(config->mtpKvBuffers[0]->sizeAt(1),
+                                              config->mtpKvBuffers[0]->sizeAt(2));
+        const LongType kvRows1_cpu = std::max(config->mtpKvBuffers[1]->sizeAt(1),
+                                              config->mtpKvBuffers[1]->sizeAt(2));
+        REQUIRE_TRUE(
+            predictorRow < mtpMaskLen_cpu
+                && predictorRow < kvRows0_cpu
+                && predictorRow < kvRows1_cpu,
+            0,
+            "autoregressive_decode: MTP CPU predictor row %lld (target position %lld) "
+            "is outside cache/mask capacity",
+            (long long)predictorRow, (long long)position);
         REQUIRE_TRUE(useMtp_cpu, 0,
                      "autoregressive_decode: attempted MTP CPU execution while MTP is disabled");
         config->mtpInputIds->p(0, tokenId);
-        config->mtpPositionOffset->p(0, position);
-        config->mtpCachePosition->p(0, position);
+        config->mtpPositionOffset->p(0, predictorRow);
+        config->mtpCachePosition->p(0, predictorRow);
         BUILD_SINGLE_SELECTOR(config->mtpCausalMask->dataType(), updateCausalMaskCpu,
-                              (config->mtpCausalMask->buffer(), position, mtpMaskLen_cpu),
+                              (config->mtpCausalMask->buffer(), predictorRow, mtpMaskLen_cpu),
                               SD_FLOAT_TYPES);
 
         Status mtpStatus = mtpPlan_cpu->execute(
@@ -1335,6 +1361,11 @@ void autoregressiveDecode(
         // variables are declared here.
         int carryRow_cpu = proposedCount_cpu > 0 ? specConsumed_cpu - 1 : 0;
         LongType nextMtpPosition_cpu = currentPosition + carryRow_cpu + 1;
+        // Packet P2: the proposal-write horizon is derived directly from the
+        // ORIGINAL proposedCount_cpu inside the publication block (never from
+        // this mutable variable - the shortened-prefix branch resets it while
+        // the proposal rows still exist). Kept only for the SHORTEN_REEXEC
+        // branch's own geometry reset below.
         LongType mtpWrittenThrough_cpu = proposedCount_cpu > 0
             ? currentPosition + proposedCount_cpu - 1 : currentPosition;
 
@@ -1625,16 +1656,35 @@ void autoregressiveDecode(
                              step, (long long)repairPosition, j, carryRow_cpu);
                 }
 
-                if (nextMtpPosition_cpu <= mtpWrittenThrough_cpu) {
+                // Rejected proposal rows (PREDICTOR rows [retainedEnd, proposedEnd),
+                // proposedEnd = currentPosition+K-1, retainedEnd =
+                // currentPosition+m-1) were written with speculative carries and
+                // are NOT retained: hide them for the next step. Half-open
+                // predictor-space endpoints computed directly (packet P2) from
+                // the FINAL consumed count but the ORIGINAL proposal count -
+                // shortening a commit does not erase the cache rows written
+                // during drafting, and the mutable mtpWrittenThrough_cpu must
+                // not define this horizon (the shortened-prefix branch resets
+                // it while the proposal writes still exist).
+                const LongType proposedPredictorEnd_cpu =
+                    currentPosition + static_cast<LongType>(proposedCount_cpu) - 1;
+                const LongType retainedPredictorEnd_cpu =
+                    currentPosition + static_cast<LongType>(specConsumed_cpu) - 1;
+                if (retainedPredictorEnd_cpu < proposedPredictorEnd_cpu) {
                     BUILD_SINGLE_SELECTOR(config->mtpCausalMask->dataType(), maskCausalRangeCpu,
-                                          (config->mtpCausalMask->buffer(), nextMtpPosition_cpu,
-                                           mtpWrittenThrough_cpu + 1, mtpMaskLen_cpu),
+                                          (config->mtpCausalMask->buffer(), retainedPredictorEnd_cpu,
+                                           proposedPredictorEnd_cpu, mtpMaskLen_cpu),
                                           SD_FLOAT_TYPES);
                 }
 
                 setMtpTargetCarryCpu(planOutputs[config->targetHiddenOutputIdx], carryRow_cpu);
-                config->mtpPositionOffset->p(0, nextMtpPosition_cpu);
-                config->mtpCachePosition->p(0, nextMtpPosition_cpu);
+                // Pending-input publication (packet P2): nextMtpPosition_cpu is
+                // the next pending TARGET token position; its predictor row is
+                // nextMtpPosition_cpu - 1 (rope = slot = row). The token itself
+                // stays specRowArgmax_cpu[carryRow_cpu] (the finalized emission).
+                const LongType nextPredictorRow_cpu = nextMtpPosition_cpu - 1;
+                config->mtpPositionOffset->p(0, nextPredictorRow_cpu);
+                config->mtpCachePosition->p(0, nextPredictorRow_cpu);
                 if (proposedCount_cpu > 0) {
                     config->mtpInputIds->p(0, specRowArgmax_cpu[carryRow_cpu]);
                 }
@@ -1871,9 +1921,12 @@ void autoregressiveDecode(
         if (useMtp_cpu) {
             // The target hidden row was committed immediately after target
             // execution. Pair it with the just-sampled, still-unwritten token.
+            // PREDICTOR ROW MAPPING (packet 2): the pending token x_(P+1) pairs
+            // with h_P at predictor row r = P (r = target position - 1), where
+            // P = currentPosition is the position the target just consumed.
             config->mtpInputIds->p(0, nextTokenId);
-            config->mtpPositionOffset->p(0, currentPosition + 1);
-            config->mtpCachePosition->p(0, currentPosition + 1);
+            config->mtpPositionOffset->p(0, currentPosition);
+            config->mtpCachePosition->p(0, currentPosition);
         }
 
         // Store in output and notify the reusable session layer. The callback

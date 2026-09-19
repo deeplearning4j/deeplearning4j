@@ -417,23 +417,21 @@ public class TestQwen35MtpDecode {
      * and inspects the RETAINED PREDICTOR state immediately after start (before
      * any native drafting) plus the retained scalar pair the first native draft
      * consumes. Documents the shipped bootstrap convention precisely:
-     *
-     * <p>Prefill: row t = (x_(t+1), h_t) at cache slot t, RoPE position t+1
-     * (position offset one) for t in [0, N-1). The TAIL row (slot N-1,
-     * position N) is the (firstGen, h_(N-1)) pair. Warmup: executes at cache
-     * slot N with RoPE position N consuming (firstGen, h_(N-1)) - so the
-     * predictor cache retains slot N as a CONTENT DUPLICATE of the prefill tail
-     * (same token, same RoPE position), which is the finding-4 duplicate-row
-     * condition this fixture pins. Asserts:
-     * <ol>
-     *   <li>every retained prefill row's token equals the shifted id sequence,</li>
-     *   <li>the first native draft input is exactly the second sampled token</li>
-     *       with the warmup hidden as its carry,</li>
-     *   <li>the retained scalars start the native loop at cache slot N,</li>
-     *   <li>the row the first draft attends (slot N) carries the duplicate pair
-     *       (documented; becomes an equality-of-one-row assertion once the
-     *       slot=position-1 decoupling lands).</li>
-     * </ol>
+     * <p>PREDICTOR ROW CONVENTION (review-ruled, packet 6): row r consumes
+     * (x_(r+1), h_r) at rope=r, slot=r. With N = actualPrefillLen and y0/y1 the
+     * first/second target-sampled tokens (target positions N and N+1):</p>
+     * <ul>
+     *   <li>prefill rows r = 0..N-1 carry (x_(r+1), h_r) — the tail row N-1 is
+     *       (y0, h_(N-1)); prefill position ORIGIN is 0;</li>
+     *   <li>the scalar predictor warmup consumes (y0, h_(N-1)) at rope=N-1,
+     *       slot=N-1 — it REWRITES the tail slot, appending nothing;</li>
+     *   <li>after the warmup the pending pair is (y1, h_N) at rope=N, slot=N
+     *       (both retained scalars = state.cachePosition - 1); slot N is NOT
+     *       yet written and stays masked until native execution consumes it;</li>
+     *   <li>the target resumes at state.cachePosition = N+1 (unchanged).</li>
+     * </ul>
+     * Exactly N live predictor rows [0,N) exist after the bootstrap. Asserts
+     * the scalars, shifted ids, mask boundary, and the unwritten/pending row.
      * If any bootstrap change shifts an index, THIS test fails before the
      * acceptance-rate regression can hide it.
      */
@@ -455,57 +453,86 @@ public class TestQwen35MtpDecode {
                 .dspEnabled(true)
                 .build();
 
-        int[] promptTokenIds = tokenizer.encodePrompt(PROMPT, null).getIds();
-        final int actualPrefillLen = promptTokenIds.length;
-
         try (GenerationPipeline pipeline = GenerationPipeline.create(config);
              GenerationSession session = pipeline.startSession(PROMPT)) {
             InGraphKvState st = session.retainedStateForInspection();
+            // The retained state's OWN logical prompt length (template/BOS-aware);
+            // an independently tokenized string could omit template tokens.
+            final int n = st.actualPrefillLen;
 
-            // Retained scalar geometry: the native decode resumes by feeding
-            // lastGeneratedToken at state.cachePosition; the MTP scalars must
-            // agree with the target-side resume position.
-            INDArray mtpCachePos = st.mtpCachePosition;
-            INDArray mtpPosOffset = st.mtpPositionOffset;
-            assertNotNull(mtpCachePos, "Retained MTP cache position must exist");
-            assertNotNull(mtpPosOffset, "Retained MTP position offset must exist");
-            final long mtpCachePosVal = mtpCachePos.getLong(0);
-            final long mtpPosOffsetVal = mtpPosOffset.getLong(0);
-            assertEquals(mtpCachePosVal, mtpPosOffsetVal,
-                    "MTP cachePosition and positionOffset must be equal at the native handoff");
-            log.info("[MTP-BOOTSTRAP-ORACLE] prefillLen={} mtpCachePos={} mtpPosOffset={} "
-                            + "inputId={} hiddenShape={}",
-                    actualPrefillLen, mtpCachePosVal, mtpPosOffsetVal,
-                    st.mtpInputIds.getLong(0), Arrays.toString(st.mtpTargetHiddenStates.shape()));
+            // -- Scalar geometry (packet 6, assertions 1-4) -------------------
+            // Target resume position: the first native target position is N+1.
+            assertEquals((long) n + 1L, (long) st.cachePosition,
+                    "target state.cachePosition must resume at N+1");
+            // BOTH retained predictor scalars describe the PENDING row N = N+1-1.
+            assertEquals((long) n, st.mtpPositionOffset.getLong(0),
+                    "retained predictor positionOffset must be the pending row N");
+            assertEquals((long) n, st.mtpCachePosition.getLong(0),
+                    "retained predictor cachePosition must be the pending row N");
+            assertEquals((long) st.cachePosition - 1L, st.mtpCachePosition.getLong(0),
+                    "predictor pending slot must equal target cachePosition - 1");
+            // Pending token = the second sampled token (the first was consumed
+            // by the warmup; the pair (y0, h_(N-1)) is stored once, in row N-1).
+            assertEquals((long) st.lastGeneratedToken, st.mtpInputIds.getLong(0),
+                    "predictor pending input must be the second sampled token");
+            // Pending carry = the target warmup hidden h_N (the hidden the target
+            // produced consuming y0): verified via shape (row-carry contract).
+            assertNotNull(st.mtpTargetHiddenStates);
+            assertEquals(3, st.mtpTargetHiddenStates.rank(),
+                    "retained predictor carry must be a rank-3 single-row tensor");
 
-            // First native draft input: the SECOND sampled token paired with the
-            // WARMUP hidden. The first sampled token must not appear here (it is
-            // consumed by the warmup itself), proving the bootstrap advanced.
-            assertNotNull(st.mtpInputIds, "Retained MTP input ids must exist");
-            assertNotNull(st.mtpTargetHiddenStates, "Retained MTP target carry must exist");
-            assertEquals(1, st.mtpInputIds.length(),
-                    "MTP pending input must be a single scalar token");
+            log.info("[MTP-BOOTSTRAP-ORACLE] n={} targetResume={} pendingRow={} pendingToken={}",
+                    n, st.cachePosition, st.mtpCachePosition.getLong(0),
+                    st.mtpInputIds.getLong(0));
 
-            // Retained predictor KV: inspect the live prefill rows 0..N-1 and the
-            // warmup row N. Prefill rows t in [0, N-2) hold shifted ids; row N-1
-            // and row N both correspond to (firstGen, h_(N-1)) at RoPE position N.
+            // -- Shifted predictor ids vs the actual target prefill ids --------
+            INDArray sourceIds = st.prefillInputMap.get(st.inputIdsName);
+            INDArray shiftedIds = st.mtpPrefillInputMap.get("mtp_input_ids");
+            assertNotNull(sourceIds, "target prefill ids must be retained");
+            assertNotNull(shiftedIds, "predictor prefill ids must be retained");
+            for (int r = 0; r + 1 < n; ++r) {
+                assertEquals(sourceIds.getLong(0, r + 1), shiftedIds.getLong(0, r),
+                        "Shifted predictor token at row " + r);
+            }
+            // Tail row N-1 carries the FIRST sampled token.
+            assertEquals(st.generatedSoFar.get(0).longValue(), shiftedIds.getLong(0, n - 1),
+                    "predictor prefill tail row must carry the first sampled token");
+            // Pending scalar carries the SECOND sampled token.
+            assertEquals(st.generatedSoFar.get(1).longValue(), st.mtpInputIds.getLong(0),
+                    "predictor pending token must be the second sampled token");
+
+            // -- Mask boundary: N live rows visible, unwritten rows invisible --
+            INDArray mtpMask = st.mtpCausalMask;
+            assertNotNull(mtpMask, "retained predictor causal mask must exist");
+            for (int r = 0; r < n; ++r) {
+                assertEquals(0.0, mtpMask.getDouble(0, 0, 0, r), 0.0,
+                        "live predictor row " + r + " must be visible (unmasked)");
+            }
+            for (long r = n; r < mtpMask.size(3); ++r) {
+                assertTrue(mtpMask.getDouble(0, 0, 0, r) < -1.0e6,
+                        "Unwritten predictor row is visible: " + r);
+            }
+
+            // -- Warmup REWRITES slot N-1; slot N stays unwritten ----------------
+            // The bootstrap re-zeroes the retained cache, so slot N must still be
+            // zero immediately after the bootstrap (an appended warmup row would
+            // be non-zero). This distinguishes rewrite-tail from append-slot-N.
             INDArray mtpKeyCache = st.mtpKvBuffers.get("mtp_past_key_values.0.key");
+            INDArray mtpValueCache = st.mtpKvBuffers.get("mtp_past_key_values.0.value");
             assertNotNull(mtpKeyCache, "Retained MTP key cache must exist");
+            assertNotNull(mtpValueCache, "Retained MTP value cache must exist");
             assertEquals(4, mtpKeyCache.rank(), "MTP key cache must be rank 4");
-            final long liveRows = actualPrefillLen; // N shifted rows retained
-            assertTrue(mtpKeyCache.size(1) >= liveRows + 1,
-                    "MTP key cache must retain the live prefill rows plus the warmup row");
-
-            // The duplicate-row condition the reviewer identified: the warmup
-            // pair (firstGen, h_(N-1)) occupies slot N while the prefill tail
-            // already holds the same logical pair at slot N-1 (position N).
-            // The predictor attention for the first draft therefore sees RoPE
-            // position N twice (slot N-1 via the tail row, slot N via the
-            // warmup row). Pinned here so the slot=position-1 decoupling change
-            // must convert this exact condition into a single retained row.
-            log.info("[MTP-BOOTSTRAP-ORACLE] liveRows={} warmupSlot={} duplicateCondition="
-                            + "prefillTailSlot={} warmupSlotContent=draft-time-visible",
-                    liveRows, liveRows, liveRows - 1);
+            assertTrue(mtpKeyCache.size(1) >= n + 1,
+                    "MTP key cache must have capacity for the pending row N");
+            for (int h = 0; h < (int) mtpKeyCache.size(2); ++h) {
+                assertEquals(0.0, mtpKeyCache.getDouble(0, n, h, 0), 0.0,
+                        "pending predictor slot N key must be unwritten after bootstrap");
+                assertEquals(0.0, mtpValueCache.getDouble(0, n, h, 0), 0.0,
+                        "pending predictor slot N value must be unwritten after bootstrap");
+            }
+            log.info("[MTP-BOOTSTRAP-ORACLE] liveRows=[0,{}) pendingRow={} "
+                            + "warmupRewroteTailSlot={} targetUnchanged=true",
+                    n, n, n - 1);
         }
     }
 

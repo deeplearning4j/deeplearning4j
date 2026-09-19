@@ -5569,22 +5569,38 @@ public class GenerationPipeline implements AutoCloseable {
     /**
      * Build or replay the isolated Qwen3.5 MTP prefill and scalar-decode plans.
      *
-     * <p>Alignment follows the reference bundled-MTP bootstrap contract (vLLM
-     * set_inputs_first_pass): predictor prefill row {@code t} carries id
-     * {@code x_(t+1)} — the live prompt ids shifted LEFT by one, with the first target
-     * sampled token in the final LIVE slot {@code actualPrefillLen-1} — paired with
-     * target hidden {@code h_t}; padded rows beyond the live prefix stay inert.
-     * There is NO all-zero bootstrap row: row {@code t} is exactly the
-     * {@code (x_(t+1), h_t)} pair, and the scalar warmup pair
-     * {@code (firstGen, h_(N-1))} then writes the row AFTER the live prefix at
-     * cache slot {@code firstDecodePos == actualPrefillLen}, so the retained
-     * cache holds {@code N} live prefill rows plus the warmup row. Prefill
-     * positions are rebased by
-     * one accordingly (row 0 holds {@code x_1} at position 1). The scalar warmup
-     * then consumes the first target-sampled token with the final prompt hidden at
-     * cache slot {@code firstDecodePos == actualPrefillLen} — the slot right after
-     * the N prefill rows. Before returning, the retained target-hidden input is
-     * advanced to the target warmup hidden and the retained id to the second
+     * <p>PREDICTOR ROW CONVENTION (vLLM set_inputs_first_pass / qwen3_5_mtp,
+     * reviewer-ruled): with x_t the token at TARGET position t and h_t the target
+     * hidden output after consuming x_t,
+     * <ul>
+     *   <li>predictor row r consumes the pair (x_(r+1), h_r);</li>
+     *   <li>predictor RoPE position = r;</li>
+     *   <li>predictor KV slot = r.</li>
+     * </ul>
+     * A native helper argument P in TARGET input-token coordinates maps to
+     * predictor row r = P - 1 exactly once, inside the predictor geometry
+     * boundary (the decode helper), never at call sites.
+     *
+     * <p>With N = actualPrefillLen, y0 = firstTokenId (target position N) and
+     * y1 = secondTokenId (target position N+1):</p>
+     * <ul>
+     *   <li>prefill rows r = 0..N-2 carry (x_(r+1), h_r) at rope=r, slot=r
+     *       (prefill position ORIGIN 0, not 1);</li>
+     *   <li>the final live prefill row r = N-1 carries (y0, h_(N-1)) at
+     *       rope=N-1, slot=N-1;</li>
+     *   <li>the scalar predictor warmup consumes (y0, h_(N-1)) at rope=N-1,
+     *       slot=N-1 — it REWRITES the same tail slot; it does not append a
+     *       logical row, so exactly N live predictor rows [0,N) exist and the
+     *       pair (y0, h_(N-1)) is stored once;</li>
+     *   <li>after the warmup the retained pending pair is (y1, h_N) at
+     *       rope=N, next write slot=N — BOTH retained predictor scalars equal N,
+     *       i.e. state.cachePosition - 1.</li>
+     * </ul>
+     * The target's own state.cachePosition stays N+1: the first native target
+     * position is N+1 (it is passed to the native op as prefillSeqLen), which
+     * maps to predictor row N under r = P - 1 - the pending row. There is NO
+     * all-zero bootstrap row. Before returning, the retained target-hidden input
+     * is advanced to the target warmup hidden and the retained id to the second
      * sampled token so native drafting starts from the second sampled token.</p>
      */
     private MtpPreparedState prepareBundledMtp(
@@ -5614,6 +5630,12 @@ public class GenerationPipeline implements AutoCloseable {
         }
 
         MtpPreparedState prepared = new MtpPreparedState();
+        // PREDICTOR COORDINATES (packet J1): the predictor's final live prefill row
+        // (rewritten by the scalar warmup) and the post-warmup pending row. The
+        // target's firstDecodePos == actualPrefillLen stays untouched; target
+        // pending position is actualPrefillLen + 1.
+        final long predictorTailRow = (long) actualPrefillLen - 1L;
+        final long predictorPendingRow = (long) actualPrefillLen;
         prepared.session = reuseState != null && reuseState.mtpSession != null
                 ? reuseState.mtpSession : decoder.getInferenceFactory().create(decoder);
         prepared.prefillInputMap = reuseState != null && reuseState.mtpPrefillInputMap != null
@@ -5692,15 +5714,16 @@ public class GenerationPipeline implements AutoCloseable {
                 NDArrayIndex.all()));
 
         INDArray prefillPosition = prepared.prefillInputMap.get(MTP_POSITION_OFFSET_NAME);
-        // Row t carries token x_(t+1) at position t+1 (the prompt's token x0 sits at
-        // position 0 and is never fed to the predictor), so the prefill RoPE window
-        // is rebased by one. The native decode loop rewrites this scalar per call
-        // from the target position grid; only the prefill execution reads it here.
+        // PREDICTOR ROW CONVENTION (packet 1, step 2): predictor row r = slot r
+        // consumes (x_(r+1), h_r) with RoPE position r — the prefill position
+        // ORIGIN is 0, not 1. Row t of the shifted id sequence IS row r = t.
+        // The native decode loop rewrites this scalar per call from the target
+        // position grid; only the prefill execution reads it here.
         if (prefillPosition == null) {
-            prefillPosition = Nd4j.scalar(DataType.INT64, 1L);
+            prefillPosition = Nd4j.scalar(DataType.INT64, 0L);
             prepared.prefillInputMap.put(MTP_POSITION_OFFSET_NAME, prefillPosition);
         } else {
-            prefillPosition.assign(1);
+            prefillPosition.assign(0);
         }
         INDArray prefillCachePosition = prepared.prefillInputMap.get(MTP_CACHE_POSITION_NAME);
         if (prefillCachePosition == null) {
@@ -5787,30 +5810,23 @@ public class GenerationPipeline implements AutoCloseable {
         if (prepared.targetHiddenStates == null) {
             prepared.targetHiddenStates = Nd4j.zeros(mtpDtype, 1, 1, hidden);
         }
-        // SLOT/POSITION LAYOUT (review round 3, finding 4 - analyzed, fixture
-        // pending): prefill rows use cache slot = RoPE position - 1 (offset one);
-        // the warmup and every native draft/maintenance row use cache slot =
-        // RoPE position (the helper couples positionOffset == cachePosition).
-        // The warmup row (slot N, position N) is therefore an exact CONTENT
-        // duplicate of the prefill tail pair (slot N-1, position N) - same
-        // token, same hidden, same RoPE position, so the first draft attends
-        // position N twice. Eliminating the duplicate requires decoupling
-        // cachePosition from positionOffset in the native MTP call sites so the
-        // slot = position - 1 invariant holds end-to-end; until that lands, the
-        // bootstrap below preserves the shipped layout that all parity gates
-        // were validated against.
+        // PREDICTOR ROW CONVENTION (packet 1): the warmup consumes the pair
+        // (y0, h_(N-1)) = (firstTokenId, targetPrefillHidden row N-1) - the same
+        // pair the final live prefill row r=N-1 stores. Under the convention
+        // (row r consumes x_(r+1) at rope=r, slot=r) the warmup's predictor row
+        // is r = N-1: it REWRITES the tail slot with the same content instead of
+        // appending, so the pair (y0, h_(N-1)) is stored exactly once.
         prepared.targetHiddenStates.assign(
                 targetPrefillHidden.get(
                         NDArrayIndex.all(),
                         NDArrayIndex.interval(actualPrefillLen - 1, actualPrefillLen),
                         NDArrayIndex.all()));
 
-        // SLOT = POSITION - 1: the retained decode mask must unmask exactly the
-        // N+1 live predictor rows (slots 0..N: prefill rows 0..N-1 plus the
-        // warmup row at slot N). The first native draft at position N+2 attends
-        // those rows and writes slot N+1 itself; slot N+1 is masked until then.
+        // Packet 1, step 5: the warmup's decode mask is built at PREDICTOR slot
+        // predictorTailRow (its own write row): the rewritten self-row stays visible and
+        // slots >= N remain inaccessible - matching the N live rows [0,N).
         INDArray freshDecodeMask = DecoderInputBuilder.buildInGraphDecodeMask(
-                firstDecodePos, maxKvLen, DataType.FLOAT);
+                predictorTailRow, maxKvLen, DataType.FLOAT);
         prepared.causalMask = reuseState != null ? reuseState.mtpCausalMask : null;
         if (prepared.causalMask == null
                 || !Arrays.equals(prepared.causalMask.shape(), freshDecodeMask.shape())) {
@@ -5820,26 +5836,21 @@ public class GenerationPipeline implements AutoCloseable {
             freshDecodeMask.close();
         }
 
-        // SLOT = POSITION - 1: the WARMUP consumes (firstGen, h_(N-1)) at RoPE
-        // position N+1 — i.e. it predicts the token AFTER firstGen using the
-        // hidden the target produced while consuming firstGen's slot. Wait: the
-        // warmup's INPUT pair is the token whose row it writes. Under the
-        // invariant its row lands at cache slot firstDecodePos (== N) and its
-        // RoPE position is firstDecodePos + 1 (== N+1). This OVERWRITES the
-        // prefill tail row's slot with the identical (firstGen, h_(N-1)) pair -
-        // content-idempotent, and the retained cache keeps exactly N+1 live rows
-        // (slots 0..N), each at slot = position - 1, NO duplicate pair.
+        // Packet 1, step 4: BOTH predictor warmup scalars are predictorTailRow
+        // (the tail predictor row the warmup rewrites): rope = N-1, slot = N-1.
+        // The previous bootstrap set rope = cache = N, which appended a logical row
+        // past the N live prefill rows and duplicated the (y0, h_(N-1)) pair.
         prepared.positionOffset = reuseState != null ? reuseState.mtpPositionOffset : null;
         if (prepared.positionOffset == null) {
-            prepared.positionOffset = Nd4j.scalar(DataType.INT64, firstDecodePos + 1);
+            prepared.positionOffset = Nd4j.scalar(DataType.INT64, predictorTailRow);
         } else {
-            prepared.positionOffset.putScalar(new long[]{}, (long) firstDecodePos + 1);
+            prepared.positionOffset.putScalar(new long[]{}, predictorTailRow);
         }
         prepared.cachePosition = reuseState != null ? reuseState.mtpCachePosition : null;
         if (prepared.cachePosition == null) {
-            prepared.cachePosition = Nd4j.scalar(DataType.INT64, firstDecodePos);
+            prepared.cachePosition = Nd4j.scalar(DataType.INT64, predictorTailRow);
         } else {
-            prepared.cachePosition.putScalar(new long[]{}, (long) firstDecodePos);
+            prepared.cachePosition.putScalar(new long[]{}, predictorTailRow);
         }
 
         Map<String, INDArray> decodeInputs = new LinkedHashMap<>();
@@ -5865,9 +5876,9 @@ public class GenerationPipeline implements AutoCloseable {
         // Reading one predictor logit is the natural host-visible completion boundary for all
         // prefill-cache copies consumed by this warmup; no manual stream/device synchronization.
         double warmupProbe = mtpLogits.getDouble(0);
-        log.info("[MTP] Scalar warmup complete: prefill={} actual={} rows0..{}=shifted(x(t+1),h(t)) "
-                        + "warmupSlot={} hidden={} kvHeads={} headDim={} probe={}",
-                prefillSeqLen, actualPrefillLen, actualPrefillLen - 1, firstDecodePos,
+        log.info("[MTP] Scalar warmup complete: prefill={} actual={} rows0..{}=row-r-consumes-(x_(r+1),h_r) "
+                        + "warmupRewritesRow={} hidden={} kvHeads={} headDim={} probe={}",
+                prefillSeqLen, actualPrefillLen, predictorTailRow, predictorTailRow,
                 hidden, kvHeads, headDim, warmupProbe);
 
         prepared.executor = prepared.session.getDynamicShapePlanExecutor();
@@ -5902,18 +5913,18 @@ public class GenerationPipeline implements AutoCloseable {
                 ? prepared.executor.getCurrentPlan().getExternalInputKeys().length : 0;
         prepared.numPlanOutputs = decodeOutputsRequested.size();
 
-        // SLOT = POSITION - 1: after the warmup executed (position N+1, row at
-        // slot N), the retained scalars hand the native loop the NEXT predictor
-        // call's geometry: position N+2, cache slot N+1. The native loop's first
-        // draft forward is invoked at position = currentPosition+1 through
-        // executeMtpCuda/setMtpNextInputCuda, which maintain the invariant
-        // themselves (cache = position - 1); these retained values only need to
-        // describe the same convention so any pre-loop replay stays consistent.
-        // The retained decode MASK must unmask slots 0..N (the N+1 live rows:
-        // prefill 0..N-1 plus the warmup row at N) - the first draft at position
-        // N+2 attends exactly those rows and writes slot N+1.
-        prepared.positionOffset.putScalar(new long[]{}, (long) firstDecodePos + 2);
-        prepared.cachePosition.putScalar(new long[]{}, (long) firstDecodePos + 1);
+        // Packet 1, step 6: after the warmup rewrote tail row N-1, publish the
+        // pending pair (y1, h_N) and set BOTH retained predictor scalars to
+        // predictorPendingRow: rope = N, next write slot = N. This equals target
+        // state.cachePosition - 1 (= N+1 - 1), per the reviewer's tuple contract.
+        // The native helper's first predictor call converts its target position
+        // argument P = N+1 to predictor row r = P - 1 = N and overwrites both
+        // scalars itself; these retained values describe the pending pair so any
+        // pre-loop consumer or diagnostic replay stays consistent. The pending
+        // row is NOT unmasked here: publishing a pending token is not consuming
+        // it - the native predictor execution unmasks its own write row.
+        prepared.positionOffset.putScalar(new long[]{}, predictorPendingRow);
+        prepared.cachePosition.putScalar(new long[]{}, predictorPendingRow);
 
         // Native drafting starts with the second target token and therefore needs h_P, produced by
         // the target warmup that consumed the first token at position P.
