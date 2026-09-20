@@ -147,9 +147,31 @@ public final class XmlToolCallConstraint implements TextConstraint {
         String argumentName = current.substring(parameterNameStart, parameterNameEnd);
         Map<String, Object> schema = argumentSchemas(
                 parameterSchemasByTool.get(toolName)).get(argumentName);
-        return schema != null
-                && NativeToolCallConstraint.repeatsStructuredValueWhitespace(
-                        current.substring(valueStart), extension, schema);
+        if (schema == null || !NativeToolCallConstraint.repeatsStructuredValueWhitespace(
+                current.substring(valueStart), extension, schema)) {
+            return false;
+        }
+        // The parameter close begins with a newline. A whitespace extension that strictly
+        // grows the pending close prefix is structural, not value padding: masking it would
+        // leave a completed value with no legal continuation (verified dead end at
+        // allowedFinite=0). The value before the pending prefix must already be complete.
+        String value = current.substring(valueStart);
+        int pending = pendingParameterClosePrefixLength(value);
+        int grown = pendingParameterClosePrefixLength(value + extension);
+        return !(grown > pending
+                && NativeToolCallConstraint.validCompleteValue(
+                        (value + extension).substring(
+                                0, value.length() + extension.length() - grown), schema));
+    }
+
+    private static int pendingParameterClosePrefixLength(String value) {
+        int maximum = Math.min(value.length(), PARAMETER_CLOSE.length() - 1);
+        for (int length = maximum; length > 0; length--) {
+            if (PARAMETER_CLOSE.startsWith(value.substring(value.length() - length))) {
+                return length;
+            }
+        }
+        return 0;
     }
 
     private boolean validPrefix(String text, boolean requireComplete) {
