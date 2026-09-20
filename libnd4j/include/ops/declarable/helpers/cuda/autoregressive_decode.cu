@@ -720,6 +720,8 @@ void autoregressiveDecode(
     }
 
     auto plan = config->planHandle;
+    AutoregressiveP0Counters p0;
+    bool p0RepairActive = false;
 
     DSP_DIAG(KV_CACHE,
              "AUTOREGRESSIVE_DECODE_CUDA entered plan=%p maxNewTokens=%d prefillSeqLen=%d "
@@ -1599,6 +1601,7 @@ void autoregressiveDecode(
             NDArray::prepareSpecialUse({snap}, {src});
             cudaMemcpyAsync(snap->specialBuffer(), srcBase,
                             rowBytes * rows, cudaMemcpyDeviceToDevice, *stream);
+            p0.snapshotBytes += static_cast<std::uint64_t>(rowBytes * rows);
             NDArray::registerSpecialUse({snap}, {src});
         }
     };
@@ -1619,6 +1622,7 @@ void autoregressiveDecode(
             NDArray::prepareSpecialUse({dst}, {snap});
             auto restoreErr = cudaMemcpyAsync(dstBase, snap->specialBuffer(),
                 rowBytes * rows, cudaMemcpyDeviceToDevice, *stream);
+            p0.restoreBytes += static_cast<std::uint64_t>(rowBytes * rows);
             REQUIRE_TRUE(restoreErr == cudaSuccess, 0,
                 "autoregressive_decode: shared-KV row restore failed: %s",
                 cudaGetErrorString(restoreErr));
@@ -1661,6 +1665,7 @@ void autoregressiveDecode(
             cudaMemcpyAsync(snap->specialBuffer(), src->specialBuffer(),
                             src->lengthOf() * src->sizeOfT(),
                             cudaMemcpyDeviceToDevice, *stream);
+            p0.snapshotBytes += static_cast<std::uint64_t>(src->lengthOf() * src->sizeOfT());
             NDArray::registerSpecialUse({snap}, {src});
         }
         for (int s = 0; s < config->numConvStatePairs; s++) {
@@ -1689,6 +1694,7 @@ void autoregressiveDecode(
             cudaMemcpyAsync(snap->specialBuffer(), src->specialBuffer(),
                             src->lengthOf() * src->sizeOfT(),
                             cudaMemcpyDeviceToDevice, *stream);
+            p0.snapshotBytes += static_cast<std::uint64_t>(src->lengthOf() * src->sizeOfT());
             NDArray::registerSpecialUse({snap}, {src});
         }
     };
@@ -1710,6 +1716,7 @@ void autoregressiveDecode(
             auto restoreErr = cudaMemcpyAsync(windowArr->specialBuffer(),
                 snap->specialBuffer(), snap->lengthOf() * snap->sizeOfT(),
                 cudaMemcpyDeviceToDevice, *stream);
+            p0.restoreBytes += static_cast<std::uint64_t>(snap->lengthOf() * snap->sizeOfT());
             REQUIRE_TRUE(restoreErr == cudaSuccess, 0,
                 "autoregressive_decode: recurrent state restore failed: %s",
                 cudaGetErrorString(restoreErr));
@@ -2041,10 +2048,24 @@ void autoregressiveDecode(
                  config->mtpKvBuffers[1]});
         }
 
+        if (writeTargetRow) {
+            p0.predictorProposalForwards++;
+        } else if (p0RepairActive) {
+            p0.predictorRepairForwards++;
+        } else {
+            p0.predictorMaintenanceForwards++;
+        }
+        const auto mtpPhaseBefore = mtpPlan->getPlanPhase();
         Status mtpStatus = mtpPlan->executeSteadyState(
             mtpExtInputs, mtpNumExtInputs,
             mtpPlanOutputs, mtpNumOutputs,
             reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)));
+        const auto mtpPhaseAfter = mtpPlan->getPlanPhase();
+        if (mtpPhaseBefore != mtpPhaseAfter) p0.planPhaseTransitions++;
+        if (mtpPhaseAfter == graph::PlanPhase::REPLAYING) p0.planReplayForwards++;
+        else p0.planWarmupForwards++;
+        if (!writeTargetRow && p0RepairActive && config->mtpLogitsOutputIdx >= 0)
+            p0.predictorRepairLmHeadForwards++;
         // Post-execution staging audit: the VARIABLE slots must have been D2D
         // refreshed from the live arrays above (performPreReplaySync step 3).
         // Snapshotting the plan's own staging buffers on the same callIndex as
@@ -2992,10 +3013,16 @@ void autoregressiveDecode(
         // teacher-forced-proven geometry as the rerun bypass - preserves
         // token parity while eliminating the poisoned capture. activeWindow
         // is already 1 here (no proposals), so no refill changes are needed.
+        if (proposedCount > 0) p0.targetVerificationForwards++;
+        const auto targetPhaseBefore = plan->getPlanPhase();
         Status planStatus = plan->executeSteadyState(
             extInputs, numExtInputs,
             planOutputs, numPlanOutputs,
             reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)));
+        const auto targetPhaseAfter = plan->getPlanPhase();
+        if (targetPhaseBefore != targetPhaseAfter) p0.planPhaseTransitions++;
+        if (targetPhaseAfter == graph::PlanPhase::REPLAYING) p0.planReplayForwards++;
+        else p0.planWarmupForwards++;
 
         // Clear the scale registry immediately after plan execution (no stale refs).
         if (config->kvQuantFormat > 0 && config->kvScaleBuffers != nullptr) {
@@ -3146,6 +3173,7 @@ void autoregressiveDecode(
                             NDArray::prepareSpecialUse({dst}, {src});
                             cudaMemcpyAsync(dst->specialBuffer(), src->specialBuffer(),
                                             bytes, cudaMemcpyDeviceToDevice, *stream);
+                            p0.stateCommitBytes += static_cast<std::uint64_t>(bytes);
                             NDArray::registerSpecialUse({dst}, {src});
                         }
                     }
@@ -3165,6 +3193,7 @@ void autoregressiveDecode(
                             NDArray::prepareSpecialUse({dst}, {src});
                             cudaMemcpyAsync(dst->specialBuffer(), src->specialBuffer(),
                                             bytes, cudaMemcpyDeviceToDevice, *stream);
+                            p0.stateCommitBytes += static_cast<std::uint64_t>(bytes);
                             NDArray::registerSpecialUse({dst}, {src});
                         }
                     }
@@ -3292,6 +3321,9 @@ void autoregressiveDecode(
             LongType basePosition = currentPosition;
 
             // -- D2H sync: wait for the existing async argmax/draft copies --
+            p0.hostWaitBoundaries++;
+            p0.hostReadbackBytes += static_cast<std::uint64_t>(numRows * sizeof(LongType) * 2
+                                                               + proposedCount * sizeof(LongType));
             const auto acceptanceSync = cudaStreamSynchronize(*stream);
             // ROUND 7 (review finding 3): the acceptance decision consumes the
             // argmax, validity, and draft readbacks - they are only trustworthy
@@ -3754,6 +3786,7 @@ void autoregressiveDecode(
                              step, scalarRerun ? "scalar-width-1" : "window",
                              extInputNan ? 1 : 0, poisonName);
                 }
+                p0.acceptedPrefixReruns++;
                 Status rerunStatus = Status::OK;
                 {
                     // Re-execute the fixed-width window plan from the restored
@@ -3862,6 +3895,8 @@ void autoregressiveDecode(
                     // memory only, so a stream-ordered completion of this D2H before
                     // the rewrite is required. ONE sync drains argmax + validity +
                     // diagnostics + state samples.
+                    p0.hostWaitBoundaries++;
+                    p0.hostReadbackBytes += sizeof(LongType) * 2;
                     cudaError_t refreshSync = cudaStreamSynchronize(*stream);
                     REQUIRE_TRUE(refreshSync == cudaSuccess, 0,
                                  "autoregressive_decode: rerun emission refresh sync "
@@ -4025,6 +4060,7 @@ void autoregressiveDecode(
                                  "re-execution so committed state matches the 1-token "
                                  "history",
                                  step, rerunWidthM);
+                        p0.shortenedRecoveryForwards++;
                         Status shortenStatus = plan->executeSteadyState(
                             extInputs, numExtInputs, planOutputs, numPlanOutputs,
                             reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)));
@@ -4062,6 +4098,8 @@ void autoregressiveDecode(
                         cudaMemcpyAsync(&shortenReadback, rerunScratch->specialBuffer(),
                                         sizeof(shortenReadback), cudaMemcpyDeviceToHost, *stream);
                         NDArray::registerSpecialUse({rerunScratch}, {shortenLogits});
+                        p0.hostWaitBoundaries++;
+                        p0.hostReadbackBytes += sizeof(LongType) * 2;
                         cudaError_t shortenSync = cudaStreamSynchronize(*stream);
                         REQUIRE_TRUE(shortenSync == cudaSuccess, 0,
                                      "autoregressive_decode: shortened rerun readback sync "
@@ -4190,6 +4228,7 @@ void autoregressiveDecode(
                 // 1 and no row is retained beyond the base: this loop is a no-op and
                 // EVERY proposal row is hidden below. The repair machinery stays
                 // for the multi-token contract's return.
+                p0RepairActive = true;
                 for (int j = 0; j < consumedCount - 1; j++) {
                     // Repair j (packet 2): token = finalizedEmitted[j], hidden =
                     // targetHiddenRows[j], target token position = base+1+j,
@@ -4212,6 +4251,7 @@ void autoregressiveDecode(
                              "carryRow=%d - rewriting predictor KV row with target hidden",
                              step, (long long)repairPosition, (long long)(repairPosition - 1), j, carryRow);
                 }
+                p0RepairActive = false;
 
                 // All predictor rows at and beyond the pending row are future
                 // state after this commit. Remask the entire tail, not merely
@@ -4892,6 +4932,7 @@ void autoregressiveDecode(
     }
 
     // -- Final sync --
+    p0.hostWaitBoundaries++;
     const auto finalSnapshotSync = cudaStreamSynchronize(*stream);
     if (captureMtpInputs) {
         REQUIRE_TRUE(finalSnapshotSync == cudaSuccess, 0,
@@ -5032,6 +5073,10 @@ void autoregressiveDecode(
             timingInfo->p(6, static_cast<float>(avgMs));
         }
     }
+    p0.finalizedTokens = tokensGenerated;
+    p0.proposals = totalSpeculativeProposed;
+    p0.acceptedDrafts = totalSpeculativeAccepted;
+    p0.speculativeSteps = static_cast<int>(speculativeStepCount);
     if (config->nativeFinishReason == 1 && timingInfo->lengthOf() > 6) {
         timingInfo->p(6, -1.0f);
     }
@@ -5055,6 +5100,32 @@ void autoregressiveDecode(
         config->windowPositionGrid = nullptr;
         delete internalWindowPositionGrid;
     }
+    // Emit after native scratch teardown so the summary is the final diagnostic
+    // event and cannot be displaced by cleanup events in the ring buffer.
+    DSP_DIAG(KV_CACHE,
+             "MTP_P0_CUDA finalized=%lld proposals=%lld accepted=%lld steps=%d "
+             "targetVerify=%d reruns=%d shortened=%d predictorProposal=%d "
+             "predictorRepair=%d predictorMaintenance=%d repairLmHead=%d "
+             "snapshotBytes=%llu restoreBytes=%llu stateCommitBytes=%llu "
+             "hostReadbackBytes=%llu hostWaits=%llu phaseTransitions=%d "
+             "planReplay=%d planWarmup=%d targetExec=%d targetPhase=%d "
+             "multiRow=%d specK=%d windowMax=%d",
+             (long long)p0.finalizedTokens, (long long)p0.proposals,
+             (long long)p0.acceptedDrafts, p0.speculativeSteps,
+             p0.targetVerificationForwards, p0.acceptedPrefixReruns,
+             p0.shortenedRecoveryForwards, p0.predictorProposalForwards,
+             p0.predictorRepairForwards, p0.predictorMaintenanceForwards,
+             p0.predictorRepairLmHeadForwards,
+             (unsigned long long)p0.snapshotBytes,
+             (unsigned long long)p0.restoreBytes,
+             (unsigned long long)p0.stateCommitBytes,
+             (unsigned long long)p0.hostReadbackBytes,
+             (unsigned long long)p0.hostWaitBoundaries,
+             p0.planPhaseTransitions, p0.planReplayForwards,
+             p0.planWarmupForwards, plan->getExecuteCount(),
+             static_cast<int>(plan->getPlanPhase()),
+             config->allowMultiRowCommit ? 1 : 0, specK,
+             config->windowMax);
 }
 
 }  // namespace helpers

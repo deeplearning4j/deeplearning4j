@@ -27,6 +27,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 namespace sd {
@@ -51,6 +52,33 @@ using AutoregressiveTokenCallback = void (*)(LongType tokenId, void* userData);
  * decode steps, preserving KV/recurrent state at a resumable boundary.
  */
 using AutoregressiveCancelCallback = bool (*)(void* userData);
+
+/**
+ * P0 native-cycle accounting. This is diagnostic state only; it does not
+ * change the timingInfo ABI or introduce synchronization. Backends emit it
+ * through the existing DSP_DIAG report path at the end of a decode call.
+ */
+struct AutoregressiveP0Counters {
+    LongType finalizedTokens = 0;
+    LongType proposals = 0;
+    LongType acceptedDrafts = 0;
+    int speculativeSteps = 0;
+    int targetVerificationForwards = 0;
+    int acceptedPrefixReruns = 0;
+    int shortenedRecoveryForwards = 0;
+    int predictorProposalForwards = 0;
+    int predictorRepairForwards = 0;
+    int predictorMaintenanceForwards = 0;
+    int predictorRepairLmHeadForwards = 0;
+    int planPhaseTransitions = 0;
+    int planReplayForwards = 0;
+    int planWarmupForwards = 0;
+    std::uint64_t snapshotBytes = 0;
+    std::uint64_t restoreBytes = 0;
+    std::uint64_t stateCommitBytes = 0;
+    std::uint64_t hostReadbackBytes = 0;
+    std::uint64_t hostWaitBoundaries = 0;
+};
 
 /**
  * Configuration for the autoregressive decode loop.

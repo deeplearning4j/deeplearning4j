@@ -85,6 +85,9 @@ public class TestQwen35MtpDecode {
 
     @BeforeAll
     public static void setup() throws Exception {
+        // Preload the selected backend before GGUF import so the normal binding
+        // selected by the test backend is initialized before model construction.
+        Nd4j.getEnvironment();
         if (System.getProperty(ND4JSystemProperties.OPTIMIZER_ENABLED) == null) {
             System.setProperty(ND4JSystemProperties.OPTIMIZER_ENABLED, "true");
         }

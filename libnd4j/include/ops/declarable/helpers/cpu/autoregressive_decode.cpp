@@ -294,6 +294,9 @@ void autoregressiveDecode(
     }
 
     auto plan = config->planHandle;
+    AutoregressiveP0Counters p0;
+    bool p0RepairActive = false;
+    bool p0MaintenanceActive = false;
 
     // ── Timing ──
     std::vector<double> stepTimesMs;
@@ -448,6 +451,7 @@ void autoregressiveDecode(
             NDArray::preparePrimaryUse({snap}, {src});
             std::memcpy(snap->buffer(), src->buffer(),
                         src->lengthOf() * src->sizeOfT());
+            p0.snapshotBytes += static_cast<std::uint64_t>(src->lengthOf() * src->sizeOfT());
             snap->tickWriteHost();
             NDArray::registerPrimaryUse({snap}, {src});
         }
@@ -476,6 +480,7 @@ void autoregressiveDecode(
             NDArray::preparePrimaryUse({snap}, {src});
             std::memcpy(snap->buffer(), src->buffer(),
                         src->lengthOf() * src->sizeOfT());
+            p0.snapshotBytes += static_cast<std::uint64_t>(src->lengthOf() * src->sizeOfT());
             snap->tickWriteHost();
             NDArray::registerPrimaryUse({snap}, {src});
         }
@@ -496,6 +501,7 @@ void autoregressiveDecode(
             NDArray::preparePrimaryUse({windowArr}, {snap});
             std::memcpy(windowArr->buffer(), snap->buffer(),
                         snap->lengthOf() * snap->sizeOfT());
+            p0.restoreBytes += static_cast<std::uint64_t>(snap->lengthOf() * snap->sizeOfT());
             windowArr->tickWriteHost();
             NDArray::registerPrimaryUse({windowArr}, {snap});
         }
@@ -771,6 +777,14 @@ void autoregressiveDecode(
                               (config->mtpCausalMask->buffer(), predictorRow, mtpMaskLen_cpu),
                               SD_FLOAT_TYPES);
 
+        if (p0RepairActive) {
+            p0.predictorRepairForwards++;
+            p0.predictorRepairLmHeadForwards++;
+        } else if (p0MaintenanceActive) {
+            p0.predictorMaintenanceForwards++;
+        } else {
+            p0.predictorProposalForwards++;
+        }
         Status mtpStatus = mtpPlan_cpu->execute(
             mtpExtInputs_cpu, mtpNumExtInputs_cpu,
             mtpPlanOutputs_cpu, mtpNumOutputs_cpu,
@@ -904,7 +918,9 @@ void autoregressiveDecode(
             if (maxPropose_cpu == 0) {
                 // Keep the predictor cache aligned even when only one target token
                 // fits in the remaining output/KV envelope.
+                p0MaintenanceActive = true;
                 (void)executeMtpCpu(mtpToken, currentPosition);
+                p0MaintenanceActive = false;
             } else {
                 for (int p = 0; p < maxPropose_cpu; p++) {
                     LongType draft = executeMtpCpu(mtpToken, currentPosition + p);
@@ -1082,6 +1098,7 @@ void autoregressiveDecode(
             capturePreVerificationState_cpu();
         }
         if (useScalarTarget) prepareScalarTarget();
+        if (proposedCount_cpu > 0) p0.targetVerificationForwards++;
         Status planStatus = useScalarTarget && proposedCount_cpu == 0 ? executeScalarTarget() : plan->execute(
             extInputs, numExtInputs,
             planOutputs, numPlanOutputs,
@@ -1327,6 +1344,7 @@ void autoregressiveDecode(
                 if (useScalarTarget) {
                     prepareScalarTarget();
                 }
+                p0.acceptedPrefixReruns++;
                 Status rerunStatus = scalarRerun_cpu ? executeScalarTarget() : plan->execute(
                     extInputs, numExtInputs,
                     planOutputs, numPlanOutputs,
@@ -1475,6 +1493,7 @@ void autoregressiveDecode(
                 REQUIRE_TRUE(copyRecurrentFeedback(src, dst), 0,
                              "autoregressive_decode: GDN state feedback copy failed at step %d pair %d",
                              step, s);
+                p0.stateCommitBytes += static_cast<std::uint64_t>(src->lengthOf() * src->sizeOfT());
             }
         }
         if (config->numConvStatePairs > 0) {
@@ -1510,6 +1529,7 @@ void autoregressiveDecode(
                 REQUIRE_TRUE(copyRecurrentFeedback(src, dst), 0,
                              "autoregressive_decode: conv state feedback copy failed at step %d pair %d",
                              step, s);
+                p0.stateCommitBytes += static_cast<std::uint64_t>(src->lengthOf() * src->sizeOfT());
             }
         }
 
@@ -1642,6 +1662,7 @@ void autoregressiveDecode(
                             prepareScalarTarget();
                         }
                         config->activeWindow = 1;
+                        p0.shortenedRecoveryForwards++;
                         Status shortenStatus = useScalarTarget
                             ? executeScalarTarget()
                             : plan->execute(extInputs, numExtInputs,
@@ -1748,6 +1769,7 @@ void autoregressiveDecode(
                                 REQUIRE_TRUE(copyRecurrentFeedback(src, dst), 0,
                                              "autoregressive_decode: GDN state feedback copy failed "
                                              "after shortened rerun at step %d pair %d", step, s);
+                                p0.stateCommitBytes += static_cast<std::uint64_t>(src->lengthOf() * src->sizeOfT());
                             }
                         }
                         if (config->numConvStatePairs > 0
@@ -1768,6 +1790,7 @@ void autoregressiveDecode(
                                 REQUIRE_TRUE(copyRecurrentFeedback(src, dst), 0,
                                              "autoregressive_decode: conv state feedback copy failed "
                                              "after shortened rerun at step %d pair %d", step, s);
+                                p0.stateCommitBytes += static_cast<std::uint64_t>(src->lengthOf() * src->sizeOfT());
                             }
                         }
                     }
@@ -1806,6 +1829,7 @@ void autoregressiveDecode(
                 // and the correction/bonus for the final committed row. On a
                 // truncated commit (specConsumed_cpu forced to 1) this loop runs
                 // zero times - the stale draft-conditioned rows are masked below.
+                p0RepairActive = true;
                 for (int j = 0; j + 1 < specConsumed_cpu; j++) {
                     LongType repairPosition = currentPosition + 1 + j;
                     setMtpTargetCarryCpu(
@@ -1816,25 +1840,17 @@ void autoregressiveDecode(
                              "carryRow=%d — rewriting predictor KV row with target hidden",
                              step, (long long)repairPosition, j, carryRow_cpu);
                 }
+                p0RepairActive = false;
 
-                // Rejected proposal rows (PREDICTOR rows [retainedEnd, proposedEnd),
-                // proposedEnd = currentPosition+K-1, retainedEnd =
-                // currentPosition+m-1) were written with speculative carries and
-                // are NOT retained: hide them for the next step. Half-open
-                // predictor-space endpoints computed directly (packet P2) from
-                // the FINAL consumed count but the ORIGINAL proposal count -
-                // shortening a commit does not erase the cache rows written
-                // during drafting, and the mutable mtpWrittenThrough_cpu must
-                // not define this horizon (the shortened-prefix branch resets
-                // it while the proposal writes still exist).
-                const LongType proposedPredictorEnd_cpu =
-                    currentPosition + static_cast<LongType>(proposedCount_cpu) - 1;
+                // Remask the entire future predictor tail. Adaptive K may shrink,
+                // so rows left unmasked by a wider prior proposal must not remain
+                // visible in a later predictor call.
                 const LongType retainedPredictorEnd_cpu =
                     currentPosition + static_cast<LongType>(specConsumed_cpu) - 1;
-                if (retainedPredictorEnd_cpu < proposedPredictorEnd_cpu) {
+                if (retainedPredictorEnd_cpu < mtpMaskLen_cpu) {
                     BUILD_SINGLE_SELECTOR(config->mtpCausalMask->dataType(), maskCausalRangeCpu,
                                           (config->mtpCausalMask->buffer(), retainedPredictorEnd_cpu,
-                                           proposedPredictorEnd_cpu, mtpMaskLen_cpu),
+                                           mtpMaskLen_cpu, mtpMaskLen_cpu),
                                           SD_FLOAT_TYPES);
                 }
 
@@ -2121,7 +2137,9 @@ void autoregressiveDecode(
                                       (config->mtpCausalMask->buffer(), currentPosition - 1,
                                        mtpMaskLen_cpu),
                                       SD_FLOAT_TYPES);
+                p0MaintenanceActive = true;
                 (void)executeMtpCpu(config->mtpInputIds->e<LongType>(0), currentPosition);
+                p0MaintenanceActive = false;
             }
             // 2. Authoritative publication: target-conditioned carry + newly
             //    emitted pending token at row currentPosition.
@@ -2367,6 +2385,10 @@ void autoregressiveDecode(
             timingInfo->p(6, static_cast<float>(avgMs));
         }
     }
+    p0.finalizedTokens = tokensGenerated;
+    p0.proposals = totalSpeculativeProposed;
+    p0.acceptedDrafts = totalSpeculativeAccepted;
+    p0.speculativeSteps = static_cast<int>(speculativeStepCount);
     if (config->nativeFinishReason == 1 && timingInfo->lengthOf() > 6) {
         timingInfo->p(6, -1.0f);
     }
@@ -2390,6 +2412,20 @@ void autoregressiveDecode(
     if (internalPosIds != nullptr) {
         delete internalPosIds;
     }
+    DSP_DIAG(KV_CACHE,
+             "MTP_P0_CPU finalized=%lld proposals=%lld accepted=%lld steps=%d "
+             "targetVerify=%d reruns=%d shortened=%d predictorProposal=%d "
+             "predictorRepair=%d predictorMaintenance=%d repairLmHead=%d "
+             "snapshotBytes=%llu restoreBytes=%llu stateCommitBytes=%llu",
+             (long long)p0.finalizedTokens, (long long)p0.proposals,
+             (long long)p0.acceptedDrafts, p0.speculativeSteps,
+             p0.targetVerificationForwards, p0.acceptedPrefixReruns,
+             p0.shortenedRecoveryForwards, p0.predictorProposalForwards,
+             p0.predictorRepairForwards, p0.predictorMaintenanceForwards,
+             p0.predictorRepairLmHeadForwards,
+             (unsigned long long)p0.snapshotBytes,
+             (unsigned long long)p0.restoreBytes,
+             (unsigned long long)p0.stateCommitBytes);
 }
 
 }  // namespace helpers
