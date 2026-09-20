@@ -3,6 +3,7 @@
  */
 package org.eclipse.deeplearning4j.llm.generation;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -29,6 +30,18 @@ public class TestMtpCpuRetainedRowRepair {
     private static final int K = 3;
     private static final int WIDTH = K + 1;
     private static final int CACHE = 8;
+
+    @BeforeAll
+    static void requireMultiRowCommitMode() {
+        // The surefire mapping in platform-tests/pom.xml only forwards
+        // SD_MTP_MULTI_ROW_COMMIT into the forked JVM when the Maven property is
+        // provided at launch. Without it the native op runs the single-row commit
+        // policy and every multi-row expectation below fails for policy reasons,
+        // not correctness. Fail fast with the launch instruction instead.
+        assertEquals("1", System.getenv("SD_MTP_MULTI_ROW_COMMIT"),
+                "This class validates multi-row commits. "
+                        + "Run with -Dnd4j.mtp.multiRowCommit=1.");
+    }
     /**
      * Synthetic native target start position (packet 5). The predictor row
      * mapping is r = target position - 1, so a zero origin would map the first
