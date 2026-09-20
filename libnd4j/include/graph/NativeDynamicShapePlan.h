@@ -3649,45 +3649,32 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   int refreshStaleViewWrappersInSegment(GraphSegment& seg, NDArray** externalArrays, int numExt);
 
   /**
-   * Resolve an input for a view op, preferring the staging buffer for external inputs.
+   * Resolve a view input through the same per-input storage selection as other consumers.
    *
-   * When a view op aliases an external input, the view wrapper must point into the
-   * plan-owned staging buffer (stable address) rather than the Java-managed placeholder
-   * (address changes every frame). cuBLAS kernels baked into the CUDA graph have staging
-   * buffer addresses — if views resolve through the original placeholder, the output slot
-   * addresses drift and the graph reads from freed/wrong memory (error 700).
+   * Maintained ordinary placeholders select stable staging, while device-managed
+   * inputs may select live storage or a refreshed captured-address wrapper. Views
+   * must alias that selected storage, not any historical staging allocation: staging
+   * may exist without being refreshed for a managed input during this execution.
    *
    * @param srcIdx  Slot wiring source index: >= 0 for internal slot, < 0 for external
    * @param externalArrays  Java-provided external input arrays
    * @param numExt  Number of external inputs
-   * @return The staging NDArray* if available, else the original external array, else outputSlots_[srcIdx]
+   * @return The current effective external input, raw input when not staged, or internal output slot
    */
   inline NDArray* resolveViewInput(int srcIdx, NDArray** externalArrays, int numExt) const {
     if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
       return outputSlots_[srcIdx];
     } else if (srcIdx < 0) {
       int extIdx = -(srcIdx + 1);
-      if (extIdx >= numExt) return nullptr;
-      // Prefer staging buffer: stable address that matches what the CUDA graph captured.
-      // ONLY while staging is maintained this exec: once the exec target flips to
-      // direct SBS ("staging D2D skipped"), staging content is no longer refreshed —
-      // a view minted over it reads a PREVIOUS iteration's values forever
-      // (deepAttentionQKV varying#4: bit-identical wrong output across NVRTC/PTX,
-      // views object-matched to the exec-1 staging buffer at every later exec).
-      NDArray** stagingBuffers = activeStagingBuffers_ != nullptr
-          ? activeStagingBuffers_ : placeholderStagingBuffers_;
-      if (stagingMaintainedThisExec_ &&
-          stagingBuffers != nullptr && extIdx < numExternalInputs_) {
-        NDArray* staging = stagingBuffers[extIdx];
-        if (staging != nullptr && staging->dataBuffer() != nullptr
-            && staging->dataBuffer()->isValid() && staging->specialBuffer() != nullptr) {
-          return staging;
-        }
+      if (externalArrays == nullptr || extIdx >= numExt) return nullptr;
+      // ensureAndSyncStagingBuffers publishes this table only after selecting
+      // and refreshing each input. A plan-wide maintained flag does not mean
+      // every historical staging buffer was refreshed (managed inputs bypass it).
+      if (stagingMaintainedThisExec_ && effectiveExternals_ != nullptr
+          && extIdx < numExternalInputs_) {
+        return effectiveExternals_[extIdx];
       }
-      NDArray* extArr = externalArrays[extIdx];
-      // Fallback: staging buffer unavailable → use the raw external input. If that array was
-      // closed/freed between replays, the captured graph can hold a stale address (close-weight err700 lead).
-      return extArr;
+      return externalArrays[extIdx];
     }
     return nullptr;
   }

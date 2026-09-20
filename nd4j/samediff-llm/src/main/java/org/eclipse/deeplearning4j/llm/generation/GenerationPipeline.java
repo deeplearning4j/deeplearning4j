@@ -778,10 +778,18 @@ public class GenerationPipeline implements AutoCloseable {
         if (requested == null || requested.isBlank()) {
             requested = System.getenv("ND4J_LLM_BENCHMARK_CONFIG");
         }
-        if (requested == null || requested.isBlank()
-                || "OPTIMAL".equalsIgnoreCase(requested.trim())) {
-            log.info("No BenchmarkConfig provided — using default optimal config "
-                    + "(Triton + CUDA graph capture)");
+        if (requested == null || requested.isBlank()) {
+            // Select before compilation from the active backend's capabilities,
+            // not from the presence of a CUDA backend elsewhere in the registry.
+            // Explicit overrides below retain their requested semantics.
+            if (Nd4j.getNativeOps().isTritonAvailable()) {
+                log.info("No BenchmarkConfig provided — using OPTIMAL on Triton-capable backend");
+                return BenchmarkConfig.optimal();
+            }
+            log.info("No BenchmarkConfig provided — using AUTO backend selection (Triton unavailable)");
+            return BenchmarkConfig.create("AUTO").executionMode(GraphExecutionMode.AUTO);
+        }
+        if ("OPTIMAL".equalsIgnoreCase(requested.trim())) {
             return BenchmarkConfig.optimal();
         }
 

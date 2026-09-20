@@ -20,6 +20,9 @@
 package org.eclipse.deeplearning4j.llm.generation;
 
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.deeplearning4j.llm.TestGgufMtpCapturedReplay.PreparedReference;
+import org.eclipse.deeplearning4j.model.benchmark.BenchmarkConfig;
+import org.eclipse.deeplearning4j.model.benchmark.BenchmarkConfigApplier;
 import org.eclipse.deeplearning4j.llm.data.LLMModelDownloader;
 import org.eclipse.deeplearning4j.llm.generation.GenerationPipeline.GenerationSession;
 import org.eclipse.deeplearning4j.llm.generation.kvcache.KvCacheStrategy;
@@ -146,6 +149,55 @@ public class TestQwen35MtpDecode {
         tokenizer = null;
     }
 
+    private static GenerationResult generateMeasured(GenerationPipeline pipeline, String mode) throws Exception {
+        boolean timing = Boolean.getBoolean("mtp.benchmark.opTiming");
+        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+        log.info("[MTP-BENCHMARK] backend={} native={} mode={} tokens={} opTiming={} scope=generation-including-prefill",
+                backend, Nd4j.getNativeOps().getClass().getSimpleName(), mode, TOKENS, timing);
+        if (timing) {
+            Nd4j.getNativeOps().resetOpTiming();
+            Nd4j.getNativeOps().setOpTimingEnabled(1, 1);
+        }
+        try {
+            return pipeline.generate(PROMPT, TOKENS);
+        } finally {
+            if (timing) {
+                try {
+                    Nd4j.getNativeOps().flushOpTiming();
+                    log.info("[MTP-OP-PROFILE] backend={} mode={} scope=generation-including-prefill", backend, mode);
+                    Nd4j.getNativeOps().printOpTimingStats(20);
+                } finally {
+                    Nd4j.getNativeOps().setOpTimingEnabled(0, 0);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testPreparedPredictorMatchesCapturedReference() throws Exception {
+        PreparedReference reference = new PreparedReference(System.getProperty("mtp.reference.gguf"),
+                System.getProperty("qwen.mtp.snapshotPrefix"));
+        GenerationPipelineConfig config = GenerationPipelineConfig.builder()
+                .decoder(model).tokenizer(tokenizer)
+                .samplingConfig(SamplingConfig.speculative().toBuilder().minNewTokens(24).build())
+                .maxNewTokens(24).maxSpeculativeTokens(SPEC_K)
+                .maxPrefillLength(64).maxKvCacheLength(192)
+                .kvCacheStrategy(KvCacheStrategy.STATIC)
+                .graphOptimizerEnabled(false).dspEnabled(true).build();
+        try (GenerationPipeline pipeline = GenerationPipeline.create(config);
+             GenerationSession session = pipeline.startSession(PROMPT)) {
+            InGraphKvState state = session.retainedStateForInspection();
+            assertNotNull(state.mtpExecutor);
+            if (Boolean.getBoolean("mtp.reference.prefillOnly")) {
+                reference.verifyAfterPrefill(System.getProperty("mtp.reference.gguf"), state.mtpPrefillInputMap);
+            } else {
+                try (var binding = state.mtpExecutor.captureNativeExecutionBinding()) {
+                    reference.verify(binding);
+                }
+            }
+        }
+    }
+
     @Test
     public void testBundledMtpIsLosslessAndEngaged() throws Exception {
         SamplingConfig mtpSampling = SamplingConfig.speculative().toBuilder()
@@ -179,7 +231,7 @@ public class TestQwen35MtpDecode {
                         result.getSpeculativeSteps());
             }
 
-            mtpResult = pipeline.generate(PROMPT, TOKENS);
+            mtpResult = generateMeasured(pipeline, "MTP");
             log.info("[MTP-METRICS] tokens={} proposed={} accepted={} steps={} acceptance={} "
                             + "tok/s={} decodeTok/s={} lateTok/s={} effectiveTok/s={}",
                     mtpResult.getTokenIds().length, mtpResult.getTotalSpeculativeTokens(),
@@ -190,7 +242,7 @@ public class TestQwen35MtpDecode {
                     mtpResult.getEffectiveTokensPerSecond());
 
             pipeline.setSamplingConfig(greedySampling);
-            greedyResult = pipeline.generate(PROMPT, TOKENS);
+            greedyResult = generateMeasured(pipeline, "GREEDY");
             log.info("[MTP-GREEDY-METRICS] tokens={} tok/s={} decodeTok/s={} lateTok/s={}",
                     greedyResult.getTokenIds().length, greedyResult.getTokensPerSecond(),
                     greedyResult.getDecodeTokensPerSecond(),
@@ -557,6 +609,9 @@ public class TestQwen35MtpDecode {
     }
 
     private void runTargetWindowRowsMatchChainedScalarCheckpoints(boolean requestAttentionAux) throws Exception {
+        if (Boolean.getBoolean("mtp.parity.productionConfig")) {
+            BenchmarkConfigApplier.apply(BenchmarkConfig.optimal());
+        }
         final int window = 5;
         final int maxKvLength = 192;
         List<INDArray> owned = new ArrayList<>();

@@ -297,7 +297,9 @@ void autoregressiveDecode(
 
     // ── Timing ──
     std::vector<double> stepTimesMs;
+    std::vector<int> stepTokenCounts;
     stepTimesMs.reserve(maxNewTokens);
+    stepTokenCounts.reserve(maxNewTokens);
     auto loopStart = std::chrono::high_resolution_clock::now();
 
     // ── Internal state ──
@@ -833,6 +835,7 @@ void autoregressiveDecode(
         // step counter — without this check the next step writes past the
         // generatedTokenIds buffer (maxNewTokens-sized) and over-reports count.
         if (tokensGenerated >= maxNewTokens) break;
+        const int tokensBeforeStep = tokensGenerated;
         auto stepStart = std::chrono::high_resolution_clock::now();
 
         // ── Step 1: Update plan external inputs for this decode step ──
@@ -1950,6 +1953,7 @@ void autoregressiveDecode(
             auto stepEnd = std::chrono::high_resolution_clock::now();
             double stepMs = std::chrono::duration<double, std::milli>(stepEnd - stepStart).count();
             stepTimesMs.push_back(stepMs);
+            stepTokenCounts.push_back(tokensGenerated - tokensBeforeStep);
 
             // Publish the pending final token and positions even on termination.
             // ── Step 6: Embedding lookup for next step ─────────────────────────
@@ -2150,6 +2154,7 @@ void autoregressiveDecode(
         auto stepEnd = std::chrono::high_resolution_clock::now();
         double stepMs = std::chrono::duration<double, std::milli>(stepEnd - stepStart).count();
         stepTimesMs.push_back(stepMs);
+        stepTokenCounts.push_back(tokensGenerated - tokensBeforeStep);
 
         if (shouldStop) break;
         if (matchedRepetition) {
@@ -2326,7 +2331,8 @@ void autoregressiveDecode(
     timingInfo->p(9, static_cast<float>(speculativeStepCount));
     if (!stepTimesMs.empty()) {
         double avgMs = totalMs / stepTimesMs.size();
-        double tokPerSec = stepTimesMs.size() > 0 ? (stepTimesMs.size() * 1000.0 / totalMs) : 0.0;
+        // Throughput counts finalized emitted tokens; latency remains per step.
+        double tokPerSec = totalMs > 0.0 ? (tokensGenerated * 1000.0 / totalMs) : 0.0;
 
         std::vector<double> sorted = stepTimesMs;
         std::sort(sorted.begin(), sorted.end());
@@ -2345,12 +2351,15 @@ void autoregressiveDecode(
         if (static_cast<int>(stepTimesMs.size()) > LATE_STEADY_START) {
             double lateSteadyTotalMs = 0.0;
             int lateSteadyCount = 0;
+            LongType lateSteadyTokens = 0;
             for (int i = LATE_STEADY_START; i < static_cast<int>(stepTimesMs.size()); i++) {
                 lateSteadyTotalMs += stepTimesMs[i];
+                lateSteadyTokens += stepTokenCounts[i];
                 lateSteadyCount++;
             }
             double lateSteadyAvgMs = lateSteadyTotalMs / lateSteadyCount;
-            double lateSteadyTokPerSec = lateSteadyCount * 1000.0 / lateSteadyTotalMs;
+            double lateSteadyTokPerSec = lateSteadyTotalMs > 0.0
+                ? lateSteadyTokens * 1000.0 / lateSteadyTotalMs : 0.0;
             timingInfo->p(5, static_cast<float>(lateSteadyTokPerSec));
             timingInfo->p(6, static_cast<float>(lateSteadyAvgMs));
         } else {

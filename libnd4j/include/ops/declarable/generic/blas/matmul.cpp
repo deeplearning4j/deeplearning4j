@@ -26,6 +26,7 @@
 #if NOT_EXCLUDED(OP_matmul)
 
 #include <helpers/MmulHelper.h>
+#include <ops/declarable/helpers/matmul.h>
 #include <ops/declarable/headers/blas.h>
 
 namespace sd {
@@ -44,7 +45,7 @@ CUSTOM_OP_IMPL(matmul, 2, 1, false, 0, -2) {
   const LongType arithmetic = iSize > 3 ? INT_ARG(3) : 0;
   REQUIRE_TRUE(arithmetic == 0 || arithmetic == 1, 0,
                "MATMUL OP: arithmetic must be 0 (legacy) or 1 (SERIAL_FMA)");
-  if(x->isEmpty() || y->isEmpty()) return Status::OK;
+  if (arithmetic == 0 && (x->isEmpty() || y->isEmpty())) return Status::OK;
   // optional use alpha nad beta
   iSize = (int)block.getTArguments()->size();
   double alpha = iSize > 0 ? T_ARG(0) : 1.0;
@@ -61,13 +62,15 @@ CUSTOM_OP_IMPL(matmul, 2, 1, false, 0, -2) {
   if (arithmetic == 1) {
     REQUIRE_TRUE(x->rankOf() > 0 && y->rankOf() > 0, 0,
                  "MATMUL SERIAL_FMA: scalar operands are unsupported");
-    const auto dtype = x->dataType();
-    REQUIRE_TRUE(dtype == y->dataType() && dtype == z->dataType() &&
-                     (dtype == DataType::FLOAT32 || dtype == DataType::DOUBLE ||
-                      dtype == DataType::HALF || dtype == DataType::BFLOAT16), 0,
-                 "MATMUL SERIAL_FMA: expected same HALF/BFLOAT16/FLOAT/DOUBLE storage dtype");
+    const auto outputType = block.numD() > 0 ? D_ARG(0) : x->dataType();
+    REQUIRE_TRUE(block.numD() <= 1 &&
+                     helpers::matmulSerialStorageSupported(x->dataType(), y->dataType(), outputType) &&
+                     z->dataType() == outputType &&
+                     (block.numD() > 0 || x->dataType() == y->dataType()), 0,
+                 "MATMUL SERIAL_FMA: expected matching storage or explicit FLOAT output with HALF/BFLOAT16/FLOAT inputs");
     const auto expected = ShapeUtils::evalShapeForMatmul(x->shapeInfo(), y->shapeInfo(), transX, transY);
     REQUIRE_TRUE(z->isSameShape(expected), 0, "MATMUL SERIAL_FMA: output shape mismatch");
+    if (x->isEmpty() || y->isEmpty()) return Status::OK;
     REQUIRE_TRUE(x->getDataBuffer() != z->getDataBuffer() && y->getDataBuffer() != z->getDataBuffer(), 0,
                  "MATMUL SERIAL_FMA: output must not alias an input");
     // Preserve the logical strides instead of flattening batch/transposed axes.
@@ -213,10 +216,11 @@ DECLARE_SHAPE_FN(matmul) {
     REQUIRE_TRUE(shape::rank(xShapeInfo) > 0 && shape::rank(yShapeInfo) > 0, 0,
                  "MATMUL SERIAL_FMA: scalar operands are unsupported");
     const auto dtype = ArrayOptions::dataType(xShapeInfo);
-    REQUIRE_TRUE(dtype == ArrayOptions::dataType(yShapeInfo) &&
-                     (dtype == DataType::HALF || dtype == DataType::BFLOAT16 ||
-                      dtype == DataType::FLOAT32 || dtype == DataType::DOUBLE), 0,
-                 "MATMUL SERIAL_FMA: expected matching HALF/BFLOAT16/FLOAT/DOUBLE operands");
+    const auto otherType = ArrayOptions::dataType(yShapeInfo);
+    const auto outputType = block.numD() > 0 ? D_ARG(0) : dtype;
+    REQUIRE_TRUE(block.numD() <= 1 && helpers::matmulSerialStorageSupported(dtype, otherType, outputType) &&
+                     (block.numD() > 0 || dtype == otherType), 0,
+                 "MATMUL SERIAL_FMA: expected matching storage or explicit FLOAT output with HALF/BFLOAT16/FLOAT inputs");
   }
   int transX = iSize > 0 ? INT_ARG(0) : 0;
   int transY = iSize > 1 ? INT_ARG(1) : 0;
@@ -241,8 +245,10 @@ DECLARE_SHAPE_FN(matmul) {
 
   // we just pick the higher data type out of X and Y
   auto dtypeZ = dtypeX > dtypeY ? dtypeX : dtypeY;
+  if (iSize > 3 && INT_ARG(3) == 1 && block.numD() > 0) dtypeZ = D_ARG(0);
   if(shape::isEmptyConst(xShapeInfo) || shape::isEmptyConst(yShapeInfo)) {
-    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(ArrayOptions::dataType(xShapeInfo),zShapeOnly));
+    const auto emptyType = iSize > 3 && INT_ARG(3) == 1 ? dtypeZ : dtypeX;
+    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(emptyType, zShapeOnly));
   }
 
   auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtypeZ, zOrder, zShapeOnly);

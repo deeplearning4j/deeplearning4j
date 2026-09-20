@@ -21,7 +21,8 @@ inline bool supportsArguments(const NativeSlot& slot) {
       slot.args.numIArgs == 4 && slot.args.iArgs[3] == 1 &&
       slot.args.numTArgs >= 0 && slot.args.numTArgs <= 2 &&
       (slot.args.numTArgs == 0 || slot.args.tArgs != nullptr) &&
-      slot.args.numBArgs == 0 && slot.args.numDArgs == 0 && slot.args.numSArgs == 0 &&
+      slot.args.numBArgs == 0 && slot.args.numDArgs >= 0 && slot.args.numDArgs <= 1 &&
+      (slot.args.numDArgs == 0 || slot.args.dArgs != nullptr) && slot.args.numSArgs == 0 &&
       !Environment::getInstance().isTritonExcludedOp(name) &&
       slot.wiring.numInputs == 2 && slot.wiring.numOutputs == 1 &&
       TritonTargetDispatch::detectTarget() == TritonGpuTarget::NVIDIA;
@@ -42,14 +43,21 @@ inline NDArray* resolve(int src, NDArray** outputs, int nOutputs,
 
 // Initial compiled layout domain: nonempty rank>=2 matrices/equal-rank batches
 // and ND/2D combinations, positive-stride inputs, dense C-order output. Reject
-// vectors, mixed storage, aliasing, unavailable metadata and oversized indices.
+// vectors, aliasing, unavailable metadata and oversized indices. Explicit FLOAT
+// output admits independent HALF/BFLOAT16/FLOAT input storage.
 // Buffer pointers already include the view base; strides below are relative.
 inline bool supports(const NativeSlot& slot, NDArray* a, NDArray* b, NDArray* c) {
   if (!supportsArguments(slot) || !a || !b || !c) return false;
   const auto dt = a->dataType();
-  if (b->dataType() != dt || c->dataType() != dt ||
-      (dt != DataType::HALF && dt != DataType::BFLOAT16 &&
-       dt != DataType::FLOAT32 && dt != DataType::DOUBLE)) return false;
+  const auto outputType = slot.args.numDArgs > 0 ? slot.args.dArgs[0] : dt;
+  if (c->dataType() != outputType) return false;
+  auto floatStorage = [](DataType type) {
+    return type == DataType::HALF || type == DataType::BFLOAT16 || type == DataType::FLOAT32;
+  };
+  if (slot.args.numDArgs > 0 && outputType == DataType::FLOAT32) {
+    if (!floatStorage(dt) || !floatStorage(b->dataType())) return false;
+  } else if (b->dataType() != dt || outputType != dt ||
+             (!floatStorage(dt) && dt != DataType::DOUBLE)) return false;
   if (a->getDataBuffer() == c->getDataBuffer() || b->getDataBuffer() == c->getDataBuffer()) return false;
   const LongType limit = std::numeric_limits<int>::max() - 16384;
   for (auto* array : {a, b, c}) {

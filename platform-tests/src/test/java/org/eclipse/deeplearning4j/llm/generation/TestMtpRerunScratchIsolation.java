@@ -84,6 +84,13 @@ public class TestMtpRerunScratchIsolation {
             runCommit(target, predictor, result -> {
                 assertEquals(3, result[1].getLong(0), "two accepted drafts plus correction");
                 assertEquals(2, result[2].getFloat(8), 0.0f, "forced acceptance length");
+                double elapsedMs = result[2].getDouble(0);
+                double tokensPerSecond = result[2].getDouble(2);
+                assertTrue(elapsedMs > 0.0, "timing interval must be positive");
+                assertEquals(3.0, tokensPerSecond * elapsedMs / 1000.0, 1e-5,
+                        "throughput numerator must count three emitted tokens, not one step");
+                assertEquals(tokensPerSecond, result[2].getDouble(5), 1e-5,
+                        "short-run late throughput must use the same emitted-token rate");
                 assertEquals(DRAFT_TOKEN, result[0].getLong(0), "emitted 0 = accepted draft");
                 assertEquals(DRAFT_TOKEN, result[0].getLong(1), "emitted 1 = accepted draft");
                 assertEquals(CORRECTION_TOKEN, result[0].getLong(2),

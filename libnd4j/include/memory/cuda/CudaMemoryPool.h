@@ -77,6 +77,13 @@ class SD_LIB_EXPORT CudaMemoryPool {
    */
   static CudaMemoryPool& getInstance();
 
+  // Copies preserve the supplied stream and wait for stream-ordered allocation
+  // readiness (not subsequent writes). Both endpoints may be interior pointers.
+  static cudaError_t memcpyAsync(void* dst, const void* src, size_t bytes,
+                                 cudaMemcpyKind kind, cudaStream_t stream);
+  static cudaError_t memcpyPeerAsync(void* dst, int dstDevice, const void* src,
+                                     int srcDevice, size_t bytes, cudaStream_t stream);
+
   /**
    * Check if peer-to-peer access is enabled between two devices.
    * Returns true if srcDevice can directly access dstDevice memory.

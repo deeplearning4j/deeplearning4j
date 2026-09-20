@@ -177,8 +177,20 @@ void Environment_queryCudaDeviceLimits(size_t& stackSize,
   if (cudaDeviceGetLimit(&value, cudaLimitPrintfFifoSize) == cudaSuccess)
     printfFifoSize = value;
 
-  if (cudaDeviceGetLimit(&value, cudaLimitDevRuntimeSyncDepth) == cudaSuccess)
-    devRuntimeSyncDepth = value;
+  // Device-side synchronization was removed on compute capability >= 9.0.
+  // Querying its limit on those devices raises cudaErrorUnsupportedLimit and
+  // leaves a sticky error for subsequent initialization calls.
+  int device = -1;
+  int computeMajor = 0;
+  if (cudaGetDevice(&device) == cudaSuccess &&
+      cudaDeviceGetAttribute(&computeMajor, cudaDevAttrComputeCapabilityMajor, device) == cudaSuccess) {
+    if (computeMajor < 9) {
+      if (cudaDeviceGetLimit(&value, cudaLimitDevRuntimeSyncDepth) == cudaSuccess)
+        devRuntimeSyncDepth = value;
+    } else {
+      devRuntimeSyncDepth = 0;
+    }
+  }
 
   if (cudaDeviceGetLimit(&value, cudaLimitDevRuntimePendingLaunchCount) == cudaSuccess)
     devRuntimePendingLaunchCount = value;

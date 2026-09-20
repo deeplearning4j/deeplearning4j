@@ -60,6 +60,95 @@ public class TestReproducibleMmul extends BaseNd4jTestWithBackends {
                 .map(t -> Arguments.of(a.get()[0], t)));
     }
 
+    public static Stream<Arguments> mixedStorageConfigs() {
+        return configs().flatMap(backend -> Stream.of(DataType.HALF, DataType.BFLOAT16, DataType.FLOAT)
+                .flatMap(a -> Stream.of(DataType.HALF, DataType.BFLOAT16, DataType.FLOAT)
+                        .map(b -> Arguments.of(backend.get()[0], a, b))));
+    }
+
+    @ParameterizedTest
+    @MethodSource("mixedStorageConfigs")
+    public void serialMixedStorageMatchesExplicitFp32Casts(Nd4jBackend backend, DataType aType, DataType bType) {
+        for (char order : new char[]{'c', 'f'}) {
+            try (INDArray a = Nd4j.create(aType, new long[]{2, 3}, 'c');
+                 INDArray b = Nd4j.create(bType, new long[]{3, 2}, order);
+                 INDArray actual = Nd4j.valueArrayOf(new long[]{2, 2}, 0.5, DataType.FLOAT);
+                 INDArray expected = Nd4j.valueArrayOf(new long[]{2, 2}, 0.5, DataType.FLOAT)) {
+                for (int r = 0; r < 2; r++) for (int k = 0; k < 3; k++)
+                    a.putScalar(new long[]{r, k}, (r + 1) * (k + 1) * 0.125);
+                for (int k = 0; k < 3; k++) for (int c = 0; c < 2; c++)
+                    b.putScalar(new long[]{k, c}, (k - c + 1) * 0.25);
+                try (INDArray af = Nd4j.create(DataType.FLOAT, a.shape(), a.ordering());
+                     INDArray bf = Nd4j.create(DataType.FLOAT, b.shape(), b.ordering())) {
+                    af.assign(a);
+                    bf.assign(b);
+                    Nd4j.getExecutioner().exec(serial(af, bf, expected, 0.75, 0.25, false, false, false));
+                }
+                Mmul op = serial(a, b, actual, 0.75, 0.25, false, false, false);
+                op.addDArgument(DataType.FLOAT);
+                assertEquals(List.of(DataType.FLOAT), op.calculateOutputDataTypes(List.of(aType, bType)));
+                Nd4j.getExecutioner().exec(op);
+                assertBits(expected, actual, "direct storage " + aType + "/" + bType + " order=" + order);
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("mixedStorageConfigs")
+    public void serialMixedStorageGraphSeesWeightUpdatesWithoutCasts(Nd4jBackend backend, DataType aType, DataType bType) {
+        try (INDArray input = Nd4j.ones(aType, 1, 3);
+             SameDiff sd = SameDiff.create()) {
+            SDVariable x = sd.placeHolder("x", aType, 1, 3);
+            SDVariable w = sd.var("w", Nd4j.ones(bType, 3, 2));
+            Mmul op = new Mmul(sd, x, w, MMulTranspose.allFalse(), Mmul.Arithmetic.SERIAL_FMA);
+            op.addDArgument(DataType.FLOAT);
+            op.outputVariable().rename("out");
+            sd.setOutputs("out");
+            assertEquals(0, count(sd, "cast"), "no materialized FP32 operand conversion");
+            for (int step = 1; step <= 8; step++) {
+                w.getArr().assign(step);
+                INDArray result = sd.output(Map.of("x", input), "out").get("out");
+                assertEquals(DataType.FLOAT, result.dataType());
+                assertEquals(3.0f * step, result.getFloat(0), 0.0f);
+                assertEquals(3.0f * step, result.getFloat(1), 0.0f);
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("mixedStorageConfigs")
+    public void serialMixedStorageTiledWindowOracle(Nd4jBackend backend, DataType aType, DataType bType) {
+        // Cross K/N tile boundaries and the one-row/four-row kernel specializations.
+        final int n = 131;
+        for (int k : new int[]{31, 33, 65, 257}) {
+            try (INDArray one = Nd4j.create(aType, 1, k);
+                 INDArray weights = Nd4j.create(bType, new long[]{k, n}, 'f')) {
+                fill(one, 0);
+                fill(weights, 2);
+                float[] expected = new float[n];
+                for (int col = 0; col < n; col++) {
+                    float sum = 0.0f;
+                    for (int p = 0; p < k; p++)
+                        sum = Math.fma(one.getFloat(0, p), weights.getFloat(p, col), sum);
+                    expected[col] = sum;
+                }
+                for (int rows : new int[]{1, 5, 64}) {
+                    try (INDArray input = Nd4j.create(aType, rows, k);
+                         INDArray output = Nd4j.create(DataType.FLOAT, rows, n)) {
+                        for (int row = 0; row < rows; row++) for (int p = 0; p < k; p++)
+                            input.putScalar(row, p, one.getDouble(0, p));
+                        Mmul op = serial(input, weights, output, 1, 0, false, false, false);
+                        op.addDArgument(DataType.FLOAT);
+                        Nd4j.getExecutioner().exec(op);
+                        for (int row = 0; row < rows; row++) for (int col = 0; col < n; col++)
+                            assertEquals(Float.floatToIntBits(expected[col]), Float.floatToIntBits(output.getFloat(row, col)),
+                                    "ordered " + aType + "/" + bType + " W=" + rows + " K=" + k + " row=" + row + " col=" + col);
+                    }
+                }
+            }
+        }
+    }
+
     private static Mmul serial(INDArray a, INDArray b, INDArray out, double alpha, double beta,
                                boolean ta, boolean tb, boolean tz) {
         return new Mmul(a, b, out, alpha, beta, MMulTranspose.builder()

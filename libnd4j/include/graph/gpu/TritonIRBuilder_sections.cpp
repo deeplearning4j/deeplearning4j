@@ -2004,7 +2004,8 @@ void TritonIRBuilder::emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Locat
                                             int M, int N, int K,
                                             const NativeSlot* serialSlot,
                                             NDArray* aArray, NDArray* bArray, NDArray* cArray) {
-  const bool serial = serialSlot != nullptr;
+  const bool serial = serialSlot != nullptr && dsp::hasNonLegacyMatmulArithmetic(*serialSlot);
+  const bool hasLayout = serialSlot != nullptr && aArray != nullptr && bArray != nullptr && cArray != nullptr;
   bool tx = false, ty = false;
   if (serial) {
     if (!triton_matmul::supports(*serialSlot, aArray, bArray, cArray))
@@ -2029,9 +2030,13 @@ void TritonIRBuilder::emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Locat
     for (const char* key : {"denormal-fp-math", "denormal-fp-math-f32"})
       attributes.push_back(builder.getArrayAttr({builder.getStringAttr(key), builder.getStringAttr("ieee,ieee")}));
     function->setAttr("passthrough", builder.getArrayAttr(attributes));
-    tx = serialSlot->args.iArgs[0] != 0;
-    ty = serialSlot->args.iArgs[1] != 0;
-    if (serialSlot->args.iArgs[2]) {
+  }
+  // Layout belongs to every arithmetic mode, not just SERIAL_FMA. In
+  // particular cast outputs may retain F-order from transposed weights.
+  if (hasLayout) {
+    tx = serialSlot->args.numIArgs > 0 && serialSlot->args.iArgs[0] != 0;
+    ty = serialSlot->args.numIArgs > 1 && serialSlot->args.iArgs[1] != 0;
+    if (serialSlot->args.numIArgs > 2 && serialSlot->args.iArgs[2]) {
       std::swap(aArray, bArray);
       std::swap(aPtr, bPtr);
       const bool oldTx = tx;
@@ -2055,7 +2060,7 @@ void TritonIRBuilder::emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Locat
   auto splatBase = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, offsetBase);
   auto offsets = builder.create<mlir::arith::AddIOp>(loc, splatBase, range);
 
-  int totalElements = serial ? static_cast<int>(cArray->lengthOf()) : M * N;
+  int totalElements = hasLayout ? static_cast<int>(cArray->lengthOf()) : M * N;
   auto nElemConst = builder.create<mlir::arith::ConstantIntOp>(loc, totalElements, 32);
   auto splatN = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, nElemConst);
   auto mask = builder.create<mlir::arith::CmpIOp>(
@@ -2100,7 +2105,7 @@ void TritonIRBuilder::emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Locat
   mlir::Value bOffset = builder.create<mlir::arith::AddIOp>(loc,
       builder.create<mlir::arith::MulIOp>(loc, splatK, splatNConst), colIndices);
 
-  if (serial) {
+  if (hasLayout) {
     // Project output coordinates through each input's own strides. Batch axes
     // are not flattened into M; 2D operands are reused across every batch.
     auto intConstant = [&](LongType value) -> mlir::Value {
@@ -2124,7 +2129,10 @@ void TritonIRBuilder::emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Locat
         offset = builder.create<mlir::arith::AddIOp>(loc, offset, term);
       };
       addAxis(coords[cArray->rankOf() - (left ? 2 : 1)], outAxis);
-      for (int d = 0; d < rank - 2; ++d) addAxis(coords[d], d);
+      const int batchShift = cArray->rankOf() - rank;
+      for (int d = 0; d < rank - 2; ++d) {
+        if (array->sizeAt(d) != 1) addAxis(coords[d + batchShift], d);
+      }
       return offset;
     };
     aOffset = inputOffset(aArray, tx, true);
@@ -2157,15 +2165,17 @@ void TritonIRBuilder::emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Locat
 
   // When TF32 enabled, truncate mantissa to 10 bits to match cuBLAS TF32 tensor ops.
   // TF32: zero the low 13 mantissa bits of FP32 (AND with 0xFFFFE000).
+  // Tensor bitcasts must use the Triton dialect: the TTIR-to-TTGIR and
+  // GPU-to-LLVM pipelines legalize tt.bitcast, not tensor arith.bitcast.
   if (useTf32) {
     auto i32TensorTypeLocal = mlir::RankedTensorType::get({blockSize}, i32Type);
     auto tf32Mask = splatConstantI32(builder, loc, i32TensorTypeLocal, static_cast<int>(0xFFFFE000u));
-    auto aBits = builder.create<mlir::arith::BitcastOp>(loc, i32TensorTypeLocal, aVal);
+    auto aBits = builder.create<mlir::triton::BitcastOp>(loc, i32TensorTypeLocal, aVal);
     auto aTrunc = builder.create<mlir::arith::AndIOp>(loc, aBits, tf32Mask);
-    aVal = builder.create<mlir::arith::BitcastOp>(loc, f32TensorType, aTrunc);
-    auto bBits = builder.create<mlir::arith::BitcastOp>(loc, i32TensorTypeLocal, bVal);
+    aVal = builder.create<mlir::triton::BitcastOp>(loc, f32TensorType, aTrunc);
+    auto bBits = builder.create<mlir::triton::BitcastOp>(loc, i32TensorTypeLocal, bVal);
     auto bTrunc = builder.create<mlir::arith::AndIOp>(loc, bBits, tf32Mask);
-    bVal = builder.create<mlir::arith::BitcastOp>(loc, f32TensorType, bTrunc);
+    bVal = builder.create<mlir::triton::BitcastOp>(loc, f32TensorType, bTrunc);
   }
 
   mlir::Value newAcc;
@@ -2184,7 +2194,20 @@ void TritonIRBuilder::emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Locat
   builder.setInsertionPointAfter(forOp);
   mlir::Value finalAcc = forOp.getResult(0);
   auto splatCPtr = builder.create<mlir::triton::SplatOp>(loc, cPtrTensorType, cPtr);
-  auto cPtrs = builder.create<mlir::triton::AddPtrOp>(loc, cPtrTensorType, splatCPtr, offsets);
+  mlir::Value cOffsets = offsets;
+  if (hasLayout) {
+    cOffsets = splatConstantI32(builder, loc, i32TensorType, 0);
+    mlir::Value remaining = offsets;
+    for (int d = cArray->rankOf() - 1; d >= 0; --d) {
+      auto size = splatConstantI32(builder, loc, i32TensorType, static_cast<int>(cArray->sizeAt(d)));
+      auto coord = builder.create<mlir::arith::RemSIOp>(loc, remaining, size);
+      remaining = builder.create<mlir::arith::DivSIOp>(loc, remaining, size);
+      auto stride = splatConstantI32(builder, loc, i32TensorType, static_cast<int>(cArray->stridesOf()[d]));
+      cOffsets = builder.create<mlir::arith::AddIOp>(loc, cOffsets,
+          builder.create<mlir::arith::MulIOp>(loc, coord, stride));
+    }
+  }
+  auto cPtrs = builder.create<mlir::triton::AddPtrOp>(loc, cPtrTensorType, splatCPtr, cOffsets);
   if (serial) {
     const double alpha = serialSlot->args.numTArgs > 0 ? serialSlot->args.tArgs[0] : 1.0;
     const double beta = serialSlot->args.numTArgs > 1 ? serialSlot->args.tArgs[1] : 0.0;

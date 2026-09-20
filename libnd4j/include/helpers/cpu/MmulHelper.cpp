@@ -40,12 +40,12 @@
 namespace sd {
 
 // Explicit, shape-invariant arithmetic. Parallelize outputs, never the K recurrence.
-// Private template is completely defined before its selective single-type dispatch.
-template <typename T>
+// Private templates are completely defined before their selective dispatch.
+template <typename X, typename Y = X, typename Z = X>
 static void serialGemm(NDArray* x, NDArray* y, NDArray* z, bool tx, bool ty, double alpha, double beta) {
-  const T* xb = x->bufferAsT<T>();
-  const T* yb = y->bufferAsT<T>();
-  T* zb = z->bufferAsT<T>();
+  const X* xb = x->bufferAsT<X>();
+  const Y* yb = y->bufferAsT<Y>();
+  Z* zb = z->bufferAsT<Z>();
   const auto* xs = x->shapeInfo();
   const auto* ys = y->shapeInfo();
   const auto* zs = z->shapeInfo();
@@ -60,10 +60,16 @@ static void serialGemm(NDArray* x, NDArray* y, NDArray* z, bool tx, bool ty, dou
 
 void MmulHelper::matmulSerial(LaunchContext* context, NDArray* x, NDArray* y, NDArray* z,
                             bool tx, bool ty, double alpha, double beta) {
+  if (!ops::helpers::matmulSerialStorageSupported(x->dataType(), y->dataType(), z->dataType()))
+    THROW_EXCEPTION("MATMUL SERIAL_FMA: unsupported storage dtype combination");
   if (z->isEmpty()) return;
+  if (x->getDataBuffer() == z->getDataBuffer() || y->getDataBuffer() == z->getDataBuffer())
+    THROW_EXCEPTION("MATMUL SERIAL_FMA: output must not alias an input");
   if (beta != 0.0) NDArray::preparePrimaryUse({z}, {x, y, z});
   else NDArray::preparePrimaryUse({z}, {x, y});
-  BUILD_SINGLE_SELECTOR(x->dataType(), serialGemm, (x, y, z, tx, ty, alpha, beta), SD_FLOAT_TYPES);
+  BUILD_TRIPLE_SELECTOR(x->dataType(), y->dataType(), z->dataType(), serialGemm,
+                        (x, y, z, tx, ty, alpha, beta),
+                        SD_FLOAT_TYPES, SD_FLOAT_TYPES, SD_FLOAT_TYPES);
   NDArray::registerPrimaryUse({z}, {x, y});
 }
 

@@ -732,7 +732,9 @@ void autoregressiveDecode(
 
     // -- Timing --
     std::vector<double> stepTimesMs;
+    std::vector<int> stepTokenCounts;
     stepTimesMs.reserve(maxNewTokens);
+    stepTokenCounts.reserve(maxNewTokens);
     auto loopStart = std::chrono::high_resolution_clock::now();
 
     // -- Internal state --
@@ -1564,8 +1566,11 @@ void autoregressiveDecode(
         if (!config->planOwnsKvScatter || rows <= 0
                 || config->kvInputExtIndices == nullptr || numKvPairs <= 0) return;
         kvRowSnapshotBase = base;
-        kvRowSnapshotRows.assign(numKvPairs, rows);
-        for (int kv = 0; kv < numKvPairs; kv++) {
+        // Indices contain all keys followed by all values. Both halves must
+        // roll back before re-executing an accepted prefix.
+        const int numKvBuffers = 2 * numKvPairs;
+        kvRowSnapshotRows.assign(numKvBuffers, rows);
+        for (int kv = 0; kv < numKvBuffers; kv++) {
             int extIdx = config->kvInputExtIndices[kv];
             NDArray* src = (extIdx >= 0 && extIdx < numExtInputs)
                 ? extInputs[extIdx] : nullptr;
@@ -1619,7 +1624,9 @@ void autoregressiveDecode(
                 cudaGetErrorString(restoreErr));
             NDArray::registerSpecialUse({dst}, {snap});
         }
-        kvRowSnapshotBase = -1;
+        // Keep the pre-verification snapshot valid for another rollback in
+        // this transaction (e.g. a disagreeing rerun shortened to one row).
+        // The next committed step retires it before capturing a new snapshot.
     };
     // Capture every recurrent state ext input (GDN + conv pairs) into the dedicated
     // owned snapshot arrays. Called immediately before the plan execution that may
@@ -2669,6 +2676,8 @@ void autoregressiveDecode(
     LongType speculativeStepCount = 0;
 
     for (int step = 0; step < maxNewTokens; step++) {
+        // A rollback snapshot belongs to one commit transaction, not one restore.
+        kvRowSnapshotBase = -1;
         // Cancellation is observed only at a committed step boundary. This
         // keeps KV/recurrent state coherent for a later continuation.
         if (config->cancelCallback != nullptr &&
@@ -2679,6 +2688,7 @@ void autoregressiveDecode(
         // step counter - without this check the next step writes past the
         // generatedTokenIds buffer (maxNewTokens-sized) and over-reports count.
         if (tokensGenerated >= maxNewTokens) break;
+        const int tokensBeforeStep = tokensGenerated;
         auto stepStart = std::chrono::high_resolution_clock::now();
 
         // -- Step 1: Update plan external inputs for this decode step --
@@ -3744,26 +3754,13 @@ void autoregressiveDecode(
                 }
                 Status rerunStatus = Status::OK;
                 {
-                    // IN-PLAN POISON FALLBACK (gates 5-10 evidence chain):
-                    // SCALAR_RETRY retry=NaN on identical inputs + full scalar
-                    // ext-input scan (probed=105 float, inNaN=0) + inert KV-row
-                    // restore + gate-10 (maintenance forward ALONE poisons the
-                    // captured scalar plan on the next call) => the captured
-                    // scalar plan's INTERNAL memory (shared output slots /
-                    // workspace with interleaved plan executions) is the
-                    // poison vector. Route the rerun through the WINDOW plan at
-                    // activeWindow=1 - the exact geometry the teacher-forced
-                    // window4 gate proved equivalent to chained scalar and the
-                    // geometry proven interleave-tolerant - preserving parity
-                    // without the poisoned capture. The refill above already
-                    // set activeWindow=1 and the restore re-established the
-                    // pre-verify state in the live ext inputs the window plan
-                    // reads. The captured scalar plan is RETIRED from the hot
-                    // loop entirely (see the main-path retirement note).
+                    // Re-execute the fixed-width window plan from the restored
+                    // pre-verification state. The mask, positions and actual
+                    // sequence length above select the consumed prefix;
+                    // physical tensor width remains config->windowMax.
                     DSP_DIAG(KV_CACHE,
-                             "SCALAR_RERUN_BYPASS step=%d - rerun via window plan "
-                             "activeWindow=1 (captured scalar plan retired, gates 5-10)",
-                             step);
+                             "PREFIX_RERUN_EXECUTE step=%d activeWindow=%d physicalWidth=%d",
+                             step, rerunActiveWindow, config->windowMax);
                     rerunStatus = plan->executeSteadyState(
                         extInputs, numExtInputs, planOutputs, numPlanOutputs,
                         reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)));
@@ -4428,6 +4425,7 @@ void autoregressiveDecode(
             auto tStopCheck = std::chrono::high_resolution_clock::now();
             double stepMs = std::chrono::duration<double, std::milli>(tStopCheck - stepStart).count();
             stepTimesMs.push_back(stepMs);
+            stepTokenCounts.push_back(tokensGenerated - tokensBeforeStep);
 
             // Publish the terminal input/position too; the last output is pending,
             // not consumed. This is part of the same prefix commit as a live step.
@@ -4818,6 +4816,7 @@ void autoregressiveDecode(
         // when detailed sub-step timing (stepTimingEnabled) is off.
         double stepMs = std::chrono::duration<double, std::milli>(tStopCheck - stepStart).count();
         stepTimesMs.push_back(stepMs);
+        stepTokenCounts.push_back(tokensGenerated - tokensBeforeStep);
 
         if (shouldStop) break;
         if (matchedRepetition) {
@@ -4997,7 +4996,8 @@ void autoregressiveDecode(
     timingInfo->p(9, static_cast<float>(speculativeStepCount));
     if (!stepTimesMs.empty()) {
         double avgMs = totalMs / stepTimesMs.size();
-        double tokPerSec = stepTimesMs.size() > 0 ? (stepTimesMs.size() * 1000.0 / totalMs) : 0.0;
+        // Throughput counts finalized emitted tokens; latency remains per step.
+        double tokPerSec = totalMs > 0.0 ? (tokensGenerated * 1000.0 / totalMs) : 0.0;
 
         std::vector<double> sorted = stepTimesMs;
         std::sort(sorted.begin(), sorted.end());
@@ -5017,12 +5017,15 @@ void autoregressiveDecode(
         if (static_cast<int>(stepTimesMs.size()) > LATE_STEADY_START) {
             double lateSteadyTotalMs = 0.0;
             int lateSteadyCount = 0;
+            LongType lateSteadyTokens = 0;
             for (int i = LATE_STEADY_START; i < static_cast<int>(stepTimesMs.size()); i++) {
                 lateSteadyTotalMs += stepTimesMs[i];
+                lateSteadyTokens += stepTokenCounts[i];
                 lateSteadyCount++;
             }
             double lateSteadyAvgMs = lateSteadyTotalMs / lateSteadyCount;
-            double lateSteadyTokPerSec = lateSteadyCount * 1000.0 / lateSteadyTotalMs;
+            double lateSteadyTokPerSec = lateSteadyTotalMs > 0.0
+                ? lateSteadyTokens * 1000.0 / lateSteadyTotalMs : 0.0;
             timingInfo->p(5, static_cast<float>(lateSteadyTokPerSec));
             timingInfo->p(6, static_cast<float>(lateSteadyAvgMs));
         } else {

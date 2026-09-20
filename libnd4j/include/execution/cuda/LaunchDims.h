@@ -207,6 +207,12 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define BLOCK_SIZE_MATMUL_SERIAL_FMA getEnvVariable("BLOCK_SIZE_MATMUL_SERIAL_FMA", 256)
 #define SHARED_MEM_SIZE_MATMUL_SERIAL_FMA getEnvVariable("SHARED_MEM_SIZE_MATMUL_SERIAL_FMA", 0)
 
+// Ordered-FMA operand staging: 128 columns x (32 K + one bank pad), plus 4 x 32 A values.
+// The launcher validates the fixed tile/thread/shared-memory contract.
+#define GRID_SIZE_MATMUL_SERIAL_FMA_TILED getEnvVariable("GRID_SIZE_MATMUL_SERIAL_FMA_TILED", 256)
+#define BLOCK_SIZE_MATMUL_SERIAL_FMA_TILED getEnvVariable("BLOCK_SIZE_MATMUL_SERIAL_FMA_TILED", 128)
+#define SHARED_MEM_SIZE_MATMUL_SERIAL_FMA_TILED getEnvVariable("SHARED_MEM_SIZE_MATMUL_SERIAL_FMA_TILED", 17408)
+
 #define GRID_SIZE_MATRIX_MULTIPLY getEnvVariable("GRID_SIZE_MATRIX_MULTIPLY", 256)
 #define BLOCK_SIZE_MATRIX_MULTIPLY getEnvVariable("BLOCK_SIZE_MATRIX_MULTIPLY", 256)
 #define SHARED_MEM_SIZE_MATRIX_MULTIPLY getEnvVariable("SHARED_MEM_SIZE_MATRIX_MULTIPLY", 256)
