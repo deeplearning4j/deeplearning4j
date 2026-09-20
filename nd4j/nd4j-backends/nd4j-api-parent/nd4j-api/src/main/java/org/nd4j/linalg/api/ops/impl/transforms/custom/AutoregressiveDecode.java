@@ -1024,6 +1024,49 @@ public class AutoregressiveDecode extends DynamicCustomOp {
      * 53..57 ids/mask/position/cache/active-length indices; 58/59 mapping lengths;
      * 60+ scalar-input-to-window-input map, then window-output-to-scalar-output map.</p>
      */
+    private static final long MTP_REPAIR_TRAILER_MARKER = 0x4D545052L;
+
+    /**
+     * Attach an optional KV-only predictor repair plan. The trailer is appended
+     * after the existing scalar-target trailer and is versioned by a marker so
+     * older callers keep the established ABI unchanged.
+     */
+    public AutoregressiveDecode withMtpRepairPlan(
+            Pointer planHandle, Pointer contextHandle,
+            int numPlanExternalInputs, int numPlanOutputs,
+            int inputIdsExtIdx, int targetHiddenExtIdx, int causalMaskExtIdx,
+            int positionOffsetExtIdx, int cachePositionExtIdx,
+            int keyOutputIdx, int valueOutputIdx,
+            int keyInputExtIdx, int valueInputExtIdx) {
+        if (planHandle == null || planHandle.isNull() || contextHandle == null || contextHandle.isNull()) {
+            throw new IllegalArgumentException("MTP repair requires non-null plan and context handles");
+        }
+        if (numPlanExternalInputs <= 0 || numPlanOutputs <= 0
+                || inputIdsExtIdx < 0 || targetHiddenExtIdx < 0
+                || positionOffsetExtIdx < 0
+                || keyOutputIdx < 0 || valueOutputIdx < 0) {
+            throw new IllegalArgumentException("MTP repair metadata is incomplete");
+        }
+        while (tArguments.size() < 45) tArguments.add(0.0);
+        long planAddress = planHandle.address();
+        long contextAddress = contextHandle.address();
+        for (double value : new double[]{
+                (double) MTP_REPAIR_TRAILER_MARKER,
+                (double) (planAddress & 0xFFFFFFFFL),
+                (double) ((planAddress >>> 32) & 0xFFFFFFFFL),
+                (double) (contextAddress & 0xFFFFFFFFL),
+                (double) ((contextAddress >>> 32) & 0xFFFFFFFFL),
+                (double) numPlanExternalInputs, (double) numPlanOutputs,
+                (double) inputIdsExtIdx, (double) targetHiddenExtIdx,
+                (double) causalMaskExtIdx, (double) positionOffsetExtIdx,
+                (double) cachePositionExtIdx, (double) keyOutputIdx,
+                (double) valueOutputIdx, (double) keyInputExtIdx,
+                (double) valueInputExtIdx}) {
+            tArguments.add(value);
+        }
+        return this;
+    }
+
     public AutoregressiveDecode withScalarTargetPlan(
             NativeExecutionBinding binding, String[] targetInputKeys, List<String> targetOutputs,
             String inputIdsName, String causalMaskName, String positionOffsetName,

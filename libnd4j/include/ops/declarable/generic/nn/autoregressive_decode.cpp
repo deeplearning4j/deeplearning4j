@@ -349,12 +349,15 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
     decodeConfig.mtpHiddenOutputIdx = static_cast<int>(T_ARG(41));
     decodeConfig.targetHiddenOutputIdx = static_cast<int>(T_ARG(42));
 
-    // Optional scalar ABI, documented by AutoregressiveDecode.withScalarTargetPlan.
-    // Any advertised trailer must be complete; it is never silently ignored.
-    if (block.getTArguments()->size() > 45) {
-      REQUIRE_TRUE(block.getTArguments()->size() >= 60, 0,
+    // Optional scalar ABI, documented by AutoregressiveDecode.withScalarTargetPlan,
+    // followed by an optional versioned KV-only repair trailer.
+    constexpr double MTP_REPAIR_TRAILER_MARKER = 0x4D545052;
+    const size_t tArgCount = block.getTArguments()->size();
+    size_t repairStart = tArgCount;
+    if (tArgCount > 45 && T_ARG(45) != MTP_REPAIR_TRAILER_MARKER) {
+      REQUIRE_TRUE(tArgCount >= 60, 0,
                    "autoregressive_decode: incomplete scalar target metadata");
-      for (size_t i = 45; i < block.getTArguments()->size(); ++i) {
+      for (size_t i = 45; i < 60; ++i) {
         double value = T_ARG(i);
         double maxValue = i <= 48 ? 4294967295.0 : static_cast<double>(std::numeric_limits<int>::max());
         REQUIRE_TRUE(std::isfinite(value) && value >= 0 && value <= maxValue && std::floor(value) == value,
@@ -366,8 +369,7 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
       uint64_t scalarCtxAddr =
           (static_cast<uint64_t>(static_cast<uint32_t>(T_ARG(48))) << 32)
           | static_cast<uint64_t>(static_cast<uint32_t>(T_ARG(47)));
-      auto* scalarPlan =
-          reinterpret_cast<graph::NativeDynamicShapePlan*>(scalarPlanAddr);
+      auto* scalarPlan = reinterpret_cast<graph::NativeDynamicShapePlan*>(scalarPlanAddr);
       void* scalarCtx = reinterpret_cast<void*>(scalarCtxAddr);
       REQUIRE_TRUE(scalarPlan != nullptr && scalarCtx != nullptr, 0,
                    "autoregressive_decode: scalar plan/context must both be non-null");
@@ -383,11 +385,63 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
       decodeConfig.scalarCachePositionExtIdx = static_cast<int>(T_ARG(56));
       decodeConfig.scalarActualSequenceLengthExtIdx = static_cast<int>(T_ARG(57));
       int ni = static_cast<int>(T_ARG(58)), no = static_cast<int>(T_ARG(59));
-      REQUIRE_TRUE(ni > 0 && no > 0 && ni == decodeConfig.scalarNumPlanExternalInputs
-                       && static_cast<size_t>(60) + ni + no == block.getTArguments()->size(),
+      repairStart = static_cast<size_t>(60 + ni + no);
+      REQUIRE_TRUE(ni > 0 && no > 0 && repairStart <= tArgCount
+                       && (repairStart == tArgCount || T_ARG(repairStart) == MTP_REPAIR_TRAILER_MARKER),
                    0, "autoregressive_decode: invalid scalar mapping lengths");
       for (int i = 0; i < ni; ++i) decodeConfig.scalarInputToTarget.push_back(static_cast<int>(T_ARG(60 + i)));
       for (int i = 0; i < no; ++i) decodeConfig.targetOutputToScalar.push_back(static_cast<int>(T_ARG(60 + ni + i)));
+    } else if (tArgCount > 45) {
+      repairStart = 45;
+    }
+    if (repairStart < tArgCount) {
+      REQUIRE_TRUE(tArgCount == repairStart + 16 && T_ARG(repairStart) == MTP_REPAIR_TRAILER_MARKER,
+                   0, "autoregressive_decode: malformed MTP repair trailer");
+      for (size_t i = repairStart; i < tArgCount; ++i) {
+        double value = T_ARG(i);
+        const bool pointerHalf = i >= repairStart + 1 && i <= repairStart + 4;
+        const bool optionalIndex = i == repairStart + 9   // causal mask
+            || i == repairStart + 11                       // cache position
+            || i == repairStart + 14                       // key-cache input
+            || i == repairStart + 15;                      // value-cache input
+        const double minimum = optionalIndex ? -1.0 : 0.0;
+        const double maximum = pointerHalf
+            ? 4294967295.0 : static_cast<double>(std::numeric_limits<int>::max());
+        REQUIRE_TRUE(std::isfinite(value) && value >= minimum
+                         && value <= maximum && std::floor(value) == value,
+                     0, "autoregressive_decode: invalid MTP repair metadata at tArg %d", static_cast<int>(i));
+      }
+      const size_t r = repairStart + 1;
+      uint64_t repairPlanAddr =
+          (static_cast<uint64_t>(static_cast<uint32_t>(T_ARG(r + 1))) << 32)
+          | static_cast<uint64_t>(static_cast<uint32_t>(T_ARG(r)));
+      uint64_t repairCtxAddr =
+          (static_cast<uint64_t>(static_cast<uint32_t>(T_ARG(r + 3))) << 32)
+          | static_cast<uint64_t>(static_cast<uint32_t>(T_ARG(r + 2)));
+      decodeConfig.mtpRepairPlanHandle =
+          reinterpret_cast<graph::NativeDynamicShapePlan*>(repairPlanAddr);
+      decodeConfig.mtpRepairExtInputContext = reinterpret_cast<void*>(repairCtxAddr);
+      decodeConfig.mtpRepairNumPlanExternalInputs = static_cast<int>(T_ARG(r + 4));
+      decodeConfig.mtpRepairNumPlanOutputs = static_cast<int>(T_ARG(r + 5));
+      decodeConfig.mtpRepairInputIdsExtIdx = static_cast<int>(T_ARG(r + 6));
+      decodeConfig.mtpRepairTargetHiddenExtIdx = static_cast<int>(T_ARG(r + 7));
+      decodeConfig.mtpRepairCausalMaskExtIdx = static_cast<int>(T_ARG(r + 8));
+      decodeConfig.mtpRepairPositionOffsetExtIdx = static_cast<int>(T_ARG(r + 9));
+      decodeConfig.mtpRepairCachePositionExtIdx = static_cast<int>(T_ARG(r + 10));
+      decodeConfig.mtpRepairKeyOutputIdx = static_cast<int>(T_ARG(r + 11));
+      decodeConfig.mtpRepairValueOutputIdx = static_cast<int>(T_ARG(r + 12));
+      decodeConfig.mtpRepairKvInputExtIndices[0] = static_cast<int>(T_ARG(r + 13));
+      decodeConfig.mtpRepairKvInputExtIndices[1] = static_cast<int>(T_ARG(r + 14));
+      REQUIRE_TRUE(decodeConfig.mtpRepairPlanHandle != nullptr
+                       && decodeConfig.mtpRepairExtInputContext != nullptr
+                       && decodeConfig.mtpRepairNumPlanExternalInputs > 0
+                       && decodeConfig.mtpRepairNumPlanOutputs > 0
+                       && decodeConfig.mtpRepairInputIdsExtIdx >= 0
+                       && decodeConfig.mtpRepairTargetHiddenExtIdx >= 0
+                       && decodeConfig.mtpRepairPositionOffsetExtIdx >= 0
+                       && decodeConfig.mtpRepairKeyOutputIdx >= 0
+                       && decodeConfig.mtpRepairValueOutputIdx >= 0,
+                   0, "autoregressive_decode: invalid MTP repair plan metadata");
     }
 
     decodeConfig.mtpInputIds = mtpInputIds;

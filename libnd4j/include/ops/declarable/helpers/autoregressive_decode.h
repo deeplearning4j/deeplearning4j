@@ -226,6 +226,22 @@ struct AutoregressiveDecodeConfig {
     int mtpHiddenOutputIdx = -1;
     int targetHiddenOutputIdx = -1;  // pre-final-norm target hidden rows
 
+    // Optional KV-only retained-row repair plan. The plan produces K/V states
+    // without the predictor LM head; the decode helper scatters those states
+    // through the existing stride-aware BSHD writer.
+    graph::NativeDynamicShapePlan* mtpRepairPlanHandle = nullptr;
+    void* mtpRepairExtInputContext = nullptr;
+    int mtpRepairNumPlanExternalInputs = 0;
+    int mtpRepairNumPlanOutputs = 0;
+    int mtpRepairInputIdsExtIdx = -1;
+    int mtpRepairTargetHiddenExtIdx = -1;
+    int mtpRepairCausalMaskExtIdx = -1;
+    int mtpRepairPositionOffsetExtIdx = -1;
+    int mtpRepairCachePositionExtIdx = -1;
+    int mtpRepairKvInputExtIndices[2] = {-1, -1};
+    int mtpRepairKeyOutputIdx = -1;
+    int mtpRepairValueOutputIdx = -1;
+
     // T3b-dual: width-1 target plan captured from the same session's scalar
     // warmup. The rerun (asl=1 re-execution) routes through this plan so its
     // row-0 logits are greedy-identical: two separately-frozen plans (W-substrate

@@ -157,6 +157,20 @@ class InGraphKvState implements AutoCloseable {
     Pointer mtpPlanHandle;
     Pointer mtpContextHandle;
 
+    /** Optional retained-row K/V-only repair plan; shares immutable graph weights with MTP. */
+    NativeExecutionBinding mtpRepairBinding;
+    InferenceSession mtpRepairSession;
+    int mtpRepairInputIdsExtIdx = -1;
+    int mtpRepairTargetHiddenExtIdx = -1;
+    int mtpRepairCausalMaskExtIdx = -1;
+    int mtpRepairPositionOffsetExtIdx = -1;
+    int mtpRepairCachePositionExtIdx = -1;
+    int[] mtpRepairKvInputExtIndices;
+    int mtpRepairKeyOutputIdx = -1;
+    int mtpRepairValueOutputIdx = -1;
+    int mtpRepairNumPlanExternalInputs;
+    int mtpRepairNumPlanOutputs;
+
     // ── Frozen plan handles (owned by the decoder's InferenceSession — NOT closed here) ──────────
     DynamicShapePlanExecutor executor;
     Pointer planHandle;
@@ -328,6 +342,22 @@ class InGraphKvState implements AutoCloseable {
         // Lease/context wrappers must be released before any borrowed buffers or sessions.
         // Leave ownership retryable if binding teardown fails.
         closeScalarTarget();
+        if (mtpRepairBinding != null) {
+            try {
+                mtpRepairBinding.close();
+            } finally {
+                mtpRepairBinding = null;
+            }
+        }
+        if (mtpRepairSession != null) {
+            try {
+                mtpRepairSession.clearAllCaches();
+            } catch (Exception e) {
+                log.warn("[GenerationSession] error clearing MTP repair session: {}", e.getMessage());
+            } finally {
+                mtpRepairSession = null;
+            }
+        }
         closed = true;
         // Destroy the isolated predictor plan before releasing any external inputs it references.
         if (mtpSession != null) {

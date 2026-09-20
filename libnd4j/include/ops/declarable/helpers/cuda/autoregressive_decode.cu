@@ -1767,8 +1767,12 @@ void autoregressiveDecode(
         ? reinterpret_cast<graph::Context*>(config->mtpExtInputContext) : nullptr;
     std::vector<NDArray*> mtpExtInputsVec;
     std::vector<NDArray*> mtpPlanOutputsVec;
+    std::vector<NDArray*> mtpRepairExtInputsVec;
+    std::vector<NDArray*> mtpRepairPlanOutputsVec;
     NDArray** mtpExtInputs = nullptr;
     NDArray** mtpPlanOutputs = nullptr;
+    NDArray** mtpRepairExtInputs = nullptr;
+    NDArray** mtpRepairPlanOutputs = nullptr;
     int mtpNumExtInputs = 0;
     int mtpNumOutputs = 0;
     LongType mtpMaskLen = 0;
@@ -1844,6 +1848,43 @@ void autoregressiveDecode(
         // addresses and attention writes rows in place (no per-call copy needed).
     }
 
+    const bool mtpRepairReady = config->mtpRepairPlanHandle != nullptr
+        && config->mtpRepairExtInputContext != nullptr;
+    if (mtpRepairReady) {
+        auto* repairContext = reinterpret_cast<graph::Context*>(config->mtpRepairExtInputContext);
+        REQUIRE_TRUE(config->mtpRepairNumPlanExternalInputs > 0
+                         && config->mtpRepairNumPlanOutputs > 0,
+                     0, "autoregressive_decode: invalid MTP repair plan dimensions");
+        mtpRepairExtInputsVec.resize(config->mtpRepairNumPlanExternalInputs);
+        for (int i = 0; i < config->mtpRepairNumPlanExternalInputs; i++) {
+            mtpRepairExtInputsVec[i] = repairContext->array(i);
+        }
+        auto setRepairInput = [&](int idx, NDArray* array) {
+            if (idx >= 0 && idx < static_cast<int>(mtpRepairExtInputsVec.size()))
+                mtpRepairExtInputsVec[idx] = array;
+        };
+        setRepairInput(config->mtpRepairInputIdsExtIdx, config->mtpInputIds);
+        setRepairInput(config->mtpRepairTargetHiddenExtIdx, config->mtpTargetHidden);
+        setRepairInput(config->mtpRepairCausalMaskExtIdx, config->mtpCausalMask);
+        setRepairInput(config->mtpRepairPositionOffsetExtIdx, config->mtpPositionOffset);
+        setRepairInput(config->mtpRepairCachePositionExtIdx, config->mtpCachePosition);
+        setRepairInput(config->mtpRepairKvInputExtIndices[0], config->mtpKvBuffers[0]);
+        setRepairInput(config->mtpRepairKvInputExtIndices[1], config->mtpKvBuffers[1]);
+        mtpRepairExtInputs = mtpRepairExtInputsVec.data();
+        mtpRepairPlanOutputsVec.resize(config->mtpRepairNumPlanOutputs, nullptr);
+        mtpRepairPlanOutputs = mtpRepairPlanOutputsVec.data();
+        auto markRepairVariable = [&](int idx) {
+            if (idx >= 0) config->mtpRepairPlanHandle->markExternalInputVariable(idx);
+        };
+        markRepairVariable(config->mtpRepairInputIdsExtIdx);
+        markRepairVariable(config->mtpRepairTargetHiddenExtIdx);
+        markRepairVariable(config->mtpRepairCausalMaskExtIdx);
+        markRepairVariable(config->mtpRepairPositionOffsetExtIdx);
+        markRepairVariable(config->mtpRepairCachePositionExtIdx);
+        markRepairVariable(config->mtpRepairKvInputExtIndices[0]);
+        markRepairVariable(config->mtpRepairKvInputExtIndices[1]);
+    }
+
     // KV_CACHE-gated chain probe: per chain exec, sample the carry-in hidden,
     // input token, and hidden-out (async D2H on the exec stream, drained by the
     // acceptance path's existing sync - no new sync points). Diagnoses whether
@@ -1893,6 +1934,86 @@ void autoregressiveDecode(
         cudaMemcpyAsync(liveArray->specialBuffer(), src, bytes,
                         cudaMemcpyDeviceToDevice, *stream);
         NDArray::registerSpecialUse({liveArray}, {});
+    };
+
+    // Execute the optional KV-only repair plan and scatter its BSHD outputs into
+    // the predictor cache. This path intentionally has no logits/hidden output
+    // publication, so it cannot execute the predictor LM head or recursive carry.
+    auto executeMtpRepairCuda = [&](LongType targetTokenPosition) {
+        REQUIRE_TRUE(mtpRepairReady, 0,
+                     "autoregressive_decode: MTP KV-only repair plan is unavailable");
+        const LongType predictorRow = targetTokenPosition - 1;
+        REQUIRE_TRUE(targetTokenPosition >= 1 && predictorRow >= 0, 0,
+                     "autoregressive_decode: invalid KV-only repair target position");
+        NDArray::prepareSpecialUse({config->mtpPositionOffset, config->mtpCachePosition}, {});
+        updatePositionIdsKernel<<<1, 1, 0, *stream>>>(
+            config->mtpPositionOffset->specialBuffer(), predictorRow);
+        updatePositionIdsKernel<<<1, 1, 0, *stream>>>(
+            config->mtpCachePosition->specialBuffer(), predictorRow);
+        if (config->mtpRepairCausalMaskExtIdx >= 0) {
+            NDArray::prepareSpecialUse({config->mtpCausalMask}, {});
+            BUILD_SINGLE_SELECTOR(config->mtpCausalMask->dataType(), updateCausalMaskLauncher,
+                                  (stream, config->mtpCausalMask->specialBuffer(),
+                                   predictorRow, mtpMaskLen), SD_FLOAT_TYPES);
+            NDArray::registerSpecialUse({config->mtpCausalMask}, {});
+        }
+        NDArray::registerSpecialUse({config->mtpPositionOffset, config->mtpCachePosition}, {});
+        // The retained carry/token writes above run on the decode caller stream,
+        // while the independent repair plan may replay on the DSP execution
+        // stream. Preserve the same device-side happens-before contract as the
+        // full predictor path; without it, the repair plan can consume stale
+        // staging/carry data only when host timing is fast enough to expose it.
+        void* repairCarryEvent = sd::graph::dspCreateEvent();
+        REQUIRE_TRUE(repairCarryEvent != nullptr, 0,
+                     "autoregressive_decode: failed to create CUDA MTP repair carry event");
+        sd::graph::dspEventRecord(repairCarryEvent, *stream);
+        void* repairDspStream = sd::graph::dspGetExecutionStream();
+        if (repairDspStream != nullptr
+                && repairDspStream != static_cast<void*>(*stream)) {
+            sd::graph::dspStreamWaitEvent(repairDspStream, repairCarryEvent);
+        }
+        sd::graph::dspDestroyEvent(repairCarryEvent);
+        const auto repairPhaseBefore = config->mtpRepairPlanHandle->getPlanPhase();
+        Status repairStatus = config->mtpRepairPlanHandle->executeSteadyState(
+            mtpRepairExtInputs, config->mtpRepairNumPlanExternalInputs,
+            mtpRepairPlanOutputs, config->mtpRepairNumPlanOutputs,
+            reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)));
+        const auto repairPhaseAfter = config->mtpRepairPlanHandle->getPlanPhase();
+        if (repairPhaseBefore != repairPhaseAfter) p0.planPhaseTransitions++;
+        if (repairPhaseAfter == graph::PlanPhase::REPLAYING) p0.planReplayForwards++;
+        else p0.planWarmupForwards++;
+        REQUIRE_TRUE(repairStatus == Status::OK, 0,
+                     "autoregressive_decode: KV-only repair plan failed at row %lld",
+                     (long long)predictorRow);
+        REQUIRE_TRUE(config->mtpRepairKeyOutputIdx >= 0
+                         && config->mtpRepairKeyOutputIdx < config->mtpRepairNumPlanOutputs
+                         && config->mtpRepairValueOutputIdx >= 0
+                         && config->mtpRepairValueOutputIdx < config->mtpRepairNumPlanOutputs,
+                     0, "autoregressive_decode: KV-only repair output indices are invalid");
+        NDArray* key = mtpRepairPlanOutputs[config->mtpRepairKeyOutputIdx];
+        NDArray* value = mtpRepairPlanOutputs[config->mtpRepairValueOutputIdx];
+        REQUIRE_TRUE(key != nullptr && value != nullptr && key->rankOf() == 4 && value->rankOf() == 4,
+                     0, "autoregressive_decode: KV-only repair outputs are invalid");
+        NDArray::prepareSpecialUse({config->mtpKvBuffers[0], config->mtpKvBuffers[1]}, {key, value});
+        ops::helpers::kvInPlaceWriteBSHD(config->mtpKvBuffers[0], key,
+                                         config->mtpCachePosition->specialBuffer(), context);
+        ops::helpers::kvInPlaceWriteBSHD(config->mtpKvBuffers[1], value,
+                                         config->mtpCachePosition->specialBuffer(), context);
+        NDArray::registerSpecialUse({config->mtpKvBuffers[0], config->mtpKvBuffers[1]}, {key, value});
+        // The scatter is queued on the caller stream, while the next predictor
+        // replay may use the DSP execution stream. Publish the repaired cache
+        // row across that boundary before returning to the decode loop.
+        void* repairScatterEvent = sd::graph::dspCreateEvent();
+        REQUIRE_TRUE(repairScatterEvent != nullptr, 0,
+                     "autoregressive_decode: failed to create CUDA MTP repair scatter event");
+        sd::graph::dspEventRecord(repairScatterEvent, *stream);
+        void* nextDspStream = sd::graph::dspGetExecutionStream();
+        if (nextDspStream != nullptr
+                && nextDspStream != static_cast<void*>(*stream)) {
+            sd::graph::dspStreamWaitEvent(nextDspStream, repairScatterEvent);
+        }
+        sd::graph::dspDestroyEvent(repairScatterEvent);
+        p0.predictorRepairForwards++;
     };
 
     auto executeMtpCuda = [&](LongType targetTokenPosition, int draftSlot, bool writeTargetRow) {
@@ -4245,7 +4366,8 @@ void autoregressiveDecode(
                     // and must not enter predictor KV). Predictor row
                     // base+j consumes emitted[j] (target position base+1+j).
                     setMtpNextInputCuda(specArgmaxDevice, j, repairPosition);
-                    executeMtpCuda(repairPosition, 0, false);
+                    if (mtpRepairReady) executeMtpRepairCuda(repairPosition);
+                    else executeMtpCuda(repairPosition, 0, false);
                     DSP_DIAG(KV_CACHE,
                              "MTP_PREFIX_REPAIR step=%d targetPos=%lld predictorRow=%lld committedRow=%d "
                              "carryRow=%d - rewriting predictor KV row with target hidden",

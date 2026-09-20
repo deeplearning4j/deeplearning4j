@@ -2916,6 +2916,18 @@ public class GenerationPipeline implements AutoCloseable {
             state.mtpHiddenOutputIdx = preparedMtp.hiddenOutputIdx;
             state.mtpNumPlanExternalInputs = preparedMtp.numPlanExternalInputs;
             state.mtpNumPlanOutputs = preparedMtp.numPlanOutputs;
+            state.mtpRepairBinding = preparedMtp.repairBinding;
+            state.mtpRepairSession = preparedMtp.repairSession;
+            state.mtpRepairInputIdsExtIdx = preparedMtp.repairInputIdsExtIdx;
+            state.mtpRepairTargetHiddenExtIdx = preparedMtp.repairTargetHiddenExtIdx;
+            state.mtpRepairCausalMaskExtIdx = preparedMtp.repairCausalMaskExtIdx;
+            state.mtpRepairPositionOffsetExtIdx = preparedMtp.repairPositionOffsetExtIdx;
+            state.mtpRepairCachePositionExtIdx = preparedMtp.repairCachePositionExtIdx;
+            state.mtpRepairKvInputExtIndices = preparedMtp.repairKvInputExtIndices;
+            state.mtpRepairKeyOutputIdx = preparedMtp.repairKeyOutputIdx;
+            state.mtpRepairValueOutputIdx = preparedMtp.repairValueOutputIdx;
+            state.mtpRepairNumPlanExternalInputs = preparedMtp.repairNumPlanExternalInputs;
+            state.mtpRepairNumPlanOutputs = preparedMtp.repairNumPlanOutputs;
         }
         state.kvInputNames = kvInputNames;
         state.recurrentStates = recurrentStates;
@@ -4292,6 +4304,22 @@ public class GenerationPipeline implements AutoCloseable {
                                 state.cachePosName, state.actualSeqLenName,
                                 state.logitsName, TARGET_HIDDEN_STATES_NAME);
                     }
+                    if (state.mtpRepairBinding != null) {
+                        NativeExecutionBinding repairBinding = state.mtpRepairBinding;
+                        op.withMtpRepairPlan(
+                                repairBinding.getPlanHandle(), repairBinding.getContextHandle(),
+                                state.mtpRepairNumPlanExternalInputs,
+                                state.mtpRepairNumPlanOutputs,
+                                state.mtpRepairInputIdsExtIdx,
+                                state.mtpRepairTargetHiddenExtIdx,
+                                state.mtpRepairCausalMaskExtIdx,
+                                state.mtpRepairPositionOffsetExtIdx,
+                                state.mtpRepairCachePositionExtIdx,
+                                state.mtpRepairKeyOutputIdx,
+                                state.mtpRepairValueOutputIdx,
+                                state.mtpRepairKvInputExtIndices[0],
+                                state.mtpRepairKvInputExtIndices[1]);
+                    }
                 }
                 applyConfiguredStopSequences(op, state.generatedSoFar);
 
@@ -5596,6 +5624,22 @@ public class GenerationPipeline implements AutoCloseable {
         }
     }
 
+    /** Resolve a retained-plan input by the exact buffer owner captured at completion. */
+    private static int findBoundInputIndex(
+            NativeExecutionBinding binding, INDArray expected) {
+        if (binding == null || expected == null) return -1;
+        INDArray[] inputs = binding.getExternalInputsSnapshot();
+        for (int index = 0; index < inputs.length; index++) {
+            INDArray candidate = inputs[index];
+            if (candidate == expected) return index;
+            if (candidate != null && candidate.data() != null
+                    && expected.data() != null && candidate.data() == expected.data()) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
     private static final class MtpPreparedState {
         Map<String, INDArray> kvBuffers;
         Map<String, INDArray> prefillInputMap;
@@ -5618,6 +5662,18 @@ public class GenerationPipeline implements AutoCloseable {
         int hiddenOutputIdx;
         int numPlanExternalInputs;
         int numPlanOutputs;
+        NativeExecutionBinding repairBinding;
+        InferenceSession repairSession;
+        int repairInputIdsExtIdx = -1;
+        int repairTargetHiddenExtIdx = -1;
+        int repairCausalMaskExtIdx = -1;
+        int repairPositionOffsetExtIdx = -1;
+        int repairCachePositionExtIdx = -1;
+        int[] repairKvInputExtIndices;
+        int repairKeyOutputIdx = -1;
+        int repairValueOutputIdx = -1;
+        int repairNumPlanExternalInputs;
+        int repairNumPlanOutputs;
         // T3b-dual: width-1 target plan handle (greedy geometry) for the native
         // rerun; null when unavailable (rerun falls back to the W-substrate plan).
     }
@@ -5968,6 +6024,95 @@ public class GenerationPipeline implements AutoCloseable {
         prepared.numPlanExternalInputs = prepared.executor.getCurrentPlan() != null
                 ? prepared.executor.getCurrentPlan().getExternalInputKeys().length : 0;
         prepared.numPlanOutputs = decodeOutputsRequested.size();
+
+        // P1A: build an independent K/V-only repair plan from the same graph and
+        // immutable weights. Requesting only these outputs prunes the predictor
+        // LM head, logits/argmax, final vocabulary path, and downstream carry.
+        // The native controller will scatter these returned BSHD rows explicitly.
+        final boolean enableMtpRepair = Boolean.parseBoolean(
+                System.getProperty("nd4j.mtp.kvRepair", "true"));
+        if (!enableMtpRepair) {
+            log.info("[MTP-REPAIR] KV-only repair disabled by nd4j.mtp.kvRepair=false; "
+                    + "using the legacy predictor repair path");
+        }
+        if (enableMtpRepair) {
+            prepared.repairSession = reuseState != null && reuseState.mtpRepairSession != null
+                    ? reuseState.mtpRepairSession : decoder.getInferenceFactory().create(decoder);
+        List<String> repairOutputsRequested = Arrays.asList(
+                MTP_KEY_STATES_NAME, MTP_VALUE_STATES_NAME);
+        Map<String, INDArray> repairOutputs = outputWithSession(
+                prepared.repairSession, decodeInputs, repairOutputsRequested);
+        INDArray repairKey = repairOutputs.get(MTP_KEY_STATES_NAME);
+        INDArray repairValue = repairOutputs.get(MTP_VALUE_STATES_NAME);
+        if (repairKey == null || repairValue == null || repairKey.rank() != 4 || repairValue.rank() != 4) {
+            throw new IllegalStateException("MTP K/V repair plan did not return rank-4 states: "
+                    + repairOutputs.keySet());
+        }
+        DynamicShapePlanExecutor repairExecutor = prepared.repairSession
+                .getDynamicShapePlanExecutor();
+        if (repairExecutor == null || repairExecutor.getCurrentPlan() == null) {
+            throw new IllegalStateException("MTP K/V repair executor is unavailable");
+        }
+        repairExecutor.setMaxKvCacheLength((int) maxKvLen);
+        repairExecutor.configureMaxAllocationForKvCache(repairOutputs);
+        boolean repairSlotBySlot = decoder.getGraphExecutionMode() == GraphExecutionMode.SLOT_BY_SLOT
+                || Nd4j.getEnvironment().tritonSkipKernels();
+        if (!repairSlotBySlot) repairExecutor.setShapesFrozen(true);
+        try {
+            prepared.repairBinding = repairExecutor.captureNativeExecutionBinding();
+        } catch (BindingCaptureException failure) {
+            prepared.repairBinding = failure.getBinding();
+            throw failure;
+        }
+        String[] repairKeys = prepared.repairBinding.getExternalInputKeysSnapshot();
+        int repairInputs = prepared.repairBinding.getInputCount();
+        int repairOutputsCount = prepared.repairBinding.getOutputCount();
+        prepared.repairNumPlanExternalInputs = repairInputs;
+        prepared.repairNumPlanOutputs = repairOutputsCount;
+        // Disk-cached plans may expose normalized sd_var_* external keys even
+        // though the graph compiler logged semantic names. Bind the mutable
+        // inputs by their exact retained INDArray owners instead of relying on
+        // those serialized names. Cache/mask/KV inputs are optional: K/V-only
+        // projection pruning legitimately removes them from the dependency set.
+        prepared.repairInputIdsExtIdx = findBoundInputIndex(
+                prepared.repairBinding, prepared.inputIds);
+        prepared.repairTargetHiddenExtIdx = findBoundInputIndex(
+                prepared.repairBinding, prepared.targetHiddenStates);
+        prepared.repairCausalMaskExtIdx = findBoundInputIndex(
+                prepared.repairBinding, prepared.causalMask);
+        prepared.repairPositionOffsetExtIdx = findBoundInputIndex(
+                prepared.repairBinding, prepared.positionOffset);
+        prepared.repairCachePositionExtIdx = findBoundInputIndex(
+                prepared.repairBinding, prepared.cachePosition);
+        prepared.repairKvInputExtIndices = new int[]{
+                findBoundInputIndex(prepared.repairBinding, prepared.kvBuffers.get(MTP_KEY_CACHE_NAME)),
+                findBoundInputIndex(prepared.repairBinding, prepared.kvBuffers.get(MTP_VALUE_CACHE_NAME))};
+        prepared.repairKeyOutputIdx = repairOutputsRequested.indexOf(MTP_KEY_STATES_NAME);
+        prepared.repairValueOutputIdx = repairOutputsRequested.indexOf(MTP_VALUE_STATES_NAME);
+        if (prepared.repairInputIdsExtIdx < 0 || prepared.repairTargetHiddenExtIdx < 0
+                || prepared.repairPositionOffsetExtIdx < 0
+                || prepared.repairKeyOutputIdx < 0 || prepared.repairValueOutputIdx < 0) {
+            throw new IllegalStateException("MTP K/V repair plan has unresolved input/output indices: "
+                    + "ids=" + prepared.repairInputIdsExtIdx
+                    + " targetHidden=" + prepared.repairTargetHiddenExtIdx
+                    + " mask=" + prepared.repairCausalMaskExtIdx
+                    + " position=" + prepared.repairPositionOffsetExtIdx
+                    + " cachePosition=" + prepared.repairCachePositionExtIdx
+                    + " keyInput=" + prepared.repairKvInputExtIndices[0]
+                    + " valueInput=" + prepared.repairKvInputExtIndices[1]
+                    + " keyOutput=" + prepared.repairKeyOutputIdx
+                    + " valueOutput=" + prepared.repairValueOutputIdx
+                    + " externalKeys=" + Arrays.toString(repairKeys));
+        }
+        log.info("[MTP-REPAIR] prepared KV-only plan inputs={} outputs={} keyOut={} valueOut={} "
+                        + "keyInput={} valueInput={} scalarInputIds={} targetHidden={}",
+                repairInputs, repairOutputsCount, prepared.repairKeyOutputIdx,
+                prepared.repairValueOutputIdx, prepared.repairKvInputExtIndices[0],
+                prepared.repairKvInputExtIndices[1], prepared.repairInputIdsExtIdx,
+                prepared.repairTargetHiddenExtIdx);
+            repairKey.close();
+            repairValue.close();
+        }
 
         // Packet 1, step 6: after the warmup rewrote tail row N-1, publish the
         // pending pair (y1, h_N) and set BOTH retained predictor scalars to
