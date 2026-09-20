@@ -41,9 +41,12 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <functional>
 #include <limits>
+#include <map>
 #include <mutex>
 #include <sstream>
+#include <tuple>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -732,6 +735,31 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
     DSP_DIAG(COMPILE, "TritonIRBuilder::buildModule: segment [%d-%d] failed pre-check: %s",
               startSlot, endSlot, analysis.failureReason.c_str());
     return result;  // result.valid = false
+  }
+
+  // Pure pointwise kernels share the domain-aware lowering used by pointwise
+  // sections. One section is still one fused kernel; no intermediate launches
+  // or materializations are added. The old section-wide preload cannot express
+  // a shared source consumed under two distinct broadcast coordinate mappings.
+  bool purePointwise = true;
+  for (int si = startSlot; si <= endSlot && purePointwise; ++si) {
+    const auto& slot = slots[si];
+    auto cat = getOpCategory(slot.ident.opName);
+    purePointwise = slot.wiring.numOutputs == 1 &&
+        (cat == TritonOpCategory::BINARY_ELEMENTWISE || cat == TritonOpCategory::UNARY_ELEMENTWISE ||
+         cat == TritonOpCategory::COMPARISON || cat == TritonOpCategory::LOGICAL ||
+         cat == TritonOpCategory::TERNARY || cat == TritonOpCategory::CAST);
+    if (slot.wiring.numOutputs == 1 && cat == TritonOpCategory::IDENTITY) {
+      std::string name = slot.ident.opName;
+      std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+      purePointwise = name != "assign" && (slot.wiring.numInputs == 1 ||
+          name == "broadcast_to" || name == "broadcastto");
+    }
+  }
+  if (purePointwise) {
+    return buildSectionedModule(slots, startSlot, endSlot, totalSlots,
+        externalInputs, numExternalInputs, outputSlots, totalOutputSlots,
+        requestedOutputSlotIndices, numRequestedOutputs);
   }
 
   // Route small, pure matmul segments to the dedicated 2D tiled builder.
@@ -3195,12 +3223,11 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           auto cPtr = getSlotArgPtr(cSlot);
 
           if (aPtr && bPtr && cPtr) {
-            const bool serial = dsp::hasNonLegacyMatmulArithmetic(slot);
             emitPerElementMatmul(builder, loc, pid, blockSize, aPtr, bPtr, cPtr, M, N, K,
-                serial ? &slot : nullptr,
-                serial ? triton_matmul::resolve(aSrc, outputSlots, totalOutputSlots, externalInputs, numExternalInputs) : nullptr,
-                serial ? triton_matmul::resolve(bSrc, outputSlots, totalOutputSlots, externalInputs, numExternalInputs) : nullptr,
-                serial ? triton_matmul::resolve(cSlot, outputSlots, totalOutputSlots, externalInputs, numExternalInputs) : nullptr);
+                &slot,
+                triton_matmul::resolve(aSrc, outputSlots, totalOutputSlots, externalInputs, numExternalInputs),
+                triton_matmul::resolve(bSrc, outputSlots, totalOutputSlots, externalInputs, numExternalInputs),
+                triton_matmul::resolve(cSlot, outputSlots, totalOutputSlots, externalInputs, numExternalInputs));
 
             // Load result back for downstream SSA consumers
             DataType outDtype = FLOAT32;
@@ -5067,6 +5094,31 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
     }
   }
 
+  // Only independent casts may store each root immediately. Shared producers,
+  // broadcast expressions and trailing permutes retain domain-aware evaluation.
+  std::vector<bool> independentCastSections(sections.size(), false);
+  for (size_t s = 0; s < sections.size(); ++s) {
+    const auto& sec = sections[s];
+    bool independent = !sec.hasTrailingPermute &&
+        (sec.type == KernelSectionType::ELEMENTWISE || sec.type == KernelSectionType::IDENTITY);
+    for (int si = sec.startSlot; si <= sec.endSlot && independent; ++si) {
+      const auto& slot = slots[si];
+      independent = getOpCategory(slot.ident.opName) == TritonOpCategory::CAST &&
+          slot.wiring.numInputs == 1 && slot.wiring.numOutputs == 1 &&
+          !slot.aliasesInput() && !slot.isInPlaceFused();
+      if (independent) {
+        int input = slot.wiring.inputSourceIndices[0];
+        int output = slot.wiring.outputSlotIndices[0];
+        independent = !internalSlotOutputs.count(input) &&
+            resolveShape(input) == resolveShape(output);
+      }
+    }
+    independentCastSections[s] = independent;
+  }
+  const bool deferCastPointers = !sections.empty() &&
+      std::all_of(independentCastSections.begin(), independentCastSections.end(),
+                  [](bool independent) { return independent; });
+
   // Determine which outputs are cross-section intermediates:
   // produced in one section, consumed in a different section
   auto crossSectionIntermediates = dsp::identifyCrossSectionIntermediates(
@@ -5449,9 +5501,11 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   auto* entryBlock = funcOp.addEntryBlock();
   builder.setInsertionPointToStart(entryBlock);
 
-  // Unpack indirect args if needed
+  // Independent cast kernels load only the two pointers needed by an active
+  // root, inside its uniform guard. Never cache those region-local SSA values.
+  // Other kernels keep entry-block unpacking and its existing dominance contract.
   std::vector<mlir::Value> argUnpacked;
-  if (useIndirectArgs) {
+  if (useIndirectArgs && !deferCastPointers) {
     auto i64Type = builder.getI64Type();
     auto argArrayPtr = entryBlock->getArgument(0);
     for (int a = 0; a < totalBufferArgs; a++) {
@@ -5470,6 +5524,17 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   }
 
   auto getBufferArg = [&](int a) -> mlir::Value {
+    if (useIndirectArgs && deferCastPointers) {
+      auto argArrayPtr = entryBlock->getArgument(0);
+      auto index = builder.create<mlir::arith::ConstantIntOp>(loc, a, 64);
+      auto address = builder.create<mlir::triton::AddPtrOp>(
+          loc, argArrayPtr.getType(), argArrayPtr, index);
+      auto raw = builder.create<mlir::triton::LoadOp>(
+          loc, address, mlir::triton::CacheModifier::NONE,
+          mlir::triton::EvictionPolicy::NORMAL, false);
+      auto ptrType = mlir::triton::PointerType::get(getMLIRType(builder, result.args[a].dtype), 1);
+      return builder.create<mlir::triton::IntToPtrOp>(loc, ptrType, raw);
+    }
     if (useIndirectArgs) return argUnpacked[a];
     return entryBlock->getArgument(a);
   };
@@ -6060,7 +6125,32 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
         auto mask = builder.create<mlir::arith::CmpIOp>(
             loc, mlir::arith::CmpIPredicate::slt, offsets, splatN);
 
-        bool skipGenericPreload = (sec.type == KernelSectionType::NORMALIZATION);
+        // Only pure pointwise sections may be recomputed under a consumer's
+        // coordinates. Reduction, normalization, generation and assignment
+        // sections retain their ordered/specialized emission contracts.
+        auto isPointwise = [&](int si) {
+          const auto& slot = slots[si];
+          auto cat = getOpCategory(slot.ident.opName);
+          if (slot.wiring.numOutputs != 1) return false;
+          if (cat == TritonOpCategory::IDENTITY) {
+            std::string name = slot.ident.opName;
+            std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+            return name != "assign" && (slot.wiring.numInputs == 1 ||
+                name == "broadcast_to" || name == "broadcastto");
+          }
+          return cat == TritonOpCategory::BINARY_ELEMENTWISE ||
+                 cat == TritonOpCategory::UNARY_ELEMENTWISE ||
+                 cat == TritonOpCategory::COMPARISON ||
+                 cat == TritonOpCategory::LOGICAL ||
+                 cat == TritonOpCategory::TERNARY || cat == TritonOpCategory::CAST;
+        };
+        bool domainEvaluation = sec.type == KernelSectionType::ELEMENTWISE ||
+                                sec.type == KernelSectionType::IDENTITY;
+        for (int si = sec.startSlot; si <= sec.endSlot; ++si)
+          domainEvaluation = domainEvaluation && isPointwise(si);
+
+        bool skipGenericPreload = domainEvaluation ||
+                                  (sec.type == KernelSectionType::NORMALIZATION);
         if (!skipGenericPreload) {
           for (int si = sec.startSlot; si <= sec.endSlot; si++) {
             // For broadcast_to (IDENTITY with 2 inputs): skip input[1] (shape tensor).
@@ -6248,8 +6338,11 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           }
         }
 
-        // Emit ops in this section
-        for (int si = sec.startSlot; si <= sec.endSlot; si++) {
+        // Reuse exactly the same math emitters for ordinary section emission
+        // and demand-driven evaluation. Demand-driven calls provide a fresh
+        // operand map for ONE requested domain, not section-global values.
+        auto emitPointwise = [&](int si, std::unordered_map<int, mlir::Value>& ssaValues) {
+          do {
           auto& slot = slots[si];
           auto cat = getOpCategory(slot.ident.opName);
           auto it = opTable.find(slot.ident.opName);
@@ -6401,6 +6494,271 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                                             resolveDtype(slot.wiring.inputSourceIndices[0]), targetDtype);
               for (int o = 0; o < slot.wiring.numOutputs; o++) ssaValues[slot.wiring.outputSlotIndices[o]] = opResult;
             }
+          }
+          } while (false);
+        };
+
+        // Mapping identity is an SSA logical-index value, not a shape or a
+        // length: equal-sized domains can request entirely different lanes.
+        // This cache lives inside the section's scf.if, so every reused value
+        // dominates its use. Masks are part of the identity as well.
+        using DomainKey = std::tuple<int, uintptr_t, uintptr_t>;
+        std::map<DomainKey, mlir::Value> domainValues;
+        std::unordered_map<int, int> producers;
+        std::unordered_set<int> evaluating;
+        if (domainEvaluation) {
+          for (int si = sec.startSlot; si <= sec.endSlot; ++si)
+            producers.emplace(slots[si].wiring.outputSlotIndices[0], si);
+        }
+        auto indexType = mlir::RankedTensorType::get({blockSize}, builder.getI64Type());
+        auto indexConstant = [&](LongType value) -> mlir::Value {
+          auto scalar = builder.create<mlir::arith::ConstantIntOp>(loc, value, 64);
+          return builder.create<mlir::triton::SplatOp>(loc, indexType, scalar);
+        };
+        auto domainError = [&](int src, const char* message) -> mlir::Value {
+          DSP_DIAG(COMPILE, "Triton pointwise domain: slot %d: %s", src, message);
+          result.valid = false;
+          return {};
+        };
+        auto hasShape = [&](int src) {
+          if (src < 0) {
+            int ext = -(src + 1);
+            return ext < numExternalInputs && externalInputs && externalInputs[ext];
+          }
+          auto cached = cachedShapeInfoMap.find(src);
+          return (src < totalOutputSlots && outputSlots && outputSlots[src]) ||
+                 (cached != cachedShapeInfoMap.end() && cached->second);
+        };
+        // Map logical C-order coordinates to strides. Callers supply logical
+        // strides for broadcasting, physical strides only at a buffer load.
+        auto mapCoordinates = [&](mlir::Value indices, const std::vector<LongType>& shape,
+                                  const std::vector<LongType>& strides) -> mlir::Value {
+          mlir::Value mapped = indexConstant(0);
+          // Empty domains have no active lanes; do not generate division by
+          // zero while constructing coordinates for their masked loads.
+          if (std::find(shape.begin(), shape.end(), 0) != shape.end()) return mapped;
+          LongType logicalStride = 1;
+          for (int d = static_cast<int>(shape.size()) - 1; d >= 0; --d) {
+            if (shape[d] > 1 && strides[d] != 0) {
+              mlir::Value coord = indices;
+              if (logicalStride != 1)
+                coord = builder.create<mlir::arith::DivSIOp>(loc, coord, indexConstant(logicalStride));
+              coord = builder.create<mlir::arith::RemSIOp>(loc, coord, indexConstant(shape[d]));
+              auto term = builder.create<mlir::arith::MulIOp>(loc, coord, indexConstant(strides[d]));
+              mapped = builder.create<mlir::arith::AddIOp>(loc, mapped, term);
+            }
+            logicalStride *= shape[d];
+          }
+          return mapped;
+        };
+        if (domainEvaluation && independentCastSections[secIdx]) {
+          // Prove physical-linear equivalence from actual strides, ignoring
+          // singleton axes only. Equal dense C or equal dense F layouts have
+          // the same coordinate at each physical index, including shifted views.
+          auto denseLayout = [](const std::vector<LongType>& shape,
+                                const std::vector<LongType>& strides, bool fortran) {
+            if (shape.size() != strides.size()) return false;
+            LongType expected = 1;
+            for (size_t axis = 0; axis < shape.size(); ++axis) {
+              size_t d = fortran ? axis : shape.size() - 1 - axis;
+              if (shape[d] <= 0) return false;
+              if (shape[d] > 1 && strides[d] != expected) return false;
+              if (expected > std::numeric_limits<LongType>::max() / shape[d]) return false;
+              expected *= shape[d];
+            }
+            return true;
+          };
+          for (int si = sec.startSlot; si <= sec.endSlot; ++si) {
+            const auto& slot = slots[si];
+            int input = slot.wiring.inputSourceIndices[0];
+            int output = slot.wiring.outputSlotIndices[0];
+            if (!externalOutputs.count(output)) continue;
+            auto inputArg = slotToArgIdx.find(input);
+            auto outputArg = slotToArgIdx.find(output);
+            auto shape = resolveShape(output);
+            auto inputStrides = resolveStrides(input);
+            auto outputStrides = resolveStrides(output);
+            if (!hasShape(input) || !hasShape(output) ||
+                inputArg == slotToArgIdx.end() || outputArg == slotToArgIdx.end() ||
+                inputStrides.size() != shape.size() || outputStrides.size() != shape.size() ||
+                opTable.find(slot.ident.opName) == opTable.end()) {
+              domainError(output, "missing independent cast metadata");
+              return result;
+            }
+            LongType length = 1;
+            for (auto dim : shape) {
+              if (dim < 0 || (dim > 0 && length > std::numeric_limits<LongType>::max() / dim)) {
+                domainError(output, "invalid independent cast shape");
+                return result;
+              }
+              length *= dim;
+            }
+            // The section skeleton uses i32 offsets; do not truncate its domain.
+            if (length > std::numeric_limits<int>::max()) {
+              domainError(output, "independent cast exceeds section index range");
+              return result;
+            }
+            bool physicalLinear =
+                (denseLayout(shape, inputStrides, false) && denseLayout(shape, outputStrides, false)) ||
+                (denseLayout(shape, inputStrides, true) && denseLayout(shape, outputStrides, true));
+            auto end = builder.create<mlir::arith::ConstantIntOp>(loc, length, 32);
+            auto active = builder.create<mlir::arith::CmpIOp>(
+                loc, mlir::arith::CmpIPredicate::slt, offsetBase, end);
+            auto rootIf = builder.create<mlir::scf::IfOp>(loc, active, /*withElseRegion=*/false);
+            builder.setInsertionPointToStart(&rootIf.getThenRegion().front());
+            auto rootOffsets = builder.create<mlir::arith::ExtSIOp>(loc, indexType, offsets);
+            auto rootMask = builder.create<mlir::arith::CmpIOp>(
+                loc, mlir::arith::CmpIPredicate::slt, rootOffsets, indexConstant(length));
+            auto inputOffsets = physicalLinear ? rootOffsets.getResult() :
+                mapCoordinates(rootOffsets, shape, inputStrides);
+            auto outputOffsets = physicalLinear ? rootOffsets.getResult() :
+                mapCoordinates(rootOffsets, shape, outputStrides);
+            auto inputPtr = getBufferArg(inputArg->second);
+            auto inputPtrType = mlir::RankedTensorType::get({blockSize}, inputPtr.getType());
+            auto inputBase = builder.create<mlir::triton::SplatOp>(loc, inputPtrType, inputPtr);
+            auto inputPtrs = builder.create<mlir::triton::AddPtrOp>(
+                loc, inputPtrType, inputBase, inputOffsets);
+            auto loaded = builder.create<mlir::triton::LoadOp>(
+                loc, inputPtrs.getResult(), rootMask, mlir::Value(),
+                mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+            // Neither operands nor pointer loads escape this root's scf.if.
+            // Reuse the cast emitter (including eliminated casts and rounding).
+            std::unordered_map<int, mlir::Value> operands;
+            operands[input] = loaded;
+            emitPointwise(si, operands);
+            auto value = operands.find(output);
+            if (value == operands.end() || !value->second) {
+              domainError(output, "independent cast emitter did not produce output");
+              return result;
+            }
+            auto rounded = roundSectionOutput(value->second, output);
+            auto outputPtr = getBufferArg(outputArg->second);
+            auto outputPtrType = mlir::RankedTensorType::get({blockSize}, outputPtr.getType());
+            auto outputBase = builder.create<mlir::triton::SplatOp>(loc, outputPtrType, outputPtr);
+            auto outputPtrs = builder.create<mlir::triton::AddPtrOp>(
+                loc, outputPtrType, outputBase, outputOffsets);
+            auto elemType = mlir::cast<mlir::triton::PointerType>(outputPtr.getType()).getPointeeType();
+            builder.create<mlir::triton::StoreOp>(
+                loc, outputPtrs, castTo(builder, loc, rounded, elemType), rootMask,
+                mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL);
+            builder.setInsertionPointAfter(rootIf);
+          }
+          break;
+        }
+
+        std::function<mlir::Value(int, mlir::Value, mlir::Value)> evaluate;
+        evaluate = [&](int src, mlir::Value indices, mlir::Value activeMask) -> mlir::Value {
+          DomainKey key{src, reinterpret_cast<uintptr_t>(indices.getAsOpaquePointer()),
+                       reinterpret_cast<uintptr_t>(activeMask.getAsOpaquePointer())};
+          auto cached = domainValues.find(key);
+          if (cached != domainValues.end()) return cached->second;
+          if (!hasShape(src)) return domainError(src, "missing shape metadata");
+          auto srcShape = resolveShape(src);
+          auto producer = producers.find(src);
+          mlir::Value value;
+          if (producer == producers.end()) {
+            auto arg = slotToArgIdx.find(src);
+            if (arg == slotToArgIdx.end()) return domainError(src, "missing buffer argument");
+            auto strides = resolveStrides(src);
+            if (strides.size() != srcShape.size())
+              return domainError(src, "missing physical strides");
+            auto ptr = getBufferArg(arg->second);
+            auto ptrType = mlir::cast<mlir::triton::PointerType>(ptr.getType());
+            auto ptrTensorType = mlir::RankedTensorType::get({blockSize}, ptrType);
+            auto splat = builder.create<mlir::triton::SplatOp>(loc, ptrTensorType, ptr);
+            auto physical = mapCoordinates(indices, srcShape, strides);
+            auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc, ptrTensorType, splat, physical);
+            value = builder.create<mlir::triton::LoadOp>(loc, ptrs.getResult(), activeMask,
+                mlir::Value(), mlir::triton::CacheModifier::NONE,
+                mlir::triton::EvictionPolicy::NORMAL, false);
+          } else {
+            if (!evaluating.insert(src).second) return domainError(src, "cyclic producer edge");
+            auto& slot = slots[producer->second];
+            std::unordered_map<int, mlir::Value> operands;
+            int inputCount = slot.wiring.numInputs;
+            // broadcast_to's second input describes shape, not tensor data.
+            if (getOpCategory(slot.ident.opName) == TritonOpCategory::IDENTITY) inputCount = 1;
+            for (int inp = 0; inp < inputCount; ++inp) {
+              int input = slot.wiring.inputSourceIndices[inp];
+              if (!hasShape(input)) return domainError(input, "missing operand shape metadata");
+              auto inputShape = resolveShape(input);
+              if (inputShape.size() > srcShape.size())
+                return domainError(input, "operand rank exceeds broadcast output rank");
+              mlir::Value inputIndices = indices;
+              if (inputShape != srcShape) {
+                std::vector<LongType> broadcastStrides(srcShape.size(), 0);
+                LongType stride = 1;
+                int shift = static_cast<int>(srcShape.size() - inputShape.size());
+                for (int d = static_cast<int>(inputShape.size()) - 1; d >= 0; --d) {
+                  if (inputShape[d] != 1 && inputShape[d] != srcShape[d + shift])
+                    return domainError(input, "incompatible broadcast dimensions");
+                  if (inputShape[d] != 1) broadcastStrides[d + shift] = stride;
+                  stride *= inputShape[d];
+                }
+                inputIndices = mapCoordinates(indices, srcShape, broadcastStrides);
+              }
+              auto operand = evaluate(input, inputIndices, activeMask);
+              if (!operand) return {};
+              operands[input] = operand;
+            }
+            emitPointwise(producer->second, operands);
+            auto output = operands.find(src);
+            if (output == operands.end() || !output->second)
+              return domainError(src, "pointwise emitter did not produce output");
+            value = output->second;
+            // Arithmetic emitters already round their outputs. Identity and
+            // eliminated casts also need to expose the declared storage value.
+            auto category = getOpCategory(slot.ident.opName);
+            if (category == TritonOpCategory::IDENTITY || category == TritonOpCategory::CAST)
+              value = roundSectionOutput(value, src);
+            evaluating.erase(src);
+          }
+          domainValues.emplace(key, value);
+          return value;
+        };
+
+        // Emit each materialized value in its OWN domain. An internal producer
+        // requested by a broadcast consumer is recursively emitted in that
+        // consumer mapping; it is never materialized by taking its prefix.
+        mlir::Value logicalOffsets;
+        std::map<LongType, mlir::Value> domainMasks;
+        std::unordered_map<int, mlir::Value> outputMasks;
+        if (domainEvaluation)
+          logicalOffsets = builder.create<mlir::arith::ExtSIOp>(loc, indexType, offsets);
+        for (int si = sec.startSlot; si <= sec.endSlot; ++si) {
+          auto& slot = slots[si];
+          auto cat = getOpCategory(slot.ident.opName);
+          auto it = opTable.find(slot.ident.opName);
+          if (it == opTable.end()) {
+            if (domainEvaluation) {
+              domainError(si, "missing pointwise emitter mapping");
+              return result;
+            }
+            continue;
+          }
+          const auto& mapping = it->second;
+          if (domainEvaluation) {
+            int outIdx = slot.wiring.outputSlotIndices[0];
+            if (!externalOutputs.count(outIdx) &&
+                !(sec.hasTrailingPermute && sec.trailingPermuteInputSlotIdx == outIdx)) continue;
+            LongType length = 1;  // rank-zero tensors have one element
+            for (auto dim : resolveShape(outIdx)) length *= dim;
+            auto maskIt = domainMasks.find(length);
+            if (maskIt == domainMasks.end()) {
+              auto ownMask = builder.create<mlir::arith::CmpIOp>(
+                  loc, mlir::arith::CmpIPredicate::slt, logicalOffsets, indexConstant(length));
+              maskIt = domainMasks.emplace(length, ownMask.getResult()).first;
+            }
+            auto value = evaluate(outIdx, logicalOffsets, maskIt->second);
+            if (!value) { result.valid = false; return result; }
+            ssaValues[outIdx] = value;
+            outputMasks[outIdx] = maskIt->second;
+          } else if (cat == TritonOpCategory::BINARY_ELEMENTWISE ||
+                     cat == TritonOpCategory::UNARY_ELEMENTWISE ||
+                     cat == TritonOpCategory::COMPARISON || cat == TritonOpCategory::LOGICAL ||
+                     cat == TritonOpCategory::TERNARY || cat == TritonOpCategory::IDENTITY ||
+                     cat == TritonOpCategory::CAST) {
+            emitPointwise(si, ssaValues);
           } else if (cat == TritonOpCategory::REDUCTION) {
             // Segmented reduction: same approach as buildModule (lines 4159-4449).
             // Cannot use emitReductionOp/tt.reduce because sectioned module uses flat 1D
@@ -7359,6 +7717,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               outMask = builder.create<mlir::arith::CmpIOp>(
                   loc, mlir::arith::CmpIPredicate::slt, offsets, splatOutN);
             }
+            // Keep empty/scalar domains and evaluation/store predicates identical.
+            if (domainEvaluation) outMask = outputMasks.at(outIdx);
             builder.create<mlir::triton::StoreOp>(loc, ptrs, storeVal, outMask,
                                                    mlir::triton::CacheModifier::NONE,
                                                    mlir::triton::EvictionPolicy::NORMAL);
@@ -7591,12 +7951,11 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           auto cPtr = getSlotArgPtr(cSlot);
 
           if (M > 0 && N > 0 && K > 0 && aPtr && bPtr && cPtr) {
-            const bool serial = dsp::hasNonLegacyMatmulArithmetic(slot);
             emitPerElementMatmul(builder, loc, pid, blockSize, aPtr, bPtr, cPtr, M, N, K,
-                serial ? &slot : nullptr,
-                serial ? triton_matmul::resolve(aSrc, outputSlots, totalOutputSlots, externalInputs, numExternalInputs) : nullptr,
-                serial ? triton_matmul::resolve(bSrc, outputSlots, totalOutputSlots, externalInputs, numExternalInputs) : nullptr,
-                serial ? triton_matmul::resolve(cSlot, outputSlots, totalOutputSlots, externalInputs, numExternalInputs) : nullptr);
+                &slot,
+                triton_matmul::resolve(aSrc, outputSlots, totalOutputSlots, externalInputs, numExternalInputs),
+                triton_matmul::resolve(bSrc, outputSlots, totalOutputSlots, externalInputs, numExternalInputs),
+                triton_matmul::resolve(cSlot, outputSlots, totalOutputSlots, externalInputs, numExternalInputs));
             DataType outDtype = resolveDtype(cSlot);
             auto loaded = loadBlock(cSlot, outDtype);
             if (loaded) {

@@ -27,6 +27,7 @@
 #include <graph/Context.h>
 
 #include <limits>
+#include <cmath>
 
 namespace sd {
 namespace ops {
@@ -165,6 +166,12 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
   NDArray* mtpCachePosition = nullptr;
   NDArray* mtpKeyCache = nullptr;
   NDArray* mtpValueCache = nullptr;
+  const bool hasMtpBatchRepair = (optionalMask & 1024) != 0;
+  NDArray* mtpRepairBatchInputIds = nullptr;
+  NDArray* mtpRepairBatchTargetHidden = nullptr;
+  NDArray* mtpRepairBatchCausalMask = nullptr;
+  NDArray* mtpRepairBatchPositionOffset = nullptr;
+  NDArray* mtpRepairBatchCachePosition = nullptr;
   if (hasMtpPlan) {
     REQUIRE_TRUE(block.width() >= nextInput + 7, 0,
                  "autoregressive_decode: MTP bit is set but only %d inputs remain (need 7)",
@@ -176,6 +183,19 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
     mtpCachePosition = INPUT_VARIABLE(nextInput++);
     mtpKeyCache = INPUT_VARIABLE(nextInput++);
     mtpValueCache = INPUT_VARIABLE(nextInput++);
+    if (hasMtpBatchRepair) {
+      REQUIRE_TRUE(block.width() >= nextInput + 5, 0,
+                   "autoregressive_decode: batched MTP repair bit is set but only %d inputs remain (need 5)",
+                   block.width() - nextInput);
+      mtpRepairBatchInputIds = INPUT_VARIABLE(nextInput++);
+      mtpRepairBatchTargetHidden = INPUT_VARIABLE(nextInput++);
+      mtpRepairBatchCausalMask = INPUT_VARIABLE(nextInput++);
+      mtpRepairBatchPositionOffset = INPUT_VARIABLE(nextInput++);
+      mtpRepairBatchCachePosition = INPUT_VARIABLE(nextInput++);
+    }
+  } else {
+    REQUIRE_TRUE(!hasMtpBatchRepair, 0,
+                 "autoregressive_decode: batched MTP repair inputs require the MTP plan bit");
   }
 
   // Collect additional stop token IDs (always includes eosTokenId)
@@ -311,6 +331,16 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
   decodeConfig.actualSequenceLengthExtIdx = actualSequenceLengthExtIdx_arg;
   decodeConfig.nativeRepetitionLoopMaxPeriod = nativeRepetitionLoopMaxPeriod;
   decodeConfig.nativeRepetitionLoopMaxRepeats = nativeRepetitionLoopMaxRepeats;
+  decodeConfig.mtpRepairBatchInputIds = mtpRepairBatchInputIds;
+  decodeConfig.mtpRepairBatchTargetHidden = mtpRepairBatchTargetHidden;
+  decodeConfig.mtpRepairBatchCausalMask = mtpRepairBatchCausalMask;
+  decodeConfig.mtpRepairBatchPositionOffset = mtpRepairBatchPositionOffset;
+  decodeConfig.mtpRepairBatchCachePosition = mtpRepairBatchCachePosition;
+  // Multi-row commit is EXPERIMENTAL (breaks token-exact parity, see
+  // allowMultiRowCommit docs). Opt in per test run via -D in the pom's
+  // surefire env mapping; production default is OFF.
+  const char* mrc = std::getenv("SD_MTP_MULTI_ROW_COMMIT");
+  decodeConfig.allowMultiRowCommit = mrc != nullptr && mrc[0] == '1';
 
   if (hasMtpPlan) {
     REQUIRE_TRUE(speculatorType_arg == 2, 0,
@@ -342,6 +372,177 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
     decodeConfig.mtpLogitsOutputIdx = static_cast<int>(T_ARG(40));
     decodeConfig.mtpHiddenOutputIdx = static_cast<int>(T_ARG(41));
     decodeConfig.targetHiddenOutputIdx = static_cast<int>(T_ARG(42));
+
+    // Optional scalar ABI, documented by AutoregressiveDecode.withScalarTargetPlan,
+    // followed by an optional versioned KV-only repair trailer.
+    constexpr double MTP_REPAIR_TRAILER_MARKER = 0x4D545052;
+    constexpr double MTP_BATCH_REPAIR_TRAILER_MARKER = 0x4D545042;
+    const size_t tArgCount = block.getTArguments()->size();
+    size_t repairStart = tArgCount;
+    if (tArgCount > 45 && T_ARG(45) != MTP_REPAIR_TRAILER_MARKER
+            && T_ARG(45) != MTP_BATCH_REPAIR_TRAILER_MARKER) {
+      REQUIRE_TRUE(tArgCount >= 60, 0,
+                   "autoregressive_decode: incomplete scalar target metadata");
+      for (size_t i = 45; i < 60; ++i) {
+        double value = T_ARG(i);
+        double maxValue = i <= 48 ? 4294967295.0 : static_cast<double>(std::numeric_limits<int>::max());
+        REQUIRE_TRUE(std::isfinite(value) && value >= 0 && value <= maxValue && std::floor(value) == value,
+                     0, "autoregressive_decode: invalid scalar metadata at tArg %d", static_cast<int>(i));
+      }
+      uint64_t scalarPlanAddr =
+          (static_cast<uint64_t>(static_cast<uint32_t>(T_ARG(46))) << 32)
+          | static_cast<uint64_t>(static_cast<uint32_t>(T_ARG(45)));
+      uint64_t scalarCtxAddr =
+          (static_cast<uint64_t>(static_cast<uint32_t>(T_ARG(48))) << 32)
+          | static_cast<uint64_t>(static_cast<uint32_t>(T_ARG(47)));
+      auto* scalarPlan = reinterpret_cast<graph::NativeDynamicShapePlan*>(scalarPlanAddr);
+      void* scalarCtx = reinterpret_cast<void*>(scalarCtxAddr);
+      REQUIRE_TRUE(scalarPlan != nullptr && scalarCtx != nullptr, 0,
+                   "autoregressive_decode: scalar plan/context must both be non-null");
+      decodeConfig.scalarPlanHandle = scalarPlan;
+      decodeConfig.scalarExtInputContext = scalarCtx;
+      decodeConfig.scalarLogitsOutputIdx = static_cast<int>(T_ARG(49));
+      decodeConfig.scalarTargetHiddenOutputIdx = static_cast<int>(T_ARG(50));
+      decodeConfig.scalarNumPlanExternalInputs = static_cast<int>(T_ARG(51));
+      decodeConfig.scalarNumPlanOutputs = static_cast<int>(T_ARG(52));
+      decodeConfig.scalarInputIdsExtIdx = static_cast<int>(T_ARG(53));
+      decodeConfig.scalarCausalMaskExtIdx = static_cast<int>(T_ARG(54));
+      decodeConfig.scalarPositionOffsetExtIdx = static_cast<int>(T_ARG(55));
+      decodeConfig.scalarCachePositionExtIdx = static_cast<int>(T_ARG(56));
+      decodeConfig.scalarActualSequenceLengthExtIdx = static_cast<int>(T_ARG(57));
+      int ni = static_cast<int>(T_ARG(58)), no = static_cast<int>(T_ARG(59));
+      repairStart = static_cast<size_t>(60 + ni + no);
+      REQUIRE_TRUE(ni > 0 && no > 0 && repairStart <= tArgCount
+                       && (repairStart == tArgCount
+                           || T_ARG(repairStart) == MTP_REPAIR_TRAILER_MARKER
+                           || T_ARG(repairStart) == MTP_BATCH_REPAIR_TRAILER_MARKER),
+                   0, "autoregressive_decode: invalid scalar mapping lengths");
+      for (int i = 0; i < ni; ++i) decodeConfig.scalarInputToTarget.push_back(static_cast<int>(T_ARG(60 + i)));
+      for (int i = 0; i < no; ++i) decodeConfig.targetOutputToScalar.push_back(static_cast<int>(T_ARG(60 + ni + i)));
+    } else if (tArgCount > 45) {
+      repairStart = 45;
+    }
+    if (repairStart < tArgCount && T_ARG(repairStart) == MTP_REPAIR_TRAILER_MARKER) {
+      REQUIRE_TRUE(tArgCount >= repairStart + 16 && T_ARG(repairStart) == MTP_REPAIR_TRAILER_MARKER,
+                   0, "autoregressive_decode: malformed MTP repair trailer");
+      for (size_t i = repairStart; i < repairStart + 16; ++i) {
+        double value = T_ARG(i);
+        const bool pointerHalf = i >= repairStart + 1 && i <= repairStart + 4;
+        const bool optionalIndex = i == repairStart + 9   // causal mask
+            || i == repairStart + 11                       // cache position
+            || i == repairStart + 14                       // key-cache input
+            || i == repairStart + 15;                      // value-cache input
+        const double minimum = optionalIndex ? -1.0 : 0.0;
+        const double maximum = pointerHalf
+            ? 4294967295.0 : static_cast<double>(std::numeric_limits<int>::max());
+        REQUIRE_TRUE(std::isfinite(value) && value >= minimum
+                         && value <= maximum && std::floor(value) == value,
+                     0, "autoregressive_decode: invalid MTP repair metadata at tArg %d", static_cast<int>(i));
+      }
+      const size_t r = repairStart + 1;
+      uint64_t repairPlanAddr =
+          (static_cast<uint64_t>(static_cast<uint32_t>(T_ARG(r + 1))) << 32)
+          | static_cast<uint64_t>(static_cast<uint32_t>(T_ARG(r)));
+      uint64_t repairCtxAddr =
+          (static_cast<uint64_t>(static_cast<uint32_t>(T_ARG(r + 3))) << 32)
+          | static_cast<uint64_t>(static_cast<uint32_t>(T_ARG(r + 2)));
+      decodeConfig.mtpRepairPlanHandle =
+          reinterpret_cast<graph::NativeDynamicShapePlan*>(repairPlanAddr);
+      decodeConfig.mtpRepairExtInputContext = reinterpret_cast<void*>(repairCtxAddr);
+      decodeConfig.mtpRepairNumPlanExternalInputs = static_cast<int>(T_ARG(r + 4));
+      decodeConfig.mtpRepairNumPlanOutputs = static_cast<int>(T_ARG(r + 5));
+      decodeConfig.mtpRepairInputIdsExtIdx = static_cast<int>(T_ARG(r + 6));
+      decodeConfig.mtpRepairTargetHiddenExtIdx = static_cast<int>(T_ARG(r + 7));
+      decodeConfig.mtpRepairCausalMaskExtIdx = static_cast<int>(T_ARG(r + 8));
+      decodeConfig.mtpRepairPositionOffsetExtIdx = static_cast<int>(T_ARG(r + 9));
+      decodeConfig.mtpRepairCachePositionExtIdx = static_cast<int>(T_ARG(r + 10));
+      decodeConfig.mtpRepairKeyOutputIdx = static_cast<int>(T_ARG(r + 11));
+      decodeConfig.mtpRepairValueOutputIdx = static_cast<int>(T_ARG(r + 12));
+      decodeConfig.mtpRepairKvInputExtIndices[0] = static_cast<int>(T_ARG(r + 13));
+      decodeConfig.mtpRepairKvInputExtIndices[1] = static_cast<int>(T_ARG(r + 14));
+      REQUIRE_TRUE(decodeConfig.mtpRepairPlanHandle != nullptr
+                       && decodeConfig.mtpRepairExtInputContext != nullptr
+                       && decodeConfig.mtpRepairNumPlanExternalInputs > 0
+                       && decodeConfig.mtpRepairNumPlanOutputs > 0
+                       && decodeConfig.mtpRepairInputIdsExtIdx >= 0
+                       && decodeConfig.mtpRepairTargetHiddenExtIdx >= 0
+                       && decodeConfig.mtpRepairPositionOffsetExtIdx >= 0
+                       && decodeConfig.mtpRepairKeyOutputIdx >= 0
+                       && decodeConfig.mtpRepairValueOutputIdx >= 0,
+                   0, "autoregressive_decode: invalid MTP repair plan metadata");
+    }
+
+    const bool hasScalarRepairTrailer = repairStart < tArgCount
+        && T_ARG(repairStart) == MTP_REPAIR_TRAILER_MARKER;
+    const size_t batchRepairStart = hasScalarRepairTrailer ? repairStart + 16 : repairStart;
+    if (hasMtpBatchRepair) {
+      REQUIRE_TRUE(tArgCount == batchRepairStart + 16
+                       && T_ARG(batchRepairStart) == MTP_BATCH_REPAIR_TRAILER_MARKER,
+                   0, "autoregressive_decode: malformed batched MTP repair trailer");
+      for (size_t i = batchRepairStart; i < tArgCount; ++i) {
+        double value = T_ARG(i);
+        const bool pointerHalf = i >= batchRepairStart + 1 && i <= batchRepairStart + 4;
+        const bool optionalIndex = i == batchRepairStart + 9
+            || i == batchRepairStart + 11
+            || i == batchRepairStart + 14
+            || i == batchRepairStart + 15;
+        const double minimum = optionalIndex ? -1.0 : 0.0;
+        const double maximum = pointerHalf
+            ? 4294967295.0 : static_cast<double>(std::numeric_limits<int>::max());
+        REQUIRE_TRUE(std::isfinite(value) && value >= minimum
+                         && value <= maximum && std::floor(value) == value,
+                     0, "autoregressive_decode: invalid batched MTP repair metadata at tArg %d",
+                     static_cast<int>(i));
+      }
+      const size_t r = batchRepairStart + 1;
+      uint64_t repairPlanAddr =
+          (static_cast<uint64_t>(static_cast<uint32_t>(T_ARG(r + 1))) << 32)
+          | static_cast<uint64_t>(static_cast<uint32_t>(T_ARG(r)));
+      uint64_t repairCtxAddr =
+          (static_cast<uint64_t>(static_cast<uint32_t>(T_ARG(r + 3))) << 32)
+          | static_cast<uint64_t>(static_cast<uint32_t>(T_ARG(r + 2)));
+      decodeConfig.mtpRepairBatchPlanHandle =
+          reinterpret_cast<graph::NativeDynamicShapePlan*>(repairPlanAddr);
+      decodeConfig.mtpRepairBatchExtInputContext = reinterpret_cast<void*>(repairCtxAddr);
+      decodeConfig.mtpRepairBatchNumPlanExternalInputs = static_cast<int>(T_ARG(r + 4));
+      decodeConfig.mtpRepairBatchNumPlanOutputs = static_cast<int>(T_ARG(r + 5));
+      decodeConfig.mtpRepairBatchInputIdsExtIdx = static_cast<int>(T_ARG(r + 6));
+      decodeConfig.mtpRepairBatchTargetHiddenExtIdx = static_cast<int>(T_ARG(r + 7));
+      decodeConfig.mtpRepairBatchCausalMaskExtIdx = static_cast<int>(T_ARG(r + 8));
+      decodeConfig.mtpRepairBatchPositionOffsetExtIdx = static_cast<int>(T_ARG(r + 9));
+      decodeConfig.mtpRepairBatchCachePositionExtIdx = static_cast<int>(T_ARG(r + 10));
+      decodeConfig.mtpRepairBatchKeyOutputIdx = static_cast<int>(T_ARG(r + 11));
+      decodeConfig.mtpRepairBatchValueOutputIdx = static_cast<int>(T_ARG(r + 12));
+      decodeConfig.mtpRepairBatchKvInputExtIndices[0] = static_cast<int>(T_ARG(r + 13));
+      decodeConfig.mtpRepairBatchKvInputExtIndices[1] = static_cast<int>(T_ARG(r + 14));
+      REQUIRE_TRUE(decodeConfig.mtpRepairBatchPlanHandle != nullptr
+                       && decodeConfig.mtpRepairBatchExtInputContext != nullptr
+                       && decodeConfig.mtpRepairBatchNumPlanExternalInputs > 0
+                       && decodeConfig.mtpRepairBatchNumPlanOutputs > 0
+                       && decodeConfig.mtpRepairBatchInputIdsExtIdx >= 0
+                       && decodeConfig.mtpRepairBatchInputIdsExtIdx < decodeConfig.mtpRepairBatchNumPlanExternalInputs
+                       && decodeConfig.mtpRepairBatchTargetHiddenExtIdx >= 0
+                       && decodeConfig.mtpRepairBatchTargetHiddenExtIdx < decodeConfig.mtpRepairBatchNumPlanExternalInputs
+                       && decodeConfig.mtpRepairBatchPositionOffsetExtIdx >= 0
+                       && decodeConfig.mtpRepairBatchPositionOffsetExtIdx < decodeConfig.mtpRepairBatchNumPlanExternalInputs
+                       && decodeConfig.mtpRepairBatchKeyOutputIdx >= 0
+                       && decodeConfig.mtpRepairBatchKeyOutputIdx < decodeConfig.mtpRepairBatchNumPlanOutputs
+                       && decodeConfig.mtpRepairBatchValueOutputIdx >= 0
+                       && decodeConfig.mtpRepairBatchValueOutputIdx < decodeConfig.mtpRepairBatchNumPlanOutputs,
+                   0, "autoregressive_decode: invalid batched MTP repair plan metadata");
+      // Optional K/V-only pruned inputs: -1 means absent; otherwise in range.
+      const auto optionalBatchIdxValid = [&](int idx) {
+        return idx == -1 || (idx >= 0 && idx < decodeConfig.mtpRepairBatchNumPlanExternalInputs);
+      };
+      REQUIRE_TRUE(optionalBatchIdxValid(decodeConfig.mtpRepairBatchCausalMaskExtIdx)
+                       && optionalBatchIdxValid(decodeConfig.mtpRepairBatchCachePositionExtIdx)
+                       && optionalBatchIdxValid(decodeConfig.mtpRepairBatchKvInputExtIndices[0])
+                       && optionalBatchIdxValid(decodeConfig.mtpRepairBatchKvInputExtIndices[1]),
+                   0, "autoregressive_decode: invalid optional batched MTP repair index");
+    } else {
+      REQUIRE_TRUE(batchRepairStart == tArgCount, 0,
+                   "autoregressive_decode: unexpected trailing MTP repair metadata");
+    }
 
     decodeConfig.mtpInputIds = mtpInputIds;
     decodeConfig.mtpTargetHidden = mtpTargetHidden;
@@ -391,6 +592,61 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
                      && decodeConfig.mtpHiddenOutputIdx < decodeConfig.mtpNumPlanOutputs
                      && decodeConfig.targetHiddenOutputIdx >= 0,
                  0, "autoregressive_decode: unresolved or out-of-range MTP plan index");
+
+    if (hasMtpBatchRepair) {
+      REQUIRE_TRUE(mtpRepairBatchInputIds != nullptr && mtpRepairBatchTargetHidden != nullptr
+                       && mtpRepairBatchCausalMask != nullptr
+                       && mtpRepairBatchPositionOffset != nullptr
+                       && mtpRepairBatchCachePosition != nullptr,
+                   0, "autoregressive_decode: batched MTP repair input is null");
+      REQUIRE_TRUE(mtpRepairBatchInputIds->rankOf() == 2, 0,
+                   "autoregressive_decode: batched MTP repair ids must be rank 2");
+      const LongType repairWidth = mtpRepairBatchInputIds->sizeAt(1);
+      decodeConfig.mtpRepairBatchWidth = static_cast<int>(repairWidth);
+      REQUIRE_TRUE(mtpRepairBatchInputIds->dataType() == DataType::INT64
+                       && mtpRepairBatchInputIds->sizeAt(0) == 1 && repairWidth > 0
+                       && mtpRepairBatchTargetHidden->rankOf() == 3
+                       && mtpRepairBatchTargetHidden->sizeAt(0) == 1
+                       && mtpRepairBatchTargetHidden->sizeAt(1) == repairWidth
+                       && mtpRepairBatchCausalMask->rankOf() == 4
+                       && mtpRepairBatchCausalMask->sizeAt(0) == 1
+                       && mtpRepairBatchCausalMask->sizeAt(1) == 1
+                       && mtpRepairBatchCausalMask->sizeAt(2) == repairWidth
+                       && mtpRepairBatchCausalMask->sizeAt(3) > 0
+                       && mtpRepairBatchPositionOffset->dataType() == DataType::INT64
+                       && mtpRepairBatchCachePosition->dataType() == DataType::INT64
+                       && mtpRepairBatchPositionOffset->lengthOf() == 1
+                       && mtpRepairBatchCachePosition->lengthOf() == 1,
+                   0, "autoregressive_decode: batched MTP repair arrays must be "
+                      "ids [1,W] INT64, hidden [1,W,H], mask [1,1,W,L], scalar pos/cache");
+      REQUIRE_TRUE(decodeConfig.mtpRepairBatchInputIdsExtIdx >= 0
+                       && decodeConfig.mtpRepairBatchInputIdsExtIdx
+                           < decodeConfig.mtpRepairBatchNumPlanExternalInputs
+                       && decodeConfig.mtpRepairBatchTargetHiddenExtIdx >= 0
+                       && decodeConfig.mtpRepairBatchTargetHiddenExtIdx
+                           < decodeConfig.mtpRepairBatchNumPlanExternalInputs
+                       && decodeConfig.mtpRepairBatchPositionOffsetExtIdx >= 0
+                       && decodeConfig.mtpRepairBatchPositionOffsetExtIdx
+                           < decodeConfig.mtpRepairBatchNumPlanExternalInputs
+                       && decodeConfig.mtpRepairBatchKeyOutputIdx >= 0
+                       && decodeConfig.mtpRepairBatchKeyOutputIdx
+                           < decodeConfig.mtpRepairBatchNumPlanOutputs
+                       && decodeConfig.mtpRepairBatchValueOutputIdx >= 0
+                       && decodeConfig.mtpRepairBatchValueOutputIdx
+                           < decodeConfig.mtpRepairBatchNumPlanOutputs,
+                   0, "autoregressive_decode: unresolved batched MTP repair plan indices");
+      // Optional K/V-only pruned indices (-1 allowed, in-range otherwise) are
+      // re-verified here so the bounds block agrees with the trailer contract.
+      const int numBatchPlanInputs = decodeConfig.mtpRepairBatchNumPlanExternalInputs;
+      const auto batchOptionalIdxValid = [numBatchPlanInputs](int idx) {
+        return idx == -1 || (idx >= 0 && idx < numBatchPlanInputs);
+      };
+      REQUIRE_TRUE(batchOptionalIdxValid(decodeConfig.mtpRepairBatchCausalMaskExtIdx)
+                       && batchOptionalIdxValid(decodeConfig.mtpRepairBatchCachePositionExtIdx)
+                       && batchOptionalIdxValid(decodeConfig.mtpRepairBatchKvInputExtIndices[0])
+                       && batchOptionalIdxValid(decodeConfig.mtpRepairBatchKvInputExtIndices[1]),
+                   0, "autoregressive_decode: out-of-range optional batched MTP repair index");
+    }
   }
 
   int iArgCount = block.getIArguments()->size();
@@ -656,6 +912,142 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
     stopTokenIds.push_back(INT_ARG(i));
   }
 
+  REQUIRE_TRUE(block.getTArguments()->size() <= 45 || hasMtpPlan, 0,
+               "autoregressive_decode: scalar target metadata requires MTP");
+  if (decodeConfig.scalarPlanHandle != nullptr) {
+    auto& c = decodeConfig;
+    // P02 adaptive-K (review finding 1): speculativeK==0 is a VALID adaptive
+    // invocation, not a misconfigured one. The scalar binding describes the
+    // CAPTURED width-1 plan + its live window substrate; it does not require
+    // drafting to be enabled for this call. K=0 routes every step through
+    // the scalar target (proposedCount==0), so the binding must stay usable.
+    REQUIRE_TRUE(hasPlanConfig && c.planHandle != nullptr && c.extInputContext != nullptr && c.planOwnsKvScatter
+                     && c.windowMax > 1, 0,
+                 "autoregressive_decode: scalar MTP target requires an in-graph window plan");
+    REQUIRE_TRUE(c.scalarNumPlanExternalInputs == c.scalarPlanHandle->getNumExternalInputs()
+                     && c.scalarNumPlanOutputs == c.scalarPlanHandle->getNumRequestedOutputs()
+                     && c.targetOutputToScalar.size() == c.planHandle->getNumRequestedOutputs(), 0,
+                 "autoregressive_decode: scalar captured counts disagree with native plans");
+    auto* scalarContext = reinterpret_cast<graph::Context*>(c.scalarExtInputContext);
+    auto* targetContext = reinterpret_cast<graph::Context*>(c.extInputContext);
+    REQUIRE_TRUE(scalarContext->width() == c.scalarNumPlanExternalInputs
+                     && targetContext->width() == c.numPlanExternalInputs, 0,
+                 "autoregressive_decode: scalar context input count mismatch");
+    for (int index : {c.scalarInputIdsExtIdx, c.scalarCausalMaskExtIdx, c.scalarPositionOffsetExtIdx,
+                      c.scalarCachePositionExtIdx, c.scalarActualSequenceLengthExtIdx}) {
+      REQUIRE_TRUE(index >= 0 && index < c.scalarNumPlanExternalInputs, 0,
+                   "autoregressive_decode: scalar mutable input index out of range");
+    }
+    for (int i = 0; i < c.scalarNumPlanExternalInputs; ++i) {
+      int ti = c.scalarInputToTarget[i];
+      REQUIRE_TRUE(ti >= 0 && ti < c.numPlanExternalInputs, 0,
+                   "autoregressive_decode: scalar input mapping out of range");
+      auto* a = scalarContext->array(i);
+      auto* b = targetContext->array(ti);
+      REQUIRE_TRUE(a != nullptr && b != nullptr, 0, "autoregressive_decode: null scalar mapped input");
+      bool geometry = i == c.scalarInputIdsExtIdx || i == c.scalarCausalMaskExtIdx
+          || i == c.scalarPositionOffsetExtIdx || i == c.scalarCachePositionExtIdx
+          || i == c.scalarActualSequenceLengthExtIdx;
+      REQUIRE_TRUE(a->dataType() == b->dataType(), 0, "autoregressive_decode: scalar input dtype mismatch");
+      if (!geometry) {
+        // Only recurrent-state snapshots are per-step copied between the two plans; they
+        // must match shape. Everything else non-geometry (graph weights, derived plan
+        // inputs) is NOT copied and may legitimately differ in shape between the width-1
+        // capture and the W-wide window plan.
+        // Recurrent decision: scalar input i maps to target index (already in
+        // `ti`); the input is recurrent iff ti IS one of the target-domain
+        // GDN/conv state indices. The gdn/conv arrays are indexed by their own
+        // pair counts only.
+        bool recurrent = false;
+        for (int s = 0; s < c.numGdnStatePairs && !recurrent; ++s) {
+          recurrent = c.gdnStateExtIndices != nullptr && ti == c.gdnStateExtIndices[s];
+        }
+        for (int s = 0; s < c.numConvStatePairs && !recurrent; ++s) {
+          recurrent = c.convStateExtIndices != nullptr && ti == c.convStateExtIndices[s];
+        }
+        REQUIRE_TRUE(!recurrent || a->isSameShape(b), 0,
+                     "autoregressive_decode: scalar recurrent snapshot shape mismatch "
+                     "(scalarIdx=%d targetIdx=%d scalarRank=%d len=%lld targetRank=%d len=%lld "
+                     "idsExt=%d maskExt=%d posExt=%d cacheExt=%d activeExt=%d)",
+                     i, ti, static_cast<int>(a->rankOf()),
+                     static_cast<long long>(a->lengthOf()), static_cast<int>(b->rankOf()),
+                     static_cast<long long>(b->lengthOf()),
+                     c.scalarInputIdsExtIdx, c.scalarCausalMaskExtIdx,
+                     c.scalarPositionOffsetExtIdx, c.scalarCachePositionExtIdx,
+                     c.scalarActualSequenceLengthExtIdx);
+      } else {
+        REQUIRE_TRUE(a->dataBuffer() != b->dataBuffer(), 0,
+                     "autoregressive_decode: scalar geometry must own independent mutable storage");
+      }
+      if (geometry || a->dataBuffer() != b->dataBuffer()) {
+        REQUIRE_TRUE(a->ordering() == 'c' && shape::strideDescendingCAscendingF(a->shapeInfo())
+                         && b->ordering() == 'c' && shape::strideDescendingCAscendingF(b->shapeInfo()), 0,
+                     "autoregressive_decode: scalar mutable inputs require contiguous C layout");
+      }
+    }
+    auto* ids = scalarContext->array(c.scalarInputIdsExtIdx);
+    auto* mask = scalarContext->array(c.scalarCausalMaskExtIdx);
+    REQUIRE_TRUE(ids->dataType() == DataType::INT64 && ids->rankOf() == 2 && ids->lengthOf() == 1
+                     && mask->rankOf() == 4 && mask->sizeAt(0) == 1 && mask->sizeAt(1) == 1
+                     && mask->sizeAt(2) == 1 && mask->sizeAt(3) > 0, 0,
+                 "autoregressive_decode: scalar ids/mask must have width-one geometry");
+    for (int index : {c.scalarPositionOffsetExtIdx, c.scalarCachePositionExtIdx,
+                      c.scalarActualSequenceLengthExtIdx}) {
+      auto* a = scalarContext->array(index);
+      REQUIRE_TRUE(a->dataType() == DataType::INT64 && a->lengthOf() == 1, 0,
+                   "autoregressive_decode: scalar position/cache/active-length must be INT64 scalars");
+    }
+    const int scalarGeometry[] = {c.scalarInputIdsExtIdx, c.scalarCausalMaskExtIdx,
+        c.scalarPositionOffsetExtIdx, c.scalarCachePositionExtIdx, c.scalarActualSequenceLengthExtIdx};
+    const int targetGeometry[] = {c.inputIdsExtIdx, c.causalMaskExtIdx,
+        c.positionOffsetExtIdx, c.cachePositionExtIdx, c.actualSequenceLengthExtIdx};
+    for (int i = 0; i < 5; ++i) {
+      REQUIRE_TRUE(c.scalarInputToTarget[scalarGeometry[i]] == targetGeometry[i], 0,
+                   "autoregressive_decode: scalar mutable input mapping disagrees with target role");
+      for (int j = 0; j < i; ++j) {
+        REQUIRE_TRUE(scalarGeometry[i] != scalarGeometry[j], 0,
+                     "autoregressive_decode: scalar mutable roles must have distinct indices");
+      }
+    }
+    REQUIRE_TRUE(mask->sizeAt(3) == targetContext->array(c.causalMaskExtIdx)->sizeAt(-1), 0,
+                 "autoregressive_decode: scalar mask capacity differs from target");
+    for (int ti : kvInputExtIndicesVec) {
+      bool found = false;
+      for (int i = 0; i < c.scalarNumPlanExternalInputs; ++i) {
+        if (c.scalarInputToTarget[i] != ti) continue;
+        found = true;
+        REQUIRE_TRUE(scalarContext->array(i)->dataBuffer() == targetContext->array(ti)->dataBuffer(), 0,
+                     "autoregressive_decode: scalar target KV must share committed storage");
+      }
+      REQUIRE_TRUE(found, 0, "autoregressive_decode: missing scalar target KV mapping");
+    }
+    for (const auto* states : {&gdnStateExtIndicesVec, &convStateExtIndicesVec}) {
+      for (int ti : *states) {
+        // gdn/conv ext indices are TARGET-domain indices: compare ti directly
+        // against the mapping VALUES, never re-map a target index through the
+        // scalar-indexed vector.
+        REQUIRE_TRUE(ti >= 0 && ti < c.numPlanExternalInputs, 0,
+                     "autoregressive_decode: recurrent ext index out of target range");
+        bool found = false;
+        for (int i = 0; i < c.scalarNumPlanExternalInputs; ++i) {
+          if (c.scalarInputToTarget[i] != ti) continue;
+          found = true;
+          REQUIRE_TRUE(scalarContext->array(i)->dataBuffer() != targetContext->array(ti)->dataBuffer(), 0,
+                       "autoregressive_decode: scalar recurrent input requires private prefix snapshot storage");
+        }
+        REQUIRE_TRUE(found, 0, "autoregressive_decode: missing scalar recurrent input mapping");
+      }
+    }
+    for (int index : c.targetOutputToScalar) {
+      REQUIRE_TRUE(index >= 0 && index < c.scalarNumPlanOutputs, 0,
+                   "autoregressive_decode: scalar output mapping out of range");
+    }
+    REQUIRE_TRUE(c.logitsOutputIdx >= 0 && c.logitsOutputIdx < c.targetOutputToScalar.size()
+                     && c.targetHiddenOutputIdx >= 0 && c.targetHiddenOutputIdx < c.targetOutputToScalar.size()
+                     && c.targetOutputToScalar[c.logitsOutputIdx] == c.scalarLogitsOutputIdx
+                     && c.targetOutputToScalar[c.targetHiddenOutputIdx] == c.scalarTargetHiddenOutputIdx, 0,
+                 "autoregressive_decode: scalar logits/hidden mapping mismatch");
+  }
   helpers::AutoregressiveDecodeConfig* configPtr = hasPlanConfig ? &decodeConfig : nullptr;
 
   helpers::autoregressiveDecode(

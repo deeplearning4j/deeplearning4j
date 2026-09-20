@@ -29,6 +29,15 @@ public class TestMtpCpuRetainedRowRepair {
     private static final int K = 3;
     private static final int WIDTH = K + 1;
     private static final int CACHE = 8;
+    /**
+     * Synthetic native target start position (packet 5). The predictor row
+     * mapping is r = target position - 1, so a zero origin would map the first
+     * target position to a NEGATIVE predictor row. With base target position 1
+     * the predictor base row is 0 and a final emitted count m leaves the
+     * pending predictor row at m - the original retained-key/value and mask
+     * oracles are unchanged.
+     */
+    private static final int BASE_TARGET_POSITION = 1;
 
     @ParameterizedTest(name = "accepted prefix length {0}")
     @ValueSource(ints = {0, 1, 2, 3})
@@ -49,6 +58,9 @@ public class TestMtpCpuRetainedRowRepair {
     }
 
     private void checkRetainedRows(int accepted, DataType targetType, DataType predictorType) {
+        // ADR 0106 Phase 2b exit: token-exact parity proven (milestone bc3f5c2a,
+        // emissionDeltas 0/251); CUDA multi-token emission restored, so the
+        // retained-row repair contract is asserted on BOTH backends.
         try (Plan target = target(accepted, targetType); Plan predictor = predictor(predictorType)) {
             target.compile();
             predictor.compile();
@@ -56,9 +68,14 @@ public class TestMtpCpuRetainedRowRepair {
             predictor.input("key").assign(-1);
             predictor.input("value").assign(-1);
             predictor.input("carry").assign(7);
+            // Stage the target controls at the synthetic base position so the
+            // first verification execution and the native loop's per-step writes
+            // agree on the origin (packet 5).
+            target.input("position").assign(BASE_TARGET_POSITION);
+            target.input("cache_position").assign(BASE_TARGET_POSITION);
             try (INDArray embeddings = Nd4j.zeros(DataType.FLOAT, 1, 1, 1);
                  INDArray table = Nd4j.ones(DataType.FLOAT, 2, 1);
-                 INDArray positions = Nd4j.zeros(DataType.INT64, 1, 1)) {
+                 INDArray positions = Nd4j.valueArrayOf(new long[]{1, 1}, BASE_TARGET_POSITION)) {
                 AutoregressiveDecode op = new AutoregressiveDecode(
                         embeddings, table, target.input("ids"), target.input("mask"), positions, null,
                         target.executor.getNativePlanHandle(), target.executor.getCachedOpContext(),
@@ -66,7 +83,7 @@ public class TestMtpCpuRetainedRowRepair {
                         -1, -1, target.ext("mask"), -1, target.ext("ids"), target.out("logits"),
                         -1, target.ext("position"), target.ext("cache_position"),
                         new int[0], new int[0], new int[0], new int[0], new int[0], new int[0],
-                        WIDTH, 0, 0, 0, 0.0, 0, 0.0, 1.0, Set.of());
+                        WIDTH, 0, 0, BASE_TARGET_POSITION, 0.0, 0, 0.0, 1.0, Set.of());
                 op.withDecodePolicy(AutoregressiveDecode.DECODE_STRATEGY_SPECULATIVE,
                                 1, WIDTH, 1, 1, -1, 1, 1.0, 0.0, 0)
                         .withSpeculativeDecoding(K, AutoregressiveDecode.SPECULATOR_TYPE_MTP)

@@ -30,6 +30,15 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
+inline bool matmulSerialFloatStorage(DataType dtype) {
+  return dtype == DataType::HALF || dtype == DataType::BFLOAT16 || dtype == DataType::FLOAT32;
+}
+
+inline bool matmulSerialStorageSupported(DataType x, DataType y, DataType z) {
+  return (z == DataType::FLOAT32 && matmulSerialFloatStorage(x) && matmulSerialFloatStorage(y)) ||
+      (x == y && y == z && (matmulSerialFloatStorage(x) || x == DataType::DOUBLE));
+}
+
 // SERIAL_FMA arithmetic is deliberately independent of M, N, tiling and launch
 // geometry. Explicit FMA starts at +0; alpha multiplication is rounded before
 // the optional beta FMA. No output read when beta == 0.
@@ -83,12 +92,12 @@ SD_HOST_DEVICE SD_INLINE void matmulSerialOffsets(
   ykStride = shape::stride(ys)[yk];
 }
 
-template <typename T>
+template <typename X, typename Y = X, typename Z = X>
 SD_HOST_DEVICE SD_INLINE void matmulSerialElement(
-    LongType linearIndex, const T* x, const T* y, T* z,
+    LongType linearIndex, const X* x, const Y* y, Z* z,
     const LongType* xs, const LongType* ys, const LongType* zs,
     bool tx, bool ty, double alpha, double beta) {
-  using AccT = typename simdOps::AggregateType<T>::type;
+  using AccT = typename simdOps::AggregateType<Z>::type;
   LongType xo, yo, zo, kSize, xkStride, ykStride;
   matmulSerialOffsets(linearIndex, xs, ys, zs, tx, ty, xo, yo, zo, kSize, xkStride, ykStride);
   AccT sum = static_cast<AccT>(0);
@@ -97,7 +106,7 @@ SD_HOST_DEVICE SD_INLINE void matmulSerialElement(
   AccT result = matmulMultiply(static_cast<AccT>(alpha), sum);
   if (beta != 0.0)
     result = matmulFma(static_cast<AccT>(beta), static_cast<AccT>(z[zo]), result);
-  z[zo] = static_cast<T>(result);
+  z[zo] = static_cast<Z>(result);
 }
 
 SD_LIB_HIDDEN void _matmul(LaunchContext *context, NDArray *A, NDArray *B, NDArray *C, int transA, int transB,

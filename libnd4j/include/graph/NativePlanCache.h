@@ -168,7 +168,19 @@ class SD_LIB_EXPORT NativePlanCache {
       bool acquireLease = true);
 
   /**
-   * Unpin a plan that was previously returned by getOrInsert().
+   * Acquire one independent eviction-protection lease for a resident plan.
+   * Validates membership by pointer equality under the cache mutex without
+   * dereferencing plan. Rejects null/nonmembers, shutdown, clear-pending caches,
+   * and lease-count overflow. Does not dispatch, reactivate, reorder the LRU,
+   * or modify any plan resources (including passivated plans).
+   * Each successful retain requires one matching unpinPlan(). The cache must
+   * remain alive throughout the lease; this does not protect executor-owned
+   * resources from retirement or synchronize plan execution.
+   */
+  bool retainPlan(NativeDynamicShapePlan* plan);
+
+  /**
+   * Unpin a plan that was previously returned by getOrInsert() or retained.
    * Once unpinned, the plan becomes eligible for LRU eviction.
    * Safe to call with nullptr or a plan not in the cache (no-op). One call
    * releases one borrower lease; the plan becomes evictable only at zero.

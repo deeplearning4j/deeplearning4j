@@ -33,12 +33,93 @@
 #include <cstdlib>
 #include <cstring>
 #include <mutex>
+#include <map>
+#include <stdexcept>
+#include <cstdint>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
 namespace sd {
 namespace memory {
+
+namespace {
+struct AllocationReadiness {
+  size_t bytes;
+  int device;
+  cudaStream_t stream;
+  uint64_t threadGeneration;
+  cudaEvent_t event;
+};
+
+// One entry/event per live allocation generation, not per address forever.
+// Keep lookup, wait enqueue and retirement under the same mutex: an event cannot
+// be destroyed/replaced while another thread is enqueueing its dependency.
+std::mutex allocationReadinessMutex;
+std::map<uintptr_t, AllocationReadiness> allocationReadiness;
+std::atomic<uint64_t> nextAllocationThreadGeneration{1};
+// OS thread IDs can be recycled while allocations outlive their allocating thread.
+thread_local const uint64_t allocationThreadGeneration =
+    nextAllocationThreadGeneration.fetch_add(1, std::memory_order_relaxed);
+
+cudaError_t waitAllocationLocked(const void* ptr, size_t bytes, cudaStream_t stream) {
+  if (ptr == nullptr || bytes == 0) return cudaSuccess;
+  auto address = reinterpret_cast<uintptr_t>(ptr);
+  auto it = allocationReadiness.upper_bound(address);
+  if (it == allocationReadiness.begin()) return cudaSuccess;
+  --it;
+  size_t offset = address - it->first;
+  const auto& allocation = it->second;
+  if (offset >= allocation.bytes) return cudaSuccess;
+  if (bytes > allocation.bytes - offset) return cudaErrorInvalidValue;
+  int device;
+  auto status = cudaGetDevice(&device);
+  if (status != cudaSuccess) return status;
+  // Per-thread stream handles are tokens, not globally unique streams.
+  if (device == allocation.device && stream == allocation.stream &&
+      (stream != cudaStreamPerThread || allocation.threadGeneration == allocationThreadGeneration))
+    return cudaSuccess;
+  // Publish the allocation dependency on every distinct consumer stream.
+  // Host-side completion polling must not elide this stream-ordering edge;
+  // a wait on an already-completed event is nonblocking for the host.
+  // Allocation events are recorded outside graph capture. Represent their
+  // dependencies as external event nodes instead of attempting to join the
+  // allocation stream to the consumer's capture (cudaErrorStreamCaptureIsolation).
+  cudaStreamCaptureStatus capture = cudaStreamCaptureStatusNone;
+  // The legacy stream cannot be captured. Querying it while another stream
+  // captures can itself raise cudaErrorStreamCaptureImplicit.
+  if (stream != nullptr && stream != cudaStreamLegacy) {
+    status = cudaStreamIsCapturing(stream, &capture);
+    if (status != cudaSuccess) return status;
+    if (capture == cudaStreamCaptureStatusInvalidated) return cudaErrorStreamCaptureInvalidated;
+  }
+  const unsigned int flags = capture == cudaStreamCaptureStatusActive
+      ? cudaEventWaitExternal : cudaEventWaitDefault;
+  status = cudaStreamWaitEvent(stream, allocation.event, flags);
+  DSP_DIAG(STREAM_SYNC, "ALLOCATION_READY_WAIT: base=%p offset=%zu bytes=%zu allocationDevice=%d allocationStream=%p consumerDevice=%d consumerStream=%p status=%d",
+           reinterpret_cast<void*>(it->first), offset, bytes, allocation.device,
+           reinterpret_cast<void*>(allocation.stream), device, reinterpret_cast<void*>(stream), (int)status);
+  return status;
+}
+}  // namespace
+
+cudaError_t CudaMemoryPool::memcpyAsync(void* dst, const void* src, size_t bytes,
+                                       cudaMemcpyKind kind, cudaStream_t stream) {
+  std::lock_guard<std::mutex> lock(allocationReadinessMutex);
+  auto status = waitAllocationLocked(dst, bytes, stream);
+  if (status == cudaSuccess) status = waitAllocationLocked(src, bytes, stream);
+  if (status != cudaSuccess) return status;
+  return cudaMemcpyAsync(dst, src, bytes, kind, stream);
+}
+
+cudaError_t CudaMemoryPool::memcpyPeerAsync(void* dst, int dstDevice, const void* src,
+                                           int srcDevice, size_t bytes, cudaStream_t stream) {
+  std::lock_guard<std::mutex> lock(allocationReadinessMutex);
+  auto status = waitAllocationLocked(dst, bytes, stream);
+  if (status == cudaSuccess) status = waitAllocationLocked(src, bytes, stream);
+  if (status != cudaSuccess) return status;
+  return cudaMemcpyPeerAsync(dst, dstDevice, src, srcDevice, bytes, stream);
+}
 
 SD_INLINE cudaError_t streamOrderedMalloc(void** ptr, size_t size, cudaStream_t stream) {
 #if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
@@ -50,7 +131,50 @@ SD_INLINE cudaError_t streamOrderedMalloc(void** ptr, size_t size, cudaStream_t 
   (void)stream;
   return cudaMalloc(ptr, size);
 #else
-  return cudaMallocAsync(ptr, size, stream);
+  std::lock_guard<std::mutex> lock(allocationReadinessMutex);
+  auto status = cudaMallocAsync(ptr, size, stream);
+  if (status != cudaSuccess || *ptr == nullptr) return status;
+  cudaStreamCaptureStatus capture;
+  status = cudaStreamIsCapturing(stream, &capture);
+  // Graph-owned allocations have graph-local lifetime/order. Do not publish a
+  // host readiness event for them; workspace suballocations never reach here.
+  if (status == cudaSuccess && capture == cudaStreamCaptureStatusActive) return cudaSuccess;
+  if (status == cudaSuccess && capture == cudaStreamCaptureStatusInvalidated)
+    status = cudaErrorStreamCaptureInvalidated;
+  cudaEvent_t event = nullptr;
+  cudaPointerAttributes attributes{};
+  int previousDevice = -1;
+  bool restoreDevice = false;
+  if (status == cudaSuccess) status = cudaPointerGetAttributes(&attributes, *ptr);
+  if (status == cudaSuccess) status = cudaGetDevice(&previousDevice);
+  if (status == cudaSuccess && previousDevice != attributes.device) {
+    status = cudaSetDevice(attributes.device);
+    restoreDevice = status == cudaSuccess;
+  }
+  if (status == cudaSuccess) status = cudaEventCreateWithFlags(&event, cudaEventDisableTiming);
+  if (status == cudaSuccess) status = cudaEventRecord(event, stream);
+  if (restoreDevice) {
+    auto restoreStatus = cudaSetDevice(previousDevice);
+    if (status == cudaSuccess) status = restoreStatus;
+  }
+  if (status == cudaSuccess) {
+    try {
+      auto inserted = allocationReadiness.emplace(reinterpret_cast<uintptr_t>(*ptr),
+          AllocationReadiness{size, attributes.device, stream, allocationThreadGeneration, event});
+      if (inserted.second) return cudaSuccess;
+      throw std::runtime_error("Duplicate live CUDA allocation readiness address");
+    } catch (...) {
+      cudaEventDestroy(event);
+      cudaFreeAsync(*ptr, stream);
+      *ptr = nullptr;
+      throw;
+    }
+  }
+  if (event != nullptr) cudaEventDestroy(event);
+  cudaFreeAsync(*ptr, stream);
+  *ptr = nullptr;
+  // This is a bookkeeping failure, not OOM: never invoke allocator failover.
+  throw std::runtime_error(std::string("CUDA allocation readiness: ") + cudaGetErrorString(status));
 #endif
 }
 
@@ -61,7 +185,24 @@ SD_INLINE cudaError_t streamOrderedFree(void* ptr, cudaStream_t stream) {
   (void)stream;
   return cudaFree(ptr);
 #else
-  return cudaFreeAsync(ptr, stream);
+  std::lock_guard<std::mutex> lock(allocationReadinessMutex);
+  auto status = waitAllocationLocked(ptr, 1, stream);
+  if (status != cudaSuccess) return status;
+  status = cudaFreeAsync(ptr, stream);
+  if (status == cudaSuccess) {
+    auto it = allocationReadiness.find(reinterpret_cast<uintptr_t>(ptr));
+    if (it != allocationReadiness.end()) {
+      // CUDA retains already-enqueued waits when their event is destroyed.
+      // Erase before releasing the lock so address reuse gets a fresh event.
+      auto event = it->second.event;
+      allocationReadiness.erase(it);
+      auto destroyStatus = cudaEventDestroy(event);
+      if (destroyStatus != cudaSuccess)
+        throw std::runtime_error(std::string("CUDA allocation event retirement: ") +
+                                 cudaGetErrorString(destroyStatus));
+    }
+  }
+  return status;
 #endif
 }
 
@@ -1533,9 +1674,14 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
     }
   }
 
-  // Device memory: use cudaFreeAsync for stream-ordered deallocation.
-  // Works for both pool and non-pool allocations since CUDA 11.2.
-  if (enabled_.load() && supported_) {
+  // Allocation provenance survives changes to the pool-enabled setting.
+  bool streamOrderedAllocation;
+  {
+    std::lock_guard<std::mutex> lock(allocationReadinessMutex);
+    streamOrderedAllocation = allocationReadiness.count(reinterpret_cast<uintptr_t>(ptr)) != 0;
+  }
+  // Device memory: preserve async lifetime and retire its readiness generation.
+  if ((enabled_.load() && supported_) || streamOrderedAllocation) {
     // CAPTURE-SAFE DEFER: if a CUDA graph capture is ACTIVELY in progress on freeStream,
     // issuing cudaFreeAsync now corrupts it. For a capture-time (workspace-interior) buffer
     // the call fails "invalid argument", and any cudaFreeAsync that references a pointer not
@@ -2640,6 +2786,18 @@ void CudaMemoryPool::releaseAll() {
     if (sd::Environment::getInstance().isDebug() || sd::Environment::getInstance().isVerbose()) {
       sd_debug("CudaMemoryPool::releaseAll: Exception during cleanup - possible heap corruption\n", "");
     }
+  }
+  // No consumers may be submitted after pool teardown. Pending CUDA waits
+  // retain their event dependency even after the host event handle is destroyed.
+  {
+    std::lock_guard<std::mutex> lock(allocationReadinessMutex);
+    for (const auto& entry : allocationReadiness) {
+      auto status = cudaEventDestroy(entry.second.event);
+      if (status != cudaSuccess)
+        DSP_DIAG(MEMORY, "ALLOCATION_READY_EVENT_TEARDOWN_FAILED: base=%p status=%d",
+                 reinterpret_cast<void*>(entry.first), (int)status);
+    }
+    allocationReadiness.clear();
   }
 }
 

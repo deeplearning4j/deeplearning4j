@@ -71,8 +71,8 @@ void recordActiveMmulOutputFingerprint(int ordinal, const void* cPtr, size_t cBy
 
 namespace sd {
 
-template <typename T>
-static SD_KERNEL void serialGemmKernel(const T* x, const T* y, T* z,
+template <typename X, typename Y, typename Z>
+static SD_KERNEL void serialGemmKernel(const X* x, const Y* y, Z* z,
     const LongType* xs, const LongType* ys, const LongType* zs,
     LongType length, bool tx, bool ty, double alpha, double beta) {
   for (LongType i = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
@@ -80,33 +80,167 @@ static SD_KERNEL void serialGemmKernel(const T* x, const T* y, T* z,
     ops::helpers::matmulSerialElement(i, x, y, z, xs, ys, zs, tx, ty, alpha, beta);
 }
 
-template <typename T>
+// Fixed algorithm geometry, not runtime tuning knobs. Padding avoids shared-bank
+// conflicts both for contiguous-K staging and output-parallel consumption.
+static constexpr int serialTileK = 32;
+static constexpr int serialTileN = 128;
+static constexpr int serialTileRows = 4;
+static constexpr int serialTileSharedElements =
+    serialTileN * (serialTileK + 1) + serialTileRows * serialTileK;
+
+struct SerialTileLayout {
+  LongType m, n, k, aRow, cRow, cCol;
+};
+
+static bool serialTileLayout(NDArray* x, NDArray* y, NDArray* z, bool tx, bool ty,
+                             SerialTileLayout& layout) {
+  if (z->dataType() != DataType::FLOAT32) return false;
+  const int xr = x->rankOf(), yr = y->rankOf(), zr = z->rankOf();
+  if ((xr != 2 && xr != 3) || (yr != 2 && yr != 3) || zr != std::max(xr, yr)) return false;
+  if ((xr == 3 && x->sizeAt(0) != 1) || (yr == 3 && y->sizeAt(0) != 1) ||
+      (zr == 3 && z->sizeAt(0) != 1)) return false;
+  const int xm = xr - (tx ? 1 : 2), xk = xr - (tx ? 2 : 1);
+  const int yk = yr - (ty ? 1 : 2), yn = yr - (ty ? 2 : 1);
+  layout = {x->sizeAt(xm), y->sizeAt(yn), x->sizeAt(xk),
+            shape::stride(x->shapeInfo())[xm], shape::stride(z->shapeInfo())[zr - 2],
+            shape::stride(z->shapeInfo())[zr - 1]};
+  if (layout.m <= 0 || layout.n <= 0 || layout.k <= 0 || y->sizeAt(yk) != layout.k ||
+      z->sizeAt(zr - 2) != layout.m || z->sizeAt(zr - 1) != layout.n) return false;
+  // Effective A rows have contiguous K; B is [K,N] with strides [1,K].
+  // Shifted view bases are supported, including padded A rows and output rows/columns.
+  if (shape::stride(x->shapeInfo())[xk] != 1 || layout.aRow < layout.k ||
+      shape::stride(y->shapeInfo())[yk] != 1 || shape::stride(y->shapeInfo())[yn] != layout.k)
+    return false;
+  // Explicitly prove disjoint output rows or columns. Other output views retain
+  // the general coordinate/stride kernel, rather than assuming contiguity.
+  return (layout.cCol == 1 && layout.cRow >= layout.n) ||
+         (layout.cRow == 1 && layout.cCol >= layout.m);
+}
+
+template <typename X, typename Y, typename Z, int Rows>
+static SD_KERNEL void serialGemmTiledKernel(const X* x, const Y* y, Z* z,
+                                           SerialTileLayout layout, double alpha, double beta) {
+  using AccT = typename simdOps::AggregateType<Z>::type;
+  extern __shared__ unsigned char sharedStorage[];
+  auto* staged = reinterpret_cast<AccT*>(sharedStorage);
+  AccT* aTile = staged + serialTileN * (serialTileK + 1);
+  const LongType nTiles = (layout.n - 1) / serialTileN + 1;
+  const LongType tiles = nTiles * ((layout.m - 1) / Rows + 1);
+  const int lane = threadIdx.x;
+  for (LongType tile = blockIdx.x; tile < tiles; tile += gridDim.x) {
+    const LongType firstRow = (tile / nTiles) * Rows;
+    const LongType firstCol = (tile % nTiles) * serialTileN;
+    const LongType col = firstCol + lane;
+    // A single persistent accumulator per output: tiles stage operands only.
+    AccT sums[Rows] = {};
+    for (LongType firstK = 0; firstK < layout.k;) {
+      const int activeK = static_cast<int>(layout.k - firstK < serialTileK ?
+                                           layout.k - firstK : serialTileK);
+      // Adjacent lanes load adjacent K, not widely separated output columns.
+      for (int i = lane; i < serialTileN * serialTileK; i += blockDim.x) {
+        const int n = i / serialTileK, k = i % serialTileK;
+        if (firstCol + n < layout.n && k < activeK)
+          staged[n * (serialTileK + 1) + k] = static_cast<AccT>(y[(firstCol + n) * layout.k + firstK + k]);
+      }
+      for (int i = lane; i < Rows * serialTileK; i += blockDim.x) {
+        const int r = i / serialTileK, k = i % serialTileK;
+        if (firstRow + r < layout.m && k < activeK)
+          aTile[i] = static_cast<AccT>(x[(firstRow + r) * layout.aRow + firstK + k]);
+      }
+      __syncthreads();
+      if (col < layout.n) {
+        for (int k = 0; k < activeK; ++k) {
+          const AccT weight = staged[lane * (serialTileK + 1) + k];
+          for (int r = 0; r < Rows; ++r)
+            if (firstRow + r < layout.m)
+              sums[r] = ops::helpers::matmulFma(aTile[r * serialTileK + k], weight, sums[r]);
+        }
+      }
+      // Tail output lanes participate too; no thread can overwrite the next
+      // tile before every consumer finishes. No padded K values enter an FMA.
+      __syncthreads();
+      firstK += activeK;
+    }
+    if (col < layout.n) {
+      for (int r = 0; r < Rows; ++r) {
+        if (firstRow + r < layout.m) {
+          const LongType offset = (firstRow + r) * layout.cRow + col * layout.cCol;
+          AccT result = ops::helpers::matmulMultiply(static_cast<AccT>(alpha), sums[r]);
+          if (beta != 0.0)
+            result = ops::helpers::matmulFma(static_cast<AccT>(beta), static_cast<AccT>(z[offset]), result);
+          z[offset] = static_cast<Z>(result);
+        }
+      }
+    }
+  }
+}
+
+template <typename X, typename Y, typename Z>
+static void launchSerialGemmTiled(dim3 dims, cudaStream_t* stream, NDArray* x, NDArray* y, NDArray* z,
+                                  SerialTileLayout layout, double alpha, double beta) {
+  using AccT = typename simdOps::AggregateType<Z>::type;
+  if (dims.z != serialTileSharedElements * sizeof(AccT))
+    THROW_EXCEPTION("MATMUL SERIAL_FMA: shared memory does not match accumulator dtype");
+  const auto* a = static_cast<const X*>(x->specialBuffer());
+  const auto* b = static_cast<const Y*>(y->specialBuffer());
+  auto* c = static_cast<Z*>(z->specialBuffer());
+  const int rows = layout.m == 1 ? 1 : serialTileRows;
+  const LongType tiles = ((layout.n - 1) / serialTileN + 1) * ((layout.m - 1) / rows + 1);
+  const unsigned int blocks = static_cast<unsigned int>(std::min<LongType>(dims.x, tiles));
+  if (rows == 1)
+    serialGemmTiledKernel<X, Y, Z, 1><<<blocks, dims.y, dims.z, *stream>>>(a, b, c, layout, alpha, beta);
+  else
+    serialGemmTiledKernel<X, Y, Z, serialTileRows><<<blocks, dims.y, dims.z, *stream>>>(a, b, c, layout, alpha, beta);
+}
+
+template <typename X, typename Y = X, typename Z = X>
 static void launchSerialGemm(dim3 dims, cudaStream_t* stream, NDArray* x, NDArray* y, NDArray* z,
                             bool tx, bool ty, double alpha, double beta) {
   const auto* xs = x->specialShapeInfo();
   const auto* ys = y->specialShapeInfo();
   const auto* zs = z->specialShapeInfo();
-  serialGemmKernel<T><<<dims.x, dims.y, 0, *stream>>>(
-      static_cast<const T*>(x->specialBuffer()), static_cast<const T*>(y->specialBuffer()),
-      static_cast<T*>(z->specialBuffer()), xs, ys, zs, z->lengthOf(), tx, ty, alpha, beta);
+  serialGemmKernel<X, Y, Z><<<dims.x, dims.y, 0, *stream>>>(
+      static_cast<const X*>(x->specialBuffer()), static_cast<const Y*>(y->specialBuffer()),
+      static_cast<Z*>(z->specialBuffer()), xs, ys, zs, z->lengthOf(), tx, ty, alpha, beta);
 }
 
 void MmulHelper::matmulSerial(LaunchContext* context, NDArray* x, NDArray* y, NDArray* z,
                             bool tx, bool ty, double alpha, double beta) {
+  if (!ops::helpers::matmulSerialStorageSupported(x->dataType(), y->dataType(), z->dataType()))
+    THROW_EXCEPTION("MATMUL SERIAL_FMA: unsupported storage dtype combination");
   if (z->isEmpty()) return;
-  const auto dims = getLaunchDims("matmul_serial_fma");
-  // No shared memory, barriers, workspace, host tensors or BLAS handles.
+  if (x->getDataBuffer() == z->getDataBuffer() || y->getDataBuffer() == z->getDataBuffer())
+    THROW_EXCEPTION("MATMUL SERIAL_FMA: output must not alias an input");
+  SerialTileLayout layout{};
+  const bool tiled = serialTileLayout(x, y, z, tx, ty, layout);
+  const auto dims = getLaunchDims(tiled ? "matmul_serial_fma_tiled" : "matmul_serial_fma");
+  // Both paths use only existing device buffers and the supplied stream.
   cudaDeviceProp properties;
   if (cudaGetDeviceProperties(&properties, context->getDeviceID()) != cudaSuccess)
     THROW_EXCEPTION("MATMUL SERIAL_FMA: unable to query launch limits");
   if (dims.x == 0 || dims.x > static_cast<unsigned int>(properties.maxGridSize[0]) ||
       dims.y == 0 || dims.y > static_cast<unsigned int>(properties.maxThreadsPerBlock) ||
-      dims.y > static_cast<unsigned int>(properties.maxThreadsDim[0]) || dims.z != 0)
+      dims.y > static_cast<unsigned int>(properties.maxThreadsDim[0]))
     THROW_EXCEPTION("MATMUL SERIAL_FMA: invalid named launch dimensions");
+  if (tiled) {
+    if (dims.y != serialTileN || dims.z != serialTileSharedElements * z->sizeOfT() ||
+        dims.z > properties.sharedMemPerBlock || properties.warpSize != serialTileK)
+      THROW_EXCEPTION("MATMUL SERIAL_FMA: tiled launch requires 128 threads, 17408 shared bytes and 32-lane warps");
+  } else if (dims.z != 0) {
+    THROW_EXCEPTION("MATMUL SERIAL_FMA: general launch requires zero shared bytes");
+  }
   if (beta != 0.0) NDArray::prepareSpecialUse({z}, {x, y, z});
   else NDArray::prepareSpecialUse({z}, {x, y});
   auto* stream = context->getCudaStream();
-  BUILD_SINGLE_SELECTOR(x->dataType(), launchSerialGemm, (dims, stream, x, y, z, tx, ty, alpha, beta), SD_FLOAT_TYPES);
+  if (tiled) {
+    BUILD_TRIPLE_SELECTOR(x->dataType(), y->dataType(), z->dataType(), launchSerialGemmTiled,
+                          (dims, stream, x, y, z, layout, alpha, beta),
+                          SD_FLOAT_TYPES, SD_FLOAT_TYPES, SD_FLOAT_TYPES);
+  } else {
+    BUILD_TRIPLE_SELECTOR(x->dataType(), y->dataType(), z->dataType(), launchSerialGemm,
+                          (dims, stream, x, y, z, tx, ty, alpha, beta),
+                          SD_FLOAT_TYPES, SD_FLOAT_TYPES, SD_FLOAT_TYPES);
+  }
   NDArray::registerSpecialUse({z}, {x, y});
   if (!DebugHelper::inGraphCapture(stream))
     DebugHelper::checkGlobalErrorCode("MATMUL SERIAL_FMA launch failed");

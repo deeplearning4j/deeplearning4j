@@ -24,6 +24,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor.NativeExecutionBinding;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -947,6 +948,7 @@ public class AutoregressiveDecode extends DynamicCustomOp {
             int mtpHiddenOutputIdx,
             int targetHiddenOutputIdx) {
 
+
         if (mtpInputIds == null || mtpTargetHiddenStates == null || mtpCausalMask == null
                 || mtpPositionOffset == null || mtpCachePosition == null) {
             throw new IllegalArgumentException("withMtpPlan requires all five mutable MTP inputs");
@@ -1009,6 +1011,204 @@ public class AutoregressiveDecode extends DynamicCustomOp {
             if (tArguments.size() == index) tArguments.add(metadata[i]);
             else tArguments.set(index, metadata[i]);
         }
+        return this;
+    }
+
+    /**
+     * Attach a leased width-one target execution. The caller owns the binding and its inputs,
+     * and brackets execution AND readback with beginNativeUse/completeNativeUse.
+     * No output or external-input ordering is inferred from the window plan.
+     *
+     * <p>tArgs 43/44 remain repetition limits. Scalar ABI: 45..48 plan/context unsigned
+     * pointer halves; 49 logits; 50 target hidden; 51/52 captured input/output counts;
+     * 53..57 ids/mask/position/cache/active-length indices; 58/59 mapping lengths;
+     * 60+ scalar-input-to-window-input map, then window-output-to-scalar-output map.</p>
+     */
+    private static final long MTP_REPAIR_TRAILER_MARKER = 0x4D545052L;
+    /** Optional trailer marker for the fixed-width B=1 repair plan. */
+    private static final long MTP_BATCH_REPAIR_TRAILER_MARKER = 0x4D545042L;
+
+    /**
+     * Attach an optional KV-only predictor repair plan. The trailer is appended
+     * after the existing scalar-target trailer and is versioned by a marker so
+     * older callers keep the established ABI unchanged.
+     */
+    public AutoregressiveDecode withMtpRepairPlan(
+            Pointer planHandle, Pointer contextHandle,
+            int numPlanExternalInputs, int numPlanOutputs,
+            int inputIdsExtIdx, int targetHiddenExtIdx, int causalMaskExtIdx,
+            int positionOffsetExtIdx, int cachePositionExtIdx,
+            int keyOutputIdx, int valueOutputIdx,
+            int keyInputExtIdx, int valueInputExtIdx) {
+        if (planHandle == null || planHandle.isNull() || contextHandle == null || contextHandle.isNull()) {
+            throw new IllegalArgumentException("MTP repair requires non-null plan and context handles");
+        }
+        if (numPlanExternalInputs <= 0 || numPlanOutputs <= 0
+                || inputIdsExtIdx < 0 || targetHiddenExtIdx < 0
+                || positionOffsetExtIdx < 0
+                || keyOutputIdx < 0 || valueOutputIdx < 0) {
+            throw new IllegalArgumentException("MTP repair metadata is incomplete");
+        }
+        while (tArguments.size() < 45) tArguments.add(0.0);
+        long planAddress = planHandle.address();
+        long contextAddress = contextHandle.address();
+        for (double value : new double[]{
+                (double) MTP_REPAIR_TRAILER_MARKER,
+                (double) (planAddress & 0xFFFFFFFFL),
+                (double) ((planAddress >>> 32) & 0xFFFFFFFFL),
+                (double) (contextAddress & 0xFFFFFFFFL),
+                (double) ((contextAddress >>> 32) & 0xFFFFFFFFL),
+                (double) numPlanExternalInputs, (double) numPlanOutputs,
+                (double) inputIdsExtIdx, (double) targetHiddenExtIdx,
+                (double) causalMaskExtIdx, (double) positionOffsetExtIdx,
+                (double) cachePositionExtIdx, (double) keyOutputIdx,
+                (double) valueOutputIdx, (double) keyInputExtIdx,
+                (double) valueInputExtIdx}) {
+            tArguments.add(value);
+        }
+        return this;
+    }
+
+    /**
+     * Attach an independent fixed-width B=1 K/V-only predictor repair plan.
+     *
+     * <p>The scalar repair trailer remains the compatibility fallback. This optional extension
+     * appends five stable input arrays after the seven scalar MTP arrays and a second versioned
+     * metadata trailer. The native helper selects this plan only when the 1024 input-mask bit is
+     * present; old callers and the scalar ABI remain unchanged.</p>
+     */
+    public AutoregressiveDecode withMtpBatchedRepairPlan(
+            INDArray repairInputIds, INDArray repairTargetHiddenStates,
+            INDArray repairCausalMask, INDArray repairPositionOffset,
+            INDArray repairCachePosition, int width,
+            Pointer planHandle, Pointer contextHandle,
+            int numPlanExternalInputs, int numPlanOutputs,
+            int inputIdsExtIdx, int targetHiddenExtIdx, int causalMaskExtIdx,
+            int positionOffsetExtIdx, int cachePositionExtIdx,
+            int keyOutputIdx, int valueOutputIdx,
+            int keyInputExtIdx, int valueInputExtIdx) {
+        if ((iArguments.get(4) & 256L) == 0L) {
+            throw new IllegalStateException("Batched MTP repair requires withMtpPlan first");
+        }
+        if (repairInputIds == null || repairTargetHiddenStates == null || repairCausalMask == null
+                || repairPositionOffset == null || repairCachePosition == null) {
+            throw new IllegalArgumentException("Batched MTP repair requires five stable input arrays");
+        }
+        if (width <= 0 || repairInputIds.rank() != 2 || repairInputIds.size(0) != 1
+                || repairInputIds.size(1) != width || repairInputIds.dataType() != DataType.INT64
+                || repairTargetHiddenStates.rank() != 3 || repairTargetHiddenStates.size(0) != 1
+                || repairTargetHiddenStates.size(1) != width
+                || repairCausalMask.rank() != 4 || repairCausalMask.size(0) != 1
+                || repairCausalMask.size(1) != 1 || repairCausalMask.size(2) != width
+                || repairCausalMask.size(3) <= 0
+                || repairPositionOffset.length() != 1 || repairCachePosition.length() != 1
+                || repairPositionOffset.dataType() != DataType.INT64
+                || repairCachePosition.dataType() != DataType.INT64) {
+            throw new IllegalArgumentException("Batched MTP repair requires ids [1,W] INT64, hidden [1,W,H], "
+                    + "mask [1,1,W,L], and INT64 position/cache scalars");
+        }
+        if (planHandle == null || planHandle.isNull() || contextHandle == null || contextHandle.isNull()) {
+            throw new IllegalArgumentException("Batched MTP repair requires non-null plan and context handles");
+        }
+        if (numPlanExternalInputs <= 0 || numPlanOutputs <= 0
+                || inputIdsExtIdx < 0 || targetHiddenExtIdx < 0
+                || positionOffsetExtIdx < 0 || keyOutputIdx < 0 || valueOutputIdx < 0) {
+            throw new IllegalArgumentException("Batched MTP repair metadata is incomplete");
+        }
+        // K/V-only pruning legitimately removes the attention mask, cache
+        // position, and past-K/V graph inputs; -1 marks an absent binding.
+        // Required ids/hidden/position/output mappings stay mandatory above.
+        if (causalMaskExtIdx < -1 || cachePositionExtIdx < -1
+                || keyInputExtIdx < -1 || valueInputExtIdx < -1
+                || causalMaskExtIdx >= numPlanExternalInputs
+                || cachePositionExtIdx >= numPlanExternalInputs
+                || keyInputExtIdx >= numPlanExternalInputs
+                || valueInputExtIdx >= numPlanExternalInputs) {
+            throw new IllegalArgumentException("Batched MTP repair optional indices are malformed");
+        }
+        inputArguments.add(repairInputIds);
+        inputArguments.add(repairTargetHiddenStates);
+        inputArguments.add(repairCausalMask);
+        inputArguments.add(repairPositionOffset);
+        inputArguments.add(repairCachePosition);
+
+        long previousMask = iArguments.get(4);
+        long batchedMask = previousMask | 1024L;
+        iArguments.set(4, batchedMask);
+        this.optionalInputMask = (int) batchedMask;
+
+        while (tArguments.size() < 45) tArguments.add(0.0);
+        long planAddress = planHandle.address();
+        long contextAddress = contextHandle.address();
+        for (double value : new double[]{
+                (double) MTP_BATCH_REPAIR_TRAILER_MARKER,
+                (double) (planAddress & 0xFFFFFFFFL),
+                (double) ((planAddress >>> 32) & 0xFFFFFFFFL),
+                (double) (contextAddress & 0xFFFFFFFFL),
+                (double) ((contextAddress >>> 32) & 0xFFFFFFFFL),
+                (double) numPlanExternalInputs, (double) numPlanOutputs,
+                (double) inputIdsExtIdx, (double) targetHiddenExtIdx,
+                (double) causalMaskExtIdx, (double) positionOffsetExtIdx,
+                (double) cachePositionExtIdx, (double) keyOutputIdx,
+                (double) valueOutputIdx, (double) keyInputExtIdx,
+                (double) valueInputExtIdx}) {
+            tArguments.add(value);
+        }
+        return this;
+    }
+
+    public AutoregressiveDecode withScalarTargetPlan(
+            NativeExecutionBinding binding, String[] targetInputKeys, List<String> targetOutputs,
+            String inputIdsName, String causalMaskName, String positionOffsetName,
+            String cachePositionName, String actualSequenceLengthName,
+            String logitsName, String targetHiddenName) {
+        if (binding == null || speculatorType != SPECULATOR_TYPE_MTP
+                || targetInputKeys == null || targetOutputs == null) {
+            throw new IllegalArgumentException("Scalar target requires an MTP plan and complete named mappings");
+        }
+        String[] scalarKeys = binding.getExternalInputKeysSnapshot();
+        INDArray[] scalarInputs = binding.getExternalInputsSnapshot();
+        int ids = binding.findExternalInputIndex(inputIdsName);
+        int mask = binding.findExternalInputIndex(causalMaskName);
+        int pos = binding.findExternalInputIndex(positionOffsetName);
+        int cache = binding.findExternalInputIndex(cachePositionName);
+        int active = binding.findExternalInputIndex(actualSequenceLengthName);
+        int logits = binding.findOutputIndex(logitsName);
+        int hidden = binding.findOutputIndex(targetHiddenName);
+        if (ids < 0 || mask < 0 || pos < 0 || cache < 0 || active < 0 || logits < 0 || hidden < 0) {
+            throw new IllegalArgumentException("Scalar target is missing a required input/output name");
+        }
+        if (!Arrays.equals(scalarInputs[ids].shape(), new long[]{1, 1})
+                || scalarInputs[ids].dataType() != DataType.INT64
+                || scalarInputs[mask].rank() != 4 || scalarInputs[mask].size(0) != 1
+                || scalarInputs[mask].size(1) != 1 || scalarInputs[mask].size(2) != 1) {
+            throw new IllegalArgumentException("Scalar target requires ids [1,1] INT64 and mask [1,1,1,L]");
+        }
+        for (int index : new int[]{pos, cache, active}) {
+            if (scalarInputs[index].length() != 1 || scalarInputs[index].dataType() != DataType.INT64) {
+                throw new IllegalArgumentException("Scalar position/cache/active length must be INT64 scalars");
+            }
+        }
+        List<Double> metadata = new ArrayList<>();
+        long plan = binding.getPlanHandle().address(), context = binding.getContextHandle().address();
+        for (double value : new double[]{plan & 0xFFFFFFFFL, (plan >>> 32) & 0xFFFFFFFFL,
+                context & 0xFFFFFFFFL, (context >>> 32) & 0xFFFFFFFFL, logits, hidden,
+                binding.getInputCount(), binding.getOutputCount(), ids, mask, pos, cache, active,
+                scalarKeys.length, targetOutputs.size()}) metadata.add(value);
+        List<String> targetKeys = Arrays.asList(targetInputKeys);
+        for (String key : scalarKeys) {
+            int index = targetKeys.indexOf(key);
+            if (index < 0) throw new IllegalArgumentException("Unmapped scalar external input: " + key);
+            metadata.add((double) index);
+        }
+        for (String output : targetOutputs) {
+            int index = binding.findOutputIndex(output);
+            if (index < 0) throw new IllegalArgumentException("Unmapped scalar output: " + output);
+            metadata.add((double) index);
+        }
+        while (tArguments.size() < 45) tArguments.add(0.0);
+        while (tArguments.size() > 45) tArguments.remove(tArguments.size() - 1);
+        tArguments.addAll(metadata);
         return this;
     }
 

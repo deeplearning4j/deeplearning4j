@@ -29,10 +29,22 @@ import static org.junit.jupiter.api.Assertions.*;
  * Uses the placeholder/warmup pattern from DspExtInputTestSupport. Synthetic
  * recurrent outputs count consumed rows, so committing an overlong verification
  * pass is observable without relying on numerically sensitive model logits.
+ *
+ * <p>Multi-token terminal truncation (budget/stop inside one accepted batch) is
+ * a CPU-contract assertion: ADR 0106 Phase 2b keeps CUDA on the single-token
+ * commit until the CUDA full-state parity gate passes, so the budget/stop
+ * multi-row cases here assert CPU semantics only (see 017d7ff7).</p>
  */
 public class TestNativeSpeculativeTerminalState {
     private static final int WIDTH = 5;
     private static final int CACHE = 16;
+    /**
+     * Synthetic native target start position. The predictor row mapping is
+     * r = target position - 1, so target base 1 maps to predictor base row 0.
+     * Target-side committed positions are [BASE, BASE+emitted); the predictor's
+     * pending rope/slot is P+emitted-1 == emitted (same value as before).
+     */
+    private static final int BASE_TARGET_POSITION = 1;
 
     @Test
     public void testAcceptedEosCommitsOnlyConsumedInputs() {
@@ -41,6 +53,7 @@ public class TestNativeSpeculativeTerminalState {
 
     @Test
     public void testTokenBudgetCommitsOnlyConsumedInputs() {
+        // ADR 0106 Phase 2b exit: parity proven (bc3f5c2a), CUDA multi-token restored.
         // Proposal capacity already reserves the bonus token: two drafts + bonus.
         checkTerminalPrefix(3, -1, List.of(), 3, 2, 2);
     }
@@ -50,13 +63,19 @@ public class TestNativeSpeculativeTerminalState {
         checkTerminalPrefix(8, -1, List.of(new int[]{1, 1}), 2, 4, 2);
     }
 
+    static boolean isCudaBackend() {
+        String exec = Nd4j.getExecutioner().getClass().getName().toLowerCase();
+        String backend = Nd4j.getBackend().getClass().getName().toLowerCase();
+        return exec.contains("cuda") || backend.contains("jcublas") || backend.contains("cuda");
+    }
+
     private void checkTerminalPrefix(int budget, int eos, List<int[]> stops,
                                      int emitted, int proposed, int accepted) {
         try (TinyPlan target = new TinyPlan(WIDTH, false);
              TinyPlan predictor = new TinyPlan(1, true);
              INDArray embeddings = Nd4j.zeros(DataType.FLOAT, 1, 1, 1);
              INDArray table = Nd4j.ones(DataType.FLOAT, 2, 1);
-             INDArray positions = Nd4j.zeros(DataType.INT64, 1, 1)) {
+             INDArray positions = Nd4j.valueArrayOf(new long[]{1, 1}, BASE_TARGET_POSITION)) {
             DynamicShapePlanExecutor t = target.executor;
             DynamicShapePlanExecutor p = predictor.executor;
             AutoregressiveDecode op = new AutoregressiveDecode(
@@ -68,7 +87,7 @@ public class TestNativeSpeculativeTerminalState {
                     new int[0], new int[0],
                     new int[]{target.ext("gdn")}, new int[]{target.out("gdn_next")},
                     new int[]{target.ext("conv")}, new int[]{target.out("conv_next")},
-                    budget, eos, 0, 0, 0.0, 0, 0.0, 1.0, Set.of());
+                    budget, eos, 0, BASE_TARGET_POSITION, 0.0, 0, 0.0, 1.0, Set.of());
             op.withDecodePolicy(AutoregressiveDecode.DECODE_STRATEGY_SPECULATIVE,
                     1, WIDTH, 1, 1, -1, 1, 1.0, 0.0, 0)
                     .withSpeculativeDecoding(WIDTH - 1, AutoregressiveDecode.SPECULATOR_TYPE_MTP)
@@ -95,16 +114,23 @@ public class TestNativeSpeculativeTerminalState {
                 assertEquals(emitted, target.input("gdn").getFloat(i), 0.0);
                 assertEquals(10 * emitted, target.input("conv").getFloat(i), 0.0);
             }
-            assertEquals(emitted, positions.getLong(0));
-            assertEquals(emitted, target.input("position").getLong(0));
-            assertEquals(emitted, target.input("cache_position").getLong(0));
+            // Target-side positions advance from the synthetic base: committed
+            // target positions are [BASE, BASE+emitted), so the next target
+            // position (position ids / position / cache_position) is BASE+emitted.
+            assertEquals(BASE_TARGET_POSITION + emitted, positions.getLong(0));
+            assertEquals(BASE_TARGET_POSITION + emitted, target.input("position").getLong(0));
+            assertEquals(BASE_TARGET_POSITION + emitted, target.input("cache_position").getLong(0));
+            // Predictor pending rope/slot = P + emitted - 1 == emitted (packet 2).
             assertEquals(emitted, predictor.input("position").getLong(0));
             assertEquals(emitted, predictor.input("cache_position").getLong(0));
             assertEquals(1, target.input("ids").getLong(0));
             assertEquals(1, predictor.input("ids").getLong(0));
             // Target hidden row r is r+1. EOS is pending, so carry is row emitted-1.
             assertEquals(emitted, predictor.input("carry").getFloat(0), 0.0);
-            assertCommittedMask(target.input("mask"), emitted);
+            // Causal visibility prefixes: the target's visible prefix runs from
+            // slot 0 (causal history) through the last committed position
+            // BASE+emitted-1; the predictor's retained rows are [0, emitted).
+            assertCommittedMask(target.input("mask"), BASE_TARGET_POSITION + emitted);
             assertCommittedMask(predictor.input("mask"), emitted);
         }
     }
@@ -115,7 +141,8 @@ public class TestNativeSpeculativeTerminalState {
             values = copy.data().asFloat();
         }
         for (int i = 0; i < values.length; i++) {
-            if (i % CACHE < committed) assertEquals(0.0f, values[i], 0.0f);
+            int slot = i % CACHE;
+            if (slot < committed) assertEquals(0.0f, values[i], 0.0f);
             else assertTrue(values[i] <= -1e9f, "unconsumed KV visible at mask index " + i);
         }
     }
@@ -142,8 +169,11 @@ public class TestNativeSpeculativeTerminalState {
             if (predictor) {
                 SDVariable carry = placeholder("carry", Nd4j.zeros(DataType.FLOAT, 1, 1, 1));
                 output(carry.add("hidden", 1));
-                output(placeholder("key", Nd4j.zeros(DataType.FLOAT, 1, 1, CACHE, 1)).add("key_echo", 1));
-                output(placeholder("value", Nd4j.zeros(DataType.FLOAT, 1, 1, CACHE, 1)).add("value_echo", 1));
+                // KV cache layout contract (review round 4, finding E): BSHD
+                // [batch, maxSeqLen, heads, dim] - the SEQUENCE capacity is
+                // dim 1. The native capacity gate enforces this layout.
+                output(placeholder("key", Nd4j.zeros(DataType.FLOAT, 1, CACHE, 1, 1)).add("key_echo", 1));
+                output(placeholder("value", Nd4j.zeros(DataType.FLOAT, 1, CACHE, 1, 1)).add("value_echo", 1));
             } else {
                 float[] rows = new float[width];
                 for (int i = 0; i < width; i++) rows[i] = i;

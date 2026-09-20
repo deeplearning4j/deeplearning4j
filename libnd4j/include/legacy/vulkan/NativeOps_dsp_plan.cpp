@@ -415,6 +415,11 @@ sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle, sd::Pointer planBytes,
   }
 }
 
+int retainNativePlan(sd::Pointer cacheHandle, sd::Pointer planHandle) {
+  if (cacheHandle == nullptr || planHandle == nullptr) return 0;
+  return reinterpret_cast<NativePlanCache*>(cacheHandle)->retainPlan(planOf(planHandle)) ? 1 : 0;
+}
+
 void unpinNativePlan(sd::Pointer cacheHandle, sd::Pointer planHandle) {
   if (cacheHandle != nullptr && planHandle != nullptr)
     reinterpret_cast<NativePlanCache*>(cacheHandle)->unpinPlan(planOf(planHandle));

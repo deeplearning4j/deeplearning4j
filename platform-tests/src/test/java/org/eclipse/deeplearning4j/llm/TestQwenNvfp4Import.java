@@ -277,16 +277,60 @@ public class TestQwenNvfp4Import {
                         greedyTokens * 1e9 / Math.max(1, greedyDecodeNs),
                         (mtpTokens * (double) greedyDecodeNs) / Math.max(1, mtpDecodeNs * (double) greedyTokens),
                         accepted, proposed);
-                // Lossless contract across the session seam — the same invariant the
-                // one-shot parity test asserts. Speculative verification must emit
-                // exactly the greedy sequence on the same prompt regardless of the
-                // predictor's acceptance rate; any divergence here is a real
-                // session/engine bug, not benchmark bookkeeping.
-                assertArrayEquals(greedyAllTokens, mtpAllTokens,
-                        "Session-mode MTP must match session-mode greedy token-for-token: greedy="
-                                + Arrays.toString(greedyAllTokens) + " mtp=" + Arrays.toString(mtpAllTokens));
+                // Lossless contract across the session seam. The state-level proof
+                // (GDN state bit-identical between legs, milestone aaceac3b) is the
+                // real correctness invariant: speculative state commits exactly what
+                // greedy commits, and the emitted text is coherent. Token-for-token
+                // emission parity additionally requires the two separately-frozen DSP
+                // plans (MTP session's W-substrate plan vs greedy session's width-1
+                // plan) to produce bit-identical attention/GEMM reductions — a
+                // plan-geometry property, not an engine contract (probe verdict
+                // 2609f6f8: logits differ 0.02-0.08 from reduction order, argmax
+                // flips only on flat profiles). Assert state-level parity via the
+                // committed-state fingerprint equality + text coherence, and report
+                // the emission-delta count. Token-exact parity becomes assertable
+                // once the dual-plan fix (milestone c0e81350) routes the rerun
+                // through a width-1-geometry plan.
+                long emissionDeltas = 0;
+                for (int i = 0; i < Math.min(greedyAllTokens.length, mtpAllTokens.length); i++) {
+                    if (greedyAllTokens[i] != mtpAllTokens[i]) emissionDeltas++;
+                }
+                int tailMtp = mtpAllTokens.length - Math.min(greedyAllTokens.length, mtpAllTokens.length);
+                int tailGreedy = greedyAllTokens.length - Math.min(greedyAllTokens.length, mtpAllTokens.length);
+                long totalDeltas = emissionDeltas + tailMtp + tailGreedy;
+                log.info("NVFP4-BENCH PARITY emissionDeltas={} of {} tokens "
+                                + "(lengthDelta mtp-greedy={})",
+                        emissionDeltas, greedyAllTokens.length,
+                        mtpAllTokens.length - greedyAllTokens.length);
+                // P00 RESTORED GATE: full-sequence token equality. The earlier
+                // coherentPrefix>=90 check was a smoke check, not losslessness -
+                // a run with 124 differing tokens passed it. With the shipped
+                // default (allowMultiRowCommit=false) the validated scalar width-1
+                // path owns every commit, so the two legs MUST produce identical
+                // token sequences end to end, including lengths (the mismatch
+                // counter previously omitted unmatched tails).
+                // The EXPERIMENTAL multi-token mode (allowMultiRowCommit=true)
+                // is expected to diverge - it must run its own explicit
+                // state-equivalence gate (teacher-forced window-vs-scalar,
+                // TestQwen35MtpDecode#testTargetWindowRowsMatchChainedScalarCheckpoints)
+                // and is not covered by this free-running equality assertion.
+                assertEquals(greedyAllTokens.length, mtpAllTokens.length,
+                        "MTP and greedy must produce the same token count");
+                assertEquals(0, totalDeltas,
+                        "MTP and greedy must be token-identical over the FULL sequence "
+                                + "(body=" + emissionDeltas + " tailMtp=" + tailMtp
+                                + " tailGreedy=" + tailGreedy + "); first divergence at token "
+                                + firstDivergenceIndex(greedyAllTokens, mtpAllTokens));
             }
         }
+    }
+
+    private static int firstDivergenceIndex(int[] a, int[] b) {
+        int n = Math.min(a.length, b.length);
+        for (int i = 0; i < n; i++) {
+            if (a[i] != b[i]) return i;
+        }
+        return a.length == b.length ? -1 : n;
     }
 
     @Test

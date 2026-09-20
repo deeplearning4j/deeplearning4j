@@ -19,6 +19,9 @@
 package org.nd4j.autodiff.samediff.dsp;
 
 import lombok.extern.slf4j.Slf4j;
+import org.bytedeco.javacpp.Pointer;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -29,6 +32,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.execution.DspPlanAssertions;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor.NativeExecutionBinding;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.execution.PlanPhase;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
@@ -36,11 +40,22 @@ import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
+import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.OpaqueDataBuffer;
+import org.nd4j.nativeblas.OpaqueNDArray;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -281,6 +296,173 @@ public class DspMultiPlanShapeSwitchTest {
             resultA2 = sd.output(phA, "y");
         }
         assertOutputsMatch("Phase3-ShapeA-Again", expectedA, resultA2);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("Retained width-1 binding survives width-3 execution and rejects destructive teardown")
+    void testRetainedNativeBindingShapeSwitch(Nd4jBackend backend) {
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, -1, 2);
+        SDVariable width = sd.placeHolder("width", DataType.LONG);
+        SDVariable weights = sd.var("W", Nd4j.createFromArray(new float[][]{{2, 0}, {0, 3}}));
+        SDVariable projected = sd.mmul("projected", x, weights);
+        SDVariable outputShape = sd.stack("output_shape", 0, width, sd.constant("features", 2L));
+        SDVariable y = sd.reshape("y", projected, outputShape);
+        y.add("shifted", 1.0);
+        sd.setOutputs("y", "shifted");
+        // AUTO is already the default: preserve the normal native lifecycle on every backend.
+        sd.setDspAutoCompileEnabled(true);
+        sd.setDspNativeAutoCompileEnabled(true);
+        InferenceSession.setDynamicShapePlanEnabled(true);
+
+        try (INDArray input1 = Nd4j.createFromArray(new float[][]{{4, 5}});
+             INDArray input3 = Nd4j.createFromArray(new float[][]{{1, 2}, {3, 4}, {5, 6}});
+             INDArray width1 = Nd4j.scalar(DataType.LONG, 1);
+             INDArray width3 = Nd4j.scalar(DataType.LONG, 3)) {
+            try {
+                INDArray first = sd.output(Map.of("x", input1, "width", width1), "y", "shifted").get("y");
+                assertMatrixValues(first, new float[]{8, 15});
+                DynamicShapePlanExecutor executor = sd.getOrCreateSession().getDynamicShapePlanExecutor();
+                assertNotNull(executor);
+                try (NativeExecutionBinding binding1 = executor.captureNativeExecutionBinding()) {
+                    long context1 = binding1.getContextHandle().address();
+                    assertNotEquals(executor.getCachedOpContext().address(), context1,
+                            "Binding must own a context independent of the executor");
+                    long plan1 = binding1.getPlanHandle().address();
+                    String[] keys = binding1.getExternalInputKeysSnapshot();
+                    INDArray[] inputs = binding1.getExternalInputsSnapshot();
+                    int xIndex = binding1.findExternalInputIndex("x");
+                    int widthIndex = binding1.findExternalInputIndex("width");
+                    int weightIndex = binding1.findExternalInputIndex("W");
+                    assertTrue(xIndex >= 0 && widthIndex >= 0 && weightIndex >= 0);
+                    assertNotEquals(widthIndex, weightIndex, "The shape scalar is not the weight matrix");
+                    assertEquals("width", keys[widthIndex]);
+                    assertEquals("W", keys[weightIndex]);
+                    assertEquals(DataType.LONG, inputs[widthIndex].dataType());
+                    assertArrayEquals(new long[0], inputs[widthIndex].shape());
+                    assertEquals(1L, inputs[widthIndex].getLong(0));
+                    assertArrayEquals(new long[]{2, 2}, inputs[weightIndex].shape());
+                    assertArrayEquals(new long[]{1, 2}, inputs[xIndex].shape());
+                    assertEquals(0, binding1.findOutputIndex("y"));
+                    assertEquals(1, binding1.findOutputIndex("shifted"));
+                    assertEquals(2, binding1.getOutputCount());
+                    assertThrows(UnsupportedOperationException.class,
+                            () -> binding1.getRequestedOutputs().set(0, "corrupted"));
+                    String[] mutableKeys = binding1.getExternalInputKeysSnapshot();
+                    mutableKeys[xIndex] = "corrupted";
+                    INDArray[] mutableInputs = binding1.getExternalInputsSnapshot();
+                    mutableInputs[xIndex] = input3;
+                    assertArrayEquals(keys, binding1.getExternalInputKeysSnapshot());
+                    assertSame(inputs[xIndex], binding1.getExternalInputsSnapshot()[xIndex]);
+
+                    INDArray third = sd.output(Map.of("x", input3, "width", width3), "y", "shifted").get("y");
+                    assertArrayEquals(new long[]{3, 2}, third.shape());
+                    assertMatrixValues(third, new float[]{2, 6, 6, 12, 10, 18});
+                    try (NativeExecutionBinding binding3 = executor.captureNativeExecutionBinding()) {
+                        assertNotEquals(plan1, binding3.getPlanHandle().address());
+                        assertNotEquals(context1, binding3.getContextHandle().address());
+                        assertEquals(binding1.getCacheHandle().address(), binding3.getCacheHandle().address());
+                        assertArrayEquals(new long[]{3, 2}, binding3.getExternalInputsSnapshot()[
+                                binding3.findExternalInputIndex("x")].shape());
+                        assertEquals(context1, binding1.getContextHandle().address());
+                        assertEquals(plan1, binding1.getPlanHandle().address());
+                        assertArrayEquals(keys, binding1.getExternalInputKeysSnapshot());
+                        for (int i = 0; i < inputs.length; i++) {
+                            assertSame(inputs[i], binding1.getExternalInputsSnapshot()[i], "input index " + i);
+                        }
+                        Pointer currentPlan = executor.getNativePlanHandle();
+                        Pointer currentContext = executor.getCachedOpContext();
+                        assertThrows(IllegalStateException.class, executor::resetForNextPage);
+                        assertSame(currentPlan, executor.getNativePlanHandle());
+                        assertSame(currentContext, executor.getCachedOpContext());
+                        assertThrows(IllegalStateException.class, executor::close);
+                        assertSame(currentPlan, executor.getNativePlanHandle());
+                        assertSame(currentContext, executor.getCachedOpContext());
+                        // Also prove rejection preserved the completed-execution marker and open state.
+                        try (NativeExecutionBinding probe = executor.captureNativeExecutionBinding()) {
+                            assertEquals(currentPlan.address(), probe.getPlanHandle().address());
+                        }
+                        // Fresh data excludes passing by merely reading the original width-1 output.
+                        inputs[xIndex].assign(7);
+                        // Execute both after failed teardown: rejection must precede ANY mutation.
+                        assertBoundNativeOutputs(binding1, new long[]{1, 2}, new float[]{14, 21});
+                        assertBoundNativeOutputs(binding3, new long[]{3, 2}, new float[]{2, 6, 6, 12, 10, 18});
+                    }
+                    // Releasing one retained plan must not invalidate the other lease/context.
+                    assertThrows(IllegalStateException.class, executor::resetForNextPage);
+                    assertBoundNativeOutputs(binding1, new long[]{1, 2}, new float[]{14, 21});
+                    binding1.close();
+                    assertDoesNotThrow(binding1::close);
+                    assertThrows(IllegalStateException.class, binding1::beginNativeUse);
+                }
+                assertDoesNotThrow(() -> { executor.resetForNextPage(); });
+                assertDoesNotThrow(executor::close);
+            } finally {
+                sd.close();
+            }
+        }
+    }
+
+    private static void assertMatrixValues(INDArray actual, float[] expected) {
+        assertEquals(DataType.FLOAT, actual.dataType());
+        assertArrayEquals(new long[]{expected.length / 2, 2}, actual.shape());
+        for (int i = 0; i < expected.length; i++) {
+            assertEquals(expected[i], actual.getFloat(i / 2, i % 2), 1e-6f, "element " + i);
+        }
+    }
+
+    /** Copy native-owned outputs before releasing the binding's execution serialization. */
+    private static void assertBoundNativeOutputs(NativeExecutionBinding binding, long[] shape, float[] expected) {
+        NativeOps ops = binding.getBackendOwner().nativeOps();
+        Pointer stream = ops.dspGetExecutionStream(binding.getPlanHandle());
+        binding.beginNativeUse();
+        try {
+            assertThrows(IllegalStateException.class, binding::close);
+            int status = ops.executeDynamicShapePlan(binding.getPlanHandle(), binding.getContextHandle(), stream);
+            // Execution can enqueue CUDA work, including on a failing execution. Drain it first.
+            ops.streamSynchronize(stream);
+            assertEquals(0, ops.lastErrorCode(), "native execution completion: " + ops.lastErrorMessage());
+            assertEquals(0, status, "captured native execution: " + ops.lastErrorMessage());
+            for (String name : binding.getRequestedOutputs()) {
+                OpaqueNDArray output = ops.getOutputArrayNative(binding.getContextHandle(), binding.findOutputIndex(name));
+                assertNotNull(output);
+                assertTrue(!output.isNull());
+                output.attachOwner(binding.getBackendOwner());
+                assertArrayEquals(shape, Shape.shape(output.shapeInfo()));
+                assertEquals(DataType.FLOAT, ArrayOptionsHelper.dataType(Shape.extras(output.shapeInfo())));
+                assertEquals(expected.length, output.length());
+                Pointer special = ops.getOpaqueNDArraySpecialBuffer(output);
+                Pointer primary = special == null || special.isNull() ? ops.getOpaqueNDArrayBuffer(output) : null;
+                OpaqueDataBuffer source = ops.dbCreateExternalDataBuffer(
+                        expected.length, DataType.FLOAT.toInt(), primary, special);
+                assertNotNull(source);
+                assertTrue(!source.isNull());
+                try (INDArray copy = Nd4j.createUninitialized(DataType.FLOAT, shape,
+                        Shape.stride(output.shapeInfo()), Shape.order(output.shapeInfo()))) {
+                    try {
+                        ops.copyBuffer(copy.data().opaqueBuffer(), expected.length, source, 0, 0);
+                        Nd4j.getExecutioner().commit();
+                        float[] reference = expected.clone();
+                        if (name.equals("shifted")) {
+                            for (int i = 0; i < reference.length; i++) reference[i] += 1;
+                        }
+                        assertMatrixValues(copy, reference);
+                    } finally {
+                        Nd4j.getExecutioner().commit();
+                        ops.deleteDataBuffer(source);
+                    }
+                }
+                // output is borrowed from the plan/context; never close that wrapper here.
+            }
+        } finally {
+            // Do not release serialization if completion fails: in-flight ownership must survive.
+            // streamSynchronize returns 1 on CUDA and 0 on CPU; errors use lastErrorCode.
+            ops.streamSynchronize(stream);
+            assertEquals(0, ops.lastErrorCode(), "native completion before releasing binding: " + ops.lastErrorMessage());
+            Nd4j.getExecutioner().commit();
+            binding.completeNativeUse();
+        }
     }
 
     @Test

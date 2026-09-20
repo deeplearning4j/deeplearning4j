@@ -204,16 +204,22 @@ public final class QuantizedLinear {
                 ? outputDtype
                 : GGMLDTypePolicy.accumulationType(computeDtype);
         boolean restoreOutputType = accumulationType != outputDtype;
-        SDVariable computeA = GGMLDTypePolicy.castTo(a, name + "_a_accum", accumulationType);
-        SDVariable computeB = GGMLDTypePolicy.castTo(b, name + "_b_accum", accumulationType);
         // Dense low-precision inference must use the same K recurrence for W=1
-        // and W>1. Deterministic cuBLAS replay alone does not provide this contract.
+        // and W>1. Read original storage directly; do not materialize FP32 weights.
         boolean serialFma = computeDtype == DataType.HALF || computeDtype == DataType.BFLOAT16;
         String resultName = restoreOutputType ? name + "_accum" : name;
-        SDVariable result = serialFma
-                ? new Mmul(sd, computeA, computeB, MMulTranspose.allFalse(), Mmul.Arithmetic.SERIAL_FMA)
-                        .outputVariable().rename(resultName)
-                : sd.mmul(resultName, computeA, computeB);
+        SDVariable result;
+        if (serialFma && accumulationType == DataType.FLOAT) {
+            result = new Mmul(sd, a, b, MMulTranspose.allFalse(), Mmul.Arithmetic.SERIAL_FMA, DataType.FLOAT)
+                    .outputVariable().rename(resultName);
+        } else {
+            SDVariable computeA = GGMLDTypePolicy.castTo(a, name + "_a_accum", accumulationType);
+            SDVariable computeB = GGMLDTypePolicy.castTo(b, name + "_b_accum", accumulationType);
+            result = serialFma
+                    ? new Mmul(sd, computeA, computeB, MMulTranspose.allFalse(), Mmul.Arithmetic.SERIAL_FMA)
+                            .outputVariable().rename(resultName)
+                    : sd.mmul(resultName, computeA, computeB);
+        }
         return restoreOutputType
                 ? GGMLDTypePolicy.castTo(result, name, outputDtype)
                 : result;

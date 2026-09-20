@@ -523,9 +523,9 @@ void DataBuffer::expand(const uint64_t size) {
     cudaError_t err;
     if (!copyPrimary && source.type == cudaMemoryTypeDevice && target.type == cudaMemoryTypeDevice &&
         source.device != special.device) {
-      err = cudaMemcpyPeerAsync(special.pointer, special.device, copySource, source.device, oldBytes, copyStream);
+      err = memory::CudaMemoryPool::memcpyPeerAsync(special.pointer, special.device, copySource, source.device, oldBytes, copyStream);
     } else {
-      err = cudaMemcpyAsync(special.pointer, copySource, oldBytes, cudaMemcpyDefault, copyStream);
+      err = memory::CudaMemoryPool::memcpyAsync(special.pointer, copySource, oldBytes, cudaMemcpyDefault, copyStream);
     }
     if (err != cudaSuccess) throwCudaStatus("DataBuffer::expand: copy failed", err);
   }
@@ -1258,17 +1258,10 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
     switchedDevice = true;
   }
 
-  // Always use stream 0 (default stream) for D2H transfers.
-  // Rationale: context->getCudaStream() accesses thread-local ContextBuffers, which
-  // reinitializes when it detects a device change (release old streams + create new
-  // ones on the current device). The freshly created stream has NO ordering relationship
-  // with prior cudaMallocAsync pool allocations or kernel writes, causing
-  // cudaMemcpyAsync to fail with cudaErrorInvalidValue on pool-allocated buffers.
-  // This happens during cross-device DSP execution where ops run on device 1 but the
-  // thread was originally on device 0. Stream 0 avoids this because it implicitly
-  // orders after all prior operations on the device.
-  // Performance impact is minimal since syncToPrimary always calls cudaStreamSynchronize
-  // after the memcpy, making it a blocking call regardless of which stream is used.
+  // Keep D2H on stream 0 without reinitializing thread-local ContextBuffers on
+  // device changes. The legacy stream does NOT order nonblocking DSP streams.
+  // CudaMemoryPool::memcpyAsync supplies allocation readiness explicitly;
+  // write-completion dependencies remain separate from allocation readiness.
   cudaStream_t stream = 0;
 
   cudaError_t res;
@@ -1282,7 +1275,7 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
 
   // Use async memcpy - works best with pinned (page-locked) host memory
   // With CudaPinnedMemoryPool, _primaryBuffer is pinned, enabling true async DMA
-  res = cudaMemcpyAsync(_primaryBuffer, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToHost, stream);
+  res = memory::CudaMemoryPool::memcpyAsync(_primaryBuffer, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToHost, stream);
   if (res != cudaSuccess) {
     if (switchedDevice) {
       cudaSetDevice(currentDeviceId);
@@ -1427,7 +1420,7 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
     }
 
     cudaStream_t capturedStream = captureSafeStreamOrDefault();
-    auto res = cudaMemcpyAsync(_specialBuffer, h2dSource, getLenInBytes(),
+    auto res = memory::CudaMemoryPool::memcpyAsync(_specialBuffer, h2dSource, getLenInBytes(),
                                cudaMemcpyHostToDevice, capturedStream);
     DSP_DIAG(EXECUTE, "CAPTURE_H2D(DataBuffer): size=%zu src=%p dst=%p isPinned=%d stream=%p",
              getLenInBytes(), h2dSource, _specialBuffer,
@@ -1565,7 +1558,7 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
     }
   }
 
-  auto res = cudaMemcpyAsync(_specialBuffer, _primaryBuffer, getLenInBytes(), cudaMemcpyHostToDevice, stream);
+  auto res = memory::CudaMemoryPool::memcpyAsync(_specialBuffer, _primaryBuffer, getLenInBytes(), cudaMemcpyHostToDevice, stream);
   if (res != cudaSuccess) {
     // Restore device before throwing
     if (switchedDevice) {
@@ -1846,7 +1839,7 @@ void DataBuffer::copyBufferFrom(const DataBuffer& other, size_t sizeToCopyinByte
     // recently-invalidated CUDA graph capture, cudaMemcpy fails with error 906
     // (cudaErrorStreamCaptureImplicit). Using cudaMemcpyAsync on a per-thread stream
     // avoids this because cudaStreamPerThread doesn't implicitly sync with named streams.
-    res = cudaMemcpyAsync(
+    res = memory::CudaMemoryPool::memcpyAsync(
         static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType),
         static_cast<const int8_t*>(other._primaryBuffer) + offsetOther * DataTypeUtils::sizeOfElement(other._dataType),
         sizeToCopyinBytes, cudaMemcpyHostToDevice, copyStream);
@@ -1854,7 +1847,7 @@ void DataBuffer::copyBufferFrom(const DataBuffer& other, size_t sizeToCopyinByte
   } else {
     waitForLastDspCompletionIfNeeded(copyStream);
     other.waitForSpecialWriteEvent(copyStream);
-    res = cudaMemcpyAsync(
+    res = memory::CudaMemoryPool::memcpyAsync(
         static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType),
         static_cast<const int8_t*>(other._specialBuffer) + offsetOther * DataTypeUtils::sizeOfElement(other._dataType),
         sizeToCopyinBytes, cudaMemcpyDeviceToDevice, copyStream);
@@ -1904,7 +1897,7 @@ void DataBuffer::copyBufferFromHost(const void* hostBuffer, size_t sizeToCopyinB
   }
 
   cudaStream_t copyStream = asyncTransferStream(switchedDevice);
-  int res = cudaMemcpyAsync(
+  int res = memory::CudaMemoryPool::memcpyAsync(
       static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType),
       static_cast<const int8_t*>(hostBuffer) + offsetHostBuffer * DataTypeUtils::sizeOfElement(_dataType),
       sizeToCopyinBytes, cudaMemcpyHostToDevice, copyStream);
@@ -2185,20 +2178,20 @@ void memcpyWithT(DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, 
   dst->waitForSpecialWriteEvent(stream);
   if (copyBytes < dst->getLenInBytes() && !dst->isSpecialActual() && dst->isPrimaryActual()) {
     // A partial write must preserve the untouched primary-actual destination bytes.
-    res = cudaMemcpyAsync(dst->special(), dst->primary(), dst->getLenInBytes(), cudaMemcpyDefault, stream);
+    res = memory::CudaMemoryPool::memcpyAsync(dst->special(), dst->primary(), dst->getLenInBytes(), cudaMemcpyDefault, stream);
     if (res != cudaSuccess) throwCudaStatus("DataBuffer::memcpy: destination preservation failed", res);
   }
   if (specialSource) {
     src->waitForSpecialWriteEvent(stream);
     if (srcAttrs.type == cudaMemoryTypeDevice && dstAttrs.type == cudaMemoryTypeDevice
         && srcAttrs.device != dstAttrs.device) {
-      res = cudaMemcpyPeerAsync(dstPointer, dstAttrs.device, srcPointer, srcAttrs.device, copyBytes, stream);
+      res = memory::CudaMemoryPool::memcpyPeerAsync(dstPointer, dstAttrs.device, srcPointer, srcAttrs.device, copyBytes, stream);
     } else {
-      res = cudaMemcpyAsync(dstPointer, srcPointer, copyBytes, cudaMemcpyDefault, stream);
+      res = memory::CudaMemoryPool::memcpyAsync(dstPointer, srcPointer, copyBytes, cudaMemcpyDefault, stream);
     }
   } else {
     // Host-actual input must read PRIMARY storage, not stale special storage.
-    res = cudaMemcpyAsync(dstPointer, srcPointer, copyBytes, cudaMemcpyDefault, stream);
+    res = memory::CudaMemoryPool::memcpyAsync(dstPointer, srcPointer, copyBytes, cudaMemcpyDefault, stream);
   }
   if (res != cudaSuccess) throwCudaStatus("DataBuffer::memcpy: asynchronous copy failed", res);
 
@@ -2369,11 +2362,11 @@ void DataBuffer::migrate() {
     cudaError_t err;
     if (!copyPrimary && oldLocation.type == cudaMemoryTypeDevice && target.type == cudaMemoryTypeDevice &&
         oldLocation.device != candidate.device) {
-      err = cudaMemcpyPeerAsync(candidate.pointer, candidate.device, copySource, oldLocation.device, bytes, copyStream);
+      err = memory::CudaMemoryPool::memcpyPeerAsync(candidate.pointer, candidate.device, copySource, oldLocation.device, bytes, copyStream);
     } else {
       // Default direction handles pinned host and managed residency, as well as
       // actual-target-equals-source failover (a real copy, not an early return).
-      err = cudaMemcpyAsync(candidate.pointer, copySource, bytes, cudaMemcpyDefault, copyStream);
+      err = memory::CudaMemoryPool::memcpyAsync(candidate.pointer, copySource, bytes, cudaMemcpyDefault, copyStream);
     }
     if (err != cudaSuccess) throwCudaStatus("DataBuffer::migrate: copy failed", err);
   }
@@ -2430,12 +2423,9 @@ void DataBuffer::writePrimary() const { _writePrimary = ++_counter; }
 void DataBuffer::writeSpecial() const {
   _writeSpecial = ++_counter;
 
-  // Event recording is intentionally omitted. syncToPrimary() uses stream 0
-  // (the legacy default stream) which implicitly synchronizes with ALL other
-  // streams on the device, making event-based ordering redundant.
-  // Removing event creation also eliminates heap allocations (new cudaEvent_t)
-  // in the hot path that are vulnerable to corrupted heap metadata from native
-  // op buffer overruns.
+  // This updates coherence counters only. Writers on nonblocking streams need
+  // their own completion dependency; legacy stream 0 does not order them.
+  // The allocator's readiness event covers allocation, not subsequent writes.
 }
 void DataBuffer::readPrimary() const { _readPrimary = ++_counter; }
 void DataBuffer::readSpecial() const { _readSpecial = ++_counter; }

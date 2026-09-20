@@ -1865,6 +1865,9 @@
                         <ND4J_DSP_DIAGNOSTICS_FILE>${nd4j.dsp.diagnostics.file}</ND4J_DSP_DIAGNOSTICS_FILE>
                         <!-- Opt-in native staging fault injection for fail-closed DSP tests. -->
                         <ND4J_DSP_STAGING_FAULT>${nd4j.dsp.stagingFault}</ND4J_DSP_STAGING_FAULT>
+                        <!-- EXPERIMENTAL MTP multi-row commit (breaks token-exact parity;
+                             default OFF). Opt in with -Dnd4j.mtp.multiRowCommit=1. -->
+                        <SD_MTP_MULTI_ROW_COMMIT>${nd4j.mtp.multiRowCommit}</SD_MTP_MULTI_ROW_COMMIT>
                         <ND4J_DSP_NATIVE_DUMP_OUTPUTS>${nd4j.dsp.native.dumpOutputs}</ND4J_DSP_NATIVE_DUMP_OUTPUTS>
                         <ND4J_DSP_DIAG_EXEC_LIMIT>${nd4j.dsp.diagExecLimit}</ND4J_DSP_DIAG_EXEC_LIMIT>
                         <!-- Pinned-host failover budget for CudaMemoryPool (MB). Default 8 GB is too

@@ -713,6 +713,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         INDArray xArr = getX(op, oc);
         INDArray zArr = getZ(op, oc);
+        // Clear any STALE native error before dispatch (same pattern as
+        // createShapeInfo): a prior failed op (e.g. a fail-loud guard throwing
+        // from inside another op's execution) leaves lastErrorCode set
+        // process-wide, and without this clear the NEXT successful op would
+        // wrongly report that old error and throw.
+        getNativeOps().clearLastError();
         val x = OpaqueNDArray.fromINDArray(xArr);
         // Native execScalar reinterprets the scalar buffer through x's dtype: a mismatched
         // scalar (e.g. a DOUBLE 1.0 against FLOAT x) is silently read as garbage (~0.0),
@@ -745,6 +751,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             errorMessage.append("Native  execution exec failed: ");
             errorMessage.append(differentialFunction.debugInfo());
             errorMessage.append(getNativeOps().lastErrorMessage());
+            // Clear the error AFTER reporting it: lastErrorCode is process-wide,
+            // and a leftover set bit makes the NEXT successful op throw this
+            // same error (observed: the fail-loud SPEC VERIFY VALIDITY GUARD
+            // inside autoregressive_decode poisoned every later Nd4j.ones()).
+            getNativeOps().clearLastError();
             throw new RuntimeException(errorMessage.toString());
         }
         profilingConfigurableHookOut(op, oc, st);

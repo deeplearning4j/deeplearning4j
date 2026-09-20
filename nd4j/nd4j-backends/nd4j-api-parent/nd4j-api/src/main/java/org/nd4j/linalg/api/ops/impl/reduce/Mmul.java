@@ -73,6 +73,28 @@ public class Mmul extends DynamicCustomOp {
         addIArgument(Objects.requireNonNull(arithmetic, "arithmetic").argument);
     }
 
+    /**
+     * Explicit output storage for SERIAL_FMA. FLOAT output accepts independently
+     * HALF/BFLOAT16/FLOAT operands and uses FP32 arithmetic without materializing
+     * converted operands. Other output types must match both inputs.
+     */
+    public Mmul(SameDiff sd, SDVariable a, SDVariable b, MMulTranspose transpose,
+                Arithmetic arithmetic, DataType outputType) {
+        this(sd, a, b, transpose == null ? MMulTranspose.allFalse() : transpose, arithmetic);
+        Preconditions.checkArgument(arithmetic == Arithmetic.SERIAL_FMA,
+                "Explicit output storage constructor requires SERIAL_FMA");
+        addDArgument(Objects.requireNonNull(outputType, "outputType"));
+    }
+
+    /** Array equivalent of the explicit SERIAL_FMA output-storage contract. */
+    public Mmul(INDArray a, INDArray b, INDArray c, double alpha, double beta,
+                MMulTranspose transpose, Arithmetic arithmetic, DataType outputType) {
+        this(a, b, c, alpha, beta, transpose, arithmetic);
+        Preconditions.checkArgument(arithmetic == Arithmetic.SERIAL_FMA,
+                "Explicit output storage constructor requires SERIAL_FMA");
+        addDArgument(Objects.requireNonNull(outputType, "outputType"));
+    }
+
     protected MMulTranspose mt;
     protected double alpha = 1.0;
     protected double beta = 0.0;
@@ -367,19 +389,32 @@ public class Mmul extends DynamicCustomOp {
         return ret;
     }
 
+    private static boolean serialFloatStorage(DataType type) {
+        return type == DataType.HALF || type == DataType.BFLOAT16 || type == DataType.FLOAT;
+    }
+
+    private static DataType serialOutputDataType(List<DataType> dataTypes, List<DataType> outputTypes) {
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 2,
+                "SERIAL_FMA requires two operand storage dtypes: %s", dataTypes);
+        Preconditions.checkState(outputTypes.size() <= 1, "SERIAL_FMA accepts at most one output dtype");
+        DataType type = dataTypes.get(0);
+        DataType other = dataTypes.get(1);
+        if (!outputTypes.isEmpty() && outputTypes.get(0) == DataType.FLOAT) {
+            Preconditions.checkState(serialFloatStorage(type) && serialFloatStorage(other),
+                    "SERIAL_FMA FLOAT output requires HALF/BFLOAT16/FLOAT operands: %s", dataTypes);
+        } else {
+            Preconditions.checkState(type == other && (serialFloatStorage(type) || type == DataType.DOUBLE),
+                    "SERIAL_FMA requires matching HALF/BFLOAT16/FLOAT/DOUBLE storage: %s", dataTypes);
+            Preconditions.checkState(outputTypes.isEmpty() || outputTypes.get(0) == type,
+                    "SERIAL_FMA requires matching output storage or explicit FLOAT output");
+        }
+        return outputTypes.isEmpty() ? type : outputTypes.get(0);
+    }
+
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
-        if (arithmetic() == Arithmetic.SERIAL_FMA) {
-            Preconditions.checkState(dataTypes != null && dataTypes.size() == 2 &&
-                            dataTypes.get(0) == dataTypes.get(1),
-                    "SERIAL_FMA requires matching operand storage dtypes: %s", dataTypes);
-            DataType type = dataTypes.get(0);
-            Preconditions.checkState(type == DataType.HALF || type == DataType.BFLOAT16 ||
-                            type == DataType.FLOAT || type == DataType.DOUBLE,
-                    "Unsupported SERIAL_FMA storage dtype: %s", type);
-            Preconditions.checkState(dArguments.isEmpty() || dArguments.get(0) == type,
-                    "SERIAL_FMA requires matching output storage dtype");
-        }
+        if (arithmetic() == Arithmetic.SERIAL_FMA)
+            return Collections.singletonList(serialOutputDataType(dataTypes, dArguments));
         if(!dArguments.isEmpty())
             return Collections.singletonList(dArguments.get(0));
         Preconditions.checkState(dataTypes != null && dataTypes.size() >= 2, "Expected at least 2 inputs to mmul op, got %s", dataTypes);
@@ -430,6 +465,10 @@ public class Mmul extends DynamicCustomOp {
 
         // Get transpose flags from iArgs
         List<Long> iArgs = oc.getIArguments();
+        long arithmeticArg = iArgs != null && iArgs.size() > 3 ? iArgs.get(3) : 0;
+        Preconditions.checkState(arithmeticArg == 0 || arithmeticArg == 1,
+                "Invalid matmul arithmetic: %s", arithmeticArg);
+        boolean serial = arithmeticArg == 1;
         boolean transposeA = iArgs != null && iArgs.size() > 0 && iArgs.get(0) != 0;
         boolean transposeB = iArgs != null && iArgs.size() > 1 && iArgs.get(1) != 0;
         boolean transposeResult = iArgs != null && iArgs.size() > 2 && iArgs.get(2) != 0;
@@ -483,13 +522,16 @@ public class Mmul extends DynamicCustomOp {
         // input's dtype would allocate a HALF output for a HALF×FLOAT32 matmul, which bypasses
         // MmulHelper::mmulMxM's FLOAT32 mixed-dtype normalization (gated on cType==FLOAT32) and
         // yields NaN. All three dtype-inference sites must agree on the promoted output dtype.
-        DataType dtype = promoteMatmulOutputDataType(a.dataType(), b.dataType());
-        long[] strides = Nd4j.getStrides(outputShape, 'c');
-        boolean isEmpty = false;
+        DataType dtype = serial
+                ? serialOutputDataType(Arrays.asList(a.dataType(), b.dataType()), oc.getDArguments())
+                : promoteMatmulOutputDataType(a.dataType(), b.dataType());
+        char order = serial && (a.ordering() != 'c' || b.ordering() != 'c') ? 'f' : 'c';
+        long[] strides = Nd4j.getStrides(outputShape, order);
+        boolean isEmpty = serial && (a.isEmpty() || b.isEmpty());
         for (long dim : outputShape) {
             if (dim == 0) { isEmpty = true; break; }
         }
-        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(outputShape, strides, 1, 'c', dtype, isEmpty);
+        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(outputShape, strides, 1, order, dtype, isEmpty);
         DataBuffer shapeInfo = Shape.createShapeInformation(descriptor);
         return Collections.singletonList(shapeInfo);
     }

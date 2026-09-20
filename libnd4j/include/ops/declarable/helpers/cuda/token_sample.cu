@@ -40,6 +40,31 @@ struct AccType { using type = float; };
 template <>
 struct AccType<double> { using type = double; };
 
+/**
+ * SHARED TIE + ABSENT-CANDIDATE CONTRACT (review rounds 6+7): the scalar
+ * GREEDY selector must agree with the CPU argmax and the autoregressive
+ * decode kernels — larger value wins, EXACT ties resolve to the SMALLER
+ * vocabulary index, and a thread that saw NO element carries an ABSENT
+ * candidate (index = vocabSize) that can never win. The old finite
+ * -DataTypeUtils::max<AccT>() init at index 0 (a) beat very-negative real
+ * logits, (b) let an unused thread's synthetic candidate win a masked /
+ * extreme-value row ([-inf, -FLT_MAX] selected 0 instead of 1), and (c)
+ * kept the left entry on ties. The value of an absent candidate is -inf:
+ * the floating maximum-reduction identity (NVIDIA convention).
+ */
+template <typename AccT>
+static SD_DEVICE inline bool greedyTakeOther(AccT currentVal, LongType currentIdx,
+                                             AccT otherVal, LongType otherIdx,
+                                             LongType vocabSize) {
+    const bool currentValid = currentIdx < vocabSize;
+    const bool otherValid = otherIdx < vocabSize;
+    if (!otherValid) return false;             // absent candidate never wins
+    if (!currentValid) return true;            // a real candidate beats absent
+    if (otherVal > currentVal) return true;
+    // Exact tie: smaller vocabulary index wins (CPU lowest-index contract).
+    return otherVal == currentVal && otherIdx < currentIdx;
+}
+
 // Kernel: greedy argmax — one block per batch element, threads cooperate via shared mem reduction
 template <typename T>
 static SD_KERNEL __launch_bounds__(256, 2) void greedyArgmaxKernel(const void* vlogits,
@@ -60,15 +85,24 @@ static SD_KERNEL __launch_bounds__(256, 2) void greedyArgmaxKernel(const void* v
     LongType batchIdx = blockIdx.x;
     LongType baseOffset = batchIdx * rowStride + rowOffset;
 
-    AccT localMax = -sd::DataTypeUtils::max<AccT>();
-    LongType localIdx = 0;
-
-    for (LongType v = threadIdx.x; v < vocabSize; v += blockDim.x) {
-        AccT val = static_cast<AccT>(logits[baseOffset + v * elemStride]);
-        if (val > localMax) {
-            localMax = val;
-            localIdx = v;
+    AccT localMax;
+    LongType localIdx;
+    if (threadIdx.x < vocabSize) {
+        localMax = static_cast<AccT>(logits[baseOffset + threadIdx.x * elemStride]);
+        localIdx = threadIdx.x;
+        for (LongType v = threadIdx.x + blockDim.x; v < vocabSize; v += blockDim.x) {
+            AccT val = static_cast<AccT>(logits[baseOffset + v * elemStride]);
+            // Strict > keeps the LOWEST index on ties (CPU parity).
+            if (val > localMax) {
+                localMax = val;
+                localIdx = v;
+            }
         }
+    } else {
+        // ABSENT candidate (thread saw no element): -inf identity + invalid
+        // index = vocabSize; can never beat a real candidate (round 7).
+        localMax = -sd::DataTypeUtils::infOrMax<AccT>();
+        localIdx = vocabSize;
     }
 
     sMaxVal[threadIdx.x] = localMax;
@@ -77,7 +111,9 @@ static SD_KERNEL __launch_bounds__(256, 2) void greedyArgmaxKernel(const void* v
 
     for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
         if (threadIdx.x < stride) {
-            if (sMaxVal[threadIdx.x + stride] > sMaxVal[threadIdx.x]) {
+            if (greedyTakeOther(sMaxVal[threadIdx.x], sMaxIdx[threadIdx.x],
+                                sMaxVal[threadIdx.x + stride], sMaxIdx[threadIdx.x + stride],
+                                vocabSize)) {
                 sMaxVal[threadIdx.x] = sMaxVal[threadIdx.x + stride];
                 sMaxIdx[threadIdx.x] = sMaxIdx[threadIdx.x + stride];
             }

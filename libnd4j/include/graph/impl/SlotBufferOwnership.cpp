@@ -168,7 +168,8 @@ void classifyAndUpdateOwnership(
   //    (or a view of a placeholder; pruneTransientViewSlots uses
   //    protectedWeightBuffers to distinguish the two cases).
   for (int i = 0; i < numExternalInputs; i++) {
-    if (externalInputs[i] != nullptr && externalInputs[i]->dataBuffer() == outBuffer) {
+    if (externalInputs[i] != nullptr && externalInputs[i]->dataBuffer() == outBuffer &&
+        (outArray->isView() || externalInputs[i] == outArray)) {
       info.ownership = BufferOwnership::VIEW_OF_WEIGHT;
       info.dataBuffer = outBuffer;
       DSP_DIAG(MEMORY, "OWNERSHIP_CLASSIFY: slot %d → %s (extIdx=%d)",
@@ -179,9 +180,13 @@ void classifyAndUpdateOwnership(
 
   // 3. Check earlier output slots only. Later slots may still contain stale
   // wrappers from the previous execution and must never become parents of the
-  // slot currently being classified.
+  // slot currently being classified. DataBuffer identity alone is not an alias
+  // proof: buffer coloring intentionally recycles dead allocations for
+  // materializing producers. Accept only an actual view wrapper or the exact
+  // same wrapper published by an identity/pass-through operation.
   for (int i = 0; i < slotIdx && i < totalOutputSlots; i++) {
-    if (outputSlots[i] != nullptr && outputSlots[i]->dataBuffer() == outBuffer) {
+    if (outputSlots[i] != nullptr && outputSlots[i]->dataBuffer() == outBuffer &&
+        (outArray->isView() || outputSlots[i] == outArray)) {
       info.ownership = BufferOwnership::VIEW_OF_SLOT;
       info.parentSlotIdx = i;
       info.dataBuffer = outBuffer;

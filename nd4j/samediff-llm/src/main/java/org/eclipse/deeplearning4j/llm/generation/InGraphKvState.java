@@ -23,6 +23,7 @@ package org.eclipse.deeplearning4j.llm.generation;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor.NativeExecutionBinding;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -156,6 +157,40 @@ class InGraphKvState implements AutoCloseable {
     Pointer mtpPlanHandle;
     Pointer mtpContextHandle;
 
+    /** Optional retained-row K/V-only repair plan; shares immutable graph weights with MTP. */
+    NativeExecutionBinding mtpRepairBinding;
+    InferenceSession mtpRepairSession;
+    int mtpRepairInputIdsExtIdx = -1;
+    int mtpRepairTargetHiddenExtIdx = -1;
+    int mtpRepairCausalMaskExtIdx = -1;
+    int mtpRepairPositionOffsetExtIdx = -1;
+    int mtpRepairCachePositionExtIdx = -1;
+    int[] mtpRepairKvInputExtIndices;
+    int mtpRepairKeyOutputIdx = -1;
+    int mtpRepairValueOutputIdx = -1;
+    int mtpRepairNumPlanExternalInputs;
+    int mtpRepairNumPlanOutputs;
+
+    /** Optional fixed-width B=1 K/V-only repair plan for contiguous accepted-prefix rows. */
+    NativeExecutionBinding mtpRepairBatchBinding;
+    InferenceSession mtpRepairBatchSession;
+    INDArray mtpRepairBatchInputIds;
+    INDArray mtpRepairBatchTargetHiddenStates;
+    INDArray mtpRepairBatchCausalMask;
+    INDArray mtpRepairBatchPositionOffset;
+    INDArray mtpRepairBatchCachePosition;
+    int mtpRepairBatchWidth;
+    int mtpRepairBatchInputIdsExtIdx = -1;
+    int mtpRepairBatchTargetHiddenExtIdx = -1;
+    int mtpRepairBatchCausalMaskExtIdx = -1;
+    int mtpRepairBatchPositionOffsetExtIdx = -1;
+    int mtpRepairBatchCachePositionExtIdx = -1;
+    int[] mtpRepairBatchKvInputExtIndices;
+    int mtpRepairBatchKeyOutputIdx = -1;
+    int mtpRepairBatchValueOutputIdx = -1;
+    int mtpRepairBatchNumPlanExternalInputs;
+    int mtpRepairBatchNumPlanOutputs;
+
     // ── Frozen plan handles (owned by the decoder's InferenceSession — NOT closed here) ──────────
     DynamicShapePlanExecutor executor;
     Pointer planHandle;
@@ -194,6 +229,28 @@ class InGraphKvState implements AutoCloseable {
     int mtpNumPlanExternalInputs;
     int mtpNumPlanOutputs;
 
+    /** T3b-dual: width-1 target plan (greedy geometry) for the native rerun; null when unavailable. */
+    NativeExecutionBinding scalarTargetBinding;
+    /** Only private scalar geometry and recurrent snapshots; never weights or shared KV. */
+    Map<String, INDArray> scalarTargetOwnedInputs;
+
+    void releaseScalarTargetBinding() {
+        if (scalarTargetBinding != null) {
+            scalarTargetBinding.close();
+            scalarTargetBinding = null;
+        }
+    }
+
+    void closeScalarTarget() {
+        releaseScalarTargetBinding();
+        if (scalarTargetOwnedInputs != null) {
+            for (INDArray input : scalarTargetOwnedInputs.values()) {
+                if (input != null && !input.wasClosed()) input.close();
+            }
+            scalarTargetOwnedInputs = null;
+        }
+    }
+
     // ── Running decode state ─────────────────────────────────────────────────────────────────────
     /** Absolute position at which the next-fed token ({@link #lastGeneratedToken}) is written: {@code P + G - 1}. */
     volatile int cachePosition;
@@ -206,6 +263,17 @@ class InGraphKvState implements AutoCloseable {
     ConstraintMasker constraintMasker;
     Set<Integer> stopTokenIds;
     int eosTokenId;
+    /**
+     * Session-owned speculative-depth override (review round 4, finding 1):
+     * set by {@code GenerationSession.setSpeculativeDepth}. Null = follow the
+     * pipeline's adaptive K bucket. Unlike the old strategy-rewrite approach,
+     * the override is a REAL depth control: it does not flip the decode
+     * strategy away from SPECULATIVE, so the MTP predictor resources stay
+     * attached at K=0 and the native loop keeps maintaining the predictor
+     * cache ("MTP resources present, drafting disabled, predictor
+     * maintained") instead of bypassing the maintenance implementation.
+     */
+    volatile Integer forcedSpecDepth;
 
     // ── Capacity / shape metadata ────────────────────────────────────────────────────────────────
     long maxKvLen;          // total KV buffer length (the hard capacity ceiling)
@@ -291,6 +359,41 @@ class InGraphKvState implements AutoCloseable {
     @Override
     public void close() {
         if (closed) return;
+        // Lease/context wrappers must be released before any borrowed buffers or sessions.
+        // Leave ownership retryable if binding teardown fails.
+        closeScalarTarget();
+        if (mtpRepairBinding != null) {
+            try {
+                mtpRepairBinding.close();
+            } finally {
+                mtpRepairBinding = null;
+            }
+        }
+        if (mtpRepairSession != null) {
+            try {
+                mtpRepairSession.clearAllCaches();
+            } catch (Exception e) {
+                log.warn("[GenerationSession] error clearing MTP repair session: {}", e.getMessage());
+            } finally {
+                mtpRepairSession = null;
+            }
+        }
+        if (mtpRepairBatchBinding != null) {
+            try {
+                mtpRepairBatchBinding.close();
+            } finally {
+                mtpRepairBatchBinding = null;
+            }
+        }
+        if (mtpRepairBatchSession != null) {
+            try {
+                mtpRepairBatchSession.clearAllCaches();
+            } catch (Exception e) {
+                log.warn("[GenerationSession] error clearing batched MTP repair session: {}", e.getMessage());
+            } finally {
+                mtpRepairBatchSession = null;
+            }
+        }
         closed = true;
         // Destroy the isolated predictor plan before releasing any external inputs it references.
         if (mtpSession != null) {
@@ -320,6 +423,11 @@ class InGraphKvState implements AutoCloseable {
         safeClose(mtpCausalMask);
         safeClose(mtpPositionOffset);
         safeClose(mtpCachePosition);
+        safeClose(mtpRepairBatchInputIds);
+        safeClose(mtpRepairBatchTargetHiddenStates);
+        safeClose(mtpRepairBatchCausalMask);
+        safeClose(mtpRepairBatchPositionOffset);
+        safeClose(mtpRepairBatchCachePosition);
         releaseRecurrentCopyDonors();
         closeAll(mtpKvBuffers);
         closeAll(mtpPrefillInputMap);

@@ -20,7 +20,11 @@
 package org.eclipse.deeplearning4j.llm.generation;
 
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.deeplearning4j.llm.TestGgufMtpCapturedReplay.PreparedReference;
+import org.eclipse.deeplearning4j.model.benchmark.BenchmarkConfig;
+import org.eclipse.deeplearning4j.model.benchmark.BenchmarkConfigApplier;
 import org.eclipse.deeplearning4j.llm.data.LLMModelDownloader;
+import org.eclipse.deeplearning4j.llm.generation.GenerationPipeline.GenerationSession;
 import org.eclipse.deeplearning4j.llm.generation.kvcache.KvCacheStrategy;
 import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
 import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
@@ -81,6 +85,9 @@ public class TestQwen35MtpDecode {
 
     @BeforeAll
     public static void setup() throws Exception {
+        // Preload the selected backend before GGUF import so the normal binding
+        // selected by the test backend is initialized before model construction.
+        Nd4j.getEnvironment();
         if (System.getProperty(ND4JSystemProperties.OPTIMIZER_ENABLED) == null) {
             System.setProperty(ND4JSystemProperties.OPTIMIZER_ENABLED, "true");
         }
@@ -145,6 +152,55 @@ public class TestQwen35MtpDecode {
         tokenizer = null;
     }
 
+    private static GenerationResult generateMeasured(GenerationPipeline pipeline, String mode) throws Exception {
+        boolean timing = Boolean.getBoolean("mtp.benchmark.opTiming");
+        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+        log.info("[MTP-BENCHMARK] backend={} native={} mode={} tokens={} opTiming={} scope=generation-including-prefill",
+                backend, Nd4j.getNativeOps().getClass().getSimpleName(), mode, TOKENS, timing);
+        if (timing) {
+            Nd4j.getNativeOps().resetOpTiming();
+            Nd4j.getNativeOps().setOpTimingEnabled(1, 1);
+        }
+        try {
+            return pipeline.generate(PROMPT, TOKENS);
+        } finally {
+            if (timing) {
+                try {
+                    Nd4j.getNativeOps().flushOpTiming();
+                    log.info("[MTP-OP-PROFILE] backend={} mode={} scope=generation-including-prefill", backend, mode);
+                    Nd4j.getNativeOps().printOpTimingStats(20);
+                } finally {
+                    Nd4j.getNativeOps().setOpTimingEnabled(0, 0);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testPreparedPredictorMatchesCapturedReference() throws Exception {
+        PreparedReference reference = new PreparedReference(System.getProperty("mtp.reference.gguf"),
+                System.getProperty("qwen.mtp.snapshotPrefix"));
+        GenerationPipelineConfig config = GenerationPipelineConfig.builder()
+                .decoder(model).tokenizer(tokenizer)
+                .samplingConfig(SamplingConfig.speculative().toBuilder().minNewTokens(24).build())
+                .maxNewTokens(24).maxSpeculativeTokens(SPEC_K)
+                .maxPrefillLength(64).maxKvCacheLength(192)
+                .kvCacheStrategy(KvCacheStrategy.STATIC)
+                .graphOptimizerEnabled(false).dspEnabled(true).build();
+        try (GenerationPipeline pipeline = GenerationPipeline.create(config);
+             GenerationSession session = pipeline.startSession(PROMPT)) {
+            InGraphKvState state = session.retainedStateForInspection();
+            assertNotNull(state.mtpExecutor);
+            if (Boolean.getBoolean("mtp.reference.prefillOnly")) {
+                reference.verifyAfterPrefill(System.getProperty("mtp.reference.gguf"), state.mtpPrefillInputMap);
+            } else {
+                try (var binding = state.mtpExecutor.captureNativeExecutionBinding()) {
+                    reference.verify(binding);
+                }
+            }
+        }
+    }
+
     @Test
     public void testBundledMtpIsLosslessAndEngaged() throws Exception {
         SamplingConfig mtpSampling = SamplingConfig.speculative().toBuilder()
@@ -178,7 +234,7 @@ public class TestQwen35MtpDecode {
                         result.getSpeculativeSteps());
             }
 
-            mtpResult = pipeline.generate(PROMPT, TOKENS);
+            mtpResult = generateMeasured(pipeline, "MTP");
             log.info("[MTP-METRICS] tokens={} proposed={} accepted={} steps={} acceptance={} "
                             + "tok/s={} decodeTok/s={} lateTok/s={} effectiveTok/s={}",
                     mtpResult.getTokenIds().length, mtpResult.getTotalSpeculativeTokens(),
@@ -189,7 +245,7 @@ public class TestQwen35MtpDecode {
                     mtpResult.getEffectiveTokensPerSecond());
 
             pipeline.setSamplingConfig(greedySampling);
-            greedyResult = pipeline.generate(PROMPT, TOKENS);
+            greedyResult = generateMeasured(pipeline, "GREEDY");
             log.info("[MTP-GREEDY-METRICS] tokens={} tok/s={} decodeTok/s={} lateTok/s={}",
                     greedyResult.getTokenIds().length, greedyResult.getTokensPerSecond(),
                     greedyResult.getDecodeTokensPerSecond(),
@@ -209,10 +265,332 @@ public class TestQwen35MtpDecode {
                 "Bundled MTP reported zero speculative steps");
         assertTrue(mtpResult.getTotalAcceptedTokens() > 0,
                 "Bundled MTP accepted zero tokens");
-        assertTrue(mtpTokens.length >= Math.min(TOKENS, 20),
-                "MTP generated too few tokens: " + mtpTokens.length);
+        assertEquals(TOKENS, greedyTokens.length,
+                "Greedy qualification run did not reach the requested token count");
+        assertEquals(TOKENS, mtpTokens.length,
+                "MTP qualification run did not reach the requested token count");
         assertArrayEquals(greedyTokens, mtpTokens,
                 "Bundled Qwen3.5 MTP must remain token-identical to greedy decode");
+    }
+
+    /**
+     * P02 adaptive-K hysteresis oracle (reviewer pass-evidence: switching K
+     * preserves output and state across calls; forced low-acceptance workloads
+     * stop wasting draft/verification work).
+     *
+     * <p>Run with K=1: the first generation exercises the MTP path; when its
+     * acceptance lands below the floor, the SECOND generation must drop to
+     * K=0 (the native no-spec scalar fast path: proposedCount==0) yet remain
+     * token-identical to greedy, and the third generation must keep that
+     * bucket. No model reload and no plan recapture occur - the bucket only
+     * selects what the native loop proposes.</p>
+     */
+    @Test
+    public void testAdaptiveSpecKCollapsesOnLowAcceptanceAndPreservesOutput() throws Exception {
+        SamplingConfig mtpSampling = SamplingConfig.speculative().toBuilder()
+                .minNewTokens(TOKENS)
+                .build();
+        SamplingConfig greedySampling = SamplingConfig.greedy().toBuilder()
+                .minNewTokens(TOKENS)
+                .build();
+
+        GenerationPipelineConfig config = GenerationPipelineConfig.builder()
+                .decoder(model)
+                .tokenizer(tokenizer)
+                .samplingConfig(mtpSampling)
+                .maxNewTokens(TOKENS)
+                .maxSpeculativeTokens(1)
+                .maxPrefillLength(64)
+                .maxKvCacheLength(Math.max(192, TOKENS + 64))
+                .kvCacheStrategy(KvCacheStrategy.STATIC)
+                .graphOptimizerEnabled(false)
+                .dspEnabled(true)
+                .build();
+
+        GenerationResult first;
+        GenerationResult second;
+        GenerationResult third;
+        GenerationResult greedy;
+        try (GenerationPipeline pipeline = GenerationPipeline.create(config)) {
+            // Determinism warmup: fresh-plan builds jitter (Triton autotune, allocator
+            // ordering) on the very first plan; run one throwaway generation so every
+            // measured generation executes on a warmed, replay-stable plan. The lossless
+            // test uses the same pattern.
+            pipeline.generate(PROMPT, TOKENS);
+
+            first = pipeline.generate(PROMPT, TOKENS);
+            // ORACLE over mechanism (review finding 6): the controller may have
+            // legitimately dropped the bucket to K=0 during the warmup
+            // generation if its acceptance fell below the floor (0.8B measured
+            // 1/57 in gate 11). What must hold is the TOKEN ORACLE asserted
+            // below - deterministic, greedy-identical output regardless of
+            // which bucket the controller chose. Record the bucket for the
+            // later legs; do not pin which path ran.
+            int afterFirst = pipeline.getAdaptiveSpecK();
+            assertTrue(afterFirst >= 0 && afterFirst <= 1,
+                    "Bucket must stay within [0,1] after generation one: " + afterFirst);
+
+            second = pipeline.generate(PROMPT, TOKENS);
+            int afterSecond = pipeline.getAdaptiveSpecK();
+            // The bucket may sit at 0 or 1 here (controller state after the
+            // warmup); both are valid. What must hold: K=0 output equals K=1
+            // output (proven natively in gate 11), and the same-K legs are
+            // deterministic. Assert the boundary transition only when the
+            // PREVIOUS generation actually speculated.
+            assertTrue(afterSecond >= 0 && afterSecond <= 1,
+                    "Bucket must stay within [0,1] after generation two: " + afterSecond);
+            if (first.getAverageAcceptanceRate() < GenerationPipeline.SPEC_K_ACCEPTANCE_FLOOR
+                    && first.getTotalSpeculativeTokens() > 0) {
+                assertEquals(0, afterSecond,
+                        "Below-floor acceptance from a speculative generation must drop the bucket");
+            }
+
+            third = pipeline.generate(PROMPT, TOKENS);
+            assertEquals(afterSecond, pipeline.getAdaptiveSpecK(),
+                    "Hysteresis: bucket must not flip-flop between consecutive generations");
+
+            pipeline.setSamplingConfig(greedySampling);
+            greedy = pipeline.generate(PROMPT, TOKENS);
+        }
+
+        log.info("[MTP-ADAPTIVE-ORACLE] first={} second={} third={} greedy={}",
+                Arrays.toString(Arrays.copyOf(first.getTokenIds(), Math.min(16, first.getTokenIds().length))),
+                Arrays.toString(Arrays.copyOf(second.getTokenIds(), Math.min(16, second.getTokenIds().length))),
+                Arrays.toString(Arrays.copyOf(third.getTokenIds(), Math.min(16, third.getTokenIds().length))),
+                Arrays.toString(Arrays.copyOf(greedy.getTokenIds(), Math.min(16, greedy.getTokenIds().length))));
+
+        // Same-bucket generations must be deterministic and identical to each other.
+        assertArrayEquals(first.getTokenIds(), second.getTokenIds(),
+                "Consecutive same-K generations must be deterministic");
+        assertArrayEquals(first.getTokenIds(), third.getTokenIds(),
+                "Hysteresis generation must match the K it held");
+        // The adaptive-K MTP path must remain token-identical to greedy decode.
+        assertArrayEquals(greedy.getTokenIds(), first.getTokenIds(),
+                "Adaptive-K (K=1) MTP must remain token-identical to greedy");
+    }
+
+    /**
+     * Same-session K transition oracle (review round 3, finding 1): forces the
+     * K=1 -> K=0 -> K=1 depth transitions WITHIN one continuing
+     * GenerationSession via the session-scoped setSpeculativeDepth control
+     * (the pipeline-level setSamplingConfig deliberately does not reach an
+     * open session). The oracle proves three separate properties: (1) the
+     * requested K actually changed what the native decode ran - the K=0 leg
+     * must propose zero tokens and the re-enabled leg must propose again;
+     * (2) the whole combined sequence (initial leg + both continuations)
+     * equals a full-length same-total-budget reference generated in one
+     * K=1 session on the same prompt - so both continuation legs, not just
+     * the pre-transition prefix, are under token equality; (3) the retained
+     * predictor state stayed valid across the scalar-only interval. A stale
+     * predictor carry/KV on re-enable surfaces as divergence in the third
+     * leg - the exact defect class the K-re-enable epilogue fix guards.
+     */
+    @Test
+    public void testSameSessionKTransitionPreservesTokensAcrossK0Interval() throws Exception {
+        SamplingConfig mtpSampling = SamplingConfig.speculative().toBuilder()
+                .minNewTokens(TOKENS)
+                .build();
+
+        GenerationPipelineConfig config = GenerationPipelineConfig.builder()
+                .decoder(model)
+                .tokenizer(tokenizer)
+                .samplingConfig(mtpSampling)
+                .maxNewTokens(TOKENS)
+                .maxSpeculativeTokens(1)
+                .maxPrefillLength(64)
+                .maxKvCacheLength(Math.max(256, 2 * TOKENS + 64))
+                .kvCacheStrategy(KvCacheStrategy.STATIC)
+                .graphOptimizerEnabled(false)
+                .dspEnabled(true)
+                .build();
+
+        final int stepTokens = Math.max(8, TOKENS / 3);
+        final int totalBudget = TOKENS + 2 * stepTokens;
+        int[] referenceSeq;
+        int[] sessionSeq;
+        int k0Proposed;
+        int reProposed;
+        try (GenerationPipeline referencePipeline = GenerationPipeline.create(config)) {
+            // Reference: ONE K=1 generation covering the session's whole budget.
+            referencePipeline.setSamplingConfig(mtpSampling);
+            GenerationResult reference = referencePipeline.generate(PROMPT, totalBudget);
+            assertTrue(reference.getTotalSpeculativeTokens() > 0,
+                    "Reference leg must run the speculative path");
+            referenceSeq = reference.getTokenIds();
+        }
+
+        try (GenerationPipeline pipeline = GenerationPipeline.create(config);
+             GenerationSession session = pipeline.startSession(PROMPT)) {
+            // Leg 1: K=1 head of the session.
+            session.generate(TOKENS);
+
+            // Leg 2: force K=0 for THIS session - scalar-only tokens stream
+            // into the shared predictor context. Must propose ZERO tokens.
+            session.setSpeculativeDepth(0);
+            GenerationResult k0Leg = session.continueGeneration(stepTokens);
+            assertEquals(stepTokens, k0Leg.getTokenIds().length,
+                    "K=0 continuation must emit exactly its step budget");
+            assertEquals(0, k0Leg.getTotalSpeculativeTokens(),
+                    "K=0 continuation must propose ZERO tokens - the depth override did not reach the native decode");
+            k0Proposed = k0Leg.getTotalSpeculativeTokens();
+
+            // Leg 3: re-enable K=1 from the same retained state. Must propose
+            // again - proving the native execution actually resumed drafting.
+            session.setSpeculativeDepth(1);
+            GenerationResult reLeg = session.continueGeneration(stepTokens);
+            assertEquals(stepTokens, reLeg.getTokenIds().length,
+                    "Re-enabled continuation must emit exactly its step budget");
+            assertTrue(reLeg.getTotalSpeculativeTokens() > 0,
+                    "Re-enabled continuation must PROPOSE tokens - the depth override did not reach the native decode");
+            reProposed = reLeg.getTotalSpeculativeTokens();
+
+            sessionSeq = session.getAllTokens();
+        }
+
+        log.info("[MTP-K-TRANSITION-ORACLE] k0Proposed={} reProposed={} sessionLen={} refLen={} "
+                        + "reference={} session={}",
+                k0Proposed, reProposed, sessionSeq.length, referenceSeq.length,
+                Arrays.toString(Arrays.copyOf(referenceSeq, Math.min(20, referenceSeq.length))),
+                Arrays.toString(Arrays.copyOf(sessionSeq, Math.min(20, sessionSeq.length))));
+
+        // Property 1: the depth override reached the native decode.
+        assertEquals(0, k0Proposed, "K=0 leg must propose zero tokens");
+        assertTrue(reProposed > 0, "Re-enabled leg must propose tokens");
+
+        // Property 2: FULL-sequence equality including both transition legs.
+        // The reference covers the identical total budget in one K=1 session,
+        // so the entire session sequence - not just the pre-transition prefix -
+        // is under token equality.
+        assertEquals(totalBudget, referenceSeq.length,
+                "Reference must cover the full combined budget");
+        assertEquals(totalBudget, sessionSeq.length,
+                "Session must produce the full combined budget across the K transitions");
+        assertArrayEquals(referenceSeq, sessionSeq,
+                "K=1 -> K=0 -> K=1 same-session sequence must match the K=1 full-budget reference");
+    }
+
+    /**
+     * Exact bootstrap tuple fixture (review round 3, finding 4): opens a session
+     * and inspects the RETAINED PREDICTOR state immediately after start (before
+     * any native drafting) plus the retained scalar pair the first native draft
+     * consumes. Documents the shipped bootstrap convention precisely:
+     * <p>PREDICTOR ROW CONVENTION (review-ruled, packet 6): row r consumes
+     * (x_(r+1), h_r) at rope=r, slot=r. With N = actualPrefillLen and y0/y1 the
+     * first/second target-sampled tokens (target positions N and N+1):</p>
+     * <ul>
+     *   <li>prefill rows r = 0..N-1 carry (x_(r+1), h_r) — the tail row N-1 is
+     *       (y0, h_(N-1)); prefill position ORIGIN is 0;</li>
+     *   <li>the scalar predictor warmup consumes (y0, h_(N-1)) at rope=N-1,
+     *       slot=N-1 — it REWRITES the tail slot, appending nothing;</li>
+     *   <li>after the warmup the pending pair is (y1, h_N) at rope=N, slot=N
+     *       (both retained scalars = state.cachePosition - 1); slot N is NOT
+     *       yet written and stays masked until native execution consumes it;</li>
+     *   <li>the target resumes at state.cachePosition = N+1 (unchanged).</li>
+     * </ul>
+     * Exactly N live predictor rows [0,N) exist after the bootstrap. Asserts
+     * the scalars, shifted ids, mask boundary, and the unwritten/pending row.
+     * If any bootstrap change shifts an index, THIS test fails before the
+     * acceptance-rate regression can hide it.
+     */
+    @Test
+    public void testBootstrapPredictorTupleLayout() throws Exception {
+        SamplingConfig mtpSampling = SamplingConfig.speculative().toBuilder()
+                .minNewTokens(8)
+                .build();
+        GenerationPipelineConfig config = GenerationPipelineConfig.builder()
+                .decoder(model)
+                .tokenizer(tokenizer)
+                .samplingConfig(mtpSampling)
+                .maxNewTokens(8)
+                .maxSpeculativeTokens(1)
+                .maxPrefillLength(64)
+                .maxKvCacheLength(256)
+                .kvCacheStrategy(KvCacheStrategy.STATIC)
+                .graphOptimizerEnabled(false)
+                .dspEnabled(true)
+                .build();
+
+        try (GenerationPipeline pipeline = GenerationPipeline.create(config);
+             GenerationSession session = pipeline.startSession(PROMPT)) {
+            InGraphKvState st = session.retainedStateForInspection();
+            // The retained state's OWN logical prompt length (template/BOS-aware);
+            // an independently tokenized string could omit template tokens.
+            final int n = st.actualPrefillLen;
+
+            // -- Scalar geometry (packet 6, assertions 1-4) -------------------
+            // Target resume position: the first native target position is N+1.
+            assertEquals((long) n + 1L, (long) st.cachePosition,
+                    "target state.cachePosition must resume at N+1");
+            // BOTH retained predictor scalars describe the PENDING row N = N+1-1.
+            assertEquals((long) n, st.mtpPositionOffset.getLong(0),
+                    "retained predictor positionOffset must be the pending row N");
+            assertEquals((long) n, st.mtpCachePosition.getLong(0),
+                    "retained predictor cachePosition must be the pending row N");
+            assertEquals((long) st.cachePosition - 1L, st.mtpCachePosition.getLong(0),
+                    "predictor pending slot must equal target cachePosition - 1");
+            // Pending token = the second sampled token (the first was consumed
+            // by the warmup; the pair (y0, h_(N-1)) is stored once, in row N-1).
+            assertEquals((long) st.lastGeneratedToken, st.mtpInputIds.getLong(0),
+                    "predictor pending input must be the second sampled token");
+            // Pending carry = the target warmup hidden h_N (the hidden the target
+            // produced consuming y0): verified via shape (row-carry contract).
+            assertNotNull(st.mtpTargetHiddenStates);
+            assertEquals(3, st.mtpTargetHiddenStates.rank(),
+                    "retained predictor carry must be a rank-3 single-row tensor");
+
+            log.info("[MTP-BOOTSTRAP-ORACLE] n={} targetResume={} pendingRow={} pendingToken={}",
+                    n, st.cachePosition, st.mtpCachePosition.getLong(0),
+                    st.mtpInputIds.getLong(0));
+
+            // -- Shifted predictor ids vs the actual target prefill ids --------
+            INDArray sourceIds = st.prefillInputMap.get(st.inputIdsName);
+            INDArray shiftedIds = st.mtpPrefillInputMap.get("mtp_input_ids");
+            assertNotNull(sourceIds, "target prefill ids must be retained");
+            assertNotNull(shiftedIds, "predictor prefill ids must be retained");
+            for (int r = 0; r + 1 < n; ++r) {
+                assertEquals(sourceIds.getLong(0, r + 1), shiftedIds.getLong(0, r),
+                        "Shifted predictor token at row " + r);
+            }
+            // Tail row N-1 carries the FIRST sampled token.
+            assertEquals(st.generatedSoFar.get(0).longValue(), shiftedIds.getLong(0, n - 1),
+                    "predictor prefill tail row must carry the first sampled token");
+            // Pending scalar carries the SECOND sampled token.
+            assertEquals(st.generatedSoFar.get(1).longValue(), st.mtpInputIds.getLong(0),
+                    "predictor pending token must be the second sampled token");
+
+            // -- Mask boundary: N live rows visible, unwritten rows invisible --
+            INDArray mtpMask = st.mtpCausalMask;
+            assertNotNull(mtpMask, "retained predictor causal mask must exist");
+            for (int r = 0; r < n; ++r) {
+                assertEquals(0.0, mtpMask.getDouble(0, 0, 0, r), 0.0,
+                        "live predictor row " + r + " must be visible (unmasked)");
+            }
+            for (long r = n; r < mtpMask.size(3); ++r) {
+                assertTrue(mtpMask.getDouble(0, 0, 0, r) < -1.0e6,
+                        "Unwritten predictor row is visible: " + r);
+            }
+
+            // -- Warmup REWRITES slot N-1; slot N stays unwritten ----------------
+            // The bootstrap re-zeroes the retained cache, so slot N must still be
+            // zero immediately after the bootstrap (an appended warmup row would
+            // be non-zero). This distinguishes rewrite-tail from append-slot-N.
+            INDArray mtpKeyCache = st.mtpKvBuffers.get("mtp_past_key_values.0.key");
+            INDArray mtpValueCache = st.mtpKvBuffers.get("mtp_past_key_values.0.value");
+            assertNotNull(mtpKeyCache, "Retained MTP key cache must exist");
+            assertNotNull(mtpValueCache, "Retained MTP value cache must exist");
+            assertEquals(4, mtpKeyCache.rank(), "MTP key cache must be rank 4");
+            assertTrue(mtpKeyCache.size(1) >= n + 1,
+                    "MTP key cache must have capacity for the pending row N");
+            for (int h = 0; h < (int) mtpKeyCache.size(2); ++h) {
+                assertEquals(0.0, mtpKeyCache.getDouble(0, n, h, 0), 0.0,
+                        "pending predictor slot N key must be unwritten after bootstrap");
+                assertEquals(0.0, mtpValueCache.getDouble(0, n, h, 0), 0.0,
+                        "pending predictor slot N value must be unwritten after bootstrap");
+            }
+            log.info("[MTP-BOOTSTRAP-ORACLE] liveRows=[0,{}) pendingRow={} "
+                            + "warmupRewroteTailSlot={} targetUnchanged=true",
+                    n, n, n - 1);
+        }
     }
 
     /**
@@ -236,6 +614,9 @@ public class TestQwen35MtpDecode {
     }
 
     private void runTargetWindowRowsMatchChainedScalarCheckpoints(boolean requestAttentionAux) throws Exception {
+        if (Boolean.getBoolean("mtp.parity.productionConfig")) {
+            BenchmarkConfigApplier.apply(BenchmarkConfig.optimal());
+        }
         final int window = 5;
         final int maxKvLength = 192;
         List<INDArray> owned = new ArrayList<>();
@@ -589,11 +970,23 @@ public class TestQwen35MtpDecode {
             String firstFinalStateDivergence = null;
             double firstFinalStateMax = 0.0;
             double firstFinalStateL1 = 0.0;
+            // WINDOW4 ORACLE SCOPING: the window4 mode runs the W-wide pass at
+            // asl=4 with WILD draft tokens at rows 2-3 (deliberately not consumed
+            // by the 2-row scalar chain). The full-window finalState therefore
+            // legitimately folds two extra rows the scalar chain never saw - the
+            // acceptedZeroRerunState/partialRerunState discriminators below prove
+            // the shortened-recurrence rerun from pre-step state is EXACT, and the
+            // row-0/row-1 output comparisons prove the consumed rows are exact.
+            // So the finalState check is meaningful only in the asl=2 envelope
+            // (no wild rows), where the window pass folds exactly the same rows
+            // as the chained scalar. In window4 mode it is reported, not asserted.
+            boolean assertFinalState = !Boolean.getBoolean("mtp.parity.window4");
             for (String name : stateOutputNames) {
                 double[] stateDiff = difference(
                         windowStateSnapshot.get(name), scalarSecondStateSnapshot.get(name));
                 if (stateDiff[0] != 0.0) {
-                    log.info("[MTP-TARGET-PARITY] discriminator=finalState name={} max={} l1={}",
+                    log.info("[MTP-TARGET-PARITY] discriminator=finalState name={} max={} l1={} "
+                                    + "(window4: expected - wild rows 2-3 fold extra state)",
                             name, stateDiff[0], stateDiff[1]);
                     if (firstFinalStateDivergence == null) {
                         firstFinalStateDivergence = name;
@@ -837,9 +1230,13 @@ public class TestQwen35MtpDecode {
                     (requestAttentionAux ? "Aux-output" : "Output-only")
                             + " W=5 target rows diverged first at " + firstDivergence
                             + " (max=" + firstMax + ", l1=" + firstL1 + ")");
-            assertTrue(firstFinalStateDivergence == null,
-                    "W=5 final recurrent state diverged first at " + firstFinalStateDivergence
-                            + " (max=" + firstFinalStateMax + ", l1=" + firstFinalStateL1 + ")");
+            // window4: full-window finalState folds the wild rows; asserted only
+            // in the asl=2 envelope where both legs fold the same consumed rows.
+            if (assertFinalState) {
+                assertTrue(firstFinalStateDivergence == null,
+                        "W=5 final recurrent state diverged first at " + firstFinalStateDivergence
+                                + " (max=" + firstFinalStateMax + ", l1=" + firstFinalStateL1 + ")");
+            }
             assertTrue(firstAcceptedZeroStateDivergence == null,
                     "Accepted-zero rerun state diverged first at "
                             + firstAcceptedZeroStateDivergence

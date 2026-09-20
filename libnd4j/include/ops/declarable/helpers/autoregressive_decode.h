@@ -27,6 +27,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 namespace sd {
@@ -51,6 +52,33 @@ using AutoregressiveTokenCallback = void (*)(LongType tokenId, void* userData);
  * decode steps, preserving KV/recurrent state at a resumable boundary.
  */
 using AutoregressiveCancelCallback = bool (*)(void* userData);
+
+/**
+ * P0 native-cycle accounting. This is diagnostic state only; it does not
+ * change the timingInfo ABI or introduce synchronization. Backends emit it
+ * through the existing DSP_DIAG report path at the end of a decode call.
+ */
+struct AutoregressiveP0Counters {
+    LongType finalizedTokens = 0;
+    LongType proposals = 0;
+    LongType acceptedDrafts = 0;
+    int speculativeSteps = 0;
+    int targetVerificationForwards = 0;
+    int acceptedPrefixReruns = 0;
+    int shortenedRecoveryForwards = 0;
+    int predictorProposalForwards = 0;
+    int predictorRepairForwards = 0;
+    int predictorMaintenanceForwards = 0;
+    int predictorRepairLmHeadForwards = 0;
+    int planPhaseTransitions = 0;
+    int planReplayForwards = 0;
+    int planWarmupForwards = 0;
+    std::uint64_t snapshotBytes = 0;
+    std::uint64_t restoreBytes = 0;
+    std::uint64_t stateCommitBytes = 0;
+    std::uint64_t hostReadbackBytes = 0;
+    std::uint64_t hostWaitBoundaries = 0;
+};
 
 /**
  * Configuration for the autoregressive decode loop.
@@ -167,6 +195,19 @@ struct AutoregressiveDecodeConfig {
     int speculativeK = 0;            // max draft tokens per step (0 = off)
     int speculatorType = 0;          // 0=none, 1=NGRAM, 2=MTP
 
+    // Multi-row commit policy (ADR 0106 Phase 2b review decision).
+    // When true (EXPERIMENTAL), an accepted prefix longer than one token is
+    // committed by re-executing the WINDOW plan at activeWindow=consumedCount.
+    // The W-substrate geometry's row-0 numerics are not yet proven equivalent
+    // to the width-1 greedy geometry (teacher-forced comparison pending), so
+    // this trades token-exact parity for mechanism: measured on the Qwen 27B
+    // NVFP4 real-model gate as emissionDeltas 124/251 (see milestone dbf8340c).
+    // When false (SHIPPED DEFAULT), every speculative step commits exactly one
+    // token through the validated scalar width-1 plan: bit-exact greedy parity
+    // (emissionDeltas 0/251, milestone bc3f5c2a) and acceptance-stats parity
+    // with the pre-review contract.
+    bool allowMultiRowCommit = false;
+
     // ─── Qwen3.5 bundled MTP predictor ─────────────────────────────────────────
     // The predictor is a second plan over the same immutable SameDiff weights. It owns an
     // independent context and KV cache, and always executes scalar [1,1] steps. The target plan
@@ -184,6 +225,70 @@ struct AutoregressiveDecodeConfig {
     int mtpLogitsOutputIdx = -1;
     int mtpHiddenOutputIdx = -1;
     int targetHiddenOutputIdx = -1;  // pre-final-norm target hidden rows
+
+    // Optional KV-only retained-row repair plan. The plan produces K/V states
+    // without the predictor LM head; the decode helper scatters those states
+    // through the existing stride-aware BSHD writer.
+    graph::NativeDynamicShapePlan* mtpRepairPlanHandle = nullptr;
+    void* mtpRepairExtInputContext = nullptr;
+    int mtpRepairNumPlanExternalInputs = 0;
+    int mtpRepairNumPlanOutputs = 0;
+    int mtpRepairInputIdsExtIdx = -1;
+    int mtpRepairTargetHiddenExtIdx = -1;
+    int mtpRepairCausalMaskExtIdx = -1;
+    int mtpRepairPositionOffsetExtIdx = -1;
+    int mtpRepairCachePositionExtIdx = -1;
+    int mtpRepairKvInputExtIndices[2] = {-1, -1};
+    int mtpRepairKeyOutputIdx = -1;
+    int mtpRepairValueOutputIdx = -1;
+
+    // Optional fixed-width B=1 repair plan. The five input arrays are stable
+    // caller-owned buffers; the native loop fills only their active prefix per
+    // transaction and leaves the scalar repair ABI above untouched.
+    graph::NativeDynamicShapePlan* mtpRepairBatchPlanHandle = nullptr;
+    void* mtpRepairBatchExtInputContext = nullptr;
+    int mtpRepairBatchNumPlanExternalInputs = 0;
+    int mtpRepairBatchNumPlanOutputs = 0;
+    int mtpRepairBatchInputIdsExtIdx = -1;
+    int mtpRepairBatchTargetHiddenExtIdx = -1;
+    int mtpRepairBatchCausalMaskExtIdx = -1;
+    int mtpRepairBatchPositionOffsetExtIdx = -1;
+    int mtpRepairBatchCachePositionExtIdx = -1;
+    int mtpRepairBatchKvInputExtIndices[2] = {-1, -1};
+    int mtpRepairBatchKeyOutputIdx = -1;
+    int mtpRepairBatchValueOutputIdx = -1;
+    int mtpRepairBatchWidth = 0;
+
+    // Stable arrays passed as optional op inputs when the 1024 input-mask bit is set.
+    NDArray* mtpRepairBatchInputIds = nullptr;
+    NDArray* mtpRepairBatchTargetHidden = nullptr;
+    NDArray* mtpRepairBatchCausalMask = nullptr;
+    NDArray* mtpRepairBatchPositionOffset = nullptr;
+    NDArray* mtpRepairBatchCachePosition = nullptr;
+
+    // T3b-dual: width-1 target plan captured from the same session's scalar
+    // warmup. The rerun (asl=1 re-execution) routes through this plan so its
+    // row-0 logits are greedy-identical: two separately-frozen plans (W-substrate
+    // vs width-1) produce different attention/GEMM reduction orders — 0.02-0.08
+    // logit deltas that flip argmax at flat profiles (probe verdict 2609f6f8).
+    // Absent metadata preserves the original API. Advertised metadata is validated strictly.
+    // KV and weights are shared; private recurrent inputs snapshot the committed prefix
+    // BEFORE verification, so even in-place window state writes cannot pollute the rerun.
+    graph::NativeDynamicShapePlan* scalarPlanHandle = nullptr;
+    void* scalarExtInputContext = nullptr;
+    int scalarLogitsOutputIdx = -1;
+    int scalarTargetHiddenOutputIdx = -1;
+    int scalarNumPlanExternalInputs = 0;
+    int scalarNumPlanOutputs = 0;
+    int scalarInputIdsExtIdx = -1;
+    int scalarCausalMaskExtIdx = -1;
+    int scalarPositionOffsetExtIdx = -1;
+    int scalarCachePositionExtIdx = -1;
+    int scalarActualSequenceLengthExtIdx = -1;
+    // Captured scalar input order -> window input order; window output order -> scalar order.
+    // Context owns borrowed wrappers. The Java binding owns their lifetime and native lease.
+    std::vector<int> scalarInputToTarget;
+    std::vector<int> targetOutputToScalar;
 
     // Stable-address arrays also passed as op inputs to retain lifetime and make native updates
     // explicit. The same NDArray objects are registered in mtpExtInputContext.
@@ -242,6 +347,19 @@ class StopSequenceMatcher {
   void rollback(size_t count) {
     while (count-- > 0 && !_suffix.empty()) _suffix.pop_back();
   }
+
+  /** Exact pre-step checkpoint of the matcher suffix. Unlike rollback(n), this
+   *  restores the complete observable state, including any history that was
+   *  evicted from the bounded suffix during provisional accepts. Use for
+   *  multi-token transactions where a rerun may invalidate any part of the
+   *  provisional sequence, not just the final token. */
+  struct Snapshot {
+    std::vector<int> suffix;
+  };
+
+  Snapshot snapshot() const { return Snapshot{_suffix}; }
+
+  void restore(const Snapshot& snap) { _suffix = snap.suffix; }
 
   bool prime(const std::vector<int>& history) {
     bool matched = false;

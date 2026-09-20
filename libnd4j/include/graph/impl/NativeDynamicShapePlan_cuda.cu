@@ -1267,8 +1267,14 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     // input copy. Reuse the existing per-device staging owners (including their
     // release/accounting lifecycle), but keep these state inputs out of ordinary
     // input-only staging. A same-device replacement must refresh an existing owner.
+    // Device-managed inputs (shared KV/state/weights registered via
+    // registerDeviceManagedExternalInput) bypass staging entirely — their live
+    // device buffer is the source of truth (NativeDynamicShapePlan.h:2484) — so
+    // they must NOT enter this migration path (the generic DataBuffer::memcpy
+    // here also lacks FLOAT8 handling for quantized storage).
     if (externalSource && externalInputIsVariable_[externalInputIdx] &&
-        !externalInputIsPlaceholder_[externalInputIdx]) {
+        !externalInputIsPlaceholder_[externalInputIdx] &&
+        !isDeviceManagedExternalInput(externalInputIdx, arr)) {
       NDArray** stateBuffers = nullptr;
       if (targetDevice == 0) {
         stateBuffers = placeholderStagingBuffers_;
@@ -1357,8 +1363,16 @@ Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
           if (effectiveExternals_ != nullptr) effectiveExternals_[externalInputIdx] = state;
         } catch (const std::exception& error) {
           if (savedDevice >= 0) cudaSetDevice(savedDevice);
-          return cudaPlanFailure("CUDA writable external migration failed: ext=%d targetDevice=%d: %s",
-                                 externalInputIdx, targetDevice, error.what());
+          const char* extName = externalInputIdx < static_cast<int>(externalInputNames_.size())
+                                    ? externalInputNames_[externalInputIdx].c_str() : "?";
+          return cudaPlanFailure("CUDA writable external migration failed: ext=%d '%s' "
+                                 "isVariable=%d isPlaceholder=%d targetDevice=%d: %s",
+                                 externalInputIdx, extName,
+                                 externalInputIdx < static_cast<int>(externalInputIsVariable_.size())
+                                     ? static_cast<int>(externalInputIsVariable_[externalInputIdx]) : -1,
+                                 externalInputIdx < static_cast<int>(externalInputIsPlaceholder_.size())
+                                     ? static_cast<int>(externalInputIsPlaceholder_[externalInputIdx]) : -1,
+                                 targetDevice, error.what());
         }
         if (savedDevice >= 0) cudaSetDevice(savedDevice);
         continue;

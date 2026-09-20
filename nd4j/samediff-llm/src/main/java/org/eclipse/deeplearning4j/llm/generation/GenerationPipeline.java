@@ -60,11 +60,14 @@ import org.nd4j.autodiff.samediff.execution.DspDebugger;
 import org.nd4j.autodiff.samediff.execution.DspHandle;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor.NativeExecutionBinding;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor.BindingCaptureException;
 import org.nd4j.autodiff.samediff.execution.DynamicShapeSlot;
 import org.nd4j.autodiff.samediff.execution.PlanPhase;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.io.File;
 import java.io.IOException;
@@ -206,6 +209,41 @@ public class GenerationPipeline implements AutoCloseable {
     /** Template-owned assistant turn terminators active only during generateChat(). */
     private volatile Set<Integer> activeChatStopTokenIds = Collections.emptySet();
 
+    /**
+     * P02 adaptive speculative depth (K bucket), adjusted ONLY at generation
+     * boundaries - never per token, never via environment polling.
+     *
+     * <p>Hysteresis contract (reviewer P02): the bucket moves at most one step
+     * per generation, based on the PREVIOUS generation's sequential-prefix
+     * acceptance. A generation that ends below {@link #SPEC_K_ACCEPTANCE_FLOOR}
+     * drops the bucket (eventually to 0 = the validated no-spec scalar path);
+     * one above {@link #SPEC_K_ACCEPTANCE_CEILING} raises it (capped by the
+     * configured maximum and by the window substrate's W-1 capacity). K=0
+     * collapses natively to the width-1 scalar fast path (proposedCount==0),
+     * so a dropped bucket never re-captures a plan and never reloads the
+     * model. Reported through {@link #getAdaptiveSpecK()} for metrics.</p>
+     */
+    private volatile int adaptiveSpecK = -1;   // -1 = not yet initialized
+    private volatile int lastGenProposed = 0;
+    private volatile int lastGenAccepted = 0;
+    /** Consecutive scalar-only generations at K=0 before a bounded K=1 probe. */
+    private volatile int scalarOnlyStreak = 0;
+
+    /** Previous-generation acceptance (accepted/proposed) below which K drops. */
+    static final double SPEC_K_ACCEPTANCE_FLOOR = 0.02;
+    /** Previous-generation acceptance above which K rises. */
+    static final double SPEC_K_ACCEPTANCE_CEILING = 0.30;
+    /**
+     * Ceiling as a fraction of the per-K emitted maximum. With the shipped
+     * single-token commit a K-step emits at most one accepted draft, so the
+     * emitted-acceptance ceiling is 1/K; the raise signal compares against
+     * this fraction of that maximum so a good draft chain can still climb
+     * from deeper buckets (review finding 6).
+     */
+    static final double SPEC_K_CEILING_CAP_FRACTION = 0.8;
+    /** Scalar-only generations tolerated at K=0 before a bounded K=1 probe. */
+    static final int SPEC_K_PROBE_INTERVAL = 8;
+
     private enum DecodePolicyKind {
         GREEDY,
         SAMPLE,
@@ -286,6 +324,8 @@ public class GenerationPipeline implements AutoCloseable {
      * Thread-confined to the pipeline's decode thread.
      */
     private InGraphKvState cachedFixedBufferState;
+    /** Retain retryable failed binding cleanup; never abandon its borrowed input owners. */
+    private InGraphKvState pendingScalarTargetCleanup;
 
     /**
      * Stable-address prefill inputs for the pre-built-embeddings entry point used by VLMs.
@@ -738,10 +778,18 @@ public class GenerationPipeline implements AutoCloseable {
         if (requested == null || requested.isBlank()) {
             requested = System.getenv("ND4J_LLM_BENCHMARK_CONFIG");
         }
-        if (requested == null || requested.isBlank()
-                || "OPTIMAL".equalsIgnoreCase(requested.trim())) {
-            log.info("No BenchmarkConfig provided — using default optimal config "
-                    + "(Triton + CUDA graph capture)");
+        if (requested == null || requested.isBlank()) {
+            // Select before compilation from the active backend's capabilities,
+            // not from the presence of a CUDA backend elsewhere in the registry.
+            // Explicit overrides below retain their requested semantics.
+            if (Nd4j.getNativeOps().isTritonAvailable()) {
+                log.info("No BenchmarkConfig provided — using OPTIMAL on Triton-capable backend");
+                return BenchmarkConfig.optimal();
+            }
+            log.info("No BenchmarkConfig provided — using AUTO backend selection (Triton unavailable)");
+            return BenchmarkConfig.create("AUTO").executionMode(GraphExecutionMode.AUTO);
+        }
+        if ("OPTIMAL".equalsIgnoreCase(requested.trim())) {
             return BenchmarkConfig.optimal();
         }
 
@@ -1444,7 +1492,99 @@ public class GenerationPipeline implements AutoCloseable {
         return configured;
     }
 
+    /**
+     * P02: adjust the adaptive K bucket at a GENERATION BOUNDARY (called at
+     * the top of every generate/generateInternal, never per token). Moves at
+     * most one bucket per generation from the previous generation's
+     * acceptance; K=0 takes the native no-spec scalar fast path.
+     */
+    private void adjustAdaptiveSpecK() {
+        int maxK = config != null ? config.getMaxSpeculativeTokens() : 0;
+        if (maxK <= 0) {
+            adaptiveSpecK = 0;
+            return;
+        }
+        int current = adaptiveSpecK < 0 ? maxK : adaptiveSpecK;
+        // CONSUME-ON-READ (review finding 6): the adjustment window is exactly
+        // the previous generation. Reset here so older requests never bleed
+        // into later decisions.
+        int proposed = lastGenProposed;
+        int accepted = lastGenAccepted;
+        lastGenProposed = 0;
+        lastGenAccepted = 0;
+        if (proposed > 0) {
+            double acceptance = (double) accepted / (double) proposed;
+            if (acceptance < SPEC_K_ACCEPTANCE_FLOOR && current > 0) {
+                current--;
+                scalarOnlyStreak = 0;
+            } else if (current < maxK) {
+                // COMMIT-CAP-AWARE CEILING (review finding 6): emitted
+                // acceptance tops out at 1/K per step under the single-token
+                // commit; compare against a reachable ceiling instead of the
+                // absolute one so deeper buckets remain climbable.
+                double reachable = Math.min(SPEC_K_ACCEPTANCE_CEILING,
+                        SPEC_K_CEILING_CAP_FRACTION / Math.max(1, current));
+                if (acceptance > reachable) {
+                    current++;
+                    scalarOnlyStreak = 0;
+                }
+            }
+        } else if (current == 0) {
+            // BOUNDED RE-ENABLE PROBE (review finding 6): at K=0 no
+            // speculative counters are produced, so a purely passive
+            // controller can never leave the scalar fast path. Every
+            // PROBE_INTERVAL scalar-only generations, force the bucket to 1
+            // for one probe generation; if the workload is still below the
+            // floor, the next boundary drops the bucket again (existing
+            // logic) and the streak restarts.
+            scalarOnlyStreak++;
+            if (scalarOnlyStreak >= SPEC_K_PROBE_INTERVAL) {
+                current = 1;
+                scalarOnlyStreak = 0;
+                log.info("[MTP-ADAPTIVE-K] probe: re-enabling K=1 after {} scalar-only generations",
+                        SPEC_K_PROBE_INTERVAL);
+            }
+        }
+        if (current != adaptiveSpecK) {
+            log.info("[MTP-ADAPTIVE-K] bucket {} -> {} (lastGen accepted={}/{} floor={} ceiling={})",
+                    adaptiveSpecK, current, accepted, proposed,
+                    SPEC_K_ACCEPTANCE_FLOOR, SPEC_K_ACCEPTANCE_CEILING);
+        }
+        adaptiveSpecK = current;
+    }
+
+    /** Current adaptive speculative depth for metrics/reporting. */
+    public int getAdaptiveSpecK() {
+        return adaptiveSpecK;
+    }
+
+    /**
+     * Resolve the EFFECTIVE speculative depth for this native decode call
+     * (review round 4, finding 1): the session's forced override wins when
+     * set; otherwise the adaptive bucket (max when uninitialized). The result
+     * is clamped to the configured maximum and to the frozen plan's actual
+     * window capacity (W - 1 proposal slots; {@code frozenWindow} is the
+     * frozen input width). A forced value exceeding the frozen capacity is
+     * rejected loudly rather than silently clamped - the caller asked for a
+     * depth the captured plan cannot serve.
+     */
+    private int effectiveSpecK(InGraphKvState state) {
+        int configuredMax = config != null ? config.getMaxSpeculativeTokens() : 0;
+        int adaptive = adaptiveSpecK < 0 ? configuredMax : adaptiveSpecK;
+        int resolved = state.forcedSpecDepth != null ? state.forcedSpecDepth : adaptive;
+        int effective = Math.min(configuredMax, resolved);
+        int frozenWindow = state.decodeInputIds != null ? (int) state.decodeInputIds.size(1) : 1;
+        int frozenCapacity = Math.max(0, frozenWindow - 1);
+        if (state.forcedSpecDepth != null && effective > frozenCapacity) {
+            throw new IllegalStateException("Session forced speculative depth " + state.forcedSpecDepth
+                    + " exceeds the frozen plan capacity " + frozenCapacity
+                    + " (window " + frozenWindow + "); recapture with a wider window");
+        }
+        return Math.min(effective, frozenCapacity);
+    }
+
     private GenerationResult generateInternal(int[] promptTokenIds, int maxNewTokens) {
+        adjustAdaptiveSpecK();
         // Single-model mode: no separate embedTokens model was provided.
         // The decoder handles its own embedding lookup internally
         // (input_ids → gather → transformer → logits).
@@ -1535,6 +1675,13 @@ public class GenerationPipeline implements AutoCloseable {
                                                   ModelIOConfig.KVCacheNames kvInputNames,
                                                   long startTime, InGraphKvState reuseState,
                                                   boolean finishOneShotAfterPrefill) {
+        // A new prompt replaces the old scalar execution lease before any lifecycle reset.
+        // Continuation bypasses prefill and retains this binding unchanged.
+        if (pendingScalarTargetCleanup != null) {
+            pendingScalarTargetCleanup.closeScalarTarget();
+            pendingScalarTargetCleanup = null;
+        }
+        if (reuseState != null) reuseState.closeScalarTarget();
         // Continuation sessions retain their warmup and future-decode state.
         final boolean prefillExhaustsBudget = finishOneShotAfterPrefill && maxNewTokens == 1;
 
@@ -2429,12 +2576,87 @@ public class GenerationPipeline implements AutoCloseable {
         log.info("[GGUF-KV] STEP 3: warmup decode with {} KV buffers (V2={}), {} recurrent state buffers, {} inputs",
                 kvBufCount, isQuantizedV2, recurrentStateBuffers.size(), decodeInputMap.size());
 
-        Map<String, INDArray> decodeOutputs;
+        InGraphKvState scalarOwner = reuseState != null ? reuseState : new InGraphKvState();
         try {
+<<<<<<< HEAD
             decodeOutputs = decoder.output(decodeInputMap, warmupDecodeOutputNames.toArray(new String[0]));
         } catch (Exception e) {
             log.error("[GGUF-KV] STEP 3 warmup decode failed", e);
             throw e;
+=======
+        Map<String, INDArray> decodeOutputs;
+        Map<String, INDArray> windowPreparationOutputs = null;
+        if (useNativeMtp) {
+            // Execute real width-one geometry from prefix P, not activeLength=1 on W.
+            // Recurrent inputs are private snapshots; immutable weights and KV stay shared.
+            Map<String, INDArray> owned = new LinkedHashMap<>();
+            scalarOwner.scalarTargetOwnedInputs = owned;
+            INDArray scalarIds = Nd4j.zeros(DataType.INT64, 1, 1);
+            scalarIds.putScalar(0, firstTokenId);
+            owned.put(inputIdsName, scalarIds);
+            owned.put(causalMaskName, DecoderInputBuilder.buildInGraphDecodeMask(firstDecodePos, maxKvLen, maskDtype));
+            owned.put(posOffsetName, Nd4j.scalar(DataType.INT64, firstDecodePos));
+            owned.put(cachePosName, Nd4j.scalar(DataType.INT64, firstDecodePos));
+            owned.put(ACTUAL_SEQUENCE_LENGTH_NAME, Nd4j.scalar(DataType.INT64, 1L));
+            for (Map.Entry<String, INDArray> entry : recurrentStateBuffers.entrySet()) {
+                owned.put(entry.getKey(), entry.getValue().dup('c'));
+            }
+            Map<String, INDArray> scalarMap = new HashMap<>(decodeInputMap);
+            scalarMap.putAll(owned);
+            Nd4j.getExecutioner().commit();
+            Map<String, INDArray> scalarResults = decoder.output(scalarMap, decodeOutputNames.toArray(new String[0]));
+            // Keep authoritative outputs independent of per-shape zero-copy readback caches.
+            decodeOutputs = new LinkedHashMap<>();
+            for (String name : decodeOutputNames) {
+                INDArray output = scalarResults.get(name);
+                if (output == null) throw new IllegalStateException("Missing scalar target output: " + name);
+                decodeOutputs.put(name, output.dup('c'));
+            }
+            DynamicShapePlanExecutor scalarExecutor = decoder.getOrCreateSession().getDynamicShapePlanExecutor();
+            if (scalarExecutor == null) throw new IllegalStateException("Scalar target native executor is unavailable");
+            scalarExecutor.setMaxKvCacheLength((int) maxKvLen);
+            scalarExecutor.configureMaxAllocationForKvCache(scalarResults, kvOutputNamesForMaxAlloc(kvInputNames));
+            // Freeze through the normal lifecycle; do not change the selected execution mode.
+            if (decoder.getGraphExecutionMode() != GraphExecutionMode.SLOT_BY_SLOT
+                    && !Nd4j.getEnvironment().tritonSkipKernels()) scalarExecutor.setShapesFrozen(true);
+            try {
+                scalarOwner.scalarTargetBinding = scalarExecutor.captureNativeExecutionBinding();
+            } catch (BindingCaptureException failure) {
+                scalarOwner.scalarTargetBinding = failure.getBinding();
+                throw failure;
+            }
+            // The window preparation must not replace the scalar warmup's committed KV row.
+            // GGUF KV is [batch, sequence, heads, headDim], including inline-scale INT8 storage.
+            Map<String, INDArray> committedRows = new LinkedHashMap<>();
+            try {
+                for (Map.Entry<String, INDArray> entry : kvSourceMap.entrySet()) {
+                    INDArray kv = entry.getValue();
+                    if (kv.rank() != 4 || kv.size(1) <= firstDecodePos) {
+                        throw new IllegalStateException("Invalid scalar target KV geometry: " + entry.getKey());
+                    }
+                    try (INDArray row = kv.get(NDArrayIndex.all(),
+                            NDArrayIndex.interval(firstDecodePos, firstDecodePos + 1),
+                            NDArrayIndex.all(), NDArrayIndex.all())) {
+                        committedRows.put(entry.getKey(), row.dup('c'));
+                    }
+                }
+                Nd4j.getExecutioner().commit();
+                // Shared recurrent inputs still hold prefix P: scalar used private copies.
+                windowPreparationOutputs = decoder.output(decodeInputMap, decodeOutputNames.toArray(new String[0]));
+            } finally {
+                for (Map.Entry<String, INDArray> entry : committedRows.entrySet()) {
+                    try (INDArray row = kvSourceMap.get(entry.getKey()).get(NDArrayIndex.all(),
+                            NDArrayIndex.interval(firstDecodePos, firstDecodePos + 1),
+                            NDArrayIndex.all(), NDArrayIndex.all())) {
+                        row.assign(entry.getValue());
+                    }
+                }
+                Nd4j.getExecutioner().commit();
+                for (INDArray row : committedRows.values()) row.close();
+            }
+        } else {
+            decodeOutputs = decoder.output(decodeInputMap, decodeOutputNames.toArray(new String[0]));
+>>>>>>> origin/ag_new_release_updates_2
         }
 
         INDArray targetWarmupHidden = useNativeMtp ? decodeOutputs.get(TARGET_HIDDEN_STATES_NAME) : null;
@@ -2547,7 +2769,9 @@ public class GenerationPipeline implements AutoCloseable {
             // max-length pinned — every decode step then allocates fresh full-length KV buffers
             // (~120MB/step on gemma4, filling a 24GB card by step ~224). The overload accepting
             // explicit names is the model-agnostic path.
-            executor.configureMaxAllocationForKvCache(decodeOutputs, kvOutputNamesForMaxAlloc(kvInputNames));
+            executor.configureMaxAllocationForKvCache(
+                    windowPreparationOutputs != null ? windowPreparationOutputs : decodeOutputs,
+                    kvOutputNamesForMaxAlloc(kvInputNames));
             log.info("[Perf] GGUF configured KV cache max-allocation: maxKvLen={}", maxKvLen);
             boolean forcedSlotBySlot = decoder.getGraphExecutionMode() == GraphExecutionMode.SLOT_BY_SLOT
                     || Nd4j.getEnvironment().tritonSkipKernels();
@@ -2571,6 +2795,11 @@ public class GenerationPipeline implements AutoCloseable {
         // Decode requested K/V outputs only to keep the DSP output contract identical to prefill.
         // The native loop updates the retained KV inputs in-place, so these one-step arrays are not owners.
         closeGeneratedKvOutputs(decodeOutputs, kvInputNames);
+        if (windowPreparationOutputs != null) {
+            for (INDArray output : windowPreparationOutputs.values()) {
+                if (output != null && !output.wasClosed()) output.close();
+            }
+        }
 
         int inputIdsExtIdx = resolveExtInputIdx(executor, inputIdsName);
         int causalMaskExtIdx = causalMaskName != null ? resolveExtInputIdx(executor, causalMaskName) : -1;
@@ -2650,7 +2879,7 @@ public class GenerationPipeline implements AutoCloseable {
         // On reuse, write back into the SAME retained state object (its buffers ARE the ones just
         // refilled in place) so no buffer is aliased by two states → no double-free. The index / handle
         // / running-state fields are refreshed below; the buffer fields are identity assignments.
-        InGraphKvState state = (reuseState != null) ? reuseState : new InGraphKvState();
+        InGraphKvState state = scalarOwner;
         // V2 QUANTIZED: float staticKvBuffers are freed; quantizedKvBuffers holds INT8 live storage.
         // V1 / STATIC: staticKvBuffers holds float live storage; quantizedKvBuffers is archive or null.
         state.staticKvBuffers = isQuantizedV2 ? null : staticKvBuffers;
@@ -2709,6 +2938,36 @@ public class GenerationPipeline implements AutoCloseable {
             state.mtpHiddenOutputIdx = preparedMtp.hiddenOutputIdx;
             state.mtpNumPlanExternalInputs = preparedMtp.numPlanExternalInputs;
             state.mtpNumPlanOutputs = preparedMtp.numPlanOutputs;
+            state.mtpRepairBinding = preparedMtp.repairBinding;
+            state.mtpRepairSession = preparedMtp.repairSession;
+            state.mtpRepairInputIdsExtIdx = preparedMtp.repairInputIdsExtIdx;
+            state.mtpRepairTargetHiddenExtIdx = preparedMtp.repairTargetHiddenExtIdx;
+            state.mtpRepairCausalMaskExtIdx = preparedMtp.repairCausalMaskExtIdx;
+            state.mtpRepairPositionOffsetExtIdx = preparedMtp.repairPositionOffsetExtIdx;
+            state.mtpRepairCachePositionExtIdx = preparedMtp.repairCachePositionExtIdx;
+            state.mtpRepairKvInputExtIndices = preparedMtp.repairKvInputExtIndices;
+            state.mtpRepairKeyOutputIdx = preparedMtp.repairKeyOutputIdx;
+            state.mtpRepairValueOutputIdx = preparedMtp.repairValueOutputIdx;
+            state.mtpRepairNumPlanExternalInputs = preparedMtp.repairNumPlanExternalInputs;
+            state.mtpRepairNumPlanOutputs = preparedMtp.repairNumPlanOutputs;
+            state.mtpRepairBatchBinding = preparedMtp.repairBatchBinding;
+            state.mtpRepairBatchSession = preparedMtp.repairBatchSession;
+            state.mtpRepairBatchInputIds = preparedMtp.repairBatchInputIds;
+            state.mtpRepairBatchTargetHiddenStates = preparedMtp.repairBatchTargetHiddenStates;
+            state.mtpRepairBatchCausalMask = preparedMtp.repairBatchCausalMask;
+            state.mtpRepairBatchPositionOffset = preparedMtp.repairBatchPositionOffset;
+            state.mtpRepairBatchCachePosition = preparedMtp.repairBatchCachePosition;
+            state.mtpRepairBatchWidth = preparedMtp.repairBatchWidth;
+            state.mtpRepairBatchInputIdsExtIdx = preparedMtp.repairBatchInputIdsExtIdx;
+            state.mtpRepairBatchTargetHiddenExtIdx = preparedMtp.repairBatchTargetHiddenExtIdx;
+            state.mtpRepairBatchCausalMaskExtIdx = preparedMtp.repairBatchCausalMaskExtIdx;
+            state.mtpRepairBatchPositionOffsetExtIdx = preparedMtp.repairBatchPositionOffsetExtIdx;
+            state.mtpRepairBatchCachePositionExtIdx = preparedMtp.repairBatchCachePositionExtIdx;
+            state.mtpRepairBatchKvInputExtIndices = preparedMtp.repairBatchKvInputExtIndices;
+            state.mtpRepairBatchKeyOutputIdx = preparedMtp.repairBatchKeyOutputIdx;
+            state.mtpRepairBatchValueOutputIdx = preparedMtp.repairBatchValueOutputIdx;
+            state.mtpRepairBatchNumPlanExternalInputs = preparedMtp.repairBatchNumPlanExternalInputs;
+            state.mtpRepairBatchNumPlanOutputs = preparedMtp.repairBatchNumPlanOutputs;
         }
         state.kvInputNames = kvInputNames;
         state.recurrentStates = recurrentStates;
@@ -2753,8 +3012,26 @@ public class GenerationPipeline implements AutoCloseable {
             state.cancelRequested = false;
             state.terminalResult = null;
             state.closed = false;
+            // OVERRIDE LIFETIME (review round 5, finding 4): a reused fixed-buffer
+            // state entering a NEW logical generation/session must not inherit the
+            // previous session's forcedSpecDepth - session A's setSpeculativeDepth(0)
+            // would silently keep session B scalar-only. The override lives only for
+            // CONTINUATION of the session that set it (that path never passes a
+            // reuseState through here); this boundary initializes a new logical
+            // generation on retained buffers.
+            state.forcedSpecDepth = null;
         }
         return state;
+        } catch (RuntimeException | Error failure) {
+            try {
+                Nd4j.getExecutioner().commit();
+                scalarOwner.closeScalarTarget();
+            } catch (RuntimeException | Error cleanup) {
+                pendingScalarTargetCleanup = scalarOwner;
+                failure.addSuppressed(cleanup);
+            }
+            throw failure;
+        }
     }
 
     /** Map public configuration values (1..4) to the native op enum (0..3). */
@@ -3923,7 +4200,10 @@ public class GenerationPipeline implements AutoCloseable {
                     // specK > 0 only when decodePolicy.kind == SPECULATIVE and windowMax = specK+1.
                     if (decodePolicy.kind == DecodePolicyKind.SPECULATIVE && config != null
                             && config.getMaxSpeculativeTokens() > 0) {
-                        op.withSpeculativeDecoding(config.getMaxSpeculativeTokens(), 1 /* NGRAM */);
+                        // Review round 4, finding 1: the session's forced depth
+                        // override wins over the adaptive bucket.
+                        int effK = effectiveSpecK(state);
+                        op.withSpeculativeDecoding(effK, 1 /* NGRAM */);
                         op.withActualSequenceLengthExtIdx(state.actualSeqLenExtIdx);
                     }
                     applyConfiguredStopSequences(op,
@@ -4023,9 +4303,17 @@ public class GenerationPipeline implements AutoCloseable {
                         (int) state.decodeInputIds.size(1));
                 if (decodePolicy.kind == DecodePolicyKind.SPECULATIVE && config != null
                         && config.getMaxSpeculativeTokens() > 0) {
+                    // Review round 4, finding 1: the session's forced depth
+                    // override wins over the adaptive bucket. The MTP RESOURCES
+                    // are attached whenever the session owns a plan REGARDLESS of
+                    // effK (including effK=0): the native K=0 maintenance path is
+                    // defined by "MTP resources present, drafting disabled",
+                    // which the native loop detects from metadata presence while
+                    // specK=0.
+                    int effK = effectiveSpecK(state);
                     boolean hasMtpPlan = state.mtpPlanHandle != null && !state.mtpPlanHandle.isNull();
                     op.withSpeculativeDecoding(
-                            config.getMaxSpeculativeTokens(),
+                            effK,
                             hasMtpPlan ? AutoregressiveDecode.SPECULATOR_TYPE_MTP
                                     : AutoregressiveDecode.SPECULATOR_TYPE_NGRAM);
                     op.withActualSequenceLengthExtIdx(state.actualSeqLenExtIdx);
@@ -4050,10 +4338,65 @@ public class GenerationPipeline implements AutoCloseable {
                                 state.mtpLogitsOutputIdx,
                                 state.mtpHiddenOutputIdx,
                                 state.targetHiddenOutputIdx);
+                        op.withScalarTargetPlan(state.scalarTargetBinding,
+                                state.executor.getCurrentPlan().getExternalInputKeys(), state.decodeOutputNames,
+                                state.inputIdsName, state.causalMaskName, state.posOffsetName,
+                                state.cachePosName, state.actualSeqLenName,
+                                state.logitsName, TARGET_HIDDEN_STATES_NAME);
+                    }
+                    if (state.mtpRepairBinding != null) {
+                        NativeExecutionBinding repairBinding = state.mtpRepairBinding;
+                        op.withMtpRepairPlan(
+                                repairBinding.getPlanHandle(), repairBinding.getContextHandle(),
+                                state.mtpRepairNumPlanExternalInputs,
+                                state.mtpRepairNumPlanOutputs,
+                                state.mtpRepairInputIdsExtIdx,
+                                state.mtpRepairTargetHiddenExtIdx,
+                                state.mtpRepairCausalMaskExtIdx,
+                                state.mtpRepairPositionOffsetExtIdx,
+                                state.mtpRepairCachePositionExtIdx,
+                                state.mtpRepairKeyOutputIdx,
+                                state.mtpRepairValueOutputIdx,
+                                state.mtpRepairKvInputExtIndices[0],
+                                state.mtpRepairKvInputExtIndices[1]);
+                    }
+                    if (state.mtpRepairBatchBinding != null) {
+                        NativeExecutionBinding batchRepairBinding = state.mtpRepairBatchBinding;
+                        op.withMtpBatchedRepairPlan(
+                                state.mtpRepairBatchInputIds,
+                                state.mtpRepairBatchTargetHiddenStates,
+                                state.mtpRepairBatchCausalMask,
+                                state.mtpRepairBatchPositionOffset,
+                                state.mtpRepairBatchCachePosition,
+                                state.mtpRepairBatchWidth,
+                                batchRepairBinding.getPlanHandle(), batchRepairBinding.getContextHandle(),
+                                state.mtpRepairBatchNumPlanExternalInputs,
+                                state.mtpRepairBatchNumPlanOutputs,
+                                state.mtpRepairBatchInputIdsExtIdx,
+                                state.mtpRepairBatchTargetHiddenExtIdx,
+                                state.mtpRepairBatchCausalMaskExtIdx,
+                                state.mtpRepairBatchPositionOffsetExtIdx,
+                                state.mtpRepairBatchCachePositionExtIdx,
+                                state.mtpRepairBatchKeyOutputIdx,
+                                state.mtpRepairBatchValueOutputIdx,
+                                state.mtpRepairBatchKvInputExtIndices[0],
+                                state.mtpRepairBatchKvInputExtIndices[1]);
                     }
                 }
                 applyConfiguredStopSequences(op, state.generatedSoFar);
 
+                NativeExecutionBinding scalarBinding = state.scalarTargetBinding;
+                if (scalarBinding != null) {
+                    // Validate the backend owner; device placement is enforced by the
+                    // executor lifecycle itself (ensureExecutionDevice switches the thread
+                    // to the plan's execution device before executeNative, and the native
+                    // decode runs on the plan-owned DSP stream of that same device).
+                    if (scalarBinding.getBackendOwner().nativeOps() != NativeOpsHolder.getInstance().getDeviceNativeOps()) {
+                        throw new IllegalStateException("Scalar binding backend differs from native decode execution");
+                    }
+                    scalarBinding.beginNativeUse();
+                }
+                try {
                 INDArray[] results = Nd4j.getExecutioner().exec(op);
                 INDArray nativeTokenIds = results[0];
                 INDArray nativeTokenCount = results[1];
@@ -4077,6 +4420,14 @@ public class GenerationPipeline implements AutoCloseable {
                 closeOutputs(results);
                 dummyEmbeddings.close();
                 dummyEmbTable.close();
+                } finally {
+                    if (scalarBinding != null) {
+                        // The helper submits both plans on this op's supplied execution stream.
+                        // Drain even on failure; do not release ownership if completion fails.
+                        Nd4j.getExecutioner().commit();
+                        scalarBinding.completeNativeUse();
+                    }
+                }
             }
             // Token count/timing reads above are the native op's existing host-visible boundary.
             state.releaseRecurrentCopyDonors();
@@ -4116,6 +4467,12 @@ public class GenerationPipeline implements AutoCloseable {
         long timeMs = System.currentTimeMillis() - startTime;
         log.info("[GGUF-KV] decode complete (continuation={}): nativeCount={} callTokens={} cachePosition={} eos={}",
                 isContinuation, nativeCount, callTokens.size(), state.cachePosition, hitEos);
+
+        // P02: feed the adaptive-K hysteresis. The counters accumulate across
+        // continuation calls of one generation; the next generation BOUNDARY
+        // reads them via adjustAdaptiveSpecK().
+        lastGenProposed += totalSpeculative;
+        lastGenAccepted += totalAccepted;
 
         return GenerationResult.builder()
                 .text(text).tokenIds(tokenIds)
@@ -4735,6 +5092,12 @@ public class GenerationPipeline implements AutoCloseable {
         private boolean firstGenerateDone;
         private boolean closed;
 
+        /** Package-visible retained-state accessor for bootstrap/state inspection fixtures. */
+        InGraphKvState retainedStateForInspection() {
+            requireOpen();
+            return state;
+        }
+
         GenerationSession(GenerationPipeline pipeline, InGraphKvState state, long createTime) {
             this.pipeline = pipeline;
             this.state = state;
@@ -4868,6 +5231,47 @@ public class GenerationPipeline implements AutoCloseable {
             if (!firstGenerateDone) throw new IllegalStateException("Call generate() before append().");
             if (state.eosReached) throw new IllegalStateException("Session reached EOS; cannot append.");
             pipeline.appendInSession(state, tokens);
+        }
+
+        /**
+         * Override the speculative draft depth (K) for the NEXT session decode calls, at this invocation
+         * boundary. The session retains the sampling configuration captured at start (see
+         * {@link GenerationPipeline#setSamplingConfig}); this control exists for the same-session K-transition
+         * contract: the reviewer's P02 evidence requires forcing K=1 → K=0 → K=1 within one continuing
+         * session with the retained predictor state, which the pipeline-level setter cannot reach (an open
+         * session deliberately keeps its captured sampler).
+         *
+         * <p>REAL DEPTH CONTROL (review round 4, finding 1): the requested integer is retained on the
+         * session state and resolved at each decode call against the adaptive bucket and the frozen plan
+         * capacity. The decode strategy is NOT rewritten here: a session that owns MTP predictor resources
+         * keeps them attached at K=0, so the native loop takes the resource-present K=0 path (scalar-only
+         * target steps WITH predictor maintenance) instead of bypassing the maintenance implementation.
+         * The override affects only the depth/strategy resolution for subsequent
+         * {@code continueGeneration}/{@code generate} calls and does not touch pipeline-level configuration,
+         * plan capture, or the native plan.</p>
+         *
+         * @param specK the forced speculative depth for this session (0 = scalar-only target steps with
+         *              predictor maintenance when MTP resources exist); must be within
+         *              [0, configured maxSpeculativeTokens]
+         */
+        public void setSpeculativeDepth(int specK) {
+            checkThread();
+            requireOpen();
+            int maxK = pipeline.config != null ? pipeline.config.getMaxSpeculativeTokens() : 0;
+            if (specK < 0 || specK > maxK) {
+                throw new IllegalArgumentException("Speculative depth " + specK
+                        + " outside [0," + maxK + "]");
+            }
+            // Depth validation happens again at each decode call against the ACTUAL
+            // frozen plan capacity (the state's frozen window envelope minus the
+            // carry row); the configured maximum is only a first gate here.
+            state.forcedSpecDepth = specK;
+        }
+
+        /** The session's forced speculative depth override; null = follow the adaptive bucket. */
+        Integer forcedSpecDepthForInspection() {
+            requireOpen();
+            return state.forcedSpecDepth;
         }
 
         /**
@@ -5282,6 +5686,22 @@ public class GenerationPipeline implements AutoCloseable {
         }
     }
 
+    /** Resolve a retained-plan input by the exact buffer owner captured at completion. */
+    private static int findBoundInputIndex(
+            NativeExecutionBinding binding, INDArray expected) {
+        if (binding == null || expected == null) return -1;
+        INDArray[] inputs = binding.getExternalInputsSnapshot();
+        for (int index = 0; index < inputs.length; index++) {
+            INDArray candidate = inputs[index];
+            if (candidate == expected) return index;
+            if (candidate != null && candidate.data() != null
+                    && expected.data() != null && candidate.data() == expected.data()) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
     private static final class MtpPreparedState {
         Map<String, INDArray> kvBuffers;
         Map<String, INDArray> prefillInputMap;
@@ -5304,24 +5724,76 @@ public class GenerationPipeline implements AutoCloseable {
         int hiddenOutputIdx;
         int numPlanExternalInputs;
         int numPlanOutputs;
+        NativeExecutionBinding repairBinding;
+        InferenceSession repairSession;
+        int repairInputIdsExtIdx = -1;
+        int repairTargetHiddenExtIdx = -1;
+        int repairCausalMaskExtIdx = -1;
+        int repairPositionOffsetExtIdx = -1;
+        int repairCachePositionExtIdx = -1;
+        int[] repairKvInputExtIndices;
+        int repairKeyOutputIdx = -1;
+        int repairValueOutputIdx = -1;
+        int repairNumPlanExternalInputs;
+        int repairNumPlanOutputs;
+
+        NativeExecutionBinding repairBatchBinding;
+        InferenceSession repairBatchSession;
+        INDArray repairBatchInputIds;
+        INDArray repairBatchTargetHiddenStates;
+        INDArray repairBatchCausalMask;
+        INDArray repairBatchPositionOffset;
+        INDArray repairBatchCachePosition;
+        int repairBatchWidth;
+        int repairBatchInputIdsExtIdx = -1;
+        int repairBatchTargetHiddenExtIdx = -1;
+        int repairBatchCausalMaskExtIdx = -1;
+        int repairBatchPositionOffsetExtIdx = -1;
+        int repairBatchCachePositionExtIdx = -1;
+        int[] repairBatchKvInputExtIndices;
+        int repairBatchKeyOutputIdx = -1;
+        int repairBatchValueOutputIdx = -1;
+        int repairBatchNumPlanExternalInputs;
+        int repairBatchNumPlanOutputs;
+        // T3b-dual: width-1 target plan handle (greedy geometry) for the native
+        // rerun; null when unavailable (rerun falls back to the W-substrate plan).
     }
 
     /**
      * Build or replay the isolated Qwen3.5 MTP prefill and scalar-decode plans.
      *
-     * <p>Alignment follows the reference bundled-MTP bootstrap contract (vLLM
-     * set_inputs_first_pass): predictor prefill row {@code t} carries id
-     * {@code x_(t+1)} — the prompt ids shifted LEFT by one, with the first target
-     * sampled token in the final slot — paired with target hidden {@code h_t}.
-     * There is NO all-zero bootstrap row: row {@code t} is exactly the
-     * {@code (x_(t+1), h_t)} pair, and the scalar warmup pair
-     * {@code (firstGen, h_(N-1))} overwrites the last row, so the prefill cache
-     * holds exactly {@code N} meaningful rows. Prefill positions are rebased by
-     * one accordingly (row 0 holds {@code x_1} at position 1). The scalar warmup
-     * then consumes the first target-sampled token with the final prompt hidden at
-     * cache slot {@code firstDecodePos == actualPrefillLen} — the slot right after
-     * the N prefill rows. Before returning, the retained target-hidden input is
-     * advanced to the target warmup hidden and the retained id to the second
+     * <p>PREDICTOR ROW CONVENTION (vLLM set_inputs_first_pass / qwen3_5_mtp,
+     * reviewer-ruled): with x_t the token at TARGET position t and h_t the target
+     * hidden output after consuming x_t,
+     * <ul>
+     *   <li>predictor row r consumes the pair (x_(r+1), h_r);</li>
+     *   <li>predictor RoPE position = r;</li>
+     *   <li>predictor KV slot = r.</li>
+     * </ul>
+     * A native helper argument P in TARGET input-token coordinates maps to
+     * predictor row r = P - 1 exactly once, inside the predictor geometry
+     * boundary (the decode helper), never at call sites.
+     *
+     * <p>With N = actualPrefillLen, y0 = firstTokenId (target position N) and
+     * y1 = secondTokenId (target position N+1):</p>
+     * <ul>
+     *   <li>prefill rows r = 0..N-2 carry (x_(r+1), h_r) at rope=r, slot=r
+     *       (prefill position ORIGIN 0, not 1);</li>
+     *   <li>the final live prefill row r = N-1 carries (y0, h_(N-1)) at
+     *       rope=N-1, slot=N-1;</li>
+     *   <li>the scalar predictor warmup consumes (y0, h_(N-1)) at rope=N-1,
+     *       slot=N-1 — it REWRITES the same tail slot; it does not append a
+     *       logical row, so exactly N live predictor rows [0,N) exist and the
+     *       pair (y0, h_(N-1)) is stored once;</li>
+     *   <li>after the warmup the retained pending pair is (y1, h_N) at
+     *       rope=N, next write slot=N — BOTH retained predictor scalars equal N,
+     *       i.e. state.cachePosition - 1.</li>
+     * </ul>
+     * The target's own state.cachePosition stays N+1: the first native target
+     * position is N+1 (it is passed to the native op as prefillSeqLen), which
+     * maps to predictor row N under r = P - 1 - the pending row. There is NO
+     * all-zero bootstrap row. Before returning, the retained target-hidden input
+     * is advanced to the target warmup hidden and the retained id to the second
      * sampled token so native drafting starts from the second sampled token.</p>
      */
     private MtpPreparedState prepareBundledMtp(
@@ -5351,6 +5823,12 @@ public class GenerationPipeline implements AutoCloseable {
         }
 
         MtpPreparedState prepared = new MtpPreparedState();
+        // PREDICTOR COORDINATES (packet J1): the predictor's final live prefill row
+        // (rewritten by the scalar warmup) and the post-warmup pending row. The
+        // target's firstDecodePos == actualPrefillLen stays untouched; target
+        // pending position is actualPrefillLen + 1.
+        final long predictorTailRow = (long) actualPrefillLen - 1L;
+        final long predictorPendingRow = (long) actualPrefillLen;
         prepared.session = reuseState != null && reuseState.mtpSession != null
                 ? reuseState.mtpSession : decoder.getInferenceFactory().create(decoder);
         prepared.prefillInputMap = reuseState != null && reuseState.mtpPrefillInputMap != null
@@ -5365,13 +5843,39 @@ public class GenerationPipeline implements AutoCloseable {
         // one (x1..xN-1) with the first generated token in the final slot, so row t
         // pairs id x_(t+1) with hidden h_t. The previous bootstrap fed the UNSHIFTED
         // ids and compensated with an all-zero hidden row, corrupting row 0.
+        // LIVE-PREFIX LAYOUT (review finding 3): the predictor KV cache retains
+        // rows [0, actualPrefillLen) — the LOGICAL length — so the shifted sequence
+        // and the sampled tail token are laid out over that live prefix and padding
+        // rows [actualPrefillLen, prefillSeqLen) stay inert (masked, outside the
+        // retained window). The previous physical-length shift placed firstTokenId
+        // at padded column prefillSeqLen-1, outside the retained cache, leaving the
+        // last live row paired with a prompt/pad id instead of the first generated
+        // token — a concrete padded-bootstrap misalignment that degrades draft
+        // quality independently of the decode-loop state machinery.
+        // SINGLE-SOURCE BOOTSTRAP (review round 3, finding 4): the pair
+        // (firstGen, h_(N-1)) is supplied EXCLUSIVELY by the scalar warmup
+        // (which writes it at cache slot firstDecodePos == N, the slot the
+        // first native draft row attends). The prefill therefore fills only
+        // the SHIFTED rows [0, actualPrefillLen-1) with real live pairs; its
+        // final live row actualPrefillLen-1 is still WRITTEN (so the prefill
+        // execution has a causal end) but is immediately masked back inert in
+        // the retained mask below, and the warmup row is the single retained
+        // occurrence of the (firstGen, h_(N-1)) pair.
         if (prefillSeqLen > 1) {
             try (INDArray sourceIds = Nd4j.createFromArray(effectiveTokenIds)
                     .reshape(1, prefillSeqLen).castTo(DataType.INT64);
                  INDArray shifted = Nd4j.zeros(DataType.INT64, 1, prefillSeqLen)) {
-                shifted.get(NDArrayIndex.all(), NDArrayIndex.interval(0, prefillSeqLen - 1)).assign(
-                        sourceIds.get(NDArrayIndex.all(), NDArrayIndex.interval(1, prefillSeqLen)));
-                shifted.putScalar(new long[]{0, prefillSeqLen - 1}, firstTokenId);
+                if (actualPrefillLen > 1) {
+                    shifted.get(NDArrayIndex.all(), NDArrayIndex.interval(0, actualPrefillLen - 1)).assign(
+                            sourceIds.get(NDArrayIndex.all(), NDArrayIndex.interval(1, actualPrefillLen)));
+                }
+                // Sampled tail token at the last LIVE row; when the prompt is
+                // unpadded (actualPrefillLen == prefillSeqLen) this is exactly the
+                // historical physical behavior. For actualPrefillLen == 1 the live
+                // region is this single row. The tail row IS the (firstGen, h_(N-1))
+                // pair at predictor slot actualPrefillLen-1 / RoPE position N —
+                // see the SLOT = POSITION - 1 invariant note at the warmup below.
+                shifted.putScalar(new long[]{0, actualPrefillLen - 1}, firstTokenId);
                 if (prefillIds == null) {
                     prefillIds = shifted.dup();
                     prepared.prefillInputMap.put(MTP_INPUT_IDS_NAME, prefillIds);
@@ -5403,15 +5907,16 @@ public class GenerationPipeline implements AutoCloseable {
                 NDArrayIndex.all()));
 
         INDArray prefillPosition = prepared.prefillInputMap.get(MTP_POSITION_OFFSET_NAME);
-        // Row t carries token x_(t+1) at position t+1 (the prompt's token x0 sits at
-        // position 0 and is never fed to the predictor), so the prefill RoPE window
-        // is rebased by one. The native decode loop rewrites this scalar per call
-        // from the target position grid; only the prefill execution reads it here.
+        // PREDICTOR ROW CONVENTION (packet 1, step 2): predictor row r = slot r
+        // consumes (x_(r+1), h_r) with RoPE position r — the prefill position
+        // ORIGIN is 0, not 1. Row t of the shifted id sequence IS row r = t.
+        // The native decode loop rewrites this scalar per call from the target
+        // position grid; only the prefill execution reads it here.
         if (prefillPosition == null) {
-            prefillPosition = Nd4j.scalar(DataType.INT64, 1L);
+            prefillPosition = Nd4j.scalar(DataType.INT64, 0L);
             prepared.prefillInputMap.put(MTP_POSITION_OFFSET_NAME, prefillPosition);
         } else {
-            prefillPosition.assign(1);
+            prefillPosition.assign(0);
         }
         INDArray prefillCachePosition = prepared.prefillInputMap.get(MTP_CACHE_POSITION_NAME);
         if (prefillCachePosition == null) {
@@ -5498,23 +6003,23 @@ public class GenerationPipeline implements AutoCloseable {
         if (prepared.targetHiddenStates == null) {
             prepared.targetHiddenStates = Nd4j.zeros(mtpDtype, 1, 1, hidden);
         }
-        // Post-shift warmup alignment: the prefill already consumed rows 0..N-1 of the
-        // predictor KV (id x_(t+1) with h_t), so the scalar warmup pair
-        // (firstGen, h_(N-1)) must write the row AFTER them: cache slot
-        // firstDecodePos == actualPrefillLen == N. Under the old zero-row bootstrap
-        // the appended warmup row landed at slot N with one junk slot behind it.
-        // Feeding h_(N-1) as the target carry makes the warmup draft predict from the
-        // SAME final prompt hidden the predictor prefill already committed — the
-        // warmup's own KV write is then exactly what the next draft step would
-        // recompute, instead of a duplicate entry the repair pass must overwrite.
+        // PREDICTOR ROW CONVENTION (packet 1): the warmup consumes the pair
+        // (y0, h_(N-1)) = (firstTokenId, targetPrefillHidden row N-1) - the same
+        // pair the final live prefill row r=N-1 stores. Under the convention
+        // (row r consumes x_(r+1) at rope=r, slot=r) the warmup's predictor row
+        // is r = N-1: it REWRITES the tail slot with the same content instead of
+        // appending, so the pair (y0, h_(N-1)) is stored exactly once.
         prepared.targetHiddenStates.assign(
                 targetPrefillHidden.get(
                         NDArrayIndex.all(),
                         NDArrayIndex.interval(actualPrefillLen - 1, actualPrefillLen),
                         NDArrayIndex.all()));
 
+        // Packet 1, step 5: the warmup's decode mask is built at PREDICTOR slot
+        // predictorTailRow (its own write row): the rewritten self-row stays visible and
+        // slots >= N remain inaccessible - matching the N live rows [0,N).
         INDArray freshDecodeMask = DecoderInputBuilder.buildInGraphDecodeMask(
-                firstDecodePos, maxKvLen, DataType.FLOAT);
+                predictorTailRow, maxKvLen, DataType.FLOAT);
         prepared.causalMask = reuseState != null ? reuseState.mtpCausalMask : null;
         if (prepared.causalMask == null
                 || !Arrays.equals(prepared.causalMask.shape(), freshDecodeMask.shape())) {
@@ -5524,17 +6029,21 @@ public class GenerationPipeline implements AutoCloseable {
             freshDecodeMask.close();
         }
 
+        // Packet 1, step 4: BOTH predictor warmup scalars are predictorTailRow
+        // (the tail predictor row the warmup rewrites): rope = N-1, slot = N-1.
+        // The previous bootstrap set rope = cache = N, which appended a logical row
+        // past the N live prefill rows and duplicated the (y0, h_(N-1)) pair.
         prepared.positionOffset = reuseState != null ? reuseState.mtpPositionOffset : null;
         if (prepared.positionOffset == null) {
-            prepared.positionOffset = Nd4j.scalar(DataType.INT64, firstDecodePos);
+            prepared.positionOffset = Nd4j.scalar(DataType.INT64, predictorTailRow);
         } else {
-            prepared.positionOffset.putScalar(new long[]{}, (long) firstDecodePos);
+            prepared.positionOffset.putScalar(new long[]{}, predictorTailRow);
         }
         prepared.cachePosition = reuseState != null ? reuseState.mtpCachePosition : null;
         if (prepared.cachePosition == null) {
-            prepared.cachePosition = Nd4j.scalar(DataType.INT64, firstDecodePos);
+            prepared.cachePosition = Nd4j.scalar(DataType.INT64, predictorTailRow);
         } else {
-            prepared.cachePosition.putScalar(new long[]{}, (long) firstDecodePos);
+            prepared.cachePosition.putScalar(new long[]{}, predictorTailRow);
         }
 
         Map<String, INDArray> decodeInputs = new LinkedHashMap<>();
@@ -5560,9 +6069,9 @@ public class GenerationPipeline implements AutoCloseable {
         // Reading one predictor logit is the natural host-visible completion boundary for all
         // prefill-cache copies consumed by this warmup; no manual stream/device synchronization.
         double warmupProbe = mtpLogits.getDouble(0);
-        log.info("[MTP] Scalar warmup complete: prefill={} actual={} rows0..{}=shifted(x(t+1),h(t)) "
-                        + "warmupSlot={} hidden={} kvHeads={} headDim={} probe={}",
-                prefillSeqLen, actualPrefillLen, prefillSeqLen - 1, firstDecodePos,
+        log.info("[MTP] Scalar warmup complete: prefill={} actual={} rows0..{}=row-r-consumes-(x_(r+1),h_r) "
+                        + "warmupRewritesRow={} hidden={} kvHeads={} headDim={} probe={}",
+                prefillSeqLen, actualPrefillLen, predictorTailRow, predictorTailRow,
                 hidden, kvHeads, headDim, warmupProbe);
 
         prepared.executor = prepared.session.getDynamicShapePlanExecutor();
@@ -5596,6 +6105,321 @@ public class GenerationPipeline implements AutoCloseable {
         prepared.numPlanExternalInputs = prepared.executor.getCurrentPlan() != null
                 ? prepared.executor.getCurrentPlan().getExternalInputKeys().length : 0;
         prepared.numPlanOutputs = decodeOutputsRequested.size();
+
+        final boolean enableMtpRepair = Boolean.parseBoolean(
+                System.getProperty("nd4j.mtp.kvRepair", "true"));
+        // Independent batch-mode selector: batching is an ABI option, not a
+        // consequence of enabling KV-only repair. Setting nd4j.mtp.kvRepairBatch=false
+        // keeps the scalar KV-only reference path selectable for qualification.
+        final boolean enableMtpBatchRepair = enableMtpRepair && Boolean.parseBoolean(
+                System.getProperty("nd4j.mtp.kvRepairBatch", "true"))
+                && config.getMaxSpeculativeTokens() > 0;
+        // Width is fixed by the configured maximum K regardless of mode so the
+        // substrate geometry is stable across selector flips within a session.
+        final int repairWidth = config.getMaxSpeculativeTokens();
+        prepared.repairBatchWidth = repairWidth;
+        if (enableMtpBatchRepair) {
+        // The batched repair substrate is fixed at the configured maximum K. Its
+        // arrays are independent from the scalar predictor arrays so native repair
+        // can overwrite an active prefix without changing the scalar ABI or any
+        // captured scalar-plan addresses.
+        prepared.repairBatchInputIds = reuseState != null ? reuseState.mtpRepairBatchInputIds : null;
+        if (prepared.repairBatchInputIds == null
+                || !Arrays.equals(prepared.repairBatchInputIds.shape(), new long[]{1, repairWidth})) {
+            if (prepared.repairBatchInputIds != null) prepared.repairBatchInputIds.close();
+            prepared.repairBatchInputIds = Nd4j.zeros(DataType.INT64, 1, repairWidth);
+        }
+        prepared.repairBatchTargetHiddenStates = reuseState != null
+                ? reuseState.mtpRepairBatchTargetHiddenStates : null;
+        if (prepared.repairBatchTargetHiddenStates == null
+                || !Arrays.equals(prepared.repairBatchTargetHiddenStates.shape(), new long[]{1, repairWidth, hidden})) {
+            if (prepared.repairBatchTargetHiddenStates != null) prepared.repairBatchTargetHiddenStates.close();
+            prepared.repairBatchTargetHiddenStates = Nd4j.zeros(mtpDtype, 1, repairWidth, hidden);
+        }
+        prepared.repairBatchPositionOffset = reuseState != null
+                ? reuseState.mtpRepairBatchPositionOffset : null;
+        if (prepared.repairBatchPositionOffset == null) {
+            prepared.repairBatchPositionOffset = Nd4j.scalar(DataType.INT64, predictorPendingRow);
+        } else {
+            prepared.repairBatchPositionOffset.putScalar(new long[]{}, predictorPendingRow);
+        }
+        prepared.repairBatchCachePosition = reuseState != null
+                ? reuseState.mtpRepairBatchCachePosition : null;
+        if (prepared.repairBatchCachePosition == null) {
+            prepared.repairBatchCachePosition = Nd4j.scalar(DataType.INT64, predictorPendingRow);
+        } else {
+            prepared.repairBatchCachePosition.putScalar(new long[]{}, predictorPendingRow);
+        }
+        INDArray freshRepairBatchMask = DecoderInputBuilder.buildInGraphWindowMask(
+                DecoderInputBuilder.chainParents(1, repairWidth), predictorTailRow,
+                1, repairWidth, maxKvLen, DataType.FLOAT);
+        prepared.repairBatchCausalMask = reuseState != null
+                ? reuseState.mtpRepairBatchCausalMask : null;
+        if (prepared.repairBatchCausalMask == null
+                || !Arrays.equals(prepared.repairBatchCausalMask.shape(), freshRepairBatchMask.shape())) {
+            if (prepared.repairBatchCausalMask != null) prepared.repairBatchCausalMask.close();
+            prepared.repairBatchCausalMask = freshRepairBatchMask;
+        } else {
+            prepared.repairBatchCausalMask.assign(freshRepairBatchMask);
+            freshRepairBatchMask.close();
+        }
+        } else {
+            // Batch disabled: never retain or publish batch arrays. The scalar
+            // KV-only repair path owns predictor state in this mode.
+            prepared.repairBatchInputIds = null;
+            prepared.repairBatchTargetHiddenStates = null;
+            prepared.repairBatchCausalMask = null;
+            prepared.repairBatchPositionOffset = null;
+            prepared.repairBatchCachePosition = null;
+        }
+
+        // P1A: build an independent K/V-only repair plan from the same graph and
+        // immutable weights. Requesting only these outputs prunes the predictor
+        // LM head, logits/argmax, final vocabulary path, and downstream carry.
+        // The native controller will scatter these returned BSHD rows explicitly.
+        if (!enableMtpRepair) {
+            log.info("[MTP-REPAIR] KV-only repair disabled by nd4j.mtp.kvRepair=false; "
+                    + "using the legacy predictor repair path");
+        }
+        if (enableMtpRepair) {
+            prepared.repairSession = reuseState != null && reuseState.mtpRepairSession != null
+                    ? reuseState.mtpRepairSession : decoder.getInferenceFactory().create(decoder);
+        List<String> repairOutputsRequested = Arrays.asList(
+                MTP_KEY_STATES_NAME, MTP_VALUE_STATES_NAME);
+        Map<String, INDArray> repairOutputs = outputWithSession(
+                prepared.repairSession, decodeInputs, repairOutputsRequested);
+        INDArray repairKey = repairOutputs.get(MTP_KEY_STATES_NAME);
+        INDArray repairValue = repairOutputs.get(MTP_VALUE_STATES_NAME);
+        if (repairKey == null || repairValue == null || repairKey.rank() != 4 || repairValue.rank() != 4) {
+            throw new IllegalStateException("MTP K/V repair plan did not return rank-4 states: "
+                    + repairOutputs.keySet());
+        }
+        DynamicShapePlanExecutor repairExecutor = prepared.repairSession
+                .getDynamicShapePlanExecutor();
+        if (repairExecutor == null || repairExecutor.getCurrentPlan() == null) {
+            throw new IllegalStateException("MTP K/V repair executor is unavailable");
+        }
+        repairExecutor.setMaxKvCacheLength((int) maxKvLen);
+        repairExecutor.configureMaxAllocationForKvCache(repairOutputs);
+        boolean repairSlotBySlot = decoder.getGraphExecutionMode() == GraphExecutionMode.SLOT_BY_SLOT
+                || Nd4j.getEnvironment().tritonSkipKernels();
+        if (!repairSlotBySlot) repairExecutor.setShapesFrozen(true);
+        try {
+            prepared.repairBinding = repairExecutor.captureNativeExecutionBinding();
+        } catch (BindingCaptureException failure) {
+            prepared.repairBinding = failure.getBinding();
+            throw failure;
+        }
+        String[] repairKeys = prepared.repairBinding.getExternalInputKeysSnapshot();
+        int repairInputs = prepared.repairBinding.getInputCount();
+        int repairOutputsCount = prepared.repairBinding.getOutputCount();
+        prepared.repairNumPlanExternalInputs = repairInputs;
+        prepared.repairNumPlanOutputs = repairOutputsCount;
+        // Disk-cached plans may expose normalized sd_var_* external keys even
+        // though the graph compiler logged semantic names. Bind the mutable
+        // inputs by their exact retained INDArray owners instead of relying on
+        // those serialized names. Cache/mask/KV inputs are optional: K/V-only
+        // projection pruning legitimately removes them from the dependency set.
+        prepared.repairInputIdsExtIdx = findBoundInputIndex(
+                prepared.repairBinding, prepared.inputIds);
+        prepared.repairTargetHiddenExtIdx = findBoundInputIndex(
+                prepared.repairBinding, prepared.targetHiddenStates);
+        prepared.repairCausalMaskExtIdx = findBoundInputIndex(
+                prepared.repairBinding, prepared.causalMask);
+        prepared.repairPositionOffsetExtIdx = findBoundInputIndex(
+                prepared.repairBinding, prepared.positionOffset);
+        prepared.repairCachePositionExtIdx = findBoundInputIndex(
+                prepared.repairBinding, prepared.cachePosition);
+        prepared.repairKvInputExtIndices = new int[]{
+                findBoundInputIndex(prepared.repairBinding, prepared.kvBuffers.get(MTP_KEY_CACHE_NAME)),
+                findBoundInputIndex(prepared.repairBinding, prepared.kvBuffers.get(MTP_VALUE_CACHE_NAME))};
+        prepared.repairKeyOutputIdx = repairOutputsRequested.indexOf(MTP_KEY_STATES_NAME);
+        prepared.repairValueOutputIdx = repairOutputsRequested.indexOf(MTP_VALUE_STATES_NAME);
+        if (prepared.repairInputIdsExtIdx < 0 || prepared.repairTargetHiddenExtIdx < 0
+                || prepared.repairPositionOffsetExtIdx < 0
+                || prepared.repairKeyOutputIdx < 0 || prepared.repairValueOutputIdx < 0) {
+            throw new IllegalStateException("MTP K/V repair plan has unresolved input/output indices: "
+                    + "ids=" + prepared.repairInputIdsExtIdx
+                    + " targetHidden=" + prepared.repairTargetHiddenExtIdx
+                    + " mask=" + prepared.repairCausalMaskExtIdx
+                    + " position=" + prepared.repairPositionOffsetExtIdx
+                    + " cachePosition=" + prepared.repairCachePositionExtIdx
+                    + " keyInput=" + prepared.repairKvInputExtIndices[0]
+                    + " valueInput=" + prepared.repairKvInputExtIndices[1]
+                    + " keyOutput=" + prepared.repairKeyOutputIdx
+                    + " valueOutput=" + prepared.repairValueOutputIdx
+                    + " externalKeys=" + Arrays.toString(repairKeys));
+        }
+        log.info("[MTP-REPAIR] prepared KV-only plan inputs={} outputs={} keyOut={} valueOut={} "
+                        + "keyInput={} valueInput={} scalarInputIds={} targetHidden={}",
+                repairInputs, repairOutputsCount, prepared.repairKeyOutputIdx,
+                prepared.repairValueOutputIdx, prepared.repairKvInputExtIndices[0],
+                prepared.repairKvInputExtIndices[1], prepared.repairInputIdsExtIdx,
+                prepared.repairTargetHiddenExtIdx);
+            repairKey.close();
+            repairValue.close();
+
+            if (enableMtpBatchRepair) {
+            // Capture a second, fixed-width K/V-only plan against the independent
+            // B=1 repair arrays. The scalar plan above remains available whenever
+            // the optional batch metadata is absent.
+            prepared.repairBatchSession = reuseState != null && reuseState.mtpRepairBatchSession != null
+                    ? reuseState.mtpRepairBatchSession : decoder.getInferenceFactory().create(decoder);
+            // The capture forward is a real K/V write. Preserve the live
+            // predictor rows it touches so plan capture cannot alter the
+            // post-warmup state before native decoding begins.
+            INDArray batchKeySnapshot;
+            INDArray batchValueSnapshot;
+            try (INDArray keySnapshotView = keyCache.get(
+                         NDArrayIndex.all(),
+                         NDArrayIndex.interval(predictorPendingRow, predictorPendingRow + repairWidth),
+                         NDArrayIndex.all(), NDArrayIndex.all());
+                 INDArray valueSnapshotView = valueCache.get(
+                         NDArrayIndex.all(),
+                         NDArrayIndex.interval(predictorPendingRow, predictorPendingRow + repairWidth),
+                         NDArrayIndex.all(), NDArrayIndex.all())) {
+                batchKeySnapshot = keySnapshotView.dup();
+                batchValueSnapshot = valueSnapshotView.dup();
+            }
+            prepared.repairBatchInputIds.putScalar(new long[]{0, 0}, firstTokenId);
+            try (INDArray firstRepairHidden = prepared.repairBatchTargetHiddenStates.get(
+                    NDArrayIndex.all(), NDArrayIndex.interval(0, 1), NDArrayIndex.all())) {
+                firstRepairHidden.assign(prepared.targetHiddenStates);
+            }
+            Map<String, INDArray> batchRepairInputs = new LinkedHashMap<>();
+            batchRepairInputs.put(MTP_INPUT_IDS_NAME, prepared.repairBatchInputIds);
+            batchRepairInputs.put(MTP_TARGET_HIDDEN_NAME, prepared.repairBatchTargetHiddenStates);
+            batchRepairInputs.put(MTP_POSITION_OFFSET_NAME, prepared.repairBatchPositionOffset);
+            batchRepairInputs.put(MTP_CACHE_POSITION_NAME, prepared.repairBatchCachePosition);
+            batchRepairInputs.put(MTP_CAUSAL_MASK_NAME, prepared.repairBatchCausalMask);
+            batchRepairInputs.put(MTP_KEY_CACHE_NAME, keyCache);
+            batchRepairInputs.put(MTP_VALUE_CACHE_NAME, valueCache);
+            List<String> batchRepairOutputsRequested = Arrays.asList(
+                    MTP_KEY_STATES_NAME, MTP_VALUE_STATES_NAME);
+            Map<String, INDArray> batchRepairOutputs;
+            try {
+                batchRepairOutputs = outputWithSession(
+                        prepared.repairBatchSession, batchRepairInputs, batchRepairOutputsRequested);
+            } finally {
+                try (INDArray keyRestoreView = keyCache.get(
+                             NDArrayIndex.all(),
+                             NDArrayIndex.interval(predictorPendingRow, predictorPendingRow + repairWidth),
+                             NDArrayIndex.all(), NDArrayIndex.all());
+                     INDArray valueRestoreView = valueCache.get(
+                             NDArrayIndex.all(),
+                             NDArrayIndex.interval(predictorPendingRow, predictorPendingRow + repairWidth),
+                             NDArrayIndex.all(), NDArrayIndex.all())) {
+                    keyRestoreView.assign(batchKeySnapshot);
+                    valueRestoreView.assign(batchValueSnapshot);
+                }
+                batchKeySnapshot.close();
+                batchValueSnapshot.close();
+            }
+            INDArray batchRepairKey = batchRepairOutputs.get(MTP_KEY_STATES_NAME);
+            INDArray batchRepairValue = batchRepairOutputs.get(MTP_VALUE_STATES_NAME);
+            if (batchRepairKey == null || batchRepairValue == null
+                    || batchRepairKey.rank() != 4 || batchRepairValue.rank() != 4) {
+                throw new IllegalStateException("Batched MTP K/V repair plan did not return rank-4 states: "
+                        + batchRepairOutputs.keySet());
+            }
+            DynamicShapePlanExecutor batchRepairExecutor = prepared.repairBatchSession
+                    .getDynamicShapePlanExecutor();
+            if (batchRepairExecutor == null || batchRepairExecutor.getCurrentPlan() == null) {
+                throw new IllegalStateException("Batched MTP K/V repair executor is unavailable");
+            }
+            batchRepairExecutor.setMaxKvCacheLength((int) maxKvLen);
+            batchRepairExecutor.configureMaxAllocationForKvCache(batchRepairOutputs);
+            if (!repairSlotBySlot) batchRepairExecutor.setShapesFrozen(true);
+            try {
+                prepared.repairBatchBinding = batchRepairExecutor.captureNativeExecutionBinding();
+            } catch (BindingCaptureException failure) {
+                prepared.repairBatchBinding = failure.getBinding();
+                throw failure;
+            }
+            String[] batchRepairKeys = prepared.repairBatchBinding.getExternalInputKeysSnapshot();
+            prepared.repairBatchNumPlanExternalInputs = prepared.repairBatchBinding.getInputCount();
+            prepared.repairBatchNumPlanOutputs = prepared.repairBatchBinding.getOutputCount();
+            prepared.repairBatchInputIdsExtIdx = findBoundInputIndex(
+                    prepared.repairBatchBinding, prepared.repairBatchInputIds);
+            prepared.repairBatchTargetHiddenExtIdx = findBoundInputIndex(
+                    prepared.repairBatchBinding, prepared.repairBatchTargetHiddenStates);
+            prepared.repairBatchCausalMaskExtIdx = findBoundInputIndex(
+                    prepared.repairBatchBinding, prepared.repairBatchCausalMask);
+            prepared.repairBatchPositionOffsetExtIdx = findBoundInputIndex(
+                    prepared.repairBatchBinding, prepared.repairBatchPositionOffset);
+            prepared.repairBatchCachePositionExtIdx = findBoundInputIndex(
+                    prepared.repairBatchBinding, prepared.repairBatchCachePosition);
+            prepared.repairBatchKvInputExtIndices = new int[]{
+                    findBoundInputIndex(prepared.repairBatchBinding, keyCache),
+                    findBoundInputIndex(prepared.repairBatchBinding, valueCache)};
+            prepared.repairBatchKeyOutputIdx = batchRepairOutputsRequested.indexOf(MTP_KEY_STATES_NAME);
+            prepared.repairBatchValueOutputIdx = batchRepairOutputsRequested.indexOf(MTP_VALUE_STATES_NAME);
+            // Required: ids, target hidden, position offset, key/value outputs.
+            // Optional (may be pruned from the K/V-only dependency set): attention
+            // mask, cache position, past-K/V graph inputs. -1 marks an absent
+            // binding; anything below -1 fails.
+            if (prepared.repairBatchInputIdsExtIdx < 0
+                    || prepared.repairBatchTargetHiddenExtIdx < 0
+                    || prepared.repairBatchPositionOffsetExtIdx < 0
+                    || prepared.repairBatchKeyOutputIdx < 0
+                    || prepared.repairBatchValueOutputIdx < 0
+                    || prepared.repairBatchCausalMaskExtIdx < -1
+                    || prepared.repairBatchCachePositionExtIdx < -1
+                    || prepared.repairBatchKvInputExtIndices[0] < -1
+                    || prepared.repairBatchKvInputExtIndices[1] < -1) {
+                throw new IllegalStateException("Batched MTP K/V repair plan has unresolved input/output indices: "
+                        + "ids=" + prepared.repairBatchInputIdsExtIdx
+                        + " targetHidden=" + prepared.repairBatchTargetHiddenExtIdx
+                        + " mask=" + prepared.repairBatchCausalMaskExtIdx
+                        + " position=" + prepared.repairBatchPositionOffsetExtIdx
+                        + " cachePosition=" + prepared.repairBatchCachePositionExtIdx
+                        + " keyInput=" + prepared.repairBatchKvInputExtIndices[0]
+                        + " valueInput=" + prepared.repairBatchKvInputExtIndices[1]
+                        + " keyOutput=" + prepared.repairBatchKeyOutputIdx
+                        + " valueOutput=" + prepared.repairBatchValueOutputIdx
+                        + " externalKeys=" + Arrays.toString(batchRepairKeys));
+            }
+            log.info("[MTP-REPAIR] prepared fixed-width B=1 plan width={} inputs={} outputs={} "
+                            + "keyOut={} valueOut={} keyInput={} valueInput={}",
+                    repairWidth, prepared.repairBatchNumPlanExternalInputs,
+                    prepared.repairBatchNumPlanOutputs, prepared.repairBatchKeyOutputIdx,
+                    prepared.repairBatchValueOutputIdx, prepared.repairBatchKvInputExtIndices[0],
+                    prepared.repairBatchKvInputExtIndices[1]);
+            batchRepairKey.close();
+            batchRepairValue.close();
+            } else {
+                log.info("[MTP-REPAIR] batched repair disabled by nd4j.mtp.kvRepairBatch=false; "
+                        + "using the scalar KV-only repair path");
+            }
+
+        }
+
+        // Keep the retained batch substrate published at the pending predictor
+        // row. Native repair rewrites this scalar start for every transaction.
+        // Guarded on batch enablement: when disabled, the batch arrays were
+        // never allocated and must not be touched.
+        if (enableMtpBatchRepair) {
+            prepared.repairBatchPositionOffset.putScalar(new long[]{}, predictorPendingRow);
+            prepared.repairBatchCachePosition.putScalar(new long[]{}, predictorPendingRow);
+            INDArray pendingRepairMask = DecoderInputBuilder.buildInGraphWindowMask(
+                    DecoderInputBuilder.chainParents(1, repairWidth), predictorPendingRow,
+                    1, repairWidth, maxKvLen, DataType.FLOAT);
+            prepared.repairBatchCausalMask.assign(pendingRepairMask);
+            pendingRepairMask.close();
+        }
+
+        // Packet 1, step 6: after the warmup rewrote tail row N-1, publish the
+        // pending pair (y1, h_N) and set BOTH retained predictor scalars to
+        // predictorPendingRow: rope = N, next write slot = N. This equals target
+        // state.cachePosition - 1 (= N+1 - 1), per the reviewer's tuple contract.
+        // The native helper's first predictor call converts its target position
+        // argument P = N+1 to predictor row r = P - 1 = N and overwrites both
+        // scalars itself; these retained values describe the pending pair so any
+        // pre-loop consumer or diagnostic replay stays consistent. The pending
+        // row is NOT unmasked here: publishing a pending token is not consuming
+        // it - the native predictor execution unmasks its own write row.
+        prepared.positionOffset.putScalar(new long[]{}, predictorPendingRow);
+        prepared.cachePosition.putScalar(new long[]{}, predictorPendingRow);
 
         // Native drafting starts with the second target token and therefore needs h_P, produced by
         // the target warmup that consumed the first token at position P.
@@ -8237,6 +9061,16 @@ public class GenerationPipeline implements AutoCloseable {
      * <p>This method is a no-op if the decoder is null or has already been closed.</p>
      */
     public void suspend() {
+        if (pendingScalarTargetCleanup != null) {
+            pendingScalarTargetCleanup.closeScalarTarget();
+            pendingScalarTargetCleanup = null;
+        }
+        if (cachedFixedBufferState != null) {
+            cachedFixedBufferState.close();
+            cachedFixedBufferState = null;
+        }
+        GenerationSession scalarSession = activeSession.get();
+        if (scalarSession != null) scalarSession.state.releaseScalarTargetBinding();
         // Close any open continuation session — it holds KV buffers and a plan handle
         // into native memory that may be invalidated by a device-lost event.
         GenerationSession openSession = activeSession.getAndSet(null);
@@ -8268,6 +9102,12 @@ public class GenerationPipeline implements AutoCloseable {
      */
     @Override
     public void close() {
+        // Executor teardown rejects live bindings. Release leases first, retaining all arrays
+        // until the existing borrower-retirement boundary below has completed.
+        if (pendingScalarTargetCleanup != null) pendingScalarTargetCleanup.releaseScalarTargetBinding();
+        if (cachedFixedBufferState != null) cachedFixedBufferState.releaseScalarTargetBinding();
+        GenerationSession scalarSession = activeSession.get();
+        if (scalarSession != null) scalarSession.state.releaseScalarTargetBinding();
         // Every retained generation state below owns arrays whose addresses are
         // borrowed by the decoder's InferenceSession/native DSP plan. Retire
         // that borrower before closing any state, including when the decoder
@@ -8287,6 +9127,10 @@ public class GenerationPipeline implements AutoCloseable {
         }
         if (!decoderBorrowersRetired) {
             return;
+        }
+        if (pendingScalarTargetCleanup != null) {
+            pendingScalarTargetCleanup.closeScalarTarget();
+            pendingScalarTargetCleanup = null;
         }
 
         // Close any open continuation session first — it holds retained KV buffers and a plan handle
