@@ -83,6 +83,8 @@ SD_KERNEL void gatedDeltaRuleKernel(
     const LongType* __restrict__ actualLen,
     typename simdOps::AggregateType<T>::type* __restrict__ state,
     T* __restrict__ out,
+    T* __restrict__ prefixOut,
+    const LongType prefixW,
     const LongType B, const LongType L, const LongType H,
     const LongType D_k, const LongType D_v,
     const LongType t,
@@ -138,6 +140,13 @@ SD_KERNEL void gatedDeltaRuleKernel(
                 sPtr[dk * D_v + dv] = reproducible::add<AccT>(
                     reproducible::multiply<AccT>(expGate, sPtr[dk * D_v + dv]),
                     reproducible::multiply<AccT>(betaDelta, kValue));
+
+                // Prefix checkpoint: state AFTER consuming input t, written from the
+                // unrounded working accumulator (never re-fed into later steps).
+                if (prefixOut != nullptr && t < prefixW) {
+                    T* pBase = prefixOut + ((t * B + b) * H + h) * D_k * D_v;
+                    pBase[dk * D_v + dv] = static_cast<T>(sPtr[dk * D_v + dv]);
+                }
             }
         }
 
@@ -164,6 +173,7 @@ static void launchGatedDeltaRule(
     const T* q, const T* k, const T* v,
     const T* betaArr, const T* gateArr, const LongType* actualLen,
     typename simdOps::AggregateType<T>::type* workingState, T* out,
+    T* prefixOut, LongType prefixW,
     LongType B, LongType L, LongType H, LongType D_k, LongType D_v,
     LongType qS0, LongType qS1, LongType qS2, LongType qS3,
     LongType kS0, LongType kS1, LongType kS2, LongType kS3,
@@ -183,6 +193,7 @@ static void launchGatedDeltaRule(
     for (LongType t = 0; t < L; ++t) {
         gatedDeltaRuleKernel<T><<<numBlocks, threadsPerBlock, 0, stream>>>(
             q, k, v, betaArr, gateArr, actualLen, workingState, out,
+            prefixOut, prefixW,
             B, L, H, D_k, D_v, t,
             qS0, qS1, qS2, qS3, kS0, kS1, kS2, kS3,
             vS0, vS1, vS2, vS3, bS0, bS1, bS2,
@@ -735,7 +746,8 @@ template <typename T>
 static void gatedDeltaRuleFromArrays(
                      LaunchContext* context, NDArray* Q, NDArray* K, NDArray* V,
                      NDArray* beta, NDArray* gate, NDArray* stateIn,
-                     NDArray* actualLen, NDArray* output, NDArray* stateOut) {
+                     NDArray* actualLen, NDArray* output, NDArray* stateOut,
+                     NDArray* prefixOut) {
     using AccT = typename simdOps::AggregateType<T>::type;
 
     const auto B = Q->sizeAt(0);
@@ -928,6 +940,8 @@ static void gatedDeltaRuleFromArrays(
             actualLen ? reinterpret_cast<const LongType*>(actualLen->specialBuffer()) : nullptr,
             workingState,
             reinterpret_cast<T*>(output->specialBuffer()),
+            prefixOut != nullptr ? reinterpret_cast<T*>(prefixOut->specialBuffer()) : nullptr,
+            prefixOut != nullptr ? prefixOut->sizeAt(0) : static_cast<LongType>(0),
             B, L, H, D_k, D_v,
             Q->strideAt(0), Q->strideAt(1), Q->strideAt(2), Q->strideAt(3),
             K->strideAt(0), K->strideAt(1), K->strideAt(2), K->strideAt(3),
@@ -1003,19 +1017,33 @@ static void gatedDeltaRuleFromArrays(
 void gatedDeltaRule(LaunchContext* context, NDArray* Q, NDArray* K, NDArray* V,
                      NDArray* beta, NDArray* gate, NDArray* stateIn,
                      NDArray* actualLen, NDArray* output, NDArray* stateOut) {
+    gatedDeltaRuleWithPrefix(context, Q, K, V, beta, gate, stateIn, actualLen,
+                             output, stateOut, nullptr);
+}
+
+void gatedDeltaRuleWithPrefix(LaunchContext* context, NDArray* Q, NDArray* K, NDArray* V,
+                              NDArray* beta, NDArray* gate, NDArray* stateIn,
+                              NDArray* actualLen, NDArray* output, NDArray* stateOut,
+                              NDArray* prefixOut) {
     if (Q->sizeAt(3) > GDR_CUDA_MAX_HEAD_DIM) {
         THROW_EXCEPTION("gatedDeltaRule: key head dimension exceeds supported CUDA maximum");
     }
+    // Prefix capture rides the sequential path; actualLen already forces it.
+    if (prefixOut != nullptr && actualLen == nullptr) {
+        THROW_EXCEPTION("gatedDeltaRuleWithPrefix: prefix capture requires an actualLen input");
+    }
     NDArray::prepareSpecialUse({output, stateOut}, {Q, K, V, beta, gate, actualLen});
     if (stateIn != nullptr) NDArray::prepareSpecialUse({}, {stateIn});
+    if (prefixOut != nullptr) NDArray::prepareSpecialUse({prefixOut}, {});
 
     BUILD_SINGLE_SELECTOR(
         Q->dataType(), gatedDeltaRuleFromArrays,
-        (context, Q, K, V, beta, gate, stateIn, actualLen, output, stateOut),
+        (context, Q, K, V, beta, gate, stateIn, actualLen, output, stateOut, prefixOut),
         SD_FLOAT_TYPES);
 
     NDArray::registerSpecialUse({output, stateOut}, {Q, K, V, beta, gate, actualLen});
     if (stateIn != nullptr) NDArray::registerSpecialUse({}, {stateIn});
+    if (prefixOut != nullptr) NDArray::registerSpecialUse({prefixOut}, {});
 }
 
 }  // namespace helpers

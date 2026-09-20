@@ -114,6 +114,97 @@ DECLARE_SHAPE_FN(gated_delta_rule) {
     return SHAPELIST(outputShape, stateShape);
 }
 
+#endif
+
+#if NOT_EXCLUDED(OP_gated_delta_rule_with_prefix)
+
+CUSTOM_OP_IMPL(gated_delta_rule_with_prefix, 5, 3, false, 0, 0) {
+    auto Q = INPUT_VARIABLE(0);        // [B, L, H, D_k]
+    auto K = INPUT_VARIABLE(1);        // [B, L, H, D_k]
+    auto V = INPUT_VARIABLE(2);        // [B, L, H, D_v]
+    auto beta = INPUT_VARIABLE(3);     // [B, L, H]
+    auto gate = INPUT_VARIABLE(4);     // [B, L, H]
+
+    auto output = OUTPUT_VARIABLE(0);     // [B, L, H, D_v]
+    auto stateOut = OUTPUT_VARIABLE(1);   // [B, H, D_k, D_v]
+    auto prefixOut = OUTPUT_VARIABLE(2);  // [W, B, H, D_k, D_v] time-leading C-order
+
+    NDArray* stateIn = nullptr;
+    NDArray* actualLen = nullptr;
+    for (int i = 5; i < block.width(); ++i) {
+        auto input = INPUT_VARIABLE(i);
+        if (input->rankOf() == 0) {
+            REQUIRE_TRUE(actualLen == nullptr, 0,
+                         "gated_delta_rule_with_prefix: multiple scalar actualLen inputs are not allowed");
+            actualLen = input;
+        } else {
+            REQUIRE_TRUE(stateIn == nullptr, 0,
+                         "gated_delta_rule_with_prefix: multiple recurrent state inputs are not allowed");
+            stateIn = input;
+        }
+    }
+    // Prefix capture rides the sequential path; actualLen must be present.
+    REQUIRE_TRUE(actualLen != nullptr, 0,
+                 "gated_delta_rule_with_prefix: an INT64 actualLen scalar input is required");
+    const auto dataType = Q->dataType();
+    REQUIRE_TRUE(K->dataType() == dataType && V->dataType() == dataType &&
+                     beta->dataType() == dataType && gate->dataType() == dataType,
+                 0, "gated_delta_rule_with_prefix: Q, K, V, beta, and gate must have the same floating dtype");
+    REQUIRE_TRUE(stateIn == nullptr || stateIn->dataType() == dataType, 0,
+                 "gated_delta_rule_with_prefix: stateIn dtype must match Q dtype");
+    REQUIRE_TRUE(stateIn == nullptr ||
+                     (stateIn->rankOf() == 4 &&
+                      stateIn->sizeAt(0) == Q->sizeAt(0) &&
+                      stateIn->sizeAt(1) == Q->sizeAt(2) &&
+                      stateIn->sizeAt(2) == Q->sizeAt(3) &&
+                      stateIn->sizeAt(3) == V->sizeAt(3)), 0,
+                 "gated_delta_rule_with_prefix: stateIn must have shape [B,H,D_k,D_v]");
+    REQUIRE_TRUE(prefixOut->rankOf() == 5 &&
+                     prefixOut->sizeAt(1) == Q->sizeAt(0) &&
+                     prefixOut->sizeAt(2) == Q->sizeAt(2) &&
+                     prefixOut->sizeAt(3) == Q->sizeAt(3) &&
+                     prefixOut->sizeAt(4) == V->sizeAt(3), 0,
+                 "gated_delta_rule_with_prefix: prefixOut must have shape [W,B,H,D_k,D_v]");
+    REQUIRE_TRUE(prefixOut->dataType() == dataType, 0,
+                 "gated_delta_rule_with_prefix: prefixOut dtype must match Q dtype");
+
+    helpers::gatedDeltaRuleWithPrefix(block.launchContext(), Q, K, V, beta, gate, stateIn, actualLen,
+                                      output, stateOut, prefixOut);
+
+    return sd::Status::OK;
+}
+
+DECLARE_TYPES(gated_delta_rule_with_prefix) {
+    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING | OP_TRAIT_EXTERNAL_WORKSPACE);
+    getOpDescriptor()
+        ->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})
+        ->setAllowedOutputTypes({ALL_FLOATS});
+}
+
+DECLARE_SHAPE_FN(gated_delta_rule_with_prefix) {
+    auto qShape = inputShape->at(0);  // [B, L, H, D_k]
+    auto vShape = inputShape->at(2);  // [B, L, H, D_v]
+
+    auto B = shape::sizeAt(qShape, 0);
+    auto L = shape::sizeAt(qShape, 1);
+    auto H = shape::sizeAt(qShape, 2);
+    auto D_k = shape::sizeAt(qShape, 3);
+    auto D_v = shape::sizeAt(vShape, 3);
+
+    auto outputShape = ConstantShapeHelper::getInstance().createShapeInfo(
+        ArrayOptions::dataType(qShape), 'c', {B, L, H, D_v});
+
+    auto stateShape = ConstantShapeHelper::getInstance().createShapeInfo(
+        ArrayOptions::dataType(qShape), 'c', {B, H, D_k, D_v});
+
+    // Physical prefix capacity W: the caller allocates the verification window
+    // width; slots beyond actualLen remain defined-but-unselected.
+    auto prefixShape = ConstantShapeHelper::getInstance().createShapeInfo(
+        ArrayOptions::dataType(qShape), 'c', {L, B, H, D_k, D_v});
+
+    return SHAPELIST(outputShape, stateShape, prefixShape);
+}
+
 }  // namespace ops
 }  // namespace sd
 

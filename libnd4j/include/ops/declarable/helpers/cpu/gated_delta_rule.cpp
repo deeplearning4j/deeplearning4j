@@ -63,7 +63,8 @@ static SD_INLINE AccT gatedDeltaReproducibleDot(
 template <typename T>
 static void gatedDeltaRule_(LaunchContext* context, NDArray* Q, NDArray* K, NDArray* V,
                              NDArray* beta, NDArray* gate, NDArray* stateIn,
-                             NDArray* actualLen, NDArray* output, NDArray* stateOut) {
+                             NDArray* actualLen, NDArray* output, NDArray* stateOut,
+                             NDArray* prefixOut) {
     using AccT = typename simdOps::AggregateType<T>::type;
 
     const auto B = Q->sizeAt(0);
@@ -77,6 +78,8 @@ static void gatedDeltaRule_(LaunchContext* context, NDArray* Q, NDArray* K, NDAr
         if (effectiveLen < 0) effectiveLen = 0;
         if (effectiveLen > L) effectiveLen = L;
     }
+    T* prefixBuf = prefixOut != nullptr ? prefixOut->bufferAsT<T>() : nullptr;
+    const LongType prefixW = prefixOut != nullptr ? prefixOut->sizeAt(0) : 0;
 
     const T* qBuf = Q->bufferAsT<T>();
     const T* kBuf = K->bufferAsT<T>();
@@ -169,6 +172,16 @@ static void gatedDeltaRule_(LaunchContext* context, NDArray* Q, NDArray* K, NDAr
                 const LongType qBase = b * qS0 + t * qS1 + h * qS2;
                 for (LongType dk = 0; dk < D_k; ++dk)
                     qLocal[dk] = static_cast<AccT>(qBuf[qBase + dk * qS3]);
+
+                if (prefixBuf != nullptr && t < prefixW && t < effectiveLen) {
+                    // Checkpoint the unrounded working state AFTER consuming input t.
+                    // stateBuf is transposed [B,H,D_v,D_k]; prefixOut is [W,B,H,D_k,D_v].
+                    T* pBase = prefixBuf + ((t * B + b) * H + h) * D_k * D_v;
+                    for (LongType dk = 0; dk < D_k; ++dk)
+                        for (LongType dv = 0; dv < D_v; ++dv)
+                            pBase[dk * D_v + dv] =
+                                static_cast<T>(stateBuf[((b * H + h) * D_v + dv) * D_k + dk]);
+                }
 
                 for (LongType dv = 0; dv < D_v; ++dv) {
                     AccT* sRow = sBase + dv * D_k;
@@ -488,26 +501,39 @@ static void gatedDeltaRuleChunked_(LaunchContext* context, NDArray* Q, NDArray* 
 void gatedDeltaRule(LaunchContext* context, NDArray* Q, NDArray* K, NDArray* V,
                      NDArray* beta, NDArray* gate, NDArray* stateIn,
                      NDArray* actualLen, NDArray* output, NDArray* stateOut) {
+    gatedDeltaRuleWithPrefix(context, Q, K, V, beta, gate, stateIn, actualLen,
+                             output, stateOut, nullptr);
+}
+
+void gatedDeltaRuleWithPrefix(LaunchContext* context, NDArray* Q, NDArray* K, NDArray* V,
+                              NDArray* beta, NDArray* gate, NDArray* stateIn,
+                              NDArray* actualLen, NDArray* output, NDArray* stateOut,
+                              NDArray* prefixOut) {
     if (Q->sizeAt(3) > GDR_MAX_HEAD_DIM) {
         THROW_EXCEPTION("gatedDeltaRule: key head dimension exceeds supported maximum");
     }
     NDArray::preparePrimaryUse({output, stateOut}, {Q, K, V, beta, gate, actualLen});
     if (stateIn != nullptr) NDArray::preparePrimaryUse({}, {stateIn});
+    if (prefixOut != nullptr) NDArray::preparePrimaryUse({prefixOut}, {});
 
     const auto L   = Q->sizeAt(1);
     // Chunked path: L >= C=64, no actualLen masking (chunked doesn't support partial masking)
     const bool useChunked = (L >= GDN_CHUNK_CPU) && (actualLen == nullptr);
+    if (prefixOut != nullptr && useChunked) {
+        THROW_EXCEPTION("gatedDeltaRuleWithPrefix: prefix capture requires the sequential path; pass actualLen");
+    }
 
     if (useChunked) {
         BUILD_SINGLE_SELECTOR(Q->dataType(), gatedDeltaRuleChunked_,
             (context, Q, K, V, beta, gate, stateIn, output, stateOut), SD_FLOAT_TYPES);
     } else {
         BUILD_SINGLE_SELECTOR(Q->dataType(), gatedDeltaRule_,
-            (context, Q, K, V, beta, gate, stateIn, actualLen, output, stateOut), SD_FLOAT_TYPES);
+            (context, Q, K, V, beta, gate, stateIn, actualLen, output, stateOut, prefixOut), SD_FLOAT_TYPES);
     }
 
     NDArray::registerPrimaryUse({output, stateOut}, {Q, K, V, beta, gate, actualLen});
     if (stateIn != nullptr) NDArray::registerPrimaryUse({}, {stateIn});
+    if (prefixOut != nullptr) NDArray::registerPrimaryUse({prefixOut}, {});
 }
 
 }  // namespace helpers

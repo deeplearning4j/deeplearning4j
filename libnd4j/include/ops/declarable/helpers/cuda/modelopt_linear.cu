@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 #include <system/op_boilerplate.h>
+#include <cuda_runtime.h>
 #if NOT_EXCLUDED(OP_modelopt_nvfp4_linear) || NOT_EXCLUDED(OP_modelopt_fp8_linear)
 #include <ops/declarable/helpers/modelopt_linear.h>
 #include <execution/cuda/LaunchDims.h>
@@ -21,7 +22,8 @@ namespace helpers {
 // stream completion boundary). The CUDA device trap intrinsic remains active in
 // release builds (plain assert() disappears under NDEBUG).
 SD_DEVICE SD_INLINE float modelOptScaleChecked(float value) {
-  if (!modelOptValidScale(value)) __trap();
+  if (!modelOptValidScale(value))
+    asm("trap;");
   return value;
 }
 
@@ -32,7 +34,7 @@ SD_KERNEL static void modelOptValidateScalesKernel(const void* scale, const floa
                                                    const LongType* shapeInfo,
                                                    LongType count, bool nvfp4) {
   if (blockIdx.x == 0 && threadIdx.x == 0 && !modelOptValidScale(second[0]))
-    __trap();
+    asm("trap;");
   for (LongType linear = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
        linear < count; linear += static_cast<LongType>(gridDim.x) * blockDim.x) {
     float value;
@@ -45,7 +47,7 @@ SD_KERNEL static void modelOptValidateScalesKernel(const void* scale, const floa
       value = static_cast<const float*>(scale)[0];
     }
     if (!modelOptValidScale(value))
-      __trap();
+      asm("trap;");
   }
 }
 
@@ -69,7 +71,7 @@ SD_KERNEL static void modelOptLinearKernel(const X* x, const void* w, const void
   const float second = secondScale[0];
   // Fused on-stream validation of the global/input scale scalar (previously
   // carried by the standalone pre-flight kernel; see modelOptScaleChecked).
-  if (!modelOptValidScale(second)) __trap();
+  if (!modelOptValidScale(second)) asm("trap;");
   const float weightScale = nvfp4 ? 1.0f : modelOptScaleChecked(
       static_cast<const float*>(scale)[0]);
   for (LongType linear = static_cast<LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
@@ -132,7 +134,7 @@ SD_KERNEL static void modelOptLinearTiledKernel(
   const int lane = tid & 31;
   const LongType words = kLength / 8;  // kLength % 8 == 0 is proven on the host
   const float second = secondScale[0];
-  if (blockIdx.x == 0 && threadIdx.x == 0 && !modelOptValidScale(second)) __trap();
+  if (blockIdx.x == 0 && threadIdx.x == 0 && !modelOptValidScale(second)) asm("trap;");
   for (LongType columnBlock = static_cast<LongType>(blockIdx.x) * (blockDim.x / 32);
        columnBlock < nColumns;
        columnBlock += static_cast<LongType>(gridDim.x) * (blockDim.x / 32)) {

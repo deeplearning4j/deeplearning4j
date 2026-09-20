@@ -755,6 +755,22 @@ DECLARE_CUSTOM_OP(gated_delta_rule, 5, 2, false, 0, 0);
 #endif
 
 /**
+ * gated_delta_rule_with_prefix - gated_delta_rule plus per-timestep state checkpoints
+ *
+ * Same recurrence and inputs as gated_delta_rule (actualLen REQUIRED - capture rides
+ * the sequential path).
+ *
+ * Outputs:
+ *   0: output [B, L, H, D_v] - attention output (identical to gated_delta_rule)
+ *   1: state_out [B, H, D_k, D_v] - final recurrent state (identical)
+ *   2: prefix [L, B, H, D_k, D_v] - time-leading C-order; slot t is the state AFTER
+ *      consuming input rows 0..t (t < actualLen written; inactive slots deterministic)
+ */
+#if NOT_EXCLUDED(OP_gated_delta_rule_with_prefix)
+DECLARE_CUSTOM_OP(gated_delta_rule_with_prefix, 5, 3, false, 0, 0);
+#endif
+
+/**
  * causal_conv1d - Depthwise causal 1D convolution with state
  *
  * Performs a causal (left-padded) depthwise 1D convolution, used in GDN and Mamba.
