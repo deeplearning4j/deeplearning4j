@@ -6086,13 +6086,21 @@ public class GenerationPipeline implements AutoCloseable {
 
         final boolean enableMtpRepair = Boolean.parseBoolean(
                 System.getProperty("nd4j.mtp.kvRepair", "true"));
-        if (enableMtpRepair) {
+        // Independent batch-mode selector: batching is an ABI option, not a
+        // consequence of enabling KV-only repair. Setting nd4j.mtp.kvRepairBatch=false
+        // keeps the scalar KV-only reference path selectable for qualification.
+        final boolean enableMtpBatchRepair = enableMtpRepair && Boolean.parseBoolean(
+                System.getProperty("nd4j.mtp.kvRepairBatch", "true"))
+                && config.getMaxSpeculativeTokens() > 0;
+        // Width is fixed by the configured maximum K regardless of mode so the
+        // substrate geometry is stable across selector flips within a session.
+        final int repairWidth = config.getMaxSpeculativeTokens();
+        prepared.repairBatchWidth = repairWidth;
+        if (enableMtpBatchRepair) {
         // The batched repair substrate is fixed at the configured maximum K. Its
         // arrays are independent from the scalar predictor arrays so native repair
         // can overwrite an active prefix without changing the scalar ABI or any
         // captured scalar-plan addresses.
-        final int repairWidth = config.getMaxSpeculativeTokens();
-        prepared.repairBatchWidth = repairWidth;
         prepared.repairBatchInputIds = reuseState != null ? reuseState.mtpRepairBatchInputIds : null;
         if (prepared.repairBatchInputIds == null
                 || !Arrays.equals(prepared.repairBatchInputIds.shape(), new long[]{1, repairWidth})) {
@@ -6133,6 +6141,14 @@ public class GenerationPipeline implements AutoCloseable {
             prepared.repairBatchCausalMask.assign(freshRepairBatchMask);
             freshRepairBatchMask.close();
         }
+        } else {
+            // Batch disabled: never retain or publish batch arrays. The scalar
+            // KV-only repair path owns predictor state in this mode.
+            prepared.repairBatchInputIds = null;
+            prepared.repairBatchTargetHiddenStates = null;
+            prepared.repairBatchCausalMask = null;
+            prepared.repairBatchPositionOffset = null;
+            prepared.repairBatchCachePosition = null;
         }
 
         // P1A: build an independent K/V-only repair plan from the same graph and
@@ -6221,6 +6237,7 @@ public class GenerationPipeline implements AutoCloseable {
             repairKey.close();
             repairValue.close();
 
+            if (enableMtpBatchRepair) {
             // Capture a second, fixed-width K/V-only plan against the independent
             // B=1 repair arrays. The scalar plan above remains available whenever
             // the optional batch metadata is absent.
@@ -6315,15 +6332,19 @@ public class GenerationPipeline implements AutoCloseable {
                     findBoundInputIndex(prepared.repairBatchBinding, valueCache)};
             prepared.repairBatchKeyOutputIdx = batchRepairOutputsRequested.indexOf(MTP_KEY_STATES_NAME);
             prepared.repairBatchValueOutputIdx = batchRepairOutputsRequested.indexOf(MTP_VALUE_STATES_NAME);
+            // Required: ids, target hidden, position offset, key/value outputs.
+            // Optional (may be pruned from the K/V-only dependency set): attention
+            // mask, cache position, past-K/V graph inputs. -1 marks an absent
+            // binding; anything below -1 fails.
             if (prepared.repairBatchInputIdsExtIdx < 0
                     || prepared.repairBatchTargetHiddenExtIdx < 0
-                    || prepared.repairBatchCausalMaskExtIdx < 0
                     || prepared.repairBatchPositionOffsetExtIdx < 0
-                    || prepared.repairBatchCachePositionExtIdx < 0
-                    || prepared.repairBatchKvInputExtIndices[0] < 0
-                    || prepared.repairBatchKvInputExtIndices[1] < 0
                     || prepared.repairBatchKeyOutputIdx < 0
-                    || prepared.repairBatchValueOutputIdx < 0) {
+                    || prepared.repairBatchValueOutputIdx < 0
+                    || prepared.repairBatchCausalMaskExtIdx < -1
+                    || prepared.repairBatchCachePositionExtIdx < -1
+                    || prepared.repairBatchKvInputExtIndices[0] < -1
+                    || prepared.repairBatchKvInputExtIndices[1] < -1) {
                 throw new IllegalStateException("Batched MTP K/V repair plan has unresolved input/output indices: "
                         + "ids=" + prepared.repairBatchInputIdsExtIdx
                         + " targetHidden=" + prepared.repairBatchTargetHiddenExtIdx
@@ -6344,17 +6365,26 @@ public class GenerationPipeline implements AutoCloseable {
                     prepared.repairBatchKvInputExtIndices[1]);
             batchRepairKey.close();
             batchRepairValue.close();
+            } else {
+                log.info("[MTP-REPAIR] batched repair disabled by nd4j.mtp.kvRepairBatch=false; "
+                        + "using the scalar KV-only repair path");
+            }
+
         }
 
         // Keep the retained batch substrate published at the pending predictor
         // row. Native repair rewrites this scalar start for every transaction.
-        prepared.repairBatchPositionOffset.putScalar(new long[]{}, predictorPendingRow);
-        prepared.repairBatchCachePosition.putScalar(new long[]{}, predictorPendingRow);
-        INDArray pendingRepairMask = DecoderInputBuilder.buildInGraphWindowMask(
-                DecoderInputBuilder.chainParents(1, repairWidth), predictorPendingRow,
-                1, repairWidth, maxKvLen, DataType.FLOAT);
-        prepared.repairBatchCausalMask.assign(pendingRepairMask);
-        pendingRepairMask.close();
+        // Guarded on batch enablement: when disabled, the batch arrays were
+        // never allocated and must not be touched.
+        if (enableMtpBatchRepair) {
+            prepared.repairBatchPositionOffset.putScalar(new long[]{}, predictorPendingRow);
+            prepared.repairBatchCachePosition.putScalar(new long[]{}, predictorPendingRow);
+            INDArray pendingRepairMask = DecoderInputBuilder.buildInGraphWindowMask(
+                    DecoderInputBuilder.chainParents(1, repairWidth), predictorPendingRow,
+                    1, repairWidth, maxKvLen, DataType.FLOAT);
+            prepared.repairBatchCausalMask.assign(pendingRepairMask);
+            pendingRepairMask.close();
+        }
 
         // Packet 1, step 6: after the warmup rewrote tail row N-1, publish the
         // pending pair (y1, h_N) and set BOTH retained predictor scalars to

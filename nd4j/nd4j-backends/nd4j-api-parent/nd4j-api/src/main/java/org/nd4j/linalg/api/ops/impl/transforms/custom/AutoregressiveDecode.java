@@ -1112,9 +1112,19 @@ public class AutoregressiveDecode extends DynamicCustomOp {
         }
         if (numPlanExternalInputs <= 0 || numPlanOutputs <= 0
                 || inputIdsExtIdx < 0 || targetHiddenExtIdx < 0
-                || positionOffsetExtIdx < 0 || keyOutputIdx < 0 || valueOutputIdx < 0
-                || keyInputExtIdx < 0 || valueInputExtIdx < 0) {
+                || positionOffsetExtIdx < 0 || keyOutputIdx < 0 || valueOutputIdx < 0) {
             throw new IllegalArgumentException("Batched MTP repair metadata is incomplete");
+        }
+        // K/V-only pruning legitimately removes the attention mask, cache
+        // position, and past-K/V graph inputs; -1 marks an absent binding.
+        // Required ids/hidden/position/output mappings stay mandatory above.
+        if (causalMaskExtIdx < -1 || cachePositionExtIdx < -1
+                || keyInputExtIdx < -1 || valueInputExtIdx < -1
+                || causalMaskExtIdx >= numPlanExternalInputs
+                || cachePositionExtIdx >= numPlanExternalInputs
+                || keyInputExtIdx >= numPlanExternalInputs
+                || valueInputExtIdx >= numPlanExternalInputs) {
+            throw new IllegalArgumentException("Batched MTP repair optional indices are malformed");
         }
         inputArguments.add(repairInputIds);
         inputArguments.add(repairTargetHiddenStates);

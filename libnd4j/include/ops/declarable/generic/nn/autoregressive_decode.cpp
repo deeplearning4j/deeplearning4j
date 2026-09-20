@@ -520,15 +520,25 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
                        && decodeConfig.mtpRepairBatchNumPlanExternalInputs > 0
                        && decodeConfig.mtpRepairBatchNumPlanOutputs > 0
                        && decodeConfig.mtpRepairBatchInputIdsExtIdx >= 0
+                       && decodeConfig.mtpRepairBatchInputIdsExtIdx < decodeConfig.mtpRepairBatchNumPlanExternalInputs
                        && decodeConfig.mtpRepairBatchTargetHiddenExtIdx >= 0
-                       && decodeConfig.mtpRepairBatchCausalMaskExtIdx >= 0
+                       && decodeConfig.mtpRepairBatchTargetHiddenExtIdx < decodeConfig.mtpRepairBatchNumPlanExternalInputs
                        && decodeConfig.mtpRepairBatchPositionOffsetExtIdx >= 0
-                       && decodeConfig.mtpRepairBatchCachePositionExtIdx >= 0
+                       && decodeConfig.mtpRepairBatchPositionOffsetExtIdx < decodeConfig.mtpRepairBatchNumPlanExternalInputs
                        && decodeConfig.mtpRepairBatchKeyOutputIdx >= 0
+                       && decodeConfig.mtpRepairBatchKeyOutputIdx < decodeConfig.mtpRepairBatchNumPlanOutputs
                        && decodeConfig.mtpRepairBatchValueOutputIdx >= 0
-                       && decodeConfig.mtpRepairBatchKvInputExtIndices[0] >= 0
-                       && decodeConfig.mtpRepairBatchKvInputExtIndices[1] >= 0,
+                       && decodeConfig.mtpRepairBatchValueOutputIdx < decodeConfig.mtpRepairBatchNumPlanOutputs,
                    0, "autoregressive_decode: invalid batched MTP repair plan metadata");
+      // Optional K/V-only pruned inputs: -1 means absent; otherwise in range.
+      const auto optionalBatchIdxValid = [&](int idx) {
+        return idx == -1 || (idx >= 0 && idx < decodeConfig.mtpRepairBatchNumPlanExternalInputs);
+      };
+      REQUIRE_TRUE(optionalBatchIdxValid(decodeConfig.mtpRepairBatchCausalMaskExtIdx)
+                       && optionalBatchIdxValid(decodeConfig.mtpRepairBatchCachePositionExtIdx)
+                       && optionalBatchIdxValid(decodeConfig.mtpRepairBatchKvInputExtIndices[0])
+                       && optionalBatchIdxValid(decodeConfig.mtpRepairBatchKvInputExtIndices[1]),
+                   0, "autoregressive_decode: invalid optional batched MTP repair index");
     } else {
       REQUIRE_TRUE(batchRepairStart == tArgCount, 0,
                    "autoregressive_decode: unexpected trailing MTP repair metadata");
@@ -615,20 +625,8 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
                        && decodeConfig.mtpRepairBatchTargetHiddenExtIdx >= 0
                        && decodeConfig.mtpRepairBatchTargetHiddenExtIdx
                            < decodeConfig.mtpRepairBatchNumPlanExternalInputs
-                       && decodeConfig.mtpRepairBatchCausalMaskExtIdx >= 0
-                       && decodeConfig.mtpRepairBatchCausalMaskExtIdx
-                           < decodeConfig.mtpRepairBatchNumPlanExternalInputs
                        && decodeConfig.mtpRepairBatchPositionOffsetExtIdx >= 0
                        && decodeConfig.mtpRepairBatchPositionOffsetExtIdx
-                           < decodeConfig.mtpRepairBatchNumPlanExternalInputs
-                       && decodeConfig.mtpRepairBatchCachePositionExtIdx >= 0
-                       && decodeConfig.mtpRepairBatchCachePositionExtIdx
-                           < decodeConfig.mtpRepairBatchNumPlanExternalInputs
-                       && decodeConfig.mtpRepairBatchKvInputExtIndices[0] >= 0
-                       && decodeConfig.mtpRepairBatchKvInputExtIndices[0]
-                           < decodeConfig.mtpRepairBatchNumPlanExternalInputs
-                       && decodeConfig.mtpRepairBatchKvInputExtIndices[1] >= 0
-                       && decodeConfig.mtpRepairBatchKvInputExtIndices[1]
                            < decodeConfig.mtpRepairBatchNumPlanExternalInputs
                        && decodeConfig.mtpRepairBatchKeyOutputIdx >= 0
                        && decodeConfig.mtpRepairBatchKeyOutputIdx
@@ -637,6 +635,17 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
                        && decodeConfig.mtpRepairBatchValueOutputIdx
                            < decodeConfig.mtpRepairBatchNumPlanOutputs,
                    0, "autoregressive_decode: unresolved batched MTP repair plan indices");
+      // Optional K/V-only pruned indices (-1 allowed, in-range otherwise) are
+      // re-verified here so the bounds block agrees with the trailer contract.
+      const int numBatchPlanInputs = decodeConfig.mtpRepairBatchNumPlanExternalInputs;
+      const auto batchOptionalIdxValid = [numBatchPlanInputs](int idx) {
+        return idx == -1 || (idx >= 0 && idx < numBatchPlanInputs);
+      };
+      REQUIRE_TRUE(batchOptionalIdxValid(decodeConfig.mtpRepairBatchCausalMaskExtIdx)
+                       && batchOptionalIdxValid(decodeConfig.mtpRepairBatchCachePositionExtIdx)
+                       && batchOptionalIdxValid(decodeConfig.mtpRepairBatchKvInputExtIndices[0])
+                       && batchOptionalIdxValid(decodeConfig.mtpRepairBatchKvInputExtIndices[1]),
+                   0, "autoregressive_decode: out-of-range optional batched MTP repair index");
     }
   }
 

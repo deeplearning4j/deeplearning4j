@@ -273,9 +273,13 @@ static SD_KERNEL void refillRepairMaskKernel(void* vMask,
          idx += static_cast<LongType>(gridDim.x) * blockDim.x) {
         const LongType row = idx / rowLen;
         const LongType col = idx % rowLen;
-        // chainParents(1,W): every repair row sees the committed prefix and
-        // its own slot, but no sibling repair row. Inactive rows stay finite
-        // (past + self) and are never scattered by the caller.
+        // Rows at/beyond the active prefix see the committed prefix and their
+        // own slot so their softmax stays finite (outputs never scattered).
+        // Rows inside the active prefix behave identically: the intended
+        // K/V-only repair graph prunes attention entirely, so mask content
+        // must not feed the returned K/V. If a future repair graph retains
+        // attention, this refill is NOT a valid causal chain and the graph
+        // must qualify its own mask semantics before use.
         mask[idx] = (col < predictorBase || col == predictorBase + row)
             ? static_cast<T>(0.0f) : static_cast<T>(maskFill);
     }
@@ -2149,8 +2153,12 @@ void autoregressiveDecode(
                          && hidden->ordering() == 'c' && shape::strideDescendingCAscendingF(hidden->shapeInfo()),
                      0, "autoregressive_decode: batched repair inputs must use contiguous C layout");
         const LongType maskLen = mask->sizeAt(3);
-        REQUIRE_TRUE(predictorBase + config->mtpRepairBatchWidth <= maskLen,
-                     0, "autoregressive_decode: batched repair mask capacity is too small");
+        // Only the active prefix is written and scattered; inactive rows are
+        // masked finite and their outputs are ignored, so requiring the whole
+        // physical width inside the mask would reject valid near-capacity
+        // repairs. The scatter capacity check below covers the active rows.
+        REQUIRE_TRUE(predictorBase + activeRows <= maskLen,
+                     0, "autoregressive_decode: batched repair active prefix exceeds mask capacity");
         REQUIRE_TRUE(config->mtpKvBuffers[0] != nullptr && config->mtpKvBuffers[1] != nullptr
                          && config->mtpKvBuffers[0]->rankOf() == 4
                          && config->mtpKvBuffers[1]->rankOf() == 4
