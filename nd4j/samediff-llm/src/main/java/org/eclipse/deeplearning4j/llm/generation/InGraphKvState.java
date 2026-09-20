@@ -171,6 +171,26 @@ class InGraphKvState implements AutoCloseable {
     int mtpRepairNumPlanExternalInputs;
     int mtpRepairNumPlanOutputs;
 
+    /** Optional fixed-width B=1 K/V-only repair plan for contiguous accepted-prefix rows. */
+    NativeExecutionBinding mtpRepairBatchBinding;
+    InferenceSession mtpRepairBatchSession;
+    INDArray mtpRepairBatchInputIds;
+    INDArray mtpRepairBatchTargetHiddenStates;
+    INDArray mtpRepairBatchCausalMask;
+    INDArray mtpRepairBatchPositionOffset;
+    INDArray mtpRepairBatchCachePosition;
+    int mtpRepairBatchWidth;
+    int mtpRepairBatchInputIdsExtIdx = -1;
+    int mtpRepairBatchTargetHiddenExtIdx = -1;
+    int mtpRepairBatchCausalMaskExtIdx = -1;
+    int mtpRepairBatchPositionOffsetExtIdx = -1;
+    int mtpRepairBatchCachePositionExtIdx = -1;
+    int[] mtpRepairBatchKvInputExtIndices;
+    int mtpRepairBatchKeyOutputIdx = -1;
+    int mtpRepairBatchValueOutputIdx = -1;
+    int mtpRepairBatchNumPlanExternalInputs;
+    int mtpRepairBatchNumPlanOutputs;
+
     // ── Frozen plan handles (owned by the decoder's InferenceSession — NOT closed here) ──────────
     DynamicShapePlanExecutor executor;
     Pointer planHandle;
@@ -358,6 +378,22 @@ class InGraphKvState implements AutoCloseable {
                 mtpRepairSession = null;
             }
         }
+        if (mtpRepairBatchBinding != null) {
+            try {
+                mtpRepairBatchBinding.close();
+            } finally {
+                mtpRepairBatchBinding = null;
+            }
+        }
+        if (mtpRepairBatchSession != null) {
+            try {
+                mtpRepairBatchSession.clearAllCaches();
+            } catch (Exception e) {
+                log.warn("[GenerationSession] error clearing batched MTP repair session: {}", e.getMessage());
+            } finally {
+                mtpRepairBatchSession = null;
+            }
+        }
         closed = true;
         // Destroy the isolated predictor plan before releasing any external inputs it references.
         if (mtpSession != null) {
@@ -387,6 +423,11 @@ class InGraphKvState implements AutoCloseable {
         safeClose(mtpCausalMask);
         safeClose(mtpPositionOffset);
         safeClose(mtpCachePosition);
+        safeClose(mtpRepairBatchInputIds);
+        safeClose(mtpRepairBatchTargetHiddenStates);
+        safeClose(mtpRepairBatchCausalMask);
+        safeClose(mtpRepairBatchPositionOffset);
+        safeClose(mtpRepairBatchCachePosition);
         releaseRecurrentCopyDonors();
         closeAll(mtpKvBuffers);
         closeAll(mtpPrefillInputMap);

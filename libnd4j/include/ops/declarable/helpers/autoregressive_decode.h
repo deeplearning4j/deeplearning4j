@@ -242,6 +242,30 @@ struct AutoregressiveDecodeConfig {
     int mtpRepairKeyOutputIdx = -1;
     int mtpRepairValueOutputIdx = -1;
 
+    // Optional fixed-width B=1 repair plan. The five input arrays are stable
+    // caller-owned buffers; the native loop fills only their active prefix per
+    // transaction and leaves the scalar repair ABI above untouched.
+    graph::NativeDynamicShapePlan* mtpRepairBatchPlanHandle = nullptr;
+    void* mtpRepairBatchExtInputContext = nullptr;
+    int mtpRepairBatchNumPlanExternalInputs = 0;
+    int mtpRepairBatchNumPlanOutputs = 0;
+    int mtpRepairBatchInputIdsExtIdx = -1;
+    int mtpRepairBatchTargetHiddenExtIdx = -1;
+    int mtpRepairBatchCausalMaskExtIdx = -1;
+    int mtpRepairBatchPositionOffsetExtIdx = -1;
+    int mtpRepairBatchCachePositionExtIdx = -1;
+    int mtpRepairBatchKvInputExtIndices[2] = {-1, -1};
+    int mtpRepairBatchKeyOutputIdx = -1;
+    int mtpRepairBatchValueOutputIdx = -1;
+    int mtpRepairBatchWidth = 0;
+
+    // Stable arrays passed as optional op inputs when the 1024 input-mask bit is set.
+    NDArray* mtpRepairBatchInputIds = nullptr;
+    NDArray* mtpRepairBatchTargetHidden = nullptr;
+    NDArray* mtpRepairBatchCausalMask = nullptr;
+    NDArray* mtpRepairBatchPositionOffset = nullptr;
+    NDArray* mtpRepairBatchCachePosition = nullptr;
+
     // T3b-dual: width-1 target plan captured from the same session's scalar
     // warmup. The rerun (asl=1 re-execution) routes through this plan so its
     // row-0 logits are greedy-identical: two separately-frozen plans (W-substrate

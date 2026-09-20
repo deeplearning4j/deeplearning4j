@@ -166,6 +166,12 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
   NDArray* mtpCachePosition = nullptr;
   NDArray* mtpKeyCache = nullptr;
   NDArray* mtpValueCache = nullptr;
+  const bool hasMtpBatchRepair = (optionalMask & 1024) != 0;
+  NDArray* mtpRepairBatchInputIds = nullptr;
+  NDArray* mtpRepairBatchTargetHidden = nullptr;
+  NDArray* mtpRepairBatchCausalMask = nullptr;
+  NDArray* mtpRepairBatchPositionOffset = nullptr;
+  NDArray* mtpRepairBatchCachePosition = nullptr;
   if (hasMtpPlan) {
     REQUIRE_TRUE(block.width() >= nextInput + 7, 0,
                  "autoregressive_decode: MTP bit is set but only %d inputs remain (need 7)",
@@ -177,6 +183,19 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
     mtpCachePosition = INPUT_VARIABLE(nextInput++);
     mtpKeyCache = INPUT_VARIABLE(nextInput++);
     mtpValueCache = INPUT_VARIABLE(nextInput++);
+    if (hasMtpBatchRepair) {
+      REQUIRE_TRUE(block.width() >= nextInput + 5, 0,
+                   "autoregressive_decode: batched MTP repair bit is set but only %d inputs remain (need 5)",
+                   block.width() - nextInput);
+      mtpRepairBatchInputIds = INPUT_VARIABLE(nextInput++);
+      mtpRepairBatchTargetHidden = INPUT_VARIABLE(nextInput++);
+      mtpRepairBatchCausalMask = INPUT_VARIABLE(nextInput++);
+      mtpRepairBatchPositionOffset = INPUT_VARIABLE(nextInput++);
+      mtpRepairBatchCachePosition = INPUT_VARIABLE(nextInput++);
+    }
+  } else {
+    REQUIRE_TRUE(!hasMtpBatchRepair, 0,
+                 "autoregressive_decode: batched MTP repair inputs require the MTP plan bit");
   }
 
   // Collect additional stop token IDs (always includes eosTokenId)
@@ -312,6 +331,11 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
   decodeConfig.actualSequenceLengthExtIdx = actualSequenceLengthExtIdx_arg;
   decodeConfig.nativeRepetitionLoopMaxPeriod = nativeRepetitionLoopMaxPeriod;
   decodeConfig.nativeRepetitionLoopMaxRepeats = nativeRepetitionLoopMaxRepeats;
+  decodeConfig.mtpRepairBatchInputIds = mtpRepairBatchInputIds;
+  decodeConfig.mtpRepairBatchTargetHidden = mtpRepairBatchTargetHidden;
+  decodeConfig.mtpRepairBatchCausalMask = mtpRepairBatchCausalMask;
+  decodeConfig.mtpRepairBatchPositionOffset = mtpRepairBatchPositionOffset;
+  decodeConfig.mtpRepairBatchCachePosition = mtpRepairBatchCachePosition;
   // Multi-row commit is EXPERIMENTAL (breaks token-exact parity, see
   // allowMultiRowCommit docs). Opt in per test run via -D in the pom's
   // surefire env mapping; production default is OFF.
@@ -352,9 +376,11 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
     // Optional scalar ABI, documented by AutoregressiveDecode.withScalarTargetPlan,
     // followed by an optional versioned KV-only repair trailer.
     constexpr double MTP_REPAIR_TRAILER_MARKER = 0x4D545052;
+    constexpr double MTP_BATCH_REPAIR_TRAILER_MARKER = 0x4D545042;
     const size_t tArgCount = block.getTArguments()->size();
     size_t repairStart = tArgCount;
-    if (tArgCount > 45 && T_ARG(45) != MTP_REPAIR_TRAILER_MARKER) {
+    if (tArgCount > 45 && T_ARG(45) != MTP_REPAIR_TRAILER_MARKER
+            && T_ARG(45) != MTP_BATCH_REPAIR_TRAILER_MARKER) {
       REQUIRE_TRUE(tArgCount >= 60, 0,
                    "autoregressive_decode: incomplete scalar target metadata");
       for (size_t i = 45; i < 60; ++i) {
@@ -387,17 +413,19 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
       int ni = static_cast<int>(T_ARG(58)), no = static_cast<int>(T_ARG(59));
       repairStart = static_cast<size_t>(60 + ni + no);
       REQUIRE_TRUE(ni > 0 && no > 0 && repairStart <= tArgCount
-                       && (repairStart == tArgCount || T_ARG(repairStart) == MTP_REPAIR_TRAILER_MARKER),
+                       && (repairStart == tArgCount
+                           || T_ARG(repairStart) == MTP_REPAIR_TRAILER_MARKER
+                           || T_ARG(repairStart) == MTP_BATCH_REPAIR_TRAILER_MARKER),
                    0, "autoregressive_decode: invalid scalar mapping lengths");
       for (int i = 0; i < ni; ++i) decodeConfig.scalarInputToTarget.push_back(static_cast<int>(T_ARG(60 + i)));
       for (int i = 0; i < no; ++i) decodeConfig.targetOutputToScalar.push_back(static_cast<int>(T_ARG(60 + ni + i)));
     } else if (tArgCount > 45) {
       repairStart = 45;
     }
-    if (repairStart < tArgCount) {
-      REQUIRE_TRUE(tArgCount == repairStart + 16 && T_ARG(repairStart) == MTP_REPAIR_TRAILER_MARKER,
+    if (repairStart < tArgCount && T_ARG(repairStart) == MTP_REPAIR_TRAILER_MARKER) {
+      REQUIRE_TRUE(tArgCount >= repairStart + 16 && T_ARG(repairStart) == MTP_REPAIR_TRAILER_MARKER,
                    0, "autoregressive_decode: malformed MTP repair trailer");
-      for (size_t i = repairStart; i < tArgCount; ++i) {
+      for (size_t i = repairStart; i < repairStart + 16; ++i) {
         double value = T_ARG(i);
         const bool pointerHalf = i >= repairStart + 1 && i <= repairStart + 4;
         const bool optionalIndex = i == repairStart + 9   // causal mask
@@ -442,6 +470,68 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
                        && decodeConfig.mtpRepairKeyOutputIdx >= 0
                        && decodeConfig.mtpRepairValueOutputIdx >= 0,
                    0, "autoregressive_decode: invalid MTP repair plan metadata");
+    }
+
+    const bool hasScalarRepairTrailer = repairStart < tArgCount
+        && T_ARG(repairStart) == MTP_REPAIR_TRAILER_MARKER;
+    const size_t batchRepairStart = hasScalarRepairTrailer ? repairStart + 16 : repairStart;
+    if (hasMtpBatchRepair) {
+      REQUIRE_TRUE(tArgCount == batchRepairStart + 16
+                       && T_ARG(batchRepairStart) == MTP_BATCH_REPAIR_TRAILER_MARKER,
+                   0, "autoregressive_decode: malformed batched MTP repair trailer");
+      for (size_t i = batchRepairStart; i < tArgCount; ++i) {
+        double value = T_ARG(i);
+        const bool pointerHalf = i >= batchRepairStart + 1 && i <= batchRepairStart + 4;
+        const bool optionalIndex = i == batchRepairStart + 9
+            || i == batchRepairStart + 11
+            || i == batchRepairStart + 14
+            || i == batchRepairStart + 15;
+        const double minimum = optionalIndex ? -1.0 : 0.0;
+        const double maximum = pointerHalf
+            ? 4294967295.0 : static_cast<double>(std::numeric_limits<int>::max());
+        REQUIRE_TRUE(std::isfinite(value) && value >= minimum
+                         && value <= maximum && std::floor(value) == value,
+                     0, "autoregressive_decode: invalid batched MTP repair metadata at tArg %d",
+                     static_cast<int>(i));
+      }
+      const size_t r = batchRepairStart + 1;
+      uint64_t repairPlanAddr =
+          (static_cast<uint64_t>(static_cast<uint32_t>(T_ARG(r + 1))) << 32)
+          | static_cast<uint64_t>(static_cast<uint32_t>(T_ARG(r)));
+      uint64_t repairCtxAddr =
+          (static_cast<uint64_t>(static_cast<uint32_t>(T_ARG(r + 3))) << 32)
+          | static_cast<uint64_t>(static_cast<uint32_t>(T_ARG(r + 2)));
+      decodeConfig.mtpRepairBatchPlanHandle =
+          reinterpret_cast<graph::NativeDynamicShapePlan*>(repairPlanAddr);
+      decodeConfig.mtpRepairBatchExtInputContext = reinterpret_cast<void*>(repairCtxAddr);
+      decodeConfig.mtpRepairBatchNumPlanExternalInputs = static_cast<int>(T_ARG(r + 4));
+      decodeConfig.mtpRepairBatchNumPlanOutputs = static_cast<int>(T_ARG(r + 5));
+      decodeConfig.mtpRepairBatchInputIdsExtIdx = static_cast<int>(T_ARG(r + 6));
+      decodeConfig.mtpRepairBatchTargetHiddenExtIdx = static_cast<int>(T_ARG(r + 7));
+      decodeConfig.mtpRepairBatchCausalMaskExtIdx = static_cast<int>(T_ARG(r + 8));
+      decodeConfig.mtpRepairBatchPositionOffsetExtIdx = static_cast<int>(T_ARG(r + 9));
+      decodeConfig.mtpRepairBatchCachePositionExtIdx = static_cast<int>(T_ARG(r + 10));
+      decodeConfig.mtpRepairBatchKeyOutputIdx = static_cast<int>(T_ARG(r + 11));
+      decodeConfig.mtpRepairBatchValueOutputIdx = static_cast<int>(T_ARG(r + 12));
+      decodeConfig.mtpRepairBatchKvInputExtIndices[0] = static_cast<int>(T_ARG(r + 13));
+      decodeConfig.mtpRepairBatchKvInputExtIndices[1] = static_cast<int>(T_ARG(r + 14));
+      REQUIRE_TRUE(decodeConfig.mtpRepairBatchPlanHandle != nullptr
+                       && decodeConfig.mtpRepairBatchExtInputContext != nullptr
+                       && decodeConfig.mtpRepairBatchNumPlanExternalInputs > 0
+                       && decodeConfig.mtpRepairBatchNumPlanOutputs > 0
+                       && decodeConfig.mtpRepairBatchInputIdsExtIdx >= 0
+                       && decodeConfig.mtpRepairBatchTargetHiddenExtIdx >= 0
+                       && decodeConfig.mtpRepairBatchCausalMaskExtIdx >= 0
+                       && decodeConfig.mtpRepairBatchPositionOffsetExtIdx >= 0
+                       && decodeConfig.mtpRepairBatchCachePositionExtIdx >= 0
+                       && decodeConfig.mtpRepairBatchKeyOutputIdx >= 0
+                       && decodeConfig.mtpRepairBatchValueOutputIdx >= 0
+                       && decodeConfig.mtpRepairBatchKvInputExtIndices[0] >= 0
+                       && decodeConfig.mtpRepairBatchKvInputExtIndices[1] >= 0,
+                   0, "autoregressive_decode: invalid batched MTP repair plan metadata");
+    } else {
+      REQUIRE_TRUE(batchRepairStart == tArgCount, 0,
+                   "autoregressive_decode: unexpected trailing MTP repair metadata");
     }
 
     decodeConfig.mtpInputIds = mtpInputIds;
@@ -492,6 +582,62 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
                      && decodeConfig.mtpHiddenOutputIdx < decodeConfig.mtpNumPlanOutputs
                      && decodeConfig.targetHiddenOutputIdx >= 0,
                  0, "autoregressive_decode: unresolved or out-of-range MTP plan index");
+
+    if (hasMtpBatchRepair) {
+      REQUIRE_TRUE(mtpRepairBatchInputIds != nullptr && mtpRepairBatchTargetHidden != nullptr
+                       && mtpRepairBatchCausalMask != nullptr
+                       && mtpRepairBatchPositionOffset != nullptr
+                       && mtpRepairBatchCachePosition != nullptr,
+                   0, "autoregressive_decode: batched MTP repair input is null");
+      REQUIRE_TRUE(mtpRepairBatchInputIds->rankOf() == 2, 0,
+                   "autoregressive_decode: batched MTP repair ids must be rank 2");
+      const LongType repairWidth = mtpRepairBatchInputIds->sizeAt(1);
+      decodeConfig.mtpRepairBatchWidth = static_cast<int>(repairWidth);
+      REQUIRE_TRUE(mtpRepairBatchInputIds->dataType() == DataType::INT64
+                       && mtpRepairBatchInputIds->sizeAt(0) == 1 && repairWidth > 0
+                       && mtpRepairBatchTargetHidden->rankOf() == 3
+                       && mtpRepairBatchTargetHidden->sizeAt(0) == 1
+                       && mtpRepairBatchTargetHidden->sizeAt(1) == repairWidth
+                       && mtpRepairBatchCausalMask->rankOf() == 4
+                       && mtpRepairBatchCausalMask->sizeAt(0) == 1
+                       && mtpRepairBatchCausalMask->sizeAt(1) == 1
+                       && mtpRepairBatchCausalMask->sizeAt(2) == repairWidth
+                       && mtpRepairBatchCausalMask->sizeAt(3) > 0
+                       && mtpRepairBatchPositionOffset->dataType() == DataType::INT64
+                       && mtpRepairBatchCachePosition->dataType() == DataType::INT64
+                       && mtpRepairBatchPositionOffset->lengthOf() == 1
+                       && mtpRepairBatchCachePosition->lengthOf() == 1,
+                   0, "autoregressive_decode: batched MTP repair arrays must be "
+                      "ids [1,W] INT64, hidden [1,W,H], mask [1,1,W,L], scalar pos/cache");
+      REQUIRE_TRUE(decodeConfig.mtpRepairBatchInputIdsExtIdx >= 0
+                       && decodeConfig.mtpRepairBatchInputIdsExtIdx
+                           < decodeConfig.mtpRepairBatchNumPlanExternalInputs
+                       && decodeConfig.mtpRepairBatchTargetHiddenExtIdx >= 0
+                       && decodeConfig.mtpRepairBatchTargetHiddenExtIdx
+                           < decodeConfig.mtpRepairBatchNumPlanExternalInputs
+                       && decodeConfig.mtpRepairBatchCausalMaskExtIdx >= 0
+                       && decodeConfig.mtpRepairBatchCausalMaskExtIdx
+                           < decodeConfig.mtpRepairBatchNumPlanExternalInputs
+                       && decodeConfig.mtpRepairBatchPositionOffsetExtIdx >= 0
+                       && decodeConfig.mtpRepairBatchPositionOffsetExtIdx
+                           < decodeConfig.mtpRepairBatchNumPlanExternalInputs
+                       && decodeConfig.mtpRepairBatchCachePositionExtIdx >= 0
+                       && decodeConfig.mtpRepairBatchCachePositionExtIdx
+                           < decodeConfig.mtpRepairBatchNumPlanExternalInputs
+                       && decodeConfig.mtpRepairBatchKvInputExtIndices[0] >= 0
+                       && decodeConfig.mtpRepairBatchKvInputExtIndices[0]
+                           < decodeConfig.mtpRepairBatchNumPlanExternalInputs
+                       && decodeConfig.mtpRepairBatchKvInputExtIndices[1] >= 0
+                       && decodeConfig.mtpRepairBatchKvInputExtIndices[1]
+                           < decodeConfig.mtpRepairBatchNumPlanExternalInputs
+                       && decodeConfig.mtpRepairBatchKeyOutputIdx >= 0
+                       && decodeConfig.mtpRepairBatchKeyOutputIdx
+                           < decodeConfig.mtpRepairBatchNumPlanOutputs
+                       && decodeConfig.mtpRepairBatchValueOutputIdx >= 0
+                       && decodeConfig.mtpRepairBatchValueOutputIdx
+                           < decodeConfig.mtpRepairBatchNumPlanOutputs,
+                   0, "autoregressive_decode: unresolved batched MTP repair plan indices");
+    }
   }
 
   int iArgCount = block.getIArguments()->size();

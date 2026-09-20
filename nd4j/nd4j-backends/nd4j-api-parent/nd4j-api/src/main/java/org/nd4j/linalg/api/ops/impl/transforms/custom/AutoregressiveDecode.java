@@ -1025,6 +1025,8 @@ public class AutoregressiveDecode extends DynamicCustomOp {
      * 60+ scalar-input-to-window-input map, then window-output-to-scalar-output map.</p>
      */
     private static final long MTP_REPAIR_TRAILER_MARKER = 0x4D545052L;
+    /** Optional trailer marker for the fixed-width B=1 repair plan. */
+    private static final long MTP_BATCH_REPAIR_TRAILER_MARKER = 0x4D545042L;
 
     /**
      * Attach an optional KV-only predictor repair plan. The trailer is appended
@@ -1052,6 +1054,84 @@ public class AutoregressiveDecode extends DynamicCustomOp {
         long contextAddress = contextHandle.address();
         for (double value : new double[]{
                 (double) MTP_REPAIR_TRAILER_MARKER,
+                (double) (planAddress & 0xFFFFFFFFL),
+                (double) ((planAddress >>> 32) & 0xFFFFFFFFL),
+                (double) (contextAddress & 0xFFFFFFFFL),
+                (double) ((contextAddress >>> 32) & 0xFFFFFFFFL),
+                (double) numPlanExternalInputs, (double) numPlanOutputs,
+                (double) inputIdsExtIdx, (double) targetHiddenExtIdx,
+                (double) causalMaskExtIdx, (double) positionOffsetExtIdx,
+                (double) cachePositionExtIdx, (double) keyOutputIdx,
+                (double) valueOutputIdx, (double) keyInputExtIdx,
+                (double) valueInputExtIdx}) {
+            tArguments.add(value);
+        }
+        return this;
+    }
+
+    /**
+     * Attach an independent fixed-width B=1 K/V-only predictor repair plan.
+     *
+     * <p>The scalar repair trailer remains the compatibility fallback. This optional extension
+     * appends five stable input arrays after the seven scalar MTP arrays and a second versioned
+     * metadata trailer. The native helper selects this plan only when the 1024 input-mask bit is
+     * present; old callers and the scalar ABI remain unchanged.</p>
+     */
+    public AutoregressiveDecode withMtpBatchedRepairPlan(
+            INDArray repairInputIds, INDArray repairTargetHiddenStates,
+            INDArray repairCausalMask, INDArray repairPositionOffset,
+            INDArray repairCachePosition, int width,
+            Pointer planHandle, Pointer contextHandle,
+            int numPlanExternalInputs, int numPlanOutputs,
+            int inputIdsExtIdx, int targetHiddenExtIdx, int causalMaskExtIdx,
+            int positionOffsetExtIdx, int cachePositionExtIdx,
+            int keyOutputIdx, int valueOutputIdx,
+            int keyInputExtIdx, int valueInputExtIdx) {
+        if ((iArguments.get(4) & 256L) == 0L) {
+            throw new IllegalStateException("Batched MTP repair requires withMtpPlan first");
+        }
+        if (repairInputIds == null || repairTargetHiddenStates == null || repairCausalMask == null
+                || repairPositionOffset == null || repairCachePosition == null) {
+            throw new IllegalArgumentException("Batched MTP repair requires five stable input arrays");
+        }
+        if (width <= 0 || repairInputIds.rank() != 2 || repairInputIds.size(0) != 1
+                || repairInputIds.size(1) != width || repairInputIds.dataType() != DataType.INT64
+                || repairTargetHiddenStates.rank() != 3 || repairTargetHiddenStates.size(0) != 1
+                || repairTargetHiddenStates.size(1) != width
+                || repairCausalMask.rank() != 4 || repairCausalMask.size(0) != 1
+                || repairCausalMask.size(1) != 1 || repairCausalMask.size(2) != width
+                || repairCausalMask.size(3) <= 0
+                || repairPositionOffset.length() != 1 || repairCachePosition.length() != 1
+                || repairPositionOffset.dataType() != DataType.INT64
+                || repairCachePosition.dataType() != DataType.INT64) {
+            throw new IllegalArgumentException("Batched MTP repair requires ids [1,W] INT64, hidden [1,W,H], "
+                    + "mask [1,1,W,L], and INT64 position/cache scalars");
+        }
+        if (planHandle == null || planHandle.isNull() || contextHandle == null || contextHandle.isNull()) {
+            throw new IllegalArgumentException("Batched MTP repair requires non-null plan and context handles");
+        }
+        if (numPlanExternalInputs <= 0 || numPlanOutputs <= 0
+                || inputIdsExtIdx < 0 || targetHiddenExtIdx < 0
+                || positionOffsetExtIdx < 0 || keyOutputIdx < 0 || valueOutputIdx < 0
+                || keyInputExtIdx < 0 || valueInputExtIdx < 0) {
+            throw new IllegalArgumentException("Batched MTP repair metadata is incomplete");
+        }
+        inputArguments.add(repairInputIds);
+        inputArguments.add(repairTargetHiddenStates);
+        inputArguments.add(repairCausalMask);
+        inputArguments.add(repairPositionOffset);
+        inputArguments.add(repairCachePosition);
+
+        long previousMask = iArguments.get(4);
+        long batchedMask = previousMask | 1024L;
+        iArguments.set(4, batchedMask);
+        this.optionalInputMask = (int) batchedMask;
+
+        while (tArguments.size() < 45) tArguments.add(0.0);
+        long planAddress = planHandle.address();
+        long contextAddress = contextHandle.address();
+        for (double value : new double[]{
+                (double) MTP_BATCH_REPAIR_TRAILER_MARKER,
                 (double) (planAddress & 0xFFFFFFFFL),
                 (double) ((planAddress >>> 32) & 0xFFFFFFFFL),
                 (double) (contextAddress & 0xFFFFFFFFL),

@@ -261,6 +261,41 @@ static SD_KERNEL void refillWindowCausalMaskKernel(void* vMask,
 }
 
 template <typename T>
+static SD_KERNEL void refillRepairMaskKernel(void* vMask,
+                                             LongType wMax,
+                                             LongType rowLen,
+                                             LongType predictorBase,
+                                             float maskFill) {
+    const LongType totalElems = wMax * rowLen;
+    auto mask = reinterpret_cast<T*>(vMask);
+    for (LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
+         idx < totalElems;
+         idx += static_cast<LongType>(gridDim.x) * blockDim.x) {
+        const LongType row = idx / rowLen;
+        const LongType col = idx % rowLen;
+        // chainParents(1,W): every repair row sees the committed prefix and
+        // its own slot, but no sibling repair row. Inactive rows stay finite
+        // (past + self) and are never scattered by the caller.
+        mask[idx] = (col < predictorBase || col == predictorBase + row)
+            ? static_cast<T>(0.0f) : static_cast<T>(maskFill);
+    }
+}
+
+template <typename T>
+static void refillRepairMaskLauncher(const cudaStream_t* stream,
+                                     void* vMask,
+                                     LongType wMax,
+                                     LongType rowLen,
+                                     LongType predictorBase) {
+    const float maskFill = (sizeof(T) == 2) ? -65504.0f : -1e9f;
+    const LongType totalElems = wMax * rowLen;
+    const int threads = 256;
+    const int blocks = static_cast<int>((totalElems + threads - 1) / threads);
+    refillRepairMaskKernel<T><<<blocks, threads, 0, *stream>>>(
+        vMask, wMax, rowLen, predictorBase, maskFill);
+}
+
+template <typename T>
 static void refillWindowCausalMaskLauncher(const cudaStream_t* stream,
                                            void* vMask,
                                            LongType wMax,
@@ -1769,10 +1804,14 @@ void autoregressiveDecode(
     std::vector<NDArray*> mtpPlanOutputsVec;
     std::vector<NDArray*> mtpRepairExtInputsVec;
     std::vector<NDArray*> mtpRepairPlanOutputsVec;
+    std::vector<NDArray*> mtpRepairBatchExtInputsVec;
+    std::vector<NDArray*> mtpRepairBatchPlanOutputsVec;
     NDArray** mtpExtInputs = nullptr;
     NDArray** mtpPlanOutputs = nullptr;
     NDArray** mtpRepairExtInputs = nullptr;
     NDArray** mtpRepairPlanOutputs = nullptr;
+    NDArray** mtpRepairBatchExtInputs = nullptr;
+    NDArray** mtpRepairBatchPlanOutputs = nullptr;
     int mtpNumExtInputs = 0;
     int mtpNumOutputs = 0;
     LongType mtpMaskLen = 0;
@@ -1883,6 +1922,67 @@ void autoregressiveDecode(
         markRepairVariable(config->mtpRepairCachePositionExtIdx);
         markRepairVariable(config->mtpRepairKvInputExtIndices[0]);
         markRepairVariable(config->mtpRepairKvInputExtIndices[1]);
+    }
+
+    const bool mtpRepairBatchReady = config->mtpRepairBatchPlanHandle != nullptr
+        && config->mtpRepairBatchExtInputContext != nullptr
+        && config->mtpRepairBatchWidth > 0;
+    if (mtpRepairBatchReady) {
+        auto* batchRepairContext = reinterpret_cast<graph::Context*>(config->mtpRepairBatchExtInputContext);
+        REQUIRE_TRUE(config->mtpRepairBatchNumPlanExternalInputs > 0
+                         && config->mtpRepairBatchNumPlanOutputs > 0,
+                     0, "autoregressive_decode: invalid batched MTP repair plan dimensions");
+        REQUIRE_TRUE(config->mtpRepairBatchInputIds != nullptr
+                         && config->mtpRepairBatchTargetHidden != nullptr
+                         && config->mtpRepairBatchCausalMask != nullptr
+                         && config->mtpRepairBatchPositionOffset != nullptr
+                         && config->mtpRepairBatchCachePosition != nullptr,
+                     0, "autoregressive_decode: batched MTP repair arrays are null");
+        REQUIRE_TRUE(config->mtpRepairBatchInputIds->rankOf() == 2
+                         && config->mtpRepairBatchInputIds->sizeAt(0) == 1
+                         && config->mtpRepairBatchInputIds->sizeAt(1) == config->mtpRepairBatchWidth
+                         && config->mtpRepairBatchInputIds->dataType() == DataType::INT64
+                         && config->mtpRepairBatchTargetHidden->rankOf() == 3
+                         && config->mtpRepairBatchTargetHidden->sizeAt(0) == 1
+                         && config->mtpRepairBatchTargetHidden->sizeAt(1) == config->mtpRepairBatchWidth
+                         && config->mtpRepairBatchCausalMask->rankOf() == 4
+                         && config->mtpRepairBatchCausalMask->sizeAt(0) == 1
+                         && config->mtpRepairBatchCausalMask->sizeAt(1) == 1
+                         && config->mtpRepairBatchCausalMask->sizeAt(2) == config->mtpRepairBatchWidth
+                         && config->mtpRepairBatchCausalMask->sizeAt(3) > 0
+                         && config->mtpRepairBatchPositionOffset->lengthOf() == 1
+                         && config->mtpRepairBatchCachePosition->lengthOf() == 1,
+                     0, "autoregressive_decode: invalid batched MTP repair array geometry");
+        mtpRepairBatchExtInputsVec.resize(config->mtpRepairBatchNumPlanExternalInputs);
+        for (int i = 0; i < config->mtpRepairBatchNumPlanExternalInputs; i++) {
+            mtpRepairBatchExtInputsVec[i] = batchRepairContext->array(i);
+        }
+        auto setBatchRepairInput = [&](int idx, NDArray* array) {
+            if (idx >= 0 && idx < static_cast<int>(mtpRepairBatchExtInputsVec.size()))
+                mtpRepairBatchExtInputsVec[idx] = array;
+        };
+        setBatchRepairInput(config->mtpRepairBatchInputIdsExtIdx, config->mtpRepairBatchInputIds);
+        setBatchRepairInput(config->mtpRepairBatchTargetHiddenExtIdx, config->mtpRepairBatchTargetHidden);
+        setBatchRepairInput(config->mtpRepairBatchCausalMaskExtIdx, config->mtpRepairBatchCausalMask);
+        setBatchRepairInput(config->mtpRepairBatchPositionOffsetExtIdx, config->mtpRepairBatchPositionOffset);
+        setBatchRepairInput(config->mtpRepairBatchCachePositionExtIdx, config->mtpRepairBatchCachePosition);
+        setBatchRepairInput(config->mtpRepairBatchKvInputExtIndices[0], config->mtpKvBuffers[0]);
+        setBatchRepairInput(config->mtpRepairBatchKvInputExtIndices[1], config->mtpKvBuffers[1]);
+        mtpRepairBatchExtInputs = mtpRepairBatchExtInputsVec.data();
+        mtpRepairBatchPlanOutputsVec.resize(config->mtpRepairBatchNumPlanOutputs, nullptr);
+        mtpRepairBatchPlanOutputs = mtpRepairBatchPlanOutputsVec.data();
+        auto markBatchRepairVariable = [&](int idx) {
+            if (idx >= 0) config->mtpRepairBatchPlanHandle->markExternalInputVariable(idx);
+        };
+        markBatchRepairVariable(config->mtpRepairBatchInputIdsExtIdx);
+        markBatchRepairVariable(config->mtpRepairBatchTargetHiddenExtIdx);
+        markBatchRepairVariable(config->mtpRepairBatchCausalMaskExtIdx);
+        markBatchRepairVariable(config->mtpRepairBatchPositionOffsetExtIdx);
+        markBatchRepairVariable(config->mtpRepairBatchCachePositionExtIdx);
+        markBatchRepairVariable(config->mtpRepairBatchKvInputExtIndices[0]);
+        markBatchRepairVariable(config->mtpRepairBatchKvInputExtIndices[1]);
+        config->mtpRepairBatchPlanHandle->registerDeviceManagedExternalInput(config->mtpKvBuffers[0]);
+        config->mtpRepairBatchPlanHandle->registerDeviceManagedExternalInput(config->mtpKvBuffers[1]);
     }
 
     // KV_CACHE-gated chain probe: per chain exec, sample the carry-in hidden,
@@ -2010,6 +2110,136 @@ void autoregressiveDecode(
         void* nextDspStream = sd::graph::dspGetExecutionStream();
         if (nextDspStream != nullptr
                 && nextDspStream != static_cast<void*>(*stream)) {
+            sd::graph::dspStreamWaitEvent(nextDspStream, repairScatterEvent);
+        }
+        sd::graph::dspDestroyEvent(repairScatterEvent);
+        p0.predictorRepairForwards++;
+    };
+
+    // Execute the fixed-width B=1 repair plan once for the contiguous accepted
+    // prefix. The five stable arrays are overwritten in place; inactive rows
+    // remain masked and are never scattered into the predictor cache.
+    auto executeMtpRepairBatchCuda = [&](int activeRows, LongType predictorBase) {
+        REQUIRE_TRUE(mtpRepairBatchReady, 0,
+                     "autoregressive_decode: batched MTP KV-only repair plan is unavailable");
+        REQUIRE_TRUE(activeRows >= 1 && activeRows <= config->mtpRepairBatchWidth,
+                     0, "autoregressive_decode: invalid active batched repair rows %d/%d",
+                     activeRows, config->mtpRepairBatchWidth);
+        REQUIRE_TRUE(predictorBase >= 0, 0,
+                     "autoregressive_decode: invalid batched repair predictor base %lld",
+                     (long long)predictorBase);
+        NDArray* ids = config->mtpRepairBatchInputIds;
+        NDArray* hidden = config->mtpRepairBatchTargetHidden;
+        NDArray* mask = config->mtpRepairBatchCausalMask;
+        NDArray* position = config->mtpRepairBatchPositionOffset;
+        NDArray* cachePosition = config->mtpRepairBatchCachePosition;
+        REQUIRE_TRUE(config->targetHiddenOutputIdx >= 0
+                         && config->targetHiddenOutputIdx < numPlanOutputs,
+                     0, "autoregressive_decode: batched repair target hidden output index is invalid");
+        NDArray* targetHiddenRows = planOutputs[config->targetHiddenOutputIdx];
+        REQUIRE_TRUE(targetHiddenRows != nullptr && targetHiddenRows->rankOf() == 3
+                         && targetHiddenRows->sizeAt(0) == 1
+                         && targetHiddenRows->sizeAt(1) >= activeRows
+                         && targetHiddenRows->sizeAt(2) == hidden->sizeAt(2)
+                         && targetHiddenRows->dataType() == hidden->dataType()
+                         && targetHiddenRows->ordering() == 'c'
+                         && shape::strideDescendingCAscendingF(targetHiddenRows->shapeInfo()),
+                     0, "autoregressive_decode: batched repair target hidden rows are not contiguous [1,W,H]");
+        REQUIRE_TRUE(ids->ordering() == 'c' && shape::strideDescendingCAscendingF(ids->shapeInfo())
+                         && hidden->ordering() == 'c' && shape::strideDescendingCAscendingF(hidden->shapeInfo()),
+                     0, "autoregressive_decode: batched repair inputs must use contiguous C layout");
+        const LongType maskLen = mask->sizeAt(3);
+        REQUIRE_TRUE(predictorBase + config->mtpRepairBatchWidth <= maskLen,
+                     0, "autoregressive_decode: batched repair mask capacity is too small");
+        REQUIRE_TRUE(config->mtpKvBuffers[0] != nullptr && config->mtpKvBuffers[1] != nullptr
+                         && config->mtpKvBuffers[0]->rankOf() == 4
+                         && config->mtpKvBuffers[1]->rankOf() == 4
+                         && config->mtpKvBuffers[0]->sizeAt(0) == 1
+                         && config->mtpKvBuffers[1]->sizeAt(0) == 1
+                         && config->mtpKvBuffers[0]->sizeAt(2) == config->mtpKvBuffers[1]->sizeAt(2)
+                         && config->mtpKvBuffers[0]->sizeAt(3) == config->mtpKvBuffers[1]->sizeAt(3)
+                         && config->mtpKvBuffers[0]->dataType() == config->mtpKvBuffers[1]->dataType(),
+                     0, "autoregressive_decode: batched repair KV caches must be matching BSHD arrays");
+
+        const LongType hiddenRowBytes = hidden->sizeAt(2) * hidden->sizeOfT();
+        NDArray::prepareSpecialUse({ids, hidden, position, cachePosition, mask},
+                                   {specArgmaxDevice, targetHiddenRows});
+        cudaMemcpyAsync(ids->specialBuffer(), specArgmaxDevice->specialBuffer(),
+                        static_cast<size_t>(activeRows) * sizeof(LongType),
+                        cudaMemcpyDeviceToDevice, *stream);
+        cudaMemcpyAsync(hidden->specialBuffer(), targetHiddenRows->specialBuffer(),
+                        static_cast<size_t>(activeRows) * hiddenRowBytes,
+                        cudaMemcpyDeviceToDevice, *stream);
+        updatePositionIdsKernel<<<1, 1, 0, *stream>>>(position->specialBuffer(), predictorBase);
+        updatePositionIdsKernel<<<1, 1, 0, *stream>>>(cachePosition->specialBuffer(), predictorBase);
+        BUILD_SINGLE_SELECTOR(mask->dataType(), refillRepairMaskLauncher,
+                              (stream, mask->specialBuffer(),
+                               static_cast<LongType>(config->mtpRepairBatchWidth), maskLen,
+                               predictorBase), SD_FLOAT_TYPES);
+        NDArray::registerSpecialUse({ids, hidden, position, cachePosition, mask},
+                                    {specArgmaxDevice, targetHiddenRows});
+
+        void* repairCarryEvent = sd::graph::dspCreateEvent();
+        REQUIRE_TRUE(repairCarryEvent != nullptr, 0,
+                     "autoregressive_decode: failed to create CUDA batched repair event");
+        sd::graph::dspEventRecord(repairCarryEvent, *stream);
+        void* repairDspStream = sd::graph::dspGetExecutionStream();
+        if (repairDspStream != nullptr && repairDspStream != static_cast<void*>(*stream)) {
+            sd::graph::dspStreamWaitEvent(repairDspStream, repairCarryEvent);
+        }
+        sd::graph::dspDestroyEvent(repairCarryEvent);
+        const auto repairPhaseBefore = config->mtpRepairBatchPlanHandle->getPlanPhase();
+        Status repairStatus = config->mtpRepairBatchPlanHandle->executeSteadyState(
+            mtpRepairBatchExtInputs, config->mtpRepairBatchNumPlanExternalInputs,
+            mtpRepairBatchPlanOutputs, config->mtpRepairBatchNumPlanOutputs,
+            reinterpret_cast<void*>(const_cast<cudaStream_t*>(stream)));
+        const auto repairPhaseAfter = config->mtpRepairBatchPlanHandle->getPlanPhase();
+        if (repairPhaseBefore != repairPhaseAfter) p0.planPhaseTransitions++;
+        if (repairPhaseAfter == graph::PlanPhase::REPLAYING) p0.planReplayForwards++;
+        else p0.planWarmupForwards++;
+        REQUIRE_TRUE(repairStatus == Status::OK, 0,
+                     "autoregressive_decode: batched MTP K/V-only repair plan failed at base row %lld",
+                     (long long)predictorBase);
+        REQUIRE_TRUE(config->mtpRepairBatchKeyOutputIdx >= 0
+                         && config->mtpRepairBatchKeyOutputIdx < config->mtpRepairBatchNumPlanOutputs
+                         && config->mtpRepairBatchValueOutputIdx >= 0
+                         && config->mtpRepairBatchValueOutputIdx < config->mtpRepairBatchNumPlanOutputs,
+                     0, "autoregressive_decode: batched repair output indices are invalid");
+        NDArray* key = mtpRepairBatchPlanOutputs[config->mtpRepairBatchKeyOutputIdx];
+        NDArray* value = mtpRepairBatchPlanOutputs[config->mtpRepairBatchValueOutputIdx];
+        REQUIRE_TRUE(key != nullptr && value != nullptr && key->rankOf() == 4 && value->rankOf() == 4
+                         && key->sizeAt(0) == 1 && value->sizeAt(0) == 1
+                         && key->sizeAt(1) >= activeRows && value->sizeAt(1) >= activeRows
+                         && key->sizeAt(2) == config->mtpKvBuffers[0]->sizeAt(2)
+                         && value->sizeAt(2) == config->mtpKvBuffers[1]->sizeAt(2)
+                         && key->sizeAt(3) == config->mtpKvBuffers[0]->sizeAt(3)
+                         && value->sizeAt(3) == config->mtpKvBuffers[1]->sizeAt(3)
+                         && key->dataType() == config->mtpKvBuffers[0]->dataType()
+                         && value->dataType() == config->mtpKvBuffers[1]->dataType()
+                         && predictorBase + activeRows <= config->mtpKvBuffers[0]->sizeAt(1)
+                         && predictorBase + activeRows <= config->mtpKvBuffers[1]->sizeAt(1),
+                     0, "autoregressive_decode: batched repair outputs/caches violate BSHD capacity contract");
+        std::vector<LongType> prefix{0, 1, 0, activeRows, 0, key->sizeAt(2), 0, key->sizeAt(3)};
+        NDArray* keyPrefix = (*key)(prefix, true);
+        prefix[4] = 0;
+        prefix[6] = 0;
+        NDArray* valuePrefix = (*value)(prefix, true);
+        NDArray::prepareSpecialUse({config->mtpKvBuffers[0], config->mtpKvBuffers[1]},
+                                   {keyPrefix, valuePrefix});
+        ops::helpers::kvInPlaceWriteBSHD(config->mtpKvBuffers[0], keyPrefix,
+                                         cachePosition->specialBuffer(), context);
+        ops::helpers::kvInPlaceWriteBSHD(config->mtpKvBuffers[1], valuePrefix,
+                                         cachePosition->specialBuffer(), context);
+        NDArray::registerSpecialUse({config->mtpKvBuffers[0], config->mtpKvBuffers[1]},
+                                    {keyPrefix, valuePrefix});
+        delete keyPrefix;
+        delete valuePrefix;
+        void* repairScatterEvent = sd::graph::dspCreateEvent();
+        REQUIRE_TRUE(repairScatterEvent != nullptr, 0,
+                     "autoregressive_decode: failed to create CUDA batched repair scatter event");
+        sd::graph::dspEventRecord(repairScatterEvent, *stream);
+        void* nextDspStream = sd::graph::dspGetExecutionStream();
+        if (nextDspStream != nullptr && nextDspStream != static_cast<void*>(*stream)) {
             sd::graph::dspStreamWaitEvent(nextDspStream, repairScatterEvent);
         }
         sd::graph::dspDestroyEvent(repairScatterEvent);
@@ -4349,31 +4579,34 @@ void autoregressiveDecode(
                 // 1 and no row is retained beyond the base: this loop is a no-op and
                 // EVERY proposal row is hidden below. The repair machinery stays
                 // for the multi-token contract's return.
-                p0RepairActive = true;
-                for (int j = 0; j < consumedCount - 1; j++) {
-                    // Repair j (packet 2): token = finalizedEmitted[j], hidden =
-                    // targetHiddenRows[j], target token position = base+1+j,
-                    // PREDICTOR rope/slot = base+j (r = P - 1). executeMtpCuda
-                    // converts inside; the caller passes the TARGET position.
-                    LongType repairPosition = basePosition + 1 + j;
-                    setMtpTargetCarryCuda(
-                        planOutputs[config->targetHiddenOutputIdx], j);
-                    // Pairing (review round 2): draft p is written into target
-                    // input row p+1 and verification row r processes input r,
-                    // so for repaired rows j in [0, consumedCount-2]:
-                    // raw[j] == emitted[j] (all repaired rows are accepted
-                    // drafts; the pending correction is NEVER a consumed input
-                    // and must not enter predictor KV). Predictor row
-                    // base+j consumes emitted[j] (target position base+1+j).
-                    setMtpNextInputCuda(specArgmaxDevice, j, repairPosition);
-                    if (mtpRepairReady) executeMtpRepairCuda(repairPosition);
-                    else executeMtpCuda(repairPosition, 0, false);
+                if (mtpRepairBatchReady && consumedCount > 1) {
+                    // The batched plan consumes exactly the contiguous accepted
+                    // prefix. Its row j is positioned at predictorBase+j and
+                    // receives token[j] plus target hidden row[j].
+                    p0RepairActive = false;
+                    executeMtpRepairBatchCuda(consumedCount - 1, basePosition);
                     DSP_DIAG(KV_CACHE,
-                             "MTP_PREFIX_REPAIR step=%d targetPos=%lld predictorRow=%lld committedRow=%d "
-                             "carryRow=%d - rewriting predictor KV row with target hidden",
-                             step, (long long)repairPosition, (long long)(repairPosition - 1), j, carryRow);
+                             "MTP_PREFIX_REPAIR_BATCH step=%d predictorBase=%lld activeRows=%d "
+                             "carryRow=%d - one fixed-width K/V-only forward",
+                             step, (long long)basePosition, consumedCount - 1, carryRow);
+                } else {
+                    p0RepairActive = true;
+                    for (int j = 0; j < consumedCount - 1; j++) {
+                        // Scalar compatibility fallback: repair one row at a
+                        // time using the retained [1,1] arrays.
+                        LongType repairPosition = basePosition + 1 + j;
+                        setMtpTargetCarryCuda(
+                            planOutputs[config->targetHiddenOutputIdx], j);
+                        setMtpNextInputCuda(specArgmaxDevice, j, repairPosition);
+                        if (mtpRepairReady) executeMtpRepairCuda(repairPosition);
+                        else executeMtpCuda(repairPosition, 0, false);
+                        DSP_DIAG(KV_CACHE,
+                                 "MTP_PREFIX_REPAIR step=%d targetPos=%lld predictorRow=%lld committedRow=%d "
+                                 "carryRow=%d - rewriting predictor KV row with target hidden",
+                                 step, (long long)repairPosition, (long long)(repairPosition - 1), j, carryRow);
+                    }
+                    p0RepairActive = false;
                 }
-                p0RepairActive = false;
 
                 // All predictor rows at and beyond the pending row are future
                 // state after this commit. Remask the entire tail, not merely

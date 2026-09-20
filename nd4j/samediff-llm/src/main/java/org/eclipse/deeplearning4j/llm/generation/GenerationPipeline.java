@@ -2928,6 +2928,24 @@ public class GenerationPipeline implements AutoCloseable {
             state.mtpRepairValueOutputIdx = preparedMtp.repairValueOutputIdx;
             state.mtpRepairNumPlanExternalInputs = preparedMtp.repairNumPlanExternalInputs;
             state.mtpRepairNumPlanOutputs = preparedMtp.repairNumPlanOutputs;
+            state.mtpRepairBatchBinding = preparedMtp.repairBatchBinding;
+            state.mtpRepairBatchSession = preparedMtp.repairBatchSession;
+            state.mtpRepairBatchInputIds = preparedMtp.repairBatchInputIds;
+            state.mtpRepairBatchTargetHiddenStates = preparedMtp.repairBatchTargetHiddenStates;
+            state.mtpRepairBatchCausalMask = preparedMtp.repairBatchCausalMask;
+            state.mtpRepairBatchPositionOffset = preparedMtp.repairBatchPositionOffset;
+            state.mtpRepairBatchCachePosition = preparedMtp.repairBatchCachePosition;
+            state.mtpRepairBatchWidth = preparedMtp.repairBatchWidth;
+            state.mtpRepairBatchInputIdsExtIdx = preparedMtp.repairBatchInputIdsExtIdx;
+            state.mtpRepairBatchTargetHiddenExtIdx = preparedMtp.repairBatchTargetHiddenExtIdx;
+            state.mtpRepairBatchCausalMaskExtIdx = preparedMtp.repairBatchCausalMaskExtIdx;
+            state.mtpRepairBatchPositionOffsetExtIdx = preparedMtp.repairBatchPositionOffsetExtIdx;
+            state.mtpRepairBatchCachePositionExtIdx = preparedMtp.repairBatchCachePositionExtIdx;
+            state.mtpRepairBatchKvInputExtIndices = preparedMtp.repairBatchKvInputExtIndices;
+            state.mtpRepairBatchKeyOutputIdx = preparedMtp.repairBatchKeyOutputIdx;
+            state.mtpRepairBatchValueOutputIdx = preparedMtp.repairBatchValueOutputIdx;
+            state.mtpRepairBatchNumPlanExternalInputs = preparedMtp.repairBatchNumPlanExternalInputs;
+            state.mtpRepairBatchNumPlanOutputs = preparedMtp.repairBatchNumPlanOutputs;
         }
         state.kvInputNames = kvInputNames;
         state.recurrentStates = recurrentStates;
@@ -4320,6 +4338,28 @@ public class GenerationPipeline implements AutoCloseable {
                                 state.mtpRepairKvInputExtIndices[0],
                                 state.mtpRepairKvInputExtIndices[1]);
                     }
+                    if (state.mtpRepairBatchBinding != null) {
+                        NativeExecutionBinding batchRepairBinding = state.mtpRepairBatchBinding;
+                        op.withMtpBatchedRepairPlan(
+                                state.mtpRepairBatchInputIds,
+                                state.mtpRepairBatchTargetHiddenStates,
+                                state.mtpRepairBatchCausalMask,
+                                state.mtpRepairBatchPositionOffset,
+                                state.mtpRepairBatchCachePosition,
+                                state.mtpRepairBatchWidth,
+                                batchRepairBinding.getPlanHandle(), batchRepairBinding.getContextHandle(),
+                                state.mtpRepairBatchNumPlanExternalInputs,
+                                state.mtpRepairBatchNumPlanOutputs,
+                                state.mtpRepairBatchInputIdsExtIdx,
+                                state.mtpRepairBatchTargetHiddenExtIdx,
+                                state.mtpRepairBatchCausalMaskExtIdx,
+                                state.mtpRepairBatchPositionOffsetExtIdx,
+                                state.mtpRepairBatchCachePositionExtIdx,
+                                state.mtpRepairBatchKeyOutputIdx,
+                                state.mtpRepairBatchValueOutputIdx,
+                                state.mtpRepairBatchKvInputExtIndices[0],
+                                state.mtpRepairBatchKvInputExtIndices[1]);
+                    }
                 }
                 applyConfiguredStopSequences(op, state.generatedSoFar);
 
@@ -5674,6 +5714,25 @@ public class GenerationPipeline implements AutoCloseable {
         int repairValueOutputIdx = -1;
         int repairNumPlanExternalInputs;
         int repairNumPlanOutputs;
+
+        NativeExecutionBinding repairBatchBinding;
+        InferenceSession repairBatchSession;
+        INDArray repairBatchInputIds;
+        INDArray repairBatchTargetHiddenStates;
+        INDArray repairBatchCausalMask;
+        INDArray repairBatchPositionOffset;
+        INDArray repairBatchCachePosition;
+        int repairBatchWidth;
+        int repairBatchInputIdsExtIdx = -1;
+        int repairBatchTargetHiddenExtIdx = -1;
+        int repairBatchCausalMaskExtIdx = -1;
+        int repairBatchPositionOffsetExtIdx = -1;
+        int repairBatchCachePositionExtIdx = -1;
+        int[] repairBatchKvInputExtIndices;
+        int repairBatchKeyOutputIdx = -1;
+        int repairBatchValueOutputIdx = -1;
+        int repairBatchNumPlanExternalInputs;
+        int repairBatchNumPlanOutputs;
         // T3b-dual: width-1 target plan handle (greedy geometry) for the native
         // rerun; null when unavailable (rerun falls back to the W-substrate plan).
     }
@@ -6025,12 +6084,61 @@ public class GenerationPipeline implements AutoCloseable {
                 ? prepared.executor.getCurrentPlan().getExternalInputKeys().length : 0;
         prepared.numPlanOutputs = decodeOutputsRequested.size();
 
+        final boolean enableMtpRepair = Boolean.parseBoolean(
+                System.getProperty("nd4j.mtp.kvRepair", "true"));
+        if (enableMtpRepair) {
+        // The batched repair substrate is fixed at the configured maximum K. Its
+        // arrays are independent from the scalar predictor arrays so native repair
+        // can overwrite an active prefix without changing the scalar ABI or any
+        // captured scalar-plan addresses.
+        final int repairWidth = config.getMaxSpeculativeTokens();
+        prepared.repairBatchWidth = repairWidth;
+        prepared.repairBatchInputIds = reuseState != null ? reuseState.mtpRepairBatchInputIds : null;
+        if (prepared.repairBatchInputIds == null
+                || !Arrays.equals(prepared.repairBatchInputIds.shape(), new long[]{1, repairWidth})) {
+            if (prepared.repairBatchInputIds != null) prepared.repairBatchInputIds.close();
+            prepared.repairBatchInputIds = Nd4j.zeros(DataType.INT64, 1, repairWidth);
+        }
+        prepared.repairBatchTargetHiddenStates = reuseState != null
+                ? reuseState.mtpRepairBatchTargetHiddenStates : null;
+        if (prepared.repairBatchTargetHiddenStates == null
+                || !Arrays.equals(prepared.repairBatchTargetHiddenStates.shape(), new long[]{1, repairWidth, hidden})) {
+            if (prepared.repairBatchTargetHiddenStates != null) prepared.repairBatchTargetHiddenStates.close();
+            prepared.repairBatchTargetHiddenStates = Nd4j.zeros(mtpDtype, 1, repairWidth, hidden);
+        }
+        prepared.repairBatchPositionOffset = reuseState != null
+                ? reuseState.mtpRepairBatchPositionOffset : null;
+        if (prepared.repairBatchPositionOffset == null) {
+            prepared.repairBatchPositionOffset = Nd4j.scalar(DataType.INT64, predictorPendingRow);
+        } else {
+            prepared.repairBatchPositionOffset.putScalar(new long[]{}, predictorPendingRow);
+        }
+        prepared.repairBatchCachePosition = reuseState != null
+                ? reuseState.mtpRepairBatchCachePosition : null;
+        if (prepared.repairBatchCachePosition == null) {
+            prepared.repairBatchCachePosition = Nd4j.scalar(DataType.INT64, predictorPendingRow);
+        } else {
+            prepared.repairBatchCachePosition.putScalar(new long[]{}, predictorPendingRow);
+        }
+        INDArray freshRepairBatchMask = DecoderInputBuilder.buildInGraphWindowMask(
+                DecoderInputBuilder.chainParents(1, repairWidth), predictorTailRow,
+                1, repairWidth, maxKvLen, DataType.FLOAT);
+        prepared.repairBatchCausalMask = reuseState != null
+                ? reuseState.mtpRepairBatchCausalMask : null;
+        if (prepared.repairBatchCausalMask == null
+                || !Arrays.equals(prepared.repairBatchCausalMask.shape(), freshRepairBatchMask.shape())) {
+            if (prepared.repairBatchCausalMask != null) prepared.repairBatchCausalMask.close();
+            prepared.repairBatchCausalMask = freshRepairBatchMask;
+        } else {
+            prepared.repairBatchCausalMask.assign(freshRepairBatchMask);
+            freshRepairBatchMask.close();
+        }
+        }
+
         // P1A: build an independent K/V-only repair plan from the same graph and
         // immutable weights. Requesting only these outputs prunes the predictor
         // LM head, logits/argmax, final vocabulary path, and downstream carry.
         // The native controller will scatter these returned BSHD rows explicitly.
-        final boolean enableMtpRepair = Boolean.parseBoolean(
-                System.getProperty("nd4j.mtp.kvRepair", "true"));
         if (!enableMtpRepair) {
             log.info("[MTP-REPAIR] KV-only repair disabled by nd4j.mtp.kvRepair=false; "
                     + "using the legacy predictor repair path");
@@ -6112,7 +6220,141 @@ public class GenerationPipeline implements AutoCloseable {
                 prepared.repairTargetHiddenExtIdx);
             repairKey.close();
             repairValue.close();
+
+            // Capture a second, fixed-width K/V-only plan against the independent
+            // B=1 repair arrays. The scalar plan above remains available whenever
+            // the optional batch metadata is absent.
+            prepared.repairBatchSession = reuseState != null && reuseState.mtpRepairBatchSession != null
+                    ? reuseState.mtpRepairBatchSession : decoder.getInferenceFactory().create(decoder);
+            // The capture forward is a real K/V write. Preserve the live
+            // predictor rows it touches so plan capture cannot alter the
+            // post-warmup state before native decoding begins.
+            INDArray batchKeySnapshot;
+            INDArray batchValueSnapshot;
+            try (INDArray keySnapshotView = keyCache.get(
+                         NDArrayIndex.all(),
+                         NDArrayIndex.interval(predictorPendingRow, predictorPendingRow + repairWidth),
+                         NDArrayIndex.all(), NDArrayIndex.all());
+                 INDArray valueSnapshotView = valueCache.get(
+                         NDArrayIndex.all(),
+                         NDArrayIndex.interval(predictorPendingRow, predictorPendingRow + repairWidth),
+                         NDArrayIndex.all(), NDArrayIndex.all())) {
+                batchKeySnapshot = keySnapshotView.dup();
+                batchValueSnapshot = valueSnapshotView.dup();
+            }
+            prepared.repairBatchInputIds.putScalar(new long[]{0, 0}, firstTokenId);
+            try (INDArray firstRepairHidden = prepared.repairBatchTargetHiddenStates.get(
+                    NDArrayIndex.all(), NDArrayIndex.interval(0, 1), NDArrayIndex.all())) {
+                firstRepairHidden.assign(prepared.targetHiddenStates);
+            }
+            Map<String, INDArray> batchRepairInputs = new LinkedHashMap<>();
+            batchRepairInputs.put(MTP_INPUT_IDS_NAME, prepared.repairBatchInputIds);
+            batchRepairInputs.put(MTP_TARGET_HIDDEN_NAME, prepared.repairBatchTargetHiddenStates);
+            batchRepairInputs.put(MTP_POSITION_OFFSET_NAME, prepared.repairBatchPositionOffset);
+            batchRepairInputs.put(MTP_CACHE_POSITION_NAME, prepared.repairBatchCachePosition);
+            batchRepairInputs.put(MTP_CAUSAL_MASK_NAME, prepared.repairBatchCausalMask);
+            batchRepairInputs.put(MTP_KEY_CACHE_NAME, keyCache);
+            batchRepairInputs.put(MTP_VALUE_CACHE_NAME, valueCache);
+            List<String> batchRepairOutputsRequested = Arrays.asList(
+                    MTP_KEY_STATES_NAME, MTP_VALUE_STATES_NAME);
+            Map<String, INDArray> batchRepairOutputs;
+            try {
+                batchRepairOutputs = outputWithSession(
+                        prepared.repairBatchSession, batchRepairInputs, batchRepairOutputsRequested);
+            } finally {
+                try (INDArray keyRestoreView = keyCache.get(
+                             NDArrayIndex.all(),
+                             NDArrayIndex.interval(predictorPendingRow, predictorPendingRow + repairWidth),
+                             NDArrayIndex.all(), NDArrayIndex.all());
+                     INDArray valueRestoreView = valueCache.get(
+                             NDArrayIndex.all(),
+                             NDArrayIndex.interval(predictorPendingRow, predictorPendingRow + repairWidth),
+                             NDArrayIndex.all(), NDArrayIndex.all())) {
+                    keyRestoreView.assign(batchKeySnapshot);
+                    valueRestoreView.assign(batchValueSnapshot);
+                }
+                batchKeySnapshot.close();
+                batchValueSnapshot.close();
+            }
+            INDArray batchRepairKey = batchRepairOutputs.get(MTP_KEY_STATES_NAME);
+            INDArray batchRepairValue = batchRepairOutputs.get(MTP_VALUE_STATES_NAME);
+            if (batchRepairKey == null || batchRepairValue == null
+                    || batchRepairKey.rank() != 4 || batchRepairValue.rank() != 4) {
+                throw new IllegalStateException("Batched MTP K/V repair plan did not return rank-4 states: "
+                        + batchRepairOutputs.keySet());
+            }
+            DynamicShapePlanExecutor batchRepairExecutor = prepared.repairBatchSession
+                    .getDynamicShapePlanExecutor();
+            if (batchRepairExecutor == null || batchRepairExecutor.getCurrentPlan() == null) {
+                throw new IllegalStateException("Batched MTP K/V repair executor is unavailable");
+            }
+            batchRepairExecutor.setMaxKvCacheLength((int) maxKvLen);
+            batchRepairExecutor.configureMaxAllocationForKvCache(batchRepairOutputs);
+            if (!repairSlotBySlot) batchRepairExecutor.setShapesFrozen(true);
+            try {
+                prepared.repairBatchBinding = batchRepairExecutor.captureNativeExecutionBinding();
+            } catch (BindingCaptureException failure) {
+                prepared.repairBatchBinding = failure.getBinding();
+                throw failure;
+            }
+            String[] batchRepairKeys = prepared.repairBatchBinding.getExternalInputKeysSnapshot();
+            prepared.repairBatchNumPlanExternalInputs = prepared.repairBatchBinding.getInputCount();
+            prepared.repairBatchNumPlanOutputs = prepared.repairBatchBinding.getOutputCount();
+            prepared.repairBatchInputIdsExtIdx = findBoundInputIndex(
+                    prepared.repairBatchBinding, prepared.repairBatchInputIds);
+            prepared.repairBatchTargetHiddenExtIdx = findBoundInputIndex(
+                    prepared.repairBatchBinding, prepared.repairBatchTargetHiddenStates);
+            prepared.repairBatchCausalMaskExtIdx = findBoundInputIndex(
+                    prepared.repairBatchBinding, prepared.repairBatchCausalMask);
+            prepared.repairBatchPositionOffsetExtIdx = findBoundInputIndex(
+                    prepared.repairBatchBinding, prepared.repairBatchPositionOffset);
+            prepared.repairBatchCachePositionExtIdx = findBoundInputIndex(
+                    prepared.repairBatchBinding, prepared.repairBatchCachePosition);
+            prepared.repairBatchKvInputExtIndices = new int[]{
+                    findBoundInputIndex(prepared.repairBatchBinding, keyCache),
+                    findBoundInputIndex(prepared.repairBatchBinding, valueCache)};
+            prepared.repairBatchKeyOutputIdx = batchRepairOutputsRequested.indexOf(MTP_KEY_STATES_NAME);
+            prepared.repairBatchValueOutputIdx = batchRepairOutputsRequested.indexOf(MTP_VALUE_STATES_NAME);
+            if (prepared.repairBatchInputIdsExtIdx < 0
+                    || prepared.repairBatchTargetHiddenExtIdx < 0
+                    || prepared.repairBatchCausalMaskExtIdx < 0
+                    || prepared.repairBatchPositionOffsetExtIdx < 0
+                    || prepared.repairBatchCachePositionExtIdx < 0
+                    || prepared.repairBatchKvInputExtIndices[0] < 0
+                    || prepared.repairBatchKvInputExtIndices[1] < 0
+                    || prepared.repairBatchKeyOutputIdx < 0
+                    || prepared.repairBatchValueOutputIdx < 0) {
+                throw new IllegalStateException("Batched MTP K/V repair plan has unresolved input/output indices: "
+                        + "ids=" + prepared.repairBatchInputIdsExtIdx
+                        + " targetHidden=" + prepared.repairBatchTargetHiddenExtIdx
+                        + " mask=" + prepared.repairBatchCausalMaskExtIdx
+                        + " position=" + prepared.repairBatchPositionOffsetExtIdx
+                        + " cachePosition=" + prepared.repairBatchCachePositionExtIdx
+                        + " keyInput=" + prepared.repairBatchKvInputExtIndices[0]
+                        + " valueInput=" + prepared.repairBatchKvInputExtIndices[1]
+                        + " keyOutput=" + prepared.repairBatchKeyOutputIdx
+                        + " valueOutput=" + prepared.repairBatchValueOutputIdx
+                        + " externalKeys=" + Arrays.toString(batchRepairKeys));
+            }
+            log.info("[MTP-REPAIR] prepared fixed-width B=1 plan width={} inputs={} outputs={} "
+                            + "keyOut={} valueOut={} keyInput={} valueInput={}",
+                    repairWidth, prepared.repairBatchNumPlanExternalInputs,
+                    prepared.repairBatchNumPlanOutputs, prepared.repairBatchKeyOutputIdx,
+                    prepared.repairBatchValueOutputIdx, prepared.repairBatchKvInputExtIndices[0],
+                    prepared.repairBatchKvInputExtIndices[1]);
+            batchRepairKey.close();
+            batchRepairValue.close();
         }
+
+        // Keep the retained batch substrate published at the pending predictor
+        // row. Native repair rewrites this scalar start for every transaction.
+        prepared.repairBatchPositionOffset.putScalar(new long[]{}, predictorPendingRow);
+        prepared.repairBatchCachePosition.putScalar(new long[]{}, predictorPendingRow);
+        INDArray pendingRepairMask = DecoderInputBuilder.buildInGraphWindowMask(
+                DecoderInputBuilder.chainParents(1, repairWidth), predictorPendingRow,
+                1, repairWidth, maxKvLen, DataType.FLOAT);
+        prepared.repairBatchCausalMask.assign(pendingRepairMask);
+        pendingRepairMask.close();
 
         // Packet 1, step 6: after the warmup rewrote tail row N-1, publish the
         // pending pair (y1, h_N) and set BOTH retained predictor scalars to
