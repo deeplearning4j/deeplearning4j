@@ -1560,7 +1560,7 @@ void autoregressiveDecode(
     std::vector<LongType> kvRowSnapshotRows;  // snapshot rows per KV buffer
     std::vector<NDArray*> kvRowSnapshotSources;  // source static KV buffer
     LongType kvRowSnapshotBase = -1;              // base row captured
-    // Capture rows [base, base+proposedCount) of every static KV buffer.
+    // Capture the complete verification write range of every static KV buffer.
     // Called immediately before the verification execution.
     auto capturePreVerificationKvRows = [&](LongType base, int rows) {
         if (!config->planOwnsKvScatter || rows <= 0
@@ -2973,9 +2973,11 @@ void autoregressiveDecode(
             // Called BEFORE prepareScalarTarget and BEFORE the verification plan
             // execution - the snapshot is genuinely pre-verify.
             capturePreVerificationState();
-            // Verdict-c fix: also snapshot the shared KV rows [base, base+K) the
-            // W-wide verify is about to overwrite with draft-conditioned K/V.
-            capturePreVerificationKvRows(currentPosition, proposedCount);
+            // Snapshot the complete verification write range. The W-wide verify
+            // executes with activeWindow = 1 + proposedCount and therefore writes
+            // the current row plus every draft row; omitting the final correction
+            // row leaves stale K/V visible to a later prefix rerun.
+            capturePreVerificationKvRows(currentPosition, 1 + proposedCount);
         }
         if (useScalarTarget) prepareScalarTarget();
         // SCALAR-PLAN RETIREMENT (gates 8-10 evidence chain): the captured
@@ -4211,30 +4213,26 @@ void autoregressiveDecode(
                              step, (long long)repairPosition, (long long)(repairPosition - 1), j, carryRow);
                 }
 
-                // Rejected proposal rows (PREDICTOR rows [retainedEnd, proposedEnd),
-                // where proposedEnd = base+K-1 and retainedEnd = base+m-1 in
-                // predictor coordinates) were written with speculative carries
-                // and are NOT retained: hide them for the next step.
-                // Half-open predictor-space endpoints computed directly (packet
-                // C4): final consumedCount but ORIGINAL proposedCount - shortening
-                // a commit does not erase the cache rows written during drafting.
+                // All predictor rows at and beyond the pending row are future
+                // state after this commit. Remask the entire tail, not merely
+                // the suffix proposed by this step: adaptive K can shrink, and
+                // rows left unmasked by a wider prior proposal would otherwise
+                // become visible in a later predictor call.
                 // nextMtpPosition = base+m is the next pending TARGET token
                 // position; its predictor row is nextMtpPosition - 1 = retainedEnd.
-                const LongType proposedPredictorEnd =
-                    basePosition + static_cast<LongType>(proposedCount) - 1;  // exclusive
                 const LongType retainedPredictorEnd =
                     basePosition + static_cast<LongType>(consumedCount) - 1;  // exclusive
                 LongType nextMtpPosition = basePosition + consumedCount;
-                if (retainedPredictorEnd < proposedPredictorEnd) {
+                if (retainedPredictorEnd < mtpMaskLen) {
                     REQUIRE_TRUE(retainedPredictorEnd >= 0, 0,
-                                 "autoregressive_decode: CUDA MTP rejected-row mask start "
+                                 "autoregressive_decode: CUDA MTP future-row mask start "
                                  "%lld invalid at step %d",
                                  (long long)retainedPredictorEnd, step);
                     NDArray::prepareSpecialUse({config->mtpCausalMask}, {});
                     BUILD_SINGLE_SELECTOR(config->mtpCausalMask->dataType(),
                                           maskCausalRangeLauncher,
                                           (stream, config->mtpCausalMask->specialBuffer(),
-                                           retainedPredictorEnd, proposedPredictorEnd,
+                                           retainedPredictorEnd, mtpMaskLen,
                                            mtpMaskLen),
                                           SD_FLOAT_TYPES);
                     NDArray::registerSpecialUse({config->mtpCausalMask}, {});

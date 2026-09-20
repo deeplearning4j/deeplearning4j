@@ -262,8 +262,10 @@ public class TestQwen35MtpDecode {
                 "Bundled MTP reported zero speculative steps");
         assertTrue(mtpResult.getTotalAcceptedTokens() > 0,
                 "Bundled MTP accepted zero tokens");
-        assertTrue(mtpTokens.length >= Math.min(TOKENS, 20),
-                "MTP generated too few tokens: " + mtpTokens.length);
+        assertEquals(TOKENS, greedyTokens.length,
+                "Greedy qualification run did not reach the requested token count");
+        assertEquals(TOKENS, mtpTokens.length,
+                "MTP qualification run did not reach the requested token count");
         assertArrayEquals(greedyTokens, mtpTokens,
                 "Bundled Qwen3.5 MTP must remain token-identical to greedy decode");
     }
