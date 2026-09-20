@@ -2578,12 +2578,6 @@ public class GenerationPipeline implements AutoCloseable {
 
         InGraphKvState scalarOwner = reuseState != null ? reuseState : new InGraphKvState();
         try {
-<<<<<<< HEAD
-            decodeOutputs = decoder.output(decodeInputMap, warmupDecodeOutputNames.toArray(new String[0]));
-        } catch (Exception e) {
-            log.error("[GGUF-KV] STEP 3 warmup decode failed", e);
-            throw e;
-=======
         Map<String, INDArray> decodeOutputs;
         Map<String, INDArray> windowPreparationOutputs = null;
         if (useNativeMtp) {
@@ -2604,7 +2598,10 @@ public class GenerationPipeline implements AutoCloseable {
             Map<String, INDArray> scalarMap = new HashMap<>(decodeInputMap);
             scalarMap.putAll(owned);
             Nd4j.getExecutioner().commit();
-            Map<String, INDArray> scalarResults = decoder.output(scalarMap, decodeOutputNames.toArray(new String[0]));
+            // Merge resolution: warmup-class decode executions request the FULL ordered output
+            // list (warmupDecodeOutputNames, includes KV outputs) so configureMaxAllocationForKvCache
+            // can max-length-pin the KV slots; decodeOutputNames stays the reduced per-step contract.
+            Map<String, INDArray> scalarResults = decoder.output(scalarMap, warmupDecodeOutputNames.toArray(new String[0]));
             // Keep authoritative outputs independent of per-shape zero-copy readback caches.
             decodeOutputs = new LinkedHashMap<>();
             for (String name : decodeOutputNames) {
@@ -2642,7 +2639,7 @@ public class GenerationPipeline implements AutoCloseable {
                 }
                 Nd4j.getExecutioner().commit();
                 // Shared recurrent inputs still hold prefix P: scalar used private copies.
-                windowPreparationOutputs = decoder.output(decodeInputMap, decodeOutputNames.toArray(new String[0]));
+                windowPreparationOutputs = decoder.output(decodeInputMap, warmupDecodeOutputNames.toArray(new String[0]));
             } finally {
                 for (Map.Entry<String, INDArray> entry : committedRows.entrySet()) {
                     try (INDArray row = kvSourceMap.get(entry.getKey()).get(NDArrayIndex.all(),
@@ -2655,8 +2652,7 @@ public class GenerationPipeline implements AutoCloseable {
                 for (INDArray row : committedRows.values()) row.close();
             }
         } else {
-            decodeOutputs = decoder.output(decodeInputMap, decodeOutputNames.toArray(new String[0]));
->>>>>>> origin/ag_new_release_updates_2
+            decodeOutputs = decoder.output(decodeInputMap, warmupDecodeOutputNames.toArray(new String[0]));
         }
 
         INDArray targetWarmupHidden = useNativeMtp ? decodeOutputs.get(TARGET_HIDDEN_STATES_NAME) : null;
