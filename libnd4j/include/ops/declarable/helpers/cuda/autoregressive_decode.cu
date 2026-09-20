@@ -2170,7 +2170,9 @@ void autoregressiveDecode(
                      0, "autoregressive_decode: batched repair KV caches must be matching BSHD arrays");
 
         const LongType hiddenRowBytes = hidden->sizeAt(2) * hidden->sizeOfT();
-        NDArray::prepareSpecialUse({ids, hidden, position, cachePosition, mask},
+        // The graph may prune its mask input. Do not refill or publish a
+        // fabricated mask write when no repair-plan consumer exists.
+        NDArray::prepareSpecialUse({ids, hidden, position, cachePosition},
                                    {specArgmaxDevice, targetHiddenRows});
         cudaMemcpyAsync(ids->specialBuffer(), specArgmaxDevice->specialBuffer(),
                         static_cast<size_t>(activeRows) * sizeof(LongType),
@@ -2180,11 +2182,15 @@ void autoregressiveDecode(
                         cudaMemcpyDeviceToDevice, *stream);
         updatePositionIdsKernel<<<1, 1, 0, *stream>>>(position->specialBuffer(), predictorBase);
         updatePositionIdsKernel<<<1, 1, 0, *stream>>>(cachePosition->specialBuffer(), predictorBase);
-        BUILD_SINGLE_SELECTOR(mask->dataType(), refillRepairMaskLauncher,
-                              (stream, mask->specialBuffer(),
-                               static_cast<LongType>(config->mtpRepairBatchWidth), maskLen,
-                               predictorBase), SD_FLOAT_TYPES);
-        NDArray::registerSpecialUse({ids, hidden, position, cachePosition, mask},
+        if (config->mtpRepairBatchCausalMaskExtIdx >= 0) {
+            NDArray::prepareSpecialUse({mask}, {});
+            BUILD_SINGLE_SELECTOR(mask->dataType(), refillRepairMaskLauncher,
+                                  (stream, mask->specialBuffer(),
+                                   static_cast<LongType>(config->mtpRepairBatchWidth), maskLen,
+                                   predictorBase), SD_FLOAT_TYPES);
+            NDArray::registerSpecialUse({mask}, {});
+        }
+        NDArray::registerSpecialUse({ids, hidden, position, cachePosition},
                                     {specArgmaxDevice, targetHiddenRows});
 
         void* repairCarryEvent = sd::graph::dspCreateEvent();
@@ -2215,6 +2221,13 @@ void autoregressiveDecode(
                      0, "autoregressive_decode: batched repair output indices are invalid");
         NDArray* key = mtpRepairBatchPlanOutputs[config->mtpRepairBatchKeyOutputIdx];
         NDArray* value = mtpRepairBatchPlanOutputs[config->mtpRepairBatchValueOutputIdx];
+        // Match the floating source/destination families supported by the
+        // stride-aware BSHD scatter. It converts values while writing; requiring
+        // identical source/cache dtypes rejects valid FLOAT -> HALF repair.
+        const auto repairScatterTypeSupported = [](DataType dtype) {
+            return dtype == DataType::HALF || dtype == DataType::BFLOAT16
+                || dtype == DataType::FLOAT32 || dtype == DataType::DOUBLE;
+        };
         REQUIRE_TRUE(key != nullptr && value != nullptr && key->rankOf() == 4 && value->rankOf() == 4
                          && key->sizeAt(0) == 1 && value->sizeAt(0) == 1
                          && key->sizeAt(1) >= activeRows && value->sizeAt(1) >= activeRows
@@ -2222,8 +2235,10 @@ void autoregressiveDecode(
                          && value->sizeAt(2) == config->mtpKvBuffers[1]->sizeAt(2)
                          && key->sizeAt(3) == config->mtpKvBuffers[0]->sizeAt(3)
                          && value->sizeAt(3) == config->mtpKvBuffers[1]->sizeAt(3)
-                         && key->dataType() == config->mtpKvBuffers[0]->dataType()
-                         && value->dataType() == config->mtpKvBuffers[1]->dataType()
+                         && repairScatterTypeSupported(key->dataType())
+                         && repairScatterTypeSupported(value->dataType())
+                         && repairScatterTypeSupported(config->mtpKvBuffers[0]->dataType())
+                         && repairScatterTypeSupported(config->mtpKvBuffers[1]->dataType())
                          && predictorBase + activeRows <= config->mtpKvBuffers[0]->sizeAt(1)
                          && predictorBase + activeRows <= config->mtpKvBuffers[1]->sizeAt(1),
                      0, "autoregressive_decode: batched repair outputs/caches violate BSHD capacity contract");
