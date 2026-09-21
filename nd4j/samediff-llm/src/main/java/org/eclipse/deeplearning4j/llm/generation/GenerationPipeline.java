@@ -9196,6 +9196,15 @@ public class GenerationPipeline implements AutoCloseable {
         if (resolved == InGraphKvState.PrefixSelectMode.OFF) {
             return InGraphKvState.PrefixSelectMode.OFF;
         }
+        // Packet 08: shadow means a COMPARISON transaction, not a capture-only mode
+        // value. The comparison transaction is not implemented, so an explicit
+        // shadow request fails at admission rather than running capture-only while
+        // claiming validation. select is the supported fast path.
+        if (resolved == InGraphKvState.PrefixSelectMode.SHADOW) {
+            throw new IllegalStateException(
+                    "nd4j.mtp.prefixSelect=shadow is not supported: the checkpoint-vs-reference "
+                    + "comparison transaction is not implemented. Use off or select.");
+        }
         String mode = resolved.name().toLowerCase(Locale.ROOT);
 
         if (decoder == null || executor == null

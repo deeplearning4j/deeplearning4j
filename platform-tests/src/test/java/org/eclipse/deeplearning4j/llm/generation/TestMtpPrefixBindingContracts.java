@@ -280,6 +280,37 @@ public class TestMtpPrefixBindingContracts {
         return new ArrayList<>(p.executor.getCurrentPlan().getRequestedOutputs()).get(idx);
     }
 
+    @Test
+    void testShadowModeFailsAdmissionInsteadOfSilentCapture() throws Exception {
+        // Packet 08: shadow is a comparison transaction, which is not implemented;
+        // an explicit shadow request must fail at admission - never run capture-only
+        // while claiming validation, and never silently resolve to OFF.
+        System.setProperty("nd4j.mtp.prefixSelect", "shadow");
+        try (MixedPlan p = new MixedPlan()) {
+            p.compile();
+            ModelIOConfig ioConfig = ModelIOConfig.discover(p.graph);
+            List<ModelIOConfig.RecurrentStatePair> pairs =
+                    ModelIOConfig.findRecurrentStatePairs(p.graph, ioConfig);
+            List<Integer> gdnExt = new ArrayList<>(), gdnOut = new ArrayList<>();
+            List<Integer> convExt = new ArrayList<>(), convOut = new ArrayList<>();
+            GenerationPipeline.resolveRecurrentFeedbackIndices(
+                    p.executor, pairs, gdnExt, gdnOut, convExt, convOut);
+            InGraphKvState state = new InGraphKvState();
+            state.gdnStateExtIndices = gdnExt.stream().mapToInt(Integer::intValue).toArray();
+            state.gdnStateOutputIndices = gdnOut.stream().mapToInt(Integer::intValue).toArray();
+            state.convStateExtIndices = convExt.stream().mapToInt(Integer::intValue).toArray();
+            state.convStateOutputIndices = convOut.stream().mapToInt(Integer::intValue).toArray();
+            IllegalStateException ex = assertThrows(IllegalStateException.class,
+                    () -> GenerationPipeline.attachPrefixSelect(state, p.graph, pairs, p.executor));
+            assertTrue(ex.getMessage().contains("comparison"),
+                    "shadow admission must name the missing comparison, got: " + ex.getMessage());
+            assertEquals(InGraphKvState.PrefixSelectMode.OFF, state.prefixSelectMode,
+                    "state must stay OFF after a rejected shadow request");
+        } finally {
+            System.clearProperty("nd4j.mtp.prefixSelect");
+        }
+    }
+
     private static String layerOf(String name) {
         return name.substring(name.lastIndexOf('_') + 1);
     }

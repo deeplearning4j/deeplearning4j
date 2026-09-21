@@ -82,13 +82,13 @@ public class TestMtpPrefixTrailerContracts {
     @Test
     void testAsymmetricLayoutG2C1() {
         AutoregressiveDecode op = baseOp();
-        op.withMtpPrefixSelect(1,
+        op.withMtpPrefixSelect(2,
                 new int[]{10, 12}, new int[]{30, 32},
                 new int[]{20}, new int[]{40},
                 new int[]{50, 52, 60});
         int start = findTrailerStart(op);
         assertTrue(start >= 0, "prefix trailer marker must be present");
-        double[] expected = {MAGIC, 1, 2, 1, 10, 12, 30, 32, 20, 40, 50, 52, 60};
+        double[] expected = {MAGIC, 2, 2, 1, 10, 12, 30, 32, 20, 40, 50, 52, 60};
         assertEquals(start + expected.length, op.numTArguments(), "total words = 4 + 3*N for G=2,C=1");
         for (int i = 0; i < expected.length; i++) {
             assertEquals(expected[i], op.getTArgument(start + i).doubleValue(), 0.0,
@@ -153,14 +153,29 @@ public class TestMtpPrefixTrailerContracts {
     }
 
     @Test
+    void testShadowModeRejectedAtAdmissionOnBothSides() {
+        // Packet 08: shadow means a comparison transaction, not a capture-only
+        // mode value. Both the Java writer and the native parser reject mode 1
+        // until the comparison is implemented - never run capture-only while
+        // claiming validation.
+        IllegalArgumentException javaEx = assertThrows(IllegalArgumentException.class,
+                () -> baseOp().withMtpPrefixSelect(1,
+                        new int[]{1}, new int[]{2},
+                        new int[]{3}, new int[]{4},
+                        new int[]{5, 6}));
+        assertTrue(javaEx.getMessage().contains("comparison"),
+                "Java rejection must name the missing comparison, got: " + javaEx.getMessage());
+    }
+
+    @Test
     void testDuplicateAttachmentAndOrderingViolationsRejected() {
         AutoregressiveDecode op = baseOp();
-        op.withMtpPrefixSelect(1,
+        op.withMtpPrefixSelect(2,
                 new int[]{1}, new int[]{2},
                 new int[]{3}, new int[]{4},
                 new int[]{5, 6});
         assertThrows(IllegalArgumentException.class,
-                () -> op.withMtpPrefixSelect(1,
+                () -> op.withMtpPrefixSelect(2,
                         new int[]{1}, new int[]{2},
                         new int[]{3}, new int[]{4},
                         new int[]{5, 6}),

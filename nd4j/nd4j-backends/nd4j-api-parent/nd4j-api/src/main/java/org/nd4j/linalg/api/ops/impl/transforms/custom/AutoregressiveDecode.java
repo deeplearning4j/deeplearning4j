@@ -1073,6 +1073,14 @@ public class AutoregressiveDecode extends DynamicCustomOp {
         if (mode != 0 && mode != 1 && mode != 2) {
             throw new IllegalArgumentException("prefix select mode must be 0, 1, or 2");
         }
+        if (mode == 1) {
+            // Packet 08: shadow is a COMPARISON transaction, not a capture-only mode
+            // value. The comparison is not implemented, so mode 1 is rejected here
+            // rather than silently behaving as capture-only while claiming validation.
+            throw new IllegalArgumentException(
+                    "prefix select mode 1 (shadow) is unsupported: the checkpoint-vs-reference "
+                    + "comparison transaction is not implemented. Use mode 0 (off) or 2 (select).");
+        }
         if (prefixTrailerAttached) {
             throw new IllegalArgumentException("prefix select trailer already attached");
         }

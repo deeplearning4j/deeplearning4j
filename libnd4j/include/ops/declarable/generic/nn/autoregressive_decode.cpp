@@ -580,8 +580,9 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
         const int prefixMode = static_cast<int>(T_ARG(prefixStart + 1));
         const int gdnCount = static_cast<int>(T_ARG(prefixStart + 2));
         const int convCount = static_cast<int>(T_ARG(prefixStart + 3));
-        REQUIRE_TRUE(prefixMode == 1 || prefixMode == 2, 0,
-                     "autoregressive_decode: invalid prefix-select mode %d (OFF is no trailer)",
+        REQUIRE_TRUE(prefixMode == 2, 0,
+                     "autoregressive_decode: prefix-select mode %d unsupported (shadow "
+                     "requires an implemented comparison transaction; OFF is no trailer)",
                      prefixMode);
         REQUIRE_TRUE(gdnCount >= 0 && convCount >= 0
                          && gdnCount + convCount > 0
