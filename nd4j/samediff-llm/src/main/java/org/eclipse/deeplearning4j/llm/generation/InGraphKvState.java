@@ -217,6 +217,23 @@ class InGraphKvState implements AutoCloseable {
     int numPlanOutputs;
     int numKvPairs;
 
+    /**
+     * Non-owning metadata: the EXACT native requested-output order of the prepared
+     * target plan (new ArrayList<>(plan.getRequestedOutputs()), matching
+     * DynamicShapePlanExecutor.findOutputIndex). The native decode declares this
+     * count/order to the C++ op; the reduced decodeOutputNames list stays a
+     * separate Java-consumer contract. Refreshed whenever target preparation
+     * legitimately changes plan identity; asserted unchanged at native handoff.
+     * Never closed through this field - no arrays are owned here.
+     */
+    List<String> nativeTargetOutputNames;
+    /**
+     * Non-owning metadata: the exact external-input key order of the prepared
+     * target plan (plan.getExternalInputKeys()). Same identity/refresh rules as
+     * nativeTargetOutputNames; same count but different order is an error.
+     */
+    String[] nativeTargetInputKeys;
+
     /** Target-plan output carrying pre-final-norm hidden rows used to refresh the MTP state. */
     int targetHiddenOutputIdx = -1;
     int mtpInputIdsExtIdx = -1;

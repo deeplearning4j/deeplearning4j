@@ -1007,10 +1007,20 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
     REQUIRE_TRUE(hasPlanConfig && c.planHandle != nullptr && c.extInputContext != nullptr && c.planOwnsKvScatter
                      && c.windowMax > 1, 0,
                  "autoregressive_decode: scalar MTP target requires an in-graph window plan");
-    REQUIRE_TRUE(c.scalarNumPlanExternalInputs == c.scalarPlanHandle->getNumExternalInputs()
-                     && c.scalarNumPlanOutputs == c.scalarPlanHandle->getNumRequestedOutputs()
-                     && c.targetOutputToScalar.size() == c.planHandle->getNumRequestedOutputs(), 0,
-                 "autoregressive_decode: scalar captured counts disagree with native plans");
+    // Three separate invariants (reviewer Packet 02): each failure must name the
+    // exact declared value, the native handle value, and which handle was checked.
+    REQUIRE_TRUE(c.scalarNumPlanExternalInputs == c.scalarPlanHandle->getNumExternalInputs(), 0,
+                 "autoregressive_decode: scalar declared external-input count %d disagrees with "
+                 "scalar handle getNumExternalInputs() %d",
+                 c.scalarNumPlanExternalInputs, c.scalarPlanHandle->getNumExternalInputs());
+    REQUIRE_TRUE(c.scalarNumPlanOutputs == c.scalarPlanHandle->getNumRequestedOutputs(), 0,
+                 "autoregressive_decode: scalar declared output count %d disagrees with "
+                 "scalar handle getNumRequestedOutputs() %d",
+                 c.scalarNumPlanOutputs, c.scalarPlanHandle->getNumRequestedOutputs());
+    REQUIRE_TRUE(c.targetOutputToScalar.size() == c.planHandle->getNumRequestedOutputs(), 0,
+                 "autoregressive_decode: target-to-scalar map length %zu disagrees with "
+                 "TARGET handle getNumRequestedOutputs() %d",
+                 c.targetOutputToScalar.size(), c.planHandle->getNumRequestedOutputs());
     auto* scalarContext = reinterpret_cast<graph::Context*>(c.scalarExtInputContext);
     auto* targetContext = reinterpret_cast<graph::Context*>(c.extInputContext);
     REQUIRE_TRUE(scalarContext->width() == c.scalarNumPlanExternalInputs

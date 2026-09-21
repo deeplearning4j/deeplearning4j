@@ -2866,9 +2866,20 @@ public class GenerationPipeline implements AutoCloseable {
         // secondToken (the last unwritten token) will be written when it is fed.
         // ══════════════════════════════════════════════════════════════════════
         Pointer contextHandle = executor.getCachedOpContext();
-        int numPlanExternalInputs = executor.getCurrentPlan() != null
-                ? executor.getCurrentPlan().getExternalInputKeys().length : 0;
-        int numPlanOutputs = decodeOutputNames.size();
+        // Packet 02: capture the ACTUAL native target plan identity at the moment the
+        // indices are resolved, BEFORE any later execution could switch the executor's
+        // current plan. The warmup executed with the FULL warmupDecodeOutputNames list,
+        // so the frozen plan's requested-output set is the full list; declaring the
+        // REDUCED decodeOutputNames size to the native op makes the scalar mapping
+        // length disagree with the target handle's getNumRequestedOutputs().
+        DynamicShapePlan targetPlan = executor.getCurrentPlan();
+        int numPlanExternalInputs = targetPlan != null
+                ? targetPlan.getExternalInputKeys().length : 0;
+        List<String> nativeTargetOutputs = targetPlan != null
+                ? new ArrayList<>(targetPlan.getRequestedOutputs()) : new ArrayList<>();
+        String[] nativeTargetInputKeys = targetPlan != null
+                ? targetPlan.getExternalInputKeys().clone() : new String[0];
+        int numPlanOutputs = nativeTargetOutputs.size();
 
         // On reuse, write back into the SAME retained state object (its buffers ARE the ones just
         // refilled in place) so no buffer is aliased by two states → no double-free. The index / handle
@@ -2909,6 +2920,8 @@ public class GenerationPipeline implements AutoCloseable {
         state.convStateOutputIndices = convStateOutputIndices;
         state.numPlanExternalInputs = numPlanExternalInputs;
         state.numPlanOutputs = numPlanOutputs;
+        state.nativeTargetOutputNames = nativeTargetOutputs;
+        state.nativeTargetInputKeys = nativeTargetInputKeys;
         state.numKvPairs = numKvPairs;
         if (preparedMtp != null) {
             state.mtpKvBuffers = preparedMtp.kvBuffers;
@@ -3672,9 +3685,16 @@ public class GenerationPipeline implements AutoCloseable {
         // pairs when the state is built (attachPrefixSelect).
 
         Pointer contextHandle = executor.getCachedOpContext();
-        int numPlanExternalInputs = executor.getCurrentPlan() != null
-                ? executor.getCurrentPlan().getExternalInputKeys().length : 0;
-        int numPlanOutputs = decodeOutputNames.size();
+        // Packet 02: same native plan identity capture as the main warmup path - the
+        // suffix warmup executes the full output request and freezes that plan.
+        DynamicShapePlan targetPlan = executor.getCurrentPlan();
+        int numPlanExternalInputs = targetPlan != null
+                ? targetPlan.getExternalInputKeys().length : 0;
+        List<String> nativeTargetOutputs = targetPlan != null
+                ? new ArrayList<>(targetPlan.getRequestedOutputs()) : new ArrayList<>();
+        String[] nativeTargetInputKeys = targetPlan != null
+                ? targetPlan.getExternalInputKeys().clone() : new String[0];
+        int numPlanOutputs = nativeTargetOutputs.size();
 
         // Build a fresh prefillInputMap (the suffix-prefill path didn't use a retained one)
         Map<String, INDArray> prefillInputMap = new HashMap<>();
@@ -3736,6 +3756,8 @@ public class GenerationPipeline implements AutoCloseable {
         state.convStateOutputIndices = convOutList.stream().mapToInt(Integer::intValue).toArray();
         state.numPlanExternalInputs = numPlanExternalInputs;
         state.numPlanOutputs = numPlanOutputs;
+        state.nativeTargetOutputNames = nativeTargetOutputs;
+        state.nativeTargetInputKeys = nativeTargetInputKeys;
         state.numKvPairs = numKvPairs;
         state.kvInputNames = kvInputNames;
         state.recurrentStates = recurrentStates;
@@ -4271,6 +4293,37 @@ public class GenerationPipeline implements AutoCloseable {
                 INDArray dummyEmbeddings = Nd4j.zeros(DataType.FLOAT, 1, 1, 1);
                 INDArray dummyEmbTable = Nd4j.zeros(DataType.FLOAT, 1, 1);
 
+                // Packet 02 handoff assert: the prepared target plan identity captured at
+                // preparation time must still describe the executor's current plan. Same
+                // count but different order is an error; a replaced plan is an error. The
+                // plan handle/context were captured alongside these lists.
+                DynamicShapePlan currentPlan = state.executor.getCurrentPlan();
+                if (currentPlan == null) {
+                    throw new IllegalStateException(
+                            "Native decode handoff: executor has no current target plan");
+                }
+                String[] currentInputKeys = currentPlan.getExternalInputKeys();
+                List<String> currentOutputs = new ArrayList<>(currentPlan.getRequestedOutputs());
+                if (state.nativeTargetInputKeys == null || state.nativeTargetOutputNames == null
+                        || !Arrays.equals(state.nativeTargetInputKeys, currentInputKeys)) {
+                    throw new IllegalStateException(
+                            "Native decode handoff: target external-input identity changed since "
+                            + "preparation (prepared=" + state.nativeTargetInputKeys.length
+                            + " keys, current=" + currentInputKeys.length + " keys)");
+                }
+                if (!state.nativeTargetOutputNames.equals(currentOutputs)) {
+                    throw new IllegalStateException(
+                            "Native decode handoff: target requested-output identity changed since "
+                            + "preparation (prepared=" + state.nativeTargetOutputNames
+                            + ", current=" + currentOutputs + ")");
+                }
+                if (state.numPlanOutputs != currentOutputs.size()) {
+                    throw new IllegalStateException(
+                            "Native decode handoff: declared numPlanOutputs " + state.numPlanOutputs
+                            + " disagrees with the current plan's requested outputs "
+                            + currentOutputs.size());
+                }
+
                 AutoregressiveDecode op = new AutoregressiveDecode(
                         dummyEmbeddings, dummyEmbTable, state.decodeInputIds,
                         state.decodeCausalMask, null, staticKvArray,
@@ -4335,7 +4388,7 @@ public class GenerationPipeline implements AutoCloseable {
                                 state.mtpHiddenOutputIdx,
                                 state.targetHiddenOutputIdx);
                         op.withScalarTargetPlan(state.scalarTargetBinding,
-                                state.executor.getCurrentPlan().getExternalInputKeys(), state.decodeOutputNames,
+                                state.nativeTargetInputKeys, state.nativeTargetOutputNames,
                                 state.inputIdsName, state.causalMaskName, state.posOffsetName,
                                 state.cachePosName, state.actualSeqLenName,
                                 state.logitsName, TARGET_HIDDEN_STATES_NAME);
