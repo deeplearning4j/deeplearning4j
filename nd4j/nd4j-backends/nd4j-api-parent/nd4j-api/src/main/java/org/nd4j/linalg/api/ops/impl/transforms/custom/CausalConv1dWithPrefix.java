@@ -82,6 +82,13 @@ public class CausalConv1dWithPrefix extends DynamicCustomOp {
     }
 
     public CausalConv1dWithPrefix(SameDiff sd, SDVariable x, SDVariable weight,
+                                  SDVariable bias, SDVariable stateIn, SDVariable actualLen,
+                                  int activation, int wFormat) {
+        super(null, sd, buildSdInputs(x, weight, bias, stateIn, actualLen));
+        addIArgument(activation, wFormat);
+    }
+
+    public CausalConv1dWithPrefix(SameDiff sd, SDVariable x, SDVariable weight,
                                   SDVariable stateIn, SDVariable actualLen,
                                   int activation, int wFormat) {
         super(null, sd, buildSdInputs(x, weight, stateIn, actualLen));
@@ -99,14 +106,20 @@ public class CausalConv1dWithPrefix extends DynamicCustomOp {
         return inputs.toArray(new INDArray[0]);
     }
 
-    private static SDVariable[] buildSdInputs(SDVariable x, SDVariable weight,
+    private static SDVariable[] buildSdInputs(SDVariable x, SDVariable weight, SDVariable bias,
                                               SDVariable stateIn, SDVariable actualLen) {
         List<SDVariable> inputs = new ArrayList<>();
         inputs.add(x);
         inputs.add(weight);
+        if (bias != null) inputs.add(bias);
         if (stateIn != null) inputs.add(stateIn);
         inputs.add(actualLen);
         return inputs.toArray(new SDVariable[0]);
+    }
+
+    private static SDVariable[] buildSdInputs(SDVariable x, SDVariable weight,
+                                              SDVariable stateIn, SDVariable actualLen) {
+        return buildSdInputs(x, weight, null, stateIn, actualLen);
     }
 
     @Override

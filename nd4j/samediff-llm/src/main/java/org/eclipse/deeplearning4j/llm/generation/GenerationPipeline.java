@@ -3668,11 +3668,41 @@ public class GenerationPipeline implements AutoCloseable {
 
         List<Integer> gdnExtList = new ArrayList<>(), gdnOutList = new ArrayList<>();
         List<Integer> convExtList = new ArrayList<>(), convOutList = new ArrayList<>();
+        // Accepted-prefix checkpoint outputs (companion 3-output ops only).
+        List<String> prefixCheckpointNames = new ArrayList<>();
         for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
             int extIdx = resolveExtInputIdx(executor, pair.inputName);
             int outIdx = resolveOutputIdx(executor, pair.outputName);
             if (pair.isGdn()) { gdnExtList.add(extIdx); gdnOutList.add(outIdx); }
             else { convExtList.add(extIdx); convOutList.add(outIdx); }
+            if (pair.hasPrefixCapture()) {
+                String prefixName = pair.prefixOutputName();
+                if (prefixName != null && decoder.hasVariable(prefixName)) {
+                    prefixCheckpointNames.add(prefixName);
+                }
+            }
+        }
+        // Prefix-select resolution: only available when the verification graph was
+        // built with exportRecurrentStatePrefixes AND the checkpoint output set is
+        // complete (one prefix per GDN+conv pair). Otherwise fail closed to OFF.
+        // Resolution is stored on the local and applied to the state below, after
+        // the state object exists.
+        InGraphKvState.PrefixSelectMode resolvedPrefixMode = InGraphKvState.PrefixSelectMode.OFF;
+        if (!prefixCheckpointNames.isEmpty()
+                && prefixCheckpointNames.size() == gdnExtList.size() + convExtList.size()) {
+            String flag = System.getProperty("nd4j.mtp.prefixSelect", "off")
+                    .toLowerCase(java.util.Locale.ROOT);
+            if ("shadow".equals(flag)) {
+                resolvedPrefixMode = InGraphKvState.PrefixSelectMode.SHADOW;
+            } else if ("select".equals(flag)) {
+                resolvedPrefixMode = InGraphKvState.PrefixSelectMode.SELECT;
+            } else if (!"off".equals(flag)) {
+                log.warn("[MTP-PREFIX] unknown nd4j.mtp.prefixSelect='{}' - failing closed to OFF", flag);
+            }
+            if (resolvedPrefixMode != InGraphKvState.PrefixSelectMode.OFF) {
+                log.info("[MTP-PREFIX] mode={} with {} checkpoint layers", resolvedPrefixMode,
+                        prefixCheckpointNames.size());
+            }
         }
 
         Pointer contextHandle = executor.getCachedOpContext();
@@ -3768,6 +3798,20 @@ public class GenerationPipeline implements AutoCloseable {
         state.cancelRequested = false;
         state.terminalResult = null;
         state.closed = false;
+        state.prefixSelectMode = resolvedPrefixMode;
+        // Retain one checkpoint buffer slot per prefix layer; the buffers themselves
+        // are bound from the verification window's outputs at execution time and
+        // live only for the current invocation.
+        if (resolvedPrefixMode != InGraphKvState.PrefixSelectMode.OFF) {
+            for (String prefixName : prefixCheckpointNames) {
+                long[] shape = decoder.hasVariable(prefixName)
+                        ? deriveRecurrentStateShape(decoder, prefixName) : null;
+                if (shape != null) {
+                    state.prefixCheckpointBuffers.put(prefixName,
+                            Nd4j.empty(decoder.getVariable(prefixName).dataType()));
+                }
+            }
+        }
         return state;
     }
 
@@ -4377,6 +4421,23 @@ public class GenerationPipeline implements AutoCloseable {
                                 state.mtpRepairBatchValueOutputIdx,
                                 state.mtpRepairBatchKvInputExtIndices[0],
                                 state.mtpRepairBatchKvInputExtIndices[1]);
+                    }
+                    // Accepted-prefix capture metadata (Packet 3B): only when the
+                    // verification graph was built with checkpoint outputs and a
+                    // complete layer/state binding was resolved. Shadow mode captures
+                    // without selecting; select is reserved for Packet 4.
+                    if (state.prefixSelectMode != InGraphKvState.PrefixSelectMode.OFF
+                            && !state.prefixCheckpointBuffers.isEmpty()) {
+                        int mode = state.prefixSelectMode == InGraphKvState.PrefixSelectMode.SELECT ? 2 : 1;
+                        int[] prefixOutIdx = new int[state.prefixCheckpointBuffers.size()];
+                        int p = 0;
+                        for (String prefixName : state.prefixCheckpointBuffers.keySet()) {
+                            prefixOutIdx[p++] = resolveOutputIdx(state.executor, prefixName);
+                        }
+                        op.withMtpPrefixSelect(mode,
+                                state.gdnStateExtIndices, state.gdnStateOutputIndices,
+                                state.convStateExtIndices, state.convStateOutputIndices,
+                                prefixOutIdx);
                     }
                 }
                 applyConfiguredStopSequences(op, state.generatedSoFar);

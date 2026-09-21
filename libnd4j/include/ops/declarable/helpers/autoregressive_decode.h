@@ -259,6 +259,25 @@ struct AutoregressiveDecodeConfig {
     int mtpRepairBatchValueOutputIdx = -1;
     int mtpRepairBatchWidth = 0;
 
+    // ─── Accepted-prefix checkpoint capture (Packet 3B/4) ───────────────
+    // 0 = off (no capture), 1 = shadow (capture + compare against legacy recovery,
+    // never selected), 2 = select (controller commits checkpoint[consumed-1]).
+    // Select stays disabled until the DSP retirement fix lands and the integrated
+    // build passes repeated exact-length 250-token equality.
+    int mtpPrefixSelectMode = 0;
+    // Layer counts for the verification graph's recurrent companions.
+    int mtpPrefixGdnLayerCount = 0;
+    int mtpPrefixConvLayerCount = 0;
+    // Per-layer binding: committed-state external-input index and companion
+    // prefix-output index, interleaved GDN-first then conv to match buildGraph
+    // registration order. Layer cap matches the 64-entry conservative bound in
+    // the trailer parser.
+    static constexpr int MTP_PREFIX_MAX_LAYERS = 64;
+    int mtpPrefixGdnInputIndices[MTP_PREFIX_MAX_LAYERS] = {};
+    int mtpPrefixGdnOutputIndices[MTP_PREFIX_MAX_LAYERS] = {};
+    int mtpPrefixConvInputIndices[MTP_PREFIX_MAX_LAYERS] = {};
+    int mtpPrefixConvOutputIndices[MTP_PREFIX_MAX_LAYERS] = {};
+
     // Stable arrays passed as optional op inputs when the 1024 input-mask bit is set.
     NDArray* mtpRepairBatchInputIds = nullptr;
     NDArray* mtpRepairBatchTargetHidden = nullptr;

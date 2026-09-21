@@ -31,6 +31,7 @@ import org.eclipse.deeplearning4j.llm.generation.constraint.ConstraintMasker;
 import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -274,6 +275,39 @@ class InGraphKvState implements AutoCloseable {
      * maintained") instead of bypassing the maintenance implementation.
      */
     volatile Integer forcedSpecDepth;
+
+    /**
+     * Accepted-prefix state-selection mode for the bundled MTP verification graph.
+     *
+     * <ul>
+     *   <li>{@code OFF} — companion capture ops are absent; the legacy
+     *       restore/re-execute recovery path runs (default).</li>
+     *   <li>{@code SHADOW} — companion checkpoints are captured and compared
+     *       against the legacy recovery reference; never used for performance.</li>
+     *   <li>{@code SELECT} — the controller commits {@code checkpoint[consumed-1]}
+     *       directly; ordinary partial acceptance requires zero full-target reruns.</li>
+     * </ul>
+     * Select is disabled until the DSP retirement fix lands and the integrated
+     * build passes repeated exact-length 250-token equality.
+     */
+    enum PrefixSelectMode { OFF, SHADOW, SELECT }
+
+    /**
+     * Resolved prefix-selection mode. Default OFF. Set once at state preparation
+     * from {@code nd4j.mtp.prefixSelect} (off|shadow|select, case-insensitive;
+     * unknown values fail closed to OFF) and an availability check for prefix
+     * outputs in the verification graph.
+     */
+    PrefixSelectMode prefixSelectMode = PrefixSelectMode.OFF;
+
+    /**
+     * Per-layer accepted-prefix checkpoint buffers, retained in this state's
+     * lifetime. Keyed by prefix output name (gdn_state_prefix_N /
+     * conv_state_prefix_N). Populated when prefixSelectMode != OFF from the
+     * verification window's companion outputs; live only for the current
+     * invocation (no cross-step or cross-session reuse).
+     */
+    Map<String, INDArray> prefixCheckpointBuffers = new LinkedHashMap<>();
 
     // ── Capacity / shape metadata ────────────────────────────────────────────────────────────────
     long maxKvLen;          // total KV buffer length (the hard capacity ceiling)

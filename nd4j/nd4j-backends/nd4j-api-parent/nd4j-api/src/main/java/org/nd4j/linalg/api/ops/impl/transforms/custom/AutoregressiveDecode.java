@@ -1027,6 +1027,63 @@ public class AutoregressiveDecode extends DynamicCustomOp {
     private static final long MTP_REPAIR_TRAILER_MARKER = 0x4D545052L;
     /** Optional trailer marker for the fixed-width B=1 repair plan. */
     private static final long MTP_BATCH_REPAIR_TRAILER_MARKER = 0x4D545042L;
+    /** Optional trailer marker for accepted-prefix checkpoint capture (GDN/conv companions). */
+    private static final long MTP_PREFIX_TRAILER_MARKER = 0x4D545050L;
+
+    /**
+     * Attach accepted-prefix checkpoint capture metadata for the verification
+     * graph's recurrent companions.
+     *
+     * <p>mode: 0=off (metadata absent), 1=shadow (capture + independent comparison
+     * against legacy recovery), 2=select (controller commits checkpoint[consumed-1]
+     * directly; ordinary partial acceptance requires zero full-target reruns).</p>
+     *
+     * <p>gdnStateInputCount/gdnStateOutputCount and conv equivalents repeat the
+     * established recurrent index arrays so the native side can validate the layer
+     * coverage without inferring correspondence. prefixOutputIndices lists the
+     * output index of each companion prefix tensor, ordered to interleave with the
+     * recurrent outputs the same way the capture graph emitted them (GDN pairs
+     * first, then conv pairs, matching buildGraph registration order).</p>
+     */
+    public AutoregressiveDecode withMtpPrefixSelect(
+            int mode,
+            int[] gdnStateInputIndices, int[] gdnStateOutputIndices,
+            int[] convStateInputIndices, int[] convStateOutputIndices,
+            int[] prefixOutputIndices) {
+        if (mode != 0 && mode != 1 && mode != 2) {
+            throw new IllegalArgumentException("prefix select mode must be 0, 1, or 2");
+        }
+        if (mode != 0) {
+            if (gdnStateInputIndices == null || convStateInputIndices == null
+                    || prefixOutputIndices == null
+                    || gdnStateOutputIndices == null || convStateOutputIndices == null) {
+                throw new IllegalArgumentException("prefix select requires the recurrent and prefix index arrays");
+            }
+            if (gdnStateInputIndices.length != gdnStateOutputIndices.length
+                    || convStateInputIndices.length != convStateOutputIndices.length) {
+                throw new IllegalArgumentException("GDN/conv input/output index arrays must be paired");
+            }
+            if (prefixOutputIndices.length != gdnStateInputIndices.length + convStateInputIndices.length) {
+                throw new IllegalArgumentException("one prefix output index per recurrent layer required");
+            }
+            for (int idx : prefixOutputIndices) {
+                if (idx < 0) {
+                    throw new IllegalArgumentException("prefix output indices must be resolved, got " + idx);
+                }
+            }
+        }
+        while (tArguments.size() < 45) tArguments.add(0.0);
+        tArguments.add((double) MTP_PREFIX_TRAILER_MARKER);
+        tArguments.add((double) mode);
+        tArguments.add((double) gdnStateInputIndices.length);
+        tArguments.add((double) convStateInputIndices.length);
+        for (int idx : gdnStateInputIndices) tArguments.add((double) idx);
+        for (int idx : gdnStateOutputIndices) tArguments.add((double) idx);
+        for (int idx : convStateInputIndices) tArguments.add((double) idx);
+        for (int idx : convStateOutputIndices) tArguments.add((double) idx);
+        for (int idx : prefixOutputIndices) tArguments.add((double) idx);
+        return this;
+    }
 
     /**
      * Attach an optional KV-only predictor repair plan. The trailer is appended
