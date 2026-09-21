@@ -66,6 +66,10 @@ struct AutoregressiveP0Counters {
     int targetVerificationForwards = 0;
     int acceptedPrefixReruns = 0;
     int shortenedRecoveryForwards = 0;
+    /** Packet 4: steps that committed checkpoint[consumed-1] instead of re-running. */
+    int checkpointSelectCommits = 0;
+    /** Packet 4: steps where select was requested but ineligible (fallback to rerun). */
+    int checkpointSelectFallbacks = 0;
     int predictorProposalForwards = 0;
     int predictorRepairForwards = 0;
     int predictorMaintenanceForwards = 0;
@@ -76,6 +80,8 @@ struct AutoregressiveP0Counters {
     std::uint64_t snapshotBytes = 0;
     std::uint64_t restoreBytes = 0;
     std::uint64_t stateCommitBytes = 0;
+    /** Packet 4: bytes copied by checkpoint[consumed-1] selection. */
+    std::uint64_t checkpointSelectBytes = 0;
     std::uint64_t hostReadbackBytes = 0;
     std::uint64_t hostWaitBoundaries = 0;
 };

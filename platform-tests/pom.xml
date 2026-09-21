@@ -59,7 +59,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
         <!-- Kept in sync with the nd4j-cuda artifact family by change-cuda-versions.sh. -->
-        <cuda.version>12.9</cuda.version>
+        <cuda.version>13.1</cuda.version>
         <platform.classifier>${javacpp.platform}</platform.classifier>
         <backend.artifactId>nd4j-cuda-${cuda.version}</backend.artifactId>
         <!-- Forwarded into Surefire so backend-specific profiles select the intended runtime. -->
@@ -122,6 +122,13 @@
         <nd4j.environment.vulkanPipelineCacheMaxBytes></nd4j.environment.vulkanPipelineCacheMaxBytes>
         <nd4j.environment.vulkanKernelDump></nd4j.environment.vulkanKernelDump>
         <nd4j.triton.includeTypes></nd4j.triton.includeTypes>
+        <!-- Accepted-prefix state selection for bundled MTP (off|shadow|select).
+             Off keeps the legacy restore/rerun recovery; shadow captures the
+             companion checkpoints without selecting them; select commits
+             checkpoint[consumed-1] and skips the recovery forward. Both the graph
+             build (ModelArchitecture) and the controller (GenerationPipeline) read
+             this from the forked JVM, so it must reach surefire explicitly. -->
+        <nd4j.mtp.prefixSelect>off</nd4j.mtp.prefixSelect>
         <org.bytedeco.javacpp.logger.debug>false</org.bytedeco.javacpp.logger.debug>
         <!-- Needed for CUDA: https://github.com/google/sanitizers/issues/629 -->
         <test.asan.options></test.asan.options>
@@ -1981,6 +1988,9 @@
                         <!-- Debug/verbose mode — picked up by DebugVerboseExtension -->
                         <nd4j.debug>${nd4j.debug}</nd4j.debug>
                         <nd4j.verbose>${nd4j.verbose}</nd4j.verbose>
+                        <!-- Bundled-MTP accepted-prefix state selection (off|shadow|select).
+                             Maven properties alone do not reach the forked JVM. -->
+                        <nd4j.mtp.prefixSelect>${nd4j.mtp.prefixSelect}</nd4j.mtp.prefixSelect>
                         <!-- Test result recording -->
                         <dl4j.test.results.disabled>${dl4j.test.results.disabled}</dl4j.test.results.disabled>
                         <dl4j.test.results.dir>${dl4j.test.results.dir}</dl4j.test.results.dir>

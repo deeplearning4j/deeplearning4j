@@ -21,13 +21,20 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.ops;
 
 import org.junit.jupiter.api.Test;
+import org.eclipse.deeplearning4j.llm.generation.ModelIOConfig;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRuleWithPrefix;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -129,6 +136,61 @@ public class TestGdnPrefixStates {
             assertEquals(0.0, stateIn.sub(stateInBackup).amaxNumber().doubleValue(), 0.0,
                     "stateIn was mutated by prefix capture, W=" + w);
         }
+    }
+
+    @Test
+    public void testOptimizerRoundTripPreservesNamesAndPairing() {
+        // The production verification graph is built once, then cloned by
+        // GraphOptimizer through a SDNB round-trip before any plan is compiled. A
+        // companion op that registers name-colliding variables makes that round-trip
+        // rename unrelated variables (observed as the recurrent placeholder losing its
+        // name and the state input being reported missing at plan execution), so the
+        // graph must survive the clone with every semantic name intact and exactly one
+        // recurrent pair per layer.
+        int l = 3;
+        SameDiff sd = SameDiff.create();
+        SDVariable q = sd.placeHolder("q", DataType.FLOAT, B, l, H, DK);
+        SDVariable k = sd.placeHolder("k", DataType.FLOAT, B, l, H, DK);
+        SDVariable v = sd.placeHolder("v", DataType.FLOAT, B, l, H, DV);
+        SDVariable beta = sd.placeHolder("beta", DataType.FLOAT, B, l, H);
+        SDVariable gate = sd.placeHolder("gate", DataType.FLOAT, B, l, H);
+        SDVariable stateIn = sd.placeHolder("past_gdn_state.7", DataType.FLOAT, B, H, DK, DV);
+        SDVariable actualLen = sd.placeHolder("actual_sequence_length", DataType.INT64);
+
+        SDVariable[] out = sd.nn().gatedDeltaRuleWithPrefix(
+                new String[]{"gdn_out_7", "gdn_state_out_7", "gdn_state_prefix_7"},
+                q, k, v, beta, gate, stateIn, actualLen);
+        assertEquals(3, out.length, "companion op must expose output, state, prefix");
+        sd.setOutputs("gdn_out_7", "gdn_state_out_7", "gdn_state_prefix_7");
+
+        SameDiff optimized = GraphOptimizer.optimize(
+                sd, List.copyOf(sd.outputs()), GraphOptimizer.defaultOptimizations());
+        assertNotNull(optimized, "GraphOptimizer must return a graph");
+
+        // Every semantic name survives the round-trip: the recurrent placeholder (the
+        // one the state commit writes back to) and all three op outputs.
+        for (String name : new String[]{"past_gdn_state.7", "gdn_out_7", "gdn_state_out_7",
+                "gdn_state_prefix_7"}) {
+            assertNotNull(optimized.getVariable(name),
+                    "optimizer round-trip lost variable '" + name + "'");
+        }
+
+        // Exactly one recurrent pair, and it is the state handoff - never the
+        // per-timestep checkpoint.
+        ModelIOConfig ioConfig = ModelIOConfig.discover(optimized);
+        List<ModelIOConfig.RecurrentStatePair> pairs =
+                ModelIOConfig.findRecurrentStatePairs(optimized, ioConfig);
+        assertEquals(1, pairs.size(),
+                "expected one recurrent pair for one layer, got " + pairs);
+        ModelIOConfig.RecurrentStatePair pair = pairs.get(0);
+        assertEquals("past_gdn_state.7", pair.inputName,
+                "recurrent pair must bind the state placeholder");
+        assertEquals("gdn_state_out_7", pair.outputName,
+                "recurrent pair must bind the state handoff, not the checkpoint");
+        assertTrue(pair.isGdn(), "companion op must classify as a GDN state: " + pair);
+        assertTrue(pair.hasPrefixCapture(), "companion op must report prefix capture: " + pair);
+        assertEquals("gdn_state_prefix_7", pair.prefixOutputName(),
+                "prefix binding must name the checkpoint output");
     }
 
     @Test

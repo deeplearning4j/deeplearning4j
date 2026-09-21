@@ -381,7 +381,8 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
     const size_t tArgCount = block.getTArguments()->size();
     size_t repairStart = tArgCount;
     if (tArgCount > 45 && T_ARG(45) != MTP_REPAIR_TRAILER_MARKER
-            && T_ARG(45) != MTP_BATCH_REPAIR_TRAILER_MARKER) {
+            && T_ARG(45) != MTP_BATCH_REPAIR_TRAILER_MARKER
+            && T_ARG(45) != MTP_PREFIX_TRAILER_MARKER) {
       REQUIRE_TRUE(tArgCount >= 60, 0,
                    "autoregressive_decode: incomplete scalar target metadata");
       for (size_t i = 45; i < 60; ++i) {
@@ -416,7 +417,8 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
       REQUIRE_TRUE(ni > 0 && no > 0 && repairStart <= tArgCount
                        && (repairStart == tArgCount
                            || T_ARG(repairStart) == MTP_REPAIR_TRAILER_MARKER
-                           || T_ARG(repairStart) == MTP_BATCH_REPAIR_TRAILER_MARKER),
+                           || T_ARG(repairStart) == MTP_BATCH_REPAIR_TRAILER_MARKER
+                           || T_ARG(repairStart) == MTP_PREFIX_TRAILER_MARKER),
                    0, "autoregressive_decode: invalid scalar mapping lengths");
       for (int i = 0; i < ni; ++i) decodeConfig.scalarInputToTarget.push_back(static_cast<int>(T_ARG(60 + i)));
       for (int i = 0; i < no; ++i) decodeConfig.targetOutputToScalar.push_back(static_cast<int>(T_ARG(60 + ni + i)));
@@ -477,10 +479,13 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
         && T_ARG(repairStart) == MTP_REPAIR_TRAILER_MARKER;
     const size_t batchRepairStart = hasScalarRepairTrailer ? repairStart + 16 : repairStart;
     if (hasMtpBatchRepair) {
-      REQUIRE_TRUE(tArgCount == batchRepairStart + 16
+      // The prefix-select trailer may follow every repair-trailer combination, so the
+      // batch trailer occupies exactly 16 tArgs at batchRepairStart; anything beyond
+      // that belongs to the prefix trailer parsed after this block.
+      REQUIRE_TRUE(tArgCount >= batchRepairStart + 16
                        && T_ARG(batchRepairStart) == MTP_BATCH_REPAIR_TRAILER_MARKER,
                    0, "autoregressive_decode: malformed batched MTP repair trailer");
-      for (size_t i = batchRepairStart; i < tArgCount; ++i) {
+      for (size_t i = batchRepairStart; i < batchRepairStart + 16; ++i) {
         double value = T_ARG(i);
         const bool pointerHalf = i >= batchRepairStart + 1 && i <= batchRepairStart + 4;
         const bool optionalIndex = i == batchRepairStart + 9
@@ -541,11 +546,23 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
                        && optionalBatchIdxValid(decodeConfig.mtpRepairBatchKvInputExtIndices[1]),
                    0, "autoregressive_decode: invalid optional batched MTP repair index");
     } else {
-      // Accepted-prefix capture trailer (0x4D545050) may legitimately follow when
-      // no repair trailers were attached.
-      if (batchRepairStart < tArgCount
-              && T_ARG(batchRepairStart) == MTP_PREFIX_TRAILER_MARKER) {
-        const size_t prefixStart = batchRepairStart;
+      // No batched repair trailer: the region from batchRepairStart onward is either
+      // empty or exactly the prefix-select trailer, which is parsed below.
+      REQUIRE_TRUE(batchRepairStart == tArgCount
+                       || T_ARG(batchRepairStart) == MTP_PREFIX_TRAILER_MARKER,
+                   0, "autoregressive_decode: unexpected trailing MTP repair metadata");
+    }
+
+    // Accepted-prefix capture trailer (0x4D545050): self-contained and optional, and
+    // it may follow ANY combination of the repair trailers. Resolve where the repair
+    // trailers end, then parse the prefix trailer when one is present.
+    {
+      size_t trailerEnd = batchRepairStart;
+      if (hasMtpBatchRepair) {
+        trailerEnd = batchRepairStart + 16;
+      }
+      if (trailerEnd < tArgCount && T_ARG(trailerEnd) == MTP_PREFIX_TRAILER_MARKER) {
+        const size_t prefixStart = trailerEnd;
         REQUIRE_TRUE(prefixStart + 4 <= tArgCount, 0,
                      "autoregressive_decode: truncated MTP prefix-select trailer");
         const int prefixMode = static_cast<int>(T_ARG(prefixStart + 1));
@@ -577,27 +594,36 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
         for (int i = 0; i < convCount; ++i) {
           decodeConfig.mtpPrefixConvOutputIndices[i] = static_cast<int>(T_ARG(cursor++));
         }
-        // Validate the binding against the target plan's actual index domains.
+        // Validate the binding against the target plan's actual index domains. The
+        // iArgs that carry the plan dimensions are parsed AFTER the tArg trailers (and
+        // iArgCount is declared later still), so read the argument list directly here;
+        // without a declared plan geometry the binding is unusable.
+        const size_t prefixIArgCount = block.getIArguments() != nullptr
+            ? block.getIArguments()->size() : 0;
+        const int prefixPlanExtInputs = (prefixIArgCount > 10) ? INT_ARG(9) : 0;
+        const int prefixPlanOutputs = (prefixIArgCount > 10) ? INT_ARG(10) : 0;
+        REQUIRE_TRUE(prefixPlanExtInputs > 0 && prefixPlanOutputs > 0, 0,
+                     "autoregressive_decode: prefix-select requires a declared plan geometry");
         REQUIRE_TRUE(decodeConfig.mtpPrefixSelectMode != 0
                          || decodeConfig.mtpPrefixGdnLayerCount == 0,
                      0, "autoregressive_decode: mode-0 prefix trailer must carry no layers");
         for (int i = 0; i < gdnCount; ++i) {
           REQUIRE_TRUE(decodeConfig.mtpPrefixGdnInputIndices[i] >= 0
-                           && decodeConfig.mtpPrefixGdnInputIndices[i] < decodeConfig.numPlanExternalInputs
+                           && decodeConfig.mtpPrefixGdnInputIndices[i] < prefixPlanExtInputs
                            && decodeConfig.mtpPrefixGdnOutputIndices[i] >= 0
-                           && decodeConfig.mtpPrefixGdnOutputIndices[i] < decodeConfig.numPlanOutputs,
+                           && decodeConfig.mtpPrefixGdnOutputIndices[i] < prefixPlanOutputs,
                        0, "autoregressive_decode: GDN prefix binding %d out of range", i);
         }
         for (int i = 0; i < convCount; ++i) {
           REQUIRE_TRUE(decodeConfig.mtpPrefixConvInputIndices[i] >= 0
-                           && decodeConfig.mtpPrefixConvInputIndices[i] < decodeConfig.numPlanExternalInputs
+                           && decodeConfig.mtpPrefixConvInputIndices[i] < prefixPlanExtInputs
                            && decodeConfig.mtpPrefixConvOutputIndices[i] >= 0
-                           && decodeConfig.mtpPrefixConvOutputIndices[i] < decodeConfig.numPlanOutputs,
+                           && decodeConfig.mtpPrefixConvOutputIndices[i] < prefixPlanOutputs,
                        0, "autoregressive_decode: conv prefix binding %d out of range", i);
         }
       } else {
-        REQUIRE_TRUE(batchRepairStart == tArgCount, 0,
-                     "autoregressive_decode: unexpected trailing MTP repair metadata");
+        REQUIRE_TRUE(trailerEnd == tArgCount, 0,
+                     "autoregressive_decode: unexpected trailing MTP metadata");
       }
     }
 

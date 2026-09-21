@@ -1089,12 +1089,6 @@ public class LLaMAArchitecture implements ModelArchitecture {
         gdnOut = GGMLDTypePolicy.castTo(
                 gdnOut, "gdn_output_cast_" + layerIdx, dtype);
 
-        if (config.isExportRecurrentStatePrefixes()) {
-            // Register the prefix output on the graph so the controller's binding
-            // map can resolve it by name after GraphOptimizer runs.
-            sd.identity("gdn_state_prefix_" + layerIdx, sd.getVariable("gdn_state_prefix_" + layerIdx));
-        }
-
         // 10. Reshape from [B, L, H, D_v] to [B, L, H*D_v]
         SDVariable flatShape = sd.stack("gdn_flat_shape_" + layerIdx, 0,
                 batchDim, seqDim,

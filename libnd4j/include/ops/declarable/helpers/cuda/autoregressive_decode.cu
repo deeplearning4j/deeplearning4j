@@ -3070,9 +3070,18 @@ void autoregressiveDecode(
     LongType totalSpeculativeAccepted = 0;
     LongType speculativeStepCount = 0;
 
+    // PACKET 4: set when the current step committed state by selecting the
+    // accepted-prefix checkpoint instead of re-executing the target. Read by
+    // commitRecurrentState: after that selection the live ext inputs already
+    // hold the state for exactly the consumed prefix, and copying the plan's
+    // post-verify outputs over them would restore the rejected-suffix state
+    // this mode exists to avoid. Reset at every committed step boundary.
+    bool selectStateCommittedThisStep = false;
+
     for (int step = 0; step < maxNewTokens; step++) {
         // A rollback snapshot belongs to one commit transaction, not one restore.
         kvRowSnapshotBase = -1;
+        selectStateCommittedThisStep = false;
         // Cancellation is observed only at a committed step boundary. This
         // keeps KV/recurrent state coherent for a later continuation.
         if (config->cancelCallback != nullptr &&
@@ -3533,6 +3542,15 @@ void autoregressiveDecode(
         // with same type/length (guaranteed by gated_delta_rule op shape function),
         // so raw memcpy is safe and avoids the stream mismatch entirely.
         auto commitRecurrentState = [&]() {
+            if (selectStateCommittedThisStep) {
+                // PACKET 4: the selected-state commit already wrote the live
+                // recurrent ext inputs for exactly the consumed prefix. The plan
+                // outputs still hold the post-verification full-window state
+                // (including the rejected suffix), so copying them here would
+                // overwrite the selection. The copy cost was already accounted
+                // as checkpointSelectBytes.
+                return;
+            }
             if (config->numGdnStatePairs > 0 && config->gdnStateExtIndices != nullptr
                 && config->gdnStateOutputIndices != nullptr) {
                 for (int s = 0; s < config->numGdnStatePairs; s++) {
@@ -3969,6 +3987,110 @@ void autoregressiveDecode(
                     && config->actualSequenceLengthExtIdx >= 0
                     && config->actualSequenceLengthExtIdx < numExtInputs
                     && extInputs[config->actualSequenceLengthExtIdx] != nullptr) {
+                // PACKET 4 SELECT FAST PATH (mode=2): the verification pass ran the
+                // companion recurrent ops, so prefix[consumedCount-1] holds exactly
+                // the state greedy decoding would hold after the consumed prefix -
+                // the same property the legacy rerun re-derives by re-executing the
+                // whole target. Select the checkpoints directly: copy each layer's
+                // prefix row [consumedCount-1] into the live recurrent ext input.
+                // Eligibility (all required before any mutation):
+                //  - select mode requested AND complete layer binding parsed;
+                //  - checkpoint outputs resolved in this invocation's plan;
+                //  - checkpoint row length matches the live recurrent input.
+                // Ineligible configurations fall through to the legacy restore/rerun
+                // below, unchanged and still counted.
+                bool selectEligible = config->mtpPrefixSelectMode == 2
+                    && (config->mtpPrefixGdnLayerCount + config->mtpPrefixConvLayerCount) > 0;
+                // Thread-local: the eligibility probe runs on every partial-acceptance
+                // step, so the scratch must not allocate per step.
+                static thread_local std::vector<NDArray*> tl_selectPrefixSrc;
+                static thread_local std::vector<NDArray*> tl_selectStateDst;
+                tl_selectPrefixSrc.clear();
+                tl_selectStateDst.clear();
+                std::vector<NDArray*>& selectPrefixSrc = tl_selectPrefixSrc;
+                std::vector<NDArray*>& selectStateDst = tl_selectStateDst;
+                if (selectEligible) {
+                    selectPrefixSrc.reserve(config->mtpPrefixGdnLayerCount
+                                            + config->mtpPrefixConvLayerCount);
+                    selectStateDst.reserve(config->mtpPrefixGdnLayerCount
+                                           + config->mtpPrefixConvLayerCount);
+                    auto resolveLayer = [&](int stateExtIdx, int prefixOutIdx) -> bool {
+                        NDArray* dst = (stateExtIdx >= 0 && stateExtIdx < numExtInputs)
+                            ? extInputs[stateExtIdx] : nullptr;
+                        NDArray* src = (prefixOutIdx >= 0 && prefixOutIdx < numPlanOutputs)
+                            ? planOutputs[prefixOutIdx] : nullptr;
+                        if (dst == nullptr || src == nullptr
+                                || src->rankOf() != dst->rankOf() + 1
+                                || src->sizeAt(0) < consumedCount) return false;
+                        // Prefix layout is time-leading: [W, B, ...state dims]. The
+                        // slot for consumedCount inputs is row (consumedCount-1); its
+                        // trailing dims must match the state tensor exactly.
+                        for (int d = 1; d < dst->rankOf(); d++) {
+                            if (src->sizeAt(d) != dst->sizeAt(d - 1)) return false;
+                        }
+                        if (src->dataType() != dst->dataType()) return false;
+                        selectPrefixSrc.push_back(src);
+                        selectStateDst.push_back(dst);
+                        return true;
+                    };
+                    for (int s = 0; s < config->mtpPrefixGdnLayerCount && selectEligible; s++) {
+                        selectEligible = resolveLayer(config->mtpPrefixGdnInputIndices[s],
+                                                      config->mtpPrefixGdnOutputIndices[s]);
+                    }
+                    for (int s = 0; s < config->mtpPrefixConvLayerCount && selectEligible; s++) {
+                        selectEligible = resolveLayer(config->mtpPrefixConvInputIndices[s],
+                                                      config->mtpPrefixConvOutputIndices[s]);
+                    }
+                }
+                if (selectEligible) {
+                    // ONE selected-state commit. No restore, no rerun, no recovery
+                    // forward: ordinary partial acceptance costs ONE verification.
+                    const LongType selectedRow = static_cast<LongType>(consumedCount) - 1;
+                    for (size_t li = 0; li < selectStateDst.size(); li++) {
+                        NDArray* src = selectPrefixSrc[li];
+                        NDArray* dst = selectStateDst[li];
+                        // Per-layer slot size: GDN and conv states differ, so the row
+                        // stride is this layer's own trailing-dims product (verified
+                        // equal to the prefix's trailing dims at resolution time).
+                        const size_t slotElems = static_cast<size_t>(dst->lengthOf());
+                        const size_t rowBytes = slotElems * static_cast<size_t>(dst->sizeOfT());
+                        // Source row base: prefix is time-leading C-order, row stride
+                        // = slotElems elements.
+                        void* srcBase = static_cast<char*>(src->specialBuffer())
+                            + static_cast<size_t>(selectedRow) * slotElems * src->sizeOfT();
+                        NDArray::prepareSpecialUse({dst}, {});
+                        auto selErr = cudaMemcpyAsync(dst->specialBuffer(), srcBase, rowBytes,
+                            cudaMemcpyDeviceToDevice, *stream);
+                        p0.checkpointSelectBytes += static_cast<std::uint64_t>(rowBytes);
+                        REQUIRE_TRUE(selErr == cudaSuccess, 0,
+                            "autoregressive_decode: prefix checkpoint select copy failed: %s",
+                            cudaGetErrorString(selErr));
+                        NDArray::registerSpecialUse({dst}, {});
+                    }
+                    // Advance actual_sequence_length to the consumed prefix: the
+                    // state now reflects exactly those inputs.
+                    NDArray* aslArr = extInputs[config->actualSequenceLengthExtIdx];
+                    NDArray::prepareSpecialUse({aslArr}, {});
+                    updatePositionIdsKernel<<<1, 1, 0, *stream>>>(
+                        aslArr->specialBuffer(), static_cast<LongType>(consumedCount));
+                    NDArray::registerSpecialUse({aslArr}, {});
+                    config->activeWindow = static_cast<int>(consumedCount);
+                    p0.checkpointSelectCommits++;
+                    selectStateCommittedThisStep = true;
+                    DSP_DIAG(KV_CACHE,
+                             "SPEC_STATE_SELECT step=%d proposed=%d accepted=%d "
+                             "consumed=%d layers=%d - checkpoint[m-1] committed, no rerun",
+                             step, proposedCount, acceptedDrafts, consumedCount,
+                             static_cast<int>(selectStateDst.size()));
+                }
+                if (config->mtpPrefixSelectMode == 2 && !selectStateCommittedThisStep) {
+                    // Select was requested but this step could not honour it (incomplete
+                    // binding, shape mismatch, or index unresolvable). The legacy
+                    // restore/rerun below runs unchanged; the count makes the fallback
+                    // visible instead of silently accepting the rerun cost.
+                    p0.checkpointSelectFallbacks++;
+                }
+                if (!selectStateCommittedThisStep) {
                 // T3b parity fix (step-99 flip, 1536 vs 5218): the rerun must be
                 // width-1 in GEOMETRY, not just in recurrent row count. asl only
                 // gates GDN/conv; attention/GEMM/softmax otherwise run the frozen
@@ -4326,6 +4448,7 @@ void autoregressiveDecode(
                                  (long long)rerunRefreshedToken, (long long)argmaxDst[0],
                                  rerunLogitsNan ? 1 : 0, rerunStateNan ? 1 : 0);
                 }
+                }   // end if (!selectStateCommittedThisStep)
             }
             // -- FINALIZED EMISSION SEQUENCE (review round 2) ---------------------
             // Reconstruct the lossless verify emission, apply the authoritative
@@ -5485,6 +5608,8 @@ void autoregressiveDecode(
              "targetVerify=%d reruns=%d shortened=%d predictorProposal=%d "
              "predictorRepair=%d predictorMaintenance=%d repairLmHead=%d "
              "snapshotBytes=%llu restoreBytes=%llu stateCommitBytes=%llu "
+             "checkpointSelectCommits=%d checkpointSelectFallbacks=%d "
+             "checkpointSelectBytes=%llu "
              "hostReadbackBytes=%llu hostWaits=%llu phaseTransitions=%d "
              "planReplay=%d planWarmup=%d targetExec=%d targetPhase=%d "
              "multiRow=%d specK=%d windowMax=%d",
@@ -5497,6 +5622,8 @@ void autoregressiveDecode(
              (unsigned long long)p0.snapshotBytes,
              (unsigned long long)p0.restoreBytes,
              (unsigned long long)p0.stateCommitBytes,
+             p0.checkpointSelectCommits, p0.checkpointSelectFallbacks,
+             (unsigned long long)p0.checkpointSelectBytes,
              (unsigned long long)p0.hostReadbackBytes,
              (unsigned long long)p0.hostWaitBoundaries,
              p0.planPhaseTransitions, p0.planReplayForwards,

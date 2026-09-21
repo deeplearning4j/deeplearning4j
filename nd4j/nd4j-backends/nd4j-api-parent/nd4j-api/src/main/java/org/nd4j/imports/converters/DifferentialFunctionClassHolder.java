@@ -967,10 +967,15 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.signal.STFT.class,
                 // Transform custom ops
                 org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d.class,
+                // Accepted-prefix capture companions (3-output variants). Without an
+                // entry here the SDNB round-trip cannot resolve the op name back to a
+                // class and GraphOptimizer's SameDiff.dup fails loudly.
+                org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1dWithPrefix.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.GGMLDequantize.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaNetBlock.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRuleWithPrefix.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.Mamba2SSM.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.MoeSharedExperts.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.PagedAttentionForward.class,

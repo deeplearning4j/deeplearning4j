@@ -146,6 +146,20 @@ public interface ModelArchitecture {
                 .layerTypes(metadata.getLayerTypes())
                 .fullAttentionInterval(metadata.getFullAttentionInterval())
                 .ropeType(metadata.getRopeType())
+                .exportRecurrentStatePrefixes(recurrentStatePrefixesRequested())
                 .build();
+    }
+
+    /**
+     * Accepted-prefix checkpoint export is opt-in: it adds one time-leading output
+     * per recurrent (GDN/conv) layer to the built graph. Enabled when bundled-MTP
+     * accepted-prefix state selection is requested via
+     * {@code -Dnd4j.mtp.prefixSelect=shadow|select}. The verification graph must be
+     * built with the companion outputs present; the controller fails closed to the
+     * legacy restore/rerun recovery when they are absent.
+     */
+    static boolean recurrentStatePrefixesRequested() {
+        String mode = System.getProperty("nd4j.mtp.prefixSelect", "off");
+        return mode != null && !"off".equalsIgnoreCase(mode.trim());
     }
 }

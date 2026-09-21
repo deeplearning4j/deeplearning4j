@@ -465,6 +465,7 @@ class InGraphKvState implements AutoCloseable {
         releaseRecurrentCopyDonors();
         closeAll(mtpKvBuffers);
         closeAll(mtpPrefillInputMap);
+        closeAll(prefixCheckpointBuffers);
         closeAll(recurrentStateBuffers);
         closeAll(staticKvBuffers);
         closeAll(quantizedKvBuffers);

@@ -98,11 +98,30 @@ public class ModelIOConfig {
             this.opType = opType;
         }
 
-        /** True if this is a GDN (gated delta rule) state. */
-        public boolean isGdn() { return "gated_delta_rule".equals(opType); }
+        /** True if this is a GDN (gated delta rule) state, including the prefix-capture companion. */
+        public boolean isGdn() { return "gated_delta_rule".equals(opType) || "gated_delta_rule_with_prefix".equals(opType); }
 
-        /** True if this is a conv (causal conv1d) state. */
-        public boolean isConv() { return "causal_conv1d".equals(opType); }
+        /** True if this is a conv (causal conv1d) state, including the prefix-capture companion. */
+        public boolean isConv() { return "causal_conv1d".equals(opType) || "causal_conv1d_with_prefix".equals(opType); }
+
+        /** True if the consuming op also emits accepted-prefix checkpoints (3-output companion). */
+        public boolean hasPrefixCapture() {
+            return "gated_delta_rule_with_prefix".equals(opType)
+                || "causal_conv1d_with_prefix".equals(opType);
+        }
+
+        /** The name of the companion prefix output for this state, or null if not capturing. */
+        public String prefixOutputName() {
+            if (!hasPrefixCapture()) return null;
+            if (isGdn()) {
+                return outputName.startsWith("gdn_state_out_")
+                    ? "gdn_state_prefix_" + outputName.substring("gdn_state_out_".length())
+                    : null;
+            }
+            return outputName.startsWith("conv_state_out_")
+                ? "conv_state_prefix_" + outputName.substring("conv_state_out_".length())
+                : null;
+        }
 
         @Override
         public String toString() {
@@ -162,9 +181,15 @@ public class ModelIOConfig {
                 if (opOutputs == null) continue;
 
                 for (String outVar : opOutputs) {
-                    if (graphOutputs.contains(outVar) && isRecurrentStateName(outVar)) {
-                        pairs.add(new RecurrentStatePair(inputName, outVar, op.opName()));
-                    }
+                    if (!graphOutputs.contains(outVar) || !isRecurrentStateName(outVar)) continue;
+                    // Accepted-prefix capture outputs are graph outputs too, and their names
+                    // contain "state" (gdn_state_prefix_N / conv_state_prefix_N), but they
+                    // are per-timestep CHECKPOINTS of the same op - not the co-produced
+                    // state handoff that replaces the input next step. Pairing them would
+                    // emit two pairs per layer, registering a [W,B,...] checkpoint tensor
+                    // as if it were a state input/output of state rank.
+                    if (isPrefixCaptureOutput(op, outVar)) continue;
+                    pairs.add(new RecurrentStatePair(inputName, outVar, op.opName()));
                 }
             }
         }
@@ -174,6 +199,19 @@ public class ModelIOConfig {
 
     private static boolean isRecurrentStateName(String name) {
         return name != null && name.contains("state");
+    }
+
+    /**
+     * True when {@code outVar} is the accepted-prefix checkpoint of a companion
+     * capture op. Both signals are required: the consuming op must be a
+     * {@code *_with_prefix} companion AND the output must be the checkpoint tensor,
+     * so a state handoff that happens to be named "prefix" elsewhere is unaffected.
+     */
+    private static boolean isPrefixCaptureOutput(DifferentialFunction op, String outVar) {
+        if (op == null || outVar == null) return false;
+        String opType = op.opName();
+        return opType != null && opType.endsWith("_with_prefix")
+                && outVar.contains("prefix");
     }
 
     /**
