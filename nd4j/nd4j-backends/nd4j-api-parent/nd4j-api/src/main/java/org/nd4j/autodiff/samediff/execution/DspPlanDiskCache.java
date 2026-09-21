@@ -31,6 +31,7 @@ import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -478,15 +479,23 @@ public class DspPlanDiskCache {
         long modelHash = computeModelIdentityHash(requestedOutputs, externalInputKeys, numSlots);
         String idxName = "dsp_model_" + hashToHex(modelHash) + ".idx";
 
-        // Check override dir first, then cache dir
+        // Check override dir first, then cache dir.
+        // The index holds one structure hash per line: a single model identity
+        // legitimately maps to multiple valid plans (one per distinct input shape,
+        // e.g. one per encoded prompt length), so every recorded candidate is tried
+        // in stored order until one validates.
         for (String dir : new String[]{getOverrideDir(), getCacheDir()}) {
             File idxFile = new File(dir, idxName);
             if (!idxFile.exists()) continue;
 
-            try (BufferedReader reader = new BufferedReader(new FileReader(idxFile))) {
-                String structureHashHex = reader.readLine();
-                if (structureHashHex != null && !structureHashHex.isEmpty()) {
-                    long structureHash = Long.parseUnsignedLong(structureHashHex.trim(), 16);
+            try {
+                List<Long> candidates = new ArrayList<>();
+                for (String line : Files.readAllLines(idxFile.toPath())) {
+                    String trimmed = line.trim();
+                    if (trimmed.isEmpty()) continue;
+                    candidates.add(Long.parseUnsignedLong(trimmed, 16));
+                }
+                for (long structureHash : candidates) {
                     byte[] bytes = tryLoadByHash(structureHash);
                     if (bytes != null) {
                         log.info("DSP disk cache: model identity HIT — loaded plan via index dsp_model_{}",
@@ -504,6 +513,14 @@ public class DspPlanDiskCache {
 
     /**
      * Store the model identity → structure hash mapping.
+     *
+     * <p>A single model identity legitimately maps to multiple valid plans (one per
+     * distinct input shape, e.g. one per encoded prompt length). Existing hashes are
+     * preserved, the newly validated hash is recorded first (most recently used), and
+     * the set is bounded so the index cannot grow without limit. Without this merge,
+     * an index entry written by an older shape permanently shadows newer valid plans:
+     * every generation loads the stale bytes, fails structure validation, and pays a
+     * full recompile.</p>
      */
     public static void storeModelIdentityIndex(Set<String> requestedOutputs, String[] externalInputKeys,
                                                int numSlots, long structureHash) {
@@ -515,6 +532,23 @@ public class DspPlanDiskCache {
 
         if (!ensureCacheDir(cacheDir)) return;
 
+        final int maxEntries = 64;
+        Set<Long> hashes = new LinkedHashSet<>();
+        hashes.add(structureHash);
+        File idxFile = new File(cacheDir, idxName);
+        if (idxFile.exists()) {
+            try {
+                for (String line : Files.readAllLines(idxFile.toPath())) {
+                    String trimmed = line.trim();
+                    if (trimmed.isEmpty()) continue;
+                    hashes.add(Long.parseUnsignedLong(trimmed, 16));
+                    if (hashes.size() >= maxEntries) break;
+                }
+            } catch (IOException | NumberFormatException e) {
+                log.debug("DSP disk cache: failed to read model index {}: {}", idxName, e.getMessage());
+            }
+        }
+
         long pid = ProcessHandle.current().pid();
         long tid = Thread.currentThread().getId();
         String tmpSuffix = ".tmp." + pid + "." + tid;
@@ -522,7 +556,13 @@ public class DspPlanDiskCache {
         try {
             Path idxTmp = new File(cacheDir, idxName + tmpSuffix).toPath();
             Path idxFinal = new File(cacheDir, idxName).toPath();
-            Files.writeString(idxTmp, hashToHex(structureHash) + "\n");
+            StringBuilder body = new StringBuilder();
+            int written = 0;
+            for (long hash : hashes) {
+                body.append(hashToHex(hash)).append('\n');
+                if (++written >= maxEntries) break;
+            }
+            Files.writeString(idxTmp, body.toString());
             Files.move(idxTmp, idxFinal, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
         } catch (IOException e) {
             log.debug("DSP disk cache: failed to write model index {}: {}", idxName, e.getMessage());

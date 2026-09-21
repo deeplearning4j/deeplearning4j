@@ -2328,7 +2328,13 @@ public class DynamicShapePlanExecutor implements Closeable {
                 DspPlanDiskCache.store(structureHash, serialized,
                         plan.getSlots().length, extKeys.length,
                         plan.getRequestedOutputs().size(), outputSetStr);
-                // Also store the model identity → structure hash mapping for cross-JVM lookup
+            }
+            // Model identity index is updated whenever this plan was compiled fresh
+            // (bytes may already exist on disk from a prior run — only the index entry
+            // is missing). Gating on exists(structureHash) left poisoned single-hash
+            // index entries permanently shadowing newer valid plans for multi-shape
+            // models (one plan per distinct prompt length).
+            if (DspPlanDiskCache.isEnabled() && !loadedFromDiskCache) {
                 DspPlanDiskCache.storeModelIdentityIndex(
                         plan.getRequestedOutputs(), extKeys, plan.getSlots().length, structureHash);
             }
