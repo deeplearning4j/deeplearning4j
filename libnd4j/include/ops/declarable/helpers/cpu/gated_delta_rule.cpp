@@ -516,17 +516,55 @@ void gatedDeltaRuleWithPrefix(LaunchContext* context, NDArray* Q, NDArray* K, ND
     if (stateIn != nullptr) NDArray::preparePrimaryUse({}, {stateIn});
     if (prefixOut != nullptr) NDArray::preparePrimaryUse({prefixOut}, {});
 
-    // Companion storage contract: the prefix snapshot and the committed state must
-    // be independent allocations. The recurrence overwrites stateOut in place; a
-    // caller aliasing prefixOut with stateIn or stateOut would corrupt either the
-    // checkpoints or the committed state mid-capture.
+    // Range-overlap check for two byte intervals [aStart, aStart+aBytes) and
+    // [bStart, bStart+bBytes). Equal start pointers are a special case.
+    auto rangesOverlap = [](const void* aStart, size_t aBytes,
+                            const void* bStart, size_t bBytes) {
+        const auto a = reinterpret_cast<std::uintptr_t>(aStart);
+        const auto b = reinterpret_cast<std::uintptr_t>(bStart);
+        return a < b + bBytes && b < a + aBytes;
+    };
+    const size_t stateBytes =
+        static_cast<size_t>(Q->sizeAt(0)) * Q->sizeAt(2) * Q->sizeAt(3) * V->sizeAt(3)
+            * stateOut->sizeOfT();
+    const size_t outputBytes = static_cast<size_t>(output->lengthOf()) * output->sizeOfT();
+    // Prefix layout: time-leading flat [W, B, H, D_k, D_v] C-order; slot t is the
+    // state after consuming inputs 0..t, so capacity W >= L is required.
     if (prefixOut != nullptr) {
-        const void* prefixBase = prefixOut->buffer();
-        const bool aliases = (stateIn != nullptr && stateIn->buffer() == prefixBase)
-            || stateOut->buffer() == prefixBase
-            || output->buffer() == prefixBase;
-        if (aliases) {
-            THROW_EXCEPTION("gatedDeltaRuleWithPrefix: prefixOut must not alias stateIn, stateOut, or output");
+        if (prefixOut->rankOf() != 5) {
+            THROW_EXCEPTION("gatedDeltaRuleWithPrefix: prefixOut must have rank 5 [W,B,H,D_k,D_v]");
+        }
+        const size_t slotBytes = static_cast<size_t>(stateOut->lengthOf()) * stateOut->sizeOfT();
+        if (prefixOut->sizeAt(1) != Q->sizeAt(0) || prefixOut->sizeAt(2) != Q->sizeAt(2)
+                || prefixOut->sizeAt(3) != Q->sizeAt(3) || prefixOut->sizeAt(4) != V->sizeAt(3)
+                || prefixOut->sizeAt(0) < Q->sizeAt(1)
+                || static_cast<size_t>(prefixOut->lengthOf()) * prefixOut->sizeOfT()
+                    < slotBytes * static_cast<size_t>(Q->sizeAt(1))) {
+            THROW_EXCEPTION("gatedDeltaRuleWithPrefix: prefixOut capacity/layout mismatch for [W,B,H,D_k,D_v]");
+        }
+        const size_t prefixBytes = static_cast<size_t>(prefixOut->lengthOf()) * prefixOut->sizeOfT();
+        // Companion storage contract (range-aware): the prefix snapshot must not
+        // overlap the committed state, the committed stateIn, or the activations
+        // when capture is enabled.
+        const bool aliasesStateIn = stateIn != nullptr
+            && rangesOverlap(stateIn->buffer(), stateBytes, prefixOut->buffer(), prefixBytes);
+        const bool aliasesStateOut =
+            rangesOverlap(stateOut->buffer(), stateBytes, prefixOut->buffer(), prefixBytes);
+        const bool aliasesOutput =
+            rangesOverlap(output->buffer(), outputBytes, prefixOut->buffer(), prefixBytes);
+        if (aliasesStateIn || aliasesStateOut || aliasesOutput) {
+            THROW_EXCEPTION("gatedDeltaRuleWithPrefix: prefixOut must not overlap stateIn, stateOut, or output");
+        }
+    } else if (stateIn != nullptr) {
+        // Legacy path: the long-standing direct-state fast path already validates
+        // stateIn/stateOut aliasing in the backend selector; equal-buffer reuse
+        // remains legal here. Capture mode requires strict separation instead.
+        if (rangesOverlap(stateIn->buffer(), stateBytes,
+                          stateOut->buffer(), stateBytes)) {
+            const bool identical = stateIn->buffer() == stateOut->buffer();
+            if (!identical) {
+                THROW_EXCEPTION("gatedDeltaRule: stateIn partially overlaps stateOut");
+            }
         }
     }
 

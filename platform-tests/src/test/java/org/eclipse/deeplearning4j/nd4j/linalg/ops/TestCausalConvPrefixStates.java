@@ -290,4 +290,100 @@ public class TestCausalConvPrefixStates {
         assertEquals(0.0, stateIn.sub(stateInBackup).amaxNumber().doubleValue(), 0.0f,
                 "stateIn mutated in SiLU arm");
     }
+
+    @Test
+    public void testStateChangingInputsReuseUpdatesPrefixSlots() {
+        // Conv history is raw-x based, so an x change changes every live prefix
+        // slot. Rerun through the SAME buffers with different x and verify all
+        // live slots against an independent reference.
+        int l = 5;
+        INDArray[] in = deterministicInputs(l);
+        INDArray x = in[0];
+        INDArray weight = in[1];
+        INDArray bias = in[2];
+        INDArray stateIn = nonzeroHistory();
+        INDArray stateInBackup = stateIn.dup();
+
+        INDArray output = Nd4j.create(DataType.FLOAT, B, l, D);
+        INDArray stateOut = Nd4j.create(DataType.FLOAT, B, D, KC - 1);
+        INDArray prefix = Nd4j.create(DataType.FLOAT, l, B, D, KC - 1);
+
+        CausalConv1dWithPrefix first = new CausalConv1dWithPrefix(
+                x, weight, bias, stateIn, Nd4j.scalar(DataType.INT64, (long) l));
+        first.addOutputArgument(output, stateOut, prefix);
+        Nd4j.getExecutioner().exec(first);
+        Nd4j.getExecutioner().commit();
+
+        INDArray x2 = x.mul(2.0f).addi(0.5f);
+        CausalConv1dWithPrefix second = new CausalConv1dWithPrefix(
+                x2, weight, bias, stateIn, Nd4j.scalar(DataType.INT64, (long) l));
+        second.addOutputArgument(output, stateOut, prefix);
+        Nd4j.getExecutioner().exec(second);
+        Nd4j.getExecutioner().commit();
+
+        for (int m = 1; m <= l; m++) {
+            INDArray lo = Nd4j.create(DataType.FLOAT, B, l, D);
+            INDArray ls = Nd4j.create(DataType.FLOAT, B, D, KC - 1);
+            CausalConv1d legacyM = new CausalConv1d(x2, weight, bias, stateInBackup,
+                    Nd4j.scalar(DataType.INT64, (long) m), 0, 0);
+            legacyM.addOutputArgument(lo, ls);
+            Nd4j.getExecutioner().exec(legacyM);
+            Nd4j.getExecutioner().commit();
+            INDArray slot = prefix.get(
+                    org.nd4j.linalg.indexing.NDArrayIndex.point(m - 1),
+                    org.nd4j.linalg.indexing.NDArrayIndex.all(),
+                    org.nd4j.linalg.indexing.NDArrayIndex.all(),
+                    org.nd4j.linalg.indexing.NDArrayIndex.all());
+            assertEquals(0.0, slot.sub(ls).amaxNumber().doubleValue(), 0.0f,
+                    "state-changing reuse prefix[" + (m - 1) + "] stale or wrong");
+        }
+        assertEquals(0.0, stateIn.sub(stateInBackup).amaxNumber().doubleValue(), 0.0f,
+                "stateIn mutated across state-changing reuse");
+    }
+
+    @Test
+    public void testFixedWidthActiveLengthReuseShrinksThenGrows() {
+        // Fixed-W 5 -> 1 -> 3 active-length reuse: live slots [0,m) must track the
+        // current active length; slots beyond it may keep older data but must never
+        // be selected.
+        int w = 5;
+        INDArray[] in = deterministicInputs(w);
+        INDArray x = in[0];
+        INDArray weight = in[1];
+        INDArray bias = in[2];
+        INDArray stateIn = nonzeroHistory();
+        INDArray stateInBackup = stateIn.dup();
+
+        INDArray output = Nd4j.create(DataType.FLOAT, B, w, D);
+        INDArray stateOut = Nd4j.create(DataType.FLOAT, B, D, KC - 1);
+        INDArray prefix = Nd4j.create(DataType.FLOAT, w, B, D, KC - 1);
+
+        int[] activeLengths = {5, 1, 3};
+        for (int active : activeLengths) {
+            CausalConv1dWithPrefix op = new CausalConv1dWithPrefix(
+                    x, weight, bias, stateIn, Nd4j.scalar(DataType.INT64, (long) active));
+            op.addOutputArgument(output, stateOut, prefix);
+            Nd4j.getExecutioner().exec(op);
+            Nd4j.getExecutioner().commit();
+
+            for (int m = 1; m <= active; m++) {
+                INDArray lo = Nd4j.create(DataType.FLOAT, B, w, D);
+                INDArray ls = Nd4j.create(DataType.FLOAT, B, D, KC - 1);
+                CausalConv1d legacyM = new CausalConv1d(x, weight, bias, stateInBackup,
+                        Nd4j.scalar(DataType.INT64, (long) m), 0, 0);
+                legacyM.addOutputArgument(lo, ls);
+                Nd4j.getExecutioner().exec(legacyM);
+                Nd4j.getExecutioner().commit();
+                INDArray slot = prefix.get(
+                        org.nd4j.linalg.indexing.NDArrayIndex.point(m - 1),
+                        org.nd4j.linalg.indexing.NDArrayIndex.all(),
+                        org.nd4j.linalg.indexing.NDArrayIndex.all(),
+                        org.nd4j.linalg.indexing.NDArrayIndex.all());
+                assertEquals(0.0, slot.sub(ls).amaxNumber().doubleValue(), 0.0f,
+                        "active=" + active + " live prefix[" + (m - 1) + "] stale or wrong");
+            }
+            assertEquals(0.0, stateIn.sub(stateInBackup).amaxNumber().doubleValue(), 0.0f,
+                    "stateIn mutated at active=" + active);
+        }
+    }
 }

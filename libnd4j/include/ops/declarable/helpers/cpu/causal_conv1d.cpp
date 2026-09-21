@@ -172,6 +172,41 @@ void causalConv1dWithPrefix(LaunchContext* context, NDArray* x, NDArray* weight,
     if (prefixOut != nullptr && actualLen == nullptr) {
         THROW_EXCEPTION("causalConv1dWithPrefix: prefix capture requires an actualLen input");
     }
+    // Range-overlap predicate over byte intervals.
+    auto rangesOverlap = [](const void* aStart, size_t aBytes,
+                            const void* bStart, size_t bBytes) {
+        const auto a = reinterpret_cast<std::uintptr_t>(aStart);
+        const auto b = reinterpret_cast<std::uintptr_t>(bStart);
+        return a < b + bBytes && b < a + aBytes;
+    };
+    const auto K = (wFormat == 0) ? weight->sizeAt(1) : weight->sizeAt(0);
+    const size_t stateBytes = static_cast<size_t>(stateOut->lengthOf()) * stateOut->sizeOfT();
+    const size_t outputBytes = static_cast<size_t>(output->lengthOf()) * output->sizeOfT();
+    if (prefixOut != nullptr) {
+        // Companion storage contract (range-aware): prefix snapshots must not
+        // overlap the retained history, the incoming history, or the activations.
+        if (prefixOut->rankOf() != 4 || prefixOut->sizeAt(1) != x->sizeAt(0)
+                || prefixOut->sizeAt(2) != x->sizeAt(2) || prefixOut->sizeAt(3) != K - 1
+                || prefixOut->sizeAt(0) < x->sizeAt(1)) {
+            THROW_EXCEPTION("causalConv1dWithPrefix: prefixOut capacity/layout mismatch for [W,B,D,K-1]");
+        }
+        const size_t prefixBytes = static_cast<size_t>(prefixOut->lengthOf()) * prefixOut->sizeOfT();
+        const bool aliasesStateIn = stateIn != nullptr
+            && rangesOverlap(stateIn->buffer(), stateBytes, prefixOut->buffer(), prefixBytes);
+        const bool aliasesStateOut = rangesOverlap(stateOut->buffer(), stateBytes,
+                                                   prefixOut->buffer(), prefixBytes);
+        const bool aliasesOutput = rangesOverlap(output->buffer(), outputBytes,
+                                                 prefixOut->buffer(), prefixBytes);
+        if (aliasesStateIn || aliasesStateOut || aliasesOutput) {
+            THROW_EXCEPTION("causalConv1dWithPrefix: prefixOut must not overlap stateIn, stateOut, or output");
+        }
+    } else if (stateIn != nullptr) {
+        // Legacy path: identical buffer reuse stays legal; partial overlap was never legal.
+        if (rangesOverlap(stateIn->buffer(), stateBytes, stateOut->buffer(), stateBytes)
+                && stateIn->buffer() != stateOut->buffer()) {
+            THROW_EXCEPTION("causalConv1d: stateIn partially overlaps stateOut");
+        }
+    }
     NDArray::preparePrimaryUse({output, stateOut}, {x, weight, bias, actualLen});
     if (stateIn != nullptr) NDArray::preparePrimaryUse({}, {stateIn});
     if (prefixOut != nullptr) NDArray::preparePrimaryUse({prefixOut}, {});

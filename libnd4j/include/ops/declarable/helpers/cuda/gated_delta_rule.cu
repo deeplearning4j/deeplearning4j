@@ -1032,20 +1032,41 @@ void gatedDeltaRuleWithPrefix(LaunchContext* context, NDArray* Q, NDArray* K, ND
     if (prefixOut != nullptr && actualLen == nullptr) {
         THROW_EXCEPTION("gatedDeltaRuleWithPrefix: prefix capture requires an actualLen input");
     }
+    // Range-overlap predicate over byte intervals.
+    auto rangesOverlap = [](const void* aStart, size_t aBytes,
+                            const void* bStart, size_t bBytes) {
+        const auto a = reinterpret_cast<std::uintptr_t>(aStart);
+        const auto b = reinterpret_cast<std::uintptr_t>(bStart);
+        return a < b + bBytes && b < a + aBytes;
+    };
+    const size_t stateBytes = static_cast<size_t>(stateOut->lengthOf()) * stateOut->sizeOfT();
+    const size_t outputBytes = static_cast<size_t>(output->lengthOf()) * output->sizeOfT();
+    if (prefixOut != nullptr) {
+        // Companion storage contract (range-aware): the prefix snapshot must not
+        // overlap the committed state, the committed stateIn, or the activations.
+        const size_t prefixBytes = static_cast<size_t>(prefixOut->lengthOf()) * prefixOut->sizeOfT();
+        const bool aliasesStateIn = stateIn != nullptr
+            && rangesOverlap(stateIn->specialBuffer(), stateBytes,
+                             prefixOut->specialBuffer(), prefixBytes);
+        const bool aliasesStateOut = rangesOverlap(stateOut->specialBuffer(), stateBytes,
+                             prefixOut->specialBuffer(), prefixBytes);
+        const bool aliasesOutput = rangesOverlap(output->specialBuffer(), outputBytes,
+                             prefixOut->specialBuffer(), prefixBytes);
+        if (aliasesStateIn || aliasesStateOut || aliasesOutput) {
+            THROW_EXCEPTION("gatedDeltaRuleWithPrefix: prefixOut must not overlap stateIn, stateOut, or output");
+        }
+    } else if (stateIn != nullptr) {
+        // Legacy path: identical buffer reuse stays legal (direct-state fast path
+        // relies on it); partial overlap was never legal.
+        if (rangesOverlap(stateIn->specialBuffer(), stateBytes,
+                          stateOut->specialBuffer(), stateBytes)
+                && stateIn->specialBuffer() != stateOut->specialBuffer()) {
+            THROW_EXCEPTION("gatedDeltaRule: stateIn partially overlaps stateOut");
+        }
+    }
     NDArray::prepareSpecialUse({output, stateOut}, {Q, K, V, beta, gate, actualLen});
     if (stateIn != nullptr) NDArray::prepareSpecialUse({}, {stateIn});
-    if (prefixOut != nullptr) {
-        // Companion storage contract: prefix snapshots and the committed state must
-        // be independent allocations (see CPU helper for the same rule).
-        const bool overlapsStateIn = stateIn != nullptr
-            && stateIn->specialBuffer() == prefixOut->specialBuffer();
-        const bool overlapsStateOut = stateOut->specialBuffer() == prefixOut->specialBuffer();
-        const bool overlapsOutput = output->specialBuffer() == prefixOut->specialBuffer();
-        if (overlapsStateIn || overlapsStateOut || overlapsOutput) {
-            THROW_EXCEPTION("gatedDeltaRuleWithPrefix: prefixOut must not alias stateIn, stateOut, or output");
-        }
-        NDArray::prepareSpecialUse({prefixOut}, {});
-    }
+    if (prefixOut != nullptr) NDArray::prepareSpecialUse({prefixOut}, {});
 
     BUILD_SINGLE_SELECTOR(
         Q->dataType(), gatedDeltaRuleFromArrays,

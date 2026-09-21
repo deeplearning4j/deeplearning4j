@@ -216,6 +216,106 @@ public class TestGdnPrefixStates {
                 "stateIn mutated across reuse");
     }
 
+    @Test
+    public void testStateChangingInputsReuseUpdatesPrefixSlots() {
+        // Q alone does not change recurrent state. V/K/gate DO. Rerun through the
+        // same buffers with a state-changing input and verify ALL live prefix slots
+        // reflect the new inputs (no stale slots from the previous invocation).
+        int w = 4;
+        INDArray[] in = deterministicInputs(w, DataType.FLOAT);
+        INDArray q = in[0];
+        INDArray k = in[1];
+        INDArray v = in[2];
+        INDArray beta = in[3];
+        INDArray gate = in[4];
+        INDArray stateIn = nonzeroState(DataType.FLOAT);
+        INDArray stateInBackup = stateIn.dup();
+
+        INDArray output = Nd4j.create(DataType.FLOAT, B, w, H, DV);
+        INDArray stateOut = Nd4j.create(DataType.FLOAT, B, H, DK, DV);
+        INDArray prefix = Nd4j.create(DataType.FLOAT, w, B, H, DK, DV);
+
+        GatedDeltaRuleWithPrefix first = new GatedDeltaRuleWithPrefix(
+                q, k, v, beta, gate, stateIn, Nd4j.scalar(DataType.INT64, (long) w));
+        first.addOutputArgument(output, stateOut, prefix);
+        Nd4j.getExecutioner().exec(first);
+        Nd4j.getExecutioner().commit();
+
+        // State-changing change: V and K (and gate) shift, Q unchanged.
+        INDArray v2 = v.mul(3.0f).addi(0.25f);
+        INDArray k2 = k.mul(-0.5f).addi(0.125f);
+        INDArray gate2 = gate.addi(-0.02f);
+
+        GatedDeltaRuleWithPrefix second = new GatedDeltaRuleWithPrefix(
+                q, k2, v2, beta, gate2, stateIn, Nd4j.scalar(DataType.INT64, (long) w));
+        second.addOutputArgument(output, stateOut, prefix);
+        Nd4j.getExecutioner().exec(second);
+        Nd4j.getExecutioner().commit();
+
+        // Independent reference from the ORIGINAL state with the NEW inputs.
+        INDArray[] legacy2 = runLegacy(q, k2, v2, beta, gate2, stateInBackup, w);
+        for (int m = 1; m <= w; m++) {
+            INDArray[] legacyM = runLegacy(q, k2, v2, beta, gate2, stateInBackup, m);
+            INDArray slot = prefix.get(
+                    org.nd4j.linalg.indexing.NDArrayIndex.point(m - 1),
+                    org.nd4j.linalg.indexing.NDArrayIndex.all(),
+                    org.nd4j.linalg.indexing.NDArrayIndex.all(),
+                    org.nd4j.linalg.indexing.NDArrayIndex.all(),
+                    org.nd4j.linalg.indexing.NDArrayIndex.all());
+            assertEquals(0.0, slot.sub(legacyM[1]).amaxNumber().doubleValue(), EPS,
+                    "state-changing reuse prefix[" + (m - 1) + "] stale or wrong");
+        }
+        assertEquals(0.0, output.sub(legacy2[0]).amaxNumber().doubleValue(), EPS,
+                "state-changing reuse output differs from legacy");
+        assertEquals(0.0, stateOut.sub(legacy2[1]).amaxNumber().doubleValue(), EPS,
+                "state-changing reuse final state differs from legacy");
+        assertEquals(0.0, stateIn.sub(stateInBackup).amaxNumber().doubleValue(), 0.0,
+                "stateIn mutated across state-changing reuse");
+    }
+
+    @Test
+    public void testFixedWidthActiveLengthReuseShrinksThenGrows() {
+        // Fixed-W 5 -> 1 -> 3 active-length reuse: live slots [0,m) must track the
+        // CURRENT active length each call; slots beyond the active length may keep
+        // older data but must never be selected by the controller.
+        int w = 5;
+        INDArray[] in = deterministicInputs(w, DataType.FLOAT);
+        INDArray q = in[0];
+        INDArray k = in[1];
+        INDArray v = in[2];
+        INDArray beta = in[3];
+        INDArray gate = in[4];
+        INDArray stateIn = nonzeroState(DataType.FLOAT);
+        INDArray stateInBackup = stateIn.dup();
+
+        INDArray output = Nd4j.create(DataType.FLOAT, B, w, H, DV);
+        INDArray stateOut = Nd4j.create(DataType.FLOAT, B, H, DK, DV);
+        INDArray prefix = Nd4j.create(DataType.FLOAT, w, B, H, DK, DV);
+
+        int[] activeLengths = {5, 1, 3};
+        for (int active : activeLengths) {
+            GatedDeltaRuleWithPrefix op = new GatedDeltaRuleWithPrefix(
+                    q, k, v, beta, gate, stateIn, Nd4j.scalar(DataType.INT64, (long) active));
+            op.addOutputArgument(output, stateOut, prefix);
+            Nd4j.getExecutioner().exec(op);
+            Nd4j.getExecutioner().commit();
+
+            for (int m = 1; m <= active; m++) {
+                INDArray[] legacyM = runLegacy(q, k, v, beta, gate, stateInBackup, m);
+                INDArray slot = prefix.get(
+                        org.nd4j.linalg.indexing.NDArrayIndex.point(m - 1),
+                        org.nd4j.linalg.indexing.NDArrayIndex.all(),
+                        org.nd4j.linalg.indexing.NDArrayIndex.all(),
+                        org.nd4j.linalg.indexing.NDArrayIndex.all(),
+                        org.nd4j.linalg.indexing.NDArrayIndex.all());
+                assertEquals(0.0, slot.sub(legacyM[1]).amaxNumber().doubleValue(), EPS,
+                        "active=" + active + " live prefix[" + (m - 1) + "] stale or wrong");
+            }
+            assertEquals(0.0, stateIn.sub(stateInBackup).amaxNumber().doubleValue(), 0.0,
+                    "stateIn mutated at active=" + active);
+        }
+    }
+
     private static INDArray[] runLegacy(INDArray q, INDArray k, INDArray v,
                                         INDArray beta, INDArray gate,
                                         INDArray stateIn, int actualLen) {
