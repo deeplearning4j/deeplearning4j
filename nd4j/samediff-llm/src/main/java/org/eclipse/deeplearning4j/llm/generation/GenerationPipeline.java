@@ -409,6 +409,31 @@ public class GenerationPipeline implements AutoCloseable {
                 disableDsp(embedTokens, "embedTokens");
             }
         }
+
+        // Plan-reuse posture: make the per-call rebuild cost explicit at load time.
+        // maxPrefillLength=0 selects the variable-shape path — every generation whose prompt
+        // length differs tears down and rebuilds/re-warms the DSP prefill+decode plans.
+        // maxPrefillLength>0 selects the fixed-buffer path: one prefill plan and one decode
+        // plan, frozen at the configured length and reused in place across calls (LRU-of-one
+        // retained state in cachedFixedBufferState). Multi-call harnesses and serving loops
+        // almost always want the latter.
+        if (config.getMaxPrefillLength() > 0) {
+            log.info("Plan reuse: FIXED-BUFFER path active (maxPrefillLength={}, maxKvLen={}) — "
+                            + "prefill+decode DSP plans are frozen once and reused in place across "
+                            + "calls (LRU-of-one retained state)",
+                    config.getMaxPrefillLength(), config.getMaxKvCacheLength());
+        } else {
+            log.warn("Plan reuse: DISABLED (maxPrefillLength=0) — every call with a different prompt "
+                            + "length tears down and rebuilds/re-warms the DSP prefill+decode plans "
+                            + "(seconds of overhead per call). If this pipeline serves more than one "
+                            + "generation per load, set maxPrefillLength to the longest expected prompt "
+                            + "length to freeze and reuse the plans.",
+                    (Object) null);
+        }
+        if (!config.isPrefixCacheEnabled()) {
+            log.info("Prefix cache: DISABLED — repeated/extended prompts (e.g. multi-round tool "
+                    + "loops) will re-prefill from scratch each call");
+        }
     }
 
     private static void disableDsp(SameDiff model, String label) {
