@@ -21,13 +21,24 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.ops;
 
 import org.junit.jupiter.api.Test;
+import org.eclipse.deeplearning4j.llm.generation.GenerationPipeline;
+import org.eclipse.deeplearning4j.llm.generation.ModelIOConfig;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1dWithPrefix;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -385,5 +396,75 @@ public class TestCausalConvPrefixStates {
             assertEquals(0.0, stateIn.sub(stateInBackup).amaxNumber().doubleValue(), 0.0f,
                     "stateIn mutated at active=" + active);
         }
+    }
+
+    @Test
+    public void testCompanionShapeDerivationAndOptimizedExecution() {
+        // Packet 01 conv counterpart: deriveRecurrentStateShape must resolve the
+        // COMPANION conv op by name, and the optimized graph must execute with the
+        // derived state, producing both the ordinary history and the checkpoint.
+        int l = 3;
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, B, l, D);
+        // Production contract: the conv weight is a graph VARIABLE (sd.var) with a
+        // real array; deriveConvStateShapeFromOp reads its shape to get [D, K].
+        INDArray weightArr = Nd4j.linspace(1, D * KC, D * KC, DataType.FLOAT)
+                .reshape(D, KC).muli(0.01f);
+        SDVariable weight = sd.var("weight", weightArr);
+        SDVariable stateIn = sd.placeHolder("past_conv_state.5", DataType.FLOAT, B, D, KC - 1);
+        SDVariable actualLen = sd.placeHolder("actual_sequence_length", DataType.INT64);
+
+        SDVariable[] out = sd.nn().causalConv1dWithPrefix(
+                new String[]{"conv_out_5", "conv_state_out_5", "conv_state_prefix_5"},
+                x, weight, null, stateIn, actualLen, 1, 0);
+        assertEquals(3, out.length, "companion op must expose output, state, prefix");
+        sd.setOutputs("conv_out_5", "conv_state_out_5", "conv_state_prefix_5");
+
+        SameDiff optimized = GraphOptimizer.optimize(
+                sd, List.copyOf(sd.outputs()), GraphOptimizer.defaultOptimizations());
+        assertNotNull(optimized, "GraphOptimizer must return a graph");
+
+        // Discovery: exactly one conv pair binding the state handoff.
+        ModelIOConfig ioConfig = ModelIOConfig.discover(optimized);
+        List<ModelIOConfig.RecurrentStatePair> pairs =
+                ModelIOConfig.findRecurrentStatePairs(optimized, ioConfig);
+        assertEquals(1, pairs.size(),
+                "expected one conv recurrent pair, got " + pairs);
+        ModelIOConfig.RecurrentStatePair pair = pairs.get(0);
+        assertTrue(pair.isConv(), "companion op must classify as conv: " + pair);
+        assertEquals("past_conv_state.5", pair.inputName);
+        assertEquals("conv_state_out_5", pair.outputName);
+        assertEquals("conv_state_prefix_5", pair.prefixOutputName());
+
+        // Shape derivation from the companion op.
+        long[] derived = GenerationPipeline.deriveRecurrentStateShape(
+                optimized, pair.inputName);
+        assertNotNull(derived, "deriveRecurrentStateShape must resolve the companion conv op");
+        assertArrayEquals(new long[]{B, D, KC - 1}, derived,
+                "derived conv state shape must be [B,D,K-1]");
+
+        // Execute the optimized graph with the derived zero state.
+        Map<String, INDArray> inputs = new LinkedHashMap<>();
+        inputs.put("x", deterministicInputs(l)[0]);
+        inputs.put(pair.inputName, Nd4j.zeros(DataType.FLOAT, derived));
+        inputs.put("actual_sequence_length", Nd4j.scalar(DataType.INT64, (long) l));
+        Map<String, INDArray> results = optimized.output(inputs,
+                "conv_state_out_5", "conv_state_prefix_5");
+        INDArray stateOut = results.get("conv_state_out_5");
+        INDArray prefixOut = results.get("conv_state_prefix_5");
+        assertNotNull(stateOut, "optimized graph must produce the ordinary history output");
+        assertNotNull(prefixOut, "optimized graph must produce the checkpoint output");
+        assertArrayEquals(new long[]{B, D, KC - 1}, stateOut.shape(),
+                "ordinary history output shape");
+        assertArrayEquals(new long[]{l, B, D, KC - 1}, prefixOut.shape(),
+                "checkpoint output shape [W,B,D,K-1]");
+        INDArray lastSlot = prefixOut.get(
+                org.nd4j.linalg.indexing.NDArrayIndex.point(l - 1),
+                org.nd4j.linalg.indexing.NDArrayIndex.all(),
+                org.nd4j.linalg.indexing.NDArrayIndex.all(),
+                org.nd4j.linalg.indexing.NDArrayIndex.all());
+        assertEquals(0.0, stateOut.sub(lastSlot).amaxNumber().doubleValue(), 0.0f,
+                "prefix[l-1] must equal the ordinary final history");
+        for (INDArray result : results.values()) result.close();
     }
 }

@@ -21,6 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.ops;
 
 import org.junit.jupiter.api.Test;
+import org.eclipse.deeplearning4j.llm.generation.GenerationPipeline;
 import org.eclipse.deeplearning4j.llm.generation.ModelIOConfig;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -31,8 +32,11 @@ import org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRuleWithPrefix;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -149,13 +153,29 @@ public class TestGdnPrefixStates {
         // recurrent pair per layer.
         int l = 3;
         SameDiff sd = SameDiff.create();
-        SDVariable q = sd.placeHolder("q", DataType.FLOAT, B, l, H, DK);
-        SDVariable k = sd.placeHolder("k", DataType.FLOAT, B, l, H, DK);
-        SDVariable v = sd.placeHolder("v", DataType.FLOAT, B, l, H, DV);
+        // Production contract: Q/K/V are reshape outputs whose shape argument is a
+        // stack [batchDim, seqDim, const(H), const(D)] - exactly what
+        // resolveReshapeHeadDims/tryExtractStackConstants walk backwards through.
+        // Flat placeholders mirror the QKV projection output before the head reshape.
+        SDVariable qFlat = sd.placeHolder("q_flat", DataType.FLOAT, B, l, H * DK);
+        SDVariable kFlat = sd.placeHolder("k_flat", DataType.FLOAT, B, l, H * DK);
+        SDVariable vFlat = sd.placeHolder("v_flat", DataType.FLOAT, B, l, H * DV);
         SDVariable beta = sd.placeHolder("beta", DataType.FLOAT, B, l, H);
         SDVariable gate = sd.placeHolder("gate", DataType.FLOAT, B, l, H);
         SDVariable stateIn = sd.placeHolder("past_gdn_state.7", DataType.FLOAT, B, H, DK, DV);
         SDVariable actualLen = sd.placeHolder("actual_sequence_length", DataType.INT64);
+
+        SDVariable batchDim = sd.sizeAt(qFlat, 0);
+        SDVariable seqDim = sd.sizeAt(qFlat, 1);
+        SDVariable q = sd.reshape("q", qFlat, sd.stack("q_head_shape", 0,
+                batchDim, seqDim,
+                sd.constant(Nd4j.scalar((long) H)), sd.constant(Nd4j.scalar((long) DK))));
+        SDVariable k = sd.reshape("k", kFlat, sd.stack("k_head_shape", 0,
+                batchDim, seqDim,
+                sd.constant(Nd4j.scalar((long) H)), sd.constant(Nd4j.scalar((long) DK))));
+        SDVariable v = sd.reshape("v", vFlat, sd.stack("v_head_shape", 0,
+                batchDim, seqDim,
+                sd.constant(Nd4j.scalar((long) H)), sd.constant(Nd4j.scalar((long) DV))));
 
         SDVariable[] out = sd.nn().gatedDeltaRuleWithPrefix(
                 new String[]{"gdn_out_7", "gdn_state_out_7", "gdn_state_prefix_7"},
@@ -191,6 +211,48 @@ public class TestGdnPrefixStates {
         assertTrue(pair.hasPrefixCapture(), "companion op must report prefix capture: " + pair);
         assertEquals("gdn_state_prefix_7", pair.prefixOutputName(),
                 "prefix binding must name the checkpoint output");
+
+        // Packet 01: the production input-map builder must derive the state shape
+        // from the COMPANION op (name-based dispatch), and the optimized graph must
+        // execute with the derived state plus all required inputs, returning both
+        // the ordinary state handoff and the checkpoint.
+        long[] derived = GenerationPipeline.deriveRecurrentStateShape(
+                optimized, pair.inputName);
+        assertNotNull(derived, "deriveRecurrentStateShape must resolve the companion GDN op");
+        assertArrayEquals(new long[]{B, H, DK, DV}, derived,
+                "derived GDN state shape must be [B,H,Dk,Dv]");
+
+        // Execute the optimized graph with the derived zero state and request both
+        // the ordinary state output and the prefix checkpoint.
+        Map<String, INDArray> inputs = new LinkedHashMap<>();
+        inputs.put("q_flat", deterministicInputs(l, DataType.FLOAT)[0].reshape(B, l, H * DK));
+        inputs.put("k_flat", deterministicInputs(l, DataType.FLOAT)[1].reshape(B, l, H * DK));
+        inputs.put("v_flat", deterministicInputs(l, DataType.FLOAT)[2].reshape(B, l, H * DV));
+        inputs.put("beta", deterministicInputs(l, DataType.FLOAT)[3]);
+        inputs.put("gate", deterministicInputs(l, DataType.FLOAT)[4]);
+        inputs.put(pair.inputName, Nd4j.zeros(DataType.FLOAT, derived));
+        inputs.put("actual_sequence_length", Nd4j.scalar(DataType.INT64, (long) l));
+        Map<String, INDArray> results = optimized.output(inputs,
+                "gdn_state_out_7", "gdn_state_prefix_7");
+        INDArray stateOut = results.get("gdn_state_out_7");
+        INDArray prefixOut = results.get("gdn_state_prefix_7");
+        assertNotNull(stateOut, "optimized graph must produce the ordinary state output");
+        assertNotNull(prefixOut, "optimized graph must produce the checkpoint output");
+        assertArrayEquals(new long[]{B, H, DK, DV}, stateOut.shape(),
+                "ordinary state output shape");
+        assertArrayEquals(new long[]{l, B, H, DK, DV}, prefixOut.shape(),
+                "checkpoint output shape [W,B,H,Dk,Dv]");
+        // The final checkpoint slot equals the ordinary final state: both are the
+        // state after consuming all l rows.
+        INDArray lastSlot = prefixOut.get(
+                org.nd4j.linalg.indexing.NDArrayIndex.point(l - 1),
+                org.nd4j.linalg.indexing.NDArrayIndex.all(),
+                org.nd4j.linalg.indexing.NDArrayIndex.all(),
+                org.nd4j.linalg.indexing.NDArrayIndex.all(),
+                org.nd4j.linalg.indexing.NDArrayIndex.all());
+        assertEquals(0.0, stateOut.sub(lastSlot).amaxNumber().doubleValue(), EPS,
+                "prefix[l-1] must equal the ordinary final state");
+        for (INDArray result : results.values()) result.close();
     }
 
     @Test

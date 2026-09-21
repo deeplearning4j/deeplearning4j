@@ -2031,15 +2031,13 @@ public class GenerationPipeline implements AutoCloseable {
 
             // Zero-filled recurrent state inputs for prefill (zeros = no prior history)
             // Shapes are derived from the ops that consume each state placeholder.
+            // A discovered pair with an underivable shape is a construction error, not
+            // a warning: the plan will later refuse the unresolved external input.
             for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
                 if (decoder.hasVariable(pair.inputName)) {
                     DataType dt = decoder.getVariable(pair.inputName).dataType();
-                    long[] stateShape = deriveRecurrentStateShape(decoder, pair.inputName);
-                    if (stateShape != null) {
-                        prefillInputMap.put(pair.inputName, Nd4j.zeros(dt, stateShape));
-                    } else {
-                        log.warn("[GGUF-KV] Cannot derive state shape for '{}' from graph", pair.inputName);
-                    }
+                    long[] stateShape = requireRecurrentStateShape(decoder, pair);
+                    prefillInputMap.put(pair.inputName, Nd4j.zeros(dt, stateShape));
                 }
             }
         }
@@ -3377,10 +3375,8 @@ public class GenerationPipeline implements AutoCloseable {
             }
             if (initState == null) {
                 DataType dt = decoder.getVariable(pair.inputName).dataType();
-                long[] stateShape = GenerationPipeline.deriveRecurrentStateShape(decoder, pair.inputName);
-                if (stateShape != null) {
-                    initState = Nd4j.zeros(dt, stateShape);
-                }
+                long[] stateShape = requireRecurrentStateShape(decoder, pair);
+                initState = Nd4j.zeros(dt, stateShape);
             }
             if (initState != null) {
                 suffixInputMap.put(pair.inputName, initState);
@@ -3704,8 +3700,8 @@ public class GenerationPipeline implements AutoCloseable {
         for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
             if (decoder.hasVariable(pair.inputName)) {
                 DataType dt = decoder.getVariable(pair.inputName).dataType();
-                long[] sh = deriveRecurrentStateShape(decoder, pair.inputName);
-                if (sh != null) prefillInputMap.put(pair.inputName, Nd4j.zeros(dt, sh));
+                long[] sh = requireRecurrentStateShape(decoder, pair);
+                prefillInputMap.put(pair.inputName, Nd4j.zeros(dt, sh));
             }
         }
 
@@ -5427,13 +5423,61 @@ public class GenerationPipeline implements AutoCloseable {
             try { op = sd.getOpById(opName); } catch (Exception e) { log.debug("deriveRecurrentStateShape: getOpById('{}') failed", opName, e); continue; }
             if (op == null) continue;
 
-            if (op instanceof GatedDeltaRule) {
+            // Dispatch by op NAME, not class: the accepted-prefix capture companions
+            // (gated_delta_rule_with_prefix / causal_conv1d_with_prefix) extend
+            // DynamicCustomOp, not the legacy op classes, and they share the exact
+            // same input roles as their two-output originals. Class-based dispatch
+            // fell through to null for the companions, so the prefill input map
+            // omitted the state placeholder and plan execution failed later with
+            // "missing external input past_gdn_state.N".
+            String opType = op.opName();
+            if ("gated_delta_rule".equals(opType)
+                    || "gated_delta_rule_with_prefix".equals(opType)) {
                 return deriveGdnStateShapeFromOp(sd, op, stateName);
-            } else if ("causal_conv1d".equals(op.opName())) {
+            }
+            if ("causal_conv1d".equals(opType)
+                    || "causal_conv1d_with_prefix".equals(opType)) {
                 return deriveConvStateShapeFromOp(sd, op);
             }
         }
         return null;
+    }
+
+    /**
+     * Require a derivable recurrent state shape for an already-discovered required
+     * pair. A discovered pair means the plan treats this placeholder as a recurrent
+     * state input; an unresolved shape here would later surface as a missing
+     * external input during plan execution. Fail at input-map construction with the
+     * input name, the consuming ops and the declared placeholder shape instead.
+     */
+    private static long[] requireRecurrentStateShape(SameDiff decoder,
+                                                     ModelIOConfig.RecurrentStatePair pair) {
+        long[] shape = deriveRecurrentStateShape(decoder, pair.inputName);
+        if (shape == null || shape.length == 0) {
+            StringBuilder consumers = new StringBuilder();
+            Variable var = decoder.getVariables().get(pair.inputName);
+            if (var != null && var.getInputsForOp() != null) {
+                for (String opId : var.getInputsForOp()) {
+                    if (consumers.length() > 0) consumers.append(", ");
+                    consumers.append(opId);
+                }
+            }
+            long[] declared = decoder.hasVariable(pair.inputName)
+                    ? decoder.getVariable(pair.inputName).getShape() : null;
+            throw new IllegalStateException(
+                    "Cannot derive recurrent state shape for required pair " + pair
+                    + ": no recognized consuming op among [" + consumers + "]"
+                    + " (declared placeholder shape="
+                    + (declared == null ? "dynamic" : Arrays.toString(declared)) + ")");
+        }
+        for (long dim : shape) {
+            if (dim <= 0) {
+                throw new IllegalStateException(
+                        "Derived nonpositive recurrent state shape " + Arrays.toString(shape)
+                        + " for required pair " + pair);
+            }
+        }
+        return shape;
     }
 
     /**
