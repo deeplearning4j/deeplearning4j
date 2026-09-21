@@ -149,9 +149,11 @@ CUSTOM_OP_IMPL(gated_delta_rule_with_prefix, 5, 3, false, 0, 0) {
             stateIn = input;
         }
     }
-    // Prefix capture rides the sequential path; actualLen must be present.
+    // Prefix capture rides the sequential path; actualLen must be present and INT64.
     REQUIRE_TRUE(actualLen != nullptr, 0,
                  "gated_delta_rule_with_prefix: an INT64 actualLen scalar input is required");
+    REQUIRE_TRUE(actualLen->dataType() == DataType::INT64, 0,
+                 "gated_delta_rule_with_prefix: actualLen input must be INT64 scalar");
     const auto dataType = Q->dataType();
     REQUIRE_TRUE(K->dataType() == dataType && V->dataType() == dataType &&
                      beta->dataType() == dataType && gate->dataType() == dataType,

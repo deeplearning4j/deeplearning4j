@@ -1034,7 +1034,18 @@ void gatedDeltaRuleWithPrefix(LaunchContext* context, NDArray* Q, NDArray* K, ND
     }
     NDArray::prepareSpecialUse({output, stateOut}, {Q, K, V, beta, gate, actualLen});
     if (stateIn != nullptr) NDArray::prepareSpecialUse({}, {stateIn});
-    if (prefixOut != nullptr) NDArray::prepareSpecialUse({prefixOut}, {});
+    if (prefixOut != nullptr) {
+        // Companion storage contract: prefix snapshots and the committed state must
+        // be independent allocations (see CPU helper for the same rule).
+        const bool overlapsStateIn = stateIn != nullptr
+            && stateIn->specialBuffer() == prefixOut->specialBuffer();
+        const bool overlapsStateOut = stateOut->specialBuffer() == prefixOut->specialBuffer();
+        const bool overlapsOutput = output->specialBuffer() == prefixOut->specialBuffer();
+        if (overlapsStateIn || overlapsStateOut || overlapsOutput) {
+            THROW_EXCEPTION("gatedDeltaRuleWithPrefix: prefixOut must not alias stateIn, stateOut, or output");
+        }
+        NDArray::prepareSpecialUse({prefixOut}, {});
+    }
 
     BUILD_SINGLE_SELECTOR(
         Q->dataType(), gatedDeltaRuleFromArrays,

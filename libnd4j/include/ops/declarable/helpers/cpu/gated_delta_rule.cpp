@@ -516,6 +516,20 @@ void gatedDeltaRuleWithPrefix(LaunchContext* context, NDArray* Q, NDArray* K, ND
     if (stateIn != nullptr) NDArray::preparePrimaryUse({}, {stateIn});
     if (prefixOut != nullptr) NDArray::preparePrimaryUse({prefixOut}, {});
 
+    // Companion storage contract: the prefix snapshot and the committed state must
+    // be independent allocations. The recurrence overwrites stateOut in place; a
+    // caller aliasing prefixOut with stateIn or stateOut would corrupt either the
+    // checkpoints or the committed state mid-capture.
+    if (prefixOut != nullptr) {
+        const void* prefixBase = prefixOut->buffer();
+        const bool aliases = (stateIn != nullptr && stateIn->buffer() == prefixBase)
+            || stateOut->buffer() == prefixBase
+            || output->buffer() == prefixBase;
+        if (aliases) {
+            THROW_EXCEPTION("gatedDeltaRuleWithPrefix: prefixOut must not alias stateIn, stateOut, or output");
+        }
+    }
+
     const auto L   = Q->sizeAt(1);
     // Chunked path: L >= C=64, no actualLen masking (chunked doesn't support partial masking)
     const bool useChunked = (L >= GDN_CHUNK_CPU) && (actualLen == nullptr);

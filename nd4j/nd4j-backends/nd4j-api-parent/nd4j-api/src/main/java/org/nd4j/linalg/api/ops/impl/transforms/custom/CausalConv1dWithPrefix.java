@@ -50,6 +50,10 @@ import java.util.List;
  *   1: weight   [D, K] or [K, D]
  *   2+: bias [D], stateIn [B, D, K-1], actualLen INT64 scalar (REQUIRED)
  *
+ * Integer arguments (mirroring causal_conv1d):
+ *   0: activation (0=none, 1=silu)
+ *   1: wFormat (0=[D,K], 1=[K,D])
+ *
  * Outputs:
  *   0: output    [B, L, D]
  *   1: state_out [B, D, K-1]
@@ -62,14 +66,26 @@ public class CausalConv1dWithPrefix extends DynamicCustomOp {
 
     public CausalConv1dWithPrefix(INDArray x, INDArray weight, INDArray bias,
                                   INDArray stateIn, INDArray actualLen) {
+        this(x, weight, bias, stateIn, actualLen, 0, 0);
+    }
+
+    public CausalConv1dWithPrefix(INDArray x, INDArray weight, INDArray bias,
+                                  INDArray stateIn, INDArray actualLen,
+                                  int activation, int wFormat) {
         super(buildInputs(x, weight, bias, stateIn, actualLen), null);
-        addIArgument(0, 0); // activation=none, wFormat=0
+        addIArgument(activation, wFormat);
     }
 
     public CausalConv1dWithPrefix(SameDiff sd, SDVariable x, SDVariable weight,
                                   SDVariable stateIn, SDVariable actualLen) {
+        this(sd, x, weight, stateIn, actualLen, 0, 0);
+    }
+
+    public CausalConv1dWithPrefix(SameDiff sd, SDVariable x, SDVariable weight,
+                                  SDVariable stateIn, SDVariable actualLen,
+                                  int activation, int wFormat) {
         super(null, sd, buildSdInputs(x, weight, stateIn, actualLen));
-        addIArgument(0, 0);
+        addIArgument(activation, wFormat);
     }
 
     private static INDArray[] buildInputs(INDArray x, INDArray weight, INDArray bias,
@@ -98,10 +114,23 @@ public class CausalConv1dWithPrefix extends DynamicCustomOp {
         return "causal_conv1d_with_prefix";
     }
 
+    /**
+     * Output dtype mirrors the native contract: output 0 uses the activation dtype;
+     * state_out and prefix use the state input's dtype when present (the native
+     * selector builds on stateType, which defaults to x's dtype only when stateIn
+     * is absent).
+     */
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
-        DataType dt = inputDataTypes.get(0);
-        return Arrays.asList(dt, dt, dt);
+        DataType activationType = inputDataTypes.get(0);
+        // Inputs: 0=x, 1=weight, [2=bias], [state], actualLen (always last).
+        DataType stateType = activationType;
+        int numInputs = inputDataTypes.size();
+        // stateIn, when present, is the input immediately before the final actualLen.
+        if (numInputs >= 4) {
+            stateType = inputDataTypes.get(numInputs - 2);
+        }
+        return Arrays.asList(activationType, stateType, stateType);
     }
 
     @Override

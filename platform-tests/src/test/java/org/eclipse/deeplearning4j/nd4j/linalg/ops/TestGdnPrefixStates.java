@@ -168,8 +168,52 @@ public class TestGdnPrefixStates {
         }
         assertEquals(0.0, stateOut.sub(legacy[1]).amaxNumber().doubleValue(), EPS,
                 "active=" + active + " final state differs from legacy");
+        // Full ordinary output at the active length must equal legacy too.
+        assertEquals(0.0, output.sub(legacy[0]).amaxNumber().doubleValue(), EPS,
+                "active=" + active + " full activation output differs from legacy");
         assertEquals(0.0, stateIn.sub(stateInBackup).amaxNumber().doubleValue(), 0.0,
                 "stateIn was mutated");
+    }
+
+    @Test
+    public void testRetainedBufferReuseStaysFresh() {
+        // Two back-to-back invocations through the SAME output arrays with different
+        // inputs; the second result must match an independent legacy execution.
+        int w = 4;
+        INDArray[] in = deterministicInputs(w, DataType.FLOAT);
+        INDArray q = in[0];
+        INDArray k = in[1];
+        INDArray v = in[2];
+        INDArray beta = in[3];
+        INDArray gate = in[4];
+        INDArray stateIn = nonzeroState(DataType.FLOAT);
+        INDArray stateInBackup = stateIn.dup();
+
+        INDArray output = Nd4j.create(DataType.FLOAT, B, w, H, DV);
+        INDArray stateOut = Nd4j.create(DataType.FLOAT, B, H, DK, DV);
+        INDArray prefix = Nd4j.create(DataType.FLOAT, w, B, H, DK, DV);
+
+        // First run with q/k/v, then rerun with doubled q through the same buffers.
+        GatedDeltaRuleWithPrefix first = new GatedDeltaRuleWithPrefix(
+                q, k, v, beta, gate, stateIn, Nd4j.scalar(DataType.INT64, (long) w));
+        first.addOutputArgument(output, stateOut, prefix);
+        Nd4j.getExecutioner().exec(first);
+        Nd4j.getExecutioner().commit();
+
+        INDArray q2 = q.mul(2.0f);
+        INDArray[] legacy2 = runLegacy(q2, k, v, beta, gate, stateInBackup, w);
+        GatedDeltaRuleWithPrefix second = new GatedDeltaRuleWithPrefix(
+                q2, k, v, beta, gate, stateIn, Nd4j.scalar(DataType.INT64, (long) w));
+        second.addOutputArgument(output, stateOut, prefix);
+        Nd4j.getExecutioner().exec(second);
+        Nd4j.getExecutioner().commit();
+
+        assertEquals(0.0, output.sub(legacy2[0]).amaxNumber().doubleValue(), EPS,
+                "reused-buffer output shows stale data");
+        assertEquals(0.0, stateOut.sub(legacy2[1]).amaxNumber().doubleValue(), EPS,
+                "reused-buffer state shows stale data");
+        assertEquals(0.0, stateIn.sub(stateInBackup).amaxNumber().doubleValue(), 0.0,
+                "stateIn mutated across reuse");
     }
 
     private static INDArray[] runLegacy(INDArray q, INDArray k, INDArray v,

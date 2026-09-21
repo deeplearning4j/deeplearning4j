@@ -179,4 +179,115 @@ public class TestCausalConvPrefixStates {
         Nd4j.getExecutioner().commit();
         return stateOut;
     }
+
+    @Test
+    public void testFullOutputsMatchLegacyAndReuseKeepsFreshData() {
+        int l = 6;
+        INDArray[] in = deterministicInputs(l);
+        INDArray x = in[0];
+        INDArray weight = in[1];
+        INDArray bias = in[2];
+        INDArray stateIn = nonzeroHistory();
+        INDArray stateInBackup = stateIn.dup();
+
+        INDArray legacyOutput = Nd4j.create(DataType.FLOAT, B, l, D);
+        INDArray legacyState = Nd4j.create(DataType.FLOAT, B, D, KC - 1);
+        CausalConv1d legacyOp = new CausalConv1d(x, weight, bias, stateIn,
+                Nd4j.scalar(DataType.INT64, (long) l), 0, 0);
+        legacyOp.addOutputArgument(legacyOutput, legacyState);
+        Nd4j.getExecutioner().exec(legacyOp);
+        Nd4j.getExecutioner().commit();
+
+        INDArray output = Nd4j.create(DataType.FLOAT, B, l, D);
+        INDArray stateOut = Nd4j.create(DataType.FLOAT, B, D, KC - 1);
+        INDArray prefix = Nd4j.create(DataType.FLOAT, l, B, D, KC - 1);
+        CausalConv1dWithPrefix op = new CausalConv1dWithPrefix(
+                x, weight, bias, stateIn, Nd4j.scalar(DataType.INT64, (long) l));
+        op.addOutputArgument(output, stateOut, prefix);
+        Nd4j.getExecutioner().exec(op);
+        Nd4j.getExecutioner().commit();
+
+        assertEquals(0.0, output.sub(legacyOutput).amaxNumber().doubleValue(), 1e-5f,
+                "full activation output differs from legacy");
+        assertEquals(0.0, stateOut.sub(legacyState).amaxNumber().doubleValue(), 0.0f,
+                "final state differs from legacy");
+
+        // Retained-buffer reuse: rerun with DIFFERENT x through the SAME output
+        // arrays; stale prior-run data must not survive.
+        INDArray x2 = x.mul(2.0f).addi(0.5f);
+        INDArray legacyOutput2 = Nd4j.create(DataType.FLOAT, B, l, D);
+        INDArray legacyState2 = Nd4j.create(DataType.FLOAT, B, D, KC - 1);
+        CausalConv1d legacyOp2 = new CausalConv1d(x2, weight, bias, stateInBackup,
+                Nd4j.scalar(DataType.INT64, (long) l), 0, 0);
+        legacyOp2.addOutputArgument(legacyOutput2, legacyState2);
+        Nd4j.getExecutioner().exec(legacyOp2);
+        Nd4j.getExecutioner().commit();
+
+        CausalConv1dWithPrefix op2 = new CausalConv1dWithPrefix(
+                x2, weight, bias, stateIn, Nd4j.scalar(DataType.INT64, (long) l));
+        op2.addOutputArgument(output, stateOut, prefix);
+        Nd4j.getExecutioner().exec(op2);
+        Nd4j.getExecutioner().commit();
+
+        assertEquals(0.0, output.sub(legacyOutput2).amaxNumber().doubleValue(), 1e-5f,
+                "reused-buffer output shows stale data");
+        assertEquals(0.0, stateOut.sub(legacyState2).amaxNumber().doubleValue(), 0.0f,
+                "reused-buffer state shows stale data");
+        assertEquals(0.0, stateIn.sub(stateInBackup).amaxNumber().doubleValue(), 0.0f,
+                "stateIn mutated across reuse");
+    }
+
+    @Test
+    public void testSiluActivationMatchesLegacy() {
+        int l = 5;
+        INDArray[] in = deterministicInputs(l);
+        INDArray x = in[0];
+        INDArray weight = in[1];
+        INDArray bias = in[2];
+        INDArray stateIn = nonzeroHistory();
+        INDArray stateInBackup = stateIn.dup();
+
+        // Production Qwen3.5 uses SiLU (=1); the companion must honor activation.
+        INDArray legacyOutput = Nd4j.create(DataType.FLOAT, B, l, D);
+        INDArray legacyState = Nd4j.create(DataType.FLOAT, B, D, KC - 1);
+        CausalConv1d legacyOp = new CausalConv1d(x, weight, bias, stateIn,
+                Nd4j.scalar(DataType.INT64, (long) l), 1, 0);
+        legacyOp.addOutputArgument(legacyOutput, legacyState);
+        Nd4j.getExecutioner().exec(legacyOp);
+        Nd4j.getExecutioner().commit();
+
+        INDArray output = Nd4j.create(DataType.FLOAT, B, l, D);
+        INDArray stateOut = Nd4j.create(DataType.FLOAT, B, D, KC - 1);
+        INDArray prefix = Nd4j.create(DataType.FLOAT, l, B, D, KC - 1);
+        CausalConv1dWithPrefix op = new CausalConv1dWithPrefix(
+                x, weight, bias, stateIn, Nd4j.scalar(DataType.INT64, (long) l), 1, 0);
+        op.addOutputArgument(output, stateOut, prefix);
+        Nd4j.getExecutioner().exec(op);
+        Nd4j.getExecutioner().commit();
+
+        assertEquals(0.0, output.sub(legacyOutput).amaxNumber().doubleValue(), 1e-5f,
+                "SiLU activation output differs from legacy");
+        assertEquals(0.0, stateOut.sub(legacyState).amaxNumber().doubleValue(), 0.0f,
+                "SiLU final state differs from legacy");
+        // Prefix slots are raw-input based, unaffected by activation; slot m-1 must
+        // still equal the legacy state at actualLen=m (SiLU on both sides).
+        for (int m = 1; m <= l; m++) {
+            INDArray lo = Nd4j.create(DataType.FLOAT, B, l, D);
+            INDArray ls = Nd4j.create(DataType.FLOAT, B, D, KC - 1);
+            CausalConv1d legacyM = new CausalConv1d(x, weight, bias, stateInBackup,
+                    Nd4j.scalar(DataType.INT64, (long) m), 1, 0);
+            legacyM.addOutputArgument(lo, ls);
+            Nd4j.getExecutioner().exec(legacyM);
+            Nd4j.getExecutioner().commit();
+            INDArray slot = prefix.get(
+                    org.nd4j.linalg.indexing.NDArrayIndex.point(m - 1),
+                    org.nd4j.linalg.indexing.NDArrayIndex.all(),
+                    org.nd4j.linalg.indexing.NDArrayIndex.all(),
+                    org.nd4j.linalg.indexing.NDArrayIndex.all());
+            assertEquals(0.0, slot.sub(ls).amaxNumber().doubleValue(), 0.0f,
+                    "SiLU prefix[" + (m - 1) + "] differs from legacy actualLen=" + m);
+        }
+        assertEquals(0.0, stateIn.sub(stateInBackup).amaxNumber().doubleValue(), 0.0f,
+                "stateIn mutated in SiLU arm");
+    }
 }

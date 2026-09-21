@@ -107,6 +107,11 @@ public class GatedDeltaRuleWithPrefix extends DynamicCustomOp {
         return "gated_delta_rule_with_prefix";
     }
 
+    /**
+     * All three outputs share Q's dtype per the native contract (state and prefix
+     * are built from the q dtype in the shape function; the op validates stateIn
+     * matches Q).
+     */
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
         DataType dt = inputDataTypes.get(0);
