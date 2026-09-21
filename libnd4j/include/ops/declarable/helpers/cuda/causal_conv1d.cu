@@ -167,11 +167,55 @@ static void launchCausalConv1d(
 
 // No explicit instantiation needed — the selector below instantiates this file-local launcher.
 
+// Prefix history capture: for every prefix boundary m, slot m-1 stores the same
+// history element resolution the final state performs at srcT = m - (K-1) + kk.
+template <typename X, typename S>
+SD_KERNEL void convPrefixHistoryKernel(
+    const X* __restrict__ x,
+    const S* __restrict__ stateIn,
+    const LongType* __restrict__ actualLen,
+    S* __restrict__ prefixOut,
+    const LongType prefixW,
+    const LongType B, const LongType L, const LongType D, const LongType K,
+    const LongType xS0, const LongType xS1, const LongType xS2,
+    const LongType siS0, const LongType siS1, const LongType siS2) {
+
+    const LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
+    const LongType total = prefixW * B * D * (K - 1);
+    if (idx >= total) return;
+
+    const LongType kk = idx % (K - 1);
+    const LongType d = (idx / (K - 1)) % D;
+    const LongType b = (idx / (D * (K - 1))) % B;
+    const LongType mIdx = idx / (B * D * (K - 1));  // slot index, history for m = mIdx+1
+
+    LongType effectiveLen = L;
+    if (actualLen != nullptr) {
+        effectiveLen = actualLen[0];
+        if (effectiveLen < 0) effectiveLen = 0;
+        if (effectiveLen > L) effectiveLen = L;
+    }
+    if (mIdx >= effectiveLen) return;  // inactive slots stay untouched (deterministic)
+
+    const LongType m = mIdx + 1;
+    const LongType srcT = m - (K - 1) + kk;
+    S val = static_cast<S>(0);
+    if (srcT >= 0) {
+        val = static_cast<S>(x[b * xS0 + srcT * xS1 + d * xS2]);
+    } else if (stateIn != nullptr) {
+        const LongType stateIdx = (K - 1) + srcT;
+        if (stateIdx >= 0) {
+            val = stateIn[b * siS0 + d * siS1 + stateIdx * siS2];
+        }
+    }
+    prefixOut[((mIdx * B + b) * D + d) * (K - 1) + kk] = val;
+}
+
 template <typename X, typename W, typename S>
 static void launchCausalConv1dFromArrays(
     LaunchContext* context, NDArray* x, NDArray* weight, NDArray* bias,
     NDArray* stateIn, NDArray* actualLen, NDArray* output, NDArray* stateOut,
-    int activation, int wFormat) {
+    NDArray* prefixOut, int activation, int wFormat) {
     const auto B = x->sizeAt(0);
     const auto L = x->sizeAt(1);
     const auto D = x->sizeAt(2);
@@ -201,22 +245,53 @@ static void launchCausalConv1dFromArrays(
         siS0, siS1, siS2,
         stateOut->strideAt(0), stateOut->strideAt(1), stateOut->strideAt(2),
         *context->getCudaStream());
+
+    // Prefix history capture: one flat kernel over [W, B, D, K-1] slots.
+    if (prefixOut != nullptr) {
+        const LongType prefixW = prefixOut->sizeAt(0);
+        const LongType prefixTotal = prefixW * B * D * (K - 1);
+        if (prefixTotal > 0) {
+            int prefixBlocks = static_cast<int>((prefixTotal + 255) / 256);
+            convPrefixHistoryKernel<X, S><<<prefixBlocks, 256, 0, *context->getCudaStream()>>>(
+                reinterpret_cast<const X*>(x->specialBuffer()),
+                stateIn ? reinterpret_cast<const S*>(stateIn->specialBuffer()) : nullptr,
+                actualLen ? reinterpret_cast<const LongType*>(actualLen->specialBuffer()) : nullptr,
+                reinterpret_cast<S*>(prefixOut->specialBuffer()),
+                prefixW,
+                B, L, D, K,
+                x->strideAt(0), x->strideAt(1), x->strideAt(2),
+                siS0, siS1, siS2);
+            DebugHelper::checkGlobalErrorCode("convPrefixHistoryKernel failed");
+        }
+    }
 }
 
 void causalConv1d(LaunchContext* context, NDArray* x, NDArray* weight, NDArray* bias,
                    NDArray* stateIn, NDArray* actualLen, NDArray* output, NDArray* stateOut,
                    int activation, int wFormat) {
+    causalConv1dWithPrefix(context, x, weight, bias, stateIn, actualLen,
+                           output, stateOut, nullptr, activation, wFormat);
+}
+
+void causalConv1dWithPrefix(LaunchContext* context, NDArray* x, NDArray* weight, NDArray* bias,
+                            NDArray* stateIn, NDArray* actualLen, NDArray* output, NDArray* stateOut,
+                            NDArray* prefixOut, int activation, int wFormat) {
+    if (prefixOut != nullptr && actualLen == nullptr) {
+        THROW_EXCEPTION("causalConv1dWithPrefix: prefix capture requires an actualLen input");
+    }
     NDArray::prepareSpecialUse({output, stateOut}, {x, weight, bias, actualLen});
     if (stateIn != nullptr) NDArray::prepareSpecialUse({}, {stateIn});
+    if (prefixOut != nullptr) NDArray::prepareSpecialUse({prefixOut}, {});
 
     const auto stateType = stateIn != nullptr ? stateIn->dataType() : x->dataType();
     BUILD_TRIPLE_SELECTOR(
         x->dataType(), weight->dataType(), stateType, launchCausalConv1dFromArrays,
-        (context, x, weight, bias, stateIn, actualLen, output, stateOut, activation, wFormat),
+        (context, x, weight, bias, stateIn, actualLen, output, stateOut, prefixOut, activation, wFormat),
         SD_FLOAT_TYPES, SD_FLOAT_TYPES, SD_FLOAT_TYPES);
 
     NDArray::registerSpecialUse({output, stateOut}, {x, weight, bias, actualLen});
     if (stateIn != nullptr) NDArray::registerSpecialUse({}, {stateIn});
+    if (prefixOut != nullptr) NDArray::registerSpecialUse({prefixOut}, {});
 }
 
 }  // namespace helpers

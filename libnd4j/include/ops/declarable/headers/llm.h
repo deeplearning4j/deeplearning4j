@@ -794,6 +794,22 @@ DECLARE_CUSTOM_OP(causal_conv1d, 2, 2, false, 0, 0);
 #endif
 
 /**
+ * causal_conv1d_with_prefix - causal_conv1d plus per-prefix history checkpoints
+ *
+ * Same convolution and inputs as causal_conv1d (actualLen REQUIRED).
+ *
+ * Outputs:
+ *   0: output [B, L, D] (identical to causal_conv1d)
+ *   1: state_out [B, D, K-1] (identical)
+ *   2: prefix [L, B, D, K-1] time-leading C-order; slot t holds the retained
+ *      raw-input history after consuming input rows 0..t (last K-1 elements of
+ *      concat(stateIn, x[0:t+1]); t < actualLen written; inactive slots untouched)
+ */
+#if NOT_EXCLUDED(OP_causal_conv1d_with_prefix)
+DECLARE_CUSTOM_OP(causal_conv1d_with_prefix, 2, 3, false, 0, 0);
+#endif
+
+/**
  * gated_delta_net_block - Full Gated Delta Network layer
  *
  * Fuses: linear projection -&gt; causal_conv1d + SiLU -&gt; gated_delta_rule -&gt; RMSNorm + Swish gate -&gt; output projection

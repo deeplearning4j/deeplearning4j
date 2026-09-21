@@ -29,12 +29,12 @@
 //
 
 #include <system/op_boilerplate.h>
-#if NOT_EXCLUDED(OP_gated_delta_rule)
-
 #include <system/common.h>
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/headers/llm.h>
 #include <ops/declarable/helpers/gated_delta_rule.h>
+
+#if NOT_EXCLUDED(OP_gated_delta_rule)
 
 namespace sd {
 namespace ops {
@@ -114,9 +114,15 @@ DECLARE_SHAPE_FN(gated_delta_rule) {
     return SHAPELIST(outputShape, stateShape);
 }
 
+}  // namespace ops
+}  // namespace sd
+
 #endif
 
 #if NOT_EXCLUDED(OP_gated_delta_rule_with_prefix)
+
+namespace sd {
+namespace ops {
 
 CUSTOM_OP_IMPL(gated_delta_rule_with_prefix, 5, 3, false, 0, 0) {
     auto Q = INPUT_VARIABLE(0);        // [B, L, H, D_k]
