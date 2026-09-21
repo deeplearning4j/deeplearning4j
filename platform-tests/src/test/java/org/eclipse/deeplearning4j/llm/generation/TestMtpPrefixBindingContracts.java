@@ -25,16 +25,151 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
- * Packet 02 binding contracts for the native output manifest and the scalar-target
- * mapping. The native decode must declare the FULL requested-output list of the
- * prepared target plan (including outputs the Java loop never consumes), and the
- * scalar mapping must be name-based on the scalar binding side.
+ * Packet 02/03 binding contracts for the native output manifest, the scalar-target
+ * mapping, and the suffix-prefill ordinary recurrent feedback mapping. The native
+ * decode must declare the FULL requested-output list of the prepared target plan
+ * (including outputs the Java loop never consumes), the scalar mapping must be
+ * name-based on the scalar binding side, and every discovered GDN/conv pair must
+ * resolve to a paired ordinary feedback mapping consumed by the next decode step.
  */
 public class TestMtpPrefixBindingContracts {
     private static final int K = 1;
     private static final int WIDTH = K + 1;
     private static final int CACHE = 8;
     private static final int BASE_TARGET_POSITION = 1;
+
+    @Test
+    void testSuffixPrefillRecurrentFeedbackMappingIsPairedAndConsumed() {
+        // Packet 03: the suffix-prefix-cache state construction must produce
+        // paired, nonempty ORDINARY recurrent feedback mappings for every
+        // discovered GDN/conv pair - in OFF mode and prefix-capable mode alike -
+        // and a second decode step must consume the resulting nonzero state
+        // (distinct values per layer) through those mappings.
+        int l = 2;
+        int h = 2, dk = 8, dv = 8;
+        int convD = 4, convK = 4;
+        try (RecurrentPlan p = new RecurrentPlan(l, h, dk, dv, convD, convK)) {
+            p.compile();
+            ModelIOConfig ioConfig = ModelIOConfig.discover(p.graph);
+            List<ModelIOConfig.RecurrentStatePair> pairs =
+                    ModelIOConfig.findRecurrentStatePairs(p.graph, ioConfig);
+            assertEquals(2, pairs.size(),
+                    "one GDN pair and one conv pair must be discovered, got " + pairs);
+
+            // The ordinary feedback index mapping must be paired and nonempty in
+            // OFF mode (the prefix flag plays no role in this resolution).
+            List<Integer> gdnExt = new ArrayList<>(), gdnOut = new ArrayList<>();
+            List<Integer> convExt = new ArrayList<>(), convOut = new ArrayList<>();
+            GenerationPipeline.resolveRecurrentFeedbackIndices(
+                    p.executor, pairs, gdnExt, gdnOut, convExt, convOut);
+            assertEquals(1, gdnExt.size(), "one GDN feedback pair expected");
+            assertEquals(1, gdnOut.size(), "one GDN feedback output expected");
+            assertEquals(1, convExt.size(), "one conv feedback pair expected");
+            assertEquals(1, convOut.size(), "one conv feedback output expected");
+            assertTrue(gdnExt.get(0) >= 0 && gdnOut.get(0) >= 0, "GDN indices must resolve");
+            assertTrue(convExt.get(0) >= 0 && convOut.get(0) >= 0, "conv indices must resolve");
+
+            // Second decode step consumes the first step's nonzero state: the GDN
+            // output depends on S_{t-1}, so feeding the nonzero state back through
+            // the resolved input index changes the next step's output.
+            Map<String, INDArray> step0 = p.run(Nd4j.zeros(DataType.FLOAT, 1, h, dk, dv),
+                    Nd4j.zeros(DataType.FLOAT, 1, convD, convK - 1));
+            Map<String, INDArray> step1 = p.run(p.gdnNonzeroState(), p.convNonzeroState());
+            INDArray gdnOut0 = step0.get("gdn_state_out_0");
+            INDArray gdnOut1 = step1.get("gdn_state_out_0");
+            assertNotNull(gdnOut0, "step 0 GDN state output");
+            assertNotNull(gdnOut1, "step 1 GDN state output");
+            assertTrue(!gdnOut0.equalsWithEps(gdnOut1, 1e-6f),
+                    "the second step must consume the nonzero GDN state (outputs differ)");
+            assertTrue(!p.gdnNonzeroState().equalsWithEps(p.convNonzeroState(), 1e-6f),
+                    "the two layers must carry distinct nonzero state values");
+        }
+    }
+
+    /** Suffix-prefill-style graph with one GDN companion and one conv companion. */
+    private static final class RecurrentPlan implements AutoCloseable {
+        private final SameDiff graph = SameDiff.create();
+        private final Map<String, INDArray> inputs = new LinkedHashMap<>();
+        private final List<String> outputs = new ArrayList<>();
+        private final int l;
+        private DynamicShapePlanExecutor executor;
+
+        RecurrentPlan(int l, int h, int dk, int dv, int convD, int convK) {
+            this.l = l;
+            SDVariable q = placeholder("q", Nd4j.linspace(1, l * h * dk, l * h * dk, DataType.FLOAT)
+                    .reshape(1, l, h, dk).muli(0.01f));
+            SDVariable k = placeholder("k", Nd4j.linspace(1, l * h * dk, l * h * dk, DataType.FLOAT)
+                    .reshape(1, l, h, dk).muli(0.02f));
+            SDVariable v = placeholder("v", Nd4j.linspace(1, l * h * dv, l * h * dv, DataType.FLOAT)
+                    .reshape(1, l, h, dv).muli(0.03f));
+            SDVariable beta = placeholder("beta", Nd4j.valueArrayOf(
+                    new long[]{1, l, h}, 0.5, DataType.FLOAT));
+            SDVariable gate = placeholder("gate", Nd4j.valueArrayOf(
+                    new long[]{1, l, h}, -1.0, DataType.FLOAT));
+            SDVariable gdnState = placeholder("past_gdn_state.0",
+                    Nd4j.zeros(DataType.FLOAT, 1, h, dk, dv));
+            SDVariable x = placeholder("x", Nd4j.linspace(1, l * convD, l * convD, DataType.FLOAT)
+                    .reshape(1, l, convD).muli(0.05f));
+            SDVariable weight = graph.var("gdn_conv_weight", Nd4j.linspace(1, convD * convK,
+                    convD * convK, DataType.FLOAT).reshape(convD, convK).muli(0.01f));
+            SDVariable convState = placeholder("past_conv_state.0",
+                    Nd4j.zeros(DataType.FLOAT, 1, convD, convK - 1));
+            SDVariable actualLen = placeholder("actual_sequence_length",
+                    Nd4j.scalar(DataType.INT64, (long) l));
+
+            SDVariable[] gdnOut = graph.nn().gatedDeltaRuleWithPrefix(
+                    new String[]{"gdn_out_0", "gdn_state_out_0", "gdn_state_prefix_0"},
+                    q, k, v, beta, gate, gdnState, actualLen);
+            SDVariable[] convOut = graph.nn().causalConv1dWithPrefix(
+                    new String[]{"conv_out_0", "conv_state_out_0", "conv_state_prefix_0"},
+                    x, weight, null, convState, actualLen, 1, 0);
+            graph.setOutputs(gdnOut[0].name(), gdnOut[1].name(),
+                    convOut[0].name(), convOut[1].name());
+            for (String name : graph.outputs()) outputs.add(name);
+        }
+
+        private SDVariable placeholder(String name, INDArray value) {
+            inputs.put(name, value);
+            return graph.placeHolder(name, value.dataType(), value.shape());
+        }
+
+        private INDArray gdnNonzeroState() {
+            return Nd4j.linspace(1, 1 * 2 * 8 * 8, 1 * 2 * 8 * 8, DataType.FLOAT)
+                    .reshape(1, 2, 8, 8).muli(0.05f);
+        }
+
+        private INDArray convNonzeroState() {
+            return Nd4j.linspace(1, 1 * 4 * 3, 1 * 4 * 3, DataType.FLOAT)
+                    .reshape(1, 4, 3).muli(-0.07f);
+        }
+
+        private Map<String, INDArray> run(INDArray gdnState, INDArray convState) {
+            Map<String, INDArray> stepInputs = new LinkedHashMap<>();
+            for (Map.Entry<String, INDArray> entry : inputs.entrySet()) {
+                if ("past_gdn_state.0".equals(entry.getKey())) {
+                    stepInputs.put(entry.getKey(), gdnState);
+                } else if ("past_conv_state.0".equals(entry.getKey())) {
+                    stepInputs.put(entry.getKey(), convState);
+                } else {
+                    stepInputs.put(entry.getKey(), entry.getValue());
+                }
+            }
+            return graph.output(stepInputs, outputs.toArray(new String[0]));
+        }
+
+        private void compile() {
+            graph.setDspAutoCompileEnabled(true);
+            graph.setDspNativeAutoCompileEnabled(true);
+            for (int i = 0; i < 8; i++) graph.output(inputs, outputs.toArray(new String[0]));
+            executor = graph.getOrCreateSession().getDynamicShapePlanExecutor();
+            assertNotNull(executor);
+            assertNotNull(executor.getNativePlanHandle());
+            assertTrue(!executor.getNativePlanHandle().isNull(), "native plan required");
+            assertNotNull(executor.getCachedOpContext());
+        }
+
+        @Override public void close() { graph.close(); }
+    }
 
     /** Target window plan with an EXTRA requested output ("extra") the consumer loop ignores. */
     private static Plan target() {

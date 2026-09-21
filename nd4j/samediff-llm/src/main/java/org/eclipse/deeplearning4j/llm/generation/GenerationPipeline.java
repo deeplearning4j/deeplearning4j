@@ -3681,8 +3681,14 @@ public class GenerationPipeline implements AutoCloseable {
 
         List<Integer> gdnExtList = new ArrayList<>(), gdnOutList = new ArrayList<>();
         List<Integer> convExtList = new ArrayList<>(), convOutList = new ArrayList<>();
-        // Accepted-prefix checkpoint outputs are resolved from the state's recurrent
-        // pairs when the state is built (attachPrefixSelect).
+        // Packet 03: restore the ORDINARY recurrent feedback index population. This
+        // runs regardless of prefix mode - OFF mode still needs per-step recurrent
+        // feedback - and only the ordinary state handoff participates. The
+        // checkpoint outputs are excluded upstream by findRecurrentStatePairs
+        // (isPrefixCaptureOutput); prefix resolution (attachPrefixSelect) is a
+        // separate concern and never contributes to these lists.
+        resolveRecurrentFeedbackIndices(executor, recurrentStates,
+                gdnExtList, gdnOutList, convExtList, convOutList);
 
         Pointer contextHandle = executor.getCachedOpContext();
         // Packet 02: same native plan identity capture as the main warmup path - the
@@ -9065,6 +9071,46 @@ public class GenerationPipeline implements AutoCloseable {
     private static int resolveOutputIdx(DynamicShapePlanExecutor executor, String name) {
         if (name == null || executor == null) return -1;
         return executor.findOutputIndex(name);
+    }
+
+    /**
+     * Resolve the ORDINARY recurrent feedback index pairs (GDN and conv) against
+     * the prepared target plan. Checkpoint outputs are excluded upstream by
+     * findRecurrentStatePairs; this helper maps only the state handoff. An
+     * unrecognized kind is an error (never silently classified as conv), and a
+     * missing input/output index fails with the pair name. Runs regardless of
+     * prefix mode: OFF mode still needs per-step recurrent feedback.
+     */
+    static void resolveRecurrentFeedbackIndices(
+            DynamicShapePlanExecutor executor,
+            List<ModelIOConfig.RecurrentStatePair> recurrentStates,
+            List<Integer> gdnExtList, List<Integer> gdnOutList,
+            List<Integer> convExtList, List<Integer> convOutList) {
+        for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
+            int extIdx = resolveExtInputIdx(executor, pair.inputName);
+            int outIdx = resolveOutputIdx(executor, pair.outputName);
+            if (extIdx < 0) {
+                throw new IllegalStateException(
+                        "Missing recurrent input index for " + pair.inputName
+                        + " against the prepared target plan");
+            }
+            if (outIdx < 0) {
+                throw new IllegalStateException(
+                        "Missing recurrent state output index for " + pair.outputName
+                        + " against the prepared target plan");
+            }
+            if (pair.isGdn()) {
+                gdnExtList.add(extIdx);
+                gdnOutList.add(outIdx);
+            } else if (pair.isConv()) {
+                convExtList.add(extIdx);
+                convOutList.add(outIdx);
+            } else {
+                throw new IllegalStateException(
+                        "Unrecognized recurrent state kind for pair " + pair
+                        + ": neither GDN nor conv against the prepared target plan");
+            }
+        }
     }
 
     /**
