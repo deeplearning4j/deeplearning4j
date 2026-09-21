@@ -3078,6 +3078,13 @@ void autoregressiveDecode(
     // this mode exists to avoid. Reset at every committed step boundary.
     bool selectStateCommittedThisStep = false;
 
+    // PACKET 07: per-invocation SELECT scratch. Reserved before the step loop so
+    // the per-step eligibility probe never allocates, and cleared per step so the
+    // borrowed plan-output pointers cannot leak across invocations. Not owned:
+    // the checkpoint arrays belong to the plan's output storage.
+    std::vector<NDArray*> selectScratchSrc;
+    std::vector<NDArray*> selectScratchDst;
+
     for (int step = 0; step < maxNewTokens; step++) {
         // A rollback snapshot belongs to one commit transaction, not one restore.
         kvRowSnapshotBase = -1;
@@ -3987,28 +3994,31 @@ void autoregressiveDecode(
                     && config->actualSequenceLengthExtIdx >= 0
                     && config->actualSequenceLengthExtIdx < numExtInputs
                     && extInputs[config->actualSequenceLengthExtIdx] != nullptr) {
-                // PACKET 4 SELECT FAST PATH (mode=2): the verification pass ran the
+                // PACKET 07 SELECT FAST PATH (mode=2): the verification pass ran the
                 // companion recurrent ops, so prefix[consumedCount-1] holds exactly
                 // the state greedy decoding would hold after the consumed prefix -
                 // the same property the legacy rerun re-derives by re-executing the
-                // whole target. Select the checkpoints directly: copy each layer's
-                // prefix row [consumedCount-1] into the live recurrent ext input.
-                // Eligibility (all required before any mutation):
-                //  - select mode requested AND complete layer binding parsed;
-                //  - checkpoint outputs resolved in this invocation's plan;
-                //  - checkpoint row length matches the live recurrent input.
-                // Ineligible configurations fall through to the legacy restore/rerun
-                // below, unchanged and still counted.
+                // whole target. Admission is ALL-OR-NOTHING: every layer is fully
+                // validated (shape, dtype, storage, coverage, row capacity) BEFORE
+                // any mutation, so a malformed binding can never partly commit.
+                // An explicitly requested but unqualified layout takes the legacy
+                // restore/rerun fallback BEFORE any selected-state copy and is
+                // counted in checkpointSelectFallbacks.
                 bool selectEligible = config->mtpPrefixSelectMode == 2
                     && (config->mtpPrefixGdnLayerCount + config->mtpPrefixConvLayerCount) > 0;
-                // Thread-local: the eligibility probe runs on every partial-acceptance
-                // step, so the scratch must not allocate per step.
-                static thread_local std::vector<NDArray*> tl_selectPrefixSrc;
-                static thread_local std::vector<NDArray*> tl_selectStateDst;
-                tl_selectPrefixSrc.clear();
-                tl_selectStateDst.clear();
-                std::vector<NDArray*>& selectPrefixSrc = tl_selectPrefixSrc;
-                std::vector<NDArray*>& selectStateDst = tl_selectStateDst;
+                // Per-invocation scratch, allocated once before the step loop and
+                // cleared per step (reviewer packet 07: thread-local vectors retain
+                // pointers across calls; per-invocation ownership stays explicit).
+                selectScratchSrc.clear();
+                selectScratchDst.clear();
+                std::vector<NDArray*>& selectPrefixSrc = selectScratchSrc;
+                std::vector<NDArray*>& selectStateDst = selectScratchDst;
+                if (selectEligible) {
+                    // consumedCount must address a row of THIS verification window.
+                    if (consumedCount < 1) {
+                        selectEligible = false;
+                    }
+                }
                 if (selectEligible) {
                     selectPrefixSrc.reserve(config->mtpPrefixGdnLayerCount
                                             + config->mtpPrefixConvLayerCount);
@@ -4022,13 +4032,25 @@ void autoregressiveDecode(
                         if (dst == nullptr || src == nullptr
                                 || src->rankOf() != dst->rankOf() + 1
                                 || src->sizeAt(0) < consumedCount) return false;
-                        // Prefix layout is time-leading: [W, B, ...state dims]. The
-                        // slot for consumedCount inputs is row (consumedCount-1); its
-                        // trailing dims must match the state tensor exactly.
-                        for (int d = 1; d < dst->rankOf(); d++) {
-                            if (src->sizeAt(d) != dst->sizeAt(d - 1)) return false;
+                        // FULL trailing-dim match including the last state dimension:
+                        // src [W, B, s0, s1, ...] must satisfy src->sizeAt(d+1) ==
+                        // dst->sizeAt(d) for EVERY d in [0, dst->rankOf()). A [1,2,8,8]
+                        // state must be rejected against a [W,1,2,8,7] checkpoint - the
+                        // old loop stopped one dimension early and would compute a wrong
+                        // row offset/byte count.
+                        for (int d = 0; d < dst->rankOf(); ++d) {
+                            if (src->sizeAt(d + 1) != dst->sizeAt(d)) return false;
                         }
                         if (src->dataType() != dst->dataType()) return false;
+                        // Dense supported C-order storage for the raw-copy path.
+                        if (src->ordering() != 'c' || dst->ordering() != 'c') return false;
+                        if (src->ews() != 1 || dst->ews() != 1) return false;
+                        // No source/destination overlap.
+                        const char* srcB = static_cast<const char*>(src->specialBuffer());
+                        char* dstB = static_cast<char*>(dst->specialBuffer());
+                        const size_t bytes = static_cast<size_t>(dst->lengthOf())
+                            * static_cast<size_t>(dst->sizeOfT());
+                        if (srcB < dstB + bytes && dstB < srcB + bytes) return false;
                         selectPrefixSrc.push_back(src);
                         selectStateDst.push_back(dst);
                         return true;
@@ -4050,22 +4072,24 @@ void autoregressiveDecode(
                         NDArray* src = selectPrefixSrc[li];
                         NDArray* dst = selectStateDst[li];
                         // Per-layer slot size: GDN and conv states differ, so the row
-                        // stride is this layer's own trailing-dims product (verified
-                        // equal to the prefix's trailing dims at resolution time).
+                        // stride is this layer's own element count (validated above:
+                        // the checkpoint's trailing dims equal the state shape exactly,
+                        // and both are dense C-order, so row stride == state length).
                         const size_t slotElems = static_cast<size_t>(dst->lengthOf());
                         const size_t rowBytes = slotElems * static_cast<size_t>(dst->sizeOfT());
-                        // Source row base: prefix is time-leading C-order, row stride
-                        // = slotElems elements.
+                        // Source row base from the validated geometry.
                         void* srcBase = static_cast<char*>(src->specialBuffer())
                             + static_cast<size_t>(selectedRow) * slotElems * src->sizeOfT();
-                        NDArray::prepareSpecialUse({dst}, {});
+                        // BOTH sides participate in access bookkeeping: the checkpoint
+                        // read and the state write are ordered on the same stream.
+                        NDArray::prepareSpecialUse({dst}, {src});
                         auto selErr = cudaMemcpyAsync(dst->specialBuffer(), srcBase, rowBytes,
                             cudaMemcpyDeviceToDevice, *stream);
                         p0.checkpointSelectBytes += static_cast<std::uint64_t>(rowBytes);
                         REQUIRE_TRUE(selErr == cudaSuccess, 0,
                             "autoregressive_decode: prefix checkpoint select copy failed: %s",
                             cudaGetErrorString(selErr));
-                        NDArray::registerSpecialUse({dst}, {});
+                        NDArray::registerSpecialUse({dst}, {src});
                     }
                     // Advance actual_sequence_length to the consumed prefix: the
                     // state now reflects exactly those inputs.
