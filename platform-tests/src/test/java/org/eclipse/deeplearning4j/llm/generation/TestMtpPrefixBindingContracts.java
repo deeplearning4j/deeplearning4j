@@ -14,6 +14,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -171,7 +172,216 @@ public class TestMtpPrefixBindingContracts {
         @Override public void close() { graph.close(); }
     }
 
-    /** Target window plan with an EXTRA requested output ("extra") the consumer loop ignores. */
+    @Test
+    void testDeterministicPrefixTriplePairingAcrossMixedDiscoveryOrder() throws Exception {
+        // Packet 04: two GDN and two conv layers with discovery order deliberately
+        // mixed (conv22, gdn7, conv7, gdn22). The checkpoint-output binding must
+        // preserve layer pairing in grouped GDN-first/conv-second serialization
+        // independent of discovery order, and the state metadata must carry only
+        // integer indices (no placeholder-owned arrays).
+        System.setProperty("nd4j.mtp.prefixSelect", "select");
+        try (MixedPlan p = new MixedPlan()) {
+            p.compile();
+            ModelIOConfig ioConfig = ModelIOConfig.discover(p.graph);
+            List<ModelIOConfig.RecurrentStatePair> pairs =
+                    ModelIOConfig.findRecurrentStatePairs(p.graph, ioConfig);
+            assertEquals(4, pairs.size(), "four recurrent pairs expected, got " + pairs);
+
+            // Ordinary feedback mapping first (what the pipeline populates before
+            // attachPrefixSelect).
+            List<Integer> gdnExt = new ArrayList<>(), gdnOut = new ArrayList<>();
+            List<Integer> convExt = new ArrayList<>(), convOut = new ArrayList<>();
+            GenerationPipeline.resolveRecurrentFeedbackIndices(
+                    p.executor, pairs, gdnExt, gdnOut, convExt, convOut);
+            assertEquals(2, gdnOut.size(), "two GDN ordinary outputs");
+            assertEquals(2, convOut.size(), "two conv ordinary outputs");
+
+            InGraphKvState state = new InGraphKvState();
+            state.gdnStateExtIndices = gdnExt.stream().mapToInt(Integer::intValue).toArray();
+            state.gdnStateOutputIndices = gdnOut.stream().mapToInt(Integer::intValue).toArray();
+            state.convStateExtIndices = convExt.stream().mapToInt(Integer::intValue).toArray();
+            state.convStateOutputIndices = convOut.stream().mapToInt(Integer::intValue).toArray();
+
+            InGraphKvState.PrefixSelectMode mode =
+                    GenerationPipeline.attachPrefixSelect(state, p.graph, pairs, p.executor);
+            assertEquals(InGraphKvState.PrefixSelectMode.SELECT, mode);
+            assertNotNull(state.gdnPrefixOutputIndices, "GDN prefix indices resolved");
+            assertNotNull(state.convPrefixOutputIndices, "conv prefix indices resolved");
+            assertEquals(2, state.gdnPrefixOutputIndices.length);
+            assertEquals(2, state.convPrefixOutputIndices.length);
+
+            // Every resolved index must refer to a state or checkpoint output of the
+            // same kind, and grouped serialization (GDN-first then conv) must
+            // preserve PAIRING: prefix[i] corresponds to the SAME layer as
+            // ordinary[i] in each group. The within-group ORDER is not asserted -
+            // discovery order is deliberately mixed, and the binding contract is
+            // pairing preservation, not a specific layer sort.
+            for (int i = 0; i < 2; i++) {
+                String gdnOrdinaryName = nameAt(p, state.gdnStateOutputIndices[i]);
+                String gdnPrefixName = nameAt(p, state.gdnPrefixOutputIndices[i]);
+                String convOrdinaryName = nameAt(p, state.convStateOutputIndices[i]);
+                String convPrefixName = nameAt(p, state.convPrefixOutputIndices[i]);
+                assertTrue(gdnOrdinaryName.startsWith("gdn_state_out_"),
+                        "GDN ordinary index " + i + " must refer to a GDN state output: " + gdnOrdinaryName);
+                assertTrue(gdnPrefixName.startsWith("gdn_state_prefix_"),
+                        "GDN prefix index " + i + " must refer to a GDN checkpoint: " + gdnPrefixName);
+                assertTrue(convOrdinaryName.startsWith("conv_state_out_"),
+                        "conv ordinary index " + i + " must refer to a conv state output: " + convOrdinaryName);
+                assertTrue(convPrefixName.startsWith("conv_state_prefix_"),
+                        "conv prefix index " + i + " must refer to a conv checkpoint: " + convPrefixName);
+                assertEquals(layerOf(gdnOrdinaryName), layerOf(gdnPrefixName),
+                        "GDN ordinary/prefix layer pairing must be preserved at position " + i);
+                assertEquals(layerOf(convOrdinaryName), layerOf(convPrefixName),
+                        "conv ordinary/prefix layer pairing must be preserved at position " + i);
+            }
+            // No duplicate state tuple: the four pairs must have four distinct input names.
+            Set<String> inputNames = new LinkedHashSet<>();
+            for (ModelIOConfig.RecurrentStatePair pair : pairs) {
+                assertTrue(inputNames.add(pair.inputName),
+                        "duplicate recurrent tuple for " + pair.inputName);
+            }
+            assertEquals(4, inputNames.size());
+            // No placeholder-owned arrays: the metadata is index arrays only.
+            for (int idx : state.gdnPrefixOutputIndices) assertTrue(idx >= 0);
+            for (int idx : state.convPrefixOutputIndices) assertTrue(idx >= 0);
+        } finally {
+            System.clearProperty("nd4j.mtp.prefixSelect");
+        }
+    }
+    @Test
+    void testMissingCheckpointOutputFailsPreparationBeforeDecode() throws Exception {
+        System.setProperty("nd4j.mtp.prefixSelect", "select");
+        try (MixedPlan p = new MixedPlan(false)) {
+            p.compile();
+            ModelIOConfig ioConfig = ModelIOConfig.discover(p.graph);
+            List<ModelIOConfig.RecurrentStatePair> pairs =
+                    ModelIOConfig.findRecurrentStatePairs(p.graph, ioConfig);
+            List<Integer> gdnExt = new ArrayList<>(), gdnOut = new ArrayList<>();
+            List<Integer> convExt = new ArrayList<>(), convOut = new ArrayList<>();
+            GenerationPipeline.resolveRecurrentFeedbackIndices(
+                    p.executor, pairs, gdnExt, gdnOut, convExt, convOut);
+            InGraphKvState state = new InGraphKvState();
+            state.gdnStateExtIndices = gdnExt.stream().mapToInt(Integer::intValue).toArray();
+            state.gdnStateOutputIndices = gdnOut.stream().mapToInt(Integer::intValue).toArray();
+            state.convStateExtIndices = convExt.stream().mapToInt(Integer::intValue).toArray();
+            state.convStateOutputIndices = convOut.stream().mapToInt(Integer::intValue).toArray();
+            IllegalStateException ex = assertThrows(IllegalStateException.class,
+                    () -> GenerationPipeline.attachPrefixSelect(state, p.graph, pairs, p.executor));
+            assertTrue(ex.getMessage().contains("gdn_state_prefix_22")
+                            || ex.getMessage().contains("prefix"),
+                    "the missing checkpoint must be named in the preparation failure, got: "
+                            + ex.getMessage());
+        } finally {
+            System.clearProperty("nd4j.mtp.prefixSelect");
+        }
+    }
+
+    private static String nameAt(MixedPlan p, int idx) {
+        return new ArrayList<>(p.executor.getCurrentPlan().getRequestedOutputs()).get(idx);
+    }
+
+    private static String layerOf(String name) {
+        return name.substring(name.lastIndexOf('_') + 1);
+    }
+
+    /**
+     * Four-layer mixed-order companion graph: discovery order conv22, gdn7,
+     * conv7, gdn22. When {@code includeAllPrefixOutputs} is false, the
+     * gdn_state_prefix_22 output is NOT requested, so preparation must fail
+     * before any decode execution.
+     */
+    private static final class MixedPlan implements AutoCloseable {
+        private final SameDiff graph = SameDiff.create();
+        private final Map<String, INDArray> inputs = new LinkedHashMap<>();
+        private final List<String> outputs = new ArrayList<>();
+        private DynamicShapePlanExecutor executor;
+
+        MixedPlan() { this(true); }
+
+        MixedPlan(boolean includeAllPrefixOutputs) {
+            int l = 2, h = 2, dk = 8, dv = 8, convD = 4, convK = 4;
+            // One shared scalar placeholder for the whole graph (production graphs
+            // have a single actual_sequence_length input).
+            placeholder(graph, inputs, "actual_length", Nd4j.scalar(DataType.INT64, (long) l));
+            // Deliberately mixed discovery order.
+            convLayer(graph, inputs, l, convD, convK, 22);
+            gdnLayer(graph, inputs, l, h, dk, dv, 7);
+            convLayer(graph, inputs, l, convD, convK, 7);
+            gdnLayer(graph, inputs, l, h, dk, dv, 22);
+            if (includeAllPrefixOutputs) {
+                graph.setOutputs("gdn_state_out_7", "gdn_state_prefix_7",
+                        "gdn_state_out_22", "gdn_state_prefix_22",
+                        "conv_state_out_22", "conv_state_prefix_22",
+                        "conv_state_out_7", "conv_state_prefix_7");
+            } else {
+                graph.setOutputs("gdn_state_out_7", "gdn_state_prefix_7",
+                        "gdn_state_out_22",
+                        "conv_state_out_22", "conv_state_prefix_22",
+                        "conv_state_out_7", "conv_state_prefix_7");
+            }
+            for (String name : graph.outputs()) outputs.add(name);
+        }
+
+        private static void gdnLayer(SameDiff graph, Map<String, INDArray> inputs,
+                                     int l, int h, int dk, int dv, int layer) {
+            String tag = String.valueOf(layer);
+            SDVariable q = placeholder(graph, inputs, "q" + layer,
+                    Nd4j.linspace(1, l * h * dk, l * h * dk, DataType.FLOAT)
+                            .reshape(1, l, h, dk).muli(0.01f));
+            SDVariable k = placeholder(graph, inputs, "k" + layer,
+                    Nd4j.linspace(1, l * h * dk, l * h * dk, DataType.FLOAT)
+                            .reshape(1, l, h, dk).muli(0.02f));
+            SDVariable v = placeholder(graph, inputs, "v" + layer,
+                    Nd4j.linspace(1, l * h * dv, l * h * dv, DataType.FLOAT)
+                            .reshape(1, l, h, dv).muli(0.03f));
+            SDVariable beta = placeholder(graph, inputs, "beta" + layer,
+                    Nd4j.valueArrayOf(new long[]{1, l, h}, 0.5, DataType.FLOAT));
+            SDVariable gate = placeholder(graph, inputs, "gate" + layer,
+                    Nd4j.valueArrayOf(new long[]{1, l, h}, -1.0, DataType.FLOAT));
+            SDVariable state = placeholder(graph, inputs, "past_gdn_state." + layer,
+                    Nd4j.zeros(DataType.FLOAT, 1, h, dk, dv));
+            SDVariable actualLen = graph.getVariable("actual_length");
+            graph.nn().gatedDeltaRuleWithPrefix(
+                    new String[]{"gdn_out_" + tag, "gdn_state_out_" + tag, "gdn_state_prefix_" + tag},
+                    q, k, v, beta, gate, state, actualLen);
+        }
+
+        private static void convLayer(SameDiff graph, Map<String, INDArray> inputs,
+                                      int l, int d, int kc, int layer) {
+            String tag = String.valueOf(layer);
+            SDVariable x = placeholder(graph, inputs, "x" + layer,
+                    Nd4j.linspace(1, l * d, l * d, DataType.FLOAT)
+                            .reshape(1, l, d).muli(0.05f));
+            SDVariable weight = graph.var("conv_weight_" + layer, Nd4j.linspace(1, d * kc,
+                    d * kc, DataType.FLOAT).reshape(d, kc).muli(0.01f));
+            SDVariable state = placeholder(graph, inputs, "past_conv_state." + layer,
+                    Nd4j.zeros(DataType.FLOAT, 1, d, kc - 1));
+            SDVariable actualLen = graph.getVariable("actual_length");
+            graph.nn().causalConv1dWithPrefix(
+                    new String[]{"conv_out_" + tag, "conv_state_out_" + tag, "conv_state_prefix_" + tag},
+                    x, weight, null, state, actualLen, 1, 0);
+        }
+
+        private static SDVariable placeholder(SameDiff graph, Map<String, INDArray> inputs,
+                                              String name, INDArray value) {
+            inputs.put(name, value);
+            return graph.placeHolder(name, value.dataType(), value.shape());
+        }
+
+        private void compile() {
+            graph.setDspAutoCompileEnabled(true);
+            graph.setDspNativeAutoCompileEnabled(true);
+            for (int i = 0; i < 8; i++) graph.output(inputs, outputs.toArray(new String[0]));
+            executor = graph.getOrCreateSession().getDynamicShapePlanExecutor();
+            assertNotNull(executor);
+            assertNotNull(executor.getNativePlanHandle());
+            assertTrue(!executor.getNativePlanHandle().isNull(), "native plan required");
+            assertNotNull(executor.getCachedOpContext());
+        }
+
+        @Override public void close() { graph.close(); }
+    }
+
     private static Plan target() {
         Plan p = new Plan();
         p.placeholder("ids", Nd4j.ones(DataType.INT64, 1, WIDTH));

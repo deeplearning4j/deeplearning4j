@@ -311,20 +311,23 @@ class InGraphKvState implements AutoCloseable {
 
     /**
      * Resolved prefix-selection mode. Default OFF. Set once at state preparation
-     * from {@code nd4j.mtp.prefixSelect} (off|shadow|select, case-insensitive;
-     * unknown values fail closed to OFF) and an availability check for prefix
-     * outputs in the verification graph.
+     * from {@code nd4j.mtp.prefixSelect} (off|shadow|select); unknown values and
+     * incomplete checkpoint bindings are preparation errors, never a silent OFF.
      */
     PrefixSelectMode prefixSelectMode = PrefixSelectMode.OFF;
 
     /**
-     * Per-layer accepted-prefix checkpoint buffers, retained in this state's
-     * lifetime. Keyed by prefix output name (gdn_state_prefix_N /
-     * conv_state_prefix_N). Populated when prefixSelectMode != OFF from the
-     * verification window's companion outputs; live only for the current
-     * invocation (no cross-step or cross-session reuse).
+     * Per-layer accepted-prefix checkpoint output INDEX arrays, grouped
+     * GDN-first then conv, in the SAME order as the ordinary state feedback
+     * arrays ({@code gdnStateOutputIndices} / {@code convStateOutputIndices}).
+     * These are indices into the prepared plan's requested-output list, resolved
+     * by name at preparation time - never map iteration order and never
+     * placeholder-owned arrays. The checkpoint tensors themselves are borrowed
+     * plan outputs owned by the prepared plan/session leases; this metadata does
+     * not own them. Null when prefixSelectMode == OFF.
      */
-    Map<String, INDArray> prefixCheckpointBuffers = new LinkedHashMap<>();
+    int[] gdnPrefixOutputIndices;
+    int[] convPrefixOutputIndices;
 
     // ── Capacity / shape metadata ────────────────────────────────────────────────────────────────
     long maxKvLen;          // total KV buffer length (the hard capacity ceiling)
@@ -482,7 +485,6 @@ class InGraphKvState implements AutoCloseable {
         releaseRecurrentCopyDonors();
         closeAll(mtpKvBuffers);
         closeAll(mtpPrefillInputMap);
-        closeAll(prefixCheckpointBuffers);
         closeAll(recurrentStateBuffers);
         closeAll(staticKvBuffers);
         closeAll(quantizedKvBuffers);
