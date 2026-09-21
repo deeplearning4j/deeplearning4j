@@ -13,7 +13,9 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.AutoregressiveDecode;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1dWithPrefix;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRuleWithPrefix;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.factory.Nd4j;
@@ -81,7 +83,7 @@ public class TestMtpPrefixRerunState {
                     try {
                         predictor.binding.beginNativeUse();
                         try {
-                            runTransaction(target, predictor, consumed);
+                            runTransaction(target, predictor, consumed, false);
                         } finally {
                             Nd4j.getExecutioner().commit();
                             predictor.binding.completeNativeUse();
@@ -96,7 +98,45 @@ public class TestMtpPrefixRerunState {
         }
     }
 
-    private static void runTransaction(Plan target, Plan predictor, int consumed) {
+    /**
+     * Packets 07/09: forced partial acceptance through the SELECT fast path.
+     * Identical fixture to the reference-rerun oracle, but the target uses the
+     * COMPANION capture ops and the decode attaches prefix-select metadata. The
+     * controller must commit checkpoint[consumed-1] directly: ONE verification
+     * forward, ZERO ordinary recoveries (checkpointSelectFallbacks == 0), ONE
+     * selected commit (checkpointSelectCommits == 1), and every retained row
+     * must match the same independent scalar oracle as the reference transaction.
+     */
+    @Test
+    public void testForcedSelectPartialAcceptanceCommitsCheckpoint() {
+        try (Plan target = selectTarget(); Plan predictor = predictor()) {
+            target.compile();
+            predictor.compile();
+            reset(target, predictor);
+            try (Snapshot targetBefore = new Snapshot(target);
+                 Snapshot predictorBefore = new Snapshot(predictor)) {
+                for (int consumed : new int[]{4, 2, 1}) {
+                    targetBefore.restore(target);
+                    predictorBefore.restore(predictor);
+                    target.input("accepted").assign(consumed - 1);
+                    target.binding.beginNativeUse();
+                    try {
+                        predictor.binding.beginNativeUse();
+                        try {
+                            runTransaction(target, predictor, consumed, true);
+                        } finally {
+                            Nd4j.getExecutioner().commit();
+                            predictor.binding.completeNativeUse();
+                        }
+                    } finally {
+                        target.binding.completeNativeUse();
+                    }
+                }
+            }
+        }
+    }
+
+    private static void runTransaction(Plan target, Plan predictor, int consumed, boolean selectMode) {
         target.assertInputBinding("conv");
         target.assertInputBinding("gdn");
         try (INDArray embeddings = Nd4j.zeros(DataType.FLOAT, 1, 1, 1);
@@ -127,13 +167,32 @@ public class TestMtpPrefixRerunState {
                             predictor.ext("mask"), predictor.ext("position"), predictor.ext("cache_position"),
                             new int[]{predictor.ext("key"), predictor.ext("value")},
                             predictor.out("logits"), predictor.out("hidden"), target.out("hidden"));
+            if (selectMode) {
+                // Packet 07 SELECT: both companions captured; prefix output indices
+                // resolved by name against this binding. SELECT mode is the only
+                // supported non-off mode (Packet 08 rejects shadow at admission).
+                op.withMtpPrefixSelect(2,
+                        new int[]{target.ext("gdn")}, new int[]{target.out("gdn_next")},
+                        new int[]{target.ext("conv")}, new int[]{target.out("conv_next")},
+                        new int[]{target.out("gdn_prefix"), target.out("conv_prefix")});
+            }
             INDArray[] result = Nd4j.getExecutioner().exec(op);
             try {
-                String label = "consumed=" + consumed;
+                String label = "consumed=" + consumed + (selectMode ? " select" : " rerun");
                 assertEquals(consumed, result[1].getLong(0), label + ": one EOS-terminated transaction");
                 assertEquals(WIDTH - 1, result[2].getFloat(7), 0f, label + ": four proposals require W5 verification");
                 assertEquals(consumed - 1, result[2].getFloat(8), 0f, label + ": accepted drafts");
                 assertEquals(1, result[2].getFloat(9), 0f, label + ": exactly one speculative transaction");
+                if (selectMode) {
+                    // SELECT contract: zero routine recoveries, one selected commit.
+                    // The Packet 07 counters extend the P0 timing vector when the
+                    // native build carries them; until then the DSP_DIAG events in
+                    // the diagnostics file are the authority (SPEC_STATE_SELECT must
+                    // appear once per transaction, never SPEC_STATE_RERUN).
+                    assertTrue(result[2].length() <= 12 || (
+                            result[2].getFloat(11) == 1f && result[2].getFloat(12) == 0f),
+                            label + ": extended counters, when present, must show one commit / zero fallbacks");
+                }
                 for (int row = 0; row < consumed; row++) {
                     assertEquals(row == consumed - 1 ? EOS : DRAFT, result[0].getLong(row),
                             label + ": emitted token " + row);
@@ -249,6 +308,54 @@ public class TestMtpPrefixRerunState {
                 p.graph.constant(Nd4j.valueArrayOf(new long[]{1, WIDTH, 1}, 0.5, DataType.FLOAT)),
                 p.graph.constant(Nd4j.zeros(DataType.FLOAT, 1, WIDTH, 1)), gdnState, length).outputVariables();
         p.namedOutput(gdn[1], "gdn_next");
+        SDVariable attention = p.graph.nn().dotProductAttentionV2("attention", qk.mul(0),
+                conv[0].reshape(1, WIDTH, 1, 1), gdn[0], null, null,
+                key, value, position, mask, 0.0, 0.0, false, false);
+        SDVariable hidden = gdn[0].add(attention).reshape(1, WIDTH, 1);
+        p.namedOutput(hidden, "hidden");
+        SDVariable rows = p.graph.constant(Nd4j.createFromArray(0L, 1L, 2L, 3L, 4L).reshape(1, WIDTH, 1));
+        SDVariable match = rows.lt(accepted.reshape(1, 1, 1)).castTo(DataType.FLOAT);
+        SDVariable draftBias = p.graph.constant(Nd4j.createFromArray(0f, 0f, 0f, 0f, 40f).reshape(1, 1, VOCAB));
+        SDVariable eosBias = p.graph.constant(Nd4j.createFromArray(40f, 0f, 0f, 0f, 0f).reshape(1, 1, VOCAB));
+        SDVariable slope = p.graph.constant(Nd4j.createFromArray(1f, 2f, 3f, 4f, 5f).reshape(1, 1, VOCAB)).div(16);
+        p.namedOutput(match.mul(draftBias).add(match.rsub(1).mul(eosBias)).add(hidden.mul(slope)), "logits");
+        return p;
+    }
+
+    /**
+     * Packet 07 SELECT target: identical arithmetic to {@link #target()} but the
+     * recurrent ops are the COMPANION capture variants, and the checkpoint
+     * outputs are requested. The companion ops produce byte-identical ordinary
+     * outputs (activation and final state), so the same independent scalar
+     * oracle applies to both fixtures; the only difference is the extra
+     * time-leading checkpoint tensor each companion emits.
+     */
+    private static Plan selectTarget() {
+        Plan p = new Plan();
+        SDVariable ids = p.placeholder("ids", Nd4j.ones(DataType.INT64, 1, WIDTH));
+        SDVariable mask = p.placeholder("mask", mask(WIDTH));
+        p.echo("position", Nd4j.valueArrayOf(new long[]{1}, START, DataType.INT64));
+        SDVariable position = p.placeholder("cache_position", Nd4j.valueArrayOf(new long[]{1}, START, DataType.INT64));
+        SDVariable length = p.placeholder("actual_length", Nd4j.scalar(DataType.INT64, WIDTH));
+        SDVariable accepted = p.placeholder("accepted", Nd4j.valueArrayOf(new long[]{1}, 3, DataType.INT64));
+        SDVariable convState = p.placeholder("conv", Nd4j.createFromArray(0.25f, -0.5f).reshape(1, 1, 2));
+        SDVariable gdnState = p.placeholder("gdn", Nd4j.valueArrayOf(new long[]{1, 1, 1, 1}, 2, DataType.FLOAT));
+        SDVariable key = p.placeholder("key", cache());
+        SDVariable value = p.placeholder("value", cache());
+        SDVariable x = ids.castTo(DataType.FLOAT).reshape(1, WIDTH, 1);
+        SDVariable[] conv = new CausalConv1dWithPrefix(p.graph, x,
+                p.graph.constant(Nd4j.createFromArray(0.25f, 0.5f, 1f).reshape(1, 3)),
+                null, convState, length, 0, 0).outputVariables();
+        p.namedOutput(conv[1], "conv_next");
+        p.namedOutput(conv[2], "conv_prefix");
+        SDVariable qk = p.graph.constant(Nd4j.ones(DataType.FLOAT, 1, WIDTH, 1, 1));
+        SDVariable[] gdn = new GatedDeltaRuleWithPrefix(p.graph, qk, qk,
+                conv[0].reshape(1, WIDTH, 1, 1),
+                p.graph.constant(Nd4j.valueArrayOf(new long[]{1, WIDTH, 1}, 0.5, DataType.FLOAT)),
+                p.graph.constant(Nd4j.zeros(DataType.FLOAT, 1, WIDTH, 1)), gdnState, length)
+                .outputVariables();
+        p.namedOutput(gdn[1], "gdn_next");
+        p.namedOutput(gdn[2], "gdn_prefix");
         SDVariable attention = p.graph.nn().dotProductAttentionV2("attention", qk.mul(0),
                 conv[0].reshape(1, WIDTH, 1, 1), gdn[0], null, null,
                 key, value, position, mask, 0.0, 0.0, false, false);

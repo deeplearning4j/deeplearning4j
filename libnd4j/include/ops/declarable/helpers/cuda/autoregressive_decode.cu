@@ -4058,10 +4058,38 @@ void autoregressiveDecode(
                     for (int s = 0; s < config->mtpPrefixGdnLayerCount && selectEligible; s++) {
                         selectEligible = resolveLayer(config->mtpPrefixGdnInputIndices[s],
                                                       config->mtpPrefixGdnOutputIndices[s]);
+                        if (!selectEligible) {
+                            NDArray* dst = (config->mtpPrefixGdnInputIndices[s] >= 0
+                                    && config->mtpPrefixGdnInputIndices[s] < numExtInputs)
+                                ? extInputs[config->mtpPrefixGdnInputIndices[s]] : nullptr;
+                            NDArray* src = (config->mtpPrefixGdnOutputIndices[s] >= 0
+                                    && config->mtpPrefixGdnOutputIndices[s] < numPlanOutputs)
+                                ? planOutputs[config->mtpPrefixGdnOutputIndices[s]] : nullptr;
+                            DSP_DIAG(KV_CACHE,
+                                     "SELECT_INELIGIBLE layer=gdn.%d consumed=%d "
+                                     "dst=%p src=%p dstShape=%s srcShape=%s",
+                                     s, consumedCount, (void*)dst, (void*)src,
+                                     dst != nullptr ? dst->shapeInfoAsString() : "null",
+                                     src != nullptr ? src->shapeInfoAsString() : "null");
+                        }
                     }
                     for (int s = 0; s < config->mtpPrefixConvLayerCount && selectEligible; s++) {
                         selectEligible = resolveLayer(config->mtpPrefixConvInputIndices[s],
                                                       config->mtpPrefixConvOutputIndices[s]);
+                        if (!selectEligible) {
+                            NDArray* dst = (config->mtpPrefixConvInputIndices[s] >= 0
+                                    && config->mtpPrefixConvInputIndices[s] < numExtInputs)
+                                ? extInputs[config->mtpPrefixConvInputIndices[s]] : nullptr;
+                            NDArray* src = (config->mtpPrefixConvOutputIndices[s] >= 0
+                                    && config->mtpPrefixConvOutputIndices[s] < numPlanOutputs)
+                                ? planOutputs[config->mtpPrefixConvOutputIndices[s]] : nullptr;
+                            DSP_DIAG(KV_CACHE,
+                                     "SELECT_INELIGIBLE layer=conv.%d consumed=%d "
+                                     "dst=%p src=%p dstShape=%s srcShape=%s",
+                                     s, consumedCount, (void*)dst, (void*)src,
+                                     dst != nullptr ? dst->shapeInfoAsString() : "null",
+                                     src != nullptr ? src->shapeInfoAsString() : "null");
+                        }
                     }
                 }
                 if (selectEligible) {
