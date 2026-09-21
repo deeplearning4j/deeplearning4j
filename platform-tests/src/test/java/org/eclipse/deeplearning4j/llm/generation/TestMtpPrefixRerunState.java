@@ -7,6 +7,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.diagnostics.DspDiagnostics;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor.NativeExecutionBinding;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -83,7 +84,7 @@ public class TestMtpPrefixRerunState {
                     try {
                         predictor.binding.beginNativeUse();
                         try {
-                            runTransaction(target, predictor, consumed, false);
+                            runTransaction(target, predictor, consumed, false, true);
                         } finally {
                             Nd4j.getExecutioner().commit();
                             predictor.binding.completeNativeUse();
@@ -102,41 +103,162 @@ public class TestMtpPrefixRerunState {
      * Packets 07/09: forced partial acceptance through the SELECT fast path.
      * Identical fixture to the reference-rerun oracle, but the target uses the
      * COMPANION capture ops and the decode attaches prefix-select metadata. The
-     * controller must commit checkpoint[consumed-1] directly: ONE verification
-     * forward, ZERO ordinary recoveries (checkpointSelectFallbacks == 0), ONE
-     * selected commit (checkpointSelectCommits == 1), and every retained row
-     * must match the same independent scalar oracle as the reference transaction.
+     * controller must commit checkpoint[consumed-1] directly.
+     *
+     * <p>THE SELECT PROOF IS COUNTER-BASED, NOT NUMERICS-ONLY: legacy recovery
+     * produces correct results too, so a numerics-only pass proves nothing. The
+     * current invocation's MTP_P0_CUDA summary is read from the native DSP
+     * diagnostics ring (DspDiagnostics.getJsonReport) for exactly this one call:
+     * targetVerify=1, reruns=0, shortened=0, checkpointSelectCommits=1,
+     * checkpointSelectFallbacks=0. Exactly one SPEC_STATE_SELECT event, zero
+     * SPEC_STATE_RERUN, zero SELECT_INELIGIBLE. A missing or ambiguous summary is
+     * a FAILURE, never a pass. Requires -Dnd4j.mtp.multiRowCommit=1.</p>
      */
     @Test
     public void testForcedSelectPartialAcceptanceCommitsCheckpoint() {
+        // Explicit precondition: this is a MULTI-ROW commit fixture (consumed=2).
+        // Without numeric 1 the native commitCap is 1 and every expectation below
+        // fails for policy reasons, not correctness.
+        org.junit.jupiter.api.Assertions.assertEquals("1", System.getenv("SD_MTP_MULTI_ROW_COMMIT"),
+                "This SELECT proof requires multi-row commit. Run with -Dnd4j.mtp.multiRowCommit=1.");
+
         try (Plan target = selectTarget(); Plan predictor = predictor()) {
             target.compile();
             predictor.compile();
             reset(target, predictor);
             try (Snapshot targetBefore = new Snapshot(target);
                  Snapshot predictorBefore = new Snapshot(predictor)) {
-                for (int consumed : new int[]{4, 2, 1}) {
-                    targetBefore.restore(target);
-                    predictorBefore.restore(predictor);
-                    target.input("accepted").assign(consumed - 1);
-                    target.binding.beginNativeUse();
+                // ONE transaction: consumed=2 (accepted=1 draft + EOS bonus).
+                // Output budget stays FIVE so all four proposals execute; EOS ends
+                // the commit after two consumed inputs.
+                final int consumed = 2;
+                targetBefore.restore(target);
+                predictorBefore.restore(predictor);
+                target.input("accepted").assign(consumed - 1);
+
+                // ── Observation interval: save config, configure, clear, invoke ONCE ──
+                NativeOps nativeOps = Nd4j.getNativeOps();
+                int savedMask = nativeOps.dspDiagGetEnabledMask();
+                int savedLevel = nativeOps.dspDiagGetLevel();
+                String report;
+                target.binding.beginNativeUse();
+                try {
+                    predictor.binding.beginNativeUse();
                     try {
-                        predictor.binding.beginNativeUse();
-                        try {
-                            runTransaction(target, predictor, consumed, true);
-                        } finally {
-                            Nd4j.getExecutioner().commit();
-                            predictor.binding.completeNativeUse();
-                        }
+                        DspDiagnostics.initialize();
+                        DspDiagnostics.setCategories(DspDiagnostics.KV_CACHE);
+                        DspDiagnostics.setLevel(DspDiagnostics.LEVEL_DETAILED);
+                        DspDiagnostics.clear();
+                        runTransaction(target, predictor, consumed, true, true);
+                        // Read BEFORE any other native invocation or teardown.
+                        report = DspDiagnostics.getJsonReport();
                     } finally {
-                        target.binding.completeNativeUse();
+                        Nd4j.getExecutioner().commit();
+                        predictor.binding.completeNativeUse();
                     }
+                } finally {
+                    target.binding.completeNativeUse();
+                    // Restore prior diagnostic configuration even on assertion path.
+                    nativeOps.dspDiagSetCategories(savedMask);
+                    nativeOps.dspDiagSetLevel(savedLevel);
                 }
+
+                // ── Assert the current invocation's real counters ──
+                SelectSummary summary = SelectSummary.parse(report);
+                summary.assertSelectContract(consumed);
             }
         }
     }
 
-    private static void runTransaction(Plan target, Plan predictor, int consumed, boolean selectMode) {
+    /**
+     * Continuation from the selected state. Transaction 1 forces the SELECT commit
+     * (checkpoint[1] -> GDN 2.890625, conv [1,4]); transaction 2 then runs on the
+     * SAME plans/buffers WITHOUT restoring the snapshot. If the committed state were
+     * stale (still the initial 2.0), transaction 2's recurrence diverges immediately
+     * (it would end at GDN 1.841796875 instead of 4.28515625).
+     *
+     * <p>Transaction 2 asserts only the PURE RECURRENCE state (GDN/conv) - the
+     * quantity SELECT actually commits. The attention-derived hidden/logit values
+     * depend on a visible KV set that spans BOTH transactions, which the
+     * single-transaction oracle does not model, so they are deliberately not
+     * asserted here (transaction 1 still asserts the full oracle).
+     */
+    @Test
+    public void testContinuationFromSelectedState() {
+        assertEquals("1", System.getenv("SD_MTP_MULTI_ROW_COMMIT"),
+                "This continuation proof requires multi-row commit. Run with -Dnd4j.mtp.multiRowCommit=1.");
+        try (Plan target = selectTarget(); Plan predictor = predictor()) {
+            target.compile();
+            predictor.compile();
+            reset(target, predictor);
+
+            // Transaction 1: forced SELECT, consumed=2, from the reset initial state;
+            // full independent oracle applies (single transaction, from reset).
+            target.input("accepted").assign(1);
+            target.binding.beginNativeUse();
+            try {
+                predictor.binding.beginNativeUse();
+                try {
+                    runTransaction(target, predictor, 2, true, true);
+                } finally {
+                    Nd4j.getExecutioner().commit();
+                    predictor.binding.completeNativeUse();
+                }
+            } finally {
+                target.binding.completeNativeUse();
+            }
+            assertEquals(2.890625, target.input("gdn").getDouble(0), EPS,
+                    "transaction 1 must leave the SELECT-committed GDN state, not the initial 2.0");
+
+            // Pure-recurrence continuation of transaction 2 from (2.890625, [1,4]):
+            //   row0 token=1: conv=0.25*1+0.5*4+1=3.25; state=(2.890625+3.25)/2=3.0703125
+            //   row1 token=4: conv=0.25*4+0.5*1+4=5.5;  state=(3.0703125+5.5)/2=4.28515625
+            // A rolled-back (stale initial 2.0) state would end at 1.841796875.
+
+            // Transaction 2: a NEW non-EOS pending token, same forced acceptance
+            // (consumed=2), from the CONTINUED state and advanced positions.
+            target.input("ids").assign(BASE);
+            target.input("accepted").assign(1);
+
+            NativeOps nativeOps = Nd4j.getNativeOps();
+            int savedMask = nativeOps.dspDiagGetEnabledMask();
+            int savedLevel = nativeOps.dspDiagGetLevel();
+            String report;
+            target.binding.beginNativeUse();
+            try {
+                predictor.binding.beginNativeUse();
+                try {
+                    DspDiagnostics.initialize();
+                    DspDiagnostics.setCategories(DspDiagnostics.KV_CACHE);
+                    DspDiagnostics.setLevel(DspDiagnostics.LEVEL_DETAILED);
+                    DspDiagnostics.clear();
+                    runTransaction(target, predictor, 2, true, false);
+                    report = DspDiagnostics.getJsonReport();
+                } finally {
+                    Nd4j.getExecutioner().commit();
+                    predictor.binding.completeNativeUse();
+                }
+            } finally {
+                target.binding.completeNativeUse();
+                nativeOps.dspDiagSetCategories(savedMask);
+                nativeOps.dspDiagSetLevel(savedLevel);
+            }
+
+            // The committed state CONTINUED: the recurrence advanced from
+            // 2.890625, not from the initial 2.0.
+            assertEquals(4.28515625, target.input("gdn").getDouble(0), EPS,
+                    "transaction 2 must advance the SELECT-committed GDN state (continued, not rolled back)");
+            assertEquals(1.0, target.input("conv").getDouble(0), EPS, "transaction 2 conv older");
+            assertEquals(4.0, target.input("conv").getDouble(1), EPS, "transaction 2 conv newest");
+
+            // Transaction 2 committed via SELECT again, on the continued state.
+            SelectSummary summary = SelectSummary.parse(report);
+            summary.assertSelectContract(2);
+        }
+    }
+
+    private static void runTransaction(Plan target, Plan predictor, int consumed, boolean selectMode,
+                                       boolean fullNumerics) {
         target.assertInputBinding("conv");
         target.assertInputBinding("gdn");
         try (INDArray embeddings = Nd4j.zeros(DataType.FLOAT, 1, 1, 1);
@@ -183,16 +305,10 @@ public class TestMtpPrefixRerunState {
                 assertEquals(WIDTH - 1, result[2].getFloat(7), 0f, label + ": four proposals require W5 verification");
                 assertEquals(consumed - 1, result[2].getFloat(8), 0f, label + ": accepted drafts");
                 assertEquals(1, result[2].getFloat(9), 0f, label + ": exactly one speculative transaction");
-                if (selectMode) {
-                    // SELECT contract: zero routine recoveries, one selected commit.
-                    // The Packet 07 counters extend the P0 timing vector when the
-                    // native build carries them; until then the DSP_DIAG events in
-                    // the diagnostics file are the authority (SPEC_STATE_SELECT must
-                    // appear once per transaction, never SPEC_STATE_RERUN).
-                    assertTrue(result[2].length() <= 12 || (
-                            result[2].getFloat(11) == 1f && result[2].getFloat(12) == 0f),
-                            label + ": extended counters, when present, must show one commit / zero fallbacks");
-                }
+                // NOTE: the SELECT-vs-rerun distinction is NOT asserted here - the
+                // timing vector does not carry checkpoint counters. The SELECT proof
+                // asserts the current invocation's MTP_P0_CUDA summary and event tags
+                // from the native diagnostics ring (see the SELECT test).
                 for (int row = 0; row < consumed; row++) {
                     assertEquals(row == consumed - 1 ? EOS : DRAFT, result[0].getLong(row),
                             label + ": emitted token " + row);
@@ -200,15 +316,22 @@ public class TestMtpPrefixRerunState {
                 assertEquals(WIDTH, target.input("ids").size(1), "physical width must remain five");
                 assertEquals(consumed, target.input("actual_length").getLong(0),
                         label + ": authoritative rerun length, not full verification length");
-                checkNumerics(target, predictor, consumed, label);
-                assertEquals(START + consumed, positions.getLong(0), label + ": published position");
+                if (fullNumerics) {
+                    // Transactions verified with the full oracle all run from the reset
+                    // state. Multi-transaction continuations pass fullNumerics=false and
+                    // assert the pure-recurrence state themselves (their attention visible
+                    // set spans transactions, outside this single-transaction oracle).
+                    checkNumerics(target, predictor, consumed, label, selectMode);
+                    assertEquals(START + consumed, positions.getLong(0), label + ": published position");
+                }
             } finally {
                 for (INDArray array : result) array.close();
             }
         }
     }
 
-    private static void checkNumerics(Plan target, Plan predictor, int consumed, String label) {
+    private static void checkNumerics(Plan target, Plan predictor, int consumed, String label,
+                                      boolean selectMode) {
         // Independent row-by-row reference; no ND4J op or window graph is used here.
         double state = 2.0;
         double older = 0.25;
@@ -249,9 +372,23 @@ public class TestMtpPrefixRerunState {
         }
         target.assertInputBinding("conv");
         target.assertInputBinding("gdn");
-        assertEquals(state, target.input("gdn").getDouble(0), EPS, label + ": full GDN state");
-        assertEquals(older, target.input("conv").getDouble(0), EPS, label + ": conv older");
-        assertEquals(previous, target.input("conv").getDouble(1), EPS, label + ": conv newest");
+        String evidence = "";
+        if (selectMode) {
+            // The diagnostics ring still holds THIS invocation's events: the clear
+            // ran before the op and no other native invocation has happened. Read
+            // it right here so the numerical failure carries its evidence.
+            SelectSummary s = SelectSummary.parse(DspDiagnostics.getJsonReport());
+            evidence = " [P0 summary=" + s.summaryMessage
+                    + " selectEvents=" + s.selectEvents + " rerunEvents=" + s.rerunEvents
+                    + " ineligible=" + s.ineligibleMessages
+                    + " trail=" + s.selectTrail + "]";
+        }
+        assertEquals(state, target.input("gdn").getDouble(0), EPS,
+                label + ": full GDN state" + evidence);
+        assertEquals(older, target.input("conv").getDouble(0), EPS,
+                label + ": conv older" + evidence);
+        assertEquals(previous, target.input("conv").getDouble(1), EPS,
+                label + ": conv newest" + evidence);
         assertEquals(carry, predictor.input("carry").getDouble(0), EPS, label + ": pending carry");
         assertEquals(EOS, target.input("ids").getLong(0), label + ": target pending token");
         assertEquals(EOS, predictor.input("ids").getLong(0), label + ": predictor pending token");
@@ -514,6 +651,180 @@ public class TestMtpPrefixRerunState {
         @Override public void close() {
             if (binding != null) binding.close();
             graph.close();
+        }
+    }
+
+    /**
+     * Parses the SINGLE current-call MTP_P0_CUDA summary plus event tags out of
+     * the DspDiagnostics JSON report captured for exactly one native invocation.
+     *
+     * <p>The P0 summary is the MTP_P0_CUDA event emitted at the end of every
+     * decode call carrying key=value counters. This parser extracts its message
+     * field and the required counters; a missing, duplicated, or ambiguous
+     * summary is itself a failure, never substituted with zeros.</p>
+     */
+    static final class SelectSummary {
+        final String summaryMessage;
+        final int selectCommits;
+        final int selectFallbacks;
+        final int rerunEvents;
+        final int selectEvents;
+        final int ineligibleEvents;
+        final List<String> ineligibleMessages;
+        final int p0Summaries;
+        /** Every SELECT_COPY / SELECT_PROBE / SPEC_STATE_SELECT message in ring order. */
+        final List<String> selectTrail;
+
+        private SelectSummary(String summaryMessage, int selectCommits, int selectFallbacks,
+                              int rerunEvents, int selectEvents, int ineligibleEvents,
+                              List<String> ineligibleMessages, int p0Summaries,
+                              List<String> selectTrail) {
+            this.summaryMessage = summaryMessage;
+            this.selectCommits = selectCommits;
+            this.selectFallbacks = selectFallbacks;
+            this.rerunEvents = rerunEvents;
+            this.selectEvents = selectEvents;
+            this.ineligibleEvents = ineligibleEvents;
+            this.ineligibleMessages = ineligibleMessages;
+            this.p0Summaries = p0Summaries;
+            this.selectTrail = selectTrail;
+        }
+
+        /**
+         * Extract event messages from the serialized report. The JSON shape is the
+         * C++ DspDiagnostics serialization: an events array whose entries carry a
+         * message string field. Messages are matched on the MTP_P0_CUDA /
+         * SPEC_STATE_SELECT / SPEC_STATE_RERUN / SELECT_INELIGIBLE event TAGS -
+         * prefix matches on the message text, not arbitrary substring hits.
+         */
+        static SelectSummary parse(String jsonReport) {
+            List<String> messages = extractEventMessages(jsonReport);
+            String summary = null;
+            int p0Count = 0;
+            int selectCommits = -1;
+            int selectFallbacks = -1;
+            int rerun = 0;
+            int select = 0;
+            int ineligible = 0;
+            List<String> ineligibleMsgs = new ArrayList<>();
+            List<String> trail = new ArrayList<>();
+            for (String message : messages) {
+                if (message == null) continue;
+                if (message.startsWith("MTP_P0_CUDA ")) {
+                    p0Count++;
+                    summary = message;
+                    selectCommits = extractCounter(message, "checkpointSelectCommits");
+                    selectFallbacks = extractCounter(message, "checkpointSelectFallbacks");
+                } else if (message.startsWith("SPEC_STATE_SELECT")) {
+                    select++;
+                    trail.add(message);
+                } else if (message.startsWith("SPEC_STATE_RERUN")) {
+                    rerun++;
+                } else if (message.startsWith("SELECT_INELIGIBLE")) {
+                    ineligible++;
+                    ineligibleMsgs.add(message);
+                } else if (message.startsWith("SELECT_COPY") || message.startsWith("SELECT_PROBE")) {
+                    trail.add(message);
+                }
+            }
+            return new SelectSummary(summary, selectCommits, selectFallbacks,
+                    rerun, select, ineligible, ineligibleMsgs, p0Count, trail);
+        }
+
+        /** Pull event "message" fields from the report's events array. */
+        private static List<String> extractEventMessages(String json) {
+            List<String> out = new ArrayList<>();
+            if (json == null || json.isEmpty()) return out;
+            // The events array entries are flat JSON objects with a "message" key.
+            // Scan message occurrences and decode the JSON string payload.
+            int idx = 0;
+            while (true) {
+                int keyAt = json.indexOf("\"message\"", idx);
+                if (keyAt < 0) break;
+                int colonAt = json.indexOf(':', keyAt + "\"message\"".length());
+                if (colonAt < 0) break;
+                int quoteAt = json.indexOf('"', colonAt + 1);
+                if (quoteAt < 0) break;
+                StringBuilder sb = new StringBuilder();
+                int cursor = quoteAt + 1;
+                boolean closed = false;
+                while (cursor < json.length()) {
+                    char c = json.charAt(cursor);
+                    if (c == '\\' && cursor + 1 < json.length()) {
+                        char next = json.charAt(cursor + 1);
+                        switch (next) {
+                            case 'n': sb.append('\n'); break;
+                            case 't': sb.append('\t'); break;
+                            case '"': sb.append('"'); break;
+                            case '\\': sb.append('\\'); break;
+                            default: sb.append(next);
+                        }
+                        cursor += 2;
+                        continue;
+                    }
+                    if (c == '"') {
+                        closed = true;
+                        cursor++;
+                        break;
+                    }
+                    sb.append(c);
+                    cursor++;
+                }
+                if (!closed) break;
+                out.add(sb.toString());
+                idx = cursor;
+            }
+            return out;
+        }
+
+        /** Extract an integer key=value counter from a P0 summary message; -1 if absent. */
+        private static int extractCounter(String message, String key) {
+            String needle = key + "=";
+            int at = message.indexOf(needle);
+            if (at < 0) return -1;
+            int start = at + needle.length();
+            int end = start;
+            while (end < message.length() && (Character.isDigit(message.charAt(end))
+                    || (end == start && message.charAt(end) == '-'))) {
+                end++;
+            }
+            try {
+                return Integer.parseInt(message.substring(start, end));
+            } catch (NumberFormatException e) {
+                return -1;
+            }
+        }
+
+        /** The SELECT contract: exactly one summary, one commit, zero fallbacks/reruns. */
+        void assertSelectContract(int consumed) {
+            String context = "consumed=" + consumed + " ";
+            String evidence = context + "summary=" + summaryMessage
+                    + " events: SPEC_STATE_SELECT=" + selectEvents
+                    + " SPEC_STATE_RERUN=" + rerunEvents
+                    + " SELECT_INELIGIBLE=" + ineligibleEvents
+                    + (ineligibleMessages.isEmpty() ? "" : " records=" + ineligibleMessages);
+            assertEquals(1, p0Summaries,
+                    context + "expected EXACTLY ONE MTP_P0_CUDA summary for the observed invocation; "
+                    + (p0Summaries == 0
+                        ? "the diagnostics ring carried none - observability failure, not a pass"
+                        : "ambiguous: multiple decode calls inside the observation interval")
+                    + "; " + evidence);
+            String summaryText = summaryMessage == null ? "<no summary>" : summaryMessage;
+            assertTrue(selectCommits >= 0,
+                    context + "checkpointSelectCommits MISSING from summary: " + summaryText);
+            assertTrue(selectFallbacks >= 0,
+                    context + "checkpointSelectFallbacks MISSING from summary: " + summaryText);
+            assertEquals(1, selectCommits,
+                    context + "exactly one checkpoint-select commit required; " + evidence);
+            assertEquals(0, selectFallbacks,
+                    context + "zero checkpoint-select fallbacks required; " + evidence);
+            assertEquals(1, selectEvents,
+                    context + "exactly one SPEC_STATE_SELECT event required; " + evidence);
+            assertEquals(0, rerunEvents,
+                    context + "zero SPEC_STATE_RERUN events required (a fallback-only pass is a failure); "
+                            + evidence);
+            assertEquals(0, ineligibleEvents,
+                    context + "zero SELECT_INELIGIBLE events required; " + evidence);
         }
     }
 }

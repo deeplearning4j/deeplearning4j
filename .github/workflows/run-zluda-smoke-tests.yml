@@ -34,11 +34,11 @@ on:
       backendArtifactId:
         description: 'CUDA backend artifact'
         required: false
-        default: 'nd4j-cuda-12.9'
+        default: 'nd4j-cuda-13.1'
         type: choice
         options:
-          - nd4j-cuda-12.9
-          - nd4j-cuda-12.9
+          - nd4j-cuda-13.1
+          - nd4j-cuda-13.1
 
       classifier:
         description: 'Platform classifier for the backend jars'

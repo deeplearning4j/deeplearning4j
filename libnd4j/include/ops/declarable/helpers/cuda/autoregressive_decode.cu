@@ -3085,6 +3085,15 @@ void autoregressiveDecode(
     std::vector<NDArray*> selectScratchSrc;
     std::vector<NDArray*> selectScratchDst;
 
+    // PACKET 09 discriminator: pinned S0/S1/D1 probe storage for the SELECT copy.
+    // Values are D2H-queued on the decode stream in transaction order and only
+    // decoded after the existing completion boundary; slots are per-layer so an
+    // async later sample cannot overwrite an earlier one.
+    constexpr int SELECT_PROBE_SLOTS = 8;
+    uint64_t* pinnedSelectProbeSrc = nullptr;
+    uint64_t* pinnedSelectProbeDst = nullptr;
+    int selectProbeSlot = 0;
+
     for (int step = 0; step < maxNewTokens; step++) {
         // A rollback snapshot belongs to one commit transaction, not one restore.
         kvRowSnapshotBase = -1;
@@ -4006,6 +4015,15 @@ void autoregressiveDecode(
                 // counted in checkpointSelectFallbacks.
                 bool selectEligible = config->mtpPrefixSelectMode == 2
                     && (config->mtpPrefixGdnLayerCount + config->mtpPrefixConvLayerCount) > 0;
+                // Packet 07/09 pre-loop fallback reporting: every rejection BEFORE
+                // the layer loops gets its own reason record.
+                if (!selectEligible) {
+                    DSP_DIAG(KV_CACHE,
+                             "SELECT_INELIGIBLE reason=%s mode=%d gdnLayers=%d convLayers=%d",
+                             config->mtpPrefixSelectMode != 2 ? "mode-not-select" : "empty-layer-mapping",
+                             config->mtpPrefixSelectMode,
+                             config->mtpPrefixGdnLayerCount, config->mtpPrefixConvLayerCount);
+                }
                 // Per-invocation scratch, allocated once before the step loop and
                 // cleared per step (reviewer packet 07: thread-local vectors retain
                 // pointers across calls; per-invocation ownership stays explicit).
@@ -4017,79 +4035,170 @@ void autoregressiveDecode(
                     // consumedCount must address a row of THIS verification window.
                     if (consumedCount < 1) {
                         selectEligible = false;
+                        DSP_DIAG(KV_CACHE,
+                                 "SELECT_INELIGIBLE reason=invalid-consumed-count consumed=%d mode=%d",
+                                 consumedCount, config->mtpPrefixSelectMode);
                     }
+                }
+                if (selectEligible && (config->actualSequenceLengthExtIdx < 0
+                        || config->actualSequenceLengthExtIdx >= numExtInputs
+                        || extInputs[config->actualSequenceLengthExtIdx] == nullptr)) {
+                    selectEligible = false;
+                    DSP_DIAG(KV_CACHE,
+                             "SELECT_INELIGIBLE reason=actual-length-control-unavailable extIdx=%d",
+                             config->actualSequenceLengthExtIdx);
                 }
                 if (selectEligible) {
                     selectPrefixSrc.reserve(config->mtpPrefixGdnLayerCount
                                             + config->mtpPrefixConvLayerCount);
                     selectStateDst.reserve(config->mtpPrefixGdnLayerCount
                                            + config->mtpPrefixConvLayerCount);
-                    auto resolveLayer = [&](int stateExtIdx, int prefixOutIdx) -> bool {
+                    // Genuine dense-contiguity check. ews() alone is NOT proof of
+                    // density: for singleton dimensions NDArray::ews() reports 0
+                    // (shape.cpp returns 0 when a dim size is 1), yet the storage can
+                    // be perfectly contiguous - dstShape=[1,1,2] dstStride=[2,2,1]
+                    // is dense. Verify via the C-order stride contract instead:
+                    // stride[d] == product of sizes[d+1..rank), plus row-major flag.
+                    auto isDenseCOrder = [](NDArray* a) -> bool {
+                        if (a == nullptr) return false;
+                        if (a->isEmpty()) return false;
+                        const int rank = a->rankOf();
+                        if (a->ordering() != 'c') return false;
+                        if (rank == 0) return true;
+                        LongType expected = 1;
+                        for (int d = rank - 1; d >= 0; --d) {
+                            if (a->sizeAt(d) != 1 && a->strideAt(d) != expected) {
+                                return false;
+                            }
+                            // Singleton dims may carry any stride; non-singleton dims
+                            // must follow the exact C-order packing.
+                            expected *= a->sizeAt(d);
+                        }
+                        return true;
+                    };
+                    // Host-side metadata snapshot helpers for the rejection record.
+                    // Built ONLY from declared NDArray APIs (rankOf/sizeAt/strideAt/
+                    // ordering/ews/dataType/lengthOf); kept alive through the
+                    // DSP_DIAG call below. No tensor values, no readback.
+                    auto shapeString = [](NDArray* a) {
+                        std::string s = "[";
+                        if (a == nullptr) return std::string("null");
+                        for (int d = 0; d < a->rankOf(); ++d) {
+                            if (d) s += ",";
+                            s += std::to_string(static_cast<long long>(a->sizeAt(d)));
+                        }
+                        s += "]";
+                        return s;
+                    };
+                    auto strideString = [](NDArray* a) {
+                        std::string s = "[";
+                        if (a == nullptr) return std::string("null");
+                        for (int d = 0; d < a->rankOf(); ++d) {
+                            if (d) s += ",";
+                            s += std::to_string(static_cast<long long>(a->strideAt(d)));
+                        }
+                        s += "]";
+                        return s;
+                    };
+                    // Resolves one layer and reports the FIRST failed predicate with
+                    // full host-side metadata when it fails. Returns the failure
+                    // reason, or nullptr when the layer is admitted.
+                    auto resolveLayer = [&](const char* kind, int pairOrdinal,
+                            int stateExtIdx, int prefixOutIdx) -> const char* {
                         NDArray* dst = (stateExtIdx >= 0 && stateExtIdx < numExtInputs)
                             ? extInputs[stateExtIdx] : nullptr;
                         NDArray* src = (prefixOutIdx >= 0 && prefixOutIdx < numPlanOutputs)
                             ? planOutputs[prefixOutIdx] : nullptr;
-                        if (dst == nullptr || src == nullptr
-                                || src->rankOf() != dst->rankOf() + 1
-                                || src->sizeAt(0) < consumedCount) return false;
-                        // FULL trailing-dim match including the last state dimension:
-                        // src [W, B, s0, s1, ...] must satisfy src->sizeAt(d+1) ==
-                        // dst->sizeAt(d) for EVERY d in [0, dst->rankOf()). A [1,2,8,8]
-                        // state must be rejected against a [W,1,2,8,7] checkpoint - the
-                        // old loop stopped one dimension early and would compute a wrong
-                        // row offset/byte count.
-                        for (int d = 0; d < dst->rankOf(); ++d) {
-                            if (src->sizeAt(d + 1) != dst->sizeAt(d)) return false;
+                        const char* reason = nullptr;
+                        if (dst == nullptr) {
+                            reason = "missing-destination";
+                        } else if (src == nullptr) {
+                            reason = "missing-checkpoint-output";
+                        } else if (src->rankOf() != dst->rankOf() + 1) {
+                            reason = "wrong-rank";
+                        } else if (src->sizeAt(0) < consumedCount) {
+                            reason = "insufficient-checkpoint-capacity";
+                        } else {
+                            for (int d = 0; d < dst->rankOf(); ++d) {
+                                // FULL trailing-dim match including the last state
+                                // dimension: src [W, B, s0, ...] needs src->sizeAt(d+1)
+                                // == dst->sizeAt(d) for every d.
+                                if (src->sizeAt(d + 1) != dst->sizeAt(d)) {
+                                    reason = "trailing-dimension-mismatch";
+                                    break;
+                                }
+                            }
                         }
-                        if (src->dataType() != dst->dataType()) return false;
-                        // Dense supported C-order storage for the raw-copy path.
-                        if (src->ordering() != 'c' || dst->ordering() != 'c') return false;
-                        if (src->ews() != 1 || dst->ews() != 1) return false;
-                        // No source/destination overlap.
-                        const char* srcB = static_cast<const char*>(src->specialBuffer());
-                        char* dstB = static_cast<char*>(dst->specialBuffer());
-                        const size_t bytes = static_cast<size_t>(dst->lengthOf())
-                            * static_cast<size_t>(dst->sizeOfT());
-                        if (srcB < dstB + bytes && dstB < srcB + bytes) return false;
-                        selectPrefixSrc.push_back(src);
-                        selectStateDst.push_back(dst);
-                        return true;
+                        if (reason == nullptr && src->dataType() != dst->dataType()) {
+                            reason = "dtype-mismatch";
+                        }
+                        if (reason == nullptr && !isDenseCOrder(src)) {
+                            reason = "source-layout";
+                        }
+                        if (reason == nullptr && !isDenseCOrder(dst)) {
+                            reason = "destination-layout";
+                        }
+                        if (reason == nullptr) {
+                            // Overlap over the FULL checkpoint span (all W rows), not
+                            // just the selected row: any overlap between the whole
+                            // prefix storage and the destination disqualifies.
+                            const char* srcB = static_cast<const char*>(src->specialBuffer());
+                            char* dstB = static_cast<char*>(dst->specialBuffer());
+                            const size_t srcBytes = static_cast<size_t>(src->lengthOf())
+                                * static_cast<size_t>(src->sizeOfT());
+                            const size_t dstBytes = static_cast<size_t>(dst->lengthOf())
+                                * static_cast<size_t>(dst->sizeOfT());
+                            if (srcB < dstB + dstBytes && dstB < srcB + srcBytes) {
+                                reason = "overlapping-storage";
+                            }
+                        }
+                        if (reason != nullptr) {
+                            const std::string dstShape = shapeString(dst);
+                            const std::string srcShape = shapeString(src);
+                            const std::string dstStride = strideString(dst);
+                            const std::string srcStride = strideString(src);
+                            DSP_DIAG(KV_CACHE,
+                                     "SELECT_INELIGIBLE reason=%s layer=%s.%d consumed=%d "
+                                     "stateExtIdx=%d prefixOutIdx=%d "
+                                     "dstShape=%s srcShape=%s dstStride=%s srcStride=%s "
+                                     "dstOrder=%c srcOrder=%c dstEws=%lld srcEws=%lld "
+                                     "dstDtype=%d srcDtype=%d "
+                                     "dstWrapper=%p dstDevice=%p srcWrapper=%p srcDevice=%p",
+                                     reason, kind, pairOrdinal, consumedCount,
+                                     stateExtIdx, prefixOutIdx,
+                                     dstShape.c_str(), srcShape.c_str(),
+                                     dstStride.c_str(), srcStride.c_str(),
+                                     dst != nullptr ? dst->ordering() : '?',
+                                     src != nullptr ? src->ordering() : '?',
+                                     dst != nullptr ? (long long)dst->ews() : -1LL,
+                                     src != nullptr ? (long long)src->ews() : -1LL,
+                                     dst != nullptr ? (int)dst->dataType() : -1,
+                                     src != nullptr ? (int)src->dataType() : -1,
+                                     (void*)dst,
+                                     dst != nullptr ? dst->specialBuffer() : nullptr,
+                                     (void*)src,
+                                     src != nullptr ? src->specialBuffer() : nullptr);
+                        } else {
+                            // Admitted: record the copy pair. Without this the commit
+                            // block runs with an EMPTY destination list (observed as
+                            // SPEC_STATE_SELECT layers=0, checkpointSelectBytes=0) and
+                            // no state is written at all.
+                            selectPrefixSrc.push_back(src);
+                            selectStateDst.push_back(dst);
+                        }
+                        return reason;
                     };
                     for (int s = 0; s < config->mtpPrefixGdnLayerCount && selectEligible; s++) {
-                        selectEligible = resolveLayer(config->mtpPrefixGdnInputIndices[s],
-                                                      config->mtpPrefixGdnOutputIndices[s]);
-                        if (!selectEligible) {
-                            NDArray* dst = (config->mtpPrefixGdnInputIndices[s] >= 0
-                                    && config->mtpPrefixGdnInputIndices[s] < numExtInputs)
-                                ? extInputs[config->mtpPrefixGdnInputIndices[s]] : nullptr;
-                            NDArray* src = (config->mtpPrefixGdnOutputIndices[s] >= 0
-                                    && config->mtpPrefixGdnOutputIndices[s] < numPlanOutputs)
-                                ? planOutputs[config->mtpPrefixGdnOutputIndices[s]] : nullptr;
-                            DSP_DIAG(KV_CACHE,
-                                     "SELECT_INELIGIBLE layer=gdn.%d consumed=%d "
-                                     "dst=%p src=%p dstShape=%s srcShape=%s",
-                                     s, consumedCount, (void*)dst, (void*)src,
-                                     dst != nullptr ? dst->shapeInfoAsString() : "null",
-                                     src != nullptr ? src->shapeInfoAsString() : "null");
-                        }
+                        const char* reason = resolveLayer("gdn", s,
+                                config->mtpPrefixGdnInputIndices[s],
+                                config->mtpPrefixGdnOutputIndices[s]);
+                        if (reason != nullptr) selectEligible = false;
                     }
                     for (int s = 0; s < config->mtpPrefixConvLayerCount && selectEligible; s++) {
-                        selectEligible = resolveLayer(config->mtpPrefixConvInputIndices[s],
-                                                      config->mtpPrefixConvOutputIndices[s]);
-                        if (!selectEligible) {
-                            NDArray* dst = (config->mtpPrefixConvInputIndices[s] >= 0
-                                    && config->mtpPrefixConvInputIndices[s] < numExtInputs)
-                                ? extInputs[config->mtpPrefixConvInputIndices[s]] : nullptr;
-                            NDArray* src = (config->mtpPrefixConvOutputIndices[s] >= 0
-                                    && config->mtpPrefixConvOutputIndices[s] < numPlanOutputs)
-                                ? planOutputs[config->mtpPrefixConvOutputIndices[s]] : nullptr;
-                            DSP_DIAG(KV_CACHE,
-                                     "SELECT_INELIGIBLE layer=conv.%d consumed=%d "
-                                     "dst=%p src=%p dstShape=%s srcShape=%s",
-                                     s, consumedCount, (void*)dst, (void*)src,
-                                     dst != nullptr ? dst->shapeInfoAsString() : "null",
-                                     src != nullptr ? src->shapeInfoAsString() : "null");
-                        }
+                        const char* reason = resolveLayer("conv", s,
+                                config->mtpPrefixConvInputIndices[s],
+                                config->mtpPrefixConvOutputIndices[s]);
+                        if (reason != nullptr) selectEligible = false;
                     }
                 }
                 if (selectEligible) {
@@ -4105,18 +4214,84 @@ void autoregressiveDecode(
                         // and both are dense C-order, so row stride == state length).
                         const size_t slotElems = static_cast<size_t>(dst->lengthOf());
                         const size_t rowBytes = slotElems * static_cast<size_t>(dst->sizeOfT());
-                        // Source row base from the validated geometry.
-                        void* srcBase = static_cast<char*>(src->specialBuffer())
+                        // S0 PROBE (pre-preparation): capture the selected-row source
+                        // bytes and BOTH rows of the checkpoint (tiny fixture: W=5,
+                        // state is 1-4 floats), plus full identity metadata, BEFORE
+                        // any preparation can change the picture. Sample storage is
+                        // dedicated pinned memory retained through the final sync;
+                        // values are only read at the completion boundary.
+                        uint64_t* selProbeRow = nullptr;
+                        uint64_t* selProbeRows = nullptr;
+                        NDArray* srcDbOwner = nullptr;
+                        NDArray* dstDbOwner = nullptr;
+                        void* srcPrepDevice = src->specialBuffer();
+                        void* dstPrepDevice = dst->specialBuffer();
+                        const void* srcBaseBeforePrep = static_cast<const char*>(src->specialBuffer())
                             + static_cast<size_t>(selectedRow) * slotElems * src->sizeOfT();
+                        if (DSP_DIAG_ENABLED(KV_CACHE) && rowBytes <= 16) {
+                            if (pinnedSelectProbeSrc == nullptr) {
+                                cudaError_t pinErr = cudaMallocHost(&pinnedSelectProbeSrc,
+                                    SELECT_PROBE_SLOTS * 2 * sizeof(uint64_t));
+                                if (pinErr != cudaSuccess) pinnedSelectProbeSrc = nullptr;
+                            }
+                            if (pinnedSelectProbeDst == nullptr) {
+                                cudaError_t pinErr = cudaMallocHost(&pinnedSelectProbeDst,
+                                    SELECT_PROBE_SLOTS * 2 * sizeof(uint64_t));
+                                if (pinErr != cudaSuccess) pinnedSelectProbeDst = nullptr;
+                            }
+                            if (pinnedSelectProbeSrc != nullptr && pinnedSelectProbeDst != nullptr) {
+                                selProbeRow = pinnedSelectProbeSrc + 2 * selectProbeSlot;
+                                selProbeRows = pinnedSelectProbeSrc
+                                    + 2 * (SELECT_PROBE_SLOTS + selectProbeSlot);
+                                // Selected-row bytes.
+                                cudaMemcpyAsync(selProbeRow, srcBaseBeforePrep, rowBytes,
+                                    cudaMemcpyDeviceToHost, *stream);
+                                // Row 0 and row 1 of the checkpoint (the discriminator
+                                // case: distinguishes wrong-row from bad-tensor).
+                                const size_t probeRows = std::min<size_t>(2, src->sizeAt(0));
+                                cudaMemcpyAsync(selProbeRows, src->specialBuffer(),
+                                    probeRows * rowBytes, cudaMemcpyDeviceToHost, *stream);
+                                srcDbOwner = src;
+                                dstDbOwner = dst;
+                            }
+                        }
                         // BOTH sides participate in access bookkeeping: the checkpoint
                         // read and the state write are ordered on the same stream.
                         NDArray::prepareSpecialUse({dst}, {src});
-                        auto selErr = cudaMemcpyAsync(dst->specialBuffer(), srcBase, rowBytes,
+                        // S1 PROBE: the EXACT addresses the copy will use, acquired
+                        // AFTER preparation - the pre-computed srcBase is not assumed
+                        // to remain valid across preparation.
+                        const void* srcBasePostPrep = static_cast<const char*>(src->specialBuffer())
+                            + static_cast<size_t>(selectedRow) * slotElems * src->sizeOfT();
+                        void* dstPostPrep = dst->specialBuffer();
+                        auto selErr = cudaMemcpyAsync(dst->specialBuffer(), srcBasePostPrep, rowBytes,
                             cudaMemcpyDeviceToDevice, *stream);
                         p0.checkpointSelectBytes += static_cast<std::uint64_t>(rowBytes);
                         REQUIRE_TRUE(selErr == cudaSuccess, 0,
                             "autoregressive_decode: prefix checkpoint select copy failed: %s",
                             cudaGetErrorString(selErr));
+                        // D1 PROBE: read the exact destination address immediately
+                        // after the D2D copy, on the same ordered stream, into the
+                        // destination probe slot for this layer.
+                        uint64_t* dstProbe = nullptr;
+                        if (DSP_DIAG_ENABLED(KV_CACHE) && rowBytes <= 16
+                                && pinnedSelectProbeDst != nullptr) {
+                            dstProbe = pinnedSelectProbeDst + 2 * selectProbeSlot;
+                            cudaMemcpyAsync(dstProbe, dstPostPrep, rowBytes,
+                                cudaMemcpyDeviceToHost, *stream);
+                            selectProbeSlot = (selectProbeSlot + 1) % SELECT_PROBE_SLOTS;
+                        }
+                        DSP_DIAG(KV_CACHE,
+                                 "SELECT_COPY layer=%zu srcBaseBeforePrep=%p srcBasePostPrep=%p "
+                                 "dstBeforePrep=%p dstPostPrep=%p rowBytes=%zu row=%lld "
+                                 "srcDb=%p dstDb=%p changed=%d",
+                                 li, const_cast<void*>(srcBaseBeforePrep),
+                                 const_cast<void*>(srcBasePostPrep),
+                                 srcPrepDevice, dstPostPrep, rowBytes,
+                                 static_cast<long long>(selectedRow),
+                                 (void*)srcDbOwner, (void*)dstDbOwner,
+                                 (srcPrepDevice != dstPostPrep
+                                  || srcBaseBeforePrep != srcBasePostPrep) ? 1 : 0);
                         NDArray::registerSpecialUse({dst}, {src});
                     }
                     // Advance actual_sequence_length to the consumed prefix: the
@@ -5683,6 +5858,38 @@ void autoregressiveDecode(
              static_cast<int>(plan->getPlanPhase()),
              config->allowMultiRowCommit ? 1 : 0, specK,
              config->windowMax);
+
+    // PACKET 09 discriminator: after the final completion boundary, decode the
+    // queued S0/S1/D1 probe samples. The final stream sync above guarantees every
+    // async D2H sample has landed; no new synchronization is added.
+    if (pinnedSelectProbeSrc != nullptr && pinnedSelectProbeDst != nullptr
+            && p0.checkpointSelectBytes > 0) {
+        const int layers = std::min(selectProbeSlot, SELECT_PROBE_SLOTS);
+        for (int probe = 0; probe < layers; probe++) {
+            const uint64_t* srcRow = pinnedSelectProbeSrc + 2 * probe;
+            const uint64_t* srcRows = pinnedSelectProbeSrc
+                + 2 * (SELECT_PROBE_SLOTS + probe);
+            const uint64_t* dstAfter = pinnedSelectProbeDst + 2 * probe;
+            DSP_DIAG(KV_CACHE,
+                     "SELECT_PROBE slot=%d srcRow=[%016llx,%016llx] "
+                     "srcRows01=[%016llx,%016llx] dstAfter=[%016llx,%016llx]",
+                     probe,
+                     static_cast<unsigned long long>(srcRow[0]),
+                     static_cast<unsigned long long>(srcRow[1]),
+                     static_cast<unsigned long long>(srcRows[0]),
+                     static_cast<unsigned long long>(srcRows[1]),
+                     static_cast<unsigned long long>(dstAfter[0]),
+                     static_cast<unsigned long long>(dstAfter[1]));
+        }
+    }
+    if (pinnedSelectProbeSrc != nullptr) {
+        cudaFreeHost(pinnedSelectProbeSrc);
+        pinnedSelectProbeSrc = nullptr;
+    }
+    if (pinnedSelectProbeDst != nullptr) {
+        cudaFreeHost(pinnedSelectProbeDst);
+        pinnedSelectProbeDst = nullptr;
+    }
 }
 
 }  // namespace helpers
