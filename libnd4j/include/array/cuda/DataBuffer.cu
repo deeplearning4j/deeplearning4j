@@ -907,7 +907,43 @@ void DataBuffer::allocateSpecial() {
     }
 
     if (_workspace == nullptr) {
-      if (!memory::MemoryCounter::getInstance().validate(getLenInBytes())) {
+      bool admitted = memory::MemoryCounter::getInstance().validate(getLenInBytes());
+      // ── Pool-aware admission credit ──────────────────────────────────────
+      // The CUDA async pool retains its reservation after stream-ordered frees
+      // (trim points are explicit barriers: plan teardown, cache Round 3). A
+      // counter-only refusal therefore lies when the pool already holds
+      // reserved-but-unused physical memory that it can serve without growing
+      // the reservation: if counter + size - poolFreeReserved <= limit, this
+      // allocation reuses blocks the pool owns and the effective footprint
+      // stays within the limit. Physical free memory is NOT credited here —
+      // only memory the pool itself has already reserved, so a fresh growth
+      // beyond the limit still refuses.
+      if (!admitted) {
+        size_t poolUsed = 0, poolReserved = 0;
+        memory::CudaMemoryPool::getInstance().getStats(deviceId, poolUsed, poolReserved);
+        const size_t poolFreeReserved =
+            poolReserved > poolUsed ? poolReserved - poolUsed : 0;
+        const LongType effective =
+            static_cast<LongType>(getLenInBytes()) - static_cast<LongType>(poolFreeReserved);
+        if (effective <= 0 ||
+            memory::MemoryCounter::getInstance().validateDevice(deviceId, effective)) {
+          admitted = true;
+          DSP_DIAG(MEMORY,
+                   "ALLOC_POOL_CREDIT: db=%p bytes=%lld dev=%d counterWouldRefuse=1 poolFreeReserved=%zuMB — admitted from pool-owned blocks",
+                   (void*)this, (long long)getLenInBytes(), deviceId,
+                   poolFreeReserved / (1024 * 1024));
+        } else {
+          DSP_DIAG(MEMORY,
+                   "ALLOC_REFUSED: db=%p bytes=%lld dev=%d counterFree=%lldMB poolFreeReserved=%zuMB — shortfall=%lldMB",
+                   (void*)this, (long long)getLenInBytes(), deviceId,
+                   (long long)(memory::MemoryCounter::getInstance().deviceLimit(deviceId) -
+                               memory::MemoryCounter::getInstance().allocatedDevice(deviceId)) / (1024 * 1024),
+                   poolFreeReserved / (1024 * 1024),
+                   (long long)(effective - (memory::MemoryCounter::getInstance().deviceLimit(deviceId) -
+                                            memory::MemoryCounter::getInstance().allocatedDevice(deviceId))) / (1024 * 1024));
+        }
+      }
+      if (!admitted) {
         std::string errorMessage;
         errorMessage += "DataBuffer::allocateSpecial: ";
         errorMessage += "Requested amount exceeds device limits";
@@ -2284,13 +2320,38 @@ void DataBuffer::migrate() {
 
   // Requested-device admission happens before any target allocation. Padding is
   // physical capacity only: MemoryCounter consistently charges logical bytes.
+  // Pool-aware admission credit: a counter refusal is over-conservative when the
+  // async pool already holds reserved-but-unused physical memory on the target
+  // device (trim points are explicit barriers, so the reservation lags frees).
+  // The pool can serve the new block from memory it owns, so the EFFECTIVE
+  // footprint (counter + size - poolFreeReserved) is what must fit the limit.
+  // Fresh growth beyond the limit still refuses — only pool-owned blocks are
+  // credited, never raw cudaMemGetInfo free memory.
   if (!counter.transferDeviceAllocation(oldChargeDevice, oldCharge, requestedDevice, bytes, false)) {
-    sd_printf("MIGRATION_ADMISSION_REJECT db=%p oldBuffer=%p physicalSourceDevice=%d oldChargeDevice=%d oldOwner=%d oldCaptureWorkspace=%d host=%d oldCharge=%lld bytes=%lld requestedDevice=%d\n",
-              static_cast<void*>(this), oldBuffer, oldLocation.device, oldChargeDevice,
-              static_cast<int>(oldOwner), static_cast<int>(oldCaptureWorkspace),
-              static_cast<int>(oldLocation.host), static_cast<long long>(oldCharge),
-              static_cast<long long>(bytes), requestedDevice);
-    THROW_EXCEPTION("DataBuffer::migrate: requested target exceeds device or DEVICE-group memory limits");
+    bool poolCreditAdmitted = false;
+    size_t poolUsed = 0, poolReserved = 0;
+    memory::CudaMemoryPool::getInstance().getStats(requestedDevice, poolUsed, poolReserved);
+    const size_t poolFreeReserved =
+        poolReserved > poolUsed ? poolReserved - poolUsed : 0;
+    const LongType effectiveTarget =
+        static_cast<LongType>(bytes) - static_cast<LongType>(poolFreeReserved);
+    if (effectiveTarget <= 0 ||
+        counter.transferDeviceAllocation(oldChargeDevice, oldCharge, requestedDevice,
+                                         effectiveTarget, false)) {
+      poolCreditAdmitted = true;
+      DSP_DIAG(MEMORY,
+               "MIGRATE_POOL_CREDIT: db=%p bytes=%lld dev=%d poolFreeReserved=%zuMB — counter would refuse, admitted against pool-owned blocks",
+               (void*)this, (long long)bytes, requestedDevice,
+               poolFreeReserved / (1024 * 1024));
+    }
+    if (!poolCreditAdmitted) {
+      sd_printf("MIGRATION_ADMISSION_REJECT db=%p oldBuffer=%p physicalSourceDevice=%d oldChargeDevice=%d oldOwner=%d oldCaptureWorkspace=%d host=%d oldCharge=%lld bytes=%lld requestedDevice=%d\n",
+                static_cast<void*>(this), oldBuffer, oldLocation.device, oldChargeDevice,
+                static_cast<int>(oldOwner), static_cast<int>(oldCaptureWorkspace),
+                static_cast<int>(oldLocation.host), static_cast<long long>(oldCharge),
+                static_cast<long long>(bytes), requestedDevice);
+      THROW_EXCEPTION("DataBuffer::migrate: requested target exceeds device or DEVICE-group memory limits");
+    }
   }
 
   auto* callerStream = LaunchContext::defaultContext()->getCudaStream();
@@ -2372,12 +2433,29 @@ void DataBuffer::migrate() {
     const bool remoteDeviceSource = !copyPrimary && oldLocation.type == cudaMemoryTypeDevice &&
                                     oldLocation.device != candidate.device;
     if (remoteDeviceSource && !pool.isPeerAccessEnabled(candidate.device, oldLocation.device)) {
-      MigrationAllocation staging(pool, oldLocation.device);
-      AffinityManager::setCurrentNativeDevice(oldLocation.device);
-      staging.pointer = pool.allocatePinnedHost(allocSize);
-      if (staging.pointer == nullptr)
+      // Per-thread reusable staging scratch: pinned allocation is expensive
+      // page-locking work and the pinned budget is shared with failover
+      // storage. Migrate can fire hundreds of times per plan run, so a fresh
+      // allocate/free per call churns the pinned pool and transiently doubles
+      // pinned pressure. The scratch grows to the largest migrate seen on
+      // this thread and is retired by CudaMemoryPool::release() with every
+      // other tracked host allocation — never per call.
+      thread_local void* stageScratch = nullptr;
+      thread_local size_t stageScratchCap = 0;
+      if (stageScratchCap < allocSize) {
+        if (stageScratch != nullptr) {
+          pool.freePinnedHost(stageScratch);
+          stageScratch = nullptr;
+          stageScratchCap = 0;
+        }
+        stageScratch = pool.allocatePinnedHost(allocSize);
+        if (stageScratch != nullptr) stageScratchCap = allocSize;
+      }
+      void* stage = stageScratch;
+      if (stage == nullptr)
         THROW_EXCEPTION("DataBuffer::migrate: remote-source pinned staging allocation failed");
-      err = memory::CudaMemoryPool::memcpyAsync(staging.pointer, copySource, bytes,
+      AffinityManager::setCurrentNativeDevice(oldLocation.device);
+      err = memory::CudaMemoryPool::memcpyAsync(stage, copySource, bytes,
                                                 cudaMemcpyDeviceToHost, copyStream);
       if (err != cudaSuccess) throwCudaStatus("DataBuffer::migrate: remote-source staging copy failed", err);
       auto stageErr = cudaStreamSynchronize(copyStream);
@@ -2387,17 +2465,15 @@ void DataBuffer::migrate() {
       copyStream = cudaStreamPerThread;
       // Source is host memory now: visible from the destination context, so the
       // Default-direction copy above is valid for managed and pinned targets.
-      err = memory::CudaMemoryPool::memcpyAsync(candidate.pointer, staging.pointer, bytes,
+      err = memory::CudaMemoryPool::memcpyAsync(candidate.pointer, stage, bytes,
                                                 cudaMemcpyDefault, copyStream);
-      // The scoped staging destructor below retires the pinned buffer on the
-      // source device WITHOUT cross-stream ordering against this per-thread
-      // copy. Complete the copy here so retirement can never race the read.
+      // The scratch is reused by later migrates on this thread; complete the
+      // copy here so reuse can never race this read.
       if (err == cudaSuccess) {
         auto stageCopyErr = cudaStreamSynchronize(copyStream);
         if (stageCopyErr != cudaSuccess)
           throwCudaStatus("DataBuffer::migrate: staging copy completion failed", stageCopyErr);
       }
-      // staging destructor retires the pinned buffer on the source device.
     } else if (!copyPrimary && oldLocation.type == cudaMemoryTypeDevice && target.type == cudaMemoryTypeDevice &&
         oldLocation.device != candidate.device) {
       err = memory::CudaMemoryPool::memcpyPeerAsync(candidate.pointer, candidate.device, copySource, oldLocation.device, bytes, copyStream);
