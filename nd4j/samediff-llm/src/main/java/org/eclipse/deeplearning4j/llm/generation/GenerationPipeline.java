@@ -3932,35 +3932,53 @@ public class GenerationPipeline implements AutoCloseable {
         // captured decode plan replays (no per-generate re-warm). The reuse path keeps the plan, refills
         // the retained (stable-address) buffers in place, and skips the re-freeze. Fresh path otherwise.
         //
-        // ONE-SHOT TEARDOWN: reuse is only sound when the same prompt content recurs. The native
-        // plan cache keys on placeholder CONTENT hashes, so each distinct prompt builds a NEW
-        // GB-scale plan while the retained state keeps the previous one pinned — on multi-prompt
-        // workloads the plans accumulate until a device ceiling rejects 1-3 MB allocations
-        // (observed: device counters pinned at cap, downstream tools failing wholesale). One-shot
-        // generates therefore drop the retained state and clear the native plan cache exactly like
-        // the variable-shape path; resumable sessions keep their reuse semantics via startSession.
+        // SHAPE-SIGNATURE GUARD (was unconditional teardown): reuse is only sound when the retained
+        // plan matches the incoming request. Both requests here are FIXED-BUFFER, so the plan's
+        // prefill dimension is always maxPrefill — the signature reduces to equal maxKvLen (the KV
+        // capacity the plan was frozen against). On a match we reuse in place; the native plan
+        // cache's LRU + real-bytes budget (passivate/evict unpinned plans) plus error-path
+        // reclamation handle any residual accumulation the original teardown guarded against.
+        // On any mismatch we tear down exactly as before so the fresh prefill builds a plan for
+        // the new signature.
         boolean fixedBuffers = config.getMaxPrefillLength() > 0;
         InGraphKvState reuse = null;
         if (fixedBuffers && cachedFixedBufferState != null) {
-            InGraphKvState stale = cachedFixedBufferState;
-            cachedFixedBufferState = null;
-            stale.close();
-            // Best-effort teardown: resetSession and the plan-cache clear reclaim the
-            // previous generation's plan. A failure here (session buffers already
-            // released, degraded stream) must not abort this generate — the fresh
-            // prefill below builds a replacement plan either way.
-            try {
-                decoder.resetSession();
-            } catch (Exception resetFailure) {
-                log.warn("[Lifecycle] one-shot teardown resetSession failed: {}", resetFailure.getMessage());
+            long kvCapNow = config.getMaxKvCacheLength();
+            long maxKvLenNow = kvCapNow > 0
+                    ? Math.min(promptTokenIds.length + (long) maxNewTokens, kvCapNow)
+                    : promptTokenIds.length + (long) maxNewTokens;
+            boolean signatureMatches =
+                    cachedFixedBufferState.prefillSeqLen == config.getMaxPrefillLength()
+                            && cachedFixedBufferState.maxKvLen == maxKvLenNow;
+            if (signatureMatches) {
+                // Retained state transfers into this generate: same plan, same buffers,
+                // STEP 1 re-prefills in place. Do NOT close it — prefillWarmupAndFreeze
+                // treats a non-null reuseState as keep-plan/re-bind.
+                reuse = cachedFixedBufferState;
+                cachedFixedBufferState = null;
+                log.info("[Lifecycle] Fixed-buffer shape signature matches (prefillLen={}, maxKvLen={}) — reusing frozen prefill plan in place",
+                        reuse.prefillSeqLen, reuse.maxKvLen);
+            } else {
+                InGraphKvState stale = cachedFixedBufferState;
+                cachedFixedBufferState = null;
+                stale.close();
+                // Best-effort teardown: resetSession and the plan-cache clear reclaim the
+                // previous generation's plan. A failure here (session buffers already
+                // released, degraded stream) must not abort this generate — the fresh
+                // prefill below builds a replacement plan either way.
+                try {
+                    decoder.resetSession();
+                } catch (Exception resetFailure) {
+                    log.warn("[Lifecycle] one-shot teardown resetSession failed: {}", resetFailure.getMessage());
+                }
+                try {
+                    decoder.clearDynamicShapePlanCache();
+                } catch (Exception clearFailure) {
+                    log.warn("[Lifecycle] one-shot teardown clearDynamicShapePlanCache failed: {}",
+                            clearFailure.getMessage());
+                }
+                SameDiffMemoryUtils.trimAllDevicePools();
             }
-            try {
-                decoder.clearDynamicShapePlanCache();
-            } catch (Exception clearFailure) {
-                log.warn("[Lifecycle] one-shot teardown clearDynamicShapePlanCache failed: {}",
-                        clearFailure.getMessage());
-            }
-            SameDiffMemoryUtils.trimAllDevicePools();
         }
         InGraphKvState state = prefillWarmupAndFreeze(
                 promptTokenIds, maxNewTokens, kvInputNames, startTime, reuse, true);
