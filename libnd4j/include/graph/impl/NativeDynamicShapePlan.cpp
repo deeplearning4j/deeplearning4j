@@ -77,6 +77,7 @@
 #include <unordered_set>
 #include <utility>
 #include <system/Environment.h>
+#include <memory/MemoryCounter.h>
 
 
 /*
@@ -3849,10 +3850,26 @@ Status NativeDynamicShapePlan::execute(
     // never runs again. Passivate via the same proven release path the cache
     // eviction uses; the next cache hit reactivates and re-warms automatically.
     try {
+      // Counter accounting brackets (permanent telemetry): passivate() frees the
+      // plan's intermediates; the device counters MUST drop by the same amount.
+      // A mismatch here is the signature of a release path that frees storage
+      // without countOut — the wedge that starves every later admission.
+      auto& reclaimCounter = sd::memory::MemoryCounter::getInstance();
+      const LongType devBefore = reclaimCounter.allocatedDevice(0);
+      const LongType dev1Before = reclaimCounter.allocatedDevice(1);
+      const LongType groupBefore = reclaimCounter.allocatedGroup(sd::memory::MemoryType::DEVICE);
       const size_t reclaimed = passivate();
+      const LongType devAfter = reclaimCounter.allocatedDevice(0);
+      const LongType dev1After = reclaimCounter.allocatedDevice(1);
+      const LongType groupAfter = reclaimCounter.allocatedGroup(sd::memory::MemoryType::DEVICE);
       DSP_DIAG(MEMORY,
-               "EXEC_ERROR_RECLAIM: plan=%p exec=%d status=%d — passivated, reclaimed ~%zuMB of failed-exec intermediates",
-               (void*)this, executeCount_, static_cast<int>(phaseStatus), reclaimed / (1024 * 1024));
+               "EXEC_ERROR_RECLAIM: plan=%p exec=%d status=%d — passivated, reclaimed ~%zuMB; "
+               "counter dev0 %lld->%lldMB dev1 %lld->%lldMB group %lld->%lldMB (freed=%zuMB)",
+               (void*)this, executeCount_, static_cast<int>(phaseStatus), reclaimed / (1024 * 1024),
+               (long long)(devBefore / (1024 * 1024)), (long long)(devAfter / (1024 * 1024)),
+               (long long)(dev1Before / (1024 * 1024)), (long long)(dev1After / (1024 * 1024)),
+               (long long)(groupBefore / (1024 * 1024)), (long long)(groupAfter / (1024 * 1024)),
+               (size_t)((devBefore - devAfter + dev1Before - dev1After) / (1024 * 1024)));
     } catch (const std::exception& reclaimErr) {
       // Never mask the original phase failure; report and continue with the
       // counters as they are (the owner of the failure already saw its detail).
