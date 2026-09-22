@@ -3841,6 +3841,25 @@ Status NativeDynamicShapePlan::execute(
     flushDeferredSlotDeletes();
     platformEndGuard.dismiss();
     platformEndExecution(executionStatePtr, stream, planLifecycle_.isInFrozenOrReplayState(), executeCount_);
+    // Lifecycle (error-path reclamation): a failed execution leaves every
+    // intermediate it allocated charged against its device's MemoryCounter.
+    // Without releasing them the counters stay wedged — every later admit
+    // (e.g. the lm_logits cast) fails for the rest of the process, and the
+    // failing plan keeps hitting the cache so insert-time budget enforcement
+    // never runs again. Passivate via the same proven release path the cache
+    // eviction uses; the next cache hit reactivates and re-warms automatically.
+    try {
+      const size_t reclaimed = passivate();
+      DSP_DIAG(MEMORY,
+               "EXEC_ERROR_RECLAIM: plan=%p exec=%d status=%d — passivated, reclaimed ~%zuMB of failed-exec intermediates",
+               (void*)this, executeCount_, static_cast<int>(phaseStatus), reclaimed / (1024 * 1024));
+    } catch (const std::exception& reclaimErr) {
+      // Never mask the original phase failure; report and continue with the
+      // counters as they are (the owner of the failure already saw its detail).
+      DSP_DIAG(MEMORY,
+               "EXEC_ERROR_RECLAIM FAILED: plan=%p exec=%d status=%d — passivation error, counters unchanged: %s",
+               (void*)this, executeCount_, static_cast<int>(phaseStatus), reclaimErr.what());
+    }
     return phaseStatus;
   }
 
