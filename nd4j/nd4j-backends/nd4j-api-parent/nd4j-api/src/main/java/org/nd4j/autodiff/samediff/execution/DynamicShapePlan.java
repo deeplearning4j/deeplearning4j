@@ -382,7 +382,8 @@ public class DynamicShapePlan implements Closeable {
         List<Map.Entry<Integer, Long>> viable = new ArrayList<>(sorted.size());
         for (Map.Entry<Integer, Long> entry : sorted) {
             long budget = entry.getValue();
-            if (budget >= totalMem * MIN_DEVICE_BUDGET_FRACTION || budget == largestBudget) {
+            if (entry.getKey() == residentDevice
+                    || budget >= totalMem * MIN_DEVICE_BUDGET_FRACTION || budget == largestBudget) {
                 viable.add(entry);
             } else {
                 log.info("Device placement: excluding device {} from DSP split — budget {}MB " +
@@ -411,7 +412,7 @@ public class DynamicShapePlan implements Closeable {
         // device that physically holds the input. This prevents plan-killing migrations
         // of multi-GB weights to small-capacity devices (e.g. the tied lm-head embedding
         // copy to a 4 GiB secondary device).
-        int anchorDevice = sorted.get(0).getKey();
+        int anchorDevice = residentDevice >= 0 ? residentDevice : sorted.get(0).getKey();
         boolean[] pinned = new boolean[slots.length];
         int pinnedCount = 0;
         long[] externalInputBytes = getExternalInputBytes();
