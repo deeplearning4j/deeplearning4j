@@ -177,12 +177,28 @@ void NativePlanCache::clear() {
   }
   fprintf(stderr, "[DSP-CLEAR] releaseGpuIntermediates done for %zu plans\n", toDelete.size());
   fflush(stderr);
+  // Heap probe between phases: if glibc later aborts inside a plan dtor, this
+  // malloc/free pair proves the allocator metadata was still consistent at the
+  // release/delete boundary (i.e. the corruption is inside a specific dtor phase
+  // or a later path, not the batch release itself).
+  {
+    void* probe = malloc(64);
+    fprintf(stderr, "[DSP-CLEAR] HEAP-PROBE post-release ptr=%p\n", probe);
+    fflush(stderr);
+    free(probe);
+    fprintf(stderr, "[DSP-CLEAR] HEAP-PROBE free OK\n");
+    fflush(stderr);
+  }
   for (auto* plan : toDelete) {
     // Double-destruction guard: skip plans whose destructor already ran.
     if (plan != nullptr && !plan->isDestructed()) {
       fprintf(stderr, "[DSP-CLEAR-PLAN] delete plan=%p\n", (void*)plan);
       fflush(stderr);
       delete plan;
+      void* postProbe = malloc(64);
+      free(postProbe);
+      fprintf(stderr, "[DSP-CLEAR] HEAP-PROBE post-delete plan=%p OK\n", (void*)plan);
+      fflush(stderr);
     } else if (plan != nullptr) {
       DSP_DIAG(MEMORY, "PLAN_CACHE_CLEAR: SKIPPED already-destructed plan=%p", (void*)plan);
       fprintf(stderr, "[DSP-CLEAR-PLAN] SKIPPED already-destructed plan=%p\n", (void*)plan);

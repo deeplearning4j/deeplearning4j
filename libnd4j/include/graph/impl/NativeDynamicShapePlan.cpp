@@ -462,8 +462,31 @@ void NativeDynamicShapePlan::flushDeferredSlotDeletes() {
       owningDeletes.push_back(arr);
     }
   }
-  for (NDArray* arr : nonOwningDeletes) delete arr;
-  for (NDArray* arr : owningDeletes) delete arr;
+  // Teardown bracketing (unconditional): the 2026-09-22 '(out)' abort fires at
+  // plan dtor's delete[] outputSlots_ AFTER this flush, meaning an earlier free
+  // inside one of these loops corrupted a neighboring heap chunk. Bracket each
+  // deletion group so a future abort pins the group (glibc reports at the
+  // detecting free, so the last COMPLETED bracket identifies the corruptor).
+  {
+    fprintf(stderr, "[DSP-FLUSH] BEGIN plan=%p nonOwning=%zu owning=%zu retained=%zu\n",
+            (void*)this, nonOwningDeletes.size(), owningDeletes.size(), retained);
+    fflush(stderr);
+    for (NDArray* arr : nonOwningDeletes) {
+      fprintf(stderr, "[DSP-FLUSH] DEL-NONOWNING arr=%p\n", (void*)arr);
+      fflush(stderr);
+      delete arr;
+    }
+    fprintf(stderr, "[DSP-FLUSH] DEL-NONOWNING DONE\n");
+    fflush(stderr);
+    for (NDArray* arr : owningDeletes) {
+      fprintf(stderr, "[DSP-FLUSH] DEL-OWNING arr=%p db=%p\n", (void*)arr,
+              (void*)arr->dataBuffer());
+      fflush(stderr);
+      delete arr;
+    }
+    fprintf(stderr, "[DSP-FLUSH] DEL-OWNING DONE\n");
+    fflush(stderr);
+  }
   const size_t deleted = nonOwningDeletes.size() + owningDeletes.size();
   DSP_DIAG(MEMORY,
            "DEFERRED_DELETE_FLUSH: plan=%p queued=%zu unique=%zu deleted=%zu retained=%zu reentrant=%zu",
@@ -8079,12 +8102,24 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
     deferredSlotDeletes_.erase(std::remove_if(deferredSlotDeletes_.begin(), deferredSlotDeletes_.end(),
         [&](NDArray* arr) { return warmupRetiringArrays.count(arr) != 0; }), deferredSlotDeletes_.end());
     for (auto* arr : warmupRetiringArrays) planOwnedArrays_.erase(arr);
+    // Teardown bracketing: same rationale as [DSP-FLUSH] above — pin the exact
+    // deleting sub-phase inside the release window.
+    fprintf(stderr, "[DSP-WARMUP-RETIRE] BEGIN plan=%p borrowers=%zu owners=%zu\n",
+            (void*)this, warmupBorrowers.size(), warmupOwners.size());
+    fflush(stderr);
     for (auto* arr : warmupBorrowers) {
+      fprintf(stderr, "[DSP-WARMUP-RETIRE] DEL-BORROWER arr=%p\n", (void*)arr);
+      fflush(stderr);
       deleted.insert(arr);
       delete arr;
       ++freedCount;
     }
+    fprintf(stderr, "[DSP-WARMUP-RETIRE] DEL-BORROWERS DONE\n");
+    fflush(stderr);
     for (auto* arr : warmupOwners) {
+      fprintf(stderr, "[DSP-WARMUP-RETIRE] DEL-OWNER arr=%p db=%p\n", (void*)arr,
+              (void*)arr->dataBuffer());
+      fflush(stderr);
       deleted.insert(arr);
       auto* db = arr->dataBuffer();
       if (db != nullptr && db->isValid() && !db->isClosed()) db->deleteBuffers();
@@ -8092,6 +8127,8 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
       delete arr;
       ++freedCount;
     }
+    fprintf(stderr, "[DSP-WARMUP-RETIRE] DEL-OWNERS DONE\n");
+    fflush(stderr);
     colorMap_.clearWarmupTracking();
 
     if (slotOwnership_) {
