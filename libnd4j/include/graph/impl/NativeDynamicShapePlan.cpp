@@ -1791,8 +1791,22 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   }
 
   DSP_DTOR_PHASE("PHASE-OWNED-CLASSIFY");
-  for (NDArray* arr : viewArrays) delete arr;
-  for (NDArray* arr : owningArrays) delete arr;
+  // Per-wrapper teardown events (permanent DSP_DIAG): the 2026-09-22 '(out)'
+  // abort fires at PHASE-OUTSLOTS-ARRAY-DELETE with a pointer-sized value in the
+  // chunk header BEFORE the array — the stomp happens during one of the wrapper
+  // deletes in THIS loop (glibc reports at the next free of the corrupted
+  // region, which is exactly delete[] outputSlots_). Emit one event per delete
+  // so the last completed event before an abort names the exact wrapper whose
+  // destructor corrupts its heap neighbor.
+  for (NDArray* arr : viewArrays) {
+    DSP_DIAG(MEMORY, "DTOR_DEL: view arr=%p", (void*)arr);
+    delete arr;
+  }
+  for (NDArray* arr : owningArrays) {
+    DSP_DIAG(MEMORY, "DTOR_DEL: owner arr=%p db=%p", (void*)arr,
+             (void*)(arr->dataBuffer()));
+    delete arr;
+  }
   DSP_DTOR_PHASE("PHASE-OWNED-DELETE-DONE");
   const int freedOwned =
       static_cast<int>(viewArrays.size() + owningArrays.size());
