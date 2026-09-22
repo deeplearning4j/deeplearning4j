@@ -173,10 +173,22 @@
     "lifecycle" : "ACTIVE",
     "tags" : [ "code", "auto-detected", "directory-project" ],
     "metadata" : {
-      "detection.language" : "Code"
+      "detection.language" : "Code",
+      "knowledgeBaseId" : "execution-knowledge",
+      "graphPath" : "data/crawls/execution-knowledge/graph.kgraph",
+      "codeProjectionVersion" : "4",
+      "codeProjectedAt" : "2026-09-22T00:43:34.033966260Z",
+      "codeIndexGeneration" : "2026-09-22T00:43:23.814691240Z",
+      "codeProjectionEntities" : "2899",
+      "codeProjectionRelations" : "8169",
+      "codeProjectionCodeEntities" : "2162",
+      "codeProjectionFolderProjectId" : "execution",
+      "codeProjectionFactSheetId" : "",
+      "codeProjectionIncludes" : "",
+      "codeProjectionExcludes" : ""
     },
     "createdAt" : "2026-09-22T00:43:24.111079920Z",
-    "updatedAt" : "2026-09-22T00:43:24.112987298Z"
+    "updatedAt" : "2026-09-22T00:43:34.035257557Z"
   }, {
     "id" : "sdx-aot",
     "codeProjectId" : "sdx-aot",
@@ -332,5 +344,5 @@
   "workflows" : [ ],
   "metadata" : { },
   "createdAt" : "2026-08-21T20:06:29.083137933Z",
-  "updatedAt" : "2026-09-22T00:43:24.115748917Z"
+  "updatedAt" : "2026-09-22T00:43:34.035616885Z"
 }
