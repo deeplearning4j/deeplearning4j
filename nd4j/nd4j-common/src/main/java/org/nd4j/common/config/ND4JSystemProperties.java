@@ -493,15 +493,6 @@ public class ND4JSystemProperties {
 
     /**
      * Applicability: DynamicShapePlan-based inference<br>
-     * Description: When true, force single-GPU mode for DSP execution even when multiple
-     * CUDA devices are available.
-     * <p>
-     * Default: false
-     */
-    public static final String DSP_SINGLE_GPU = "nd4j.dsp.singleGpu";
-
-    /**
-     * Applicability: DynamicShapePlan-based inference<br>
      * Description: When true, serialize parallel worker op execution (only one worker thread
      * executes at a time). For debugging concurrent CUDA issues.
      * <p>

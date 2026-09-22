@@ -23,7 +23,6 @@ package org.nd4j.autodiff.samediff.execution;
 import lombok.Data;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
@@ -277,10 +276,6 @@ public class DynamicShapePlan implements Closeable {
             return; // CPU backend or no devices
         }
         if (numDevices <= 1 || slots == null || slots.length == 0) return;
-        if (Boolean.getBoolean(ND4JSystemProperties.DSP_SINGLE_GPU)) {
-            log.debug("DSP single-GPU mode forced via {}=true", ND4JSystemProperties.DSP_SINGLE_GPU);
-            return;
-        }
 
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
