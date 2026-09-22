@@ -2360,7 +2360,45 @@ void DataBuffer::migrate() {
     THROW_EXCEPTION("DataBuffer::migrate: target stream is capturing");
   if (copySource != nullptr) {
     cudaError_t err;
-    if (!copyPrimary && oldLocation.type == cudaMemoryTypeDevice && target.type == cudaMemoryTypeDevice &&
+    // Remote-device source policy: without peer access, source memory on another
+    // device is addressable ONLY from that device's context. The Device/Device
+    // branch handles peer device-to-device copies, but pool failover can hand
+    // back a HOST-RESIDENT target (managed preferred-CPU, or pinned) — host
+    // pages are visible to every context, so the plain Default copy runs on this
+    // context and raises cudaErrorInvalidValue when it dereferences the remote
+    // source (observed: gdn_out_8 on dev1 -> managed failover target on dev0,
+    // no P2P). Stage through pinned host on the SOURCE device instead — the
+    // same non-peer safety policy the target guard above enforces.
+    const bool remoteDeviceSource = !copyPrimary && oldLocation.type == cudaMemoryTypeDevice &&
+                                    oldLocation.device != candidate.device;
+    if (remoteDeviceSource && !pool.isPeerAccessEnabled(candidate.device, oldLocation.device)) {
+      MigrationAllocation staging(pool, oldLocation.device);
+      AffinityManager::setCurrentNativeDevice(oldLocation.device);
+      staging.pointer = pool.allocatePinnedHost(allocSize);
+      if (staging.pointer == nullptr)
+        THROW_EXCEPTION("DataBuffer::migrate: remote-source pinned staging allocation failed");
+      err = memory::CudaMemoryPool::memcpyAsync(staging.pointer, copySource, bytes,
+                                                cudaMemcpyDeviceToHost, copyStream);
+      if (err != cudaSuccess) throwCudaStatus("DataBuffer::migrate: remote-source staging copy failed", err);
+      auto stageErr = cudaStreamSynchronize(copyStream);
+      if (stageErr != cudaSuccess)
+        throwCudaStatus("DataBuffer::migrate: remote-source staging sync failed", stageErr);
+      AffinityManager::setCurrentNativeDevice(candidate.device);
+      copyStream = cudaStreamPerThread;
+      // Source is host memory now: visible from the destination context, so the
+      // Default-direction copy above is valid for managed and pinned targets.
+      err = memory::CudaMemoryPool::memcpyAsync(candidate.pointer, staging.pointer, bytes,
+                                                cudaMemcpyDefault, copyStream);
+      // The scoped staging destructor below retires the pinned buffer on the
+      // source device WITHOUT cross-stream ordering against this per-thread
+      // copy. Complete the copy here so retirement can never race the read.
+      if (err == cudaSuccess) {
+        auto stageCopyErr = cudaStreamSynchronize(copyStream);
+        if (stageCopyErr != cudaSuccess)
+          throwCudaStatus("DataBuffer::migrate: staging copy completion failed", stageCopyErr);
+      }
+      // staging destructor retires the pinned buffer on the source device.
+    } else if (!copyPrimary && oldLocation.type == cudaMemoryTypeDevice && target.type == cudaMemoryTypeDevice &&
         oldLocation.device != candidate.device) {
       err = memory::CudaMemoryPool::memcpyPeerAsync(candidate.pointer, candidate.device, copySource, oldLocation.device, bytes, copyStream);
     } else {
